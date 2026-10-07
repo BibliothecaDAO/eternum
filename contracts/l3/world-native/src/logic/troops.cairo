@@ -7,15 +7,10 @@ pub fn active_explorer(
 ) -> ExplorerTroops {
     let explorer = crate::logic::troops::explorer(key).expect('missing explorer');
     let rules = game_context.rules.unbox();
-    if rules.epoch_seconds != 0 {
+    if rules.day_unit_seconds != 0 {
+        let today = crate::days::day_of(game_context.game.unbox(), rules.day_unit_seconds, timestamp).index;
         assert!(
-            crate::expeditions::is_current(
-                explorer.coord,
-                game_context.game.unbox().start_main_at,
-                rules.epoch_seconds,
-                crate::logic::settlement::rules(key.game_id).spacing,
-                timestamp,
-            ),
+            crate::expeditions::is_current(explorer.coord, crate::logic::settlement::rules(key.game_id).spacing, today),
             "EXPIRED_ARMY",
         );
     }
@@ -292,7 +287,7 @@ pub mod TroopsLogic {
                 crate::logic::guards::GuardState::save(guard_key, crate::guards::Guard { troops, destroyed_tick: 0 });
             }
             if let Some(kind) = site_kind {
-                assert!(rules.epoch_seconds != 0, "site outside expedition");
+                assert!(rules.day_unit_seconds != 0, "site outside expedition");
                 crate::logic::expeditions::create_site(key, kind, guards, rules.troop_limit_config);
             }
         }
@@ -707,7 +702,7 @@ pub mod TroopsLogic {
 
             let rules = self.authorize(game_id, context);
             let home = crate::logic::troops::owned_structure(game_id, command.structure_id, actor);
-            if rules.epoch_seconds != 0 {
+            if rules.day_unit_seconds != 0 {
                 self
                     .expire_home_armies(
                         ResourceKey { game_id, entity_id: command.structure_id }, rules, context.timestamp, context,
@@ -717,20 +712,18 @@ pub mod TroopsLogic {
             let tier = troop_tier(command.tier);
             let id = crate::logic::game::allocate_entity(game_id);
             self.pay_troops(game_id, command.structure_id, category, tier, command.amount, context.timestamp, context);
-            let origin = if rules.epoch_seconds == 0 {
+            let today = if rules.day_unit_seconds == 0 {
+                0
+            } else {
+                crate::days::day_of(context.game.unbox(), rules.day_unit_seconds, context.timestamp).index
+            };
+            let origin = if rules.day_unit_seconds == 0 {
                 crate::structures::structure_coord(ResourceKey { game_id, entity_id: command.structure_id })
             } else {
-                crate::expeditions::site(
-                    context.game.unbox().start_main_at,
-                    rules.epoch_seconds,
-                    self.expedition_spacing(game_id),
-                    home.metadata.realm_id,
-                    context.timestamp,
-                    0,
-                )
+                crate::expeditions::site(self.expedition_spacing(game_id), home.metadata.realm_id, today, 0)
             };
             let coord = neighbor(origin, command.direction);
-            if rules.epoch_seconds != 0 {
+            if rules.day_unit_seconds != 0 {
                 crate::logic::map::raise_expedition_home(
                     tile_key(game_id, origin), crate::commands::biome_context(context),
                 );
@@ -745,7 +738,7 @@ pub mod TroopsLogic {
                 "army size limit",
             );
             let mut troops = initial_troops(category, tier, command.amount, rules, context.timestamp);
-            if rules.epoch_seconds != 0 {
+            if rules.day_unit_seconds != 0 {
                 // A slot's first army of the day starts full at its own maximum, read from the progress it is
                 // created with; a slot an army already used keeps the bar that army left.
                 troops
@@ -753,7 +746,7 @@ pub mod TroopsLogic {
                         crate::logic::army_slots::allocate(
                             ExplorerKey { game_id, explorer_id: id },
                             command.structure_id,
-                            crate::expeditions::absolute_epoch(rules.epoch_seconds, context.timestamp),
+                            today,
                             home.base.troop_max_explorer_count.try_into().expect('invalid slot allowance'),
                             troops.stamina.inline(),
                             category,
@@ -894,12 +887,12 @@ pub mod troop_helpers {
             timestamp: u64,
             game_context: crate::commands::ExecutionContext,
         ) {
-            let start = game_context.game.unbox().start_main_at;
+            let today = crate::days::day_of(game_context.game.unbox(), rules.day_unit_seconds, timestamp).index;
             let spacing = self.expedition_spacing(home.game_id);
             for id in crate::logic::troops::home_armies(home) {
                 let key = ExplorerKey { game_id: home.game_id, explorer_id: *id };
                 let explorer = crate::logic::troops::explorer(key).expect('missing home army');
-                if !crate::expeditions::is_current(explorer.coord, start, rules.epoch_seconds, spacing, timestamp) {
+                if !crate::expeditions::is_current(explorer.coord, spacing, today) {
                     self.return_troops(key, home, explorer, timestamp, game_context);
                     self.destroy_explorer(key, explorer);
                 }

@@ -52,7 +52,11 @@ export const RealmCard = ({ season, className }: { season: DirectoryGame; classN
         </h2>
         {season.expedition && (
           <DayDial
-            rules={{ epochSeconds: season.expedition.epoch_seconds, startMainAt: season.clock.start_main_at }}
+            rules={{
+              dayUnitSeconds: season.expedition.day_unit_seconds,
+              seed: BigInt(season.expedition.seed),
+              startMainAt: season.clock.start_main_at,
+            }}
             now={now}
             className="ml-auto"
           />

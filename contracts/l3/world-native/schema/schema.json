@@ -1,16 +1,10 @@
 {
   "ruleConstants": {
     "ATTRIBUTE_CAP": 5,
+    "ATTRIBUTE_DAMAGE_PERCENT": 10,
     "ATTRIBUTE_SUPPORT_PERCENT": 10,
+    "ATTRIBUTE_STAMINA": 30,
     "ATTRIBUTE_SCOUTING_BPS": 150,
-    "BATTLE_UNCOMMON_BPS": 1000,
-    "BATTLE_RARE_BPS": 3000,
-    "BATTLE_EPIC_BPS": 6000,
-    "BATTLE_LEGENDARY_BPS": 10000,
-    "LOGISTICS_UNCOMMON_STAMINA": 20,
-    "LOGISTICS_RARE_STAMINA": 50,
-    "LOGISTICS_EPIC_STAMINA": 90,
-    "LOGISTICS_LEGENDARY_STAMINA": 150,
     "ENTRY_ENTITLEMENT": 0,
     "ENTRY_OPEN": 1,
     "ENTRY_ROSTER": 2,
@@ -32,8 +26,7 @@
     "OWNER_ONLY_SHARES": 16384,
     "HYPERSTRUCTURE_MULTIPLIERS": 32768,
     "PRODUCTION_START": 131072,
-    "WELL_STAMINA": 60,
-    "TIER_STAMINA_REFILL": 30
+    "WELL_STAMINA": 60
   },
   "tileOccupierConstants": {
     "CHEST_OCCUPIER": 34,
@@ -2702,38 +2695,20 @@
           "feltLength": 1
         },
         {
-          "name": "fixed_xp",
+          "name": "clear_xp",
           "type": "core::integer::u32",
-          "id": "0x66697865645f7870",
+          "id": "0x636c6561725f7870",
           "feltLength": 1
         },
         {
-          "name": "uncommon_xp",
+          "name": "level_step_xp",
           "type": "core::integer::u32",
-          "id": "0x756e636f6d6d6f6e5f7870",
-          "feltLength": 1
-        },
-        {
-          "name": "rare_xp",
-          "type": "core::integer::u32",
-          "id": "0x726172655f7870",
-          "feltLength": 1
-        },
-        {
-          "name": "epic_xp",
-          "type": "core::integer::u32",
-          "id": "0x657069635f7870",
-          "feltLength": 1
-        },
-        {
-          "name": "legendary_xp",
-          "type": "core::integer::u32",
-          "id": "0x6c6567656e646172795f7870",
+          "id": "0x6c6576656c5f737465705f7870",
           "feltLength": 1
         }
       ],
       "keyLength": 1,
-      "valueLength": 6,
+      "valueLength": 3,
       "derivedFrom": "preset"
     },
     {
@@ -2874,7 +2849,7 @@
           "entity_id": "structure_id"
         },
         "value": "zero",
-        "meaning": "No Support boost earned for this realm in this absolute epoch."
+        "meaning": "No Support boost earned for this realm on this season day."
       }
     },
     {
@@ -2912,16 +2887,10 @@
           "type": "core::integer::u128",
           "id": "0x6c6f7264735f706f6f6c",
           "feltLength": 1
-        },
-        {
-          "name": "season_epochs",
-          "type": "core::integer::u16",
-          "id": "0x736561736f6e5f65706f636873",
-          "feltLength": 1
         }
       ],
       "keyLength": 1,
-      "valueLength": 8,
+      "valueLength": 7,
       "derivedFrom": "preset"
     },
     {
@@ -4482,6 +4451,12 @@
       ],
       "members": [
         {
+          "name": "level",
+          "type": "core::integer::u16",
+          "id": "0x6c6576656c",
+          "feltLength": 1
+        },
+        {
           "name": "xp",
           "type": "core::integer::u32",
           "id": "0x7870",
@@ -4510,10 +4485,16 @@
           "type": "core::integer::u8",
           "id": "0x737570706f7274",
           "feltLength": 1
+        },
+        {
+          "name": "pending",
+          "type": "core::option::Option::<world_native::progression::AttributeOffer>",
+          "id": "0x70656e64696e67",
+          "feltLength": null
         }
       ],
       "keyLength": 2,
-      "valueLength": 5
+      "valueLength": null
     },
     {
       "name": "ArmySlot",
@@ -4564,7 +4545,7 @@
           "entity_id": "structure_id"
         },
         "value": "unused",
-        "meaning": "This army slot has not been used in the current expedition epoch."
+        "meaning": "This army slot has not been used on this season day."
       }
     },
     {
@@ -4631,9 +4612,9 @@
           "feltLength": 1
         },
         {
-          "name": "initial_guard_strength",
+          "name": "initial_guard_count",
           "type": "core::integer::u128",
-          "id": "0x696e697469616c5f67756172645f737472656e677468",
+          "id": "0x696e697469616c5f67756172645f636f756e74",
           "feltLength": 1
         },
         {
@@ -6184,9 +6165,9 @@
           "feltLength": 1
         },
         {
-          "name": "epoch_seconds",
+          "name": "day_unit_seconds",
           "type": "core::integer::u32",
-          "id": "0x65706f63685f7365636f6e6473",
+          "id": "0x6461795f756e69745f7365636f6e6473",
           "feltLength": 1
         },
         {
@@ -6811,6 +6792,16 @@
         }
       ]
     },
+    "core::array::Span::<world_native::progression::Attribute>": {
+      "type": "struct",
+      "name": "core::array::Span::<world_native::progression::Attribute>",
+      "members": [
+        {
+          "name": "snapshot",
+          "type": "@core::array::Array::<world_native::progression::Attribute>"
+        }
+      ]
+    },
     "core::array::Span::<world_native::registrar::RosterPlayer>": {
       "type": "struct",
       "name": "core::array::Span::<world_native::registrar::RosterPlayer>",
@@ -7190,6 +7181,20 @@
         {
           "name": "Some",
           "type": "world_native::progression::ArmyProgressionRules"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
+    "core::option::Option::<world_native::progression::AttributeOffer>": {
+      "type": "enum",
+      "name": "core::option::Option::<world_native::progression::AttributeOffer>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "world_native::progression::AttributeOffer"
         },
         {
           "name": "None",
@@ -8232,7 +8237,7 @@
           "type": "world_native::rules::BiomeClimateConfig"
         },
         {
-          "name": "epoch_seconds",
+          "name": "day_unit_seconds",
           "type": "core::integer::u32"
         },
         {
@@ -8518,8 +8523,8 @@
           "type": "world_native::research::Research"
         },
         {
-          "name": "BuyTier",
-          "type": "world_native::progression::BuyTier"
+          "name": "ChooseAttribute",
+          "type": "world_native::progression::ChooseAttribute"
         },
         {
           "name": "UpgradeBuilding",
@@ -8760,7 +8765,7 @@
           "type": "world_native::expeditions::SiteKind"
         },
         {
-          "name": "initial_guard_strength",
+          "name": "initial_guard_count",
           "type": "core::integer::u128"
         },
         {
@@ -10210,8 +10215,8 @@
           "type": "world_native::relics::ChestReward"
         },
         {
-          "name": "TierBought",
-          "type": "world_native::progression::TierBought"
+          "name": "AttributeChosen",
+          "type": "world_native::progression::AttributeChosen"
         },
         {
           "name": "SitePayout",
@@ -10612,6 +10617,10 @@
       "name": "world_native::progression::ArmyProgress",
       "members": [
         {
+          "name": "level",
+          "type": "core::integer::u16"
+        },
+        {
           "name": "xp",
           "type": "core::integer::u32"
         },
@@ -10630,6 +10639,10 @@
         {
           "name": "support",
           "type": "core::integer::u8"
+        },
+        {
+          "name": "pending",
+          "type": "core::option::Option::<world_native::progression::AttributeOffer>"
         }
       ]
     },
@@ -10642,23 +10655,11 @@
           "type": "core::integer::u32"
         },
         {
-          "name": "fixed_xp",
+          "name": "clear_xp",
           "type": "core::integer::u32"
         },
         {
-          "name": "uncommon_xp",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "rare_xp",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "epic_xp",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "legendary_xp",
+          "name": "level_step_xp",
           "type": "core::integer::u32"
         }
       ]
@@ -10685,12 +10686,68 @@
         }
       ]
     },
-    "world_native::progression::BuyTier": {
+    "world_native::progression::AttributeChosen": {
       "type": "struct",
-      "name": "world_native::progression::BuyTier",
+      "name": "world_native::progression::AttributeChosen",
       "members": [
         {
           "name": "explorer_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "offer_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "source",
+          "type": "world_native::progression::OfferSource"
+        },
+        {
+          "name": "attribute",
+          "type": "world_native::progression::Attribute"
+        },
+        {
+          "name": "applied",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "lost",
+          "type": "core::integer::u8"
+        }
+      ]
+    },
+    "world_native::progression::AttributeOffer": {
+      "type": "struct",
+      "name": "world_native::progression::AttributeOffer",
+      "members": [
+        {
+          "name": "id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "source",
+          "type": "world_native::progression::OfferSource"
+        },
+        {
+          "name": "amount",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "choices",
+          "type": "core::array::Span::<world_native::progression::Attribute>"
+        }
+      ]
+    },
+    "world_native::progression::ChooseAttribute": {
+      "type": "struct",
+      "name": "world_native::progression::ChooseAttribute",
+      "members": [
+        {
+          "name": "explorer_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "offer_id",
           "type": "core::integer::u32"
         },
         {
@@ -10699,25 +10756,21 @@
         }
       ]
     },
-    "world_native::progression::TierBought": {
-      "type": "struct",
-      "name": "world_native::progression::TierBought",
-      "members": [
+    "world_native::progression::OfferSource": {
+      "type": "enum",
+      "name": "world_native::progression::OfferSource",
+      "variants": [
         {
-          "name": "explorer_id",
-          "type": "core::integer::u32"
+          "name": "Level",
+          "type": "()"
         },
         {
-          "name": "attribute",
-          "type": "world_native::progression::Attribute"
+          "name": "Relic",
+          "type": "()"
         },
         {
-          "name": "tier",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "price",
-          "type": "core::integer::u32"
+          "name": "Shrine",
+          "type": "()"
         }
       ]
     },
@@ -10731,7 +10784,7 @@
         },
         {
           "name": "Clear",
-          "type": "core::integer::u128"
+          "type": "()"
         }
       ]
     },
@@ -10978,10 +11031,6 @@
         {
           "name": "lords_pool",
           "type": "core::integer::u128"
-        },
-        {
-          "name": "season_epochs",
-          "type": "core::integer::u16"
         }
       ]
     },
@@ -11594,7 +11643,7 @@
           "type": "core::integer::u32"
         },
         {
-          "name": "epoch_seconds",
+          "name": "day_unit_seconds",
           "type": "core::integer::u32"
         },
         {
@@ -12992,5 +13041,5 @@
       ]
     }
   },
-  "identity": "cb766c9c89e97ae338b2e2e4bce277f5f2d5e2d033af39409c429501da944ca9"
+  "identity": "aa2f67d44872adcb0b8966fc66bb15020727414fa6292941eebad8446f985c9e"
 }

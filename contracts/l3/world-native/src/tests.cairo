@@ -6,6 +6,7 @@ mod bitcoin;
 mod bridge;
 mod combat_actions;
 mod combat_formula;
+mod days;
 mod entry;
 mod fact_wire;
 mod fixtures;

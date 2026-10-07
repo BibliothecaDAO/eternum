@@ -13,12 +13,17 @@ import {
   createGameActions,
   configManager,
   getBuildingCosts,
+  dayOf,
+  DAY_UNITS_PER_BAG,
+  DAYS_PER_BAG,
   getBlockTimestamp,
   getTileAt,
   entityMapPosition,
   liveHomeArmies,
+  readExpeditionRules,
   readTroopRaiseCost,
   ResourceManager,
+  seasonSeconds,
   type GameClient,
   waitForWorldState,
 } from "@bibliothecadao/eternum";
@@ -61,7 +66,8 @@ import {
   type WheatState,
 } from "./frontier-rules";
 
-const PRODUCTION_EPOCH_SECONDS = 86400;
+// Frontier's own day unit: the evidence's time scale is how much faster a run's unit is.
+const DESIGN_DAY_UNIT_SECONDS = 14_400;
 const precision = BigInt(RESOURCE_PRECISION);
 
 /**
@@ -83,13 +89,17 @@ export async function launchFrontierSeason(
   const config = loadNativePresetConfiguration("madara.frontier", presetId);
   const preset = buildNativePreset(config, presetId);
   if (nativePresetForId(presetId).clockScale) await registerFixturePreset(account, presetId, manifest, preset);
-  const startAt = Math.floor(Date.now() / 1000) + 60;
+  // The season starts on an armies tick and lasts whole bags of days, covering the run and its longest last day.
+  const tick = Number(preset.rules.tick_config.armies_tick_in_seconds);
+  const startAt = Math.ceil((Math.floor(Date.now() / 1000) + 60) / tick) * tick;
+  const unit = preset.rules.day_unit_seconds;
+  const bags = Math.ceil((Math.ceil(minutes * 60) + 6 * unit) / seasonSeconds(1, unit));
   const params = buildNativeGameParams(config, {
     gameName,
     presetId,
     startMainAt: startAt,
     chainTimestamp: startAt - 60,
-    durationSeconds: Math.ceil(minutes * 60) + preset.rules.epoch_seconds,
+    durationSeconds: seasonSeconds(bags, unit),
     devModeOn: false,
     singleRealmMode: true,
     twoPlayerMode: false,
@@ -101,7 +111,7 @@ export async function launchFrontierSeason(
     JSON.stringify({
       frontierSeason: created.gameId,
       presetId,
-      epochSeconds: preset.rules.epoch_seconds,
+      dayUnitSeconds: unit,
       createTransaction: created.transactionHash,
     }),
   );
@@ -121,10 +131,10 @@ async function registerFixturePreset(
   console.log(JSON.stringify({ fixturePreset: presetId, commitment: registration.commitment, transaction }));
 }
 
-/** A design run's day: the accelerated fixture preset's, which the season it plays must match. */
-const acceleratedEpochSeconds = (): number => {
+/** A design run's day unit: the accelerated fixture preset's, which the season it plays must match. */
+const acceleratedDayUnitSeconds = (): number => {
   const preset = nativePresetForId(FRONTIER_ACCELERATED_PRESET_ID);
-  return preset.epochSeconds / preset.clockScale!;
+  return preset.dayUnitSeconds / preset.clockScale!;
 };
 
 type Army = NativeRows["ExplorerTroops"];
@@ -184,7 +194,8 @@ export interface FrontierEvidence {
   burst?: FrontierBurst;
   /** A functional pass at the season's own speed: what it observed of its preset's rates and charges. */
   rules?: FrontierRuleEvidence;
-  epochSeconds: number;
+  /** The mean day of a bag (20 units over 5 days), the length the summaries count days in. */
+  meanDaySeconds: number;
   timeScale: number;
   tokenCap: number;
   players: Array<
@@ -214,16 +225,18 @@ interface RunFrontierOptions {
 /** Decisions use the same synchronized native facts and command submission as a player. */
 export async function runFrontierWorkload(options: RunFrontierOptions): Promise<WorkloadResult> {
   const { client, game, accounts } = options;
-  const epochSeconds = epochSecondsOf(client);
-  // A burst measures one moment of load, which is the same on any day length; the capacity shape plays its own days.
-  if (!options.burst && !options.functional && epochSeconds === acceleratedEpochSeconds())
-    throw new Error(`The Frontier capacity shape needs production-length days, not the design run's ${epochSeconds} s`);
-  const rules = options.functional && epochSeconds !== acceleratedEpochSeconds() ? recordRules(client) : undefined;
+  const dayUnitSeconds = calendarOf(client).dayUnitSeconds;
+  // A burst measures one moment of load, which is the same on any day length; the plain shape plays its own days.
+  if (!options.burst && options.accelerated !== (dayUnitSeconds === acceleratedDayUnitSeconds()))
+    throw new Error(
+      `Frontier ${options.accelerated ? "design run" : "capacity shape"} does not match the season's day unit (${dayUnitSeconds} s)`,
+    );
+  const rules = options.functional && dayUnitSeconds !== acceleratedDayUnitSeconds() ? recordRules(client) : undefined;
   await game.waitUntilPlaying();
-  if (options.burst?.shape === "booth") return runBoothBurst(options, epochSeconds);
+  if (options.burst?.shape === "booth") return runBoothBurst(options, dayUnitSeconds);
   const players = await settleFrontierPlayers(options, accounts);
   await Promise.all(players.map((player) => waitForRealmResources(player.client, player)));
-  if (options.burst?.shape === "rollover") return runRolloverBurst(options, players, epochSeconds);
+  if (options.burst?.shape === "rollover") return runRolloverBurst(options, players, dayUnitSeconds);
   for (const player of players) observeDay(player);
   rules?.observeRates(players);
   await options.onReady?.();
@@ -264,7 +277,7 @@ export async function runFrontierWorkload(options: RunFrontierOptions): Promise<
     await sleep(1000);
   }
   for (const player of players) currentDay(player).endedAt = now();
-  return frontierResult(options, { players, actions, startedAt, ticks, epochSeconds, rules: rules?.evidence });
+  return frontierResult(options, { players, actions, startedAt, ticks, dayUnitSeconds, rules: rules?.evidence });
 }
 
 type RuleRecorder = ReturnType<typeof recordRules>;
@@ -308,7 +321,7 @@ function wheatState(player: Player): WheatState {
  * The booth burst: every bot founds its realm inside the window, released evenly across it, and the foundings are the
  * measured workload.
  */
-async function runBoothBurst(options: RunFrontierOptions, epochSeconds: number): Promise<WorkloadResult> {
+async function runBoothBurst(options: RunFrontierOptions, dayUnitSeconds: number): Promise<WorkloadResult> {
   await options.onReady?.();
   const startedAt = new Date().toISOString();
   const releaseAtMs = Date.now();
@@ -325,7 +338,7 @@ async function runBoothBurst(options: RunFrontierOptions, epochSeconds: number):
     actions: founded.map(({ transaction }) => transaction),
     startedAt,
     ticks: 0,
-    epochSeconds,
+    dayUnitSeconds,
   });
 }
 
@@ -336,14 +349,14 @@ async function runBoothBurst(options: RunFrontierOptions, epochSeconds: number):
 async function runRolloverBurst(
   options: RunFrontierOptions,
   players: Player[],
-  epochSeconds: number,
+  dayUnitSeconds: number,
 ): Promise<WorkloadResult> {
   const { client } = options;
   // Workers sharing the season are all settled before any waits, so they wait for the same boundary.
   await options.onReady?.();
-  const settledEpoch = currentEpoch(client);
-  console.log(JSON.stringify({ frontierRolloverWaitSeconds: epochSeconds - (now() % epochSeconds) }));
-  while (currentEpoch(client) === settledEpoch) await sleep(1000);
+  const settledDay = today(client);
+  console.log(JSON.stringify({ frontierRolloverWaitSeconds: settledDay.end - now() }));
+  while (today(client).index === settledDay.index) await sleep(1000);
   for (const player of players) observeDay(player);
   const startedAt = new Date().toISOString();
   const releaseAtMs = Date.now();
@@ -355,7 +368,7 @@ async function runRolloverBurst(
       return playRollover(options, player, scheduledAtMs);
     }),
   );
-  return frontierResult(options, { players, actions: actions.flat(), startedAt, ticks: 0, epochSeconds });
+  return frontierResult(options, { players, actions: actions.flat(), startedAt, ticks: 0, dayUnitSeconds });
 }
 
 /** One bot's rollover: a fresh army, then, once the army is in view, its first move of the day. */
@@ -410,19 +423,19 @@ async function frontierResult(
     actions: TrackedTransaction[];
     startedAt: string;
     ticks: number;
-    epochSeconds: number;
+    dayUnitSeconds: number;
     rules?: FrontierRuleEvidence;
   },
 ): Promise<WorkloadResult> {
   const { client, game, provider } = options;
-  const { players, actions, epochSeconds } = run;
+  const { players, actions, dayUnitSeconds } = run;
   await attachAcceptedBlocks(provider, actions);
   const chests = await readChestHistory(client, Math.max(0, ...actions.map((action) => action.acceptedOnL2Block ?? 0)));
   const evidence: FrontierEvidence = {
     ...(options.burst ? { burst: options.burst } : {}),
     ...(run.rules ? { rules: run.rules } : {}),
-    epochSeconds,
-    timeScale: PRODUCTION_EPOCH_SECONDS / epochSeconds,
+    meanDaySeconds: (DAY_UNITS_PER_BAG / DAYS_PER_BAG) * dayUnitSeconds,
+    timeScale: DESIGN_DAY_UNIT_SECONDS / dayUnitSeconds,
     tokenCap: client.setup.store.require("ChestRules", { game_id: game.gameId }).token_cap,
     players: players.map(({ identity, siteExchanges: _exchanges, nextActionAt: _next, ...player }) => ({
       ...player,
@@ -548,17 +561,20 @@ function home(client: GameClient, player: Player): Home {
 function activeArmies(client: GameClient, player: Player): Army[] {
   return liveHomeArmies(client.setup.store, player.realmId, client.gameId);
 }
-function epochSecondsOf(client: GameClient): number {
-  return client.setup.store.require("SliceRules", { game_id: client.gameId }).epoch_seconds;
+function calendarOf(client: GameClient) {
+  const rules = readExpeditionRules(client.setup.store, client.gameId);
+  if (!rules) throw new Error("A Frontier season has days");
+  return rules;
 }
-function currentEpoch(client: GameClient): number {
-  const registry = client.setup.store.require("GameRegistry", { game_id: client.gameId });
-  const epochSeconds = epochSecondsOf(client);
-  return Math.floor(now() / epochSeconds) - Math.floor(Number(registry.start_main_at) / epochSeconds);
+/** The season day the chain clock is in; the workload only runs once the season has started. */
+function today(client: GameClient) {
+  const day = dayOf(calendarOf(client), now());
+  if (!day) throw new Error("The Frontier season has not started");
+  return day;
 }
 function observeDay(player: Player) {
   const { client, game } = player;
-  const epoch = currentEpoch(client);
+  const epoch = today(client).index;
   if (currentDay(player)?.epoch === epoch) return;
   const previous = currentDay(player);
   if (previous) {
@@ -596,15 +612,18 @@ function observeDay(player: Player) {
   });
   observeProgress(client, game, player);
 }
+/** A profile plays a few sessions spread over today, however long today lasts. */
 function sessionPeriod(client: GameClient, player: Player): number {
-  return epochSecondsOf(client) / (player.profile === "check-in" ? 3 : 9);
+  const day = today(client);
+  return (day.end - day.start) / (player.profile === "check-in" ? 3 : 9);
 }
 function session(client: GameClient, player: Player): number {
-  return Math.floor((now() % epochSecondsOf(client)) / sessionPeriod(client, player));
+  return Math.floor((now() - today(client).start) / sessionPeriod(client, player));
 }
 function inSession(client: GameClient, player: Player): boolean {
   const period = sessionPeriod(client, player);
-  return now() % epochSecondsOf(client) >= 2 && (now() - player.settledAt < period / 3 || now() % period < period / 3);
+  const intoDay = now() - today(client).start;
+  return intoDay >= 2 && (now() - player.settledAt < period / 3 || intoDay % period < period / 3);
 }
 interface Action {
   kind: string;
@@ -1070,7 +1089,7 @@ export function summarizeFrontierDesign(evidence: FrontierEvidence) {
   return (["check-in", "daily"] as const).map((profile) => {
     const players = evidence.players.filter((player) => player.profile === profile);
     const observedDays = players.map(
-      (player) => ((player.days.at(-1)?.endedAt ?? player.settledAt) - player.settledAt) / evidence.epochSeconds,
+      (player) => ((player.days.at(-1)?.endedAt ?? player.settledAt) - player.settledAt) / evidence.meanDaySeconds,
     );
     const playerDays = observedDays.reduce((sum, days) => sum + days, 0);
     const days = players.flatMap((player) => player.days);
@@ -1083,7 +1102,7 @@ export function summarizeFrontierDesign(evidence: FrontierEvidence) {
         total +
         player.days.filter((day) =>
           player.chests.some(
-            (chest) => chest.epoch === Math.floor(day.startedAt / evidence.epochSeconds) && chest.depth === 3,
+            (chest) => chest.epoch === day.epoch && chest.depth === 3,
           ),
         ).length,
       0,
@@ -1103,7 +1122,7 @@ export function summarizeFrontierDesign(evidence: FrontierEvidence) {
         target: 4,
         values: players.map((player, index) =>
           observedDays[index] >= 7
-            ? player.rungs.filter((rung) => rung.at - player.settledAt <= 7 * evidence.epochSeconds).length
+            ? player.rungs.filter((rung) => rung.at - player.settledAt <= 7 * evidence.meanDaySeconds).length
             : null,
         ),
       },
@@ -1111,14 +1130,14 @@ export function summarizeFrontierDesign(evidence: FrontierEvidence) {
         target: profile === "check-in" ? "20–28 days" : null,
         values: players.map((player) => {
           const rung = player.rungs.find((rung) => rung.lane === "depth" && rung.level === 1);
-          return rung ? (rung.at - player.settledAt) / evidence.epochSeconds : null;
+          return rung ? (rung.at - player.settledAt) / evidence.meanDaySeconds : null;
         }),
         note: "Null means not reached within observedDays, not an estimated completion date",
       },
       rungIntervalsDays: {
         target: "5–9 days",
         values: players.flatMap((player) =>
-          player.rungs.slice(1).map((rung, index) => (rung.at - player.rungs[index].at) / evidence.epochSeconds),
+          player.rungs.slice(1).map((rung, index) => (rung.at - player.rungs[index].at) / evidence.meanDaySeconds),
         ),
       },
       actionsPerPlayerDay: {

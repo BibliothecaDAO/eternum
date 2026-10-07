@@ -52,7 +52,8 @@ export interface HeraldGameDirectoryEntry {
   ready: boolean;
   clock: HeraldGameClock;
   dev_mode_on: boolean;
-  expedition: { epoch_seconds: number } | null;
+  /** A game with days: its day unit and the seed its bags of days are drawn from (decimal). */
+  expedition: { day_unit_seconds: number; seed: string } | null;
   game_id: number;
   mode: "blitz" | "eternum" | "frontier" | "duel" | null;
   name: string;

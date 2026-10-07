@@ -37,12 +37,12 @@ export class HomeRing {
   /** The cached ring rows of the scope's realms for its day; a ring not cached yet is fetched and published later. */
   public rows(gameId: string, scope: GameSyncScope, timestamp: number): FoldSet[] {
     const expedition = scope.expedition;
-    if (!expedition || expedition.absoluteEpoch < 0) return [];
+    if (!expedition || expedition.day < 0) return [];
     return [...expedition.realmTraits].flatMap((realm) => {
-      const ring = ringKey(gameId, realm, expedition.absoluteEpoch);
+      const ring = ringKey(gameId, realm, expedition.day);
       const cached = this.rings.get(ring);
       if (cached) return cached;
-      this.fetch(ring, { gameId, realmId: Number(realm), absoluteEpoch: expedition.absoluteEpoch }, timestamp);
+      this.fetch(ring, { gameId, realmId: Number(realm), day: expedition.day }, timestamp);
       return [];
     });
   }
@@ -92,8 +92,8 @@ export class HomeRing {
   /** A realm's rings from before yesterday serve nobody: its armies can only act in today's region. */
   private forgetEarlierDays(day: RingDay): void {
     for (const [ring, rows] of this.rings) {
-      const [gameId, realm, absoluteEpoch] = ring.split(":");
-      if (gameId !== day.gameId || Number(realm) !== day.realmId || Number(absoluteEpoch) >= day.absoluteEpoch - 1)
+      const [gameId, realm, ringDay] = ring.split(":");
+      if (gameId !== day.gameId || Number(realm) !== day.realmId || Number(ringDay) >= day.day - 1)
         continue;
       this.rings.delete(ring);
       for (const row of rows) this.byKey.delete(row.key);
@@ -104,10 +104,10 @@ export class HomeRing {
 interface RingDay {
   gameId: string;
   realmId: number;
-  absoluteEpoch: number;
+  day: number;
 }
 
-const ringKey = (gameId: string, realm: string, absoluteEpoch: number) => `${gameId}:${realm}:${absoluteEpoch}`;
+const ringKey = (gameId: string, realm: string, day: number) => `${gameId}:${realm}:${day}`;
 
 // Raised home-ring tiles have already consumed their reveal reward; occupancy is independent.
 const BIOME_SCALE = BigInt(nativeTilePackingConstants.BIOME_SCALE);

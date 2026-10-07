@@ -15,8 +15,8 @@ import {
 /** A Frontier game whose expedition bands are ten rows deep, holding the given site at entity 9. */
 const siteFacts = (site: { kind: "Camp" | "Rift" | "FallenRealm"; cleared: boolean } | undefined) => {
   const rows: Record<string, Record<string, unknown> | undefined> = {
-    SliceRules: { epoch_seconds: 86_400 },
-    GameRegistry: { start_main_at: 0 },
+    SliceRules: { day_unit_seconds: 86_400 },
+    GameRegistry: { start_main_at: 0, seed: 1 },
     SettlementRules: { spacing: 10 },
     ExpeditionSite: site && { game_id: 1, entity_id: 9, initial_guard_count: 0n, ...site },
   };

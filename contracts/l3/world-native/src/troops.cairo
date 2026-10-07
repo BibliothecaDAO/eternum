@@ -50,6 +50,7 @@ impl StaminaIntoSource of Into<Stamina, StaminaSource> {
 pub struct ArmySlotKey {
     pub game_id: u32,
     pub structure_id: u32,
+    // The season day index (crate::days), under the field's historical name.
     pub epoch: u64,
     pub slot: u8,
 }

@@ -722,14 +722,14 @@ fn lords_amounts_and_cumulative_allowance_use_the_preset_without_overflow() {
     for (quality, expected) in array![(0_u8, 100_u128), (1, 400), (2, 1500), (3, 6000)] {
         assert_eq!(crate::relics::lords_amount(rules.lords_amounts, quality), expected);
     }
-    assert_eq!(crate::relics::lords_allowance(rules, 0), 14285);
-    assert_eq!(crate::relics::lords_allowance(rules, 20), 300000);
-    assert_eq!(crate::relics::lords_allowance(rules, 69), 1000000);
-    assert_eq!(crate::relics::lords_allowance(rules, 70), 1000000);
+    assert_eq!(crate::relics::lords_allowance(rules, 0, 70), 14285);
+    assert_eq!(crate::relics::lords_allowance(rules, 20, 70), 300000);
+    assert_eq!(crate::relics::lords_allowance(rules, 69, 70), 1000000);
+    assert_eq!(crate::relics::lords_allowance(rules, 70, 70), 1000000);
     let maximum = 0xffffffffffffffffffffffffffffffff_u128;
     let largest = ChestRules { lords_pool: maximum, ..rules };
-    assert_eq!(crate::relics::lords_allowance(largest, 69), maximum);
-    assert_eq!(crate::relics::lords_allowance(largest, 0), maximum / 70);
+    assert_eq!(crate::relics::lords_allowance(largest, 69, 70), maximum);
+    assert_eq!(crate::relics::lords_allowance(largest, 0, 70), maximum / 70);
 }
 
 #[test]

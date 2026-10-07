@@ -391,7 +391,7 @@ pub mod StructuresLogic {
             let key = self.place_settlement(game_id, coord, record, context);
             match creation {
                 crate::settlement::SettlementCreation::Realm(realm) => {
-                    if context.rules.unbox().epoch_seconds != 0 {
+                    if context.rules.unbox().day_unit_seconds != 0 {
                         crate::logic::research::write(key, crate::research::RealmKnowledge { learned: 0 });
                         self.raise_realm_home(game_id, realm.realm_id, context);
                     }
@@ -701,7 +701,7 @@ pub mod StructuresLogic {
                 );
             match discovery {
                 Discovery::Mine => {
-                    if rules.epoch_seconds == 0 {
+                    if rules.day_unit_seconds == 0 {
                         let (kind, config, cap) = IMineRulesLibraryDispatcher {
                             class_hash: self.release.classes(game_id).production.read(),
                         }
@@ -723,7 +723,7 @@ pub mod StructuresLogic {
                 Discovery::Hyperstructure => self.create_hyperstructure(key, seed, completed),
                 Discovery::BitcoinMine => {},
                 Discovery::Camp => {
-                    if rules.epoch_seconds == 0 {
+                    if rules.day_unit_seconds == 0 {
                         assert!(
                             crate::rules::rule_enabled(rules, crate::rules::DISCOVER_CAMPS),
                             "camp discovery is disabled",
@@ -753,13 +753,15 @@ pub mod StructuresLogic {
                             );
                     }
                 },
-                Discovery::FallenRealm => { assert!(rules.epoch_seconds != 0, "fallen realm requires expeditions"); },
+                Discovery::FallenRealm => {
+                    assert!(rules.day_unit_seconds != 0, "fallen realm requires expeditions");
+                },
                 Discovery::None | Discovery::Chest | Discovery::Shrine |
                 Discovery::Well => panic!("discovery is not a structure"),
             }
             crate::logic::structures::StructureState::create(key, record);
             crate::logic::map::MapState::occupy(tile_key(game_id, coord), id, occupier, true);
-            let site_kind = if rules.epoch_seconds == 0 {
+            let site_kind = if rules.day_unit_seconds == 0 {
                 None
             } else {
                 Some(
@@ -793,7 +795,7 @@ pub mod StructuresLogic {
             let key = ResourceKey { game_id, entity_id: crate::logic::game::allocate_entity(game_id) };
             let rules = game_context.rules.unbox();
             let village = record.base.category == crate::taxonomy::VILLAGE_CATEGORY;
-            let on_map = rules.epoch_seconds == 0 || village;
+            let on_map = rules.day_unit_seconds == 0 || village;
             if on_map {
                 self.prepare_settlement_tile(game_id, coord, game_context);
             }
@@ -833,14 +835,11 @@ pub mod StructuresLogic {
             if context.timestamp < context.game.unbox().start_main_at {
                 return;
             }
-            let origin = crate::expeditions::site(
-                context.game.unbox().start_main_at,
-                context.rules.unbox().epoch_seconds,
-                crate::logic::settlement::rules(game_id).spacing,
-                realm_id,
-                context.timestamp,
-                0,
-            );
+            let today = crate::days::day_of(
+                context.game.unbox(), context.rules.unbox().day_unit_seconds, context.timestamp,
+            )
+                .index;
+            let origin = crate::expeditions::site(crate::logic::settlement::rules(game_id).spacing, realm_id, today, 0);
             crate::logic::map::raise_expedition_home(
                 tile_key(game_id, origin), crate::commands::biome_context(context),
             );
@@ -947,7 +946,7 @@ pub mod StructuresLogic {
                 return;
             }
             crate::logic::structures::StructureState::mark_starting_troops(key);
-            let coord = if game_context.rules.unbox().epoch_seconds != 0
+            let coord = if game_context.rules.unbox().day_unit_seconds != 0
                 && record.base.category == crate::taxonomy::REALM_CATEGORY {
                 crate::settlement::off_map_realm_reference(record.metadata.realm_id.into())
             } else {

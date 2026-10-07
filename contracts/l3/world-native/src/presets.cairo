@@ -55,8 +55,8 @@ pub struct PresetDefinition {
 
 pub fn validate(preset: PresetDefinition) {
     let rules = preset.rules;
-    assert!(preset.economy.chests.is_some() == (rules.epoch_seconds != 0), "chest rules require expedition");
-    assert!(preset.economy.discovery.is_some() == (rules.epoch_seconds != 0), "discovery requires expedition");
+    assert!(preset.economy.chests.is_some() == (rules.day_unit_seconds != 0), "chest rules require expedition");
+    assert!(preset.economy.discovery.is_some() == (rules.day_unit_seconds != 0), "discovery requires expedition");
     if let Some(discovery) = preset.economy.discovery {
         crate::discovery::validate_frontier(discovery);
         assert!(
@@ -64,7 +64,7 @@ pub fn validate(preset: PresetDefinition) {
             "expedition uses categorical odds",
         );
     }
-    assert!(preset.economy.progression.is_some() == (rules.epoch_seconds != 0), "progression requires expedition");
+    assert!(preset.economy.progression.is_some() == (rules.day_unit_seconds != 0), "progression requires expedition");
     if let Some(progression) = preset.economy.progression {
         assert!(
             progression.reveal_xp != 0
@@ -78,8 +78,8 @@ pub fn validate(preset: PresetDefinition) {
     }
     assert!(rules.tick_config.armies_tick_in_seconds != 0, "zero army tick");
     assert!(
-        Into::<u32, u64>::into(rules.epoch_seconds) % rules.tick_config.armies_tick_in_seconds == 0,
-        "a day must be whole armies ticks",
+        Into::<u32, u64>::into(rules.day_unit_seconds) % rules.tick_config.armies_tick_in_seconds == 0,
+        "day unit is not whole ticks",
     );
     if rules.bitcoin_mine_config.enabled {
         assert!(rules.tick_config.bitcoin_phase_in_seconds != 0, "zero Bitcoin phase duration");
@@ -108,7 +108,7 @@ pub fn validate(preset: PresetDefinition) {
     assert!(troops.mercenaries_troop_lower_bound < troops.mercenaries_troop_upper_bound, "invalid mercenary bounds");
     if crate::rules::rule_enabled(preset.rules, crate::rules::DISCOVER_CAMPS)
         && map.camp_win_probability != 0
-        && preset.rules.epoch_seconds == 0 {
+        && preset.rules.day_unit_seconds == 0 {
         assert!(preset.structures.camps.labor_rate > 0, "zero camp labor rate");
     }
 }

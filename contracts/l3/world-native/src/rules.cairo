@@ -246,7 +246,7 @@ pub struct SliceRules {
     pub spire_travel_essence_cost: u128,
     pub command_mask: u128,
     pub mode_rules: u32,
-    pub epoch_seconds: u32,
+    pub day_unit_seconds: u32,
     pub entry_rule: u8,
     pub faith_enabled: bool,
     pub speed_config: SpeedConfig,

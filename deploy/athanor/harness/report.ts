@@ -340,7 +340,7 @@ function frontierDesignChecks(frontier: FrontierEvidence) {
       player.days.every(
         (day) =>
           player.chests.filter(
-            (chest) => chest.epoch === Math.floor(day.startedAt / frontier.epochSeconds) && chest.kind === "Token",
+            (chest) => chest.epoch === day.epoch && chest.kind === "Token",
           ).length <= frontier.tokenCap,
       ),
     ),

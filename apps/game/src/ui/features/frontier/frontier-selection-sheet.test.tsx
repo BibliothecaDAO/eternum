@@ -94,12 +94,13 @@ it("offers depth entry from Frontier for an own army at the computed spire", asy
     {
       model: "TileOccupancy",
       key: "0x904",
-      value: { game_id: 1, alt: false, col: 5, row: 85, entity_id: 201, category: 15, is_structure: false },
+      // Realm 1's day-0 site, beside its spire: the fixture's clock (t=350) is on day 0.
+      value: { game_id: 1, alt: false, col: 5, row: 5, entity_id: 201, category: 15, is_structure: false },
     },
   ] as never);
   useAccountStore.setState({ account: { address: "0x111" } as never });
   useUIStore.getState().updateEntityActionSelectedEntityId(201);
-  useUIStore.getState().setSelectedHex({ col: 5, row: 85 });
+  useUIStore.getState().setSelectedHex({ col: 5, row: 5 });
   tiles.current = [];
   const enter = vi.fn().mockResolvedValue(undefined);
   const host = document.createElement("div");

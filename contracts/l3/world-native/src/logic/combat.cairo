@@ -617,7 +617,7 @@ pub fn resolve_battle(
     game_context: crate::commands::ExecutionContext,
 ) -> (Troops, Troops) {
     let rules = game_context.rules.unbox();
-    if rules.epoch_seconds != 0 {
+    if rules.day_unit_seconds != 0 {
         let tick = context.timestamp / rules.tick_config.armies_tick_in_seconds;
         if context.attacker_is_structure_guard {
             attacker

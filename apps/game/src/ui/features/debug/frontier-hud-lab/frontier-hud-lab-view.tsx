@@ -57,7 +57,8 @@ const LabPacing = ({ store, gameId }: { store: NativeFactStore; gameId: number }
       data-lab-chrome
       className="pointer-events-none fixed top-36 left-1/2 z-40 -translate-x-1/2 rounded bg-black/70 px-2 py-1 font-sans text-[10px] text-gold/80"
     >
-      Lab · launch pacing: {rules.epoch_seconds} s days, {String(rules.tick_config.armies_tick_in_seconds)} s ticks, +
+      Lab · launch pacing: {rules.day_unit_seconds} s day units, {String(rules.tick_config.armies_tick_in_seconds)} s
+      ticks, +
       {rules.troop_stamina_config.stamina_gain_per_tick} stamina a tick
     </p>
   );

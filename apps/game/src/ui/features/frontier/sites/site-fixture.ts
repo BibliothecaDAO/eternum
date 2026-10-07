@@ -27,7 +27,7 @@ export const campBeside = (kind: NativeRows["ExpeditionSite"]["kind"] = "Camp", 
     set("0x100", "SliceRules", {
       ...preset.rules,
       game_id: 1,
-      epoch_seconds: 100,
+      day_unit_seconds: 100,
       mode_rules: noDice,
       battle_config: { ...preset.rules.battle_config, cooldown_seconds: 0 },
     }),

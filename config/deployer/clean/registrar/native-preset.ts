@@ -137,7 +137,7 @@ export function loadNativePresetConfiguration(environment: DeploymentEnvironment
   if (preset.environmentGameType !== target.gameType || !stored)
     throw new Error(`No native preset definition for ${environment} preset ${presetId}`);
   const config = configurationOf(structuredClone(stored), `config/generated/${preset.gameType}.madara.json`);
-  // A scaled preset's season lasts as many of its shorter days as its mode's: the length scales with the epoch.
+  // A scaled preset's season lasts as many of its shorter bags as its mode's: the length scales with the day unit.
   if (preset.clockScale)
     config.season.durationSeconds = clockScaled(config.season.durationSeconds, preset.clockScale, "season duration");
   return config;

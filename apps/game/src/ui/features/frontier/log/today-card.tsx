@@ -2,7 +2,7 @@ import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useStoryEvents } from "@/hooks/store/use-story-events-store";
 import { Eye, TreasureChest } from "@/ui/design-system/atoms/game-icons";
-import { absoluteEpoch } from "@bibliothecadao/eternum";
+import { dayOf } from "@bibliothecadao/eternum";
 import { ResourcesIds } from "@bibliothecadao/types";
 import { Chip } from "../frontier-chips";
 import { formatAmount } from "../frontier-format";
@@ -20,9 +20,9 @@ export const TodayCard = ({ rules }: { rules: ExpeditionRules }) => {
   const player = useAccountStore((state) => state.account?.address ?? null);
   const now = useNowSeconds();
   const { data: stories } = useStoryEvents(350);
-  if (!player) return null;
-  const start = absoluteEpoch(rules, now) * rules.epochSeconds;
-  const totals = totalToday(stories, player, { startMs: start * 1_000, endMs: (start + rules.epochSeconds) * 1_000 });
+  const today = dayOf(rules, now);
+  if (!player || !today) return null;
+  const totals = totalToday(stories, player, { startMs: today.start * 1_000, endMs: today.end * 1_000 });
   return (
     <section aria-label="Today" className="frontier-card mx-2 mt-2 grid grid-cols-3 gap-2 p-3 font-sans">
       <Chip small label="Reveals" icon={<Eye />} value={formatAmount(totals.reveals)} />

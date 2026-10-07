@@ -351,7 +351,7 @@ describe("native fact store", () => {
 describe("declared fact absence", () => {
   it("requires the current actor snapshot for nonce and points zeroes, without storing synthetic rows", () => {
     const store = new NativeFactStore();
-    store.applyFacts([set("0x100", "SliceRules", { ...preset.rules, game_id: 1, epoch_seconds: 0 })]);
+    store.applyFacts([set("0x100", "SliceRules", { ...preset.rules, game_id: 1, day_unit_seconds: 0 })]);
     let complete = false;
     let actor: string | undefined = undefined;
     const update = () => store.setSnapshot({ gameId: 1, complete, actor, timestamp: 350 });
@@ -383,7 +383,7 @@ describe("declared fact absence", () => {
 
   it("waits for the last snapshot page, requires the parent, and forgets zero after parent deletion", () => {
     const store = new NativeFactStore();
-    store.applyFacts([set("0x100", "SliceRules", { ...preset.rules, game_id: 1, epoch_seconds: 0 })]);
+    store.applyFacts([set("0x100", "SliceRules", { ...preset.rules, game_id: 1, day_unit_seconds: 0 })]);
     let complete = false;
     const update = () => store.setSnapshot({ gameId: 1, complete, actor: null, timestamp: 350 });
     update();
@@ -405,7 +405,7 @@ describe("declared fact absence", () => {
   });
   it("uses the declared resource, hyperstructure and settlement parents", () => {
     const store = new NativeFactStore();
-    store.applyFacts([set("0x100", "SliceRules", { ...preset.rules, game_id: 1, epoch_seconds: 0 })]);
+    store.applyFacts([set("0x100", "SliceRules", { ...preset.rules, game_id: 1, day_unit_seconds: 0 })]);
     store.setSnapshot({ gameId: 1, complete: true, actor: null, timestamp: 350 });
     const entity = { game_id: 1, entity_id: 7 };
     const resource = { ...entity, resource_type: 2 };
@@ -441,10 +441,11 @@ describe("declared fact absence", () => {
 
   it("never invents a chest counter for another actor or an unobserved Frontier day", () => {
     const store = new NativeFactStore();
-    store.applyFacts([set("0x100", "SliceRules", { ...preset.rules, game_id: 1, epoch_seconds: 0 })]);
+    store.applyFacts([set("0x100", "SliceRules", { ...preset.rules, game_id: 1, day_unit_seconds: 0 })]);
     store.setSnapshot({ gameId: 1, complete: true, actor: "0x111", timestamp: 350 });
+    // Seed 1 opens with a 3-unit day: day 0 is [100, 400), so t=350 is on day 0.
     store.applyFacts([
-      set("0x100", "SliceRules", { ...preset.rules, game_id: 1, epoch_seconds: 100 }),
+      set("0x100", "SliceRules", { ...preset.rules, game_id: 1, day_unit_seconds: 100 }),
       set("0x2", "SettlementRules", {
         game_id: 1,
         registration_start: 1,
@@ -469,7 +470,7 @@ describe("declared fact absence", () => {
     ]);
     setBlockTimestampSource(() => 350);
     store.applyFacts([set("0x7", "Structure", structure("0x111"))]);
-    const slot = { game_id: 1, structure_id: 7, epoch: 3n, slot: 0 };
+    const slot = { game_id: 1, structure_id: 7, epoch: 0n, slot: 0 };
     expect(store.requireOrAbsent("ArmySlot", slot)).toEqual({ unused: true });
     const army = {
       ...explorer,
@@ -504,10 +505,10 @@ describe("declared fact absence", () => {
     store.applyFacts([set("0x70", "ArmySlot", { ...occupied, explorer_id: army.explorer_id + 1 })]);
     expect(() => resolveExplorerTroops(store, army)).toThrow("occupant mismatch");
     store.applyFacts([remove("0x70", "ArmySlot")]);
-    store.applyFacts([set("0x71", "ChestTokens", { game_id: 1, player: "0x111", epoch: "3", count: 1 })]);
-    expect(store.requireOrAbsent("ChestTokens", { game_id: 1, player: 0x111n, epoch: 3n }).known?.count).toBe(1);
+    store.applyFacts([set("0x71", "ChestTokens", { game_id: 1, player: "0x111", epoch: "0", count: 1 })]);
+    expect(store.requireOrAbsent("ChestTokens", { game_id: 1, player: 0x111n, epoch: 0n }).known?.count).toBe(1);
 
-    expect(store.requireOrAbsent("ArmySlot", { ...slot, epoch: 2n }).unknown).toContain("OUTSIDE_SNAPSHOT_SCOPE");
+    expect(store.requireOrAbsent("ArmySlot", { ...slot, epoch: 1n }).unknown).toContain("OUTSIDE_SNAPSHOT_SCOPE");
     expect(store.requireOrAbsent("ArmySlot", { ...slot, structure_id: 8 }).unknown).toContain("OUTSIDE_SNAPSHOT_SCOPE");
     store.setSnapshot({ gameId: 1, complete: false, actor: "0x111", timestamp: 350 });
     expect(store.requireOrAbsent("ArmySlot", slot).unknown).toContain("INCOMPLETE_SNAPSHOT");
@@ -519,7 +520,7 @@ describe("declared fact absence", () => {
     expect(resolveExplorerTroops(store, army)).toBeUndefined();
     store.setSnapshot({ gameId: 1, complete: true, actor: "0x111", timestamp: 350 });
     expect(store.requireOrAbsent("ChestPity", { game_id: 1, player: 0x111n, depth: 3 }).known?.count).toBe(0);
-    expect(store.requireOrAbsent("ChestTokens", { game_id: 1, player: 0x111n, epoch: 3n }).known?.count).toBe(1);
+    expect(store.requireOrAbsent("ChestTokens", { game_id: 1, player: 0x111n, epoch: 0n }).known?.count).toBe(1);
     expect(store.requireOrAbsent("ChestPity", { game_id: 1, player: 0x222n, depth: 3 }).unknown).toContain(
       "OUTSIDE_SNAPSHOT_SCOPE",
     );
@@ -530,7 +531,7 @@ describe("declared fact absence", () => {
   });
   it("musters into the lowest vacant slot, on a fresh bar or the one its last army left", () => {
     const store = new NativeFactStore();
-    store.applyFacts([set("0x100", "SliceRules", { ...preset.rules, game_id: 1, epoch_seconds: 100 })]);
+    store.applyFacts([set("0x100", "SliceRules", { ...preset.rules, game_id: 1, day_unit_seconds: 100 })]);
     store.setSnapshot({ gameId: 1, complete: true, actor: "0x111", timestamp: 350 });
     store.applyFacts([
       set("0x2", "SettlementRules", {
@@ -562,7 +563,7 @@ describe("declared fact absence", () => {
       set(`0x8${index}`, "ArmySlot", {
         game_id: 1,
         structure_id: 7,
-        epoch: "3",
+        epoch: "0",
         slot: index,
         explorer_id: explorerId,
         stamina: { amount, updated_tick: "10" },
@@ -589,12 +590,12 @@ describe("declared fact absence", () => {
     store.setSnapshot({ gameId: 1, complete: false, actor: "0x111", timestamp: 350 });
     expect(openArmySlots(store, home)).toBeUndefined();
   });
-  // Pinned to the contract's gate expedition_slot_reuse_preserves_its_bar_and_midnight_allocates_a_fresh_bar
+  // Pinned to the contract's gate expedition_slot_reuse_preserves_its_bar_and_the_next_day_allocates_a_fresh_bar
   // (world-native registrar tests): a slot released at 7 hands exactly 7 to an army mustered in the same tick, and
   // the next epoch's first muster in that slot starts full at its maximum.
   it("promises the bar the contract's allocate hands on", () => {
     const store = new NativeFactStore();
-    store.applyFacts([set("0x100", "SliceRules", { ...preset.rules, game_id: 1, epoch_seconds: 100 })]);
+    store.applyFacts([set("0x100", "SliceRules", { ...preset.rules, game_id: 1, day_unit_seconds: 100 })]);
     const day = (timestamp: number) => {
       store.setSnapshot({ gameId: 1, complete: true, actor: "0x111", timestamp });
       setBlockTimestampSource(() => timestamp);
@@ -626,7 +627,7 @@ describe("declared fact absence", () => {
       set("0x80", "ArmySlot", {
         game_id: 1,
         structure_id: 7,
-        epoch: "3",
+        epoch: "0",
         slot: 0,
         explorer_id: 0,
         stamina: { amount: "7", updated_tick: "35" },
@@ -653,7 +654,7 @@ describe("declared fact absence", () => {
     store.subscribe(() => seen.push(store.requireOrAbsent("PlayerPoints", { game_id: 1, address: 0x111n }).unknown));
     store.setSnapshot({ gameId: 1, complete: false, actor: "0x111", timestamp: 350 });
     store.applyFacts([
-      set("0x100", "SliceRules", { ...preset.rules, game_id: 1, epoch_seconds: 100 }),
+      set("0x100", "SliceRules", { ...preset.rules, game_id: 1, day_unit_seconds: 100 }),
       set("0x2", "SettlementRules", {
         game_id: 1,
         registration_start: 1,
@@ -691,7 +692,7 @@ describe("declared fact absence", () => {
 
   it("scopes a visited realm alongside the actor's own, and drops it when the visit ends", () => {
     const store = new NativeFactStore();
-    store.applyFacts([set("0x100", "SliceRules", { ...preset.rules, game_id: 1, epoch_seconds: 0 })]);
+    store.applyFacts([set("0x100", "SliceRules", { ...preset.rules, game_id: 1, day_unit_seconds: 0 })]);
     const state = { gameId: 1, complete: true, actor: "0x111", timestamp: 350 };
     store.setSnapshot({ ...state, visit: "0x222" });
     expect(store.subscriptionScope().known).toEqual({ actor: "0x111", visit: "0x222" });
@@ -701,7 +702,7 @@ describe("declared fact absence", () => {
 
   it("notifies sparse readers when gates open, while actor nonces ignore expedition clock", () => {
     const store = new NativeFactStore();
-    store.applyFacts([set("0x100", "SliceRules", { ...preset.rules, game_id: 1, epoch_seconds: 100 })]);
+    store.applyFacts([set("0x100", "SliceRules", { ...preset.rules, game_id: 1, day_unit_seconds: 100 })]);
     const state = { gameId: 1, complete: false, actor: "0x111", timestamp: undefined };
     const values: unknown[] = [];
     store.subscribe(() => values.push(store.requireOrAbsent("ActionNonce", { game_id: 1, actor: 0x111n })));

@@ -65,7 +65,9 @@ export const frontierPreset: NativePreset = {
     ] satisfies Array<keyof typeof nativeCommandBits>
   ).reduce((mask, command) => mask | BigInt(nativeCommandBits[command]), 0n),
   spacing: 100,
-  epochSeconds: 86400,
+  // Four-hour units: days of 8 to 24 hours, bags of 80 hours, a season of 21 bags in ten weeks.
+  dayUnitSeconds: 14400,
+  seasonBags: 21,
   board: {
     demolitionRefundBps: 5000,
     workshopRate: 0.056,
@@ -109,7 +111,6 @@ export const frontierPreset: NativePreset = {
     tokenCap: 1,
     lordsAmounts: { common: 100, uncommon: 400, rare: 1500, epic: 6000 },
     lordsPool: 1000000,
-    seasonEpochs: 70,
   },
   depths: [
     {

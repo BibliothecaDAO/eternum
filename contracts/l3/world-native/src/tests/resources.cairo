@@ -45,7 +45,7 @@ mod ResourceFixture {
             let state = crate::state::write();
             state.games.games.entry(key.game_id).preset_id.write(1);
             state.registrar.presets.write(1, 1);
-            state.presets.entry(1).rules.epoch_seconds.write(0);
+            state.presets.entry(1).rules.day_unit_seconds.write(0);
             // One-second ticks: this fixture's clock reads production in seconds.
             state.presets.entry(1).rules.tick_config.armies_tick_in_seconds.write(1);
             self.resources.initialize(key, capacity);

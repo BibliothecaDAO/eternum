@@ -83,7 +83,7 @@ function buildRules(config: Config, preset: ReturnType<typeof nativePresetForId>
     map_center_offset: config.settlement.center,
     spire_travel_essence_cost: scaled(config.spireTravelEssenceCost),
     command_mask: preset.commandMask,
-    epoch_seconds: preset.epochSeconds,
+    day_unit_seconds: preset.dayUnitSeconds,
     mode_rules: preset.modeRules,
     entry_rule: preset.entryRule,
     faith_enabled: faith.enabled,
@@ -280,7 +280,7 @@ function buildEconomy(
   tokens: Array<{ resource_type: number; token: string }>,
 ) {
   const chests = preset.chests;
-  if (chests === undefined || (chests !== null) !== (preset.epochSeconds !== 0))
+  if (chests === undefined || (chests !== null) !== (preset.dayUnitSeconds !== 0))
     throw new Error("Explicit chest rules are required for expedition presets only");
   if (chests !== null) {
     const amounts = [
@@ -290,17 +290,14 @@ function buildEconomy(
       chests.lordsAmounts.epic,
     ];
     if (
-      ![...amounts, chests.lordsPool, chests.seasonEpochs, chests.tokenCap].every(
-        (value) => Number.isSafeInteger(value) && value > 0,
-      ) ||
-      chests.seasonEpochs > 65535 ||
+      ![...amounts, chests.lordsPool, chests.tokenCap].every((value) => Number.isSafeInteger(value) && value > 0) ||
       chests.tokenCap > 65535 ||
       amounts.some((value, index) => value > (amounts[index + 1] ?? chests.lordsPool))
     )
       throw new Error("Invalid LORDS chest table or limits");
   }
   const progression = preset.progression;
-  if (progression === undefined || (progression !== null) !== (preset.epochSeconds !== 0))
+  if (progression === undefined || (progression !== null) !== (preset.dayUnitSeconds !== 0))
     throw new Error("Explicit progression rules are required for expedition presets only");
   if (
     progression &&
@@ -330,7 +327,6 @@ function buildEconomy(
               Object.entries(chests.lordsAmounts).map(([quality, amount]) => [quality, BigInt(amount)]),
             ),
             lords_pool: BigInt(chests.lordsPool),
-            season_epochs: chests.seasonEpochs,
           }),
     trade: { max_count: config.trade.maxCount },
     banks: {
@@ -401,7 +397,7 @@ export function buildNativePreset(config: Config, presetId: number) {
 
 /** A fixture preset plays its mode's season this many times faster: a shorter day, faster army ticks, more output. */
 function scaleSeasonClocks(definition: ReturnType<typeof buildNativePreset>, scale: number): void {
-  definition.rules.epoch_seconds = clockScaled(definition.rules.epoch_seconds, scale, "epoch_seconds");
+  definition.rules.day_unit_seconds = clockScaled(definition.rules.day_unit_seconds, scale, "day_unit_seconds");
   definition.rules.tick_config.armies_tick_in_seconds = clockScaled(
     definition.rules.tick_config.armies_tick_in_seconds,
     scale,
@@ -516,7 +512,7 @@ function resolveBridgeTokens(config: Config, resources: readonly number[]) {
 
 function buildDiscovery(preset: ReturnType<typeof nativePresetForId>) {
   const rules = preset.discovery;
-  if (rules === undefined || (rules !== null) !== (preset.epochSeconds !== 0))
+  if (rules === undefined || (rules !== null) !== (preset.dayUnitSeconds !== 0))
     throw new Error("Explicit discovery rules are required for expedition presets only");
   if (rules === null) return new CairoOption(CairoOptionVariant.None);
   if (

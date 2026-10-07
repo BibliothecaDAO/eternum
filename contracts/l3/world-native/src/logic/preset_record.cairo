@@ -289,7 +289,7 @@ fn write_depths(preset: PresetWrite, rules: crate::rules::SliceRules, depths: Sp
     } else {
         0
     }, "incomplete depth rules");
-    assert!(!enabled || rules.epoch_seconds != 0, "depths require expedition regions");
+    assert!(!enabled || rules.day_unit_seconds != 0, "depths require expedition regions");
     for index in 0..depths.len() {
         let value = *depths.at(index);
         let ground = value.chest;
@@ -348,11 +348,11 @@ fn write_relics(
 ) {
     if let Some(value) = chests {
         assert!(
-            game_rules.epoch_seconds != 0 && crate::rules::rule_enabled(game_rules, crate::rules::DEPTH_CONTENTS),
+            game_rules.day_unit_seconds != 0 && crate::rules::rule_enabled(game_rules, crate::rules::DEPTH_CONTENTS),
             "chest tables require depth rules",
         );
         assert!(value.relic_probability <= 10000, "invalid chest type probabilities");
-        assert!(value.token_cap != 0 && value.season_epochs != 0, "empty chest limits");
+        assert!(value.token_cap != 0, "empty chest limits");
         let amounts = value.lords_amounts;
         assert!(
             amounts.common != 0

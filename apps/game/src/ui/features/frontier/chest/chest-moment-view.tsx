@@ -313,7 +313,7 @@ const RelicReveal = ({
       {outcome.lordsSpent && (
         <Pop>
           <Chip
-            label="Today's LORDS are spent; more at midnight UTC"
+            label="Today's LORDS are spent; more when the day ends"
             icon={<img src={TOKEN_ICON} alt="" className="opacity-60 grayscale" />}
             value="00:00"
           />

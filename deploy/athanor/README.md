@@ -219,7 +219,7 @@ and exercise sign-in.
 Deploy one of our shards from its release with
 `OPERATOR_TOKEN=... python3 deploy/athanor/scripts/deploy.py ENVIRONMENT DIRECTORY`. `deploy/release/ENVIRONMENT.json`
 is the environment's inputs, including the only preset set it registers; it must be committed. `staging.json` is the dev
-box's: 2 and 5 as in production, 101 for the harness's Frontier design runs and 103 for playtests. The command takes
+box's: 2 and 5 as in production, and 101 for the harness's Frontier design runs. The command takes
 `/opt/athanor/isolated-stack.lock` itself, so do not hold it around the command; it refuses to start when initialization
 would receive no operator approval, and it fails naming every way the shard differs from the tag's release.json. Use a
 staging tunnel connector of its own and fresh volumes for every shard. Hold the lock by hand for verification

@@ -72,7 +72,7 @@ describe("native resource facts", () => {
     const store = new NativeFactStore();
     store.setSnapshot({ gameId: 1, complete: false, actor: "0xaaa", timestamp: 350 });
     store.applyFacts([
-      ...upsert("0x100", { SliceRules: { ...rules, game_id: 1, epoch_seconds: 100, mode_rules: 0 } }),
+      ...upsert("0x100", { SliceRules: { ...preset.rules, game_id: 1, day_unit_seconds: 100, mode_rules: 0 } }),
       ...upsert("0x101", { GameRegistry: { ...game, ready: true } }),
       ...upsert("0x102", {
         SettlementRules: {

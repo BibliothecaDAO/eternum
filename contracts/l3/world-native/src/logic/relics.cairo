@@ -86,7 +86,7 @@ pub mod RelicState {
                 ExplorerKey { game_id, explorer_id: command.explorer_id }, actor, context.timestamp, context,
             );
             assert!(explorer.troops.count != 0, "explorer is dead");
-            if context.rules.unbox().epoch_seconds != 0 {
+            if context.rules.unbox().day_unit_seconds != 0 {
                 crate::expeditions::assert_same_region(
                     explorer.coord, command.coord, crate::logic::settlement::rules(game_id).spacing,
                 );
@@ -209,7 +209,7 @@ pub mod RelicState {
         ) -> ((), crate::ownership::StoryCursor) {
             let context = crate::commands::load_context(game_id, context);
             self.assert_command(game_id, context.timestamp, context);
-            assert!(context.rules.unbox().epoch_seconds != 0, "site requires expedition");
+            assert!(context.rules.unbox().day_unit_seconds != 0, "site requires expedition");
             let key = ExplorerKey { game_id, explorer_id: command.explorer_id };
             let explorer = crate::logic::troops::authorized_explorer(key, actor, context.timestamp, context);
             assert!(explorer.troops.count != 0, "explorer is dead");
@@ -303,7 +303,7 @@ pub mod RelicState {
             let explorer_key = ExplorerKey { game_id: site.game_id, explorer_id };
             let explorer = crate::logic::troops::active_explorer(explorer_key, context.timestamp, context);
             self.refund_capture_stamina(explorer_key, explorer, context);
-            if context.rules.unbox().epoch_seconds != 0 {
+            if context.rules.unbox().day_unit_seconds != 0 {
                 let (_, next_cursor) = crate::expeditions::ISiteRewardsDispatcherTrait::pay_expedition_site(
                     crate::expeditions::ISiteRewardsLibraryDispatcher {
                         class_hash: self.logic_classes(site.game_id).resources.read(),
@@ -474,10 +474,9 @@ pub mod RelicState {
         ) {
             let explorer_key = ExplorerKey { game_id, explorer_id: command.explorer_id };
             let game = context.game.unbox();
-            let game_rules = context.rules.unbox();
             let spacing = crate::logic::settlement::rules(game_id).spacing;
             let depth: u8 = (command.coord.y / spacing % 4).try_into().unwrap();
-            let epoch = crate::expeditions::absolute_epoch(game_rules.epoch_seconds, context.timestamp);
+            let epoch = crate::expeditions::region_day(command.coord, spacing);
             let old_pity = self.data.relics.chest_pity.read((game_id, actor, depth));
             let tokens = self.data.relics.chest_tokens.read((game_id, actor, epoch));
             let mut root = context.raw_root;

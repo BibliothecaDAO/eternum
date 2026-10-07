@@ -11,6 +11,7 @@ pub mod combat;
 pub mod combat_actions;
 pub mod command_routes;
 pub mod commands;
+pub mod days;
 pub mod discovery;
 pub mod entry;
 pub mod events;

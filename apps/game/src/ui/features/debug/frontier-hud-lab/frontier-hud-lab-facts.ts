@@ -1,4 +1,4 @@
-import { absoluteEpoch } from "@bibliothecadao/eternum/expeditions";
+import { dayOf, seasonSeconds } from "@bibliothecadao/eternum/expeditions";
 import { StructureType, TileOccupier } from "@bibliothecadao/types";
 /**
  * A Frontier day in facts: the current Frontier launch's rules, projected from today's preset by `pnpm lab:frontier`
@@ -41,17 +41,19 @@ type LabClock = ReturnType<typeof readLabClock>;
 const readLabClock = (rules: WireRow[]) => {
   const slice = requireRow(rules, "SliceRules") as {
     game_id: string;
-    epoch_seconds: string;
+    day_unit_seconds: string;
     tick_config: { armies_tick_in_seconds: string };
   };
   const spacing = Number((requireRow(rules, "SettlementRules") as { spacing: string }).spacing);
-  const epochSeconds = Number(slice.epoch_seconds);
-  const startMainAt = 20 * epochSeconds;
-  const nowSeconds = startMainAt + DAY * epochSeconds + Math.floor(epochSeconds * 0.4) + 7;
+  const dayUnitSeconds = Number(slice.day_unit_seconds);
+  // The lab's game draws its days from seed 1 (gameRegistry below).
+  const calendar = { seed: 1n, startMainAt: 20 * dayUnitSeconds, dayUnitSeconds };
+  let today = dayOf(calendar, calendar.startMainAt)!;
+  while (today.index < DAY) today = dayOf(calendar, today.end)!;
+  const nowSeconds = today.start + Math.floor((today.end - today.start) * 0.4) + 7;
   return {
     gameId: Number(slice.game_id),
-    epochSeconds,
-    startMainAt,
+    ...calendar,
     nowSeconds,
     currentTick: Math.floor(nowSeconds / Number(slice.tick_config.armies_tick_in_seconds)),
     siteCol: (REALM_TRAIT_ID - 1) * spacing + Math.floor(spacing / 2),
@@ -210,9 +212,9 @@ const gameRegistry = (clock: LabClock) => ({
   settled: false,
   ready: true,
   dev_mode_on: false,
-  start_settling_at: String(clock.startMainAt - clock.epochSeconds),
+  start_settling_at: String(clock.startMainAt - clock.dayUnitSeconds),
   start_main_at: String(clock.startMainAt),
-  end_at: String(clock.startMainAt + 30 * clock.epochSeconds),
+  end_at: String(clock.startMainAt + seasonSeconds(2, clock.dayUnitSeconds)),
   end_grace_seconds: 0,
   seed: "0x1",
 });
@@ -284,7 +286,7 @@ const armyProgress = (clock: LabClock, explorerId: number) => ({
 const armySlot = (clock: LabClock, explorerId: number, slot: number, stamina: number) => ({
   game_id: clock.gameId,
   structure_id: LAB_REALM_ID,
-  epoch: String(absoluteEpoch(clock, clock.nowSeconds)),
+  epoch: String(DAY),
   slot,
   explorer_id: explorerId,
   stamina: { amount: String(stamina), updated_tick: String(clock.currentTick) },

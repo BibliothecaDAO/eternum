@@ -1,4 +1,6 @@
 import { frontierPreset } from "../../../config/source/frontier/native";
+import { seasonSeconds } from "../../../packages/core/src/utils/days";
+import { frontierSeasonEnd } from "./test-dates";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { scheduleFrontierSeason } from "./schedule";
 import { D1LaunchStore } from "./store";
@@ -97,13 +99,7 @@ test("a launch interrupted while running is resumed, not queued twice", async ()
 });
 
 /** The calendar uses the Frontier preset season length. */
-const season = (startsAt: string) => ({
-  phase: "frontier" as const,
-  startsAt,
-  endsAt: new Date(
-    Date.parse(startsAt) + frontierPreset.chests!.seasonEpochs * frontierPreset.epochSeconds * 1000,
-  ).toISOString(),
-});
+const season = (startsAt: string) => ({ phase: "frontier" as const, startsAt, endsAt: frontierSeasonEnd(startsAt) });
 
 test("one Frontier season is created once by every tick and continued like any failed run", async () => {
   const store = new D1LaunchStore(database.db, testChain());
@@ -115,7 +111,7 @@ test("one Frontier season is created once by every tick and continued like any f
   expect(run.request).toMatchObject({
     version: "5",
     gameStartTime: seasonStart,
-    durationSeconds: frontierPreset.chests!.seasonEpochs * frontierPreset.epochSeconds,
+    durationSeconds: seasonSeconds(frontierPreset.seasonBags, frontierPreset.dayUnitSeconds),
   });
   await store.retry(run.id, "rpc down", 60_000);
   // A tick while the season waits to retry must not reset its attempts or its delay.

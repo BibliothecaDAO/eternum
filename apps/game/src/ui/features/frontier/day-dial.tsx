@@ -1,4 +1,4 @@
-import { expeditionDayEndsAt, seasonDay } from "@bibliothecadao/eternum";
+import { dayOf, type SeasonCalendar } from "@bibliothecadao/eternum";
 
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
@@ -16,13 +16,15 @@ export const DayDial = ({
   now,
   className,
 }: {
-  rules: { epochSeconds: number; startMainAt: number };
+  rules: SeasonCalendar;
   now: number;
   className?: string;
 }) => {
-  const day = seasonDay(rules, now);
-  const left = (day === null ? rules.startMainAt : expeditionDayEndsAt(rules, now)) - now;
-  const share = Math.min(1, Math.max(0, left / rules.epochSeconds));
+  const today = dayOf(rules, now);
+  const day = today?.index ?? null;
+  const left = (today ? today.end : rules.startMainAt) - now;
+  // Days differ in length, so the ring drains over today's own.
+  const share = today ? Math.min(1, Math.max(0, left / (today.end - today.start))) : 1;
   return (
     <div
       role="timer"

@@ -52,7 +52,7 @@ pub mod MovementLogic {
             assert!(explorer.troops.count != 0, "explorer is dead");
             crate::logic::map::MapState::vacate(tile_key(game_id, explorer.coord), command.explorer_id);
             let destination = neighbor(explorer.coord, command.direction);
-            if rules.epoch_seconds != 0 {
+            if rules.day_unit_seconds != 0 {
                 crate::expeditions::assert_same_region(explorer.coord, destination, self.expedition_spacing(game_id));
             }
             let tile = tile_key(game_id, destination);
@@ -76,7 +76,7 @@ pub mod MovementLogic {
                 IPointsLibraryDispatcher { class_hash: self.release.classes(game_id).season.read() }
                     .register_exploration(game_id, actor, crate::commands::action_context(context));
                 discovery =
-                    if rules.epoch_seconds != 0 {
+                    if rules.day_unit_seconds != 0 {
                         crate::expeditions::IFrontierDiscoveryDispatcherTrait::discover_frontier_tile(
                             crate::expeditions::IFrontierDiscoveryLibraryDispatcher {
                                 class_hash: self.release.classes(game_id).map.read(),
@@ -206,7 +206,7 @@ pub mod MovementLogic {
             let context = crate::commands::load_context(game_id, context);
 
             let rules = self.authorize(game_id, context);
-            assert!(rules.epoch_seconds != 0, "depth entry requires expeditions");
+            assert!(rules.day_unit_seconds != 0, "depth entry requires expeditions");
             let key = ExplorerKey { game_id, explorer_id: command.explorer_id };
             let mut explorer = crate::logic::troops::authorized_explorer(key, actor, context.timestamp, context);
             assert!(explorer.troops.count != 0, "explorer is dead");
@@ -220,13 +220,8 @@ pub mod MovementLogic {
                 "depth is not unlocked",
             );
             let spacing = self.expedition_spacing(game_id);
-            let spire = crate::expeditions::spire(
-                context.game.unbox().start_main_at,
-                rules.epoch_seconds,
-                spacing,
-                home.metadata.realm_id,
-                context.timestamp,
-            );
+            let today = crate::days::day_of(context.game.unbox(), rules.day_unit_seconds, context.timestamp).index;
+            let spire = crate::expeditions::spire(spacing, home.metadata.realm_id, today);
             assert!(
                 explorer.coord == spire || crate::geometry::adjacent(explorer.coord, spire),
                 "army must be at its realm's spire",
@@ -275,7 +270,7 @@ pub mod MovementLogic {
             crate::logic::map::MapState::vacate(tile_key(game_id, explorer.coord), command.explorer_id);
             for direction in command.directions {
                 let destination = neighbor(explorer.coord, *direction);
-                if rules.epoch_seconds != 0 {
+                if rules.day_unit_seconds != 0 {
                     crate::expeditions::assert_same_region(
                         explorer.coord, destination, self.expedition_spacing(game_id),
                     );

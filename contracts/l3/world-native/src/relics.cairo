@@ -51,7 +51,6 @@ pub struct ChestRules {
     pub token_cap: u16,
     pub lords_amounts: LordsAmounts,
     pub lords_pool: u128,
-    pub season_epochs: u16,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
@@ -77,12 +76,12 @@ pub fn lords_amount(amounts: LordsAmounts, quality: u8) -> u128 {
     }
 }
 
-pub fn lords_allowance(rules: ChestRules, season_day: u64) -> u128 {
-    let epochs: u128 = rules.season_epochs.into();
-    assert!(epochs != 0, "zero season epochs");
-    let released: u128 = core::cmp::min(Into::<u64, u128>::into(season_day) + 1, epochs);
+pub fn lords_allowance(rules: ChestRules, day: u64, season_days: u64) -> u128 {
+    let days: u128 = season_days.into();
+    assert!(days != 0, "zero season days");
+    let released: u128 = core::cmp::min(Into::<u64, u128>::into(day) + 1, days);
     // Quotient and remainder keep the exact floor without overflowing a u128 pool.
-    (rules.lords_pool / epochs) * released + (rules.lords_pool % epochs) * released / epochs
+    (rules.lords_pool / days) * released + (rules.lords_pool % days) * released / days
 }
 
 #[starknet::interface]
@@ -104,6 +103,7 @@ pub enum ChestKind {
 pub struct ChestReward {
     pub player: ContractAddress,
     pub explorer_id: u32,
+    // The season day index (crate::days), under the field's historical name.
     pub epoch: u64,
     pub depth: u8,
     pub kind: ChestKind,

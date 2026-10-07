@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "cb766c9c89e97ae338b2e2e4bce277f5f2d5e2d033af39409c429501da944ca9",
+  "schemaIdentity": "aa2f67d44872adcb0b8966fc66bb15020727414fa6292941eebad8446f985c9e",
   "commandAbi": [
     {
       "type": "interface",
@@ -296,8 +296,8 @@
           "type": "world_native::research::Research"
         },
         {
-          "name": "BuyTier",
-          "type": "world_native::progression::BuyTier"
+          "name": "ChooseAttribute",
+          "type": "world_native::progression::ChooseAttribute"
         },
         {
           "name": "UpgradeBuilding",
@@ -1377,10 +1377,14 @@
     },
     {
       "type": "struct",
-      "name": "world_native::progression::BuyTier",
+      "name": "world_native::progression::ChooseAttribute",
       "members": [
         {
           "name": "explorer_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "offer_id",
           "type": "core::integer::u32"
         },
         {

@@ -30,7 +30,10 @@ export interface NativePreset {
   commandMask: bigint;
   settlementMode: "Single" | "Triple" | "Duel";
   spacing: number;
-  epochSeconds: number;
+  /** The unit a season's days are counted in (Frontier rules §9): a day lasts 2 to 6 units; 0 in modes without days. */
+  dayUnitSeconds: number;
+  /** A season's length in bags of five days, each bag 20 day units; 0 in modes without days. */
+  seasonBags: number;
   board: null | {
     demolitionRefundBps: number;
     workshopRate: number;
@@ -72,7 +75,6 @@ export interface NativePreset {
     tokenCap: number;
     lordsAmounts: { common: number; uncommon: number; rare: number; epic: number };
     lordsPool: number;
-    seasonEpochs: number;
   };
   depths: Array<{
     revealPercent: number;

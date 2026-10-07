@@ -317,7 +317,7 @@ pub mod MapLogic {
             if stored.map(|tile| tile.data / BIOME_SCALE % BYTE_RANGE != 0).unwrap_or(false) {
                 return stored;
             }
-            if game_context.epoch_seconds == 0
+            if game_context.day_unit_seconds == 0
                 || !crate::expeditions::is_home_ring(
                     Coord { alt: key.alt, x: key.col, y: key.row },
                     crate::logic::settlement::rules(key.game_id).spacing,
@@ -383,7 +383,10 @@ pub mod MapLogic {
             let counter = crate::expeditions::ExpeditionDiscoveryKey {
                 game_id: key.game_id,
                 structure_id: home,
-                epoch: crate::expeditions::absolute_epoch(context.rules.unbox().epoch_seconds, context.timestamp),
+                epoch: crate::expeditions::region_day(
+                    crate::troops::Coord { alt: key.alt, x: key.col, y: key.row },
+                    crate::logic::settlement::rules(key.game_id).spacing,
+                ),
             };
             let empty = crate::logic::expeditions::discovery(counter).map(|row| row.empty_reveals).unwrap_or(0);
             let (camp_bonus, rift_bonus) = crate::progression::scouting_bonus(progress);
@@ -487,7 +490,7 @@ pub mod MapLogic {
                 crate::commands::resource_context(context),
             );
             crate::logic::map::MapState::mark_reward_extracted(key);
-            if rules.epoch_seconds != 0 {
+            if rules.day_unit_seconds != 0 {
                 crate::progression::IArmyProgressionDispatcherTrait::grant_army_xp(
                     crate::progression::IArmyProgressionLibraryDispatcher { class_hash: classes.relics.read() },
                     crate::troops::ExplorerKey { game_id, explorer_id },
@@ -530,7 +533,7 @@ pub mod MapLogic {
             if !crate::rules::rule_enabled(rules, crate::rules::DISCOVER_CHESTS) || coord.alt {
                 return;
             }
-            if rules.epoch_seconds != 0
+            if rules.day_unit_seconds != 0
                 && crate::relics::IRelicsDispatcherTrait::chest_rules(
                     crate::relics::IRelicsLibraryDispatcher { class_hash: classes.relics.read() }, game_id,
                 )

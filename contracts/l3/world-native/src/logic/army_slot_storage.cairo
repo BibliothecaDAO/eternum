@@ -32,13 +32,9 @@ fn write(key: ArmySlotKey, value: ArmySlot) {
 }
 
 fn key_for(key: ExplorerKey, home: u32, coord: Coord, slot: u8) -> ArmySlotKey {
-    let game = crate::logic::game::game(key.game_id);
-    let seconds = crate::logic::game::rules(key.game_id).epoch_seconds;
-    assert!(seconds != 0 && !coord.alt, "slot outside expedition");
-    let spacing = crate::logic::settlement::rules(key.game_id).spacing;
-    let epoch = crate::expeditions::absolute_epoch(seconds, game.start_main_at)
-        + Into::<u32, u64>::into(coord.y / spacing / 4);
-    ArmySlotKey { game_id: key.game_id, structure_id: home, epoch, slot }
+    assert!(!coord.alt, "slot outside expedition");
+    let day = crate::expeditions::region_day(coord, crate::logic::settlement::rules(key.game_id).spacing);
+    ArmySlotKey { game_id: key.game_id, structure_id: home, epoch: day, slot }
 }
 
 fn occupied(key: ArmySlotKey, explorer_id: u32) -> ArmySlot {

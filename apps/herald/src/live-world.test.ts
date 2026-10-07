@@ -1,4 +1,5 @@
 import { CairoCustomEnum } from "starknet";
+import { dayOf } from "@bibliothecadao/eternum/expeditions";
 import { describe, expect, it, vi } from "vitest";
 import { LiveWorld } from "./live-world";
 import type { HistoryStore } from "./history-store";
@@ -136,7 +137,8 @@ describe("native live publication", () => {
             dev_mode_on: false,
             start_settling_at: 0,
             start_main_at: 100,
-            end_at: 99999999,
+            // Fourteen bags of four-hour units: 70 days.
+            end_at: 100 + 14 * 288_000,
             end_grace_seconds: 0,
             seed: 42,
           }),
@@ -152,7 +154,6 @@ describe("native live publication", () => {
             token_cap: 1,
             lords_amounts: { common: 100, uncommon: 400, rare: 1500, epic: 6000 },
             lords_pool: 1000000,
-            season_epochs: 70,
           }),
         ]),
       ),
@@ -160,7 +161,7 @@ describe("native live publication", () => {
       0,
     );
     seedDerivedRows(fold, decoder, [
-      rowEvent("SliceRules", ["1"], { ...fold.modelRows("SliceRules")[0].value, epoch_seconds: 86400 }),
+      rowEvent("SliceRules", ["1"], { ...fold.modelRows("SliceRules")[0].value, day_unit_seconds: 14_400 }),
     ]);
     await live.acceptSubscribedHead({ block_number: 10, timestamp: 100 });
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
@@ -177,7 +178,6 @@ describe("native live publication", () => {
       expect(warn).toHaveBeenCalledTimes(1);
       expect(JSON.parse(warn.mock.calls[0][0])).toMatchObject({
         event: "frontier_lords_allowance_80_percent",
-        absolute_epoch: 0,
         season_day: 0,
         allowance: "14285",
       });
@@ -214,9 +214,11 @@ describe("native live publication", () => {
     const event = rulesEvent();
     const rules = decoder.decodeRowSet("SliceRules", ["1"], event.data.slice(3));
     if (rules.kind !== "set") throw new Error("Expected rules row");
-    rules.value.epoch_seconds = 86_400;
+    rules.value.day_unit_seconds = 14_400;
     const dayStart = Date.parse("2026-09-22T00:00:00Z") / 1000;
-    const beforeMidnight = dayStart + 86_399;
+    // The season's day 0, drawn from the game's seed 7 below; its last second is the eve of the rollover.
+    const dayZero = dayOf({ seed: 7n, startMainAt: dayStart + 120, dayUnitSeconds: 14_400 }, dayStart + 120)!;
+    const beforeMidnight = dayZero.end - 1;
     fold.apply(rules);
     const homes = [1, 2].map((id) =>
       rowEvent("Structure", ["1", String(id)], {
@@ -255,7 +257,7 @@ describe("native live publication", () => {
             dev_mode_on: false,
             start_settling_at: String(dayStart + 120),
             start_main_at: String(dayStart + 120),
-            end_at: String(dayStart + 864_000),
+            end_at: String(dayStart + 120 + 2 * 288_000),
             end_grace_seconds: "0",
             seed: "7",
           }),
@@ -268,8 +270,8 @@ describe("native live publication", () => {
           ...homes,
           ...armies,
           ...positions,
-          rowEvent("ExpeditionDiscovery", ["1", "1", String(Math.floor(dayStart / 86400))], { empty_reveals: 7 }),
-          rowEvent("ExpeditionDiscovery", ["1", "2", String(Math.floor(dayStart / 86400))], { empty_reveals: 3 }),
+          rowEvent("ExpeditionDiscovery", ["1", "1", "0"], { empty_reveals: 7 }),
+          rowEvent("ExpeditionDiscovery", ["1", "2", "0"], { empty_reveals: 3 }),
           rowEvent("TileOccupancy", ["1", "0", "51", "50"], { entity_id: 300, category: 34, is_structure: false }),
           rowEvent("ResourceBalance", ["1", "1", "28"], { balance: 100n }),
           rowEvent("ResourceBalance", ["1", "2", "28"], { balance: 200n }),
@@ -424,7 +426,7 @@ describe("native live publication", () => {
     messages.forEach((stream) => {
       stream.length = 0;
     });
-    pending.timestamp = dayStart + 86_400;
+    pending.timestamp = dayZero.end;
     await live.publishChainClock();
     for (const [index, stream] of messages.entries()) {
       expect(stream.some((message) => message.type === "hello" || message.type === "snapshot")).toBe(false);

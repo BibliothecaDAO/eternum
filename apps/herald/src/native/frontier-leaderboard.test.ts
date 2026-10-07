@@ -3,15 +3,25 @@ import type { HeraldHistoryEvent } from "@bibliothecadao/eternum/game-sync";
 import { buildFrontierLeaderboard } from "./frontier-leaderboard";
 import { LordsAllowanceAlerts } from "./lords-allowance-alert";
 import type { FoldRow } from "../types";
+import { dayOf } from "@bibliothecadao/eternum/expeditions";
 
 const amounts = { common: 100, uncommon: 400, rare: 1500, epic: 6000 };
+// A season of 14 bags of four-hour units, 70 days, drawn from seed 7.
+const CALENDAR = { seed: 7n, startMainAt: 100 * 86400 + 120, dayUnitSeconds: 14_400 };
+const START = CALENDAR.startMainAt;
+/** The first second of season day `index`. */
+const dayStart = (index: number) => {
+  let day = dayOf(CALENDAR, START)!;
+  while (day.index < index) day = dayOf(CALENDAR, day.end)!;
+  return day.start;
+};
 function facts(depths = [2], committed = 0) {
   const rows: Record<string, FoldRow[]> = {};
   const add = (model: string, value: Record<string, unknown>) =>
     (rows[model] ??= []).push({ key: String(rows[model]?.length), value: { game_id: "1", ...value } });
-  add("GameRegistry", { start_main_at: 100 * 86400 + 10 });
-  add("SliceRules", { epoch_seconds: 86400 });
-  add("ChestRules", { lords_amounts: amounts, lords_pool: 1_000_000, season_epochs: 70 });
+  add("GameRegistry", { start_main_at: START, end_at: START + 14 * 288_000, seed: "7" });
+  add("SliceRules", { day_unit_seconds: 14400 });
+  add("ChestRules", { lords_amounts: amounts, lords_pool: 1_000_000 });
   add("LordsBudget", { lords_committed: committed });
   depths.forEach((depth, i) =>
     add("Structure", {
@@ -112,25 +122,24 @@ describe("Frontier season standings", () => {
 });
 
 describe("confirmed LORDS allowance warnings", () => {
-  it("uses the absolute start offset, cumulative roll-forward, day boundary and final cap", () => {
+  it("uses the season's drawn days, cumulative roll-forward, day boundary and final cap", () => {
     const warnings: unknown[] = [];
     const alerts = new LordsAllowanceAlerts((w) => warnings.push(w));
     const { read, rows } = facts([], 11427);
-    alerts.observe(read, 100 * 86400 + 10);
+    alerts.observe(read, START);
     expect(warnings).toEqual([]);
     rows.LordsBudget[0].value.lords_committed = 11428;
-    alerts.observe(read, 100 * 86400 + 10);
-    alerts.observe(read, 101 * 86400 - 1);
+    alerts.observe(read, START);
+    alerts.observe(read, dayStart(1) - 1);
     expect(warnings).toEqual([
       expect.objectContaining({
-        absolute_epoch: 100,
         season_day: 0,
         committed: "11428",
         allowance: "14285",
         remaining: "2857",
       }),
     ]);
-    alerts.observe(read, 101 * 86400);
+    alerts.observe(read, dayStart(1));
     expect(warnings).toHaveLength(1);
     for (const [day, committed, allowance] of [
       [34, 400000, "500000"],
@@ -138,7 +147,7 @@ describe("confirmed LORDS allowance warnings", () => {
       [90, 1000000, "1000000"],
     ] as const) {
       rows.LordsBudget[0].value.lords_committed = committed;
-      alerts.observe(read, (100 + day) * 86400);
+      alerts.observe(read, dayStart(day));
       expect(warnings.at(-1)).toMatchObject({ season_day: day, allowance });
     }
     expect(warnings).toHaveLength(4);
@@ -148,13 +157,13 @@ describe("confirmed LORDS allowance warnings", () => {
     const warnings: unknown[] = [];
     const alerts = new LordsAllowanceAlerts((w) => warnings.push(w));
     const { read, rows } = facts([], 14285);
-    alerts.observe(read, 100 * 86400 + 9);
+    alerts.observe(read, START - 1);
     expect(warnings).toEqual([]);
-    alerts.observe(read, 100 * 86400 + 10);
+    alerts.observe(read, START);
     for (const values of Object.values(rows)) for (const row of values) row.value.game_id = "2";
-    alerts.observe(read, 100 * 86400 + 10);
+    alerts.observe(read, START);
     expect(warnings).toHaveLength(2);
     rows.LordsBudget[0].value.lords_committed = 14286;
-    expect(() => new LordsAllowanceAlerts().observe(read, 100 * 86400 + 10)).toThrow("exceeds allowance");
+    expect(() => new LordsAllowanceAlerts().observe(read, START)).toThrow("exceeds allowance");
   });
 });

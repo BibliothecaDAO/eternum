@@ -14,7 +14,6 @@ import { applyDeploymentConfigOverrides } from "../config/config-loader";
 import { buildNativePreset } from "../config/native-preset";
 import {
   FRONTIER_ACCELERATED_PRESET_ID,
-  FRONTIER_PLAYTEST_PRESET_ID,
   FRONTIER_PRESET_ID,
   nativeGameModeOf,
 } from "../../../source/common/native-preset-modes";
@@ -50,7 +49,7 @@ function configuration(preset: number) {
 }
 
 describe("native presets", () => {
-  test("Frontier owns the 90/10 chest split, whole LORDS table and seventy-day season", () => {
+  test("Frontier owns the 90/10 chest split, whole LORDS table and a season of 21 bags of days", () => {
     const config = loadNativePresetConfiguration("madara.frontier", FRONTIER_PRESET_ID);
     const preset = buildNativePreset(config, FRONTIER_PRESET_ID);
     expect(preset.economy.chests.unwrap()).toEqual({
@@ -58,9 +57,10 @@ describe("native presets", () => {
       token_cap: 1,
       lords_amounts: { common: 100n, uncommon: 400n, rare: 1500n, epic: 6000n },
       lords_pool: 1000000n,
-      season_epochs: 70,
     });
-    expect(config.season.durationSeconds).toBe(70 * preset.rules.epoch_seconds);
+    // Four-hour units, 20 to a bag: 1,680 hours, ten weeks.
+    expect(preset.rules.day_unit_seconds).toBe(14_400);
+    expect(config.season.durationSeconds).toBe(10 * 7 * 86_400);
     expect(preset.economy.chests.unwrap()).not.toHaveProperty("cosmetic_probability");
   });
 
@@ -127,8 +127,8 @@ describe("native presets", () => {
       FRONTIER_ACCELERATED_PRESET_ID,
     );
 
-    expect(canonical.rules.epoch_seconds).toBe(86_400);
-    expect(accelerated.rules.epoch_seconds).toBe(720);
+    expect(canonical.rules.day_unit_seconds).toBe(14_400);
+    expect(accelerated.rules.day_unit_seconds).toBe(120);
     expect(accelerated.rules.tick_config.armies_tick_in_seconds).toBe(
       canonical.rules.tick_config.armies_tick_in_seconds / 120,
     );
@@ -140,41 +140,8 @@ describe("native presets", () => {
     ).not.toBe(buildNativePresetRegistration(canonical, FRONTIER_PRESET_ID, manifestPath).commitment);
   });
 
-  test("the playtest preset is Frontier's design compressed exactly 24 times: days, army tick and every rate", () => {
-    const design = buildNativePreset(
-      loadNativePresetConfiguration("madara.frontier", FRONTIER_PRESET_ID),
-      FRONTIER_PRESET_ID,
-    );
-    const playtest = buildNativePreset(
-      loadNativePresetConfiguration("madara.frontier", FRONTIER_PLAYTEST_PRESET_ID),
-      FRONTIER_PLAYTEST_PRESET_ID,
-    );
-    const board = (preset: typeof design) => preset.structures.board.unwrap() as { workshop_rate: bigint };
-
-    expect(playtest.rules.epoch_seconds).toBe(3_600);
-    expect(playtest.rules.epoch_seconds * 24).toBe(design.rules.epoch_seconds);
-    expect(playtest.rules.tick_config.armies_tick_in_seconds).toBe(5);
-    expect(playtest.rules.tick_config.armies_tick_in_seconds * 24).toBe(
-      design.rules.tick_config.armies_tick_in_seconds,
-    );
-    expect(playtest.resources.resources).toEqual(
-      design.resources.resources.map((resource) => ({
-        ...resource,
-        realm_rate: resource.realm_rate * 24n,
-        village_rate: resource.village_rate * 24n,
-      })),
-    );
-    expect(board(playtest).workshop_rate).toBe(board(design).workshop_rate * 24n);
-    expect(playtest.resources.mine_kinds.map(({ config }) => config.production_rate)).toEqual(
-      design.resources.mine_kinds.map(({ config }) => config.production_rate * 24n),
-    );
-    // Stamina is paid per tick, so a 24 times faster tick is a 24 times faster regen with the same numbers.
-    expect(playtest.rules.troop_stamina_config).toEqual(design.rules.troop_stamina_config);
-    expect(playtest.settlement.realms).toEqual(design.settlement.realms);
-  });
-
   test("Frontier replaces the supply pool with depth reveal percentages", () => {
-    for (const id of [FRONTIER_PRESET_ID, FRONTIER_ACCELERATED_PRESET_ID, FRONTIER_PLAYTEST_PRESET_ID]) {
+    for (const id of [FRONTIER_PRESET_ID, FRONTIER_ACCELERATED_PRESET_ID]) {
       const generated = loadNativePresetConfiguration("madara.frontier", id);
       expect(generated.blitz.exploration.rewards).toEqual([]);
       const preset = buildNativePreset(generated, id);
@@ -411,11 +378,10 @@ describe("native presets", () => {
 
   test("every preset id names the mode it plays, and an unknown id fails by name", () => {
     expect(
-      [1, 2, 3, 4, FRONTIER_PRESET_ID, FRONTIER_ACCELERATED_PRESET_ID, 102, FRONTIER_PLAYTEST_PRESET_ID].map(
-        nativeGameModeOf,
-      ),
-    ).toEqual(["frontier", "blitz", "eternum", "duel", "frontier", "frontier", "frontier", "frontier"]);
+      [1, 2, 3, 4, FRONTIER_PRESET_ID, FRONTIER_ACCELERATED_PRESET_ID, 102].map(nativeGameModeOf),
+    ).toEqual(["frontier", "blitz", "eternum", "duel", "frontier", "frontier", "frontier"]);
     expect(() => nativeGameModeOf(9)).toThrow("Unknown native preset 9");
+    expect(() => nativeGameModeOf(103)).toThrow("Unknown native preset 103");
   });
 
   test("native balances and mine ladders come only from the selected sheet", () => {
@@ -594,18 +560,17 @@ describe("scaled Frontier presets", () => {
       startMainAt: 1_800_000_000,
       factoryAddress: "",
     }).season.durationSeconds;
-  const epochSeconds = (presetId: number) =>
-    buildNativePreset(loadNativePresetConfiguration("madara.frontier", presetId), presetId).rules.epoch_seconds;
+  const dayUnitSeconds = (presetId: number) =>
+    buildNativePreset(loadNativePresetConfiguration("madara.frontier", presetId), presetId).rules.day_unit_seconds;
 
-  test("a playtest launch lasts seventy one-hour days, not seventy calendar days", () => {
-    expect(epochSeconds(FRONTIER_PLAYTEST_PRESET_ID)).toBe(3_600);
-    expect(launchedSeconds(FRONTIER_PLAYTEST_PRESET_ID)).toBe(70 * 3_600);
-    expect(launchedSeconds(FRONTIER_PRESET_ID)).toBe(70 * 86_400);
+  test("an accelerated launch lasts 21 bags of its 120 s units: 14 hours", () => {
+    expect(dayUnitSeconds(FRONTIER_ACCELERATED_PRESET_ID)).toBe(120);
+    expect(launchedSeconds(FRONTIER_ACCELERATED_PRESET_ID)).toBe(14 * 3_600);
+    expect(launchedSeconds(FRONTIER_PRESET_ID)).toBe(10 * 7 * 86_400);
   });
 
-  test("every scaled preset keeps its mode's season length in epochs", () => {
-    const epochs = launchedSeconds(FRONTIER_PRESET_ID) / epochSeconds(FRONTIER_PRESET_ID);
-    for (const presetId of [FRONTIER_ACCELERATED_PRESET_ID, FRONTIER_PLAYTEST_PRESET_ID])
-      expect(launchedSeconds(presetId) / epochSeconds(presetId)).toBe(epochs);
+  test("every scaled preset keeps its mode's season length in day units", () => {
+    const units = launchedSeconds(FRONTIER_PRESET_ID) / dayUnitSeconds(FRONTIER_PRESET_ID);
+    expect(launchedSeconds(FRONTIER_ACCELERATED_PRESET_ID) / dayUnitSeconds(FRONTIER_ACCELERATED_PRESET_ID)).toBe(units);
   });
 });

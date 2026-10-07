@@ -28,12 +28,12 @@ const realm = {
 };
 
 /**
- * A Frontier day at epoch 3 on the realm board: the realm owns 420 T1 knights and 1,000 wheat, each knight takes two
- * wheat to deploy, and one of its three slots holds an army.
+ * A Frontier day on the realm board, day 0 (seed 1 opens with a 3-unit day, [100, 400) at t=350): the realm owns 420
+ * T1 knights and 1,000 wheat, each knight takes two wheat to deploy, and one of its three slots holds an army.
  */
 export const frontierDay = () => {
   const store = new NativeFactStore();
-  store.applyFacts([set("0x100", "SliceRules", { ...preset.rules, game_id: 1, epoch_seconds: 100 })] as never);
+  store.applyFacts([set("0x100", "SliceRules", { ...preset.rules, game_id: 1, day_unit_seconds: 100 })] as never);
   store.setSnapshot({ gameId: 1, complete: true, actor: "0x111", timestamp: 350 });
   store.applyFacts([
     set("0x2", "SettlementRules", {
@@ -96,7 +96,7 @@ export const frontierDay = () => {
     set("0x9", "ArmySlot", {
       game_id: 1,
       structure_id: 7,
-      epoch: "3",
+      epoch: "0",
       slot: 0,
       explorer_id: 70,
       stamina: { amount: "30", updated_tick: "3" },

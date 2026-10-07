@@ -763,7 +763,7 @@ export function defineFactModels({ struct, model: declare }) {
         parent: "Structure",
         parentKeys: { entity_id: "structure_id" },
         value: "unused",
-        meaning: "This army slot has not been used in the current expedition epoch.",
+        meaning: "This army slot has not been used on this season day.",
       };
     if (row.name === "Guard")
       row.absence = {
@@ -1326,7 +1326,7 @@ const behaviouralFacts = {
 // Which rows a player's subscription carries. "shared" rows reach every subscriber and "actor" rows only the selected
 // gameplay account. "internal" rows remain in Herald and never reach a subscription. In an expedition game every
 // other row is in scope when any listed field names one of the player's owners, entities, realms, realm traits,
-// production sources or regions; `epoch` also requires the current day.
+// production sources or regions; `epoch`, a season day index, also requires the current day.
 // Generation fails for a fact or event without an entry here.
 const shared = "shared";
 const byEntity = { entities: ["entity_id"] };

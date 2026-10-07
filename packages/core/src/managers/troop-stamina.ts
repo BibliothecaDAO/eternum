@@ -78,7 +78,7 @@ export function inlineTroops(troops: NativeRows["ExplorerTroops"]["troops"], rul
   return {
     ...troops,
     stamina: troops.stamina.Inline,
-    ...(rules && rules.epoch_seconds !== 0
+    ...(rules && rules.day_unit_seconds !== 0
       ? {
           staminaMax: troopStaminaLimits(rules.troop_stamina_config, troops.category, TroopTier.T1).staminaMax,
         }
@@ -191,9 +191,9 @@ const NO_BOOSTS: Troops["boosts"] = {
   incr_explore_reward_end_tick: 0,
 };
 
-/** Slots are keyed by the absolute epoch, known once the expedition scope and its clock are. */
+/** Slots are keyed by the season day, known once the expedition scope and its clock are. */
 const slotEpoch = (store: NativeFactStore): bigint | undefined => {
   const scope = store.subscriptionScope();
-  if (!scope.known?.expedition || scope.known.expedition.absoluteEpoch < 0) return undefined;
-  return BigInt(scope.known.expedition.absoluteEpoch);
+  if (!scope.known?.expedition || scope.known.expedition.day < 0) return undefined;
+  return BigInt(scope.known.expedition.day);
 };

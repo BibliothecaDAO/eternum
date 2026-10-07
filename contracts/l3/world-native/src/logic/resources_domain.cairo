@@ -65,10 +65,11 @@ pub mod ResourcesLogic {
             let game = context.game.unbox();
             crate::game::assert_playing(game, context.timestamp);
             let rules = crate::logic::preset_record::for_game(game_id).chest_rules.read().expect('missing chest rules');
-            let season_day = crate::expeditions::season_day(
-                game.start_main_at, context.rules.unbox().epoch_seconds, context.timestamp,
+            let unit = context.rules.unbox().day_unit_seconds;
+            let today = crate::days::day_of(game, unit, context.timestamp).index;
+            let allowance = crate::relics::lords_allowance(
+                rules, today, crate::days::season_days(game.end_at - game.start_main_at, unit),
             );
-            let allowance = crate::relics::lords_allowance(rules, season_day);
             let amount = crate::relics::lords_amount(rules.lords_amounts, quality);
             let committed = crate::state::read().relics.lords_committed.read(game_id).expect('missing LORDS budget');
             assert!(committed <= allowance, "LORDS budget exceeds allowance");

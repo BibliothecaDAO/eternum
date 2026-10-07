@@ -4,48 +4,42 @@ import type { NativeFactStore } from "../client/native-fact-store";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { getNeighborHexes, StructureType } from "@bibliothecadao/types";
 import { getBlockTimestamp } from "./timestamp";
+import { dayOf } from "./days";
 
 import { entityMapPosition } from "./tile";
 
-type ExpeditionRules = NonNullable<ReturnType<typeof readExpeditionRules>>;
+export * from "./days";
+
+export type ExpeditionRules = NonNullable<ReturnType<typeof readExpeditionRules>>;
 
 type ExpeditionRuleModel = "SliceRules" | "GameRegistry" | "SettlementRules";
 type ExpeditionRuleReader = (model: ExpeditionRuleModel) => Record<string, unknown> | undefined;
 
-/** One reader for the clocks and grid, from the native store or Herald's fold. */
+/** One reader for the season's calendar and grid, from the native store or Herald's fold. */
 export const readExpeditionRules = (
   source: Pick<NativeFactStore, "get"> | ExpeditionRuleReader,
   gameId: number,
-): { epochSeconds: number; spacing: number; startMainAt: number } | null => {
+): { dayUnitSeconds: number; spacing: number; startMainAt: number; seed: bigint } | null => {
   const read: ExpeditionRuleReader =
     typeof source === "function" ? source : (model) => source.get(model, { game_id: gameId });
   const rules = read("SliceRules");
   const game = read("GameRegistry");
   if (!rules && game) throw new Error("Game subscription requires its rules");
-  if (!rules || Number(rules.epoch_seconds) === 0) return null;
+  if (!rules || Number(rules.day_unit_seconds) === 0) return null;
   const settlement = read("SettlementRules");
   if (!game || !settlement || Number(settlement.spacing) <= 0)
     throw new Error("Expedition scope requires game and settlement rules");
   return {
-    epochSeconds: Number(rules.epoch_seconds),
+    dayUnitSeconds: Number(rules.day_unit_seconds),
     spacing: Number(settlement.spacing),
     startMainAt: Number(game.start_main_at),
+    seed: BigInt(game.seed as bigint | string),
   };
 };
 
-/** Absolute clock bucket used by expedition fact keys. */
-export const absoluteEpoch = (rules: Pick<ExpeditionRules, "epochSeconds">, timestamp: number): number => {
-  if (!Number.isSafeInteger(rules.epochSeconds) || rules.epochSeconds <= 0)
-    throw new Error("Expedition epoch duration must be positive");
-  return Math.floor(timestamp / rules.epochSeconds);
-};
-
-/** Zero-based season day; only this relative value selects a map region or allowance day. */
-export const seasonDay = (
-  rules: Pick<ExpeditionRules, "epochSeconds" | "startMainAt">,
-  timestamp: number,
-): number | null =>
-  timestamp < rules.startMainAt ? null : absoluteEpoch(rules, timestamp) - absoluteEpoch(rules, rules.startMainAt);
+/** The season day an expedition timestamp falls in: its index keys the day's map region and every per-day fact. */
+export const seasonDay = (rules: ExpeditionRules, timestamp: number): number | null =>
+  dayOf(rules, timestamp)?.index ?? null;
 
 /**
  * What clearing a site pays home, as the contract's site_reward computes it from the guard it started with: a camp
@@ -67,9 +61,11 @@ const expeditionBand = (rules: ExpeditionRules, coord: { y: number }): number =>
 export const expeditionDepth = (rules: ExpeditionRules, coord: { y: number }): number =>
   expeditionBand(rules, coord) % 4;
 
-/** When today's expedition ends: the next UTC epoch boundary, where the contract rolls every army and site over. */
-export const expeditionDayEndsAt = (rules: Pick<ExpeditionRules, "epochSeconds">, nowSeconds: number): number =>
-  (absoluteEpoch(rules, nowSeconds) + 1) * rules.epochSeconds;
+/**
+ * When today's expedition ends, where the contract rolls every army and site over; before the season, when it starts.
+ */
+export const expeditionDayEndsAt = (rules: ExpeditionRules, nowSeconds: number): number =>
+  dayOf(rules, nowSeconds)?.end ?? rules.startMainAt;
 
 /**
  * An army belongs to today's expedition only while it stands in today's region, as the contract's `is_current` decides;

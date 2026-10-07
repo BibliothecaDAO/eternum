@@ -44,8 +44,8 @@ pub trait IGameSettlement<T> {
 #[derive(Copy, Drop)]
 pub struct LaunchRules {
     pub mode_rules: u32,
-    pub epoch_seconds: u32,
-    pub armies_tick: u64,
+    pub day_unit_seconds: u32,
+    pub armies_tick_seconds: u64,
     pub entry_rule: u8,
     pub settlement_mode: crate::settlement::SettlementMode,
     pub spacing: u32,
@@ -55,12 +55,8 @@ pub fn validate_params(params: CreateGameParams, rules: LaunchRules) {
     assert!(params.name != 0, "game name is empty");
     assert!(params.seed != 0, "game seed is zero");
     assert!(params.duration_seconds != 0, "game duration is zero");
-    crate::expeditions::validate_game(rules.epoch_seconds, rules.spacing, params.duration_seconds);
+    crate::expeditions::validate_game(rules, params.start_main_at, params.duration_seconds);
     assert!(params.start_settling_at <= params.start_main_at, "invalid game schedule");
-    // Days are whole ticks, so a season on a tick boundary rolls every day over on one, with stores and stamina.
-    assert!(
-        rules.epoch_seconds == 0 || params.start_main_at % rules.armies_tick == 0, "season must start on an armies tick",
-    );
     assert!(
         Into::<u32, u64>::into(params.registration_start) < params.start_settling_at,
         "registration must open before settling",

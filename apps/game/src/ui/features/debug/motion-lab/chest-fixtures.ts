@@ -12,7 +12,6 @@ const CHEST_RULES_ROW: NativeRows["ChestRules"] = {
   token_cap: 1,
   lords_amounts: { common: 100n, uncommon: 400n, rare: 1_500n, epic: 6_000n },
   lords_pool: 1_000_000n,
-  season_epochs: 70,
 };
 
 /** Frontier's fixed XP, what a relic chest pays the army whatever its quality. */

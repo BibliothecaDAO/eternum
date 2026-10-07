@@ -98,7 +98,6 @@ describe("a chest's result", () => {
         token_cap: 1,
         lords_amounts: { common: "100", uncommon: "400", rare: "1500", epic: "6000" },
         lords_pool: "1000000",
-        season_epochs: 70,
       }),
     ] as never);
     const host = document.createElement("div");
@@ -145,7 +144,6 @@ it.each(["relic", "missing", "story"] as const)(
         token_cap: 1,
         lords_amounts: { common: "100", uncommon: "400", rare: "1500", epic: "6000" },
         lords_pool: "1000000",
-        season_epochs: 70,
       }),
       set("0x5", "TileOccupancy", {
         game_id: 1,

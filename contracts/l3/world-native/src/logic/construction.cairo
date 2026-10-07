@@ -297,7 +297,7 @@ pub mod ConstructionLogic {
             crate::logic::structures::StructureState::upgrade(
                 key, record.base, context.rules.unbox().troop_limit_config,
             );
-            if record.base.category == crate::taxonomy::REALM_CATEGORY && context.rules.unbox().epoch_seconds == 0 {
+            if record.base.category == crate::taxonomy::REALM_CATEGORY && context.rules.unbox().day_unit_seconds == 0 {
                 let coord = crate::structures::structure_coord(key);
                 crate::logic::map::MapState::upgrade_realm(
                     crate::map::TileKey { game_id, alt: coord.alt, col: coord.x, row: coord.y },

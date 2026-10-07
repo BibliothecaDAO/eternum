@@ -7,6 +7,7 @@ import { derivePresetFacts } from "./preset-facts";
 import { decodePresetPreimage } from "./preset-preimages";
 import { encodeMembers } from "./serde";
 import type { DecodedWorldEvent } from "../types";
+import { seasonSeconds } from "@bibliothecadao/eternum/expeditions";
 
 const codec = new CallData([...Object.values(schema.types), ...schema.games.entrypoints] as Abi);
 
@@ -30,7 +31,8 @@ function fixtureLaunchParams(presetId: number, definition: ReturnType<typeof bui
     preset_id: presetId,
     start_settling_at: 1800,
     start_main_at: 1800,
-    duration_seconds: 86400,
+    // A season with days lasts whole bags of them.
+    duration_seconds: presetId === 5 ? seasonSeconds(1, definition.rules.day_unit_seconds) : 86400,
     end_grace_seconds: 0,
     dev_mode_on: false,
     roster: presetId === 2 ? [{ account: "0x111" }] : [],
