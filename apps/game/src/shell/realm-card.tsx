@@ -2,10 +2,10 @@ import { getRealmNameById } from "@bibliothecadao/eternum";
 import { Trophy } from "@/ui/design-system/atoms/game-icons";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Chip } from "@/ui/features/frontier/frontier-chips";
-import { formatAmount } from "@/ui/features/frontier/frontier-format";
+import { formatAmount } from "@/ui/design-system/kit/amount";
 import { DayDial } from "@/ui/features/frontier/day-dial";
 import { FlagGlyph } from "@/ui/features/frontier/glyphs";
-import { orderEmblem } from "@/ui/features/frontier/board/order-emblem";
+import { orderEmblem } from "@/ui/design-system/kit/order-emblem";
 import { normalizeLeaderboardAddress } from "@/services/leaderboard/landing-leaderboard-service";
 
 import { entryHref } from "./game-links";

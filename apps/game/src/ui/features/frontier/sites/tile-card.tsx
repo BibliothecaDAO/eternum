@@ -13,7 +13,7 @@ import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import type { TileSpatialRenderable } from "@bibliothecadao/eternum/game-sync";
 import { type ReactNode, useMemo, useState } from "react";
 import { Chip, TroopChip } from "../frontier-chips";
-import { formatAmount } from "../frontier-format";
+import { formatAmount } from "@/ui/design-system/kit/amount";
 import { BoltGlyph, FlagGlyph, SwordGlyph } from "../glyphs";
 import { useSelectedOwnArmy } from "./selected-army";
 import { readSiteCard, type SiteAttack, type SiteCardPlan } from "./site-card-plan";

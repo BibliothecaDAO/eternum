@@ -4,10 +4,10 @@ import type { HeraldFrontierLeaderboardEntry } from "@bibliothecadao/eternum/gam
 import { ResourcesIds } from "@bibliothecadao/types";
 import { useState } from "react";
 import { depthArt, DEPTH_ART } from "../depth-art";
-import { formatAmount } from "../frontier-format";
+import { formatAmount } from "@/ui/design-system/kit/amount";
 import { FlagGlyph, MedalGlyph } from "../glyphs";
 import { SITE_ART } from "../sites/site-art";
-import { orderEmblem } from "./order-emblem";
+import { orderEmblem } from "@/ui/design-system/kit/order-emblem";
 import { wholeLords, wholeResource } from "./standings";
 
 type Entry = HeraldFrontierLeaderboardEntry;

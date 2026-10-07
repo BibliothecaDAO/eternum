@@ -17,7 +17,7 @@ import {
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { type Direction, getNeighborHexes, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { useEffect, useMemo, useState } from "react";
-import { formatAmount } from "../frontier-format";
+import { formatAmount } from "@/ui/design-system/kit/amount";
 import { Chip, TierBanner, TroopChip, YieldChip } from "../frontier-chips";
 import { BoltGlyph } from "../glyphs";
 import {

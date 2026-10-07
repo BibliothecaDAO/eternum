@@ -3,7 +3,7 @@ import { EASE } from "@/ui/motion/motion-scale";
 import { useReducedMotion } from "@/ui/motion/motion-settings";
 import { AnimatePresence, motion } from "framer-motion";
 import { Chip } from "../frontier-chips";
-import { formatAmount } from "../frontier-format";
+import { formatAmount } from "@/ui/design-system/kit/amount";
 import { FlagGlyph } from "../glyphs";
 import { SITE_ART } from "./site-art";
 import { closeSiteClearCard, useSiteClearCard } from "./site-clear-moment";

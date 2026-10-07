@@ -3,7 +3,7 @@ import { getTroopResourceId } from "@bibliothecadao/eternum";
 import { RESOURCE_PRECISION, ResourcesIds, TroopTier, TroopType } from "@bibliothecadao/types";
 import type { ReactNode } from "react";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { formatAmount } from "./frontier-format";
+import { formatAmount } from "@/ui/design-system/kit/amount";
 
 const PRECISION = BigInt(RESOURCE_PRECISION);
 

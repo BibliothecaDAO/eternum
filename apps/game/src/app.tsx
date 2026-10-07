@@ -23,6 +23,9 @@ import { SIGN_IN_PATH } from "./shell/sign-in/sign-in-route";
 const MotionLabView = lazy(() =>
   import("./ui/features/debug/motion-lab/motion-lab-view").then((module) => ({ default: module.MotionLabView })),
 );
+const KitLabView = lazy(() =>
+  import("./ui/features/debug/kit-lab/kit-lab-view").then((module) => ({ default: module.KitLabView })),
+);
 const FrontierHudLabView = lazy(() =>
   import("./ui/features/debug/frontier-hud-lab/frontier-hud-lab-view").then((module) => ({
     default: module.FrontierHudLabView,
@@ -135,6 +138,16 @@ export const appRoutes = (
         element={
           <LazyRoute>
             <MotionLabView />
+          </LazyRoute>
+        }
+      />
+    )}
+    {import.meta.env.DEV && (
+      <Route
+        path="/lab/kit"
+        element={
+          <LazyRoute>
+            <KitLabView />
           </LazyRoute>
         }
       />

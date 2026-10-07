@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatAmount, formatClock } from "./frontier-format";
+import { formatClock } from "./frontier-format";
 
 describe("formatClock", () => {
   it("keeps one h:mm:ss shape so the countdown never jumps", () => {
@@ -10,14 +10,5 @@ describe("formatClock", () => {
   it("rounds a partial second up and never goes below zero", () => {
     expect(formatClock(0.2)).toBe("0:00:01");
     expect(formatClock(-3)).toBe("0:00:00");
-  });
-});
-
-describe("formatAmount", () => {
-  it("shows an unknown amount as a dash, never zero", () => {
-    expect(formatAmount(undefined)).toBe("—");
-    expect(formatAmount(0)).toBe("0");
-    expect(formatAmount(1_498)).toBe("1,498");
-    expect(formatAmount(12_400)).toBe("12.4K");
   });
 });

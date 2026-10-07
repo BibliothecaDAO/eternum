@@ -5,7 +5,7 @@ import { Eye, TreasureChest } from "@/ui/design-system/atoms/game-icons";
 import { absoluteEpoch } from "@bibliothecadao/eternum";
 import { ResourcesIds } from "@bibliothecadao/types";
 import { Chip } from "../frontier-chips";
-import { formatAmount } from "../frontier-format";
+import { formatAmount } from "@/ui/design-system/kit/amount";
 import type { useExpeditionRules } from "../frontier-home";
 import { FlagGlyph } from "../glyphs";
 import { totalToday } from "./today-totals";

@@ -3,7 +3,7 @@ import { isRealmCategory } from "@bibliothecadao/eternum/expeditions";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 
 import { realmStill } from "@/shell/mode-art";
-import { orderEmblem } from "@/ui/features/frontier/board/order-emblem";
+import { orderEmblem } from "@/ui/design-system/kit/order-emblem";
 
 import type { DoorwayRealm } from "./doorway-screen";
 

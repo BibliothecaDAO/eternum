@@ -18,7 +18,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { bankedCounterTarget } from "@/ui/motion/moments/banked-flight";
 import { TickNumber } from "@/ui/motion/tick-number";
 import { DayDial } from "./day-dial";
-import { formatAmount } from "./frontier-format";
+import { formatAmount } from "@/ui/design-system/kit/amount";
 import { CastleGlyph, MapGlyph } from "./glyphs";
 import { troopsOnHand, useExpeditionRules, useGoToFrontierPlace } from "./frontier-home";
 

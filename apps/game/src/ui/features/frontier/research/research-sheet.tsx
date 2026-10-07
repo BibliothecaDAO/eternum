@@ -7,7 +7,7 @@ import { FRONTIER_BUILDING_NAMES } from "../build/building-names";
 import { DEPTH_ART } from "../depth-art";
 import { MAP_SITE_ART } from "../sites/site-art";
 import { Chip, TierBanner } from "../frontier-chips";
-import { formatAmount } from "../frontier-format";
+import { formatAmount } from "@/ui/design-system/kit/amount";
 import {
   depthNode,
   firstOpenNode,

@@ -19,7 +19,7 @@ import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { BUILDINGS_CENTER, BuildingType, getHexDistance, type HexPosition, ResourcesIds } from "@bibliothecadao/types";
 import { useEffect, useMemo, useState } from "react";
 import { Chip, TierBanner } from "../frontier-chips";
-import { formatAmount } from "../frontier-format";
+import { formatAmount } from "@/ui/design-system/kit/amount";
 import { PersonGlyph } from "../glyphs";
 import { type BuildOption, readBuildOptions } from "./build-options";
 import { FRONTIER_BUILDING_NAMES } from "./building-names";

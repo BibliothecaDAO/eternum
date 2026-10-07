@@ -1,8 +1,8 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Chip } from "@/ui/features/frontier/frontier-chips";
-import { formatAmount } from "@/ui/features/frontier/frontier-format";
+import { formatAmount } from "@/ui/design-system/kit/amount";
 import { FlagGlyph } from "@/ui/features/frontier/glyphs";
-import { orderEmblem } from "@/ui/features/frontier/board/order-emblem";
+import { orderEmblem } from "@/ui/design-system/kit/order-emblem";
 import type { HeraldFrontierLeaderboardEntry } from "@bibliothecadao/eternum/game-sync";
 
 import type { DirectoryGame } from "./herald";

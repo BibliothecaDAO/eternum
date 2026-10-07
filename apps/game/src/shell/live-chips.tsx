@@ -1,7 +1,8 @@
 import { Hourglass } from "@/ui/design-system/atoms/game-icons";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Chip } from "@/ui/features/frontier/frontier-chips";
-import { formatAmount, formatTimeLeft } from "@/ui/features/frontier/frontier-format";
+import { formatTimeLeft } from "@/ui/features/frontier/frontier-format";
+import { formatAmount } from "@/ui/design-system/kit/amount";
 import { PersonGlyph } from "@/ui/features/frontier/glyphs";
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";

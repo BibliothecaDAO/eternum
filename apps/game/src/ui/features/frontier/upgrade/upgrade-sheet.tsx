@@ -1,7 +1,7 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { useState } from "react";
 import { Chip, TierBanner } from "../frontier-chips";
-import { formatAmount } from "../frontier-format";
+import { formatAmount } from "@/ui/design-system/kit/amount";
 import { PersonGlyph } from "../glyphs";
 import type { UpgradePlan, UpgradeStep } from "./upgrade-plan";
 import { FrontierSheet } from "../frontier-sheet";

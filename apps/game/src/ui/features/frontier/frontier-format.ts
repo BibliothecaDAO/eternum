@@ -16,15 +16,3 @@ export const formatShortClock = (seconds: number): string => {
 /** Time left on a countdown chip: whole days once it is two days or more away ("12d"), the clock under that. */
 export const formatTimeLeft = (seconds: number): string =>
   seconds >= 2 * 86_400 ? `${Math.floor(seconds / 86_400)}d` : formatShortClock(seconds);
-
-const exact = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
-const compact = new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 });
-
-/**
- * A known amount, exact while a player still counts it against a price ("1,250 labor") and compact past ten
- * thousand; an unknown one is "—", never zero.
- */
-export const formatAmount = (value: number | undefined): string => {
-  if (value === undefined) return "—";
-  return Math.abs(value) < 10_000 ? exact.format(value) : compact.format(value);
-};
