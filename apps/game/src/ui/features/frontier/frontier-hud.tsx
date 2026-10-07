@@ -1,6 +1,7 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useRealmVisit } from "@/sync/active-game-client";
+import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
 import { Sheet } from "@/ui/design-system/kit/sheet";
 import { SETTINGS } from "@/ui/design-system/kit/words";
 import { EventLogPanel } from "@/ui/features/event-feed/event-log-panel";
@@ -20,15 +21,17 @@ import { FrontierSelectionSheet } from "./frontier-selection-sheet";
 import { FrontierSurfaces } from "./frontier-surfaces";
 import { FrontierGuide, useGuideLine } from "./guide/frontier-guide";
 import { replayGuide } from "./guide/guide-seen";
-import { SelectedArmyBar } from "./hud/action-bar";
+import { SelectedArmyBar, useArmyRevealYield } from "./hud/action-bar";
+import { type ArmyOrder, useArmyOrder } from "./hud/army-order";
 import { ArmyDock } from "./hud/army-dock";
 import { ChatPage } from "./hud/chat-page";
-import { useDockArmies } from "./hud/dock-armies";
+import { type DockArmy, useDockArmies } from "./hud/dock-armies";
 import { FrontierNav, type HudSurface, useHudSurface } from "./hud/frontier-nav";
 import { FrontierStrip } from "./hud/frontier-strip";
 import { HudBands } from "./hud/hud-bands";
 import { MenuSheet } from "./hud/menu-sheet";
 import { OfflineNotice } from "./hud/offline-notice";
+import { OrderBar } from "./hud/order-bar";
 import { TodayCard } from "./log/today-card";
 import { FrontierResearch } from "./research/frontier-research";
 import { SiteClearCardView } from "./sites/site-clear-card";
@@ -100,11 +103,16 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
   );
 };
 
-/** The foot's army rows: the selected army's status, then the dock. */
+/**
+ * The foot's army rows: with an order pending, its costs and verb take the foot; otherwise the selected army's status
+ * over the dock.
+ */
 const Foot = ({ realm }: { realm: NativeRows["Structure"] }) => {
   const armies = useDockArmies(realm);
+  const order = useArmyOrder();
   const selectedId = useUIStore((state) => state.entityActions.selectedEntityId);
   const selected = armies.find((army) => army.explorerId === selectedId);
+  if (order && selected) return <PendingOrder order={order} army={selected} />;
   return (
     <>
       {selected && <SelectedArmyBar army={selected} />}
@@ -112,6 +120,19 @@ const Foot = ({ realm }: { realm: NativeRows["Structure"] }) => {
     </>
   );
 };
+
+const PendingOrder = ({ order, army }: { order: ArmyOrder; army: DockArmy }) => (
+  <OrderBar
+    kind={order.kind}
+    tiles={order.tiles}
+    stamina={order.stamina}
+    wheat={order.wheat}
+    revealYield={useArmyRevealYield(army)}
+    xp={order.xp}
+    onCancel={() => useUIStore.getState().updateEntityActionHoveredHex(null)}
+    onGo={() => requestOrderAt(order.target)}
+  />
+);
 
 /** The Menu over the game: each row opens its way and closes the menu; Exit leaves for the app. */
 const HudMenu = ({ onOpen, onClose }: { onOpen: (surface: HudSurface | null) => void; onClose: () => void }) => {

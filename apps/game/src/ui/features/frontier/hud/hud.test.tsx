@@ -6,10 +6,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 
 import { canResearchNow } from "../research/research-plan";
+import { secondsUntilHeld } from "./army-order";
 import { ArmyToken, OpenSlot } from "./army-token";
 import { dayClock } from "./day-clock";
 import { type HudSurface, useHudSurface } from "./frontier-nav";
 import { MenuSheet } from "./menu-sheet";
+import { OrderBar } from "./order-bar";
 import { PlaceNav } from "./place-nav";
 import { StatusStrip, type StoreReading } from "./status-strip";
 
@@ -194,5 +196,65 @@ describe("the HUD's surfaces", () => {
     act(() => root.render(<Host />));
     act(() => open("research"));
     expect(useUIStore.getState().selectedBuildingHex).toBeNull();
+  });
+});
+
+describe("the order bar", () => {
+  const covered = { cost: 30, held: 90, wait: undefined };
+
+  it("shows what an order leaves and earns, then Cancel and the verb", () => {
+    const onGo = vi.fn();
+    act(() =>
+      root.render(
+        <OrderBar
+          kind="explore"
+          tiles={1}
+          stamina={covered}
+          wheat={{ cost: 100, held: 4_410, wait: undefined }}
+          revealYield={500}
+          xp={2}
+          onCancel={() => {}}
+          onGo={onGo}
+        />,
+      ),
+    );
+    expect([...host.querySelectorAll('[role="img"]')].map((chip) => chip.getAttribute("aria-label"))).toEqual([
+      "stamina 90 → 60",
+      "wheat −100",
+      "Essence, labor +500",
+      "XP +2",
+    ]);
+    const buttons = [...host.querySelectorAll("button")].map((button) => button.textContent);
+    expect(buttons).toEqual(["Cancel", "Explore"]);
+    act(() => host.querySelectorAll("button")[1].click());
+    expect(onGo).toHaveBeenCalled();
+  });
+
+  it("turns a short cost ember with its exact wait, and takes the verb away", () => {
+    act(() =>
+      root.render(
+        <OrderBar
+          kind="move"
+          tiles={3}
+          stamina={covered}
+          wheat={{ cost: 300, held: 40, wait: 4 * 60 }}
+          revealYield={null}
+          xp={undefined}
+          onCancel={() => {}}
+          onGo={() => {}}
+        />,
+      ),
+    );
+    const wheat = host.querySelector('[aria-label="wheat 40 / 300"]');
+    expect(wheat?.getAttribute("data-tone")).toBe("loss");
+    expect(host.querySelector('[aria-label="left 4m"]')).not.toBeNull();
+    expect([...host.querySelectorAll("button")].map((button) => button.textContent)).toEqual(["Cancel"]);
+  });
+
+  it("waits for wheat at the farms' rate, and never for wheat already held or never coming", () => {
+    expect(secondsUntilHeld(40, 100, 900)).toBe(240);
+    expect(secondsUntilHeld(100, 100, 900)).toBeUndefined();
+    expect(secondsUntilHeld(40, 100, 0)).toBeUndefined();
+    expect(secondsUntilHeld(undefined, 100, 900)).toBeUndefined();
   });
 });

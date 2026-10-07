@@ -14,6 +14,7 @@ const ICONS = {
   St: "/image-icons/ui-lightning.png",
   Hg: "/image-icons/hourglass.png",
   Ey: "/image-icons/ui-eye.png",
+  Bt: "/image-icons/ui-footprints.png",
   Fl: "/image-icons/ui-flag.png",
   Mp: "/image-icons/world.png",
   Cs: "/image-icons/house.png",

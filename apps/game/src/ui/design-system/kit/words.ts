@@ -42,6 +42,11 @@ export const EXIT = "Exit";
 export const RESUME = "Resume";
 export const SIGN_IN = "Sign in";
 
+/** An army's two ways across the map, and backing out of an order. */
+export const EXPLORE = "Explore";
+export const MOVE = "Move";
+export const CANCEL = "Cancel";
+
 /** Raise an army from troops at home. */
 export const DEPLOY = "Deploy";
 

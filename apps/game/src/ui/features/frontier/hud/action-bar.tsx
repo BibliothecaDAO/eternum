@@ -45,7 +45,7 @@ export const SelectedArmyBar = ({ army }: { army: DockArmy }) => (
 );
 
 /** What the army's next reveal sends home at the depth it stands on, in whole units. */
-const useArmyRevealYield = (army: DockArmy): number | undefined | null => {
+export const useArmyRevealYield = (army: DockArmy): number | undefined | null => {
   const { setup } = useGame();
   const rules = useExpeditionRules();
   const coord = entityMapPosition(setup.store, configManager.getActiveGameId(), army.explorerId);

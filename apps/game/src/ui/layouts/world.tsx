@@ -51,9 +51,6 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
         {/* Game systems */}
         <GameSystems backgroundImage={backgroundImage} />
 
-        {/* Action feedback overlays */}
-        <ActionInfo />
-
         {/* HUD (heads-up display) elements */}
         {FLIGHT_TRACE_ENABLED ? (
           <Profiler id="hud" onRender={(id, phase, actualDuration) => traceFlightCommit(id, phase, actualDuration)}>
@@ -150,6 +147,8 @@ const ArenaHud = () => {
   const lane = useCompactLane();
   return (
     <>
+      {/* The hovered order's costs; Frontier's action bar shows them in its own HUD. */}
+      <ActionInfo />
       <TopHeader />
       {lane ? (
         <CompactHud lane={lane} />

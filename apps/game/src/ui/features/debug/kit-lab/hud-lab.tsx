@@ -5,6 +5,7 @@ import { ArmyToken, OpenSlot } from "@/ui/features/frontier/hud/army-token";
 import type { DayClock } from "@/ui/features/frontier/hud/day-clock";
 import { HudBands } from "@/ui/features/frontier/hud/hud-bands";
 import { MenuSheet } from "@/ui/features/frontier/hud/menu-sheet";
+import { OrderBar } from "@/ui/features/frontier/hud/order-bar";
 import { PlaceNav } from "@/ui/features/frontier/hud/place-nav";
 import { StatusStrip, type StoreReading } from "@/ui/features/frontier/hud/status-strip";
 import { useParams } from "react-router-dom";
@@ -72,6 +73,20 @@ const ARMIES: LabArmy[] = [
 ];
 const UNKNOWN_ARMIES: LabArmy[] = [{}, {}, {}];
 
+/** Army 1 (5,000 troops, 90 stamina) explores a new tile, or moves three tiles over known ground. */
+const EXPLORE: LabOrder = {
+  kind: "explore",
+  tiles: 1,
+  stamina: { cost: 30, held: 90, wait: undefined },
+  wheat: { cost: 100, held: 4_410, wait: undefined },
+};
+const MOVE: LabOrder = {
+  kind: "move",
+  tiles: 3,
+  stamina: { cost: 30, held: 90, wait: undefined },
+  wheat: { cost: 300, held: 4_410, wait: undefined },
+};
+
 const STATES = {
   idle: { clock: CLOCK, stores: STORES, armies: ARMIES },
   selected: { clock: CLOCK, stores: STORES, armies: ARMIES, selected: 0 },
@@ -79,9 +94,38 @@ const STATES = {
   offline: { clock: UNKNOWN_CLOCK, stores: UNKNOWN_STORES, armies: UNKNOWN_ARMIES, offline: true },
   menu: { clock: CLOCK, stores: STORES, armies: ARMIES, menu: true },
   empty: { clock: CLOCK, stores: STORES, armies: [] },
+  explore: { clock: CLOCK, stores: STORES, armies: ARMIES, selected: 0, order: EXPLORE },
+  move: { clock: CLOCK, stores: STORES, armies: ARMIES, selected: 0, order: MOVE },
+  "wheat-short": {
+    clock: CLOCK,
+    stores: [
+      store("essence", 18_250),
+      store("labor", 9_640, 18_000),
+      store("wheat", 40, 18_000),
+      store("troops", 1_200, 18_000),
+    ],
+    armies: ARMIES,
+    selected: 0,
+    order: { ...EXPLORE, wheat: { cost: 100, held: 40, wait: 4 * 60 } },
+  },
+  "stamina-short": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    selected: 0,
+    order: { ...EXPLORE, stamina: { cost: 30, held: 10, wait: 40 * 60 } },
+  },
 } as const;
 
+type LabOrder = {
+  kind: "explore" | "move";
+  tiles: number;
+  stamina: { cost: number; held: number | undefined; wait: number | undefined };
+  wheat: { cost: number; held: number | undefined; wait: number | undefined };
+};
+
 type LabState = {
+  order?: LabOrder;
   clock: DayClock;
   stores: readonly StoreReading[];
   armies: readonly LabArmy[];
@@ -96,7 +140,7 @@ const noop = () => undefined;
 
 /**
  * Dev only: the Map HUD's states on the lab fixtures, at /lab/kit/hud/<state> (idle, selected, full, offline, menu,
- * empty). The same components the live HUD draws, fed the handoff's fiction instead of the game's facts.
+ * empty, explore, move, wheat-short, stamina-short): the components the live HUD draws, on the handoff's fiction.
  */
 export const HudLab = () => {
   const { state = "idle" } = useParams();
@@ -113,25 +157,30 @@ export const HudLab = () => {
         foot={
           <>
             {lab.offline && <Notice icon="Of" line={OFFLINE} verb={TRY_AGAIN} onVerb={noop} ember />}
-            {selected && <ArmyStatusBar stamina={selected.stamina} secondsToFull={2 * HOUR} revealYield={500} />}
-            <nav aria-label="Armies" className="pointer-events-auto flex gap-1.5">
-              {lab.armies.map((army, index) => (
-                <ArmyToken
-                  key={index}
-                  label={`Army ${index + 1}`}
-                  art={army.troops === undefined ? undefined : "/images/armies/knightT1.png"}
-                  xp={army.xp}
-                  stamina={army.stamina === undefined ? undefined : { current: army.stamina, max: 150 }}
-                  troops={army.troops}
-                  canBuyTier={army.tier === true}
-                  selected={lab.selected === index}
-                  onPick={noop}
-                />
-              ))}
-              {Array.from({ length: SLOTS - lab.armies.length }, (_, index) => (
-                <OpenSlot key={index} label="Deploy" pulse={index === 0 && lab.armies.length === 0} onDeploy={noop} />
-              ))}
-            </nav>
+            {lab.order && <OrderBar {...lab.order} revealYield={500} xp={2} onCancel={noop} onGo={noop} />}
+            {selected && !lab.order && (
+              <ArmyStatusBar stamina={selected.stamina} secondsToFull={2 * HOUR} revealYield={500} />
+            )}
+            {!lab.order && (
+              <nav aria-label="Armies" className="pointer-events-auto flex gap-1.5">
+                {lab.armies.map((army, index) => (
+                  <ArmyToken
+                    key={index}
+                    label={`Army ${index + 1}`}
+                    art={army.troops === undefined ? undefined : "/images/armies/knightT1.png"}
+                    xp={army.xp}
+                    stamina={army.stamina === undefined ? undefined : { current: army.stamina, max: 150 }}
+                    troops={army.troops}
+                    canBuyTier={army.tier === true}
+                    selected={lab.selected === index}
+                    onPick={noop}
+                  />
+                ))}
+                {Array.from({ length: SLOTS - lab.armies.length }, (_, index) => (
+                  <OpenSlot key={index} label="Deploy" pulse={index === 0 && lab.armies.length === 0} onDeploy={noop} />
+                ))}
+              </nav>
+            )}
             <PlaceNav
               place={lab.menu ? "menu" : "map"}
               onGo={noop}

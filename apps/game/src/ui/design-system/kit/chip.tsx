@@ -2,9 +2,29 @@ import { type IconCode, KitIcon } from "./kit-icon";
 import { formatDuration } from "./time";
 import { FULL_IN } from "./words";
 
-/** An icon (or two, overlapping) and its number on the chip token: the one way the HUD shows an amount of something. */
-export const Chip = ({ icons, value, label }: { icons: IconCode[]; value: string; label: string }) => (
-  <span role="img" aria-label={`${label} ${value}`} className="frontier-chip h-7 shrink-0 !py-0">
+/**
+ * An icon (or two, overlapping) and its number on the chip token: the one way the HUD shows an amount of something. A
+ * unit word follows the number where there is no icon for it (XP); ember marks a cost that is short.
+ */
+export const Chip = ({
+  icons,
+  value,
+  label,
+  unit,
+  ember = false,
+}: {
+  icons: IconCode[];
+  value: string;
+  label: string;
+  unit?: string;
+  ember?: boolean;
+}) => (
+  <span
+    role="img"
+    aria-label={`${label} ${value}`}
+    data-tone={ember ? "loss" : undefined}
+    className="frontier-chip h-7 shrink-0 !py-0"
+  >
     {/* `contents` takes the chip token's fixed-size first child, so two icons keep their own size. */}
     <span className="contents">
       <span className="flex -space-x-1">
@@ -13,6 +33,7 @@ export const Chip = ({ icons, value, label }: { icons: IconCode[]; value: string
         ))}
       </span>
       <span className="frontier-chip-number tabular-nums !text-[15px]">{value}</span>
+      {unit && <span className="text-[13px] font-semibold text-[color:var(--frontier-parchment)]">{unit}</span>}
     </span>
   </span>
 );
