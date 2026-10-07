@@ -113,7 +113,8 @@ export function resolveExplorerTroops(
     staminaMax: base + (progress.logistics - 1) * nativeRuleConstants.ATTRIBUTE_STAMINA,
     boosts: {
       ...explorer.troops.boosts,
-      incr_damage_dealt_percent_num: (progress.battle - 1) * nativeRuleConstants.ATTRIBUTE_DAMAGE_PERCENT,
+      // The rule is a whole percent per level; Combat reads damage boosts in basis points.
+      incr_damage_dealt_percent_num: (progress.battle - 1) * nativeRuleConstants.ATTRIBUTE_DAMAGE_PERCENT * 100,
       incr_damage_dealt_end_tick: 0,
     },
   };

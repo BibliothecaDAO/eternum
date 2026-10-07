@@ -439,6 +439,7 @@ pub enum ArmySlotAction {
 #[derive(Copy, Drop, Serde)]
 pub struct ResolvedArmySlot {
     pub stamina: StaminaSource,
+    // In basis points, the unit of every damage boost; the name predates that and is part of the declared schema.
     pub battle_bonus_percent: u16,
 }
 #[starknet::interface]

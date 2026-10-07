@@ -269,8 +269,65 @@ fn every_relic_quality_persists_its_attribute_amount_and_logistics_updates_the_s
         d.games, || crate::logic::progression::write(key, ArmyProgress { battle: 3, ..crate::progression::initial() }),
     );
     let troops = super::state::GameState { contract_address: d.games }.resolved_explorer(key).unwrap().troops;
-    assert_eq!(troops.boosts.incr_damage_dealt_percent_num, 20);
     assert_eq!(troops.boosts.incr_damage_dealt_end_tick, 0);
+}
+
+/// The damage a slot army resolved at `battle` deals to a fixed defender, as Combat computes it.
+fn damage_at_battle(
+    d: super::Deployment, key: crate::troops::ExplorerKey, battle: u8, rules: crate::rules::SliceRules,
+) -> u128 {
+    snforge_std::interact_with_state(
+        d.games, || crate::logic::progression::write(key, ArmyProgress { battle, ..crate::progression::initial() }),
+    );
+    let attacker = super::state::GameState { contract_address: d.games }.resolved_explorer(key).unwrap().troops;
+    let tick = 360 / rules.tick_config.armies_tick_in_seconds;
+    let stamina: crate::troops::StaminaSource = crate::troops::Stamina { amount: 150, updated_tick: tick }.into();
+    let mut attacker = crate::troops::Troops { count: 1000 * crate::rules::RESOURCE_PRECISION, stamina, ..attacker };
+    let mut defender = crate::troops::Troops {
+        count: 1_000_000 * crate::rules::RESOURCE_PRECISION,
+        battle_cooldown_end: 0,
+        boosts: Default::default(),
+        ..attacker,
+    };
+    let context = crate::combat::CombatContext {
+        timestamp: 360,
+        attacker_roll: 0,
+        defender_roll: 0,
+        attacker_biome: crate::biome::Biome::Grassland,
+        defender_biome: crate::biome::Biome::Grassland,
+        attack_distance: 1,
+        attacker_is_structure_guard: false,
+        defender_is_structure_guard: false,
+    };
+    let (dealt, _, _, _) = crate::combat::TroopsTrait::damage_with_context(
+        ref attacker, ref defender, context, rules.troop_stamina_config, rules.troop_damage_config, tick, 0,
+    );
+    dealt
+}
+
+#[test]
+fn battle_adds_ten_percent_damage_per_level_above_the_first() {
+    let d = super::registrar::setup();
+    let (game_id, preset, category) = super::registrar::expedition_home(d);
+    let (key, _) = super::registrar::expedition_armies(d, game_id, category);
+    let common = damage_at_battle(d, key, 1, preset.rules);
+    let rare = damage_at_battle(d, key, 3, preset.rules);
+    let legendary = damage_at_battle(d, key, 5, preset.rules);
+    assert!(common > 0);
+    // 1.2x and 1.4x, to Combat's rounding of losses to whole troops.
+    let troop = crate::rules::RESOURCE_PRECISION;
+    assert!(
+        rare * 10 >= common * 12 - 10 * troop && rare * 10 <= common * 12 + 10 * troop,
+        "Battle 3 deals {} against {}",
+        rare,
+        common,
+    );
+    assert!(
+        legendary * 10 >= common * 14 - 10 * troop && legendary * 10 <= common * 14 + 10 * troop,
+        "Battle 5 deals {} against {}",
+        legendary,
+        common,
+    );
 }
 
 

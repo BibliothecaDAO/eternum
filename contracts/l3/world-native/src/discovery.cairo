@@ -74,7 +74,7 @@ pub fn frontier(
     rules: crate::expeditions::FrontierDiscoveryRules, scouting: u8, empty_reveals: u8, seed: u256, timestamp: u64,
 ) -> Discovery {
     assert!(scouting >= 1 && scouting <= 5, "invalid Scouting level");
-    let bonus: u128 = Into::<u8, u128>::into(scouting - 1) * 150;
+    let bonus: u128 = Into::<u8, u128>::into(scouting - 1) * crate::rules::ATTRIBUTE_SCOUTING_BPS.into();
     let camp: u128 = rules.camp_bps.into() + bonus;
     let rift: u128 = rules.rift_bps.into() + bonus;
     let fallen: u128 = rules.fallen_realm_bps.into();
