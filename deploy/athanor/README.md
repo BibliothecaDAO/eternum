@@ -25,10 +25,11 @@ beside it under its own per-container limits.
 ## Publishing the shard package
 
 Push a reviewed `shard-v*` tag to build the init, Herald and gateway images and the downloadable Compose package. Tag
-only a commit whose own validation run is green; the workflow refuses any other before building. The release job
-verifies anonymous pulls before publishing its archive. For the first tag, an organization package administrator must
-set `eternum-shard-init`, `eternum-shard-herald` and `eternum-shard-gateway` to public; GitHub creates new container
-packages as private
+only a commit whose own validation run is green; the workflow refuses any other before building. That run compiles no
+world contracts: a change to them passed `contracts/l3/check-native.sh` before it landed, and the init image build
+compiles them again. The release job verifies anonymous pulls before publishing its archive. For the first tag, an
+organization package administrator must set `eternum-shard-init`, `eternum-shard-herald` and `eternum-shard-gateway` to
+public; GitHub creates new container packages as private
 ([registry documentation](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry)).
 After that one-time setting, retry the failed package job; future tags retain the package visibility. Tags publish
 artifacts only and never redeploy a shard.
@@ -58,14 +59,16 @@ pnpm install --frozen-lockfile
 pnpm run build:packages
 bash deploy/athanor/scripts/install-native-tools.sh "$HOME/.local/share/eternum-native-tools"
 source "$HOME/.local/share/eternum-native-tools/env"
-(cd contracts/l3/world-native && scarb build && scarb test)
 python3 scripts/generate-realm-metadata.py --check
-bun contracts/l3/world-native/scripts/generate-schema.mjs --check
+bash contracts/l3/check-native.sh
 ```
 
-The native workspace version file is authoritative. `scarb test` uses Foundry's built-in partitions and concurrency
-limit; filtered `snforge test` remains available for individual rules. Test success alone does not establish native
-execution: declare and execute the generated classes on the selected node image as well.
+The native workspace version file is authoritative. `check-native.sh` is the world contracts' landing gate: the build,
+class sizes, the recorded entrypoint ABI, fact wire declarations, schema and format drift, and the whole suite in
+Foundry's partitions on one thread. GitHub does not run it, and it is heavy (the test-profile build peaked near 18 GB
+locally): run it once, when a pull request that changes `contracts/l3` is ready to land, never while writing it. Test
+success alone does not establish native execution: declare and execute the generated classes on the selected node image
+as well.
 
 ## Isolated node and release
 

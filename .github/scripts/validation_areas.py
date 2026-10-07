@@ -64,7 +64,7 @@ AREAS = {
         "contracts/utils/**"
     ],
     "native": [
-        ".github/workflows/native-world.yml",
+        ".github/workflows/test-native.yml",
         "apps/gateway/**",
         "apps/herald/src/**",
         "apps/launch-service/src/**",
@@ -78,16 +78,6 @@ AREAS = {
         "deploy/release/**",
         "deploy/shard/**",
         "scripts/generate-realm-metadata.py"
-    ],
-    # The native-world contract suite inside the native area: its build, tests and schema generation read
-    # the L3 contracts and Herald's row serialization, never the app, core packages, config or deploy tooling.
-    "native_world": [
-        ".github/workflows/native-world.yml",
-        "contracts/l3/**",
-        "apps/herald/src/model-registry.ts",
-        "apps/herald/src/native/serde.ts",
-        "apps/herald/src/native/schema.ts",
-        "apps/herald/src/types.ts"
     ],
     "runtime": [
         ".github/workflows/test-agent-runtime.yml",
@@ -141,11 +131,6 @@ AREAS = {
     ]
 }
 
-# The TypeScript an area's checks run, when narrower than its paths; otherwise every source file its paths match.
-ENTRIES = {
-    # The world job's only TypeScript; the vector and preset-fixture generators run under the native area.
-    "native_world": ["contracts/l3/world-native/scripts/generate-schema.mjs"],
-}
 # Areas the import check skips, and why.
 UNCHECKED = {
     "terrain": "renderer captures triggered by the renderer and asset sources alone; the client area covers their imports",

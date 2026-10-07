@@ -15,9 +15,6 @@ class CiFileOwnership(unittest.TestCase):
     def test_a_called_workflow_selects_only_its_own_area(self):
         self.assertEqual(areas_run_by(".github/workflows/test-client.yml"), {"client"})
 
-    def test_the_contract_workflow_selects_the_native_area_and_its_world_suite(self):
-        self.assertEqual(areas_run_by(".github/workflows/native-world.yml"), {"native", "native_world"})
-
     def test_a_composite_action_selects_the_areas_whose_workflows_use_it(self):
         self.assertEqual(
             areas_run_by(".github/actions/fetch-cairo-dependencies/action.yml"),

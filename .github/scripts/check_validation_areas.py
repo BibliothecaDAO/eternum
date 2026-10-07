@@ -18,7 +18,7 @@ import subprocess
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from validation_areas import AREAS, ENTRIES, SHARED, STATIC, UNCHECKED, matches, unowned_ci_files
+from validation_areas import AREAS, SHARED, STATIC, UNCHECKED, matches, unowned_ci_files
 
 ROOT = Path(__file__).resolve().parents[2]
 SOURCES = (".ts", ".tsx", ".js", ".mjs", ".cjs")
@@ -76,7 +76,7 @@ def misses(sources):
         if area in UNCHECKED:
             continue
         covered = SHARED + patterns
-        entries = ENTRIES.get(area) or [name for name in sources if matches(name, patterns)]
+        entries = [name for name in sources if matches(name, patterns)]
         found += [(area, reader, path) for reader, path in reachable_reads(entries) if not matches(path, covered)]
     return found
 

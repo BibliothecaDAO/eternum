@@ -182,9 +182,10 @@ When non-Cairo code changes, run these commands before finishing:
 - `pnpm run format`
 - `pnpm run knip`
 
-When Cairo code changes, run:
+When Cairo code changes, do not build or test it while you write: read the code instead. GitHub compiles no world
+contracts, so the build runs once, when the pull request is ready to land:
 
-- `scarb fmt`
+- `bash contracts/l3/check-native.sh` (build, class sizes, ABI, schema and format drift, the whole suite)
 
 If a change touches both non-Cairo and Cairo code, run all relevant commands.
 
