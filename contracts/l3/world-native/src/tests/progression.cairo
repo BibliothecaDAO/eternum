@@ -395,6 +395,7 @@ fn training_starts_only_later_armies_at_their_realms_tiers_and_full_at_their_log
             learned = crate::research::learn(learned, row, 0);
         }
     }
+    let learned = learned;
     snforge_std::interact_with_state(
         d.games, || crate::logic::research::write(home, crate::research::RealmKnowledge { learned }),
     );

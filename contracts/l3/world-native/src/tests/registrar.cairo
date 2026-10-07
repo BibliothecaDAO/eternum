@@ -2401,6 +2401,7 @@ fn a_full_refill_costs_one_lords_a_point_returns_to_the_pool_and_is_allowed_besi
     let mut bar = tired.stamina.inline();
     bar.amount = 40;
     tired.stamina = crate::troops::StaminaSource::Inline(bar);
+    let tired = tired;
     snforge_std::interact_with_state(
         d.games,
         || {
