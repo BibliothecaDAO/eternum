@@ -9,7 +9,7 @@ import { formatDuration } from "./time";
  * Why a verb cannot run, standing where its button would: either what is held against what is needed (and the exact
  * wait when it fills by itself), or the one line naming what failed.
  */
-type Reason =
+export type Reason =
   | { kind: "short"; icon: IconCode; held: number | undefined; need: number; unit?: string; wait?: number }
   | { kind: "failed"; line: string };
 

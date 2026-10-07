@@ -12,7 +12,10 @@ import { SiteClearCard } from "@/ui/features/frontier/sites/site-clear-card";
 import { SiteCardView } from "@/ui/features/frontier/sites/site-card-view";
 import { DayDoneCard } from "@/ui/features/frontier/rollover/day-done-card";
 import { LastHourBubble } from "@/ui/features/frontier/rollover/last-hour";
-import { Direction } from "@bibliothecadao/types";
+import { BuildView } from "@/ui/features/frontier/build/build-view";
+import { BuildingsRow } from "@/ui/features/frontier/realm/buildings-row";
+import { CastleView } from "@/ui/features/frontier/upgrade/castle-view";
+import { BuildingType, Direction } from "@bibliothecadao/types";
 import { PlaceNav } from "@/ui/features/frontier/hud/place-nav";
 import { StatusStrip, type StoreReading } from "@/ui/features/frontier/hud/status-strip";
 import { useParams } from "react-router-dom";
@@ -256,6 +259,11 @@ const STATES = {
     ],
     armies: [],
   },
+  build: { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "build" },
+  "build-early": { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "build-early" },
+  castle: { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "castle" },
+  "castle-short": { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "castle-short" },
+  "realm-full": { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "full" },
 } as const;
 
 type LabOrder = {
@@ -333,7 +341,38 @@ const DAY_DONE = {
   onContinue: () => undefined,
 };
 
+/** A city's build sheet: eight buildings, the War hall and Hearth already standing, a fifth farm at 6,800 labor. */
+const BUILD_TILES: Parameters<typeof BuildView>[0]["tiles"] = [
+  { key: "farm", icon: "Fm", name: "Farm", foot: { kind: "price", labor: 6_800, short: false } },
+  { key: "workshop", icon: "Wk", name: "Workshop", foot: { kind: "price", labor: 10_000, short: true } },
+  { key: "barracks", icon: "Bs", name: "Barracks", foot: { kind: "price", labor: 6_800, short: false } },
+  { key: "hut", icon: "Ht", name: "Hut", foot: { kind: "price", labor: 5_100, short: false } },
+  { key: "war", icon: "Wa", name: "War hall", foot: { kind: "built" } },
+  { key: "supply", icon: "Sy", name: "Supply yard", foot: { kind: "price", labor: 3_000, short: false } },
+  { key: "lodge", icon: "Ld", name: "Scouts' lodge", foot: { kind: "price", labor: 3_000, short: false } },
+  { key: "hearth", icon: "He", name: "Hearth", foot: { kind: "built" } },
+];
+const EARLY_TILES: Parameters<typeof BuildView>[0]["tiles"] = [
+  { key: "farm", icon: "Fm", name: "Farm", foot: { kind: "price", labor: 800, short: false } },
+  { key: "workshop", icon: "Wk", name: "Workshop", foot: { kind: "price", labor: 2_000, short: false } },
+  { key: "barracks", icon: "Bs", name: "Barracks", foot: { kind: "price", labor: 800, short: false } },
+  { key: "hut", icon: "Ht", name: "Hut", foot: { kind: "price", labor: 300, short: false } },
+  { key: "war", icon: "Wa", name: "War hall", foot: { kind: "locked", gate: 3 } },
+  { key: "supply", icon: "Sy", name: "Supply yard", foot: { kind: "locked", gate: 3 } },
+  { key: "lodge", icon: "Ld", name: "Scouts' lodge", foot: { kind: "locked", gate: 3 } },
+  { key: "hearth", icon: "He", name: "Hearth", foot: { kind: "locked", gate: 3 } },
+];
+const CASTLE_SIDE = (level: number, limit: number) => ({
+  level,
+  art: `/images/buildings/construction/${["castleZero", "castleOne", "castleTwo", "castleThree"][level]}.png`,
+  plots: [6, 18, 36, 60][level],
+  slots: [3, 4, 5, 6][level],
+  limit,
+  deployCap: [3_000, 9_000, 25_000, 50_000][level],
+});
+
 type LabState = {
+  realmView?: "build" | "build-early" | "castle" | "castle-short" | "full";
   dayDone?: Parameters<typeof DayDoneCard>[0];
   lastHour?: boolean;
   order?: LabOrder;
@@ -377,6 +416,17 @@ export const HudLab = () => {
         foot={
           <>
             {lab.offline && <Notice icon="Of" line={OFFLINE} verb={TRY_AGAIN} onVerb={noop} ember />}
+            {lab.realmView === "full" && (
+              <BuildingsRow
+                counts={{
+                  [BuildingType.ResourceWheat]: 18,
+                  [BuildingType.ResourceKnightT1]: 18,
+                  [BuildingType.ResourceLabor]: 8,
+                  [BuildingType.WorkersHut]: 8,
+                }}
+                onOpen={noop}
+              />
+            )}
             {lab.clear && <SiteClearCard {...lab.clear} />}
             {lab.order && <OrderBar {...lab.order} revealYield={500} xp={2} onCancel={noop} onGo={noop} />}
             {selected && !lab.order && (
@@ -403,7 +453,7 @@ export const HudLab = () => {
               </nav>
             )}
             <PlaceNav
-              place={lab.menu ? "menu" : "map"}
+              place={lab.menu ? "menu" : lab.realmView ? "realm" : "map"}
               onGo={noop}
               realmDot={lab.realmDot}
               researchDot={!lab.offline}
@@ -414,6 +464,47 @@ export const HudLab = () => {
       >
         {lab.deploy && <LabDeploySheet deploy={lab.deploy} />}
         {lab.dayDone && <DayDoneCard {...lab.dayDone} />}
+        {(lab.realmView === "build" || lab.realmView === "build-early") && (
+          <BuildView
+            tiles={lab.realmView === "build" ? BUILD_TILES : EARLY_TILES}
+            chosen={lab.realmView === "build" ? 0 : 2}
+            onChoose={noop}
+            gains={
+              lab.realmView === "build"
+                ? [
+                    { icon: "Wh", value: "+375/h", label: "produces" },
+                    { icon: "Pp", value: "1", label: "population" },
+                    { icon: "Hx", value: "×2", label: "marked plot" },
+                  ]
+                : [
+                    { icon: "Tr", value: "+100/h", label: "produces" },
+                    { icon: "Pp", value: "3", label: "population" },
+                  ]
+            }
+            prices={[{ of: "labor", amount: lab.realmView === "build" ? 6_800 : 800 }]}
+            short={undefined}
+            sending={false}
+            onBuild={noop}
+            onMap={noop}
+            onClose={noop}
+          />
+        )}
+        {(lab.realmView === "castle" || lab.realmView === "castle-short") && (
+          <CastleView
+            now={CASTLE_SIDE(1, 18_000)}
+            next={CASTLE_SIDE(2, 50_000)}
+            prices={[{ of: "labor", amount: 15_000 }]}
+            short={
+              lab.realmView === "castle-short"
+                ? { kind: "short", icon: "La", held: 9_640, need: 15_000, wait: 10 * HOUR + 44 * 60 }
+                : undefined
+            }
+            sending={false}
+            onUpgrade={noop}
+            onMap={noop}
+            onClose={noop}
+          />
+        )}
         {lab.site && <SiteCardView {...lab.site} onRealm={noop} onClose={noop} />}
         {lab.chest && <RuinChestMoment {...lab.chest} />}
         {lab.menu && (

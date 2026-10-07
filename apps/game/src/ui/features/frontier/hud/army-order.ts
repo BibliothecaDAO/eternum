@@ -143,3 +143,16 @@ export const secondsUntilHeld = (
   if (held === undefined || held >= need || !perHour || perHour <= 0) return undefined;
   return ((need - held) / perHour) * 3_600;
 };
+
+/** What the realm makes of a resource an hour at the rates running now; undefined where it holds none of it. */
+export const realmPerHour = (
+  store: Parameters<typeof getBalance>[3],
+  realmId: number,
+  resourceId: ResourcesIds,
+  tick: number,
+): number | undefined => {
+  const resource = new ResourceManager(store, realmId).current(resourceId);
+  return (
+    resource && ResourceManager.calculateResourceProductionData(resourceId, resource, tick).productionPerSecond * 3_600
+  );
+};

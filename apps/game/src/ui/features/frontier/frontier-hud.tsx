@@ -38,6 +38,7 @@ import { SiteClearCardView } from "./sites/site-clear-card";
 import { useFrontierType } from "./use-frontier-type";
 import { dayClock } from "./hud/day-clock";
 import { DayDone } from "./rollover/day-done";
+import { RealmBuildingsRow } from "./realm/buildings-row";
 import { LastHourBubble } from "./rollover/last-hour";
 import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 
@@ -124,6 +125,7 @@ const Foot = ({ realm }: { realm: NativeRows["Structure"] }) => {
   if (order && selected) return <PendingOrder order={order} army={selected} />;
   return (
     <>
+      <RealmBuildingsRow realm={realm} />
       {selected && <SelectedArmyBar army={selected} />}
       <ArmyDock realm={realm} armies={armies} />
     </>

@@ -10,9 +10,8 @@ import { BuildingType, getProducedResource, RESOURCE_PRECISION, ResourcesIds } f
  */
 const FRONTIER_BUILDINGS = [
   BuildingType.ResourceWheat,
-  BuildingType.ResourceKnightT1,
   BuildingType.ResourceLabor,
-  BuildingType.Storehouse,
+  BuildingType.ResourceKnightT1,
   BuildingType.WorkersHut,
 ] as const;
 

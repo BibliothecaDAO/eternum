@@ -20,7 +20,7 @@ import {
 import { useMemo } from "react";
 import type { Account } from "starknet";
 import { readBuildingEffect } from "../build/build-options";
-import { FRONTIER_BUILDING_NAMES } from "../build/building-names";
+import { buildingName } from "../build/building-names";
 import { effectGain } from "../build/effect-gain";
 import type { UpgradePlan, UpgradeStep } from "./upgrade-plan";
 import { UpgradeSheet } from "./upgrade-sheet";
@@ -115,7 +115,7 @@ export const readBuildingUpgradePlan = (
     : 0;
   const held = knownBalance(getBalance(realm.entity_id, ResourcesIds.Labor, tick, store).balance);
   return {
-    name: FRONTIER_BUILDING_NAMES[category] ?? "",
+    name: buildingName(category),
     doubled: multiplier === 2,
     population: store.require("BuildingRule", { game_id: realm.game_id, category }).population_cost,
     now: step(tier),

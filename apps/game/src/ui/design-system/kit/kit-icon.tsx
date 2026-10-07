@@ -29,6 +29,14 @@ const ICONS = {
   Rs: "/image-icons/ui-flask.png",
   Ct: "/image-icons/ui-message.png",
   Mn: "/image-icons/ui-menu.png",
+  Fm: "/images/buildings/construction/farm.png",
+  Wk: "/images/buildings/construction/castleZero.png",
+  Bs: "/images/buildings/construction/barracks.png",
+  Ht: "/images/buildings/construction/workers_hut.png",
+  Hx: "/image-icons/ui-hexagon.png",
+  Pp: "/image-icons/ui-person.png",
+  Ok: "/image-icons/ui-check.png",
+  Lk: "/image-icons/ui-lock.png",
   Tp: "/image-icons/trophy.png",
   Hm: "/image-icons/leave.png",
   // The four Aspect marks wait for the art pass; the attribute glyphs stand in (Homecoming wears Support's).
@@ -36,6 +44,14 @@ const ICONS = {
   Lg: "/images/frontier/attributes/logistics.svg",
   Sc: "/images/frontier/attributes/scouting.svg",
   Su: "/images/frontier/attributes/support.svg",
+  // The four training buildings wait for their art; the attribute each trains stands in.
+  Wa: "/images/frontier/attributes/battle.svg",
+  Sy: "/images/frontier/attributes/logistics.svg",
+  Ld: "/images/frontier/attributes/scouting.svg",
+  He: "/images/frontier/attributes/support.svg",
+  // Army slots and a store's limit wait for their new icons; these stand in.
+  Sl: "/image-icons/ui-people.png",
+  Sg: "/image-icons/ui-gauge.png",
   // The kit's clock and the guide's mark wait for the art pass; these stand in.
   Cl: "/image-icons/ui-calendar.png",
   Gd: "/image-icons/question.png",

@@ -70,6 +70,18 @@ export const USING = "Using…";
 /** Making something you own better: the castle a level, a building type a tier, an army an attribute tier. */
 export const UPGRADE = "Upgrade";
 
+/** The realm: its castle and levels, its buildings, and the row that counts a full realm's common buildings. */
+export const CASTLE = "Castle";
+export const REALM_LEVELS = ["Settlement", "City", "Kingdom", "Empire"] as const;
+export const FARM = "Farm";
+export const WORKSHOP = "Workshop";
+export const BARRACKS = "Barracks";
+export const HUT = "Hut";
+export const TRAINING_BUILDINGS = ["War hall", "Supply yard", "Scouts' lodge", "Hearth"] as const;
+export const BUILDINGS = "Buildings";
+export const BUILDING = "Building…";
+export const UPGRADING = "Upgrading…";
+
 /** Raise an army from troops at home. */
 export const DEPLOY = "Deploy";
 export const DEPLOYING = "Deploying…";
