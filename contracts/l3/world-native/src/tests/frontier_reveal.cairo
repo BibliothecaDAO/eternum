@@ -1,4 +1,5 @@
-use crate::expeditions::{ExpeditionSite, RIFT_CATEGORY, RUIN_CATEGORY, STRAGGLERS_CATEGORY, site_reward};
+use crate::expeditions::{ExpeditionSite, site_reward};
+use crate::taxonomy::{RIFT_CATEGORY, RUIN_CATEGORY, STRAGGLERS_CATEGORY};
 use crate::exploration_rewards::reveal_reward;
 use crate::resources::{ESSENCE, LABOR};
 use crate::rules::RESOURCE_PRECISION;
