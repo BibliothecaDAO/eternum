@@ -54,17 +54,6 @@ export type TierBoughtSystemUpdate = {
   tier: number;
   price: number;
 };
-/** A Frontier chest opened on capture: what the army found and how deep it stood. */
-export type ChestRewardSystemUpdate = {
-  resultKey: readonly [gameId: string, order: string, index: string];
-  explorerId: ID;
-  kind: NativeRows["ChestReward"]["kind"];
-  lordsExhausted: boolean;
-  quality: number;
-  depth: number;
-  timestamp: number;
-};
-
 /** A relic crate opened by an explorer: the contract hex it stood on and the relics it yielded. */
 export type RelicChestOpenedSystemUpdate = {
   explorerId: ID;

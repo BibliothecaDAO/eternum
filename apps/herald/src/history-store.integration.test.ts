@@ -207,16 +207,14 @@ describe("Frontier confirmed season history", () => {
       const { native, fold } = setup();
       const layout = nativeSchema.games.events.find((e) => e.name === "StoryEvent")!;
       const stories = [0, 1, 2, 3].map(
-        (quality) =>
+        (index) =>
           new CairoCustomEnum({
-            ChestReward: {
-              player: 10,
+            SitePayout: {
+              structure_id: 1,
               explorer_id: 7,
-              epoch: 100,
-              depth: 0,
-              kind: new CairoCustomEnum({ Token: {} }),
-              quality,
-              lords_exhausted: false,
+              site_id: 20 + index,
+              category: 10,
+              reward: new CairoOption(CairoOptionVariant.Some, { resource_type: 37, amount: 2_000_000_000_000n }),
             },
           }),
       );
@@ -269,14 +267,13 @@ describe("Frontier confirmed season history", () => {
       expect(history).toHaveLength(5);
       const values: Record<string, Record<string, unknown>> = {
         GameRegistry: {},
-        ChestRules: { lords_amounts: { common: 100, uncommon: 400, rare: 1500, epic: 6000 } },
         Structure: { entity_id: 1, owner: 10, base: { category: 1 }, metadata: { deepest_depth: 2, order: 5 } },
       };
       const read = (model: string) => [{ key: "1", value: { game_id: "1", ...values[model] } }];
       const board = buildFrontierLeaderboard(read, "1", history);
       expect(board.entries[0]).toMatchObject({
         chests_earned: 4,
-        sites_cleared: { total: 1, camps: 1 },
+        sites_cleared: { total: 5, camps: 1, ruins: 4 },
         rewards: { lords: "8000", labor: "500000000000", essence: "0" },
       });
       await store.close();

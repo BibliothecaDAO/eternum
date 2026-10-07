@@ -310,15 +310,6 @@ const RelicReveal = ({
   const { outcome, relic } = result;
   return (
     <>
-      {outcome.lordsSpent && (
-        <Pop>
-          <Chip
-            label="Today's LORDS are spent; more when the day ends"
-            icon={<img src={TOKEN_ICON} alt="" className="opacity-60 grayscale" />}
-            value="00:00"
-          />
-        </Pop>
-      )}
       <Pop className="w-full">
         <RarityCard intensity={outcome.intensity}>
           <h2 className="frontier-title text-center">{relic.name}</h2>

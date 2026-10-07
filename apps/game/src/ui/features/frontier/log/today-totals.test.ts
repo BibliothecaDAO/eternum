@@ -20,14 +20,17 @@ describe("the player's day in totals", () => {
         reward: { Some: { resource_type: ResourcesIds.Labor, amount: whole(550) } },
       }),
       story("SitePayout", { category: 11, reward: null }),
-      story("ChestReward", { kind: "Relic", quality: 1 }),
+      story("SitePayout", {
+        category: 10,
+        reward: { Some: { resource_type: ResourcesIds.Lords, amount: whole(200) } },
+      }),
       // Another player's reveal, and one of yesterday's, count for nothing today.
       story("ExplorationReward", { resource_type: ResourcesIds.Essence, amount: whole(900) }, "0x222"),
       story("ExplorationReward", { resource_type: ResourcesIds.Essence, amount: whole(900) }, "0x111", 500),
     ];
     expect(totalToday(stories, "0x0111", { startMs: 1_000, endMs: 9_000 })).toEqual({
       reveals: 2,
-      sitesCleared: 2,
+      sitesCleared: 3,
       chests: 1,
       essence: 150,
       labor: 699,

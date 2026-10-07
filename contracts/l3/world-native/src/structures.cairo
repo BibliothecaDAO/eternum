@@ -142,7 +142,7 @@ pub(crate) fn discovered_structure(
         Discovery::Rift => (
             crate::taxonomy::RIFT_CATEGORY, crate::taxonomy::RIFT_OCCUPIER, 0, capacities.camp_capacity,
         ),
-        Discovery::Ruin => (
+        Discovery::Ruin(_) => (
             crate::taxonomy::RUIN_CATEGORY, crate::taxonomy::RUIN_OCCUPIER, 0, capacities.camp_capacity,
         ),
         Discovery::Stragglers => (

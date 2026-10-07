@@ -284,15 +284,14 @@ describe("home ring", () => {
     }
   });
 
-  it("scopes slot and chest rows by the season day", () => {
+  it("scopes slot and discovery rows by the season day", () => {
     const { fold } = frontierWorld();
     const scope = fold.subscriptionScope("1", "0xa", MID_DAY);
     expect(scope.expedition?.day).toBe(0);
     expect(scope.expedition?.regions).toEqual(new Set(["0:0"]));
     for (const [model, key] of [
       ["ArmySlot", { structure_id: "1", slot: "0" }],
-      ["ChestTokens", { player: "10" }],
-      ["ChestReward", { player: "10", explorer_id: "11", index: "0" }],
+      ["ExpeditionDiscovery", { structure_id: "1" }],
     ] as const) {
       expect(rowInGameSyncScope(model, { ...key, epoch: "0" }, scope)).toBe(true);
       expect(rowInGameSyncScope(model, { ...key, epoch: "1" }, scope)).toBe(false);
@@ -662,20 +661,6 @@ describe("client and Herald subscription scope parity", () => {
     timestamp = TODAY.end + 60;
     deliver(subscription!.project({ type: "head", block: 12, preconfirmed: true, timestamp }));
     expect(store.subscriptionScope().known).toEqual(overlay.subscriptionScope("1", actor, timestamp));
-    expect(
-      store.requireOrAbsent("ChestTokens", {
-        game_id: 1,
-        player: 0xbn,
-        epoch: BigInt(TODAY.index),
-      }).unknown,
-    ).toContain("OUTSIDE_SNAPSHOT_SCOPE");
-    expect(
-      store.requireOrAbsent("ChestTokens", {
-        game_id: 1,
-        player: 0xbn,
-        epoch: BigInt(dayOf(CALENDAR, timestamp)!.index),
-      }).known?.count,
-    ).toBe(0);
     expect(guardReads.some((read) => (read as { unknown?: string }).unknown === "UNKNOWN_SCOPE_CLOCK")).toBe(true);
   });
 });

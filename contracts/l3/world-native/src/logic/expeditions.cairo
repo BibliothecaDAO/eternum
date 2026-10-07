@@ -63,6 +63,13 @@ pub fn discovery(key: ExpeditionDiscoveryKey) -> Option<ExpeditionDiscovery> {
         .map(|empty_reveals| ExpeditionDiscovery { empty_reveals, ruin_found: state.map_rules.ruin_found.read(storage_key) })
 }
 
+fn is_ruin(discovery: crate::discovery::Discovery) -> bool {
+    match discovery {
+        crate::discovery::Discovery::Ruin(_) => true,
+        _ => false,
+    }
+}
+
 pub fn record_discovery(key: ExpeditionDiscoveryKey, result: crate::discovery::Discovery) {
     let previous = discovery(key).unwrap_or(ExpeditionDiscovery { empty_reveals: 0, ruin_found: false });
     let next = ExpeditionDiscovery {
@@ -71,7 +78,7 @@ pub fn record_discovery(key: ExpeditionDiscoveryKey, result: crate::discovery::D
         } else {
             0
         },
-        ruin_found: previous.ruin_found || result == crate::discovery::Discovery::Ruin,
+        ruin_found: previous.ruin_found || is_ruin(result),
     };
     let storage_key = (key.game_id, key.structure_id, key.epoch);
     let state = crate::state::write();

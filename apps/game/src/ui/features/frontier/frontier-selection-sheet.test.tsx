@@ -84,7 +84,7 @@ it("offers depth entry from Frontier for an own army at the computed spire", asy
         site_guard_lower: 1,
         site_guard_upper: 2,
         reveal_site_neighbors: false,
-        chest: { common: 1, uncommon: 0, rare: 0, pity: 0 },
+        chest: { common: 10000, uncommon: 0, rare: 0, epic: 0, legendary: 0 },
         ruin_guard_lower: 1,
         ruin_guard_upper: 2,
         guard_step: 1,

@@ -86,15 +86,6 @@ pub mod MapState {
         write_occupancy(key, Some(TileOccupancy { entity_id, category, is_structure }));
     }
 
-    pub fn close_site_chest(key: TileKey, site_id: u32) {
-        let previous = crate::logic::map::occupancy(key).expect('missing ruin');
-        assert!(previous.entity_id == site_id && previous.is_structure, "ruin occupancy mismatch");
-        write_occupancy(
-            key,
-            Some(TileOccupancy { entity_id: site_id, category: crate::taxonomy::CHEST_OCCUPIER, is_structure: false }),
-        );
-    }
-
     pub fn reserve_hyperstructure(key: TileKey) {
         crate::logic::map::tile(key).expect('unrevealed reservation');
         assert!(crate::logic::map::occupancy(key).is_none(), "occupied reservation tile");
@@ -390,9 +381,22 @@ pub mod MapLogic {
             };
             let day = crate::logic::expeditions::discovery(counter)
                 .unwrap_or(crate::expeditions::ExpeditionDiscovery { empty_reveals: 0, ruin_found: false });
+            // The ruin's chest is fixed before the draw: no chest that fits, no ruin, and the day stays free.
+            let ruin = if day.ruin_found {
+                None
+            } else {
+                let odds = crate::logic::expeditions::depth_rules_at(
+                    key.game_id, Coord { alt: key.alt, x: key.col, y: key.row },
+                )
+                    .chest;
+                crate::logic::lords_budget::offer(key.game_id, odds, seed, context)
+            };
             let result = crate::discovery::frontier(
-                rules, progress.scouting, day.empty_reveals, !day.ruin_found, seed, context.timestamp,
+                rules, progress.scouting, day.empty_reveals, ruin, seed, context.timestamp,
             );
+            if let crate::discovery::Discovery::Ruin(chest) = result {
+                crate::logic::lords_budget::reserve(key.game_id, chest, context);
+            }
             crate::logic::expeditions::record_discovery(counter, result);
             if let Some(category) = crate::discovery::tile_occupier(result) {
                 crate::logic::map::MapState::occupy(
@@ -528,18 +532,8 @@ pub mod MapLogic {
             game_context: crate::commands::ActionContext,
         ) {
             let game_context = crate::commands::load_context(game_id, game_context);
-
-            let classes = self.release.classes(game_id);
-
             let rules = game_context.rules.unbox();
             if !crate::rules::rule_enabled(rules, crate::rules::DISCOVER_CHESTS) || coord.alt {
-                return;
-            }
-            if rules.day_unit_seconds != 0
-                && crate::relics::IRelicsDispatcherTrait::chest_rules(
-                    crate::relics::IRelicsLibraryDispatcher { class_hash: classes.relics.read() }, game_id,
-                )
-                    .is_some() {
                 return;
             }
             if self.data.map_rules.last_relic_discovery.read(game_id)
@@ -578,13 +572,6 @@ pub mod MapLogic {
                         values: array![timestamp.into()].span(),
                     },
                 );
-        }
-        fn close_site_chest(ref self: ContractState, site: crate::resources::ResourceKey) {
-            let status = crate::logic::expeditions::expedition_site(site).expect('missing expedition site');
-            let category = crate::logic::structures::structure(site).expect('missing ruin').base.category;
-            assert!(status.cleared && category == crate::taxonomy::RUIN_CATEGORY, "ruin not cleared");
-            let coord = crate::structures::structure_coord(site);
-            crate::logic::map::MapState::close_site_chest(tile_key(site.game_id, coord), site.entity_id);
         }
         fn consume_relic_chest(ref self: ContractState, game_id: u32, coord: Coord) {
             let key = tile_key(game_id, coord);

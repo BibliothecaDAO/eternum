@@ -204,12 +204,12 @@ export interface FrontierEvidence {
   /** The mean day of a bag (20 units over 5 days), the length the summaries count days in. */
   meanDaySeconds: number;
   timeScale: number;
-  tokenCap: number;
   players: Array<
     Omit<Player, "identity" | "siteExchanges" | "nextActionAt"> & {
       botId: number;
       owner: string;
-      chests: Array<{ epoch: number; depth: number; kind: string; quality: number }>;
+      /** Each ruin the player cleared: its day and the whole LORDS its stored chest paid. */
+      chests: Array<{ epoch: number; lords: number }>;
     }
   >;
 }
@@ -434,23 +434,26 @@ async function frontierResult(
     rules?: FrontierRuleEvidence;
   },
 ): Promise<WorkloadResult> {
-  const { client, game, provider } = options;
+  const { client, provider } = options;
   const { players, actions, dayUnitSeconds } = run;
   await attachAcceptedBlocks(provider, actions);
-  const chests = await readChestHistory(client, Math.max(0, ...actions.map((action) => action.acceptedOnL2Block ?? 0)));
+  const chests = await readRuinChestHistory(
+    client,
+    Math.max(0, ...actions.map((action) => action.acceptedOnL2Block ?? 0)),
+    epochSeconds,
+  );
   const evidence: FrontierEvidence = {
     ...(options.burst ? { burst: options.burst } : {}),
     ...(run.rules ? { rules: run.rules } : {}),
     meanDaySeconds: (DAY_UNITS_PER_BAG / DAYS_PER_BAG) * dayUnitSeconds,
     timeScale: DESIGN_DAY_UNIT_SECONDS / dayUnitSeconds,
-    tokenCap: client.setup.store.require("ChestRules", { game_id: game.gameId }).token_cap,
     players: players.map(({ identity, siteExchanges: _exchanges, nextActionAt: _next, ...player }) => ({
       ...player,
       botId: identity.botId,
       owner: identity.owner,
       chests: chests
         .filter((row) => row.player === BigInt(identity.address))
-        .map((row) => ({ epoch: Number(row.epoch), depth: row.depth, kind: row.kind, quality: row.quality })),
+        .map(({ epoch, lords }) => ({ epoch, lords })),
     })),
   };
   return {
@@ -466,36 +469,33 @@ async function frontierResult(
   };
 }
 
-async function readChestHistory(client: GameClient, confirmedBlock: number) {
-  const rewards: Array<{ player: bigint; epoch: number; depth: number; kind: string; quality: number }> = [];
+/** A ruin's chest pays at its clear, as the LORDS reward of the ruin's SitePayout story. */
+async function readRuinChestHistory(client: GameClient, confirmedBlock: number, epochSeconds: number) {
+  const chests: Array<{ player: bigint; epoch: number; lords: number }> = [];
   for (let offset = 0; ; ) {
     const page = await fetchHeraldGameHistory(client.shard, client.gameId, {
       model: "StoryEvent",
-      story: "ChestReward",
+      story: "SitePayout",
       limit: 500,
       offset,
     });
     if (page.complete_through_block === null || page.complete_through_block < confirmedBlock)
-      throw new Error("Chest history has not reached the final confirmed action");
+      throw new Error("Site history has not reached the final confirmed action");
     for (const event of page.items) {
-      const row = (event.value.story as Record<string, Record<string, string>>).ChestReward;
-      const reward = {
-        player: BigInt(row.player),
-        epoch: Number(row.epoch),
-        depth: Number(row.depth),
-        kind: row.kind,
-        quality: Number(row.quality),
-      };
-      if (
-        ![reward.epoch, reward.depth, reward.quality].every(Number.isSafeInteger) ||
-        !["Relic", "Token"].includes(reward.kind)
-      )
-        throw new Error("Malformed chest reward history");
-      rewards.push(reward);
+      const payout = (event.value.story as Record<string, Record<string, unknown>>).SitePayout;
+      if (Number(payout.category) !== StructureType.Ruin) continue;
+      const reward = payout.reward as { resource_type: string; amount: string } | null;
+      if (!reward || Number(reward.resource_type) !== ResourcesIds.Lords)
+        throw new Error("A ruin cleared without its chest");
+      chests.push({
+        player: BigInt(String(event.value.owner)),
+        epoch: Math.floor(Number(event.value.timestamp) / epochSeconds),
+        lords: Number(BigInt(reward.amount) / precision),
+      });
     }
     offset += page.items.length;
-    if (offset >= page.total) return rewards;
-    if (page.items.length === 0) throw new Error("Chest history ended before its declared total");
+    if (offset >= page.total) return chests;
+    if (page.items.length === 0) throw new Error("Site history ended before its declared total");
   }
 }
 
@@ -1099,13 +1099,6 @@ export function summarizeFrontierDesign(evidence: FrontierEvidence) {
     const attackStamina = days.reduce((sum, day) => sum + day.attackStamina, 0);
     const otherStamina = days.reduce((sum, day) => sum + day.otherStamina, 0);
     const chests = players.flatMap((player) => player.chests);
-    const deepDays = players.reduce(
-      (total, player) =>
-        total +
-        player.days.filter((day) => player.chests.some((chest) => chest.epoch === day.epoch && chest.depth === 3))
-          .length,
-      0,
-    );
     return {
       profile,
       players: players.length,
@@ -1164,16 +1157,10 @@ export function summarizeFrontierDesign(evidence: FrontierEvidence) {
         opened: chests.length,
         value: playerDays ? (chests.length * 7) / playerDays : null,
       },
-      deepestEpics: {
-        target: "~1 per week",
-        opened: chests.filter((chest) => chest.depth === 3 && chest.quality === 3).length,
-        daysWithDeepChests: deepDays,
-        note: "No weekly estimate without a week of deepest-ground exposure",
-      },
-      tokenResults: {
-        target: "preset daily cap; value set by budget",
-        recorded: chests.filter((chest) => chest.kind === "Token").length,
-        note: "Claims recorded only; no token fulfilment",
+      ruinChestLords: {
+        target: "at most the day price ceiling per share",
+        paid: chests.reduce((sum, chest) => sum + chest.lords, 0),
+        note: "Paid into the realm at each ruin's clear; withdrawal is not exercised",
       },
     };
   });

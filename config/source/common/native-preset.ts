@@ -1,5 +1,14 @@
 import type { GameType } from "./types";
 
+/** Five chest tiers, common to legendary: a depth's odds in basis points, or the shares each tier pays. */
+export interface ChestTiers {
+  common: number;
+  uncommon: number;
+  rare: number;
+  epic: number;
+  legendary: number;
+}
+
 export interface NativePreset {
   id: number;
   /**
@@ -71,10 +80,12 @@ export interface NativePreset {
     legendaryXp: number;
   };
   chests: null | {
-    relicProbability: number;
-    tokenCap: number;
-    lordsAmounts: { common: number; uncommon: number; rare: number; epic: number };
-    lordsPool: number;
+    pool: number;
+    priceCeiling: number;
+    shares: ChestTiers;
+    surgeFactor: number;
+    surgeMinimumShares: number;
+    estimateDays: number;
   };
   depths: Array<{
     revealPercent: number;
@@ -85,6 +96,6 @@ export interface NativePreset {
     guardStep: number;
     revealSiteNeighbors: boolean;
     entryStamina: number;
-    chest: { common: number; uncommon: number; rare: number; pity: number };
+    chest: ChestTiers;
   }>;
 }

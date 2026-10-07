@@ -36,28 +36,13 @@ pub mod RelicState {
         +Drop<TContractState>,
     > of crate::relics::IRelics<ComponentState<TContractState>> {
         fn lords_budget(self: @ComponentState<TContractState>, game_id: u32) -> Option<crate::relics::LordsBudget> {
-            self
-                .data
-                .relics
-                .lords_committed
-                .read(game_id)
-                .map(|lords_committed| crate::relics::LordsBudget { lords_committed })
+            crate::logic::lords_budget::budget(game_id)
         }
         fn chest_rules(self: @ComponentState<TContractState>, game_id: u32) -> Option<crate::relics::ChestRules> {
             crate::logic::preset_record::for_game(game_id).chest_rules.read()
         }
-        fn chest_pity(self: @ComponentState<TContractState>, game_id: u32, player: ContractAddress, depth: u8) -> u16 {
-            self.data.relics.chest_pity.read((game_id, player, depth))
-        }
-        fn chest_tokens(
-            self: @ComponentState<TContractState>, game_id: u32, player: ContractAddress, epoch: u64,
-        ) -> u16 {
-            self.data.relics.chest_tokens.read((game_id, player, epoch))
-        }
-        fn chest_reward(
-            self: @ComponentState<TContractState>, game_id: u32, order: u64, index: u32,
-        ) -> Option<crate::relics::ChestReward> {
-            self.data.relics.chest_rewards.read((game_id, order, index))
+        fn site_chest(self: @ComponentState<TContractState>, key: ResourceKey) -> Option<crate::relics::SiteChest> {
+            crate::logic::lords_budget::site_chest(key)
         }
         fn relic_rules(self: @ComponentState<TContractState>, game_id: u32) -> Span<RelicRule> {
             if self.chest_rules(game_id).is_some() {
@@ -86,11 +71,6 @@ pub mod RelicState {
                 ExplorerKey { game_id, explorer_id: command.explorer_id }, actor, context.timestamp, context,
             );
             assert!(explorer.troops.count != 0, "explorer is dead");
-            if context.rules.unbox().day_unit_seconds != 0 {
-                crate::expeditions::assert_same_region(
-                    explorer.coord, command.coord, crate::logic::settlement::rules(game_id).spacing,
-                );
-            }
             assert!(crate::geometry::adjacent(explorer.coord, command.coord), "explorer is not adjacent to chest");
             IRelicMapLibraryDispatcher { class_hash: classes.map.read() }.consume_relic_chest(game_id, command.coord);
             self.pay_chest(game_id, actor, command, context, ref story_cursor);
@@ -228,6 +208,88 @@ pub mod RelicState {
             } else {
                 self.refill_stamina(key, explorer, crate::rules::WELL_STAMINA, context);
             }
+            ((), story_cursor)
+        }
+    }
+
+    #[embeddable_as(LordsImpl)]
+    pub impl Lords<
+        TContractState,
+        +HasComponent<TContractState>,
+        impl Life: ReleaseState::HasComponent<TContractState>,
+        +Drop<TContractState>,
+    > of crate::relics::ILords<ComponentState<TContractState>> {
+        // A full refill at 1 LORDS per missing stamina point, paid from the realm's LORDS back into the season pool.
+        // It is always allowed, including while the day's ruin stands.
+        fn refill_stamina(
+            ref self: ComponentState<TContractState>,
+            game_id: u32,
+            actor: ContractAddress,
+            command: crate::relics::RefillStamina,
+            context: crate::commands::ActionContext,
+            story_cursor: crate::ownership::StoryCursor,
+        ) -> ((), crate::ownership::StoryCursor) {
+            let context = crate::commands::load_context(game_id, context);
+            self.assert_command(game_id, context.timestamp, context);
+            let key = ExplorerKey { game_id, explorer_id: command.explorer_id };
+            let explorer = crate::logic::troops::authorized_explorer(key, actor, context.timestamp, context);
+            assert!(explorer.troops.count != 0, "explorer is dead");
+            let maximum = crate::progression::stamina_max(
+                crate::logic::progression::require(key),
+                explorer.troops.category,
+                context.rules.unbox().troop_stamina_config,
+            );
+            let mut stamina = explorer.troops.stamina.inline();
+            assert!(stamina.amount < maximum, "stamina is already full");
+            let missing: u128 = (maximum - stamina.amount).into();
+            self
+                .resources(game_id)
+                .spend_resource(
+                    ResourceKey { game_id, entity_id: explorer.owner },
+                    crate::resources::LORDS,
+                    missing * crate::rules::RESOURCE_PRECISION,
+                    context.timestamp,
+                    crate::commands::resource_context(context),
+                );
+            crate::logic::lords_budget::return_to_pool(game_id, missing, context);
+            stamina.amount = maximum;
+            crate::troops::IArmySlotStaminaDispatcherTrait::army_slot_stamina(
+                crate::troops::IArmySlotStaminaLibraryDispatcher {
+                    class_hash: self.logic_classes(game_id).relics.read(),
+                },
+                key,
+                crate::troops::ArmySlotAction::Persist(crate::troops::StaminaSource::Inline(stamina)),
+            );
+            ((), story_cursor)
+        }
+
+        // Whole LORDS leave the realm and are recorded for fulfilment on L2.
+        fn withdraw_lords(
+            ref self: ComponentState<TContractState>,
+            game_id: u32,
+            actor: ContractAddress,
+            command: crate::relics::WithdrawLords,
+            context: crate::commands::ActionContext,
+            mut story_cursor: crate::ownership::StoryCursor,
+        ) -> ((), crate::ownership::StoryCursor) {
+            let context = crate::commands::load_context(game_id, context);
+            self.assert_command(game_id, context.timestamp, context);
+            assert!(command.amount != 0, "zero LORDS withdrawal");
+            let realm = ResourceKey { game_id, entity_id: command.structure_id };
+            assert!(crate::logic::structures::owner(realm) == actor, "actor does not own structure");
+            self
+                .resources(game_id)
+                .spend_resource(
+                    realm,
+                    crate::resources::LORDS,
+                    command.amount * crate::rules::RESOURCE_PRECISION,
+                    context.timestamp,
+                    crate::commands::resource_context(context),
+                );
+            let withdrawal = crate::relics::LordsWithdrawal {
+                player: actor, structure_id: command.structure_id, amount: command.amount,
+            };
+            self.record_lords_withdrawal(game_id, withdrawal, context.timestamp, ref story_cursor);
             ((), story_cursor)
         }
     }
@@ -435,10 +497,6 @@ pub mod RelicState {
             context: ExecutionContext,
             ref story_cursor: crate::ownership::StoryCursor,
         ) {
-            if let Some(rules) = self.chest_rules(game_id) {
-                self.pay_expedition_chest(game_id, actor, command, context, rules, ref story_cursor);
-                return;
-            }
             let mut root = context.raw_root;
             let seed = crate::random::game_root(ref root, game_id, context.game.unbox().seed);
             let config = context.rules.unbox();
@@ -463,113 +521,27 @@ pub mod RelicState {
             self.record_chest_opened(game_id, actor, command, relics, points, context.timestamp, ref story_cursor);
         }
 
-        fn pay_expedition_chest(
+        fn record_lords_withdrawal(
             ref self: ComponentState<TContractState>,
             game_id: u32,
-            actor: ContractAddress,
-            command: OpenChest,
-            context: ExecutionContext,
-            rules: crate::relics::ChestRules,
-            ref story_cursor: crate::ownership::StoryCursor,
-        ) {
-            let explorer_key = ExplorerKey { game_id, explorer_id: command.explorer_id };
-            let game = context.game.unbox();
-            let spacing = crate::logic::settlement::rules(game_id).spacing;
-            let depth: u8 = (command.coord.y / spacing % 4).try_into().unwrap();
-            let epoch = crate::expeditions::region_day(command.coord, spacing);
-            let old_pity = self.data.relics.chest_pity.read((game_id, actor, depth));
-            let tokens = self.data.relics.chest_tokens.read((game_id, actor, epoch));
-            let mut root = context.raw_root;
-            let seed = crate::random::game_root(ref root, game_id, game.seed);
-            let ground = crate::logic::expeditions::depth_rules(game_id, depth).chest;
-            let mut roll = crate::relics::roll_chest(rules, ground, old_pity, tokens, seed, context.timestamp);
-            let lords_exhausted = roll.kind == crate::relics::ChestKind::Token
-                && !crate::relics::ILordsCommitmentDispatcherTrait::commit_lords(
-                    crate::relics::ILordsCommitmentLibraryDispatcher {
-                        class_hash: self.logic_classes(game_id).resources.read(),
-                    },
-                    game_id,
-                    roll.quality,
-                    crate::commands::action_context(context),
-                );
-            if lords_exhausted {
-                roll.kind = crate::relics::ChestKind::Relic;
-            }
-            if roll.kind == crate::relics::ChestKind::Relic {
-                crate::logic::progression::grant_fixed_xp(explorer_key);
-            }
-            self.write_chest_counters(game_id, actor, depth, epoch, roll, old_pity, tokens);
-            let reward = crate::relics::ChestReward {
-                player: actor,
-                explorer_id: command.explorer_id,
-                epoch,
-                depth,
-                kind: roll.kind,
-                quality: roll.quality,
-                lords_exhausted,
-            };
-            self.record_expedition_chest(game_id, reward, context.timestamp, ref story_cursor);
-        }
-
-        fn write_chest_counters(
-            ref self: ComponentState<TContractState>,
-            game_id: u32,
-            actor: ContractAddress,
-            depth: u8,
-            epoch: u64,
-            roll: crate::relics::ChestRoll,
-            old_pity: u16,
-            tokens: u16,
-        ) {
-            if roll.pity != old_pity {
-                self.data.relics.chest_pity.write((game_id, actor, depth), roll.pity);
-                self
-                    .emit(
-                        crate::events::RowSet {
-                            version: 1,
-                            model: 'ChestPity',
-                            keys: array![game_id.into(), actor.into(), depth.into()].span(),
-                            values: array![roll.pity.into()].span(),
-                        },
-                    );
-            }
-            if roll.kind == crate::relics::ChestKind::Token {
-                self.data.relics.chest_tokens.write((game_id, actor, epoch), tokens + 1);
-                self
-                    .emit(
-                        crate::events::RowSet {
-                            version: 1,
-                            model: 'ChestTokens',
-                            keys: array![game_id.into(), actor.into(), epoch.into()].span(),
-                            values: array![(tokens + 1).into()].span(),
-                        },
-                    );
-            }
-        }
-
-        fn record_expedition_chest(
-            ref self: ComponentState<TContractState>,
-            game_id: u32,
-            reward: crate::relics::ChestReward,
+            withdrawal: crate::relics::LordsWithdrawal,
             timestamp: u64,
             ref story_cursor: crate::ownership::StoryCursor,
         ) {
             let order = story_cursor.order;
             let index = crate::ownership::StoryCursorTrait::next(ref story_cursor);
-            if reward.kind != crate::relics::ChestKind::Relic {
-                self.data.relics.chest_rewards.write((game_id, order, index), Some(reward));
-                let mut values = array![];
-                reward.serialize(ref values);
-                self
-                    .emit(
-                        crate::events::RowSet {
-                            version: 1,
-                            model: 'ChestReward',
-                            keys: array![game_id.into(), order.into(), index.into()].span(),
-                            values: values.span(),
-                        },
-                    );
-            }
+            self.data.relics.lords_withdrawals.write((game_id, order, index), Some(withdrawal));
+            let mut values = array![];
+            withdrawal.serialize(ref values);
+            self
+                .emit(
+                    crate::events::RowSet {
+                        version: 1,
+                        model: 'LordsWithdrawal',
+                        keys: array![game_id.into(), order.into(), index.into()].span(),
+                        values: values.span(),
+                    },
+                );
             self
                 .emit(
                     crate::ownership::StoryEvent {
@@ -577,11 +549,11 @@ pub mod RelicState {
                         game_id,
                         order,
                         index,
-                        entity_id: Some(reward.explorer_id),
-                        owner: Some(reward.player),
-                        timestamp: timestamp,
+                        entity_id: Some(withdrawal.structure_id),
+                        owner: Some(withdrawal.player),
+                        timestamp,
                         tx_hash: starknet::get_tx_info().unbox().transaction_hash,
-                        story: crate::ownership::Story::ChestReward(reward),
+                        story: crate::ownership::Story::LordsWithdrawn(withdrawal),
                     },
                 );
         }

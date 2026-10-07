@@ -110,14 +110,6 @@ export const resolveChestOpening = (result: ChestResult, now = performance.now()
   set({ ...moment, result, speed: momentSpeed("chest", result.outcome.intensity, now) });
 };
 
-/** Facts can finish an unresolved opening, but must not replace a story delivered in the same update. */
-export const recoverChestOpening = (opening: ChestOpening, result: ChestResult | null): void => {
-  const moment = current();
-  if (moment?.opening !== opening || moment.result) return;
-  if (result) resolveChestOpening(result);
-  else cancelChestOpening(opening);
-};
-
 /** The opening failed: the hold ends where it is, and the caller says why. */
 export const cancelChestOpening = (opening?: ChestOpening): void => {
   if (opening && current()?.opening !== opening) return;

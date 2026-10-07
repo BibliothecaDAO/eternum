@@ -200,27 +200,6 @@ describe("native fact store", () => {
     expect([...store.rows("ResourceBalance")]).toHaveLength(1);
   });
 
-  it("refuses the reserved chest tag rather than treating it as a relic", () => {
-    const store = new NativeFactStore();
-    expect(() =>
-      store.applyFacts([
-        set("0xc", "ChestReward", {
-          game_id: 1,
-          order: 1,
-          index: 0,
-          player: "0x1",
-          explorer_id: 7,
-          epoch: 3,
-          depth: 0,
-          kind: "Reserved",
-          quality: 0,
-          lords_exhausted: false,
-        }),
-      ]),
-    ).toThrow("Invalid enum");
-    expect([...store.rows("ChestReward")]).toEqual([]);
-  });
-
   it("rejects an entire transaction before changing rows or notifying readers", () => {
     const store = new NativeFactStore();
     store.applyFacts([set("0x8", "ResourceBalance", balance(7, "12"))]);
@@ -437,7 +416,7 @@ describe("declared fact absence", () => {
     expect(store.requireOrAbsent("ResourceBalance", resource).known?.balance).toBe(0n);
   });
 
-  it("never invents a chest counter for another actor or an unobserved Frontier day", () => {
+  it("never invents a discovery counter for an unobserved Frontier day", () => {
     const store = new NativeFactStore();
     store.applyFacts([set("0x100", "SliceRules", { ...preset.rules, game_id: 1, day_unit_seconds: 0 })]);
     store.setSnapshot({ gameId: 1, complete: true, actor: "0x111", timestamp: 350 });
@@ -503,8 +482,17 @@ describe("declared fact absence", () => {
     store.applyFacts([set("0x70", "ArmySlot", { ...occupied, explorer_id: army.explorer_id + 1 })]);
     expect(() => resolveExplorerTroops(store, army)).toThrow("occupant mismatch");
     store.applyFacts([remove("0x70", "ArmySlot")]);
-    store.applyFacts([set("0x71", "ChestTokens", { game_id: 1, player: "0x111", epoch: "0", count: 1 })]);
-    expect(store.requireOrAbsent("ChestTokens", { game_id: 1, player: 0x111n, epoch: 0n }).known?.count).toBe(1);
+    store.applyFacts([
+      set("0x71", "ExpeditionDiscovery", {
+        game_id: 1,
+        structure_id: 7,
+        epoch: "0",
+        empty_reveals: 1,
+        ruin_found: true,
+      }),
+    ]);
+    const counter = { game_id: 1, structure_id: 7, epoch: 0n };
+    expect(store.requireOrAbsent("ExpeditionDiscovery", counter).known?.empty_reveals).toBe(1);
 
     expect(store.requireOrAbsent("ArmySlot", { ...slot, epoch: 1n }).unknown).toContain("OUTSIDE_SNAPSHOT_SCOPE");
     expect(store.requireOrAbsent("ArmySlot", { ...slot, structure_id: 8 }).unknown).toContain("OUTSIDE_SNAPSHOT_SCOPE");
@@ -517,13 +505,9 @@ describe("declared fact absence", () => {
     store.setSnapshot({ gameId: 1, complete: true, timestamp: 350 });
     expect(resolveExplorerTroops(store, army)).toBeUndefined();
     store.setSnapshot({ gameId: 1, complete: true, actor: "0x111", timestamp: 350 });
-    expect(store.requireOrAbsent("ChestPity", { game_id: 1, player: 0x111n, depth: 3 }).known?.count).toBe(0);
-    expect(store.requireOrAbsent("ChestTokens", { game_id: 1, player: 0x111n, epoch: 0n }).known?.count).toBe(1);
-    expect(store.requireOrAbsent("ChestPity", { game_id: 1, player: 0x222n, depth: 3 }).unknown).toContain(
-      "OUTSIDE_SNAPSHOT_SCOPE",
-    );
+    expect(store.requireOrAbsent("ExpeditionDiscovery", counter).known?.ruin_found).toBe(true);
     for (const epoch of [1n, 2n])
-      expect(store.requireOrAbsent("ChestTokens", { game_id: 1, player: 0x111n, epoch }).unknown).toContain(
+      expect(store.requireOrAbsent("ExpeditionDiscovery", { ...counter, epoch }).unknown).toContain(
         "OUTSIDE_SNAPSHOT_SCOPE",
       );
   });

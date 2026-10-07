@@ -9,7 +9,6 @@ pub mod ResourcesLogic {
     use crate::logic::release::ReleaseState;
     use crate::logic::resources::ResourceState;
     use crate::ownership::{Story, StoryEvent};
-    use crate::relics::{IRelicMapDispatcherTrait, IRelicMapLibraryDispatcher};
     use crate::resources::ResourceKey;
     use crate::troops::ExplorerKey;
 
@@ -50,34 +49,6 @@ pub mod ResourcesLogic {
         StoryEvent: StoryEvent,
     }
     #[abi(embed_v0)]
-    impl LordsCommitment of crate::relics::ILordsCommitment<ContractState> {
-        fn initialize_lords_budget(ref self: ContractState, game_id: u32) {
-            crate::logic::preset_record::for_game(game_id).chest_rules.read().expect('missing chest rules');
-            assert!(
-                crate::state::read().relics.lords_committed.read(game_id).is_none(), "LORDS budget already initialized",
-            );
-            self.resources.write_lords_budget(game_id, 0);
-        }
-        fn commit_lords(
-            ref self: ContractState, game_id: u32, quality: u8, context: crate::commands::ActionContext,
-        ) -> bool {
-            let context = crate::commands::load_context(game_id, context);
-            let game = context.game.unbox();
-            crate::game::assert_playing(game, context.timestamp);
-            let rules = crate::logic::preset_record::for_game(game_id).chest_rules.read().expect('missing chest rules');
-            let unit = context.rules.unbox().day_unit_seconds;
-            let today = crate::days::day_of(game, unit, context.timestamp).index;
-            let allowance = crate::relics::lords_allowance(
-                rules, today, crate::days::season_days(game.end_at - game.start_main_at, unit),
-            );
-            let amount = crate::relics::lords_amount(rules.lords_amounts, quality);
-            let committed = crate::state::read().relics.lords_committed.read(game_id).expect('missing LORDS budget');
-            assert!(committed <= allowance, "LORDS budget exceeds allowance");
-            if amount > allowance - committed {
-                return false;
-            }
-            self.resources.write_lords_budget(game_id, committed + amount);
-            true
         }
     }
     #[abi(embed_v0)]
@@ -93,11 +64,11 @@ pub mod ResourcesLogic {
             let context = crate::commands::load_context(key.game_id, context);
             let site = crate::logic::expeditions::clear_site(key);
             let category = crate::logic::structures::structure(key).expect('missing site').base.category;
-            let reward = crate::expeditions::site_reward(category, site);
-            if category == crate::taxonomy::RUIN_CATEGORY {
-                IRelicMapLibraryDispatcher { class_hash: self.release.classes(key.game_id).map.read() }
-                    .close_site_chest(key);
-            }
+            let reward = if category == crate::taxonomy::RUIN_CATEGORY {
+                Some(crate::logic::lords_budget::pay(key, context))
+            } else {
+                crate::expeditions::site_reward(category, site)
+            };
             let home = ResourceKey { game_id: key.game_id, entity_id: home_id };
             if let Some(reward) = reward {
                 self

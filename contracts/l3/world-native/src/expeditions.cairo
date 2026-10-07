@@ -33,7 +33,7 @@ pub struct SitePayout {
     pub reward: Option<crate::resources::ResourceAmount>,
 }
 
-// Stragglers pay only the clear's XP; the ruin pays the chest stored with it.
+// Stragglers pay only the clear's XP; a ruin pays the chest stored with it (crate::relics::SiteChest).
 pub fn site_reward(category: u8, site: ExpeditionSite) -> Option<crate::resources::ResourceAmount> {
     use crate::resources::{ESSENCE, LABOR, ResourceAmount};
     if category == crate::taxonomy::CAMP_CATEGORY {
@@ -136,7 +136,8 @@ pub struct DepthRules {
     pub site_guard_upper: u16,
     pub reveal_site_neighbors: bool,
     pub entry_stamina: u16,
-    pub chest: crate::relics::ChestGround,
+    // Each chest tier's odds, in basis points, for a ruin found at this depth.
+    pub chest: crate::relics::ChestTiers,
     pub ruin_guard_lower: u32,
     pub ruin_guard_upper: u32,
     pub guard_step: u32,

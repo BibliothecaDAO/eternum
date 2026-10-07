@@ -74,7 +74,7 @@ export const nativeStoryVariants = [
   "ExplorerDeleteStory",
   "GuardDeleteStory",
   "TroopsTransferred",
-  "ChestReward",
+  "LordsWithdrawn",
   "AttributeChosen",
   "SitePayout"
 ] as const;
@@ -96,11 +96,10 @@ export interface NativeRows {
   FrontierDiscoveryRules: { readonly game_id: number; readonly stragglers_bps: number; readonly camp_bps: number; readonly rift_bps: number; readonly ruin_bps: number; readonly shrine_bps: number; readonly well_bps: number; readonly empty_reveal_limit: number };
   ExpeditionDiscovery: { readonly game_id: number; readonly structure_id: number; readonly epoch: bigint; readonly empty_reveals: number; readonly ruin_found: boolean };
   RealmSupport: { readonly game_id: number; readonly structure_id: number; readonly epoch: bigint; readonly level: number };
-  ChestRules: { readonly game_id: number; readonly relic_probability: number; readonly token_cap: number; readonly lords_amounts: { readonly common: bigint; readonly uncommon: bigint; readonly rare: bigint; readonly epic: bigint }; readonly lords_pool: bigint; readonly season_epochs: number };
-  LordsBudget: { readonly game_id: number; readonly lords_committed: bigint };
-  ChestPity: { readonly game_id: number; readonly player: bigint; readonly depth: number; readonly count: number };
-  ChestTokens: { readonly game_id: number; readonly player: bigint; readonly epoch: bigint; readonly count: number };
-  ChestReward: { readonly game_id: number; readonly order: bigint; readonly index: number; readonly player: bigint; readonly explorer_id: number; readonly epoch: bigint; readonly depth: number; readonly kind: "Relic" | "Token"; readonly quality: number; readonly lords_exhausted: boolean };
+  ChestRules: { readonly game_id: number; readonly pool: bigint; readonly price_ceiling: bigint; readonly shares: { readonly common: number; readonly uncommon: number; readonly rare: number; readonly epic: number; readonly legendary: number }; readonly surge_factor: number; readonly surge_minimum_shares: number; readonly estimate_days: number };
+  LordsBudget: { readonly game_id: number; readonly pool_left: bigint; readonly open: bigint; readonly spent: bigint; readonly day: bigint; readonly price: bigint; readonly ceiling: bigint; readonly estimate: bigint; readonly paid_shares: bigint };
+  SiteChest: { readonly game_id: number; readonly entity_id: number; readonly tier: number; readonly amount: bigint };
+  LordsWithdrawal: { readonly game_id: number; readonly order: bigint; readonly index: number; readonly player: bigint; readonly structure_id: number; readonly amount: bigint };
   RelicDiscovery: { readonly game_id: number; readonly last_at: bigint };
   DepositRules: { readonly game_id: number; readonly paused: boolean; readonly realm_fee_bps: number; readonly velords_fee_bps: number; readonly season_fee_bps: number; readonly client_fee_bps: number };
   WithdrawalRules: { readonly game_id: number; readonly paused: boolean; readonly bank_fee_bps: number; readonly velords_fee_bps: number; readonly season_fee_bps: number; readonly client_fee_bps: number; readonly velords_recipient: bigint; readonly season_recipient: bigint; readonly retention: readonly ({ readonly troop_percent: number; readonly resource_percent: number })[] };
@@ -163,7 +162,7 @@ export interface NativeRows {
   ResourceRule: { readonly game_id: number; readonly resource_type: number; readonly unit_weight: bigint; readonly realm_rate: bigint; readonly village_rate: bigint };
   UpgradeLimits: { readonly game_id: number; readonly realm_max: number; readonly village_max: number };
   UpgradeRecipe: { readonly game_id: number; readonly level: number; readonly costs: readonly ({ readonly resource_type: number; readonly amount: bigint })[] };
-  DepthRules: { readonly game_id: number; readonly depth: number; readonly reveal_percent: number; readonly site_guard_lower: number; readonly site_guard_upper: number; readonly reveal_site_neighbors: boolean; readonly entry_stamina: number; readonly chest: { readonly common: number; readonly uncommon: number; readonly rare: number; readonly pity: number }; readonly ruin_guard_lower: number; readonly ruin_guard_upper: number; readonly guard_step: number };
+  DepthRules: { readonly game_id: number; readonly depth: number; readonly reveal_percent: number; readonly site_guard_lower: number; readonly site_guard_upper: number; readonly reveal_site_neighbors: boolean; readonly entry_stamina: number; readonly chest: { readonly common: number; readonly uncommon: number; readonly rare: number; readonly epic: number; readonly legendary: number }; readonly ruin_guard_lower: number; readonly ruin_guard_upper: number; readonly guard_step: number };
   GameRelease: { readonly game_id: number; readonly release_id: number; readonly preset_commitment: bigint };
   GameRegistry: { readonly game_id: number; readonly name: bigint; readonly preset_id: number; readonly creator: bigint; readonly settled: boolean; readonly ready: boolean; readonly dev_mode_on: boolean; readonly start_settling_at: bigint; readonly start_main_at: bigint; readonly end_at: bigint; readonly end_grace_seconds: number; readonly seed: bigint };
   GameOverrides: { readonly game_id: number; readonly registration_start: number; readonly biome_climate: { readonly elevation_scale_bps: number; readonly moisture_scale_bps: number; readonly elevation_bias_bps: number; readonly moisture_bias_bps: number; readonly elevation_seed: number; readonly moisture_seed: number }; readonly map: ({ readonly shards_mines_win_probability: number; readonly shards_mines_fail_probability: number; readonly camp_win_probability: number; readonly camp_fail_probability: number; readonly bitcoin_mine_win_probability: number; readonly bitcoin_mine_fail_probability: number; readonly hyps_win_prob: number; readonly hyps_fail_prob: number; readonly hyps_fail_prob_increase_p_hex: number; readonly hyps_fail_prob_increase_p_fnd: number; readonly relic_discovery_interval_sec: number; readonly relic_hex_dist_from_center: number; readonly relic_chest_relics_per_chest: number }) | null; readonly map_center_offset: number };
@@ -191,9 +190,8 @@ export interface NativeKeys {
   RealmSupport: { readonly game_id: number; readonly structure_id: number; readonly epoch: bigint };
   ChestRules: { readonly game_id: number };
   LordsBudget: { readonly game_id: number };
-  ChestPity: { readonly game_id: number; readonly player: bigint; readonly depth: number };
-  ChestTokens: { readonly game_id: number; readonly player: bigint; readonly epoch: bigint };
-  ChestReward: { readonly game_id: number; readonly order: bigint; readonly index: number };
+  SiteChest: { readonly game_id: number; readonly entity_id: number };
+  LordsWithdrawal: { readonly game_id: number; readonly order: bigint; readonly index: number };
   RelicDiscovery: { readonly game_id: number };
   DepositRules: { readonly game_id: number };
   WithdrawalRules: { readonly game_id: number };
@@ -513,16 +511,18 @@ export const nativeFactModels = {
     "scope": "game",
     "fields": {
       "game_id": "u32",
-      "relic_probability": "u16",
-      "token_cap": "u16",
-      "lords_amounts": {
-        "common": "u128",
-        "uncommon": "u128",
-        "rare": "u128",
-        "epic": "u128"
+      "pool": "u128",
+      "price_ceiling": "u128",
+      "shares": {
+        "common": "u16",
+        "uncommon": "u16",
+        "rare": "u16",
+        "epic": "u16",
+        "legendary": "u16"
       },
-      "lords_pool": "u128",
-      "season_epochs": "u16"
+      "surge_factor": "u16",
+      "surge_minimum_shares": "u32",
+      "estimate_days": "u16"
     }
   },
   "LordsBudget": {
@@ -532,46 +532,30 @@ export const nativeFactModels = {
     "scope": "game",
     "fields": {
       "game_id": "u32",
-      "lords_committed": "u128"
+      "pool_left": "u128",
+      "open": "u128",
+      "spent": "u128",
+      "day": "u64",
+      "price": "u128",
+      "ceiling": "u128",
+      "estimate": "u128",
+      "paid_shares": "u128"
     }
   },
-  "ChestPity": {
+  "SiteChest": {
     "keys": [
       "game_id",
-      "player",
-      "depth"
+      "entity_id"
     ],
     "scope": "game",
     "fields": {
       "game_id": "u32",
-      "player": "felt",
-      "depth": "u8",
-      "count": "u16"
-    },
-    "absence": {
-      "value": "zero",
-      "meaning": "No chests have advanced this counter."
+      "entity_id": "u32",
+      "tier": "u8",
+      "amount": "u128"
     }
   },
-  "ChestTokens": {
-    "keys": [
-      "game_id",
-      "player",
-      "epoch"
-    ],
-    "scope": "game",
-    "fields": {
-      "game_id": "u32",
-      "player": "felt",
-      "epoch": "u64",
-      "count": "u16"
-    },
-    "absence": {
-      "value": "zero",
-      "meaning": "No chests have advanced this counter."
-    }
-  },
-  "ChestReward": {
+  "LordsWithdrawal": {
     "keys": [
       "game_id",
       "order",
@@ -583,17 +567,8 @@ export const nativeFactModels = {
       "order": "u64",
       "index": "u32",
       "player": "felt",
-      "explorer_id": "u32",
-      "epoch": "u64",
-      "depth": "u8",
-      "kind": {
-        "enum": [
-          "Relic",
-          "Token"
-        ]
-      },
-      "quality": "u8",
-      "lords_exhausted": "boolean"
+      "structure_id": "u32",
+      "amount": "u128"
     }
   },
   "RelicDiscovery": {
@@ -1799,7 +1774,8 @@ export const nativeFactModels = {
         "common": "u16",
         "uncommon": "u16",
         "rare": "u16",
-        "pity": "u16"
+        "epic": "u16",
+        "legendary": "u16"
       },
       "ruin_guard_lower": "u32",
       "ruin_guard_upper": "u32",
@@ -2153,11 +2129,6 @@ export const nativeSyncScopes = {
       "player"
     ]
   },
-  "ChestPity": {
-    "owners": [
-      "player"
-    ]
-  },
   "BitcoinContribution": {
     "owners": [
       "player"
@@ -2173,17 +2144,10 @@ export const nativeSyncScopes = {
       "player"
     ]
   },
-  "ChestTokens": {
+  "LordsWithdrawal": {
     "owners": [
       "player"
-    ],
-    "epoch": "epoch"
-  },
-  "ChestReward": {
-    "owners": [
-      "player"
-    ],
-    "epoch": "epoch"
+    ]
   },
   "RaidEvent": {
     "owners": [
@@ -2228,6 +2192,11 @@ export const nativeSyncScopes = {
     ]
   },
   "ExpeditionSite": {
+    "entities": [
+      "entity_id"
+    ]
+  },
+  "SiteChest": {
     "entities": [
       "entity_id"
     ]

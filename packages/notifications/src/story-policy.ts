@@ -14,7 +14,6 @@ const STORY_RULES = {
   BankLiquidity: { level: "all", recipients: "owner" },
   HyperstructurePoints: { level: "all", recipients: "owner" },
   RelicChestOpened: { level: "all", recipients: "owner" },
-  ChestReward: { level: "all", recipients: "owner" },
   SitePayout: { level: "all", recipients: "owner" },
   AttributeChosen: { level: "all", recipients: "owner" },
   ExplorationReward: { level: "all", recipients: "owner" },
@@ -41,6 +40,7 @@ const STORY_RULES = {
   GuardDeleteStory: { level: "all", recipients: "owner" },
   TroopsTransferred: { level: "all", recipients: "owner" },
   FaithPointsClaimedStory: { excluded: "Recipient and notification UX deferred" },
+  LordsWithdrawn: { excluded: "The player's own withdrawal needs no notification" },
 } satisfies Record<string, StoryRule>;
 
 export function storyNotificationRule(story: string): StoryRule {

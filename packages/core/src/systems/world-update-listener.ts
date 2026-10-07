@@ -3,14 +3,12 @@ import type { GameClientSetup } from "../client/game-client";
 import { configManager } from "../managers/config-manager";
 import { divideByPrecision } from "../utils/utils";
 import { siteKindOf } from "../utils/expeditions";
-import { storyEventKeys } from "../sync/story-event-identity";
 import type {
   BattleEventSystemUpdate,
   BuildingSystemUpdate,
   TierBoughtSystemUpdate,
   ExplorerRewardSystemUpdate,
   RelicChestOpenedSystemUpdate,
-  ChestRewardSystemUpdate,
   SitePayoutSystemUpdate,
 } from "./types";
 
@@ -102,26 +100,6 @@ export class WorldUpdateListener {
             attribute,
             tier: integer(payload.tier),
             price: integer(payload.price),
-          });
-        }),
-    };
-  }
-
-  get ChestRewards() {
-    return {
-      onChestReward: (callback: (value: ChestRewardSystemUpdate) => void) =>
-        this.onStory("ChestReward", (payload, event) => {
-          const kind = typeof payload.kind === "string" ? payload.kind : Object.keys(fields(payload.kind) ?? {})[0];
-          if (kind !== "Relic" && kind !== "Token") throw new Error("Invalid chest reward kind");
-          if (typeof payload.lords_exhausted !== "boolean") throw new Error("Missing chest budget result");
-          callback({
-            resultKey: storyEventKeys(event),
-            explorerId: integer(payload.explorer_id),
-            kind,
-            lordsExhausted: payload.lords_exhausted,
-            quality: integer(payload.quality),
-            depth: integer(payload.depth),
-            timestamp: integer(event.timestamp),
           });
         }),
     };

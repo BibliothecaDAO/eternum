@@ -71,7 +71,9 @@ export const nativeCommandBits = {
   "Research": "147573952589676412928",
   "BuyTier": "295147905179352825856",
   "UpgradeBuilding": "590295810358705651712",
-  "InteractSite": "1180591620717411303424"
+  "InteractSite": "1180591620717411303424",
+  "RefillStamina": "2361183241434822606848",
+  "WithdrawLords": "4722366482869645213696"
 } as const;
 export interface NativeCommandPayloads {
   CreateExplorer: { readonly structure_id: BigNumberish; readonly category: BigNumberish; readonly tier: BigNumberish; readonly amount: BigNumberish; readonly direction: BigNumberish };
@@ -145,5 +147,7 @@ export interface NativeCommandPayloads {
   BuyTier: { readonly explorer_id: BigNumberish; readonly attribute: { readonly kind: "Battle"; readonly value: undefined } | { readonly kind: "Logistics"; readonly value: undefined } | { readonly kind: "Scouting"; readonly value: undefined } | { readonly kind: "Support"; readonly value: undefined } };
   UpgradeBuilding: { readonly structure_id: BigNumberish; readonly coord: { readonly alt: boolean; readonly x: BigNumberish; readonly y: BigNumberish } };
   InteractSite: { readonly explorer_id: BigNumberish; readonly coord: { readonly alt: boolean; readonly x: BigNumberish; readonly y: BigNumberish } };
+  RefillStamina: { readonly explorer_id: BigNumberish };
+  WithdrawLords: { readonly structure_id: BigNumberish; readonly amount: BigNumberish };
 }
 export type NativeCommand = { [K in keyof NativeCommandPayloads]: { kind: K; value: NativeCommandPayloads[K] } }[keyof NativeCommandPayloads];

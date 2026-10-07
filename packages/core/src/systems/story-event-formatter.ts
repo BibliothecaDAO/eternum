@@ -39,11 +39,7 @@ const resourceNameMap = resources.reduce<Record<number, string>>((acc, resource)
   return acc;
 }, {});
 
-const CHEST_QUALITY_LABELS = ["Common", "Uncommon", "Rare", "Epic"];
 const ATTRIBUTE_TIER_LABELS = ["", "common", "uncommon", "rare", "epic", "legendary"];
-const CHEST_KIND_LABELS: Record<string, string> = { Relic: "relic", Token: "token claim" };
-const EXPEDITION_GROUND_LABELS = ["the surface", "Ethereal I", "Ethereal II", "Ethereal III"];
-
 /** What a story model other than StoryEvent's own variants reaches the feed as. */
 type StoryEventModel = "BattleEvent" | "RaidEvent";
 
@@ -168,21 +164,10 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
       icon: "scroll",
     };
   },
-  ChestReward: (event, payload, components) => {
-    const quality = labelAt(CHEST_QUALITY_LABELS, payload.quality);
-    const rawKind = formatEnum(payload.kind);
-    if (rawKind && !(rawKind in CHEST_KIND_LABELS)) throw new Error("Invalid chest reward kind");
-    const kind = CHEST_KIND_LABELS[rawKind ?? ""] ?? "reward";
-    const ground = labelAt(EXPEDITION_GROUND_LABELS, payload.depth);
-    return {
-      title: `Chest opened: ${quality ? `${quality} ${kind}` : kind}`,
-      description: joinPieces([
-        describeExplorer(payload.explorer_id, components),
-        ground ? `On ${ground}` : undefined,
-        payload.lords_exhausted === true ? "LORDS allowance exhausted; awarded a relic of the same rarity" : undefined,
-      ]),
-      icon: "prize",
-    };
+  LordsWithdrawn: (_event, payload) => {
+    const amount = toNumber(payload.amount);
+    if (amount === null) throw new Error("Incomplete LORDS withdrawal story");
+    return { title: "LORDS withdrawn", description: `${amount} LORDS to L2`, icon: "prize" };
   },
   RealmCreatedStory: (event, payload, components, resolvePlayerName) => {
     const coord = formatCoord(payload.coord);
@@ -655,12 +640,6 @@ function formatNumber(value: unknown): string | null {
     }
   }
   return `${value}`;
-}
-
-/** The label an index names, or undefined when the payload carries no index or one outside the table. */
-function labelAt(labels: string[], value: unknown): string | undefined {
-  const index = toNumber(value);
-  return index === null ? undefined : labels[index];
 }
 
 function toNumber(value: unknown): number | null {

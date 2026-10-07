@@ -1,4 +1,3 @@
-use core::dict::{Felt252Dict, Felt252DictTrait};
 use snforge_std::{start_cheat_block_timestamp_global, start_cheat_caller_address, stop_cheat_caller_address};
 use crate::commands::{Command, ExecutionContext};
 use crate::exploration_rewards::{ExplorationReward, IExtractionSafeDispatcher, IExtractionSafeDispatcherTrait};
@@ -6,9 +5,8 @@ use crate::game::IGameDispatcherTrait;
 use crate::map::IMapLogicDispatcher;
 use crate::registrar::IRegistrarSafeDispatcherTrait;
 use crate::relics::{
-    ApplyRelic, ChestGround, ChestKind, ChestRules, IRelicMapDispatcher, IRelicMapDispatcherTrait,
-    IRelicMapSafeDispatcher, IRelicsDispatcher, IRelicsSafeDispatcher, IRelicsSafeDispatcherTrait, OpenChest, Recipient,
-    RelicRule, roll_chest,
+    ApplyRelic, IRelicMapDispatcher, IRelicMapDispatcherTrait, IRelicMapSafeDispatcher, IRelicsDispatcher,
+    IRelicsSafeDispatcher, IRelicsSafeDispatcherTrait, OpenChest, Recipient, RelicRule,
 };
 use crate::resources::{IResourceOperationsDispatcher, ResourceKey, ResourceSlot};
 use crate::rules::RESOURCE_PRECISION;
@@ -656,90 +654,4 @@ fn chest_search_skips_the_explorers_vacated_start_tile() {
     assert!(map.tile(crate::geometry::tile_key(3, vacated)).is_none());
     let tile = map.tile(crate::geometry::tile_key(3, Coord { x: 2000212, ..vacated })).unwrap();
     assert_eq!(tile.data / 2 % 256, 34);
-}
-
-#[test]
-fn chest_tables_control_type_quality_pity_and_token_cap() {
-    let (_, preset) = super::preset_projection::current_definition("frontier");
-    let rules = preset.economy.chests.unwrap();
-    let grounds = array![
-        ChestGround { common: 7800, uncommon: 1800, rare: 350, pity: 400 },
-        ChestGround { common: 6000, uncommon: 3000, rare: 800, pity: 100 },
-        ChestGround { common: 4200, uncommon: 3800, rare: 1500, pity: 40 },
-        ChestGround { common: 2500, uncommon: 4300, rare: 2300, pity: 20 },
-    ];
-    for ground in grounds {
-        let mut counts: Felt252Dict<u32> = Default::default();
-        for seed in 0_u32..2000 {
-            let rolled = roll_chest(rules, ground, 0, 0, seed.into(), 100);
-            let kind: felt252 = match rolled.kind {
-                ChestKind::Relic => 0,
-                ChestKind::Reserved => panic!("reserved chest kind produced"),
-                ChestKind::Token => 2,
-            };
-            counts.insert(kind, counts.get(kind) + 1);
-            let quality: felt252 = 10 + Into::<u8, felt252>::into(rolled.quality);
-            counts.insert(quality, counts.get(quality) + 1);
-        }
-        let expected = array![
-            (0, 1800_u32), (2, 200), (10, Into::<u16, u32>::into(ground.common) / 5),
-            (11, Into::<u16, u32>::into(ground.uncommon) / 5), (12, Into::<u16, u32>::into(ground.rare) / 5),
-            (
-                13,
-                (10000
-                    - Into::<u16, u32>::into(ground.common)
-                    - Into::<u16, u32>::into(ground.uncommon)
-                    - Into::<u16, u32>::into(ground.rare))
-                    / 5,
-            ),
-        ];
-        for (bucket, expected) in expected {
-            let actual = counts.get(bucket);
-            let difference = core::cmp::max(actual, expected) - core::cmp::min(actual, expected);
-            let variance = expected * (2000 - expected) / 2000;
-            assert!(actual != 0 && difference * difference <= 16 * variance + 1, "chest distribution outside table");
-        }
-    }
-    let ground = ChestGround { common: 10000, uncommon: 0, rare: 0, pity: 3 };
-    let relics = ChestRules { relic_probability: 10000, ..rules };
-    let first = roll_chest(relics, ground, 0, 0, 77, 100);
-    let second = roll_chest(relics, ground, first.pity, 0, 77, 101);
-    let third = roll_chest(relics, ground, second.pity, 0, 77, 102);
-    assert_eq!((first.quality, first.pity), (0, 1));
-    assert_eq!((second.quality, second.pity), (0, 2));
-    assert_eq!((third.quality, third.pity), (3, 0));
-    let tokens = ChestRules { relic_probability: 0, ..rules };
-    let before_cap = roll_chest(tokens, ground, 2, 0, 77, 100);
-    let capped = roll_chest(tokens, ground, 2, 1, 77, 100);
-    assert_eq!((before_cap.kind, before_cap.quality, before_cap.pity), (ChestKind::Token, 0, 2));
-    assert_eq!((capped.kind, capped.quality, capped.pity), (ChestKind::Relic, 3, 0));
-}
-
-#[test]
-fn lords_amounts_and_cumulative_allowance_use_the_preset_without_overflow() {
-    let (_, preset) = super::preset_projection::current_definition("frontier");
-    let rules = preset.economy.chests.unwrap();
-    for (quality, expected) in array![(0_u8, 100_u128), (1, 400), (2, 1500), (3, 6000)] {
-        assert_eq!(crate::relics::lords_amount(rules.lords_amounts, quality), expected);
-    }
-    assert_eq!(crate::relics::lords_allowance(rules, 0, 70), 14285);
-    assert_eq!(crate::relics::lords_allowance(rules, 20, 70), 300000);
-    assert_eq!(crate::relics::lords_allowance(rules, 69, 70), 1000000);
-    assert_eq!(crate::relics::lords_allowance(rules, 70, 70), 1000000);
-    let maximum = 0xffffffffffffffffffffffffffffffff_u128;
-    let largest = ChestRules { lords_pool: maximum, ..rules };
-    assert_eq!(crate::relics::lords_allowance(largest, 69, 70), maximum);
-    assert_eq!(crate::relics::lords_allowance(largest, 0, 70), maximum / 70);
-}
-
-#[test]
-fn chest_kind_tags_preserve_recorded_rewards() {
-    let mut relic = array![];
-    ChestKind::Relic.serialize(ref relic);
-    assert_eq!(relic.span(), array![0].span());
-    let mut token = array![];
-    ChestKind::Token.serialize(ref token);
-    assert_eq!(token.span(), array![2].span());
-    let mut recorded = array![2].span();
-    assert_eq!(Serde::<ChestKind>::deserialize(ref recorded), Some(ChestKind::Token));
 }

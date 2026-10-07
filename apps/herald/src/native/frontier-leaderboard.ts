@@ -4,7 +4,7 @@ import type {
   HeraldHistoryEvent,
 } from "@bibliothecadao/eternum/game-sync";
 import { isRealmCategory, siteKindOf } from "@bibliothecadao/eternum/expeditions";
-import { ResourcesIds } from "@bibliothecadao/types";
+import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import type { FoldRow } from "../types";
 import { address, gameRows, integer, number, record, required, type Row } from "./values";
 
@@ -19,7 +19,6 @@ export function buildFrontierLeaderboard(
   history: readonly HeraldHistoryEvent[],
 ): HeraldFrontierLeaderboard {
   required(modelRows("GameRegistry"), gameId, "GameRegistry");
-  const amounts = record(required(modelRows("ChestRules"), gameId, "ChestRules").lords_amounts);
   const players = settledPlayers(gameRows(modelRows("Structure"), gameId));
   const receipts = new Set<string>();
   for (const event of history) {
@@ -29,7 +28,7 @@ export function buildFrontierLeaderboard(
     receipts.add(receipt);
     const player = players.get(address(event.value.owner));
     if (!player) throw new Error("Frontier reward has no settled realm");
-    applyStory(player, record(event.value.story), amounts, event);
+    applyStory(player, record(event.value.story), event);
   }
   const entries = [...players.values()]
     .sort(compareStandings)
@@ -59,10 +58,9 @@ function settledPlayers(structures: Row[]): Map<string, Standing> {
   return players;
 }
 
-function applyStory(player: Standing, story: Row, amounts: Row, event: HeraldHistoryEvent): void {
+function applyStory(player: Standing, story: Row, event: HeraldHistoryEvent): void {
   if (story.SitePayout) creditSiteClear(player, record(story.SitePayout), event);
   else if (story.ExplorationReward) creditResource(player.entry, record(story.ExplorationReward));
-  else if (story.ChestReward) creditChest(player.entry, record(story.ChestReward), amounts);
   else throw new Error("Unexpected Frontier leaderboard story");
 }
 
@@ -77,6 +75,7 @@ function creditSiteClear(player: Standing, payout: Row, event: HeraldHistoryEven
       break;
     case "Ruin":
       counts.ruins++;
+      player.entry.chests_earned++;
       break;
     case "Stragglers":
       counts.stragglers++;
@@ -87,24 +86,17 @@ function creditSiteClear(player: Standing, payout: Row, event: HeraldHistoryEven
   if (payout.reward !== null) creditResource(player.entry, record(payout.reward));
 }
 
-function creditChest(entry: HeraldFrontierLeaderboardEntry, chest: Row, amounts: Row): void {
-  const quality = number(chest.quality);
-  const key = ["common", "uncommon", "rare", "epic"][quality];
-  if (!key) throw new Error("Invalid Frontier chest quality");
-  const amount = integer(amounts[key]);
-  if (amount <= 0n) throw new Error("Missing Frontier LORDS amount");
-  if (chest.kind !== "Token" && chest.kind !== "Relic") throw new Error("Invalid Frontier chest kind");
-  entry.chests_earned++;
-  if (chest.kind === "Token") entry.rewards.lords = (integer(entry.rewards.lords) + amount).toString();
-}
-
+/** Essence and labor stay in game precision; a ruin's chest counts in whole LORDS. */
 function creditResource(entry: HeraldFrontierLeaderboardEntry, reward: Row): void {
   const resource = number(reward.resource_type);
-  const key = resource === ResourcesIds.Essence ? "essence" : resource === ResourcesIds.Labor ? "labor" : undefined;
-  if (!key) return;
   const amount = integer(reward.amount);
   if (amount < 0n) throw new Error("Negative Frontier reward");
-  entry.rewards[key] = (integer(entry.rewards[key]) + amount).toString();
+  if (resource === ResourcesIds.Lords) {
+    entry.rewards.lords = (integer(entry.rewards.lords) + amount / BigInt(RESOURCE_PRECISION)).toString();
+    return;
+  }
+  const key = resource === ResourcesIds.Essence ? "essence" : resource === ResourcesIds.Labor ? "labor" : undefined;
+  if (key) entry.rewards[key] = (integer(entry.rewards[key]) + amount).toString();
 }
 
 function comparePosition(a: HeraldHistoryEvent, b: HeraldHistoryEvent): number {

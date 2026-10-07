@@ -292,12 +292,15 @@ fn write_depths(preset: PresetWrite, rules: crate::rules::SliceRules, depths: Sp
     assert!(!enabled || rules.day_unit_seconds != 0, "depths require expedition regions");
     for index in 0..depths.len() {
         let value = *depths.at(index);
-        let ground = value.chest;
+        let odds = value.chest;
         assert!(
-            Into::<u16, u32>::into(ground.common) + ground.uncommon.into() + ground.rare.into() <= 10000,
-            "invalid chest quality probabilities",
+            Into::<u16, u32>::into(odds.common)
+                + odds.uncommon.into()
+                + odds.rare.into()
+                + odds.epic.into()
+                + odds.legendary.into() == 10000,
+            "chest tier odds must sum to 100 percent",
         );
-        assert!(ground.pity != 0, "zero relic pity threshold");
         assert!(index != 0 || value.entry_stamina == 0, "surface needs no entry stamina");
         assert!(value.reveal_percent != 0 && value.reveal_percent <= 100, "invalid reveal percentage");
         assert!(
@@ -350,18 +353,24 @@ fn write_relics(
             game_rules.day_unit_seconds != 0 && crate::rules::rule_enabled(game_rules, crate::rules::DEPTH_CONTENTS),
             "chest tables require depth rules",
         );
-        assert!(value.relic_probability <= 10000, "invalid chest type probabilities");
-        assert!(value.token_cap != 0, "empty chest limits");
-        let amounts = value.lords_amounts;
         assert!(
-            amounts.common != 0
-                && amounts.common <= amounts.uncommon
-                && amounts.uncommon <= amounts.rare
-                && amounts.rare <= amounts.epic
-                && amounts.epic <= value.lords_pool,
-            "invalid LORDS table",
+            value.pool != 0
+                && value.price_ceiling != 0
+                && value.surge_factor != 0
+                && value.surge_minimum_shares != 0
+                && value.estimate_days != 0,
+            "empty chest rules",
         );
-        assert!(rules.is_empty(), "attribute chests replace timed relics");
+        let shares = value.shares;
+        assert!(
+            shares.common != 0
+                && shares.common <= shares.uncommon
+                && shares.uncommon <= shares.rare
+                && shares.rare <= shares.epic
+                && shares.epic <= shares.legendary,
+            "invalid chest shares",
+        );
+        assert!(rules.is_empty(), "ruin chests replace timed relics");
         preset.chest_rules.write(chests);
         return;
     }

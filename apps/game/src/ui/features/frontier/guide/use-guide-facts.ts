@@ -26,8 +26,6 @@ import {
   type TroopTier,
   type TroopType,
 } from "@bibliothecadao/types";
-import { useAccountStore } from "@/hooks/store/use-account-store";
-import { useStoryEvents } from "@/hooks/store/use-story-events-store";
 import { knownBalance } from "@/ui/utils/utils";
 import { affordableUpgrades } from "../attributes/attributes";
 import { useMemo } from "react";
@@ -51,25 +49,18 @@ const GUIDE_MODELS = [
   "ResearchPrice",
 ] as const;
 
-/**
- * What the guide answers to, read from the store at chain time, and from the player's chest history for the one first
- * no current fact keeps; it never listens for events.
- */
+/** What the guide answers to, read from the store at chain time; it never listens for events. */
 export const useGuideFacts = (rules: ExpeditionRules, realm: NativeRows["Structure"] | null): GuideFacts => {
   const { setup } = useGame();
-  const player = useAccountStore((state) => state.account?.address ?? null);
-  // A LORDS roll the day could not pay leaves only its story; no row keeps it.
-  const { data: chests } = useStoryEvents(100, "ChestReward", player ?? ZERO_ADDRESS);
-  const lordsSpent = player !== null && chests.some(({ storyPayload }) => storyPayload?.lords_exhausted === true);
   const revision = useNativeRevision(GUIDE_MODELS);
   const now = useNowSeconds();
   const tick = useCurrentDefaultTick();
   const armiesTick = useCurrentArmiesTick();
   const { isMapView } = useQuery();
   return useMemo(
-    () => ({ ...readGuideFacts(setup.store, rules, realm, { now, tick, armiesTick, onMap: isMapView }), lordsSpent }),
+    () => readGuideFacts(setup.store, rules, realm, { now, tick, armiesTick, onMap: isMapView }),
     // The revision is the recompute signal for store writes; the clocks for time passing.
-    [setup.store, rules, realm, now, tick, armiesTick, isMapView, revision, lordsSpent],
+    [setup.store, rules, realm, now, tick, armiesTick, isMapView, revision],
   );
 };
 
@@ -78,7 +69,7 @@ const readGuideFacts = (
   rules: ExpeditionRules,
   realm: NativeRows["Structure"] | null,
   clock: { now: number; tick: number; armiesTick: number; onMap: boolean },
-): Omit<GuideFacts, "lordsSpent"> => {
+): GuideFacts => {
   if (!realm) return { ...NO_REALM, onMap: clock.onMap };
   const armies = liveHomeArmies(store, realm.entity_id, realm.game_id);
   const stamina = armies.flatMap((army) => {
@@ -145,9 +136,7 @@ const readSiteFirsts = (store: NativeFactStore, gameId: number) => {
   };
 };
 
-const ZERO_ADDRESS = "0x0";
-
-const NO_REALM: Omit<GuideFacts, "lordsSpent"> = {
+const NO_REALM: GuideFacts = {
   realm: false,
   barracks: false,
   troopsAtHome: undefined,

@@ -18,6 +18,7 @@ mod frontier_reveal;
 pub(crate) mod games_fixture;
 mod games_host;
 mod hyperstructures;
+mod lords_budget;
 mod market;
 mod mines;
 mod packer_bound;

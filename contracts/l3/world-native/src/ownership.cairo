@@ -63,7 +63,7 @@ pub enum Story {
     ExplorerDeleteStory: crate::troop_management::ExplorerRemoved,
     GuardDeleteStory: crate::troop_management::GuardSlot,
     TroopsTransferred: crate::troop_management::TransferTroops,
-    ChestReward: crate::relics::ChestReward,
+    LordsWithdrawn: crate::relics::LordsWithdrawal,
     TierBought: crate::progression::TierBought,
     SitePayout: crate::expeditions::SitePayout,
 }

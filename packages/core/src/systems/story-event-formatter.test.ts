@@ -104,14 +104,10 @@ describe("owner naming", () => {
   });
 });
 
-it("names a chest's quality and ground only when the story carries them", () => {
-  expect(buildStoryEventPresentation(story("ChestReward", { quality: 2, kind: "Relic", depth: 1 }))).toMatchObject({
-    title: "Chest opened: Rare relic",
-    description: "Army · On Ethereal I",
-  });
-  const bare = buildStoryEventPresentation(story("ChestReward", {}));
-  expect(bare.title).toBe("Chest opened: reward");
-  expect(bare.description).toBe("Army");
+it("names a LORDS withdrawal by its whole amount", () => {
+  expect(
+    buildStoryEventPresentation(story("LordsWithdrawn", { player: "0x1", structure_id: 3, amount: 200 })),
+  ).toMatchObject({ title: "LORDS withdrawn", description: "200 LORDS to L2" });
 });
 
 it("formats native battle sides and positive Ethereal rolls without a legacy row projection", () => {
@@ -187,22 +183,6 @@ it("renders the site's recorded kind and payout without a current structure", ()
       }),
     ),
   ).toMatchObject({ title: "Stragglers cleared", description: "Army · XP only" });
-});
-
-it("explains a LORDS budget fallback without hiding its rarity", () => {
-  const result = buildStoryEventPresentation(
-    story("ChestReward", {
-      quality: 2,
-      kind: "Relic",
-      depth: 1,
-      lords_exhausted: true,
-    }),
-  );
-  expect(result.title).toBe("Chest opened: Rare relic");
-  expect(result.description).toContain("LORDS allowance exhausted; awarded a relic of the same rarity");
-  expect(() => buildStoryEventPresentation(story("ChestReward", { kind: "Reserved" }))).toThrow(
-    "Invalid chest reward kind",
-  );
 });
 
 describe("every story the chain can tell", () => {
@@ -294,7 +274,7 @@ describe("every story the chain can tell", () => {
     ExplorerDeleteStory: { explorer_id: 7 },
     GuardDeleteStory: { structure_id: 5, slot: 0 },
     TroopsTransferred: { source: { Explorer: 7 }, target: { Explorer: 8 }, amount },
-    ChestReward: { explorer_id: 7, kind: "Token", quality: 3, depth: 1, lords_exhausted: false },
+    LordsWithdrawn: { player: "0x111", structure_id: 5, amount },
     TierBought: { explorer_id: 7, attribute: "Battle", tier: 2, price: 100 },
     SitePayout: {
       structure_id: 5,

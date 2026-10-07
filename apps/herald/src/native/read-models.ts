@@ -19,7 +19,6 @@ import type { FoldRow } from "../types";
 export const FINALIZED_GAME_MODELS: ReadonlySet<string> = new Set([
   "GameRegistry",
   "SliceRules",
-  "ChestRules",
   "SettlementRules",
   "SettlementProgress",
   "Structure",

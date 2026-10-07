@@ -252,12 +252,6 @@ pub mod GamesFixture {
                 game_context,
             )
         }
-        fn close_site_chest(ref self: TContractState, site: crate::resources::ResourceKey) {
-            let classes = fixture_classes(site.game_id);
-            crate::relics::IRelicMapDispatcherTrait::close_site_chest(
-                crate::relics::IRelicMapLibraryDispatcher { class_hash: classes.map.read() }, site,
-            );
-        }
         fn consume_relic_chest(ref self: TContractState, game_id: u32, coord: crate::troops::Coord) {
             let classes = fixture_classes(game_id);
             crate::relics::IRelicMapDispatcherTrait::consume_relic_chest(
@@ -2409,24 +2403,12 @@ pub mod GamesFixture {
                 crate::relics::IRelicsLibraryDispatcher { class_hash: classes.relics.read() }, game_id,
             )
         }
-        fn chest_pity(self: @TContractState, game_id: u32, player: starknet::ContractAddress, depth: u8) -> u16 {
-            let classes = fixture_classes(game_id);
-            crate::relics::IRelicsDispatcherTrait::chest_pity(
-                crate::relics::IRelicsLibraryDispatcher { class_hash: classes.relics.read() }, game_id, player, depth,
-            )
-        }
-        fn chest_tokens(self: @TContractState, game_id: u32, player: starknet::ContractAddress, epoch: u64) -> u16 {
-            let classes = fixture_classes(game_id);
-            crate::relics::IRelicsDispatcherTrait::chest_tokens(
-                crate::relics::IRelicsLibraryDispatcher { class_hash: classes.relics.read() }, game_id, player, epoch,
-            )
-        }
-        fn chest_reward(
-            self: @TContractState, game_id: u32, order: u64, index: u32,
-        ) -> Option<crate::relics::ChestReward> {
-            let classes = fixture_classes(game_id);
-            crate::relics::IRelicsDispatcherTrait::chest_reward(
-                crate::relics::IRelicsLibraryDispatcher { class_hash: classes.relics.read() }, game_id, order, index,
+        fn site_chest(
+            self: @TContractState, key: crate::resources::ResourceKey,
+        ) -> Option<crate::relics::SiteChest> {
+            let classes = fixture_classes(key.game_id);
+            crate::relics::IRelicsDispatcherTrait::site_chest(
+                crate::relics::IRelicsLibraryDispatcher { class_hash: classes.relics.read() }, key,
             )
         }
         fn relic_rules(self: @TContractState, game_id: u32) -> Span<crate::relics::RelicRule> {

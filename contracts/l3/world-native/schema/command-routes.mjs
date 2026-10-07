@@ -94,4 +94,6 @@ export const commandRoutes = [
   { name: "Research", logic: "construction", entrypoint: "research" },
   { name: "BuyTier", logic: "relics", entrypoint: "buy_tier" },
   { name: "InteractSite", logic: "relics", entrypoint: "interact_site" },
+  { name: "RefillStamina", logic: "relics", entrypoint: "refill_stamina" },
+  { name: "WithdrawLords", logic: "relics", entrypoint: "withdraw_lords" },
 ];

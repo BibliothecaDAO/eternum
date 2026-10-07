@@ -49,19 +49,24 @@ function configuration(preset: number) {
 }
 
 describe("native presets", () => {
-  test("Frontier owns the 90/10 chest split, whole LORDS table and a season of 21 bags of days", () => {
+  test("Frontier pays ruin chests from its LORDS pool at a day price of at most 50 a share, over a seventy-day season", () => {
     const config = loadNativePresetConfiguration("madara.frontier", FRONTIER_PRESET_ID);
     const preset = buildNativePreset(config, FRONTIER_PRESET_ID);
     expect(preset.economy.chests.unwrap()).toEqual({
-      relic_probability: 9000,
-      token_cap: 1,
-      lords_amounts: { common: 100n, uncommon: 400n, rare: 1500n, epic: 6000n },
-      lords_pool: 1000000n,
+      pool: 1000000n,
+      price_ceiling: 50n,
+      shares: { common: 1, uncommon: 2, rare: 4, epic: 10, legendary: 20 },
+      surge_factor: 3,
+      surge_minimum_shares: 60,
+      estimate_days: 5,
     });
-    // Four-hour units, 20 to a bag: 1,680 hours, ten weeks.
-    expect(preset.rules.day_unit_seconds).toBe(14_400);
-    expect(config.season.durationSeconds).toBe(10 * 7 * 86_400);
-    expect(preset.economy.chests.unwrap()).not.toHaveProperty("cosmetic_probability");
+    expect(preset.settlement.depths.map(({ chest }) => Object.values(chest))).toEqual([
+      [5000, 2700, 1400, 600, 300],
+      [4000, 3000, 1700, 900, 400],
+      [3000, 3000, 2200, 1200, 600],
+      [2000, 3000, 2500, 1600, 900],
+    ]);
+    expect(config.season.durationSeconds).toBe(seasonSeconds(frontierPreset.seasonBags, frontierPreset.dayUnitSeconds));
   });
 
   test("every preset supplies its cooldown explicitly, independent of the stamina clock", () => {
@@ -236,7 +241,6 @@ describe("native presets", () => {
       well_bps: 300,
       empty_reveal_limit: 7,
     });
-    expect(preset.economy.chests.unwrap()).not.toHaveProperty("loose_one_in");
     expect(preset.rules.map_config.camp_win_probability).toBe(0);
     expect(preset.rules.map_config.shards_mines_win_probability).toBe(0);
     expect(

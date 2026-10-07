@@ -135,17 +135,9 @@ const stories: Record<string, { fields: number[]; expected: unknown }> = {
     fields: [7, 1, 3, 200],
     expected: { explorer_id: 7n, attribute: "Logistics", tier: 3n, price: 200n },
   },
-  ChestReward: {
-    fields: [17, 7, 3, 2, 2, 3, 0],
-    expected: {
-      player: 17n,
-      explorer_id: 7n,
-      epoch: 3n,
-      depth: 2n,
-      kind: "Token",
-      quality: 3n,
-      lords_exhausted: false,
-    },
+  LordsWithdrawn: {
+    fields: [17, 3, 200],
+    expected: { player: 17n, structure_id: 3n, amount: 200n },
   },
   ExplorerCreateStory: {
     fields: [7, 3, 1, 2, 100, 4],

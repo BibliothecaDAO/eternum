@@ -10,7 +10,7 @@ pub enum Discovery {
     BitcoinMine,
     Camp,
     Rift,
-    Ruin,
+    Ruin: crate::relics::SiteChest,
     Stragglers,
     Shrine,
     Well,
@@ -74,25 +74,25 @@ pub fn validate_frontier(rules: crate::expeditions::FrontierDiscoveryRules) {
 }
 
 // One categorical draw per reveal. After `empty_reveal_limit` empty reveals in a row the draw covers only the kinds
-// still allowed, so the next reveal always finds something. A ruin is allowed only while the player's day is free.
+// still allowed, so the next reveal always finds something. A ruin is allowed only with a chest: while the player's
+// day is free and its chest fits the LORDS budget, fixed before the draw.
 pub fn frontier(
     rules: crate::expeditions::FrontierDiscoveryRules,
     scouting: u8,
     empty_reveals: u8,
-    ruin_allowed: bool,
+    ruin: Option<crate::relics::SiteChest>,
     seed: u256,
     timestamp: u64,
 ) -> Discovery {
     assert!(scouting >= 1 && scouting <= 5, "invalid Scouting level");
     let bonus: u128 = Into::<u8, u128>::into(scouting - 1) * 150;
-    let ruin: u128 = if ruin_allowed {
-        rules.ruin_bps.into()
-    } else {
-        0
+    let (chest, ruin_weight): (crate::relics::SiteChest, u128) = match ruin {
+        Some(chest) => (chest, rules.ruin_bps.into()),
+        None => (crate::relics::SiteChest { tier: 0, amount: 0 }, 0),
     };
     let kinds = array![
         (Discovery::Stragglers, rules.stragglers_bps.into()), (Discovery::Camp, rules.camp_bps.into() + bonus),
-        (Discovery::Rift, rules.rift_bps.into() + bonus), (Discovery::Ruin, ruin),
+        (Discovery::Rift, rules.rift_bps.into() + bonus), (Discovery::Ruin(chest), ruin_weight),
         (Discovery::Shrine, rules.shrine_bps.into()), (Discovery::Well, rules.well_bps.into()),
     ];
     let mut total: u128 = 0;

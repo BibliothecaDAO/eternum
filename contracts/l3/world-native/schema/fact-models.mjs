@@ -778,11 +778,6 @@ export function defineFactModels({ struct, model: declare }) {
         value: "zero",
         meaning: "No players have settled or registered realms in this game.",
       };
-    if (row.name === "ChestPity" || row.name === "ChestTokens")
-      row.absence = {
-        value: "zero",
-        meaning: "No chests have advanced this counter.",
-      };
     if (row.name === "VillageRaid")
       row.absence = { parent: "Structure", value: "zero", meaning: "The village has not been successfully raided." };
     if (row.name === "ActionNonce")
@@ -884,35 +879,16 @@ export function defineFactModels({ struct, model: declare }) {
     ),
     model("ChestRules", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("relics::ChestRules")),
     model("LordsBudget", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("relics::LordsBudget")),
+    model("SiteChest", "game", struct("resources::ResourceKey"), struct("relics::SiteChest")),
     model(
-      "ChestPity",
-      "game",
-      [
-        { name: "game_id", type: "core::integer::u32" },
-        { name: "player", type: "core::starknet::contract_address::ContractAddress" },
-        { name: "depth", type: "core::integer::u8" },
-      ],
-      [{ name: "count", type: "core::integer::u16" }],
-    ),
-    model(
-      "ChestTokens",
-      "game",
-      [
-        { name: "game_id", type: "core::integer::u32" },
-        { name: "player", type: "core::starknet::contract_address::ContractAddress" },
-        { name: "epoch", type: "core::integer::u64" },
-      ],
-      [{ name: "count", type: "core::integer::u16" }],
-    ),
-    model(
-      "ChestReward",
+      "LordsWithdrawal",
       "game",
       [
         { name: "game_id", type: "core::integer::u32" },
         { name: "order", type: "core::integer::u64" },
         { name: "index", type: "core::integer::u32" },
       ],
-      struct("relics::ChestReward"),
+      struct("relics::LordsWithdrawal"),
     ),
     model(
       "RelicDiscovery",
@@ -1220,13 +1196,14 @@ const behaviouralFacts = {
     domain: "expedition",
     fields: {
       revealPercent: "reveal_percent",
-      guardLower: "guard_lower",
-      guardUpper: "guard_upper",
-      mineMinimum: "mine_cap_min",
-      mineMaximum: "mine_cap_max",
-      mineRate: "mine_rate",
-      mineChest: "mine_chest",
+      siteGuardLower: "site_guard_lower",
+      siteGuardUpper: "site_guard_upper",
+      ruinGuardLower: "ruin_guard_lower",
+      ruinGuardUpper: "ruin_guard_upper",
+      guardStep: "guard_step",
+      chestOdds: "chest",
       revealSiteNeighbors: "reveal_site_neighbors",
+      entryStamina: "entry_stamina",
     },
   },
   SettlementProgress: { domain: "realm/blitz", fields: { players: "registered", realms: "realm_count" } },
@@ -1396,12 +1373,10 @@ export const syncScopes = {
   Guild: { owners: ["guild_id"] },
   GuildMember: { owners: ["actor"] },
   GuildWhitelist: byPlayer,
-  ChestPity: byPlayer,
   BitcoinContribution: byPlayer,
   PlayerFaithPoints: byPlayer,
   PointsAwarded: byPlayer,
-  ChestTokens: { owners: ["player"], epoch: "epoch" },
-  ChestReward: { owners: ["player"], epoch: "epoch" },
+  LordsWithdrawal: byPlayer,
   RaidEvent: { owners: ["player", "target_owner"] },
   WonderFaith: { owners: ["last_recorded_owner"] },
   TileOpt: { regions: [{ alt: "alt", x: "col", y: "row" }] },
@@ -1409,6 +1384,7 @@ export const syncScopes = {
   Building: { realms: ["structure_id"] },
   RealmKnowledge: { realms: ["structure_id"] },
   ExpeditionSite: { entities: ["entity_id"] },
+  SiteChest: { entities: ["entity_id"] },
   ArmyProgress: { entities: ["explorer_id"] },
   ExpeditionDiscovery: { realms: ["structure_id"], epoch: "epoch" },
   ArmySlot: { realms: ["structure_id"], epoch: "epoch" },

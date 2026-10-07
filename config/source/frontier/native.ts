@@ -58,8 +58,9 @@ export const frontierPreset: NativePreset = {
       "Research",
       "EnterDepth",
       "BuyTier",
-      "OpenRelicChest",
       "InteractSite",
+      "RefillStamina",
+      "WithdrawLords",
       "SetEntityName",
       "MarkGameSettled",
     ] satisfies Array<keyof typeof nativeCommandBits>
@@ -106,11 +107,14 @@ export const frontierPreset: NativePreset = {
     emptyRevealLimit: 7,
   },
   progression: { revealXp: 2, fixedXp: 200, uncommonXp: 100, rareXp: 200, epicXp: 400, legendaryXp: 800 },
+  // The ruin's chest: the season pool paid through a day price of at most 50 LORDS a share.
   chests: {
-    relicProbability: 9000,
-    tokenCap: 1,
-    lordsAmounts: { common: 100, uncommon: 400, rare: 1500, epic: 6000 },
-    lordsPool: 1000000,
+    pool: 1000000,
+    priceCeiling: 50,
+    shares: { common: 1, uncommon: 2, rare: 4, epic: 10, legendary: 20 },
+    surgeFactor: 3,
+    surgeMinimumShares: 60,
+    estimateDays: 5,
   },
   depths: [
     {
@@ -122,7 +126,7 @@ export const frontierPreset: NativePreset = {
       guardStep: 100,
       revealSiteNeighbors: false,
       entryStamina: 0,
-      chest: { common: 7800, uncommon: 1800, rare: 350, pity: 400 },
+      chest: { common: 5000, uncommon: 2700, rare: 1400, epic: 600, legendary: 300 },
     },
     {
       revealPercent: 15,
@@ -133,7 +137,7 @@ export const frontierPreset: NativePreset = {
       guardStep: 100,
       revealSiteNeighbors: false,
       entryStamina: 30,
-      chest: { common: 6000, uncommon: 3000, rare: 800, pity: 100 },
+      chest: { common: 4000, uncommon: 3000, rare: 1700, epic: 900, legendary: 400 },
     },
     {
       revealPercent: 20,
@@ -144,7 +148,7 @@ export const frontierPreset: NativePreset = {
       guardStep: 100,
       revealSiteNeighbors: false,
       entryStamina: 40,
-      chest: { common: 4200, uncommon: 3800, rare: 1500, pity: 40 },
+      chest: { common: 3000, uncommon: 3000, rare: 2200, epic: 1200, legendary: 600 },
     },
     {
       revealPercent: 25,
@@ -155,7 +159,7 @@ export const frontierPreset: NativePreset = {
       guardStep: 100,
       revealSiteNeighbors: false,
       entryStamina: 50,
-      chest: { common: 2500, uncommon: 4300, rare: 2300, pity: 20 },
+      chest: { common: 2000, uncommon: 3000, rare: 2500, epic: 1600, legendary: 900 },
     },
   ],
 };

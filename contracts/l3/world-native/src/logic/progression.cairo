@@ -81,7 +81,7 @@ pub fn award_xp(key: ExplorerKey, award: XpAward) {
     write(key, progress);
 }
 
-/// A shrine's XP, and until relics leave chests a relic chest's: a fixed amount, whatever its quality.
+/// A shrine's XP: a fixed amount, whatever its quality.
 pub fn grant_fixed_xp(key: ExplorerKey) {
     let mut progress = require(key);
     progress.xp += rules(key.game_id).expect('missing progression rules').fixed_xp;

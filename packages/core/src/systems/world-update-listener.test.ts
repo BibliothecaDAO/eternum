@@ -12,32 +12,6 @@ function fixture() {
 }
 
 describe("native scene updates", () => {
-  it("carries the chest result's recorded action key to its consumer", () => {
-    const { store, listener } = fixture();
-    const reward = vi.fn();
-    listener.ChestRewards.onChestReward(reward);
-    store.applyEvent({
-      model: "StoryEvent",
-      key: "receipt-key",
-      value: {
-        game_id: 1,
-        order: "9007199254740993",
-        index: 1,
-        timestamp: 100,
-        story: { ChestReward: { explorer_id: 7, kind: "Token", quality: 0, depth: 2, lords_exhausted: false } },
-      },
-    });
-    expect(reward).toHaveBeenCalledWith({
-      resultKey: ["0x1", "0x20000000000001", "0x1"],
-      explorerId: 7,
-      kind: "Token",
-      lordsExhausted: false,
-      quality: 0,
-      depth: 2,
-      timestamp: 100,
-    });
-  });
-
   it("reads an army's Upgrade in either enum form, and refuses one it cannot name", () => {
     const { store, listener } = fixture();
     const chosen = vi.fn();
