@@ -58,6 +58,7 @@ export const campBeside = (kind: SiteKind = "Camp", guardKnown = true) => {
       initial_guard_count: String(1_100n * PRECISION),
       cleared: false,
     }),
+    ...(kind === "Ruin" ? [set("0x76", "SiteChest", { game_id: 1, entity_id: SITE, tier: 3, amount: "500" })] : []),
     ...(guardKnown
       ? [
           set("0x73", "Guard", {
