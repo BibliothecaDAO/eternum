@@ -164,8 +164,7 @@ export function musterStamina(
 ): { amount: number; max: number } {
   // A new slot occupant starts at its realm's trained Logistics, regardless of its troop tier.
   const staminaMax =
-    troopStaminaLimits(rules, troop.category, TroopTier.T1).staminaMax +
-    logisticsStamina(trainedLogistics + 1);
+    troopStaminaLimits(rules, troop.category, TroopTier.T1).staminaMax + logisticsStamina(trainedLogistics + 1);
   // A slot's first army of the day starts full at its own maximum.
   if (!slot.inherited) return { amount: staminaMax, max: staminaMax };
   const newArmy: Troops = {
