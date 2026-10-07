@@ -179,7 +179,7 @@ describe("native resource facts", () => {
     expect(manager.current(23)!.production).toMatchObject({ last_updated_at: 1000, production_rate: 2n });
     expect(manager.getActiveProductions()[0]).toMatchObject({ lastUpdatedAt: 1000, productionRate: 2n });
   });
-  it("projects wheat-funded training and shared storage before allowing muster", () => {
+  it("settles troops and wheat alone against shared storage, and nothing consumes wheat", () => {
     const store = new NativeFactStore();
     store.setSnapshot({ gameId: 1, complete: true, actor: null, timestamp: 350 });
     store.applyFacts([
@@ -215,12 +215,11 @@ describe("native resource facts", () => {
       }),
     ]);
     const manager = new ResourceManager(store, 7, 1);
-    expect(manager.trainsFromWheat()).toBe(true);
-    expect(new ResourceManager(store, 8, 1).trainsFromWheat()).toBe(false);
-    // Farms grow 100 a second; the barracks trains 10 a second at 2 wheat each (rates in game precision).
-    expect(manager.wheatPerHour(101)).toEqual({ produced: (100 / 1e9) * 3600, consumed: (20 / 1e9) * 3600 });
+    // Farms grow 100 a second (rates in game precision); the barracks's recipe wheat is paid only when troops deploy.
+    expect(manager.wheatPerHour(101)).toBe((100 / 1e9) * 3600);
     expect(new ResourceManager(store, 8, 1).wheatPerHour(101)).toBeUndefined();
-    expect(manager.balanceWithProduction(101, 26).balance).toBe(30);
+    // Each settles alone into the 10 the store has left, as the contract settles one touched resource at a time.
+    expect(manager.balanceWithProduction(101, 26).balance).toBe(40);
     expect(manager.balanceWithProduction(101, 35).balance).toBe(70);
     expect(manager.balance(35)).toBe(60n);
     store.applyFacts([
@@ -230,33 +229,14 @@ describe("native resource facts", () => {
         ResourceProduction: { ...production, resource_type: 35, production_rate: 0n },
       }),
     ]);
-    expect(manager.balanceWithProduction(101, 26).balance).toBe(32);
-    expect(manager.balanceWithProduction(110, 26).balance).toBe(32);
-    store.applyFacts([
-      ...upsert("0x2", {
-        ResourceProduction: { ...production, resource_type: 35, production_rate: 4n, last_updated_at: 110 },
-      }),
-    ]);
-    expect(manager.balanceWithProduction(111, 26).balance).toBe(34);
-    expect(manager.balanceWithProduction(111, 35).balance).toBe(0);
-  });
-  it("leaves the wheat rate unknown while the barracks snapshot is incomplete", () => {
-    const store = new NativeFactStore();
-    store.setSnapshot({ gameId: 1, complete: false, actor: null, timestamp: 350 });
-    store.applyFacts([
-      ...upsert("0x100", { SliceRules: { ...preset.rules, game_id: 1, mode_rules: 0 } }),
-      ...upsert("0x1", { ResourceWeight: weight() }),
-      ...upsert("0x2", {
-        ResourceBalance: { ...balance(), resource_type: 35 },
-        ResourceProduction: { ...production, resource_type: 35 },
-      }),
-    ]);
-
-    expect(new ResourceManager(store, 7, 1).wheatPerHour(101)).toBeUndefined();
+    // With no farm and almost no wheat the barracks still trains, up to the store's room.
+    expect(manager.balanceWithProduction(101, 26).balance).toBe(40);
+    expect(manager.balanceWithProduction(110, 26).balance).toBe(96);
+    expect(manager.balanceWithProduction(110, 35).balance).toBe(4);
   });
 });
 
-it("integrates yesterday's Support for wheat and training after refresh, and uses declared absence for an unboosted realm", () => {
+it("integrates yesterday's Support for wheat and troops after refresh, and uses declared absence for an unboosted realm", () => {
   const facts: GameSyncFact[] = [
     ...upsert("rules", { SliceRules: { ...preset.rules, game_id: 1, epoch_seconds: 100, mode_rules: 0 } }),
     ...upsert("game", { GameRegistry: { ...game, ready: true, start_main_at: 0n } }),
@@ -314,30 +294,22 @@ it("integrates yesterday's Support for wheat and training after refresh, and use
   for (let refreshCount = 0; refreshCount < 2; refreshCount++) {
     const { store, manager } = refresh(facts);
     expect(manager.balanceWithProduction(110, 26)?.balance).toBe(220);
-    expect(manager.balanceWithProduction(110, 35)?.balance).toBe(1760);
+    expect(manager.balanceWithProduction(110, 35)?.balance).toBe(2200);
     expect(ResourceManager.calculateResourceProductionData(35, manager.current(35)!, 110).productionPerSecond).toBe(
       100 / 1e9,
     );
     expect(store.requireOrAbsent("RealmSupport", { game_id: 1, structure_id: 7, epoch: 1n }).known?.level).toBe(0);
-    // The day's wheat runs 20% faster, both ways, until its midnight at 100; then the base rates.
-    expect(manager.wheatPerHour(95)).toEqual({ produced: (120 / 1e9) * 3600, consumed: (24 / 1e9) * 3600 });
-    expect(manager.wheatPerHour(150)).toEqual({ produced: (100 / 1e9) * 3600, consumed: (20 / 1e9) * 3600 });
+    // The day's wheat runs 20% faster until its midnight at 100; then the base rate.
+    expect(manager.wheatPerHour(95)).toBe((120 / 1e9) * 3600);
+    expect(manager.wheatPerHour(150)).toBe((100 / 1e9) * 3600);
     // Today's boost: the day's earned level past the first, none on a day that earned nothing.
     expect(realmSupportPercent(store, 1, 7, 90)).toEqual({ known: 20 });
     expect(realmSupportPercent(store, 1, 7, 150)).toEqual({ known: 0 });
-    const readCurrent = manager.current.bind(manager);
-    const unknownTrainer = vi
-      .spyOn(manager, "current")
-      .mockImplementation((id) => (id === 26 ? undefined : readCurrent(id)));
-    expect(manager.current(35)).toBeDefined();
-    expect(manager.balanceWithProduction(110, 35)).toBeUndefined();
-    unknownTrainer.mockRestore();
     store.setSnapshot({ gameId: 1, complete: false, actor: "0xa", timestamp: 110 });
-    expect(manager.balanceWithProduction(110, 35)).toBeUndefined();
     // An incomplete scope cannot vouch for a day without a row.
     expect(realmSupportPercent(store, 1, 7, 150).unknown).toBeDefined();
   }
   const unboosted = refresh(facts.filter((row) => row.model !== "RealmSupport"));
   expect(unboosted.manager.balanceWithProduction(110, 26)?.balance).toBe(200);
-  expect(unboosted.manager.balanceWithProduction(110, 35)?.balance).toBe(1600);
+  expect(unboosted.manager.balanceWithProduction(110, 35)?.balance).toBe(2000);
 });

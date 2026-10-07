@@ -141,16 +141,12 @@ export const formatTravelBlockedSummary = ({
   return `Cannot travel — needs ${requirements.join(" and ")}`;
 };
 
-/**
- * The visible reason food keeps an army still: what one step costs it, what its realm holds, and that barracks training
- * takes the wheat first where it does.
- */
+/** The visible reason food keeps an army still: what one step costs it and what its realm holds. */
 export const formatFoodBlock = (
   block: {
     action: "travel" | "explore";
     perStep: ArmyFoodRequirement;
     food: ArmyFoodBalance;
-    trainingTakesWheat: boolean;
   },
   formatAmount: (amount: number) => string,
 ): string => {
@@ -166,6 +162,5 @@ export const formatFoodBlock = (
     .join(" and ");
   const verb = block.action === "travel" ? "Can't march" : "Can't explore";
   const step = block.action === "travel" ? "each step" : "each explore";
-  const training = block.trainingTakesWheat ? " Barracks training takes the wheat first." : "";
-  return `${verb}: ${step} costs ${cost}; the realm has ${held}.${training}`;
+  return `${verb}: ${step} costs ${cost}; the realm has ${held}.`;
 };
