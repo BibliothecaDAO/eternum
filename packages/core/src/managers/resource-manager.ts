@@ -1,6 +1,13 @@
 import { productionOutput } from "../utils/production-output";
 import { isModeRuleEnabled } from "../utils/mode-rules";
-import { BuildingType, ID, ResourcesIds, RESOURCE_PRECISION, type Resource } from "@bibliothecadao/types";
+import {
+  BuildingType,
+  ID,
+  ResourcesIds,
+  RESOURCE_PRECISION,
+  StructureType,
+  type Resource,
+} from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { divideByPrecision, getBuildingCount, gramToKg } from "../utils";
@@ -30,6 +37,12 @@ const UNLIMITED_U128 = (1n << 128n) - 1n;
 /** The contract's is_unlimited: the marker, or one settlements wore below it before they stopped wearing it. */
 const isUnlimitedOutput = (outputAmountLeft: bigint) => outputAmountLeft >= UNLIMITED_U128 - (1n << 64n);
 
+/** The stores a board realm's castle keeps up to a limit of their own, as the contract's has_castle_limit. */
+const hasCastleLimit = (resourceId: ResourcesIds): boolean =>
+  resourceId === ResourcesIds.Wheat ||
+  resourceId === ResourcesIds.Labor ||
+  (resourceId >= ResourcesIds.Knight && resourceId <= ResourcesIds.PaladinT3);
+
 export class ResourceManager {
   entityId: ID;
 
@@ -47,10 +60,12 @@ export class ResourceManager {
         changes.length === 0 ||
         changes.some((change) => {
           if (change.model === "GameRegistry") return (change.current ?? change.previous)?.game_id === this.gameId;
+          // A realm's level sets its stores' limits.
           if (
             change.model !== "ResourceBalance" &&
             change.model !== "ResourceProduction" &&
-            change.model !== "ResourceWeight"
+            change.model !== "ResourceWeight" &&
+            change.model !== "Structure"
           )
             return false;
           const row = change.current ?? change.previous;
@@ -150,13 +165,39 @@ export class ResourceManager {
     if (!production)
       return { balance: Number(balance), hasReachedMaxCapacity: false, amountProduced: 0n, amountProducedLimited: 0n };
     const amountProduced = ResourceManager._amountProducedStatic(production, currentTick, resourceId);
-    const amountProducedLimited = this._limitProductionByStoreCapacity(amountProduced, resourceId);
+    // A store keeps nothing past its own limit, as the contract adds production to it.
+    const limit = this.storeLimit(resourceId);
+    const room = limit === undefined ? undefined : limit > balance ? limit - balance : 0n;
+    const fitting = this._limitProductionByStoreCapacity(amountProduced, resourceId);
+    const amountProducedLimited = room === undefined || fitting < room ? fitting : room;
+    const kept = balance + amountProducedLimited;
     return {
-      balance: Number(balance + amountProducedLimited),
-      hasReachedMaxCapacity: amountProducedLimited < amountProduced,
+      balance: Number(kept),
+      hasReachedMaxCapacity: amountProducedLimited < amountProduced || (limit !== undefined && kept >= limit),
       amountProduced,
       amountProducedLimited,
     };
+  }
+
+  /**
+   * A board realm's own limit on its wheat, labor or troops, as the contract's store_limit: its castle stores that many
+   * of its level's full deploys. Undefined for every other store, which only the shared weight bounds.
+   */
+  public storeLimit(resourceId: ResourcesIds): bigint | undefined {
+    if (!hasCastleLimit(resourceId)) return undefined;
+    const board = this.store.get("BoardRules", { game_id: this.gameId });
+    if (!board) return undefined;
+    const structure = this.store.get("Structure", { game_id: this.gameId, entity_id: this.entityId });
+    if (structure?.base.category !== StructureType.Realm) return undefined;
+    const limits = this.store.require("SliceRules", { game_id: this.gameId }).troop_limit_config;
+    const cap = [
+      limits.settlement_deployment_cap,
+      limits.city_deployment_cap,
+      limits.kingdom_deployment_cap,
+      limits.empire_deployment_cap,
+    ][structure.base.level];
+    if (cap === undefined) throw new Error(`Unknown castle level ${structure.base.level}`);
+    return BigInt(cap) * BigInt(board.castle_store_deploys) * BigInt(RESOURCE_PRECISION);
   }
 
   /**

@@ -263,6 +263,12 @@ pub mod ConstructionLogic {
             };
             assert!(record.base.level < maximum, "structure is already at max level");
             let next_level = record.base.level + 1;
+            if self.buildings.board(game_id).is_some() {
+                // The level sets the stores' limits: what accrued so far settles under the old ones.
+                self
+                    .resources_dispatcher(game_id)
+                    .settle_production(key, context.timestamp, crate::commands::resource_context(context));
+            }
             for cost in crate::logic::upgrades::recipe(game_id, next_level).costs {
                 self
                     .spend(
@@ -478,8 +484,8 @@ pub mod ConstructionLogic {
                     );
             }
         }
-        // A board building adds or removes its type's output, its hut tiers' population and, for a Storehouse, its
-        // capacity. Called after the building's own row and counts are written.
+        // A board building adds or removes its type's output and its hut tiers' population after its row and counts
+        // are written.
         fn change_board_building(
             ref self: ContractState,
             key: ResourceKey,
@@ -507,7 +513,6 @@ pub mod ConstructionLogic {
                         key, old_bonus, new_bonus, game_context.rules.unbox().building_config.base_population,
                     );
             }
-            self.change_building_capacity(key, category, adding, game_context);
         }
         fn change_board_output(
             ref self: ContractState,

@@ -1,9 +1,9 @@
 use crate::rules::RESOURCE_PRECISION;
 
 pub const LABOR: u8 = 23;
+pub const WHEAT: u8 = 35;
 pub const LORDS: u8 = 37;
 pub const ESSENCE: u8 = 38;
-pub const WHEAT: u8 = 35;
 pub const UNLIMITED_OUTPUT: u128 = 0xffffffffffffffffffffffffffffffff;
 // Settlements before this rule wore markers down by what they produced; a season never produces this much.
 const UNLIMITED_MARGIN: u128 = 0x10000000000000000;
@@ -18,6 +18,11 @@ pub fn is_unlimited(output_amount_left: u128) -> bool {
 
 pub fn is_troop_resource(resource_type: u8) -> bool {
     resource_type >= FIRST_TROOP_RESOURCE && resource_type <= LAST_TROOP_RESOURCE
+}
+
+/// The resources a board realm's castle stores up to a limit of their own: wheat, labor and troops.
+pub fn has_castle_limit(resource_type: u8) -> bool {
+    resource_type == WHEAT || resource_type == LABOR || is_troop_resource(resource_type)
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
@@ -101,6 +106,8 @@ pub(crate) struct SettledResource {
     pub(crate) balance: u128,
     pub(crate) production: Production,
     pub(crate) weight: Weight,
+    // A store's own limit, where it has one; the shared weight still bounds every store.
+    pub(crate) limit: Option<u128>,
 }
 
 pub(crate) fn assert_resource(resource_type: u8) {
@@ -117,7 +124,13 @@ pub(crate) fn has_production(resource_type: u8) -> bool {
 }
 
 pub fn settle(
-    resource_type: u8, ref balance: u128, ref production: Production, ref weight: Weight, unit_weight: u128, now: u32,
+    resource_type: u8,
+    ref balance: u128,
+    ref production: Production,
+    ref weight: Weight,
+    unit_weight: u128,
+    limit: Option<u128>,
+    now: u32,
 ) {
     let start_at = production.last_updated_at;
     production.last_updated_at = now;
@@ -130,11 +143,14 @@ pub fn settle(
         production.output_amount_left -= produced;
     }
     if produced != 0 {
-        add(resource_type, ref balance, ref weight, produced, unit_weight);
+        add(resource_type, ref balance, ref weight, produced, unit_weight, limit);
     }
 }
 
-pub(crate) fn add(resource_type: u8, ref balance: u128, ref weight: Weight, amount: u128, unit_weight: u128) -> u128 {
+/// Stores what fits, under the shared weight and the store's own limit, and returns it: the rest is gone.
+pub(crate) fn add(
+    resource_type: u8, ref balance: u128, ref weight: Weight, amount: u128, unit_weight: u128, limit: Option<u128>,
+) -> u128 {
     let unlimited = weight.capacity == 0xffffffffffffffffffffffffffffffff;
     let remaining = if unlimited {
         weight.capacity
@@ -142,11 +158,14 @@ pub(crate) fn add(resource_type: u8, ref balance: u128, ref weight: Weight, amou
         weight.capacity - core::cmp::min(weight.capacity, weight.weight)
     };
     let total_weight = amount * unit_weight;
-    let storable = if remaining < total_weight {
+    let mut storable = if remaining < total_weight {
         remaining / unit_weight
     } else {
         amount
     };
+    if let Some(limit) = limit {
+        storable = core::cmp::min(storable, limit - core::cmp::min(limit, balance));
+    }
     balance += storable;
     assert_relic_precision(resource_type, balance);
     if !unlimited {
@@ -238,6 +257,8 @@ pub trait IResourceOperations<T> {
         timestamp: u64,
         game_context: crate::commands::ResourceContext,
     );
+    // Settles every producing store, as a change to its limits must first.
+    fn settle_production(ref self: T, key: ResourceKey, timestamp: u64, game_context: crate::commands::ResourceContext);
     fn change_structure_capacity(
         ref self: T,
         key: ResourceKey,

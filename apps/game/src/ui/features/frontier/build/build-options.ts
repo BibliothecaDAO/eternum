@@ -19,13 +19,11 @@ const FRONTIER_BUILDINGS = [
   BuildingType.ResourceWheat,
   BuildingType.ResourceKnightT1,
   BuildingType.ResourceLabor,
-  BuildingType.Storehouse,
   BuildingType.WorkersHut,
 ] as const;
 
 export type BuildEffect =
   | { kind: "produces"; resource: ResourcesIds; perHour: number }
-  | { kind: "capacity"; amount: number }
   | { kind: "population"; amount: number };
 
 export interface BuildOption {
@@ -83,10 +81,6 @@ export const readBuildingEffect = (
   const board = store.require("BoardRules", { game_id: realm.game_id });
   const row = researchRowOf(category);
   const tier = row === undefined ? 0 : researchTier(learned, row);
-  if (category === BuildingType.Storehouse) {
-    const { capacity_config } = store.require("SliceRules", { game_id: realm.game_id });
-    return { kind: "capacity", amount: capacity_config.storehouse_boost_capacity };
-  }
   if (category === BuildingType.WorkersHut)
     return {
       kind: "population",

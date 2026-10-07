@@ -8,7 +8,6 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { getPlayerName } from "@/services/identity/player-profiles";
 import { requireActiveGameClient } from "@/sync/active-game-client";
 import { BUILDING_IMAGES_PATH } from "@/ui/config";
-import { Package } from "@/ui/design-system/atoms/game-icons";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { toast } from "@/ui/features/event-feed/notify";
 import { canIssueOrders } from "@/utils/can-issue-orders";
@@ -220,8 +219,6 @@ const EffectChip = ({ option: { effect } }: { option: BuildOption }) => {
         value={`+${formatAmount(effect.perHour)}/h`}
       />
     );
-  if (effect.kind === "capacity")
-    return <Chip label="Storage" icon={<Package />} value={`+${formatAmount(effect.amount)}`} />;
   return <Chip label="Population room" icon={<PersonGlyph />} value={`+${formatAmount(effect.amount)}`} />;
 };
 

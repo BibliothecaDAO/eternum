@@ -189,6 +189,7 @@ function buildStructures(config: Config, preset: ReturnType<typeof nativePresetF
             population_step_bps: board.populationStepBps,
             ration_step: scaled(board.rationStep, precision),
             training_gate_tier: board.trainingGateTier,
+            castle_store_deploys: board.castleStoreDeploys,
           }),
     research: preset.research.map(({ row, tier, essenceCost, laborCost }) => ({
       row,

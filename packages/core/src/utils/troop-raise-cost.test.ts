@@ -44,6 +44,7 @@ const realm = (board: boolean, wheat: bigint) => {
             population_step_bps: 2500,
             ration_step: PRECISION / 4n,
             training_gate_tier: 2,
+            castle_store_deploys: 2,
           }),
         ]
       : []),

@@ -808,16 +808,19 @@ pub mod StructuresLogic {
                 };
                 crate::logic::map::MapState::occupy(tile_key(game_id, coord), key.entity_id, occupier, true);
             }
-            let capacity = if village {
-                rules.structure_capacity_config.village_capacity
+            // A board realm has no shared weight: each of its stores has its own limit.
+            let capacity: u128 = if crate::logic::preset_record::for_game(game_id).board_terms.read().is_some() {
+                core::num::traits::Bounded::MAX
+            } else if village {
+                rules.structure_capacity_config.village_capacity.into() * RESOURCE_PRECISION
             } else {
-                rules.structure_capacity_config.realm_capacity
+                rules.structure_capacity_config.realm_capacity.into() * RESOURCE_PRECISION
             };
             self
                 .resources_dispatcher(game_id)
                 .initialize_resources(
                     key,
-                    capacity.into() * RESOURCE_PRECISION,
+                    capacity,
                     record.base.category,
                     record.base.created_at.into(),
                     crate::commands::action_context(game_context),

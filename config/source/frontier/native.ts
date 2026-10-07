@@ -74,6 +74,7 @@ export const frontierPreset: NativePreset = {
     populationStepBps: 2500,
     rationStep: 0.25,
     trainingGateTier: 2,
+    castleStoreDeploys: 2,
   },
   research: [
     ...buildingRows.flatMap(({ row, essence, labor }) =>

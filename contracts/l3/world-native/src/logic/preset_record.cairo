@@ -205,6 +205,7 @@ fn write_buildings(
         assert!(board.demolition_refund_bps <= 10000, "invalid demolition refund");
         assert!(board.workshop_rate != 0, "zero workshop rate");
         assert!(board.training_gate_tier <= 4, "invalid training gate tier");
+        assert!(board.castle_store_deploys != 0, "zero castle store");
         preset.board_terms.write(Some(board));
     }
 }

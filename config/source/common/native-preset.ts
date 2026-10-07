@@ -44,6 +44,8 @@ export interface NativePreset {
     rationStep: number;
     /** The Barracks tier a training building needs. */
     trainingGateTier: number;
+    /** The castle base is this many full deploys of its level. */
+    castleStoreDeploys: number;
   };
   /** One price per research row tier above common; rows are research.cairo's ROW_* ids. */
   research: readonly { row: number; tier: number; essenceCost: number; laborCost: number }[];

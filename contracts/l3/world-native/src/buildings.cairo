@@ -136,13 +136,14 @@ pub struct BoardRules {
     pub ration_step: u128,
     // The Barracks tier a realm needs before it can build a training building.
     pub training_gate_tier: u8,
+    // The castle stores this many of its level's full deploys of each of wheat, labor and troops.
+    pub castle_store_deploys: u8,
 }
 
 #[derive(Copy, Drop, Default, Debug, PartialEq)]
 pub struct BuildingEffect {
     pub resource_type: u8,
     pub rate: u64,
-    pub capacity: u128,
     pub population: u32,
 }
 

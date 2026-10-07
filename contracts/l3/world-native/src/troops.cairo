@@ -269,14 +269,18 @@ pub(crate) fn troop_occupier(troops: Troops) -> u8 {
     };
     category + tier
 }
-pub fn max_army_size(config: crate::rules::TroopLimitConfig, level: u8, tier: TroopTier) -> u32 {
-    let cap = match level {
+pub fn deployment_cap(config: crate::rules::TroopLimitConfig, level: u8) -> u32 {
+    match level {
         0 => config.settlement_deployment_cap,
         1 => config.city_deployment_cap,
         2 => config.kingdom_deployment_cap,
         3 => config.empire_deployment_cap,
         _ => panic!("invalid structure level"),
-    };
+    }
+}
+
+pub fn max_army_size(config: crate::rules::TroopLimitConfig, level: u8, tier: TroopTier) -> u32 {
+    let cap = deployment_cap(config, level);
     let (strength, modifier) = match tier {
         TroopTier::T1 => (config.t1_tier_strength, config.t1_tier_modifier),
         TroopTier::T2 => (config.t2_tier_strength, config.t2_tier_modifier),

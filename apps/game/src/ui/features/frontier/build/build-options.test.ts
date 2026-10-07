@@ -22,10 +22,7 @@ describe("Frontier's build options", () => {
     });
     expect(options.get(BuildingType.ResourceLabor)?.effect).toMatchObject({ resource: ResourcesIds.Labor });
     expect((options.get(BuildingType.ResourceLabor)?.effect as { perHour: number }).perHour).toBeCloseTo(50, 0);
-    expect(options.get(BuildingType.Storehouse)?.effect).toEqual({
-      kind: "capacity",
-      amount: preset.rules.capacity_config.storehouse_boost_capacity,
-    });
+    expect(options.has(BuildingType.Storehouse)).toBe(false);
     const hut = preset.buildings.find(({ category }) => category === BuildingType.WorkersHut)!.rule.capacity_grant;
     expect(options.get(BuildingType.WorkersHut)?.effect).toEqual({ kind: "population", amount: hut });
     expect(options.get(BuildingType.ResourceWheat)?.cost.length).toBeGreaterThan(0);
@@ -43,8 +40,6 @@ describe("Frontier's build options", () => {
     expect(farm.wheat.after).toBeCloseTo(300 + farm.wheat.change, 3);
     expect(barracks.wheat.change).toBe(0);
     expect(barracks.wheat.after).toBeCloseTo(300, 3);
-    expect(options.get(BuildingType.Storehouse)!.wheat.change).toBe(0);
-    expect(options.get(BuildingType.Storehouse)!.wheat.after).toBeCloseTo(300, 3);
   });
 
   it("gives each Fields pick a quarter more output and each hut tier a quarter more room, at no extra price", () => {

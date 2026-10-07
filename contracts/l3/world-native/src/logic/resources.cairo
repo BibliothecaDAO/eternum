@@ -1,5 +1,5 @@
-use starknet::storage::StorageMapReadAccess;
-use crate::resources::{Production, ResourceKey, Weight, assert_resource, has_production};
+use starknet::storage::{StorageMapReadAccess, StoragePathEntry, StoragePointerReadAccess};
+use crate::resources::{Production, ResourceKey, Weight, assert_resource, has_castle_limit, has_production};
 
 #[inline(never)]
 pub fn assert_exists(key: ResourceKey) {
@@ -30,6 +30,27 @@ pub fn weight(key: ResourceKey) -> Weight {
     let state = crate::state::read();
     assert_exists(key);
     state.resources.weights.read((key.game_id, key.entity_id))
+}
+
+/// A board realm keeps each of wheat, labor and troops up to its castle's base: that many deploys of its castle level's
+/// cap. Every other store, and every store off a board, has no limit of its own.
+#[inline(never)]
+pub fn store_limit(key: ResourceKey, resource_type: u8) -> Option<u128> {
+    if !has_castle_limit(resource_type) {
+        return None;
+    }
+    let preset = crate::logic::preset_record::for_game(key.game_id);
+    let board = preset.board_terms.read()?;
+    let base = crate::state::read().structures.structures.entry((key.game_id, key.entity_id)).base.read();
+    if base.category != crate::taxonomy::REALM_CATEGORY {
+        return None;
+    }
+    let cap = crate::troops::deployment_cap(preset.rules.troop_limit_config.read(), base.level);
+    Some(
+        Into::<u32, u128>::into(cap)
+            * Into::<u8, u128>::into(board.castle_store_deploys)
+            * crate::rules::RESOURCE_PRECISION,
+    )
 }
 
 pub fn rule(game_id: u32, resource_type: u8) -> crate::resources::ResourceRule {
@@ -212,7 +233,9 @@ pub mod ResourceState {
             start_at: u32,
         ) -> u128 {
             let mut resource = self.load_settled(key, resource_type, unit_weight, now, start_at);
-            let granted = add(resource_type, ref resource.balance, ref resource.weight, amount, unit_weight);
+            let granted = add(
+                resource_type, ref resource.balance, ref resource.weight, amount, unit_weight, resource.limit,
+            );
             self.commit_resource(key, resource_type, resource);
             granted
         }
@@ -305,13 +328,20 @@ pub mod ResourceState {
                 balance: crate::logic::resources::balance(key, resource_type),
                 production: crate::logic::resources::production(key, resource_type),
                 weight: self.data.resources.weights.read((key.game_id, key.entity_id)),
+                limit: crate::logic::resources::store_limit(key, resource_type),
             };
             resource
                 .production
                 .last_updated_at = core::cmp::max(resource.production.last_updated_at, core::cmp::min(now, start_at));
             if resource.production.last_updated_at != now {
                 settle(
-                    resource_type, ref resource.balance, ref resource.production, ref resource.weight, unit_weight, now,
+                    resource_type,
+                    ref resource.balance,
+                    ref resource.production,
+                    ref resource.weight,
+                    unit_weight,
+                    resource.limit,
+                    now,
                 );
             }
             resource

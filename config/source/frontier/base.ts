@@ -1,6 +1,6 @@
 import { frontierPreset } from "./native";
 import { nativeResearchConstants as research } from "../../../contracts/l3/world-native/schema/client.gen";
-import { CapacityConfig, RESOURCE_PRECISION } from "../../../packages/types/src/constants";
+import { RESOURCE_PRECISION } from "../../../packages/types/src/constants";
 import type { ConfigPatch } from "../common/merge-config";
 import { mergeConfigPatches } from "../common/merge-config";
 import { arenaBaseConfig } from "../common/arena/base";
@@ -10,7 +10,6 @@ const buildingIds = Array.from({ length: research.HEARTH }, (_, index) => index 
 const trainingBuildings = [research.WAR_HALL, research.SUPPLY_YARD, research.SCOUTS_LODGE, research.HEARTH];
 const laborCosts: Record<number, number> = {
   [research.HUT]: 300,
-  2: 1000,
   [research.WORKSHOP]: 2000,
   [research.BARRACKS]: 400,
   [research.FARM]: 400,
@@ -75,10 +74,6 @@ export const frontierBaseConfig: ConfigPatch = mergeConfigPatches(arenaBaseConfi
     buildingCapacity: Object.fromEntries(buildingIds.map((id) => [id, id === research.HUT ? 6 : 0])),
     simpleBuildingCost: buildingCosts,
     complexBuildingCosts: Object.fromEntries(buildingIds.map((id) => [id, []])),
-  },
-  carryCapacityGram: {
-    [CapacityConfig.RealmStructure]: 20000,
-    [CapacityConfig.Storehouse]: 10000,
   },
   realmMaxLevel: 4,
   villageMaxLevel: 1,

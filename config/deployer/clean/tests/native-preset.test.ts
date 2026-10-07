@@ -230,6 +230,7 @@ describe("native presets", () => {
       population_step_bps: 2500,
       ration_step: precision / 4n,
       training_gate_tier: 2,
+      castle_store_deploys: 2,
     });
     expect(preset.structures.buildings).toHaveLength(research.HEARTH);
     for (const category of [research.WAR_HALL, research.SUPPLY_YARD, research.SCOUTS_LODGE, research.HEARTH]) {

@@ -97,6 +97,7 @@ pub fn board_rules() -> crate::buildings::BoardRules {
         population_step_bps: 2500,
         ration_step: crate::rules::RESOURCE_PRECISION / 4,
         training_gate_tier: 2,
+        castle_store_deploys: 2,
     }
 }
 
@@ -560,7 +561,6 @@ fn board_output(deployment: super::Deployment, home: ResourceKey, category: u8) 
             .resource_production(ResourceSlot { game_id: home.game_id, entity_id: home.entity_id, resource_type: 35 })
             .production_rate
             .into(),
-        2 => resources.resource_weight(home).capacity,
         1 => IStructureOperationsDispatcher { contract_address: deployment.games }
             .structure_buildings(home)
             .population

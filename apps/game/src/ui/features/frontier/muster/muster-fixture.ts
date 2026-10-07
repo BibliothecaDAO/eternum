@@ -75,6 +75,7 @@ export const frontierDay = () => {
       population_step_bps: 2500,
       ration_step: "0",
       training_gate_tier: 2,
+      castle_store_deploys: 2,
     }),
     // Nothing trained yet: armies start at common.
     set("0xd", "RealmKnowledge", { game_id: 1, structure_id: 7, learned: "0" }),

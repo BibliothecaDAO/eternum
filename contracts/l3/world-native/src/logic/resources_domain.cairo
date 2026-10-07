@@ -256,6 +256,11 @@ pub mod ResourcesLogic {
                     game_context.production_start,
                 );
         }
+        fn settle_production(
+            ref self: ContractState, key: ResourceKey, timestamp: u64, game_context: crate::commands::ResourceContext,
+        ) {
+            self.resources.settle_production(key, timestamp.try_into().unwrap(), game_context.production_start);
+        }
         fn change_structure_capacity(
             ref self: ContractState,
             key: ResourceKey,
