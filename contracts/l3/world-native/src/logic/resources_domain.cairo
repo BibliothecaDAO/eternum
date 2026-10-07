@@ -49,9 +49,6 @@ pub mod ResourcesLogic {
         StoryEvent: StoryEvent,
     }
     #[abi(embed_v0)]
-        }
-    }
-    #[abi(embed_v0)]
     impl SiteRewards of crate::expeditions::ISiteRewards<ContractState> {
         fn pay_expedition_site(
             ref self: ContractState,
