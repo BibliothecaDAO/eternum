@@ -713,7 +713,7 @@ const presetDerivedModels = new Set([
   "BoardRules",
   "ResearchNode",
   "BuildingTierRule",
-  "CampResources",
+  "CampRules",
   "FaithRules",
   "UpgradeLimits",
   "UpgradeRecipe",
@@ -814,12 +814,7 @@ export function defineFactModels({ struct, model: declare }) {
       [{ name: "commitment", type: "core::felt252" }],
     ),
     model("SpireLayout", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("spires::SpireLayout")),
-    model(
-      "CampResources",
-      "game",
-      [{ name: "game_id", type: "core::integer::u32" }],
-      [{ name: "resources", type: "core::array::Span::<world_native::resources::ResourceAmount>" }],
-    ),
+    model("CampRules", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("camps::CampRules")),
     model(
       "Guild",
       "game",
@@ -1349,7 +1344,7 @@ export const syncScopes = {
     [
       "Preset",
       "SpireLayout",
-      "CampResources",
+      "CampRules",
       "ArtificerCost",
       "BlitzResult",
       "FaithRules",

@@ -97,7 +97,9 @@ function deriveStructures(emit: EmitRule, structures: PresetRecord) {
   }
   const board = some(structures.board);
   if (board) emit("BoardRules", board);
-  emit("CampResources", { resources: structures.camps });
+  // Registrations before CampRules carry the camp's grants alone.
+  if (Array.isArray(structures.camps)) emit("CampResources", { resources: structures.camps });
+  else emit("CampRules", record(structures.camps));
   emit("FaithRules", record(structures.faith));
   emit("UpgradeLimits", record(structures.upgrade_limits));
   records(structures.upgrades).forEach((recipe, index) => emit("UpgradeRecipe", recipe, { level: index + 1 }));

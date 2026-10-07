@@ -421,9 +421,9 @@ pub mod GamesFixture {
 
     #[starknet::embeddable]
     pub impl CampRulesFixture<TContractState, +Drop<TContractState>> of crate::camps::ICampRules<TContractState> {
-        fn camp_resources(self: @TContractState, game_id: u32) -> Span<crate::resources::ResourceAmount> {
+        fn camp_rules(self: @TContractState, game_id: u32) -> crate::camps::CampRules {
             let classes = fixture_classes(game_id);
-            crate::camps::ICampRulesDispatcherTrait::camp_resources(
+            crate::camps::ICampRulesDispatcherTrait::camp_rules(
                 crate::camps::ICampRulesLibraryDispatcher { class_hash: classes.structures.read() }, game_id,
             )
         }

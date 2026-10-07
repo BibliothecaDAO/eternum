@@ -201,14 +201,14 @@ pub mod StructuresLogic {
     }
     #[abi(embed_v0)]
     impl Camps of crate::camps::ICampRules<ContractState> {
-        fn camp_resources(self: @ContractState, game_id: u32) -> Span<crate::resources::ResourceAmount> {
+        fn camp_rules(self: @ContractState, game_id: u32) -> crate::camps::CampRules {
             let preset = crate::logic::preset_record::for_game(game_id);
             let count = preset.camp_resource_count.read();
             let mut resources = array![];
             for index in 0..count {
                 resources.append(preset.camp_grants.read(index));
             }
-            resources.span()
+            crate::camps::CampRules { resources: resources.span(), labor_rate: preset.camp_labor_rate.read() }
         }
     }
     #[abi(embed_v0)]
@@ -728,7 +728,8 @@ pub mod StructuresLogic {
                             crate::rules::rule_enabled(rules, crate::rules::DISCOVER_CAMPS),
                             "camp discovery is disabled",
                         );
-                        for resource in self.camp_resources(game_id) {
+                        let camp = self.camp_rules(game_id);
+                        for resource in camp.resources {
                             self
                                 .resources_dispatcher(game_id)
                                 .grant_resource(
@@ -739,13 +740,11 @@ pub mod StructuresLogic {
                                     crate::commands::resource_context(game_context),
                                 );
                         }
-                        let labor_rate = crate::logic::resources::rule(game_id, 23).village_rate;
-                        assert!(labor_rate != 0, "zero camp labor rate");
                         self
                             .create_producer(
                                 key,
                                 crate::resources::UNLIMITED_OUTPUT,
-                                labor_rate,
+                                camp.labor_rate,
                                 23,
                                 25,
                                 rules.building_config.base_population,

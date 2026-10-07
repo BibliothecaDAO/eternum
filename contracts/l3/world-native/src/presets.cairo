@@ -11,7 +11,7 @@ pub struct StructurePreset {
     pub research: Span<crate::research::ResearchNodeConfig>,
     pub building_tiers: Span<crate::research::BuildingTierConfig>,
     pub buildings: Span<crate::buildings::BuildingRuleConfig>,
-    pub camps: Span<crate::resources::ResourceAmount>,
+    pub camps: crate::camps::CampRules,
     pub faith: crate::faith::FaithRules,
     pub upgrade_limits: crate::upgrades::UpgradeLimits,
     pub upgrades: Span<crate::upgrades::UpgradeRecipe>,
@@ -106,13 +106,7 @@ pub fn validate(preset: PresetDefinition) {
     if crate::rules::rule_enabled(preset.rules, crate::rules::DISCOVER_CAMPS)
         && map.camp_win_probability != 0
         && preset.rules.epoch_seconds == 0 {
-        let mut labor_rate = None;
-        for rule in preset.resources.resources {
-            if *rule.resource_type == 23 {
-                labor_rate = Some(*rule.village_rate);
-            }
-        }
-        assert!(labor_rate.expect('missing village labor rule') > 0, "zero camp labor rate");
+        assert!(preset.structures.camps.labor_rate > 0, "zero camp labor rate");
     }
 }
 

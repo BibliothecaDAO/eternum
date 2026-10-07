@@ -40,12 +40,14 @@ pub fn for_game(game_id: u32) -> StoragePath<crate::state::Preset> {
 fn write_structures(preset: PresetWrite, structures: crate::presets::StructurePreset) {
     write_buildings(preset, structures.buildings, structures.board);
     write_research(preset, structures);
-    for index in 0..structures.camps.len() {
-        let resource = *structures.camps.at(index);
+    let camps = structures.camps;
+    for index in 0..camps.resources.len() {
+        let resource = *camps.resources.at(index);
         crate::resources::assert_resource(resource.resource_type);
         preset.camp_grants.write(index, resource);
     }
-    preset.camp_resource_count.write(structures.camps.len());
+    preset.camp_resource_count.write(camps.resources.len());
+    preset.camp_labor_rate.write(camps.labor_rate);
     assert!(structures.faith.owner_share_bps <= 10000, "invalid faith owner share");
     preset.faith_rules.write(structures.faith);
     write_upgrades(preset, structures.upgrade_limits, structures.upgrades);

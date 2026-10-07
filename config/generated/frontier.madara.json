@@ -549,6 +549,7 @@
   ],
   "villageStartingResources": [],
   "campStartingResources": [],
+  "campLaborPerSecond": 0.5,
   "troop": {
     "damage": {
       "t1DamageValue": "1844674407370955161600",

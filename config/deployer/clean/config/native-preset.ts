@@ -215,10 +215,13 @@ function buildStructures(config: Config, preset: ReturnType<typeof nativePresetF
         },
       };
     }),
-    camps: config.campStartingResources.map(({ resource, min_amount, max_amount }) => {
-      if (min_amount !== max_amount) throw new Error("Native camp preset requires the pinned fixed grants");
-      return { resource_type: resource, amount: scaled(min_amount, precision) };
-    }),
+    camps: {
+      resources: config.campStartingResources.map(({ resource, min_amount, max_amount }) => {
+        if (min_amount !== max_amount) throw new Error("Native camp preset requires the pinned fixed grants");
+        return { resource_type: resource, amount: scaled(min_amount, precision) };
+      }),
+      labor_rate: scaled(config.campLaborPerSecond, precision),
+    },
     faith: {
       wonder_rate: faith.wonder_base_fp_per_sec,
       realm_rate: faith.realm_fp_per_sec,
@@ -406,6 +409,7 @@ function scaleSeasonClocks(definition: ReturnType<typeof buildNativePreset>, sca
     resource.realm_rate *= BigInt(scale);
     resource.village_rate *= BigInt(scale);
   }
+  definition.structures.camps.labor_rate *= BigInt(scale);
   const board = definition.structures.board.unwrap();
   if (!board || typeof board !== "object" || !("workshop_rate" in board) || typeof board.workshop_rate !== "bigint")
     throw new Error("A scaled season requires a workshop rate");

@@ -53,7 +53,8 @@ fn setup_realm_with_explorers(count: u8) -> (Deployment, ResourceKey) {
     preset.structures.board = None;
     preset
         .structures
-        .camps =
+        .camps
+        .resources =
             array![ResourceAmount { resource_type: 1, amount: 100 }, ResourceAmount { resource_type: 2, amount: 20 }]
         .span();
     preset

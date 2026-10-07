@@ -88,7 +88,7 @@ pub(crate) fn definition(blitz: bool) -> PresetDefinition {
             building_tiers: array![].span(),
             board: None,
             buildings: super::building_commands::rules(),
-            camps: array![].span(),
+            camps: crate::camps::CampRules { resources: array![].span(), labor_rate: 5 },
             faith: crate::faith::FaithRules {
                 wonder_rate: 500, realm_rate: 100, village_rate: 10, owner_share_bps: 3000,
             },
@@ -418,22 +418,11 @@ fn preset_registration_rejects_enabled_mines_without_a_pool() {
 
 #[test]
 #[feature("safe_dispatcher")]
-fn preset_registration_rejects_camps_with_zero_village_labor() {
+fn preset_registration_rejects_camps_with_zero_camp_labor() {
     let d = setup();
     let mut preset = definition(true);
     preset.rules.map_config.camp_win_probability = 1;
-    let mut resources = array![];
-    for rule in preset.resources.resources {
-        resources
-            .append(
-                ResourceRule { village_rate: if *rule.resource_type == 23 {
-                    0
-                } else {
-                    *rule.village_rate
-                }, ..*rule },
-            );
-    }
-    preset.resources.resources = resources.span();
+    preset.structures.camps.labor_rate = 0;
     assert!(safe(d, super::authority()).register_preset(1, preset).is_err());
     assert_eq!(registry(d).preset_commitment(1), 0);
 }

@@ -422,6 +422,7 @@ export interface Config {
   startingResources: ResourceCost[];
   villageStartingResources: ResourceCost[];
   campStartingResources: ResourceMinMax[];
+  campLaborPerSecond: number;
   realmUpgradeCosts: { [key in RealmLevels]: ResourceCost[] };
   realmMaxLevel: number;
   villageMaxLevel: number;

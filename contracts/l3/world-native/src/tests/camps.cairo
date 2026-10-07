@@ -44,12 +44,17 @@ pub fn rules(blitz: bool) -> crate::rules::SliceRules {
     rules
 }
 fn setup(blitz: bool) -> (super::Deployment, ResourceKey) {
+    let (d, home, _) = super::resource_commands::setup_with_preset(camp_preset(blitz));
+    (d, home)
+}
+fn camp_preset(blitz: bool) -> crate::presets::PresetDefinition {
     let mut preset = super::resource_commands::fixture_preset(rules(blitz));
     preset.structures.buildings = super::building_commands::rules();
     preset.structures.board = None;
     preset
         .structures
-        .camps =
+        .camps
+        .resources =
             array![ResourceAmount { resource_type: 1, amount: 100 }, ResourceAmount { resource_type: 2, amount: 20 }]
         .span();
     preset
@@ -60,8 +65,7 @@ fn setup(blitz: bool) -> (super::Deployment, ResourceKey) {
                 },
             ]
         .span();
-    let (d, home, _) = super::resource_commands::setup_with_preset(preset);
-    (d, home)
+    preset
 }
 fn coord() -> Coord {
     Coord { alt: false, x: 2000100, y: 2000100 }
@@ -131,7 +135,7 @@ fn camps_grant_configured_resources_labor_and_one_crossbow_guard() {
         Into::<u64, u128>::into(rules(true).structure_capacity_config.camp_capacity) * RESOURCE_PRECISION,
     );
     let production = resources.resource_production(ResourceSlot { resource_type: 23, ..slot });
-    assert_eq!(production.production_rate, resources.resource_rule(3, 23).village_rate);
+    assert_eq!(production.production_rate, 5);
     assert_eq!(production.output_amount_left, 0xffffffffffffffffffffffffffffffff);
     assert_eq!(production.building_count, 1);
     assert_eq!(production.last_updated_at, 30);
@@ -148,6 +152,25 @@ fn camps_grant_configured_resources_labor_and_one_crossbow_guard() {
     for slot in 1_u8..4 {
         assert_eq!(guards.guard(GuardKey { game_id: 3, structure_id: key.entity_id, slot }), Default::default());
     }
+}
+#[test]
+fn tuning_the_village_rate_leaves_camps_unchanged() {
+    let mut preset = camp_preset(true);
+    let mut resources = array![];
+    for rule in preset.resources.resources {
+        let mut rule = *rule;
+        if rule.resource_type == crate::resources::LABOR {
+            rule.village_rate = 999;
+        }
+        resources.append(rule);
+    }
+    preset.resources.resources = resources.span();
+    let (d, _, _) = super::resource_commands::setup_with_preset(preset);
+    let key = create(d, coord());
+    let resources = IResourceOperationsDispatcher { contract_address: d.games };
+    assert_eq!(resources.resource_rule(3, crate::resources::LABOR).village_rate, 999);
+    let slot = ResourceSlot { game_id: 3, entity_id: key.entity_id, resource_type: crate::resources::LABOR };
+    assert_eq!(resources.resource_production(slot).production_rate, 5);
 }
 #[test]
 fn camp_reveals_six_biomes_without_neighbor_lotteries_or_points() {
@@ -170,20 +193,20 @@ fn camp_configuration_is_immutable_scoped_and_requires_authority() {
     let safe = ICampRulesSafeDispatcher { contract_address: d.games };
     let registrar = crate::registrar::IRegistrarSafeDispatcher { contract_address: d.games };
     let mut preset = super::resource_commands::fixture_preset(rules(true));
-    preset.structures.camps = array![].span();
+    preset.structures.camps.resources = array![].span();
     start_cheat_caller_address(d.games, d.actor);
     assert!(registrar.register_preset(20000, preset).is_err());
     start_cheat_caller_address(d.games, super::authority());
     let mut invalid = preset;
-    invalid.structures.camps = array![ResourceAmount { resource_type: 99, amount: 1 }].span();
+    invalid.structures.camps.resources = array![ResourceAmount { resource_type: 99, amount: 1 }].span();
     assert!(registrar.register_preset(20000, invalid).is_err());
     assert!(registrar.register_preset(20000, preset).is_ok());
     assert!(registrar.register_preset(20000, preset).is_err());
     stop_cheat_caller_address(d.games);
     let games = crate::game::IGameDispatcher { contract_address: d.games };
     super::recorded::seed_game_with_preset(d.games, 4, games.game(3), preset);
-    assert!(safe.camp_resources(4).unwrap().is_empty());
-    assert!(safe.camp_resources(999).is_err());
+    assert!(safe.camp_rules(4).unwrap().resources.is_empty());
+    assert!(safe.camp_rules(999).is_err());
 }
 
 #[test]

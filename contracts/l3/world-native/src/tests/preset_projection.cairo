@@ -256,7 +256,7 @@ fn observe_structures(ref rows: Array<ObservedRow>, address: ContractAddress, ga
             }
         }
     }
-    row(ref rows, 'CampResources', key, camp_rules.camp_resources(game_id));
+    row(ref rows, 'CampRules', key, camp_rules.camp_rules(game_id));
     row(ref rows, 'FaithRules', key, faith.faith_rules(game_id));
     let limits = upgrade_rules.upgrade_limits(game_id);
     row(ref rows, 'UpgradeLimits', key, limits);

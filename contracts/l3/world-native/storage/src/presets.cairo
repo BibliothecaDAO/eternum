@@ -48,6 +48,7 @@ pub struct PresetStorage<
     pub building_costs: Map<(u8, bool, u8), TResourceAmount>,
     pub camp_resource_count: u32,
     pub camp_grants: Map<u32, TResourceAmount>,
+    pub camp_labor_rate: u64,
     pub faith_rules: TFaithRules,
     pub upgrade_limits: TUpgradeLimits,
     pub upgrade_cost_counts: Map<u8, u32>,
