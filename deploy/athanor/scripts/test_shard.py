@@ -3,6 +3,8 @@ import io
 import importlib.util
 import json
 from pathlib import Path
+import resource
+import subprocess
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -26,6 +28,13 @@ def configuration():
         "node_flags": ["--enable-native-execution=true", "--native-compilation-mode=async"],
         "presets": [2],
     }
+
+
+def write_deployed_world(directory):
+    """The deployment records the gateway's environment is rendered from."""
+    (directory / "gameplay-contracts.json").write_text(json.dumps({"operatorAccountAddress": "0x1"}))
+    (directory / "authority.json").write_text(json.dumps({"address": "0x3", "signingKey": "0x2"}))
+    (directory / "native-world.json").write_text(json.dumps({"world": {"address": "0x4"}}))
 
 
 def load_package_script(name):
@@ -292,15 +301,35 @@ class ShardTest(unittest.TestCase):
     def test_the_collector_scrapes_the_gateway_metrics_listener_not_its_admission_port(self):
         with tempfile.TemporaryDirectory() as temporary:
             directory = Path(temporary)
-            (directory / "gameplay-contracts.json").write_text(json.dumps({"operatorAccountAddress": "0x1"}))
-            (directory / "authority.json").write_text(json.dumps({"address": "0x3", "signingKey": "0x2"}))
-            (directory / "native-world.json").write_text(json.dumps({"world": {"address": "0x4"}}))
+            write_deployed_world(directory)
             shard.write_gateway_environment({"player_capacity": 96}, directory)
             gateway = dict(line.split("=", 1) for line in (directory / "gateway.env").read_text().splitlines())
             [target] = shard.collector_configuration()["receivers"]["prometheus"]["config"]["scrape_configs"][0][
                 "static_configs"][0]["targets"]
             self.assertEqual(target.split(":")[1], gateway["GATEWAY_METRICS_LISTEN"].split(":")[1])
             self.assertNotEqual(gateway["GATEWAY_METRICS_LISTEN"], gateway["GATEWAY_LISTEN"])
+
+    def test_the_gateway_starts_with_a_descriptor_for_every_connection_it_admits(self):
+        # Docker starts containers at a soft limit of 1024 open files, and the gateway does not raise its own.
+        config = {**configuration(), "player_capacity": 2000}
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            for name in ("config", "public"):
+                (root / name).mkdir()
+            write_deployed_world(root / "config")
+            shard.write_gateway_environment(config, root / "config")
+            (root / "public" / "proxy.env").write_text("")
+            gateway = root / "realms-gateway"
+            gateway.write_text("#!/bin/sh\nulimit -Sn\n")
+            gateway.chmod(0o755)
+            # The runner renders the package's Compose file, so this is the entrypoint both start; Compose unescapes $$.
+            shell, flag, script = shard.compose_configuration(config, root / "run")["services"]["gateway"]["entrypoint"]
+            script = (script.replace("$$", "$").replace("/config/", f"{root}/config/")
+                      .replace("/public/", f"{root}/public/").replace("/usr/local/bin/realms-gateway", str(gateway)))
+            hard = resource.getrlimit(resource.RLIMIT_NOFILE)[1]
+            started = subprocess.run([shell, flag, script], capture_output=True, text=True, check=True,
+                                     preexec_fn=lambda: resource.setrlimit(resource.RLIMIT_NOFILE, (1024, hard)))
+        self.assertEqual(int(started.stdout), shard.admission_connections(config) + shard.GATEWAY_OWN_FILES)
 
     def test_cgroup_samples_keep_units_and_history_across_container_replacement(self):
         spec = importlib.util.spec_from_file_location("collect_cpu", shard.METRICS_CONTEXT / "collect_cpu.py")

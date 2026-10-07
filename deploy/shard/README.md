@@ -43,6 +43,10 @@ the gateway and the host; size larger or Frontier workloads from their own measu
 disabled. Our box runner keeps these defaults and refuses a shard whose limits do not fit its resource slice beside the
 shards already running there.
 
+Open files follow `PLAYER_CAPACITY` too. The gateway raises its soft limit at start to one descriptor per admission
+connection plus its own sockets; the node, Herald, the RPC proxy and Postgres size their own. Docker's default hard
+limit covers this; a host whose hard limit is lower stops the gateway at start, naming `ulimit`.
+
 Community shards use the production guardian at `https://play.realms.party/api/guardian`.
 `https://play.dev-realms.party/api/guardian` belongs to our staging tests.
 

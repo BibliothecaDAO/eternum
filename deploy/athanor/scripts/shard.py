@@ -38,6 +38,11 @@ RELEASES = "https://github.com/BibliothecaDAO/eternum/releases/download"
 # package's: players never reach the node directly.
 CONNECTIONS_PER_PLAYER = 2
 TOOLING_CONNECTIONS = 32
+# The gateway's descriptors beyond its admission connections: up to 256 concurrent node requests (its jsonrpsee
+# client's limit), two node subscriptions, its two listeners, metrics scrapes and the runtime's own, with headroom.
+# It does not raise its open-file limit itself, unlike the node, Herald, the RPC proxy, Postgres and the collector, and
+# Docker starts containers at a soft limit of 1024.
+GATEWAY_OWN_FILES = 384
 # Campaign G's target, not yet a measured ceiling: a larger shard waits for a G measurement that supports it.
 MAX_PLAYER_CAPACITY = 2000
 DEFAULT_NODE_MEMORY_MIB = 24576
@@ -61,6 +66,10 @@ def cpu_numbers(value):
 
 def admission_connections(config):
     return config["player_capacity"] * CONNECTIONS_PER_PLAYER + TOOLING_CONNECTIONS
+
+
+def gateway_open_files(config):
+    return admission_connections(config) + GATEWAY_OWN_FILES
 
 
 def validate_configuration(config, allowed_cpus):
@@ -352,7 +361,7 @@ def write_gateway_environment(config, directory):
         "RANDOMNESS_PRIVATE_KEY": authority["signingKey"],
         "RANDOMNESS_EPOCH_SECRET": "/data/game-epoch-secret.json", "RUST_LOG": "info",
         "GATEWAY_LISTEN": "0.0.0.0:9950", "GATEWAY_METRICS_LISTEN": "0.0.0.0:9951",
-        "GATEWAY_MAX_CONNECTIONS": admission_connections(config),
+        "GATEWAY_MAX_CONNECTIONS": admission_connections(config), "GATEWAY_OPEN_FILES": gateway_open_files(config),
         "GATEWAY_PLAYER_CAPACITY": config["player_capacity"],
         "GATEWAY_AUTHORITY": json.loads((directory / "gameplay-contracts.json").read_text())["operatorAccountAddress"],
         "NODE_RPC_URL": "http://madara:9944/rpc/v0_10_2", "NODE_WS_URL": "ws://madara:9944/rpc/v0_10_2",

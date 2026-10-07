@@ -5,12 +5,12 @@
 
 ENVIRONMENT names deploy/release/ENVIRONMENT.json, the deployment's inputs: the shard-v* package tag, the shard's
 identity and public endpoints, its size and the presets it registers. That committed file is the environment's only
-preset set; nothing else passes PRESETS, and a file git does not track unchanged is refused. No environment has one
-yet: the first is committed with the first shard this command creates. DIRECTORY holds the package and the shard's data/ across runs. The command
-takes the isolated-stack lock, fetches the tag's shard.tar.gz, renders the package's .env from the inputs, checks that
-initialization will receive an operator approval, starts the package, waits for initialization, then compares the
-deployed shard with the release.json CI published beside it: release id, schema, every class, the migration and every
-preset commitment. Any difference fails the deployment and is named.
+preset set; nothing else passes PRESETS, and a file git does not track unchanged is refused. A new shard for an
+environment is a new chain id and package in its file. DIRECTORY holds the package and the shard's data/ across runs.
+The command takes the isolated-stack lock, fetches the tag's shard.tar.gz, renders the package's .env from the inputs,
+checks that initialization will receive an operator approval, starts the package, waits for initialization, then
+compares the deployed shard with the release.json CI published beside it: release id, schema, every class, the migration
+and every preset commitment. Any difference fails the deployment and is named.
 """
 import io
 import json
