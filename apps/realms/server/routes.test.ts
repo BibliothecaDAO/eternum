@@ -70,7 +70,7 @@ it.each([
   ["/api/notifications/preferences", "POST"],
   ["/api/notifications/push/subscribe", "POST"],
 ])("rejects sibling-origin and originless cookie mutations at %s", async (path, method) => {
-  for (const originHeader of [null, "https://staging.realms.party", "null"]) {
+  for (const originHeader of [null, "https://herald.realms.party", "null"]) {
     const headers: Record<string, string> = { cookie: "session=example", "content-type": "text/plain" };
     if (originHeader) headers.origin = originHeader;
     const response = await routeIdentityRequest(

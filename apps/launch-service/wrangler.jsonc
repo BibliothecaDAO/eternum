@@ -17,10 +17,10 @@
       "name": "realms-launch-staging",
       "workers_dev": false,
       "routes": [
-        { "pattern": "staging.realms.party/api/factory/*", "zone_name": "realms.party" },
-        { "pattern": "staging.realms.party/api/slots*", "zone_name": "realms.party" },
+        { "pattern": "play.dev-realms.party/api/factory/*", "zone_name": "dev-realms.party" },
+        { "pattern": "play.dev-realms.party/api/slots*", "zone_name": "dev-realms.party" },
       ],
-      "vars": { "ENVIRONMENT": "staging", "BASE_URL": "https://staging.realms.party" },
+      "vars": { "ENVIRONMENT": "staging", "BASE_URL": "https://play.dev-realms.party" },
       "d1_databases": [{ "binding": "DB", "database_name": "realms-launch-staging", "migrations_dir": "migrations" }],
       "services": [{ "binding": "IDENTITY", "service": "realms-identity-staging" }],
       "durable_objects": { "bindings": [{ "name": "REGISTRAR", "class_name": "Registrar" }] },

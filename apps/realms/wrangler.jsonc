@@ -1,4 +1,4 @@
-// The identity Worker. Staging serves staging.realms.party/api beside the isolated box stack's app; production serves
+// The identity Worker. Staging serves play.dev-realms.party/api, on the dev domain's own zone; production serves
 // play.realms.party/api at the cutover. Either way the app and its identity routes share one origin.
 // Each environment has its own D1 database and its own secrets (BETTER_AUTH_SECRET, IDENTITY_RPC_URL), which the
 // deploy workflow sets from that environment's GitHub secrets.
@@ -17,10 +17,10 @@
     "staging": {
       "name": "realms-identity-staging",
       "workers_dev": false,
-      "routes": [{ "pattern": "staging.realms.party/api/*", "zone_name": "realms.party" }],
+      "routes": [{ "pattern": "play.dev-realms.party/api/*", "zone_name": "dev-realms.party" }],
       "vars": {
         "ENVIRONMENT": "staging",
-        "BASE_URL": "https://staging.realms.party",
+        "BASE_URL": "https://play.dev-realms.party",
         "ACCOUNT_CLASS_HASH": "0x68995feeefffc1647118073e1ff16179f07eb8eed6c8fb03cce73109f5fbacd",
         "SHARD_NOTIFIER_POLL_MS": "3000",
       },

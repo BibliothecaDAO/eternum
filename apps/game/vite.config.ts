@@ -29,8 +29,8 @@ const requireIdentityRpcUrl = (): PluginOption => ({
   },
 });
 
-/** The isolated box stack's app and its identity Worker, which every development build signs in against. */
-const STAGING_ORIGIN = "https://staging.realms.party";
+/** The dev environment's app and its identity Worker, which every development build signs in against. */
+const STAGING_ORIGIN = "https://play.dev-realms.party";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
