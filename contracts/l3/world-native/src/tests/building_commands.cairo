@@ -401,7 +401,7 @@ fn building_placement_rejects_invalid_paths_categories_and_occupied_tiles() {
             40,
         );
     }
-    for category in array![0_u8, 41] {
+    for category in array![0_u8, crate::buildings::BUILDING_CATEGORY_COUNT + 1] {
         assert_terminal_rejection(deployment, create(home, category), 40);
     }
     assert_eq!(resource_facts(deployment, home), before);
