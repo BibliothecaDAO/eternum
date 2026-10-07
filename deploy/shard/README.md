@@ -43,6 +43,11 @@ the gateway and the host; size larger or Frontier workloads from their own measu
 disabled. Our box runner keeps these defaults and refuses a shard whose limits do not fit its resource slice beside the
 shards already running there.
 
+Every shard runs a metrics collector, `metrics`, in 256 MiB: the node exports its OTLP metrics to it, it scrapes the
+gateway's admission series and it samples every container's CPU from a read-only `/sys/fs/cgroup`, with no Docker socket
+and no capabilities. It writes `data/metrics/metrics.jsonl` and `data/metrics/container-metrics.jsonl`; each rotates at
+100 MB and keeps two older files, so the directory holds at most 600 MB. Nothing leaves the host.
+
 Open files follow `PLAYER_CAPACITY` too. The gateway raises its soft limit at start to one descriptor per admission
 connection plus its own sockets; the node, Herald, the RPC proxy and Postgres size their own. Docker's default hard
 limit covers this; a host whose hard limit is lower stops the gateway at start, naming `ulimit`.

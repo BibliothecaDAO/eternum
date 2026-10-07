@@ -50,6 +50,8 @@ services:
       - --l1-sync-disabled
       - --enable-native-execution=true
       - --native-compilation-mode=async
+      - --otel-collector-endpoint=http://metrics:4317
+      - --otel-export-metrics=true
     volumes: ["chain:/data", "public-config:/config:ro"]
     mem_limit: ${NODE_MEMORY:-24g}
     memswap_limit: ${NODE_MEMORY:-24g}
@@ -120,6 +122,22 @@ services:
     restart: on-failure
     depends_on:
       init: { condition: service_completed_successfully, restart: true }
+
+  # The shard's own metrics: the node's OTLP export, the gateway's admission series and every container's CPU, as JSON
+  # lines under data/metrics. Each file rotates at 100 MB and keeps two older files, 600 MB at most.
+  metrics:
+    image: ${SHARD_METRICS_IMAGE:?Use the published metrics image digest}
+    command: ["--config=/config/collector.json"]
+    user: "${HOST_UID:?}:${HOST_GID:?}"
+    volumes: ["public-config:/config:ro", "${SHARD_DATA:-./data}/metrics:/data", "/sys/fs/cgroup:/host-cgroup:ro"]
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 256m
+    memswap_limit: 256m
+    restart: on-failure
+    depends_on:
+      prepare: { condition: service_completed_successfully }
 
 volumes:
   chain:

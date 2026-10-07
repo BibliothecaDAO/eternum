@@ -100,19 +100,19 @@ state; existing candidate chains are not rewritten or migrated by initialization
 
 The runner creates private volumes, deploys the Realms account class (refusing one that differs from the class the
 identity service approves devices for) and the operator's own Realms account, deploys the native world under it,
-registers the configuration's `presets` and starts Herald. Each shard exports upstream node metrics through its own
-pinned OTLP collector into its private run directory; `harness.env` points the existing block reporter at that output.
-The collector also scrapes `gateway:9951/metrics` (a port the package never publishes) every 5 seconds. Its cgroup
-sampler replaces the Docker stats receiver: it reads each container's `cpu.stat` through a read-only `/sys/fs/cgroup`
-mount, with no Docker socket. Every 10 seconds it appends usage and throttling counters to
-`metrics/container-metrics.jsonl` in the existing OTLP JSON format, retaining the whole run across collector restarts.
-Container ID, cgroup name and relative cgroup path identify each sample, including containers outside the shard so runs
-can show competing work. Compare cumulative `container.cpu.usage.total` deltas (nanoseconds), CPU utilization and
-throttled time with the latency window. The image builds from pinned Python and collector images; the Compose runner
-builds it from the sampler's content hash. It runs without capabilities or writable root files. Keep the unrotated
-samples with the run report. The run directory holds its compose configuration, manifest, logs and private
-`harness.env`. It starts no live services. Failed runs retain their volumes for inspection; choose a fresh shard id for
-a new run.
+registers the configuration's `presets` and starts Herald. Every shard, started by the runner or from the package, runs
+the package's `metrics` service: the release's pinned OTLP collector, which the node exports its metrics to, in 256 MiB;
+`harness.env` points the existing block reporter at its output. The collector also scrapes `gateway:9951/metrics` (a
+port the package never publishes) every 5 seconds. Its cgroup sampler replaces the Docker stats receiver: it reads each
+container's `cpu.stat` through a read-only `/sys/fs/cgroup` mount, with no Docker socket. Every 10 seconds it appends
+usage and throttling counters to `metrics/container-metrics.jsonl` in the existing OTLP JSON format, across collector
+restarts. Container ID, cgroup name and relative cgroup path identify each sample, including containers outside the
+shard so runs can show competing work. Compare cumulative `container.cpu.usage.total` deltas (nanoseconds), CPU
+utilization and throttled time with the latency window. `metrics.jsonl` and `container-metrics.jsonl` each rotate at 100
+MB and keep two older files. The release builds the image from pinned Python and collector images and publishes it
+beside the others. It runs without capabilities or writable root files. The run directory holds its compose
+configuration, manifest, logs and private `harness.env`. It starts no live services. Failed runs retain their volumes
+for inspection; choose a fresh shard id for a new run.
 
 Before starting admission, the runner checks genesis and every shard role against `host-accounts.json` and the node: the
 deployer, sequencing account and its administrator, operator and each domain's authority. It refuses a seeded devnet

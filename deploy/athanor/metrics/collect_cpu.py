@@ -12,6 +12,10 @@ import time
 INTERVAL_SECONDS = 10
 CGROUP_ROOT = Path('/host-cgroup')
 OUTPUT = Path('/data/container-metrics.jsonl')
+# The collector's own export rotates at 100 MB and keeps two older files (collector.json); these samples do the same,
+# so a long-lived shard's metrics stay bounded.
+ROTATE_BYTES = 100 * 2**20
+BACKUPS = 2
 # Preserve the Docker receiver's cumulative metric names and nanosecond units.
 COUNTERS = (
     ('usage_usec', 'container.cpu.usage.total', 'ns', 1000),
@@ -54,6 +58,7 @@ def append_samples(root, output, previous):
     now = time.time_ns()
     elapsed_clock = time.monotonic_ns()
     current = {}
+    rotate(output)
     with output.open('a') as stream:
         for path in root.rglob('cpu.stat'):
             identity = container_identity(path.parent, root)
@@ -70,6 +75,17 @@ def append_samples(root, output, previous):
             stream.write(json.dumps(sample, separators=(',', ':')) + '\n')
             current[key] = (elapsed_clock, counters['usage_usec'])
     return current
+
+
+def rotate(output):
+    """Moves a full sample file to .1, and .1 to .2, dropping the oldest."""
+    if not output.exists() or output.stat().st_size < ROTATE_BYTES:
+        return
+    for generation in range(BACKUPS - 1, 0, -1):
+        older = output.with_name(f'{output.name}.{generation}')
+        if older.exists():
+            older.replace(output.with_name(f'{output.name}.{generation + 1}'))
+    output.replace(output.with_name(f'{output.name}.1'))
 
 
 def container_identity(directory, root):

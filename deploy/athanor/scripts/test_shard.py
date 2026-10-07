@@ -21,6 +21,7 @@ def configuration():
         "player_capacity": 96,
         "herald_image": "sha256:" + "b" * 64,
         "gateway_image": "sha256:" + "c" * 64, "init_image": "sha256:" + "d" * 64,
+        "metrics_image": "sha256:" + "f" * 64,
         "chain_config": "/tmp/chain-config.yaml",
         "guardian_url": "https://identity.test/api/guardian",
         "public_rpc_url": "https://rpc.test/rpc/v0_10_2",
@@ -35,6 +36,13 @@ def write_deployed_world(directory):
     (directory / "gameplay-contracts.json").write_text(json.dumps({"operatorAccountAddress": "0x1"}))
     (directory / "authority.json").write_text(json.dumps({"address": "0x3", "signingKey": "0x2"}))
     (directory / "native-world.json").write_text(json.dumps({"world": {"address": "0x4"}}))
+
+
+def load_cpu_sampler():
+    spec = importlib.util.spec_from_file_location("collect_cpu", shard.ROOT / "deploy/athanor/metrics/collect_cpu.py")
+    sampler = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(sampler)
+    return sampler
 
 
 def load_package_script(name):
@@ -331,10 +339,39 @@ class ShardTest(unittest.TestCase):
                                      preexec_fn=lambda: resource.setrlimit(resource.RLIMIT_NOFILE, (1024, hard)))
         self.assertEqual(int(started.stdout), shard.admission_connections(config) + shard.GATEWAY_OWN_FILES)
 
+    def test_the_package_runs_its_collector_within_its_budget_and_the_node_exports_to_it(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            compose = shard.compose_configuration(configuration(), Path(temporary))
+        node, metrics = compose["services"]["madara"], compose["services"]["metrics"]
+        receiver = shard.collector_configuration()["receivers"]["otlp"]["protocols"]["grpc"]["endpoint"]
+        self.assertIn(f"--otel-collector-endpoint=http://metrics:{receiver.rsplit(':', 1)[1]}", node["command"])
+        self.assertIn("--otel-export-metrics=true", node["command"])
+        # The release's published collector, the same on every shard; the runner builds none of its own.
+        self.assertEqual(metrics["image"], configuration()["metrics_image"])
+        self.assertEqual(shard.memory_bytes(metrics["mem_limit"]), 256 * 2**20)
+        self.assertEqual(shard.memory_bytes(metrics["memswap_limit"]), 256 * 2**20)
+        self.assertTrue(metrics["read_only"])
+        self.assertEqual(metrics["cap_drop"], ["ALL"])
+
+    def test_cpu_samples_rotate_as_the_collector_export_does(self):
+        sampler = load_cpu_sampler()
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            container = root / ("docker-" + "a" * 64 + ".scope")
+            container.mkdir()
+            (container / "cpu.stat").write_text("usage_usec 120\n")
+            output = root / "container-metrics.jsonl"
+            for generation in ("oldest", "older", "full"):
+                output.write_text(generation.ljust(sampler.ROTATE_BYTES, "."))
+                sampler.append_samples(root, output, {})
+            self.assertEqual(len(output.read_text().splitlines()), 1)
+            backups = sorted(root.glob("container-metrics.jsonl.*"))
+            self.assertEqual([path.name for path in backups], ["container-metrics.jsonl.1", "container-metrics.jsonl.2"])
+            self.assertTrue(backups[0].read_text().startswith("full"))
+            self.assertTrue(backups[1].read_text().startswith("older"))
+
     def test_cgroup_samples_keep_units_and_history_across_container_replacement(self):
-        spec = importlib.util.spec_from_file_location("collect_cpu", shard.METRICS_CONTEXT / "collect_cpu.py")
-        sampler = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(sampler)
+        sampler = load_cpu_sampler()
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             output = root / "samples.jsonl"

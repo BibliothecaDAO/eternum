@@ -29,7 +29,6 @@ sys.path.insert(0, str(ROOT / "deploy/shard"))
 from stack_lock import isolated_stack_lock
 
 
-METRICS_CONTEXT = ROOT / "deploy/athanor/metrics"
 # sudo resets the environment; the operator token passes through to initialization only when it is kept.
 DOCKER = ["sudo", "-n", "--preserve-env=OPERATOR_TOKEN", "docker"]
 RELEASES = "https://github.com/BibliothecaDAO/eternum/releases/download"
@@ -81,7 +80,7 @@ def validate_configuration(config, allowed_cpus):
         raise ValueError("presets must list the preset ids the shard registers")
     if "madara_image" in config:
         raise ValueError("the node image is the package's pin in deploy/shard/compose.yml")
-    for key in ("herald_image", "gateway_image", "init_image"):
+    for key in ("herald_image", "gateway_image", "init_image", "metrics_image"):
         if not re.fullmatch(r"(?:[^\s]+@)?sha256:[a-f0-9]{64}", config[key]):
             raise ValueError(f"{key} must be pinned by digest")
     port = config["port_base"]
@@ -160,6 +159,7 @@ def compose_configuration(config, directory):
     environment = {
         **os.environ, "SHARD_NAME": f"athanor-{config['shard']}", "CHAIN_ID": config["chain_id"],
         "SHARD_DATA": str(directory), "SHARD_INIT_IMAGE": config["init_image"],
+        "SHARD_METRICS_IMAGE": config["metrics_image"],
         "SHARD_HERALD_IMAGE": config["herald_image"], "SHARD_GATEWAY_IMAGE": config["gateway_image"],
         "GUARDIAN_URL": config["guardian_url"], "PUBLIC_RPC_URL": config["public_rpc_url"],
         "PUBLIC_ADMISSION_URL": config["public_admission_url"], "PLAYER_CAPACITY": str(config["player_capacity"]),
@@ -190,20 +190,9 @@ def compose_configuration(config, directory):
                                    "target": "/template/chain-config.yaml", "read_only": True})
     node = compose["services"]["madara"]
     replaced = ("--enable-native-execution=", "--native-compilation-mode=")
-    node["command"] = [flag for flag in node["command"] if not flag.startswith(replaced)] + [
-        "--otel-collector-endpoint=http://metrics:4317", "--otel-export-metrics=true", *config["node_flags"],
-    ]
+    node["command"] = [flag for flag in node["command"] if not flag.startswith(replaced)] + config["node_flags"]
     node["ports"] = [f"127.0.0.1:{config['port_base']}:9944"]
     compose["services"]["postgres"]["ports"] = [f"127.0.0.1:{config['port_base'] + 2}:5432"]
-    compose["services"]["metrics"] = {
-        **budget, "image": collector_image(), "build": {"context": str(METRICS_CONTEXT)},
-        "mem_limit": "256m", "memswap_limit": "256m",
-        "user": f"{os.getuid()}:{os.getgid()}", "command": ["--config=/config/collector.json"],
-        "volumes": ["public-config:/config:ro", f"{directory / 'metrics'}:/data",
-                    "/sys/fs/cgroup:/host-cgroup:ro"],
-        "read_only": True, "cap_drop": ["ALL"], "security_opt": ["no-new-privileges:true"],
-        "depends_on": {"prepare": {"condition": "service_completed_successfully"}},
-    }
     return compose
 
 
@@ -310,11 +299,6 @@ def deployment_environment(config, directory):
     }
 
 
-def collector_image():
-    source = b"".join((METRICS_CONTEXT / name).read_bytes() for name in ("Dockerfile", "collect_cpu.py"))
-    return f"athanor-metrics:{hashlib.sha256(source).hexdigest()}"
-
-
 def collector_configuration():
     # Replace node-only telemetry with admission timing and container cost in the same run directory.
     gateway = {"job_name": "gateway", "scrape_interval": "5s", "static_configs": [{"targets": ["gateway:9951"]}]}
@@ -384,7 +368,7 @@ def save_harness_environment(directory, environment):
 def deployment_manifest(config, compose, directory, manifest, rpc_rtt, herald_rtt):
     return {
         **config, "project": compose["name"], "revision": read(["git", "rev-parse", "HEAD"]),
-        "chainId": manifest["shard"]["chainId"], "metrics_image": compose["services"]["metrics"]["image"],
+        "chainId": manifest["shard"]["chainId"],
         "slice_limits": {name: Path(f"/sys/fs/cgroup/athanor.slice/{name}").read_text().strip()
                          for name in ("cpu.max", "cpuset.cpus.effective", "memory.max", "memory.high",
                                       "memory.swap.max")},
@@ -423,13 +407,13 @@ def initialize_shard_identity(config, directory, deployer_address):
 
 
 def release_images(tag):
-    """The init, Herald and gateway digests a shard-v* release pins in its package."""
+    """The image digests a shard-v* release pins in its package."""
     with urlopen(f"{RELEASES}/{tag}/shard.tar.gz", timeout=60) as response:
         archive = tarfile.open(fileobj=io.BytesIO(response.read()), mode="r:gz")
     lines = archive.extractfile("shard/images.env").read().decode().splitlines()
     images = dict(line.split("=", 1) for line in lines if line)
     return {"init_image": images["SHARD_INIT_IMAGE"], "herald_image": images["SHARD_HERALD_IMAGE"],
-            "gateway_image": images["SHARD_GATEWAY_IMAGE"]}
+            "gateway_image": images["SHARD_GATEWAY_IMAGE"], "metrics_image": images["SHARD_METRICS_IMAGE"]}
 
 
 def gateway_image_at(revision):
