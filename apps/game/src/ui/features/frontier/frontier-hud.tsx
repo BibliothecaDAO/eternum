@@ -1,41 +1,47 @@
+import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { LogToggle, QuickFeedRows } from "@/ui/features/event-feed/quick-feed";
-import { ScrollText } from "@/ui/design-system/atoms/game-icons";
-import { SecondaryMenuItems } from "@/ui/features/world";
-import { HudChatWindow } from "@/ui/features/world/containers/hud-chat-window";
-import { type CSSProperties, useEffect, useState } from "react";
 import { useRealmVisit } from "@/sync/active-game-client";
+import { Sheet } from "@/ui/design-system/kit/sheet";
+import { SETTINGS } from "@/ui/design-system/kit/words";
+import { EventLogPanel } from "@/ui/features/event-feed/event-log-panel";
+import { useGameChat } from "@/ui/features/world/containers/hud-chat-window";
+import { SettingsPanel } from "@/ui/modules/settings/settings";
+import { configManager } from "@bibliothecadao/eternum";
+import type { NativeRows } from "@bibliothecadao/eternum/game-client";
+import { useNavigate } from "react-router-dom";
 import { FrontierPick } from "./attributes/frontier-pick";
 import { RealmVisitBanner, useVisitedRealm } from "./board/realm-visit-banner";
-import { SeasonBoardChip, SeasonBoardPeek } from "./board/season-board";
+import { SeasonBoardHost, SeasonBoardPeek, useOpenSeasonBoard, useSeasonRank } from "./board/season-board";
 import { useSpectatorWatchesTheLeader } from "./board/spectator-watch";
-import { TodayCard } from "./log/today-card";
-import { FrontierResearch } from "./research/frontier-research";
 import { ChestMomentView } from "./chest/chest-moment-view";
 import { useChestResults } from "./chest/chest-results";
-import { SiteClearCardView } from "./sites/site-clear-card";
-import { FrontierSurfaces } from "./frontier-surfaces";
-import { FrontierArmyDock } from "./frontier-army-dock";
 import { useExpeditionRules, useFrontierRealm } from "./frontier-home";
 import { FrontierSelectionSheet } from "./frontier-selection-sheet";
-import { FrontierStatusStrip } from "./frontier-status-strip";
+import { FrontierSurfaces } from "./frontier-surfaces";
 import { FrontierGuide, useGuideLine } from "./guide/frontier-guide";
+import { replayGuide } from "./guide/guide-seen";
+import { SelectedArmyBar } from "./hud/action-bar";
+import { ArmyDock } from "./hud/army-dock";
+import { ChatPage } from "./hud/chat-page";
+import { useDockArmies } from "./hud/dock-armies";
+import { FrontierNav, type HudSurface, useHudSurface } from "./hud/frontier-nav";
+import { FrontierStrip } from "./hud/frontier-strip";
+import { HudBands } from "./hud/hud-bands";
+import { MenuSheet } from "./hud/menu-sheet";
+import { OfflineNotice } from "./hud/offline-notice";
+import { TodayCard } from "./log/today-card";
+import { FrontierResearch } from "./research/frontier-research";
+import { SiteClearCardView } from "./sites/site-clear-card";
 import { useFrontierType } from "./use-frontier-type";
 
-const SAFE_AREA: CSSProperties = {
-  paddingTop: "max(env(safe-area-inset-top), 0.5rem)",
-  paddingRight: "max(env(safe-area-inset-right), 0.5rem)",
-  paddingBottom: "max(env(safe-area-inset-bottom), 0.5rem)",
-  paddingLeft: "max(env(safe-area-inset-left), 0.5rem)",
-};
+type ExpeditionRules = NonNullable<ReturnType<typeof useExpeditionRules>>;
 
 /**
- * Frontier's own HUD, one tree for every width. Upright phones stack the status strip, the map, the selection sheet,
- * the chat strip and the army dock; sideways and on desktop the dock and chat move to the left edge, the sheet to the
- * right and the season's leaders under the strip. Everything else opens from these: muster, build, the board,
- * settings, the log.
+ * Frontier's HUD in three bands: the strip with its clock line on top; the map (or a nav page) in the middle; at the
+ * foot the guide when it speaks, the action bar while an army is selected, the dock and the place bar. Everything else
+ * opens from these as a sheet.
  */
-export const FrontierHud = ({ rules }: { rules: NonNullable<ReturnType<typeof useExpeditionRules>> }) => {
+export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
   useFrontierType();
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
   const realm = useFrontierRealm();
@@ -45,70 +51,89 @@ export const FrontierHud = ({ rules }: { rules: NonNullable<ReturnType<typeof us
   const dockRealm = visit ? visited : realm;
   // A spectator has no realm of their own: they watch the season's leader, and the strip reads the watched realm.
   useSpectatorWatchesTheLeader();
-  const [logOpen, setLogOpen] = useState(false);
-  const [chatOpen, setChatOpen] = useState(false);
-  const armySelected = useUIStore((state) => state.entityActions.selectedEntityId !== null);
-  const guideLine = useGuideLine(rules, realm);
   useChestResults();
-  // Picking an army is the moment to play, not to read: chat folds away.
-  useEffect(() => {
-    if (armySelected) setChatOpen(false);
-  }, [armySelected]);
+  const [surface, setSurface] = useHudSurface();
+  const chat = useGameChat(surface === "chat");
+  const guideLine = useGuideLine(rules, realm);
   if (showBlankOverlay) return null;
+  const close = () => setSurface(null);
 
   return (
-    <div
-      aria-label="Frontier HUD"
-      // The session happens on the map: while any sheet is open, Ysolde waits out of the way (her line stays unseen)
-      // instead of stacking on it.
-      className="pointer-events-none fixed inset-0 z-30 flex flex-col gap-2 [&:has([data-frontier-sheet])_[data-guide]]:hidden"
-      style={SAFE_AREA}
+    <HudBands
+      top={<FrontierStrip rules={rules} realm={realm ?? visited} />}
+      middle={
+        surface === "chat" ? (
+          <ChatPage gameZoneId={chat.gameZoneId} signedIn={chat.initializer !== null} onSignIn={chat.requestSignIn} />
+        ) : undefined
+      }
+      foot={
+        <>
+          <div data-guide>{realm && !visit && <FrontierGuide line={guideLine} realm={realm} />}</div>
+          <FrontierPick />
+          <SiteClearCardView />
+          <OfflineNotice />
+          {dockRealm && <Foot realm={dockRealm} />}
+          <FrontierNav realm={realm} surface={surface} onSurface={setSurface} unread={chat.unread} />
+        </>
+      }
     >
-      <FrontierStatusStrip rules={rules} realm={realm ?? visited} />
       {/* A chest's opening owns the screen while it plays, over the world where the chest opens. */}
       <ChestMomentView />
       <FrontierSurfaces realm={realm} />
       <RealmVisitBanner home={realm} />
-      <div className="flex min-h-0 flex-1 flex-col justify-end gap-2 landscape:flex-row landscape:items-stretch landscape:justify-between">
-        <div className="flex max-w-[min(360px,70vw)] flex-col items-end gap-1 self-end portrait:mb-auto landscape:order-2 landscape:mb-auto landscape:ml-auto landscape:self-start">
-          {/* Under the strip: the log, research, season rank and settings as chips, then the feed's latest rows. */}
-          <div className="pointer-events-auto flex items-center gap-2">
-            <LogToggle
-              open={logOpen}
-              onToggle={() => setLogOpen((open) => !open)}
-              header={<TodayCard rules={rules} />}
-              className="size-11 justify-center rounded-full border border-gold/25 bg-black/50 lg:size-9"
-            >
-              <ScrollText className="size-5" />
-            </LogToggle>
-            {realm && <FrontierResearch realm={realm} />}
-            <SeasonBoardChip />
-            <SecondaryMenuItems />
-          </div>
-          <SeasonBoardPeek />
-          <QuickFeedRows />
-        </div>
-        <FrontierSelectionSheet realm={realm} />
-        {/* The dock, chat and guide keep their height; the selection sheet above scrolls to make room. */}
-        <div className="flex min-h-0 shrink-0 flex-col-reverse gap-2 landscape:order-first landscape:w-48 landscape:flex-col">
-          {dockRealm && <FrontierArmyDock realm={dockRealm} />}
-          {/* The pick and a cleared site's card deal into the thumb zone above the dock on an upright phone, and float at
-              the foot otherwise. */}
-          <div className="landscape:fixed landscape:bottom-4 landscape:left-1/2 landscape:w-[min(560px,60vw)] landscape:-translate-x-1/2">
-            <FrontierPick />
-            <SiteClearCardView />
-          </div>
-          <HudChatWindow open={chatOpen} onOpenChange={setChatOpen} foldToIcon={guideLine.step !== null} />
-          {/* Ysolde sits above chat on a phone held upright, and floats at the foot of the screen otherwise. While she
-              has a line, chat folds to its icon on an upright phone. */}
-          <div
-            data-guide
-            className="landscape:fixed landscape:bottom-4 landscape:left-1/2 landscape:w-[min(440px,48vw)] landscape:-translate-x-1/2"
-          >
-            {realm && !visit && <FrontierGuide line={guideLine} realm={realm} />}
-          </div>
-        </div>
+      <div className="pointer-events-auto fixed right-2 top-24 hidden lg:block">
+        <SeasonBoardPeek />
       </div>
-    </div>
+      <FrontierSelectionSheet realm={realm} />
+      {surface === "menu" && <HudMenu onOpen={setSurface} onClose={close} />}
+      {surface === "research" && realm && <FrontierResearch realm={realm} onClose={close} />}
+      {surface === "settings" && (
+        <Sheet label={SETTINGS} onClose={close}>
+          <SettingsPanel />
+        </Sheet>
+      )}
+      {surface === "today" && (
+        <EventLogPanel header={<TodayCard rules={rules} />} onDismiss={close} isInsideAnchor={() => false} />
+      )}
+      <SeasonBoardHost />
+    </HudBands>
+  );
+};
+
+/** The foot's army rows: the selected army's status, then the dock. */
+const Foot = ({ realm }: { realm: NativeRows["Structure"] }) => {
+  const armies = useDockArmies(realm);
+  const selectedId = useUIStore((state) => state.entityActions.selectedEntityId);
+  const selected = armies.find((army) => army.explorerId === selectedId);
+  return (
+    <>
+      {selected && <SelectedArmyBar army={selected} />}
+      <ArmyDock realm={realm} armies={armies} />
+    </>
+  );
+};
+
+/** The Menu over the game: each row opens its way and closes the menu; Exit leaves for the app. */
+const HudMenu = ({ onOpen, onClose }: { onOpen: (surface: HudSurface | null) => void; onClose: () => void }) => {
+  const navigate = useNavigate();
+  const player = useAccountStore((state) => state.account?.address ?? null);
+  const openSeasonBoard = useOpenSeasonBoard();
+  const rank = useSeasonRank();
+  return (
+    <MenuSheet
+      rank={rank}
+      onToday={() => onOpen("today")}
+      onSeason={() => {
+        onClose();
+        openSeasonBoard();
+      }}
+      onGuide={() => {
+        onClose();
+        if (player) replayGuide(configManager.getActiveGameId(), player);
+      }}
+      onSettings={() => onOpen("settings")}
+      onExit={() => navigate("/")}
+      onClose={onClose}
+    />
   );
 };

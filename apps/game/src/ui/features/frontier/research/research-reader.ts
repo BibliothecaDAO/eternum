@@ -19,12 +19,15 @@ const RESEARCH_MODELS = [
   "ResourceProduction",
 ] as const;
 
-/** The realm's research tree as its sheet draws it, from its facts; unknown while the realm's knowledge is. */
-export const useResearchPlan = (realm: NativeRows["Structure"]): ResearchPlan | undefined => {
+/** The realm's research tree as its sheet draws it, from its facts; unknown while the realm's knowledge is (or with no realm). */
+export const useResearchPlan = (realm: NativeRows["Structure"] | null): ResearchPlan | undefined => {
   const { setup } = useGame();
   const tick = useCurrentDefaultTick();
   const revision = useNativeRevision(RESEARCH_MODELS);
-  return useMemo(() => readResearchPlan(setup.store, realm, tick), [realm, revision, setup.store, tick]);
+  return useMemo(
+    () => (realm ? readResearchPlan(setup.store, realm, tick) : undefined),
+    [realm, revision, setup.store, tick],
+  );
 };
 
 /**

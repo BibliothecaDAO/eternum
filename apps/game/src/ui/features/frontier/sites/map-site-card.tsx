@@ -14,7 +14,7 @@ import { BoltGlyph, CardFanGlyph } from "../glyphs";
 import { type MapSiteKind, mapSiteKind, readMapSite } from "./map-site-plan";
 import { useSelectedOwnArmy } from "./selected-army";
 import { armWellRefill } from "./well-refill";
-import { FrontierSheet } from "../frontier-sheet";
+import { Sheet } from "@/ui/design-system/kit/sheet";
 
 const MAP_SITE_MODELS = ["ArmyProgress", "ExplorerTroops", "TileOccupancy"] as const;
 
@@ -69,7 +69,7 @@ export const MapSiteCard = ({
   };
 
   return (
-    <FrontierSheet label={plan.kind} onClose={onClose}>
+    <Sheet label={plan.kind} onClose={onClose}>
       <header className="flex items-center gap-3">
         <img src={plan.art} alt="" className="size-24 shrink-0 rounded-xl bg-black/50 object-contain p-2" />
         <span className="flex flex-col items-start gap-2">
@@ -89,6 +89,6 @@ export const MapSiteCard = ({
       >
         Use
       </button>
-    </FrontierSheet>
+    </Sheet>
   );
 };

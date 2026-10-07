@@ -16,7 +16,17 @@ vi.mock("@/sync/active-game-client", () => ({ startRealmVisit: startVisit }));
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { configManager } from "@bibliothecadao/eternum";
-import { SeasonBoardChip } from "./season-board";
+import { SeasonBoardHost, useOpenSeasonBoard, useSeasonRank } from "./season-board";
+
+/** The Menu's Season row as the HUD wires it: the rank, and a tap that opens the board. */
+const SeasonRow = () => {
+  const openBoard = useOpenSeasonBoard();
+  return (
+    <button type="button" aria-label="Season" onClick={openBoard}>
+      {useSeasonRank()}
+    </button>
+  );
+};
 
 const PLAYER = "0xa38";
 const entry = (index: number) => ({
@@ -36,7 +46,7 @@ afterEach(() => {
 });
 
 describe("the season board", () => {
-  it("ranks the player on the chip, lists the top fifty with their own row, and visits another realm", async () => {
+  it("ranks the player on the Menu's row, lists the top fifty with their own row, and visits another realm", async () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     vi.spyOn(configManager, "getActiveGameId").mockReturnValue(3);
     useAccountStore.setState({ account: { address: PLAYER } as never });
@@ -48,12 +58,13 @@ describe("the season board", () => {
     act(() =>
       root.render(
         <QueryClientProvider client={client}>
-          <SeasonBoardChip />
+          <SeasonRow />
+          <SeasonBoardHost />
         </QueryClientProvider>,
       ),
     );
-    const rank = () => host.querySelector('[aria-label^="Season rank"]')?.getAttribute("aria-label");
-    expect(rank()).toBe("Season rank —");
+    const rank = () => host.querySelector('button[aria-label="Season"]')?.textContent;
+    expect(rank()).toBe("—");
 
     act(() =>
       answer({ game_id: "3", mode: "frontier", entries: Array.from({ length: 60 }, (_, index) => entry(index)) }),
@@ -61,10 +72,10 @@ describe("the season board", () => {
     // The query settles on its notifier's next ticks; each retry lets React apply them.
     await vi.waitFor(async () => {
       await act(() => new Promise((resolve) => setTimeout(resolve, 0)));
-      expect(rank()).toBe("Season rank #57");
+      expect(rank()).toBe("#57");
     });
 
-    act(() => host.querySelector<HTMLButtonElement>('button[aria-label="Season board"]')!.click());
+    act(() => host.querySelector<HTMLButtonElement>('button[aria-label="Season"]')!.click());
     const rows = host.querySelectorAll('section[aria-label="Season board"] li');
     expect(rows).toHaveLength(51);
     expect(rows[50].textContent).toContain(`Player ${PLAYER}`);

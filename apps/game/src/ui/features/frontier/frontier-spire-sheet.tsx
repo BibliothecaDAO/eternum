@@ -14,7 +14,7 @@ import {
 } from "@bibliothecadao/eternum";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { canIssueOrders } from "@/utils/can-issue-orders";
-import { FrontierSheet } from "./frontier-sheet";
+import { Sheet } from "@/ui/design-system/kit/sheet";
 import { SpireDepthActions } from "./spire-depth-actions";
 
 /** Rule-drawn spires have no occupancy row, so select them from the same rules as the map. */
@@ -43,7 +43,7 @@ export const FrontierSpireSheet = ({ realm, onClose }: { realm: NativeRows["Stru
   );
   if (!army) return null;
   return (
-    <FrontierSheet
+    <Sheet
       label="Spire"
       onClose={() => {
         useUIStore.getState().updateEntityActionSelectedEntityId(null);
@@ -51,6 +51,6 @@ export const FrontierSpireSheet = ({ realm, onClose }: { realm: NativeRows["Stru
       }}
     >
       <SpireDepthActions armyEntityId={army.explorer_id} />
-    </FrontierSheet>
+    </Sheet>
   );
 };

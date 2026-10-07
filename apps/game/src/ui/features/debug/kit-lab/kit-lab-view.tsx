@@ -13,18 +13,30 @@ import { OFFLINE, TRY_AGAIN, YOU } from "@/ui/design-system/kit/words";
 import { useFrontierType } from "@/ui/features/frontier/use-frontier-type";
 import { useBootDocumentState } from "@/ui/modules/boot-loader/boot-loader-state";
 import { type ReactNode, useState } from "react";
+import { Route, Routes } from "react-router-dom";
+
+import { HudLab } from "./hud-lab";
 
 const HOUR = 3600;
 /** The handoff's one fiction: Day 12, today ends at 21:40 with 7h 14m left, tomorrow lasts 12h. */
 const ENDS_AT = new Date(2026, 9, 7, 21, 40).getTime() / 1000;
 
 /**
- * Dev only: the kit's shared components in their states, on the Frontier ground, at /lab/kit. Nothing here reads a
- * game; every value is the handoff's fiction.
+ * Dev only: the kit's shared components in their states, on the Frontier ground, at /lab/kit, and the Frontier screens
+ * built on them at /lab/kit/hud/<state>. Nothing here reads a game; every value is the handoff's fiction.
  */
 export const KitLabView = () => {
   useFrontierType();
   useBootDocumentState("app-ready");
+  return (
+    <Routes>
+      <Route path="hud/:state" element={<HudLab />} />
+      <Route path="*" element={<Components />} />
+    </Routes>
+  );
+};
+
+const Components = () => {
   return (
     <main className="min-h-dvh bg-[color:var(--frontier-void)] px-4 py-6 font-sans text-[color:var(--frontier-parchment)]">
       <div className="mx-auto flex max-w-[390px] flex-col gap-8 lg:max-w-5xl lg:flex-row lg:flex-wrap">

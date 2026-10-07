@@ -38,11 +38,15 @@ export const useFrontierRealm = (): NativeRows["Structure"] | null => {
   }, [address, revision, setup.store]);
 };
 
-/** Frontier's two places: `goToPlace(true)` opens the day's expedition map, `goToPlace(false)` the realm board. */
-export const useGoToFrontierPlace = (realm: NativeRows["Structure"]) => {
+/**
+ * Frontier's two places: `goToPlace(true)` opens the day's expedition map, `goToPlace(false)` the realm board. With no
+ * realm (a spectator) there is nowhere to go.
+ */
+export const useGoToFrontierPlace = (realm: NativeRows["Structure"] | null) => {
   const { setup } = useGame();
   const goToStructure = useGoToStructure(setup);
   return (expedition: boolean) => {
+    if (!realm) return;
     const site = structureMapPosition(setup.store, realm);
     if (!site) return;
     const position = Position.fromContract(site);

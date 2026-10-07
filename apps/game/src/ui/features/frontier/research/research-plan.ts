@@ -43,3 +43,10 @@ export const depthNode = (plan: ResearchPlan, depth: 1 | 2 | 3) =>
 /** The node the sheet opens on: the first one open to research, else the first. */
 export const firstOpenNode = (plan: ResearchPlan): ResearchNodeView | undefined =>
   plan.nodes.find(({ state }) => state === "open") ?? plan.nodes[0];
+
+/** Whether the realm can research something now: a node is open and its Essence is held. The nav's Research dot. */
+export const canResearchNow = (plan: ResearchPlan | undefined): boolean => {
+  const essence = plan?.essence;
+  if (!plan || essence === undefined) return false;
+  return plan.nodes.some(({ state, price }) => state === "open" && price <= essence);
+};

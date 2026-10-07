@@ -22,7 +22,3 @@ export const useOpenArmySlots = (realm: NativeRows["Structure"] | null | undefin
     [realm, revision, setup.store],
   );
 };
-
-/** What a slot hands its next army, as the dock's Muster card reads it. */
-export const describeSlotBar = (slot: OpenArmySlot | undefined): string =>
-  slot === undefined ? "—" : slot.inherited ? "Tired bar" : "Fresh bar";

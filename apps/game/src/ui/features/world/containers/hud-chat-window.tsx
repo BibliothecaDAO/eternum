@@ -21,18 +21,11 @@ const isTypingTarget = (target: EventTarget | null) =>
   target instanceof Element &&
   target.closest('input,textarea,select,button,a,[contenteditable="true"],[role="textbox"],[role="dialog"]') !== null;
 
-/** The strip at the foot of the right column: last message and unread count. Open, a fixed-height pane rises
- *  above the strip and the details above keep whatever room is left. `foldToIcon` shrinks the strip to its icon and
- *  unread count on a phone held upright, when something else needs the room. */
-export function HudChatWindow({
-  open,
-  onOpenChange,
-  foldToIcon = false,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  foldToIcon?: boolean;
-}) {
+/**
+ * The game's chat room: joined once the player is signed in, its history loaded on connect, its unread count, and the
+ * room marked read while `open`. Every HUD that hosts chat reads it here, so the count matches what the room holds.
+ */
+export function useGameChat(open: boolean) {
   const { status } = useIdentitySession();
   const signedIn = status === "signed-in";
   const requestSignIn = useRequestSignIn();
@@ -53,7 +46,6 @@ export function HudChatWindow({
   const lastMessage = useRealtimeChatSelector((state) => state.worldZones[zoneId]?.messages.at(-1));
   const unread = useRealtimeChatSelector((state) => state.unreadWorldTotal + state.unreadDirectTotal);
   const setShellOpen = useRealtimeChatSelector((state) => state.actions.setShellOpen);
-  const pane = useRef<HTMLElement>(null);
 
   // The strip shows the last message before the chat was ever opened, so history loads on connect.
   useEffect(() => {
@@ -63,6 +55,26 @@ export function HudChatWindow({
     setShellOpen(open);
     return () => setShellOpen(false);
   }, [open, setShellOpen]);
+
+  return { status, initializer, requestSignIn, gameZoneId, connection, hasGameChat, lastMessage, unread };
+}
+
+/** The strip at the foot of the right column: last message and unread count. Open, a fixed-height pane rises
+ *  above the strip and the details above keep whatever room is left. `foldToIcon` shrinks the strip to its icon and
+ *  unread count on a phone held upright, when something else needs the room. */
+export function HudChatWindow({
+  open,
+  onOpenChange,
+  foldToIcon = false,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  foldToIcon?: boolean;
+}) {
+  const { status, initializer, requestSignIn, gameZoneId, connection, hasGameChat, lastMessage, unread } =
+    useGameChat(open);
+  const pane = useRef<HTMLElement>(null);
+
   useEffect(() => {
     if (open) pane.current?.querySelector<HTMLInputElement | HTMLTextAreaElement>("input,textarea")?.focus();
   }, [open]);

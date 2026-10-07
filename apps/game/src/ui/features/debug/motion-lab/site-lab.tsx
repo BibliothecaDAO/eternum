@@ -1,4 +1,5 @@
-import { BankedHolding } from "@/ui/features/frontier/frontier-status-strip";
+import { StatusStrip } from "@/ui/features/frontier/hud/status-strip";
+import { bankedCounterTarget } from "@/ui/motion/moments/banked-flight";
 import { SiteClearCardView } from "@/ui/features/frontier/sites/site-clear-card";
 import { playSiteClear } from "@/ui/features/frontier/sites/site-clear-moment";
 import type { SiteClear } from "@/ui/features/frontier/sites/site-outcome";
@@ -44,10 +45,15 @@ export const SiteLab = () => {
       {/* The card sits in the thumb zone in the HUD; here it takes the top of the panel so it stays in view. */}
       <SiteClearCardView />
       {counters && (
-        <dl className="flex items-center gap-4 rounded-lg border border-gold/20 px-3 py-2">
-          <BankedHolding resourceId={ResourcesIds.Essence} amount={balances[ResourcesIds.Essence]} />
-          <BankedHolding resourceId={ResourcesIds.Labor} amount={balances[ResourcesIds.Labor]} />
-        </dl>
+        <div className="w-[390px]">
+          <StatusStrip
+            clock={NO_CLOCK}
+            stores={[
+              labStore("essence", ResourcesIds.Essence, balances[ResourcesIds.Essence]),
+              labStore("labor", ResourcesIds.Labor, balances[ResourcesIds.Labor]),
+            ]}
+          />
+        </div>
       )}
       <div ref={site} className="rounded-xl border border-[#b8801a]/70 bg-[#3a2a12] px-6 py-4 text-sm">
         Guarded site
@@ -67,3 +73,21 @@ const LabButton = ({ onClick, children }: { onClick: () => void; children: React
     {children}
   </button>
 );
+
+/** The lab has no game clock: the strip's dial and clock line read as unknown. */
+const NO_CLOCK = {
+  day: undefined,
+  endsAt: undefined,
+  secondsLeft: undefined,
+  tomorrowSeconds: undefined,
+  shareLeft: undefined,
+  tone: "calm",
+} as const;
+
+const labStore = (kind: "essence" | "labor", resourceId: ResourcesIds, amount: number | undefined) => ({
+  kind,
+  amount,
+  limit: undefined,
+  tone: "calm" as const,
+  flyTarget: bankedCounterTarget(resourceId),
+});

@@ -30,13 +30,6 @@ export const BoltGlyph = ({ className }: { className?: string }) => (
   </svg>
 );
 
-/** A day's army slot: a banner, gold when an army holds it, an outline while it is free. */
-export const SlotBanner = ({ used }: { used: boolean }) => (
-  <svg viewBox="0 0 22 30" width="22" height="30" aria-hidden>
-    <path d="M2 2h18v22l-9-5-9 5z" fill={used ? GOLD : "none"} stroke={GOLD} strokeWidth="1.5" strokeLinejoin="round" />
-  </svg>
-);
-
 /** The expedition: a folded map. */
 export const MapGlyph = ({ className }: { className?: string }) => (
   <svg viewBox="0 0 28 28" className={className} aria-hidden>
@@ -89,13 +82,6 @@ export const CardFanGlyph = ({ className }: { className?: string }) => (
       stroke={INK}
       strokeWidth="1.4"
     />
-  </svg>
-);
-
-/** An open slot: its banner with a plus, waiting for a muster. */
-export const PlusGlyph = ({ className }: { className?: string }) => (
-  <svg viewBox="0 0 28 28" className={className} aria-hidden>
-    <path d="M14 7v14M7 14h14" stroke={GOLD} strokeWidth="3" strokeLinecap="round" />
   </svg>
 );
 

@@ -17,7 +17,7 @@ import {
   TREE_BUILDINGS,
   tierNode,
 } from "./research-plan";
-import { FrontierSheet } from "../frontier-sheet";
+import { Sheet } from "@/ui/design-system/kit/sheet";
 
 const ESSENCE_ICON = `/images/resources/${ResourcesIds.Essence}.png`;
 const NUMERALS = ["", "I", "II", "III"] as const;
@@ -66,7 +66,7 @@ export const ResearchSheet = ({
     );
 
   return (
-    <FrontierSheet label="Research" onClose={onClose} workspace bodyClassName="gap-0 overflow-hidden px-0 pb-0">
+    <Sheet label="Research" onClose={onClose}>
       <header className="flex items-center justify-between px-4 pb-2">
         <h2 className="frontier-title">Research</h2>
         <Chip label="Essence" icon={<img src={ESSENCE_ICON} alt="" />} value={formatAmount(plan.essence)} />
@@ -97,7 +97,7 @@ export const ResearchSheet = ({
         </div>
       </div>
       {chosen && <ChosenNode node={chosen} canResearch={canResearch} onResearch={() => void buy()} />}
-    </FrontierSheet>
+    </Sheet>
   );
 };
 

@@ -8,7 +8,7 @@ import { TileOccupier } from "@bibliothecadao/types";
 import { useMemo } from "react";
 
 import { DEPTH_ART } from "../depth-art";
-import { FrontierSheet } from "../frontier-sheet";
+import { Sheet } from "@/ui/design-system/kit/sheet";
 
 const CHEST_ART = "/image-icons/ui-chest.png";
 const ARMY_ART = "/images/armies/knightT1.png";
@@ -35,7 +35,7 @@ export const ChestCard = ({ tile, onClose }: { tile: TileSpatialRenderable; onCl
     onClose();
   };
   return (
-    <FrontierSheet label="Chest" onClose={onClose}>
+    <Sheet label="Chest" onClose={onClose}>
       <header className="flex items-center gap-3">
         <img src={CHEST_ART} alt="" className="size-24 shrink-0 object-contain" />
         <h2 className="frontier-title">Chest</h2>
@@ -59,7 +59,7 @@ export const ChestCard = ({ tile, onClose }: { tile: TileSpatialRenderable; onCl
           Open
         </button>
       )}
-    </FrontierSheet>
+    </Sheet>
   );
 };
 
@@ -68,7 +68,7 @@ export const SpireCard = ({ onClose }: { onClose: () => void }) => {
   const mapLayer = useUIStore((state) => state.mapLayer);
   const setMapLayer = useUIStore((state) => state.setMapLayer);
   return (
-    <FrontierSheet label="Spire" onClose={onClose}>
+    <Sheet label="Spire" onClose={onClose}>
       <header className="flex items-center gap-3">
         <img src={DEPTH_ART[1]} alt="" className="size-24 shrink-0 object-contain" />
         <h2 className="frontier-title">Spire</h2>
@@ -81,6 +81,6 @@ export const SpireCard = ({ onClose }: { onClose: () => void }) => {
       >
         Look
       </button>
-    </FrontierSheet>
+    </Sheet>
   );
 };

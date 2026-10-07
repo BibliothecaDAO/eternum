@@ -27,6 +27,7 @@ export const Sheet = ({ label, onClose, children }: { label: string; onClose: ()
       <section
         role="dialog"
         aria-label={label}
+        data-kit-sheet
         className={cn(
           "frontier-sheet pointer-events-auto fixed z-40 flex flex-col font-sans",
           "inset-x-0 bottom-0 max-h-[85dvh]",
@@ -77,7 +78,8 @@ const useLatest = <T,>(value: T) => {
   return ref;
 };
 
-const useEscapeCloses = (close: () => void) => {
+/** Escape closes what is open; a host that is not a Sheet (a dealt card) uses it too. */
+export const useEscapeCloses = (close: () => void) => {
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") close();

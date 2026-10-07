@@ -2,16 +2,13 @@ import { EASE } from "@/ui/motion/motion-scale";
 import { useReducedMotion } from "@/ui/motion/motion-settings";
 import { animate } from "framer-motion";
 import { useEffect, useRef } from "react";
+import { armyArt } from "../hud/dock-armies";
 import { type ArmyProgressFacts, attributeBadgeTarget, levelProgress, type ProgressionRulesFacts } from "./attributes";
 
 const FILL_MS = 300;
 const LEVEL_UP_MS = 400;
 const RING_RADIUS = 21;
 const RING_LENGTH = 2 * Math.PI * RING_RADIUS;
-
-/** An army's diorama: its troops on their hex base. */
-const armyArt = (troops: { category: string; tier: string }) =>
-  `/images/armies/${troops.category.toLowerCase()}${troops.tier}.png`;
 
 /**
  * An army's portrait (design §3.12, mockup 7): its diorama inside a ring that fills with XP toward the next level,

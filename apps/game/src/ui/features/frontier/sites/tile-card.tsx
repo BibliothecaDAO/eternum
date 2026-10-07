@@ -17,7 +17,7 @@ import { formatAmount } from "@/ui/design-system/kit/amount";
 import { BoltGlyph, FlagGlyph, SwordGlyph } from "../glyphs";
 import { useSelectedOwnArmy } from "./selected-army";
 import { readSiteCard, type SiteAttack, type SiteCardPlan } from "./site-card-plan";
-import { FrontierSheet } from "../frontier-sheet";
+import { Sheet } from "@/ui/design-system/kit/sheet";
 
 const SITE_MODELS = ["ExpeditionSite", "ExplorerTroops", "ArmySlot", "Guard", "Structure", "TileOccupancy"] as const;
 
@@ -78,7 +78,7 @@ export const TileCard = ({ selected, onClose }: { selected: SelectedSite; onClos
   };
 
   return (
-    <FrontierSheet label={plan.name} onClose={onClose}>
+    <Sheet label={plan.name} onClose={onClose}>
       <header className="flex items-center gap-3">
         <img src={plan.art} alt="" className="size-24 shrink-0 rounded-xl bg-black/50 object-cover" />
         <span className="flex flex-col items-start gap-2">
@@ -100,7 +100,7 @@ export const TileCard = ({ selected, onClose }: { selected: SelectedSite; onClos
         Attack
         <Chip small tone="price" label="Stamina" icon={<BoltGlyph />} value={formatAmount(plan.attackStamina)} />
       </button>
-    </FrontierSheet>
+    </Sheet>
   );
 };
 

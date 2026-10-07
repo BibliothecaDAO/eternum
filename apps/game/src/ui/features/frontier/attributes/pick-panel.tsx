@@ -14,7 +14,9 @@ import {
   MAX_ATTRIBUTE_LEVEL,
   type ProgressionRulesFacts,
 } from "./attributes";
-import { SheetClose, useEscapeCloses } from "../frontier-sheet";
+import { Button } from "@/ui/design-system/kit/button";
+import { useEscapeCloses } from "@/ui/design-system/kit/sheet";
+import { LATER } from "@/ui/design-system/kit/words";
 import { closePick, commitPick, liftChoice, usePick } from "./pick-moment";
 
 const DEAL_MS = 280;
@@ -60,7 +62,7 @@ export const PickPanel = ({
       className="frontier-card pointer-events-auto mx-auto flex w-full max-w-lg flex-col gap-3 p-3 font-sans"
     >
       <div className="-mb-2 flex justify-end">
-        <SheetClose label="Later" disabled={busy} onClose={closePick} />
+        <Button role="outline" word={LATER} disabled={busy} onClick={closePick} />
       </div>
       <LevelBar progress={progress} rules={rules} relic={pick.offer.source === "Relic"} />
       <div className="grid grid-cols-3 gap-2">

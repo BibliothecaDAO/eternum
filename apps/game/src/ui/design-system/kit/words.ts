@@ -11,6 +11,7 @@ export const DAY_ENDS = "Day ends";
 export const LEFT = "left";
 export const TOMORROW_LASTS = "Tomorrow lasts";
 export const DAY = "Day";
+export const FULL_IN = "Full in";
 
 export const OFFLINE = "Offline";
 export const TRY_AGAIN = "Try again";
@@ -24,6 +25,28 @@ export const LABOR = "labor";
 export const WHEAT = "wheat";
 export const TROOPS = "troops";
 export const STAMINA = "stamina";
+
+/** The places: the nav's five words. */
+export const MAP = "Map";
+export const REALM = "Realm";
+export const RESEARCH = "Research";
+export const CHAT = "Chat";
+export const MENU = "Menu";
+
+/** The Menu's rows and its two buttons. */
+export const TODAY = "Today";
+export const SEASON = "Season";
+export const GUIDE = "Guide";
+export const SETTINGS = "Settings";
+export const EXIT = "Exit";
+export const RESUME = "Resume";
+export const SIGN_IN = "Sign in";
+
+/** Raise an army from troops at home. */
+export const DEPLOY = "Deploy";
+
+/** Default army names: "Army" and its place. */
+export const ARMY = "Army";
 
 /** The player on any list. */
 export const YOU = "You";

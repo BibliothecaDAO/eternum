@@ -3,7 +3,8 @@ import { Trophy } from "@/ui/design-system/atoms/game-icons";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Chip } from "@/ui/features/frontier/frontier-chips";
 import { formatAmount } from "@/ui/design-system/kit/amount";
-import { DayDial } from "@/ui/features/frontier/day-dial";
+import { DayDial } from "@/ui/design-system/kit/day-dial";
+import { dayClock } from "@/ui/features/frontier/hud/day-clock";
 import { FlagGlyph } from "@/ui/features/frontier/glyphs";
 import { orderEmblem } from "@/ui/design-system/kit/order-emblem";
 import { normalizeLeaderboardAddress } from "@/services/leaderboard/landing-leaderboard-service";
@@ -51,11 +52,12 @@ export const RealmCard = ({ season, className }: { season: DirectoryGame; classN
           {getRealmNameById(realm.realm_id)}
         </h2>
         {season.expedition && (
-          <DayDial
-            rules={{ epochSeconds: season.expedition.epoch_seconds, startMainAt: season.clock.start_main_at }}
-            now={now}
-            className="ml-auto"
-          />
+          <span className="ml-auto">
+            <SeasonDayDial
+              rules={{ epochSeconds: season.expedition.epoch_seconds, startMainAt: season.clock.start_main_at }}
+              now={now}
+            />
+          </span>
         )}
       </header>
       {/* A phone stacks the numbers over Resume; a wide card sets them side by side, Resume at the right. */}
@@ -75,4 +77,10 @@ export const RealmCard = ({ season, className }: { season: DirectoryGame; classN
       </div>
     </article>
   );
+};
+
+/** Today's dial on the wall clock, read through the HUD's one day clock. */
+const SeasonDayDial = ({ rules, now }: { rules: Parameters<typeof dayClock>[0]; now: number }) => {
+  const { day, shareLeft, tone } = dayClock(rules, now);
+  return <DayDial day={day} shareLeft={shareLeft} tone={tone} />;
 };

@@ -44,7 +44,7 @@ export const QuickFeed = ({ logOpen, onLogToggle }: { logOpen: boolean; onLogTog
  * The button that opens the event log, with its unread count, and the log panel anchored to it. Each layout dresses
  * it: the right column with its label, Frontier's strip as a glyph.
  */
-export const LogToggle = ({
+const LogToggle = ({
   open,
   onToggle,
   className,
@@ -86,7 +86,7 @@ export const LogToggle = ({
 };
 
 /** The feed's pinned notices and its latest rows, fading after 20 s. */
-export const QuickFeedRows = () => {
+const QuickFeedRows = () => {
   const { nowMs, rows, pinned } = useImportantFeed();
   const visible = selectQuickFeedRows(rows, nowMs, QUICK_FEED_WINDOW_MS, QUICK_FEED_MAX_ROWS);
   useConnectionNotices();

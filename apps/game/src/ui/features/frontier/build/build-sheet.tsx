@@ -23,7 +23,7 @@ import { formatAmount } from "@/ui/design-system/kit/amount";
 import { PersonGlyph } from "../glyphs";
 import { type BuildOption, readBuildOptions } from "./build-options";
 import { FRONTIER_BUILDING_NAMES } from "./building-names";
-import { FrontierSheet } from "../frontier-sheet";
+import { Sheet } from "@/ui/design-system/kit/sheet";
 
 const BUILD_MODELS = [
   "Building",
@@ -129,7 +129,7 @@ export const BuildSheet = ({
   };
 
   return (
-    <FrontierSheet label="Build" onClose={onClose} width="lg">
+    <Sheet label="Build" onClose={onClose}>
       {/* The chosen card lifts; the row's top padding keeps it inside the scroller. */}
       <div className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-1 pt-3">
         {options.map((candidate, index) => (
@@ -153,7 +153,7 @@ export const BuildSheet = ({
           <PriceChip key={cost.resource} cost={cost} />
         ))}
       </button>
-    </FrontierSheet>
+    </Sheet>
   );
 };
 

@@ -144,7 +144,7 @@ export const appRoutes = (
     )}
     {import.meta.env.DEV && (
       <Route
-        path="/lab/kit"
+        path="/lab/kit/*"
         element={
           <LazyRoute>
             <KitLabView />

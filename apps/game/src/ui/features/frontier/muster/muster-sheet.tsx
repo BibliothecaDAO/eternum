@@ -28,7 +28,7 @@ import {
   previewMuster,
   readMusterPlan,
 } from "./muster-plan";
-import { FrontierSheet } from "../frontier-sheet";
+import { Sheet } from "@/ui/design-system/kit/sheet";
 import { DeployRing } from "./deploy-ring";
 
 const MUSTER_MODELS = [
@@ -104,7 +104,7 @@ export const MusterSheet = ({ realm, onClose }: { realm: NativeRows["Structure"]
   };
 
   return (
-    <FrontierSheet label="Deploy" onClose={onClose} workspace width="lg">
+    <Sheet label="Deploy" onClose={onClose}>
       <header className="flex items-center justify-between">
         <h2 className="frontier-title">Deploy</h2>
       </header>
@@ -173,7 +173,7 @@ export const MusterSheet = ({ realm, onClose }: { realm: NativeRows["Structure"]
       <button type="button" disabled={!canMuster} onClick={() => void muster()} className="frontier-primary">
         Deploy
       </button>
-    </FrontierSheet>
+    </Sheet>
   );
 };
 

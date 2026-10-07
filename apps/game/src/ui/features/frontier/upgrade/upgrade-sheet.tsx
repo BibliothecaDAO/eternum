@@ -4,7 +4,7 @@ import { Chip, TierBanner } from "../frontier-chips";
 import { formatAmount } from "@/ui/design-system/kit/amount";
 import { PersonGlyph } from "../glyphs";
 import type { UpgradePlan, UpgradeStep } from "./upgrade-plan";
-import { FrontierSheet } from "../frontier-sheet";
+import { Sheet } from "@/ui/design-system/kit/sheet";
 
 /**
  * Frontier's upgrade sheet (design §3.12, mockup 1), on a building or on the keep: its name with the marked plot's ×2,
@@ -31,7 +31,7 @@ export const UpgradeSheet = ({
     }
   };
   return (
-    <FrontierSheet label={plan.name} onClose={onClose} bodyClassName="gap-4">
+    <Sheet label={plan.name} onClose={onClose}>
       <header className="flex items-center gap-2">
         <h2 className="frontier-title">{plan.name}</h2>
         {plan.doubled && <DoubledBadge />}
@@ -70,7 +70,7 @@ export const UpgradeSheet = ({
           ))}
         </button>
       )}
-    </FrontierSheet>
+    </Sheet>
   );
 };
 

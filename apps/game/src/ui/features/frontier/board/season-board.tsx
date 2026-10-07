@@ -13,7 +13,7 @@ import { Chip } from "../frontier-chips";
 import { FlagGlyph } from "../glyphs";
 import { SeasonTable } from "./season-table";
 import { boardRows, ownRank } from "./standings";
-import { FrontierSheet } from "../frontier-sheet";
+import { Sheet } from "@/ui/design-system/kit/sheet";
 
 // The board shares the popover store's one-open rule, so opening any other surface closes it.
 const BOARD_ID = "frontier-season-board";
@@ -46,27 +46,20 @@ const useViewer = () => useAccountStore((state) => state.account?.address ?? nul
 const rankValue = (rank: number | null | undefined): string =>
   rank === undefined ? "—" : rank === null ? "" : `#${rank}`;
 
-/** The rank chip in the strip's chip row (mockup 7): the trophy and the player's season rank, opening the board. */
-export const SeasonBoardChip = () => {
-  const toggle = usePopoverStore((state) => state.toggle);
-  const open = usePopoverStore((state) => state.openId === BOARD_ID);
-  const board = useSeasonBoard();
-  const rank = rankValue(ownRank(board.data, useViewer()));
+/** The player's season rank as the Menu's Season row shows it. */
+export const useSeasonRank = (): string => rankValue(ownRank(useSeasonBoard().data, useViewer()));
 
-  return (
-    <>
-      <button
-        type="button"
-        aria-label="Season board"
-        aria-expanded={open}
-        onClick={() => toggle(BOARD_ID)}
-        className="pointer-events-auto flex min-h-11 items-center lg:min-h-9"
-      >
-        <Chip label="Season rank" icon={<Trophy />} value={rank} />
-      </button>
-      {open && <SeasonBoardSheet rank={rank} />}
-    </>
-  );
+/** The way to the full board, from the Menu's Season row. */
+export const useOpenSeasonBoard = () => {
+  const open = usePopoverStore((state) => state.open);
+  return () => open(BOARD_ID);
+};
+
+/** The full board while it is open, wherever it was opened from. */
+export const SeasonBoardHost = () => {
+  const open = usePopoverStore((state) => state.openId === BOARD_ID);
+  const rank = useSeasonRank();
+  return open ? <SeasonBoardSheet rank={rank} /> : null;
 };
 
 /** Desktop's panel under the chip row (§3.10): the top five and the player's own row, opening the full board. */
@@ -106,7 +99,7 @@ const SeasonBoardSheet = ({ rank }: { rank: string }) => {
   };
 
   return (
-    <FrontierSheet label="Season board" onClose={() => close(BOARD_ID)} workspace>
+    <Sheet label="Season board" onClose={() => close(BOARD_ID)}>
       <header className="flex justify-center">
         <Chip label="Season rank" icon={<Trophy />} value={rank} />
       </header>
@@ -115,7 +108,7 @@ const SeasonBoardSheet = ({ rank }: { rank: string }) => {
       ) : (
         <p className="frontier-hero text-center">—</p>
       )}
-    </FrontierSheet>
+    </Sheet>
   );
 };
 
