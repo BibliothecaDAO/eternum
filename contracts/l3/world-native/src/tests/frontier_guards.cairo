@@ -69,8 +69,11 @@ fn ruin_beasts_are_sized_by_layer_in_one_troop_type() {
 fn frontier_registration_refuses_zero_step_off_grid_and_reversed_guard_bounds() {
     let d = super::registrar::setup();
     snforge_std::start_cheat_caller_address(d.games, super::authority());
-    for invalid in 0_u8..5 {
+    for invalid in 0_u8..6 {
         let (id, mut preset) = super::preset_projection::current_definition("frontier");
+        if invalid == 5 {
+            preset.rules.troop_limit_config.t1_tier_strength = 2;
+        }
         let mut depths = array![];
         for row in preset.settlement.depths {
             let mut depth = *row;
