@@ -135,6 +135,7 @@ export const createLaunchApp = (dependencies: LaunchAppDependencies) => {
   // Whether the signed-in caller launches, so the factory page shows itself to launchers only. A read decides nothing:
   // every write is still refused by requireLauncher.
   app.get("/api/factory/launcher", async (context) => {
+    context.header("Cache-Control", "private, no-store");
     const cookie = context.req.header("cookie");
     if (!cookie) return context.json({ launcher: false });
     const resolved = await Effect.runPromise(Effect.result(dependencies.identity.resolve(cookie)));

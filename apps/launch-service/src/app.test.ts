@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { createLaunchApp } from "./app";
 import { scheduleFrontierSeason } from "./schedule";
 import type { IdentityResolver } from "./auth";
+import { IdentityUnavailable } from "./errors";
 import { D1CalendarStore } from "./calendar-store";
 import { D1SlotStore } from "./slot-store";
 import { D1LaunchStore } from "./store";
@@ -261,12 +262,28 @@ describe("launch service authorization", () => {
         .app.request("https://play.realms.party/api/factory/launcher", {
           headers: cookie ? { cookie } : {},
         })
-        .then((response) => response.json());
+        .then((response) => {
+          expect(response.headers.get("cache-control")).toBe("private, no-store");
+          expect(response.status).toBe(200);
+          return response.json();
+        });
     expect(await launcher(signedIn(ALLOWED_ADDRESS))).toEqual({ launcher: true });
     expect(await launcher(signedIn("0x456"))).toEqual({ launcher: false });
     expect(await launcher(signedIn())).toEqual({ launcher: false });
     expect(await launcher(signedOut)).toEqual({ launcher: false });
     expect(await launcher(signedIn(ALLOWED_ADDRESS), null)).toEqual({ launcher: false });
+  });
+
+  test("does not cache the launcher answer when identity resolution is unavailable", async () => {
+    const identity: IdentityResolver = {
+      resolve: () => Effect.fail(new IdentityUnavailable({ cause: "identity unavailable" })),
+    };
+    const response = await createApp(identity).app.request("https://play.realms.party/api/factory/launcher", {
+      headers: { cookie: "session=1" },
+    });
+    expect(response.status).toBe(503);
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
+    expect(await response.json()).toEqual({ error: "Identity service unavailable." });
   });
 
   test("rejects a mutation without a verified session", async () => {
