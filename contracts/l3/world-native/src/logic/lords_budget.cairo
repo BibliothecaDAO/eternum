@@ -7,9 +7,6 @@ use crate::commands::ExecutionContext;
 use crate::relics::{ChestRules, ChestTiers, LORDS_ESTIMATE_SCALE, LordsBudget, SiteChest, roll_tier, tier_value};
 use crate::resources::ResourceKey;
 
-// Skipped days decay the estimate one step each, up to this many; past it the estimate is long since zero.
-const MAX_DECAY_DAYS: u64 = 64;
-
 pub fn site_chest(key: ResourceKey) -> Option<SiteChest> {
     crate::state::read().structures.site_chests.read((key.game_id, key.entity_id))
 }
@@ -145,13 +142,15 @@ fn day_ticks(clock: SeasonClock, index: u64) -> u128 {
 /// so their LORDS stay in the pool.
 pub fn roll(rules: ChestRules, previous: LordsBudget, clock: SeasonClock, day: u64) -> LordsBudget {
     assert!(day > previous.day, "LORDS budget runs backwards");
-    let window: u128 = rules.estimate_days.into();
+    let window: u256 = rules.estimate_days.into();
     let ticks = core::cmp::max(day_ticks(clock, previous.day), 1);
     let sample = previous.paid_shares * LORDS_ESTIMATE_SCALE / ticks;
-    let mut estimate = (previous.estimate * (window - 1) + sample) / window;
-    let mut skipped = core::cmp::min(day - previous.day - 1, MAX_DECAY_DAYS);
-    while skipped != 0 {
-        estimate = estimate * (window - 1) / window;
+    let mut estimate: u128 = ((Into::<u128, u256>::into(previous.estimate) * (window - 1) + sample.into()) / window).try_into().unwrap();
+    let mut skipped = day - previous.day - 1;
+    // For a nonzero estimate and window >= 1, floor(estimate * (window - 1) / window) is strictly smaller.
+    // The loop takes at most the skipped days or the initial estimate, and stops as soon as zero stays zero.
+    while skipped != 0 && estimate != 0 {
+        estimate = (Into::<u128, u256>::into(estimate) * (window - 1) / window).try_into().unwrap();
         skipped -= 1;
     }
     open_day(

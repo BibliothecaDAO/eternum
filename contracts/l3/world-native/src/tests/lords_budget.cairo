@@ -187,3 +187,17 @@ fn the_pool_never_overshoots_across_season_sizes() {
     let (paid, _, _) = simulate(300, 4);
     assert!(paid * 4 >= rules().pool * 3, "a full season leaves most of its pool");
 }
+
+#[test]
+fn skipped_day_decay_is_exact_beyond_sixty_four_days() {
+    let rules = ChestRules { estimate_days: 100, ..rules() };
+    let previous = LordsBudget { estimate: 1_000_000_000, ..closed_day(rules, 0) };
+    let mut expected = previous.estimate;
+    for _ in 0_u64..100 {
+        expected = expected * 99 / 100;
+    }
+    assert!(expected != 0);
+    assert_eq!(roll(rules, previous, clock(), 100).estimate, expected);
+    let small = LordsBudget { estimate: 1, ..previous };
+    assert_eq!(roll(rules, small, clock(), 100).estimate, 0);
+}
