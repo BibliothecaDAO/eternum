@@ -11,8 +11,8 @@ import { WalletNotDeployedError, type VerifyWalletSignature } from "./wallet-sig
 import type { IdentityEnv } from "./env";
 import { realmsIdOf } from "./realms-id";
 import { routeIdentityRequest } from "./routes";
+import { ORIGIN } from "./workerd-harness";
 
-const ORIGIN = "https://staging.realms.party";
 const ACCOUNT_CLASS_HASH = "0x68995feeefffc1647118073e1ff16179f07eb8eed6c8fb03cce73109f5fbacd";
 const GUARDIAN_KEY = "0x2dccce1da22003777062ee0870e9881b460a8b7eca276870f57c601f182136c";
 const CHAIN_ID = "0x5245414c4d535f53484152445f41";

@@ -3,6 +3,7 @@ import { mkdtempSync, readdirSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Miniflare } from "miniflare";
+import { unstable_readConfig } from "wrangler";
 
 /**
  * The Worker as Cloudflare runs it, for tests: the bundle wrangler would deploy, its Durable Objects, alarms and D1 in
@@ -10,7 +11,12 @@ import { Miniflare } from "miniflare";
  * keeps each sign-in code it is asked to send, and everything else by `outbound`.
  */
 export const WORKER_NAME = "identity";
-const ORIGIN = "https://staging.realms.party";
+const STAGING_CONFIG = unstable_readConfig({
+  config: new URL("../wrangler.jsonc", import.meta.url).pathname,
+  env: "staging",
+});
+/** The origin the staging Worker serves, read from its wrangler config so no test repeats the hostname. */
+export const ORIGIN = new URL(String(STAGING_CONFIG.vars.BASE_URL)).origin;
 const EMAIL_PROVIDER = "https://api.resend.com/emails";
 
 export const buildWorkerBundle = (): string => {
@@ -52,7 +58,7 @@ export const startWorker = async (options: {
     },
     bindings: {
       ENVIRONMENT: "staging",
-      BASE_URL: "https://staging.realms.party",
+      BASE_URL: ORIGIN,
       ACCOUNT_CLASS_HASH: "0x1",
       BETTER_AUTH_SECRET: "workerd-test-secret-workerd-test-secret",
       IDENTITY_RPC_URL: "http://127.0.0.1:1",

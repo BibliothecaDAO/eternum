@@ -4,13 +4,19 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Miniflare } from "miniflare";
 import { afterAll, beforeAll, expect, it } from "vitest";
+import { unstable_readConfig } from "wrangler";
 import schema from "../../../contracts/l3/world-native/schema/schema.json";
 
 /**
  * The Worker as Cloudflare runs it: the bundle wrangler deploys, its cron tick, its registrar Durable Object and D1 in
  * workerd. Identity and the shard are faked at the network edge.
  */
-const ORIGIN = "https://staging.realms.party";
+const STAGING_CONFIG = unstable_readConfig({
+  config: new URL("../wrangler.jsonc", import.meta.url).pathname,
+  env: "staging",
+});
+/** The origin the staging Worker serves, read from its wrangler config so the test does not repeat the hostname. */
+const ORIGIN = new URL(String(STAGING_CONFIG.vars.BASE_URL)).origin;
 const LAUNCHER = "0x123";
 const SHARD_URL = "https://shard.test";
 const SHARD_CHAIN = "0x534e5f574f524b4552";
