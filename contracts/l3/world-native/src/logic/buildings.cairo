@@ -160,6 +160,8 @@ pub mod BuildingState {
                 }
             }
             if new_capacity != old_capacity {
+                // Storage only caps what settles, so the old limit must cap what accrued under it.
+                resources.settle_production(key, timestamp, crate::commands::resource_context(game_context));
                 resources
                     .change_structure_capacity(
                         key,

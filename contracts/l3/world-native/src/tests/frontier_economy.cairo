@@ -17,6 +17,7 @@ use super::resource_commands::{assert_terminal_rejection, execute, grant, set_fi
 
 const KNIGHT: u8 = 26;
 const WHEAT: u8 = 35;
+const STOREHOUSE: u8 = 2;
 const BARRACKS: u8 = 28;
 const FARM: u8 = 37;
 const EAST: u8 = 0;
@@ -248,6 +249,53 @@ fn settling_keeps_only_what_fits_the_storage_limit_and_later_spending_sees_that_
     assert_eq!(stored(deployment, home, KNIGHT), 0);
     settle(deployment, home, KNIGHT, 105);
     assert_eq!(stored(deployment, home, KNIGHT), 10);
+}
+
+#[test]
+fn a_storehouse_raises_the_limit_only_after_production_settles_against_the_old_one() {
+    let mut preset = frontier_preset();
+    preset.rules.capacity_config.storehouse_boost_capacity = 1;
+    let (deployment, home) = frontier_realm(preset);
+    assert!(execute(deployment, build(home, FARM, WEST), 40));
+    // The fixture's own producer runs dry before the limit is pinned, so only wheat is pending afterwards.
+    settle(deployment, home, 1, 90);
+    settle(deployment, home, WHEAT, 90);
+    assert_eq!(stored(deployment, home, WHEAT), 100);
+    leave_room(deployment, home, 20);
+
+    // Thirty seconds made 60 wheat under a limit with room for 20: the storehouse cannot rescue the other 40.
+    assert!(execute(deployment, build(home, STOREHOUSE, EAST), 120));
+    settle(deployment, home, WHEAT, 120);
+    assert_eq!(stored(deployment, home, WHEAT), 120);
+    settle(deployment, home, WHEAT, 130);
+    assert_eq!(stored(deployment, home, WHEAT), 140);
+}
+
+#[test]
+fn a_lost_storehouse_lowers_the_limit_only_after_production_settles_against_the_old_one() {
+    let mut preset = frontier_preset();
+    preset.rules.capacity_config.storehouse_boost_capacity = 1;
+    let (deployment, home) = frontier_realm(preset);
+    assert!(execute(deployment, build(home, FARM, WEST), 40));
+    assert!(execute(deployment, build(home, STOREHOUSE, EAST), 40));
+    settle(deployment, home, 1, 90);
+    settle(deployment, home, WHEAT, 90);
+    // Without the storehouse the realm would have room for ten more.
+    let weight = resources(deployment).resource_weight(home).weight;
+    set_fixture(
+        deployment.games,
+        selector!("resources"),
+        selector!("weights"),
+        array![home.game_id.into(), home.entity_id.into()].span(),
+        Weight { capacity: weight + 10 + RESOURCE_PRECISION, weight },
+    );
+
+    // Thirty seconds made 60 wheat the storehouse still holds, so the realm cannot give the storehouse up.
+    assert_terminal_rejection(deployment, demolish(home, EAST), 120);
+    assert_eq!(last_rejection(deployment), "structure exceeds reduced capacity");
+    spend(deployment, home, WHEAT, 160, 120);
+    assert!(execute(deployment, demolish(home, EAST), 120));
+    assert_eq!(stored(deployment, home, WHEAT), 0);
 }
 
 #[test]

@@ -68,22 +68,13 @@ pub mod ResourcesLogic {
             if level <= 1 || level <= previous {
                 return;
             }
-            let now: u32 = context.timestamp.try_into().unwrap();
-            let start_at = crate::commands::resource_context(context).production_start;
-            for resource_type in 1_u8..59 {
-                if crate::resources::has_production(resource_type)
-                    && crate::logic::resources::production(key, resource_type).building_count != 0 {
-                    self
-                        .resources
-                        .settle_resource(
-                            key,
-                            resource_type,
-                            crate::logic::resources::rule(key.game_id, resource_type).unit_weight,
-                            now,
-                            start_at,
-                        );
-                }
-            }
+            self
+                .resources
+                .settle_production(
+                    key,
+                    context.timestamp.try_into().unwrap(),
+                    crate::commands::resource_context(context).production_start,
+                );
             crate::state::write().production.realm_support.write(storage_key, level);
             self
                 .emit(
@@ -284,6 +275,11 @@ pub mod ResourcesLogic {
             if produces_without_inputs(key.game_id) {
                 self.pay_troop_recipe(key, resource_type, amount, timestamp, game_context);
             }
+        }
+        fn settle_production(
+            ref self: ContractState, key: ResourceKey, timestamp: u64, game_context: crate::commands::ResourceContext,
+        ) {
+            self.resources.settle_production(key, timestamp.try_into().unwrap(), game_context.production_start);
         }
         fn stop_production(
             ref self: ContractState,

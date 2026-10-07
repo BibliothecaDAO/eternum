@@ -219,6 +219,7 @@ pub trait IResourceOperations<T> {
         timestamp: u64,
         game_context: crate::commands::ResourceContext,
     );
+    fn settle_production(ref self: T, key: ResourceKey, timestamp: u64, game_context: crate::commands::ResourceContext);
     fn start_production(
         ref self: T,
         key: ResourceKey,

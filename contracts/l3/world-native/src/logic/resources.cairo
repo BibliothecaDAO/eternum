@@ -154,6 +154,22 @@ pub mod ResourceState {
             self.commit_resource(key, resource_type, resource);
             resource.balance
         }
+        // A rate or a storage limit applies from the moment it changes: what accrued before settles under the old one.
+        fn settle_production(ref self: ComponentState<TContractState>, key: ResourceKey, now: u32, start_at: u32) {
+            for resource_type in 1_u8..59 {
+                if has_production(resource_type)
+                    && crate::logic::resources::production(key, resource_type).building_count != 0 {
+                    self
+                        .settle_resource(
+                            key,
+                            resource_type,
+                            crate::logic::resources::rule(key.game_id, resource_type).unit_weight,
+                            now,
+                            start_at,
+                        );
+                }
+            }
+        }
         fn spend(
             ref self: ComponentState<TContractState>,
             key: ResourceKey,
