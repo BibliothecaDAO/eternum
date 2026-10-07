@@ -1955,6 +1955,12 @@ fn depth_entry_requires_research_and_spends_only_the_selected_depth_stamina() {
     let home = ResourceKey { game_id, entity_id: 1 };
     let resources = IResourceOperationsDispatcher { contract_address: d.games };
     let essence = ResourceSlot { game_id, entity_id: 1, resource_type: 38 };
+    let mut depth_budget = 0;
+    for price in frontier.structures.research {
+        if *price.row == crate::research::ROW_DEPTH {
+            depth_budget += (*price.price).essence;
+        }
+    }
     start_cheat_caller_address(d.games, d.games);
     resources
         .grant_resource(
@@ -1970,7 +1976,7 @@ fn depth_entry_requires_research_and_spends_only_the_selected_depth_stamina() {
         .grant_resource(
             home,
             38,
-            1000000 * RESOURCE_PRECISION,
+            depth_budget,
             350,
             crate::commands::resource_context(
                 crate::commands::ExecutionContext { timestamp: 350, ..crate::tests::context(d.games, (home).game_id) },
