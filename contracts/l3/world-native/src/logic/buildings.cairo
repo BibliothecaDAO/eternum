@@ -165,6 +165,8 @@ pub mod BuildingState {
                         key,
                         core::cmp::max(old_capacity, new_capacity) - core::cmp::min(old_capacity, new_capacity),
                         new_capacity > old_capacity,
+                        timestamp,
+                        crate::commands::resource_context(game_context),
                     );
             }
             if new_population != old_population {

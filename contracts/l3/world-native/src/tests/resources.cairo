@@ -6,7 +6,7 @@ use crate::rules::RESOURCE_PRECISION;
 #[starknet::interface]
 trait IResourceFixture<T> {
     fn initialize(ref self: T, key: ResourceKey, capacity: u128);
-    fn configure_support_training(ref self: T, key: ResourceKey);
+    fn configure_support(ref self: T, key: ResourceKey);
     fn grant(ref self: T, key: ResourceKey, amount: u128);
     fn spend(ref self: T, key: ResourceKey, amount: u128);
     fn start(ref self: T, key: ResourceKey);
@@ -27,20 +27,16 @@ mod ResourceFixture {
     use crate::logic::resources::ResourceState;
     use crate::resources::{Production, ResourceKey, Weight};
     component!(path: ResourceState, storage: resources, event: ResourceEvent);
-    component!(path: crate::logic::production::ProductionState, storage: recipes, event: RecipeEvent);
     impl Internal = ResourceState::InternalImpl<ContractState>;
     #[storage]
     #[allow(starknet::colliding_storage_paths)]
     struct Storage {
         #[substorage(v0)]
         resources: ResourceState::Storage,
-        #[substorage(v0)]
-        recipes: crate::logic::production::ProductionState::Storage,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
     enum Event {
-        RecipeEvent: crate::logic::production::ProductionState::Event,
         #[flat]
         ResourceEvent: ResourceState::Event,
     }
@@ -53,25 +49,10 @@ mod ResourceFixture {
             state.presets.entry(1).rules.epoch_seconds.write(0);
             self.resources.initialize(key, capacity);
         }
-        fn configure_support_training(ref self: ContractState, key: ResourceKey) {
+        fn configure_support(ref self: ContractState, key: ResourceKey) {
             let state = crate::state::write();
-            let preset = state.presets.entry(1);
-            preset.rules.epoch_seconds.write(100);
+            state.presets.entry(1).rules.epoch_seconds.write(100);
             state.production.realm_support.write((key.game_id, key.entity_id, 0), 3);
-            for resource in array![26_u8, 35] {
-                preset.resource_rules.write(resource, (1, 0));
-            }
-            preset
-                .production_terms
-                .write(
-                    26,
-                    crate::production::RecipeTerms {
-                        simple_output: 1, complex_output: 0, simple_count: 1, complex_count: 0,
-                    },
-                );
-            preset
-                .production_inputs
-                .write((26, false, 0), crate::resources::ResourceAmount { resource_type: 35, amount: 2 });
         }
         fn grant(ref self: ContractState, key: ResourceKey, amount: u128) {
             self.resources.grant_resource(key, 23, amount, 1, 10, 0);
@@ -319,21 +300,26 @@ fn inactive_resources_have_no_clock_and_activation_starts_at_the_recorded_time()
 
 
 #[test]
-fn support_boosts_wheat_and_training_through_midnight_using_the_same_integral() {
+fn support_boosts_wheat_and_troops_through_midnight_using_the_same_integral() {
     let resources = fixture();
     let key = ResourceKey { game_id: 1, entity_id: 7 };
     resources.initialize(key, 100000);
-    resources.configure_support_training(key);
+    resources.configure_support(key);
     resources.start_at(key, 35, 100, crate::resources::UNLIMITED_OUTPUT, 90);
     resources.start_at(key, 26, 10, crate::resources::UNLIMITED_OUTPUT, 90);
     resources.spend_at(key, 26, 0, 1, 110);
     let (troops, _, _) = resources.read_slot(key, 26);
     let (wheat, _, _) = resources.read_slot(key, 35);
     assert_eq!(troops, 220);
-    assert_eq!(wheat, 1760);
+    // Each resource settles alone: touching troops leaves wheat where it was.
+    assert_eq!(wheat, 0);
+    resources.spend_at(key, 35, 0, 1, 110);
+    let (wheat, _, _) = resources.read_slot(key, 35);
+    assert_eq!(wheat, 2200);
     resources.spend_at(key, 26, 0, 1, 120);
+    resources.spend_at(key, 35, 0, 1, 120);
     let (troops, _, _) = resources.read_slot(key, 26);
     let (wheat, _, _) = resources.read_slot(key, 35);
     assert_eq!(troops, 320);
-    assert_eq!(wheat, 2560);
+    assert_eq!(wheat, 3200);
 }

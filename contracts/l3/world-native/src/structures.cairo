@@ -124,15 +124,6 @@ pub trait IStructureOperations<T> {
     fn provision_realm(
         ref self: T, game_id: u32, actor: ContractAddress, coord: Coord, grants: Span<(u8, u128)>,
     ) -> u32;
-    fn pay_for_explorer(
-        ref self: T,
-        key: ResourceKey,
-        actor: ContractAddress,
-        resource_type: u8,
-        amount: u128,
-        timestamp: u64,
-        game_context: crate::commands::ActionContext,
-    );
 }
 
 pub(crate) fn discovered_structure(

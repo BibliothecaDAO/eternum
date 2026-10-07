@@ -56,9 +56,6 @@ pub fn production_start(game_id: u32, game_context: crate::commands::ExecutionCo
 pub mod ResourceState {
     use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
     use crate::events::{RowDeleted, RowSet};
-    use crate::logic::production::ProductionState;
-    use crate::logic::production::ProductionState::InternalTrait as RecipeInternal;
-    use crate::production::RecipeKey;
     use crate::resources::{
         Production, ResourceKey, SettledResource, Weight, add, assert_production, has_production, settle, spend,
     };
@@ -76,9 +73,7 @@ pub mod ResourceState {
         RowDeleted: RowDeleted,
     }
     #[generate_trait]
-    pub impl InternalImpl<
-        TContractState, +HasComponent<TContractState>, impl Recipes: ProductionState::HasComponent<TContractState>,
-    > of InternalTrait<TContractState> {
+    pub impl InternalImpl<TContractState, +HasComponent<TContractState>> of InternalTrait<TContractState> {
         fn write_lords_budget(ref self: ComponentState<TContractState>, game_id: u32, lords_committed: u128) {
             self.data.relics.lords_committed.write(game_id, Some(lords_committed));
             self
@@ -159,6 +154,22 @@ pub mod ResourceState {
             self.commit_resource(key, resource_type, resource);
             resource.balance
         }
+        // A rate or a storage limit applies from the moment it changes: what accrued before settles under the old one.
+        fn settle_production(ref self: ComponentState<TContractState>, key: ResourceKey, now: u32, start_at: u32) {
+            for resource_type in 1_u8..59 {
+                if has_production(resource_type)
+                    && crate::logic::resources::production(key, resource_type).building_count != 0 {
+                    self
+                        .settle_resource(
+                            key,
+                            resource_type,
+                            crate::logic::resources::rule(key.game_id, resource_type).unit_weight,
+                            now,
+                            start_at,
+                        );
+                }
+            }
+        }
         fn spend(
             ref self: ComponentState<TContractState>,
             key: ResourceKey,
@@ -230,12 +241,6 @@ pub mod ResourceState {
             start_at: u32,
         ) {
             assert_production(resource_type);
-            if crate::resources::is_troop_resource(resource_type) && output == crate::resources::UNLIMITED_OUTPUT {
-                self
-                    .settle_resource(
-                        key, 35, crate::logic::resources::rule(key.game_id, 35).unit_weight, now, start_at,
-                    );
-            }
             let mut resource = self.load_settled(key, resource_type, unit_weight, now, start_at);
             resource.production.building_count += 1;
             resource.production.production_rate += rate;
@@ -265,13 +270,20 @@ pub mod ResourceState {
             self.commit_resource(key, resource_type, resource);
         }
         fn change_structure_capacity(
-            ref self: ComponentState<TContractState>, key: ResourceKey, amount: u128, adding: bool,
+            ref self: ComponentState<TContractState>,
+            key: ResourceKey,
+            amount: u128,
+            adding: bool,
+            now: u32,
+            start_at: u32,
         ) {
             crate::logic::resources::assert_exists(key);
-            let mut weight = self.data.resources.weights.read((key.game_id, key.entity_id));
-            if weight.capacity == 0xffffffffffffffffffffffffffffffff {
+            if crate::logic::resources::weight(key).capacity == 0xffffffffffffffffffffffffffffffff {
                 return;
             }
+            // Storage only caps what settles, so the old limit must cap what accrued under it.
+            self.settle_production(key, now, start_at);
+            let mut weight = self.data.resources.weights.read((key.game_id, key.entity_id));
             weight.capacity = if adding {
                 weight.capacity + amount
             } else {
@@ -290,9 +302,6 @@ pub mod ResourceState {
             now: u32,
             start_at: u32,
         ) -> SettledResource {
-            if resource_type == 35 || crate::resources::is_troop_resource(resource_type) {
-                self.settle_training(key, now, start_at);
-            }
             let mut resource = SettledResource {
                 balance: crate::logic::resources::balance(key, resource_type),
                 production: crate::logic::resources::production(key, resource_type),
@@ -316,69 +325,6 @@ pub mod ResourceState {
                 );
             }
             resource
-        }
-
-        fn settle_training(ref self: ComponentState<TContractState>, key: ResourceKey, now: u32, start_at: u32) {
-            let mut trainers = array![];
-            for resource_type in crate::resources::FIRST_TROOP_RESOURCE..(crate::resources::LAST_TROOP_RESOURCE + 1) {
-                let production = crate::logic::resources::production(key, resource_type);
-                if production.output_amount_left == crate::resources::UNLIMITED_OUTPUT
-                    && production.building_count != 0
-                    && production.last_updated_at != now {
-                    trainers.append((resource_type, production));
-                }
-            }
-            if trainers.is_empty() {
-                return;
-            }
-
-            let mut wheat = crate::logic::resources::production(key, 35);
-            let wheat_weight = crate::logic::resources::rule(key.game_id, 35).unit_weight;
-            let stored_wheat = crate::logic::resources::balance(key, 35);
-            let mut available = stored_wheat;
-            if wheat.building_count != 0 {
-                let since = core::cmp::max(wheat.last_updated_at, core::cmp::min(now, start_at));
-                available += Into::<u32, u128>::into(now - since) * wheat.production_rate.into()
-                    + crate::logic::production::support_bonus(key, wheat.production_rate, since, now);
-            }
-            wheat.last_updated_at = now;
-            let mut outputs = array![];
-            for (resource_type, mut production) in trainers {
-                let recipe = get_dep_component!(@self, Recipes)
-                    .recipe(RecipeKey { game_id: key.game_id, resource_type });
-                assert!(recipe.simple_output != 0 && recipe.simple_inputs.len() == 1, "training needs a simple recipe");
-                let input = *recipe.simple_inputs.at(0);
-                assert!(input.resource_type == 35 && input.amount != 0, "training requires wheat");
-                let since = core::cmp::max(production.last_updated_at, core::cmp::min(now, start_at));
-                let expected = Into::<u32, u128>::into(now - since) * production.production_rate.into()
-                    + crate::logic::production::support_bonus(key, production.production_rate, since, now);
-                let per_cycle: u128 = recipe.simple_output.into();
-                let trained = core::cmp::min(expected, available * per_cycle / input.amount);
-                available -= (trained * input.amount + per_cycle - 1) / per_cycle;
-                production.last_updated_at = now;
-                outputs.append((resource_type, production, trained));
-            }
-
-            // Training consumes farm output before storage burns any surplus.
-            let mut weight = crate::logic::resources::weight(key);
-            let mut wheat_balance = stored_wheat;
-            spend(35, ref wheat_balance, ref weight, stored_wheat, wheat_weight);
-            add(35, ref wheat_balance, ref weight, available, wheat_weight);
-            self.write_balance(key, 35, wheat_balance);
-            self.write_production(key, 35, wheat);
-            for (resource_type, production, trained) in outputs {
-                let mut balance = crate::logic::resources::balance(key, resource_type);
-                add(
-                    resource_type,
-                    ref balance,
-                    ref weight,
-                    trained,
-                    crate::logic::resources::rule(key.game_id, resource_type).unit_weight,
-                );
-                self.write_balance(key, resource_type, balance);
-                self.write_production(key, resource_type, production);
-            }
-            self.write_weight(key, weight);
         }
 
         fn commit_resource(
