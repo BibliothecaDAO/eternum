@@ -7,7 +7,7 @@ import { derivePresetFacts } from "./preset-facts";
 import { decodePresetPreimage } from "./preset-preimages";
 import { encodeMembers } from "./serde";
 import type { DecodedWorldEvent } from "../types";
-import { seasonSeconds } from "@bibliothecadao/eternum/expeditions";
+import { seasonSeconds } from "../../../../packages/core/src/utils/days";
 
 const codec = new CallData([...Object.values(schema.types), ...schema.games.entrypoints] as Abi);
 
