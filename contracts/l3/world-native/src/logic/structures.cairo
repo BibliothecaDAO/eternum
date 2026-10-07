@@ -740,7 +740,7 @@ pub mod StructuresLogic {
                         self
                             .create_producer(
                                 key,
-                                0xffffffffffffffffffffffffffffffff,
+                                crate::resources::UNLIMITED_OUTPUT,
                                 labor_rate,
                                 23,
                                 25,
@@ -873,7 +873,7 @@ pub mod StructuresLogic {
             self
                 .create_producer(
                     key,
-                    0xffffffffffffffffffffffffffffffff,
+                    crate::resources::UNLIMITED_OUTPUT,
                     crate::logic::resources::rule(key.game_id, 23).realm_rate,
                     23,
                     25,
