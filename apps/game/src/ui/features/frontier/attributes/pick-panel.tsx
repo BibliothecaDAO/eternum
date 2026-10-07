@@ -68,7 +68,7 @@ export const PickPanel = ({
               attribute={attribute}
               level={level}
               price={price}
-              affordable={price !== null && progress.xp >= price}
+              affordable={attribute !== "Scouting" && price !== null && progress.xp >= price}
               lifted={pick.lifted === attribute}
               phase={pick.phase}
               badge={attributeBadgeTarget(progress.explorer_id)}

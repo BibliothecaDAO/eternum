@@ -380,7 +380,8 @@ pub mod MapLogic {
                 epoch: crate::expeditions::absolute_epoch(context.rules.unbox().epoch_seconds, context.timestamp),
             };
             let empty = crate::logic::expeditions::discovery(counter).map(|row| row.empty_reveals).unwrap_or(0);
-            let result = crate::discovery::frontier(rules, progress.scouting, empty, seed, context.timestamp);
+            let (camp_bonus, rift_bonus) = crate::progression::scouting_bonus(progress);
+            let result = crate::discovery::frontier(rules, camp_bonus, rift_bonus, empty, seed, context.timestamp);
             crate::logic::expeditions::record_discovery(counter, result);
             if let Some(category) = crate::discovery::tile_occupier(result) {
                 crate::logic::map::MapState::occupy(

@@ -21,7 +21,16 @@ const RULES: ProgressionRulesFacts = {
   epic_xp: 400,
   legendary_xp: 800,
 };
-const ARMY: ArmyProgressFacts = { game_id: 1, explorer_id: 201, xp: 250, battle: 2, logistics: 1, scouting: 5, support: 1 };
+const ARMY: ArmyProgressFacts = {
+  game_id: 1,
+  explorer_id: 201,
+  xp: 250,
+  battle: 2,
+  logistics: 1,
+  scouting: 5,
+  scouting_kinds: 0b10_10_10_10,
+  support: 1,
+};
 
 let read: () => ReturnType<typeof usePick> = () => null;
 const Probe = () => {

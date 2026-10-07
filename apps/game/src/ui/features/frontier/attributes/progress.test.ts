@@ -19,7 +19,7 @@ const RULES = {
   epic_xp: 400,
   legendary_xp: 800,
 };
-const ARMY = { game_id: 1, explorer_id: 7, xp: 0, battle: 1, logistics: 1, scouting: 1, support: 1 };
+const ARMY = { game_id: 1, explorer_id: 7, xp: 0, battle: 1, logistics: 1, scouting: 1, scouting_kinds: 0, support: 1 };
 
 beforeEach(() => {
   plays.length = 0;
@@ -33,7 +33,8 @@ describe("an army's progress", () => {
 
   it("can Upgrade any attribute whose next tier its XP covers", () => {
     expect(affordableUpgrades({ ...ARMY, xp: 99 }, RULES)).toEqual([]);
-    expect(affordableUpgrades({ ...ARMY, xp: 150, battle: 2 }, RULES)).toEqual(["Logistics", "Scouting", "Support"]);
+    // Scouting waits for the frontend's kind choice.
+    expect(affordableUpgrades({ ...ARMY, xp: 150, battle: 2 }, RULES)).toEqual(["Logistics", "Support"]);
     expect(affordableUpgrades({ ...ARMY, xp: 5000, battle: 5, logistics: 5, scouting: 5, support: 5 }, RULES)).toEqual(
       [],
     );
@@ -50,7 +51,8 @@ describe("an attribute's gain", () => {
     expect(attributeGain("Battle", 1, 2)).toBe("+10%");
     expect(attributeGain("Battle", 3, 5)).toBe("+70%");
     expect(attributeGain("Logistics", 1, 3)).toBe("+50");
-    expect(attributeGain("Scouting", 1, 2)).toBe("+1.5");
+    expect(attributeGain("Scouting", 1, 2)).toBe("+10%");
+    expect(attributeGain("Scouting", 1, 5)).toBe("+100%");
     expect(attributeGain("Support", 1, 3)).toBe("+20%");
   });
 });

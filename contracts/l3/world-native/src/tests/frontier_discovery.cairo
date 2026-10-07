@@ -16,16 +16,17 @@ fn bucket(result: Discovery) -> felt252 {
 }
 
 #[test]
-fn frontier_categorical_odds_and_scouting_keep_loose_chests_fixed_over_100k_reveals() {
+fn frontier_categorical_odds_and_scouting_on_rifts_keep_ruins_and_loose_chests_fixed_over_100k_reveals() {
     let rules = rules();
     let mut ordinary: Felt252Dict<u32> = Default::default();
     let mut scouting: Felt252Dict<u32> = Default::default();
     let mut floored: Felt252Dict<u32> = Default::default();
     let mut empty = 0_u8;
     for timestamp in 0_u64..100000 {
-        let base = frontier(rules, 1, 0, 0x46524f4e54494552, timestamp);
-        let boosted = frontier(rules, 5, 0, 0x46524f4e54494552, timestamp);
-        let session = frontier(rules, 1, empty, 0x46524f4e54494552, timestamp);
+        let base = frontier(rules, 0, 0, 0, 0x46524f4e54494552, timestamp);
+        // Every Scouting tier on rifts: +10%, +20%, +30% and +40% of the rift rate, which doubles it.
+        let boosted = frontier(rules, 0, 10000, 0, 0x46524f4e54494552, timestamp);
+        let session = frontier(rules, 0, 0, empty, 0x46524f4e54494552, timestamp);
         let key = bucket(base);
         let count = ordinary.get(key);
         ordinary.insert(key, count + 1);
@@ -48,8 +49,8 @@ fn frontier_categorical_odds_and_scouting_keep_loose_chests_fixed_over_100k_reve
     for (index, expected) in array![(0_u8, 4000_u32), (1, 4000), (2, 2000), (3, 2000)] {
         let value = ordinary.get((index).into());
         assert!(value + 200 >= expected && value <= expected + 200, "ordinary odds drift");
-        let target = if index < 2 {
-            10000
+        let target = if index == 1 {
+            2 * expected
         } else {
             expected
         };
@@ -58,7 +59,7 @@ fn frontier_categorical_odds_and_scouting_keep_loose_chests_fixed_over_100k_reve
     }
     for index in 0_u8..5 {
         println!(
-            "bucket {} ordinary {} Scouting5 {} floor-modified {}",
+            "bucket {} ordinary {} legendary Scouting on rifts {} floor-modified {}",
             index,
             ordinary.get(index.into()),
             scouting.get(index.into()),
@@ -83,7 +84,7 @@ fn frontier_floor_is_home_day_scoped_and_only_player_discoveries_change_it() {
         crate::logic::expeditions::record_discovery(key, Discovery::None);
     }
     assert_eq!(crate::logic::expeditions::discovery(key).unwrap().empty_reveals, 7);
-    let next = frontier(rules(), 1, 7, 0, 0);
+    let next = frontier(rules(), 0, 0, 7, 0, 0);
     assert!(next == Discovery::Camp || next == Discovery::Mine || next == Discovery::FallenRealm);
     crate::logic::expeditions::record_discovery(key, next);
     assert_eq!(crate::logic::expeditions::discovery(key).unwrap().empty_reveals, 0);
@@ -134,8 +135,8 @@ fn shrine_well_odds_are_three_percent_without_moving_the_chest_interval() {
     let mut floor_shrines = 0_u32;
     let mut floor_wells = 0_u32;
     for timestamp in 0_u64..100000 {
-        let draw = frontier(unlocked, 1, 0, 0x5349544553, timestamp);
-        let without = frontier(locked, 1, 0, 0x5349544553, timestamp);
+        let draw = frontier(unlocked, 0, 0, 0, 0x5349544553, timestamp);
+        let without = frontier(locked, 0, 0, 0, 0x5349544553, timestamp);
         assert!(without != Discovery::Shrine && without != Discovery::Well);
         assert_eq!(draw == Discovery::Chest, without == Discovery::Chest);
         if draw == Discovery::Shrine {
@@ -144,7 +145,7 @@ fn shrine_well_odds_are_three_percent_without_moving_the_chest_interval() {
         if draw == Discovery::Well {
             wells += 1;
         }
-        let floored = frontier(unlocked, 1, 7, 0x5349544553, timestamp);
+        let floored = frontier(unlocked, 0, 0, 7, 0x5349544553, timestamp);
         assert!(floored != Discovery::None && floored != Discovery::Chest);
         if floored == Discovery::Shrine {
             floor_shrines += 1;

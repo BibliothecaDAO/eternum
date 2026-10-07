@@ -23,7 +23,16 @@ const RULES: ProgressionRulesFacts = {
   epic_xp: 400,
   legendary_xp: 800,
 };
-const ARMY: ArmyProgressFacts = { game_id: 1, explorer_id: 201, xp: 140, battle: 2, logistics: 1, scouting: 4, support: 1 };
+const ARMY: ArmyProgressFacts = {
+  game_id: 1,
+  explorer_id: 201,
+  xp: 140,
+  battle: 2,
+  logistics: 1,
+  scouting: 4,
+  scouting_kinds: 0b10_01_10,
+  support: 1,
+};
 const COLUMN: Record<Attribute, "battle" | "logistics" | "scouting" | "support"> = {
   Battle: "battle",
   Logistics: "logistics",

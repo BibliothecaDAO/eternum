@@ -1,6 +1,5 @@
 pub const ATTRIBUTE_CAP: u8 = 5;
 pub const ATTRIBUTE_SUPPORT_PERCENT: u8 = 10;
-pub const ATTRIBUTE_SCOUTING_BPS: u8 = 150;
 // Attribute tiers run common (1) to legendary (5); common gives nothing and the steps grow.
 pub const BATTLE_UNCOMMON_BPS: u32 = 1000;
 pub const BATTLE_RARE_BPS: u32 = 3000;
@@ -10,6 +9,11 @@ pub const LOGISTICS_UNCOMMON_STAMINA: u32 = 20;
 pub const LOGISTICS_RARE_STAMINA: u32 = 50;
 pub const LOGISTICS_EPIC_STAMINA: u32 = 90;
 pub const LOGISTICS_LEGENDARY_STAMINA: u32 = 150;
+// What each Scouting tier adds to its chosen kind's find rate, in basis points of that kind's base rate.
+pub const SCOUTING_UNCOMMON_BPS: u32 = 1000;
+pub const SCOUTING_RARE_BPS: u32 = 2000;
+pub const SCOUTING_EPIC_BPS: u32 = 3000;
+pub const SCOUTING_LEGENDARY_BPS: u32 = 4000;
 
 /// Damage dealt above common at a Battle tier, in the basis points Combat reads.
 pub fn battle_bonus_bps(tier: u8) -> u32 {
@@ -20,6 +24,18 @@ pub fn battle_bonus_bps(tier: u8) -> u32 {
         3 => BATTLE_RARE_BPS,
         4 => BATTLE_EPIC_BPS,
         5 => BATTLE_LEGENDARY_BPS,
+        _ => panic!("invalid attribute tier"),
+    }
+}
+
+/// What reaching a Scouting tier adds to the kind chosen for it, relative to that kind's base rate.
+pub fn scouting_increment_bps(tier: u8) -> u32 {
+    match tier {
+        0 | 1 => panic!("invalid attribute tier"),
+        2 => SCOUTING_UNCOMMON_BPS,
+        3 => SCOUTING_RARE_BPS,
+        4 => SCOUTING_EPIC_BPS,
+        5 => SCOUTING_LEGENDARY_BPS,
         _ => panic!("invalid attribute tier"),
     }
 }

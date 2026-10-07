@@ -19,13 +19,23 @@ pub enum Attribute {
     Support,
 }
 
-/// An army's unspent XP and its tier in each attribute, from 1 (common) to 5 (legendary).
+/// What a Scouting tier raises: the find rate of one kind of site. Ruins, shrines and wells never change.
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub enum ScoutingKind {
+    Camp,
+    Rift,
+    Stragglers,
+}
+
+/// An army's unspent XP and its tier in each attribute, from 1 (common) to 5 (legendary). `scouting_kinds` holds the
+/// kind each Scouting tier above common applies to, two bits per tier from uncommon up: 1 camp, 2 rift, 3 stragglers.
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct ArmyProgress {
     pub xp: u32,
     pub battle: u8,
     pub logistics: u8,
     pub scouting: u8,
+    pub scouting_kinds: u8,
     pub support: u8,
 }
 
@@ -37,6 +47,7 @@ pub impl ProgressPacking of starknet::storage_access::StorePacking<ArmyProgress,
             + Into::<u8, u128>::into(value.logistics) * 0x10000000000
             + Into::<u8, u128>::into(value.scouting) * 0x1000000000000
             + Into::<u8, u128>::into(value.support) * 0x100000000000000
+            + Into::<u8, u128>::into(value.scouting_kinds) * 0x10000000000000000
     }
     fn unpack(value: u128) -> ArmyProgress {
         ArmyProgress {
@@ -45,20 +56,24 @@ pub impl ProgressPacking of starknet::storage_access::StorePacking<ArmyProgress,
             logistics: (value / 0x10000000000 % 256).try_into().unwrap(),
             scouting: (value / 0x1000000000000 % 256).try_into().unwrap(),
             support: (value / 0x100000000000000 % 256).try_into().unwrap(),
+            scouting_kinds: (value / 0x10000000000000000 % 256).try_into().unwrap(),
         }
     }
 }
 
+/// An Upgrade; a Scouting tier names the kind it applies to, every other attribute none.
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct BuyTier {
     pub explorer_id: u32,
     pub attribute: Attribute,
+    pub kind: Option<ScoutingKind>,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct TierBought {
     pub explorer_id: u32,
     pub attribute: Attribute,
+    pub kind: Option<ScoutingKind>,
     pub tier: u8,
     pub price: u32,
 }
@@ -86,7 +101,7 @@ pub trait IArmyProgression<T> {
 }
 
 pub fn initial() -> ArmyProgress {
-    ArmyProgress { xp: 0, battle: 1, logistics: 1, scouting: 1, support: 1 }
+    ArmyProgress { xp: 0, battle: 1, logistics: 1, scouting: 1, scouting_kinds: 0, support: 1 }
 }
 
 pub fn attribute_tier(progress: ArmyProgress, attribute: Attribute) -> u8 {
@@ -122,7 +137,46 @@ pub fn buy_tier(ref progress: ArmyProgress, rules: ArmyProgressionRules, command
         Attribute::Scouting => progress.scouting = tier,
         Attribute::Support => progress.support = tier,
     }
-    TierBought { explorer_id: command.explorer_id, attribute: command.attribute, tier, price }
+    if command.attribute == Attribute::Scouting {
+        let code: u8 = match command.kind.expect('Scouting needs a kind') {
+            ScoutingKind::Camp => 1,
+            ScoutingKind::Rift => 2,
+            // Stragglers are not on the map until build item 11.
+            ScoutingKind::Stragglers => panic!("stragglers are not on the map yet"),
+        };
+        progress.scouting_kinds += code * scouting_kind_shift(tier);
+    } else {
+        assert!(command.kind.is_none(), "only Scouting takes a kind");
+    }
+    TierBought { explorer_id: command.explorer_id, attribute: command.attribute, kind: command.kind, tier, price }
+}
+
+/// The place of a Scouting tier's kind in `scouting_kinds`: two bits per tier from uncommon (tier 2) up.
+fn scouting_kind_shift(tier: u8) -> u8 {
+    match tier {
+        2 => 1,
+        3 => 4,
+        4 => 16,
+        5 => 64,
+        _ => panic!("invalid attribute tier"),
+    }
+}
+
+/// What the army's Scouting tiers add to camp and rift find rates, in basis points of each kind's base rate.
+pub fn scouting_bonus(progress: ArmyProgress) -> (u32, u32) {
+    let mut camp = 0;
+    let mut rift = 0;
+    let mut tier = 2;
+    while tier <= progress.scouting {
+        let increment = crate::rules::scouting_increment_bps(tier);
+        match progress.scouting_kinds / scouting_kind_shift(tier) % 4 {
+            1 => camp += increment,
+            2 => rift += increment,
+            _ => panic!("missing Scouting kind"),
+        }
+        tier += 1;
+    }
+    (camp, rift)
 }
 
 /// A clear pays 2.5 x the square root of the guard's starting strength in whole troops, rounded down: exactly

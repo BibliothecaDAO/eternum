@@ -698,18 +698,26 @@ export class EternumProvider extends EventEmitter {
     );
   }
 
-  /** Upgrades one attribute of an army by one tier, paid from its XP. */
+  /** Upgrades one attribute of an army by one tier, paid from its XP; a Scouting tier names the kind it raises. */
   public async buy_tier(
     props: SystemProps.SystemSigner & {
       explorerId: number;
       attribute: "Battle" | "Logistics" | "Scouting" | "Support";
+      scoutingKind?: "Camp" | "Rift" | "Stragglers";
     },
   ) {
     return this.submitCommand(
       props.signer,
       {
         kind: "BuyTier",
-        value: { explorer_id: props.explorerId, attribute: { kind: props.attribute, value: undefined } },
+        value: {
+          explorer_id: props.explorerId,
+          attribute: { kind: props.attribute, value: undefined },
+          kind:
+            props.scoutingKind === undefined
+              ? { kind: "None", value: undefined }
+              : { kind: "Some", value: { kind: props.scoutingKind, value: undefined } },
+        },
       },
       TransactionType.BUY_TIER,
     );

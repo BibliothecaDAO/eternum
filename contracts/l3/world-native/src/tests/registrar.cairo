@@ -2184,7 +2184,7 @@ fn chest_reveal_time(d: super::Deployment, key: ExplorerKey, from: u64) -> u64 {
         d.games, || crate::logic::preset_record::for_game(key.game_id).discovery_rules.read().unwrap(),
     );
     for timestamp in from..from + 20 {
-        if crate::discovery::frontier(rules, 1, 0, seed, timestamp) == crate::discovery::Discovery::Chest {
+        if crate::discovery::frontier(rules, 0, 0, 0, seed, timestamp) == crate::discovery::Discovery::Chest {
             return timestamp;
         }
     }
@@ -2633,7 +2633,7 @@ fn frontier_floor_counts_seven_player_reveals_across_armies_and_depths_then_rese
             index,
         );
         while index < 7
-            && crate::discovery::frontier(discovery, 1, index, seed, time) != crate::discovery::Discovery::None {
+            && crate::discovery::frontier(discovery, 0, 0, index, seed, time) != crate::discovery::Discovery::None {
             time += 1;
         }
         assert!(time < 399);
@@ -2686,7 +2686,7 @@ fn frontier_floor_counts_seven_player_reveals_across_armies_and_depths_then_rese
     );
     let third = *IStructureOperationsDispatcher { contract_address: d.games }.home_armies(home).at(0);
     let mut time = 401;
-    while crate::discovery::frontier(discovery, 1, 0, seed, time) != crate::discovery::Discovery::None {
+    while crate::discovery::frontier(discovery, 0, 0, 0, seed, time) != crate::discovery::Discovery::None {
         time += 1;
     }
     assert!(execute_in_game(d, game_id, Command::Explore(Explore { explorer_id: third, direction: 0 }), time, time));
@@ -2999,7 +2999,7 @@ fn frontier_site_discovery_reads_home_knowledge_and_places_only_tile_occupancy()
             ..rules,
         };
         let mut seed = 0_u256;
-        while crate::discovery::frontier(enabled, 1, 0, seed, 360) != expected {
+        while crate::discovery::frontier(enabled, 0, 0, 0, seed, 360) != expected {
             seed += 1;
         }
         let seed = seed;

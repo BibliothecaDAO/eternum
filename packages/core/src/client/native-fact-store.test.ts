@@ -487,13 +487,12 @@ describe("declared fact absence", () => {
       set("0x72", "ArmyProgress", {
         game_id: 1,
         explorer_id: army.explorer_id,
-        level: 3,
         xp: 17,
         battle: 3,
         logistics: 3,
         scouting: 1,
+        scouting_kinds: 0,
         support: 1,
-        pending: null,
       }),
     ]);
     expect(resolveExplorerTroops(store, army)?.stamina).toEqual({ amount: 7n, updated_tick: 17n });

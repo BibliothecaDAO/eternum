@@ -64,19 +64,29 @@ fn hyperstructure_weight(config: MapConfig, distance: u128, hyperstructures: u32
 pub fn validate_frontier(rules: crate::expeditions::FrontierDiscoveryRules) {
     let sites: u32 = Into::<u16, u32>::into(rules.camp_bps) + rules.rift_bps.into() + rules.fallen_realm_bps.into();
     assert!(sites != 0 && rules.empty_reveal_limit != 0, "empty discovery floor");
+    // Every Scouting tier on one kind doubles its rate: the larger of camp and rift is the most it can add.
+    let scouting_reserve: u32 = core::cmp::max(rules.camp_bps, rules.rift_bps).into();
     assert!(
-        sites + 1200 + rules.loose_chest_bps.into() + rules.shrine_bps.into() + rules.well_bps.into() <= 10000,
+        sites
+            + scouting_reserve
+            + rules.loose_chest_bps.into()
+            + rules.shrine_bps.into()
+            + rules.well_bps.into() <= 10000,
         "discovery odds exceed 100 percent",
     );
 }
 
+/// A reveal's draw. Scouting raises camp and rift by its bonuses, in basis points of each base rate.
 pub fn frontier(
-    rules: crate::expeditions::FrontierDiscoveryRules, scouting: u8, empty_reveals: u8, seed: u256, timestamp: u64,
+    rules: crate::expeditions::FrontierDiscoveryRules,
+    camp_bonus_bps: u32,
+    rift_bonus_bps: u32,
+    empty_reveals: u8,
+    seed: u256,
+    timestamp: u64,
 ) -> Discovery {
-    assert!(scouting >= 1 && scouting <= 5, "invalid Scouting level");
-    let bonus: u128 = Into::<u8, u128>::into(scouting - 1) * crate::rules::ATTRIBUTE_SCOUTING_BPS.into();
-    let camp: u128 = rules.camp_bps.into() + bonus;
-    let rift: u128 = rules.rift_bps.into() + bonus;
+    let camp: u128 = Into::<u16, u128>::into(rules.camp_bps) * (10000 + camp_bonus_bps.into()) / 10000;
+    let rift: u128 = Into::<u16, u128>::into(rules.rift_bps) * (10000 + rift_bonus_bps.into()) / 10000;
     let fallen: u128 = rules.fallen_realm_bps.into();
     let shrine: u128 = rules.shrine_bps.into();
     let well: u128 = rules.well_bps.into();

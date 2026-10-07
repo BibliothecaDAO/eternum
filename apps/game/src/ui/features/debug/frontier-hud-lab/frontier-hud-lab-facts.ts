@@ -283,6 +283,7 @@ const armyProgress = (clock: LabClock, explorerId: number) => ({
   battle: 1,
   logistics: 1,
   scouting: 1,
+  scouting_kinds: 0,
   support: 1,
 });
 

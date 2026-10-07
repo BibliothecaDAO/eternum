@@ -776,7 +776,15 @@ function planExpedition(client: GameClient, game: HarnessGame, player: Player): 
     if (upgrade)
       return command(client, player, {
         kind: "BuyTier",
-        value: { explorer_id: army.explorer_id, attribute: { kind: upgrade, value: undefined } },
+        value: {
+          explorer_id: army.explorer_id,
+          attribute: { kind: upgrade, value: undefined },
+          // A bot's Scouting raises rifts, the Essence it spends on research and depths.
+          kind:
+            upgrade === "Scouting"
+              ? { kind: "Some", value: { kind: "Rift", value: undefined } }
+              : { kind: "None", value: undefined },
+        },
       });
     const coord = entityMapPosition(client.setup.store, client.gameId, army.explorer_id);
     const neighbors = getNeighborHexes(coord.x, coord.y);

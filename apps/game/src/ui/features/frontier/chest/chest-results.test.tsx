@@ -45,6 +45,7 @@ const progress = (xp: number) => ({
   battle: 2,
   logistics: 1,
   scouting: 4,
+  scouting_kinds: 0b10_10_10,
   support: 1,
 });
 const RULES = {
