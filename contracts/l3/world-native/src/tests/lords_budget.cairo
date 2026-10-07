@@ -2,8 +2,8 @@ use core::dict::{Felt252Dict, Felt252DictTrait};
 use crate::logic::lords_budget::{SeasonClock, fits, open_day, roll};
 use crate::relics::{ChestRules, LordsBudget, roll_tier, tier_value};
 
-const DAY: u32 = 86400;
-const SEASON_DAYS: u64 = 70;
+const DAY_UNIT: u32 = 14400;
+const SEASON_DAYS: u64 = 105;
 
 fn rules() -> ChestRules {
     let (_, preset) = super::preset_projection::current_definition("frontier");
@@ -11,7 +11,14 @@ fn rules() -> ChestRules {
 }
 
 fn clock() -> SeasonClock {
-    SeasonClock { start: 0, end: SEASON_DAYS * DAY.into(), day_seconds: DAY, tick: 120 }
+    SeasonClock {
+        game: crate::game::GameRegistry {
+            name: 'frontier', preset_id: 5, creator: 1.try_into().unwrap(), settled: false, ready: true,
+            dev_mode_on: false, start_settling_at: 0, start_main_at: 0, end_at: 21 * 20 * DAY_UNIT.into(),
+            end_grace_seconds: 0, seed: 1,
+        },
+        day_unit_seconds: DAY_UNIT, tick: 120,
+    }
 }
 
 // A budget as it stood at the end of `day`, before anything was found that day.
@@ -88,11 +95,19 @@ fn a_busy_day_prices_its_allowance_over_the_expected_shares() {
     // 1,800 shares paid on the day before, with no history before it.
     previous.paid_shares = 1800;
     let today = roll(rules, previous, clock(), 1);
-    // estimate = 1800 / 720 ticks / 5 days, in millionths of a share per tick.
-    assert_eq!(today.estimate, 500000);
-    // allowance = 1,000,000 x 720 / (69 x 720); expected = 0.5 x 720 = 360 shares.
-    assert_eq!(today.price, 1000000 / 69 / 360);
-    assert_eq!(today.ceiling, today.price * 3 * 360);
+    let clock = clock();
+    let yesterday = crate::days::day_of(clock.game, DAY_UNIT, 0);
+    let current = crate::days::day_of(clock.game, DAY_UNIT, yesterday.end);
+    assert!(current.end - current.start != yesterday.end - yesterday.start);
+    let yesterday_ticks: u128 = ((yesterday.end - yesterday.start) / clock.tick).into();
+    let current_ticks: u128 = ((current.end - current.start) / clock.tick).into();
+    let ticks_left: u128 = ((clock.game.end_at - current.start) / clock.tick).into();
+    assert_eq!(today.estimate, 1800 * crate::relics::LORDS_ESTIMATE_SCALE / yesterday_ticks / 5);
+    let allowance = rules.pool * current_ticks / ticks_left;
+    let expected = today.estimate * current_ticks;
+    let price = core::cmp::min(rules.price_ceiling, allowance * crate::relics::LORDS_ESTIMATE_SCALE / expected);
+    assert_eq!(today.price, core::cmp::max(price, 1));
+    assert_eq!(today.ceiling, today.price * core::cmp::max(3 * expected / crate::relics::LORDS_ESTIMATE_SCALE, 60));
     assert_eq!((today.open, today.spent, today.paid_shares, today.day), (0, 0, 0, 1));
 }
 
@@ -129,7 +144,7 @@ fn chest_tiers_follow_each_depths_odds_over_10k_rolls() {
     }
 }
 
-// Seasons of 70 days with a fixed number of ruins a day, each chest found and cleared while it fits. The pool never
+// Seasons of 105 seeded days with a fixed number of ruins a day, each chest found and cleared while it fits. The pool never
 // pays past its size, a small season pays the ceiling throughout, and a full one spends most of its pool.
 fn simulate(ruins_per_day: u32, seed: u256) -> (u128, u128, bool) {
     let rules = rules();

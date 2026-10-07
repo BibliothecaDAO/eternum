@@ -87,12 +87,9 @@ fn today(game_id: u32, rules: ChestRules, context: ExecutionContext) -> LordsBud
     let game = context.game.unbox();
     let game_rules = context.rules.unbox();
     let clock = SeasonClock {
-        start: game.start_main_at,
-        end: game.end_at,
-        day_seconds: game_rules.epoch_seconds,
-        tick: game_rules.tick_config.armies_tick_in_seconds,
+        game, day_unit_seconds: game_rules.day_unit_seconds, tick: game_rules.tick_config.armies_tick_in_seconds,
     };
-    let day = crate::expeditions::absolute_epoch(clock.day_seconds, context.timestamp);
+    let day = crate::days::day_of(game, clock.day_unit_seconds, context.timestamp).index;
     match budget(game_id) {
         Some(previous) => if previous.day == day {
             previous
@@ -118,18 +115,29 @@ fn today(game_id: u32, rules: ChestRules, context: ExecutionContext) -> LordsBud
 
 #[derive(Copy, Drop)]
 pub struct SeasonClock {
-    pub start: u64,
-    pub end: u64,
-    pub day_seconds: u32,
+    pub game: crate::game::GameRegistry,
+    pub day_unit_seconds: u32,
     pub tick: u64,
 }
 
-fn day_ticks(clock: SeasonClock, day: u64) -> u128 {
-    let (start, end) = crate::expeditions::day_span(clock.start, clock.end, clock.day_seconds, day);
-    if end <= start {
+// Jump to the requested bag, then walk at most four day boundaries using the shared seeded schedule.
+fn priced_day(clock: SeasonClock, index: u64) -> crate::days::Day {
+    let bag = index / crate::days::DAYS_PER_BAG;
+    let start = clock.game.start_main_at + bag * crate::days::UNITS_PER_BAG * clock.day_unit_seconds.into();
+    let mut day = crate::days::day_of(clock.game, clock.day_unit_seconds, start);
+    while day.index < index {
+        day = crate::days::day_of(clock.game, clock.day_unit_seconds, day.end);
+    }
+    day
+}
+
+fn day_ticks(clock: SeasonClock, index: u64) -> u128 {
+    let day = priced_day(clock, index);
+    let end = core::cmp::min(day.end, clock.game.end_at);
+    if end <= day.start {
         0
     } else {
-        ((end - start) / clock.tick).into()
+        ((end - day.start) / clock.tick).into()
     }
 }
 
@@ -157,9 +165,9 @@ pub fn roll(rules: ChestRules, previous: LordsBudget, clock: SeasonClock, day: u
 // expected shares), at least 1; surge ceiling = price x max(surge factor x expected shares, minimum shares).
 pub fn open_day(rules: ChestRules, mut budget: LordsBudget, clock: SeasonClock) -> LordsBudget {
     let ticks = day_ticks(clock, budget.day);
-    let (start, _) = crate::expeditions::day_span(clock.start, clock.end, clock.day_seconds, budget.day);
-    let ticks_left: u128 = if clock.end > start {
-        ((clock.end - start) / clock.tick).into()
+    let start = priced_day(clock, budget.day).start;
+    let ticks_left: u128 = if clock.game.end_at > start {
+        ((clock.game.end_at - start) / clock.tick).into()
     } else {
         0
     };
