@@ -1100,11 +1100,8 @@ export function summarizeFrontierDesign(evidence: FrontierEvidence) {
     const deepDays = players.reduce(
       (total, player) =>
         total +
-        player.days.filter((day) =>
-          player.chests.some(
-            (chest) => chest.epoch === day.epoch && chest.depth === 3,
-          ),
-        ).length,
+        player.days.filter((day) => player.chests.some((chest) => chest.epoch === day.epoch && chest.depth === 3))
+          .length,
       0,
     );
     return {

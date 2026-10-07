@@ -171,7 +171,11 @@ describe("launcher rosters and off-timetable slots", () => {
     const now = Math.ceil(Date.now() / 1_000) * 1_000;
     // A season starts on Frontier's 120 s armies tick.
     const startsAt = new Date(Math.ceil((now + 60_000) / 120_000) * 120_000);
-    const season = { phase: "frontier" as const, startsAt: startsAt.toISOString(), endsAt: frontierSeasonEnd(startsAt) };
+    const season = {
+      phase: "frontier" as const,
+      startsAt: startsAt.toISOString(),
+      endsAt: frontierSeasonEnd(startsAt),
+    };
     await calendar.set(season, now);
     await scheduleFrontierSeason(store, season);
     const frontier = (await store.startNext(Date.now() + 1_000))!;

@@ -93,8 +93,7 @@ export class HomeRing {
   private forgetEarlierDays(day: RingDay): void {
     for (const [ring, rows] of this.rings) {
       const [gameId, realm, ringDay] = ring.split(":");
-      if (gameId !== day.gameId || Number(realm) !== day.realmId || Number(ringDay) >= day.day - 1)
-        continue;
+      if (gameId !== day.gameId || Number(realm) !== day.realmId || Number(ringDay) >= day.day - 1) continue;
       this.rings.delete(ring);
       for (const row of rows) this.byKey.delete(row.key);
     }

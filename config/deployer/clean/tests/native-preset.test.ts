@@ -377,9 +377,15 @@ describe("native presets", () => {
   });
 
   test("every preset id names the mode it plays, and an unknown id fails by name", () => {
-    expect(
-      [1, 2, 3, 4, FRONTIER_PRESET_ID, FRONTIER_ACCELERATED_PRESET_ID, 102].map(nativeGameModeOf),
-    ).toEqual(["frontier", "blitz", "eternum", "duel", "frontier", "frontier", "frontier"]);
+    expect([1, 2, 3, 4, FRONTIER_PRESET_ID, FRONTIER_ACCELERATED_PRESET_ID, 102].map(nativeGameModeOf)).toEqual([
+      "frontier",
+      "blitz",
+      "eternum",
+      "duel",
+      "frontier",
+      "frontier",
+      "frontier",
+    ]);
     expect(() => nativeGameModeOf(9)).toThrow("Unknown native preset 9");
     expect(() => nativeGameModeOf(103)).toThrow("Unknown native preset 103");
   });
@@ -571,6 +577,8 @@ describe("scaled Frontier presets", () => {
 
   test("every scaled preset keeps its mode's season length in day units", () => {
     const units = launchedSeconds(FRONTIER_PRESET_ID) / dayUnitSeconds(FRONTIER_PRESET_ID);
-    expect(launchedSeconds(FRONTIER_ACCELERATED_PRESET_ID) / dayUnitSeconds(FRONTIER_ACCELERATED_PRESET_ID)).toBe(units);
+    expect(launchedSeconds(FRONTIER_ACCELERATED_PRESET_ID) / dayUnitSeconds(FRONTIER_ACCELERATED_PRESET_ID)).toBe(
+      units,
+    );
   });
 });

@@ -11,15 +11,7 @@ const DIAL_LENGTH = 2 * Math.PI * DIAL_RADIUS;
  * The expedition day: its number in a ring that drains as the day runs out; the time left is its label. The caller
  * gives the clock it reads: the game's block clock in the HUD, the wall clock in the shell.
  */
-export const DayDial = ({
-  rules,
-  now,
-  className,
-}: {
-  rules: SeasonCalendar;
-  now: number;
-  className?: string;
-}) => {
+export const DayDial = ({ rules, now, className }: { rules: SeasonCalendar; now: number; className?: string }) => {
   const today = dayOf(rules, now);
   const day = today?.index ?? null;
   const left = (today ? today.end : rules.startMainAt) - now;

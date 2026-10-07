@@ -17,9 +17,7 @@ describe("dayOf", () => {
 
   // The same vector as days.cairo's drawn_bags_match_the_client_vector.
   it("draws the contract's bags from the same seed", () => {
-    expect([0, 1, 2].flatMap((bag) => bagLengths(0x5eedn, bag))).toEqual([
-      4, 6, 3, 2, 5, 4, 3, 5, 2, 6, 3, 6, 4, 2, 5,
-    ]);
+    expect([0, 1, 2].flatMap((bag) => bagLengths(0x5eedn, bag))).toEqual([4, 6, 3, 2, 5, 4, 3, 5, 2, 6, 3, 6, 4, 2, 5]);
   });
 
   it("walks the season day by day: each day ends where the next starts, 105 days in ten weeks", () => {

@@ -178,22 +178,13 @@ const frontierArmy = (game: number, player: number, army: number, x: number) => 
       scouting_kinds: "0",
       homecoming: "1",
     }),
-    row(
-      "ArmySlot",
-      [
-        game,
-        realm(game, player),
-        seasonDay(expedition(), Math.floor(now / 1000))!,
-        army,
-      ],
-      {
-        explorer_id: String(entity),
-        "stamina.amount": String(preset.definition.rules.troop_stamina_config.stamina_initial),
-        "stamina.updated_tick": String(
-          Math.floor(now / 1000 / Number(preset.definition.rules.tick_config.armies_tick_in_seconds)),
-        ),
-      },
-    ),
+    row("ArmySlot", [game, realm(game, player), seasonDay(expedition(), Math.floor(now / 1000))!, army], {
+      explorer_id: String(entity),
+      "stamina.amount": String(preset.definition.rules.troop_stamina_config.stamina_initial),
+      "stamina.updated_tick": String(
+        Math.floor(now / 1000 / Number(preset.definition.rules.tick_config.armies_tick_in_seconds)),
+      ),
+    }),
     ...place(game, entity, player * SPACING + x, 5, 15, false),
   ];
 };
@@ -320,11 +311,7 @@ const live = new LiveWorld({
   historyStore: reviews(),
   // The campaign has no node: model its seven home-ring view results on the shared expedition grid.
   homeRingView: async (_gameId, realmId, timestamp) => {
-    const site = expeditionRealmSite(
-      expedition(),
-      realmId,
-      timestamp,
-    );
+    const site = expeditionRealmSite(expedition(), realmId, timestamp);
     if (!site) return [];
     return [site, ...getNeighborHexes(site.col, site.row)].map(({ col, row }) => ({ col, row, biome: 5 }));
   },

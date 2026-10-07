@@ -110,8 +110,7 @@ export function gameSyncScopeKeys(scope: GameSyncScope): ReadonlySet<string> {
   if (holdsEveryScopedRow(scope)) keys.add("*");
   else if (expedition)
     for (const set of [...SYNC_SETS, "regions"] as const)
-      for (const value of expedition[set])
-        keys.add(`${set}:${value}`).add(`${set}:${value}@${expedition.day}`);
+      for (const value of expedition[set]) keys.add(`${set}:${value}`).add(`${set}:${value}@${expedition.day}`);
   scopeKeysByScope.set(scope, keys);
   return keys;
 }

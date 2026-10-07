@@ -339,9 +339,8 @@ function frontierDesignChecks(frontier: FrontierEvidence) {
     frontierTokenCap: frontier.players.every((player) =>
       player.days.every(
         (day) =>
-          player.chests.filter(
-            (chest) => chest.epoch === day.epoch && chest.kind === "Token",
-          ).length <= frontier.tokenCap,
+          player.chests.filter((chest) => chest.epoch === day.epoch && chest.kind === "Token").length <=
+          frontier.tokenCap,
       ),
     ),
     frontierRollovers: frontier.players.every(

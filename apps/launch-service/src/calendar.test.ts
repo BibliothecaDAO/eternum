@@ -65,7 +65,11 @@ test("a phase moves until it starts; a started Frontier season keeps its start a
     endsAt: frontierSeasonEnd("2027-01-01T00:00:00.000Z"),
   };
   await calendar.set(frontier, now);
-  const moved = { ...frontier, startsAt: "2027-01-02T00:00:00.000Z", endsAt: frontierSeasonEnd("2027-01-02T00:00:00.000Z") };
+  const moved = {
+    ...frontier,
+    startsAt: "2027-01-02T00:00:00.000Z",
+    endsAt: frontierSeasonEnd("2027-01-02T00:00:00.000Z"),
+  };
   expect(await calendar.set(moved, now)).toEqual(moved);
   expect(await calendar.list()).toEqual([moved]);
 
@@ -91,12 +95,15 @@ test("a phase moves until it starts; a started Frontier season keeps its start a
 test("a Frontier season lasts its 21 bags of days from an armies tick, or the calendar refuses it", async () => {
   const { calendar } = stores();
   const startsAt = day(0).toISOString();
-  await expect(calendar.set({ phase: "frontier", startsAt, endsAt: day(31).toISOString() }, Date.now())).rejects.toThrow(
-    "lasts 21 bags of days",
-  );
+  await expect(
+    calendar.set({ phase: "frontier", startsAt, endsAt: day(31).toISOString() }, Date.now()),
+  ).rejects.toThrow("lasts 21 bags of days");
   const offTick = new Date(day(0).getTime() + 1_000);
   await expect(
-    calendar.set({ phase: "frontier", startsAt: offTick.toISOString(), endsAt: frontierSeasonEnd(offTick) }, Date.now()),
+    calendar.set(
+      { phase: "frontier", startsAt: offTick.toISOString(), endsAt: frontierSeasonEnd(offTick) },
+      Date.now(),
+    ),
   ).rejects.toThrow("starts on a 120 s tick");
   expect(await calendar.list()).toEqual([]);
 });
