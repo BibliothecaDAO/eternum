@@ -440,7 +440,6 @@ async function frontierResult(
   const chests = await readRuinChestHistory(
     client,
     Math.max(0, ...actions.map((action) => action.acceptedOnL2Block ?? 0)),
-    epochSeconds,
   );
   const evidence: FrontierEvidence = {
     ...(options.burst ? { burst: options.burst } : {}),
@@ -470,7 +469,7 @@ async function frontierResult(
 }
 
 /** A ruin's chest pays at its clear, as the LORDS reward of the ruin's SitePayout story. */
-async function readRuinChestHistory(client: GameClient, confirmedBlock: number, epochSeconds: number) {
+async function readRuinChestHistory(client: GameClient, confirmedBlock: number) {
   const chests: Array<{ player: bigint; epoch: number; lords: number }> = [];
   for (let offset = 0; ; ) {
     const page = await fetchHeraldGameHistory(client.shard, client.gameId, {
@@ -489,7 +488,7 @@ async function readRuinChestHistory(client: GameClient, confirmedBlock: number, 
         throw new Error("A ruin cleared without its chest");
       chests.push({
         player: BigInt(String(event.value.owner)),
-        epoch: Math.floor(Number(event.value.timestamp) / epochSeconds),
+        epoch: known(dayOf(calendarOf(client), Number(event.value.timestamp)), client.gameId, "ruin clear day").index,
         lords: Number(BigInt(reward.amount) / precision),
       });
     }

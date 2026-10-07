@@ -3,7 +3,6 @@ import type { HeraldHistoryEvent } from "@bibliothecadao/eternum/game-sync";
 import { buildFrontierLeaderboard } from "./frontier-leaderboard";
 import { LordsCeilingAlerts } from "./lords-ceiling-alert";
 import type { FoldRow } from "../types";
-import { dayOf } from "@bibliothecadao/eternum/expeditions";
 
 function facts(depths = [2], spent = 0) {
   const rows: Record<string, FoldRow[]> = {};

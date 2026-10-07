@@ -337,11 +337,7 @@ function frontierChecks(frontier: FrontierEvidence, actions: TrackedTransaction[
 function frontierDesignChecks(frontier: FrontierEvidence) {
   return {
     frontierOneRuinADay: frontier.players.every((player) =>
-      player.days.every(
-        (day) =>
-          player.chests.filter((chest) => chest.epoch === day.epoch).length <=
-          1,
-      ),
+      player.days.every((day) => player.chests.filter((chest) => chest.epoch === day.epoch).length <= 1),
     ),
     frontierRollovers: frontier.players.every(
       (player) =>
