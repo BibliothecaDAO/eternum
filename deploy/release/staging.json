@@ -1,0 +1,12 @@
+{
+  "package": "shard-v0.4.0",
+  "shard_name": "realms-staging-f",
+  "chain_id": "REALMS_STAGING_F_20261007",
+  "guardian_url": "https://play.dev-realms.party/api/guardian",
+  "public_rpc_url": "https://rpc.dev-realms.party/rpc/v0_10_2",
+  "public_admission_url": "https://admission.dev-realms.party",
+  "player_capacity": 2000,
+  "presets": [2, 5, 101, 103],
+  "node_memory": "24g",
+  "herald_memory": "6g"
+}
