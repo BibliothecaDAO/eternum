@@ -14,7 +14,6 @@ import { TickNumber } from "@/ui/motion/tick-number";
 import { ChestMomentView } from "@/ui/features/frontier/chest/chest-moment-view";
 import { type ReactNode, useRef, useState } from "react";
 import { ChestLab } from "./chest-lab";
-import { PickLab } from "./pick-lab";
 import { SiteLab } from "./site-lab";
 
 const LORDS_BY_INTENSITY = [100, 400, 1_500, 6_000] as const;
@@ -81,11 +80,6 @@ export const MotionLabView = () => {
         <Panel title={`burst · ${INTENSITY.particles[intensity]} particles`}>
           <p className="text-sm text-gold/70">World particles through the instanced pools: checked on staging.</p>
         </Panel>
-        <section className="sm:col-span-2 lg:col-span-3">
-          <Panel title="pick · tap a card, then Choose">
-            <PickLab />
-          </Panel>
-        </section>
         <section className="sm:col-span-2 lg:col-span-3">
           <Panel title="site cleared · tap the card to dismiss">
             <SiteLab />

@@ -54,6 +54,8 @@ export const CANCEL = "Cancel";
 
 /** The four attributes, each wearing its Aspect's mark. */
 export const ATTRIBUTES = ["Battle", "Logistics", "Scouting", "Homecoming"] as const;
+/** Scouting's choice at each tier: the kind it lifts (the screen shows icons; these are their names). */
+export const FIND_KINDS = ["Find camps", "Find rifts", "Find stragglers"] as const;
 
 /** The sites on the map, as their cards title them, and the verbs they take. */
 export const CAMP = "Camp";

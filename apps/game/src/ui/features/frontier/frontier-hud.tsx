@@ -10,7 +10,6 @@ import { SettingsPanel } from "@/ui/modules/settings/settings";
 import { configManager } from "@bibliothecadao/eternum";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { useNavigate } from "react-router-dom";
-import { FrontierPick } from "./attributes/frontier-pick";
 import { RealmVisitBanner, useVisitedRealm } from "./board/realm-visit-banner";
 import { SeasonBoardHost, SeasonBoardPeek, useOpenSeasonBoard, useSeasonRank } from "./board/season-board";
 import { useSpectatorWatchesTheLeader } from "./board/spectator-watch";
@@ -81,7 +80,6 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
       foot={
         <>
           <div data-guide>{realm && !visit && <FrontierGuide line={guideLine} realm={realm} />}</div>
-          <FrontierPick />
           <SiteClearCardView />
           <OfflineNotice />
           {dockRealm && <Foot realm={dockRealm} />}

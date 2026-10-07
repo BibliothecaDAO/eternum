@@ -13,6 +13,7 @@ import { SiteCardView } from "@/ui/features/frontier/sites/site-card-view";
 import { DayDoneCard } from "@/ui/features/frontier/rollover/day-done-card";
 import { LastHourBubble } from "@/ui/features/frontier/rollover/last-hour";
 import { BuildView } from "@/ui/features/frontier/build/build-view";
+import { type AttributeKey, ArmySheet } from "@/ui/features/frontier/army/army-sheet";
 import { BuildingsRow } from "@/ui/features/frontier/realm/buildings-row";
 import { CastleView } from "@/ui/features/frontier/upgrade/castle-view";
 import { BuildingType, Direction } from "@bibliothecadao/types";
@@ -264,6 +265,23 @@ const STATES = {
   castle: { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "castle" },
   "castle-short": { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "castle-short" },
   "realm-full": { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "full" },
+  "army-cheap": { clock: CLOCK, stores: STORES, armies: ARMIES, selected: 0, army: { chosen: "logistics" } },
+  "army-dear": { clock: CLOCK, stores: STORES, armies: ARMIES, selected: 0, army: { chosen: "battle" } },
+  "army-nearly-full": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    selected: 0,
+    army: { chosen: "logistics", stamina: 140 },
+  },
+  "army-scout": { clock: CLOCK, stores: STORES, armies: ARMIES, selected: 0, army: { chosen: "scouting" } },
+  "army-legendary": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    selected: 0,
+    army: { chosen: "battle", xp: 520, stamina: 240, max: 240, tiers: [5, 4, 3, 4] },
+  },
 } as const;
 
 type LabOrder = {
@@ -371,7 +389,23 @@ const CASTLE_SIDE = (level: number, limit: number) => ({
   deployCap: [3_000, 9_000, 25_000, 50_000][level],
 });
 
+/** Army 1: 5,000 troops, 260 XP, Battle rare, Logistics and Scouting common, Homecoming rare (the realm trained two). */
+type LabArmySheet = {
+  chosen: AttributeKey;
+  xp?: number;
+  stamina?: number;
+  max?: number;
+  tiers?: [1 | 2 | 3 | 4 | 5, 1 | 2 | 3 | 4 | 5, 1 | 2 | 3 | 4 | 5, 1 | 2 | 3 | 4 | 5];
+};
+const EFFECTS = {
+  battle: ["+0%", "+10%", "+30%", "+60%", "+100%"],
+  logistics: ["150", "170", "200", "240", "300"],
+  scouting: ["+0%", "+10%", "+30%", "+60%", "+100%"],
+  homecoming: ["0%", "3%", "9%", "18%", "30%"],
+} as const;
+
 type LabState = {
+  army?: LabArmySheet;
   realmView?: "build" | "build-early" | "castle" | "castle-short" | "full";
   dayDone?: Parameters<typeof DayDoneCard>[0];
   lastHour?: boolean;
@@ -464,6 +498,7 @@ export const HudLab = () => {
       >
         {lab.deploy && <LabDeploySheet deploy={lab.deploy} />}
         {lab.dayDone && <DayDoneCard {...lab.dayDone} />}
+        {lab.army && <LabArmy army={lab.army} />}
         {(lab.realmView === "build" || lab.realmView === "build-early") && (
           <BuildView
             tiles={lab.realmView === "build" ? BUILD_TILES : EARLY_TILES}
@@ -555,6 +590,37 @@ const LabDeploySheet = ({ deploy }: { deploy: LabDeploy }) => {
       onDeploy={noop}
       wheatShort={undefined}
       onBuild={noop}
+      onClose={noop}
+    />
+  );
+};
+
+/** The army sheet on the fiction: tier prices 100, 200, 400, 800 XP; a purchase refills up to 30. */
+const LabArmy = ({ army }: { army: LabArmySheet }) => {
+  const [battle, logistics, scouting, homecoming] = army.tiers ?? [3, 1, 1, 3];
+  return (
+    <ArmySheet
+      name="Army 1"
+      art="/images/armies/knightT1.png"
+      troops={army.tiers ? 60_000 : 5_000}
+      xp={army.xp ?? 260}
+      stamina={{ current: army.stamina ?? 90, max: army.max ?? 150, secondsToFull: 2 * HOUR }}
+      attributes={{
+        battle: { tier: battle },
+        logistics: { tier: logistics },
+        scouting: { tier: scouting, kinds: army.tiers ? ["rift", "rift"] : [] },
+        homecoming: { tier: homecoming },
+      }}
+      tierPrices={{ 2: 100, 3: 200, 4: 400, 5: 800 }}
+      effects={EFFECTS}
+      refillOnBuy={30}
+      chosen={army.chosen}
+      onChoose={noop}
+      kindRates={{ camp: ["4%", "4.4%"], rift: ["4%", "4.4%"], stragglers: ["6%", "6.6%"] }}
+      kind="rift"
+      onKind={noop}
+      sending={false}
+      onUpgrade={noop}
       onClose={noop}
     />
   );
