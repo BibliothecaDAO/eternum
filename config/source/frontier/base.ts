@@ -52,7 +52,7 @@ export const frontierBaseConfig: ConfigPatch = mergeConfigPatches(arenaBaseConfi
   battle: { cooldownSeconds: 0, regularImmunityTicks: 0, villageImmunityTicks: 0, delaySeconds: 0 },
   startingResources: [
     { resource: 26, amount: 1500 },
-    { resource: 35, amount: 1000 },
+    { resource: 35, amount: 4500 },
     { resource: 23, amount: 2000 },
   ],
   villageStartingResources: [],

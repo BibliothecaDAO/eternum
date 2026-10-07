@@ -367,7 +367,7 @@ describe("native presets", () => {
     });
     expect(design.settlement.realms.resources).toEqual([
       { resource_type: 26, amount: 1_500_000_000_000n },
-      { resource_type: 35, amount: 1_000_000_000_000n },
+      { resource_type: 35, amount: 4_500_000_000_000n },
       { resource_type: 23, amount: 2_000_000_000_000n },
     ]);
     expect(design.settlement.realms.starting_troops.every((troop) => troop.activeVariant() === "Knight")).toBe(true);
