@@ -815,7 +815,7 @@ fn open_preset_exploration_discovers_a_camp_and_credits_the_home_realm() {
     let tile = IMapLogicDispatcher { contract_address: d.games }
         .tile(crate::geometry::tile_key(game_id, target))
         .unwrap();
-    assert_eq!((tile.data / 2) % 256, crate::camps::CAMP_OCCUPIER.into());
+    assert_eq!((tile.data / 2) % 256, crate::taxonomy::CAMP_OCCUPIER.into());
     assert_eq!(troops.resolved_explorer(explorer).unwrap().coord, origin);
     assert_eq!(resources.resource_balance(home_slot), before + 10 * RESOURCE_PRECISION);
     assert_eq!(resources.resource_balance(ResourceSlot { entity_id: explorer_id, ..home_slot }), 0);
@@ -1649,7 +1649,7 @@ fn assert_capture_at(depth: u8, count: u128, tier: crate::troops::TroopTier, rev
     let tile = map.tile(crate::geometry::tile_key(game_id, coord)).unwrap();
     let camp_id: u32 = (tile.data / 512 % 0x100000000).try_into().unwrap();
     let camp = ResourceKey { game_id, entity_id: camp_id };
-    assert_eq!(structures.structure(camp).unwrap().base.category, crate::camps::CAMP_CATEGORY);
+    assert_eq!(structures.structure(camp).unwrap().base.category, crate::taxonomy::CAMP_CATEGORY);
     assert_eq!(structures.structure(camp).unwrap().base.troop_max_explorer_count, 0);
     assert_eq!(troops.resolved_explorer(army_key).unwrap().coord, army.coord);
     assert_eq!(
@@ -2205,7 +2205,7 @@ fn frontier_closed_chest_persists_opens_once_and_rejects_expired_armies() {
         ),
     );
     let closed = snforge_std::interact_with_state(d.games, || crate::logic::map::occupancy(tile).unwrap());
-    assert_eq!(closed.category, crate::map::CHEST_OCCUPIER);
+    assert_eq!(closed.category, crate::taxonomy::CHEST_OCCUPIER);
     assert!(!closed.is_structure);
     assert_eq!(GameState { contract_address: d.games }.resolved_explorer(key).unwrap().coord, army.coord);
     // Reads at the end of the day see the same closed occupancy, without a transaction.
@@ -2229,7 +2229,7 @@ fn frontier_closed_chest_persists_opens_once_and_rejects_expired_armies() {
     let expired_coord = crate::geometry::neighbor(army.coord, 1);
     let expired_tile = crate::geometry::tile_key(game_id, expired_coord);
     snforge_std::interact_with_state(
-        d.games, || crate::logic::map::MapState::occupy(expired_tile, 9999, crate::map::CHEST_OCCUPIER, false),
+        d.games, || crate::logic::map::MapState::occupy(expired_tile, 9999, crate::taxonomy::CHEST_OCCUPIER, false),
     );
     assert!(
         !execute_in_game(
@@ -2242,7 +2242,7 @@ fn frontier_closed_chest_persists_opens_once_and_rejects_expired_armies() {
     );
     assert_eq!(
         snforge_std::interact_with_state(d.games, || crate::logic::map::occupancy(expired_tile).unwrap()).category,
-        crate::map::CHEST_OCCUPIER,
+        crate::taxonomy::CHEST_OCCUPIER,
     );
     let mut rewards = 0;
     for (_, event) in spy.get_events().emitted_by(d.games).events.span() {
@@ -2315,7 +2315,7 @@ fn frontier_fallen_realm_capture_places_exactly_one_closed_chest_without_paying_
     assert!(captured, "{}", outcome.reason);
     let tile = crate::geometry::tile_key(game_id, coord);
     let closed = snforge_std::interact_with_state(d.games, || crate::logic::map::occupancy(tile).unwrap());
-    assert_eq!(closed.category, crate::map::CHEST_OCCUPIER);
+    assert_eq!(closed.category, crate::taxonomy::CHEST_OCCUPIER);
     assert_eq!(closed.entity_id, site);
     assert!(!closed.is_structure);
     assert!(
@@ -2735,7 +2735,7 @@ fn frontier_lords_commitment_and_exhaustion_are_atomic_and_keep_the_rolled_quali
                 if crate::logic::map::tile(tile).is_none() {
                     crate::logic::map::MapState::reveal(tile, 1);
                 }
-                crate::logic::map::MapState::occupy(tile, 9999, crate::map::CHEST_OCCUPIER, false);
+                crate::logic::map::MapState::occupy(tile, 9999, crate::taxonomy::CHEST_OCCUPIER, false);
             },
         );
         let mut spy = snforge_std::spy_events();
@@ -2856,7 +2856,7 @@ fn place_frontier_chest_fixture(d: super::Deployment, game_id: u32, coord: crate
             if crate::logic::map::tile(tile).is_none() {
                 crate::logic::map::MapState::reveal(tile, 1);
             }
-            crate::logic::map::MapState::occupy(tile, id, crate::map::CHEST_OCCUPIER, false);
+            crate::logic::map::MapState::occupy(tile, id, crate::taxonomy::CHEST_OCCUPIER, false);
         },
     );
 }
@@ -2914,7 +2914,7 @@ fn frontier_shrine_and_well_persist_once_and_use_the_public_progress_and_slot() 
                 key, crate::progression::ArmyProgress { xp: 7, ..crate::progression::initial() },
             );
             crate::logic::map::MapState::reveal(tile, 1);
-            crate::logic::map::MapState::occupy(tile, 900, crate::map::SHRINE_OCCUPIER, false);
+            crate::logic::map::MapState::occupy(tile, 900, crate::taxonomy::SHRINE_OCCUPIER, false);
         },
     );
     let closed = snforge_std::interact_with_state(d.games, || crate::logic::map::occupancy(tile).unwrap());
@@ -2926,7 +2926,7 @@ fn frontier_shrine_and_well_persist_once_and_use_the_public_progress_and_slot() 
     assert!(snforge_std::interact_with_state(d.games, || crate::logic::map::occupancy(tile)).is_none());
     assert!(!execute_in_game(d, game_id, command, 360, 360));
     snforge_std::interact_with_state(
-        d.games, || crate::logic::map::MapState::occupy(tile, 901, crate::map::SHRINE_OCCUPIER, false),
+        d.games, || crate::logic::map::MapState::occupy(tile, 901, crate::taxonomy::SHRINE_OCCUPIER, false),
     );
     assert!(!execute_in_game(d, game_id, command, 360, 360));
     assert!(snforge_std::interact_with_state(d.games, || crate::logic::map::occupancy(tile)).is_some());
@@ -2934,7 +2934,7 @@ fn frontier_shrine_and_well_persist_once_and_use_the_public_progress_and_slot() 
         d.games,
         || {
             crate::logic::map::MapState::vacate(tile, 901);
-            crate::logic::map::MapState::occupy(tile, 902, crate::map::WELL_OCCUPIER, false);
+            crate::logic::map::MapState::occupy(tile, 902, crate::taxonomy::WELL_OCCUPIER, false);
             crate::logic::progression::write(key, crate::progression::ArmyProgress { logistics: 3, ..progress });
             let mut army = crate::logic::troops::active_explorer(
                 key,
@@ -2954,7 +2954,7 @@ fn frontier_shrine_and_well_persist_once_and_use_the_public_progress_and_slot() 
     snforge_std::interact_with_state(
         d.games,
         || {
-            crate::logic::map::MapState::occupy(tile, 903, crate::map::WELL_OCCUPIER, false);
+            crate::logic::map::MapState::occupy(tile, 903, crate::taxonomy::WELL_OCCUPIER, false);
             let mut army = crate::logic::troops::active_explorer(
                 key,
                 360,
@@ -2990,8 +2990,8 @@ fn frontier_site_discovery_reads_home_knowledge_and_places_only_tile_occupancy()
     let rules = super::preset_projection::frontier_discovery_rules();
     let map = crate::expeditions::IFrontierDiscoveryLibraryDispatcher { class_hash: super::declare_logic("MapLogic") };
     for (expected, node, category) in array![
-        (crate::discovery::Discovery::Shrine, 8_u8, crate::map::SHRINE_OCCUPIER),
-        (crate::discovery::Discovery::Well, 9_u8, crate::map::WELL_OCCUPIER),
+        (crate::discovery::Discovery::Shrine, 8_u8, crate::taxonomy::SHRINE_OCCUPIER),
+        (crate::discovery::Discovery::Well, 9_u8, crate::taxonomy::WELL_OCCUPIER),
     ] {
         let enabled = crate::expeditions::FrontierDiscoveryRules {
             shrine_bps: if node == 8 {

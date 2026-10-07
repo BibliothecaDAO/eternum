@@ -7,43 +7,8 @@ export enum ActorType {
   Structure = "structure",
 }
 
-export enum TileOccupier {
-  None = 0,
-  //
-  RealmRegularLevel1 = 1,
-  RealmRegularLevel2 = 2,
-  RealmRegularLevel3 = 3,
-  RealmRegularLevel4 = 4,
-  //
-  RealmWonderLevel1 = 5,
-  RealmWonderLevel2 = 6,
-  RealmWonderLevel3 = 7,
-  RealmWonderLevel4 = 8,
-  //
-  Hyperstructure = 9,
-  //
-  Mine = 12,
-  Village = 13,
-  Bank = 14,
-  //
-  ExplorerKnightT1Regular = 15,
-  ExplorerKnightT2Regular = 16,
-  ExplorerKnightT3Regular = 17,
-  ExplorerPaladinT1Regular = 18,
-  ExplorerPaladinT2Regular = 19,
-  ExplorerPaladinT3Regular = 20,
-  ExplorerCrossbowmanT1Regular = 21,
-  ExplorerCrossbowmanT2Regular = 22,
-  ExplorerCrossbowmanT3Regular = 23,
-  //
-  //
-  Chest = 34,
-  Spire = 35,
-  //
-  Camp = 37,
-  BitcoinMine = 38,
-  ReservedHyperstructure = 39,
-}
+/** Tile occupiers as the contract names them; generated from contracts/l3/world-native/src/taxonomy.cairo. */
+export { NativeTileOccupier as TileOccupier } from "../../../../contracts/l3/world-native/schema/client.gen";
 
 /**
  * Interface representing season contract addresses and resources

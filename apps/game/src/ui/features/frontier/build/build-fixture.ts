@@ -1,6 +1,6 @@
 import { configManager, setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { BuildingType, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
+import { BuildingType, RESOURCE_PRECISION, ResourcesIds, StructureType, TileOccupier } from "@bibliothecadao/types";
 import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
 
 const set = (key: string, model: string, value: Record<string, unknown>) => ({ model, key, value });
@@ -52,7 +52,7 @@ export const realmBoard = () => {
       entity_id: 7,
       owner: "0x111",
       base: {
-        category: 1,
+        category: StructureType.Realm,
         level: 0,
         created_at: "0x1",
         troop_max_guard_count: 0,
@@ -93,7 +93,7 @@ export const realmBoard = () => {
       col: 30,
       row: 30,
       entity_id: 7,
-      category: 1,
+      category: TileOccupier.RealmRegularLevel1,
       is_structure: true,
     }),
     // Nothing researched yet; Farm II is on the board's research table with its tier rule (Frontier's preset).

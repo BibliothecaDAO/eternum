@@ -125,9 +125,9 @@ pub fn frontier(
 
 pub fn tile_occupier(discovery: Discovery) -> Option<u8> {
     match discovery {
-        Discovery::Chest => Some(crate::map::CHEST_OCCUPIER),
-        Discovery::Shrine => Some(crate::map::SHRINE_OCCUPIER),
-        Discovery::Well => Some(crate::map::WELL_OCCUPIER),
+        Discovery::Chest => Some(crate::taxonomy::CHEST_OCCUPIER),
+        Discovery::Shrine => Some(crate::taxonomy::SHRINE_OCCUPIER),
+        Discovery::Well => Some(crate::taxonomy::WELL_OCCUPIER),
         _ => None,
     }
 }

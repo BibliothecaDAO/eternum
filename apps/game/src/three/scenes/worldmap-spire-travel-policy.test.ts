@@ -6,7 +6,7 @@ describe("resolveSpireTraversalAction", () => {
   it.each([false, true])("targets the attacker's coordinate on the other layer (attacker alt=%s)", (attackerAlt) => {
     const getTile = vi.fn(() => ({
       occupier_id: 42,
-      occupier_type: TileOccupier.ExplorerKnightT1Regular,
+      occupier_type: TileOccupier.ExplorerKnightT1,
       occupier_is_structure: false,
     }));
     expect(resolveSpireTraversalAction({ attackerHex: { col: 100, row: 200 }, attackerAlt, getTile })).toEqual({

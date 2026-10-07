@@ -50,6 +50,7 @@ pub mod spires;
 pub mod stamina;
 pub mod state;
 pub mod structures;
+pub mod taxonomy;
 
 #[cfg(test)]
 mod tests;

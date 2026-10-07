@@ -10,7 +10,7 @@ world=contracts/l3/world-native
 protocol=contracts/l3/randomness-protocol
 
 (cd "$world" && scarb build)
-node --test "$world/scripts/check-class-sizes.test.mjs" "$world/scripts/event-layouts.test.mjs"
+node --test "$world/scripts/check-class-sizes.test.mjs" "$world/scripts/event-layouts.test.mjs" "$world/scripts/taxonomy.test.mjs"
 node "$world/scripts/check-class-sizes.mjs"
 (cd "$protocol" && scarb build)
 python3 "$protocol/check-entrypoint.py" "$world/target/dev/world_native_Games.contract_class.json" "$(mktemp)"

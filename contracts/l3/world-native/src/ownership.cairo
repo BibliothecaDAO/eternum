@@ -1,7 +1,5 @@
 use starknet::ContractAddress;
 
-pub const VILLAGE_CATEGORY: u8 = 5;
-
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct TransferOwnership {
     pub entity_id: u32,

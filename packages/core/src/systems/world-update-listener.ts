@@ -233,7 +233,7 @@ export class WorldUpdateListener {
   }
 }
 
-const SITE_KINDS = ["Camp", "Rift", "FallenRealm"] as const;
+const SITE_KINDS: readonly SitePayoutSystemUpdate["kind"][] = ["Camp", "Rift", "FallenRealm"];
 const siteKind = (value: unknown): SitePayoutSystemUpdate["kind"] => {
   const kind = typeof value === "string" ? value : Object.keys(fields(value) ?? {})[0];
   if (!SITE_KINDS.includes(kind as SitePayoutSystemUpdate["kind"])) throw new Error("Malformed site kind");

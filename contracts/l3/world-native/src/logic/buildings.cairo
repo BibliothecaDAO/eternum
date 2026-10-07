@@ -94,7 +94,7 @@ pub mod BuildingState {
                 board.workshop_rate
             } else {
                 let rule = crate::logic::resources::rule(key.game_id, resource_type);
-                if base.category == 1 {
+                if base.category == crate::taxonomy::REALM_CATEGORY {
                     rule.realm_rate
                 } else {
                     rule.village_rate

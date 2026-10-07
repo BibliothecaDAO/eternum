@@ -476,7 +476,7 @@ fn village_arrivals_wait_for_both_season_and_creation_immunity() {
             StructureRecord {
                 owner: structure.owner,
                 base: crate::structures::StructureBase {
-                    category: crate::ownership::VILLAGE_CATEGORY, ..structure.base,
+                    category: crate::taxonomy::VILLAGE_CATEGORY, ..structure.base,
                 },
                 resources_packed: structure.resources_packed,
                 metadata: structure.metadata,
@@ -782,7 +782,7 @@ fn village_fixture(deployment: Deployment, key: ResourceKey, owner: starknet::Co
         array![key.game_id.into(), key.entity_id.into()].span(),
         StructureRecord {
             owner,
-            base: crate::structures::StructureBase { category: crate::ownership::VILLAGE_CATEGORY, ..structure.base },
+            base: crate::structures::StructureBase { category: crate::taxonomy::VILLAGE_CATEGORY, ..structure.base },
             resources_packed: structure.resources_packed,
             metadata: crate::structures::StructureMetadata { village_realm: 12345, ..structure.metadata },
         },

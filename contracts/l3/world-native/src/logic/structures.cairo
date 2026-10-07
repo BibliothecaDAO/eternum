@@ -234,7 +234,7 @@ pub mod StructuresLogic {
             let record = StructureRecord {
                 owner,
                 base: StructureBase {
-                    category: 3,
+                    category: crate::taxonomy::BANK_CATEGORY,
                     level: 3,
                     troop_max_guard_count: 4,
                     troop_max_explorer_count: 0,
@@ -245,13 +245,15 @@ pub mod StructuresLogic {
                 metadata: Default::default(),
             };
             crate::logic::structures::StructureState::create(key, record);
-            crate::logic::map::MapState::occupy(tile_key(key.game_id, coord), key.entity_id, 14, true);
+            crate::logic::map::MapState::occupy(
+                tile_key(key.game_id, coord), key.entity_id, crate::taxonomy::BANK_OCCUPIER, true,
+            );
             self
                 .resources_dispatcher(key.game_id)
                 .initialize_resources(
                     key,
                     rules.structure_capacity_config.bank_structure_capacity.into() * RESOURCE_PRECISION,
-                    3,
+                    crate::taxonomy::BANK_CATEGORY,
                     timestamp,
                     crate::commands::action_context(game_context),
                 );
@@ -377,9 +379,11 @@ pub mod StructuresLogic {
                     let connected = crate::logic::structures::record(
                         ResourceKey { game_id, entity_id: village.connected_realm },
                     );
-                    assert!(connected.base.category == 1, "connected entity is not a realm");
+                    assert!(
+                        connected.base.category == crate::taxonomy::REALM_CATEGORY, "connected entity is not a realm",
+                    );
                     assert!(village.resource >= 1 && village.resource <= 22, "invalid village resource");
-                    record.base.category = crate::ownership::VILLAGE_CATEGORY;
+                    record.base.category = crate::taxonomy::VILLAGE_CATEGORY;
                     record.metadata.village_realm = village.connected_realm;
                     record.resources_packed = pack_realm_resources(array![village.resource].span());
                 },
@@ -443,7 +447,7 @@ pub mod StructuresLogic {
             let key = ResourceKey { game_id, entity_id: village_id };
             let record = crate::logic::structures::record(key);
             assert!(record.owner == actor, "actor does not own village");
-            assert!(record.base.category == crate::ownership::VILLAGE_CATEGORY, "structure is not a village");
+            assert!(record.base.category == crate::taxonomy::VILLAGE_CATEGORY, "structure is not a village");
             assert!(!record.base.starting_troops_granted, "army grant already claimed");
             let grants = self.village_rules(game_id);
             let interval = context.rules.unbox().tick_config.armies_tick_in_seconds;
@@ -500,7 +504,7 @@ pub mod StructuresLogic {
             let key = ResourceKey { game_id, entity_id: structure_id };
             let record = crate::logic::structures::record(key);
             assert!(record.owner == actor, "actor does not own structure");
-            assert!(record.base.category == 1, "not a realm");
+            assert!(record.base.category == crate::taxonomy::REALM_CATEGORY, "not a realm");
             self.provision_realm_economy(key, context.timestamp, context, ref story_cursor);
             ((), story_cursor)
         }
@@ -565,7 +569,7 @@ pub mod StructuresLogic {
             assert!(record.owner == actor, "actor does not own structure");
             assert!(crate::logic::game::game_exists(game_id), "ownership rules require initialized game");
             assert!(command.new_owner != 0.try_into().unwrap(), "new owner is zero");
-            assert!(record.base.category != crate::ownership::VILLAGE_CATEGORY, "cannot transfer ownership of village");
+            assert!(record.base.category != crate::taxonomy::VILLAGE_CATEGORY, "cannot transfer ownership of village");
             if record.owner == command.new_owner {
                 return ((), story_cursor);
             }
@@ -598,7 +602,7 @@ pub mod StructuresLogic {
             )
                 .owner;
             assert!(owner != 0.try_into().unwrap(), "capturing home is unowned");
-            if record.base.category == 8 {
+            if record.base.category == crate::taxonomy::BITCOIN_MINE_CATEGORY {
                 crate::bitcoin::IBitcoinFundingDispatcherTrait::bitcoin_mine_captured(
                     crate::bitcoin::IBitcoinFundingLibraryDispatcher {
                         class_hash: self.release.classes(key.game_id).prizes.read(),
@@ -645,7 +649,7 @@ pub mod StructuresLogic {
                 troop_max_guard_count: guards,
                 troop_max_explorer_count: armies,
                 created_at: timestamp.try_into().unwrap(),
-                category: 1,
+                category: crate::taxonomy::REALM_CATEGORY,
                 level: 0,
                 starting_troops_granted: false,
             },
@@ -789,7 +793,7 @@ pub mod StructuresLogic {
             assert!(!coord.alt && record.owner != 0.try_into().unwrap(), "invalid realm owner or layer");
             let key = ResourceKey { game_id, entity_id: crate::logic::game::allocate_entity(game_id) };
             let rules = game_context.rules.unbox();
-            let village = record.base.category == crate::ownership::VILLAGE_CATEGORY;
+            let village = record.base.category == crate::taxonomy::VILLAGE_CATEGORY;
             let on_map = rules.epoch_seconds == 0 || village;
             if on_map {
                 self.prepare_settlement_tile(game_id, coord, game_context);
@@ -797,11 +801,11 @@ pub mod StructuresLogic {
             crate::logic::structures::StructureState::create(key, record);
             if on_map {
                 let occupier = if village {
-                    13
+                    crate::taxonomy::VILLAGE_OCCUPIER
                 } else if record.metadata.has_wonder {
-                    5
+                    crate::taxonomy::REALM_WONDER_LEVEL_1_OCCUPIER
                 } else {
-                    1
+                    crate::taxonomy::REALM_REGULAR_LEVEL_1_OCCUPIER
                 };
                 crate::logic::map::MapState::occupy(tile_key(game_id, coord), key.entity_id, occupier, true);
             }
@@ -941,7 +945,8 @@ pub mod StructuresLogic {
                 return;
             }
             crate::logic::structures::StructureState::mark_starting_troops(key);
-            let coord = if game_context.rules.unbox().epoch_seconds != 0 && record.base.category == 1 {
+            let coord = if game_context.rules.unbox().epoch_seconds != 0
+                && record.base.category == crate::taxonomy::REALM_CATEGORY {
                 crate::settlement::off_map_realm_reference(record.metadata.realm_id.into())
             } else {
                 crate::structures::structure_coord(key)

@@ -223,7 +223,7 @@ pub mod RelicState {
                 },
                 crate::geometry::tile_key(game_id, command.coord),
             );
-            if category == crate::map::SHRINE_OCCUPIER {
+            if category == crate::taxonomy::SHRINE_OCCUPIER {
                 crate::logic::progression::grant_fixed_xp(key);
             } else {
                 self.refill_stamina(key, explorer, crate::rules::WELL_STAMINA, context);
@@ -339,7 +339,9 @@ pub mod RelicState {
             let key = ResourceKey { game_id, entity_id: structure_id };
             let structure = crate::logic::structures::structure(key).expect('missing structure');
             assert!(
-                structure.base.category == 1 || structure.base.category == 5, "structure is not a realm or village",
+                structure.base.category == crate::taxonomy::REALM_CATEGORY
+                    || structure.base.category == crate::taxonomy::VILLAGE_CATEGORY,
+                "structure is not a realm or village",
             );
             assert!(structure.owner == actor, "actor does not own structure");
             self

@@ -179,7 +179,7 @@ pub mod ResourcesLogic {
             let game_context = crate::commands::load_context(key.game_id, game_context);
 
             self.resources.initialize(key, capacity);
-            if category == 8 {
+            if category == crate::taxonomy::BITCOIN_MINE_CATEGORY {
                 crate::bitcoin::IBitcoinFundingDispatcherTrait::register_bitcoin_structure(
                     crate::bitcoin::IBitcoinFundingLibraryDispatcher {
                         class_hash: self.release.classes(key.game_id).prizes.read(),
@@ -562,7 +562,7 @@ pub mod ResourcesLogic {
             self: @ContractState, key: ResourceKey, timestamp: u64, game_context: crate::commands::ExecutionContext,
         ) {
             let structure = crate::logic::structures::structure(key).expect('missing destination structure');
-            if structure.base.category != crate::ownership::VILLAGE_CATEGORY {
+            if structure.base.category != crate::taxonomy::VILLAGE_CATEGORY {
                 return;
             }
             let rules = game_context.rules.unbox();

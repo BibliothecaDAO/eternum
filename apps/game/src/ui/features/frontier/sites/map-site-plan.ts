@@ -1,16 +1,12 @@
-import { nativeRuleConstants, nativeTileOccupierConstants, type NativeRows } from "@bibliothecadao/eternum/game-client";
-import { getLayerNeighborHexes } from "@bibliothecadao/types";
+import { nativeRuleConstants, type NativeRows } from "@bibliothecadao/eternum/game-client";
+import { getLayerNeighborHexes, TileOccupier } from "@bibliothecadao/types";
 import { MAP_SITE_ART } from "./site-art";
 
 export type MapSiteKind = keyof typeof MAP_SITE_ART;
 
 /** A tile's single-use site, from its occupier category alone: these sites have no Structure. */
 export const mapSiteKind = (occupierType: number | undefined): MapSiteKind | null =>
-  occupierType === nativeTileOccupierConstants.SHRINE_OCCUPIER
-    ? "Shrine"
-    : occupierType === nativeTileOccupierConstants.WELL_OCCUPIER
-      ? "Well"
-      : null;
+  occupierType === TileOccupier.Shrine ? "Shrine" : occupierType === TileOccupier.Well ? "Well" : null;
 
 /** The player's selected army, where it stands and its progress, when it could use a site. */
 export interface MapSiteUser {

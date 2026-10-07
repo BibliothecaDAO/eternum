@@ -1,6 +1,6 @@
 import { configManager, setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { RESOURCE_PRECISION } from "@bibliothecadao/types";
+import { RESOURCE_PRECISION, StructureType } from "@bibliothecadao/types";
 import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
 
 const set = (key: string, model: string, value: Record<string, unknown>) => ({ model, key, value });
@@ -9,7 +9,7 @@ const realm = {
   entity_id: 7,
   owner: "0x111",
   base: {
-    category: 1,
+    category: StructureType.Realm,
     level: 0,
     created_at: "0x1",
     troop_max_guard_count: 0,

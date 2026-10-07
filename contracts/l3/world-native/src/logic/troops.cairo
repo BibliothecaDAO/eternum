@@ -265,11 +265,11 @@ pub mod TroopsLogic {
             let base = crate::logic::structures::structure(key).expect('missing guarded structure').base;
             let category = base.category;
             assert!(
-                category == 2
-                    || category == 3
-                    || category == 4
-                    || category == crate::camps::CAMP_CATEGORY
-                    || category == 8,
+                category == crate::taxonomy::HYPERSTRUCTURE_CATEGORY
+                    || category == crate::taxonomy::BANK_CATEGORY
+                    || category == crate::taxonomy::MINE_CATEGORY
+                    || category == crate::taxonomy::CAMP_CATEGORY
+                    || category == crate::taxonomy::BITCOIN_MINE_CATEGORY,
                 "invalid guarded structure category",
             );
             let rules = game_context.rules.unbox();

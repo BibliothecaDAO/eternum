@@ -256,7 +256,10 @@ pub mod ConstructionLogic {
             let context = crate::commands::load_context(game_id, context);
             let key = ResourceKey { game_id, entity_id: command.structure_id };
             let base = self.assert_building_command(key, actor, context.timestamp, context);
-            assert!(base.category == 1 && self.buildings.board(game_id).is_some(), "research requires a realm board");
+            assert!(
+                base.category == crate::taxonomy::REALM_CATEGORY && self.buildings.board(game_id).is_some(),
+                "research requires a realm board",
+            );
             let mut knowledge = crate::logic::research::require(key);
             let rule = crate::logic::research::node(game_id, command.node);
             let bit = crate::research::node_bit(command.node);
@@ -305,9 +308,13 @@ pub mod ConstructionLogic {
             let key = ResourceKey { game_id, entity_id: structure_id };
             let record = crate::logic::structures::record(key);
             assert!(record.owner == actor, "actor does not own structure");
-            assert!(record.base.category == 1 || record.base.category == 5, "structure is not a realm or village");
+            assert!(
+                record.base.category == crate::taxonomy::REALM_CATEGORY
+                    || record.base.category == crate::taxonomy::VILLAGE_CATEGORY,
+                "structure is not a realm or village",
+            );
             let limits = crate::logic::upgrades::limits(game_id);
-            let maximum = if record.base.category == 1 {
+            let maximum = if record.base.category == crate::taxonomy::REALM_CATEGORY {
                 limits.realm_max
             } else {
                 limits.village_max
@@ -327,7 +334,7 @@ pub mod ConstructionLogic {
             crate::logic::structures::StructureState::upgrade(
                 key, record.base, context.rules.unbox().troop_limit_config,
             );
-            if record.base.category == 1 && context.rules.unbox().epoch_seconds == 0 {
+            if record.base.category == crate::taxonomy::REALM_CATEGORY && context.rules.unbox().epoch_seconds == 0 {
                 let coord = crate::structures::structure_coord(key);
                 crate::logic::map::MapState::upgrade_realm(
                     crate::map::TileKey { game_id, alt: coord.alt, col: coord.x, row: coord.y },
@@ -416,10 +423,12 @@ pub mod ConstructionLogic {
             self: @ContractState, game_id: u32, base: StructureBase, directions: Span<u8>,
         ) -> Coord {
             let limits = crate::logic::upgrades::limits(game_id);
-            let maximum = match base.category {
-                1 => limits.realm_max,
-                5 => limits.village_max,
-                _ => 0,
+            let maximum = if base.category == crate::taxonomy::REALM_CATEGORY {
+                limits.realm_max
+            } else if base.category == crate::taxonomy::VILLAGE_CATEGORY {
+                limits.village_max
+            } else {
+                0
             };
             assert!(!directions.is_empty(), "building path is empty");
             assert!(directions.len() <= Into::<u8, u32>::into(maximum) + 1, "building outside maximum level");
@@ -441,7 +450,10 @@ pub mod ConstructionLogic {
             assert!(crate::logic::structures::owner(key) == actor, "actor does not own structure");
             let base = self.data.structures.structures.entry((key.game_id, key.entity_id)).base.read();
             assert!(
-                base.category == 1 || base.category == 5 || base.category == 7, "structure does not support production",
+                base.category == crate::taxonomy::REALM_CATEGORY
+                    || base.category == crate::taxonomy::VILLAGE_CATEGORY
+                    || base.category == crate::taxonomy::CAMP_CATEGORY,
+                "structure does not support production",
             );
             base
         }

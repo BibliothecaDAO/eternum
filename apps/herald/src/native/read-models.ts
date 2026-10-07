@@ -11,6 +11,7 @@ import {
 } from "@bibliothecadao/eternum/game-sync";
 import { nativeGameModeOf } from "@bibliothecadao/eternum";
 import { expeditionRealmSite, isRealmCategory } from "@bibliothecadao/eternum/expeditions";
+import { StructureType } from "@bibliothecadao/types";
 import { resolveDirectoryStatus, type DirectoryInput } from "../game-directory";
 import type { FoldRow } from "../types";
 
@@ -90,7 +91,7 @@ function directoryPlayerState(
   const settlement = required(facts.settlementRules, game.game_id, "SettlementRules");
   return {
     registered: gameRows(facts.entries, game.game_id).some((row) => address(row.player) === player),
-    settled: structures.some((row) => number(record(row.base).category) === 1),
+    settled: structures.some((row) => isRealmCategory(number(record(row.base).category))),
     roster_member: roster.some((row) => address(row.account) === player),
     structures: structures.map((row) => playerStructure(row, game, settlement, facts, input.timestamp)),
   };
@@ -135,6 +136,8 @@ export function directoryStatus(game: Row, timestamp: number) {
   );
 }
 
+const SETTLEMENT_CATEGORIES: readonly number[] = [StructureType.Realm, StructureType.Village];
+
 function directoryEntry(game: Row, facts: DirectoryRows, input: DirectoryInput): HeraldGameDirectoryEntry {
   const { settlementRules, progress, structures, rosters } = facts;
   const mode = nativeGameModeOf(number(game.preset_id));
@@ -142,9 +145,9 @@ function directoryEntry(game: Row, facts: DirectoryRows, input: DirectoryInput):
   const epochSeconds = number(required(facts.rules, game.game_id, "SliceRules").epoch_seconds);
   const state = gameRows(progress, game.game_id)[0];
   const settlements = gameRows(structures, game.game_id).filter(
-    (row) => [1, 5].includes(number(record(row.base).category)) && integer(row.owner) !== 0n,
+    (row) => SETTLEMENT_CATEGORIES.includes(number(record(row.base).category)) && integer(row.owner) !== 0n,
   );
-  const realms = settlements.filter((row) => number(record(row.base).category) === 1);
+  const realms = settlements.filter((row) => isRealmCategory(number(record(row.base).category)));
   const roster = (gameRows(rosters, game.game_id)[0]?.players as Row[] | undefined) ?? [];
   const clock = {
     start_settling_at: number(game.start_settling_at),

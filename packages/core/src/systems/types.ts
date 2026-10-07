@@ -1,4 +1,5 @@
 import { BuildingType, ContractAddress, ID, ResourcesIds } from "@bibliothecadao/types";
+import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 
 export const TROOP_TIERS: Record<string, number> = {
   T1: 1,
@@ -39,7 +40,7 @@ export type SitePayoutSystemUpdate = {
   explorerId: ID;
   siteId: ID;
   ownerAddress: bigint | null;
-  kind: "Camp" | "Rift" | "FallenRealm";
+  kind: NativeRows["ExpeditionSite"]["kind"];
   reward: { resourceId: ResourcesIds; amount: number } | null;
   /** The site's tile, in contract coordinates. */
   coord: { x: number; y: number };
@@ -57,7 +58,7 @@ export type TierBoughtSystemUpdate = {
 export type ChestRewardSystemUpdate = {
   resultKey: readonly [gameId: string, order: string, index: string];
   explorerId: ID;
-  kind: "Relic" | "Token";
+  kind: NativeRows["ChestReward"]["kind"];
   lordsExhausted: boolean;
   quality: number;
   depth: number;

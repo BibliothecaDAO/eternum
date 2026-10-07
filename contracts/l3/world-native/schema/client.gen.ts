@@ -36,12 +36,48 @@ export const nativeRuleConstants = {
   "WELL_STAMINA": 60,
   "TIER_STAMINA_REFILL": 30
 } as const;
-export const nativeTileOccupierConstants = {
-  "CHEST_OCCUPIER": 34,
-  "SPIRE_OCCUPIER": 35,
-  "SHRINE_OCCUPIER": 40,
-  "WELL_OCCUPIER": 41
-} as const;
+/** Structure categories named in src/taxonomy.cairo. */
+export enum NativeStructureCategory {
+  Realm = 1,
+  Hyperstructure = 2,
+  Bank = 3,
+  Mine = 4,
+  Village = 5,
+  Camp = 7,
+  BitcoinMine = 8,
+}
+/** Tile occupiers named in src/taxonomy.cairo. */
+export enum NativeTileOccupier {
+  None = 0,
+  RealmRegularLevel1 = 1,
+  RealmRegularLevel2 = 2,
+  RealmRegularLevel3 = 3,
+  RealmRegularLevel4 = 4,
+  RealmWonderLevel1 = 5,
+  RealmWonderLevel2 = 6,
+  RealmWonderLevel3 = 7,
+  RealmWonderLevel4 = 8,
+  Hyperstructure = 9,
+  Mine = 12,
+  Village = 13,
+  Bank = 14,
+  ExplorerKnightT1 = 15,
+  ExplorerKnightT2 = 16,
+  ExplorerKnightT3 = 17,
+  ExplorerPaladinT1 = 18,
+  ExplorerPaladinT2 = 19,
+  ExplorerPaladinT3 = 20,
+  ExplorerCrossbowmanT1 = 21,
+  ExplorerCrossbowmanT2 = 22,
+  ExplorerCrossbowmanT3 = 23,
+  Chest = 34,
+  Spire = 35,
+  Camp = 37,
+  BitcoinMine = 38,
+  ReservedHyperstructure = 39,
+  Shrine = 40,
+  Well = 41,
+}
 export const nativeTilePackingConstants = {
   "BIOME_SCALE": "0x20000000000",
   "BYTE_RANGE": "0x100",

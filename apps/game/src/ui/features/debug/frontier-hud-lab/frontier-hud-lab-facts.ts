@@ -1,5 +1,5 @@
-import { nativeTileOccupierConstants } from "@bibliothecadao/eternum/game-client";
 import { absoluteEpoch } from "@bibliothecadao/eternum/expeditions";
+import { StructureType, TileOccupier } from "@bibliothecadao/types";
 /**
  * A Frontier day in facts: the current Frontier launch's rules, projected from today's preset by `pnpm lab:frontier`
  * through Herald's own projection, plus a hand-built player in the same shapes — one realm with its castle producing
@@ -114,7 +114,7 @@ const playerRows = (clock: LabClock): WireRow[] => [
       col: clock.siteCol,
       row: clock.siteRow,
       entity_id: LAB_REALM_ID,
-      category: 1,
+      category: TileOccupier.RealmRegularLevel1,
       is_structure: true,
     },
   },
@@ -144,8 +144,8 @@ const playerRows = (clock: LabClock): WireRow[] => [
   // A camp beside army 1, held by 1,100 T1 knights, so the tile card has a site to show.
   ...campSite(clock, LAB_CAMP_ID, 3, 1),
   // A Well beside army 1 and a Shrine beside army 2: single-use sites to use.
-  { model: "TileOccupancy", value: mapSiteTile(clock, 811, 1, 1, nativeTileOccupierConstants.WELL_OCCUPIER) },
-  { model: "TileOccupancy", value: mapSiteTile(clock, 812, -2, 2, nativeTileOccupierConstants.SHRINE_OCCUPIER) },
+  { model: "TileOccupancy", value: mapSiteTile(clock, 811, 1, 1, TileOccupier.Well) },
+  { model: "TileOccupancy", value: mapSiteTile(clock, 812, -2, 2, TileOccupier.Shrine) },
 ];
 
 const LAB_CAMP_ID = 710;
@@ -157,7 +157,12 @@ const campSite = (clock: LabClock, entityId: number, colOffset: number, rowOffse
       ...realm(clock),
       entity_id: entityId,
       owner: "0x0",
-      base: { ...realm(clock).base, category: 7, troop_max_guard_count: 1, troop_max_explorer_count: 0 },
+      base: {
+        ...realm(clock).base,
+        category: StructureType.Camp,
+        troop_max_guard_count: 1,
+        troop_max_explorer_count: 0,
+      },
     },
   },
   {
@@ -192,7 +197,7 @@ const campSite = (clock: LabClock, entityId: number, colOffset: number, rowOffse
       col: clock.siteCol + colOffset,
       row: clock.siteRow + rowOffset,
       entity_id: entityId,
-      category: 37,
+      category: TileOccupier.Camp,
       is_structure: true,
     },
   },
@@ -221,7 +226,7 @@ const realm = (clock: LabClock) => ({
     troop_max_guard_count: 0,
     troop_max_explorer_count: 3,
     created_at: clock.startMainAt,
-    category: 1,
+    category: StructureType.Realm,
     level: 0,
     starting_troops_granted: true,
   },
@@ -303,7 +308,7 @@ const armyTile = (clock: LabClock, explorerId: number, colOffset: number, rowOff
   col: clock.siteCol + colOffset,
   row: clock.siteRow + rowOffset,
   entity_id: explorerId,
-  category: 15,
+  category: TileOccupier.ExplorerKnightT1,
   is_structure: false,
 });
 

@@ -21,7 +21,14 @@ import {
   waitForWorldState,
 } from "@bibliothecadao/eternum";
 import { generateBuildablePositions } from "@bibliothecadao/eternum/automation";
-import { BUILDINGS_CENTER, getNeighborHexes, RESOURCE_PRECISION, ResourcesIds, TroopTier } from "@bibliothecadao/types";
+import {
+  BUILDINGS_CENTER,
+  getNeighborHexes,
+  RESOURCE_PRECISION,
+  ResourcesIds,
+  StructureType,
+  TroopTier,
+} from "@bibliothecadao/types";
 import type { NativeCommand } from "../../../contracts/l3/world-native/schema/commands.gen";
 import type { NativeRows } from "../../../contracts/l3/world-native/schema/client.gen";
 import { buildNativePreset } from "../../../config/deployer/clean/config/native-preset";
@@ -912,13 +919,18 @@ function planExpedition(client: GameClient, game: HarnessGame, player: Player): 
       .map((spot) => getTileAt(client.setup.store, false, spot.col, spot.row, client.gameId)?.occupier_id)
       .filter((id): id is number => Boolean(id))
       .map((id) => client.setup.store.get("Structure", { game_id: client.gameId, entity_id: id }))
-      .find((site) => site && site.owner === 0n && (site.base.category === 4 || site.base.category === 7));
+      .find(
+        (site) =>
+          site &&
+          site.owner === 0n &&
+          (site.base.category === StructureType.Mine || site.base.category === StructureType.Camp),
+      );
     if (target) {
       if (holdsForSite(amount, stamina.stamina_attack_req)) continue;
       let campAttempt = day.campAttempts.find(
         (attempt) => attempt.armyId === army.explorer_id && attempt.siteId === target.entity_id,
       );
-      if (target.base.category === 7 && !campAttempt) {
+      if (target.base.category === StructureType.Camp && !campAttempt) {
         campAttempt = { armyId: army.explorer_id, siteId: target.entity_id, lost: false };
         day.campAttempts.push(campAttempt);
       }
@@ -936,7 +948,7 @@ function planExpedition(client: GameClient, game: HarnessGame, player: Player): 
         day.attackStamina += stamina.stamina_attack_req - (captured ? stamina.capture_stamina_refund : 0);
         if (captured) {
           day.captures++;
-          if (target.base.category === 7) {
+          if (target.base.category === StructureType.Camp) {
             day.campCaptures++;
             player.firstCampAt ??= now();
           }

@@ -258,9 +258,9 @@ pub(crate) fn explorer_occupier(explorer: ExplorerTroops) -> u8 {
 
 pub(crate) fn troop_occupier(troops: Troops) -> u8 {
     let category = match troops.category {
-        TroopType::Knight => 15,
-        TroopType::Paladin => 18,
-        TroopType::Crossbowman => 21,
+        TroopType::Knight => crate::taxonomy::EXPLORER_KNIGHT_T1_OCCUPIER,
+        TroopType::Paladin => crate::taxonomy::EXPLORER_PALADIN_T1_OCCUPIER,
+        TroopType::Crossbowman => crate::taxonomy::EXPLORER_CROSSBOWMAN_T1_OCCUPIER,
     };
     let tier = match troops.tier {
         TroopTier::T1 => 0,
@@ -322,8 +322,9 @@ pub(crate) fn discovery_guards(
     category: u8, seed: u256, rules: crate::rules::SliceRules, timestamp: u64,
 ) -> Span<Troops> {
     use crate::troops::{TroopTier, TroopType};
-    let light_guard = category == 4 || category == crate::camps::CAMP_CATEGORY;
-    let three_guards = category == 2 || category == 3;
+    let light_guard = category == crate::taxonomy::MINE_CATEGORY || category == crate::taxonomy::CAMP_CATEGORY;
+    let three_guards = category == crate::taxonomy::HYPERSTRUCTURE_CATEGORY
+        || category == crate::taxonomy::BANK_CATEGORY;
     let count = if light_guard {
         1_u8
     } else if three_guards {

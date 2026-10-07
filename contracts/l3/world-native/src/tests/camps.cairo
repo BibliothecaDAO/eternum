@@ -117,7 +117,7 @@ fn camps_grant_configured_resources_labor_and_one_crossbow_guard() {
     let key = create(d, coord());
     let structure = IStructureOperationsDispatcher { contract_address: d.games }.structure(key).unwrap();
     assert_eq!(structure.owner, 0.try_into().unwrap());
-    assert_eq!(structure.base.category, crate::camps::CAMP_CATEGORY);
+    assert_eq!(structure.base.category, crate::taxonomy::CAMP_CATEGORY);
     assert_eq!(structure.base.level, 0);
     assert_eq!(structure.base.troop_max_guard_count, 1);
     assert_eq!(structure.base.troop_max_explorer_count, 1);
@@ -154,7 +154,7 @@ fn camp_reveals_six_biomes_without_neighbor_lotteries_or_points() {
     let (d, _) = setup(true);
     let key = create(d, coord());
     let map = IMapLogicDispatcher { contract_address: d.games };
-    assert_eq!((map.tile(tile_key(3, coord())).unwrap().data / 2) % 256, crate::camps::CAMP_OCCUPIER.into());
+    assert_eq!((map.tile(tile_key(3, coord())).unwrap().data / 2) % 256, crate::taxonomy::CAMP_OCCUPIER.into());
     for direction in 0_u8..6 {
         let tile = map.tile(tile_key(3, neighbor(coord(), direction))).unwrap();
         assert_eq!(tile.data % 0x20000000000, 0);
@@ -212,7 +212,7 @@ fn recorded_exploration_discovers_a_camp_without_moving_the_explorer_into_it() {
     assert_eq!(troops.explorer(key).unwrap().coord, origin);
     let destination = neighbor(origin, 0);
     let tile = IMapLogicDispatcher { contract_address: d.games }.tile(tile_key(3, destination)).unwrap();
-    assert_eq!((tile.data / 2) % 256, crate::camps::CAMP_OCCUPIER.into());
+    assert_eq!((tile.data / 2) % 256, crate::taxonomy::CAMP_OCCUPIER.into());
     let camp_id: u32 = (tile.data / 512 % 0x100000000).try_into().unwrap();
     assert_eq!(structures.structure(ResourceKey { game_id: 3, entity_id: camp_id }).unwrap().base.created_at, 140);
     assert_eq!(

@@ -244,7 +244,7 @@ describe("WorldSpatialProjection", () => {
       row: 200,
       biome: 0,
       occupierId: 7,
-      occupierType: TileOccupier.ExplorerKnightT1Regular,
+      occupierType: TileOccupier.ExplorerKnightT1,
     });
     writeArmy("explorer", { explorerId: 7, col: 100, row: 200 });
     projection.start();
@@ -378,7 +378,7 @@ describe("WorldSpatialProjection", () => {
       col: 103,
       row: 200,
       occupierId: 10,
-      occupierType: TileOccupier.ExplorerKnightT1Regular,
+      occupierType: TileOccupier.ExplorerKnightT1,
     });
 
     projection.start();

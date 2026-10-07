@@ -55,7 +55,7 @@ pub mod MapState {
     use starknet::Event as EventTrait;
     use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
     use crate::events::{RowDeleted, RowSet};
-    use crate::map::{BIOME_SCALE, BYTE_RANGE, RESERVED_HYPERSTRUCTURE, TileKey, TileOccupancy};
+    use crate::map::{BIOME_SCALE, BYTE_RANGE, TileKey, TileOccupancy};
 
     #[derive(Drop, starknet::Event)]
     pub enum Event {
@@ -81,7 +81,7 @@ pub mod MapState {
     }
 
     pub fn occupy(key: TileKey, entity_id: u32, category: u8, is_structure: bool) {
-        assert!(entity_id != 0 && category != 0, "empty occupier");
+        assert!(entity_id != 0 && category != crate::taxonomy::NONE_OCCUPIER, "empty occupier");
         assert!(crate::logic::map::occupancy(key).is_none(), "occupied tile");
         write_occupancy(key, Some(TileOccupancy { entity_id, category, is_structure }));
     }
@@ -90,7 +90,8 @@ pub mod MapState {
         let previous = crate::logic::map::occupancy(key).expect('missing fallen realm');
         assert!(previous.entity_id == site_id && previous.is_structure, "fallen realm occupancy mismatch");
         write_occupancy(
-            key, Some(TileOccupancy { entity_id: site_id, category: crate::map::CHEST_OCCUPIER, is_structure: false }),
+            key,
+            Some(TileOccupancy { entity_id: site_id, category: crate::taxonomy::CHEST_OCCUPIER, is_structure: false }),
         );
     }
 
@@ -102,7 +103,7 @@ pub mod MapState {
             key,
             Some(
                 TileOccupancy {
-                    entity_id: 0, category: RESERVED_HYPERSTRUCTURE.try_into().unwrap(), is_structure: true,
+                    entity_id: 0, category: crate::taxonomy::RESERVED_HYPERSTRUCTURE_OCCUPIER, is_structure: true,
                 },
             ),
         );
@@ -110,7 +111,9 @@ pub mod MapState {
 
     pub fn release_hyperstructure(key: TileKey) {
         let previous = crate::logic::map::occupancy(key).expect('missing reservation');
-        assert!(previous.category.into() == RESERVED_HYPERSTRUCTURE, "hyperstructure already created");
+        assert!(
+            previous.category == crate::taxonomy::RESERVED_HYPERSTRUCTURE_OCCUPIER, "hyperstructure already created",
+        );
         write_occupancy(key, None);
     }
 
@@ -118,13 +121,18 @@ pub mod MapState {
         let previous = crate::logic::map::occupancy(key).expect('missing realm tile');
         assert!(!key.alt && previous.is_structure, "not a surface structure");
         assert!(previous.entity_id == entity_id, "occupier mismatch");
-        assert!(previous.category >= 1 && previous.category <= 8, "not a realm tile");
+        assert!(
+            previous.category >= crate::taxonomy::REALM_REGULAR_LEVEL_1_OCCUPIER
+                && previous.category <= crate::taxonomy::REALM_WONDER_LEVEL_4_OCCUPIER,
+            "not a realm tile",
+        );
         assert!(level <= 3, "invalid realm level");
-        let category = level + if wonder {
-            5
-        } else {
-            1
-        };
+        let category = level
+            + if wonder {
+                crate::taxonomy::REALM_WONDER_LEVEL_1_OCCUPIER
+            } else {
+                crate::taxonomy::REALM_REGULAR_LEVEL_1_OCCUPIER
+            };
         write_occupancy(key, Some(TileOccupancy { category, ..previous }));
     }
 
@@ -152,8 +160,8 @@ pub mod MapState {
     // Chests and spires are tile-only facts; reservations have no entity yet.
     fn has_single_position(occupier: TileOccupancy) -> bool {
         occupier.entity_id != 0
-            && occupier.category != crate::map::CHEST_OCCUPIER
-            && occupier.category != crate::map::SPIRE_OCCUPIER
+            && occupier.category != crate::taxonomy::CHEST_OCCUPIER
+            && occupier.category != crate::taxonomy::SPIRE_OCCUPIER
     }
 
     // The occupancy fact and its private reverse index are changed only here.
@@ -339,8 +347,8 @@ pub mod MapLogic {
             let occupied = crate::logic::map::occupancy(key).expect('missing site');
             assert!(
                 !occupied.is_structure
-                    && (occupied.category == crate::map::SHRINE_OCCUPIER
-                        || occupied.category == crate::map::WELL_OCCUPIER),
+                    && (occupied.category == crate::taxonomy::SHRINE_OCCUPIER
+                        || occupied.category == crate::taxonomy::WELL_OCCUPIER),
                 "tile is not a shrine or well",
             );
             crate::logic::map::MapState::vacate(key, occupied.entity_id);
@@ -551,7 +559,7 @@ pub mod MapLogic {
                         );
                     }
                     crate::logic::map::MapState::occupy(
-                        key, crate::logic::game::allocate_entity(game_id), crate::map::CHEST_OCCUPIER, false,
+                        key, crate::logic::game::allocate_entity(game_id), crate::taxonomy::CHEST_OCCUPIER, false,
                     );
                     break;
                 }
@@ -580,7 +588,7 @@ pub mod MapLogic {
             let key = tile_key(game_id, coord);
             let tile = crate::logic::map::tile(key).expect('missing chest tile');
             assert!(
-                tile.data % 2 == 0 && (tile.data / 2) % BYTE_RANGE == crate::map::CHEST_OCCUPIER.into(),
+                tile.data % 2 == 0 && (tile.data / 2) % BYTE_RANGE == crate::taxonomy::CHEST_OCCUPIER.into(),
                 "tile is not a relic chest",
             );
             let id = ((tile.data / crate::map::OCCUPIER_SCALE) % crate::map::ENTITY_RANGE).try_into().unwrap();

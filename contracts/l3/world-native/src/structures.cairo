@@ -134,12 +134,24 @@ pub(crate) fn discovered_structure(
     timestamp: u64,
 ) -> (StructureRecord, u8, u128) {
     let (category, occupier, level, capacity) = match discovery {
-        Discovery::Mine => (4_u8, 12_u8, 0_u8, capacities.fragment_mine_capacity),
-        Discovery::Hyperstructure => (2, 9, 3, capacities.hyperstructure_capacity),
-        Discovery::BitcoinMine => (8, 38, 3, capacities.bitcoin_mine_capacity),
+        Discovery::Mine => (
+            crate::taxonomy::MINE_CATEGORY, crate::taxonomy::MINE_OCCUPIER, 0_u8, capacities.fragment_mine_capacity,
+        ),
+        Discovery::Hyperstructure => (
+            crate::taxonomy::HYPERSTRUCTURE_CATEGORY,
+            crate::taxonomy::HYPERSTRUCTURE_OCCUPIER,
+            3,
+            capacities.hyperstructure_capacity,
+        ),
+        Discovery::BitcoinMine => (
+            crate::taxonomy::BITCOIN_MINE_CATEGORY,
+            crate::taxonomy::BITCOIN_MINE_OCCUPIER,
+            3,
+            capacities.bitcoin_mine_capacity,
+        ),
         Discovery::Camp |
         Discovery::FallenRealm => (
-            crate::camps::CAMP_CATEGORY, crate::camps::CAMP_OCCUPIER, 0, capacities.camp_capacity,
+            crate::taxonomy::CAMP_CATEGORY, crate::taxonomy::CAMP_OCCUPIER, 0, capacities.camp_capacity,
         ),
         Discovery::None | Discovery::Chest | Discovery::Shrine |
         Discovery::Well => panic!("discovery is not a structure"),

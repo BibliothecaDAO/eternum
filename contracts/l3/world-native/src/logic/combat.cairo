@@ -366,7 +366,7 @@ pub fn collect_raid_loot(
     timestamp: u64,
     game_context: crate::commands::ExecutionContext,
 ) {
-    let village = target.base.category == 5;
+    let village = target.base.category == crate::taxonomy::VILLAGE_CATEGORY;
     let tick = timestamp / rules.tick_config.armies_tick_in_seconds;
     if village {
         let last = crate::state::write().combat_domain.village_raids.read((game_id, command.structure_id));
@@ -438,7 +438,8 @@ pub fn try_capture(
 ) {
     if explorer.troops.count == 0
         || (crate::rules::rule_enabled(rules, crate::rules::UNOWNED_TARGETS) && target.owner != 0.try_into().unwrap())
-        || (target.base.category == 5 && !crate::rules::rule_enabled(rules, crate::rules::CAPTURE_VILLAGES)) {
+        || (target.base.category == crate::taxonomy::VILLAGE_CATEGORY
+            && !crate::rules::rule_enabled(rules, crate::rules::CAPTURE_VILLAGES)) {
         return;
     }
     if !crate::geometry::adjacent(explorer.coord, crate::structures::structure_coord(key))
@@ -520,7 +521,7 @@ pub fn assert_battle_immunity(
             + rules.battle_config.regular_immunity_ticks.into(),
         "season immunity",
     );
-    if home.base.category == 5 {
+    if home.base.category == crate::taxonomy::VILLAGE_CATEGORY {
         assert!(
             tick >= home.base.created_at.into() / rules.tick_config.armies_tick_in_seconds
                 + rules.battle_config.village_immunity_ticks.into(),

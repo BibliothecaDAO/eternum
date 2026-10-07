@@ -43,7 +43,7 @@ describe("Frontier's selection sheet", () => {
     // An empty tile, an unrevealed one, or an army the dock already shows: no card, and never the old inspector.
     expect(sheetFor(TileOccupier.None)).toBeNull();
     expect(sheetFor(null)).toBeNull();
-    expect(sheetFor(TileOccupier.ExplorerKnightT1Regular)).toBeNull();
+    expect(sheetFor(TileOccupier.ExplorerKnightT1)).toBeNull();
     useUIStore.getState().setSelectedHex(null);
   });
 

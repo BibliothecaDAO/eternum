@@ -202,10 +202,13 @@ pub mod FaithState {
             let rules = crate::logic::preset_record::for_game(game_id).faith_rules.read();
             let rate = if structure.metadata.has_wonder {
                 rules.wonder_rate
-            } else if structure.base.category == 1 {
+            } else if structure.base.category == crate::taxonomy::REALM_CATEGORY {
                 rules.realm_rate
             } else {
-                assert!(structure.base.category == 5, "invalid structure category for faith");
+                assert!(
+                    structure.base.category == crate::taxonomy::VILLAGE_CATEGORY,
+                    "invalid structure category for faith",
+                );
                 rules.village_rate
             };
             let owner_rate: u16 = (Into::<u16, u128>::into(rate) * rules.owner_share_bps.into() / 10000)
