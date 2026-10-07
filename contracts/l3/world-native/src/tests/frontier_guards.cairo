@@ -113,3 +113,26 @@ fn only_stragglers_draw_among_the_three_troop_categories() {
         assert!(count >= 3234 && count <= 3433, "straggler category odds drift");
     }
 }
+
+#[test]
+fn stragglers_draw_all_three_types_while_other_site_guards_are_knights() {
+    let (_, preset) = super::preset_projection::current_definition("frontier");
+    let mut saw_knight = false;
+    let mut saw_paladin = false;
+    let mut saw_crossbowman = false;
+    for depth in preset.settlement.depths {
+        for seed in 0_u32..2000 {
+            let straggler = frontier_guard(STRAGGLERS_CATEGORY, *depth, seed.into(), preset.rules, 360);
+            match straggler.category {
+                TroopType::Knight => saw_knight = true,
+                TroopType::Paladin => saw_paladin = true,
+                TroopType::Crossbowman => saw_crossbowman = true,
+            }
+            for category in array![crate::taxonomy::CAMP_CATEGORY, RIFT_CATEGORY, RUIN_CATEGORY] {
+                let beast = frontier_guard(category, *depth, seed.into(), preset.rules, 360);
+                assert_eq!(beast.category, TroopType::Knight);
+            }
+        }
+    }
+    assert!(saw_knight && saw_paladin && saw_crossbowman, "stragglers must draw every troop type");
+}
