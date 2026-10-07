@@ -19,6 +19,7 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { GhostButton, GoldButton, Loading, Panel, PanelTitle } from "./kit";
 import { NameClaim } from "./name-claim";
 import { useRequestSignIn } from "./sign-in/sign-in-route";
+import { PageFrame } from "./frame/page-frame";
 
 const WalletLink = lazy(() =>
   import("@/ui/modules/identity/wallet-actions").then((module) => ({ default: module.WalletLink })),
@@ -203,7 +204,7 @@ const SignedInAccount = ({ session, refresh }: { session: Session; refresh: () =
   );
 };
 
-export const AccountPage = () => {
+const AccountBody = () => {
   const { session, status } = useIdentitySession();
   const refresh = useIdentitySessionStore((state) => state.refresh);
   const requestSignIn = useRequestSignIn();
@@ -216,7 +217,7 @@ export const AccountPage = () => {
           Sign in with Discord or your email; your first sign-in creates your Realms account. Then claim your name, and
           link a wallet to claim prizes.
         </p>
-        <GoldButton onClick={() => requestSignIn("/account")}>Sign in</GoldButton>
+        <GoldButton onClick={() => requestSignIn("/profile")}>Sign in</GoldButton>
       </Panel>
     );
   }
@@ -225,3 +226,9 @@ export const AccountPage = () => {
 
 const reportSignOutFailure = (cause: unknown) =>
   console.error("identity_sign_out_failed", { error: cause instanceof Error ? cause.message : cause });
+
+export const AccountPage = () => (
+  <PageFrame>
+    <AccountBody />
+  </PageFrame>
+);

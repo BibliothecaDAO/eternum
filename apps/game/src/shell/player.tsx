@@ -5,8 +5,9 @@ import { modeLabel } from "./game-links";
 import { type DirectoryGame, useLeaderboard, useRecentResults } from "./herald";
 import { playerPortraitUrl } from "@/services/identity/player-portrait";
 import { ErrorPanel, Loading, Panel, PanelTitle } from "./kit";
-import { NotFoundPage } from "./not-found";
+import { NothingHere } from "./not-found";
 import { useProfiles } from "./profiles";
+import { PageFrame } from "./frame/page-frame";
 
 const HISTORY_LIMIT = 8;
 
@@ -43,12 +44,12 @@ const findResult = <Entry extends { address: string; rank: number }>(
 };
 
 /** Public profile: name and portrait from identity, results from the shard's recorded standings. */
-export const PlayerPage = () => {
+const PlayerBody = () => {
   const { address = "" } = useParams();
   const isAddress = /^0x[0-9a-fA-F]{1,64}$/.test(address);
   const profileOf = useProfiles(isAddress ? [address] : []);
   const history = useRecentResults(HISTORY_LIMIT, isAddress ? address : null);
-  if (!isAddress) return <NotFoundPage title="No such lord">That is not a gameplay account address.</NotFoundPage>;
+  if (!isAddress) return <NothingHere />;
   const profile = profileOf(address);
   const games = history.data?.games ?? [];
   return (
@@ -88,3 +89,9 @@ export const PlayerPage = () => {
     </div>
   );
 };
+
+export const PlayerPage = () => (
+  <PageFrame back="/season">
+    <PlayerBody />
+  </PageFrame>
+);

@@ -1,6 +1,7 @@
 import { latestFeatures, type FeatureType } from "@/ui/features/world/latest-features";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Bug, ExternalLink, Newspaper, Sparkles, TrendingUp, Wrench } from "@/ui/design-system/atoms/game-icons";
+import { PageFrame } from "./frame/page-frame";
 
 const getFeatureTypeStyle = (type: FeatureType) => {
   switch (type) {
@@ -30,7 +31,7 @@ const formatGameSlug = (gameSlug: string) =>
 /**
  * News tab content - Latest features and updates
  */
-export const NewsPage = () => (
+const NewsBody = () => (
   <div className="rounded-2xl border border-gold/20 bg-black/60 p-6 backdrop-blur-xl">
     <div className="flex items-center gap-3 mb-6">
       <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gold/20">
@@ -96,4 +97,10 @@ export const NewsPage = () => (
       })}
     </div>
   </div>
+);
+
+export const NewsPage = () => (
+  <PageFrame back="/learn">
+    <NewsBody />
+  </PageFrame>
 );

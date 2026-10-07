@@ -8,6 +8,7 @@ import { type DirectoryGame, useDirectory, useHistory, useRealmsPlayer } from ".
 import { ErrorPanel, GhostButton, Loading, Panel, PanelTitle } from "./kit";
 import { UnavailableChip } from "./live-chips";
 import { Standings } from "./standings";
+import { PageFrame } from "./frame/page-frame";
 
 /** The post-game review with its award and share cards; heavy, so it loads only when a player opens a score. */
 const GameReviewModal = lazy(() =>
@@ -25,7 +26,7 @@ const reviewedGame = (game: DirectoryGame): ReviewedGame => ({
 });
 
 /** Recorded results, newest first: rank and victory points as the chain settled them. */
-export const ResultsPage = () => {
+const ResultsBody = () => {
   const { data: player } = useRealmsPlayer();
   const [filter, setFilter] = useState<Filter>("all");
   const mine = filter === "mine" && player !== null;
@@ -145,4 +146,10 @@ const ResultRow = ({
       </div>
     ) : null}
   </details>
+);
+
+export const ResultsPage = () => (
+  <PageFrame>
+    <ResultsBody />
+  </PageFrame>
 );

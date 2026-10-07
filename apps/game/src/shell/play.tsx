@@ -5,13 +5,14 @@ import { ErrorPanel, Loading } from "./kit";
 import { BlitzLobbyCard, EternumCard, FrontierCard } from "./mode-cards";
 import { chooseSeason } from "./season";
 import { useNowSeconds } from "./use-now";
+import { PageFrame } from "./frame/page-frame";
 
 /**
  * The games (design o4, o12): the modes as painted cards with their live state. Frontier's season with Enter, every
  * Blitz as a row with its seats and one action, and Eternum greyed until it opens. On desktop Frontier stands large
  * beside Blitz and Eternum.
  */
-export const PlayPage = () => {
+const PlayBody = () => {
   const { status } = useIdentitySession();
   const now = useNowSeconds();
   const directory = useDirectory();
@@ -39,3 +40,9 @@ export const PlayPage = () => {
     </div>
   );
 };
+
+export const PlayPage = () => (
+  <PageFrame back="/">
+    <PlayBody />
+  </PageFrame>
+);

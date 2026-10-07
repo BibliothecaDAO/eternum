@@ -43,10 +43,12 @@ vi.mock("@/runtime/world/shards", () => ({
 }));
 vi.mock("./standings", () => ({ Standings: () => <p>standings</p> }));
 
+import { setViewportWidth } from "./frame/test-viewport";
 import { ResultsPage } from "./results";
 
 it("pages through the history: settled games newest first, load more until the last page, and names a missing shard", async () => {
-  (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  setViewportWidth(390);
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const container = document.createElement("div");
   const root = createRoot(container);

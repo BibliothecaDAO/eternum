@@ -7,9 +7,9 @@
   Cache-Control: no-cache
 /play
   Cache-Control: no-cache
-/results
+/season
   Cache-Control: no-cache
-/account
+/profile
   Cache-Control: no-cache
 /sign-in
   Cache-Control: no-cache

@@ -3,7 +3,8 @@ import { Link, useParams } from "react-router-dom";
 
 import { scrollPosts, type ScrollPost, type ScrollPostType } from "./generated/scroll-posts";
 import { Panel, PanelTitle, Pill } from "./kit";
-import { NotFoundPage } from "./not-found";
+import { NothingHere } from "./not-found";
+import { PageFrame } from "./frame/page-frame";
 
 /** The scroll: the written layer of Realms, built from content/scroll at build time and served as plain data. */
 
@@ -35,7 +36,7 @@ const similarPosts = (post: ScrollPost, limit = 3): ScrollPost[] =>
       score:
         candidate.tags.filter((tag) => post.tags.includes(tag)).length * 2 + (candidate.type === post.type ? 1 : 0),
     }))
-    .sort((a, b) => b.score - a.score || b.candidate.date.localeCompare(a.candidate.date))
+    .toSorted((a, b) => b.score - a.score || b.candidate.date.localeCompare(a.candidate.date))
     .slice(0, limit)
     .map((entry) => entry.candidate);
 
@@ -72,7 +73,7 @@ const PostCard = ({ post, featured = false }: { post: ScrollPost; featured?: boo
   </Link>
 );
 
-export const ScrollIndexPage = () => {
+const ScrollIndexBody = () => {
   const [filter, setFilter] = useState<ScrollFilter>("all");
   const posts = useMemo(
     () => (filter === "all" ? publishedPosts : publishedPosts.filter((post) => post.type === filter)),
@@ -127,10 +128,10 @@ const NeighbourLink = ({ label, post }: { label: string; post: ScrollPost | unde
     </Link>
   ) : null;
 
-export const ScrollPostPage = () => {
+const ScrollPostBody = () => {
   const { slug } = useParams();
   const index = publishedPosts.findIndex((post) => post.slug === slug);
-  if (index === -1) return <NotFoundPage />;
+  if (index === -1) return <NothingHere />;
   const post = publishedPosts[index];
   const newer = publishedPosts[index - 1];
   const older = publishedPosts[index + 1];
@@ -173,3 +174,15 @@ export const ScrollPostPage = () => {
     </article>
   );
 };
+
+export const ScrollIndexPage = () => (
+  <PageFrame back="/learn">
+    <ScrollIndexBody />
+  </PageFrame>
+);
+
+export const ScrollPostPage = () => (
+  <PageFrame back="/scroll">
+    <ScrollPostBody />
+  </PageFrame>
+);

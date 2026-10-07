@@ -85,6 +85,8 @@ jobs:
       - name: Build client
         env:
           VITE_PUBLIC_GAME_VERSION: ${{ github.event.inputs.version || github.sha }}
+          # The app's one environment constant: production, or the dev environment's Dev mark, install icon and labs.
+          VITE_PUBLIC_ENVIRONMENT: ${{ inputs.environment }}
           VITE_PUBLIC_SENTRY_DSN: ${{ secrets.CLIENT_SENTRY_DSN }}
         run: pnpm --dir apps/game build
 

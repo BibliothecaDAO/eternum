@@ -11,13 +11,14 @@ import { RealmCard } from "./realm-card";
 import { chooseSeason, seasonRealm } from "./season";
 import { SeasonPodium } from "./season-podium";
 import { useNowSeconds } from "./use-now";
+import { PageFrame } from "./frame/page-frame";
 
 /**
  * Home, the Play tab (design o1, o2, o10). A first visit meets the painted hero with one Play free into the live
  * season; a player with a realm meets their realm card and Resume. Below, the modes as live cards and the season's
  * podium. On desktop the painting is the page and the modes stand in a row beneath it.
  */
-export const HomePage = () => {
+const HomeBody = () => {
   const { status } = useIdentitySession();
   const now = useNowSeconds();
   const directory = useDirectory();
@@ -87,4 +88,10 @@ const Pitch = ({ season }: { season: DirectoryGame | undefined }) => (
       )}
     </div>
   </section>
+);
+
+export const HomePage = () => (
+  <PageFrame>
+    <HomeBody />
+  </PageFrame>
 );

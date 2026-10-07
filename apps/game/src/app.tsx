@@ -13,6 +13,7 @@ import { FactoryPage } from "./shell/factory";
 import { HomePage } from "./shell/home";
 import { LearnPage } from "./shell/learn";
 import { NewsPage } from "./shell/news";
+import { IS_DEV_ENVIRONMENT } from "./shell/frame/environment";
 import { NotFoundPage } from "./shell/not-found";
 import { PlayPage } from "./shell/play";
 import { PlayerPage } from "./shell/player";
@@ -83,8 +84,8 @@ export const appRoutes = (
     <Route element={<AppShell />}>
       <Route index element={<HomePage />} />
       <Route path="play" element={<PlayPage />} />
-      <Route path="results" element={<ResultsPage />} />
-      <Route path="account" element={<AccountPage />} />
+      <Route path="season" element={<ResultsPage />} />
+      <Route path="profile" element={<AccountPage />} />
       <Route path="p/:address" element={<PlayerPage />} />
       <Route path="learn" element={<LearnPage />} />
       <Route path="news" element={<NewsPage />} />
@@ -132,100 +133,99 @@ export const appRoutes = (
         </SceneRoute>
       }
     />
-    {import.meta.env.DEV && (
-      <Route
-        path="/lab/motion"
-        element={
-          <LazyRoute>
-            <MotionLabView />
-          </LazyRoute>
-        }
-      />
+    {/* The labs and debug scenes exist only in the dev environment's build. */}
+    {IS_DEV_ENVIRONMENT && (
+      <>
+        <Route
+          path="/lab/motion"
+          element={
+            <LazyRoute>
+              <MotionLabView />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path="/lab/kit/*"
+          element={
+            <LazyRoute>
+              <KitLabView />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path="/lab/frontier-hud/*"
+          element={
+            <LazyRoute>
+              <FrontierHudLabView />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path="/lab/*"
+          element={
+            <SceneRoute fallback={<AppFallback />}>
+              <GraphicsLabView />
+            </SceneRoute>
+          }
+        />
+        <Route
+          path="/debug/three-chunks"
+          element={
+            <SceneRoute fallback={<AppFallback />}>
+              <DebugThreeChunkView />
+            </SceneRoute>
+          }
+        />
+        <Route
+          path="/debug/procedural-characters"
+          element={
+            <SceneRoute fallback={<AppFallback />}>
+              <DebugProceduralCharacterGymView />
+            </SceneRoute>
+          }
+        />
+        <Route
+          path="/debug/procedural-character-benchmark"
+          element={
+            <SceneRoute fallback={<AppFallback />}>
+              <DebugProceduralCharacterBenchmarkView />
+            </SceneRoute>
+          }
+        />
+        <Route
+          path="/debug/procedural-world-gym"
+          element={
+            <SceneRoute fallback={<AppFallback />}>
+              <DebugProceduralWorldGymView />
+            </SceneRoute>
+          }
+        />
+        <Route
+          path="/debug/terrain-props"
+          element={
+            <SceneRoute fallback={<AppFallback />}>
+              <DebugTerrainPropView />
+            </SceneRoute>
+          }
+        />
+        <Route
+          path="/debug/procedural-terrain-benchmark"
+          element={
+            <SceneRoute fallback={<AppFallback />}>
+              <DebugProceduralTerrainBenchmarkView />
+            </SceneRoute>
+          }
+        />
+        <Route
+          path="/debug/world-fx"
+          element={
+            <SceneRoute fallback={<AppFallback />}>
+              <DebugWorldFxGymView />
+            </SceneRoute>
+          }
+        />
+      </>
     )}
-    {import.meta.env.DEV && (
-      <Route
-        path="/lab/kit/*"
-        element={
-          <LazyRoute>
-            <KitLabView />
-          </LazyRoute>
-        }
-      />
-    )}
-    {import.meta.env.DEV && (
-      <Route
-        path="/lab/frontier-hud/*"
-        element={
-          <LazyRoute>
-            <FrontierHudLabView />
-          </LazyRoute>
-        }
-      />
-    )}
-    <Route
-      path="/lab/*"
-      element={
-        <SceneRoute fallback={<AppFallback />}>
-          <GraphicsLabView />
-        </SceneRoute>
-      }
-    />
-    <Route
-      path="/debug/three-chunks"
-      element={
-        <SceneRoute fallback={<AppFallback />}>
-          <DebugThreeChunkView />
-        </SceneRoute>
-      }
-    />
-    <Route
-      path="/debug/procedural-characters"
-      element={
-        <SceneRoute fallback={<AppFallback />}>
-          <DebugProceduralCharacterGymView />
-        </SceneRoute>
-      }
-    />
-    <Route
-      path="/debug/procedural-character-benchmark"
-      element={
-        <SceneRoute fallback={<AppFallback />}>
-          <DebugProceduralCharacterBenchmarkView />
-        </SceneRoute>
-      }
-    />
-    <Route
-      path="/debug/procedural-world-gym"
-      element={
-        <SceneRoute fallback={<AppFallback />}>
-          <DebugProceduralWorldGymView />
-        </SceneRoute>
-      }
-    />
-    <Route
-      path="/debug/terrain-props"
-      element={
-        <SceneRoute fallback={<AppFallback />}>
-          <DebugTerrainPropView />
-        </SceneRoute>
-      }
-    />
-    <Route
-      path="/debug/procedural-terrain-benchmark"
-      element={
-        <SceneRoute fallback={<AppFallback />}>
-          <DebugProceduralTerrainBenchmarkView />
-        </SceneRoute>
-      }
-    />
-    <Route
-      path="/debug/world-fx"
-      element={
-        <SceneRoute fallback={<AppFallback />}>
-          <DebugWorldFxGymView />
-        </SceneRoute>
-      }
-    />
   </>
 );
 

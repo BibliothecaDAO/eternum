@@ -62,13 +62,6 @@ export const CardFanGlyph = ({ className }: { className?: string }) => (
   </svg>
 );
 
-/** Play: a flat gold arrowhead, the verb of the app's first tab. */
-export const PlayGlyph = ({ className }: { className?: string }) => (
-  <svg viewBox="0 0 28 28" className={className} aria-hidden>
-    <path d="M8 5.5v17l14-8.5z" fill={GOLD} stroke={INK} strokeWidth="1.5" strokeLinejoin="round" />
-  </svg>
-);
-
 /** Discord's own mark (the Simple Icons drawing), in white on the sign-in flow's Discord button. */
 export const DiscordGlyph = ({ className }: { className?: string }) => (
   <svg viewBox="0 0 24 24" className={className} aria-hidden>

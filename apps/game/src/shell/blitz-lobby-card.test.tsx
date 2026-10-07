@@ -18,7 +18,7 @@ const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefin
 afterEach(() => consoleError.mockClear());
 
 it("draws a failed slots read on the lobby's Blitz card as a named state with a retry, never the service's code", async () => {
-  (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const container = document.createElement("div");
   const root = createRoot(container);

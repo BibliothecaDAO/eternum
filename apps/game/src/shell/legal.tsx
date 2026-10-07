@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 import { Panel, PanelTitle } from "./kit";
+import { PageFrame } from "./frame/page-frame";
 
 /** The terms and the privacy policy: static text, so the shell serves it with no game module. */
 
@@ -451,6 +452,14 @@ const PRIVACY: LegalSection[] = [
   },
 ];
 
-export const TermsPage = () => <LegalPage title="Terms of Service" updated="February 2025" sections={TERMS} />;
+export const TermsPage = () => (
+  <PageFrame back="/learn">
+    <LegalPage title="Terms of Service" updated="February 2025" sections={TERMS} />
+  </PageFrame>
+);
 
-export const PrivacyPage = () => <LegalPage title="Privacy Policy" updated="February 2025" sections={PRIVACY} />;
+export const PrivacyPage = () => (
+  <PageFrame back="/learn">
+    <LegalPage title="Privacy Policy" updated="February 2025" sections={PRIVACY} />
+  </PageFrame>
+);

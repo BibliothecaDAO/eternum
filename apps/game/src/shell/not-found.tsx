@@ -1,13 +1,20 @@
 import { Link } from "react-router-dom";
 
+import { PageFrame } from "./frame/page-frame";
 import { Panel, PanelTitle } from "./kit";
 
-export const NotFoundPage = ({ title = "Nothing here", children }: { title?: string; children?: React.ReactNode }) => (
+/** A page that does not exist, also drawn inside a page whose subject does not exist (a post, a player). */
+export const NothingHere = () => (
   <Panel className="max-w-lg">
-    <PanelTitle>{title}</PanelTitle>
-    <p className="text-sm text-gold/70">{children ?? "That page does not exist."}</p>
-    <Link to="/" className="mt-3 inline-block font-mono text-[11px] uppercase tracking-wider text-gold underline">
-      Back home
+    <PanelTitle>Nothing here</PanelTitle>
+    <Link to="/" className="mt-3 inline-block text-[15px] text-gold underline">
+      Play
     </Link>
   </Panel>
+);
+
+export const NotFoundPage = () => (
+  <PageFrame>
+    <NothingHere />
+  </PageFrame>
 );

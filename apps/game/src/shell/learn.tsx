@@ -1,5 +1,6 @@
 import { BookOpen, ExternalLink, Sparkles, Video } from "@/ui/design-system/atoms/game-icons";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { PageFrame } from "./frame/page-frame";
 
 /** Curated guides; static content, so the shell serves it with no game module. */
 type LearnGuideTier = "beginner" | "advanced";
@@ -206,7 +207,7 @@ const LearnTierSection = ({ tier }: { tier: LearnGuideTier }) => {
 /**
  * Learn tab content - clear onboarding first, then tiered guides, then practice games.
  */
-export const LearnPage = () => (
+const LearnBody = () => (
   <div className="flex flex-col gap-4">
     <a
       href={START_HERE_GUIDE.url}
@@ -242,4 +243,10 @@ export const LearnPage = () => (
       <LearnTierSection tier="advanced" />
     </div>
   </div>
+);
+
+export const LearnPage = () => (
+  <PageFrame>
+    <LearnBody />
+  </PageFrame>
 );
