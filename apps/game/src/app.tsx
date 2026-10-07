@@ -18,7 +18,8 @@ import { BlitzListPage, BlitzLobbyPage } from "./shell/blitz/blitz-pages";
 import { DominionPage, EternumPage, FrontierPage } from "./shell/play/age-pages";
 import { PlayPage } from "./shell/play/play-page";
 import { PlayerPage } from "./shell/player";
-import { ResultsPage } from "./shell/results";
+import { ResultsPage } from "./shell/season-tab/results-page";
+import { SeasonPage } from "./shell/season-tab/season-page";
 import { SignInPage } from "./shell/sign-in/sign-in-page";
 import { SIGN_IN_PATH } from "./shell/sign-in/sign-in-route";
 
@@ -89,7 +90,8 @@ export const appRoutes = (
       <Route path="frontier" element={<FrontierPage />} />
       <Route path="eternum" element={<EternumPage />} />
       <Route path="dominion" element={<DominionPage />} />
-      <Route path="season" element={<ResultsPage />} />
+      <Route path="season" element={<SeasonPage />} />
+      <Route path="results/:id" element={<ResultsPage />} />
       <Route path="profile" element={<AccountPage />} />
       <Route path="p/:address" element={<PlayerPage />} />
       <Route path="learn" element={<LearnPage />} />

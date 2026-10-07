@@ -62,7 +62,7 @@ it("asks our directory for the signed-in player's state on every shard, and for 
   expect(requests).toEqual(["/api/directory"]);
 });
 
-it("keeps a pasted shard's settled games out of the live list and offers them apart, newest first", async () => {
+it("keeps a pasted shard's settled games out of the live list", async () => {
   pasted.shards = [{ url: "https://pasted.test", chainId: "0xc" }];
   try {
     const directory = await fetchDirectories(null);
@@ -70,7 +70,6 @@ it("keeps a pasted shard's settled games out of the live list and offers them ap
       ["0xa", 1],
       ["0xc", 7],
     ]);
-    expect(directory.pastedFinished.map((game) => game.game_id)).toEqual([6, 5]);
   } finally {
     pasted.shards = [];
   }

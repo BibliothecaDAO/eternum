@@ -73,6 +73,8 @@ const ICONS = {
   Ed: "/image-icons/ui-edit.png",
   Pf: "/image-icons/ui-person.png",
   Dv: "/image-icons/ui-monitor.png",
+  Dp: "/image-icons/portal.png",
+  Xs: "/image-icons/ui-share.png",
 } as const;
 
 export type IconCode = keyof typeof ICONS;

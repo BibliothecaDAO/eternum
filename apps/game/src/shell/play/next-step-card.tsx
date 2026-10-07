@@ -11,6 +11,7 @@ import { findOwnEntry, wholeLords } from "@/ui/features/frontier/board/standings
 
 import { ClockChip } from "../clock-chip";
 import { useLayout } from "../frame/layout";
+import { resultsHref } from "../season-tab/results-link";
 import { ServiceFailure } from "../service-failure";
 import { entryHref } from "../game-links";
 import { type DirectoryGame, useLeaderboard, useRealmsPlayer } from "../herald";
@@ -22,9 +23,8 @@ import { ageState, seasonDay } from "./age-state";
 import { ageOf, type AgeMode } from "./ages";
 import { paintingSources } from "../paintings";
 import { GoButton } from "./go-button";
-import { gameKey, type NextStep } from "./next-step";
+import type { NextStep } from "./next-step";
 import type { PlayFacts } from "./play-facts";
-import { markResultsSeen } from "./seen-results";
 import { LiveChip } from "./state-chip";
 
 /** The home card: the step the table chose, with its age, its picture, its figure and clock, and the one verb. */
@@ -207,15 +207,7 @@ const ResultsCard = ({ season }: { season: DirectoryGame }) => {
       picture={<Painting painting={ageOf("eternum").painting} />}
       figure={<Chip icons={["Tp"]} value={own ? `#${own.rank}` : "—"} label={WORDS.season} />}
       line={<p className="font-ui text-[17px] font-bold text-kit-gold2">{WORDS.seasonOver}</p>}
-      verb={
-        <GoButton
-          role="primary"
-          word={WORDS.results}
-          icon="Tp"
-          to="/season"
-          onGo={() => markResultsSeen(gameKey(season))}
-        />
-      }
+      verb={<GoButton role="primary" word={WORDS.results} icon="Tp" to={resultsHref(season, false)} />}
     />
   );
 };

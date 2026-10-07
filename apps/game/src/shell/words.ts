@@ -88,3 +88,19 @@ export const DOORWAY_WORDS = {
   deviceLimit: "Device limit reached.",
   devices: "Devices",
 } as const;
+
+/** The Season tab and a game's Results. */
+export const SEASON_WORDS = {
+  /** The view switch's name, for assistive technology. */
+  views: "Season views",
+  continue: "Continue",
+  share: "Share",
+  youPlaced: "You placed",
+  /** Between a place and the field: "3rd of 24". */
+  of: "of",
+  /** Blitz's own unit. */
+  vp: "VP",
+  /** The season's two endings (story): the mist lifted, or it grew too strong. */
+  mistLifted: "The mist lifted",
+  mistWon: "The mist grew too strong",
+} as const;

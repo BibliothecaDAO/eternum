@@ -6,6 +6,7 @@
 /eternum / 200
 /dominion / 200
 /season / 200
+/results/:id / 200
 /profile / 200
 /sign-in / 200
 /learn / 200

@@ -1,6 +1,6 @@
 import { fetchHeraldLeaderboard, type GameRef, type Shard } from "@bibliothecadao/eternum/shard";
 import { realmsAccountAddress } from "@realms-world/identity/account";
-import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { useIdentitySession } from "@/hooks/context/identity-session";
 
@@ -30,8 +30,6 @@ interface ShardListing {
 interface ShardDirectory {
   /** Live and upcoming games; a settled game lives in the history instead. */
   games: DirectoryGame[];
-  /** Settled games on the shards the player pasted, which our history does not list. */
-  pastedFinished: DirectoryGame[];
   shards: ShardListing[];
   /** Shards known but not readable, by URL and reason: the directory's own, and pasted ones that would not open. */
   failures: { url: string; error: Error }[];
@@ -56,7 +54,6 @@ export const fetchDirectories = async (player: string | null): Promise<ShardDire
       ...listed.flatMap((shard) => (shard.games ?? []).map((game) => ({ ...game, chainId: shard.chainId }))),
       ...pastedGames.filter((game) => !isSettled(game)),
     ],
-    pastedFinished: pastedGames.filter(isSettled).toSorted((a, b) => b.clock.end_at - a.clock.end_at),
     shards: [
       ...listed.map((shard) => ({
         url: shard.url,
@@ -149,19 +146,6 @@ export const useDirectory = () => {
     retry: 1,
   });
 };
-
-const HISTORY_PAGE_SIZE = 20;
-
-/** Settled games on our shards, newest first, a page at a time; with a player, only that player's games. */
-export const useHistory = (player: string | null = null) =>
-  useInfiniteQuery({
-    queryKey: ["shell", "history", player],
-    queryFn: ({ pageParam }) => fetchDirectoryHistory({ limit: HISTORY_PAGE_SIZE, cursor: pageParam, player }),
-    initialPageParam: null as string | null,
-    getNextPageParam: (page) => page.next,
-    staleTime: 30_000,
-    retry: 1,
-  });
 
 /** The first few settled games, as a short list shows them (the latest result, a player's recent matches). */
 export const useRecentResults = (limit: number, player: string | null = null) =>

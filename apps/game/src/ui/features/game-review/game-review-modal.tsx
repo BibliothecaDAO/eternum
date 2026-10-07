@@ -18,7 +18,7 @@ import { displayPlayerName } from "@bibliothecadao/eternum";
 import { ScoreCardContent } from "./score-card-content";
 
 /** The finished game under review, as the shell names it. */
-export type ReviewedGame = GameRef & { name: string };
+type ReviewedGame = GameRef & { name: string };
 
 type ReviewStepId =
   | "finished"

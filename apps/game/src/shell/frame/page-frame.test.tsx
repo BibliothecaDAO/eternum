@@ -17,8 +17,11 @@ const SIZES = [
   [1440, 900],
 ] as const;
 
-/** The tab pages; every other page is opened from another and carries Back. */
-const TAB_PATHS = new Set(["/", "/season", "/learn", "/profile", "/nothing-here"]);
+/**
+ * The pages without Back: the tab pages, and a result after a match (spec 08); every other page is opened from another
+ * and carries Back.
+ */
+const TAB_PATHS = new Set(["/", "/season", "/learn", "/profile", "/nothing-here", "/results/0x111"]);
 /** Full-screen steps: no tabs, the desktop bar keeps the lockup alone (sign-in, a Blitz lobby). */
 const STEP_PATHS = ["/sign-in", "/blitz/0x111"];
 const CONTROLS = "a[href], button, input, select, textarea";
