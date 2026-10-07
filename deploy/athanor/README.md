@@ -33,6 +33,12 @@ packages as private
 After that one-time setting, retry the failed package job; future tags retain the package visibility. Tags publish
 artifacts only and never redeploy a shard.
 
+Only the newest commit of a burst of merges to `next` is guaranteed a validation run: a newer merge cancels the run of
+the commit before it. The same rule holds for the production Worker and client dispatches, which run the same check. Tag
+the newest green commit of `next`. A commit whose run was cancelled is refused with the run's id; to publish that commit
+anyway, run `gh run rerun <id>` once no newer run on `next` is in progress (a re-run joins the same group and would
+cancel it), and tag it when the re-run is green.
+
 ## Live holdovers
 
 Until the native cutover's fresh genesis, the live stack on the production box retains its `madara-lab` compose project

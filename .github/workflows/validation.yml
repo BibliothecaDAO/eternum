@@ -8,10 +8,14 @@ on:
 permissions:
   contents: read
 
-# A push run scopes itself from the previous push, so it must never be cancelled or replaced: each push is its own
-# group. A pull request scopes from its base, so its newest run covers everything and older ones cancel.
+# A pull request scopes from where it branched, so its newest run covers everything and older ones cancel. A run on next
+# checks every area and depends on no earlier run, so a newer merge cancels it too: only the newest commit of a burst
+# of merges is guaranteed a run, and landing-run.sh names a cancelled run when it refuses to publish its commit. A
+# stream push is measured from its merge-base with the integration branch and is its own group.
 concurrency:
-  group: validation-${{ github.event.pull_request.number || format('{0}@{1}', github.ref, github.sha) }}
+  group:
+    validation-${{ github.event.pull_request.number || (github.ref == 'refs/heads/next' && github.ref) ||
+    format('{0}@{1}', github.ref, github.sha) }}
   cancel-in-progress: true
 
 jobs:
