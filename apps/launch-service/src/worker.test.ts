@@ -101,6 +101,11 @@ it("opens a Blitz window, ticks the schedule, queues an authorized launch and re
     environment: "staging",
     version: "workerd-test",
   });
+  expect(await (await mf.dispatchFetch(`${ORIGIN}/api/factory/version`)).json()).toEqual({
+    service: "launch",
+    environment: "staging",
+    version: "workerd-test",
+  });
 
   const launched = await mf.dispatchFetch(`${ORIGIN}/api/factory/runs`, {
     method: "POST",

@@ -1,20 +1,15 @@
 #!/usr/bin/env bash
-# Prints the commit a run's changes are measured from. A stream branch lands every commit it carries, so its run
-# must cover all of them: it is measured from its merge-base with the integration branch, never only from its last
-# push. A pull request is measured from its base. The integration branch and next run every area, so their base is
-# never read. A base that cannot be resolved falls back to origin/next, which checks more, never less.
-# Inputs (environment): EVENT, PR_BASE_SHA, HEAD_SHA; LANDING_BRANCH defaults to the integration branch. Needs full
-# history (actions/checkout with fetch-depth: 0).
+# Prints the commit a pull request's changes are measured from: where its head branched from its base (their
+# merge-base), so changes the base gained after the branch was cut are not counted as the pull request's own. It fetches
+# only the history that needs, into the scope job's one-commit shallow checkout. A push to next runs every area and
+# never reads a base. Prints nothing when no base can be resolved; the caller then runs every area, which checks more,
+# never less.
+# Inputs (environment): PR_BASE_SHA, HEAD_SHA.
 set -euo pipefail
 
-landing=${LANDING_BRANCH:-native-world-foundation}
-base=""
-if [ "$EVENT" = pull_request ]; then
-  base=$PR_BASE_SHA
-elif git fetch --quiet --no-tags origin "$landing" 2>/dev/null; then
-  base=$(git merge-base "$HEAD_SHA" FETCH_HEAD || true)
+# Commits and trees only: a list of changed paths never reads a file's contents.
+deepen=()
+[ "$(git rev-parse --is-shallow-repository)" = true ] && deepen=(--unshallow)
+if git fetch --quiet --no-tags --filter=blob:none "${deepen[@]}" origin "$PR_BASE_SHA" "$HEAD_SHA" 2>/dev/null; then
+  git merge-base "$PR_BASE_SHA" "$HEAD_SHA" 2>/dev/null || true
 fi
-if [ -z "$base" ] || ! git cat-file -e "$base^{commit}" 2>/dev/null; then
-  base=origin/next
-fi
-echo "$base"

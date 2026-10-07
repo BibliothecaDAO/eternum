@@ -53,11 +53,11 @@ jobs:
           - worker: apps/realms
             package: "@realms-world/realms"
             database: realms-identity
-            health: /api/health
+            version: /api/health
           - worker: apps/launch-service
             package: "@bibliothecadao/launch-service"
             database: realms-launch
-            health: /api/factory/health
+            version: /api/factory/version
     env:
       TARGET: ${{ inputs.environment || 'staging' }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -167,28 +167,48 @@ jobs:
             --var "DEPLOYER_ACCOUNT_ADDRESS:$LAUNCH_DEPLOYER_ACCOUNT_ADDRESS" \
             --var "LAUNCHER_ALLOWLIST:$LAUNCHER_ALLOWLIST"
 
-      # The deploy record names the Worker's route pattern and the version it deployed; the route must answer its health
-      # path from that version, not from the one it replaced.
+      # The deploy record names the Worker's route pattern and the version it deployed; the route must answer its
+      # version path from that version, not from the one it replaced. The version path reads nothing else, so the state
+      # of the shard a Worker talks to cannot fail its deploy.
       - name: Verify the deployed version answers
+        id: verify
         if: steps.launch-vars.outputs.missing == ''
         env:
           WRANGLER_OUTPUT_FILE_PATH: ${{ runner.temp }}/wrangler-output.ndjson
+          VERSION_PATH: ${{ matrix.version }}
         run: |
           set -euo pipefail
           record=$(jq -c 'select(.type == "deploy")' "$WRANGLER_OUTPUT_FILE_PATH")
-          target=$(jq -r '.targets[0]' <<< "$record")
+          route=$(jq -r '.targets[0]' <<< "$record")
           version=$(jq -r '.version_id' <<< "$record")
-          host=${target#https://}
+          host=${route#https://}
           host=${host%%/*}
-          for attempt in $(seq 1 20); do
-            if curl -fsS "https://$host${{ matrix.health }}" > health.json &&
+          echo "host=$host" >> "$GITHUB_OUTPUT"
+          for _ in $(seq 1 20); do
+            if curl -fsS "https://$host$VERSION_PATH" > version.json &&
               jq -e --arg env "$TARGET" --arg version "$version" \
-                '.environment == $env and .version == $version' health.json > /dev/null; then
-              cat health.json
+                '.environment == $env and .version == $version' version.json > /dev/null; then
+              cat version.json
               exit 0
             fi
             sleep 3
           done
-          echo "::error::https://$host${{ matrix.health }} did not answer from version $version"
-          cat health.json || true
+          echo "::error::https://$host$VERSION_PATH did not answer from version $version"
+          cat version.json || true
           exit 1
+
+      # The launch Worker's health reads its work on the shard: runs stranded on another chain, or a store it cannot
+      # read, answer 503. That is the shard's state, not this deploy's, so it is reported as its own signal and never
+      # fails the job.
+      - name: Report the launch Worker's shard health (does not fail the deploy)
+        if: matrix.worker == 'apps/launch-service' && steps.verify.outcome == 'success'
+        env:
+          HOST: ${{ steps.verify.outputs.host }}
+        run: |
+          status=$(curl -sS -o health.json -w '%{http_code}' "https://$HOST/api/factory/health") || status=unreachable
+          if [ "$status" = 200 ]; then
+            echo "Launch shard health: https://$HOST/api/factory/health answered 200"
+          else
+            echo "::warning title=Launch shard health::https://$HOST/api/factory/health answered $status; the deploy itself succeeded"
+          fi
+          { echo "Launch shard health: $status"; echo '```json'; cat health.json 2> /dev/null; echo '```'; } >> "$GITHUB_STEP_SUMMARY"

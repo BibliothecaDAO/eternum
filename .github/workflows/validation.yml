@@ -3,15 +3,16 @@ name: validation
 on:
   pull_request:
   push:
-    branches: [next, "native-*"]
+    branches: [next]
 
 permissions:
   contents: read
 
-# A push run scopes itself from the previous push, so it must never be cancelled or replaced: each push is its own
-# group. A pull request scopes from its base, so its newest run covers everything and older ones cancel.
+# A pull request scopes from where it branched, so its newest run covers everything and older ones cancel. A run on next
+# checks every area and depends on no earlier run, so a newer merge cancels it too: only the newest commit of a burst
+# of merges is guaranteed a run, and landing-run.sh names a cancelled run when it refuses to publish its commit.
 concurrency:
-  group: validation-${{ github.event.pull_request.number || format('{0}@{1}', github.ref, github.sha) }}
+  group: validation-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -31,30 +32,39 @@ jobs:
       season_pass: ${{ steps.paths.outputs.season_pass }}
       contract_scripts: ${{ steps.paths.outputs.contract_scripts }}
     steps:
+      # One shallow commit holding only the scripts: diff-base.sh fetches the history its measurement needs.
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          sparse-checkout: .github/scripts
       - name: Select validation areas
         id: paths
         env:
           EVENT: ${{ github.event_name }}
-          BRANCH: ${{ github.ref_name }}
           PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
-          BASE_SHA=$(bash .github/scripts/diff-base.sh)
-          export BASE_SHA
-          echo "Measuring $HEAD_SHA from $BASE_SHA"
+          # A push to next runs every area: a hand-kept path map can miss an import, and a push measured from its
+          # predecessor would let a red area turn green on a later push that never touched it.
+          # .github/scripts/landing-run.sh lets a publish path trust only these runs.
+          EVERY_AREA=false
+          if [ "$EVENT" = push ]; then
+            EVERY_AREA=true
+          else
+            BASE_SHA=$(bash .github/scripts/diff-base.sh)
+            if [ -z "$BASE_SHA" ]; then
+              echo "::warning title=Every area selected::no base resolved for $HEAD_SHA, so this run checks every area"
+              EVERY_AREA=true
+            fi
+            echo "Measuring $HEAD_SHA from $BASE_SHA"
+          fi
+          export EVERY_AREA BASE_SHA
           python3 - <<'PYTHON'
           import json, os, subprocess, sys
           sys.path.insert(0, ".github/scripts")
           from validation_areas import selected_areas
-          # The integration branch and next run every area: a hand-kept path map can miss an import, and a push
-          # measured from its predecessor would let a red area turn green on a later push that never touched it.
-          # .github/scripts/landing-run.sh lets a publish path trust only these runs.
-          landing = os.environ["EVENT"] == "push" and os.environ["BRANCH"] in ("native-world-foundation", "next")
-          files = subprocess.check_output(["git", "diff", "--name-only", "-z", os.environ["BASE_SHA"], os.environ["HEAD_SHA"]]).decode().split("\0")
-          selected = selected_areas(files, landing)
+          every_area = os.environ["EVERY_AREA"] == "true"
+          files = [] if every_area else subprocess.check_output(["git", "diff", "--name-only", "-z", os.environ["BASE_SHA"], os.environ["HEAD_SHA"]]).decode().split("\0")
+          selected = selected_areas(files, every_area)
           with open(os.environ["GITHUB_OUTPUT"], "a") as output:
               for area, enabled in selected.items():
                   print(f"{area}={str(enabled).lower()}", file=output)
