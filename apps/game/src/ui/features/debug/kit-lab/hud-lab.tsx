@@ -1,5 +1,15 @@
 import { Notice } from "@/ui/design-system/kit/notice";
-import { OFFLINE, TRAINING_BUILDINGS, TRY_AGAIN } from "@/ui/design-system/kit/words";
+import {
+  BARRACKS,
+  CASTLE,
+  FARM,
+  HUT,
+  MAP,
+  OFFLINE,
+  TRAINING_BUILDINGS,
+  TRY_AGAIN,
+  WORKSHOP,
+} from "@/ui/design-system/kit/words";
 import { ArmyStatusBar } from "@/ui/features/frontier/hud/action-bar";
 import { ArmyToken, OpenSlot } from "@/ui/features/frontier/hud/army-token";
 import type { DayClock } from "@/ui/features/frontier/hud/day-clock";
@@ -16,6 +26,10 @@ import { BuildView } from "@/ui/features/frontier/build/build-view";
 import { type AttributeKey, ArmySheet } from "@/ui/features/frontier/army/army-sheet";
 import { BuildingsRow } from "@/ui/features/frontier/realm/buildings-row";
 import { CastleView } from "@/ui/features/frontier/upgrade/castle-view";
+import { TypeUpgradeSheet } from "@/ui/features/frontier/upgrade/type-upgrade-sheet";
+import { CastleNodeSheet, TreePage, type TreeRow } from "@/ui/features/frontier/research/tree-page";
+import { Button } from "@/ui/design-system/kit/button";
+import { Chip } from "@/ui/design-system/kit/chip";
 import { type ProductionLine, ProductionSheet } from "@/ui/features/frontier/production/production-sheet";
 import { BuildingType, Direction } from "@bibliothecadao/types";
 import { PlaceNav } from "@/ui/features/frontier/hud/place-nav";
@@ -235,6 +249,55 @@ const PRODUCTION_LINES: ProductionLine[] = [
   line({ icon: "Tr", spentAt: "deploy", perHour: 600, sides: ["Dr"], held: 1_200, fullIn: 28 * HOUR }),
 ];
 
+/** A city's tree: farm uncommon (Fields), workshop common, barracks rare (Drill twice), hut common, two training buildings. */
+const TREE_ROWS: TreeRow[] = [
+  { key: "farm", icon: "Fm", name: FARM, tier: 2, sides: ["Fi"], next: { essence: 4_000, labor: 3_000 }, choice: true },
+  {
+    key: "workshop",
+    icon: "Wk",
+    name: WORKSHOP,
+    tier: 1,
+    sides: [],
+    next: { essence: 2_000, labor: 2_000 },
+    choice: true,
+  },
+  {
+    key: "barracks",
+    icon: "Bs",
+    name: BARRACKS,
+    tier: 3,
+    sides: ["Dr", "Dr"],
+    next: { essence: 48_000, labor: 24_000 },
+    choice: true,
+  },
+  { key: "hut", icon: "Ht", name: HUT, tier: 1, sides: [], next: { essence: 500, labor: 500 }, choice: false },
+  {
+    key: "war",
+    icon: "Wa",
+    name: TRAINING_BUILDINGS[0],
+    tier: 2,
+    sides: [],
+    next: { essence: 48_000, labor: 9_000 },
+    choice: false,
+  },
+  {
+    key: "hearth",
+    icon: "He",
+    name: TRAINING_BUILDINGS[3],
+    tier: 2,
+    sides: [],
+    next: { essence: 48_000, labor: 9_000 },
+    choice: false,
+  },
+];
+const CASTLE_NODES = [
+  { key: "shrine", icon: "Sh" as const, label: "Shrine", essence: 2_000, state: "open" as const },
+  { key: "well", icon: "Wl" as const, label: "Well", essence: 6_000, state: "open" as const },
+  { key: "d1", icon: "Dp" as const, label: "I", essence: 160_000, state: "open" as const },
+  { key: "d2", icon: "Dp" as const, label: "II", essence: 400_000, state: "locked" as const },
+  { key: "d3", icon: "Dp" as const, label: "III", essence: 900_000, state: "locked" as const },
+];
+
 const STATES = {
   idle: { clock: CLOCK, stores: STORES, armies: ARMIES },
   selected: { clock: CLOCK, stores: STORES, armies: ARMIES, selected: 0 },
@@ -441,9 +504,15 @@ const STATES = {
       line({ icon: "Tr", spentAt: "deploy", perHour: 0, held: 1_500, limit: 6_000, noBuilding: true }),
     ],
   },
+  research: { clock: CLOCK, stores: STORES, armies: ARMIES, tree: "page" },
+  "tree-farm": { clock: CLOCK, stores: STORES, armies: ARMIES, tree: "farm" },
+  "tree-barracks": { clock: CLOCK, stores: STORES, armies: ARMIES, tree: "barracks" },
+  "tree-hut": { clock: CLOCK, stores: STORES, armies: ARMIES, tree: "hut" },
+  "tree-shrine": { clock: CLOCK, stores: STORES, armies: ARMIES, tree: "shrine" },
 } as const;
 
 type LabState = {
+  tree?: "page" | "farm" | "barracks" | "hut" | "shrine";
   production?: readonly ProductionLine[];
   army?: LabArmySheet;
   realmView?: "build" | "build-early" | "castle" | "castle-short" | "full";
@@ -483,9 +552,21 @@ export const HudLab = () => {
       <HudBands
         top={<StatusStrip clock={lab.clock} stores={[...lab.stores]} />}
         middle={
-          <div className="relative min-h-0 flex-1">
-            {lab.lastHour && <LastHourBubble troopsOut={6_021} returned={470} tiersToBuy={2} />}
-          </div>
+          lab.tree ? (
+            <TreePage
+              essence={18_250}
+              labor={9_640}
+              rows={TREE_ROWS}
+              castle={CASTLE_NODES}
+              chosen={lab.tree === "page" || lab.tree === "shrine" ? undefined : lab.tree}
+              onRow={noop}
+              onCastle={noop}
+            />
+          ) : (
+            <div className="relative min-h-0 flex-1">
+              {lab.lastHour && <LastHourBubble troopsOut={6_021} returned={470} tiersToBuy={2} />}
+            </div>
+          )
         }
         foot={
           <>
@@ -527,7 +608,7 @@ export const HudLab = () => {
               </nav>
             )}
             <PlaceNav
-              place={lab.menu ? "menu" : lab.realmView ? "realm" : "map"}
+              place={lab.menu ? "menu" : lab.tree ? "research" : lab.realmView ? "realm" : "map"}
               onGo={noop}
               realmDot={lab.realmDot}
               researchDot={!lab.offline}
@@ -539,6 +620,7 @@ export const HudLab = () => {
         {lab.deploy && <LabDeploySheet deploy={lab.deploy} />}
         {lab.dayDone && <DayDoneCard {...lab.dayDone} />}
         {lab.army && <LabArmy army={lab.army} />}
+        {lab.tree && lab.tree !== "page" && <LabTreeSheet tree={lab.tree} />}
         {lab.production && <ProductionSheet lines={lab.production} onSpend={noop} onBuild={noop} onClose={noop} />}
         {(lab.realmView === "build" || lab.realmView === "build-early") && (
           <BuildView
@@ -661,6 +743,76 @@ const LabArmy = ({ army }: { army: LabArmySheet }) => {
       kindRates={{ camp: ["4%", "4.4%"], rift: ["4%", "4.4%"], stragglers: ["6%", "6.6%"] }}
       kind="rift"
       onKind={noop}
+      sending={false}
+      onUpgrade={noop}
+      onClose={noop}
+    />
+  );
+};
+
+/** The tree's sheets on the fiction: a farm's two sides, barracks above the labor limit, a hut, the shrine row. */
+const LabTreeSheet = ({ tree }: { tree: "farm" | "barracks" | "hut" | "shrine" }) => {
+  if (tree === "shrine")
+    return (
+      <CastleNodeSheet
+        node={CASTLE_NODES[0]}
+        gives={<Chip icons={["Sh"]} label="XP" value="+200" unit="XP" />}
+        sending={false}
+        onResearch={noop}
+        onClose={noop}
+      />
+    );
+  if (tree === "hut")
+    return (
+      <TypeUpgradeSheet
+        icon="Ht"
+        name={HUT}
+        tier={1}
+        gives={
+          <span className="flex justify-center">
+            <Chip icons={["Pp"]} label="population" value="30 → 36" />
+          </span>
+        }
+        prices={[
+          { of: "essence", amount: 500 },
+          { of: "labor", amount: 500 },
+        ]}
+        sending={false}
+        onUpgrade={noop}
+        onClose={noop}
+      />
+    );
+  const farm = tree === "farm";
+  return (
+    <TypeUpgradeSheet
+      icon={farm ? "Fm" : "Bs"}
+      name={farm ? FARM : BARRACKS}
+      tier={farm ? 2 : 3}
+      sides={
+        farm
+          ? [
+              { icon: "Fi", name: "Fields", gain: { icon: "Wh", label: "wheat", value: "1,500 → 1,800/h" } },
+              { icon: "Gr", name: "Granary", gain: { icon: "Sg", label: "limit", value: "18k → 27k" } },
+            ]
+          : [
+              { icon: "Dr", name: "Drill", gain: { icon: "Tr", label: "troops", value: "600 → 700/h" } },
+              { icon: "Ra", name: "Rations", gain: { icon: "Wh", label: "wheat", value: "2 → 1.75" } },
+            ]
+      }
+      lifted={1}
+      onLift={noop}
+      prices={[
+        { of: "essence", amount: farm ? 4_000 : 48_000 },
+        { of: "labor", amount: farm ? 3_000 : 24_000 },
+      ]}
+      short={
+        farm
+          ? undefined
+          : {
+              reason: { kind: "short", icon: "Sg", held: 24_000, need: 18_000 },
+              step: <Button role="primary" icon="Cs" word={CASTLE} className="w-[120px]" onClick={noop} />,
+            }
+      }
       sending={false}
       onUpgrade={noop}
       onClose={noop}

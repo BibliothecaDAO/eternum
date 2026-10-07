@@ -84,6 +84,10 @@ export const BARRACKS = "Barracks";
 export const HUT = "Hut";
 export const TRAINING_BUILDINGS = ["War hall", "Supply yard", "Scouts' lodge", "Hearth"] as const;
 export const BUILDINGS = "Buildings";
+/** The castle rows that unlock the three reaches beyond the spire. */
+export const ETHEREAL = "Ethereal";
+export const REACH_NUMERALS = ["I", "II", "III"] as const;
+export const RESEARCHING = "Researching…";
 export const BUILDING = "Building…";
 export const UPGRADING = "Upgrading…";
 

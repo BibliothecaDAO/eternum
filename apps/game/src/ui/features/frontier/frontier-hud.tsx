@@ -78,6 +78,8 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
       middle={
         surface === "chat" ? (
           <ChatPage gameZoneId={chat.gameZoneId} signedIn={chat.initializer !== null} onSignIn={chat.requestSignIn} />
+        ) : surface === "research" && realm ? (
+          <FrontierResearch realm={realm} />
         ) : (
           <div className="relative min-h-0 flex-1">
             {dockRealm && !visit && <LastHour rules={rules} realm={dockRealm} />}
@@ -103,7 +105,6 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
       </div>
       <FrontierSelectionSheet realm={realm} />
       {surface === "menu" && <HudMenu onOpen={setSurface} onClose={close} />}
-      {surface === "research" && realm && <FrontierResearch realm={realm} onClose={close} />}
       {surface === "production" && realm && <FrontierProduction realm={realm} onClose={close} />}
       {surface === "settings" && (
         <Sheet label={SETTINGS} onClose={close}>
