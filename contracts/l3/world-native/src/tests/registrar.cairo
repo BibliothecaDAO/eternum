@@ -2887,7 +2887,7 @@ fn frontier_sites_store_the_seeded_category_and_depth_tier_with_the_count_basis(
     let d = setup();
     let (preset_id, preset) = super::preset_projection::current_definition("frontier");
     registry(d).register_preset(preset_id, preset);
-    let game_id = registry(d).create_game(CreateGameParams { preset_id, ..params(false) });
+    let game_id = registry(d).create_game(CreateGameParams { preset_id, start_main_at: 360, duration_seconds: FRONTIER_BAG_SECONDS, ..params(false) });
     let context = crate::commands::ExecutionContext { timestamp: 360, ..crate::tests::context(d.games, game_id) };
     start_cheat_caller_address(d.games, d.games);
     for depth_index in 0_u32..4 {
