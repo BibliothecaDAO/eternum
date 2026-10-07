@@ -188,7 +188,9 @@ const HOST_STATE_SCRIPT = path.resolve(import.meta.dir, "../scripts/host-state.s
 
 export async function collectHarnessEvidenceBeforeRun(functional = false): Promise<HarnessEvidenceBeforeRun> {
   const madaraImage = functional ? null : pinnedNodeImage(process.env.MADARA_IMAGE);
-  const [revision, hostStateStart] = await Promise.all([runRevision(), functional ? null : captureHostState()]);
+  // In turn, so a run that cannot name its code fails on that, never on whichever read lost a race.
+  const revision = await runRevision();
+  const hostStateStart = functional ? null : await captureHostState();
   return { ...revision, hostStateStart, madaraImage };
 }
 
@@ -199,10 +201,9 @@ export async function collectHarnessEvidenceBeforeRun(functional = false): Promi
 async function runRevision(): Promise<{ gitRevision: string; gitDirty: boolean }> {
   const built = process.env.SHARD_REVISION?.trim();
   if (built) return { gitRevision: built, gitDirty: false };
-  const [gitRevision, gitStatus] = await Promise.all([
-    runCommand(["git", "rev-parse", "HEAD"]),
-    runCommand(["git", "status", "--porcelain"]),
-  ]);
+  // The revision first: without one the status means nothing, and a run without a repository names the revision.
+  const gitRevision = await runCommand(["git", "rev-parse", "HEAD"]);
+  const gitStatus = await runCommand(["git", "status", "--porcelain"]);
   return { gitRevision: gitRevision.trim(), gitDirty: gitStatus.trim().length > 0 };
 }
 
