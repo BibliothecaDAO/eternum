@@ -1,6 +1,8 @@
 import { StatusStrip } from "@/ui/features/frontier/hud/status-strip";
 import { bankedCounterTarget } from "@/ui/motion/moments/banked-flight";
-import { SiteClearCardView } from "@/ui/features/frontier/sites/site-clear-card";
+import { SiteClearCard } from "@/ui/features/frontier/sites/site-clear-card";
+import { closeSiteClearCard, useSiteClearCard } from "@/ui/features/frontier/sites/site-clear-moment";
+import { AnimatePresence } from "framer-motion";
 import { playSiteClear } from "@/ui/features/frontier/sites/site-clear-moment";
 import type { SiteClear } from "@/ui/features/frontier/sites/site-outcome";
 import { ResourcesIds } from "@bibliothecadao/types";
@@ -43,7 +45,7 @@ export const SiteLab = () => {
   return (
     <div className="flex w-full flex-col items-center gap-4">
       {/* The card sits in the thumb zone in the HUD; here it takes the top of the panel so it stays in view. */}
-      <SiteClearCardView />
+      <LabClearCard />
       {counters && (
         <div className="w-[390px]">
           <StatusStrip
@@ -91,3 +93,24 @@ const labStore = (kind: "essence" | "labor", resourceId: ResourcesIds, amount: n
   tone: "calm" as const,
   flyTarget: bankedCounterTarget(resourceId),
 });
+
+/** The clear card the lab's clear plays; the lab has no game, so the XP reads unknown. */
+const LabClearCard = () => {
+  const card = useSiteClearCard();
+  return (
+    <AnimatePresence>
+      {card && (
+        <SiteClearCard
+          key={card.shownAt}
+          site={card.clear.kind}
+          paid={
+            card.clear.reward && { icon: card.clear.kind === "Camp" ? "La" : "Es", amount: card.clear.reward.amount }
+          }
+          xp={undefined}
+          troopsLost={card.troopsLost}
+          onClose={closeSiteClearCard}
+        />
+      )}
+    </AnimatePresence>
+  );
+};

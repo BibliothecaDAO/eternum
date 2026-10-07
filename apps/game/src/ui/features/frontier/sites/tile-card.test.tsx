@@ -2,7 +2,12 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@/hooks/helpers/use-block-timestamp", () => ({ useNowSeconds: () => 350, useCurrentArmiesTick: () => 3 }));
+vi.mock("@/hooks/helpers/use-block-timestamp", () => ({
+  useNowSeconds: () => 350,
+  useCurrentArmiesTick: () => 3,
+  useCurrentDefaultTick: () => 3,
+  useBlockTimestamp: () => ({ currentArmiesTick: 3, armiesTickTimeRemaining: 60 }),
+}));
 vi.mock("@/audio/unit-command-audio", () => ({ playUnitCommandSound: () => {} }));
 
 import { GameProvider } from "@/hooks/context/game-context";
@@ -20,7 +25,7 @@ afterEach(() => {
 });
 
 describe("the tile card", () => {
-  it("attacks the site's guard with the selected army, and stays disabled with no army in reach", async () => {
+  it("names the guard, offers no Attack until an army is chosen, then attacks with the same tap", async () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     const { store, site, structure } = campBeside();
     store.applyFacts([
@@ -47,13 +52,14 @@ describe("the tile card", () => {
       ),
     );
     const button = () =>
-      [...host.querySelectorAll("button")].find((candidate) => candidate.textContent?.includes("Attack"))!;
-    expect(host.querySelector('[aria-label="Knight T1 1,100"] .frontier-tier')?.textContent).toBe("I");
-    expect(button().disabled).toBe(true);
+      [...host.querySelectorAll("button")].find((candidate) => candidate.textContent?.includes("Attack"));
+    expect(host.querySelector('section[aria-label="Camp"]')).not.toBeNull();
+    expect(host.querySelector('[aria-label="troops 1,100"]')).not.toBeNull();
+    expect(button()).toBeUndefined();
 
     act(() => useUIStore.getState().updateEntityActionSelectedEntityId(201));
-    expect(button().disabled).toBe(false);
-    await act(async () => button().click());
+    expect(button()?.disabled).toBe(false);
+    await act(async () => button()!.click());
     expect(attack).toHaveBeenCalledWith(expect.objectContaining({ explorer_id: 201, structure_id: SITE }));
     act(() => root.unmount());
     host.remove();

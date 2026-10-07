@@ -17,7 +17,7 @@ const ROLES: Record<ButtonRole, string> = {
     "h-12 rounded-2xl border-2 border-[color:var(--frontier-line2)] bg-transparent text-[15px] font-semibold text-[color:var(--frontier-parchment)] hover:border-[color:var(--frontier-gold)]",
 };
 
-type Price = { of: PriceKind; amount: number | undefined };
+export type Price = { of: PriceKind; amount: number | undefined };
 
 /**
  * The kit's button: an icon, one word and the prices it pays. While its action is under way it shows that step's word

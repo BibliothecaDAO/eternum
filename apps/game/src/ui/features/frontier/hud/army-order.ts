@@ -46,14 +46,17 @@ export const isCovered = ({ cost, held }: Cost): boolean => held !== undefined &
  * The pinned order over the game's facts: the selected army and the tile the player tapped (or hovers on a desktop),
  * when that tile is one to explore or move to. Null otherwise.
  */
-export const useArmyOrder = (): ArmyOrder | null => {
+export const useArmyOrder = (): ArmyOrder | null => useOrderAt(useUIStore((state) => state.entityActions.hoveredHex));
+
+/** The selected army's order at a tile (normalized), when it can explore or move there; null otherwise. */
+export const useOrderAt = (target: { col: number; row: number } | null): ArmyOrder | null => {
   const { setup } = useGame();
   useNativeRevision(ORDER_MODELS);
   const { currentArmiesTick, armiesTickTimeRemaining } = useBlockTimestamp();
   const tick = useCurrentDefaultTick();
-  const { selectedEntityId, hoveredHex, actionPaths } = useUIStore((state) => state.entityActions);
-  if (selectedEntityId === null || selectedEntityId === undefined || !hoveredHex) return null;
-  const path = actionPaths.get(ActionPaths.posKey(hoveredHex, true));
+  const { selectedEntityId, actionPaths } = useUIStore((state) => state.entityActions);
+  if (selectedEntityId === null || selectedEntityId === undefined || !target) return null;
+  const path = actionPaths.get(ActionPaths.posKey(target, true));
   if (!path || path.length < 2) return null;
   const actionType = ActionPaths.getActionType(path);
   if (actionType !== ActionType.Explore && actionType !== ActionType.Move) return null;
@@ -77,7 +80,7 @@ export const useArmyOrder = (): ArmyOrder | null => {
 
   return {
     kind: explore ? "explore" : "move",
-    target: hoveredHex,
+    target,
     tiles,
     stamina: {
       cost: staminaCost,
@@ -89,6 +92,24 @@ export const useArmyOrder = (): ArmyOrder | null => {
     },
     wheat: { cost: wheatCost, held: wheatHeld, wait: secondsUntilHeld(wheatHeld, wheatCost, wheatPerHour) },
     xp: explore ? setup.store.get("ArmyProgressionRules", { game_id: gameId })?.reveal_xp : undefined,
+  };
+};
+
+/**
+ * The stamina the selected army holds now, and when it reaches `need`: an attack's cost held against what it has.
+ */
+export const useArmyStamina = (explorerId: number | null, need: number): Cost | undefined => {
+  const { setup } = useGame();
+  const { currentArmiesTick, armiesTickTimeRemaining } = useBlockTimestamp();
+  if (explorerId === null) return undefined;
+  const army = setup.store.get("ExplorerTroops", { game_id: configManager.getActiveGameId(), explorer_id: explorerId });
+  const troops = army && resolveExplorerTroops(setup.store, army);
+  if (!troops) return undefined;
+  const held = Number(StaminaManager.getStamina(troops, currentArmiesTick).amount);
+  return {
+    cost: need,
+    held,
+    wait: held < need ? secondsUntilStamina(troops, need, currentArmiesTick, armiesTickTimeRemaining) : undefined,
   };
 };
 

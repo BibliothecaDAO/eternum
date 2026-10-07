@@ -50,6 +50,18 @@ export const CANCEL = "Cancel";
 /** The four attributes, each wearing its Aspect's mark. */
 export const ATTRIBUTES = ["Battle", "Logistics", "Scouting", "Homecoming"] as const;
 
+/** The sites on the map, as their cards title them, and the verbs they take. */
+export const CAMP = "Camp";
+export const RIFT = "Rift";
+export const RUIN = "Ruin";
+export const STRAGGLERS = "Stragglers";
+export const SHRINE = "Shrine";
+export const WELL = "Well";
+export const ATTACK = "Attack";
+export const ATTACKING = "Attacking…";
+export const USE = "Use";
+export const USING = "Using…";
+
 /** Raise an army from troops at home. */
 export const DEPLOY = "Deploy";
 export const DEPLOYING = "Deploying…";

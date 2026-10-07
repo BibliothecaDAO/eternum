@@ -22,14 +22,13 @@ export interface MapSiteUser {
 
 interface MapSitePlan {
   kind: MapSiteKind;
-  art: string;
   /** What using it gives: a Shrine one level (and its pick), a Well stamina. */
   gain: number;
   usable: boolean;
 }
 
 /**
- * A Shrine or Well as its tile card shows it: its art, what one use gives, and whether the selected army can use it
+ * A Shrine or Well as its tile card shows it: what one use gives, and whether the selected army can use it
  * now. The contract's own refusals disable it first: a living army on an adjacent tile, and for a Shrine an army that
  * can take an offer. Unknown progress keeps a Shrine disabled.
  */
@@ -39,7 +38,6 @@ export const readMapSite = (
   user: MapSiteUser | null,
 ): MapSitePlan => ({
   kind,
-  art: MAP_SITE_ART[kind],
   gain: kind === "Shrine" ? 1 : nativeRuleConstants.WELL_STAMINA,
   usable: user !== null && canUse(kind, siteTile, user),
 });

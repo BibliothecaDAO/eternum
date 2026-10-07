@@ -20,7 +20,6 @@ import {
   type TroopTier,
   type TroopType,
 } from "@bibliothecadao/types";
-import { SITE_ART } from "./site-art";
 
 const PRECISION = BigInt(RESOURCE_PRECISION);
 
@@ -41,18 +40,30 @@ export interface SiteAttack {
  * exists for an army in reach.
  */
 export interface SiteCardPlan {
-  art: string;
-  name: string;
+  kind: SiteKind;
+  /** A ruin's beast, named on the guard row; the card's title is the kind. */
+  beast: string | undefined;
   guard: { type: TroopType; tier: TroopTier; count: number } | null | undefined;
-  /** Whole units paid home; null for a fallen realm, which pays its chest. */
+  /** Whole units paid home; null for a ruin, which pays its chest. */
   payout: { resourceId: ResourcesIds; amount: number } | null;
+  /** The XP the clear pays the army. */
+  xp: number | undefined;
   attackStamina: number;
   fight: SiteFight | undefined;
 }
 
-type SiteFight =
+/** The guarded sites as the glossary names them; stragglers arrive with the contracts' generated taxonomy. */
+export type SiteKind = "camp" | "rift" | "ruin";
+
+const KINDS: Record<NativeRows["ExpeditionSite"]["kind"], SiteKind> = {
+  Camp: "camp",
+  Rift: "rift",
+  FallenRealm: "ruin",
+};
+
+export type SiteFight =
   | { outcome: "refused" }
-  | { outcome: "wins" | "loses" | "stalls"; exchanges: number; troopsLost: number };
+  | { outcome: "wins" | "loses" | "stalls"; exchanges: number; troopsLost: number; guardLeft: number };
 
 export const readSiteCard = (
   store: NativeFactStore,
@@ -65,20 +76,27 @@ export const readSiteCard = (
   const guard = guards && guards.find((candidate) => candidate.troops.count > 0n);
   const reward = siteReward(site);
   return {
-    art: SITE_ART[site.kind],
-    name: siteName(store, site, siteTile),
+    kind: KINDS[site.kind],
+    beast: site.kind === "FallenRealm" ? ruinBeast(store, site, siteTile) : undefined,
     guard: guards === undefined ? undefined : guard ? troopsOf(guard.troops) : null,
     payout: reward && { resourceId: reward.resourceType, amount: Number(reward.amount / PRECISION) },
+    xp: siteClearXp(store, site.game_id),
     attackStamina: activeCombatRules().stamina.stamina_attack_req,
     fight: guard && attack ? forecastSiteFight(store, guard.troops, siteTile, attack) : undefined,
   };
 };
 
-/** A camp or rift by its kind; a fallen realm by the Loot Survivor beast that holds it at its depth. */
-const siteName = (store: NativeFactStore, site: NativeRows["ExpeditionSite"], siteTile: { row: number }): string => {
-  if (site.kind !== "FallenRealm") return site.kind;
+/**
+ * The XP a clear pays: the preset's clear XP on next. With the contracts' battle rules it becomes clearXp (core's
+ * mirror of progression.cairo) of the site's initial guard.
+ */
+export const siteClearXp = (store: NativeFactStore, gameId: number): number | undefined =>
+  store.get("ArmyProgressionRules", { game_id: gameId })?.clear_xp;
+
+/** The Loot Survivor beast that holds a ruin at its depth. */
+const ruinBeast = (store: NativeFactStore, site: NativeRows["ExpeditionSite"], siteTile: { row: number }): string => {
   const rules = readExpeditionRules(store, site.game_id);
-  if (!rules) throw new Error(`Fallen realm ${site.entity_id} stands in a game without expedition rules`);
+  if (!rules) throw new Error(`Ruin ${site.entity_id} stands in a game without expedition rules`);
   return fallenRealmBeast(expeditionDepth(rules, { y: siteTile.row })).name;
 };
 
@@ -125,5 +143,6 @@ const forecastSiteFight = (
     outcome: forecast.outcome,
     exchanges: forecast.exchanges,
     troopsLost: Number(forecast.attackerLoss / PRECISION),
+    guardLeft: Number((guard.count - forecast.defenderLoss) / PRECISION),
   };
 };

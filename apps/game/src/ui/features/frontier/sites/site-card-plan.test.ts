@@ -11,16 +11,17 @@ describe("Frontier's tile card", () => {
   it("shows a camp's guard as troops and tier, its labor payout, and the exact fight from the army beside it", () => {
     const { store, site, structure, attack } = campBeside();
     const plan = readSiteCard(store, site, structure, SITE_TILE, attack({ col: 41, row: 12, alt: false }));
-    expect(plan.name).toBe("Camp");
-    expect(plan.art).toBe("/images/buildings/construction/camp.png");
+    expect(plan.kind).toBe("camp");
+    expect(plan.beast).toBeUndefined();
     expect(plan.guard).toEqual({ type: TroopType.Knight, tier: TroopTier.T1, count: 1_100 });
     expect(plan.payout).toEqual({ resourceId: ResourcesIds.Labor, amount: 550 });
     expect(plan.attackStamina).toBe(preset.rules.troop_stamina_config.stamina_attack_req);
     expect(plan.fight).toMatchObject({ outcome: "wins" });
-    const fight = plan.fight as { exchanges: number; troopsLost: number };
+    const fight = plan.fight as { exchanges: number; troopsLost: number; guardLeft: number };
     expect(fight.exchanges).toBeGreaterThan(0);
     expect(fight.troopsLost).toBeGreaterThan(0);
     expect(fight.troopsLost).toBeLessThan(1_498);
+    expect(fight.guardLeft).toBe(0);
   });
 
   it("has no fight for an army out of reach or none selected, and an unknown guard until its slots arrive", () => {
@@ -34,11 +35,12 @@ describe("Frontier's tile card", () => {
     expect(plan.guard).toBeUndefined();
   });
 
-  it("names a fallen realm by the beast its depth calls for, and pays its chest", () => {
+  it("titles a ruin by its kind, names the beast its depth calls for, and pays its chest", () => {
     const { store, site, structure } = campBeside("FallenRealm");
     // Row 12 of ten-row bands is the second band: Ethereal I, held by a wyvern.
     const plan = readSiteCard(store, site, structure, SITE_TILE, null);
-    expect(plan.name).toBe("Wyvern");
+    expect(plan.kind).toBe("ruin");
+    expect(plan.beast).toBe("Wyvern");
     expect(plan.payout).toBeNull();
     const rift = campBeside("Rift");
     expect(readSiteCard(rift.store, rift.site, rift.structure, SITE_TILE, null).payout).toEqual({

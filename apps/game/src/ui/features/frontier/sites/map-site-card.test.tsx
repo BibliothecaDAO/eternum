@@ -3,6 +3,10 @@ import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/audio/unit-command-audio", () => ({ playUnitCommandSound: () => {} }));
+vi.mock("@/hooks/helpers/use-block-timestamp", () => ({
+  useCurrentDefaultTick: () => 3,
+  useBlockTimestamp: () => ({ currentArmiesTick: 3, armiesTickTimeRemaining: 60 }),
+}));
 
 import { GameProvider } from "@/hooks/context/game-context";
 import { useAccountStore } from "@/hooks/store/use-account-store";
@@ -15,7 +19,7 @@ import { campBeside, SITE_TILE } from "./site-fixture";
 afterEach(() => useUIStore.getState().updateEntityActionSelectedEntityId(null));
 
 describe("a Well's tile card", () => {
-  it("shows the stamina it gives, and uses it with the selected army beside it", async () => {
+  it("shows the stamina it gives, offers Use only with an army beside it, and uses it", async () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     const { store } = campBeside();
     store.applyFacts([
@@ -40,13 +44,13 @@ describe("a Well's tile card", () => {
         </GameProvider>,
       ),
     );
-    const use = () => [...host.querySelectorAll("button")].find((button) => button.textContent === "Use")!;
-    expect(host.querySelector('[aria-label="Stamina +60"]')).not.toBeNull();
-    expect(use().disabled).toBe(true);
+    const use = () => [...host.querySelectorAll("button")].find((button) => button.textContent === "Use");
+    expect(host.querySelector('[aria-label="stamina +60"]')).not.toBeNull();
+    expect(use()).toBeUndefined();
 
     act(() => useUIStore.getState().updateEntityActionSelectedEntityId(201));
-    expect(use().disabled).toBe(false);
-    await act(async () => use().click());
+    expect(use()?.disabled).toBe(false);
+    await act(async () => use()!.click());
     expect(interact).toHaveBeenCalledWith(
       expect.objectContaining({ explorer_id: 201, coord: { alt: false, x: SITE_TILE.col, y: SITE_TILE.row } }),
     );

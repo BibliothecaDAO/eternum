@@ -7,6 +7,9 @@ import { HudBands } from "@/ui/features/frontier/hud/hud-bands";
 import { MenuSheet } from "@/ui/features/frontier/hud/menu-sheet";
 import { OrderBar } from "@/ui/features/frontier/hud/order-bar";
 import { DeployView } from "@/ui/features/frontier/deploy/deploy-view";
+import { RuinChestMoment } from "@/ui/features/frontier/chest/ruin-chest-moment";
+import { SiteClearCard } from "@/ui/features/frontier/sites/site-clear-card";
+import { SiteCardView } from "@/ui/features/frontier/sites/site-card-view";
 import { Direction } from "@bibliothecadao/types";
 import { PlaceNav } from "@/ui/features/frontier/hud/place-nav";
 import { StatusStrip, type StoreReading } from "@/ui/features/frontier/hud/status-strip";
@@ -131,6 +134,108 @@ const STATES = {
     armies: [],
     deploy: { ...DEPLOY, count: 0, troopsAtHome: 0, troopsMax: 0 },
   },
+  "site-camp": { clock: CLOCK, stores: STORES, armies: ARMIES, site: CAMP_CARD },
+  "site-full": {
+    clock: CLOCK,
+    stores: [
+      store("essence", 18_250),
+      store("labor", 17_880, 18_000, "amber"),
+      store("wheat", 4_410, 18_000),
+      store("troops", 1_200, 18_000),
+    ],
+    armies: ARMIES,
+    site: { ...CAMP_CARD, pay: { icon: "La", amount: 550, fits: 120 } },
+  },
+  "site-stragglers": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    site: { ...CAMP_CARD, site: "stragglers", guard: 400, fight: WIN(1, 15), pay: null, xp: 50 },
+  },
+  "site-ruin": { clock: CLOCK, stores: STORES, armies: ARMIES, site: RUIN_CARD },
+  "site-ruin-lose": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    site: {
+      ...RUIN_CARD,
+      army: { ...ARMY_CHIP, troops: 1_200 },
+      fight: { outcome: "loses", exchanges: 3, troopsLost: 1_200, guardLeft: 2_300 },
+    },
+  },
+  "site-far": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    site: {
+      ...CAMP_CARD,
+      verb: {
+        kind: "move",
+        prices: [
+          { of: "stamina", amount: 20 },
+          { of: "wheat", amount: 200 },
+        ],
+        onMove: () => undefined,
+      },
+    },
+  },
+  "site-pick": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    site: {
+      ...CAMP_CARD,
+      army: null,
+      verb: null,
+      choices: [
+        { label: "Army 1", art: ARMY_CHIP.art, troops: 5_000, wins: true, onPick: () => undefined },
+        { label: "Army 2", art: ARMY_CHIP.art, troops: 1, wins: false, onPick: () => undefined },
+        { label: "Army 3", art: ARMY_CHIP.art, troops: 1, wins: false, onPick: () => undefined },
+      ],
+    },
+  },
+  "site-short": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    site: { ...CAMP_CARD, verb: { kind: "short", stamina: { cost: 30, held: 10, wait: 40 * 60 } } },
+  },
+  "clear-camp": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    clear: { site: "Camp", paid: { icon: "La", amount: 550 }, xp: 22, troopsLost: 180, onClose: () => undefined },
+  },
+  "clear-cut": {
+    clock: CLOCK,
+    stores: [
+      store("essence", 18_250),
+      store("labor", 18_000, 18_000, "ember"),
+      store("wheat", 4_410, 18_000),
+      store("troops", 1_200, 18_000),
+    ],
+    armies: ARMIES,
+    realmDot: "ember",
+    clear: {
+      site: "Camp",
+      paid: { icon: "La", amount: 120, full: 550 },
+      xp: 22,
+      troopsLost: 180,
+      onClose: () => undefined,
+    },
+  },
+  "clear-ruin": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    chest: { tier: 3, lords: 128, xp: 145, troopsLost: 1_250, onClose: () => undefined },
+  },
+  "clear-ruin-legendary": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    chest: { tier: 5, lords: 640, xp: 145, troopsLost: 1_250, onClose: () => undefined },
+  },
 } as const;
 
 type LabOrder = {
@@ -152,8 +257,45 @@ type LabDeploy = {
 
 const DEPLOY: LabDeploy = { count: 5_000, troopsAtHome: 6_200, troopsMax: 6_200, wheat: 14_410, tiles: 44 };
 
+type LabSite = Omit<Parameters<typeof SiteCardView>[0], "onClose" | "onRealm">;
+type LabClear = Parameters<typeof SiteClearCard>[0];
+type LabChest = Parameters<typeof RuinChestMoment>[0];
+
+const ARMY_CHIP = { art: "/images/armies/knightT1.png", troops: 5_000 };
+const ATTACK_30 = { kind: "attack" as const, stamina: 30, sending: false, onAttack: () => undefined };
+const WIN = (exchanges: number, troopsLost: number) => ({
+  outcome: "wins" as const,
+  exchanges,
+  troopsLost,
+  guardLeft: 0,
+});
+const CAMP_CARD: LabSite = {
+  site: "camp",
+  beast: undefined,
+  army: ARMY_CHIP,
+  guard: 1_100,
+  fight: WIN(1, 180),
+  pay: { icon: "La", amount: 550 },
+  xp: 82,
+  verb: ATTACK_30,
+};
+const RUIN_CARD: LabSite = {
+  site: "ruin",
+  beast: "Troll",
+  army: ARMY_CHIP,
+  guard: 3_400,
+  fight: WIN(2, 1_250),
+  pay: null,
+  chest: { tier: 3, lords: 128 },
+  xp: 145,
+  verb: ATTACK_30,
+};
+
 type LabState = {
   order?: LabOrder;
+  site?: LabSite;
+  clear?: LabClear;
+  chest?: LabChest;
   deploy?: LabDeploy;
   clock: DayClock;
   stores: readonly StoreReading[];
@@ -186,6 +328,7 @@ export const HudLab = () => {
         foot={
           <>
             {lab.offline && <Notice icon="Of" line={OFFLINE} verb={TRY_AGAIN} onVerb={noop} ember />}
+            {lab.clear && <SiteClearCard {...lab.clear} />}
             {lab.order && <OrderBar {...lab.order} revealYield={500} xp={2} onCancel={noop} onGo={noop} />}
             {selected && !lab.order && (
               <ArmyStatusBar stamina={selected.stamina} secondsToFull={2 * HOUR} revealYield={500} />
@@ -221,6 +364,8 @@ export const HudLab = () => {
         }
       >
         {lab.deploy && <LabDeploySheet deploy={lab.deploy} />}
+        {lab.site && <SiteCardView {...lab.site} onRealm={noop} onClose={noop} />}
+        {lab.chest && <RuinChestMoment {...lab.chest} />}
         {lab.menu && (
           <MenuSheet
             rank="#12"

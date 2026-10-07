@@ -25,14 +25,14 @@ export type DockArmy = {
   troops: number;
 };
 
-/** The realm's armies out today, in the order the castle granted their slots. */
-export const useDockArmies = (realm: NativeRows["Structure"]): DockArmy[] => {
+/** The realm's armies out today, in the order the castle granted their slots; none without a realm. */
+export const useDockArmies = (realm: NativeRows["Structure"] | null): DockArmy[] => {
   const { setup } = useGame();
   const revision = useNativeRevision(ARMY_MODELS);
   const { currentArmiesTick, armiesTickTimeRemaining } = useBlockTimestamp();
   const armies = useMemo(
-    () => liveHomeArmies(setup.store, realm.entity_id, configManager.getActiveGameId()),
-    [realm.entity_id, revision, setup.store, currentArmiesTick],
+    () => (realm ? liveHomeArmies(setup.store, realm.entity_id, configManager.getActiveGameId()) : []),
+    [realm?.entity_id, revision, setup.store, currentArmiesTick],
   );
   return armies.map((army, index) => {
     const snapshot = getExplorerStaminaSnapshot({
