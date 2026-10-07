@@ -247,7 +247,7 @@ export class ResourceManager {
     const { production } = resource;
     if (production.building_count === 0 || production.production_rate === 0n) return 0;
     if (ResourceManager.neverRunsOut(production, resourceId)) return Number.MAX_SAFE_INTEGER;
-    const produced = productionOutput(production, timestamp, resource.tickSeconds, resource.support);
+    const produced = productionOutput(production, timestamp, resource.tickSeconds);
     const remaining = production.output_amount_left > produced ? production.output_amount_left - produced : 0n;
     return secondsUntilPaid(remaining, production.production_rate, timestamp, resource.tickSeconds);
   }

@@ -1,5 +1,5 @@
 use snforge_std::{start_cheat_caller_address, stop_cheat_caller_address};
-use crate::buildings::{BoardRules, CreateBuilding};
+use crate::buildings::CreateBuilding;
 use crate::commands::Command;
 use crate::resources::{
     IResourceOperationsDispatcher, IResourceOperationsDispatcherTrait, Production, ResourceKey, ResourceSlot,
@@ -72,7 +72,7 @@ fn eternum_labor_stays_unlimited_through_every_settlement() {
 #[test]
 fn frontier_board_buildings_stay_unlimited_through_every_settlement() {
     let (deployment, home) = super::building_commands::building_world_with_preset(
-        super::building_commands::building_preset(Some(BoardRules { demolition_refund_bps: 5000, workshop_rate: 20 })),
+        super::building_commands::building_preset(Some(super::building_commands::board_rules())),
     );
     grant(deployment, home, LABOR, 1000);
     assert!(
@@ -103,7 +103,7 @@ fn a_marker_already_worn_by_a_running_game_still_never_runs_out_or_wears_further
         selector!("resources"),
         selector!("productions"),
         array![home.game_id.into(), home.entity_id.into(), LABOR.into()].span(),
-        Production { building_count: 1, production_rate: 3, output_amount_left: WORN, last_updated_at: 40 },
+        Production { building_count: 1, production_rate: 3, output_amount_left: WORN, last_settled_tick: 40 },
     );
     let before = resources(deployment).resource_balance(slot(home, LABOR));
     assert_eq!(settle(deployment, home, LABOR, 100).output_amount_left, WORN);
