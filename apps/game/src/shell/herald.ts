@@ -74,7 +74,7 @@ export const fetchDirectories = async (player: string | null): Promise<ShardDire
     failures: [
       ...listed
         .filter((shard) => shard.games === null)
-        .map((shard) => ({ url: shard.url, error: new Error("unavailable right now") })),
+        .map((shard) => ({ url: shard.url, error: new Error("the directory listed no games for this shard") })),
       ...pastedFailures,
       ...readFailures,
     ],

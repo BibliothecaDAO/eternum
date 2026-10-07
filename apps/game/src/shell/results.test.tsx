@@ -46,7 +46,7 @@ vi.mock("./standings", () => ({ Standings: () => <p>standings</p> }));
 import { setViewportWidth } from "./frame/test-viewport";
 import { ResultsPage } from "./results";
 
-it("pages through the history: settled games newest first, load more until the last page, and names a missing shard", async () => {
+it("pages through the history: settled games newest first, load more until the last page, and says when a shard did not answer", async () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   setViewportWidth(390);
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -69,7 +69,8 @@ it("pages through the history: settled games newest first, load more until the l
   await settle();
   try {
     expect(names()).toEqual(["blitz-3", "blitz-2"]);
-    expect(container.textContent).toContain("Results from shard-b.test are unavailable right now.");
+    expect(container.textContent).toContain("Results did not answer.");
+    expect(container.textContent).not.toContain("shard-b.test");
     expect(requests).toContain("/api/directory/history?limit=20");
     await act(async () => loadMore()!.click());
     await settle();

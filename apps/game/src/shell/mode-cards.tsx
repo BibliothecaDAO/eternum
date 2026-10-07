@@ -8,8 +8,9 @@ import { type BlitzRow, blitzRows, leadBlitzRow } from "./blitz-rows";
 import { useJoinSlot, usePlaytestSlots } from "./blitz-slot";
 import { entryHref } from "./game-links";
 import type { DirectoryGame } from "./herald";
-import { ErrorPanel } from "./kit";
-import { PlayersChip, PrimaryLink, SeatBar, TimeLeftChip, UnavailableChip } from "./live-chips";
+import { ServiceFailure } from "./service-failure";
+import { ClockChip } from "./clock-chip";
+import { PlayersChip, PrimaryLink, SeatBar, UnavailableChip } from "./live-chips";
 import { MODE_ART } from "./mode-art";
 
 /**
@@ -94,10 +95,10 @@ export const FrontierCard = ({ season, to, className }: { season: DirectoryGame;
 );
 
 /** The Blitz rows a card draws: the directory's games and the launch service's slots, as one list. */
-const useBlitzRows = (games: DirectoryGame[], now: number) => {
+const useBlitzRows = (games: DirectoryGame[]) => {
   const slots = usePlaytestSlots();
   const join = useJoinSlot();
-  const rows = blitzRows(games, slots.data?.slots ?? [], join.realmsId, now);
+  const rows = blitzRows(games, slots.data?.slots ?? [], join.realmsId);
   return { rows, slots, join };
 };
 
@@ -106,7 +107,7 @@ const useBlitzRows = (games: DirectoryGame[], now: number) => {
  * its seats and Join, or a check once registered. The card opens the lobby, which lists every Blitz.
  */
 export const BlitzCard = ({ games, now, className }: { games: DirectoryGame[]; now: number; className?: string }) => {
-  const { rows, slots, join } = useBlitzRows(games, now);
+  const { rows, slots, join } = useBlitzRows(games);
   const lead = leadBlitzRow(rows);
   return (
     <ModeCard
@@ -115,7 +116,13 @@ export const BlitzCard = ({ games, now, className }: { games: DirectoryGame[]; n
       to="/play"
       className={className}
       // Unknown while the slots load; with nothing to play or join there is nothing to show.
-      state={lead ? <BlitzRowState row={lead} /> : !slots.data && <TimeLeftChip seconds={undefined} />}
+      state={
+        lead ? (
+          <BlitzRowState row={lead} now={now} />
+        ) : (
+          !slots.data && <ClockChip prefix="starts" at={undefined} now={now} />
+        )
+      }
       action={lead && <BlitzRowAction row={lead} join={join} />}
     />
   );
@@ -134,7 +141,7 @@ export const BlitzLobbyCard = ({
   now: number;
   className?: string;
 }) => {
-  const { rows, slots, join } = useBlitzRows(games, now);
+  const { rows, slots, join } = useBlitzRows(games);
   // With no game to play or watch and no slot filling, Blitz is closed for now, greyed like Eternum before it opens.
   if (rows.length === 0 && slots.isSuccess) {
     return <ModeCard art={MODE_ART.blitz} name="Blitz" locked state={null} className={cn("h-32 lg:h-40", className)} />;
@@ -145,24 +152,14 @@ export const BlitzLobbyCard = ({
         <ModeArt art={MODE_ART.blitz} name="Blitz" locked={false} />
         <ModeName name="Blitz" />
       </div>
-      {slots.isError && (
-        <ErrorPanel
-          message="Blitz slots are unavailable right now."
-          error={slots.error}
-          retry={() => void slots.refetch()}
-        />
-      )}
+      {slots.isError && <ServiceFailure service="slots" error={slots.error} retry={() => void slots.refetch()} />}
       {join.register.isError && (
-        <ErrorPanel
-          message="Registration did not go through. Try again."
-          error={join.register.error}
-          retry={() => join.register.reset()}
-        />
+        <ServiceFailure service="slots" error={join.register.error} retry={() => join.register.reset()} />
       )}
       <ul className="divide-y divide-kit-plate2">
         {rows.map((row) => (
           <li key={row.key} className="flex items-center gap-3 px-3 py-2.5 lg:px-4">
-            <BlitzRowState row={row} />
+            <BlitzRowState row={row} now={now} />
             <span className="ml-auto">
               <BlitzRowAction row={row} join={join} />
             </span>
@@ -174,19 +171,19 @@ export const BlitzLobbyCard = ({
 };
 
 /** A row's state: the live dot, or the time until it starts or its slot closes; then its seats. */
-const BlitzRowState = ({ row }: { row: BlitzRow }) => (
+const BlitzRowState = ({ row, now }: { row: BlitzRow; now: number }) => (
   <span className="flex min-w-0 items-center gap-3">
     {row.kind === "game" && row.game.error ? (
       <UnavailableChip />
     ) : row.kind === "game" && row.game.status === "Ended" ? (
       <span className="font-ui text-[15px] font-extrabold text-kit-cream">Ended</span>
-    ) : row.secondsLeft === null ? (
+    ) : row.startsAt === null ? (
       <span className="flex items-center gap-2 font-ui text-[15px] font-extrabold text-kit-cream">
         <span aria-hidden className="size-2.5 rounded-full bg-kit-sage shadow-[0_0_8px_theme(colors.kit.sage)]" />
         Live
       </span>
     ) : (
-      <TimeLeftChip seconds={row.secondsLeft} />
+      <ClockChip prefix="starts" at={row.startsAt} now={now} />
     )}
     <SeatBar filled={row.seats.filled} total={row.seats.total} />
   </span>
@@ -264,7 +261,9 @@ export const EternumCard = ({
         next?.error ? (
           <UnavailableChip />
         ) : (
-          next && !open && next.clock.start_main_at > now && <TimeLeftChip seconds={next.clock.start_main_at - now} />
+          next &&
+          !open &&
+          next.clock.start_main_at > now && <ClockChip prefix="opens" at={next.clock.start_main_at} now={now} />
         )
       }
       action={

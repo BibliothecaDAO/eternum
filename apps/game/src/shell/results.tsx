@@ -2,10 +2,11 @@ import { lazy, Suspense, useState } from "react";
 
 import type { ReviewedGame } from "@/ui/features/game-review/game-review-modal";
 
-import { formatDate } from "./format";
+import { formatDate } from "@/ui/design-system/kit/time";
 import { modeLabel } from "./game-links";
 import { type DirectoryGame, useDirectory, useHistory, useRealmsPlayer } from "./herald";
-import { ErrorPanel, GhostButton, Loading, Panel, PanelTitle } from "./kit";
+import { GhostButton, Loading, Panel, PanelTitle } from "./kit";
+import { ServiceFailure } from "./service-failure";
 import { UnavailableChip } from "./live-chips";
 import { Standings } from "./standings";
 import { PageFrame } from "./frame/page-frame";
@@ -56,22 +57,16 @@ const ResultsBody = () => {
         {player ? <FilterButtons filter={filter} onChange={setFilter} /> : null}
       </div>
       {history.isError ? (
-        <ErrorPanel
-          message="Results are unavailable right now."
-          error={history.error}
-          retry={() => void history.refetch()}
-        />
+        <ServiceFailure service="results" error={history.error} retry={() => void history.refetch()} />
       ) : null}
       {history.isPending ? <Loading /> : null}
       {history.isSuccess && games.length === 0 ? (
         <p className="text-sm text-gold/60">{mine ? "You have no finished game yet." : "No game has settled yet."}</p>
       ) : null}
       {games.map(row)}
-      {unavailable.map((url) => (
-        <p key={url} className="border-t border-gold/10 py-2 text-[12.5px] text-gold/60">
-          Results from {new URL(url).host} are unavailable right now.
-        </p>
-      ))}
+      {unavailable.length > 0 ? (
+        <ServiceFailure service="results" error={unavailable} retry={() => void history.refetch()} />
+      ) : null}
       {history.hasNextPage ? (
         <div className="pt-3">
           <GhostButton onClick={() => void history.fetchNextPage()} disabled={history.isFetchingNextPage}>

@@ -1,10 +1,14 @@
 import { useParams } from "react-router-dom";
 
-import { formatDate, ordinal, sameAddress, shortAddress } from "./format";
+import { formatAmount } from "@/ui/design-system/kit/amount";
+import { formatDate } from "@/ui/design-system/kit/time";
+import { PlayerName } from "@/ui/design-system/kit/player-name";
+import { ordinal, sameAddress } from "./format";
 import { modeLabel } from "./game-links";
 import { type DirectoryGame, useLeaderboard, useRecentResults } from "./herald";
 import { playerPortraitUrl } from "@/services/identity/player-portrait";
-import { ErrorPanel, Loading, Panel, PanelTitle } from "./kit";
+import { Loading, Panel, PanelTitle } from "./kit";
+import { ServiceFailure } from "./service-failure";
 import { NothingHere } from "./not-found";
 import { useProfiles } from "./profiles";
 import { PageFrame } from "./frame/page-frame";
@@ -17,8 +21,8 @@ const MatchRow = ({ game, address }: { game: DirectoryGame; address: string }) =
   const board = leaderboard.data;
   const result =
     board.mode === "frontier"
-      ? findResult(board.entries, address, (entry) => `${entry.sites_cleared.total.toLocaleString()} sites`)
-      : findResult(board.entries, address, (entry) => `${Math.round(entry.totalPoints).toLocaleString()} VP`);
+      ? findResult(board.entries, address, (entry) => `${formatAmount(entry.sites_cleared.total)} sites`)
+      : findResult(board.entries, address, (entry) => `${formatAmount(Math.round(entry.totalPoints))} VP`);
   if (!result) return null;
   return (
     <li className="flex items-center gap-3 border-t border-gold/10 py-2 text-[12.5px] first:border-t-0">
@@ -63,7 +67,7 @@ const PlayerBody = () => {
             className="h-16 w-16 rounded-lg border border-gold/40 object-cover"
           />
           <div className="font-ui text-[20px] font-bold tracking-wide text-gold">
-            {profile?.name ?? shortAddress(address)}
+            <PlayerName account={address} />
           </div>
         </div>
       </Panel>
@@ -71,11 +75,7 @@ const PlayerBody = () => {
         <PanelTitle>Match history</PanelTitle>
         {history.isPending ? <Loading /> : null}
         {history.isError ? (
-          <ErrorPanel
-            message="This player's games are unavailable right now."
-            error={history.error}
-            retry={() => void history.refetch()}
-          />
+          <ServiceFailure service="results" error={history.error} retry={() => void history.refetch()} />
         ) : null}
         {history.isSuccess && games.length === 0 ? (
           <p className="text-sm text-gold/60">No finished games on record.</p>

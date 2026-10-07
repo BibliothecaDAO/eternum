@@ -1,4 +1,5 @@
 import { latestFeatures, type FeatureType } from "@/ui/features/world/latest-features";
+import { formatContentDay } from "./clock-chip";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Bug, ExternalLink, Newspaper, Sparkles, TrendingUp, Wrench } from "@/ui/design-system/atoms/game-icons";
 import { PageFrame } from "./frame/page-frame";
@@ -17,9 +18,6 @@ const getFeatureTypeStyle = (type: FeatureType) => {
       return { icon: Sparkles, color: "text-gold", bg: "bg-gold/20", label: "Update" };
   }
 };
-
-const formatFeatureDate = (dateString: string) =>
-  new Date(dateString).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
 const formatGameSlug = (gameSlug: string) =>
   gameSlug
@@ -74,7 +72,7 @@ const NewsBody = () => (
                     </span>
                   ) : null}
                   <span className="text-[10px] uppercase tracking-[0.12em] text-gold/45">
-                    {formatFeatureDate(feature.date)}
+                    {formatContentDay(feature.date)}
                   </span>
                 </div>
                 <h3 className="font-semibold text-gold">{feature.title}</h3>

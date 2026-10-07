@@ -22,7 +22,7 @@ import { fetchSettlementSnapshot, type SettlementSnapshot } from "@/runtime/worl
 import { isGameOver, isMember } from "@/runtime/world/directory";
 import { markGameEntryMilestone } from "@/ui/layouts/game-entry-timeline";
 import { BlitzPreparing } from "@/shell/blitz-preparing";
-import { TimeLeftChip } from "@/shell/live-chips";
+import { ClockChip } from "@/shell/clock-chip";
 import { getRealmNameById } from "@bibliothecadao/eternum";
 import { seasonRealm } from "@/shell/season";
 import { realmStill } from "@/shell/mode-art";
@@ -230,7 +230,6 @@ export const GameEntryModal = ({
   const endAt = worldMeta?.clock.end_at;
   const seasonNotEnded = endAt == null || endAt === 0 || nowSeconds <= endAt;
   const seasonTimingValid = isDevMode || (seasonHasStarted && seasonNotEnded);
-  const secondsUntilSeasonStart = seasonStartAt == null ? null : Math.max(0, seasonStartAt - nowSeconds);
   const blitzEntry = useMemo(() => {
     if (!isBlitzMode || !worldMeta?.player_state) return null;
     return resolveBlitzEntry({ isMember: isMember(worldMeta), ready: worldMeta.ready, ended: isGameOver(worldMeta) });
@@ -592,7 +591,7 @@ export const GameEntryModal = ({
       onSignIn={() => requestSignIn()}
       onSpectate={handleSpectate}
     >
-      {phase === "settlement-waiting" && <TimeLeftChip seconds={secondsUntilSeasonStart ?? undefined} />}
+      {phase === "settlement-waiting" && <ClockChip prefix="starts" at={seasonStartAt ?? undefined} now={nowSeconds} />}
       {phase === "settlement" && isBlitzMode && worldMeta && <BlitzPreparing game={worldMeta} member />}
       {phase === "settlement" && isSeasonMode && !foundsOnItsOwn && settleStage === "idle" && (
         <>

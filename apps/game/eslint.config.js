@@ -14,6 +14,23 @@ const COLOUR_LITERAL = "/#[0-9a-fA-F]{3,8}(?![0-9a-zA-Z])|rgba?\\(/";
 const COLOUR_MESSAGE =
   "Shell colours come from the token file (src/tokens.ts): use a kit-* class or theme(colors.kit.*).";
 
+// A shell file never writes a time, an amount, a failure or a fallback name itself: each has one owner.
+const OWNED_FORMATS = [
+  {
+    selector:
+      "MemberExpression[property.name=/^toLocale(Date|Time)?String$/], NewExpression[callee.object.name='Intl']",
+    message: "Times come from ClockChip and the kit's time.ts, amounts from the kit's amount.ts.",
+  },
+  {
+    selector: "Literal[value=/^(Lord |Unnamed|Player-)/], TemplateElement[value.raw=/^(Lord |Unnamed|Player-)/]",
+    message: "A player's name comes from PlayerName (the one name rule).",
+  },
+  {
+    selector: "Literal[value=/did not answer|unavailable right now/]",
+    message: "A failed read is worded by ServiceFailure, one line per service.",
+  },
+];
+
 export default tseslint.config(
   { ignores: ["dist"] },
   {
@@ -35,12 +52,28 @@ export default tseslint.config(
   },
   {
     files: ["src/shell/**/*.{ts,tsx}"],
+    // Tests assert the owners' own words.
+    ignores: ["src/shell/**/*.test.{ts,tsx}"],
     rules: {
       "no-restricted-syntax": [
         "error",
         NO_MUTATING_SORT,
         { selector: `Literal[value=${COLOUR_LITERAL}]`, message: COLOUR_MESSAGE },
         { selector: `TemplateElement[value.raw=${COLOUR_LITERAL}]`, message: COLOUR_MESSAGE },
+        ...OWNED_FORMATS,
+      ],
+    },
+  },
+  {
+    // The failure owner is the one file that words a failure.
+    files: ["src/shell/service-failure.tsx"],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        NO_MUTATING_SORT,
+        { selector: `Literal[value=${COLOUR_LITERAL}]`, message: COLOUR_MESSAGE },
+        { selector: `TemplateElement[value.raw=${COLOUR_LITERAL}]`, message: COLOUR_MESSAGE },
+        ...OWNED_FORMATS.slice(0, 2),
       ],
     },
   },

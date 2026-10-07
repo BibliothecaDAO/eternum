@@ -4,7 +4,8 @@ import type { GameRef } from "@bibliothecadao/eternum/shard";
 
 import { formatPoints, ordinal, sameAddress } from "./format";
 import { useLeaderboard } from "./herald";
-import { ErrorPanel, Loading } from "./kit";
+import { Loading } from "./kit";
+import { ServiceFailure } from "./service-failure";
 import { useProfiles } from "./profiles";
 import { playerPortraitUrl } from "@/services/identity/player-portrait";
 import { SeasonTable } from "@/ui/features/frontier/board/season-table";
@@ -23,13 +24,7 @@ export const Standings = ({ game, highlight, limit }: { game: GameRef; highlight
   const profileOf = useProfiles((seasonRows?.map(({ entry }) => entry) ?? entries).map((entry) => entry.address));
 
   if (leaderboard.isError)
-    return (
-      <ErrorPanel
-        message="Standings are unavailable right now."
-        error={leaderboard.error}
-        retry={() => void leaderboard.refetch()}
-      />
-    );
+    return <ServiceFailure service="results" error={leaderboard.error} retry={() => void leaderboard.refetch()} />;
   if (leaderboard.isPending) return <Loading />;
   if (seasonRows)
     return seasonRows.length === 0 ? (

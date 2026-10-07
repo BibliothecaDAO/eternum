@@ -1,8 +1,8 @@
 import { lazy, Suspense, useEffect, useState } from "react";
 
 import {
-  identityClient,
   identityUsername,
+  identityClient,
   signOutIdentitySession,
   useIdentitySession,
   useIdentitySessionStore,
@@ -16,6 +16,7 @@ import { shortAddress } from "./format";
 import { AccountStatePrompt } from "./account-state";
 import { playerPortraitUrl, portraitUrl } from "@/services/identity/player-portrait";
 import { useAccountStore } from "@/hooks/store/use-account-store";
+import { PlayerName } from "@/ui/design-system/kit/player-name";
 import { GhostButton, GoldButton, Loading, Panel, PanelTitle } from "./kit";
 import { NameClaim } from "./name-claim";
 import { useRequestSignIn } from "./sign-in/sign-in-route";
@@ -154,7 +155,9 @@ const SignedInAccount = ({ session, refresh }: { session: Session; refresh: () =
             className="h-[72px] w-[72px] rounded-lg border border-gold/40 object-cover"
           />
           <div>
-            <div className="font-ui text-[22px] font-bold tracking-wide text-gold">{name ?? "Unnamed lord"}</div>
+            <div className="font-ui text-[22px] font-bold tracking-wide text-gold">
+              {address ? <PlayerName account={address} /> : "—"}
+            </div>
             <button
               type="button"
               onClick={() => setEditingPortrait((value) => !value)}

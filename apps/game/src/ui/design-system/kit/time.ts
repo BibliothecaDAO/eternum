@@ -20,3 +20,14 @@ const CLOCK = new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-dig
 /** A moment (unix seconds) as the device's local clock time, "21:40". */
 export const formatClockTime = (unixSeconds: number | undefined): string =>
   unixSeconds === undefined ? DASH : CLOCK.format(new Date(unixSeconds * 1000));
+
+const DAY_MONTH = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short" });
+const DAY_MONTH_YEAR = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric" });
+
+/** A day (unix seconds) as the device's local "7 Oct", with the year only when it is not this year's. */
+export const formatDate = (unixSeconds: number | undefined, nowSeconds = Date.now() / 1000): string => {
+  if (unixSeconds === undefined) return DASH;
+  const date = new Date(unixSeconds * 1000);
+  const sameYear = date.getFullYear() === new Date(nowSeconds * 1000).getFullYear();
+  return (sameYear ? DAY_MONTH : DAY_MONTH_YEAR).format(date);
+};

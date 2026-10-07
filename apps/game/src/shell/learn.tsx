@@ -1,4 +1,5 @@
 import { BookOpen, ExternalLink, Sparkles, Video } from "@/ui/design-system/atoms/game-icons";
+import { formatContentDay } from "./clock-chip";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { PageFrame } from "./frame/page-frame";
 
@@ -111,9 +112,6 @@ const LEARN_TIER_COPY: Record<LearnGuideTier, { title: string; description: stri
 const getVisibleLearnGuides = (tier: LearnGuideTier) =>
   LEARN_GUIDES.filter((guide) => guide.tier === tier && !guide.deprecated);
 
-const formatGuideVerifiedAt = (dateString: string) =>
-  new Date(dateString).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-
 const getLearnGuideStyle = (kind: LearnGuideKind) =>
   kind === "video"
     ? {
@@ -154,7 +152,7 @@ const LearnGuideCard = ({ guide }: { guide: LearnGuide }) => {
             {style.label}
           </span>
           <span className="rounded-full border border-gold/20 bg-gold/10 px-2 py-0.5 text-gold/75">
-            Verified {formatGuideVerifiedAt(guide.verifiedAt)}
+            Verified {formatContentDay(guide.verifiedAt)}
           </span>
         </div>
       </div>
@@ -226,7 +224,7 @@ const LearnBody = () => (
           </div>
         </div>
         <span className="rounded-full border border-gold/20 bg-black/30 px-2 py-1 text-[10px] uppercase tracking-[0.14em] text-gold/75">
-          Verified {formatGuideVerifiedAt(START_HERE_GUIDE.verifiedAt)}
+          Verified {formatContentDay(START_HERE_GUIDE.verifiedAt)}
         </span>
       </div>
 

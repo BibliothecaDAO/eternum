@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from "react";
+import type { ReactNode } from "react";
 
 /** The shell's few presentational pieces: plain elements, so the shell carries no game module. */
 
@@ -86,33 +86,6 @@ export function Loading({ label = "Loading…" }: { label?: string }) {
   return (
     <div role="status" className="px-1 py-6 text-center font-mono text-[11px] uppercase tracking-[0.2em] text-gold/50">
       {label}
-    </div>
-  );
-}
-
-/**
- * A read that failed renders as a named state ("Games are unavailable right now.") with a retry; the service's own
- * words (a status, a code) go to the console for the operator, never onto the page.
- */
-export function ErrorPanel({ message, error, retry }: { message: string; error: unknown; retry?: () => void }) {
-  useEffect(() => {
-    console.error("shell_read_failed", { message, error });
-  }, [error, message]);
-  return (
-    <div
-      role="alert"
-      className="rounded-lg border border-dashed border-danger/60 bg-danger/5 px-4 py-3 text-[13px] text-gold"
-    >
-      {message}
-      {retry ? (
-        <button
-          type="button"
-          onClick={retry}
-          className="ml-3 font-mono text-[11px] uppercase tracking-wider text-gold underline"
-        >
-          Retry
-        </button>
-      ) : null}
     </div>
   );
 }

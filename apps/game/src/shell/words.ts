@@ -12,3 +12,13 @@ export const WORDS = {
   back: "Back",
   dev: "Dev",
 } as const;
+
+/** ClockChip's prefix words: a moment that begins something, or one that ends it. */
+export const CLOCK_WORDS = {
+  starts: "Starts",
+  opens: "Opens",
+  ends: "Ends",
+  expires: "Expires",
+  /** Before the time left to a beginning: "Starts 16:30 · in 2h 4m". */
+  in: "in",
+} as const;

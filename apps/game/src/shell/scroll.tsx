@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { formatContentDay } from "./clock-chip";
 import { Link, useParams } from "react-router-dom";
 
 import { scrollPosts, type ScrollPost, type ScrollPostType } from "./generated/scroll-posts";
@@ -20,13 +21,6 @@ const publishedPosts = scrollPosts.filter((post) => post.published);
 
 const typeLabel = (type: ScrollPostType): string => (type === "update" ? "Update" : "Thought piece");
 
-const formatDate = (date: string): string => {
-  const [year, month, day] = date.split("-").map(Number);
-  return new Intl.DateTimeFormat("en-US", { year: "numeric", month: "short", day: "numeric" }).format(
-    new Date(year, month - 1, day),
-  );
-};
-
 /** Posts sharing tags with this one first, then by type, then newest. */
 const similarPosts = (post: ScrollPost, limit = 3): ScrollPost[] =>
   publishedPosts
@@ -44,7 +38,7 @@ const PostMeta = ({ post }: { post: ScrollPost }) => (
   <div className="flex flex-wrap items-center gap-2 font-mono text-[10.5px] uppercase tracking-[0.13em] text-gold/60">
     <span>{typeLabel(post.type)}</span>
     <span>·</span>
-    <span>{formatDate(post.date)}</span>
+    <span>{formatContentDay(post.date)}</span>
     <span>·</span>
     <span>{post.readingTimeMinutes} min read</span>
   </div>

@@ -3,7 +3,8 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 
 import { entryHref } from "./game-links";
 import { type DirectoryGame, useDirectory } from "./herald";
-import { ErrorPanel, Loading } from "./kit";
+import { Loading } from "./kit";
+import { ServiceFailure } from "./service-failure";
 import { PrimaryLink, UnavailableChip } from "./live-chips";
 import { HERO_ART } from "./mode-art";
 import { BlitzCard, EternumCard, FrontierCard } from "./mode-cards";
@@ -24,13 +25,7 @@ const HomeBody = () => {
   const directory = useDirectory();
 
   if (directory.isError)
-    return (
-      <ErrorPanel
-        message="Games are unavailable right now."
-        error={directory.error}
-        retry={() => void directory.refetch()}
-      />
-    );
+    return <ServiceFailure service="directory" error={directory.error} retry={() => void directory.refetch()} />;
   if (directory.isPending || status === "loading") return <Loading />;
   const games = directory.data.games;
   const season = chooseSeason(games, status === "signed-in");

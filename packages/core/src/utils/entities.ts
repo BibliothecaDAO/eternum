@@ -115,12 +115,16 @@ const getEntityNameFromLocalStorage = (entityId: ID) => {
   return localStorage.getItem(`entity-name-${entityId}`);
 };
 
-/** The name registration writes when the account has no username; every reader treats it as no name. */
-export const buildFallbackPlayerName = (address: string): string => `Player-${address.slice(-6)}`;
+/**
+ * A player who has not claimed a name (ruled): "Lord" and the account's last four characters, so two such players stay
+ * apart and no surface shows an address or an email as a name.
+ */
+export const unclaimedPlayerName = (address: ContractAddress | string): string =>
+  `Lord ${BigInt(address).toString(16).padStart(4, "0").slice(-4)}`;
 
-/** The one display rule for a player: the resolved name, else the registration fallback, never an address. */
+/** The one display rule for a player: the claimed name, else the unclaimed one, never an address. */
 export const displayPlayerName = (address: ContractAddress | string, name: string | null | undefined): string =>
-  name || buildFallbackPlayerName(typeof address === "string" ? address : `0x${address.toString(16)}`);
+  name || unclaimedPlayerName(address);
 
 /**
  * A player's name, from the one place names live: the player's Realms profile, looked up by the client that owns the

@@ -8,13 +8,14 @@ import type { DirectoryGame } from "./herald";
 export type BlitzAction = "enter" | "spectate" | "join" | "registered";
 
 /**
- * One Blitz on the lobby's Blitz card (design o4): live, or the seconds until it starts or its slot closes, its seats,
- * and one action. A game comes from the directory; a slot still taking players comes from the launch service, and
+ * One Blitz on the lobby's Blitz card (design o4): live, or the moment it starts or its slot closes, its seats, and
+ * one action. A game comes from the directory; a slot still taking players comes from the launch service, and
  * its game joins the directory only once the slot closes, so the two never show the same game.
  */
 export type BlitzRow = {
   key: string;
-  secondsLeft: number | null;
+  /** When it starts (a game) or its slot closes (a slot); null once it is live or over. */
+  startsAt: number | null;
   seats: { filled: number; total: number };
   action: BlitzAction | null;
 } & ({ kind: "game"; game: DirectoryGame } | { kind: "slot"; slot: PlaytestSlot });
@@ -24,7 +25,6 @@ export const blitzRows = (
   games: readonly DirectoryGame[],
   slots: readonly PlaytestSlot[],
   realmsId: string | undefined,
-  now: number,
 ): BlitzRow[] => {
   const running = games.filter((game) => game.mode === "blitz" && game.status !== "Settled");
   const live = running.filter((game) => game.status === "Live");
@@ -36,8 +36,8 @@ export const blitzRows = (
     .toSorted((a, b) => Date.parse(a.closesAt) - Date.parse(b.closesAt));
   return [
     ...live.map((game) => gameRow(game, null)),
-    ...starting.map((game) => gameRow(game, isGameOver(game) ? null : game.clock.start_main_at - now)),
-    ...filling.map((slot) => slotRow(slot, realmsId, now)),
+    ...starting.map((game) => gameRow(game, isGameOver(game) ? null : game.clock.start_main_at)),
+    ...filling.map((slot) => slotRow(slot, realmsId)),
   ];
 };
 
@@ -45,11 +45,11 @@ export const blitzRows = (
 export const leadBlitzRow = (rows: readonly BlitzRow[]): BlitzRow | undefined =>
   rows.find((row) => row.action === "enter") ?? rows.find((row) => row.kind === "slot") ?? rows[0];
 
-const gameRow = (game: DirectoryGame, secondsLeft: number | null): BlitzRow => ({
+const gameRow = (game: DirectoryGame, startsAt: number | null): BlitzRow => ({
   kind: "game",
   key: `game:${game.chainId}:${game.game_id}`,
   game,
-  secondsLeft: secondsLeft === null ? null : Math.max(0, secondsLeft),
+  startsAt,
   seats: { filled: game.player_count, total: game.roster_count || BLITZ_SEATS },
   action: gameAction(game),
 });
@@ -61,11 +61,11 @@ const gameAction = (game: DirectoryGame): BlitzAction | null => {
   return isMember(game) ? "registered" : "spectate";
 };
 
-const slotRow = (slot: PlaytestSlot, realmsId: string | undefined, now: number): BlitzRow => ({
+const slotRow = (slot: PlaytestSlot, realmsId: string | undefined): BlitzRow => ({
   kind: "slot",
   key: `slot:${slot.name}`,
   slot,
-  secondsLeft: Math.max(0, Math.floor(Date.parse(slot.closesAt) / 1000) - now),
+  startsAt: Math.floor(Date.parse(slot.closesAt) / 1000),
   seats: { filled: seatsFilling(slot), total: BLITZ_SEATS },
   action: registrationFor(slot, realmsId) ? "registered" : "join",
 });

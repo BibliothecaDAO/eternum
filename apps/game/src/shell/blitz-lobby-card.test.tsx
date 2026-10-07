@@ -17,7 +17,7 @@ import { BlitzLobbyCard } from "./mode-cards";
 const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
 afterEach(() => consoleError.mockClear());
 
-it("draws a failed slots read on the lobby's Blitz card as a named state with a retry, never the service's code", async () => {
+it("draws a failed slots read on the lobby's Blitz card as Blitz's one line with Try again, never the service's code", async () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const container = document.createElement("div");
@@ -31,16 +31,13 @@ it("draws a failed slots read on the lobby's Blitz card as a named state with a 
       </MemoryRouter>,
     ),
   );
-  for (let tick = 0; tick < 5 && !container.querySelector("[role='alert']"); tick += 1) await act(async () => {});
+  const failure = () => container.querySelector("[role='status']")?.parentElement;
+  for (let tick = 0; tick < 5 && !failure(); tick += 1) await act(async () => {});
   try {
-    const alert = container.querySelector("[role='alert']");
-    expect(alert?.textContent).toContain("Blitz slots are unavailable right now.");
-    expect(alert?.querySelector("button")?.textContent).toBe("Retry");
+    expect(failure()?.textContent).toContain("Blitz did not answer.");
+    expect(failure()?.querySelector("button")?.textContent).toBe("Try again");
     expect(container.textContent).not.toContain("not_found");
-    expect(consoleError).toHaveBeenCalledWith(
-      "shell_read_failed",
-      expect.objectContaining({ message: "Blitz slots are unavailable right now." }),
-    );
+    expect(consoleError).toHaveBeenCalledWith("shell_read_failed", expect.objectContaining({ service: "slots" }));
   } finally {
     await act(async () => root.unmount());
   }

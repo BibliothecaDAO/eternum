@@ -1,7 +1,6 @@
 import { Hourglass } from "@/ui/design-system/atoms/game-icons";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Chip } from "@/ui/features/frontier/frontier-chips";
-import { formatTimeLeft } from "@/ui/features/frontier/frontier-format";
 import { formatAmount } from "@/ui/design-system/kit/amount";
 import { PersonGlyph } from "@/ui/features/frontier/glyphs";
 import type { ReactNode } from "react";
@@ -14,11 +13,6 @@ export const SeatBar = ({ filled, total }: { filled: number; total: number }) =>
       <span key={seat} className={cn("w-[3px] rounded-sm", seat < filled ? "bg-kit-gold2" : "bg-kit-line")} />
     ))}
   </span>
-);
-
-/** Time left to a start or a close, as the hourglass and "0:42" or "12d"; unknown is "—". */
-export const TimeLeftChip = ({ seconds }: { seconds: number | undefined }) => (
-  <Chip small label="Time left" icon={<Hourglass />} value={seconds === undefined ? "—" : formatTimeLeft(seconds)} />
 );
 
 export const PlayersChip = ({ count }: { count: number }) => (

@@ -1,19 +1,14 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
 
-import {
-  IDENTITY_POPOVER_ID,
-  identityUsername,
-  signOutIdentitySession,
-  useIdentitySession,
-} from "@/hooks/context/identity-session";
+import { IDENTITY_POPOVER_ID, signOutIdentitySession, useIdentitySession } from "@/hooks/context/identity-session";
+import { useAccountStore } from "@/hooks/store/use-account-store";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { GameplayAccountSync } from "@/hooks/context/gameplay-account-sync";
-import type { Session } from "@realms-world/identity";
+import { PlayerName } from "@/ui/design-system/kit/player-name";
 
 import { useIdentityPanelSlot } from "./identity-chip";
 import { AccountStatePrompt } from "./account-state";
-import { shortAddress } from "./format";
 
 /**
  * The shell's account runtime: the gameplay account sync and the signed-in player's panel. It is one lazy chunk,
@@ -32,10 +27,11 @@ function IdentityPanelPortal() {
   const { status, session } = useIdentitySession();
   if (!slot) return null;
   if (status !== "signed-in" || !session) return null;
-  return createPortal(<SignedInPanel session={session} />, slot);
+  return createPortal(<SignedInPanel />, slot);
 }
 
-function SignedInPanel({ session }: { session: Session }) {
+function SignedInPanel() {
+  const account = useAccountStore((state) => state.account?.address);
   const closePopover = usePopoverStore((state) => state.close);
   const [signingOut, setSigningOut] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -57,12 +53,11 @@ function SignedInPanel({ session }: { session: Session }) {
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex flex-col gap-1">
-        <span className="text-sm font-semibold text-gold">{identityUsername(session)}</span>
-        {session.user.address ? (
-          <span className="font-mono text-xs text-gold/60">{shortAddress(session.user.address)}</span>
-        ) : null}
-      </div>
+      {account ? (
+        <span className="text-sm font-semibold text-gold">
+          <PlayerName account={account} />
+        </span>
+      ) : null}
       <AccountStatePrompt />
       <button
         type="button"

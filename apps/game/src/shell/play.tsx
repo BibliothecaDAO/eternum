@@ -1,7 +1,8 @@
 import { useIdentitySession } from "@/hooks/context/identity-session";
 
 import { useDirectory } from "./herald";
-import { ErrorPanel, Loading } from "./kit";
+import { Loading } from "./kit";
+import { ServiceFailure } from "./service-failure";
 import { BlitzLobbyCard, EternumCard, FrontierCard } from "./mode-cards";
 import { chooseSeason } from "./season";
 import { useNowSeconds } from "./use-now";
@@ -18,13 +19,7 @@ const PlayBody = () => {
   const directory = useDirectory();
 
   if (directory.isError)
-    return (
-      <ErrorPanel
-        message="Games are unavailable right now."
-        error={directory.error}
-        retry={() => void directory.refetch()}
-      />
-    );
+    return <ServiceFailure service="directory" error={directory.error} retry={() => void directory.refetch()} />;
   if (directory.isPending || status === "loading") return <Loading />;
   const games = directory.data.games;
   const season = chooseSeason(games, status === "signed-in");

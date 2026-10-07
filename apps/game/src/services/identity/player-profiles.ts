@@ -92,6 +92,6 @@ const readOwnProfile = (address: string | bigint): IdentityProfile | null => {
 
 export const getPlayerName: PlayerNameResolver = (address) => readPlayerProfile(address).name;
 
-/** The name a surface shows for a player: their chosen name, else "Player-<last six>". */
+/** The name a surface shows for a player: their claimed name, else "Lord" and the account's last four. */
 export const getPlayerDisplayName = (address: string | bigint): string =>
   displayPlayerName(`0x${BigInt(address).toString(16)}`, getPlayerName(address));

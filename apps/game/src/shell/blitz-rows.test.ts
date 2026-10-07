@@ -5,7 +5,6 @@ import type { PlaytestSlot } from "@/ui/features/factory-v2/api/factory-worker";
 import { blitzRows, leadBlitzRow } from "./blitz-rows";
 import type { DirectoryGame } from "./herald";
 
-const NOW = 1_000;
 const ME = "0x7";
 
 const blitz = (gameId: number, over: Partial<DirectoryGame>): DirectoryGame =>
@@ -55,14 +54,13 @@ describe("the lobby's Blitz rows", () => {
         slot("frozen", 900, { frozenAt: "x", closed: true }),
       ],
       ME,
-      NOW,
     );
-    expect(rows.map((row) => [row.key, row.secondsLeft, row.action])).toEqual([
+    expect(rows.map((row) => [row.key, row.startsAt, row.action])).toEqual([
       ["game:0xa:1", null, "spectate"],
       ["game:0xa:2", null, "enter"],
-      ["game:0xa:3", 600, "registered"],
-      ["slot:soon", 42, "registered"],
-      ["slot:late", 4_000, "join"],
+      ["game:0xa:3", 1_600, "registered"],
+      ["slot:soon", 1_042, "registered"],
+      ["slot:late", 5_000, "join"],
     ]);
   });
 
@@ -72,29 +70,29 @@ describe("the lobby's Blitz rows", () => {
       realmsId: `0x${position + 100}`,
       position,
     }));
-    const [row] = blitzRows([], [slot("big", 2_000, { registrations })], ME, NOW);
+    const [row] = blitzRows([], [slot("big", 2_000, { registrations })], ME);
     expect(row.seats).toEqual({ filled: 2, total: 24 });
   });
 
   it("keeps a closed slot's check until the player's game lists, then only the game shows", () => {
     const closed = slot("closed", 900, { closed: true, registrations: [mine] });
-    expect(blitzRows([], [closed], ME, NOW).map((row) => [row.key, row.secondsLeft, row.action])).toEqual([
-      ["slot:closed", 0, "registered"],
+    expect(blitzRows([], [closed], ME).map((row) => [row.key, row.startsAt, row.action])).toEqual([
+      ["slot:closed", 900, "registered"],
     ]);
     const assigned = { ...closed, frozenAt: "x", registrations: [{ ...mine, gameNumber: 1 }] };
-    expect(blitzRows([], [assigned], ME, NOW).map((row) => row.key)).toEqual(["slot:closed"]);
+    expect(blitzRows([], [assigned], ME).map((row) => row.key)).toEqual(["slot:closed"]);
     const anotherGame = blitz(2, { name: "closed-2" });
-    expect(blitzRows([anotherGame], [assigned], ME, NOW).map((row) => row.key)).toContain("slot:closed");
+    expect(blitzRows([anotherGame], [assigned], ME).map((row) => row.key)).toContain("slot:closed");
     const ownGame = blitz(1, { name: "closed-1" });
-    expect(blitzRows([anotherGame, ownGame], [assigned], ME, NOW).map((row) => row.key)).toEqual([
+    expect(blitzRows([anotherGame, ownGame], [assigned], ME).map((row) => row.key)).toEqual([
       "game:0xa:2",
       "game:0xa:1",
     ]);
-    expect(blitzRows([], [assigned], "0x999", NOW)).toEqual([]);
+    expect(blitzRows([], [assigned], "0x999")).toEqual([]);
   });
 
   it("leads a one-row card with the player's own game to enter, else the next slot", () => {
-    const rows = blitzRows([blitz(1, {})], [slot("soon", 1_042)], ME, NOW);
+    const rows = blitzRows([blitz(1, {})], [slot("soon", 1_042)], ME);
     expect(leadBlitzRow(rows)?.key).toBe("slot:soon");
     const playing = blitzRows(
       [
@@ -103,7 +101,6 @@ describe("the lobby's Blitz rows", () => {
       ],
       [slot("soon", 1_042)],
       ME,
-      NOW,
     );
     expect(leadBlitzRow(playing)?.key).toBe("game:0xa:2");
   });
@@ -114,8 +111,8 @@ it("keeps ended Blitz games available to watch until their settled result lists"
     status: "Ended",
     player_state: { registered: true, settled: true, roster_member: true, structures: [] },
   });
-  const rows = blitzRows([ended], [], ME, NOW);
-  expect(rows).toMatchObject([{ key: "game:0xa:7", action: "spectate", secondsLeft: null }]);
+  const rows = blitzRows([ended], [], ME);
+  expect(rows).toMatchObject([{ key: "game:0xa:7", action: "spectate", startsAt: null }]);
   expect(leadBlitzRow(rows)?.key).toBe("game:0xa:7");
-  expect(blitzRows([{ ...ended, status: "Settled" }], [], ME, NOW)).toEqual([]);
+  expect(blitzRows([{ ...ended, status: "Settled" }], [], ME)).toEqual([]);
 });

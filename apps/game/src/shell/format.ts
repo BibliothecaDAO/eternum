@@ -1,8 +1,7 @@
+import { formatExact } from "@/ui/design-system/kit/amount";
+
 export const shortAddress = (address: string): string =>
   address.length > 12 ? `${address.slice(0, 6)}…${address.slice(-4)}` : address;
-
-export const formatDate = (unixSeconds: number): string =>
-  new Date(unixSeconds * 1000).toLocaleDateString([], { month: "short", day: "numeric" });
 
 export const ordinal = (rank: number): string => {
   const mod100 = rank % 100;
@@ -12,7 +11,7 @@ export const ordinal = (rank: number): string => {
 };
 
 /** Victory points are recorded with six decimals. */
-export const formatPoints = (points: number): string => Math.round(points).toLocaleString();
+export const formatPoints = (points: number): string => formatExact(Math.round(points));
 
 export const sameAddress = (left: string, right: string): boolean => {
   try {
