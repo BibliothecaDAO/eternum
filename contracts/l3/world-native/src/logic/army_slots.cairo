@@ -43,6 +43,3 @@ pub fn release(key: ExplorerKey, explorer: ExplorerTroops) {
     dispatch(key, ArmySlotAction::Release(explorer.troops.stamina));
 }
 
-pub fn grant_logistics(key: ExplorerKey, stamina: StaminaSource, levels: u8) {
-    dispatch(key, ArmySlotAction::GrantLogistics(crate::troops::LogisticsStamina { stamina, levels }));
-}

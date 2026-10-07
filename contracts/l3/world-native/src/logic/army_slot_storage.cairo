@@ -2,8 +2,8 @@ use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
 use crate::events::RowSet;
 use crate::stamina::{StaminaSourceTrait, StaminaTrait};
 use crate::troops::{
-    ArmySlot, ArmySlotKey, ArmySlotRecord, Coord, ExplorerKey, ExplorerRecord, ExplorerRecordTrait, ExplorerTroops,
-    Stamina, StaminaSource, Troops,
+    ArmySlot, ArmySlotKey, ArmySlotRecord, Coord, ExplorerKey, ExplorerRecord, ExplorerTroops, Stamina, StaminaSource,
+    Troops,
 };
 
 pub fn read(key: ArmySlotKey) -> Option<ArmySlot> {
@@ -123,14 +123,4 @@ pub fn release(key: ExplorerKey, explorer: ExplorerTroops) {
         value.explorer_id = 0;
         write(slot_key, value);
     }
-}
-
-pub fn grant_logistics(
-    key: ExplorerKey, mut explorer: ExplorerTroops, award: crate::troops::LogisticsStamina,
-) -> StaminaSource {
-    let previous = explorer.into_record();
-    let mut stamina = award.stamina.inline();
-    stamina.amount += Into::<u8, u64>::into(award.levels) * crate::rules::ATTRIBUTE_STAMINA.into();
-    explorer.troops.stamina = StaminaSource::Inline(stamina);
-    persist(key, previous, explorer.troops).stamina
 }

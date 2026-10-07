@@ -172,10 +172,8 @@ pub mod RelicState {
             let key = ExplorerKey { game_id, explorer_id: command.explorer_id };
             let explorer = crate::logic::troops::authorized_explorer(key, actor, context.timestamp, context);
             let mut progress = crate::logic::progression::require(key);
+            // Logistics raises only the maximum, which stamina_max reads from the stored level.
             let choice = crate::progression::apply_choice(ref progress, command);
-            if choice.attribute == crate::progression::Attribute::Logistics {
-                crate::logic::army_slots::grant_logistics(key, explorer.troops.stamina, choice.applied);
-            }
             if choice.attribute == crate::progression::Attribute::Support {
                 crate::production::IRealmSupportDispatcherTrait::raise_realm_support(
                     crate::production::IRealmSupportLibraryDispatcher {
@@ -287,7 +285,8 @@ pub mod RelicState {
                     army_slot_storage::release(key, explorer);
                     stamina
                 },
-                ArmySlotAction::GrantLogistics(award) => army_slot_storage::grant_logistics(key, explorer, award),
+                // Declared in the schema; a Logistics pick no longer grants stamina, so nothing sends it.
+                ArmySlotAction::GrantLogistics(_) => panic!("Logistics grants no stamina"),
                 ArmySlotAction::Allocate(_) => panic!("allocation already handled"),
             };
             ResolvedArmySlot { stamina, battle_bonus_percent }

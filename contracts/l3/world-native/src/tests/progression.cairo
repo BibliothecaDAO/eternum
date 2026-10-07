@@ -215,7 +215,7 @@ fn recorded_choices_release_banked_levels_and_reject_stale_offers() {
 }
 
 #[test]
-fn every_relic_quality_persists_its_attribute_amount_and_logistics_updates_the_slot() {
+fn every_relic_quality_persists_its_attribute_amount_and_logistics_raises_only_the_maximum() {
     let d = super::registrar::setup();
     let (game_id, preset, category) = super::registrar::expedition_home(d);
     let (key, _) = super::registrar::expedition_armies(d, game_id, category);
@@ -250,12 +250,16 @@ fn every_relic_quality_persists_its_attribute_amount_and_logistics_updates_the_s
         assert!(execute_choice(d, key, pending));
         let progress = read_progress(d, key);
         assert_eq!(progress.logistics, quality + 2);
-        let after = super::state::GameState { contract_address: d.games }.resolved_explorer(key).unwrap().troops;
-        assert_eq!(
-            after.stamina.inline().amount,
-            before.stamina.inline().amount
-                + Into::<u8, u64>::into(quality + 1) * crate::rules::ATTRIBUTE_STAMINA.into(),
+        let after = snforge_std::interact_with_state(
+            d.games,
+            || {
+                let context = crate::commands::load_context(
+                    game_id, crate::commands::ActionContext { raw_root: 123, timestamp: 360 },
+                );
+                crate::logic::troops::active_explorer(key, 360, context).troops
+            },
         );
+        assert_eq!(after.stamina.inline().amount, before.stamina.inline().amount);
         assert_eq!(
             crate::progression::stamina_max(progress, after.category, preset.rules.troop_stamina_config),
             crate::stamina::StaminaImpl::max(
@@ -270,6 +274,53 @@ fn every_relic_quality_persists_its_attribute_amount_and_logistics_updates_the_s
     );
     let troops = super::state::GameState { contract_address: d.games }.resolved_explorer(key).unwrap().troops;
     assert_eq!(troops.boosts.incr_damage_dealt_end_tick, 0);
+}
+
+/// Sets the slot army's bar to `amount` at the current tick, through the troop write every action uses.
+fn set_bar(d: super::Deployment, key: crate::troops::ExplorerKey, amount: u64, tick: u64) {
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            let mut troops = crate::logic::troops::explorer(key).unwrap().troops;
+            troops.stamina = crate::troops::Stamina { amount, updated_tick: tick }.into();
+            crate::logic::troops::TroopState::update_troops(key, troops);
+        },
+    );
+}
+
+#[test]
+fn a_logistics_pick_raises_the_maximum_stamina_and_leaves_the_bar_where_it_was() {
+    let d = super::registrar::setup();
+    let (game_id, preset, category) = super::registrar::expedition_home(d);
+    let (key, _) = super::registrar::expedition_armies(d, game_id, category);
+    let rules = preset.rules.troop_stamina_config;
+    let tick = 360 / preset.rules.tick_config.armies_tick_in_seconds;
+    let base = crate::progression::stamina_max(crate::progression::initial(), crate::troops::TroopType::Knight, rules);
+    // A full bar, then one that is not: the pick moves neither, only the room above them.
+    for (amount, logistics) in array![(base, 1_u8), (40, 2)] {
+        snforge_std::interact_with_state(
+            d.games,
+            || {
+                crate::logic::progression::write(
+                    key,
+                    ArmyProgress { battle: 5, logistics, scouting: 5, support: 5, ..crate::progression::initial() },
+                );
+                let context = crate::commands::load_context(
+                    game_id, crate::commands::ActionContext { raw_root: 123, timestamp: 360 },
+                );
+                crate::logic::progression::grant_relic(key, 0, context);
+            },
+        );
+        set_bar(d, key, amount, tick);
+        let maximum = crate::progression::stamina_max(read_progress(d, key), crate::troops::TroopType::Knight, rules);
+        assert!(execute_choice(d, key, read_progress(d, key).pending.unwrap()));
+        let after = super::state::GameState { contract_address: d.games }.resolved_explorer(key).unwrap().troops;
+        assert_eq!(after.stamina.inline().amount, amount);
+        assert_eq!(
+            crate::progression::stamina_max(read_progress(d, key), crate::troops::TroopType::Knight, rules),
+            maximum + crate::rules::ATTRIBUTE_STAMINA.into(),
+        );
+    }
 }
 
 /// The damage a slot army resolved at `battle` deals to a fixed defender, as Combat computes it.
