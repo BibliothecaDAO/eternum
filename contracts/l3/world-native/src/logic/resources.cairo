@@ -310,17 +310,8 @@ pub mod ResourceState {
                 .production
                 .last_updated_at = core::cmp::max(resource.production.last_updated_at, core::cmp::min(now, start_at));
             if resource.production.last_updated_at != now {
-                let bonus = crate::logic::production::support_bonus(
-                    key, resource.production.production_rate, resource.production.last_updated_at, now,
-                );
                 settle(
-                    resource_type,
-                    ref resource.balance,
-                    ref resource.production,
-                    ref resource.weight,
-                    unit_weight,
-                    now,
-                    bonus,
+                    resource_type, ref resource.balance, ref resource.production, ref resource.weight, unit_weight, now,
                 );
             }
             resource

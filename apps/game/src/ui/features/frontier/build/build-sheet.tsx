@@ -30,8 +30,6 @@ const BUILD_MODELS = [
   "ResourceBalance",
   "ResourceProduction",
   "ResourceWeight",
-  // A day's Support boosts the wheat the realm grows and its barracks eat.
-  "RealmSupport",
   "Structure",
   "StructureBuildings",
   // What the realm has researched sets each building's tier, its price and what it gives.

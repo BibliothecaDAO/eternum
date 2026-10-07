@@ -50,44 +50,6 @@ pub mod ResourcesLogic {
         StoryEvent: StoryEvent,
     }
     #[abi(embed_v0)]
-    impl RealmSupport of crate::production::IRealmSupport<ContractState> {
-        fn realm_support(
-            self: @ContractState, key: crate::production::RealmSupportKey,
-        ) -> Option<crate::production::RealmSupport> {
-            crate::logic::production::realm_support(key)
-        }
-        fn raise_realm_support(
-            ref self: ContractState, key: ResourceKey, level: u8, context: crate::commands::ActionContext,
-        ) {
-            let context = crate::commands::load_context(key.game_id, context);
-            assert!(level >= 1 && level <= crate::rules::ATTRIBUTE_CAP, "invalid Support level");
-            let epoch_seconds = context.rules.unbox().epoch_seconds;
-            let epoch = crate::expeditions::absolute_epoch(epoch_seconds, context.timestamp);
-            let storage_key = (key.game_id, key.entity_id, epoch);
-            let previous = crate::state::read().production.realm_support.read(storage_key);
-            if level <= 1 || level <= previous {
-                return;
-            }
-            self
-                .resources
-                .settle_production(
-                    key,
-                    context.timestamp.try_into().unwrap(),
-                    crate::commands::resource_context(context).production_start,
-                );
-            crate::state::write().production.realm_support.write(storage_key, level);
-            self
-                .emit(
-                    RowSet {
-                        version: 1,
-                        model: 'RealmSupport',
-                        keys: array![key.game_id.into(), key.entity_id.into(), epoch.into()].span(),
-                        values: array![level.into()].span(),
-                    },
-                );
-        }
-    }
-    #[abi(embed_v0)]
     impl LordsCommitment of crate::relics::ILordsCommitment<ContractState> {
         fn initialize_lords_budget(ref self: ContractState, game_id: u32) {
             crate::logic::preset_record::for_game(game_id).chest_rules.read().expect('missing chest rules');

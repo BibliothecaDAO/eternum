@@ -1,12 +1,12 @@
-import { battleBonusBps, logisticsStamina, scoutingIncrementBps } from "@bibliothecadao/eternum";
+import { battleBonusBps, homecomingBps, logisticsStamina, scoutingIncrementBps } from "@bibliothecadao/eternum";
 import { nativeRuleConstants, type NativeRows } from "@bibliothecadao/eternum/game-client";
 
 /** An army's XP and attribute tiers, and the game's XP rules, exactly as the native store carries them. */
 export type ArmyProgressFacts = NativeRows["ArmyProgress"];
-export type Attribute = "Battle" | "Logistics" | "Scouting" | "Support";
+export type Attribute = "Battle" | "Logistics" | "Scouting" | "Homecoming";
 export type ProgressionRulesFacts = NativeRows["ArmyProgressionRules"];
 
-export const ATTRIBUTES: readonly Attribute[] = ["Battle", "Logistics", "Scouting", "Support"];
+export const ATTRIBUTES: readonly Attribute[] = ["Battle", "Logistics", "Scouting", "Homecoming"];
 
 /** The contract's top tier, legendary. */
 export const MAX_ATTRIBUTE_LEVEL = nativeRuleConstants.ATTRIBUTE_CAP;
@@ -17,7 +17,7 @@ export const attributeLevel = (progress: ArmyProgressFacts, attribute: Attribute
     Battle: progress.battle,
     Logistics: progress.logistics,
     Scouting: progress.scouting,
-    Support: progress.support,
+    Homecoming: progress.homecoming,
   })[attribute];
 
 /** What the next tier above `tier` costs in XP, as the contract prices it; null at legendary. */
@@ -43,8 +43,8 @@ export const attributeBadgeTarget = (explorerId: number): string => `attributes-
 
 /**
  * Each attribute's glyph and what it gives at a tier, as the contract's constants apply it: damage in percent and
- * stamina from their tier tables, the chosen kind's find rate in percent of its base, and the home realm's production
- * in percent for the day.
+ * stamina from their tier tables, the chosen kind's find rate in percent of its base, and the share of surviving troops
+ * returned home at the day's end in percent.
  */
 export const ATTRIBUTE_LOOK: Record<Attribute, { glyph: string; atTier: (tier: number) => number; unit: "%" | "" }> = {
   Battle: { glyph: "/images/frontier/attributes/battle.svg", atTier: (tier) => battleBonusBps(tier) / 100, unit: "%" },
@@ -57,9 +57,10 @@ export const ATTRIBUTE_LOOK: Record<Attribute, { glyph: string; atTier: (tier: n
       100,
     unit: "%",
   },
-  Support: {
+  // Support's glyph stands in until the narrative lane deals Homecoming's Aspect mark.
+  Homecoming: {
     glyph: "/images/frontier/attributes/support.svg",
-    atTier: (tier) => (tier - 1) * nativeRuleConstants.ATTRIBUTE_SUPPORT_PERCENT,
+    atTier: (tier) => homecomingBps(tier) / 100,
     unit: "%",
   },
 };

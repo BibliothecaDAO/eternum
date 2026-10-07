@@ -250,6 +250,6 @@ const siteReward = (value: unknown): SitePayoutSystemUpdate["reward"] => {
   };
 };
 
-const ATTRIBUTES = ["Battle", "Logistics", "Scouting", "Support"] as const;
+const ATTRIBUTES = ["Battle", "Logistics", "Scouting", "Homecoming"] as const;
 const isAttribute = (value: unknown): value is TierBoughtSystemUpdate["attribute"] =>
   ATTRIBUTES.includes(value as TierBoughtSystemUpdate["attribute"]);

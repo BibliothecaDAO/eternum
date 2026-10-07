@@ -11,7 +11,7 @@ const progress = (overrides: Partial<NonNullable<MapSiteUser["progress"]>> = {})
   logistics: 1,
   scouting: 1,
   scouting_kinds: 0,
-  support: 1,
+  homecoming: 1,
   ...overrides,
 });
 const RULES = {
@@ -50,7 +50,7 @@ describe("a Shrine or Well", () => {
   });
 
   it("lets a legendary army use a Shrine, and keeps it disabled only while the army's progress is unknown", () => {
-    const maxed = progress({ battle: 5, logistics: 5, scouting: 5, support: 5 });
+    const maxed = progress({ battle: 5, logistics: 5, scouting: 5, homecoming: 5 });
     expect(readMapSite("Shrine", SITE, user({ progress: maxed }), RULES).usable).toBe(true);
     expect(readMapSite("Shrine", SITE, user({ progress: undefined }), RULES).usable).toBe(false);
     // A Well asks nothing of progress.

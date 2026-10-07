@@ -31,13 +31,13 @@ const ARMY: ArmyProgressFacts = {
   logistics: 1,
   scouting: 4,
   scouting_kinds: 0b10_01_10,
-  support: 1,
+  homecoming: 1,
 };
-const COLUMN: Record<Attribute, "battle" | "logistics" | "scouting" | "support"> = {
+const COLUMN: Record<Attribute, "battle" | "logistics" | "scouting" | "homecoming"> = {
   Battle: "battle",
   Logistics: "logistics",
   Scouting: "scouting",
-  Support: "support",
+  Homecoming: "homecoming",
 };
 /** Herald's pre-confirmed result, simulated. */
 const RESULT_AFTER_MS = 500;

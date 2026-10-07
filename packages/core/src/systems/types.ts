@@ -49,7 +49,7 @@ export type SitePayoutSystemUpdate = {
 /** An army's Upgrade: the attribute raised, the tier it reached and the XP it paid. */
 export type TierBoughtSystemUpdate = {
   explorerId: ID;
-  attribute: "Battle" | "Logistics" | "Scouting" | "Support";
+  attribute: "Battle" | "Logistics" | "Scouting" | "Homecoming";
   tier: number;
   price: number;
 };

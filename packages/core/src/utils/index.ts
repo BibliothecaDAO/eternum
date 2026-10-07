@@ -41,4 +41,3 @@ export * from "./utils";
 export * from "./realm-research";
 
 export * from "./production-output";
-export * from "./realm-support";

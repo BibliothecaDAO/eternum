@@ -47,9 +47,8 @@ pub fn destroy(key: ExplorerKey) {
         .troops
         .progress
         .write(
-            (key.game_id, key.explorer_id), ArmyProgress {
-                xp: 0, battle: 0, logistics: 0, scouting: 0, scouting_kinds: 0, support: 0,
-            },
+            (key.game_id, key.explorer_id),
+            ArmyProgress { xp: 0, battle: 0, logistics: 0, scouting: 0, scouting_kinds: 0, homecoming: 0 },
         );
     let mut keys = array![];
     key.serialize(ref keys);

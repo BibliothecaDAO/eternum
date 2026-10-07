@@ -6,7 +6,6 @@ use crate::rules::RESOURCE_PRECISION;
 #[starknet::interface]
 trait IResourceFixture<T> {
     fn initialize(ref self: T, key: ResourceKey, capacity: u128);
-    fn configure_support(ref self: T, key: ResourceKey);
     fn grant(ref self: T, key: ResourceKey, amount: u128);
     fn spend(ref self: T, key: ResourceKey, amount: u128);
     fn start(ref self: T, key: ResourceKey);
@@ -48,11 +47,6 @@ mod ResourceFixture {
             state.registrar.presets.write(1, 1);
             state.presets.entry(1).rules.epoch_seconds.write(0);
             self.resources.initialize(key, capacity);
-        }
-        fn configure_support(ref self: ContractState, key: ResourceKey) {
-            let state = crate::state::write();
-            state.presets.entry(1).rules.epoch_seconds.write(100);
-            state.production.realm_support.write((key.game_id, key.entity_id, 0), 3);
         }
         fn grant(ref self: ContractState, key: ResourceKey, amount: u128) {
             self.resources.grant_resource(key, 23, amount, 1, 10, 0);
@@ -298,28 +292,3 @@ fn inactive_resources_have_no_clock_and_activation_starts_at_the_recorded_time()
     assert_eq!(production.last_updated_at, 205);
 }
 
-
-#[test]
-fn support_boosts_wheat_and_troops_through_midnight_using_the_same_integral() {
-    let resources = fixture();
-    let key = ResourceKey { game_id: 1, entity_id: 7 };
-    resources.initialize(key, 100000);
-    resources.configure_support(key);
-    resources.start_at(key, 35, 100, crate::resources::UNLIMITED_OUTPUT, 90);
-    resources.start_at(key, 26, 10, crate::resources::UNLIMITED_OUTPUT, 90);
-    resources.spend_at(key, 26, 0, 1, 110);
-    let (troops, _, _) = resources.read_slot(key, 26);
-    let (wheat, _, _) = resources.read_slot(key, 35);
-    assert_eq!(troops, 220);
-    // Each resource settles alone: touching troops leaves wheat where it was.
-    assert_eq!(wheat, 0);
-    resources.spend_at(key, 35, 0, 1, 110);
-    let (wheat, _, _) = resources.read_slot(key, 35);
-    assert_eq!(wheat, 2200);
-    resources.spend_at(key, 26, 0, 1, 120);
-    resources.spend_at(key, 35, 0, 1, 120);
-    let (troops, _, _) = resources.read_slot(key, 26);
-    let (wheat, _, _) = resources.read_slot(key, 35);
-    assert_eq!(troops, 320);
-    assert_eq!(wheat, 3200);
-}

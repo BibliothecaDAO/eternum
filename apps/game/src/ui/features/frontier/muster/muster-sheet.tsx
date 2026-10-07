@@ -33,8 +33,6 @@ import { DeployRing } from "./deploy-ring";
 
 const MUSTER_MODELS = [
   "ArmySlot",
-  // Troops on hand are trained through the production integral, which a day's Support boosts.
-  "RealmSupport",
   "ResourceBalance",
   "ResourceProduction",
   "ResourceWeight",

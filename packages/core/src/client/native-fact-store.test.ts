@@ -492,7 +492,7 @@ describe("declared fact absence", () => {
         logistics: 3,
         scouting: 1,
         scouting_kinds: 0,
-        support: 1,
+        homecoming: 1,
       }),
     ]);
     expect(resolveExplorerTroops(store, army)?.stamina).toEqual({ amount: 7n, updated_tick: 17n });

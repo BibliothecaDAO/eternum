@@ -1,5 +1,4 @@
 pub const ATTRIBUTE_CAP: u8 = 5;
-pub const ATTRIBUTE_SUPPORT_PERCENT: u8 = 10;
 // Attribute tiers run common (1) to legendary (5); common gives nothing and the steps grow.
 pub const BATTLE_UNCOMMON_BPS: u32 = 1000;
 pub const BATTLE_RARE_BPS: u32 = 3000;
@@ -36,6 +35,25 @@ pub fn scouting_increment_bps(tier: u8) -> u32 {
         3 => SCOUTING_RARE_BPS,
         4 => SCOUTING_EPIC_BPS,
         5 => SCOUTING_LEGENDARY_BPS,
+        _ => panic!("invalid attribute tier"),
+    }
+}
+
+// The share of an army's surviving troops Homecoming returns to the realm when the day ends, in basis points.
+pub const HOMECOMING_UNCOMMON_BPS: u32 = 300;
+pub const HOMECOMING_RARE_BPS: u32 = 900;
+pub const HOMECOMING_EPIC_BPS: u32 = 1800;
+pub const HOMECOMING_LEGENDARY_BPS: u32 = 3000;
+
+/// The share of its surviving troops an army returns home at a Homecoming tier, in basis points.
+pub fn homecoming_bps(tier: u8) -> u32 {
+    match tier {
+        0 => panic!("invalid attribute tier"),
+        1 => 0,
+        2 => HOMECOMING_UNCOMMON_BPS,
+        3 => HOMECOMING_RARE_BPS,
+        4 => HOMECOMING_EPIC_BPS,
+        5 => HOMECOMING_LEGENDARY_BPS,
         _ => panic!("invalid attribute tier"),
     }
 }

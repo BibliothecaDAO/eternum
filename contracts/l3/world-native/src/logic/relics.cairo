@@ -172,16 +172,6 @@ pub mod RelicState {
             let bought = crate::progression::buy_tier(
                 ref progress, crate::logic::progression::rules(game_id).expect('missing progression rules'), command,
             );
-            if bought.attribute == crate::progression::Attribute::Support {
-                crate::production::IRealmSupportDispatcherTrait::raise_realm_support(
-                    crate::production::IRealmSupportLibraryDispatcher {
-                        class_hash: get_dep_component!(@self, Life).classes(game_id).resources.read(),
-                    },
-                    ResourceKey { game_id, entity_id: explorer.owner },
-                    progress.support,
-                    crate::commands::action_context(context),
-                );
-            }
             crate::logic::progression::write(key, progress);
             self.refill_stamina(key, explorer, crate::rules::TIER_STAMINA_REFILL, context);
             let index = crate::ownership::StoryCursorTrait::next(ref story_cursor);

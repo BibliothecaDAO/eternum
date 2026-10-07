@@ -4,7 +4,6 @@ import { describe, expect, it, vi } from "vitest";
 import { NativeFactStore } from "../client/native-fact-store";
 import { waitForWorldState } from "../client/wait-for-world-state";
 import { ResourceManager } from "./resource-manager";
-import { realmSupportPercent } from "../utils/realm-support";
 import type { GameSyncFact } from "../sync/game-sync-types";
 import { ResourcesIds } from "@bibliothecadao/types";
 
@@ -234,82 +233,4 @@ describe("native resource facts", () => {
     expect(manager.balanceWithProduction(110, 26).balance).toBe(96);
     expect(manager.balanceWithProduction(110, 35).balance).toBe(4);
   });
-});
-
-it("integrates yesterday's Support for wheat and troops after refresh, and uses declared absence for an unboosted realm", () => {
-  const facts: GameSyncFact[] = [
-    ...upsert("rules", { SliceRules: { ...preset.rules, game_id: 1, epoch_seconds: 100, mode_rules: 0 } }),
-    ...upsert("game", { GameRegistry: { ...game, ready: true, start_main_at: 0n } }),
-    ...upsert("settlement", {
-      SettlementRules: { game_id: 1, registration_start: 0, registration_limit: 0, mode: "Single", spacing: 100 },
-    }),
-    ...upsert("realm", {
-      Structure: {
-        game_id: 1,
-        entity_id: 7,
-        owner: "0xa",
-        resources_packed: 0n,
-        base: {
-          category: 1,
-          level: 0,
-          created_at: 0n,
-          troop_max_guard_count: 0,
-          troop_max_explorer_count: 0,
-          starting_troops_granted: false,
-        },
-        metadata: { realm_id: 1, village_realm: 0, mine_kind: 0, deepest_depth: 0, has_wonder: false, order: 0 },
-      },
-    }),
-    ...upsert("weight", { ResourceWeight: { ...weight(), capacity: 100000n } }),
-    ...upsert("support", { RealmSupport: { game_id: 1, structure_id: 7, epoch: 0n, level: 3 } }),
-    ...[35, 26].flatMap((resourceId) =>
-      upsert(`resource-${resourceId}`, {
-        ResourceProduction: {
-          ...production,
-          resource_type: resourceId,
-          production_rate: resourceId === 35 ? 100n : 10n,
-          output_amount_left: (1n << 128n) - 1n,
-          last_updated_at: 90,
-        },
-        ResourceRule: { game_id: 1, resource_type: resourceId, unit_weight: 1n, realm_rate: 0n, village_rate: 0n },
-      }),
-    ),
-    ...upsert("recipe", {
-      ProductionRecipe: {
-        game_id: 1,
-        resource_type: 26,
-        simple_output: 1n,
-        simple_inputs: [{ resource_type: 35, amount: 2n }],
-        complex_output: 0n,
-        complex_inputs: [],
-      },
-    }),
-  ];
-  const refresh = (rows: GameSyncFact[]) => {
-    const store = new NativeFactStore();
-    store.applyFacts(rows.map((row, index) => ({ ...row, key: `0x${index + 1}` })));
-    store.setSnapshot({ gameId: 1, complete: true, actor: "0xa", timestamp: 110 });
-    return { store, manager: new ResourceManager(store, 7, 1) };
-  };
-  for (let refreshCount = 0; refreshCount < 2; refreshCount++) {
-    const { store, manager } = refresh(facts);
-    expect(manager.balanceWithProduction(110, 26)?.balance).toBe(220);
-    expect(manager.balanceWithProduction(110, 35)?.balance).toBe(2200);
-    expect(ResourceManager.calculateResourceProductionData(35, manager.current(35)!, 110).productionPerSecond).toBe(
-      100 / 1e9,
-    );
-    expect(store.requireOrAbsent("RealmSupport", { game_id: 1, structure_id: 7, epoch: 1n }).known?.level).toBe(0);
-    // The day's wheat runs 20% faster until its midnight at 100; then the base rate.
-    expect(manager.wheatPerHour(95)).toBe((120 / 1e9) * 3600);
-    expect(manager.wheatPerHour(150)).toBe((100 / 1e9) * 3600);
-    // Today's boost: the day's earned level past the first, none on a day that earned nothing.
-    expect(realmSupportPercent(store, 1, 7, 90)).toEqual({ known: 20 });
-    expect(realmSupportPercent(store, 1, 7, 150)).toEqual({ known: 0 });
-    store.setSnapshot({ gameId: 1, complete: false, actor: "0xa", timestamp: 110 });
-    // An incomplete scope cannot vouch for a day without a row.
-    expect(realmSupportPercent(store, 1, 7, 150).unknown).toBeDefined();
-  }
-  const unboosted = refresh(facts.filter((row) => row.model !== "RealmSupport"));
-  expect(unboosted.manager.balanceWithProduction(110, 26)?.balance).toBe(200);
-  expect(unboosted.manager.balanceWithProduction(110, 35)?.balance).toBe(2000);
 });

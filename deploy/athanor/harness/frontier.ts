@@ -911,7 +911,7 @@ function affordableUpgrade(client: GameClient, explorerId: number) {
     ["Battle", progress.battle],
     ["Logistics", progress.logistics],
     ["Scouting", progress.scouting],
-    ["Support", progress.support],
+    ["Homecoming", progress.homecoming],
   ] as const;
   const [attribute] =
     tiers

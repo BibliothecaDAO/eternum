@@ -130,16 +130,6 @@ const playerRows = (clock: LabClock): WireRow[] => [
     },
   },
   { model: "RealmKnowledge", value: { game_id: clock.gameId, structure_id: LAB_REALM_ID, learned: 0 } },
-  // The realm earned Support III today: its production runs 20% faster until midnight.
-  {
-    model: "RealmSupport",
-    value: {
-      game_id: clock.gameId,
-      structure_id: LAB_REALM_ID,
-      epoch: String(absoluteEpoch(clock, clock.nowSeconds)),
-      level: 3,
-    },
-  },
   { model: "ArmySlot", value: armySlot(clock, 201, 0, 30) },
   { model: "ArmySlot", value: armySlot(clock, 202, 1, 150) },
   // The day's third army fell this morning: its slot keeps the tired bar for the next muster.
@@ -284,7 +274,7 @@ const armyProgress = (clock: LabClock, explorerId: number) => ({
   logistics: 1,
   scouting: 1,
   scouting_kinds: 0,
-  support: 1,
+  homecoming: 1,
 });
 
 const armySlot = (clock: LabClock, explorerId: number, slot: number, stamina: number) => ({

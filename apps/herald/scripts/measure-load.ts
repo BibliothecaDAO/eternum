@@ -164,13 +164,12 @@ const frontierArmy = (game: number, player: number, army: number, x: number) => 
       "troops.stamina": ["1", String(army)],
     }),
     row("ArmyProgress", [game, entity], {
-      level: "1",
       xp: "0",
       battle: "1",
       logistics: "1",
       scouting: "1",
-      support: "1",
-      pending: ["1"],
+      scouting_kinds: "0",
+      homecoming: "1",
     }),
     row(
       "ArmySlot",

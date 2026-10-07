@@ -29,7 +29,7 @@ const ARMY: ArmyProgressFacts = {
   logistics: 1,
   scouting: 5,
   scouting_kinds: 0b10_10_10_10,
-  support: 1,
+  homecoming: 1,
 };
 
 let read: () => ReturnType<typeof usePick> = () => null;
@@ -78,9 +78,7 @@ describe("the Upgrade", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     const host = document.createElement("div");
     const root = createRoot(host);
-    await act(async () =>
-      root.render(<PickPanel progress={ARMY} rules={RULES} commit={() => Promise.resolve()} />),
-    );
+    await act(async () => root.render(<PickPanel progress={ARMY} rules={RULES} commit={() => Promise.resolve()} />));
     await act(async () => openPick(201));
     const card = (attribute: string) => host.querySelector<HTMLButtonElement>(`[aria-label^="${attribute}, tier"]`)!;
     expect(host.textContent).toContain("250 XP");

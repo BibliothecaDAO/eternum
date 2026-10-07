@@ -16,7 +16,7 @@ pub enum Attribute {
     Battle,
     Logistics,
     Scouting,
-    Support,
+    Homecoming,
 }
 
 /// What a Scouting tier raises: the find rate of one kind of site. Ruins, shrines and wells never change.
@@ -36,7 +36,7 @@ pub struct ArmyProgress {
     pub logistics: u8,
     pub scouting: u8,
     pub scouting_kinds: u8,
-    pub support: u8,
+    pub homecoming: u8,
 }
 
 // Tiers start at common, so a stored zero word means no progress.
@@ -46,7 +46,7 @@ pub impl ProgressPacking of starknet::storage_access::StorePacking<ArmyProgress,
             + Into::<u8, u128>::into(value.battle) * 0x100000000
             + Into::<u8, u128>::into(value.logistics) * 0x10000000000
             + Into::<u8, u128>::into(value.scouting) * 0x1000000000000
-            + Into::<u8, u128>::into(value.support) * 0x100000000000000
+            + Into::<u8, u128>::into(value.homecoming) * 0x100000000000000
             + Into::<u8, u128>::into(value.scouting_kinds) * 0x10000000000000000
     }
     fn unpack(value: u128) -> ArmyProgress {
@@ -55,7 +55,7 @@ pub impl ProgressPacking of starknet::storage_access::StorePacking<ArmyProgress,
             battle: (value / 0x100000000 % 256).try_into().unwrap(),
             logistics: (value / 0x10000000000 % 256).try_into().unwrap(),
             scouting: (value / 0x1000000000000 % 256).try_into().unwrap(),
-            support: (value / 0x100000000000000 % 256).try_into().unwrap(),
+            homecoming: (value / 0x100000000000000 % 256).try_into().unwrap(),
             scouting_kinds: (value / 0x10000000000000000 % 256).try_into().unwrap(),
         }
     }
@@ -101,7 +101,7 @@ pub trait IArmyProgression<T> {
 }
 
 pub fn initial() -> ArmyProgress {
-    ArmyProgress { xp: 0, battle: 1, logistics: 1, scouting: 1, scouting_kinds: 0, support: 1 }
+    ArmyProgress { xp: 0, battle: 1, logistics: 1, scouting: 1, scouting_kinds: 0, homecoming: 1 }
 }
 
 pub fn attribute_tier(progress: ArmyProgress, attribute: Attribute) -> u8 {
@@ -109,7 +109,7 @@ pub fn attribute_tier(progress: ArmyProgress, attribute: Attribute) -> u8 {
         Attribute::Battle => progress.battle,
         Attribute::Logistics => progress.logistics,
         Attribute::Scouting => progress.scouting,
-        Attribute::Support => progress.support,
+        Attribute::Homecoming => progress.homecoming,
     }
 }
 
@@ -135,7 +135,7 @@ pub fn buy_tier(ref progress: ArmyProgress, rules: ArmyProgressionRules, command
         Attribute::Battle => progress.battle = tier,
         Attribute::Logistics => progress.logistics = tier,
         Attribute::Scouting => progress.scouting = tier,
-        Attribute::Support => progress.support = tier,
+        Attribute::Homecoming => progress.homecoming = tier,
     }
     if command.attribute == Attribute::Scouting {
         let code: u8 = match command.kind.expect('Scouting needs a kind') {

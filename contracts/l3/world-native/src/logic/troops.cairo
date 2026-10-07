@@ -428,16 +428,11 @@ pub mod TroopsLogic {
             game_context: crate::commands::ExecutionContext,
         ) {
             crate::troop_management::assert_amount(amount);
-            let tier = match tier {
-                TroopTier::T1 => 0,
-                TroopTier::T2 => 1,
-                TroopTier::T3 => 2,
-            };
             self
                 .resources_dispatcher(game_id)
                 .raise_troops(
                     ResourceKey { game_id, entity_id: home },
-                    crate::troops::troop_resource(category, tier),
+                    crate::troops::stock_resource(category, tier),
                     amount,
                     timestamp,
                     crate::commands::resource_context(game_context),
@@ -889,9 +884,39 @@ pub mod troop_helpers {
                 let key = ExplorerKey { game_id: home.game_id, explorer_id: *id };
                 let explorer = crate::logic::troops::explorer(key).expect('missing home army');
                 if !crate::expeditions::is_current(explorer.coord, start, rules.epoch_seconds, spacing, timestamp) {
+                    self.return_troops(key, home, explorer, timestamp, game_context);
                     self.destroy_explorer(key, explorer);
                 }
             }
+        }
+
+        /// Homecoming: an army the day has ended sends its own tier's share of its surviving troops back to the
+        /// realm's stock, in whole troops and as much as fits.
+        fn return_troops(
+            ref self: TContractState,
+            key: ExplorerKey,
+            home: ResourceKey,
+            explorer: ExplorerTroops,
+            timestamp: u64,
+            game_context: crate::commands::ExecutionContext,
+        ) {
+            let Some(progress) = crate::logic::progression::read(key) else {
+                return;
+            };
+            let share: u128 = crate::rules::homecoming_bps(progress.homecoming).into();
+            let returned = explorer.troops.count / RESOURCE_PRECISION * share / 10000 * RESOURCE_PRECISION;
+            if returned == 0 {
+                return;
+            }
+            self
+                .resources_dispatcher(home.game_id)
+                .grant_resource(
+                    home,
+                    crate::troops::stock_resource(explorer.troops.category, explorer.troops.tier),
+                    returned,
+                    timestamp,
+                    crate::commands::resource_context(game_context),
+                );
         }
 
         fn reveal_depth_arrival(

@@ -1,9 +1,7 @@
 use starknet::storage::StorageMapWriteAccess;
 use crate::progression::{ArmyProgress, ArmyProgressionRules, Attribute, BuyTier, ProgressPacking, ScoutingKind};
-use crate::resources::IResourceOperationsDispatcherTrait;
 use crate::stamina::StaminaSourceTrait;
-use crate::tests::state::TroopObservationTrait;
-use crate::troops::IBattleResolutionDispatcherTrait;
+use crate::tests::state::{ResourceObservationTrait, TroopObservationTrait};
 
 fn rules() -> ArmyProgressionRules {
     ArmyProgressionRules {
@@ -98,7 +96,7 @@ fn a_clear_pays_two_and_a_half_times_the_root_of_the_guard_strength() {
 #[fuzzer(runs: 64)]
 fn packed_progress_round_trips_every_tier_and_the_full_xp_range(xp: u32, a: u8, b: u8, c: u8, d: u8, kinds: u8) {
     let progress = ArmyProgress {
-        xp, battle: a % 5 + 1, logistics: b % 5 + 1, scouting: c % 5 + 1, scouting_kinds: kinds, support: d % 5 + 1,
+        xp, battle: a % 5 + 1, logistics: b % 5 + 1, scouting: c % 5 + 1, scouting_kinds: kinds, homecoming: d % 5 + 1,
     };
     assert_eq!(ProgressPacking::unpack(ProgressPacking::pack(progress)), progress);
 }
@@ -263,76 +261,50 @@ fn logistics_tiers_set_the_maximum_stamina_by_the_ruled_table() {
 
 
 #[test]
-fn chosen_support_is_the_days_max_survives_death_and_stops_at_midnight() {
+fn homecoming_returns_each_expired_armys_own_share_of_its_survivors() {
     let d = super::registrar::setup();
     let (game_id, _, category) = super::registrar::expedition_home(d);
     let (first, second) = super::registrar::expedition_armies(d, game_id, category);
     let home = crate::resources::ResourceKey { game_id, entity_id: 1 };
-    let before = snforge_std::interact_with_state(
+    let troop = crate::rules::RESOURCE_PRECISION;
+    let stock = snforge_std::interact_with_state(
         d.games,
         || {
-            let state = crate::state::write();
-            state
+            // An unlimited store isolates the share from capacity clipping.
+            crate::state::write()
                 .resources
-                .productions
+                .weights
                 .write(
-                    (game_id, 1, crate::resources::LABOR),
-                    crate::resources::Production {
-                        building_count: 1,
-                        production_rate: 100,
-                        last_updated_at: 350,
-                        output_amount_left: crate::resources::UNLIMITED_OUTPUT,
-                    },
+                    (game_id, 1), crate::resources::Weight { capacity: 0xffffffffffffffffffffffffffffffff, weight: 0 },
                 );
-            crate::logic::resources::balance(home, crate::resources::LABOR)
+            // The first army ends the day 10,000 strong at epic Homecoming, the second 1,000 strong at rare.
+            for (key, count, homecoming) in array![(first, 10_000_u128, 4_u8), (second, 1_000, 3)] {
+                let mut troops = crate::logic::troops::explorer(key).unwrap().troops;
+                troops.count = count * troop;
+                crate::logic::troops::TroopState::update_troops(key, troops);
+                crate::logic::progression::write(key, ArmyProgress { homecoming, ..crate::progression::initial() });
+            }
+            let troops = crate::logic::troops::explorer(first).unwrap().troops;
+            crate::troops::stock_resource(troops.category, troops.tier)
         },
     );
-    // The first army buys Support to rare, the second to uncommon: the day keeps the higher.
-    for (key, support) in array![(first, 2_u8), (second, 1_u8)] {
-        write_progress(d, key, ArmyProgress { xp: 1000, support, ..crate::progression::initial() });
-        assert!(execute_buy(d, key, Attribute::Support));
-    }
-    let support_key = crate::production::RealmSupportKey { game_id, structure_id: 1, epoch: 3 };
-    assert_eq!(
-        snforge_std::interact_with_state(d.games, || crate::logic::production::realm_support(support_key))
-            .unwrap()
-            .level,
-        3,
+    let resources = crate::resources::IResourceOperationsDispatcher { contract_address: d.games };
+    let slot = crate::resources::ResourceSlot { game_id, entity_id: 1, resource_type: stock };
+    let before = resources.resource_balance(slot);
+    // The next day's first deploy removes yesterday's armies: 18% of 10,000 and 9% of 1,000 come home.
+    assert!(
+        super::resource_commands::execute_in_game(d, game_id, super::registrar::muster_command(category, 0), 401, 401),
     );
     let troops = super::state::GameState { contract_address: d.games };
-    let mut defeated = troops.resolved_explorer(first).unwrap();
-    let count = defeated.troops.count;
-    defeated.troops.count = 0;
-    let defeated = defeated;
-    let troop_class = super::declare_logic("TroopsLogic");
-    snforge_std::interact_with_state(
-        d.games,
-        || {
-            crate::troops::IBattleResolutionLibraryDispatcher { class_hash: troop_class }
-                .finish_battle(first, defeated, count, crate::commands::ActionContext { raw_root: 1, timestamp: 361 });
-        },
-    );
-    assert!(troops.explorer(first).is_none());
-    assert_eq!(
-        snforge_std::interact_with_state(d.games, || crate::logic::production::realm_support(support_key))
-            .unwrap()
-            .level,
-        3,
-    );
-    let resource_class = super::declare_logic("ResourcesLogic");
-    snforge_std::interact_with_state(
-        d.games,
-        || {
-            let context = crate::commands::load_context(
-                game_id, crate::commands::ActionContext { raw_root: 1, timestamp: 410 },
-            );
-            crate::resources::IResourceOperationsLibraryDispatcher { class_hash: resource_class }
-                .grant_resource(home, crate::resources::LABOR, 0, 410, crate::commands::resource_context(context));
-            assert_eq!(crate::logic::resources::balance(home, crate::resources::LABOR) - before, 6800);
-            assert!(
-                crate::logic::production::realm_support(crate::production::RealmSupportKey { epoch: 4, ..support_key })
-                    .is_none(),
-            );
-        },
-    );
+    assert!(troops.explorer(first).is_none() && troops.explorer(second).is_none());
+    assert_eq!(resources.resource_balance(slot), before + 1800 * troop + 90 * troop - troop);
+}
+
+#[test]
+fn homecoming_returns_whole_troops_and_nothing_at_common() {
+    for (count, homecoming, returned) in array![(10_000_u128, 1_u8, 0_u128), (99, 4, 17), (33, 2, 0), (34, 2, 1)] {
+        let share: u128 = crate::rules::homecoming_bps(homecoming).into();
+        assert_eq!(count * share / 10000, returned);
+    }
+    assert_eq!(crate::rules::homecoming_bps(5), 3000);
 }

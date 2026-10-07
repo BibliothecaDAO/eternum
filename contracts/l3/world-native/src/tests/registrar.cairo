@@ -2218,7 +2218,7 @@ fn frontier_closed_chest_persists_opens_once_and_rejects_expired_armies() {
         || crate::logic::progression::write(
             key,
             crate::progression::ArmyProgress {
-                battle: 5, logistics: 5, scouting: 5, support: 5, ..crate::logic::progression::require(key),
+                battle: 5, logistics: 5, scouting: 5, homecoming: 5, ..crate::logic::progression::require(key),
             },
         ),
     );

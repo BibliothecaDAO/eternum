@@ -1,5 +1,4 @@
-import { absoluteEpoch } from "../utils/expeditions";
-import { productionOutput, type ProductionSupport } from "../utils/production-output";
+import { productionOutput } from "../utils/production-output";
 import { isModeRuleEnabled } from "../utils/mode-rules";
 import { BuildingType, ID, ResourcesIds, RESOURCE_PRECISION, type Resource } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
@@ -14,7 +13,6 @@ type Production = Pick<
 interface ResourceState {
   balance: bigint;
   production: Production;
-  support: ProductionSupport | null;
 }
 
 export interface ResourceProductionData {
@@ -49,10 +47,6 @@ export class ResourceManager {
         changes.length === 0 ||
         changes.some((change) => {
           if (change.model === "GameRegistry") return (change.current ?? change.previous)?.game_id === this.gameId;
-          if (change.model === "RealmSupport") {
-            const row = change.current ?? change.previous;
-            return row?.game_id === this.gameId && row.structure_id === this.entityId;
-          }
           if (
             change.model !== "ResourceBalance" &&
             change.model !== "ResourceProduction" &&
@@ -80,23 +74,7 @@ export class ResourceManager {
     const production = this.store.requireOrAbsent("ResourceProduction", keys);
     const balance = this.store.requireOrAbsent("ResourceBalance", keys);
     if (!production.known || !balance.known) return undefined;
-    const adjusted = this.productionForGameClock(production.known);
-    const support = this.productionSupport(adjusted);
-    if (support === undefined) return undefined;
-    return { balance: balance.known.balance, production: adjusted, support };
-  }
-
-  private productionSupport(production: Production): ProductionSupport | null | undefined {
-    if (production.building_count === 0 || production.production_rate === 0n) return null;
-    const rules = this.store.require("SliceRules", { game_id: this.gameId });
-    if (rules.epoch_seconds === 0) return null;
-    const clock = { epochSeconds: rules.epoch_seconds };
-    const support = this.store.requireOrAbsent("RealmSupport", {
-      game_id: this.gameId,
-      structure_id: this.entityId,
-      epoch: BigInt(absoluteEpoch(clock, production.last_updated_at)),
-    });
-    return support.known ? { ...clock, level: support.known.level } : undefined;
+    return { balance: balance.known.balance, production: this.productionForGameClock(production.known) };
   }
 
   private productionForGameClock(production: Production): Production {
@@ -171,7 +149,7 @@ export class ResourceManager {
     const { balance, production } = resource;
     if (!production)
       return { balance: Number(balance), hasReachedMaxCapacity: false, amountProduced: 0n, amountProducedLimited: 0n };
-    const amountProduced = ResourceManager._amountProducedStatic(production, currentTick, resourceId, resource.support);
+    const amountProduced = ResourceManager._amountProducedStatic(production, currentTick, resourceId);
     const amountProducedLimited = this._limitProductionByStoreCapacity(amountProduced, resourceId);
     return {
       balance: Number(balance + amountProducedLimited),
@@ -182,9 +160,8 @@ export class ResourceManager {
   }
 
   /**
-   * What the realm's farms grow each hour at the rates running at `currentTick`, in whole units. Rates come from the one
-   * production integral, so a day's Support boost counts until its midnight. Nothing produced consumes wheat: only
-   * raising and marching armies spend it. Undefined where the entity holds no wheat.
+   * What the realm's farms grow each hour at the rates running at `currentTick`, in whole units. Nothing produced
+   * consumes wheat: only raising and marching armies spend it. Undefined where the entity holds no wheat.
    */
   public wheatPerHour(currentTick: number): number | undefined {
     const wheat = this.current(ResourcesIds.Wheat);
@@ -283,12 +260,11 @@ export class ResourceManager {
     },
     currentTick: number,
     resourceId: ResourcesIds,
-    support: ProductionSupport | null,
   ): bigint {
     if (!production || production.building_count === 0) return 0n;
     if (production.production_rate === 0n) return 0n;
 
-    let totalAmountProduced = productionOutput(production, currentTick, support);
+    let totalAmountProduced = productionOutput(production, currentTick);
 
     const isContinuousProductionResource = ResourceManager.isContinuousProductionResource(resourceId);
     if (!isContinuousProductionResource && totalAmountProduced > production.output_amount_left) {
@@ -330,8 +306,8 @@ export class ResourceManager {
   ): ResourceProductionData {
     const productionPerSecond = divideByPrecision(
       Number(
-        productionOutput(productionInfo.production, currentTick + 1, productionInfo.support) -
-          productionOutput(productionInfo.production, currentTick, productionInfo.support),
+        productionOutput(productionInfo.production, currentTick + 1) -
+          productionOutput(productionInfo.production, currentTick),
       ),
       false,
     );
@@ -348,7 +324,7 @@ export class ResourceManager {
       };
     }
 
-    const totalAmountProduced = productionOutput(production, currentTick, productionInfo.support);
+    const totalAmountProduced = productionOutput(production, currentTick);
     const remainingOutput =
       production.output_amount_left > totalAmountProduced ? production.output_amount_left - totalAmountProduced : 0n;
     const outputRemainingNumber = Number(remainingOutput) / RESOURCE_PRECISION;

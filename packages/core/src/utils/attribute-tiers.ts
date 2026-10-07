@@ -21,6 +21,13 @@ const SCOUTING_BPS = [
   nativeRuleConstants.SCOUTING_EPIC_BPS,
   nativeRuleConstants.SCOUTING_LEGENDARY_BPS,
 ];
+const HOMECOMING_BPS = [
+  0,
+  nativeRuleConstants.HOMECOMING_UNCOMMON_BPS,
+  nativeRuleConstants.HOMECOMING_RARE_BPS,
+  nativeRuleConstants.HOMECOMING_EPIC_BPS,
+  nativeRuleConstants.HOMECOMING_LEGENDARY_BPS,
+];
 const LOGISTICS_STAMINA = [
   0,
   nativeRuleConstants.LOGISTICS_UNCOMMON_STAMINA,
@@ -40,3 +47,6 @@ export const scoutingIncrementBps = (tier: number): number => SCOUTING_BPS[tierI
 
 /** Maximum stamina above the troop's base at a Logistics tier (rules::logistics_stamina). */
 export const logisticsStamina = (tier: number): number => LOGISTICS_STAMINA[tierIndex(tier)]!;
+
+/** The share of its surviving troops an army returns home at a Homecoming tier, in basis points (rules::homecoming_bps). */
+export const homecomingBps = (tier: number): number => HOMECOMING_BPS[tierIndex(tier)]!;

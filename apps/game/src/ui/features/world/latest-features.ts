@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-07",
+    title: "Armies Upgrade with XP",
+    description:
+      "In Frontier, armies spend their XP on the attribute tier you choose instead of levelling, and Homecoming replaces Support: when the day ends, part of each army's survivors return to your realm as troops.",
+    type: "balance",
+  },
+  {
+    date: "2026-10-07",
     title: "Wheat pays to Deploy",
     description:
       "In Frontier, barracks train for free and each troop costs its wheat when you Deploy it; the Deploy screens show the cost and wait until your realm holds it.",

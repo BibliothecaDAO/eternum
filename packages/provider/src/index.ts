@@ -702,7 +702,7 @@ export class EternumProvider extends EventEmitter {
   public async buy_tier(
     props: SystemProps.SystemSigner & {
       explorerId: number;
-      attribute: "Battle" | "Logistics" | "Scouting" | "Support";
+      attribute: "Battle" | "Logistics" | "Scouting" | "Homecoming";
       scoutingKind?: "Camp" | "Rift" | "Stragglers";
     },
   ) {

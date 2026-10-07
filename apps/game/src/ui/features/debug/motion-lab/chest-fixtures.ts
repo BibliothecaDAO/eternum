@@ -15,8 +15,8 @@ const CHEST_RULES_ROW: NativeRows["ChestRules"] = {
   season_epochs: 70,
 };
 
-/** The army the relic's offer is for: its levels now, so the cards show "from → to" and any lost excess. */
-const ARMY_LEVELS = { Battle: 2, Scouting: 4, Support: 1 } as const;
+/** Frontier's fixed XP, what a relic chest pays the army whatever its quality. */
+const RELIC_XP = 200;
 
 export type ChestVariant = "lords" | "relic" | "spent";
 
@@ -35,16 +35,6 @@ export const chestResultFixture = (variant: ChestVariant, intensity: Intensity, 
   if (outcome.kind === "lords") return { outcome };
   return {
     outcome,
-    relic: {
-      name: relicName(reward.resultKey),
-      offer: {
-        // A relic awards +1 to +4 by its quality, capped at 5.
-        amount: intensity + 1,
-        choices: Object.entries(ARMY_LEVELS).map(([attribute, level]) => ({
-          attribute: attribute as keyof typeof ARMY_LEVELS,
-          level,
-        })),
-      },
-    },
+    relic: { name: relicName(reward.resultKey), xp: RELIC_XP },
   };
 };

@@ -46,7 +46,7 @@ const progress = (xp: number) => ({
   logistics: 1,
   scouting: 4,
   scouting_kinds: 0b10_10_10,
-  support: 1,
+  homecoming: 1,
 });
 const RULES = {
   game_id: 1,

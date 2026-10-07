@@ -244,6 +244,14 @@ pub fn troop_resource(category: TroopType, tier: u8) -> u8 {
         TroopType::Crossbowman => 29,
     }) + tier
 }
+/// The realm resource that stocks troops of this category and tier.
+pub fn stock_resource(category: TroopType, tier: TroopTier) -> u8 {
+    troop_resource(category, match tier {
+        TroopTier::T1 => 0,
+        TroopTier::T2 => 1,
+        TroopTier::T3 => 2,
+    })
+}
 pub(crate) fn explorer_occupier(explorer: ExplorerTroops) -> u8 {
     troop_occupier(explorer.troops)
 }
