@@ -346,6 +346,35 @@ describe("ArmyActionManager.findActionPaths origin precedence", () => {
   });
 });
 
+describe("ArmyActionManager food checks", () => {
+  beforeEach(() => {
+    vi.spyOn(configManager, "getExploreStaminaCost").mockReturnValue(1);
+    vi.spyOn(configManager, "getMinTravelStaminaCost").mockReturnValue(1);
+    vi.spyOn(configManager, "getTravelFoodCostConfig").mockReturnValue({
+      travelWheatBurnAmount: 30,
+      travelFishBurnAmount: 0,
+      exploreWheatBurnAmount: 100,
+      exploreFishBurnAmount: 0,
+    } as any);
+    vi.spyOn(StaminaManager.prototype, "getStamina").mockReturnValue({ amount: 50n, updated_tick: 0n } as any);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  // Raising troops spends the realm's wheat; an army whose owner cannot feed the step has it refused on chain.
+  it("refuses an explore and limits travel to the steps the owner's wheat pays for", () => {
+    const { manager } = createTestSetup();
+    vi.mocked(manager.getFood).mockReturnValue({ wheat: 99, fish: 0 });
+    expect(manager.canExplore(0, 0)).toBe(false);
+    expect(manager.maxTravelSteps(0, 0)).toBe(3);
+
+    vi.mocked(manager.getFood).mockReturnValue({ wheat: 100, fish: 0 });
+    expect(manager.canExplore(0, 0)).toBe(true);
+  });
+});
+
 describe("ArmyActionManager.moveArmy explore position-freshness guard", () => {
   it("rejects explore when path[0] differs from TileOccupancy", async () => {
     const systemCalls = {
