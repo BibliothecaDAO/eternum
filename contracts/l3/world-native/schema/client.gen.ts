@@ -1,5 +1,5 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "c58a25eb6889e0e29b4ece1e215ba42f038f102bc2db01c4399c169036800313";
+export const nativeFactSchemaIdentity = "e8e5e3846fdfed48d8e23433f22b66b7d9b521cd29774c8b795e4c175ef9ec27";
 export const nativeRuleConstants = {
   "ATTRIBUTE_CAP": 5,
   "BATTLE_UNCOMMON_BPS": 1000,
@@ -228,7 +228,7 @@ export interface NativeRows {
   ResearchPrice: { readonly game_id: number; readonly row: number; readonly tier: number; readonly essence: bigint; readonly labor: bigint };
   BoardRules: { readonly game_id: number; readonly demolition_refund_bps: number; readonly workshop_rate: bigint; readonly output_step_bps: number; readonly storage_step_bps: number; readonly population_step_bps: number; readonly ration_step: bigint; readonly training_gate_tier: number; readonly castle_store_deploys: number };
   BuildingRule: { readonly game_id: number; readonly category: number; readonly population_cost: number; readonly capacity_grant: number; readonly simple_cost: readonly ({ readonly resource_type: number; readonly amount: bigint })[]; readonly complex_cost: readonly ({ readonly resource_type: number; readonly amount: bigint })[] };
-  Building: { readonly game_id: number; readonly structure_id: number; readonly inner_col: number; readonly inner_row: number; readonly category: number; readonly paused: boolean; readonly labor_paid: bigint; readonly tier: number };
+  Building: { readonly game_id: number; readonly structure_id: number; readonly inner_col: number; readonly inner_row: number; readonly category: number; readonly paused: boolean; readonly labor_paid: bigint };
   StructureBuildings: { readonly game_id: number; readonly entity_id: number; readonly packed_counts_1: bigint; readonly packed_counts_2: bigint; readonly packed_counts_3: bigint; readonly population: { readonly current: number; readonly max: number } };
   Hyperstructure: { readonly game_id: number; readonly entity_id: number; readonly stage: "Foundation" | "Construction" | "Complete"; readonly access: "Public" | "Private" | "GuildOnly"; readonly seed: bigint };
   HyperstructureProgress: { readonly game_id: number; readonly entity_id: number; readonly resource_type: number; readonly contributed: bigint };
@@ -1554,8 +1554,7 @@ export const nativeFactModels = {
       "inner_row": "u32",
       "category": "u8",
       "paused": "boolean",
-      "labor_paid": "u128",
-      "tier": "u8"
+      "labor_paid": "u128"
     }
   },
   "StructureBuildings": {

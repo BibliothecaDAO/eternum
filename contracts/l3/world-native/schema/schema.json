@@ -5253,16 +5253,10 @@
           "type": "core::integer::u128",
           "id": "0x6c61626f725f70616964",
           "feltLength": 1
-        },
-        {
-          "name": "tier",
-          "type": "core::integer::u8",
-          "id": "0x74696572",
-          "feltLength": 1
         }
       ],
       "keyLength": 4,
-      "valueLength": 4,
+      "valueLength": 3,
       "observation": {
         "domain": "production",
         "fields": {
@@ -7934,10 +7928,6 @@
         {
           "name": "labor_paid",
           "type": "core::integer::u128"
-        },
-        {
-          "name": "tier",
-          "type": "core::integer::u8"
         }
       ]
     },
@@ -12884,5 +12874,5 @@
       ]
     }
   },
-  "identity": "c58a25eb6889e0e29b4ece1e215ba42f038f102bc2db01c4399c169036800313"
+  "identity": "e8e5e3846fdfed48d8e23433f22b66b7d9b521cd29774c8b795e4c175ef9ec27"
 }
