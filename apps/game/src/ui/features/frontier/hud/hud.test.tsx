@@ -155,10 +155,11 @@ describe("the place bar", () => {
 });
 
 describe("the Menu", () => {
-  it("opens Today, Season with the rank, the guide and Settings, and closes on Resume", () => {
+  it("opens Today, Season with the rank, Production, the guide and Settings, and closes on Resume", () => {
     const handlers = {
       onToday: vi.fn(),
       onSeason: vi.fn(),
+      onProduction: vi.fn(),
       onGuide: vi.fn(),
       onSettings: vi.fn(),
       onExit: vi.fn(),
@@ -173,6 +174,7 @@ describe("the Menu", () => {
     for (const [word, handler] of [
       ["Today", handlers.onToday],
       ["Season", handlers.onSeason],
+      ["Production", handlers.onProduction],
       ["Guide", handlers.onGuide],
       ["Settings", handlers.onSettings],
       ["Exit", handlers.onExit],

@@ -16,6 +16,7 @@ import { BuildView } from "@/ui/features/frontier/build/build-view";
 import { type AttributeKey, ArmySheet } from "@/ui/features/frontier/army/army-sheet";
 import { BuildingsRow } from "@/ui/features/frontier/realm/buildings-row";
 import { CastleView } from "@/ui/features/frontier/upgrade/castle-view";
+import { type ProductionLine, ProductionSheet } from "@/ui/features/frontier/production/production-sheet";
 import { BuildingType, Direction } from "@bibliothecadao/types";
 import { PlaceNav } from "@/ui/features/frontier/hud/place-nav";
 import { StatusStrip, type StoreReading } from "@/ui/features/frontier/hud/status-strip";
@@ -218,6 +219,22 @@ const EFFECTS = {
   homecoming: ["0%", "3%", "9%", "18%", "30%"],
 } as const;
 
+/** A city's three stores: 18,000 a store, wheat lifted by Fields, troops by Drill. */
+const line = (overrides: Partial<ProductionLine> & Pick<ProductionLine, "icon" | "spentAt">): ProductionLine => ({
+  perHour: undefined,
+  held: undefined,
+  limit: 18_000,
+  tone: "calm",
+  fullIn: undefined,
+  noBuilding: false,
+  ...overrides,
+});
+const PRODUCTION_LINES: ProductionLine[] = [
+  line({ icon: "Wh", spentAt: "deploy", perHour: 1_500, sides: ["Fi"], held: 4_410, fullIn: 9 * HOUR + 4 * 60 }),
+  line({ icon: "La", spentAt: "realm", perHour: 500, held: 9_640, fullIn: 16 * HOUR + 44 * 60 }),
+  line({ icon: "Tr", spentAt: "deploy", perHour: 600, sides: ["Dr"], held: 1_200, fullIn: 28 * HOUR }),
+];
+
 const STATES = {
   idle: { clock: CLOCK, stores: STORES, armies: ARMIES },
   selected: { clock: CLOCK, stores: STORES, armies: ARMIES, selected: 0 },
@@ -402,9 +419,32 @@ const STATES = {
     selected: 0,
     army: { chosen: "battle", xp: 520, stamina: 240, max: 240, tiers: [5, 4, 3, 4] },
   },
+  production: { clock: CLOCK, stores: STORES, armies: ARMIES, production: PRODUCTION_LINES },
+  "production-full": {
+    clock: CLOCK,
+    stores: FULL_STORES,
+    armies: ARMIES,
+    realmDot: "ember",
+    production: [
+      { ...PRODUCTION_LINES[0], held: 17_580, tone: "amber", fullIn: 18 * 60 },
+      { ...PRODUCTION_LINES[1], held: 18_000, tone: "ember" },
+      PRODUCTION_LINES[2],
+    ],
+  },
+  "production-empty": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: [],
+    production: [
+      line({ icon: "Wh", spentAt: "deploy", perHour: 0, held: 4_500, limit: 6_000, noBuilding: true }),
+      line({ icon: "La", spentAt: "realm", perHour: 100, held: 2_000, limit: 6_000, fullIn: 40 * HOUR }),
+      line({ icon: "Tr", spentAt: "deploy", perHour: 0, held: 1_500, limit: 6_000, noBuilding: true }),
+    ],
+  },
 } as const;
 
 type LabState = {
+  production?: readonly ProductionLine[];
   army?: LabArmySheet;
   realmView?: "build" | "build-early" | "castle" | "castle-short" | "full";
   dayDone?: Parameters<typeof DayDoneCard>[0];
@@ -499,6 +539,7 @@ export const HudLab = () => {
         {lab.deploy && <LabDeploySheet deploy={lab.deploy} />}
         {lab.dayDone && <DayDoneCard {...lab.dayDone} />}
         {lab.army && <LabArmy army={lab.army} />}
+        {lab.production && <ProductionSheet lines={lab.production} onSpend={noop} onBuild={noop} onClose={noop} />}
         {(lab.realmView === "build" || lab.realmView === "build-early") && (
           <BuildView
             tiles={lab.realmView === "build" ? BUILD_TILES : EARLY_TILES}
@@ -547,6 +588,7 @@ export const HudLab = () => {
             rank="#12"
             onToday={noop}
             onSeason={noop}
+            onProduction={noop}
             onGuide={noop}
             onSettings={noop}
             onExit={noop}

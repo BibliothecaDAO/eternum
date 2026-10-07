@@ -49,6 +49,13 @@ const ICONS = {
   Sy: "/images/frontier/attributes/logistics.svg",
   Ld: "/images/frontier/attributes/scouting.svg",
   He: "/images/frontier/attributes/support.svg",
+  // The six sides wait for their art; the building or the store each lifts stands in.
+  Fi: "/images/buildings/construction/farm.png",
+  Gr: "/image-icons/ui-layers.png",
+  To: "/images/buildings/construction/castleZero.png",
+  So: "/image-icons/ui-layers.png",
+  Dr: "/images/buildings/construction/barracks.png",
+  Ra: "/image-icons/ui-backpack.png",
   // Army slots and a store's limit wait for their new icons; these stand in.
   Sl: "/image-icons/ui-people.png",
   Sg: "/image-icons/ui-gauge.png",

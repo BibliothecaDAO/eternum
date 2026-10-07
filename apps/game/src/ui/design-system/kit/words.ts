@@ -40,6 +40,9 @@ export const MENU = "Menu";
 
 /** The Menu's rows and its two buttons. */
 export const TODAY = "Today";
+export const PRODUCTION = "Production";
+/** A store at its limit. */
+export const FULL = "Full";
 export const SEASON = "Season";
 export const GUIDE = "Guide";
 export const SETTINGS = "Settings";

@@ -9,7 +9,7 @@ import { useResearchPlan } from "../research/research-reader";
 import { type Place, PlaceNav } from "./place-nav";
 
 /** What the HUD has open over the map: a nav page, the Menu, or a way the Menu opens. */
-export type HudSurface = "research" | "chat" | "menu" | "today" | "settings";
+export type HudSurface = "research" | "chat" | "menu" | "today" | "settings" | "production";
 
 /**
  * What the HUD has open. Opening a surface lets go of the tile, plot or building the player had tapped, so one sheet

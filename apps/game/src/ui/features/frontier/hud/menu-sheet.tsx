@@ -1,17 +1,18 @@
 import { Button } from "@/ui/design-system/kit/button";
 import { type IconCode, KitIcon } from "@/ui/design-system/kit/kit-icon";
 import { Sheet } from "@/ui/design-system/kit/sheet";
-import { EXIT, GUIDE, MENU, RESUME, SEASON, SETTINGS, TODAY } from "@/ui/design-system/kit/words";
+import { EXIT, GUIDE, MENU, PRODUCTION, RESUME, SEASON, SETTINGS, TODAY } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
 
 /**
- * The Menu: the ways that are not places (Today, Season with the player's rank, the guide, Settings), then Exit to the
- * app and Resume, which closes the menu.
+ * The Menu: the ways that are not places (Today, Season with the player's rank, Production, the guide, Settings), then
+ * Exit to the app and Resume, which closes the menu.
  */
 export const MenuSheet = ({
   rank,
   onToday,
   onSeason,
+  onProduction,
   onGuide,
   onSettings,
   onExit,
@@ -20,6 +21,7 @@ export const MenuSheet = ({
   rank: string;
   onToday: () => void;
   onSeason: () => void;
+  onProduction: () => void;
   onGuide: () => void;
   onSettings: () => void;
   onExit: () => void;
@@ -35,6 +37,7 @@ export const MenuSheet = ({
         badge={<span className="text-[15px] tabular-nums">{rank}</span>}
         onClick={onSeason}
       />
+      <MenuRow icon="Wh" word={PRODUCTION} onClick={onProduction} />
       <MenuRow icon="Gd" word={GUIDE} onClick={onGuide} />
       <MenuRow icon="Mn" word={SETTINGS} onClick={onSettings} />
     </nav>

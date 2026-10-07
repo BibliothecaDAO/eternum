@@ -21,10 +21,19 @@ const TROOPS_TARGET = "troops-at-home";
  * The strip over the game's facts: today on the game's clock, and what the realm holds (a visited realm's when
  * visiting). The stores' limits arrive with the contracts' store limits; until then no limit bar is drawn.
  */
-export const FrontierStrip = ({ rules, realm }: { rules: ExpeditionRules; realm: NativeRows["Structure"] | null }) => {
+export const FrontierStrip = ({
+  rules,
+  realm,
+  onOpenStores,
+}: {
+  rules: ExpeditionRules;
+  realm: NativeRows["Structure"] | null;
+  /** Production, from a tap on the stores; absent while visiting. */
+  onOpenStores?: () => void;
+}) => {
   const clock = dayClock(rules, useNowSeconds());
   const stores = useRealmStores(realm);
-  return <StatusStrip clock={clock} stores={stores} />;
+  return <StatusStrip clock={clock} stores={stores} onOpenStores={onOpenStores} />;
 };
 
 const useRealmStores = (realm: NativeRows["Structure"] | null): StoreReading[] => {

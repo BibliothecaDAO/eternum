@@ -32,6 +32,7 @@ import { MenuSheet } from "./hud/menu-sheet";
 import { OfflineNotice } from "./hud/offline-notice";
 import { OrderBar } from "./hud/order-bar";
 import { TodayCard } from "./log/today-card";
+import { FrontierProduction } from "./production/frontier-production";
 import { FrontierResearch } from "./research/frontier-research";
 import { SiteClearCardView } from "./sites/site-clear-card";
 import { useFrontierType } from "./use-frontier-type";
@@ -67,7 +68,13 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
 
   return (
     <HudBands
-      top={<FrontierStrip rules={rules} realm={realm ?? visited} />}
+      top={
+        <FrontierStrip
+          rules={rules}
+          realm={realm ?? visited}
+          onOpenStores={realm && !visit ? () => setSurface("production") : undefined}
+        />
+      }
       middle={
         surface === "chat" ? (
           <ChatPage gameZoneId={chat.gameZoneId} signedIn={chat.initializer !== null} onSignIn={chat.requestSignIn} />
@@ -97,6 +104,7 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
       <FrontierSelectionSheet realm={realm} />
       {surface === "menu" && <HudMenu onOpen={setSurface} onClose={close} />}
       {surface === "research" && realm && <FrontierResearch realm={realm} onClose={close} />}
+      {surface === "production" && realm && <FrontierProduction realm={realm} onClose={close} />}
       {surface === "settings" && (
         <Sheet label={SETTINGS} onClose={close}>
           <SettingsPanel />
@@ -161,6 +169,7 @@ const HudMenu = ({ onOpen, onClose }: { onOpen: (surface: HudSurface | null) => 
     <MenuSheet
       rank={rank}
       onToday={() => onOpen("today")}
+      onProduction={() => onOpen("production")}
       onSeason={() => {
         onClose();
         openSeasonBoard();
