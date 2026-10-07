@@ -1,4 +1,5 @@
-import { TileOccupier, type HexPosition, type ID } from "@bibliothecadao/types";
+import { isTileOccupierArmy } from "@bibliothecadao/eternum";
+import type { HexPosition, ID } from "@bibliothecadao/types";
 
 type DestinationTileReference = {
   occupier_id: ID;
@@ -18,10 +19,6 @@ type SpireTraversalAction =
       targetHex: HexPosition;
     };
 
-function isExplorerTileOccupier(occupierType: number): boolean {
-  return occupierType >= TileOccupier.ExplorerKnightT1 && occupierType <= TileOccupier.ExplorerCrossbowmanT3;
-}
-
 export function resolveSpireTraversalAction(input: {
   attackerHex: HexPosition;
   attackerAlt: boolean;
@@ -35,7 +32,7 @@ export function resolveSpireTraversalAction(input: {
     destinationTile &&
     Number(destinationTile.occupier_id) !== 0 &&
     !destinationTile.occupier_is_structure &&
-    isExplorerTileOccupier(destinationTile.occupier_type)
+    isTileOccupierArmy(destinationTile.occupier_type)
   ) {
     return { kind: "attack", targetArmyId: destinationTile.occupier_id, targetHex, defenderAlt };
   }

@@ -27,6 +27,7 @@ import {
   getBuildingCosts,
   getBalance,
   hasTileOccupier,
+  isTileOccupierArmy,
   isTileOccupierChest,
   isTileOccupierReservedHyperstructure,
   isTileOccupierStructure,
@@ -171,8 +172,9 @@ const MapTilePanel = () => {
     if (isReservedHyperstructure) return "Unconstructed Hyperstructure";
     if (isStructure) return "Structure Tile";
     if (isChest) return "Relic Tile";
-    return "Army Tile";
-  }, [tile, hasOccupier, isSpire, isReservedHyperstructure, isStructure, isChest]);
+    if (isTileOccupierArmy(occupierType)) return "Army Tile";
+    return `${TileOccupier[occupierType]} Tile`;
+  }, [tile, hasOccupier, isSpire, isReservedHyperstructure, isStructure, isChest, occupierType]);
 
   // Only shown for a selected hex: with none, useSelectedTileDetails shows no panel at all.
   if (!selectedHex) return null;
