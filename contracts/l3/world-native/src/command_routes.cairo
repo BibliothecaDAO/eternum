@@ -11,7 +11,7 @@ pub struct CommandRoute {
 
 pub const SETTLE_BLITZ_ROSTER: u32 = 7;
 
-pub const COMMAND_ROUTES: [CommandRoute; 73] = [
+pub const COMMAND_ROUTES: [CommandRoute; 72] = [
     CommandRoute { logic: 6, selector: selector!("create_explorer"), items_offset: None, batch: false },
     CommandRoute { logic: 16, selector: selector!("explore"), items_offset: None, batch: false },
     CommandRoute { logic: 12, selector: selector!("battle"), items_offset: Some(2), batch: false },
@@ -27,20 +27,12 @@ pub const COMMAND_ROUTES: [CommandRoute; 73] = [
     CommandRoute { logic: 5, selector: selector!("receive_village_army"), items_offset: None, batch: false },
     CommandRoute { logic: 8, selector: selector!("burn_structure_resources"), items_offset: Some(1), batch: false },
     CommandRoute { logic: 8, selector: selector!("transfer_explorer_resources"), items_offset: Some(2), batch: false },
-    CommandRoute {
-        logic: 8, selector: selector!("transfer_structure_resources_to_explorer"), items_offset: Some(2), batch: false,
-    },
+    CommandRoute { logic: 8, selector: selector!("transfer_structure_resources_to_explorer"), items_offset: Some(2), batch: false },
     CommandRoute { logic: 8, selector: selector!("offload_arrival"), items_offset: None, batch: false },
     CommandRoute { logic: 8, selector: selector!("send_resources"), items_offset: Some(2), batch: false },
-    CommandRoute {
-        logic: 8, selector: selector!("transfer_explorer_resources_to_structure"), items_offset: Some(2), batch: false,
-    },
-    CommandRoute {
-        logic: 4, selector: selector!("burn_labor_for_resource_production"), items_offset: None, batch: false,
-    },
-    CommandRoute {
-        logic: 4, selector: selector!("burn_resource_for_resource_production"), items_offset: None, batch: false,
-    },
+    CommandRoute { logic: 8, selector: selector!("transfer_explorer_resources_to_structure"), items_offset: Some(2), batch: false },
+    CommandRoute { logic: 4, selector: selector!("burn_labor_for_resource_production"), items_offset: None, batch: false },
+    CommandRoute { logic: 4, selector: selector!("burn_resource_for_resource_production"), items_offset: None, batch: false },
     CommandRoute { logic: 3, selector: selector!("create_building"), items_offset: None, batch: false },
     CommandRoute { logic: 3, selector: selector!("destroy_building"), items_offset: None, batch: false },
     CommandRoute { logic: 3, selector: selector!("pause_building_production"), items_offset: None, batch: false },
@@ -60,9 +52,7 @@ pub const COMMAND_ROUTES: [CommandRoute; 73] = [
     CommandRoute { logic: 9, selector: selector!("remove_bank_liquidity"), items_offset: None, batch: false },
     CommandRoute { logic: 9, selector: selector!("initialize_hyperstructure"), items_offset: None, batch: false },
     CommandRoute { logic: 9, selector: selector!("contribute_hyperstructure"), items_offset: Some(2), batch: false },
-    CommandRoute {
-        logic: 9, selector: selector!("allocate_hyperstructure_shares"), items_offset: Some(1), batch: false,
-    },
+    CommandRoute { logic: 9, selector: selector!("allocate_hyperstructure_shares"), items_offset: Some(1), batch: false },
     CommandRoute { logic: 9, selector: selector!("set_construction_access"), items_offset: None, batch: false },
     CommandRoute { logic: 15, selector: selector!("open_relic_chest"), items_offset: None, batch: false },
     CommandRoute { logic: 15, selector: selector!("apply_relic"), items_offset: None, batch: false },
@@ -90,8 +80,7 @@ pub const COMMAND_ROUTES: [CommandRoute; 73] = [
     CommandRoute { logic: 5, selector: selector!("set_entity_name"), items_offset: None, batch: false },
     CommandRoute { logic: 16, selector: selector!("enter_depth"), items_offset: None, batch: false },
     CommandRoute { logic: 3, selector: selector!("research"), items_offset: None, batch: false },
-    CommandRoute { logic: 15, selector: selector!("choose_attribute"), items_offset: None, batch: false },
-    CommandRoute { logic: 3, selector: selector!("upgrade_building"), items_offset: None, batch: false },
+    CommandRoute { logic: 15, selector: selector!("buy_tier"), items_offset: None, batch: false },
     CommandRoute { logic: 15, selector: selector!("interact_site"), items_offset: None, batch: false },
     CommandRoute { logic: 15, selector: selector!("refill_stamina"), items_offset: None, batch: false },
     CommandRoute { logic: 15, selector: selector!("withdraw_lords"), items_offset: None, batch: false },
@@ -194,8 +183,7 @@ pub enum Command {
     SetEntityName: crate::names::SetEntityName,
     EnterDepth: crate::commands::EnterDepth,
     Research: crate::research::Research,
-    ChooseAttribute: crate::progression::ChooseAttribute,
-    UpgradeBuilding: crate::buildings::ChangeBuilding,
+    BuyTier: crate::progression::BuyTier,
     InteractSite: crate::relics::InteractSite,
     RefillStamina: crate::relics::RefillStamina,
     WithdrawLords: crate::relics::WithdrawLords,
