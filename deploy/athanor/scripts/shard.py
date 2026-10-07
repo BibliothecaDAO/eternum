@@ -104,6 +104,29 @@ def validate_configuration(config, allowed_cpus):
         raise ValueError("record the native execution setting explicitly")
     if not any(flag.startswith("--native-compilation-mode=") for flag in config["node_flags"]):
         raise ValueError("record the native compilation mode explicitly")
+    validate_node_allocator(config)
+
+
+def validate_node_allocator(config):
+    environment = config.get("node_environment", {})
+    allowed = {"MALLOC_MMAP_THRESHOLD_", "MALLOC_ARENA_MAX", "MALLOC_CONF", "LD_PRELOAD"}
+    if not isinstance(environment, dict) or any(
+        key not in allowed or not isinstance(value, str) or "\n" in value
+        for key, value in environment.items()
+    ):
+        raise ValueError("node_environment must contain single-line allocator settings")
+    volumes = config.get("node_volumes", [])
+    if not isinstance(volumes, list):
+        raise ValueError("node_volumes must list read-only allocator mounts")
+    for volume in volumes:
+        if not isinstance(volume, dict) or set(volume) != {"source", "target", "read_only"}:
+            raise ValueError("allocator mounts must name source, target and read_only")
+        if volume["read_only"] is not True:
+            raise ValueError("allocator mounts must be read-only")
+        for key, root in (("source", "/opt/athanor/allocators"), ("target", "/opt/allocator")):
+            value = volume[key]
+            if not isinstance(value, str) or ".." in Path(value).parts or not Path(value).is_relative_to(root):
+                raise ValueError(f"allocator mount {key} must stay under {root}")
 
 
 def validate_shard_identity(config):
@@ -196,6 +219,8 @@ def compose_configuration(config, directory):
     node = compose["services"]["madara"]
     replaced = ("--enable-native-execution=", "--native-compilation-mode=")
     node["command"] = [flag for flag in node["command"] if not flag.startswith(replaced)] + config["node_flags"]
+    node.setdefault("environment", {}).update(config.get("node_environment", {}))
+    node.setdefault("volumes", []).extend({"type": "bind", **volume} for volume in config.get("node_volumes", []))
     node["ports"] = [f"127.0.0.1:{config['port_base']}:9944"]
     compose["services"]["postgres"]["ports"] = [f"127.0.0.1:{config['port_base'] + 2}:5432"]
     return compose

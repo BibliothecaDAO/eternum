@@ -174,6 +174,11 @@ reconciliation over the workload window, and admission-to-visible latency split 
 overall, in bursts and in calm. A failed workload aborts the matrix. Each completed or failed candidate is stopped with
 its volumes retained; the next configuration starts fresh.
 
+Allocator trials may add `node_environment` (`MALLOC_MMAP_THRESHOLD_`, `MALLOC_ARENA_MAX`, `MALLOC_CONF`, or
+`LD_PRELOAD`, with string values) and `node_volumes` (read-only bind mounts with `source`, `target`, and `read_only`).
+Allocator sources stay under `/opt/athanor/allocators` and targets under `/opt/allocator`. These settings apply only to
+Madara; its package image, data mounts, and lifecycle remain the same.
+
 Recovery drills run against a shard the runner started: `scripts/drill.py RUN_DIRECTORY`. Four drills run in turn, each
 under its own burst of four Blitz games of 24: SIGTERM and SIGKILL of the node, then of the gateway, sent once the burst
 has recorded executions and followed by a restart. `drills.json` records each drill's recovery height and time, the

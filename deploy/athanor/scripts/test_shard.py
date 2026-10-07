@@ -55,6 +55,43 @@ def load_package_script(name):
 
 
 class ShardTest(unittest.TestCase):
+    def test_allocator_trial_changes_only_the_nodes_environment_and_read_only_mounts(self):
+        config = configuration()
+        mount = {"source": "/opt/athanor/allocators/jemalloc/libjemalloc.so.2",
+                 "target": "/opt/allocator/libjemalloc.so.2", "read_only": True}
+        trial = {**config, "node_environment": {"LD_PRELOAD": mount["target"], "MALLOC_ARENA_MAX": "2"},
+                 "node_volumes": [mount]}
+        shard.validate_configuration(trial, set(range(24)))
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            write_deployed_world(directory)
+            baseline = shard.compose_configuration(config, directory)
+            rendered = shard.compose_configuration(trial, directory)
+        node = rendered["services"]["madara"]
+        original = baseline["services"]["madara"]
+        self.assertEqual(node["image"], original["image"])
+        self.assertEqual(node["command"], original["command"])
+        self.assertEqual(node["volumes"], [*original["volumes"], {"type": "bind", **mount}])
+        self.assertEqual(node["environment"], {**original.get("environment", {}), **trial["node_environment"]})
+        for name, service in baseline["services"].items():
+            if name != "madara":
+                self.assertEqual(rendered["services"][name], service)
+
+    def test_allocator_trials_cannot_change_chain_environment_or_mount_writable_files(self):
+        config = configuration()
+        mount = {"source": "/opt/athanor/allocators/libjemalloc.so.2",
+                 "target": "/opt/allocator/libjemalloc.so.2", "read_only": True}
+        for setting in (
+            {"node_environment": {"CHAIN_ID": "other"}},
+            {"node_environment": {"MALLOC_ARENA_MAX": 2}},
+            {"node_environment": {"MALLOC_CONF": "a\nb"}},
+            {"node_volumes": [{**mount, "read_only": False}]},
+            {"node_volumes": [{**mount, "target": "/data"}]},
+            {"node_volumes": [{**mount, "source": "/opt/athanor/allocators/../secrets/key"}]},
+        ):
+            with self.subTest(setting=setting), self.assertRaises(ValueError):
+                shard.validate_configuration({**config, **setting}, set(range(24)))
+
     def test_resource_and_target_validation_precedes_deployment(self):
         config = configuration()
         allowed = set(range(8, 12)) | set(range(20, 24))
