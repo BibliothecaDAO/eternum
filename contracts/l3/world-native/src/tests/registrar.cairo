@@ -623,10 +623,14 @@ fn automatic_blitz_settlement_is_open_atomic_and_resumes_its_fixed_order() {
             crate::commands::resource_context(super::context(d.games, game_id)),
         );
     assert_eq!(resources.resource_balance(slot), balance - 1, "production paid before the first pulse");
-    resources.spend_resource(
-        ResourceKey { game_id, entity_id }, 23, 0, 1020,
-        crate::commands::resource_context(super::context(d.games, game_id)),
-    );
+    resources
+        .spend_resource(
+            ResourceKey { game_id, entity_id },
+            23,
+            0,
+            1020,
+            crate::commands::resource_context(super::context(d.games, game_id)),
+        );
     assert_eq!(resources.resource_balance(slot), balance + 60 * 10 - 1, "first production pulse missing");
     stop_cheat_caller_address(d.games);
     let progress = views.settlement_progress(game_id);
@@ -1701,14 +1705,13 @@ fn assert_capture_at(depth: u8, count: u128, tier: crate::troops::TroopTier, rev
     let seed = crate::random::game_root(ref root, game_id, context.game.unbox().seed);
     let discovery_rules = preset.economy.discovery.unwrap();
     let mut reveal_at = opening + 2;
-    while crate::discovery::frontier(discovery_rules, 0, 0, 0, 0, None, seed, reveal_at)
-        != crate::discovery::Discovery::Camp {
+    while crate::discovery::frontier(
+        discovery_rules, 0, 0, 0, 0, None, seed, reveal_at,
+    ) != crate::discovery::Discovery::Camp {
         reveal_at += 1;
     }
     assert!(reveal_at < capture_at, "camp draw must precede the fixture capture");
-    assert!(
-        execute_in_game(d, game_id, Command::Explore(Explore { explorer_id, direction: 0 }), reveal_at, reveal_at),
-    );
+    assert!(execute_in_game(d, game_id, Command::Explore(Explore { explorer_id, direction: 0 }), reveal_at, reveal_at));
     let coord = crate::geometry::neighbor(army.coord, 0);
     let map = IMapLogicDispatcher { contract_address: d.games };
     let tile = map.tile(crate::geometry::tile_key(game_id, coord)).unwrap();
@@ -2399,7 +2402,8 @@ fn frontier_finds_at_most_one_ruin_a_day_and_holds_its_chest_against_the_budget(
     );
     assert_eq!((budget.open, budget.spent), (chest.amount, chest.amount));
     let counter = crate::expeditions::ExpeditionDiscoveryKey {
-        game_id, structure_id: army.owner,
+        game_id,
+        structure_id: army.owner,
         epoch: crate::days::day_of(context.game.unbox(), context.rules.unbox().day_unit_seconds, time).index,
     };
     assert!(
@@ -2893,7 +2897,10 @@ fn frontier_sites_store_the_seeded_category_and_depth_tier_with_the_count_basis(
     let d = setup();
     let (preset_id, preset) = super::preset_projection::current_definition("frontier");
     registry(d).register_preset(preset_id, preset);
-    let game_id = registry(d).create_game(CreateGameParams { preset_id, start_main_at: 360, duration_seconds: FRONTIER_BAG_SECONDS, ..params(false) });
+    let game_id = registry(d)
+        .create_game(
+            CreateGameParams { preset_id, start_main_at: 360, duration_seconds: FRONTIER_BAG_SECONDS, ..params(false) },
+        );
     let context = crate::commands::ExecutionContext { timestamp: 360, ..crate::tests::context(d.games, game_id) };
     start_cheat_caller_address(d.games, d.games);
     for depth_index in 0_u32..4 {
