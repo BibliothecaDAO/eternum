@@ -43,6 +43,10 @@ import { SeasonList, type SeasonListRow } from "@/ui/features/frontier/board/sea
 import { SeasonDetailSheet } from "@/ui/features/frontier/board/season-detail";
 import { SeasonOverCard } from "@/ui/features/frontier/board/season-over-card";
 import { VisitFoot } from "@/ui/features/frontier/board/visit-foot";
+import { GuideCard } from "@/ui/features/frontier/guide/guide-card";
+import { type GuideFacts, GUIDE_STEPS } from "@/ui/features/frontier/guide/guide-script";
+import { GuideThread } from "@/ui/features/frontier/guide/guide-thread";
+import { useRef } from "react";
 
 const HOUR = 3_600;
 const NOW = new Date(2026, 9, 7, 14, 26).getTime() / 1000;
@@ -338,6 +342,38 @@ const SEASON_ROWS: SeasonListRow[] = SEASON_NAMES.map((name, index) => ({
 }));
 const OWN_ROW: SeasonListRow = { key: "you", rank: 12, order: 12, name: YOU, sitesCleared: 88, lords: 192, own: true };
 
+/** The guide's lab lines, by the step they show. */
+const GUIDE_LINES = {
+  reveal: "first-reveal",
+  deploy: "deploy",
+  realm: "build-on-the-mark",
+  rest: "rest",
+  fight: "losing-fight",
+  season: "season-over",
+} as const;
+
+const LAB_GUIDE_FACTS: GuideFacts = {
+  realm: true,
+  barracks: false,
+  troopsAtHome: 1_500,
+  armies: 0,
+  armyActed: false,
+  armyTierAffordable: undefined,
+  camp: null,
+  siteCleared: false,
+  stragglers: undefined,
+  castleAffordable: false,
+  onMap: true,
+  typeTierAffordable: undefined,
+  armiesTired: false,
+  ruin: false,
+  chestPaid: undefined,
+  armyBeyondSpire: false,
+  losingFight: true,
+  storeFull: undefined,
+  seasonOver: true,
+};
+
 const STATES = {
   idle: { clock: CLOCK, stores: STORES, armies: ARMIES },
   selected: { clock: CLOCK, stores: STORES, armies: ARMIES, selected: 0 },
@@ -563,9 +599,26 @@ const STATES = {
   "season-loading": { clock: CLOCK, stores: STORES, armies: ARMIES, season: "loading" },
   "season-failed": { clock: CLOCK, stores: STORES, armies: ARMIES, season: "failed" },
   visiting: { clock: CLOCK, stores: STORES, armies: ARMIES, visiting: true },
+  guide: { clock: CLOCK, stores: STORES, armies: ARMIES, guide: "reveal" },
+  "guide-deploy": { clock: CLOCK, stores: STORES, armies: [], guide: "deploy" },
+  "guide-realm": { clock: CLOCK, stores: STORES, armies: [], guide: "realm" },
+  "guide-rest": { clock: CLOCK, stores: STORES, armies: ARMIES, guide: "rest" },
+  "guide-fight": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    guide: "fight",
+    site: {
+      ...RUIN_CARD,
+      army: { ...ARMY_CHIP, troops: 1_200 },
+      fight: { outcome: "loses", exchanges: 3, troopsLost: 1_200, guardLeft: 2_300 },
+    },
+  },
+  "guide-season": { clock: CLOCK, stores: STORES, armies: ARMIES, results: "over", guide: "season" },
 } as const;
 
 type LabState = {
+  guide?: keyof typeof GUIDE_LINES;
   results?: "today" | "today-earlier" | "today-failed" | "over" | "over-strong";
   season?: "list" | "detail" | "loading" | "failed";
   visiting?: boolean;
@@ -639,6 +692,7 @@ export const HudLab = () => {
         }
         foot={
           <>
+            {lab.guide && lab.guide !== "fight" && lab.guide !== "season" && <LabGuide guide={lab.guide} />}
             {lab.offline && <Notice icon="Of" line={OFFLINE} verb={TRY_AGAIN} onVerb={noop} ember />}
             {lab.realmView === "full" && (
               <BuildingsRow
@@ -668,11 +722,18 @@ export const HudLab = () => {
                     troops={army.troops}
                     canBuyTier={army.tier === true}
                     selected={lab.selected === index}
+                    guided={index === 0}
                     onPick={noop}
                   />
                 ))}
                 {Array.from({ length: lab.visiting ? 0 : SLOTS - lab.armies.length }, (_, index) => (
-                  <OpenSlot key={index} label="Deploy" pulse={index === 0 && lab.armies.length === 0} onDeploy={noop} />
+                  <OpenSlot
+                    key={index}
+                    label="Deploy"
+                    pulse={index === 0 && lab.armies.length === 0}
+                    guided={index === 0}
+                    onDeploy={noop}
+                  />
                 ))}
               </nav>
             )}
@@ -690,7 +751,7 @@ export const HudLab = () => {
         }
       >
         {lab.deploy && <LabDeploySheet deploy={lab.deploy} />}
-        {lab.results && <LabResults results={lab.results} />}
+        {lab.results && <LabResults results={lab.results} guided={lab.guide === "season"} />}
         {lab.season === "detail" && (
           <SeasonDetailSheet
             label="Aldric"
@@ -755,7 +816,14 @@ export const HudLab = () => {
             onClose={noop}
           />
         )}
-        {lab.site && <SiteCardView {...lab.site} onRealm={noop} onClose={noop} />}
+        {lab.site && (
+          <SiteCardView
+            {...lab.site}
+            guide={lab.guide === "fight" ? <LabGuide guide="fight" /> : undefined}
+            onRealm={noop}
+            onClose={noop}
+          />
+        )}
         {lab.chest && <RuinChestMoment {...lab.chest} />}
         {lab.menu && (
           <MenuSheet
@@ -763,7 +831,7 @@ export const HudLab = () => {
             onToday={noop}
             onSeason={noop}
             onProduction={noop}
-            onGuide={noop}
+            guide={{ on: true, onToggle: noop }}
             onSettings={noop}
             onExit={noop}
             onClose={noop}
@@ -959,7 +1027,26 @@ const LabTraining = ({ training }: { training: "battle" | "hearth" | "scouts" | 
   );
 };
 
-const LabResults = ({ results }: { results: NonNullable<LabState["results"]> }) =>
+/** A guide line on the lab fixtures, with its thread to the control it names. */
+const LabGuide = ({ guide }: { guide: keyof typeof GUIDE_LINES }) => {
+  const card = useRef<HTMLElement>(null);
+  const step = GUIDE_STEPS.find(({ id }) => id === GUIDE_LINES[guide]);
+  if (!step) throw new Error(`No guide step ${GUIDE_LINES[guide]}`);
+  return (
+    <>
+      <GuideCard
+        ref={card}
+        mark={step.mark}
+        line={step.line(LAB_GUIDE_FACTS)}
+        onShowMe={step.place ? noop : undefined}
+        onNext={noop}
+      />
+      {step.target && <GuideThread from={card} target={step.target} />}
+    </>
+  );
+};
+
+const LabResults = ({ results, guided }: { results: NonNullable<LabState["results"]>; guided: boolean }) =>
   results === "over" || results === "over-strong" ? (
     <SeasonOverCard
       ending={results === "over" ? "lifted" : "strong"}
@@ -971,6 +1058,7 @@ const LabResults = ({ results }: { results: NonNullable<LabState["results"]> }) 
         { key: "3", rank: 3, name: "Corwin", sitesCleared: 397 },
       ]}
       totals={{ sitesCleared: 288, chests: 61, lords: 2_003, reach: 2, essence: 2_100_000, labor: 1_400_000 }}
+      guide={guided ? <LabGuide guide="season" /> : undefined}
       onSeason={noop}
       onExit={noop}
     />

@@ -4,6 +4,8 @@ import { type IconCode, KitIcon } from "@/ui/design-system/kit/kit-icon";
 import { CHAT, MAP, MENU, REALM, RESEARCH } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
 
+import { guideTarget } from "../guide/guide-thread";
+
 export type Place = "map" | "realm" | "research" | "chat" | "menu";
 
 /** A dot on a slot: lit is news (research to buy), amber and ember a store nearing or at its limit. */
@@ -34,7 +36,7 @@ export const PlaceNav = ({
   unread: number;
 }) => {
   const slot = (to: Place, icon: IconCode, word: string, badge?: ReactNode) => (
-    <Slot key={to} lit={place === to} icon={icon} word={word} badge={badge} onClick={() => onGo(to)} />
+    <Slot key={to} to={to} lit={place === to} icon={icon} word={word} badge={badge} onClick={() => onGo(to)} />
   );
   return (
     <nav
@@ -58,12 +60,14 @@ export const PlaceNav = ({
 };
 
 const Slot = ({
+  to,
   lit,
   icon,
   word,
   badge,
   onClick,
 }: {
+  to: Place;
   lit: boolean;
   icon: IconCode;
   word: string;
@@ -73,6 +77,7 @@ const Slot = ({
   <button
     type="button"
     aria-current={lit ? "page" : undefined}
+    {...(to === "realm" ? guideTarget("realm-tab") : {})}
     onClick={onClick}
     className={cn(
       "flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl text-[11px] font-semibold",

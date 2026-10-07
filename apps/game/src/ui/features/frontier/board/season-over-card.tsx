@@ -32,6 +32,7 @@ export const SeasonOverCard = ({
   field,
   podium,
   totals,
+  guide,
   onSeason,
   onExit,
 }: {
@@ -40,6 +41,8 @@ export const SeasonOverCard = ({
   field: number | undefined;
   podium: readonly PodiumPlace[];
   totals: SeasonTotals | undefined;
+  /** The guide's line on the season's end. */
+  guide?: ReactNode;
   onSeason: () => void;
   onExit: () => void;
 }) => (
@@ -75,6 +78,7 @@ export const SeasonOverCard = ({
       </div>
     )}
     <div className="min-h-2 flex-1" />
+    <div className="w-full max-w-[360px]">{guide}</div>
     <div className="flex w-full max-w-[360px] gap-2">
       <Button role="secondary" icon="Tp" word={SEASON} onClick={onSeason} className="w-[130px]" />
       <Button role="primary" icon="Hm" word={EXIT} onClick={onExit} className="flex-1" />

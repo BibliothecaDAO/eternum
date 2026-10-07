@@ -1,7 +1,8 @@
 /**
- * Ysolde's first-session script (lore draft approved 25 Sep 2026). Each step names the game state it answers; the guide
- * shows the first step not yet seen whose state holds, so a reload lands on the same line and a player who is ahead
- * never waits on an old one.
+ * The Aspect of Skill's script (frontier-narrative-2026-10/script.html, beat for beat). Each step names the game state
+ * it answers; a slot shows the first step for its place not yet seen whose state holds, so a reload lands on the same
+ * line and a player who is ahead never waits on an old one. A fact the client cannot read yet is undefined, and a step
+ * never speaks on one.
  */
 export interface GuideFacts {
   /** The player's Frontier realm exists. */
@@ -14,121 +15,177 @@ export interface GuideFacts {
   armies: number;
   /** An army of today has spent stamina: it has explored or moved. */
   armyActed: boolean;
+  /** An army can afford its first attribute tier (the army's XP and tier prices, with the contracts' schema). */
+  armyTierAffordable: boolean | undefined;
   /** A guarded camp of today's region on the board, where "Show me" frames it; null when there is none. */
   camp: { x: number; y: number } | null;
+  /** A site of the expedition has been cleared. */
+  siteCleared: boolean;
+  /** Stragglers are in view (the generated site taxonomy). */
+  stragglers: boolean | undefined;
   /** The realm can pay for its next castle level. */
   castleAffordable: boolean;
   /** The player is looking at the expedition map, not the realm. */
   onMap: boolean;
+  /** The building whose first tier the realm can afford (RealmKnowledge, with the contracts' schema); null for none. */
+  typeTierAffordable: string | null | undefined;
   /** Every army of today lacks the stamina to explore. */
   armiesTired: boolean;
-  /** An army of today has an attribute offer waiting. */
-  pickWaiting: boolean;
-  /** A site of the expedition has been cleared. */
-  siteCleared: boolean;
-  /** A closed chest waits on a tile. */
-  closedChest: boolean;
-  /** A fallen realm stands on the map. */
-  fallenRealm: boolean;
-  /** One of the player's chests paid a relic because the day's LORDS were spent. */
-  lordsSpent: boolean;
-  /** The realm has learned nothing yet and holds the Essence for its cheapest research. */
-  firstResearchAffordable: boolean;
-  /** An army of today stands at Ethereal I or deeper. */
-  armyBelowSurface: boolean;
+  /** A ruin stands on the map. */
+  ruin: boolean;
+  /** The player's first ruin chest has paid (its LORDS, with the contracts' ruin chests). */
+  chestPaid: boolean | undefined;
+  /** An army of today stands at Ethereal I or further. */
+  armyBeyondSpire: boolean;
+  /** The selected army's forecast on the open site says it cannot win. */
+  losingFight: boolean;
+  /** The store a payout or reveal did not fit (the contracts' store limits); null for none. */
+  storeFull: string | null | undefined;
+  /** The season is over. */
+  seasonOver: boolean;
 }
 
-export type GuidePlace = "realm" | "muster" | "camp";
+/** Where a line speaks: the HUD's foot, inside the open site card, or on the season-over card. */
+export type GuideHost = "foot" | "site-card" | "season-over";
+
+/** The Aspect's mark: dim between lines, gold as it speaks, glowing after play, amber on a warning. */
+export type GuideMark = "rest" | "speaking" | "pleased" | "warning";
+
+/** A HUD control the line names, which its thread reaches. */
+export type GuideTarget = "realm-tab" | "open-slot" | "stores" | "army-xp" | "army-stamina" | "forecast";
+
+/** A place the line names off the HUD, which "Show me" takes the player to. */
+export type GuidePlace = "realm" | "deploy" | "camp";
 
 interface GuideStep {
   id: string;
-  line: string;
-  /** Ysolde's face for the line: pleased when the player has just made progress. */
-  mood?: "pleased";
-  /** The place the line names, which "Show me" takes the player to. */
+  host?: GuideHost;
+  mark: GuideMark;
+  line: (facts: GuideFacts) => string;
+  target?: GuideTarget;
   place?: GuidePlace;
   when: (facts: GuideFacts) => boolean;
 }
 
+const say = (line: string) => () => line;
+
 export const GUIDE_STEPS: readonly GuideStep[] = [
   {
     id: "arrival",
-    line: "You made it through the fog, Lord. Good. It forgets everything by midnight, except your realm.",
+    mark: "speaking",
+    line: say("I am the Aspect of Skill, Lord. Your realm stays. Each day, the mist takes the rest."),
+    place: "realm",
     when: (facts) => facts.realm,
   },
   {
     id: "build-on-the-mark",
-    line: "See the lit plot? The land is kinder there: whatever you build on it does twice the work. Put your Barracks on it. It will feed on your farms.",
+    mark: "speaking",
+    line: say("Build barracks on the marked plot. It trains troops twice as fast."),
     place: "realm",
     when: (facts) => facts.realm && !facts.barracks,
   },
   {
-    id: "muster",
-    line: "Send one strong army and a couple of scouts. What walks into the fog does not walk back, so send what today needs.",
-    place: "muster",
+    id: "deploy",
+    mark: "speaking",
+    line: say("One strong army, two scouts. They stay out until the day ends."),
+    target: "open-slot",
+    place: "deploy",
     when: (facts) => facts.troopsAtHome !== undefined && facts.troopsAtHome >= 1 && facts.armies === 0,
   },
   {
     id: "first-reveal",
-    mood: "pleased",
-    line: "Every tile you uncover sends Essence or labor home. The stronger the army, the more it sends. You saw the number before you went.",
+    mark: "pleased",
+    line: say("Each new tile sends Essence or labor home. Bigger armies send more."),
+    target: "stores",
     when: (facts) => facts.armyActed,
   },
   {
-    id: "first-pick",
-    line: "It has learned something. Choose one of three. Scouts like Scouting; your main army likes Battle.",
-    when: (facts) => facts.pickWaiting,
+    id: "first-army-tier",
+    mark: "speaking",
+    line: say("Enough XP. Upgrade a tier: Battle for the main army, Scouting for scouts."),
+    when: (facts) => facts.armyTierAffordable === true,
   },
   {
-    id: "a-site",
-    line: "A camp. The count you see is exactly what the fight will cost. No luck in it. Decide if the prize is worth those troops.",
+    id: "a-camp",
+    mark: "speaking",
+    line: say("A camp. Count their troops, then yours. These numbers do not lie."),
     place: "camp",
     when: (facts) => facts.camp !== null,
   },
   {
     id: "first-clear",
-    mood: "pleased",
-    line: "Paid on the spot. Labor from camps, Essence from rifts. Bigger guards, bigger purse.",
+    mark: "pleased",
+    line: say("Cleared. That is where an army learns."),
+    target: "army-xp",
     when: (facts) => facts.siteCleared,
   },
   {
-    id: "closed-chest",
-    line: "Chests wait on their tile until midnight. The army that opens it keeps what is inside.",
-    when: (facts) => facts.closedChest,
+    id: "first-stragglers",
+    mark: "speaking",
+    line: say("Stragglers. They went too far, long ago. Learn from them."),
+    when: (facts) => facts.stragglers === true,
   },
   {
     id: "come-home",
-    mood: "pleased",
-    line: "Take it home. Labor raises buildings.",
+    mark: "pleased",
+    line: say("Enough labor. Your castle can grow."),
+    target: "realm-tab",
     place: "realm",
     when: (facts) => facts.castleAffordable && facts.onMap,
   },
   {
-    id: "first-research",
-    line: "Essence buys knowing. Learn Farm II first: your barracks eats more than one farm grows.",
-    when: (facts) => facts.firstResearchAffordable,
+    id: "first-type-tier",
+    mark: "speaking",
+    line: (facts) => `Store more, or make more. Each choice holds for every ${facts.typeTierAffordable}.`,
+    when: (facts) => typeof facts.typeTierAffordable === "string",
   },
   {
     id: "rest",
-    mood: "pleased",
-    line: "They are tired and the fog is patient. Come back when the bars fill. Tomorrow it is all new land.",
+    mark: "rest",
+    line: say("Out of stamina. It comes back while you are away."),
+    target: "army-stamina",
     when: (facts) => facts.armies > 0 && facts.armiesTired,
   },
   // After the first session, the guide speaks only on firsts.
   {
-    id: "first-fallen-realm",
-    line: "A realm the Mist took. Something lives in it now. There is a chest inside, if you are strong enough to ask for it.",
-    when: (facts) => facts.fallenRealm,
+    id: "first-fallen-site",
+    mark: "speaking",
+    line: say("This ruin is from the old war. Its beast guards a chest."),
+    when: (facts) => facts.ruin,
   },
   {
-    id: "first-ethereal-depth",
-    line: "Below the surface the Mist is older. Bigger guards, better chests. Your reveals pay a little more.",
-    when: (facts) => facts.armyBelowSurface,
+    id: "first-chest",
+    mark: "pleased",
+    line: say("Only one a day. The next one comes tomorrow."),
+    when: (facts) => facts.chestPaid === true,
   },
   {
-    id: "first-lords-spent",
-    line: "The coin is gone for today; the Mist gave you a relic instead. More coin at midnight.",
-    when: (facts) => facts.lordsSpent,
+    id: "first-ethereal",
+    mark: "speaking",
+    line: say("Beyond the spire: harder guards, richer ground."),
+    when: (facts) => facts.armyBeyondSpire,
+  },
+  {
+    id: "store-full",
+    mark: "warning",
+    line: (facts) => `Your ${facts.storeFull} store is full. What does not fit is gone.`,
+    when: (facts) => typeof facts.storeFull === "string",
+  },
+  {
+    id: "losing-fight",
+    host: "site-card",
+    mark: "warning",
+    line: say("This army cannot win here. It can weaken them for the next one."),
+    target: "forecast",
+    when: (facts) => facts.losingFight,
+  },
+  // The season's ending is not a recorded fact yet: the mist lifted stands until Herald names it.
+  {
+    id: "season-over",
+    host: "season-over",
+    mark: "pleased",
+    line: say("The mist has lifted. For a while, the land remembers."),
+    when: (facts) => facts.seasonOver,
   },
 ];
 
@@ -136,6 +193,9 @@ export const GUIDE_STEPS: readonly GuideStep[] = [
 export const canShowPlace = (place: GuidePlace | undefined, facts: GuideFacts): place is GuidePlace =>
   place === "realm" ? facts.onMap : place !== undefined;
 
-/** The line to show now: the first step not yet seen whose state holds; none once the script is done or skipped. */
-export const nextGuideStep = (facts: GuideFacts, seen: ReadonlySet<string>): GuideStep | null =>
-  GUIDE_STEPS.find((step) => !seen.has(step.id) && step.when(facts)) ?? null;
+/** The line a host shows now: its first step not yet seen whose state holds; none once its script is seen. */
+export const nextGuideStep = (facts: GuideFacts, seen: ReadonlySet<string>, host: GuideHost): GuideStep | null =>
+  GUIDE_STEPS.find((step) => (step.host ?? "foot") === host && !seen.has(step.id) && step.when(facts)) ?? null;
+
+/** The guide is on while any line is still to come; off once every line is seen (or turned off from the Menu). */
+export const isGuideOn = (seen: ReadonlySet<string>): boolean => GUIDE_STEPS.some((step) => !seen.has(step.id));

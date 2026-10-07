@@ -155,7 +155,7 @@ describe("the place bar", () => {
 });
 
 describe("the Menu", () => {
-  it("opens Today, Season with the rank, Production, the guide and Settings, and closes on Resume", () => {
+  it("opens Today, Season with the rank, Production and Settings, switches the guide, and closes on Resume", () => {
     const handlers = {
       onToday: vi.fn(),
       onSeason: vi.fn(),
@@ -165,12 +165,14 @@ describe("the Menu", () => {
       onExit: vi.fn(),
       onClose: vi.fn(),
     };
-    act(() => root.render(<MenuSheet rank="#12" {...handlers} />));
+    const { onGuide, ...ways } = handlers;
+    act(() => root.render(<MenuSheet rank="#12" guide={{ on: true, onToggle: onGuide }} {...ways} />));
     const button = (word: string) =>
       [...document.querySelectorAll<HTMLButtonElement>("section[aria-label='Menu'] button")].find((candidate) =>
         candidate.textContent?.startsWith(word),
       )!;
     expect(button("Season").textContent).toBe("Season#12");
+    expect(button("Guide").getAttribute("aria-pressed")).toBe("true");
     for (const [word, handler] of [
       ["Today", handlers.onToday],
       ["Season", handlers.onSeason],

@@ -1,5 +1,4 @@
 import { AudioCategory, useAudio } from "@/audio";
-import { GuideSettings } from "@/ui/features/frontier/guide/guide-settings";
 import {
   identityClient,
   signOutIdentitySession,
@@ -40,7 +39,6 @@ const effectsCategories = Object.values(AudioCategory).filter((category) => cate
 export const SettingsPanel = () => (
   <div className="flex flex-col gap-4 p-1">
     <ProfileHeader />
-    <GuideSettings />
     <AudioSettings />
     <VideoSettings />
     <NotificationsCard />

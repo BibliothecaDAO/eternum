@@ -12,6 +12,7 @@ import { useReducedMotion } from "@/ui/motion/motion-settings";
 import { TickNumber } from "@/ui/motion/tick-number";
 import { AnimatePresence, motion } from "framer-motion";
 
+import { guideTarget } from "../guide/guide-thread";
 import type { DayClock } from "./day-clock";
 
 export type StoreKind = "essence" | "labor" | "wheat" | "troops";
@@ -65,11 +66,13 @@ const Stores = ({ stores, onOpen }: { stores: StoreReading[]; onOpen?: () => voi
   const plates = stores.map((store) => <StorePlate key={store.kind} store={store} />);
   const layout = "flex h-full min-w-0 flex-1 items-stretch gap-1";
   return onOpen ? (
-    <button type="button" onClick={onOpen} className={layout}>
+    <button type="button" onClick={onOpen} className={layout} {...guideTarget("stores")}>
       {plates}
     </button>
   ) : (
-    <div className={layout}>{plates}</div>
+    <div className={layout} {...guideTarget("stores")}>
+      {plates}
+    </div>
   );
 };
 

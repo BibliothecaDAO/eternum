@@ -17,11 +17,12 @@ import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import { useMemo, useState } from "react";
 
 import { useFrontierRealm, useGoToFrontierPlace } from "../frontier-home";
+import { GuideSlot } from "../guide/frontier-guide";
 import { type ArmyOrder, type Cost, isCovered, useArmyStamina, useOrderAt } from "../hud/army-order";
 import { armyArt, type DockArmy, useDockArmies } from "../hud/dock-armies";
 import { useApproachTile } from "./approach";
 import { useSelectedOwnArmy } from "./selected-army";
-import { readSiteCard, type SiteAttack } from "./site-card-plan";
+import { readSiteCard, type SiteAttack, type SiteFight } from "./site-card-plan";
 import { type SiteChoice, SiteCardView, type SiteVerb } from "./site-card-view";
 
 const SITE_MODELS = ["ExpeditionSite", "ExplorerTroops", "ArmySlot", "Guard", "Structure", "TileOccupancy"] as const;
@@ -109,6 +110,7 @@ export const TileCard = ({ selected, onClose }: { selected: SelectedSite; onClos
       xp={plan.xp}
       verb={verb}
       choices={actor ? undefined : choices}
+      guide={<GuideSlot host="site-card" facts={{ losingFight: cannotWin(plan.fight) }} />}
       onRealm={() => {
         onClose();
         goToPlace(false);
@@ -190,6 +192,10 @@ const useSiteChoices = (selected: SelectedSite, wanted: boolean): SiteChoice[] =
     };
   });
 };
+
+/** A forecast the army does not win: it loses, or the fight stalls. */
+const cannotWin = (fight: SiteFight | undefined): boolean =>
+  fight !== undefined && fight.outcome !== "refused" && fight.outcome !== "wins";
 
 const wholeTroops = (army: NativeRows["ExplorerTroops"]): number =>
   Number(army.troops.count / BigInt(RESOURCE_PRECISION));

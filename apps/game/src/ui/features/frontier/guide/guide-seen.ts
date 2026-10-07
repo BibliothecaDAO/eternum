@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { GUIDE_STEPS } from "./guide-script";
 
 /**
- * Which of Ysolde's lines this viewer has seen: a per-viewer convenience in localStorage, one list per game and player.
+ * Which of the guide's lines this viewer has seen: a per-viewer convenience in localStorage, one list per game and player.
  * Storage that throws or is blocked only means the guide may repeat itself; the session copy keeps it working.
  */
 const storageKey = (gameId: number, player: string) => `frontier-guide:${gameId}:${player.toLowerCase()}`;
@@ -44,7 +44,7 @@ export const useGuideSeen = (gameId: number, player: string | null) => {
     },
     [key],
   );
-  // A replay from settings resets the mounted guide too.
+  // A replay resets every mounted guide.
   useEffect(() => {
     if (!key) return;
     const reset = () => setSeen(readSeen(key));
@@ -52,11 +52,11 @@ export const useGuideSeen = (gameId: number, player: string | null) => {
     return () => window.removeEventListener(REPLAY_EVENT, reset);
   }, [key]);
   const skipAll = useCallback(() => markSeen(GUIDE_STEPS.map((step) => step.id)), [markSeen]);
-  return { seen, markSeen, skipAll };
-};
-
-/** Settings' replay: forget every line this viewer has seen in this game, so the guide starts over. */
-export const replayGuide = (gameId: number, player: string): void => {
-  writeSeen(storageKey(gameId, player), new Set());
-  window.dispatchEvent(new Event(REPLAY_EVENT));
+  // Forget every line this viewer has seen in this game, so the guide starts over.
+  const replay = useCallback(() => {
+    if (!key) return;
+    writeSeen(key, new Set());
+    window.dispatchEvent(new Event(REPLAY_EVENT));
+  }, [key]);
+  return { seen, markSeen, skipAll, replay };
 };

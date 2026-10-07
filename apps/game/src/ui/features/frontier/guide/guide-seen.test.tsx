@@ -1,7 +1,7 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { replayGuide, useGuideSeen } from "./guide-seen";
+import { useGuideSeen } from "./guide-seen";
 
 let latest: ReturnType<typeof useGuideSeen> | null = null;
 const Probe = ({ player }: { player: string }) => {
@@ -23,12 +23,14 @@ afterEach(() => {
 });
 
 describe("useGuideSeen", () => {
-  it("remembers dismissed lines per game and player, and forgets them on replay", async () => {
+  it("remembers dismissed lines per game and player, forgets them on replay, and turns every line off", async () => {
     const root = await mount("0xA1");
     await act(async () => latest!.markSeen(["arrival"]));
     expect(window.localStorage.getItem("frontier-guide:7:0xa1")).toBe('["arrival"]');
-    await act(async () => replayGuide(7, "0xa1"));
+    await act(async () => latest!.replay());
     expect(latest!.seen.size).toBe(0);
+    await act(async () => latest!.skipAll());
+    expect(latest!.seen.has("season-over")).toBe(true);
     await act(async () => root.unmount());
   });
 
@@ -40,8 +42,8 @@ describe("useGuideSeen", () => {
       throw new Error("blocked");
     });
     const root = await mount("0xB2");
-    await act(async () => latest!.markSeen(["arrival", "muster"]));
-    expect([...latest!.seen]).toEqual(["arrival", "muster"]);
+    await act(async () => latest!.markSeen(["arrival", "deploy"]));
+    expect([...latest!.seen]).toEqual(["arrival", "deploy"]);
     await act(async () => root.unmount());
   });
 });

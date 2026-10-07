@@ -11,6 +11,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+import { GuideSlot } from "../guide/frontier-guide";
 import { type SeasonDetail, SeasonDetailSheet } from "./season-detail";
 import { SeasonList, type SeasonListRow } from "./season-list";
 import { type PodiumPlace, SeasonOverCard, type SeasonTotals } from "./season-over-card";
@@ -137,6 +138,7 @@ export const SeasonOver = ({ onSeason }: { onSeason: () => void }) => {
       field={entries?.length}
       podium={(entries ?? []).slice(0, 3).map((entry) => podiumPlace(entry, entry === own))}
       totals={own && seasonTotals(own)}
+      guide={<GuideSlot host="season-over" facts={{ seasonOver: true }} />}
       onSeason={onSeason}
       onExit={() => navigate("/")}
     />

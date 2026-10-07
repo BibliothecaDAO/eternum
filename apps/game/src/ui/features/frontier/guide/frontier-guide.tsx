@@ -1,177 +1,129 @@
 import { useNavigateToMapView } from "@/hooks/helpers/use-navigate";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { leave } from "@/ui/motion/motion-scale";
 import { useReducedMotion } from "@/ui/motion/motion-settings";
 import { Pop } from "@/ui/motion/pop";
 import { configManager, Position } from "@bibliothecadao/eternum";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { AnimatePresence, motion } from "framer-motion";
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import { createContext, type ReactNode, useContext, useEffect, useRef } from "react";
+
 import { type useExpeditionRules, useGoToFrontierPlace } from "../frontier-home";
+import { GuideCard } from "./guide-card";
 import { pointAtDeploy } from "./guide-pointer";
-import { canShowPlace, type GuideFacts, type GuidePlace, nextGuideStep } from "./guide-script";
+import {
+  canShowPlace,
+  type GuideFacts,
+  type GuideHost,
+  type GuidePlace,
+  isGuideOn,
+  nextGuideStep,
+} from "./guide-script";
 import { useGuideSeen } from "./guide-seen";
+import { GuideThread } from "./guide-thread";
 import { useGuideFacts } from "./use-guide-facts";
 
-const PORTRAIT = { neutral: "/images/guides/ysolde-neutral.webp", pleased: "/images/guides/ysolde-pleased.webp" };
-/** The portrait leads the line in by this much, so she arrives before she speaks. */
-const LINE_DELAY_MS = 60;
+type ExpeditionRules = NonNullable<ReturnType<typeof useExpeditionRules>>;
 
-type GuideLine = ReturnType<typeof useGuideLine>;
+type Guide = {
+  realm: NativeRows["Structure"];
+  facts: GuideFacts;
+  seen: ReadonlySet<string>;
+  markSeen: (ids: readonly string[]) => void;
+  skipAll: () => void;
+  replay: () => void;
+};
+
+const GuideContext = createContext<Guide | null>(null);
 
 /**
- * Ysolde's current line and the controls that move it on, read from the store and this viewer's seen list. The HUD
- * holds it, so its layout knows whether she is speaking.
+ * The guide over the game: the facts its lines answer and the lines this viewer has seen, read once for every slot.
+ * It speaks only to a player in their own realm; a visit or a spectator hears nothing.
  */
-export const useGuideLine = (
-  rules: NonNullable<ReturnType<typeof useExpeditionRules>>,
-  realm: NativeRows["Structure"] | null,
-) => {
+export const GuideProvider = ({
+  rules,
+  realm,
+  children,
+}: {
+  rules: ExpeditionRules;
+  realm: NativeRows["Structure"] | null;
+  children: ReactNode;
+}) => {
   const player = useAccountStore((state) => state.account?.address ?? null);
   const facts = useGuideFacts(rules, realm);
-  const { seen, markSeen, skipAll } = useGuideSeen(configManager.getActiveGameId(), player);
-  const step = player && realm ? nextGuideStep(facts, seen) : null;
-  return { step, facts, seen, markSeen, skipAll };
+  const { seen, markSeen, skipAll, replay } = useGuideSeen(configManager.getActiveGameId(), player);
+  const guide = player && realm ? { realm, facts, seen, markSeen, skipAll, replay } : null;
+  return <GuideContext.Provider value={guide}>{children}</GuideContext.Provider>;
 };
 
 /**
- * Ysolde of the Fox, speaking one line at a time in the thumb zone. Never a modal: the map stays live around her.
- * A line the player answers by playing earns her pleased face on the next one; "Show me" takes the player to the place
- * a line names, "Next" dismisses it and "Skip" ends the guide.
+ * Where a line speaks: the HUD's foot, or a card that hosts its own line and tells the fact behind it (the forecast
+ * on a site card, the season's end).
  */
-export const FrontierGuide = ({
-  line: { step, facts, seen, markSeen, skipAll },
-  realm,
-}: {
-  line: GuideLine;
-  realm: NativeRows["Structure"];
-}) => {
-  const pleasedFor = usePleasedAfterPlay(step?.id ?? null, seen, markSeen);
-  const showMeFor = useShowMe(realm);
-  const reduced = useReducedMotion();
+export const GuideSlot = ({ host, facts }: { host: GuideHost; facts?: Partial<GuideFacts> }) => {
+  const guide = useContext(GuideContext);
+  return guide ? <GuideSpeaker guide={guide} host={host} facts={{ ...guide.facts, ...facts }} /> : null;
+};
 
+/** The Menu's Guide row: on while any line is still to come; off marks every line seen, on starts it over. */
+export const useGuideSwitch = (): { on: boolean; toggle: () => void } | null => {
+  const guide = useContext(GuideContext);
+  if (!guide) return null;
+  const on = isGuideOn(guide.seen);
+  return { on, toggle: on ? guide.skipAll : guide.replay };
+};
+
+const GuideSpeaker = ({ guide, host, facts }: { guide: Guide; host: GuideHost; facts: GuideFacts }) => {
+  const step = nextGuideStep(facts, guide.seen, host);
+  useMarkAnsweredSeen(step?.id ?? null, guide.markSeen);
+  const showMe = useShowMe(guide.realm);
+  const card = useRef<HTMLElement>(null);
+  const reduced = useReducedMotion();
   return (
     <AnimatePresence mode="wait">
       {step && (
-        <motion.div key={step.id} exit={leave(reduced)} className="pointer-events-none relative pt-24 lg:pt-36">
-          <GuideCard
-            line={step.line}
-            mood={step.mood ?? (pleasedFor === step.id ? "pleased" : "neutral")}
-            onShowMe={showMeFor(step.place, facts)}
-            onNext={() => markSeen([step.id])}
-            onSkip={skipAll}
-          />
+        <motion.div key={step.id} exit={leave(reduced)} className="pointer-events-none">
+          <Pop>
+            <GuideCard
+              ref={card}
+              mark={step.mark}
+              line={step.line(facts)}
+              onShowMe={canShowPlace(step.place, facts) ? () => showMe(step.place!, facts.camp) : undefined}
+              onNext={() => guide.markSeen([step.id])}
+            />
+          </Pop>
+          {step.target && <GuideThread from={card} target={step.target} />}
         </motion.div>
       )}
     </AnimatePresence>
   );
 };
 
-/** Ysolde standing on the card's top-left edge, her waist fade over it, arriving just before the line. */
-const GuideCard = ({
-  line,
-  mood,
-  onShowMe,
-  onNext,
-  onSkip,
-}: {
-  line: string;
-  mood: keyof typeof PORTRAIT;
-  onShowMe: (() => void) | null;
-  onNext: () => void;
-  onSkip: () => void;
-}) => (
-  <>
-    <Pop delayMs={LINE_DELAY_MS}>
-      <aside
-        aria-label="Ysolde"
-        aria-live="polite"
-        className={cn(OVERLAY_SURFACE_BASE, "pointer-events-auto flow-root rounded-xl p-3")}
-      >
-        {/* Her fade reaches just inside the card: the name steps past it and the line runs full width. */}
-        <span aria-hidden className="float-left h-2 w-[108px] lg:w-[156px]" />
-        <h2 className="text-base font-semibold text-gold">Ysolde of the Fox</h2>
-        <p className="mt-1 text-base leading-snug text-gold/90">{line}</p>
-        <div className="clear-both flex flex-wrap gap-2 pt-2">
-          {onShowMe && (
-            <GuideButton primary onClick={onShowMe}>
-              Show me
-            </GuideButton>
-          )}
-          <GuideButton primary={!onShowMe} onClick={onNext}>
-            Next
-          </GuideButton>
-          <GuideButton onClick={onSkip}>Skip the guide</GuideButton>
-        </div>
-      </aside>
-    </Pop>
-    <Pop className="absolute left-2 top-0 origin-bottom-left">
-      <img src={PORTRAIT[mood]} alt="" className="h-28 w-28 lg:h-40 lg:w-40" />
-    </Pop>
-  </>
-);
-
-const GuideButton = ({
-  primary = false,
-  onClick,
-  children,
-}: {
-  primary?: boolean;
-  onClick: () => void;
-  children: ReactNode;
-}) => (
-  <button
-    type="button"
-    onClick={onClick}
-    className={cn(
-      "min-h-11 rounded-lg px-4 lg:min-h-9",
-      primary ? "bg-gold font-semibold text-dark-brown" : "border border-gold/30 text-gold/80",
-    )}
-  >
-    {children}
-  </button>
-);
-
 /**
- * Marks each line seen once the next one replaces it. A line still unseen when it goes was answered by play, since
- * "Next" marks its line first, so the line after it is the one Ysolde greets pleased.
+ * Marks each line seen once the next one replaces it: a line still unseen when it goes was answered by play, since
+ * Next marks its line first.
  */
-const usePleasedAfterPlay = (
-  stepId: string | null,
-  seen: ReadonlySet<string>,
-  markSeen: (ids: readonly string[]) => void,
-): string | null => {
+const useMarkAnsweredSeen = (stepId: string | null, markSeen: (ids: readonly string[]) => void) => {
   const shown = useRef<string | null>(null);
-  const [pleasedFor, setPleasedFor] = useState<string | null>(null);
   useEffect(() => {
     const previous = shown.current;
     shown.current = stepId;
-    if (!previous || previous === stepId) return;
-    setPleasedFor(seen.has(previous) ? null : stepId);
-    markSeen([previous]);
-  }, [markSeen, seen, stepId]);
-  return pleasedFor;
+    if (previous && previous !== stepId) markSeen([previous]);
+  }, [markSeen, stepId]);
 };
 
-/**
- * "Show me" for a line's place, or null when it has nowhere to go: the realm board for the realm, a sweep over the
- * muster card, the camera on the camp.
- */
+/** Show me for a line's place: the realm board, a sweep over the first open army slot, the camera on the camp. */
 const useShowMe = (realm: NativeRows["Structure"]) => {
   const goToPlace = useGoToFrontierPlace(realm);
   const navigateToMapView = useNavigateToMapView();
   const setSelectedHex = useUIStore((state) => state.setSelectedHex);
-  const show = (place: GuidePlace, camp: GuideFacts["camp"]) => {
+  return (place: GuidePlace, camp: GuideFacts["camp"]) => {
     if (place === "realm") goToPlace(false);
-    if (place === "muster") pointAtDeploy();
+    if (place === "deploy") pointAtDeploy();
     if (place === "camp" && camp) {
       navigateToMapView(Position.fromContract(camp));
       setSelectedHex({ col: camp.x, row: camp.y });
     }
   };
-  return (place: GuidePlace | undefined, facts: GuideFacts): (() => void) | null =>
-    canShowPlace(place, facts) ? () => show(place, facts.camp) : null;
 };

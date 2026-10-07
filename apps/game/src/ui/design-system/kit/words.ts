@@ -116,3 +116,7 @@ export const BACK = "Back";
 /** Looking at another realm, and stopping. */
 export const VISIT = "Visit";
 export const LEAVE = "Leave";
+
+/** The guide card's two verbs: go to what the line names, and on to the next line. */
+export const SHOW_ME = "Show me";
+export const NEXT = "Next";

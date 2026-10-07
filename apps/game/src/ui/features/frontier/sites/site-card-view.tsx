@@ -21,6 +21,9 @@ import {
   XP,
 } from "@/ui/design-system/kit/words";
 
+import type { ReactNode } from "react";
+
+import { guideTarget } from "../guide/guide-thread";
 import type { Cost } from "../hud/army-order";
 import type { SiteFight } from "./site-card-plan";
 
@@ -60,6 +63,7 @@ export const SiteCardView = ({
   xp,
   verb,
   choices,
+  guide,
   onRealm,
   onClose,
 }: {
@@ -75,6 +79,8 @@ export const SiteCardView = ({
   xp: number | undefined;
   verb: SiteVerb | null;
   choices?: readonly SiteChoice[];
+  /** The guide's line when it speaks about this fight. */
+  guide?: ReactNode;
   /** The way to make room when the payout does not all fit. */
   onRealm?: () => void;
   onClose: () => void;
@@ -107,6 +113,7 @@ export const SiteCardView = ({
           )}
         </div>
       </div>
+      {guide}
       <Verb verb={verb} onRealm={pay?.fits !== undefined && pay.fits < pay.amount ? onRealm : undefined} />
     </Sheet>
   );
@@ -160,7 +167,10 @@ const FightPlate = ({ fight }: { fight: SiteFight | undefined }) => {
   const known = fight && fight.outcome !== "refused" ? fight : undefined;
   const loses = known && known.outcome !== "wins";
   return (
-    <div className="frontier-card flex h-[92px] flex-1 flex-col items-center justify-center gap-1.5 !rounded-xl">
+    <div
+      {...guideTarget("forecast")}
+      className="frontier-card flex h-[92px] flex-1 flex-col items-center justify-center gap-1.5 !rounded-xl"
+    >
       {loses ? (
         <>
           <Line icon="Sk" value={`−${formatExact(known.troopsLost)}`} hot />

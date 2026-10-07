@@ -31,8 +31,8 @@ export const ArmyDock = ({ realm, armies }: { realm: NativeRows["Structure"]; ar
   const openCount = openSlots?.length ?? Math.max(0, realm.base.troop_max_explorer_count - armies.length);
   return (
     <nav aria-label="Armies" className="pointer-events-auto flex gap-1.5">
-      {armies.map((army) => (
-        <DockToken key={army.explorerId} army={army} pickable={own} />
+      {armies.map((army, index) => (
+        <DockToken key={army.explorerId} army={army} pickable={own} guided={own && index === 0} />
       ))}
       {ordersAllowed &&
         Array.from({ length: openCount }, (_, index) => (
@@ -46,7 +46,7 @@ export const ArmyDock = ({ realm, armies }: { realm: NativeRows["Structure"]; ar
   );
 };
 
-const DockToken = ({ army, pickable }: { army: DockArmy; pickable: boolean }) => {
+const DockToken = ({ army, pickable, guided }: { army: DockArmy; pickable: boolean; guided: boolean }) => {
   const selected = useUIStore((state) => state.entityActions.selectedEntityId === army.explorerId);
   const pick = usePickArmy(army.explorerId);
   const stamina = useWellRefillShown(army);
@@ -60,6 +60,7 @@ const DockToken = ({ army, pickable }: { army: DockArmy; pickable: boolean }) =>
       canBuyTier={false}
       selected={selected}
       flyTarget={attributeBadgeTarget(army.explorerId)}
+      guided={guided}
       onPick={pickable ? pick : undefined}
     />
   );
@@ -93,7 +94,12 @@ const DeploySlot = ({ first, pulse }: { first: boolean; pulse: boolean }) => {
   const pointed = useDeployPointed();
   return (
     <Sweep play={first ? pointed : 0} className="shrink-0 rounded-xl">
-      <OpenSlot label={DEPLOY} pulse={pulse} onDeploy={() => setLeftNavigationView(LeftView.MilitaryView)} />
+      <OpenSlot
+        label={DEPLOY}
+        pulse={pulse}
+        guided={first}
+        onDeploy={() => setLeftNavigationView(LeftView.MilitaryView)}
+      />
     </Sweep>
   );
 };

@@ -2,6 +2,7 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { formatAmount } from "@/ui/design-system/kit/amount";
 
 import { CardFanGlyph } from "../glyphs";
+import { guideTarget } from "../guide/guide-thread";
 
 /** A token's stamina bar: five segments of the army's own maximum, so a full bar reads full whatever its Logistics. */
 const SEGMENTS = 5;
@@ -21,6 +22,7 @@ export const ArmyToken = ({
   canBuyTier,
   selected,
   flyTarget,
+  guided = false,
   onPick,
 }: {
   label: string;
@@ -32,6 +34,8 @@ export const ArmyToken = ({
   selected: boolean;
   /** Where a gain flies into the portrait. */
   flyTarget?: string;
+  /** The dock's first army: the guide's lines about XP and stamina point at its badge and its bar. */
+  guided?: boolean;
   /** Absent on a visit: the token is shown, never picked. */
   onPick?: () => void;
 }) => {
@@ -41,7 +45,10 @@ export const ArmyToken = ({
         <span className="block size-full overflow-hidden rounded-full border border-kit-line2 bg-kit-ground">
           {art && <img src={art} alt="" className="size-full object-cover" />}
         </span>
-        <span className="absolute -bottom-1 -right-2.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full border border-kit-line2 bg-kit-ink px-1 text-[12px] leading-none text-kit-gold2 tabular-nums">
+        <span
+          {...(guided ? guideTarget("army-xp") : {})}
+          className="absolute -bottom-1 -right-2.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full border border-kit-line2 bg-kit-ink px-1 text-[12px] leading-none text-kit-gold2 tabular-nums"
+        >
           {formatAmount(xp)}
         </span>
         {canBuyTier && (
@@ -50,7 +57,7 @@ export const ArmyToken = ({
           </span>
         )}
       </span>
-      <StaminaSegments stamina={stamina} />
+      <StaminaSegments stamina={stamina} guided={guided} />
       <span className="text-[14px] leading-none text-kit-cream tabular-nums">{formatAmount(troops)}</span>
     </>
   );
@@ -66,11 +73,25 @@ export const ArmyToken = ({
   );
 };
 
-/** An open army slot: a plus in a dashed ring that opens Deploy; the first one pulses while no army is out. */
-export const OpenSlot = ({ label, pulse, onDeploy }: { label: string; pulse: boolean; onDeploy: () => void }) => (
+/**
+ * An open army slot: a plus in a dashed ring that opens Deploy; the first one pulses while no army is out, and is where
+ * the guide's Deploy line points.
+ */
+export const OpenSlot = ({
+  label,
+  pulse,
+  guided = false,
+  onDeploy,
+}: {
+  label: string;
+  pulse: boolean;
+  guided?: boolean;
+  onDeploy: () => void;
+}) => (
   <button
     type="button"
     aria-label={label}
+    {...(guided ? guideTarget("open-slot") : {})}
     onClick={onDeploy}
     className={cn(TOKEN, "border border-kit-line bg-kit-ground")}
   >
@@ -85,13 +106,20 @@ export const OpenSlot = ({ label, pulse, onDeploy }: { label: string; pulse: boo
   </button>
 );
 
-const StaminaSegments = ({ stamina }: { stamina: { current: number; max: number } | undefined }) => {
+const StaminaSegments = ({
+  stamina,
+  guided,
+}: {
+  stamina: { current: number; max: number } | undefined;
+  guided: boolean;
+}) => {
   const filled = stamina && stamina.max > 0 ? (SEGMENTS * stamina.current) / stamina.max : 0;
   return (
     <span
       role="meter"
       aria-valuenow={stamina?.current}
       aria-valuemax={stamina?.max}
+      {...(guided ? guideTarget("army-stamina") : {})}
       className="flex w-full gap-0.5 px-1.5"
     >
       {Array.from({ length: SEGMENTS }, (_, index) => (
