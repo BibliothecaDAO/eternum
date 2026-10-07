@@ -182,12 +182,14 @@ def compose_configuration(config, directory):
     for name, service in compose["services"].items():
         if name != "harness":
             service.update(budget)
+    # Rendering resolved the operator secret from this shell into every service that passes it through (initialization
+    # and the harness); compose.json keeps only its name, and starting a service passes it from the same shell again.
+    for service in compose["services"].values():
+        if "OPERATOR_TOKEN" in service.get("environment", {}):
+            service["environment"]["OPERATOR_TOKEN"] = None
     for name in ("prepare", "init"):
         service = compose["services"][name]
         service.update({"mem_limit": "8g", "memswap_limit": "8g"})
-        # Rendering resolved the operator secret from this shell; compose.json keeps only its name, and starting the
-        # shard passes it through from the same shell again.
-        service["environment"]["OPERATOR_TOKEN"] = None
         service["environment"]["CHAIN_CONFIG"] = "/template/chain-config.yaml"
         service["volumes"].append({"type": "bind", "source": str((ROOT / config["chain_config"]).resolve()),
                                    "target": "/template/chain-config.yaml", "read_only": True})
