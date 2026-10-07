@@ -5,6 +5,8 @@ import {
   type PlaytestSlot,
 } from "@/ui/features/factory-v2/api/factory-worker";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { useLocation, useSearchParams } from "react-router-dom";
 
 import { useRequestSignIn } from "./sign-in/sign-in-route";
 
@@ -30,10 +32,17 @@ export const seatsFilling = (slot: PlaytestSlot): number => {
   return registered === 0 ? 0 : ((registered - 1) % BLITZ_SEATS) + 1;
 };
 
-/** Joining a slot as the signed-in player, or asking them to sign in first. */
+/** The return path's mark that a Join waits on the sign-in it led through. */
+const JOIN_PARAM = "join";
+
+/**
+ * Joining a slot as the signed-in player. Signed out, Join leads through sign-in and comes back to the same page
+ * marked with the slot, which then joins by itself: no second tap.
+ */
 export const useJoinSlot = () => {
   const { status, session } = useIdentitySession();
   const requestSignIn = useRequestSignIn();
+  const { pathname } = useLocation();
   const client = useQueryClient();
   const register = useMutation({
     mutationFn: registerPlaytestSlot,
@@ -42,6 +51,30 @@ export const useJoinSlot = () => {
   return {
     realmsId: session?.user.realmsId,
     register,
-    join: (slot: PlaytestSlot) => (status === "signed-in" ? register.mutate(slot.name) : requestSignIn()),
+    /** The slot whose Join is under way, so only its button says Joining…. */
+    joining: register.isPending ? register.variables : undefined,
+    join: (slot: PlaytestSlot) =>
+      status === "signed-in"
+        ? register.mutate(slot.name)
+        : requestSignIn(`${pathname}?${JOIN_PARAM}=${encodeURIComponent(slot.name)}`),
   };
+};
+
+/** Back from sign-in with a Join waiting: join that slot once, then drop the mark from the address. */
+export const useJoinOnReturn = (join: ReturnType<typeof useJoinSlot>, slots: readonly PlaytestSlot[] | undefined) => {
+  const { status } = useIdentitySession();
+  const [search, setSearch] = useSearchParams();
+  const waiting = search.get(JOIN_PARAM);
+  useEffect(() => {
+    if (status !== "signed-in" || !waiting || !slots) return;
+    const slot = slots.find((candidate) => candidate.name === waiting);
+    if (slot && !registrationFor(slot, join.realmsId)) join.join(slot);
+    setSearch(
+      (current) => {
+        current.delete(JOIN_PARAM);
+        return current;
+      },
+      { replace: true },
+    );
+  }, [join, setSearch, slots, status, waiting]);
 };

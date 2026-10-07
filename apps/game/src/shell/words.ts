@@ -62,3 +62,14 @@ export const SIGN_IN_WORDS = {
   saving: "Saving…",
   portrait: "Portrait",
 } as const;
+
+/** Blitz's list and lobby: the steps on Join, the seat's cost, and what stands where an action cannot. */
+export const BLITZ_WORDS = {
+  joining: "Joining…",
+  preparing: "Preparing…",
+  /** The one line above Join (ruled: a seat is kept). */
+  seatKept: "A seat cannot be given up.",
+  /** Shown only to assistive technology; the seats are drawn. */
+  seats: "Seats",
+  full: (nextStart: string) => `Full. The ${nextStart} game has seats.`,
+} as const;

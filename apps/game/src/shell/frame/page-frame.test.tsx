@@ -19,8 +19,8 @@ const SIZES = [
 
 /** The tab pages; every other page is opened from another and carries Back. */
 const TAB_PATHS = new Set(["/", "/season", "/learn", "/profile", "/nothing-here"]);
-/** Full-screen steps outside the app shell: no tabs, the desktop bar keeps the lockup alone. */
-const STEP_PATHS = ["/sign-in"];
+/** Full-screen steps: no tabs, the desktop bar keeps the lockup alone (sign-in, a Blitz lobby). */
+const STEP_PATHS = ["/sign-in", "/blitz/0x111"];
 const CONTROLS = "a[href], button, input, select, textarea";
 
 /** The app shell's pages (the route without a path), each with a sample for its parameters. */
@@ -66,7 +66,7 @@ const bandOrder = (container: HTMLElement) =>
 describe.each(SIZES)("every page at %i × %i keeps each control in its band", (width) => {
   const layout = width >= 1024 ? "desktop" : "phone";
 
-  it.each([...shellPaths(), ...STEP_PATHS])("%s", async (path) => {
+  it.each([...new Set([...shellPaths(), ...STEP_PATHS])])("%s", async (path) => {
     setViewportWidth(width);
     const container = await renderPath(path);
     const top = band(container, "top");

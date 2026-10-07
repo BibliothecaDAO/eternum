@@ -1,6 +1,3 @@
-/** The game's cover the Blitz list still wears until it takes the kit's art (item 6). */
-export const MODE_ART = { blitz: "/images/covers/blitz-arena.png" } as const;
-
 const REALM_STILLS = ["settlement", "city", "kingdom", "empire"] as const;
 
 /**

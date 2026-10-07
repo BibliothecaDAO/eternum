@@ -3,7 +3,6 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { useLayout } from "../frame/layout";
 import { PageFrame } from "../frame/page-frame";
 import { Loading } from "../kit";
-import { BlitzLobbyCard } from "../mode-cards";
 import { chooseSeason, seasonRealm } from "../season";
 import { AgeLabel } from "./age-card";
 import { ageState } from "./age-state";
@@ -45,18 +44,6 @@ export const EternumPage = () => <AgePage mode="eternum" />;
 
 /** Dominion: the fourth age as the lore names it; locked, no date, no button (ruled). */
 export const DominionPage = () => <AgePage mode="dominion" />;
-
-/** Blitz's page: its games and joining. The lobby list stands here until the Blitz list is rebuilt (item 6). */
-export const BlitzPage = () => {
-  const facts = usePlayFacts();
-  return (
-    <PageFrame back="/" title={ageOf("blitz").name}>
-      <AgeFailureOr facts={facts}>
-        <BlitzLobbyCard games={facts.games} now={facts.now} />
-      </AgeFailureOr>
-    </PageFrame>
-  );
-};
 
 const AgePage = ({ mode }: { mode: AgeMode }) => {
   const facts = usePlayFacts();

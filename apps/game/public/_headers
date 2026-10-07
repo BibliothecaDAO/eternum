@@ -7,6 +7,8 @@
   Cache-Control: no-cache
 /blitz
   Cache-Control: no-cache
+/blitz/*
+  Cache-Control: no-cache
 /frontier
   Cache-Control: no-cache
 /eternum

@@ -5,12 +5,14 @@ import { ReasonPlate } from "@/ui/design-system/kit/reason-plate";
 import { TRY_AGAIN } from "@/ui/design-system/kit/words";
 
 /** The services the app reads; a failure names the one that did not answer. */
-type Service = "directory" | "slots" | "season" | "results";
+type Service = "directory" | "slots" | "join" | "season" | "results";
 
 /** One line per service, in the glossary's shape ("Season did not answer."). */
 const FAILURE_LINES: Record<Service, string> = {
   directory: "Games did not answer.",
   slots: "Blitz did not answer.",
+  /** A Join the launch service did not take: the seat was not taken either. */
+  join: "Blitz did not answer. Your seat was not taken.",
   season: "Season did not answer.",
   results: "Results did not answer.",
 };
