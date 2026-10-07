@@ -39,7 +39,7 @@ export interface SiteAttack {
  * fight from the army in reach as exact exchanges. The guard's count is unknown until its slots arrive; a fight only
  * exists for an army in reach.
  */
-export interface SiteCardPlan {
+interface SiteCardPlan {
   kind: SiteKind;
   /** A ruin's beast, named on the guard row; the card's title is the kind. */
   beast: string | undefined;
@@ -53,7 +53,7 @@ export interface SiteCardPlan {
 }
 
 /** The guarded sites as the glossary names them; stragglers arrive with the contracts' generated taxonomy. */
-export type SiteKind = "camp" | "rift" | "ruin";
+type SiteKind = "camp" | "rift" | "ruin";
 
 const KINDS: Record<NativeRows["ExpeditionSite"]["kind"], SiteKind> = {
   Camp: "camp",

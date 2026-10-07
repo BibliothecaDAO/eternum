@@ -25,7 +25,7 @@ import type { Cost } from "../hud/army-order";
 import type { SiteFight } from "./site-card-plan";
 
 /** The guarded sites; stragglers are drawn now and read once the contracts' taxonomy names them. */
-export type GuardedSite = "camp" | "rift" | "ruin" | "stragglers";
+type GuardedSite = "camp" | "rift" | "ruin" | "stragglers";
 
 const SITES: Record<GuardedSite, { word: string; icon: IconCode }> = {
   camp: { word: CAMP, icon: "Cp" },
@@ -38,7 +38,7 @@ const SITES: Record<GuardedSite, { word: string; icon: IconCode }> = {
  * stamina held against the attack's cost. */
 export type SiteVerb =
   | { kind: "attack"; stamina: number; sending: boolean; onAttack: () => void }
-  | { kind: "move"; prices: Price[]; onMove: () => void }
+  | { kind: "move"; prices: readonly Price[]; onMove: () => void }
   | { kind: "short"; stamina: Cost };
 
 /** An army that could take the site, offered when none is selected: its forecast marked win or loss. */
@@ -74,13 +74,15 @@ export const SiteCardView = ({
   chest?: { tier: Tier; lords: number };
   xp: number | undefined;
   verb: SiteVerb | null;
-  choices?: SiteChoice[];
+  choices?: readonly SiteChoice[];
   /** The way to make room when the payout does not all fit. */
   onRealm?: () => void;
   onClose: () => void;
 }) => {
   const { word, icon } = SITES[site];
   const lost = fight && fight.outcome === "loses";
+  // With no army selected the realm's armies are the choices, and the guard moves up beside the kind.
+  const picking = choices !== undefined && choices.length > 0;
   return (
     <Sheet label={word} onClose={onClose}>
       <header className="flex items-center gap-3">
@@ -88,8 +90,9 @@ export const SiteCardView = ({
           <KitIcon code={icon} size={36} />
         </span>
         <h2 className="frontier-title flex-1">{word}</h2>
+        {picking && guard !== null && <Chip icons={["Tr"]} label={TROOPS} value={formatExact(guard)} />}
       </header>
-      {choices ? <Choices choices={choices} /> : <Matchup army={army} beast={beast} guard={guard} />}
+      {picking && choices ? <Choices choices={choices} /> : <Matchup army={army} beast={beast} guard={guard} />}
       <div className="flex gap-2">
         <FightPlate fight={fight} />
         <div
@@ -134,7 +137,7 @@ const Matchup = ({
 );
 
 /** No army selected: the armies are the choices, each marked with its forecast. */
-const Choices = ({ choices }: { choices: SiteChoice[] }) => (
+const Choices = ({ choices }: { choices: readonly SiteChoice[] }) => (
   <div className="flex gap-1.5">
     {choices.map((choice) => (
       <button

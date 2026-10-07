@@ -37,7 +37,7 @@ export const Button = ({
   role: ButtonRole;
   word: string;
   icon?: IconCode;
-  prices?: Price[];
+  prices?: readonly Price[];
   /** The step's word while the action is under way; the button waits until it clears. */
   loading?: string;
   disabled?: boolean;

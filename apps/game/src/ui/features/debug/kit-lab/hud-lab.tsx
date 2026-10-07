@@ -1,5 +1,5 @@
 import { Notice } from "@/ui/design-system/kit/notice";
-import { OFFLINE, TRY_AGAIN } from "@/ui/design-system/kit/words";
+import { OFFLINE, TRAINING_BUILDINGS, TRY_AGAIN } from "@/ui/design-system/kit/words";
 import { ArmyStatusBar } from "@/ui/features/frontier/hud/action-bar";
 import { ArmyToken, OpenSlot } from "@/ui/features/frontier/hud/army-token";
 import type { DayClock } from "@/ui/features/frontier/hud/day-clock";
@@ -97,6 +97,126 @@ const MOVE: LabOrder = {
   stamina: { cost: 30, held: 90, wait: undefined },
   wheat: { cost: 300, held: 4_410, wait: undefined },
 };
+
+type LabOrder = {
+  kind: "explore" | "move";
+  tiles: number;
+  stamina: { cost: number; held: number | undefined; wait: number | undefined };
+  wheat: { cost: number; held: number | undefined; wait: number | undefined };
+};
+
+/** A city's deploy: 6,200 troops at home, 2 wheat a troop, the realm trained Battle and Homecoming to uncommon. */
+type LabDeploy = {
+  count: number;
+  troopsAtHome: number;
+  troopsMax: number;
+  wheatStop?: number;
+  wheat: number;
+  tiles: number;
+};
+
+const DEPLOY: LabDeploy = { count: 5_000, troopsAtHome: 6_200, troopsMax: 6_200, wheat: 14_410, tiles: 44 };
+
+type LabSite = Omit<Parameters<typeof SiteCardView>[0], "onClose" | "onRealm">;
+type LabClear = Parameters<typeof SiteClearCard>[0];
+type LabChest = Parameters<typeof RuinChestMoment>[0];
+
+const ARMY_CHIP = { art: "/images/armies/knightT1.png", troops: 5_000 };
+const ATTACK_30 = { kind: "attack" as const, stamina: 30, sending: false, onAttack: () => undefined };
+const WIN = (exchanges: number, troopsLost: number) => ({
+  outcome: "wins" as const,
+  exchanges,
+  troopsLost,
+  guardLeft: 0,
+});
+const CAMP_CARD: LabSite = {
+  site: "camp",
+  beast: undefined,
+  army: ARMY_CHIP,
+  guard: 1_100,
+  fight: WIN(1, 180),
+  pay: { icon: "La", amount: 550 },
+  xp: 82,
+  verb: ATTACK_30,
+};
+const RUIN_CARD: LabSite = {
+  site: "ruin",
+  beast: "Troll",
+  army: ARMY_CHIP,
+  guard: 3_400,
+  fight: WIN(2, 1_250),
+  pay: null,
+  chest: { tier: 3, lords: 128 },
+  xp: 145,
+  verb: ATTACK_30,
+};
+
+/** Day 13 at 22:30: an 8-hour day from 21:40 that ends in the night, at 05:40; tomorrow lasts 20h. */
+const NIGHT: DayClock = {
+  day: 13,
+  endsAt: NOW + 15 * HOUR + 14 * 60,
+  secondsLeft: 7 * HOUR + 10 * 60,
+  tomorrowSeconds: 20 * HOUR,
+  shareLeft: (7 * HOUR + 10 * 60) / (8 * HOUR),
+  tone: "calm",
+};
+const LAST_HOUR: DayClock = { ...CLOCK, secondsLeft: 42 * 60, shareLeft: 42 / 960, tone: "ember" };
+const DAY_DONE = {
+  endedDay: 12,
+  realmArt: "/images/realm-card/city.webp",
+  clock: { ...NIGHT, secondsLeft: 7 * HOUR + 55 * 60 },
+  totals: { reveals: 31, cleared: 3, chests: 1, essence: 6_400, labor: 1_150, lords: 128 },
+  rank: { from: 14, to: 12 },
+  armies: 3,
+  troopsLost: 6_021,
+  returned: { sent: 470, fitted: 470 },
+  onContinue: () => undefined,
+};
+
+/** A city's build sheet: eight buildings, the War hall and Hearth already standing, a fifth farm at 6,800 labor. */
+const BUILD_TILES: Parameters<typeof BuildView>[0]["tiles"] = [
+  { key: "farm", icon: "Fm", name: "Farm", foot: { kind: "price", labor: 6_800, short: false } },
+  { key: "workshop", icon: "Wk", name: "Workshop", foot: { kind: "price", labor: 10_000, short: true } },
+  { key: "barracks", icon: "Bs", name: "Barracks", foot: { kind: "price", labor: 6_800, short: false } },
+  { key: "hut", icon: "Ht", name: "Hut", foot: { kind: "price", labor: 5_100, short: false } },
+  { key: "war", icon: "Wa", name: TRAINING_BUILDINGS[0], foot: { kind: "built" } },
+  { key: "supply", icon: "Sy", name: TRAINING_BUILDINGS[1], foot: { kind: "price", labor: 3_000, short: false } },
+  { key: "lodge", icon: "Ld", name: TRAINING_BUILDINGS[2], foot: { kind: "price", labor: 3_000, short: false } },
+  { key: "hearth", icon: "He", name: TRAINING_BUILDINGS[3], foot: { kind: "built" } },
+];
+const EARLY_TILES: Parameters<typeof BuildView>[0]["tiles"] = [
+  { key: "farm", icon: "Fm", name: "Farm", foot: { kind: "price", labor: 800, short: false } },
+  { key: "workshop", icon: "Wk", name: "Workshop", foot: { kind: "price", labor: 2_000, short: false } },
+  { key: "barracks", icon: "Bs", name: "Barracks", foot: { kind: "price", labor: 800, short: false } },
+  { key: "hut", icon: "Ht", name: "Hut", foot: { kind: "price", labor: 300, short: false } },
+  { key: "war", icon: "Wa", name: TRAINING_BUILDINGS[0], foot: { kind: "locked", gate: 3 } },
+  { key: "supply", icon: "Sy", name: TRAINING_BUILDINGS[1], foot: { kind: "locked", gate: 3 } },
+  { key: "lodge", icon: "Ld", name: TRAINING_BUILDINGS[2], foot: { kind: "locked", gate: 3 } },
+  { key: "hearth", icon: "He", name: TRAINING_BUILDINGS[3], foot: { kind: "locked", gate: 3 } },
+];
+const CASTLE_SIDE = (level: number, limit: number) => ({
+  level,
+  art: `/images/buildings/construction/${["castleZero", "castleOne", "castleTwo", "castleThree"][level]}.png`,
+  plots: [6, 18, 36, 60][level],
+  slots: [3, 4, 5, 6][level],
+  limit,
+  deployCap: [3_000, 9_000, 25_000, 50_000][level],
+});
+
+/** Army 1: 5,000 troops, 260 XP, Battle rare, Logistics and Scouting common, Homecoming rare (the realm trained two). */
+type LabArmySheet = {
+  chosen: AttributeKey;
+  xp?: number;
+  stamina?: number;
+  max?: number;
+  tiers?: readonly [1 | 2 | 3 | 4 | 5, 1 | 2 | 3 | 4 | 5, 1 | 2 | 3 | 4 | 5, 1 | 2 | 3 | 4 | 5];
+};
+const EFFECTS = {
+  battle: ["+0%", "+10%", "+30%", "+60%", "+100%"],
+  logistics: ["150", "170", "200", "240", "300"],
+  scouting: ["+0%", "+10%", "+30%", "+60%", "+100%"],
+  homecoming: ["0%", "3%", "9%", "18%", "30%"],
+} as const;
 
 const STATES = {
   idle: { clock: CLOCK, stores: STORES, armies: ARMIES },
@@ -282,126 +402,6 @@ const STATES = {
     selected: 0,
     army: { chosen: "battle", xp: 520, stamina: 240, max: 240, tiers: [5, 4, 3, 4] },
   },
-} as const;
-
-type LabOrder = {
-  kind: "explore" | "move";
-  tiles: number;
-  stamina: { cost: number; held: number | undefined; wait: number | undefined };
-  wheat: { cost: number; held: number | undefined; wait: number | undefined };
-};
-
-/** A city's deploy: 6,200 troops at home, 2 wheat a troop, the realm trained Battle and Homecoming to uncommon. */
-type LabDeploy = {
-  count: number;
-  troopsAtHome: number;
-  troopsMax: number;
-  wheatStop?: number;
-  wheat: number;
-  tiles: number;
-};
-
-const DEPLOY: LabDeploy = { count: 5_000, troopsAtHome: 6_200, troopsMax: 6_200, wheat: 14_410, tiles: 44 };
-
-type LabSite = Omit<Parameters<typeof SiteCardView>[0], "onClose" | "onRealm">;
-type LabClear = Parameters<typeof SiteClearCard>[0];
-type LabChest = Parameters<typeof RuinChestMoment>[0];
-
-const ARMY_CHIP = { art: "/images/armies/knightT1.png", troops: 5_000 };
-const ATTACK_30 = { kind: "attack" as const, stamina: 30, sending: false, onAttack: () => undefined };
-const WIN = (exchanges: number, troopsLost: number) => ({
-  outcome: "wins" as const,
-  exchanges,
-  troopsLost,
-  guardLeft: 0,
-});
-const CAMP_CARD: LabSite = {
-  site: "camp",
-  beast: undefined,
-  army: ARMY_CHIP,
-  guard: 1_100,
-  fight: WIN(1, 180),
-  pay: { icon: "La", amount: 550 },
-  xp: 82,
-  verb: ATTACK_30,
-};
-const RUIN_CARD: LabSite = {
-  site: "ruin",
-  beast: "Troll",
-  army: ARMY_CHIP,
-  guard: 3_400,
-  fight: WIN(2, 1_250),
-  pay: null,
-  chest: { tier: 3, lords: 128 },
-  xp: 145,
-  verb: ATTACK_30,
-};
-
-/** Day 13 at 22:30: an 8-hour day from 21:40 that ends in the night, at 05:40; tomorrow lasts 20h. */
-const NIGHT: DayClock = {
-  day: 13,
-  endsAt: NOW + 15 * HOUR + 14 * 60,
-  secondsLeft: 7 * HOUR + 10 * 60,
-  tomorrowSeconds: 20 * HOUR,
-  shareLeft: (7 * HOUR + 10 * 60) / (8 * HOUR),
-  tone: "calm",
-};
-const LAST_HOUR: DayClock = { ...CLOCK, secondsLeft: 42 * 60, shareLeft: 42 / 960, tone: "ember" };
-const DAY_DONE = {
-  endedDay: 12,
-  realmArt: "/images/realm-card/city.webp",
-  clock: { ...NIGHT, secondsLeft: 7 * HOUR + 55 * 60 },
-  totals: { reveals: 31, cleared: 3, chests: 1, essence: 6_400, labor: 1_150, lords: 128 },
-  rank: { from: 14, to: 12 },
-  armies: 3,
-  troopsLost: 6_021,
-  returned: { sent: 470, fitted: 470 },
-  onContinue: () => undefined,
-};
-
-/** A city's build sheet: eight buildings, the War hall and Hearth already standing, a fifth farm at 6,800 labor. */
-const BUILD_TILES: Parameters<typeof BuildView>[0]["tiles"] = [
-  { key: "farm", icon: "Fm", name: "Farm", foot: { kind: "price", labor: 6_800, short: false } },
-  { key: "workshop", icon: "Wk", name: "Workshop", foot: { kind: "price", labor: 10_000, short: true } },
-  { key: "barracks", icon: "Bs", name: "Barracks", foot: { kind: "price", labor: 6_800, short: false } },
-  { key: "hut", icon: "Ht", name: "Hut", foot: { kind: "price", labor: 5_100, short: false } },
-  { key: "war", icon: "Wa", name: "War hall", foot: { kind: "built" } },
-  { key: "supply", icon: "Sy", name: "Supply yard", foot: { kind: "price", labor: 3_000, short: false } },
-  { key: "lodge", icon: "Ld", name: "Scouts' lodge", foot: { kind: "price", labor: 3_000, short: false } },
-  { key: "hearth", icon: "He", name: "Hearth", foot: { kind: "built" } },
-];
-const EARLY_TILES: Parameters<typeof BuildView>[0]["tiles"] = [
-  { key: "farm", icon: "Fm", name: "Farm", foot: { kind: "price", labor: 800, short: false } },
-  { key: "workshop", icon: "Wk", name: "Workshop", foot: { kind: "price", labor: 2_000, short: false } },
-  { key: "barracks", icon: "Bs", name: "Barracks", foot: { kind: "price", labor: 800, short: false } },
-  { key: "hut", icon: "Ht", name: "Hut", foot: { kind: "price", labor: 300, short: false } },
-  { key: "war", icon: "Wa", name: "War hall", foot: { kind: "locked", gate: 3 } },
-  { key: "supply", icon: "Sy", name: "Supply yard", foot: { kind: "locked", gate: 3 } },
-  { key: "lodge", icon: "Ld", name: "Scouts' lodge", foot: { kind: "locked", gate: 3 } },
-  { key: "hearth", icon: "He", name: "Hearth", foot: { kind: "locked", gate: 3 } },
-];
-const CASTLE_SIDE = (level: number, limit: number) => ({
-  level,
-  art: `/images/buildings/construction/${["castleZero", "castleOne", "castleTwo", "castleThree"][level]}.png`,
-  plots: [6, 18, 36, 60][level],
-  slots: [3, 4, 5, 6][level],
-  limit,
-  deployCap: [3_000, 9_000, 25_000, 50_000][level],
-});
-
-/** Army 1: 5,000 troops, 260 XP, Battle rare, Logistics and Scouting common, Homecoming rare (the realm trained two). */
-type LabArmySheet = {
-  chosen: AttributeKey;
-  xp?: number;
-  stamina?: number;
-  max?: number;
-  tiers?: [1 | 2 | 3 | 4 | 5, 1 | 2 | 3 | 4 | 5, 1 | 2 | 3 | 4 | 5, 1 | 2 | 3 | 4 | 5];
-};
-const EFFECTS = {
-  battle: ["+0%", "+10%", "+30%", "+60%", "+100%"],
-  logistics: ["150", "170", "200", "240", "300"],
-  scouting: ["+0%", "+10%", "+30%", "+60%", "+100%"],
-  homecoming: ["0%", "3%", "9%", "18%", "30%"],
 } as const;
 
 type LabState = {

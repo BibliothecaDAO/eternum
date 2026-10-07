@@ -2,9 +2,9 @@ import { nativeRuleConstants, type NativeRows } from "@bibliothecadao/eternum/ga
 
 /** An army's progress, its pending offer and the game's XP rules, exactly as the native store carries them. */
 export type ArmyProgressFacts = NativeRows["ArmyProgress"];
-export type AttributeOfferFacts = NonNullable<ArmyProgressFacts["pending"]>;
+type AttributeOfferFacts = NonNullable<ArmyProgressFacts["pending"]>;
 export type Attribute = AttributeOfferFacts["choices"][number];
-export type ProgressionRulesFacts = NativeRows["ArmyProgressionRules"];
+type ProgressionRulesFacts = NativeRows["ArmyProgressionRules"];
 
 /** The contract's attribute cap: levels past it are lost. */
 export const MAX_ATTRIBUTE_LEVEL = nativeRuleConstants.ATTRIBUTE_CAP;

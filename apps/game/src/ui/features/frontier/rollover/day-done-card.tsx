@@ -9,7 +9,7 @@ import { CONTINUE, DAY, DAY_DONE, DAY_OPEN, REALM_KEPT, TOMORROW_LASTS, TROOPS }
 import type { DayClock } from "../hud/day-clock";
 
 /** The ended day's totals, as the log counts them; LORDS arrive with the contracts' ruin chests. */
-export type DayDoneTotals = {
+type DayDoneTotals = {
   reveals: number | undefined;
   cleared: number | undefined;
   chests: number | undefined;

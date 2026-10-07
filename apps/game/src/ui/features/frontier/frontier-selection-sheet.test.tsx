@@ -29,7 +29,7 @@ const sheetFor = (occupierType: number | null) => {
   const host = document.createElement("div");
   const root = createRoot(host);
   act(() => root.render(<FrontierSelectionSheet realm={null} />));
-  const sheet = host.querySelector("[data-frontier-sheet]")?.getAttribute("aria-label") ?? null;
+  const sheet = host.querySelector("[data-kit-sheet]")?.getAttribute("aria-label") ?? null;
   act(() => root.unmount());
   return sheet;
 };

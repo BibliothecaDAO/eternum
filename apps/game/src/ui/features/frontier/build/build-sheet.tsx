@@ -139,7 +139,7 @@ export const BuildSheet = ({
     targetSpot: plot,
   }).canSubmit;
   const freePopulation =
-    realmInfo.population === undefined || realmInfo.capacity === undefined
+    realmInfo?.population === undefined || realmInfo.capacity === undefined
       ? undefined
       : realmInfo.capacity + configManager.getBasePopulationCapacity() - realmInfo.population;
   return (
@@ -185,6 +185,10 @@ const BUILDING_ICONS: Partial<Record<BuildingType, IconCode>> = {
 };
 
 const RESOURCE_ICONS: Partial<Record<number, IconCode>> = {
+  // A barracks trains the troops of its tier: one troop type, drawn as troops.
+  [ResourcesIds.Knight]: "Tr",
+  [ResourcesIds.KnightT2]: "Tr",
+  [ResourcesIds.KnightT3]: "Tr",
   [ResourcesIds.Labor]: "La",
   [ResourcesIds.Wheat]: "Wh",
   [ResourcesIds.Essence]: "Es",

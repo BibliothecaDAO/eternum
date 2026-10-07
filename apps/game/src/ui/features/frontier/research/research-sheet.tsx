@@ -3,7 +3,7 @@ import { Check, Lock } from "@/ui/design-system/atoms/game-icons";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ResourcesIds } from "@bibliothecadao/types";
 import { Fragment, useState } from "react";
-import { FRONTIER_BUILDING_NAMES } from "../build/building-names";
+import { buildingName } from "../build/building-names";
 import { DEPTH_ART } from "../depth-art";
 import { MAP_SITE_ART } from "../sites/site-art";
 import { Chip, TierBanner } from "../frontier-chips";
@@ -245,7 +245,7 @@ const ChosenNode = ({
 
 const nodeTitle = ({ effect }: ResearchNodeView): string =>
   effect.kind === "tier"
-    ? (FRONTIER_BUILDING_NAMES[effect.category] ?? "")
+    ? buildingName(effect.category)
     : effect.kind === "site"
       ? effect.site
       : NUMERALS[effect.depth];

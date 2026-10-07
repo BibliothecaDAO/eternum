@@ -17,7 +17,7 @@ import { type Direction, RESOURCE_PRECISION, ResourcesIds, TroopTier, TroopType 
  * troop costs and the wheat the realm holds. Troops are one count; the troop resource they are drawn from is the
  * realm's own, never shown.
  */
-export interface DeployPlan {
+interface DeployPlan {
   /** The slot the next army fills, or null when every slot today holds an army. */
   next: OpenArmySlot | null;
   slots: { used: number; allowed: number };

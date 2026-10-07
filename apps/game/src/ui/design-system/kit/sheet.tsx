@@ -78,8 +78,7 @@ const useLatest = <T,>(value: T) => {
   return ref;
 };
 
-/** Escape closes what is open; a host that is not a Sheet (a dealt card) uses it too. */
-export const useEscapeCloses = (close: () => void) => {
+const useEscapeCloses = (close: () => void) => {
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") close();

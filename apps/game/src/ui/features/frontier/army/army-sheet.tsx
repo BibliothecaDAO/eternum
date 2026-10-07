@@ -11,7 +11,7 @@ import { ATTRIBUTES, FIND_KINDS, STAMINA, TROOPS, UPGRADE, UPGRADING, XP } from 
 import type { ReactNode } from "react";
 
 export type AttributeKey = "battle" | "logistics" | "scouting" | "homecoming";
-export type ScoutKind = "camp" | "rift" | "stragglers";
+type ScoutKind = "camp" | "rift" | "stragglers";
 
 const ATTRIBUTE_KEYS: AttributeKey[] = ["battle", "logistics", "scouting", "homecoming"];
 const MARKS: Record<AttributeKey, IconCode> = { battle: "Ba", logistics: "Lg", scouting: "Sc", homecoming: "Su" };
@@ -19,7 +19,7 @@ const KIND_ICONS: Record<ScoutKind, IconCode> = { camp: "Cp", rift: "Rf", stragg
 const KINDS: ScoutKind[] = ["camp", "rift", "stragglers"];
 
 /** One attribute of the army: its tier, and for Scouting the kind each tier above common went to. */
-export type AttributeState = { tier: Tier; kinds?: readonly ScoutKind[] };
+type AttributeState = { tier: Tier; kinds?: readonly ScoutKind[] };
 
 /**
  * The army (wireframe 08): its head (troops and XP, no level), its stamina against its own maximum with Full in and
