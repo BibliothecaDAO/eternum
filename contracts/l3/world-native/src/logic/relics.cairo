@@ -153,7 +153,7 @@ pub mod RelicState {
                 ref progress, crate::logic::progression::rules(game_id).expect('missing progression rules'), command,
             );
             crate::logic::progression::write(key, progress);
-            self.refill_stamina(key, explorer, crate::rules::TIER_STAMINA_REFILL, context);
+            self.grant_stamina(key, explorer, crate::rules::TIER_STAMINA_REFILL, context);
             let index = crate::ownership::StoryCursorTrait::next(ref story_cursor);
             self
                 .emit(
@@ -206,7 +206,7 @@ pub mod RelicState {
             if category == crate::taxonomy::SHRINE_OCCUPIER {
                 crate::logic::progression::grant_fixed_xp(key);
             } else {
-                self.refill_stamina(key, explorer, crate::rules::WELL_STAMINA, context);
+                self.grant_stamina(key, explorer, crate::rules::WELL_STAMINA, context);
             }
             ((), story_cursor)
         }
@@ -443,7 +443,7 @@ pub mod RelicState {
         +Drop<TContractState>,
     > of InternalTrait<TContractState> {
         /// Adds stamina to a slot army's bar, up to its own maximum: a well's, and a bought tier's.
-        fn refill_stamina(
+        fn grant_stamina(
             self: @ComponentState<TContractState>,
             key: ExplorerKey,
             explorer: crate::troops::ExplorerTroops,
