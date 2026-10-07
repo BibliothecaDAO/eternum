@@ -373,13 +373,11 @@ pub mod MapLogic {
             assert!(home != 0, "missing exploring army");
             let progress = crate::logic::progression::require(explorer_key);
             let home_key = crate::resources::ResourceKey { game_id: key.game_id, entity_id: home };
-            use crate::research::{MapContentKind, ResearchEffect};
-            if rules.shrine_bps != 0
-                && !crate::logic::research::has_effect(home_key, ResearchEffect::MapContent(MapContentKind::Shrine)) {
+            let learned = crate::logic::research::require(home_key).learned;
+            if crate::research::tier(learned, crate::research::ROW_SHRINE) == 0 {
                 rules.shrine_bps = 0;
             }
-            if rules.well_bps != 0
-                && !crate::logic::research::has_effect(home_key, ResearchEffect::MapContent(MapContentKind::Well)) {
+            if crate::research::tier(learned, crate::research::ROW_WELL) == 0 {
                 rules.well_bps = 0;
             }
             let counter = crate::expeditions::ExpeditionDiscoveryKey {

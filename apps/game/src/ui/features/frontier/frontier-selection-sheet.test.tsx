@@ -14,7 +14,6 @@ vi.mock("@/ui/features/military/chest/use-adjacent-own-explorer", () => ({
 vi.mock("./build/build-sheet", () => ({ BuildSheet: () => null, useOpenPlot: () => null }));
 vi.mock("./sites/map-site-card", () => ({ MapSiteCard: () => null, useSelectedMapSite: () => null }));
 vi.mock("./sites/tile-card", () => ({ TileCard: () => null, useSelectedSite: () => null }));
-vi.mock("./upgrade/building-upgrade", () => ({ BuildingUpgrade: () => null, useSelectedBuilding: () => null }));
 vi.mock("./upgrade/castle-upgrade", () => ({ CastleUpgrade: () => null, useKeepSelected: () => null }));
 
 import { GameProvider } from "@/hooks/context/game-context";
@@ -72,12 +71,8 @@ it("offers depth entry from Frontier for an own army at the computed spire", asy
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const { store } = campBeside();
   store.applyFacts([
-    { model: "RealmKnowledge", key: "0x901", value: { game_id: 1, structure_id: 7, learned: 1 } },
-    {
-      model: "ResearchNode",
-      key: "0x902",
-      value: { game_id: 1, node: 0, prerequisites: 0, essence_cost: "1", effect: { Depth: 1 } },
-    },
+    // research.cairo: the depth row's tier sits at bit 46; Ethereal I is researched.
+    { model: "RealmKnowledge", key: "0x901", value: { game_id: 1, structure_id: 7, learned: 1n << 46n } },
     {
       model: "DepthRules",
       key: "0x903",

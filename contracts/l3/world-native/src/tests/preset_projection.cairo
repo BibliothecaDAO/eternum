@@ -226,7 +226,7 @@ fn observe_structures(ref rows: Array<ObservedRow>, address: ContractAddress, ga
     let camp_rules = ICampRulesDispatcher { contract_address: address };
     let faith = IFaithDispatcher { contract_address: address };
     let upgrade_rules = IUpgradeRulesDispatcher { contract_address: address };
-    for category in 1_u8..41 {
+    for category in 1_u8..crate::buildings::BUILDING_CATEGORY_COUNT + 1 {
         row(
             ref rows,
             'BuildingRule',
@@ -237,21 +237,13 @@ fn observe_structures(ref rows: Array<ObservedRow>, address: ContractAddress, ga
     if let Some(board) =
         interact_with_state(address, || crate::logic::construction::ConstructionLogic::observed_board_rules(game_id)) {
         row(ref rows, 'BoardRules', key, board);
-        for node in 0..crate::research::NODE_COUNT {
-            row(
-                ref rows,
-                'ResearchNode',
-                array![game_id.into(), node.into()].span(),
-                interact_with_state(address, || crate::logic::research::node(game_id, node)),
-            );
-        }
-        for category in array![1_u8, 2, 28, 37] {
-            for tier in 2_u8..4 {
+        for research_row in 0..crate::research::ROW_COUNT {
+            for tier in 1..crate::research::max_tier(research_row) + 1 {
                 row(
                     ref rows,
-                    'BuildingTierRule',
-                    array![game_id.into(), category.into(), tier.into()].span(),
-                    interact_with_state(address, || crate::logic::research::tier_rule(game_id, category, tier)),
+                    'ResearchPrice',
+                    array![game_id.into(), research_row.into(), tier.into()].span(),
+                    interact_with_state(address, || crate::logic::research::price(game_id, research_row, tier)),
                 );
             }
         }

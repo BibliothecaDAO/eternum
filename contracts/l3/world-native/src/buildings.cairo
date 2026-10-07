@@ -10,7 +10,6 @@ pub struct Building {
     pub category: u8,
     pub paused: bool,
     pub labor_paid: u128,
-    pub tier: u8,
 }
 #[derive(Copy, Drop, Serde, Default, Debug, PartialEq)]
 pub struct Population {
@@ -26,12 +25,13 @@ pub struct StructureBuildings {
 }
 
 const BYTE_SCALE: u128 = 256;
+// Categories 41 to 44 are the four training buildings of a realm board.
+pub const BUILDING_CATEGORY_COUNT: u8 = 44;
 const PAUSED_SCALE: u64 = 0x10000000000;
 
 pub impl BuildingPacking of starknet::storage_access::StorePacking<Building, felt252> {
     fn pack(value: Building) -> felt252 {
         let identity: u64 = value.category.into()
-            + Into::<u8, u64>::into(value.tier) * 256
             + if value.paused {
                 PAUSED_SCALE
             } else {
@@ -43,7 +43,6 @@ pub impl BuildingPacking of starknet::storage_access::StorePacking<Building, fel
         let value: u256 = value.into();
         Building {
             category: (value.low % 256).try_into().unwrap(),
-            tier: (value.low / 256 % 256).try_into().unwrap(),
             paused: value.low / Into::<u64, u128>::into(PAUSED_SCALE) % 2 != 0,
             labor_paid: value.low / 0x10000000000000000 + value.high * 0x10000000000000000,
         }
@@ -62,7 +61,7 @@ pub impl PopulationPacking of starknet::storage_access::StorePacking<Population,
 }
 
 fn count_position(category: u8) -> (u8, u128) {
-    assert!(category > 0 && category <= 40, "invalid production building");
+    assert!(category > 0 && category <= BUILDING_CATEGORY_COUNT, "invalid production building");
     let mut scale = 1_u128;
     for _ in 0..(category - 1) % 16 {
         scale *= BYTE_SCALE;
@@ -128,6 +127,15 @@ pub struct BuildingTerms {
 pub struct BoardRules {
     pub demolition_refund_bps: u16,
     pub workshop_rate: u64,
+    // What one tier pick adds, for every building of its type: Fields, Tools and Drill a share of the base output,
+    // Granary and Storeroom a share of the castle's base limit, a hut tier a share of a hut's population, and
+    // Rations a cut in the wheat each deployed troop costs.
+    pub output_step_bps: u16,
+    pub storage_step_bps: u16,
+    pub population_step_bps: u16,
+    pub ration_step: u128,
+    // The Barracks tier a realm needs before it can build a training building.
+    pub training_gate_tier: u8,
 }
 
 #[derive(Copy, Drop, Default, Debug, PartialEq)]
@@ -158,14 +166,6 @@ pub struct ChangeBuilding {
 }
 #[starknet::interface]
 pub trait IBuildingCommands<T> {
-    fn upgrade_building(
-        ref self: T,
-        game_id: u32,
-        actor: starknet::ContractAddress,
-        command: ChangeBuilding,
-        context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> ((), crate::ownership::StoryCursor);
     fn create_building(
         ref self: T,
         game_id: u32,
@@ -202,7 +202,7 @@ pub trait IBuildingCommands<T> {
 
 pub fn produced_resource(category: u8) -> u8 {
     match category {
-        1 | 2 => 0,
+        1 | 2 | 41 | 42 | 43 | 44 => 0,
         39 => 38,
         40 => 57,
         _ => {

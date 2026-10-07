@@ -47,8 +47,8 @@ describe("the build sheet", () => {
     const card = (name: string) => host.querySelector<HTMLButtonElement>(`[aria-label="${name}"]`)!;
     expect(card("Farm").getAttribute("aria-pressed")).toBe("true");
     expect(useUIStore.getState().previewBuilding).toEqual({ type: BuildingType.ResourceWheat, plot });
-    // The ring's marked plot doubles every card, and a farm's wheat after is good news.
-    expect(card("Farm").querySelector('[aria-label="Doubled on this plot"]')).not.toBeNull();
+    // A farm's wheat after is good news; the ring's marked plot doubles nothing.
+    expect(card("Farm").querySelector('[aria-label="Doubled on this plot"]')).toBeNull();
     expect(card("Farm").querySelector('[aria-label^="Wheat an hour after"]')?.getAttribute("data-tone")).toBe("gain");
     expect(card("Hut").querySelector('[aria-label^="Wheat an hour after"]')).toBeNull();
 

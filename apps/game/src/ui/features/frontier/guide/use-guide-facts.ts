@@ -7,7 +7,7 @@ import {
   configManager,
   entityMapPosition,
   expeditionDepth,
-  learnedResearchNodes,
+  realmLearned,
   getBalance,
   getBuildingQuantity,
   getGuardsByStructure,
@@ -48,7 +48,7 @@ const GUIDE_MODELS = [
   "ArmyProgress",
   "ExpeditionSite",
   "RealmKnowledge",
-  "ResearchNode",
+  "ResearchPrice",
 ] as const;
 
 /**
@@ -121,13 +121,12 @@ const readGuideFacts = (
   };
 };
 
-/** Nothing learned yet, and the realm's Essence covers the cheapest node on the table. */
+/** Nothing learned yet, and the realm's Essence covers the cheapest first tier on the table. */
 const canAffordFirstResearch = (store: NativeFactStore, realm: NativeRows["Structure"], tick: number): boolean => {
-  const learned = learnedResearchNodes(store, realm.game_id, realm.entity_id);
-  if (learned === undefined || learned.length > 0) return false;
-  const prices = [...store.inGame("ResearchNode", realm.game_id)].map(
-    ({ essence_cost }) => Number(essence_cost) / RESOURCE_PRECISION,
-  );
+  if (realmLearned(store, realm.game_id, realm.entity_id) !== 0n) return false;
+  const prices = [...store.inGame("ResearchPrice", realm.game_id)]
+    .filter(({ tier }) => tier === 1)
+    .map(({ essence }) => Number(essence) / RESOURCE_PRECISION);
   const essence = knownBalance(getBalance(realm.entity_id, ResourcesIds.Essence, tick, store).balance);
   return prices.length > 0 && essence !== undefined && essence >= Math.min(...prices);
 };

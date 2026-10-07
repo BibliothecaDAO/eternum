@@ -29,11 +29,6 @@ export function PlotConstructionPicker(target: PlotConstructionTarget) {
           </label>
         )}
       </div>
-      {form.markedPlot && (
-        <p className="rounded border border-emerald-400/40 bg-emerald-900/20 px-2 py-1.5 text-xs text-emerald-200">
-          Marked plot: a building here gives twice its output, capacity or population.
-        </p>
-      )}
       {form.error && (
         <p role="status" className="text-xs">
           {form.error}

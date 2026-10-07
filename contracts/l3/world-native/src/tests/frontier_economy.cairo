@@ -1,6 +1,6 @@
 use eternum_randomness_protocol::entrypoint::IRecordedExecutionViewsDispatcher;
 use snforge_std::{EventSpyTrait, EventsFilterTrait, start_cheat_caller_address, stop_cheat_caller_address};
-use crate::buildings::{BoardRules, ChangeBuilding, CreateBuilding};
+use crate::buildings::{ChangeBuilding, CreateBuilding};
 use crate::commands::{Command, CreateExplorer};
 use crate::production::RefillProduction;
 use crate::resources::{
@@ -25,9 +25,7 @@ const WEST: u8 = 3;
 
 /// A board realm carrying Frontier's own recipes: two wheat for each troop.
 fn frontier_preset() -> crate::presets::PresetDefinition {
-    let mut preset = super::building_commands::building_preset(
-        Some(BoardRules { demolition_refund_bps: 5000, workshop_rate: 20 }),
-    );
+    let mut preset = super::building_commands::building_preset(Some(super::building_commands::board_rules()));
     let (_, frontier) = super::preset_projection::current_definition("frontier");
     preset.resources.production = frontier.resources.production;
     preset
@@ -224,6 +222,32 @@ fn raising_troops_pays_two_wheat_each_from_settled_wheat_and_fails_when_the_real
     assert!(execute(deployment, raise(home, 2, 1), 88));
     assert_eq!(stored(deployment, home, KNIGHT), 14 * RESOURCE_PRECISION);
     assert_eq!(stored(deployment, home, WHEAT), 0);
+}
+
+fn learn_barracks(deployment: super::Deployment, home: ResourceKey, sides: Span<u8>) {
+    let mut learned = 0;
+    for side in sides {
+        learned = crate::research::learn(learned, crate::research::ROW_BARRACKS, *side);
+    }
+    snforge_std::interact_with_state(
+        deployment.games, || crate::logic::research::write(home, crate::research::RealmKnowledge { learned }),
+    );
+}
+
+#[test]
+fn each_rations_pick_takes_a_quarter_wheat_off_every_troop_deployed() {
+    let (deployment, home) = frontier_realm(frontier_preset());
+    allow_armies(deployment, home);
+    grant(deployment, home, KNIGHT, 20 * RESOURCE_PRECISION);
+    grant(deployment, home, WHEAT, 20 * RESOURCE_PRECISION);
+    // Drill then Rations: 1.75 wheat a troop.
+    learn_barracks(deployment, home, array![crate::research::CHOICE_DRILL, crate::research::CHOICE_RATIONS].span());
+    assert!(execute(deployment, raise(home, 4, 0), 40));
+    assert_eq!(stored(deployment, home, WHEAT), 13 * RESOURCE_PRECISION);
+    // Rations twice: 1.5 wheat a troop.
+    learn_barracks(deployment, home, array![crate::research::CHOICE_RATIONS, crate::research::CHOICE_RATIONS].span());
+    assert!(execute(deployment, raise(home, 4, 1), 40));
+    assert_eq!(stored(deployment, home, WHEAT), 7 * RESOURCE_PRECISION);
 }
 
 #[test]

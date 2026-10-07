@@ -40,6 +40,5 @@ export const blitzPreset: NativePreset = {
   chests: null,
   board: null,
   research: [],
-  buildingTiers: [],
   depths: [],
 };

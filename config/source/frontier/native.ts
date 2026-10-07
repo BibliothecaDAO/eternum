@@ -1,7 +1,25 @@
 import type { NativePreset } from "../common/native-preset";
-import { nativeRuleConstants as rule } from "../../../contracts/l3/world-native/schema/client.gen";
+import {
+  nativeResearchConstants as research,
+  nativeRuleConstants as rule,
+} from "../../../contracts/l3/world-native/schema/client.gen";
 import { nativeCommandBits } from "../../../contracts/l3/world-native/schema/commands.gen";
 import { FRONTIER_PRESET_ID } from "../common/native-preset-modes";
+
+// A building row's tier, uncommon to legendary, costs its base times this ladder, in Essence and in labor.
+const essenceLadder = [1, 4, 12, 30];
+const laborLadder = [1, 3, 8, 20];
+const buildingRows = [
+  { row: research.ROW_FARM, essence: 1000, labor: 1000 },
+  { row: research.ROW_WORKSHOP, essence: 2000, labor: 2000 },
+  { row: research.ROW_BARRACKS, essence: 4000, labor: 3000 },
+  { row: research.ROW_HUT, essence: 500, labor: 500 },
+  ...[research.ROW_WAR_HALL, research.ROW_SUPPLY_YARD, research.ROW_SCOUTS_LODGE, research.ROW_HEARTH].map((row) => ({
+    row,
+    essence: 12000,
+    labor: 3000,
+  })),
+];
 
 export const frontierPreset: NativePreset = {
   ledger: {
@@ -38,7 +56,6 @@ export const frontierPreset: NativePreset = {
       "DestroyBuilding",
       "LevelUp",
       "Research",
-      "UpgradeBuilding",
       "EnterDepth",
       "BuyTier",
       "OpenRelicChest",
@@ -52,87 +69,29 @@ export const frontierPreset: NativePreset = {
   board: {
     demolitionRefundBps: 5000,
     workshopRate: 200 / 3600,
+    outputStepBps: 2500,
+    storageStepBps: 5000,
+    populationStepBps: 2500,
+    rationStep: 0.25,
+    trainingGateTier: 2,
   },
   research: [
-    { node: 0, prerequisites: 0, essenceCost: 150, effect: { kind: "BuildingTier", category: 37, tier: 2 } },
-    { node: 1, prerequisites: 1 << 0, essenceCost: 12000, effect: { kind: "BuildingTier", category: 37, tier: 3 } },
-    { node: 2, prerequisites: 0, essenceCost: 3000, effect: { kind: "BuildingTier", category: 28, tier: 2 } },
-    { node: 3, prerequisites: 1 << 2, essenceCost: 40000, effect: { kind: "BuildingTier", category: 28, tier: 3 } },
-    { node: 4, prerequisites: 0, essenceCost: 1000, effect: { kind: "BuildingTier", category: 2, tier: 2 } },
-    { node: 5, prerequisites: 1 << 4, essenceCost: 15000, effect: { kind: "BuildingTier", category: 2, tier: 3 } },
-    { node: 6, prerequisites: 0, essenceCost: 400, effect: { kind: "BuildingTier", category: 1, tier: 2 } },
-    { node: 7, prerequisites: 1 << 6, essenceCost: 12000, effect: { kind: "BuildingTier", category: 1, tier: 3 } },
-    { node: 8, prerequisites: 0, essenceCost: 2000, effect: { kind: "MapContent", content: "Shrine" } },
-    { node: 9, prerequisites: 0, essenceCost: 6000, effect: { kind: "MapContent", content: "Well" } },
-    { node: 10, prerequisites: 0, essenceCost: 80000, effect: { kind: "Depth", depth: 1 } },
-    { node: 11, prerequisites: 1 << 10, essenceCost: 200000, effect: { kind: "Depth", depth: 2 } },
-    { node: 12, prerequisites: 1 << 11, essenceCost: 450000, effect: { kind: "Depth", depth: 3 } },
-  ],
-  buildingTiers: [
-    {
-      category: 37,
-      tier: 2,
-      laborUpgradeCost: 200,
-      outputMultiplierBps: 20000,
-      capacityMultiplierBps: 10000,
-      populationMultiplierBps: 10000,
-    },
-    {
-      category: 37,
-      tier: 3,
-      laborUpgradeCost: 400,
-      outputMultiplierBps: 40000,
-      capacityMultiplierBps: 10000,
-      populationMultiplierBps: 10000,
-    },
-    {
-      category: 28,
-      tier: 2,
-      laborUpgradeCost: 2400,
-      outputMultiplierBps: 10000,
-      capacityMultiplierBps: 10000,
-      populationMultiplierBps: 10000,
-    },
-    {
-      category: 28,
-      tier: 3,
-      laborUpgradeCost: 4800,
-      outputMultiplierBps: 10000,
-      capacityMultiplierBps: 10000,
-      populationMultiplierBps: 10000,
-    },
-    {
-      category: 2,
-      tier: 2,
-      laborUpgradeCost: 2000,
-      outputMultiplierBps: 10000,
-      capacityMultiplierBps: 20000,
-      populationMultiplierBps: 10000,
-    },
-    {
-      category: 2,
-      tier: 3,
-      laborUpgradeCost: 4000,
-      outputMultiplierBps: 10000,
-      capacityMultiplierBps: 40000,
-      populationMultiplierBps: 10000,
-    },
-    {
-      category: 1,
-      tier: 2,
-      laborUpgradeCost: 600,
-      outputMultiplierBps: 10000,
-      capacityMultiplierBps: 10000,
-      populationMultiplierBps: 20000,
-    },
-    {
-      category: 1,
-      tier: 3,
-      laborUpgradeCost: 1200,
-      outputMultiplierBps: 10000,
-      capacityMultiplierBps: 10000,
-      populationMultiplierBps: 40000,
-    },
+    ...buildingRows.flatMap(({ row, essence, labor }) =>
+      essenceLadder.map((factor, index) => ({
+        row,
+        tier: index + 1,
+        essenceCost: essence * factor,
+        laborCost: labor * laborLadder[index]!,
+      })),
+    ),
+    { row: research.ROW_SHRINE, tier: 1, essenceCost: 2000, laborCost: 0 },
+    { row: research.ROW_WELL, tier: 1, essenceCost: 6000, laborCost: 0 },
+    ...[160000, 400000, 900000].map((essenceCost, index) => ({
+      row: research.ROW_DEPTH,
+      tier: index + 1,
+      essenceCost,
+      laborCost: 0,
+    })),
   ],
   discovery: {
     campBps: 400,

@@ -8,8 +8,7 @@ pub struct ResourcePreset {
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct StructurePreset {
     pub board: Option<crate::buildings::BoardRules>,
-    pub research: Span<crate::research::ResearchNodeConfig>,
-    pub building_tiers: Span<crate::research::BuildingTierConfig>,
+    pub research: Span<crate::research::ResearchPriceConfig>,
     pub buildings: Span<crate::buildings::BuildingRuleConfig>,
     pub camps: crate::camps::CampRules,
     pub faith: crate::faith::FaithRules,

@@ -5,7 +5,10 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { CallData, type Account, type RpcProvider } from "starknet";
 import schema from "../../../../contracts/l3/world-native/schema/schema.json";
-import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
+import {
+  nativeResearchConstants as research,
+  nativeRuleConstants,
+} from "../../../../contracts/l3/world-native/schema/client.gen";
 import { nativeCommandBits } from "../../../../contracts/l3/world-native/schema/commands.gen";
 import { applyDeploymentConfigOverrides } from "../config/config-loader";
 import { buildNativePreset } from "../config/native-preset";
@@ -194,58 +197,51 @@ describe("native presets", () => {
     }
   });
 
-  test("Frontier research prices and per-building tiers are explicit resource-precision rows", () => {
+  test("Frontier prices every research row's tiers once, in resource precision, from the rules' ladders", () => {
     const preset = buildNativePreset(
       loadNativePresetConfiguration("madara.frontier", FRONTIER_PRESET_ID),
       FRONTIER_PRESET_ID,
     );
     const precision = 1_000_000_000n;
-    expect(
-      preset.structures.research.map(({ node, rule }) => [
-        node,
-        rule.prerequisites,
-        BigInt(rule.essence_cost) / precision,
+    const prices = Object.fromEntries(
+      preset.structures.research.map(({ row, tier, price }) => [
+        `${row}:${tier}`,
+        [BigInt(price.essence) / precision, BigInt(price.labor) / precision],
       ]),
-    ).toEqual([
-      [0, 0, 150n],
-      [1, 1, 12000n],
-      [2, 0, 3000n],
-      [3, 4, 40000n],
-      [4, 0, 1000n],
-      [5, 16, 15000n],
-      [6, 0, 400n],
-      [7, 64, 12000n],
-      [8, 0, 2000n],
-      [9, 0, 6000n],
-      [10, 0, 80000n],
-      [11, 1024, 200000n],
-      [12, 2048, 450000n],
-    ]);
-    expect(
-      preset.structures.building_tiers.map(({ category, tier, rule }) => [
-        category,
-        tier,
-        BigInt(rule.labor_upgrade_cost) / precision,
-        rule.output_multiplier_bps,
-        rule.capacity_multiplier_bps,
-        rule.population_multiplier_bps,
-      ]),
-    ).toEqual([
-      [37, 2, 200n, 20000, 10000, 10000],
-      [37, 3, 400n, 40000, 10000, 10000],
-      [28, 2, 2400n, 10000, 10000, 10000],
-      [28, 3, 4800n, 10000, 10000, 10000],
-      [2, 2, 2000n, 10000, 20000, 10000],
-      [2, 3, 4000n, 10000, 40000, 10000],
-      [1, 2, 600n, 10000, 10000, 20000],
-      [1, 3, 1200n, 10000, 10000, 40000],
-    ]);
-    expect(preset.structures.building_tiers.some(({ tier }) => tier === 1)).toBe(false);
+    );
+    expect(preset.structures.research).toHaveLength(37);
+    expect(prices).toMatchObject({
+      [`${research.ROW_FARM}:1`]: [1000n, 1000n],
+      [`${research.ROW_FARM}:4`]: [30000n, 20000n],
+      [`${research.ROW_WORKSHOP}:2`]: [8000n, 6000n],
+      [`${research.ROW_BARRACKS}:3`]: [48000n, 24000n],
+      [`${research.ROW_HUT}:4`]: [15000n, 10000n],
+      [`${research.ROW_WAR_HALL}:1`]: [12000n, 3000n],
+      [`${research.ROW_HEARTH}:4`]: [360000n, 60000n],
+      [`${research.ROW_SHRINE}:1`]: [2000n, 0n],
+      [`${research.ROW_WELL}:1`]: [6000n, 0n],
+      [`${research.ROW_DEPTH}:1`]: [160000n, 0n],
+      [`${research.ROW_DEPTH}:2`]: [400000n, 0n],
+      [`${research.ROW_DEPTH}:3`]: [900000n, 0n],
+    });
+    expect(preset.structures.board.unwrap()).toMatchObject({
+      output_step_bps: 2500,
+      storage_step_bps: 5000,
+      population_step_bps: 2500,
+      ration_step: precision / 4n,
+      training_gate_tier: 2,
+    });
+    expect(preset.structures.buildings).toHaveLength(research.HEARTH);
+    for (const category of [research.WAR_HALL, research.SUPPLY_YARD, research.SCOUTS_LODGE, research.HEARTH]) {
+      const rule = preset.structures.buildings.find((row) => row.category === category)!.rule;
+      expect([rule.population_cost, rule.simple_cost]).toEqual([2, [{ resource_type: 23, amount: 3000n * precision }]]);
+    }
     for (const category of [31, 34]) {
       const rule = preset.structures.buildings.find((row) => row.category === category)!.rule;
       expect(rule.simple_cost).toEqual([]);
       expect(rule.complex_cost).toEqual([]);
     }
+    expect(preset.rules.building_config.base_cost_percent_increase).toBe(10000);
     expect(preset.structures.board.unwrap()).not.toHaveProperty("neighbors");
     for (const depth of preset.settlement.depths) expect(depth).not.toHaveProperty("attunement_cost");
   });

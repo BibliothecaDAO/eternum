@@ -1344,8 +1344,7 @@ export default class WorldmapScene extends WarpTravel {
       hexes: () => expeditionSpires(store, configManager.getActiveGameId(), getBlockTimestamp().currentBlockTimestamp),
       subscribe: (onChange) => {
         const unsubscribeFacts = store.subscribe((changes) => {
-          if (changes.some((change) => ["Structure", "RealmKnowledge", "ResearchNode"].includes(change.model)))
-            onChange();
+          if (changes.some((change) => ["Structure", "RealmKnowledge"].includes(change.model))) onChange();
         });
         // The day turning over re-projects every realm onto its new site.
         const unsubscribeStructures = projection.subscribeStructures(() => onChange());

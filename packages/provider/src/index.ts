@@ -674,27 +674,15 @@ export class EternumProvider extends EventEmitter {
     );
   }
 
-  public async research(props: SystemProps.SystemSigner & { structureId: number; node: number }) {
+  /** Buys a research row's next tier at the realm's castle; `choice` is the tier's side or Scouts' lodge kind. */
+  public async research(props: SystemProps.SystemSigner & { structureId: number; row: number; choice: number }) {
     return this.submitCommand(
       props.signer,
       {
         kind: "Research",
-        value: { structure_id: props.structureId, node: props.node },
+        value: { structure_id: props.structureId, row: props.row, choice: props.choice },
       },
       TransactionType.RESEARCH,
-    );
-  }
-
-  public async upgrade_building(
-    props: SystemProps.SystemSigner & { structureId: number; coord: { alt: boolean; x: number; y: number } },
-  ) {
-    return this.submitCommand(
-      props.signer,
-      {
-        kind: "UpgradeBuilding",
-        value: { structure_id: props.structureId, coord: props.coord },
-      },
-      TransactionType.UPGRADE_BUILDING,
     );
   }
 

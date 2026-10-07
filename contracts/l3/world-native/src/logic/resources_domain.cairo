@@ -522,6 +522,16 @@ pub mod ResourcesLogic {
         }
     }
     // A board's buildings produce for ever from nothing, so its troops are paid for when they are raised.
+    // Each Rations pick cuts the wheat a deployed troop costs; the cut is per troop, the recipe per `per_troops`.
+    fn ration_cut(key: ResourceKey, per_troops: u128) -> u128 {
+        let board = crate::logic::preset_record::for_game(key.game_id).board_terms.read().unwrap();
+        let rations: u128 = crate::research::picks(
+            crate::logic::research::learned(key), crate::research::ROW_BARRACKS, crate::research::CHOICE_RATIONS,
+        )
+            .into();
+        rations * board.ration_step * per_troops / crate::rules::RESOURCE_PRECISION
+    }
+
     fn produces_without_inputs(game_id: u32) -> bool {
         crate::logic::preset_record::for_game(game_id).board_terms.read().is_some()
     }
@@ -538,11 +548,17 @@ pub mod ResourcesLogic {
         ) {
             let recipe = self.production.recipe(crate::production::RecipeKey { game_id: key.game_id, resource_type });
             let per_troops: u128 = recipe.simple_output.into();
+            let ration_cut = ration_cut(key, per_troops);
             let now: u32 = timestamp.try_into().unwrap();
             for input in recipe.simple_inputs {
                 let unit_weight = crate::logic::resources::rule(key.game_id, *input.resource_type).unit_weight;
+                let amount = if *input.resource_type == crate::resources::WHEAT {
+                    *input.amount - core::cmp::min(*input.amount, ration_cut)
+                } else {
+                    *input.amount
+                };
                 // A realm never underpays a fraction of a recipe.
-                let cost = (*input.amount * troops + per_troops - 1) / per_troops;
+                let cost = (amount * troops + per_troops - 1) / per_troops;
                 let mut stock = self
                     .resources
                     .load_settled(key, *input.resource_type, unit_weight, now, game_context.production_start);

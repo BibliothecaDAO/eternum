@@ -3,6 +3,7 @@ use crate::rules::RESOURCE_PRECISION;
 pub const LABOR: u8 = 23;
 pub const LORDS: u8 = 37;
 pub const ESSENCE: u8 = 38;
+pub const WHEAT: u8 = 35;
 pub const UNLIMITED_OUTPUT: u128 = 0xffffffffffffffffffffffffffffffff;
 // Settlements before this rule wore markers down by what they produced; a season never produces this much.
 const UNLIMITED_MARGIN: u128 = 0x10000000000000000;

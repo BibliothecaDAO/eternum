@@ -157,9 +157,19 @@ const ruleConstants = Object.fromEntries(
   ]),
 );
 
+// Research rows, tier choices and the building categories that have a row.
+const researchSource = await readFile(new URL("src/research.cairo", root), "utf8");
+const researchConstants = Object.fromEntries(
+  [...researchSource.matchAll(/^pub const ([A-Z][A-Z0-9_]*): u8 = ([0-9]+);$/gm)].map(([, name, value]) => [
+    name,
+    Number(value),
+  ]),
+);
+
 const taxonomy = await readCheckedTaxonomy(fileURLToPath(new URL("src/", root)));
 // The schema identity hashes these four, and every recorded run pins that identity. They leave the schema at its next
 // declared shape change; readers take the full taxonomy from the generated enums.
+
 const tileOccupierConstants = Object.fromEntries(
   ["Chest", "Spire", "Shrine", "Well"].map((member) => [
     `${member.toUpperCase()}_OCCUPIER`,
@@ -185,6 +195,7 @@ const productionAbi = Object.values(artifacts).flat();
 
 const schema = {
   ruleConstants,
+  researchConstants,
   tileOccupierConstants,
   tilePackingConstants,
   logicClasses,
@@ -437,6 +448,7 @@ const declarations = [
   "// Generated from native fact models and contract ABIs. Run the native schema generator to update.",
   `export const nativeFactSchemaIdentity = ${JSON.stringify(schema.identity)};`,
   `export const nativeRuleConstants = ${JSON.stringify(ruleConstants, null, 2)} as const;`,
+  `export const nativeResearchConstants = ${JSON.stringify(researchConstants, null, 2)} as const;`,
   typeScriptEnum(
     "NativeStructureCategory",
     "Structure categories named in src/taxonomy.cairo.",

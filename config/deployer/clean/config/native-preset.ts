@@ -1,4 +1,7 @@
-import { nativeRuleConstants as presetRule } from "../../../../contracts/l3/world-native/schema/client.gen";
+import {
+  nativeResearchConstants,
+  nativeRuleConstants as presetRule,
+} from "../../../../contracts/l3/world-native/schema/client.gen";
 import { nativePresetForId } from "../../../source/native";
 import { RESOURCE_PRECISION, ResourcesIds, type Config } from "@bibliothecadao/types";
 import { CairoCustomEnum, CairoOption, CairoOptionVariant } from "starknet";
@@ -166,6 +169,9 @@ function buildMines(config: Config) {
   };
 }
 
+// The Hearth is the last building category: the four training buildings follow the forty older ones.
+const buildingCategoryCount = nativeResearchConstants.HEARTH;
+
 function buildStructures(config: Config, preset: ReturnType<typeof nativePresetForId>) {
   const faith = config.faith;
   if (!faith) throw new Error("Native faith config is required");
@@ -178,34 +184,29 @@ function buildStructures(config: Config, preset: ReturnType<typeof nativePresetF
         : new CairoOption(CairoOptionVariant.Some, {
             demolition_refund_bps: board.demolitionRefundBps,
             workshop_rate: scaled(board.workshopRate, precision),
+            output_step_bps: board.outputStepBps,
+            storage_step_bps: board.storageStepBps,
+            population_step_bps: board.populationStepBps,
+            ration_step: scaled(board.rationStep, precision),
+            training_gate_tier: board.trainingGateTier,
           }),
-    research: preset.research.map(({ node, prerequisites, essenceCost, effect }) => ({
-      node,
-      rule: { prerequisites, essence_cost: scaled(essenceCost, precision), effect: researchEffect(effect) },
+    research: preset.research.map(({ row, tier, essenceCost, laborCost }) => ({
+      row,
+      tier,
+      price: { essence: scaled(essenceCost, precision), labor: scaled(laborCost, precision) },
     })),
-    building_tiers: preset.buildingTiers.map(
-      ({ category, tier, laborUpgradeCost, outputMultiplierBps, capacityMultiplierBps, populationMultiplierBps }) => ({
-        category,
-        tier,
-        rule: {
-          labor_upgrade_cost: scaled(laborUpgradeCost, precision),
-          output_multiplier_bps: outputMultiplierBps,
-          capacity_multiplier_bps: capacityMultiplierBps,
-          population_multiplier_bps: populationMultiplierBps,
-        },
-      }),
-    ),
-    buildings: Array.from({ length: 40 }, (_, index) => {
+    buildings: Array.from({ length: buildingCategoryCount }, (_, index) => {
       const category = index + 1;
-      // Legacy presets have no storehouse recipe; Essence is mine-only.
-      const hasNoRecipe = (category === 2 && board === null) || category === 39;
+      // Essence is mine-only, and only a realm board has training buildings; legacy presets have no storehouse recipe.
+      const isNotBuilt = category === 39 || (category > 40 && board === null);
+      const hasNoRecipe = isNotBuilt || (category === 2 && board === null);
       return {
         category,
         rule: {
-          population_cost:
-            category === 39 ? 0 : required(config.buildings.buildingPopulation, category, "building population"),
-          capacity_grant:
-            category === 39 ? 0 : required(config.buildings.buildingCapacity, category, "building capacity"),
+          population_cost: isNotBuilt
+            ? 0
+            : required(config.buildings.buildingPopulation, category, "building population"),
+          capacity_grant: isNotBuilt ? 0 : required(config.buildings.buildingCapacity, category, "building capacity"),
           simple_cost: hasNoRecipe
             ? []
             : amounts(required(config.buildings.simpleBuildingCost, category, "simple building cost"), precision),
@@ -542,15 +543,4 @@ function buildDiscovery(preset: ReturnType<typeof nativePresetForId>) {
     well_bps: rules.wellBps,
     empty_reveal_limit: rules.emptyRevealLimit,
   });
-}
-
-function researchEffect(effect: ReturnType<typeof nativePresetForId>["research"][number]["effect"]) {
-  switch (effect.kind) {
-    case "BuildingTier":
-      return new CairoCustomEnum({ BuildingTier: { 0: effect.category, 1: effect.tier } });
-    case "MapContent":
-      return new CairoCustomEnum({ MapContent: new CairoCustomEnum({ [effect.content]: {} }) });
-    case "Depth":
-      return new CairoCustomEnum({ Depth: effect.depth });
-  }
 }

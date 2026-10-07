@@ -34,24 +34,19 @@ export interface NativePreset {
   board: null | {
     demolitionRefundBps: number;
     workshopRate: number;
+    /** What one tier pick adds for every building of its type: Fields, Tools and Drill, of the base output. */
+    outputStepBps: number;
+    /** Granary and Storeroom, of the castle's base limit. */
+    storageStepBps: number;
+    /** A hut tier, of a hut's population. */
+    populationStepBps: number;
+    /** Wheat a Rations pick takes off each deployed troop. */
+    rationStep: number;
+    /** The Barracks tier a training building needs. */
+    trainingGateTier: number;
   };
-  research: readonly {
-    node: number;
-    prerequisites: number;
-    essenceCost: number;
-    effect:
-      | { kind: "BuildingTier"; category: number; tier: number }
-      | { kind: "MapContent"; content: "Shrine" | "Well" }
-      | { kind: "Depth"; depth: number };
-  }[];
-  buildingTiers: readonly {
-    category: number;
-    tier: number;
-    laborUpgradeCost: number;
-    outputMultiplierBps: number;
-    capacityMultiplierBps: number;
-    populationMultiplierBps: number;
-  }[];
+  /** One price per research row tier above common; rows are research.cairo's ROW_* ids. */
+  research: readonly { row: number; tier: number; essenceCost: number; laborCost: number }[];
   discovery: null | {
     campBps: number;
     riftBps: number;

@@ -205,8 +205,6 @@ const LocalTilePanel = () => {
     "StructureBuildings",
     "Building",
     "RealmKnowledge",
-    "ResearchNode",
-    "BuildingTierRule",
   ]);
   const selectedStructure = useMemo(() => {
     const base = liveStructure?.base;

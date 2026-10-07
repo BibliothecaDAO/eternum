@@ -26,7 +26,10 @@ export const markedPlot = (realmId: number, ring: number): { col: number; row: n
   return plot;
 };
 
-/** Whether a plot of the realm board is its ring's marked plot, where a building makes twice its output. */
+/**
+ * Whether a plot of the realm board is its ring's marked plot. The plot changes nothing yet: its effect, one per
+ * building type, waits on the owner's design (building_ring.cairo).
+ */
 export const isMarkedPlot = (realmId: number, plot: { col: number; row: number }): boolean => {
   const ring = getHexDistance(CENTRE, plot);
   if (ring === 0 || !Number.isFinite(ring)) return false;

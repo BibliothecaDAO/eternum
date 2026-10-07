@@ -6,8 +6,10 @@ import { fetchHeraldGameHistory } from "@bibliothecadao/eternum/game-client";
 import {
   ArmyActionManager,
   canPayTroopRaise,
-  researchedBuildingTier,
-  researchedDepths,
+  realmLearned,
+  researchedDepth,
+  researchRowCategory,
+  researchTier,
   createGameActions,
   configManager,
   getBuildingCosts,
@@ -30,7 +32,10 @@ import {
   TroopTier,
 } from "@bibliothecadao/types";
 import type { NativeCommand } from "../../../contracts/l3/world-native/schema/commands.gen";
-import type { NativeRows } from "../../../contracts/l3/world-native/schema/client.gen";
+import {
+  nativeResearchConstants as research,
+  type NativeRows,
+} from "../../../contracts/l3/world-native/schema/client.gen";
 import { buildNativePreset } from "../../../config/deployer/clean/config/native-preset";
 import { nativePresetForId } from "../../../config/source/native";
 import { FRONTIER_ACCELERATED_PRESET_ID } from "../../../config/source/common/native-preset-modes";
@@ -674,39 +679,30 @@ function planUpgrade(client: GameClient, player: Player): Action | undefined {
       cost: recipe.costs.find((cost) => cost.resource_type === 38)?.amount ?? 0n,
       action: { kind: "LevelUp", value: player.realmId },
     });
+  // Research the cheapest open row's next tier, always on its first side: Fields, Tools, Drill, camps.
   const learned = store.require("RealmKnowledge", { game_id: client.gameId, structure_id: player.realmId }).learned;
-  for (const node of store.inGame("ResearchNode", client.gameId)) {
-    if ((learned & (1 << node.node)) !== 0 || (learned & node.prerequisites) !== node.prerequisites) continue;
-    if (node.essence_cost <= essence)
+  const labor = balance(client, player, 23);
+  for (let row = 0; row < research.ROW_COUNT; row++) {
+    const category = researchRowCategory[row];
+    if (category !== undefined && !standing(client, player, category)) continue;
+    const price = store.get("ResearchPrice", { game_id: client.gameId, row, tier: researchTier(learned, row) + 1 });
+    if (price && price.essence <= essence && price.labor <= labor)
       candidates.push({
-        cost: node.essence_cost,
-        action: { kind: "Research", value: { structure_id: player.realmId, node: node.node } },
-      });
-  }
-  for (const building of store.inGame("Building", client.gameId)) {
-    if (building.structure_id !== player.realmId) continue;
-    const unlocked = known(
-      researchedBuildingTier(store, client.gameId, player.realmId, building.category),
-      player.realmId,
-      "researched tier",
-    );
-    if (building.tier >= unlocked) continue;
-    const rule = store.require("BuildingTierRule", {
-      game_id: client.gameId,
-      category: building.category,
-      tier: building.tier + 1,
-    });
-    if (rule.labor_upgrade_cost <= balance(client, player, 23))
-      candidates.push({
-        cost: rule.labor_upgrade_cost,
-        action: {
-          kind: "UpgradeBuilding",
-          value: { structure_id: player.realmId, coord: { alt: false, x: building.inner_col, y: building.inner_row } },
-        },
+        cost: price.essence,
+        action: { kind: "Research", value: { structure_id: player.realmId, row, choice: 0 } },
       });
   }
   const selected = candidates.sort((a, b) => Number(a.cost - b.cost))[0];
   return selected ? command(client, player, selected.action) : undefined;
+}
+// Buildings of a type on the realm board, the castle's own workshop aside.
+function standing(client: GameClient, player: Player, category: number): number {
+  return [...client.setup.store.inGame("Building", client.gameId)].filter(
+    (row) =>
+      row.structure_id === player.realmId &&
+      row.category === category &&
+      (row.inner_col !== BUILDINGS_CENTER[0] || row.inner_row !== BUILDINGS_CENTER[1]),
+  ).length;
 }
 function planBuilding(client: GameClient, player: Player): Action | undefined {
   const realm = home(client, player);
@@ -720,12 +716,7 @@ function planBuilding(client: GameClient, player: Player): Action | undefined {
   const training = known(
     new ResourceManager(client.setup.store, player.realmId, client.gameId).balanceWithProduction(
       getBlockTimestamp().currentDefaultTick,
-      (25 +
-        known(
-          researchedBuildingTier(client.setup.store, client.gameId, player.realmId, 28),
-          player.realmId,
-          "researched barracks tier",
-        )) as ResourcesIds,
+      ResourcesIds.Knight,
     ),
     player.realmId,
     "troop training balance",
@@ -797,32 +788,19 @@ function planMuster(client: GameClient, player: Player): Action | undefined {
     realm.base.level
   ]!;
   if (armies.length >= slots) return;
-  let tier =
-    known(
-      researchedBuildingTier(client.setup.store, client.gameId, player.realmId, 28),
-      player.realmId,
-      "researched barracks tier",
-    ) - 1;
-  let troops = 0n;
-  for (; tier >= 0; tier--) {
-    const resource = (26 + tier) as ResourcesIds;
-    const cap = BigInt(
-      configManager.getMaxArmySize(realm.base.level, [TroopTier.T1, TroopTier.T2, TroopTier.T3][tier]!),
-    );
-    const available = balance(client, player, resource) / precision;
-    troops = available < cap ? (available * 9n) / 10n : cap;
-    if (troops >= 1000n) break;
-  }
-  if (tier < 0) return;
-  // The realm pays its troops' recipe wheat to deploy them, so it raises what it can pay for, as a player's deploy sheet
-  // offers: at real speed a new realm's wheat pays for fewer troops than its barracks hold.
-  troops = affordableTroops(client, player, (26 + tier) as ResourcesIds, troops);
+  // One troop type: every army deploys Knight T1.
+  const cap = BigInt(configManager.getMaxArmySize(realm.base.level, TroopTier.T1));
+  const available = balance(client, player, ResourcesIds.Knight) / precision;
+  let troops = available < cap ? (available * 9n) / 10n : cap;
+  if (troops < 1000n) return;
+  // Deploy only the troops whose recipe inputs the realm can pay for now.
+  troops = affordableTroops(client, player, ResourcesIds.Knight, troops);
   if (troops < 1n) return;
   const cost = readTroopRaiseCost(
     client.setup.store,
     client.gameId,
     player.realmId,
-    (26 + tier) as ResourcesIds,
+    ResourcesIds.Knight,
     Number(troops),
     getBlockTimestamp().currentDefaultTick,
   );
@@ -840,12 +818,12 @@ function planMuster(client: GameClient, player: Player): Action | undefined {
       value: {
         structure_id: player.realmId,
         category: 0,
-        tier,
+        tier: 0,
         amount: troops * precision,
         direction: spawn.direction,
       },
     }),
-    charge: { kind: "CreateExplorer", troopResource: 26 + tier, troops },
+    charge: { kind: "CreateExplorer", troopResource: ResourcesIds.Knight, troops },
   };
 }
 /** At most `troops`, and no more than every input of one troop's raise, held now, pays for. */
@@ -891,13 +869,10 @@ function planExpedition(client: GameClient, game: HarnessGame, player: Player): 
     const neighbors = getNeighborHexes(coord.x, coord.y);
     const spacing = client.setup.store.require("SettlementRules", { game_id: client.gameId }).spacing;
     const realm = home(client, player);
-    const depth = Math.max(
-      0,
-      ...known(
-        researchedDepths(client.setup.store, client.gameId, player.realmId),
-        player.realmId,
-        "researched depths",
-      ),
+    const depth = known(
+      researchedDepth(client.setup.store, client.gameId, player.realmId),
+      player.realmId,
+      "researched depth",
     );
     const atEntrance =
       Math.floor(coord.y / spacing) % 4 === 0 &&
@@ -1066,22 +1041,14 @@ function observeProgress(client: GameClient, game: HarnessGame, player: Player) 
     ["castle", realm.base.level],
     [
       "barracks",
-      known(
-        researchedBuildingTier(client.setup.store, client.gameId, player.realmId, 28),
-        player.realmId,
-        "researched barracks tier",
-      ) - 1,
+      researchTier(
+        known(realmLearned(client.setup.store, client.gameId, player.realmId), player.realmId, "realm knowledge"),
+        research.ROW_BARRACKS,
+      ),
     ],
     [
       "depth",
-      Math.max(
-        0,
-        ...known(
-          researchedDepths(client.setup.store, client.gameId, player.realmId),
-          player.realmId,
-          "researched depths",
-        ),
-      ),
+      known(researchedDepth(client.setup.store, client.gameId, player.realmId), player.realmId, "researched depth"),
     ],
   ] as const) {
     if (level > 0 && !player.rungs.some((rung) => rung.lane === lane && rung.level === level))

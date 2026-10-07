@@ -1,4 +1,4 @@
-import { researchedDepths } from "./realm-research";
+import { researchedDepth } from "./realm-research";
 import { MAX_U32, ResourcesIds } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
@@ -195,7 +195,7 @@ export const expeditionSpires = (
     .filter(
       (structure) =>
         isExpeditionRealm(store, structure) &&
-        (researchedDepths(store, structure.game_id, structure.entity_id)?.length ?? 0) > 0,
+        (researchedDepth(store, structure.game_id, structure.entity_id) ?? 0) > 0,
     )
     .flatMap((structure) => {
       const spire = expeditionSpireTile(rules, structure, nowSeconds);

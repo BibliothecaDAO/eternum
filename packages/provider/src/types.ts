@@ -71,7 +71,6 @@ export enum TransactionType {
   TRAVEL_HEX = "travel_hex",
   ENTER_DEPTH = "enter_depth",
   RESEARCH = "research",
-  UPGRADE_BUILDING = "upgrade_building",
   BUY_TIER = "buy_tier",
   EXPLORER_CREATE = "explorer_create",
   EXPLORER_ADD = "explorer_add",

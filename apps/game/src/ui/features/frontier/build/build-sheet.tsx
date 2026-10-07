@@ -32,10 +32,9 @@ const BUILD_MODELS = [
   "ResourceWeight",
   "Structure",
   "StructureBuildings",
-  // What the realm has researched sets each building's tier, its price and what it gives.
+  // What the realm has researched sets what each building type gives.
   "RealmKnowledge",
-  "ResearchNode",
-  "BuildingTierRule",
+  "BoardRules",
 ] as const;
 
 /**
@@ -63,7 +62,7 @@ export const useOpenPlot = (realm: NativeRows["Structure"] | null): HexPosition 
 
 /**
  * Frontier's build sheet (design §3.12, mockup 2): each building the plot can hold as a card of art and numbers,
- * what it gives, the population it takes, the wheat after it and its price, doubled on the ring's marked plot.
+ * what it gives, the population it takes, the wheat after it and its price.
  * The chosen card's building stands on the plot as a ghost; one Build button raises it.
  */
 export const BuildSheet = ({
@@ -82,8 +81,8 @@ export const BuildSheet = ({
   const revision = useNativeRevision(BUILD_MODELS);
   const tick = useCurrentDefaultTick();
   const options = useMemo(
-    () => readBuildOptions(setup.store, realm, plot, useSimpleCost, tick),
-    [plot.col, plot.row, realm, revision, setup.store, tick, useSimpleCost],
+    () => readBuildOptions(setup.store, realm, useSimpleCost, tick),
+    [realm, revision, setup.store, tick, useSimpleCost],
   );
   const realmInfo = useMemo(
     () => getRealmInfo(realm.entity_id, setup.store, getPlayerName),
@@ -186,14 +185,6 @@ const BuildCard = ({
       !buildable && "opacity-60",
     )}
   >
-    {option.doubled && (
-      <span
-        aria-label="Doubled on this plot"
-        className="absolute right-1.5 top-1.5 rounded-full bg-[#9fd06a] px-1.5 text-[13px] font-extrabold text-[#1b1207]"
-      >
-        ×2
-      </span>
-    )}
     <img
       src={BUILDING_IMAGES_PATH[option.category as keyof typeof BUILDING_IMAGES_PATH]}
       alt=""

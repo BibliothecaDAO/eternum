@@ -1047,7 +1047,7 @@ pub mod StructuresLogic {
                 .buildings
                 .create(
                     BuildingKey { game_id: key.game_id, structure_id: key.entity_id, inner_col: 10, inner_row: 10 },
-                    Building { category: building_category, paused: false, labor_paid: 0, tier: 1 },
+                    Building { category: building_category, paused: false, labor_paid: 0 },
                     // A producer the world places at a structure's centre costs no population: only a player's
                     // building does. The centre labor producer cannot be destroyed, so nothing refunds this.
                     0,

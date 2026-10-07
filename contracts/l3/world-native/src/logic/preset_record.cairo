@@ -181,7 +181,7 @@ fn write_banks(preset: PresetWrite, rules: crate::market::BankRules) {
 fn write_buildings(
     preset: PresetWrite, rules: Span<crate::buildings::BuildingRuleConfig>, board: Option<crate::buildings::BoardRules>,
 ) {
-    assert!(rules.len() == 40, "incomplete building rules");
+    assert!(rules.len() == crate::buildings::BUILDING_CATEGORY_COUNT.into(), "incomplete building rules");
     let mut expected = 1_u8;
     for config in rules {
         assert!(*config.category == expected, "building rules must be ordered");
@@ -204,6 +204,7 @@ fn write_buildings(
     if let Some(board) = board {
         assert!(board.demolition_refund_bps <= 10000, "invalid demolition refund");
         assert!(board.workshop_rate != 0, "zero workshop rate");
+        assert!(board.training_gate_tier <= 4, "invalid training gate tier");
         preset.board_terms.write(Some(board));
     }
 }
@@ -449,50 +450,20 @@ fn write_withdrawals(preset: PresetWrite, withdrawals: crate::presets::Withdrawa
 
 fn write_research(preset: PresetWrite, structures: crate::presets::StructurePreset) {
     if structures.board.is_none() {
-        assert!(structures.research.is_empty() && structures.building_tiers.is_empty(), "research needs a board");
+        assert!(structures.research.is_empty(), "research needs a board");
         return;
     }
-    assert!(structures.research.len() == crate::research::NODE_COUNT.into(), "incomplete research tree");
-    for id in 0..crate::research::NODE_COUNT {
-        let entry = *structures.research.at(id.into());
-        let bit = crate::research::node_bit(id);
-        assert!(entry.node == id && entry.rule.prerequisites < bit, "invalid research prerequisites");
-        assert!(entry.rule.essence_cost != 0, "empty research price");
-        for previous in 0..id {
-            assert!(
-                preset.research_nodes.read(previous).unwrap().effect != entry.rule.effect, "duplicate research effect",
-            );
-        }
-        preset.research_nodes.write(id, Some(entry.rule));
+    // Every row's tiers are priced exactly once, from the first tier above common to the row's last.
+    let mut expected = 0_u32;
+    for row in 0..crate::research::ROW_COUNT {
+        expected += crate::research::max_tier(row).into();
     }
-    assert!(structures.building_tiers.len() == 8, "incomplete building tiers");
-    for entry in structures.building_tiers {
-        assert!(*entry.tier == 2 || *entry.tier == 3, "invalid building tier");
-        assert!(
-            *entry.category == 1 || *entry.category == 2 || *entry.category == 28 || *entry.category == 37,
-            "invalid tier category",
-        );
-        let key = (*entry.category, *entry.tier);
-        assert!(preset.building_tiers.read(key).is_none(), "duplicate building tier");
-        let rule = *entry.rule;
-        assert!(
-            rule.labor_upgrade_cost != 0
-                && rule.output_multiplier_bps != 0
-                && rule.capacity_multiplier_bps != 0
-                && rule.population_multiplier_bps >= 10000,
-            "empty building tier rule",
-        );
-        preset.building_tiers.write(key, Some(rule));
-    }
+    assert!(structures.research.len() == expected, "incomplete research prices");
     for entry in structures.research {
-        match *entry.rule.effect {
-            crate::research::ResearchEffect::BuildingTier((
-                category, tier,
-            )) => { assert!(preset.building_tiers.read((category, tier)).is_some(), "research tier is missing"); },
-            crate::research::ResearchEffect::MapContent(_) => {},
-            crate::research::ResearchEffect::Depth(depth) => {
-                assert!(depth > 0 && depth < 4, "invalid research depth");
-            },
-        }
+        let key = (*entry.row, *entry.tier);
+        assert!(*entry.tier > 0 && *entry.tier <= crate::research::max_tier(*entry.row), "invalid research tier");
+        assert!(preset.research_prices.read(key).is_none(), "duplicate research price");
+        assert!((*entry.price).essence != 0, "empty research price");
+        preset.research_prices.write(key, Some(*entry.price));
     }
 }

@@ -5,13 +5,13 @@ import { BuildSheet, useOpenPlot } from "./build/build-sheet";
 import { MapSiteCard, useSelectedMapSite } from "./sites/map-site-card";
 import { TileCard, useSelectedSite } from "./sites/tile-card";
 import { ChestCard, SpireCard, useSelectedTileObject } from "./sites/tile-object-cards";
-import { BuildingUpgrade, useSelectedBuilding } from "./upgrade/building-upgrade";
 import { CastleUpgrade, useKeepSelected } from "./upgrade/castle-upgrade";
 
 /**
- * What the player tapped, as its Frontier card: an open plot of the realm the build sheet, the keep or a building the
- * upgrade sheet, a standing site the tile card, a Shrine or Well its card, a loose chest or a spire theirs. Anything
- * else, an empty tile or an army the dock already shows, has no card and opens nothing.
+ * What the player tapped, as its Frontier card: an open plot of the realm the build sheet, the keep its upgrade sheet,
+ * a standing site the tile card, a Shrine or Well its card, a loose chest or a spire theirs. Anything else, an empty
+ * tile, a standing building (its type's tiers are bought at the castle) or an army the dock already shows, has no card
+ * and opens nothing.
  */
 export const FrontierSelectionSheet = ({ realm }: { realm: NativeRows["Structure"] | null }) => {
   const openPlot = useOpenPlot(realm);
@@ -19,7 +19,6 @@ export const FrontierSelectionSheet = ({ realm }: { realm: NativeRows["Structure
   const mapSite = useSelectedMapSite();
   const tileObject = useSelectedTileObject();
   const keep = useKeepSelected(realm);
-  const building = useSelectedBuilding(realm);
   const setSelectedHex = useUIStore((state) => state.setSelectedHex);
   const setSelectedBuildingHex = useUIStore((state) => state.setSelectedBuildingHex);
   const close = () => {
@@ -32,6 +31,5 @@ export const FrontierSelectionSheet = ({ realm }: { realm: NativeRows["Structure
   if (tileObject?.kind === "chest") return <ChestCard tile={tileObject.tile} onClose={close} />;
   if (tileObject?.kind === "spire") return <SpireCard onClose={close} />;
   if (realm && keep) return <CastleUpgrade realm={realm} onClose={close} />;
-  if (realm && building) return <BuildingUpgrade realm={realm} selected={building} onClose={close} />;
   return realm ? <FrontierSpireSheet realm={realm} onClose={close} /> : null;
 };

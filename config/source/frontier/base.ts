@@ -1,17 +1,30 @@
 import { frontierPreset } from "./native";
+import { nativeResearchConstants as research } from "../../../contracts/l3/world-native/schema/client.gen";
 import { CapacityConfig, RESOURCE_PRECISION } from "../../../packages/types/src/constants";
 import type { ConfigPatch } from "../common/merge-config";
 import { mergeConfigPatches } from "../common/merge-config";
 import { arenaBaseConfig } from "../common/arena/base";
 
 const resourceIds = Array.from({ length: 58 }, (_, index) => index + 1);
-const buildingIds = Array.from({ length: 40 }, (_, index) => index + 1);
-const laborCosts: Record<number, number> = { 1: 300, 2: 1000, 25: 2000, 28: 1200, 37: 100 };
+const buildingIds = Array.from({ length: research.HEARTH }, (_, index) => index + 1);
+const trainingBuildings = [research.WAR_HALL, research.SUPPLY_YARD, research.SCOUTS_LODGE, research.HEARTH];
+const laborCosts: Record<number, number> = {
+  [research.HUT]: 300,
+  2: 1000,
+  [research.WORKSHOP]: 2000,
+  [research.BARRACKS]: 400,
+  [research.FARM]: 400,
+  ...Object.fromEntries(trainingBuildings.map((category) => [category, 3000])),
+};
+const populationCosts: Record<number, number> = {
+  [research.HUT]: 0,
+  [research.BARRACKS]: 3,
+  [research.FARM]: 1,
+};
+// One troop type: Barracks make Knight T1 (resource 26) and nothing else.
 const rates: Record<number, number> = {
   23: 100 / 3600,
   26: 100 / 3600,
-  27: 100 / 3600,
-  28: 100 / 3600,
   35: 300 / 3600,
 };
 const buildingCosts = Object.fromEntries(
@@ -19,7 +32,7 @@ const buildingCosts = Object.fromEntries(
 );
 // Barracks train from nothing. A troop's recipe is what its realm pays, per troop, to raise it into an army.
 const troopRaiseCosts = Object.fromEntries(
-  resourceIds.map((id) => [id, id >= 26 && id <= 34 ? [{ resource: 35, amount: 2 }] : []]),
+  resourceIds.map((id) => [id, id === 26 ? [{ resource: 35, amount: 2 }] : []]),
 );
 
 // Combat keeps the existing troop formula; the board and economy use Frontier's sheet.
@@ -48,7 +61,7 @@ export const frontierBaseConfig: ConfigPatch = mergeConfigPatches(arenaBaseConfi
   resources: {
     resourcePrecision: RESOURCE_PRECISION,
     productionBySimpleRecipe: troopRaiseCosts,
-    productionBySimpleRecipeOutputs: Object.fromEntries(resourceIds.map((id) => [id, id >= 26 && id <= 34 ? 1 : 0])),
+    productionBySimpleRecipeOutputs: Object.fromEntries(resourceIds.map((id) => [id, id === 26 ? 1 : 0])),
     productionByComplexRecipe: Object.fromEntries(resourceIds.map((id) => [id, []])),
     productionByComplexRecipeOutputs: Object.fromEntries(resourceIds.map((id) => [id, rates[id] ?? 0])),
     resourceWeightsGrams: Object.fromEntries(
@@ -56,11 +69,10 @@ export const frontierBaseConfig: ConfigPatch = mergeConfigPatches(arenaBaseConfi
     ),
   },
   buildings: {
-    buildingFixedCostScalePercent: 1500,
-    buildingPopulation: Object.fromEntries(
-      buildingIds.map((id) => [id, id === 1 ? 0 : id === 28 ? 3 : id === 37 ? 1 : 2]),
-    ),
-    buildingCapacity: Object.fromEntries(buildingIds.map((id) => [id, id === 1 ? 6 : 0])),
+    // A copy costs its base times 1 + (copies - 1)^2: a surcharge of 1.0, in basis points.
+    buildingFixedCostScalePercent: 10000,
+    buildingPopulation: Object.fromEntries(buildingIds.map((id) => [id, populationCosts[id] ?? 2])),
+    buildingCapacity: Object.fromEntries(buildingIds.map((id) => [id, id === research.HUT ? 6 : 0])),
     simpleBuildingCost: buildingCosts,
     complexBuildingCosts: Object.fromEntries(buildingIds.map((id) => [id, []])),
   },
@@ -91,8 +103,8 @@ export const frontierBaseConfig: ConfigPatch = mergeConfigPatches(arenaBaseConfi
       staminaDefenseReq: 40,
       staminaExploreStaminaCost: 30,
       staminaTravelStaminaCost: 10,
-      staminaExploreWheatCost: 0.03,
-      staminaTravelWheatCost: 0.03,
+      staminaExploreWheatCost: 0.02,
+      staminaTravelWheatCost: 0.02,
       staminaExploreFishCost: 0,
       staminaTravelFishCost: 0,
     },
@@ -112,6 +124,9 @@ export const frontierBaseConfig: ConfigPatch = mergeConfigPatches(arenaBaseConfi
       kingdomDeploymentCap: 25000,
       empireDeploymentCap: 60000,
       t1TierModifier: 100,
+      // Troop tiers are gone from Frontier: a T2 or T3 army has room for no troops.
+      t2TierModifier: 0,
+      t3TierModifier: 0,
     },
   },
   exploration: {
