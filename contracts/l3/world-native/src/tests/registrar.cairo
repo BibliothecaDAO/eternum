@@ -1696,8 +1696,18 @@ fn assert_capture_at(depth: u8, count: u128, tier: crate::troops::TroopTier, rev
     let labor_supply = ResourceSlot { game_id, entity_id: 1, resource_type: 23 };
     let essence_supply = ResourceSlot { game_id, entity_id: 1, resource_type: 38 };
     let before_supplies = resources.resource_balance(labor_supply) + resources.resource_balance(essence_supply);
+    let context = crate::tests::context(d.games, game_id);
+    let mut root = context.raw_root;
+    let seed = crate::random::game_root(ref root, game_id, context.game.unbox().seed);
+    let discovery_rules = preset.economy.discovery.unwrap();
+    let mut reveal_at = opening + 2;
+    while crate::discovery::frontier(discovery_rules, 0, 0, 0, 0, None, seed, reveal_at)
+        != crate::discovery::Discovery::Camp {
+        reveal_at += 1;
+    }
+    assert!(reveal_at < capture_at, "camp draw must precede the fixture capture");
     assert!(
-        execute_in_game(d, game_id, Command::Explore(Explore { explorer_id, direction: 0 }), opening + 2, opening + 2),
+        execute_in_game(d, game_id, Command::Explore(Explore { explorer_id, direction: 0 }), reveal_at, reveal_at),
     );
     let coord = crate::geometry::neighbor(army.coord, 0);
     let map = IMapLogicDispatcher { contract_address: d.games };
