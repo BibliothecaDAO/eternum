@@ -242,10 +242,16 @@ pub mod RelicState {
             use crate::troops::{ArmySlotAction, ResolvedArmySlot};
             use crate::logic::army_slot_storage;
             if let ArmySlotAction::Allocate(value) = action {
-                crate::logic::progression::create(key);
+                let home = crate::resources::ResourceKey { game_id: key.game_id, entity_id: value.home };
+                let progress = crate::logic::progression::create(key, crate::logic::research::learned(home));
+                // A slot's first army of the day starts full at its own maximum, trained Logistics included.
+                let maximum = crate::progression::stamina_max(
+                    progress, value.category, crate::logic::game::rules(key.game_id).troop_stamina_config,
+                );
+                let initial = crate::troops::Stamina { amount: maximum, ..value.initial };
                 return ResolvedArmySlot {
                     stamina: army_slot_storage::allocate(
-                        key, value.home, value.epoch, value.allowance, value.initial, value.maximum,
+                        key, value.home, value.epoch, value.allowance, initial, maximum,
                     ),
                     battle_bonus_percent: 0,
                 };

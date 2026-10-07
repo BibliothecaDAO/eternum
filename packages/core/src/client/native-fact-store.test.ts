@@ -580,18 +580,18 @@ describe("declared fact absence", () => {
     const rules = store.get("SliceRules", { game_id: 1 })!.troop_stamina_config;
     const knight = { category: "Knight", tier: "T1" } as const;
     const { staminaMax } = troopStaminaLimits(rules, knight.category, knight.tier);
-    expect(musterStamina(open[0], knight, 12, rules)).toEqual({
+    expect(musterStamina(open[0], knight, 12, rules, 0)).toEqual({
       amount: Math.min(4 + 2 * Number(rules.stamina_gain_per_tick), staminaMax),
       max: staminaMax,
     });
-    expect(musterStamina(open[1], knight, 12, rules)).toEqual({ amount: staminaMax, max: staminaMax });
+    expect(musterStamina(open[1], knight, 12, rules, 0)).toEqual({ amount: staminaMax, max: staminaMax });
 
     store.setSnapshot({ gameId: 1, complete: false, actor: "0x111", timestamp: 350 });
     expect(openArmySlots(store, home)).toBeUndefined();
   });
   // Pinned to the contract's gate expedition_slot_reuse_preserves_its_bar_and_midnight_allocates_a_fresh_bar
   // (world-native registrar tests): a slot released at 7 hands exactly 7 to an army mustered in the same tick, and
-  // the next epoch's first muster in that slot starts on stamina_initial.
+  // the next epoch's first muster in that slot starts full at its maximum.
   it("promises the bar the contract's allocate hands on", () => {
     const store = new NativeFactStore();
     store.applyFacts([set("0x100", "SliceRules", { ...preset.rules, game_id: 1, epoch_seconds: 100 })]);
@@ -638,12 +638,14 @@ describe("declared fact absence", () => {
 
     const released = openArmySlots(store, home)![0];
     expect(released.slot).toBe(0);
-    expect(musterStamina(released, knight, 35, rules).amount).toBe(7);
+    expect(musterStamina(released, knight, 35, rules, 0).amount).toBe(7);
 
     day(400);
     const nextDay = openArmySlots(store, home)![0];
     expect(nextDay).toEqual({ slot: 0, inherited: null });
-    expect(musterStamina(nextDay, knight, 40, rules).amount).toBe(troopStaminaLimits(rules, "Knight", "T1").staminaMax);
+    expect(musterStamina(nextDay, knight, 40, rules, 0).amount).toBe(
+      troopStaminaLimits(rules, knight.category, knight.tier).staminaMax,
+    );
   });
   it("keeps incomplete scope invariants out of synchronous listeners", () => {
     const store = new NativeFactStore();

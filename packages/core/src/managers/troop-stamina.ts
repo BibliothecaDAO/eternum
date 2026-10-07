@@ -151,15 +151,22 @@ export function openArmySlots(
   return open;
 }
 
-/** The bar a new army of this troop starts on in the slot, at the tick, under the game's rules. */
+/**
+ * The bar a new army of this troop starts on in the slot, at the tick, under the game's rules, when its realm has
+ * trained Logistics to `trainedLogistics` tiers above common (the Supply yard's row).
+ */
 export function musterStamina(
   slot: OpenArmySlot,
   troop: { category: TroopType; tier: TroopTier },
   currentArmiesTick: number,
   rules: TroopStaminaRules,
+  trainedLogistics: number,
 ): { amount: number; max: number } {
-  // A new slot occupant starts at Logistics 1, regardless of its troop tier; a slot's first army of the day starts full.
-  const { staminaMax } = troopStaminaLimits(rules, troop.category, TroopTier.T1);
+  // A new slot occupant starts at its realm's trained Logistics, regardless of its troop tier.
+  const staminaMax =
+    troopStaminaLimits(rules, troop.category, TroopTier.T1).staminaMax +
+    logisticsStamina(trainedLogistics + 1);
+  // A slot's first army of the day starts full at its own maximum.
   if (!slot.inherited) return { amount: staminaMax, max: staminaMax };
   const newArmy: Troops = {
     ...troop,

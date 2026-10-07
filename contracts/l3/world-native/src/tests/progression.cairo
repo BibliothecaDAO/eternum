@@ -349,3 +349,69 @@ fn homecoming_returns_whole_troops_and_nothing_at_common() {
     }
     assert_eq!(crate::rules::homecoming_bps(5), 3000);
 }
+
+fn deploy(d: super::Deployment, game_id: u32, category: u8, direction: u8) -> crate::troops::ExplorerKey {
+    let home = crate::resources::ResourceKey { game_id, entity_id: 1 };
+    let command = crate::commands::Command::CreateExplorer(
+        crate::commands::CreateExplorer {
+            structure_id: 1, category, tier: 0, amount: 3 * crate::rules::RESOURCE_PRECISION, direction,
+        },
+    );
+    assert!(super::resource_commands::execute_in_game(d, game_id, command, 351, 351));
+    let armies = crate::structures::IStructureOperationsDispatcherTrait::home_armies(
+        crate::structures::IStructureOperationsDispatcher { contract_address: d.games }, home,
+    );
+    crate::troops::ExplorerKey { game_id, explorer_id: *armies.at(armies.len() - 1) }
+}
+
+#[test]
+fn training_starts_only_later_armies_at_their_realms_tiers_and_full_at_their_logistics_maximum() {
+    let d = super::registrar::setup();
+    let (game_id, preset, category) = super::registrar::expedition_home(d);
+    let home = crate::resources::ResourceKey { game_id, entity_id: 1 };
+    snforge_std::start_cheat_caller_address(d.games, d.games);
+    crate::resources::IResourceOperationsDispatcher { contract_address: d.games }
+        .grant_resource(
+            home,
+            26,
+            1000 * crate::rules::RESOURCE_PRECISION,
+            351,
+            crate::commands::resource_context(
+                crate::commands::ExecutionContext { timestamp: 351, ..crate::tests::context(d.games, game_id) },
+            ),
+        );
+    snforge_std::stop_cheat_caller_address(d.games);
+    let untrained = deploy(d, game_id, category, 0);
+    assert_eq!(read_progress(d, untrained), crate::progression::initial());
+
+    // War hall rare, Supply yard uncommon, Hearth epic; the Scouts' lodge untrained.
+    let mut learned = 0;
+    for (row, tiers) in array![
+        (crate::research::ROW_WAR_HALL, 2_u8), (crate::research::ROW_SUPPLY_YARD, 1), (crate::research::ROW_HEARTH, 3),
+    ] {
+        for _ in 0..tiers {
+            learned = crate::research::learn(learned, row, 0);
+        }
+    }
+    snforge_std::interact_with_state(
+        d.games, || crate::logic::research::write(home, crate::research::RealmKnowledge { learned }),
+    );
+    let trained = deploy(d, game_id, category, 1);
+    let progress = read_progress(d, trained);
+    assert_eq!(
+        (progress.battle, progress.logistics, progress.scouting, progress.support, progress.level, progress.xp),
+        (3, 2, 1, 4, 1, 0),
+    );
+    // Training changes no army already deployed.
+    assert_eq!(read_progress(d, untrained), crate::progression::initial());
+    let troops = super::state::GameState { contract_address: d.games }.resolved_explorer(trained).unwrap().troops;
+    assert_eq!(
+        troops.stamina.inline().amount,
+        crate::progression::stamina_max(progress, troops.category, preset.rules.troop_stamina_config),
+    );
+    assert_eq!(
+        troops.stamina.inline().amount,
+        crate::stamina::StaminaImpl::max(troops.category, crate::troops::TroopTier::T1, preset.rules.troop_stamina_config)
+            + crate::rules::ATTRIBUTE_STAMINA.into(),
+    );
+}

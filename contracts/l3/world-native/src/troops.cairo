@@ -437,7 +437,7 @@ pub struct ArmySlotAllocation {
     pub epoch: u64,
     pub allowance: u8,
     pub initial: Stamina,
-    pub maximum: u64,
+    pub category: TroopType,
 }
 #[derive(Copy, Drop, Serde)]
 pub struct LogisticsStamina {

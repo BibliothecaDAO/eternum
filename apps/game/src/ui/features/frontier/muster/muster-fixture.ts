@@ -66,7 +66,18 @@ export const frontierDay = () => {
       resource_type: 26,
       balance: String(420n * BigInt(RESOURCE_PRECISION)),
     }),
-    set("0xa", "BoardRules", { game_id: 1, demolition_refund_bps: 5000, workshop_rate: "0" }),
+    set("0xa", "BoardRules", {
+      game_id: 1,
+      demolition_refund_bps: 5000,
+      workshop_rate: "0",
+      output_step_bps: 2500,
+      storage_step_bps: 5000,
+      population_step_bps: 2500,
+      ration_step: "0",
+      training_gate_tier: 2,
+    }),
+    // Nothing trained yet: armies start at common.
+    set("0xd", "RealmKnowledge", { game_id: 1, structure_id: 7, learned: "0" }),
     set("0xb", "ProductionRecipe", {
       game_id: 1,
       resource_type: 26,

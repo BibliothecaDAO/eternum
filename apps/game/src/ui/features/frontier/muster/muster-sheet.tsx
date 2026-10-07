@@ -33,6 +33,8 @@ import { DeployRing } from "./deploy-ring";
 
 const MUSTER_MODELS = [
   "ArmySlot",
+  // The Supply yard's tier sets the bar a new army starts on.
+  "RealmKnowledge",
   "ResourceBalance",
   "ResourceProduction",
   "ResourceWeight",
