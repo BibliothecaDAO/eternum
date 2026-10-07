@@ -39,6 +39,9 @@ jobs:
       - name: Test that a CI file selects only the area that owns it
         run: python3 .github/scripts/test_validation_areas.py
 
+      - name: Test that each contract test partition runs alone and none is dropped
+        run: bash .github/scripts/test-native.test.sh
+
       - uses: oven-sh/setup-bun@v2
 
       - name: Check staging Worker deployment follows next without path gaps
