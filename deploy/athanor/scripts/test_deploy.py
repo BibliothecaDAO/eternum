@@ -96,7 +96,8 @@ class EnrolmentTest(unittest.TestCase):
             deploy.check_operator_approval(directory, {})
 
     def test_the_package_passes_the_operator_token_through_sudo(self):
-        self.assertIn("--preserve-env=OPERATOR_TOKEN", deploy.compose(Path("/srv/shard")))
+        preserved = [flag for flag in deploy.compose(Path("/srv/shard")) if flag.startswith("--preserve-env=")]
+        self.assertIn("OPERATOR_TOKEN", preserved[0].removeprefix("--preserve-env=").split(","))
 
 
 if __name__ == "__main__":

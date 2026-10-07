@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
-"""Fails when a validation area's own files read a path the area does not cover, naming each miss.
+"""Fails when a validation area's own files read a path the area does not cover, or a CI file has the wrong owner,
+naming each miss.
 
-A stream push or pull request runs only the areas its diff selects, so an area must cover every file its code and tests
-read: otherwise a change to that file skips the checks that read it and first shows on the integration branch. The
+A pull request runs only the areas its diff selects, so an area must cover every file its code and tests read:
+otherwise a change to that file skips the checks that read it and first shows on next. The
 reads found are relative module specifiers and relative path literals (fixtures opened with `new URL(..., import.meta
 .url)`), resolved from the file that names them.
+
+Every tracked file under .github must have an owner (an area, STATIC or SHARED), and a local workflow or action must
+belong to the area that runs it: the area whose validation.yml job calls it, or each owner of the workflow using it.
 """
 from functools import cache
 import os
@@ -14,12 +18,15 @@ import subprocess
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from validation_areas import AREAS, ENTRIES, SHARED, UNCHECKED, matches
+from validation_areas import AREAS, SHARED, STATIC, UNCHECKED, matches, unowned_ci_files
 
 ROOT = Path(__file__).resolve().parents[2]
 SOURCES = (".ts", ".tsx", ".js", ".mjs", ".cjs")
 # A quoted relative path, and a following `$` when it is a template literal cut at its first substitution: that prefix
 # reads the directory it names, while a whole literal naming a directory only anchors other paths.
+# A job key in a workflow's jobs map, and a local reusable workflow or composite action that a job or step uses.
+JOB = re.compile(r"^  ([\w-]+):\s*$")
+LOCAL_USE = re.compile(r"^\s*(?:- )?uses:\s*\./(\.github/(?:workflows/[\w.-]+\.ya?ml|actions/[\w.-]+))\s*$")
 RELATIVE = re.compile(r"""["'`](\.\.?/[^"'`\s$]*)(\$?)""")
 # Extensionless and compiled-extension specifiers resolve to the source file beside them.
 CANDIDATES = ("", ".ts", ".tsx", ".js", ".mjs", "/index.ts", "/index.tsx", "/index.js")
@@ -69,7 +76,7 @@ def misses(sources):
         if area in UNCHECKED:
             continue
         covered = SHARED + patterns
-        entries = ENTRIES.get(area) or [name for name in sources if matches(name, patterns)]
+        entries = [name for name in sources if matches(name, patterns)]
         found += [(area, reader, path) for reader, path in reachable_reads(entries) if not matches(path, covered)]
     return found
 
@@ -87,6 +94,37 @@ def reachable_reads(entries):
     return found
 
 
+def owners(path):
+    """The areas whose patterns name a path, plus "static" when STATIC does."""
+    found = {area for area, patterns in AREAS.items() if matches(path, patterns)}
+    return found | {"static"} if matches(path, STATIC) else found
+
+
+def local_uses(workflow):
+    """Each (job key, local workflow or action path) a workflow uses."""
+    job, found = None, []
+    for line in (ROOT / workflow).read_text().splitlines():
+        if heading := JOB.match(line):
+            job = heading[1]
+        elif use := LOCAL_USE.match(line):
+            target = use[1] if use[1].startswith(".github/workflows/") else f"{use[1]}/action.yml"
+            found.append((job, target))
+    return found
+
+
+def ownership_misses():
+    """Each CI file no area owns, and each local workflow or action whose owners leave out an area that runs it."""
+    unowned = unowned_ci_files(sorted(tracked()))
+    found = [f"{path} has no owner: name it in an area, STATIC or SHARED" for path in unowned]
+    for workflow in sorted(name for name in tracked() if name.startswith(".github/workflows/")):
+        for job, target in local_uses(workflow):
+            # validation.yml's jobs are named for the areas they run; any other workflow runs for its own owners.
+            runners = {job} if workflow == ".github/workflows/validation.yml" else owners(workflow)
+            if missing := runners - owners(target):
+                found.append(f"{target} runs for {', '.join(sorted(missing))} (from {workflow}) but is not owned by it")
+    return found
+
+
 def main():
     found = misses(sorted(name for name in tracked() if name.endswith(SOURCES)))
     for area, reader, path in found:
@@ -94,6 +132,12 @@ def main():
     if found:
         raise SystemExit(f"{len(found)} reads fall outside their validation area; widen the area in validation_areas.py")
     print(f"validation areas: each of {len(AREAS) - len(UNCHECKED)} areas covers every file its checks read")
+    ownership = ownership_misses()
+    for miss in ownership:
+        print(miss, file=sys.stderr)
+    if ownership:
+        raise SystemExit(f"{len(ownership)} CI files are unowned or owned by the wrong area; fix validation_areas.py")
+    print("validation areas: every CI file belongs to the area that runs it")
 
 
 if __name__ == "__main__":

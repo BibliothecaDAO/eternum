@@ -18,7 +18,7 @@ jobs:
     timeout-minutes: 45
     strategy:
       matrix:
-        image: [init, herald, gateway]
+        image: [init, herald, gateway, metrics]
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
@@ -37,6 +37,9 @@ jobs:
           if [ "$IMAGE" = gateway ]; then
             echo 'context=apps/gateway' >> "$GITHUB_OUTPUT"
             echo 'file=apps/gateway/Dockerfile' >> "$GITHUB_OUTPUT"
+          elif [ "$IMAGE" = metrics ]; then
+            echo 'context=deploy/athanor/metrics' >> "$GITHUB_OUTPUT"
+            echo 'file=deploy/athanor/metrics/Dockerfile' >> "$GITHUB_OUTPUT"
           else
             echo 'context=.' >> "$GITHUB_OUTPUT"
             echo 'file=deploy/shard/Dockerfile' >> "$GITHUB_OUTPUT"
@@ -85,7 +88,7 @@ jobs:
         run: |
           mkdir shard
           cp deploy/shard/compose.yml deploy/shard/README.md deploy/shard/backup.py deploy/shard/stack_lock.py shard/
-          for image in init herald gateway; do
+          for image in init herald gateway metrics; do
             printf 'SHARD_%s_IMAGE=%s\n' "${image^^}" "$(cat "images/$image.image")" >> shard/images.env
           done
       # The release facts the init image was built with, plus what CI knows of the release, in one file the deploy
@@ -99,8 +102,8 @@ jobs:
           test -n "$node_image"
           jq --arg tag "$TAG" --arg commit "$GITHUB_SHA" --arg node "$node_image" \
             --arg init "$(cat images/init.image)" --arg herald "$(cat images/herald.image)" \
-            --arg gateway "$(cat images/gateway.image)" \
-            '{tag: $tag, commit: $commit, images: {init: $init, herald: $herald, gateway: $gateway}, node: $node} + .' \
+            --arg gateway "$(cat images/gateway.image)" --arg metrics "$(cat images/metrics.image)" \
+            '{tag: $tag, commit: $commit, images: {init: $init, herald: $herald, gateway: $gateway, metrics: $metrics}, node: $node} + .' \
             facts.json > shard/release.json
           tar -czf shard.tar.gz shard
       - name: Publish the package beside its image tag

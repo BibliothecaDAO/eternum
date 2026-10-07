@@ -27,14 +27,17 @@ jobs:
       - name: Check for unused files, exports and types
         run: pnpm run knip
 
-      - name: Check the diff base keeps every unlanded commit in scope
+      - name: Check a pull request is measured from where it branched
         run: bash .github/scripts/diff-base.test.sh
 
       - name: Check that only a landing validation run validates a publish
         run: bash .github/scripts/landing-run.test.sh
 
-      - name: Check that each validation area covers every file its checks read
+      - name: Check that each validation area covers every file its checks read and owns the CI files that run it
         run: python3 .github/scripts/check_validation_areas.py
+
+      - name: Test that a CI file selects only the area that owns it
+        run: python3 .github/scripts/test_validation_areas.py
 
       - uses: oven-sh/setup-bun@v2
 

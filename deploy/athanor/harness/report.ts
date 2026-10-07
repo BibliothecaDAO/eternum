@@ -1,6 +1,7 @@
 import { addBattleSummaries, summarizeBattles, type BattleSummary } from "./combat";
-import type { InvalidFrame, UncaughtFailure } from "./worker-boundary";
+import type { WorkerBoundaryEvidence } from "./worker-boundary";
 import { summarizeFrontierDesign, type FrontierEvidence } from "./frontier";
+import { frontierRuleChecks } from "./frontier-rules";
 import type { HarnessRpcRequests } from "./provider";
 import { PROCESS_INTERVAL_MS } from "@bibliothecadao/eternum/automation";
 import type { LayerRoundTripEvidence } from "./layer-round-trip";
@@ -18,83 +19,13 @@ import {
   type WorkloadResult,
 } from "./driver";
 
-interface BlockStats {
-  blockProductionMs: MetricSummary;
-  blocks: { busy: number; count: number; first: number | null; last: number | null };
-  closeBlockMs: MetricSummary;
-  dbWriteMs: { max: number | null };
-  merklizationMs: { max: number | null };
-  pair: "concurrency" | "hash-cache" | null;
-  /** Required node series or block fields the window lacked; the read failed if any are listed. */
-  missingRequired: string[];
-  blockifier: Record<"transactions" | "validationAttempts" | "aborts" | "commitPhaseAborts", number | null>;
-  hashCache: Record<string, { calls?: number | null; hits?: number | null; hitRate: number | null }>;
-  l2GasPerBusyBlock: MetricSummary;
-  /** The gateway's admission over the window; queueWaitMs.p95UpperBoundMs is null past the last bucket bound. */
-  admission: {
-    queueDepth: MetricSummary;
-    acceptedTicketsPerSecond: number | null;
-    ticketsPerTransaction: number | null;
-    queueWaitMs: { count: number | null; meanMs: number | null; p95UpperBoundMs: number | null };
-  };
-  executionAmplification: {
-    attempts: number | null;
-    committed: number | null;
-    intervals: number;
-    resets: number;
-    attemptsPerCommitted: number | null;
-  };
-  mempool: {
-    lastObservedReadyTransactions: number | null;
-    lastObservedTransactions: number | null;
-    maxReadyTransactions: number | null;
-    maxTransactions: number | null;
-    maxPreconfirmedStatuses: number | null;
-    samples: number;
-  };
-  sierraGasPerBusyBlock: MetricSummary;
-  slowestBlock: {
-    batches: number | null;
-    blockNumber: number;
-    blockProductionMs: number;
-    closeBlockMs: number;
-    dbWriteMs: number;
-    mempoolMaxReadyTransactions: number | null;
-    mempoolMaxTransactions: number | null;
-    merklizationMs: number;
-    sierraGas: number | null;
-    transactions: number;
-  } | null;
-  transactions: {
-    addedToBlock: number;
-    classesDeclared: number;
-    contractsDeployed: number;
-    executed: number;
-    l2GasConsumed: number;
-    rejected: number;
-    reverted: number;
-  };
-  transactionsPerBusyBlock: { max: number | null; p50: number | null };
-  window: { since: string; until: string };
-}
-
-interface MetricSummary {
-  max: number | null;
-  p50: number | null;
-  p95: number | null;
-}
-
-interface HarnessEvidenceBeforeRun {
+/**
+ * The code the run ran. The host's state, the node's memory and its blocks are measured from the host
+ * (deploy/athanor/scripts/measures.py), which sees what a harness inside the shard's network cannot.
+ */
+export interface HarnessEvidence {
   gitDirty: boolean;
   gitRevision: string;
-  hostStateStart: Record<string, unknown> | null;
-  /** The node image as the shard pins it; null for a functional run, which records no node evidence. */
-  madaraImage: { digest: string; tag: string | null } | null;
-}
-
-export interface HarnessEvidence extends HarnessEvidenceBeforeRun {
-  blockStats: BlockStats | null;
-  hostStateEnd: Record<string, unknown> | null;
 }
 
 /** Where the driver process ran: the campaign compares figures only across the same placement. */
@@ -156,7 +87,7 @@ export interface HarnessReportInput {
   layerRoundTrips?: LayerRoundTripEvidence[];
   transportRequests?: HarnessRpcRequests;
   /** What escaped every caller in this worker, and the frames no library could parse. */
-  workerBoundary?: { uncaughtFailures: UncaughtFailure[]; invalidFrames: InvalidFrame[] };
+  workerBoundary?: WorkerBoundaryEvidence;
 }
 
 interface PercentileSummary {
@@ -183,41 +114,18 @@ export const HARNESS_OUTPUT_DIRECTORY = path.resolve(
   process.env.HARNESS_OUTPUT_DIRECTORY ?? path.resolve(import.meta.dir, "../.lab/runs"),
 );
 const REPOSITORY_ROOT = path.resolve(import.meta.dir, "../../..");
-const BLOCK_STATS_SCRIPT = path.resolve(import.meta.dir, "../scripts/block-stats.sh");
-const HOST_STATE_SCRIPT = path.resolve(import.meta.dir, "../scripts/host-state.sh");
-
-export async function collectHarnessEvidenceBeforeRun(functional = false): Promise<HarnessEvidenceBeforeRun> {
-  const madaraImage = functional ? null : pinnedNodeImage(process.env.MADARA_IMAGE);
-  // In turn, so a run that cannot name its code fails on that, never on whichever read lost a race.
-  const revision = await runRevision();
-  const hostStateStart = functional ? null : await captureHostState();
-  return { ...revision, hostStateStart, madaraImage };
-}
 
 /**
  * The code the run ran: a checkout's git revision, or, inside the shard package's init image, which carries no
  * repository, the commit the image was built from.
  */
-async function runRevision(): Promise<{ gitRevision: string; gitDirty: boolean }> {
+export async function runRevision(): Promise<HarnessEvidence> {
   const built = process.env.SHARD_REVISION?.trim();
   if (built) return { gitRevision: built, gitDirty: false };
   // The revision first: without one the status means nothing, and a run without a repository names the revision.
   const gitRevision = await runCommand(["git", "rev-parse", "HEAD"]);
   const gitStatus = await runCommand(["git", "status", "--porcelain"]);
   return { gitRevision: gitRevision.trim(), gitDirty: gitStatus.trim().length > 0 };
-}
-
-export async function finishHarnessEvidence(
-  before: HarnessEvidenceBeforeRun,
-  workloadStartedAt: string,
-  workloadEndedAt: string,
-  functional = false,
-): Promise<HarnessEvidence> {
-  const [blockStats, hostStateEnd] = await Promise.all([
-    functional ? null : captureBlockStats(workloadStartedAt, workloadEndedAt),
-    functional ? null : captureHostState(),
-  ]);
-  return { ...before, blockStats, hostStateEnd };
 }
 
 export async function writeHarnessReport(
@@ -340,19 +248,10 @@ function collectRunGas(input: HarnessReportInput): Promise<GasSummary> {
         ],
   );
   const drills = (input.layerRoundTrips ?? []).flatMap((drill) => drill.steps.map((step) => step.transaction));
-  const blockStats = input.gates?.evidence.blockStats ?? null;
   return collectGas({
     transactions: [...input.setupTransactions, ...input.workload.actions, ...drills, ...finalizations],
     reader: input.receipts,
-    node: blockStats ? { blocks: blockStats.blocks, l2GasConsumed: blockStats.transactions.l2GasConsumed } : null,
-    nativeExecution: readNativeExecution(input.gates?.evidence.hostStateStart ?? null),
   });
-}
-
-/** host-state.sh records the flag the Madara container was started with; null when the host state is missing. */
-function readNativeExecution(hostState: Record<string, unknown> | null): boolean | null {
-  const madara = hostState?.madara as { nativeExecution?: unknown } | undefined;
-  return typeof madara?.nativeExecution === "boolean" ? madara.nativeExecution : null;
 }
 
 export function analyzeHarnessResult(input: HarnessReportInput) {
@@ -384,7 +283,7 @@ export function analyzeHarnessResult(input: HarnessReportInput) {
         }),
     ...(measuredRun ? { admissionToVisibleMeasured: admissionToVisibleMissing === 0 } : {}),
     setup: setupFailures.length === 0,
-    ...(input.workload.frontier && input.functional ? frontierDesignChecks(input.workload.frontier) : {}),
+    ...(input.workload.frontier && input.functional ? frontierChecks(input.workload.frontier, actions) : {}),
     playerProgress:
       input.workload.profile !== "build-order" ||
       summarizePlayerProgress(
@@ -427,7 +326,14 @@ export function analyzeHarnessResult(input: HarnessReportInput) {
   };
 }
 
-/** FR11's design gates: only the accelerated design run plays enough days for them to mean anything. */
+/**
+ * A functional Frontier run's gates: the real-speed pass checks its preset's rates and charges; the accelerated design
+ * run, the only one that plays enough days, FR11's multi-day design gates.
+ */
+function frontierChecks(frontier: FrontierEvidence, actions: TrackedTransaction[]) {
+  return frontier.rules ? frontierRuleChecks(frontier.rules, actions) : frontierDesignChecks(frontier);
+}
+
 function frontierDesignChecks(frontier: FrontierEvidence) {
   return {
     frontierTokenCap: frontier.players.every((player) =>
@@ -463,7 +369,6 @@ function buildHarnessManifest(
       chainId: input.chainId,
       rpcUrl: input.rpcUrl,
       heraldUrl: input.heraldUrl,
-      madaraImage: input.gates?.evidence.madaraImage ?? null,
     },
     source: input.gates
       ? { gitRevision: input.gates.evidence.gitRevision, gitDirty: input.gates.evidence.gitDirty }
@@ -479,7 +384,10 @@ function buildHarnessManifest(
       profile: input.workload.profile ?? "cadence",
       functional: input.functional ?? false,
       frontier: input.workload.frontier,
-      designGates: input.workload.frontier ? summarizeFrontierDesign(input.workload.frontier) : undefined,
+      designGates:
+        input.workload.frontier && !input.workload.frontier.rules
+          ? summarizeFrontierDesign(input.workload.frontier)
+          : undefined,
       automationIntervalMs: input.workload.profile === "build-order" ? PROCESS_INTERVAL_MS : null,
       perPlayer: summarizePlayerProgress(
         input.accounts.map(({ botId }) => botId),
@@ -501,6 +409,7 @@ function buildHarnessManifest(
       battles: analysis.battles,
       uncaughtFailures: input.workerBoundary?.uncaughtFailures ?? [],
       invalidFrames: input.workerBoundary?.invalidFrames ?? [],
+      droppedUnsubscribeFrames: input.workerBoundary?.droppedUnsubscribeFrames ?? 0,
       reverts: analysis.reverts.length,
       blockingReverts: analysis.blockingReverts.length,
       revertReasons: analysis.revertReasons,
@@ -547,13 +456,6 @@ function buildHarnessManifest(
       latency: analysis.latency,
     },
     driver: input.driver,
-    evidence: input.gates
-      ? {
-          hostStateStart: input.gates.evidence.hostStateStart,
-          hostStateEnd: input.gates.evidence.hostStateEnd,
-          blockStats: input.gates.evidence.blockStats,
-        }
-      : null,
   };
 }
 
@@ -739,16 +641,6 @@ function withinTarget(value: number | null, target: number): boolean {
   return value !== null && value <= target;
 }
 
-// Block stats are the run's close-cost diagnostic, so a measured run cannot pass without them: a failed read (log
-// rotation, a window spanning a container restart, an empty window) is a failed run, never a null figure.
-async function captureBlockStats(since: string, until: string): Promise<BlockStats> {
-  const output = await runCommand([BLOCK_STATS_SCRIPT, "--since", since, "--until", until, "--json"]);
-  const summary = JSON.parse(output) as Omit<BlockStats, "window">;
-  if (summary.blocks.count === 0)
-    throw new Error(`Block stats: no closed blocks in the Madara log window ${since}..${until}`);
-  return { ...summary, window: { since, until } };
-}
-
 export async function readDriverPlacement(): Promise<DriverPlacement> {
   const [status, cgroup] = await Promise.all([readProcFile("/proc/self/status"), readProcFile("/proc/self/cgroup")]);
   return {
@@ -762,26 +654,6 @@ export async function readDriverPlacement(): Promise<DriverPlacement> {
 
 async function readProcFile(file: string): Promise<string | null> {
   return readFile(file, "utf8").catch(() => null);
-}
-
-/**
- * The node image a measured run played against, as the shard pins it by digest in its harness.env (MADARA_IMAGE).
- * It is read from the shard's configuration, never from a container name, so a run works from any host.
- */
-export function pinnedNodeImage(pinned: string | undefined): { digest: string; tag: string | null } {
-  if (!pinned) throw new Error("MADARA_IMAGE is required for a measured run: the shard's harness.env pins it");
-  const match = /^(?:(.+)@)?(sha256:[a-f0-9]{64})$/.exec(pinned.trim());
-  if (!match) throw new Error(`MADARA_IMAGE ${pinned} is not pinned by digest`);
-  return { tag: match[1] ?? null, digest: match[2]! };
-}
-
-async function captureHostState(): Promise<Record<string, unknown>> {
-  const output = await runCommand([HOST_STATE_SCRIPT]);
-  const parsed = JSON.parse(output) as unknown;
-  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
-    throw new Error("host-state.sh did not return a JSON object");
-  }
-  return parsed as Record<string, unknown>;
 }
 
 function roundMilliseconds(value: number): number {

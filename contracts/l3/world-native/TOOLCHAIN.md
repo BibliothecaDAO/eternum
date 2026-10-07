@@ -6,17 +6,15 @@ executed library's hash. Blockifier and Madara already behave correctly; the pat
 
 Upstream fix: [starknet-foundry #4601](https://github.com/foundry-rs/starknet-foundry/pull/4601).
 
-After installing the declared tools, build the same runner CI uses:
+After installing the declared tools, build the corrected runner once and put it first on `PATH`:
 
 ```bash
 bash contracts/l3/world-native/build-snforge.sh "$HOME/.local/share/eternum-native-tools/patched/bin"
 export PATH="$HOME/.local/share/eternum-native-tools/patched/bin:$PATH"
-(cd contracts/l3/world-native && scarb test)
 ```
 
-The script pins Foundry's source commit and Rust 1.94.1. The existing native-world job caches only the resulting binary,
-keyed by runner OS/architecture and the hashes of the patch, build script and version file. Cache misses build once;
-cache hits use that binary directly.
+The script pins Foundry's source commit and Rust 1.94.1. GitHub does not build or test this package: `scarb test` and
+the landing gate `contracts/l3/check-native.sh` run on the machine that lands the pull request, with this runner.
 
-Remove the patch, build script and cache step when a released Foundry version includes the fix, update `.tool-versions`,
-and restore the stock runner install in native-world. Keep the failed-library-call regression when making that change.
+Remove the patch and the build script when a released Foundry version includes the fix, and update `.tool-versions`.
+Keep the failed-library-call regression when making that change.

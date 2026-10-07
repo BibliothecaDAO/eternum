@@ -48,7 +48,8 @@ export class ArmyActionManager {
     return entityArmy?.troops.category as TroopType;
   }
 
-  private _canExplore(currentDefaultTick: number, currentArmiesTick: number): boolean {
+  /** Whether the army can explore one hex now: its stamina and its owner's food for the explore. */
+  public canExplore(currentDefaultTick: number, currentArmiesTick: number): boolean {
     const stamina = this.staminaManager.getStamina(currentArmiesTick);
 
     if (Number(stamina?.amount ?? 0n) < configManager.getExploreStaminaCost()) {
@@ -79,7 +80,8 @@ export class ArmyActionManager {
     return true;
   }
 
-  private readonly _calculateMaxTravelPossible = (currentDefaultTick: number, currentArmiesTick: number) => {
+  /** How many hexes the army can travel now, by its stamina and its owner's food. */
+  public readonly maxTravelSteps = (currentDefaultTick: number, currentArmiesTick: number) => {
     const stamina = this.staminaManager.getStamina(currentArmiesTick);
     // Calculate minimum stamina cost across all biomes for this troop type
     const minTravelStaminaCost = configManager.getMinTravelStaminaCost();
@@ -209,8 +211,8 @@ export class ArmyActionManager {
     // freshness guard checks. Callers must not substitute a visual position.
     const startPos = this._getCurrentPosition();
     // max hex based on food
-    const maxHex = this._calculateMaxTravelPossible(currentDefaultTick, currentArmiesTick);
-    const canExplore = this._canExplore(currentDefaultTick, currentArmiesTick);
+    const maxHex = this.maxTravelSteps(currentDefaultTick, currentArmiesTick);
+    const canExplore = this.canExplore(currentDefaultTick, currentArmiesTick);
 
     const actionPaths = new ActionPaths();
     const lowestStaminaUse = new Map<string, number>();

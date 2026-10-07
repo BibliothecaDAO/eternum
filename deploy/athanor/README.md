@@ -25,23 +25,27 @@ beside it under its own per-container limits.
 ## Publishing the shard package
 
 Push a reviewed `shard-v*` tag to build the init, Herald and gateway images and the downloadable Compose package. Tag
-only a commit whose own validation run is green; the workflow refuses any other before building. The release job
-verifies anonymous pulls before publishing its archive. For the first tag, an organization package administrator must
-set `eternum-shard-init`, `eternum-shard-herald` and `eternum-shard-gateway` to public; GitHub creates new container
-packages as private
+only a commit whose own validation run is green; the workflow refuses any other before building. That run compiles no
+world contracts: a change to them passed `contracts/l3/check-native.sh` before it landed, and the init image build
+compiles them again. The release job verifies anonymous pulls before publishing its archive. For the first tag, an
+organization package administrator must set `eternum-shard-init`, `eternum-shard-herald` and `eternum-shard-gateway` to
+public; GitHub creates new container packages as private
 ([registry documentation](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry)).
 After that one-time setting, retry the failed package job; future tags retain the package visibility. Tags publish
 artifacts only and never redeploy a shard.
+
+Only the newest commit of a burst of merges to `next` is guaranteed a validation run: a newer merge cancels the run of
+the commit before it. The same rule holds for the production Worker and client dispatches, which run the same check. Tag
+the newest green commit of `next`. A commit whose run was cancelled is refused with the run's id; to publish that commit
+anyway, run `gh run rerun <id>` once no newer run on `next` is in progress (a re-run joins the same group and would
+cancel it), and tag it when the re-run is green.
 
 ## Live holdovers
 
 Until the native cutover's fresh genesis, the live stack on the production box retains its `madara-lab` compose project
 and container names, chain ID and tunnel hostnames. Source-directory changes do not rename, restart or switch that
 stack. Native shards run on their own box, where nothing live runs, as `athanor-<shard>` projects; set
-`COMPOSE_PROJECT_NAME` when starting one. A measured harness run reads the node's image and container from the shard's
-`harness.env` (`MADARA_IMAGE`, pinned by digest, and `MADARA_CONTAINER`) and stops by name without them; a functional
-run reads neither. Set `MADARA_CONTAINER` by hand only when measuring a separately named running node. The three live
-holdovers are removed only at the approved traffic switch.
+`COMPOSE_PROJECT_NAME` when starting one. The three live holdovers are removed only at the approved traffic switch.
 
 Give each shard its own compose project, ports, volumes and Herald database. Announce any replacement of a shard being
 playtested. Passing a small smoke does not authorize a traffic switch or a merge into `next`.
@@ -55,14 +59,16 @@ pnpm install --frozen-lockfile
 pnpm run build:packages
 bash deploy/athanor/scripts/install-native-tools.sh "$HOME/.local/share/eternum-native-tools"
 source "$HOME/.local/share/eternum-native-tools/env"
-(cd contracts/l3/world-native && scarb build && scarb test)
 python3 scripts/generate-realm-metadata.py --check
-bun contracts/l3/world-native/scripts/generate-schema.mjs --check
+bash contracts/l3/check-native.sh
 ```
 
-The native workspace version file is authoritative. `scarb test` uses Foundry's built-in partitions and concurrency
-limit; filtered `snforge test` remains available for individual rules. Test success alone does not establish native
-execution: declare and execute the generated classes on the selected node image as well.
+The native workspace version file is authoritative. `check-native.sh` is the world contracts' landing gate: the build,
+class sizes, the recorded entrypoint ABI, fact wire declarations, schema and format drift, and the whole suite in
+Foundry's partitions on one thread. GitHub does not run it, and it is heavy (the test-profile build peaked near 18 GB
+locally): run it once, when a pull request that changes `contracts/l3` is ready to land, never while writing it. Test
+success alone does not establish native execution: declare and execute the generated classes on the selected node image
+as well.
 
 ## Isolated node and release
 
@@ -100,17 +106,17 @@ state; existing candidate chains are not rewritten or migrated by initialization
 
 The runner creates private volumes, deploys the Realms account class (refusing one that differs from the class the
 identity service approves devices for) and the operator's own Realms account, deploys the native world under it,
-registers the configuration's `presets` and starts Herald. Each shard exports upstream node metrics through its own
-pinned OTLP collector into its private run directory; `harness.env` points the existing block reporter at that output.
-The collector also scrapes `gateway:9951/metrics` (a port the package never publishes) every 5 seconds. Its cgroup
-sampler replaces the Docker stats receiver: it reads each container's `cpu.stat` through a read-only `/sys/fs/cgroup`
-mount, with no Docker socket. Every 10 seconds it appends usage and throttling counters to
-`metrics/container-metrics.jsonl` in the existing OTLP JSON format, retaining the whole run across collector restarts.
-Container ID, cgroup name and relative cgroup path identify each sample, including containers outside the shard so runs
-can show competing work. Compare cumulative `container.cpu.usage.total` deltas (nanoseconds), CPU utilization and
-throttled time with the latency window. The image builds from pinned Python and collector images; the Compose runner
-builds it from the sampler's content hash. It runs without capabilities or writable root files. Keep the unrotated
-samples with the run report. The run directory holds its compose configuration, manifest, logs and private
+registers the configuration's `presets` and starts Herald. Every shard, started by the runner or from the package, runs
+the package's `metrics` service: the release's pinned OTLP collector, which the node exports its metrics to, in 256 MiB;
+the host-side measurement reads its output. The collector also scrapes `gateway:9951/metrics` (a port the package never
+publishes) every 5 seconds. Its cgroup sampler replaces the Docker stats receiver: it reads each container's `cpu.stat`
+through a read-only `/sys/fs/cgroup` mount, with no Docker socket. Every 10 seconds it appends usage and throttling
+counters to `metrics/container-metrics.jsonl` in the existing OTLP JSON format, across collector restarts. Container ID,
+cgroup name and relative cgroup path identify each sample, including containers outside the shard so runs can show
+competing work. Compare cumulative `container.cpu.usage.total` deltas (nanoseconds), CPU utilization and throttled time
+with the latency window. `metrics.jsonl` and `container-metrics.jsonl` each rotate at 100 MB and keep two older files.
+The release builds the image from pinned Python and collector images and publishes it beside the others. It runs without
+capabilities or writable root files. The run directory holds its compose configuration, manifest, logs and private
 `harness.env`. It starts no live services. Failed runs retain their volumes for inspection; choose a fresh shard id for
 a new run.
 
@@ -161,11 +167,12 @@ underscores for dashes and `true` for a bare flag:
 `accounts_per_game`, or a launch `slot`; the harness refuses what it does not accept), which a configuration's own
 `workload` overrides key by key. A configuration may name a `package` (a `shard-v*` release, whose image digests it
 runs) and a `gateway_revision` (a commit whose `apps/gateway` the runner builds and runs instead of the package's
-gateway, for a lever trial). Each trial stores its configuration with the resolved digests, deployment, workload
-reports, start/end host snapshots and `matrix-result.json`: pass/fail, the node's anonymous memory and kept RocksDB
-snapshots every 15 s, and admission-to-visible latency split into its gateway part and the rest, overall, in bursts and
-in calm. A failed workload aborts the matrix. Each completed or failed candidate is stopped with its volumes retained;
-the next configuration starts fresh.
+gateway, for a lever trial). Each trial stores its configuration with the resolved digests, deployment, workload reports
+and `matrix-result.json`, the host-side measurement described under "Measuring a shard": pass/fail, the host's state
+before and after, the node's anonymous memory and kept RocksDB snapshots every 15 s, its block statistics and gas
+reconciliation over the workload window, and admission-to-visible latency split into its gateway part and the rest,
+overall, in bursts and in calm. A failed workload aborts the matrix. Each completed or failed candidate is stopped with
+its volumes retained; the next configuration starts fresh.
 
 Recovery drills run against a shard the runner started: `scripts/drill.py RUN_DIRECTORY`. Four drills run in turn, each
 under its own burst of four Blitz games of 24: SIGTERM and SIGKILL of the node, then of the gateway, sent once the burst
@@ -176,7 +183,8 @@ drill run. The command takes the isolated-stack lock itself before starting any 
 
 Campaign plans live in `plans/`. `plans/latency-window.json` is the latency pair and snapshot A/B window: base, the two
 gateway levers (branch `native-gateway-levers-2`, each the current next gateway plus the lever; lever3 includes lever2),
-and 30-minute runs without and with `--db-max-kept-snapshots=0` for the memory curve.
+and 30-minute runs without and with `--db-max-kept-snapshots=0` for the memory curve. It runs `shard-v0.5.0`, the first
+release whose package carries the metrics collector, and each trial's evidence is its `matrix-result.json`.
 
 The runner starts the gateway after deployment with the new world's sequencing account and address. The gateway persists
 its epoch secret in its own volume. Pending assignments are volatile across restart; recorded nonces prevent duplicate
@@ -294,14 +302,19 @@ use the matching codec.
 
 ## Gameplay validation
 
-The harness uses the shared client, native fact store, recorded admission and node transaction subscriptions:
+The harness uses the shared client, native fact store, recorded admission and node transaction subscriptions. On one of
+our shards, run it from the package directory with the environment's operator token in the shell:
 
 ```bash
-RPC_URL=http://127.0.0.1:<node-port>/rpc/v0_10_2 HERALD_URL=http://127.0.0.1:<herald-port> \
-IDENTITY_URL=https://play.dev-realms.party/api OPERATOR_TOKEN=... \
-bun deploy/athanor/harness/run.ts \
-  --bots 6 --minutes 2.5 --interval-seconds 15 --setup-concurrency 6 --workload build-order
+OPERATOR_TOKEN=... sudo --preserve-env=OPERATOR_TOKEN docker compose run --rm harness \
+  --bots 6 --minutes 6 --interval-seconds 15 --setup-concurrency 6 --workload build-order --functional
 ```
+
+The `harness` service runs the init image on the shard's network as the host user, with the shard's `harness.env`: the
+node's internal RPC, Herald, the identity API and the operator's keys. Its reports land in `data/harness/<start time>/`,
+owned by the host user. `HARNESS_CPUSET` pins the driver to CPUs of its own; set it for any large run, so the driver
+does not compete with the shard it drives. `--herald-url https://HERALD_HOST` drives the public Herald instead, as a
+player's client does.
 
 Bots are Realms accounts under the shard's own guardian, like players. Each bot's device is approved by the
 environment's identity Worker through its operator route (`POST /api/devices/bots`), which approves only a bot account's
@@ -310,13 +323,13 @@ operator token cannot take over an account that already has a device, the operat
 identity API of the environment whose guardian the shard's manifest names, and `OPERATOR_TOKEN` is that environment's
 operator token.
 
-The node and Herald URLs are required (`--rpc-url`/`RPC_URL`, `--herald-url`/`HERALD_URL`) and have no default. Use the
-node's internal URL on the box, as the shard's `harness.env` records it: the public RPC refuses writes and WebSockets,
-and the harness confirms over the node's WebSocket.
+The node and Herald URLs are required (`--rpc-url`/`RPC_URL`, `--herald-url`/`HERALD_URL`) and have no default; the
+`harness` service takes them from `harness.env`. The node's URL is always its internal one: the public RPC refuses
+writes and WebSockets, and the harness confirms over the node's WebSocket.
 
 Every bot follows build-order suggestions, updates automation each minute and explores. The full acceptance workload
 uses 96 players and the frozen run configuration. Do not substitute a short smoke for it. Keep failed runs labeled
-failed. Run reports remain in `.lab/runs/`; measurements and exact revision/image/configuration pins go in the PR.
+failed. Measurements and exact revision/image/configuration pins go in the PR.
 
 A roster run drives every player as a worker thread of one process and asserts its gates once, over the whole run, in
 `rosters-<time>/summary.json`. A run fails only on correctness: the action threshold (3,500 for the frozen 96-player
@@ -325,19 +338,23 @@ target to drive as low as possible, reported against the owner's figures and fla
 submit to pre-confirmed visible in the client p95 250 ms (`admissionToVisibleMs`), and Herald's confirmed state behind
 the node p95 500 ms (`heraldConfirmedLagMs`: Herald's confirmed notice for the transaction minus the node's
 ACCEPTED_ON_L2 for it, both on the driver's clock). Pre-confirmed, accepted-on-L2 and block close latencies are reported
-beside them as diagnostics. Host state and block stats are read once by the driver, never per worker, and a block-stats
-read that fails or finds no closed block fails the run. The summary records the driver's placement (host, pid, cpuset,
-cgroup, available threads) and, per game, the number of transactions its settlement burst took at start. Worker reports
-under `players/` carry no gates of their own.
+beside them as diagnostics. The summary records the driver's placement (host, pid, cpuset, cgroup, available threads)
+and, per game, the number of transactions its settlement burst took at start. Worker reports under `players/` carry no
+gates of their own.
 
 The capacity campaign's shapes are run configurations of the same harness. `--preset <id>` names the preset new games
 are created from (default: the game type's). The slot shape's start burst is `--bots 96 --workload burst`: four games of
 24, every bot releasing its whole plan at the same instant and its next action as soon as the previous one lands; the
 summary's `releaseSpreadMs` shows how tight the release was. The Frontier shape is `--game-type frontier` without
 `--functional`: production-length days, every player settling then mustering and exploring in the first minutes, with
-the latency and close-cost gates. `--game-type frontier --functional` is FR11's design run instead: the season is
-created with twelve-minute days so the bots play through rollovers, and the design gates (token cap, fresh armies after
-at least three rollovers) apply while the latency gates do not.
+the latency gates and, measured from the host, the close-cost evidence. `--game-type frontier --functional` is FR11's
+design run instead: the season is created with twelve-minute days so the bots play through rollovers, and the design
+gates (token cap, fresh armies after at least three rollovers) apply while the latency gates do not.
+`--game-type frontier --functional --preset 5` is the real-speed pass on the preset players play: every bot founds its
+realm, raises the troops its wheat pays for and explores, and the run checks, from the chain's facts, each producing
+building's rate against preset 5's, that raising took exactly the recipe's 2 wheat per troop and each explore or step
+exactly its food per troop, and that no submitted action was a gameplay rejection. Latency is reported, not gated. A day
+lasts a day there, so the multi-day gates stay with the design run.
 
 The slot shape proper registers the bots the way players register: `--slot <name> --launch-url <app origin>` with
 `OPERATOR_TOKEN` in the environment creates the slot closing `--slot-closes-in-seconds` ahead (default 120), registers
@@ -345,8 +362,25 @@ every bot's account into it, waits for the cron to freeze it and for each `<slot
 and then drives the games the launch service split, created and settled. The harness creates nothing itself in this
 mode; a failed launch run fails the harness run with the launch service's reason.
 
-For a node with OTLP export, set `MADARA_METRICS_FILE` to the collector's JSON-lines output. The existing
-`scripts/block-stats.py` combines close-block data with upstream counter deltas, excluding process resets. Report
-latency separately from gas and execution resources. Admission-to-visible includes queue wait and the Herald barrier.
+### Measuring a shard
+
+The harness runs inside the shard's network and sees only what a client sees. What only the host sees is measured around
+it, by one function in `scripts/measures.py` that a runner trial and a package shard share: the host's state before and
+after (`host-state.sh`), the node's anonymous memory and kept RocksDB snapshots every 15 s, read from the cgroup Docker
+placed the node in, and, over the workload window the harness's reports span, the node's closed blocks from its logs and
+its metrics export (`block-stats.sh`) and the harness's gas per block reconciled against them. Block statistics are the
+run's close-cost evidence: a window without a closed block fails the run.
+
+Measure one of our package shards from its deploy directory:
+
+```bash
+OPERATOR_TOKEN=... python3 deploy/athanor/scripts/measures.py /opt/athanor/runs/staging-f soak-1 --cpuset 20-23 -- \
+  --game-type frontier --frontier-burst booth --bots 2000 --setup-concurrency 32
+```
+
+It takes the isolated-stack lock, runs the package's `harness` service with the options after `--` on the CPUs
+`--cpuset` names (recorded as `driverCpuset`; the harness's own report records the CPUs it saw), and writes
+`data/measure/NAME/result.json` beside the harness's reports in `data/measure/NAME/workload`. Report latency separately
+from gas and execution resources. Admission-to-visible includes queue wait and the Herald barrier.
 
 Preserve the baseline image and chain data until final acceptance and the approved cutover.

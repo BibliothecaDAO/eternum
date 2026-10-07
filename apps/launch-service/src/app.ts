@@ -13,7 +13,7 @@ import type { LaunchServiceStore } from "./store";
 
 interface LaunchAppDependencies {
   config: LaunchAccess;
-  /** What the health route reports, so a deploy can tell its own answers from its predecessor's. */
+  /** What the version and health routes report, so a deploy can tell its own answers from its predecessor's. */
   deployment: { environment: string; version: string };
   identity: IdentityResolver;
   store: LaunchServiceStore;
@@ -98,6 +98,10 @@ export const createLaunchApp = (dependencies: LaunchAppDependencies) => {
   app.use("/api/factory/*", requireLauncher(dependencies.config));
   app.route("/api/factory/calendar", createCalendarRoutes(dependencies.calendar));
   app.route("/api/slots", createSlotRoutes(dependencies.slots, dependencies.playerAccount, dependencies.config));
+
+  // The deploy verifies this route: it names the running code and reads nothing else, so the shard's state, which health
+  // reports, cannot fail a deploy.
+  app.get("/api/factory/version", (context) => context.json({ service: "launch", ...dependencies.deployment }));
 
   // A failed launch stays failed until a launcher continues it, a Frontier season included: the schedule creates the
   // season once and never requeues it. Health names every failed run so that wait is never silent.

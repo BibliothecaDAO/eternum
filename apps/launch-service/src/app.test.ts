@@ -380,3 +380,13 @@ test("health warns about queued and running work left on another chain", async (
     strandedRuns: [{ chainId: "0xdead", name: "old-chain", status: "queued" }],
   });
 });
+
+test("version names the deployed code whatever state its shard work is in", async () => {
+  const { app, store } = createApp(signedOut);
+  const run = await store.enqueue("game", { environment: "madara.blitz", gameName: "old-chain" });
+  await database.db.prepare("UPDATE launch_runs SET chain_id = '0xdead' WHERE id = ?").bind(run.id).run();
+  expect((await app.request("https://play.realms.party/api/factory/health")).status).toBe(503);
+  const response = await app.request("https://play.realms.party/api/factory/version");
+  expect(response.status).toBe(200);
+  expect(await response.json()).toEqual({ service: "launch", environment: "staging", version: "test" });
+});

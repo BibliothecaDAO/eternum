@@ -39,4 +39,4 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-docker "${DOCKER_ARGS[@]}" 2>&1 | python3 "$SCRIPT_DIR/block-stats.py" "${PYTHON_ARGS[@]}"
+sudo -n docker "${DOCKER_ARGS[@]}" 2>&1 | python3 "$SCRIPT_DIR/block-stats.py" "${PYTHON_ARGS[@]}"

@@ -62,18 +62,15 @@ export interface GasSummary {
   };
   blocks: { first: number | null; last: number | null };
   /**
-   * Cairo steps and builtins per action kind, from the receipts. Unavailable, never zero, when the run executed
-   * natively (native execution reports no steps) or when the node's receipts carry no step counters at all.
+   * The L2 gas of the run's executed transactions in each block, which the host reconciles against the node's own
+   * close-block totals (deploy/athanor/scripts/measures.py).
+   */
+  l2GasByBlock: Record<string, number>;
+  /**
+   * Cairo steps and builtins per action kind, from the receipts. Unavailable, never zero, when the receipts carry no
+   * step counters, as a node executing natively reports none.
    */
   resources: { available: false; reason: string } | { available: true; byKind: Record<string, KindResources> };
-  /** The harness's gas inside the node's reported block range against the node's close-block total for it. */
-  reconciliation: {
-    nodeBlocks: { first: number; last: number } | null;
-    nodeL2Gas: number | null;
-    harnessL2GasInNodeBlocks: number | null;
-    deltaL2Gas: number | null;
-    reconciled: boolean | null;
-  };
 }
 
 /** The recorded facts the collector needs; every tracked transaction carries them. */
@@ -81,11 +78,6 @@ export type CollectedTransaction = Pick<
   TrackedTransaction,
   "actionIndex" | "botId" | "gameId" | "kind" | "outcome" | "stage" | "tick" | "transactionHash"
 >;
-
-interface NodeGasWindow {
-  blocks: { first: number | null; last: number | null };
-  l2GasConsumed: number;
-}
 
 export interface KindResources {
   transactions: number;
@@ -96,9 +88,6 @@ export interface KindResources {
 export interface CollectGasOptions {
   transactions: readonly CollectedTransaction[];
   reader: TransactionReceiptReader;
-  node: NodeGasWindow | null;
-  /** Whether the node executed natively during the run, as the host state records it; null when unknown. */
-  nativeExecution: boolean | null;
   concurrency?: number;
 }
 
@@ -107,7 +96,7 @@ const STAGES: TransactionStage[] = ["setup", "workload", "finalization"];
 export async function collectGas(options: CollectGasOptions): Promise<GasSummary> {
   const hashes = [...new Set(options.transactions.flatMap((record) => record.transactionHash ?? []))];
   const receipts = await readTransactionGas(options.reader, hashes, options.concurrency);
-  return summarizeGas(options.transactions, receipts, options.node, options.nativeExecution);
+  return summarizeGas(options.transactions, receipts);
 }
 
 /** Reads every receipt once, after the window; a missing receipt is recorded as null, never as zero gas. */
@@ -148,8 +137,6 @@ export async function attachAcceptedBlocks(
 function summarizeGas(
   transactions: readonly CollectedTransaction[],
   receipts: ReadonlyMap<string, TransactionGas | null>,
-  node: NodeGasWindow | null,
-  nativeExecution: boolean | null,
 ): GasSummary {
   const attempts = dropIdenticalResubmissions(transactions);
   const retried = new Set(laterAttemptsOfSameAction(attempts));
@@ -179,21 +166,12 @@ function summarizeGas(
     if (gas.executionStatus === "REVERTED") add(totals.failed, gas);
     if (retried.has(record)) add(totals.retried, gas);
   }
-  const nodeBlocks =
-    node && node.blocks.first !== null && node.blocks.last !== null
-      ? { first: node.blocks.first, last: node.blocks.last }
-      : null;
-  const harnessInNodeBlocks = nodeBlocks
-    ? attempts.reduce((sum, record) => {
-        const gas = record.transactionHash === undefined ? null : receipts.get(record.transactionHash);
-        const inside =
-          gas?.blockNumber !== null &&
-          gas?.blockNumber !== undefined &&
-          gas.blockNumber >= nodeBlocks.first &&
-          gas.blockNumber <= nodeBlocks.last;
-        return inside ? sum + gas.l2Gas : sum;
-      }, 0)
-    : null;
+  const l2GasByBlock: Record<string, number> = {};
+  for (const record of attempts) {
+    const gas = record.transactionHash === undefined ? null : receipts.get(record.transactionHash);
+    if (gas?.blockNumber !== null && gas?.blockNumber !== undefined)
+      l2GasByBlock[gas.blockNumber] = (l2GasByBlock[gas.blockNumber] ?? 0) + gas.l2Gas;
+  }
   return {
     transactions: {
       records: transactions.length,
@@ -219,23 +197,15 @@ function summarizeGas(
       >,
     },
     blocks: { first: blocks.length ? Math.min(...blocks) : null, last: blocks.length ? Math.max(...blocks) : null },
-    resources: summarizeResources(attempts, receipts, nativeExecution),
-    reconciliation: {
-      nodeBlocks,
-      nodeL2Gas: node?.l2GasConsumed ?? null,
-      harnessL2GasInNodeBlocks: harnessInNodeBlocks,
-      deltaL2Gas: node && harnessInNodeBlocks !== null ? node.l2GasConsumed - harnessInNodeBlocks : null,
-      reconciled: node && harnessInNodeBlocks !== null ? node.l2GasConsumed === harnessInNodeBlocks : null,
-    },
+    l2GasByBlock,
+    resources: summarizeResources(attempts, receipts),
   };
 }
 
 function summarizeResources(
   attempts: readonly CollectedTransaction[],
   receipts: ReadonlyMap<string, TransactionGas | null>,
-  nativeExecution: boolean | null,
 ): GasSummary["resources"] {
-  if (nativeExecution) return { available: false, reason: "native execution reports no Cairo steps or builtins" };
   const executed = attempts.flatMap((record) => {
     const gas = record.transactionHash === undefined ? null : receipts.get(record.transactionHash);
     return gas ? [{ record, gas }] : [];
