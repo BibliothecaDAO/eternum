@@ -56,9 +56,8 @@ const ICONS = {
   So: "/image-icons/ui-layers.png",
   Dr: "/images/buildings/construction/barracks.png",
   Ra: "/image-icons/ui-backpack.png",
-  // The seal (a choice final for the season) and the spire's reaches wait for their art.
+  // The seal (a choice final for the season) waits for its art.
   Fx: "/image-icons/ui-star.png",
-  Dp: "/image-icons/portal.png",
   // Army slots and a store's limit wait for their new icons; these stand in.
   Sl: "/image-icons/ui-people.png",
   Sg: "/image-icons/ui-gauge.png",

@@ -39,7 +39,8 @@ export const DeploySheet = ({ realm, onClose }: { realm: NativeRows["Structure"]
   const direction = deployDirection(ring, picked);
   const [sending, setSending] = useState(false);
   const rules = useExpeditionRules();
-  const clock = rules ? dayClock(rules, useNowSeconds()) : undefined;
+  const now = useNowSeconds();
+  const clock = rules ? dayClock(rules, now) : undefined;
   const goToPlace = useGoToFrontierPlace(realm);
   const wheatPerHour = new ResourceManager(setup.store, realm.entity_id).wheatPerHour(defaultTick);
 

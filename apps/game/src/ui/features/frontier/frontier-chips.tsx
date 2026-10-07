@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { formatAmount } from "@/ui/design-system/kit/amount";
 
 /** An icon and its number on the chip token: the one way Frontier shows an amount of something. */
 export const Chip = ({

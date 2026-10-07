@@ -1,5 +1,5 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { type ReactNode, type PointerEvent, useEffect, useId, useRef } from "react";
+import { type ReactNode, type PointerEvent, useEffect, useId, useLayoutEffect, useRef } from "react";
 
 import { CLOSE } from "./words";
 
@@ -72,9 +72,12 @@ const Handle = ({ onClose }: { onClose: () => void }) => {
   );
 };
 
+/** The latest value for handlers bound once, refreshed after each render rather than during it. */
 const useLatest = <T,>(value: T) => {
   const ref = useRef(value);
-  ref.current = value;
+  useLayoutEffect(() => {
+    ref.current = value;
+  });
   return ref;
 };
 
