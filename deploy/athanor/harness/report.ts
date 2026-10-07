@@ -188,17 +188,22 @@ const HOST_STATE_SCRIPT = path.resolve(import.meta.dir, "../scripts/host-state.s
 
 export async function collectHarnessEvidenceBeforeRun(functional = false): Promise<HarnessEvidenceBeforeRun> {
   const madaraImage = functional ? null : pinnedNodeImage(process.env.MADARA_IMAGE);
-  const [gitRevision, gitStatus, hostStateStart] = await Promise.all([
+  const [revision, hostStateStart] = await Promise.all([runRevision(), functional ? null : captureHostState()]);
+  return { ...revision, hostStateStart, madaraImage };
+}
+
+/**
+ * The code the run ran: a checkout's git revision, or, inside the shard package's init image, which carries no
+ * repository, the commit the image was built from.
+ */
+async function runRevision(): Promise<{ gitRevision: string; gitDirty: boolean }> {
+  const built = process.env.SHARD_REVISION?.trim();
+  if (built) return { gitRevision: built, gitDirty: false };
+  const [gitRevision, gitStatus] = await Promise.all([
     runCommand(["git", "rev-parse", "HEAD"]),
     runCommand(["git", "status", "--porcelain"]),
-    functional ? null : captureHostState(),
   ]);
-  return {
-    gitDirty: gitStatus.trim().length > 0,
-    gitRevision: gitRevision.trim(),
-    hostStateStart,
-    madaraImage,
-  };
+  return { gitRevision: gitRevision.trim(), gitDirty: gitStatus.trim().length > 0 };
 }
 
 export async function finishHarnessEvidence(
