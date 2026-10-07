@@ -5,6 +5,7 @@ import { ArrowLeft } from "@/ui/design-system/atoms/game-icons";
 
 import { paintingSources } from "../paintings";
 import { WORDS } from "../words";
+import { useAppNotice } from "./app-notice";
 import { EnvEdge } from "./env-mark";
 import { type Layout, useLayout } from "./layout";
 import { Lockup } from "./lockup";
@@ -33,10 +34,13 @@ type PageFrameProps = {
  */
 export const PageFrame = (props: PageFrameProps) => {
   const layout = useLayout();
+  // The page's own notice first (a refusal it caused); else the app's (offline, an update, install).
+  const appNotice = useAppNotice();
+  const framed = { ...props, notice: props.notice ?? appNotice };
   return (
     <div data-layout={layout} className="bg-kit-ground font-body text-kit-cream">
       <EnvEdge />
-      {layout === "phone" ? <PhoneFrame {...props} /> : <DesktopFrame {...props} />}
+      {layout === "phone" ? <PhoneFrame {...framed} /> : <DesktopFrame {...framed} />}
     </div>
   );
 };

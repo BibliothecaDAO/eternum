@@ -3,14 +3,16 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#F6C297" />
-    <title>Realms — Connection unavailable</title>
+    <meta name="theme-color" content="#130F0C" />
+    <title>Realms — Offline</title>
+    <!-- The installed app's page with no connection (spec 14): the mark on the ground, Offline and Try again. Colours are
+         the token file's (src/tokens.ts); only precached files may load here. -->
     <style>
       :root {
         color-scheme: dark;
-        font-family: Georgia, serif;
-        background: #080d10;
-        color: #f4e6cf;
+        background: #130f0c;
+        color: #f4ebdc;
+        font-family: system-ui, sans-serif;
       }
       body {
         margin: 0;
@@ -21,50 +23,44 @@
           env(safe-area-inset-left);
       }
       main {
-        max-width: 30rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1.25rem;
         margin: 2rem;
-        text-align: center;
       }
       img {
-        width: 80px;
-        height: 80px;
-        border-radius: 20px;
-        padding: 8px;
-        box-sizing: border-box;
-        background: #f6c297;
+        width: 96px;
+        height: 96px;
+        border-radius: 22px;
       }
       h1 {
-        font-size: clamp(1.6rem, 5vw, 2.2rem);
-        font-weight: normal;
-      }
-      p {
-        color: #c5bba9;
-        line-height: 1.6;
-        font-family: system-ui, sans-serif;
+        margin: 0;
+        font-size: 1.4rem;
+        font-weight: 700;
       }
       button {
-        margin-top: 1rem;
-        padding: 0.85rem 1.5rem;
-        border: 1px solid #f6c297;
-        border-radius: 0.4rem;
-        background: #f6c297;
-        color: #131b1d;
+        min-height: 48px;
+        padding: 0 1.5rem;
+        border: 2px solid #6b5230;
+        border-radius: 16px;
+        background: transparent;
+        color: #f4ebdc;
         font:
           600 1rem system-ui,
           sans-serif;
         cursor: pointer;
       }
       button:focus-visible {
-        outline: 3px solid white;
-        outline-offset: 5px;
+        outline: 3px solid #f6c297;
+        outline-offset: 3px;
       }
     </style>
   </head>
   <body>
     <main>
       <img src="/images/game-pwa-192x192.png" alt="Realms" />
-      <h1>Connection unavailable</h1>
-      <p>Realms needs an internet connection to load your game. Check your connection, then try again.</p>
+      <h1>Offline</h1>
       <button type="button" onclick="location.reload()">Try again</button>
     </main>
   </body>

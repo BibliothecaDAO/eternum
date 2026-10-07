@@ -81,6 +81,8 @@ const ICONS = {
   Pc: "/image-icons/latest-updates.png",
   Dk: "/image-icons/ui-book.png",
   Ar: "/image-icons/ui-arrow-right.png",
+  In: "/image-icons/ui-download.png",
+  Up: "/image-icons/ui-refresh.png",
 } as const;
 
 export type IconCode = keyof typeof ICONS;

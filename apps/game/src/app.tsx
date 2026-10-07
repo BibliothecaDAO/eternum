@@ -3,7 +3,7 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { QueryClientProvider } from "@tanstack/react-query";
 
 import "./index.css";
-import { PwaUpdatePrompt } from "./pwa/pwa-update-prompt";
+import { PwaUpdateRuntime } from "./pwa/pwa-update-prompt";
 import { SceneRoute } from "./scene-route";
 import { PwaInstallRuntime } from "./pwa/pwa-install-control";
 import { appQueryClient } from "./runtime/query-client";
@@ -20,6 +20,7 @@ import { PlayerPage, ProfilePage, ProfileRowPage } from "./shell/profile/profile
 import { ResultsPage } from "./shell/season-tab/results-page";
 import { SeasonPage } from "./shell/season-tab/season-page";
 import { SignInPage } from "./shell/sign-in/sign-in-page";
+import { FirstFrame } from "./shell/first-frame";
 import { SIGN_IN_PATH } from "./shell/sign-in/sign-in-route";
 
 const MotionLabView = lazy(() =>
@@ -70,7 +71,7 @@ const TermsPage = lazy(() => import("./shell/legal").then((module) => ({ default
 const PrivacyPage = lazy(() => import("./shell/legal").then((module) => ({ default: module.PrivacyPage })));
 const GameClientApp = lazy(() => import("./game-client-app").then((module) => ({ default: module.GameClientApp })));
 
-const AppFallback = () => <div className="min-h-screen bg-black" />;
+const AppFallback = FirstFrame;
 
 const LazyRoute = ({ children }: { children: ReactNode }) => <Suspense fallback={<AppFallback />}>{children}</Suspense>;
 
@@ -228,7 +229,7 @@ function App() {
   return (
     <BrowserRouter>
       <QueryClientProvider client={appQueryClient}>
-        <PwaUpdatePrompt />
+        <PwaUpdateRuntime />
         <PwaInstallRuntime />
         <Routes>{appRoutes}</Routes>
       </QueryClientProvider>

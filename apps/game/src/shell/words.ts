@@ -163,3 +163,20 @@ export const LEARN_WORDS = {
   /** A post's reading time: "4min". */
   minutes: (count: number) => `${count}min`,
 } as const;
+
+/** The app's own states: install, update, offline, a page that does not exist. */
+export const APP_STATE_WORDS = {
+  install: "Install",
+  /** The install notice's one line: where the app will live. */
+  onHomeScreen: "Realms on your home screen",
+  updateReady: "Update ready",
+  update: "Update",
+  updating: "Updating…",
+  nothingHere: "Nothing here",
+  /** The browser's own words, quoted on the install steps. */
+  share: "Share",
+  addToHomeScreen: "Add to Home Screen",
+  add: "Add",
+  file: "File",
+  addToDock: "Add to Dock",
+} as const;
