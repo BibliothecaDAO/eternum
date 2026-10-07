@@ -6,7 +6,7 @@ import { storyEventKeys } from "../sync/story-event-identity";
 import type {
   BattleEventSystemUpdate,
   BuildingSystemUpdate,
-  AttributeChosenSystemUpdate,
+  TierBoughtSystemUpdate,
   ExplorerRewardSystemUpdate,
   RelicChestOpenedSystemUpdate,
   ChestRewardSystemUpdate,
@@ -91,17 +91,16 @@ export class WorldUpdateListener {
 
   get Attributes() {
     return {
-      onAttributeChosen: (callback: (value: AttributeChosenSystemUpdate) => void) =>
-        this.onStory("AttributeChosen", (payload) => {
+      onTierBought: (callback: (value: TierBoughtSystemUpdate) => void) =>
+        this.onStory("TierBought", (payload) => {
           const attribute =
             typeof payload.attribute === "string" ? payload.attribute : Object.keys(fields(payload.attribute) ?? {})[0];
-          if (!isAttribute(attribute)) throw new Error("Malformed attribute choice");
+          if (!isAttribute(attribute)) throw new Error("Malformed tier purchase");
           callback({
             explorerId: integer(payload.explorer_id),
-            offerId: integer(payload.offer_id),
             attribute,
-            applied: integer(payload.applied),
-            lost: integer(payload.lost),
+            tier: integer(payload.tier),
+            price: integer(payload.price),
           });
         }),
     };
@@ -252,5 +251,5 @@ const siteReward = (value: unknown): SitePayoutSystemUpdate["reward"] => {
 };
 
 const ATTRIBUTES = ["Battle", "Logistics", "Scouting", "Support"] as const;
-const isAttribute = (value: unknown): value is AttributeChosenSystemUpdate["attribute"] =>
-  ATTRIBUTES.includes(value as AttributeChosenSystemUpdate["attribute"]);
+const isAttribute = (value: unknown): value is TierBoughtSystemUpdate["attribute"] =>
+  ATTRIBUTES.includes(value as TierBoughtSystemUpdate["attribute"]);

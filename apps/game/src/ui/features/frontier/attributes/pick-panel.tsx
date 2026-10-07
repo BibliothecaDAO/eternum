@@ -8,10 +8,11 @@ import { AttributeOfferCard } from "./attribute-offer-card";
 import {
   type ArmyProgressFacts,
   type Attribute,
+  ATTRIBUTES,
   attributeBadgeTarget,
   attributeLevel,
-  levelProgress,
   MAX_ATTRIBUTE_LEVEL,
+  nextTierPrice,
   type ProgressionRulesFacts,
 } from "./attributes";
 import { SheetClose, useEscapeCloses } from "../frontier-sheet";
@@ -23,11 +24,10 @@ const FLY_MS = 450;
 const FALL_MS = 200;
 
 /**
- * The pick panel (mockup 6): the army's level and its bar, then its three offer cards dealt into the thumb zone. Its
- * host places it just above the army's card, so the chosen card is seen flying down into the army's portrait. A tap
- * lifts a card, Choose commits it, and on the result the chosen card flies home while the others fall away. A refusal
- * shakes the card back and says why in a toast. The handle puts the pick off. The offer is a fact: if it leaves the
- * army's progress, the panel closes.
+ * The Upgrade panel: the army's XP, then its four attributes dealt into the thumb zone, each priced at its next tier and
+ * lit only while the army can pay. Its host places it just above the army's card, so the chosen card is seen flying down
+ * into the army's portrait. A tap lifts a card, Choose commits it, and on the result the chosen card flies home while the
+ * others fall away. A refusal shakes the card back and says why in a toast.
  */
 export const PickPanel = ({
   progress,
@@ -40,12 +40,6 @@ export const PickPanel = ({
 }) => {
   const pick = usePick();
   const open = pick !== null && pick.explorerId === progress.explorer_id;
-  const offerStands = progress.pending?.id === pick?.offer.id;
-
-  // State first: an offer answered anywhere (or by a result that never reached this screen) takes the panel with it.
-  useEffect(() => {
-    if (open && !offerStands && pick?.phase !== "chosen") closePick();
-  }, [offerStands, open, pick?.phase]);
 
   useEffect(() => {
     if (pick?.error) toast.error(pick.error);
@@ -62,21 +56,26 @@ export const PickPanel = ({
       <div className="-mb-2 flex justify-end">
         <SheetClose label="Later" disabled={busy} onClose={closePick} />
       </div>
-      <LevelBar progress={progress} rules={rules} relic={pick.offer.source === "Relic"} />
-      <div className="grid grid-cols-3 gap-2">
-        {pick.offer.choices.map((attribute, index) => (
-          <DealtCard
-            key={attribute}
-            index={index}
-            attribute={attribute}
-            level={attributeLevel(progress, attribute)}
-            amount={pick.offer.amount}
-            lifted={pick.lifted === attribute}
-            phase={pick.phase}
-            badge={attributeBadgeTarget(progress.explorer_id)}
-            onLift={() => liftChoice(attribute)}
-          />
-        ))}
+      <XpBalance progress={progress} />
+      <div className="grid grid-cols-4 gap-2">
+        {ATTRIBUTES.map((attribute, index) => {
+          const level = attributeLevel(progress, attribute);
+          const price = nextTierPrice(rules, level);
+          return (
+            <DealtCard
+              key={attribute}
+              index={index}
+              attribute={attribute}
+              level={level}
+              price={price}
+              affordable={price !== null && progress.xp >= price}
+              lifted={pick.lifted === attribute}
+              phase={pick.phase}
+              badge={attributeBadgeTarget(progress.explorer_id)}
+              onLift={() => liftChoice(attribute)}
+            />
+          );
+        })}
       </div>
       <button
         type="button"
@@ -90,39 +89,21 @@ export const PickPanel = ({
   );
 };
 
-/** The army's level in its ring and how far into it the army is; a relic's offer wears the relic mark. */
-const LevelBar = ({
-  progress,
-  rules,
-  relic,
-}: {
-  progress: ArmyProgressFacts;
-  rules: ProgressionRulesFacts;
-  relic: boolean;
-}) => {
-  const { into, needed } = levelProgress(progress, rules);
-  return (
-    <span className="flex items-center gap-3" aria-label={`Level ${progress.level}`}>
-      <span className="frontier-title flex size-10 shrink-0 items-center justify-center rounded-full border-2 border-[#dfaa54] tabular-nums">
-        {progress.level}
-      </span>
-      <span className="h-2.5 flex-1 overflow-hidden rounded-full bg-[#dfaa54]/15">
-        <span
-          className="block h-full rounded-full bg-[linear-gradient(90deg,#f7c35a,#e39001)]"
-          style={{ width: `${needed > 0 ? (into / needed) * 100 : 100}%` }}
-        />
-      </span>
-      {relic && <Sparkles className="size-7" alt="Relic" />}
-    </span>
-  );
-};
+/** The army's unspent XP, what every Upgrade is paid from. */
+const XpBalance = ({ progress }: { progress: ArmyProgressFacts }) => (
+  <span className="flex items-center justify-center gap-2" aria-label={`${progress.xp} XP`}>
+    <Sparkles className="size-6" alt="" />
+    <span className="frontier-title tabular-nums">{progress.xp} XP</span>
+  </span>
+);
 
 /** One card: dealt in from below, lifted on its tap, and on the result either flown home or dropped. */
 const DealtCard = ({
   index,
   attribute,
   level,
-  amount,
+  price,
+  affordable,
   lifted,
   phase,
   badge,
@@ -131,7 +112,8 @@ const DealtCard = ({
   index: number;
   attribute: Attribute;
   level: number;
-  amount: number;
+  price: number | null;
+  affordable: boolean;
   lifted: boolean;
   phase: string;
   badge: string;
@@ -182,7 +164,8 @@ const DealtCard = ({
       ref={card}
       type="button"
       aria-pressed={lifted}
-      aria-label={`${attribute}, level ${level} to ${Math.min(MAX_ATTRIBUTE_LEVEL, level + amount)}`}
+      aria-label={`${attribute}, tier ${level} to ${Math.min(MAX_ATTRIBUTE_LEVEL, level + 1)}`}
+      disabled={!affordable}
       onClick={onLift}
       initial={reduced ? { opacity: 0 } : { opacity: 0, y: 60 }}
       // Once chosen, the flight or the fall owns the card.
@@ -190,7 +173,7 @@ const DealtCard = ({
       transition={{ duration: DEAL_MS / 1000, delay: (index * DEAL_STAGGER_MS) / 1000, ease: EASE.outQuart }}
       className="frontier-card"
     >
-      <AttributeOfferCard attribute={attribute} level={level} amount={amount} />
+      <AttributeOfferCard attribute={attribute} level={level} amount={price === null ? 0 : 1} price={price} />
     </motion.button>
   );
 };

@@ -144,17 +144,8 @@ const playerRows = (clock: LabClock): WireRow[] => [
   { model: "ArmySlot", value: armySlot(clock, 202, 1, 150) },
   // The day's third army fell this morning: its slot keeps the tired bar for the next muster.
   { model: "ArmySlot", value: armySlot(clock, 0, 2, 40) },
-  // Army 1 reached level 2 this morning and its pick is still waiting, with more XP banking behind it.
-  {
-    model: "ArmyProgress",
-    value: {
-      ...armyProgress(clock, 201),
-      level: 2,
-      xp: 45,
-      battle: 2,
-      pending: { id: 1, source: "Level", amount: 1, choices: ["Battle", "Scouting", "Support"] },
-    },
-  },
+  // Army 1 has earned enough XP this morning for an Upgrade it has not bought yet.
+  { model: "ArmyProgress", value: { ...armyProgress(clock, 201), xp: 145, battle: 2 } },
   { model: "ArmyProgress", value: armyProgress(clock, 202) },
   { model: "ExplorerTroops", value: army(clock, 201, 1_498, 0) },
   { model: "ExplorerTroops", value: army(clock, 202, 1, 1) },
@@ -162,7 +153,7 @@ const playerRows = (clock: LabClock): WireRow[] => [
   { model: "TileOccupancy", value: armyTile(clock, 202, -3, 2) },
   // A camp beside army 1, held by 1,100 T1 knights, so the tile card has a site to show.
   ...campSite(clock, LAB_CAMP_ID, 3, 1),
-  // A Well beside army 1 and a Shrine beside army 2, whose pick is not waiting: single-use sites to use.
+  // A Well beside army 1 and a Shrine beside army 2: single-use sites to use.
   { model: "TileOccupancy", value: mapSiteTile(clock, 811, 1, 1, nativeTileOccupierConstants.WELL_OCCUPIER) },
   { model: "TileOccupancy", value: mapSiteTile(clock, 812, -2, 2, nativeTileOccupierConstants.SHRINE_OCCUPIER) },
 ];
@@ -288,13 +279,11 @@ const army = (clock: LabClock, explorerId: number, count: number, slot: number) 
 const armyProgress = (clock: LabClock, explorerId: number) => ({
   game_id: clock.gameId,
   explorer_id: explorerId,
-  level: 1,
   xp: 0,
   battle: 1,
   logistics: 1,
   scouting: 1,
   support: 1,
-  pending: null,
 });
 
 const armySlot = (clock: LabClock, explorerId: number, slot: number, stamina: number) => ({

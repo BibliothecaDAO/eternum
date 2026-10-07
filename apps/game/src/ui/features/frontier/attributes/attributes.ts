@@ -1,23 +1,17 @@
 import { battleBonusBps, logisticsStamina } from "@bibliothecadao/eternum";
 import { nativeRuleConstants, type NativeRows } from "@bibliothecadao/eternum/game-client";
 
-/** An army's progress, its pending offer and the game's XP rules, exactly as the native store carries them. */
+/** An army's XP and attribute tiers, and the game's XP rules, exactly as the native store carries them. */
 export type ArmyProgressFacts = NativeRows["ArmyProgress"];
-export type AttributeOfferFacts = NonNullable<ArmyProgressFacts["pending"]>;
-export type Attribute = AttributeOfferFacts["choices"][number];
+export type Attribute = "Battle" | "Logistics" | "Scouting" | "Support";
 export type ProgressionRulesFacts = NativeRows["ArmyProgressionRules"];
 
-/** The contract's attribute cap: levels past it are lost. */
+export const ATTRIBUTES: readonly Attribute[] = ["Battle", "Logistics", "Scouting", "Support"];
+
+/** The contract's top tier, legendary. */
 export const MAX_ATTRIBUTE_LEVEL = nativeRuleConstants.ATTRIBUTE_CAP;
 
-/** Whether an army can take a new offer, as the contract checks: none waiting, and an attribute below the cap. */
-export const canReceiveOffer = (progress: ArmyProgressFacts): boolean =>
-  progress.pending === null &&
-  [progress.battle, progress.logistics, progress.scouting, progress.support].some(
-    (level) => level < MAX_ATTRIBUTE_LEVEL,
-  );
-
-/** The army's level in one attribute. */
+/** The army's tier in one attribute, 1 (common) to 5 (legendary). */
 export const attributeLevel = (progress: ArmyProgressFacts, attribute: Attribute): number =>
   ({
     Battle: progress.battle,
@@ -26,51 +20,20 @@ export const attributeLevel = (progress: ArmyProgressFacts, attribute: Attribute
     Support: progress.support,
   })[attribute];
 
-/**
- * How far an army is into its level, where level L costs `level_step_xp × L`. While an offer waits, XP keeps banking
- * past the threshold and the level holds, so the bar stops at full.
- */
-export const levelProgress = (progress: Pick<ArmyProgressFacts, "level" | "xp">, rules: ProgressionRulesFacts) => {
-  const needed = rules.level_step_xp * progress.level;
-  return { into: Math.min(progress.xp, needed), needed };
-};
+/** What the next tier above `tier` costs in XP, as the contract prices it; null at legendary. */
+export const nextTierPrice = (rules: ProgressionRulesFacts, tier: number): number | null =>
+  [rules.uncommon_xp, rules.rare_xp, rules.epic_xp, rules.legendary_xp][tier - 1] ?? null;
 
-/**
- * The picks banked behind an army's waiting offer (backend shapes v6): that offer already spent its level's threshold,
- * and the XP it keeps earning meanwhile buys one more level and offer per threshold it covers, each claimed after the
- * pick before it.
- */
-export const bankedPicks = (
-  progress: Pick<ArmyProgressFacts, "level" | "xp">,
-  rules: ProgressionRulesFacts,
-): number => {
-  let picks = 0;
-  let xp = progress.xp;
-  for (let level = progress.level; xp >= rules.level_step_xp * level; level += 1) {
-    xp -= rules.level_step_xp * level;
-    picks += 1;
-  }
-  return picks;
-};
+/** The attributes the army can Upgrade now: below legendary, with the next tier's price in hand. */
+export const affordableUpgrades = (progress: ArmyProgressFacts, rules: ProgressionRulesFacts): Attribute[] =>
+  ATTRIBUTES.filter((attribute) => {
+    const price = nextTierPrice(rules, attributeLevel(progress, attribute));
+    return price !== null && progress.xp >= price;
+  });
 
-/** The XP an army earned between two readings, across however many levels it crossed; a pick alone earns none. */
-export const xpGained = (
-  before: Pick<ArmyProgressFacts, "level" | "xp">,
-  after: Pick<ArmyProgressFacts, "level" | "xp">,
-  rules: ProgressionRulesFacts,
-): number => {
-  if (after.level === before.level) return after.xp - before.xp;
-  let gained = levelProgress(before, rules).needed - before.xp + after.xp;
-  for (let level = before.level + 1; level < after.level; level += 1) gained += rules.level_step_xp * level;
-  return gained;
-};
-
-/** What changed in an army's progress between two readings: the XP it earned and the levels it gained. */
-export const progressChange = (
-  before: Pick<ArmyProgressFacts, "level" | "xp">,
-  after: Pick<ArmyProgressFacts, "level" | "xp">,
-  rules: ProgressionRulesFacts,
-) => ({ xp: xpGained(before, after, rules), levels: after.level - before.level });
+/** The XP an army earned between two readings; an Upgrade spends XP and earns none. */
+export const xpGained = (before: Pick<ArmyProgressFacts, "xp">, after: Pick<ArmyProgressFacts, "xp">): number =>
+  Math.max(0, after.xp - before.xp);
 
 /** Where a chosen attribute's card lands: the army's attribute badge. */
 export const attributeBadgeTarget = (explorerId: number): string => `attributes-${explorerId}`;

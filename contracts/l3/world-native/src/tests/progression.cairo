@@ -1,279 +1,144 @@
 use starknet::storage::StorageMapWriteAccess;
-use crate::progression::{
-    ArmyProgress, ArmyProgressionRules, Attribute, AttributeOffer, ChooseAttribute, OfferSource, ProgressPacking,
-};
+use crate::progression::{ArmyProgress, ArmyProgressionRules, Attribute, BuyTier, ProgressPacking};
 use crate::resources::IResourceOperationsDispatcherTrait;
 use crate::stamina::StaminaSourceTrait;
 use crate::tests::state::TroopObservationTrait;
 use crate::troops::IBattleResolutionDispatcherTrait;
 
 fn rules() -> ArmyProgressionRules {
-    super::preset_projection::frontier_progression_rules()
-}
-fn offer(id: u32) -> AttributeOffer {
-    AttributeOffer {
-        id,
-        source: OfferSource::Level,
-        amount: 1,
-        choices: array![Attribute::Battle, Attribute::Logistics, Attribute::Scouting].span(),
+    ArmyProgressionRules {
+        reveal_xp: 2, fixed_xp: 200, uncommon_xp: 100, rare_xp: 200, epic_xp: 400, legendary_xp: 800,
     }
 }
-fn choose(progress: ArmyProgress) -> ChooseAttribute {
-    let pending = progress.pending.unwrap();
-    ChooseAttribute { explorer_id: 7, offer_id: pending.id, attribute: *pending.choices.at(0) }
+fn buy(attribute: Attribute) -> BuyTier {
+    BuyTier { explorer_id: 7, attribute }
 }
 
 #[test]
-fn pending_pick_banks_two_thresholds_and_advances_only_after_each_choice() {
-    let rules = rules();
-    let mut progress = ArmyProgress { level: 2, xp: 7, pending: Some(offer(1)), ..crate::progression::initial() };
-    let banked = rules.level_step_xp * (2 + 3);
-    progress.xp += banked;
-    assert!(!crate::progression::advance_level(ref progress, rules));
-    assert_eq!(progress.level, 2);
-    assert_eq!(progress.xp, banked + 7);
-    assert_eq!(progress.pending, Some(offer(1)));
-
-    let command = choose(progress);
-    crate::progression::apply_choice(ref progress, command);
-    assert!(crate::progression::advance_level(ref progress, rules));
-    progress.pending = Some(offer(2));
-    assert_eq!(progress.level, 3);
-    assert_eq!(progress.xp, rules.level_step_xp * 3 + 7);
-    assert!(!crate::progression::advance_level(ref progress, rules));
-
-    let command = choose(progress);
-    crate::progression::apply_choice(ref progress, command);
-    assert!(crate::progression::advance_level(ref progress, rules));
-    progress.pending = Some(offer(3));
-    assert_eq!(progress.level, 4);
-    assert_eq!(progress.xp, 7);
+fn each_tier_costs_its_price_and_a_legendary_attribute_cannot_be_bought_further() {
+    let mut progress = ArmyProgress { xp: 1600, ..crate::progression::initial() };
+    for (tier, price) in array![(2_u8, 100_u32), (3, 200), (4, 400), (5, 800)] {
+        let bought = crate::progression::buy_tier(ref progress, rules(), buy(Attribute::Battle));
+        assert_eq!(bought.tier, tier);
+        assert_eq!(bought.price, price);
+    }
+    assert_eq!(progress, ArmyProgress { xp: 100, battle: 5, ..crate::progression::initial() });
+    // Any attribute may be bought while the XP lasts; nothing is rolled.
+    crate::progression::buy_tier(ref progress, rules(), buy(Attribute::Scouting));
+    assert_eq!(progress, ArmyProgress { xp: 0, battle: 5, scouting: 2, ..crate::progression::initial() });
 }
 
 #[test]
-fn threshold_is_inclusive_and_carries_the_remainder() {
-    let rules = rules();
-    let mut progress = ArmyProgress { xp: rules.level_step_xp - 1, ..crate::progression::initial() };
-    assert!(!crate::progression::advance_level(ref progress, rules));
-    progress.xp += 1;
-    assert!(crate::progression::advance_level(ref progress, rules));
-    assert_eq!(progress.level, 2);
-    assert_eq!(progress.xp, 0);
+#[should_panic(expected: "attribute is legendary")]
+fn a_legendary_attribute_refuses_another_tier() {
+    let mut progress = ArmyProgress { xp: 10000, logistics: 5, ..crate::progression::initial() };
+    crate::progression::buy_tier(ref progress, rules(), buy(Attribute::Logistics));
 }
 
 #[test]
-fn offers_are_unique_and_include_only_eligible_attributes() {
-    for capped in 0_u8..5 {
-        let progress = ArmyProgress {
-            battle: if capped > 0 {
-                5
-            } else {
-                1
-            },
-            logistics: if capped > 1 {
-                5
-            } else {
-                1
-            },
-            scouting: if capped > 2 {
-                5
-            } else {
-                1
-            },
-            support: if capped > 3 {
-                5
-            } else {
-                1
-            },
-            ..crate::progression::initial(),
-        };
-        for seed in 0_u128..32 {
-            let choices = crate::progression::draw_choices(progress, seed.into(), 77);
-            assert_eq!(choices.len(), core::cmp::min(3, (4 - capped).into()));
-            for i in 0..choices.len() {
-                assert!(crate::progression::attribute_level(progress, *choices.at(i)) < 5);
-                for j in 0..i {
-                    assert!(*choices.at(i) != *choices.at(j));
-                }
-            }
-        }
+#[should_panic(expected: "not enough XP")]
+fn a_tier_is_refused_without_its_price() {
+    let mut progress = ArmyProgress { xp: 199, battle: 2, ..crate::progression::initial() };
+    crate::progression::buy_tier(ref progress, rules(), buy(Attribute::Battle));
+}
+
+#[test]
+fn a_clear_pays_two_and_a_half_times_the_root_of_the_guard_strength() {
+    let troops = crate::rules::RESOURCE_PRECISION;
+    for (strength, xp) in array![(430_u128, 51_u32), (1300, 90), (3000, 136), (25000, 395), (49500, 556)] {
+        assert_eq!(crate::progression::clear_xp(strength * troops), xp);
     }
 }
 
 #[test]
-fn attribute_awards_cap_at_five_and_report_the_excess() {
-    for amount in 1_u8..5 {
-        let mut progress = ArmyProgress {
-            battle: 4,
-            pending: Some(AttributeOffer { amount, source: OfferSource::Relic, ..offer(1) }),
-            ..crate::progression::initial(),
-        };
-        let command = choose(progress);
-        let story = crate::progression::apply_choice(ref progress, command);
-        assert_eq!(progress.battle, 5);
-        assert_eq!(story.applied, 1);
-        assert_eq!(story.lost, amount - 1);
-        assert!(progress.pending.is_none());
-    }
-}
-
-#[test]
-#[should_panic(expected: ("stale attribute offer",))]
-fn stale_offer_is_rejected() {
-    let mut progress = ArmyProgress { pending: Some(offer(2)), ..crate::progression::initial() };
-    crate::progression::apply_choice(
-        ref progress, ChooseAttribute { explorer_id: 7, offer_id: 1, attribute: Attribute::Battle },
-    );
-}
-
-#[test]
-#[should_panic(expected: ('no pending attribute offer',))]
-fn a_second_choice_is_rejected() {
-    let mut progress = ArmyProgress { pending: Some(offer(1)), ..crate::progression::initial() };
-    let command = choose(progress);
-    crate::progression::apply_choice(ref progress, command);
-    crate::progression::apply_choice(ref progress, command);
-}
-
-#[test]
-fn packed_progress_round_trips_pending_and_full_integer_ranges() {
-    for source in array![OfferSource::Level, OfferSource::Relic, OfferSource::Shrine] {
-        for count in 0_u32..4 {
-            let choices = array![Attribute::Support, Attribute::Battle, Attribute::Scouting];
-            let progress = ArmyProgress {
-                level: 65535,
-                xp: 4294967295,
-                battle: 1,
-                logistics: 2,
-                scouting: 3,
-                support: 5,
-                pending: Some(
-                    AttributeOffer { id: 4294967295, source, amount: 4, choices: choices.span().slice(0, count) },
-                ),
-            };
-            assert_eq!(ProgressPacking::unpack(ProgressPacking::pack(progress)), progress);
-        }
-    }
-    let progress = crate::progression::initial();
+#[fuzzer(runs: 64)]
+fn packed_progress_round_trips_every_tier_and_the_full_xp_range(xp: u32, a: u8, b: u8, c: u8, d: u8) {
+    let progress = ArmyProgress {
+        xp, battle: a % 5 + 1, logistics: b % 5 + 1, scouting: c % 5 + 1, support: d % 5 + 1,
+    };
     assert_eq!(ProgressPacking::unpack(ProgressPacking::pack(progress)), progress);
 }
 
 fn read_progress(d: super::Deployment, key: crate::troops::ExplorerKey) -> ArmyProgress {
     snforge_std::interact_with_state(d.games, || crate::logic::progression::require(key))
 }
-fn award(d: super::Deployment, key: crate::troops::ExplorerKey, kind: crate::progression::XpAward) {
-    snforge_std::interact_with_state(
-        d.games,
-        || {
-            let context = crate::commands::load_context(
-                key.game_id, crate::commands::ActionContext { raw_root: 123, timestamp: 360 },
-            );
-            crate::logic::progression::award_xp(key, kind, context);
-        },
-    );
+fn write_progress(d: super::Deployment, key: crate::troops::ExplorerKey, progress: ArmyProgress) {
+    snforge_std::interact_with_state(d.games, || crate::logic::progression::write(key, progress));
 }
-fn execute_choice(d: super::Deployment, key: crate::troops::ExplorerKey, offer: AttributeOffer) -> bool {
+fn execute_buy(d: super::Deployment, key: crate::troops::ExplorerKey, attribute: Attribute) -> bool {
     super::resource_commands::execute_in_game(
         d,
         key.game_id,
-        crate::commands::Command::ChooseAttribute(
-            ChooseAttribute { explorer_id: key.explorer_id, offer_id: offer.id, attribute: *offer.choices.at(0) },
-        ),
+        crate::commands::Command::BuyTier(BuyTier { explorer_id: key.explorer_id, attribute }),
         360,
         360,
     )
 }
-
-#[test]
-fn recorded_choices_release_banked_levels_and_reject_stale_offers() {
-    let d = super::registrar::setup();
-    let (game_id, _, category) = super::registrar::expedition_home(d);
-    let (key, _) = super::registrar::expedition_armies(d, game_id, category);
-    award(d, key, crate::progression::XpAward::Clear);
-    let first = read_progress(d, key);
-    assert_eq!(first.level, 2);
-    assert_eq!(first.xp, 5);
-    for _ in 0_u8..4 {
-        award(d, key, crate::progression::XpAward::Clear);
-    }
-    let banked = read_progress(d, key);
-    assert_eq!(banked.level, 2);
-    assert_eq!(banked.xp, 105);
-    assert_eq!(banked.pending, first.pending);
-    assert!(execute_choice(d, key, first.pending.unwrap()));
-    let second = read_progress(d, key);
-    assert_eq!(second.level, 3);
-    assert_eq!(second.xp, 65);
-    assert!(second.pending.unwrap().id != first.pending.unwrap().id);
-    assert!(!execute_choice(d, key, first.pending.unwrap()));
-    assert_eq!(read_progress(d, key), second);
-    assert!(execute_choice(d, key, second.pending.unwrap()));
-    let third = read_progress(d, key);
-    assert_eq!(third.level, 4);
-    assert_eq!(third.xp, 5);
-    assert!(third.pending.is_some());
+fn bar(d: super::Deployment, key: crate::troops::ExplorerKey, game_id: u32) -> u64 {
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            let context = crate::commands::load_context(
+                game_id, crate::commands::ActionContext { raw_root: 123, timestamp: 360 },
+            );
+            crate::logic::troops::active_explorer(key, 360, context).troops.stamina.inline().amount
+        },
+    )
 }
 
 #[test]
-fn every_relic_quality_persists_its_attribute_amount_and_logistics_raises_only_the_maximum() {
+fn reveals_clears_shrines_and_relic_chests_pay_their_xp() {
+    let d = super::registrar::setup();
+    let (game_id, _, category) = super::registrar::expedition_home(d);
+    let (key, _) = super::registrar::expedition_armies(d, game_id, category);
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            crate::logic::progression::award_xp(key, crate::progression::XpAward::Reveal);
+            crate::logic::progression::award_xp(
+                key, crate::progression::XpAward::Clear(1300 * crate::rules::RESOURCE_PRECISION),
+            );
+            crate::logic::progression::grant_fixed_xp(key);
+        },
+    );
+    assert_eq!(read_progress(d, key).xp, 2 + 90 + 200);
+}
+
+#[test]
+fn buying_a_tier_charges_its_price_raises_one_tier_and_refills_thirty_stamina() {
     let d = super::registrar::setup();
     let (game_id, preset, category) = super::registrar::expedition_home(d);
     let (key, _) = super::registrar::expedition_armies(d, game_id, category);
-    for quality in 0_u8..4 {
-        snforge_std::interact_with_state(
-            d.games,
-            || {
-                crate::logic::progression::write(
-                    key, ArmyProgress { battle: 5, scouting: 5, support: 5, ..crate::progression::initial() },
-                );
-                let context = crate::commands::load_context(
-                    game_id, crate::commands::ActionContext { raw_root: 123, timestamp: 360 },
-                );
-                crate::logic::progression::grant_relic(key, quality, context);
-            },
-        );
-        let offered = read_progress(d, key);
-        let pending = offered.pending.unwrap();
-        assert_eq!(pending.amount, quality + 1);
-        assert_eq!(pending.source, OfferSource::Relic);
-        assert_eq!(pending.choices, array![Attribute::Logistics].span());
-        assert_eq!(read_progress(d, key), offered);
-        let before = snforge_std::interact_with_state(
-            d.games,
-            || {
-                let context = crate::commands::load_context(
-                    game_id, crate::commands::ActionContext { raw_root: 123, timestamp: 360 },
-                );
-                crate::logic::troops::active_explorer(key, 360, context).troops
-            },
-        );
-        assert!(execute_choice(d, key, pending));
-        let progress = read_progress(d, key);
-        assert_eq!(progress.logistics, quality + 2);
-        let after = snforge_std::interact_with_state(
-            d.games,
-            || {
-                let context = crate::commands::load_context(
-                    game_id, crate::commands::ActionContext { raw_root: 123, timestamp: 360 },
-                );
-                crate::logic::troops::active_explorer(key, 360, context).troops
-            },
-        );
-        assert_eq!(after.stamina.inline().amount, before.stamina.inline().amount);
+    let tick = 360 / preset.rules.tick_config.armies_tick_in_seconds;
+    write_progress(d, key, ArmyProgress { xp: 250, ..crate::progression::initial() });
+    set_bar(d, key, 0, tick);
+    assert!(execute_buy(d, key, Attribute::Battle));
+    assert_eq!(read_progress(d, key), ArmyProgress { xp: 150, battle: 2, ..crate::progression::initial() });
+    assert_eq!(bar(d, key, game_id), 30);
+    // 150 XP buys no rare tier: the command is refused and nothing moves.
+    assert!(!execute_buy(d, key, Attribute::Battle));
+    assert_eq!(read_progress(d, key), ArmyProgress { xp: 150, battle: 2, ..crate::progression::initial() });
+    assert_eq!(bar(d, key, game_id), 30);
+}
+
+#[test]
+fn a_logistics_tier_raises_the_maximum_and_the_bar_takes_only_the_purchase_refill() {
+    let d = super::registrar::setup();
+    let (game_id, preset, category) = super::registrar::expedition_home(d);
+    let (key, _) = super::registrar::expedition_armies(d, game_id, category);
+    let rules = preset.rules.troop_stamina_config;
+    let tick = 360 / preset.rules.tick_config.armies_tick_in_seconds;
+    let base = crate::progression::stamina_max(crate::progression::initial(), crate::troops::TroopType::Knight, rules);
+    // A full bar rises only as far as the new maximum; a low one takes the 30 a purchase refills.
+    for (amount, after) in array![(base, base + 20), (40, 70)] {
+        write_progress(d, key, ArmyProgress { xp: 100, ..crate::progression::initial() });
+        set_bar(d, key, amount, tick);
+        assert!(execute_buy(d, key, Attribute::Logistics));
+        assert_eq!(bar(d, key, game_id), after);
         assert_eq!(
-            crate::progression::stamina_max(progress, after.category, preset.rules.troop_stamina_config),
-            crate::stamina::StaminaImpl::max(
-                after.category, crate::troops::TroopTier::T1, preset.rules.troop_stamina_config,
-            )
-                + *array![20_u64, 50, 90, 150].at(quality.into()),
+            crate::progression::stamina_max(read_progress(d, key), crate::troops::TroopType::Knight, rules), base + 20,
         );
-        assert!(!execute_choice(d, key, pending));
     }
-    snforge_std::interact_with_state(
-        d.games, || crate::logic::progression::write(key, ArmyProgress { battle: 3, ..crate::progression::initial() }),
-    );
-    let troops = super::state::GameState { contract_address: d.games }.resolved_explorer(key).unwrap().troops;
-    assert_eq!(troops.boosts.incr_damage_dealt_end_tick, 0);
 }
 
 /// Sets the slot army's bar to `amount` at the current tick, through the troop write every action uses.
@@ -286,41 +151,6 @@ fn set_bar(d: super::Deployment, key: crate::troops::ExplorerKey, amount: u64, t
             crate::logic::troops::TroopState::update_troops(key, troops);
         },
     );
-}
-
-#[test]
-fn a_logistics_pick_raises_the_maximum_stamina_and_leaves_the_bar_where_it_was() {
-    let d = super::registrar::setup();
-    let (game_id, preset, category) = super::registrar::expedition_home(d);
-    let (key, _) = super::registrar::expedition_armies(d, game_id, category);
-    let rules = preset.rules.troop_stamina_config;
-    let tick = 360 / preset.rules.tick_config.armies_tick_in_seconds;
-    let base = crate::progression::stamina_max(crate::progression::initial(), crate::troops::TroopType::Knight, rules);
-    // A full bar, then one that is not: the pick moves neither, only the room above them.
-    for (amount, logistics, step) in array![(base, 1_u8, 20_u64), (40, 2, 30)] {
-        snforge_std::interact_with_state(
-            d.games,
-            || {
-                crate::logic::progression::write(
-                    key,
-                    ArmyProgress { battle: 5, logistics, scouting: 5, support: 5, ..crate::progression::initial() },
-                );
-                let context = crate::commands::load_context(
-                    game_id, crate::commands::ActionContext { raw_root: 123, timestamp: 360 },
-                );
-                crate::logic::progression::grant_relic(key, 0, context);
-            },
-        );
-        set_bar(d, key, amount, tick);
-        let maximum = crate::progression::stamina_max(read_progress(d, key), crate::troops::TroopType::Knight, rules);
-        assert!(execute_choice(d, key, read_progress(d, key).pending.unwrap()));
-        let after = super::state::GameState { contract_address: d.games }.resolved_explorer(key).unwrap().troops;
-        assert_eq!(after.stamina.inline().amount, amount);
-        assert_eq!(
-            crate::progression::stamina_max(read_progress(d, key), crate::troops::TroopType::Knight, rules),
-            maximum + step,
-        );
-    }
 }
 
 /// The damage a slot army resolved at `battle` deals to a fixed defender, as Combat computes it.
@@ -413,20 +243,10 @@ fn chosen_support_is_the_days_max_survives_death_and_stops_at_midnight() {
             crate::logic::resources::balance(home, crate::resources::LABOR)
         },
     );
-    for (key, quality) in array![(first, 1_u8), (second, 0_u8)] {
-        snforge_std::interact_with_state(
-            d.games,
-            || {
-                crate::logic::progression::write(
-                    key, ArmyProgress { battle: 5, logistics: 5, scouting: 5, ..crate::progression::initial() },
-                );
-                let context = crate::commands::load_context(
-                    game_id, crate::commands::ActionContext { raw_root: 123, timestamp: 360 },
-                );
-                crate::logic::progression::grant_relic(key, quality, context);
-            },
-        );
-        assert!(execute_choice(d, key, read_progress(d, key).pending.unwrap()));
+    // The first army buys Support to rare, the second to uncommon: the day keeps the higher.
+    for (key, support) in array![(first, 2_u8), (second, 1_u8)] {
+        write_progress(d, key, ArmyProgress { xp: 1000, support, ..crate::progression::initial() });
+        assert!(execute_buy(d, key, Attribute::Support));
     }
     let support_key = crate::production::RealmSupportKey { game_id, structure_id: 1, epoch: 3 };
     assert_eq!(

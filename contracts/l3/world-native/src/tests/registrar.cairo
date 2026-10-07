@@ -2085,14 +2085,7 @@ fn setup_frontier_chests_with_payout(
             );
     preset.rules.map_config.camp_win_probability = 0;
     preset.rules.map_config.shards_mines_win_probability = 0;
-    preset
-        .economy
-        .progression =
-            Some(
-                crate::progression::ArmyProgressionRules {
-                    level_step_xp: 1000, ..super::preset_projection::frontier_progression_rules(),
-                },
-            );
+    preset.economy.progression = Some(super::preset_projection::frontier_progression_rules());
     preset
         .rules
         .command_mask = (*read_txt(@FileTrait::new("tests/fixtures/frontier-command-mask.txt")).at(0))
@@ -2199,13 +2192,12 @@ fn chest_reveal_time(d: super::Deployment, key: ExplorerKey, from: u64) -> u64 {
 }
 
 #[test]
-fn frontier_closed_chest_persists_opens_once_and_rejects_pending_maxed_and_expired_armies() {
+fn frontier_closed_chest_persists_opens_once_and_rejects_expired_armies() {
     let (d, game_id, key) = setup_frontier_chests();
     let time = chest_reveal_time(d, key, 360);
     let army = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
     let coord = crate::geometry::neighbor(army.coord, 0);
     let tile = crate::geometry::tile_key(game_id, coord);
-    let progress_before = snforge_std::interact_with_state(d.games, || crate::logic::progression::require(key));
     let mut spy = snforge_std::spy_events();
     assert!(
         execute_in_game(
@@ -2216,36 +2208,22 @@ fn frontier_closed_chest_persists_opens_once_and_rejects_pending_maxed_and_expir
     assert_eq!(closed.category, crate::map::CHEST_OCCUPIER);
     assert!(!closed.is_structure);
     assert_eq!(GameState { contract_address: d.games }.resolved_explorer(key).unwrap().coord, army.coord);
-    let progress = snforge_std::interact_with_state(d.games, || crate::logic::progression::require(key));
-    assert!(progress.pending.is_none());
-    assert_eq!(progress.level, progress_before.level);
     // Reads at the end of the day see the same closed occupancy, without a transaction.
     start_cheat_block_timestamp_global(399);
     assert_eq!(snforge_std::interact_with_state(d.games, || crate::logic::map::occupancy(tile).unwrap()), closed);
     let open = Command::OpenRelicChest(crate::relics::OpenChest { explorer_id: key.explorer_id, coord });
-    let offer = crate::progression::AttributeOffer {
-        id: 77,
-        source: crate::progression::OfferSource::Level,
-        amount: 1,
-        choices: array![crate::progression::Attribute::Battle].span(),
-    };
-    snforge_std::interact_with_state(
-        d.games,
-        || crate::logic::progression::write(key, crate::progression::ArmyProgress { pending: Some(offer), ..progress }),
-    );
-    assert!(!execute_in_game(d, game_id, open, 399, 399));
+    // An army with every attribute legendary still opens it: chests no longer deal attribute offers.
     snforge_std::interact_with_state(
         d.games,
         || crate::logic::progression::write(
-            key, crate::progression::ArmyProgress { battle: 5, logistics: 5, scouting: 5, support: 5, ..progress },
+            key,
+            crate::progression::ArmyProgress {
+                battle: 5, logistics: 5, scouting: 5, support: 5, ..crate::logic::progression::require(key),
+            },
         ),
     );
-    assert!(!execute_in_game(d, game_id, open, 399, 399));
-    assert_eq!(snforge_std::interact_with_state(d.games, || crate::logic::map::occupancy(tile).unwrap()), closed);
-    snforge_std::interact_with_state(d.games, || crate::logic::progression::write(key, progress));
     assert!(execute_in_game(d, game_id, open, 399, 399));
     assert!(snforge_std::interact_with_state(d.games, || crate::logic::map::occupancy(tile)).is_none());
-    choose_pending_attribute(d, game_id, key.explorer_id, 399);
     assert!(!execute_in_game(d, game_id, open, 399, 399));
     // A different unopened chest becomes inaccessible at the epoch boundary.
     let expired_coord = crate::geometry::neighbor(army.coord, 1);
@@ -2608,33 +2586,6 @@ fn expedition_death_releases_the_slot_with_the_final_battle_bar() {
     assert_eq!(reused.stamina, vacant.stamina);
 }
 
-fn choose_pending_attribute(d: super::Deployment, game_id: u32, explorer_id: u32, timestamp: u64) {
-    let progress = snforge_std::interact_with_state(
-        d.games, || crate::logic::progression::require(ExplorerKey { game_id, explorer_id }),
-    );
-    if let Some(offer) = progress.pending {
-        let mut choice = *offer.choices.at(0);
-        for attribute in offer.choices {
-            if crate::progression::attribute_level(
-                progress, *attribute,
-            ) < crate::progression::attribute_level(progress, choice) {
-                choice = *attribute;
-            }
-        }
-        assert!(
-            execute_in_game(
-                d,
-                game_id,
-                Command::ChooseAttribute(
-                    crate::progression::ChooseAttribute { explorer_id, offer_id: offer.id, attribute: choice },
-                ),
-                timestamp,
-                timestamp,
-            ),
-        );
-    }
-}
-
 #[test]
 fn frontier_floor_counts_seven_player_reveals_across_armies_and_depths_then_resets_at_midnight() {
     let discovery = crate::expeditions::FrontierDiscoveryRules {
@@ -2794,14 +2745,13 @@ fn frontier_lords_commitment_and_exhaustion_are_atomic_and_keep_the_rolled_quali
             1
         });
         assert_eq!(relics.chest_pity(game_id, actor, 0), 1);
+        // An exhausted budget falls back to the relic, which pays the fixed XP whatever its quality.
         let progress = snforge_std::interact_with_state(d.games, || crate::logic::progression::require(key));
-        if exhausted {
-            let offer = progress.pending.unwrap();
-            assert_eq!(offer.amount, 3);
-            assert_eq!(offer.source, crate::progression::OfferSource::Relic);
+        assert_eq!(progress.xp, if exhausted {
+            preset.economy.progression.unwrap().fixed_xp
         } else {
-            assert!(progress.pending.is_none());
-        }
+            0
+        });
         assert!(!execute_in_game(d, game_id, open, 361, 361));
         let mut rewards = 0;
         for (_, event) in spy.get_events().emitted_by(d.games).events.span() {
@@ -2964,10 +2914,7 @@ fn frontier_shrine_and_well_persist_once_and_use_the_public_progress_and_slot() 
     assert_eq!(snforge_std::interact_with_state(d.games, || crate::logic::map::occupancy(tile).unwrap()), closed);
     assert!(execute_in_game(d, game_id, command, 360, 360));
     let progress = snforge_std::interact_with_state(d.games, || crate::logic::progression::require(key));
-    assert_eq!(progress.level, 2);
-    assert_eq!(progress.xp, 7);
-    assert_eq!(progress.pending.unwrap().source, crate::progression::OfferSource::Shrine);
-    assert_eq!(progress.pending.unwrap().amount, 1);
+    assert_eq!(progress.xp, 7 + 200);
     assert!(snforge_std::interact_with_state(d.games, || crate::logic::map::occupancy(tile)).is_none());
     assert!(!execute_in_game(d, game_id, command, 360, 360));
     snforge_std::interact_with_state(
@@ -2975,18 +2922,6 @@ fn frontier_shrine_and_well_persist_once_and_use_the_public_progress_and_slot() 
     );
     assert!(!execute_in_game(d, game_id, command, 360, 360));
     assert!(snforge_std::interact_with_state(d.games, || crate::logic::map::occupancy(tile)).is_some());
-    snforge_std::interact_with_state(
-        d.games,
-        || {
-            crate::logic::progression::write(
-                key,
-                crate::progression::ArmyProgress {
-                    pending: None, battle: 5, logistics: 5, scouting: 5, support: 5, ..progress,
-                },
-            );
-        },
-    );
-    assert!(!execute_in_game(d, game_id, command, 360, 360));
     snforge_std::interact_with_state(
         d.games,
         || {
@@ -3002,7 +2937,7 @@ fn frontier_shrine_and_well_persist_once_and_use_the_public_progress_and_slot() 
             crate::logic::troops::TroopState::save(key, army.into_record());
         },
     );
-    // Wells may be used while a pick is pending, and persist into the same occupied slot.
+    // A well's stamina persists into the same occupied slot.
     assert!(execute_in_game(d, game_id, command, 360, 360));
     let filled = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
     assert_eq!(filled.troops.stamina.inline().amount, 70);

@@ -309,8 +309,11 @@ function buildEconomy(
         ? new CairoOption(CairoOptionVariant.None)
         : new CairoOption(CairoOptionVariant.Some, {
             reveal_xp: progression.revealXp,
-            clear_xp: progression.clearXp,
-            level_step_xp: progression.levelStepXp,
+            fixed_xp: progression.fixedXp,
+            uncommon_xp: progression.uncommonXp,
+            rare_xp: progression.rareXp,
+            epic_xp: progression.epicXp,
+            legendary_xp: progression.legendaryXp,
           }),
     chests:
       chests === null

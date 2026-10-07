@@ -29,6 +29,7 @@ import {
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useStoryEvents } from "@/hooks/store/use-story-events-store";
 import { knownBalance } from "@/ui/utils/utils";
+import { affordableUpgrades } from "../attributes/attributes";
 import { useMemo } from "react";
 import { troopsOnHand, type useExpeditionRules } from "../frontier-home";
 import type { GuideFacts } from "./guide-script";
@@ -107,9 +108,11 @@ const readGuideFacts = (
     onMap: clock.onMap,
     armiesTired:
       stamina.length === armies.length && stamina.length > 0 && stamina.every((bar) => bar.current < exploreCost),
-    pickWaiting: armies.some(
-      (army) => store.get("ArmyProgress", { game_id: army.game_id, explorer_id: army.explorer_id })?.pending,
-    ),
+    pickWaiting: armies.some((army) => {
+      const progress = store.get("ArmyProgress", { game_id: army.game_id, explorer_id: army.explorer_id });
+      const xpRules = store.get("ArmyProgressionRules", { game_id: army.game_id });
+      return progress !== undefined && xpRules !== undefined && affordableUpgrades(progress, xpRules).length > 0;
+    }),
     ...readSiteFirsts(store, realm.game_id),
     firstResearchAffordable: canAffordFirstResearch(store, realm, clock.tick),
     armyBelowSurface: armies.some(

@@ -152,18 +152,15 @@ pub mod RelicState {
             crate::logic::progression::rules(game_id)
         }
         fn grant_army_xp(
-            ref self: ComponentState<TContractState>,
-            key: ExplorerKey,
-            award: crate::progression::XpAward,
-            context: crate::commands::ActionContext,
+            ref self: ComponentState<TContractState>, key: ExplorerKey, award: crate::progression::XpAward,
         ) {
-            crate::logic::progression::award_xp(key, award, crate::commands::load_context(key.game_id, context));
+            crate::logic::progression::award_xp(key, award);
         }
-        fn choose_attribute(
+        fn buy_tier(
             ref self: ComponentState<TContractState>,
             game_id: u32,
             actor: ContractAddress,
-            command: crate::progression::ChooseAttribute,
+            command: crate::progression::BuyTier,
             context: crate::commands::ActionContext,
             mut story_cursor: crate::ownership::StoryCursor,
         ) -> ((), crate::ownership::StoryCursor) {
@@ -172,9 +169,10 @@ pub mod RelicState {
             let key = ExplorerKey { game_id, explorer_id: command.explorer_id };
             let explorer = crate::logic::troops::authorized_explorer(key, actor, context.timestamp, context);
             let mut progress = crate::logic::progression::require(key);
-            // Logistics raises only the maximum, which stamina_max reads from the stored level.
-            let choice = crate::progression::apply_choice(ref progress, command);
-            if choice.attribute == crate::progression::Attribute::Support {
+            let bought = crate::progression::buy_tier(
+                ref progress, crate::logic::progression::rules(game_id).expect('missing progression rules'), command,
+            );
+            if bought.attribute == crate::progression::Attribute::Support {
                 crate::production::IRealmSupportDispatcherTrait::raise_realm_support(
                     crate::production::IRealmSupportLibraryDispatcher {
                         class_hash: get_dep_component!(@self, Life).classes(game_id).resources.read(),
@@ -184,8 +182,8 @@ pub mod RelicState {
                     crate::commands::action_context(context),
                 );
             }
-            crate::logic::progression::offer_earned_level(key, ref progress, context);
             crate::logic::progression::write(key, progress);
+            self.refill_stamina(key, explorer, crate::rules::TIER_STAMINA_REFILL, context);
             let index = crate::ownership::StoryCursorTrait::next(ref story_cursor);
             self
                 .emit(
@@ -198,7 +196,7 @@ pub mod RelicState {
                         owner: Some(actor),
                         timestamp: context.timestamp,
                         tx_hash: starknet::get_tx_info().unbox().transaction_hash,
-                        story: crate::ownership::Story::AttributeChosen(choice),
+                        story: crate::ownership::Story::TierBought(bought),
                     },
                 );
             ((), story_cursor)
@@ -236,9 +234,9 @@ pub mod RelicState {
                 crate::geometry::tile_key(game_id, command.coord),
             );
             if category == crate::map::SHRINE_OCCUPIER {
-                crate::logic::progression::grant_shrine(key, context);
+                crate::logic::progression::grant_fixed_xp(key);
             } else {
-                self.grant_well(key, explorer, context);
+                self.refill_stamina(key, explorer, crate::rules::WELL_STAMINA, context);
             }
             ((), story_cursor)
         }
@@ -386,10 +384,12 @@ pub mod RelicState {
         impl Life: ReleaseState::HasComponent<TContractState>,
         +Drop<TContractState>,
     > of InternalTrait<TContractState> {
-        fn grant_well(
+        /// Adds stamina to a slot army's bar, up to its own maximum: a well's, and a bought tier's.
+        fn refill_stamina(
             self: @ComponentState<TContractState>,
             key: ExplorerKey,
             explorer: crate::troops::ExplorerTroops,
+            amount: u8,
             context: ExecutionContext,
         ) {
             let progress = crate::logic::progression::require(key);
@@ -397,7 +397,7 @@ pub mod RelicState {
                 progress, explorer.troops.category, context.rules.unbox().troop_stamina_config,
             );
             let mut stamina = explorer.troops.stamina.inline();
-            stamina.amount = core::cmp::min(maximum, stamina.amount + crate::rules::WELL_STAMINA.into());
+            stamina.amount = core::cmp::min(maximum, stamina.amount + amount.into());
             crate::troops::IArmySlotStaminaDispatcherTrait::army_slot_stamina(
                 crate::troops::IArmySlotStaminaLibraryDispatcher {
                     class_hash: self.logic_classes(key.game_id).relics.read(),
@@ -478,7 +478,6 @@ pub mod RelicState {
             ref story_cursor: crate::ownership::StoryCursor,
         ) {
             let explorer_key = ExplorerKey { game_id, explorer_id: command.explorer_id };
-            crate::logic::progression::assert_can_receive_offer(crate::logic::progression::require(explorer_key));
             let game = context.game.unbox();
             let game_rules = context.rules.unbox();
             let spacing = crate::logic::settlement::rules(game_id).spacing;
@@ -503,7 +502,7 @@ pub mod RelicState {
                 roll.kind = crate::relics::ChestKind::Relic;
             }
             if roll.kind == crate::relics::ChestKind::Relic {
-                crate::logic::progression::grant_relic(explorer_key, roll.quality, context);
+                crate::logic::progression::grant_fixed_xp(explorer_key);
             }
             self.write_chest_counters(game_id, actor, depth, epoch, roll, old_pity, tokens);
             let reward = crate::relics::ChestReward {

@@ -157,19 +157,10 @@ it.each([
   }
 });
 
-it("shows applied attribute levels and lost excess from history without reconstructing current levels", () => {
+it("shows the tier an Upgrade reached and the XP it cost from history", () => {
   expect(
-    buildStoryEventPresentation(
-      story("AttributeChosen", {
-        explorer_id: 7,
-        offer_id: 9,
-        source: "Relic",
-        attribute: "Logistics",
-        applied: 1,
-        lost: 3,
-      }),
-    ),
-  ).toMatchObject({ title: "Logistics +1", description: "Army · 3 levels lost at the cap" });
+    buildStoryEventPresentation(story("TierBought", { explorer_id: 7, attribute: "Logistics", tier: 3, price: 200 })),
+  ).toMatchObject({ title: "Logistics rare", description: "Army · 200 XP" });
 });
 
 it("renders the site's recorded kind and payout without a current structure", () => {
@@ -303,7 +294,7 @@ describe("every story the chain can tell", () => {
     GuardDeleteStory: { structure_id: 5, slot: 0 },
     TroopsTransferred: { source: { Explorer: 7 }, target: { Explorer: 8 }, amount },
     ChestReward: { explorer_id: 7, kind: "Token", quality: 3, depth: 1, lords_exhausted: false },
-    AttributeChosen: { explorer_id: 7, offer_id: 1, source: "Level", attribute: "Battle", applied: 1, lost: 0 },
+    TierBought: { explorer_id: 7, attribute: "Battle", tier: 2, price: 100 },
     SitePayout: { structure_id: 5, explorer_id: 7, site_id: 9, kind: "Camp", reward: { resource_type: 23, amount } },
     BattleEvent: {
       attacker_id: 7,

@@ -360,7 +360,14 @@ describe("native presets", () => {
       stamina_initial: 150,
     });
     expect(design.economy.relics).toEqual([]);
-    expect(design.economy.progression.unwrap()).toEqual({ reveal_xp: 10, clear_xp: 25, level_step_xp: 20 });
+    expect(design.economy.progression.unwrap()).toEqual({
+      reveal_xp: 2,
+      fixed_xp: 200,
+      uncommon_xp: 100,
+      rare_xp: 200,
+      epic_xp: 400,
+      legendary_xp: 800,
+    });
     expect(design.settlement.realms.resources).toEqual([
       { resource_type: 26, amount: 1_500_000_000_000n },
       { resource_type: 35, amount: 1_000_000_000_000n },

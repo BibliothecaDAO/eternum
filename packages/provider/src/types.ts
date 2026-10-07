@@ -72,7 +72,7 @@ export enum TransactionType {
   ENTER_DEPTH = "enter_depth",
   RESEARCH = "research",
   UPGRADE_BUILDING = "upgrade_building",
-  CHOOSE_ATTRIBUTE = "choose_attribute",
+  BUY_TIER = "buy_tier",
   EXPLORER_CREATE = "explorer_create",
   EXPLORER_ADD = "explorer_add",
   EXPLORER_DELETE = "explorer_delete",

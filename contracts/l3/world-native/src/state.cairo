@@ -62,7 +62,7 @@ pub type Storage =
         crate::trade::TradeOrder,
         crate::troops::ExplorerRecord,
         crate::troops::ArmySlotRecord,
-        crate::progression::PackedArmyProgress,
+        crate::progression::ArmyProgress,
         crate::village::VillagePass,
     >;
 

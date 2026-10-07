@@ -61,7 +61,15 @@ export interface NativePreset {
     wellBps: number;
     emptyRevealLimit: number;
   };
-  progression: null | { revealXp: number; clearXp: number; levelStepXp: number };
+  /** XP per reveal, the fixed award (a shrine, and a relic chest until relics leave chests), and each tier's price. */
+  progression: null | {
+    revealXp: number;
+    fixedXp: number;
+    uncommonXp: number;
+    rareXp: number;
+    epicXp: number;
+    legendaryXp: number;
+  };
   chests: null | {
     relicProbability: number;
     tokenCap: number;

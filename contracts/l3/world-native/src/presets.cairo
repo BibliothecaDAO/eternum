@@ -68,7 +68,12 @@ pub fn validate(preset: PresetDefinition) {
     assert!(preset.economy.progression.is_some() == (rules.epoch_seconds != 0), "progression requires expedition");
     if let Some(progression) = preset.economy.progression {
         assert!(
-            progression.reveal_xp != 0 && progression.clear_xp != 0 && progression.level_step_xp != 0,
+            progression.reveal_xp != 0
+                && progression.fixed_xp != 0
+                && progression.uncommon_xp != 0
+                && progression.rare_xp != 0
+                && progression.epic_xp != 0
+                && progression.legendary_xp != 0,
             "empty progression rules",
         );
     }

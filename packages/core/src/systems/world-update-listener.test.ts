@@ -37,10 +37,10 @@ describe("native scene updates", () => {
     });
   });
 
-  it("reads an army's attribute choice in either enum form, and refuses one it cannot name", () => {
+  it("reads an army's Upgrade in either enum form, and refuses one it cannot name", () => {
     const { store, listener } = fixture();
     const chosen = vi.fn();
-    listener.Attributes.onAttributeChosen(chosen);
+    listener.Attributes.onTierBought(chosen);
     const story = (attribute: unknown) =>
       store.applyEvent({
         model: "StoryEvent",
@@ -51,17 +51,17 @@ describe("native scene updates", () => {
           index: 0,
           timestamp: 100,
           story: {
-            AttributeChosen: { explorer_id: 7, offer_id: 3, source: "Level", attribute, applied: 1, lost: 2 },
+            TierBought: { explorer_id: 7, attribute, tier: 3, price: 200 },
           },
         },
       });
     story("Scouting");
     story({ Battle: {} });
     expect(chosen.mock.calls.map(([update]) => update)).toEqual([
-      { explorerId: 7, offerId: 3, attribute: "Scouting", applied: 1, lost: 2 },
-      { explorerId: 7, offerId: 3, attribute: "Battle", applied: 1, lost: 2 },
+      { explorerId: 7, attribute: "Scouting", tier: 3, price: 200 },
+      { explorerId: 7, attribute: "Battle", tier: 3, price: 200 },
     ]);
-    expect(() => story("Luck")).toThrow("Malformed attribute choice");
+    expect(() => story("Luck")).toThrow("Malformed tier purchase");
   });
 
   it("carries a cleared site's payout with the tile and losses of the exchange that won it", () => {

@@ -46,13 +46,12 @@ export type SitePayoutSystemUpdate = {
   /** Whole troops the army lost in the winning exchange. */
   troopsLost: number;
 };
-/** An army's answer to its attribute offer: the attribute raised, the levels it gained and any lost past the cap. */
-export type AttributeChosenSystemUpdate = {
+/** An army's Upgrade: the attribute raised, the tier it reached and the XP it paid. */
+export type TierBoughtSystemUpdate = {
   explorerId: ID;
-  offerId: number;
   attribute: "Battle" | "Logistics" | "Scouting" | "Support";
-  applied: number;
-  lost: number;
+  tier: number;
+  price: number;
 };
 /** A Frontier chest opened on capture: what the army found and how deep it stood. */
 export type ChestRewardSystemUpdate = {

@@ -38,17 +38,24 @@ const home = {
     order: 0,
   },
 };
-const progress = (pending: Record<string, unknown> | null) => ({
+const progress = (xp: number) => ({
   game_id: 1,
   explorer_id: 201,
-  level: 2,
-  xp: 0,
+  xp,
   battle: 2,
   logistics: 1,
   scouting: 4,
   support: 1,
-  pending,
 });
+const RULES = {
+  game_id: 1,
+  reveal_xp: 2,
+  fixed_xp: 200,
+  uncommon_xp: 100,
+  rare_xp: 200,
+  epic_xp: 400,
+  legendary_xp: 800,
+};
 const chestStory = (index: number, kind: "Relic" | "Token", quality: number) => ({
   model: "StoryEvent",
   key: `0xc${index}`,
@@ -74,7 +81,7 @@ const Probe = () => {
 afterEach(() => act(() => closeChestMoment()));
 
 describe("a chest's result", () => {
-  it("ends the player's opening with its LORDS at once, and a relic once its offer is on the army", () => {
+  it("ends the player's opening at once, with its LORDS or with the fixed XP a relic pays", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     vi.spyOn(configManager, "getActiveGameId").mockReturnValue(1);
     useAccountStore.setState({ account: { address: PLAYER } as never });
@@ -82,7 +89,8 @@ describe("a chest's result", () => {
     store.applyFacts([
       set("0x1", "Structure", home),
       set("0x2", "ExplorerTroops", { ...rowFixture.expected.value, game_id: 1, explorer_id: 201, owner: 100 }),
-      set("0x3", "ArmyProgress", progress(null)),
+      set("0x3", "ArmyProgress", progress(0)),
+      set("0x6", "ArmyProgressionRules", RULES),
       set("0x4", "ChestRules", {
         game_id: 1,
         relic_probability: 9_000,
@@ -109,21 +117,9 @@ describe("a chest's result", () => {
 
     act(() => beginChestOpening({ x: 10, y: 10 }));
     act(() => store.applyEvent(chestStory(2, "Relic", 1)));
-    expect(seen.moment?.result).toBeNull();
-    const offer = { id: 5, source: "Relic", amount: 2, choices: ["Battle", "Scouting", "Support"] };
-    act(() => store.applyFacts([set("0x3", "ArmyProgress", progress(offer))] as never));
     expect(seen.moment?.result).toMatchObject({
       outcome: { kind: "relic", intensity: 1, lordsSpent: false },
-      relic: {
-        offer: {
-          amount: 2,
-          choices: [
-            { attribute: "Battle", level: 2 },
-            { attribute: "Scouting", level: 4 },
-            { attribute: "Support", level: 1 },
-          ],
-        },
-      },
+      relic: { xp: 200 },
     });
     act(() => root.unmount());
   });
@@ -140,7 +136,8 @@ it.each(["relic", "missing", "story"] as const)(
     store.applyFacts([
       set("0x1", "Structure", home),
       set("0x2", "ExplorerTroops", { ...rowFixture.expected.value, game_id: 1, explorer_id: 201, owner: 100 }),
-      set("0x3", "ArmyProgress", progress(null)),
+      set("0x3", "ArmyProgress", progress(0)),
+      set("0x6", "ArmyProgressionRules", RULES),
       set("0x4", "ChestRules", {
         game_id: 1,
         relic_probability: 9000,
@@ -177,24 +174,12 @@ it.each(["relic", "missing", "story"] as const)(
     await act(async () => {
       store.applyFacts([
         set("0x5", "TileOccupancy", null),
-        set(
-          "0x3",
-          "ArmyProgress",
-          progress(
-            result === "relic"
-              ? { id: 5, source: "Relic", amount: 2, choices: ["Battle", "Scouting", "Support"] }
-              : null,
-          ),
-        ),
+        set("0x3", "ArmyProgress", progress(result === "relic" ? 200 : 0)),
       ] as never);
       if (result === "story") store.applyEvent(chestStory(1, "Token", 3));
     });
-    if (result === "relic")
-      expect(seen.moment?.result).toMatchObject({
-        outcome: { kind: "relic", intensity: 1 },
-        relic: { offer: { amount: 2 } },
-      });
-    else if (result === "story") expect(seen.moment?.result).toMatchObject({ outcome: { kind: "lords", lords: 6000 } });
+    // Without its story a relic's XP cannot be told from any other, so the opening ends unnamed.
+    if (result === "story") expect(seen.moment?.result).toMatchObject({ outcome: { kind: "lords", lords: 6000 } });
     else expect(seen.moment).toBeNull();
     act(() => root.unmount());
   },

@@ -90,7 +90,7 @@ pub const COMMAND_ROUTES: [CommandRoute; 71] = [
     CommandRoute { logic: 5, selector: selector!("set_entity_name"), items_offset: None, batch: false },
     CommandRoute { logic: 16, selector: selector!("enter_depth"), items_offset: None, batch: false },
     CommandRoute { logic: 3, selector: selector!("research"), items_offset: None, batch: false },
-    CommandRoute { logic: 15, selector: selector!("choose_attribute"), items_offset: None, batch: false },
+    CommandRoute { logic: 15, selector: selector!("buy_tier"), items_offset: None, batch: false },
     CommandRoute { logic: 3, selector: selector!("upgrade_building"), items_offset: None, batch: false },
     CommandRoute { logic: 15, selector: selector!("interact_site"), items_offset: None, batch: false },
 ];
@@ -192,7 +192,7 @@ pub enum Command {
     SetEntityName: crate::names::SetEntityName,
     EnterDepth: crate::commands::EnterDepth,
     Research: crate::research::Research,
-    ChooseAttribute: crate::progression::ChooseAttribute,
+    BuyTier: crate::progression::BuyTier,
     UpgradeBuilding: crate::buildings::ChangeBuilding,
     InteractSite: crate::relics::InteractSite,
 }

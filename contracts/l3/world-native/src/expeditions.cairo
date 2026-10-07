@@ -13,6 +13,9 @@ pub enum SiteKind {
 pub struct ExpeditionSite {
     pub kind: SiteKind,
     pub initial_guard_count: u128,
+    /// The guard's troops times their tier strength when the site appeared, in resource precision: what a clear's XP
+    /// reads, while the payout counts troops alone.
+    pub initial_guard_strength: u128,
     pub cleared: bool,
 }
 

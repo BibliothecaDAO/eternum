@@ -772,18 +772,11 @@ function planExpedition(client: GameClient, game: HarnessGame, player: Player): 
   const stamina = rules.troop_stamina_config;
   for (const army of activeArmies(client, player)) {
     const amount = game.explorerStamina(army.explorer_id, game.currentTicks().armies);
-    const offer = client.setup.store.require("ArmyProgress", {
-      game_id: client.gameId,
-      explorer_id: army.explorer_id,
-    }).pending;
-    if (offer)
+    const upgrade = affordableUpgrade(client, army.explorer_id);
+    if (upgrade)
       return command(client, player, {
-        kind: "ChooseAttribute",
-        value: {
-          explorer_id: army.explorer_id,
-          offer_id: offer.id,
-          attribute: { kind: offer.choices[0]!, value: undefined },
-        },
+        kind: "BuyTier",
+        value: { explorer_id: army.explorer_id, attribute: { kind: upgrade, value: undefined } },
       });
     const coord = entityMapPosition(client.setup.store, client.gameId, army.explorer_id);
     const neighbors = getNeighborHexes(coord.x, coord.y);
@@ -901,6 +894,24 @@ function planExpedition(client: GameClient, game: HarnessGame, player: Player): 
   }
 }
 /** An army beside a guard site waits to attack it: exploring on would walk it away from the capture it found. */
+/** The army's lowest attribute it can afford to Upgrade, as a player spreading XP would; none while it cannot pay. */
+function affordableUpgrade(client: GameClient, explorerId: number) {
+  const progress = client.setup.store.require("ArmyProgress", { game_id: client.gameId, explorer_id: explorerId });
+  const rules = client.setup.store.require("ArmyProgressionRules", { game_id: client.gameId });
+  const prices = [rules.uncommon_xp, rules.rare_xp, rules.epic_xp, rules.legendary_xp];
+  const tiers = [
+    ["Battle", progress.battle],
+    ["Logistics", progress.logistics],
+    ["Scouting", progress.scouting],
+    ["Support", progress.support],
+  ] as const;
+  const [attribute] =
+    tiers
+      .filter(([, tier]) => tier < prices.length + 1 && progress.xp >= prices[tier - 1]!)
+      .toSorted((a, b) => a[1] - b[1])[0] ?? [];
+  return attribute;
+}
+
 export function holdsForSite(stamina: number, attackRequirement: number): boolean {
   return stamina < attackRequirement;
 }

@@ -293,7 +293,7 @@ pub mod TroopsLogic {
             }
             if let Some(kind) = site_kind {
                 assert!(rules.epoch_seconds != 0, "site outside expedition");
-                crate::logic::expeditions::create_site(key, kind, guards);
+                crate::logic::expeditions::create_site(key, kind, guards, rules.troop_limit_config);
             }
         }
         fn add_starting_guard(

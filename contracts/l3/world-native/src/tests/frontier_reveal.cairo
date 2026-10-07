@@ -47,7 +47,9 @@ fn frontier_reveal_draws_only_essence_or_labor_evenly_over_ten_thousand_reveals(
 #[test]
 fn site_payout_keeps_initial_scaled_guard_count_and_has_no_clock_factor() {
     let initial = 1001 * RESOURCE_PRECISION + 1;
-    let camp = ExpeditionSite { kind: SiteKind::Camp, initial_guard_count: initial, cleared: false };
+    let camp = ExpeditionSite {
+        kind: SiteKind::Camp, initial_guard_count: initial, initial_guard_strength: initial, cleared: false,
+    };
     assert_eq!(
         site_reward(camp).unwrap(), crate::resources::ResourceAmount { resource_type: LABOR, amount: initial / 2 },
     );
@@ -72,9 +74,17 @@ fn site_payout_counts_all_initial_guard_troops_without_tier_weighting() {
             Troops { count: 700 * RESOURCE_PRECISION, tier, ..Default::default() },
             Troops { count: 400 * RESOURCE_PRECISION, tier, ..Default::default() },
         ];
-        crate::logic::expeditions::create_site(key, SiteKind::Camp, guards.span());
+        let limits = super::recorded::rules().troop_limit_config;
+        crate::logic::expeditions::create_site(key, SiteKind::Camp, guards.span(), limits);
         let site = crate::logic::expeditions::expedition_site(key).unwrap();
         assert_eq!(site.initial_guard_count, 1100 * RESOURCE_PRECISION);
+        // A clear's XP reads the same troops by their tier's strength.
+        let strength: u128 = match tier {
+            TroopTier::T1 => limits.t1_tier_strength.into(),
+            TroopTier::T2 => limits.t2_tier_strength.into(),
+            TroopTier::T3 => limits.t3_tier_strength.into(),
+        };
+        assert_eq!(site.initial_guard_strength, 1100 * RESOURCE_PRECISION * strength);
         assert_eq!(site_reward(site).unwrap().amount, 550 * RESOURCE_PRECISION);
         let cleared = crate::logic::expeditions::clear_site(key);
         assert_eq!(cleared.initial_guard_count, site.initial_guard_count);

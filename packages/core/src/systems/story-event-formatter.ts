@@ -40,6 +40,7 @@ const resourceNameMap = resources.reduce<Record<number, string>>((acc, resource)
 }, {});
 
 const CHEST_QUALITY_LABELS = ["Common", "Uncommon", "Rare", "Epic"];
+const ATTRIBUTE_TIER_LABELS = ["", "common", "uncommon", "rare", "epic", "legendary"];
 const CHEST_KIND_LABELS: Record<string, string> = { Relic: "relic", Token: "token claim" };
 const EXPEDITION_GROUND_LABELS = ["the surface", "Ethereal I", "Ethereal II", "Ethereal III"];
 
@@ -152,17 +153,14 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
       icon: "prize",
     };
   },
-  AttributeChosen: (event, payload, components) => {
+  TierBought: (event, payload, components) => {
     const attribute = formatEnum(payload.attribute);
-    const applied = toNumber(payload.applied);
-    const lost = toNumber(payload.lost);
-    if (!attribute || applied === null || lost === null) throw new Error("Incomplete attribute choice story");
+    const tier = labelAt(ATTRIBUTE_TIER_LABELS, payload.tier);
+    const price = toNumber(payload.price);
+    if (!attribute || !tier || price === null) throw new Error("Incomplete tier purchase story");
     return {
-      title: `${attribute} +${applied}`,
-      description: joinPieces([
-        describeExplorer(payload.explorer_id, components),
-        lost > 0 ? `${lost} ${lost === 1 ? "level" : "levels"} lost at the cap` : undefined,
-      ]),
+      title: `${attribute} ${tier}`,
+      description: joinPieces([describeExplorer(payload.explorer_id, components), `${price} XP`]),
       icon: "scroll",
     };
   },

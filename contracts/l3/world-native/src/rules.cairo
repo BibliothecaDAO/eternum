@@ -550,3 +550,4 @@ pub struct SpeedConfig {
 }
 
 pub const WELL_STAMINA: u8 = 60;
+pub const TIER_STAMINA_REFILL: u8 = 30;

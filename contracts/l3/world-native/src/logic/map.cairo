@@ -485,7 +485,6 @@ pub mod MapLogic {
                     crate::progression::IArmyProgressionLibraryDispatcher { class_hash: classes.relics.read() },
                     crate::troops::ExplorerKey { game_id, explorer_id },
                     crate::progression::XpAward::Reveal,
-                    crate::commands::action_context(context),
                 );
             }
             self

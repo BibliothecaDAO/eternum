@@ -131,9 +131,9 @@ const stories: Record<string, { fields: number[]; expected: unknown }> = {
       reward: { resource_type: 23n, amount: 500n },
     },
   },
-  AttributeChosen: {
-    fields: [7, 9, 1, 1, 2, 1],
-    expected: { explorer_id: 7n, offer_id: 9n, source: "Relic", attribute: "Logistics", applied: 2n, lost: 1n },
+  TierBought: {
+    fields: [7, 1, 3, 200],
+    expected: { explorer_id: 7n, attribute: "Logistics", tier: 3n, price: 200n },
   },
   ChestReward: {
     fields: [17, 7, 3, 2, 2, 3, 0],

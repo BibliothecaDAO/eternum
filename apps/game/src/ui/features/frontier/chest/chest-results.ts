@@ -1,20 +1,18 @@
 import { useGame } from "@/hooks/context/game-context";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { type ChestRewardSystemUpdate, configManager, WorldUpdateListener } from "@bibliothecadao/eternum";
-import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
+import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { rowInGameSyncScope } from "@bibliothecadao/eternum/game-sync";
 import { TileOccupier } from "@bibliothecadao/types";
 import { useEffect } from "react";
-import { attributeLevel } from "../attributes/attributes";
 import { isPlayersArmy } from "../frontier-home";
 import { type ChestResult, recoverChestOpening, useChestMoment, resolveChestOpening } from "./chest-moment";
 import { readChestOutcome } from "./chest-outcome";
 import { relicName } from "./relic-name";
 
 /**
- * The player's own chest results end the opening they tapped: a LORDS roll at once, a relic once its attribute offer
- * is on the army. The contract grants that offer with the story, and an army can only open a chest with no offer
- * waiting, so the army's pending Relic offer is this chest's.
+ * The player's own chest results end the opening they tapped, from the story alone: a LORDS roll, or a relic and the
+ * fixed XP it paid the army.
  */
 export const useChestResults = (): void => {
   const { setup } = useGame();
@@ -55,9 +53,8 @@ export const useChestResults = (): void => {
         if (!scope.known || !rowInGameSyncScope("TileOccupancy", keys, scope.known)) return;
         const tile = setup.store.get("TileOccupancy", keys);
         if (tile?.category === TileOccupier.Chest) return;
-        const progress = setup.store.get("ArmyProgress", { game_id: opening.gameId, explorer_id: opening.explorerId });
-        const result = progress && recoveredRelic(progress);
-        recoverChestOpening(opening, result ?? null);
+        // A lost story leaves nothing on the army to tell a relic from other XP, so the opening ends unnamed.
+        recoverChestOpening(opening, null);
       });
     const stop = setup.store.subscribe(recover);
     recover();
@@ -68,42 +65,11 @@ export const useChestResults = (): void => {
   }, [moment, setup.store]);
 };
 
-/** The moment's result from a chest story and the facts beside it; null while a relic's offer has yet to arrive. */
-const readChestResult = (
-  store: Pick<NativeFactStore, "get" | "require">,
-  reward: ChestRewardSystemUpdate,
-): ChestResult | null => {
+/** The moment's result from a chest story and the game's rules. */
+const readChestResult = (store: Pick<NativeFactStore, "require">, reward: ChestRewardSystemUpdate): ChestResult => {
   const gameId = configManager.getActiveGameId();
   const outcome = readChestOutcome(reward, store.require("ChestRules", { game_id: gameId }));
   if (outcome.kind === "lords") return { outcome };
-  const progress = store.get("ArmyProgress", { game_id: gameId, explorer_id: reward.explorerId });
-  const offer = progress?.pending;
-  if (!progress || offer?.source !== "Relic") return null;
-  return {
-    outcome,
-    relic: {
-      name: relicName(reward.resultKey),
-      offer: relicOffer(progress, offer),
-    },
-  };
+  const xp = store.require("ArmyProgressionRules", { game_id: gameId }).fixed_xp;
+  return { outcome, relic: { name: relicName(reward.resultKey), xp } };
 };
-
-/** The contract grants quality + 1 levels; a lost story leaves the offer intact but no flavour name or token roll. */
-const recoveredRelic = (progress: NativeRows["ArmyProgress"]): ChestResult | null => {
-  const offer = progress.pending;
-  if (offer?.source !== "Relic") return null;
-  const quality = offer.amount - 1;
-  if (quality !== 0 && quality !== 1 && quality !== 2 && quality !== 3) throw new Error("Unknown relic quality");
-  return {
-    outcome: { kind: "relic", intensity: quality },
-    relic: { name: "Relic", offer: relicOffer(progress, offer) },
-  };
-};
-
-const relicOffer = (
-  progress: NativeRows["ArmyProgress"],
-  offer: NonNullable<NativeRows["ArmyProgress"]["pending"]>,
-) => ({
-  amount: offer.amount,
-  choices: offer.choices.map((attribute) => ({ attribute, level: attributeLevel(progress, attribute) })),
-});

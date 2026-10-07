@@ -40,7 +40,7 @@ export const frontierPreset: NativePreset = {
       "Research",
       "UpgradeBuilding",
       "EnterDepth",
-      "ChooseAttribute",
+      "BuyTier",
       "OpenRelicChest",
       "InteractSite",
       "SetEntityName",
@@ -143,7 +143,7 @@ export const frontierPreset: NativePreset = {
     wellBps: 300,
     emptyRevealLimit: 7,
   },
-  progression: { revealXp: 10, clearXp: 25, levelStepXp: 20 },
+  progression: { revealXp: 2, fixedXp: 200, uncommonXp: 100, rareXp: 200, epicXp: 400, legendaryXp: 800 },
   chests: {
     relicProbability: 9000,
     tokenCap: 1,

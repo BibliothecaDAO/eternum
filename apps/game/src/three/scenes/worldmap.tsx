@@ -10,7 +10,7 @@ import { isMapPreviewAction } from "./worldmap-action-preview-policy";
 import { projectHexToScreen } from "@/three/utils/project-hex-to-screen";
 import { playRevealYield } from "@/ui/motion/moments/reveal-yield";
 import { playSiteClear } from "@/ui/features/frontier/sites/site-clear-moment";
-import { type ArmyProgressFacts, progressChange } from "@/ui/features/frontier/attributes/attributes";
+import { type ArmyProgressFacts, xpGained } from "@/ui/features/frontier/attributes/attributes";
 import { playArmyProgress } from "@/ui/features/frontier/attributes/progress-moment";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { openArmyDeploymentPicker } from "@/ui/features/military/utils/open-army-deployment-picker";
@@ -1734,20 +1734,10 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private playOwnArmyProgress(before: ArmyProgressFacts, after: ArmyProgressFacts): void {
-    const rules = this.game.store.require("ArmyProgressionRules", { game_id: after.game_id });
-    const { xp, levels } = progressChange(before, after, rules);
-    if (xp <= 0 && levels <= 0) return;
+    const xp = xpGained(before, after);
+    if (xp <= 0) return;
     const hex = this.getArmyDisplayPosition(after.explorer_id);
-    playArmyProgress({
-      xp,
-      levels,
-      at: hex ? projectHexToScreen(hex, this.camera) : null,
-      burst: () => {
-        if (!hex) return;
-        const world = getWorldPositionForHex(hex);
-        this.playBurst(new Vector3(world.x, 0.1, world.z), "level-up", 1);
-      },
-    });
+    playArmyProgress({ xp, at: hex ? projectHexToScreen(hex, this.camera) : null });
   }
 
   /**

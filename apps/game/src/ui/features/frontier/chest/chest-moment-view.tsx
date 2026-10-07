@@ -10,7 +10,7 @@ import { TickNumber } from "@/ui/motion/tick-number";
 import { ResourcesIds } from "@bibliothecadao/types";
 import { AnimatePresence, motion } from "framer-motion";
 import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
-import { AttributeOfferCard } from "../attributes/attribute-offer-card";
+import { XP_STAR_ICON } from "../attributes/xp-star";
 import { Chip } from "../frontier-chips";
 import {
   advanceChestMoment,
@@ -28,7 +28,6 @@ const COIN_RING_DEGREES = [-160, -125, -90, -55, -20, 200, 160];
 const SCRIM_OPACITY = 0.55;
 const OPENING_CAPTION_AFTER_MS = 2_500;
 const CARD_FAN_DELAY_MS = 280;
-const CARD_STAGGER_MS = 80;
 /** A LORDS result closes itself this long after its count settles; a relic waits for the player. */
 const LORDS_DISMISS_AFTER_MS = 2_500;
 
@@ -326,15 +325,9 @@ const RelicReveal = ({
           <RarityChip intensity={outcome.intensity} />
         </RarityCard>
       </Pop>
-      <div className="grid w-full grid-cols-3 gap-2">
-        {relic.offer.choices.map((choice, index) => (
-          <Pop key={choice.attribute} delayMs={skipped ? 0 : CARD_FAN_DELAY_MS + index * CARD_STAGGER_MS}>
-            <span className="frontier-card block">
-              <AttributeOfferCard attribute={choice.attribute} level={choice.level} amount={relic.offer.amount} />
-            </span>
-          </Pop>
-        ))}
-      </div>
+      <Pop delayMs={skipped ? 0 : CARD_FAN_DELAY_MS}>
+        <Chip tone="gain" label="XP" icon={<img src={XP_STAR_ICON} alt="" />} value={`+${relic.xp}`} />
+      </Pop>
     </>
   );
 };

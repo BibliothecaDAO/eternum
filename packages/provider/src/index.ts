@@ -698,25 +698,20 @@ export class EternumProvider extends EventEmitter {
     );
   }
 
-  /** Answers an army's pending attribute offer with one of its three choices. */
-  public async choose_attribute(
+  /** Upgrades one attribute of an army by one tier, paid from its XP. */
+  public async buy_tier(
     props: SystemProps.SystemSigner & {
       explorerId: number;
-      offerId: number;
       attribute: "Battle" | "Logistics" | "Scouting" | "Support";
     },
   ) {
     return this.submitCommand(
       props.signer,
       {
-        kind: "ChooseAttribute",
-        value: {
-          explorer_id: props.explorerId,
-          offer_id: props.offerId,
-          attribute: { kind: props.attribute, value: undefined },
-        },
+        kind: "BuyTier",
+        value: { explorer_id: props.explorerId, attribute: { kind: props.attribute, value: undefined } },
       },
-      TransactionType.CHOOSE_ATTRIBUTE,
+      TransactionType.BUY_TIER,
     );
   }
 
