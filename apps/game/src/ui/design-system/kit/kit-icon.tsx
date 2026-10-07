@@ -75,6 +75,9 @@ const ICONS = {
   Dv: "/image-icons/ui-monitor.png",
   Dp: "/image-icons/portal.png",
   Xs: "/image-icons/ui-share.png",
+  Bl: "/image-icons/ui-bell.png",
+  Wt: "/image-icons/ui-backpack.png",
+  Xo: "/image-icons/leave.png",
 } as const;
 
 export type IconCode = keyof typeof ICONS;

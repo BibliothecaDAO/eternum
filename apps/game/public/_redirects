@@ -8,6 +8,9 @@
 /season / 200
 /results/:id / 200
 /profile / 200
+/profile/account / 200
+/profile/notifications / 200
+/profile/devices / 200
 /sign-in / 200
 /learn / 200
 /news / 200

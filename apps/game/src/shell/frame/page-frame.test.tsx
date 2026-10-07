@@ -22,6 +22,8 @@ const SIZES = [
  * and carries Back.
  */
 const TAB_PATHS = new Set(["/", "/season", "/learn", "/profile", "/nothing-here", "/results/0x111"]);
+/** Profile's rows: pages with Back on a phone, the open panel beside Profile's rows on desktop. */
+const PROFILE_PANELS = new Set(["/profile/account", "/profile/notifications", "/profile/devices"]);
 /** Full-screen steps: no tabs, the desktop bar keeps the lockup alone (sign-in, a Blitz lobby). */
 const STEP_PATHS = ["/sign-in", "/blitz/0x111"];
 const CONTROLS = "a[href], button, input, select, textarea";
@@ -73,7 +75,7 @@ describe.each(SIZES)("every page at %i × %i keeps each control in its band", (w
     setViewportWidth(width);
     const container = await renderPath(path);
     const top = band(container, "top");
-    const isTabPage = TAB_PATHS.has(path);
+    const isTabPage = TAB_PATHS.has(path) || (layout === "desktop" && PROFILE_PANELS.has(path));
     const isStep = STEP_PATHS.includes(path);
 
     // Every control on the page sits in one of the frame's bands.

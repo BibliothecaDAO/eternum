@@ -30,7 +30,7 @@ import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { ContractAddress } from "@bibliothecadao/types";
 import { Pencil } from "@/ui/design-system/atoms/game-icons";
 import { type ReactNode, useState } from "react";
-import { NotificationSettings } from "./notification-settings";
+import { NotificationsCard } from "@/shell/profile/notifications";
 import { PwaInstallControl } from "@/pwa/pwa-install-control";
 
 export const SETTINGS_POPOVER_ID = "settings";
@@ -43,7 +43,7 @@ export const SettingsPanel = () => (
     <GuideSettings />
     <AudioSettings />
     <VideoSettings />
-    <NotificationSettings />
+    <NotificationsCard />
     <ShortcutsSection />
     <PwaInstallControl />
     <RendererSettings />

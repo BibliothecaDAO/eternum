@@ -21,6 +21,8 @@
   Cache-Control: no-cache
 /profile
   Cache-Control: no-cache
+/profile/*
+  Cache-Control: no-cache
 /sign-in
   Cache-Control: no-cache
 /p/*

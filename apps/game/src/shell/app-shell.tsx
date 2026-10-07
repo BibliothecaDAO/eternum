@@ -1,4 +1,7 @@
+import { lazy, Suspense } from "react";
 import { Outlet } from "react-router-dom";
+
+import { useIdentitySession } from "@/hooks/context/identity-session";
 
 import { useFrontierType } from "@/ui/features/frontier/use-frontier-type";
 import { useBootDocumentState } from "@/ui/modules/boot-loader";
@@ -6,7 +9,7 @@ import { useOutsidePlaySession } from "@/utils/spectator-session";
 
 /**
  * Every screen outside a game, in the player app's one visual system. Each page composes itself with PageFrame; this
- * route only marks the app ready and holds the type. It carries no three.js and no game asset; a game loads only under
+ * route marks the app ready, holds the type and runs the signed-in player's account sync. It carries no three.js and no game asset; a game loads only under
  * `/g/:chain/:game`.
  */
 export const AppShell = () => {
@@ -15,5 +18,18 @@ export const AppShell = () => {
   useOutsidePlaySession();
   // The shell wears the player app's one visual system, the same as Frontier's HUD.
   useFrontierType();
-  return <Outlet />;
+  const { session } = useIdentitySession();
+  return (
+    <>
+      <Outlet />
+      {session && (
+        <Suspense fallback={null}>
+          <AccountRuntime />
+        </Suspense>
+      )}
+    </>
+  );
 };
+
+/** The gameplay account syncs for a signed-in player on either layout; an anonymous visit never downloads it. */
+const AccountRuntime = lazy(() => import("./account-runtime"));

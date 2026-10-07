@@ -1,7 +1,7 @@
 import { IdentityRequestError } from "@realms-world/identity";
 
 /** What the player asked for; each names its own failure. */
-export type IdentityAction = "discord" | "send-code" | "code" | "link" | "unlink";
+export type IdentityAction = "discord" | "send-code" | "code" | "link" | "unlink" | "portrait";
 
 export class WrongNetworkError extends Error {}
 
@@ -24,6 +24,7 @@ const FALLBACK: Record<IdentityAction, string> = {
   code: "Sign-in did not complete. Try again in a moment.",
   link: "The wallet was not linked. Try again in a moment.",
   unlink: "The wallet was not unlinked. Try again in a moment.",
+  portrait: "The portrait was not saved. Try again in a moment.",
 };
 
 /** One sentence per failure the player can act on; the detail goes to the console. */
@@ -33,4 +34,13 @@ export const failureSentence = (action: IdentityAction, cause: unknown): string 
   if (code && NAMED_REFUSALS[code]) return NAMED_REFUSALS[code];
   if (cause instanceof WrongNetworkError) return "Switch this wallet to Starknet mainnet.";
   return FALLBACK[action];
+};
+
+/** The server names why a name was refused (NAME_TAKEN, NAME_INVALID:<rule>); the player reads one sentence. */
+export const nameRefusal = (cause: unknown): string => {
+  const reason = cause instanceof Error ? cause.message : "";
+  if (reason === "NAME_TAKEN") return "That name is taken. Try another.";
+  if (reason.startsWith("NAME_INVALID:")) return `Names use ${reason.slice("NAME_INVALID:".length)}.`;
+  console.error("identity_name_claim_failed", { error: reason });
+  return "The name was not saved. Try again in a moment.";
 };

@@ -17,29 +17,6 @@ export function PanelTitle({ children }: { children: ReactNode }) {
 const BUTTON_BASE =
   "inline-flex items-center justify-center gap-2 rounded-lg px-5 py-3 font-ui text-[13px] font-semibold uppercase tracking-[0.1em] transition-colors disabled:cursor-not-allowed disabled:opacity-50";
 
-export function GoldButton({
-  children,
-  onClick,
-  disabled,
-  type = "button",
-}: {
-  children: ReactNode;
-  onClick?: () => void;
-  disabled?: boolean;
-  type?: "button" | "submit";
-}) {
-  return (
-    <button
-      type={type}
-      onClick={onClick}
-      disabled={disabled}
-      className={`${BUTTON_BASE} border border-gold/60 bg-gold text-brown hover:brightness-110`}
-    >
-      {children}
-    </button>
-  );
-}
-
 export function GhostButton({
   children,
   onClick,

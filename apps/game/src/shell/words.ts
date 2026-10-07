@@ -104,3 +104,45 @@ export const SEASON_WORDS = {
   mistLifted: "The mist lifted",
   mistWon: "The mist grew too strong",
 } as const;
+
+/** Profile and its pages: Account, Devices and Notifications, their rows, sheets and confirms. */
+export const PROFILE_WORDS = {
+  account: "Account",
+  notifications: "Notifications",
+  devices: "Devices",
+  name: "Name",
+  portrait: "Portrait",
+  signInMethods: "Sign-in",
+  discord: "Discord",
+  email: "email",
+  wallet: "Wallet",
+  linkWallet: "Link wallet",
+  unlink: "Unlink",
+  unlinking: "Unlinking…",
+  signOut: "Sign out",
+  signOutAsk: "Sign out?",
+  signOutCost: "This device forgets your account until you sign in again.",
+  unlinkAsk: "Unlink this wallet?",
+  unlinkCost: "Your account keeps no wallet until you link one again.",
+  /** The safe choice on a confirm: the primary. */
+  keep: "Keep",
+  cancel: "Cancel",
+  remove: "Remove",
+  removing: "Removing…",
+  removeAsk: (device: string) => `Remove ${device}?`,
+  removeCost: "It signs out there and cannot enter a game until it signs in again.",
+  thisDevice: "This device",
+  /** A device the account knows but that has no name yet. */
+  device: (lastFour: string) => `Device ${lastFour}`,
+  deviceRemoved: "This device was removed",
+  blocked: "Blocked",
+  blockedLine: "The browser blocks alerts for Realms. Allow them in its site settings.",
+  install: "Install",
+} as const;
+
+/** The three alert levels (ruled) and what each carries, in one line. */
+export const LEVEL_WORDS = {
+  off: { word: "Off", line: "Nothing" },
+  important: { word: "Important", line: "Your day ends in an hour, your Blitz starts, a message to you" },
+  all: { word: "All", line: "Plus every clear, fight and build" },
+} as const;

@@ -1,88 +1,43 @@
+import { NavLink } from "react-router-dom";
+
+import { identityUsername, useIdentitySession } from "@/hooks/context/identity-session";
+import { usePlayerProfile } from "@/hooks/use-player-profile";
 import { playerPortraitUrl } from "@/services/identity/player-portrait";
-import { useAccountStore } from "@/hooks/store/use-account-store";
-import { lazy, Suspense } from "react";
-import { create } from "zustand";
+import { Button } from "@/ui/design-system/kit/button";
+import { PlayerName } from "@/ui/design-system/kit/player-name";
 
-import {
-  IDENTITY_POPOVER_ID,
-  identityUsername,
-  type IdentitySessionStatus,
-  useIdentitySession,
-} from "@/hooks/context/identity-session";
-import { usePopoverStore } from "@/hooks/store/use-popover-store";
-import type { Session } from "@realms-world/identity";
-
+import { useRealmsPlayer } from "./herald";
 import { useRequestSignIn } from "./sign-in/sign-in-route";
+import { SIGN_IN_WORDS, WORDS } from "./words";
 
 /**
- * Where the account runtime renders the signed-in player's panel. The runtime (Starknet wallets, the gameplay account)
- * loads only once a player signs in, so an anonymous visit never downloads it.
+ * The desktop top bar's player chip: the portrait and name, opening Profile; Sign in before a session; Claim name for
+ * a session without a name (the flow opens on its name step).
  */
-export const useIdentityPanelSlot = create<{
-  element: HTMLElement | null;
-  setElement: (element: HTMLElement | null) => void;
-}>((set) => ({ element: null, setElement: (element) => set({ element }) }));
-
-const AccountRuntime = lazy(() => import("./account-runtime"));
-
-/** A session without a chosen name is asked for one; the flow opens on its name step. */
-const chipLabel = (status: IdentitySessionStatus, session: Session | null): string => {
-  if (status === "loading") return "…";
-  return session ? "Choose a name" : "Sign in";
-};
-
 export const IdentityChip = () => {
   const { status, session } = useIdentitySession();
-  const address = useAccountStore((state) => state.account?.address);
   const requestSignIn = useRequestSignIn();
-  const isOpen = usePopoverStore((state) => state.openId === IDENTITY_POPOVER_ID);
-  const setElement = useIdentityPanelSlot((state) => state.setElement);
-  const signedIn = status === "signed-in" ? session : null;
-  const name = signedIn ? identityUsername(signedIn) : null;
+  const { data: account } = useRealmsPlayer();
+  if (status === "loading") return null;
+  if (!session) return <Button role="outline" word={WORDS.signIn} icon="Pf" onClick={() => requestSignIn()} />;
+  if (identityUsername(session) === null)
+    return <Button role="outline" word={SIGN_IN_WORDS.claimName} icon="Pf" onClick={() => requestSignIn()} />;
+  return account ? <PlayerChip account={account} /> : null;
+};
 
-  const togglePanel = () => {
-    const popover = usePopoverStore.getState();
-    if (isOpen) popover.close(IDENTITY_POPOVER_ID);
-    else popover.open(IDENTITY_POPOVER_ID);
-  };
-
+const PlayerChip = ({ account }: { account: string }) => {
+  const profile = usePlayerProfile(account);
   return (
-    <div className="relative">
-      {signedIn && name !== null ? (
-        <button
-          type="button"
-          aria-expanded={isOpen}
-          aria-haspopup="dialog"
-          aria-label={name}
-          onClick={togglePanel}
-          className="block size-11 overflow-hidden rounded-full border-2 border-kit-gold shadow-[0_0_12px_theme(colors.kit.peach/35%)]"
-        >
-          <img src={playerPortraitUrl(address, signedIn.user.image)} alt="" className="size-full object-cover" />
-        </button>
-      ) : (
-        <button
-          type="button"
-          onClick={() => requestSignIn()}
-          disabled={status === "loading"}
-          className="frontier-chip h-11 px-5 font-ui text-[17px] font-extrabold text-kit-cream disabled:opacity-50"
-        >
-          {chipLabel(status, signedIn)}
-        </button>
-      )}
-      {signedIn && isOpen ? (
-        <div
-          role="dialog"
-          aria-label="Identity"
-          className="frontier-card absolute right-0 top-full z-50 mt-2 w-72 p-4 shadow-xl"
-        >
-          <div ref={setElement} className="min-h-[3rem] text-gold" />
-        </div>
-      ) : null}
-      {signedIn ? (
-        <Suspense fallback={null}>
-          <AccountRuntime />
-        </Suspense>
-      ) : null}
-    </div>
+    <NavLink
+      to="/profile"
+      className="flex h-12 items-center gap-2.5 rounded-3xl border border-kit-line2 pl-1.5 pr-3.5 font-ui text-[15px] font-bold text-kit-cream"
+    >
+      <img
+        src={playerPortraitUrl(account, profile.portrait)}
+        alt=""
+        className="size-9 rounded-full border-2 border-kit-peach object-cover"
+      />
+      <PlayerName account={account} />
+    </NavLink>
   );
 };

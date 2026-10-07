@@ -1,9 +1,6 @@
 import type { LocalNotificationPayload } from "@bibliothecadao/notifications";
-import { create } from "zustand";
 import type { NotificationDevice } from "./notification-database";
 import { isAppleMobile, isInstalledPwa } from "./browser-capabilities";
-
-export const useNotificationDeliveryError = create<{ error: string | null }>(() => ({ error: null }));
 
 export function localNotificationCapability(): string | null {
   if (isAppleMobile() && !isInstalledPwa())
@@ -46,8 +43,7 @@ export async function notificationWorkerRequest<T>(
 export const readLocalNotificationDevice = (owner: string) =>
   notificationWorkerRequest<NotificationDevice | null>(owner, "status");
 
+/** A delivery that failed in the background has no surface of its own: the operator reads it in the console. */
 export function reportNotificationDeliveryError(error: unknown): void {
-  useNotificationDeliveryError.setState({
-    error: error instanceof Error ? error.message : "Notification delivery failed",
-  });
+  console.error("notification_delivery_failed", { error: error instanceof Error ? error.message : error });
 }
