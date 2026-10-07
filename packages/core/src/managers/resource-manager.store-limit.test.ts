@@ -30,9 +30,16 @@ const boardRealm = (wheat: bigint) => {
   store.applyFacts([
     ...upsert("0x1", { SliceRules: { ...preset.rules, game_id: 1, mode_rules: 0 } }),
     ...upsert("0x2", {
-      BoardRules: { game_id: 1, demolition_refund_bps: 0, workshop_rate: 0n, castle_store_deploys: 2 },
+      BoardRules: {
+        game_id: 1,
+        demolition_refund_bps: 0,
+        workshop_rate: 0n,
+        castle_store_deploys: 2,
+        storage_step_bps: 5000,
+      },
     }),
     ...upsert("0x3", { Structure: realm(0) }),
+    ...upsert("0x6", { RealmKnowledge: { game_id: 1, structure_id: 7, learned: 0n } }),
     ...upsert("0x4", { ResourceWeight: { game_id: 1, entity_id: 7, capacity: (1n << 128n) - 1n, weight: 0n } }),
     ...upsert("0x5", { ResourceBalance: { game_id: 1, entity_id: 7, resource_type: 35, balance: wheat } }),
   ]);
@@ -49,6 +56,19 @@ describe("a board realm's store limits", () => {
     expect(manager.storeLimit(ResourcesIds.Knight)).toBe(settlementLimit);
     expect(manager.storeLimit(ResourcesIds.Essence)).toBeUndefined();
     expect(manager.storeLimit(ResourcesIds.Lords)).toBeUndefined();
+  });
+
+  it("adds half the castle base per store choice, independently of troop storage", () => {
+    const { store, manager } = boardRealm(0n);
+    // Farm rare: Granary, Fields. Workshop uncommon: Storeroom.
+    store.applyFacts(
+      upsert("0x6", {
+        RealmKnowledge: { game_id: 1, structure_id: 7, learned: 2n | (1n << 3n) | (1n << 7n) | (1n << 10n) },
+      }),
+    );
+    expect(manager.storeLimit(ResourcesIds.Wheat)).toBe((settlementLimit * 3n) / 2n);
+    expect(manager.storeLimit(ResourcesIds.Labor)).toBe((settlementLimit * 3n) / 2n);
+    expect(manager.storeLimit(ResourcesIds.Knight)).toBe(settlementLimit);
   });
 
   it("raises the limits with the castle's level", () => {

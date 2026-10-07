@@ -1,3 +1,5 @@
+import { researchChoice, researchTier } from "../utils/realm-research";
+import { nativeResearchConstants as research } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { productionOutput } from "../utils/production-output";
 import { isModeRuleEnabled } from "../utils/mode-rules";
 import {
@@ -67,11 +69,14 @@ export class ResourceManager {
             change.model !== "ResourceBalance" &&
             change.model !== "ResourceProduction" &&
             change.model !== "ResourceWeight" &&
-            change.model !== "Structure"
+            change.model !== "Structure" &&
+            change.model !== "RealmKnowledge"
           )
             return false;
           const row = change.current ?? change.previous;
-          return row?.game_id === this.gameId && row.entity_id === this.entityId;
+          return (
+            row?.game_id === this.gameId && ("entity_id" in row ? row.entity_id : row.structure_id) === this.entityId
+          );
         })
       )
         onChange();
@@ -207,7 +212,20 @@ export class ResourceManager {
       limits.empire_deployment_cap,
     ][structure.base.level];
     if (cap === undefined) throw new Error(`Unknown castle level ${structure.base.level}`);
-    return BigInt(cap) * BigInt(board.castle_store_deploys) * BigInt(RESOURCE_PRECISION);
+    const base = BigInt(cap) * BigInt(board.castle_store_deploys) * BigInt(RESOURCE_PRECISION);
+    const row =
+      resourceId === ResourcesIds.Wheat
+        ? research.ROW_FARM
+        : resourceId === ResourcesIds.Labor
+          ? research.ROW_WORKSHOP
+          : undefined;
+    if (row === undefined) return base;
+    const learned = this.store.require("RealmKnowledge", { game_id: this.gameId, structure_id: this.entityId }).learned;
+    let stores = 0;
+    for (let at = 1; at <= researchTier(learned, row); at++) {
+      if (researchChoice(learned, row, at) === research.CHOICE_STORE) stores++;
+    }
+    return (base * BigInt(10_000 + stores * board.storage_step_bps)) / 10_000n;
   }
 
   /**
