@@ -77,6 +77,10 @@ pub fn validate(preset: PresetDefinition) {
         );
     }
     assert!(rules.tick_config.armies_tick_in_seconds != 0, "zero army tick");
+    assert!(
+        Into::<u32, u64>::into(rules.epoch_seconds) % rules.tick_config.armies_tick_in_seconds == 0,
+        "a day must be whole armies ticks",
+    );
     if rules.bitcoin_mine_config.enabled {
         assert!(rules.tick_config.bitcoin_phase_in_seconds != 0, "zero Bitcoin phase duration");
         assert!(rules.bitcoin_mine_config.prize_per_phase != 0, "zero Bitcoin prize");

@@ -425,7 +425,7 @@ describe("declared fact absence", () => {
       building_count: 0,
       production_rate: 0n,
       output_amount_left: 0n,
-      last_updated_at: 0,
+      last_settled_tick: 0,
     });
     expect(store.requireOrAbsent("HyperstructureProgress", resource).known?.contributed).toBe(0n);
     expect(store.requireOrAbsent("SettlementProgress", { game_id: 1 }).known).toEqual({

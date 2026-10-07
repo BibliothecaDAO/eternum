@@ -156,16 +156,17 @@ fn building_lifecycle_settles_before_rate_changes_and_removes_the_final_building
     assert_eq!(resources.resource_production(slot).building_count, 1);
     assert_eq!(resources.resource_production(slot).production_rate, 2);
     assert_eq!(structures.structure_buildings(home).population.current, 1);
+    // Two wheat a second, paid in whole minute ticks: the tick ended at 60 pays 120.
     assert!(execute(deployment, Command::PauseBuildingProduction(change(home)), 70));
-    assert_eq!(resources.resource_balance(slot), 60);
+    assert_eq!(resources.resource_balance(slot), 120);
     assert_eq!(resources.resource_production(slot).building_count, 0);
     assert!(structures.building(east()).unwrap().paused);
     assert_terminal_rejection(deployment, Command::PauseBuildingProduction(change(home)), 80);
     assert!(execute(deployment, Command::ResumeBuildingProduction(change(home)), 100));
-    assert_eq!(resources.resource_balance(slot), 60);
-    assert_eq!(resources.resource_production(slot).last_updated_at, 100);
-    assert!(execute(deployment, Command::DestroyBuilding(change(home)), 130));
     assert_eq!(resources.resource_balance(slot), 120);
+    assert_eq!(resources.resource_production(slot).last_settled_tick, 1);
+    assert!(execute(deployment, Command::DestroyBuilding(change(home)), 130));
+    assert_eq!(resources.resource_balance(slot), 240);
     assert_eq!(resources.resource_production(slot).building_count, 0);
     assert!(structures.building(east()).is_none());
     assert_eq!(structures.structure_buildings(home).population.current, 0);
@@ -282,6 +283,21 @@ fn arena_storehouse_world(blitz: bool) -> (super::Deployment, ResourceKey) {
     building_world_with_preset(preset)
 }
 
+#[test]
+fn a_blitz_farm_makes_an_hours_output_in_whole_ticks() {
+    let (deployment, home) = arena_storehouse_world(true);
+    let resources = IResourceOperationsDispatcher { contract_address: deployment.games };
+    let wheat = ResourceSlot { game_id: home.game_id, entity_id: home.entity_id, resource_type: 35 };
+    assert!(execute(deployment, create(home, 37), 40));
+    // Started mid-tick, an hour later it has been paid sixty whole minute ticks: the hour's output, unchanged.
+    start_cheat_caller_address(deployment.games, deployment.games);
+    crate::resources::IResourceOperationsDispatcherTrait::spend_resource(
+        resources, home, 35, 0, 3640, crate::commands::resource_context(super::context(deployment.games, home.game_id)),
+    );
+    stop_cheat_caller_address(deployment.games);
+    assert_eq!(resources.resource_balance(wheat), 3600 * resources.resource_production(wheat).production_rate.into());
+}
+
 /// Leaves `room` free in the realm's storage on top of whatever its storehouses add.
 fn leave_room(deployment: super::Deployment, home: ResourceKey, room: u128) {
     let resources = IResourceOperationsDispatcher { contract_address: deployment.games };
@@ -299,7 +315,7 @@ fn leave_room(deployment: super::Deployment, home: ResourceKey, room: u128) {
     );
 }
 
-/// The fixture realm's own producer makes two of resource 1 a second from time 30.
+/// The fixture realm's own producer makes two of resource 1 a second from time 30, paid each minute tick, up to 100.
 fn produced_stock(deployment: super::Deployment, home: ResourceKey, timestamp: u64) -> u128 {
     let resources = IResourceOperationsDispatcher { contract_address: deployment.games };
     start_cheat_caller_address(deployment.games, deployment.games);
@@ -319,9 +335,10 @@ fn a_new_storehouse_does_not_keep_what_there_was_no_room_for(blitz: bool) {
     let (deployment, home) = arena_storehouse_world(blitz);
     assert_eq!(produced_stock(deployment, home, 30), 100);
     leave_room(deployment, home, 10);
-    // Ten seconds make 20 where there is room for 10; the storehouse, paid with 10, cannot rescue the rest.
-    assert!(execute(deployment, create(home, 2), 40));
-    assert_eq!(produced_stock(deployment, home, 40), 100);
+    // The ended tick makes the producer's last 100 where there is room for 10; the storehouse, paid with 10, cannot
+    // rescue the rest.
+    assert!(execute(deployment, create(home, 2), 70));
+    assert_eq!(produced_stock(deployment, home, 70), 100);
 }
 
 fn a_demolished_storehouse_does_not_burn_what_was_held(blitz: bool) {
@@ -329,23 +346,24 @@ fn a_demolished_storehouse_does_not_burn_what_was_held(blitz: bool) {
     assert!(execute(deployment, create(home, 2), 40));
     let held = produced_stock(deployment, home, 40);
     leave_room(deployment, home, 10);
-    // Ten seconds make 20 the storehouse holds; without it there is room for 10, so it cannot go yet.
+    // The ended tick makes the producer's last 100, which the storehouse holds; without it there is room for 10, so it
+    // cannot go yet.
     let before = resource_facts(deployment, home);
-    assert_terminal_rejection(deployment, Command::DestroyBuilding(change(home)), 50);
+    assert_terminal_rejection(deployment, Command::DestroyBuilding(change(home)), 70);
     assert_eq!(resource_facts(deployment, home), before);
-    assert_eq!(produced_stock(deployment, home, 50), held + 20);
+    assert_eq!(produced_stock(deployment, home, 70), held + 100);
     start_cheat_caller_address(deployment.games, deployment.games);
     crate::resources::IResourceOperationsDispatcherTrait::spend_resource(
         IResourceOperationsDispatcher { contract_address: deployment.games },
         home,
         1,
-        10,
-        50,
+        90,
+        70,
         crate::commands::resource_context(super::context(deployment.games, home.game_id)),
     );
     stop_cheat_caller_address(deployment.games);
-    assert!(execute(deployment, Command::DestroyBuilding(change(home)), 50));
-    assert_eq!(produced_stock(deployment, home, 50), held + 10);
+    assert!(execute(deployment, Command::DestroyBuilding(change(home)), 70));
+    assert_eq!(produced_stock(deployment, home, 70), held + 10);
 }
 
 #[test]

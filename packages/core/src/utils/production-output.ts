@@ -1,9 +1,12 @@
-/** What a producer adds between its last settlement and `timestamp`: elapsed seconds times its rate. */
+/** A producer pays its rate for every ended armies tick, with nothing paid between boundaries. */
 export function productionOutput(
-  production: { last_updated_at: number; production_rate: bigint },
+  production: { last_settled_tick: number; production_rate: bigint },
   timestamp: number,
+  tickSeconds: number,
 ): bigint {
-  const since = production.last_updated_at;
+  const since = production.last_settled_tick;
   if (!Number.isSafeInteger(since) || !Number.isSafeInteger(timestamp)) throw new Error("Invalid production clock");
-  return BigInt(Math.max(0, timestamp - since)) * production.production_rate;
+  if (!Number.isSafeInteger(tickSeconds) || tickSeconds <= 0) throw new Error("Invalid production tick");
+  const ticks = Math.max(0, Math.floor(timestamp / tickSeconds) - since);
+  return BigInt(ticks) * production.production_rate * BigInt(tickSeconds);
 }

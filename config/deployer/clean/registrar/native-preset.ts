@@ -93,7 +93,7 @@ export function buildNativeGameParams(
     if (input.devModeOn) throw new Error("Free Blitz does not use development mode");
     if (roster.length < 1 || roster.length > 24) throw new Error("Blitz requires a fixed roster of 1 to 24 players");
   } else if (roster.length) throw new Error("Open seasons do not use a fixed roster");
-  const common = buildCreateGameParams(config, input);
+  const common = buildCreateGameParams(config, { ...input, startMainAt: seasonStart(config, input) });
   return {
     name: common.name,
     preset_id: common.preset_id,
@@ -111,6 +111,19 @@ export function buildNativeGameParams(
     ),
     seed: common.seed,
   };
+}
+
+/**
+ * A season with days starts on an armies tick, rounded up, so every day rolls over on one: the contract refuses any
+ * other start.
+ */
+function seasonStart(config: Config, input: CreateGamePayloadInput): number {
+  const preset = nativePresetForId(input.presetId);
+  if (preset.epochSeconds === 0) return input.startMainAt;
+  const tick = preset.clockScale
+    ? clockScaled(config.tick.armiesTickIntervalInSeconds, preset.clockScale, "armies tick")
+    : config.tick.armiesTickIntervalInSeconds;
+  return Math.ceil(input.startMainAt / tick) * tick;
 }
 
 // Imported rather than read from disk, so the launch Worker carries the same preset configurations as the CLIs. Each

@@ -91,7 +91,7 @@ export const realmBoard = () => {
       building_count: 1,
       production_rate: String((300n * PRECISION) / BigInt(HOUR)),
       output_amount_left: "0",
-      last_updated_at: 100,
+      last_settled_tick: 1,
     }),
     set("0x76", "TileOccupancy", {
       game_id: 1,

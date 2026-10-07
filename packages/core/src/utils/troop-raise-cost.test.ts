@@ -22,7 +22,7 @@ const realm = (board: boolean, wheat: bigint) => {
       building_count: 0,
       production_rate: 0n,
       output_amount_left: 0n,
-      last_updated_at: 0,
+      last_settled_tick: 0,
     }),
     upsert("0x7", "ResourceRule", { game_id: 1, resource_type: 35, unit_weight: 1n, realm_rate: 0n, village_rate: 0n }),
     upsert("0x5", "ProductionRecipe", {

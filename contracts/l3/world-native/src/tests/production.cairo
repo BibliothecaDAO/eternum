@@ -117,7 +117,7 @@ fn late_refills_use_recorded_troop_bonus_expiry_without_retroactive_production()
     let slot = ResourceSlot { game_id: 3, entity_id: key.entity_id, resource_type: 26 };
     let at_end = resources.resource_production(slot);
     assert_eq!(at_end.output_amount_left, 150);
-    assert_eq!(at_end.last_updated_at, 0);
+    assert_eq!(at_end.last_settled_tick, 0);
     assert!(execute_recorded_at(deployment, Command::BurnLaborForResourceProduction(refill), 120, 1001));
     assert_eq!(resources.resource_production(slot).output_amount_left, 250);
     assert_eq!(resources.resource_balance(slot), 0);

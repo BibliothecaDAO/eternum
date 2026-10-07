@@ -809,14 +809,15 @@ fn open_preset_exploration_discovers_a_camp_and_credits_the_home_realm() {
     assert_eq!(resources.resource_balance(ResourceSlot { entity_id: explorer_id, ..home_slot }), 0);
 }
 
-// An open expedition game with 100 s days, 1024-hex regions and two field armies a realm, in which realm 1 is settled
-// at t=350 as entity 1. Returns the game, its preset and the troop category of the realm's grant.
-pub fn expedition_home(d: super::Deployment) -> (u32, PresetDefinition, u8) {
+// The expedition preset of `expedition_home`: 100 s days of two 50 s armies ticks.
+fn expedition_preset() -> PresetDefinition {
     let mut preset = definition(true);
     preset.rules.entry_rule = crate::rules::ENTRY_OPEN;
     preset.rules.command_mask = preset.rules.command_mask
         | (*read_txt(@FileTrait::new("tests/fixtures/frontier-command-mask.txt")).at(0)).try_into().unwrap();
     preset.rules.epoch_seconds = 100;
+    // A day is whole armies ticks.
+    preset.rules.tick_config.armies_tick_in_seconds = 50;
     preset.economy.discovery = Some(super::preset_projection::frontier_discovery_rules());
     let (_, frontier) = super::preset_projection::current_definition("frontier");
     preset.economy.chests = frontier.economy.chests;
@@ -833,6 +834,13 @@ pub fn expedition_home(d: super::Deployment) -> (u32, PresetDefinition, u8) {
     preset.rules.map_config.shards_mines_win_probability = 0;
     preset.rules.map_config.shards_mines_fail_probability = 1;
     preset.rules.troop_limit_config.settlement_armies = 2;
+    preset
+}
+
+// An open expedition game with 100 s days, 1024-hex regions and two field armies a realm, in which realm 1 is settled
+// at t=350 as entity 1. Returns the game, its preset and the troop category of the realm's grant.
+pub fn expedition_home(d: super::Deployment) -> (u32, PresetDefinition, u8) {
+    let preset = expedition_preset();
     registry(d).register_preset(1, preset);
     let game_id = registry(d)
         .create_game(
@@ -857,6 +865,20 @@ pub fn expedition_home(d: super::Deployment) -> (u32, PresetDefinition, u8) {
     let guards = IGuardsDispatcher { contract_address: d.games };
     let category: u8 = guards.guard(GuardKey { game_id, structure_id: 1, slot: 0 }).troops.category.into();
     (game_id, preset, category)
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn a_day_is_whole_armies_ticks_and_a_season_starts_on_one() {
+    let d = setup();
+    let mut uneven = expedition_preset();
+    uneven.rules.tick_config.armies_tick_in_seconds = 60;
+    assert!(safe(d, super::authority()).register_preset(1, uneven).is_err());
+    registry(d).register_preset(1, expedition_preset());
+    let season = CreateGameParams { dev_mode_on: true, end_grace_seconds: 0, duration_seconds: 500, ..params(false) };
+    assert!(safe(d, super::authority()).create_game(CreateGameParams { start_main_at: 310, ..season }).is_err());
+    assert_eq!(registry(d).next_game_id(), 1);
+    assert_eq!(registry(d).create_game(CreateGameParams { start_main_at: 350, ..season }), 1);
 }
 
 pub fn muster_command(category: u8, direction: u8) -> Command {
@@ -1066,7 +1088,7 @@ fn a_materialized_home_ring_moves_and_explores_without_a_roll() {
 
     // An explore onto another ring tile moves at move cost: no discovery, no supplies.
     let (step, target) = free_ring_neighbor(map, game_id, ring_tile, site, spacing);
-    // The fixture's armies start with one move of stamina and regain it per 60 s tick, and the move above spent it in
+    // The fixture's armies start with one move of stamina and regain it per 50 s tick, and the move above spent it in
     // this tick; rest the army by one dearest move so the explore is judged on the ring rule, not on fatigue.
     let stamina = preset.rules.troop_stamina_config;
     let mut rested = troops.resolved_explorer(key).unwrap();
@@ -1216,7 +1238,8 @@ fn expedition_rollover_expires_armies_and_preserves_the_home_economy() {
             ),
         );
     stop_cheat_caller_address(d.games);
-    assert_eq!(resources.resource_balance(labor), stored + 70 * producer.production_rate.into());
+    // The realm settled at 350; by 420 one whole 50 s tick has ended, paid at its per-second rate.
+    assert_eq!(resources.resource_balance(labor), stored + 50 * producer.production_rate.into());
     assert_eq!(resources.resource_production(labor).production_rate, producer.production_rate);
     assert!(execute_in_game(d, game_id, Command::LevelUp(home_id), 430, 430));
     assert_eq!(structures.structure(home).unwrap().base.level, 1);
@@ -1808,6 +1831,8 @@ fn depth_entry_requires_research_and_spends_only_the_selected_depth_stamina() {
     let mut preset = definition(true);
     preset.rules.entry_rule = crate::rules::ENTRY_OPEN;
     preset.rules.epoch_seconds = 100;
+    // A day is whole armies ticks.
+    preset.rules.tick_config.armies_tick_in_seconds = 50;
     preset.economy.discovery = Some(super::preset_projection::frontier_discovery_rules());
     let (_, frontier) = super::preset_projection::current_definition("frontier");
     preset.economy.chests = frontier.economy.chests;
@@ -2070,6 +2095,8 @@ fn setup_frontier_chests_with_payout(
     let mut preset = definition(true);
     preset.rules.entry_rule = crate::rules::ENTRY_OPEN;
     preset.rules.epoch_seconds = 100;
+    // A day is whole armies ticks.
+    preset.rules.tick_config.armies_tick_in_seconds = 50;
     preset
         .economy
         .discovery =

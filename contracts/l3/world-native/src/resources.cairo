@@ -59,18 +59,19 @@ pub struct Production {
     pub building_count: u8,
     pub production_rate: u64,
     pub output_amount_left: u128,
-    pub last_updated_at: u32,
+    // The armies tick through which production is paid: it pays in whole ticks, never a fraction of one.
+    pub last_settled_tick: u32,
 }
 
 
 const PRODUCTION_TIME_SCALE: u128 = 0x10000000000000000;
 const PRODUCTION_COUNT_SCALE: u128 = 0x1000000000000000000000000;
 
-// The cap occupies the low limb; rate, settlement time and building count use 104 high bits.
+// The cap occupies the low limb; rate, settled tick and building count use 104 high bits.
 pub impl ProductionPacking of starknet::storage_access::StorePacking<Production, felt252> {
     fn pack(value: Production) -> felt252 {
         let high = value.production_rate.into()
-            + value.last_updated_at.into() * PRODUCTION_TIME_SCALE
+            + value.last_settled_tick.into() * PRODUCTION_TIME_SCALE
             + value.building_count.into() * PRODUCTION_COUNT_SCALE;
         u256 { low: value.output_amount_left, high }.try_into().unwrap()
     }
@@ -80,7 +81,7 @@ pub impl ProductionPacking of starknet::storage_access::StorePacking<Production,
             building_count: (value.high / PRODUCTION_COUNT_SCALE).try_into().unwrap(),
             production_rate: (value.high % PRODUCTION_TIME_SCALE).try_into().unwrap(),
             output_amount_left: value.low,
-            last_updated_at: (value.high / PRODUCTION_TIME_SCALE % 0x100000000).try_into().unwrap(),
+            last_settled_tick: (value.high / PRODUCTION_TIME_SCALE % 0x100000000).try_into().unwrap(),
         }
     }
 }
@@ -123,6 +124,7 @@ pub(crate) fn has_production(resource_type: u8) -> bool {
     resource_type != LORDS && (resource_type < 39 || resource_type > 56)
 }
 
+/// Pays a producer its per-second rate for every whole armies tick that has ended since it last settled.
 pub fn settle(
     resource_type: u8,
     ref balance: u128,
@@ -130,14 +132,16 @@ pub fn settle(
     ref weight: Weight,
     unit_weight: u128,
     limit: Option<u128>,
-    now: u32,
+    tick: u32,
+    tick_seconds: u32,
 ) {
-    let start_at = production.last_updated_at;
-    production.last_updated_at = now;
+    let since = production.last_settled_tick;
+    production.last_settled_tick = tick;
     if resource_type == LORDS || production.building_count == 0 {
         return;
     }
-    let mut produced = (now - start_at).into() * production.production_rate.into();
+    let ticks: u128 = (tick - since).into();
+    let mut produced = ticks * production.production_rate.into() * tick_seconds.into();
     if resource_type != 35 && resource_type != 36 && !is_unlimited(production.output_amount_left) {
         produced = core::cmp::min(produced, production.output_amount_left);
         production.output_amount_left -= produced;

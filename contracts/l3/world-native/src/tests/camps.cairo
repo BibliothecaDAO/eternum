@@ -138,7 +138,9 @@ fn camps_grant_configured_resources_labor_and_one_crossbow_guard() {
     assert_eq!(production.production_rate, 5);
     assert_eq!(production.output_amount_left, 0xffffffffffffffffffffffffffffffff);
     assert_eq!(production.building_count, 1);
-    assert_eq!(production.last_updated_at, 30);
+    // Created at time 30, it has settled through the tick that holds it.
+    let settled: u32 = (30 / rules(true).tick_config.armies_tick_in_seconds).try_into().unwrap();
+    assert_eq!(production.last_settled_tick, settled);
     let guards = IGuardsDispatcher { contract_address: d.games };
     let guard = guards.guard(GuardKey { game_id: 3, structure_id: key.entity_id, slot: 0 });
     assert_eq!(guard.troops.category, TroopType::Crossbowman);

@@ -99,7 +99,7 @@ const playerRows = (clock: LabClock): WireRow[] => [
       building_count: 1,
       production_rate: String((100n * PRECISION) / 3600n),
       output_amount_left: "0",
-      last_updated_at: clock.nowSeconds,
+      last_settled_tick: clock.currentTick,
     },
   },
   // Today's ground around the site is explored grassland, so its tiles open their panels.

@@ -85,6 +85,7 @@ pub mod RegistrarState {
             let rules = crate::registrar::LaunchRules {
                 mode_rules: preset.rules.mode_rules.read(),
                 epoch_seconds: preset.rules.epoch_seconds.read(),
+                armies_tick: preset.rules.tick_config.armies_tick_in_seconds.read(),
                 entry_rule: preset.rules.entry_rule.read(),
                 settlement_mode: preset.settlement_mode.read(),
                 spacing: preset.settlement_spacing.read(),

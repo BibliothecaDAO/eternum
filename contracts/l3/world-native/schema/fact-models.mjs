@@ -546,7 +546,7 @@ export const factWireTypes = [
         type: "core::integer::u128",
       },
       {
-        name: "last_updated_at",
+        name: "last_settled_tick",
         type: "core::integer::u32",
       },
     ],
@@ -1162,12 +1162,12 @@ const behaviouralFacts = {
     domain: "resources",
     transform: "production",
     meaning:
-      "Settlement time is meaningful only while at least one production building exists; inactive time projects to zero.",
+      "Production pays its per-second rate for each whole armies tick after the settled tick, which is meaningful only while at least one production building exists; inactive time projects to zero.",
     fields: {
       buildingCount: "building_count",
       rate: "production_rate",
       outputRemaining: "output_amount_left",
-      updatedAt: "last_updated_at",
+      settledTick: "last_settled_tick",
     },
   },
   ProductionBonus: {

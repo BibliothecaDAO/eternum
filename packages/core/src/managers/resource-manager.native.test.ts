@@ -7,6 +7,8 @@ import { ResourceManager } from "./resource-manager";
 import type { GameSyncFact } from "../sync/game-sync-types";
 import { ResourcesIds } from "@bibliothecadao/types";
 
+// One-second armies ticks: these cases read production second by second.
+const rules = { ...preset.rules, tick_config: { ...preset.rules.tick_config, armies_tick_in_seconds: 1 } };
 const upsert = (key: string, models: Record<string, Record<string, unknown>>): GameSyncFact[] =>
   Object.entries(models).map(([model, value]) => ({ model, key, value }));
 const weight = (game = 1) => ({ game_id: game, entity_id: 7, capacity: 1000n, weight: 0n });
@@ -32,14 +34,14 @@ const production = {
   building_count: 1,
   production_rate: 2n,
   output_amount_left: 10n,
-  last_updated_at: 100,
+  last_settled_tick: 100,
 };
 
 describe("native resource facts", () => {
   it("reads sparse resources and observes a transaction once, including deletion", () => {
     const store = new NativeFactStore();
     store.setSnapshot({ gameId: 1, complete: true, actor: null, timestamp: 350 });
-    store.applyFacts([...upsert("0x100", { SliceRules: { ...preset.rules, game_id: 1, mode_rules: 0 } })]);
+    store.applyFacts([...upsert("0x100", { SliceRules: { ...rules, game_id: 1, mode_rules: 0 } })]);
     const manager = new ResourceManager(store, 7, 1);
     store.applyFacts([...upsert("0x1", { ResourceWeight: weight() })]);
     const changed = vi.fn();
@@ -51,7 +53,7 @@ describe("native resource facts", () => {
     expect(changed).toHaveBeenCalledTimes(1);
     expect(manager.balance(23)).toBe(9007199254740993n);
     expect(manager.getActiveProductions()).toEqual([
-      { resourceId: 23, productionRate: 2n, buildingCount: 1, outputAmountLeft: 10n, lastUpdatedAt: 100 },
+      { resourceId: 23, productionRate: 2n, buildingCount: 1, outputAmountLeft: 10n, lastSettledTick: 100 },
     ]);
     store.applyFacts([{ model: "ResourceBalance", key: "0x2", value: null }]);
     expect(manager.balance(23)).toBe(0n);
@@ -70,7 +72,7 @@ describe("native resource facts", () => {
     const store = new NativeFactStore();
     store.setSnapshot({ gameId: 1, complete: false, actor: "0xaaa", timestamp: 350 });
     store.applyFacts([
-      ...upsert("0x100", { SliceRules: { ...preset.rules, game_id: 1, epoch_seconds: 100, mode_rules: 0 } }),
+      ...upsert("0x100", { SliceRules: { ...rules, game_id: 1, epoch_seconds: 100, mode_rules: 0 } }),
       ...upsert("0x101", { GameRegistry: { ...game, ready: true } }),
       ...upsert("0x102", {
         SettlementRules: {
@@ -140,7 +142,7 @@ describe("native resource facts", () => {
   it("scopes reads and notifications to their game, and knows no balance without a resource owner", () => {
     const store = new NativeFactStore();
     store.setSnapshot({ gameId: 1, complete: true, actor: null, timestamp: 350 });
-    store.applyFacts([...upsert("0x100", { SliceRules: { ...preset.rules, game_id: 1, mode_rules: 0 } })]);
+    store.applyFacts([...upsert("0x100", { SliceRules: { ...rules, game_id: 1, mode_rules: 0 } })]);
     const first = new ResourceManager(store, 7, 1);
     const second = new ResourceManager(store, 7, 2);
     const changed = vi.fn();
@@ -151,7 +153,7 @@ describe("native resource facts", () => {
     expect(first.balances()).toBeUndefined();
     expect(first.getStoreCapacityKg()).toBeUndefined();
     store.applyFacts([...upsert("0x2", { ResourceWeight: weight(2), ResourceBalance: balance(2) })]);
-    store.applyFacts([...upsert("0x101", { SliceRules: { ...preset.rules, game_id: 2, mode_rules: 0 } })]);
+    store.applyFacts([...upsert("0x101", { SliceRules: { ...rules, game_id: 2, mode_rules: 0 } })]);
     store.setSnapshot({ gameId: 2, complete: true, actor: null, timestamp: 350 });
     expect(second.balance(23)).toBe(9007199254740993n);
     expect(first.hasResources()).toBe(false);
@@ -162,9 +164,9 @@ describe("native resource facts", () => {
     const store = new NativeFactStore();
     store.setSnapshot({ gameId: 1, complete: true, actor: null, timestamp: 350 });
     store.applyFacts([
-      ...upsert("0x1", { ResourceWeight: weight(), ResourceProduction: { ...production, last_updated_at: 100 } }),
+      ...upsert("0x1", { ResourceWeight: weight(), ResourceProduction: { ...production, last_settled_tick: 100 } }),
       ...upsert("0x2", {
-        SliceRules: { ...preset.rules, game_id: 1, mode_rules: nativeRuleConstants.PRODUCTION_START },
+        SliceRules: { ...rules, game_id: 1, mode_rules: nativeRuleConstants.PRODUCTION_START },
         GameRegistry: game,
       }),
     ]);
@@ -175,14 +177,14 @@ describe("native resource facts", () => {
     expect(manager.getActiveProductions()).toEqual([]);
     store.applyFacts([...upsert("0x2", { GameRegistry: { ...game, ready: true, start_main_at: 1000n } })]);
     expect(changed).toHaveBeenCalledTimes(1);
-    expect(manager.current(23)!.production).toMatchObject({ last_updated_at: 1000, production_rate: 2n });
-    expect(manager.getActiveProductions()[0]).toMatchObject({ lastUpdatedAt: 1000, productionRate: 2n });
+    expect(manager.current(23)!.production).toMatchObject({ last_settled_tick: 1000, production_rate: 2n });
+    expect(manager.getActiveProductions()[0]).toMatchObject({ lastSettledTick: 1000, productionRate: 2n });
   });
   it("settles troops and wheat alone against shared storage, and nothing consumes wheat", () => {
     const store = new NativeFactStore();
     store.setSnapshot({ gameId: 1, complete: true, actor: null, timestamp: 350 });
     store.applyFacts([
-      ...upsert("0x100", { SliceRules: { ...preset.rules, game_id: 1, mode_rules: 0 } }),
+      ...upsert("0x100", { SliceRules: { ...rules, game_id: 1, mode_rules: 0 } }),
       ...upsert("0x1", { ResourceWeight: { ...weight(), capacity: 100n, weight: 90n } }),
       ...upsert("0x2", {
         ResourceBalance: { ...balance(), resource_type: 35, balance: 60n },
@@ -233,4 +235,38 @@ describe("native resource facts", () => {
     expect(manager.balanceWithProduction(110, 26).balance).toBe(96);
     expect(manager.balanceWithProduction(110, 35).balance).toBe(4);
   });
+});
+it("pays production in whole armies ticks, so a store steps once a tick and never between", () => {
+  const store = new NativeFactStore();
+  store.setSnapshot({ gameId: 1, complete: true, actor: null, timestamp: 0 });
+  store.applyFacts([
+    ...upsert("0x1", {
+      SliceRules: {
+        ...preset.rules,
+        game_id: 1,
+        mode_rules: 0,
+        tick_config: { ...preset.rules.tick_config, armies_tick_in_seconds: 120 },
+      },
+    }),
+    ...upsert("0x2", { ResourceWeight: { ...weight(), capacity: (1n << 128n) - 1n } }),
+    ...upsert("0x3", {
+      ResourceBalance: { ...balance(), resource_type: 35, balance: 0n },
+      ResourceProduction: {
+        ...production,
+        resource_type: 35,
+        production_rate: 100n,
+        output_amount_left: (1n << 128n) - 1n,
+        last_settled_tick: 0,
+      },
+    }),
+  ]);
+  const manager = new ResourceManager(store, 7, 1);
+  expect(manager.balanceWithProduction(119, 35)!.balance).toBe(0);
+  expect(manager.balanceWithProduction(120, 35)!.balance).toBe(12_000);
+  expect(manager.balanceWithProduction(239, 35)!.balance).toBe(12_000);
+  expect(manager.balanceWithProduction(240, 35)!.balance).toBe(24_000);
+  // The rate reads per second, as one tick's output spread over the tick.
+  expect(ResourceManager.calculateResourceProductionData(35, manager.current(35)!, 130).productionPerSecond).toBe(
+    100 / 1e9,
+  );
 });

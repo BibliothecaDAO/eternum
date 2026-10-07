@@ -46,6 +46,8 @@ mod ResourceFixture {
             state.games.games.entry(key.game_id).preset_id.write(1);
             state.registrar.presets.write(1, 1);
             state.presets.entry(1).rules.epoch_seconds.write(0);
+            // One-second ticks: this fixture's clock reads production in seconds.
+            state.presets.entry(1).rules.tick_config.armies_tick_in_seconds.write(1);
             self.resources.initialize(key, capacity);
         }
         fn grant(ref self: ContractState, key: ResourceKey, amount: u128) {
@@ -166,7 +168,7 @@ fn production_storage_preserves_all_232_bits_in_one_slot() {
         building_count: 0xff,
         production_rate: 0xffffffffffffffff,
         output_amount_left: 0xffffffffffffffffffffffffffffffff,
-        last_updated_at: 0xffffffff,
+        last_settled_tick: 0xffffffff,
     };
     let packed: u256 = ProductionPacking::pack(maximum).into();
     assert_eq!(packed, u256 { low: 0xffffffffffffffffffffffffffffffff, high: 0xffffffffffffffffffffffffff });
@@ -177,7 +179,7 @@ fn production_storage_preserves_all_232_bits_in_one_slot() {
 #[fuzzer(runs: 256)]
 fn packed_production_fields_do_not_overlap(buildings: u8, rate: u64, cap: u128, time: u32) {
     let production = Production {
-        building_count: buildings, production_rate: rate, output_amount_left: cap, last_updated_at: time,
+        building_count: buildings, production_rate: rate, output_amount_left: cap, last_settled_tick: time,
     };
     assert_eq!(ProductionPacking::unpack(ProductionPacking::pack(production)), production);
 }
@@ -200,7 +202,7 @@ fn spending_settles_once_and_emits_only_the_final_resource_facts() {
     assert_eq!(resources.weight(key), Weight { capacity: 100, weight: 15 });
     assert_eq!(
         resources.production(key),
-        Production { building_count: 1, production_rate: 2, output_amount_left: 80, last_updated_at: 20 },
+        Production { building_count: 1, production_rate: 2, output_amount_left: 80, last_settled_tick: 20 },
     );
     let mut spy = spy_events();
     resources.grant_at(key, 23, 10, 1, 25);
@@ -282,13 +284,36 @@ fn inactive_resources_have_no_clock_and_activation_starts_at_the_recorded_time()
     let (balance, production, _) = resources.read_slot(key, 1);
     assert_eq!(balance, 8);
     assert_eq!(
-        production, Production { building_count: 1, production_rate: 2, output_amount_left: 100, last_updated_at: 200 },
+        production, Production { building_count: 1, production_rate: 2, output_amount_left: 100, last_settled_tick: 200 },
     );
     resources.spend_at(key, 1, 0, 1, 205);
     let (balance, production, weight) = resources.read_slot(key, 1);
     assert_eq!(balance, 18);
     assert_eq!(weight.weight, 18);
     assert_eq!(production.output_amount_left, 90);
-    assert_eq!(production.last_updated_at, 205);
+    assert_eq!(production.last_settled_tick, 205);
 }
 
+#[test]
+fn whole_ticks_pay_exactly_however_often_production_settles() {
+    // A farm's 300 wheat an hour on Frontier's two-minute tick: ten wheat a tick, less the per-second rate's rounding.
+    let tick_seconds = 120_u32;
+    let rate = 83333333_u64;
+    let mut production = Production {
+        building_count: 1, production_rate: rate, output_amount_left: 0, last_settled_tick: 0,
+    };
+    let mut balance = 0_u128;
+    let mut weight = Weight { capacity: core::num::traits::Bounded::MAX, weight: 0 };
+    let mut now = 0_u32;
+    let mut seed = 7_u128;
+    for _ in 0..10000_u32 {
+        seed = (seed * 6364136223846793005 + 1442695040888963407) % 0x10000000000000000;
+        now += (seed % 300).try_into().unwrap();
+        crate::resources::settle(
+            crate::resources::WHEAT, ref balance, ref production, ref weight, 1, None, now / tick_seconds, tick_seconds,
+        );
+        // Every ended tick is paid in full, and nothing of the tick in progress is paid early.
+        let ended: u128 = (now / tick_seconds).into();
+        assert_eq!(balance, ended * Into::<u64, u128>::into(rate) * Into::<u32, u128>::into(tick_seconds));
+    }
+}
