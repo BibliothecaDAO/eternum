@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-07",
+    title: "A new home for Realms",
+    description:
+      "Play opens on one card with your next step (Resume your Frontier day, Enter your Blitz, see a finished season) and the four ages of the lore beside it, each with its own painting and page.",
+    type: "feature",
+  },
+  {
+    date: "2026-10-07",
     title: "Wheat pays to Deploy",
     description:
       "In Frontier, barracks train for free and each troop costs its wheat when you Deploy it; the Deploy screens show the cost and wait until your realm holds it.",

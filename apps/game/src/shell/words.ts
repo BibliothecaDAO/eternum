@@ -1,17 +1,40 @@
+import { RESUME, SEASON, SIGN_IN } from "@/ui/design-system/kit/words";
+
 /**
  * The app's words outside a match, each spelled once (words.html; the Frontier glossary stays the authority for game
  * words). A screen never types one of these itself: it names the constant.
  */
 export const WORDS = {
   play: "Play",
-  season: "Season",
+  season: SEASON,
   learn: "Learn",
   profile: "Profile",
-  signIn: "Sign in",
+  signIn: SIGN_IN,
   /** The back arrow is wordless; this names it for assistive technology. */
   back: "Back",
   dev: "Dev",
+  /** Start Frontier on a first visit; entry is free. */
+  playFree: "Play free",
+  resume: RESUME,
+  /** Go into a Blitz game the player is on. */
+  enter: "Enter",
+  /** Look at a Blitz game the player is not on. */
+  watch: "Watch",
+  /** Take a Blitz seat. */
+  join: "Join",
+  joined: "Joined",
+  results: "Results",
+  /** A game under way. */
+  live: "Live",
+  seasonOver: "Season over",
+  /** Before an age's numeral: "Age II". */
+  age: "Age",
 } as const;
+
+/** The lore's line, on the first visit's painting and on sign-in (approved 25 September). */
+export const LORE_LINE = "The mist forgets. Your realm remembers.";
+/** Frontier's pitch on the first visit's card. */
+export const PITCH = "A new land every day. Your realm keeps what it earns.";
 
 /** ClockChip's prefix words: a moment that begins something, or one that ends it. */
 export const CLOCK_WORDS = {

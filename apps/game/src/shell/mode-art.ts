@@ -1,11 +1,7 @@
-/** The shell's paintings, from the game's own covers: the hero and each mode's card. */
+/** The game's covers the shell still wears until sign-in (item 5) and the Blitz list (item 6) take the kit's art. */
 export const HERO_ART = "/images/covers/07.png";
 
-export const MODE_ART = {
-  frontier: "/images/covers/04.png",
-  blitz: "/images/covers/blitz-arena.png",
-  eternum: "/images/covers/09.png",
-} as const;
+export const MODE_ART = { blitz: "/images/covers/blitz-arena.png" } as const;
 
 const REALM_STILLS = ["settlement", "city", "kingdom", "empire"] as const;
 

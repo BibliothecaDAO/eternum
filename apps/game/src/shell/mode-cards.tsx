@@ -76,56 +76,12 @@ const ModeName = ({ name, locked = false }: { name: string; locked?: boolean }) 
   </h3>
 );
 
-/** Frontier: the live season's players, and Enter; its day joins once the directory carries it. */
-export const FrontierCard = ({ season, to, className }: { season: DirectoryGame; to?: string; className?: string }) => (
-  <ModeCard
-    art={MODE_ART.frontier}
-    name="Frontier"
-    to={to}
-    className={className}
-    state={season.error ? <UnavailableChip /> : <PlayersChip count={season.player_count} />}
-    action={
-      canEnterGame(season) && (
-        <PrimaryLink small to={entryHref(season, "play")}>
-          Enter
-        </PrimaryLink>
-      )
-    }
-  />
-);
-
 /** The Blitz rows a card draws: the directory's games and the launch service's slots, as one list. */
 const useBlitzRows = (games: DirectoryGame[]) => {
   const slots = usePlaytestSlots();
   const join = useJoinSlot();
   const rows = blitzRows(games, slots.data?.slots ?? [], join.realmsId);
   return { rows, slots, join };
-};
-
-/**
- * Blitz on home (design o1, o2, o10): one row, the player's own game to enter, else the next slot's time to close,
- * its seats and Join, or a check once registered. The card opens the lobby, which lists every Blitz.
- */
-export const BlitzCard = ({ games, now, className }: { games: DirectoryGame[]; now: number; className?: string }) => {
-  const { rows, slots, join } = useBlitzRows(games);
-  const lead = leadBlitzRow(rows);
-  return (
-    <ModeCard
-      art={MODE_ART.blitz}
-      name="Blitz"
-      to="/play"
-      className={className}
-      // Unknown while the slots load; with nothing to play or join there is nothing to show.
-      state={
-        lead ? (
-          <BlitzRowState row={lead} now={now} />
-        ) : (
-          !slots.data && <ClockChip prefix="starts" at={undefined} now={now} />
-        )
-      }
-      action={lead && <BlitzRowAction row={lead} join={join} />}
-    />
-  );
 };
 
 /**
@@ -232,47 +188,4 @@ const BlitzRowAction = ({ row, join }: { row: BlitzRow; join: ReturnType<typeof 
         </span>
       );
   }
-};
-
-/** Eternum: greyed until its next game opens, with the time left to it; Enter once one is open to the player. */
-export const EternumCard = ({
-  games,
-  now,
-  to,
-  className,
-}: {
-  games: DirectoryGame[];
-  now: number;
-  to?: string;
-  className?: string;
-}) => {
-  const next = games
-    .filter((game) => game.mode === "eternum" && !isGameOver(game))
-    .toSorted((a, b) => a.clock.start_main_at - b.clock.start_main_at)[0];
-  const open = next !== undefined && canEnterGame(next);
-  return (
-    <ModeCard
-      art={MODE_ART.eternum}
-      name="Eternum"
-      locked={!open}
-      to={to}
-      className={className}
-      state={
-        next?.error ? (
-          <UnavailableChip />
-        ) : (
-          next &&
-          !open &&
-          next.clock.start_main_at > now && <ClockChip prefix="opens" at={next.clock.start_main_at} now={now} />
-        )
-      }
-      action={
-        open && (
-          <PrimaryLink small to={entryHref(next, "play")}>
-            Enter
-          </PrimaryLink>
-        )
-      }
-    />
-  );
 };

@@ -7,7 +7,7 @@ type Entry = HeraldFrontierLeaderboardEntry;
 const PRECISION = BigInt(RESOURCE_PRECISION);
 
 /** The viewer's own row, matched by canonical address; none for a spectator or a player without a settled realm. */
-const findOwnEntry = (entries: readonly Entry[], viewer: string | null): Entry | undefined => {
+export const findOwnEntry = (entries: readonly Entry[], viewer: string | null): Entry | undefined => {
   const own = normalizeLeaderboardAddress(viewer);
   return own ? entries.find((entry) => normalizeLeaderboardAddress(entry.address) === own) : undefined;
 };

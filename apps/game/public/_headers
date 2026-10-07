@@ -5,7 +5,13 @@
   Cache-Control: no-cache
 /index.html
   Cache-Control: no-cache
-/play
+/blitz
+  Cache-Control: no-cache
+/frontier
+  Cache-Control: no-cache
+/eternum
+  Cache-Control: no-cache
+/dominion
   Cache-Control: no-cache
 /season
   Cache-Control: no-cache

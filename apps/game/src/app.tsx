@@ -10,12 +10,12 @@ import { appQueryClient } from "./runtime/query-client";
 import { AccountPage } from "./shell/account";
 import { AppShell } from "./shell/app-shell";
 import { FactoryPage } from "./shell/factory";
-import { HomePage } from "./shell/home";
 import { LearnPage } from "./shell/learn";
 import { NewsPage } from "./shell/news";
 import { IS_DEV_ENVIRONMENT } from "./shell/frame/environment";
 import { NotFoundPage } from "./shell/not-found";
-import { PlayPage } from "./shell/play";
+import { BlitzPage, DominionPage, EternumPage, FrontierPage } from "./shell/play/age-pages";
+import { PlayPage } from "./shell/play/play-page";
 import { PlayerPage } from "./shell/player";
 import { ResultsPage } from "./shell/results";
 import { SignInPage } from "./shell/sign-in/sign-in-page";
@@ -82,8 +82,11 @@ const LazyRoute = ({ children }: { children: ReactNode }) => <Suspense fallback=
 export const appRoutes = (
   <>
     <Route element={<AppShell />}>
-      <Route index element={<HomePage />} />
-      <Route path="play" element={<PlayPage />} />
+      <Route index element={<PlayPage />} />
+      <Route path="blitz" element={<BlitzPage />} />
+      <Route path="frontier" element={<FrontierPage />} />
+      <Route path="eternum" element={<EternumPage />} />
+      <Route path="dominion" element={<DominionPage />} />
       <Route path="season" element={<ResultsPage />} />
       <Route path="profile" element={<AccountPage />} />
       <Route path="p/:address" element={<PlayerPage />} />

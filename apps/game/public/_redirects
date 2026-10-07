@@ -1,6 +1,9 @@
 # Only application routes use the SPA shell. Missing assets must remain 404s.
 # src/app-hosting.test.ts holds this list to exactly the router's routes in src/app.tsx.
-/play / 200
+/blitz / 200
+/frontier / 200
+/eternum / 200
+/dominion / 200
 /season / 200
 /profile / 200
 /sign-in / 200
