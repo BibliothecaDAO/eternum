@@ -42,6 +42,6 @@ curl -si https://realms-guardian-staging.<account>.workers.dev/ | head -1
 Every shard's manifest carries the guardian public key and account class that the identity Worker publishes:
 
 ```sh
-curl -s https://staging.realms.party/api/guardian
+curl -s https://play.dev-realms.party/api/guardian
 curl -s <herald>/manifest | jq '{guardianPublicKey, accountClassHash}'
 ```
