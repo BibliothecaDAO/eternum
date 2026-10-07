@@ -45,3 +45,20 @@ export const CLOCK_WORDS = {
   /** Before the time left to a beginning: "Starts 16:30 · in 2h 4m". */
   in: "in",
 } as const;
+
+/** The sign-in flow's words: its titles, its two ways in and the steps on its buttons. */
+export const SIGN_IN_WORDS = {
+  discord: "Discord",
+  or: "or",
+  email: "Email",
+  sendCode: "Send code",
+  sending: "Sending…",
+  codeSent: "Code sent",
+  code: "Sign-in code",
+  checking: "Checking…",
+  newCode: "New code",
+  yourName: "Your name",
+  claimName: "Claim name",
+  saving: "Saving…",
+  portrait: "Portrait",
+} as const;

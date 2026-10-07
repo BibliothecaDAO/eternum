@@ -8,6 +8,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 vi.hoisted(() => vi.stubGlobal("fetch", async () => new Response(null, { status: 401 })));
 
 import { identityClient, useIdentitySessionStore } from "@/hooks/context/identity-session";
+import { setViewportWidth } from "../frame/test-viewport";
 import { SignInPage } from "./sign-in-page";
 
 const NEXT = "/g/0x5245414c4d53/1/map?col=4&row=9&spectate=true";
@@ -24,6 +25,7 @@ const Where = () => {
 
 const mount = async (path: string) => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  setViewportWidth(390);
   const container = document.createElement("div");
   document.body.append(container);
   const root = createRoot(container);
@@ -58,7 +60,7 @@ afterEach(() => {
 });
 
 describe("the sign-in flow", () => {
-  it("takes a new player from an emailed code through their name and portrait to Play, back where they asked", async () => {
+  it("takes a new player from an emailed code through their name and portrait, back where they asked", async () => {
     useIdentitySessionStore.setState({ status: "anonymous", session: null });
     const sendCode = vi.spyOn(identityClient, "sendSignInCode").mockResolvedValue();
     vi.spyOn(identityClient, "signInWithCode").mockResolvedValue(sessionOf({}));
@@ -88,9 +90,8 @@ describe("the sign-in flow", () => {
       await ui.type('input[autocomplete="nickname"]', "Ysolde");
       await act(async () => ui.query<HTMLFormElement>("form")!.requestSubmit());
       expect(save).toHaveBeenCalledWith({ name: "Ysolde", image: picked.replace("Portrait ", "") });
-      expect(ui.container.textContent).toContain("You're in, Ysolde");
-
-      await act(async () => ui.query<HTMLAnchorElement>("a")!.click());
+      // No welcome step: the claimed name sends the player straight back where they asked.
+      await act(async () => {});
       expect(ui.query('[data-testid="where"]')?.textContent).toBe(NEXT);
     } finally {
       await ui.unmount();

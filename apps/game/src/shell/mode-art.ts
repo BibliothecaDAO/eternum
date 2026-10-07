@@ -1,6 +1,4 @@
-/** The game's covers the shell still wears until sign-in (item 5) and the Blitz list (item 6) take the kit's art. */
-export const HERO_ART = "/images/covers/07.png";
-
+/** The game's cover the Blitz list still wears until it takes the kit's art (item 6). */
 export const MODE_ART = { blitz: "/images/covers/blitz-arena.png" } as const;
 
 const REALM_STILLS = ["settlement", "city", "kingdom", "empire"] as const;

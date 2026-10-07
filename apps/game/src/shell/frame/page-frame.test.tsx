@@ -19,6 +19,8 @@ const SIZES = [
 
 /** The tab pages; every other page is opened from another and carries Back. */
 const TAB_PATHS = new Set(["/", "/season", "/learn", "/profile", "/nothing-here"]);
+/** Full-screen steps outside the app shell: no tabs, the desktop bar keeps the lockup alone. */
+const STEP_PATHS = ["/sign-in"];
 const CONTROLS = "a[href], button, input, select, textarea";
 
 /** The app shell's pages (the route without a path), each with a sample for its parameters. */
@@ -64,11 +66,12 @@ const bandOrder = (container: HTMLElement) =>
 describe.each(SIZES)("every page at %i × %i keeps each control in its band", (width) => {
   const layout = width >= 1024 ? "desktop" : "phone";
 
-  it.each(shellPaths())("%s", async (path) => {
+  it.each([...shellPaths(), ...STEP_PATHS])("%s", async (path) => {
     setViewportWidth(width);
     const container = await renderPath(path);
     const top = band(container, "top");
     const isTabPage = TAB_PATHS.has(path);
+    const isStep = STEP_PATHS.includes(path);
 
     // Every control on the page sits in one of the frame's bands.
     for (const control of controlsIn(container))
@@ -85,13 +88,15 @@ describe.each(SIZES)("every page at %i × %i keeps each control in its band", (w
       expect(bandOrder(container).filter((name) => name !== "body")).toEqual(
         ["top", "notice", "foot", "tabs"].filter((name) => band(container, name)),
       );
-      expect(controlsIn(band(container, "tabs")).filter((control) => control.dataset.role === "tab")).toHaveLength(4);
+      expect(controlsIn(band(container, "tabs")).filter((control) => control.dataset.role === "tab")).toHaveLength(
+        isStep ? 0 : 4,
+      );
     } else {
       // One top bar: the lockup, Play · Season · Learn and the player; Back sits in the title row under it.
       const [lockup, ...rest] = controlsIn(top);
       const tabs = rest.filter((control) => control.dataset.role === "tab");
       expect(lockup.dataset.role).toBe("lockup");
-      expect(tabs).toHaveLength(3);
+      expect(tabs).toHaveLength(isStep ? 0 : 3);
       for (const control of rest.filter((other) => !tabs.includes(other)))
         expect(control.closest('[data-role="player"]'), control.outerHTML).not.toBeNull();
       expect(band(container, "tabs")).toBeNull();

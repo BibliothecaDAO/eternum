@@ -49,9 +49,3 @@ export const AGES: readonly Age[] = [
 ];
 
 export const ageOf = (mode: AgeMode): Age => AGES.find((age) => age.mode === mode)!;
-
-/** A kit landscape at the width a surface needs, as an img srcset pair. */
-export const paintingSources = (painting: string) => ({
-  src: `/images/landscapes/${painting}-800.webp`,
-  srcSet: `/images/landscapes/${painting}-800.webp 800w, /images/landscapes/${painting}-1600.webp 1600w`,
-});

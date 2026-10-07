@@ -68,6 +68,9 @@ const ICONS = {
   // The app's own codes (app handoff, Icons): play, and watch (a spyglass, never the explore eye).
   Pl: "/image-icons/ui-play.png",
   Wc: "/image-icons/ui-telescope.png",
+  Dc: "/image-icons/discord.png",
+  Em: "/image-icons/ui-mail.png",
+  Ed: "/image-icons/ui-edit.png",
 } as const;
 
 export type IconCode = keyof typeof ICONS;

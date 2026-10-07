@@ -4,7 +4,8 @@ import { chooseSeason } from "../season";
 import { LORE_LINE } from "../words";
 import { AgeCard } from "./age-card";
 import { ageState } from "./age-state";
-import { AGES, ageOf, paintingSources } from "./ages";
+import { AGES, ageOf } from "./ages";
+import { paintingSources } from "../paintings";
 import { ageOfStep, type NextStep } from "./next-step";
 import { NextStepCard } from "./next-step-card";
 import { type PlayFacts, usePlayFacts } from "./play-facts";
@@ -19,7 +20,12 @@ import { StateCard } from "./state-card";
 export const PlayPage = () => {
   const facts = usePlayFacts();
   const layout = useLayout();
-  return <PageFrame>{layout === "phone" ? <PhonePlay facts={facts} /> : <DesktopPlay facts={facts} />}</PageFrame>;
+  const painting = isFirstVisit(facts.step) ? "dark-plains" : ageOf(ageOfStep(facts.step)).painting;
+  return (
+    <PageFrame painting={painting}>
+      {layout === "phone" ? <PhonePlay facts={facts} /> : <DesktopPlay facts={facts} />}
+    </PageFrame>
+  );
 };
 
 const isFirstVisit = (step: NextStep | undefined) => step?.kind === "play" && step.firstVisit;
@@ -69,10 +75,8 @@ const PhoneHero = () => (
 const DesktopPlay = ({ facts }: { facts: PlayFacts }) => {
   const season = chooseSeason(facts.games, facts.signedIn);
   const firstVisit = isFirstVisit(facts.step);
-  const painting = firstVisit ? "dark-plains" : ageOf(ageOfStep(facts.step)).painting;
   return (
-    <div className="relative isolate flex flex-col gap-6">
-      <DesktopBackdrop painting={painting} />
+    <div className="flex flex-col gap-6">
       <div className="flex min-h-[26rem] items-start justify-between gap-8 pt-6">
         <div className="flex w-[34rem] flex-col gap-4">
           {firstVisit && <p className="font-display text-[44px] leading-[1.1] text-kit-cream">{LORE_LINE}</p>}
@@ -92,14 +96,3 @@ const DesktopPlay = ({ facts }: { facts: PlayFacts }) => {
     </div>
   );
 };
-
-/** The card's age painting across the window behind the page, faded into the ground in its lower third. */
-const DesktopBackdrop = ({ painting }: { painting: string }) => (
-  <div
-    aria-hidden
-    className="pointer-events-none absolute left-1/2 top-[-1.5rem] -z-10 h-[36rem] w-screen -translate-x-1/2"
-  >
-    <img {...paintingSources(painting)} sizes="100vw" alt="" className="size-full object-cover object-[50%_40%]" />
-    <span className="absolute inset-0 bg-gradient-to-b from-kit-ground/40 via-kit-ground/10 to-kit-ground" />
-  </div>
-);

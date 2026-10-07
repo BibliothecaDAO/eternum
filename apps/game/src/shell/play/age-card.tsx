@@ -4,7 +4,8 @@ import { Link } from "react-router-dom";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
 import { WORDS } from "../words";
-import { AGES, type AgeMode, paintingSources } from "./ages";
+import { AGES, type AgeMode } from "./ages";
+import { paintingSources } from "../paintings";
 import type { AgeAction } from "./age-state";
 import { GoButton } from "./go-button";
 

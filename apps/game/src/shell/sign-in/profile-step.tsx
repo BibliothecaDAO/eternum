@@ -2,101 +2,59 @@ import { IDENTITY_PORTRAITS, nameRuleViolation, type Session } from "@realms-wor
 import { useState, type FormEvent } from "react";
 
 import { identityClient } from "@/hooks/context/identity-session";
-import { Check } from "@/ui/design-system/atoms/game-icons";
-import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { Button } from "@/ui/design-system/kit/button";
 
-import { portraitUrl } from "@/services/identity/player-portrait";
 import { nameRefusal } from "../name-claim";
-
-/** The name and portrait a new player chose, as the account now holds them. */
-export interface ChosenProfile {
-  name: string;
-  portrait: string;
-}
+import { SIGN_IN_WORDS } from "../words";
+import { FailureLine } from "./failure-line";
+import { NameField, PortraitGrid } from "./fields";
 
 /**
- * The profile step (design o3, third screen): the name suggested at sign-up (their Discord name or their email's local
- * part), ticked only while it passes the identity service's own name rule, and the ink portraits with one already
- * picked at random. One Continue saves both.
+ * A new account's one step (spec 02): the name suggested at sign-up (the Discord name or the email's local part),
+ * ticked while it passes the identity service's rule, and a portrait already picked; Claim name saves both.
  */
-export const ProfileStep = ({
-  session,
-  onChosen,
-}: {
-  session: Session;
-  onChosen: (profile: ChosenProfile) => void;
-}) => {
+export const ProfileStep = ({ session, onClaimed }: { session: Session; onClaimed: () => void }) => {
   const [name, setName] = useState(session.user.suggestedName ?? "");
   const [portrait, setPortrait] = useState(() => session.user.image ?? randomPortrait());
-  const [pending, setPending] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const chosenName = name.trim();
-  const violation = nameRuleViolation(chosenName);
+  const valid = nameRuleViolation(chosenName) === null;
 
-  const save = async (event: FormEvent) => {
+  const claim = async (event: FormEvent) => {
     event.preventDefault();
-    setPending(true);
+    setSaving(true);
     setError(null);
     try {
       await identityClient.updateUser({ name: chosenName, image: portrait });
-      onChosen({ name: chosenName, portrait });
+      onClaimed();
     } catch (cause) {
       setError(nameRefusal(cause));
     } finally {
-      setPending(false);
+      setSaving(false);
     }
   };
 
   return (
-    <form onSubmit={(event) => void save(event)} className="flex flex-col gap-5 pt-10">
-      <label
-        className={cn(
-          "flex h-[60px] items-center gap-2 rounded-[18px] border-2 bg-kit-plate px-4",
-          violation ? "border-kit-red" : "border-kit-peach",
-        )}
-      >
-        <span className="sr-only">Your name</span>
-        <input
-          type="text"
-          value={name}
-          maxLength={20}
-          autoComplete="nickname"
-          onChange={(event) => setName(event.target.value)}
-          placeholder="Your name"
-          aria-invalid={violation !== null}
-          className="min-w-0 flex-1 bg-transparent font-ui text-[22px] font-extrabold text-kit-cream outline-none placeholder:text-kit-muted"
-        />
-        {violation === null && (
-          <span aria-hidden className="flex size-7 items-center justify-center rounded-full bg-kit-sage">
-            <Check className="size-5" />
-          </span>
-        )}
-      </label>
-      {violation && chosenName.length > 0 && <p className="-mt-3 text-[14px] text-kit-red">Names use {violation}.</p>}
-      <div role="radiogroup" aria-label="Portrait" className="grid grid-cols-3 gap-3">
-        {IDENTITY_PORTRAITS.map((id) => (
-          <button
-            key={id}
-            type="button"
-            role="radio"
-            aria-checked={portrait === id}
-            aria-label={`Portrait ${id}`}
-            onClick={() => setPortrait(id)}
-            className={cn(
-              "overflow-hidden rounded-2xl border-2",
-              portrait === id
-                ? "border-kit-peach shadow-[0_0_16px_theme(colors.kit.peach/55%)]"
-                : "border-kit-line opacity-80",
-            )}
-          >
-            <img src={portraitUrl(id)} alt="" className="aspect-square w-full object-cover" />
-          </button>
-        ))}
-      </div>
-      <button type="submit" disabled={pending || violation !== null} className="frontier-primary">
-        Continue
-      </button>
-      {error && <p className="text-center text-[15px] text-kit-red">{error}</p>}
+    <form onSubmit={(event) => void claim(event)} className="flex flex-col gap-4">
+      <NameField
+        name={name}
+        valid={valid}
+        onName={(value) => {
+          setError(null);
+          setName(value);
+        }}
+      />
+      <FailureLine line={error} />
+      <PortraitGrid chosen={portrait} onChoose={setPortrait} />
+      <Button
+        role="primary"
+        type="submit"
+        word={SIGN_IN_WORDS.claimName}
+        icon="Ok"
+        disabled={!valid}
+        loading={saving ? SIGN_IN_WORDS.saving : undefined}
+      />
     </form>
   );
 };

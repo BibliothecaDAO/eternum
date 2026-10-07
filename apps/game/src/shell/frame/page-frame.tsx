@@ -3,6 +3,7 @@ import { Link, type To } from "react-router-dom";
 
 import { ArrowLeft } from "@/ui/design-system/atoms/game-icons";
 
+import { paintingSources } from "../paintings";
 import { WORDS } from "../words";
 import { EnvEdge } from "./env-mark";
 import { type Layout, useLayout } from "./layout";
@@ -20,6 +21,8 @@ type PageFrameProps = {
   foot?: ReactNode;
   /** The four tabs; a full-screen step (sign-in, entering a match) has none. */
   tabs?: boolean;
+  /** A kit landscape across the desktop window behind the page, faded into the ground in its lower third. */
+  painting?: string;
   children: ReactNode;
 };
 
@@ -64,11 +67,12 @@ const PhoneFrame = ({ back, title, notice, foot, tabs = true, children }: PageFr
   </div>
 );
 
-const DesktopFrame = ({ back, title, notice, foot, children }: PageFrameProps) => (
-  <div className="flex min-h-screen flex-col">
+const DesktopFrame = ({ back, title, notice, foot, tabs = true, painting, children }: PageFrameProps) => (
+  <div className="relative isolate flex min-h-screen flex-col">
     <div data-band="top">
-      <TopNav />
+      <TopNav places={tabs} />
     </div>
+    {painting && <Backdrop painting={painting} />}
     {back !== undefined ? (
       <div data-band="title" className="mx-auto flex w-full max-w-6xl items-center gap-2 px-10 pt-6">
         <BackTitle back={back} title={title} layout="desktop" />
@@ -87,6 +91,13 @@ const DesktopFrame = ({ back, title, notice, foot, children }: PageFrameProps) =
         {notice}
       </div>
     ) : null}
+  </div>
+);
+
+const Backdrop = ({ painting }: { painting: string }) => (
+  <div aria-hidden className="pointer-events-none absolute inset-x-0 top-[68px] -z-10 h-[38rem]">
+    <img {...paintingSources(painting)} sizes="100vw" alt="" className="size-full object-cover object-[50%_40%]" />
+    <span className="absolute inset-0 bg-gradient-to-b from-kit-ground/40 via-kit-ground/10 to-kit-ground" />
   </div>
 );
 

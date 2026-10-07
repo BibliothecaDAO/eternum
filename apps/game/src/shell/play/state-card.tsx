@@ -1,5 +1,5 @@
 import { ServiceFailure } from "../service-failure";
-import { paintingSources } from "./ages";
+import { paintingSources } from "../paintings";
 
 /** A card in a failure state: the storm painting and the failure owner's one line with its verb. */
 export const StateCard = ({

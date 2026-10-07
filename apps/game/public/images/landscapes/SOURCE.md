@@ -8,6 +8,7 @@ at web sizes. One painting per age, so a player learns the ages by sight (brand.
 - `castle`: Age III, Eternum
 - `hidden-castle`: Age IV, Dominion (drawn greyed)
 - `dark-plains`: the first visit's hero
+- `brooding-plains`: sign-in ("The mist forgets.")
 - `stormy`: a failure state
 
 Each at 800 and 1600 px wide, from the kit's PNG master:

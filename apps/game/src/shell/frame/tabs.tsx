@@ -81,38 +81,45 @@ export const TabBar = () => {
   );
 };
 
-/** The desktop's one top bar: the lockup, Play · Season · Learn, and the player chip (or Sign in) at the right. */
-export const TopNav = () => {
+/**
+ * The desktop's one top bar: the lockup, Play · Season · Learn, and the player chip (or Sign in) at the right; a
+ * full-screen step keeps the lockup alone.
+ */
+export const TopNav = ({ places }: { places: boolean }) => {
   const active = useActiveTab();
   return (
     <header className="relative z-30 flex h-[68px] shrink-0 items-center gap-7 border-b border-kit-line bg-kit-ground px-10">
       <NavLink to="/" data-role="lockup" aria-label={WORDS.play}>
         <Lockup size="desktop" />
       </NavLink>
-      <nav aria-label="Tabs" className="flex gap-1">
-        {DESKTOP_TABS.map((tab) => {
-          const current = active === tab.to;
-          const Icon = tab.icon;
-          return (
-            <NavLink
-              key={tab.to}
-              to={tab.to}
-              data-role="tab"
-              aria-current={current ? "page" : undefined}
-              className={cn(
-                "flex h-12 items-center gap-2 rounded-xl px-4 font-ui text-[15px] font-semibold",
-                current ? "bg-kit-peach/[.07] text-kit-peach" : "text-kit-muted",
-              )}
-            >
-              <Icon size={24} className={current ? undefined : "brightness-[.8] grayscale-[.6]"} />
-              {tab.word}
-            </NavLink>
-          );
-        })}
-      </nav>
-      <div className="ml-auto" data-role="player">
-        <IdentityChip />
-      </div>
+      {places && (
+        <>
+          <nav aria-label="Tabs" className="flex gap-1">
+            {DESKTOP_TABS.map((tab) => {
+              const current = active === tab.to;
+              const Icon = tab.icon;
+              return (
+                <NavLink
+                  key={tab.to}
+                  to={tab.to}
+                  data-role="tab"
+                  aria-current={current ? "page" : undefined}
+                  className={cn(
+                    "flex h-12 items-center gap-2 rounded-xl px-4 font-ui text-[15px] font-semibold",
+                    current ? "bg-kit-peach/[.07] text-kit-peach" : "text-kit-muted",
+                  )}
+                >
+                  <Icon size={24} className={current ? undefined : "brightness-[.8] grayscale-[.6]"} />
+                  {tab.word}
+                </NavLink>
+              );
+            })}
+          </nav>
+          <div className="ml-auto" data-role="player">
+            <IdentityChip />
+          </div>
+        </>
+      )}
     </header>
   );
 };

@@ -8,25 +8,25 @@ import {
   useIdentitySession,
   useIdentitySessionStore,
 } from "@/hooks/context/identity-session";
-import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { useFrontierType } from "@/ui/features/frontier/use-frontier-type";
 import { useBootDocumentState } from "@/ui/modules/boot-loader";
 import { failureSentence, type IdentityAction } from "@/ui/modules/identity/identity-failures";
 
-import { HERO_ART } from "../mode-art";
+import { useLayout } from "../frame/layout";
+import { PageFrame } from "../frame/page-frame";
+import { paintingSources } from "../paintings";
+import { LORE_LINE, SIGN_IN_WORDS, WORDS } from "../words";
 import { CodeStep } from "./code-step";
-import { type ChosenProfile, ProfileStep } from "./profile-step";
+import { ProfileStep } from "./profile-step";
 import { nextOf, signInHref } from "./sign-in-route";
 import { StartStep } from "./start-step";
-import { WelcomeStep } from "./welcome-step";
 
-/** The flow's four screens, as its progress dots count them. */
-type Step = "start" | "code" | "profile" | "welcome";
-const STEPS: Step[] = ["start", "code", "profile", "welcome"];
+/** The sign-in flow's painting: Brooding Plains, the mist. */
+const PAINTING = "brooding-plains";
 
 /**
- * The one sign-in flow (design o3), full screen: Discord or an emailed code, then a new player's name and portrait, then
- * "You're in" and back to `next`. A player who already has a name goes straight back to `next` once signed in.
+ * The one sign-in flow (spec 02): Discord or an emailed code, then, for a new account only, its name and portrait; it
+ * returns the player to `next` the moment the account carries a name. Back leads there on every step.
  */
 export const SignInPage = () => {
   useBootDocumentState("app-ready");
@@ -35,27 +35,14 @@ export const SignInPage = () => {
   const next = nextOf(search);
   const { status, session } = useIdentitySession();
   const refresh = useIdentitySessionStore((state) => state.refresh);
-  const [welcome, setWelcome] = useState<ChosenProfile | null>(null);
 
-  const choose = (profile: ChosenProfile) => {
-    // The welcome shows first; the refreshed session then carries the name everywhere else.
-    setWelcome(profile);
-    void refresh();
-  };
-
-  if (welcome) {
-    return (
-      <SignInFrame step="welcome">
-        <WelcomeStep profile={welcome} next={next} />
-      </SignInFrame>
-    );
-  }
-  if (status === "loading") return <SignInFrame />;
+  if (status === "loading") return <SignInFrame next={next} title={WORDS.signIn} />;
   if (!session) return <AnonymousSignIn next={next} />;
+  // The refreshed session carries the claimed name, and the player is back where they were going.
   if (identityUsername(session) !== null) return <Navigate to={next} replace />;
   return (
-    <SignInFrame step="profile">
-      <ProfileStep session={session} onChosen={choose} />
+    <SignInFrame next={next} title={SIGN_IN_WORDS.yourName}>
+      <ProfileStep session={session} onClaimed={() => void refresh()} />
     </SignInFrame>
   );
 };
@@ -66,7 +53,7 @@ const AnonymousSignIn = ({ next }: { next: string }) => {
   const applySession = useIdentitySessionStore((state) => state.applySession);
   const [sent, setSent] = useState<{ email: string; at: number } | null>(null);
   // Discord returns to the flow with an `error` query parameter when its sign-in did not complete.
-  const { run, pending, error, setError } = useIdentityAction(() => discordReturnError(search));
+  const { run, running, error, setError } = useIdentityAction(() => discordReturnError(search));
 
   const continueWithDiscord = () =>
     void run("discord", async () => window.location.assign(await identityClient.discordSignInUrl(signInHref(next))));
@@ -74,7 +61,7 @@ const AnonymousSignIn = ({ next }: { next: string }) => {
   const emailCode = (email: string) =>
     void run("send-code", async () => {
       await identityClient.sendSignInCode(email);
-      setSent({ email, at: Date.now() });
+      setSent({ email, at: Math.floor(Date.now() / 1000) });
     });
 
   const signInWithCode = (email: string, code: string) =>
@@ -82,20 +69,27 @@ const AnonymousSignIn = ({ next }: { next: string }) => {
 
   if (!sent) {
     return (
-      <SignInFrame step="start">
-        <StartStep pending={pending} error={error} onDiscord={continueWithDiscord} onEmail={emailCode} />
+      <SignInFrame next={next} title={WORDS.signIn} hero>
+        <StartStep
+          sending={running === "send-code"}
+          error={error}
+          onDiscord={continueWithDiscord}
+          onEmail={emailCode}
+        />
       </SignInFrame>
     );
   }
   return (
-    <SignInFrame step="code">
+    <SignInFrame next={next} title={SIGN_IN_WORDS.codeSent}>
       <CodeStep
         email={sent.email}
         sentAt={sent.at}
-        pending={pending}
+        checking={running === "code"}
+        sending={running === "send-code"}
         error={error}
         onCode={(code) => signInWithCode(sent.email, code)}
         onNewCode={() => emailCode(sent.email)}
+        onTyping={() => setError(null)}
         onChangeEmail={() => {
           setError(null);
           setSent(null);
@@ -105,15 +99,15 @@ const AnonymousSignIn = ({ next }: { next: string }) => {
   );
 };
 
-/** Runs one identity action at a time; a failure becomes the one sentence the player can act on. */
+/** Runs one identity action at a time; its name is the step its button shows, a failure the one line under it. */
 const useIdentityAction = (initialError: () => string | null) => {
-  const [pending, setPending] = useState(false);
+  const [running, setRunning] = useState<IdentityAction | null>(null);
   const [error, setError] = useState<string | null>(initialError);
-  const running = useRef(false);
+  const busy = useRef(false);
   const run = useCallback(async (action: IdentityAction, body: () => Promise<void>): Promise<boolean> => {
-    if (running.current) return false;
-    running.current = true;
-    setPending(true);
+    if (busy.current) return false;
+    busy.current = true;
+    setRunning(action);
     setError(null);
     try {
       await body();
@@ -122,44 +116,68 @@ const useIdentityAction = (initialError: () => string | null) => {
       setError(failureSentence(action, cause));
       return false;
     } finally {
-      running.current = false;
-      setPending(false);
+      busy.current = false;
+      setRunning(null);
     }
   }, []);
-  return { run, pending, error, setError };
+  return { run, running, error, setError };
 };
 
 /**
- * The flow's frame: a phone-width column, the progress dots on the screens between the first and the last, and on a
- * wide screen that column as a panel over the hero painting, dimmed.
+ * The flow's frame on PageFrame, with no tabs: on a phone one column, the painting and the lore line above the first
+ * step only; on desktop the painting at full strength across the window, the lore line at its bottom left and the
+ * steps in a 440 px panel at the right.
  */
-const SignInFrame = ({ step, children }: { step?: Step; children?: ReactNode }) => (
-  <div className="relative isolate min-h-dvh bg-kit-ground font-sans text-kit-cream lg:py-12">
+const SignInFrame = ({
+  next,
+  title,
+  hero = false,
+  children,
+}: {
+  next: string;
+  title: string;
+  hero?: boolean;
+  children?: ReactNode;
+}) => {
+  const layout = useLayout();
+  return (
+    <PageFrame back={next} title={title} tabs={false}>
+      {layout === "phone" ? (
+        <div className="flex flex-col gap-5">
+          {hero && <PhoneHero />}
+          {children}
+        </div>
+      ) : (
+        <DesktopPanel>{children}</DesktopPanel>
+      )}
+    </PageFrame>
+  );
+};
+
+const PhoneHero = () => (
+  <section className="relative isolate -mx-4 flex h-[38dvh] items-end overflow-hidden px-4 pb-3">
     <img
-      src={HERO_ART}
+      {...paintingSources(PAINTING)}
+      sizes="100vw"
       alt=""
-      aria-hidden
-      className="absolute inset-0 -z-10 hidden size-full object-cover opacity-25 blur-sm lg:block"
+      className="absolute inset-0 -z-10 size-full object-cover"
     />
-    <main className="mx-auto flex min-h-dvh w-full max-w-[420px] flex-col px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] lg:min-h-0 lg:rounded-3xl lg:border lg:border-kit-line lg:bg-kit-ground/90 lg:p-6">
-      {(step === "code" || step === "profile") && <ProgressDots step={step} />}
-      {children}
-    </main>
-  </div>
+    <span className="absolute inset-0 -z-10 bg-gradient-to-b from-transparent via-transparent to-kit-ground" />
+    <p className="font-display text-[26px] leading-[1.15] text-kit-cream">{LORE_LINE}</p>
+  </section>
 );
 
-const ProgressDots = ({ step }: { step: Step }) => (
-  <div aria-hidden className="flex justify-center gap-1.5 pt-6">
-    {STEPS.map((dot) => (
-      <span
-        key={dot}
-        className={cn(
-          "h-2 rounded-full",
-          dot === step ? "w-6 bg-kit-peach" : "w-2",
-          dot !== step && (STEPS.indexOf(dot) < STEPS.indexOf(step) ? "bg-kit-peach" : "bg-kit-line"),
-        )}
-      />
-    ))}
+const DesktopPanel = ({ children }: { children?: ReactNode }) => (
+  // No stacking context of its own: the fixed painting must sit behind the frame's title row (Back), not over it.
+  <div className="flex min-h-[38rem] items-start justify-end">
+    <div aria-hidden className="pointer-events-none fixed inset-x-0 bottom-0 top-[68px] -z-10">
+      <img {...paintingSources(PAINTING)} sizes="100vw" alt="" className="size-full object-cover" />
+      <span className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-kit-ground/60" />
+    </div>
+    <p className="fixed bottom-10 left-10 max-w-[32rem] font-display text-[40px] leading-[1.1] text-kit-cream">
+      {LORE_LINE}
+    </p>
+    <div className="w-[440px] rounded-2xl border border-kit-line bg-kit-plate p-6">{children}</div>
   </div>
 );
 
