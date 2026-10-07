@@ -105,13 +105,13 @@ pub fn initial() -> ArmyProgress {
 }
 
 // A new army starts each attribute at its realm's trained tier, common being level 1: the War hall's Battle, the
-// Supply yard's Logistics, the Scouts' lodge's Scouting and the Hearth's Homecoming, which takes Support's place.
+// Supply yard's Logistics, the Scouts' lodge's Scouting and the Hearth's Homecoming.
 pub fn trained(learned: u64) -> ArmyProgress {
     ArmyProgress {
         battle: 1 + crate::research::tier(learned, crate::research::ROW_WAR_HALL),
         logistics: 1 + crate::research::tier(learned, crate::research::ROW_SUPPLY_YARD),
         scouting: 1 + crate::research::tier(learned, crate::research::ROW_SCOUTS_LODGE),
-        support: 1 + crate::research::tier(learned, crate::research::ROW_HEARTH),
+        homecoming: 1 + crate::research::tier(learned, crate::research::ROW_HEARTH),
         ..initial()
     }
 }

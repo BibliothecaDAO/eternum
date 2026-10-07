@@ -399,8 +399,8 @@ fn training_starts_only_later_armies_at_their_realms_tiers_and_full_at_their_log
     let trained = deploy(d, game_id, category, 1);
     let progress = read_progress(d, trained);
     assert_eq!(
-        (progress.battle, progress.logistics, progress.scouting, progress.support, progress.level, progress.xp),
-        (3, 2, 1, 4, 1, 0),
+        (progress.battle, progress.logistics, progress.scouting, progress.homecoming, progress.xp),
+        (3, 2, 1, 4, 0),
     );
     // Training changes no army already deployed.
     assert_eq!(read_progress(d, untrained), crate::progression::initial());
@@ -412,6 +412,6 @@ fn training_starts_only_later_armies_at_their_realms_tiers_and_full_at_their_log
     assert_eq!(
         troops.stamina.inline().amount,
         crate::stamina::StaminaImpl::max(troops.category, crate::troops::TroopTier::T1, preset.rules.troop_stamina_config)
-            + crate::rules::ATTRIBUTE_STAMINA.into(),
+            + crate::rules::logistics_stamina(2).into(),
     );
 }
