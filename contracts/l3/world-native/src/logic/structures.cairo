@@ -262,7 +262,6 @@ pub mod StructuresLogic {
                 crate::guards::IGuardsLibraryDispatcher { class_hash: self.release.classes(key.game_id).troops.read() },
                 key,
                 seed,
-                None,
                 timestamp,
                 crate::commands::action_context(game_context),
             );
