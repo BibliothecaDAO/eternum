@@ -6,6 +6,8 @@ import type { DayClock } from "@/ui/features/frontier/hud/day-clock";
 import { HudBands } from "@/ui/features/frontier/hud/hud-bands";
 import { MenuSheet } from "@/ui/features/frontier/hud/menu-sheet";
 import { OrderBar } from "@/ui/features/frontier/hud/order-bar";
+import { DeployView } from "@/ui/features/frontier/deploy/deploy-view";
+import { Direction } from "@bibliothecadao/types";
 import { PlaceNav } from "@/ui/features/frontier/hud/place-nav";
 import { StatusStrip, type StoreReading } from "@/ui/features/frontier/hud/status-strip";
 import { useParams } from "react-router-dom";
@@ -115,6 +117,20 @@ const STATES = {
     selected: 0,
     order: { ...EXPLORE, stamina: { cost: 30, held: 10, wait: 40 * 60 } },
   },
+  deploy: { clock: CLOCK, stores: STORES, armies: ARMIES, deploy: DEPLOY },
+  "deploy-scout": { clock: CLOCK, stores: STORES, armies: ARMIES, deploy: { ...DEPLOY, count: 1, tiles: 99 } },
+  "deploy-wheat": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    deploy: { ...DEPLOY, count: 1_000, wheatStop: 1_000, wheat: 2_000, tiles: 0 },
+  },
+  "deploy-empty": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: [],
+    deploy: { ...DEPLOY, count: 0, troopsAtHome: 0, troopsMax: 0 },
+  },
 } as const;
 
 type LabOrder = {
@@ -124,8 +140,21 @@ type LabOrder = {
   wheat: { cost: number; held: number | undefined; wait: number | undefined };
 };
 
+/** A city's deploy: 6,200 troops at home, 2 wheat a troop, the realm trained Battle and Homecoming to uncommon. */
+type LabDeploy = {
+  count: number;
+  troopsAtHome: number;
+  troopsMax: number;
+  wheatStop?: number;
+  wheat: number;
+  tiles: number;
+};
+
+const DEPLOY: LabDeploy = { count: 5_000, troopsAtHome: 6_200, troopsMax: 6_200, wheat: 14_410, tiles: 44 };
+
 type LabState = {
   order?: LabOrder;
+  deploy?: LabDeploy;
   clock: DayClock;
   stores: readonly StoreReading[];
   armies: readonly LabArmy[];
@@ -191,6 +220,7 @@ export const HudLab = () => {
           </>
         }
       >
+        {lab.deploy && <LabDeploySheet deploy={lab.deploy} />}
         {lab.menu && (
           <MenuSheet
             rank="#12"
@@ -204,5 +234,42 @@ export const HudLab = () => {
         )}
       </HudBands>
     </>
+  );
+};
+
+const RING = [
+  Direction.EAST,
+  Direction.NORTH_EAST,
+  Direction.NORTH_WEST,
+  Direction.WEST,
+  Direction.SOUTH_WEST,
+  Direction.SOUTH_EAST,
+].map((direction) => ({ direction, open: true, explored: true }));
+
+/** Deploy on the fiction: 2 wheat a troop, 0.02 a troop a tile, a full new army at 150 stamina. */
+const LabDeploySheet = ({ deploy }: { deploy: LabDeploy }) => {
+  const cost = deploy.count * 2;
+  return (
+    <DeployView
+      slots={{ used: deploy.troopsAtHome === 0 ? 0 : 1, allowed: 4 }}
+      art={deploy.troopsAtHome === 0 ? undefined : "/images/armies/knightT1.png"}
+      troopsAtHome={deploy.troopsAtHome}
+      count={deploy.count}
+      troopsMax={deploy.troopsMax}
+      wheatStop={deploy.wheatStop}
+      onCount={noop}
+      equation={{ wheatCost: cost, wheatLeft: Math.max(0, deploy.wheat - cost), tiles: deploy.tiles }}
+      revealYield={500}
+      startingStamina={150}
+      startingTiers={[2, 1, 1, 2]}
+      clock={CLOCK}
+      ring={{ tiles: RING, chosen: Direction.EAST, onPick: noop }}
+      canDeploy={deploy.count > 0}
+      sending={false}
+      onDeploy={noop}
+      wheatShort={undefined}
+      onBuild={noop}
+      onClose={noop}
+    />
   );
 };

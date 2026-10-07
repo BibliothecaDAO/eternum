@@ -12,8 +12,8 @@ import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { DEPLOY } from "@/ui/design-system/kit/words";
 
 import { attributeBadgeTarget } from "../attributes/attributes";
-import { useOpenArmySlots } from "../frontier-muster-stamina";
-import { useMusterPointed } from "../guide/guide-pointer";
+import { useOpenArmySlots } from "../deploy/open-slots";
+import { useDeployPointed } from "../guide/guide-pointer";
 import { useWellRefill } from "../sites/well-refill";
 import { ArmyToken, OpenSlot } from "./army-token";
 import type { DockArmy } from "./dock-armies";
@@ -90,7 +90,7 @@ const usePickArmy = (explorerId: number) => {
 /** An open slot; the first one takes the guide's sweep when it points at Deploy. */
 const DeploySlot = ({ first, pulse }: { first: boolean; pulse: boolean }) => {
   const setLeftNavigationView = useUIStore((state) => state.setLeftNavigationView);
-  const pointed = useMusterPointed();
+  const pointed = useDeployPointed();
   return (
     <Sweep play={first ? pointed : 0} className="shrink-0 rounded-xl">
       <OpenSlot label={DEPLOY} pulse={pulse} onDeploy={() => setLeftNavigationView(LeftView.MilitaryView)} />

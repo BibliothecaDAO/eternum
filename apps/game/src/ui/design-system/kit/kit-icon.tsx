@@ -23,6 +23,11 @@ const ICONS = {
   Mn: "/image-icons/ui-menu.png",
   Tp: "/image-icons/trophy.png",
   Hm: "/image-icons/leave.png",
+  // The four Aspect marks wait for the art pass; the attribute glyphs stand in (Homecoming wears Support's).
+  Ba: "/images/frontier/attributes/battle.svg",
+  Lg: "/images/frontier/attributes/logistics.svg",
+  Sc: "/images/frontier/attributes/scouting.svg",
+  Su: "/images/frontier/attributes/support.svg",
   // The kit's clock and the guide's mark wait for the art pass; these stand in.
   Cl: "/image-icons/ui-calendar.png",
   Gd: "/image-icons/question.png",

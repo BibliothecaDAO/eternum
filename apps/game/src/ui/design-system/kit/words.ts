@@ -47,8 +47,13 @@ export const EXPLORE = "Explore";
 export const MOVE = "Move";
 export const CANCEL = "Cancel";
 
+/** The four attributes, each wearing its Aspect's mark. */
+export const ATTRIBUTES = ["Battle", "Logistics", "Scouting", "Homecoming"] as const;
+
 /** Raise an army from troops at home. */
 export const DEPLOY = "Deploy";
+export const DEPLOYING = "Deploying…";
+export const BUILD = "Build";
 
 /** Default army names: "Army" and its place. */
 export const ARMY = "Army";

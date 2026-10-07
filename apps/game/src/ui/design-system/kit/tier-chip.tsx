@@ -2,7 +2,7 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 
 import { TIER_WORDS } from "./words";
 
-type Tier = 1 | 2 | 3 | 4 | 5;
+export type Tier = 1 | 2 | 3 | 4 | 5;
 
 /**
  * Each tier's frame, common to legendary: one set for chests, building types and attributes. The frame thickens and

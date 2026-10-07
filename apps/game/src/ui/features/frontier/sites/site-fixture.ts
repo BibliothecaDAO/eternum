@@ -2,7 +2,7 @@ import { BiomeType } from "@bibliothecadao/types";
 import { nativeRuleConstants } from "../../../../../../../contracts/l3/world-native/schema/client.gen";
 import rowFixture from "../../../../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
 import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
-import { frontierDay } from "../muster/muster-fixture";
+import { frontierDay } from "../deploy/deploy-fixture";
 import type { SiteAttack } from "./site-card-plan";
 
 const PRECISION = 1_000_000_000n;
@@ -16,7 +16,7 @@ const troops = (count: bigint, stamina: bigint) => ({
 });
 
 /**
- * The muster's Frontier day with a camp guarded by 1,100 T1 knights on row 12 and the realm's 1,498-knight army beside
+ * The deploy fixture's Frontier day with a camp guarded by 1,100 T1 knights on row 12 and the realm's 1,498-knight army beside
  * it, in a game without combat dice as Frontier plays.
  */
 export const campBeside = (kind: "Camp" | "Rift" | "FallenRealm" = "Camp", guardKnown = true) => {

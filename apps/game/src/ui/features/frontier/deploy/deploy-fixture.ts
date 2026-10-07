@@ -28,7 +28,7 @@ const realm = {
 };
 
 /**
- * A Frontier day at epoch 3 on the realm board: the realm owns 420 T1 knights and 1,000 wheat, each knight takes two
+ * A Frontier day at epoch 3 on the realm board: the realm has 420 troops at home and 1,000 wheat, each troop takes two
  * wheat to deploy, and one of its three slots holds an army.
  */
 export const frontierDay = () => {

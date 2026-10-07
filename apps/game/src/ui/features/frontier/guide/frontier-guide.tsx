@@ -11,7 +11,7 @@ import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { AnimatePresence, motion } from "framer-motion";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { type useExpeditionRules, useGoToFrontierPlace } from "../frontier-home";
-import { pointAtMuster } from "./guide-pointer";
+import { pointAtDeploy } from "./guide-pointer";
 import { canShowPlace, type GuideFacts, type GuidePlace, nextGuideStep } from "./guide-script";
 import { useGuideSeen } from "./guide-seen";
 import { useGuideFacts } from "./use-guide-facts";
@@ -166,7 +166,7 @@ const useShowMe = (realm: NativeRows["Structure"]) => {
   const setSelectedHex = useUIStore((state) => state.setSelectedHex);
   const show = (place: GuidePlace, camp: GuideFacts["camp"]) => {
     if (place === "realm") goToPlace(false);
-    if (place === "muster") pointAtMuster();
+    if (place === "muster") pointAtDeploy();
     if (place === "camp" && camp) {
       navigateToMapView(Position.fromContract(camp));
       setSelectedHex({ col: camp.x, row: camp.y });
