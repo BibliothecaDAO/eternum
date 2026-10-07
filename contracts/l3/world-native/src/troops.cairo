@@ -377,8 +377,8 @@ pub(crate) fn discovery_guard(
     discovered_guard(category, tier, count, rules, timestamp)
 }
 
-// A ruin's beast is one troop type sized by its layer; camps, rifts and stragglers draw a random type from the site
-// grid, and stragglers keep a third of that draw.
+// Camps, rifts and ruins are guarded by Knight beasts. Only stragglers draw among the three troop categories and
+// keep a third of the site grid draw.
 pub(crate) fn frontier_guard(
     category: u8,
     depth: crate::expeditions::DepthRules,
@@ -389,10 +389,14 @@ pub(crate) fn frontier_guard(
     let (troop, lower, upper) = if category == crate::taxonomy::RUIN_CATEGORY {
         (TroopType::Knight, depth.ruin_guard_lower, depth.ruin_guard_upper)
     } else {
-        let troop = match crate::random::range(seed, 2, 3) {
-            0 => TroopType::Knight,
-            1 => TroopType::Paladin,
-            _ => TroopType::Crossbowman,
+        let troop = if category == crate::taxonomy::STRAGGLERS_CATEGORY {
+            match crate::random::range(seed, 2, 3) {
+                0 => TroopType::Knight,
+                1 => TroopType::Paladin,
+                _ => TroopType::Crossbowman,
+            }
+        } else {
+            TroopType::Knight
         };
         (troop, depth.site_guard_lower.into(), depth.site_guard_upper.into())
     };

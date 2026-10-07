@@ -1,11 +1,11 @@
 use core::dict::{Felt252Dict, Felt252DictTrait};
-use crate::expeditions::{RIFT_CATEGORY, RUIN_CATEGORY, STRAGGLERS_CATEGORY};
+use crate::taxonomy::{RIFT_CATEGORY, RUIN_CATEGORY, STRAGGLERS_CATEGORY};
 use crate::registrar::{IRegistrarSafeDispatcher, IRegistrarSafeDispatcherTrait};
 use crate::rules::RESOURCE_PRECISION;
 use crate::troops::{TroopTier, TroopType, frontier_guard};
 
 #[test]
-fn seeded_frontier_guards_use_the_inclusive_preset_grid_and_random_categories() {
+fn seeded_beasts_are_knights_on_the_inclusive_preset_grid() {
     let (_, preset) = super::preset_projection::current_definition("frontier");
     for depth_index in 0_u32..4 {
         let depth = *preset.settlement.depths.at(depth_index);
@@ -32,18 +32,10 @@ fn seeded_frontier_guards_use_the_inclusive_preset_grid_and_random_categories() 
                 categories.insert(troop.into(), total + 1);
                 // One troop type: every guard is T1 and its strength is its count.
                 assert_eq!(guard.tier, TroopTier::T1);
-                if ruin {
-                    assert_eq!(guard.category, TroopType::Knight);
-                }
+                assert_eq!(guard.category, TroopType::Knight);
             }
             assert!(saw_lower && saw_upper, "inclusive endpoint never drawn");
-            if !ruin {
-                for troop in 0_u8..3 {
-                    let count = categories.get(troop.into());
-                    assert!(count >= 3234 && count <= 3433, "guard category odds drift");
-                    println!("depth {} category {} of 10000: {}", depth_index, troop, count);
-                }
-            }
+
         }
     }
 }
@@ -55,7 +47,6 @@ fn stragglers_are_a_third_of_the_camp_draw() {
         for seed in 0_u32..2000 {
             let camp = frontier_guard(crate::taxonomy::CAMP_CATEGORY, *depth, seed.into(), preset.rules, 360);
             let stragglers = frontier_guard(STRAGGLERS_CATEGORY, *depth, seed.into(), preset.rules, 360);
-            assert_eq!(stragglers.category, camp.category);
             assert_eq!(stragglers.tier, TroopTier::T1);
             assert_eq!(stragglers.count, camp.count / RESOURCE_PRECISION / 3 * RESOURCE_PRECISION);
         }
@@ -102,5 +93,21 @@ fn frontier_registration_refuses_zero_step_off_grid_and_reversed_guard_bounds() 
         }
         preset.settlement.depths = depths.span();
         assert!(IRegistrarSafeDispatcher { contract_address: d.games }.register_preset(id, preset).is_err());
+    }
+}
+
+#[test]
+fn only_stragglers_draw_among_the_three_troop_categories() {
+    let (_, preset) = super::preset_projection::current_definition("frontier");
+    let depth = *preset.settlement.depths.at(0);
+    let mut categories: Felt252Dict<u32> = Default::default();
+    for seed in 0_u32..10000 {
+        let guard = frontier_guard(STRAGGLERS_CATEGORY, depth, seed.into(), preset.rules, 360);
+        let troop: u8 = guard.category.into();
+        categories.insert(troop.into(), categories.get(troop.into()) + 1);
+    }
+    for troop in 0_u8..3 {
+        let count = categories.get(troop.into());
+        assert!(count >= 3234 && count <= 3433, "straggler category odds drift");
     }
 }
