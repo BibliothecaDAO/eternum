@@ -38,7 +38,7 @@ export interface RealmsAccountShard {
 
 /** The identity Worker of the shard's environment, reached with that environment's operator token. */
 export interface OperatorIdentity {
-  /** The identity API's base, e.g. https://staging.realms.party/api. */
+  /** The identity API's base, e.g. https://play.dev-realms.party/api. */
   url: string;
   operatorToken: string;
 }

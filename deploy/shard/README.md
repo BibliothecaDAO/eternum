@@ -44,7 +44,7 @@ disabled. Our box runner keeps these defaults and refuses a shard whose limits d
 shards already running there.
 
 Community shards use the production guardian at `https://play.realms.party/api/guardian`.
-`https://staging.realms.party/api/guardian` belongs to our staging tests.
+`https://play.dev-realms.party/api/guardian` belongs to our staging tests.
 
 Initialization generates the host's deployer and sequencing keys locally in `data/`, reads the guardian's real public
 key and account class, starts a genesis with no seeded accounts, deploys the contracts and operator, registers the

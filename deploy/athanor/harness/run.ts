@@ -813,7 +813,7 @@ Usage: bun deploy/athanor/harness/run.ts [options]
   --preset <id>                  preset new games are created from; default: the game type’s preset
   --slot <name>                  register the bots into this free Blitz slot through the launch API instead of
                                  creating games; needs OPERATOR_TOKEN and --launch-url or LAUNCH_URL
-  --launch-url <origin>          the app origin the launch API is served under, e.g. https://staging.realms.party
+  --launch-url <origin>          the app origin the launch API is served under, e.g. https://play.dev-realms.party
   --slot-closes-in-seconds <s>   with --slot; default: 120; the cron freezes the slot within a minute of closing
   --frontier-burst <booth|rollover>  Frontier campaign burst, measured as the workload: booth founds every bot's
                                  realm inside the window; rollover waits for the next day and has every bot muster
@@ -828,7 +828,7 @@ Usage: bun deploy/athanor/harness/run.ts [options]
   --herald-url <url>             required, or HERALD_URL
 
 New bots enrol through the shard's guardian: IDENTITY_URL (the environment's identity API, e.g.
-https://staging.realms.party/api) and OPERATOR_TOKEN are required unless --prepared-game is given.
+https://play.dev-realms.party/api) and OPERATOR_TOKEN are required unless --prepared-game is given.
 `);
 }
 

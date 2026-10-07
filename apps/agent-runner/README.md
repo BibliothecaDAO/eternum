@@ -22,7 +22,7 @@ pnpm --filter @bibliothecadao/agent-runner start -- --game-id 5 --signer none
 
 # Bot: a Realms account under the shard's guardian, its key minted on first run and kept in <data dir>/bot-key.json,
 # its device approved through the identity Worker's operator route (the environment's identity API and operator token).
-IDENTITY_URL=https://staging.realms.party/api OPERATOR_TOKEN=... \
+IDENTITY_URL=https://play.dev-realms.party/api OPERATOR_TOKEN=... \
   pnpm --filter @bibliothecadao/agent-runner start -- --game-name blitz-daily-0003 --signer bot
 
 # Key: an existing gameplay account.

@@ -185,13 +185,16 @@ gameplay effects. The node always runs with WAL and fsync enabled; never request
 
 ### Staging
 
-Staging runs on its own box and domain. Initialize each shard with `guardian_url=https://<staging origin>/api/guardian`.
-Initialization fetches the guardian's public key and account class hash and records them in `shard.guardianPublicKey`
-and `shard.accountClassHash`. An unavailable endpoint or invalid identity stops initialization; candidate and release
-configurations never supply substitute values. The deployer declares `RealmsAccount` only when its locally built class
-matches that published hash, and the game's authentication and Herald use the same manifest class. The init image builds
-the account with the root's declared toolchain and the game with its workspace's toolchain. The host does not compile
-contracts during initialization.
+Staging is the dev environment: its own box (`realms-dev`), its own domain (`dev-realms.party`) and its own Workers,
+databases and keys, sharing nothing with production. Its hostnames mirror production's, so a URL has the same shape in
+both: `play.dev-realms.party` (the client and the Workers under `/api`), `rpc.dev-realms.party`,
+`herald.dev-realms.party` and `admission.dev-realms.party`. Initialize each shard with
+`guardian_url=https://play.dev-realms.party/api/guardian`. Initialization fetches the guardian's public key and account
+class hash and records them in `shard.guardianPublicKey` and `shard.accountClassHash`. An unavailable endpoint or
+invalid identity stops initialization; candidate and release configurations never supply substitute values. The deployer
+declares `RealmsAccount` only when its locally built class matches that published hash, and the game's authentication
+and Herald use the same manifest class. The init image builds the account with the root's declared toolchain and the
+game with its workspace's toolchain. The host does not compile contracts during initialization.
 
 Every shard uses the pinned upstream Madara image and admission gateway described above, with its public RPC and
 admission URLs on their own staging tunnel hostnames. The node is limited to 24 GiB (`node_memory_mib`) and Herald to
@@ -295,7 +298,7 @@ The harness uses the shared client, native fact store, recorded admission and no
 
 ```bash
 RPC_URL=http://127.0.0.1:<node-port>/rpc/v0_10_2 HERALD_URL=http://127.0.0.1:<herald-port> \
-IDENTITY_URL=https://staging.realms.party/api OPERATOR_TOKEN=... \
+IDENTITY_URL=https://play.dev-realms.party/api OPERATOR_TOKEN=... \
 bun deploy/athanor/harness/run.ts \
   --bots 6 --minutes 2.5 --interval-seconds 15 --setup-concurrency 6 --workload build-order
 ```

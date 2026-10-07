@@ -5,6 +5,7 @@ import {
   deviceKeys,
   migrationStatements,
   newStorage,
+  ORIGIN,
   startWorker,
   vapidKeys,
   pause,
@@ -17,7 +18,6 @@ import {
  * Objects, and the shard's Herald answers who plays which game. Billing cannot be measured locally; an idle room's cost
  * rests on the room using the hibernation API only, and eviction with hibernated sockets is exercised below.
  */
-const ORIGIN = "https://staging.realms.party";
 const SHARD = "https://shard-a.test";
 const CHAIN_ID = "0xa";
 const ROOM = `game:${CHAIN_ID}:1`;

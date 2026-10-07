@@ -5,7 +5,7 @@
     "player_capacity": 96,
     "presets": [2],
     "chain_config": "deploy/athanor/chain-config.yaml",
-    "guardian_url": "https://staging.realms.party/api/guardian",
+    "guardian_url": "https://play.dev-realms.party/api/guardian",
     "node_flags": ["--enable-native-execution=true", "--native-compilation-mode=async"],
     "gateway_revision": "f6a50acd184"
   },

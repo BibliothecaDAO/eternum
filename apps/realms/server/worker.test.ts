@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, expect, it, vi } from "vitest";
 
-import { buildWorkerBundle, migrationStatements, newStorage, startWorker, vapidKeys } from "./workerd-harness";
+import { buildWorkerBundle, migrationStatements, newStorage, ORIGIN, startWorker, vapidKeys } from "./workerd-harness";
 
 let bundle: string;
 let worker: Awaited<ReturnType<typeof startWorker>>;
@@ -24,7 +24,7 @@ afterAll(() => worker?.dispose());
 let launchDirectoryMock: ReturnType<typeof vi.fn>;
 
 it("routes the directory read through the launch service binding", async () => {
-  const response = await worker.mf.dispatchFetch("https://staging.realms.party/api/directory");
+  const response = await worker.mf.dispatchFetch(`${ORIGIN}/api/directory`);
 
   expect(response.status).toBe(200);
   expect(launchDirectoryMock).toHaveBeenCalledOnce();
