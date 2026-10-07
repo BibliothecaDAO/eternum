@@ -4,6 +4,7 @@ import type { Account } from "starknet";
 import { createOperatorAccount } from "../../../config/deployer/clean/shared/madara-account";
 import { fetchHeraldGameHistory } from "@bibliothecadao/eternum/game-client";
 import {
+  ArmyActionManager,
   canPayTroopRaise,
   researchedBuildingTier,
   researchedDepths,
@@ -966,7 +967,10 @@ function planExpedition(client: GameClient, game: HarnessGame, player: Player): 
           spot.row % spacing < (spacing * 3) / 4,
       )
       .find((spot) => !getTileAt(client.setup.store, false, spot.col, spot.row, client.gameId)?.biome);
-    if (frontier && amount >= stamina.stamina_explore_stamina_cost) {
+    // The game's own checks, as the player's army panel makes them: stamina, and the food the realm pays per troop.
+    const armyActions = new ArmyActionManager(client.setup.store, client.setup.systemCalls, army.explorer_id);
+    const ticks = game.currentTicks();
+    if (frontier && armyActions.canExplore(ticks.default, ticks.armies)) {
       const explore = {
         ...command(client, player, {
           kind: "Explore",
@@ -981,7 +985,7 @@ function planExpedition(client: GameClient, game: HarnessGame, player: Player): 
       };
       return explore;
     }
-    if (!frontier && amount >= stamina.stamina_travel_stamina_cost) {
+    if (!frontier && armyActions.maxTravelSteps(ticks.default, ticks.armies) >= 1) {
       const direction = pathToUnexplored(client, army);
       if (direction !== undefined) {
         const move = {

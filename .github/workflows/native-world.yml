@@ -14,24 +14,23 @@ permissions:
   contents: read
 
 jobs:
-  native-world:
+  # The corrected snforge every test partition runs. The corrected build takes 13-18 minutes, and an Actions cache saved
+  # on one branch is not readable on another, so it is published once per patch hash as an asset of the ci-toolchain
+  # release, which every ref can download. This job restores it from there, or builds it once when its inputs changed,
+  # and hands it to the partitions as this run's artifact, so no partition downloads or builds it again.
+  snforge:
     if: inputs.world
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     outputs:
-      built-snforge: ${{ steps.snforge.outputs.built }}
-    # 1.5x the slowest green run (33 min): a cold snforge rebuild (13-18 min, when its cache is not readable on the
-    # ref) plus the full suite (13-23 min) overran the former 35.
-    timeout-minutes: 50
+      asset: ${{ steps.snforge.outputs.asset }}
+      built: ${{ steps.snforge.outputs.built }}
+      partitions: ${{ steps.partitions.outputs.list }}
     steps:
       - uses: actions/checkout@v4
-      - uses: software-mansion/setup-scarb@v1
         with:
-          tool-versions: contracts/l3/world-native/.tool-versions
-          scarb-lock: contracts/l3/world-native/Scarb.lock
-      # The corrected snforge takes 13-18 minutes to build, and an Actions cache saved on one branch is not readable
-      # on another, so every branch rebuilt it cold. It is published once per patch hash as an asset of the
-      # ci-toolchain release, which every ref can download.
-      - name: Install corrected snforge
+          sparse-checkout: contracts/l3
+      - name: Restore or build corrected snforge
         id: snforge
         env:
           GH_TOKEN: ${{ github.token }}
@@ -40,31 +39,84 @@ jobs:
             'contracts/l3/world-native/build-snforge.sh',
             'contracts/l3/world-native/toolchain/library-call-rollback.patch') }}
         run: |
-          bin="$RUNNER_TEMP/native-snforge/bin"
-          mkdir -p "$bin"
+          echo "asset=$ASSET" >> "$GITHUB_OUTPUT"
           if gh release download ci-toolchain --repo "$GITHUB_REPOSITORY" --pattern "$ASSET.gz" --dir "$RUNNER_TEMP"; then
-            gunzip -c "$RUNNER_TEMP/$ASSET.gz" > "$bin/snforge"
-            chmod 755 "$bin/snforge"
             echo "Restored $ASSET from the ci-toolchain release"
           else
             echo "::notice::$ASSET is not published yet; building it"
+            bin="$RUNNER_TEMP/native-snforge/bin"
             bash contracts/l3/world-native/build-snforge.sh "$bin"
             gzip -c "$bin/snforge" > "$RUNNER_TEMP/$ASSET.gz"
             echo "built=$ASSET" >> "$GITHUB_OUTPUT"
           fi
-          "$bin/snforge" --version
-          echo "$bin" >> "$GITHUB_PATH"
-      - name: Keep the freshly built snforge for the publish job
-        if: steps.snforge.outputs.built != ''
+      - name: Hand the corrected snforge to the partitions
         uses: actions/upload-artifact@v4
         with:
           name: corrected-snforge
-          path: ${{ runner.temp }}/${{ steps.snforge.outputs.built }}.gz
+          path: ${{ runner.temp }}/${{ steps.snforge.outputs.asset }}.gz
           if-no-files-found: error
           retention-days: 1
+      # The partition count lives in test-native.sh alone, so the matrix cannot drop a partition.
+      - name: List the suite's partitions
+        id: partitions
+        run: |
+          list=$(bash contracts/l3/test-native.sh --partitions | jq -cR 'split(" ") | map(tonumber)')
+          echo "list=$list" >> "$GITHUB_OUTPUT"
+
+  # One runner per partition: each runs one partition on one test-runner thread, as test-native.sh bounds it, so no
+  # runner holds more than one partition's peak. A failed partition fails this workflow, whose result the validation
+  # gate requires.
+  native-world-tests:
+    name: native-world tests ${{ matrix.partition }}
+    if: inputs.world
+    needs: snforge
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        partition: ${{ fromJSON(needs.snforge.outputs.partitions) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: software-mansion/setup-scarb@v1
+        with:
+          tool-versions: contracts/l3/world-native/.tool-versions
+          scarb-lock: contracts/l3/world-native/Scarb.lock
+      - uses: actions/download-artifact@v4
+        with:
+          name: corrected-snforge
+          path: ${{ runner.temp }}
+      - name: Install corrected snforge
+        env:
+          ASSET: ${{ needs.snforge.outputs.asset }}
+        run: |
+          bin="$RUNNER_TEMP/native-snforge/bin"
+          mkdir -p "$bin"
+          gunzip -c "$RUNNER_TEMP/$ASSET.gz" > "$bin/snforge"
+          chmod 755 "$bin/snforge"
+          "$bin/snforge" --version
+          echo "$bin" >> "$GITHUB_PATH"
       - uses: software-mansion/setup-universal-sierra-compiler@v1
         with:
           tool-versions: contracts/l3/world-native/.tool-versions
+      - name: Test native rules and recorded execution, partition ${{ matrix.partition }}
+        working-directory: contracts/l3/world-native
+        env:
+          PARTITION: ${{ matrix.partition }}
+        run: /usr/bin/time -v bash ../test-native.sh "$PARTITION"
+
+  # Everything in the world suite but its tests: the build, class sizes, the recorded entrypoint ABI, the fact wire
+  # declarations, and schema and format drift.
+  native-world:
+    if: inputs.world
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: software-mansion/setup-scarb@v1
+        with:
+          tool-versions: contracts/l3/world-native/.tool-versions
+          scarb-lock: contracts/l3/world-native/Scarb.lock
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
@@ -94,9 +146,9 @@ jobs:
           python3 contracts/l3/randomness-protocol/check-entrypoint.py \
             contracts/l3/world-native/target/dev/world_native_Games.contract_class.json \
             "$RUNNER_TEMP/recorded-entrypoint.json"
-      - name: Test all native rules and recorded execution
+      - name: Build the test profile
         working-directory: contracts/l3/world-native
-        run: /usr/bin/time -v scarb test
+        run: /usr/bin/time -v scarb build --test
       - name: Check fact wire declarations against the test-profile ABI
         run: node contracts/l3/world-native/scripts/check-fact-wire.mjs
       - name: Regenerate production schema and reject drift
@@ -122,8 +174,8 @@ jobs:
           if-no-files-found: error
 
   publish-snforge:
-    needs: native-world
-    if: github.event_name == 'push' && needs.native-world.outputs.built-snforge != ''
+    needs: snforge
+    if: github.event_name == 'push' && needs.snforge.outputs.built != ''
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -134,7 +186,7 @@ jobs:
       - name: Publish the corrected snforge to the ci-toolchain release
         env:
           GH_TOKEN: ${{ github.token }}
-          ASSET: ${{ needs.native-world.outputs.built-snforge }}
+          ASSET: ${{ needs.snforge.outputs.built }}
         run: |
           # Another run may create the release first; either way it exists before the upload.
           gh release view ci-toolchain --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1 ||

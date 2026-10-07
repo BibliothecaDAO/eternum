@@ -1,5 +1,5 @@
 import { addBattleSummaries, summarizeBattles, type BattleSummary } from "./combat";
-import type { InvalidFrame, UncaughtFailure } from "./worker-boundary";
+import type { WorkerBoundaryEvidence } from "./worker-boundary";
 import { summarizeFrontierDesign, type FrontierEvidence } from "./frontier";
 import { frontierRuleChecks } from "./frontier-rules";
 import type { HarnessRpcRequests } from "./provider";
@@ -87,7 +87,7 @@ export interface HarnessReportInput {
   layerRoundTrips?: LayerRoundTripEvidence[];
   transportRequests?: HarnessRpcRequests;
   /** What escaped every caller in this worker, and the frames no library could parse. */
-  workerBoundary?: { uncaughtFailures: UncaughtFailure[]; invalidFrames: InvalidFrame[] };
+  workerBoundary?: WorkerBoundaryEvidence;
 }
 
 interface PercentileSummary {
@@ -409,6 +409,7 @@ function buildHarnessManifest(
       battles: analysis.battles,
       uncaughtFailures: input.workerBoundary?.uncaughtFailures ?? [],
       invalidFrames: input.workerBoundary?.invalidFrames ?? [],
+      droppedUnsubscribeFrames: input.workerBoundary?.droppedUnsubscribeFrames ?? 0,
       reverts: analysis.reverts.length,
       blockingReverts: analysis.blockingReverts.length,
       revertReasons: analysis.revertReasons,

@@ -51,3 +51,6 @@ Before changing `SHARD_URL`, close registration and let all queued and running l
 old shard. Completed games remain in the player directory across chains. If unfinished work remains after a change, new
 launches and execution are refused, and `/api/factory/health` returns 503 with `strandedRuns` naming the affected chains
 and runs. Restore the previous `SHARD_URL` and drain that work before retrying the cutover.
+
+`/api/factory/version` names the running code and reads nothing else; `deploy-workers.yml` verifies a deploy against it.
+The deploy reports `/api/factory/health` as a separate shard-health signal that never fails the deploy.
