@@ -273,7 +273,6 @@ pub mod RelicState {
             mut story_cursor: crate::ownership::StoryCursor,
         ) -> ((), crate::ownership::StoryCursor) {
             let context = crate::commands::load_context(game_id, context);
-            self.assert_command(game_id, context.timestamp, context);
             assert!(command.amount != 0, "zero LORDS withdrawal");
             let realm = ResourceKey { game_id, entity_id: command.structure_id };
             assert!(crate::logic::structures::owner(realm) == actor, "actor does not own structure");

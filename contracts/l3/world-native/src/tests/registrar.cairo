@@ -2441,7 +2441,7 @@ fn a_full_refill_costs_one_lords_a_point_returns_to_the_pool_and_is_allowed_besi
 }
 
 #[test]
-fn a_lords_withdrawal_spends_the_realm_and_is_recorded_once() {
+fn a_lords_withdrawal_after_season_end_spends_the_realm_and_is_recorded_once() {
     let (d, game_id, key) = setup_frontier_chests();
     let army = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
     let home = ResourceKey { game_id, entity_id: army.owner };
@@ -2459,8 +2459,9 @@ fn a_lords_withdrawal_spends_the_realm_and_is_recorded_once() {
     stop_cheat_caller_address(d.games);
     let withdraw = Command::WithdrawLords(crate::relics::WithdrawLords { structure_id: home.entity_id, amount: 200 });
     let mut spy = snforge_std::spy_events();
-    assert!(execute_in_game(d, game_id, withdraw, 362, 362));
-    assert!(!execute_in_game(d, game_id, withdraw, 363, 363));
+    let after_end = IGameDispatcher { contract_address: d.games }.game(game_id).end_at + 1;
+    assert!(execute_in_game(d, game_id, withdraw, after_end, after_end));
+    assert!(!execute_in_game(d, game_id, withdraw, after_end + 1, after_end + 1));
     let lords = ResourceSlot { game_id, entity_id: home.entity_id, resource_type: crate::resources::LORDS };
     assert_eq!(IResourceOperationsDispatcher { contract_address: d.games }.resource_balance(lords), 100 * RESOURCE_PRECISION);
     let mut withdrawals = 0;
