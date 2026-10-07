@@ -221,6 +221,21 @@ pub mod ConstructionLogic {
                     crate::logic::research::price(game_id, command.row, crate::research::tier(learned, command.row)),
                     context,
                 );
+            // A store choice enlarges its limit only after accrued production has settled under the old knowledge.
+            if command.choice == crate::research::CHOICE_STORE {
+                let resource = if command.row == crate::research::ROW_FARM {
+                    crate::resources::WHEAT
+                } else if command.row == crate::research::ROW_WORKSHOP {
+                    crate::resources::LABOR
+                } else {
+                    0
+                };
+                if resource != 0 {
+                    self.resources_dispatcher(game_id).spend_resource(
+                        key, resource, 0, context.timestamp, crate::commands::resource_context(context),
+                    );
+                }
+            }
             crate::logic::research::write(key, crate::research::RealmKnowledge { learned });
             self.apply_research(key, base, command.row, board.unwrap(), before, learned, context);
         }
