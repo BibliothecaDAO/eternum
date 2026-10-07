@@ -1,5 +1,5 @@
 {
-  "package": "shard-v0.4.1",
+  "package": "shard-v0.5.0",
   "shard_name": "realms-staging-f",
   "chain_id": "REALMS_STAGING_F_20261007",
   "guardian_url": "https://play.dev-realms.party/api/guardian",
