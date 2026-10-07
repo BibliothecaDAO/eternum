@@ -72,6 +72,151 @@ const AppFallback = () => <div className="min-h-screen bg-black" />;
 const LazyRoute = ({ children }: { children: ReactNode }) => <Suspense fallback={<AppFallback />}>{children}</Suspense>;
 
 /**
+ * Every page the app serves. Cloudflare Pages rewrites to the app shell only the paths `public/_redirects` names, so
+ * `app-hosting.test.ts` holds that file to exactly these routes.
+ */
+export const appRoutes = (
+  <>
+    <Route element={<AppShell />}>
+      <Route index element={<HomePage />} />
+      <Route path="play" element={<PlayPage />} />
+      <Route path="results" element={<ResultsPage />} />
+      <Route path="account" element={<AccountPage />} />
+      <Route path="p/:address" element={<PlayerPage />} />
+      <Route path="learn" element={<LearnPage />} />
+      <Route path="news" element={<NewsPage />} />
+      <Route
+        path="scroll"
+        element={
+          <LazyRoute>
+            <ScrollIndexPage />
+          </LazyRoute>
+        }
+      />
+      <Route
+        path="scroll/:slug"
+        element={
+          <LazyRoute>
+            <ScrollPostPage />
+          </LazyRoute>
+        }
+      />
+      <Route
+        path="terms"
+        element={
+          <LazyRoute>
+            <TermsPage />
+          </LazyRoute>
+        }
+      />
+      <Route
+        path="privacy"
+        element={
+          <LazyRoute>
+            <PrivacyPage />
+          </LazyRoute>
+        }
+      />
+      <Route path="factory" element={<FactoryPage />} />
+      <Route path="*" element={<NotFoundPage />} />
+    </Route>
+    <Route path={SIGN_IN_PATH} element={<SignInPage />} />
+    <Route
+      path="/g/:chain/:game/*"
+      element={
+        <SceneRoute fallback={<AppFallback />}>
+          <GameClientApp />
+        </SceneRoute>
+      }
+    />
+    {import.meta.env.DEV && (
+      <Route
+        path="/lab/motion"
+        element={
+          <LazyRoute>
+            <MotionLabView />
+          </LazyRoute>
+        }
+      />
+    )}
+    {import.meta.env.DEV && (
+      <Route
+        path="/lab/frontier-hud/*"
+        element={
+          <LazyRoute>
+            <FrontierHudLabView />
+          </LazyRoute>
+        }
+      />
+    )}
+    <Route
+      path="/lab/*"
+      element={
+        <SceneRoute fallback={<AppFallback />}>
+          <GraphicsLabView />
+        </SceneRoute>
+      }
+    />
+    <Route
+      path="/debug/three-chunks"
+      element={
+        <SceneRoute fallback={<AppFallback />}>
+          <DebugThreeChunkView />
+        </SceneRoute>
+      }
+    />
+    <Route
+      path="/debug/procedural-characters"
+      element={
+        <SceneRoute fallback={<AppFallback />}>
+          <DebugProceduralCharacterGymView />
+        </SceneRoute>
+      }
+    />
+    <Route
+      path="/debug/procedural-character-benchmark"
+      element={
+        <SceneRoute fallback={<AppFallback />}>
+          <DebugProceduralCharacterBenchmarkView />
+        </SceneRoute>
+      }
+    />
+    <Route
+      path="/debug/procedural-world-gym"
+      element={
+        <SceneRoute fallback={<AppFallback />}>
+          <DebugProceduralWorldGymView />
+        </SceneRoute>
+      }
+    />
+    <Route
+      path="/debug/terrain-props"
+      element={
+        <SceneRoute fallback={<AppFallback />}>
+          <DebugTerrainPropView />
+        </SceneRoute>
+      }
+    />
+    <Route
+      path="/debug/procedural-terrain-benchmark"
+      element={
+        <SceneRoute fallback={<AppFallback />}>
+          <DebugProceduralTerrainBenchmarkView />
+        </SceneRoute>
+      }
+    />
+    <Route
+      path="/debug/world-fx"
+      element={
+        <SceneRoute fallback={<AppFallback />}>
+          <DebugWorldFxGymView />
+        </SceneRoute>
+      }
+    />
+  </>
+);
+
+/**
  * One app: the shell (home, play, results, account) is the cold path and carries no game module; a game, with the
  * 3D client and its mode's screens, loads only under `/g/:chain/:game`.
  */
@@ -81,144 +226,7 @@ function App() {
       <QueryClientProvider client={appQueryClient}>
         <PwaUpdatePrompt />
         <PwaInstallRuntime />
-        <Routes>
-          <Route element={<AppShell />}>
-            <Route index element={<HomePage />} />
-            <Route path="play" element={<PlayPage />} />
-            <Route path="results" element={<ResultsPage />} />
-            <Route path="account" element={<AccountPage />} />
-            <Route path="p/:address" element={<PlayerPage />} />
-            <Route path="learn" element={<LearnPage />} />
-            <Route path="news" element={<NewsPage />} />
-            <Route
-              path="scroll"
-              element={
-                <LazyRoute>
-                  <ScrollIndexPage />
-                </LazyRoute>
-              }
-            />
-            <Route
-              path="scroll/:slug"
-              element={
-                <LazyRoute>
-                  <ScrollPostPage />
-                </LazyRoute>
-              }
-            />
-            <Route
-              path="terms"
-              element={
-                <LazyRoute>
-                  <TermsPage />
-                </LazyRoute>
-              }
-            />
-            <Route
-              path="privacy"
-              element={
-                <LazyRoute>
-                  <PrivacyPage />
-                </LazyRoute>
-              }
-            />
-            <Route path="factory" element={<FactoryPage />} />
-            <Route path="*" element={<NotFoundPage />} />
-          </Route>
-          <Route path={SIGN_IN_PATH} element={<SignInPage />} />
-          <Route
-            path="/g/:chain/:game/*"
-            element={
-              <SceneRoute fallback={<AppFallback />}>
-                <GameClientApp />
-              </SceneRoute>
-            }
-          />
-          {import.meta.env.DEV && (
-            <Route
-              path="/lab/motion"
-              element={
-                <LazyRoute>
-                  <MotionLabView />
-                </LazyRoute>
-              }
-            />
-          )}
-          {import.meta.env.DEV && (
-            <Route
-              path="/lab/frontier-hud/*"
-              element={
-                <LazyRoute>
-                  <FrontierHudLabView />
-                </LazyRoute>
-              }
-            />
-          )}
-          <Route
-            path="/lab/*"
-            element={
-              <SceneRoute fallback={<AppFallback />}>
-                <GraphicsLabView />
-              </SceneRoute>
-            }
-          />
-          <Route
-            path="/debug/three-chunks"
-            element={
-              <SceneRoute fallback={<AppFallback />}>
-                <DebugThreeChunkView />
-              </SceneRoute>
-            }
-          />
-          <Route
-            path="/debug/procedural-characters"
-            element={
-              <SceneRoute fallback={<AppFallback />}>
-                <DebugProceduralCharacterGymView />
-              </SceneRoute>
-            }
-          />
-          <Route
-            path="/debug/procedural-character-benchmark"
-            element={
-              <SceneRoute fallback={<AppFallback />}>
-                <DebugProceduralCharacterBenchmarkView />
-              </SceneRoute>
-            }
-          />
-          <Route
-            path="/debug/procedural-world-gym"
-            element={
-              <SceneRoute fallback={<AppFallback />}>
-                <DebugProceduralWorldGymView />
-              </SceneRoute>
-            }
-          />
-          <Route
-            path="/debug/terrain-props"
-            element={
-              <SceneRoute fallback={<AppFallback />}>
-                <DebugTerrainPropView />
-              </SceneRoute>
-            }
-          />
-          <Route
-            path="/debug/procedural-terrain-benchmark"
-            element={
-              <SceneRoute fallback={<AppFallback />}>
-                <DebugProceduralTerrainBenchmarkView />
-              </SceneRoute>
-            }
-          />
-          <Route
-            path="/debug/world-fx"
-            element={
-              <SceneRoute fallback={<AppFallback />}>
-                <DebugWorldFxGymView />
-              </SceneRoute>
-            }
-          />
-        </Routes>
+        <Routes>{appRoutes}</Routes>
       </QueryClientProvider>
     </BrowserRouter>
   );
