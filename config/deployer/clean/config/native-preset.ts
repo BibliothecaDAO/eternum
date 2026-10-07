@@ -243,15 +243,14 @@ function buildSettlement(config: Config, preset: ReturnType<typeof nativePresetF
     spacing: preset.spacing,
     depths: preset.depths.map((depth) => ({
       reveal_percent: depth.revealPercent,
-      guard_lower: depth.guardLower,
-      guard_upper: depth.guardUpper,
+      site_guard_lower: depth.siteGuardLower,
+      site_guard_upper: depth.siteGuardUpper,
       reveal_site_neighbors: depth.revealSiteNeighbors,
       entry_stamina: depth.entryStamina,
       chest: depth.chest,
-      fallen_guard_lower: depth.fallenGuardLower,
-      fallen_guard_upper: depth.fallenGuardUpper,
+      ruin_guard_lower: depth.ruinGuardLower,
+      ruin_guard_upper: depth.ruinGuardUpper,
       guard_step: depth.guardStep,
-      fallen_guard_tier: new CairoCustomEnum({ [depth.fallenGuardTier]: {} }),
     })),
     realms: {
       resources: amounts(config.startingResources, config.resources.resourcePrecision),
@@ -519,11 +518,11 @@ function buildDiscovery(preset: ReturnType<typeof nativePresetForId>) {
     Object.values(rules).some((value) => !Number.isSafeInteger(value) || value < 0 || value > 10000) ||
     rules.emptyRevealLimit < 1 ||
     rules.emptyRevealLimit > 255 ||
-    rules.campBps + rules.riftBps + rules.fallenRealmBps === 0 ||
-    rules.campBps +
+    rules.stragglersBps + rules.campBps + rules.riftBps === 0 ||
+    rules.stragglersBps +
+      rules.campBps +
       rules.riftBps +
-      rules.fallenRealmBps +
-      rules.looseChestBps +
+      rules.ruinBps +
       rules.shrineBps +
       rules.wellBps +
       // Every Scouting tier on one kind doubles it: the larger of camp and rift is the most Scouting adds.
@@ -532,10 +531,10 @@ function buildDiscovery(preset: ReturnType<typeof nativePresetForId>) {
   )
     throw new Error("Invalid categorical discovery rules");
   return new CairoOption(CairoOptionVariant.Some, {
+    stragglers_bps: rules.stragglersBps,
     camp_bps: rules.campBps,
     rift_bps: rules.riftBps,
-    fallen_realm_bps: rules.fallenRealmBps,
-    loose_chest_bps: rules.looseChestBps,
+    ruin_bps: rules.ruinBps,
     shrine_bps: rules.shrineBps,
     well_bps: rules.wellBps,
     empty_reveal_limit: rules.emptyRevealLimit,

@@ -134,41 +134,33 @@ pub(crate) fn discovered_structure(
     timestamp: u64,
 ) -> (StructureRecord, u8, u128) {
     let (category, occupier, level, capacity) = match discovery {
-        Discovery::Mine => (
-            crate::taxonomy::MINE_CATEGORY, crate::taxonomy::MINE_OCCUPIER, 0_u8, capacities.fragment_mine_capacity,
+        Discovery::Mine => (crate::taxonomy::MINE_CATEGORY, crate::taxonomy::MINE_OCCUPIER, 0_u8, capacities.fragment_mine_capacity),
+        Discovery::Hyperstructure => (crate::taxonomy::HYPERSTRUCTURE_CATEGORY, crate::taxonomy::HYPERSTRUCTURE_OCCUPIER, 3, capacities.hyperstructure_capacity),
+        Discovery::BitcoinMine => (crate::taxonomy::BITCOIN_MINE_CATEGORY, crate::taxonomy::BITCOIN_MINE_OCCUPIER, 3, capacities.bitcoin_mine_capacity),
+        Discovery::Camp => (crate::taxonomy::CAMP_CATEGORY, crate::taxonomy::CAMP_OCCUPIER, 0, capacities.camp_capacity),
+        // Frontier's other guarded sites hold nothing; they share the camp's capacity.
+        Discovery::Rift => (
+            crate::taxonomy::RIFT_CATEGORY, crate::taxonomy::RIFT_OCCUPIER, 0, capacities.camp_capacity,
         ),
-        Discovery::Hyperstructure => (
-            crate::taxonomy::HYPERSTRUCTURE_CATEGORY,
-            crate::taxonomy::HYPERSTRUCTURE_OCCUPIER,
-            3,
-            capacities.hyperstructure_capacity,
+        Discovery::Ruin => (
+            crate::taxonomy::RUIN_CATEGORY, crate::taxonomy::RUIN_OCCUPIER, 0, capacities.camp_capacity,
         ),
-        Discovery::BitcoinMine => (
-            crate::taxonomy::BITCOIN_MINE_CATEGORY,
-            crate::taxonomy::BITCOIN_MINE_OCCUPIER,
-            3,
-            capacities.bitcoin_mine_capacity,
+        Discovery::Stragglers => (
+            crate::taxonomy::STRAGGLERS_CATEGORY, crate::taxonomy::STRAGGLERS_OCCUPIER, 0, capacities.camp_capacity,
         ),
-        Discovery::Camp |
-        Discovery::FallenRealm => (
-            crate::taxonomy::CAMP_CATEGORY, crate::taxonomy::CAMP_OCCUPIER, 0, capacities.camp_capacity,
-        ),
-        Discovery::None | Discovery::Chest | Discovery::Shrine |
-        Discovery::Well => panic!("discovery is not a structure"),
+        Discovery::None | Discovery::Shrine | Discovery::Well => panic!("discovery is not a structure"),
     };
     assert!(
         discovery == Discovery::Mine || coord.alt == (discovery == Discovery::BitcoinMine), "invalid discovery layer",
     );
-    let max_guards = if discovery == Discovery::Mine
-        || discovery == Discovery::Camp
-        || discovery == Discovery::FallenRealm {
-        1
-    } else {
+    let max_guards = if discovery == Discovery::Hyperstructure || discovery == Discovery::BitcoinMine {
         4
+    } else {
+        1
     };
     let base = StructureBase {
         troop_max_guard_count: max_guards,
-        troop_max_explorer_count: if discovery == Discovery::Camp || discovery == Discovery::FallenRealm {
+        troop_max_explorer_count: if discovery == Discovery::Camp {
             camp_armies
         } else {
             0

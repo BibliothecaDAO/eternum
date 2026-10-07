@@ -133,8 +133,6 @@ describe("native fact store", () => {
       shards_mines_fail_probability: 1,
       camp_win_probability: 1,
       camp_fail_probability: 0,
-      holysite_win_probability: 0,
-      holysite_fail_probability: 1,
       bitcoin_mine_win_probability: 0,
       bitcoin_mine_fail_probability: 1,
       hyps_win_prob: 0,

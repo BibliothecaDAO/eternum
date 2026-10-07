@@ -6,7 +6,9 @@ import {
   forecastFight,
   getGuardsByStructure,
   readExpeditionRules,
+  siteKindOf,
   siteReward,
+  type SiteKind,
 } from "@bibliothecadao/eternum";
 import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
 import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
@@ -44,7 +46,7 @@ export interface SiteCardPlan {
   art: string;
   name: string;
   guard: { type: TroopType; tier: TroopTier; count: number } | null | undefined;
-  /** Whole units paid home; null for a fallen realm, which pays its chest. */
+  /** Whole units paid home; null for stragglers, which pay only XP, and a ruin, which pays its chest. */
   payout: { resourceId: ResourcesIds; amount: number } | null;
   attackStamina: number;
   fight: SiteFight | undefined;
@@ -63,10 +65,11 @@ export const readSiteCard = (
 ): SiteCardPlan => {
   const guards = getGuardsByStructure(structure, store);
   const guard = guards && guards.find((candidate) => candidate.troops.count > 0n);
-  const reward = siteReward(site);
+  const kind = siteKindOf(structure.base.category);
+  const reward = siteReward(kind, site);
   return {
-    art: SITE_ART[site.kind],
-    name: siteName(store, site, siteTile),
+    art: SITE_ART[kind],
+    name: siteName(store, kind, site, siteTile),
     guard: guards === undefined ? undefined : guard ? troopsOf(guard.troops) : null,
     payout: reward && { resourceId: reward.resourceType, amount: Number(reward.amount / PRECISION) },
     attackStamina: activeCombatRules().stamina.stamina_attack_req,
@@ -74,11 +77,16 @@ export const readSiteCard = (
   };
 };
 
-/** A camp or rift by its kind; a fallen realm by the Loot Survivor beast that holds it at its depth. */
-const siteName = (store: NativeFactStore, site: NativeRows["ExpeditionSite"], siteTile: { row: number }): string => {
-  if (site.kind !== "FallenRealm") return site.kind;
+/** A site by its kind; a ruin by the Loot Survivor beast that holds it at its depth. */
+const siteName = (
+  store: NativeFactStore,
+  kind: SiteKind,
+  site: NativeRows["ExpeditionSite"],
+  siteTile: { row: number },
+): string => {
+  if (kind !== "Ruin") return kind;
   const rules = readExpeditionRules(store, site.game_id);
-  if (!rules) throw new Error(`Fallen realm ${site.entity_id} stands in a game without expedition rules`);
+  if (!rules) throw new Error(`Ruin ${site.entity_id} stands in a game without expedition rules`);
   return fallenRealmBeast(expeditionDepth(rules, { y: siteTile.row })).name;
 };
 

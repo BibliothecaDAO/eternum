@@ -21,7 +21,10 @@ export const isTileOccupierStructure = (tileOccupier: TileOccupier) => {
     tileOccupier === TileOccupier.Village ||
     tileOccupier === TileOccupier.Bank ||
     tileOccupier === TileOccupier.Camp ||
-    tileOccupier === TileOccupier.BitcoinMine
+    tileOccupier === TileOccupier.BitcoinMine ||
+    tileOccupier === TileOccupier.Rift ||
+    tileOccupier === TileOccupier.Ruin ||
+    tileOccupier === TileOccupier.Stragglers
   );
 };
 

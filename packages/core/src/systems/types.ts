@@ -1,5 +1,5 @@
 import { BuildingType, ContractAddress, ID, ResourcesIds } from "@bibliothecadao/types";
-import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
+import type { SiteKind } from "../utils/expeditions";
 
 export const TROOP_TIERS: Record<string, number> = {
   T1: 1,
@@ -34,13 +34,13 @@ export type ExplorerRewardSystemUpdate = {
 };
 /**
  * A site cleared, as its payout story and the winning exchange before it tell it (one transaction): what the site was,
- * what it paid home in whole units (a fallen realm pays its chest instead), where it stood and what the fight cost.
+ * what it paid home in whole units (stragglers pay only XP, a ruin its chest), where it stood and what the fight cost.
  */
 export type SitePayoutSystemUpdate = {
   explorerId: ID;
   siteId: ID;
   ownerAddress: bigint | null;
-  kind: NativeRows["ExpeditionSite"]["kind"];
+  kind: SiteKind;
   reward: { resourceId: ResourcesIds; amount: number } | null;
   /** The site's tile, in contract coordinates. */
   coord: { x: number; y: number };

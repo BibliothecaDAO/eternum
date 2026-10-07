@@ -69,6 +69,13 @@ import {
 // Frontier's own day unit: the evidence's time scale is how much faster a run's unit is.
 const DESIGN_DAY_UNIT_SECONDS = 14_400;
 const precision = BigInt(RESOURCE_PRECISION);
+/** Every guarded Frontier site an army may attack: camps, rifts, stragglers and the day's ruin. */
+const GUARDED_SITES = new Set<number>([
+  StructureType.Camp,
+  StructureType.Rift,
+  StructureType.Stragglers,
+  StructureType.Ruin,
+]);
 
 /**
  * Creates a Frontier season from a registered preset. The design run creates from the accelerated fixture preset, which
@@ -913,12 +920,7 @@ function planExpedition(client: GameClient, game: HarnessGame, player: Player): 
       .map((spot) => getTileAt(client.setup.store, false, spot.col, spot.row, client.gameId)?.occupier_id)
       .filter((id): id is number => Boolean(id))
       .map((id) => client.setup.store.get("Structure", { game_id: client.gameId, entity_id: id }))
-      .find(
-        (site) =>
-          site &&
-          site.owner === 0n &&
-          (site.base.category === StructureType.Mine || site.base.category === StructureType.Camp),
-      );
+      .find((site) => site && site.owner === 0n && GUARDED_SITES.has(site.base.category));
     if (target) {
       if (holdsForSite(amount, stamina.stamina_attack_req)) continue;
       let campAttempt = day.campAttempts.find(

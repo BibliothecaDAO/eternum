@@ -1566,8 +1566,8 @@ fn assert_capture_at(depth: u8, count: u128, tier: crate::troops::TroopTier, rev
                 crate::expeditions::FrontierDiscoveryRules {
                     camp_bps: 8000,
                     rift_bps: 1,
-                    fallen_realm_bps: 1,
-                    loose_chest_bps: 0,
+                    ruin_bps: 1,
+                    stragglers_bps: 0,
                     shrine_bps: 0,
                     well_bps: 0,
                     empty_reveal_limit: 7,
@@ -1580,13 +1580,12 @@ fn assert_capture_at(depth: u8, count: u128, tier: crate::troops::TroopTier, rev
         depths
             .append(
                 crate::expeditions::DepthRules {
-                    fallen_guard_lower: 2000,
-                    fallen_guard_upper: 4000,
+                    ruin_guard_lower: 2000,
+                    ruin_guard_upper: 4000,
                     guard_step: 1,
-                    fallen_guard_tier: crate::troops::TroopTier::T1,
                     reveal_percent: 10 + index * 5,
-                    guard_lower: index + 1,
-                    guard_upper: index + 1,
+                    site_guard_lower: index + 1,
+                    site_guard_upper: index + 1,
                     reveal_site_neighbors: false,
                     entry_stamina: 0,
                     chest: crate::relics::ChestGround { common: 10000, uncommon: 0, rare: 0, pity: 20 },
@@ -1720,7 +1719,6 @@ fn assert_capture_at(depth: u8, count: u128, tier: crate::troops::TroopTier, rev
             crate::logic::expeditions::expedition_site(camp).unwrap()
         },
     );
-    assert_eq!(site_before.kind, crate::expeditions::SiteKind::Camp);
     assert_eq!(site_before.initial_guard_count, (Into::<u8, u128>::into(depth) + 1) * RESOURCE_PRECISION);
     assert!(!site_before.cleared);
     let attack = Command::BattleGuard(crate::commands::Battle { attacker_id: explorer_id, defender_id: camp_id });
@@ -1767,7 +1765,7 @@ fn assert_capture_at(depth: u8, count: u128, tier: crate::troops::TroopTier, rev
         .create_discovery(
             game_id,
             mine_coord,
-            crate::discovery::Discovery::Mine,
+            crate::discovery::Discovery::Rift,
             101,
             capture_at + 1,
             crate::commands::action_context(
@@ -1786,7 +1784,7 @@ fn assert_capture_at(depth: u8, count: u128, tier: crate::troops::TroopTier, rev
             crate::logic::expeditions::expedition_site(ResourceKey { game_id, entity_id: mine_id }).unwrap()
         },
     );
-    assert_eq!(rift.kind, crate::expeditions::SiteKind::Rift);
+    assert_eq!(structures.structure(ResourceKey { game_id, entity_id: mine_id }).unwrap().base.category, crate::taxonomy::RIFT_CATEGORY);
     assert!(
         execute_in_game(
             d,
@@ -1850,14 +1848,14 @@ fn assert_capture_at(depth: u8, count: u128, tier: crate::troops::TroopTier, rev
                 assert_eq!(story.entity_id, Some(payout.site_id));
                 assert_eq!(payout.structure_id, home.entity_id);
                 assert_eq!(payout.explorer_id, explorer_id);
-                let expected = if payout.site_id == camp_id {
-                    site_before
+                let (category, expected) = if payout.site_id == camp_id {
+                    (crate::taxonomy::CAMP_CATEGORY, site_before)
                 } else {
                     assert_eq!(payout.site_id, mine_id);
-                    rift
+                    (crate::taxonomy::RIFT_CATEGORY, rift)
                 };
-                assert_eq!(payout.kind, expected.kind);
-                assert_eq!(payout.reward, crate::expeditions::site_reward(expected));
+                assert_eq!(payout.category, category);
+                assert_eq!(payout.reward, crate::expeditions::site_reward(category, expected));
             }
         }
     }
@@ -1893,13 +1891,12 @@ fn depth_entry_requires_research_and_spends_only_the_selected_depth_stamina() {
         depths
             .append(
                 crate::expeditions::DepthRules {
-                    fallen_guard_lower: 2000,
-                    fallen_guard_upper: 4000,
+                    ruin_guard_lower: 2000,
+                    ruin_guard_upper: 4000,
                     guard_step: 1,
-                    fallen_guard_tier: crate::troops::TroopTier::T1,
                     reveal_percent: depth + 1,
-                    guard_lower: depth + 1,
-                    guard_upper: depth + 1,
+                    site_guard_lower: depth + 1,
+                    site_guard_upper: depth + 1,
                     reveal_site_neighbors: false,
                     entry_stamina: if depth == 0 {
                         0
@@ -2143,8 +2140,8 @@ fn setup_frontier_chests_with_payout(
                 crate::expeditions::FrontierDiscoveryRules {
                     camp_bps: 1,
                     rift_bps: 0,
-                    fallen_realm_bps: 0,
-                    loose_chest_bps: 8000,
+                    ruin_bps: 0,
+                    stragglers_bps: 8000,
                     shrine_bps: 0,
                     well_bps: 0,
                     empty_reveal_limit: 7,
@@ -2181,13 +2178,12 @@ fn setup_frontier_chests_with_payout(
         depths
             .append(
                 crate::expeditions::DepthRules {
-                    fallen_guard_lower: 2000,
-                    fallen_guard_upper: 4000,
+                    ruin_guard_lower: 2000,
+                    ruin_guard_upper: 4000,
                     guard_step: 1,
-                    fallen_guard_tier: crate::troops::TroopTier::T1,
                     reveal_percent: 1,
-                    guard_lower: 1,
-                    guard_upper: 1,
+                    site_guard_lower: 1,
+                    site_guard_upper: 1,
                     reveal_site_neighbors: false,
                     entry_stamina: 0,
                     chest: ground,
@@ -2245,95 +2241,8 @@ fn setup_frontier_chests_with_payout(
     (d, game_id, ExplorerKey { game_id, explorer_id })
 }
 
-fn chest_reveal_time(d: super::Deployment, key: ExplorerKey, from: u64) -> u64 {
-    let context = crate::tests::context(d.games, key.game_id);
-    let mut root = context.raw_root;
-    let seed = crate::random::game_root(ref root, key.game_id, context.game.unbox().seed);
-    let rules = snforge_std::interact_with_state(
-        d.games, || crate::logic::preset_record::for_game(key.game_id).discovery_rules.read().unwrap(),
-    );
-    for timestamp in from..from + 20 {
-        if crate::discovery::frontier(rules, 0, 0, 0, seed, timestamp) == crate::discovery::Discovery::Chest {
-            return timestamp;
-        }
-    }
-    panic!("fixture needs a chest draw")
-}
-
 #[test]
-fn frontier_closed_chest_persists_opens_once_and_rejects_expired_armies() {
-    let (d, game_id, key) = setup_frontier_chests();
-    let time = chest_reveal_time(d, key, 360);
-    let army = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
-    let coord = crate::geometry::neighbor(army.coord, 0);
-    let tile = crate::geometry::tile_key(game_id, coord);
-    let mut spy = snforge_std::spy_events();
-    assert!(
-        execute_in_game(
-            d, game_id, Command::Explore(Explore { explorer_id: key.explorer_id, direction: 0 }), time, time,
-        ),
-    );
-    let closed = snforge_std::interact_with_state(d.games, || crate::logic::map::occupancy(tile).unwrap());
-    assert_eq!(closed.category, crate::taxonomy::CHEST_OCCUPIER);
-    assert!(!closed.is_structure);
-    assert_eq!(GameState { contract_address: d.games }.resolved_explorer(key).unwrap().coord, army.coord);
-    // Reads at the end of the day see the same closed occupancy, without a transaction.
-    let tomorrow = day_start(d, game_id, 1);
-    let last = tomorrow - 1;
-    start_cheat_block_timestamp_global(last);
-    assert_eq!(snforge_std::interact_with_state(d.games, || crate::logic::map::occupancy(tile).unwrap()), closed);
-    let open = Command::OpenRelicChest(crate::relics::OpenChest { explorer_id: key.explorer_id, coord });
-    // An army with every attribute legendary still opens it: chests no longer deal attribute offers.
-    snforge_std::interact_with_state(
-        d.games,
-        || crate::logic::progression::write(
-            key,
-            crate::progression::ArmyProgress {
-                battle: 5, logistics: 5, scouting: 5, homecoming: 5, ..crate::logic::progression::require(key),
-            },
-        ),
-    );
-    assert!(execute_in_game(d, game_id, open, last, last));
-    assert!(snforge_std::interact_with_state(d.games, || crate::logic::map::occupancy(tile)).is_none());
-    assert!(!execute_in_game(d, game_id, open, last, last));
-    // A different unopened chest becomes inaccessible at the epoch boundary.
-    let expired_coord = crate::geometry::neighbor(army.coord, 1);
-    let expired_tile = crate::geometry::tile_key(game_id, expired_coord);
-    snforge_std::interact_with_state(
-        d.games, || crate::logic::map::MapState::occupy(expired_tile, 9999, crate::taxonomy::CHEST_OCCUPIER, false),
-    );
-    assert!(
-        !execute_in_game(
-            d,
-            game_id,
-            Command::OpenRelicChest(crate::relics::OpenChest { explorer_id: key.explorer_id, coord: expired_coord }),
-            tomorrow,
-            tomorrow,
-        ),
-    );
-    assert_eq!(
-        snforge_std::interact_with_state(d.games, || crate::logic::map::occupancy(expired_tile).unwrap()).category,
-        crate::taxonomy::CHEST_OCCUPIER,
-    );
-    let mut rewards = 0;
-    for (_, event) in spy.get_events().emitted_by(d.games).events.span() {
-        if event.keys.len() > 1 && *event.keys.at(1) == selector!("StoryEvent") {
-            let mut keys = event.keys.span().slice(2, event.keys.len() - 2);
-            let mut data = event.data.span();
-            let story: crate::ownership::StoryEvent = starknet::Event::deserialize(ref keys, ref data).unwrap();
-            if let crate::ownership::Story::ChestReward(reward) = story.story {
-                rewards += 1;
-                assert_eq!(reward.explorer_id, key.explorer_id);
-                assert_eq!(reward.epoch, 0);
-                assert_eq!(story.timestamp, last);
-            }
-        }
-    }
-    assert_eq!(rewards, 1);
-}
-
-#[test]
-fn frontier_fallen_realm_capture_places_exactly_one_closed_chest_without_paying_it() {
+fn frontier_ruin_capture_places_exactly_one_closed_chest_without_paying_it() {
     let (d, game_id, key) = setup_frontier_chests();
     let state = GameState { contract_address: d.games };
     let mut army = state.resolved_explorer(key).unwrap();
@@ -2356,7 +2265,7 @@ fn frontier_fallen_realm_capture_places_exactly_one_closed_chest_without_paying_
         .create_discovery(
             game_id,
             coord,
-            crate::discovery::Discovery::FallenRealm,
+            crate::discovery::Discovery::Ruin,
             123,
             360,
             crate::commands::action_context(context),
@@ -2366,7 +2275,7 @@ fn frontier_fallen_realm_capture_places_exactly_one_closed_chest_without_paying_
     let initial = snforge_std::interact_with_state(
         d.games, || crate::logic::expeditions::expedition_site(site_key).unwrap(),
     );
-    assert_eq!(initial.kind, crate::expeditions::SiteKind::FallenRealm);
+    assert_eq!(structures.structure(site_key).unwrap().base.category, crate::taxonomy::RUIN_CATEGORY);
     assert!(
         initial.initial_guard_count >= 2000
             * RESOURCE_PRECISION && initial.initial_guard_count <= 4000
@@ -2401,7 +2310,7 @@ fn frontier_fallen_realm_capture_places_exactly_one_closed_chest_without_paying_
             let story: crate::ownership::StoryEvent = starknet::Event::deserialize(ref keys, ref data).unwrap();
             if let crate::ownership::Story::SitePayout(payout) = story.story {
                 payouts += 1;
-                assert_eq!(payout.kind, crate::expeditions::SiteKind::FallenRealm);
+                assert_eq!(payout.category, crate::taxonomy::RUIN_CATEGORY);
                 assert!(payout.reward.is_none());
             }
         } else if event.keys.len() > 1 && *event.keys.at(1) == selector!("StoryEvent") {
@@ -2715,7 +2624,7 @@ fn frontier_floor_counts_seven_player_reveals_across_armies_and_depths_then_rese
             index,
         );
         while index < 7
-            && crate::discovery::frontier(discovery, 0, 0, index, seed, time) != crate::discovery::Discovery::None {
+            && crate::discovery::frontier(discovery, 1, index, true, seed, time) != crate::discovery::Discovery::None {
             time += 1;
         }
         assert!(time < tomorrow);
@@ -2768,7 +2677,7 @@ fn frontier_floor_counts_seven_player_reveals_across_armies_and_depths_then_rese
     );
     let third = *IStructureOperationsDispatcher { contract_address: d.games }.home_armies(home).at(0);
     let mut time = tomorrow + 1;
-    while crate::discovery::frontier(discovery, 0, 0, 0, seed, time) != crate::discovery::Discovery::None {
+    while crate::discovery::frontier(discovery, 1, 0, true, seed, time) != crate::discovery::Discovery::None {
         time += 1;
     }
     assert!(execute_in_game(d, game_id, Command::Explore(Explore { explorer_id: third, direction: 0 }), time, time));
@@ -2947,10 +2856,11 @@ fn frontier_sites_store_the_seeded_category_and_depth_tier_with_the_count_basis(
     start_cheat_caller_address(d.games, d.games);
     for depth_index in 0_u32..4 {
         let depth = *preset.settlement.depths.at(depth_index);
-        for (discovery, kind, offset) in array![
-            (crate::discovery::Discovery::Camp, crate::expeditions::SiteKind::Camp, 0_u32),
-            (crate::discovery::Discovery::Mine, crate::expeditions::SiteKind::Rift, 1),
-            (crate::discovery::Discovery::FallenRealm, crate::expeditions::SiteKind::FallenRealm, 2),
+        for (discovery, category, offset) in array![
+            (crate::discovery::Discovery::Camp, crate::taxonomy::CAMP_CATEGORY, 0_u32),
+            (crate::discovery::Discovery::Rift, crate::taxonomy::RIFT_CATEGORY, 1),
+            (crate::discovery::Discovery::Ruin, crate::taxonomy::RUIN_CATEGORY, 2),
+            (crate::discovery::Discovery::Stragglers, crate::taxonomy::STRAGGLERS_CATEGORY, 3),
         ] {
             let coord = crate::troops::Coord {
                 alt: false, x: 100 + offset, y: depth_index * preset.settlement.spacing + preset.settlement.spacing / 2,
@@ -2960,7 +2870,7 @@ fn frontier_sites_store_the_seeded_category_and_depth_tier_with_the_count_basis(
                 .create_discovery(game_id, coord, discovery, seed, 360, crate::commands::action_context(context));
             let guard = IGuardsDispatcher { contract_address: d.games }
                 .guard(GuardKey { game_id, structure_id: id, slot: 0 });
-            let expected = crate::troops::frontier_guard(kind, depth, seed, context.rules.unbox(), 360);
+            let expected = crate::troops::frontier_guard(category, depth, seed, context.rules.unbox(), 360);
             assert_eq!(guard.troops, expected);
             let site = snforge_std::interact_with_state(
                 d.games,
@@ -2969,7 +2879,11 @@ fn frontier_sites_store_the_seeded_category_and_depth_tier_with_the_count_basis(
                 },
             );
             assert_eq!(site.initial_guard_count, expected.count);
-            assert_eq!(site.kind, kind);
+            let structure = IStructureOperationsDispatcher { contract_address: d.games }
+                .structure(ResourceKey { game_id, entity_id: id })
+                .unwrap();
+            assert_eq!(structure.base.category, category);
+            assert_eq!(structure.base.troop_max_explorer_count, 0);
         }
     }
 }
@@ -3083,7 +2997,7 @@ fn frontier_site_discovery_reads_home_knowledge_and_places_only_tile_occupancy()
             ..rules,
         };
         let mut seed = 0_u256;
-        while crate::discovery::frontier(enabled, 0, 0, 0, seed, 360) != expected {
+        while crate::discovery::frontier(enabled, 1, 0, true, seed, 360) != expected {
             seed += 1;
         }
         let seed = seed;
@@ -3106,7 +3020,7 @@ fn frontier_site_discovery_reads_home_knowledge_and_places_only_tile_occupancy()
                 );
                 crate::logic::expeditions::record_discovery(
                     crate::expeditions::ExpeditionDiscoveryKey { game_id, structure_id: army.owner, epoch: 0 },
-                    crate::discovery::Discovery::Chest,
+                    crate::discovery::Discovery::Camp,
                 );
             },
         );

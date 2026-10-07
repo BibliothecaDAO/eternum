@@ -6,10 +6,10 @@ import { ResourcesIds } from "@bibliothecadao/types";
 import { type ReactNode, useRef, useState } from "react";
 
 /** Site payouts as the world update listener reads them from SitePayout stories, in whole units. */
-const STORIES: Record<"camp" | "rift" | "fallen", SiteClear> = {
+const STORIES: Record<"camp" | "rift" | "ruin", SiteClear> = {
   camp: { kind: "Camp", reward: { resourceId: ResourcesIds.Labor, amount: 550 } },
   rift: { kind: "Rift", reward: { resourceId: ResourcesIds.Essence, amount: 3_300 } },
-  fallen: { kind: "FallenRealm", reward: null },
+  ruin: { kind: "Ruin", reward: null },
 };
 const TROOPS_LOST = 420;
 
@@ -55,7 +55,7 @@ export const SiteLab = () => {
       <div className="flex flex-wrap justify-center gap-2">
         <LabButton onClick={() => clear("camp")}>Clear camp · +550 labor</LabButton>
         <LabButton onClick={() => clear("rift")}>Clear rift · +3,300 Essence</LabButton>
-        <LabButton onClick={() => clear("fallen")}>Clear fallen realm</LabButton>
+        <LabButton onClick={() => clear("ruin")}>Clear ruin</LabButton>
         <LabButton onClick={() => setCounters(!counters)}>{counters ? "Hide counters" : "Show counters"}</LabButton>
       </div>
     </div>

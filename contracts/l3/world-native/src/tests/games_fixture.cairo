@@ -316,7 +316,6 @@ pub mod GamesFixture {
             ref self: TContractState,
             key: crate::resources::ResourceKey,
             seed: u256,
-            site_kind: Option<crate::expeditions::SiteKind>,
             timestamp: u64,
             game_context: crate::commands::ActionContext,
         ) {
@@ -325,7 +324,6 @@ pub mod GamesFixture {
                 crate::guards::IGuardsLibraryDispatcher { class_hash: classes.troops.read() },
                 key,
                 seed,
-                site_kind,
                 timestamp,
                 game_context,
             )

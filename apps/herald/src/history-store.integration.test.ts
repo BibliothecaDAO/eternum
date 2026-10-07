@@ -226,7 +226,7 @@ describe("Frontier confirmed season history", () => {
             structure_id: 1,
             explorer_id: 7,
             site_id: 9,
-            kind: new CairoCustomEnum({ Camp: {} }),
+            category: 7,
             reward: new CairoOption(CairoOptionVariant.Some, { resource_type: 23, amount: 500000000000n }),
           },
         }),

@@ -92,8 +92,9 @@ pub mod ResourcesLogic {
         ) -> ((), crate::ownership::StoryCursor) {
             let context = crate::commands::load_context(key.game_id, context);
             let site = crate::logic::expeditions::clear_site(key);
-            let reward = crate::expeditions::site_reward(site);
-            if site.kind == crate::expeditions::SiteKind::FallenRealm {
+            let category = crate::logic::structures::structure(key).expect('missing site').base.category;
+            let reward = crate::expeditions::site_reward(category, site);
+            if category == crate::taxonomy::RUIN_CATEGORY {
                 IRelicMapLibraryDispatcher { class_hash: self.release.classes(key.game_id).map.read() }
                     .close_site_chest(key);
             }
@@ -124,7 +125,7 @@ pub mod ResourcesLogic {
                         structure_id: home_id,
                         explorer_id: explorer.explorer_id,
                         site_id: key.entity_id,
-                        kind: site.kind,
+                        category,
                         reward,
                     },
                 ),

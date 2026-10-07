@@ -1,7 +1,7 @@
 import { BuildingType, BuildingTypeToString, GuardSlot, RESOURCE_PRECISION, resources } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import { getStructureName, type PlayerNameResolver } from "../utils/entities";
-import { structureMapPosition } from "../utils/expeditions";
+import { siteKindOf, structureMapPosition } from "../utils/expeditions";
 import { Position } from "./position";
 import { getIsBlitz } from "../utils/utils";
 import { StoryEventSystemUpdate } from "./types";
@@ -141,11 +141,15 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
   }),
   BlitzFinalized: () => ({ title: "Blitz finalized", icon: "scroll" }),
   SitePayout: (_event, payload, components) => {
-    const kind = formatEnum(payload.kind);
-    const label =
-      kind === "Camp" ? "Camp" : kind === "Rift" ? "Rift" : kind === "FallenRealm" ? "Fallen realm" : undefined;
-    if (!label || payload.reward === undefined) throw new Error("Incomplete site payout story");
-    const reward = payload.reward === null ? "Closed chest on the tile" : formatResourceList([payload.reward]);
+    const category = toNumber(payload.category);
+    if (category === null || payload.reward === undefined) throw new Error("Incomplete site payout story");
+    const label = siteKindOf(category);
+    const reward =
+      payload.reward === null
+        ? label === "Ruin"
+          ? "Closed chest on the tile"
+          : "XP only"
+        : formatResourceList([payload.reward]);
     if (!reward) throw new Error("Incomplete site resource reward");
     return {
       title: `${label} cleared`,
@@ -483,7 +487,7 @@ function describeStructureDetails(
   const structure = readStructure(targetId, components);
   if (!structure) return describeFallbackStructure(fallbackCategory, fallbackCoord);
 
-  const name = getStructureName(components, structure, getIsBlitz()).name;
+  const name = getStructureName(structure, getIsBlitz()).name;
   const level = toNumber(structure.base?.level);
   const coord = formatCoord(structureMapPosition(components, structure));
 
@@ -522,7 +526,7 @@ function describeStructureName(structureId: unknown, components?: NativeFactStor
 }
 
 function structureDisplayName(components: NativeFactStore, structure: StructureRow): string {
-  return getStructureName(components, structure, getIsBlitz()).name;
+  return getStructureName(structure, getIsBlitz()).name;
 }
 
 /**

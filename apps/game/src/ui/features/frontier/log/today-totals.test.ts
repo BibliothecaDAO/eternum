@@ -16,10 +16,10 @@ describe("the player's day in totals", () => {
       story("ExplorationReward", { resource_type: ResourcesIds.Essence, amount: whole(150) }),
       story("ExplorationReward", { resource_type: ResourcesIds.Labor, amount: whole(149) }),
       story("SitePayout", {
-        kind: "Camp",
+        category: 7,
         reward: { Some: { resource_type: ResourcesIds.Labor, amount: whole(550) } },
       }),
-      story("SitePayout", { kind: "FallenRealm", reward: null }),
+      story("SitePayout", { category: 11, reward: null }),
       story("ChestReward", { kind: "Relic", quality: 1 }),
       // Another player's reveal, and one of yesterday's, count for nothing today.
       story("ExplorationReward", { resource_type: ResourcesIds.Essence, amount: whole(900) }, "0x222"),

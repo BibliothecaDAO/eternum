@@ -53,10 +53,10 @@ export interface NativePreset {
   /** One price per research row tier above common; rows are research.cairo's ROW_* ids. */
   research: readonly { row: number; tier: number; essenceCost: number; laborCost: number }[];
   discovery: null | {
+    stragglersBps: number;
     campBps: number;
     riftBps: number;
-    fallenRealmBps: number;
-    looseChestBps: number;
+    ruinBps: number;
     shrineBps: number;
     wellBps: number;
     emptyRevealLimit: number;
@@ -78,12 +78,11 @@ export interface NativePreset {
   };
   depths: Array<{
     revealPercent: number;
-    guardLower: number;
-    guardUpper: number;
-    fallenGuardLower: number;
-    fallenGuardUpper: number;
+    siteGuardLower: number;
+    siteGuardUpper: number;
+    ruinGuardLower: number;
+    ruinGuardUpper: number;
     guardStep: number;
-    fallenGuardTier: "T1" | "T2" | "T3";
     revealSiteNeighbors: boolean;
     entryStamina: number;
     chest: { common: number; uncommon: number; rare: number; pity: number };

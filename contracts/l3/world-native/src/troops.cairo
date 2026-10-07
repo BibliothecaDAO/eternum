@@ -377,29 +377,36 @@ pub(crate) fn discovery_guard(
     discovered_guard(category, tier, count, rules, timestamp)
 }
 
+// A ruin's beast is one troop type sized by its layer; camps, rifts and stragglers draw a random type from the site
+// grid, and stragglers keep a third of that draw.
 pub(crate) fn frontier_guard(
-    kind: crate::expeditions::SiteKind,
+    category: u8,
     depth: crate::expeditions::DepthRules,
     seed: u256,
     rules: crate::rules::SliceRules,
     timestamp: u64,
 ) -> Troops {
-    let (category, tier, lower, upper) = if kind == crate::expeditions::SiteKind::FallenRealm {
-        (TroopType::Knight, depth.fallen_guard_tier, depth.fallen_guard_lower, depth.fallen_guard_upper)
+    let (troop, lower, upper) = if category == crate::taxonomy::RUIN_CATEGORY {
+        (TroopType::Knight, depth.ruin_guard_lower, depth.ruin_guard_upper)
     } else {
-        let category = match crate::random::range(seed, 2, 3) {
+        let troop = match crate::random::range(seed, 2, 3) {
             0 => TroopType::Knight,
             1 => TroopType::Paladin,
             _ => TroopType::Crossbowman,
         };
-        (category, TroopTier::T1, depth.guard_lower.into(), depth.guard_upper.into())
+        (troop, depth.site_guard_lower.into(), depth.site_guard_upper.into())
     };
     let step: u128 = depth.guard_step.into();
     let lower: u128 = lower.into();
     let upper: u128 = upper.into();
     // Preset validation makes both inclusive endpoints reachable on the grid.
     let count = lower + step * crate::random::range(seed, 1, (upper - lower) / step + 1);
-    discovered_guard(category, tier, count, rules, timestamp)
+    let count = if category == crate::taxonomy::STRAGGLERS_CATEGORY {
+        count / 3
+    } else {
+        count
+    };
+    discovered_guard(troop, TroopTier::T1, count, rules, timestamp)
 }
 
 fn discovered_guard(

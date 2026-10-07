@@ -193,17 +193,18 @@ it("counts season days from the exact start, whatever the time of day", () => {
 describe("siteReward", () => {
   it("pays as the contract does: a camp half its first guard in labor, a rift three times it in Essence", () => {
     const guard = 1_100n * 1_000_000_000n;
-    expect(siteReward({ kind: "Camp", initial_guard_count: guard })).toEqual({
+    expect(siteReward("Camp", { initial_guard_count: guard })).toEqual({
       resourceType: ResourcesIds.Labor,
       amount: 550n * 1_000_000_000n,
     });
-    expect(siteReward({ kind: "Rift", initial_guard_count: guard })).toEqual({
+    expect(siteReward("Rift", { initial_guard_count: guard })).toEqual({
       resourceType: ResourcesIds.Essence,
       amount: 3_300n * 1_000_000_000n,
     });
     // An odd scaled count halves as the contract's integer division does.
-    expect(siteReward({ kind: "Camp", initial_guard_count: 3n })?.amount).toBe(1n);
-    expect(siteReward({ kind: "FallenRealm", initial_guard_count: guard })).toBeNull();
+    expect(siteReward("Camp", { initial_guard_count: 3n })?.amount).toBe(1n);
+    expect(siteReward("Stragglers", { initial_guard_count: guard })).toBeNull();
+    expect(siteReward("Ruin", { initial_guard_count: guard })).toBeNull();
   });
 });
 

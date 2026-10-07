@@ -1,3 +1,4 @@
+import { StructureType } from "@bibliothecadao/types";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { hash } from "starknet";
 import { NativeFactStore } from "../client/native-fact-store";
@@ -169,7 +170,7 @@ it("renders the site's recorded kind and payout without a current structure", ()
       structure_id: 3,
       explorer_id: 7,
       site_id: 9,
-      kind: "Camp",
+      category: StructureType.Camp,
       reward: { resource_type: 23, amount: "500000000000" },
     }),
   );
@@ -181,11 +182,11 @@ it("renders the site's recorded kind and payout without a current structure", ()
         structure_id: 3,
         explorer_id: 7,
         site_id: 9,
-        kind: "FallenRealm",
+        category: StructureType.Stragglers,
         reward: null,
       }),
     ),
-  ).toMatchObject({ title: "Fallen realm cleared", description: "Army · Closed chest on the tile" });
+  ).toMatchObject({ title: "Stragglers cleared", description: "Army · XP only" });
 });
 
 it("explains a LORDS budget fallback without hiding its rarity", () => {
@@ -295,7 +296,13 @@ describe("every story the chain can tell", () => {
     TroopsTransferred: { source: { Explorer: 7 }, target: { Explorer: 8 }, amount },
     ChestReward: { explorer_id: 7, kind: "Token", quality: 3, depth: 1, lords_exhausted: false },
     TierBought: { explorer_id: 7, attribute: "Battle", tier: 2, price: 100 },
-    SitePayout: { structure_id: 5, explorer_id: 7, site_id: 9, kind: "Camp", reward: { resource_type: 23, amount } },
+    SitePayout: {
+      structure_id: 5,
+      explorer_id: 7,
+      site_id: 9,
+      category: StructureType.Camp,
+      reward: { resource_type: 23, amount },
+    },
     BattleEvent: {
       attacker_id: 7,
       defender_id: 9,

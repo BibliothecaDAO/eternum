@@ -44,13 +44,14 @@ function story(name: string, value: Record<string, unknown>, index: number, owne
     value: { owner, story: { [name]: value } },
   };
 }
-const clear = (kind: string, index: number, owner = 10) =>
+const CATEGORY = { Camp: 7, Rift: 9, Ruin: 10, Stragglers: 11 } as const;
+const clear = (kind: keyof typeof CATEGORY, index: number, owner = 10) =>
   story(
     "SitePayout",
     {
-      kind,
+      category: CATEGORY[kind],
       reward:
-        kind === "FallenRealm"
+        kind === "Ruin" || kind === "Stragglers"
           ? null
           : { resource_type: kind === "Camp" ? 23 : 38, amount: kind === "Camp" ? "500000000000" : "3000000000000" },
     },
@@ -75,14 +76,15 @@ describe("Frontier season standings", () => {
     ).toBe("1700");
   });
 
-  it("counts 3 camps, a rift and a fallen realm from stories after site deletion; duplicates and order do not change it", () => {
+  it("counts 3 camps, a rift, a ruin and stragglers from stories after site deletion; duplicates and order do not change it", () => {
     const { read } = facts();
     const history = [
       clear("Camp", 0),
       clear("Camp", 1),
       clear("Camp", 2),
       clear("Rift", 3),
-      clear("FallenRealm", 4),
+      clear("Ruin", 4),
+      clear("Stragglers", 6),
       story("ExplorationReward", { resource_type: 38, amount: "6000000000000" }, 5),
     ];
     const board = buildFrontierLeaderboard(read, "1", history);
@@ -90,7 +92,7 @@ describe("Frontier season standings", () => {
       structure_id: "1",
       deepest_depth: 2,
       order: 3,
-      sites_cleared: { total: 5, camps: 3, rifts: 1, fallen_realms: 1 },
+      sites_cleared: { total: 6, camps: 3, rifts: 1, ruins: 1, stragglers: 1 },
       rewards: { lords: "0", labor: "1500000000000", essence: "9000000000000" },
     });
     expect(buildFrontierLeaderboard(read, "1", [...history, ...history].reverse())).toEqual(board);

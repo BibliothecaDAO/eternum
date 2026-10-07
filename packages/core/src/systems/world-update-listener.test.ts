@@ -1,3 +1,4 @@
+import { StructureType } from "@bibliothecadao/types";
 import { describe, expect, it, vi } from "vitest";
 import { WorldUpdateListener } from "./world-update-listener";
 import { NativeFactStore } from "../client/native-fact-store";
@@ -83,7 +84,7 @@ describe("native scene updates", () => {
           defender: side(1_100_000_000_000n, 0n),
         },
       });
-    const story = (order: string, siteId: number, kind: unknown, reward: unknown) =>
+    const story = (order: string, siteId: number, category: number, reward: unknown) =>
       store.applyEvent({
         model: "StoryEvent",
         key: `story-${order}`,
@@ -93,14 +94,14 @@ describe("native scene updates", () => {
           index: 1,
           owner: "0x111",
           timestamp: 100,
-          story: { SitePayout: { structure_id: 3, explorer_id: 7, site_id: siteId, kind, reward } },
+          story: { SitePayout: { structure_id: 3, explorer_id: 7, site_id: siteId, category, reward } },
         },
       });
 
     battle("5", 9);
-    story("5", 9, "Camp", { resource_type: 23, amount: "550000000000" });
+    story("5", 9, StructureType.Camp, { resource_type: 23, amount: "550000000000" });
     battle("6", 10);
-    story("6", 10, { FallenRealm: {} }, null);
+    story("6", 10, StructureType.Stragglers, null);
     expect(payout.mock.calls.map(([update]) => update)).toEqual([
       {
         explorerId: 7,
@@ -111,15 +112,17 @@ describe("native scene updates", () => {
         coord: { x: 40, y: 12 },
         troopsLost: 420,
       },
-      expect.objectContaining({ siteId: 10, kind: "FallenRealm", reward: null }),
+      expect.objectContaining({ siteId: 10, kind: "Stragglers", reward: null }),
     ]);
     // A payout whose winning battle is not the one just before it is a contract bug, never a guess.
-    expect(() => story("7", 11, "Rift", { resource_type: 29, amount: "1" })).toThrow("without its winning battle");
+    expect(() => story("7", 11, StructureType.Rift, { resource_type: 29, amount: "1" })).toThrow(
+      "without its winning battle",
+    );
     battle("7", 11);
-    expect(() => story("7", 11, "Rift", null)).toThrow("A cleared Rift pays a resource");
+    expect(() => story("7", 11, StructureType.Rift, null)).toThrow("A cleared Rift pays nothing");
     stop();
     battle("8", 12);
-    story("8", 12, "Camp", { resource_type: 23, amount: "1" });
+    story("8", 12, StructureType.Camp, { resource_type: 23, amount: "1" });
     expect(payout).toHaveBeenCalledTimes(2);
   });
 

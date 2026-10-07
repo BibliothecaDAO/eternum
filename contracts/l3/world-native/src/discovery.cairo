@@ -9,8 +9,9 @@ pub enum Discovery {
     Hyperstructure,
     BitcoinMine,
     Camp,
-    FallenRealm,
-    Chest,
+    Rift,
+    Ruin,
+    Stragglers,
     Shrine,
     Well,
 }
@@ -61,71 +62,60 @@ fn hyperstructure_weight(config: MapConfig, distance: u128, hyperstructures: u32
     weighted - core::cmp::min(weighted, penalty)
 }
 
+// Scouting may raise camps and rifts by up to 600 points each, so the table keeps 1200 of its 10000 in reserve.
 pub fn validate_frontier(rules: crate::expeditions::FrontierDiscoveryRules) {
-    let sites: u32 = Into::<u16, u32>::into(rules.camp_bps) + rules.rift_bps.into() + rules.fallen_realm_bps.into();
-    assert!(sites != 0 && rules.empty_reveal_limit != 0, "empty discovery floor");
-    // Every Scouting tier on one kind doubles its rate: the larger of camp and rift is the most it can add.
-    let scouting_reserve: u32 = core::cmp::max(rules.camp_bps, rules.rift_bps).into();
+    // The floor must find something on a day whose ruin is already taken.
+    let guarded: u32 = Into::<u16, u32>::into(rules.stragglers_bps) + rules.camp_bps.into() + rules.rift_bps.into();
+    assert!(guarded != 0 && rules.empty_reveal_limit != 0, "empty discovery floor");
     assert!(
-        sites
-            + scouting_reserve
-            + rules.loose_chest_bps.into()
-            + rules.shrine_bps.into()
-            + rules.well_bps.into() <= 10000,
+        guarded + rules.ruin_bps.into() + 1200 + rules.shrine_bps.into() + rules.well_bps.into() <= 10000,
         "discovery odds exceed 100 percent",
     );
 }
 
-/// A reveal's draw. Scouting raises camp and rift by its bonuses, in basis points of each base rate.
+// One categorical draw per reveal. After `empty_reveal_limit` empty reveals in a row the draw covers only the kinds
+// still allowed, so the next reveal always finds something. A ruin is allowed only while the player's day is free.
 pub fn frontier(
     rules: crate::expeditions::FrontierDiscoveryRules,
-    camp_bonus_bps: u32,
-    rift_bonus_bps: u32,
+    scouting: u8,
     empty_reveals: u8,
+    ruin_allowed: bool,
     seed: u256,
     timestamp: u64,
 ) -> Discovery {
-    let camp: u128 = Into::<u16, u128>::into(rules.camp_bps) * (10000 + camp_bonus_bps.into()) / 10000;
-    let rift: u128 = Into::<u16, u128>::into(rules.rift_bps) * (10000 + rift_bonus_bps.into()) / 10000;
-    let fallen: u128 = rules.fallen_realm_bps.into();
-    let shrine: u128 = rules.shrine_bps.into();
-    let well: u128 = rules.well_bps.into();
+    assert!(scouting >= 1 && scouting <= 5, "invalid Scouting level");
+    let bonus: u128 = Into::<u8, u128>::into(scouting - 1) * 150;
+    let ruin: u128 = if ruin_allowed {
+        rules.ruin_bps.into()
+    } else {
+        0
+    };
+    let kinds = array![
+        (Discovery::Stragglers, rules.stragglers_bps.into()), (Discovery::Camp, rules.camp_bps.into() + bonus),
+        (Discovery::Rift, rules.rift_bps.into() + bonus), (Discovery::Ruin, ruin),
+        (Discovery::Shrine, rules.shrine_bps.into()), (Discovery::Well, rules.well_bps.into()),
+    ];
+    let mut total: u128 = 0;
+    for (_, weight) in kinds.span() {
+        total += *weight;
+    }
     let floor = empty_reveals >= rules.empty_reveal_limit;
-    let mut draw = crate::random::range(
-        seed, Into::<u64, u128>::into(timestamp) + 29, if floor {
-            camp + rift + fallen + shrine + well
-        } else {
-            10000
-        },
-    );
-    if !floor {
-        let chest: u128 = rules.loose_chest_bps.into();
-        if draw < chest {
-            return Discovery::Chest;
+    let mut draw = crate::random::range(seed, Into::<u64, u128>::into(timestamp) + 29, if floor {
+        total
+    } else {
+        10000
+    });
+    for (kind, weight) in kinds {
+        if draw < weight {
+            return kind;
         }
-        draw -= chest;
-    }
-    if draw < camp {
-        return Discovery::Camp;
-    }
-    if draw < camp + rift {
-        return Discovery::Mine;
-    }
-    if draw < camp + rift + fallen {
-        return Discovery::FallenRealm;
-    }
-    if draw < camp + rift + fallen + shrine {
-        return Discovery::Shrine;
-    }
-    if draw < camp + rift + fallen + shrine + well {
-        return Discovery::Well;
+        draw -= weight;
     }
     Discovery::None
 }
 
 pub fn tile_occupier(discovery: Discovery) -> Option<u8> {
     match discovery {
-        Discovery::Chest => Some(crate::taxonomy::CHEST_OCCUPIER),
         Discovery::Shrine => Some(crate::taxonomy::SHRINE_OCCUPIER),
         Discovery::Well => Some(crate::taxonomy::WELL_OCCUPIER),
         _ => None,

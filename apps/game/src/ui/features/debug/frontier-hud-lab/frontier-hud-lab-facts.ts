@@ -184,7 +184,6 @@ const campSite = (clock: LabClock, entityId: number, colOffset: number, rowOffse
     value: {
       game_id: clock.gameId,
       entity_id: entityId,
-      kind: "Camp",
       initial_guard_count: amount(1_100),
       cleared: false,
     },
@@ -346,7 +345,7 @@ export const labSeasonBoard = (gameId: number) => ({
       address: index === 56 ? LAB_PLAYER : `0x${(0xa000 + index).toString(16)}`,
       structure_id: String(index === 56 ? LAB_REALM_ID : 500 + index),
       rank: index + 1,
-      sites_cleared: { total, camps: total - rifts - fallen, rifts, fallen_realms: fallen },
+      sites_cleared: { total, camps: total - rifts - fallen, rifts, ruins: fallen, stragglers: 0 },
       chests_earned: Math.floor(total / 3),
       rewards: {
         lords: String(Math.floor(total / 3) * 400),

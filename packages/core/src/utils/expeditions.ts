@@ -41,16 +41,31 @@ export const readExpeditionRules = (
 export const seasonDay = (rules: ExpeditionRules, timestamp: number): number | null =>
   dayOf(rules, timestamp)?.index ?? null;
 
+/** A guarded Frontier site's kind is its structure category. */
+export type SiteKind = "Camp" | "Rift" | "Ruin" | "Stragglers";
+const SITE_KINDS = new Map<number, SiteKind>([
+  [StructureType.Camp, "Camp"],
+  [StructureType.Rift, "Rift"],
+  [StructureType.Ruin, "Ruin"],
+  [StructureType.Stragglers, "Stragglers"],
+]);
+export const siteKindOf = (category: number): SiteKind => {
+  const kind = SITE_KINDS.get(category);
+  if (!kind) throw new Error(`Structure category ${category} is not a guarded site`);
+  return kind;
+};
+
 /**
- * What clearing a site pays home, as the contract's site_reward computes it from the guard it started with: a camp
- * half its troops in labor, a rift three times them in Essence, both in game precision; a fallen realm pays none (its
- * closed chest instead).
+ * What clearing a site pays home in resources, as the contract's site_reward computes it from the guard it started
+ * with: a camp half its troops in labor, a rift three times them in Essence, both in game precision. Stragglers pay
+ * only XP; a ruin pays its chest.
  */
 export const siteReward = (
-  site: Pick<NativeRows["ExpeditionSite"], "kind" | "initial_guard_count">,
+  kind: SiteKind,
+  site: Pick<NativeRows["ExpeditionSite"], "initial_guard_count">,
 ): { resourceType: ResourcesIds; amount: bigint } | null => {
-  if (site.kind === "Camp") return { resourceType: ResourcesIds.Labor, amount: site.initial_guard_count / 2n };
-  if (site.kind === "Rift") return { resourceType: ResourcesIds.Essence, amount: site.initial_guard_count * 3n };
+  if (kind === "Camp") return { resourceType: ResourcesIds.Labor, amount: site.initial_guard_count / 2n };
+  if (kind === "Rift") return { resourceType: ResourcesIds.Essence, amount: site.initial_guard_count * 3n };
   return null;
 };
 

@@ -753,31 +753,16 @@ pub mod StructuresLogic {
                             );
                     }
                 },
-                Discovery::FallenRealm => {
-                    assert!(rules.day_unit_seconds != 0, "fallen realm requires expeditions");
-                },
-                Discovery::None | Discovery::Chest | Discovery::Shrine |
-                Discovery::Well => panic!("discovery is not a structure"),
+                Discovery::Rift | Discovery::Ruin |
+                Discovery::Stragglers => { assert!(rules.day_unit_seconds != 0, "site requires expeditions"); },
+                Discovery::None | Discovery::Shrine | Discovery::Well => panic!("discovery is not a structure"),
             }
             crate::logic::structures::StructureState::create(key, record);
             crate::logic::map::MapState::occupy(tile_key(game_id, coord), id, occupier, true);
-            let site_kind = if rules.day_unit_seconds == 0 {
-                None
-            } else {
-                Some(
-                    match discovery {
-                        Discovery::Camp => crate::expeditions::SiteKind::Camp,
-                        Discovery::Mine => crate::expeditions::SiteKind::Rift,
-                        Discovery::FallenRealm => crate::expeditions::SiteKind::FallenRealm,
-                        _ => panic!("invalid expedition site"),
-                    },
-                )
-            };
             crate::guards::IGuardsDispatcherTrait::initialize_structure_guards(
                 crate::guards::IGuardsLibraryDispatcher { class_hash: self.release.classes(game_id).troops.read() },
                 key,
                 seed,
-                site_kind,
                 timestamp,
                 crate::commands::action_context(game_context),
             );

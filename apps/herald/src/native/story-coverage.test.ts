@@ -122,12 +122,12 @@ const stories: Record<string, { fields: number[]; expected: unknown }> = {
   BlitzFinalized: { fields: [11], expected: 11n },
   RelicCrafted: { fields: [4], expected: 4n },
   SitePayout: {
-    fields: [3, 7, 9, 0, 0, 23, 500],
+    fields: [3, 7, 9, 7, 0, 23, 500],
     expected: {
       structure_id: 3n,
       explorer_id: 7n,
       site_id: 9n,
-      kind: "Camp",
+      category: 7n,
       reward: { resource_type: 23n, amount: 500n },
     },
   },

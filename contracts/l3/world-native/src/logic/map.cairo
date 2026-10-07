@@ -87,8 +87,8 @@ pub mod MapState {
     }
 
     pub fn close_site_chest(key: TileKey, site_id: u32) {
-        let previous = crate::logic::map::occupancy(key).expect('missing fallen realm');
-        assert!(previous.entity_id == site_id && previous.is_structure, "fallen realm occupancy mismatch");
+        let previous = crate::logic::map::occupancy(key).expect('missing ruin');
+        assert!(previous.entity_id == site_id && previous.is_structure, "ruin occupancy mismatch");
         write_occupancy(
             key,
             Some(TileOccupancy { entity_id: site_id, category: crate::taxonomy::CHEST_OCCUPIER, is_structure: false }),
@@ -388,9 +388,11 @@ pub mod MapLogic {
                     crate::logic::settlement::rules(key.game_id).spacing,
                 ),
             };
-            let empty = crate::logic::expeditions::discovery(counter).map(|row| row.empty_reveals).unwrap_or(0);
-            let (camp_bonus, rift_bonus) = crate::progression::scouting_bonus(progress);
-            let result = crate::discovery::frontier(rules, camp_bonus, rift_bonus, empty, seed, context.timestamp);
+            let day = crate::logic::expeditions::discovery(counter)
+                .unwrap_or(crate::expeditions::ExpeditionDiscovery { empty_reveals: 0, ruin_found: false });
+            let result = crate::discovery::frontier(
+                rules, progress.scouting, day.empty_reveals, !day.ruin_found, seed, context.timestamp,
+            );
             crate::logic::expeditions::record_discovery(counter, result);
             if let Some(category) = crate::discovery::tile_occupier(result) {
                 crate::logic::map::MapState::occupy(
@@ -579,9 +581,8 @@ pub mod MapLogic {
         }
         fn close_site_chest(ref self: ContractState, site: crate::resources::ResourceKey) {
             let status = crate::logic::expeditions::expedition_site(site).expect('missing expedition site');
-            assert!(
-                status.cleared && status.kind == crate::expeditions::SiteKind::FallenRealm, "fallen realm not cleared",
-            );
+            let category = crate::logic::structures::structure(site).expect('missing ruin').base.category;
+            assert!(status.cleared && category == crate::taxonomy::RUIN_CATEGORY, "ruin not cleared");
             let coord = crate::structures::structure_coord(site);
             crate::logic::map::MapState::close_site_chest(tile_key(site.game_id, coord), site.entity_id);
         }

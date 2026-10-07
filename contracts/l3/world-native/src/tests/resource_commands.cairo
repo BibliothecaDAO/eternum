@@ -711,7 +711,7 @@ fn troop_deposit_ownership(blitz_mode_on: bool, category: u8) {
     let explorer = explorer_fixture(deployment, 70, home.entity_id, Coord { alt: false, x: 2000009, y: 2000000 }, 1000);
     grant(deployment, explorer, 26, 100);
     grant(deployment, explorer, 1, 100);
-    let coord = if category == 8 {
+    let coord = if category == crate::taxonomy::BITCOIN_MINE_CATEGORY {
         Coord { alt: true, x: 1999995, y: 2000000 }
     } else {
         Coord { alt: false, x: 2000009, y: 2000000 }

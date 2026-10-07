@@ -157,7 +157,7 @@ describe("native presets", () => {
       FRONTIER_PRESET_ID,
     );
 
-    expect(design.structures.camps).toEqual([]);
+    expect(design.structures.camps.resources).toEqual([]);
     for (const depth of design.settlement.depths) {
       for (const retired of ["mine_cap_min", "mine_cap_max", "mine_rate", "mine_chest"])
         expect(depth).not.toHaveProperty(retired);
@@ -214,16 +214,24 @@ describe("native presets", () => {
     for (const depth of preset.settlement.depths) expect(depth).not.toHaveProperty("attunement_cost");
   });
 
-  test("Frontier owns discovery odds in its categorical row and fallen guards in each depth", () => {
+  test("A camp's labor rate is its own rule, at the rate it read from the village before", () => {
+    for (const id of [2, 3, 4]) {
+      const preset = buildNativePreset(configuration(id), id);
+      const labor = preset.resources.resources.find(({ resource_type }) => resource_type === 23)!;
+      expect(preset.structures.camps.labor_rate).toBe(labor.realm_rate / 2n);
+    }
+  });
+
+  test("Frontier owns discovery odds in its categorical row and ruin beasts in each depth", () => {
     const preset = buildNativePreset(
       loadNativePresetConfiguration("madara.frontier", FRONTIER_PRESET_ID),
       FRONTIER_PRESET_ID,
     );
     expect(preset.economy.discovery.unwrap()).toEqual({
+      stragglers_bps: 600,
       camp_bps: 400,
       rift_bps: 400,
-      fallen_realm_bps: 200,
-      loose_chest_bps: 200,
+      ruin_bps: 100,
       shrine_bps: 300,
       well_bps: 300,
       empty_reveal_limit: 7,
@@ -233,23 +241,27 @@ describe("native presets", () => {
     expect(preset.rules.map_config.shards_mines_win_probability).toBe(0);
     expect(
       preset.settlement.depths.map((depth) => [
-        depth.guard_lower,
-        depth.guard_upper,
-        depth.fallen_guard_lower,
-        depth.fallen_guard_upper,
+        depth.site_guard_lower,
+        depth.site_guard_upper,
+        depth.ruin_guard_lower,
+        depth.ruin_guard_upper,
         depth.guard_step,
-        depth.fallen_guard_tier.activeVariant(),
       ]),
     ).toEqual([
-      [1000, 1600, 2000, 4000, 100, "T1"],
-      [3000, 5000, 2000, 3500, 100, "T2"],
-      [8000, 12000, 2000, 2500, 100, "T3"],
-      [20000, 30000, 4500, 6500, 100, "T3"],
+      [1000, 1600, 2000, 4000, 100],
+      [3000, 5000, 6000, 10500, 100],
+      [8000, 12000, 18000, 22500, 100],
+      [20000, 30000, 52500, 76000, 100],
     ]);
     for (const depth of preset.settlement.depths) {
-      expect(depth.guard_lower).toBeLessThanOrEqual(depth.guard_upper);
-      expect(depth.fallen_guard_lower).toBeLessThanOrEqual(depth.fallen_guard_upper);
-      for (const bound of [depth.guard_lower, depth.guard_upper, depth.fallen_guard_lower, depth.fallen_guard_upper])
+      expect(depth.site_guard_lower).toBeLessThanOrEqual(depth.site_guard_upper);
+      expect(depth.ruin_guard_lower).toBeLessThanOrEqual(depth.ruin_guard_upper);
+      for (const bound of [
+        depth.site_guard_lower,
+        depth.site_guard_upper,
+        depth.ruin_guard_lower,
+        depth.ruin_guard_upper,
+      ])
         expect(bound % depth.guard_step).toBe(0);
     }
   });

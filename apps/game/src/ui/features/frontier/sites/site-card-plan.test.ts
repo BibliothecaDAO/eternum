@@ -34,8 +34,8 @@ describe("Frontier's tile card", () => {
     expect(plan.guard).toBeUndefined();
   });
 
-  it("names a fallen realm by the beast its depth calls for, and pays its chest", () => {
-    const { store, site, structure } = campBeside("FallenRealm");
+  it("names a ruin by the beast its depth calls for, and pays its chest", () => {
+    const { store, site, structure } = campBeside("Ruin");
     // Row 12 of ten-row bands is the second band: Ethereal I, held by a wyvern.
     const plan = readSiteCard(store, site, structure, SITE_TILE, null);
     expect(plan.name).toBe("Wyvern");

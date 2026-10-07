@@ -110,20 +110,19 @@ describe("verified preset configuration facts", () => {
     expect(world.fold.gameRows("BuildingRule", "1")).toHaveLength(40);
     const depths = world.fold.gameRows("DepthRules", "1").map(({ value }) => value);
     expect(depths.map((row) => Number(row.guard_step))).toEqual([100, 100, 100, 100]);
-    expect(depths.map((row) => row.fallen_guard_tier)).toEqual(["T1", "T2", "T3", "T3"]);
     expect(depths.map((row) => Number(row.reveal_percent))).toEqual([10, 15, 20, 25]);
     expect(depths.every((row) => !Object.hasOwn(row, "supply_multiplier"))).toBe(true);
     const discovery = world.fold.gameRows("FrontierDiscoveryRules", "1")[0]!.value;
     expect(
-      ["camp_bps", "rift_bps", "fallen_realm_bps", "loose_chest_bps", "empty_reveal_limit"].map((key) =>
+      ["stragglers_bps", "camp_bps", "rift_bps", "ruin_bps", "empty_reveal_limit"].map((key) =>
         Number(discovery[key]),
       ),
-    ).toEqual([400, 400, 200, 200, 7]);
-    expect(depths.map((row) => [Number(row.fallen_guard_lower), Number(row.fallen_guard_upper)])).toEqual([
+    ).toEqual([600, 400, 400, 100, 7]);
+    expect(depths.map((row) => [Number(row.ruin_guard_lower), Number(row.ruin_guard_upper)])).toEqual([
       [2000, 4000],
-      [2000, 3500],
-      [2000, 2500],
-      [4500, 6500],
+      [6000, 10500],
+      [18000, 22500],
+      [52500, 76000],
     ]);
 
     expect(world.fold.gameRows("GameOverrides", "1")).toHaveLength(1);

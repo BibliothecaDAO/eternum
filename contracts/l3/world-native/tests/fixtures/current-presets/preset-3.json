@@ -11,8 +11,6 @@
       "shards_mines_fail_probability": 49000,
       "camp_win_probability": 1500,
       "camp_fail_probability": 48500,
-      "holysite_win_probability": 0,
-      "holysite_fail_probability": 0,
       "bitcoin_mine_win_probability": 200,
       "bitcoin_mine_fail_probability": 9800,
       "hyps_win_prob": 2000,

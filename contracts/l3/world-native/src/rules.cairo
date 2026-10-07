@@ -161,9 +161,6 @@ pub struct MapConfig {
     pub shards_mines_fail_probability: u16,
     pub camp_win_probability: u16,
     pub camp_fail_probability: u16,
-    // Reserved: removing these shifts the packed map config of existing games.
-    pub holysite_win_probability: u16,
-    pub holysite_fail_probability: u16,
     pub bitcoin_mine_win_probability: u16, // 1/50 = 2% = 200 (out of 10000)
     pub bitcoin_mine_fail_probability: u16, // 9800
     pub hyps_win_prob: u32,
@@ -542,10 +539,10 @@ pub impl MapConfigPacking of starknet::storage_access::StorePacking<MapConfig, P
             first: value.shards_mines_win_probability.into()
                 + value.shards_mines_fail_probability.into() * 0x10000
                 + value.camp_win_probability.into() * 0x100000000
-                + value.camp_fail_probability.into() * 0x1000000000000
-                + value.holysite_win_probability.into() * 0x10000000000000000,
-            second: value.holysite_fail_probability.into()
-                + value.bitcoin_mine_win_probability.into() * 0x10000
+                + value.camp_fail_probability.into() * 0x1000000000000,
+            // Bits 64-79 of the first word and 0-15 of the second held a dead site lottery; they stay empty so stored
+            // map configs keep their layout.
+            second: value.bitcoin_mine_win_probability.into() * 0x10000
                 + value.bitcoin_mine_fail_probability.into() * 0x100000000
                 + value.hyps_win_prob.into() * 0x1000000000000
                 + value.hyps_fail_prob.into() * 0x100000000000000000000
@@ -562,8 +559,6 @@ pub impl MapConfigPacking of starknet::storage_access::StorePacking<MapConfig, P
             shards_mines_fail_probability: (value.first / 0x10000 % 0x10000).try_into().unwrap(),
             camp_win_probability: (value.first / 0x100000000 % 0x10000).try_into().unwrap(),
             camp_fail_probability: (value.first / 0x1000000000000 % 0x10000).try_into().unwrap(),
-            holysite_win_probability: (value.first / 0x10000000000000000).try_into().unwrap(),
-            holysite_fail_probability: (value.second % 0x10000).try_into().unwrap(),
             bitcoin_mine_win_probability: (value.second / 0x10000 % 0x10000).try_into().unwrap(),
             bitcoin_mine_fail_probability: (value.second / 0x100000000 % 0x10000).try_into().unwrap(),
             hyps_win_prob: (value.second / 0x1000000000000 % 0x100000000).try_into().unwrap(),

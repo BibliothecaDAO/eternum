@@ -40,3 +40,10 @@ pub const BITCOIN_MINE_OCCUPIER: u8 = 38;
 pub const RESERVED_HYPERSTRUCTURE_OCCUPIER: u8 = 39;
 pub const SHRINE_OCCUPIER: u8 = 40;
 pub const WELL_OCCUPIER: u8 = 41;
+
+pub const RIFT_CATEGORY: u8 = 9;
+pub const RUIN_CATEGORY: u8 = 10;
+pub const STRAGGLERS_CATEGORY: u8 = 11;
+pub const RIFT_OCCUPIER: u8 = 42;
+pub const RUIN_OCCUPIER: u8 = 43;
+pub const STRAGGLERS_OCCUPIER: u8 = 44;

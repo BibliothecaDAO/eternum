@@ -2,6 +2,7 @@ import { BuildingType, type ID, type ResourcesIds } from "@bibliothecadao/types"
 import type { GameClientSetup } from "../client/game-client";
 import { configManager } from "../managers/config-manager";
 import { divideByPrecision } from "../utils/utils";
+import { siteKindOf } from "../utils/expeditions";
 import { storyEventKeys } from "../sync/story-event-identity";
 import type {
   BattleEventSystemUpdate,
@@ -153,10 +154,10 @@ export class WorldUpdateListener {
           const battle = lastBattle;
           if (battle?.order !== String(event.order) || battle.defenderId !== siteId)
             throw new Error(`Site payout ${siteId} arrived without its winning battle`);
-          const kind = siteKind(payload.kind);
+          const kind = siteKindOf(integer(payload.category));
           const reward = siteReward(payload.reward);
-          if ((kind === "FallenRealm") !== (reward === null))
-            throw new Error(`A cleared ${kind} pays ${kind === "FallenRealm" ? "its chest" : "a resource"}`);
+          if ((kind === "Ruin" || kind === "Stragglers") !== (reward === null))
+            throw new Error(`A cleared ${kind} pays ${reward === null ? "nothing" : "a resource"}`);
           callback({
             explorerId: integer(payload.explorer_id),
             siteId,
@@ -233,13 +234,7 @@ export class WorldUpdateListener {
   }
 }
 
-const SITE_KINDS: readonly SitePayoutSystemUpdate["kind"][] = ["Camp", "Rift", "FallenRealm"];
-const siteKind = (value: unknown): SitePayoutSystemUpdate["kind"] => {
-  const kind = typeof value === "string" ? value : Object.keys(fields(value) ?? {})[0];
-  if (!SITE_KINDS.includes(kind as SitePayoutSystemUpdate["kind"])) throw new Error("Malformed site kind");
-  return kind as SitePayoutSystemUpdate["kind"];
-};
-/** A camp or rift pays a resource; a fallen realm pays none (its closed chest waits on the tile). */
+/** A camp or rift pays a resource; stragglers pay none, and a ruin its closed chest. */
 const siteReward = (value: unknown): SitePayoutSystemUpdate["reward"] => {
   if (value === null) return null;
   const reward = fields(value);

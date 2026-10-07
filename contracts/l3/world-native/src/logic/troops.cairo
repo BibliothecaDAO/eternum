@@ -251,7 +251,6 @@ pub mod TroopsLogic {
             ref self: ContractState,
             key: ResourceKey,
             seed: u256,
-            site_kind: Option<crate::expeditions::SiteKind>,
             timestamp: u64,
             game_context: crate::commands::ActionContext,
         ) {
@@ -259,21 +258,21 @@ pub mod TroopsLogic {
 
             let base = crate::logic::structures::structure(key).expect('missing guarded structure').base;
             let category = base.category;
-            assert!(
-                category == crate::taxonomy::HYPERSTRUCTURE_CATEGORY
-                    || category == crate::taxonomy::BANK_CATEGORY
-                    || category == crate::taxonomy::MINE_CATEGORY
-                    || category == crate::taxonomy::CAMP_CATEGORY
-                    || category == crate::taxonomy::BITCOIN_MINE_CATEGORY,
-                "invalid guarded structure category",
-            );
             let rules = game_context.rules.unbox();
-            let guards = if let Some(kind) = site_kind {
+            // Every guarded structure an expedition discovers is a site whose guard follows its kind and depth.
+            let site = rules.day_unit_seconds != 0;
+            let guarded = if site {
+                crate::expeditions::is_site_category(category)
+            } else {
+                category == crate::taxonomy::HYPERSTRUCTURE_CATEGORY || category == crate::taxonomy::BANK_CATEGORY || category == crate::taxonomy::MINE_CATEGORY || category == crate::taxonomy::CAMP_CATEGORY || category == crate::taxonomy::BITCOIN_MINE_CATEGORY
+            };
+            assert!(guarded, "invalid guarded structure category");
+            let guards = if site {
                 assert!(crate::rules::rule_enabled(rules, crate::rules::DEPTH_CONTENTS), "site requires depth rules");
                 let depth = crate::logic::expeditions::depth_rules_at(
                     key.game_id, crate::structures::structure_coord(key),
                 );
-                array![crate::troops::frontier_guard(kind, depth, seed, rules, timestamp)].span()
+                array![crate::troops::frontier_guard(category, depth, seed, rules, timestamp)].span()
             } else {
                 crate::troops::discovery_guards(category, seed, rules, timestamp)
             };
@@ -286,9 +285,8 @@ pub mod TroopsLogic {
                 assert!(crate::logic::guards::guard(guard_key) == Default::default(), "guards already initialized");
                 crate::logic::guards::GuardState::save(guard_key, crate::guards::Guard { troops, destroyed_tick: 0 });
             }
-            if let Some(kind) = site_kind {
-                assert!(rules.day_unit_seconds != 0, "site outside expedition");
-                crate::logic::expeditions::create_site(key, kind, guards, rules.troop_limit_config);
+            if site {
+                crate::logic::expeditions::create_site(key, guards, rules.troop_limit_config);
             }
         }
         fn add_starting_guard(

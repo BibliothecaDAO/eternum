@@ -1,5 +1,6 @@
 import { BiomeType, StructureType } from "@bibliothecadao/types";
-import { nativeRuleConstants, type NativeRows } from "../../../../../../../contracts/l3/world-native/schema/client.gen";
+import type { SiteKind } from "@bibliothecadao/eternum";
+import { nativeRuleConstants } from "../../../../../../../contracts/l3/world-native/schema/client.gen";
 import rowFixture from "../../../../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
 import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
 import { frontierDay } from "../muster/muster-fixture";
@@ -19,7 +20,14 @@ const troops = (count: bigint, stamina: bigint) => ({
  * The muster's Frontier day with a camp guarded by 1,100 T1 knights on row 12 and the realm's 1,498-knight army beside
  * it, in a game without combat dice as Frontier plays.
  */
-export const campBeside = (kind: NativeRows["ExpeditionSite"]["kind"] = "Camp", guardKnown = true) => {
+const SITE_CATEGORY: Record<SiteKind, StructureType> = {
+  Camp: StructureType.Camp,
+  Rift: StructureType.Rift,
+  Ruin: StructureType.Ruin,
+  Stragglers: StructureType.Stragglers,
+};
+
+export const campBeside = (kind: SiteKind = "Camp", guardKnown = true) => {
   const { store } = frontierDay();
   const noDice =
     preset.rules.mode_rules & ~(nativeRuleConstants.COMBAT_DICE | nativeRuleConstants.COMBAT_DICE_ETHEREAL);
@@ -36,7 +44,7 @@ export const campBeside = (kind: NativeRows["ExpeditionSite"]["kind"] = "Camp", 
       entity_id: SITE,
       owner: "0x0",
       base: {
-        category: StructureType.Camp,
+        category: SITE_CATEGORY[kind],
         level: 0,
         created_at: "0x1",
         troop_max_guard_count: 1,
@@ -47,7 +55,6 @@ export const campBeside = (kind: NativeRows["ExpeditionSite"]["kind"] = "Camp", 
     set("0x72", "ExpeditionSite", {
       game_id: 1,
       entity_id: SITE,
-      kind,
       initial_guard_count: String(1_100n * PRECISION),
       cleared: false,
     }),

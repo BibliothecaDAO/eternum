@@ -11,5 +11,6 @@ pub struct MapStateStorage {
 #[starknet::storage_node]
 pub struct MapDomainStorage {
     pub empty_reveals: Map<(u32, u32, u64), Option<u8>>,
+    pub ruin_found: Map<(u32, u32, u64), bool>,
     pub last_relic_discovery: Map<u32, u64>,
 }

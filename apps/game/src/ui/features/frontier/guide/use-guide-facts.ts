@@ -136,7 +136,11 @@ const readSiteFirsts = (store: NativeFactStore, gameId: number) => {
   const sites = [...store.inGame("ExpeditionSite", gameId)];
   return {
     siteCleared: sites.some((site) => site.cleared),
-    fallenRealm: sites.some((site) => site.kind === "FallenRealm" && !site.cleared),
+    fallenRealm: sites.some(
+      (site) =>
+        !site.cleared &&
+        store.get("Structure", { game_id: gameId, entity_id: site.entity_id })?.base.category === StructureType.Ruin,
+    ),
     closedChest: [...store.inGame("TileOccupancy", gameId)].some((tile) => tile.category === TileOccupier.Chest),
   };
 };

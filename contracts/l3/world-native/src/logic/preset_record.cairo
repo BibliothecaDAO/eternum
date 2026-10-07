@@ -300,17 +300,16 @@ fn write_depths(preset: PresetWrite, rules: crate::rules::SliceRules, depths: Sp
         assert!(ground.pity != 0, "zero relic pity threshold");
         assert!(index != 0 || value.entry_stamina == 0, "surface needs no entry stamina");
         assert!(value.reveal_percent != 0 && value.reveal_percent <= 100, "invalid reveal percentage");
-        assert!(value.guard_lower != 0 && value.guard_lower <= value.guard_upper, "invalid depth guards");
         assert!(
-            value.fallen_guard_lower != 0 && value.fallen_guard_lower <= value.fallen_guard_upper,
-            "invalid fallen guards",
+            value.site_guard_lower != 0 && value.site_guard_lower <= value.site_guard_upper, "invalid depth guards",
         );
+        assert!(value.ruin_guard_lower != 0 && value.ruin_guard_lower <= value.ruin_guard_upper, "invalid ruin guards");
         assert!(value.guard_step != 0, "zero guard step");
         assert!(
-            Into::<u16, u32>::into(value.guard_lower) % value.guard_step == 0
-                && Into::<u16, u32>::into(value.guard_upper) % value.guard_step == 0
-                && value.fallen_guard_lower % value.guard_step == 0
-                && value.fallen_guard_upper % value.guard_step == 0,
+            Into::<u16, u32>::into(value.site_guard_lower) % value.guard_step == 0
+                && Into::<u16, u32>::into(value.site_guard_upper) % value.guard_step == 0
+                && value.ruin_guard_lower % value.guard_step == 0
+                && value.ruin_guard_upper % value.guard_step == 0,
             "guard bounds off grid",
         );
         preset.depth_rules.write(index.try_into().unwrap(), Some(value));

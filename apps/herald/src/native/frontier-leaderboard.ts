@@ -3,7 +3,7 @@ import type {
   HeraldFrontierLeaderboardEntry,
   HeraldHistoryEvent,
 } from "@bibliothecadao/eternum/game-sync";
-import { isRealmCategory } from "@bibliothecadao/eternum/expeditions";
+import { isRealmCategory, siteKindOf } from "@bibliothecadao/eternum/expeditions";
 import { ResourcesIds } from "@bibliothecadao/types";
 import type { FoldRow } from "../types";
 import { address, gameRows, integer, number, record, required, type Row } from "./values";
@@ -48,7 +48,7 @@ function settledPlayers(structures: Row[]): Map<string, Standing> {
         address: owner,
         structure_id: integer(structure.entity_id).toString(),
         rank: 0,
-        sites_cleared: { total: 0, camps: 0, rifts: 0, fallen_realms: 0 },
+        sites_cleared: { total: 0, camps: 0, rifts: 0, ruins: 0, stragglers: 0 },
         chests_earned: 0,
         rewards: { lords: "0", essence: "0", labor: "0" },
         deepest_depth: number(record(structure.metadata).deepest_depth),
@@ -68,18 +68,19 @@ function applyStory(player: Standing, story: Row, amounts: Row, event: HeraldHis
 
 function creditSiteClear(player: Standing, payout: Row, event: HeraldHistoryEvent): void {
   const counts = player.entry.sites_cleared;
-  switch (payout.kind) {
+  switch (siteKindOf(number(payout.category))) {
     case "Camp":
       counts.camps++;
       break;
     case "Rift":
       counts.rifts++;
       break;
-    case "FallenRealm":
-      counts.fallen_realms++;
+    case "Ruin":
+      counts.ruins++;
       break;
-    default:
-      throw new Error("Unknown Frontier site kind");
+    case "Stragglers":
+      counts.stragglers++;
+      break;
   }
   counts.total++;
   if (!player.lastClear || comparePosition(player.lastClear, event) < 0) player.lastClear = event;
