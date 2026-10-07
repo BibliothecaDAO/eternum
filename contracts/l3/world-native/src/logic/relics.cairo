@@ -279,8 +279,6 @@ pub mod RelicState {
                     army_slot_storage::release(key, explorer);
                     stamina
                 },
-                // Declared in the schema; a Logistics pick no longer grants stamina, so nothing sends it.
-                ArmySlotAction::GrantLogistics(_) => panic!("Logistics grants no stamina"),
                 ArmySlotAction::Allocate(_) => panic!("allocation already handled"),
             };
             ResolvedArmySlot { stamina, battle_bonus_percent }

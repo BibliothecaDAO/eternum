@@ -440,17 +440,11 @@ pub struct ArmySlotAllocation {
     pub category: TroopType,
 }
 #[derive(Copy, Drop, Serde)]
-pub struct LogisticsStamina {
-    pub stamina: StaminaSource,
-    pub levels: u8,
-}
-#[derive(Copy, Drop, Serde)]
 pub enum ArmySlotAction {
     Resolve: Option<u64>,
     Allocate: ArmySlotAllocation,
     Persist: StaminaSource,
     Release: StaminaSource,
-    GrantLogistics: LogisticsStamina,
 }
 #[derive(Copy, Drop, Serde)]
 pub struct ResolvedArmySlot {
