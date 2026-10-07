@@ -24,6 +24,7 @@ import { ResourceManager } from "./resource-manager";
 import { StaminaManager } from "./stamina-manager";
 import { computeExploreFoodCosts, computeTravelFoodCosts } from "./utils";
 import { isViewerOwner } from "../utils/viewer";
+import { isTileOccupierMapSite } from "../utils/map/hex";
 
 export class ArmyActionManager {
   private readonly entityId: ID;
@@ -138,6 +139,12 @@ export class ArmyActionManager {
     return tile?.occupier_type === TileOccupier.Spire;
   }
 
+  // A shrine or well holds its tile: an army uses it from beside it, so no path enters or crosses it.
+  private isMapSiteHex(position: HexPosition): boolean {
+    const tile = getTileAt(this.store, this._getCurrentPosition().alt, position.col, position.row);
+    return tile !== undefined && isTileOccupierMapSite(tile.occupier_type);
+  }
+
   private getAttackStaminaRequirement(): number {
     return configManager.getCombatConfig().stamina_attack_req;
   }
@@ -248,6 +255,7 @@ export class ArmyActionManager {
 
       // Skip if hex requires exploration but army can't explore
       if (!isSpire && !isExplored && !canExplore) continue;
+      if (this.isMapSiteHex({ col, row })) continue;
 
       const isMine = isArmyMine || isStructureMine;
       const canAttack = (hasArmy || hasStructure) && !isMine;
@@ -335,7 +343,7 @@ export class ArmyActionManager {
           const hasChest = chestHexes.get(col - this.FELT_CENTER)?.has(row - this.FELT_CENTER) || false;
           const hasSpire = this.isWorldSpireHex({ col, row });
 
-          if (hasSpire) continue;
+          if (hasSpire || this.isMapSiteHex({ col, row })) continue;
 
           if (!isExplored || hasArmy || hasStructure || hasChest) continue;
 

@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-07",
+    title: "Shrines and wells read right",
+    description:
+      "Selecting a shrine or well no longer opens an army panel, and armies are no longer offered a move onto one.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-07",
     title: "A new home for Realms",
     description:
       "Play opens on one card with your next step (Resume your Frontier day, Enter your Blitz, see a finished season) and the four ages of the lore beside it, each with its own painting and page.",
