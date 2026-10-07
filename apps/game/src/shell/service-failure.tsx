@@ -5,7 +5,7 @@ import { ReasonPlate } from "@/ui/design-system/kit/reason-plate";
 import { TRY_AGAIN } from "@/ui/design-system/kit/words";
 
 /** The services the app reads; a failure names the one that did not answer. */
-type Service = "directory" | "slots" | "join" | "season" | "results";
+type Service = "directory" | "slots" | "join" | "season" | "results" | "world";
 
 /** One line per service, in the glossary's shape ("Season did not answer."). */
 const FAILURE_LINES: Record<Service, string> = {
@@ -15,7 +15,12 @@ const FAILURE_LINES: Record<Service, string> = {
   join: "Blitz did not answer. Your seat was not taken.",
   season: "Season did not answer.",
   results: "Results did not answer.",
+  /** Entering a match: the shard, its world or its scene did not open. */
+  world: "The world did not answer.",
 };
+
+/** A service's one line, for a surface that draws the failure in its own place (the doorway's plate). */
+export const failureLine = (service: Service): string => FAILURE_LINES[service];
 
 /**
  * A read that failed: the service's one line with Try again on it. The service's own words (a status, a code, a host)

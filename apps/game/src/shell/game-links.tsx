@@ -2,7 +2,7 @@ import { buildEntryHref } from "@/play/navigation/play-route";
 
 import type { DirectoryGame } from "./herald";
 
-export const modeLabel = (game: DirectoryGame): string => {
+export const modeLabel = (game: Pick<DirectoryGame, "mode" | "preset_id">): string => {
   switch (game.mode) {
     case "frontier":
       return "Frontier";

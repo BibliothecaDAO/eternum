@@ -71,6 +71,8 @@ const ICONS = {
   Dc: "/image-icons/discord.png",
   Em: "/image-icons/ui-mail.png",
   Ed: "/image-icons/ui-edit.png",
+  Pf: "/image-icons/ui-person.png",
+  Dv: "/image-icons/ui-monitor.png",
 } as const;
 
 export type IconCode = keyof typeof ICONS;

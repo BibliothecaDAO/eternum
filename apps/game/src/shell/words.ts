@@ -73,3 +73,18 @@ export const BLITZ_WORDS = {
   seats: "Seats",
   full: (nextStart: string) => `Full. The ${nextStart} game has seats.`,
 } as const;
+
+/** The doorway into a match: its four steps and what holds it until the player acts. */
+export const DOORWAY_WORDS = {
+  account: "Account",
+  realm: "Realm",
+  map: "Map",
+  play: "Play",
+  /** The track, named for assistive technology. */
+  entering: "Entering the game",
+  signInToPlay: "Sign in to play.",
+  notOnThisGame: "Not on this game.",
+  ended: "This game has ended.",
+  deviceLimit: "Device limit reached.",
+  devices: "Devices",
+} as const;

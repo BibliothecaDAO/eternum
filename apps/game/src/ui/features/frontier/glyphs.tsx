@@ -7,20 +7,6 @@ const GOLD = "#dfaa54";
 const PARCHMENT = "#eadfc8";
 const STAMINA = "#9fd06a";
 
-/** The expedition: a folded map. */
-export const MapGlyph = ({ className }: { className?: string }) => (
-  <svg viewBox="0 0 28 28" className={className} aria-hidden>
-    <path
-      d="M4 7l6-2.5 8 2.5 6-2.5v16.5L18 23.5l-8-2.5-6 2.5z"
-      fill={PARCHMENT}
-      stroke={INK}
-      strokeWidth="1.5"
-      strokeLinejoin="round"
-    />
-    <path d="M10 4.5v16.5M18 7v16.5" stroke={INK} strokeWidth="1.4" />
-  </svg>
-);
-
 /** The realm: a castle's two towers and gate. */
 export const CastleGlyph = ({ className }: { className?: string }) => (
   <svg viewBox="0 0 28 28" className={className} aria-hidden>
