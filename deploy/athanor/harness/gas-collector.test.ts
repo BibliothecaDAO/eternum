@@ -52,12 +52,7 @@ describe("gas collector", () => {
       record(undefined, "workload", "move", "submit_failed", 3),
       record(HASH.seasonClose, "finalization", "season_close", "completed"),
     ];
-    const summary = await collectGas({
-      transactions,
-      reader,
-      node: { blocks: { first: 11, last: 13 }, l2GasConsumed: 810 },
-      nativeExecution: null,
-    });
+    const summary = await collectGas({ transactions, reader });
 
     expect(summary.transactions).toEqual({
       records: 8,
@@ -76,42 +71,26 @@ describe("gas collector", () => {
     expect(summary.gas.byStage.workload).toMatchObject({ transactions: 4, l2Gas: 300 + 200 + 150 + 160 });
     expect(summary.gas.byStage.finalization).toMatchObject({ transactions: 1, l2Gas: 700 });
     expect(summary.blocks).toEqual({ first: 10, last: 20 });
-    expect(summary.reconciliation).toEqual({
-      nodeBlocks: { first: 11, last: 13 },
-      nodeL2Gas: 810,
-      harnessL2GasInNodeBlocks: 810,
-      deltaL2Gas: 0,
-      reconciled: true,
-    });
+    // The resubmitted hash counts once in its block; the host reconciles these against the node's blocks.
+    expect(summary.l2GasByBlock).toEqual({ "10": 1_000, "11": 500, "12": 150, "13": 160, "20": 700 });
   });
 
-  it("reports a hash the node never executed as a missing receipt and an unreconciled window as such", async () => {
+  it("reports a hash the node never executed as a missing receipt", async () => {
     const summary = await collectGas({
       transactions: [
         record(HASH.move, "workload", "move", "completed", 0),
         record("0x" + "9".repeat(64), "workload", "move", "confirmation_timeout", 1),
       ],
       reader,
-      node: { blocks: { first: 11, last: 11 }, l2GasConsumed: 345 },
-      nativeExecution: false,
     });
     expect(summary.transactions).toMatchObject({ unique: 2, receiptsFetched: 1, receiptsMissing: 1 });
-    expect(summary.reconciliation).toMatchObject({ harnessL2GasInNodeBlocks: 300, deltaL2Gas: 45, reconciled: false });
+    expect(summary.l2GasByBlock).toEqual({ "11": 300 });
   });
 
-  it("leaves the reconciliation open when the node reported no window", async () => {
+  it("reports steps as unavailable when the receipts carry no counters", async () => {
     const summary = await collectGas({
       transactions: [record(HASH.move, "workload", "move", "completed", 0)],
       reader,
-      node: null,
-      nativeExecution: false,
-    });
-    expect(summary.reconciliation).toEqual({
-      nodeBlocks: null,
-      nodeL2Gas: null,
-      harnessL2GasInNodeBlocks: null,
-      deltaL2Gas: null,
-      reconciled: null,
     });
     expect(summary.resources).toEqual({
       available: false,
@@ -119,7 +98,7 @@ describe("gas collector", () => {
     });
   });
 
-  it("reports steps and builtins as unavailable, never zero, for a native run, and per kind when a node lists them", async () => {
+  it("reports steps and builtins as unavailable, never zero, for native receipts, and per kind when a node lists them", async () => {
     const withSteps = (l2Gas: number, steps: number, pedersen: number) => ({
       ...receipt(l2Gas, 30),
       execution_resources: {
@@ -140,17 +119,11 @@ describe("gas collector", () => {
       record(HASH.retriedProduce, "workload", "produce", "completed", 2),
     ];
 
-    const native = await collectGas({ transactions, reader: listing, node: null, nativeExecution: true });
-    expect(native.resources).toEqual({
-      available: false,
-      reason: "native execution reports no Cairo steps or builtins",
-    });
-
     const zeroSteps: TransactionReceiptReader = { getTransactionReceipt: async () => withSteps(300, 0, 0) };
-    const nativeReceipts = await collectGas({ transactions, reader: zeroSteps, node: null, nativeExecution: null });
+    const nativeReceipts = await collectGas({ transactions, reader: zeroSteps });
     expect(nativeReceipts.resources.available).toBe(false);
 
-    const listed = await collectGas({ transactions, reader: listing, node: null, nativeExecution: false });
+    const listed = await collectGas({ transactions, reader: listing });
     expect(listed.resources).toEqual({
       available: true,
       byKind: {

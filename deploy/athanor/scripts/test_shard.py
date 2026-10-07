@@ -75,27 +75,6 @@ class ShardTest(unittest.TestCase):
             with self.subTest(key=key, value=value), self.assertRaises(ValueError):
                 shard.validate_configuration({**config, key: value}, allowed)
 
-    def test_package_init_retains_the_actual_node_evidence(self):
-        package = load_package_script("init")
-        config = configuration()
-        values = {
-            "CHAIN_ID": "COMMUNITY", "GUARDIAN_URL": config["guardian_url"],
-            "PUBLIC_RPC_URL": config["public_rpc_url"], "PUBLIC_ADMISSION_URL": config["public_admission_url"],
-            "PLAYER_CAPACITY": "16", "MADARA_IMAGE": NODE_IMAGE,
-            "MADARA_CONTAINER": "community-madara-1",
-        }
-        with tempfile.TemporaryDirectory() as temporary, patch.dict(shard.os.environ, values):
-            directory = Path(temporary)
-            (directory / "host-keys.json").write_text(json.dumps({
-                "deployerAddress": "0x789", "deployerPrivateKey": "0xabc", "sequencingPrivateKey": "0xdef",
-            }))
-            with patch.object(package, "DATA", directory):
-                environment = package.environment(package.configuration())
-            shard.save_harness_environment(directory, environment)
-            saved = dict(line.split("=", 1) for line in (directory / "harness.env").read_text().splitlines())
-            self.assertEqual(saved["MADARA_IMAGE"], NODE_IMAGE)
-            self.assertEqual(saved["MADARA_CONTAINER"], "community-madara-1")
-
     def test_package_init_refuses_a_preset_outside_the_release_catalogue(self):
         package = load_package_script("init")
         facts = {"presets": {"2": "0x2", "3": "0x3", "5": "0x5", "101": "0x65"}}
@@ -277,9 +256,8 @@ class ShardTest(unittest.TestCase):
             self.assertEqual(values["RPC_URL"], "http://127.0.0.1:28050/rpc/v0_10_2")
             self.assertEqual(values["IDENTITY_URL"], "https://identity.test/api")
             self.assertEqual(values["GAMEPLAY_CONTRACTS_PATH"], str(directory / "gameplay-contracts.json"))
-            self.assertEqual(values["MADARA_METRICS_FILE"], str(directory / "metrics" / "metrics.jsonl"))
-            self.assertEqual(values["MADARA_IMAGE"], NODE_IMAGE)
-            self.assertEqual(values["MADARA_CONTAINER"], f"athanor-{configuration()['shard']}-madara-1")
+            # The node's image, container and metrics belong to the host-side measurement, not to the harness.
+            self.assertFalse({"MADARA_IMAGE", "MADARA_CONTAINER", "MADARA_METRICS_FILE"} & set(values))
 
     def test_collector_output_is_the_harness_metrics_input(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -324,10 +302,11 @@ class ShardTest(unittest.TestCase):
             # The holder text is drafted beside the lock and linked into place; no draft outlives either outcome.
             self.assertEqual(list(Path(temporary).iterdir()), [])
 
-    def test_docker_keeps_exactly_the_operator_token_through_sudo(self):
-        # sudo resets the environment: without this the token never reaches initialization.
+    def test_docker_keeps_exactly_the_operator_token_and_the_driver_cpus_through_sudo(self):
+        # sudo resets the environment: without this the token never reaches initialization, and a measured driver
+        # would share the shard's CPUs.
         preserved = [flag for flag in shard.DOCKER if flag.startswith("--preserve-env")]
-        self.assertEqual(preserved, ["--preserve-env=OPERATOR_TOKEN"])
+        self.assertEqual(preserved, ["--preserve-env=OPERATOR_TOKEN,HARNESS_CPUSET"])
 
     def test_the_collector_scrapes_the_gateway_metrics_listener_not_its_admission_port(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -389,7 +368,8 @@ class ShardTest(unittest.TestCase):
                 sampler.append_samples(root, output, {})
             self.assertEqual(len(output.read_text().splitlines()), 1)
             backups = sorted(root.glob("container-metrics.jsonl.*"))
-            self.assertEqual([path.name for path in backups], ["container-metrics.jsonl.1", "container-metrics.jsonl.2"])
+            self.assertEqual([path.name for path in backups],
+                             ["container-metrics.jsonl.1", "container-metrics.jsonl.2"])
             self.assertTrue(backups[0].read_text().startswith("full"))
             self.assertTrue(backups[1].read_text().startswith("older"))
 
@@ -464,8 +444,14 @@ class ShardTest(unittest.TestCase):
                     (directory / "compose.json").write_text("{}")
                     (directory / "harness.env").write_text("COMPOSE_PROJECT_NAME=athanor-smoke\n")
 
+                def measure(_docker, run_workload, node, *_paths):
+                    measured.append(node)
+                    run_workload()
+                    return {"blockStats": {"blocks": {"count": 1}}}
+
+                measured = []
                 with patch.object(shard, "start_shard", side_effect=start), \
-                     patch.object(shard, "capture_host") as hosts, \
+                     patch.object(shard.measures, "measure_workload", side_effect=measure), \
                      patch.object(shard, "run") as stop, \
                      patch.object(shard, "run_workload", side_effect=failure) as workload:
                     output = root / "matrix"
@@ -477,7 +463,7 @@ class ShardTest(unittest.TestCase):
                     self.assertEqual(started, ["smoke"] if failure else ["smoke", "second"])
                     minutes = [call.args[0][call.args[0].index("--minutes") + 1] for call in workload.call_args_list]
                     self.assertEqual(minutes, ["1"] if failure else ["1", "30"])
-                    self.assertEqual(hosts.call_count, len(started) * 2)
+                    self.assertEqual(measured, [f"athanor-{name}-madara-1" for name in started])
                     for call, name in zip(stop.call_args_list, started):
                         self.assertEqual(call.args[0][-2:], [str(output / name / "compose.json"), "stop"])
                         result = json.loads((output / name / "matrix-result.json").read_text())
@@ -501,7 +487,7 @@ class PackageStartTest(unittest.TestCase):
         self.environ = {
             "CHAIN_ID": "COMMUNITY", "GUARDIAN_URL": "https://identity.test/api/guardian",
             "PUBLIC_RPC_URL": "https://rpc.test/rpc/v0_10_2", "PUBLIC_ADMISSION_URL": "https://admission.test",
-            "PLAYER_CAPACITY": "16", "MADARA_IMAGE": NODE_IMAGE, "MADARA_CONTAINER": "community-madara-1",
+            "PLAYER_CAPACITY": "16",
             "TRUSTED_PROXY": "172.18.0.1",
         }
         for name, volume in self.volumes.items():
@@ -552,8 +538,7 @@ class PackageStartTest(unittest.TestCase):
 
     def test_operational_settings_change_on_restart_and_identity_never_does(self):
         self.start()
-        self.start(PLAYER_CAPACITY="200", MADARA_IMAGE="ghcr.io/madara-alliance/madara@sha256:" + "e" * 64,
-                   PUBLIC_RPC_URL="https://rpc.moved.test/rpc/v0_10_2")
+        self.start(PLAYER_CAPACITY="200", PUBLIC_RPC_URL="https://rpc.moved.test/rpc/v0_10_2")
         gateway = shard.read_private_environment(self.published("GATEWAY_CONFIG", "gateway.env"))
         self.assertEqual(gateway["GATEWAY_PLAYER_CAPACITY"], "200")
         herald = shard.read_private_environment(self.published("HERALD_CONFIG", "herald.env"))

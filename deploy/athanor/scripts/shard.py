@@ -15,7 +15,6 @@ import socket
 import subprocess
 import sys
 import tarfile
-import threading
 import time
 from urllib.request import Request, urlopen
 from urllib.parse import urlparse
@@ -29,8 +28,9 @@ sys.path.insert(0, str(ROOT / "deploy/shard"))
 from stack_lock import isolated_stack_lock
 
 
-# sudo resets the environment; the operator token passes through to initialization only when it is kept.
-DOCKER = ["sudo", "-n", "--preserve-env=OPERATOR_TOKEN", "docker"]
+# sudo resets the environment; the operator token passes through to initialization, and a measured driver's CPUs to
+# the harness service, only when they are kept.
+DOCKER = ["sudo", "-n", "--preserve-env=OPERATOR_TOKEN,HARNESS_CPUSET", "docker"]
 RELEASES = "https://github.com/BibliothecaDAO/eternum/releases/download"
 # Gateway connections: each player holds about two (a 100-connection server refused a 96-player slot at its 48th
 # player), plus a fixed allowance for the sequencing authority, Herald and tooling. The node's own limit is the
@@ -288,17 +288,12 @@ def deployment_environment(config, directory):
         "HERALD_PUBLIC_RPC_URL": config["public_rpc_url"],
         "HERALD_PUBLIC_ADMISSION_URL": config["public_admission_url"],
         "COMPOSE_PROJECT_NAME": f"athanor-{config['shard']}",
-        "CHAIN_CONFIG_PATH": str(directory / "chain-config.yaml"),
         "RANDOMNESS_PRIVATE_KEY": keys["sequencingPrivateKey"],
         "SHARD_HOST_ACCOUNTS": str(directory / "host-accounts.json"),
         "NATIVE_AUTHORITY_FILE": str(directory / "authority.json"),
         "NATIVE_WORLD_MANIFEST": str(directory / "native-world.json"),
         "GAMEPLAY_CONTRACTS_PATH": str(directory / "gameplay-contracts.json"),
         "OPERATOR_ENROLMENT_PATH": str(directory / "operator-enrolment.json"),
-        "MADARA_METRICS_FILE": str(directory / "metrics" / "metrics.jsonl"),
-        # The node image and container as this shard runs them: a measured harness run records both as evidence.
-        "MADARA_IMAGE": config["madara_image"],
-        "MADARA_CONTAINER": config.get("madara_container", f"athanor-{config['shard']}-madara-1"),
     }
 
 
@@ -361,9 +356,7 @@ def save_harness_environment(directory, environment):
     keys = (
         "DEPLOYER_ACCOUNT_ADDRESS", "DEPLOYER_PRIVATE_KEY", "RPC_URL", "ADMISSION_URL", "HERALD_URL", "IDENTITY_URL",
         "SHARD_HOST_ACCOUNTS",
-        "NATIVE_AUTHORITY_FILE", "NATIVE_WORLD_MANIFEST", "GAMEPLAY_CONTRACTS_PATH",
-        "MADARA_METRICS_FILE", "MADARA_IMAGE", "MADARA_CONTAINER",
-        "COMPOSE_PROJECT_NAME", "CHAIN_CONFIG_PATH",
+        "NATIVE_AUTHORITY_FILE", "NATIVE_WORLD_MANIFEST", "GAMEPLAY_CONTRACTS_PATH", "COMPOSE_PROJECT_NAME",
     )
     write_private_environment(directory / "harness.env", {key: environment[key] for key in keys})
 
@@ -492,6 +485,7 @@ def run_workload(command, directory, environment):
             code = process.wait()
             if code:
                 raise subprocess.CalledProcessError(code, command)
+            return True
         finally:
             if process.poll() is None:
                 os.killpg(process.pid, signal.SIGTERM)
@@ -500,25 +494,6 @@ def run_workload(command, directory, environment):
                 except subprocess.TimeoutExpired:
                     os.killpg(process.pid, signal.SIGKILL)
                     process.wait()
-
-
-def capture_host(directory, environment, phase):
-    run(["bash", "deploy/athanor/scripts/host-state.sh"], directory, f"host-{phase}", environment)
-
-
-def run_measured_workload(command, target, environment, config, result):
-    """Runs the trial's workload while sampling its node, then splits the admission latency the harness reported."""
-    stop, samples = threading.Event(), []
-    sampler = threading.Thread(target=measures.sample_node, daemon=True, args=(
-        DOCKER, f"athanor-{config['shard']}-madara-1", SLICE, target / "metrics" / "metrics.jsonl", stop, samples))
-    sampler.start()
-    try:
-        run_workload(command, target, environment)
-    finally:
-        stop.set()
-        sampler.join()
-        result["nodeSamples"] = samples
-    result["admission"] = measures.admission_split(target / "workload")
 
 
 def run_matrix(matrix, directory):
@@ -530,29 +505,22 @@ def run_matrix(matrix, directory):
         target = directory / config["shard"]
         if target.exists():
             raise ValueError(f"duplicate run directory: {target}")
-        environment = None
         result = {"passed": False}
         try:
             start_shard(config, target)
             private = read_private_environment(target / "harness.env")
             environment = {**os.environ, **private, "HARNESS_OUTPUT_DIRECTORY": str(target / "workload")}
-            capture_host(target, environment, "start")
-            run_measured_workload(command, target, environment, config, result)
+            result.update(measures.measure_workload(
+                DOCKER, lambda: run_workload(command, target, environment), f"athanor-{config['shard']}-madara-1",
+                target / "metrics" / "metrics.jsonl", target / "chain-config.yaml", target / "workload"))
             result["passed"] = True
         except Exception as error:
             result["error"] = str(error)
             raise
         finally:
-            try:
-                if environment:
-                    capture_host(target, environment, "end")
-            except Exception as error:
-                result.update(passed=False, error=str(error))
-                raise
-            finally:
-                if (target / "compose.json").exists():
-                    write_json(target / "matrix-result.json", result)
-                    run([*DOCKER, "compose", "-f", str(target / "compose.json"), "stop"], target, "shard-stop")
+            if (target / "compose.json").exists():
+                write_json(target / "matrix-result.json", result)
+                run([*DOCKER, "compose", "-f", str(target / "compose.json"), "stop"], target, "shard-stop")
     return {"passed": True, "directory": str(directory)}
 
 

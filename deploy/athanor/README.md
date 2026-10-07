@@ -38,10 +38,7 @@ artifacts only and never redeploy a shard.
 Until the native cutover's fresh genesis, the live stack on the production box retains its `madara-lab` compose project
 and container names, chain ID and tunnel hostnames. Source-directory changes do not rename, restart or switch that
 stack. Native shards run on their own box, where nothing live runs, as `athanor-<shard>` projects; set
-`COMPOSE_PROJECT_NAME` when starting one. A measured harness run reads the node's image and container from the shard's
-`harness.env` (`MADARA_IMAGE`, pinned by digest, and `MADARA_CONTAINER`) and stops by name without them; a functional
-run reads neither. Set `MADARA_CONTAINER` by hand only when measuring a separately named running node. The three live
-holdovers are removed only at the approved traffic switch.
+`COMPOSE_PROJECT_NAME` when starting one. The three live holdovers are removed only at the approved traffic switch.
 
 Give each shard its own compose project, ports, volumes and Herald database. Announce any replacement of a shard being
 playtested. Passing a small smoke does not authorize a traffic switch or a merge into `next`.
@@ -102,17 +99,17 @@ The runner creates private volumes, deploys the Realms account class (refusing o
 identity service approves devices for) and the operator's own Realms account, deploys the native world under it,
 registers the configuration's `presets` and starts Herald. Every shard, started by the runner or from the package, runs
 the package's `metrics` service: the release's pinned OTLP collector, which the node exports its metrics to, in 256 MiB;
-`harness.env` points the existing block reporter at its output. The collector also scrapes `gateway:9951/metrics` (a
-port the package never publishes) every 5 seconds. Its cgroup sampler replaces the Docker stats receiver: it reads each
-container's `cpu.stat` through a read-only `/sys/fs/cgroup` mount, with no Docker socket. Every 10 seconds it appends
-usage and throttling counters to `metrics/container-metrics.jsonl` in the existing OTLP JSON format, across collector
-restarts. Container ID, cgroup name and relative cgroup path identify each sample, including containers outside the
-shard so runs can show competing work. Compare cumulative `container.cpu.usage.total` deltas (nanoseconds), CPU
-utilization and throttled time with the latency window. `metrics.jsonl` and `container-metrics.jsonl` each rotate at 100
-MB and keep two older files. The release builds the image from pinned Python and collector images and publishes it
-beside the others. It runs without capabilities or writable root files. The run directory holds its compose
-configuration, manifest, logs and private `harness.env`. It starts no live services. Failed runs retain their volumes
-for inspection; choose a fresh shard id for a new run.
+the host-side measurement reads its output. The collector also scrapes `gateway:9951/metrics` (a port the package never
+publishes) every 5 seconds. Its cgroup sampler replaces the Docker stats receiver: it reads each container's `cpu.stat`
+through a read-only `/sys/fs/cgroup` mount, with no Docker socket. Every 10 seconds it appends usage and throttling
+counters to `metrics/container-metrics.jsonl` in the existing OTLP JSON format, across collector restarts. Container ID,
+cgroup name and relative cgroup path identify each sample, including containers outside the shard so runs can show
+competing work. Compare cumulative `container.cpu.usage.total` deltas (nanoseconds), CPU utilization and throttled time
+with the latency window. `metrics.jsonl` and `container-metrics.jsonl` each rotate at 100 MB and keep two older files.
+The release builds the image from pinned Python and collector images and publishes it beside the others. It runs without
+capabilities or writable root files. The run directory holds its compose configuration, manifest, logs and private
+`harness.env`. It starts no live services. Failed runs retain their volumes for inspection; choose a fresh shard id for
+a new run.
 
 Before starting admission, the runner checks genesis and every shard role against `host-accounts.json` and the node: the
 deployer, sequencing account and its administrator, operator and each domain's authority. It refuses a seeded devnet
@@ -161,11 +158,12 @@ underscores for dashes and `true` for a bare flag:
 `accounts_per_game`, or a launch `slot`; the harness refuses what it does not accept), which a configuration's own
 `workload` overrides key by key. A configuration may name a `package` (a `shard-v*` release, whose image digests it
 runs) and a `gateway_revision` (a commit whose `apps/gateway` the runner builds and runs instead of the package's
-gateway, for a lever trial). Each trial stores its configuration with the resolved digests, deployment, workload
-reports, start/end host snapshots and `matrix-result.json`: pass/fail, the node's anonymous memory and kept RocksDB
-snapshots every 15 s, and admission-to-visible latency split into its gateway part and the rest, overall, in bursts and
-in calm. A failed workload aborts the matrix. Each completed or failed candidate is stopped with its volumes retained;
-the next configuration starts fresh.
+gateway, for a lever trial). Each trial stores its configuration with the resolved digests, deployment, workload reports
+and `matrix-result.json`, the host-side measurement described under "Measuring a shard": pass/fail, the host's state
+before and after, the node's anonymous memory and kept RocksDB snapshots every 15 s, its block statistics and gas
+reconciliation over the workload window, and admission-to-visible latency split into its gateway part and the rest,
+overall, in bursts and in calm. A failed workload aborts the matrix. Each completed or failed candidate is stopped with
+its volumes retained; the next configuration starts fresh.
 
 Recovery drills run against a shard the runner started: `scripts/drill.py RUN_DIRECTORY`. Four drills run in turn, each
 under its own burst of four Blitz games of 24: SIGTERM and SIGKILL of the node, then of the gateway, sent once the burst
@@ -176,7 +174,8 @@ drill run. The command takes the isolated-stack lock itself before starting any 
 
 Campaign plans live in `plans/`. `plans/latency-window.json` is the latency pair and snapshot A/B window: base, the two
 gateway levers (branch `native-gateway-levers-2`, each the current next gateway plus the lever; lever3 includes lever2),
-and 30-minute runs without and with `--db-max-kept-snapshots=0` for the memory curve.
+and 30-minute runs without and with `--db-max-kept-snapshots=0` for the memory curve. It runs `shard-v0.5.0`, the first
+release whose package carries the metrics collector, and each trial's evidence is its `matrix-result.json`.
 
 The runner starts the gateway after deployment with the new world's sequencing account and address. The gateway persists
 its epoch secret in its own volume. Pending assignments are volatile across restart; recorded nonces prevent duplicate
@@ -330,19 +329,18 @@ target to drive as low as possible, reported against the owner's figures and fla
 submit to pre-confirmed visible in the client p95 250 ms (`admissionToVisibleMs`), and Herald's confirmed state behind
 the node p95 500 ms (`heraldConfirmedLagMs`: Herald's confirmed notice for the transaction minus the node's
 ACCEPTED_ON_L2 for it, both on the driver's clock). Pre-confirmed, accepted-on-L2 and block close latencies are reported
-beside them as diagnostics. Host state and block stats are read once by the driver, never per worker, and a block-stats
-read that fails or finds no closed block fails the run. The summary records the driver's placement (host, pid, cpuset,
-cgroup, available threads) and, per game, the number of transactions its settlement burst took at start. Worker reports
-under `players/` carry no gates of their own.
+beside them as diagnostics. The summary records the driver's placement (host, pid, cpuset, cgroup, available threads)
+and, per game, the number of transactions its settlement burst took at start. Worker reports under `players/` carry no
+gates of their own.
 
 The capacity campaign's shapes are run configurations of the same harness. `--preset <id>` names the preset new games
 are created from (default: the game type's). The slot shape's start burst is `--bots 96 --workload burst`: four games of
 24, every bot releasing its whole plan at the same instant and its next action as soon as the previous one lands; the
 summary's `releaseSpreadMs` shows how tight the release was. The Frontier shape is `--game-type frontier` without
 `--functional`: production-length days, every player settling then mustering and exploring in the first minutes, with
-the latency and close-cost gates. `--game-type frontier --functional` is FR11's design run instead: the season is
-created with twelve-minute days so the bots play through rollovers, and the design gates (token cap, fresh armies after
-at least three rollovers) apply while the latency gates do not.
+the latency gates and, measured from the host, the close-cost evidence. `--game-type frontier --functional` is FR11's
+design run instead: the season is created with twelve-minute days so the bots play through rollovers, and the design
+gates (token cap, fresh armies after at least three rollovers) apply while the latency gates do not.
 
 The slot shape proper registers the bots the way players register: `--slot <name> --launch-url <app origin>` with
 `OPERATOR_TOKEN` in the environment creates the slot closing `--slot-closes-in-seconds` ahead (default 120), registers
@@ -350,8 +348,25 @@ every bot's account into it, waits for the cron to freeze it and for each `<slot
 and then drives the games the launch service split, created and settled. The harness creates nothing itself in this
 mode; a failed launch run fails the harness run with the launch service's reason.
 
-For a node with OTLP export, set `MADARA_METRICS_FILE` to the collector's JSON-lines output. The existing
-`scripts/block-stats.py` combines close-block data with upstream counter deltas, excluding process resets. Report
-latency separately from gas and execution resources. Admission-to-visible includes queue wait and the Herald barrier.
+### Measuring a shard
+
+The harness runs inside the shard's network and sees only what a client sees. What only the host sees is measured around
+it, by one function in `scripts/measures.py` that a runner trial and a package shard share: the host's state before and
+after (`host-state.sh`), the node's anonymous memory and kept RocksDB snapshots every 15 s, read from the cgroup Docker
+placed the node in, and, over the workload window the harness's reports span, the node's closed blocks from its logs and
+its metrics export (`block-stats.sh`) and the harness's gas per block reconciled against them. Block statistics are the
+run's close-cost evidence: a window without a closed block fails the run.
+
+Measure one of our package shards from its deploy directory:
+
+```bash
+OPERATOR_TOKEN=... python3 deploy/athanor/scripts/measures.py /opt/athanor/runs/staging-f soak-1 --cpuset 20-23 -- \
+  --game-type frontier --frontier-burst booth --bots 2000 --setup-concurrency 32
+```
+
+It takes the isolated-stack lock, runs the package's `harness` service with the options after `--` on the CPUs
+`--cpuset` names (recorded as `driverCpuset`; the harness's own report records the CPUs it saw), and writes
+`data/measure/NAME/result.json` beside the harness's reports in `data/measure/NAME/workload`. Report latency separately
+from gas and execution resources. Admission-to-visible includes queue wait and the Herald barrier.
 
 Preserve the baseline image and chain data until final acceptance and the approved cutover.

@@ -29,7 +29,6 @@ RELEASE_FACTS = Path("/release/release-facts.json")
 def configuration():
     chain_id = os.environ["CHAIN_ID"]
     config = {
-        "madara_image": os.environ["MADARA_IMAGE"], "madara_container": os.environ["MADARA_CONTAINER"],
         "shard": chain_id.lower().replace("_", "-"), "chain_id": chain_id, "port_base": 0,
         "guardian_url": os.environ["GUARDIAN_URL"], "public_rpc_url": os.environ["PUBLIC_RPC_URL"],
         "public_admission_url": os.environ["PUBLIC_ADMISSION_URL"], "player_capacity": int(os.environ["PLAYER_CAPACITY"]),

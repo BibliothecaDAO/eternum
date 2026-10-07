@@ -11,8 +11,6 @@ x-init: &init
     - gateway-config:/gateway-config
     - postgres-config:/postgres-config
   environment:
-    MADARA_IMAGE: *madara-image
-    MADARA_CONTAINER: ${SHARD_NAME:?Choose a unique shard name}-madara-1
     CHAIN_ID: ${CHAIN_ID:?Choose a unique chain id}
     GUARDIAN_URL: ${GUARDIAN_URL:?Set the identity guardian endpoint}
     PUBLIC_RPC_URL: ${PUBLIC_RPC_URL:?Set the read RPC URL}

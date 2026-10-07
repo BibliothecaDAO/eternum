@@ -27,11 +27,9 @@ import { registerBotsThroughSlot } from "./slot-registration";
 import {
   HARNESS_OUTPUT_DIRECTORY,
   assessRosterRun,
-  collectHarnessEvidenceBeforeRun,
-  finishHarnessEvidence,
   readDriverPlacement,
+  runRevision,
   writeHarnessReport,
-  type HarnessEvidence,
   type HarnessGameInstance,
   type WorkerWorkloadSummary,
 } from "./report";
@@ -213,7 +211,7 @@ async function main(): Promise<void> {
           });
 
     const isRosterWorker = Boolean(workerData?.harness);
-    const evidenceBefore = isRosterWorker ? null : await collectHarnessEvidenceBeforeRun(options.functional);
+    const revision = isRosterWorker ? null : await runRevision();
     if (!options.functional) console.log("Waiting for explorers to recover before measuring the workload");
     const workload =
       options.workload === "frontier"
@@ -275,15 +273,10 @@ async function main(): Promise<void> {
           ]
         : [];
 
-    const gates = evidenceBefore
+    const gates = revision
       ? {
           minimumThresholdActions: resolveMinimumThresholdActions(options, workload.plannedActions),
-          evidence: await finishHarnessEvidence(
-            evidenceBefore,
-            workload.startedAt,
-            workload.endedAt,
-            options.functional,
-          ),
+          evidence: revision,
         }
       : null;
     const report = await writeHarnessReport({
@@ -541,15 +534,15 @@ export function playersOf(
   return groups.length > 1 ? { kind: "roster", groups } : { kind: "single", game: games[0]! };
 }
 
-// One driver process runs every group as a worker thread. Evidence is read once here, never per worker, and the
-// run's gates (action threshold, latency bars, close cost) are asserted over the whole run: a worker only reports.
+// One driver process runs every group as a worker thread. The revision is read once here, never per worker, and the
+// run's gates (action threshold, latency bars) are asserted over the whole run: a worker only reports.
 async function runRosterGroups(options: HarnessCliOptions, players: PreparedGame[]): Promise<void> {
   const directory = path.join(HARNESS_OUTPUT_DIRECTORY, `rosters-${Date.now()}`);
   await mkdir(directory, { recursive: true, mode: 0o700 });
   const workers: LabelledWorker[] = [];
   const reports: GameWorkerReport[] = [];
   let outcomes: WorkerOutcome[] = [];
-  const evidenceBefore = await collectHarnessEvidenceBeforeRun(options.functional);
+  const evidence = await runRevision();
   let failure: unknown;
   try {
     const paths = await Promise.all(
@@ -567,12 +560,6 @@ async function runRosterGroups(options: HarnessCliOptions, players: PreparedGame
     if (error instanceof GameWorkersFailed) outcomes = error.outcomes;
   } finally {
     await Promise.all(workers.map(({ worker }) => worker.terminate()));
-  }
-  let evidence: HarnessEvidence | null = null;
-  try {
-    evidence = await finishRosterEvidence(evidenceBefore, reports, options.functional);
-  } catch (error) {
-    failure ??= error;
   }
   const workloads = reports.map((report) => report.workload);
   const gates = assessRosterRun({
@@ -610,20 +597,6 @@ function gamesPlayed(groups: PreparedGame[]) {
     games.set(game.gameId, { ...game, botCount: (played?.botCount ?? 0) + accounts.length });
   }
   return [...games.values()];
-}
-
-async function finishRosterEvidence(
-  before: Awaited<ReturnType<typeof collectHarnessEvidenceBeforeRun>>,
-  reports: GameWorkerReport[],
-  functional: boolean,
-): Promise<HarnessEvidence | null> {
-  if (reports.length === 0) return null;
-  const startedAt = reports.map(({ workload }) => workload.startedAt).sort()[0]!;
-  const endedAt = reports
-    .map(({ workload }) => workload.endedAt)
-    .sort()
-    .at(-1)!;
-  return finishHarnessEvidence(before, startedAt, endedAt, functional);
 }
 
 /** A worker is named by the game it plays and its first bot, as its output directory is. */
@@ -820,7 +793,7 @@ Usage: bun deploy/athanor/harness/run.ts [options]
                                  and move inside the window (use the 720 s day of --preset 101 on perf shards)
   --burst-window-seconds <s>     with --frontier-burst; default: 600 for booth, 120 for rollover
   --workers <count>              Frontier: split the season's bots across this many worker threads; default: 1
-  --functional                  omit capacity collection and latency gates; for Frontier, the accelerated design run
+  --functional                  omit request counts and the latency gates; for Frontier, the accelerated design run
   --prepared-game <path>         resume a prepared roster using its private account file
   --game-id <id>                 use an existing Eternum game
   --game-name <name>             name for a new game or report label for --game-id
