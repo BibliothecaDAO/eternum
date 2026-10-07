@@ -18,7 +18,6 @@ STATIC = [
     ".github/workflows/deploy-client.yml",
     ".github/workflows/deploy-workers.yml",
     ".github/workflows/shard-images.yml",
-    ".github/workflows/release-game.yml",
     ".github/scripts/**",
     ".github/ISSUE_TEMPLATE/**",
 ]
