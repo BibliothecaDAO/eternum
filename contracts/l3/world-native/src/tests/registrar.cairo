@@ -2960,12 +2960,14 @@ fn frontier_shrine_and_well_persist_once_and_use_the_public_progress_and_slot() 
     snforge_std::interact_with_state(
         d.games, || crate::logic::map::MapState::occupy(tile, 901, crate::taxonomy::SHRINE_OCCUPIER, false),
     );
+    assert!(execute_in_game(d, game_id, command, 360, 360));
+    let progress = snforge_std::interact_with_state(d.games, || crate::logic::progression::require(key));
+    assert_eq!(progress.xp, 7 + 200 + 200);
+    assert!(snforge_std::interact_with_state(d.games, || crate::logic::map::occupancy(tile)).is_none());
     assert!(!execute_in_game(d, game_id, command, 360, 360));
-    assert!(snforge_std::interact_with_state(d.games, || crate::logic::map::occupancy(tile)).is_some());
     snforge_std::interact_with_state(
         d.games,
         || {
-            crate::logic::map::MapState::vacate(tile, 901);
             crate::logic::map::MapState::occupy(tile, 902, crate::taxonomy::WELL_OCCUPIER, false);
             crate::logic::progression::write(key, crate::progression::ArmyProgress { logistics: 3, ..progress });
             let mut army = crate::logic::troops::active_explorer(
