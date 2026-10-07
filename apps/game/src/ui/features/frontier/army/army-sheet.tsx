@@ -268,7 +268,7 @@ const RefillFits = ({ refills, of }: { refills: number; of: number }) =>
   );
 
 /** Scouting's choice: the kind this tier lifts, each with its find rate before and after; never ruins, shrines, wells. */
-const KindChoice = ({
+export const KindChoice = ({
   rates,
   lifted,
   onKind,

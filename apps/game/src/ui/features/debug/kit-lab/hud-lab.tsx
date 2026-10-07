@@ -27,6 +27,8 @@ import { type AttributeKey, ArmySheet } from "@/ui/features/frontier/army/army-s
 import { BuildingsRow } from "@/ui/features/frontier/realm/buildings-row";
 import { CastleView } from "@/ui/features/frontier/upgrade/castle-view";
 import { TypeUpgradeSheet } from "@/ui/features/frontier/upgrade/type-upgrade-sheet";
+import { TrainingGives } from "@/ui/features/frontier/upgrade/training-gives";
+import { KindChoice } from "@/ui/features/frontier/army/army-sheet";
 import { CastleNodeSheet, TreePage, type TreeRow } from "@/ui/features/frontier/research/tree-page";
 import { Button } from "@/ui/design-system/kit/button";
 import { Chip } from "@/ui/design-system/kit/chip";
@@ -509,9 +511,14 @@ const STATES = {
   "tree-barracks": { clock: CLOCK, stores: STORES, armies: ARMIES, tree: "barracks" },
   "tree-hut": { clock: CLOCK, stores: STORES, armies: ARMIES, tree: "hut" },
   "tree-shrine": { clock: CLOCK, stores: STORES, armies: ARMIES, tree: "shrine" },
+  "train-battle": { clock: CLOCK, stores: STORES, armies: ARMIES, training: "battle" },
+  "train-hearth": { clock: CLOCK, stores: STORES, armies: ARMIES, training: "hearth" },
+  "train-scouts": { clock: CLOCK, stores: STORES, armies: ARMIES, training: "scouts" },
+  "train-short": { clock: CLOCK, stores: STORES, armies: ARMIES, training: "short" },
 } as const;
 
 type LabState = {
+  training?: "battle" | "hearth" | "scouts" | "short";
   tree?: "page" | "farm" | "barracks" | "hut" | "shrine";
   production?: readonly ProductionLine[];
   army?: LabArmySheet;
@@ -621,6 +628,7 @@ export const HudLab = () => {
         {lab.dayDone && <DayDoneCard {...lab.dayDone} />}
         {lab.army && <LabArmy army={lab.army} />}
         {lab.tree && lab.tree !== "page" && <LabTreeSheet tree={lab.tree} />}
+        {lab.training && <LabTraining training={lab.training} />}
         {lab.production && <ProductionSheet lines={lab.production} onSpend={noop} onBuild={noop} onClose={noop} />}
         {(lab.realmView === "build" || lab.realmView === "build-early") && (
           <BuildView
@@ -812,6 +820,53 @@ const LabTreeSheet = ({ tree }: { tree: "farm" | "barracks" | "hut" | "shrine" }
               reason: { kind: "short", icon: "Sg", held: 24_000, need: 18_000 },
               step: <Button role="primary" icon="Cs" word={CASTLE} className="w-[120px]" onClick={noop} />,
             }
+      }
+      sending={false}
+      onUpgrade={noop}
+      onClose={noop}
+    />
+  );
+};
+
+/** A training building's sheet on the fiction: the War hall to rare, the Hearth to rare, the Scouts' lodge's kind. */
+const LabTraining = ({ training }: { training: "battle" | "hearth" | "scouts" | "short" }) => {
+  const hearth = training === "hearth";
+  const scouts = training === "scouts";
+  return (
+    <TypeUpgradeSheet
+      icon={hearth ? "He" : scouts ? "Ld" : "Wa"}
+      name={TRAINING_BUILDINGS[hearth ? 3 : scouts ? 2 : 0]}
+      tier={scouts ? 1 : 2}
+      gives={
+        <TrainingGives
+          mark={hearth ? "Su" : scouts ? "Sc" : "Ba"}
+          attribute={hearth ? "Homecoming" : scouts ? "Scouting" : "Battle"}
+          effect={hearth ? "3% → 9%" : scouts ? "+10%" : "+10% → +30%"}
+          xpSaved={scouts ? 100 : 300}
+          tier={scouts ? 1 : 2}
+          armyArt="/images/armies/knightT1.png"
+          kinds={
+            scouts ? (
+              <KindChoice
+                rates={{ camp: ["4%", "4.4%"], rift: ["4%", "4.4%"], stragglers: ["6%", "6.6%"] }}
+                lifted="rift"
+                onKind={noop}
+              />
+            ) : undefined
+          }
+        />
+      }
+      prices={[
+        { of: "essence", amount: scouts ? 12_000 : 48_000 },
+        { of: "labor", amount: scouts ? 3_000 : 9_000 },
+      ]}
+      short={
+        training === "short"
+          ? {
+              reason: { kind: "short", icon: "Es", held: 18_250, need: 48_000 },
+              step: <Button role="primary" icon="Mp" word={MAP} className="w-[104px]" onClick={noop} />,
+            }
+          : undefined
       }
       sending={false}
       onUpgrade={noop}
