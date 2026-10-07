@@ -36,6 +36,10 @@ import { TodayCard } from "./log/today-card";
 import { FrontierResearch } from "./research/frontier-research";
 import { SiteClearCardView } from "./sites/site-clear-card";
 import { useFrontierType } from "./use-frontier-type";
+import { dayClock } from "./hud/day-clock";
+import { DayDone } from "./rollover/day-done";
+import { LastHourBubble } from "./rollover/last-hour";
+import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 
 type ExpeditionRules = NonNullable<ReturnType<typeof useExpeditionRules>>;
 
@@ -67,7 +71,11 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
       middle={
         surface === "chat" ? (
           <ChatPage gameZoneId={chat.gameZoneId} signedIn={chat.initializer !== null} onSignIn={chat.requestSignIn} />
-        ) : undefined
+        ) : (
+          <div className="relative min-h-0 flex-1">
+            {dockRealm && !visit && <LastHour rules={rules} realm={dockRealm} />}
+          </div>
+        )
       }
       foot={
         <>
@@ -99,6 +107,7 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
         <EventLogPanel header={<TodayCard rules={rules} />} onDismiss={close} isInsideAnchor={() => false} />
       )}
       <SeasonBoardHost />
+      {realm && !visit && <DayDone rules={rules} realm={realm} />}
     </HudBands>
   );
 };
@@ -133,6 +142,14 @@ const PendingOrder = ({ order, army }: { order: ArmyOrder; army: DockArmy }) => 
     onGo={() => requestOrderAt(order.target)}
   />
 );
+
+/** In the day's last hour, the bubble of what the day's end takes and returns: the troops still out. */
+const LastHour = ({ rules, realm }: { rules: ExpeditionRules; realm: NativeRows["Structure"] }) => {
+  const armies = useDockArmies(realm);
+  const clock = dayClock(rules, useNowSeconds());
+  if (clock.tone !== "ember" || armies.length === 0) return null;
+  return <LastHourBubble troopsOut={armies.reduce((sum, army) => sum + army.troops, 0)} />;
+};
 
 /** The Menu over the game: each row opens its way and closes the menu; Exit leaves for the app. */
 const HudMenu = ({ onOpen, onClose }: { onOpen: (surface: HudSurface | null) => void; onClose: () => void }) => {

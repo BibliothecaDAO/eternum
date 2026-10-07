@@ -45,3 +45,14 @@ export const dayClock = (rules: ExpeditionRules, now: number): DayClock => {
     tone: secondsLeft <= LAST_HOUR_SECONDS ? "ember" : "calm",
   };
 };
+
+/**
+ * The day that ended last: its number and its bounds in unix seconds, for the day-done card's totals. Null on the
+ * season's first day, which follows no day.
+ */
+export const endedDay = (rules: ExpeditionRules, now: number): { day: number; start: number; end: number } | null => {
+  const today = seasonDay(rules, now);
+  if (today === null || today === 0) return null;
+  const end = expeditionDayEndsAt(rules, now) - rules.epochSeconds;
+  return { day: today, start: end - rules.epochSeconds, end };
+};

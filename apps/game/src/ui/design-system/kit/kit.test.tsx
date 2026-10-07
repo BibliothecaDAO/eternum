@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { formatAmount, formatExact } from "./amount";
 import { Button } from "./button";
 import { ClockLine } from "./clock-line";
+import { clockLineText } from "./clock-text";
 import { DayDial } from "./day-dial";
 import { Notice } from "./notice";
 import { PriceChip } from "./price-chip";
@@ -227,5 +228,17 @@ describe("Sheet", () => {
       window.dispatchEvent(new PopStateEvent("popstate", { state: null }));
     });
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("the clock line as text", () => {
+  it("writes the Day-end reminder's line from its instants with the clock line's words", () => {
+    const endsAt = new Date(2026, 9, 7, 21, 40).getTime() / 1000;
+    expect(clockLineText({ endsAt, secondsLeft: 3_600, tomorrowSeconds: 12 * 3_600 })).toBe(
+      "Day ends 21:40 · 1h left · Tomorrow lasts 12h",
+    );
+    expect(clockLineText({ endsAt: undefined, secondsLeft: undefined, tomorrowSeconds: undefined })).toBe(
+      "Day ends — · — left · Tomorrow lasts —",
+    );
   });
 });

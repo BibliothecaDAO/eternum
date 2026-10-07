@@ -11,6 +11,11 @@ export const DAY_ENDS = "Day ends";
 export const LEFT = "left";
 export const TOMORROW_LASTS = "Tomorrow lasts";
 export const DAY = "Day";
+/** The day-done card: "Day 12 done · Realm kept · Day 13 is open", and its one verb. */
+export const DAY_DONE = "done";
+export const REALM_KEPT = "Realm kept";
+export const DAY_OPEN = "is open";
+export const CONTINUE = "Continue";
 export const FULL_IN = "Full in";
 
 export const OFFLINE = "Offline";
@@ -61,6 +66,9 @@ export const ATTACK = "Attack";
 export const ATTACKING = "Attacking…";
 export const USE = "Use";
 export const USING = "Using…";
+
+/** Making something you own better: the castle a level, a building type a tier, an army an attribute tier. */
+export const UPGRADE = "Upgrade";
 
 /** Raise an army from troops at home. */
 export const DEPLOY = "Deploy";

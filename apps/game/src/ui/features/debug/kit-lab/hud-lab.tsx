@@ -10,6 +10,8 @@ import { DeployView } from "@/ui/features/frontier/deploy/deploy-view";
 import { RuinChestMoment } from "@/ui/features/frontier/chest/ruin-chest-moment";
 import { SiteClearCard } from "@/ui/features/frontier/sites/site-clear-card";
 import { SiteCardView } from "@/ui/features/frontier/sites/site-card-view";
+import { DayDoneCard } from "@/ui/features/frontier/rollover/day-done-card";
+import { LastHourBubble } from "@/ui/features/frontier/rollover/last-hour";
 import { Direction } from "@bibliothecadao/types";
 import { PlaceNav } from "@/ui/features/frontier/hud/place-nav";
 import { StatusStrip, type StoreReading } from "@/ui/features/frontier/hud/status-strip";
@@ -236,6 +238,24 @@ const STATES = {
     armies: ARMIES,
     chest: { tier: 5, lords: 640, xp: 145, troopsLost: 1_250, onClose: () => undefined },
   },
+  "last-hour": { clock: LAST_HOUR, stores: STORES, armies: ARMIES, lastHour: true },
+  "day-done": { clock: NIGHT, stores: STORES, armies: [], dayDone: DAY_DONE },
+  "day-done-full": {
+    clock: NIGHT,
+    stores: STORES,
+    armies: [],
+    dayDone: { ...DAY_DONE, returned: { sent: 470, fitted: 200 } },
+  },
+  night: {
+    clock: NIGHT,
+    stores: [
+      store("essence", 24_650),
+      store("labor", 10_790, 18_000),
+      store("wheat", 15_560, 18_000),
+      store("troops", 7_400, 18_000),
+    ],
+    armies: [],
+  },
 } as const;
 
 type LabOrder = {
@@ -291,7 +311,31 @@ const RUIN_CARD: LabSite = {
   verb: ATTACK_30,
 };
 
+/** Day 13 at 22:30: an 8-hour day from 21:40 that ends in the night, at 05:40; tomorrow lasts 20h. */
+const NIGHT: DayClock = {
+  day: 13,
+  endsAt: NOW + 15 * HOUR + 14 * 60,
+  secondsLeft: 7 * HOUR + 10 * 60,
+  tomorrowSeconds: 20 * HOUR,
+  shareLeft: (7 * HOUR + 10 * 60) / (8 * HOUR),
+  tone: "calm",
+};
+const LAST_HOUR: DayClock = { ...CLOCK, secondsLeft: 42 * 60, shareLeft: 42 / 960, tone: "ember" };
+const DAY_DONE = {
+  endedDay: 12,
+  realmArt: "/images/realm-card/city.webp",
+  clock: { ...NIGHT, secondsLeft: 7 * HOUR + 55 * 60 },
+  totals: { reveals: 31, cleared: 3, chests: 1, essence: 6_400, labor: 1_150, lords: 128 },
+  rank: { from: 14, to: 12 },
+  armies: 3,
+  troopsLost: 6_021,
+  returned: { sent: 470, fitted: 470 },
+  onContinue: () => undefined,
+};
+
 type LabState = {
+  dayDone?: Parameters<typeof DayDoneCard>[0];
+  lastHour?: boolean;
   order?: LabOrder;
   site?: LabSite;
   clear?: LabClear;
@@ -325,6 +369,11 @@ export const HudLab = () => {
       />
       <HudBands
         top={<StatusStrip clock={lab.clock} stores={[...lab.stores]} />}
+        middle={
+          <div className="relative min-h-0 flex-1">
+            {lab.lastHour && <LastHourBubble troopsOut={6_021} returned={470} tiersToBuy={2} />}
+          </div>
+        }
         foot={
           <>
             {lab.offline && <Notice icon="Of" line={OFFLINE} verb={TRY_AGAIN} onVerb={noop} ember />}
@@ -364,6 +413,7 @@ export const HudLab = () => {
         }
       >
         {lab.deploy && <LabDeploySheet deploy={lab.deploy} />}
+        {lab.dayDone && <DayDoneCard {...lab.dayDone} />}
         {lab.site && <SiteCardView {...lab.site} onRealm={noop} onClose={noop} />}
         {lab.chest && <RuinChestMoment {...lab.chest} />}
         {lab.menu && (
