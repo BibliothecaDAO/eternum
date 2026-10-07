@@ -415,6 +415,13 @@ fn discovered_guard(
 
 #[starknet::interface]
 pub trait IBattleResolution<T> {
+    // The explorer a command acts with: active this day, and owned by the actor when one is given.
+    fn command_explorer(
+        self: @T,
+        key: ExplorerKey,
+        actor: Option<starknet::ContractAddress>,
+        game_context: crate::commands::ActionContext,
+    ) -> ExplorerTroops;
     fn finish_battle(
         ref self: T,
         key: ExplorerKey,

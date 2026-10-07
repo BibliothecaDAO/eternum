@@ -828,6 +828,20 @@ pub mod TroopsLogic {
     }
     #[abi(embed_v0)]
     impl BattleResolution of crate::troops::IBattleResolution<ContractState> {
+        fn command_explorer(
+            self: @ContractState,
+            key: ExplorerKey,
+            actor: Option<ContractAddress>,
+            game_context: crate::commands::ActionContext,
+        ) -> ExplorerTroops {
+            let game_context = crate::commands::load_context(key.game_id, game_context);
+            match actor {
+                Some(actor) => crate::logic::troops::authorized_explorer(
+                    key, actor, game_context.timestamp, game_context,
+                ),
+                None => crate::logic::troops::active_explorer(key, game_context.timestamp, game_context),
+            }
+        }
         fn finish_battle(
             ref self: ContractState,
             key: ExplorerKey,
