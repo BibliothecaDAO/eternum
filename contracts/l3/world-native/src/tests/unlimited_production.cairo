@@ -103,7 +103,7 @@ fn a_marker_already_worn_by_a_running_game_still_never_runs_out_or_wears_further
         selector!("resources"),
         selector!("productions"),
         array![home.game_id.into(), home.entity_id.into(), LABOR.into()].span(),
-        Production { building_count: 1, production_rate: 3, output_amount_left: WORN, last_settled_tick: 40 },
+        Production { building_count: 1, production_rate: 3, output_amount_left: WORN, last_settled_tick: (40_u64 / super::recorded::rules().tick_config.armies_tick_in_seconds).try_into().unwrap() },
     );
     let before = resources(deployment).resource_balance(slot(home, LABOR));
     assert_eq!(settle(deployment, home, LABOR, 100).output_amount_left, WORN);
