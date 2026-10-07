@@ -36,6 +36,8 @@ USER bun
 ENTRYPOINT ["bun", "/app/herald.js"]
 
 FROM build AS init
+# The harness runs as the host user and writes each game's launch summary here.
+RUN mkdir -m 1777 /app/.context
 # The image carries no repository, so commands run from it record this commit as the code they ran.
 ARG SHARD_REVISION
 ENV SHARD_REVISION=${SHARD_REVISION}

@@ -171,14 +171,17 @@ def compose_configuration(config, directory):
         "PRESETS": ",".join(str(preset) for preset in config["presets"]),
     }
     compose = json.loads(subprocess.check_output([
-        "docker", "compose", "-f", str(ROOT / "deploy/shard/compose.yml"), "config", "--format", "json",
+        "docker", "compose", "-f", str(ROOT / "deploy/shard/compose.yml"), "--profile", "harness", "config",
+        "--format", "json",
     ], env=environment, text=True))
     budget = {
         "cgroup_parent": "athanor.slice", "cpuset": config["cpuset"], "pids_limit": 2048,
         "logging": {"driver": "json-file", "options": {"max-size": "20m", "max-file": "3"}},
     }
-    for service in compose["services"].values():
-        service.update(budget)
+    # The harness is the driver, not the shard: it keeps the CPUs HARNESS_CPUSET gives it.
+    for name, service in compose["services"].items():
+        if name != "harness":
+            service.update(budget)
     for name in ("prepare", "init"):
         service = compose["services"][name]
         service.update({"mem_limit": "8g", "memswap_limit": "8g"})

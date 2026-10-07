@@ -123,6 +123,15 @@ services:
     depends_on:
       init: { condition: service_completed_successfully, restart: true }
 
+  # The gameplay harness against this shard, from its network, as the host user, so its reports in data/ are the
+  # user's: docker compose run --rm harness OPTIONS. HARNESS_CPUSET keeps a large driver off the shard's own CPUs.
+  harness:
+    <<: *init
+    profiles: [harness]
+    entrypoint: ["python3", "/app/deploy/shard/init.py", "harness"]
+    user: "${HOST_UID:?}:${HOST_GID:?}"
+    cpuset: ${HARNESS_CPUSET:-}
+
   # The shard's own metrics: the node's OTLP export, the gateway's admission series and every container's CPU, as JSON
   # lines under data/metrics. Each file rotates at 100 MB and keeps two older files, 600 MB at most.
   metrics:

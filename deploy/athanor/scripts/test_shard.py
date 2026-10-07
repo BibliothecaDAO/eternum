@@ -6,6 +6,7 @@ from pathlib import Path
 import resource
 import subprocess
 import tempfile
+import time
 import unittest
 from unittest.mock import patch
 
@@ -151,6 +152,28 @@ class ShardTest(unittest.TestCase):
                 backup.main(command)
             self.assertEqual(holders, [["backup", "capture", "athanor-smoke"]])
             self.assertFalse(lock.exists())
+
+    def test_the_package_harness_runs_with_the_shards_settings_and_reports_into_data(self):
+        package = load_package_script("init")
+        with tempfile.TemporaryDirectory() as temporary:
+            data = Path(temporary)
+            shard.write_private_environment(data / "harness.env", {"RPC_URL": "http://madara:9944/rpc/v0_10_2"})
+            started = time.struct_time((2026, 10, 7, 16, 2, 47, 0, 0, 0))
+            argv, environment = package.harness_invocation(["--bots", "1"], {"OPERATOR_TOKEN": "t"}, data, started)
+            self.assertEqual(argv, ["bun", "deploy/athanor/harness/run.ts", "--bots", "1"])
+            self.assertEqual(environment["RPC_URL"], "http://madara:9944/rpc/v0_10_2")
+            self.assertEqual(environment["OPERATOR_TOKEN"], "t")
+            self.assertEqual(environment["HARNESS_OUTPUT_DIRECTORY"], str(data / "harness" / "20261007T160247Z"))
+            chosen = {"HARNESS_OUTPUT_DIRECTORY": "/data/measure/soak/workload"}
+            _, environment = package.harness_invocation([], chosen, data, started)
+            self.assertEqual(environment["HARNESS_OUTPUT_DIRECTORY"], "/data/measure/soak/workload")
+
+    def test_the_package_harness_runs_as_the_host_user_on_its_own_cpus(self):
+        with tempfile.TemporaryDirectory() as temporary, patch.dict(shard.os.environ, {"HARNESS_CPUSET": "20-23"}):
+            harness = shard.compose_configuration(configuration(), Path(temporary))["services"]["harness"]
+        self.assertEqual(harness["user"], f"{shard.os.getuid()}:{shard.os.getgid()}")
+        self.assertEqual(harness["cpuset"], "20-23")
+        self.assertEqual(harness["profiles"], ["harness"])
 
     def test_package_init_derives_the_trusted_proxy_only_behind_loopback_bindings(self):
         package = load_package_script("init")

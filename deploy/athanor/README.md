@@ -294,14 +294,19 @@ use the matching codec.
 
 ## Gameplay validation
 
-The harness uses the shared client, native fact store, recorded admission and node transaction subscriptions:
+The harness uses the shared client, native fact store, recorded admission and node transaction subscriptions. On one of
+our shards, run it from the package directory with the environment's operator token in the shell:
 
 ```bash
-RPC_URL=http://127.0.0.1:<node-port>/rpc/v0_10_2 HERALD_URL=http://127.0.0.1:<herald-port> \
-IDENTITY_URL=https://play.dev-realms.party/api OPERATOR_TOKEN=... \
-bun deploy/athanor/harness/run.ts \
-  --bots 6 --minutes 2.5 --interval-seconds 15 --setup-concurrency 6 --workload build-order
+OPERATOR_TOKEN=... sudo --preserve-env=OPERATOR_TOKEN docker compose run --rm harness \
+  --bots 6 --minutes 6 --interval-seconds 15 --setup-concurrency 6 --workload build-order --functional
 ```
+
+The `harness` service runs the init image on the shard's network as the host user, with the shard's `harness.env`: the
+node's internal RPC, Herald, the identity API and the operator's keys. Its reports land in `data/harness/<start time>/`,
+owned by the host user. `HARNESS_CPUSET` pins the driver to CPUs of its own; set it for any large run, so the driver
+does not compete with the shard it drives. `--herald-url https://HERALD_HOST` drives the public Herald instead, as a
+player's client does.
 
 Bots are Realms accounts under the shard's own guardian, like players. Each bot's device is approved by the
 environment's identity Worker through its operator route (`POST /api/devices/bots`), which approves only a bot account's
@@ -310,13 +315,13 @@ operator token cannot take over an account that already has a device, the operat
 identity API of the environment whose guardian the shard's manifest names, and `OPERATOR_TOKEN` is that environment's
 operator token.
 
-The node and Herald URLs are required (`--rpc-url`/`RPC_URL`, `--herald-url`/`HERALD_URL`) and have no default. Use the
-node's internal URL on the box, as the shard's `harness.env` records it: the public RPC refuses writes and WebSockets,
-and the harness confirms over the node's WebSocket.
+The node and Herald URLs are required (`--rpc-url`/`RPC_URL`, `--herald-url`/`HERALD_URL`) and have no default; the
+`harness` service takes them from `harness.env`. The node's URL is always its internal one: the public RPC refuses
+writes and WebSockets, and the harness confirms over the node's WebSocket.
 
 Every bot follows build-order suggestions, updates automation each minute and explores. The full acceptance workload
 uses 96 players and the frozen run configuration. Do not substitute a short smoke for it. Keep failed runs labeled
-failed. Run reports remain in `.lab/runs/`; measurements and exact revision/image/configuration pins go in the PR.
+failed. Measurements and exact revision/image/configuration pins go in the PR.
 
 A roster run drives every player as a worker thread of one process and asserts its gates once, over the whole run, in
 `rosters-<time>/summary.json`. A run fails only on correctness: the action threshold (3,500 for the frozen 96-player

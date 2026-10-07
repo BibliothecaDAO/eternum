@@ -89,7 +89,9 @@ Repeat the RPC check from outside the host. Unshaped submissions must return met
 batches; invalid-params means the node's write handler is exposed.
 
 The account smoke (`deploy/athanor/scripts/account-rpc-smoke.ts`), which also joins and revokes a temporary operator
-device, needs guardian approvals through our operator route, so it runs on our own shards only.
+device, needs guardian approvals through our operator route, so it runs on our own shards only. So does the gameplay
+harness, whose bots are approved the same way: `docker compose run --rm harness OPTIONS`, described in
+`deploy/athanor/README.md`.
 
 Create an unranked Frontier game with the host operator (choose a future start time):
 
