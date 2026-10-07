@@ -13,9 +13,6 @@ pub fn is_site_category(category: u8) -> bool {
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
 pub struct ExpeditionSite {
     pub initial_guard_count: u128,
-    /// The guard's troops times their tier strength when the site appeared, in resource precision: what a clear's XP
-    /// reads, while the payout counts troops alone.
-    pub initial_guard_strength: u128,
     pub cleared: bool,
 }
 

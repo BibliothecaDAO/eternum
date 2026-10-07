@@ -85,7 +85,7 @@ pub mod ResourcesLogic {
                     class_hash: self.release.classes(key.game_id).relics.read(),
                 },
                 explorer,
-                crate::progression::XpAward::Clear(site.initial_guard_strength),
+                crate::progression::XpAward::Clear(site.initial_guard_count),
             );
             let actor = crate::logic::structures::structure(home).expect('missing home structure').owner;
             crate::logic::stories::emit_entity_story(

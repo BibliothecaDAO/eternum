@@ -48,7 +48,7 @@ fn frontier_reveal_draws_only_essence_or_labor_evenly_over_ten_thousand_reveals(
 fn site_payout_keeps_initial_scaled_guard_count_and_has_no_clock_factor() {
     let initial = 1001 * RESOURCE_PRECISION + 1;
     let camp_category = crate::taxonomy::CAMP_CATEGORY;
-    let site = ExpeditionSite { initial_guard_count: initial, initial_guard_strength: initial, cleared: false };
+    let site = ExpeditionSite { initial_guard_count: initial, cleared: false };
     assert_eq!(
         site_reward(camp_category, site).unwrap(),
         crate::resources::ResourceAmount { resource_type: LABOR, amount: initial / 2 },
@@ -77,7 +77,7 @@ fn site_payout_counts_all_initial_guard_troops_without_tier_weighting() {
             Troops { count: 700 * RESOURCE_PRECISION, tier, ..Default::default() },
             Troops { count: 400 * RESOURCE_PRECISION, tier, ..Default::default() },
         ];
-        crate::logic::expeditions::create_site(key, guards.span(), super::recorded::rules().troop_limit_config);
+        crate::logic::expeditions::create_site(key, guards.span());
         let site = crate::logic::expeditions::expedition_site(key).unwrap();
         assert_eq!(site.initial_guard_count, 1100 * RESOURCE_PRECISION);
         assert_eq!(site_reward(crate::taxonomy::CAMP_CATEGORY, site).unwrap().amount, 550 * RESOURCE_PRECISION);

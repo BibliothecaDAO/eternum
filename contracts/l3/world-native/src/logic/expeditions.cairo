@@ -6,21 +6,14 @@ pub fn expedition_site(key: crate::resources::ResourceKey) -> Option<ExpeditionS
     crate::state::read().structures.expedition_sites.read((key.game_id, key.entity_id))
 }
 
-pub fn create_site(key: crate::resources::ResourceKey, guards: Span<crate::troops::Troops>, limits: crate::rules::TroopLimitConfig) {
+pub fn create_site(key: crate::resources::ResourceKey, guards: Span<crate::troops::Troops>) {
     assert!(expedition_site(key).is_none(), "site already initialized");
     let mut initial_guard_count = 0;
-    let mut initial_guard_strength = 0;
     for guard in guards {
         initial_guard_count += *guard.count;
-        let strength: u128 = match *guard.tier {
-            crate::troops::TroopTier::T1 => limits.t1_tier_strength.into(),
-            crate::troops::TroopTier::T2 => limits.t2_tier_strength.into(),
-            crate::troops::TroopTier::T3 => limits.t3_tier_strength.into(),
-        };
-        initial_guard_strength += *guard.count * strength;
     }
     assert!(initial_guard_count != 0, "empty site guard");
-    write_site(key, ExpeditionSite { initial_guard_count, initial_guard_strength, cleared: false });
+    write_site(key, ExpeditionSite { initial_guard_count, cleared: false });
 }
 
 pub fn clear_site(key: crate::resources::ResourceKey) -> ExpeditionSite {
