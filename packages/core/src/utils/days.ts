@@ -17,7 +17,7 @@ export interface SeasonCalendar {
 }
 
 /** One day of the season: its index from the season's start, and its bounds in seconds, end excluded. */
-export interface SeasonDay {
+interface SeasonDay {
   index: number;
   start: number;
   end: number;
@@ -66,13 +66,6 @@ export const dayOf = (calendar: SeasonCalendar, timestamp: number): SeasonDay | 
     index += 1;
   }
   throw new Error("A bag's days cover the bag");
-};
-
-/** How many days a season of `durationSeconds` holds; it must be whole bags, as the contract's launch requires. */
-export const seasonDays = (durationSeconds: number, dayUnitSeconds: number): number => {
-  const bagSeconds = DAY_UNITS_PER_BAG * dayUnitSeconds;
-  if (bagSeconds <= 0 || durationSeconds % bagSeconds !== 0) throw new Error("A season lasts whole bags of days");
-  return (durationSeconds / bagSeconds) * DAYS_PER_BAG;
 };
 
 /** How long a season of whole bags lasts, in seconds. */

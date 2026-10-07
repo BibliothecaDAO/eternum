@@ -98,7 +98,7 @@ const fittingPayout = (
   reward: { resourceType: ResourcesIds; amount: bigint },
   attack: SiteAttack | null,
 ): SiteCardPlan["payout"] => {
-  const raw = Number(reward.amount / PRECISION);
+  const raw = Number(reward.amount) / Number(PRECISION);
   if (reward.resourceType !== ResourcesIds.Labor) return { resourceId: reward.resourceType, amount: raw };
   const actor = store.subscriptionScope().known?.actor;
   const home =
