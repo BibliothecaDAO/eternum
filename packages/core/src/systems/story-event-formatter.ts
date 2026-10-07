@@ -153,9 +153,10 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
       icon: "prize",
     };
   },
-  TierBought: (event, payload, components) => {
+  TierBought: (_event, payload, components) => {
     const attribute = formatEnum(payload.attribute);
-    const tier = labelAt(ATTRIBUTE_TIER_LABELS, payload.tier);
+    const tierIndex = toNumber(payload.tier);
+    const tier = tierIndex === null ? undefined : ATTRIBUTE_TIER_LABELS[tierIndex];
     const price = toNumber(payload.price);
     if (!attribute || !tier || price === null) throw new Error("Incomplete tier purchase story");
     return {
