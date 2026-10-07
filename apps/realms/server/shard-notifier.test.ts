@@ -1,3 +1,4 @@
+import { dayOf } from "@bibliothecadao/eternum/expeditions";
 import type { HeraldHistoryEvent } from "@bibliothecadao/eternum/game-sync";
 import { beforeAll, expect, it } from "vitest";
 
@@ -88,11 +89,25 @@ const createHerald = () => {
     /** Snapshot reads answered, and whether this Herald is failing them. */
     snapshotReads: 0,
     snapshotFails: false,
+    seasonStart: SEASON_START,
+    members: [PLAYER_ACCOUNT],
   };
   const answer = (url: URL): unknown => {
     if (url.pathname === "/manifest") return { version: 1, chainId: state.chain, contracts: { games: "0x5e45" } };
     if (url.pathname === "/games")
-      return { chain: state.chain, games: [{ game_id: GAME_ID, name: "frontier-a", status: state.status }] };
+      return {
+        chain: state.chain,
+        games: [
+          {
+            game_id: GAME_ID,
+            name: "frontier-a",
+            status: state.status,
+            mode: "frontier",
+            clock: { start_main_at: state.seasonStart, end_at: state.seasonStart + 21 * 20 * DAY_UNIT_SECONDS },
+            expedition: { seed: "1", day_unit_seconds: DAY_UNIT_SECONDS },
+          },
+        ],
+      };
     if (url.pathname === `/games/${GAME_ID}/snapshot`) state.snapshotReads++;
     if (url.pathname === `/games/${GAME_ID}/snapshot` && state.snapshotFails)
       return Response.json({ error: "snapshot unavailable" }, { status: 500 });
@@ -102,7 +117,7 @@ const createHerald = () => {
         { status: 409 },
       );
     if (url.pathname === `/games/${GAME_ID}/snapshot`)
-      return snapshot(state.army, state.neighbourArmy, url.searchParams.get("owner"));
+      return snapshot(state.army, state.neighbourArmy, url.searchParams.get("owner"), state.members);
     const page = { chain: state.chain, world_address: "0x5e45", complete_through_block: 10 + log.length };
     const after = url.searchParams.get("after");
     if (!after) return { ...page, next_cursor: { block: 10, transaction: 2147483647, event: 2147483647 }, items: [] };
@@ -173,10 +188,21 @@ const STRUCTURE_OWNERS = new Map([
   [NEIGHBOUR_HOME, "0x7e1"],
 ]);
 
-const snapshot = (army: ArmyState | null, neighbour: ArmyState | null, owner: string | null) => ({
+const snapshot = (army: ArmyState | null, neighbour: ArmyState | null, owner: string | null, members: string[]) => ({
   confirmed_block: 10,
   game_id: String(GAME_ID),
   models: [
+    {
+      model: "PlayerEntry",
+      rows: members.map((account) => ({
+        key: account,
+        value: {
+          game_id: GAME_ID,
+          owner: account,
+          player: "0xdead",
+        },
+      })),
+    },
     {
       model: "SliceRules",
       rows: [
@@ -326,25 +352,27 @@ const armyPosition = (explorerId: number, home: number, army: ArmyState) => ({
 });
 
 /** The Worker in workerd over storage that survives a restart, a fake Herald, and a push service answering `status`. */
-const createHarness = async (level: "important" | "standard") => {
+const createHarness = async (level: "off" | "important" | "standard" | "all", pollMs = POLL_MS) => {
   const storage = newStorage();
   const herald = createHerald();
-  const push = { status: 201, received: [] as number[] };
+  const push = { status: 201, received: [] as number[], times: [] as number[], endpoints: [] as string[] };
   const vapid = await vapidKeys();
   const start = () =>
     startWorker({
       bundle,
       storage,
       vapid,
-      notifierPollMs: POLL_MS,
+      notifierPollMs: pollMs,
       outbound: (request) => {
         const url = new URL(request.url);
         if (url.origin === SHARD) {
           const answer = herald.answer(url);
           return answer instanceof Response ? answer : Response.json(answer);
         }
-        if (url.href === PUSH_ENDPOINT) {
+        if (url.href.startsWith(PUSH_ENDPOINT)) {
           push.received.push(push.status);
+          push.times.push(Date.now());
+          push.endpoints.push(url.href);
           return new Response(null, { status: push.status });
         }
         return new Response("unexpected outbound request", { status: 599 });
@@ -490,3 +518,133 @@ it("reads a new chain at the same URL from its own head, and sends nothing twice
   expect(push.received).toEqual([201, 201, 201]);
   await worker.dispose();
 }, 60_000);
+
+/** Put the shared calendar's first reminder a few seconds ahead; no player needs to have acted. */
+const remindSoon = (herald: ReturnType<typeof createHerald>, seconds = 8) => {
+  const dueAt = (Math.floor(Date.now() / 1000) + seconds) * 1000;
+  const first = dayOf({ seed: 1n, startMainAt: 0, dayUnitSeconds: DAY_UNIT_SECONDS }, 0)!;
+  herald.state.seasonStart = dueAt / 1000 + 3600 - first.end;
+  return dueAt;
+};
+
+it.each(["important", "all"] as const)(
+  "rule 9.6 sends one reminder to an inactive %s player at its seeded instant",
+  async (level) => {
+    const { herald, push, worker, start } = await createHarness(level, 1000);
+    const dueAt = remindSoon(herald);
+    // Being in the game is not a quiet-hours or foreground exception for the reminder.
+    await worker.db
+      .prepare('UPDATE "notification_push_subscriptions" SET "gameForegroundUntil" = ?')
+      .bind(dueAt + 60_000)
+      .run();
+    await worker.runCron();
+    await waitUntil(() => push.received.length > 0, 15_000);
+    expect(push.received).toEqual([201]);
+    expect(push.times[0]).toBeGreaterThanOrEqual(dueAt);
+    expect(push.times[0]).toBeLessThan(dueAt + 1000);
+    await worker.dispose();
+    const restarted = await start();
+    await restarted.runCron();
+    await pause(2000);
+    expect(push.received).toEqual([201]);
+    await restarted.dispose();
+  },
+  45_000,
+);
+
+it("rule 9.6 covers enrollment beyond a story page, including another inactive player", async () => {
+  const { herald, push, worker } = await createHarness("important", 1000);
+  const account = "0xbeef";
+  const owner = realmsIdOf("player-two");
+  const endpoint = `${PUSH_ENDPOINT}/two`;
+  const now = Date.now();
+  // The first hundred accounts have never registered a notification device; recipients still include later rows.
+  herald.state.members = [
+    ...Array.from({ length: 101 }, (_, index) => `0x${(0x1000 + index).toString(16)}`),
+    PLAYER_ACCOUNT,
+    account,
+  ];
+  await worker.db.batch([
+    worker.db
+      .prepare(
+        `INSERT INTO "user" ("id", "name", "email", "emailVerified", "createdAt", "updatedAt", "realmsId")
+      VALUES ('player-two', 'player-two', 'two@x.test', 0, ?, ?, ?)`,
+      )
+      .bind(new Date(now).toISOString(), new Date(now).toISOString(), owner),
+    worker.db.prepare('INSERT INTO "realms_accounts" ("address", "realmsId") VALUES (?, ?)').bind(account, owner),
+    worker.db
+      .prepare('INSERT INTO "notification_preferences" ("owner", "level", "revision") VALUES (?, ?, 1)')
+      .bind(owner, "all"),
+    worker.db
+      .prepare(
+        `INSERT INTO "notification_push_subscriptions"
+      ("id", "owner", "endpoint", "p256dh", "auth", "revocationHash", "gameAlertsEnabledAt", "createdAt")
+      SELECT '00000000-0000-4000-8000-000000000002', ?, ?, "p256dh", "auth", 'x', "gameAlertsEnabledAt", "createdAt"
+      FROM "notification_push_subscriptions" WHERE "id" = ?`,
+      )
+      .bind(owner, endpoint, DEVICE_ID),
+  ]);
+  remindSoon(herald);
+  await worker.runCron();
+  await waitUntil(() => push.received.length === 2, 15_000);
+  expect(push.endpoints.sort()).toEqual([PUSH_ENDPOINT, endpoint]);
+  await worker.dispose();
+}, 45_000);
+
+it("rule 9.6 drops a missed trigger on a newly started notifier", async () => {
+  const { herald, push, worker } = await createHarness("important", 1000);
+  remindSoon(herald, -2);
+  await worker.runCron();
+  await pause(2000);
+  expect(push.received).toEqual([]);
+  await worker.dispose();
+}, 45_000);
+
+it("rule 9.6 rechecks preferences after preparation and cancels a finished game's reminder", async () => {
+  for (const cancelledBy of ["off", "settled"] as const) {
+    const { herald, push, worker } = await createHarness("important", 1000);
+    const dueAt = remindSoon(herald);
+    await worker.runCron();
+    await waitUntil(() => herald.state.snapshotReads > 0, 4000);
+    expect(herald.state.snapshotReads).toBeGreaterThan(0);
+    if (cancelledBy === "off")
+      await worker.db.prepare('UPDATE "notification_preferences" SET "level" = ?').bind("off").run();
+    else herald.state.status = "Settled";
+    await pause(Math.max(0, dueAt + 1500 - Date.now()));
+    expect(push.received).toEqual([]);
+    await worker.dispose();
+  }
+}, 45_000);
+
+it("rule 9.6 never reminds Off or a device without game-alert consent", async () => {
+  const { herald, push, worker } = await createHarness("off", 1000);
+  const dueAt = remindSoon(herald);
+  await worker.runCron();
+  await pause(Math.max(0, dueAt + 1500 - Date.now()));
+  expect(push.received).toEqual([]);
+  await worker.dispose();
+  const other = await createHarness("important", 1000);
+  const otherDue = remindSoon(other.herald);
+  await other.worker.db.prepare('UPDATE "notification_push_subscriptions" SET "gameAlertsEnabledAt" = NULL').run();
+  await other.worker.runCron();
+  await pause(Math.max(0, otherDue + 1500 - Date.now()));
+  expect(other.push.received).toEqual([]);
+  await other.worker.dispose();
+}, 45_000);
+
+it("rule 9.6 drops a lost delivery rather than retrying after the hour", async () => {
+  const { herald, push, worker, start } = await createHarness("important", 1000);
+  const dueAt = remindSoon(herald);
+  push.status = 503;
+  await worker.runCron();
+  await waitUntil(() => push.received.length > 0, 15_000);
+  expect(push.received).toEqual([503]);
+  await worker.dispose();
+  await pause(Math.max(0, dueAt + 1500 - Date.now()));
+  const restarted = await start();
+  push.status = 201;
+  await restarted.runCron();
+  await pause(2000);
+  expect(push.received).toEqual([503]);
+  await restarted.dispose();
+}, 45_000);
