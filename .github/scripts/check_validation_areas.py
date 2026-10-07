@@ -2,8 +2,8 @@
 """Fails when a validation area's own files read a path the area does not cover, or a CI file has the wrong owner,
 naming each miss.
 
-A stream push or pull request runs only the areas its diff selects, so an area must cover every file its code and tests
-read: otherwise a change to that file skips the checks that read it and first shows on the integration branch. The
+A pull request runs only the areas its diff selects, so an area must cover every file its code and tests read:
+otherwise a change to that file skips the checks that read it and first shows on next. The
 reads found are relative module specifiers and relative path literals (fixtures opened with `new URL(..., import.meta
 .url)`), resolved from the file that names them.
 

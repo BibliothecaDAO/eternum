@@ -27,7 +27,7 @@ jobs:
       - name: Check for unused files, exports and types
         run: pnpm run knip
 
-      - name: Check the diff base keeps every unlanded commit in scope
+      - name: Check a pull request is measured from where it branched
         run: bash .github/scripts/diff-base.test.sh
 
       - name: Check that only a landing validation run validates a publish

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# A commit whose only green validation run was scoped (a stream-branch push) is refused; the same commit with a green
-# landing run on the integration branch is accepted. A commit whose run on next was cancelled by a newer merge is
-# refused with that reason and the run to re-run, never with a bare "no green run".
+# A commit whose only green validation run was scoped (a pull request, or a push to a branch other than next) is
+# refused; the same commit with a green landing run on next is accepted. A commit whose run on next was cancelled by a
+# newer merge is refused with that reason and the run to re-run, never with a bare "no green run".
 set -euo pipefail
 script=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/landing-run.sh
 work=$(mktemp -d)
@@ -27,10 +27,9 @@ chmod +x "$work/gh"
 check() { RUNS=$1 REPO=owner/repo SHA=abc PATH="$work:$PATH" bash "$script" > "$work/out" 2>&1; }
 
 fail() { echo "FAIL: $1" >&2; exit 1; }
-! check "push native-foo success 1" || fail "a scoped stream-branch run must not validate a publish"
-! check "pull_request native-foo success 2" || fail "a pull request run must not validate a publish"
-check "push native-world-foundation success 3" || fail "a green integration run must validate a publish"
-check "push next success 4" || fail "a green run on next must validate a publish"
+! check "pull_request feature success 1" || fail "a pull request run must not validate a publish"
+! check "push native-world-foundation success 2" || fail "a run on the retired integration branch must not validate"
+check "push next success 3" || fail "a green run on next must validate a publish"
 ! check "push next cancelled 42" || fail "a cancelled run on next must not validate a publish"
 { grep -q "cancelled" "$work/out" && grep -q "gh run rerun 42" "$work/out"; } ||
   fail "a commit whose run on next was superseded must say so and name the run to re-run: $(cat "$work/out")"
