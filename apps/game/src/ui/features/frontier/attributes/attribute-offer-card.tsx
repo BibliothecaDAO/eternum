@@ -19,7 +19,7 @@ export const AttributeOfferCard = ({
   return (
     <span className="flex w-full flex-col items-center gap-2 px-2 pb-3 pt-4">
       <img src={ATTRIBUTE_LOOK[attribute].glyph} alt="" className="size-12" />
-      <span className="frontier-title tabular-nums">{attributeGain(attribute, reached - level)}</span>
+      <span className="frontier-title tabular-nums">{attributeGain(attribute, level, reached)}</span>
       <span className="flex items-center gap-1" aria-hidden>
         {Array.from({ length: MAX_LEVEL + lost }, (_, index) => (
           <span

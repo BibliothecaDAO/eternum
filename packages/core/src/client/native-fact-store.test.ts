@@ -498,10 +498,10 @@ describe("declared fact absence", () => {
     ]);
     expect(resolveExplorerTroops(store, army)?.stamina).toEqual({ amount: 7n, updated_tick: 17n });
     expect(resolveExplorerTroops(store, army)?.staminaMax).toBe(
-      Number(preset.rules.troop_stamina_config.stamina_knight_max) + 60,
+      Number(preset.rules.troop_stamina_config.stamina_knight_max) + 50,
     );
-    // Battle 3 deals 20% more, in the basis points Combat and the forecast read.
-    expect(resolveExplorerTroops(store, army)?.boosts.incr_damage_dealt_percent_num).toBe(2_000);
+    // Rare Battle deals 30% more, in the basis points Combat and the forecast read; rare Logistics adds 50.
+    expect(resolveExplorerTroops(store, army)?.boosts.incr_damage_dealt_percent_num).toBe(3_000);
     store.applyFacts([set("0x70", "ArmySlot", { ...occupied, explorer_id: army.explorer_id + 1 })]);
     expect(() => resolveExplorerTroops(store, army)).toThrow("occupant mismatch");
     store.applyFacts([remove("0x70", "ArmySlot")]);

@@ -40,11 +40,12 @@ describe("an army's progress", () => {
 });
 
 describe("an attribute's gain", () => {
-  it("reads each attribute's rule, Support's production percent included", () => {
-    expect(attributeGain("Battle", 1)).toBe("+10%");
-    expect(attributeGain("Logistics", 2)).toBe("+60");
-    expect(attributeGain("Scouting", 1)).toBe("+1.5");
-    expect(attributeGain("Support", 2)).toBe("+20%");
+  it("reads each attribute's rule, the tiered ones by the step between two tiers", () => {
+    expect(attributeGain("Battle", 1, 2)).toBe("+10%");
+    expect(attributeGain("Battle", 3, 5)).toBe("+70%");
+    expect(attributeGain("Logistics", 1, 3)).toBe("+50");
+    expect(attributeGain("Scouting", 1, 2)).toBe("+1.5");
+    expect(attributeGain("Support", 1, 3)).toBe("+20%");
   });
 });
 

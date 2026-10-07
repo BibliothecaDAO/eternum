@@ -265,7 +265,7 @@ fn every_relic_quality_persists_its_attribute_amount_and_logistics_raises_only_t
             crate::stamina::StaminaImpl::max(
                 after.category, crate::troops::TroopTier::T1, preset.rules.troop_stamina_config,
             )
-                + Into::<u8, u64>::into(quality + 1) * crate::rules::ATTRIBUTE_STAMINA.into(),
+                + *array![20_u64, 50, 90, 150].at(quality.into()),
         );
         assert!(!execute_choice(d, key, pending));
     }
@@ -297,7 +297,7 @@ fn a_logistics_pick_raises_the_maximum_stamina_and_leaves_the_bar_where_it_was()
     let tick = 360 / preset.rules.tick_config.armies_tick_in_seconds;
     let base = crate::progression::stamina_max(crate::progression::initial(), crate::troops::TroopType::Knight, rules);
     // A full bar, then one that is not: the pick moves neither, only the room above them.
-    for (amount, logistics) in array![(base, 1_u8), (40, 2)] {
+    for (amount, logistics, step) in array![(base, 1_u8, 20_u64), (40, 2, 30)] {
         snforge_std::interact_with_state(
             d.games,
             || {
@@ -318,7 +318,7 @@ fn a_logistics_pick_raises_the_maximum_stamina_and_leaves_the_bar_where_it_was()
         assert_eq!(after.stamina.inline().amount, amount);
         assert_eq!(
             crate::progression::stamina_max(read_progress(d, key), crate::troops::TroopType::Knight, rules),
-            maximum + crate::rules::ATTRIBUTE_STAMINA.into(),
+            maximum + step,
         );
     }
 }
@@ -357,28 +357,34 @@ fn damage_at_battle(
 }
 
 #[test]
-fn battle_adds_ten_percent_damage_per_level_above_the_first() {
+fn battle_tiers_multiply_damage_by_the_ruled_table() {
     let d = super::registrar::setup();
     let (game_id, preset, category) = super::registrar::expedition_home(d);
     let (key, _) = super::registrar::expedition_armies(d, game_id, category);
     let common = damage_at_battle(d, key, 1, preset.rules);
-    let rare = damage_at_battle(d, key, 3, preset.rules);
-    let legendary = damage_at_battle(d, key, 5, preset.rules);
     assert!(common > 0);
-    // 1.2x and 1.4x, to Combat's rounding of losses to whole troops.
+    // Uncommon to legendary: x1.1, x1.3, x1.6, x2.0, to Combat's rounding of losses to whole troops.
     let troop = crate::rules::RESOURCE_PRECISION;
-    assert!(
-        rare * 10 >= common * 12 - 10 * troop && rare * 10 <= common * 12 + 10 * troop,
-        "Battle 3 deals {} against {}",
-        rare,
-        common,
-    );
-    assert!(
-        legendary * 10 >= common * 14 - 10 * troop && legendary * 10 <= common * 14 + 10 * troop,
-        "Battle 5 deals {} against {}",
-        legendary,
-        common,
-    );
+    for (tier, tenths) in array![(2_u8, 11_u128), (3, 13), (4, 16), (5, 20)] {
+        let dealt = damage_at_battle(d, key, tier, preset.rules);
+        assert!(
+            dealt * 10 >= common * tenths - 10 * troop && dealt * 10 <= common * tenths + 10 * troop,
+            "Battle tier {} deals {} against {}",
+            tier,
+            dealt,
+            common,
+        );
+    }
+}
+
+#[test]
+fn logistics_tiers_set_the_maximum_stamina_by_the_ruled_table() {
+    let (_, frontier) = super::preset_projection::current_definition("frontier");
+    let rules = frontier.rules.troop_stamina_config;
+    for (logistics, maximum) in array![(1_u8, 150_u64), (2, 170), (3, 200), (4, 240), (5, 300)] {
+        let progress = ArmyProgress { logistics, ..crate::progression::initial() };
+        assert_eq!(crate::progression::stamina_max(progress, crate::troops::TroopType::Knight, rules), maximum);
+    }
 }
 
 

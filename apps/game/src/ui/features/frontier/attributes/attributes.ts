@@ -1,3 +1,4 @@
+import { battleBonusBps, logisticsStamina } from "@bibliothecadao/eternum";
 import { nativeRuleConstants, type NativeRows } from "@bibliothecadao/eternum/game-client";
 
 /** An army's progress, its pending offer and the game's XP rules, exactly as the native store carries them. */
@@ -75,32 +76,28 @@ export const progressChange = (
 export const attributeBadgeTarget = (explorerId: number): string => `attributes-${explorerId}`;
 
 /**
- * Each attribute's glyph and what one level of it gives, as the contract's constants apply it: damage in percent,
- * stamina, camp and rift odds in points, and the home realm's production in percent for the day.
+ * Each attribute's glyph and what it gives at a tier, as the contract's constants apply it: damage in percent and
+ * stamina from their tier tables, camp and rift odds in points, and the home realm's production in percent for the day.
  */
-export const ATTRIBUTE_LOOK: Record<Attribute, { glyph: string; perLevel: { value: number; unit: "%" | "" } }> = {
-  Battle: {
-    glyph: "/images/frontier/attributes/battle.svg",
-    perLevel: { value: nativeRuleConstants.ATTRIBUTE_DAMAGE_PERCENT, unit: "%" },
-  },
-  Logistics: {
-    glyph: "/images/frontier/attributes/logistics.svg",
-    perLevel: { value: nativeRuleConstants.ATTRIBUTE_STAMINA, unit: "" },
-  },
+export const ATTRIBUTE_LOOK: Record<Attribute, { glyph: string; atTier: (tier: number) => number; unit: "%" | "" }> = {
+  Battle: { glyph: "/images/frontier/attributes/battle.svg", atTier: (tier) => battleBonusBps(tier) / 100, unit: "%" },
+  Logistics: { glyph: "/images/frontier/attributes/logistics.svg", atTier: logisticsStamina, unit: "" },
   Scouting: {
     glyph: "/images/frontier/attributes/scouting.svg",
-    perLevel: { value: nativeRuleConstants.ATTRIBUTE_SCOUTING_BPS / 100, unit: "" },
+    atTier: (tier) => ((tier - 1) * nativeRuleConstants.ATTRIBUTE_SCOUTING_BPS) / 100,
+    unit: "",
   },
   Support: {
     glyph: "/images/frontier/attributes/support.svg",
-    perLevel: { value: nativeRuleConstants.ATTRIBUTE_SUPPORT_PERCENT, unit: "%" },
+    atTier: (tier) => (tier - 1) * nativeRuleConstants.ATTRIBUTE_SUPPORT_PERCENT,
+    unit: "%",
   },
 };
 
 const gain = new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 });
 
-/** What taking `levels` more of an attribute gives, "+20%" or "+1.5". */
-export const attributeGain = (attribute: Attribute, levels: number): string => {
-  const { perLevel } = ATTRIBUTE_LOOK[attribute];
-  return `+${gain.format(levels * perLevel.value)}${perLevel.unit}`;
+/** What going from one tier of an attribute to another gives, "+20%" or "+1.5". */
+export const attributeGain = (attribute: Attribute, from: number, to: number): string => {
+  const { atTier, unit } = ATTRIBUTE_LOOK[attribute];
+  return `+${gain.format(atTier(to) - atTier(from))}${unit}`;
 };

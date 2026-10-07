@@ -266,10 +266,10 @@ pub mod RelicState {
             let mut battle_bonus_percent = 0;
             let stamina = match action {
                 ArmySlotAction::Resolve(timestamp) => {
-                    // The rule is a whole percent per level; Combat reads damage boosts in basis points.
-                    battle_bonus_percent = Into::<u8, u16>::into(crate::logic::progression::require(key).battle - 1)
-                        * crate::rules::ATTRIBUTE_DAMAGE_PERCENT.into()
-                        * crate::math::PercentageValueImpl::_1().try_into().unwrap();
+                    battle_bonus_percent =
+                        crate::rules::battle_bonus_bps(crate::logic::progression::require(key).battle)
+                        .try_into()
+                        .unwrap();
                     army_slot_storage::resolve(key, explorer, timestamp).troops.stamina
                 },
                 ArmySlotAction::Persist(stamina) => {

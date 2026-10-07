@@ -1,6 +1,6 @@
 import { TroopTier, TroopType, type Troops } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
-import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { battleBonusBps, logisticsStamina } from "../utils/attribute-tiers";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 
 /** One game's stamina rules, exactly as its SliceRules carries them. */
@@ -110,11 +110,10 @@ export function resolveExplorerTroops(
   return {
     ...explorer.troops,
     stamina: result.known.stamina,
-    staminaMax: base + (progress.logistics - 1) * nativeRuleConstants.ATTRIBUTE_STAMINA,
+    staminaMax: base + logisticsStamina(progress.logistics),
     boosts: {
       ...explorer.troops.boosts,
-      // The rule is a whole percent per level; Combat reads damage boosts in basis points.
-      incr_damage_dealt_percent_num: (progress.battle - 1) * nativeRuleConstants.ATTRIBUTE_DAMAGE_PERCENT * 100,
+      incr_damage_dealt_percent_num: battleBonusBps(progress.battle),
       incr_damage_dealt_end_tick: 0,
     },
   };

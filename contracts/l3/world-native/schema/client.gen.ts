@@ -1,11 +1,17 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "89ae3058803481cf8d766403189e1c7ead5586381db5b49e79109a6c9f89895b";
+export const nativeFactSchemaIdentity = "e62fc80cf301c140a7228fe690a9df51d14dc84a121c5e2a8b594b3f6a9b0ec8";
 export const nativeRuleConstants = {
   "ATTRIBUTE_CAP": 5,
-  "ATTRIBUTE_DAMAGE_PERCENT": 10,
   "ATTRIBUTE_SUPPORT_PERCENT": 10,
-  "ATTRIBUTE_STAMINA": 30,
   "ATTRIBUTE_SCOUTING_BPS": 150,
+  "BATTLE_UNCOMMON_BPS": 1000,
+  "BATTLE_RARE_BPS": 3000,
+  "BATTLE_EPIC_BPS": 6000,
+  "BATTLE_LEGENDARY_BPS": 10000,
+  "LOGISTICS_UNCOMMON_STAMINA": 20,
+  "LOGISTICS_RARE_STAMINA": 50,
+  "LOGISTICS_EPIC_STAMINA": 90,
+  "LOGISTICS_LEGENDARY_STAMINA": 150,
   "ENTRY_ENTITLEMENT": 0,
   "ENTRY_OPEN": 1,
   "ENTRY_ROSTER": 2,

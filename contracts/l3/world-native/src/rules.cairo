@@ -1,8 +1,41 @@
 pub const ATTRIBUTE_CAP: u8 = 5;
-pub const ATTRIBUTE_DAMAGE_PERCENT: u8 = 10;
 pub const ATTRIBUTE_SUPPORT_PERCENT: u8 = 10;
-pub const ATTRIBUTE_STAMINA: u8 = 30;
 pub const ATTRIBUTE_SCOUTING_BPS: u8 = 150;
+// Attribute tiers run common (1) to legendary (5); common gives nothing and the steps grow.
+pub const BATTLE_UNCOMMON_BPS: u32 = 1000;
+pub const BATTLE_RARE_BPS: u32 = 3000;
+pub const BATTLE_EPIC_BPS: u32 = 6000;
+pub const BATTLE_LEGENDARY_BPS: u32 = 10000;
+pub const LOGISTICS_UNCOMMON_STAMINA: u32 = 20;
+pub const LOGISTICS_RARE_STAMINA: u32 = 50;
+pub const LOGISTICS_EPIC_STAMINA: u32 = 90;
+pub const LOGISTICS_LEGENDARY_STAMINA: u32 = 150;
+
+/// Damage dealt above common at a Battle tier, in the basis points Combat reads.
+pub fn battle_bonus_bps(tier: u8) -> u32 {
+    match tier {
+        0 => panic!("invalid attribute tier"),
+        1 => 0,
+        2 => BATTLE_UNCOMMON_BPS,
+        3 => BATTLE_RARE_BPS,
+        4 => BATTLE_EPIC_BPS,
+        5 => BATTLE_LEGENDARY_BPS,
+        _ => panic!("invalid attribute tier"),
+    }
+}
+
+/// Maximum stamina above the troop's base at a Logistics tier.
+pub fn logistics_stamina(tier: u8) -> u32 {
+    match tier {
+        0 => panic!("invalid attribute tier"),
+        1 => 0,
+        2 => LOGISTICS_UNCOMMON_STAMINA,
+        3 => LOGISTICS_RARE_STAMINA,
+        4 => LOGISTICS_EPIC_STAMINA,
+        5 => LOGISTICS_LEGENDARY_STAMINA,
+        _ => panic!("invalid attribute tier"),
+    }
+}
 
 pub const RESOURCE_PRECISION: u128 = 1000000000;
 

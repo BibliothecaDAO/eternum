@@ -275,7 +275,7 @@ pub fn stamina_max(
     progress: ArmyProgress, category: crate::troops::TroopType, rules: crate::rules::TroopStaminaConfig,
 ) -> u64 {
     crate::stamina::StaminaImpl::max(category, crate::troops::TroopTier::T1, rules)
-        + Into::<u8, u64>::into(progress.logistics - 1) * crate::rules::ATTRIBUTE_STAMINA.into()
+        + crate::rules::logistics_stamina(progress.logistics).into()
 }
 
 pub fn relic_levels(quality: u8) -> u8 {
