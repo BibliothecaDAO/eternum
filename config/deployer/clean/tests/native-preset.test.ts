@@ -294,7 +294,7 @@ describe("native presets", () => {
 
     expect(laborPaid("madara.blitz", 2)).toEqual([]);
     expect(laborPaid("madara.blitz", 4)).toEqual([]);
-    expect(laborPaid("madara.frontier", FRONTIER_PRESET_ID)).toEqual([26, 27, 28, 29, 30, 31, 32, 33, 34]);
+    expect(laborPaid("madara.frontier", FRONTIER_PRESET_ID)).toEqual([26]);
     expect(laborPaid("madara.eternum", 3).length).toBeGreaterThan(0);
   });
 
@@ -372,17 +372,22 @@ describe("native presets", () => {
     expect(design.settlement.realms.starting_troops.every((troop) => troop.activeVariant() === "Knight")).toBe(true);
     for (const [resource, expected] of [
       [26, 100],
-      [27, 100],
-      [28, 100],
+      [27, 0],
+      [28, 0],
       [35, 300],
       [23, 100],
     ]) {
       expect(perHour(resource)).toBeCloseTo(expected, 5);
     }
-    for (const resource of [26, 27, 28]) {
+    for (const resource of [26]) {
       const production = design.resources.production.find(({ resource_type }) => resource_type === resource)!;
       expect(production.recipe.simple_inputs).toEqual([{ resource_type: 35, amount: 2_000_000_000n }]);
       expect(perHour(resource) * 2).toBeCloseTo(200, 5);
+    }
+    for (const resource of [27, 28, 29, 30, 31, 32, 33, 34]) {
+      const production = design.resources.production.find(({ resource_type }) => resource_type === resource)!;
+      expect(production.recipe.simple_inputs).toEqual([]);
+      expect(production.recipe.simple_output).toBe(0n);
     }
     // A Labor building a player builds costs 2 population; the castle the world places at founding costs none.
     expect(design.structures.buildings.find(({ category }) => category === 25)?.rule.population_cost).toBe(2);
