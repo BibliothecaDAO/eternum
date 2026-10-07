@@ -415,3 +415,16 @@ fn training_starts_only_later_armies_at_their_realms_tiers_and_full_at_their_log
             + crate::rules::logistics_stamina(2).into(),
     );
 }
+
+#[test]
+fn trained_scouting_carries_every_choice_from_the_lodge() {
+    let mut learned = 0;
+    for kind in array![crate::research::KIND_RIFTS, crate::research::KIND_CAMPS,
+        crate::research::KIND_STRAGGLERS, crate::research::KIND_RIFTS] {
+        learned = crate::research::learn(learned, crate::research::ROW_SCOUTS_LODGE, kind);
+    }
+    let progress = crate::progression::trained(learned);
+    assert_eq!(progress.scouting, 5);
+    assert_eq!(progress.scouting_kinds, 2 + 4 + 3 * 16 + 2 * 64);
+    assert_eq!(progress.xp, 0);
+}
