@@ -2392,7 +2392,10 @@ fn frontier_finds_at_most_one_ruin_a_day_and_holds_its_chest_against_the_budget(
         budget.price * crate::relics::tier_value(relics.chest_rules(game_id).unwrap().shares, chest.tier).into(),
     );
     assert_eq!((budget.open, budget.spent), (chest.amount, chest.amount));
-    let counter = crate::expeditions::ExpeditionDiscoveryKey { game_id, structure_id: army.owner, epoch: 3 };
+    let counter = crate::expeditions::ExpeditionDiscoveryKey {
+        game_id, structure_id: army.owner,
+        epoch: crate::days::day_of(context.game.unbox(), context.rules.unbox().day_unit_seconds, time).index,
+    };
     assert!(
         snforge_std::interact_with_state(d.games, || crate::logic::expeditions::discovery(counter).unwrap()).ruin_found,
     );
