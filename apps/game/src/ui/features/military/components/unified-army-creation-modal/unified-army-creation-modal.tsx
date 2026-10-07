@@ -155,6 +155,12 @@ export const UnifiedArmyCreationBody = ({
                 <p className="px-1 py-1 text-[11px] text-gold/70">{form.troopTrainingLine}</p>
               </>
             )}
+            {form.raiseCostLine && (
+              <>
+                <div className="border-t border-gold/15" />
+                <p className="px-1 py-1 text-[11px] text-gold/70">{form.raiseCostLine}</p>
+              </>
+            )}
             {mode.ui.musterNotice && (
               <>
                 <div className="border-t border-gold/15" />

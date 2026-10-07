@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  describeTroopRaiseCost,
   describeTroopTraining,
   resolveArmyCreationBlockedReason,
   resolveArmyTroopAvailability,
@@ -22,6 +23,7 @@ const ready = {
   capacityRemaining: 3000,
   available: 5000,
   troopCount: 1000,
+  canPayRaise: true,
   isLoading: false,
   supply: noBarracks,
 };
@@ -55,6 +57,7 @@ describe("army deployment blocked states", () => {
     [{ available: 0 }, "No Knight T1 troops. A Knight T1 barracks on the realm board trains them."],
     [{ available: 999 }, "Not enough of this troop."],
     [{ troopCount: 0 }, "Choose a troop count."],
+    [{ canPayRaise: false }, "Realm cannot pay to raise troops."],
     [{ isLoading: true }, "Deploying army."],
   ])("explains %j inline", (changes, reason) => {
     expect(resolveArmyCreationBlockedReason({ ...ready, ...changes })).toBe(reason);
@@ -68,6 +71,16 @@ describe("army deployment blocked states", () => {
         hasFreeDirection: false,
       }),
     ).toBeNull();
+  });
+});
+
+describe("troop raise cost", () => {
+  it("names what deploying costs beyond the troops, and nothing where it costs nothing", () => {
+    expect(describeTroopRaiseCost([{ resource: 35, amount: 20_000_000_000n, held: 0n }])).toBe(
+      "Deploying costs 20 wheat.",
+    );
+    expect(describeTroopRaiseCost([])).toBeNull();
+    expect(describeTroopRaiseCost(undefined)).toBeNull();
   });
 });
 

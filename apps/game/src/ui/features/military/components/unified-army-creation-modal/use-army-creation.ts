@@ -7,6 +7,7 @@ import {
 import { useWorldSpatialTiles } from "@/hooks/use-world-spatial-tiles";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import {
+  canPayTroopRaise,
   configManager,
   divideByPrecision,
   formatTime,
@@ -15,6 +16,7 @@ import {
   getGuardsByStructure,
   getTroopResourceId,
   liveHomeArmies,
+  readTroopRaiseCost,
   ResourceManager,
   structureMapPosition,
   openSpawnDirections,
@@ -50,6 +52,7 @@ import { requireActiveGameClient } from "@/sync/active-game-client";
 
 import { useBlitzRealmProvision } from "@/ui/modules/entity-details/hooks/use-blitz-realm-provision";
 import {
+  describeTroopRaiseCost,
   describeTroopTraining,
   resolveArmyCreationBlockedReason,
   resolveArmyTroopAvailability,
@@ -411,6 +414,18 @@ export const useArmyCreation = ({
       ),
     [store, activeStructureId, selectedTroopCombo, selectedAvailable, troopCapacityLimit, revision, currentDefaultTick],
   );
+  const raiseCost = useMemo(
+    () =>
+      readTroopRaiseCost(
+        store,
+        configManager.getActiveGameId(),
+        activeStructureId,
+        getTroopResourceId(selectedTroopCombo.type, selectedTroopCombo.tier),
+        troopCount,
+        currentDefaultTick,
+      ),
+    [store, activeStructureId, selectedTroopCombo, troopCount, currentDefaultTick, revision],
+  );
   const troopAvailabilityReason = resolveTroopAvailabilityReason({
     capacityRemaining: capacityRemainingForSelector,
     available: selectedAvailable,
@@ -455,6 +470,7 @@ export const useArmyCreation = ({
     available: selectedAvailable,
     supply: troopSupply,
     troopCount,
+    canPayRaise: canPayTroopRaise(raiseCost),
     isLoading,
   });
   const isActionDisabled = blockedReason !== null;
@@ -535,6 +551,7 @@ export const useArmyCreation = ({
     submitBlockedReason,
     // With no troop on hand the availability reason already carries the training line.
     troopTrainingLine: troopAvailabilityReason ? null : describeTroopTraining(troopSupply),
+    raiseCostLine: describeTroopRaiseCost(raiseCost),
   };
 };
 
