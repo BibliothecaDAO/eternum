@@ -1,15 +1,25 @@
 # Only application routes use the SPA shell. Missing assets must remain 404s.
+# src/app-hosting.test.ts holds this list to exactly the router's routes in src/app.tsx.
 /play / 200
 /results / 200
 /account / 200
+/sign-in / 200
 /learn / 200
 /news / 200
 /scroll / 200
+/scroll/:slug / 200
 /terms / 200
 /privacy / 200
 /factory / 200
-/p/* / 200
-/scroll/* / 200
-/g/* / 200
+/p/:address / 200
+/g/:chain/:game / 200
+/g/:chain/:game/* / 200
+/lab / 200
 /lab/* / 200
-/debug/* / 200
+/debug/three-chunks / 200
+/debug/procedural-characters / 200
+/debug/procedural-character-benchmark / 200
+/debug/procedural-world-gym / 200
+/debug/terrain-props / 200
+/debug/procedural-terrain-benchmark / 200
+/debug/world-fx / 200

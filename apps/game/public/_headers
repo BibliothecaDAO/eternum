@@ -11,9 +11,13 @@
   Cache-Control: no-cache
 /account
   Cache-Control: no-cache
+/sign-in
+  Cache-Control: no-cache
 /p/*
   Cache-Control: no-cache
 /g/*
+  Cache-Control: no-cache
+/lab
   Cache-Control: no-cache
 /lab/*
   Cache-Control: no-cache
