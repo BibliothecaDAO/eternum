@@ -62,13 +62,14 @@ fn hyperstructure_weight(config: MapConfig, distance: u128, hyperstructures: u32
     weighted - core::cmp::min(weighted, penalty)
 }
 
-// Scouting may raise camps and rifts by up to 600 points each, so the table keeps 1200 of its 10000 in reserve.
+// All Scouting tiers on one kind double its base rate: reserve the largest increase among the three kinds.
 pub fn validate_frontier(rules: crate::expeditions::FrontierDiscoveryRules) {
     // The floor must find something on a day whose ruin is already taken.
     let guarded: u32 = Into::<u16, u32>::into(rules.stragglers_bps) + rules.camp_bps.into() + rules.rift_bps.into();
     assert!(guarded != 0 && rules.empty_reveal_limit != 0, "empty discovery floor");
+    let reserve: u32 = core::cmp::max(rules.stragglers_bps, core::cmp::max(rules.camp_bps, rules.rift_bps)).into();
     assert!(
-        guarded + rules.ruin_bps.into() + 1200 + rules.shrine_bps.into() + rules.well_bps.into() <= 10000,
+        guarded + rules.ruin_bps.into() + reserve + rules.shrine_bps.into() + rules.well_bps.into() <= 10000,
         "discovery odds exceed 100 percent",
     );
 }
@@ -78,21 +79,24 @@ pub fn validate_frontier(rules: crate::expeditions::FrontierDiscoveryRules) {
 // day is free and its chest fits the LORDS budget, fixed before the draw.
 pub fn frontier(
     rules: crate::expeditions::FrontierDiscoveryRules,
-    scouting: u8,
+    camp_bonus_bps: u32,
+    rift_bonus_bps: u32,
+    stragglers_bonus_bps: u32,
     empty_reveals: u8,
     ruin: Option<crate::relics::SiteChest>,
     seed: u256,
     timestamp: u64,
 ) -> Discovery {
-    assert!(scouting >= 1 && scouting <= 5, "invalid Scouting level");
-    let bonus: u128 = Into::<u8, u128>::into(scouting - 1) * 150;
+    let camp = Into::<u16, u128>::into(rules.camp_bps) * (10000 + camp_bonus_bps.into()) / 10000;
+    let rift = Into::<u16, u128>::into(rules.rift_bps) * (10000 + rift_bonus_bps.into()) / 10000;
+    let stragglers = Into::<u16, u128>::into(rules.stragglers_bps) * (10000 + stragglers_bonus_bps.into()) / 10000;
     let (chest, ruin_weight): (crate::relics::SiteChest, u128) = match ruin {
         Some(chest) => (chest, rules.ruin_bps.into()),
         None => (crate::relics::SiteChest { tier: 0, amount: 0 }, 0),
     };
     let kinds = array![
-        (Discovery::Stragglers, rules.stragglers_bps.into()), (Discovery::Camp, rules.camp_bps.into() + bonus),
-        (Discovery::Rift, rules.rift_bps.into() + bonus), (Discovery::Ruin(chest), ruin_weight),
+        (Discovery::Stragglers, stragglers), (Discovery::Camp, camp),
+        (Discovery::Rift, rift), (Discovery::Ruin(chest), ruin_weight),
         (Discovery::Shrine, rules.shrine_bps.into()), (Discovery::Well, rules.well_bps.into()),
     ];
     let mut total: u128 = 0;

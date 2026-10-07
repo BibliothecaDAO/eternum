@@ -533,8 +533,8 @@ function buildDiscovery(preset: ReturnType<typeof nativePresetForId>) {
       rules.ruinBps +
       rules.shrineBps +
       rules.wellBps +
-      // Every Scouting tier on one kind doubles it: the larger of camp and rift is the most Scouting adds.
-      Math.max(rules.campBps, rules.riftBps) >
+      // Every Scouting tier on one kind doubles it: the largest of the three kinds is the most Scouting adds.
+      Math.max(rules.stragglersBps, rules.campBps, rules.riftBps) >
       10000
   )
     throw new Error("Invalid categorical discovery rules");

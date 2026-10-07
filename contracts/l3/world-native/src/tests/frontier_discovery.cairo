@@ -32,7 +32,7 @@ fn frontier_draws_the_ruled_odds_over_100k_reveals() {
     );
     let mut counts: Felt252Dict<u32> = Default::default();
     for timestamp in 0_u64..100000 {
-        let key = bucket(frontier(preset, 1, 0, Some(CHEST), 0x46524f4e54494552, timestamp));
+        let key = bucket(frontier(preset, 0, 0, 0, 0, Some(CHEST), 0x46524f4e54494552, timestamp));
         let count = counts.get(key);
         counts.insert(key, count + 1);
     }
@@ -45,11 +45,11 @@ fn frontier_draws_the_ruled_odds_over_100k_reveals() {
 }
 
 #[test]
-fn scouting_raises_camps_and_rifts_and_leaves_the_rest() {
+fn scouting_raises_its_chosen_kind_without_changing_stragglers() {
     let rules = rules();
     for timestamp in 0_u64..20000 {
-        let base = frontier(rules, 1, 0, Some(CHEST), 0x53434f5554, timestamp);
-        let boosted = frontier(rules, 5, 0, Some(CHEST), 0x53434f5554, timestamp);
+        let base = frontier(rules, 0, 0, 0, 0, Some(CHEST), 0x53434f5554, timestamp);
+        let boosted = frontier(rules, 0, 10000, 0, 0, Some(CHEST), 0x53434f5554, timestamp);
         // The table is ordered stragglers first, so Scouting never moves a straggler draw.
         assert_eq!(base == Discovery::Stragglers, boosted == Discovery::Stragglers);
     }
@@ -61,8 +61,8 @@ fn a_day_without_a_chest_never_draws_a_ruin_and_its_share_stays_empty() {
     let mut empties_free = 0_u32;
     let mut empties_taken = 0_u32;
     for timestamp in 0_u64..20000 {
-        let free = frontier(rules, 1, 0, Some(CHEST), 0x5255494e, timestamp);
-        let taken = frontier(rules, 1, 0, None, 0x5255494e, timestamp);
+        let free = frontier(rules, 0, 0, 0, 0, Some(CHEST), 0x5255494e, timestamp);
+        let taken = frontier(rules, 0, 0, 0, 0, None, 0x5255494e, timestamp);
         assert!(bucket(taken) != 3);
         if free == Discovery::Ruin(CHEST) {
             assert_eq!(taken, Discovery::None);
@@ -85,7 +85,7 @@ fn the_floor_draws_only_kinds_still_allowed() {
     let locked = rules();
     let mut empty = 0_u8;
     for timestamp in 0_u64..20000 {
-        let session = frontier(locked, 1, empty, None, 0x464c4f4f52, timestamp);
+        let session = frontier(locked, 0, 0, 0, empty, None, 0x464c4f4f52, timestamp);
         if empty == 7 {
             assert!(
                 session == Discovery::Camp || session == Discovery::Rift || session == Discovery::Stragglers,
@@ -97,7 +97,7 @@ fn the_floor_draws_only_kinds_still_allowed() {
         } else {
             0
         };
-        let floored = frontier(unlocked, 1, 7, Some(CHEST), 0x464c4f4f52, timestamp);
+        let floored = frontier(unlocked, 0, 0, 0, 7, Some(CHEST), 0x464c4f4f52, timestamp);
         assert!(floored != Discovery::None);
     }
 }
@@ -127,11 +127,23 @@ fn shrine_and_well_appear_only_once_researched() {
     let unlocked = super::preset_projection::frontier_discovery_rules();
     let locked = rules();
     for timestamp in 0_u64..20000 {
-        let without = frontier(locked, 1, 0, Some(CHEST), 0x5349544553, timestamp);
+        let without = frontier(locked, 0, 0, 0, 0, Some(CHEST), 0x5349544553, timestamp);
         assert!(without != Discovery::Shrine && without != Discovery::Well);
-        let draw = frontier(unlocked, 1, 0, Some(CHEST), 0x5349544553, timestamp);
+        let draw = frontier(unlocked, 0, 0, 0, 0, Some(CHEST), 0x5349544553, timestamp);
         if draw != Discovery::Shrine && draw != Discovery::Well {
             assert_eq!(draw, without);
         }
     }
+}
+
+#[test]
+fn every_scouting_tier_on_stragglers_doubles_only_their_rate() {
+    let rules = rules();
+    let mut found = 0_u32;
+    for timestamp in 0_u64..100000 {
+        if frontier(rules, 0, 0, 10000, 0, Some(CHEST), 0x5354524147474c455253, timestamp) == Discovery::Stragglers {
+            found += 1;
+        }
+    }
+    assert!(found >= 11800 && found <= 12200);
 }

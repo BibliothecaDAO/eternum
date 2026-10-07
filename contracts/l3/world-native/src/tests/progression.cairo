@@ -34,24 +34,26 @@ fn each_tier_costs_its_price_and_a_legendary_attribute_cannot_be_bought_further(
 #[test]
 fn each_scouting_tier_raises_the_kind_chosen_for_it_by_its_relative_increment() {
     let mut progress = ArmyProgress { xp: 1500, ..crate::progression::initial() };
-    assert_eq!(crate::progression::scouting_bonus(progress), (0, 0));
+    assert_eq!(crate::progression::scouting_bonus(progress), (0, 0, 0));
     for kind in array![ScoutingKind::Rift, ScoutingKind::Camp, ScoutingKind::Rift, ScoutingKind::Rift] {
         crate::progression::buy_tier(ref progress, rules(), scout(kind));
     }
     // Uncommon, epic and legendary on rifts (+10%, +30%, +40%); rare on camps (+20%).
-    assert_eq!(crate::progression::scouting_bonus(progress), (2000, 8000));
+    assert_eq!(crate::progression::scouting_bonus(progress), (2000, 8000, 0));
     let mut all_rifts = ArmyProgress { xp: 1500, ..crate::progression::initial() };
     for _ in 0_u8..4 {
         crate::progression::buy_tier(ref all_rifts, rules(), scout(ScoutingKind::Rift));
     }
-    assert_eq!(crate::progression::scouting_bonus(all_rifts), (0, 10000));
+    assert_eq!(crate::progression::scouting_bonus(all_rifts), (0, 10000, 0));
 }
 
 #[test]
-#[should_panic(expected: "stragglers are not on the map yet")]
-fn a_scouting_tier_cannot_raise_stragglers_until_they_exist() {
-    let mut progress = ArmyProgress { xp: 100, ..crate::progression::initial() };
-    crate::progression::buy_tier(ref progress, rules(), scout(ScoutingKind::Stragglers));
+fn every_scouting_tier_may_raise_stragglers_once_they_exist() {
+    let mut progress = ArmyProgress { xp: 1500, ..crate::progression::initial() };
+    for _ in 0_u8..4 {
+        crate::progression::buy_tier(ref progress, rules(), scout(ScoutingKind::Stragglers));
+    }
+    assert_eq!(crate::progression::scouting_bonus(progress), (0, 0, 10000));
 }
 
 #[test]
