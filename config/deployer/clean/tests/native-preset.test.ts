@@ -372,18 +372,18 @@ describe("native presets", () => {
     ]);
     expect(design.settlement.realms.starting_troops.every((troop) => troop.activeVariant() === "Knight")).toBe(true);
     for (const [resource, expected] of [
-      [26, 100],
+      [26, 100.8],
       [27, 0],
       [28, 0],
-      [35, 300],
-      [23, 100],
+      [35, 302.4],
+      [23, 100.8],
     ]) {
       expect(perHour(resource)).toBeCloseTo(expected, 5);
     }
     for (const resource of [26]) {
       const production = design.resources.production.find(({ resource_type }) => resource_type === resource)!;
       expect(production.recipe.simple_inputs).toEqual([{ resource_type: 35, amount: 2_000_000_000n }]);
-      expect(perHour(resource) * 2).toBeCloseTo(200, 5);
+      expect(perHour(resource) * 2).toBeCloseTo(201.6, 5);
     }
     for (const resource of [27, 28, 29, 30, 31, 32, 33, 34]) {
       const production = design.resources.production.find(({ resource_type }) => resource_type === resource)!;

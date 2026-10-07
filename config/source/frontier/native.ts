@@ -68,7 +68,7 @@ export const frontierPreset: NativePreset = {
   epochSeconds: 86400,
   board: {
     demolitionRefundBps: 5000,
-    workshopRate: 200 / 3600,
+    workshopRate: 0.056,
     outputStepBps: 2500,
     storageStepBps: 5000,
     populationStepBps: 2500,

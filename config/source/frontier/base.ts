@@ -22,9 +22,9 @@ const populationCosts: Record<number, number> = {
 };
 // One troop type: Barracks make Knight T1 (resource 26) and nothing else.
 const rates: Record<number, number> = {
-  23: 100 / 3600,
-  26: 100 / 3600,
-  35: 300 / 3600,
+  23: 0.028,
+  26: 0.028,
+  35: 0.084,
 };
 const buildingCosts = Object.fromEntries(
   buildingIds.map((id) => [id, laborCosts[id] === undefined ? [] : [{ resource: 23, amount: laborCosts[id] }]]),

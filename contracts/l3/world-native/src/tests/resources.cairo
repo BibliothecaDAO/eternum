@@ -296,9 +296,9 @@ fn inactive_resources_have_no_clock_and_activation_starts_at_the_recorded_time()
 
 #[test]
 fn whole_ticks_pay_exactly_however_often_production_settles() {
-    // A farm's 300 wheat an hour on Frontier's two-minute tick: ten wheat a tick, less the per-second rate's rounding.
+    // The exact Frontier farm rate pays 10.08 wheat per two-minute tick.
     let tick_seconds = 120_u32;
-    let rate = 83333333_u64;
+    let rate = 84000000_u64;
     let mut production = Production {
         building_count: 1, production_rate: rate, output_amount_left: 0, last_settled_tick: 0,
     };
@@ -315,5 +315,28 @@ fn whole_ticks_pay_exactly_however_often_production_settles() {
         // Every ended tick is paid in full, and nothing of the tick in progress is paid early.
         let ended: u128 = (now / tick_seconds).into();
         assert_eq!(balance, ended * Into::<u64, u128>::into(rate) * Into::<u32, u128>::into(tick_seconds));
+    }
+}
+
+#[test]
+fn frontier_rates_pay_exactly_for_ten_thousand_ticks_at_every_output_tier() {
+    for (resource, rate, base_cents) in array![
+        (crate::resources::WHEAT, 84_000_000_u64, 1008_u128),
+        (crate::resources::LABOR, 56_000_000, 672),
+        (26, 28_000_000, 336),
+        (crate::resources::LABOR, 28_000_000, 336),
+    ] {
+        for picks in 0_u128..5 {
+            let tier_rate = Into::<u64, u128>::into(rate) * (10000 + picks * 2500) / 10000;
+            let mut production = Production {
+                building_count: 1, production_rate: tier_rate.try_into().unwrap(),
+                output_amount_left: crate::resources::UNLIMITED_OUTPUT, last_settled_tick: 0,
+            };
+            let mut balance = 0;
+            let mut weight = Weight { capacity: core::num::traits::Bounded::MAX, weight: 0 };
+            crate::resources::settle(resource, ref balance, ref production, ref weight, 0, None, 10000, 120);
+            let cents = base_cents * (4 + picks) / 4;
+            assert_eq!(balance, cents * crate::rules::RESOURCE_PRECISION / 100 * 10000);
+        }
     }
 }
