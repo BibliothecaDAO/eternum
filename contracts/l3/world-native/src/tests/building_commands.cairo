@@ -234,7 +234,7 @@ fn storehouse_capacity_is_retained_while_paused_and_cannot_be_removed_while_need
         selector!("resources"),
         selector!("weights"),
         array![3, home.entity_id.into()].span(),
-        crate::resources::Weight { capacity: 100, weight: 0 },
+        crate::resources::Weight { capacity: 100, weight: 100 },
     );
     assert!(execute(deployment, create(home, 2), 40));
     assert_eq!(resources.resource_weight(home).capacity, 100 + crate::rules::RESOURCE_PRECISION);
