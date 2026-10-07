@@ -120,8 +120,9 @@ fn a_marker_already_worn_by_a_running_game_still_never_runs_out_or_wears_further
 fn a_limited_producer_still_counts_down_to_nothing() {
     // The fixture realm's producer makes two of resource 1 a second from time 30, a hundred in all.
     let (deployment, home, _) = super::resource_commands::setup();
-    assert_eq!(settle(deployment, home, 1, 40).output_amount_left, 80);
-    assert_eq!(settle(deployment, home, 1, 60).output_amount_left, 40);
+    assert_eq!(settle(deployment, home, 1, 40).output_amount_left, 100);
+    assert_eq!(settle(deployment, home, 1, 59).output_amount_left, 100);
+    assert_eq!(settle(deployment, home, 1, 60).output_amount_left, 0);
     assert_eq!(settle(deployment, home, 1, 200).output_amount_left, 0);
     assert_eq!(resources(deployment).resource_balance(slot(home, 1)), 200);
 }

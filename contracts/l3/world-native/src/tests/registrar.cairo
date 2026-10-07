@@ -622,7 +622,12 @@ fn automatic_blitz_settlement_is_open_atomic_and_resumes_its_fixed_order() {
             1002,
             crate::commands::resource_context(super::context(d.games, game_id)),
         );
-    assert_eq!(resources.resource_balance(slot), balance + 10 - 1, "production did not start with the game");
+    assert_eq!(resources.resource_balance(slot), balance - 1, "production paid before the first pulse");
+    resources.spend_resource(
+        ResourceKey { game_id, entity_id }, 23, 0, 1020,
+        crate::commands::resource_context(super::context(d.games, game_id)),
+    );
+    assert_eq!(resources.resource_balance(slot), balance + 60 * 10 - 1, "first production pulse missing");
     stop_cheat_caller_address(d.games);
     let progress = views.settlement_progress(game_id);
     assert!(

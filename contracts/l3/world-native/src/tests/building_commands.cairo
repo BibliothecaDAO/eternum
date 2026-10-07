@@ -202,7 +202,7 @@ fn delayed_building_actions_use_recorded_time_after_the_game_ends() {
     let slot = ResourceSlot { game_id: 3, entity_id: home.entity_id, resource_type: 35 };
     assert!(execute_recorded_at(deployment, create(home, 37), 40, 1000));
     assert!(execute_recorded_at(deployment, Command::PauseBuildingProduction(change(home)), 70, 1001));
-    assert_eq!(resources.resource_balance(slot), 60);
+    assert_eq!(resources.resource_balance(slot), 120);
     assert_eq!(resources.resource_production(slot).building_count, 0);
 }
 
