@@ -192,9 +192,10 @@ export const frontierPreset: NativePreset = {
       revealPercent: 25,
       guardLower: 20000,
       guardUpper: 30000,
-      fallenGuardLower: 4500,
-      fallenGuardUpper: 6500,
-      guardStep: 100,
+      // The ruin beasts grow x1.3 for +100% Battle; a step of 50 keeps both ends exact.
+      fallenGuardLower: 5850,
+      fallenGuardUpper: 8450,
+      guardStep: 50,
       fallenGuardTier: "T3",
       revealSiteNeighbors: false,
       entryStamina: 50,
