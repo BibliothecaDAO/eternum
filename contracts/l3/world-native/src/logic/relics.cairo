@@ -413,8 +413,7 @@ pub mod RelicState {
                 .stamina
                 .add(
                     ref explorer.troops.boosts,
-                    explorer.troops.category,
-                    explorer.troops.tier,
+                    crate::logic::progression::own_stamina_max(key, explorer.troops, rules.troop_stamina_config),
                     rules.troop_stamina_config,
                     refund.into(),
                     context.timestamp / rules.tick_config.armies_tick_in_seconds,

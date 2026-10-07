@@ -579,15 +579,12 @@ describe("declared fact absence", () => {
 
     const rules = store.get("SliceRules", { game_id: 1 })!.troop_stamina_config;
     const knight = { category: "Knight", tier: "T1" } as const;
-    const { staminaInitial, staminaMax } = troopStaminaLimits(rules, knight.category, knight.tier);
+    const { staminaMax } = troopStaminaLimits(rules, knight.category, knight.tier);
     expect(musterStamina(open[0], knight, 12, rules)).toEqual({
       amount: Math.min(4 + 2 * Number(rules.stamina_gain_per_tick), staminaMax),
       max: staminaMax,
     });
-    expect(musterStamina(open[1], knight, 12, rules)).toEqual({
-      amount: Math.min(staminaInitial, staminaMax),
-      max: staminaMax,
-    });
+    expect(musterStamina(open[1], knight, 12, rules)).toEqual({ amount: staminaMax, max: staminaMax });
 
     store.setSnapshot({ gameId: 1, complete: false, actor: "0x111", timestamp: 350 });
     expect(openArmySlots(store, home)).toBeUndefined();
@@ -646,7 +643,7 @@ describe("declared fact absence", () => {
     day(400);
     const nextDay = openArmySlots(store, home)![0];
     expect(nextDay).toEqual({ slot: 0, inherited: null });
-    expect(musterStamina(nextDay, knight, 40, rules).amount).toBe(Number(rules.stamina_initial));
+    expect(musterStamina(nextDay, knight, 40, rules).amount).toBe(troopStaminaLimits(rules, "Knight", "T1").staminaMax);
   });
   it("keeps incomplete scope invariants out of synchronous listeners", () => {
     const store = new NativeFactStore();

@@ -2550,7 +2550,15 @@ fn expedition_slot_reuse_preserves_its_bar_and_midnight_allocates_a_fresh_bar() 
     assert!(execute_in_game(d, game_id, muster_command(category, 0), 400, 400));
     let next = read_slot(crate::troops::ArmySlotKey { epoch: 4, ..slot_key }).unwrap();
     assert!(next.explorer_id != replacement && next.explorer_id != 0);
-    assert_eq!(next.stamina.amount, preset.rules.troop_stamina_config.stamina_initial.into());
+    // The next day's first army starts full at its own maximum, not at the configured initial bar.
+    let fresh = troops.explorer(ExplorerKey { game_id, explorer_id: next.explorer_id }).unwrap().troops;
+    assert_eq!(
+        next.stamina.amount,
+        crate::progression::stamina_max(
+            crate::progression::initial(), fresh.category, preset.rules.troop_stamina_config,
+        ),
+    );
+    assert!(next.stamina.amount > preset.rules.troop_stamina_config.stamina_initial.into());
     assert_eq!(read_slot(slot_key).unwrap().stamina.amount, 7);
     assert_eq!(read_slot(slot_key).unwrap().explorer_id, 0);
     assert!(troops.explorer(ExplorerKey { game_id, explorer_id: replacement }).is_none());

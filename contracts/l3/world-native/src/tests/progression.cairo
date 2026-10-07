@@ -261,6 +261,47 @@ fn logistics_tiers_set_the_maximum_stamina_by_the_ruled_table() {
 
 
 #[test]
+fn added_stamina_stops_at_the_armys_own_maximum() {
+    use crate::stamina::StaminaTrait;
+    let (_, frontier) = super::preset_projection::current_definition("frontier");
+    let rules = frontier.rules.troop_stamina_config;
+    let maximum = crate::progression::stamina_max(
+        ArmyProgress { logistics: 3, ..crate::progression::initial() }, crate::troops::TroopType::Knight, rules,
+    );
+    assert_eq!(maximum, 200);
+    let mut boosts: crate::troops::TroopBoosts = Default::default();
+    // Past the troop's base of 150, up to the army's own 200, and never beyond it.
+    let mut bar = crate::troops::Stamina { amount: 140, updated_tick: 5 };
+    bar.add(ref boosts, maximum, rules, 25, 5);
+    assert_eq!(bar.amount, 165);
+    bar.add(ref boosts, maximum, rules, 50, 5);
+    assert_eq!(bar.amount, 200);
+}
+
+#[test]
+fn an_armys_own_maximum_reads_its_logistics_tier_and_a_troops_without_progress() {
+    let d = super::registrar::setup();
+    let (game_id, preset, category) = super::registrar::expedition_home(d);
+    let (key, _) = super::registrar::expedition_armies(d, game_id, category);
+    let rules = preset.rules.troop_stamina_config;
+    write_progress(d, key, ArmyProgress { logistics: 3, ..crate::progression::initial() });
+    let (troops, own, other) = snforge_std::interact_with_state(
+        d.games,
+        || {
+            let troops = crate::logic::troops::explorer(key).unwrap().troops;
+            let other = crate::troops::ExplorerKey { game_id, explorer_id: 9999 };
+            (
+                troops,
+                crate::logic::progression::own_stamina_max(key, troops, rules),
+                crate::logic::progression::own_stamina_max(other, troops, rules),
+            )
+        },
+    );
+    assert_eq!(own, crate::stamina::StaminaImpl::max(troops.category, crate::troops::TroopTier::T1, rules) + 50);
+    assert_eq!(other, crate::stamina::StaminaImpl::max(troops.category, troops.tier, rules));
+}
+
+#[test]
 fn homecoming_returns_each_expired_armys_own_share_of_its_survivors() {
     let d = super::registrar::setup();
     let (game_id, _, category) = super::registrar::expedition_home(d);

@@ -746,6 +746,11 @@ pub mod TroopsLogic {
             );
             let mut troops = initial_troops(category, tier, command.amount, rules, context.timestamp);
             if rules.epoch_seconds != 0 {
+                // A slot's first army of the day starts full at its own maximum, read from the progress it is
+                // created with; a slot an army already used keeps the bar that army left.
+                let maximum = crate::progression::stamina_max(
+                    crate::progression::initial(), category, rules.troop_stamina_config,
+                );
                 troops
                     .stamina =
                         crate::logic::army_slots::allocate(
@@ -753,8 +758,8 @@ pub mod TroopsLogic {
                             command.structure_id,
                             crate::expeditions::absolute_epoch(rules.epoch_seconds, context.timestamp),
                             home.base.troop_max_explorer_count.try_into().expect('invalid slot allowance'),
-                            troops.stamina.inline(),
-                            crate::stamina::StaminaImpl::max(category, TroopTier::T1, rules.troop_stamina_config),
+                            crate::troops::Stamina { amount: maximum, ..troops.stamina.inline() },
+                            maximum,
                         );
             }
             crate::logic::map::MapState::occupy(

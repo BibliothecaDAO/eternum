@@ -158,9 +158,9 @@ export function musterStamina(
   currentArmiesTick: number,
   rules: TroopStaminaRules,
 ): { amount: number; max: number } {
-  // A new slot occupant starts at Logistics 1, regardless of its troop tier.
-  const { staminaInitial, staminaMax } = troopStaminaLimits(rules, troop.category, TroopTier.T1);
-  if (!slot.inherited) return { amount: Math.min(staminaInitial, staminaMax), max: staminaMax };
+  // A new slot occupant starts at Logistics 1, regardless of its troop tier; a slot's first army of the day starts full.
+  const { staminaMax } = troopStaminaLimits(rules, troop.category, TroopTier.T1);
+  if (!slot.inherited) return { amount: staminaMax, max: staminaMax };
   const newArmy: Troops = {
     ...troop,
     count: 0n,

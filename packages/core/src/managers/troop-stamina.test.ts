@@ -47,10 +47,10 @@ describe("stamina under one game's rules", () => {
     expect(fullAtTick(troops, 10, rules)).toBe(12);
   });
 
-  it("musters every troop tier at Logistics 1 and clamps a former occupant's larger bar before refill", () => {
+  it("musters every troop tier full at Logistics 1 and clamps a former occupant's larger bar before refill", () => {
     for (const tier of [TroopTier.T1, TroopTier.T2, TroopTier.T3]) {
       const troop = { category: TroopType.Knight, tier };
-      expect(musterStamina({ slot: 0, inherited: null }, troop, 10, rules)).toEqual({ amount: 35, max: 120 });
+      expect(musterStamina({ slot: 0, inherited: null }, troop, 10, rules)).toEqual({ amount: 120, max: 120 });
       const inherited = { amount: 180n, updated_tick: 10n };
       expect(musterStamina({ slot: 0, inherited }, troop, 10, rules)).toEqual({ amount: 120, max: 120 });
       expect(musterStamina({ slot: 0, inherited }, troop, 11, rules)).toEqual({ amount: 120, max: 120 });

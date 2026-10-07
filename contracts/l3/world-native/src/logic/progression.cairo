@@ -59,6 +59,16 @@ pub fn destroy(key: ExplorerKey) {
     );
 }
 
+/// An army's own maximum stamina: its Logistics tier's for an expedition army, its troop's for any other.
+pub fn own_stamina_max(
+    key: ExplorerKey, troops: crate::troops::Troops, rules: crate::rules::TroopStaminaConfig,
+) -> u64 {
+    match read(key) {
+        Some(progress) => crate::progression::stamina_max(progress, troops.category, rules),
+        None => crate::stamina::StaminaImpl::max(troops.category, troops.tier, rules),
+    }
+}
+
 pub fn award_xp(key: ExplorerKey, award: XpAward) {
     let rules = rules(key.game_id).expect('missing progression rules');
     let mut progress = require(key);
