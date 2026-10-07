@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "aa2f67d44872adcb0b8966fc66bb15020727414fa6292941eebad8446f985c9e",
+  "schemaIdentity": "c58a25eb6889e0e29b4ece1e215ba42f038f102bc2db01c4399c169036800313",
   "commandAbi": [
     {
       "type": "interface",
@@ -296,16 +296,20 @@
           "type": "world_native::research::Research"
         },
         {
-          "name": "ChooseAttribute",
-          "type": "world_native::progression::ChooseAttribute"
-        },
-        {
-          "name": "UpgradeBuilding",
-          "type": "world_native::buildings::ChangeBuilding"
+          "name": "BuyTier",
+          "type": "world_native::progression::BuyTier"
         },
         {
           "name": "InteractSite",
           "type": "world_native::relics::InteractSite"
+        },
+        {
+          "name": "RefillStamina",
+          "type": "world_native::relics::RefillStamina"
+        },
+        {
+          "name": "WithdrawLords",
+          "type": "world_native::relics::WithdrawLords"
         }
       ]
     },
@@ -1370,26 +1374,30 @@
           "type": "core::integer::u32"
         },
         {
-          "name": "node",
+          "name": "row",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "choice",
           "type": "core::integer::u8"
         }
       ]
     },
     {
       "type": "struct",
-      "name": "world_native::progression::ChooseAttribute",
+      "name": "world_native::progression::BuyTier",
       "members": [
         {
           "name": "explorer_id",
           "type": "core::integer::u32"
         },
         {
-          "name": "offer_id",
-          "type": "core::integer::u32"
-        },
-        {
           "name": "attribute",
           "type": "world_native::progression::Attribute"
+        },
+        {
+          "name": "kind",
+          "type": "core::option::Option::<world_native::progression::ScoutingKind>"
         }
       ]
     },
@@ -1410,7 +1418,39 @@
           "type": "()"
         },
         {
-          "name": "Support",
+          "name": "Homecoming",
+          "type": "()"
+        }
+      ]
+    },
+    {
+      "type": "enum",
+      "name": "core::option::Option::<world_native::progression::ScoutingKind>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "world_native::progression::ScoutingKind"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
+    {
+      "type": "enum",
+      "name": "world_native::progression::ScoutingKind",
+      "variants": [
+        {
+          "name": "Camp",
+          "type": "()"
+        },
+        {
+          "name": "Rift",
+          "type": "()"
+        },
+        {
+          "name": "Stragglers",
           "type": "()"
         }
       ]
@@ -1426,6 +1466,30 @@
         {
           "name": "coord",
           "type": "world_native::troops::Coord"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::relics::RefillStamina",
+      "members": [
+        {
+          "name": "explorer_id",
+          "type": "core::integer::u32"
+        }
+      ]
+    },
+    {
+      "type": "struct",
+      "name": "world_native::relics::WithdrawLords",
+      "members": [
+        {
+          "name": "structure_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "amount",
+          "type": "core::integer::u128"
         }
       ]
     }
@@ -1466,7 +1530,7 @@
       "scope": "game"
     },
     {
-      "name": "CampResources",
+      "name": "CampRules",
       "scope": "game"
     },
     {
@@ -1518,10 +1582,6 @@
       "scope": "game"
     },
     {
-      "name": "RealmSupport",
-      "scope": "game"
-    },
-    {
       "name": "ChestRules",
       "scope": "game"
     },
@@ -1530,15 +1590,11 @@
       "scope": "game"
     },
     {
-      "name": "ChestPity",
+      "name": "SiteChest",
       "scope": "game"
     },
     {
-      "name": "ChestTokens",
-      "scope": "game"
-    },
-    {
-      "name": "ChestReward",
+      "name": "LordsWithdrawal",
       "scope": "game"
     },
     {
@@ -1722,11 +1778,7 @@
       "scope": "game"
     },
     {
-      "name": "ResearchNode",
-      "scope": "game"
-    },
-    {
-      "name": "BuildingTierRule",
+      "name": "ResearchPrice",
       "scope": "game"
     },
     {

@@ -37,10 +37,10 @@
     "troop_damage_config": {
       "damage_raid_percent_num": 1000,
       "damage_biome_bonus_num": 3000,
-      "damage_scaling_factor": "36893488147419103232",
-      "t1_damage_value": "1844674407370955161600",
-      "t2_damage_multiplier": "55340232221128654848",
-      "t3_damage_multiplier": "166020696663385964544"
+      "damage_scaling_factor": "0x20000000000000000",
+      "t1_damage_value": "0x640000000000000000",
+      "t2_damage_multiplier": "0x30000000000000000",
+      "t3_damage_multiplier": "0x90000000000000000"
     },
     "troop_stamina_config": {
       "damage_stamina_refund": true,
@@ -91,13 +91,13 @@
       "storehouse_boost_capacity": 0
     },
     "structure_capacity_config": {
-      "realm_capacity": "18446744073709551615",
-      "village_capacity": "18446744073709551615",
-      "hyperstructure_capacity": "18446744073709551615",
-      "fragment_mine_capacity": "18446744073709551615",
-      "bank_structure_capacity": "18446744073709551615",
-      "camp_capacity": "18446744073709551615",
-      "bitcoin_mine_capacity": "18446744073709551615"
+      "realm_capacity": "0xffffffffffffffff",
+      "village_capacity": "0xffffffffffffffff",
+      "hyperstructure_capacity": "0xffffffffffffffff",
+      "fragment_mine_capacity": "0xffffffffffffffff",
+      "bank_structure_capacity": "0xffffffffffffffff",
+      "camp_capacity": "0xffffffffffffffff",
+      "bitcoin_mine_capacity": "0xffffffffffffffff"
     },
     "building_config": {
       "base_population": 6,
@@ -110,11 +110,11 @@
       "owner_cut_bps": 2000
     },
     "victory_points_grant_config": {
-      "hyp_points_per_second": "1000000",
-      "claim_hyperstructure_points": "3000000000",
-      "claim_otherstructure_points": "500000000",
-      "explore_tiles_points": "10000000",
-      "relic_open_points": "1000000000"
+      "hyp_points_per_second": "0xf4240",
+      "claim_hyperstructure_points": "0xb2d05e00",
+      "claim_otherstructure_points": "0x1dcd6500",
+      "explore_tiles_points": "0x989680",
+      "relic_open_points": "0x3b9aca00"
     },
     "map_center_offset": 20,
     "spire_travel_essence_cost": "0x2540be400",
@@ -1535,6 +1535,42 @@
             "amount": "0xdf8475800"
           }
         ]
+      }
+    },
+    {
+      "category": 41,
+      "rule": {
+        "population_cost": 0,
+        "capacity_grant": 0,
+        "simple_cost": [],
+        "complex_cost": []
+      }
+    },
+    {
+      "category": 42,
+      "rule": {
+        "population_cost": 0,
+        "capacity_grant": 0,
+        "simple_cost": [],
+        "complex_cost": []
+      }
+    },
+    {
+      "category": 43,
+      "rule": {
+        "population_cost": 0,
+        "capacity_grant": 0,
+        "simple_cost": [],
+        "complex_cost": []
+      }
+    },
+    {
+      "category": 44,
+      "rule": {
+        "population_cost": 0,
+        "capacity_grant": 0,
+        "simple_cost": [],
+        "complex_cost": []
       }
     }
   ]
