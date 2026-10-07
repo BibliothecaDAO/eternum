@@ -1032,22 +1032,13 @@ pub mod GamesFixture {
                 game_context,
             )
         }
-        fn settle_production(
+        fn change_structure_capacity(
             ref self: TContractState,
             key: crate::resources::ResourceKey,
+            amount: u128,
+            adding: bool,
             timestamp: u64,
             game_context: crate::commands::ResourceContext,
-        ) {
-            let classes = fixture_classes(key.game_id);
-            crate::resources::IResourceOperationsDispatcherTrait::settle_production(
-                crate::resources::IResourceOperationsLibraryDispatcher { class_hash: classes.resources.read() },
-                key,
-                timestamp,
-                game_context,
-            )
-        }
-        fn change_structure_capacity(
-            ref self: TContractState, key: crate::resources::ResourceKey, amount: u128, adding: bool,
         ) {
             let classes = fixture_classes(key.game_id);
             crate::resources::IResourceOperationsDispatcherTrait::change_structure_capacity(
@@ -1055,6 +1046,8 @@ pub mod GamesFixture {
                 key,
                 amount,
                 adding,
+                timestamp,
+                game_context,
             )
         }
         fn spend_food(

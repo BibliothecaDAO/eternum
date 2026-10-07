@@ -219,7 +219,6 @@ pub trait IResourceOperations<T> {
         timestamp: u64,
         game_context: crate::commands::ResourceContext,
     );
-    fn settle_production(ref self: T, key: ResourceKey, timestamp: u64, game_context: crate::commands::ResourceContext);
     fn start_production(
         ref self: T,
         key: ResourceKey,
@@ -237,7 +236,14 @@ pub trait IResourceOperations<T> {
         timestamp: u64,
         game_context: crate::commands::ResourceContext,
     );
-    fn change_structure_capacity(ref self: T, key: ResourceKey, amount: u128, adding: bool);
+    fn change_structure_capacity(
+        ref self: T,
+        key: ResourceKey,
+        amount: u128,
+        adding: bool,
+        timestamp: u64,
+        game_context: crate::commands::ResourceContext,
+    );
     fn spend_food(
         ref self: T,
         key: ResourceKey,

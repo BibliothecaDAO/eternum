@@ -270,13 +270,20 @@ pub mod ResourceState {
             self.commit_resource(key, resource_type, resource);
         }
         fn change_structure_capacity(
-            ref self: ComponentState<TContractState>, key: ResourceKey, amount: u128, adding: bool,
+            ref self: ComponentState<TContractState>,
+            key: ResourceKey,
+            amount: u128,
+            adding: bool,
+            now: u32,
+            start_at: u32,
         ) {
             crate::logic::resources::assert_exists(key);
-            let mut weight = self.data.resources.weights.read((key.game_id, key.entity_id));
-            if weight.capacity == 0xffffffffffffffffffffffffffffffff {
+            if crate::logic::resources::weight(key).capacity == 0xffffffffffffffffffffffffffffffff {
                 return;
             }
+            // Storage only caps what settles, so the old limit must cap what accrued under it.
+            self.settle_production(key, now, start_at);
+            let mut weight = self.data.resources.weights.read((key.game_id, key.entity_id));
             weight.capacity = if adding {
                 weight.capacity + amount
             } else {

@@ -511,7 +511,11 @@ pub mod ConstructionLogic {
             }
             let amount = Into::<u32, u128>::into(game_context.rules.unbox().capacity_config.storehouse_boost_capacity)
                 * RESOURCE_PRECISION;
-            self.resources_dispatcher(key.game_id).change_structure_capacity(key, amount, adding);
+            self
+                .resources_dispatcher(key.game_id)
+                .change_structure_capacity(
+                    key, amount, adding, game_context.timestamp, crate::commands::resource_context(game_context),
+                );
         }
         fn set_building_paused(
             ref self: ContractState,

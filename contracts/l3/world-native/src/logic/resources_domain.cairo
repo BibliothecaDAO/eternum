@@ -276,11 +276,6 @@ pub mod ResourcesLogic {
                 self.pay_troop_recipe(key, resource_type, amount, timestamp, game_context);
             }
         }
-        fn settle_production(
-            ref self: ContractState, key: ResourceKey, timestamp: u64, game_context: crate::commands::ResourceContext,
-        ) {
-            self.resources.settle_production(key, timestamp.try_into().unwrap(), game_context.production_start);
-        }
         fn stop_production(
             ref self: ContractState,
             key: ResourceKey,
@@ -300,8 +295,19 @@ pub mod ResourcesLogic {
                     game_context.production_start,
                 );
         }
-        fn change_structure_capacity(ref self: ContractState, key: ResourceKey, amount: u128, adding: bool) {
-            self.resources.change_structure_capacity(key, amount, adding);
+        fn change_structure_capacity(
+            ref self: ContractState,
+            key: ResourceKey,
+            amount: u128,
+            adding: bool,
+            timestamp: u64,
+            game_context: crate::commands::ResourceContext,
+        ) {
+            self
+                .resources
+                .change_structure_capacity(
+                    key, amount, adding, timestamp.try_into().unwrap(), game_context.production_start,
+                );
         }
         fn start_production(
             ref self: ContractState,

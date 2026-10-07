@@ -214,6 +214,8 @@ fn storehouse_capacity_is_retained_while_paused_and_cannot_be_removed_while_need
     assert_eq!(resources.resource_weight(home).capacity, 100 + crate::rules::RESOURCE_PRECISION);
     assert!(execute(deployment, Command::PauseBuildingProduction(change(home)), 50));
     assert_eq!(resources.resource_weight(home).capacity, 100 + crate::rules::RESOURCE_PRECISION);
+    // Production since the last settlement is held stock too, so settle before pinning the stored weight.
+    produced_stock(deployment, home, 60);
     let stored = resources.resource_weight(home);
     set_fixture(
         deployment.games,
@@ -225,6 +227,7 @@ fn storehouse_capacity_is_retained_while_paused_and_cannot_be_removed_while_need
     assert_terminal_rejection(deployment, Command::DestroyBuilding(change(home)), 60);
     assert!(IStructureOperationsDispatcher { contract_address: deployment.games }.building(east()).is_some());
     assert_eq!(resources.resource_weight(home).capacity, stored.capacity);
+    produced_stock(deployment, home, 70);
     set_fixture(
         deployment.games,
         selector!("resources"),
@@ -234,6 +237,110 @@ fn storehouse_capacity_is_retained_while_paused_and_cannot_be_removed_while_need
     );
     assert!(execute(deployment, Command::DestroyBuilding(change(home)), 70));
     assert_eq!(resources.resource_weight(home).capacity, 100);
+}
+
+/// A realm without a board, under Blitz's or Eternum's rules, whose storehouse adds one unit of storage.
+fn arena_storehouse_world(blitz: bool) -> (super::Deployment, ResourceKey) {
+    let rules = if blitz {
+        crate::rules::SliceRules {
+            mode_rules: super::recorded::BLITZ_RULES,
+            entry_rule: crate::rules::ENTRY_ROSTER,
+            command_mask: super::recorded::BLITZ_COMMAND_MASK,
+            ..super::recorded::rules(),
+        }
+    } else {
+        super::recorded::rules()
+    };
+    let mut preset = super::resource_commands::fixture_preset(rules);
+    preset.structures = building_preset(None).structures;
+    preset.rules.capacity_config.storehouse_boost_capacity = 1;
+    building_world_with_preset(preset)
+}
+
+/// Leaves `room` free in the realm's storage on top of whatever its storehouses add.
+fn leave_room(deployment: super::Deployment, home: ResourceKey, room: u128) {
+    let resources = IResourceOperationsDispatcher { contract_address: deployment.games };
+    let weight = resources.resource_weight(home).weight;
+    let storehouses: u128 = crate::buildings::category_count(
+        IStructureOperationsDispatcher { contract_address: deployment.games }.structure_buildings(home), 2,
+    )
+        .into();
+    set_fixture(
+        deployment.games,
+        selector!("resources"),
+        selector!("weights"),
+        array![home.game_id.into(), home.entity_id.into()].span(),
+        crate::resources::Weight { capacity: weight + room + storehouses * crate::rules::RESOURCE_PRECISION, weight },
+    );
+}
+
+/// The fixture realm's own producer makes two of resource 1 a second from time 30.
+fn produced_stock(deployment: super::Deployment, home: ResourceKey, timestamp: u64) -> u128 {
+    let resources = IResourceOperationsDispatcher { contract_address: deployment.games };
+    start_cheat_caller_address(deployment.games, deployment.games);
+    crate::resources::IResourceOperationsDispatcherTrait::spend_resource(
+        resources,
+        home,
+        1,
+        0,
+        timestamp,
+        crate::commands::resource_context(super::context(deployment.games, home.game_id)),
+    );
+    stop_cheat_caller_address(deployment.games);
+    resources.resource_balance(ResourceSlot { game_id: home.game_id, entity_id: home.entity_id, resource_type: 1 })
+}
+
+fn a_new_storehouse_does_not_keep_what_there_was_no_room_for(blitz: bool) {
+    let (deployment, home) = arena_storehouse_world(blitz);
+    assert_eq!(produced_stock(deployment, home, 30), 100);
+    leave_room(deployment, home, 10);
+    // Ten seconds make 20 where there is room for 10; the storehouse, paid with 10, cannot rescue the rest.
+    assert!(execute(deployment, create(home, 2), 40));
+    assert_eq!(produced_stock(deployment, home, 40), 100);
+}
+
+fn a_demolished_storehouse_does_not_burn_what_was_held(blitz: bool) {
+    let (deployment, home) = arena_storehouse_world(blitz);
+    assert!(execute(deployment, create(home, 2), 40));
+    let held = produced_stock(deployment, home, 40);
+    leave_room(deployment, home, 10);
+    // Ten seconds make 20 the storehouse holds; without it there is room for 10, so it cannot go yet.
+    let before = resource_facts(deployment, home);
+    assert_terminal_rejection(deployment, Command::DestroyBuilding(change(home)), 50);
+    assert_eq!(resource_facts(deployment, home), before);
+    assert_eq!(produced_stock(deployment, home, 50), held + 20);
+    start_cheat_caller_address(deployment.games, deployment.games);
+    crate::resources::IResourceOperationsDispatcherTrait::spend_resource(
+        IResourceOperationsDispatcher { contract_address: deployment.games },
+        home,
+        1,
+        10,
+        50,
+        crate::commands::resource_context(super::context(deployment.games, home.game_id)),
+    );
+    stop_cheat_caller_address(deployment.games);
+    assert!(execute(deployment, Command::DestroyBuilding(change(home)), 50));
+    assert_eq!(produced_stock(deployment, home, 50), held + 10);
+}
+
+#[test]
+fn blitz_storehouse_settles_against_the_old_limit_when_built() {
+    a_new_storehouse_does_not_keep_what_there_was_no_room_for(true);
+}
+
+#[test]
+fn eternum_storehouse_settles_against_the_old_limit_when_built() {
+    a_new_storehouse_does_not_keep_what_there_was_no_room_for(false);
+}
+
+#[test]
+fn blitz_storehouse_settles_against_the_old_limit_when_demolished() {
+    a_demolished_storehouse_does_not_burn_what_was_held(true);
+}
+
+#[test]
+fn eternum_storehouse_settles_against_the_old_limit_when_demolished() {
+    a_demolished_storehouse_does_not_burn_what_was_held(false);
 }
 
 #[test]
