@@ -1,6 +1,7 @@
 import { addBattleSummaries, summarizeBattles, type BattleSummary } from "./combat";
 import type { InvalidFrame, UncaughtFailure } from "./worker-boundary";
 import { summarizeFrontierDesign, type FrontierEvidence } from "./frontier";
+import { frontierRuleChecks } from "./frontier-rules";
 import type { HarnessRpcRequests } from "./provider";
 import { PROCESS_INTERVAL_MS } from "@bibliothecadao/eternum/automation";
 import type { LayerRoundTripEvidence } from "./layer-round-trip";
@@ -282,7 +283,7 @@ export function analyzeHarnessResult(input: HarnessReportInput) {
         }),
     ...(measuredRun ? { admissionToVisibleMeasured: admissionToVisibleMissing === 0 } : {}),
     setup: setupFailures.length === 0,
-    ...(input.workload.frontier && input.functional ? frontierDesignChecks(input.workload.frontier) : {}),
+    ...(input.workload.frontier && input.functional ? frontierChecks(input.workload.frontier, actions) : {}),
     playerProgress:
       input.workload.profile !== "build-order" ||
       summarizePlayerProgress(
@@ -325,7 +326,14 @@ export function analyzeHarnessResult(input: HarnessReportInput) {
   };
 }
 
-/** FR11's design gates: only the accelerated design run plays enough days for them to mean anything. */
+/**
+ * A functional Frontier run's gates: the real-speed pass checks its preset's rates and charges; the accelerated design
+ * run, the only one that plays enough days, FR11's multi-day design gates.
+ */
+function frontierChecks(frontier: FrontierEvidence, actions: TrackedTransaction[]) {
+  return frontier.rules ? frontierRuleChecks(frontier.rules, actions) : frontierDesignChecks(frontier);
+}
+
 function frontierDesignChecks(frontier: FrontierEvidence) {
   return {
     frontierTokenCap: frontier.players.every((player) =>
@@ -376,7 +384,10 @@ function buildHarnessManifest(
       profile: input.workload.profile ?? "cadence",
       functional: input.functional ?? false,
       frontier: input.workload.frontier,
-      designGates: input.workload.frontier ? summarizeFrontierDesign(input.workload.frontier) : undefined,
+      designGates:
+        input.workload.frontier && !input.workload.frontier.rules
+          ? summarizeFrontierDesign(input.workload.frontier)
+          : undefined,
       automationIntervalMs: input.workload.profile === "build-order" ? PROCESS_INTERVAL_MS : null,
       perPlayer: summarizePlayerProgress(
         input.accounts.map(({ botId }) => botId),

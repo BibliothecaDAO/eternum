@@ -39,6 +39,14 @@ import { createRpcMetrics, trackTransaction, type TrackedTransaction, type Workl
 import type { HarnessGame } from "./harness-game";
 import type { HarnessProvider } from "./provider";
 import { known } from "./known";
+import {
+  expectedWheat,
+  presetRates,
+  wheatCharged,
+  type FrontierRuleEvidence,
+  type WheatCharge,
+  type WheatState,
+} from "./frontier-rules";
 
 const PRODUCTION_EPOCH_SECONDS = 86400;
 const precision = BigInt(RESOURCE_PRECISION);
@@ -161,6 +169,8 @@ export interface FrontierBurst {
 }
 export interface FrontierEvidence {
   burst?: FrontierBurst;
+  /** A functional pass at the season's own speed: what it observed of its preset's rates and charges. */
+  rules?: FrontierRuleEvidence;
   epochSeconds: number;
   timeScale: number;
   tokenCap: number;
@@ -173,7 +183,8 @@ export interface FrontierEvidence {
   >;
 }
 interface RunFrontierOptions {
-  accelerated: boolean;
+  /** A functional run: the design run on the accelerated preset, the real-speed rules pass on any other. */
+  functional: boolean;
   burst?: FrontierBurst;
   setupConcurrency: number;
   onReady?: () => Promise<void>;
@@ -191,17 +202,17 @@ interface RunFrontierOptions {
 export async function runFrontierWorkload(options: RunFrontierOptions): Promise<WorkloadResult> {
   const { client, game, accounts } = options;
   const epochSeconds = epochSecondsOf(client);
-  // A burst measures one moment of load, which is the same on any day length; the plain shape plays its own days.
-  if (!options.burst && options.accelerated !== (epochSeconds === acceleratedEpochSeconds()))
-    throw new Error(
-      `Frontier ${options.accelerated ? "design run" : "capacity shape"} does not match the season's day length (${epochSeconds} s)`,
-    );
+  // A burst measures one moment of load, which is the same on any day length; the capacity shape plays its own days.
+  if (!options.burst && !options.functional && epochSeconds === acceleratedEpochSeconds())
+    throw new Error(`The Frontier capacity shape needs production-length days, not the design run's ${epochSeconds} s`);
+  const rules = options.functional && epochSeconds !== acceleratedEpochSeconds() ? recordRules(client) : undefined;
   await game.waitUntilPlaying();
   if (options.burst?.shape === "booth") return runBoothBurst(options, epochSeconds);
   const players = await settleFrontierPlayers(options, accounts);
   await Promise.all(players.map((player) => waitForRealmResources(player.client, player)));
   if (options.burst?.shape === "rollover") return runRolloverBurst(options, players, epochSeconds);
   for (const player of players) observeDay(player);
+  rules?.observeRates(players);
   await options.onReady?.();
   const startedAt = new Date().toISOString();
   const deadline = Date.now() + options.minutes * 60000;
@@ -216,7 +227,7 @@ export async function runFrontierWorkload(options: RunFrontierOptions): Promise<
         if (now() < player.nextActionAt || !inSession(player.client, player)) return;
         const action = chooseAction(player.client, player.game, player);
         if (!action) return;
-        const result = await playAction(options, player, action);
+        const result = await playAction(options, player, action, undefined, rules);
         actions.push(result);
         player.nextActionAt = now() + 1;
         if (result.outcome !== "completed") {
@@ -240,7 +251,44 @@ export async function runFrontierWorkload(options: RunFrontierOptions): Promise<
     await sleep(1000);
   }
   for (const player of players) currentDay(player).endedAt = now();
-  return frontierResult(options, { players, actions, startedAt, ticks, epochSeconds });
+  return frontierResult(options, { players, actions, startedAt, ticks, epochSeconds, rules: rules?.evidence });
+}
+
+type RuleRecorder = ReturnType<typeof recordRules>;
+
+/** The real-speed pass's observations, against the preset its season was created from. */
+function recordRules(client: GameClient) {
+  const presetId = client.setup.store.require("GameRegistry", { game_id: client.gameId }).preset_id;
+  const definition = buildNativePreset(loadNativePresetConfiguration("madara.frontier", presetId), presetId);
+  const evidence: FrontierRuleEvidence = { rates: [], charges: [] };
+  return {
+    evidence,
+    /** Each realm's production as founded, before any upgrade changes a building's tier. */
+    observeRates(players: Player[]) {
+      for (const { client: own, realmId } of players) {
+        const rows = [...own.setup.store.inGame("ResourceProduction", own.gameId)].filter(
+          (row) => row.entity_id === realmId,
+        );
+        evidence.rates.push(...presetRates(definition, rows));
+      }
+    },
+    recordCharge(player: Player, charge: WheatCharge, before: WheatState, after: WheatState) {
+      const charged = wheatCharged(before, after);
+      if (charged === null) return;
+      evidence.charges.push({
+        botId: player.identity.botId,
+        kind: charge.kind,
+        troops: charge.troops.toString(),
+        expected: expectedWheat(definition, charge).toString(),
+        charged: charged.toString(),
+      });
+    },
+  };
+}
+
+function wheatState(player: Player): WheatState {
+  const manager = new ResourceManager(player.client.setup.store, player.realmId, player.client.gameId);
+  return known(manager.current(ResourcesIds.Wheat), player.realmId, "wheat state");
 }
 
 /**
@@ -321,7 +369,9 @@ async function playAction(
   player: Player,
   action: Action,
   scheduledAtMs?: number,
+  rules?: RuleRecorder,
 ): Promise<TrackedTransaction> {
+  const before = rules && action.charge ? wheatState(player) : undefined;
   const result = await trackTransaction({
     botId: player.identity.botId,
     gameId: game.gameId,
@@ -333,6 +383,7 @@ async function playAction(
     send: () => player.game.submit(player.identity.account, action.run),
   });
   if (result.outcome !== "completed") return result;
+  if (before) rules!.recordCharge(player, action.charge!, before, wheatState(player));
   currentDay(player).actions++;
   action.after?.();
   observeProgress(player.client, player.game, player);
@@ -341,7 +392,14 @@ async function playAction(
 
 async function frontierResult(
   options: RunFrontierOptions,
-  run: { players: Player[]; actions: TrackedTransaction[]; startedAt: string; ticks: number; epochSeconds: number },
+  run: {
+    players: Player[];
+    actions: TrackedTransaction[];
+    startedAt: string;
+    ticks: number;
+    epochSeconds: number;
+    rules?: FrontierRuleEvidence;
+  },
 ): Promise<WorkloadResult> {
   const { client, game, provider } = options;
   const { players, actions, epochSeconds } = run;
@@ -349,6 +407,7 @@ async function frontierResult(
   const chests = await readChestHistory(client, Math.max(0, ...actions.map((action) => action.acceptedOnL2Block ?? 0)));
   const evidence: FrontierEvidence = {
     ...(options.burst ? { burst: options.burst } : {}),
+    ...(run.rules ? { rules: run.rules } : {}),
     epochSeconds,
     timeScale: PRODUCTION_EPOCH_SECONDS / epochSeconds,
     tokenCap: client.setup.store.require("ChestRules", { game_id: game.gameId }).token_cap,
@@ -538,7 +597,10 @@ interface Action {
   kind: string;
   run(): Promise<unknown>;
   after?(): void;
+  /** What the action takes from its realm's wheat, for the real-speed pass to check against the preset. */
+  charge?: WheatCharge;
 }
+
 function command(client: GameClient, player: Player, value: NativeCommand): Action {
   return { kind: value.kind, run: () => client.setup.network.provider.submitCommand(player.identity.account, value) };
 }
@@ -744,7 +806,10 @@ function planMuster(client: GameClient, player: Player): Action | undefined {
     if (troops >= 1000n) break;
   }
   if (tier < 0) return;
-  // The realm pays its troops' recipe wheat to deploy them: hold it first, as a player's deploy sheet does.
+  // The realm pays its troops' recipe wheat to deploy them, so it raises what it can pay for, as a player's deploy sheet
+  // offers: at real speed a new realm's wheat pays for fewer troops than its barracks hold.
+  troops = affordableTroops(client, player, (26 + tier) as ResourcesIds, troops);
+  if (troops < 1n) return;
   const cost = readTroopRaiseCost(
     client.setup.store,
     client.gameId,
@@ -761,10 +826,38 @@ function planMuster(client: GameClient, player: Player): Action | undefined {
     (spot) => !getTileAt(client.setup.store, false, spot.col, spot.row, client.gameId)?.occupier_id,
   );
   if (!spawn) return;
-  return command(client, player, {
-    kind: "CreateExplorer",
-    value: { structure_id: player.realmId, category: 0, tier, amount: troops * precision, direction: spawn.direction },
-  });
+  return {
+    ...command(client, player, {
+      kind: "CreateExplorer",
+      value: {
+        structure_id: player.realmId,
+        category: 0,
+        tier,
+        amount: troops * precision,
+        direction: spawn.direction,
+      },
+    }),
+    charge: { kind: "CreateExplorer", troopResource: 26 + tier, troops },
+  };
+}
+/** At most `troops`, and no more than every input of one troop's raise, held now, pays for. */
+function affordableTroops(client: GameClient, player: Player, resource: ResourcesIds, troops: bigint): bigint {
+  const perTroop = known(
+    readTroopRaiseCost(
+      client.setup.store,
+      client.gameId,
+      player.realmId,
+      resource,
+      1,
+      getBlockTimestamp().currentDefaultTick,
+    ),
+    player.realmId,
+    "troop raise cost",
+  );
+  return perTroop.reduce((fewest, { amount, held }) => {
+    const paid = amount === 0n ? fewest : held / amount;
+    return paid < fewest ? paid : fewest;
+  }, troops);
 }
 function planExpedition(client: GameClient, game: HarnessGame, player: Player): Action | undefined {
   const rules = client.setup.store.require("SliceRules", { game_id: client.gameId });
@@ -874,10 +967,13 @@ function planExpedition(client: GameClient, game: HarnessGame, player: Player): 
       )
       .find((spot) => !getTileAt(client.setup.store, false, spot.col, spot.row, client.gameId)?.biome);
     if (frontier && amount >= stamina.stamina_explore_stamina_cost) {
-      const explore = command(client, player, {
-        kind: "Explore",
-        value: { explorer_id: army.explorer_id, direction: frontier.direction },
-      });
+      const explore = {
+        ...command(client, player, {
+          kind: "Explore",
+          value: { explorer_id: army.explorer_id, direction: frontier.direction },
+        }),
+        charge: { kind: "Explore" as const, troops: army.troops.count / precision },
+      };
       explore.after = () => {
         day.explored++;
         day.sessionExplores[currentSession] = (day.sessionExplores[currentSession] ?? 0) + 1;
@@ -888,10 +984,13 @@ function planExpedition(client: GameClient, game: HarnessGame, player: Player): 
     if (!frontier && amount >= stamina.stamina_travel_stamina_cost) {
       const direction = pathToUnexplored(client, army);
       if (direction !== undefined) {
-        const move = command(client, player, {
-          kind: "Move",
-          value: { explorer_id: army.explorer_id, directions: [direction] },
-        });
+        const move = {
+          ...command(client, player, {
+            kind: "Move",
+            value: { explorer_id: army.explorer_id, directions: [direction] },
+          }),
+          charge: { kind: "Move" as const, troops: army.troops.count / precision },
+        };
         move.after = () => {
           day.otherStamina += stamina.stamina_travel_stamina_cost;
         };

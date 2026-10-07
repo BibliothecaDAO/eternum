@@ -216,7 +216,7 @@ async function main(): Promise<void> {
     const workload =
       options.workload === "frontier"
         ? await runFrontierWorkload({
-            accelerated: options.functional,
+            functional: options.functional,
             burst: options.frontierBurst,
             setupConcurrency: options.setupConcurrency,
             client,
@@ -793,7 +793,8 @@ Usage: bun deploy/athanor/harness/run.ts [options]
                                  and move inside the window (use the 720 s day of --preset 101 on perf shards)
   --burst-window-seconds <s>     with --frontier-burst; default: 600 for booth, 120 for rollover
   --workers <count>              Frontier: split the season's bots across this many worker threads; default: 1
-  --functional                  omit request counts and the latency gates; for Frontier, the accelerated design run
+  --functional                  omit request counts and the latency gates; for Frontier, the accelerated design run,
+                                 or with --preset 5 the real-speed pass on the preset's own rates and charges
   --prepared-game <path>         resume a prepared roster using its private account file
   --game-id <id>                 use an existing Eternum game
   --game-name <name>             name for a new game or report label for --game-id
