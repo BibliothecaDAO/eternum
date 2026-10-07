@@ -255,6 +255,20 @@ const launchRequest = () =>
   });
 
 describe("launch service authorization", () => {
+  test("says whether the signed-in caller launches, so the factory page shows itself to launchers only", async () => {
+    const launcher = (resolver: IdentityResolver, cookie: string | null = "session=1") =>
+      createApp(resolver)
+        .app.request("https://play.realms.party/api/factory/launcher", {
+          headers: cookie ? { cookie } : {},
+        })
+        .then((response) => response.json());
+    expect(await launcher(signedIn(ALLOWED_ADDRESS))).toEqual({ launcher: true });
+    expect(await launcher(signedIn("0x456"))).toEqual({ launcher: false });
+    expect(await launcher(signedIn())).toEqual({ launcher: false });
+    expect(await launcher(signedOut)).toEqual({ launcher: false });
+    expect(await launcher(signedIn(ALLOWED_ADDRESS), null)).toEqual({ launcher: false });
+  });
+
   test("rejects a mutation without a verified session", async () => {
     const { app } = createApp(signedOut);
     const response = await app.request(launchRequest());

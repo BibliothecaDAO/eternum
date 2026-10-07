@@ -1,8 +1,15 @@
 import { isGameEnvironmentId, type GameEnvironmentId } from "../../../config/shared/game-environments";
-import { Effect, Schema } from "effect";
+import { Effect, Result, Schema } from "effect";
 import { Hono, type Context } from "hono";
 import { logger } from "hono/logger";
-import { requireIdentity, requireLauncher, type IdentityResolver, type LaunchAccess, type LaunchAppEnv } from "./auth";
+import {
+  isLauncher,
+  requireIdentity,
+  requireLauncher,
+  type IdentityResolver,
+  type LaunchAccess,
+  type LaunchAppEnv,
+} from "./auth";
 import { createSlotRoutes } from "./slot-routes";
 import type { CalendarStore } from "./calendar";
 import { createCalendarRoutes } from "./calendar-routes";
@@ -123,6 +130,19 @@ export const createLaunchApp = (dependencies: LaunchAppDependencies) => {
     } catch {
       return context.json({ status: "unavailable" }, 503);
     }
+  });
+
+  // Whether the signed-in caller launches, so the factory page shows itself to launchers only. A read decides nothing:
+  // every write is still refused by requireLauncher.
+  app.get("/api/factory/launcher", async (context) => {
+    const cookie = context.req.header("cookie");
+    if (!cookie) return context.json({ launcher: false });
+    const resolved = await Effect.runPromise(Effect.result(dependencies.identity.resolve(cookie)));
+    if (Result.isFailure(resolved)) return context.json({ error: "Identity service unavailable." }, 503);
+    const identity = resolved.success;
+    return context.json({
+      launcher: identity !== null && isLauncher({ kind: "session", ...identity }, dependencies.config),
+    });
   });
 
   app.get("/api/factory/directory-games", async (context) => {

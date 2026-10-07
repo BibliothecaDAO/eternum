@@ -11,7 +11,7 @@ import { ClockChip } from "../clock-chip";
 import { useLayout } from "../frame/layout";
 import { PageFrame } from "../frame/page-frame";
 import { entryHref } from "../game-links";
-import { Loading } from "../kit";
+import { Loading } from "../loading";
 import { NothingHere } from "../not-found";
 import { paintingSources } from "../paintings";
 import { AgeLabel } from "../play/age-card";

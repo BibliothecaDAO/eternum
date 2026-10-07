@@ -15,7 +15,7 @@ import { formatPoints, ordinal, sameAddress } from "../format";
 import { useLayout } from "../frame/layout";
 import { PageFrame } from "../frame/page-frame";
 import { type DirectoryGame, useDirectory, useLeaderboard, useRealmsPlayer, useRecentResults } from "../herald";
-import { Loading } from "../kit";
+import { Loading } from "../loading";
 import { NothingHere } from "../not-found";
 import { paintingSources } from "../paintings";
 import { ageOf } from "../play/ages";

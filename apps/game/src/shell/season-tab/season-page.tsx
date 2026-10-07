@@ -11,7 +11,7 @@ import { boardRows, wholeLords } from "@/ui/features/frontier/board/standings";
 import { useLayout } from "../frame/layout";
 import { PageFrame } from "../frame/page-frame";
 import { type DirectoryGame, useDirectory, useLeaderboard, useRealmsPlayer, useRecentResults } from "../herald";
-import { Loading } from "../kit";
+import { Loading } from "../loading";
 import { ageOf } from "../play/ages";
 import { seasonDay } from "../play/age-state";
 import { chooseSeason } from "../season";

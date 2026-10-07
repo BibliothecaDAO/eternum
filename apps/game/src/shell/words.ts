@@ -173,6 +173,8 @@ export const APP_STATE_WORDS = {
   update: "Update",
   updating: "Updating…",
   nothingHere: "Nothing here",
+  /** The operators' page. */
+  factory: "Factory",
   /** The browser's own words, quoted on the install steps. */
   share: "Share",
   addToHomeScreen: "Add to Home Screen",

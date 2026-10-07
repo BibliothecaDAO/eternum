@@ -11,7 +11,7 @@ import { forgetDeviceKey } from "@bibliothecadao/eternum";
 import { useLayout } from "../frame/layout";
 import { PageFrame } from "../frame/page-frame";
 import { useRealmsPlayer } from "../herald";
-import { Loading } from "../kit";
+import { Loading } from "../loading";
 import { NothingHere } from "../not-found";
 import { paintingSources } from "../paintings";
 import { useRequestSignIn } from "../sign-in/sign-in-route";

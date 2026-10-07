@@ -8,7 +8,7 @@ import { PlayerName } from "@/ui/design-system/kit/player-name";
 import { findOwnEntry } from "@/ui/features/frontier/board/standings";
 
 import { useDirectory, useLeaderboard, useRecentResults } from "../herald";
-import { Loading } from "../kit";
+import { Loading } from "../loading";
 import { paintingSources } from "../paintings";
 import { AgeLabel } from "../play/age-card";
 import { ageOf } from "../play/ages";

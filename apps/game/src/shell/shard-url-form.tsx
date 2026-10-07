@@ -4,7 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { addPastedShard } from "@/runtime/world/shards";
 
 import { DIRECTORY_QUERY_KEY } from "./herald";
-import { GhostButton } from "./kit";
+import { Button } from "@/ui/design-system/kit/button";
 
 /** Opens another shard by its URL; the directory then lists that shard's games beside ours. */
 export const ShardUrlForm = ({ failures }: { failures: { url: string; error: Error }[] }) => {
@@ -38,15 +38,13 @@ export const ShardUrlForm = ({ failures }: { failures: { url: string; error: Err
           type="url"
           required
           aria-label="Shard URL"
-          className="min-w-0 flex-1 rounded-lg border border-gold/30 bg-black/40 px-3 py-2 text-[13px] text-gold outline-none placeholder:text-gold/40 focus:border-gold"
+          className="h-12 min-w-0 flex-1 rounded-xl border-2 border-kit-line bg-kit-ground px-3 text-[15px] text-kit-cream outline-none placeholder:text-kit-muted focus:border-kit-peach"
         />
-        <GhostButton type="submit" disabled={isOpening}>
-          {isOpening ? "Opening…" : "Open shard"}
-        </GhostButton>
+        <Button role="outline" type="submit" word="Open shard" loading={isOpening ? "Opening…" : undefined} />
       </div>
       {[...failures.map((failure) => `${failure.url}: ${failure.error.message}`), ...(error ? [error] : [])].map(
         (message) => (
-          <p key={message} role="alert" className="text-[12px] text-danger">
+          <p key={message} role="alert" className="text-[13px] text-kit-red">
             {message}
           </p>
         ),

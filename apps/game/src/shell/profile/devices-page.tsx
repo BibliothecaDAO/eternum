@@ -12,7 +12,7 @@ import {
 } from "@bibliothecadao/eternum";
 
 import { useRealmsPlayer } from "../herald";
-import { Loading } from "../kit";
+import { Loading } from "../loading";
 import { StateChip } from "../play/state-chip";
 import { ServiceFailure } from "../service-failure";
 import { PROFILE_WORDS } from "../words";

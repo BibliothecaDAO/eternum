@@ -2,7 +2,7 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 
 import { useLayout } from "../frame/layout";
 import { PageFrame } from "../frame/page-frame";
-import { Loading } from "../kit";
+import { Loading } from "../loading";
 import { chooseSeason, seasonRealm } from "../season";
 import { AgeLabel } from "./age-card";
 import { ageState } from "./age-state";
