@@ -1,7 +1,8 @@
 """The app lockup (ruled 7 October 2026): the kit's mark and the word "Realms" in IM Fell English SC, drawn as outlines
 in one SVG so the word never depends on a loaded face. Two arrangements of the same parts: beside (the phone's top row;
 the word's cap height is 0.6 of the mark's height, set 0.36 of it after the mark, centred on it) and stacked (the desktop
-rail; the word centred under the mark, its cap height 0.34 of the mark's height).
+rail; the word centred under the mark, its cap height 0.34 of the mark's height). The status site (apps/status), which
+shares no file with the app, gets its own copy of the beside lockup.
 
 Run from apps/game: uvx --from 'fonttools[woff]' python -I scripts/build-app-lockup.py
 """
@@ -16,6 +17,7 @@ FONT = "public/fonts/im-fell-english-sc-regular.ttf"
 MARK = "public/images/logos/realms-mark.svg"
 OUT = "public/images/logos/realms-lockup.svg"
 OUT_STACKED = "public/images/logos/realms-lockup-stacked.svg"
+OUT_STATUS = "../status/public/realms-lockup.svg"
 WORD = "Realms"
 MARK_WIDTH, MARK_HEIGHT = 256, 217
 CREAM = "#F4EBDC"
@@ -55,6 +57,7 @@ def write(path, width, height, mark_transform, outline):
 
 outline, width = word_outline(MARK_HEIGHT * 0.6, MARK_WIDTH + MARK_HEIGHT * 0.36, MARK_HEIGHT * 0.8)
 write(OUT, width, MARK_HEIGHT, "translate(0 0)", outline)
+write(OUT_STATUS, width, MARK_HEIGHT, "translate(0 0)", outline)
 
 cap = MARK_HEIGHT * 0.34
 stacked_width = max(MARK_WIDTH, word_width(cap))
