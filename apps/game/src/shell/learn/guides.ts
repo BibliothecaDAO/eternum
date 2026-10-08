@@ -6,9 +6,12 @@ import { LEARN_WORDS } from "../words";
 /** The docs site, where each mode's rules are written down (apps/game-docs). */
 export const DOCS = "https://docs.realms.world";
 
-/** One guide per mode, Frontier's first under the Aspect of Skill's mark; Dominion has none yet. */
+/**
+ * One guide per mode, Frontier's first, each under its kit mark (Frontier's the open book: the guide's own mark is the
+ * in-match guide's); Dominion has none yet.
+ */
 export const MODE_GUIDES: readonly { mode: AgeMode; title: string; icon: IconCode; url: string }[] = [
-  { mode: "frontier", title: LEARN_WORDS.howFrontier, icon: "Gd", url: `${DOCS}/frontier/introduction` },
+  { mode: "frontier", title: LEARN_WORDS.howFrontier, icon: "Dk", url: `${DOCS}/frontier/introduction` },
   { mode: "blitz", title: LEARN_WORDS.howBlitz, icon: "Pl", url: `${DOCS}/blitz/key-concepts` },
   { mode: "eternum", title: LEARN_WORDS.howEternum, icon: "Cs", url: `${DOCS}/eternum/key-concepts` },
 ];
