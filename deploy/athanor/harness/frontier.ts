@@ -205,7 +205,7 @@ export interface FrontierEvidence {
   meanDaySeconds: number;
   timeScale: number;
   players: Array<
-    Omit<Player, "identity" | "siteExchanges" | "nextActionAt"> & {
+    Pick<Player, "realmId" | "profile" | "settledAt" | "firstCampAt" | "days" | "rungs" | "rollovers" | "captures"> & {
       botId: number;
       owner: string;
       /** Each ruin the player cleared: its day and the whole LORDS its stored chest paid. */
@@ -494,12 +494,10 @@ async function frontierResult(
     ...(run.rules ? { rules: run.rules } : {}),
     meanDaySeconds: (DAY_UNITS_PER_BAG / DAYS_PER_BAG) * dayUnitSeconds,
     timeScale: DESIGN_DAY_UNIT_SECONDS / dayUnitSeconds,
-    players: players.map(({ identity, siteExchanges: _exchanges, nextActionAt: _next, ...player }) => ({
-      ...player,
-      botId: identity.botId,
-      owner: identity.owner,
+    players: players.map((player) => ({
+      ...frontierPlayerFacts(player),
       chests: chests
-        .filter((row) => row.player === BigInt(identity.address))
+        .filter((row) => row.player === BigInt(player.identity.address))
         .map(({ epoch, lords }) => ({ epoch, lords })),
     })),
   };
@@ -513,6 +511,22 @@ async function frontierResult(
     endedAt: new Date().toISOString(),
     ticks: run.ticks,
     readinessWaitMs: 0,
+  };
+}
+
+/** Reports carry durable player facts, never clients, signer keys or execution helpers. */
+export function frontierPlayerFacts(player: Player) {
+  return {
+    botId: player.identity.botId,
+    owner: player.identity.owner,
+    realmId: player.realmId,
+    profile: player.profile,
+    settledAt: player.settledAt,
+    firstCampAt: player.firstCampAt,
+    days: player.days,
+    rungs: player.rungs,
+    rollovers: player.rollovers,
+    captures: player.captures,
   };
 }
 
