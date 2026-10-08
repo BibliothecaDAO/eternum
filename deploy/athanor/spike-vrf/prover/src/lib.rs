@@ -23,7 +23,10 @@ fn secret(input: &[u8]) -> Result<ScalarField, u32> {
 
 fn prove(key: ScalarField, seeds: &[u8], output: &mut [u8]) -> Result<(), u32> {
     let prover = StarkVRF::new(generate_public_key(key)).map_err(|_| 3_u32)?;
-    for (input, result) in seeds.chunks_exact(FELT_BYTES).zip(output.chunks_exact_mut(PROOF_BYTES)) {
+    for (input, result) in seeds
+        .chunks_exact(FELT_BYTES)
+        .zip(output.chunks_exact_mut(PROOF_BYTES))
+    {
         let seed = BaseField::from_be_bytes_mod_order(input);
         if bytes(seed).as_slice() != input {
             return Err(4);
@@ -32,7 +35,12 @@ fn prove(key: ScalarField, seeds: &[u8], output: &mut [u8]) -> Result<(), u32> {
         let hint = prover.hash_to_sqrt_ratio_hint(&[seed]);
         let root = prover.proof_to_hash(&proof).map_err(|_| 6_u32)?;
         for (field, target) in [
-            bytes(proof.0.x), bytes(proof.0.y), bytes(proof.1), bytes(proof.2), bytes(hint), bytes(root),
+            bytes(proof.0.x),
+            bytes(proof.0.y),
+            bytes(proof.1),
+            bytes(proof.2),
+            bytes(hint),
+            bytes(root),
         ]
         .iter()
         .zip(result.chunks_exact_mut(FELT_BYTES))
@@ -43,7 +51,12 @@ fn prove(key: ScalarField, seeds: &[u8], output: &mut [u8]) -> Result<(), u32> {
     Ok(())
 }
 
-fn parallel_proofs(key: ScalarField, seeds: &[u8], output: &mut [u8], threads: usize) -> Result<(), u32> {
+fn parallel_proofs(
+    key: ScalarField,
+    seeds: &[u8],
+    output: &mut [u8],
+    threads: usize,
+) -> Result<(), u32> {
     if threads == 1 {
         return prove(key, seeds, output);
     }
@@ -74,7 +87,12 @@ pub unsafe extern "C" fn node_first_vrf_public_key(key: *const u8, output: *mut 
     }
     catch_unwind(|| {
         // SAFETY: caller guarantees valid, disjoint byte buffers of the documented lengths.
-        let (input, result) = unsafe { (slice::from_raw_parts(key, 32), slice::from_raw_parts_mut(output, 64)) };
+        let (input, result) = unsafe {
+            (
+                slice::from_raw_parts(key, 32),
+                slice::from_raw_parts_mut(output, 64),
+            )
+        };
         let key = secret(input)?;
         let point = generate_public_key(key);
         result[..32].copy_from_slice(&bytes(point.x));
@@ -98,7 +116,13 @@ pub unsafe extern "C" fn node_first_vrf_prove(
     threads: usize,
     output: *mut u8,
 ) -> u32 {
-    if key.is_null() || seeds.is_null() || output.is_null() || count == 0 || count > MAX_BATCH || !matches!(threads, 1 | 2 | 4) {
+    if key.is_null()
+        || seeds.is_null()
+        || output.is_null()
+        || count == 0
+        || count > MAX_BATCH
+        || !matches!(threads, 1 | 2 | 4)
+    {
         return 1;
     }
     catch_unwind(|| {

@@ -4,7 +4,10 @@ import { feltBytes, NativeProver } from "./native";
 // Public upstream known-answer fixture; never used as a deployed credential.
 const key = () => feltBytes("190");
 const expectedRoot = 1749760720107131022781690892024891617311129198096286233628341005792224087740n;
-const expectedGamma = [1506339363762384048749124975867331702319430609263271304275332020910807468800n, 36259598506905210600179635686591002688831785399437338349196739602416217657n];
+const expectedGamma = [
+  1506339363762384048749124975867331702319430609263271304275332020910807468800n,
+  36259598506905210600179635686591002688831785399437338349196739602416217657n,
+];
 
 test("native construction matches the independent Cairo known-answer vector", () => {
   const prover = new NativeProver(key());
@@ -16,7 +19,9 @@ test("native construction matches the independent Cairo known-answer vector", ()
       2465182048640915825114623967805639036884813714770257338089158027381626459289n,
       3038635738014387716559859267483610492356329532552881764846792983975787300333n,
     ]);
-  } finally { prover.close(); }
+  } finally {
+    prover.close();
+  }
 });
 
 test("threads preserve proof bytes and input order, including distinct seeds", () => {
@@ -27,7 +32,9 @@ test("threads preserve proof bytes and input order, including distinct seeds", (
     expect(new Set(expected.map((value) => value[5])).size).toBe(seeds.length);
     expect(prover.proofs(seeds, 2)).toEqual(expected);
     expect(prover.proofs(seeds, 4)).toEqual(expected);
-  } finally { prover.close(); }
+  } finally {
+    prover.close();
+  }
 });
 
 test("bad inputs fail closed and a closed native handle cannot be used", () => {
@@ -38,6 +45,9 @@ test("bad inputs fail closed and a closed native handle cannot be used", () => {
   expect(() => prover.publicKey()).toThrow("closed");
   expect(() => prover.proofs(["42"])).toThrow("closed");
   const zero = new NativeProver(feltBytes("0"));
-  try { expect(() => zero.publicKey()).toThrow("failed (2)"); }
-  finally { zero.close(); }
+  try {
+    expect(() => zero.publicKey()).toThrow("failed (2)");
+  } finally {
+    zero.close();
+  }
 });

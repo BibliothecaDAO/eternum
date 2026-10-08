@@ -7,7 +7,11 @@ const RECORD = 6 * WIDTH;
 
 export function feltBytes(value: string): Buffer {
   let integer: bigint;
-  try { integer = BigInt(value); } catch { throw new Error("Invalid VRF input encoding"); }
+  try {
+    integer = BigInt(value);
+  } catch {
+    throw new Error("Invalid VRF input encoding");
+  }
   if (integer < 0n || integer >= FIELD) throw new Error("Noncanonical VRF input");
   return Buffer.from(integer.toString(16).padStart(64, "0"), "hex");
 }
@@ -18,7 +22,10 @@ const hex = (value: Uint8Array) => `0x${Buffer.from(value).toString("hex")}`;
 export class NativeProver {
   private readonly library;
   private closed = false;
-  constructor(private readonly key: Buffer, libraryPath = join(import.meta.dir, `prover/target/release/libnode_first_vrf_prover.${suffix}`)) {
+  constructor(
+    private readonly key: Buffer,
+    libraryPath = join(import.meta.dir, `prover/target/release/libnode_first_vrf_prover.${suffix}`),
+  ) {
     if (key.length !== WIDTH) throw new Error("VRF scalar must be 32 bytes");
     this.library = dlopen(libraryPath, {
       node_first_vrf_public_key: { args: ["ptr", "ptr"], returns: "u32" },
@@ -39,9 +46,19 @@ export class NativeProver {
     if (!seeds.length || seeds.length > 4096) throw new Error("VRF batch must contain 1..4096 seeds");
     const input = Buffer.concat(seeds.map(feltBytes));
     const output = Buffer.alloc(seeds.length * RECORD);
-    const status = this.library.symbols.node_first_vrf_prove(ptr(this.key), ptr(input), seeds.length, threads, ptr(output));
+    const status = this.library.symbols.node_first_vrf_prove(
+      ptr(this.key),
+      ptr(input),
+      seeds.length,
+      threads,
+      ptr(output),
+    );
     if (status !== 0) throw new Error(`VRF proof generation failed (${status})`);
-    return seeds.map((_, index) => Array.from({ length: 6 }, (_, field) => hex(output.subarray(index * RECORD + field * WIDTH, index * RECORD + (field + 1) * WIDTH))));
+    return seeds.map((_, index) =>
+      Array.from({ length: 6 }, (_, field) =>
+        hex(output.subarray(index * RECORD + field * WIDTH, index * RECORD + (field + 1) * WIDTH)),
+      ),
+    );
   }
 
   close(): void {
