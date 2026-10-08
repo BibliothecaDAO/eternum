@@ -5,8 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#130F0C" />
     <title>Realms — Offline</title>
-    <!-- The installed app's page with no connection (spec 14): the mark on the ground, Offline and Try again. Colours are
-         the token file's (src/tokens.ts); only precached files may load here. -->
+    <!-- The installed app's page with no connection (spec 14): one plate with the mark, Offline and Try again. Colours are
+         the token file's (src/tokens.ts); only precached files may load here, so the title is set in a plain serif (the
+         display face is not precached). -->
     <style>
       :root {
         color-scheme: dark;
@@ -27,7 +28,13 @@
         flex-direction: column;
         align-items: center;
         gap: 1.25rem;
-        margin: 2rem;
+        width: min(30rem, calc(100% - 2rem));
+        padding: 1.5rem;
+        box-sizing: border-box;
+        border: 1px solid #6b5230;
+        border-radius: 16px;
+        background: #201a16;
+        box-shadow: 0 22px 50px rgb(0 0 0 / 0.55);
       }
       img {
         width: 96px;
@@ -36,10 +43,10 @@
       }
       h1 {
         margin: 0;
-        font-size: 1.4rem;
-        font-weight: 700;
+        font: 400 32px/1 serif;
       }
       button {
+        align-self: stretch;
         min-height: 48px;
         padding: 0 1.5rem;
         border: 2px solid #6b5230;

@@ -21,7 +21,7 @@ import { submitSettlement } from "@/services/settlement";
 import { fetchSettlementSnapshot, type SettlementSnapshot } from "@/runtime/world/herald-pre-session-reader";
 import { isGameOver, isMember } from "@/runtime/world/directory";
 import { markGameEntryMilestone } from "@/ui/layouts/game-entry-timeline";
-import { modeLabel } from "@/shell/game-links";
+import { gamePainting, modeLabel } from "@/shell/game-links";
 import { StateChip } from "@/shell/play/state-chip";
 import { BLITZ_WORDS } from "@/shell/words";
 import { ClockChip } from "@/shell/clock-chip";
@@ -590,6 +590,7 @@ export const GameEntryModal = ({
       view={view}
       realm={realm}
       title={worldMeta ? modeLabel(worldMeta) : undefined}
+      painting={worldMeta ? gamePainting(worldMeta) : undefined}
       onRetry={settleStage === "error" ? () => void handleSettle() : handleRetry}
       onSignIn={() => requestSignIn()}
       onSpectate={handleSpectate}

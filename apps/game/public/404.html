@@ -1,6 +1,83 @@
 <!doctype html>
 <html lang="en">
-  <meta charset="utf-8" />
-  <title>Not found</title>
-  <p>This page or asset is unavailable. <a href="/">Back home</a>.</p>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#130F0C" />
+    <title>Realms — Nothing here</title>
+    <!-- The host's answer for an address that is no page and no file: the app's Nothing here (the storm, one plate, Play),
+         with no script. Colours are the token file's (src/tokens.ts); faces and painting are the app's own files. -->
+    <style>
+      @font-face {
+        font-family: "Bokor";
+        src: url("/fonts/bokor-regular.ttf") format("truetype");
+        font-display: swap;
+      }
+      @font-face {
+        font-family: "Realms UI";
+        src: url("/fonts/im-fell-english-sc-regular.ttf") format("truetype");
+        font-display: swap;
+      }
+      :root {
+        color-scheme: dark;
+        background: #130f0c;
+        color: #f4ebdc;
+        font-family: system-ui, sans-serif;
+      }
+      body {
+        margin: 0;
+        min-height: 100svh;
+        display: grid;
+        place-items: center;
+        padding: 1rem;
+        box-sizing: border-box;
+        background:
+          linear-gradient(0deg, #130f0c 0%, rgb(19 15 12 / 0.2) 60%, rgb(19 15 12 / 0.5) 100%),
+          url("/images/landscapes/stormy-1600.webp") center / cover no-repeat;
+      }
+      main {
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+        width: min(30rem, 100%);
+        padding: 1.5rem;
+        box-sizing: border-box;
+        border: 1px solid #6b5230;
+        border-radius: 16px;
+        background: #201a16;
+        box-shadow: 0 22px 50px rgb(0 0 0 / 0.55);
+      }
+      h1 {
+        margin: 0;
+        text-align: center;
+        font:
+          400 34px/1 "Bokor",
+          serif;
+      }
+      a {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 56px;
+        border-radius: 16px;
+        background: linear-gradient(180deg, #f3d08a, #dfaa54);
+        color: #1b1207;
+        font:
+          400 19px "Realms UI",
+          serif;
+        letter-spacing: 0.05em;
+        text-decoration: none;
+      }
+      a:focus-visible {
+        outline: 3px solid #f6c297;
+        outline-offset: 3px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Nothing here</h1>
+      <a href="/">Play</a>
+    </main>
+  </body>
 </html>

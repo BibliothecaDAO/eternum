@@ -3,8 +3,8 @@ import type { ReactNode } from "react";
 import { Kbd } from "./kbd";
 
 /**
- * The screen's one step on the desktop: its verb, with the Enter mark while it can be taken (desktop-keys presses it
- * when nothing else holds the focus).
+ * The screen's one step on the desktop: its verb, with the Enter mark at its right while it can be taken (desktop-keys
+ * presses it when nothing else holds the focus).
  */
 export const StepVerb = ({ children }: { children: ReactNode }) => (
   <div data-role="step" className="group relative flex flex-col">

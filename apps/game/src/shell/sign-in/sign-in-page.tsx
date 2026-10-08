@@ -8,6 +8,7 @@ import {
   useIdentitySession,
   useIdentitySessionStore,
 } from "@/hooks/context/identity-session";
+import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { useFrontierType } from "@/ui/features/frontier/use-frontier-type";
 import { useBootDocumentState } from "@/ui/modules/boot-loader";
 import { failureSentence, type IdentityAction } from "@/ui/modules/identity/identity-failures";
@@ -131,8 +132,8 @@ const useIdentityAction = (initialError: () => string | null) => {
 
 /**
  * The flow's frame on PageFrame, with no tabs: on a phone one column, the painting and the lore line above the first
- * step only; on desktop the painting at full strength across the window, the lore line at its bottom left and the
- * steps in a 440 px panel at the right.
+ * step only; on desktop the window split: the painting with the lore line at its foot, and the steps in a panel the
+ * window's height at the right, under the step's title.
  */
 const SignInFrame = ({
   next,
@@ -144,21 +145,19 @@ const SignInFrame = ({
   title: string;
   hero?: boolean;
   children?: ReactNode;
-}) => {
-  const layout = useLayout();
-  return (
+}) =>
+  useLayout() === "phone" ? (
     <PageFrame back={next} title={title} tabs={false}>
-      {layout === "phone" ? (
-        <div className="flex flex-col gap-5">
-          {hero && <PhoneHero />}
-          {children}
-        </div>
-      ) : (
-        <DesktopPanel>{children}</DesktopPanel>
-      )}
+      <div className="flex flex-col gap-5">
+        {hero && <PhoneHero />}
+        {children}
+      </div>
+    </PageFrame>
+  ) : (
+    <PageFrame back={next} tabs={false}>
+      <DesktopSplit title={title}>{children}</DesktopSplit>
     </PageFrame>
   );
-};
 
 const PhoneHero = () => (
   <section className="relative isolate -mx-4 flex h-[38dvh] items-end overflow-hidden px-4 pb-3">
@@ -173,18 +172,29 @@ const PhoneHero = () => (
   </section>
 );
 
-const DesktopPanel = ({ children }: { children?: ReactNode }) => (
-  // No stacking context of its own: the fixed painting must sit behind the frame's title row (Back), not over it.
-  <div className="flex min-h-[38rem] items-start justify-end">
-    <div aria-hidden className="pointer-events-none fixed inset-x-0 bottom-0 top-[68px] -z-10">
-      <img {...paintingSources(PAINTING)} sizes="100vw" alt="" className="size-full object-cover" />
-      <span className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-kit-ground/60" />
+/** The panel's width; the painting takes the rest of the window beside the rail. */
+const PANEL = "w-[34rem] min-[1800px]:w-[38rem]";
+
+const DesktopSplit = ({ title, children }: { title: string; children?: ReactNode }) => (
+  <>
+    {/* No stacking context of its own: the fixed painting must sit behind the frame's title row (Back), not over it. */}
+    <div aria-hidden className="grain pointer-events-none fixed inset-0 -z-10">
+      <img {...paintingSources(PAINTING)} sizes="70vw" alt="" className="size-full object-cover object-[35%_50%]" />
+      <span className="absolute inset-0 bg-gradient-to-t from-kit-ground/80 via-transparent to-transparent" />
     </div>
-    <p className="fixed bottom-10 left-10 max-w-[32rem] font-display text-[40px] leading-[1.1] text-kit-cream">
+    <p className="fixed bottom-10 left-36 max-w-[36rem] font-display text-[44px] leading-[1.1] text-kit-cream [text-shadow:0_2px_0_theme(colors.kit.ink/70%)] min-[1800px]:left-40">
       {LORE_LINE}
     </p>
-    <div className="w-[440px] plate p-6">{children}</div>
-  </div>
+    <section
+      className={cn(
+        "leather fixed inset-y-0 right-0 z-10 flex flex-col gap-5 overflow-y-auto border-l bg-kit-plate px-10 pb-10 pt-12",
+        PANEL,
+      )}
+    >
+      <h1 className="font-display text-[34px] leading-tight text-kit-cream">{title}</h1>
+      {children}
+    </section>
+  </>
 );
 
 const discordReturnError = (search: string): string | null => {
