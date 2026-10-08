@@ -63,7 +63,7 @@ export const FrontierSeason = ({ rules, onBack }: { rules: ExpeditionRules; onBa
   const [opened, setOpened] = useState<string | null>(null);
   const entries = board.data ?? [];
   const own = findOwnEntry(entries, viewer);
-  const top = entries.slice(0, LIST_LENGTH);
+  const { rows, pinned } = useSeasonListRows(board.data, LIST_LENGTH);
   const chosen = entries.find((entry) => entry.address === opened);
   const visit = (entry: Entry) => {
     startRealmVisit({ player: entry.address, structureId: Number(entry.structure_id) });
@@ -74,8 +74,8 @@ export const FrontierSeason = ({ rules, onBack }: { rules: ExpeditionRules; onBa
       <SeasonList
         rank={ownRank(board.data, viewer)}
         chest={chest}
-        rows={top.map((entry) => listRow(entry, entry === own))}
-        pinned={own && !top.includes(own) ? listRow(own, true) : undefined}
+        rows={rows}
+        pinned={pinned}
         state={board.isError ? "failed" : board.isPending ? "loading" : "ready"}
         onRetry={() => void board.refetch()}
         onOpen={setOpened}
@@ -109,6 +109,22 @@ const useCommonChest = (rules: ExpeditionRules): { tier: Tier; lords: number } |
 };
 
 const CHEST_MODELS = ["LordsBudget", "ChestRules"] as const;
+
+/**
+ * The season's first rows as SeasonRow draws them, the player's own lit in place, or pinned under them when it ranks
+ * below.
+ */
+export const useSeasonListRows = (
+  entries: readonly Entry[] | undefined,
+  length: number,
+): { rows: SeasonListRow[]; pinned: SeasonListRow | undefined } => {
+  const own = findOwnEntry(entries ?? [], useViewer());
+  const top = (entries ?? []).slice(0, length);
+  return {
+    rows: top.map((entry) => listRow(entry, entry === own)),
+    pinned: own && !top.includes(own) ? listRow(own, true) : undefined,
+  };
+};
 
 const listRow = (entry: Entry, own: boolean): SeasonListRow => ({
   key: entry.address,

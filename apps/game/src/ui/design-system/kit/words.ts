@@ -99,6 +99,9 @@ export const DEPLOY = "Deploy";
 export const DEPLOYING = "Deploying…";
 export const BUILD = "Build";
 
+/** What an army's Homecoming sends home when its day ends (a screen reader's word; the screen shows Su and Tr). */
+export const RETURNED = "troops returned";
+
 /** Default army names: "Army" and its place. */
 export const ARMY = "Army";
 

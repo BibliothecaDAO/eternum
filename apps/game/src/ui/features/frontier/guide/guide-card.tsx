@@ -1,3 +1,4 @@
+import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Button } from "@/ui/design-system/kit/button";
 import { KitIcon } from "@/ui/design-system/kit/kit-icon";
 import { GUIDE, NEXT, SHOW_ME } from "@/ui/design-system/kit/words";
@@ -14,8 +15,8 @@ const MARKS: Record<GuideMark, string> = {
 };
 
 /** The Aspect of Skill's mark in one of its states. */
-export const GuideMarkIcon = ({ mark, size }: { mark: GuideMark; size: number }) => (
-  <KitIcon code="Gd" size={size} className={MARKS[mark]} />
+export const GuideMarkIcon = ({ mark, size, className }: { mark: GuideMark; size: number; className?: string }) => (
+  <KitIcon code="Gd" size={size} className={cn(MARKS[mark], className)} />
 );
 
 /**
@@ -33,7 +34,8 @@ export const GuideCard = forwardRef<
     className="frontier-card pointer-events-auto flex flex-col gap-2 !rounded-xl p-2.5"
   >
     <div className="flex items-start gap-2.5">
-      <GuideMarkIcon mark={mark} size={48} />
+      {/* The mark is 48 dp on a phone and 72 on desktop, where the card has the room. */}
+      <GuideMarkIcon mark={mark} size={48} className="lg:size-[72px]" />
       <p className="text-[15px] leading-snug text-kit-cream">{line}</p>
     </div>
     <div className="flex gap-2">

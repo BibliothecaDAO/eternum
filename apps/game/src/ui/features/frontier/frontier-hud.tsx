@@ -6,8 +6,11 @@ import { SETTINGS } from "@/ui/design-system/kit/words";
 import { useGameChat } from "@/ui/features/world/containers/hud-chat-window";
 import { SettingsPanel } from "@/ui/modules/settings/settings";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
+import { useLayout } from "@/shell/frame/layout";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { RealmVisitFoot, useVisitedRealm } from "./board/realm-visit";
+import { SeasonPeek } from "./board/season-peek";
 import { FrontierSeason, SeasonOver, useSeasonRank } from "./board/season-board";
 import { useSpectatorWatchesTheLeader } from "./board/spectator-watch";
 import { useExpeditionRules, useFrontierRealm } from "./frontier-home";
@@ -42,9 +45,9 @@ import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 type ExpeditionRules = NonNullable<ReturnType<typeof useExpeditionRules>>;
 
 /**
- * Frontier's HUD in three bands: the strip with its clock line on top; the map (or a nav page) in the middle; at the
- * foot the guide when it speaks, the action bar while an army is selected, the dock and the place bar. Everything else
- * opens from these as a sheet.
+ * Frontier's HUD, one set of parts in two compositions (HudBands): the strip with its clock line, a nav page or the
+ * map, the guide when it speaks, the action bar while an army is selected, the dock and the place bar; on desktop also
+ * the season's top five and chat docked open. Everything else opens from these as a sheet.
  */
 export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
   useFrontierType();
@@ -57,9 +60,19 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
   // A spectator has no realm of their own: they watch the season's leader, and the strip reads the watched realm.
   useSpectatorWatchesTheLeader();
   const [surface, setSurface] = useHudSurface();
-  const chat = useGameChat(surface === "chat");
+  const desktop = useLayout() === "desktop";
+  // Desktop keeps chat docked open beside the map, its Chat slot collapsing it; a phone opens it as a page.
+  const [chatDocked, setChatDocked] = useState(true);
+  const chat = useGameChat(desktop ? chatDocked : surface === "chat");
   if (showBlankOverlay) return null;
   const close = () => setSurface(null);
+  const onSurface = (next: HudSurface | null) =>
+    desktop && (next === "chat" || (next === null && surface === "chat"))
+      ? setChatDocked((docked) => !docked)
+      : setSurface(next);
+  const chatPage = (
+    <ChatPage gameZoneId={chat.gameZoneId} signedIn={chat.initializer !== null} onSignIn={chat.requestSignIn} />
+  );
   const openArmy = (explorerId: number) => {
     useUIStore.getState().updateEntityActionSelectedEntityId(explorerId);
     setSurface("army");
@@ -68,40 +81,44 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
   return (
     <GuideProvider rules={rules} realm={visit ? null : realm}>
       <HudBands
-        top={
+        strip={
           <FrontierStrip
             rules={rules}
             realm={realm ?? visited}
             onOpenStores={realm && !visit ? () => setSurface("production") : undefined}
           />
         }
-        middle={
-          surface === "chat" ? (
-            <ChatPage gameZoneId={chat.gameZoneId} signedIn={chat.initializer !== null} onSignIn={chat.requestSignIn} />
+        page={
+          surface === "chat" && !desktop ? (
+            chatPage
           ) : surface === "research" && realm ? (
             <FrontierResearch rules={rules} realm={realm} />
           ) : surface === "season" ? (
             <FrontierSeason rules={rules} onBack={close} />
-          ) : (
-            <div className="relative min-h-0 flex-1">
-              {dockRealm && !visit && <LastHour rules={rules} realm={dockRealm} />}
-            </div>
-          )
+          ) : undefined
         }
-        foot={
+        stage={dockRealm && !visit && <LastHour rules={rules} realm={dockRealm} />}
+        guide={<GuideSlot host="foot" />}
+        notices={
           <>
-            <div data-guide>
-              <GuideSlot host="foot" />
-            </div>
             <SiteClearCardView />
             <OfflineNotice />
-            {dockRealm && <Foot rules={rules} realm={dockRealm} onOpenArmy={() => setSurface("army")} />}
-            <RealmVisitFoot home={realm} />
-            {!visit && (
-              <FrontierNav rules={rules} realm={realm} surface={surface} onSurface={setSurface} unread={chat.unread} />
-            )}
           </>
         }
+        action={
+          <>
+            {dockRealm && <ArmyAction rules={rules} realm={dockRealm} onOpenArmy={() => setSurface("army")} />}
+            <RealmVisitFoot home={realm} />
+          </>
+        }
+        dock={dockRealm && <DockFor realm={dockRealm} />}
+        nav={
+          !visit && (
+            <FrontierNav rules={rules} realm={realm} surface={surface} onSurface={onSurface} unread={chat.unread} />
+          )
+        }
+        peek={<SeasonPeek onOpen={() => setSurface("season")} />}
+        chat={desktop && chatDocked && chatPage}
       >
         <FrontierSurfaces realm={realm} />
         <FrontierSelectionSheet rules={rules} realm={realm} />
@@ -122,10 +139,10 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
 };
 
 /**
- * The foot's army rows: with an order pending, its costs and verb take the foot; otherwise the selected army's status
- * over the dock.
+ * The action bar's army row: with an order pending, its costs and verb; otherwise the selected army's status, a tap
+ * opening the army. A full realm's phone board adds its Buildings row.
  */
-const Foot = ({
+const ArmyAction = ({
   rules,
   realm,
   onOpenArmy,
@@ -143,9 +160,18 @@ const Foot = ({
     <>
       <RealmBuildingsRow realm={realm} />
       {selected && <SelectedArmyBar army={selected} onOpen={onOpenArmy} />}
-      <ArmyDock realm={realm} armies={armies} />
     </>
   );
+};
+
+/** The dock over the realm's armies today; on a phone a pending order takes the foot in its place. */
+const DockFor = ({ realm }: { realm: NativeRows["Structure"] }) => {
+  const armies = useDockArmies(realm);
+  const order = useArmyOrder();
+  const selected = useUIStore((state) => state.entityActions.selectedEntityId !== null);
+  const phone = useLayout() === "phone";
+  if (phone && order && selected) return null;
+  return <ArmyDock realm={realm} armies={armies} />;
 };
 
 const PendingOrder = ({

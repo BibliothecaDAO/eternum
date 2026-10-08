@@ -43,6 +43,8 @@ import { SeasonList, type SeasonListRow } from "@/ui/features/frontier/board/sea
 import { SeasonDetailSheet } from "@/ui/features/frontier/board/season-detail";
 import { SeasonOverCard } from "@/ui/features/frontier/board/season-over-card";
 import { VisitFoot } from "@/ui/features/frontier/board/visit-foot";
+import { SeasonPeekView } from "@/ui/features/frontier/board/season-peek";
+import { useLayout } from "@/shell/frame/layout";
 import { GuideCard } from "@/ui/features/frontier/guide/guide-card";
 import { type GuideFacts, GUIDE_STEPS } from "@/ui/features/frontier/guide/guide-script";
 import { GuideThread } from "@/ui/features/frontier/guide/guide-thread";
@@ -689,8 +691,8 @@ export const HudLab = () => {
         className="fixed inset-0 bg-[radial-gradient(ellipse_at_center,theme(colors.kit.line),theme(colors.kit.ground))]"
       />
       <HudBands
-        top={<StatusStrip clock={lab.clock} stores={[...lab.stores]} />}
-        middle={
+        strip={<StatusStrip clock={lab.clock} stores={[...lab.stores]} />}
+        page={
           lab.tree ? (
             <TreePage
               essence={18_250}
@@ -712,16 +714,18 @@ export const HudLab = () => {
               onOpen={noop}
               onBack={noop}
             />
-          ) : (
-            <div className="relative min-h-0 flex-1">
-              {lab.lastHour && <LastHourBubble troopsOut={6_021} returned={470} tiersToBuy={2} />}
-            </div>
-          )
+          ) : undefined
         }
-        foot={
+        stage={lab.lastHour && <LastHourBubble troopsOut={6_021} returned={470} tiersToBuy={2} />}
+        guide={lab.guide && lab.guide !== "fight" && lab.guide !== "season" && <LabGuide guide={lab.guide} />}
+        notices={
           <>
-            {lab.guide && lab.guide !== "fight" && lab.guide !== "season" && <LabGuide guide={lab.guide} />}
             {lab.offline && <Notice icon="Of" line={OFFLINE} verb={TRY_AGAIN} onVerb={noop} ember />}
+            {lab.clear && <SiteClearCard {...lab.clear} />}
+          </>
+        }
+        action={
+          <>
             {lab.realmView === "full" && (
               <BuildingsRow
                 counts={{
@@ -733,7 +737,6 @@ export const HudLab = () => {
                 onOpen={noop}
               />
             )}
-            {lab.clear && <SiteClearCard {...lab.clear} />}
             {lab.order && (
               <OrderBar
                 {...lab.order}
@@ -747,45 +750,22 @@ export const HudLab = () => {
             {selected && !lab.order && (
               <ArmyStatusBar stamina={selected.stamina} secondsToFull={2 * HOUR} revealYield={500} />
             )}
-            {!lab.order && (
-              <nav aria-label="Armies" className="pointer-events-auto flex gap-1.5">
-                {lab.armies.map((army, index) => (
-                  <ArmyToken
-                    key={index}
-                    label={`Army ${index + 1}`}
-                    art={army.troops === undefined ? undefined : "/images/armies/knightT1.png"}
-                    xp={army.xp}
-                    stamina={army.stamina === undefined ? undefined : { current: army.stamina, max: 150 }}
-                    troops={army.troops}
-                    canBuyTier={army.tier === true}
-                    selected={lab.selected === index}
-                    guided={index === 0}
-                    onPick={noop}
-                  />
-                ))}
-                {Array.from({ length: lab.visiting ? 0 : SLOTS - lab.armies.length }, (_, index) => (
-                  <OpenSlot
-                    key={index}
-                    label="Deploy"
-                    pulse={index === 0 && lab.armies.length === 0}
-                    guided={index === 0}
-                    onDeploy={noop}
-                  />
-                ))}
-              </nav>
-            )}
             {lab.visiting && <VisitFoot label="Aldric" order={2} name="Aldric" arriving={false} onLeave={noop} />}
-            {!lab.visiting && (
-              <PlaceNav
-                place={lab.menu || lab.season ? "menu" : lab.tree ? "research" : lab.realmView ? "realm" : "map"}
-                onGo={noop}
-                realmDot={lab.realmDot}
-                researchDot={!lab.offline}
-                unread={lab.offline ? 0 : 3}
-              />
-            )}
           </>
         }
+        dock={!lab.order && <LabDock lab={lab} />}
+        nav={
+          !lab.visiting && (
+            <PlaceNav
+              place={lab.menu || lab.season ? "menu" : lab.tree ? "research" : lab.realmView ? "realm" : "map"}
+              onGo={noop}
+              realmDot={lab.realmDot}
+              researchDot={!lab.offline}
+              unread={lab.offline ? 0 : 3}
+            />
+          )
+        }
+        peek={<SeasonPeekView rows={[...SEASON_ROWS.slice(0, 5), OWN_ROW]} onOpen={noop} />}
       >
         {lab.deploy && <LabDeploySheet deploy={lab.deploy} />}
         {lab.results && <LabResults results={lab.results} guided={lab.guide === "season"} />}
@@ -1094,6 +1074,50 @@ const LabGuide = ({ guide }: { guide: keyof typeof GUIDE_LINES }) => {
       />
       {step.target && <GuideThread from={card} target={step.target} />}
     </>
+  );
+};
+
+/** The dock on the lab's armies: a row of tokens, or desktop's column of full cards. */
+const LabDock = ({ lab }: { lab: LabState }) => {
+  const wide = useLayout() === "desktop";
+  return (
+    <nav
+      aria-label="Armies"
+      className={wide ? "pointer-events-auto flex flex-col gap-1.5" : "pointer-events-auto flex gap-1.5"}
+    >
+      {lab.armies.map((army, index) => (
+        <ArmyToken
+          key={index}
+          label={`Army ${index + 1}`}
+          art={army.troops === undefined ? undefined : "/images/armies/knightT1.png"}
+          xp={army.xp}
+          stamina={army.stamina === undefined ? undefined : { current: army.stamina, max: 150 }}
+          troops={army.troops}
+          canBuyTier={army.tier === true}
+          selected={lab.selected === index}
+          guided={index === 0}
+          wide={
+            wide
+              ? {
+                  secondsToFull: index === 1 ? undefined : 2 * HOUR,
+                  returnsHome: army.troops && Math.floor(army.troops * 0.09),
+                }
+              : undefined
+          }
+          onPick={noop}
+        />
+      ))}
+      {Array.from({ length: lab.visiting ? 0 : SLOTS - lab.armies.length }, (_, index) => (
+        <OpenSlot
+          key={index}
+          label="Deploy"
+          pulse={index === 0 && lab.armies.length === 0}
+          guided={index === 0}
+          wide={wide}
+          onDeploy={noop}
+        />
+      ))}
+    </nav>
   );
 };
 

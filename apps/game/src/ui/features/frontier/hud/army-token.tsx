@@ -1,5 +1,7 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { formatAmount } from "@/ui/design-system/kit/amount";
+import { Chip, FullIn } from "@/ui/design-system/kit/chip";
+import { RETURNED } from "@/ui/design-system/kit/words";
 
 import { CardFanGlyph } from "../glyphs";
 import { guideTarget } from "../guide/guide-thread";
@@ -8,10 +10,12 @@ import { guideTarget } from "../guide/guide-thread";
 const SEGMENTS = 5;
 
 const TOKEN = "relative flex h-[72px] w-14 shrink-0 flex-col items-center justify-center gap-[3px] rounded-xl";
+const CARD = "relative flex w-full shrink-0 flex-col items-center gap-1 rounded-xl px-2 py-2";
 
 /**
  * One army on the dock: its portrait with its XP balance as the badge (a number alone; there is no level), a card fan
- * when a tier is affordable now, its stamina in segments, and its troops. Read-only on a visit.
+ * when a tier is affordable now, its stamina in segments, and its troops. Desktop's wide card adds what a phone shows
+ * only for the selected army: when the bar is full, and the troops its Homecoming sends home. Read-only on a visit.
  */
 export const ArmyToken = ({
   label,
@@ -23,6 +27,7 @@ export const ArmyToken = ({
   selected,
   flyTarget,
   guided = false,
+  wide,
   onPick,
 }: {
   label: string;
@@ -36,6 +41,8 @@ export const ArmyToken = ({
   flyTarget?: string;
   /** The dock's first army: the guide's lines about XP and stamina point at its badge and its bar. */
   guided?: boolean;
+  /** Desktop's full card: the bar's Full in and the troops Homecoming returns (unknown is a dash). */
+  wide?: { secondsToFull: number | undefined; returnsHome: number | undefined };
   /** Absent on a visit: the token is shown, never picked. */
   onPick?: () => void;
 }) => {
@@ -59,9 +66,14 @@ export const ArmyToken = ({
       </span>
       <StaminaSegments stamina={stamina} guided={guided} />
       <span className="text-[14px] leading-none text-kit-cream tabular-nums">{formatAmount(troops)}</span>
+      {wide && <WideRows {...wide} />}
     </>
   );
-  const look = cn(TOKEN, "border bg-kit-ground", selected ? "border-[3px] border-kit-hot" : "border-kit-line");
+  const look = cn(
+    wide ? CARD : TOKEN,
+    "border bg-kit-ground",
+    selected ? "border-[3px] border-kit-hot" : "border-kit-line",
+  );
   return onPick ? (
     <button type="button" aria-label={label} aria-pressed={selected} onClick={onPick} className={look}>
       {body}
@@ -81,11 +93,14 @@ export const OpenSlot = ({
   label,
   pulse,
   guided = false,
+  wide = false,
   onDeploy,
 }: {
   label: string;
   pulse: boolean;
   guided?: boolean;
+  /** Desktop's full card: the plus with Deploy beside it. */
+  wide?: boolean;
   onDeploy: () => void;
 }) => (
   <button
@@ -93,7 +108,7 @@ export const OpenSlot = ({
     aria-label={label}
     {...(guided ? guideTarget("open-slot") : {})}
     onClick={onDeploy}
-    className={cn(TOKEN, "border border-kit-line bg-kit-ground")}
+    className={cn(wide ? cn(CARD, "!flex-row justify-center") : TOKEN, "border border-kit-line bg-kit-ground")}
   >
     <span
       className={cn(
@@ -103,6 +118,7 @@ export const OpenSlot = ({
     >
       +
     </span>
+    {wide && <span className="text-[14px] font-semibold text-kit-cream">{label}</span>}
   </button>
 );
 
@@ -133,3 +149,17 @@ const StaminaSegments = ({
     </span>
   );
 };
+
+/** The wide card's rows: when the bar is full, and the troops Homecoming sends home when the day ends. */
+const WideRows = ({
+  secondsToFull,
+  returnsHome,
+}: {
+  secondsToFull: number | undefined;
+  returnsHome: number | undefined;
+}) => (
+  <span className="flex w-full flex-wrap items-center justify-center gap-1">
+    {secondsToFull !== undefined && secondsToFull > 0 && <FullIn seconds={secondsToFull} />}
+    <Chip icons={["Su", "Tr"]} label={RETURNED} value={`+${formatAmount(returnsHome)}`} />
+  </span>
+);

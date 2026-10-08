@@ -1,8 +1,10 @@
+import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { useGame } from "@/hooks/context/game-context";
 import { useNavigateToMapView } from "@/hooks/helpers/use-navigate";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { useLayout } from "@/shell/frame/layout";
 import { requestArmySelection } from "@/three/scenes/worldmap-army-select-request";
 import { LeftView } from "@/types";
 import { canIssueOrders } from "@/utils/can-issue-orders";
@@ -29,10 +31,12 @@ export const ArmyDock = ({ realm, armies }: { realm: NativeRows["Structure"]; ar
   const own = actor !== null && BigInt(realm.owner) === BigInt(actor);
   const openSlots = useOpenArmySlots(realm);
   const openCount = openSlots?.length ?? Math.max(0, realm.base.troop_max_explorer_count - armies.length);
+  // Desktop has the width for full cards down the left; a phone keeps one row of tokens.
+  const wide = useLayout() === "desktop";
   return (
-    <nav aria-label="Armies" className="pointer-events-auto flex gap-1.5">
+    <nav aria-label="Armies" className={cn("pointer-events-auto flex gap-1.5", wide && "flex-col")}>
       {armies.map((army, index) => (
-        <DockToken key={army.explorerId} army={army} pickable={own} guided={own && index === 0} />
+        <DockToken key={army.explorerId} army={army} pickable={own} guided={own && index === 0} wide={wide} />
       ))}
       {ordersAllowed &&
         Array.from({ length: openCount }, (_, index) => (
@@ -40,13 +44,24 @@ export const ArmyDock = ({ realm, armies }: { realm: NativeRows["Structure"]; ar
             key={openSlots?.[index]?.slot ?? `open-${index}`}
             first={index === 0}
             pulse={index === 0 && armies.length === 0}
+            wide={wide}
           />
         ))}
     </nav>
   );
 };
 
-const DockToken = ({ army, pickable, guided }: { army: DockArmy; pickable: boolean; guided: boolean }) => {
+const DockToken = ({
+  army,
+  pickable,
+  guided,
+  wide,
+}: {
+  army: DockArmy;
+  pickable: boolean;
+  guided: boolean;
+  wide: boolean;
+}) => {
   const selected = useUIStore((state) => state.entityActions.selectedEntityId === army.explorerId);
   const pick = usePickArmy(army.explorerId);
   const stamina = useWellRefillShown(army);
@@ -61,6 +76,7 @@ const DockToken = ({ army, pickable, guided }: { army: DockArmy; pickable: boole
       selected={selected}
       flyTarget={attributeBadgeTarget(army.explorerId)}
       guided={guided}
+      wide={wide ? { secondsToFull: army.secondsToFull, returnsHome: army.returnsHome } : undefined}
       onPick={pickable ? pick : undefined}
     />
   );
@@ -89,7 +105,7 @@ const usePickArmy = (explorerId: number) => {
 };
 
 /** An open slot; the first one takes the guide's sweep when it points at Deploy. */
-const DeploySlot = ({ first, pulse }: { first: boolean; pulse: boolean }) => {
+const DeploySlot = ({ first, pulse, wide }: { first: boolean; pulse: boolean; wide: boolean }) => {
   const setLeftNavigationView = useUIStore((state) => state.setLeftNavigationView);
   const pointed = useDeployPointed();
   return (
@@ -98,6 +114,7 @@ const DeploySlot = ({ first, pulse }: { first: boolean; pulse: boolean }) => {
         label={DEPLOY}
         pulse={pulse}
         guided={first}
+        wide={wide}
         onDeploy={() => setLeftNavigationView(LeftView.MilitaryView)}
       />
     </Sweep>
