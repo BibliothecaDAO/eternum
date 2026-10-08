@@ -259,16 +259,14 @@ const launchRequest = () =>
 
 describe("launch service authorization", () => {
   test("says whether the signed-in caller launches, so the factory page shows itself to launchers only", async () => {
-    const launcher = (resolver: IdentityResolver, cookie: string | null = "session=1") =>
-      createApp(resolver)
-        .app.request("https://play.realms.party/api/factory/launcher", {
-          headers: cookie ? { cookie } : {},
-        })
-        .then((response) => {
-          expect(response.headers.get("cache-control")).toBe("private, no-store");
-          expect(response.status).toBe(200);
-          return response.json();
-        });
+    const launcher = async (resolver: IdentityResolver, cookie: string | null = "session=1") => {
+      const response = await createApp(resolver).app.request("https://play.realms.party/api/factory/launcher", {
+        headers: cookie ? { cookie } : {},
+      });
+      expect(response.headers.get("cache-control")).toBe("private, no-store");
+      expect(response.status).toBe(200);
+      return response.json();
+    };
     expect(await launcher(signedIn(ALLOWED_ADDRESS))).toEqual({ launcher: true });
     expect(await launcher(signedIn("0x456"))).toEqual({ launcher: false });
     expect(await launcher(signedIn())).toEqual({ launcher: false });
