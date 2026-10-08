@@ -65,7 +65,8 @@ if __name__ == "__main__":
     SPEC = json.load(open(p(*a.char.split("/")))); bp = p(*a.bound.split("/")); V, tris, W, rig0, cls, classes = HN.load_bound(bp); helpers = [h for h in a.helpers.split(",") if h]
     rig, Wh = HH.add_helpers(V, W, rig0, helpers, cls, classes); names = list(rig["names"]); par = [int(x) for x in rig["parent"]]; rest = np.array(rig["rest"], float); tip = np.array(rig["tip"], float)
     order = GAME_ORDER + [n for n in names if n not in GAME_ORDER]; nm = {int(k): c for k, c in classes.items()}; byname = {c["name"]: k for k, c in nm.items()}
-    out = {"from": a.bound, "frame": {"up": "+Y", "forward": "+Z", "left": "+X", "units": "metres", "from_working_frame": "(x, y, z) -> (x, z, -y)", "note": "every joint's rest rotation is identity: a joint's frame is the world's axes at its rest position"},
+    out = {"from": os.path.basename(a.bound.replace("\\", "/")),   # the name only: a path would put the maker's folders into a shipped file
+           "frame": {"up": "+Y", "forward": "+Z", "left": "+X", "units": "metres", "from_working_frame": "(x, y, z) -> (x, z, -y)", "note": "every joint's rest rotation is identity: a joint's frame is the world's axes at its rest position"},
            "joints": [{"name": n, "parent": (names[par[names.index(n)]] if par[names.index(n)] >= 0 else None), "rest_position": r6(to_game(rest[names.index(n)]))} for n in order]}
 
     # ---- helper joints
