@@ -1,4 +1,4 @@
-# T1 Knight default
+# T1 Knight Default
 
 The default skin of the T1 Knight with its sword and shield. Opt-in for now: the appearance is offered only in
 development builds opened with `?t1KnightDefault=1` (`procedural-character-review-capability.ts`).
@@ -17,7 +17,7 @@ serve both levels.
 
 Every file is a plain GLB: one mesh, one primitive, one single-sided PBR material with base colour, normal and one ORM
 image (occlusion, roughness, metallic) as embedded PNGs. No animation clips. Axes are the game's: +Y up, +Z forward, +X
-the character's left, in metres, feet on y = 0. The figure stands 0.615 to the top of the helmet.
+the character's left, in metres, feet on y = 0. The figure stands about 0.61 to the top of the helmet.
 
 The skins carry 31 joints: the 25 core joints in the family order, then `elbow_half_l/r`, `knee_half_l/r` and
 `upperarm_twist_l/r`. Every joint is a node with a translation and no rotation, so a joint's local rotation is its turn
@@ -35,7 +35,8 @@ centre; the shield's front faces +Z from an origin at the centre of its rear fac
 
 `apps/game/asset-sources/characters/t1-knight-default/runtime-fit.json` is the measured data the adapter is filled from:
 rest positions, helper rules and twist axes with 66 worked cases, both sockets, three knuckle points per hand and the
-feet. `t1-knight-default-driver-reference.json` holds those worked cases for the driver's test.
+feet. The adapter test and the driver test read it: the first compares the adapter's hands, feet, sockets and driven
+joints with it, the second takes its 66 worked cases from it.
 
 ## Checking the files
 
@@ -62,8 +63,8 @@ rather than polished.
 
 The editable sources (the raw generation, the labelled and bound full-detail model, the Blender file of the sword and
 shield) and the Python tools that bind, reduce, bake and export are not in this repository. They are kept by the author;
-`.claude/skills/eternum-tripo-asset-workflow` describes the process. Replacing a file here means re-exporting all four
-and `runtime-fit.json` together, then updating the adapter and the hash pins from them.
+the process is the `eternum-tripo-asset-workflow` skill, proposed separately in #5031 with the tools. Replacing a file
+here means re-exporting all four and `runtime-fit.json` together, then updating the adapter and the hash pins from them.
 
 ## Known limits
 
@@ -72,3 +73,15 @@ and `runtime-fit.json` together, then updating the adapter and the hash pins fro
 - The shield's rim is a 1,000-triangle outline and reads as a polygon when it fills the screen.
 - The right fist is a hammer grip. The blade stands about 67 degrees from the forearm and cannot be brought into line
   with the arm.
+
+## Licence and attribution
+
+The figure, the sword and the shield were generated with [Tripo](https://www.tripo3d.ai) (model version 3.1) from this
+project's own concept art, on a paid Tripo account.
+
+Tripo's terms treat free and paid use differently. Models made on a paid plan belong to the account holder, who may use
+them commercially, and no credit to Tripo is required. Models made on the free plan are public and licensed CC BY 4.0,
+which does require credit. Tripo is named here as the source, not because attribution is owed. If a file here is ever
+regenerated on a free plan, that changes. (Checked 2026-10-08 against Tripo's help pages on commercial use.)
+
+The skinning weights derive from the MakeHuman base mesh's rig data, which is CC0. None of that mesh is in these files.
