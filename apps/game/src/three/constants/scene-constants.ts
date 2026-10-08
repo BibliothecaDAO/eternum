@@ -142,6 +142,11 @@ export const buildingModelPaths = (isBlitz: boolean) => {
       [BuildingType.WorkersHut]: BUILDINGS_MODELS_PATH + BuildingFilenames.WorkersHut,
       [BuildingType.ResourceDragonhide]: BUILDINGS_MODELS_PATH + BuildingFilenames.Dragonhide,
       [BuildingType.ResourceResearch]: BUILDINGS_MODELS_PATH + BuildingFilenames.Castle,
+      // Frontier's training buildings stand in on existing models until the art pass draws them.
+      [BuildingType.WarHall]: BUILDINGS_MODELS_PATH + BuildingFilenames.ArcheryRange,
+      [BuildingType.SupplyYard]: BUILDINGS_MODELS_PATH + BuildingFilenames.Market,
+      [BuildingType.ScoutsLodge]: BUILDINGS_MODELS_PATH + BuildingFilenames.Stable,
+      [BuildingType.Hearth]: BUILDINGS_MODELS_PATH + BuildingFilenames.WorkersHut,
     },
     [BUILDINGS_GROUPS.RESOURCES_MINING]: {
       [ResourceMiningTypes.Forge]: BUILDINGS_MODELS_PATH + BuildingFilenames.Forge,

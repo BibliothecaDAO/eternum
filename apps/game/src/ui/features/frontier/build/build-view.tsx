@@ -62,7 +62,8 @@ export const BuildView = ({
         <Chip key={gain.label} icons={[gain.icon]} label={gain.label} value={gain.value} />
       ))}
     </div>
-    {short ? (
+    {/* A building already standing or still gated shows why on its tile; there is nothing to build. */}
+    {tiles[chosen]?.foot.kind !== "price" ? null : short ? (
       <ReasonPlate
         reason={short}
         step={<Button role="primary" icon="Mp" word={MAP} className="w-[104px]" onClick={onMap} />}

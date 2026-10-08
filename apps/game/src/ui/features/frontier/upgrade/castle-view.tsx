@@ -13,7 +13,7 @@ export type CastleSide = {
   art: string;
   plots: number;
   slots: number;
-  /** Each store's limit at this level; undefined until the facts carry store limits. */
+  /** What the castle stores of each store at this level, before the Granary and Storeroom; unknown is undefined. */
   limit: number | undefined;
   deployCap: number;
 };

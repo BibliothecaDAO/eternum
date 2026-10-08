@@ -1,12 +1,13 @@
 import {
   getBuildingCosts,
+  getBuildingQuantity,
   realmLearned,
   researchChoice,
   researchRowOf,
   researchTier,
   ResourceManager,
 } from "@bibliothecadao/eternum";
-import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
+import { nativeResearchConstants, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { BuildingType, getProducedResource, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 
 /**
@@ -20,11 +21,24 @@ const FRONTIER_BUILDINGS = [
   BuildingType.ResourceKnightT1,
   BuildingType.ResourceLabor,
   BuildingType.WorkersHut,
+  BuildingType.WarHall,
+  BuildingType.SupplyYard,
+  BuildingType.ScoutsLodge,
+  BuildingType.Hearth,
 ] as const;
+
+/** Each training building and the attribute it trains every new army in. */
+const TRAINS: Partial<Record<BuildingType, "Battle" | "Logistics" | "Scouting" | "Homecoming">> = {
+  [BuildingType.WarHall]: "Battle",
+  [BuildingType.SupplyYard]: "Logistics",
+  [BuildingType.ScoutsLodge]: "Scouting",
+  [BuildingType.Hearth]: "Homecoming",
+};
 
 export type BuildEffect =
   | { kind: "produces"; resource: ResourcesIds; perHour: number }
-  | { kind: "population"; amount: number };
+  | { kind: "population"; amount: number }
+  | { kind: "trains"; attribute: "Battle" | "Logistics" | "Scouting" | "Homecoming" };
 
 export interface BuildOption {
   category: BuildingType;
@@ -33,6 +47,11 @@ export interface BuildOption {
   cost: { resource: number; amount: number }[];
   effect: BuildEffect;
   populationCost: number;
+  /**
+   * Whether it can rise now: a training building is unique on the board, and opens once the Barracks row reaches the
+   * board's gate tier (the contract's assert_board_category).
+   */
+  standing: "open" | "built" | { gate: number };
   /** What it adds to the realm's wheat an hour, and the realm's wheat an hour once it stands (unknown while that is). */
   wheat: { change: number; after: number | undefined };
 }
@@ -46,6 +65,8 @@ export const readBuildOptions = (
   const learned = realmLearned(store, realm.game_id, realm.entity_id);
   if (learned === undefined) return undefined;
   const wheat = new ResourceManager(store, realm.entity_id).wheatPerHour(tick);
+  const board = store.require("BoardRules", { game_id: realm.game_id });
+  const barracksTier = researchTier(learned, nativeResearchConstants.ROW_BARRACKS);
   const options: BuildOption[] = [];
   for (const category of FRONTIER_BUILDINGS) {
     const cost = getBuildingCosts(realm.entity_id, store, category, useSimpleCost);
@@ -60,6 +81,13 @@ export const readBuildOptions = (
       cost,
       effect,
       populationCost: rule.population_cost,
+      standing: !TRAINS[category]
+        ? "open"
+        : getBuildingQuantity(realm.entity_id, category, store) > 0
+          ? "built"
+          : barracksTier < board.training_gate_tier
+            ? { gate: board.training_gate_tier }
+            : "open",
       wheat: { change, after: wheat === undefined ? undefined : wheat + change },
     });
   }
@@ -81,6 +109,8 @@ const readBuildingEffect = (
   const board = store.require("BoardRules", { game_id: realm.game_id });
   const row = researchRowOf(category);
   const tier = row === undefined ? 0 : researchTier(learned, row);
+  const trains = TRAINS[category];
+  if (trains) return { kind: "trains", attribute: trains };
   if (category === BuildingType.WorkersHut)
     return {
       kind: "population",

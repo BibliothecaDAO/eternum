@@ -195,8 +195,27 @@ export class ResourceManager {
   }
 
   /**
+   * What a board realm's castle stores of each of wheat, labor and troops at a level, before the Granary and the
+   * Storeroom: that many of its level's full deploys. Undefined in a game without a realm board.
+   */
+  public static castleStoreLimit(store: NativeFactStore, gameId: number, level: number): bigint | undefined {
+    const board = store.get("BoardRules", { game_id: gameId });
+    if (!board) return undefined;
+    const limits = store.require("SliceRules", { game_id: gameId }).troop_limit_config;
+    const cap = [
+      limits.settlement_deployment_cap,
+      limits.city_deployment_cap,
+      limits.kingdom_deployment_cap,
+      limits.empire_deployment_cap,
+    ][level];
+    if (cap === undefined) throw new Error(`Unknown castle level ${level}`);
+    return BigInt(cap) * BigInt(board.castle_store_deploys) * BigInt(RESOURCE_PRECISION);
+  }
+
+  /**
    * A board realm's own limit on its wheat, labor or troops, as the contract's store_limit: its castle stores that many
-   * of its level's full deploys. Undefined for every other store, which only the shared weight bounds.
+   * of its level's full deploys, and a Granary or Storeroom tier raises wheat's or labor's. Undefined for every other
+   * store, which only the shared weight bounds.
    */
   public storeLimit(resourceId: ResourcesIds): bigint | undefined {
     if (!hasCastleLimit(resourceId)) return undefined;
@@ -204,15 +223,7 @@ export class ResourceManager {
     if (!board) return undefined;
     const structure = this.store.get("Structure", { game_id: this.gameId, entity_id: this.entityId });
     if (structure?.base.category !== StructureType.Realm) return undefined;
-    const limits = this.store.require("SliceRules", { game_id: this.gameId }).troop_limit_config;
-    const cap = [
-      limits.settlement_deployment_cap,
-      limits.city_deployment_cap,
-      limits.kingdom_deployment_cap,
-      limits.empire_deployment_cap,
-    ][structure.base.level];
-    if (cap === undefined) throw new Error(`Unknown castle level ${structure.base.level}`);
-    const base = BigInt(cap) * BigInt(board.castle_store_deploys) * BigInt(RESOURCE_PRECISION);
+    const base = ResourceManager.castleStoreLimit(this.store, this.gameId, structure.base.level)!;
     const row =
       resourceId === ResourcesIds.Wheat
         ? research.ROW_FARM

@@ -10,6 +10,8 @@ import { requireActiveGameClient } from "@/sync/active-game-client";
 import { formatAmount } from "@/ui/design-system/kit/amount";
 import type { IconCode } from "@/ui/design-system/kit/kit-icon";
 import type { PriceKind } from "@/ui/design-system/kit/price-chip";
+import type { Tier } from "@/ui/design-system/kit/tier-chip";
+import { TIER_WORDS } from "@/ui/design-system/kit/words";
 import { toast } from "@/ui/features/event-feed/notify";
 import { knownBalance } from "@/ui/utils/utils";
 import { canIssueOrders } from "@/utils/can-issue-orders";
@@ -179,6 +181,18 @@ const BUILDING_ICONS: Partial<Record<BuildingType, IconCode>> = {
   [BuildingType.ResourceLabor]: "Wk",
   [BuildingType.ResourceKnightT1]: "Bs",
   [BuildingType.WorkersHut]: "Ht",
+  [BuildingType.WarHall]: "Wa",
+  [BuildingType.SupplyYard]: "Sy",
+  [BuildingType.ScoutsLodge]: "Ld",
+  [BuildingType.Hearth]: "He",
+};
+
+/** Each attribute's mark, as a training building's gain shows it. */
+const ATTRIBUTE_MARKS: Record<Extract<BuildOption["effect"], { kind: "trains" }>["attribute"], IconCode> = {
+  Battle: "Ba",
+  Logistics: "Lg",
+  Scouting: "Sc",
+  Homecoming: "Su",
 };
 
 const RESOURCE_ICONS: Partial<Record<number, IconCode>> = {
@@ -218,17 +232,28 @@ const buildTile = (option: BuildOption, labor: number | undefined): BuildTile =>
     key: String(option.category),
     icon,
     name: buildingName(option.category),
-    foot: { kind: "price", labor: price, short: labor === undefined || labor < price },
+    foot:
+      option.standing === "built"
+        ? { kind: "built" }
+        : option.standing === "open"
+          ? { kind: "price", labor: price, short: labor === undefined || labor < price }
+          : // The gate is a research tier above common; the kit counts tiers from common.
+            { kind: "locked", gate: (option.standing.gate + 1) as Tier },
   };
 };
 
-/** The chosen building's gains: what it makes an hour or the population room it adds, and its population. */
+/**
+ * The chosen building's gains: what it makes an hour, the population room it adds or the tier a training building
+ * starts each new army at, and its population.
+ */
 const buildGains = (option: BuildOption): BuildGain[] => {
   const { effect } = option;
   const gain: BuildGain =
     effect.kind === "produces"
       ? { icon: iconOf(effect.resource), value: `+${formatAmount(effect.perHour)}/h`, label: "produces" }
-      : { icon: "Pp", value: `+${formatAmount(effect.amount)}`, label: "houses" };
+      : effect.kind === "trains"
+        ? { icon: ATTRIBUTE_MARKS[effect.attribute], value: TIER_WORDS[option.tier - 1], label: "trains" }
+        : { icon: "Pp", value: `+${formatAmount(effect.amount)}`, label: "houses" };
   return [gain, { icon: "Pp", value: formatAmount(option.populationCost), label: "population" }];
 };
 

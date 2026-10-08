@@ -2,13 +2,13 @@ import { useQuery } from "@/hooks/helpers/use-query";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useStructureUpgrade } from "@/ui/modules/entity-details/hooks/use-structure-upgrade";
 import { canIssueOrders } from "@/utils/can-issue-orders";
-import type { NativeRows } from "@bibliothecadao/eternum/game-client";
+import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
 import { useGame } from "@/hooks/context/game-context";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import type { PriceKind } from "@/ui/design-system/kit/price-chip";
 import { knownBalance } from "@/ui/utils/utils";
-import { buildablePlotCount, configManager, getBalance } from "@bibliothecadao/eternum";
-import { BUILDINGS_CENTER, ResourcesIds, TroopTier } from "@bibliothecadao/types";
+import { buildablePlotCount, configManager, getBalance, ResourceManager } from "@bibliothecadao/eternum";
+import { BUILDINGS_CENTER, RESOURCE_PRECISION, ResourcesIds, TroopTier } from "@bibliothecadao/types";
 import { useState } from "react";
 
 import { useGoToFrontierPlace } from "../frontier-home";
@@ -57,8 +57,8 @@ export const CastleUpgrade = ({ realm, onClose }: { realm: NativeRows["Structure
   };
   return (
     <CastleView
-      now={castleSide(upgrade.currentLevel)}
-      next={upgrade.nextLevel === null ? null : castleSide(upgrade.nextLevel)}
+      now={castleSide(setup.store, realm.game_id, upgrade.currentLevel)}
+      next={upgrade.nextLevel === null ? null : castleSide(setup.store, realm.game_id, upgrade.nextLevel)}
       prices={upgrade.requirements.map(({ resource, amount }) => ({ of: castlePriceKind(resource), amount }))}
       short={
         short && {
@@ -84,8 +84,11 @@ export const CastleUpgrade = ({ realm, onClose }: { realm: NativeRows["Structure
   );
 };
 
-/** The castle at a level: the plots its ring opens, its army slots and deploy cap from the preset. */
-const castleSide = (level: number): CastleSide => {
+/**
+ * The castle at a level: the plots its ring opens, its army slots, what it stores of each store (before the Granary and
+ * Storeroom) and its deploy cap, from the preset.
+ */
+const castleSide = (store: NativeFactStore, gameId: number, level: number): CastleSide => {
   const art = CASTLE_ART[level];
   if (!art) throw new Error(`No castle art for level ${level}`);
   return {
@@ -93,7 +96,7 @@ const castleSide = (level: number): CastleSide => {
     art,
     plots: buildablePlotCount(level),
     slots: configManager.getArmySlots(level),
-    limit: undefined,
+    limit: wholeOrUnknown(ResourceManager.castleStoreLimit(store, gameId, level)),
     deployCap: configManager.getMaxArmySize(level, TroopTier.T1),
   };
 };
@@ -104,3 +107,6 @@ const castlePriceKind = (resource: number): PriceKind => {
   if (resource === ResourcesIds.Essence) return "essence";
   throw new Error(`The castle is priced in resource ${resource}`);
 };
+
+const wholeOrUnknown = (amount: bigint | undefined): number | undefined =>
+  amount === undefined ? undefined : Number(amount / BigInt(RESOURCE_PRECISION));

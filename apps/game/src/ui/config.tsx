@@ -69,6 +69,11 @@ export const BUILDING_IMAGES_PATH = {
   [BuildingType.WorkersHut]: `${BUILD_IMAGES_PREFIX}workers_hut.png`,
   [BuildingType.Storehouse]: `${BUILD_IMAGES_PREFIX}storehouse.png`,
   [BuildingType.ResourceResearch]: `${BUILD_IMAGES_PREFIX}research_lab.png`,
+  // Frontier's training buildings stand in on existing art until the art pass draws them.
+  [BuildingType.WarHall]: `${BUILD_IMAGES_PREFIX}archery.png`,
+  [BuildingType.SupplyYard]: `${BUILD_IMAGES_PREFIX}market.png`,
+  [BuildingType.ScoutsLodge]: `${BUILD_IMAGES_PREFIX}stable.png`,
+  [BuildingType.Hearth]: `${BUILD_IMAGES_PREFIX}workers_hut.png`,
   [ResourceMiningTypes.Forge]: `${BUILD_IMAGES_PREFIX}forge.png`,
   [ResourceMiningTypes.Mine]: `${BUILD_IMAGES_PREFIX}mine.png`,
   [ResourceMiningTypes.LumberMill]: `${BUILD_IMAGES_PREFIX}lumber_mill.png`,
