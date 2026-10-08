@@ -354,7 +354,13 @@ const armyPosition = (explorerId: number, home: number, army: ArmyState) => ({
 const createHarness = async (level: "off" | "important" | "standard" | "all", pollMs = POLL_MS) => {
   const storage = newStorage();
   const herald = createHerald();
-  const push = { status: 201, received: [] as number[], times: [] as number[], endpoints: [] as string[] };
+  const push = {
+    status: 201,
+    received: [] as number[],
+    times: [] as number[],
+    endpoints: [] as string[],
+    stalledEndpoint: null as string | null,
+  };
   const vapid = await vapidKeys();
   const start = () =>
     startWorker({
@@ -372,6 +378,8 @@ const createHarness = async (level: "off" | "important" | "standard" | "all", po
           push.received.push(push.status);
           push.times.push(Date.now());
           push.endpoints.push(url.href);
+          if (url.href === push.stalledEndpoint)
+            return pause(1500).then(() => new Response(null, { status: push.status }));
           return new Response(null, { status: push.status });
         }
         return new Response("unexpected outbound request", { status: 599 });
@@ -519,10 +527,12 @@ it("reads a new chain at the same URL from its own head, and sends nothing twice
 }, 60_000);
 
 /** Put the shared calendar's first reminder a few seconds ahead; no player needs to have acted. */
-const remindSoon = (herald: ReturnType<typeof createHerald>, seconds = 8) => {
+const remindSoon = (herald: ReturnType<typeof createHerald>, seconds = 8, dayIndex = 0) => {
   const dueAt = (Math.floor(Date.now() / 1000) + seconds) * 1000;
-  const first = dayOf({ seed: 1n, startMainAt: 0, dayUnitSeconds: DAY_UNIT_SECONDS }, 0)!;
-  herald.state.seasonStart = dueAt / 1000 + 3600 - first.end;
+  const calendar = { seed: 1n, startMainAt: 0, dayUnitSeconds: DAY_UNIT_SECONDS };
+  let day = dayOf(calendar, 0)!;
+  for (let index = 0; index < dayIndex; index++) day = dayOf(calendar, day.end)!;
+  herald.state.seasonStart = dueAt / 1000 + 3600 - day.end;
   return dueAt;
 };
 
@@ -647,3 +657,100 @@ it("rule 9.6 drops a lost delivery rather than retrying after the hour", async (
   expect(push.received).toEqual([503]);
   await restarted.dispose();
 }, 45_000);
+
+/** Each extra player owns one eligible device, within the production per-owner cap. */
+const addReminderPlayers = async (worker: Awaited<ReturnType<typeof startWorker>>, count: number) => {
+  const now = Date.now();
+  const players = Array.from({ length: count }, (_, index) => {
+    const id = `reminder-extra-${index}`;
+    return {
+      id,
+      owner: realmsIdOf(id),
+      account: `0x${(0x2000 + index).toString(16)}`,
+      endpoint: `${PUSH_ENDPOINT}/${index}`,
+      device: `00000000-0000-4000-8000-${(index + 2).toString().padStart(12, "0")}`,
+    };
+  });
+  await worker.db.batch(
+    players.flatMap((player) => [
+      worker.db
+        .prepare(
+          `INSERT INTO "user" ("id","name","email","emailVerified","createdAt","updatedAt","realmsId") VALUES (?,?,?,1,?,?,?)`,
+        )
+        .bind(
+          player.id,
+          player.id,
+          `${player.id}@x.test`,
+          new Date(now).toISOString(),
+          new Date(now).toISOString(),
+          player.owner,
+        ),
+      worker.db
+        .prepare('INSERT INTO "realms_accounts" ("address","realmsId") VALUES (?,?)')
+        .bind(player.account, player.owner),
+      worker.db
+        .prepare(`INSERT INTO "notification_preferences" ("owner","level","revision") VALUES (?,'important',1)`)
+        .bind(player.owner),
+      worker.db
+        .prepare(
+          `INSERT INTO "notification_push_subscriptions" ("id","owner","endpoint","p256dh","auth","revocationHash","gameAlertsEnabledAt","createdAt")
+      SELECT ?,?,?,"p256dh","auth",'x',"gameAlertsEnabledAt","createdAt" FROM "notification_push_subscriptions" WHERE "id"=?`,
+        )
+        .bind(player.device, player.owner, player.endpoint, DEVICE_ID),
+    ]),
+  );
+  return players;
+};
+
+it("rule 9.6 starts device 101 in its scheduled second while an endpoint in the first hundred stalls", async () => {
+  const { herald, push, worker } = await createHarness("important", 1000);
+  try {
+    const players = await addReminderPlayers(worker, 100);
+    herald.state.members.push(...players.map((player) => player.account));
+    const ordered = [{ owner: OWNER, endpoint: PUSH_ENDPOINT }, ...players].sort((a, b) =>
+      a.owner < b.owner ? -1 : a.owner > b.owner ? 1 : 0,
+    );
+    push.stalledEndpoint = ordered[0]!.endpoint;
+    const dueAt = remindSoon(herald, 10);
+    await worker.runCron();
+    await waitUntil(() => push.endpoints.length === 101, 15_000);
+    const last = push.endpoints.indexOf(ordered[100]!.endpoint);
+    expect(last).toBeGreaterThanOrEqual(0);
+    expect(push.times[last]).toBeGreaterThanOrEqual(dueAt);
+    expect(push.times[last]).toBeLessThan(dueAt + 1000);
+    expect(push.times.every((time) => time >= dueAt && time < dueAt + 1000)).toBe(true);
+    await pause(Math.max(0, dueAt + 2500 - Date.now()));
+    expect(new Set(push.endpoints).size).toBe(101);
+    expect(push.endpoints).toHaveLength(101);
+  } finally {
+    await worker.dispose();
+  }
+}, 45_000);
+
+it.each([false, true])(
+  "rule 9.6 fixes eligibility at preparation (empty cohort: %s), then includes a late enrolment next day",
+  async (initiallyEmpty) => {
+    const { herald, push, worker } = await createHarness("important", 1000);
+    try {
+      const [late] = await addReminderPlayers(worker, 1);
+      if (initiallyEmpty) herald.state.members = [];
+      const dueAt = remindSoon(herald, 8);
+      await worker.runCron();
+      await waitUntil(() => herald.state.snapshotReads > 0, 4000);
+      expect(herald.state.snapshotReads).toBeGreaterThan(0);
+      herald.state.members.push(late!.account);
+      await pause(Math.max(0, dueAt + 1500 - Date.now()));
+      expect(push.endpoints).toEqual(initiallyEmpty ? [] : [PUSH_ENDPOINT]);
+      const nextDue = remindSoon(herald, 8, 1); // Advance the fake shard to the next seeded day.
+      await worker.runCron();
+      await waitUntil(() => push.endpoints.includes(late!.endpoint), 12_000);
+      expect(push.endpoints.filter((endpoint) => endpoint === late!.endpoint)).toHaveLength(1);
+      const attempt = push.endpoints.indexOf(late!.endpoint);
+      expect(push.times[attempt]).toBeGreaterThanOrEqual(nextDue);
+      expect(push.times[attempt]).toBeLessThan(nextDue + 1000);
+    } finally {
+      await worker.dispose();
+    }
+  },
+  45_000,
+);

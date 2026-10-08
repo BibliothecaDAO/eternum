@@ -122,13 +122,20 @@ export class ShardNotifier extends DurableObject<Record<string, unknown>> {
       if (entry.envelope.notification.kind === "day-end" && !running.has(entry.envelope.notification.target))
         await this.ctx.storage.delete(key);
     }
+    // Delivery metadata lives with the existing outbox and expires at the same trigger.
+    for (const [key, dueAt] of await this.ctx.storage.list<number>({ prefix: "reminder-prepared:" }))
+      if (dueAt <= Date.now()) await this.ctx.storage.delete(key);
     const plan = planDayEndReminders(directory.games, Date.now(), REMINDER_PREPARE_MS);
     for (const reminder of plan.prepare) {
+      const preparedKey = `reminder-prepared:${reminder.gameId}:${reminder.day}`;
+      if ((await this.ctx.storage.get(preparedKey)) !== undefined) continue;
       const entries = await reminderAlerts(env, shard, reminder);
       await this.ctx.storage.transaction(async (txn) => {
         // An enrollment read that finishes late must not resurrect an already claimed reminder.
-        if (Date.now() >= reminder.dueAt) return;
+        if (Date.now() >= reminder.dueAt || (await txn.get(preparedKey)) !== undefined) return;
         for (const entry of entries) await txn.put(outboxKey(entry), entry);
+        // An empty cohort is prepared too; subsequent polls must not admit later enrollments.
+        await txn.put(preparedKey, reminder.dueAt);
       });
     }
     return plan.nextAlarmAt;
@@ -272,12 +279,8 @@ export class ShardNotifier extends DurableObject<Record<string, unknown>> {
       ([, entry]) => entry.dueAt <= now,
     );
     const reminders = due.filter(([, entry]) => entry.envelope.notification.kind === "day-end");
-    // A game's players share one instant. Bounded parallel delivery keeps one slow endpoint from delaying the rest.
-    for (let offset = 0; offset < reminders.length; offset += STORY_PAGE) {
-      await Promise.all(
-        reminders.slice(offset, offset + STORY_PAGE).map(([key, entry]) => this.deliverEntry(env, key, entry)),
-      );
-    }
+    // Start every independent dispatch before awaiting an endpoint; all players share the same expiry.
+    await Promise.all(reminders.map(([key, entry]) => this.deliverEntry(env, key, entry)));
     for (const [key, entry] of due) {
       if (entry.envelope.notification.kind !== "day-end") await this.deliverEntry(env, key, entry);
     }
@@ -428,6 +431,7 @@ const alertsForDevices = (
 
 /** Prepare every enrolled owner's opted-in devices; the level is checked at dispatch, not a minute earlier. */
 const reminderAlerts = async (env: IdentityEnv, shard: Required<WatchedShard>, reminder: DayEndReminder) => {
+  // Eligibility ends at this confirmed enrollment read. Later joins receive next day's reminder, never this one.
   const accounts = await readReminderPlayers(shard.url, reminder.gameId);
   const entries: OutboxEntry[] = [];
   // D1 permits 100 bound parameters. Enrollment can be larger than a story page.
