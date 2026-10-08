@@ -160,9 +160,8 @@ describe("expedition spire", () => {
       ...storeWith(expeditionRules),
       get: (model: string, key: { structure_id: number }) =>
         model === "RealmKnowledge"
-          ? { learned: key.structure_id === 2 ? 1 << 10 : 0 }
+          ? { learned: key.structure_id === 2 ? 1n << 46n : 0n }
           : storeWith(expeditionRules).get(model),
-      require: () => ({ effect: { Depth: 1 } }),
       inGame: (model: string) => (model === "Structure" ? [realm(0), realm(2)] : [])[Symbol.iterator](),
     };
     expect(expeditionSpires(store as never, 7, dayStart(1) + 10)).toEqual([{ col: 25, row: 46 }]);

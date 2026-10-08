@@ -1,4 +1,4 @@
-import { BiomeType, StructureType } from "@bibliothecadao/types";
+import { BiomeType, StructureType, TileOccupier } from "@bibliothecadao/types";
 import type { SiteKind } from "@bibliothecadao/eternum";
 import { nativeRuleConstants } from "../../../../../../../contracts/l3/world-native/schema/client.gen";
 import rowFixture from "../../../../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
@@ -71,6 +71,15 @@ export const campBeside = (kind: SiteKind = "Camp", guardKnown = true) => {
         ]
       : []),
     set("0x74", "ExplorerTroops", { game_id: 1, explorer_id: 201, owner: 7, troops: troops(1_498n, 100n) }),
+    set("0x75", "TileOccupancy", {
+      game_id: 1,
+      alt: false,
+      col: 41,
+      row: 12,
+      entity_id: 201,
+      category: TileOccupier.ExplorerKnightT1,
+      is_structure: false,
+    }),
   ] as never);
   const army = store.require("ExplorerTroops", { game_id: 1, explorer_id: 201 });
   const attack = (armyTile: SiteAttack["armyTile"]): SiteAttack => ({

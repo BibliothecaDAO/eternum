@@ -33,7 +33,20 @@ const realm = {
  */
 export const frontierDay = () => {
   const store = new NativeFactStore();
-  store.applyFacts([set("0x100", "SliceRules", { ...preset.rules, game_id: 1, day_unit_seconds: 100 })] as never);
+  store.applyFacts([
+    set("0x100", "SliceRules", {
+      ...preset.rules,
+      game_id: 1,
+      day_unit_seconds: 100,
+      troop_stamina_config: {
+        ...preset.rules.troop_stamina_config,
+        stamina_initial: 150,
+        stamina_knight_max: 150,
+        stamina_paladin_max: 150,
+        stamina_crossbowman_max: 150,
+      },
+    }),
+  ] as never);
   store.setSnapshot({ gameId: 1, complete: true, actor: "0x111", timestamp: 350 });
   store.applyFacts([
     set("0x2", "SettlementRules", {

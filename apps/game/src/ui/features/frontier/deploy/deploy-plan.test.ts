@@ -49,6 +49,17 @@ describe("Frontier's deploy", () => {
     expect(preview.revealYield).toBeUndefined();
   });
 
+  it("starts a new army full at the Logistics its realm's Supply yard has trained", () => {
+    const { store, row } = frontierDay();
+    const max = () => previewDeploy(store, 1, readDeployPlan(store, row, 3)!, 100, 3).stamina!;
+    expect(max()).toEqual({ amount: 150, max: 150 });
+    // research.cairo: the Supply yard's tier at bit 27; two tiers trained.
+    store.applyFacts([
+      { model: "RealmKnowledge", key: "0xd", value: { game_id: 1, structure_id: 7, learned: 2n << 27n } },
+    ] as never);
+    expect(max()).toEqual({ amount: 200, max: 200 });
+  });
+
   it("deploys onto the picked tile while it stays open, else the first open one, never onto unknown or taken ground", () => {
     const { store, row } = frontierDay();
     const ring = (occupier: (col: number) => number | undefined) => spawnRing(store, row, (hex) => occupier(hex.col));

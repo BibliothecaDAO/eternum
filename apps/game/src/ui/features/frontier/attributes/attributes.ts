@@ -1,18 +1,15 @@
 import { battleBonusBps, homecomingBps, logisticsStamina, scoutingIncrementBps } from "@bibliothecadao/eternum";
-import { nativeRuleConstants, type NativeRows } from "@bibliothecadao/eternum/game-client";
+import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 
 /** An army's XP and attribute tiers, and the game's XP rules, exactly as the native store carries them. */
 export type ArmyProgressFacts = NativeRows["ArmyProgress"];
-export type Attribute = "Battle" | "Logistics" | "Scouting" | "Homecoming";
-export type ProgressionRulesFacts = NativeRows["ArmyProgressionRules"];
+type Attribute = "Battle" | "Logistics" | "Scouting" | "Homecoming";
+type ProgressionRulesFacts = NativeRows["ArmyProgressionRules"];
 
-export const ATTRIBUTES: readonly Attribute[] = ["Battle", "Logistics", "Scouting", "Homecoming"];
-
-/** The contract's top tier, legendary. */
-export const MAX_ATTRIBUTE_LEVEL = nativeRuleConstants.ATTRIBUTE_CAP;
+const ATTRIBUTES: readonly Attribute[] = ["Battle", "Logistics", "Scouting", "Homecoming"];
 
 /** The army's tier in one attribute, 1 (common) to 5 (legendary). */
-export const attributeLevel = (progress: ArmyProgressFacts, attribute: Attribute): number =>
+const attributeLevel = (progress: ArmyProgressFacts, attribute: Attribute): number =>
   ({
     Battle: progress.battle,
     Logistics: progress.logistics,
@@ -46,7 +43,7 @@ export const attributeBadgeTarget = (explorerId: number): string => `attributes-
  * stamina from their tier tables, the chosen kind's find rate in percent of its base, and the share of surviving troops
  * returned home at the day's end in percent.
  */
-export const ATTRIBUTE_LOOK: Record<Attribute, { glyph: string; atTier: (tier: number) => number; unit: "%" | "" }> = {
+const ATTRIBUTE_LOOK: Record<Attribute, { glyph: string; atTier: (tier: number) => number; unit: "%" | "" }> = {
   Battle: { glyph: "/images/frontier/attributes/battle.svg", atTier: (tier) => battleBonusBps(tier) / 100, unit: "%" },
   Logistics: { glyph: "/images/frontier/attributes/logistics.svg", atTier: logisticsStamina, unit: "" },
   Scouting: {
