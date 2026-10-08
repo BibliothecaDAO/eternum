@@ -1,0 +1,352 @@
+{
+  "version": 1,
+  "output": {
+    "size": 128,
+    "subjectShare": 0.84,
+    "directory": "public/image-icons/kit"
+  },
+  "ramp": [
+    {
+      "at": 0,
+      "color": "#1c0f04"
+    },
+    {
+      "at": 0.32,
+      "color": "#6b3f0c"
+    },
+    {
+      "at": 0.62,
+      "color": "#d39a3a"
+    },
+    {
+      "at": 1,
+      "color": "#fff0c2"
+    }
+  ],
+  "keyline": {
+    "color": "#0e0904",
+    "width": 2
+  },
+  "icons": [
+    {
+      "slug": "ui-lightning",
+      "master": "../menus/approved/ui-lightning.png",
+      "subject": "lightning bolt (stamina)"
+    },
+    {
+      "slug": "ui-eye",
+      "master": "../menus/approved/ui-eye.png",
+      "subject": "open eye (explore)"
+    },
+    {
+      "slug": "ui-footprints",
+      "master": "../menus/approved/ui-footprints.png",
+      "subject": "footprints (move)"
+    },
+    {
+      "slug": "ui-skull",
+      "master": "../menus/approved/ui-skull.png",
+      "subject": "skull (lost, defeat)"
+    },
+    {
+      "slug": "ui-chest",
+      "master": "../menus/approved/ui-chest.png",
+      "subject": "chest"
+    },
+    {
+      "slug": "ui-camp",
+      "master": "../menus/approved/ui-camp.png",
+      "subject": "camp tent"
+    },
+    {
+      "slug": "ui-flag",
+      "master": "../menus/approved/ui-flag.png",
+      "subject": "flag (site cleared)"
+    },
+    {
+      "slug": "ui-flask",
+      "master": "../menus/approved/ui-flask.png",
+      "subject": "flask (research)"
+    },
+    {
+      "slug": "ui-message",
+      "master": "../menus/approved/ui-message.png",
+      "subject": "speech bubble (chat)"
+    },
+    {
+      "slug": "ui-menu",
+      "master": "../menus/approved/ui-menu.png",
+      "subject": "menu"
+    },
+    {
+      "slug": "ui-hexagon",
+      "master": "../menus/approved/ui-hexagon.png",
+      "subject": "hexagon tile"
+    },
+    {
+      "slug": "ui-person",
+      "master": "../menus/approved/ui-person.png",
+      "subject": "person (player, profile)"
+    },
+    {
+      "slug": "ui-check",
+      "master": "../menus/approved/ui-check.png",
+      "subject": "tick"
+    },
+    {
+      "slug": "ui-lock",
+      "master": "../menus/approved/ui-lock.png",
+      "subject": "padlock"
+    },
+    {
+      "slug": "ui-backpack",
+      "master": "../menus/approved/ui-backpack.png",
+      "subject": "backpack (wallet)"
+    },
+    {
+      "slug": "ui-network-off",
+      "master": "../menus/approved/ui-network-off.png",
+      "subject": "broken link (offline)"
+    },
+    {
+      "slug": "ui-chevron-down",
+      "master": "../menus/approved/ui-chevron-down.png",
+      "subject": "chevron"
+    },
+    {
+      "slug": "ui-refresh",
+      "master": "../menus/approved/ui-refresh.png",
+      "subject": "circling arrows"
+    },
+    {
+      "slug": "ui-play",
+      "master": "../menus/approved/ui-play.png",
+      "subject": "play triangle"
+    },
+    {
+      "slug": "ui-telescope",
+      "master": "../menus/approved/ui-telescope.png",
+      "subject": "spyglass (watch)"
+    },
+    {
+      "slug": "ui-mail",
+      "master": "../menus/approved/ui-mail.png",
+      "subject": "sealed letter"
+    },
+    {
+      "slug": "ui-edit",
+      "master": "../menus/approved/ui-edit.png",
+      "subject": "quill (edit)"
+    },
+    {
+      "slug": "ui-monitor",
+      "master": "../menus/approved/ui-monitor.png",
+      "subject": "monitor (devices)"
+    },
+    {
+      "slug": "ui-share",
+      "master": "../menus/approved/ui-share.png",
+      "subject": "share"
+    },
+    {
+      "slug": "ui-bell",
+      "master": "../menus/approved/ui-bell.png",
+      "subject": "bell (notifications)"
+    },
+    {
+      "slug": "ui-book",
+      "master": "../menus/approved/ui-book.png",
+      "subject": "open book (learn)"
+    },
+    {
+      "slug": "ui-arrow-right",
+      "master": "../menus/approved/ui-arrow-right.png",
+      "subject": "arrow"
+    },
+    {
+      "slug": "ui-download",
+      "master": "../menus/approved/ui-download.png",
+      "subject": "download arrow (install)"
+    },
+    {
+      "slug": "ui-music",
+      "master": "../menus/approved/ui-music.png",
+      "subject": "music (sound on)"
+    },
+    {
+      "slug": "ui-mute",
+      "master": "../menus/approved/ui-mute.png",
+      "subject": "mute (sound off)"
+    },
+    {
+      "slug": "hourglass",
+      "master": "masters/hourglass.png",
+      "subject": "hourglass with running sand"
+    },
+    {
+      "slug": "attack",
+      "master": "masters/attack.png",
+      "subject": "crossed swords and a round shield (attack, army)"
+    },
+    {
+      "slug": "realm-home",
+      "master": "masters/realm-home.png",
+      "subject": "small stone keep with a pennant (the realm, home)"
+    },
+    {
+      "slug": "exit",
+      "master": "masters/exit.png",
+      "subject": "open door with an arrow leaving (exit, sign out)"
+    },
+    {
+      "slug": "trophy",
+      "master": "masters/trophy.png",
+      "subject": "trophy cup (season place)"
+    },
+    {
+      "slug": "ethereal-portal",
+      "master": "masters/ethereal-portal.png",
+      "subject": "ethereal portal arch (depth)"
+    },
+    {
+      "slug": "scroll",
+      "master": "masters/scroll.png",
+      "subject": "rolled scroll with a wax seal (the Scroll)"
+    },
+    {
+      "slug": "map",
+      "master": "masters/map.png",
+      "subject": "folded map with a route"
+    },
+    {
+      "slug": "essence",
+      "master": "masters/essence.png",
+      "subject": "violet essence crystal shard"
+    },
+    {
+      "slug": "labor",
+      "master": "masters/labor.png",
+      "subject": "crossed hammer and saw (labor)"
+    },
+    {
+      "slug": "wheat",
+      "master": "masters/wheat.png",
+      "subject": "sheaf of wheat"
+    },
+    {
+      "slug": "troops",
+      "master": "masters/troops.png",
+      "subject": "knight's helm (troops)"
+    },
+    {
+      "slug": "lords-coin",
+      "master": "masters/lords-coin.png",
+      "subject": "LORDS coin"
+    },
+    {
+      "slug": "fields",
+      "master": "masters/fields.png",
+      "subject": "ploughed field rows (Fields)"
+    },
+    {
+      "slug": "granary",
+      "master": "masters/granary.png",
+      "subject": "granary with a full sack (Granary)"
+    },
+    {
+      "slug": "tools",
+      "master": "masters/tools.png",
+      "subject": "hammer on an anvil (Tools)"
+    },
+    {
+      "slug": "storehouse",
+      "master": "masters/storehouse.png",
+      "subject": "storehouse crates (Storehouse)"
+    },
+    {
+      "slug": "drill",
+      "master": "masters/drill.png",
+      "subject": "spear and drill banner (Drill)"
+    },
+    {
+      "slug": "rations",
+      "master": "masters/rations.png",
+      "subject": "ration bundle with bread (Rations)"
+    },
+    {
+      "slug": "final-seal",
+      "master": "masters/final-seal.png",
+      "subject": "wax seal (a final choice)"
+    },
+    {
+      "slug": "army-slots",
+      "master": "masters/army-slots.png",
+      "subject": "three helms in a row (army slots)"
+    },
+    {
+      "slug": "store-limit",
+      "master": "masters/store-limit.png",
+      "subject": "full crate with a level line (store limit)"
+    },
+    {
+      "slug": "game-clock",
+      "master": "masters/game-clock.png",
+      "subject": "small clock face (the game clock)"
+    },
+    {
+      "slug": "back",
+      "master": "masters/back.png",
+      "subject": "arrow pointing back over a short rule"
+    },
+    {
+      "slug": "fr-site-ruin",
+      "master": "masters/fr-site-ruin.png",
+      "subject": "broken tower with a lit window (ruin)"
+    },
+    {
+      "slug": "sh-site-shrine",
+      "master": "masters/sh-site-shrine.png",
+      "subject": "small stone altar with a glow (shrine)"
+    },
+    {
+      "slug": "wl-site-well",
+      "master": "masters/wl-site-well.png",
+      "subject": "stone well with a rope and bucket (well)"
+    },
+    {
+      "slug": "rift",
+      "master": "masters/rift.png",
+      "subject": "torn violet fissure in the ground (rift)"
+    },
+    {
+      "slug": "mmr-storm-lord",
+      "master": "masters/mmr-storm-lord.png",
+      "subject": "crowned storm shield (rating 2,400 and up)"
+    },
+    {
+      "slug": "mmr-warlord",
+      "master": "masters/mmr-warlord.png",
+      "subject": "horned war shield (2,000 to 2,399)"
+    },
+    {
+      "slug": "mmr-conqueror",
+      "master": "masters/mmr-conqueror.png",
+      "subject": "banner shield (1,600 to 1,999)"
+    },
+    {
+      "slug": "mmr-marauder",
+      "master": "masters/mmr-marauder.png",
+      "subject": "axe shield (1,200 to 1,599)"
+    },
+    {
+      "slug": "mmr-raider",
+      "master": "masters/mmr-raider.png",
+      "subject": "dagger shield (600 to 1,199)"
+    },
+    {
+      "slug": "mmr-scrapper",
+      "master": "masters/mmr-scrapper.png",
+      "subject": "plain wooden buckler (under 600)"
+    }
+  ]
+}

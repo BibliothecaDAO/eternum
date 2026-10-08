@@ -1,5 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 
+import type { IconCode } from "@/ui/design-system/kit/kit-icon";
+
 /**
  * The Blitz rating (MMR), read from the identity service's /api/ratings (lobby-chat-mmr.txt): the token's current
  * rating, pinned to one mainnet block per answer. The app keeps no rating of its own; every read asks again.
@@ -55,13 +57,13 @@ export const ratingPoints = (rating: string): number => Number(rating.split(".")
 
 /** The game's six tiers, highest first, each from its floor in rating points (the earlier client's mmr-tiers). */
 const TIERS = [
-  { name: "Storm Lord", floor: 2400, mark: "text-kit-stormLord" },
-  { name: "Warlord", floor: 2000, mark: "text-kit-warlord" },
-  { name: "Conqueror", floor: 1600, mark: "text-kit-conqueror" },
-  { name: "Marauder", floor: 1200, mark: "text-kit-gold2" },
-  { name: "Raider", floor: 600, mark: "text-kit-gold" },
-  { name: "Scrapper", floor: 0, mark: "text-kit-muted" },
-] as const;
+  { name: "Storm Lord", floor: 2400, mark: "R1" },
+  { name: "Warlord", floor: 2000, mark: "R2" },
+  { name: "Conqueror", floor: 1600, mark: "R3" },
+  { name: "Marauder", floor: 1200, mark: "R4" },
+  { name: "Raider", floor: 600, mark: "R5" },
+  { name: "Scrapper", floor: 0, mark: "R6" },
+] as const satisfies readonly { name: string; floor: number; mark: IconCode }[];
 
 type RatingTier = (typeof TIERS)[number];
 

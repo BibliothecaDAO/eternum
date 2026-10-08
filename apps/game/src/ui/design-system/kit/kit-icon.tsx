@@ -1,5 +1,4 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { ResourcesIds } from "@bibliothecadao/types";
 
 import { orderEmblem } from "./order-emblem";
 
@@ -15,44 +14,48 @@ const ASPECT_SIGILS = {
   light: orderEmblem(16).art,
 };
 
+/** An icon of the kit's gilded family, Icons 2 (asset-sources/icons/kit; `pnpm icons:kit:build`). */
+const kit = (slug: string) => `/image-icons/kit/${slug}.png`;
+
 /**
- * The handoff's icon codes (frontier-mobile-ui/handoff.html, Icons) drawn with the art that exists today. A code the
- * art pass redraws changes here and nowhere else.
+ * The handoff's icon codes (frontier-mobile-ui/handoff.html, Icons): the gilded family where its master exists, the
+ * art that exists today elsewhere (the building renders and attribute glyphs wait for their masters, Discord keeps
+ * its brand mark). A code the art pass redraws changes here and nowhere else.
  */
 const ICONS = {
-  Es: `/images/resources/${ResourcesIds.Essence}.png`,
-  La: `/images/resources/${ResourcesIds.Labor}.png`,
-  Wh: `/images/resources/${ResourcesIds.Wheat}.png`,
-  Tr: `/images/resources/${ResourcesIds.Knight}.png`,
-  Lo: `/images/resources/${ResourcesIds.Lords}.png`,
-  St: "/image-icons/ui-lightning.png",
-  Hg: "/image-icons/hourglass.png",
-  Ey: "/image-icons/ui-eye.png",
-  Bt: "/image-icons/ui-footprints.png",
-  At: "/image-icons/military.png",
-  Sk: "/image-icons/ui-skull.png",
-  Ch: "/image-icons/ui-chest.png",
-  Cp: "/image-icons/ui-camp.png",
-  Rf: "/images/buildings/construction/essence-rift.png",
-  Fr: "/images/frontier/sites/fallen-realm.svg",
-  Sh: "/images/frontier/sites/shrine.svg",
-  Wl: "/images/frontier/sites/well.svg",
-  Fl: "/image-icons/ui-flag.png",
-  Mp: "/image-icons/world.png",
-  Cs: "/image-icons/house.png",
-  Rs: "/image-icons/ui-flask.png",
-  Ct: "/image-icons/ui-message.png",
-  Mn: "/image-icons/ui-menu.png",
+  Es: kit("essence"),
+  La: kit("labor"),
+  Wh: kit("wheat"),
+  Tr: kit("troops"),
+  Lo: kit("lords-coin"),
+  St: kit("ui-lightning"),
+  Hg: kit("hourglass"),
+  Ey: kit("ui-eye"),
+  Bt: kit("ui-footprints"),
+  At: kit("attack"),
+  Sk: kit("ui-skull"),
+  Ch: kit("ui-chest"),
+  Cp: kit("ui-camp"),
+  Rf: kit("rift"),
+  Fr: kit("fr-site-ruin"),
+  Sh: kit("sh-site-shrine"),
+  Wl: kit("wl-site-well"),
+  Fl: kit("ui-flag"),
+  Mp: kit("map"),
+  Cs: kit("realm-home"),
+  Rs: kit("ui-flask"),
+  Ct: kit("ui-message"),
+  Mn: kit("ui-menu"),
   Fm: "/images/buildings/construction/farm.png",
   Wk: "/images/buildings/construction/castleZero.png",
   Bs: "/images/buildings/construction/barracks.png",
   Ht: "/images/buildings/construction/workers_hut.png",
-  Hx: "/image-icons/ui-hexagon.png",
-  Pp: "/image-icons/ui-person.png",
-  Ok: "/image-icons/ui-check.png",
-  Lk: "/image-icons/ui-lock.png",
-  Tp: "/image-icons/trophy.png",
-  Hm: "/image-icons/leave.png",
+  Hx: kit("ui-hexagon"),
+  Pp: kit("ui-person"),
+  Ok: kit("ui-check"),
+  Lk: kit("ui-lock"),
+  Tp: kit("trophy"),
+  Hm: kit("exit"),
   // The four army attributes, each its Aspect's sigil.
   Ba: ASPECT_SIGILS.rage,
   Lg: ASPECT_SIGILS.skill,
@@ -63,54 +66,59 @@ const ICONS = {
   Sy: ASPECT_SIGILS.skill,
   Ld: ASPECT_SIGILS.detection,
   He: ASPECT_SIGILS.light,
-  // The six sides wait for their art; the building or the store each lifts stands in.
-  Fi: "/images/buildings/construction/farm.png",
-  Gr: "/image-icons/ui-layers.png",
-  To: "/images/buildings/construction/castleZero.png",
-  So: "/image-icons/ui-layers.png",
-  Dr: "/images/buildings/construction/barracks.png",
-  Ra: "/image-icons/ui-backpack.png",
-  // The seal (a choice final for the season) waits for its art.
-  Fx: "/image-icons/ui-star.png",
-  // Army slots and a store's limit wait for their new icons; these stand in.
-  Sl: "/image-icons/ui-people.png",
-  Sg: "/image-icons/ui-gauge.png",
-  // The kit's clock waits for the art pass; the calendar stands in.
-  Cl: "/image-icons/ui-calendar.png",
+  // The six research sides.
+  Fi: kit("fields"),
+  Gr: kit("granary"),
+  To: kit("tools"),
+  So: kit("storehouse"),
+  Dr: kit("drill"),
+  Ra: kit("rations"),
+  // The seal: a choice final for the season.
+  Fx: kit("final-seal"),
+  Sl: kit("army-slots"),
+  Sg: kit("store-limit"),
+  Cl: kit("game-clock"),
   // The guide's mark: the Aspect of Skill's sigil.
   Gd: ASPECT_SIGILS.skill,
-  Of: "/image-icons/ui-network-off.png",
-  Cv: "/image-icons/ui-chevron-down.png",
-  // The kit's back waits for the art pass; the chevron, turned to point back, stands in.
-  Bk: "/image-icons/ui-chevron-down.png",
-  Sp: "/image-icons/ui-refresh.png",
+  Of: kit("ui-network-off"),
+  Cv: kit("ui-chevron-down"),
+  Bk: kit("back"),
+  Sp: kit("ui-refresh"),
   // The app's own codes (app handoff, Icons): play, and watch (a spyglass, never the explore eye).
-  Pl: "/image-icons/ui-play.png",
-  Wc: "/image-icons/ui-telescope.png",
+  Pl: kit("ui-play"),
+  Wc: kit("ui-telescope"),
   Dc: "/image-icons/discord.png",
-  Em: "/image-icons/ui-mail.png",
-  Ed: "/image-icons/ui-edit.png",
-  Pf: "/image-icons/ui-person.png",
-  Dv: "/image-icons/ui-monitor.png",
-  Dp: "/image-icons/portal.png",
-  Xs: "/image-icons/ui-share.png",
-  Bl: "/image-icons/ui-bell.png",
-  Wt: "/image-icons/ui-backpack.png",
-  Xo: "/image-icons/leave.png",
-  Pc: "/image-icons/latest-updates.png",
-  Dk: "/image-icons/ui-book.png",
-  Ar: "/image-icons/ui-arrow-right.png",
-  In: "/image-icons/ui-download.png",
-  Up: "/image-icons/ui-refresh.png",
+  Em: kit("ui-mail"),
+  Ed: kit("ui-edit"),
+  Pf: kit("ui-person"),
+  Dv: kit("ui-monitor"),
+  Dp: kit("ethereal-portal"),
+  Xs: kit("ui-share"),
+  Bl: kit("ui-bell"),
+  Wt: kit("ui-backpack"),
+  Xo: kit("exit"),
+  Pc: kit("scroll"),
+  Dk: kit("ui-book"),
+  Ar: kit("ui-arrow-right"),
+  In: kit("ui-download"),
+  Up: kit("ui-refresh"),
+  // The Blitz rating's six tiers, highest first (the game's own: Storm Lord, Warlord, Conqueror, Marauder, Raider,
+  // Scrapper).
+  R1: kit("mmr-storm-lord"),
+  R2: kit("mmr-warlord"),
+  R3: kit("mmr-conqueror"),
+  R4: kit("mmr-marauder"),
+  R5: kit("mmr-raider"),
+  R6: kit("mmr-scrapper"),
   // Music outside a match: on, and off.
-  Mu: "/image-icons/ui-music.png",
-  Mt: "/image-icons/ui-mute.png",
+  Mu: kit("ui-music"),
+  Mt: kit("ui-mute"),
 } as const;
 
 export type IconCode = keyof typeof ICONS;
 
-/** Codes drawn turned: the chevron that says a row opens points right, the one that says back points left. */
-const TURNS: Partial<Record<IconCode, number>> = { Cv: -90, Bk: 90 };
+/** Codes drawn turned: the chevron that says a row opens points right. */
+const TURNS: Partial<Record<IconCode, number>> = { Cv: -90 };
 
 /**
  * An icon by its code, in a square of its size whatever its art's shape (the page's img rule would otherwise let a

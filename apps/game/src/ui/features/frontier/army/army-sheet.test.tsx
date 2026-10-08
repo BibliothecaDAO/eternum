@@ -69,7 +69,7 @@ describe("the army", () => {
     render("logistics");
     expect(row("Logistics").textContent).toBe("Logistics100XP");
     expect(row("Battle").querySelector(".text-light-red")?.textContent).toBe("400XP");
-    expect(row("Homecoming").querySelector('img[src="/image-icons/ui-check.png"]')).not.toBeNull();
+    expect(row("Homecoming").querySelector('img[src="/image-icons/kit/ui-check.png"]')).not.toBeNull();
   });
 
   it("buys the chosen tier for its XP price, showing what it changes and the stamina it refills", () => {

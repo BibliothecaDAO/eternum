@@ -54,7 +54,7 @@ describe("the castle's tree", () => {
     );
     const farm = host.querySelector<HTMLButtonElement>('[aria-label="Farm"]')!;
     expect(farm.textContent).toBe("FarmUncommon4,0003,000");
-    expect(host.querySelector('[aria-label="Hut"] img[src="/image-icons/ui-check.png"]')).not.toBeNull();
+    expect(host.querySelector('[aria-label="Hut"] img[src="/image-icons/kit/ui-check.png"]')).not.toBeNull();
     expect(host.querySelector<HTMLButtonElement>('[aria-label="II"]')!.className).toContain("opacity-50");
     act(() => farm.click());
     act(() => host.querySelector<HTMLButtonElement>('[aria-label="Shrine"]')!.click());
@@ -89,7 +89,7 @@ describe("the castle's tree", () => {
     expect(host.querySelector('[aria-label="Granary"]')?.getAttribute("aria-checked")).toBe("true");
     act(() => host.querySelector<HTMLButtonElement>('[aria-label="Fields"]')!.click());
     expect(onLift).toHaveBeenCalledWith(0);
-    expect(host.querySelector('img[src="/image-icons/ui-star.png"]')).not.toBeNull();
+    expect(host.querySelector('img[src="/image-icons/kit/final-seal.png"]')).not.toBeNull();
     act(() =>
       buttons()
         .find((button) => button.textContent === "Upgrade4,0003,000")!

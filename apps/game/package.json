@@ -44,6 +44,7 @@
     "icons:menus:build": "node ./scripts/icons/build-menu-icons.mjs",
     "icons:menus:publish": "node ./scripts/icons/publish-menu-icons.mjs",
     "icons:menus:verify": "node ./scripts/icons/verify-menu-icons.mjs",
+    "icons:kit:build": "node ./scripts/icons/build-kit-icons.mjs",
     "icons:prompts": "node ./scripts/icons/print-resource-icon-prompts.mjs",
     "icons:prompts:pilot": "node ./scripts/icons/print-resource-icon-prompts.mjs --pilot",
     "icons:publish": "node ./scripts/icons/publish-resource-icons.mjs",
