@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 
 import type { IconCode } from "@/ui/design-system/kit/kit-icon";
+import { fetchApi } from "@/runtime/app-api";
 
 /**
  * The Blitz rating (MMR), read from the identity service's /api/ratings (lobby-chat-mmr.txt): the token's current
@@ -25,7 +26,7 @@ interface RatingTopResponse {
 }
 
 const readJson = async <T>(path: string): Promise<T> => {
-  const response = await fetch(path);
+  const response = await fetchApi(path);
   if (!response.ok) throw new Error(`Ratings answered ${response.status}`);
   return (await response.json()) as T;
 };

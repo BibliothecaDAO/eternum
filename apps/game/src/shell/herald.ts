@@ -13,6 +13,7 @@ import {
 } from "@/runtime/world/directory";
 import { readShardDirectory } from "@/runtime/world/shard-directory";
 import { listPastedShards, openPastedShards, requireOpenShard } from "@/runtime/world/shards";
+import { fetchApi } from "@/runtime/app-api";
 
 /** A directory entry with the shard it came from, so the shell can address the game as (chain id, game id). */
 export interface DirectoryGame extends DirectoryEntry {
@@ -108,7 +109,7 @@ interface GuardianIdentity {
 
 /** Our guardian's key and the account class: with the Realms id they place the player's account on every shard we run. */
 const fetchGuardian = async (): Promise<GuardianIdentity> => {
-  const response = await fetch("/api/guardian");
+  const response = await fetchApi("/api/guardian");
   if (!response.ok) throw new Error(`Guardian answered ${response.status}`);
   return (await response.json()) as GuardianIdentity;
 };

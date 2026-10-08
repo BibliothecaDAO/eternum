@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useIdentitySession } from "@/hooks/context/identity-session";
+import { fetchApi } from "@/runtime/app-api";
 
 /**
  * A Blitz lobby's chat (lobby-chat-mmr.txt): the room `slot:<name>` on the identity Worker's chat, opened by the lobby
@@ -23,7 +24,7 @@ const roomUrl = (zoneId: string) => {
 };
 
 const fetchHistory = async (zoneId: string): Promise<WorldChatMessage[]> => {
-  const response = await fetch(`/api/chat/world?zoneId=${encodeURIComponent(zoneId)}&limit=${HISTORY}`, {
+  const response = await fetchApi(`/api/chat/world?zoneId=${encodeURIComponent(zoneId)}&limit=${HISTORY}`, {
     credentials: "include",
   });
   if (!response.ok) throw new Error(`Chat answered ${response.status}`);

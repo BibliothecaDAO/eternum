@@ -1,4 +1,5 @@
 import type { HeraldGameDirectoryEntry } from "@bibliothecadao/eternum/game-sync";
+import { fetchApi } from "@/runtime/app-api";
 
 /** A shard game whose launch records may temporarily be unavailable. */
 export interface DirectoryEntry extends HeraldGameDirectoryEntry {
@@ -24,7 +25,7 @@ export interface DirectoryShard {
  */
 export const fetchDirectory = async (player: string | null = null): Promise<DirectoryShard[]> => {
   const query = player ? `?player=${encodeURIComponent(player)}` : "";
-  const response = await fetch(`/api/directory${query}`, { cache: "no-store" });
+  const response = await fetchApi(`/api/directory${query}`, { cache: "no-store" });
   if (!response.ok) throw new Error(`Directory answered ${response.status}`);
   const { shards } = (await response.json()) as { shards: DirectoryShard[] };
   return shards;
@@ -76,7 +77,7 @@ export const fetchDirectoryHistory = async ({
   const query = new URLSearchParams({ limit: String(limit) });
   if (cursor) query.set("cursor", cursor);
   if (player) query.set("player", player);
-  const response = await fetch(`/api/directory/history?${query}`, { cache: "no-store" });
+  const response = await fetchApi(`/api/directory/history?${query}`, { cache: "no-store" });
   if (!response.ok) throw new Error(`History answered ${response.status}`);
   return (await response.json()) as DirectoryHistoryPage;
 };
