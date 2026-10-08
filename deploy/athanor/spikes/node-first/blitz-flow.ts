@@ -29,6 +29,7 @@ type SentAction = {
   receiptBlockNumber?: number;
   executionStatus?: string;
   submitError?: string;
+  chainPosition?: number;
 };
 type Prepared = { hash: string; body: string; actor: string; game: number };
 const pause = (milliseconds: number) => new Promise<void>((resolve) => setTimeout(resolve, Math.max(0, milliseconds)));
@@ -111,7 +112,20 @@ export function phaseStatistics(rows: SentAction[]) {
 type BlitzFixture = Fixture & { destroyCalldata: string[][] };
 type Actor = { fixture: BlitzFixture; player: Player };
 type ReceiptStream = Awaited<ReturnType<typeof observe>>;
-type Submit = (signed: Prepared, offered: bigint) => void;
+type Submit = (signed: Prepared, offered: bigint, chainPosition?: number) => void;
+
+export function steadyChainSchedule(seconds: number, chainLength: number) {
+  if (chainLength !== 1 && chainLength !== 3) throw new Error("Chain length must be 1 or 3");
+  const chains = Math.floor((20.3 * seconds) / chainLength);
+  return Array.from({ length: chains }, (_, chain) =>
+    Array.from({ length: chainLength }, (_, position) => ({
+      actorIndex: chain % 96,
+      payloadIndex: Math.floor(chain / 96) * chainLength + position,
+      chainPosition: position + 1,
+      offeredOffsetNs: BigInt(Math.round((chain * chainLength * 1e9) / 20.3)),
+    })),
+  ).flat();
+}
 
 async function warmBlitzActions(
   actors: Actor[],
@@ -153,9 +167,15 @@ async function warmBlitzActions(
   return coldStages;
 }
 
-async function presignSteadyFlow(actors: Actor[], provider: RpcProvider, seconds: number, rate: number) {
+async function presignSteadyFlow(
+  actors: Actor[],
+  provider: RpcProvider,
+  seconds: number,
+  rate: number,
+  chainLength: number,
+) {
   // Presign every offered action before the timer; do not gate steady offers on prior receipts.
-  const perActor = Math.ceil((rate * seconds) / 96);
+  const perActor = Math.ceil((rate * seconds) / (96 * chainLength)) * chainLength;
   return await mapWithConcurrency(actors, 8, async ({ fixture: f, player }) => {
     const nonce = BigInt(await provider.getNonceForAddress(player.address, "pre_confirmed"));
     const signed: Prepared[] = [];
@@ -173,7 +193,17 @@ async function presignSteadyFlow(actors: Actor[], provider: RpcProvider, seconds
 }
 
 async function main() {
-  const a = args(["fixture", "rpc-url", "ws-url", "out", "seconds", "rate", "burst-file", "ready-file"]);
+  const a = args([
+    "fixture",
+    "rpc-url",
+    "ws-url",
+    "out",
+    "seconds",
+    "rate",
+    "burst-file",
+    "ready-file",
+    "chain-length",
+  ]);
   const fixture = load<{ chainId: string; fixtures: (Fixture & { destroyCalldata: string[][] })[] }>(
     required(a.fixture, "fixture"),
   );
@@ -191,12 +221,14 @@ async function main() {
     seconds = Number(a.seconds ?? 180);
   if (rate !== 20.3 || !Number.isFinite(seconds) || seconds < 120 || seconds > 600)
     throw new Error("Fixed 20.3/s; duration 120..600s");
+  const chainLength = Number(a["chain-length"] ?? 1);
+  const schedule = steadyChainSchedule(seconds, chainLength);
   const records = new Map<string, SentAction>();
   const stream = await observe(required(a["ws-url"], "ws-url"), records);
   try {
     const out = required(a.out, "out");
     let pending = new Set<Promise<void>>();
-    const submit = (signed: Prepared, offered: bigint) => {
+    const submit = (signed: Prepared, offered: bigint, chainPosition?: number) => {
       const sent = now();
       const row: SentAction = {
         hash: signed.hash,
@@ -204,6 +236,7 @@ async function main() {
         game: signed.game,
         offeredNs: String(offered),
         sentNs: String(sent),
+        chainPosition,
       };
       records.set(signed.hash, row);
       const request = (async () => {
@@ -226,15 +259,15 @@ async function main() {
       void request.finally(() => pending.delete(request));
     };
     const coldStages = await warmBlitzActions(actors, provider, records, submit, stream, out);
-    const payloads = await presignSteadyFlow(actors, provider, seconds, rate);
+    const payloads = await presignSteadyFlow(actors, provider, seconds, rate, chainLength);
     records.clear();
     const started = now();
     const deadline = started + BigInt(Math.ceil(seconds * 1e9));
     if (a["ready-file"]) save(a["ready-file"], { startedNs: String(started), rate, seconds });
     let burst: { firstSendNs: string; lastReceiptNs: string; completed: number } | null = null;
-    for (let index = 0; index < Math.floor(rate * seconds); index++) {
-      const offered = started + BigInt(Math.round((index * 1e9) / rate));
-      await pause(ms(offered - now()));
+    for (const slot of schedule) {
+      const offered = started + slot.offeredOffsetNs;
+      if (slot.chainPosition === 1) await pause(ms(offered - now()));
       if (stream.failure()) break;
       if (a["burst-file"] && existsSync(a["burst-file"])) {
         burst = load(a["burst-file"]);
@@ -242,7 +275,7 @@ async function main() {
       }
       const finish = burst ? BigInt(burst.lastReceiptNs) + 30000000000n : deadline;
       if (now() >= finish) break;
-      submit(payloads[index % 96]![Math.floor(index / 96)]!, offered);
+      submit(payloads[slot.actorIndex]![slot.payloadIndex]!, offered, slot.chainPosition);
     }
     if (!burst) await pause(ms(deadline - now()));
     await Promise.all(pending);
@@ -269,6 +302,11 @@ async function main() {
       chainId: fixture.chainId,
       mode: "genuine alternating build/demolish per home; four preset2 Blitz games; separate accounts fromburst",
       rate,
+      chainLength,
+      chainPositionStats: Array.from({ length: chainLength }, (_, position) => ({
+        position: position + 1,
+        ...phaseStatistics(rows.filter((row) => row.chainPosition === position + 1)),
+      })),
       seconds,
       startedNs: String(started),
       finishedNs: String(now()),
