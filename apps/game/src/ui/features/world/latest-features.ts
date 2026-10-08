@@ -1,5 +1,3 @@
-import { resolveActiveProceduralCharacterReviewCapability } from "@/three/characters/procedural-character-review-capability";
-
 export type FeatureType = "feature" | "improvement" | "balance" | "fix";
 
 interface LatestFeature {
@@ -31,19 +29,10 @@ const compareLatestFeatureDatesDescending = (left: LatestFeature, right: LatestF
 const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
   features.toSorted(compareLatestFeatureDatesDescending).slice(0, MAX_LATEST_FEATURES);
 
-const t1KnightDefaultReviewFeature: LatestFeature = {
-  date: "2026-09-29",
-  title: "T1 Knight Art Review",
-  description:
-    "Added an opt-in T1 Knight art review with authored armour, natural hand grips, a fitted sword and forearm shield, and near- and mid-detail models.",
-  type: "feature",
-};
-
 // Curated, deduplicated news feed. Same-day iteration churn and dev-only entries
 // are collapsed into single player-facing items; only the latest MAX_LATEST_FEATURES
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
-  ...(resolveActiveProceduralCharacterReviewCapability().includeT1KnightDefault ? [t1KnightDefaultReviewFeature] : []),
   {
     date: "2026-10-07",
     title: "Wheat pays to Deploy",
