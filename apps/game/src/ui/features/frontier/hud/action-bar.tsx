@@ -1,7 +1,7 @@
 import { useGame } from "@/hooks/context/game-context";
 import { formatAmount } from "@/ui/design-system/kit/amount";
 import { Chip, FullIn } from "@/ui/design-system/kit/chip";
-import { ESSENCE, LABOR, STAMINA } from "@/ui/design-system/kit/words";
+import { ARMY, ESSENCE, LABOR, STAMINA } from "@/ui/design-system/kit/words";
 import { configManager, entityMapPosition, expeditionDepth } from "@bibliothecadao/eternum";
 import { RESOURCE_PRECISION } from "@bibliothecadao/types";
 
@@ -17,12 +17,21 @@ export const ArmyStatusBar = ({
   stamina,
   secondsToFull,
   revealYield,
+  onOpen,
 }: {
   stamina: number | undefined;
   secondsToFull: number | undefined;
   revealYield: number | undefined | null;
+  /** A tap opens the army: its tiers and Upgrade. */
+  onOpen?: () => void;
 }) => (
-  <div className="frontier-card pointer-events-auto flex h-11 items-center justify-center gap-1.5 !rounded-xl px-1">
+  <button
+    type="button"
+    aria-label={ARMY}
+    disabled={!onOpen}
+    onClick={onOpen}
+    className="frontier-card pointer-events-auto flex h-11 w-full items-center justify-center gap-1.5 !rounded-xl px-1"
+  >
     <Chip icons={["St"]} label={STAMINA} value={formatAmount(stamina)} />
     {secondsToFull !== undefined && secondsToFull > 0 && <FullIn seconds={secondsToFull} />}
     {revealYield !== null && (
@@ -32,15 +41,16 @@ export const ArmyStatusBar = ({
         value={revealYield === undefined ? "—" : `+${formatAmount(revealYield)}`}
       />
     )}
-  </div>
+  </button>
 );
 
-/** The selected army's status bar over the game's facts. */
-export const SelectedArmyBar = ({ army }: { army: DockArmy }) => (
+/** The selected army's status bar over the game's facts; a tap opens the army. */
+export const SelectedArmyBar = ({ army, onOpen }: { army: DockArmy; onOpen: () => void }) => (
   <ArmyStatusBar
     stamina={army.stamina?.current}
     secondsToFull={army.secondsToFull}
     revealYield={useArmyRevealYield(army)}
+    onOpen={onOpen}
   />
 );
 

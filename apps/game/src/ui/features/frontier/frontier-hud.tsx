@@ -11,6 +11,7 @@ import { RealmVisitFoot, useVisitedRealm } from "./board/realm-visit";
 import { FrontierSeason, SeasonOver, useSeasonRank } from "./board/season-board";
 import { useSpectatorWatchesTheLeader } from "./board/spectator-watch";
 import { useExpeditionRules, useFrontierRealm } from "./frontier-home";
+import { FrontierArmy } from "./army/frontier-army";
 import { FrontierSelectionSheet } from "./frontier-selection-sheet";
 import { useRealmStores } from "./realm-stores";
 import { FrontierSurfaces } from "./frontier-surfaces";
@@ -89,7 +90,7 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
             </div>
             <SiteClearCardView />
             <OfflineNotice />
-            {dockRealm && <Foot rules={rules} realm={dockRealm} />}
+            {dockRealm && <Foot rules={rules} realm={dockRealm} onOpenArmy={() => setSurface("army")} />}
             <RealmVisitFoot home={realm} />
             {!visit && (
               <FrontierNav rules={rules} realm={realm} surface={surface} onSurface={setSurface} unread={chat.unread} />
@@ -100,6 +101,7 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
         <FrontierSurfaces realm={realm} />
         <FrontierSelectionSheet realm={realm} />
         {surface === "menu" && <HudMenu onOpen={setSurface} onClose={close} />}
+        {surface === "army" && realm && !visit && <FrontierArmy realm={realm} onClose={close} />}
         {surface === "production" && realm && <FrontierProduction rules={rules} realm={realm} onClose={close} />}
         {surface === "settings" && (
           <Sheet label={SETTINGS} onClose={close}>
@@ -118,7 +120,15 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
  * The foot's army rows: with an order pending, its costs and verb take the foot; otherwise the selected army's status
  * over the dock.
  */
-const Foot = ({ rules, realm }: { rules: ExpeditionRules; realm: NativeRows["Structure"] }) => {
+const Foot = ({
+  rules,
+  realm,
+  onOpenArmy,
+}: {
+  rules: ExpeditionRules;
+  realm: NativeRows["Structure"];
+  onOpenArmy: () => void;
+}) => {
   const armies = useDockArmies(realm);
   const order = useArmyOrder();
   const selectedId = useUIStore((state) => state.entityActions.selectedEntityId);
@@ -127,7 +137,7 @@ const Foot = ({ rules, realm }: { rules: ExpeditionRules; realm: NativeRows["Str
   return (
     <>
       <RealmBuildingsRow realm={realm} />
-      {selected && <SelectedArmyBar army={selected} />}
+      {selected && <SelectedArmyBar army={selected} onOpen={onOpenArmy} />}
       <ArmyDock realm={realm} armies={armies} />
     </>
   );

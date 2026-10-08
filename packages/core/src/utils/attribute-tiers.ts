@@ -57,3 +57,28 @@ export const homecomingBps = (tier: number): number => HOMECOMING_BPS[tierIndex(
  */
 export const homecomingReturn = (wholeTroops: number, homecomingTier: number): number =>
   Math.floor((Math.floor(wholeTroops) * homecomingBps(homecomingTier)) / 10_000);
+
+/** The kinds a Scouting tier can raise, by the code progression.cairo packs for each (1, 2, 3). */
+const SCOUTING_KINDS = ["Camp", "Rift", "Stragglers"] as const;
+export type ScoutingKind = (typeof SCOUTING_KINDS)[number];
+
+/**
+ * The kind each Scouting tier above common went to, uncommon first, as progression.cairo packs `scouting_kinds`: two
+ * bits a tier, from uncommon up.
+ */
+export const scoutingKindsOf = (scouting: number, packed: number): ScoutingKind[] =>
+  Array.from({ length: Math.max(0, scouting - 1) }, (_, index) => {
+    const kind = SCOUTING_KINDS[(Math.floor(packed / 4 ** index) % 4) - 1];
+    if (!kind) throw new Error(`Scouting tier ${index + 2} has no kind`);
+    return kind;
+  });
+
+/**
+ * What the army's Scouting tiers add to each kind's find rate, in basis points of its base rate, as progression.cairo's
+ * scouting_bonus sums each tier's increment onto the kind chosen for it.
+ */
+export const scoutingBonusBps = (scouting: number, packed: number): Record<ScoutingKind, number> => {
+  const bonus: Record<ScoutingKind, number> = { Camp: 0, Rift: 0, Stragglers: 0 };
+  scoutingKindsOf(scouting, packed).forEach((kind, index) => (bonus[kind] += scoutingIncrementBps(index + 2)));
+  return bonus;
+};

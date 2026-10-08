@@ -3,8 +3,8 @@ import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 
 /** An army's XP and attribute tiers, and the game's XP rules, exactly as the native store carries them. */
 export type ArmyProgressFacts = NativeRows["ArmyProgress"];
-type Attribute = "Battle" | "Logistics" | "Scouting" | "Homecoming";
-type ProgressionRulesFacts = NativeRows["ArmyProgressionRules"];
+export type Attribute = "Battle" | "Logistics" | "Scouting" | "Homecoming";
+export type ProgressionRulesFacts = NativeRows["ArmyProgressionRules"];
 
 const ATTRIBUTES: readonly Attribute[] = ["Battle", "Logistics", "Scouting", "Homecoming"];
 
@@ -21,14 +21,11 @@ const attributeLevel = (progress: ArmyProgressFacts, attribute: Attribute): numb
 export const nextTierPrice = (rules: ProgressionRulesFacts, tier: number): number | null =>
   [rules.uncommon_xp, rules.rare_xp, rules.epic_xp, rules.legendary_xp][tier - 1] ?? null;
 
-/**
- * The attributes the army can Upgrade here now: below legendary, with the next tier's price in hand. Scouting waits
- * for the frontend's kind choice: its tier must name camps or rifts, which this panel cannot ask yet.
- */
+/** The attributes the army can Upgrade now: below legendary, with the next tier's price in hand. */
 export const affordableUpgrades = (progress: ArmyProgressFacts, rules: ProgressionRulesFacts): Attribute[] =>
   ATTRIBUTES.filter((attribute) => {
     const price = nextTierPrice(rules, attributeLevel(progress, attribute));
-    return attribute !== "Scouting" && price !== null && progress.xp >= price;
+    return price !== null && progress.xp >= price;
   });
 
 /** The XP an army earned between two readings; an Upgrade spends XP and earns none. */
@@ -43,7 +40,7 @@ export const attributeBadgeTarget = (explorerId: number): string => `attributes-
  * stamina from their tier tables, the chosen kind's find rate in percent of its base, and the share of surviving troops
  * returned home at the day's end in percent.
  */
-const ATTRIBUTE_LOOK: Record<Attribute, { glyph: string; atTier: (tier: number) => number; unit: "%" | "" }> = {
+export const ATTRIBUTE_LOOK: Record<Attribute, { glyph: string; atTier: (tier: number) => number; unit: "%" | "" }> = {
   Battle: { glyph: "/images/frontier/attributes/battle.svg", atTier: (tier) => battleBonusBps(tier) / 100, unit: "%" },
   Logistics: { glyph: "/images/frontier/attributes/logistics.svg", atTier: logisticsStamina, unit: "" },
   Scouting: {
