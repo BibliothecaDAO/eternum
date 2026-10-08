@@ -246,7 +246,6 @@ async function main() {
         await new Promise((ok) => setTimeout(ok, 10));
       const nodeCpu = sampler!.finish();
       sampler = undefined;
-      const executionEvidence = executorLogs(a["node-log"], logOffset);
       const burstHeads = [...heads];
       const actions = rows.map((row) => ({
         hash: row.hash,
@@ -273,7 +272,10 @@ async function main() {
               )
             : null,
           completed: succeeded.length,
+          checkpointWrittenNs: String(now()),
         });
+      // Publish the follow-up trigger before reading or parsing the accumulated node log.
+      const executionEvidence = executorLogs(a["node-log"], logOffset);
       const lastVisibleMs = complete ? Math.max(...latencies) : null;
       const spreadMs = ms(lastSend - first);
       const releaseValid = spreadMs < 100;
