@@ -123,7 +123,7 @@ async function measure(
 function publicReader(network: typeof fetch, signal: AbortSignal) {
   return async (url: string, init?: RequestInit) => {
     publicUrl(url);
-    const response = await network(url, { ...init, signal, redirect: "error", cache: "no-store" });
+    const response = await network(url, { ...init, signal, redirect: "manual", cache: "no-store" });
     if (!response.ok) throw new Error("Public probe failed");
     return response;
   };

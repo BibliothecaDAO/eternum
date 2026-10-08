@@ -1,6 +1,5 @@
 import { beforeAll, expect, it } from "vitest";
 import { valuePlaneAddress } from "@realms-world/chain";
-import { hash } from "starknet";
 import { buildWorkerBundle, migrationStatements, newStorage, ORIGIN, startWorker, vapidKeys } from "./workerd-harness";
 
 let bundle: string;
@@ -19,29 +18,29 @@ it("reads linked owners through the deployed Worker's SDK and serves new ledger 
     storage: newStorage(),
     vapid: await vapidKeys(),
     outbound: async (request) => {
-      const rpc = (await request.json()) as { id: number; method: string; params: unknown };
-      calls.push(rpc);
+      if (request.url === "https://realms.world/api/ratings/population")
+        return request.method === "HEAD"
+          ? new Response(null, { headers: { "x-rating-hash": blockHash, "x-rating-block": String(blockNumber) } })
+          : Response.json({ block_number: blockNumber, block_hash: blockHash, players: ["0xa"] });
+      const payload = await request.json();
+      const requests = (Array.isArray(payload) ? payload : [payload]) as {
+        id: number;
+        method: string;
+        params: unknown;
+      }[];
       if (unavailable) return new Response(null, { status: 503 });
-      const result = {
-        starknet_specVersion: "0.9.0",
-        starknet_chainId: "0x534e5f4d41494e",
-        starknet_getBlockWithTxHashes: { block_number: blockNumber, block_hash: blockHash },
-        starknet_getEvents: {
-          events: [
-            {
-              block_number: blockNumber,
-              block_hash: blockHash,
-              from_address: valuePlaneAddress("mmrToken"),
-              transaction_hash: "0x1",
-              keys: [hash.getSelectorFromName("MMRUpdated"), "0xa"],
-              data: [],
-            },
-          ],
-        },
-        starknet_call: [`0x${(points * 10n ** 18n).toString(16)}`, "0x0"],
-      }[rpc.method];
-      if (result === undefined) throw new Error(`Unexpected RPC method ${rpc.method}`);
-      return Response.json({ jsonrpc: "2.0", id: rpc.id, result });
+      const answers = requests.map((rpc) => {
+        calls.push(rpc);
+        const result = {
+          starknet_specVersion: "0.9.0",
+          starknet_chainId: "0x534e5f4d41494e",
+          starknet_getBlockWithTxHashes: { block_number: blockNumber, block_hash: blockHash },
+          starknet_call: [`0x${(points * 10n ** 18n).toString(16)}`, "0x0"],
+        }[rpc.method];
+        if (result === undefined) throw new Error(`Unexpected RPC method ${rpc.method}`);
+        return { jsonrpc: "2.0", id: rpc.id, result };
+      });
+      return Response.json(Array.isArray(payload) ? [...answers].reverse() : answers[0]);
     },
   });
   try {

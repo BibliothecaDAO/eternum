@@ -78,6 +78,7 @@ beforeAll(async () => {
     BASE_URL: ORIGIN,
     ACCOUNT_CLASS_HASH,
     BETTER_AUTH_SECRET: "identity-test-secret-identity-test-secret",
+    RATING_READER: {} as IdentityEnv["RATING_READER"],
     IDENTITY_RPC_URL: "http://127.0.0.1:1",
     OPERATOR_TOKEN: OPERATOR_TOKEN,
     DISCORD_CLIENT_ID: "discord-client",

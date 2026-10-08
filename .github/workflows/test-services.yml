@@ -32,6 +32,10 @@ jobs:
         run: pnpm --dir apps/realms test
       - name: Test the launch Worker on D1
         run: pnpm --dir apps/launch-service test
+      - name: Test indexed rating population
+        run:
+          pnpm --dir apps/indexer exec vitest run indexers/strk-mmr-updates.indexer.test.ts
+          indexers/mmr-population-query.test.ts
       - name: Test independent status publication
         run: pnpm --dir apps/status-monitor test
       - name: Typecheck services

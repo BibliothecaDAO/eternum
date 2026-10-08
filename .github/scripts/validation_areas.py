@@ -52,6 +52,7 @@ AREAS = {
         "apps/launch-service/**",
         "apps/realms/**",
         "apps/status-monitor/**",
+        "apps/indexer/**",
         "apps/status/**",
         "apps/guardian/**",
         "apps/web/**",

@@ -11,6 +11,7 @@ import { db } from "@realms-world/db/client";
 import { starknet_mmr_updates } from "@realms-world/db/schema";
 import { normalizeStarknetAddress } from "@realms-world/identity";
 
+import { getRelationalSchema } from "../drizzle-schema";
 import { getStarknetStreamUrl } from "../streams";
 
 const MMR_UPDATED_SELECTOR = getSelector("MMRUpdated");
@@ -41,6 +42,7 @@ export function createIndexer<
     finality: "accepted",
     startingCursor: { orderKey: startingBlock() },
     filter: {
+      header: "on_data_or_on_new_block",
       events: [
         {
           address: valuePlaneAddress("mmrToken") as `0x${string}`,
@@ -51,7 +53,9 @@ export function createIndexer<
     plugins: [
       drizzleStorage({
         db: database,
-        schema: { starknet_mmr_updates },
+        schema: getRelationalSchema({ starknet_mmr_updates }),
+        // This history is insert-only. A reorg removes the entire transaction's events together.
+        idColumn: "transaction_hash",
         persistState: true,
         indexerName: "starknet-mmr-updates",
       }),

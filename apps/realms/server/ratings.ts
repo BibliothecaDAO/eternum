@@ -1,6 +1,7 @@
 import type { IdentityEnv } from "./env";
 import { json } from "./http";
-import { openRatingLedger, readLedgerRatings, ratingPoints } from "./rating-ledger";
+import { ratingFailure } from "./rating-failure";
+import { ratingPoints } from "./rating-ledger";
 
 const BATCH_LIMIT = 100;
 const FIELD_PRIME = (1n << 251n) + 17n * (1n << 192n) + 1n;
@@ -19,23 +20,34 @@ interface LedgerRatings {
 }
 
 /** One current rating read for lobby, season, profile and results; immutable MMR events are never a fallback. */
-export async function handleRatings(env: Pick<IdentityEnv, "DB" | "IDENTITY_RPC_URL">, url: URL): Promise<Response> {
+export async function handleRatings(env: Pick<IdentityEnv, "DB" | "RATING_READER">, url: URL): Promise<Response> {
   const query = parseRatingQuery(url);
   if (!query) return json({ error: "invalid_rating_query" }, 400);
   try {
     const players = await resolveRatingIdentities(env.DB, query);
     const owners = [...new Set([...players.values()].flatMap(({ player }) => (player === null ? [] : [player])))];
-    const ledger = owners.length ? await openRatingLedger(env.IDENTITY_RPC_URL, query.blockHash) : null;
-    const ratings = ledger ? await readLedgerRatings(ledger, owners) : new Map<string, bigint>();
+    const result = owners.length
+      ? await env.RATING_READER.get(env.RATING_READER.idFromName("mainnet")).ratings(owners, query.blockHash)
+      : null;
     return json({
-      block_number: ledger?.block ?? null,
-      block_hash: ledger?.blockHash ?? null,
-      ratings: ratingsByIdentifier(query, players, { block: ledger?.block ?? null, ratings }),
+      block_number: result?.block_number ?? null,
+      block_hash: result?.block_hash ?? null,
+      ratings: ratingsByIdentifier(query, players, {
+        block: result?.block_number ?? null,
+        ratings: new Map(
+          result?.values.map((entry) => {
+            const owner = entry[0],
+              value = entry[1];
+            if (!owner || value === undefined) throw new Error("Invalid cached rating");
+            return [owner, BigInt(value)] as const;
+          }) ?? [],
+        ),
+      }),
     });
-  } catch {
+  } catch (error) {
     // No stale history or application initial rating can hide a failed live read.
     console.error("ratings_read_unavailable");
-    return json({ error: "ratings_unavailable" }, 503);
+    return ratingFailure(error);
   }
 }
 

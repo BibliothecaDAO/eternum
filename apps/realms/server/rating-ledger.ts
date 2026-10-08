@@ -2,18 +2,16 @@ import { assertProviderChain, valuePlaneAddress } from "@realms-world/chain";
 import { RpcProvider } from "starknet";
 
 const PRECISION = 10n ** 18n;
-const CONCURRENT_READS = 8;
+const CONCURRENT_READS = 100;
 const FIELD_PRIME = (1n << 251n) + 17n * (1n << 192n) + 1n;
 
 /** A response names immutable chain state, rather than several reads of a height that might be reorganized. */
-export async function openRatingLedger(rpcUrl: string, blockHash?: string) {
+export async function openRatingLedger(provider: RpcProvider, blockHash?: string) {
   const signal = AbortSignal.timeout(10_000);
-  const provider = new RpcProvider({
-    nodeUrl: rpcUrl,
-    baseFetch: (input: RequestInfo | URL, init?: RequestInit) => fetch(input, { ...init, signal }),
-  });
-  await assertProviderChain(provider, "mainnet", "identity ratings");
-  const block = await provider.getBlock(blockHash ?? "latest");
+  const [, block] = await Promise.all([
+    assertProviderChain(provider, "mainnet", "identity ratings"),
+    provider.getBlock(blockHash ?? "latest"),
+  ]);
   const number = "block_number" in block ? block.block_number : undefined;
   const canonicalHash = "block_hash" in block ? block.block_hash : undefined;
   if (
@@ -27,10 +25,13 @@ export async function openRatingLedger(rpcUrl: string, blockHash?: string) {
   )
     throw new Error("Invalid confirmed rating block");
   if (blockHash && BigInt(canonicalHash) !== BigInt(blockHash)) throw new Error("Wrong rating block");
-  return { provider, signal, block: number, blockHash: canonicalHash, token: valuePlaneAddress("mmrToken") };
+  return { provider, signal, block: number, blockHash: `0x${BigInt(canonicalHash).toString(16)}` };
 }
 
-export type RatingLedger = Awaited<ReturnType<typeof openRatingLedger>>;
+export type RatingLedger = Pick<
+  Awaited<ReturnType<typeof openRatingLedger>>,
+  "provider" | "signal" | "block" | "blockHash"
+>;
 
 /** Both API reads use the token's effective rating, including its initial rating, with the same u256 decoder. */
 export async function readLedgerRatings(ledger: RatingLedger, owners: string[]): Promise<Map<string, bigint>> {
@@ -40,7 +41,7 @@ export async function readLedgerRatings(ledger: RatingLedger, owners: string[]):
     await Promise.all(
       owners.slice(offset, offset + CONCURRENT_READS).map(async (player) => {
         const result = await ledger.provider.callContract(
-          { contractAddress: ledger.token, entrypoint: "get_player_mmr", calldata: [player] },
+          { contractAddress: valuePlaneAddress("mmrToken"), entrypoint: "get_player_mmr", calldata: [player] },
           ledger.blockHash,
         );
         ratings.set(player, decodeRating(result));
