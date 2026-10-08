@@ -165,6 +165,13 @@ export const LEARN_WORDS = {
   updated: "Updated",
   /** A post's reading time: "4min". */
   minutes: (count: number) => `${count}min`,
+  /** The Scroll, the posts read inside Play. */
+  scroll: "The Scroll",
+  thoughtPiece: "Thought piece",
+  update: "Update",
+  change: "Change",
+  /** Below the Scroll's newest posts: everything else in News, on Learn. */
+  allNews: "All news",
 } as const;
 
 /** The app's own states: install, update, offline, a page that does not exist. */

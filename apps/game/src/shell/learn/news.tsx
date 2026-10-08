@@ -5,18 +5,15 @@ import { Sheet } from "@/ui/design-system/kit/sheet";
 import { latestFeatures } from "@/ui/features/world/latest-features";
 
 import { formatContentDay } from "../clock-chip";
-import { type ScrollPost, scrollPosts } from "../generated/scroll-posts";
 import { SettingRow } from "../profile/setting-row";
-
-/** The Scroll's published posts, newest first: News's pages. */
-export const publishedPosts: ScrollPost[] = scrollPosts.filter((post) => post.published);
+import { postHref, publishedPosts } from "./posts";
 
 /** News: the Scroll's posts and the latest changes in one list, newest first; a post opens its page. */
 type NewsItem =
   | { kind: "post"; key: string; title: string; date: string; slug: string }
   | { kind: "change"; key: string; title: string; date: string; description: string };
 
-const newsItems = (): NewsItem[] =>
+export const newsItems = (): NewsItem[] =>
   [
     ...publishedPosts.map(
       (post): NewsItem => ({ kind: "post", key: post.slug, title: post.title, date: post.date, slug: post.slug }),
@@ -32,23 +29,21 @@ const newsItems = (): NewsItem[] =>
     ),
   ].toSorted((a, b) => b.date.localeCompare(a.date));
 
-/** News's rows, newest first, for the caller's plate; a post opens its page, a change its sheet. A panel shows the first few. */
-export const News = ({ limit }: { limit?: number }) => {
+/** News's rows for the caller's plate; a post opens its page, a change its sheet. */
+export const NewsRows = ({ items }: { items: readonly NewsItem[] }) => {
   const navigate = useNavigate();
   const [change, setChange] = useState<Extract<NewsItem, { kind: "change" }> | null>(null);
   return (
     <>
-      {newsItems()
-        .slice(0, limit)
-        .map((item) => (
-          <SettingRow
-            key={item.key}
-            icon="Pc"
-            name={item.title}
-            value={formatContentDay(item.date)}
-            onOpen={() => (item.kind === "post" ? navigate(`/learn/${item.slug}`) : setChange(item))}
-          />
-        ))}
+      {items.map((item) => (
+        <SettingRow
+          key={item.key}
+          icon="Pc"
+          name={item.title}
+          value={formatContentDay(item.date)}
+          onOpen={() => (item.kind === "post" ? navigate(postHref(item)) : setChange(item))}
+        />
+      ))}
       {change && (
         <Sheet label={change.title} onClose={() => setChange(null)}>
           <h2 className="pt-1 font-ui text-[19px] font-bold text-kit-cream">{change.title}</h2>

@@ -1,8 +1,11 @@
+import { Navigate } from "react-router-dom";
+
 import { useLayout } from "../frame/layout";
 import { PageFrame } from "../frame/page-frame";
 import { chooseSeason } from "../season";
 import { BlitzRows, useBlitzJoin } from "../blitz/blitz-pages";
-import { News } from "../learn/news";
+import { OPEN_ON_NEWS } from "../learn/learn-page";
+import { NewsRows, newsItems } from "../learn/news";
 import { Panel } from "../panel";
 import { LEARN_WORDS, LORE_LINE, PLAY_WORDS, WORDS } from "../words";
 import { AgeCard } from "./age-card";
@@ -11,7 +14,7 @@ import { AGES, ageOf } from "./ages";
 import { paintingSources } from "../paintings";
 import { ageOfStep, type NextStep } from "./next-step";
 import { NextStepCard } from "./next-step-card";
-import { AgesBand, CommunityBand } from "./play-bands";
+import { AgesBand, CommunityBand, ScrollBand } from "./play-bands";
 import { type PlayFacts, usePlayFacts } from "./play-facts";
 import { SeasonTop } from "./season-top";
 import { FailureCard } from "./state-card";
@@ -20,7 +23,7 @@ import { FailureCard } from "./state-card";
  * The Play tab (spec 01, 03, 04): the next step in one card, the other three ages beside it, and on a phone the four
  * ages below as bands. A first visit wears the hero painting and the lore line. The desktop sets the step on its age's
  * painting with the season and Blitz's games beside it (a first visit is a stage: the painting fills the screen), then
- * scrolls to the four ages and the community.
+ * scrolls to the four ages, the Scroll and the community.
  */
 export const PlayPage = () => {
   const facts = usePlayFacts();
@@ -90,6 +93,7 @@ const DesktopPlay = ({ facts, join }: { facts: PlayFacts; join: Join }) => (
   <div className="flex flex-col gap-16 pb-12">
     {isFirstVisit(facts.step) ? <Stage facts={facts} join={join} /> : <Table facts={facts} join={join} />}
     <AgesBand />
+    <ScrollBand />
     <CommunityBand />
   </div>
 );
@@ -152,6 +156,10 @@ const BlitzPanel = ({ title, facts, join, limit }: { title: string; facts: PlayF
 
 const NewsPanel = () => (
   <Panel icon="Pc" title={LEARN_WORDS.news}>
-    <News limit={4} />
+    <NewsRows items={newsItems().slice(0, 4)} />
   </Panel>
 );
+
+/** The Scroll's address (realms.world links it): Play's Scroll band on the desktop; a phone's Play has no band, so its News on Learn. */
+export const ScrollPage = () =>
+  useLayout() === "desktop" ? <PlayPage /> : <Navigate to="/learn" state={OPEN_ON_NEWS} replace />;

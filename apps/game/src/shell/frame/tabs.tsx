@@ -16,7 +16,12 @@ import { Kbd } from "./kbd";
 
 /** The app's four places, one list for both layouts: the phone's tab bar and the desktop rail. */
 const TABS: readonly { to: string; word: string; icon: GameIcon; matches: readonly string[] }[] = [
-  { to: "/", word: WORDS.play, icon: Play, matches: ["/", "/blitz", "/frontier", "/eternum", "/dominion"] },
+  {
+    to: "/",
+    word: WORDS.play,
+    icon: Play,
+    matches: ["/", "/blitz", "/frontier", "/eternum", "/dominion", "/scroll"],
+  },
   { to: "/season", word: WORDS.season, icon: Trophy, matches: ["/season", "/results"] },
   { to: "/learn", word: WORDS.learn, icon: BookOpen, matches: ["/learn", "/terms", "/privacy"] },
   { to: "/profile", word: WORDS.profile, icon: User, matches: ["/profile", "/p/"] },

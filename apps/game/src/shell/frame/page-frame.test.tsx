@@ -19,15 +19,18 @@ const SIZES = [
 ] as const;
 
 /**
- * The pages without Back: the tab pages, and a result after a match (spec 08); every other page is opened from another
- * and carries Back.
+ * The pages without Back: the tab pages (the Scroll lands on Play or Learn), and a result after a match (spec 08);
+ * every other page is opened from another and carries Back.
  */
-const TAB_PATHS = new Set(["/", "/season", "/learn", "/profile", "/nothing-here", "/results/0x111"]);
+const TAB_PATHS = new Set(["/", "/season", "/learn", "/profile", "/scroll", "/nothing-here", "/results/0x111"]);
 /** Profile's rows: pages with Back on a phone, the open panel beside Profile's rows on desktop. */
 const PROFILE_PANELS = new Set(["/profile/account", "/profile/notifications", "/profile/devices"]);
 /** Full-screen steps: no tabs, the desktop rail keeps the lockup alone (sign-in, a Blitz lobby). */
 const STEP_PATHS = ["/sign-in", "/blitz/0x111"];
 const CONTROLS = "a[href], button, input, select, textarea";
+
+// jsdom lays nothing out, so it has no scrolling to do (the Scroll's address scrolls Play to its band).
+Element.prototype.scrollIntoView = () => {};
 
 /** The app shell's pages (the route without a path), each with a sample for its parameters. */
 const shellPaths = (): string[] => {

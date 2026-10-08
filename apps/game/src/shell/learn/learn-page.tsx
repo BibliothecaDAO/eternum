@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 import { KitIcon } from "@/ui/design-system/kit/kit-icon";
 import { Sheet } from "@/ui/design-system/kit/sheet";
@@ -10,17 +10,21 @@ import { PageFrame } from "../frame/page-frame";
 import { SettingRow, SettingRows } from "../profile/setting-row";
 import { LEARN_WORDS } from "../words";
 import { MODE_GUIDES, PLAYER_GUIDES } from "./guides";
-import { News } from "./news";
+import { NewsRows, newsItems } from "./news";
 
 type LearnView = "guides" | "news";
 
+/** The navigation state that opens Learn on News (the Scroll's address on a phone). */
+export const OPEN_ON_NEWS: { learnView: LearnView } = { learnView: "news" };
+
 /**
  * Learn (spec 13): a guide per mode and the players' guides, and News; a switch above the one list on a phone, both
- * side by side on desktop; Terms · Privacy at the foot.
+ * side by side on desktop; Terms · Privacy at the foot. The Scroll's address opens it on News.
  */
 export const LearnPage = () => {
   const layout = useLayout();
-  const [view, setView] = useState<LearnView>("guides");
+  const opensOn = (useLocation().state as Partial<typeof OPEN_ON_NEWS> | null)?.learnView ?? "guides";
+  const [view, setView] = useState<LearnView>(opensOn);
   return (
     <PageFrame foot={<LegalLinks />}>
       {layout === "phone" ? (
@@ -34,12 +38,12 @@ export const LearnPage = () => {
             lit={view}
             onChange={setView}
           />
-          {view === "guides" ? <Guides /> : <NewsRows />}
+          {view === "guides" ? <Guides /> : <News />}
         </div>
       ) : (
         <div className="grid grid-cols-2 items-start gap-6">
           <Guides />
-          <NewsRows />
+          <News />
         </div>
       )}
     </PageFrame>
@@ -80,9 +84,9 @@ const Guides = () => {
   );
 };
 
-const NewsRows = () => (
+const News = () => (
   <SettingRows>
-    <News />
+    <NewsRows items={newsItems()} />
   </SettingRows>
 );
 
