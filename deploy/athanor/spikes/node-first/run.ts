@@ -192,7 +192,8 @@ async function main() {
               jsonrpc: "2.0",
               id: 1,
               method: "starknet_simulateTransactions",
-              params: ["pre_confirmed", [JSON.parse(warm.body).params[0]], []],
+              // Simulation otherwise charges fees despite the trial node's --no-charge-fee mode.
+              params: ["pre_confirmed", [JSON.parse(warm.body).params[0]], ["SKIP_FEE_CHARGE"]],
             })
           : warm.body,
       });
