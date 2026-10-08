@@ -182,6 +182,11 @@ function directoryEntry(game: Row, facts: DirectoryRows, input: DirectoryInput):
     player_count: new Set(settlements.map((row) => address(row.owner))).size,
     player_state: directoryPlayerState(game, facts, input),
     roster_count: roster.length,
+    roster: roster.map((row) => {
+      const account = address(row.account);
+      const entered = gameRows(facts.entries, game.game_id).some((entry) => address(entry.player) === account);
+      return { account, prepared: entered && realms.some((realm) => address(realm.owner) === account) };
+    }),
     registration: {
       count: state ? number(state.registered) : 0,
       max: number(settlement.registration_limit),
