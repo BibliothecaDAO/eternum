@@ -288,13 +288,12 @@ const armyProgressRow = (explorerId: number, home: number) => ({
   value: {
     game_id: GAME_ID,
     explorer_id: explorerId,
-    level: 1,
     xp: 0,
     battle: 1,
     logistics: 1,
     scouting: 1,
-    support: 1,
-    pending: null,
+    scouting_kinds: 0,
+    homecoming: 1,
   },
 });
 
