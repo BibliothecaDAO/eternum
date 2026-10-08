@@ -233,11 +233,6 @@ interface RunFrontierOptions {
 export async function runFrontierWorkload(options: RunFrontierOptions): Promise<WorkloadResult> {
   const { client, game, accounts } = options;
   const dayUnitSeconds = calendarOf(client).dayUnitSeconds;
-  // A burst measures one moment of load, which is the same on any day length; the plain shape plays its own days.
-  if (!options.burst && options.accelerated !== (dayUnitSeconds === acceleratedDayUnitSeconds()))
-    throw new Error(
-      `Frontier ${options.accelerated ? "design run" : "capacity shape"} does not match the season's day unit (${dayUnitSeconds} s)`,
-    );
   const rules = options.functional && dayUnitSeconds !== acceleratedDayUnitSeconds() ? recordRules(client) : undefined;
   await game.waitUntilPlaying();
   if (options.burst?.shape === "booth") return runBoothBurst(options, dayUnitSeconds);
