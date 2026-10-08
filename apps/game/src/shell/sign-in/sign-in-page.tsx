@@ -51,7 +51,7 @@ export const SignInPage = () => {
 const AnonymousSignIn = ({ next }: { next: string }) => {
   const { search } = useLocation();
   const applySession = useIdentitySessionStore((state) => state.applySession);
-  const [sent, setSent] = useState<{ email: string; at: number } | null>(null);
+  const [sent, setSent] = useState<{ email: string; expiresAt: number | undefined } | null>(null);
   // Discord returns to the flow with an `error` query parameter when its sign-in did not complete.
   const { run, running, error, setError } = useIdentityAction(() => discordReturnError(search));
 
@@ -60,8 +60,7 @@ const AnonymousSignIn = ({ next }: { next: string }) => {
 
   const emailCode = (email: string) =>
     void run("send-code", async () => {
-      await identityClient.sendSignInCode(email);
-      setSent({ email, at: Math.floor(Date.now() / 1000) });
+      setSent({ email, expiresAt: codeExpiry(await identityClient.sendSignInCode(email)) });
     });
 
   const signInWithCode = (email: string, code: string) =>
@@ -83,7 +82,7 @@ const AnonymousSignIn = ({ next }: { next: string }) => {
     <SignInFrame next={next} title={SIGN_IN_WORDS.codeSent}>
       <CodeStep
         email={sent.email}
-        sentAt={sent.at}
+        expiresAt={sent.expiresAt}
         checking={running === "code"}
         sending={running === "send-code"}
         error={error}
@@ -98,6 +97,13 @@ const AnonymousSignIn = ({ next }: { next: string }) => {
     </SignInFrame>
   );
 };
+
+/**
+ * When the sent code stops working, as the identity Worker stored it (whole seconds, never later than the Worker's
+ * instant). A Worker that does not return it yet leaves it unknown.
+ */
+const codeExpiry = (sent: { expires_at?: number }): number | undefined =>
+  sent.expires_at === undefined ? undefined : Math.floor(sent.expires_at);
 
 /** Runs one identity action at a time; its name is the step its button shows, a failure the one line under it. */
 const useIdentityAction = (initialError: () => string | null) => {

@@ -1,4 +1,4 @@
-import { SIGN_IN_CODE_LENGTH, SIGN_IN_CODE_SECONDS } from "@realms-world/identity";
+import { SIGN_IN_CODE_LENGTH } from "@realms-world/identity";
 import { useState } from "react";
 
 import { Button } from "@/ui/design-system/kit/button";
@@ -12,11 +12,12 @@ import { FailureLine } from "./failure-line";
 
 /**
  * The code step (spec 02): the address the code went to (tap to change it), six boxes that sign in on the sixth digit,
- * and when the code expires; at that moment the clock becomes New code on the same spot.
+ * and when the code expires; at that moment the clock becomes New code on the same spot. When the Worker did not say
+ * when the code expires, the clock is a dash and New code stands beside it, since no moment will bring it.
  */
 export const CodeStep = ({
   email,
-  sentAt,
+  expiresAt,
   checking,
   sending,
   error,
@@ -26,8 +27,8 @@ export const CodeStep = ({
   onTyping,
 }: {
   email: string;
-  /** Unix seconds the code was sent. */
-  sentAt: number;
+  /** Unix seconds the code stops working, as the identity Worker stored it; undefined when it did not say. */
+  expiresAt: number | undefined;
   checking: boolean;
   sending: boolean;
   error: string | null;
@@ -40,9 +41,16 @@ export const CodeStep = ({
 }) => {
   const [code, setCode] = useState("");
   const now = useNowSeconds();
-  // The identity Worker does not yet return when a code expires; its documented lifetime stands in.
-  const expiresAt = sentAt + SIGN_IN_CODE_SECONDS;
-  const expired = now >= expiresAt;
+  const expired = expiresAt !== undefined && now >= expiresAt;
+  const newCode = (
+    <Button
+      role="outline"
+      word={SIGN_IN_WORDS.newCode}
+      icon="Em"
+      onClick={onNewCode}
+      loading={sending ? SIGN_IN_WORDS.sending : undefined}
+    />
+  );
 
   const type = (value: string) => {
     onTyping();
@@ -64,18 +72,13 @@ export const CodeStep = ({
       </button>
       <CodeBoxes code={code} refused={error !== null} disabled={checking || expired} onType={type} />
       {expired ? (
-        <Button
-          role="outline"
-          word={SIGN_IN_WORDS.newCode}
-          icon="Em"
-          onClick={onNewCode}
-          loading={sending ? SIGN_IN_WORDS.sending : undefined}
-        />
+        newCode
       ) : checking ? (
         <p className="font-ui text-[15px] font-bold text-kit-muted">{SIGN_IN_WORDS.checking}</p>
       ) : (
         <ClockChip prefix="expires" at={expiresAt} now={now} />
       )}
+      {expiresAt === undefined && !checking && newCode}
       <FailureLine line={error} />
     </div>
   );

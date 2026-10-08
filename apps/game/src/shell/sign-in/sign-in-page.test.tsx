@@ -54,6 +54,9 @@ const mount = async (path: string) => {
   return { container, query, type, unmount };
 };
 
+/** The identity Worker's answer to a sent code: when it stops working, seconds from now. */
+const sentCode = (seconds: number) => ({ success: true as const, expires_at: Date.now() / 1000 + seconds });
+
 afterEach(() => {
   vi.restoreAllMocks();
   useIdentitySessionStore.setState({ status: "anonymous", session: null });
@@ -62,7 +65,7 @@ afterEach(() => {
 describe("the sign-in flow", () => {
   it("takes a new player from an emailed code through their name and portrait, back where they asked", async () => {
     useIdentitySessionStore.setState({ status: "anonymous", session: null });
-    const sendCode = vi.spyOn(identityClient, "sendSignInCode").mockResolvedValue();
+    const sendCode = vi.spyOn(identityClient, "sendSignInCode").mockResolvedValue(sentCode(300));
     vi.spyOn(identityClient, "signInWithCode").mockResolvedValue(sessionOf({}));
     const save = vi.spyOn(identityClient, "updateUser").mockResolvedValue();
     // The app's one first session load finds nobody; the refresh after the profile is saved finds the named player.
@@ -100,7 +103,7 @@ describe("the sign-in flow", () => {
 
   it("clears the boxes and says why when the code is refused", async () => {
     useIdentitySessionStore.setState({ status: "anonymous", session: null });
-    vi.spyOn(identityClient, "sendSignInCode").mockResolvedValue();
+    vi.spyOn(identityClient, "sendSignInCode").mockResolvedValue(sentCode(300));
     vi.spyOn(identityClient, "signInWithCode").mockRejectedValue(new IdentityRequestError(401, "INVALID_OTP"));
     vi.spyOn(console, "error").mockImplementation(() => {});
     const ui = await mount("/sign-in?next=%2Fresults");
@@ -136,5 +139,36 @@ describe("the sign-in flow", () => {
     const home = await mount(`/sign-in?next=${encodeURIComponent("//evil.example/")}`);
     expect(home.query('[data-testid="where"]')?.textContent).toBe("/");
     await home.unmount();
+  });
+
+  it("shows when the code expires from the Worker's answer, and a dash with New code when it gives none", async () => {
+    useIdentitySessionStore.setState({ status: "anonymous", session: null });
+    const send = vi.spyOn(identityClient, "sendSignInCode").mockResolvedValue(sentCode(300));
+    const sendCodeTo = async (ui: Awaited<ReturnType<typeof mount>>) => {
+      await ui.type('input[type="email"]', "you@mail.test");
+      await act(async () => ui.query<HTMLFormElement>("form")!.requestSubmit());
+    };
+    const newCode = (ui: Awaited<ReturnType<typeof mount>>) =>
+      [...ui.container.querySelectorAll("button")].some((button) => button.textContent?.includes("New code"));
+
+    const known = await mount("/sign-in?next=%2Fresults");
+    try {
+      await sendCodeTo(known);
+      expect(known.container.textContent).toMatch(/Expires \d{2}:\d{2} · /);
+      expect(newCode(known)).toBe(false);
+    } finally {
+      await known.unmount();
+    }
+
+    // A Worker that predates the expiry answers without it.
+    send.mockResolvedValue({ success: true } as unknown as ReturnType<typeof sentCode>);
+    const unknown = await mount("/sign-in?next=%2Fresults");
+    try {
+      await sendCodeTo(unknown);
+      expect(unknown.container.textContent).toContain("Expires —");
+      expect(newCode(unknown)).toBe(true);
+    } finally {
+      await unknown.unmount();
+    }
   });
 });
