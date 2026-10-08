@@ -68,6 +68,7 @@ describe("Quaternius arms", () => {
           attackStyle: "slash",
           config: createDefaultProceduralMeleeConfig("knight"),
           mounted: false,
+          moving: false,
           state: { ...createIdleProceduralMeleeAttackState(), phase: "strike", phaseElapsedSeconds: 0.08 },
         });
         for (const [pose, expected] of Object.entries(ARM_ROTATIONS_BEFORE_HINGE_ARMS)) {

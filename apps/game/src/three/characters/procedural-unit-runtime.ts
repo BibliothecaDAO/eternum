@@ -532,7 +532,7 @@ class HumanoidUnitActor implements ProceduralUnitActor {
       return;
     }
     if (isMeleeUnitKind(this.kind)) {
-      this.meleePose = this.melee.update(deltaSeconds, this.object);
+      this.meleePose = this.melee.update(deltaSeconds, this.object, this.config.humanoid.animationMode !== "idle");
       this.actor.setUpperBodyAction(this.meleePose.actionWeight > 1e-4 ? this.meleePose : undefined);
       return;
     }
@@ -1287,7 +1287,8 @@ class MountedUnitActor implements ProceduralUnitActor {
       this.rider.setUpperBodyAction(undefined);
       return;
     }
-    this.meleePose = this.melee.update(deltaSeconds, this.rider.object);
+    // A rider's own legs do not move under the shield, whatever the mount does.
+    this.meleePose = this.melee.update(deltaSeconds, this.rider.object, false);
     this.rider.setUpperBodyAction(this.meleePose.actionWeight > 1e-4 ? this.meleePose : undefined);
   }
 

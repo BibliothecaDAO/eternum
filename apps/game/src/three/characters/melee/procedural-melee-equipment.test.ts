@@ -81,6 +81,7 @@ describe("intended weapon direction", () => {
         attackStyle: "slash",
         config: createDefaultProceduralMeleeConfig(),
         mounted: false,
+        moving: false,
         state: { attackGeneration: 1, contactCount: 0, phase, phaseElapsedSeconds },
       }),
       new Vector3(),

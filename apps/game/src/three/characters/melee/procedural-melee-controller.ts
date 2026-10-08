@@ -58,7 +58,7 @@ export class ProceduralMeleeController {
     this.state = cancelProceduralMeleeAttack(this.state);
   }
 
-  public update(deltaSeconds: number, coordinateSpace: Group): ProceduralMeleeUpperBodyPose {
+  public update(deltaSeconds: number, coordinateSpace: Group, moving: boolean): ProceduralMeleeUpperBodyPose {
     const advanced = advanceProceduralMeleeAttack(
       this.state,
       this.config,
@@ -83,6 +83,7 @@ export class ProceduralMeleeController {
       attackStyle: resolveProceduralMeleeWeapon(this.config.weaponId).attackStyle,
       config: this.config,
       mounted: this.mounted,
+      moving,
       state: this.state,
     });
   }

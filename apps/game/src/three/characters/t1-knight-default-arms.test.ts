@@ -25,6 +25,7 @@ import {
 const STATURE = 0.61526;
 const MIN_BLADE_TO_SHIELD = 0.01;
 const MIN_ARM_TO_SHIELD = 0.005;
+const MIN_SHIELD_TO_LEGS = 0.005;
 const MIN_BLADE_TIP_HEIGHT = 0.01;
 const MAX_HINGE_AXIS_DEGREES = 2;
 const MAX_STATE_POSITION_ERROR = 0.008;
@@ -154,6 +155,8 @@ describe("T1 Knight arm poses", () => {
       await withKnightLibrary((library) => {
         const subject = createKnightGuardSubject(library, renderDetail, STATURE);
         try {
+          // One figure goes through the motions in turn, as in play. An elbow left on the far side by one of them puts
+          // the blade through the shield in the next: it did while hinge arms still kept the last frame's bend plane.
           for (const motion of ["idle", "walk", "run"] as const) {
             const samples = sampleLocomotionGuard(subject, motion);
             expectNothingTouches(samples);
@@ -162,15 +165,12 @@ describe("T1 Knight arm poses", () => {
               "shield clear of the head and trunk",
               ({ clearance }) => clearance.shieldToHead > 0 && clearance.shieldToTrunk > 0,
             );
-            // The approved carry pose puts the shield through the thigh at the top of the run's knee lift (and within
-            // 5 mm of it in the walk): reported in the notes, not worked around here. Idle and walk are held to contact.
-            if (motion !== "run") {
-              expectEverySample(
-                samples,
-                "shield clear of the thighs and shins",
-                ({ clearance }) => clearance.shieldToLegs > 0,
-              );
-            }
+            // On the move the arms hold guard: carry holds the shield low enough for a rising knee to reach it.
+            expectEverySample(
+              samples,
+              "shield 5 mm from the thighs and shins",
+              ({ clearance }) => clearance.shieldToLegs >= MIN_SHIELD_TO_LEGS,
+            );
           }
           const attack = sampleAttackCycle(subject);
           expect(attack).toHaveLength(ATTACK_SAMPLE_COUNT);

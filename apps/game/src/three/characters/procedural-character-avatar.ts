@@ -534,9 +534,12 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
       .multiplyScalar(2)
       .sub(this.scratchIkPole.fromArray(forearmPose.jointAnchor));
     if (this.declaresArmPose(side)) this.moveTargetsWithSkeletonShoulder(pose.parts[upperPartId].jointAnchor);
-    this.solveTwoBoneTarget(upperLength, forearmLength);
+    const isHingeArm = Boolean(this.activeModel.adapter.partBindings[upperPartId].hinge);
+    // A hinge arm bends towards its pole and nowhere else. Keeping the last frame's bend plane can leave its elbow on
+    // the far side for good, and everything fixed to the arm then faces the wrong way round.
+    this.solveTwoBoneTarget(upperLength, forearmLength, !isHingeArm);
 
-    if (this.activeModel.adapter.partBindings[upperPartId].hinge) {
+    if (isHingeArm) {
       this.resolveSolvedArmHingeAxis();
       this.applyHingeLimbSegment(upperBinding, this.scratchIkRoot, this.scratchIkSolvedJoint);
       this.applyHingeLimbSegment(forearmBinding, this.scratchIkSolvedJoint, this.scratchIkSolvedEnd);

@@ -11,9 +11,9 @@ describe("procedural melee controller", () => {
     const root = new Group();
     expect(controller.attack(new Vector3(0, 0.5, 1.4))).toBe(true);
 
-    let pose = controller.update(0, root);
+    let pose = controller.update(0, root, false);
     for (let step = 0; step < 180 && controller.consumeContactGeneration() === undefined; step += 1) {
-      pose = controller.update(1 / 120, root);
+      pose = controller.update(1 / 120, root, false);
     }
 
     expect(pose.mounted).toBe(true);

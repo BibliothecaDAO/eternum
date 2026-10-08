@@ -42,6 +42,8 @@ export function resolveProceduralMeleeUpperBodyPose(input: {
   attackStyle: ProceduralMeleeAttackStyle;
   config: ProceduralMeleeConfig;
   mounted: boolean;
+  /** Whether the bearer is walking or running on its own legs. */
+  moving: boolean;
   state: ProceduralMeleeAttackState;
 }): ProceduralMeleeUpperBodyPose {
   const signals = resolveProceduralMeleeAttackSignals(input.state, input.config);
@@ -49,7 +51,7 @@ export function resolveProceduralMeleeUpperBodyPose(input: {
   return {
     ...signals,
     actionWeight: Math.max(signals.actionWeight, carryWeight),
-    arms: resolveDeclaredArms(input.config, signals),
+    arms: resolveDeclaredArms(input.config, signals, input.moving),
     aimPitchRadians: input.aimPitchRadians,
     aimYawRadians: input.aimYawRadians,
     attackArcRadians: (input.config.attackArcDegrees * Math.PI) / 180,
@@ -64,13 +66,17 @@ export function resolveProceduralMeleeUpperBodyPose(input: {
   };
 }
 
-/** The arms of gear that declares arm poses: the attack's own weights apply, so outside an attack they hold `carry`. */
+/**
+ * The arms of gear that declares arm poses. Standing still they hold `carry` and the attack's own weights move them
+ * on. On the move they hold `guard`: `carry` holds the shield low, and a walking or running knee comes up into it.
+ */
 function resolveDeclaredArms(
   config: ProceduralMeleeConfig,
   signals: ReturnType<typeof resolveProceduralMeleeAttackSignals>,
+  moving: boolean,
 ): ProceduralMeleeUpperBodyPose["arms"] {
   const weights = {
-    attackWeight: signals.actionWeight,
+    attackWeight: moving ? 1 : signals.actionWeight,
     followThrough: signals.followThrough,
     strikeProgress: signals.strikeProgress,
     windupProgress: signals.windupProgress,

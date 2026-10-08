@@ -120,7 +120,7 @@ export function sampleLocomotionGuard(
 ): KnightGuardSample[] {
   const posed = { ...subject.config, animationMode: motion };
   subject.avatar.updateConfig(posed);
-  const action = createGuardAction({ ...createIdleProceduralMeleeAttackState() });
+  const action = createGuardAction({ ...createIdleProceduralMeleeAttackState() }, motion !== "idle");
   subject.avatar.setUpperBodyAction(action);
   const samples: KnightGuardSample[] = [];
   for (let frame = 0; frame <= LOCOMOTION_SAMPLE_FRAMES[LOCOMOTION_SAMPLE_FRAMES.length - 1]; frame++) {
@@ -194,13 +194,14 @@ function createKnightMeleeConfig() {
   });
 }
 
-function createGuardAction(state: ProceduralMeleeAttackState) {
+function createGuardAction(state: ProceduralMeleeAttackState, moving = false) {
   return resolveProceduralMeleeUpperBodyPose({
     aimPitchRadians: 0,
     aimYawRadians: 0,
     attackStyle: "slash",
     config: createKnightMeleeConfig(),
     mounted: false,
+    moving,
     state,
   });
 }
