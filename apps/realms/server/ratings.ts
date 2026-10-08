@@ -10,7 +10,7 @@ type Unrated = { status: "unlinked" | "unknown_identity"; player: null; rating: 
 type Rating = { status: "rated"; player: string; rating: string } | Unrated;
 export type RatingIdentity = { player: string } | Unrated;
 interface RatingQuery {
-  kind: "realmsIds" | "players";
+  kind: "realmsIds" | "players" | "accounts";
   requested: string[];
   blockHash?: string;
 }
@@ -69,9 +69,10 @@ function ratingsByIdentifier(query: RatingQuery, players: Map<string, RatingIden
 function parseRatingQuery(url: URL): RatingQuery | null {
   const realmParams = url.searchParams.getAll("realmsIds");
   const playerParams = url.searchParams.getAll("players");
-  if (realmParams.length + playerParams.length !== 1) return null;
-  const kind = realmParams.length ? "realmsIds" : "players";
-  const requested = (realmParams[0] ?? playerParams[0] ?? "").split(",");
+  const accountParams = url.searchParams.getAll("accounts");
+  if (realmParams.length + playerParams.length + accountParams.length !== 1) return null;
+  const kind = realmParams.length ? "realmsIds" : playerParams.length ? "players" : "accounts";
+  const requested = (realmParams[0] ?? playerParams[0] ?? accountParams[0] ?? "").split(",");
   if (requested.length > BATCH_LIMIT || !requested.every((id) => ratingIdentifier(id, kind) !== null)) return null;
   const hashes = url.searchParams.getAll("block_hash");
   if (hashes.length > 1 || (hashes[0] !== undefined && !validIdentifier(hashes[0], FIELD_PRIME))) return null;
@@ -84,11 +85,18 @@ export async function resolveRatingIdentities(
 ): Promise<Map<string, RatingIdentity>> {
   const identifiers = [...new Set(query.requested.map(canonical))];
   if (query.kind === "players") return new Map(identifiers.map((player) => [player, { player }]));
+  const placeholders = identifiers.map(() => "?").join(", ");
+  // Gameplay identities come only from guardian approval, never an account's self-claimed Realms id.
+  const statement =
+    query.kind === "accounts"
+      ? `SELECT a."address" AS "account", u."address" FROM "realms_accounts" a
+       JOIN "user" u ON u."realmsId" = a."realmsId" WHERE a."address" IN (${placeholders})`
+      : `SELECT "realmsId", "address" FROM "user" WHERE "realmsId" IN (${placeholders})`;
   const { results } = await db
-    .prepare(`SELECT "realmsId", "address" FROM "user" WHERE "realmsId" IN (${identifiers.map(() => "?").join(", ")})`)
+    .prepare(statement)
     .bind(...identifiers)
-    .all<{ realmsId: string; address: string | null }>();
-  const wallets = new Map(results.map((row) => [row.realmsId, row.address]));
+    .all<{ realmsId: string; account: string; address: string | null }>();
+  const wallets = new Map(results.map((row) => [query.kind === "accounts" ? row.account : row.realmsId, row.address]));
   return new Map(
     identifiers.map((id): [string, RatingIdentity] => {
       if (!wallets.has(id)) return [id, { status: "unknown_identity", player: null, rating: null }];
@@ -106,4 +114,4 @@ const validIdentifier = (value: string, bound: bigint) =>
 const canonical = (value: string) => `0x${BigInt(value).toString(16)}`;
 
 export const ratingIdentifier = (value: string, kind: RatingQuery["kind"]): string | null =>
-  validIdentifier(value, kind === "players" ? ADDRESS_BOUND : FIELD_PRIME) ? canonical(value) : null;
+  validIdentifier(value, kind === "realmsIds" ? FIELD_PRIME : ADDRESS_BOUND) ? canonical(value) : null;

@@ -1,5 +1,6 @@
 import type { IdentityEnv } from "./env";
 import { json } from "./http";
+import { profilesOfRatingOwners } from "./profiles";
 import { ratingFailure } from "./rating-failure";
 import { ratingPoints } from "./rating-ledger";
 import { ratingIdentifier, resolveRatingIdentities, type RatingIdentity } from "./ratings";
@@ -18,7 +19,17 @@ export async function handleRatingTop(env: Pick<IdentityEnv, "DB" | "RATING_READ
     const reader = env.RATING_READER.get(env.RATING_READER.idFromName("mainnet"));
     const snapshot = await reader.top();
     const self = await readerPosition(reader, snapshot, identity);
-    return json({ ...snapshot, total: snapshot.entries.length, entries: snapshot.entries.slice(0, query.limit), self });
+    const entries = snapshot.entries.slice(0, query.limit);
+    const profiles = await profilesOfRatingOwners(env.DB, [
+      ...entries.map(({ player }) => player),
+      ...(self?.player ? [self.player] : []),
+    ]);
+    return json({
+      ...snapshot,
+      total: snapshot.entries.length,
+      entries: entries.map((entry) => ({ ...entry, profile: profiles.get(entry.player) ?? null })),
+      self: self?.player ? { ...self, profile: profiles.get(self.player) ?? null } : self,
+    });
   } catch (error) {
     console.error("rating_top_unavailable");
     return ratingFailure(error);

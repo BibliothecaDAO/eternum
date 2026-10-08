@@ -84,6 +84,9 @@ it.each([
   "players=",
   "players=0xa&realmsIds=0x1",
   "players=0",
+  "accounts=0x1&realmsIds=0x1",
+  "accounts=0x0",
+  "accounts=0x1&accounts=0x2",
   "players=0x0",
   "players=0xa,,0xb",
   `players=0x${(1n << 252n).toString(16)}`,
@@ -182,4 +185,24 @@ it("reads the top list's named hash and rejects a response for another block", a
   expect(RpcProvider.prototype.getBlock).not.toHaveBeenCalled();
   expect((await request("players=0xa&block_hash=0xdef")).status).toBe(503);
   expect((await request("players=0xa&block_hash=0x0")).status).toBe(400);
+});
+
+it("resolves another player's approved gameplay account to the same linked wallet rating", async () => {
+  query.mockResolvedValue({
+    results: [
+      { account: "0x11", address: "0xa" },
+      { account: "0x12", address: null },
+    ],
+  });
+  const response = await request("accounts=0x011,0x12,0x13");
+  expect(response.status).toBe(200);
+  expect(await response.json()).toMatchObject({
+    ratings: {
+      "0x011": { status: "rated", player: "0xa", rating: "1000" },
+      "0x12": { status: "unlinked", player: null, rating: null },
+      "0x13": { status: "unknown_identity", player: null, rating: null },
+    },
+  });
+  expect(query).toHaveBeenCalledWith(["0x11", "0x12", "0x13"]);
+  expect(call).toHaveBeenCalledTimes(1);
 });

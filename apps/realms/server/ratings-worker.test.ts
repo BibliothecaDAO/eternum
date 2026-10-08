@@ -75,6 +75,42 @@ it("reads linked owners through the deployed Worker's SDK and serves new ledger 
       entries: [{ player: "0xa", rating: "1300", rank: 1 }],
       self: { player: "0xa", rating: "1300", rank: 1 },
     });
+    await worker.db
+      .prepare('UPDATE "user" SET "name" = ?, "image" = ? WHERE "realmsId" = ?')
+      .bind("Aster", "portrait-1", player.realmsId)
+      .run();
+    await worker.db
+      .prepare('INSERT INTO "realms_accounts" ("address", "realmsId") VALUES (?, ?)')
+      .bind("0x11", player.realmsId)
+      .run();
+    const namedTop = await worker.mf.dispatchFetch(`${ORIGIN}/api/ratings/top?player=0x0a`);
+    expect(await namedTop.json()).toMatchObject({
+      entries: [{ profile: { realmsId: player.realmsId, name: "Aster", portrait: "portrait-1" } }],
+      self: { profile: { name: "Aster" } },
+    });
+    const accountRead = await worker.mf.dispatchFetch(
+      `${ORIGIN}/api/ratings?accounts=0x011,0x12&block_hash=${blockHash}`,
+    );
+    expect(await accountRead.json()).toMatchObject({
+      ratings: {
+        "0x011": { status: "rated", player: "0xa", rating: "1300" },
+        "0x12": { status: "unknown_identity", player: null, rating: null },
+      },
+    });
+    const tokenCalls = calls.filter((call) => call.method === "starknet_call").length;
+    await worker.db.prepare('UPDATE "user" SET "name" = ? WHERE "realmsId" = ?').bind("Renamed", player.realmsId).run();
+    expect(await (await worker.mf.dispatchFetch(`${ORIGIN}/api/ratings/top`)).json()).toMatchObject({
+      entries: [{ profile: { name: "Renamed" } }],
+    });
+    await worker.db.prepare('UPDATE "user" SET "address" = NULL WHERE "realmsId" = ?').bind(player.realmsId).run();
+    expect(await (await worker.mf.dispatchFetch(`${ORIGIN}/api/ratings/top`)).json()).toMatchObject({
+      entries: [{ profile: null }],
+    });
+    expect(await (await worker.mf.dispatchFetch(`${ORIGIN}/api/ratings?accounts=0x11`)).json()).toMatchObject({
+      ratings: { "0x11": { status: "unlinked", player: null, rating: null } },
+    });
+    expect(calls.filter((call) => call.method === "starknet_call").length).toBe(tokenCalls);
+    await worker.db.prepare('UPDATE "user" SET "address" = ? WHERE "realmsId" = ?').bind("0xa", player.realmsId).run();
     unavailable = true;
     expect((await read()).status).toBe(503);
   } finally {

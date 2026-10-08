@@ -7,12 +7,14 @@ import type { IdentityAuth } from "./auth";
 
 const block = { block_number: 77, block_hash: "0xabc" } as Awaited<ReturnType<RpcProvider["getBlock"]>>;
 let identityRows: { realmsId: string; address: string | null }[] = [];
+let profiles: { address: string; realmsId: string; id: string; name: string; image: string | null }[] = [];
+const profileBatch = vi.fn(async () => [{ results: profiles }]);
 let cache: ReturnType<typeof testRatingReader>;
 let population = { ...block, players: ["0xa", "0xb", "0xc", "0xd"] };
 const env = {
   IDENTITY_RPC_URL: "https://mainnet.test/rpc",
   PUBLIC_RATE_LIMIT: { limit: vi.fn(async () => ({ success: true })) },
-  DB: { prepare: () => ({ bind: () => ({ all: async () => ({ results: identityRows }) }) }) },
+  DB: { batch: profileBatch, prepare: () => ({ bind: () => ({ all: async () => ({ results: identityRows }) }) }) },
 } as unknown as IdentityEnv;
 const request = (query = "") =>
   routeIdentityRequest(
@@ -22,6 +24,8 @@ const request = (query = "") =>
     {} as Parameters<typeof routeIdentityRequest>[3],
   );
 beforeEach(() => {
+  profiles = [];
+  profileBatch.mockClear();
   cache = testRatingReader();
   env.RATING_READER = cache.binding as unknown as IdentityEnv["RATING_READER"];
   population = { ...block, players: ["0xa", "0xb", "0xc", "0xd"] };
@@ -59,10 +63,10 @@ it("serves tied top positions and the reader below the top from one block and va
     block_hash: "0xabc",
     total: 4,
     entries: [
-      { rank: 1, player: "0xa", rating: "2000" },
-      { rank: 1, player: "0xb", rating: "2000" },
+      { rank: 1, player: "0xa", rating: "2000", profile: null },
+      { rank: 1, player: "0xb", rating: "2000", profile: null },
     ],
-    self: { status: "rated", player: "0xd", rating: "1000", rank: 4 },
+    self: { status: "rated", player: "0xd", rating: "1000", rank: 4, profile: null },
   });
   expect(RpcProvider.prototype.callContract).toHaveBeenCalledTimes(4);
   for (const args of vi.mocked(RpcProvider.prototype.callContract).mock.calls) expect(args[1]).toBe("0xabc");
@@ -130,4 +134,34 @@ it("does not publish a partial list after the shared read deadline expires", asy
   });
   expect((await request()).status).toBe(503);
   expect(RpcProvider.prototype.callContract).not.toHaveBeenCalled();
+});
+
+it("reads trusted names fresh outside the immutable rating cache and leaves unlinked owners as addresses", async () => {
+  profiles = [
+    { address: "0xa", realmsId: "0x1", id: "a", name: "Aster", image: "portrait-1" },
+    { address: "0xd", realmsId: "0x2", id: "default", name: "default", image: null },
+  ];
+  const first = await (await request("limit=2&player=0xd")).json();
+  expect(first).toMatchObject({
+    entries: [
+      { player: "0xa", profile: { realmsId: "0x1", name: "Aster", portrait: "portrait-1" } },
+      { player: "0xb", profile: null },
+    ],
+    self: { profile: { realmsId: "0x2", name: null, portrait: null } },
+  });
+  profiles[0]!.name = "Renamed";
+  const second = await (await request("limit=2&player=0xd")).json();
+  expect(second).toMatchObject({ entries: [{ profile: { name: "Renamed" } }, { profile: null }] });
+  profiles = [];
+  expect(await (await request("limit=2&player=0xd")).json()).toMatchObject({
+    entries: [{ profile: null }, { profile: null }],
+    self: { profile: null },
+  });
+  expect(RpcProvider.prototype.callContract).toHaveBeenCalledTimes(4);
+  expect(profileBatch).toHaveBeenCalledTimes(3);
+});
+
+it("does not hide a broken profile lookup behind an address-only success", async () => {
+  profileBatch.mockRejectedValueOnce(new Error("D1 unavailable"));
+  expect((await request()).status).toBe(503);
 });

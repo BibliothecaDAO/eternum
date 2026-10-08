@@ -57,3 +57,18 @@ For24 lobby viewers mounting once during one minute/block:624 mainnet HTTP reque
 N=1000 and P=10:101200 /101200 before;11 /1002 after plus101 portal SQL reads. These are entry/remount workload
 examples, not measured or configured polling frequencies. An unchanged mounted screen generates no subsequent rating
 requests. A different hash incurs cold work, and the fixed method ceiling still bounds aggregate demand.
+
+## Rating identities
+
+Top entries and rated self rows include `profile: {realmsId, name, portrait} | null`, resolved from the identity
+Worker's verified wallet link on every response. The formatter is the same one as `/api/profiles`: an unchosen name is
+null. An owner without a linked Realms identity has `profile: null` and remains an address. Mutable names and links
+never enter the immutable block-hash rating cache. Only displayed owners and the reader are looked up: at most 101
+owners, two D1 statements in one batch, and no additional paid RPC calls.
+
+`/api/ratings?accounts=<gameplay addresses>` lets another player's profile read a rating through the existing
+guardian-approved `realms_accounts` mapping and the user's linked wallet. It is mutually exclusive with `realmsIds` and
+`players`, shares their 100-identifier limit and errors, and returns ratings keyed by the addresses as sent. No approved
+identity returns `unknown_identity`; an approved identity without a wallet returns `unlinked`. An account's self-claimed
+onchain Realms id is never used. This adds one D1 join, no store or polling schedule. Native Blitz automatic rating
+commits and game deltas remain deferred; these endpoints are read-only.
