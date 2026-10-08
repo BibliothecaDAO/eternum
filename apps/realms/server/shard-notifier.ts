@@ -272,12 +272,8 @@ export class ShardNotifier extends DurableObject<Record<string, unknown>> {
       ([, entry]) => entry.dueAt <= now,
     );
     const reminders = due.filter(([, entry]) => entry.envelope.notification.kind === "day-end");
-    // A game's players share one instant. Bounded parallel delivery keeps one slow endpoint from delaying the rest.
-    for (let offset = 0; offset < reminders.length; offset += STORY_PAGE) {
-      await Promise.all(
-        reminders.slice(offset, offset + STORY_PAGE).map(([key, entry]) => this.deliverEntry(env, key, entry)),
-      );
-    }
+    // Start every independent dispatch before awaiting an endpoint; all players share the same expiry.
+    await Promise.all(reminders.map(([key, entry]) => this.deliverEntry(env, key, entry)));
     for (const [key, entry] of due) {
       if (entry.envelope.notification.kind !== "day-end") await this.deliverEntry(env, key, entry);
     }
