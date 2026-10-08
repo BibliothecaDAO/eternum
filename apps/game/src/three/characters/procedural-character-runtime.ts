@@ -222,6 +222,8 @@ class RuntimeProceduralCharacterActor implements ProceduralCharacterActor {
     const replacement = requiresModelSwap
       ? this.library.instantiate(normalized.appearanceId, normalized.tier, normalized.renderDetail)
       : undefined;
+    // A render-detail change that swaps the model rebuilds the rig like any model swap: ragdoll, plant controller,
+    // pose filter and gait phase restart. That is deliberate; detail is fixed per actor today, so nothing swaps live.
     const requiresRigRebuild = normalized.seed !== this.config.seed || requiresModelSwap;
     const requiresPlantReset = requiresRigRebuild || normalized.animationMode !== this.config.animationMode;
     this.config = normalized;
@@ -472,6 +474,7 @@ class RuntimeProceduralCharacterActor implements ProceduralCharacterActor {
         this.scratchRagdollQuaternion.w,
       );
     });
+    this.avatar.applyDrivenJoints();
   }
 }
 

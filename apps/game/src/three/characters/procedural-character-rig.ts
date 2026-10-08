@@ -45,7 +45,7 @@ export interface CharacterPartDefinition {
 }
 
 export interface CharacterSourceBodyMeasurements {
-  headRadius?: number;
+  headRadius: number;
   shoulderWidth: number;
   hipWidth: number;
   pelvisToChest: number;
@@ -57,70 +57,47 @@ export interface ResolvedCharacterRig {
   parts: Readonly<Record<CharacterPartId, CharacterPartDefinition>>;
 }
 
+/** Torso boxes are sized from the body's width and height by these ratios, for the nominal and a measured figure alike. */
+const PELVIS_HALF_WIDTH_PER_HIP_WIDTH = 0.52;
+const CHEST_HALF_WIDTH_PER_SHOULDER_WIDTH = 0.43;
+const CHEST_HALF_HEIGHT_PER_TORSO_LENGTH = 0.46;
+/** The pelvis box ends this fraction of the chest's half height below the chest centre, so the two boxes overlap. */
+const PELVIS_CHEST_OVERLAP = 0.9;
+
+interface MeasuredCharacterLengths {
+  forearmLength: number;
+  shinLength: number;
+  thighLength: number;
+  upperArmLength: number;
+  foot: CharacterFootGeometry;
+  body?: CharacterSourceBodyMeasurements;
+}
+
 export function applyCharacterRigLimbLengths(
   rig: ResolvedCharacterRig,
-  lengths: {
-    forearmLength: number;
-    shinLength: number;
-    thighLength: number;
-    upperArmLength: number;
-    foot: CharacterFootGeometry;
-    body?: CharacterSourceBodyMeasurements;
-  },
+  lengths: MeasuredCharacterLengths,
 ): ResolvedCharacterRig {
+  const fitted = fitRigLimbs(rig, lengths);
+  if (!lengths.body) return fitted;
+  const sizeRelativeToNominal =
+    (lengths.thighLength + lengths.shinLength) / (rig.morphology.thighLength + rig.morphology.shinLength);
+  return fitRigToSourceBody(fitted, lengths.body, sizeRelativeToNominal);
+}
+
+/** Arm and leg lengths, and the foot, from the skeleton the rig will drive. */
+function fitRigLimbs(rig: ResolvedCharacterRig, lengths: MeasuredCharacterLengths): ResolvedCharacterRig {
   const upperArmLength = resolveMeasuredLength(lengths.upperArmLength, rig.morphology.upperArmLength);
   const forearmLength = resolveMeasuredLength(lengths.forearmLength, rig.morphology.forearmLength);
-  const measuredLegLength = lengths.thighLength + lengths.shinLength;
   const rigLegLength = rig.morphology.thighLength + rig.morphology.shinLength;
+  const measuredLegLength = lengths.thighLength + lengths.shinLength;
   const thighRatio = measuredLegLength > 0.1 ? lengths.thighLength / measuredLegLength : 0.5;
+  // A source body is measured as it is; otherwise the rig keeps its own leg length in the measured proportion.
   const thighLength = lengths.body ? lengths.thighLength : rigLegLength * thighRatio;
   const shinLength = lengths.body ? lengths.shinLength : rigLegLength - thighLength;
-  const body = lengths.body;
-  const pelvisHalfHeight = body ? body.pelvisToChest - body.chestToNeck * 0.9 : undefined;
-  if (
-    body &&
-    (!isValidSourceDimension(lengths.thighLength) ||
-      !isValidSourceDimension(lengths.shinLength) ||
-      !isValidSourceDimension(body.shoulderWidth) ||
-      !isValidSourceDimension(body.hipWidth) ||
-      !isValidSourceDimension(body.pelvisToChest) ||
-      !isValidSourceDimension(body.chestToNeck) ||
-      (body.headRadius !== undefined && !isValidSourceDimension(body.headRadius)) ||
-      !isValidSourceDimension(pelvisHalfHeight))
-  ) {
-    throw new Error("Invalid source body morphology measurements");
-  }
-  const morphology = {
-    ...rig.morphology,
-    // The pose controller sizes its offsets by `scale`: a figure measured from its own skeleton is that much of nominal.
-    scale: body ? rig.morphology.scale * (measuredLegLength / rigLegLength) : rig.morphology.scale,
-    forearmLength,
-    shinLength,
-    thighLength,
-    upperArmLength,
-    foot: lengths.foot,
-    ...(body && {
-      shoulderWidth: body.shoulderWidth,
-      hipWidth: body.hipWidth,
-      torsoLength: body.chestToNeck / 0.46,
-      ...(body.headRadius !== undefined && { headRadius: body.headRadius }),
-    }),
-  };
   return {
-    morphology,
+    morphology: { ...rig.morphology, forearmLength, shinLength, thighLength, upperArmLength, foot: lengths.foot },
     parts: {
       ...rig.parts,
-      ...(body && {
-        pelvis: {
-          ...rig.parts.pelvis,
-          halfExtents: [body.hipWidth * 0.52, pelvisHalfHeight!, rig.parts.pelvis.halfExtents![2]] as const,
-        },
-        chest: {
-          ...rig.parts.chest,
-          halfExtents: [body.shoulderWidth * 0.43, body.chestToNeck, rig.parts.chest.halfExtents![2]] as const,
-        },
-        ...(body.headRadius !== undefined && { head: { ...rig.parts.head, radius: body.headRadius } }),
-      }),
       forearmLeft: { ...rig.parts.forearmLeft, length: forearmLength },
       forearmRight: { ...rig.parts.forearmRight, length: forearmLength },
       shinLeft: { ...rig.parts.shinLeft, length: shinLength },
@@ -131,6 +108,63 @@ export function applyCharacterRigLimbLengths(
       upperArmRight: { ...rig.parts.upperArmRight, length: upperArmLength },
     },
   };
+}
+
+/** Body widths, torso, head and overall size from a figure measured at its own size. */
+function fitRigToSourceBody(
+  rig: ResolvedCharacterRig,
+  body: CharacterSourceBodyMeasurements,
+  sizeRelativeToNominal: number,
+): ResolvedCharacterRig {
+  const pelvisHalfHeight = body.pelvisToChest - body.chestToNeck * PELVIS_CHEST_OVERLAP;
+  const dimensions = [
+    rig.morphology.thighLength,
+    rig.morphology.shinLength,
+    body.shoulderWidth,
+    body.hipWidth,
+    body.pelvisToChest,
+    body.chestToNeck,
+    body.headRadius,
+    pelvisHalfHeight,
+  ];
+  if (!dimensions.every(isValidSourceDimension)) throw new Error("Invalid source body morphology measurements");
+  return {
+    morphology: {
+      ...rig.morphology,
+      // The pose controller sizes its offsets by `scale`: a figure measured from its own skeleton is that much of nominal.
+      scale: rig.morphology.scale * sizeRelativeToNominal,
+      shoulderWidth: body.shoulderWidth,
+      hipWidth: body.hipWidth,
+      torsoLength: body.chestToNeck / CHEST_HALF_HEIGHT_PER_TORSO_LENGTH,
+      headRadius: body.headRadius,
+    },
+    parts: {
+      ...rig.parts,
+      pelvis: {
+        ...rig.parts.pelvis,
+        halfExtents: [
+          body.hipWidth * PELVIS_HALF_WIDTH_PER_HIP_WIDTH,
+          pelvisHalfHeight,
+          requireBoxHalfDepth(rig.parts.pelvis),
+        ],
+      },
+      chest: {
+        ...rig.parts.chest,
+        halfExtents: [
+          body.shoulderWidth * CHEST_HALF_WIDTH_PER_SHOULDER_WIDTH,
+          body.chestToNeck,
+          requireBoxHalfDepth(rig.parts.chest),
+        ],
+      },
+      head: { ...rig.parts.head, radius: body.headRadius },
+    },
+  };
+}
+
+function requireBoxHalfDepth(part: CharacterPartDefinition): number {
+  const depth = part.halfExtents?.[2];
+  if (depth === undefined) throw new Error(`Character part ${part.id} has no box depth`);
+  return depth;
 }
 
 function isValidSourceDimension(value: number | undefined): boolean {
@@ -158,7 +192,7 @@ export function resolveCharacterRig(config: ProceduralCharacterConfig): Resolved
     {
       id: "pelvis",
       shape: "box",
-      halfExtents: [morphology.hipWidth * 0.52, 0.16 * limbScale, 0.16 * limbScale],
+      halfExtents: [morphology.hipWidth * PELVIS_HALF_WIDTH_PER_HIP_WIDTH, 0.16 * limbScale, 0.16 * limbScale],
       mass: 2.8,
       surface: "cloth",
     },
@@ -167,7 +201,11 @@ export function resolveCharacterRig(config: ProceduralCharacterConfig): Resolved
       parentId: "pelvis",
       jointKind: "swing-twist",
       shape: "box",
-      halfExtents: [morphology.shoulderWidth * 0.43, morphology.torsoLength * 0.46, 0.17 * limbScale],
+      halfExtents: [
+        morphology.shoulderWidth * CHEST_HALF_WIDTH_PER_SHOULDER_WIDTH,
+        morphology.torsoLength * CHEST_HALF_HEIGHT_PER_TORSO_LENGTH,
+        0.17 * limbScale,
+      ],
       mass: 4.2,
       surface: "metal",
     },

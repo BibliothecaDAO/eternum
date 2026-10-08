@@ -1,6 +1,7 @@
 import { Quaternion } from "three";
 import { describe, expect, it } from "vitest";
 
+import runtimeFit from "../../../asset-sources/characters/t1-knight-default/runtime-fit.json";
 import {
   resolveHumanoidRigRequiredBoneNames,
   validateHumanoidRigAdapter,
@@ -20,16 +21,44 @@ describe("T1 Knight rig adapter", () => {
     ).toBe(false);
   });
 
-  it("keeps measured gear rotations normalized", () => {
-    for (const socket of [
-      T1_KNIGHT_DEFAULT_HUMANOID_RIG_ADAPTER.sockets.gripRight,
-      T1_KNIGHT_DEFAULT_HUMANOID_RIG_ADAPTER.sockets.forearmLeft,
-    ]) {
+  it("carries the runtime fit's hands, feet, sockets and driven joints", () => {
+    const adapter = T1_KNIGHT_DEFAULT_HUMANOID_RIG_ADAPTER;
+    for (const [side, key] of [
+      ["left", "hand_l"],
+      ["right", "hand_r"],
+    ] as const) {
+      const { index, middle, pinky, normal_sign: normalSign } = runtimeFit.hands[key];
+      expect(adapter.hands[side].palm).toEqual({ index, middle, pinky, normalSign });
+    }
+    for (const [side, key] of [
+      ["left", "l"],
+      ["right", "r"],
+    ] as const) {
+      const fit = runtimeFit.feet[key];
+      expect(adapter.feet[side]).toMatchObject({
+        ankle: fit.ankle,
+        toe: fit.toe,
+        toeTip: fit.toe_tip,
+        soleHeight: fit.sole_height,
+        heelLengthRatio: fit.heel_length_ratio,
+      });
+    }
+    for (const [socket, key] of [
+      [adapter.sockets.gripRight, "sword"],
+      [adapter.sockets.forearmLeft, "shield"],
+    ] as const) {
+      const fit = runtimeFit.sockets[key];
+      expect(socket.bone).toBe(fit.joint);
+      expect(socket.offset).toEqual({ kind: "fixed", value: fit.offset });
+      expect(socket.rotationOffset).toEqual(fit.quaternion_xyzw);
       expect(new Quaternion().fromArray(socket.rotationOffset).length()).toBeCloseTo(1, 6);
     }
-    expect(T1_KNIGHT_DEFAULT_HUMANOID_RIG_ADAPTER.sockets.forearmLeft.offset.value).toEqual([
-      0.056601, -0.016108, 0.012975,
-    ]);
+    expect(adapter.drivenJoints).toHaveLength(runtimeFit.helpers.length);
+    for (const helper of runtimeFit.helpers) {
+      const driven = adapter.drivenJoints.find(({ bone }) => bone === helper.name);
+      expect(driven, helper.name).toMatchObject({ rule: helper.rule, follows: helper.follows, share: helper.share });
+      if (helper.rule === "twist") expect(driven).toMatchObject({ axis: helper.twist_axis });
+    }
   });
 
   it("requires the six driven joints and the joints they follow", () => {
@@ -64,7 +93,10 @@ describe("T1 Knight rig adapter", () => {
   it("requires the chest pair joints and rejects a degenerate pair", () => {
     expect(resolveHumanoidRigRequiredBoneNames(T1_KNIGHT_DEFAULT_HUMANOID_RIG_ADAPTER)).toContain("upperarm_r");
     expect(
-      validateHumanoidRigAdapter({ ...T1_KNIGHT_DEFAULT_HUMANOID_RIG_ADAPTER, sourceBodyChestBetween: ["a", "a"] }),
+      validateHumanoidRigAdapter({
+        ...T1_KNIGHT_DEFAULT_HUMANOID_RIG_ADAPTER,
+        sourceBody: { chestBetween: ["a", "a"] },
+      }),
     ).toContain("invalid-source-body-chest");
   });
 });

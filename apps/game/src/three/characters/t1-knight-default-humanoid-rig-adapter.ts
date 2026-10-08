@@ -29,18 +29,16 @@ function fixedSocket(bone: string, value: readonly [number, number, number]) {
 }
 
 /**
- * T1 Knight Default rig, 31 joints with world-aligned rest frames. Every number below is read from the
- * baseline export's runtime-fit.json (hands, feet, sockets, driven joints).
+ * T1 Knight Default rig: 31 joints with world-aligned rest frames. The hands, feet, the two gear sockets and the six
+ * driven joints are copied from asset-sources/characters/t1-knight-default/runtime-fit.json, and the adapter test
+ * compares them with it. The other sockets sit on their joint with no offset.
  */
 export const T1_KNIGHT_DEFAULT_HUMANOID_RIG_ADAPTER = {
   id: "t1-knight-default",
   label: "T1 Knight Default rig",
-  authoredLegLength: "chain",
   authoredUniformScale: 1,
-  sourceBodyMorphology: true,
   // spine_03 is the base of the sternum; the body calibration wants the top of the torso between the shoulders.
-  sourceBodyChestBetween: ["upperarm_l", "upperarm_r"],
-  measureSourceHeadRadius: true,
+  sourceBody: { chestBetween: ["upperarm_l", "upperarm_r"] },
   auxiliaryBones: ["root", "spine_02", "clavicle_l", "clavicle_r"],
   diagnosticBones: {
     ankleLeft: "foot_l",

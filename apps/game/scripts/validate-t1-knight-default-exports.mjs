@@ -1,7 +1,8 @@
+// Checks the four T1 Knight Default GLBs (structure, the 31 joints by name and order, weights, embedded maps) and
+// prints one line per file. Any failed check exits non-zero.
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { gzipSync } from "node:zlib";
 
 import sharp from "sharp";
 
@@ -119,7 +120,6 @@ function inspectGeometry(document, binary, name, skinned) {
   const indices = accessorReader(document, binary, primitive.indices);
   assert(positions.count > 0 && indices.count > 0 && indices.count % 3 === 0, name + ": empty/non-triangle geometry");
   assert(normals.count === positions.count && uvs.count === positions.count, name + ": attribute count mismatch");
-  let outsideUv = 0;
   const bounds = { min: [Infinity, Infinity, Infinity], max: [-Infinity, -Infinity, -Infinity] };
   for (let row = 0; row < positions.count; row++) {
     for (const [reader, components] of [
@@ -134,15 +134,13 @@ function inspectGeometry(document, binary, name, skinned) {
           bounds.min[component] = Math.min(bounds.min[component], value);
           bounds.max[component] = Math.max(bounds.max[component], value);
         }
-        if (reader === uvs && (value < -0.001 || value > 1.001)) outsideUv++;
       }
     }
   }
   for (let row = 0; row < indices.count; row++) {
     assert(indices.read(row, 0) < positions.count, name + ": out-of-range triangle index");
   }
-  // glTF samplers default to REPEAT, so authored UV tiling is valid.
-  let weightSums = null;
+  // glTF samplers default to REPEAT, so UVs outside 0..1 are valid tiling and are not checked.
   if (skinned) {
     assert(
       document.skins?.length === 1 && document.skins[0].joints.length === skinJoints.length,
@@ -160,8 +158,6 @@ function inspectGeometry(document, binary, name, skinned) {
       name + ": skin attribute count mismatch",
     );
     assert(joints.components === 4 && weights.components === 4, name + ": expected four skin influences");
-    let minimum = Infinity;
-    let maximum = -Infinity;
     let maximumError = 0;
     for (let row = 0; row < positions.count; row++) {
       let sum = 0;
@@ -175,8 +171,6 @@ function inspectGeometry(document, binary, name, skinned) {
         sum += weight;
       }
       assert(sum > 0, name + ": zero-weight vertex");
-      minimum = Math.min(minimum, sum);
-      maximum = Math.max(maximum, sum);
       maximumError = Math.max(maximumError, Math.abs(sum - 1));
     }
     assert(maximumError < 1e-5, name + ": unnormalized vertex weights");
@@ -190,11 +184,10 @@ function inspectGeometry(document, binary, name, skinned) {
         assert(Number.isFinite(inverseBinds.read(row, component)), name + ": non-finite inverse bind");
       }
     }
-    weightSums = { minimum, maximum, maximumError };
   } else {
     assert(!document.skins && primitive.attributes.JOINTS_0 === undefined, name + ": rigid item has a skin");
   }
-  return { vertices: positions.count, triangles: indices.count / 3, bounds, outsideUv, weightSums };
+  return { vertices: positions.count, triangles: indices.count / 3, topY: bounds.max[1] };
 }
 
 async function inspectTextures(document, binary, name) {
@@ -222,24 +215,18 @@ async function inspectTextures(document, binary, name) {
     const { width, height, channels } = decoded.info;
     assert(width > 0 && height > 0 && channels === 4, name + ": invalid decoded texture");
     assert(decoded.data.length === width * height * 4, name + ": decoded texture byte mismatch");
-    const red = { min: 255, max: 0 };
-    if (role === "orm") {
+    if (role === "orm" && !Number.isInteger(material.occlusionTexture?.index)) {
+      // The ORM image carries occlusion in its red channel; unbound, it must be plain white.
       for (let offset = 0; offset < decoded.data.length; offset += 4) {
-        red.min = Math.min(red.min, decoded.data[offset]);
-        red.max = Math.max(red.max, decoded.data[offset]);
+        assert(
+          decoded.data[offset] === 255,
+          name + ": ORM red channel holds occlusion, but occlusionTexture is not bound",
+        );
       }
     }
-    textures.push({
-      role,
-      name: image.name,
-      width,
-      height,
-      embeddedBytes: bytes.length,
-      decodedRgbaBytes: decoded.data.length,
-      ...(role === "orm" && { redRange: red }),
-    });
+    textures.push({ role, width, height });
   }
-  return { textures, occlusionTextureBound: Number.isInteger(material.occlusionTexture?.index) };
+  return textures;
 }
 
 async function inspectFile(relativePath) {
@@ -248,37 +235,26 @@ async function inspectFile(relativePath) {
   const { document, binary } = parseGlb(bytes, name);
   const skinned = relativePath.endsWith("skin.glb");
   assert(!document.animations || document.animations.length === 0, name + ": authored clips present");
-  const scene = inspectScene(document, name);
+  inspectScene(document, name);
   const geometry = inspectGeometry(document, binary, name, skinned);
-  const material = await inspectTextures(document, binary, name);
+  const textures = await inspectTextures(document, binary, name);
   return {
     file: relativePath,
     sha256: createHash("sha256").update(bytes).digest("hex"),
-    coldBytes: bytes.length,
-    gzipBytes: gzipSync(bytes, { level: 9 }).length,
-    clips: document.animations?.length ?? 0,
+    bytes: bytes.length,
     skinJoints: document.skins?.[0]?.joints.length ?? 0,
-    scene,
-    geometry,
-    material,
+    triangles: geometry.triangles,
+    vertices: geometry.vertices,
+    topY: geometry.topY,
+    maps: textures.map(({ role, width, height }) => `${role} ${width}x${height}`).join(", "),
   };
 }
 
 const assets = [];
 for (const file of files) assets.push(await inspectFile(file));
-const total = {
-  coldBytes: assets.reduce((sum, asset) => sum + asset.coldBytes, 0),
-  gzipBytes: assets.reduce((sum, asset) => sum + asset.gzipBytes, 0),
-  decodedRgbaBytes: assets.reduce(
-    (sum, asset) =>
-      sum + asset.material.textures.reduce((textureSum, texture) => textureSum + texture.decodedRgbaBytes, 0),
-    0,
-  ),
-};
-const inheritedMaterialLimits = assets.flatMap((asset) =>
-  !asset.material.occlusionTextureBound &&
-  asset.material.textures.find((texture) => texture.role === "orm").redRange.min < 255
-    ? [asset.file + ": ORM red channel contains nonwhite values, but occlusionTexture is not bound"]
-    : [],
-);
-process.stdout.write(JSON.stringify({ schemaVersion: 1, assets, total, inheritedMaterialLimits }, null, 2) + "\n");
+for (const asset of assets) {
+  process.stdout.write(
+    `${asset.file}: ok, ${asset.triangles} triangles, ${asset.vertices} vertices, ${asset.skinJoints} joints, ` +
+      `top y ${asset.topY.toFixed(4)}, ${asset.bytes} bytes, sha256 ${asset.sha256.slice(0, 12)}, maps ${asset.maps}\n`,
+  );
+}

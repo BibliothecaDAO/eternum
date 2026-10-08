@@ -1,1687 +1,757 @@
 {
- "from": "../t1-knight-claude/v4/work/bound-r71.npz",
- "frame": {
-  "up": "+Y",
-  "forward": "+Z",
-  "left": "+X",
-  "units": "metres",
-  "from_working_frame": "(x, y, z) -> (x, z, -y)",
-  "note": "every joint's rest rotation is identity: a joint's frame is the world's axes at its rest position"
- },
- "joints": [
-  {
-   "name": "root",
-   "parent": null,
-   "rest_position": [
-    0.0,
-    0.0,
-    0.0
-   ]
+  "from": "bound-r71.npz",
+  "frame": {
+    "up": "+Y",
+    "forward": "+Z",
+    "left": "+X",
+    "units": "metres",
+    "from_working_frame": "(x, y, z) -> (x, z, -y)",
+    "note": "every joint's rest rotation is identity: a joint's frame is the world's axes at its rest position"
   },
-  {
-   "name": "pelvis",
-   "parent": "root",
-   "rest_position": [
-    0.0,
-    0.316188,
-    -0.005661
-   ]
+  "joints": [
+    {
+      "name": "root",
+      "parent": null,
+      "rest_position": [0.0, 0.0, 0.0]
+    },
+    {
+      "name": "pelvis",
+      "parent": "root",
+      "rest_position": [0.0, 0.316188, -0.005661]
+    },
+    {
+      "name": "spine_01",
+      "parent": "pelvis",
+      "rest_position": [0.0, 0.33315, -0.004592]
+    },
+    {
+      "name": "spine_02",
+      "parent": "spine_01",
+      "rest_position": [0.0, 0.358117, -0.003032]
+    },
+    {
+      "name": "spine_03",
+      "parent": "spine_02",
+      "rest_position": [0.0, 0.392423, -0.003114]
+    },
+    {
+      "name": "clavicle_l",
+      "parent": "spine_03",
+      "rest_position": [0.012182, 0.49073, -0.004251]
+    },
+    {
+      "name": "upperarm_l",
+      "parent": "clavicle_l",
+      "rest_position": [0.072052, 0.476765, -0.01906]
+    },
+    {
+      "name": "lowerarm_l",
+      "parent": "upperarm_l",
+      "rest_position": [0.158006, 0.421111, -0.021473]
+    },
+    {
+      "name": "hand_l",
+      "parent": "lowerarm_l",
+      "rest_position": [0.219478, 0.383665, 0.009025]
+    },
+    {
+      "name": "clavicle_r",
+      "parent": "spine_03",
+      "rest_position": [-0.012182, 0.49073, -0.004251]
+    },
+    {
+      "name": "upperarm_r",
+      "parent": "clavicle_r",
+      "rest_position": [-0.072052, 0.476765, -0.01906]
+    },
+    {
+      "name": "lowerarm_r",
+      "parent": "upperarm_r",
+      "rest_position": [-0.158006, 0.421111, -0.021473]
+    },
+    {
+      "name": "hand_r",
+      "parent": "lowerarm_r",
+      "rest_position": [-0.219478, 0.383665, 0.009025]
+    },
+    {
+      "name": "neck_01",
+      "parent": "spine_03",
+      "rest_position": [0.0, 0.506776, -0.014526]
+    },
+    {
+      "name": "Head",
+      "parent": "neck_01",
+      "rest_position": [0.0, 0.547875, 0.001506]
+    },
+    {
+      "name": "thigh_l",
+      "parent": "pelvis",
+      "rest_position": [0.036929, 0.308988, 0.002037]
+    },
+    {
+      "name": "calf_l",
+      "parent": "thigh_l",
+      "rest_position": [0.060541, 0.17621, -0.002608]
+    },
+    {
+      "name": "foot_l",
+      "parent": "calf_l",
+      "rest_position": [0.074878, 0.032414, -0.014572]
+    },
+    {
+      "name": "ball_l",
+      "parent": "foot_l",
+      "rest_position": [0.088499, 0.014707, 0.035487]
+    },
+    {
+      "name": "ball_leaf_l",
+      "parent": "ball_l",
+      "rest_position": [0.09491, 0.014707, 0.063342]
+    },
+    {
+      "name": "thigh_r",
+      "parent": "pelvis",
+      "rest_position": [-0.036929, 0.308988, 0.002037]
+    },
+    {
+      "name": "calf_r",
+      "parent": "thigh_r",
+      "rest_position": [-0.060541, 0.17621, -0.002608]
+    },
+    {
+      "name": "foot_r",
+      "parent": "calf_r",
+      "rest_position": [-0.074878, 0.032414, -0.014572]
+    },
+    {
+      "name": "ball_r",
+      "parent": "foot_r",
+      "rest_position": [-0.088499, 0.014707, 0.035487]
+    },
+    {
+      "name": "ball_leaf_r",
+      "parent": "ball_r",
+      "rest_position": [-0.09491, 0.014707, 0.063342]
+    },
+    {
+      "name": "elbow_half_l",
+      "parent": "upperarm_l",
+      "rest_position": [0.158006, 0.421111, -0.021473]
+    },
+    {
+      "name": "elbow_half_r",
+      "parent": "upperarm_r",
+      "rest_position": [-0.158006, 0.421111, -0.021473]
+    },
+    {
+      "name": "knee_half_l",
+      "parent": "thigh_l",
+      "rest_position": [0.060541, 0.17621, -0.002608]
+    },
+    {
+      "name": "knee_half_r",
+      "parent": "thigh_r",
+      "rest_position": [-0.060541, 0.17621, -0.002608]
+    },
+    {
+      "name": "upperarm_twist_l",
+      "parent": "clavicle_l",
+      "rest_position": [0.072052, 0.476765, -0.01906]
+    },
+    {
+      "name": "upperarm_twist_r",
+      "parent": "clavicle_r",
+      "rest_position": [-0.072052, 0.476765, -0.01906]
+    }
+  ],
+  "helpers": [
+    {
+      "name": "elbow_half_l",
+      "rule": "half",
+      "parent": "upperarm_l",
+      "follows": "lowerarm_l",
+      "share": 0.5,
+      "rest_position": [0.158006, 0.421111, -0.021473],
+      "formula": "helper.quaternion = slerp(identity, follows.quaternion, share)"
+    },
+    {
+      "name": "elbow_half_r",
+      "rule": "half",
+      "parent": "upperarm_r",
+      "follows": "lowerarm_r",
+      "share": 0.5,
+      "rest_position": [-0.158006, 0.421111, -0.021473],
+      "formula": "helper.quaternion = slerp(identity, follows.quaternion, share)"
+    },
+    {
+      "name": "knee_half_l",
+      "rule": "half",
+      "parent": "thigh_l",
+      "follows": "calf_l",
+      "share": 0.5,
+      "rest_position": [0.060541, 0.17621, -0.002608],
+      "formula": "helper.quaternion = slerp(identity, follows.quaternion, share)"
+    },
+    {
+      "name": "knee_half_r",
+      "rule": "half",
+      "parent": "thigh_r",
+      "follows": "calf_r",
+      "share": 0.5,
+      "rest_position": [-0.060541, 0.17621, -0.002608],
+      "formula": "helper.quaternion = slerp(identity, follows.quaternion, share)"
+    },
+    {
+      "name": "upperarm_twist_l",
+      "rule": "twist",
+      "parent": "clavicle_l",
+      "follows": "upperarm_l",
+      "share": 0.4,
+      "rest_position": [0.072052, 0.476765, -0.01906],
+      "twist_axis": [0.839174, -0.543353, -0.023558],
+      "twist_axis_is": "the rest direction of upperarm_l (toward its child), in the parent's frame",
+      "formula": "D = follows.quaternion; twist = the part of D about twist_axis (project D's vector part on the axis, renormalise); swing = D * inverse(twist); helper.quaternion = swing * slerp(identity, twist, share)"
+    },
+    {
+      "name": "upperarm_twist_r",
+      "rule": "twist",
+      "parent": "clavicle_r",
+      "follows": "upperarm_r",
+      "share": 0.4,
+      "rest_position": [-0.072052, 0.476765, -0.01906],
+      "twist_axis": [-0.839174, -0.543353, -0.023558],
+      "twist_axis_is": "the rest direction of upperarm_r (toward its child), in the parent's frame",
+      "formula": "D = follows.quaternion; twist = the part of D about twist_axis (project D's vector part on the axis, renormalise); swing = D * inverse(twist); helper.quaternion = swing * slerp(identity, twist, share)"
+    }
+  ],
+  "helpers_note": "Driven every frame after the controller has posed the core joints and before skinning; never keyed. Local rotations are relative to rest, which is identity here.",
+  "driver_reference": {
+    "note": "Local rotations (x, y, z, w) in the game's frame. A driver that is given follows_quaternion must return helper_quaternion (or its negative) to about 1e-4.",
+    "cases": [
+      {
+        "pose": "rom:elbow-90",
+        "helper": "elbow_half_l",
+        "follows_quaternion_xyzw": [-0.293364, -0.454523, 0.033235, 0.840382],
+        "helper_quaternion_xyzw": [-0.152911, -0.236912, 0.017323, 0.959266]
+      },
+      {
+        "pose": "rom:elbow-90",
+        "helper": "elbow_half_r",
+        "follows_quaternion_xyzw": [-0.293364, 0.454523, -0.033235, 0.840382],
+        "helper_quaternion_xyzw": [-0.152911, 0.236912, -0.017323, 0.959266]
+      },
+      {
+        "pose": "rom:elbow-90",
+        "helper": "knee_half_l",
+        "follows_quaternion_xyzw": [0.0, 0.0, 0.0, 1.0],
+        "helper_quaternion_xyzw": [0.0, 0.0, 0.0, 1.0]
+      },
+      {
+        "pose": "rom:elbow-90",
+        "helper": "knee_half_r",
+        "follows_quaternion_xyzw": [0.0, 0.0, 0.0, 1.0],
+        "helper_quaternion_xyzw": [0.0, 0.0, 0.0, 1.0]
+      },
+      {
+        "pose": "rom:elbow-90",
+        "helper": "upperarm_twist_l",
+        "follows_quaternion_xyzw": [0.004314, -0.032578, -0.477813, 0.877847],
+        "helper_quaternion_xyzw": [-0.006321, -0.013034, -0.47779, 0.878355]
+      },
+      {
+        "pose": "rom:elbow-90",
+        "helper": "upperarm_twist_r",
+        "follows_quaternion_xyzw": [0.004314, 0.032578, 0.477813, 0.877847],
+        "helper_quaternion_xyzw": [-0.006321, 0.013034, 0.47779, 0.878355]
+      },
+      {
+        "pose": "rom:elbow-140",
+        "helper": "elbow_half_l",
+        "follows_quaternion_xyzw": [-0.458115, -0.70978, 0.0519, 0.532587],
+        "helper_quaternion_xyzw": [-0.261666, -0.405411, 0.029644, 0.875382]
+      },
+      {
+        "pose": "rom:elbow-140",
+        "helper": "elbow_half_r",
+        "follows_quaternion_xyzw": [-0.458115, 0.70978, -0.0519, 0.532587],
+        "helper_quaternion_xyzw": [-0.261666, 0.405411, -0.029644, 0.875382]
+      },
+      {
+        "pose": "rom:elbow-140",
+        "helper": "knee_half_l",
+        "follows_quaternion_xyzw": [0.0, 0.0, 0.0, 1.0],
+        "helper_quaternion_xyzw": [0.0, 0.0, 0.0, 1.0]
+      },
+      {
+        "pose": "rom:elbow-140",
+        "helper": "knee_half_r",
+        "follows_quaternion_xyzw": [0.0, 0.0, 0.0, 1.0],
+        "helper_quaternion_xyzw": [0.0, 0.0, 0.0, 1.0]
+      },
+      {
+        "pose": "rom:elbow-140",
+        "helper": "upperarm_twist_l",
+        "follows_quaternion_xyzw": [0.004314, -0.032578, -0.477813, 0.877847],
+        "helper_quaternion_xyzw": [-0.006321, -0.013034, -0.47779, 0.878355]
+      },
+      {
+        "pose": "rom:elbow-140",
+        "helper": "upperarm_twist_r",
+        "follows_quaternion_xyzw": [0.004314, 0.032578, 0.477813, 0.877847],
+        "helper_quaternion_xyzw": [-0.006321, 0.013034, 0.47779, 0.878355]
+      },
+      {
+        "pose": "rom:knee-135",
+        "helper": "elbow_half_l",
+        "follows_quaternion_xyzw": [0.114203, 0.17694, -0.012938, 0.977488],
+        "helper_quaternion_xyzw": [0.057425, 0.088972, -0.006506, 0.994356]
+      },
+      {
+        "pose": "rom:knee-135",
+        "helper": "elbow_half_r",
+        "follows_quaternion_xyzw": [0.114203, -0.17694, 0.012938, 0.977488],
+        "helper_quaternion_xyzw": [0.057425, -0.088972, 0.006506, 0.994356]
+      },
+      {
+        "pose": "rom:knee-135",
+        "helper": "knee_half_l",
+        "follows_quaternion_xyzw": [0.909609, 0.161756, -0.0, 0.382683],
+        "helper_quaternion_xyzw": [0.546989, 0.097271, 0.0, 0.83147]
+      },
+      {
+        "pose": "rom:knee-135",
+        "helper": "knee_half_r",
+        "follows_quaternion_xyzw": [0.909609, -0.161756, 0.0, 0.382683],
+        "helper_quaternion_xyzw": [0.546989, -0.097271, 0.0, 0.83147]
+      },
+      {
+        "pose": "rom:knee-135",
+        "helper": "upperarm_twist_l",
+        "follows_quaternion_xyzw": [0.004314, -0.032578, -0.477813, 0.877847],
+        "helper_quaternion_xyzw": [-0.006321, -0.013034, -0.47779, 0.878355]
+      },
+      {
+        "pose": "rom:knee-135",
+        "helper": "upperarm_twist_r",
+        "follows_quaternion_xyzw": [0.004314, 0.032578, 0.477813, 0.877847],
+        "helper_quaternion_xyzw": [-0.006321, 0.013034, 0.47779, 0.878355]
+      },
+      {
+        "pose": "rom:arm-p90-e90",
+        "helper": "elbow_half_l",
+        "follows_quaternion_xyzw": [0.114203, 0.17694, -0.012938, 0.977488],
+        "helper_quaternion_xyzw": [0.057425, 0.088972, -0.006506, 0.994356]
+      },
+      {
+        "pose": "rom:arm-p90-e90",
+        "helper": "elbow_half_r",
+        "follows_quaternion_xyzw": [0.114203, -0.17694, 0.012938, 0.977488],
+        "helper_quaternion_xyzw": [0.057425, -0.088972, 0.006506, 0.994356]
+      },
+      {
+        "pose": "rom:arm-p90-e90",
+        "helper": "knee_half_l",
+        "follows_quaternion_xyzw": [0.0, 0.0, 0.0, 1.0],
+        "helper_quaternion_xyzw": [0.0, 0.0, 0.0, 1.0]
+      },
+      {
+        "pose": "rom:arm-p90-e90",
+        "helper": "knee_half_r",
+        "follows_quaternion_xyzw": [0.0, 0.0, 0.0, 1.0],
+        "helper_quaternion_xyzw": [0.0, 0.0, 0.0, 1.0]
+      },
+      {
+        "pose": "rom:arm-p90-e90",
+        "helper": "upperarm_twist_l",
+        "follows_quaternion_xyzw": [-0.660519, -0.262415, -0.279743, 0.645443],
+        "helper_quaternion_xyzw": [-0.492896, -0.446051, -0.077985, 0.742974]
+      },
+      {
+        "pose": "rom:arm-p90-e90",
+        "helper": "upperarm_twist_r",
+        "follows_quaternion_xyzw": [-0.660519, 0.262415, 0.279743, 0.645443],
+        "helper_quaternion_xyzw": [-0.492896, 0.446051, 0.077985, 0.742974]
+      },
+      {
+        "pose": "rom:arm-rot80-hang",
+        "helper": "elbow_half_l",
+        "follows_quaternion_xyzw": [-0.293364, -0.454523, 0.033235, 0.840382],
+        "helper_quaternion_xyzw": [-0.152911, -0.236912, 0.017323, 0.959266]
+      },
+      {
+        "pose": "rom:arm-rot80-hang",
+        "helper": "elbow_half_r",
+        "follows_quaternion_xyzw": [-0.293364, 0.454523, -0.033235, 0.840382],
+        "helper_quaternion_xyzw": [-0.152911, 0.236912, -0.017323, 0.959266]
+      },
+      {
+        "pose": "rom:arm-rot80-hang",
+        "helper": "knee_half_l",
+        "follows_quaternion_xyzw": [0.0, 0.0, 0.0, 1.0],
+        "helper_quaternion_xyzw": [0.0, 0.0, 0.0, 1.0]
+      },
+      {
+        "pose": "rom:arm-rot80-hang",
+        "helper": "knee_half_r",
+        "follows_quaternion_xyzw": [0.0, 0.0, 0.0, 1.0],
+        "helper_quaternion_xyzw": [0.0, 0.0, 0.0, 1.0]
+      },
+      {
+        "pose": "rom:arm-rot80-hang",
+        "helper": "upperarm_twist_l",
+        "follows_quaternion_xyzw": [0.310437, -0.589226, -0.363252, 0.651529],
+        "helper_quaternion_xyzw": [0.125621, -0.254636, -0.461024, 0.840736]
+      },
+      {
+        "pose": "rom:arm-rot80-hang",
+        "helper": "upperarm_twist_r",
+        "follows_quaternion_xyzw": [-0.433059, -0.4423, 0.176764, 0.765236],
+        "helper_quaternion_xyzw": [-0.19108, -0.184596, 0.222648, 0.937998]
+      },
+      {
+        "pose": "rom:squat",
+        "helper": "elbow_half_l",
+        "follows_quaternion_xyzw": [0.114203, 0.17694, -0.012938, 0.977488],
+        "helper_quaternion_xyzw": [0.057425, 0.088972, -0.006506, 0.994356]
+      },
+      {
+        "pose": "rom:squat",
+        "helper": "elbow_half_r",
+        "follows_quaternion_xyzw": [0.114203, -0.17694, 0.012938, 0.977488],
+        "helper_quaternion_xyzw": [0.057425, -0.088972, 0.006506, 0.994356]
+      },
+      {
+        "pose": "rom:squat",
+        "helper": "knee_half_l",
+        "follows_quaternion_xyzw": [0.909609, 0.161756, -0.0, 0.382683],
+        "helper_quaternion_xyzw": [0.546989, 0.097271, 0.0, 0.83147]
+      },
+      {
+        "pose": "rom:squat",
+        "helper": "knee_half_r",
+        "follows_quaternion_xyzw": [0.909609, -0.161756, 0.0, 0.382683],
+        "helper_quaternion_xyzw": [0.546989, -0.097271, -0.0, 0.83147]
+      },
+      {
+        "pose": "rom:squat",
+        "helper": "upperarm_twist_l",
+        "follows_quaternion_xyzw": [-0.533078, -0.231076, -0.344708, 0.737298],
+        "helper_quaternion_xyzw": [-0.413215, -0.392266, -0.223296, 0.790898]
+      },
+      {
+        "pose": "rom:squat",
+        "helper": "upperarm_twist_r",
+        "follows_quaternion_xyzw": [-0.533078, 0.231076, 0.344708, 0.737298],
+        "helper_quaternion_xyzw": [-0.413215, 0.392266, 0.223296, 0.790898]
+      },
+      {
+        "pose": "general:reach-up-both",
+        "helper": "elbow_half_l",
+        "follows_quaternion_xyzw": [0.020593, 0.031906, -0.002333, 0.999276],
+        "helper_quaternion_xyzw": [0.010299, 0.015956, -0.001167, 0.999819]
+      },
+      {
+        "pose": "general:reach-up-both",
+        "helper": "elbow_half_r",
+        "follows_quaternion_xyzw": [0.020593, -0.031906, 0.002333, 0.999276],
+        "helper_quaternion_xyzw": [0.010299, -0.015956, 0.001167, 0.999819]
+      },
+      {
+        "pose": "general:reach-up-both",
+        "helper": "knee_half_l",
+        "follows_quaternion_xyzw": [0.025773, 0.004583, -0.0, 0.999657],
+        "helper_quaternion_xyzw": [0.012887, 0.002292, -0.0, 0.999914]
+      },
+      {
+        "pose": "general:reach-up-both",
+        "helper": "knee_half_r",
+        "follows_quaternion_xyzw": [0.025773, -0.004583, 0.0, 0.999657],
+        "helper_quaternion_xyzw": [0.012887, -0.002292, 0.0, 0.999914]
+      },
+      {
+        "pose": "general:reach-up-both",
+        "helper": "upperarm_twist_l",
+        "follows_quaternion_xyzw": [-0.876471, -0.340751, 0.15044, 0.305051],
+        "helper_quaternion_xyzw": [-0.496176, -0.309169, 0.571773, 0.575586]
+      },
+      {
+        "pose": "general:reach-up-both",
+        "helper": "upperarm_twist_r",
+        "follows_quaternion_xyzw": [-0.876471, 0.340751, -0.15044, 0.305051],
+        "helper_quaternion_xyzw": [-0.496176, 0.309169, -0.571773, 0.575586]
+      },
+      {
+        "pose": "general:walk-passing-l",
+        "helper": "elbow_half_l",
+        "follows_quaternion_xyzw": [-0.003019, -0.004677, 0.000342, 0.999984],
+        "helper_quaternion_xyzw": [-0.001509, -0.002339, 0.000171, 0.999996]
+      },
+      {
+        "pose": "general:walk-passing-l",
+        "helper": "elbow_half_r",
+        "follows_quaternion_xyzw": [-0.003019, 0.004677, -0.000342, 0.999984],
+        "helper_quaternion_xyzw": [-0.001509, 0.002339, -0.000171, 0.999996]
+      },
+      {
+        "pose": "general:walk-passing-l",
+        "helper": "knee_half_l",
+        "follows_quaternion_xyzw": [0.102914, 0.018301, 0.0, 0.994522],
+        "helper_quaternion_xyzw": [0.051528, 0.009163, 0.0, 0.99863]
+      },
+      {
+        "pose": "general:walk-passing-l",
+        "helper": "knee_half_r",
+        "follows_quaternion_xyzw": [0.507083, -0.090175, 0.0, 0.857167],
+        "helper_quaternion_xyzw": [0.26311, -0.046789, 0.0, 0.96363]
+      },
+      {
+        "pose": "general:walk-passing-l",
+        "helper": "upperarm_twist_l",
+        "follows_quaternion_xyzw": [-0.075821, -0.063288, -0.459074, 0.882891],
+        "helper_quaternion_xyzw": [-0.069644, -0.074134, -0.458117, 0.883053]
+      },
+      {
+        "pose": "general:walk-passing-l",
+        "helper": "upperarm_twist_r",
+        "follows_quaternion_xyzw": [-0.075821, 0.063288, 0.459074, 0.882891],
+        "helper_quaternion_xyzw": [-0.069644, 0.074134, 0.458117, 0.883053]
+      },
+      {
+        "pose": "knight:idle-relaxed",
+        "helper": "elbow_half_l",
+        "follows_quaternion_xyzw": [-0.174607, -0.270527, 0.019781, 0.946539],
+        "helper_quaternion_xyzw": [-0.088494, -0.137108, 0.010026, 0.986544]
+      },
+      {
+        "pose": "knight:idle-relaxed",
+        "helper": "elbow_half_r",
+        "follows_quaternion_xyzw": [0.044167, -0.068429, 0.005004, 0.996665],
+        "helper_quaternion_xyzw": [0.022102, -0.034243, 0.002504, 0.999166]
+      },
+      {
+        "pose": "knight:idle-relaxed",
+        "helper": "knee_half_l",
+        "follows_quaternion_xyzw": [0.042946, 0.007637, -0.0, 0.999048],
+        "helper_quaternion_xyzw": [0.021478, 0.003819, 0.0, 0.999762]
+      },
+      {
+        "pose": "knight:idle-relaxed",
+        "helper": "knee_half_r",
+        "follows_quaternion_xyzw": [0.025773, -0.004583, 0.0, 0.999657],
+        "helper_quaternion_xyzw": [0.012887, -0.002292, 0.0, 0.999914]
+      },
+      {
+        "pose": "knight:idle-relaxed",
+        "helper": "upperarm_twist_l",
+        "follows_quaternion_xyzw": [0.049567, -0.230775, -0.237557, 0.942259],
+        "helper_quaternion_xyzw": [-0.023088, -0.152376, -0.251834, 0.95542]
+      },
+      {
+        "pose": "knight:idle-relaxed",
+        "helper": "upperarm_twist_r",
+        "follows_quaternion_xyzw": [-0.032341, 0.047022, 0.416403, 0.907387],
+        "helper_quaternion_xyzw": [-0.035255, 0.042439, 0.41659, 0.907419]
+      },
+      {
+        "pose": "knight:idle-at-ease",
+        "helper": "elbow_half_l",
+        "follows_quaternion_xyzw": [0.020593, 0.031906, -0.002333, 0.999276],
+        "helper_quaternion_xyzw": [0.010299, 0.015956, -0.001167, 0.999819]
+      },
+      {
+        "pose": "knight:idle-at-ease",
+        "helper": "elbow_half_r",
+        "follows_quaternion_xyzw": [0.044167, -0.068429, 0.005004, 0.996665],
+        "helper_quaternion_xyzw": [0.022102, -0.034243, 0.002504, 0.999166]
+      },
+      {
+        "pose": "knight:idle-at-ease",
+        "helper": "knee_half_l",
+        "follows_quaternion_xyzw": [0.12851, 0.022853, -0.0, 0.991445],
+        "helper_quaternion_xyzw": [0.064393, 0.011451, -0.0, 0.997859]
+      },
+      {
+        "pose": "knight:idle-at-ease",
+        "helper": "knee_half_r",
+        "follows_quaternion_xyzw": [0.017183, -0.003056, -0.0, 0.999848],
+        "helper_quaternion_xyzw": [0.008592, -0.001528, 0.0, 0.999962]
+      },
+      {
+        "pose": "knight:idle-at-ease",
+        "helper": "upperarm_twist_l",
+        "follows_quaternion_xyzw": [0.158928, -0.250749, -0.369253, 0.880635],
+        "helper_quaternion_xyzw": [0.056853, -0.103236, -0.381913, 0.916653]
+      },
+      {
+        "pose": "knight:idle-at-ease",
+        "helper": "upperarm_twist_r",
+        "follows_quaternion_xyzw": [-0.177317, -0.222587, 0.393584, 0.874131],
+        "helper_quaternion_xyzw": [-0.085705, -0.079296, 0.406854, 0.906]
+      },
+      {
+        "pose": "knight:guard-middle",
+        "helper": "elbow_half_l",
+        "follows_quaternion_xyzw": [-0.339304, -0.5257, 0.03844, 0.779124],
+        "helper_quaternion_xyzw": [-0.179875, -0.278689, 0.020378, 0.943166]
+      },
+      {
+        "pose": "knight:guard-middle",
+        "helper": "elbow_half_r",
+        "follows_quaternion_xyzw": [-0.281357, 0.435919, -0.031875, 0.854281],
+        "helper_quaternion_xyzw": [-0.146101, 0.226362, -0.016552, 0.962881]
+      },
+      {
+        "pose": "knight:guard-middle",
+        "helper": "knee_half_l",
+        "follows_quaternion_xyzw": [0.254821, 0.045315, 0.0, 0.965926],
+        "helper_quaternion_xyzw": [0.12851, 0.022853, -0.0, 0.991445]
+      },
+      {
+        "pose": "knight:guard-middle",
+        "helper": "knee_half_r",
+        "follows_quaternion_xyzw": [0.170966, -0.030403, -0.0, 0.984808],
+        "helper_quaternion_xyzw": [0.085809, -0.01526, -0.0, 0.996195]
+      },
+      {
+        "pose": "knight:guard-middle",
+        "helper": "upperarm_twist_l",
+        "follows_quaternion_xyzw": [-0.073873, -0.376483, -0.133772, 0.913733],
+        "helper_quaternion_xyzw": [-0.140144, -0.316949, -0.164867, 0.923429]
+      },
+      {
+        "pose": "knight:guard-middle",
+        "helper": "upperarm_twist_r",
+        "follows_quaternion_xyzw": [0.075406, 0.130226, 0.153516, 0.976621],
+        "helper_quaternion_xyzw": [0.013107, 0.074574, 0.156776, 0.984727]
+      }
+    ]
   },
-  {
-   "name": "spine_01",
-   "parent": "pelvis",
-   "rest_position": [
-    0.0,
-    0.33315,
-    -0.004592
-   ]
+  "sockets": {
+    "sword": {
+      "joint": "hand_r",
+      "offset": [-0.018939, -0.029541, -0.000171],
+      "quaternion_xyzw": [0.685183, -0.17744, -0.17577, 0.684211],
+      "matrix_rows": [
+        [0.87524, -0.00263, -0.483681, -0.018939],
+        [-0.483684, -0.00074, -0.875242, -0.029541],
+        [0.001944, 0.999996, -0.00192, -0.000171],
+        [0.0, 0.0, 0.0, 1.0]
+      ],
+      "fit": "grip",
+      "item_axes_in_its_file": {
+        "was_working_+X": [1.0, 0.0, 0.0],
+        "was_working_+Y": [0.0, 0.0, -1.0],
+        "was_working_+Z": [0.0, 1.0, 0.0]
+      }
+    },
+    "shield": {
+      "joint": "lowerarm_l",
+      "offset": [0.056601, -0.016108, 0.012975],
+      "quaternion_xyzw": [-0.523001, 0.705645, 0.04544, 0.475889],
+      "matrix_rows": [
+        [0.0, -0.781354, 0.624088, 0.056601],
+        [-0.694858, 0.448811, 0.561909, -0.016108],
+        [-0.719147, -0.433652, -0.54293, 0.012975],
+        [0.0, 0.0, 0.0, 1.0]
+      ],
+      "fit": "forearm",
+      "item_axes_in_its_file": {
+        "was_working_+X": [1.0, 0.0, 0.0],
+        "was_working_+Y": [0.0, 0.0, -1.0],
+        "was_working_+Z": [0.0, 1.0, 0.0]
+      }
+    }
   },
-  {
-   "name": "spine_02",
-   "parent": "spine_01",
-   "rest_position": [
-    0.0,
-    0.358117,
-    -0.003032
-   ]
+  "sockets_note": "p_joint = R * p_item + offset, with p_item as the item's GLB holds it. In three.js: item.position = offset, item.quaternion = quaternion_xyzw, parented to the joint.",
+  "hands": {
+    "hand_r": {
+      "index": [-0.032574, -0.038091, 0.016716],
+      "middle": [-0.034444, -0.039099, 0.010311],
+      "pinky": [-0.030621, -0.037719, -0.009045],
+      "palm_faces": [0.841844, -0.539718, 0.001815],
+      "normal_sign": -1,
+      "frame": "offsets from the hand joint, in the joint's frame (the game's axes)",
+      "fist_width_mm": 40.5,
+      "how": "the row runs along the guide axis the fist was generated round (guide-bore.json), index finger toward the front",
+      "normal_sign_is": "the sign that makes cross(across, forward) the direction the palm faces, with forward = middle - hand and across = index - pinky on the left hand, pinky - index on the right"
+    },
+    "hand_l": {
+      "index": [0.032367, -0.039763, 0.015626],
+      "middle": [0.03439, -0.039131, 0.00961],
+      "pinky": [0.029913, -0.03855, -0.010571],
+      "palm_faces": [-0.841844, -0.539718, 0.001815],
+      "normal_sign": -1,
+      "frame": "offsets from the hand joint, in the joint's frame (the game's axes)",
+      "fist_width_mm": 39.8,
+      "how": "the other hand's directions mirrored left to right",
+      "normal_sign_is": "the sign that makes cross(across, forward) the direction the palm faces, with forward = middle - hand and across = index - pinky on the left hand, pinky - index on the right"
+    }
   },
-  {
-   "name": "spine_03",
-   "parent": "spine_02",
-   "rest_position": [
-    0.0,
-    0.392423,
-    -0.003114
-   ]
+  "feet": {
+    "l": {
+      "ankle": "foot_l",
+      "toe": "ball_l",
+      "toe_tip": "ball_leaf_l",
+      "sole_height": 0.0,
+      "ankle_height": 0.03241,
+      "ball_length": 0.05006,
+      "heel_behind_ankle": 0.0319,
+      "toe_in_front_of_ankle": 0.08196,
+      "heel_length_ratio": 0.637244,
+      "vertices_measured": 2016
+    },
+    "r": {
+      "ankle": "foot_r",
+      "toe": "ball_r",
+      "toe_tip": "ball_leaf_r",
+      "sole_height": 5e-5,
+      "ankle_height": 0.03241,
+      "ball_length": 0.05006,
+      "heel_behind_ankle": 0.03181,
+      "toe_in_front_of_ankle": 0.08187,
+      "heel_length_ratio": 0.635472,
+      "vertices_measured": 2181
+    }
   },
-  {
-   "name": "clavicle_l",
-   "parent": "spine_03",
-   "rest_position": [
-    0.012182,
-    0.49073,
-    -0.004251
-   ]
-  },
-  {
-   "name": "upperarm_l",
-   "parent": "clavicle_l",
-   "rest_position": [
-    0.072052,
-    0.476765,
-    -0.01906
-   ]
-  },
-  {
-   "name": "lowerarm_l",
-   "parent": "upperarm_l",
-   "rest_position": [
-    0.158006,
-    0.421111,
-    -0.021473
-   ]
-  },
-  {
-   "name": "hand_l",
-   "parent": "lowerarm_l",
-   "rest_position": [
-    0.219478,
-    0.383665,
-    0.009025
-   ]
-  },
-  {
-   "name": "clavicle_r",
-   "parent": "spine_03",
-   "rest_position": [
-    -0.012182,
-    0.49073,
-    -0.004251
-   ]
-  },
-  {
-   "name": "upperarm_r",
-   "parent": "clavicle_r",
-   "rest_position": [
-    -0.072052,
-    0.476765,
-    -0.01906
-   ]
-  },
-  {
-   "name": "lowerarm_r",
-   "parent": "upperarm_r",
-   "rest_position": [
-    -0.158006,
-    0.421111,
-    -0.021473
-   ]
-  },
-  {
-   "name": "hand_r",
-   "parent": "lowerarm_r",
-   "rest_position": [
-    -0.219478,
-    0.383665,
-    0.009025
-   ]
-  },
-  {
-   "name": "neck_01",
-   "parent": "spine_03",
-   "rest_position": [
-    0.0,
-    0.506776,
-    -0.014526
-   ]
-  },
-  {
-   "name": "Head",
-   "parent": "neck_01",
-   "rest_position": [
-    0.0,
-    0.547875,
-    0.001506
-   ]
-  },
-  {
-   "name": "thigh_l",
-   "parent": "pelvis",
-   "rest_position": [
-    0.036929,
-    0.308988,
-    0.002037
-   ]
-  },
-  {
-   "name": "calf_l",
-   "parent": "thigh_l",
-   "rest_position": [
-    0.060541,
-    0.17621,
-    -0.002608
-   ]
-  },
-  {
-   "name": "foot_l",
-   "parent": "calf_l",
-   "rest_position": [
-    0.074878,
-    0.032414,
-    -0.014572
-   ]
-  },
-  {
-   "name": "ball_l",
-   "parent": "foot_l",
-   "rest_position": [
-    0.088499,
-    0.014707,
-    0.035487
-   ]
-  },
-  {
-   "name": "ball_leaf_l",
-   "parent": "ball_l",
-   "rest_position": [
-    0.09491,
-    0.014707,
-    0.063342
-   ]
-  },
-  {
-   "name": "thigh_r",
-   "parent": "pelvis",
-   "rest_position": [
-    -0.036929,
-    0.308988,
-    0.002037
-   ]
-  },
-  {
-   "name": "calf_r",
-   "parent": "thigh_r",
-   "rest_position": [
-    -0.060541,
-    0.17621,
-    -0.002608
-   ]
-  },
-  {
-   "name": "foot_r",
-   "parent": "calf_r",
-   "rest_position": [
-    -0.074878,
-    0.032414,
-    -0.014572
-   ]
-  },
-  {
-   "name": "ball_r",
-   "parent": "foot_r",
-   "rest_position": [
-    -0.088499,
-    0.014707,
-    0.035487
-   ]
-  },
-  {
-   "name": "ball_leaf_r",
-   "parent": "ball_r",
-   "rest_position": [
-    -0.09491,
-    0.014707,
-    0.063342
-   ]
-  },
-  {
-   "name": "elbow_half_l",
-   "parent": "upperarm_l",
-   "rest_position": [
-    0.158006,
-    0.421111,
-    -0.021473
-   ]
-  },
-  {
-   "name": "elbow_half_r",
-   "parent": "upperarm_r",
-   "rest_position": [
-    -0.158006,
-    0.421111,
-    -0.021473
-   ]
-  },
-  {
-   "name": "knee_half_l",
-   "parent": "thigh_l",
-   "rest_position": [
-    0.060541,
-    0.17621,
-    -0.002608
-   ]
-  },
-  {
-   "name": "knee_half_r",
-   "parent": "thigh_r",
-   "rest_position": [
-    -0.060541,
-    0.17621,
-    -0.002608
-   ]
-  },
-  {
-   "name": "upperarm_twist_l",
-   "parent": "clavicle_l",
-   "rest_position": [
-    0.072052,
-    0.476765,
-    -0.01906
-   ]
-  },
-  {
-   "name": "upperarm_twist_r",
-   "parent": "clavicle_r",
-   "rest_position": [
-    -0.072052,
-    0.476765,
-    -0.01906
-   ]
+  "feet_note": "ball_length is the ball joint's z minus the ankle's; heel_length_ratio = heel_behind_ankle / ball_length. Heel and toe are the sole's ends (the lowest 12 mm of the surface bound to the foot's joints).",
+  "body": {
+    "stature": 0.61526,
+    "top_y": 0.61526,
+    "lowest_y": 0.0,
+    "joint_count": 31,
+    "joint_order": [
+      "root",
+      "pelvis",
+      "spine_01",
+      "spine_02",
+      "spine_03",
+      "clavicle_l",
+      "upperarm_l",
+      "lowerarm_l",
+      "hand_l",
+      "clavicle_r",
+      "upperarm_r",
+      "lowerarm_r",
+      "hand_r",
+      "neck_01",
+      "Head",
+      "thigh_l",
+      "calf_l",
+      "foot_l",
+      "ball_l",
+      "ball_leaf_l",
+      "thigh_r",
+      "calf_r",
+      "foot_r",
+      "ball_r",
+      "ball_leaf_r",
+      "elbow_half_l",
+      "elbow_half_r",
+      "knee_half_l",
+      "knee_half_r",
+      "upperarm_twist_l",
+      "upperarm_twist_r"
+    ]
   }
- ],
- "helpers": [
-  {
-   "name": "elbow_half_l",
-   "rule": "half",
-   "parent": "upperarm_l",
-   "follows": "lowerarm_l",
-   "share": 0.5,
-   "rest_position": [
-    0.158006,
-    0.421111,
-    -0.021473
-   ],
-   "formula": "helper.quaternion = slerp(identity, follows.quaternion, share)"
-  },
-  {
-   "name": "elbow_half_r",
-   "rule": "half",
-   "parent": "upperarm_r",
-   "follows": "lowerarm_r",
-   "share": 0.5,
-   "rest_position": [
-    -0.158006,
-    0.421111,
-    -0.021473
-   ],
-   "formula": "helper.quaternion = slerp(identity, follows.quaternion, share)"
-  },
-  {
-   "name": "knee_half_l",
-   "rule": "half",
-   "parent": "thigh_l",
-   "follows": "calf_l",
-   "share": 0.5,
-   "rest_position": [
-    0.060541,
-    0.17621,
-    -0.002608
-   ],
-   "formula": "helper.quaternion = slerp(identity, follows.quaternion, share)"
-  },
-  {
-   "name": "knee_half_r",
-   "rule": "half",
-   "parent": "thigh_r",
-   "follows": "calf_r",
-   "share": 0.5,
-   "rest_position": [
-    -0.060541,
-    0.17621,
-    -0.002608
-   ],
-   "formula": "helper.quaternion = slerp(identity, follows.quaternion, share)"
-  },
-  {
-   "name": "upperarm_twist_l",
-   "rule": "twist",
-   "parent": "clavicle_l",
-   "follows": "upperarm_l",
-   "share": 0.4,
-   "rest_position": [
-    0.072052,
-    0.476765,
-    -0.01906
-   ],
-   "twist_axis": [
-    0.839174,
-    -0.543353,
-    -0.023558
-   ],
-   "twist_axis_is": "the rest direction of upperarm_l (toward its child), in the parent's frame",
-   "formula": "D = follows.quaternion; twist = the part of D about twist_axis (project D's vector part on the axis, renormalise); swing = D * inverse(twist); helper.quaternion = swing * slerp(identity, twist, share)"
-  },
-  {
-   "name": "upperarm_twist_r",
-   "rule": "twist",
-   "parent": "clavicle_r",
-   "follows": "upperarm_r",
-   "share": 0.4,
-   "rest_position": [
-    -0.072052,
-    0.476765,
-    -0.01906
-   ],
-   "twist_axis": [
-    -0.839174,
-    -0.543353,
-    -0.023558
-   ],
-   "twist_axis_is": "the rest direction of upperarm_r (toward its child), in the parent's frame",
-   "formula": "D = follows.quaternion; twist = the part of D about twist_axis (project D's vector part on the axis, renormalise); swing = D * inverse(twist); helper.quaternion = swing * slerp(identity, twist, share)"
-  }
- ],
- "helpers_note": "Driven every frame after the controller has posed the core joints and before skinning; never keyed. Local rotations are relative to rest, which is identity here.",
- "driver_reference": {
-  "note": "Local rotations (x, y, z, w) in the game's frame. A driver that is given follows_quaternion must return helper_quaternion (or its negative) to about 1e-4.",
-  "cases": [
-   {
-    "pose": "rom:elbow-90",
-    "helper": "elbow_half_l",
-    "follows_quaternion_xyzw": [
-     -0.293364,
-     -0.454523,
-     0.033235,
-     0.840382
-    ],
-    "helper_quaternion_xyzw": [
-     -0.152911,
-     -0.236912,
-     0.017323,
-     0.959266
-    ]
-   },
-   {
-    "pose": "rom:elbow-90",
-    "helper": "elbow_half_r",
-    "follows_quaternion_xyzw": [
-     -0.293364,
-     0.454523,
-     -0.033235,
-     0.840382
-    ],
-    "helper_quaternion_xyzw": [
-     -0.152911,
-     0.236912,
-     -0.017323,
-     0.959266
-    ]
-   },
-   {
-    "pose": "rom:elbow-90",
-    "helper": "knee_half_l",
-    "follows_quaternion_xyzw": [
-     0.0,
-     0.0,
-     0.0,
-     1.0
-    ],
-    "helper_quaternion_xyzw": [
-     0.0,
-     0.0,
-     0.0,
-     1.0
-    ]
-   },
-   {
-    "pose": "rom:elbow-90",
-    "helper": "knee_half_r",
-    "follows_quaternion_xyzw": [
-     0.0,
-     0.0,
-     0.0,
-     1.0
-    ],
-    "helper_quaternion_xyzw": [
-     0.0,
-     0.0,
-     0.0,
-     1.0
-    ]
-   },
-   {
-    "pose": "rom:elbow-90",
-    "helper": "upperarm_twist_l",
-    "follows_quaternion_xyzw": [
-     0.004314,
-     -0.032578,
-     -0.477813,
-     0.877847
-    ],
-    "helper_quaternion_xyzw": [
-     -0.006321,
-     -0.013034,
-     -0.47779,
-     0.878355
-    ]
-   },
-   {
-    "pose": "rom:elbow-90",
-    "helper": "upperarm_twist_r",
-    "follows_quaternion_xyzw": [
-     0.004314,
-     0.032578,
-     0.477813,
-     0.877847
-    ],
-    "helper_quaternion_xyzw": [
-     -0.006321,
-     0.013034,
-     0.47779,
-     0.878355
-    ]
-   },
-   {
-    "pose": "rom:elbow-140",
-    "helper": "elbow_half_l",
-    "follows_quaternion_xyzw": [
-     -0.458115,
-     -0.70978,
-     0.0519,
-     0.532587
-    ],
-    "helper_quaternion_xyzw": [
-     -0.261666,
-     -0.405411,
-     0.029644,
-     0.875382
-    ]
-   },
-   {
-    "pose": "rom:elbow-140",
-    "helper": "elbow_half_r",
-    "follows_quaternion_xyzw": [
-     -0.458115,
-     0.70978,
-     -0.0519,
-     0.532587
-    ],
-    "helper_quaternion_xyzw": [
-     -0.261666,
-     0.405411,
-     -0.029644,
-     0.875382
-    ]
-   },
-   {
-    "pose": "rom:elbow-140",
-    "helper": "knee_half_l",
-    "follows_quaternion_xyzw": [
-     0.0,
-     0.0,
-     0.0,
-     1.0
-    ],
-    "helper_quaternion_xyzw": [
-     0.0,
-     0.0,
-     0.0,
-     1.0
-    ]
-   },
-   {
-    "pose": "rom:elbow-140",
-    "helper": "knee_half_r",
-    "follows_quaternion_xyzw": [
-     0.0,
-     0.0,
-     0.0,
-     1.0
-    ],
-    "helper_quaternion_xyzw": [
-     0.0,
-     0.0,
-     0.0,
-     1.0
-    ]
-   },
-   {
-    "pose": "rom:elbow-140",
-    "helper": "upperarm_twist_l",
-    "follows_quaternion_xyzw": [
-     0.004314,
-     -0.032578,
-     -0.477813,
-     0.877847
-    ],
-    "helper_quaternion_xyzw": [
-     -0.006321,
-     -0.013034,
-     -0.47779,
-     0.878355
-    ]
-   },
-   {
-    "pose": "rom:elbow-140",
-    "helper": "upperarm_twist_r",
-    "follows_quaternion_xyzw": [
-     0.004314,
-     0.032578,
-     0.477813,
-     0.877847
-    ],
-    "helper_quaternion_xyzw": [
-     -0.006321,
-     0.013034,
-     0.47779,
-     0.878355
-    ]
-   },
-   {
-    "pose": "rom:knee-135",
-    "helper": "elbow_half_l",
-    "follows_quaternion_xyzw": [
-     0.114203,
-     0.17694,
-     -0.012938,
-     0.977488
-    ],
-    "helper_quaternion_xyzw": [
-     0.057425,
-     0.088972,
-     -0.006506,
-     0.994356
-    ]
-   },
-   {
-    "pose": "rom:knee-135",
-    "helper": "elbow_half_r",
-    "follows_quaternion_xyzw": [
-     0.114203,
-     -0.17694,
-     0.012938,
-     0.977488
-    ],
-    "helper_quaternion_xyzw": [
-     0.057425,
-     -0.088972,
-     0.006506,
-     0.994356
-    ]
-   },
-   {
-    "pose": "rom:knee-135",
-    "helper": "knee_half_l",
-    "follows_quaternion_xyzw": [
-     0.909609,
-     0.161756,
-     -0.0,
-     0.382683
-    ],
-    "helper_quaternion_xyzw": [
-     0.546989,
-     0.097271,
-     0.0,
-     0.83147
-    ]
-   },
-   {
-    "pose": "rom:knee-135",
-    "helper": "knee_half_r",
-    "follows_quaternion_xyzw": [
-     0.909609,
-     -0.161756,
-     0.0,
-     0.382683
-    ],
-    "helper_quaternion_xyzw": [
-     0.546989,
-     -0.097271,
-     0.0,
-     0.83147
-    ]
-   },
-   {
-    "pose": "rom:knee-135",
-    "helper": "upperarm_twist_l",
-    "follows_quaternion_xyzw": [
-     0.004314,
-     -0.032578,
-     -0.477813,
-     0.877847
-    ],
-    "helper_quaternion_xyzw": [
-     -0.006321,
-     -0.013034,
-     -0.47779,
-     0.878355
-    ]
-   },
-   {
-    "pose": "rom:knee-135",
-    "helper": "upperarm_twist_r",
-    "follows_quaternion_xyzw": [
-     0.004314,
-     0.032578,
-     0.477813,
-     0.877847
-    ],
-    "helper_quaternion_xyzw": [
-     -0.006321,
-     0.013034,
-     0.47779,
-     0.878355
-    ]
-   },
-   {
-    "pose": "rom:arm-p90-e90",
-    "helper": "elbow_half_l",
-    "follows_quaternion_xyzw": [
-     0.114203,
-     0.17694,
-     -0.012938,
-     0.977488
-    ],
-    "helper_quaternion_xyzw": [
-     0.057425,
-     0.088972,
-     -0.006506,
-     0.994356
-    ]
-   },
-   {
-    "pose": "rom:arm-p90-e90",
-    "helper": "elbow_half_r",
-    "follows_quaternion_xyzw": [
-     0.114203,
-     -0.17694,
-     0.012938,
-     0.977488
-    ],
-    "helper_quaternion_xyzw": [
-     0.057425,
-     -0.088972,
-     0.006506,
-     0.994356
-    ]
-   },
-   {
-    "pose": "rom:arm-p90-e90",
-    "helper": "knee_half_l",
-    "follows_quaternion_xyzw": [
-     0.0,
-     0.0,
-     0.0,
-     1.0
-    ],
-    "helper_quaternion_xyzw": [
-     0.0,
-     0.0,
-     0.0,
-     1.0
-    ]
-   },
-   {
-    "pose": "rom:arm-p90-e90",
-    "helper": "knee_half_r",
-    "follows_quaternion_xyzw": [
-     0.0,
-     0.0,
-     0.0,
-     1.0
-    ],
-    "helper_quaternion_xyzw": [
-     0.0,
-     0.0,
-     0.0,
-     1.0
-    ]
-   },
-   {
-    "pose": "rom:arm-p90-e90",
-    "helper": "upperarm_twist_l",
-    "follows_quaternion_xyzw": [
-     -0.660519,
-     -0.262415,
-     -0.279743,
-     0.645443
-    ],
-    "helper_quaternion_xyzw": [
-     -0.492896,
-     -0.446051,
-     -0.077985,
-     0.742974
-    ]
-   },
-   {
-    "pose": "rom:arm-p90-e90",
-    "helper": "upperarm_twist_r",
-    "follows_quaternion_xyzw": [
-     -0.660519,
-     0.262415,
-     0.279743,
-     0.645443
-    ],
-    "helper_quaternion_xyzw": [
-     -0.492896,
-     0.446051,
-     0.077985,
-     0.742974
-    ]
-   },
-   {
-    "pose": "rom:arm-rot80-hang",
-    "helper": "elbow_half_l",
-    "follows_quaternion_xyzw": [
-     -0.293364,
-     -0.454523,
-     0.033235,
-     0.840382
-    ],
-    "helper_quaternion_xyzw": [
-     -0.152911,
-     -0.236912,
-     0.017323,
-     0.959266
-    ]
-   },
-   {
-    "pose": "rom:arm-rot80-hang",
-    "helper": "elbow_half_r",
-    "follows_quaternion_xyzw": [
-     -0.293364,
-     0.454523,
-     -0.033235,
-     0.840382
-    ],
-    "helper_quaternion_xyzw": [
-     -0.152911,
-     0.236912,
-     -0.017323,
-     0.959266
-    ]
-   },
-   {
-    "pose": "rom:arm-rot80-hang",
-    "helper": "knee_half_l",
-    "follows_quaternion_xyzw": [
-     0.0,
-     0.0,
-     0.0,
-     1.0
-    ],
-    "helper_quaternion_xyzw": [
-     0.0,
-     0.0,
-     0.0,
-     1.0
-    ]
-   },
-   {
-    "pose": "rom:arm-rot80-hang",
-    "helper": "knee_half_r",
-    "follows_quaternion_xyzw": [
-     0.0,
-     0.0,
-     0.0,
-     1.0
-    ],
-    "helper_quaternion_xyzw": [
-     0.0,
-     0.0,
-     0.0,
-     1.0
-    ]
-   },
-   {
-    "pose": "rom:arm-rot80-hang",
-    "helper": "upperarm_twist_l",
-    "follows_quaternion_xyzw": [
-     0.310437,
-     -0.589226,
-     -0.363252,
-     0.651529
-    ],
-    "helper_quaternion_xyzw": [
-     0.125621,
-     -0.254636,
-     -0.461024,
-     0.840736
-    ]
-   },
-   {
-    "pose": "rom:arm-rot80-hang",
-    "helper": "upperarm_twist_r",
-    "follows_quaternion_xyzw": [
-     -0.433059,
-     -0.4423,
-     0.176764,
-     0.765236
-    ],
-    "helper_quaternion_xyzw": [
-     -0.19108,
-     -0.184596,
-     0.222648,
-     0.937998
-    ]
-   },
-   {
-    "pose": "rom:squat",
-    "helper": "elbow_half_l",
-    "follows_quaternion_xyzw": [
-     0.114203,
-     0.17694,
-     -0.012938,
-     0.977488
-    ],
-    "helper_quaternion_xyzw": [
-     0.057425,
-     0.088972,
-     -0.006506,
-     0.994356
-    ]
-   },
-   {
-    "pose": "rom:squat",
-    "helper": "elbow_half_r",
-    "follows_quaternion_xyzw": [
-     0.114203,
-     -0.17694,
-     0.012938,
-     0.977488
-    ],
-    "helper_quaternion_xyzw": [
-     0.057425,
-     -0.088972,
-     0.006506,
-     0.994356
-    ]
-   },
-   {
-    "pose": "rom:squat",
-    "helper": "knee_half_l",
-    "follows_quaternion_xyzw": [
-     0.909609,
-     0.161756,
-     -0.0,
-     0.382683
-    ],
-    "helper_quaternion_xyzw": [
-     0.546989,
-     0.097271,
-     0.0,
-     0.83147
-    ]
-   },
-   {
-    "pose": "rom:squat",
-    "helper": "knee_half_r",
-    "follows_quaternion_xyzw": [
-     0.909609,
-     -0.161756,
-     0.0,
-     0.382683
-    ],
-    "helper_quaternion_xyzw": [
-     0.546989,
-     -0.097271,
-     -0.0,
-     0.83147
-    ]
-   },
-   {
-    "pose": "rom:squat",
-    "helper": "upperarm_twist_l",
-    "follows_quaternion_xyzw": [
-     -0.533078,
-     -0.231076,
-     -0.344708,
-     0.737298
-    ],
-    "helper_quaternion_xyzw": [
-     -0.413215,
-     -0.392266,
-     -0.223296,
-     0.790898
-    ]
-   },
-   {
-    "pose": "rom:squat",
-    "helper": "upperarm_twist_r",
-    "follows_quaternion_xyzw": [
-     -0.533078,
-     0.231076,
-     0.344708,
-     0.737298
-    ],
-    "helper_quaternion_xyzw": [
-     -0.413215,
-     0.392266,
-     0.223296,
-     0.790898
-    ]
-   },
-   {
-    "pose": "general:reach-up-both",
-    "helper": "elbow_half_l",
-    "follows_quaternion_xyzw": [
-     0.020593,
-     0.031906,
-     -0.002333,
-     0.999276
-    ],
-    "helper_quaternion_xyzw": [
-     0.010299,
-     0.015956,
-     -0.001167,
-     0.999819
-    ]
-   },
-   {
-    "pose": "general:reach-up-both",
-    "helper": "elbow_half_r",
-    "follows_quaternion_xyzw": [
-     0.020593,
-     -0.031906,
-     0.002333,
-     0.999276
-    ],
-    "helper_quaternion_xyzw": [
-     0.010299,
-     -0.015956,
-     0.001167,
-     0.999819
-    ]
-   },
-   {
-    "pose": "general:reach-up-both",
-    "helper": "knee_half_l",
-    "follows_quaternion_xyzw": [
-     0.025773,
-     0.004583,
-     -0.0,
-     0.999657
-    ],
-    "helper_quaternion_xyzw": [
-     0.012887,
-     0.002292,
-     -0.0,
-     0.999914
-    ]
-   },
-   {
-    "pose": "general:reach-up-both",
-    "helper": "knee_half_r",
-    "follows_quaternion_xyzw": [
-     0.025773,
-     -0.004583,
-     0.0,
-     0.999657
-    ],
-    "helper_quaternion_xyzw": [
-     0.012887,
-     -0.002292,
-     0.0,
-     0.999914
-    ]
-   },
-   {
-    "pose": "general:reach-up-both",
-    "helper": "upperarm_twist_l",
-    "follows_quaternion_xyzw": [
-     -0.876471,
-     -0.340751,
-     0.15044,
-     0.305051
-    ],
-    "helper_quaternion_xyzw": [
-     -0.496176,
-     -0.309169,
-     0.571773,
-     0.575586
-    ]
-   },
-   {
-    "pose": "general:reach-up-both",
-    "helper": "upperarm_twist_r",
-    "follows_quaternion_xyzw": [
-     -0.876471,
-     0.340751,
-     -0.15044,
-     0.305051
-    ],
-    "helper_quaternion_xyzw": [
-     -0.496176,
-     0.309169,
-     -0.571773,
-     0.575586
-    ]
-   },
-   {
-    "pose": "general:walk-passing-l",
-    "helper": "elbow_half_l",
-    "follows_quaternion_xyzw": [
-     -0.003019,
-     -0.004677,
-     0.000342,
-     0.999984
-    ],
-    "helper_quaternion_xyzw": [
-     -0.001509,
-     -0.002339,
-     0.000171,
-     0.999996
-    ]
-   },
-   {
-    "pose": "general:walk-passing-l",
-    "helper": "elbow_half_r",
-    "follows_quaternion_xyzw": [
-     -0.003019,
-     0.004677,
-     -0.000342,
-     0.999984
-    ],
-    "helper_quaternion_xyzw": [
-     -0.001509,
-     0.002339,
-     -0.000171,
-     0.999996
-    ]
-   },
-   {
-    "pose": "general:walk-passing-l",
-    "helper": "knee_half_l",
-    "follows_quaternion_xyzw": [
-     0.102914,
-     0.018301,
-     0.0,
-     0.994522
-    ],
-    "helper_quaternion_xyzw": [
-     0.051528,
-     0.009163,
-     0.0,
-     0.99863
-    ]
-   },
-   {
-    "pose": "general:walk-passing-l",
-    "helper": "knee_half_r",
-    "follows_quaternion_xyzw": [
-     0.507083,
-     -0.090175,
-     0.0,
-     0.857167
-    ],
-    "helper_quaternion_xyzw": [
-     0.26311,
-     -0.046789,
-     0.0,
-     0.96363
-    ]
-   },
-   {
-    "pose": "general:walk-passing-l",
-    "helper": "upperarm_twist_l",
-    "follows_quaternion_xyzw": [
-     -0.075821,
-     -0.063288,
-     -0.459074,
-     0.882891
-    ],
-    "helper_quaternion_xyzw": [
-     -0.069644,
-     -0.074134,
-     -0.458117,
-     0.883053
-    ]
-   },
-   {
-    "pose": "general:walk-passing-l",
-    "helper": "upperarm_twist_r",
-    "follows_quaternion_xyzw": [
-     -0.075821,
-     0.063288,
-     0.459074,
-     0.882891
-    ],
-    "helper_quaternion_xyzw": [
-     -0.069644,
-     0.074134,
-     0.458117,
-     0.883053
-    ]
-   },
-   {
-    "pose": "knight:idle-relaxed",
-    "helper": "elbow_half_l",
-    "follows_quaternion_xyzw": [
-     -0.174607,
-     -0.270527,
-     0.019781,
-     0.946539
-    ],
-    "helper_quaternion_xyzw": [
-     -0.088494,
-     -0.137108,
-     0.010026,
-     0.986544
-    ]
-   },
-   {
-    "pose": "knight:idle-relaxed",
-    "helper": "elbow_half_r",
-    "follows_quaternion_xyzw": [
-     0.044167,
-     -0.068429,
-     0.005004,
-     0.996665
-    ],
-    "helper_quaternion_xyzw": [
-     0.022102,
-     -0.034243,
-     0.002504,
-     0.999166
-    ]
-   },
-   {
-    "pose": "knight:idle-relaxed",
-    "helper": "knee_half_l",
-    "follows_quaternion_xyzw": [
-     0.042946,
-     0.007637,
-     -0.0,
-     0.999048
-    ],
-    "helper_quaternion_xyzw": [
-     0.021478,
-     0.003819,
-     0.0,
-     0.999762
-    ]
-   },
-   {
-    "pose": "knight:idle-relaxed",
-    "helper": "knee_half_r",
-    "follows_quaternion_xyzw": [
-     0.025773,
-     -0.004583,
-     0.0,
-     0.999657
-    ],
-    "helper_quaternion_xyzw": [
-     0.012887,
-     -0.002292,
-     0.0,
-     0.999914
-    ]
-   },
-   {
-    "pose": "knight:idle-relaxed",
-    "helper": "upperarm_twist_l",
-    "follows_quaternion_xyzw": [
-     0.049567,
-     -0.230775,
-     -0.237557,
-     0.942259
-    ],
-    "helper_quaternion_xyzw": [
-     -0.023088,
-     -0.152376,
-     -0.251834,
-     0.95542
-    ]
-   },
-   {
-    "pose": "knight:idle-relaxed",
-    "helper": "upperarm_twist_r",
-    "follows_quaternion_xyzw": [
-     -0.032341,
-     0.047022,
-     0.416403,
-     0.907387
-    ],
-    "helper_quaternion_xyzw": [
-     -0.035255,
-     0.042439,
-     0.41659,
-     0.907419
-    ]
-   },
-   {
-    "pose": "knight:idle-at-ease",
-    "helper": "elbow_half_l",
-    "follows_quaternion_xyzw": [
-     0.020593,
-     0.031906,
-     -0.002333,
-     0.999276
-    ],
-    "helper_quaternion_xyzw": [
-     0.010299,
-     0.015956,
-     -0.001167,
-     0.999819
-    ]
-   },
-   {
-    "pose": "knight:idle-at-ease",
-    "helper": "elbow_half_r",
-    "follows_quaternion_xyzw": [
-     0.044167,
-     -0.068429,
-     0.005004,
-     0.996665
-    ],
-    "helper_quaternion_xyzw": [
-     0.022102,
-     -0.034243,
-     0.002504,
-     0.999166
-    ]
-   },
-   {
-    "pose": "knight:idle-at-ease",
-    "helper": "knee_half_l",
-    "follows_quaternion_xyzw": [
-     0.12851,
-     0.022853,
-     -0.0,
-     0.991445
-    ],
-    "helper_quaternion_xyzw": [
-     0.064393,
-     0.011451,
-     -0.0,
-     0.997859
-    ]
-   },
-   {
-    "pose": "knight:idle-at-ease",
-    "helper": "knee_half_r",
-    "follows_quaternion_xyzw": [
-     0.017183,
-     -0.003056,
-     -0.0,
-     0.999848
-    ],
-    "helper_quaternion_xyzw": [
-     0.008592,
-     -0.001528,
-     0.0,
-     0.999962
-    ]
-   },
-   {
-    "pose": "knight:idle-at-ease",
-    "helper": "upperarm_twist_l",
-    "follows_quaternion_xyzw": [
-     0.158928,
-     -0.250749,
-     -0.369253,
-     0.880635
-    ],
-    "helper_quaternion_xyzw": [
-     0.056853,
-     -0.103236,
-     -0.381913,
-     0.916653
-    ]
-   },
-   {
-    "pose": "knight:idle-at-ease",
-    "helper": "upperarm_twist_r",
-    "follows_quaternion_xyzw": [
-     -0.177317,
-     -0.222587,
-     0.393584,
-     0.874131
-    ],
-    "helper_quaternion_xyzw": [
-     -0.085705,
-     -0.079296,
-     0.406854,
-     0.906
-    ]
-   },
-   {
-    "pose": "knight:guard-middle",
-    "helper": "elbow_half_l",
-    "follows_quaternion_xyzw": [
-     -0.339304,
-     -0.5257,
-     0.03844,
-     0.779124
-    ],
-    "helper_quaternion_xyzw": [
-     -0.179875,
-     -0.278689,
-     0.020378,
-     0.943166
-    ]
-   },
-   {
-    "pose": "knight:guard-middle",
-    "helper": "elbow_half_r",
-    "follows_quaternion_xyzw": [
-     -0.281357,
-     0.435919,
-     -0.031875,
-     0.854281
-    ],
-    "helper_quaternion_xyzw": [
-     -0.146101,
-     0.226362,
-     -0.016552,
-     0.962881
-    ]
-   },
-   {
-    "pose": "knight:guard-middle",
-    "helper": "knee_half_l",
-    "follows_quaternion_xyzw": [
-     0.254821,
-     0.045315,
-     0.0,
-     0.965926
-    ],
-    "helper_quaternion_xyzw": [
-     0.12851,
-     0.022853,
-     -0.0,
-     0.991445
-    ]
-   },
-   {
-    "pose": "knight:guard-middle",
-    "helper": "knee_half_r",
-    "follows_quaternion_xyzw": [
-     0.170966,
-     -0.030403,
-     -0.0,
-     0.984808
-    ],
-    "helper_quaternion_xyzw": [
-     0.085809,
-     -0.01526,
-     -0.0,
-     0.996195
-    ]
-   },
-   {
-    "pose": "knight:guard-middle",
-    "helper": "upperarm_twist_l",
-    "follows_quaternion_xyzw": [
-     -0.073873,
-     -0.376483,
-     -0.133772,
-     0.913733
-    ],
-    "helper_quaternion_xyzw": [
-     -0.140144,
-     -0.316949,
-     -0.164867,
-     0.923429
-    ]
-   },
-   {
-    "pose": "knight:guard-middle",
-    "helper": "upperarm_twist_r",
-    "follows_quaternion_xyzw": [
-     0.075406,
-     0.130226,
-     0.153516,
-     0.976621
-    ],
-    "helper_quaternion_xyzw": [
-     0.013107,
-     0.074574,
-     0.156776,
-     0.984727
-    ]
-   }
-  ]
- },
- "sockets": {
-  "sword": {
-   "joint": "hand_r",
-   "offset": [
-    -0.018939,
-    -0.029541,
-    -0.000171
-   ],
-   "quaternion_xyzw": [
-    0.685183,
-    -0.17744,
-    -0.17577,
-    0.684211
-   ],
-   "matrix_rows": [
-    [
-     0.87524,
-     -0.00263,
-     -0.483681,
-     -0.018939
-    ],
-    [
-     -0.483684,
-     -0.00074,
-     -0.875242,
-     -0.029541
-    ],
-    [
-     0.001944,
-     0.999996,
-     -0.00192,
-     -0.000171
-    ],
-    [
-     0.0,
-     0.0,
-     0.0,
-     1.0
-    ]
-   ],
-   "fit": "grip",
-   "item_axes_in_its_file": {
-    "was_working_+X": [
-     1.0,
-     0.0,
-     0.0
-    ],
-    "was_working_+Y": [
-     0.0,
-     0.0,
-     -1.0
-    ],
-    "was_working_+Z": [
-     0.0,
-     1.0,
-     0.0
-    ]
-   }
-  },
-  "shield": {
-   "joint": "lowerarm_l",
-   "offset": [
-    0.056601,
-    -0.016108,
-    0.012975
-   ],
-   "quaternion_xyzw": [
-    -0.523001,
-    0.705645,
-    0.04544,
-    0.475889
-   ],
-   "matrix_rows": [
-    [
-     0.0,
-     -0.781354,
-     0.624088,
-     0.056601
-    ],
-    [
-     -0.694858,
-     0.448811,
-     0.561909,
-     -0.016108
-    ],
-    [
-     -0.719147,
-     -0.433652,
-     -0.54293,
-     0.012975
-    ],
-    [
-     0.0,
-     0.0,
-     0.0,
-     1.0
-    ]
-   ],
-   "fit": "forearm",
-   "item_axes_in_its_file": {
-    "was_working_+X": [
-     1.0,
-     0.0,
-     0.0
-    ],
-    "was_working_+Y": [
-     0.0,
-     0.0,
-     -1.0
-    ],
-    "was_working_+Z": [
-     0.0,
-     1.0,
-     0.0
-    ]
-   }
-  }
- },
- "sockets_note": "p_joint = R * p_item + offset, with p_item as the item's GLB holds it. In three.js: item.position = offset, item.quaternion = quaternion_xyzw, parented to the joint.",
- "hands": {
-  "hand_r": {
-   "index": [
-    -0.032574,
-    -0.038091,
-    0.016716
-   ],
-   "middle": [
-    -0.034444,
-    -0.039099,
-    0.010311
-   ],
-   "pinky": [
-    -0.030621,
-    -0.037719,
-    -0.009045
-   ],
-   "palm_faces": [
-    0.841844,
-    -0.539718,
-    0.001815
-   ],
-   "normal_sign": -1,
-   "frame": "offsets from the hand joint, in the joint's frame (the game's axes)",
-   "fist_width_mm": 40.5,
-   "how": "the row runs along the guide axis the fist was generated round (guide-bore.json), index finger toward the front",
-   "normal_sign_is": "the sign that makes cross(across, forward) the direction the palm faces, with forward = middle - hand and across = index - pinky on the left hand, pinky - index on the right"
-  },
-  "hand_l": {
-   "index": [
-    0.032367,
-    -0.039763,
-    0.015626
-   ],
-   "middle": [
-    0.03439,
-    -0.039131,
-    0.00961
-   ],
-   "pinky": [
-    0.029913,
-    -0.03855,
-    -0.010571
-   ],
-   "palm_faces": [
-    -0.841844,
-    -0.539718,
-    0.001815
-   ],
-   "normal_sign": -1,
-   "frame": "offsets from the hand joint, in the joint's frame (the game's axes)",
-   "fist_width_mm": 39.8,
-   "how": "the other hand's directions mirrored left to right",
-   "normal_sign_is": "the sign that makes cross(across, forward) the direction the palm faces, with forward = middle - hand and across = index - pinky on the left hand, pinky - index on the right"
-  }
- },
- "feet": {
-  "l": {
-   "ankle": "foot_l",
-   "toe": "ball_l",
-   "toe_tip": "ball_leaf_l",
-   "sole_height": 0.0,
-   "ankle_height": 0.03241,
-   "ball_length": 0.05006,
-   "heel_behind_ankle": 0.0319,
-   "toe_in_front_of_ankle": 0.08196,
-   "heel_length_ratio": 0.637244,
-   "vertices_measured": 2016
-  },
-  "r": {
-   "ankle": "foot_r",
-   "toe": "ball_r",
-   "toe_tip": "ball_leaf_r",
-   "sole_height": 5e-05,
-   "ankle_height": 0.03241,
-   "ball_length": 0.05006,
-   "heel_behind_ankle": 0.03181,
-   "toe_in_front_of_ankle": 0.08187,
-   "heel_length_ratio": 0.635472,
-   "vertices_measured": 2181
-  }
- },
- "feet_note": "ball_length is the ball joint's z minus the ankle's; heel_length_ratio = heel_behind_ankle / ball_length. Heel and toe are the sole's ends (the lowest 12 mm of the surface bound to the foot's joints).",
- "body": {
-  "stature": 0.61526,
-  "top_y": 0.61526,
-  "lowest_y": 0.0,
-  "joint_count": 31,
-  "joint_order": [
-   "root",
-   "pelvis",
-   "spine_01",
-   "spine_02",
-   "spine_03",
-   "clavicle_l",
-   "upperarm_l",
-   "lowerarm_l",
-   "hand_l",
-   "clavicle_r",
-   "upperarm_r",
-   "lowerarm_r",
-   "hand_r",
-   "neck_01",
-   "Head",
-   "thigh_l",
-   "calf_l",
-   "foot_l",
-   "ball_l",
-   "ball_leaf_l",
-   "thigh_r",
-   "calf_r",
-   "foot_r",
-   "ball_r",
-   "ball_leaf_r",
-   "elbow_half_l",
-   "elbow_half_r",
-   "knee_half_l",
-   "knee_half_r",
-   "upperarm_twist_l",
-   "upperarm_twist_r"
-  ]
- }
 }

@@ -29,9 +29,9 @@ const T1_KNIGHT_DEFAULT_GEAR = {
 type T1KnightDefaultGearId = keyof typeof T1_KNIGHT_DEFAULT_GEAR;
 
 /**
- * Preloads registered cosmetic equipment once, then returns shallow scene
- * clones. Geometry and pooled materials stay owned by the global cosmetic
- * asset cache; actors own only their clone hierarchy.
+ * Hands out shallow scene clones of melee equipment. Registered cosmetic assets are loaded by, and stay owned by, the
+ * global cosmetic asset cache. The T1 Knight Default's sword and shield are not registered: this library loads them
+ * itself, only when asked, and disposes them. Actors own only their clone hierarchy.
  */
 export class ProceduralMeleeWeaponLibrary {
   private disposed = false;

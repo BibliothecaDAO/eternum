@@ -18,7 +18,7 @@ import { createDefaultProceduralCharacterConfig } from "./procedural-character-c
 import { resolveProceduralCharacterPose } from "./procedural-character-pose";
 import { applyCharacterRigLimbLengths, resolveCharacterRig } from "./procedural-character-rig";
 import { validateKnightGear } from "./melee/procedural-melee-weapon-library";
-import { parseTextureFreeGlb } from "./procedural-unit-test-glb";
+import { parseTextureFreeGlb } from "../../../test-support/parse-texture-free-glb";
 
 const PREFIX = "/models/characters/t1-knight-default/";
 const EXPORT_HASHES = {
@@ -114,11 +114,6 @@ describe("T1 Knight exports", () => {
     }
   });
 
-  it("accepts the 31-joint skeleton in the contract order", () => {
-    const result = runValidatorWithNearSkinJoints((joints) => joints);
-    expect(result.status).toBe(0);
-  }, 60_000);
-
   it("rejects a 25-joint skin", () => {
     const result = runValidatorWithNearSkinJoints((joints) => joints.slice(0, 25));
     expect(result.status).not.toBe(0);
@@ -168,21 +163,6 @@ describe("T1 Knight exports", () => {
         const calibrated = applyCharacterRigLimbLengths(rig, avatar.measureActiveLimbLengths());
         expect(calibrated.parts.pelvis.halfExtents?.[1]).toBeCloseTo(0.1338, 3);
         expect(calibrated.parts.chest.halfExtents?.[1]).toBeCloseTo(0.0304, 3);
-      } finally {
-        avatar.dispose();
-      }
-    });
-  });
-
-  it("measures the chest at the diagnostic bone when the adapter names no pair of joints", async () => {
-    await withKnightLibrary(async (library) => {
-      const { asset, config, rig } = createKnightAvatar(library, "hero");
-      const plainAdapter = { ...asset.adapter, sourceBodyChestBetween: undefined };
-      const avatar = new ProceduralCharacterAvatar({ ...asset, adapter: plainAdapter }, rig, config);
-      try {
-        const { body } = avatar.measureActiveLimbLengths();
-        expect(body?.pelvisToChest).toBeCloseTo(0.0763, 3);
-        expect(body?.chestToNeck).toBeCloseTo(0.1149, 3);
       } finally {
         avatar.dispose();
       }

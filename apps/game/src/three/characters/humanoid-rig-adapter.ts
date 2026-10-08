@@ -18,7 +18,6 @@ interface HumanoidHandRigBase {
 }
 
 export interface HumanoidArticulatedHandRigDefinition extends HumanoidHandRigBase {
-  kind?: "articulated";
   digits: Readonly<Record<ProceduralHandDigitId, readonly string[]>>;
   fingerCurlAxis: Vector3Tuple;
   palm: {
@@ -40,6 +39,10 @@ export interface HumanoidMinimalHandRigDefinition extends HumanoidHandRigBase {
 }
 
 export type HumanoidHandRigDefinition = HumanoidArticulatedHandRigDefinition | HumanoidMinimalHandRigDefinition;
+
+export function isMinimalHandRig(hand: HumanoidHandRigDefinition): hand is HumanoidMinimalHandRigDefinition {
+  return "kind" in hand;
+}
 
 export interface HumanoidFootRigDefinition {
   toeTip: string;
@@ -68,12 +71,13 @@ export type HumanoidDrivenJointDefinition =
   | { rule: "twist"; axis: Vector3Tuple; bone: string; follows: string; share: number };
 
 export interface HumanoidRigAdapter {
-  authoredLegLength?: "chain";
+  /** Keep the figure at its own size instead of scaling its legs to the rig's. */
   authoredUniformScale?: number;
-  sourceBodyMorphology?: true;
-  /** Source-body chest is the midpoint of these two joints instead of `diagnosticBones.chest`. */
-  sourceBodyChestBetween?: readonly [string, string];
-  measureSourceHeadRadius?: true;
+  /**
+   * Measure the body from the source rig instead of keeping the nominal figure's: shoulder and hip width, pelvis to
+   * chest, chest to neck and head radius. The chest is the midpoint of the two named joints.
+   */
+  sourceBody?: { chestBetween: readonly [string, string] };
   auxiliaryBones: readonly string[];
   diagnosticBones: Readonly<Record<ProceduralHumanoidJointId, string>>;
   drivenJoints?: readonly HumanoidDrivenJointDefinition[];
@@ -131,7 +135,7 @@ export function resolveHumanoidRigRequiredBoneNames(adapter: HumanoidRigAdapter)
     if (binding?.childBone) names.add(binding.childBone);
   });
   HUMANOID_JOINT_IDS.forEach((jointId) => addName(names, adapter.diagnosticBones[jointId]));
-  adapter.sourceBodyChestBetween?.forEach((name) => addName(names, name));
+  adapter.sourceBody?.chestBetween.forEach((name) => addName(names, name));
   adapter.drivenJoints?.forEach((joint) => {
     addName(names, joint.bone);
     addName(names, joint.follows);
@@ -141,7 +145,7 @@ export function resolveHumanoidRigRequiredBoneNames(adapter: HumanoidRigAdapter)
     const foot = adapter.feet[side];
     if (hand) {
       addName(names, hand.hand);
-      if (hand.kind !== "minimal") {
+      if (!isMinimalHandRig(hand)) {
         addName(names, hand.palm.index);
         addName(names, hand.palm.middle);
         addName(names, hand.palm.pinky);
@@ -185,7 +189,7 @@ export function validateHumanoidRigAdapter(adapter: HumanoidRigAdapter): string[
     if (hand && hand.palm?.normalSign !== -1 && hand.palm?.normalSign !== 1) {
       issues.push(`invalid-palm-normal:${side}`);
     }
-    if (hand?.kind === "minimal") {
+    if (hand && isMinimalHandRig(hand)) {
       (["index", "middle", "pinky"] as const).forEach((point) => {
         if (!isFiniteVector(hand.palm?.[point])) issues.push(`invalid-palm-point:${side}:${point}`);
       });
@@ -201,7 +205,7 @@ export function validateHumanoidRigAdapter(adapter: HumanoidRigAdapter): string[
     }
     if (hand && !isFiniteQuaternion(hand.rollCorrection)) issues.push(`invalid-roll-correction:${side}`);
   });
-  const chestBetween = adapter.sourceBodyChestBetween;
+  const chestBetween = adapter.sourceBody?.chestBetween;
   if (chestBetween && (!chestBetween[0] || !chestBetween[1] || chestBetween[0] === chestBetween[1])) {
     issues.push("invalid-source-body-chest");
   }

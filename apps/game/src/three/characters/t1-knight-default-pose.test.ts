@@ -8,7 +8,7 @@ import { ProceduralCharacterLibrary } from "./procedural-character-assets";
 import { createDefaultProceduralCharacterConfig } from "./procedural-character-config";
 import { resolveProceduralCharacterPose, type Vector3Tuple } from "./procedural-character-pose";
 import { applyCharacterRigLimbLengths, resolveCharacterRig } from "./procedural-character-rig";
-import { parseTextureFreeGlb } from "./procedural-unit-test-glb";
+import { parseTextureFreeGlb } from "../../../test-support/parse-texture-free-glb";
 
 const PREFIX = "/models/characters/t1-knight-default/";
 /** A centimetre or two at the Knight's 0.6 m height. */
@@ -60,6 +60,8 @@ describe("T1 Knight under the procedural pose controller", () => {
         const rig = applyCharacterRigLimbLengths(resolveCharacterRig(config), avatar.measureActiveLimbLengths());
         avatar.rebuild(rig, config);
         try {
+          // The Knight keeps its own 0.6 m size (authoredUniformScale); without it the legs would be scaled to the rig's.
+          expect(asset.gltf.scene.scale.x).toBe(1);
           for (const animationMode of ["idle", "walk", "run"] as const) {
             for (const elapsedSeconds of [0.1, 0.35, 0.6]) {
               const posed = { ...config, animationMode };

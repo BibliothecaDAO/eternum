@@ -32,7 +32,7 @@ describe("procedural character rig", () => {
       shinLength: 0.147,
       thighLength: 0.134,
       upperArmLength: 0.09,
-      body: { shoulderWidth: 0.151, hipWidth: 0.084, pelvisToChest: 0.158, chestToNeck: 0.023 },
+      body: { headRadius: 0.066, shoulderWidth: 0.151, hipWidth: 0.084, pelvisToChest: 0.158, chestToNeck: 0.023 },
     };
     const fitted = applyCharacterRigLimbLengths(base, measured);
     expect(fitted.morphology.shoulderWidth).toBeCloseTo(measured.body.shoulderWidth);
