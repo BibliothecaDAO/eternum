@@ -104,6 +104,10 @@ def validate_configuration(config, allowed_cpus):
         raise ValueError("record the native execution setting explicitly")
     if not any(flag.startswith("--native-compilation-mode=") for flag in config["node_flags"]):
         raise ValueError("record the native compilation mode explicitly")
+    if "network_subnet" in config:
+        subnet = ipaddress.ip_network(config["network_subnet"], strict=True)
+        if subnet.version != 4 or not subnet.is_private or subnet.prefixlen != 24:
+            raise ValueError("trial network_subnet must be a private IPv4 /24")
     environment = config.get("node_environment", {})
     if not isinstance(environment, dict) or any(
         key != "RUST_LOG" or not isinstance(value, str) or "\n" in value or "\0" in value
@@ -205,6 +209,8 @@ def compose_configuration(config, directory):
     node.setdefault("environment", {}).update(config.get("node_environment", {}))
     node["ports"] = [f"127.0.0.1:{config['port_base']}:9944"]
     compose["services"]["postgres"]["ports"] = [f"127.0.0.1:{config['port_base'] + 2}:5432"]
+    if "network_subnet" in config:
+        compose["networks"]["default"]["ipam"] = {"config": [{"subnet": config["network_subnet"]}]}
     return compose
 
 

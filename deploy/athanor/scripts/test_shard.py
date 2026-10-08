@@ -91,6 +91,17 @@ class ShardTest(unittest.TestCase):
             with self.subTest(environment=value), self.assertRaises(ValueError):
                 shard.validate_configuration({**config, "node_environment": value}, set(range(24)))
 
+    def test_trial_subnet_avoids_exhausted_default_pool_without_reusing_old_networks(self):
+        config = {**configuration(), "network_subnet": "10.240.100.0/24"}
+        shard.validate_configuration(config, set(range(24)))
+        with tempfile.TemporaryDirectory() as temporary:
+            compose = shard.compose_configuration(config, Path(temporary))
+        self.assertEqual(compose["networks"]["default"]["ipam"]["config"],
+                         [{"subnet": "10.240.100.0/24"}])
+        for value in ("8.8.8.0/24", "10.240.100.1/24", "10.240.0.0/16", "fd00::/64"):
+            with self.subTest(subnet=value), self.assertRaises(ValueError):
+                shard.validate_configuration({**config, "network_subnet": value}, set(range(24)))
+
     def test_package_init_refuses_a_preset_outside_the_release_catalogue(self):
         package = load_package_script("init")
         facts = {"presets": {"2": "0x2", "3": "0x3", "5": "0x5", "101": "0x65"}}
