@@ -1,6 +1,0 @@
-interface:
-  display_name: "Eternum Tripo Asset Workflow"
-  short_description: "Concepts, Tripo, rigging and hosted asset approval"
-  default_prompt:
-    "Use $eternum-tripo-asset-workflow to develop the requested asset through concepts, approved Tripo geometry, Blender
-    rigging and final hosted in-game review."
