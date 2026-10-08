@@ -32,6 +32,7 @@ const failures: UncaughtFailure[] = [];
 const frames: InvalidFrame[] = [];
 let droppedUnsubscribeFrames = 0;
 let installed = false;
+let reviseFinalReport: (() => unknown) | undefined;
 
 /** Installs the boundary once per worker; every later uncaught failure lands in the worker's report instead. */
 export function catchUncaughtFailures(): void {
@@ -50,6 +51,30 @@ export interface WorkerBoundaryEvidence {
 export function workerBoundaryEvidence(): WorkerBoundaryEvidence {
   return { uncaughtFailures: [...failures], invalidFrames: [...frames], droppedUnsubscribeFrames };
 }
+
+/** Exit is the last synchronous boundary: a workload's report must include cleanup callbacks and its actual exit. */
+export function onWorkerExit<Report extends { passed: boolean }>(
+  finalize: (exitCode: number, evidence: WorkerBoundaryEvidence) => Report,
+  publish: (report: Report) => void,
+): void {
+  process.once("exit", (code) => {
+    const commit = () => {
+      const exitCode = Number(process.exitCode ?? code);
+      const report = finalize(exitCode, workerBoundaryEvidence());
+      if (!report.passed && exitCode === 0) {
+        process.exitCode = 1;
+        return finalize(1, workerBoundaryEvidence());
+      }
+      return report;
+    };
+    // A later exit listener or publisher may still throw; amend the file without publishing a second result.
+    reviseFinalReport = commit;
+    publish(commit());
+  });
+}
+
+/** A synchronous teardown failure is a driver failure too; keep closing the other resources and preserve its stack. */
+export const recordWorkerFailure = (error: unknown): void => record("exception", error);
 
 /**
  * The socket class the harness hands the SDK: it checks every frame before the SDK's own listeners parse it. The known
@@ -82,6 +107,8 @@ export function frameCheckingSocket(Base: typeof WebSocket): typeof WebSocket {
 function record(kind: UncaughtFailure["kind"], reason: unknown): void {
   const error = reason instanceof Error ? reason : new Error(String(reason));
   failures.push({ at: new Date().toISOString(), kind, error: error.message, stack: error.stack });
+  if (!process.exitCode || process.exitCode === "0") process.exitCode = 1;
+  reviseFinalReport?.();
   console.error(`Uncaught ${kind} kept in the report: ${error.message}`);
 }
 

@@ -2,11 +2,12 @@
 import { launchFrontierSeason, runFrontierWorkload, type FrontierBurst } from "./frontier";
 import { FRONTIER_ACCELERATED_PRESET_ID } from "../../../config/source/common/native-preset-modes";
 import { createBuildOrderWorkload } from "./build-order";
-import { catchUncaughtFailures, workerBoundaryEvidence } from "./worker-boundary";
+import { catchUncaughtFailures, onWorkerExit, recordWorkerFailure } from "./worker-boundary";
 import { runLayerRoundTrip } from "./layer-round-trip";
 import { closeHarnessSeason } from "./season-lifecycle";
 import { nativePresetForId, nativePresetIdFor } from "../../../config/source/native";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { writeFileSync } from "node:fs";
 import { Worker, isMainThread, parentPort, workerData, threadId } from "node:worker_threads";
 import path from "node:path";
 import { DeviceSigner, deviceKeyOf, signGameplayIntent } from "@bibliothecadao/eternum";
@@ -195,6 +196,7 @@ async function main(): Promise<void> {
     connect,
   );
 
+  let reportInput: Parameters<typeof writeHarnessReport>[0];
   try {
     const harnessGame = createHarnessGame(client, heraldConfirmations, actorClients);
     const setupTransactions: TrackedTransaction[] = [];
@@ -279,7 +281,7 @@ async function main(): Promise<void> {
           evidence: revision,
         }
       : null;
-    const report = await writeHarnessReport({
+    reportInput = {
       functional: options.functional,
       accounts,
       botCount: options.bots,
@@ -297,18 +299,21 @@ async function main(): Promise<void> {
       seasonFinalizations,
       layerRoundTrips,
       transportRequests,
-      workerBoundary: workerBoundaryEvidence(),
-    });
-
-    parentPort?.postMessage({ type: "result", ...report, pid: process.pid, threadId });
-    console.log(`${report.passed ? "PASS" : "FAIL"}: ${report.path}`);
-    if (!report.passed) process.exitCode = 1;
+    };
   } finally {
-    for (const actor of actorClients.values()) actor.client.dispose();
-    client.dispose();
-    provider.dispose();
-    requests?.dispose();
+    const resources = [...actorClients.values()].map(({ client }) => client);
+    for (const resource of [...resources, client, provider, requests]) {
+      try {
+        resource?.dispose();
+      } catch (error) {
+        recordWorkerFailure(error);
+      }
+    }
   }
+  await writeHarnessReport(reportInput, (report) => {
+    parentPort?.postMessage({ type: "result", ...report, pid: process.pid, threadId });
+    console.log(`Report: ${report.path}`);
+  });
 }
 
 export const createHarnessProvider = (rpcUrl: string): HarnessProvider => new HarnessProvider(rpcUrl);
@@ -584,9 +589,16 @@ async function runRosterGroups(options: HarnessCliOptions, players: PreparedGame
     error: failure instanceof Error ? failure.message : failure === undefined ? undefined : String(failure),
   };
   const output = path.join(directory, "summary.json");
-  await writeFile(output, JSON.stringify(summary, null, 2) + "\n");
+  onWorkerExit(
+    (exitCode, workerBoundary) => {
+      const finalPassed = passed && exitCode === 0 && workerBoundary.uncaughtFailures.length === 0;
+      const finalSummary = { ...summary, passed: finalPassed, workerBoundary, driverExitCode: exitCode };
+      writeFileSync(output, JSON.stringify(finalSummary, null, 2) + "\n");
+      return { passed: finalPassed };
+    },
+    () => console.log(`Report: ${output}`),
+  );
   if (!passed) throw new Error(`Roster workload failed: ${output}`, { cause: failure });
-  console.log(`PASS: ${output}`);
 }
 
 /** Each game the groups played, once, with every bot that played it. */
