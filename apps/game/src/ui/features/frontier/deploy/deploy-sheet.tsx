@@ -17,9 +17,11 @@ import { armyArt } from "../hud/dock-armies";
 import { deployArmy, deployDirection, deployRange, previewDeploy, readDeployPlan } from "./deploy-plan";
 import { DeployView } from "./deploy-view";
 
-// The Supply yard's tier sets the bar a new army starts on.
+// The training rows set a new army's tiers and its starting bar; ended armies send Homecoming's troops back.
 const DEPLOY_MODELS = [
+  "ArmyProgress",
   "ArmySlot",
+  "ExplorerTroops",
   "RealmKnowledge",
   "ResourceBalance",
   "ResourceProduction",
@@ -33,9 +35,11 @@ export const DeploySheet = ({ realm, onClose }: { realm: NativeRows["Structure"]
   const defaultTick = useCurrentDefaultTick();
   const armiesTick = useCurrentArmiesTick();
   const revision = useNativeRevision(DEPLOY_MODELS);
+  const rules = useExpeditionRules();
+  const now = useNowSeconds();
   const plan = useMemo(
-    () => readDeployPlan(setup.store, realm, defaultTick),
-    [defaultTick, realm, revision, setup.store],
+    () => (rules ? readDeployPlan(setup.store, realm, rules, { now, defaultTick }) : undefined),
+    [defaultTick, now, realm, revision, rules, setup.store],
   );
   const range = plan ? deployRange(plan) : { troopsMax: 0, wheatMax: 0, max: 0 };
   const [count, setCount] = useState<number | null>(null);
@@ -46,8 +50,6 @@ export const DeploySheet = ({ realm, onClose }: { realm: NativeRows["Structure"]
   const [picked, setPicked] = useState<Direction | null>(null);
   const direction = deployDirection(ring, picked);
   const [sending, setSending] = useState(false);
-  const rules = useExpeditionRules();
-  const now = useNowSeconds();
   const clock = rules ? dayClock(rules, now) : undefined;
   const goToPlace = useGoToFrontierPlace(realm);
   const wheatPerHour = new ResourceManager(setup.store, realm.entity_id).wheatPerHour(defaultTick);
@@ -75,6 +77,8 @@ export const DeploySheet = ({ realm, onClose }: { realm: NativeRows["Structure"]
       wheatStop={range.wheatMax < range.troopsMax ? range.wheatMax : undefined}
       onCount={setCount}
       equation={preview && { wheatCost: preview.wheatCost, wheatLeft: preview.wheatLeft, tiles: preview.tiles }}
+      rations={plan?.rations ?? false}
+      startingTiers={plan?.startingTiers}
       revealYield={
         preview?.revealYield === undefined ? undefined : Number(preview.revealYield / BigInt(RESOURCE_PRECISION))
       }

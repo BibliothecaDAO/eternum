@@ -84,7 +84,7 @@ type StockAtDeploy = { held: number; returning: number; fits: number };
  * day has ended (core's homecomingReturn, by each army's own tier), and what of that fits the stock's limit; the
  * contract credits the return at that deploy. Unknown while a balance or an ended army's progress is.
  */
-const stocksAtNextDeploy = (
+export const stocksAtNextDeploy = (
   store: NativeFactStore,
   realm: NativeRows["Structure"],
   rules: ExpeditionRules,

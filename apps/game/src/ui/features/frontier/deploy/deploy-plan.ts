@@ -1,6 +1,8 @@
+import type { Tier } from "@/ui/design-system/kit/tier-chip";
 import {
   computeTravelFoodCosts,
   configManager,
+  type ExpeditionRules,
   type GameActions,
   getBalance,
   getTroopResourceId,
@@ -13,6 +15,9 @@ import {
 import { nativeResearchConstants, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { musterStamina, type OpenArmySlot, openArmySlots } from "@bibliothecadao/eternum/troop-stamina";
 import { type Direction, RESOURCE_PRECISION, ResourcesIds, TroopTier, TroopType } from "@bibliothecadao/types";
+
+import { stocksAtNextDeploy } from "../frontier-home";
+import { sidesTaken } from "../research/sides-taken";
 
 /**
  * What Deploy needs, read from facts with no UI of its own: the next open slot, the troops at home, the wheat each
@@ -33,24 +38,35 @@ interface DeployPlan {
   wheat: number;
   /** The Logistics tiers above common the realm's Supply yard gives every new army. */
   trainedLogistics: number;
+  /** The tiers the realm's four training buildings start a new army at. */
+  startingTiers: StartingTiers;
+  /** The Barracks row has taken Rations: each troop deploys for less wheat. */
+  rations: boolean;
 }
+
+type StartingTiers = readonly [Tier, Tier, Tier, Tier];
 
 const TYPES = [TroopType.Knight, TroopType.Crossbowman, TroopType.Paladin] as const;
 const TIERS = [TroopTier.T1, TroopTier.T2, TroopTier.T3] as const;
 const PRECISION = BigInt(RESOURCE_PRECISION);
 
-/** The realm's deploy today; unknown while any slot, troop or wheat balance, or the realm's research, is. */
+/**
+ * The realm's deploy today; unknown while any slot, troop or wheat balance, or the realm's research, is. Troops at home
+ * are what this deploy finds: the stock and Homecoming's return from the armies whose day has ended, as much as fits.
+ */
 export const readDeployPlan = (
   store: NativeFactStore,
   realm: NativeRows["Structure"],
-  defaultTick: number,
+  rules: ExpeditionRules,
+  clock: { now: number; defaultTick: number },
 ): DeployPlan | undefined => {
+  const { defaultTick } = clock;
   const allowed = realm.base.troop_max_explorer_count;
   const open = openArmySlots(store, { game_id: realm.game_id, entity_id: realm.entity_id, allowedSlots: allowed });
   const wheat = getBalance(realm.entity_id, ResourcesIds.Wheat, defaultTick, store).balance;
   const learned = realmLearned(store, realm.game_id, realm.entity_id);
   if (!open || wheat === undefined || learned === undefined) return undefined;
-  const troops = readTroopsAtHome(store, realm, defaultTick);
+  const troops = readTroopsAtHome(store, realm, rules, clock);
   if (troops === undefined) return undefined;
   return {
     next: open[0] ?? null,
@@ -62,20 +78,38 @@ export const readDeployPlan = (
       : 0,
     wheat: Number(BigInt(wheat) / PRECISION),
     trainedLogistics: researchTier(learned, nativeResearchConstants.ROW_SUPPLY_YARD),
+    startingTiers: startingTiers(learned),
+    rations: sidesTaken(learned, nativeResearchConstants.ROW_BARRACKS).includes("Ra"),
   };
 };
 
-/** The troops at home: the first stack the realm holds, with the castle's cap on one army. Undefined while unknown. */
+/** The tiers a new army starts at, as progression.cairo's starting tiers read the training rows, in the attributes' order. */
+const startingTiers = (learned: bigint): StartingTiers => {
+  const tier = (row: number) => (researchTier(learned, row) + 1) as Tier;
+  return [
+    tier(nativeResearchConstants.ROW_WAR_HALL),
+    tier(nativeResearchConstants.ROW_SUPPLY_YARD),
+    tier(nativeResearchConstants.ROW_SCOUTS_LODGE),
+    tier(nativeResearchConstants.ROW_HEARTH),
+  ];
+};
+
+/**
+ * The troops at home: the first stack this deploy finds, Homecoming's fitting return included, with the castle's cap
+ * on one army. Undefined while unknown.
+ */
 const readTroopsAtHome = (
   store: NativeFactStore,
   realm: NativeRows["Structure"],
-  defaultTick: number,
+  rules: ExpeditionRules,
+  clock: { now: number; defaultTick: number },
 ): DeployPlan["troops"] | undefined => {
+  const stocks = stocksAtNextDeploy(store, realm, rules, clock.now, clock.defaultTick);
+  if (!stocks) return undefined;
   for (const tier of TIERS)
     for (const type of TYPES) {
-      const balance = getBalance(realm.entity_id, getTroopResourceId(type, tier), defaultTick, store).balance;
-      if (balance === undefined) return undefined;
-      const atHome = Number(BigInt(balance) / PRECISION);
+      const stock = stocks.get(getTroopResourceId(type, tier))!;
+      const atHome = stock.held + stock.fits;
       if (atHome > 0) return { type, tier, atHome, cap: configManager.getMaxArmySize(realm.base.level, tier) };
     }
   return null;

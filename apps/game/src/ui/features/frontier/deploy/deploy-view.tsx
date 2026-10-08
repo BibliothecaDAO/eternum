@@ -31,6 +31,7 @@ export const DeployView = ({
   wheatStop,
   onCount,
   equation,
+  rations = false,
   revealYield,
   startingStamina,
   startingTiers,
@@ -52,9 +53,11 @@ export const DeployView = ({
   wheatStop: number | undefined;
   onCount: (count: number) => void;
   equation: { wheatCost: number; wheatLeft: number; tiles: number } | null | undefined;
+  /** The Barracks took Rations: its mark sits on the wheat price. */
+  rations?: boolean;
   revealYield: number | undefined;
   startingStamina: number | undefined;
-  /** The tiers the realm's training gives a new army; undefined until the facts carry them. */
+  /** The tiers the realm's training buildings give a new army; unknown is undefined. */
   startingTiers?: readonly [Tier, Tier, Tier, Tier];
   clock: Pick<DayClock, "endsAt" | "secondsLeft" | "tone"> | undefined;
   ring: { tiles: readonly RingTile[]; chosen: Direction | null; onPick: (direction: Direction) => void } | undefined;
@@ -82,7 +85,7 @@ export const DeployView = ({
         />
       ) : (
         <>
-          <Equation equation={equation} />
+          <Equation equation={equation} rations={rations} />
           <div className="flex items-center justify-center gap-1.5">
             {count === 1 ? (
               <Chip icons={["Ey"]} label={TROOPS} value="" />
@@ -117,11 +120,13 @@ export const DeployView = ({
 /** The wheat equation: what the troops cost, the wheat left, and the tiles that wheat moves the army. */
 const Equation = ({
   equation,
+  rations,
 }: {
   equation: { wheatCost: number; wheatLeft: number; tiles: number } | null | undefined;
+  rations: boolean;
 }) => (
   <div className="flex items-center justify-center gap-1.5">
-    <Chip icons={["Wh"]} label={WHEAT} value={`−${formatExact(equation?.wheatCost)}`} />
+    <Chip icons={rations ? ["Wh", "Ra"] : ["Wh"]} label={WHEAT} value={`−${formatExact(equation?.wheatCost)}`} />
     <span aria-hidden className="text-[16px] text-kit-muted">
       →
     </span>
