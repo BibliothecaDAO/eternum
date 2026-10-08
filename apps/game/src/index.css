@@ -425,8 +425,8 @@ html.scene-viewport body {
   --overlay-surface-to: #101c23;
 }
 
-/* The player app's type, the owner's dyslexia rule: the token file's faces everywhere (Lexend headings and buttons,
-   Atkinson Hyperlegible body); under this class also sentence case, no italics, no monospace and larger sizes. The
+/* The player app's type: the token file's faces everywhere (Type 2: Bokor titles, IM FELL English SC labels and
+   buttons with Atkinson figures, Atkinson text); under this class also sentence case, no italics, no monospace and larger sizes. The
    shell (every page outside a game) and FrontierHud set the class on <html>, so popovers and sheets rendered outside
    them follow too. Blitz and Eternum in-game surfaces keep their caps and sizes until they are next touched. */
 html.frontier-type body,
@@ -462,7 +462,7 @@ html.frontier-type .hud-body {
 html.frontier-type .hud-value {
   font-size: 0.9375rem;
 }
-/* Frontier's visual direction (design §3.12): warm ink surfaces and numbers in the rounded display face (Lexend 800,
+/* Frontier's visual direction (design §3.12): warm ink surfaces and numbers in the UI family's figures (Atkinson,
    tabular so a rolling count never jitters). The palette is the one token file's (src/tokens.ts). Scoped here so every
    Frontier sheet gets them and no other mode changes. */
 html.frontier-type {

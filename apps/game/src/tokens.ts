@@ -37,22 +37,30 @@ export const COLORS = {
   ink: "#1b1207",
 } as const;
 
-/** The dyslexia rule's faces: Lexend for titles, numbers and buttons, Atkinson for body, IM Fell only for display. */
+/**
+ * The brand's faces, as the owner chose them (Type 2, 8 October 2026): Bokor for titles, IM FELL English SC for labels
+ * and buttons, Atkinson Hyperlegible Next for text and every number. `ui` is one family drawn from two files: its
+ * letters are IM FELL, its figures and the marks around them are Atkinson's, so a label and its number need no second
+ * class. Cinzel stays banned.
+ */
 export const FONTS = {
-  /** The lockup's word and one display line of 24 px or more on a painted screen; nothing else. */
-  display: '"IM Fell English SC", serif',
-  ui: '"Lexend", system-ui, sans-serif',
+  /** Titles: page and card titles, the countdown, the one display line. */
+  display: '"Bokor", serif',
+  /** Labels, buttons, chips, the nav; figures inside them come from Atkinson. */
+  ui: '"Realms UI", "Atkinson Hyperlegible Next", system-ui, sans-serif',
+  /** Text and numbers. */
   body: '"Atkinson Hyperlegible Next", system-ui, sans-serif',
 } as const;
 
-/** Served from the app (public/fonts), so no page asks a font service. Variable weights where the face has them. */
+/** Figures and the marks that travel with them: digits, , . : % + × − (Atkinson's in the `ui` family). */
+const FIGURES = "U+0025, U+002B-002E, U+0030-003A, U+00D7, U+2212";
+
+/**
+ * Served from the app (public/fonts), each file as the brand kit or Google Fonts ships it with its licence beside it
+ * (public/fonts/SOURCE.md). A face with one weight claims every weight, so a bold label keeps its true letters and is
+ * never synthesised.
+ */
 export const FONT_FACES = [
-  {
-    fontFamily: '"Lexend"',
-    src: 'url("/fonts/lexend.woff2") format("woff2")',
-    fontWeight: "100 900",
-    fontDisplay: "swap",
-  },
   {
     fontFamily: '"Atkinson Hyperlegible Next"',
     src: 'url("/fonts/atkinson-hyperlegible-next.woff2") format("woff2")',
@@ -60,9 +68,24 @@ export const FONT_FACES = [
     fontDisplay: "swap",
   },
   {
-    fontFamily: '"IM Fell English SC"',
-    src: 'url("/fonts/im-fell-english-sc.woff2") format("woff2")',
-    fontWeight: "400",
+    fontFamily: '"Bokor"',
+    src: 'url("/fonts/bokor-regular.ttf") format("truetype")',
+    fontWeight: "100 900",
+    fontDisplay: "swap",
+  },
+  {
+    fontFamily: '"Realms UI"',
+    src: 'url("/fonts/im-fell-english-sc-regular.ttf") format("truetype")',
+    fontWeight: "100 900",
+    fontDisplay: "swap",
+  },
+  // Declared after the letters, so the figures resolve to Atkinson. The browser joins the two files into one family
+  // only when their descriptors match, so the figures claim the same weights as the letters.
+  {
+    fontFamily: '"Realms UI"',
+    src: 'url("/fonts/atkinson-hyperlegible-next.woff2") format("woff2")',
+    fontWeight: "100 900",
+    unicodeRange: FIGURES,
     fontDisplay: "swap",
   },
 ] as const;

@@ -90,7 +90,7 @@ const StepCard = ({
       {picture === undefined ? !desktop && <Painting painting={age.painting} /> : picture}
       <header className="flex items-center gap-2">
         <AgeLabel numeral={age.numeral} />
-        <h2 className="font-ui text-[19px] font-bold text-kit-cream">{age.name}</h2>
+        <h2 className="font-display text-[24px] leading-none text-kit-cream">{age.name}</h2>
         <span className="ml-auto">{figure}</span>
       </header>
       {line}

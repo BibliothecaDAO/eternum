@@ -95,7 +95,7 @@ const BandFace = ({ age, chip, action }: { age: Age; chip: ReactNode; action: Ag
   <div className="pointer-events-none absolute inset-0 flex items-end gap-3 p-3">
     <span className="pb-1 font-ui text-[44px] font-extrabold leading-none text-kit-peach">{age.numeral}</span>
     <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-      <h3 className="font-ui text-[20px] font-bold text-kit-cream">{age.name}</h3>
+      <h3 className="font-display text-[26px] leading-none text-kit-cream">{age.name}</h3>
       <p className="text-[13px] text-kit-muted">{age.lore}</p>
       <div className="pointer-events-auto flex items-center justify-between gap-2">
         {chip}

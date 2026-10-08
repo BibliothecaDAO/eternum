@@ -117,7 +117,13 @@ const BackTitle = ({ back, title, layout }: { back: To; title?: string; layout: 
       <ArrowLeft size={26} />
     </Link>
     {title ? (
-      <h1 className={layout === "phone" ? "truncate font-ui text-[22px] font-bold" : "font-ui text-[28px] font-bold"}>
+      <h1
+        className={
+          layout === "phone"
+            ? "truncate font-display text-[24px] leading-tight"
+            : "font-display text-[34px] leading-tight"
+        }
+      >
         {title}
       </h1>
     ) : null}
