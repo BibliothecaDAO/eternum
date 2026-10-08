@@ -2,6 +2,7 @@ import type { Quaternion, Vector3 } from "three";
 
 export type CharacterSocketId =
   | "drawRight"
+  | "forearmLeft"
   | "gripLeft"
   | "gripRight"
   | "handLeft"

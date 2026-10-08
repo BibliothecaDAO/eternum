@@ -48,6 +48,10 @@ import {
   type ProceduralCollisionGymConfig,
   type ProceduralCollisionGymScenario,
 } from "@/three/characters/gym/procedural-collision-gym-config";
+import {
+  filterProceduralCharacterReviewOptions,
+  resolveActiveProceduralCharacterReviewCapability,
+} from "@/three/characters/procedural-character-review-capability";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
 type NumericConfigKey = {
@@ -133,6 +137,14 @@ interface MeleeNumericField {
   max: number;
   step: number;
 }
+
+const reviewCapability = resolveActiveProceduralCharacterReviewCapability();
+const availableCharacterAppearances = filterProceduralCharacterReviewOptions(
+  PROCEDURAL_CHARACTER_APPEARANCES,
+  reviewCapability,
+);
+const availableMeleeWeapons = filterProceduralCharacterReviewOptions(PROCEDURAL_MELEE_WEAPONS, reviewCapability);
+const availableMeleeOffhands = filterProceduralCharacterReviewOptions(PROCEDURAL_MELEE_OFFHANDS, reviewCapability);
 
 const APPEARANCE_FIELDS: readonly NumericField[] = [
   { key: "metalness", label: "Metalness", min: 0, max: 1, step: 0.01 },
@@ -448,13 +460,13 @@ const MeleeControls = ({ config, onPatchConfig }: CharacterGymControlsProps) => 
       <SelectControl
         label="Weapon cosmetic"
         value={config.melee.weaponId}
-        options={PROCEDURAL_MELEE_WEAPONS.map(({ id, label }) => ({ value: id, label }))}
+        options={availableMeleeWeapons.map(({ id, label }) => ({ value: id, label }))}
         onChange={(weaponId) => onPatchConfig({ melee: { weaponId: weaponId as ProceduralMeleeWeaponId } })}
       />
       <SelectControl
         label="Offhand cosmetic"
         value={config.melee.offhandId}
-        options={PROCEDURAL_MELEE_OFFHANDS.map(({ id, label }) => ({ value: id, label }))}
+        options={availableMeleeOffhands.map(({ id, label }) => ({ value: id, label }))}
         onChange={(offhandId) => onPatchConfig({ melee: { offhandId: offhandId as ProceduralMeleeOffhandId } })}
       />
       <ToggleControl
@@ -619,7 +631,7 @@ const CharacterControls = ({ config, selectedPreset, onApplyPreset, onPatchConfi
       <SelectControl
         label={config.kind === "paladin" ? "Rider appearance" : "Appearance"}
         value={config.humanoid.appearanceId}
-        options={PROCEDURAL_CHARACTER_APPEARANCES.map(({ id, label }) => ({ value: id, label }))}
+        options={availableCharacterAppearances.map(({ id, label }) => ({ value: id, label }))}
         onChange={(appearanceId) =>
           onPatchConfig({ humanoid: { appearanceId: appearanceId as ProceduralCharacterAppearanceId } })
         }

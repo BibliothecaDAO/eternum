@@ -2,6 +2,7 @@ import { env } from "../../../env";
 import { initializeRendererBackendRuntime } from "@/three/renderer-backend-runtime";
 import { isCoarsePointer } from "@/utils/pointer";
 
+import { resolveActiveProceduralCharacterReviewCapability } from "./procedural-character-review-capability";
 import { ProceduralUnitRuntime } from "./procedural-unit-runtime";
 
 interface InitializeProceduralCharacterRendererRuntimeInput {
@@ -15,6 +16,7 @@ export async function initializeProceduralCharacterRendererRuntime(
   unitRuntime: ProceduralUnitRuntime;
   rendererRuntime: Awaited<ReturnType<typeof initializeRendererBackendRuntime>>;
 }> {
+  const reviewCapability = resolveActiveProceduralCharacterReviewCapability();
   const results = await Promise.allSettled([
     initializeRendererBackendRuntime({
       envBuildMode: env.VITE_PUBLIC_RENDERER_BUILD_MODE,
@@ -22,7 +24,10 @@ export async function initializeProceduralCharacterRendererRuntime(
       pixelRatio: Math.min(window.devicePixelRatio || 1, input.pixelRatioCap),
       search: window.location.search,
     }),
-    ProceduralUnitRuntime.create({ preloadPhysics: input.preloadPhysics }),
+    ProceduralUnitRuntime.create({
+      preloadPhysics: input.preloadPhysics,
+      includeBastionKnight: reviewCapability.includeBastionKnight,
+    }),
   ] as const);
   const [rendererResult, characterResult] = results;
 

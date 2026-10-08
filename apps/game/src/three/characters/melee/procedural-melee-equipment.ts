@@ -13,7 +13,7 @@ import {
 } from "three";
 
 import type { ProceduralCharacterConfig } from "../procedural-character-config";
-import type { ProceduralCharacterSocketReader } from "../procedural-character-sockets";
+import type { CharacterSocketId, ProceduralCharacterSocketReader } from "../procedural-character-sockets";
 import type { ProceduralUnitKind } from "../procedural-unit-config";
 import type { ProceduralMeleeConfig } from "./procedural-melee-config";
 import type { ProceduralMeleeUpperBodyPose } from "./procedural-melee-pose";
@@ -26,9 +26,12 @@ import {
 } from "./procedural-melee-weapon-catalog";
 import { ProceduralMeleeWeaponLibrary, type ProceduralMeleeEquipmentSource } from "./procedural-melee-weapon-library";
 
+export type ProceduralMeleeOffhandSocket = Extract<CharacterSocketId, "gripLeft" | "forearmLeft">;
+
 export interface ProceduralMeleeEquipmentStats {
   offhandId: ProceduralMeleeOffhandId;
   offhandSource: ProceduralMeleeEquipmentSource | "none";
+  offhandSocket?: ProceduralMeleeOffhandSocket;
   weaponId: ProceduralMeleeWeaponId;
   weaponSource: ProceduralMeleeEquipmentSource;
 }
@@ -74,6 +77,7 @@ export class ProceduralMeleeEquipment {
   private offhandId: ProceduralMeleeOffhandId = "round-shield";
   private weaponSource: ProceduralMeleeEquipmentSource = "procedural";
   private offhandSource: ProceduralMeleeEquipmentSource | "none" = "procedural";
+  private offhandSocket: ProceduralMeleeOffhandSocket = "gripLeft";
   private detailedEquipment = true;
 
   public constructor(
@@ -116,10 +120,14 @@ export class ProceduralMeleeEquipment {
     this.actorRoot.updateWorldMatrix(true, true);
     this.actorRoot.getWorldQuaternion(this.scratchInverseRootQuaternion).invert();
     this.placeAtSocket(this.weapon, "gripRight");
-    this.placeAtSocket(this.offhand, "gripLeft");
+    this.placeAtSocket(this.offhand, this.offhandSocket);
     this.orientLoadout(pose);
     this.placeAtSocket(this.rightSocketHelper, "gripRight");
-    this.placeAtSocket(this.leftSocketHelper, "gripLeft");
+    this.placeAtSocket(this.leftSocketHelper, this.offhandSocket);
+  }
+
+  public setOffhandSocket(socketId: ProceduralMeleeOffhandSocket): void {
+    this.offhandSocket = socketId;
   }
 
   public writeWeaponTipWorldPosition(outPosition: Vector3): boolean {
@@ -139,6 +147,7 @@ export class ProceduralMeleeEquipment {
     return {
       offhandId: this.offhandId,
       offhandSource: this.offhandSource,
+      offhandSocket: this.offhandSocket,
       weaponId: this.weaponId,
       weaponSource: this.weaponSource,
     };
@@ -196,6 +205,7 @@ export class ProceduralMeleeEquipment {
             this.metalMaterial,
             offhandAsset?.object ?? createProceduralShield(this.resources, this.accentMaterial),
             offhandDefinition.gripToCenter,
+            offhandDefinition.attachmentSocket !== "forearmLeft",
           );
     this.weaponSource = weaponAsset?.source ?? "procedural";
     this.offhandSource = this.offhandId === "none" ? "none" : (offhandAsset?.source ?? "procedural");
@@ -235,12 +245,14 @@ export class ProceduralMeleeEquipment {
       this.scratchWeaponDirection.applyAxisAngle(LOCAL_Y_AXIS, pose.aimYawRadians);
     }
     this.scratchWeaponDirection.normalize();
-    this.weapon.quaternion.setFromUnitVectors(LOCAL_Y_AXIS, this.scratchWeaponDirection);
+    if (resolveProceduralMeleeWeapon(this.weaponId).assetAlignment?.pivot !== "authored") {
+      this.weapon.quaternion.setFromUnitVectors(LOCAL_Y_AXIS, this.scratchWeaponDirection);
+    }
     this.scratchOffhandEuler.set(-0.08, pose?.aimYawRadians ?? 0, 0.06);
-    this.offhand.quaternion.setFromEuler(this.scratchOffhandEuler);
+    if (this.offhandSocket !== "forearmLeft") this.offhand.quaternion.setFromEuler(this.scratchOffhandEuler);
   }
 
-  private placeAtSocket(target: Group | AxesHelper, socketId: "gripLeft" | "gripRight"): void {
+  private placeAtSocket(target: Group | AxesHelper, socketId: CharacterSocketId): void {
     if (!this.sockets.writeSocketWorldTransform(socketId, this.scratchWorldPosition, this.scratchWorldQuaternion)) {
       return;
     }
@@ -342,12 +354,17 @@ function createShieldGripRoot(
   material: MeshStandardMaterial,
   shieldVisual: Group,
   gripToCenter: readonly [number, number, number],
+  heldByHand: boolean,
 ): Group {
   const gripRoot = new Group();
-  const handle = new Mesh(resources.shieldHandle, material);
-  handle.castShadow = true;
   shieldVisual.position.fromArray(gripToCenter);
-  gripRoot.add(shieldVisual, handle);
+  gripRoot.add(shieldVisual);
+  // A shield strapped to the forearm has no hand grip to draw.
+  if (heldByHand) {
+    const handle = new Mesh(resources.shieldHandle, material);
+    handle.castShadow = true;
+    gripRoot.add(handle);
+  }
   return gripRoot;
 }
 

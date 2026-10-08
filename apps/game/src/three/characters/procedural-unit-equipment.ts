@@ -21,6 +21,7 @@ import {
 import type { ProceduralCharacterConfig } from "./procedural-character-config";
 import type { ProceduralCharacterSocketReader } from "./procedural-character-sockets";
 import type { ProceduralMeleeConfig } from "./melee/procedural-melee-config";
+import { resolveProceduralMeleeOffhand } from "./melee/procedural-melee-weapon-catalog";
 import type { ProceduralMeleeUpperBodyPose } from "./melee/procedural-melee-pose";
 import {
   ProceduralMeleeEquipment,
@@ -100,6 +101,7 @@ export class ProceduralUnitEquipment {
     archerConfig?: ProceduralArcherConfig,
     archerPose?: ProceduralArcherUpperBodyPose,
   ): void {
+    this.melee.setOffhandSocket(resolveProceduralMeleeOffhand(meleeConfig.offhandId).attachmentSocket ?? "gripLeft");
     this.crossbow.visible = kind === "crossbowman";
     this.bow.setVisible(kind === "archer");
     this.melee.update(kind, meleeConfig, config, meleePose);

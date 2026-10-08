@@ -44,6 +44,14 @@ export interface CharacterPartDefinition {
   surface: "accent" | "cloth" | "metal";
 }
 
+export interface CharacterSourceBodyMeasurements {
+  headRadius?: number;
+  shoulderWidth: number;
+  hipWidth: number;
+  pelvisToChest: number;
+  chestToNeck: number;
+}
+
 export interface ResolvedCharacterRig {
   morphology: CharacterMorphology;
   parts: Readonly<Record<CharacterPartId, CharacterPartDefinition>>;
@@ -57,6 +65,7 @@ export function applyCharacterRigLimbLengths(
     thighLength: number;
     upperArmLength: number;
     foot: CharacterFootGeometry;
+    body?: CharacterSourceBodyMeasurements;
   },
 ): ResolvedCharacterRig {
   const upperArmLength = resolveMeasuredLength(lengths.upperArmLength, rig.morphology.upperArmLength);
@@ -64,13 +73,52 @@ export function applyCharacterRigLimbLengths(
   const measuredLegLength = lengths.thighLength + lengths.shinLength;
   const rigLegLength = rig.morphology.thighLength + rig.morphology.shinLength;
   const thighRatio = measuredLegLength > 0.1 ? lengths.thighLength / measuredLegLength : 0.5;
-  const thighLength = rigLegLength * thighRatio;
-  const shinLength = rigLegLength - thighLength;
-  const morphology = { ...rig.morphology, forearmLength, shinLength, thighLength, upperArmLength, foot: lengths.foot };
+  const thighLength = lengths.body ? lengths.thighLength : rigLegLength * thighRatio;
+  const shinLength = lengths.body ? lengths.shinLength : rigLegLength - thighLength;
+  const body = lengths.body;
+  const pelvisHalfHeight = body ? body.pelvisToChest - body.chestToNeck * 0.9 : undefined;
+  if (
+    body &&
+    (!isValidSourceDimension(lengths.thighLength) ||
+      !isValidSourceDimension(lengths.shinLength) ||
+      !isValidSourceDimension(body.shoulderWidth) ||
+      !isValidSourceDimension(body.hipWidth) ||
+      !isValidSourceDimension(body.pelvisToChest) ||
+      !isValidSourceDimension(body.chestToNeck) ||
+      (body.headRadius !== undefined && !isValidSourceDimension(body.headRadius)) ||
+      !isValidSourceDimension(pelvisHalfHeight))
+  ) {
+    throw new Error("Invalid source body morphology measurements");
+  }
+  const morphology = {
+    ...rig.morphology,
+    forearmLength,
+    shinLength,
+    thighLength,
+    upperArmLength,
+    foot: lengths.foot,
+    ...(body && {
+      shoulderWidth: body.shoulderWidth,
+      hipWidth: body.hipWidth,
+      torsoLength: body.chestToNeck / 0.46,
+      ...(body.headRadius !== undefined && { headRadius: body.headRadius }),
+    }),
+  };
   return {
     morphology,
     parts: {
       ...rig.parts,
+      ...(body && {
+        pelvis: {
+          ...rig.parts.pelvis,
+          halfExtents: [body.hipWidth * 0.52, pelvisHalfHeight!, rig.parts.pelvis.halfExtents![2]] as const,
+        },
+        chest: {
+          ...rig.parts.chest,
+          halfExtents: [body.shoulderWidth * 0.43, body.chestToNeck, rig.parts.chest.halfExtents![2]] as const,
+        },
+        ...(body.headRadius !== undefined && { head: { ...rig.parts.head, radius: body.headRadius } }),
+      }),
       forearmLeft: { ...rig.parts.forearmLeft, length: forearmLength },
       forearmRight: { ...rig.parts.forearmRight, length: forearmLength },
       shinLeft: { ...rig.parts.shinLeft, length: shinLength },
@@ -81,6 +129,10 @@ export function applyCharacterRigLimbLengths(
       upperArmRight: { ...rig.parts.upperArmRight, length: upperArmLength },
     },
   };
+}
+
+function isValidSourceDimension(value: number | undefined): boolean {
+  return Number.isFinite(value) && (value ?? 0) > 0;
 }
 
 export function resolveCharacterRig(config: ProceduralCharacterConfig): ResolvedCharacterRig {
