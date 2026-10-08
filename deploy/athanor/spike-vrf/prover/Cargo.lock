@@ -434,6 +434,9 @@ version = "0.1.0"
 dependencies = [
  "ark-ff",
  "node-first-stark-vrf-math",
+ "serde",
+ "serde_json",
+ "starknet-crypto",
 ]
 
 [[package]]

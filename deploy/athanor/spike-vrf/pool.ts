@@ -13,7 +13,7 @@ export class ProverPool {
   private pending = new Map<number, { resolve: (proof: Proof) => void; reject: (error: Error) => void }>();
   readonly ready: Promise<string[]>;
 
-  constructor(keyFile: string, threads: 1 | 2 | 4, libraryPath?: string) {
+  constructor(keyFile: string, threads: 1 | 2 | 4 | 8, libraryPath?: string) {
     this.ready = Promise.all(
       Array.from({ length: threads }, () => {
         const worker = new Worker(new URL("./proof-worker.ts", import.meta.url).href);
@@ -60,7 +60,8 @@ export class ProverPool {
     if (this.pending.size >= 4096) throw new Error("VRF spike RPC work limit exceeded");
     const id = this.id++;
     const work = new Promise<Proof>((resolve, reject) => this.pending.set(id, { resolve, reject }));
-    this.workers[this.next++ % this.workers.length].postMessage({ id, tx, chain });
+    const raw = new TextEncoder().encode(JSON.stringify(tx)).buffer;
+    this.workers[this.next++ % this.workers.length].postMessage({ id, raw, chain }, [raw]);
     const { proof } = await work;
     return { ...tx, signature: [...tx.signature, ...proof] };
   }

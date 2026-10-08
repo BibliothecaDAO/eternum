@@ -1,6 +1,5 @@
 import { readFileSync, statSync } from "node:fs";
 import { feltBytes, NativeProver } from "./native";
-import { invokeHash, type Invoke } from "./transaction";
 
 let prover: NativeProver | undefined;
 self.onmessage = (event: MessageEvent) => {
@@ -13,8 +12,7 @@ self.onmessage = (event: MessageEvent) => {
       return;
     }
     if (!prover) throw new Error("VRF worker not initialized");
-    const tx = message.tx as Invoke;
-    const seed = invokeHash(tx, message.chain);
+    const seed = prover.invokeHash(new Uint8Array(message.raw), message.chain);
     const proof = prover.proofs([seed])[0].slice(0, 5);
     self.postMessage({ id: message.id, seed, proof });
   } catch (error) {

@@ -41,7 +41,8 @@
         "deploy/athanor/spike-vrf/part2-setup.ts",
         "deploy/athanor/spike-vrf/part2-presign.ts",
         "deploy/athanor/spike-vrf/part2-run.ts",
-        "deploy/athanor/spike-vrf/part2-send-worker.ts"
+        "deploy/athanor/spike-vrf/part2-send-worker.ts",
+        "deploy/athanor/spike-vrf/profile.ts"
       ],
       "paths": {
         "@bibliothecadao/eternum": [

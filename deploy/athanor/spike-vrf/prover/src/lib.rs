@@ -1,3 +1,4 @@
+mod invoke;
 use ark_ff::{BigInteger, PrimeField, Zero};
 use node_first_stark_vrf_math::{generate_public_key, BaseField, ScalarField, StarkVRF};
 use std::{panic::catch_unwind, slice, thread};
@@ -136,6 +137,36 @@ pub unsafe extern "C" fn node_first_vrf_prove(
             )
         };
         parallel_proofs(secret(input)?, values, result, threads)
+    })
+    .map_or(7, |result| result.err().unwrap_or(0))
+}
+
+/// Hashes one raw JSON V3 invoke, without reading or modifying its signature.
+///
+/// # Safety
+/// data points to len initialized bytes (1..1MiB), chain to32 initialized bytes,
+/// output to32 writable bytes. Regions are disjoint and live throughout this call.
+#[no_mangle]
+pub unsafe extern "C" fn node_first_vrf_invoke_hash(
+    data: *const u8,
+    len: usize,
+    chain: *const u8,
+    output: *mut u8,
+) -> u32 {
+    if data.is_null() || chain.is_null() || output.is_null() || len == 0 || len > 1024 * 1024 {
+        return 1;
+    }
+    catch_unwind(|| {
+        // SAFETY: caller guarantees the bounded initialized, disjoint live byte regions.
+        let (input, chain, result) = unsafe {
+            (
+                slice::from_raw_parts(data, len),
+                slice::from_raw_parts(chain, 32),
+                slice::from_raw_parts_mut(output, 32),
+            )
+        };
+        result.copy_from_slice(&invoke::invoke_hash(input, chain)?);
+        Ok::<(), u32>(())
     })
     .map_or(7, |result| result.err().unwrap_or(0))
 }

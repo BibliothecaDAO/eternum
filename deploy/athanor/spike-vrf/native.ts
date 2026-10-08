@@ -28,6 +28,7 @@ export class NativeProver {
   ) {
     if (key.length !== WIDTH) throw new Error("VRF scalar must be 32 bytes");
     this.library = dlopen(libraryPath, {
+      node_first_vrf_invoke_hash: { args: ["ptr", "usize", "ptr", "ptr"], returns: "u32" },
       node_first_vrf_public_key: { args: ["ptr", "ptr"], returns: "u32" },
       node_first_vrf_prove: { args: ["ptr", "ptr", "usize", "usize", "ptr"], returns: "u32" },
     });
@@ -39,6 +40,21 @@ export class NativeProver {
     const status = this.library.symbols.node_first_vrf_public_key(ptr(this.key), ptr(output));
     if (status !== 0) throw new Error(`VRF public-key derivation failed (${status})`);
     return [hex(output.subarray(0, WIDTH)), hex(output.subarray(WIDTH))];
+  }
+
+  invokeHash(raw: Uint8Array, chain: string): string {
+    this.requireOpen();
+    if (!raw.byteLength || raw.byteLength > 1024 * 1024) throw new Error("Invalid native invoke byte length");
+    const chainBytes = feltBytes(chain);
+    const output = Buffer.alloc(32);
+    const status = this.library.symbols.node_first_vrf_invoke_hash(
+      ptr(raw),
+      raw.byteLength,
+      ptr(chainBytes),
+      ptr(output),
+    );
+    if (status !== 0) throw new Error(`Native invoke hash failed (${status})`);
+    return hex(output);
   }
 
   proofs(seeds: readonly string[], threads: 1 | 2 | 4 = 1): string[][] {

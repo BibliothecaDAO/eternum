@@ -1,4 +1,6 @@
 import { readFileSync, writeFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { cpus, availableParallelism } from "node:os";
 import { ProverPool } from "./pool";
 import { NativeProver, feltBytes } from "./native";
 import { invokeHash, type Invoke } from "./transaction";
@@ -15,7 +17,7 @@ const rows = [];
 try {
   const expectedSeeds = txs.map((tx) => invokeHash(tx, chain));
   const expected = prover.proofs(expectedSeeds);
-  for (const threads of [1, 2, 4] as const) {
+  for (const threads of [1, 2, 4, 8] as const) {
     const start = performance.now();
     const pool = new ProverPool(keyFile, threads);
     try {
@@ -48,6 +50,10 @@ try {
     }
   }
   const report = {
+    machine: cpus()[0]?.model,
+    availableParallelism: availableParallelism(),
+    datasetSha256: createHash("sha256").update(readFileSync(transactionsFile)).digest("hex"),
+    publicKey: prover.publicKey(),
     scope:
       "transaction hashing, Bun worker dispatch, complete native proof+hint and suffix copying; excludes RPC guards and network forwarding; startup reported separately",
     rows,
