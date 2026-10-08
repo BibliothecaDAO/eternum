@@ -18,6 +18,7 @@ import { PageFrame } from "../frame/page-frame";
 import { type DirectoryGame, useDirectory, useLeaderboard, useRealmsPlayer, useRecentResults } from "../herald";
 import { Loading } from "../loading";
 import { NothingHere } from "../not-found";
+import { OwnRatingLine } from "../own-rating";
 import { paintingSources, type Painting } from "../paintings";
 import { ageOf } from "../play/ages";
 import { gameKey } from "../play/next-step";
@@ -190,8 +191,10 @@ const BlitzResult = ({
 }) => {
   const now = useNowSeconds();
   const [sharing, setSharing] = useState(false);
+  const layout = useLayout();
+  const desktop = layout === "desktop";
   const own = player ? entries.find((entry) => sameAddress(entry.address, player)) : undefined;
-  const top = entries.slice(0, ROWS[useLayout()]);
+  const top = entries.slice(0, ROWS[layout]);
   const rows = own && !top.includes(own) ? [...top, own] : top;
   return (
     <ResultLayout
@@ -203,6 +206,7 @@ const BlitzResult = ({
           <p className="text-[15px] text-kit-muted">
             {game ? `${gameTitle(game)} · ${clockLine(null, game.clock.end_at, now)}` : "—"}
           </p>
+          {desktop && <OwnRatingLine />}
         </>
       }
       rows={

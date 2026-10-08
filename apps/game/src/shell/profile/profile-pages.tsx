@@ -20,7 +20,7 @@ import { LEVEL_WORDS, PROFILE_WORDS, WORDS } from "../words";
 import { AccountCard } from "./account-card";
 import { DevicesCard } from "./devices-page";
 import { NotificationsCard, shownLevel } from "./notifications";
-import { ProfileView } from "./profile-view";
+import { PlayerCard, ProfileView, RecentGames } from "./profile-view";
 import { SettingRow, SettingRows } from "./setting-row";
 import { Switch } from "./switch";
 
@@ -104,7 +104,7 @@ const SignInCard = ({ line }: { line: string | null }) => {
   );
 };
 
-/** The player's own Profile: on desktop the rows in the left column and the open one at the right. */
+/** The player's own Profile: on desktop their card and the rows in the left column, their games or the open row at the right. */
 const OwnProfile = ({ account, open }: { account: string; open: ProfileRow | null }) => {
   const layout = useLayout();
   if (layout === "phone")
@@ -115,9 +115,12 @@ const OwnProfile = ({ account, open }: { account: string; open: ProfileRow | nul
       </div>
     );
   return (
-    <div className="grid grid-cols-[26rem_1fr] items-start gap-8">
-      <Rows />
-      {open ? <RowCard row={open} /> : <ProfileView account={account} own />}
+    <div className="grid grid-cols-[26rem_minmax(0,1fr)] items-start gap-6">
+      <div className="flex flex-col gap-5">
+        <PlayerCard account={account} own />
+        <Rows />
+      </div>
+      {open ? <RowCard row={open} /> : <RecentGames account={account} />}
     </div>
   );
 };

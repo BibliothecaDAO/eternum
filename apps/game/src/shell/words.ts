@@ -153,6 +153,7 @@ export const PROFILE_WORDS = {
   devices: "Devices",
   /** Music outside a match, on this device. */
   music: "Music",
+  recentGames: "Recent games",
   name: "Name",
   portrait: "Portrait",
   signInMethods: "Sign-in",
