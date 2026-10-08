@@ -37,6 +37,7 @@ export const PlayPage = () => {
       stage={firstVisit}
       title={firstVisit ? undefined : WORDS.play}
       notice={refused || undefined}
+      footer
     >
       {layout === "phone" ? <PhonePlay facts={facts} /> : <DesktopPlay facts={facts} join={join} />}
     </PageFrame>

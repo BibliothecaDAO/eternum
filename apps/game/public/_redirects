@@ -17,6 +17,7 @@
 /scroll/:post / 200
 /terms / 200
 /privacy / 200
+/credits / 200
 /factory / 200
 /p/:address / 200
 /g/:chain/:game / 200

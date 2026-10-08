@@ -12,6 +12,8 @@ type Age = {
   /** The chronicle's name for the era and its one line, as the lore site captions the age's painting. */
   era: string;
   caption: string;
+  /** The chronicle's telling of the age, from the lore site, for Learn. */
+  chronicle: string;
   /** The lore site's painting of the age (public/images/landscapes/SOURCE.md). */
   painting: Painting;
   /** Its own page, opened from its tile or band. */
@@ -26,6 +28,8 @@ export const AGES: readonly Age[] = [
     lore: "The struggle for what remained",
     era: "Chaos & war",
     caption: "The Spires emerge. The laws of the world begin to fracture.",
+    chronicle:
+      "Thousands of kingdoms rose and fell in the struggle for the Hyperstructures. Then the Spires emerged from the land, tore at the air and bent the laws of space and time.",
     painting: "blitz-spires",
     page: "/blitz",
   },
@@ -36,6 +40,8 @@ export const AGES: readonly Age[] = [
     lore: "The last lights of the world",
     era: "The dark age",
     caption: "Beyond the last lights, the frontier waits.",
+    chronicle:
+      "The last lights of the world shone within the Realms. Beyond them, the mist swallowed the ruins of civilisation. Aspiring Lords ventured out to reestablish the frontier.",
     painting: "frontier-mist",
     page: "/frontier",
   },
@@ -46,6 +52,8 @@ export const AGES: readonly Age[] = [
     lore: "The return to greatness",
     era: "Restoration & conquest",
     caption: "From ancient foundations, the Hyperstructures rise again.",
+    chronicle:
+      "The Realms came alive. Lords set out to recover the world they had lost, uncovering the foundations of ruined Hyperstructures and restoring them to their former glory.",
     painting: "eternum-restoration",
     page: "/eternum",
   },
@@ -56,6 +64,8 @@ export const AGES: readonly Age[] = [
     lore: "The world that continues",
     era: "The first adventurer",
     caption: "The spark shone for an eternity, and then another.",
+    chronicle:
+      "The spark shone for an eternity, and then another. Then, at last, someone stepped through. An adventurer. And he was holding Loot.",
     painting: "dominion-first-adventurer",
     page: "/dominion",
   },

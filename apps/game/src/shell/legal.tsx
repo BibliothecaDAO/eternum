@@ -1,12 +1,15 @@
 import type { ReactNode } from "react";
+import { Link } from "react-router-dom";
 
 import { KitIcon } from "@/ui/design-system/kit/kit-icon";
 
 import { communityPlace } from "./community";
+import { useLayout } from "./frame/layout";
 import { PageFrame } from "./frame/page-frame";
-import { LEARN_WORDS } from "./words";
+import { Panel } from "./panel";
+import { FOOTER_WORDS, LEARN_WORDS } from "./words";
 
-/** The terms and the privacy policy: static text, so the shell serves it with no game module. */
+/** The terms, the privacy policy and the credits: static text, so the shell serves it with no game module. */
 
 interface LegalSection {
   title: string;
@@ -35,16 +38,28 @@ const CONTACT = (
   </>
 );
 
-/** A legal page (spec 13): plain reading with Back, its date, and numbered sections; no art. */
-const LegalPage = ({ title, updated, sections }: { title: string; updated: string; sections: LegalSection[] }) => (
-  <PageFrame back="/learn" title={title}>
-    <article className="mx-auto flex max-w-[760px] flex-col gap-5">
+/** The legal set, each page linking the other two. */
+const LEGAL_PAGES = [
+  { word: FOOTER_WORDS.terms, to: "/terms" },
+  { word: FOOTER_WORDS.privacy, to: "/privacy" },
+  { word: FOOTER_WORDS.credits, to: "/credits" },
+] as const;
+
+/**
+ * A legal page (spec 13): plain reading with Back, its date, and numbered sections; no art. The desktop keeps the
+ * sections' list beside the reading column, links the other legal pages, and ends on the footer.
+ */
+const LegalPage = ({ title, updated, sections }: { title: string; updated: string; sections: LegalSection[] }) => {
+  const desktop = useLayout() === "desktop";
+  const reading = (
+    <article className="flex max-w-[760px] flex-col gap-5">
       <p className="flex items-center gap-2 text-[13px] text-kit-muted">
         <KitIcon code="Cl" size={18} />
         {LEARN_WORDS.updated} {updated}
+        {desktop && <OtherLegalPages title={title} />}
       </p>
       {sections.map((section, index) => (
-        <section key={section.title}>
+        <section key={section.title} id={sectionId(index)} className="scroll-mt-6">
           <h2 className="mb-2 font-ui text-[17px] font-bold text-kit-cream">
             {index + 1}. {section.title}
           </h2>
@@ -54,7 +69,49 @@ const LegalPage = ({ title, updated, sections }: { title: string; updated: strin
         </section>
       ))}
     </article>
-  </PageFrame>
+  );
+  return (
+    <PageFrame back="/learn" title={title} footer>
+      {desktop ? (
+        <div className="grid grid-cols-[20rem_minmax(0,760px)] justify-center gap-10">
+          <Contents title={title} sections={sections} />
+          {reading}
+        </div>
+      ) : (
+        <div className="mx-auto max-w-[760px]">{reading}</div>
+      )}
+    </PageFrame>
+  );
+};
+
+const sectionId = (index: number) => `section-${index + 1}`;
+
+/** The sections as a list beside the reading column, staying in view while it scrolls. */
+const Contents = ({ title, sections }: { title: string; sections: LegalSection[] }) => (
+  <nav aria-label={title} className="sticky top-6 self-start">
+    <Panel icon="Dk" title={title}>
+      {sections.map((section, index) => (
+        <a
+          key={section.title}
+          href={`#${sectionId(index)}`}
+          className="flex min-h-10 items-center gap-3 rounded-lg px-1 text-[15px] text-kit-cream hover:bg-kit-gold/[.06]"
+        >
+          <span className="w-6 text-right font-bold tabular-nums text-kit-muted">{index + 1}</span>
+          {section.title}
+        </a>
+      ))}
+    </Panel>
+  </nav>
+);
+
+const OtherLegalPages = ({ title }: { title: string }) => (
+  <span className="ml-auto flex gap-4">
+    {LEGAL_PAGES.filter((page) => page.word !== title).map((page) => (
+      <Link key={page.to} to={page.to} className="font-ui text-[14px] text-kit-peach hover:text-kit-gold2">
+        {page.word}
+      </Link>
+    ))}
+  </span>
 );
 
 const TERMS: LegalSection[] = [
@@ -378,6 +435,31 @@ const PRIVACY: LegalSection[] = [
     ),
   },
   {
+    title: "Error Reports (Sentry)",
+    body: (
+      <>
+        <p>
+          The game app may send reports to Sentry (Functional Software, Inc.), an error-monitoring service, so that we
+          can find and fix what breaks. A report carries:
+        </p>
+        <ul>
+          <li>the error, the page it happened on and the app's version</li>
+          <li>your browser, operating system and device, and your IP address</li>
+          <li>how long the app's pages and requests took to load</li>
+          <li>
+            for every visit that meets an error, and one visit in ten without one, a recording of what the page showed,
+            with its text and what you type masked
+          </li>
+          <li>for a transaction that failed, its error with your wallet address replaced by a one-way hash</li>
+        </ul>
+        <p>
+          Keys, signatures, passwords and transaction contents are removed before a report leaves your browser. Sentry
+          keeps reports for a limited period under its own privacy policy.
+        </p>
+      </>
+    ),
+  },
+  {
     title: "Data Retention",
     body: (
       <p>
@@ -458,6 +540,46 @@ const PRIVACY: LegalSection[] = [
   },
 ];
 
-export const TermsPage = () => <LegalPage title="Terms of Service" updated="Feb 2025" sections={TERMS} />;
+/** A typeface the app ships, with its licence text served beside the font file (public/fonts/SOURCE.md). */
+const Typeface = ({ name, authors, licence }: { name: string; authors: string; licence: string }) => (
+  <li>
+    <strong>{name}</strong>, {authors}.{" "}
+    <ExternalLink href={`/fonts/${licence}`}>SIL Open Font License 1.1</ExternalLink>
+  </li>
+);
 
-export const PrivacyPage = () => <LegalPage title="Privacy Policy" updated="Feb 2025" sections={PRIVACY} />;
+const CREDITS: LegalSection[] = [
+  {
+    title: "Typefaces",
+    body: (
+      <ul>
+        <Typeface name="Bokor" authors="The Bokor Project Authors" licence="bokor-regular.OFL.txt" />
+        <Typeface
+          name="IM FELL English SC"
+          authors="Igino Marini (Reserved Font Name IM FELL English SC)"
+          licence="im-fell-english-sc-regular.OFL.txt"
+        />
+        <Typeface
+          name="Atkinson Hyperlegible Next"
+          authors="The Atkinson Hyperlegible Next Project Authors (Braille Institute)"
+          licence="atkinson-hyperlegible-next.OFL.txt"
+        />
+      </ul>
+    ),
+  },
+  {
+    title: "Paintings and art",
+    body: (
+      <ul>
+        <li>The landscapes, key art, portraits and icons: the Realms brand kit, BibliothecaDAO.</li>
+        <li>The ages' paintings: the Realms lore, Realms · The Lost Ages, and art made for the app in its style.</li>
+      </ul>
+    ),
+  },
+];
+
+export const TermsPage = () => <LegalPage title={FOOTER_WORDS.terms} updated="Feb 2025" sections={TERMS} />;
+
+export const PrivacyPage = () => <LegalPage title={FOOTER_WORDS.privacy} updated="Oct 2026" sections={PRIVACY} />;
+
+export const CreditsPage = () => <LegalPage title={FOOTER_WORDS.credits} updated="Oct 2026" sections={CREDITS} />;

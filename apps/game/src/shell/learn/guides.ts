@@ -4,7 +4,7 @@ import type { AgeMode } from "../play/ages";
 import { LEARN_WORDS } from "../words";
 
 /** The docs site, where each mode's rules are written down (apps/game-docs). */
-const DOCS = "https://docs.realms.world";
+export const DOCS = "https://docs.realms.world";
 
 /** One guide per mode, Frontier's first under the Aspect of Skill's mark; Dominion has none yet. */
 export const MODE_GUIDES: readonly { mode: AgeMode; title: string; icon: IconCode; url: string }[] = [

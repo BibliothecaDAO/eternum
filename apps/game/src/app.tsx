@@ -70,6 +70,7 @@ const GraphicsLabView = lazy(() =>
 const AppLabView = lazy(() => import("./shell/lab/app-lab").then((module) => ({ default: module.AppLabView })));
 const TermsPage = lazy(() => import("./shell/legal").then((module) => ({ default: module.TermsPage })));
 const PrivacyPage = lazy(() => import("./shell/legal").then((module) => ({ default: module.PrivacyPage })));
+const CreditsPage = lazy(() => import("./shell/legal").then((module) => ({ default: module.CreditsPage })));
 const GameClientApp = lazy(() => import("./game-client-app").then((module) => ({ default: module.GameClientApp })));
 
 const AppFallback = FirstFrame;
@@ -112,6 +113,14 @@ export const appRoutes = (
         element={
           <LazyRoute>
             <PrivacyPage />
+          </LazyRoute>
+        }
+      />
+      <Route
+        path="credits"
+        element={
+          <LazyRoute>
+            <CreditsPage />
           </LazyRoute>
         }
       />

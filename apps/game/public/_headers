@@ -54,3 +54,5 @@
   Cache-Control: no-cache
 /privacy
   Cache-Control: no-cache
+/credits
+  Cache-Control: no-cache

@@ -34,6 +34,7 @@ export const PostPage = () => {
       back={SCROLL_PATH}
       title={layout === "desktop" ? LEARN_WORDS.scroll : undefined}
       foot={<Stepper newer={publishedPosts[index - 1]} older={publishedPosts[index + 1]} />}
+      footer
     >
       {layout === "phone" ? <PhonePost post={post} /> : <DesktopPost post={post} />}
     </PageFrame>

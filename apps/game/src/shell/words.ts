@@ -30,6 +30,22 @@ export const WORDS = {
   age: "Age",
 } as const;
 
+/** The desktop footer on the pages that scroll: its columns and their links. */
+export const FOOTER_WORDS = {
+  community: "Community",
+  realms: "Realms",
+  legal: "Legal",
+  guides: "Guides",
+  gameDocs: "Game docs",
+  marketplace: "Marketplace",
+  terms: "Terms of Service",
+  privacy: "Privacy Policy",
+  credits: "Credits and licences",
+  owner: "© 2026 BibliothecaDAO",
+  places: "places",
+  back: "back",
+} as const;
+
 /** Play on the desktop: its panels and the bands below its first screen. */
 export const PLAY_WORDS = {
   blitzGames: "Blitz games",
@@ -172,6 +188,11 @@ export const LEARN_WORDS = {
   change: "Change",
   /** Below the Scroll's newest posts: everything else in News, on Learn. */
   allNews: "All news",
+  /** The four ages as the lore site tells them, on Learn. */
+  chronicle: "The chronicle",
+  lostAges: "The Lost Ages",
+  /** Under Guides by players: "6 guides". */
+  guidesCount: (count: number) => `${count} guides`,
 } as const;
 
 /** The app's own states: install, update, offline, a page that does not exist. */

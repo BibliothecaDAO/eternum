@@ -1,9 +1,10 @@
-import { type ReactNode, useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { KitIcon } from "@/ui/design-system/kit/kit-icon";
 
+import { Band } from "../band";
 import { formatContentDay } from "../clock-chip";
 import { COMMUNITY } from "../community";
 import type { ScrollPost } from "../generated/scroll-posts";
@@ -17,17 +18,6 @@ import { AgeLabel } from "./age-card";
 import { AGES, isLocked } from "./ages";
 
 type Age = (typeof AGES)[number];
-
-/** A band below Play's first screen on the desktop: its title in the display face (a link at its end), then its content. */
-const Band = ({ title, aside, children }: { title: string; aside?: ReactNode; children: ReactNode }) => (
-  <section className="flex flex-col gap-5">
-    <header className="flex items-end justify-between">
-      <h2 className="font-display text-[34px] leading-none text-kit-cream">{title}</h2>
-      {aside}
-    </header>
-    {children}
-  </section>
-);
 
 /** The four ages as the chronicle tells them, each on its lore painting; a card opens the age's page. */
 export const AgesBand = () => (

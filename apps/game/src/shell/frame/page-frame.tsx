@@ -9,6 +9,7 @@ import { paintingSources, type Painting } from "../paintings";
 import { useAppNotice } from "./app-notice";
 import { EnvEdge } from "./env-mark";
 import { useDesktopKeys } from "./desktop-keys";
+import { AppFooter } from "./footer";
 import { Kbd } from "./kbd";
 import { useLayout } from "./layout";
 import { Lockup } from "./lockup";
@@ -29,6 +30,8 @@ type PageFrameProps = {
   painting?: Painting;
   /** The painting fills the desktop's first screen: a stage, as the first visit is drawn. */
   stage?: boolean;
+  /** A page that scrolls ends on the desktop's footer. */
+  footer?: boolean;
   children: ReactNode;
 };
 
@@ -85,6 +88,7 @@ const DesktopFrame = ({
   tabs = true,
   painting,
   stage = false,
+  footer = false,
   children,
 }: PageFrameProps) => {
   useDesktopKeys({ places: tabs ? PLACES : [], back });
@@ -106,6 +110,11 @@ const DesktopFrame = ({
             {foot}
           </div>
         ) : null}
+        {footer && (
+          <div className="w-full px-8 min-[1800px]:px-12">
+            <AppFooter />
+          </div>
+        )}
       </div>
       {notice ? (
         <div data-band="notice" className="fixed right-6 top-6 z-40 w-[26rem]">
