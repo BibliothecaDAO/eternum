@@ -145,6 +145,12 @@ describe("the place bar", () => {
     expect(onGo).toHaveBeenCalledWith("menu");
   });
 
+  it("leaves Research out for a spectator, who has no realm to research", () => {
+    act(() => root.render(<PlaceNav place="realm" onGo={vi.fn()} unread={0} />));
+    const slots = [...host.querySelectorAll("button")].map((slot) => slot.textContent);
+    expect(slots).toEqual(["Map", "Realm", "Chat", "Menu"]);
+  });
+
   it("dots Research only when an open node's Essence is held", () => {
     const node = (state: "open" | "locked" | "learned", price: number) => ({
       node: 1,
@@ -191,6 +197,13 @@ describe("the Menu", () => {
       act(() => button(word).click());
       expect(handler).toHaveBeenCalled();
     }
+  });
+
+  it("offers a spectator no Production and no guide", () => {
+    const ways = { onToday: vi.fn(), onSeason: vi.fn(), onSettings: vi.fn(), onExit: vi.fn(), onClose: vi.fn() };
+    act(() => root.render(<MenuSheet rank="—" guide={null} onProduction={null} {...ways} />));
+    const words = [...document.querySelectorAll("section[aria-label='Menu'] nav button")].map((row) => row.textContent);
+    expect(words).toEqual(["Today", "Season—", "Settings"]);
   });
 });
 

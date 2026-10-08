@@ -113,8 +113,16 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
         }
         dock={dockRealm && <DockFor realm={dockRealm} />}
         nav={
-          !visit && (
-            <FrontierNav rules={rules} realm={realm} surface={surface} onSurface={onSurface} unread={chat.unread} />
+          // A player's visit trades the nav for its Leave; a spectator, with no realm to go back to, keeps it.
+          !(visit && realm) && (
+            <FrontierNav
+              rules={rules}
+              realm={realm}
+              board={dockRealm}
+              surface={surface}
+              onSurface={onSurface}
+              unread={chat.unread}
+            />
           )
         }
         peek={<SeasonPeek onOpen={() => setSurface("season")} />}
@@ -122,7 +130,7 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
       >
         <FrontierSurfaces realm={realm} />
         <FrontierSelectionSheet rules={rules} realm={realm} />
-        {surface === "menu" && <HudMenu onOpen={setSurface} onClose={close} />}
+        {surface === "menu" && <HudMenu realm={realm} onOpen={setSurface} onClose={close} />}
         {surface === "army" && realm && !visit && <FrontierArmy realm={realm} onClose={close} />}
         {surface === "production" && realm && <FrontierProduction rules={rules} realm={realm} onClose={close} />}
         {surface === "settings" && (
@@ -223,7 +231,15 @@ const LastHour = ({ rules, realm }: { rules: ExpeditionRules; realm: NativeRows[
 };
 
 /** The Menu over the game: each row opens its way and closes the menu; Exit leaves for the app. */
-const HudMenu = ({ onOpen, onClose }: { onOpen: (surface: HudSurface | null) => void; onClose: () => void }) => {
+const HudMenu = ({
+  realm,
+  onOpen,
+  onClose,
+}: {
+  realm: NativeRows["Structure"] | null;
+  onOpen: (surface: HudSurface | null) => void;
+  onClose: () => void;
+}) => {
   const navigate = useNavigate();
   const guide = useGuideSwitch();
   const rank = useSeasonRank();
@@ -231,7 +247,7 @@ const HudMenu = ({ onOpen, onClose }: { onOpen: (surface: HudSurface | null) => 
     <MenuSheet
       rank={rank}
       onToday={() => onOpen("today")}
-      onProduction={() => onOpen("production")}
+      onProduction={realm ? () => onOpen("production") : null}
       onSeason={() => onOpen("season")}
       guide={
         guide && {

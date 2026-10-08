@@ -34,17 +34,22 @@ export const useHudSurface = () => {
 /**
  * The place bar over the game: Map and Realm move the camera between the day's map and the realm board, the other
  * slots open their page or the Menu (a second tap closes it). The Realm slot carries a dot while a store the realm
- * spends is full or fills within the hour. A spectator with no realm has only the map.
+ * spends is full or fills within the hour. A spectator, with no realm of their own, moves between the map and the realm
+ * they watch, and has no Research.
  */
 export const FrontierNav = ({
   rules,
   realm,
+  board,
   surface,
   onSurface,
   unread,
 }: {
   rules: ExpeditionRules;
+  /** The player's own realm; none for a spectator. */
   realm: NativeRows["Structure"] | null;
+  /** The realm the Realm slot goes to: the player's own, or the one a spectator watches. */
+  board: NativeRows["Structure"] | null;
   surface: HudSurface | null;
   onSurface: (surface: HudSurface | null) => void;
   unread: number;
@@ -58,7 +63,7 @@ export const FrontierNav = ({
         : isMapView
           ? "map"
           : "realm";
-  const goToPlace = useGoToFrontierPlace(realm);
+  const goToPlace = useGoToFrontierPlace(board);
   const researchDot = canResearchNow(useResearchPlan(realm));
   const stores = useRealmStores(realm, rules);
   const go = (to: Place) => {
@@ -74,7 +79,7 @@ export const FrontierNav = ({
       place={place}
       onGo={go}
       realmDot={stores ? realmDot([stores.wheat, stores.labor, stores.troops]) : undefined}
-      researchDot={researchDot}
+      researchDot={realm ? researchDot : undefined}
       unread={unread}
     />
   );

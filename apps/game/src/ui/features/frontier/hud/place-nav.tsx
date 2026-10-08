@@ -31,7 +31,8 @@ export const PlaceNav = ({
   place: Place;
   onGo: (place: Place) => void;
   realmDot?: Dot;
-  researchDot: boolean;
+  /** Whether Research has a node to buy; none leaves the slot out, for a player with no realm to research. */
+  researchDot?: boolean;
   /** Chat messages unread; none shows nothing. */
   unread: number;
 }) => {
@@ -47,7 +48,8 @@ export const PlaceNav = ({
         {slot("map", "Mp", MAP)}
         {slot("realm", "Cs", REALM, realmDot && <i className={cn("size-2 rounded-full", DOTS[realmDot])} />)}
       </span>
-      {slot("research", "Rs", RESEARCH, researchDot && <i className={cn("size-2 rounded-full", DOTS.lit)} />)}
+      {researchDot !== undefined &&
+        slot("research", "Rs", RESEARCH, researchDot && <i className={cn("size-2 rounded-full", DOTS.lit)} />)}
       {slot(
         "chat",
         "Ct",

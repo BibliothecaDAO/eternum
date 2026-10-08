@@ -7,7 +7,7 @@ import type { ReactNode } from "react";
 /**
  * The Menu: the ways that are not places (Today, Season with the player's rank, Production, the guide, Settings), then
  * Exit to the app and Resume, which closes the menu. Guide turns the guide off, or on again from its first line; a
- * player with no realm of their own has no guide.
+ * player with no realm of their own has no guide and no Production.
  */
 export const MenuSheet = ({
   rank,
@@ -22,7 +22,7 @@ export const MenuSheet = ({
   rank: string;
   onToday: () => void;
   onSeason: () => void;
-  onProduction: () => void;
+  onProduction: (() => void) | null;
   guide: { on: boolean; onToggle: () => void } | null;
   onSettings: () => void;
   onExit: () => void;
@@ -38,7 +38,7 @@ export const MenuSheet = ({
         badge={<span className="text-[15px] tabular-nums">{rank}</span>}
         onClick={onSeason}
       />
-      <MenuRow icon="Wh" word={PRODUCTION} onClick={onProduction} />
+      {onProduction && <MenuRow icon="Wh" word={PRODUCTION} onClick={onProduction} />}
       {guide && (
         <MenuRow
           icon="Gd"
