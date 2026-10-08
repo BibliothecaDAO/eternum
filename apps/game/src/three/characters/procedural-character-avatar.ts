@@ -49,8 +49,10 @@ import {
 import {
   applySegmentBoneRotation,
   createSegmentBoneBinding,
+  createRestHingeAxis,
   createStableSegmentBoneBinding,
   requireSkinnedBone,
+  resolveLimbHingeAxis,
   resolveStableSegmentQuaternion,
   type SegmentBoneBinding,
 } from "./skinned-pose-binding";
@@ -183,6 +185,7 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
   private readonly scratchIkPole = new Vector3();
   private readonly scratchIkOffset = new Vector3();
   private readonly scratchIkDirection = new Vector3();
+  private readonly scratchIkHingeAxis = new Vector3();
   private readonly scratchIkPoleDirection = new Vector3();
   private readonly scratchIkCurrentPoleDirection = new Vector3();
   private readonly scratchIkSolvedJoint = new Vector3();
@@ -525,8 +528,31 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
       .sub(this.scratchIkPole.fromArray(forearmPose.jointAnchor));
     this.solveTwoBoneTarget(upperLength, forearmLength);
 
+    if (this.activeModel.adapter.partBindings[upperPartId].hinge) {
+      this.resolveSolvedArmHingeAxis();
+      this.applyHingeLimbSegment(upperBinding, this.scratchIkRoot, this.scratchIkSolvedJoint);
+      this.applyHingeLimbSegment(forearmBinding, this.scratchIkSolvedJoint, this.scratchIkSolvedEnd);
+      return;
+    }
     this.applySolvedLimbSegment(upperBinding, this.scratchIkRoot, this.scratchIkSolvedJoint);
     this.applySolvedLimbSegment(forearmBinding, this.scratchIkSolvedJoint, this.scratchIkSolvedEnd);
+  }
+
+  /**
+   * The hinge axis of the solved arm. A nearly straight arm has no plane of its own (see STRAIGHT_LIMB_SINE), so the
+   * axis comes from the plane the solver's pole set instead: target direction x pole direction, which is the sign the
+   * solved arm's own plane has when the elbow bends towards the pole.
+   */
+  private resolveSolvedArmHingeAxis(): void {
+    const hasPlane = resolveLimbHingeAxis(
+      this.scratchIkRoot,
+      this.scratchIkSolvedJoint,
+      this.scratchIkSolvedEnd,
+      this.scratchIkHingeAxis,
+    );
+    if (!hasPlane) {
+      this.scratchIkHingeAxis.crossVectors(this.scratchIkDirection, this.scratchIkPoleDirection).normalize();
+    }
   }
 
   private applyLegIk(side: HumanoidSide): void {
@@ -562,6 +588,24 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
   private applySolvedLimbSegment(binding: SegmentBoneBinding, start: Vector3, end: Vector3): void {
     this.scratchIkDirection.copy(end).sub(start).normalize();
     this.scratchIkSegmentQuaternion.setFromUnitVectors(Y_AXIS, this.scratchIkDirection);
+    applySegmentBoneRotation(
+      binding,
+      this.group,
+      this.scratchIkSegmentQuaternion,
+      this.scratchGroupQuaternion,
+      this.scratchParentQuaternion,
+      this.scratchTargetQuaternion,
+    );
+  }
+
+  private applyHingeLimbSegment(binding: SegmentBoneBinding, start: Vector3, end: Vector3): void {
+    this.scratchIkDirection.copy(end).sub(start).normalize();
+    resolveStableSegmentQuaternion(
+      this.scratchIkDirection,
+      this.scratchIkHingeAxis,
+      this.scratchIkHingeAxis,
+      this.scratchIkSegmentQuaternion,
+    );
     applySegmentBoneRotation(
       binding,
       this.group,
@@ -1046,6 +1090,7 @@ function createCharacterBoneBinding(
   partId: CharacterPartId,
 ): SegmentBoneBinding {
   const definition = adapter.partBindings[partId];
+  if (definition.hinge) return createHingeArmBoneBinding(scene, adapter, partId);
   if (definition.childBone && definition.stable) {
     return createStableSegmentBoneBinding(
       scene,
@@ -1056,6 +1101,24 @@ function createCharacterBoneBinding(
     );
   }
   return createSegmentBoneBinding(scene, definition.bone, definition.childBone);
+}
+
+/** An arm part bound in the frame of its arm's hinge, taken from the arm's rest joints. */
+function createHingeArmBoneBinding(
+  scene: Group,
+  adapter: HumanoidRigAdapter,
+  partId: CharacterPartId,
+): SegmentBoneBinding {
+  const side = partId.endsWith("Left") ? "Left" : "Right";
+  const upperArm = adapter.partBindings[`upperArm${side}`];
+  const forearm = adapter.partBindings[`forearm${side}`];
+  const part = adapter.partBindings[partId];
+  if (!upperArm.childBone || !forearm.childBone || !part.childBone) {
+    throw new Error(`${adapter.label} hinge arm ${partId} needs a child bone`);
+  }
+  const hingeAxis = createRestHingeAxis(scene, upperArm.bone, forearm.bone, forearm.childBone);
+  // The axis is the reference, and it is perpendicular to the segment, so the fallback is never used.
+  return createStableSegmentBoneBinding(scene, part.bone, part.childBone, hingeAxis, hingeAxis);
 }
 
 function requireRigBone(scene: Group, adapter: HumanoidRigAdapter, name: string): Bone {

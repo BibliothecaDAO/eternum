@@ -3,7 +3,9 @@ import { describe, expect, it } from "vitest";
 
 import {
   applySegmentBoneRotation,
+  createRestHingeAxis,
   createStableSegmentBoneBinding,
+  resolveLimbHingeAxis,
   resolveStableSegmentQuaternion,
 } from "./skinned-pose-binding";
 
@@ -45,5 +47,34 @@ describe("stable segment orientation", () => {
 
     const footForward = toe.getWorldPosition(new Vector3()).sub(ankle.getWorldPosition(new Vector3())).normalize();
     expect(footForward.dot(Z_AXIS)).toBeGreaterThan(0.99);
+  });
+});
+
+describe("limb hinge axis", () => {
+  it("is the normal of the plane through the three joints, forearm x upper arm", () => {
+    const axis = new Vector3();
+    // The arm hangs down and the forearm swings forward: the plane is the x = 0 plane.
+    expect(resolveLimbHingeAxis(new Vector3(0, 1, 0), new Vector3(0, 0, 0), new Vector3(0, 0, 1), axis)).toBe(true);
+    expect(axis.distanceTo(new Vector3(1, 0, 0))).toBeLessThan(1e-9);
+  });
+
+  it("is undefined for a straight limb, which a rig asking for hinge arms must not rest in", () => {
+    expect(resolveLimbHingeAxis(new Vector3(0, 2, 0), new Vector3(0, 1, 0), new Vector3(0, 0, 0), new Vector3())).toBe(
+      false,
+    );
+    const scene = new Group();
+    const names = ["shoulder", "elbow", "wrist"];
+    const bones = names.map((name, index) => {
+      const bone = new Bone();
+      bone.name = name;
+      bone.position.set(0, index === 0 ? 0 : -1, 0);
+      return bone;
+    });
+    scene.add(bones[0]);
+    bones[0].add(bones[1]);
+    bones[1].add(bones[2]);
+    scene.updateWorldMatrix(true, true);
+
+    expect(() => createRestHingeAxis(scene, "shoulder", "elbow", "wrist")).toThrow("rests straight");
   });
 });

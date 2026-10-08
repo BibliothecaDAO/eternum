@@ -14,6 +14,11 @@ export type HumanoidSide = "left" | "right";
 export interface HumanoidPartBindingDefinition {
   bone: string;
   childBone?: string;
+  /**
+   * Arm parts only, on both parts of a side: the arm is posed as a hinge. The upper arm and the forearm each point
+   * where the solver puts them and keep the same hinge axis, so nothing fixed to the forearm is left twisted.
+   */
+  hinge?: boolean;
   stable?: boolean;
 }
 
@@ -128,6 +133,11 @@ const HUMANOID_SOCKET_IDS: readonly CharacterSocketId[] = [
   "quiver",
 ];
 const ADAPTER_SOCKET_IDS: readonly CharacterSocketId[] = [...HUMANOID_SOCKET_IDS, ...OPTIONAL_CHARACTER_SOCKET_IDS];
+const HINGE_ARM_PART_IDS_BY_SIDE: Readonly<Record<HumanoidSide, readonly CharacterPartId[]>> = {
+  left: ["upperArmLeft", "forearmLeft"],
+  right: ["upperArmRight", "forearmRight"],
+};
+const HINGE_ARM_PART_IDS: readonly CharacterPartId[] = Object.values(HINGE_ARM_PART_IDS_BY_SIDE).flat();
 const HUMANOID_DIGIT_IDS: readonly ProceduralHandDigitId[] = ["thumb", "index", "middle", "ring", "pinky"];
 
 export function resolveHumanoidRigRequiredBoneNames(adapter: HumanoidRigAdapter): string[] {
@@ -178,6 +188,12 @@ export function validateHumanoidRigAdapter(adapter: HumanoidRigAdapter): string[
     const binding = adapter.partBindings[partId];
     if (!binding?.bone) issues.push(`missing-part:${partId}`);
     if (binding?.stable && !binding.childBone) issues.push(`missing-stable-child:${partId}`);
+    if (binding?.hinge && !binding.childBone) issues.push(`missing-hinge-child:${partId}`);
+    if (binding?.hinge && !HINGE_ARM_PART_IDS.includes(partId)) issues.push(`hinge-on-a-non-arm:${partId}`);
+  });
+  HUMANOID_SIDES.forEach((side) => {
+    const [upperArm, forearm] = HINGE_ARM_PART_IDS_BY_SIDE[side].map((partId) => adapter.partBindings[partId]);
+    if (Boolean(upperArm?.hinge) !== Boolean(forearm?.hinge)) issues.push(`hinge-arm-mismatch:${side}`);
   });
   HUMANOID_JOINT_IDS.forEach((jointId) => {
     if (!adapter.diagnosticBones[jointId]) issues.push(`missing-diagnostic:${jointId}`);

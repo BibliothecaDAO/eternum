@@ -10,6 +10,14 @@ const stableSegmentDirection = new Vector3();
 const stableSegmentForward = new Vector3();
 const stableSegmentRight = new Vector3();
 const stableSegmentMatrix = new Matrix4();
+const hingeUpperDirection = new Vector3();
+const hingeLowerDirection = new Vector3();
+
+/**
+ * Below this sine of the angle between a limb's two segments (about 3 degrees) the limb counts as straight: the plane
+ * through its three joints is then set by rounding error, not by the limb.
+ */
+export const STRAIGHT_LIMB_SINE = 0.05;
 
 export function createSegmentBoneBinding(
   scene: Object3D,
@@ -44,6 +52,37 @@ export function createStableSegmentBoneBinding(
   );
   const bindWorldQuaternion = bone.getWorldQuaternion(new Quaternion());
   return { bone, orientationOffset: alignedQuaternion.invert().multiply(bindWorldQuaternion).normalize() };
+}
+
+/**
+ * The hinge axis of a limb that bends like an elbow: the unit normal of the plane through its three joints, taken as
+ * lower segment x upper segment. Binding and posing both use this one formula, so no sign convention is needed.
+ * Returns false, leaving `out` unset, when the limb is nearly straight and has no plane.
+ */
+export function resolveLimbHingeAxis(
+  start: Readonly<Vector3>,
+  joint: Readonly<Vector3>,
+  end: Readonly<Vector3>,
+  out: Vector3,
+): boolean {
+  hingeUpperDirection.copy(joint).sub(start).normalize();
+  hingeLowerDirection.copy(end).sub(joint).normalize();
+  const normal = hingeLowerDirection.cross(hingeUpperDirection);
+  if (normal.length() < STRAIGHT_LIMB_SINE) return false;
+  out.copy(normal).normalize();
+  return true;
+}
+
+/** The hinge axis of a limb in its bind pose; a limb that rests straight has none, which is an authoring error. */
+export function createRestHingeAxis(scene: Object3D, startName: string, jointName: string, endName: string): Vector3 {
+  const axis = new Vector3();
+  const [start, joint, end] = [startName, jointName, endName].map((name) =>
+    requireSkinnedBone(scene, name).getWorldPosition(new Vector3()),
+  );
+  if (!resolveLimbHingeAxis(start, joint, end, axis)) {
+    throw new Error(`Limb ${startName}, ${jointName}, ${endName} rests straight and has no hinge axis`);
+  }
+  return axis;
 }
 
 export function requireSkinnedBone(scene: Object3D, name: string): Bone {
