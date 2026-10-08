@@ -10,7 +10,12 @@ import { resolveCharacterRig } from "../procedural-character-rig";
 import type { ProceduralMeleeAttackState } from "./procedural-melee-attack-cycle";
 import { createDefaultProceduralMeleeConfig } from "./procedural-melee-config";
 import { resolveProceduralMeleeUpperBodyPose } from "./procedural-melee-pose";
-import type { ProceduralMeleeOffhandId, ProceduralMeleeWeaponId } from "./procedural-melee-weapon-catalog";
+import {
+  resolveProceduralMeleeOffhand,
+  resolveProceduralMeleeWeapon,
+  type ProceduralMeleeOffhandId,
+  type ProceduralMeleeWeaponId,
+} from "./procedural-melee-weapon-catalog";
 
 describe("procedural melee pose", () => {
   it("moves the weapon hand through a readable slash arc while keeping the pose finite", () => {
@@ -107,43 +112,30 @@ describe("procedural melee pose", () => {
     expect(carryOf("t1-knight-default-shield")).toBe("strapped");
   });
 
-  it("resolves how the weapon is oriented once, from the catalog", () => {
-    const carryOf = (weaponId: ProceduralMeleeWeaponId) =>
+  it("holds the arms of gear that declares arm poses at carry outside an attack, and only those arms", () => {
+    const armsOf = (weaponId: ProceduralMeleeWeaponId, offhandId: ProceduralMeleeOffhandId) =>
       resolveProceduralMeleeUpperBodyPose({
         aimPitchRadians: 0,
         aimYawRadians: 0,
         attackStyle: "slash",
-        config: { ...createDefaultProceduralMeleeConfig(), weaponId },
+        config: { ...createDefaultProceduralMeleeConfig(), offhandId, weaponId },
         mounted: false,
         state: { attackGeneration: 0, contactCount: 0, phase: "idle", phaseElapsedSeconds: 0 },
-      }).weaponCarry;
+      }).arms;
+    const sword = resolveProceduralMeleeWeapon("t1-knight-default-sword").armPoses;
+    const shield = resolveProceduralMeleeOffhand("t1-knight-default-shield").armPoses;
 
-    expect(carryOf("iron-longsword")).toBe("oriented");
-    expect(carryOf("t1-knight-default-sword")).toBe("fitted");
-  });
-
-  it("holds the left wrist nearer the body for a strapped shield than for a gripped one", () => {
-    const characterConfig = createDefaultProceduralCharacterConfig();
-    const rig = resolveCharacterRig(characterConfig);
-    const wristOffsetFromChest = (offhandId: ProceduralMeleeOffhandId) => {
-      const action = resolveProceduralMeleeUpperBodyPose({
-        aimPitchRadians: 0,
-        aimYawRadians: 0,
-        attackStyle: "slash",
-        config: { ...createDefaultProceduralMeleeConfig(), offhandId },
-        mounted: false,
-        state: { attackGeneration: 0, contactCount: 0, phase: "idle", phaseElapsedSeconds: 0 },
-      });
-      const pose = resolveProceduralCharacterPose(rig, characterConfig, 0, undefined, undefined, action);
-      const part = pose.parts.forearmLeft;
-      const wrist = new Vector3(...part.position).multiplyScalar(2).sub(new Vector3(...part.jointAnchor));
-      return wrist.sub(new Vector3(...pose.parts.chest.position)).divideScalar(rig.morphology.scale);
-    };
-
-    expect(wristOffsetFromChest("round-shield").x).toBeGreaterThan(0.4);
-    expect(wristOffsetFromChest("t1-knight-default-shield").x).toBeLessThan(
-      wristOffsetFromChest("round-shield").x - 0.2,
-    );
+    const arms = armsOf("t1-knight-default-sword", "t1-knight-default-shield");
+    const flatten = (pose?: { elbow: readonly number[]; handTurn: readonly number[]; wrist: readonly number[] }) => [
+      ...(pose?.elbow ?? []),
+      ...(pose?.handTurn ?? []),
+      ...(pose?.wrist ?? []),
+    ];
+    expect(flatten(arms.left)).toHaveLength(10);
+    expect(flatten(arms.right)).toHaveLength(10);
+    flatten(arms.left).forEach((value, index) => expect(value).toBeCloseTo(flatten(shield?.carry)[index], 5));
+    flatten(arms.right).forEach((value, index) => expect(value).toBeCloseTo(flatten(sword?.carry)[index], 5));
+    expect(armsOf("iron-longsword", "round-shield")).toEqual({});
   });
 });
 

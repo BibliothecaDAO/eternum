@@ -186,6 +186,7 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
   private readonly scratchIkOffset = new Vector3();
   private readonly scratchIkDirection = new Vector3();
   private readonly scratchIkHingeAxis = new Vector3();
+  private readonly scratchIkShoulderPose = new Vector3();
   private readonly scratchIkPoleDirection = new Vector3();
   private readonly scratchIkCurrentPoleDirection = new Vector3();
   private readonly scratchIkSolvedJoint = new Vector3();
@@ -207,6 +208,7 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
   private config: ProceduralCharacterConfig;
   private lastPose?: ProceduralCharacterPose;
   private upperBodyAction?: ProceduralCharacterUpperBodyAction;
+  private readonly scratchHandTurn = new Quaternion();
   private readonly scratchHandCorrection = new Quaternion();
   private readonly scratchFingerCurl = new Quaternion();
 
@@ -531,6 +533,7 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
       .fromArray(forearmPose.position)
       .multiplyScalar(2)
       .sub(this.scratchIkPole.fromArray(forearmPose.jointAnchor));
+    if (this.declaresArmPose(side)) this.moveTargetsWithSkeletonShoulder(pose.parts[upperPartId].jointAnchor);
     this.solveTwoBoneTarget(upperLength, forearmLength);
 
     if (this.activeModel.adapter.partBindings[upperPartId].hinge) {
@@ -541,6 +544,21 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
     }
     this.applySolvedLimbSegment(upperBinding, this.scratchIkRoot, this.scratchIkSolvedJoint);
     this.applySolvedLimbSegment(forearmBinding, this.scratchIkSolvedJoint, this.scratchIkSolvedEnd);
+  }
+
+  private declaresArmPose(side: HumanoidSide): boolean {
+    return this.upperBodyAction?.kind === "melee" && this.upperBodyAction.arms[side] !== undefined;
+  }
+
+  /**
+   * A declared arm pose is measured from the skeleton's own shoulder, which stands a little off the controller's: both
+   * the wrist and the elbow's pole move by that much, so the arm keeps its approved place against the body whatever the
+   * torso does.
+   */
+  private moveTargetsWithSkeletonShoulder(poseShoulder: Vector3Tuple): void {
+    this.scratchIkOffset.copy(this.scratchIkRoot).sub(this.scratchIkShoulderPose.fromArray(poseShoulder));
+    this.scratchIkTarget.add(this.scratchIkOffset);
+    this.scratchIkPole.add(this.scratchIkOffset);
   }
 
   /**
@@ -800,6 +818,13 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
         .slerp(IDENTITY_QUATERNION, Math.min(1, Math.max(0, archerWeight)));
       binding.bone.quaternion.multiply(this.scratchHandCorrection);
     }
+    this.applyDeclaredHandTurn(side);
+  }
+
+  /** Gear fitted to a rig declares how the hand turns on the forearm: the wrist's own movement, after the bind and roll correction. */
+  private applyDeclaredHandTurn(side: HumanoidSide): void {
+    const turn = this.upperBodyAction?.kind === "melee" ? this.upperBodyAction.arms[side]?.handTurn : undefined;
+    if (turn) this.activeModel.hands[side].bone.quaternion.multiply(this.scratchHandTurn.fromArray(turn));
   }
 
   private applyFingerCurls(): void {

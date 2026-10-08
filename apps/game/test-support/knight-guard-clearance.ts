@@ -55,6 +55,7 @@ export type KnightMotion = "idle" | "walk" | "run" | "attack";
 /** Everything the criteria of work order M are measured from, for one moment. */
 export interface GuardClearance {
   armToShield: number;
+  bladeToShieldArm: number;
   bladeToHead: number;
   bladeToLegs: number;
   bladeToShield: number;
@@ -120,6 +121,7 @@ export function sampleLocomotionGuard(
   const posed = { ...subject.config, animationMode: motion };
   subject.avatar.updateConfig(posed);
   const action = createGuardAction({ ...createIdleProceduralMeleeAttackState() });
+  subject.avatar.setUpperBodyAction(action);
   const samples: KnightGuardSample[] = [];
   for (let frame = 0; frame <= LOCOMOTION_SAMPLE_FRAMES[LOCOMOTION_SAMPLE_FRAMES.length - 1]; frame++) {
     subject.avatar.applyPose(
@@ -144,6 +146,7 @@ export function sampleAttackCycle(subject: KnightGuardSubject): KnightGuardSampl
   const cycle: { action: ReturnType<typeof createGuardAction>; clearance: GuardClearance }[] = [];
   for (let frame = 0; state.phase !== "idle" && frame < 600; frame++) {
     const action = createGuardAction(state);
+    subject.avatar.setUpperBodyAction(action);
     subject.avatar.applyPose(
       resolveProceduralCharacterPose(subject.rig, posed, frame / FRAMES_PER_SECOND, undefined, undefined, action),
     );
@@ -165,6 +168,7 @@ export function summariseWorstGuardClearance(samples: readonly KnightGuardSample
   return [
     `blade-shield ${mm(min((c) => c.bladeToShield))}`,
     `arm-shield ${mm(min((c) => c.armToShield))}`,
+    `blade-shield-arm ${mm(min((c) => c.bladeToShieldArm))}`,
     `blade-head ${mm(min((c) => c.bladeToHead))}`,
     `blade-trunk ${mm(min((c) => c.bladeToTrunk))}`,
     `blade-legs ${mm(min((c) => c.bladeToLegs))}`,
@@ -222,6 +226,10 @@ function measureGuardClearance(subject: KnightGuardSubject): GuardClearance {
     segment(point(joints.elbowRight), point(joints.wristRight)),
     segment(point(joints.wristRight), gripPosition),
   ];
+  const shieldArm = [
+    segment(point(joints.shoulderLeft), point(joints.elbowLeft)),
+    segment(point(joints.elbowLeft), point(joints.wristLeft)),
+  ];
   const trunk = segment(point(joints.pelvis), neck);
   const legs = (["Left", "Right"] as const).flatMap((side) => [
     segment(point(joints[`hip${side}`]), point(joints[`knee${side}`])),
@@ -237,6 +245,7 @@ function measureGuardClearance(subject: KnightGuardSubject): GuardClearance {
     bladeToHead: pointToSegmentDistance(head, bladeSegment) - subject.headRadius,
     bladeToLegs: Math.min(...legs.map((leg) => segmentDistance(bladeSegment, leg) - LIMB_RADIUS)),
     bladeToShield: segmentToShield(bladeSegment, shield),
+    bladeToShieldArm: Math.min(...shieldArm.map((arm) => segmentDistance(bladeSegment, arm) - ARM_RADIUS)),
     bladeToTrunk: segmentDistance(bladeSegment, trunk) - TRUNK_RADIUS,
     bladeTipHeight: bladeSegment.end.y,
     bladeVerticalDegrees: radiansToDegrees(blade.angleTo(new Vector3(0, 1, 0))),
@@ -335,4 +344,62 @@ const REST_HINGE_AXES = Object.fromEntries(
 
 function radiansToDegrees(radians: number): number {
   return (radians * 180) / Math.PI;
+}
+
+export type KnightArmState = "carry" | "guard" | "windup" | "contact" | "follow";
+
+/** Where the arms and gear are in spine_03's frame, relative to the midpoint of the shoulder joints. */
+export interface KnightArmStateMeasure {
+  blade: Vector3;
+  leftElbow: Vector3;
+  leftWrist: Vector3;
+  rightElbow: Vector3;
+  rightWrist: Vector3;
+  shieldCentre: Vector3;
+  shieldFront: Vector3;
+  swordGrip: Vector3;
+}
+
+const STATE_ATTACK_MOMENTS: Record<KnightArmState, ProceduralMeleeAttackState> = {
+  carry: { attackGeneration: 0, contactCount: 0, phase: "idle", phaseElapsedSeconds: 0 },
+  // The end of each phase, so the weights of its state are fully reached.
+  guard: { attackGeneration: 1, contactCount: 0, phase: "acquire", phaseElapsedSeconds: 10 },
+  windup: { attackGeneration: 1, contactCount: 0, phase: "windup", phaseElapsedSeconds: 10 },
+  contact: { attackGeneration: 1, contactCount: 1, phase: "contact", phaseElapsedSeconds: 0 },
+  follow: { attackGeneration: 1, contactCount: 1, phase: "followThrough", phaseElapsedSeconds: 10 },
+};
+const SETTLE_FRAMES = 40;
+
+/** Drives the weights so the state is fully reached, holds it until the arm solver has settled, and measures it. */
+export function measureKnightArmState(subject: KnightGuardSubject, state: KnightArmState): KnightArmStateMeasure {
+  const posed = { ...subject.config, animationMode: "idle" as const };
+  subject.avatar.updateConfig(posed);
+  const action = createGuardAction(STATE_ATTACK_MOMENTS[state]);
+  subject.avatar.setUpperBodyAction(action);
+  for (let frame = 0; frame < SETTLE_FRAMES; frame++) {
+    subject.avatar.applyPose(resolveProceduralCharacterPose(subject.rig, posed, 0, undefined, undefined, action));
+  }
+  const joints = subject.avatar.readWorldDiagnosticJoints();
+  const spine = subject.asset.gltf.scene.getObjectByName("spine_03");
+  if (!spine) throw new Error("The Knight skeleton has no spine_03 bone");
+  const toSpineInverse = spine.getWorldQuaternion(new Quaternion()).invert();
+  const middle = new Vector3(...joints.shoulderLeft).add(new Vector3(...joints.shoulderRight)).multiplyScalar(0.5);
+  const place = (world: Vector3) => world.clone().sub(middle).applyQuaternion(toSpineInverse);
+  const turn = (world: Vector3) => world.clone().applyQuaternion(toSpineInverse);
+  const shieldCentre = new Vector3();
+  const shieldRotation = new Quaternion();
+  subject.avatar.writeSocketWorldTransform("forearmLeft", shieldCentre, shieldRotation);
+  const gripPosition = new Vector3();
+  const gripRotation = new Quaternion();
+  subject.avatar.writeSocketWorldTransform("gripRight", gripPosition, gripRotation);
+  return {
+    blade: turn(new Vector3(0, 1, 0).applyQuaternion(gripRotation)),
+    leftElbow: place(new Vector3(...joints.elbowLeft)),
+    leftWrist: place(new Vector3(...joints.wristLeft)),
+    rightElbow: place(new Vector3(...joints.elbowRight)),
+    rightWrist: place(new Vector3(...joints.wristRight)),
+    shieldCentre: place(shieldCentre),
+    shieldFront: turn(new Vector3(0, 0, 1).applyQuaternion(shieldRotation)),
+    swordGrip: place(gripPosition),
+  };
 }

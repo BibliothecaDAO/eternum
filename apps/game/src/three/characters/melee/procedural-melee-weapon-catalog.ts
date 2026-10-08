@@ -23,6 +23,27 @@ export type ProceduralMeleeOffhandId =
   | "light-cavalry-shield"
   | "t1-knight-default-shield";
 
+/** The states an arm moves between, in the order the attack blends them: carry, guard, windup, contact, follow. */
+export type ProceduralMeleeArmPoseState = "carry" | "guard" | "windup" | "contact" | "follow";
+
+/**
+ * Where an arm holds gear that was fitted to a rig, in metres in that rig's own frame, relative to the chest (the point
+ * midway between its shoulder joints; +X left, +Y up, +Z forward): the wrist, the point the elbow bends toward, and the
+ * hand's turn relative to the forearm (x, y, z, w). No `scale` factor: fitted gear is only ever worn by its own rig at
+ * its own size, which the assembly check already guarantees. Compared with `arm-poses.json` by a test.
+ */
+export interface ProceduralMeleeArmPose {
+  elbow: readonly [number, number, number];
+  handTurn: readonly [number, number, number, number];
+  wrist: readonly [number, number, number];
+}
+
+/** The states an arm holds the gear in. `carry` and `guard` are always declared; a state after them it does not declare is not part of the blend. */
+export type ProceduralMeleeArmPoses = Readonly<
+  Record<"carry" | "guard", ProceduralMeleeArmPose> &
+    Partial<Record<Exclude<ProceduralMeleeArmPoseState, "carry" | "guard">, ProceduralMeleeArmPose>>
+>;
+
 export type ProceduralMeleeAttackStyle = "chop" | "slash" | "smash";
 
 export interface ProceduralMeleeAssetAlignment {
@@ -35,6 +56,8 @@ export interface ProceduralMeleeWeaponDefinition {
   attackStyle: ProceduralMeleeAttackStyle;
   assetAlignment?: ProceduralMeleeAssetAlignment;
   compatibleKinds: readonly Extract<ProceduralUnitKind, "knight" | "paladin">[];
+  /** The sword arm's poses, for gear fitted to a rig. */
+  armPoses?: ProceduralMeleeArmPoses;
   /** Set when the gear was fitted to one rig's hand and cannot be worn on another. */
   fittedRigAdapterId?: HumanoidRigAdapterId;
   id: ProceduralMeleeWeaponId;
@@ -47,6 +70,8 @@ export interface ProceduralMeleeOffhandDefinition {
   attachmentSocket?: ProceduralMeleeOffhandSocket;
   assetAlignment?: ProceduralMeleeAssetAlignment;
   compatibleKinds: readonly Extract<ProceduralUnitKind, "knight" | "paladin">[];
+  /** The shield arm's poses, for gear fitted to a rig. */
+  armPoses?: ProceduralMeleeArmPoses;
   /** Set when the gear was fitted to one rig's forearm and cannot be worn on another. */
   fittedRigAdapterId?: HumanoidRigAdapterId;
   gripToCenter: readonly [number, number, number];
@@ -61,6 +86,33 @@ const MELEE_KINDS = ["knight", "paladin"] as const;
 export const PROCEDURAL_MELEE_WEAPONS: readonly ProceduralMeleeWeaponDefinition[] = [
   {
     attackStyle: "slash",
+    armPoses: {
+      carry: {
+        elbow: [-0.0916, -0.0998, -0.0122],
+        handTurn: [0.02432, -0.00779, -0.04957, 0.99844],
+        wrist: [-0.1141, -0.1524, 0.0411],
+      },
+      guard: {
+        elbow: [-0.1362, -0.0796, 0.0085],
+        handTurn: [-0.15234, -0.10879, 0.16523, 0.96833],
+        wrist: [-0.1209, -0.0896, 0.0845],
+      },
+      windup: {
+        elbow: [-0.011, -0.0157, 0.0869],
+        handTurn: [-0.26857, -0.18856, 0.11127, 0.93805],
+        wrist: [-0.058, 0.0464, 0.094],
+      },
+      contact: {
+        elbow: [-0.11805, -0.05695, 0.0686],
+        handTurn: [0.03198, -0.12111, -0.07711, 0.98912],
+        wrist: [-0.1457, -0.0835, 0.1322],
+      },
+      follow: {
+        elbow: [-0.1133, -0.0849, 0.0439],
+        handTurn: [-0.00987, -0.27503, 0.03012, 0.96091],
+        wrist: [-0.1323, -0.1336, 0.102],
+      },
+    },
     assetAlignment: { pivot: "authored" },
     compatibleKinds: ["knight"],
     fittedRigAdapterId: "t1-knight-default",
@@ -104,6 +156,14 @@ export const PROCEDURAL_MELEE_WEAPONS: readonly ProceduralMeleeWeaponDefinition[
 
 export const PROCEDURAL_MELEE_OFFHANDS: readonly ProceduralMeleeOffhandDefinition[] = [
   {
+    armPoses: {
+      carry: { elbow: [0.1082, -0.0913, 0.0323], handTurn: [0.0, 0.0, 0.0, 1.0], wrist: [0.0667, -0.1351, 0.082] },
+      guard: {
+        elbow: [0.1106, -0.0699, 0.0706],
+        handTurn: [-0.31985, 0.19478, -0.15874, 0.91354],
+        wrist: [0.0522, -0.0387, 0.1122],
+      },
+    },
     attachmentSocket: "forearmLeft",
     assetAlignment: { pivot: "authored" },
     compatibleKinds: ["knight"],
@@ -166,13 +226,6 @@ export function resolveProceduralMeleeOffhand(id: ProceduralMeleeOffhandId): Pro
   const definition = PROCEDURAL_MELEE_OFFHANDS.find((offhand) => offhand.id === id);
   if (!definition) throw new Error(`Unknown procedural melee offhand: ${id}`);
   return definition;
-}
-
-/** How the weapon is oriented: by the controller in actor space, or only by the hand it is fitted to. */
-export type ProceduralMeleeWeaponCarry = "oriented" | "fitted";
-
-export function resolveProceduralMeleeWeaponCarry(weapon: ProceduralMeleeWeaponDefinition): ProceduralMeleeWeaponCarry {
-  return weapon.fittedRigAdapterId === undefined ? "oriented" : "fitted";
 }
 
 /** How the offhand is carried: in the fist, strapped along the forearm, or not at all. */

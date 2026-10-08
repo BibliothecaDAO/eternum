@@ -1,18 +1,23 @@
 import type { ProceduralMeleeConfig } from "./procedural-melee-config";
+import { blendProceduralMeleeArmPoses } from "./procedural-melee-arm-poses";
 import { resolveProceduralMeleeAttackSignals, type ProceduralMeleeAttackState } from "./procedural-melee-attack-cycle";
 import {
   resolveProceduralMeleeOffhand,
   resolveProceduralMeleeOffhandCarry,
   resolveProceduralMeleeWeapon,
-  resolveProceduralMeleeWeaponCarry,
+  type ProceduralMeleeArmPose,
   type ProceduralMeleeAttackStyle,
   type ProceduralMeleeOffhandCarry,
-  type ProceduralMeleeWeaponCarry,
   type ProceduralMeleeWeaponId,
 } from "./procedural-melee-weapon-catalog";
 
 export interface ProceduralMeleeUpperBodyPose {
   actionWeight: number;
+  /**
+   * Where the arms of gear that declares arm poses are held, for the moment of the attack, in the chest's own frame. An arm
+   * is absent when its gear declares none: the controller then places it with its own targets.
+   */
+  arms: { left?: ProceduralMeleeArmPose; right?: ProceduralMeleeArmPose };
   aimPitchRadians: number;
   aimYawRadians: number;
   attackArcRadians: number;
@@ -27,8 +32,6 @@ export interface ProceduralMeleeUpperBodyPose {
   stepThrough: number;
   strikeProgress: number;
   torsoWeight: number;
-  /** How the weapon is oriented, resolved once from the catalog. */
-  weaponCarry: ProceduralMeleeWeaponCarry;
   weaponId: ProceduralMeleeWeaponId;
   windupProgress: number;
 }
@@ -46,6 +49,7 @@ export function resolveProceduralMeleeUpperBodyPose(input: {
   return {
     ...signals,
     actionWeight: Math.max(signals.actionWeight, carryWeight),
+    arms: resolveDeclaredArms(input.config, signals),
     aimPitchRadians: input.aimPitchRadians,
     aimYawRadians: input.aimYawRadians,
     attackArcRadians: (input.config.attackArcDegrees * Math.PI) / 180,
@@ -56,7 +60,25 @@ export function resolveProceduralMeleeUpperBodyPose(input: {
     reach: input.config.reach,
     stepThrough: input.config.stepThrough,
     torsoWeight: input.config.torsoWeight,
-    weaponCarry: resolveProceduralMeleeWeaponCarry(resolveProceduralMeleeWeapon(input.config.weaponId)),
     weaponId: input.config.weaponId,
+  };
+}
+
+/** The arms of gear that declares arm poses: the attack's own weights apply, so outside an attack they hold `carry`. */
+function resolveDeclaredArms(
+  config: ProceduralMeleeConfig,
+  signals: ReturnType<typeof resolveProceduralMeleeAttackSignals>,
+): ProceduralMeleeUpperBodyPose["arms"] {
+  const weights = {
+    attackWeight: signals.actionWeight,
+    followThrough: signals.followThrough,
+    strikeProgress: signals.strikeProgress,
+    windupProgress: signals.windupProgress,
+  };
+  const offhandPoses = resolveProceduralMeleeOffhand(config.offhandId).armPoses;
+  const weaponPoses = resolveProceduralMeleeWeapon(config.weaponId).armPoses;
+  return {
+    ...(offhandPoses && { left: blendProceduralMeleeArmPoses(offhandPoses, weights) }),
+    ...(weaponPoses && { right: blendProceduralMeleeArmPoses(weaponPoses, weights) }),
   };
 }

@@ -22,6 +22,7 @@ describe("procedural character action pose", () => {
 function createMeleeContactPose(): ProceduralMeleeUpperBodyPose {
   return {
     actionWeight: 1,
+    arms: {},
     aimPitchRadians: 0,
     aimYawRadians: 0,
     attackArcRadians: (118 * Math.PI) / 180,
@@ -35,7 +36,6 @@ function createMeleeContactPose(): ProceduralMeleeUpperBodyPose {
     stepThrough: 0.22,
     strikeProgress: 1,
     torsoWeight: 0.62,
-    weaponCarry: "oriented",
     weaponId: "iron-longsword",
     windupProgress: 1,
   };

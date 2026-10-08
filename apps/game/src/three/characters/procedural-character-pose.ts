@@ -4,6 +4,7 @@ import { Euler, Quaternion, Vector3 } from "three";
 import type { ProceduralArcherUpperBodyPose } from "./archer/procedural-archer-pose";
 import type { ProceduralCrossbowUpperBodyPose } from "./crossbow/procedural-crossbow-pose";
 import type { ProceduralMeleeUpperBodyPose } from "./melee/procedural-melee-pose";
+import type { ProceduralMeleeArmPose } from "./melee/procedural-melee-weapon-catalog";
 import type { ProceduralCharacterUpperBodyAction } from "./procedural-character-action";
 import type { ProceduralContactReactionPose } from "./collision/procedural-contact-reaction";
 import type { ProceduralCharacterConfig } from "./procedural-character-config";
@@ -441,8 +442,15 @@ function resolveMeleeArms(
   if (lateralLeft.lengthSq() < 1e-8) lateralLeft.set(1, 0, 0);
   else lateralLeft.normalize();
   const up = new Vector3().crossVectors(forward, lateralLeft).normalize();
-  const weapon = resolveMeleeWeaponArm(torso, baseRightArm, { forward, lateralLeft, up }, scale, action);
-  const offhand = resolveMeleeArmGuide(torso, baseLeftArm, { forward, lateralLeft, up }, scale, action);
+  const frame = { forward, lateralLeft, up };
+  const chestFrame = resolveChestFrame(torso);
+  const halfShoulderWidth = rig.morphology.shoulderWidth / 2;
+  const weapon = action.arms.right
+    ? placeDeclaredArm(action.arms.right, torso.rightShoulder, -halfShoulderWidth, chestFrame)
+    : resolveMeleeWeaponArm(torso, baseRightArm, frame, scale, action);
+  const offhand = action.arms.left
+    ? placeDeclaredArm(action.arms.left, torso.leftShoulder, halfShoulderWidth, chestFrame)
+    : resolveMeleeOffhandGuard(torso, baseLeftArm, frame, scale, action);
 
   return {
     leftArm: solveTwoBoneArm(
@@ -474,7 +482,35 @@ interface MeleeArmGuide {
   target: Vector3;
 }
 
-/** Where the right wrist goes, and which way the right elbow points, for each way the weapon is carried. */
+/** The chest's own frame: the axes the torso's chest is turned to, so the arms keep their place against the body whatever the torso does. */
+function resolveChestFrame(torso: CharacterTorsoJoints): MeleeFrame {
+  return {
+    forward: new Vector3(0, 0, 1).applyQuaternion(torso.chestRotation),
+    lateralLeft: new Vector3(1, 0, 0).applyQuaternion(torso.chestRotation),
+    up: new Vector3(0, 1, 0).applyQuaternion(torso.chestRotation),
+  };
+}
+
+/**
+ * Places a declared arm pose in the chest's own frame. The pose is measured from the midpoint of the shoulders, so it is
+ * taken from the arm's own shoulder, which stands `shoulderLeft` (negative on the right) along the shoulder line from it.
+ */
+function placeDeclaredArm(
+  pose: ProceduralMeleeArmPose,
+  shoulder: Vector3,
+  shoulderLeft: number,
+  frame: MeleeFrame,
+): MeleeArmGuide {
+  const place = ([left, up, forward]: readonly [number, number, number]) =>
+    shoulder
+      .clone()
+      .addScaledVector(frame.lateralLeft, left - shoulderLeft)
+      .addScaledVector(frame.up, up)
+      .addScaledVector(frame.forward, forward);
+  return { pole: place(pose.elbow), target: place(pose.wrist) };
+}
+
+/** The sword arm the controller places by its own targets, for a weapon it orients in actor space. */
 function resolveMeleeWeaponArm(
   torso: CharacterTorsoJoints,
   baseRightArm: CharacterArmJoints,
@@ -484,58 +520,30 @@ function resolveMeleeWeaponArm(
 ): MeleeArmGuide {
   const { forward, lateralLeft, up } = frame;
   const weaponTargets = resolveMeleeWeaponTargets(torso, forward, lateralLeft, up, scale, action);
-  const fitted = action.weaponCarry === "fitted";
-  if (fitted) weaponTargets.guard = resolveFittedWeaponGuard(torso, frame, scale);
-  // A weapon held rigid in the fist stays on guard outside an attack, as the shield arm does.
-  const guardWeight = fitted ? Math.max(FITTED_GUARD_MINIMUM_WEIGHT, action.actionWeight) : action.actionWeight;
   const target = baseRightArm.wrist
     .clone()
-    .lerp(weaponTargets.guard, guardWeight)
+    .lerp(weaponTargets.guard, action.actionWeight)
     .lerp(weaponTargets.windup, action.windupProgress * action.actionWeight)
     .lerp(weaponTargets.contact, action.strikeProgress * action.actionWeight)
     .lerp(weaponTargets.follow, action.followThrough * action.actionWeight);
-  const polePlace = fitted ? FITTED_WEAPON_GUARD.elbowPole : ORIENTED_WEAPON_ELBOW_POLE;
   const pole = torso.rightShoulder
     .clone()
-    .addScaledVector(lateralLeft, polePlace.left * scale)
-    .addScaledVector(up, polePlace.up * scale)
-    .addScaledVector(forward, polePlace.forward * scale);
+    .addScaledVector(lateralLeft, -0.52 * scale)
+    .addScaledVector(up, 0.12 * scale)
+    .addScaledVector(forward, -0.24 * scale);
   return { pole, target };
 }
 
-/** The minimum weight of the guard for gear that cannot be reoriented by the controller. */
-const FITTED_GUARD_MINIMUM_WEIGHT = 0.88;
-const ORIENTED_WEAPON_ELBOW_POLE = { forward: -0.24, left: -0.52, up: 0.12 } as const;
-/**
- * A fitted sword is held at the ready: the fist right of the shield's rim and a little forward of the body, the elbow
- * low and close to the ribs, so the blade stands up. Nominal-figure metres (scaled by `scale`), the wrist from the chest
- * and the elbow's pole from the right shoulder.
- */
-const FITTED_WEAPON_GUARD = {
-  elbowPole: { forward: 0.031, left: 0.96, up: -0.144 },
-  wrist: { forward: 0.142, left: -0.667, up: -0.255 },
-} as const;
-
-function resolveFittedWeaponGuard(torso: CharacterTorsoJoints, frame: MeleeFrame, scale: number): Vector3 {
-  const { wrist } = FITTED_WEAPON_GUARD;
-  return torso.chest
-    .clone()
-    .addScaledVector(frame.forward, wrist.forward * scale)
-    .addScaledVector(frame.up, wrist.up * scale)
-    .addScaledVector(frame.lateralLeft, wrist.left * scale);
-}
-
-/** Where the left wrist goes, and which way the left elbow points, for each way the offhand is carried. */
-function resolveMeleeArmGuide(
+/** Where the left wrist goes, and which way the left elbow points, for a shield held in the fist or an empty hand. */
+function resolveMeleeOffhandGuard(
   torso: CharacterTorsoJoints,
   baseLeftArm: CharacterArmJoints,
   frame: MeleeFrame,
   scale: number,
   action: ProceduralMeleeUpperBodyPose,
 ): MeleeArmGuide {
-  if (action.offhandCarry === "strapped") return resolveStrappedOffhandGuard(torso, baseLeftArm, frame, scale, action);
   const { forward, lateralLeft, up } = frame;
-  const shieldEngagement = resolveShieldEngagement(action);
+  const shieldEngagement = Math.max(action.strikeProgress, action.contactProgress, action.followThrough * 0.72);
   const shieldLateral = (action.mounted ? 0.64 : 0.52) + shieldEngagement * (action.mounted ? 0.14 : 0.16);
   const shieldGuard = torso.chest
     .clone()
@@ -556,46 +564,6 @@ function resolveMeleeArmGuide(
     .addScaledVector(up, -0.16 * scale)
     .addScaledVector(forward, 0.08 * scale);
   return { pole, target: baseLeftArm.wrist.clone().lerp(offhandTarget, offhandWeight) };
-}
-
-/** How far a strike has brought the shield into play: it comes across or tucks in as the blow lands. */
-function resolveShieldEngagement(action: ProceduralMeleeUpperBodyPose): number {
-  return Math.max(action.strikeProgress, action.contactProgress, action.followThrough * 0.72);
-}
-
-/**
- * A shield strapped along the forearm needs the forearm across the front of the body: the wrist in front of the
- * breastbone, the elbow low and a little forward of the ribs, so the shield faces forward. Offsets are in nominal-figure
- * metres (scaled by `scale`) from the chest for the wrist and from the left shoulder for the elbow's pole; the wrist
- * offsets in `engaged` are added as a strike brings the shield into play.
- */
-const STRAPPED_OFFHAND_GUARD = {
-  engaged: { forward: -0.146, left: 0.438, up: 0.46 },
-  elbowPole: { forward: 0.322, left: 0.394, up: -1.074 },
-  wrist: { forward: 0.388, left: 0.153, up: -0.316 },
-} as const;
-
-function resolveStrappedOffhandGuard(
-  torso: CharacterTorsoJoints,
-  baseLeftArm: CharacterArmJoints,
-  frame: MeleeFrame,
-  scale: number,
-  action: ProceduralMeleeUpperBodyPose,
-): MeleeArmGuide {
-  const { engaged, elbowPole, wrist } = STRAPPED_OFFHAND_GUARD;
-  // The shield closes again as the recovery fades the action out.
-  const engagement = resolveShieldEngagement(action) * action.actionWeight;
-  const target = torso.chest
-    .clone()
-    .addScaledVector(frame.forward, (wrist.forward + engagement * engaged.forward) * scale)
-    .addScaledVector(frame.up, (wrist.up + engagement * engaged.up) * scale)
-    .addScaledVector(frame.lateralLeft, (wrist.left + engagement * engaged.left) * scale);
-  const pole = torso.leftShoulder
-    .clone()
-    .addScaledVector(frame.lateralLeft, elbowPole.left * scale)
-    .addScaledVector(frame.up, elbowPole.up * scale)
-    .addScaledVector(frame.forward, elbowPole.forward * scale);
-  return { pole, target: baseLeftArm.wrist.clone().lerp(target, Math.max(0.88, action.actionWeight)) };
 }
 
 function resolveMeleeWeaponTargets(
