@@ -1,4 +1,7 @@
-import { nativeRuleConstants as presetRule } from "../../../../contracts/l3/world-native/schema/client.gen";
+import {
+  nativeResearchConstants,
+  nativeRuleConstants as presetRule,
+} from "../../../../contracts/l3/world-native/schema/client.gen";
 import { nativePresetForId } from "../../../source/native";
 import { RESOURCE_PRECISION, ResourcesIds, type Config } from "@bibliothecadao/types";
 import { CairoCustomEnum, CairoOption, CairoOptionVariant } from "starknet";
@@ -80,7 +83,7 @@ function buildRules(config: Config, preset: ReturnType<typeof nativePresetForId>
     map_center_offset: config.settlement.center,
     spire_travel_essence_cost: scaled(config.spireTravelEssenceCost),
     command_mask: preset.commandMask,
-    epoch_seconds: preset.epochSeconds,
+    day_unit_seconds: preset.dayUnitSeconds,
     mode_rules: preset.modeRules,
     entry_rule: preset.entryRule,
     faith_enabled: faith.enabled,
@@ -166,6 +169,9 @@ function buildMines(config: Config) {
   };
 }
 
+// The Hearth is the last building category: the four training buildings follow the forty older ones.
+const buildingCategoryCount = nativeResearchConstants.HEARTH;
+
 function buildStructures(config: Config, preset: ReturnType<typeof nativePresetForId>) {
   const faith = config.faith;
   if (!faith) throw new Error("Native faith config is required");
@@ -178,34 +184,30 @@ function buildStructures(config: Config, preset: ReturnType<typeof nativePresetF
         : new CairoOption(CairoOptionVariant.Some, {
             demolition_refund_bps: board.demolitionRefundBps,
             workshop_rate: scaled(board.workshopRate, precision),
+            output_step_bps: board.outputStepBps,
+            storage_step_bps: board.storageStepBps,
+            population_step_bps: board.populationStepBps,
+            ration_step: scaled(board.rationStep, precision),
+            training_gate_tier: board.trainingGateTier,
+            castle_store_deploys: board.castleStoreDeploys,
           }),
-    research: preset.research.map(({ node, prerequisites, essenceCost, effect }) => ({
-      node,
-      rule: { prerequisites, essence_cost: scaled(essenceCost, precision), effect: researchEffect(effect) },
+    research: preset.research.map(({ row, tier, essenceCost, laborCost }) => ({
+      row,
+      tier,
+      price: { essence: scaled(essenceCost, precision), labor: scaled(laborCost, precision) },
     })),
-    building_tiers: preset.buildingTiers.map(
-      ({ category, tier, laborUpgradeCost, outputMultiplierBps, capacityMultiplierBps, populationMultiplierBps }) => ({
-        category,
-        tier,
-        rule: {
-          labor_upgrade_cost: scaled(laborUpgradeCost, precision),
-          output_multiplier_bps: outputMultiplierBps,
-          capacity_multiplier_bps: capacityMultiplierBps,
-          population_multiplier_bps: populationMultiplierBps,
-        },
-      }),
-    ),
-    buildings: Array.from({ length: 40 }, (_, index) => {
+    buildings: Array.from({ length: buildingCategoryCount }, (_, index) => {
       const category = index + 1;
-      // Legacy presets have no storehouse recipe; Essence is mine-only.
-      const hasNoRecipe = (category === 2 && board === null) || category === 39;
+      // Essence is mine-only, and only a realm board has training buildings; legacy presets have no storehouse recipe.
+      const isNotBuilt = category === 39 || (category > 40 && board === null);
+      const hasNoRecipe = isNotBuilt || (category === 2 && board === null);
       return {
         category,
         rule: {
-          population_cost:
-            category === 39 ? 0 : required(config.buildings.buildingPopulation, category, "building population"),
-          capacity_grant:
-            category === 39 ? 0 : required(config.buildings.buildingCapacity, category, "building capacity"),
+          population_cost: isNotBuilt
+            ? 0
+            : required(config.buildings.buildingPopulation, category, "building population"),
+          capacity_grant: isNotBuilt ? 0 : required(config.buildings.buildingCapacity, category, "building capacity"),
           simple_cost: hasNoRecipe
             ? []
             : amounts(required(config.buildings.simpleBuildingCost, category, "simple building cost"), precision),
@@ -215,10 +217,13 @@ function buildStructures(config: Config, preset: ReturnType<typeof nativePresetF
         },
       };
     }),
-    camps: config.campStartingResources.map(({ resource, min_amount, max_amount }) => {
-      if (min_amount !== max_amount) throw new Error("Native camp preset requires the pinned fixed grants");
-      return { resource_type: resource, amount: scaled(min_amount, precision) };
-    }),
+    camps: {
+      resources: config.campStartingResources.map(({ resource, min_amount, max_amount }) => {
+        if (min_amount !== max_amount) throw new Error("Native camp preset requires the pinned fixed grants");
+        return { resource_type: resource, amount: scaled(min_amount, precision) };
+      }),
+      labor_rate: scaled(config.campLaborPerSecond, precision),
+    },
     faith: {
       wonder_rate: faith.wonder_base_fp_per_sec,
       realm_rate: faith.realm_fp_per_sec,
@@ -238,15 +243,14 @@ function buildSettlement(config: Config, preset: ReturnType<typeof nativePresetF
     spacing: preset.spacing,
     depths: preset.depths.map((depth) => ({
       reveal_percent: depth.revealPercent,
-      guard_lower: depth.guardLower,
-      guard_upper: depth.guardUpper,
+      site_guard_lower: depth.siteGuardLower,
+      site_guard_upper: depth.siteGuardUpper,
       reveal_site_neighbors: depth.revealSiteNeighbors,
       entry_stamina: depth.entryStamina,
       chest: depth.chest,
-      fallen_guard_lower: depth.fallenGuardLower,
-      fallen_guard_upper: depth.fallenGuardUpper,
+      ruin_guard_lower: depth.ruinGuardLower,
+      ruin_guard_upper: depth.ruinGuardUpper,
       guard_step: depth.guardStep,
-      fallen_guard_tier: new CairoCustomEnum({ [depth.fallenGuardTier]: {} }),
     })),
     realms: {
       resources: amounts(config.startingResources, config.resources.resourcePrecision),
@@ -275,27 +279,32 @@ function buildEconomy(
   tokens: Array<{ resource_type: number; token: string }>,
 ) {
   const chests = preset.chests;
-  if (chests === undefined || (chests !== null) !== (preset.epochSeconds !== 0))
+  if (chests === undefined || (chests !== null) !== (preset.dayUnitSeconds !== 0))
     throw new Error("Explicit chest rules are required for expedition presets only");
   if (chests !== null) {
-    const amounts = [
-      chests.lordsAmounts.common,
-      chests.lordsAmounts.uncommon,
-      chests.lordsAmounts.rare,
-      chests.lordsAmounts.epic,
+    const shares = [
+      chests.shares.common,
+      chests.shares.uncommon,
+      chests.shares.rare,
+      chests.shares.epic,
+      chests.shares.legendary,
     ];
     if (
-      ![...amounts, chests.lordsPool, chests.seasonEpochs, chests.tokenCap].every(
-        (value) => Number.isSafeInteger(value) && value > 0,
-      ) ||
-      chests.seasonEpochs > 65535 ||
-      chests.tokenCap > 65535 ||
-      amounts.some((value, index) => value > (amounts[index + 1] ?? chests.lordsPool))
+      ![
+        chests.pool,
+        chests.priceCeiling,
+        chests.surgeFactor,
+        chests.surgeMinimumShares,
+        chests.estimateDays,
+        ...shares,
+      ].every((value) => Number.isSafeInteger(value) && value > 0) ||
+      [chests.surgeFactor, chests.estimateDays, ...shares].some((value) => value > 0xffff) ||
+      shares.some((value, index) => value > (shares[index + 1] ?? value))
     )
-      throw new Error("Invalid LORDS chest table or limits");
+      throw new Error("Invalid ruin chest rules");
   }
   const progression = preset.progression;
-  if (progression === undefined || (progression !== null) !== (preset.epochSeconds !== 0))
+  if (progression === undefined || (progression !== null) !== (preset.dayUnitSeconds !== 0))
     throw new Error("Explicit progression rules are required for expedition presets only");
   if (
     progression &&
@@ -309,20 +318,22 @@ function buildEconomy(
         ? new CairoOption(CairoOptionVariant.None)
         : new CairoOption(CairoOptionVariant.Some, {
             reveal_xp: progression.revealXp,
-            clear_xp: progression.clearXp,
-            level_step_xp: progression.levelStepXp,
+            fixed_xp: progression.fixedXp,
+            uncommon_xp: progression.uncommonXp,
+            rare_xp: progression.rareXp,
+            epic_xp: progression.epicXp,
+            legendary_xp: progression.legendaryXp,
           }),
     chests:
       chests === null
         ? new CairoOption(CairoOptionVariant.None)
         : new CairoOption(CairoOptionVariant.Some, {
-            relic_probability: chests.relicProbability,
-            token_cap: chests.tokenCap,
-            lords_amounts: Object.fromEntries(
-              Object.entries(chests.lordsAmounts).map(([quality, amount]) => [quality, BigInt(amount)]),
-            ),
-            lords_pool: BigInt(chests.lordsPool),
-            season_epochs: chests.seasonEpochs,
+            pool: BigInt(chests.pool),
+            price_ceiling: BigInt(chests.priceCeiling),
+            shares: chests.shares,
+            surge_factor: chests.surgeFactor,
+            surge_minimum_shares: chests.surgeMinimumShares,
+            estimate_days: chests.estimateDays,
           }),
     trade: { max_count: config.trade.maxCount },
     banks: {
@@ -393,7 +404,7 @@ export function buildNativePreset(config: Config, presetId: number) {
 
 /** A fixture preset plays its mode's season this many times faster: a shorter day, faster army ticks, more output. */
 function scaleSeasonClocks(definition: ReturnType<typeof buildNativePreset>, scale: number): void {
-  definition.rules.epoch_seconds = clockScaled(definition.rules.epoch_seconds, scale, "epoch_seconds");
+  definition.rules.day_unit_seconds = clockScaled(definition.rules.day_unit_seconds, scale, "day_unit_seconds");
   definition.rules.tick_config.armies_tick_in_seconds = clockScaled(
     definition.rules.tick_config.armies_tick_in_seconds,
     scale,
@@ -403,6 +414,7 @@ function scaleSeasonClocks(definition: ReturnType<typeof buildNativePreset>, sca
     resource.realm_rate *= BigInt(scale);
     resource.village_rate *= BigInt(scale);
   }
+  definition.structures.camps.labor_rate *= BigInt(scale);
   const board = definition.structures.board.unwrap();
   if (!board || typeof board !== "object" || !("workshop_rate" in board) || typeof board.workshop_rate !== "bigint")
     throw new Error("A scaled season requires a workshop rate");
@@ -507,42 +519,32 @@ function resolveBridgeTokens(config: Config, resources: readonly number[]) {
 
 function buildDiscovery(preset: ReturnType<typeof nativePresetForId>) {
   const rules = preset.discovery;
-  if (rules === undefined || (rules !== null) !== (preset.epochSeconds !== 0))
+  if (rules === undefined || (rules !== null) !== (preset.dayUnitSeconds !== 0))
     throw new Error("Explicit discovery rules are required for expedition presets only");
   if (rules === null) return new CairoOption(CairoOptionVariant.None);
   if (
     Object.values(rules).some((value) => !Number.isSafeInteger(value) || value < 0 || value > 10000) ||
     rules.emptyRevealLimit < 1 ||
     rules.emptyRevealLimit > 255 ||
-    rules.campBps + rules.riftBps + rules.fallenRealmBps === 0 ||
-    rules.campBps +
+    rules.stragglersBps + rules.campBps + rules.riftBps === 0 ||
+    rules.stragglersBps +
+      rules.campBps +
       rules.riftBps +
-      rules.fallenRealmBps +
-      rules.looseChestBps +
+      rules.ruinBps +
       rules.shrineBps +
       rules.wellBps +
-      1200 >
+      // Every Scouting tier on one kind doubles it: the largest of the three kinds is the most Scouting adds.
+      Math.max(rules.stragglersBps, rules.campBps, rules.riftBps) >
       10000
   )
     throw new Error("Invalid categorical discovery rules");
   return new CairoOption(CairoOptionVariant.Some, {
+    stragglers_bps: rules.stragglersBps,
     camp_bps: rules.campBps,
     rift_bps: rules.riftBps,
-    fallen_realm_bps: rules.fallenRealmBps,
-    loose_chest_bps: rules.looseChestBps,
+    ruin_bps: rules.ruinBps,
     shrine_bps: rules.shrineBps,
     well_bps: rules.wellBps,
     empty_reveal_limit: rules.emptyRevealLimit,
   });
-}
-
-function researchEffect(effect: ReturnType<typeof nativePresetForId>["research"][number]["effect"]) {
-  switch (effect.kind) {
-    case "BuildingTier":
-      return new CairoCustomEnum({ BuildingTier: { 0: effect.category, 1: effect.tier } });
-    case "MapContent":
-      return new CairoCustomEnum({ MapContent: new CairoCustomEnum({ [effect.content]: {} }) });
-    case "Depth":
-      return new CairoCustomEnum({ Depth: effect.depth });
-  }
 }

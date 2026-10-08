@@ -20,7 +20,7 @@ import { ResourcesIds } from "@bibliothecadao/types";
 import { playSiteClear } from "./site-clear-moment";
 import { payoutSprites, type SiteClear } from "./site-outcome";
 
-const CAMP: SiteClear = { kind: "Camp", reward: { resourceId: ResourcesIds.Labor, amount: 550 } };
+const CAMP: SiteClear = { siteId: 9, kind: "Camp", reward: { resourceId: ResourcesIds.Labor, amount: 550 } };
 
 beforeEach(() => {
   vi.useFakeTimers();

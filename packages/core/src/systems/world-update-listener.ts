@@ -2,14 +2,13 @@ import { BuildingType, type ID, type ResourcesIds } from "@bibliothecadao/types"
 import type { GameClientSetup } from "../client/game-client";
 import { configManager } from "../managers/config-manager";
 import { divideByPrecision } from "../utils/utils";
-import { storyEventKeys } from "../sync/story-event-identity";
+import { siteKindOf } from "../utils/expeditions";
 import type {
   BattleEventSystemUpdate,
   BuildingSystemUpdate,
-  AttributeChosenSystemUpdate,
+  TierBoughtSystemUpdate,
   ExplorerRewardSystemUpdate,
   RelicChestOpenedSystemUpdate,
-  ChestRewardSystemUpdate,
   SitePayoutSystemUpdate,
 } from "./types";
 
@@ -91,37 +90,16 @@ export class WorldUpdateListener {
 
   get Attributes() {
     return {
-      onAttributeChosen: (callback: (value: AttributeChosenSystemUpdate) => void) =>
-        this.onStory("AttributeChosen", (payload) => {
+      onTierBought: (callback: (value: TierBoughtSystemUpdate) => void) =>
+        this.onStory("TierBought", (payload) => {
           const attribute =
             typeof payload.attribute === "string" ? payload.attribute : Object.keys(fields(payload.attribute) ?? {})[0];
-          if (!isAttribute(attribute)) throw new Error("Malformed attribute choice");
+          if (!isAttribute(attribute)) throw new Error("Malformed tier purchase");
           callback({
             explorerId: integer(payload.explorer_id),
-            offerId: integer(payload.offer_id),
             attribute,
-            applied: integer(payload.applied),
-            lost: integer(payload.lost),
-          });
-        }),
-    };
-  }
-
-  get ChestRewards() {
-    return {
-      onChestReward: (callback: (value: ChestRewardSystemUpdate) => void) =>
-        this.onStory("ChestReward", (payload, event) => {
-          const kind = typeof payload.kind === "string" ? payload.kind : Object.keys(fields(payload.kind) ?? {})[0];
-          if (kind !== "Relic" && kind !== "Token") throw new Error("Invalid chest reward kind");
-          if (typeof payload.lords_exhausted !== "boolean") throw new Error("Missing chest budget result");
-          callback({
-            resultKey: storyEventKeys(event),
-            explorerId: integer(payload.explorer_id),
-            kind,
-            lordsExhausted: payload.lords_exhausted,
-            quality: integer(payload.quality),
-            depth: integer(payload.depth),
-            timestamp: integer(event.timestamp),
+            tier: integer(payload.tier),
+            price: integer(payload.price),
           });
         }),
     };
@@ -154,10 +132,10 @@ export class WorldUpdateListener {
           const battle = lastBattle;
           if (battle?.order !== String(event.order) || battle.defenderId !== siteId)
             throw new Error(`Site payout ${siteId} arrived without its winning battle`);
-          const kind = siteKind(payload.kind);
+          const kind = siteKindOf(integer(payload.category));
           const reward = siteReward(payload.reward);
-          if ((kind === "FallenRealm") !== (reward === null))
-            throw new Error(`A cleared ${kind} pays ${kind === "FallenRealm" ? "its chest" : "a resource"}`);
+          if ((kind === "Ruin" || kind === "Stragglers") !== (reward === null))
+            throw new Error(`A cleared ${kind} pays ${reward === null ? "nothing" : "a resource"}`);
           callback({
             explorerId: integer(payload.explorer_id),
             siteId,
@@ -234,13 +212,7 @@ export class WorldUpdateListener {
   }
 }
 
-const SITE_KINDS = ["Camp", "Rift", "FallenRealm"] as const;
-const siteKind = (value: unknown): SitePayoutSystemUpdate["kind"] => {
-  const kind = typeof value === "string" ? value : Object.keys(fields(value) ?? {})[0];
-  if (!SITE_KINDS.includes(kind as SitePayoutSystemUpdate["kind"])) throw new Error("Malformed site kind");
-  return kind as SitePayoutSystemUpdate["kind"];
-};
-/** A camp or rift pays a resource; a fallen realm pays none (its closed chest waits on the tile). */
+/** A camp or rift pays a resource; stragglers pay none, and a ruin its closed chest. */
 const siteReward = (value: unknown): SitePayoutSystemUpdate["reward"] => {
   if (value === null) return null;
   const reward = fields(value);
@@ -251,6 +223,6 @@ const siteReward = (value: unknown): SitePayoutSystemUpdate["reward"] => {
   };
 };
 
-const ATTRIBUTES = ["Battle", "Logistics", "Scouting", "Support"] as const;
-const isAttribute = (value: unknown): value is AttributeChosenSystemUpdate["attribute"] =>
-  ATTRIBUTES.includes(value as AttributeChosenSystemUpdate["attribute"]);
+const ATTRIBUTES = ["Battle", "Logistics", "Scouting", "Homecoming"] as const;
+const isAttribute = (value: unknown): value is TierBoughtSystemUpdate["attribute"] =>
+  ATTRIBUTES.includes(value as TierBoughtSystemUpdate["attribute"]);

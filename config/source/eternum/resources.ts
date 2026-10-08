@@ -268,6 +268,9 @@ const VILLAGE_STARTING_RESOURCES: ResourceCost[] = [
   { resource: ResourcesIds.Paladin, amount: 500 },
 ];
 
+// A camp's own labor rate, kept at the half a realm's rate it produced at when it read the village rule.
+const CAMP_LABOR_PER_SECOND = 0.5;
+
 const CAMP_STARTING_RESOURCES: ResourceMinMax[] = [
   { resource: ResourcesIds.Wheat, min_amount: 500, max_amount: 500 },
   { resource: ResourcesIds.Fish, min_amount: 500, max_amount: 500 },
@@ -380,4 +383,5 @@ export const eternumResourceConfig: ConfigPatch = {
   startingResources: STARTING_RESOURCES,
   villageStartingResources: VILLAGE_STARTING_RESOURCES,
   campStartingResources: CAMP_STARTING_RESOURCES,
+  campLaborPerSecond: CAMP_LABOR_PER_SECOND,
 };

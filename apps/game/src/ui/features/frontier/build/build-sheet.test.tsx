@@ -47,9 +47,9 @@ describe("the build sheet", () => {
     const card = (name: string) => host.querySelector<HTMLButtonElement>(`[aria-label="${name}"]`)!;
     expect(card("Farm").getAttribute("aria-pressed")).toBe("true");
     expect(useUIStore.getState().previewBuilding).toEqual({ type: BuildingType.ResourceWheat, plot });
-    // The chosen farm makes wheat an hour, takes its population, and the ring's marked plot doubles it.
+    // The chosen farm makes wheat an hour and takes its population; the ring's marked plot doubles nothing.
     expect(host.querySelector('[aria-label^="produces +"]')).not.toBeNull();
-    expect(host.querySelector('[aria-label="marked plot ×2"]')).not.toBeNull();
+    expect(host.querySelector('[aria-label="marked plot ×2"]')).toBeNull();
 
     act(() => card("Barracks").click());
     expect(useUIStore.getState().previewBuilding).toEqual({ type: BuildingType.ResourceKnightT1, plot });

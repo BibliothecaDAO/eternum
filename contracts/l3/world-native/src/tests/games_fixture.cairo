@@ -252,12 +252,6 @@ pub mod GamesFixture {
                 game_context,
             )
         }
-        fn close_site_chest(ref self: TContractState, site: crate::resources::ResourceKey) {
-            let classes = fixture_classes(site.game_id);
-            crate::relics::IRelicMapDispatcherTrait::close_site_chest(
-                crate::relics::IRelicMapLibraryDispatcher { class_hash: classes.map.read() }, site,
-            );
-        }
         fn consume_relic_chest(ref self: TContractState, game_id: u32, coord: crate::troops::Coord) {
             let classes = fixture_classes(game_id);
             crate::relics::IRelicMapDispatcherTrait::consume_relic_chest(
@@ -316,7 +310,6 @@ pub mod GamesFixture {
             ref self: TContractState,
             key: crate::resources::ResourceKey,
             seed: u256,
-            site_kind: Option<crate::expeditions::SiteKind>,
             timestamp: u64,
             game_context: crate::commands::ActionContext,
         ) {
@@ -325,7 +318,6 @@ pub mod GamesFixture {
                 crate::guards::IGuardsLibraryDispatcher { class_hash: classes.troops.read() },
                 key,
                 seed,
-                site_kind,
                 timestamp,
                 game_context,
             )
@@ -421,9 +413,9 @@ pub mod GamesFixture {
 
     #[starknet::embeddable]
     pub impl CampRulesFixture<TContractState, +Drop<TContractState>> of crate::camps::ICampRules<TContractState> {
-        fn camp_resources(self: @TContractState, game_id: u32) -> Span<crate::resources::ResourceAmount> {
+        fn camp_rules(self: @TContractState, game_id: u32) -> crate::camps::CampRules {
             let classes = fixture_classes(game_id);
-            crate::camps::ICampRulesDispatcherTrait::camp_resources(
+            crate::camps::ICampRulesDispatcherTrait::camp_rules(
                 crate::camps::ICampRulesLibraryDispatcher { class_hash: classes.structures.read() }, game_id,
             )
         }
@@ -534,24 +526,6 @@ pub mod GamesFixture {
     pub impl BuildingCommandsFixture<
         TContractState, +Drop<TContractState>,
     > of crate::buildings::IBuildingCommands<TContractState> {
-        fn upgrade_building(
-            ref self: TContractState,
-            game_id: u32,
-            actor: starknet::ContractAddress,
-            command: crate::buildings::ChangeBuilding,
-            context: crate::commands::ActionContext,
-            mut story_cursor: crate::ownership::StoryCursor,
-        ) -> ((), crate::ownership::StoryCursor) {
-            let classes = fixture_classes(game_id);
-            crate::buildings::IBuildingCommandsDispatcherTrait::upgrade_building(
-                crate::buildings::IBuildingCommandsLibraryDispatcher { class_hash: classes.construction.read() },
-                game_id,
-                actor,
-                command,
-                context,
-                story_cursor,
-            )
-        }
         fn create_building(
             ref self: TContractState,
             game_id: u32,
@@ -1028,6 +1002,20 @@ pub mod GamesFixture {
                 key,
                 resource_type,
                 amount,
+                timestamp,
+                game_context,
+            )
+        }
+        fn settle_production(
+            ref self: TContractState,
+            key: crate::resources::ResourceKey,
+            timestamp: u64,
+            game_context: crate::commands::ResourceContext,
+        ) {
+            let classes = fixture_classes(key.game_id);
+            crate::resources::IResourceOperationsDispatcherTrait::settle_production(
+                crate::resources::IResourceOperationsLibraryDispatcher { class_hash: classes.resources.read() },
+                key,
                 timestamp,
                 game_context,
             )
@@ -2415,24 +2403,10 @@ pub mod GamesFixture {
                 crate::relics::IRelicsLibraryDispatcher { class_hash: classes.relics.read() }, game_id,
             )
         }
-        fn chest_pity(self: @TContractState, game_id: u32, player: starknet::ContractAddress, depth: u8) -> u16 {
-            let classes = fixture_classes(game_id);
-            crate::relics::IRelicsDispatcherTrait::chest_pity(
-                crate::relics::IRelicsLibraryDispatcher { class_hash: classes.relics.read() }, game_id, player, depth,
-            )
-        }
-        fn chest_tokens(self: @TContractState, game_id: u32, player: starknet::ContractAddress, epoch: u64) -> u16 {
-            let classes = fixture_classes(game_id);
-            crate::relics::IRelicsDispatcherTrait::chest_tokens(
-                crate::relics::IRelicsLibraryDispatcher { class_hash: classes.relics.read() }, game_id, player, epoch,
-            )
-        }
-        fn chest_reward(
-            self: @TContractState, game_id: u32, order: u64, index: u32,
-        ) -> Option<crate::relics::ChestReward> {
-            let classes = fixture_classes(game_id);
-            crate::relics::IRelicsDispatcherTrait::chest_reward(
-                crate::relics::IRelicsLibraryDispatcher { class_hash: classes.relics.read() }, game_id, order, index,
+        fn site_chest(self: @TContractState, key: crate::resources::ResourceKey) -> Option<crate::relics::SiteChest> {
+            let classes = fixture_classes(key.game_id);
+            crate::relics::IRelicsDispatcherTrait::site_chest(
+                crate::relics::IRelicsLibraryDispatcher { class_hash: classes.relics.read() }, key,
             )
         }
         fn relic_rules(self: @TContractState, game_id: u32) -> Span<crate::relics::RelicRule> {

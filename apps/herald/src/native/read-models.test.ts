@@ -126,14 +126,14 @@ describe("native directory and leaderboard", () => {
     expect(buildNativeDirectory(input).games.find((game) => game.game_id === 1)?.mode).toBe("frontier");
   });
 
-  it("publishes each expedition's pinned epoch duration and null for Blitz", () => {
+  it("publishes each expedition's day unit and seed, and null for Blitz", () => {
     const { fold, native, decoder } = world();
     const derived = seedDerivedRows(fold, decoder, [
-      gameEvent("1", "0", "0", "103"),
+      gameEvent("1", "0", "0", "101"),
       gameEvent("2", "0", "0", "5"),
       gameEvent("3", "0", "0", "2"),
-      rulesEvent("1", "3600"),
-      rulesEvent("2", "86400"),
+      rulesEvent("1", "120"),
+      rulesEvent("2", "14400"),
       rulesEvent("3", "0"),
       rowEvent("SettlementRules", ["3"], {
         registration_start: 5n,
@@ -146,14 +146,14 @@ describe("native directory and leaderboard", () => {
 
     const games = buildNativeDirectory({ chain: "madara", confirmedBlock: 12, timestamp: 30, fold }).games;
     expect(games.find(({ game_id }) => game_id === 1)).toMatchObject({
-      preset_id: 103,
+      preset_id: 101,
       mode: "frontier",
-      expedition: { epoch_seconds: 3600 },
+      expedition: { day_unit_seconds: 120, seed: "42" },
     });
     expect(games.find(({ game_id }) => game_id === 2)).toMatchObject({
       preset_id: 5,
       mode: "frontier",
-      expedition: { epoch_seconds: 86400 },
+      expedition: { day_unit_seconds: 14400, seed: "42" },
     });
     expect(games.find(({ game_id }) => game_id === 3)).toMatchObject({
       preset_id: 2,

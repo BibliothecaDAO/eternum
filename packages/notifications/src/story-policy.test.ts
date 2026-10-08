@@ -32,7 +32,6 @@ it("covers every native story and tests every cumulative level", () => {
       "BankLiquidity",
       "HyperstructurePoints",
       "RelicChestOpened",
-      "ChestReward",
       "AttributeChosen",
       "SitePayout",
       "ExplorationReward",
@@ -43,7 +42,7 @@ it("covers every native story and tests every cumulative level", () => {
       "RelicCrafted",
       "TroopsTransferred",
     ],
-    excluded: ["FaithPointsClaimedStory"],
+    excluded: ["FaithPointsClaimedStory", "LordsWithdrawn"],
   };
   expect([...variants, "BattleEvent", "RaidEvent"].sort()).toEqual(Object.values(nativeLevels).flat().sort());
   for (const [minimum, stories] of Object.entries(nativeLevels)) {

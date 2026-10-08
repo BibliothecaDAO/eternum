@@ -52,7 +52,8 @@ export interface HeraldGameDirectoryEntry {
   ready: boolean;
   clock: HeraldGameClock;
   dev_mode_on: boolean;
-  expedition: { epoch_seconds: number } | null;
+  /** A game with days: its day unit and the seed its bags of days are drawn from (decimal). */
+  expedition: { day_unit_seconds: number; seed: string } | null;
   game_id: number;
   mode: "blitz" | "eternum" | "frontier" | "duel" | null;
   name: string;
@@ -141,7 +142,7 @@ export interface HeraldFrontierLeaderboardEntry {
   address: string;
   structure_id: string;
   rank: number;
-  sites_cleared: { total: number; camps: number; rifts: number; fallen_realms: number };
+  sites_cleared: { total: number; camps: number; rifts: number; ruins: number; stragglers: number };
   chests_earned: number;
   rewards: { lords: string; essence: string; labor: string };
   deepest_depth: number;

@@ -1,5 +1,14 @@
 import type { GameType } from "./types";
 
+/** Five chest tiers, common to legendary: a depth's odds in basis points, or the shares each tier pays. */
+export interface ChestTiers {
+  common: number;
+  uncommon: number;
+  rare: number;
+  epic: number;
+  legendary: number;
+}
+
 export interface NativePreset {
   id: number;
   /**
@@ -30,55 +39,63 @@ export interface NativePreset {
   commandMask: bigint;
   settlementMode: "Single" | "Triple" | "Duel";
   spacing: number;
-  epochSeconds: number;
+  /** The unit a season's days are counted in (Frontier rules §9): a day lasts 2 to 6 units; 0 in modes without days. */
+  dayUnitSeconds: number;
+  /** A season's length in bags of five days, each bag 20 day units; 0 in modes without days. */
+  seasonBags: number;
   board: null | {
     demolitionRefundBps: number;
     workshopRate: number;
+    /** What one tier pick adds for every building of its type: Fields, Tools and Drill, of the base output. */
+    outputStepBps: number;
+    /** Granary and Storeroom, of the castle's base limit. */
+    storageStepBps: number;
+    /** A hut tier, of a hut's population. */
+    populationStepBps: number;
+    /** Wheat a Rations pick takes off each deployed troop. */
+    rationStep: number;
+    /** The Barracks tier a training building needs. */
+    trainingGateTier: number;
+    /** The castle base is this many full deploys of its level. */
+    castleStoreDeploys: number;
   };
-  research: readonly {
-    node: number;
-    prerequisites: number;
-    essenceCost: number;
-    effect:
-      | { kind: "BuildingTier"; category: number; tier: number }
-      | { kind: "MapContent"; content: "Shrine" | "Well" }
-      | { kind: "Depth"; depth: number };
-  }[];
-  buildingTiers: readonly {
-    category: number;
-    tier: number;
-    laborUpgradeCost: number;
-    outputMultiplierBps: number;
-    capacityMultiplierBps: number;
-    populationMultiplierBps: number;
-  }[];
+  /** One price per research row tier above common; rows are research.cairo's ROW_* ids. */
+  research: readonly { row: number; tier: number; essenceCost: number; laborCost: number }[];
   discovery: null | {
+    stragglersBps: number;
     campBps: number;
     riftBps: number;
-    fallenRealmBps: number;
-    looseChestBps: number;
+    ruinBps: number;
     shrineBps: number;
     wellBps: number;
     emptyRevealLimit: number;
   };
-  progression: null | { revealXp: number; clearXp: number; levelStepXp: number };
+  /** XP per reveal, the fixed award (a shrine, and a relic chest until relics leave chests), and each tier's price. */
+  progression: null | {
+    revealXp: number;
+    fixedXp: number;
+    uncommonXp: number;
+    rareXp: number;
+    epicXp: number;
+    legendaryXp: number;
+  };
   chests: null | {
-    relicProbability: number;
-    tokenCap: number;
-    lordsAmounts: { common: number; uncommon: number; rare: number; epic: number };
-    lordsPool: number;
-    seasonEpochs: number;
+    pool: number;
+    priceCeiling: number;
+    shares: ChestTiers;
+    surgeFactor: number;
+    surgeMinimumShares: number;
+    estimateDays: number;
   };
   depths: Array<{
     revealPercent: number;
-    guardLower: number;
-    guardUpper: number;
-    fallenGuardLower: number;
-    fallenGuardUpper: number;
+    siteGuardLower: number;
+    siteGuardUpper: number;
+    ruinGuardLower: number;
+    ruinGuardUpper: number;
     guardStep: number;
-    fallenGuardTier: "T1" | "T2" | "T3";
     revealSiteNeighbors: boolean;
     entryStamina: number;
-    chest: { common: number; uncommon: number; rare: number; pity: number };
+    chest: ChestTiers;
   }>;
 }

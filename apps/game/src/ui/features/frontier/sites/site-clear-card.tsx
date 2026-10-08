@@ -3,10 +3,11 @@ import { formatExact } from "@/ui/design-system/kit/amount";
 import { Chip } from "@/ui/design-system/kit/chip";
 import { type IconCode, KitIcon } from "@/ui/design-system/kit/kit-icon";
 import { StoreBar } from "@/ui/design-system/kit/store-bar";
-import { CAMP, RIFT, RUIN, TROOPS, XP } from "@/ui/design-system/kit/words";
+import { CAMP, RIFT, RUIN, STRAGGLERS, TROOPS, XP } from "@/ui/design-system/kit/words";
 import { EASE } from "@/ui/motion/motion-scale";
 import { useReducedMotion } from "@/ui/motion/motion-settings";
 import { configManager } from "@bibliothecadao/eternum";
+import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { ResourcesIds } from "@bibliothecadao/types";
 import { AnimatePresence, motion } from "framer-motion";
 
@@ -17,7 +18,8 @@ import type { SiteClear } from "./site-outcome";
 const SITES: Record<SiteClear["kind"], { word: string; icon: IconCode }> = {
   Camp: { word: CAMP, icon: "Cp" },
   Rift: { word: RIFT, icon: "Rf" },
-  FallenRealm: { word: RUIN, icon: "Fr" },
+  Ruin: { word: RUIN, icon: "Fr" },
+  Stragglers: { word: STRAGGLERS, icon: "Tr" },
 };
 
 const PAY_ICONS: Partial<Record<ResourcesIds, IconCode>> = { [ResourcesIds.Labor]: "La", [ResourcesIds.Essence]: "Es" };
@@ -38,13 +40,19 @@ export const SiteClearCardView = () => {
               amount: card.clear.reward.amount,
             }
           }
-          xp={siteClearXp(setup.store, configManager.getActiveGameId())}
+          xp={clearedSiteXp(setup.store, card.clear.siteId)}
           troopsLost={card.troopsLost}
           onClose={closeSiteClearCard}
         />
       )}
     </AnimatePresence>
   );
+};
+
+/** The XP the cleared site paid, from the guard it started with; unknown once its row has left the store. */
+const clearedSiteXp = (store: NativeFactStore, siteId: number): number | undefined => {
+  const site = store.get("ExpeditionSite", { game_id: configManager.getActiveGameId(), entity_id: siteId });
+  return site && siteClearXp(site);
 };
 
 /**

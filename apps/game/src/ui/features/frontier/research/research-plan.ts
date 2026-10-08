@@ -11,7 +11,10 @@ export interface ResearchPlan {
 }
 
 export interface ResearchNodeView {
+  /** The tier's own id on the sheet. */
   node: number;
+  /** Its research row; buying it buys the row's next tier. */
+  row: number;
   state: "learned" | "open" | "locked";
   /** Whole Essence. */
   price: number;

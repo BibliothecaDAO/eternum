@@ -69,7 +69,8 @@ const frontier = (withRealm: boolean) =>
   game({
     game_id: 1,
     name: "frontier-1",
-    expedition: { epoch_seconds: DAY },
+    // A day averages four units, so twelve days back lands near Day 12 on seed 1.
+    expedition: { day_unit_seconds: DAY / 4, seed: "1" },
     clock: {
       start_settling_at: NOW - 12 * DAY + LEFT_TODAY,
       start_main_at: NOW - 12 * DAY + LEFT_TODAY,
@@ -174,7 +175,7 @@ export const LAB_FRONTIER_BOARD: HeraldFrontierLeaderboard = {
     address,
     structure_id: String(index + 1),
     rank: index + 1,
-    sites_cleared: { total: sites, camps: 0, rifts: 0, fallen_realms: 0 },
+    sites_cleared: { total: sites, camps: 0, rifts: 0, ruins: 0, stragglers: 0 },
     chests_earned: chests,
     rewards: { lords: String(lords), essence: "0", labor: "0" },
     deepest_depth: 2,

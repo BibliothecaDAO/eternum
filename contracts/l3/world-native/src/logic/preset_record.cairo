@@ -40,12 +40,14 @@ pub fn for_game(game_id: u32) -> StoragePath<crate::state::Preset> {
 fn write_structures(preset: PresetWrite, structures: crate::presets::StructurePreset) {
     write_buildings(preset, structures.buildings, structures.board);
     write_research(preset, structures);
-    for index in 0..structures.camps.len() {
-        let resource = *structures.camps.at(index);
+    let camps = structures.camps;
+    for index in 0..camps.resources.len() {
+        let resource = *camps.resources.at(index);
         crate::resources::assert_resource(resource.resource_type);
         preset.camp_grants.write(index, resource);
     }
-    preset.camp_resource_count.write(structures.camps.len());
+    preset.camp_resource_count.write(camps.resources.len());
+    preset.camp_labor_rate.write(camps.labor_rate);
     assert!(structures.faith.owner_share_bps <= 10000, "invalid faith owner share");
     preset.faith_rules.write(structures.faith);
     write_upgrades(preset, structures.upgrade_limits, structures.upgrades);
@@ -179,7 +181,7 @@ fn write_banks(preset: PresetWrite, rules: crate::market::BankRules) {
 fn write_buildings(
     preset: PresetWrite, rules: Span<crate::buildings::BuildingRuleConfig>, board: Option<crate::buildings::BoardRules>,
 ) {
-    assert!(rules.len() == 40, "incomplete building rules");
+    assert!(rules.len() == crate::buildings::BUILDING_CATEGORY_COUNT.into(), "incomplete building rules");
     let mut expected = 1_u8;
     for config in rules {
         assert!(*config.category == expected, "building rules must be ordered");
@@ -202,6 +204,8 @@ fn write_buildings(
     if let Some(board) = board {
         assert!(board.demolition_refund_bps <= 10000, "invalid demolition refund");
         assert!(board.workshop_rate != 0, "zero workshop rate");
+        assert!(board.training_gate_tier <= 4, "invalid training gate tier");
+        assert!(board.castle_store_deploys != 0, "zero castle store");
         preset.board_terms.write(Some(board));
     }
 }
@@ -285,28 +289,30 @@ fn write_depths(preset: PresetWrite, rules: crate::rules::SliceRules, depths: Sp
     } else {
         0
     }, "incomplete depth rules");
-    assert!(!enabled || rules.epoch_seconds != 0, "depths require expedition regions");
+    assert!(!enabled || rules.day_unit_seconds != 0, "depths require expedition regions");
     for index in 0..depths.len() {
         let value = *depths.at(index);
-        let ground = value.chest;
+        let odds = value.chest;
         assert!(
-            Into::<u16, u32>::into(ground.common) + ground.uncommon.into() + ground.rare.into() <= 10000,
-            "invalid chest quality probabilities",
+            Into::<u16, u32>::into(odds.common)
+                + odds.uncommon.into()
+                + odds.rare.into()
+                + odds.epic.into()
+                + odds.legendary.into() == 10000,
+            "chest tier odds must sum to 100 percent",
         );
-        assert!(ground.pity != 0, "zero relic pity threshold");
         assert!(index != 0 || value.entry_stamina == 0, "surface needs no entry stamina");
         assert!(value.reveal_percent != 0 && value.reveal_percent <= 100, "invalid reveal percentage");
-        assert!(value.guard_lower != 0 && value.guard_lower <= value.guard_upper, "invalid depth guards");
         assert!(
-            value.fallen_guard_lower != 0 && value.fallen_guard_lower <= value.fallen_guard_upper,
-            "invalid fallen guards",
+            value.site_guard_lower != 0 && value.site_guard_lower <= value.site_guard_upper, "invalid depth guards",
         );
+        assert!(value.ruin_guard_lower != 0 && value.ruin_guard_lower <= value.ruin_guard_upper, "invalid ruin guards");
         assert!(value.guard_step != 0, "zero guard step");
         assert!(
-            Into::<u16, u32>::into(value.guard_lower) % value.guard_step == 0
-                && Into::<u16, u32>::into(value.guard_upper) % value.guard_step == 0
-                && value.fallen_guard_lower % value.guard_step == 0
-                && value.fallen_guard_upper % value.guard_step == 0,
+            Into::<u16, u32>::into(value.site_guard_lower) % value.guard_step == 0
+                && Into::<u16, u32>::into(value.site_guard_upper) % value.guard_step == 0
+                && value.ruin_guard_lower % value.guard_step == 0
+                && value.ruin_guard_upper % value.guard_step == 0,
             "guard bounds off grid",
         );
         preset.depth_rules.write(index.try_into().unwrap(), Some(value));
@@ -344,21 +350,27 @@ fn write_relics(
 ) {
     if let Some(value) = chests {
         assert!(
-            game_rules.epoch_seconds != 0 && crate::rules::rule_enabled(game_rules, crate::rules::DEPTH_CONTENTS),
+            game_rules.day_unit_seconds != 0 && crate::rules::rule_enabled(game_rules, crate::rules::DEPTH_CONTENTS),
             "chest tables require depth rules",
         );
-        assert!(value.relic_probability <= 10000, "invalid chest type probabilities");
-        assert!(value.token_cap != 0 && value.season_epochs != 0, "empty chest limits");
-        let amounts = value.lords_amounts;
         assert!(
-            amounts.common != 0
-                && amounts.common <= amounts.uncommon
-                && amounts.uncommon <= amounts.rare
-                && amounts.rare <= amounts.epic
-                && amounts.epic <= value.lords_pool,
-            "invalid LORDS table",
+            value.pool != 0
+                && value.price_ceiling != 0
+                && value.surge_factor != 0
+                && value.surge_minimum_shares != 0
+                && value.estimate_days != 0,
+            "empty chest rules",
         );
-        assert!(rules.is_empty(), "attribute chests replace timed relics");
+        let shares = value.shares;
+        assert!(
+            shares.common != 0
+                && shares.common <= shares.uncommon
+                && shares.uncommon <= shares.rare
+                && shares.rare <= shares.epic
+                && shares.epic <= shares.legendary,
+            "invalid chest shares",
+        );
+        assert!(rules.is_empty(), "ruin chests replace timed relics");
         preset.chest_rules.write(chests);
         return;
     }
@@ -447,50 +459,20 @@ fn write_withdrawals(preset: PresetWrite, withdrawals: crate::presets::Withdrawa
 
 fn write_research(preset: PresetWrite, structures: crate::presets::StructurePreset) {
     if structures.board.is_none() {
-        assert!(structures.research.is_empty() && structures.building_tiers.is_empty(), "research needs a board");
+        assert!(structures.research.is_empty(), "research needs a board");
         return;
     }
-    assert!(structures.research.len() == crate::research::NODE_COUNT.into(), "incomplete research tree");
-    for id in 0..crate::research::NODE_COUNT {
-        let entry = *structures.research.at(id.into());
-        let bit = crate::research::node_bit(id);
-        assert!(entry.node == id && entry.rule.prerequisites < bit, "invalid research prerequisites");
-        assert!(entry.rule.essence_cost != 0, "empty research price");
-        for previous in 0..id {
-            assert!(
-                preset.research_nodes.read(previous).unwrap().effect != entry.rule.effect, "duplicate research effect",
-            );
-        }
-        preset.research_nodes.write(id, Some(entry.rule));
+    // Every row's tiers are priced exactly once, from the first tier above common to the row's last.
+    let mut expected = 0_u32;
+    for row in 0..crate::research::ROW_COUNT {
+        expected += crate::research::max_tier(row).into();
     }
-    assert!(structures.building_tiers.len() == 8, "incomplete building tiers");
-    for entry in structures.building_tiers {
-        assert!(*entry.tier == 2 || *entry.tier == 3, "invalid building tier");
-        assert!(
-            *entry.category == 1 || *entry.category == 2 || *entry.category == 28 || *entry.category == 37,
-            "invalid tier category",
-        );
-        let key = (*entry.category, *entry.tier);
-        assert!(preset.building_tiers.read(key).is_none(), "duplicate building tier");
-        let rule = *entry.rule;
-        assert!(
-            rule.labor_upgrade_cost != 0
-                && rule.output_multiplier_bps != 0
-                && rule.capacity_multiplier_bps != 0
-                && rule.population_multiplier_bps >= 10000,
-            "empty building tier rule",
-        );
-        preset.building_tiers.write(key, Some(rule));
-    }
+    assert!(structures.research.len() == expected, "incomplete research prices");
     for entry in structures.research {
-        match *entry.rule.effect {
-            crate::research::ResearchEffect::BuildingTier((
-                category, tier,
-            )) => { assert!(preset.building_tiers.read((category, tier)).is_some(), "research tier is missing"); },
-            crate::research::ResearchEffect::MapContent(_) => {},
-            crate::research::ResearchEffect::Depth(depth) => {
-                assert!(depth > 0 && depth < 4, "invalid research depth");
-            },
-        }
+        let key = (*entry.row, *entry.tier);
+        assert!(*entry.tier > 0 && *entry.tier <= crate::research::max_tier(*entry.row), "invalid research tier");
+        assert!(preset.research_prices.read(key).is_none(), "duplicate research price");
+        assert!((*entry.price).essence != 0, "empty research price");
+        preset.research_prices.write(key, Some(*entry.price));
     }
 }

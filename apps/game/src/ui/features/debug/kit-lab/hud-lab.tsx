@@ -358,7 +358,7 @@ const LAB_GUIDE_FACTS: GuideFacts = {
   troopsAtHome: 1_500,
   armies: 0,
   armyActed: false,
-  armyTierAffordable: undefined,
+  armyTierAffordable: false,
   camp: null,
   siteCleared: false,
   stragglers: undefined,
@@ -759,7 +759,7 @@ export const HudLab = () => {
               rank: 2,
               order: 2,
               name: "Aldric",
-              sites: { total: 132, camps: 80, rifts: 43, ruins: 9 },
+              sites: { total: 132, camps: 70, rifts: 43, ruins: 9, stragglers: 10 },
               chests: 9,
               lords: 640,
               reach: 0,
@@ -785,7 +785,6 @@ export const HudLab = () => {
                 ? [
                     { icon: "Wh", value: "+375/h", label: "produces" },
                     { icon: "Pp", value: "1", label: "population" },
-                    { icon: "Hx", value: "×2", label: "marked plot" },
                   ]
                 : [
                     { icon: "Tr", value: "+100/h", label: "produces" },

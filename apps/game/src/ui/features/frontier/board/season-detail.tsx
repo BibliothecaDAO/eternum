@@ -15,6 +15,7 @@ import {
   RIFT,
   RUIN,
   SEASON,
+  STRAGGLERS,
   VISIT,
 } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
@@ -24,7 +25,7 @@ export type SeasonDetail = {
   rank: number;
   order: number;
   name: ReactNode;
-  sites: { total: number; camps: number; rifts: number; ruins: number };
+  sites: { total: number; camps: number; rifts: number; ruins: number; stragglers: number };
   chests: number;
   lords: number;
   /** The deepest reach beyond the spire, 1 to 3; 0 for a realm that never went through. */
@@ -34,8 +35,9 @@ export type SeasonDetail = {
 };
 
 /**
- * A row tapped (wireframe 13): the realm's Order, name and rank, its sites cleared by kind (camp, rift, ruin), chests,
- * LORDS and the deepest reach, what it earned, and one verb: Visit. The player's own row has nothing to visit.
+ * A row tapped (wireframe 13): the realm's Order, name and rank, its sites cleared by kind (camp, rift, ruin,
+ * stragglers), chests, LORDS and the deepest reach, what it earned, and one verb: Visit. The player's own row has
+ * nothing to visit.
  */
 export const SeasonDetailSheet = ({
   detail,
@@ -63,6 +65,7 @@ export const SeasonDetailSheet = ({
       <Chip icons={["Cp"]} label={CAMP} value={formatAmount(detail.sites.camps)} />
       <Chip icons={["Rf"]} label={RIFT} value={formatAmount(detail.sites.rifts)} />
       <Chip icons={["Fr"]} label={RUIN} value={formatAmount(detail.sites.ruins)} />
+      <Chip icons={["Tr"]} label={STRAGGLERS} value={formatAmount(detail.sites.stragglers)} />
     </div>
     <div className="flex items-center justify-center gap-1.5">
       <Chip icons={["Ch"]} label={CHESTS} value={formatAmount(detail.chests)} />

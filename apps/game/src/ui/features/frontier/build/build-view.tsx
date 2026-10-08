@@ -19,7 +19,7 @@ export type BuildTile = {
   foot: { kind: "price"; labor: number; short: boolean } | { kind: "built" } | { kind: "locked"; gate: Tier };
 };
 
-/** What the chosen building gives, as chips: what it makes or houses, the population it takes, the marked plot's ×2. */
+/** What the chosen building gives, as chips: what it makes or houses, and the population it takes. */
 export type BuildGain = { icon: IconCode; value: string; label: string };
 
 /**

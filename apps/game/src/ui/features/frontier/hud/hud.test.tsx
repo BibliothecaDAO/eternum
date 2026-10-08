@@ -4,6 +4,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { dayOf } from "@bibliothecadao/eternum";
 
 import { canResearchNow } from "../research/research-plan";
 import { secondsUntilHeld } from "./army-order";
@@ -33,21 +34,25 @@ afterEach(() => {
 });
 
 describe("the day clock", () => {
-  const rules = { epochSeconds: 16 * 3_600, startMainAt: 0 };
+  const rules = { dayUnitSeconds: 4 * 3_600, seed: 1n, startMainAt: 0 };
 
-  it("counts days from one, ends today at the epoch's edge and says tomorrow lasts a day", () => {
-    const now = 11 * 16 * 3_600 + 9 * 3_600;
+  it("counts days from one on the season's calendar, ends today with its day and says how long tomorrow lasts", () => {
+    const eleventh = dayOf(rules, 0)!;
+    let today = eleventh;
+    for (let index = 0; index < 11; index += 1) today = dayOf(rules, today.end)!;
+    const now = today.start + 3_600;
     const clock = dayClock(rules, now);
+    const tomorrow = dayOf(rules, today.end)!;
     expect(clock.day).toBe(12);
-    expect(clock.endsAt).toBe(12 * 16 * 3_600);
-    expect(clock.secondsLeft).toBe(7 * 3_600);
-    expect(clock.tomorrowSeconds).toBe(16 * 3_600);
-    expect(clock.shareLeft).toBeCloseTo(7 / 16);
+    expect(clock.endsAt).toBe(today.end);
+    expect(clock.secondsLeft).toBe(today.end - now);
+    expect(clock.tomorrowSeconds).toBe(tomorrow.end - tomorrow.start);
+    expect(clock.shareLeft).toBeCloseTo((today.end - now) / (today.end - today.start));
     expect(clock.tone).toBe("calm");
   });
 
   it("turns ember in the last hour, and knows nothing before the season starts", () => {
-    expect(dayClock(rules, 16 * 3_600 - 600).tone).toBe("ember");
+    expect(dayClock(rules, dayOf(rules, 0)!.end - 600).tone).toBe("ember");
     const before = dayClock({ ...rules, startMainAt: 10 * 16 * 3_600 }, 3_600);
     expect(before.day).toBeUndefined();
     expect(before.endsAt).toBeUndefined();
@@ -64,7 +69,7 @@ describe("the status strip", () => {
   });
 
   it("shows each store with a limit bar where it has a limit, and dashes the unknown", () => {
-    const clock = dayClock({ epochSeconds: 16 * 3_600, startMainAt: 0 }, 9 * 3_600);
+    const clock = dayClock({ dayUnitSeconds: 4 * 3_600, seed: 1n, startMainAt: 0 }, 3_600);
     const markup = renderToStaticMarkup(
       <StatusStrip
         clock={clock}
@@ -143,6 +148,7 @@ describe("the place bar", () => {
   it("dots Research only when an open node's Essence is held", () => {
     const node = (state: "open" | "locked" | "learned", price: number) => ({
       node: 1,
+      row: 10,
       state,
       price,
       effect: { kind: "depth" as const, depth: 1 as const },

@@ -148,15 +148,7 @@ type ResourceProductionStatus = {
 
 export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?: string; entityId: number }) => {
   const game = useGame();
-  useNativeRevision([
-    "ResourceBalance",
-    "ResourceProduction",
-    "ResourceWeight",
-    "Building",
-    "RealmKnowledge",
-    "ResearchNode",
-    "BuildingTierRule",
-  ]);
+  useNativeRevision(["ResourceBalance", "ResourceProduction", "ResourceWeight", "Building", "RealmKnowledge"]);
   const lane = useCompactLane();
   const [summaryOpen, setSummaryOpen] = useState(false);
 
@@ -1462,15 +1454,7 @@ const ResourceInfo = ({
   useSimpleCost?: boolean;
 }) => {
   const game = useGame();
-  useNativeRevision([
-    "ResourceBalance",
-    "ResourceProduction",
-    "ResourceWeight",
-    "Building",
-    "RealmKnowledge",
-    "ResearchNode",
-    "BuildingTierRule",
-  ]);
+  useNativeRevision(["ResourceBalance", "ResourceProduction", "ResourceWeight", "Building", "RealmKnowledge"]);
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
   // Undefined when the recipe is unknown here: shown as "—", never as a free cost. Relics hold an empty recipe.
   let cost = configManager.getRecipeInputs(resourceId, useSimpleCost);
@@ -1644,15 +1628,7 @@ const BuildingInfo = ({
   useSimpleCost?: boolean;
 }) => {
   const game = useGame();
-  useNativeRevision([
-    "ResourceBalance",
-    "ResourceProduction",
-    "ResourceWeight",
-    "Building",
-    "RealmKnowledge",
-    "ResearchNode",
-    "BuildingTierRule",
-  ]);
+  useNativeRevision(["ResourceBalance", "ResourceProduction", "ResourceWeight", "Building", "RealmKnowledge"]);
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
 
   const resourceProduced = configManager.getResourceBuildingProduced(buildingId);

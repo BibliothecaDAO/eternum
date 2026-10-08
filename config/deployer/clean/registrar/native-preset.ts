@@ -93,7 +93,7 @@ export function buildNativeGameParams(
     if (input.devModeOn) throw new Error("Free Blitz does not use development mode");
     if (roster.length < 1 || roster.length > 24) throw new Error("Blitz requires a fixed roster of 1 to 24 players");
   } else if (roster.length) throw new Error("Open seasons do not use a fixed roster");
-  const common = buildCreateGameParams(config, input);
+  const common = buildCreateGameParams(config, { ...input, startMainAt: seasonStart(config, input) });
   return {
     name: common.name,
     preset_id: common.preset_id,
@@ -113,6 +113,19 @@ export function buildNativeGameParams(
   };
 }
 
+/**
+ * A season with days starts on an armies tick, rounded up, so every day rolls over on one: the contract refuses any
+ * other start.
+ */
+function seasonStart(config: Config, input: CreateGamePayloadInput): number {
+  const preset = nativePresetForId(input.presetId);
+  if (preset.epochSeconds === 0) return input.startMainAt;
+  const tick = preset.clockScale
+    ? clockScaled(config.tick.armiesTickIntervalInSeconds, preset.clockScale, "armies tick")
+    : config.tick.armiesTickIntervalInSeconds;
+  return Math.ceil(input.startMainAt / tick) * tick;
+}
+
 // Imported rather than read from disk, so the launch Worker carries the same preset configurations as the CLIs. Each
 // load is a copy, as a file read was: launches apply their overrides to the configuration they get.
 const NATIVE_CONFIGURATIONS = { blitz, duel, eternum, frontier } as unknown as Record<string, StoredConfiguration>;
@@ -124,7 +137,7 @@ export function loadNativePresetConfiguration(environment: DeploymentEnvironment
   if (preset.environmentGameType !== target.gameType || !stored)
     throw new Error(`No native preset definition for ${environment} preset ${presetId}`);
   const config = configurationOf(structuredClone(stored), `config/generated/${preset.gameType}.madara.json`);
-  // A scaled preset's season lasts as many of its shorter days as its mode's: the length scales with the epoch.
+  // A scaled preset's season lasts as many of its shorter bags as its mode's: the length scales with the day unit.
   if (preset.clockScale)
     config.season.durationSeconds = clockScaled(config.season.durationSeconds, preset.clockScale, "season duration");
   return config;

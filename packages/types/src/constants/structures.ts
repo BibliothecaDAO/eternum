@@ -11,15 +11,15 @@ export const StructureTypeToNameMapping: Record<StructureType, string> = {
   [StructureType.Village]: "Village",
   [StructureType.Camp]: "Camp",
   [StructureType.BitcoinMine]: "Bitcoin Mine",
+  [StructureType.Rift]: "Rift",
+  [StructureType.Ruin]: "Ruin",
+  [StructureType.Stragglers]: "Stragglers",
 };
 
 export const MineKinds = {
   1: { name: "Essence Rift", icon: "/images/labels/essence_rift.png", model: "/models/reward-tiles/rift.glb" },
   2: { name: "Fragment Mine", icon: "/images/labels/fragment_mine.png", model: "/models/new-buildings-opt/mine.glb" },
 } as const;
-
-/** The kind a Frontier Rift is drawn as: it has no mine kind of its own. */
-export const ESSENCE_RIFT_MINE_KIND = 1;
 
 export function getMinePresentation(kind: number) {
   const presentation = MineKinds[kind as keyof typeof MineKinds];

@@ -2,6 +2,8 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { describe, expect, it, vi } from "vitest";
 
+import { dayOf } from "@bibliothecadao/eternum";
+
 import { dayBounds } from "../hud/day-clock";
 import { TodaySheet } from "./today-sheet";
 
@@ -31,12 +33,15 @@ const render = (props: Partial<Parameters<typeof TodaySheet>[0]>) => {
 };
 
 describe("Today", () => {
-  it("bounds any day of the season back from today's end, and none before the first or after today", () => {
-    const now = 11 * DAY + 60;
-    expect(dayBounds({ epochSeconds: DAY, startMainAt: 0 }, now, 12)).toEqual({ start: 11 * DAY, end: 12 * DAY });
-    expect(dayBounds({ epochSeconds: DAY, startMainAt: 0 }, now, 3)).toEqual({ start: 2 * DAY, end: 3 * DAY });
-    expect(dayBounds({ epochSeconds: DAY, startMainAt: 0 }, now, 0)).toBeNull();
-    expect(dayBounds({ epochSeconds: DAY, startMainAt: 0 }, now, 13)).toBeNull();
+  it("bounds any day of the season back from today, and none before the first or after today", () => {
+    const calendar = { dayUnitSeconds: DAY / 4, seed: 1n, startMainAt: 0 };
+    const days = [dayOf(calendar, 0)!];
+    while (days.length < 12) days.push(dayOf(calendar, days.at(-1)!.end)!);
+    const now = days[11].start + 60;
+    expect(dayBounds(calendar, now, 12)).toEqual({ start: days[11].start, end: days[11].end });
+    expect(dayBounds(calendar, now, 3)).toEqual({ start: days[2].start, end: days[2].end });
+    expect(dayBounds(calendar, now, 0)).toBeNull();
+    expect(dayBounds(calendar, now, 13)).toBeNull();
   });
 
   it("shows the day's totals and log, an unknown total as a dash, and steps back but not past today", () => {

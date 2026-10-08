@@ -1,7 +1,7 @@
 import { BuildingType, BuildingTypeToString, GuardSlot, RESOURCE_PRECISION, resources } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import { getStructureName, type PlayerNameResolver } from "../utils/entities";
-import { structureMapPosition } from "../utils/expeditions";
+import { siteKindOf, structureMapPosition } from "../utils/expeditions";
 import { Position } from "./position";
 import { getIsBlitz } from "../utils/utils";
 import { StoryEventSystemUpdate } from "./types";
@@ -39,10 +39,7 @@ const resourceNameMap = resources.reduce<Record<number, string>>((acc, resource)
   return acc;
 }, {});
 
-const CHEST_QUALITY_LABELS = ["Common", "Uncommon", "Rare", "Epic"];
-const CHEST_KIND_LABELS: Record<string, string> = { Relic: "relic", Token: "token claim" };
-const EXPEDITION_GROUND_LABELS = ["the surface", "Ethereal I", "Ethereal II", "Ethereal III"];
-
+const ATTRIBUTE_TIER_LABELS = ["", "common", "uncommon", "rare", "epic", "legendary"];
 /** What a story model other than StoryEvent's own variants reaches the feed as. */
 type StoryEventModel = "BattleEvent" | "RaidEvent";
 
@@ -140,11 +137,15 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
   }),
   BlitzFinalized: () => ({ title: "Blitz finalized", icon: "scroll" }),
   SitePayout: (_event, payload, components) => {
-    const kind = formatEnum(payload.kind);
-    const label =
-      kind === "Camp" ? "Camp" : kind === "Rift" ? "Rift" : kind === "FallenRealm" ? "Fallen realm" : undefined;
-    if (!label || payload.reward === undefined) throw new Error("Incomplete site payout story");
-    const reward = payload.reward === null ? "Closed chest on the tile" : formatResourceList([payload.reward]);
+    const category = toNumber(payload.category);
+    if (category === null || payload.reward === undefined) throw new Error("Incomplete site payout story");
+    const label = siteKindOf(category);
+    const reward =
+      payload.reward === null
+        ? label === "Ruin"
+          ? "Closed chest on the tile"
+          : "XP only"
+        : formatResourceList([payload.reward]);
     if (!reward) throw new Error("Incomplete site resource reward");
     return {
       title: `${label} cleared`,
@@ -152,35 +153,22 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
       icon: "prize",
     };
   },
-  AttributeChosen: (event, payload, components) => {
+  TierBought: (_event, payload, components) => {
     const attribute = formatEnum(payload.attribute);
-    const applied = toNumber(payload.applied);
-    const lost = toNumber(payload.lost);
-    if (!attribute || applied === null || lost === null) throw new Error("Incomplete attribute choice story");
+    const tierIndex = toNumber(payload.tier);
+    const tier = tierIndex === null ? undefined : ATTRIBUTE_TIER_LABELS[tierIndex];
+    const price = toNumber(payload.price);
+    if (!attribute || !tier || price === null) throw new Error("Incomplete tier purchase story");
     return {
-      title: `${attribute} +${applied}`,
-      description: joinPieces([
-        describeExplorer(payload.explorer_id, components),
-        lost > 0 ? `${lost} ${lost === 1 ? "level" : "levels"} lost at the cap` : undefined,
-      ]),
+      title: `${attribute} ${tier}`,
+      description: joinPieces([describeExplorer(payload.explorer_id, components), `${price} XP`]),
       icon: "scroll",
     };
   },
-  ChestReward: (event, payload, components) => {
-    const quality = labelAt(CHEST_QUALITY_LABELS, payload.quality);
-    const rawKind = formatEnum(payload.kind);
-    if (rawKind && !(rawKind in CHEST_KIND_LABELS)) throw new Error("Invalid chest reward kind");
-    const kind = CHEST_KIND_LABELS[rawKind ?? ""] ?? "reward";
-    const ground = labelAt(EXPEDITION_GROUND_LABELS, payload.depth);
-    return {
-      title: `Chest opened: ${quality ? `${quality} ${kind}` : kind}`,
-      description: joinPieces([
-        describeExplorer(payload.explorer_id, components),
-        ground ? `On ${ground}` : undefined,
-        payload.lords_exhausted === true ? "LORDS allowance exhausted; awarded a relic of the same rarity" : undefined,
-      ]),
-      icon: "prize",
-    };
+  LordsWithdrawn: (_event, payload) => {
+    const amount = toNumber(payload.amount);
+    if (amount === null) throw new Error("Incomplete LORDS withdrawal story");
+    return { title: "LORDS withdrawn", description: `${amount} LORDS to L2`, icon: "prize" };
   },
   RealmCreatedStory: (event, payload, components, resolvePlayerName) => {
     const coord = formatCoord(payload.coord);
@@ -485,7 +473,7 @@ function describeStructureDetails(
   const structure = readStructure(targetId, components);
   if (!structure) return describeFallbackStructure(fallbackCategory, fallbackCoord);
 
-  const name = getStructureName(components, structure, getIsBlitz()).name;
+  const name = getStructureName(structure, getIsBlitz()).name;
   const level = toNumber(structure.base?.level);
   const coord = formatCoord(structureMapPosition(components, structure));
 
@@ -524,7 +512,7 @@ function describeStructureName(structureId: unknown, components?: NativeFactStor
 }
 
 function structureDisplayName(components: NativeFactStore, structure: StructureRow): string {
-  return getStructureName(components, structure, getIsBlitz()).name;
+  return getStructureName(structure, getIsBlitz()).name;
 }
 
 /**
@@ -653,12 +641,6 @@ function formatNumber(value: unknown): string | null {
     }
   }
   return `${value}`;
-}
-
-/** The label an index names, or undefined when the payload carries no index or one outside the table. */
-function labelAt(labels: string[], value: unknown): string | undefined {
-  const index = toNumber(value);
-  return index === null ? undefined : labels[index];
 }
 
 function toNumber(value: unknown): number | null {

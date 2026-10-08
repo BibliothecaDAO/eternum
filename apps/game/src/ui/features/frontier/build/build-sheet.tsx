@@ -37,14 +37,11 @@ const BUILD_MODELS = [
   "ResourceBalance",
   "ResourceProduction",
   "ResourceWeight",
-  // A day's Support boosts the wheat the realm grows and its barracks eat.
-  "RealmSupport",
   "Structure",
   "StructureBuildings",
-  // What the realm has researched sets each building's tier, its price and what it gives.
+  // What the realm has researched sets what each building type gives.
   "RealmKnowledge",
-  "ResearchNode",
-  "BuildingTierRule",
+  "BoardRules",
 ] as const;
 
 /**
@@ -89,8 +86,8 @@ export const BuildSheet = ({
   const revision = useNativeRevision(BUILD_MODELS);
   const tick = useCurrentDefaultTick();
   const options = useMemo(
-    () => readBuildOptions(setup.store, realm, plot, useSimpleCost, tick),
-    [plot.col, plot.row, realm, revision, setup.store, tick, useSimpleCost],
+    () => readBuildOptions(setup.store, realm, useSimpleCost, tick),
+    [realm, revision, setup.store, tick, useSimpleCost],
   );
   const [chosen, setChosen] = useState(0);
   const option = options?.[chosen];
@@ -225,18 +222,14 @@ const buildTile = (option: BuildOption, labor: number | undefined): BuildTile =>
   };
 };
 
-/** The chosen building's gains: what it makes an hour or the population room it adds, its population, the ×2. */
+/** The chosen building's gains: what it makes an hour or the population room it adds, and its population. */
 const buildGains = (option: BuildOption): BuildGain[] => {
   const { effect } = option;
   const gain: BuildGain =
     effect.kind === "produces"
       ? { icon: iconOf(effect.resource), value: `+${formatAmount(effect.perHour)}/h`, label: "produces" }
       : { icon: "Pp", value: `+${formatAmount(effect.amount)}`, label: "houses" };
-  return [
-    gain,
-    { icon: "Pp", value: formatAmount(option.populationCost), label: "population" },
-    ...(option.doubled ? [{ icon: "Hx" as const, value: "×2", label: "marked plot" }] : []),
-  ];
+  return [gain, { icon: "Pp", value: formatAmount(option.populationCost), label: "population" }];
 };
 
 /** The chosen building stands on the plot as the scene's ghost while the sheet is open. */

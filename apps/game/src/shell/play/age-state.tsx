@@ -27,7 +27,14 @@ const NOTHING: AgeState = { chip: null, action: null };
 /** Frontier's day, from the season's clock: "Day 12". */
 export const seasonDay = (season: DirectoryGame, now: number) =>
   season.expedition
-    ? dayClock({ epochSeconds: season.expedition.epoch_seconds, startMainAt: season.clock.start_main_at }, now)
+    ? dayClock(
+        {
+          dayUnitSeconds: season.expedition.day_unit_seconds,
+          seed: BigInt(season.expedition.seed),
+          startMainAt: season.clock.start_main_at,
+        },
+        now,
+      )
     : undefined;
 
 const blitzAction = (row: BlitzRow): AgeAction | null => {

@@ -11,7 +11,7 @@ pub struct CommandRoute {
 
 pub const SETTLE_BLITZ_ROSTER: u32 = 7;
 
-pub const COMMAND_ROUTES: [CommandRoute; 71] = [
+pub const COMMAND_ROUTES: [CommandRoute; 72] = [
     CommandRoute { logic: 6, selector: selector!("create_explorer"), items_offset: None, batch: false },
     CommandRoute { logic: 16, selector: selector!("explore"), items_offset: None, batch: false },
     CommandRoute { logic: 12, selector: selector!("battle"), items_offset: Some(2), batch: false },
@@ -90,9 +90,10 @@ pub const COMMAND_ROUTES: [CommandRoute; 71] = [
     CommandRoute { logic: 5, selector: selector!("set_entity_name"), items_offset: None, batch: false },
     CommandRoute { logic: 16, selector: selector!("enter_depth"), items_offset: None, batch: false },
     CommandRoute { logic: 3, selector: selector!("research"), items_offset: None, batch: false },
-    CommandRoute { logic: 15, selector: selector!("choose_attribute"), items_offset: None, batch: false },
-    CommandRoute { logic: 3, selector: selector!("upgrade_building"), items_offset: None, batch: false },
+    CommandRoute { logic: 15, selector: selector!("buy_tier"), items_offset: None, batch: false },
     CommandRoute { logic: 15, selector: selector!("interact_site"), items_offset: None, batch: false },
+    CommandRoute { logic: 15, selector: selector!("refill_stamina"), items_offset: None, batch: false },
+    CommandRoute { logic: 15, selector: selector!("withdraw_lords"), items_offset: None, batch: false },
 ];
 
 pub fn logic_class(
@@ -192,7 +193,8 @@ pub enum Command {
     SetEntityName: crate::names::SetEntityName,
     EnterDepth: crate::commands::EnterDepth,
     Research: crate::research::Research,
-    ChooseAttribute: crate::progression::ChooseAttribute,
-    UpgradeBuilding: crate::buildings::ChangeBuilding,
+    BuyTier: crate::progression::BuyTier,
     InteractSite: crate::relics::InteractSite,
+    RefillStamina: crate::relics::RefillStamina,
+    WithdrawLords: crate::relics::WithdrawLords,
 }

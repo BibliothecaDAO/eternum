@@ -92,7 +92,8 @@ export const commandRoutes = [
   { name: "SetEntityName", logic: "structures", entrypoint: "set_entity_name" },
   { name: "EnterDepth", logic: "movement", entrypoint: "enter_depth" },
   { name: "Research", logic: "construction", entrypoint: "research" },
-  { name: "ChooseAttribute", logic: "relics", entrypoint: "choose_attribute" },
-  { name: "UpgradeBuilding", logic: "construction", entrypoint: "upgrade_building" },
+  { name: "BuyTier", logic: "relics", entrypoint: "buy_tier" },
   { name: "InteractSite", logic: "relics", entrypoint: "interact_site" },
+  { name: "RefillStamina", logic: "relics", entrypoint: "refill_stamina" },
+  { name: "WithdrawLords", logic: "relics", entrypoint: "withdraw_lords" },
 ];

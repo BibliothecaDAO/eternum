@@ -11,7 +11,6 @@ import { RealmVisitFoot, useVisitedRealm } from "./board/realm-visit";
 import { FrontierSeason, SeasonOver, useSeasonRank } from "./board/season-board";
 import { useSpectatorWatchesTheLeader } from "./board/spectator-watch";
 import { ChestMomentView } from "./chest/chest-moment-view";
-import { useChestResults } from "./chest/chest-results";
 import { useExpeditionRules, useFrontierRealm } from "./frontier-home";
 import { FrontierSelectionSheet } from "./frontier-selection-sheet";
 import { FrontierSurfaces } from "./frontier-surfaces";
@@ -55,7 +54,6 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
   const dockRealm = visit ? visited : realm;
   // A spectator has no realm of their own: they watch the season's leader, and the strip reads the watched realm.
   useSpectatorWatchesTheLeader();
-  useChestResults();
   const [surface, setSurface] = useHudSurface();
   const chat = useGameChat(surface === "chat");
   if (showBlankOverlay) return null;

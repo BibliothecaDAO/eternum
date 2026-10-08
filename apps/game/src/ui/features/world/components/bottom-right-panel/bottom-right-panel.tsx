@@ -205,8 +205,6 @@ const LocalTilePanel = () => {
     "StructureBuildings",
     "Building",
     "RealmKnowledge",
-    "ResearchNode",
-    "BuildingTierRule",
   ]);
   const selectedStructure = useMemo(() => {
     const base = liveStructure?.base;
@@ -257,7 +255,7 @@ const LocalTilePanel = () => {
       if (selectedStructureCategory === StructureType.Realm) return "Castle";
       if (isVillageLikeStructureCategory(selectedStructureCategory)) return mode.labels.village;
       if (selectedStructureCategory === StructureType.Mine)
-        return getMinePresentation(presentedMineKind(setup.store, liveStructure!)!).name;
+        return getMinePresentation(presentedMineKind(liveStructure!)!).name;
       if (selectedStructureCategory === StructureType.Hyperstructure) return "Hyperstructure";
       if (selectedStructureCategory === StructureType.Bank) return "Bank";
       return "Structure";
@@ -835,5 +833,5 @@ BottomRightPanel.displayName = "BottomRightPanel";
 const mineKindOnTile = (store: NativeFactStore, occupierId: number | string | bigint | null | undefined) => {
   if (!occupierId) return undefined;
   const structure = store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: Number(occupierId) });
-  return structure ? presentedMineKind(store, structure) : undefined;
+  return structure ? presentedMineKind(structure) : undefined;
 };

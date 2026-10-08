@@ -10,7 +10,7 @@ import {
   isAtExpeditionSpire,
   liveHomeArmies,
   readExpeditionRules,
-  researchedDepths,
+  researchedDepth,
 } from "@bibliothecadao/eternum";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { canIssueOrders } from "@/utils/can-issue-orders";
@@ -27,12 +27,12 @@ export const FrontierSpireSheet = ({ realm, onClose }: { realm: NativeRows["Stru
   const selectedArmy = useUIStore((state) => state.entityActions.selectedEntityId);
   const ordersAllowed = useUIStore(canIssueOrders);
   const address = useAccountStore((state) => state.account?.address);
-  useNativeRevision(["ArmySlot", "ExplorerTroops", "TileOccupancy", "RealmKnowledge", "ResearchNode"]);
+  useNativeRevision(["ArmySlot", "ExplorerTroops", "TileOccupancy", "RealmKnowledge"]);
   const rules = readExpeditionRules(store, realm.game_id);
   const now = getBlockTimestamp().currentBlockTimestamp;
   if (!isMapView || !ordersAllowed || !address || BigInt(address) !== realm.owner || !rules || now < rules.startMainAt)
     return null;
-  if (!researchedDepths(store, realm.game_id, realm.entity_id)?.length) return null;
+  if (!researchedDepth(store, realm.game_id, realm.entity_id)) return null;
   const spire = expeditionSpireTile(rules, realm, now);
   if (!spire) return null;
   const spireSelected = selected?.col === spire.col && selected?.row === spire.row;

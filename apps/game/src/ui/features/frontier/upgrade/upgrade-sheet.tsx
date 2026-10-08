@@ -7,9 +7,8 @@ import type { UpgradePlan, UpgradeStep } from "./upgrade-plan";
 import { Sheet } from "@/ui/design-system/kit/sheet";
 
 /**
- * Frontier's upgrade sheet (design §3.12, mockup 1), on a building or on the keep: its name with the marked plot's ×2,
- * the population it takes, the thing now and next as art with its tier banner and what each gives, and one Upgrade
- * button carrying the price. At the top tier the next side is gone and the button with it.
+ * Frontier's upgrade sheet (design §3.12, mockup 1), on the keep: its name, the population it takes, the thing now and
+ * next as art with its tier banner and what each gives, and one Upgrade button carrying the price. At the top tier the next side is gone and the button with it.
  */
 export const UpgradeSheet = ({
   plan,
@@ -34,7 +33,6 @@ export const UpgradeSheet = ({
     <Sheet label={plan.name} onClose={onClose}>
       <header className="flex items-center gap-2">
         <h2 className="frontier-title">{plan.name}</h2>
-        {plan.doubled && <DoubledBadge />}
         {plan.population !== undefined && (
           <span className="ml-auto">
             <Chip small label="Population" icon={<PersonGlyph />} value={formatAmount(plan.population)} />
@@ -86,16 +84,6 @@ const ArrowGlyph = () => (
       strokeLinejoin="round"
     />
   </svg>
-);
-
-/** The ring's marked plot doubles what the building gives. */
-const DoubledBadge = () => (
-  <span
-    aria-label="Doubled on this plot"
-    className="rounded-full bg-[radial-gradient(circle_at_40%_35%,#ffd98a,#e39001)] px-2 py-0.5 font-[Lexend] text-sm font-extrabold text-[#1b1207] shadow-[0_0_10px_rgba(246,172,29,0.6)]"
-  >
-    ×2
-  </span>
 );
 
 const StepView = ({ step, next = false }: { step: UpgradeStep; next?: boolean }) => (

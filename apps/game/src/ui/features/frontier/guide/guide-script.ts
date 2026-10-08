@@ -15,8 +15,8 @@ export interface GuideFacts {
   armies: number;
   /** An army of today has spent stamina: it has explored or moved. */
   armyActed: boolean;
-  /** An army can afford its first attribute tier (the army's XP and tier prices, with the contracts' schema). */
-  armyTierAffordable: boolean | undefined;
+  /** An army's XP buys a tier of an attribute now. */
+  armyTierAffordable: boolean;
   /** A guarded camp of today's region on the board, where "Show me" frames it; null when there is none. */
   camp: { x: number; y: number } | null;
   /** A site of the expedition has been cleared. */
@@ -103,7 +103,7 @@ export const GUIDE_STEPS: readonly GuideStep[] = [
     id: "first-army-tier",
     mark: "speaking",
     line: say("Enough XP. Upgrade a tier: Battle for the main army, Scouting for scouts."),
-    when: (facts) => facts.armyTierAffordable === true,
+    when: (facts) => facts.armyTierAffordable,
   },
   {
     id: "a-camp",

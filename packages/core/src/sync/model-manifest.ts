@@ -11,7 +11,8 @@ export interface GameSyncScope {
   actor?: string;
   visit?: string;
   expedition?: {
-    absoluteEpoch: number;
+    /** The season day the scope is for, or -1 before the season starts. */
+    day: number;
     spacing: number;
     owners: ReadonlySet<string>;
     realms: ReadonlySet<string>;
@@ -109,8 +110,7 @@ export function gameSyncScopeKeys(scope: GameSyncScope): ReadonlySet<string> {
   if (holdsEveryScopedRow(scope)) keys.add("*");
   else if (expedition)
     for (const set of [...SYNC_SETS, "regions"] as const)
-      for (const value of expedition[set])
-        keys.add(`${set}:${value}`).add(`${set}:${value}@${expedition.absoluteEpoch}`);
+      for (const value of expedition[set]) keys.add(`${set}:${value}`).add(`${set}:${value}@${expedition.day}`);
   scopeKeysByScope.set(scope, keys);
   return keys;
 }

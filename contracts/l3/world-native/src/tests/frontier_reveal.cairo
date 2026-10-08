@@ -1,7 +1,8 @@
-use crate::expeditions::{ExpeditionSite, SiteKind, site_reward};
+use crate::expeditions::{ExpeditionSite, site_reward};
 use crate::exploration_rewards::reveal_reward;
 use crate::resources::{ESSENCE, LABOR};
 use crate::rules::RESOURCE_PRECISION;
+use crate::taxonomy::{RIFT_CATEGORY, RUIN_CATEGORY, STRAGGLERS_CATEGORY};
 use crate::troops::{TroopTier, Troops};
 
 #[test]
@@ -47,16 +48,19 @@ fn frontier_reveal_draws_only_essence_or_labor_evenly_over_ten_thousand_reveals(
 #[test]
 fn site_payout_keeps_initial_scaled_guard_count_and_has_no_clock_factor() {
     let initial = 1001 * RESOURCE_PRECISION + 1;
-    let camp = ExpeditionSite { kind: SiteKind::Camp, initial_guard_count: initial, cleared: false };
+    let camp_category = crate::taxonomy::CAMP_CATEGORY;
+    let site = ExpeditionSite { initial_guard_count: initial, cleared: false };
     assert_eq!(
-        site_reward(camp).unwrap(), crate::resources::ResourceAmount { resource_type: LABOR, amount: initial / 2 },
+        site_reward(camp_category, site).unwrap(),
+        crate::resources::ResourceAmount { resource_type: LABOR, amount: initial / 2 },
     );
-    assert_eq!(site_reward(ExpeditionSite { cleared: true, ..camp }), site_reward(camp));
-    let rift = ExpeditionSite { kind: SiteKind::Rift, ..camp };
+    assert_eq!(site_reward(camp_category, ExpeditionSite { cleared: true, ..site }), site_reward(camp_category, site));
     assert_eq!(
-        site_reward(rift).unwrap(), crate::resources::ResourceAmount { resource_type: ESSENCE, amount: initial * 3 },
+        site_reward(RIFT_CATEGORY, site).unwrap(),
+        crate::resources::ResourceAmount { resource_type: ESSENCE, amount: initial * 3 },
     );
-    assert!(site_reward(ExpeditionSite { kind: SiteKind::FallenRealm, ..camp }).is_none());
+    assert!(site_reward(STRAGGLERS_CATEGORY, site).is_none());
+    assert!(site_reward(RUIN_CATEGORY, site).is_none());
 }
 
 #[test]
@@ -72,14 +76,12 @@ fn site_payout_counts_all_initial_guard_troops_without_tier_weighting() {
             Troops { count: 700 * RESOURCE_PRECISION, tier, ..Default::default() },
             Troops { count: 400 * RESOURCE_PRECISION, tier, ..Default::default() },
         ];
-        crate::logic::expeditions::create_site(key, SiteKind::Camp, guards.span());
+        crate::logic::expeditions::create_site(key, guards.span());
         let site = crate::logic::expeditions::expedition_site(key).unwrap();
         assert_eq!(site.initial_guard_count, 1100 * RESOURCE_PRECISION);
-        assert_eq!(site_reward(site).unwrap().amount, 550 * RESOURCE_PRECISION);
+        assert_eq!(site_reward(crate::taxonomy::CAMP_CATEGORY, site).unwrap().amount, 550 * RESOURCE_PRECISION);
         let cleared = crate::logic::expeditions::clear_site(key);
         assert_eq!(cleared.initial_guard_count, site.initial_guard_count);
-        assert_eq!(
-            site_reward(ExpeditionSite { kind: SiteKind::Rift, ..cleared }).unwrap().amount, 3300 * RESOURCE_PRECISION,
-        );
+        assert_eq!(site_reward(RIFT_CATEGORY, cleared).unwrap().amount, 3300 * RESOURCE_PRECISION);
     }
 }

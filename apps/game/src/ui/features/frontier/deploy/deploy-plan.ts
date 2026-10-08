@@ -6,9 +6,11 @@ import {
   getTroopResourceId,
   readRevealPercent,
   readTroopRaiseCost,
+  realmLearned,
+  researchTier,
   revealYield,
 } from "@bibliothecadao/eternum";
-import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
+import { nativeResearchConstants, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { musterStamina, type OpenArmySlot, openArmySlots } from "@bibliothecadao/eternum/troop-stamina";
 import { type Direction, RESOURCE_PRECISION, ResourcesIds, TroopTier, TroopType } from "@bibliothecadao/types";
 
@@ -29,13 +31,15 @@ interface DeployPlan {
   wheatPerTroopTile: number;
   /** Whole wheat the realm holds. */
   wheat: number;
+  /** The Logistics tiers above common the realm's Supply yard gives every new army. */
+  trainedLogistics: number;
 }
 
 const TYPES = [TroopType.Knight, TroopType.Crossbowman, TroopType.Paladin] as const;
 const TIERS = [TroopTier.T1, TroopTier.T2, TroopTier.T3] as const;
 const PRECISION = BigInt(RESOURCE_PRECISION);
 
-/** The realm's deploy today; unknown while any slot, troop or wheat balance is. */
+/** The realm's deploy today; unknown while any slot, troop or wheat balance, or the realm's research, is. */
 export const readDeployPlan = (
   store: NativeFactStore,
   realm: NativeRows["Structure"],
@@ -44,7 +48,8 @@ export const readDeployPlan = (
   const allowed = realm.base.troop_max_explorer_count;
   const open = openArmySlots(store, { game_id: realm.game_id, entity_id: realm.entity_id, allowedSlots: allowed });
   const wheat = getBalance(realm.entity_id, ResourcesIds.Wheat, defaultTick, store).balance;
-  if (!open || wheat === undefined) return undefined;
+  const learned = realmLearned(store, realm.game_id, realm.entity_id);
+  if (!open || wheat === undefined || learned === undefined) return undefined;
   const troops = readTroopsAtHome(store, realm, defaultTick);
   if (troops === undefined) return undefined;
   return {
@@ -56,6 +61,7 @@ export const readDeployPlan = (
       ? Math.abs(computeTravelFoodCosts({ category: troops.type, count: PRECISION }).wheatPayAmount)
       : 0,
     wheat: Number(BigInt(wheat) / PRECISION),
+    trainedLogistics: researchTier(learned, nativeResearchConstants.ROW_SUPPLY_YARD),
   };
 };
 
@@ -140,7 +146,13 @@ export const previewDeploy = (
         : revealYield({ tier: troops.tier, count: BigInt(whole) * PRECISION }, limits, percent),
     stamina:
       plan.next && troops
-        ? musterStamina(plan.next, { category: troops.type, tier: troops.tier }, armiesTick, staminaRules)
+        ? musterStamina(
+            plan.next,
+            { category: troops.type, tier: troops.tier },
+            armiesTick,
+            staminaRules,
+            plan.trainedLogistics,
+          )
         : null,
   };
 };

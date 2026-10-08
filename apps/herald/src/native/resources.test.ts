@@ -211,7 +211,7 @@ describe("native building facts", () => {
     native.applyReceipt(
       fold,
       receipt([
-        rowEvent("Building", keys, { category: 37, paused: false, labor_paid: 0n, tier: 1 }),
+        rowEvent("Building", keys, { category: 37, paused: false, labor_paid: 0n }),
         resourceEvent("ResourceBalance", ["1", "7", "23"], { balance: 90n }),
       ]),
       10,
@@ -227,7 +227,7 @@ describe("native building facts", () => {
     native.applyReceipt(
       fold,
       receipt([
-        rowEvent("Building", keys, { category: 37, paused: true, labor_paid: 0n, tier: 1 }),
+        rowEvent("Building", keys, { category: 37, paused: true, labor_paid: 0n }),
         resourceEvent("ResourceBalance", ["1", "7", "35"], { balance: 60n }),
       ]),
       11,
@@ -247,7 +247,7 @@ describe("native building facts", () => {
   });
   it("rejects a malformed building without publishing the accompanying balance", () => {
     const { native, fold } = setup();
-    const building = rowEvent("Building", keys, { category: 37, paused: false, labor_paid: 0, tier: 1 });
+    const building = rowEvent("Building", keys, { category: 37, paused: false, labor_paid: 0 });
     expect(() =>
       native.applyReceipt(
         fold,

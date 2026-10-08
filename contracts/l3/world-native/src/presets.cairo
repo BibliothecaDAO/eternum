@@ -8,10 +8,9 @@ pub struct ResourcePreset {
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct StructurePreset {
     pub board: Option<crate::buildings::BoardRules>,
-    pub research: Span<crate::research::ResearchNodeConfig>,
-    pub building_tiers: Span<crate::research::BuildingTierConfig>,
+    pub research: Span<crate::research::ResearchPriceConfig>,
     pub buildings: Span<crate::buildings::BuildingRuleConfig>,
-    pub camps: Span<crate::resources::ResourceAmount>,
+    pub camps: crate::camps::CampRules,
     pub faith: crate::faith::FaithRules,
     pub upgrade_limits: crate::upgrades::UpgradeLimits,
     pub upgrades: Span<crate::upgrades::UpgradeRecipe>,
@@ -56,8 +55,8 @@ pub struct PresetDefinition {
 
 pub fn validate(preset: PresetDefinition) {
     let rules = preset.rules;
-    assert!(preset.economy.chests.is_some() == (rules.epoch_seconds != 0), "chest rules require expedition");
-    assert!(preset.economy.discovery.is_some() == (rules.epoch_seconds != 0), "discovery requires expedition");
+    assert!(preset.economy.chests.is_some() == (rules.day_unit_seconds != 0), "chest rules require expedition");
+    assert!(preset.economy.discovery.is_some() == (rules.day_unit_seconds != 0), "discovery requires expedition");
     if let Some(discovery) = preset.economy.discovery {
         crate::discovery::validate_frontier(discovery);
         assert!(
@@ -65,14 +64,27 @@ pub fn validate(preset: PresetDefinition) {
             "expedition uses categorical odds",
         );
     }
-    assert!(preset.economy.progression.is_some() == (rules.epoch_seconds != 0), "progression requires expedition");
+    assert!(preset.economy.progression.is_some() == (rules.day_unit_seconds != 0), "progression requires expedition");
     if let Some(progression) = preset.economy.progression {
         assert!(
-            progression.reveal_xp != 0 && progression.clear_xp != 0 && progression.level_step_xp != 0,
+            progression.reveal_xp != 0
+                && progression.fixed_xp != 0
+                && progression.uncommon_xp != 0
+                && progression.rare_xp != 0
+                && progression.epic_xp != 0
+                && progression.legendary_xp != 0,
             "empty progression rules",
         );
     }
+    assert!(
+        rules.day_unit_seconds == 0 || rules.troop_limit_config.t1_tier_strength == 1,
+        "expedition troops must have strength one",
+    );
     assert!(rules.tick_config.armies_tick_in_seconds != 0, "zero army tick");
+    assert!(
+        Into::<u32, u64>::into(rules.day_unit_seconds) % rules.tick_config.armies_tick_in_seconds == 0,
+        "day unit is not whole ticks",
+    );
     if rules.bitcoin_mine_config.enabled {
         assert!(rules.tick_config.bitcoin_phase_in_seconds != 0, "zero Bitcoin phase duration");
         assert!(rules.bitcoin_mine_config.prize_per_phase != 0, "zero Bitcoin prize");
@@ -100,14 +112,8 @@ pub fn validate(preset: PresetDefinition) {
     assert!(troops.mercenaries_troop_lower_bound < troops.mercenaries_troop_upper_bound, "invalid mercenary bounds");
     if crate::rules::rule_enabled(preset.rules, crate::rules::DISCOVER_CAMPS)
         && map.camp_win_probability != 0
-        && preset.rules.epoch_seconds == 0 {
-        let mut labor_rate = None;
-        for rule in preset.resources.resources {
-            if *rule.resource_type == 23 {
-                labor_rate = Some(*rule.village_rate);
-            }
-        }
-        assert!(labor_rate.expect('missing village labor rule') > 0, "zero camp labor rate");
+        && preset.rules.day_unit_seconds == 0 {
+        assert!(preset.structures.camps.labor_rate > 0, "zero camp labor rate");
     }
 }
 

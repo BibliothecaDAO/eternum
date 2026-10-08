@@ -41,7 +41,9 @@ export const FrontierResearch = ({ realm }: { realm: NativeRows["Structure"] }) 
       await setup.systemCalls.research({
         signer: account.account as unknown as Account,
         structureId: realm.entity_id,
-        node: node.node,
+        row: node.row,
+        // The sheet offers no choice yet: a tier takes its first side (Fields, Tools, Drill, camps).
+        choice: 0,
       });
       setOpen(null);
     } catch (error) {

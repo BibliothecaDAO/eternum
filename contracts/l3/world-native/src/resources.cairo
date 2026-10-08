@@ -1,15 +1,28 @@
 use crate::rules::RESOURCE_PRECISION;
 
 pub const LABOR: u8 = 23;
+pub const WHEAT: u8 = 35;
 pub const LORDS: u8 = 37;
 pub const ESSENCE: u8 = 38;
 pub const UNLIMITED_OUTPUT: u128 = 0xffffffffffffffffffffffffffffffff;
+// Settlements before this rule wore markers down by what they produced; a season never produces this much.
+const UNLIMITED_MARGIN: u128 = 0x10000000000000000;
 pub const RESOURCE_RATE_SCALE: u128 = 0x10000000000000000;
 pub(crate) const FIRST_TROOP_RESOURCE: u8 = 26;
 pub(crate) const LAST_TROOP_RESOURCE: u8 = 34;
 
+/// Whether a producer's output budget is the unlimited marker, the one comparison every reader makes.
+pub fn is_unlimited(output_amount_left: u128) -> bool {
+    output_amount_left >= UNLIMITED_OUTPUT - UNLIMITED_MARGIN
+}
+
 pub fn is_troop_resource(resource_type: u8) -> bool {
     resource_type >= FIRST_TROOP_RESOURCE && resource_type <= LAST_TROOP_RESOURCE
+}
+
+/// The resources a board realm's castle stores up to a limit of their own: wheat, labor and troops.
+pub fn has_castle_limit(resource_type: u8) -> bool {
+    resource_type == WHEAT || resource_type == LABOR || is_troop_resource(resource_type)
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
@@ -46,18 +59,19 @@ pub struct Production {
     pub building_count: u8,
     pub production_rate: u64,
     pub output_amount_left: u128,
-    pub last_updated_at: u32,
+    // The armies tick through which production is paid: it pays in whole ticks, never a fraction of one.
+    pub last_settled_tick: u32,
 }
 
 
 const PRODUCTION_TIME_SCALE: u128 = 0x10000000000000000;
 const PRODUCTION_COUNT_SCALE: u128 = 0x1000000000000000000000000;
 
-// The cap occupies the low limb; rate, settlement time and building count use 104 high bits.
+// The cap occupies the low limb; rate, settled tick and building count use 104 high bits.
 pub impl ProductionPacking of starknet::storage_access::StorePacking<Production, felt252> {
     fn pack(value: Production) -> felt252 {
         let high = value.production_rate.into()
-            + value.last_updated_at.into() * PRODUCTION_TIME_SCALE
+            + value.last_settled_tick.into() * PRODUCTION_TIME_SCALE
             + value.building_count.into() * PRODUCTION_COUNT_SCALE;
         u256 { low: value.output_amount_left, high }.try_into().unwrap()
     }
@@ -67,7 +81,7 @@ pub impl ProductionPacking of starknet::storage_access::StorePacking<Production,
             building_count: (value.high / PRODUCTION_COUNT_SCALE).try_into().unwrap(),
             production_rate: (value.high % PRODUCTION_TIME_SCALE).try_into().unwrap(),
             output_amount_left: value.low,
-            last_updated_at: (value.high / PRODUCTION_TIME_SCALE % 0x100000000).try_into().unwrap(),
+            last_settled_tick: (value.high / PRODUCTION_TIME_SCALE % 0x100000000).try_into().unwrap(),
         }
     }
 }
@@ -93,6 +107,8 @@ pub(crate) struct SettledResource {
     pub(crate) balance: u128,
     pub(crate) production: Production,
     pub(crate) weight: Weight,
+    // A store's own limit, where it has one; the shared weight still bounds every store.
+    pub(crate) limit: Option<u128>,
 }
 
 pub(crate) fn assert_resource(resource_type: u8) {
@@ -108,31 +124,37 @@ pub(crate) fn has_production(resource_type: u8) -> bool {
     resource_type != LORDS && (resource_type < 39 || resource_type > 56)
 }
 
+/// Pays a producer its per-second rate for every whole armies tick that has ended since it last settled.
 pub fn settle(
     resource_type: u8,
     ref balance: u128,
     ref production: Production,
     ref weight: Weight,
     unit_weight: u128,
-    now: u32,
-    support_bonus: u128,
+    limit: Option<u128>,
+    tick: u32,
+    tick_seconds: u32,
 ) {
-    let start_at = production.last_updated_at;
-    production.last_updated_at = now;
+    let since = production.last_settled_tick;
+    production.last_settled_tick = tick;
     if resource_type == LORDS || production.building_count == 0 {
         return;
     }
-    let mut produced = (now - start_at).into() * production.production_rate.into() + support_bonus;
-    if resource_type != 35 && resource_type != 36 {
+    let ticks: u128 = (tick - since).into();
+    let mut produced = ticks * production.production_rate.into() * tick_seconds.into();
+    if resource_type != 35 && resource_type != 36 && !is_unlimited(production.output_amount_left) {
         produced = core::cmp::min(produced, production.output_amount_left);
         production.output_amount_left -= produced;
     }
     if produced != 0 {
-        add(resource_type, ref balance, ref weight, produced, unit_weight);
+        add(resource_type, ref balance, ref weight, produced, unit_weight, limit);
     }
 }
 
-pub(crate) fn add(resource_type: u8, ref balance: u128, ref weight: Weight, amount: u128, unit_weight: u128) -> u128 {
+/// Stores what fits, under the shared weight and the store's own limit, and returns it: the rest is gone.
+pub(crate) fn add(
+    resource_type: u8, ref balance: u128, ref weight: Weight, amount: u128, unit_weight: u128, limit: Option<u128>,
+) -> u128 {
     let unlimited = weight.capacity == 0xffffffffffffffffffffffffffffffff;
     let remaining = if unlimited {
         weight.capacity
@@ -140,11 +162,14 @@ pub(crate) fn add(resource_type: u8, ref balance: u128, ref weight: Weight, amou
         weight.capacity - core::cmp::min(weight.capacity, weight.weight)
     };
     let total_weight = amount * unit_weight;
-    let storable = if remaining < total_weight {
+    let mut storable = if remaining < total_weight {
         remaining / unit_weight
     } else {
         amount
     };
+    if let Some(limit) = limit {
+        storable = core::cmp::min(storable, limit - core::cmp::min(limit, balance));
+    }
     balance += storable;
     assert_relic_precision(resource_type, balance);
     if !unlimited {
@@ -236,6 +261,8 @@ pub trait IResourceOperations<T> {
         timestamp: u64,
         game_context: crate::commands::ResourceContext,
     );
+    // Settles every producing store, as a change to its limits must first.
+    fn settle_production(ref self: T, key: ResourceKey, timestamp: u64, game_context: crate::commands::ResourceContext);
     fn change_structure_capacity(
         ref self: T,
         key: ResourceKey,

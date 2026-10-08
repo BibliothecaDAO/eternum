@@ -8,6 +8,7 @@ import { useWorldSpatialTiles } from "@/hooks/use-world-spatial-tiles";
 import { requestArmySelection } from "@/three/scenes/worldmap-army-select-request";
 import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
 import type { IconCode } from "@/ui/design-system/kit/kit-icon";
+import type { Tier } from "@/ui/design-system/kit/tier-chip";
 import { toast } from "@/ui/features/event-feed/notify";
 import { extractReadableErrorMessage } from "@/utils/error-message";
 import { biomeTypeOf, configManager, entityMapPosition } from "@bibliothecadao/eternum";
@@ -22,10 +23,22 @@ import { type ArmyOrder, type Cost, isCovered, useArmyStamina, useOrderAt } from
 import { armyArt, type DockArmy, useDockArmies } from "../hud/dock-armies";
 import { useApproachTile } from "./approach";
 import { useSelectedOwnArmy } from "./selected-army";
-import { readSiteCard, type SiteAttack, type SiteFight } from "./site-card-plan";
+import { readSiteCard, type SiteAttack, type SiteCardPlan, type SiteFight } from "./site-card-plan";
 import { type SiteChoice, SiteCardView, type SiteVerb } from "./site-card-view";
 
-const SITE_MODELS = ["ExpeditionSite", "ExplorerTroops", "ArmySlot", "Guard", "Structure", "TileOccupancy"] as const;
+const SITE_MODELS = [
+  "ExpeditionSite",
+  "SiteChest",
+  "ExplorerTroops",
+  "ArmyProgress",
+  "ArmySlot",
+  "Guard",
+  "Structure",
+  "TileOccupancy",
+  "ResourceBalance",
+  "ResourceProduction",
+  "RealmKnowledge",
+] as const;
 
 /** The resources a clear pays home, by the icon the card draws them with. */
 const PAY_ICONS: Partial<Record<ResourcesIds, IconCode>> = { [ResourcesIds.Labor]: "La", [ResourcesIds.Essence]: "Es" };
@@ -97,16 +110,16 @@ export const TileCard = ({ selected, onClose }: { selected: SelectedSite; onClos
     stamina,
     attack: { stamina: plan.attackStamina, sending, onAttack: () => void attackSite() },
   });
-  const payIcon = plan.payout && PAY_ICONS[plan.payout.resourceId];
 
   return (
     <SiteCardView
-      site={plan.kind}
-      beast={plan.beast}
+      site={SITE_OF[plan.kind]}
+      beast={plan.kind === "Ruin" ? plan.name : undefined}
       army={actor && { art: armyArt(actor.army.troops), troops: wholeTroops(actor.army) }}
       guard={plan.guard === undefined ? undefined : (plan.guard?.count ?? null)}
       fight={plan.fight}
-      pay={plan.payout && payIcon ? { icon: payIcon, amount: plan.payout.amount } : null}
+      pay={sitePay(plan)}
+      chest={plan.chest ? { tier: (plan.chest.tier + 1) as Tier, lords: plan.chest.amount } : undefined}
       xp={plan.xp}
       verb={verb}
       choices={actor ? undefined : choices}
@@ -191,6 +204,20 @@ const useSiteChoices = (selected: SelectedSite, wanted: boolean): SiteChoice[] =
       onPick: () => requestArmySelection(army.explorerId),
     };
   });
+};
+
+/** Each kind as the card names it. */
+const SITE_OF: Record<SiteCardPlan["kind"], "camp" | "rift" | "ruin" | "stragglers"> = {
+  Camp: "camp",
+  Rift: "rift",
+  Ruin: "ruin",
+  Stragglers: "stragglers",
+};
+
+/** What a camp or rift pays home and what of it fits; a ruin pays its chest, stragglers only XP. */
+const sitePay = (plan: SiteCardPlan) => {
+  const icon = plan.payout && PAY_ICONS[plan.payout.resourceId];
+  return plan.payout && icon ? { icon, amount: plan.payout.amount, fits: plan.payout.fits } : null;
 };
 
 /** A forecast the army does not win: it loses, or the fight stalls. */

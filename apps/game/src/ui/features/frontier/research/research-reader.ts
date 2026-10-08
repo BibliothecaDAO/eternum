@@ -2,17 +2,28 @@ import { useGame } from "@/hooks/context/game-context";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { knownBalance } from "@/ui/utils/utils";
-import { getBalance, learnedResearchNodes } from "@bibliothecadao/eternum";
-import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
-import { type BuildingType, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
+import {
+  getBalance,
+  getBuildingQuantity,
+  realmLearned,
+  researchRowCategory,
+  researchTier,
+} from "@bibliothecadao/eternum";
+import {
+  nativeResearchConstants as research,
+  type NativeFactStore,
+  type NativeRows,
+} from "@bibliothecadao/eternum/game-client";
+import { BuildingType, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import { useMemo } from "react";
 import type { ResearchNodeView, ResearchPlan } from "./research-plan";
 
 const RESEARCH_MODELS = [
   "RealmKnowledge",
-  "ResearchNode",
-  "BuildingTierRule",
+  "ResearchPrice",
+  "BoardRules",
   "BuildingRule",
+  "StructureBuildings",
   "ResourceBalance",
   "ResourceProduction",
 ] as const;
@@ -29,45 +40,51 @@ export const useResearchPlan = (realm: NativeRows["Structure"] | null): Research
 };
 
 /**
- * Each node of the game's table in order, learned (core's learnedResearchNodes), open once every prerequisite is
- * learned, else locked; and its Essence price.
+ * Each priced tier the sheet draws, in row order: learned up to the row's tier, open for the row's next tier once a
+ * building of its type stands, else locked; and its Essence price.
  */
 const readResearchPlan = (
   store: NativeFactStore,
   realm: NativeRows["Structure"],
   tick: number,
 ): ResearchPlan | undefined => {
-  const learned = learnedResearchNodes(store, realm.game_id, realm.entity_id);
-  if (!learned) return undefined;
-  const known = new Set(learned.map(({ node }) => node));
-  const nodes = [...store.inGame("ResearchNode", realm.game_id)].toSorted((left, right) => left.node - right.node);
+  const learned = realmLearned(store, realm.game_id, realm.entity_id);
+  if (learned === undefined) return undefined;
+  const prices = [...store.inGame("ResearchPrice", realm.game_id)]
+    .filter(({ row, tier }) => drawnEffect(row, tier) !== undefined)
+    .toSorted((left, right) => left.row - right.row || left.tier - right.tier);
   return {
     essence: knownBalance(getBalance(realm.entity_id, ResourcesIds.Essence, tick, store).balance),
-    nodes: nodes.map((node) => {
-      const effect = nodeEffect(node);
+    nodes: prices.map(({ row, tier, essence }) => {
+      const effect = drawnEffect(row, tier)!;
+      const reached = researchTier(learned, row);
       return {
-        node: node.node,
-        state: known.has(node.node) ? "learned" : prerequisitesLearned(node.prerequisites, known) ? "open" : "locked",
-        price: Number(node.essence_cost) / RESOURCE_PRECISION,
+        node: row * 8 + tier,
+        row,
+        state: tier <= reached ? "learned" : tier === reached + 1 && rowOpen(store, realm, row) ? "open" : "locked",
+        price: Number(essence) / RESOURCE_PRECISION,
         effect,
       };
     }),
   };
 };
 
-const prerequisitesLearned = (prerequisites: number, known: ReadonlySet<number>): boolean => {
-  for (let node = 0, mask = prerequisites; mask !== 0; node++, mask >>>= 1)
-    if (mask & 1 && !known.has(node)) return false;
-  return true;
+/**
+ * What the sheet draws for a row's tier: a building type's uncommon and rare tiers (its II and III), the Shrine and
+ * Well, and the three depths. Other tiers have no medallion yet.
+ */
+const drawnEffect = (row: number, tier: number): ResearchNodeView["effect"] | undefined => {
+  if (row === research.ROW_SHRINE) return { kind: "site", site: "Shrine" };
+  if (row === research.ROW_WELL) return { kind: "site", site: "Well" };
+  if (row === research.ROW_DEPTH) return { kind: "depth", depth: tier as 1 | 2 | 3 };
+  const category = researchRowCategory[row];
+  return category === undefined || tier > 2 ? undefined : { kind: "tier", category, tier: (tier + 1) as 2 | 3 };
 };
 
-const nodeEffect = ({ effect }: NativeRows["ResearchNode"]): ResearchNodeView["effect"] => {
-  if ("BuildingTier" in effect)
-    return {
-      kind: "tier",
-      category: effect.BuildingTier[0] as BuildingType,
-      tier: effect.BuildingTier[1] as 2 | 3,
-    };
-  if ("MapContent" in effect) return { kind: "site", site: effect.MapContent };
-  return { kind: "depth", depth: effect.Depth as 1 | 2 | 3 };
+/** A building row opens once a building of its type stands; the castle's own workshop does not count. */
+const rowOpen = (store: NativeFactStore, realm: NativeRows["Structure"], row: number): boolean => {
+  const category = researchRowCategory[row];
+  if (category === undefined) return true;
+  const castle = category === BuildingType.ResourceLabor ? 1 : 0;
+  return getBuildingQuantity(realm.entity_id, category, store) > castle;
 };

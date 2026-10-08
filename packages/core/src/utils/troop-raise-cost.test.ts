@@ -22,7 +22,7 @@ const realm = (board: boolean, wheat: bigint) => {
       building_count: 0,
       production_rate: 0n,
       output_amount_left: 0n,
-      last_updated_at: 0,
+      last_settled_tick: 0,
     }),
     upsert("0x7", "ResourceRule", { game_id: 1, resource_type: 35, unit_weight: 1n, realm_rate: 0n, village_rate: 0n }),
     upsert("0x5", "ProductionRecipe", {
@@ -33,7 +33,21 @@ const realm = (board: boolean, wheat: bigint) => {
       complex_output: 0n,
       complex_inputs: [],
     }),
-    ...(board ? [upsert("0x6", "BoardRules", { game_id: 1, demolition_refund_bps: 0, workshop_rate: 0n })] : []),
+    ...(board
+      ? [
+          upsert("0x6", "BoardRules", {
+            game_id: 1,
+            demolition_refund_bps: 0,
+            workshop_rate: 0n,
+            output_step_bps: 2500,
+            storage_step_bps: 5000,
+            population_step_bps: 2500,
+            ration_step: PRECISION / 4n,
+            training_gate_tier: 2,
+            castle_store_deploys: 2,
+          }),
+        ]
+      : []),
   ]);
   return store;
 };
@@ -45,6 +59,17 @@ describe("troop raise cost", () => {
     expect(five).toEqual([{ resource: 35, amount: 10n * PRECISION, held: 10n * PRECISION }]);
     expect(canPayTroopRaise(five)).toBe(true);
     expect(canPayTroopRaise(readTroopRaiseCost(store, 1, 7, 26, 6, 100))).toBe(false);
+  });
+
+  it("takes a quarter wheat off each troop for every Rations pick, and nothing for Drill", () => {
+    const store = realm(true, 10n * PRECISION);
+    const barracks = (learned: bigint) =>
+      store.applyFacts([upsert("0x8", "RealmKnowledge", { game_id: 1, structure_id: 7, learned })]);
+    // research.cairo: the Barracks tier at bit 14, its choices from bit 17, Rations = 1.
+    barracks((2n << 14n) | (1n << 17n) | (1n << 18n));
+    expect(readTroopRaiseCost(store, 1, 7, 26, 4, 100)![0]!.amount).toBe(6n * PRECISION);
+    barracks((2n << 14n) | (1n << 18n));
+    expect(readTroopRaiseCost(store, 1, 7, 26, 4, 100)![0]!.amount).toBe(7n * PRECISION);
   });
 
   it("rounds a fraction of a recipe up, as the contract never undercharges", () => {

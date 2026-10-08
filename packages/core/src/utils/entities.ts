@@ -33,7 +33,7 @@ export const getEntityInfo = (
     };
   } else {
     if (structure) {
-      name = getStructureName(store, structure, isBlitz);
+      name = getStructureName(structure, isBlitz);
     }
   }
 
@@ -85,11 +85,7 @@ const getRealmName = (structure: NativeRows["Structure"]) => {
   return structure.metadata.has_wonder ? `WONDER - ${baseName}` : baseName;
 };
 
-export const getStructureName = (
-  store: Pick<NativeFactStore, "get">,
-  structure: NativeRows["Structure"],
-  isBlitz: boolean,
-) => {
+export const getStructureName = (structure: NativeRows["Structure"], isBlitz: boolean) => {
   const cachedName = getEntityNameFromLocalStorage(structure.entity_id);
   let originalName = undefined;
 
@@ -99,8 +95,7 @@ export const getStructureName = (
     originalName = getHyperstructureName(structure);
   } else {
     const structureTypeName =
-      getStructureTypeName(structure.base.category as StructureType, presentedMineKind(store, structure)) ||
-      "Structure";
+      getStructureTypeName(structure.base.category as StructureType, presentedMineKind(structure)) || "Structure";
     originalName = `${structureTypeName} ${structure.entity_id}`;
   }
 

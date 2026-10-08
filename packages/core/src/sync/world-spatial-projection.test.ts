@@ -157,10 +157,11 @@ const createHarness = () => {
         false,
       );
     }, skipUpdateStream);
-  const writeExpeditionRules = (epochSeconds: number, spacing: number, startMainAt: number) => {
-    rules.set("SliceRules", { game_id: 13, epoch_seconds: epochSeconds });
+  // Days drawn from seed 1, whose first bag opens with a 3-unit day.
+  const writeExpeditionRules = (dayUnitSeconds: number, spacing: number, startMainAt: number) => {
+    rules.set("SliceRules", { game_id: 13, day_unit_seconds: dayUnitSeconds });
     rules.set("SettlementRules", { game_id: 13, spacing });
-    rules.set("GameRegistry", { game_id: 13, start_main_at: BigInt(startMainAt) });
+    rules.set("GameRegistry", { game_id: 13, start_main_at: BigInt(startMainAt), seed: 1n });
   };
   const writeRealm = (entityId: number, realmId: number, level: number) =>
     write(
@@ -216,7 +217,8 @@ describe("WorldSpatialProjection", () => {
     const harness = createHarness();
     setBlockTimestampSource(() => 86_400 * 10 + 100);
     try {
-      harness.writeExpeditionRules(86_400, 16, 86_400 * 10);
+      // Four-hour units: day 0 lasts 12 hours, day 1 the next 16.
+      harness.writeExpeditionRules(14_400, 16, 86_400 * 10);
       harness.writeRealm(21, 3, 1);
       harness.writeRealm(22, 4, 0);
       harness.projection.start();
@@ -244,7 +246,7 @@ describe("WorldSpatialProjection", () => {
       row: 200,
       biome: 0,
       occupierId: 7,
-      occupierType: TileOccupier.ExplorerKnightT1Regular,
+      occupierType: TileOccupier.ExplorerKnightT1,
     });
     writeArmy("explorer", { explorerId: 7, col: 100, row: 200 });
     projection.start();
@@ -378,7 +380,7 @@ describe("WorldSpatialProjection", () => {
       col: 103,
       row: 200,
       occupierId: 10,
-      occupierType: TileOccupier.ExplorerKnightT1Regular,
+      occupierType: TileOccupier.ExplorerKnightT1,
     });
 
     projection.start();

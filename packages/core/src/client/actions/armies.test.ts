@@ -22,9 +22,10 @@ const parkedRealm = {
 
 const rows: Record<string, unknown> = {
   Structure: parkedRealm,
-  SliceRules: { epoch_seconds: 86400 },
+  SliceRules: { day_unit_seconds: 14_400 },
   SettlementRules: { spacing: 10 },
-  GameRegistry: { start_main_at: 86400n },
+  // Seed 1's first bag opens with a 12-hour day, so day 1 starts at 129600.
+  GameRegistry: { start_main_at: 86400n, seed: 1n },
 };
 
 const client = {
@@ -49,7 +50,7 @@ describe("structure paths", () => {
     } as never);
     vi.spyOn(configManager, "getTick").mockReturnValue(1);
     vi.spyOn(configManager, "getMapCenter").mockReturnValue(0);
-    vi.spyOn(timestamp, "getBlockTimestamp").mockReturnValue({ currentBlockTimestamp: 86400 * 2 + 10 } as never);
+    vi.spyOn(timestamp, "getBlockTimestamp").mockReturnValue({ currentBlockTimestamp: 129_600 + 10 } as never);
 
     const input = {
       structureId: 42,

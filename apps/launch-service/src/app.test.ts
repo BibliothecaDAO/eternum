@@ -8,7 +8,7 @@ import { D1CalendarStore } from "./calendar-store";
 import { D1SlotStore } from "./slot-store";
 import { D1LaunchStore } from "./store";
 import { createLaunchTestDatabase, testChain } from "./test-database";
-import { day } from "./test-dates";
+import { day, frontierSeasonEnd } from "./test-dates";
 
 const ALLOWED_ORIGIN = "https://play.realms.party";
 const ALLOWED_ADDRESS = "0x123";
@@ -157,7 +157,7 @@ describe("launcher rosters and off-timetable slots", () => {
         },
         body: JSON.stringify(body),
       });
-    const season = { startsAt: day(0).toISOString(), endsAt: day(120).toISOString() };
+    const season = { startsAt: day(0).toISOString(), endsAt: frontierSeasonEnd(day(0)) };
     expect((await operator.app.request(put(season, { token: OPERATOR_TOKEN }))).status).toBe(200);
     const backwards = { startsAt: season.endsAt, endsAt: season.startsAt };
     expect((await operator.app.request(put(backwards, { token: OPERATOR_TOKEN }))).status).toBe(409);
@@ -170,10 +170,12 @@ describe("launcher rosters and off-timetable slots", () => {
   test("publishes game ids only after calendar and Blitz roster launches complete", async () => {
     const { app, calendar, slots, store } = createApp(signedOut);
     const now = Math.ceil(Date.now() / 1_000) * 1_000;
+    // A season starts on Frontier's 120 s armies tick.
+    const startsAt = new Date(Math.ceil((now + 60_000) / 120_000) * 120_000);
     const season = {
       phase: "frontier" as const,
-      startsAt: new Date(now + 60_000).toISOString(),
-      endsAt: new Date(now + 7 * 24 * 60 * 60_000).toISOString(),
+      startsAt: startsAt.toISOString(),
+      endsAt: frontierSeasonEnd(startsAt),
     };
     await calendar.set(season, now);
     await scheduleFrontierSeason(store, season);

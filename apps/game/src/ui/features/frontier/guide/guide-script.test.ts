@@ -7,7 +7,7 @@ const facts = (overrides: Partial<GuideFacts> = {}): GuideFacts => ({
   troopsAtHome: 1_500,
   armies: 0,
   armyActed: false,
-  armyTierAffordable: undefined,
+  armyTierAffordable: false,
   camp: null,
   siteCleared: false,
   stragglers: undefined,

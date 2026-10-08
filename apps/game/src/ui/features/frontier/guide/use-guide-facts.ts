@@ -19,6 +19,7 @@ import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-c
 import { BuildingType, StructureType, type TroopTier, type TroopType } from "@bibliothecadao/types";
 import { knownBalance } from "@/ui/utils/utils";
 import { useMemo } from "react";
+import { affordableUpgrades } from "../attributes/attributes";
 import { troopsOnHand, type useExpeditionRules } from "../frontier-home";
 import type { GuideFacts } from "./guide-script";
 
@@ -33,13 +34,14 @@ const GUIDE_MODELS = [
   "Guard",
   "ResourceBalance",
   "ResourceProduction",
+  "ArmyProgress",
   "ExpeditionSite",
 ] as const;
 
 /**
- * What the guide answers to, read from the store at chain time; it never listens for events. The facts the contracts'
- * schema brings (attribute and type tiers, stragglers, ruin chests, store limits) read as unknown until then, and the
- * losing fight and the season's end are told by the cards that host those lines.
+ * What the guide answers to, read from the store at chain time; it never listens for events. The facts not wired yet
+ * (type tiers, stragglers, ruin chests, store limits) read as unknown, and the losing fight and the season's end are
+ * told by the cards that host those lines.
  */
 export const useGuideFacts = (rules: ExpeditionRules, realm: NativeRows["Structure"] | null): GuideFacts => {
   const { setup } = useGame();
@@ -91,6 +93,7 @@ const readGuideFacts = (
     onMap: clock.onMap,
     armiesTired:
       stamina.length === armies.length && stamina.length > 0 && stamina.every((bar) => bar.current < exploreCost),
+    armyTierAffordable: armies.some((army) => canBuyAttributeTier(store, army)),
     ...readSiteFirsts(store, realm.game_id),
     armyBeyondSpire: armies.some(
       (army) => expeditionDepth(rules, { y: entityMapPosition(store, army.game_id, army.explorer_id).y }) >= 1,
@@ -98,18 +101,26 @@ const readGuideFacts = (
   };
 };
 
-/** The expedition's sites as the guide's firsts read them. */
+/** An army whose XP buys a tier of an attribute now. */
+const canBuyAttributeTier = (store: NativeFactStore, army: NativeRows["ExplorerTroops"]): boolean => {
+  const progress = store.get("ArmyProgress", { game_id: army.game_id, explorer_id: army.explorer_id });
+  const xpRules = store.get("ArmyProgressionRules", { game_id: army.game_id });
+  return progress !== undefined && xpRules !== undefined && affordableUpgrades(progress, xpRules).length > 0;
+};
+
+/** The expedition's sites as the guide's firsts read them; a site's kind is its structure's category. */
 const readSiteFirsts = (store: NativeFactStore, gameId: number) => {
   const sites = [...store.inGame("ExpeditionSite", gameId)];
+  const isRuin = (site: NativeRows["ExpeditionSite"]) =>
+    store.get("Structure", { game_id: gameId, entity_id: site.entity_id })?.base.category === StructureType.Ruin;
   return {
     siteCleared: sites.some((site) => site.cleared),
-    ruin: sites.some((site) => site.kind === "FallenRealm" && !site.cleared),
+    ruin: sites.some((site) => !site.cleared && isRuin(site)),
   };
 };
 
 /** What waits for the contracts' schema, and what the hosting cards tell. */
 const NOT_YET_READ = {
-  armyTierAffordable: undefined,
   stragglers: undefined,
   typeTierAffordable: undefined,
   chestPaid: undefined,
@@ -121,6 +132,7 @@ const NOT_YET_READ = {
 const NO_REALM: GuideFacts = {
   ...NOT_YET_READ,
   realm: false,
+  armyTierAffordable: false,
   barracks: false,
   troopsAtHome: undefined,
   armies: 0,

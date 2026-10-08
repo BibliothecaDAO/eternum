@@ -49,7 +49,7 @@ fn production_bonus_packing_retains_full_width_percentages_and_ticks(a: u16, b: 
 fn building_packing_preserves_structure_pause_and_full_width_population(
     category: u8, paused: bool, current: u32, maximum: u32, labor_paid: u128,
 ) {
-    let building = crate::buildings::Building { category, paused, labor_paid, tier: category };
+    let building = crate::buildings::Building { category, paused, labor_paid };
     assert_eq!(crate::buildings::BuildingPacking::unpack(crate::buildings::BuildingPacking::pack(building)), building);
     let population = crate::buildings::Population { current, max: maximum };
     assert_eq!(
@@ -117,7 +117,7 @@ fn late_refills_use_recorded_troop_bonus_expiry_without_retroactive_production()
     let slot = ResourceSlot { game_id: 3, entity_id: key.entity_id, resource_type: 26 };
     let at_end = resources.resource_production(slot);
     assert_eq!(at_end.output_amount_left, 150);
-    assert_eq!(at_end.last_updated_at, 0);
+    assert_eq!(at_end.last_settled_tick, 0);
     assert!(execute_recorded_at(deployment, Command::BurnLaborForResourceProduction(refill), 120, 1001));
     assert_eq!(resources.resource_production(slot).output_amount_left, 250);
     assert_eq!(resources.resource_balance(slot), 0);
@@ -252,12 +252,3 @@ fn blitz_rejects_labor_recipes_but_accepts_resource_production() {
     assert_eq!(resources.resource_balance(slot), 90);
 }
 
-
-#[test]
-fn support_integral_clips_yesterdays_bonus_at_midnight() {
-    let day = 86400_u32;
-    assert_eq!(crate::production::support_bonus(100, day - 10, day + 10, day, 3), 200);
-    assert_eq!(crate::production::support_bonus(100, day - 10, day + day, day, 3), 200);
-    assert_eq!(crate::production::support_bonus(100, day + 10, day + 20, day, 0), 0);
-    assert_eq!(crate::production::support_bonus(3, day - 1, day, day, 5), 1);
-}

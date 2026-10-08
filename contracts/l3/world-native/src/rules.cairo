@@ -1,8 +1,75 @@
 pub const ATTRIBUTE_CAP: u8 = 5;
-pub const ATTRIBUTE_DAMAGE_PERCENT: u8 = 10;
-pub const ATTRIBUTE_SUPPORT_PERCENT: u8 = 10;
-pub const ATTRIBUTE_STAMINA: u8 = 30;
-pub const ATTRIBUTE_SCOUTING_BPS: u8 = 150;
+// Attribute tiers run common (1) to legendary (5); common gives nothing and the steps grow.
+pub const BATTLE_UNCOMMON_BPS: u32 = 1000;
+pub const BATTLE_RARE_BPS: u32 = 3000;
+pub const BATTLE_EPIC_BPS: u32 = 6000;
+pub const BATTLE_LEGENDARY_BPS: u32 = 10000;
+pub const LOGISTICS_UNCOMMON_STAMINA: u32 = 20;
+pub const LOGISTICS_RARE_STAMINA: u32 = 50;
+pub const LOGISTICS_EPIC_STAMINA: u32 = 90;
+pub const LOGISTICS_LEGENDARY_STAMINA: u32 = 150;
+// What each Scouting tier adds to its chosen kind's find rate, in basis points of that kind's base rate.
+pub const SCOUTING_UNCOMMON_BPS: u32 = 1000;
+pub const SCOUTING_RARE_BPS: u32 = 2000;
+pub const SCOUTING_EPIC_BPS: u32 = 3000;
+pub const SCOUTING_LEGENDARY_BPS: u32 = 4000;
+
+/// Damage dealt above common at a Battle tier, in the basis points Combat reads.
+pub fn battle_bonus_bps(tier: u8) -> u32 {
+    match tier {
+        0 => panic!("invalid attribute tier"),
+        1 => 0,
+        2 => BATTLE_UNCOMMON_BPS,
+        3 => BATTLE_RARE_BPS,
+        4 => BATTLE_EPIC_BPS,
+        5 => BATTLE_LEGENDARY_BPS,
+        _ => panic!("invalid attribute tier"),
+    }
+}
+
+/// What reaching a Scouting tier adds to the kind chosen for it, relative to that kind's base rate.
+pub fn scouting_increment_bps(tier: u8) -> u32 {
+    match tier {
+        0 | 1 => panic!("invalid attribute tier"),
+        2 => SCOUTING_UNCOMMON_BPS,
+        3 => SCOUTING_RARE_BPS,
+        4 => SCOUTING_EPIC_BPS,
+        5 => SCOUTING_LEGENDARY_BPS,
+        _ => panic!("invalid attribute tier"),
+    }
+}
+
+// The share of an army's surviving troops Homecoming returns to the realm when the day ends, in basis points.
+pub const HOMECOMING_UNCOMMON_BPS: u32 = 300;
+pub const HOMECOMING_RARE_BPS: u32 = 900;
+pub const HOMECOMING_EPIC_BPS: u32 = 1800;
+pub const HOMECOMING_LEGENDARY_BPS: u32 = 3000;
+
+/// The share of its surviving troops an army returns home at a Homecoming tier, in basis points.
+pub fn homecoming_bps(tier: u8) -> u32 {
+    match tier {
+        0 => panic!("invalid attribute tier"),
+        1 => 0,
+        2 => HOMECOMING_UNCOMMON_BPS,
+        3 => HOMECOMING_RARE_BPS,
+        4 => HOMECOMING_EPIC_BPS,
+        5 => HOMECOMING_LEGENDARY_BPS,
+        _ => panic!("invalid attribute tier"),
+    }
+}
+
+/// Maximum stamina above the troop's base at a Logistics tier.
+pub fn logistics_stamina(tier: u8) -> u32 {
+    match tier {
+        0 => panic!("invalid attribute tier"),
+        1 => 0,
+        2 => LOGISTICS_UNCOMMON_STAMINA,
+        3 => LOGISTICS_RARE_STAMINA,
+        4 => LOGISTICS_EPIC_STAMINA,
+        5 => LOGISTICS_LEGENDARY_STAMINA,
+        _ => panic!("invalid attribute tier"),
+    }
+}
 
 pub const RESOURCE_PRECISION: u128 = 1000000000;
 
@@ -94,9 +161,6 @@ pub struct MapConfig {
     pub shards_mines_fail_probability: u16,
     pub camp_win_probability: u16,
     pub camp_fail_probability: u16,
-    // Reserved: removing these shifts the packed map config of existing games.
-    pub holysite_win_probability: u16,
-    pub holysite_fail_probability: u16,
     pub bitcoin_mine_win_probability: u16, // 1/50 = 2% = 200 (out of 10000)
     pub bitcoin_mine_fail_probability: u16, // 9800
     pub hyps_win_prob: u32,
@@ -179,7 +243,7 @@ pub struct SliceRules {
     pub spire_travel_essence_cost: u128,
     pub command_mask: u128,
     pub mode_rules: u32,
-    pub epoch_seconds: u32,
+    pub day_unit_seconds: u32,
     pub entry_rule: u8,
     pub faith_enabled: bool,
     pub speed_config: SpeedConfig,
@@ -475,10 +539,10 @@ pub impl MapConfigPacking of starknet::storage_access::StorePacking<MapConfig, P
             first: value.shards_mines_win_probability.into()
                 + value.shards_mines_fail_probability.into() * 0x10000
                 + value.camp_win_probability.into() * 0x100000000
-                + value.camp_fail_probability.into() * 0x1000000000000
-                + value.holysite_win_probability.into() * 0x10000000000000000,
-            second: value.holysite_fail_probability.into()
-                + value.bitcoin_mine_win_probability.into() * 0x10000
+                + value.camp_fail_probability.into() * 0x1000000000000,
+            // Bits 64-79 of the first word and 0-15 of the second held a dead site lottery; they stay empty so stored
+            // map configs keep their layout.
+            second: value.bitcoin_mine_win_probability.into() * 0x10000
                 + value.bitcoin_mine_fail_probability.into() * 0x100000000
                 + value.hyps_win_prob.into() * 0x1000000000000
                 + value.hyps_fail_prob.into() * 0x100000000000000000000
@@ -495,8 +559,6 @@ pub impl MapConfigPacking of starknet::storage_access::StorePacking<MapConfig, P
             shards_mines_fail_probability: (value.first / 0x10000 % 0x10000).try_into().unwrap(),
             camp_win_probability: (value.first / 0x100000000 % 0x10000).try_into().unwrap(),
             camp_fail_probability: (value.first / 0x1000000000000 % 0x10000).try_into().unwrap(),
-            holysite_win_probability: (value.first / 0x10000000000000000).try_into().unwrap(),
-            holysite_fail_probability: (value.second % 0x10000).try_into().unwrap(),
             bitcoin_mine_win_probability: (value.second / 0x10000 % 0x10000).try_into().unwrap(),
             bitcoin_mine_fail_probability: (value.second / 0x100000000 % 0x10000).try_into().unwrap(),
             hyps_win_prob: (value.second / 0x1000000000000 % 0x100000000).try_into().unwrap(),
@@ -517,3 +579,4 @@ pub struct SpeedConfig {
 }
 
 pub const WELL_STAMINA: u8 = 60;
+pub const TIER_STAMINA_REFILL: u8 = 30;

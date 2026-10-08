@@ -1,3 +1,4 @@
+import { StructureType } from "@bibliothecadao/types";
 import { describe, expect, it, vi } from "vitest";
 import { WorldUpdateListener } from "./world-update-listener";
 import { NativeFactStore } from "../client/native-fact-store";
@@ -11,36 +12,10 @@ function fixture() {
 }
 
 describe("native scene updates", () => {
-  it("carries the chest result's recorded action key to its consumer", () => {
-    const { store, listener } = fixture();
-    const reward = vi.fn();
-    listener.ChestRewards.onChestReward(reward);
-    store.applyEvent({
-      model: "StoryEvent",
-      key: "receipt-key",
-      value: {
-        game_id: 1,
-        order: "9007199254740993",
-        index: 1,
-        timestamp: 100,
-        story: { ChestReward: { explorer_id: 7, kind: "Token", quality: 0, depth: 2, lords_exhausted: false } },
-      },
-    });
-    expect(reward).toHaveBeenCalledWith({
-      resultKey: ["0x1", "0x20000000000001", "0x1"],
-      explorerId: 7,
-      kind: "Token",
-      lordsExhausted: false,
-      quality: 0,
-      depth: 2,
-      timestamp: 100,
-    });
-  });
-
-  it("reads an army's attribute choice in either enum form, and refuses one it cannot name", () => {
+  it("reads an army's Upgrade in either enum form, and refuses one it cannot name", () => {
     const { store, listener } = fixture();
     const chosen = vi.fn();
-    listener.Attributes.onAttributeChosen(chosen);
+    listener.Attributes.onTierBought(chosen);
     const story = (attribute: unknown) =>
       store.applyEvent({
         model: "StoryEvent",
@@ -51,17 +26,17 @@ describe("native scene updates", () => {
           index: 0,
           timestamp: 100,
           story: {
-            AttributeChosen: { explorer_id: 7, offer_id: 3, source: "Level", attribute, applied: 1, lost: 2 },
+            TierBought: { explorer_id: 7, attribute, tier: 3, price: 200 },
           },
         },
       });
     story("Scouting");
     story({ Battle: {} });
     expect(chosen.mock.calls.map(([update]) => update)).toEqual([
-      { explorerId: 7, offerId: 3, attribute: "Scouting", applied: 1, lost: 2 },
-      { explorerId: 7, offerId: 3, attribute: "Battle", applied: 1, lost: 2 },
+      { explorerId: 7, attribute: "Scouting", tier: 3, price: 200 },
+      { explorerId: 7, attribute: "Battle", tier: 3, price: 200 },
     ]);
-    expect(() => story("Luck")).toThrow("Malformed attribute choice");
+    expect(() => story("Luck")).toThrow("Malformed tier purchase");
   });
 
   it("carries a cleared site's payout with the tile and losses of the exchange that won it", () => {
@@ -83,7 +58,7 @@ describe("native scene updates", () => {
           defender: side(1_100_000_000_000n, 0n),
         },
       });
-    const story = (order: string, siteId: number, kind: unknown, reward: unknown) =>
+    const story = (order: string, siteId: number, category: number, reward: unknown) =>
       store.applyEvent({
         model: "StoryEvent",
         key: `story-${order}`,
@@ -93,14 +68,14 @@ describe("native scene updates", () => {
           index: 1,
           owner: "0x111",
           timestamp: 100,
-          story: { SitePayout: { structure_id: 3, explorer_id: 7, site_id: siteId, kind, reward } },
+          story: { SitePayout: { structure_id: 3, explorer_id: 7, site_id: siteId, category, reward } },
         },
       });
 
     battle("5", 9);
-    story("5", 9, "Camp", { resource_type: 23, amount: "550000000000" });
+    story("5", 9, StructureType.Camp, { resource_type: 23, amount: "550000000000" });
     battle("6", 10);
-    story("6", 10, { FallenRealm: {} }, null);
+    story("6", 10, StructureType.Stragglers, null);
     expect(payout.mock.calls.map(([update]) => update)).toEqual([
       {
         explorerId: 7,
@@ -111,15 +86,17 @@ describe("native scene updates", () => {
         coord: { x: 40, y: 12 },
         troopsLost: 420,
       },
-      expect.objectContaining({ siteId: 10, kind: "FallenRealm", reward: null }),
+      expect.objectContaining({ siteId: 10, kind: "Stragglers", reward: null }),
     ]);
     // A payout whose winning battle is not the one just before it is a contract bug, never a guess.
-    expect(() => story("7", 11, "Rift", { resource_type: 29, amount: "1" })).toThrow("without its winning battle");
+    expect(() => story("7", 11, StructureType.Rift, { resource_type: 29, amount: "1" })).toThrow(
+      "without its winning battle",
+    );
     battle("7", 11);
-    expect(() => story("7", 11, "Rift", null)).toThrow("A cleared Rift pays a resource");
+    expect(() => story("7", 11, StructureType.Rift, null)).toThrow("A cleared Rift pays nothing");
     stop();
     battle("8", 12);
-    story("8", 12, "Camp", { resource_type: 23, amount: "1" });
+    story("8", 12, StructureType.Camp, { resource_type: 23, amount: "1" });
     expect(payout).toHaveBeenCalledTimes(2);
   });
 
@@ -135,7 +112,6 @@ describe("native scene updates", () => {
       category: 3,
       paused: false,
       labor_paid: 0n,
-      tier: 1,
     };
     store.applyFacts([{ model: "Building", key: "0x1", value: building }]);
     expect(changed).toHaveBeenLastCalledWith({ buildingType: 3, innerCol: 11, innerRow: 10, paused: false });

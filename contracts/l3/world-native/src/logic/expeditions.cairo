@@ -6,14 +6,14 @@ pub fn expedition_site(key: crate::resources::ResourceKey) -> Option<ExpeditionS
     crate::state::read().structures.expedition_sites.read((key.game_id, key.entity_id))
 }
 
-pub fn create_site(key: crate::resources::ResourceKey, kind: SiteKind, guards: Span<crate::troops::Troops>) {
+pub fn create_site(key: crate::resources::ResourceKey, guards: Span<crate::troops::Troops>) {
     assert!(expedition_site(key).is_none(), "site already initialized");
     let mut initial_guard_count = 0;
     for guard in guards {
         initial_guard_count += *guard.count;
     }
     assert!(initial_guard_count != 0, "empty site guard");
-    write_site(key, ExpeditionSite { kind, initial_guard_count, cleared: false });
+    write_site(key, ExpeditionSite { initial_guard_count, cleared: false });
 }
 
 pub fn clear_site(key: crate::resources::ResourceKey) -> ExpeditionSite {
@@ -47,32 +47,50 @@ pub fn depth_rules(game_id: u32, depth: u8) -> DepthRules {
 }
 
 pub fn discovery(key: ExpeditionDiscoveryKey) -> Option<ExpeditionDiscovery> {
-    crate::state::read()
+    let state = crate::state::read();
+    let storage_key = (key.game_id, key.structure_id, key.epoch);
+    state
         .map_rules
         .empty_reveals
-        .read((key.game_id, key.structure_id, key.epoch))
-        .map(|empty_reveals| ExpeditionDiscovery { empty_reveals })
+        .read(storage_key)
+        .map(
+            |
+                empty_reveals,
+            | ExpeditionDiscovery { empty_reveals, ruin_found: state.map_rules.ruin_found.read(storage_key) },
+        )
+}
+
+fn is_ruin(discovery: crate::discovery::Discovery) -> bool {
+    match discovery {
+        crate::discovery::Discovery::Ruin(_) => true,
+        _ => false,
+    }
 }
 
 pub fn record_discovery(key: ExpeditionDiscoveryKey, result: crate::discovery::Discovery) {
-    let empty_reveals = if result == crate::discovery::Discovery::None {
-        discovery(key).map(|value| value.empty_reveals).unwrap_or(0) + 1
-    } else {
-        0
+    let previous = discovery(key).unwrap_or(ExpeditionDiscovery { empty_reveals: 0, ruin_found: false });
+    let next = ExpeditionDiscovery {
+        empty_reveals: if result == crate::discovery::Discovery::None {
+            previous.empty_reveals + 1
+        } else {
+            0
+        },
+        ruin_found: previous.ruin_found || is_ruin(result),
     };
-    crate::state::write()
-        .map_rules
-        .empty_reveals
-        .write((key.game_id, key.structure_id, key.epoch), Some(empty_reveals));
+    let storage_key = (key.game_id, key.structure_id, key.epoch);
+    let state = crate::state::write();
+    state.map_rules.empty_reveals.write(storage_key, Some(next.empty_reveals));
+    if next.ruin_found != previous.ruin_found {
+        state.map_rules.ruin_found.write(storage_key, true);
+    }
     let mut keys = array![];
     key.serialize(ref keys);
+    let mut values = array![];
+    next.serialize(ref values);
     crate::logic::map::MapState::emit(
         crate::logic::map::MapState::Event::RowSet(
             crate::events::RowSet {
-                version: 1,
-                model: 'ExpeditionDiscovery',
-                keys: keys.span(),
-                values: array![empty_reveals.into()].span(),
+                version: 1, model: 'ExpeditionDiscovery', keys: keys.span(), values: values.span(),
             },
         ),
     );

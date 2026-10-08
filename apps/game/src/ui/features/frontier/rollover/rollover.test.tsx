@@ -3,6 +3,8 @@ import { createRoot } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
+import { dayOf } from "@bibliothecadao/eternum";
+
 import { endedDay } from "../hud/day-clock";
 import { DayDoneCard } from "./day-done-card";
 import { LastHourBubble } from "./last-hour";
@@ -10,10 +12,12 @@ import { LastHourBubble } from "./last-hour";
 const text = (markup: string) => new DOMParser().parseFromString(markup, "text/html").body.textContent ?? "";
 
 describe("the day's end", () => {
-  const rules = { epochSeconds: 16 * 3_600, startMainAt: 0 };
+  const rules = { dayUnitSeconds: 4 * 3_600, seed: 1n, startMainAt: 0 };
 
   it("finds the day that ended last and its bounds, and none on the season's first day", () => {
-    expect(endedDay(rules, 12 * 16 * 3_600 + 60)).toEqual({ day: 12, start: 11 * 16 * 3_600, end: 12 * 16 * 3_600 });
+    const first = dayOf(rules, 0)!;
+    const second = dayOf(rules, first.end)!;
+    expect(endedDay(rules, second.start + 60)).toEqual({ day: 1, start: first.start, end: first.end });
     expect(endedDay(rules, 60)).toBeNull();
   });
 

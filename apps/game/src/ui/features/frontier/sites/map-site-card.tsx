@@ -25,7 +25,7 @@ import { type MapSiteKind, mapSiteKind, readMapSite } from "./map-site-plan";
 import { useSelectedOwnArmy } from "./selected-army";
 import { armWellRefill } from "./well-refill";
 
-const MAP_SITE_MODELS = ["ArmyProgress", "ExplorerTroops", "TileOccupancy"] as const;
+const MAP_SITE_MODELS = ["ArmyProgress", "ArmyProgressionRules", "ExplorerTroops", "TileOccupancy"] as const;
 
 /** The map tile the player tapped, when a Shrine or Well stands on it. */
 export const useSelectedMapSite = (): { kind: MapSiteKind; tile: TileSpatialRenderable } | null => {
@@ -56,7 +56,8 @@ export const MapSiteCard = ({
   const progress =
     user &&
     setup.store.get("ArmyProgress", { game_id: configManager.getActiveGameId(), explorer_id: user.army.explorer_id });
-  const plan = readMapSite(selected.kind, siteTile, user && { ...user, progress: progress ?? undefined });
+  const rules = setup.store.get("ArmyProgressionRules", { game_id: configManager.getActiveGameId() });
+  const plan = readMapSite(selected.kind, siteTile, user && { ...user, progress: progress ?? undefined }, rules);
   const approach = useOrderAt(useApproachTile(siteTile, user !== null && !plan.usable));
   const stamina = useUserStamina(user?.army.explorer_id);
   const [sending, setSending] = useState(false);
@@ -100,18 +101,9 @@ export const MapSiteCard = ({
           </span>
         )}
         {plan.kind === "Well" ? (
-          <Chip
-            icons={["St"]}
-            label={STAMINA}
-            value={
-              stamina
-                ? `${formatAmount(stamina.current)} → ${formatAmount(Math.min(stamina.max, stamina.current + plan.gain))}`
-                : `+${formatAmount(plan.gain)}`
-            }
-          />
+          <Chip icons={["St"]} label={STAMINA} value={wellGain(plan.gain, stamina)} />
         ) : (
-          // A Shrine's fixed XP is read from the preset with the contracts' progression rules.
-          <Chip icons={[]} label={XP} value="—" unit={XP} />
+          <Chip icons={[]} label={XP} value={plan.gain === undefined ? "—" : `+${formatAmount(plan.gain)}`} unit={XP} />
         )}
       </div>
       {plan.usable ? (
@@ -147,4 +139,12 @@ const useUserStamina = (explorerId: number | undefined) => {
   const home = army && setup.store.get("Structure", { game_id: army.game_id, entity_id: army.owner });
   const armies = useDockArmies(home ?? null);
   return armies.find((candidate) => candidate.explorerId === explorerId)?.stamina;
+};
+
+/** A Well's stamina: the army's bar before and after the refill, or what it adds when no army stands at it. */
+const wellGain = (gain: number | undefined, stamina: { current: number; max: number } | undefined): string => {
+  if (gain === undefined) return "—";
+  return stamina
+    ? `${formatAmount(stamina.current)} → ${formatAmount(Math.min(stamina.max, stamina.current + gain))}`
+    : `+${formatAmount(gain)}`;
 };

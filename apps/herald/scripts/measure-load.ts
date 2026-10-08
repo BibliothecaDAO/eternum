@@ -1,5 +1,5 @@
 import { getNeighborHexes } from "@bibliothecadao/types";
-import { expeditionRealmSite, expeditionDayEndsAt, absoluteEpoch } from "@bibliothecadao/eternum/expeditions";
+import { expeditionRealmSite, expeditionDayEndsAt, seasonDay } from "@bibliothecadao/eternum/expeditions";
 // Herald's side of the scale campaign: does its memory level off under a steady game load, and does it keep up with
 // real time? Folds a synthetic world, attaches one actor-scoped subscriber per player, then drives it through the
 // production path for a simulated run: build-order-shaped actions arrive pre-confirmed, a block confirms each second,
@@ -34,6 +34,13 @@ const SIMULATED_MINUTES = Number(flags.minutes);
 const TILES_PER_PLAYER = FRONTIER ? 50 : 300;
 const preset = presetRegistration(FRONTIER ? 5 : 2);
 const SPACING = Number(preset.definition.settlement.spacing);
+// presetLaunch's games start now and draw their days from seed 1.
+const expedition = () => ({
+  dayUnitSeconds: Number(preset.definition.rules.day_unit_seconds),
+  seed: 1n,
+  spacing: SPACING,
+  startMainAt,
+});
 const MAP_STRUCTURES_PER_GAME = 150;
 const BUILDINGS_PER_REALM = 20;
 const RESOURCES_PER_REALM = 30;
@@ -164,30 +171,20 @@ const frontierArmy = (game: number, player: number, army: number, x: number) => 
       "troops.stamina": ["1", String(army)],
     }),
     row("ArmyProgress", [game, entity], {
-      level: "1",
       xp: "0",
       battle: "1",
       logistics: "1",
       scouting: "1",
-      support: "1",
-      pending: ["1"],
+      scouting_kinds: "0",
+      homecoming: "1",
     }),
-    row(
-      "ArmySlot",
-      [
-        game,
-        realm(game, player),
-        absoluteEpoch({ epochSeconds: Number(preset.definition.rules.epoch_seconds) }, Math.floor(now / 1000)),
-        army,
-      ],
-      {
-        explorer_id: String(entity),
-        "stamina.amount": String(preset.definition.rules.troop_stamina_config.stamina_initial),
-        "stamina.updated_tick": String(
-          Math.floor(now / 1000 / Number(preset.definition.rules.tick_config.armies_tick_in_seconds)),
-        ),
-      },
-    ),
+    row("ArmySlot", [game, realm(game, player), seasonDay(expedition(), Math.floor(now / 1000))!, army], {
+      explorer_id: String(entity),
+      "stamina.amount": String(preset.definition.rules.troop_stamina_config.stamina_initial),
+      "stamina.updated_tick": String(
+        Math.floor(now / 1000 / Number(preset.definition.rules.tick_config.armies_tick_in_seconds)),
+      ),
+    }),
     ...place(game, entity, player * SPACING + x, 5, 15, false),
   ];
 };
@@ -314,11 +311,7 @@ const live = new LiveWorld({
   historyStore: reviews(),
   // The campaign has no node: model its seven home-ring view results on the shared expedition grid.
   homeRingView: async (_gameId, realmId, timestamp) => {
-    const site = expeditionRealmSite(
-      { epochSeconds: Number(preset.definition.rules.epoch_seconds), spacing: SPACING, startMainAt },
-      realmId,
-      timestamp,
-    );
+    const site = expeditionRealmSite(expedition(), realmId, timestamp);
     if (!site) return [];
     return [site, ...getNeighborHexes(site.col, site.row)].map(({ col, row }) => ({ col, row, biome: 5 }));
   },
@@ -429,9 +422,8 @@ for (let second = 1; second <= SIMULATED_MINUTES * 60; second++) {
 }
 
 if (FRONTIER) {
-  // The day rolls over at 00:00 UTC: every subscriber's scope moves to the new expedition at once.
-  now =
-    expeditionDayEndsAt({ epochSeconds: Number(preset.definition.rules.epoch_seconds) }, Math.floor(now / 1000)) * 1000;
+  // The day rolls over for everyone at once: every subscriber's scope moves to the new expedition together.
+  now = expeditionDayEndsAt(expedition(), Math.floor(now / 1000)) * 1000;
   const [started, sentBefore] = [performance.now(), bytesSent];
   await live.publishChainClock();
   console.log(

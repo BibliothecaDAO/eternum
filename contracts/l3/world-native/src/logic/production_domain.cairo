@@ -159,7 +159,9 @@ pub mod ProductionLogic {
             let structure = crate::logic::structures::structure(key).expect('missing producer structure');
             assert!(structure.owner == actor, "actor does not own structure");
             assert!(
-                structure.base.category == 1 || structure.base.category == 5 || structure.base.category == 7,
+                structure.base.category == crate::taxonomy::REALM_CATEGORY
+                    || structure.base.category == crate::taxonomy::VILLAGE_CATEGORY
+                    || structure.base.category == crate::taxonomy::CAMP_CATEGORY,
                 "structure cannot produce resources",
             );
             assert!(command.resource_types.len() == command.amounts.len(), "production input lengths differ");

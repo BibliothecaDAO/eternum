@@ -14,7 +14,6 @@ vi.mock("@/ui/features/military/chest/use-adjacent-own-explorer", () => ({
 vi.mock("./build/build-sheet", () => ({ BuildSheet: () => null, useOpenPlot: () => null }));
 vi.mock("./sites/map-site-card", () => ({ MapSiteCard: () => null, useSelectedMapSite: () => null }));
 vi.mock("./sites/tile-card", () => ({ TileCard: () => null, useSelectedSite: () => null }));
-vi.mock("./upgrade/building-upgrade", () => ({ BuildingUpgrade: () => null, useSelectedBuilding: () => null }));
 vi.mock("./upgrade/castle-upgrade", () => ({ CastleUpgrade: () => null, useKeepSelected: () => null }));
 
 import { GameProvider } from "@/hooks/context/game-context";
@@ -43,7 +42,7 @@ describe("Frontier's selection sheet", () => {
     // An empty tile, an unrevealed one, or an army the dock already shows: no card, and never the old inspector.
     expect(sheetFor(TileOccupier.None)).toBeNull();
     expect(sheetFor(null)).toBeNull();
-    expect(sheetFor(TileOccupier.ExplorerKnightT1Regular)).toBeNull();
+    expect(sheetFor(TileOccupier.ExplorerKnightT1)).toBeNull();
     useUIStore.getState().setSelectedHex(null);
   });
 
@@ -72,12 +71,8 @@ it("offers depth entry from Frontier for an own army at the computed spire", asy
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const { store } = campBeside();
   store.applyFacts([
-    { model: "RealmKnowledge", key: "0x901", value: { game_id: 1, structure_id: 7, learned: 1 } },
-    {
-      model: "ResearchNode",
-      key: "0x902",
-      value: { game_id: 1, node: 0, prerequisites: 0, essence_cost: "1", effect: { Depth: 1 } },
-    },
+    // research.cairo: the depth row's tier sits at bit 46; Ethereal I is researched.
+    { model: "RealmKnowledge", key: "0x901", value: { game_id: 1, structure_id: 7, learned: 1n << 46n } },
     {
       model: "DepthRules",
       key: "0x903",
@@ -86,25 +81,25 @@ it("offers depth entry from Frontier for an own army at the computed spire", asy
         depth: 1,
         entry_stamina: 20,
         reveal_percent: 100,
-        guard_lower: 1,
-        guard_upper: 2,
+        site_guard_lower: 1,
+        site_guard_upper: 2,
         reveal_site_neighbors: false,
-        chest: { common: 1, uncommon: 0, rare: 0, pity: 0 },
-        fallen_guard_lower: 1,
-        fallen_guard_upper: 2,
+        chest: { common: 10000, uncommon: 0, rare: 0, epic: 0, legendary: 0 },
+        ruin_guard_lower: 1,
+        ruin_guard_upper: 2,
         guard_step: 1,
-        fallen_guard_tier: "T1",
       },
     },
     {
       model: "TileOccupancy",
       key: "0x904",
-      value: { game_id: 1, alt: false, col: 5, row: 85, entity_id: 201, category: 15, is_structure: false },
+      // Realm 1's day-0 site, beside its spire: the fixture's clock (t=350) is on day 0.
+      value: { game_id: 1, alt: false, col: 5, row: 5, entity_id: 201, category: 15, is_structure: false },
     },
   ] as never);
   useAccountStore.setState({ account: { address: "0x111" } as never });
   useUIStore.getState().updateEntityActionSelectedEntityId(201);
-  useUIStore.getState().setSelectedHex({ col: 5, row: 85 });
+  useUIStore.getState().setSelectedHex({ col: 5, row: 5 });
   tiles.current = [];
   const enter = vi.fn().mockResolvedValue(undefined);
   const host = document.createElement("div");

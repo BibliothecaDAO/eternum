@@ -327,7 +327,7 @@ export class HistoryStore {
               model, transaction_hash, value
        FROM herald_history_events
        WHERE chain = $1 AND world_address = $2 AND game_id = $3 AND block_number <= $4
-         AND model = 'StoryEvent' AND value->'story' ?| ARRAY['SitePayout','ChestReward','ExplorationReward']
+         AND model = 'StoryEvent' AND value->'story' ?| ARRAY['SitePayout','ExplorationReward']
        ORDER BY block_number, transaction_index, event_index`,
       [this.chain, this.worldAddress, gameId, confirmedBlock],
     );

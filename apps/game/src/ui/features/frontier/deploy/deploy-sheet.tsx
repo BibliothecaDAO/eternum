@@ -17,7 +17,15 @@ import { armyArt } from "../hud/dock-armies";
 import { deployArmy, deployDirection, deployRange, previewDeploy, readDeployPlan } from "./deploy-plan";
 import { DeployView } from "./deploy-view";
 
-const DEPLOY_MODELS = ["ArmySlot", "ResourceBalance", "ResourceProduction", "Structure", "TileOccupancy"] as const;
+// The Supply yard's tier sets the bar a new army starts on.
+const DEPLOY_MODELS = [
+  "ArmySlot",
+  "RealmKnowledge",
+  "ResourceBalance",
+  "ResourceProduction",
+  "Structure",
+  "TileOccupancy",
+] as const;
 
 /** Deploy over the game's facts: the realm's plan, the count the player drags, the tile, and the Deploy command. */
 export const DeploySheet = ({ realm, onClose }: { realm: NativeRows["Structure"]; onClose: () => void }) => {

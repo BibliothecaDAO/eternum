@@ -1,62 +1,71 @@
-import { researchedDepths } from "./realm-research";
+import { researchedDepth } from "./realm-research";
 import { MAX_U32, ResourcesIds } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { getNeighborHexes, StructureType } from "@bibliothecadao/types";
 import { getBlockTimestamp } from "./timestamp";
+import { dayOf } from "./days";
 
 import { entityMapPosition } from "./tile";
 
-type ExpeditionRules = NonNullable<ReturnType<typeof readExpeditionRules>>;
+export * from "./days";
+
+export type ExpeditionRules = NonNullable<ReturnType<typeof readExpeditionRules>>;
 
 type ExpeditionRuleModel = "SliceRules" | "GameRegistry" | "SettlementRules";
 type ExpeditionRuleReader = (model: ExpeditionRuleModel) => Record<string, unknown> | undefined;
 
-/** One reader for the clocks and grid, from the native store or Herald's fold. */
+/** One reader for the season's calendar and grid, from the native store or Herald's fold. */
 export const readExpeditionRules = (
   source: Pick<NativeFactStore, "get"> | ExpeditionRuleReader,
   gameId: number,
-): { epochSeconds: number; spacing: number; startMainAt: number } | null => {
+): { dayUnitSeconds: number; spacing: number; startMainAt: number; seed: bigint } | null => {
   const read: ExpeditionRuleReader =
     typeof source === "function" ? source : (model) => source.get(model, { game_id: gameId });
   const rules = read("SliceRules");
   const game = read("GameRegistry");
   if (!rules && game) throw new Error("Game subscription requires its rules");
-  if (!rules || Number(rules.epoch_seconds) === 0) return null;
+  if (!rules || Number(rules.day_unit_seconds) === 0) return null;
   const settlement = read("SettlementRules");
   if (!game || !settlement || Number(settlement.spacing) <= 0)
     throw new Error("Expedition scope requires game and settlement rules");
   return {
-    epochSeconds: Number(rules.epoch_seconds),
+    dayUnitSeconds: Number(rules.day_unit_seconds),
     spacing: Number(settlement.spacing),
     startMainAt: Number(game.start_main_at),
+    seed: BigInt(game.seed as bigint | string),
   };
 };
 
-/** Absolute clock bucket used by expedition fact keys. */
-export const absoluteEpoch = (rules: Pick<ExpeditionRules, "epochSeconds">, timestamp: number): number => {
-  if (!Number.isSafeInteger(rules.epochSeconds) || rules.epochSeconds <= 0)
-    throw new Error("Expedition epoch duration must be positive");
-  return Math.floor(timestamp / rules.epochSeconds);
+/** The season day an expedition timestamp falls in: its index keys the day's map region and every per-day fact. */
+export const seasonDay = (rules: ExpeditionRules, timestamp: number): number | null =>
+  dayOf(rules, timestamp)?.index ?? null;
+
+/** A guarded Frontier site's kind is its structure category. */
+export type SiteKind = "Camp" | "Rift" | "Ruin" | "Stragglers";
+const SITE_KINDS = new Map<number, SiteKind>([
+  [StructureType.Camp, "Camp"],
+  [StructureType.Rift, "Rift"],
+  [StructureType.Ruin, "Ruin"],
+  [StructureType.Stragglers, "Stragglers"],
+]);
+export const siteKindOf = (category: number): SiteKind => {
+  const kind = SITE_KINDS.get(category);
+  if (!kind) throw new Error(`Structure category ${category} is not a guarded site`);
+  return kind;
 };
 
-/** Zero-based season day; only this relative value selects a map region or allowance day. */
-export const seasonDay = (
-  rules: Pick<ExpeditionRules, "epochSeconds" | "startMainAt">,
-  timestamp: number,
-): number | null =>
-  timestamp < rules.startMainAt ? null : absoluteEpoch(rules, timestamp) - absoluteEpoch(rules, rules.startMainAt);
-
 /**
- * What clearing a site pays home, as the contract's site_reward computes it from the guard it started with: a camp
- * half its troops in labor, a rift three times them in Essence, both in game precision; a fallen realm pays none (its
- * closed chest instead).
+ * What clearing a site pays home in resources, as the contract's site_reward computes it from the guard it started
+ * with: a camp half its troops in labor, a rift three times them in Essence, both in game precision. Stragglers pay
+ * only XP; a ruin pays its chest.
  */
 export const siteReward = (
-  site: Pick<NativeRows["ExpeditionSite"], "kind" | "initial_guard_count">,
+  kind: SiteKind,
+  site: Pick<NativeRows["ExpeditionSite"], "initial_guard_count">,
 ): { resourceType: ResourcesIds; amount: bigint } | null => {
-  if (site.kind === "Camp") return { resourceType: ResourcesIds.Labor, amount: site.initial_guard_count / 2n };
-  if (site.kind === "Rift") return { resourceType: ResourcesIds.Essence, amount: site.initial_guard_count * 3n };
+  if (kind === "Camp") return { resourceType: ResourcesIds.Labor, amount: site.initial_guard_count / 2n };
+  if (kind === "Rift") return { resourceType: ResourcesIds.Essence, amount: site.initial_guard_count * 3n };
   return null;
 };
 
@@ -67,9 +76,11 @@ const expeditionBand = (rules: ExpeditionRules, coord: { y: number }): number =>
 export const expeditionDepth = (rules: ExpeditionRules, coord: { y: number }): number =>
   expeditionBand(rules, coord) % 4;
 
-/** When today's expedition ends: the next UTC epoch boundary, where the contract rolls every army and site over. */
-export const expeditionDayEndsAt = (rules: Pick<ExpeditionRules, "epochSeconds">, nowSeconds: number): number =>
-  (absoluteEpoch(rules, nowSeconds) + 1) * rules.epochSeconds;
+/**
+ * When today's expedition ends, where the contract rolls every army and site over; before the season, when it starts.
+ */
+export const expeditionDayEndsAt = (rules: ExpeditionRules, nowSeconds: number): number =>
+  dayOf(rules, nowSeconds)?.end ?? rules.startMainAt;
 
 /**
  * An army belongs to today's expedition only while it stands in today's region, as the contract's `is_current` decides;
@@ -195,7 +206,7 @@ export const expeditionSpires = (
     .filter(
       (structure) =>
         isExpeditionRealm(store, structure) &&
-        (researchedDepths(store, structure.game_id, structure.entity_id)?.length ?? 0) > 0,
+        (researchedDepth(store, structure.game_id, structure.entity_id) ?? 0) > 0,
     )
     .flatMap((structure) => {
       const spire = expeditionSpireTile(rules, structure, nowSeconds);
