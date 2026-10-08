@@ -70,7 +70,7 @@ export const SeasonDetailSheet = ({
     <div className="flex items-center justify-center gap-1.5">
       <Chip icons={["Ch"]} label={CHESTS} value={formatAmount(detail.chests)} />
       <Chip icons={["Lo"]} label={LORDS} value={formatAmount(detail.lords)} />
-      <Chip icons={["Dp"]} label={ETHEREAL} value={REACH_NUMERALS[detail.reach - 1] ?? "—"} />
+      <Chip icons={["Dp"]} label={ETHEREAL} value={reachShown(detail.reach)} />
     </div>
     <div className="flex items-center justify-center gap-1.5">
       <Chip icons={["Es"]} label={ESSENCE} value={`+${formatAmount(detail.essence)}`} />
@@ -79,3 +79,6 @@ export const SeasonDetailSheet = ({
     {onVisit && <Button role="primary" icon="Ey" word={VISIT} onClick={onVisit} />}
   </Sheet>
 );
+
+/** The deepest reach as its numeral; a realm that never went through reads 0, since a dash is kept for unknown. */
+const reachShown = (reach: number): string => (reach === 0 ? formatAmount(0) : REACH_NUMERALS[reach - 1]);

@@ -90,7 +90,7 @@ describe("the season list", () => {
     const onVisit = vi.fn();
     const other = render(<SeasonDetailSheet detail={detail} label="Aldric" onVisit={onVisit} onClose={vi.fn()} />);
     expect(other.host.querySelector("[aria-label='Ruin 9']")).not.toBeNull();
-    expect(other.host.querySelector("[aria-label='Ethereal —']")).not.toBeNull();
+    expect(other.host.querySelector("[aria-label='Ethereal 0']")).not.toBeNull();
     act(() => button(other.host, "Visit").click());
     expect(onVisit).toHaveBeenCalled();
     other.unmount();
