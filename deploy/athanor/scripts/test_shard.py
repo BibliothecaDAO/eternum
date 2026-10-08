@@ -75,6 +75,22 @@ class ShardTest(unittest.TestCase):
             with self.subTest(key=key, value=value), self.assertRaises(ValueError):
                 shard.validate_configuration({**config, key: value}, allowed)
 
+    def test_spike_log_filter_reaches_only_the_node_and_cannot_override_other_environment(self):
+        config = configuration()
+        filter_value = "info,mc_block_production::close_pipeline::reply=debug"
+        config["node_environment"] = {"RUST_LOG": filter_value}
+        shard.validate_configuration(config, set(range(24)))
+        with tempfile.TemporaryDirectory() as temporary:
+            compose = shard.compose_configuration(config, Path(temporary))
+        self.assertEqual(compose["services"]["madara"]["environment"]["RUST_LOG"], filter_value)
+        for name, service in compose["services"].items():
+            if name != "madara":
+                self.assertNotEqual(service.get("environment", {}).get("RUST_LOG"), filter_value)
+        for value in ({"OPERATOR_TOKEN": "override"}, {"RUST_LOG": "info\ndebug"},
+                      {"RUST_LOG": 1}, {"RUST_LOG": "info\0debug"}, []):
+            with self.subTest(environment=value), self.assertRaises(ValueError):
+                shard.validate_configuration({**config, "node_environment": value}, set(range(24)))
+
     def test_package_init_refuses_a_preset_outside_the_release_catalogue(self):
         package = load_package_script("init")
         facts = {"presets": {"2": "0x2", "3": "0x3", "5": "0x5", "101": "0x65"}}

@@ -104,6 +104,12 @@ def validate_configuration(config, allowed_cpus):
         raise ValueError("record the native execution setting explicitly")
     if not any(flag.startswith("--native-compilation-mode=") for flag in config["node_flags"]):
         raise ValueError("record the native compilation mode explicitly")
+    environment = config.get("node_environment", {})
+    if not isinstance(environment, dict) or any(
+        key != "RUST_LOG" or not isinstance(value, str) or "\n" in value or "\0" in value
+        for key, value in environment.items()
+    ):
+        raise ValueError("node_environment only accepts a single-line RUST_LOG filter for spike evidence")
 
 
 def validate_shard_identity(config):
@@ -196,6 +202,7 @@ def compose_configuration(config, directory):
     node = compose["services"]["madara"]
     replaced = ("--enable-native-execution=", "--native-compilation-mode=")
     node["command"] = [flag for flag in node["command"] if not flag.startswith(replaced)] + config["node_flags"]
+    node.setdefault("environment", {}).update(config.get("node_environment", {}))
     node["ports"] = [f"127.0.0.1:{config['port_base']}:9944"]
     compose["services"]["postgres"]["ports"] = [f"127.0.0.1:{config['port_base'] + 2}:5432"]
     return compose

@@ -72,3 +72,9 @@ visibility/CPU/log windows. Tier 1 measures receipt visibility, not Herald/clien
 ingress timings and the node's exact flags/config with it. Questions and build count are in the inbox log.
 
 Tier 2 waits until ops has run tier 1 once. No Games redesign is implemented here.
+
+For the settings matrix, the runner accepts `node_environment.RUST_LOG` with
+`info,mc_block_production::close_pipeline::reply=debug` on every candidate. This records actual executor batch sizes and
+durations without changing the upstream image. The environment override reaches the node only; other keys are refused.
+The filter costs extra batch log writes, so keep it identical across controls and candidates. This is spike evidence
+plumbing, never a production recommendation.

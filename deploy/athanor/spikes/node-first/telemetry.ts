@@ -107,7 +107,15 @@ export function executorLogs(file: string | undefined, offset: number) {
   return {
     unavailable: batches.length === 0,
     batches,
-    blocksClosed: lines.filter((l) => l.includes("close_block_complete")).length,
+    // Targeted DEBUG also logs the completion delivery; count each actual close summary once.
+    blocksClosed: lines.filter((line) => {
+      try {
+        const record = JSON.parse(line);
+        return record.message === "close_block_complete" && typeof record.tx_count === "number";
+      } catch {
+        return line.includes("close_block_complete") && /(?:^|\s)tx_count=\d+/.test(line);
+      }
+    }).length,
   };
 }
 export function textLength(file: string | undefined) {
