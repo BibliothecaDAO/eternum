@@ -8,9 +8,16 @@ const isForTheApp = (event: KeyboardEvent): boolean => {
   return !(target instanceof Element && target.closest("input, textarea, select, [contenteditable='true']"));
 };
 
+/** A control with the focus answers Enter itself; the screen's step answers it only when nothing else would. */
+const isFocusedControl = (target: EventTarget | null): boolean =>
+  target instanceof Element && target.closest("a, button, summary, [role=button]") !== null;
+
+/** The screen's one step (its primary verb, marked by StepVerb), while it can be taken. */
+const stepButton = () => document.querySelector<HTMLButtonElement>("[data-role=step] button:enabled");
+
 /**
- * The desktop's keys: 1–4 open the four places, Esc leads Back. An open sheet takes Esc first (it closes itself), so
- * Back answers only when nothing is open over the page.
+ * The desktop's keys: 1–4 open the four places, Esc leads Back, Enter takes the screen's step. An open sheet takes Esc
+ * and Enter first, so the page answers only when nothing is open over it.
  */
 export const useDesktopKeys = ({ places, back }: { places: readonly string[]; back: To | undefined }) => {
   const navigate = useNavigate();
@@ -22,7 +29,9 @@ export const useDesktopKeys = ({ places, back }: { places: readonly string[]; ba
         navigate(places[place - 1]);
         return;
       }
-      if (event.key === "Escape" && back !== undefined && !document.querySelector("[role=dialog]")) navigate(back);
+      if (document.querySelector("[role=dialog]")) return;
+      if (event.key === "Escape" && back !== undefined) navigate(back);
+      if (event.key === "Enter" && !isFocusedControl(event.target)) stepButton()?.click();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);

@@ -6,9 +6,11 @@ import { playerPortraitUrl } from "@/services/identity/player-portrait";
 import type { GameIcon } from "@/ui/design-system/atoms/game-icon";
 import { BookOpen, Play, Trophy, User } from "@/ui/design-system/atoms/game-icons";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { KitIcon } from "@/ui/design-system/kit/kit-icon";
 
+import { setAppMusic, useAppMusic } from "../app-music";
 import { IdentityChip } from "../identity-chip";
-import { WORDS } from "../words";
+import { PROFILE_WORDS, WORDS } from "../words";
 import { EnvChip } from "./env-mark";
 import { Kbd } from "./kbd";
 
@@ -124,11 +126,33 @@ export const Rail = ({ places }: { places: boolean }) => {
               );
             })}
           </nav>
-          <div className="mt-auto flex w-full justify-center" data-role="player">
-            <IdentityChip />
+          <div className="mt-auto flex w-full flex-col items-center gap-3">
+            <MusicSwitch />
+            <div className="flex w-full justify-center" data-role="player">
+              <IdentityChip />
+            </div>
           </div>
         </>
       )}
     </header>
+  );
+};
+
+/** The rail's sound switch: music outside a match, off until the player turns it on. */
+const MusicSwitch = () => {
+  const on = useAppMusic();
+  return (
+    <button
+      type="button"
+      role="switch"
+      data-role="sound"
+      aria-checked={on}
+      aria-label={PROFILE_WORDS.music}
+      title={PROFILE_WORDS.music}
+      onClick={() => setAppMusic(!on)}
+      className="flex size-11 items-center justify-center rounded-full border border-kit-line2 hover:border-kit-gold"
+    >
+      <KitIcon code={on ? "Mu" : "Mt"} size={22} className={on ? undefined : "opacity-60"} />
+    </button>
   );
 };

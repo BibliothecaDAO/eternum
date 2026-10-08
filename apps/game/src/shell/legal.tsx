@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 
 import { KitIcon } from "@/ui/design-system/kit/kit-icon";
 
+import { communityPlace } from "./community";
 import { PageFrame } from "./frame/page-frame";
 import { LEARN_WORDS } from "./words";
 
@@ -18,14 +19,17 @@ const ExternalLink = ({ href, children }: { href: string; children: ReactNode })
   </a>
 );
 
+const DISCORD = communityPlace("Discord").href;
+const GITHUB = communityPlace("GitHub").href;
+
 const CONTACT = (
   <>
     <ul>
       <li>
-        Discord: <ExternalLink href="https://discord.gg/realmsworld">discord.gg/realmsworld</ExternalLink>
+        Discord: <ExternalLink href={DISCORD}>{DISCORD.replace("https://", "")}</ExternalLink>
       </li>
       <li>
-        GitHub: <ExternalLink href="https://github.com/BibliothecaDAO">github.com/BibliothecaDAO</ExternalLink>
+        GitHub: <ExternalLink href={GITHUB}>{GITHUB.replace("https://", "")}</ExternalLink>
       </li>
     </ul>
   </>

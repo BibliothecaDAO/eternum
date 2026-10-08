@@ -1,15 +1,16 @@
 import type { IconCode } from "@/ui/design-system/kit/kit-icon";
 
+import type { AgeMode } from "../play/ages";
 import { LEARN_WORDS } from "../words";
 
 /** The docs site, where each mode's rules are written down (apps/game-docs). */
 const DOCS = "https://docs.realms.world";
 
-/** One guide per mode, Frontier's first under the Aspect of Skill's mark. */
-export const MODE_GUIDES: readonly { title: string; icon: IconCode; url: string }[] = [
-  { title: LEARN_WORDS.howFrontier, icon: "Gd", url: `${DOCS}/frontier/introduction` },
-  { title: LEARN_WORDS.howBlitz, icon: "Pl", url: `${DOCS}/blitz/key-concepts` },
-  { title: LEARN_WORDS.howEternum, icon: "Cs", url: `${DOCS}/eternum/key-concepts` },
+/** One guide per mode, Frontier's first under the Aspect of Skill's mark; Dominion has none yet. */
+export const MODE_GUIDES: readonly { mode: AgeMode; title: string; icon: IconCode; url: string }[] = [
+  { mode: "frontier", title: LEARN_WORDS.howFrontier, icon: "Gd", url: `${DOCS}/frontier/introduction` },
+  { mode: "blitz", title: LEARN_WORDS.howBlitz, icon: "Pl", url: `${DOCS}/blitz/key-concepts` },
+  { mode: "eternum", title: LEARN_WORDS.howEternum, icon: "Cs", url: `${DOCS}/eternum/key-concepts` },
 ];
 
 /** Guides players wrote, each by its author. */

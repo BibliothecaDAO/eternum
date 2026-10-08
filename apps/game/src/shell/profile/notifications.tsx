@@ -9,6 +9,7 @@ import { StateChip } from "../play/state-chip";
 import { ServiceFailure } from "../service-failure";
 import { LEVEL_WORDS, PROFILE_WORDS } from "../words";
 import { SettingRow, SettingRows } from "./setting-row";
+import { Switch } from "./switch";
 import { type ThisDeviceState, useThisDevice } from "./this-device";
 
 /**
@@ -80,24 +81,3 @@ const DeviceEnd = ({ state, onToggle }: { state: ThisDeviceState; onToggle: () =
       return <Switch on={state === "on"} label={PROFILE_WORDS.thisDevice} onToggle={() => void onToggle()} />;
   }
 };
-
-const Switch = ({ on, label, onToggle }: { on: boolean; label: string; onToggle: () => void }) => (
-  <button
-    type="button"
-    role="switch"
-    aria-checked={on}
-    aria-label={label}
-    onClick={onToggle}
-    className={cn(
-      "relative h-8 w-14 shrink-0 rounded-full border-2 transition-colors",
-      on ? "border-kit-gold bg-kit-gold" : "border-kit-line2 bg-kit-plate2",
-    )}
-  >
-    <span
-      className={cn(
-        "absolute top-0.5 size-6 rounded-full bg-kit-cream transition-[left]",
-        on ? "left-[26px]" : "left-0.5",
-      )}
-    />
-  </button>
-);

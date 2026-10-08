@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Link, type To } from "react-router-dom";
 
 import { ArrowLeft } from "@/ui/design-system/atoms/game-icons";
+import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { BACK } from "@/ui/design-system/kit/words";
 
 import { paintingSources, type Painting } from "../paintings";
@@ -24,8 +25,10 @@ type PageFrameProps = {
   foot?: ReactNode;
   /** The four tabs; a full-screen step (sign-in, entering a match) has none. */
   tabs?: boolean;
-  /** A kit landscape across the desktop window behind the page, faded into the ground in its lower third. */
+  /** A painting across the desktop window behind the page, faded into the ground in its lower third. */
   painting?: Painting;
+  /** The painting fills the desktop's first screen: a stage, as the first visit is drawn. */
+  stage?: boolean;
   children: ReactNode;
 };
 
@@ -74,13 +77,22 @@ const PhoneFrame = ({ back, title, notice, foot, tabs = true, children }: PageFr
   </div>
 );
 
-const DesktopFrame = ({ back, title, notice, foot, tabs = true, painting, children }: PageFrameProps) => {
+const DesktopFrame = ({
+  back,
+  title,
+  notice,
+  foot,
+  tabs = true,
+  painting,
+  stage = false,
+  children,
+}: PageFrameProps) => {
   useDesktopKeys({ places: tabs ? PLACES : [], back });
   return (
     <div className="relative isolate flex min-h-screen">
       <Rail places={tabs} />
       <div className="relative flex min-w-0 flex-1 flex-col">
-        {painting && <Backdrop painting={painting} />}
+        {painting && <Backdrop painting={painting} stage={stage} />}
         {back !== undefined || title ? (
           <div data-band="title" className="flex items-center gap-3 px-8 pt-7 min-[1800px]:px-12">
             <DesktopTitle back={back} title={title} />
@@ -130,8 +142,11 @@ const DesktopTitle = ({ back, title }: { back: To | undefined; title?: string })
  * The painting under a dark grade: a vignette that keeps its heart lit, faded into the ground at its foot. The grade
  * is what lets a 1536 px lore painting stand across a 1920 px window.
  */
-const Backdrop = ({ painting }: { painting: Painting }) => (
-  <div aria-hidden className="grain pointer-events-none absolute inset-x-0 top-0 -z-10 h-[42rem]">
+const Backdrop = ({ painting, stage }: { painting: Painting; stage: boolean }) => (
+  <div
+    aria-hidden
+    className={cn("grain pointer-events-none absolute inset-x-0 top-0 -z-10", stage ? "h-screen" : "h-[42rem]")}
+  >
     <img {...paintingSources(painting)} sizes="100vw" alt="" className="size-full object-cover object-[50%_40%]" />
     <span className="absolute inset-0 bg-[radial-gradient(120%_90%_at_55%_38%,transparent_40%,theme(colors.kit.ground/85%)_100%),linear-gradient(0deg,theme(colors.kit.ground)_0%,transparent_55%)]" />
   </div>

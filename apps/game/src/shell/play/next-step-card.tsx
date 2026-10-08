@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 import { getRealmNameById } from "@bibliothecadao/eternum";
+import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Button } from "@/ui/design-system/kit/button";
 import { Chip } from "@/ui/design-system/kit/chip";
 import { ClockLine } from "@/ui/design-system/kit/clock-line";
@@ -12,6 +13,7 @@ import { findOwnEntry, wholeLords } from "@/ui/features/frontier/board/standings
 
 import { ClockChip } from "../clock-chip";
 import { useLayout } from "../frame/layout";
+import { StepVerb } from "../frame/step-verb";
 import { resultsHref } from "../season-tab/results-link";
 import { ServiceFailure } from "../service-failure";
 import { entryHref } from "../game-links";
@@ -63,31 +65,31 @@ export const NextStepCard = ({ step, facts }: { step: NextStep | undefined; fact
   }
 };
 
-/**
- * The card's one layout: an optional picture, the age and mode with the figure at the right, one line, the chips,
- * and the verb in the card (home is a hub page: each card keeps its action).
- */
-const StepCard = ({
-  mode,
-  picture,
-  figure,
-  line,
-  chips,
-  verb,
-}: {
+type StepCardParts = {
   mode: AgeMode;
+  /** A still of the player's own (the realm); null for none; left out, the card wears its painting. */
   picture?: ReactNode;
+  /** The painting the card wears when it has no still: its age's, unless the step names another. */
+  painting?: Painting;
   figure?: ReactNode;
   line?: ReactNode;
   chips?: ReactNode;
   verb?: ReactNode;
-}) => {
+};
+
+/**
+ * The card's one layout: its picture, the age and mode with the figure at the right, one line, the chips, and the verb
+ * in the card (home is a hub page: each card keeps its action). The desktop draws it wide: a still beside the words,
+ * or the painting as the card's ground.
+ */
+const StepCard = (parts: StepCardParts) =>
+  useLayout() === "desktop" ? <DesktopStepCard {...parts} /> : <PhoneStepCard {...parts} />;
+
+const PhoneStepCard = ({ mode, picture, painting, figure, line, chips, verb }: StepCardParts) => {
   const age = ageOf(mode);
-  // On desktop the age's painting is the page behind the card; a picture of its own would repeat it.
-  const desktop = useLayout() === "desktop";
   return (
-    <section className="flex flex-col gap-3 plate p-3.5 max-lg:shadow-[inset_0_2px_0_theme(colors.kit.gold2/10%)]">
-      {picture === undefined ? !desktop && <CardPicture painting={age.painting} /> : picture}
+    <section className="flex flex-col gap-3 plate p-3.5 shadow-[inset_0_2px_0_theme(colors.kit.gold2/10%)]">
+      {picture === undefined ? <CardPicture painting={painting ?? age.painting} /> : picture}
       <header className="flex items-center gap-2">
         <AgeLabel numeral={age.numeral} />
         <h2 className="font-display text-[24px] leading-none text-kit-cream">{age.name}</h2>
@@ -100,6 +102,44 @@ const StepCard = ({
   );
 };
 
+/** The desktop's card height: the first screen's top row (380 at 1440, 460 from 1800). */
+const DESKTOP_CARD = "h-[380px] min-[1800px]:h-[460px]";
+
+const DesktopStepCard = ({ mode, picture, painting, figure, line, chips, verb }: StepCardParts) => {
+  const age = ageOf(mode);
+  const face = (
+    <div className="flex min-w-0 flex-1 flex-col gap-4 p-6">
+      <header className="flex items-center gap-3">
+        <AgeLabel numeral={age.numeral} />
+        <h2 className="font-display text-[40px] leading-none text-kit-cream min-[1800px]:text-[46px]">{age.name}</h2>
+        <span className="ml-auto">{figure}</span>
+      </header>
+      {line && <div className="flex">{line}</div>}
+      {chips && <div className="flex flex-wrap gap-2">{chips}</div>}
+      <span className="flex-1" />
+      {verb && <StepVerb>{verb}</StepVerb>}
+    </div>
+  );
+  if (picture)
+    return (
+      <section className={cn("plate flex overflow-hidden", DESKTOP_CARD)}>
+        <div className="relative w-1/2 shrink-0">{picture}</div>
+        {face}
+      </section>
+    );
+  if (picture === null) return <section className="plate flex">{face}</section>;
+  return <PaintedCard painting={painting ?? age.painting}>{face}</PaintedCard>;
+};
+
+/** A desktop card whose ground is a painting, darkening toward the words at its foot. */
+const PaintedCard = ({ painting, children }: { painting: Painting; children: ReactNode }) => (
+  <section className={cn("painted flex rounded-2xl", DESKTOP_CARD)}>
+    <img {...paintingSources(painting)} sizes="60vw" alt="" className="absolute inset-0 -z-10 size-full object-cover" />
+    <span className="absolute inset-0 -z-10 bg-gradient-to-b from-kit-ground/10 via-kit-ground/45 to-kit-ground/95" />
+    {children}
+  </section>
+);
+
 const CardPicture = ({ painting }: { painting: Painting }) => (
   <img
     {...paintingSources(painting)}
@@ -110,11 +150,16 @@ const CardPicture = ({ painting }: { painting: Painting }) => (
 );
 
 /** Nothing live or scheduled in any age: the plains under the storm and the one line that says so; no verb. */
-const QuietCard = () => (
-  <StateCard painting="brooding-plains">
-    <p className="font-ui text-[19px] font-bold text-kit-cream">{WORDS.noSeason}</p>
-  </StateCard>
-);
+const QuietCard = () =>
+  useLayout() === "desktop" ? (
+    <PaintedCard painting="brooding-plains">
+      <p className="self-end p-6 font-display text-[40px] leading-none text-kit-cream">{WORDS.noSeason}</p>
+    </PaintedCard>
+  ) : (
+    <StateCard painting="brooding-plains">
+      <p className="font-ui text-[19px] font-bold text-kit-cream">{WORDS.noSeason}</p>
+    </StateCard>
+  );
 
 /** While the table resolves the card keeps its place and its button; unknown values are dashes. */
 const WaitingCard = () => (
@@ -173,7 +218,7 @@ export const ResumeCard = ({ season, now }: { season: DirectoryGame; now: number
       mode="frontier"
       picture={
         still && (
-          <div className="relative h-40 overflow-hidden rounded-xl">
+          <div className="relative h-40 overflow-hidden rounded-xl lg:h-full lg:rounded-none">
             <img src={still} alt="" className="size-full object-cover object-[45%_55%]" />
             <span className="frontier-chip absolute left-2 top-2 h-8 !py-0 !pl-1.5 !pr-3 font-ui text-[15px] font-bold text-kit-cream">
               {own ? <OrderEmblem order={own.order} size={22} /> : <span />}
@@ -215,7 +260,7 @@ const ResultsCard = ({ season }: { season: DirectoryGame }) => {
   return (
     <StepCard
       mode="frontier"
-      picture={<CardPicture painting={ageOf("eternum").painting} />}
+      painting={ageOf("eternum").painting}
       figure={<Chip icons={["Tp"]} value={own ? `#${own.rank}` : "—"} label={WORDS.season} />}
       line={<p className="font-ui text-[17px] font-bold text-kit-gold2">{SEASON_OVER}</p>}
       verb={<GoButton role="primary" word={WORDS.results} icon="Tp" to={resultsHref(season, false)} />}

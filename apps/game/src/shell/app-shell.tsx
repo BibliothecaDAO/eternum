@@ -7,9 +7,12 @@ import { useFrontierType } from "@/ui/features/frontier/use-frontier-type";
 import { useBootDocumentState } from "@/ui/modules/boot-loader";
 import { useOutsidePlaySession } from "@/utils/spectator-session";
 
+import { AppMusic } from "./app-music";
+
 /**
  * Every screen outside a game, in the player app's one visual system. Each page composes itself with PageFrame; this
- * route marks the app ready, holds the type and runs the signed-in player's account sync. It carries no three.js and no game asset; a game loads only under
+ * route marks the app ready, holds the type, plays the app's music when it is on and runs the signed-in player's
+ * account sync. It carries no three.js and no game asset; a game loads only under
  * `/g/:chain/:game`.
  */
 export const AppShell = () => {
@@ -22,6 +25,7 @@ export const AppShell = () => {
   return (
     <>
       <Outlet />
+      <AppMusic />
       {session && (
         <Suspense fallback={null}>
           <AccountRuntime />

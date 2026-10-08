@@ -98,13 +98,15 @@ describe.each(SIZES)("every page at %i × %i keeps each control in its band", (w
         isStep ? 0 : 4,
       );
     } else {
-      // One rail: the lockup, the four places and the player; Back sits in the title row beside it.
+      // One rail: the lockup, the four places, the sound switch and the player; Back sits in the title row beside it.
       expect(top).toBeNull();
       const [lockup, ...rest] = controlsIn(band(container, "rail"));
       const tabs = rest.filter((control) => control.dataset.role === "tab");
+      const sound = rest.filter((control) => control.dataset.role === "sound");
       expect(lockup.dataset.role).toBe("lockup");
       expect(tabs).toHaveLength(isStep ? 0 : 4);
-      for (const control of rest.filter((other) => !tabs.includes(other)))
+      expect(sound).toHaveLength(isStep ? 0 : 1);
+      for (const control of rest.filter((other) => !tabs.includes(other) && !sound.includes(other)))
         expect(control.closest('[data-role="player"]'), control.outerHTML).not.toBeNull();
       expect(band(container, "tabs")).toBeNull();
       if (!isTabPage) expect(back[0].closest('[data-band="title"]')).not.toBeNull();

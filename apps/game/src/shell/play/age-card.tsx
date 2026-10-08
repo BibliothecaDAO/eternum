@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
 import { WORDS } from "../words";
-import { AGES, type AgeMode } from "./ages";
+import { AGES, isLocked } from "./ages";
 import { paintingSources } from "../paintings";
 import type { AgeAction } from "./age-state";
 import { GoButton } from "./go-button";
@@ -14,7 +14,11 @@ type Age = (typeof AGES)[number];
 /** A tile beside the home card, a band on the phone's ages, a landscape card on the desktop's row (painted 01, 02). */
 type AgeCardSize = "tile" | "band" | "landscape";
 
-const HEIGHT: Record<AgeCardSize, string> = { tile: "h-[118px]", band: "h-[168px]", landscape: "h-[288px]" };
+const HEIGHT: Record<AgeCardSize, string> = {
+  tile: "h-[118px]",
+  band: "h-[168px]",
+  landscape: "h-[210px] min-[1800px]:h-[250px]",
+};
 
 /** The image widths each size draws at, for the painting's srcset. */
 const SIZES: Record<AgeCardSize, string> = { tile: "130px", band: "100vw", landscape: "33vw" };
@@ -50,8 +54,6 @@ export const AgeCard = ({
     )}
   </article>
 );
-
-const isLocked = (mode: AgeMode) => mode === "dominion";
 
 /** "Age II" with the numeral on its own: the mode name stays the title. */
 export const AgeLabel = ({ numeral }: { numeral: string }) => (

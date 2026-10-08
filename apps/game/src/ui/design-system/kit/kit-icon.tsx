@@ -87,6 +87,9 @@ const ICONS = {
   Ar: "/image-icons/ui-arrow-right.png",
   In: "/image-icons/ui-download.png",
   Up: "/image-icons/ui-refresh.png",
+  // Music outside a match: on, and off.
+  Mu: "/image-icons/ui-music.png",
+  Mt: "/image-icons/ui-mute.png",
 } as const;
 
 export type IconCode = keyof typeof ICONS;

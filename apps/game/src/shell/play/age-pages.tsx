@@ -6,7 +6,7 @@ import { Loading } from "../loading";
 import { chooseSeason, seasonRealm } from "../season";
 import { AgeLabel } from "./age-card";
 import { ageState } from "./age-state";
-import { type AgeMode, ageOf } from "./ages";
+import { type AgeMode, ageOf, isLocked } from "./ages";
 import { paintingSources } from "../paintings";
 import { GoButton } from "./go-button";
 import { PlayCard, ResumeCard } from "./next-step-card";
@@ -72,7 +72,7 @@ const AgeFace = ({ mode, facts }: { mode: AgeMode; facts: PlayFacts }) => {
   const { chip, action } = ageState(mode, facts, "full");
   return (
     <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[1fr_24rem] lg:items-end lg:gap-8">
-      <div className={cn("painted h-56 rounded-2xl lg:h-[28rem]", mode === "dominion" && "brightness-75 grayscale")}>
+      <div className={cn("painted h-56 rounded-2xl lg:h-[28rem]", isLocked(mode) && "brightness-75 grayscale")}>
         <img
           {...paintingSources(age.painting)}
           sizes="(min-width: 1024px) 60vw, 100vw"

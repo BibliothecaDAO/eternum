@@ -8,6 +8,7 @@ import { useNotificationPreferences } from "@/hooks/use-notification-preferences
 import { Button } from "@/ui/design-system/kit/button";
 import { forgetDeviceKey } from "@bibliothecadao/eternum";
 
+import { setAppMusic, useAppMusic } from "../app-music";
 import { useLayout } from "../frame/layout";
 import { PageFrame } from "../frame/page-frame";
 import { useRealmsPlayer } from "../herald";
@@ -21,6 +22,7 @@ import { DevicesCard } from "./devices-page";
 import { NotificationsCard, shownLevel } from "./notifications";
 import { ProfileView } from "./profile-view";
 import { SettingRow, SettingRows } from "./setting-row";
+import { Switch } from "./switch";
 
 type ProfileRow = "account" | "notifications" | "devices";
 
@@ -120,7 +122,7 @@ const OwnProfile = ({ account, open }: { account: string; open: ProfileRow | nul
   );
 };
 
-/** Account, Notifications (with its level) and Devices; each opens its page or panel. */
+/** Account, Notifications (with its level) and Devices, each opening its page or panel; Music switches here. */
 const Rows = () => {
   const navigate = useNavigate();
   const { session } = useIdentitySession();
@@ -136,8 +138,14 @@ const Rows = () => {
         onOpen={() => navigate(ROW_PATH.notifications)}
       />
       <SettingRow icon="Dv" name={PROFILE_WORDS.devices} onOpen={() => navigate(ROW_PATH.devices)} />
+      <SettingRow icon="Mu" name={PROFILE_WORDS.music} end={<MusicSwitch />} />
     </SettingRows>
   );
+};
+
+const MusicSwitch = () => {
+  const on = useAppMusic();
+  return <Switch on={on} label={PROFILE_WORDS.music} onToggle={() => setAppMusic(!on)} />;
 };
 
 const RowCard = ({ row }: { row: ProfileRow }) => {

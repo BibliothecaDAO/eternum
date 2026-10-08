@@ -27,12 +27,11 @@ import { SeatGrid } from "./seat-grid";
 
 const BLITZ = ageOf("blitz");
 
-/** Blitz's facts with its Join: a Join that waited on sign-in completes here by itself. */
-const useBlitz = () => {
-  const facts = usePlayFacts();
+/** Blitz's Join where its rows are drawn: a Join that waited on sign-in completes here by itself. */
+export const useBlitzJoin = (slots: Parameters<typeof useJoinOnReturn>[1]) => {
   const join = useJoinSlot();
-  useJoinOnReturn(join, facts.slots.data?.slots);
-  // A refused Join names the service above the foot, with Try again joining the same slot.
+  useJoinOnReturn(join, slots);
+  // A refused Join names the service in the page's notice, with Try again joining the same slot.
   const refused = join.register.isError && (
     <ServiceFailure
       service="join"
@@ -40,7 +39,12 @@ const useBlitz = () => {
       retry={() => join.register.variables && join.register.mutate(join.register.variables)}
     />
   );
-  return { facts, join, refused };
+  return { join, refused };
+};
+
+const useBlitz = () => {
+  const facts = usePlayFacts();
+  return { facts, ...useBlitzJoin(facts.slots.data?.slots) };
 };
 
 /**
@@ -80,7 +84,16 @@ const AgeHeader = () => (
   </header>
 );
 
-const BlitzRows = ({ facts, join }: { facts: PlayFacts; join: ReturnType<typeof useJoinSlot> }) => {
+/** The games as rows, live first; a panel shows the first few. */
+export const BlitzRows = ({
+  facts,
+  join,
+  limit,
+}: {
+  facts: PlayFacts;
+  join: ReturnType<typeof useJoinSlot>;
+  limit?: number;
+}) => {
   if (facts.slots.isError)
     return <ServiceFailure service="slots" error={facts.slots.error} retry={() => void facts.slots.refetch()} />;
   if (facts.directory.isError)
@@ -90,7 +103,7 @@ const BlitzRows = ({ facts, join }: { facts: PlayFacts; join: ReturnType<typeof 
   if (!facts.slots.isSuccess || !facts.directory.isSuccess) return <Loading />;
   return (
     <ul>
-      {facts.blitz.map((row) => (
+      {facts.blitz.slice(0, limit).map((row) => (
         <GameRow key={row.key} row={row} now={facts.now} join={join} />
       ))}
     </ul>

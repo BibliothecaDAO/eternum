@@ -23,8 +23,8 @@ export const SettingRow = ({
   const face = (
     <>
       <KitIcon code={icon} size={24} />
-      <span className="font-ui text-[16px] font-semibold text-kit-cream">{name}</span>
-      <span className="ml-auto min-w-0 truncate text-right text-[15px] text-kit-muted">{value}</span>
+      <span className="min-w-0 text-left font-ui text-[16px] font-semibold text-kit-cream">{name}</span>
+      <span className="ml-auto max-w-[50%] shrink-0 truncate text-right text-[15px] text-kit-muted">{value}</span>
       {end ?? (onOpen && <KitIcon code="Cv" size={18} />)}
     </>
   );

@@ -1,29 +1,41 @@
 import { useLayout } from "../frame/layout";
 import { PageFrame } from "../frame/page-frame";
 import { chooseSeason } from "../season";
-import { LORE_LINE } from "../words";
+import { BlitzRows, useBlitzJoin } from "../blitz/blitz-pages";
+import { News } from "../learn/news";
+import { Panel } from "../panel";
+import { LEARN_WORDS, LORE_LINE, PLAY_WORDS, WORDS } from "../words";
 import { AgeCard } from "./age-card";
 import { ageState } from "./age-state";
 import { AGES, ageOf } from "./ages";
 import { paintingSources } from "../paintings";
 import { ageOfStep, type NextStep } from "./next-step";
 import { NextStepCard } from "./next-step-card";
+import { AgesBand, CommunityBand } from "./play-bands";
 import { type PlayFacts, usePlayFacts } from "./play-facts";
 import { SeasonTop } from "./season-top";
 import { FailureCard } from "./state-card";
 
 /**
  * The Play tab (spec 01, 03, 04): the next step in one card, the other three ages beside it, and on a phone the four
- * ages below as bands. A first visit wears the hero painting and the lore line; desktop sets the card on its age's
- * painting with the season's top five beside it.
+ * ages below as bands. A first visit wears the hero painting and the lore line. The desktop sets the step on its age's
+ * painting with the season and Blitz's games beside it (a first visit is a stage: the painting fills the screen), then
+ * scrolls to the four ages and the community.
  */
 export const PlayPage = () => {
   const facts = usePlayFacts();
+  const { join, refused } = useBlitzJoin(facts.slots.data?.slots);
   const layout = useLayout();
-  const painting = isFirstVisit(facts.step) ? "dark-plains" : ageOf(ageOfStep(facts.step)).painting;
+  const firstVisit = isFirstVisit(facts.step);
+  const painting = firstVisit ? "dark-plains" : ageOf(ageOfStep(facts.step)).painting;
   return (
-    <PageFrame painting={painting}>
-      {layout === "phone" ? <PhonePlay facts={facts} /> : <DesktopPlay facts={facts} />}
+    <PageFrame
+      painting={painting}
+      stage={firstVisit}
+      title={firstVisit ? undefined : WORDS.play}
+      notice={refused || undefined}
+    >
+      {layout === "phone" ? <PhonePlay facts={facts} /> : <DesktopPlay facts={facts} join={join} />}
     </PageFrame>
   );
 };
@@ -72,27 +84,74 @@ const PhoneHero = () => (
   </section>
 );
 
-const DesktopPlay = ({ facts }: { facts: PlayFacts }) => {
+type Join = ReturnType<typeof useBlitzJoin>["join"];
+
+const DesktopPlay = ({ facts, join }: { facts: PlayFacts; join: Join }) => (
+  <div className="flex flex-col gap-16 pb-12">
+    {isFirstVisit(facts.step) ? <Stage facts={facts} join={join} /> : <Table facts={facts} join={join} />}
+    <AgesBand />
+    <CommunityBand />
+  </div>
+);
+
+/** B: the step's card, the season beside it, the other three ages under the card, then Blitz's games and the news. */
+const Table = ({ facts, join }: { facts: PlayFacts; join: Join }) => {
   const season = chooseSeason(facts.games, facts.signedIn);
-  const firstVisit = isFirstVisit(facts.step);
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex min-h-[26rem] items-start justify-between gap-8 pt-6">
-        <div className="flex w-[34rem] flex-col gap-4">
-          {firstVisit && <p className="font-display text-[44px] leading-[1.1] text-kit-cream">{LORE_LINE}</p>}
-          <HomeCard facts={facts} />
-        </div>
-        {season && (
-          <div className="w-[24rem]">
-            <SeasonTop season={season} length={5} />
-          </div>
-        )}
+    <div className="grid grid-cols-12 items-start gap-5">
+      <div className="col-span-8">
+        <HomeCard facts={facts} />
       </div>
-      <div className="grid grid-cols-3 gap-2">
+      <div className="col-span-4 row-span-3">{season ? <SeasonTop season={season} length={12} /> : <NewsPanel />}</div>
+      <div className="col-span-8 grid grid-cols-3 gap-5">
         {otherAges(facts.step).map((age) => (
+          <AgeCard key={age.mode} age={age} {...ageState(age.mode, facts, "full")} size="landscape" />
+        ))}
+      </div>
+      <div className="col-span-8 min-[1800px]:col-span-5">
+        <BlitzPanel title={PLAY_WORDS.blitzGames} facts={facts} join={join} limit={3} />
+      </div>
+      {season && (
+        <div className="hidden min-[1800px]:col-span-3 min-[1800px]:block">
+          <NewsPanel />
+        </div>
+      )}
+    </div>
+  );
+};
+
+/** A first visit: the painting fills the screen, the lore line and Play free at its foot, the season and the next Blitz games beside them, the four ages along the bottom. */
+const Stage = ({ facts, join }: { facts: PlayFacts; join: Join }) => {
+  const season = chooseSeason(facts.games, facts.signedIn);
+  return (
+    <div className="grid min-h-[calc(100vh-3rem)] grid-cols-12 grid-rows-[1fr_auto] gap-6">
+      <div className="col-span-5 flex flex-col justify-end gap-5">
+        <p className="font-display text-[52px] leading-[1.08] text-kit-cream [text-shadow:0_2px_0_theme(colors.kit.ink/70%),0_0_24px_theme(colors.kit.ink/60%)] min-[1800px]:text-[60px]">
+          {LORE_LINE}
+        </p>
+        <HomeCard facts={facts} />
+      </div>
+      <div className="col-span-4 col-start-9 flex flex-col gap-5">
+        {season && <SeasonTop season={season} length={6} />}
+        <BlitzPanel title={PLAY_WORDS.nextBlitz} facts={facts} join={join} limit={2} />
+      </div>
+      <div className="col-span-12 grid grid-cols-4 gap-5">
+        {AGES.map((age) => (
           <AgeCard key={age.mode} age={age} {...ageState(age.mode, facts, "full")} size="landscape" />
         ))}
       </div>
     </div>
   );
 };
+
+const BlitzPanel = ({ title, facts, join, limit }: { title: string; facts: PlayFacts; join: Join; limit: number }) => (
+  <Panel icon="Pl" title={title}>
+    <BlitzRows facts={facts} join={join} limit={limit} />
+  </Panel>
+);
+
+const NewsPanel = () => (
+  <Panel icon="Pc" title={LEARN_WORDS.news}>
+    <News limit={4} />
+  </Panel>
+);

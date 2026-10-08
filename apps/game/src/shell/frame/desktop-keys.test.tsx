@@ -1,19 +1,27 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
+import { MemoryRouter, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { afterEach, expect, it } from "vitest";
 
 import { useDesktopKeys } from "./desktop-keys";
+import { StepVerb } from "./step-verb";
 
 const PLACES = ["/", "/season", "/learn", "/profile"];
 
 const Page = ({ back }: { back?: string }) => {
   useDesktopKeys({ places: PLACES, back });
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   return (
     <>
       <p data-testid="where">{pathname}</p>
       <input aria-label="field" />
+      <button type="button">Other</button>
+      <StepVerb>
+        <button type="button" onClick={() => navigate("/g/step")}>
+          Resume
+        </button>
+      </StepVerb>
     </>
   );
 };
@@ -44,6 +52,7 @@ const mount = async (path: string, back?: string) => {
     press: (key: string, target: EventTarget = window) =>
       act(async () => void target.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true }))),
     field: () => container.querySelector("input")!,
+    other: () => container.querySelector("button")!,
   };
 };
 
@@ -65,4 +74,12 @@ it("leaves Esc to an open sheet and keys typed in a field to the field", async (
   sheet.remove();
   await page.press("3", page.field());
   expect(page.where()).toBe("/blitz/x");
+});
+
+it("takes the screen's step with Enter, unless another control holds the focus", async () => {
+  const page = await mount("/");
+  await page.press("Enter", page.other());
+  expect(page.where()).toBe("/");
+  await page.press("Enter");
+  expect(page.where()).toBe("/g/step");
 });

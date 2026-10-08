@@ -7,7 +7,7 @@ import { formatContentDay } from "../clock-chip";
 import { PageFrame } from "../frame/page-frame";
 import { NothingHere } from "../not-found";
 import { LEARN_WORDS } from "../words";
-import { publishedPosts } from "./learn-page";
+import { publishedPosts } from "./news";
 
 /**
  * A post (spec 13): Back, its title, date and reading time (its art waits for the posts' own; their cover is the web

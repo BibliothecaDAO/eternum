@@ -30,6 +30,14 @@ export const WORDS = {
   age: "Age",
 } as const;
 
+/** Play on the desktop: its panels and the bands below its first screen. */
+export const PLAY_WORDS = {
+  blitzGames: "Blitz games",
+  nextBlitz: "Next Blitz",
+  fourAges: "The four ages",
+  joinTheRealm: "Join the realm",
+} as const;
+
 /** The lore's line, on the first visit's painting and on sign-in (approved 25 September). */
 export const LORE_LINE = "The mist forgets. Your realm remembers.";
 /** Frontier's pitch on the first visit's card. */
@@ -104,6 +112,8 @@ export const PROFILE_WORDS = {
   account: "Account",
   notifications: "Notifications",
   devices: "Devices",
+  /** Music outside a match, on this device. */
+  music: "Music",
   name: "Name",
   portrait: "Portrait",
   signInMethods: "Sign-in",
