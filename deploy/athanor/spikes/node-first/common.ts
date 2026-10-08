@@ -28,7 +28,7 @@ export interface Fixture {
 }
 export const now = () => process.hrtime.bigint();
 export const ms = (n: bigint) => Number(n) / 1e6;
-export const felt = (v: string | bigint | number) => `0x${BigInt(v).toString(16)}`;
+const felt = (v: string | bigint | number) => `0x${BigInt(v).toString(16)}`;
 export const normalize = (v: string) => felt(v);
 export function args(names: string[]) {
   return parseArgs({
@@ -71,7 +71,7 @@ export function percentile(values: number[], p: number) {
   const sorted = [...values].sort((a, b) => a - b);
   return sorted.length ? sorted[Math.max(0, Math.ceil(sorted.length * p) - 1)]! : null;
 }
-export const bounds = {
+const bounds = {
   l1_gas: { max_amount: 0n, max_price_per_unit: 0n },
   l2_gas: { max_amount: 1_200_000_000n, max_price_per_unit: 0n },
   l1_data_gas: { max_amount: 0n, max_price_per_unit: 0n },
