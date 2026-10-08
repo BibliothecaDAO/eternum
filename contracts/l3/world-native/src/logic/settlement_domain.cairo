@@ -151,10 +151,18 @@ pub mod SettlementLogic {
             }
             let mut root = context.raw_root;
             let seed = crate::random::game_root(ref root, game_id, game.seed);
-            let mut progress = self.settlements.data.settlements.progress.read(game_id);
-            let (realm_id, traits) = self
-                .resolve_season_realm(key, command.selected_realm, progress.realm_count, seed, context);
-            self.realms.reserve(game_id, realm_id, progress.realm_count);
+            let seat = crate::spike_ids::settlement_seat(game_id, actor);
+            let mut progress = if seat.is_some() {
+                crate::settlement::SettlementProgress { registered: 0, realm_count: 0 }
+            } else { self.settlements.data.settlements.progress.read(game_id) };
+            let (realm_id, traits) = match seat {
+                Some(realm) => {
+                    assert!(command.selected_realm.is_none(), "spike seat is fixed");
+                    (realm.into(), self.realms.traits(realm.into()))
+                },
+                None => self.resolve_season_realm(key, command.selected_realm, progress.realm_count, seed, context),
+            };
+            if seat.is_none() { self.realms.reserve(game_id, realm_id, progress.realm_count); }
             let coord = if rules.day_unit_seconds == 0 {
                 ISeasonPlacementLibraryDispatcher { class_hash: classes.placement.read() }
                     .claim_season_settlement(
@@ -177,12 +185,36 @@ pub mod SettlementLogic {
                     story_cursor,
                 )
                 .resume_story(ref story_cursor);
-            progress.realm_count += 1;
-            self.settlements.write_progress(game_id, progress);
+            if seat.is_none() {
+                progress.realm_count += 1;
+                self.settlements.write_progress(game_id, progress);
+            }
             ((), story_cursor)
         }
     }
 
+    #[abi(embed_v0)]
+    impl SpikeSeats of crate::spike_ids::ISpikeSeats<ContractState> {
+        fn seal_spike_seats(ref self: ContractState, game: u32) {
+            assert!(get_caller_address() == self.release.authority(), "only domain authority");
+            self.settlements.write_progress(game, crate::settlement::SettlementProgress { registered: 0, realm_count: 0 });
+        }
+        fn assign_spike_seats(ref self: ContractState, game: u32, actors: Span<ContractAddress>) {
+            assert!(get_caller_address() == self.release.authority(), "only domain authority");
+            let mut progress = self.settlements.data.settlements.progress.read(game);
+            for actor in actors {
+                let mut root = crate::spike_ids::action_root(*actor);
+                let seed = crate::random::game_root(ref root, game, crate::logic::game::game(game).seed);
+                let remaining = crate::realms::CANONICAL_REALM_COUNT - progress.realm_count.into();
+                let index = crate::random::range(seed, 71419, remaining.into()).try_into().unwrap();
+                let realm = self.realms.available(game, index, progress.realm_count);
+                self.realms.reserve(game, realm, progress.realm_count);
+                crate::spike_ids::bind_settlement_seat(game, *actor, realm.try_into().unwrap());
+                progress.realm_count += 1;
+            }
+            self.settlements.write_progress(game, progress);
+        }
+    }
     #[abi(embed_v0)]
     impl Villages of crate::village::IVillages<ContractState> {
         #[cfg(test)]

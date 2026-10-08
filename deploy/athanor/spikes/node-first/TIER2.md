@@ -250,3 +250,99 @@ done
 For an already completed CreateExplorer wave on the earlier Explore-capable host, the same conversion command applies
 with its actual fixture/result paths; no new setup or army provisioning is required. The Create-only host fails loudly.
 A 2,000-action result with failed/reverted/missing creations also fails conversion rather than measuring a smaller wave.
+
+## Settle
+
+READ: shipped players send `SettleSeason` through the gateway's recorded Games entry. Routing chooses SettlementLogic,
+which reserves their entry and a canonical realm, then calls the real StructuresLogic realm/economy provisioner. For
+preset101 it does **not** use the spiral/location pool: the persistent reference is `off_map_realm_reference(realm_id)`,
+and the day's region is derived from that realm id and spacing. The active shared allocation state is
+`settlements.progress[game].realm_count`, `realms.slots/reverse_indices` (the shrinking realm pool, including its common
+tail), and `games.next_entity[game]`. Registry/release/preset reads are immutable during the wave. Actor entry,
+realm/economy and coordinate facts are private to each chosen realm; no LORDS budget or season-point total is written.
+Non-Frontier settling also uses the placement pool/cursor and occupied-site checks; that branch is outside this
+preset101 measurement. The full read-before-build report is in the external handoff's Settle read section.
+
+The new standalone SettleGames host has zero homes at preparation. It retains native account validation and calls the
+complete real SettlementLogic season entry directly with caller=actor, nonzero name, `selected_realm=None`, real
+preset101, real canonical traits, recipe/starting resources and producer. No development selected-realm bypass or
+artificial million-resource grant runs in this action. This is an opening with main play begun: realm settlement also
+materialises the home ring. Root shape is fixed `Poseidon(123456789,actor)` followed by the shipped game-root
+derivation.
+
+X runs the ordinary realm draw, pool reserve, global progress increment and shared entity allocator. It includes one
+spike seat lookup returning None; otherwise the season algorithm and economy path are the same. Y draws and reserves a
+unique canonical realm for each actor **before** the burst, through the actual shrinking-pool/random-range algorithm, in
+fixture actor order. It binds that seat and namespace to the actor. During Y's settle, selection/pool mutation and
+aggregate progress are skipped; the real realm/economy provisioner runs normally. The first home id is
+`(canonical_realm_id << 16) | 1`, with later ids in that home namespace. Catalogue ids are at most8000, so this bounded
+spike fits u32. No actor slot is shared with another actor.
+
+READ: design.html section(d) supplies no seat-assignment rule and described settlement as rare/admin, retaining its
+global counter. The requested arm is a spike assumption, not an approved design: real canonical-realm reservation is
+moved to registration so no actor may choose or overwrite a seat during the wave. Setup reports registration time. It
+resets the temporary reservation count to zero through the canonical SettlementProgress fact before publishing the
+zero-home fixtures. Y's aggregate progress stays zero after play; chain verification folds all actor homes. A production
+choice would need authoritative progress/count derivation and a decision about the fairness/timing of seat assignment.
+The existing CreateExplorer/Explore hosts are unchanged; this host and the changed SettlementLogic are separate
+artifacts.
+
+Prepare once while no timed wave is active; the existing accounts and trial services are reused. Setup loads all8000
+canonical traits, registers the real preset, creates X/Y games, reserves only Y's seats, and checks every actor has no
+home, with both entity counters1 and both realm counts0. Fresh repetitions require fresh setup. Any partial preparation
+or duplicate seat fails before fixture publication.
+
+```sh
+set -euo pipefail
+REP=settle-r1
+bun deploy/athanor/spikes/node-first/game-setup.ts \
+  --dir "$TRIAL/data" --manifest "$TRIAL/data/native-world.json" \
+  --fixture "$TRIAL/data/node-first-private.json" \
+  --private-rpc "http://127.0.0.1:$BASE/rpc/v0_10_2" \
+  --preset 101 --action settle --window 16
+
+NODE_PID=$(python3 deploy/athanor/spikes/node-first/node-pid.py "$NODE_CONTAINER")
+NODE_IMAGE=$(sudo -n docker inspect --format '{{.Config.Image}}' "$NODE_CONTAINER")
+for ARM in X Y; do
+  FIXTURE="$TRIAL/data/node-first-settle-$ARM.json"
+  bun deploy/athanor/spikes/node-first/game-start.ts \
+    --dir "$TRIAL/data" --fixture "$FIXTURE" \
+    --private-rpc "http://127.0.0.1:$BASE/rpc/v0_10_2"
+  bun deploy/athanor/spikes/node-first/proxy.ts \
+    --fixture "$FIXTURE" --upstream "http://127.0.0.1:$BASE" --port "$((BASE+8))" \
+    --events "$TRIAL/data/$REP-$ARM-proxy.jsonl" \
+    > "$TRIAL/data/$REP-$ARM-proxy.log" 2>&1 &
+  TIER2_PROXY_PID=$!
+  trap 'kill "$TIER2_PROXY_PID" 2>/dev/null || true' EXIT
+  sleep 1
+  bun deploy/athanor/spikes/node-first/run.ts \
+    --fixture "$FIXTURE" --rpc-url "http://127.0.0.1:$((BASE+8))/rpc/v0_10_2" \
+    --ws-url "ws://127.0.0.1:$BASE/rpc/v0_10_2" \
+    --out "$TRIAL/data/$REP-results" --arms "$ARM" --workers 8 --timeout-ms 600000 \
+    --node-pid "$NODE_PID" --node-image "$NODE_IMAGE" \
+    --node-log "$TRIAL/data/node-first-node.log" \
+    --node-metrics "$TRIAL/data/metrics/metrics.jsonl"
+  kill "$TIER2_PROXY_PID"
+  wait "$TIER2_PROXY_PID"
+  trap - EXIT
+done
+```
+
+Keep the existing read-only watcher/collector and stop any previous temporary proxy at BASE+8 before this loop. The
+runner checks zero homes again, warms with private simulation only (`SKIP_FEE_CHARGE`, validation retained), then
+presigns/releases all2000 actual player transactions. Spread>=100ms invalidates the wave. It never commits a warmup
+home.
+
+After the final receipt, the visibility/CPU timers stop. `settlement` reads all2000 native home observations from chain
+and requires distinct ids, owners, canonical realms, persistent references and day sites; matching actor ownership;
+initial troop grant, knowledge/resource state and labor producer; X aggregate realm count2000/counter2001; Y aggregate
+count0/counter1 and ids in their assigned namespaces. Incomplete or mismatched census invalidates the result; the census
+and public per-home observations remain in the JSON for review.
+
+`settleCloseFootprint` uses pure-wave `close_block_complete` records, including the final partial block after
+visibility. After the normal collector flush it waits at most60seconds outside the measured window for complete close
+coverage. It reports events, state_diff_len, nonce updates, storage-entry count after subtracting nonces, bouncer data
+units and their per-settle averages, plus every block's fill. These are block-diff/close averages, including small block
+overhead, not a storage-syscall trace. Missing final coverage or other transactions makes per-settle figures null and
+prevents a green complete result. Preserve the raw logs, image/flags and metrics; do not assume that the40,000 cap fills
+at the same number of settles as the earlier571-army blocks. Exact settle footprint and latency are for ops to measure.

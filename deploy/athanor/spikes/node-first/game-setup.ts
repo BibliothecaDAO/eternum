@@ -23,7 +23,20 @@ import { canonicalRealmTraits } from "../../../../config/deployer/clean/world/na
 
 async function main() {
   const setupStarted = monotonicNow();
-  const a = args(["dir", "manifest", "fixture", "private-rpc", "preset", "amount", "prepare-explore", "window"]);
+  const a = args([
+    "dir",
+    "manifest",
+    "fixture",
+    "private-rpc",
+    "preset",
+    "amount",
+    "prepare-explore",
+    "window",
+    "action",
+  ]);
+  const settle = a.action === "settle";
+  if (a.action && !settle) throw new SetupFailure("Only --action settle is supported");
+  if (settle && a["prepare-explore"]) throw new SetupFailure("Settle starts with zero homes and armies");
   const dir = trialDirectory(required(a.dir, "dir"));
   const base = load<Fixture>(required(a.fixture, "fixture"));
   const manifest = load<{ world: { address: string }; shard: { chainId: string } }>(required(a.manifest, "manifest"));
@@ -52,12 +65,19 @@ async function main() {
       resolve(import.meta.dir, `artifacts-game/node_first_game_${name}.contract_class.json`),
       resolve(import.meta.dir, `artifacts-game/node_first_game_${name}.compiled_contract_class.json`),
     );
-  const games = artifact("Games"),
+  const games = artifact(settle ? "SettleGames" : "Games"),
     troops = artifact("TroopsLogic"),
     map = artifact("MapLogic"),
     structures = artifact("StructuresLogic");
-  const replacements = { troops: troops.classHash, map: map.classHash, structures: structures.classHash };
+  const settlement = settle ? artifact("SettlementLogic") : null;
+  const replacements = {
+    settlement: settlement?.classHash,
+    troops: troops.classHash,
+    map: map.classHash,
+    structures: structures.classHash,
+  };
   for (const domain of [troops, map, structures]) await declareClass(account, domain, () => {});
+  if (settlement) await declareClass(account, settlement, () => {});
   await declareClass(account, games, () => {});
   const [releaseId] = await provider.callContract({
     contractAddress: manifest.world.address,
@@ -117,6 +137,7 @@ async function main() {
     );
     await waitForSuccess(provider, tx.transaction_hash);
   };
+  if (settle) await configureSettleCatalogue(account, provider, codec, contract, window);
   const preset = Number(a.preset ?? 101);
   const config = loadNativePresetConfiguration("madara.frontier", preset);
   const definition = buildNativePreset(config, preset);
@@ -141,7 +162,7 @@ async function main() {
         start_main_at: scheduledStart,
         duration_seconds: 86400,
         end_grace_seconds: 0,
-        dev_mode_on: true,
+        dev_mode_on: !settle,
         roster: [],
         registration_start: now,
         biome_climate: definition.rules.biome_climate_config,
@@ -149,7 +170,9 @@ async function main() {
         seed: "0x1234567",
       },
     });
-    const callData = await provisionHomes(account, provider, codec, contract, base, game, arm, grants, amount, window);
+    const callData = settle
+      ? await prepareSettleGame(account, provider, codec, contract, base, game, arm, window)
+      : await provisionHomes(account, provider, codec, contract, base, game, arm, grants, amount, window);
 
     const [counter] = await provider.callContract({
       contractAddress: contract,
@@ -160,10 +183,15 @@ async function main() {
       ...base,
       contract,
       classHash: games.classHash,
-      entrypoint: "create_explorer",
+      entrypoint: settle ? "settle_season" : "create_explorer",
       playerCalldata: callData,
       simulationRpc: rpc,
-      game: { id: game, arm: arm as "X" | "Y", kind: "CreateExplorer", initialCounter: Number(BigInt(counter!)) },
+      game: {
+        id: game,
+        arm: arm as "X" | "Y",
+        kind: settle ? "Settle" : "CreateExplorer",
+        initialCounter: Number(BigInt(counter!)),
+      },
     });
   }
   for (const fixture of fixtures) {
@@ -173,11 +201,7 @@ async function main() {
   // Keep both games in day zero after preparation; actual measured calls still use node block time.
   for (const fixture of fixtures) {
     await send("start_now", { game: fixture.game!.id });
-    save(
-      resolve(dir, `node-first-${fixture.game!.kind === "Explore" ? "explore" : "game"}-${fixture.game!.arm}.json`),
-      fixture,
-      true,
-    );
+    save(resolve(dir, fixtureName(fixture)), fixture, true);
   }
   console.log(
     JSON.stringify({
@@ -185,11 +209,110 @@ async function main() {
       contract,
       prepared: base.players.length,
       setupMs: ms(monotonicNow() - setupStarted),
-      fixtures: fixtures.map(
-        (fixture) => `node-first-${fixture.game!.kind === "Explore" ? "explore" : "game"}-${fixture.game!.arm}.json`,
-      ),
+      fixtures: fixtures.map((fixture) => fixtureName(fixture)),
     }),
   );
+}
+function fixtureName(fixture: Fixture) {
+  const kind = fixture.game!.kind;
+  const prefix = kind === "Settle" ? "settle" : kind === "Explore" ? "explore" : "game";
+  return `node-first-${prefix}-${fixture.game!.arm}.json`;
+}
+async function configureSettleCatalogue(
+  account: ReturnType<typeof createMadaraAccount>,
+  provider: RpcProvider,
+  codec: CallData,
+  contract: string,
+  window: number,
+) {
+  const batches = Array.from({ length: Math.ceil(canonicalRealmTraits.length / 64) }, (_, batch) => ({
+    contractAddress: contract,
+    entrypoint: "initialize_realm_traits",
+    calldata: codec.compile("initialize_realm_traits", {
+      first_realm: batch * 64 + 1,
+      packed_traits: canonicalRealmTraits.slice(batch * 64, batch * 64 + 64),
+    }),
+  }));
+  const nonce = BigInt(await provider.getNonceForAddress(account.address, "pre_confirmed"));
+  await provisioningWindow(
+    batches.length,
+    nonce,
+    window,
+    async (index, nonce) =>
+      (await account.execute(batches[index]!, { nonce, tip: 0, resourceBounds: invokeBounds })).transaction_hash,
+    (tx) => preconfirmedSuccess(provider, tx),
+    () => {},
+  );
+  console.log(JSON.stringify({ tier: 2, action: "Settle", canonicalTraits: canonicalRealmTraits.length }));
+}
+async function prepareSettleGame(
+  account: ReturnType<typeof createMadaraAccount>,
+  provider: RpcProvider,
+  codec: CallData,
+  contract: string,
+  base: Fixture,
+  game: number,
+  arm: string,
+  window: number,
+) {
+  if (arm === "Y") {
+    const batches = Array.from({ length: Math.ceil(base.players.length / 32) }, (_, batch) => ({
+      contractAddress: contract,
+      entrypoint: "assign_seats",
+      calldata: codec.compile("assign_seats", {
+        game,
+        actors: base.players.slice(batch * 32, batch * 32 + 32).map((player) => player.address),
+      }),
+    }));
+    const nonce = BigInt(await provider.getNonceForAddress(account.address, "pre_confirmed"));
+    await provisioningWindow(
+      batches.length,
+      nonce,
+      window,
+      async (index, nonce) =>
+        (await account.execute(batches[index]!, { nonce, tip: 0, resourceBounds: invokeBounds })).transaction_hash,
+      (tx) => preconfirmedSuccess(provider, tx),
+      () => {},
+    );
+    const tx = await account.execute(
+      { contractAddress: contract, entrypoint: "seal_seats", calldata: [game] },
+      { tip: 0 },
+    );
+    await preconfirmedSuccess(provider, tx.transaction_hash);
+  }
+  const seats = new Set<string>();
+  const calldata: string[][] = [];
+  await mapWithConcurrency(base.players, 32, async (player) => {
+    const [seat] = await provider.callContract(
+      { contractAddress: contract, entrypoint: "seat", calldata: [game, player.address] },
+      "pre_confirmed",
+    );
+    const home = await provider.callContract(
+      { contractAddress: contract, entrypoint: "settle_state", calldata: [game, player.address] },
+      "pre_confirmed",
+    );
+    if (BigInt(home[0]!) !== 0n)
+      throw new SetupFailure(`Settle game ${game}: home already exists for actor ${player.botId}`);
+    if ((arm === "X" && BigInt(seat!) !== 0n) || (arm === "Y" && BigInt(seat!) === 0n))
+      throw new SetupFailure(`Settle game ${game}: invalid seat`);
+    if (arm === "Y") {
+      if (seats.has(BigInt(seat!).toString())) throw new SetupFailure("Duplicate settle seat");
+      seats.add(BigInt(seat!).toString());
+    }
+    calldata[player.botId] = [String(game), shortString.encodeShortString(`spike-${player.botId}`)];
+  });
+  const [counter] = await provider.callContract(
+    { contractAddress: contract, entrypoint: "entity_counter", calldata: [game] },
+    "pre_confirmed",
+  );
+  const [count] = await provider.callContract(
+    { contractAddress: contract, entrypoint: "realm_count", calldata: [game] },
+    "pre_confirmed",
+  );
+  if (BigInt(counter!) !== 1n || BigInt(count!) !== 0n)
+    throw new SetupFailure(`Settle game ${game}: not a zero-home fixture`);
+  console.log(JSON.stringify({ tier: 2, action: "Settle", arm, homes: 0, seats: seats.size }));
+  return calldata;
 }
 async function provisionHomes(
   account: ReturnType<typeof createMadaraAccount>,

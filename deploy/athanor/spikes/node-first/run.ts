@@ -17,6 +17,7 @@ import {
   normalize,
   type Fixture,
 } from "./common";
+import { settledHomes, settleCloseFootprint } from "./settlement";
 import { discoveryFacts } from "./discovery";
 import { cpu, metricCounters, executorLogs, textLength } from "./telemetry";
 
@@ -182,6 +183,10 @@ async function main() {
     };
     save(file, header);
     try {
+      if (fixture.game?.kind === "Settle") {
+        const empty = await settledHomes(provider, fixture);
+        if (empty.homes !== 0 || empty.aggregateRealmCount !== 0) throw new Error("Settle fixture is not empty");
+      }
       // One real probe before the window warms the new class. Its nonce is consumed and reread before presigning the wave.
       const warm = await presign(fixture, fixture.players[0]!, provider, run - 1, arm === "X" ? 0 : 1, writes, hashes);
       const response = await fetch(fixture.simulationRpc ?? url, {
@@ -197,7 +202,13 @@ async function main() {
             })
           : warm.body,
       });
-      if ((await response.json()).error) throw new Error("warmup submit failed");
+      const warmResult = await response.json();
+      if (
+        warmResult.error ||
+        (fixture.simulationRpc &&
+          warmResult.result?.[0]?.transaction_trace?.execute_invocation?.revert_reason !== undefined)
+      )
+        throw new Error("warmup submit or simulation execution failed");
       if (!fixture.simulationRpc) await provider.waitForTransaction(warm.hash);
       await new Promise((ok) => setTimeout(ok, Number(a["warm-ms"] ?? 15000)));
       const payloads = await mapWithConcurrency(fixture.players, 32, (p) =>
@@ -270,6 +281,14 @@ async function main() {
               after: await exploreState(provider, fixture),
             }
           : null;
+      const settlement = fixture.game?.kind === "Settle" ? await settledHomes(provider, fixture) : null;
+      let footprint =
+        fixture.game?.kind === "Settle" ? settleCloseFootprint(a["node-log"], logOffset, payloads.length) : null;
+      const closeDeadline = now() + 60_000_000_000n;
+      while (footprint && !footprint.complete && !footprint.contaminated && now() < closeDeadline) {
+        await new Promise((ok) => setTimeout(ok, 1000));
+        footprint = settleCloseFootprint(a["node-log"], logOffset, payloads.length);
+      }
       const expectedCounter = fixture.game
         ? fixture.game.initialCounter +
           (fixture.game.arm === "X" ? (discovery?.structuresAllocated ?? payloads.length) : 0)
@@ -287,7 +306,14 @@ async function main() {
         ...header,
         status: "finished",
         passed:
-          counterValid && discoveryValid && complete && releaseValid && !stream.failure() && lastVisibleMs! < 5000,
+          counterValid &&
+          discoveryValid &&
+          (settlement?.valid ?? true) &&
+          (footprint?.complete ?? true) &&
+          complete &&
+          releaseValid &&
+          !stream.failure() &&
+          lastVisibleMs! < 5000,
         firstSendNs: first.toString(),
         sendSpreadMs: spreadMs,
         releaseValid,
@@ -302,6 +328,8 @@ async function main() {
         discovery: discovery
           ? { ...discovery, ruinRate: discovery.reveals ? discovery.ruins / discovery.reveals : null }
           : undefined,
+        settlement,
+        settleCloseFootprint: footprint,
         nodeCpu,
         node: {
           ...executionEvidence,

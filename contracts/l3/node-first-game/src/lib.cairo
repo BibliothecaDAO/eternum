@@ -167,3 +167,5 @@ pub mod Games {
     #[external(v0)]
     fn entity_counter(self: @ContractState, game: u32) -> u32 { self.data.games.next_entity.read(game) }
 }
+
+pub mod settle;
