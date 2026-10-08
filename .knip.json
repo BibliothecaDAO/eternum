@@ -25,6 +25,7 @@
         "deploy/athanor/scripts/host-accounts.ts",
         "deploy/athanor/spikes/node-first/setup.ts",
         "deploy/athanor/spikes/node-first/game-setup.ts",
+        "deploy/athanor/spikes/node-first/game-start.ts",
         "deploy/athanor/spike-vrf/gas.ts",
         "deploy/athanor/spikes/node-first/proxy.ts",
         "deploy/athanor/spikes/node-first/run.ts",

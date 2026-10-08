@@ -105,3 +105,54 @@ test("tier2 signs the real CreateExplorer arguments without a recorded envelope"
     ),
   ).toBe(true);
 });
+
+test("Explore signs three real arguments and counts only this game's discovery facts", async () => {
+  const { discoveryFacts } = await import("./discovery");
+  const { hash, shortString } = await import("starknet");
+  const provider = new RpcProvider({ nodeUrl: "http://127.0.0.1:38000" });
+  provider.getNonceForAddress = async () => "0x3";
+  const signed = await presign(
+    {
+      chainId: "0x1",
+      contract: "0x123",
+      accountClassHash: "0x1",
+      classHash: "0x1",
+      guardianPublicKey: "0x1",
+      players: [],
+      entrypoint: "explore",
+      playerCalldata: [["2", "65537", "0"]],
+    },
+    { address: "0x456", privateKey: "0x1", publicKey: "0x1", botId: 0 },
+    provider,
+    0,
+    1,
+    1,
+    1,
+  );
+  const tx = JSON.parse(signed.body).params[0];
+  expect(tx.calldata.slice(4).map((v: string) => BigInt(v))).toEqual([2n, 65537n, 0n]);
+  const row = (model: string, game = "2", address = "0x123") => ({
+    from_address: address,
+    keys: [
+      hash.getSelectorFromName("Outer"),
+      hash.getSelectorFromName("RowSet"),
+      "0x1",
+      shortString.encodeShortString(model),
+    ],
+    data: ["0x1", game, "0x0"],
+  });
+  expect(
+    discoveryFacts(
+      [
+        row("ExpeditionDiscovery"),
+        row("SiteChest"),
+        row("LordsBudget"),
+        row("Structure"),
+        row("LordsBudget", "1"),
+        row("SiteChest", "2", "0x456"),
+      ],
+      "0x123",
+      2,
+    ),
+  ).toEqual({ Structure: 1, SiteChest: 1, LordsBudget: 1, ExpeditionDiscovery: 1 });
+});

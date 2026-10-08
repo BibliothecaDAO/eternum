@@ -11,4 +11,8 @@ world_native = { path = "../world-native" }
 [[target.starknet-contract]]
 sierra = true
 casm = true
-build-external-contracts = ["world_native::logic::troops::TroopsLogic"]
+build-external-contracts = [
+  "world_native::logic::troops::TroopsLogic",
+  "world_native::logic::map::MapLogic",
+  "world_native::logic::structures::StructuresLogic",
+]

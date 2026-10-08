@@ -11,6 +11,7 @@ if (upstream.protocol !== "http:" || upstream.username || upstream.password)
 const port = Number(required(a.port, "port"));
 if (!Number.isInteger(port) || port < 28000) throw new Error("Isolated trial port >=28000 required");
 const actors = new Set(fixture.players.map((p) => normalize(p.address)));
+const argumentCount = fixture.playerCalldata?.[fixture.players[0]!.botId]?.length ?? 5;
 const selector = hash.getSelectorFromName(fixture.entrypoint ?? "probe");
 const events = required(a.events, "events");
 const pending: object[] = [];
@@ -49,11 +50,11 @@ Bun.serve({
           !Array.isArray(tx.signature) ||
           tx.signature.length !== 3 ||
           !Array.isArray(c) ||
-          c.length !== (fixture.game ? 10 : 9) ||
+          c.length !== argumentCount + 4 ||
           BigInt(c[0]) !== 1n ||
           normalize(c[1]) !== normalize(fixture.contract) ||
           normalize(c[2]) !== normalize(selector) ||
-          BigInt(c[3]) !== (fixture.game ? 6n : 5n)
+          BigInt(c[3]) !== BigInt(argumentCount)
         )
           return Response.json({
             jsonrpc: "2.0",

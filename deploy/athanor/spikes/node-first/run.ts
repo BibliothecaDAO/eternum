@@ -17,9 +17,11 @@ import {
   normalize,
   type Fixture,
 } from "./common";
+import { discoveryFacts } from "./discovery";
 import { cpu, metricCounters, executorLogs, textLength } from "./telemetry";
 
-async function subscribe(url: string, received: Map<string, { at: bigint; status: string }>, heads: number[]) {
+type ObservedReceipt = { at: bigint; status: string; discovery?: ReturnType<typeof discoveryFacts> };
+async function subscribe(url: string, received: Map<string, ObservedReceipt>, heads: number[], fixture: Fixture) {
   const socket = new WebSocket(url);
   let failure: string | null = null;
   await new Promise<void>((ok, bad) => {
@@ -55,7 +57,14 @@ async function subscribe(url: string, received: Map<string, { at: bigint; status
         }
         const value = p.params?.result;
         if (value?.transaction_hash && !received.has(normalize(value.transaction_hash)))
-          received.set(normalize(value.transaction_hash), { at, status: value.execution_status });
+          received.set(normalize(value.transaction_hash), {
+            at,
+            status: value.execution_status,
+            discovery:
+              fixture.game?.kind === "Explore"
+                ? discoveryFacts(value.events ?? [], fixture.contract, fixture.game.id)
+                : undefined,
+          });
         if (value?.block_number !== undefined && !value.transaction_hash) heads.push(value.block_number);
       } catch {
         failure = "invalid receipt frame";
@@ -193,9 +202,10 @@ async function main() {
       const payloads = await mapWithConcurrency(fixture.players, 32, (p) =>
         presign(fixture, p, provider, run, arm === "X" ? 0 : 1, writes, hashes),
       );
-      const received = new Map<string, { at: bigint; status: string }>();
+      const before = fixture.game?.kind === "Explore" ? await exploreState(provider, fixture) : null;
+      const received = new Map<string, ObservedReceipt>();
       const heads: number[] = [];
-      stream = await subscribe(required(a["ws-url"], "ws-url"), received, heads);
+      stream = await subscribe(required(a["ws-url"], "ws-url"), received, heads, fixture);
       let metricsBefore = metricCounters(a["node-metrics"]);
       let logOffset = textLength(a["node-log"]);
       const rows = await burst(url, payloads, workers, () => {
@@ -221,6 +231,7 @@ async function main() {
         receiptMs: received.has(row.hash) ? ms(received.get(row.hash)!.at - first) : null,
         executionStatus: received.get(row.hash)?.status ?? null,
         submitError: row.error,
+        discovery: received.get(row.hash)?.discovery,
       }));
       const succeeded = actions.filter((row) => row.executionStatus === "SUCCEEDED" && !row.submitError);
       const latencies = actions.flatMap((row) => (row.receiptMs === null ? [] : [row.receiptMs]));
@@ -247,16 +258,35 @@ async function main() {
             )
           )[0]!
         : await provider.getStorageAt(fixture.contract, sharedCounter!, "pre_confirmed");
+      const discovery =
+        fixture.game?.kind === "Explore"
+          ? {
+              reveals: succeeded.reduce((n, row) => n + (row.discovery?.ExpeditionDiscovery ?? 0), 0),
+              ruins: succeeded.reduce((n, row) => n + (row.discovery?.SiteChest ?? 0), 0),
+              budgetWrites: succeeded.reduce((n, row) => n + (row.discovery?.LordsBudget ?? 0), 0),
+              structuresAllocated: succeeded.reduce((n, row) => n + (row.discovery?.Structure ?? 0), 0),
+              before,
+              after: await exploreState(provider, fixture),
+            }
+          : null;
       const expectedCounter = fixture.game
-        ? fixture.game.initialCounter + (fixture.game.arm === "X" ? payloads.length : 0)
+        ? fixture.game.initialCounter +
+          (fixture.game.arm === "X" ? (discovery?.structuresAllocated ?? payloads.length) : 0)
         : arm === "X"
           ? payloads.length
           : 0;
       const counterValid = BigInt(counter) === BigInt(expectedCounter);
+      const discoveryValid =
+        discovery === null ||
+        (discovery.reveals === succeeded.length &&
+          discovery.ruins === discovery.budgetWrites &&
+          discovery.before?.day[0] === "0" &&
+          discovery.after.day[0] === "0");
       save(file, {
         ...header,
         status: "finished",
-        passed: counterValid && complete && releaseValid && !stream.failure() && lastVisibleMs! < 5000,
+        passed:
+          counterValid && discoveryValid && complete && releaseValid && !stream.failure() && lastVisibleMs! < 5000,
         firstSendNs: first.toString(),
         sendSpreadMs: spreadMs,
         releaseValid,
@@ -268,6 +298,9 @@ async function main() {
         streamError: stream.failure(),
         sharedSlots: { counter: sharedCounter, head: sharedHead, counterValue: counter, valid: counterValid },
         actions,
+        discovery: discovery
+          ? { ...discovery, ruinRate: discovery.reveals ? discovery.ruins / discovery.reveals : null }
+          : undefined,
         nodeCpu,
         node: {
           ...executionEvidence,
@@ -289,6 +322,15 @@ async function main() {
       stream?.close();
     }
   }
+}
+async function exploreState(provider: RpcProvider, fixture: Fixture) {
+  const read = (entrypoint: string) =>
+    provider.callContract(
+      { contractAddress: fixture.contract, entrypoint, calldata: [fixture.game!.id] },
+      "pre_confirmed",
+    );
+  const [budget, day] = await Promise.all([read("lords_budget"), read("day")]);
+  return { budget, day: day.map((value) => BigInt(value).toString()) };
 }
 if (import.meta.main)
   main().catch(() => {

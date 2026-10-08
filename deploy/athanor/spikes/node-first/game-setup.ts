@@ -1,14 +1,15 @@
 import { resolve } from "node:path";
 import { CallData, RpcProvider, CairoOption, CairoOptionVariant, shortString, hash, type RawArgs } from "starknet";
-import { args, load, save, required, trialDirectory, type Fixture } from "./common";
+import { args, load, save, required, trialDirectory, presign, type Fixture } from "./common";
 import { createMadaraAccount } from "../../../../config/deployer/clean/shared/madara-account";
 import { declareClass, readClassArtifact, waitForSuccess } from "../../../../config/deployer/clean/shared/declare";
 import { buildNativePreset } from "../../../../config/deployer/clean/config/native-preset";
 import { loadNativePresetConfiguration } from "../../../../config/deployer/clean/registrar/native-preset";
+import { mapWithConcurrency } from "../../harness/account-factory";
 import { canonicalRealmTraits } from "../../../../config/deployer/clean/world/native/realm-catalogue";
 
 async function main() {
-  const a = args(["dir", "manifest", "fixture", "private-rpc", "preset", "amount"]);
+  const a = args(["dir", "manifest", "fixture", "private-rpc", "preset", "amount", "prepare-explore"]);
   const dir = trialDirectory(required(a.dir, "dir"));
   const base = load<Fixture>(required(a.fixture, "fixture"));
   const manifest = load<{ world: { address: string }; shard: { chainId: string } }>(required(a.manifest, "manifest"));
@@ -27,8 +28,11 @@ async function main() {
       resolve(import.meta.dir, `artifacts-game/node_first_game_${name}.compiled_contract_class.json`),
     );
   const games = artifact("Games"),
-    troops = artifact("TroopsLogic");
-  await declareClass(account, troops, () => {});
+    troops = artifact("TroopsLogic"),
+    map = artifact("MapLogic"),
+    structures = artifact("StructuresLogic");
+  const replacements = { troops: troops.classHash, map: map.classHash, structures: structures.classHash };
+  for (const domain of [troops, map, structures]) await declareClass(account, domain, () => {});
   await declareClass(account, games, () => {});
   const [releaseId] = await provider.callContract({
     contractAddress: manifest.world.address,
@@ -61,7 +65,9 @@ async function main() {
   ];
   if (old.length !== names.length + 1) throw new Error("Unexpected shipped release layout");
   const release = {
-    classes: Object.fromEntries(names.map((name, i) => [name, name === "troops" ? troops.classHash : old[i]!])),
+    classes: Object.fromEntries(
+      names.map((name, i) => [name, replacements[name as keyof typeof replacements] ?? old[i]!]),
+    ),
     migration: "0x0",
   };
   const codec = new CallData(games.sierra.abi);
@@ -97,6 +103,9 @@ async function main() {
     amount: 1000000n * precision,
   }));
   const now = Number((await provider.getBlock("latest")).timestamp);
+  const fixtures: Fixture[] = [];
+  const tick = Number(definition.rules.tick_config.armies_tick_in_seconds);
+  const scheduledStart = Math.ceil((now + 86400) / tick) * tick;
   for (const [index, arm] of ["X", "Y"].entries()) {
     const game = index + 1;
     await send("create_game", {
@@ -104,7 +113,7 @@ async function main() {
         name: shortString.encodeShortString(`spike-${arm}`),
         preset_id: preset,
         start_settling_at: now + 1,
-        start_main_at: now + 86400,
+        start_main_at: scheduledStart,
         duration_seconds: 86400,
         end_grace_seconds: 0,
         dev_mode_on: true,
@@ -150,30 +159,75 @@ async function main() {
       entrypoint: "entity_counter",
       calldata: [game],
     });
+    fixtures.push({
+      ...base,
+      contract,
+      classHash: games.classHash,
+      entrypoint: "create_explorer",
+      playerCalldata: callData,
+      simulationRpc: rpc,
+      game: { id: game, arm: arm as "X" | "Y", kind: "CreateExplorer", initialCounter: Number(BigInt(counter!)) },
+    });
+  }
+  for (const fixture of fixtures) {
+    await send("start_now", { game: fixture.game!.id });
+    if (a["prepare-explore"] === "true") await prepareExplore(provider, fixture, rpc);
+  }
+  // Keep both games in day zero after preparation; actual measured calls still use node block time.
+  for (const fixture of fixtures) {
+    await send("start_now", { game: fixture.game!.id });
     save(
-      resolve(dir, `node-first-game-${arm}.json`),
-      {
-        ...base,
-        contract,
-        classHash: games.classHash,
-        entrypoint: "create_explorer",
-        playerCalldata: callData,
-        simulationRpc: rpc,
-        game: { id: game, arm, kind: "CreateExplorer", initialCounter: Number(BigInt(counter!)) },
-      },
+      resolve(dir, `node-first-${fixture.game!.kind === "Explore" ? "explore" : "game"}-${fixture.game!.arm}.json`),
+      fixture,
       true,
     );
   }
-  await send("start_now", { game: 1 });
-  await send("start_now", { game: 2 });
   console.log(
     JSON.stringify({
       tier: 2,
       contract,
       prepared: base.players.length,
-      fixtures: ["node-first-game-X.json", "node-first-game-Y.json"],
+      fixtures: fixtures.map(
+        (fixture) => `node-first-${fixture.game!.kind === "Explore" ? "explore" : "game"}-${fixture.game!.arm}.json`,
+      ),
     }),
   );
+}
+async function prepareExplore(provider: RpcProvider, fixture: Fixture, rpc: string) {
+  const preparation = { ...fixture, entrypoint: "prepare_explorer" };
+  await mapWithConcurrency(fixture.players, 32, async (player) => {
+    const signed = await presign(preparation, player, provider, 0, 0, 1, 1);
+    const response = await fetch(rpc, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: signed.body,
+    });
+    const result = await response.json();
+    if (result.error || !result.result?.transaction_hash) throw new Error("Army preparation refused");
+    await waitForSuccess(provider, result.result.transaction_hash);
+  });
+  const callData: string[][] = [];
+  await mapWithConcurrency(fixture.players, 32, async (player) => {
+    const [id] = await provider.callContract(
+      {
+        contractAddress: fixture.contract,
+        entrypoint: "last_entity",
+        calldata: [fixture.game!.id, player.address],
+      },
+      "pre_confirmed",
+    );
+    if (!id || BigInt(id) === 0n) throw new Error("Missing prepared army");
+    // The same direction as the spawn steps outward, beyond the already revealed home ring.
+    callData[player.botId] = [String(fixture.game!.id), BigInt(id).toString(), "0"];
+  });
+  const [counter] = await provider.callContract(
+    { contractAddress: fixture.contract, entrypoint: "entity_counter", calldata: [fixture.game!.id] },
+    "pre_confirmed",
+  );
+  fixture.entrypoint = "explore";
+  fixture.playerCalldata = callData;
+  fixture.game = { ...fixture.game!, kind: "Explore", initialCounter: Number(BigInt(counter!)) };
+  console.log(JSON.stringify({ tier: 2, arm: fixture.game.arm, preparedExplorers: fixture.players.length }));
 }
 main().catch(() => {
   console.error("tier2 setup failed; no credentials emitted");

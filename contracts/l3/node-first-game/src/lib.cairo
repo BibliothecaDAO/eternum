@@ -3,7 +3,7 @@
 pub mod Games {
     use starknet::{ClassHash, ContractAddress, get_caller_address, get_block_timestamp};
     use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess, StoragePointerWriteAccess};
-    use world_native::commands::{ActionContext, CreateExplorer, ICreateExplorerDispatcherTrait, ICreateExplorerLibraryDispatcher};
+    use world_native::commands::{ActionContext, CreateExplorer, ICreateExplorerDispatcherTrait, ICreateExplorerLibraryDispatcher, Explore, IExploreDispatcherTrait, IExploreLibraryDispatcher};
     use world_native::registrar::{IRegistrarDispatcherTrait, IRegistrarLibraryDispatcher, CreateGameParams};
     use world_native::settlement::{ISettlementCreationDispatcherTrait, ISettlementCreationLibraryDispatcher, RealmCreation, SettlementCreation};
     use world_native::resources::{IResourceOperationsDispatcherTrait, IResourceOperationsLibraryDispatcher, ResourceAmount, ResourceKey};
@@ -91,6 +91,38 @@ pub mod Games {
             .create_explorer(game, actor, command, ActionContext { raw_root: 123456789, timestamp: get_block_timestamp() },
                 world_native::ownership::StoryCursor { order: 0, index: 0 });
         self.emit(Created { game, actor, explorer: world_native::spike_ids::last(game, actor) });
+    }
+    // Preparation fixes day zero while the accounts' armies are provisioned. Never measured.
+    #[external(v0)]
+    fn prepare_explorer(ref self: ContractState, game: u32, command: CreateExplorer) {
+        let actor = get_caller_address();
+        assert!(starknet::syscalls::get_class_hash_at_syscall(actor).unwrap() == self.spike_account_class.read(), "RealmsAccount required");
+        ICreateExplorerLibraryDispatcher { class_hash: classes(@self, game).classes.troops }
+            .create_explorer(game, actor, command, ActionContext {
+                raw_root: 123456789, timestamp: world_native::logic::game::game(game).start_main_at,
+            }, world_native::ownership::StoryCursor { order: 0, index: 0 });
+    }
+    #[external(v0)]
+    fn explore(ref self: ContractState, game: u32, command: Explore) {
+        let actor = get_caller_address();
+        assert!(starknet::syscalls::get_class_hash_at_syscall(actor).unwrap() == self.spike_account_class.read(), "RealmsAccount required");
+        // A constant root with actor-domain separation avoids a single correlated draw for the whole wave.
+        let root = core::poseidon::poseidon_hash_span(array![123456789, actor.into()].span());
+        IExploreLibraryDispatcher { class_hash: classes(@self, game).classes.movement }
+            .explore(game, actor, command, ActionContext { raw_root: root.into(), timestamp: get_block_timestamp() },
+                world_native::ownership::StoryCursor { order: 0, index: 0 });
+    }
+    #[external(v0)]
+    fn last_entity(self: @ContractState, game: u32, actor: ContractAddress) -> u32 {
+        world_native::spike_ids::last(game, actor)
+    }
+    #[external(v0)]
+    fn day(self: @ContractState, game: u32) -> world_native::days::Day {
+        world_native::days::day_of(world_native::logic::game::game(game), world_native::logic::game::rules(game).day_unit_seconds, get_block_timestamp())
+    }
+    #[external(v0)]
+    fn lords_budget(self: @ContractState, game: u32) -> Option<world_native::relics::LordsBudget> {
+        world_native::logic::lords_budget::budget(game)
     }
     #[external(v0)]
     fn entity_counter(self: @ContractState, game: u32) -> u32 { self.data.games.next_entity.read(game) }
