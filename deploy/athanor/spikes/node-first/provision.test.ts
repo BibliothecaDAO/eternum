@@ -22,6 +22,7 @@ test("provisioning submits a bounded window with consecutive nonces before any r
         finish.push(ok);
       }),
     (count) => completed.push(count),
+    async () => {},
   );
   await turn();
   expect(sent).toEqual([42n, 43n, 44n]);
@@ -51,6 +52,7 @@ test("a nonce failure stops provisioning and reports the batch instead of publis
         if (hash === "9") throw new Error("reverted");
       },
       () => {},
+      async () => {},
     ),
   ).rejects.toThrow("nonce 9 failed");
   expect(sent.length).toBeLessThan(10);
@@ -143,6 +145,7 @@ test("explicit nonce and work bounds bypass SDK fee simulation and nonce reads",
         ).transaction_hash,
       async () => {},
       () => {},
+      async () => {},
     );
     expect(nonces).toEqual([17n, 18n, 19n]);
     expect(methods.includes("starknet_getNonce")).toBe(false);
@@ -150,4 +153,43 @@ test("explicit nonce and work bounds bypass SDK fee simulation and nonce reads",
   } finally {
     await server.stop(true);
   }
+});
+
+test("pipeline waits for the final committed transaction before a default-nonce write", async () => {
+  const events: string[] = [];
+  await provisioningWindow(
+    3,
+    10n,
+    2,
+    async (_index, nonce) => String(nonce),
+    async (hash) => {
+      events.push(`preconfirmed:${hash}`);
+    },
+    () => {},
+    async (hash) => {
+      events.push(`confirmed:${hash}`);
+    },
+  );
+  expect(events).toEqual(["preconfirmed:10", "preconfirmed:11", "preconfirmed:12", "confirmed:12"]);
+});
+
+test("presigning a scheduled nonce does not read an older projected nonce", async () => {
+  const { presign } = await import("./common");
+  const provider = new RpcProvider({ nodeUrl: "http://127.0.0.1:38000" });
+  provider.getNonceForAddress = async () => {
+    throw new Error("unexpected nonce read during schedule signing");
+  };
+  const player = { address: "0x456", privateKey: "0x1", publicKey: "0x1", botId: 0 };
+  const fixture: Fixture = {
+    chainId: "0x1",
+    accountClassHash: "0x1",
+    guardianPublicKey: "0x1",
+    contract: "0x123",
+    classHash: "0x1",
+    players: [player],
+    entrypoint: "explore",
+    playerCalldata: [["1", "2", "3"]],
+  };
+  const signed = await presign(fixture, player, provider, 0, 1, 1, 1, 42n);
+  expect(JSON.parse(signed.body).params[0].nonce).toBe("0x2a");
 });

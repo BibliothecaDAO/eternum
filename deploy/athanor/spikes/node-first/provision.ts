@@ -10,9 +10,11 @@ export async function provisioningWindow(
   submit: (index: number, nonce: bigint) => Promise<string>,
   wait: (hash: string) => Promise<void>,
   progress: (completed: number) => void,
+  confirm: (hash: string) => Promise<void>,
 ) {
   if (!Number.isInteger(width) || width < 1 || width > 32) throw new SetupFailure("Setup window must be 1..32");
   const pending: { result: Promise<SetupFailure | null> }[] = [];
+  let lastTransaction = "";
   let completed = 0;
   let failure: SetupFailure | null = null;
   const finishOldest = async () => {
@@ -28,6 +30,7 @@ export async function provisioningWindow(
       let tx: string;
       try {
         tx = await submit(index, nonce);
+        lastTransaction = tx;
       } catch {
         throw new SetupFailure(`Setup submission failed at batch ${index}, nonce ${nonce}; no fixture published`);
       }
@@ -42,6 +45,7 @@ export async function provisioningWindow(
       if (pending.length >= width) await finishOldest();
     }
     while (pending.length) await finishOldest();
+    if (lastTransaction) await confirm(lastTransaction);
   } catch (error) {
     // Observe every admitted flight, including those behind a rejected nonce; never publish a partial fixture.
     await Promise.all(pending.map((flight) => flight.result));

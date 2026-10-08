@@ -88,6 +88,7 @@ export async function presign(
   arm: number,
   writes: number,
   hashes: number,
+  nonce?: bigint,
 ) {
   const account = new Account({
     provider,
@@ -97,7 +98,7 @@ export async function presign(
   });
   const details: InvocationsSignerDetails = {
     walletAddress: player.address,
-    nonce: await provider.getNonceForAddress(player.address, BlockTag.PRE_CONFIRMED),
+    nonce: nonce ?? (await provider.getNonceForAddress(player.address, BlockTag.PRE_CONFIRMED)),
     chainId: fixture.chainId as InvocationsSignerDetails["chainId"],
     cairoVersion: "1",
     version: "0x3",

@@ -1,5 +1,14 @@
 import { resolve } from "node:path";
-import { CallData, RpcProvider, CairoOption, CairoOptionVariant, shortString, hash, type RawArgs } from "starknet";
+import {
+  CallData,
+  RpcProvider,
+  RpcError,
+  CairoOption,
+  CairoOptionVariant,
+  shortString,
+  hash,
+  type RawArgs,
+} from "starknet";
 import {
   args,
   load,
@@ -131,11 +140,28 @@ async function main() {
   });
   await waitForSuccess(provider, deployed.transaction_hash);
   const send = async (entrypoint: string, values: Record<string, unknown>) => {
-    const tx = await account.execute(
-      { contractAddress: contract, entrypoint, calldata: codec.compile(entrypoint, values as RawArgs) },
-      { tip: 0 },
-    );
-    await waitForSuccess(provider, tx.transaction_hash);
+    console.log(JSON.stringify({ phase: "setup-send", entrypoint }));
+    try {
+      const tx = await account.execute(
+        { contractAddress: contract, entrypoint, calldata: codec.compile(entrypoint, values as RawArgs) },
+        { tip: 0 },
+      );
+      await waitForSuccess(provider, tx.transaction_hash);
+    } catch (error) {
+      let reason =
+        error instanceof RpcError
+          ? JSON.stringify(error.baseError)
+          : error instanceof Error
+            ? error.message
+            : "transaction refused";
+      for (const secret of [
+        host.deployerPrivateKey,
+        process.env.OPERATOR_TOKEN,
+        ...base.players.map((p) => p.privateKey),
+      ])
+        if (secret) reason = reason.split(secret).join("[redacted]");
+      throw new SetupFailure(`Setup ${entrypoint} failed: ${reason.slice(0, 1500)}`);
+    }
   };
   if (settle) await configureSettleCatalogue(account, provider, codec, contract, window);
   const preset = Number(a.preset ?? 101);
@@ -242,6 +268,7 @@ async function configureSettleCatalogue(
       (await account.execute(batches[index]!, { nonce, tip: 0, resourceBounds: invokeBounds })).transaction_hash,
     (tx) => preconfirmedSuccess(provider, tx),
     () => {},
+    (tx) => waitForSuccess(provider, tx),
   );
   console.log(JSON.stringify({ tier: 2, action: "Settle", canonicalTraits: canonicalRealmTraits.length }));
 }
@@ -273,12 +300,13 @@ async function prepareSettleGame(
         (await account.execute(batches[index]!, { nonce, tip: 0, resourceBounds: invokeBounds })).transaction_hash,
       (tx) => preconfirmedSuccess(provider, tx),
       () => {},
+      (tx) => waitForSuccess(provider, tx),
     );
     const tx = await account.execute(
       { contractAddress: contract, entrypoint: "seal_seats", calldata: [game] },
       { tip: 0 },
     );
-    await preconfirmedSuccess(provider, tx.transaction_hash);
+    await waitForSuccess(provider, tx.transaction_hash);
   }
   const seats = new Set<string>();
   const calldata: string[][] = [];
@@ -366,6 +394,7 @@ async function provisionHomes(
           window,
         }),
       ),
+    (tx) => waitForSuccess(provider, tx),
   );
   const provisioned = monotonicNow();
   const finalNonce = BigInt(await provider.getNonceForAddress(account.address, "pre_confirmed"));

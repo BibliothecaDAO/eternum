@@ -21,7 +21,12 @@ import { settledHomes, settleCloseFootprint } from "./settlement";
 import { discoveryFacts } from "./discovery";
 import { cpu, metricCounters, executorLogs, textLength } from "./telemetry";
 
-type ObservedReceipt = { at: bigint; status: string; discovery?: ReturnType<typeof discoveryFacts> };
+type ObservedReceipt = {
+  at: bigint;
+  status: string;
+  blockNumber?: number;
+  discovery?: ReturnType<typeof discoveryFacts>;
+};
 async function subscribe(url: string, received: Map<string, ObservedReceipt>, heads: number[], fixture: Fixture) {
   const socket = new WebSocket(url);
   let failure: string | null = null;
@@ -61,6 +66,7 @@ async function subscribe(url: string, received: Map<string, ObservedReceipt>, he
           received.set(normalize(value.transaction_hash), {
             at,
             status: value.execution_status,
+            blockNumber: value.block_number,
             discovery:
               fixture.game?.kind === "Explore"
                 ? discoveryFacts(value.events ?? [], fixture.contract, fixture.game.id)
@@ -145,6 +151,7 @@ async function main() {
     "node-image",
     "timeout-ms",
     "warm-ms",
+    "receipt-checkpoint",
   ]);
   const out = trialDirectory(required(a.out, "out"));
   const fixture = load<Fixture>(required(a.fixture, "fixture"));
@@ -242,12 +249,26 @@ async function main() {
         sendMs: ms(BigInt(row.sentNs) - first),
         receiptMs: received.has(row.hash) ? ms(received.get(row.hash)!.at - first) : null,
         executionStatus: received.get(row.hash)?.status ?? null,
+        receiptBlockNumber: received.get(row.hash)?.blockNumber ?? null,
         submitError: row.error,
         discovery: received.get(row.hash)?.discovery,
       }));
       const succeeded = actions.filter((row) => row.executionStatus === "SUCCEEDED" && !row.submitError);
       const latencies = actions.flatMap((row) => (row.receiptMs === null ? [] : [row.receiptMs]));
       const complete = succeeded.length === payloads.length;
+      if (a["receipt-checkpoint"])
+        save(a["receipt-checkpoint"], {
+          firstSendNs: String(first),
+          lastReceiptNs: complete
+            ? String(
+                succeeded.reduce((last, row) => {
+                  const at = received.get(row.hash)!.at;
+                  return at > last ? at : last;
+                }, first),
+              )
+            : null,
+          completed: succeeded.length,
+        });
       const lastVisibleMs = complete ? Math.max(...latencies) : null;
       const spreadMs = ms(lastSend - first);
       const releaseValid = spreadMs < 100;
