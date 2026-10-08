@@ -34,6 +34,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-10-08",
+    title: "Frontier, redrawn for phone and desktop",
+    description:
+      "Frontier's match is rebuilt around the map: one strip with your stores and the day's clock, armies you upgrade with XP, a castle's tree of building tiers and training buildings, Deploy that counts the troops coming home, ruins whose chest opens as you clear them, Today and the Season in the Menu, a guide that points at what it names, and a desktop layout with the same parts at the corners.",
+    type: "feature",
+  },
+  {
     date: "2026-10-07",
     title: "Shrines and wells read right",
     description:
