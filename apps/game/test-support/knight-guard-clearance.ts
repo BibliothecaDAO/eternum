@@ -16,6 +16,7 @@ import { resolveProceduralMeleeUpperBodyPose } from "../src/three/characters/mel
 import {
   PROCEDURAL_MELEE_OFFHANDS,
   PROCEDURAL_MELEE_WEAPONS,
+  type ProceduralMeleeArmPoseState,
 } from "../src/three/characters/melee/procedural-melee-weapon-catalog";
 import type { ProceduralCharacterLibrary } from "../src/three/characters/procedural-character-assets";
 import { ProceduralCharacterAvatar } from "../src/three/characters/procedural-character-avatar";
@@ -39,7 +40,7 @@ const LIMB_RADIUS = 0.03;
 const SAMPLES_PER_SEGMENT = 64;
 const FRAMES_PER_SECOND = 60;
 /** Eight sample times, in frames, into each locomotion mode. */
-export const LOCOMOTION_SAMPLE_FRAMES = [6, 11, 16, 21, 26, 31, 36, 41] as const;
+const LOCOMOTION_SAMPLE_FRAMES = [6, 11, 16, 21, 26, 31, 36, 41] as const;
 export const ATTACK_SAMPLE_COUNT = 40;
 /** Fraction of the stature at which the Knight's eyes sit. */
 const EYE_HEIGHT_RATIO = 0.92;
@@ -347,8 +348,6 @@ function radiansToDegrees(radians: number): number {
   return (radians * 180) / Math.PI;
 }
 
-export type KnightArmState = "carry" | "guard" | "windup" | "contact" | "follow";
-
 /** Where the arms and gear are in spine_03's frame, relative to the midpoint of the shoulder joints. */
 export interface KnightArmStateMeasure {
   blade: Vector3;
@@ -361,7 +360,7 @@ export interface KnightArmStateMeasure {
   swordGrip: Vector3;
 }
 
-const STATE_ATTACK_MOMENTS: Record<KnightArmState, ProceduralMeleeAttackState> = {
+const STATE_ATTACK_MOMENTS: Record<ProceduralMeleeArmPoseState, ProceduralMeleeAttackState> = {
   carry: { attackGeneration: 0, contactCount: 0, phase: "idle", phaseElapsedSeconds: 0 },
   // The end of each phase, so the weights of its state are fully reached.
   guard: { attackGeneration: 1, contactCount: 0, phase: "acquire", phaseElapsedSeconds: 10 },
@@ -372,7 +371,10 @@ const STATE_ATTACK_MOMENTS: Record<KnightArmState, ProceduralMeleeAttackState> =
 const SETTLE_FRAMES = 40;
 
 /** Drives the weights so the state is fully reached, holds it until the arm solver has settled, and measures it. */
-export function measureKnightArmState(subject: KnightGuardSubject, state: KnightArmState): KnightArmStateMeasure {
+export function measureKnightArmState(
+  subject: KnightGuardSubject,
+  state: ProceduralMeleeArmPoseState,
+): KnightArmStateMeasure {
   const posed = { ...subject.config, animationMode: "idle" as const };
   subject.avatar.updateConfig(posed);
   const action = createGuardAction(STATE_ATTACK_MOMENTS[state]);

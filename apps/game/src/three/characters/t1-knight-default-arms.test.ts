@@ -11,7 +11,6 @@ import {
   sampleAttackCycle,
   sampleLocomotionGuard,
   summariseWorstGuardClearance,
-  type KnightArmState,
   type KnightGuardSample,
 } from "../../../test-support/knight-guard-clearance";
 import { withKnightLibrary } from "../../../test-support/with-knight-library";
@@ -19,6 +18,7 @@ import {
   resolveProceduralMeleeOffhand,
   resolveProceduralMeleeWeapon,
   type ProceduralMeleeArmPose,
+  type ProceduralMeleeArmPoseState,
 } from "./melee/procedural-melee-weapon-catalog";
 
 /** The Knight's stature, from runtime-fit.json (body.stature). */
@@ -30,11 +30,11 @@ const MIN_BLADE_TIP_HEIGHT = 0.01;
 const MAX_HINGE_AXIS_DEGREES = 2;
 const MAX_STATE_POSITION_ERROR = 0.008;
 const MAX_STATE_DIRECTION_ERROR_DEGREES = 5;
-const STATES: readonly KnightArmState[] = ["carry", "guard", "windup", "contact", "follow"];
+const STATES: readonly ProceduralMeleeArmPoseState[] = ["carry", "guard", "windup", "contact", "follow"];
 
 interface ArmPoseFile {
   states: Record<
-    KnightArmState,
+    ProceduralMeleeArmPoseState,
     {
       expect: Record<string, readonly number[]>;
       left: { elbow: number[]; hand_turn_xyzw: number[]; wrist: number[] };
@@ -97,7 +97,10 @@ describe("T1 Knight arm poses", () => {
   it("are the numbers of arm-poses.json, written in the catalog", () => {
     const shield = resolveProceduralMeleeOffhand("t1-knight-default-shield").armPoses;
     const sword = resolveProceduralMeleeWeapon("t1-knight-default-sword").armPoses;
-    const declared = (pose: ProceduralMeleeArmPose | undefined, file: ArmPoseFile["states"][KnightArmState]["left"]) =>
+    const declared = (
+      pose: ProceduralMeleeArmPose | undefined,
+      file: ArmPoseFile["states"][ProceduralMeleeArmPoseState]["left"],
+    ) =>
       expect({ elbow: pose?.elbow, handTurn: pose?.handTurn, wrist: pose?.wrist }).toEqual({
         elbow: file.elbow,
         handTurn: file.hand_turn_xyzw,
