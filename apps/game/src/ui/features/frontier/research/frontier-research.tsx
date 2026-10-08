@@ -19,6 +19,7 @@ import { ResourcesIds } from "@bibliothecadao/types";
 import { type ReactNode, useState } from "react";
 import type { Account } from "starknet";
 
+import { reachMark } from "../depth-art";
 import { useGoToFrontierPlace } from "../frontier-home";
 import { realmPerHour, secondsUntilHeld } from "../hud/army-order";
 import { buildingIcon, buildingName } from "../build/building-names";
@@ -163,10 +164,14 @@ const castleNodes = (
     },
     ...([1, 2, 3] as const).map((depth) => ({
       view: depthNode(plan, depth),
-      icon: "Dp" as IconCode,
+      icon: reachMark(depth),
       label: REACH_NUMERALS[depth - 1],
       gives: (
-        <Chip icons={["Dp"]} label={`${ETHEREAL} ${REACH_NUMERALS[depth - 1]}`} value={REACH_NUMERALS[depth - 1]} />
+        <Chip
+          icons={[reachMark(depth)]}
+          label={`${ETHEREAL} ${REACH_NUMERALS[depth - 1]}`}
+          value={REACH_NUMERALS[depth - 1]}
+        />
       ),
     })),
   ];

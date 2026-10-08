@@ -209,6 +209,21 @@
       "subject": "ethereal portal arch (depth)"
     },
     {
+      "slug": "depth-i-ethereal-reach",
+      "master": "masters/depth-i-ethereal-reach.png",
+      "subject": "ethereal reach I: one floating stone ring"
+    },
+    {
+      "slug": "depth-ii-ethereal-reach",
+      "master": "masters/depth-ii-ethereal-reach.png",
+      "subject": "ethereal reach II: two nested floating stone rings"
+    },
+    {
+      "slug": "depth-iii-ethereal-reach",
+      "master": "masters/depth-iii-ethereal-reach.png",
+      "subject": "ethereal reach III: three floating stone rings around a light"
+    },
+    {
       "slug": "scroll",
       "master": "masters/scroll.png",
       "subject": "rolled scroll with a wax seal (the Scroll)"

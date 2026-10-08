@@ -311,9 +311,9 @@ const TREE_ROWS: TreeRow[] = [
 const CASTLE_NODES = [
   { key: "shrine", icon: "Sh" as const, label: "Shrine", essence: 2_000, state: "open" as const },
   { key: "well", icon: "Wl" as const, label: "Well", essence: 6_000, state: "open" as const },
-  { key: "d1", icon: "Dp" as const, label: "I", essence: 160_000, state: "open" as const },
-  { key: "d2", icon: "Dp" as const, label: "II", essence: 400_000, state: "locked" as const },
-  { key: "d3", icon: "Dp" as const, label: "III", essence: 900_000, state: "locked" as const },
+  { key: "d1", icon: "E1" as const, label: "I", essence: 160_000, state: "open" as const },
+  { key: "d2", icon: "E2" as const, label: "II", essence: 400_000, state: "locked" as const },
+  { key: "d3", icon: "E3" as const, label: "III", essence: 900_000, state: "locked" as const },
 ];
 
 const TODAY_LOG = [

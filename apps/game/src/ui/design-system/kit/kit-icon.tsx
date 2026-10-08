@@ -93,6 +93,10 @@ const ICONS = {
   Pf: kit("ui-person"),
   Dv: kit("ui-monitor"),
   Dp: kit("ethereal-portal"),
+  // The three Ethereal reaches: one stone ring, two, three around a light.
+  E1: kit("depth-i-ethereal-reach"),
+  E2: kit("depth-ii-ethereal-reach"),
+  E3: kit("depth-iii-ethereal-reach"),
   Xs: kit("ui-share"),
   Bl: kit("ui-bell"),
   Wt: kit("ui-backpack"),

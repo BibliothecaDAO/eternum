@@ -1,8 +1,8 @@
 import { nativeRuleConstants, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { getLayerNeighborHexes, TileOccupier } from "@bibliothecadao/types";
-import { MAP_SITE_ART } from "./site-art";
 
-export type MapSiteKind = keyof typeof MAP_SITE_ART;
+/** The single-use sites a tile can hold. */
+export type MapSiteKind = "Shrine" | "Well";
 
 /** A tile's single-use site, from its occupier category alone: these sites have no Structure. */
 export const mapSiteKind = (occupierType: number | undefined): MapSiteKind | null =>

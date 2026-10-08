@@ -5,7 +5,8 @@ import type { TileSpatialRenderable } from "@bibliothecadao/eternum/game-sync";
 import { TileOccupier } from "@bibliothecadao/types";
 import { useMemo } from "react";
 
-import { DEPTH_ART } from "../depth-art";
+import { reachMark } from "../depth-art";
+import { KitIcon } from "@/ui/design-system/kit/kit-icon";
 import { Sheet } from "@/ui/design-system/kit/sheet";
 
 /** The map tile the player tapped, when it holds a spire. */
@@ -26,7 +27,7 @@ export const SpireCard = ({ onClose }: { onClose: () => void }) => {
   return (
     <Sheet label="Spire" onClose={onClose}>
       <header className="flex items-center gap-3">
-        <img src={DEPTH_ART[1]} alt="" className="size-24 shrink-0 object-contain" />
+        <KitIcon code={reachMark(1)} size={96} />
         <h2 className="frontier-title">Spire</h2>
       </header>
       <button

@@ -14,6 +14,8 @@ October 2026): every icon a painted master in the menu icons' hand, then one scr
   `scripts/icons/kit-icon-pipeline.test.mjs` (run by `pnpm verify:assets`) holds every published icon to what its master
   makes.
 
+The three Ethereal reach marks (depth I to III, owner approved as made) joined with the Spire card and the research tree
+that draw them.
+
 Not yet in the family: the building renders (Farm, Workshop, Barracks, Hut wait for their illustrations), the army
-attributes (their Aspects' sigils, ruled), Discord (its brand mark), and the three depth marks (delivered; they join
-with the screen that draws them).
+attributes (their Aspects' sigils, ruled) and Discord (its brand mark).
