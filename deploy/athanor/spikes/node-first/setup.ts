@@ -1,4 +1,5 @@
 import { resolve } from "node:path";
+import { publicSetupFailure } from "./setup-failure";
 import { existsSync } from "node:fs";
 import { RpcProvider, hash } from "starknet";
 import { createHarnessAccounts, mapWithConcurrency } from "../../harness/account-factory";
@@ -82,7 +83,18 @@ async function main() {
   });
   console.log(JSON.stringify({ prepared: count, contract: fixture.contract, fixture: output }));
 }
-main().catch(() => {
-  console.error("node-first setup failed; no credentials are emitted");
-  process.exitCode = 1;
+let settled = false;
+process.on("exit", (exitCode) => {
+  if (!settled)
+    process.stderr.write(JSON.stringify({ phase: "account setup exited before main settled", exitCode }) + "\n");
 });
+main().then(
+  () => {
+    settled = true;
+  },
+  (error: unknown) => {
+    settled = true;
+    process.stderr.write(JSON.stringify(publicSetupFailure(error)) + "\n");
+    process.exitCode = 1;
+  },
+);
