@@ -2,7 +2,7 @@ import { resolve } from "node:path";
 import { existsSync } from "node:fs";
 import { RpcProvider, hash } from "starknet";
 import { createHarnessAccounts, mapWithConcurrency } from "../../harness/account-factory";
-import { createOperatorAccount } from "../../../../config/deployer/clean/shared/madara-account";
+import { createMadaraAccount } from "../../../../config/deployer/clean/shared/madara-account";
 import { readClassArtifact, declareClass, waitForSuccess } from "../../../../config/deployer/clean/shared/declare";
 import { args, load, save, loopback, required, trialDirectory, normalize, type Fixture } from "./common";
 
@@ -31,11 +31,9 @@ async function main() {
       resolve(import.meta.dir, "artifacts/node_first_NodeFirstProbe.contract_class.json"),
       resolve(import.meta.dir, "artifacts/node_first_NodeFirstProbe.compiled_contract_class.json"),
     );
-    const operator = createOperatorAccount(
-      privateProvider,
-      required(process.env.DEPLOYER_ACCOUNT_ADDRESS, "DEPLOYER_ACCOUNT_ADDRESS"),
-      required(process.env.DEPLOYER_PRIVATE_KEY, "DEPLOYER_PRIVATE_KEY"),
-    );
+    // RealmsAccount has no __validate_declare__; use the trial's existing standard host declarer.
+    const host = load<{ deployerAddress: string; deployerPrivateKey: string }>(resolve(dir, "host-keys.json"));
+    const operator = createMadaraAccount(privateProvider, host.deployerAddress, host.deployerPrivateKey);
     await declareClass(operator, artifact, () => {});
     const salt = hash.starknetKeccak(`node-first:${manifest.shard.chainId}`).toString();
     const contract = hash.calculateContractAddressFromHash(salt, artifact.classHash, [], 0);
