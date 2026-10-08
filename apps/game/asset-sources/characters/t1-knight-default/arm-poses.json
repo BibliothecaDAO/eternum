@@ -1,9 +1,9 @@
 {
   "from": {
-    "poses": "human-baseline/poses/knight.json",
+    "poses": "poses/knight.json",
     "bound": "bound-r71.npz",
     "fit": "runtime-fit.json",
-    "tool": "t1-knight-claude/v4/scripts/k4_arm_poses.py"
+    "tool": "k4_pose_reference.py, k4_arm_poses.py"
   },
   "frame": "the game's axes (+X left, +Y up, +Z forward), metres, relative to the chest: the point midway between the shoulder joints",
   "what": "Where the Knight holds its arms with shield and sword, taken from the pose set approved with the gear. wrist: where the wrist goes. elbow: the point the elbow bends toward. hand_turn_xyzw: the hand's turn relative to the forearm (the wrist's own movement). expect: what a game arm posed in the elbow's hinge frame from an unmoving shoulder then shows.",

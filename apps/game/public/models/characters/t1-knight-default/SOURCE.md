@@ -39,6 +39,12 @@ feet. The adapter test and the driver test read it: the first compares the adapt
 joints with it, the second takes its 66 worked cases from it. Its `from` field names the bound model file the data was
 measured from, which is among the sources kept by the author.
 
+`arm-poses.json` beside it is how the arms hold the shield and the sword: five states (carry, guard, windup, contact,
+follow) measured from the pose set the model was approved with, each giving where the wrist goes, the point the elbow
+bends toward and the hand's turn on the forearm, with what the game should then show. The sword and shield declare these
+poses in the catalog (`procedural-melee-weapon-catalog.ts`), and `t1-knight-default-arms.test.ts` compares the catalog
+with the file and the posed skeleton with its expected values.
+
 ## Checking the files
 
 ```sh
