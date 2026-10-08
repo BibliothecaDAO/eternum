@@ -7,11 +7,11 @@ import {
 
 const options = [
   { id: "modular-fantasy" },
-  { id: "t1-knight-bastion-default" },
+  { id: "t1-knight-default" },
   { id: "iron-longsword" },
-  { id: "t1-knight-bastion-sword" },
+  { id: "t1-knight-default-sword" },
   { id: "round-shield" },
-  { id: "t1-knight-bastion-shield" },
+  { id: "t1-knight-default-shield" },
 ] as const;
 
 describe("procedural character review capability", () => {
@@ -28,15 +28,15 @@ describe("procedural character review capability", () => {
   it("exposes every Knight review option behind the development flag", () => {
     const capability = resolveProceduralCharacterReviewCapability({
       isDevelopment: true,
-      search: "?bastionKnight=1",
+      search: "?t1KnightDefault=1",
     });
 
     expect(filterProceduralCharacterReviewOptions(options, capability)).toBe(options);
   });
 
   it("keeps Knight review options disabled in production regardless of the query", () => {
-    expect(resolveProceduralCharacterReviewCapability({ isDevelopment: false, search: "?bastionKnight=1" })).toEqual({
-      includeBastionKnight: false,
+    expect(resolveProceduralCharacterReviewCapability({ isDevelopment: false, search: "?t1KnightDefault=1" })).toEqual({
+      includeT1KnightDefault: false,
     });
   });
 });

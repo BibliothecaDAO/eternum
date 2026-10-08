@@ -89,10 +89,10 @@ describe("procedural character runtime asset swaps", () => {
   it("replaces the Knight model and resets animation state when detail selects another LOD", async () => {
     const plantReset = vi.spyOn(ProceduralPlantController.prototype, "reset");
     const poseReset = vi.spyOn(ProceduralCharacterPoseFilter.prototype, "reset");
-    const runtime = await ProceduralCharacterRuntime.create({ includeBastionKnight: true });
+    const runtime = await ProceduralCharacterRuntime.create({ includeT1KnightDefault: true });
     const hero = {
       ...createDefaultProceduralCharacterConfig(),
-      appearanceId: "t1-knight-bastion-default" as const,
+      appearanceId: "t1-knight-default" as const,
     };
     const actor = runtime.createActor(hero);
     runtimeMocks.instantiate.mockClear();
@@ -104,7 +104,7 @@ describe("procedural character runtime asset swaps", () => {
     actor.updateConfig({ ...hero, renderDetail: "crowd" });
 
     expect(runtimeMocks.instantiate).toHaveBeenCalledOnce();
-    expect(runtimeMocks.instantiate).toHaveBeenCalledWith("t1-knight-bastion-default", hero.tier, "crowd");
+    expect(runtimeMocks.instantiate).toHaveBeenCalledWith("t1-knight-default", hero.tier, "crowd");
     expect(runtimeMocks.replaceActiveModel).toHaveBeenCalledOnce();
     expect(plantReset).toHaveBeenCalledOnce();
     expect(poseReset).toHaveBeenCalledOnce();
@@ -128,7 +128,7 @@ describe("procedural character runtime asset swaps", () => {
     expect(() =>
       actor.updateConfig({
         ...hero,
-        appearanceId: "t1-knight-bastion-default",
+        appearanceId: "t1-knight-default",
       }),
     ).toThrow("Knight appearance was not loaded");
     expect(runtimeMocks.avatarRebuild).not.toHaveBeenCalled();

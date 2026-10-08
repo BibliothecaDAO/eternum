@@ -43,7 +43,7 @@ import { wrapUnitPhase } from "./procedural-motion-curves";
 export type ProceduralCharacterMode = "animated" | "ragdoll";
 
 export interface ProceduralCharacterRuntimeOptions {
-  includeBastionKnight?: boolean;
+  includeT1KnightDefault?: boolean;
   physicsWorld?: JoltRagdollWorld;
   preloadPhysics?: boolean;
 }
@@ -92,7 +92,7 @@ export class ProceduralCharacterRuntime {
   ) {}
 
   public static async create(options: ProceduralCharacterRuntimeOptions = {}): Promise<ProceduralCharacterRuntime> {
-    const library = await loadProceduralCharacterLibrary({ includeBastionKnight: options.includeBastionKnight });
+    const library = await loadProceduralCharacterLibrary({ includeT1KnightDefault: options.includeT1KnightDefault });
     try {
       if (options.preloadPhysics) await preloadProceduralCharacterPhysics();
       return new ProceduralCharacterRuntime(library, options.physicsWorld);

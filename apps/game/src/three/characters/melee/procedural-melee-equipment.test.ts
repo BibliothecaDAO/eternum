@@ -42,7 +42,7 @@ function buildOffhand(offhandId: ProceduralMeleeOffhandId, assetShield: boolean)
 
 describe("procedural melee shield handle", () => {
   it.each([true, false])("leaves a forearm-strapped shield without a handle (asset: %s)", (assetShield) => {
-    expect(countShieldHandles(buildOffhand("t1-knight-bastion-shield", assetShield))).toBe(0);
+    expect(countShieldHandles(buildOffhand("t1-knight-default-shield", assetShield))).toBe(0);
   });
 
   it.each([true, false])("keeps one handle on a hand-held shield (asset: %s)", (assetShield) => {

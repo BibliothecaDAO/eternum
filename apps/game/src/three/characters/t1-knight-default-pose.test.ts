@@ -2,7 +2,7 @@
 import { GLTFLoader, type GLTF } from "three/addons/loaders/GLTFLoader.js";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { loadBastionKnightCharacterAssetTemplates } from "./bastion-knight-character-assets";
+import { loadT1KnightDefaultCharacterAssetTemplates } from "./t1-knight-default-character-assets";
 import { ProceduralCharacterAvatar } from "./procedural-character-avatar";
 import { ProceduralCharacterLibrary } from "./procedural-character-assets";
 import { createDefaultProceduralCharacterConfig } from "./procedural-character-config";
@@ -31,7 +31,7 @@ async function withKnightLibrary(run: (library: ProceduralCharacterLibrary) => v
     if (!gltf) throw new Error(`Unexpected Knight asset: ${String(url)}`);
     return gltf;
   });
-  const library = new ProceduralCharacterLibrary(await loadBastionKnightCharacterAssetTemplates());
+  const library = new ProceduralCharacterLibrary(await loadT1KnightDefaultCharacterAssetTemplates());
   try {
     run(library);
   } finally {
@@ -50,7 +50,7 @@ describe("T1 Knight under the procedural pose controller", () => {
       await withKnightLibrary((library) => {
         const config = {
           ...createDefaultProceduralCharacterConfig(),
-          appearanceId: "t1-knight-bastion-default" as const,
+          appearanceId: "t1-knight-default" as const,
           renderDetail,
           tier: 1 as const,
         };

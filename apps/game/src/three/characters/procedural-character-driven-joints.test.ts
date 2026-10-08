@@ -1,14 +1,14 @@
 import { Quaternion } from "three";
 import { describe, expect, it } from "vitest";
 
-import { BASTION_KNIGHT_HUMANOID_RIG_ADAPTER } from "./bastion-knight-humanoid-rig-adapter";
-import reference from "./bastion-knight-driver-reference.json";
+import { T1_KNIGHT_DEFAULT_HUMANOID_RIG_ADAPTER } from "./t1-knight-default-humanoid-rig-adapter";
+import reference from "./t1-knight-default-driver-reference.json";
 import { resolveDrivenJointRotation } from "./procedural-character-driven-joints";
 
 const TOLERANCE = 1e-4;
 
 function definitionFor(bone: string) {
-  const definition = BASTION_KNIGHT_HUMANOID_RIG_ADAPTER.drivenJoints.find((joint) => joint.bone === bone);
+  const definition = T1_KNIGHT_DEFAULT_HUMANOID_RIG_ADAPTER.drivenJoints.find((joint) => joint.bone === bone);
   if (!definition) throw new Error(`No driven joint ${bone}`);
   return definition;
 }
@@ -35,7 +35,7 @@ describe("driven joint rotation", () => {
   });
 
   it("keeps a joint at rest when the followed joint is at rest", () => {
-    for (const definition of BASTION_KNIGHT_HUMANOID_RIG_ADAPTER.drivenJoints) {
+    for (const definition of T1_KNIGHT_DEFAULT_HUMANOID_RIG_ADAPTER.drivenJoints) {
       const actual = resolveDrivenJointRotation(definition, new Quaternion(), new Quaternion(0.3, 0.2, 0.1, 0.9));
       expectSameRotation(actual, [0, 0, 0, 1]);
     }

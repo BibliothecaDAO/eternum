@@ -10,7 +10,7 @@ import {
   type ProceduralCharacterMaterialProfile,
 } from "./procedural-character-appearance";
 import type { ProceduralCharacterRenderDetail, ProceduralCharacterTier } from "./procedural-character-config";
-import { loadBastionKnightCharacterAssetTemplates } from "./bastion-knight-character-assets";
+import { loadT1KnightDefaultCharacterAssetTemplates } from "./t1-knight-default-character-assets";
 import { loadQuaterniusCharacterAssetTemplates } from "./quaternius-character-assets";
 import { disposeSkinnedSceneTemplates, instantiateSkinnedScene } from "./skinned-asset-resources";
 
@@ -86,12 +86,12 @@ export class ProceduralCharacterLibrary {
 }
 
 export async function loadProceduralCharacterLibrary(
-  options: { includeBastionKnight?: boolean } = {},
+  options: { includeT1KnightDefault?: boolean } = {},
 ): Promise<ProceduralCharacterLibrary> {
   const base = await loadQuaterniusCharacterAssetTemplates();
   const optional: LoadedProceduralCharacterAssetTemplate[] = [];
   try {
-    if (options.includeBastionKnight) optional.push(...(await loadBastionKnightCharacterAssetTemplates()));
+    if (options.includeT1KnightDefault) optional.push(...(await loadT1KnightDefaultCharacterAssetTemplates()));
     return new ProceduralCharacterLibrary([...base, ...optional]);
   } catch (error) {
     disposeSkinnedSceneTemplates([...base, ...optional].map(({ gltf }) => gltf.scene));

@@ -17,21 +17,21 @@ describe("procedural melee Knight assets", () => {
     const load = vi.spyOn(GLTFLoader.prototype, "loadAsync");
     const library = await ProceduralMeleeWeaponLibrary.create();
     expect(load).not.toHaveBeenCalled();
-    expect(library.isWeaponReady("t1-knight-bastion-sword")).toBe(false);
+    expect(library.isWeaponReady("t1-knight-default-sword")).toBe(false);
     expect(() =>
       library.assertDirectLoadoutAvailable({
         detailedEquipment: true,
-        offhandId: "t1-knight-bastion-shield",
-        weaponId: "t1-knight-bastion-sword",
+        offhandId: "t1-knight-default-shield",
+        weaponId: "t1-knight-default-sword",
       }),
     ).toThrow("was not loaded");
-    expect(() => library.instantiateOffhand("t1-knight-bastion-shield")).toThrow("was not loaded");
+    expect(() => library.instantiateOffhand("t1-knight-default-shield")).toThrow("was not loaded");
     library.dispose();
   });
 
   it("loads the two rigid exports once through the opt-in path", async () => {
     const load = vi.spyOn(GLTFLoader.prototype, "loadAsync").mockImplementation(async () => rigidGear());
-    const library = await ProceduralMeleeWeaponLibrary.create({ includeBastionKnight: true });
+    const library = await ProceduralMeleeWeaponLibrary.create({ includeT1KnightDefault: true });
     expect(load.mock.calls.map(([url]) => url)).toEqual([
       "/models/characters/t1-knight-default/near/sword.glb",
       "/models/characters/t1-knight-default/near/shield.glb",
@@ -39,29 +39,29 @@ describe("procedural melee Knight assets", () => {
     expect(() =>
       library.assertDirectLoadoutAvailable({
         detailedEquipment: true,
-        offhandId: "t1-knight-bastion-shield",
-        weaponId: "t1-knight-bastion-sword",
+        offhandId: "t1-knight-default-shield",
+        weaponId: "t1-knight-default-sword",
       }),
     ).not.toThrow();
-    expect(library.instantiateWeapon("t1-knight-bastion-sword")?.object.position.toArray()).toEqual([0, 0, 0]);
-    expect(library.instantiateOffhand("t1-knight-bastion-shield")?.object.position.toArray()).toEqual([0, 0, 0]);
+    expect(library.instantiateWeapon("t1-knight-default-sword")?.object.position.toArray()).toEqual([0, 0, 0]);
+    expect(library.instantiateOffhand("t1-knight-default-shield")?.object.position.toArray()).toEqual([0, 0, 0]);
     library.dispose();
   });
 
   it("rejects empty, clipped and skinned gear", () => {
-    expect(() => validateKnightGear({ animations: [], scene: new Group() }, "t1-knight-bastion-sword")).toThrow(
+    expect(() => validateKnightGear({ animations: [], scene: new Group() }, "t1-knight-default-sword")).toThrow(
       "no mesh",
     );
     expect(() =>
       validateKnightGear(
         { animations: [{}] as GLTF["animations"], scene: rigidGear().scene },
-        "t1-knight-bastion-sword",
+        "t1-knight-default-sword",
       ),
     ).toThrow("clip-free");
     const scene = rigidGear().scene;
     const skinned = new SkinnedMesh(new BoxGeometry(), new MeshStandardMaterial());
     skinned.bind(new Skeleton([]));
     scene.add(skinned);
-    expect(() => validateKnightGear({ animations: [], scene }, "t1-knight-bastion-shield")).toThrow("rigid");
+    expect(() => validateKnightGear({ animations: [], scene }, "t1-knight-default-shield")).toThrow("rigid");
   });
 });

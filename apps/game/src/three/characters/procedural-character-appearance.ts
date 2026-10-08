@@ -2,13 +2,13 @@ import type { ProceduralCharacterRenderDetail } from "./procedural-character-con
 import type { HumanoidRigAdapterId } from "./humanoid-rig-adapters";
 import type { ProceduralUnitKind } from "./procedural-unit-config";
 
-export type ProceduralCharacterAppearanceId = "modular-fantasy" | "universal-base" | "t1-knight-bastion-default";
+export type ProceduralCharacterAppearanceId = "modular-fantasy" | "universal-base" | "t1-knight-default";
 export type ProceduralCharacterAssetId =
   | "base"
   | "peasant"
   | "ranger"
-  | "t1-knight-bastion-near"
-  | "t1-knight-bastion-mid";
+  | "t1-knight-default-near"
+  | "t1-knight-default-mid";
 type ProceduralCharacterAppearanceTier = 1 | 2 | 3;
 
 export interface ProceduralCharacterAppearanceDefinition {
@@ -41,11 +41,11 @@ export const DEFAULT_PROCEDURAL_CHARACTER_APPEARANCE_ID: ProceduralCharacterAppe
 
 export const PROCEDURAL_CHARACTER_APPEARANCES: readonly ProceduralCharacterAppearanceDefinition[] = [
   {
-    assetByTier: { 1: "t1-knight-bastion-near", 2: "t1-knight-bastion-near", 3: "t1-knight-bastion-near" },
-    crowdAssetId: "t1-knight-bastion-mid",
+    assetByTier: { 1: "t1-knight-default-near", 2: "t1-knight-default-near", 3: "t1-knight-default-near" },
+    crowdAssetId: "t1-knight-default-mid",
     compatibleKinds: ["knight"],
-    id: "t1-knight-bastion-default",
-    label: "T1 Knight — default",
+    id: "t1-knight-default",
+    label: "T1 Knight Default",
     materials: {
       body: /$a/,
       crowdHiddenMesh: /$a/,
@@ -53,7 +53,7 @@ export const PROCEDURAL_CHARACTER_APPEARANCES: readonly ProceduralCharacterAppea
       outfit: /$a/,
       authoredSource: true,
     },
-    rigAdapterId: "t1-knight-bastion-v1",
+    rigAdapterId: "t1-knight-default",
   },
   {
     assetByTier: { 1: "base", 2: "peasant", 3: "ranger" },

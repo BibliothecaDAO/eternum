@@ -26,7 +26,7 @@ export async function initializeProceduralCharacterRendererRuntime(
     }),
     ProceduralUnitRuntime.create({
       preloadPhysics: input.preloadPhysics,
-      includeBastionKnight: reviewCapability.includeBastionKnight,
+      includeT1KnightDefault: reviewCapability.includeT1KnightDefault,
     }),
   ] as const);
   const [rendererResult, characterResult] = results;

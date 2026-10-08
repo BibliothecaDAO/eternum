@@ -23,8 +23,8 @@ export interface ProceduralMeleeAssetInstance {
 const scratchBounds = new Box3();
 const scratchSize = new Vector3();
 const DIRECT_KNIGHT_GEAR = {
-  "t1-knight-bastion-sword": "/models/characters/t1-knight-default/near/sword.glb",
-  "t1-knight-bastion-shield": "/models/characters/t1-knight-default/near/shield.glb",
+  "t1-knight-default-sword": "/models/characters/t1-knight-default/near/sword.glb",
+  "t1-knight-default-shield": "/models/characters/t1-knight-default/near/shield.glb",
 } as const;
 type DirectKnightGearId = keyof typeof DIRECT_KNIGHT_GEAR;
 
@@ -38,10 +38,12 @@ export class ProceduralMeleeWeaponLibrary {
 
   private constructor(private readonly directTemplates: ReadonlyMap<DirectKnightGearId, GLTF>) {}
 
-  public static async create(options: { includeBastionKnight?: boolean } = {}): Promise<ProceduralMeleeWeaponLibrary> {
+  public static async create(
+    options: { includeT1KnightDefault?: boolean } = {},
+  ): Promise<ProceduralMeleeWeaponLibrary> {
     const directTemplates = new Map<DirectKnightGearId, GLTF>();
     try {
-      if (options.includeBastionKnight) {
+      if (options.includeT1KnightDefault) {
         for (const [id, url] of Object.entries(DIRECT_KNIGHT_GEAR) as [DirectKnightGearId, string][]) {
           directTemplates.set(id, await loadKnightGear(url, id));
         }

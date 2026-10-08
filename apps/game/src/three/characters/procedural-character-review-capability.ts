@@ -1,11 +1,11 @@
-const BASTION_KNIGHT_REVIEW_IDS = new Set([
-  "t1-knight-bastion-default",
-  "t1-knight-bastion-sword",
-  "t1-knight-bastion-shield",
+const T1_KNIGHT_DEFAULT_REVIEW_IDS = new Set([
+  "t1-knight-default",
+  "t1-knight-default-sword",
+  "t1-knight-default-shield",
 ]);
 
 export interface ProceduralCharacterReviewCapability {
-  includeBastionKnight: boolean;
+  includeT1KnightDefault: boolean;
 }
 
 export function resolveProceduralCharacterReviewCapability(input: {
@@ -13,7 +13,7 @@ export function resolveProceduralCharacterReviewCapability(input: {
   search: string;
 }): ProceduralCharacterReviewCapability {
   return {
-    includeBastionKnight: input.isDevelopment && new URLSearchParams(input.search).get("bastionKnight") === "1",
+    includeT1KnightDefault: input.isDevelopment && new URLSearchParams(input.search).get("t1KnightDefault") === "1",
   };
 }
 
@@ -28,6 +28,6 @@ export function filterProceduralCharacterReviewOptions<T extends { id: string }>
   options: readonly T[],
   capability: ProceduralCharacterReviewCapability,
 ): readonly T[] {
-  if (capability.includeBastionKnight) return options;
-  return options.filter(({ id }) => !BASTION_KNIGHT_REVIEW_IDS.has(id));
+  if (capability.includeT1KnightDefault) return options;
+  return options.filter(({ id }) => !T1_KNIGHT_DEFAULT_REVIEW_IDS.has(id));
 }

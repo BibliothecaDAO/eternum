@@ -145,7 +145,7 @@ export class ProceduralUnitRuntime {
       ProceduralHorseRuntime.create(physicsWorld),
       ProceduralDragonRuntime.create(),
       ProceduralBoatRuntime.create(),
-      ProceduralMeleeWeaponLibrary.create({ includeBastionKnight: options.includeBastionKnight }),
+      ProceduralMeleeWeaponLibrary.create({ includeT1KnightDefault: options.includeT1KnightDefault }),
     ] as const);
     const [characterResult, horseResult, dragonResult, boatResult, meleeResult] = results;
     if (

@@ -1,7 +1,7 @@
 # T1 Knight default
 
 The default skin of the T1 Knight with its sword and shield. Opt-in for now: the appearance is offered only in
-development builds opened with `?bastionKnight=1` (`procedural-character-review-capability.ts`).
+development builds opened with `?t1KnightDefault=1` (`procedural-character-review-capability.ts`).
 
 | File              | Triangles | Vertices | Maps        | Joints |
 | ----------------- | --------- | -------- | ----------- | ------ |
@@ -22,7 +22,7 @@ the character's left, in metres, feet on y = 0. The figure stands 0.615 to the t
 The skins carry 31 joints: the 25 core joints in the family order, then `elbow_half_l/r`, `knee_half_l/r` and
 `upperarm_twist_l/r`. Every joint is a node with a translation and no rotation, so a joint's local rotation is its turn
 from rest. The six helpers are never keyed. The runtime turns them each frame from the joint they follow
-(`procedural-character-driven-joints.ts`, declared on the adapter in `bastion-knight-humanoid-rig-adapter.ts`):
+(`procedural-character-driven-joints.ts`, declared on the adapter in `t1-knight-default-humanoid-rig-adapter.ts`):
 
 - `elbow_half` and `knee_half` take half of the forearm's or shin's rotation.
 - `upperarm_twist` takes where the upper arm points plus 40% of its roll. The shoulder plates and everything under them
@@ -35,18 +35,18 @@ centre; the shield's front faces +Z from an origin at the centre of its rear fac
 
 `apps/game/asset-sources/characters/t1-knight-default/runtime-fit.json` is the measured data the adapter is filled from:
 rest positions, helper rules and twist axes with 66 worked cases, both sockets, three knuckle points per hand and the
-feet. `bastion-knight-driver-reference.json` holds those worked cases for the driver's test.
+feet. `t1-knight-default-driver-reference.json` holds those worked cases for the driver's test.
 
 ## Checking the files
 
 ```sh
 cd apps/game
-pnpm verify:knight-assets
+pnpm verify:t1-knight-default
 pnpm test src/three/characters
 ```
 
-`validate-bastion-final-exports.mjs` checks structure, the 31 joints by name and order, weights and embedded maps.
-`bastion-knight-final-exports.test.ts` pins each file's SHA-256, so a replaced file has to be re-pinned on purpose.
+`validate-t1-knight-default-exports.mjs` checks structure, the 31 joints by name and order, weights and embedded maps.
+`t1-knight-default-exports.test.ts` pins each file's SHA-256, so a replaced file has to be re-pinned on purpose.
 
 ## Where the model comes from
 

@@ -9,9 +9,9 @@ import { Quaternion, type Object3D } from "three";
 import { GLTFLoader, type GLTF } from "three/addons/loaders/GLTFLoader.js";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { BASTION_KNIGHT_HUMANOID_RIG_ADAPTER } from "./bastion-knight-humanoid-rig-adapter";
+import { T1_KNIGHT_DEFAULT_HUMANOID_RIG_ADAPTER } from "./t1-knight-default-humanoid-rig-adapter";
 import { resolveDrivenJointRotation } from "./procedural-character-driven-joints";
-import { loadBastionKnightCharacterAssetTemplates } from "./bastion-knight-character-assets";
+import { loadT1KnightDefaultCharacterAssetTemplates } from "./t1-knight-default-character-assets";
 import { ProceduralCharacterAvatar } from "./procedural-character-avatar";
 import { ProceduralCharacterLibrary } from "./procedural-character-assets";
 import { createDefaultProceduralCharacterConfig } from "./procedural-character-config";
@@ -30,7 +30,7 @@ const EXPORT_HASHES = {
 const SKIN_JOINT_COUNT = 31;
 
 const KNIGHT_ASSET_ROOT = `public${PREFIX}`;
-const VALIDATOR = resolve(process.cwd(), "scripts/validate-bastion-final-exports.mjs");
+const VALIDATOR = resolve(process.cwd(), "scripts/validate-t1-knight-default-exports.mjs");
 
 /** Runs the validator in a scratch copy of the Knight files whose near skin has had its skin joints rewritten. */
 function runValidatorWithNearSkinJoints(rewriteJoints: (joints: number[]) => number[]) {
@@ -57,7 +57,7 @@ function runValidatorWithNearSkinJoints(rewriteJoints: (joints: number[]) => num
 
 function expectDrivenJointsFollowCoreJoints(scene: Object3D): void {
   let largestFollowedTurn = 0;
-  for (const definition of BASTION_KNIGHT_HUMANOID_RIG_ADAPTER.drivenJoints) {
+  for (const definition of T1_KNIGHT_DEFAULT_HUMANOID_RIG_ADAPTER.drivenJoints) {
     const driven = scene.getObjectByName(definition.bone)?.quaternion;
     const follows = scene.getObjectByName(definition.follows)?.quaternion;
     if (!driven || !follows) throw new Error(`Knight scene is missing ${definition.bone} or ${definition.follows}`);
@@ -80,7 +80,7 @@ async function withKnightLibrary(run: (library: ProceduralCharacterLibrary) => P
     if (!gltf) throw new Error(`Unexpected Knight asset: ${String(url)}`);
     return gltf;
   });
-  const library = new ProceduralCharacterLibrary(await loadBastionKnightCharacterAssetTemplates());
+  const library = new ProceduralCharacterLibrary(await loadT1KnightDefaultCharacterAssetTemplates());
   try {
     await run(library);
   } finally {
@@ -91,12 +91,12 @@ async function withKnightLibrary(run: (library: ProceduralCharacterLibrary) => P
 function createKnightAvatar(library: ProceduralCharacterLibrary, renderDetail: "hero" | "crowd") {
   const config = {
     ...createDefaultProceduralCharacterConfig(),
-    appearanceId: "t1-knight-bastion-default" as const,
+    appearanceId: "t1-knight-default" as const,
     renderDetail,
     tier: 1 as const,
   };
   const asset = library.instantiate(config.appearanceId, config.tier, renderDetail);
-  expect(asset.id).toBe(renderDetail === "hero" ? "t1-knight-bastion-near" : "t1-knight-bastion-mid");
+  expect(asset.id).toBe(renderDetail === "hero" ? "t1-knight-default-near" : "t1-knight-default-mid");
   const rig = resolveCharacterRig(config);
   return { asset, avatar: new ProceduralCharacterAvatar(asset, rig, config), config, rig };
 }
@@ -192,8 +192,8 @@ describe("T1 Knight exports", () => {
   it("round-trips the actual rigid sword and shield through GLTFLoader", async () => {
     vi.stubGlobal("ProgressEvent", class extends Event {});
     for (const [relativePath, id] of [
-      ["near/sword.glb", "t1-knight-bastion-sword"],
-      ["near/shield.glb", "t1-knight-bastion-shield"],
+      ["near/sword.glb", "t1-knight-default-sword"],
+      ["near/shield.glb", "t1-knight-default-shield"],
     ] as const) {
       const gltf = await parseTextureFreeGlb(PREFIX + relativePath);
       expect(() => validateKnightGear(gltf, id)).not.toThrow();

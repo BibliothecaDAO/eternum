@@ -8,7 +8,7 @@ export type ProceduralMeleeWeaponId =
   | "runic-warhammer"
   | "winter-broadaxe"
   | "winter-rider-battleaxe"
-  | "t1-knight-bastion-sword";
+  | "t1-knight-default-sword";
 
 export type ProceduralMeleeOffhandId =
   | "none"
@@ -16,7 +16,7 @@ export type ProceduralMeleeOffhandId =
   | "winter-rider-shield"
   | "winter-targe"
   | "light-cavalry-shield"
-  | "t1-knight-bastion-shield";
+  | "t1-knight-default-shield";
 
 export type ProceduralMeleeAttackStyle = "chop" | "slash" | "smash";
 
@@ -54,8 +54,8 @@ export const PROCEDURAL_MELEE_WEAPONS: readonly ProceduralMeleeWeaponDefinition[
     attackStyle: "slash",
     assetAlignment: { pivot: "authored" },
     compatibleKinds: ["knight"],
-    id: "t1-knight-bastion-sword",
-    label: "T1 Knight default Sword",
+    id: "t1-knight-default-sword",
+    label: "T1 Knight Default sword",
     visualLength: 0.298393189907074, // sword.glb bounds: blade tip on +Y from the grip centre
   },
   {
@@ -98,8 +98,8 @@ export const PROCEDURAL_MELEE_OFFHANDS: readonly ProceduralMeleeOffhandDefinitio
     assetAlignment: { pivot: "authored" },
     compatibleKinds: ["knight"],
     gripToCenter: [0, 0, 0],
-    id: "t1-knight-bastion-shield",
-    label: "T1 Knight default Shield",
+    id: "t1-knight-default-shield",
+    label: "T1 Knight Default shield",
     visualDiameter: 0.250672, // shield.glb bounds: x extent of the round face
   },
   {

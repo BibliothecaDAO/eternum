@@ -52,7 +52,7 @@ describe("procedural unit runtime asset preflight", () => {
     const runtime = await ProceduralUnitRuntime.create();
     const config = createUnavailableKnightGearConfig();
 
-    expect(() => runtime.createActor(config)).toThrow("Knight gear t1-knight-bastion-sword was not loaded");
+    expect(() => runtime.createActor(config)).toThrow("Knight gear t1-knight-default-sword was not loaded");
     expect(runtimeMocks.characterCreateActor).not.toHaveBeenCalled();
     runtime.dispose();
   });
@@ -63,7 +63,7 @@ describe("procedural unit runtime asset preflight", () => {
     (runtime as unknown as { actors: Set<typeof actor> }).actors.add(actor);
 
     expect(() => runtime.updateActorConfig(actor as never, createUnavailableKnightGearConfig())).toThrow(
-      "Knight gear t1-knight-bastion-sword was not loaded",
+      "Knight gear t1-knight-default-sword was not loaded",
     );
     expect(actor.updateConfig).not.toHaveBeenCalled();
     runtime.dispose();
@@ -74,7 +74,7 @@ function createUnavailableKnightGearConfig() {
   const config = createDefaultProceduralUnitConfig();
   config.kind = "knight";
   config.humanoid.appearanceId = "modular-fantasy";
-  config.melee.weaponId = "t1-knight-bastion-sword";
-  config.melee.offhandId = "t1-knight-bastion-shield";
+  config.melee.weaponId = "t1-knight-default-sword";
+  config.melee.offhandId = "t1-knight-default-shield";
   return config;
 }

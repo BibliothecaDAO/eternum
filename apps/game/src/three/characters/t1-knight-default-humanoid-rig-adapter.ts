@@ -29,12 +29,12 @@ function fixedSocket(bone: string, value: readonly [number, number, number]) {
 }
 
 /**
- * T1 Knight rig, H=0.6, 31 joints with world-aligned rest frames. Every number below is read from the
+ * T1 Knight Default rig, 31 joints with world-aligned rest frames. Every number below is read from the
  * baseline export's runtime-fit.json (hands, feet, sockets, driven joints).
  */
-export const BASTION_KNIGHT_HUMANOID_RIG_ADAPTER = {
-  id: "t1-knight-bastion-v1",
-  label: "T1 Knight default rig",
+export const T1_KNIGHT_DEFAULT_HUMANOID_RIG_ADAPTER = {
+  id: "t1-knight-default",
+  label: "T1 Knight Default rig",
   authoredLegLength: "chain",
   authoredUniformScale: 1,
   sourceBodyMorphology: true,

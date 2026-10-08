@@ -22,7 +22,7 @@
     "compress:weather": "node ./scripts/compress-weather-textures.mjs",
     "compress:models": "node ./scripts/compress-models.mjs",
     "verify:structures": "node ./scripts/optimize-structure-models.mjs --verify settlements/settlement.glb settlements/city.glb settlements/kingdom.glb settlements/empire.glb ethereal/spire.glb ethereal/bitcoin-mine.glb",
-    "verify:knight-assets": "node ./scripts/validate-bastion-final-exports.mjs",
+    "verify:t1-knight-default": "node ./scripts/validate-t1-knight-default-exports.mjs",
     "optimize:realms": "node ./scripts/optimize-structure-models.mjs settlements/settlement.glb settlements/city.glb settlements/kingdom.glb settlements/empire.glb",
     "optimize:spire": "node ./scripts/optimize-structure-models.mjs ethereal/spire.glb",
     "optimize:bitcoin-mine": "node ./scripts/optimize-structure-models.mjs ethereal/bitcoin-mine.glb",

@@ -15,20 +15,18 @@ describe("procedural character appearances", () => {
     expect(resolveProceduralCharacterAppearanceAssetId("modular-fantasy", 2)).toBe("peasant");
     expect(resolveProceduralCharacterAppearanceAssetId("modular-fantasy", 3)).toBe("ranger");
     expect(resolveProceduralCharacterAppearanceAssetId("universal-base", 3)).toBe("base");
-    expect(resolveProceduralCharacterAppearanceAssetId("t1-knight-bastion-default", 1)).toBe("t1-knight-bastion-near");
-    expect(resolveProceduralCharacterAppearanceAssetId("t1-knight-bastion-default", 1, "crowd")).toBe(
-      "t1-knight-bastion-mid",
-    );
+    expect(resolveProceduralCharacterAppearanceAssetId("t1-knight-default", 1)).toBe("t1-knight-default-near");
+    expect(resolveProceduralCharacterAppearanceAssetId("t1-knight-default", 1, "crowd")).toBe("t1-knight-default-mid");
   });
 
   it("publishes selectable labels and loudly normalizes unknown persisted values", () => {
     const warning = vi.spyOn(console, "warn").mockImplementation(() => undefined);
     expect(PROCEDURAL_CHARACTER_APPEARANCES.map(({ id }) => id)).toEqual([
-      "t1-knight-bastion-default",
+      "t1-knight-default",
       "modular-fantasy",
       "universal-base",
     ]);
-    expect(resolveProceduralCharacterAppearance("t1-knight-bastion-default").compatibleKinds).toEqual(["knight"]);
+    expect(resolveProceduralCharacterAppearance("t1-knight-default").compatibleKinds).toEqual(["knight"]);
     expect(resolveProceduralCharacterAppearance("universal-base").label).toBe("Universal base body");
     expect(resolveProceduralCharacterAppearance("modular-fantasy").materials.outfit.test("MI_Ranger_Armor")).toBe(true);
     expect(normalizeProceduralCharacterAppearanceId("unknown-family")).toBe(DEFAULT_PROCEDURAL_CHARACTER_APPEARANCE_ID);
@@ -41,6 +39,6 @@ describe("procedural character appearances", () => {
 
   it("changes models for authored LODs without rebuilding legacy appearances", () => {
     expect(doesProceduralCharacterRenderDetailChangeAsset("modular-fantasy", 1, "hero", "crowd")).toBe(false);
-    expect(doesProceduralCharacterRenderDetailChangeAsset("t1-knight-bastion-default", 1, "hero", "crowd")).toBe(true);
+    expect(doesProceduralCharacterRenderDetailChangeAsset("t1-knight-default", 1, "hero", "crowd")).toBe(true);
   });
 });
