@@ -13,13 +13,18 @@ import {
 } from "three";
 
 import type { ProceduralCharacterConfig } from "../procedural-character-config";
-import type { CharacterSocketId, ProceduralCharacterSocketReader } from "../procedural-character-sockets";
+import {
+  isOptionalCharacterSocketId,
+  type CharacterSocketId,
+  type ProceduralCharacterSocketReader,
+} from "../procedural-character-sockets";
 import type { ProceduralUnitKind } from "../procedural-unit-config";
 import type { ProceduralMeleeConfig } from "./procedural-melee-config";
 import type { ProceduralMeleeUpperBodyPose } from "./procedural-melee-pose";
 import { mergeStaticEquipmentGeometry } from "../merge-static-equipment-geometry";
 import {
   resolveProceduralMeleeOffhand,
+  resolveProceduralMeleeOffhandCarry,
   resolveProceduralMeleeWeapon,
   type ProceduralMeleeOffhandId,
   type ProceduralMeleeOffhandSocket,
@@ -201,7 +206,7 @@ export class ProceduralMeleeEquipment {
             this.metalMaterial,
             offhandAsset?.object ?? createProceduralShield(this.resources, this.accentMaterial),
             offhandDefinition.gripToCenter,
-            offhandDefinition.attachmentSocket !== "forearmLeft",
+            resolveProceduralMeleeOffhandCarry(offhandDefinition) === "gripped",
           );
     this.weaponSource = weaponAsset?.source ?? "procedural";
     this.offhandSource = this.offhandId === "none" ? "none" : (offhandAsset?.source ?? "procedural");
@@ -254,7 +259,7 @@ export class ProceduralMeleeEquipment {
   private placeAtSocket(target: Group | AxesHelper, socketId: CharacterSocketId): void {
     if (!this.sockets.writeSocketWorldTransform(socketId, this.scratchWorldPosition, this.scratchWorldQuaternion)) {
       // Only the forearm socket is optional on a rig; fitted gear that needs it must not drift loose without a word.
-      if (socketId === "forearmLeft")
+      if (isOptionalCharacterSocketId(socketId))
         throw new Error("The equipped gear needs a forearmLeft socket this rig does not have");
       return;
     }

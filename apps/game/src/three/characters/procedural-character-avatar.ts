@@ -41,7 +41,11 @@ import {
   type CharacterSourceBodyMeasurements,
   type ResolvedCharacterRig,
 } from "./procedural-character-rig";
-import { type CharacterSocketId, type ProceduralCharacterSocketReader } from "./procedural-character-sockets";
+import {
+  type CharacterSocketId,
+  type CharacterSocketRecord,
+  type ProceduralCharacterSocketReader,
+} from "./procedural-character-sockets";
 import {
   applySegmentBoneRotation,
   createSegmentBoneBinding,
@@ -122,10 +126,7 @@ interface PreparedCharacterModel {
   materials: Set<Material>;
   ownedGeometries: Set<BufferGeometry>;
   scene: Group;
-  sockets: Readonly<
-    Record<Exclude<CharacterSocketId, "forearmLeft">, CharacterSocketBinding> &
-      Partial<Record<"forearmLeft", CharacterSocketBinding>>
-  >;
+  sockets: Readonly<CharacterSocketRecord<CharacterSocketBinding>>;
   restRotations: ReadonlyArray<{ bone: Bone; quaternion: Quaternion }>;
   skeletons: Set<Skeleton>;
   skinnedMeshCount: number;
@@ -260,7 +261,8 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
     const transform = this.partTransforms[partId];
     transform.position.fromArray(position);
     transform.quaternion.fromArray(quaternion);
-    this.applyPartTransform(partId, true);
+    this.applyPartTransform(partId);
+    this.applyDrivenJoints();
   }
 
   public setPartTransformValues(
@@ -276,7 +278,7 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
     const transform = this.partTransforms[partId];
     transform.position.set(x, y, z);
     transform.quaternion.set(qx, qy, qz, qw);
-    this.applyPartTransform(partId, false);
+    this.applyPartTransform(partId);
   }
 
   public getStats(): ProceduralCharacterAvatarStats {
@@ -459,7 +461,7 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
     this.activeModel.scene.updateWorldMatrix(true, true);
   }
 
-  private applyPartTransform(partId: CharacterPartId, drivesJoints: boolean): void {
+  private applyPartTransform(partId: CharacterPartId): void {
     if (partId === "pelvis") {
       positionCharacterModelAtPelvis(
         this.group,
@@ -472,7 +474,6 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
     this.applyBoneRotation(partId);
     if (partId === "forearmLeft") this.applyHandRoll("left");
     if (partId === "forearmRight") this.applyHandRoll("right");
-    if (drivesJoints) this.applyDrivenJoints();
   }
 
   /**

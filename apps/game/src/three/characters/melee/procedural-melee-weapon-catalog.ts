@@ -1,8 +1,12 @@
 import type { HumanoidRigAdapterId } from "../humanoid-rig-adapters";
 import type { ProceduralUnitKind } from "../procedural-unit-config";
-import type { CharacterSocketId } from "../procedural-character-sockets";
+import {
+  isOptionalCharacterSocketId,
+  type CharacterSocketId,
+  type OptionalCharacterSocketId,
+} from "../procedural-character-sockets";
 
-export type ProceduralMeleeOffhandSocket = Extract<CharacterSocketId, "gripLeft" | "forearmLeft">;
+export type ProceduralMeleeOffhandSocket = Extract<CharacterSocketId, "gripLeft" | OptionalCharacterSocketId>;
 
 export type ProceduralMeleeWeaponId =
   | "iron-longsword"
@@ -162,6 +166,16 @@ export function resolveProceduralMeleeOffhand(id: ProceduralMeleeOffhandId): Pro
   const definition = PROCEDURAL_MELEE_OFFHANDS.find((offhand) => offhand.id === id);
   if (!definition) throw new Error(`Unknown procedural melee offhand: ${id}`);
   return definition;
+}
+
+/** How the offhand is carried: in the fist, strapped along the forearm, or not at all. */
+export type ProceduralMeleeOffhandCarry = "none" | "gripped" | "strapped";
+
+export function resolveProceduralMeleeOffhandCarry(
+  offhand: ProceduralMeleeOffhandDefinition,
+): ProceduralMeleeOffhandCarry {
+  if (offhand.id === "none") return "none";
+  return offhand.attachmentSocket && isOptionalCharacterSocketId(offhand.attachmentSocket) ? "strapped" : "gripped";
 }
 
 /** Gear without a fitted rig fits every rig. */

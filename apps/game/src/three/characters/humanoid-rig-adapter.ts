@@ -2,7 +2,12 @@ import type { ProceduralHumanoidJointId } from "./procedural-character-diagnosti
 import type { ProceduralHandDigitId } from "./procedural-character-hand-pose";
 import type { QuaternionTuple, Vector3Tuple } from "./procedural-character-pose";
 import { CHARACTER_PART_IDS, type CharacterPartId } from "./procedural-character-rig";
-import type { CharacterSocketId } from "./procedural-character-sockets";
+import {
+  isOptionalCharacterSocketId,
+  OPTIONAL_CHARACTER_SOCKET_IDS,
+  type CharacterSocketId,
+  type CharacterSocketRecord,
+} from "./procedural-character-sockets";
 
 export type HumanoidSide = "left" | "right";
 
@@ -87,10 +92,7 @@ export interface HumanoidRigAdapter {
   label: string;
   partBindings: Readonly<Record<CharacterPartId, HumanoidPartBindingDefinition>>;
   sceneRotation: QuaternionTuple;
-  sockets: Readonly<
-    Record<Exclude<CharacterSocketId, "forearmLeft">, HumanoidSocketRigDefinition> &
-      Partial<Record<"forearmLeft", HumanoidSocketRigDefinition>>
-  >;
+  sockets: Readonly<CharacterSocketRecord<HumanoidSocketRigDefinition>>;
   stableSegmentAxes: {
     fallbackForward: Vector3Tuple;
     referenceForward: Vector3Tuple;
@@ -125,6 +127,7 @@ const HUMANOID_SOCKET_IDS: readonly CharacterSocketId[] = [
   "projectileOrigin",
   "quiver",
 ];
+const ADAPTER_SOCKET_IDS: readonly CharacterSocketId[] = [...HUMANOID_SOCKET_IDS, ...OPTIONAL_CHARACTER_SOCKET_IDS];
 const HUMANOID_DIGIT_IDS: readonly ProceduralHandDigitId[] = ["thumb", "index", "middle", "ring", "pinky"];
 
 export function resolveHumanoidRigRequiredBoneNames(adapter: HumanoidRigAdapter): string[] {
@@ -158,7 +161,7 @@ export function resolveHumanoidRigRequiredBoneNames(adapter: HumanoidRigAdapter)
       addName(names, foot.toeTip);
     }
   });
-  ([...HUMANOID_SOCKET_IDS, "forearmLeft"] as const).forEach((socketId) => {
+  ADAPTER_SOCKET_IDS.forEach((socketId) => {
     const socket = adapter.sockets[socketId];
     if (!socket) return;
     addName(names, socket.bone);
@@ -215,9 +218,9 @@ export function validateHumanoidRigAdapter(adapter: HumanoidRigAdapter): string[
     if (!(joint.share >= 0 && joint.share <= 1)) issues.push(`invalid-driven-share:${joint.bone}`);
     if (joint.rule === "twist" && !isFiniteDirection(joint.axis)) issues.push(`invalid-driven-axis:${joint.bone}`);
   });
-  ([...HUMANOID_SOCKET_IDS, "forearmLeft"] as const).forEach((socketId) => {
+  ADAPTER_SOCKET_IDS.forEach((socketId) => {
     const socket = adapter.sockets[socketId];
-    if (socketId === "forearmLeft" && !socket) return;
+    if (isOptionalCharacterSocketId(socketId) && !socket) return;
     if (!socket?.bone) issues.push(`missing-socket:${socketId}`);
     if (socket?.offset.kind === "fixed" && !isFiniteVector(socket.offset.value)) {
       issues.push(`invalid-socket-offset:${socketId}`);
