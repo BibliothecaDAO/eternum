@@ -16,6 +16,7 @@ import {
   type ProgressionRulesFacts,
 } from "../attributes/attributes";
 import { useDockArmies } from "../hud/dock-armies";
+import { ArmyRefill } from "./army-refill";
 import { type AttributeKey, ArmySheet } from "./army-sheet";
 
 const PROGRESS_MODELS = ["ArmyProgress", "ArmyProgressionRules"] as const;
@@ -78,6 +79,7 @@ export const FrontierArmy = ({ realm, onClose }: { realm: NativeRows["Structure"
       troops={army.troops}
       xp={progress.xp}
       stamina={{ ...army.stamina, secondsToFull: army.secondsToFull }}
+      refill={<ArmyRefill army={army} realm={realm} />}
       attributes={attributeStates(progress)}
       tierPrices={{ 2: rules.uncommon_xp, 3: rules.rare_xp, 4: rules.epic_xp, 5: rules.legendary_xp }}
       effects={EFFECTS}

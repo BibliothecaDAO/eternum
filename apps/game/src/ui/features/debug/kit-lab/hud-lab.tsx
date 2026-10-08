@@ -47,6 +47,7 @@ import { GuideCard } from "@/ui/features/frontier/guide/guide-card";
 import { type GuideFacts, GUIDE_STEPS } from "@/ui/features/frontier/guide/guide-script";
 import { GuideThread } from "@/ui/features/frontier/guide/guide-thread";
 import { useRef } from "react";
+import { RefillButton, RefillConfirm } from "@/ui/features/frontier/army/refill";
 
 const HOUR = 3_600;
 const NOW = new Date(2026, 9, 7, 14, 26).getTime() / 1000;
@@ -233,6 +234,9 @@ const CASTLE_SIDE = (level: number, limit: number) => ({
 /** Army 1: 5,000 troops, 260 XP, Battle rare, Logistics and Scouting common, Homecoming rare (the realm trained two). */
 type LabArmySheet = {
   chosen: AttributeKey;
+  /** The realm's LORDS against the refill; with `confirm`, the refill's confirm is open. */
+  lords?: number;
+  confirm?: boolean;
   xp?: number;
   stamina?: number;
   max?: number;
@@ -558,6 +562,28 @@ const STATES = {
     selected: 0,
     army: { chosen: "battle", xp: 520, stamina: 240, max: 240, tiers: [5, 4, 3, 4] },
   },
+  "army-refill": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    selected: 0,
+    army: { chosen: "logistics", stamina: 20, lords: 1_240, confirm: true },
+  },
+  "army-refill-short": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    selected: 0,
+    army: { chosen: "logistics", stamina: 20, lords: 40 },
+  },
+  "move-refill": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    selected: 0,
+    refill: true,
+    order: { ...EXPLORE, stamina: { cost: 30, held: 10, wait: 40 * 60 } },
+  },
   production: { clock: CLOCK, stores: STORES, armies: ARMIES, production: PRODUCTION_LINES },
   "production-full": {
     clock: CLOCK,
@@ -618,6 +644,8 @@ const STATES = {
 } as const;
 
 type LabState = {
+  /** The order bar offers Refill for its short stamina. */
+  refill?: boolean;
   guide?: keyof typeof GUIDE_LINES;
   results?: "today" | "today-earlier" | "today-failed" | "over" | "over-strong";
   season?: "list" | "detail" | "loading" | "failed";
@@ -706,7 +734,16 @@ export const HudLab = () => {
               />
             )}
             {lab.clear && <SiteClearCard {...lab.clear} />}
-            {lab.order && <OrderBar {...lab.order} revealYield={500} xp={2} onCancel={noop} onGo={noop} />}
+            {lab.order && (
+              <OrderBar
+                {...lab.order}
+                revealYield={500}
+                xp={2}
+                refill={lab.refill ? <RefillButton price={140} held={1_240} onRefill={noop} /> : undefined}
+                onCancel={noop}
+                onGo={noop}
+              />
+            )}
             {selected && !lab.order && (
               <ArmyStatusBar stamina={selected.stamina} secondsToFull={2 * HOUR} revealYield={500} />
             )}
@@ -881,6 +918,16 @@ const LabDeploySheet = ({ deploy }: { deploy: LabDeploy }) => {
 /** The army sheet on the fiction: tier prices 100, 200, 400, 800 XP; a purchase refills up to 30. */
 const LabArmy = ({ army }: { army: LabArmySheet }) => {
   const [battle, logistics, scouting, homecoming] = army.tiers ?? [3, 1, 1, 3];
+  if (army.confirm)
+    return (
+      <RefillConfirm
+        stamina={{ current: army.stamina ?? 90, max: army.max ?? 150 }}
+        held={army.lords}
+        sending={false}
+        onRefill={noop}
+        onCancel={noop}
+      />
+    );
   return (
     <ArmySheet
       name="Army 1"
@@ -888,6 +935,11 @@ const LabArmy = ({ army }: { army: LabArmySheet }) => {
       troops={army.tiers ? 60_000 : 5_000}
       xp={army.xp ?? 260}
       stamina={{ current: army.stamina ?? 90, max: army.max ?? 150, secondsToFull: 2 * HOUR }}
+      refill={
+        army.lords === undefined ? undefined : (
+          <RefillButton price={(army.max ?? 150) - (army.stamina ?? 90)} held={army.lords} onRefill={noop} />
+        )
+      }
       attributes={{
         battle: { tier: battle },
         logistics: { tier: logistics },

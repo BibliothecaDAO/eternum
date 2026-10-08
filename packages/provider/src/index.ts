@@ -711,6 +711,15 @@ export class EternumProvider extends EventEmitter {
     );
   }
 
+  /** Fills an army's stamina to its maximum for one LORDS a missing point, from its realm's LORDS. */
+  public async refill_stamina(props: SystemProps.SystemSigner & { explorerId: number }) {
+    return this.submitCommand(
+      props.signer,
+      { kind: "RefillStamina", value: { explorer_id: props.explorerId } },
+      TransactionType.REFILL_STAMINA,
+    );
+  }
+
   public async settle_season(props: SystemProps.SystemSigner & { name: string; selectedRealm?: number }) {
     return this.submitCommand(
       props.signer,

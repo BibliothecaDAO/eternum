@@ -4,6 +4,7 @@ import { Chip } from "@/ui/design-system/kit/chip";
 import type { IconCode } from "@/ui/design-system/kit/kit-icon";
 import { formatDuration } from "@/ui/design-system/kit/time";
 import { CANCEL, ESSENCE, EXPLORE, LABOR, LEFT, MOVE, STAMINA, WHEAT, XP } from "@/ui/design-system/kit/words";
+import type { ReactNode } from "react";
 
 import { type Cost, isCovered } from "./army-order";
 
@@ -22,6 +23,7 @@ export const OrderBar = ({
   revealYield,
   laborFits,
   xp,
+  refill,
   onCancel,
   onGo,
 }: {
@@ -34,10 +36,13 @@ export const OrderBar = ({
   /** What of a labor reveal fits the labor store; less than the yield splits the chip, labor's half in ember. */
   laborFits?: number;
   xp: number | undefined;
+  /** Refill, offered beside Cancel when the order's stamina is short. */
+  refill?: ReactNode;
   onCancel: () => void;
   onGo: () => void;
 }) => {
   const covered = isCovered(stamina) && isCovered(wheat);
+  const staminaShort = !isCovered(stamina) && refill !== undefined;
   const verb = VERBS[kind];
   return (
     <>
@@ -55,9 +60,10 @@ export const OrderBar = ({
           role="outline"
           word={CANCEL}
           onClick={onCancel}
-          className={covered ? "!h-14 w-[104px]" : "!h-14 flex-1"}
+          className={covered || staminaShort ? "!h-14 w-[104px]" : "!h-14 flex-1"}
         />
         {covered && <Button role="primary" icon={verb.icon} word={verb.word} onClick={onGo} className="flex-1" />}
+        {staminaShort && refill}
       </div>
     </>
   );

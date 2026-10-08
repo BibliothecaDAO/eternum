@@ -120,3 +120,7 @@ export const LEAVE = "Leave";
 /** The guide card's two verbs: go to what the line names, and on to the next line. */
 export const SHOW_ME = "Show me";
 export const NEXT = "Next";
+
+/** Filling an army's stamina for LORDS, a full refill only. */
+export const REFILL = "Refill";
+export const REFILLING = "Refilling…";

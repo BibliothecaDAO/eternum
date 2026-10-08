@@ -11,6 +11,7 @@ import { RealmVisitFoot, useVisitedRealm } from "./board/realm-visit";
 import { FrontierSeason, SeasonOver, useSeasonRank } from "./board/season-board";
 import { useSpectatorWatchesTheLeader } from "./board/spectator-watch";
 import { useExpeditionRules, useFrontierRealm } from "./frontier-home";
+import { ArmyRefill } from "./army/army-refill";
 import { FrontierArmy } from "./army/frontier-army";
 import { FrontierSelectionSheet } from "./frontier-selection-sheet";
 import { useRealmStores } from "./realm-stores";
@@ -170,6 +171,7 @@ const PendingOrder = ({
         labor?.limit === undefined || labor.amount === undefined ? undefined : Math.max(0, labor.limit - labor.amount)
       }
       xp={order.xp}
+      refill={<ArmyRefill army={army} realm={realm} />}
       onCancel={() => useUIStore.getState().updateEntityActionHoveredHex(null)}
       onGo={() => requestOrderAt(order.target)}
     />
