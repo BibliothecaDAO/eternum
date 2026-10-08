@@ -1,10 +1,13 @@
+import { useGame } from "@/hooks/context/game-context";
 import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
+import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { usePlayerDisplayName } from "@/hooks/use-player-profile";
 import { getActiveGame } from "@/runtime/world";
 import { startRealmVisit } from "@/sync/active-game-client";
 import { PlayerName } from "@/ui/design-system/kit/player-name";
-import { configManager } from "@bibliothecadao/eternum";
+import type { Tier } from "@/ui/design-system/kit/tier-chip";
+import { configManager, dayOf, type ExpeditionRules } from "@bibliothecadao/eternum";
 import { fetchHeraldLeaderboard, requireShard } from "@bibliothecadao/eternum/game-client";
 import type { HeraldFrontierLeaderboardEntry } from "@bibliothecadao/eternum/game-sync";
 import { useQuery } from "@tanstack/react-query";
@@ -50,12 +53,13 @@ export const useSeasonRank = (): string => {
 };
 
 /**
- * Season over the board: the first fifty realms and the player's own, a row's detail with Visit. Visiting closes the
- * page for the visited realm. Today's common chest waits for the day's chest price in the contracts' schema.
+ * Season over the board: today's common chest, the first fifty realms and the player's own, a row's detail with
+ * Visit. Visiting closes the page for the visited realm.
  */
-export const FrontierSeason = ({ onBack }: { onBack: () => void }) => {
+export const FrontierSeason = ({ rules, onBack }: { rules: ExpeditionRules; onBack: () => void }) => {
   const board = useSeasonBoard();
   const viewer = useViewer();
+  const chest = useCommonChest(rules);
   const [opened, setOpened] = useState<string | null>(null);
   const entries = board.data ?? [];
   const own = findOwnEntry(entries, viewer);
@@ -69,6 +73,7 @@ export const FrontierSeason = ({ onBack }: { onBack: () => void }) => {
     <>
       <SeasonList
         rank={ownRank(board.data, viewer)}
+        chest={chest}
         rows={top.map((entry) => listRow(entry, entry === own))}
         pinned={own && !top.includes(own) ? listRow(own, true) : undefined}
         state={board.isError ? "failed" : board.isPending ? "loading" : "ready"}
@@ -86,6 +91,24 @@ export const FrontierSeason = ({ onBack }: { onBack: () => void }) => {
     </>
   );
 };
+
+/**
+ * Today's common chest: the common tier's shares at the day's LORDS price, as lords_budget.cairo prices a chest. The
+ * budget rolls to a new day at its first chest, so a row from an earlier day says nothing of today's price.
+ */
+const useCommonChest = (rules: ExpeditionRules): { tier: Tier; lords: number } | undefined => {
+  const { setup } = useGame();
+  useNativeRevision(CHEST_MODELS);
+  const now = useNowSeconds();
+  const gameId = configManager.getActiveGameId();
+  const budget = setup.store.get("LordsBudget", { game_id: gameId });
+  const chestRules = setup.store.get("ChestRules", { game_id: gameId });
+  const today = dayOf(rules, now);
+  if (!budget || !chestRules || !today || Number(budget.day) !== today.index) return undefined;
+  return { tier: 1, lords: Number(BigInt(chestRules.shares.common) * budget.price) };
+};
+
+const CHEST_MODELS = ["LordsBudget", "ChestRules"] as const;
 
 const listRow = (entry: Entry, own: boolean): SeasonListRow => ({
   key: entry.address,

@@ -59,6 +59,10 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
   const chat = useGameChat(surface === "chat");
   if (showBlankOverlay) return null;
   const close = () => setSurface(null);
+  const openArmy = (explorerId: number) => {
+    useUIStore.getState().updateEntityActionSelectedEntityId(explorerId);
+    setSurface("army");
+  };
 
   return (
     <GuideProvider rules={rules} realm={visit ? null : realm}>
@@ -76,7 +80,7 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
           ) : surface === "research" && realm ? (
             <FrontierResearch rules={rules} realm={realm} />
           ) : surface === "season" ? (
-            <FrontierSeason onBack={close} />
+            <FrontierSeason rules={rules} onBack={close} />
           ) : (
             <div className="relative min-h-0 flex-1">
               {dockRealm && !visit && <LastHour rules={rules} realm={dockRealm} />}
@@ -108,7 +112,7 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
             <SettingsPanel />
           </Sheet>
         )}
-        {surface === "today" && <FrontierToday rules={rules} onClose={close} />}
+        {surface === "today" && <FrontierToday rules={rules} realm={realm} onOpenArmy={openArmy} onClose={close} />}
         {surface !== "season" && <SeasonOver onSeason={() => setSurface("season")} />}
         {realm && !visit && <DayDone rules={rules} realm={realm} />}
       </HudBands>
