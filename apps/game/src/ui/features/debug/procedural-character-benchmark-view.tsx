@@ -108,12 +108,11 @@ declare global {
 
 type BenchmarkExperienceMode = "characters" | "world";
 
-// The benchmark mixes unit kinds, so it never offers an appearance restricted to one of them.
+// The humanoid kinds the benchmark mixes: an appearance is offered only if all of them can use it.
+const BENCHMARK_HUMANOID_KINDS = ["knight", "archer", "crossbowman", "paladin"] as const;
 const offeredAppearances = listOfferedProceduralCharacterAppearances(
   resolveActiveProceduralCharacterReviewCapability(),
-  {
-    mixesUnitKinds: true,
-  },
+  BENCHMARK_HUMANOID_KINDS,
 );
 
 export const ProceduralCharacterBenchmarkView = () => <ProceduralCharacterBenchmarkExperience mode="characters" />;

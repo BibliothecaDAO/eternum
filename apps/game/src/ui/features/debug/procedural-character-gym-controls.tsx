@@ -142,9 +142,6 @@ interface MeleeNumericField {
 }
 
 const reviewCapability = resolveActiveProceduralCharacterReviewCapability();
-const availableCharacterAppearances = listOfferedProceduralCharacterAppearances(reviewCapability, {
-  mixesUnitKinds: false,
-});
 const availableMeleeWeapons = filterProceduralCharacterReviewOptions(PROCEDURAL_MELEE_WEAPONS, reviewCapability);
 const availableMeleeOffhands = filterProceduralCharacterReviewOptions(PROCEDURAL_MELEE_OFFHANDS, reviewCapability);
 
@@ -638,7 +635,10 @@ const CharacterControls = ({ config, selectedPreset, onApplyPreset, onPatchConfi
       <SelectControl
         label={config.kind === "paladin" ? "Rider appearance" : "Appearance"}
         value={config.humanoid.appearanceId}
-        options={availableCharacterAppearances.map(({ id, label }) => ({ value: id, label }))}
+        options={listOfferedProceduralCharacterAppearances(reviewCapability, [config.kind]).map(({ id, label }) => ({
+          value: id,
+          label,
+        }))}
         onChange={(appearanceId) =>
           onPatchConfig({ humanoid: { appearanceId: appearanceId as ProceduralCharacterAppearanceId } })
         }

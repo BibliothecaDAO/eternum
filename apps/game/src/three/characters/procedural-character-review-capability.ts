@@ -1,10 +1,19 @@
-import { PROCEDURAL_CHARACTER_APPEARANCES } from "./procedural-character-appearance";
+import {
+  isProceduralCharacterAppearanceCompatibleWithKind,
+  PROCEDURAL_CHARACTER_APPEARANCES,
+} from "./procedural-character-appearance";
+import type { HumanoidRigAdapterId } from "./humanoid-rig-adapters";
+import type { ProceduralUnitKind } from "./procedural-unit-config";
 
-const T1_KNIGHT_DEFAULT_REVIEW_IDS = new Set([
-  "t1-knight-default",
-  "t1-knight-default-sword",
-  "t1-knight-default-shield",
-]);
+/** The one rig under review: an appearance that uses it, and gear fitted to it, are review-only. */
+const REVIEW_ONLY_RIG_ADAPTER_ID: HumanoidRigAdapterId = "t1-knight-default";
+
+/** An appearance names its rig; gear names the rig it was fitted to. */
+interface ProceduralCharacterReviewOption {
+  id: string;
+  fittedRigAdapterId?: HumanoidRigAdapterId;
+  rigAdapterId?: HumanoidRigAdapterId;
+}
 
 export interface ProceduralCharacterReviewCapability {
   includeT1KnightDefault: boolean;
@@ -26,22 +35,26 @@ export function resolveActiveProceduralCharacterReviewCapability(): ProceduralCh
   });
 }
 
-export function filterProceduralCharacterReviewOptions<T extends { id: string }>(
+export function filterProceduralCharacterReviewOptions<T extends ProceduralCharacterReviewOption>(
   options: readonly T[],
   capability: ProceduralCharacterReviewCapability,
 ): readonly T[] {
   if (capability.includeT1KnightDefault) return options;
-  return options.filter(({ id }) => !T1_KNIGHT_DEFAULT_REVIEW_IDS.has(id));
+  return options.filter(
+    ({ fittedRigAdapterId, rigAdapterId }) =>
+      fittedRigAdapterId !== REVIEW_ONLY_RIG_ADAPTER_ID && rigAdapterId !== REVIEW_ONLY_RIG_ADAPTER_ID,
+  );
 }
 
 /**
  * The one answer to which appearances a selector may offer. A review-only appearance needs the flag, and a selector
- * that mixes unit kinds never offers an appearance restricted to some of them.
+ * that applies to several unit kinds offers an appearance only if every one of them can use it.
  */
 export function listOfferedProceduralCharacterAppearances(
   capability: ProceduralCharacterReviewCapability,
-  selector: { mixesUnitKinds: boolean },
+  kinds: readonly ProceduralUnitKind[],
 ) {
-  const reviewed = filterProceduralCharacterReviewOptions(PROCEDURAL_CHARACTER_APPEARANCES, capability);
-  return selector.mixesUnitKinds ? reviewed.filter(({ compatibleKinds }) => !compatibleKinds) : reviewed;
+  return filterProceduralCharacterReviewOptions(PROCEDURAL_CHARACTER_APPEARANCES, capability).filter(({ id }) =>
+    kinds.every((kind) => isProceduralCharacterAppearanceCompatibleWithKind(id, kind)),
+  );
 }
