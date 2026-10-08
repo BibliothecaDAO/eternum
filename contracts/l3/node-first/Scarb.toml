@@ -1,0 +1,15 @@
+[package]
+name = "node_first"
+version = "0.1.0"
+cairo-version = "=2.17.0"
+edition = "2024_07"
+
+[dependencies]
+starknet = "=2.17.0"
+
+[[target.starknet-contract]]
+sierra = true
+casm = true
+
+[tool.fmt]
+max-line-length = 120

@@ -23,6 +23,10 @@
     ".": {
       "entry": [
         "deploy/athanor/scripts/host-accounts.ts",
+        "deploy/athanor/spikes/node-first/setup.ts",
+        "deploy/athanor/spikes/node-first/proxy.ts",
+        "deploy/athanor/spikes/node-first/run.ts",
+        "deploy/athanor/spikes/node-first/send-worker.ts",
         "deploy/release/facts.ts",
         "deploy/athanor/scripts/inspect-shard-roles.ts",
         "deploy/athanor/scripts/read-rpc.ts",
