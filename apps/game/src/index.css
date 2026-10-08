@@ -540,17 +540,14 @@ html.frontier-type .frontier-chip[data-tone="lit"] {
   border-color: var(--hot);
   box-shadow: 0 0 12px rgba(246, 172, 29, 0.35);
 }
+/* A price is a dark well with an amber rim wherever it sits, on a gold button too: the kit's gilded icons read on ink,
+   never on gold. */
 html.frontier-type .frontier-chip[data-tone="price"] {
-  background: linear-gradient(180deg, #f7b93a, #d98a00);
-  border-color: #ffd98a;
+  background: rgba(27, 18, 7, 0.9);
+  border-color: #b76f00;
 }
 html.frontier-type .frontier-chip[data-tone="price"] .frontier-chip-number {
-  color: var(--ink);
-}
-/* On the primary button the price sits inset, a shade of the button's own amber. */
-html.frontier-type .frontier-primary .frontier-chip[data-tone="price"] {
-  background: rgba(109, 67, 0, 0.28);
-  border-color: rgba(109, 67, 0, 0.55);
+  color: var(--cream);
 }
 /* A tier's banner: a small silver plate with the numeral, gold at III; larger under a building's medallion. */
 html.frontier-type .frontier-tier {
@@ -596,6 +593,11 @@ html.frontier-type .frontier-primary {
   font-weight: 800;
   font-size: 22px;
   color: var(--ink);
+}
+/* The primary's own icon draws in ink, like its word: a gilded icon on the amber would vanish. */
+html.frontier-type .frontier-primary > img {
+  filter: brightness(0);
+  opacity: 0.85;
 }
 html.frontier-type .frontier-primary:disabled {
   opacity: 0.45;
