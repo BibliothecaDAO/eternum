@@ -68,8 +68,11 @@ Each JSON file contains first send, every send/receipt/status/error, spread, las
 slots, CPU samples, executor batch logs, metric attempt/commit/abort deltas and closed blocks. Per-core node CPU is
 derived from thread CPU ticks assigned to their last sampled processor; migration is approximate. Missing upstream
 metrics are reported unavailable, never zero. The collector's extra 16-second flush wait is outside reported
-visibility/CPU/log windows. Tier 1 measures receipt visibility, not Herald/client rendering. Save node logs, proxy
-ingress timings and the node's exact flags/config with it. Questions and build count are in the inbox log.
+visibility/CPU/log windows. Every fresh-shard comparison also commits one full-size COLD burst of the measured action,
+records it separately, then measures three WARM bursts. The simulation warm-up is not that committed burst. Rank the
+worst warm result, with the warm median as tie-break. Tier 1 measures receipt visibility, not Herald/client rendering.
+Save node logs, proxy ingress timings and the node's exact flags/config with it. Questions and build count are in the
+inbox log.
 
 Tier 2 waits until ops has run tier 1 once. No Games redesign is implemented here.
 
@@ -78,3 +81,37 @@ For the settings matrix, the runner accepts `node_environment.RUST_LOG` with
 durations without changing the upstream image. The environment override reaches the node only; other keys are refused.
 The filter costs extra batch log writes, so keep it identical across controls and candidates. This is spike evidence
 plumbing, never a production recommendation.
+
+## Warm four-game Blitz gate
+
+`blitz-setup.ts` prepares four actual preset-2 rosters of 24 distinct accounts through the shipped settlement library.
+It uses the throwaway `BlitzGames` host and its supplied `artifacts-blitz` files. Every measured call enters the genuine
+construction library directly from a native Realms account. The flow alternates building and demolishing a category-1
+building on each player's own home at inner cell `(11, 10)`. Fixture resources are granted before measurement. This
+repeatable construction workload compares small-game publication under the same settings; it does not reproduce a mixed
+gameplay session. Repeated movement cannot sustain 20.3 actions/s on these rosters: the shipped tick is 60 seconds and
+travel costs stamina.
+
+The flow records and discards a full 96-action cold wave for each action, confirms preparation, then presigns all steady
+work. It offers 20.3 actions/s independently of preceding receipts and reports scheduling delay, refusals and every
+receipt. Use a fresh directory with the trial's private host-key file, and a separate 96-account fixture created with
+`setup.ts --count 96`. The accounts must be disjoint from the burst cohort.
+
+```sh
+bun deploy/athanor/spikes/node-first/blitz-setup.ts \
+  --dir "$BLITZ_TRIAL" --fixture "$BLITZ_TRIAL/node-first-private.json" \
+  --manifest "$TRIAL/native-world.json" --private-rpc "$PRIVATE_RPC"
+bun deploy/athanor/spikes/node-first/blitz-flow.ts \
+  --fixture "$BLITZ_TRIAL/blitz-private.json" --rpc-url "$PRIVATE_RPC" \
+  --ws-url "$PRIVATE_WS" --out "$BLITZ_TRIAL/flow.json" \
+  --seconds 600 --rate 20.3 --ready-file "$BLITZ_TRIAL/ready.json" \
+  --burst-file "$BLITZ_TRIAL/burst-receipts.json"
+```
+
+After readiness, keep the steady flow alone for at least 120 seconds. Then run the warm 2,000-action burst with
+`run.ts --receipt-checkpoint "$BLITZ_TRIAL/burst-receipts.json"`. That checkpoint records the first send and final
+successful receipt on the shared monotonic clock before later evidence collection. The flow continues to 30 seconds
+after the final burst receipt. Its output keeps the first 120 seconds, burst overlap and post-receipt period separate.
+Join the individual action timestamps to the node's close records to distinguish the actual final seal from the rest of
+that period. A missing or incomplete burst is not a passing mixed gate. Receipt block numbers are retained when supplied
+by the node. Raw receipt visibility does not establish that Herald can serve this separate spike host.

@@ -25,6 +25,8 @@
         "deploy/athanor/scripts/host-accounts.ts",
         "deploy/athanor/spikes/node-first/setup.ts",
         "deploy/athanor/spikes/node-first/game-setup.ts",
+        "deploy/athanor/spikes/node-first/blitz-setup.ts",
+        "deploy/athanor/spikes/node-first/blitz-flow.ts",
         "deploy/athanor/spikes/node-first/game-start.ts",
         "deploy/athanor/spikes/node-first/game-explore.ts",
         "deploy/athanor/spike-vrf/gas.ts",

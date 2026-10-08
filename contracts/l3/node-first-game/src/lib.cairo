@@ -169,3 +169,5 @@ pub mod Games {
 }
 
 pub mod settle;
+
+pub mod blitz;
