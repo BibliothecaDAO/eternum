@@ -3,6 +3,7 @@ use crate::{
     metrics::METRICS,
     node::{Execution, ExecutionStatus, Node, Receipt},
     ticket::{ActionStatus, RecordedTicket},
+    timing::{FlightTiming, Stage, StageTimer, Stages},
     transaction::selector,
 };
 use anyhow::{ensure, Context};
@@ -27,8 +28,14 @@ pub(crate) struct PendingTicket {
 #[async_trait::async_trait]
 pub(crate) trait ExecutionNode: Send + Sync {
     fn deployment(&self) -> Felt;
-    async fn prepare(&self, to: Felt, entrypoint: &'static str, payload: Vec<Felt>) -> anyhow::Result<(Felt, Value)>;
-    async fn execute(&self, hash: Felt, transaction: Value) -> anyhow::Result<Execution>;
+    async fn prepare(
+        &self,
+        to: Felt,
+        entrypoint: &'static str,
+        payload: Vec<Felt>,
+        timing: &mut Stages,
+    ) -> anyhow::Result<(Felt, Value)>;
+    async fn execute(&self, hash: Felt, transaction: Value, timing: &mut Stages) -> anyhow::Result<Execution>;
     async fn receipt(&self, hash: Felt) -> anyhow::Result<Option<Receipt>>;
     async fn head_order(&self, game: Felt) -> anyhow::Result<u64>;
     async fn wait_for_state_change(&self);
@@ -39,11 +46,17 @@ impl ExecutionNode for Node {
     fn deployment(&self) -> Felt {
         self.deployment
     }
-    async fn prepare(&self, to: Felt, entrypoint: &'static str, payload: Vec<Felt>) -> anyhow::Result<(Felt, Value)> {
-        Node::prepare(self, to, entrypoint, payload).await
+    async fn prepare(
+        &self,
+        to: Felt,
+        entrypoint: &'static str,
+        payload: Vec<Felt>,
+        timing: &mut Stages,
+    ) -> anyhow::Result<(Felt, Value)> {
+        Node::prepare(self, to, entrypoint, payload, Some(timing)).await
     }
-    async fn execute(&self, hash: Felt, transaction: Value) -> anyhow::Result<Execution> {
-        Node::execute(self, hash, transaction).await
+    async fn execute(&self, hash: Felt, transaction: Value, timing: &mut Stages) -> anyhow::Result<Execution> {
+        Node::execute(self, hash, transaction, Some(timing)).await
     }
     async fn receipt(&self, hash: Felt) -> anyhow::Result<Option<Receipt>> {
         Node::receipt(self, hash).await
@@ -87,19 +100,35 @@ const ATTEMPTS: usize = 3;
 
 /// A failed batch is bisected in order. Only a single definitively failed ticket is
 /// rejected; successful siblings execute normally, retaining their original contexts.
-pub(crate) async fn execute(node: Arc<impl ExecutionNode>, tickets: Vec<PendingTicket>) -> anyhow::Result<()> {
+pub(crate) async fn execute(
+    node: Arc<impl ExecutionNode>,
+    tickets: Vec<PendingTicket>,
+    previous_finished: Option<Instant>,
+) -> anyhow::Result<()> {
+    let mut timing = FlightTiming::new(tickets.len(), previous_finished);
+    execute_flight(node.as_ref(), &tickets, &mut timing).await?;
+    Ok(())
+}
+
+pub(crate) async fn execute_flight(
+    node: &impl ExecutionNode,
+    tickets: &[PendingTicket],
+    flight: &mut FlightTiming,
+) -> anyhow::Result<()> {
+    let timing = &mut flight.stages;
     let mut batches = VecDeque::from_iter(std::iter::once(0..tickets.len()));
     while let Some(range) = batches.pop_front() {
         let selected = &tickets[range.clone()];
-        if execute_range(node.as_ref(), selected, false).await? {
+        if execute_range(node, selected, false, timing).await? {
             continue;
         }
         if range.len() > 1 {
             split_front(&mut batches, range);
         } else {
-            ensure!(execute_range(node.as_ref(), selected, true).await?, "terminal rejection failed to record");
+            ensure!(execute_range(node, selected, true, timing).await?, "terminal rejection failed to record");
         }
     }
+    flight.complete();
     Ok(())
 }
 
@@ -109,12 +138,17 @@ fn split_front(batches: &mut VecDeque<Range<usize>>, range: Range<usize>) {
     batches.push_front(range.start..mid);
 }
 
-async fn execute_range(node: &impl ExecutionNode, tickets: &[PendingTicket], rejection: bool) -> anyhow::Result<bool> {
+async fn execute_range(
+    node: &impl ExecutionNode,
+    tickets: &[PendingTicket],
+    rejection: bool,
+    timing: &mut Stages,
+) -> anyhow::Result<bool> {
     let payload = batch_calldata(tickets.iter().map(|ticket| &ticket.record), rejection)?;
     let entrypoint = if rejection { "reject_execution" } else { "execute_batch" };
     // A transient retry resubmits the exact transaction. Only a proven failed
     // batch creates new transactions when bisected or terminally rejected.
-    let (hash, transaction) = node.prepare(node.deployment(), entrypoint, payload).await?;
+    let (hash, transaction) = node.prepare(node.deployment(), entrypoint, payload, timing).await?;
     for attempt in 0..ATTEMPTS {
         for ticket in tickets {
             ticket.permit.resolve(ActionStatus::Submitted {
@@ -123,7 +157,7 @@ async fn execute_range(node: &impl ExecutionNode, tickets: &[PendingTicket], rej
                 transaction_hash: hash,
             });
         }
-        let result = tokio::time::timeout(SUBMISSION_TIMEOUT, node.execute(hash, transaction.clone())).await;
+        let result = tokio::time::timeout(SUBMISSION_TIMEOUT, node.execute(hash, transaction.clone(), timing)).await;
         let observed = match result {
             Ok(Ok(outcome)) => Some(outcome),
             Ok(Err(error)) => {
@@ -143,7 +177,10 @@ async fn execute_range(node: &impl ExecutionNode, tickets: &[PendingTicket], rej
                         if !rejection {
                             METRICS.executed(tickets.len());
                         }
-                        let outcomes = receipt_outcomes(tickets.iter().map(|ticket| &ticket.record), hash, &receipt)?;
+                        let outcomes = {
+                            let _timer = StageTimer::start(Stage::OutcomeParsing, Some(timing));
+                            receipt_outcomes(tickets.iter().map(|ticket| &ticket.record), hash, &receipt)?
+                        };
                         for (ticket, outcome) in tickets.iter().zip(outcomes) {
                             ticket.permit.resolve(outcome);
                         }
@@ -379,6 +416,7 @@ mod tests {
             _: Felt,
             entrypoint: &'static str,
             payload: Vec<Felt>,
+            _: &mut Stages,
         ) -> anyhow::Result<(Felt, Value)> {
             let mut state = self.state.lock().unwrap();
             let tickets = (0..self.tickets.len())
@@ -391,7 +429,7 @@ mod tests {
             state.prepared.push(Prepared { entrypoint, payload, tickets });
             Ok((Felt::from(state.prepared.len() as u64), Value::Null))
         }
-        async fn execute(&self, hash: Felt, _: Value) -> anyhow::Result<Execution> {
+        async fn execute(&self, hash: Felt, _: Value, _: &mut Stages) -> anyhow::Result<Execution> {
             let mut state = self.state.lock().unwrap();
             state.submitted.push(hash);
             if let Some(receipt) = state.receipts.get(&hash) {
@@ -517,7 +555,7 @@ mod tests {
             Some(1),
             FirstSubmission::Normal,
         ));
-        execute(node.clone(), tickets).await.unwrap();
+        execute(node.clone(), tickets, None).await.unwrap();
         let state = node.state.lock().unwrap();
         // Game 2's poisoned first ticket is rejected in its own order; game 1 reaches order two.
         assert_eq!(state.effects, vec![0, 2]);
@@ -549,7 +587,7 @@ mod tests {
             );
             node.poison_reason = reason;
             let node = Arc::new(node);
-            assert!(execute(node.clone(), tickets).await.unwrap_err().to_string().contains("submission paused"));
+            assert!(execute(node.clone(), tickets, None).await.unwrap_err().to_string().contains("submission paused"));
             let state = node.state.lock().unwrap();
             assert_eq!(state.prepared.len(), 1);
             assert_eq!(state.prepared[0].entrypoint, "execute_batch");
@@ -566,7 +604,7 @@ mod tests {
             None,
             FirstSubmission::LostAfterExecution,
         ));
-        execute(node.clone(), tickets).await.unwrap();
+        execute(node.clone(), tickets, None).await.unwrap();
         let state = node.state.lock().unwrap();
         assert_eq!(state.effects, vec![0, 1]);
         assert_eq!(state.prepared.len(), 1);
@@ -582,7 +620,7 @@ mod tests {
             None,
             FirstSubmission::LostBeforeExecution,
         ));
-        execute(node.clone(), tickets).await.unwrap();
+        execute(node.clone(), tickets, None).await.unwrap();
         let state = node.state.lock().unwrap();
         assert_eq!(state.effects, vec![0, 1]);
         assert_eq!(state.prepared.len(), 1);
@@ -598,7 +636,7 @@ mod tests {
             None,
             FirstSubmission::DeterministicRefusal,
         ));
-        execute(node.clone(), tickets).await.unwrap();
+        execute(node.clone(), tickets, None).await.unwrap();
         assert_eq!(node.state.lock().unwrap().heads[&Felt::ONE], 1);
         assert!(node.state.lock().unwrap().effects.is_empty());
         assert!(matches!(*statuses[0].borrow(), ActionStatus::Recorded { succeeded: false, nonce_consumed: true, .. }));
