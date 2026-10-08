@@ -12,7 +12,7 @@ import { GoButton } from "./go-button";
 import { PlayCard, ResumeCard } from "./next-step-card";
 import { type PlayFacts, usePlayFacts } from "./play-facts";
 import { SeasonTop } from "./season-top";
-import { StateCard } from "./state-card";
+import { FailureCard } from "./state-card";
 
 /** Frontier's page (spec 04): the day and its end with Resume or Play, and the season's top rows with the player's. */
 export const FrontierPage = () => {
@@ -59,7 +59,9 @@ const AgePage = ({ mode }: { mode: AgeMode }) => {
 /** The directory's failure in the page's place, or its waiting state, or the page. */
 const AgeFailureOr = ({ facts, children }: { facts: PlayFacts; children: React.ReactNode }) => {
   if (facts.directory.isError)
-    return <StateCard service="directory" error={facts.directory.error} retry={() => void facts.directory.refetch()} />;
+    return (
+      <FailureCard service="directory" error={facts.directory.error} retry={() => void facts.directory.refetch()} />
+    );
   if (facts.directory.isPending) return <Loading />;
   return children;
 };

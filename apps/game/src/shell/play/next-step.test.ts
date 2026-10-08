@@ -71,6 +71,7 @@ describe("the home card's table, first match wins", () => {
     ["signed out: Play free", facts({ signedIn: false, games: [frontier, ended] }), "play"],
     ["no Frontier season: the next Blitz", facts({ blitz: [blitzRow("spectate")] }), "blitz"],
     ["nothing live: Eternum's opening", facts({ games: [game("eternum", { status: "Registration" })] }), "eternum"],
+    ["nothing live or scheduled: the quiet card", facts({}), "quiet"],
   ])("%s", (_case, input, kind) => {
     expect(nextStep(input).kind).toBe(kind);
   });
@@ -86,7 +87,7 @@ describe("the home card's table, first match wins", () => {
 
   it("shows the other three ages beside the card's own", () => {
     expect(ageOfStep({ kind: "enter", row: blitzRow("enter") })).toBe("blitz");
-    expect(ageOfStep({ kind: "eternum", game: undefined })).toBe("eternum");
+    expect(ageOfStep({ kind: "eternum", game: game("eternum", { status: "Registration" }) })).toBe("eternum");
     expect(ageOfStep(undefined)).toBe("frontier");
   });
 });

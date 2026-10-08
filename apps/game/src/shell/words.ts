@@ -1,4 +1,4 @@
-import { RESUME, SEASON, SIGN_IN } from "@/ui/design-system/kit/words";
+import { MAP, REALM, RESUME, SEASON, SIGN_IN } from "@/ui/design-system/kit/words";
 
 /**
  * The app's words outside a match, each spelled once (words.html; the Frontier glossary stays the authority for game
@@ -10,8 +10,6 @@ export const WORDS = {
   learn: "Learn",
   profile: "Profile",
   signIn: SIGN_IN,
-  /** The back arrow is wordless; this names it for assistive technology. */
-  back: "Back",
   dev: "Dev",
   /** Start Frontier on a first visit; entry is free. */
   playFree: "Play free",
@@ -26,7 +24,8 @@ export const WORDS = {
   results: "Results",
   /** A game under way. */
   live: "Live",
-  seasonOver: "Season over",
+  /** The home card when no age has a game live or scheduled; awaiting the owner's wording (a gap in spec 03's table). */
+  noSeason: "No season running",
   /** Before an age's numeral: "Age II". */
   age: "Age",
 } as const;
@@ -77,8 +76,8 @@ export const BLITZ_WORDS = {
 /** The doorway into a match: its four steps and what holds it until the player acts. */
 export const DOORWAY_WORDS = {
   account: "Account",
-  realm: "Realm",
-  map: "Map",
+  realm: REALM,
+  map: MAP,
   play: "Play",
   /** The track, named for assistive technology. */
   entering: "Entering the game",
@@ -93,16 +92,11 @@ export const DOORWAY_WORDS = {
 export const SEASON_WORDS = {
   /** The view switch's name, for assistive technology. */
   views: "Season views",
-  continue: "Continue",
   share: "Share",
-  youPlaced: "You placed",
   /** Between a place and the field: "3rd of 24". */
   of: "of",
   /** Blitz's own unit. */
   vp: "VP",
-  /** The season's two endings (story): the mist lifted, or it grew too strong. */
-  mistLifted: "The mist lifted",
-  mistWon: "The mist grew too strong",
 } as const;
 
 /** Profile and its pages: Account, Devices and Notifications, their rows, sheets and confirms. */
@@ -126,7 +120,6 @@ export const PROFILE_WORDS = {
   unlinkCost: "Your account keeps no wallet until you link one again.",
   /** The safe choice on a confirm: the primary. */
   keep: "Keep",
-  cancel: "Cancel",
   remove: "Remove",
   removing: "Removing…",
   removeAsk: (device: string) => `Remove ${device}?`,
