@@ -9,6 +9,7 @@ import type { BlitzRow } from "../blitz-rows";
 import { useJoinOnReturn, useJoinSlot } from "../blitz-slot";
 import { ClockChip } from "../clock-chip";
 import { useLayout } from "../frame/layout";
+import { useRealmsPlayer } from "../herald";
 import { PageFrame } from "../frame/page-frame";
 import { entryHref } from "../game-links";
 import { Loading } from "../loading";
@@ -105,6 +106,7 @@ export const BlitzLobbyPage = () => {
   const { id } = useParams();
   const { facts, join, refused } = useBlitz();
   const layout = useLayout();
+  const { data: player } = useRealmsPlayer();
   const row = facts.blitz.find((candidate) => lobbyId(candidate) === id);
   if (!row) {
     return (
@@ -114,7 +116,7 @@ export const BlitzLobbyPage = () => {
     );
   }
   const step = lobbyStep(row, facts.blitz, join.realmsId);
-  const seats = seatsOf(row, facts.slots.data?.slots ?? [], join.realmsId);
+  const seats = seatsOf(row, join.realmsId, player);
   const clock = <LobbyClock row={row} step={step} now={facts.now} />;
   const action = <LobbyAction row={row} step={step} join={join} />;
   return (
@@ -128,11 +130,11 @@ export const BlitzLobbyPage = () => {
       {layout === "phone" ? (
         <div className="flex flex-col gap-4">
           {clock}
-          <SeatGrid seats={seats} />
+          <SeatGrid seats={seats} preparing={step.kind === "preparing"} />
         </div>
       ) : (
         <div className="grid grid-cols-[1fr_22rem] items-start gap-8">
-          <SeatGrid seats={seats} />
+          <SeatGrid seats={seats} preparing={step.kind === "preparing"} />
           <div className="flex flex-col gap-4">
             {clock}
             {action}
@@ -183,9 +185,7 @@ const LobbyAction = ({ row, step, join }: { row: BlitzRow; step: LobbyStep; join
     case "joined":
       return null;
     case "preparing":
-      return (
-        <Button role="primary" word={WORDS.enter} loading={`${BLITZ_WORDS.preparing} ${step.ready}/${step.total}`} />
-      );
+      return <Button role="primary" word={WORDS.enter} loading={BLITZ_WORDS.preparing} />;
     case "enter":
       return (
         row.kind === "game" && (

@@ -36,12 +36,19 @@ const slotRow = (value: PlaytestSlot, action: BlitzRow["action"]): BlitzRow => (
   action,
 });
 
-const gameRow = (action: BlitzRow["action"], startsAt: number | null, playerCount = 10): BlitzRow => ({
+const PLAYER = "0x00b7";
+
+const gameRow = (
+  action: BlitzRow["action"],
+  startsAt: number | null,
+  roster?: DirectoryGame["roster"],
+  filled = 24,
+): BlitzRow => ({
   kind: "game",
   key: "game:0xa:7",
-  game: { name: "blitz-1630-1", player_count: playerCount, clock: { start_main_at: 1_000 } } as DirectoryGame,
+  game: { name: "blitz-1630-1", player_count: filled, clock: { start_main_at: 1_000 }, roster } as DirectoryGame,
   startsAt,
-  seats: { filled: 24, total: 24 },
+  seats: { filled, total: 24 },
   action,
 });
 
@@ -58,7 +65,7 @@ describe("a Blitz lobby", () => {
   });
 
   it("prepares until the roster's realms are ready, then Enter; Watch a live game the player is not on", () => {
-    expect(lobbyStep(gameRow("registered", 1_000, 15), [], ME)).toEqual({ kind: "preparing", ready: 15, total: 24 });
+    expect(lobbyStep(gameRow("registered", 1_000), [], ME)).toEqual({ kind: "preparing" });
     expect(lobbyStep(gameRow("enter", 1_000), [], ME)).toEqual({ kind: "enter" });
     expect(lobbyStep(gameRow("spectate", null), [], ME)).toEqual({ kind: "watch" });
   });
@@ -68,15 +75,29 @@ describe("a Blitz lobby", () => {
     expect(lobbyStep(gameRow("spectate", 1_000), [next], ME)).toEqual({ kind: "full", next });
   });
 
-  it("seats the game a slot is filling now, and a launched game's own roster, the player's own ringed", () => {
+  it("seats the game a slot is filling now, the player's own ringed, with no preparation to tell yet", () => {
     const filling = slot(
       Array.from({ length: 26 }, (_, index) => registration(index, index === 25 ? ME : `0x${100 + index}`)),
     );
-    expect(seatsOf(slotRow(filling, "registered"), [], ME)).toEqual([
-      { account: registration(24).account, own: false },
-      { account: registration(25).account, own: true },
+    expect(seatsOf(slotRow(filling, "registered"), ME, PLAYER)).toEqual([
+      { account: registration(24).account, own: false, prepared: undefined },
+      { account: registration(25).account, own: true, prepared: undefined },
     ]);
-    const launched = slot([registration(1, "0x9", 1), registration(2, ME, 1), registration(3, "0xa", 2)]);
-    expect(seatsOf(gameRow("enter", 1_000), [launched], ME).map((seat) => seat.own)).toEqual([false, true]);
+  });
+
+  it("seats a launched game from Herald's roster, each ticked once its player's realm is ready", () => {
+    const roster = [
+      { account: "0xa1", prepared: true },
+      { account: "0xb7", prepared: false },
+    ];
+    expect(seatsOf(gameRow("registered", 1_000, roster, 2), ME, PLAYER)).toEqual([
+      { account: "0xa1", own: false, prepared: true },
+      { account: "0xb7", own: true, prepared: false },
+    ]);
+  });
+
+  it("leaves a launched game's taken seats unnamed and their preparation unknown when Herald serves no roster", () => {
+    const seats = seatsOf(gameRow("registered", 1_000, undefined, 3), ME, PLAYER);
+    expect(seats).toEqual(Array.from({ length: 3 }, () => ({ account: null, own: false, prepared: undefined })));
   });
 });
