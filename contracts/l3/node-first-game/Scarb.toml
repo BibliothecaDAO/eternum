@@ -1,0 +1,14 @@
+[package]
+name = "node_first_game"
+version = "0.1.0"
+cairo-version = "=2.17.0"
+edition = "2024_07"
+
+[dependencies]
+starknet = "=2.17.0"
+world_native = { path = "../world-native" }
+
+[[target.starknet-contract]]
+sierra = true
+casm = true
+build-external-contracts = ["world_native::logic::troops::TroopsLogic"]

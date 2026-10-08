@@ -148,7 +148,7 @@ async function main() {
   const nodePid = Number(required(a["node-pid"], "node-pid"));
   if (!Number.isInteger(workers) || workers < 1 || workers > 32 || !Number.isInteger(nodePid) || nodePid < 1)
     throw new Error("Invalid workers/PID");
-  const arms = (a.arms ?? "X,Y").split(",");
+  const arms = (a.arms ?? fixture.game?.arm ?? "X,Y").split(",");
   if (arms.some((arm) => !["X", "Y"].includes(arm))) throw new Error("Arm X or Y required");
   for (const [index, arm] of arms.entries()) {
     const run = Date.now() + index;
@@ -156,7 +156,8 @@ async function main() {
     let sampler: ReturnType<typeof cpu> | undefined;
     let stream: Awaited<ReturnType<typeof subscribe>> | undefined;
     const header = {
-      tier: 1,
+      tier: fixture.game ? 2 : 1,
+      game: fixture.game,
       arm,
       run,
       writes,
@@ -174,13 +175,20 @@ async function main() {
     try {
       // One real probe before the window warms the new class. Its nonce is consumed and reread before presigning the wave.
       const warm = await presign(fixture, fixture.players[0]!, provider, run - 1, arm === "X" ? 0 : 1, writes, hashes);
-      const response = await fetch(url, {
+      const response = await fetch(fixture.simulationRpc ?? url, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: warm.body,
+        body: fixture.simulationRpc
+          ? JSON.stringify({
+              jsonrpc: "2.0",
+              id: 1,
+              method: "starknet_simulateTransactions",
+              params: ["pre_confirmed", [JSON.parse(warm.body).params[0]], []],
+            })
+          : warm.body,
       });
       if ((await response.json()).error) throw new Error("warmup submit failed");
-      await provider.waitForTransaction(warm.hash);
+      if (!fixture.simulationRpc) await provider.waitForTransaction(warm.hash);
       await new Promise((ok) => setTimeout(ok, Number(a["warm-ms"] ?? 15000)));
       const payloads = await mapWithConcurrency(fixture.players, 32, (p) =>
         presign(fixture, p, provider, run, arm === "X" ? 0 : 1, writes, hashes),
@@ -229,10 +237,22 @@ async function main() {
           metricsBefore.values[name] === undefined ? null : value - metricsBefore.values[name]!,
         ]),
       );
-      const sharedCounter = storageSlot("counters", 1, run);
-      const sharedHead = storageSlot("heads", 1, run);
-      const counter = await provider.getStorageAt(fixture.contract, sharedCounter, "pre_confirmed");
-      const counterValid = BigInt(counter) === BigInt(arm === "X" ? payloads.length : 0);
+      const sharedCounter = fixture.game ? null : storageSlot("counters", 1, run);
+      const sharedHead = fixture.game ? null : storageSlot("heads", 1, run);
+      const counter = fixture.game
+        ? (
+            await provider.callContract(
+              { contractAddress: fixture.contract, entrypoint: "entity_counter", calldata: [fixture.game.id] },
+              "pre_confirmed",
+            )
+          )[0]!
+        : await provider.getStorageAt(fixture.contract, sharedCounter!, "pre_confirmed");
+      const expectedCounter = fixture.game
+        ? fixture.game.initialCounter + (fixture.game.arm === "X" ? payloads.length : 0)
+        : arm === "X"
+          ? payloads.length
+          : 0;
+      const counterValid = BigInt(counter) === BigInt(expectedCounter);
       save(file, {
         ...header,
         status: "finished",

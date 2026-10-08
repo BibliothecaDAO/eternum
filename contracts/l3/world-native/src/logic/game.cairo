@@ -54,10 +54,15 @@ fn emit_game(game_id: u32, game: GameRegistry) {
     );
 }
 pub fn allocate_entity(game_id: u32) -> u32 {
+    if let Some(id) = crate::spike_ids::local_id(game_id) {
+        crate::spike_ids::record(game_id, id);
+        return id;
+    }
     let state = crate::state::write();
     let id = state.games.next_entity.read(game_id);
     assert!(id != 0, "game does not exist");
     state.games.next_entity.write(game_id, id + 1);
+    crate::spike_ids::record(game_id, id);
     id
 }
 

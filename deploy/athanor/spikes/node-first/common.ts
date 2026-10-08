@@ -25,6 +25,10 @@ export interface Fixture {
   contract: string;
   classHash: string;
   players: Player[];
+  entrypoint?: string;
+  playerCalldata?: string[][];
+  simulationRpc?: string;
+  game?: { id: number; arm: "X" | "Y"; kind: string; initialCounter: number };
 }
 export { now } from "./clock";
 export const ms = (n: bigint) => Number(n) / 1e6;
@@ -108,8 +112,14 @@ export async function presign(
     [
       {
         contractAddress: fixture.contract,
-        entrypoint: "probe",
-        calldata: ["1", String(run), String(arm), String(writes), String(hashes)],
+        entrypoint: fixture.entrypoint ?? "probe",
+        calldata: fixture.playerCalldata?.[player.botId] ?? [
+          "1",
+          String(run),
+          String(arm),
+          String(writes),
+          String(hashes),
+        ],
       },
     ],
     details,

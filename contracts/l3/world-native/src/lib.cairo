@@ -48,6 +48,7 @@ pub mod rules;
 pub mod settlement;
 pub mod settlement_grid;
 pub mod spires;
+pub mod spike_ids;
 pub mod stamina;
 pub mod state;
 pub mod structures;

@@ -11,7 +11,7 @@ if (upstream.protocol !== "http:" || upstream.username || upstream.password)
 const port = Number(required(a.port, "port"));
 if (!Number.isInteger(port) || port < 28000) throw new Error("Isolated trial port >=28000 required");
 const actors = new Set(fixture.players.map((p) => normalize(p.address)));
-const selector = hash.getSelectorFromName("probe");
+const selector = hash.getSelectorFromName(fixture.entrypoint ?? "probe");
 const events = required(a.events, "events");
 const pending: object[] = [];
 const flush = () => {
@@ -49,11 +49,11 @@ Bun.serve({
           !Array.isArray(tx.signature) ||
           tx.signature.length !== 3 ||
           !Array.isArray(c) ||
-          c.length !== 9 ||
+          c.length !== (fixture.game ? 10 : 9) ||
           BigInt(c[0]) !== 1n ||
           normalize(c[1]) !== normalize(fixture.contract) ||
           normalize(c[2]) !== normalize(selector) ||
-          BigInt(c[3]) !== 5n
+          BigInt(c[3]) !== (fixture.game ? 6n : 5n)
         )
           return Response.json({
             jsonrpc: "2.0",
@@ -69,6 +69,7 @@ Bun.serve({
           "starknet_getTransactionStatus",
           "starknet_getStorageAt",
           "starknet_blockNumber",
+          "starknet_call",
         ].includes(call.method)
       ) {
         return Response.json({ jsonrpc: "2.0", id: call.id, error: { code: -32601, message: "not public" } });

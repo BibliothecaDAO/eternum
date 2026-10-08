@@ -71,3 +71,37 @@ test("2000 preserialized requests release once on eight warmed senders", async (
     await server.stop(true);
   }
 }, 30000);
+
+test("tier2 signs the real CreateExplorer arguments without a recorded envelope", async () => {
+  const provider = new RpcProvider({ nodeUrl: "http://127.0.0.1:38000" });
+  provider.getNonceForAddress = async () => "0x2";
+  const fixture = {
+    chainId: "0x1",
+    contract: "0x123",
+    accountClassHash: "0x1",
+    classHash: "0x1",
+    guardianPublicKey: "0x1",
+    players: [],
+    entrypoint: "create_explorer",
+    playerCalldata: [["1", "44", "0", "0", "1000000000000", "0"]],
+  };
+  const result = await presign(
+    fixture,
+    { address: "0x456", privateKey: "0x1", publicKey: "0x1", botId: 0 },
+    provider,
+    1,
+    1,
+    32,
+    256,
+  );
+  const transaction = JSON.parse(result.body).params[0];
+  expect(transaction.calldata.length).toBe(10);
+  expect(transaction.calldata.slice(4).map((v: string) => BigInt(v))).toEqual([1n, 44n, 0n, 0n, 1000000000000n, 0n]);
+  expect(
+    ec.starkCurve.verify(
+      new ec.starkCurve.Signature(BigInt(transaction.signature[1]), BigInt(transaction.signature[2])),
+      result.hash,
+      ec.starkCurve.getPublicKey("0x1", true),
+    ),
+  ).toBe(true);
+});
