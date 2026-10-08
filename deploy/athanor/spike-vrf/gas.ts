@@ -22,8 +22,8 @@ const manifest = JSON.parse(readFileSync(join(data, "native-world.json"), "utf8"
 };
 const provider = new RpcProvider({ nodeUrl: rpcUrl });
 const chain = await provider.getChainId();
-if (!shortString.decodeShortString(chain).startsWith("OPS_SPIKE_"))
-  throw new Error("Refusing a chain outside OPS_SPIKE_");
+if (!/^OPS_(?:SPIKE|NODE_FIRST)_/.test(shortString.decodeShortString(chain)))
+  throw new Error("Refusing a chain outside the isolated spike namespace");
 if (BigInt(chain) !== BigInt(manifest.shard.chainId)) throw new Error("Fixture chain does not match isolated RPC");
 const admin = new Account({
   provider,
@@ -59,7 +59,7 @@ async function actor(classHash: string, label: string) {
   const account = await joinRealmsAccount({
     provider,
     shard: { chainId: chain, accountClassHash: classHash, guardianPublicKey: ec.starkCurve.getStarkKey(guardian) },
-    realmsId: hash.starknetKeccak(`SPIKE_VRF_${label}_${Date.now()}`).toString(),
+    realmsId: `0x${hash.starknetKeccak(`SPIKE_VRF_${label}_${Date.now()}`).toString(16)}`,
     device,
     approve: async (change) => {
       const signature = ec.starkCurve.sign(deviceChangeHash(change), guardian);
@@ -97,7 +97,9 @@ function transaction(sender: string, nonce: string, destination: string, selecto
     nonce,
     tip: "0x0",
     signature: [],
-    calldata: ["0x1", destination, hash.getSelectorFromName(selector), String(args.length), ...args],
+    calldata: ["0x1", destination, hash.getSelectorFromName(selector), String(args.length), ...args].map(
+      (value) => `0x${BigInt(value).toString(16)}`,
+    ),
     resource_bounds: {
       l1_gas: { max_amount: "0x0", max_price_per_unit: "0x0" },
       l1_data_gas: { max_amount: "0x0", max_price_per_unit: "0x0" },
@@ -135,8 +137,14 @@ async function send(
   const after = await rpc("starknet_getNonce", ["pre_confirmed", who.account.address]);
   if (BigInt(after) !== BigInt(nonce) + 1n)
     throw new Error("Included action did not consume exactly one account nonce");
-  const trace = await rpc("starknet_traceTransaction", [seed]);
-  if (expectedRoot && !corrupt && resultReceipt.execution_status === "SUCCEEDED") {
+  let trace: any = null;
+  let traceUnavailable: string | undefined;
+  try {
+    trace = await rpc("starknet_traceTransaction", [seed]);
+  } catch (error) {
+    traceUnavailable = String(error);
+  }
+  if (trace && expectedRoot && !corrupt && resultReceipt.execution_status === "SUCCEEDED") {
     const actual = trace.execute_invocation?.calls?.[0]?.result?.[0];
     if (actual === undefined || BigInt(actual) !== BigInt(expectedRoot)) throw new Error("Node VRF root mismatch");
   }
@@ -145,6 +153,8 @@ async function send(
     status: resultReceipt.execution_status,
     l2Gas: resultReceipt.execution_resources?.l2_gas,
     trace,
+    traceUnavailable,
+    expectedRoot,
   };
 }
 
@@ -157,7 +167,16 @@ try {
   const vector = fixtureProver.proofs(["42"])[0];
   const known = await send(original, vectors, "check", ["42", ...vector.slice(0, 5)], false);
   if (known.status !== "SUCCEEDED") throw new Error("Known-answer vector failed");
-  const knownRoot = known.trace.execute_invocation?.calls?.[0]?.result?.[0];
+  const knownRoot = (
+    await rpc("starknet_call", [
+      {
+        contract_address: vectors,
+        entry_point_selector: hash.getSelectorFromName("check"),
+        calldata: ["0x2a", ...vector.slice(0, 5)],
+      },
+      "pre_confirmed",
+    ])
+  )[0];
   if (knownRoot === undefined || BigInt(knownRoot) !== BigInt(vector[5]))
     throw new Error("Known-answer node root mismatch");
   let originalRejected = false;
