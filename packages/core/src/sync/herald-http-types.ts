@@ -162,6 +162,15 @@ export interface HeraldFrontierLeaderboard {
   entries: HeraldFrontierLeaderboardEntry[];
 }
 
+/** Immutable ranks at a seeded day's end; confirmed_block is the last block strictly before that instant. */
+export interface HeraldFrontierDayRanks {
+  game_id: string;
+  day_index: number;
+  ends_at: number;
+  confirmed_block: number;
+  entries: { address: string; structure_id: string; rank: number }[];
+}
+
 export type HeraldGameLeaderboard = HeraldLeaderboard | HeraldFrontierLeaderboard;
 
 /** Herald closes a game stream with this code when the game is finalized; the stream will never serve it again. */
