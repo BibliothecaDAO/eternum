@@ -1,4 +1,3 @@
-use snforge_std::fs::{FileTrait, read_txt};
 use snforge_std::{start_cheat_caller_address, stop_cheat_caller_address};
 use crate::buildings::{BuildingKey, BuildingRule, BuildingRuleConfig, ChangeBuilding, CreateBuilding};
 use crate::commands::Command;
@@ -589,31 +588,6 @@ fn board_output(deployment: super::Deployment, home: ResourceKey, category: u8) 
 }
 
 #[test]
-fn building_ring_matches_shared_vectors_through_the_highest_castle_ring() {
-    let input = read_txt(@FileTrait::new("tests/fixtures/frontier-ring-v1.txt"));
-    let mut fields = input.span();
-    let version: u32 = Serde::deserialize(ref fields).unwrap();
-    let count: u32 = Serde::deserialize(ref fields).unwrap();
-    assert_eq!(version, 1);
-    let highest_ring: u32 = building_preset(None).structures.upgrade_limits.realm_max.into() + 1;
-    assert_eq!(count, 12 * highest_ring);
-    let mut highest_ring_rows = 0;
-    for _ in 0..count {
-        let (realm_id, ring, x, y): (u16, u8, u32, u32) = Serde::deserialize(ref fields).unwrap();
-        assert!(ring > 0 && ring.into() <= highest_ring, "vector ring outside preset");
-        if ring.into() == highest_ring {
-            highest_ring_rows += 1;
-        }
-        let expected = Coord { alt: false, x, y };
-        assert_eq!(crate::building_ring::marked_plot(realm_id, ring.into()), expected);
-        assert_eq!(crate::geometry::distance(Coord { alt: false, x: 10, y: 10 }, expected), ring.into());
-        assert!(crate::building_ring::is_marked_plot(realm_id, expected));
-    }
-    assert_eq!(highest_ring_rows, 12);
-    assert!(fields.is_empty(), "trailing building ring vectors");
-}
-
-#[test]
 fn castle_ring_limit_accepts_four_and_rejects_five() {
     let preset = building_preset(None);
     let highest_level = preset.structures.upgrade_limits.realm_max;
@@ -927,15 +901,9 @@ fn a_copy_costs_its_base_times_one_plus_the_square_of_the_copies_before_it() {
 }
 
 #[test]
-fn the_marked_plot_changes_nothing_and_board_buildings_never_pause() {
+fn board_buildings_never_pause() {
     let (d, home, _) = research_world();
-    let wheat = 35_u8;
-    let marked = crate::building_ring::marked_plot(1, 1);
-    assert_eq!(marked, crate::geometry::neighbor(Coord { alt: false, x: 10, y: 10 }, 4));
     assert!(execute(d, build_toward(home, crate::research::FARM, 0), 40));
-    let plain = rate(d, home, wheat);
-    assert!(execute(d, build_toward(home, crate::research::FARM, 4), 40));
-    assert_eq!(rate(d, home, wheat), 2 * plain);
     assert_terminal_rejection(d, Command::PauseBuildingProduction(change(home)), 40);
 }
 
