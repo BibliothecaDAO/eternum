@@ -464,6 +464,11 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
     this.activeModel.scene.updateWorldMatrix(true, true);
   }
 
+  /**
+   * Part transforms written one by one come from the ragdoll, whose bodies turn about the shortest-arc frame. An arm
+   * bound as a hinge differs from that frame by a constant roll about its own length: it still points where its body
+   * does, and rolls by that constant (the Knight's ragdoll is not tuned for it).
+   */
   private applyPartTransform(partId: CharacterPartId): void {
     if (partId === "pelvis") {
       positionCharacterModelAtPelvis(

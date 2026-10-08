@@ -17,7 +17,7 @@ const hingeLowerDirection = new Vector3();
  * Below this sine of the angle between a limb's two segments (about 3 degrees) the limb counts as straight: the plane
  * through its three joints is then set by rounding error, not by the limb.
  */
-export const STRAIGHT_LIMB_SINE = 0.05;
+const STRAIGHT_LIMB_SINE = 0.05;
 
 export function createSegmentBoneBinding(
   scene: Object3D,
