@@ -8,7 +8,7 @@ import { waitForWheatState } from "./frontier";
 function realm() {
   const store = new NativeFactStore();
   const values: Record<string, Record<string, unknown>> = {
-    SliceRules: { ...preset.rules, game_id: 1, epoch_seconds: 86_400, mode_rules: 0 },
+    SliceRules: { ...preset.rules, game_id: 1, mode_rules: 0 },
     GameRegistry: {
       game_id: 1,
       name: 1n,
@@ -78,4 +78,10 @@ it("a shard that never completes wheat synchronization fails with its state, not
   const { client, snapshot } = realm();
   snapshot(false);
   await expect(waitForWheatState(client, 7, 10)).rejects.toThrow("wheat=unknown");
+});
+
+it("the readiness fixture keeps the registered preset's rule and calendar values", () => {
+  const expected = new NativeFactStore();
+  expected.applyFacts([{ model: "SliceRules", key: "0x1", value: { ...preset.rules, game_id: 1, mode_rules: 0 } }]);
+  expect(realm().store.get("SliceRules", { game_id: 1 })).toEqual(expected.get("SliceRules", { game_id: 1 }));
 });
