@@ -34,3 +34,6 @@ export const suggestedNameOf = (source: string): string | null => {
     .replace(/^[ _-]+|[ _-]+$/g, "");
   return nameRuleViolation(candidate) === null ? candidate : null;
 };
+
+/** The launch slot names also used by lobby chat rooms. */
+export const BLITZ_SLOT_NAME_PATTERN = /^[a-z0-9][a-z0-9-]{0,23}$/;

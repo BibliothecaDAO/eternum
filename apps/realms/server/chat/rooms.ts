@@ -1,3 +1,4 @@
+import { BLITZ_SLOT_NAME_PATTERN } from "@realms-world/identity";
 import { fetchHeraldGameDirectory } from "@bibliothecadao/eternum/game-client";
 import { GLOBAL_CHAT_CHANNEL_ID } from "@bibliothecadao/types";
 
@@ -5,11 +6,13 @@ import { GLOBAL_CHAT_CHANNEL_ID } from "@bibliothecadao/types";
 export type ChatRoomId = typeof GLOBAL_CHAT_CHANNEL_ID | `game:${string}:${number}` | `slot:${string}`;
 
 const GAME_ROOM = /^game:(0x[0-9a-f]{1,64}):([1-9][0-9]{0,9})$/;
-const SLOT_ROOM = /^slot:[a-z0-9][a-z0-9-]{0,23}$/;
 
 export const parseChatRoom = (value: unknown): ChatRoomId | null => {
   if (value === GLOBAL_CHAT_CHANNEL_ID) return GLOBAL_CHAT_CHANNEL_ID;
-  return typeof value === "string" && (GAME_ROOM.test(value) || SLOT_ROOM.test(value)) ? (value as ChatRoomId) : null;
+  return typeof value === "string" &&
+    (GAME_ROOM.test(value) || (value.startsWith("slot:") && BLITZ_SLOT_NAME_PATTERN.test(value.slice(5))))
+    ? (value as ChatRoomId)
+    : null;
 };
 
 const gameRoomOf = (chainId: string, gameId: number): ChatRoomId => `game:${chainId}:${gameId}`;

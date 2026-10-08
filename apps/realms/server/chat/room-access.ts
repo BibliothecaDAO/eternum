@@ -1,9 +1,10 @@
+import { BLITZ_SLOT_NAME_PATTERN } from "@realms-world/identity";
 import { z } from "zod";
 import type { IdentityEnv } from "../env";
 import { isRoomMember, type ChatRoomId } from "./rooms";
 
 const SlotRoster = z.object({
-  name: z.string().regex(/^[a-z0-9][a-z0-9-]{0,23}$/),
+  name: z.string().regex(BLITZ_SLOT_NAME_PATTERN),
   registrations: z.array(
     z.object({
       realmsId: z
