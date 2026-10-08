@@ -1,19 +1,44 @@
 import { resolve } from "node:path";
 import { CallData, RpcProvider, CairoOption, CairoOptionVariant, shortString, hash, type RawArgs } from "starknet";
-import { args, load, save, required, trialDirectory, presign, type Fixture } from "./common";
+import {
+  args,
+  load,
+  save,
+  required,
+  trialDirectory,
+  presign,
+  invokeBounds,
+  storageSlot,
+  now as monotonicNow,
+  ms,
+  type Fixture,
+} from "./common";
 import { createMadaraAccount } from "../../../../config/deployer/clean/shared/madara-account";
 import { declareClass, readClassArtifact, waitForSuccess } from "../../../../config/deployer/clean/shared/declare";
 import { buildNativePreset } from "../../../../config/deployer/clean/config/native-preset";
 import { loadNativePresetConfiguration } from "../../../../config/deployer/clean/registrar/native-preset";
 import { mapWithConcurrency } from "../../harness/account-factory";
+import { provisioningWindow, preconfirmedSuccess, SetupFailure } from "./provision";
 import { canonicalRealmTraits } from "../../../../config/deployer/clean/world/native/realm-catalogue";
 
 async function main() {
-  const a = args(["dir", "manifest", "fixture", "private-rpc", "preset", "amount", "prepare-explore"]);
+  const setupStarted = monotonicNow();
+  const a = args(["dir", "manifest", "fixture", "private-rpc", "preset", "amount", "prepare-explore", "window"]);
   const dir = trialDirectory(required(a.dir, "dir"));
   const base = load<Fixture>(required(a.fixture, "fixture"));
   const manifest = load<{ world: { address: string }; shard: { chainId: string } }>(required(a.manifest, "manifest"));
   const rpc = required(a["private-rpc"], "private-rpc");
+  const window = Number(a.window ?? 16);
+  if (!Number.isInteger(window) || window < 1 || window > 32) throw new SetupFailure("Setup window must be 1..32");
+  if (
+    new Set(base.players.map((player) => player.address.toLowerCase())).size !== base.players.length ||
+    new Set(base.players.map((player) => player.botId)).size !== base.players.length ||
+    base.players.some(
+      (player) => !Number.isInteger(player.botId) || player.botId < 0 || player.botId >= base.players.length,
+    ) ||
+    base.players.length > canonicalRealmTraits.length
+  )
+    throw new SetupFailure("Player/realm fixture has gaps or duplicates");
   const provider = new RpcProvider({ nodeUrl: rpc });
   if (
     BigInt(await provider.getChainId()) !== BigInt(base.chainId) ||
@@ -124,35 +149,7 @@ async function main() {
         seed: "0x1234567",
       },
     });
-    const callData: string[][] = [];
-    for (let offset = 0; offset < base.players.length; offset += 8) {
-      const rows = base.players.slice(offset, offset + 8);
-      const [start] = await provider.callContract({
-        contractAddress: contract,
-        entrypoint: "entity_counter",
-        calldata: [game],
-      });
-      const initial = Number(BigInt(start!));
-      const calls = rows.map((player, i) => {
-        const home = initial + i;
-        callData[player.botId] = [String(game), String(home), "0", "0", amount.toString(), "0"];
-        return {
-          contractAddress: contract,
-          entrypoint: "prepare_home",
-          calldata: codec.compile("prepare_home", {
-            game,
-            actor: player.address,
-            realm_id: offset + i + 1,
-            packed_traits: canonicalRealmTraits[offset + i]!,
-            grants,
-            local_ids: arm === "Y",
-          }),
-        };
-      });
-      const tx = await account.execute(calls, { tip: 0 });
-      await waitForSuccess(provider, tx.transaction_hash);
-      console.log(JSON.stringify({ tier: 2, arm, homes: offset + rows.length, total: base.players.length }));
-    }
+    const callData = await provisionHomes(account, provider, codec, contract, base, game, arm, grants, amount, window);
 
     const [counter] = await provider.callContract({
       contractAddress: contract,
@@ -187,11 +184,120 @@ async function main() {
       tier: 2,
       contract,
       prepared: base.players.length,
+      setupMs: ms(monotonicNow() - setupStarted),
       fixtures: fixtures.map(
         (fixture) => `node-first-${fixture.game!.kind === "Explore" ? "explore" : "game"}-${fixture.game!.arm}.json`,
       ),
     }),
   );
+}
+async function provisionHomes(
+  account: ReturnType<typeof createMadaraAccount>,
+  provider: RpcProvider,
+  codec: CallData,
+  contract: string,
+  base: Fixture,
+  game: number,
+  arm: string,
+  grants: { resource_type: number; amount: bigint }[],
+  amount: bigint,
+  window: number,
+) {
+  const started = monotonicNow();
+  const [first] = await provider.callContract(
+    { contractAddress: contract, entrypoint: "entity_counter", calldata: [game] },
+    "pre_confirmed",
+  );
+  const initial = Number(BigInt(first!));
+  if (initial !== 1) throw new SetupFailure(`Fresh game ${game} already has entities`);
+  const startNonce = BigInt(await provider.getNonceForAddress(account.address, "pre_confirmed"));
+  const batches = Array.from({ length: Math.ceil(base.players.length / 8) }, (_, batch) =>
+    base.players.slice(batch * 8, batch * 8 + 8).map((player, index) => ({
+      contractAddress: contract,
+      entrypoint: "prepare_home",
+      calldata: codec.compile("prepare_home", {
+        game,
+        actor: player.address,
+        realm_id: batch * 8 + index + 1,
+        packed_traits: canonicalRealmTraits[batch * 8 + index]!,
+        grants,
+        local_ids: arm === "Y",
+      }),
+    })),
+  );
+  await provisioningWindow(
+    batches.length,
+    startNonce,
+    window,
+    async (index, nonce) =>
+      (await account.execute(batches[index]!, { nonce, tip: 0, resourceBounds: invokeBounds })).transaction_hash,
+    (tx) => preconfirmedSuccess(provider, tx),
+    (completed) =>
+      console.log(
+        JSON.stringify({
+          tier: 2,
+          arm,
+          homes: Math.min(completed * 8, base.players.length),
+          total: base.players.length,
+          phase: "preconfirmed",
+          window,
+        }),
+      ),
+  );
+  const provisioned = monotonicNow();
+  const finalNonce = BigInt(await provider.getNonceForAddress(account.address, "pre_confirmed"));
+  if (finalNonce !== startNonce + BigInt(batches.length))
+    throw new SetupFailure(`Game ${game}: provisioning nonce gap`);
+  const [last] = await provider.callContract(
+    { contractAddress: contract, entrypoint: "entity_counter", calldata: [game] },
+    "pre_confirmed",
+  );
+  if (BigInt(last!) !== BigInt(initial + base.players.length))
+    throw new SetupFailure(`Game ${game}: final home count gap`);
+  const callData: string[][] = [];
+  await mapWithConcurrency(base.players, 32, async (player, index) => {
+    const home = initial + index;
+    try {
+      const [valid] = await provider.callContract(
+        {
+          contractAddress: contract,
+          entrypoint: "verify_home",
+          calldata: codec.compile("verify_home", {
+            game,
+            actor: player.address,
+            home,
+            realm: index + 1,
+            packed_traits: canonicalRealmTraits[index]!,
+            grants,
+          }),
+        },
+        "pre_confirmed",
+      );
+      const scope = await provider.getStorageAt(
+        contract,
+        storageSlot("spike_id_home", game, player.address),
+        "pre_confirmed",
+      );
+      if (BigInt(valid!) !== 1n || BigInt(scope) !== BigInt(arm === "Y" ? home : 0))
+        throw new SetupFailure("Home mismatch");
+    } catch {
+      throw new SetupFailure(`Game ${game}: home ${home} state, allocator or chain verification failed`);
+    }
+    callData[player.botId] = [String(game), String(home), "0", "0", amount.toString(), "0"];
+  });
+  console.log(
+    JSON.stringify({
+      tier: 2,
+      arm,
+      verifiedHomes: base.players.length,
+      finalNonce: finalNonce.toString(),
+      provisioningMs: ms(provisioned - started),
+      verificationMs: ms(monotonicNow() - provisioned),
+      totalMs: ms(monotonicNow() - started),
+      window,
+    }),
+  );
+  return callData;
 }
 async function prepareExplore(provider: RpcProvider, fixture: Fixture, rpc: string) {
   const preparation = { ...fixture, entrypoint: "prepare_explorer" };
@@ -229,7 +335,7 @@ async function prepareExplore(provider: RpcProvider, fixture: Fixture, rpc: stri
   fixture.game = { ...fixture.game!, kind: "Explore", initialCounter: Number(BigInt(counter!)) };
   console.log(JSON.stringify({ tier: 2, arm: fixture.game.arm, preparedExplorers: fixture.players.length }));
 }
-main().catch(() => {
-  console.error("tier2 setup failed; no credentials emitted");
+main().catch((error: unknown) => {
+  console.error(error instanceof SetupFailure ? error.message : "tier2 setup failed; no credentials emitted");
   process.exitCode = 1;
 });

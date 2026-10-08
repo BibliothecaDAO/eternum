@@ -124,6 +124,46 @@ pub mod Games {
     fn lords_budget(self: @ContractState, game: u32) -> Option<world_native::relics::LordsBudget> {
         world_native::logic::lords_budget::budget(game)
     }
+    // Read-only setup gates keep fixture verification on the native storage layout.
+    #[external(v0)]
+    fn verify_home(self: @ContractState, game: u32, actor: ContractAddress, home: u32, realm: u16, packed_traits: u32, grants: Span<ResourceAmount>) -> bool {
+        let key = ResourceKey { game_id: game, entity_id: home };
+        let record = world_native::logic::structures::record(key);
+        let traits = world_native::realms::decode_traits(packed_traits);
+        let mut packed = 0_u128;
+        for resource in traits.resources { packed = packed * 256 + (*resource).into(); }
+        if record.owner != actor || record.base.category != world_native::taxonomy::REALM_CATEGORY
+            || record.base.level != 0 || record.base.starting_troops_granted
+            || record.metadata.realm_id != realm || record.metadata.order != traits.order
+            || record.metadata.has_wonder != (traits.wonder != 1) || record.resources_packed != packed
+            || world_native::logic::research::require(key).learned != 0
+            || !world_native::logic::troops::home_armies(key).is_empty() {
+            return false;
+        }
+        for grant in grants {
+            let limit = world_native::logic::resources::store_limit(key, *grant.resource_type);
+            let expected = limit.map(|cap| core::cmp::min(cap, *grant.amount)).unwrap_or(*grant.amount);
+            if world_native::logic::resources::balance(key, *grant.resource_type) != expected { return false; }
+        }
+        true
+    }
+    #[external(v0)]
+    fn explore_ready(self: @ContractState, game: u32, actor: ContractAddress, home: u32, explorer: u32, amount: u128, direction: u8) -> bool {
+        let key = world_native::troops::ExplorerKey { game_id: game, explorer_id: explorer };
+        let army = match world_native::logic::troops::explorer(key) { Some(army) => army, None => { return false; } };
+        let home_record = world_native::logic::structures::record(ResourceKey { game_id: game, entity_id: home });
+        let rules = world_native::logic::game::rules(game);
+        let today = world_native::days::day_of(world_native::logic::game::game(game), rules.day_unit_seconds, get_block_timestamp()).index;
+        let spacing = world_native::logic::settlement::rules(game).spacing;
+        let origin = world_native::expeditions::site(spacing, home_record.metadata.realm_id, today, 0);
+        let spawn = world_native::geometry::neighbor(origin, direction);
+        let destination = world_native::geometry::neighbor(spawn, direction);
+        let tile = world_native::logic::map::tile(world_native::geometry::tile_key(game, destination));
+        home_record.owner == actor && army.owner == home && army.coord == spawn
+            && army.troops.category == world_native::troops::TroopType::Knight
+            && army.troops.tier == world_native::troops::TroopTier::T1 && army.troops.count == amount
+            && tile.is_none()
+    }
     #[external(v0)]
     fn entity_counter(self: @ContractState, game: u32) -> u32 { self.data.games.next_entity.read(game) }
 }

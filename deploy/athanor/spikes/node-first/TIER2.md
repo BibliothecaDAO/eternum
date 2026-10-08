@@ -152,3 +152,101 @@ resources, food, progress, slots and allocator count/last-id are actor/home/enti
 actors share a tile/site/home, but this fixture places one actor in each disjoint realm region. A found chest is stored
 under its new site id, not a second per-game budget. No Ruin clearing, LORDS spending/refill or withdrawal occurs in
 this wave.
+
+## Fast setup
+
+The old loop submitted eight homes, ran the SDK's automatic fee simulation, waited for that transaction's confirmed
+block, then read the counter and began the next eight. With 500 batches for both arms, block-close waits and repeated
+simulation dominated preparation. Setup now keeps at most 16 acknowledged transactions in flight (`--window 16`, range
+1..32), signs consecutive explicit nonces from one initial pre-confirmed nonce read, supplies the existing 1.2e9 work
+bound, and replenishes the window on successful pre-confirmed receipts. Eight homes per transaction is unchanged: ops
+measured one such batch at 674,109,760 gas. This removes per-batch fee estimation, nonce reads and counter reads. It
+changes no home recipe, grants, traits, id order or allocator setting. Creation timestamps still follow block time.
+
+One host account remains the sender: the host's owner-only preparation and per-game counter already order these writes.
+Adding senders would require changing that authority boundary and would not remove the shared allocation dependency. The
+first trial should measure the removed waits before adding that mechanism. The target is both 2,000-home arms in a few
+minutes; this is a target, not a claimed box result. Per-arm `provisioningMs`, `verificationMs` and total `setupMs` make
+the next result assessable.
+
+After all receipts, setup verifies the exact nonce advance, each game's counter at 2001, every home owner and canonical
+realm metadata/resources, level/start flags, untouched research and army membership, every grant balance using the
+native castle cap, and the actor's X/Y allocator setting. Two read-only host gates avoid copying Cairo's packed storage
+layout into the driver. A rejection, revert, timeout, missing home or state mismatch exits nonzero and publishes no new
+fixture. In-flight submissions are observed before that failure is returned; it never fills a nonce gap with a changed
+transaction. Only a new Games artifact is required; Troops, Map and Structures are unchanged.
+
+### One setup for CreateExplorer then Explore
+
+YES for the host that has Explore: CreateExplorer leaves its army on the home ring, with the next tile still unrevealed.
+Explore in the spawn direction uses that exact army and the genuine first-discovery path. Convert only an entirely
+successful CreateExplorer wave, regardless of whether it met the latency bar. `game-explore.ts` checks the result's
+chain/contract/game/arm, reads each army id from the chain, and verifies that all armies still match their actor, home,
+size and spawn position, with an untouched destination. The new host uses a read-only check; the earlier Explore host
+uses private signed simulations. Both retain account validation. Private simulations use `SKIP_FEE_CHARGE`, matching the
+trial's `--no-charge-fee`; they consume no nonce or game state.
+
+NO for the original 2d9 CreateExplorer-only host: it has no Explore entrypoint and cannot serve that measurement.
+
+Reset that game's day zero immediately before each measured wave as below. All creations must have stayed on their spawn
+day's map; an expired/moved army or used destination rejects conversion. This is a first-reveal comparison; it cannot
+recycle an already explored fixture for another first-reveal repetition. Each repetition still needs fresh homes, but it
+needs one setup for the pair, not two. Stop/reap the temporary proxy between commands; retain the existing read-only
+node watcher and collector, with no other timed wave or provisioning running.
+
+```sh
+set -euo pipefail
+# Use a fresh REP value/directory for each pair or node-settings candidate.
+REP=r2
+bun deploy/athanor/spikes/node-first/game-setup.ts \
+  --dir "$TRIAL/data" --manifest "$TRIAL/data/native-world.json" \
+  --fixture "$TRIAL/data/node-first-private.json" \
+  --private-rpc "http://127.0.0.1:$BASE/rpc/v0_10_2" \
+  --preset 101 --amount 1000 --window 16
+# Do not use --prepare-explore here: the measured CreateExplorer wave supplies the armies.
+NODE_PID=$(python3 deploy/athanor/spikes/node-first/node-pid.py "$NODE_CONTAINER")
+NODE_IMAGE=$(sudo -n docker inspect --format '{{.Config.Image}}' "$NODE_CONTAINER")
+for ARM in X Y; do
+  CREATE_FIXTURE="$TRIAL/data/node-first-game-$ARM.json"
+  EXPLORE_FIXTURE="$TRIAL/data/node-first-pair-$REP-explore-$ARM.json"
+  for COMMAND in create explore; do
+    if [ "$COMMAND" = create ]; then
+      FIXTURE="$CREATE_FIXTURE"
+    else
+      # The fresh Create wave left day-zero armies; only this unmeasured clock reset runs here.
+      bun deploy/athanor/spikes/node-first/game-start.ts \
+        --dir "$TRIAL/data" --fixture "$CREATE_FIXTURE" \
+        --private-rpc "http://127.0.0.1:$BASE/rpc/v0_10_2"
+      CREATE_RESULT=$(rg --files "$TRIAL/data/pair-$REP-create-$ARM" -g '*.json')
+      bun deploy/athanor/spikes/node-first/game-explore.ts \
+        --fixture "$CREATE_FIXTURE" --result "$CREATE_RESULT" --out "$EXPLORE_FIXTURE" \
+        --private-rpc "http://127.0.0.1:$BASE/rpc/v0_10_2"
+      FIXTURE="$EXPLORE_FIXTURE"
+    fi
+    bun deploy/athanor/spikes/node-first/game-start.ts \
+      --dir "$TRIAL/data" --fixture "$FIXTURE" \
+      --private-rpc "http://127.0.0.1:$BASE/rpc/v0_10_2"
+    bun deploy/athanor/spikes/node-first/proxy.ts \
+      --fixture "$FIXTURE" --upstream "http://127.0.0.1:$BASE" --port "$((BASE+8))" \
+      --events "$TRIAL/data/pair-$REP-$COMMAND-$ARM-proxy.jsonl" \
+      > "$TRIAL/data/pair-$REP-$COMMAND-$ARM-proxy.log" 2>&1 &
+    TIER2_PROXY_PID=$!
+    trap 'kill "$TIER2_PROXY_PID" 2>/dev/null || true' EXIT
+    sleep 1
+    bun deploy/athanor/spikes/node-first/run.ts \
+      --fixture "$FIXTURE" --rpc-url "http://127.0.0.1:$((BASE+8))/rpc/v0_10_2" \
+      --ws-url "ws://127.0.0.1:$BASE/rpc/v0_10_2" \
+      --out "$TRIAL/data/pair-$REP-$COMMAND-$ARM" --arms "$ARM" --workers 8 \
+      --timeout-ms 600000 --node-pid "$NODE_PID" --node-image "$NODE_IMAGE" \
+      --node-log "$TRIAL/data/node-first-node.log" \
+      --node-metrics "$TRIAL/data/metrics/metrics.jsonl"
+    kill "$TIER2_PROXY_PID"
+    wait "$TIER2_PROXY_PID"
+    trap - EXIT
+  done
+done
+```
+
+For an already completed CreateExplorer wave on the earlier Explore-capable host, the same conversion command applies
+with its actual fixture/result paths; no new setup or army provisioning is required. The Create-only host fails loudly.
+A 2,000-action result with failed/reverted/missing creations also fails conversion rather than measuring a smaller wave.

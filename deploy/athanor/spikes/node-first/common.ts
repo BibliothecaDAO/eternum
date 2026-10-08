@@ -75,7 +75,7 @@ export function percentile(values: number[], p: number) {
   const sorted = [...values].sort((a, b) => a - b);
   return sorted.length ? sorted[Math.max(0, Math.ceil(sorted.length * p) - 1)]! : null;
 }
-const bounds = {
+export const invokeBounds = {
   l1_gas: { max_amount: 0n, max_price_per_unit: 0n },
   l2_gas: { max_amount: 1_200_000_000n, max_price_per_unit: 0n },
   l1_data_gas: { max_amount: 0n, max_price_per_unit: 0n },
@@ -101,7 +101,7 @@ export async function presign(
     chainId: fixture.chainId as InvocationsSignerDetails["chainId"],
     cairoVersion: "1",
     version: "0x3",
-    resourceBounds: bounds,
+    resourceBounds: invokeBounds,
     tip: 0n,
     paymasterData: [],
     accountDeploymentData: [],
@@ -142,7 +142,7 @@ export async function presign(
     calldata: calldata.map(felt),
     signature: (invocation.signature as string[]).map(felt),
     resource_bounds: Object.fromEntries(
-      Object.entries(bounds).map(([k, v]) => [
+      Object.entries(invokeBounds).map(([k, v]) => [
         k,
         { max_amount: felt(v.max_amount), max_price_per_unit: felt(v.max_price_per_unit) },
       ]),
