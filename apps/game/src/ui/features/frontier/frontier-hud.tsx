@@ -10,7 +10,6 @@ import { useNavigate } from "react-router-dom";
 import { RealmVisitFoot, useVisitedRealm } from "./board/realm-visit";
 import { FrontierSeason, SeasonOver, useSeasonRank } from "./board/season-board";
 import { useSpectatorWatchesTheLeader } from "./board/spectator-watch";
-import { ChestMomentView } from "./chest/chest-moment-view";
 import { useExpeditionRules, useFrontierRealm } from "./frontier-home";
 import { FrontierSelectionSheet } from "./frontier-selection-sheet";
 import { useRealmStores } from "./realm-stores";
@@ -98,8 +97,6 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
           </>
         }
       >
-        {/* A chest's opening owns the screen while it plays, over the world where the chest opens. */}
-        <ChestMomentView />
         <FrontierSurfaces realm={realm} />
         <FrontierSelectionSheet realm={realm} />
         {surface === "menu" && <HudMenu onOpen={setSurface} onClose={close} />}

@@ -251,13 +251,6 @@ import { runWorldmapArmySelectionRecovery } from "./worldmap-army-selection-reco
 import { ARMY_SELECT_REQUEST_EVENT, readArmySelectRequest } from "./worldmap-army-select-request";
 import { ORDER_REQUEST_EVENT, pinsOrder, readOrderRequest } from "./worldmap-order-request";
 import { onChestOpenRequest } from "./worldmap-chest-open-request";
-import {
-  beginChestOpening,
-  cancelChestOpening,
-  confirmChestOpening,
-  type ChestOpening,
-  readChestBeat,
-} from "@/ui/features/frontier/chest/chest-moment";
 import { shouldQueueArmySelectionRecovery } from "./worldmap-army-tab-selection";
 import { shouldPlayArmyMovementFx } from "./worldmap-movement-fx-policy";
 import {
@@ -3719,36 +3712,13 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   /**
-   * The one chest opener, for a tap here or the HUD's request: in a game of expedition chests (it has ChestRules) the
-   * chest's moment holds on the tile while the command goes out, and ends if it is refused; a relic crate only sends it.
-   * The result comes back as its story.
+   * The one chest opener, for a tap here or the HUD's request: a relic crate's command goes out, and its result comes
+   * back as its story. Frontier has no chest on a tile: a ruin's chest opens at its clear.
    */
   private async openChest(explorerId: ID, hex: HexPosition): Promise<void> {
     const account = useAccountStore.getState().account;
     if (!account) return;
-    const expedition = this.game.store.get("ChestRules", { game_id: configManager.getActiveGameId() }) !== undefined;
-    const opening = {
-      gameId: configManager.getActiveGameId(),
-      explorerId,
-      hex: { ...hex, alt: useUIStore.getState().mapLayer },
-    };
-    if (expedition) this.holdExpeditionChest(opening);
-    const sent = await openRelicCrate({ systemCalls: this.game.systemCalls, account, explorerId, hex });
-    if (expedition) {
-      if (sent) confirmChestOpening(opening);
-      else cancelChestOpening(opening);
-    }
-  }
-
-  /** The chest's hold: the moment starts from the chest on screen and the world's chest plays its beats. */
-  private holdExpeditionChest(opening: ChestOpening): void {
-    const { hex } = opening;
-    const tile = { col: hex.col - FELT_CENTER(), row: hex.row - FELT_CENTER() };
-    beginChestOpening(projectHexToScreen(tile, this.camera), {
-      opening,
-      focus: () => this.moveCameraToColRow(tile.col, tile.row, 0.4),
-    });
-    this.chestManager.holdChest(hex, readChestBeat);
+    await openRelicCrate({ systemCalls: this.game.systemCalls, account, explorerId, hex });
   }
 
   private keepMovementDestinationSelected(targetHex: HexPosition): void {

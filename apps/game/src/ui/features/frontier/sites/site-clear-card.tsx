@@ -3,6 +3,7 @@ import { formatExact } from "@/ui/design-system/kit/amount";
 import { Chip } from "@/ui/design-system/kit/chip";
 import { type IconCode, KitIcon } from "@/ui/design-system/kit/kit-icon";
 import { StoreBar } from "@/ui/design-system/kit/store-bar";
+import type { Tier } from "@/ui/design-system/kit/tier-chip";
 import { CAMP, RIFT, RUIN, STRAGGLERS, TROOPS, XP } from "@/ui/design-system/kit/words";
 import { EASE } from "@/ui/motion/motion-scale";
 import { useReducedMotion } from "@/ui/motion/motion-settings";
@@ -12,6 +13,7 @@ import { ResourcesIds } from "@bibliothecadao/types";
 import { AnimatePresence, motion } from "framer-motion";
 
 import { siteClearXp } from "./site-card-plan";
+import { RuinChestMoment } from "../chest/ruin-chest-moment";
 import { closeSiteClearCard, useSiteClearCard } from "./site-clear-moment";
 import type { SiteClear } from "./site-outcome";
 
@@ -22,31 +24,61 @@ const SITES: Record<SiteClear["kind"], { word: string; icon: IconCode }> = {
   Stragglers: { word: STRAGGLERS, icon: "Tr" },
 };
 
-const PAY_ICONS: Partial<Record<ResourcesIds, IconCode>> = { [ResourcesIds.Labor]: "La", [ResourcesIds.Essence]: "Es" };
+const PAY_ICONS: Partial<Record<ResourcesIds, IconCode>> = {
+  [ResourcesIds.Labor]: "La",
+  [ResourcesIds.Essence]: "Es",
+  [ResourcesIds.Lords]: "Lo",
+};
 
-/** The site-cleared card over the game's facts: the clear the scene played, and the XP it paid. */
+/** A payout's resource as the card draws it; a clear paying anything else is loud. */
+const payIcon = (resourceId: ResourcesIds): IconCode => {
+  const icon = PAY_ICONS[resourceId];
+  if (!icon) throw new Error(`A site clear paid resource ${resourceId}`);
+  return icon;
+};
+
+/**
+ * The clear's result over the game's facts: a ruin's chest opens with its moment (its tier and the LORDS it paid, as
+ * stored when the ruin was found); every other clear slides up its card. Each shows the XP the site paid.
+ */
 export const SiteClearCardView = () => {
   const card = useSiteClearCard();
   const { setup } = useGame();
+  const chest = card?.clear.kind === "Ruin" ? ruinChest(setup.store, card.clear.siteId) : undefined;
+  const xp = card ? clearedSiteXp(setup.store, card.clear.siteId) : undefined;
   return (
     <AnimatePresence>
-      {card && (
-        <SiteClearCard
-          key={card.shownAt}
-          site={card.clear.kind}
-          paid={
-            card.clear.reward && {
-              icon: PAY_ICONS[card.clear.reward.resourceId] ?? "Es",
-              amount: card.clear.reward.amount,
+      {card &&
+        (chest ? (
+          <RuinChestMoment
+            key={card.shownAt}
+            tier={chest.tier}
+            lords={chest.lords}
+            xp={xp}
+            troopsLost={card.troopsLost}
+            onClose={closeSiteClearCard}
+          />
+        ) : (
+          <SiteClearCard
+            key={card.shownAt}
+            site={card.clear.kind}
+            paid={
+              card.clear.reward && { icon: payIcon(card.clear.reward.resourceId), amount: card.clear.reward.amount }
             }
-          }
-          xp={clearedSiteXp(setup.store, card.clear.siteId)}
-          troopsLost={card.troopsLost}
-          onClose={closeSiteClearCard}
-        />
-      )}
+            xp={xp}
+            troopsLost={card.troopsLost}
+            onClose={closeSiteClearCard}
+          />
+        ))}
     </AnimatePresence>
   );
+};
+
+/** A cleared ruin's chest as it was stored when the ruin was found; undefined until its row is known. */
+const ruinChest = (store: NativeFactStore, siteId: number): { tier: Tier; lords: number } | undefined => {
+  const chest = store.get("SiteChest", { game_id: configManager.getActiveGameId(), entity_id: siteId });
+  // The contract's tiers run 0 (common) to 4 (legendary); the kit counts from 1.
+  return chest && { tier: (chest.tier + 1) as Tier, lords: Number(chest.amount) };
 };
 
 /** The XP the cleared site paid, from the guard it started with; unknown once its row has left the store. */
