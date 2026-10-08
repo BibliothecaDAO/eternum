@@ -1,16 +1,12 @@
 // @vitest-environment node
-import { GLTFLoader, type GLTF } from "three/addons/loaders/GLTFLoader.js";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { loadT1KnightDefaultCharacterAssetTemplates } from "./t1-knight-default-character-assets";
 import { ProceduralCharacterAvatar } from "./procedural-character-avatar";
-import { ProceduralCharacterLibrary } from "./procedural-character-assets";
 import { createDefaultProceduralCharacterConfig } from "./procedural-character-config";
 import { resolveProceduralCharacterPose, type Vector3Tuple } from "./procedural-character-pose";
 import { applyCharacterRigLimbLengths, resolveCharacterRig } from "./procedural-character-rig";
-import { parseTextureFreeGlb } from "../../../test-support/parse-texture-free-glb";
+import { withKnightLibrary } from "../../../test-support/with-knight-library";
 
-const PREFIX = "/models/characters/t1-knight-default/";
 /** A centimetre or two at the Knight's 0.6 m height. */
 const JOINT_TOLERANCE = 0.02;
 const SOLE_TOLERANCE = 0.005;
@@ -18,25 +14,6 @@ const SIDES = ["Left", "Right"] as const;
 
 function distance(a: Vector3Tuple, b: Vector3Tuple): number {
   return Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
-}
-
-async function withKnightLibrary(run: (library: ProceduralCharacterLibrary) => void): Promise<void> {
-  vi.stubGlobal("ProgressEvent", class extends Event {});
-  const gltfs = new Map<string, GLTF>();
-  for (const relativePath of ["near/skin.glb", "mid/skin.glb"]) {
-    gltfs.set(PREFIX + relativePath, await parseTextureFreeGlb(PREFIX + relativePath));
-  }
-  vi.spyOn(GLTFLoader.prototype, "loadAsync").mockImplementation(async (url) => {
-    const gltf = gltfs.get(String(url));
-    if (!gltf) throw new Error(`Unexpected Knight asset: ${String(url)}`);
-    return gltf;
-  });
-  const library = new ProceduralCharacterLibrary(await loadT1KnightDefaultCharacterAssetTemplates());
-  try {
-    run(library);
-  } finally {
-    library.dispose();
-  }
 }
 
 afterEach(() => {

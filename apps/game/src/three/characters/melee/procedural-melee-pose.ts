@@ -1,9 +1,11 @@
 import type { ProceduralMeleeConfig } from "./procedural-melee-config";
 import { resolveProceduralMeleeAttackSignals, type ProceduralMeleeAttackState } from "./procedural-melee-attack-cycle";
-import type {
-  ProceduralMeleeAttackStyle,
-  ProceduralMeleeOffhandId,
-  ProceduralMeleeWeaponId,
+import {
+  resolveProceduralMeleeOffhand,
+  resolveProceduralMeleeOffhandCarry,
+  type ProceduralMeleeAttackStyle,
+  type ProceduralMeleeOffhandCarry,
+  type ProceduralMeleeWeaponId,
 } from "./procedural-melee-weapon-catalog";
 
 export interface ProceduralMeleeUpperBodyPose {
@@ -16,7 +18,8 @@ export interface ProceduralMeleeUpperBodyPose {
   followThrough: number;
   kind: "melee";
   mounted: boolean;
-  offhandId: ProceduralMeleeOffhandId;
+  /** How the offhand is carried, resolved once from the catalog. */
+  offhandCarry: ProceduralMeleeOffhandCarry;
   reach: number;
   stepThrough: number;
   strikeProgress: number;
@@ -44,7 +47,7 @@ export function resolveProceduralMeleeUpperBodyPose(input: {
     attackStyle: input.attackStyle,
     kind: "melee",
     mounted: input.mounted,
-    offhandId: input.config.offhandId,
+    offhandCarry: resolveProceduralMeleeOffhandCarry(resolveProceduralMeleeOffhand(input.config.offhandId)),
     reach: input.config.reach,
     stepThrough: input.config.stepThrough,
     torsoWeight: input.config.torsoWeight,

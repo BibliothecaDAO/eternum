@@ -7,7 +7,7 @@ import { resolveProceduralCharacterHandPose } from "./procedural-character-hand-
 
 describe("procedural character hand pose", () => {
   it("closes the weapon and shield hands for melee loadouts", () => {
-    const pose = resolveProceduralCharacterHandPose(createMeleeAction("round-shield"));
+    const pose = resolveProceduralCharacterHandPose(createMeleeAction("gripped"));
 
     expect(pose.right.profile).toBe("power");
     expect(pose.left.profile).toBe("shield");
@@ -42,6 +42,6 @@ describe("procedural character hand pose", () => {
   });
 });
 
-function createMeleeAction(offhandId: "none" | "round-shield"): ProceduralMeleeUpperBodyPose {
-  return { kind: "melee", offhandId } as ProceduralMeleeUpperBodyPose;
+function createMeleeAction(offhandCarry: "none" | "gripped"): ProceduralMeleeUpperBodyPose {
+  return { kind: "melee", offhandCarry } as ProceduralMeleeUpperBodyPose;
 }

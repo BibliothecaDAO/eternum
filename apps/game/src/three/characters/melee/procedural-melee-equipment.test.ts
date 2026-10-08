@@ -1,11 +1,12 @@
-import { CylinderGeometry, Group, Mesh } from "three";
+import { CylinderGeometry, Group, Mesh, Vector3 } from "three";
 import { describe, expect, it } from "vitest";
 
 import { createDefaultProceduralCharacterConfig } from "../procedural-character-config";
 import type { ProceduralCharacterSocketReader } from "../procedural-character-sockets";
 import { createDefaultProceduralMeleeConfig } from "./procedural-melee-config";
 import type { ProceduralMeleeOffhandId } from "./procedural-melee-weapon-catalog";
-import { ProceduralMeleeEquipment } from "./procedural-melee-equipment";
+import { ProceduralMeleeEquipment, resolveProceduralMeleeWeaponDirection } from "./procedural-melee-equipment";
+import { resolveProceduralMeleeUpperBodyPose } from "./procedural-melee-pose";
 import type { ProceduralMeleeWeaponLibrary } from "./procedural-melee-weapon-library";
 
 const SOCKETS: ProceduralCharacterSocketReader = {
@@ -68,5 +69,31 @@ describe("procedural melee socket placement", () => {
     const config = { ...createDefaultProceduralMeleeConfig("knight"), offhandId: "t1-knight-default-shield" as const };
 
     expect(() => equipment.update("knight", config, createDefaultProceduralCharacterConfig())).toThrow("forearmLeft");
+  });
+});
+
+describe("intended weapon direction", () => {
+  const resolveAt = (phase: "idle" | "windup" | "contact", phaseElapsedSeconds: number) =>
+    resolveProceduralMeleeWeaponDirection(
+      resolveProceduralMeleeUpperBodyPose({
+        aimPitchRadians: 0,
+        aimYawRadians: 0,
+        attackStyle: "slash",
+        config: createDefaultProceduralMeleeConfig(),
+        mounted: false,
+        state: { attackGeneration: 1, contactCount: 0, phase, phaseElapsedSeconds },
+      }),
+      new Vector3(),
+    );
+
+  it("carries the blade down and forward, raises it for the windup and brings it forward for the blow", () => {
+    const carry = resolveProceduralMeleeWeaponDirection(undefined, new Vector3());
+    const windup = resolveAt("windup", createDefaultProceduralMeleeConfig().windupSeconds);
+    const contact = resolveAt("contact", createDefaultProceduralMeleeConfig().contactSeconds);
+
+    expect(carry.y).toBeLessThan(-0.9);
+    expect(carry.length()).toBeCloseTo(1, 6);
+    expect(windup.y).toBeGreaterThan(0.4);
+    expect(contact.z).toBeGreaterThan(0.5);
   });
 });

@@ -30,7 +30,7 @@ function createMeleeContactPose(): ProceduralMeleeUpperBodyPose {
     followThrough: 0,
     kind: "melee",
     mounted: false,
-    offhandId: "round-shield",
+    offhandCarry: "gripped",
     reach: 1.45,
     stepThrough: 0.22,
     strikeProgress: 1,

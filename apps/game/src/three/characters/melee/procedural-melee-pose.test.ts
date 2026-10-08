@@ -10,6 +10,7 @@ import { resolveCharacterRig } from "../procedural-character-rig";
 import type { ProceduralMeleeAttackState } from "./procedural-melee-attack-cycle";
 import { createDefaultProceduralMeleeConfig } from "./procedural-melee-config";
 import { resolveProceduralMeleeUpperBodyPose } from "./procedural-melee-pose";
+import type { ProceduralMeleeOffhandId } from "./procedural-melee-weapon-catalog";
 
 describe("procedural melee pose", () => {
   it("moves the weapon hand through a readable slash arc while keeping the pose finite", () => {
@@ -88,6 +89,44 @@ describe("procedural melee pose", () => {
     expect(
       horizontalDistance(resolveSegmentEndpoint(windup, "forearmRight"), new Vector3(...windup.parts.head.position)),
     ).toBeGreaterThan(0.24);
+  });
+
+  it("resolves how the offhand is carried once, from the catalog", () => {
+    const carryOf = (offhandId: ProceduralMeleeOffhandId) =>
+      resolveProceduralMeleeUpperBodyPose({
+        aimPitchRadians: 0,
+        aimYawRadians: 0,
+        attackStyle: "slash",
+        config: { ...createDefaultProceduralMeleeConfig(), offhandId },
+        mounted: false,
+        state: { attackGeneration: 0, contactCount: 0, phase: "idle", phaseElapsedSeconds: 0 },
+      }).offhandCarry;
+
+    expect(carryOf("none")).toBe("none");
+    expect(carryOf("round-shield")).toBe("gripped");
+    expect(carryOf("t1-knight-default-shield")).toBe("strapped");
+  });
+
+  it("holds the left wrist across the front of the body for a strapped shield, and out to the side for a gripped one", () => {
+    const characterConfig = createDefaultProceduralCharacterConfig();
+    const rig = resolveCharacterRig(characterConfig);
+    const wristOffsetFromChest = (offhandId: ProceduralMeleeOffhandId) => {
+      const action = resolveProceduralMeleeUpperBodyPose({
+        aimPitchRadians: 0,
+        aimYawRadians: 0,
+        attackStyle: "slash",
+        config: { ...createDefaultProceduralMeleeConfig(), offhandId },
+        mounted: false,
+        state: { attackGeneration: 0, contactCount: 0, phase: "idle", phaseElapsedSeconds: 0 },
+      });
+      const pose = resolveProceduralCharacterPose(rig, characterConfig, 0, undefined, undefined, action);
+      const part = pose.parts.forearmLeft;
+      const wrist = new Vector3(...part.position).multiplyScalar(2).sub(new Vector3(...part.jointAnchor));
+      return wrist.sub(new Vector3(...pose.parts.chest.position)).divideScalar(rig.morphology.scale);
+    };
+
+    expect(wristOffsetFromChest("round-shield").x).toBeGreaterThan(0.4);
+    expect(Math.abs(wristOffsetFromChest("t1-knight-default-shield").x)).toBeLessThan(0.1);
   });
 });
 

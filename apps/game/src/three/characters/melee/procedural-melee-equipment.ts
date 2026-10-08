@@ -230,22 +230,7 @@ export class ProceduralMeleeEquipment {
   }
 
   private orientLoadout(pose?: ProceduralMeleeUpperBodyPose): void {
-    const windup = pose?.attackStyle === "slash" ? SLASH_WINDUP_DIRECTION : OVERHEAD_WINDUP_DIRECTION;
-    const contact =
-      pose?.attackStyle === "slash"
-        ? SLASH_CONTACT_DIRECTION
-        : pose?.mounted
-          ? MOUNTED_CONTACT_DIRECTION
-          : GROUND_CONTACT_DIRECTION;
-    const follow = pose?.attackStyle === "slash" ? SLASH_FOLLOW_DIRECTION : HEAVY_FOLLOW_DIRECTION;
-    this.scratchWeaponDirection.copy(CARRY_DIRECTION);
-    if (pose) {
-      this.scratchWeaponDirection.lerp(windup, pose.windupProgress);
-      this.scratchWeaponDirection.lerp(contact, pose.strikeProgress);
-      this.scratchWeaponDirection.lerp(follow, pose.followThrough);
-      this.scratchWeaponDirection.applyAxisAngle(LOCAL_Y_AXIS, pose.aimYawRadians);
-    }
-    this.scratchWeaponDirection.normalize();
+    resolveProceduralMeleeWeaponDirection(pose, this.scratchWeaponDirection);
     // Gear fitted to a rig is oriented by its socket alone.
     if (!resolveProceduralMeleeWeapon(this.weaponId).fittedRigAdapterId) {
       this.weapon.quaternion.setFromUnitVectors(LOCAL_Y_AXIS, this.scratchWeaponDirection);
@@ -267,6 +252,29 @@ export class ProceduralMeleeEquipment {
     target.position.copy(this.scratchWorldPosition);
     target.quaternion.copy(this.scratchWorldQuaternion).premultiply(this.scratchInverseRootQuaternion).normalize();
   }
+}
+
+/** The direction, in the actor's frame, the controller intends the blade to point in the given pose. */
+export function resolveProceduralMeleeWeaponDirection(
+  pose: ProceduralMeleeUpperBodyPose | undefined,
+  out: Vector3,
+): Vector3 {
+  const windup = pose?.attackStyle === "slash" ? SLASH_WINDUP_DIRECTION : OVERHEAD_WINDUP_DIRECTION;
+  const contact =
+    pose?.attackStyle === "slash"
+      ? SLASH_CONTACT_DIRECTION
+      : pose?.mounted
+        ? MOUNTED_CONTACT_DIRECTION
+        : GROUND_CONTACT_DIRECTION;
+  const follow = pose?.attackStyle === "slash" ? SLASH_FOLLOW_DIRECTION : HEAVY_FOLLOW_DIRECTION;
+  out.copy(CARRY_DIRECTION);
+  if (pose) {
+    out.lerp(windup, pose.windupProgress);
+    out.lerp(contact, pose.strikeProgress);
+    out.lerp(follow, pose.followThrough);
+    out.applyAxisAngle(LOCAL_Y_AXIS, pose.aimYawRadians);
+  }
+  return out.normalize();
 }
 
 interface MeleeEquipmentResources {

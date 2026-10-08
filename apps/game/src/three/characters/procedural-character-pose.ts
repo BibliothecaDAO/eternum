@@ -448,37 +448,18 @@ function resolveMeleeArms(
     .lerp(weaponTargets.windup, action.windupProgress * action.actionWeight)
     .lerp(weaponTargets.contact, action.strikeProgress * action.actionWeight)
     .lerp(weaponTargets.follow, action.followThrough * action.actionWeight);
-  const shieldEngagement = Math.max(action.strikeProgress, action.contactProgress, action.followThrough * 0.72);
-  const shieldLateral = (action.mounted ? 0.64 : 0.52) + shieldEngagement * (action.mounted ? 0.14 : 0.16);
-  const shieldGuard = torso.chest
-    .clone()
-    .addScaledVector(forward, (action.mounted ? 0.31 : 0.25) * scale)
-    .addScaledVector(up, (0.08 + shieldEngagement * 0.06) * scale)
-    .addScaledVector(lateralLeft, shieldLateral * scale);
-  const emptyHandGuard = torso.chest
-    .clone()
-    .addScaledVector(forward, 0.18 * scale)
-    .addScaledVector(up, -0.18 * scale)
-    .addScaledVector(lateralLeft, 0.26 * scale);
-  const offhandTarget = action.offhandId === "none" ? emptyHandGuard : shieldGuard;
-  const offhandWeight = action.offhandId === "none" ? action.actionWeight * 0.92 : Math.max(0.88, action.actionWeight);
-  const leftTarget = baseLeftArm.wrist.clone().lerp(offhandTarget, offhandWeight);
+  const offhand = resolveMeleeOffhandGuard(torso, baseLeftArm, { forward, lateralLeft, up }, scale, action);
   const rightPole = torso.rightShoulder
     .clone()
     .addScaledVector(lateralLeft, -0.52 * scale)
     .addScaledVector(up, 0.12 * scale)
     .addScaledVector(forward, -0.24 * scale);
-  const leftPole = torso.leftShoulder
-    .clone()
-    .addScaledVector(lateralLeft, 0.48 * scale)
-    .addScaledVector(up, -0.16 * scale)
-    .addScaledVector(forward, 0.08 * scale);
 
   return {
     leftArm: solveTwoBoneArm(
       torso.leftShoulder,
-      leftTarget,
-      leftPole,
+      offhand.target,
+      offhand.pole,
       rig.morphology.upperArmLength,
       rig.morphology.forearmLength,
     ),
@@ -490,6 +471,90 @@ function resolveMeleeArms(
       rig.morphology.forearmLength,
     ),
   };
+}
+
+interface MeleeFrame {
+  forward: Vector3;
+  lateralLeft: Vector3;
+  up: Vector3;
+}
+
+interface MeleeOffhandGuard {
+  /** Where the elbow bends towards. */
+  pole: Vector3;
+  target: Vector3;
+}
+
+/** Where the left wrist goes, and which way the left elbow points, for each way the offhand is carried. */
+function resolveMeleeOffhandGuard(
+  torso: CharacterTorsoJoints,
+  baseLeftArm: CharacterArmJoints,
+  frame: MeleeFrame,
+  scale: number,
+  action: ProceduralMeleeUpperBodyPose,
+): MeleeOffhandGuard {
+  if (action.offhandCarry === "strapped") return resolveStrappedOffhandGuard(torso, baseLeftArm, frame, scale, action);
+  const { forward, lateralLeft, up } = frame;
+  const shieldEngagement = resolveShieldEngagement(action);
+  const shieldLateral = (action.mounted ? 0.64 : 0.52) + shieldEngagement * (action.mounted ? 0.14 : 0.16);
+  const shieldGuard = torso.chest
+    .clone()
+    .addScaledVector(forward, (action.mounted ? 0.31 : 0.25) * scale)
+    .addScaledVector(up, (0.08 + shieldEngagement * 0.06) * scale)
+    .addScaledVector(lateralLeft, shieldLateral * scale);
+  const emptyHandGuard = torso.chest
+    .clone()
+    .addScaledVector(forward, 0.18 * scale)
+    .addScaledVector(up, -0.18 * scale)
+    .addScaledVector(lateralLeft, 0.26 * scale);
+  const offhandTarget = action.offhandCarry === "none" ? emptyHandGuard : shieldGuard;
+  const offhandWeight =
+    action.offhandCarry === "none" ? action.actionWeight * 0.92 : Math.max(0.88, action.actionWeight);
+  const pole = torso.leftShoulder
+    .clone()
+    .addScaledVector(lateralLeft, 0.48 * scale)
+    .addScaledVector(up, -0.16 * scale)
+    .addScaledVector(forward, 0.08 * scale);
+  return { pole, target: baseLeftArm.wrist.clone().lerp(offhandTarget, offhandWeight) };
+}
+
+/** How far a strike has brought the shield into play: it comes across or tucks in as the blow lands. */
+function resolveShieldEngagement(action: ProceduralMeleeUpperBodyPose): number {
+  return Math.max(action.strikeProgress, action.contactProgress, action.followThrough * 0.72);
+}
+
+/**
+ * A shield strapped along the forearm needs the forearm across the front of the body: the wrist in front of the
+ * breastbone, the elbow low and a little forward of the ribs, so the shield faces forward. Offsets are in nominal-figure
+ * metres (scaled by `scale`) from the chest for the wrist and from the left shoulder for the elbow's pole; the wrist
+ * offsets in `engaged` are added as a strike brings the shield into play.
+ */
+const STRAPPED_OFFHAND_GUARD = {
+  engaged: { forward: 0.05, left: 0, up: 0.06 },
+  elbowPole: { forward: 0.5, left: 0.1, up: -0.94 },
+  wrist: { forward: 0.3, left: -0.02, up: -0.22 },
+} as const;
+
+function resolveStrappedOffhandGuard(
+  torso: CharacterTorsoJoints,
+  baseLeftArm: CharacterArmJoints,
+  frame: MeleeFrame,
+  scale: number,
+  action: ProceduralMeleeUpperBodyPose,
+): MeleeOffhandGuard {
+  const { engaged, elbowPole, wrist } = STRAPPED_OFFHAND_GUARD;
+  const engagement = resolveShieldEngagement(action);
+  const target = torso.chest
+    .clone()
+    .addScaledVector(frame.forward, (wrist.forward + engagement * engaged.forward) * scale)
+    .addScaledVector(frame.up, (wrist.up + engagement * engaged.up) * scale)
+    .addScaledVector(frame.lateralLeft, (wrist.left + engagement * engaged.left) * scale);
+  const pole = torso.leftShoulder
+    .clone()
+    .addScaledVector(frame.lateralLeft, elbowPole.left * scale)
+    .addScaledVector(frame.up, elbowPole.up * scale)
+    .addScaledVector(frame.forward, elbowPole.forward * scale);
+  return { pole, target: baseLeftArm.wrist.clone().lerp(target, Math.max(0.88, action.actionWeight)) };
 }
 
 function resolveMeleeWeaponTargets(
