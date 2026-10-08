@@ -1,4 +1,5 @@
 import type { AgentData, EnemyData, FeatureHexData } from "./types";
+import { appUrl } from "@/site/lib/app-links";
 
 /** Feature hexes scattered across the grid. */
 export const FEATURE_HEXES: FeatureHexData[] = [
@@ -145,7 +146,7 @@ export const FEATURE_HEXES: FeatureHexData[] = [
     label: "The Scroll Archive",
     description:
       "Every battle, every trade, every hex conquered — permanently inscribed on Starknet. The Realms remember what players forget.",
-    link: "https://play.realms.party/scroll",
+    link: appUrl("/scroll"),
   },
 ];
 

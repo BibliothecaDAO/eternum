@@ -7,6 +7,7 @@ import { requireBiomeColor, resolveBiomeTypeFromId } from "@/three/managers/biom
 import { FELT_CENTER } from "@/ui/config";
 import { BLITZ_CARD_DIMENSIONS } from "../lib/blitz-highlight";
 import { BLITZ_CARD_BASE_STYLES, BLITZ_CARD_FONT_IMPORT, BLITZ_CARD_GOLD_THEME } from "../lib/blitz-card-shared";
+import { APP_HOST } from "@/config/app-address";
 
 type MapFingerprintViewMode = "biome" | "occupier";
 
@@ -321,7 +322,7 @@ const BlitzMapFingerprintCard = forwardRef<SVGSVGElement, BlitzMapFingerprintCar
 
           <div className="cta">
             <div className="cta-title">Play Now</div>
-            <div className="cta-subtitle">blitz.realms.world</div>
+            <div className="cta-subtitle">{APP_HOST}</div>
           </div>
 
           <div className="powered">
