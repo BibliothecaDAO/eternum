@@ -183,7 +183,7 @@ const DesktopPanel = ({ children }: { children?: ReactNode }) => (
     <p className="fixed bottom-10 left-10 max-w-[32rem] font-display text-[40px] leading-[1.1] text-kit-cream">
       {LORE_LINE}
     </p>
-    <div className="w-[440px] rounded-2xl border border-kit-line bg-kit-plate p-6">{children}</div>
+    <div className="w-[440px] plate p-6">{children}</div>
   </div>
 );
 

@@ -19,8 +19,8 @@ export const SeasonTop = ({ season, length }: { season: DirectoryGame; length: n
   const board = useLeaderboard({ chainId: season.chainId, gameId: season.game_id });
   const rows = board.data?.mode === "frontier" ? boardRows(board.data.entries, player, length) : [];
   return (
-    <section className="flex flex-col gap-1 rounded-2xl border border-kit-line bg-kit-plate p-3">
-      <h2 className="flex items-center gap-2 px-1 font-ui text-[15px] font-bold text-kit-cream">
+    <section className="flex flex-col gap-1 plate p-3">
+      <h2 className="plate-title flex items-center gap-2 px-1 font-ui text-[15px] font-bold text-kit-cream">
         <KitIcon code="Tp" size={22} />
         {WORDS.season}
       </h2>

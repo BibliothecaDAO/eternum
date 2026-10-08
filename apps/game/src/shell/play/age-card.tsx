@@ -20,7 +20,7 @@ const HEIGHT: Record<AgeCardSize, string> = { tile: "h-[118px]", band: "h-[168px
 const SIZES: Record<AgeCardSize, string> = { tile: "130px", band: "100vw", landscape: "33vw" };
 
 /**
- * One age (spec 04): its kit painting faded into the ground, its numeral and mode, its lore line, its live state and
+ * One age (spec 04): its lore painting faded into the ground, its numeral and mode, its lore line, its live state and
  * its one action, or none. The whole card opens the age's page; Dominion is greyed.
  */
 export const AgeCard = ({
@@ -34,13 +34,7 @@ export const AgeCard = ({
   action: AgeAction | null;
   size: AgeCardSize;
 }) => (
-  <article
-    className={cn(
-      "relative isolate overflow-hidden rounded-[14px] border border-kit-line",
-      HEIGHT[size],
-      isLocked(age.mode) && "brightness-75 grayscale",
-    )}
-  >
+  <article className={cn("painted rounded-[14px]", HEIGHT[size], isLocked(age.mode) && "brightness-75 grayscale")}>
     <img
       {...paintingSources(age.painting)}
       sizes={SIZES[size]}

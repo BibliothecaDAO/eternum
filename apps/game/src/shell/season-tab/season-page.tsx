@@ -105,7 +105,7 @@ const FrontierBoard = ({ rowsShown }: { rowsShown: number }) => {
   if (board.isPending) return <Loading />;
   const rows = board.data?.mode === "frontier" ? boardRows(board.data.entries, player, rowsShown) : [];
   return (
-    <section className="flex min-h-0 flex-col rounded-2xl border border-kit-line bg-kit-plate px-2">
+    <section className="flex min-h-0 flex-col plate px-2">
       {rows.map(({ entry, own }) => (
         <SeasonRow
           key={entry.address}
@@ -133,7 +133,7 @@ const BlitzGames = () => {
   if (history.isPending) return <Loading />;
   const games = history.data.games.filter((game) => game.mode === "blitz");
   return (
-    <ul className="rounded-2xl border border-kit-line bg-kit-plate px-2">
+    <ul className="plate px-2">
       {games.map((game) => (
         <HistoryRow key={`${game.chainId}:${game.game_id}`} game={game} player={player} now={now} />
       ))}

@@ -22,7 +22,7 @@ import { PITCH, WORDS } from "../words";
 import { AgeLabel } from "./age-card";
 import { ageState } from "./age-state";
 import { ageOf, type AgeMode } from "./ages";
-import { paintingSources } from "../paintings";
+import { paintingSources, type Painting } from "../paintings";
 import { GoButton } from "./go-button";
 import type { NextStep } from "./next-step";
 import type { PlayFacts } from "./play-facts";
@@ -86,8 +86,8 @@ const StepCard = ({
   // On desktop the age's painting is the page behind the card; a picture of its own would repeat it.
   const desktop = useLayout() === "desktop";
   return (
-    <section className="flex flex-col gap-3 rounded-2xl border border-kit-line bg-kit-plate p-3.5 shadow-[inset_0_2px_0_theme(colors.kit.gold2/10%)]">
-      {picture === undefined ? !desktop && <Painting painting={age.painting} /> : picture}
+    <section className="flex flex-col gap-3 plate p-3.5 max-lg:shadow-[inset_0_2px_0_theme(colors.kit.gold2/10%)]">
+      {picture === undefined ? !desktop && <CardPicture painting={age.painting} /> : picture}
       <header className="flex items-center gap-2">
         <AgeLabel numeral={age.numeral} />
         <h2 className="font-display text-[24px] leading-none text-kit-cream">{age.name}</h2>
@@ -100,7 +100,7 @@ const StepCard = ({
   );
 };
 
-const Painting = ({ painting }: { painting: string }) => (
+const CardPicture = ({ painting }: { painting: Painting }) => (
   <img
     {...paintingSources(painting)}
     sizes="(min-width: 1024px) 34rem, 100vw"
@@ -215,7 +215,7 @@ const ResultsCard = ({ season }: { season: DirectoryGame }) => {
   return (
     <StepCard
       mode="frontier"
-      picture={<Painting painting={ageOf("eternum").painting} />}
+      picture={<CardPicture painting={ageOf("eternum").painting} />}
       figure={<Chip icons={["Tp"]} value={own ? `#${own.rank}` : "—"} label={WORDS.season} />}
       line={<p className="font-ui text-[17px] font-bold text-kit-gold2">{SEASON_OVER}</p>}
       verb={<GoButton role="primary" word={WORDS.results} icon="Tp" to={resultsHref(season, false)} />}

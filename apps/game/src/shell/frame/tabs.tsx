@@ -92,7 +92,7 @@ export const Rail = ({ places }: { places: boolean }) => {
   return (
     <header
       data-band="rail"
-      className="sticky top-0 z-30 flex h-screen w-24 shrink-0 flex-col items-center gap-1 border-r border-kit-line bg-kit-ground pb-5 pt-5 min-[1800px]:w-28"
+      className="sticky top-0 z-30 flex h-screen w-24 shrink-0 flex-col items-center gap-1 leather border-r pb-5 pt-5 min-[1800px]:w-28"
     >
       <NavLink to="/" data-role="lockup" aria-label={WORDS.play} className="mb-6 flex flex-col items-center gap-2">
         <img src="/images/logos/realms-lockup-stacked.svg" alt="Realms" className="block w-16" />
@@ -113,7 +113,7 @@ export const Rail = ({ places }: { places: boolean }) => {
                   className={cn(
                     "relative flex w-full flex-col items-center gap-1.5 py-3.5 font-ui text-[13px] transition-colors",
                     current
-                      ? "bg-kit-gold/[.09] text-kit-cream before:absolute before:inset-y-2.5 before:left-0 before:w-1 before:rounded-r before:bg-kit-gold"
+                      ? "bg-gradient-to-r from-kit-gold/[.18] to-transparent text-kit-cream before:absolute before:inset-y-2.5 before:left-0 before:w-1 before:rounded-r before:bg-kit-gold"
                       : "text-kit-muted hover:bg-kit-gold/[.05] hover:text-kit-cream",
                   )}
                 >

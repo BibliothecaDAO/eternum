@@ -48,7 +48,7 @@ const ProfileBanner = ({ account, own }: { account: string; own: boolean }) => {
   const profile = usePlayerProfile(account);
   const { own: standing } = useSeasonStanding(account);
   return (
-    <section className="relative isolate flex h-40 items-end gap-3 overflow-hidden rounded-2xl border border-kit-line p-3">
+    <section className="painted flex h-40 items-end gap-3 rounded-2xl p-3">
       <img
         {...paintingSources(ageOf("frontier").painting)}
         sizes="(min-width: 1024px) 50vw, 100vw"
@@ -74,7 +74,7 @@ const SeasonFigure = ({ account }: { account: string }) => {
   const { own, field } = useSeasonStanding(account);
   const frontier = ageOf("frontier");
   return (
-    <section className="flex items-center gap-3 rounded-2xl border border-kit-line bg-kit-plate p-3">
+    <section className="flex items-center gap-3 plate p-3">
       <KitIcon code="Tp" size={30} />
       <span className="font-ui text-[28px] font-extrabold tabular-nums text-kit-gold">
         {own ? `#${own.rank}` : "—"}
@@ -99,7 +99,7 @@ const History = ({ account }: { account: string }) => {
   if (history.isPending) return <Loading />;
   if (history.data.games.length === 0) return null;
   return (
-    <ul className="rounded-2xl border border-kit-line bg-kit-plate px-2">
+    <ul className="plate px-2">
       {history.data.games.map((game) => (
         <HistoryRow key={`${game.chainId}:${game.game_id}`} game={game} player={account} now={now} />
       ))}

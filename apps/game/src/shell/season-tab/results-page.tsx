@@ -18,7 +18,7 @@ import { PageFrame } from "../frame/page-frame";
 import { type DirectoryGame, useDirectory, useLeaderboard, useRealmsPlayer, useRecentResults } from "../herald";
 import { Loading } from "../loading";
 import { NothingHere } from "../not-found";
-import { paintingSources } from "../paintings";
+import { paintingSources, type Painting } from "../paintings";
 import { ageOf } from "../play/ages";
 import { gameKey } from "../play/next-step";
 import { markResultsSeen } from "../play/seen-results";
@@ -75,7 +75,7 @@ const ResultsFrame = ({
   children,
 }: {
   fromList: boolean;
-  painting?: string;
+  painting?: Painting;
   foot?: ReactNode;
   children: ReactNode;
 }) => (
@@ -118,7 +118,7 @@ const ResultLayout = ({
   buttons,
   fromList,
 }: {
-  painting: string;
+  painting: Painting;
   outcome: ReactNode;
   rows: ReactNode;
   buttons: ReactNode;
@@ -206,7 +206,7 @@ const BlitzResult = ({
         </>
       }
       rows={
-        <ol className="rounded-2xl border border-kit-line bg-kit-plate px-2">
+        <ol className="plate px-2">
           {rows.map((entry) => {
             const isOwn = entry === own;
             return (
@@ -284,7 +284,7 @@ const FrontierResult = ({
         </>
       }
       rows={
-        <section className="rounded-2xl border border-kit-line bg-kit-plate px-2">
+        <section className="plate px-2">
           {rows.map(({ entry, own: isOwn }) => (
             <SeasonRow
               key={entry.address}

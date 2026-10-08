@@ -52,7 +52,7 @@ const FactoryBody = () => {
   const directory = useDirectory();
   return (
     <div className="flex flex-col gap-4">
-      <section className="rounded-2xl border border-kit-line bg-kit-plate p-3.5">
+      <section className="plate p-3.5">
         <ShardUrlForm failures={directory.data?.failures ?? []} />
       </section>
       <Suspense fallback={<Loading />}>

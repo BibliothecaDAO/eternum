@@ -1,11 +1,11 @@
 import type { ReactNode } from "react";
 
 import { ServiceFailure } from "../service-failure";
-import { paintingSources } from "../paintings";
+import { paintingSources, type Painting } from "../paintings";
 
 /** The handoff's StateCard: a painting, one line naming what is so, and its one verb or none. */
-export const StateCard = ({ painting, children }: { painting: string; children: ReactNode }) => (
-  <section className="flex flex-col gap-3 rounded-2xl border border-kit-line bg-kit-plate p-3.5">
+export const StateCard = ({ painting, children }: { painting: Painting; children: ReactNode }) => (
+  <section className="flex flex-col gap-3 plate p-3.5">
     <img
       {...paintingSources(painting)}
       sizes="(min-width: 1024px) 34rem, 100vw"

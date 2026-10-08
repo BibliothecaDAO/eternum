@@ -89,7 +89,7 @@ const SignInCard = ({ line }: { line: string | null }) => {
     requestSignIn("/profile");
   };
   return (
-    <section className="flex flex-col gap-3 rounded-2xl border border-kit-line bg-kit-plate p-3.5">
+    <section className="flex flex-col gap-3 plate p-3.5">
       <img
         {...paintingSources("winter-fortress")}
         sizes="(min-width: 1024px) 34rem, 100vw"

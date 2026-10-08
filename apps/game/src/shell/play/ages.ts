@@ -1,4 +1,6 @@
-/** The modes as the lore's four ages (ruled), each with its painting, so a player learns the ages by sight. */
+import type { Painting } from "../paintings";
+
+/** The modes as the lore's four ages (ruled), each with the lore's painting, so a player learns the ages by sight. */
 export type AgeMode = "blitz" | "frontier" | "eternum" | "dominion";
 
 type Age = {
@@ -7,8 +9,8 @@ type Age = {
   name: string;
   /** The lore site's words for the age. */
   lore: string;
-  /** The kit landscape it wears, served at 800 and 1600 px (public/images/landscapes/SOURCE.md). */
-  painting: string;
+  /** The lore site's painting of the age (public/images/landscapes/SOURCE.md). */
+  painting: Painting;
   /** Its own page, opened from its tile or band. */
   page: string;
 };
@@ -19,7 +21,7 @@ export const AGES: readonly Age[] = [
     numeral: "I",
     name: "Blitz",
     lore: "The struggle for what remained",
-    painting: "twilight-tundra",
+    painting: "blitz-spires",
     page: "/blitz",
   },
   {
@@ -27,7 +29,7 @@ export const AGES: readonly Age[] = [
     numeral: "II",
     name: "Frontier",
     lore: "The last lights of the world",
-    painting: "wheat",
+    painting: "frontier-mist",
     page: "/frontier",
   },
   {
@@ -35,7 +37,7 @@ export const AGES: readonly Age[] = [
     numeral: "III",
     name: "Eternum",
     lore: "The return to greatness",
-    painting: "castle",
+    painting: "eternum-restoration",
     page: "/eternum",
   },
   {
@@ -43,7 +45,7 @@ export const AGES: readonly Age[] = [
     numeral: "IV",
     name: "Dominion",
     lore: "The world that continues",
-    painting: "hidden-castle",
+    painting: "dominion-first-adventurer",
     page: "/dominion",
   },
 ];

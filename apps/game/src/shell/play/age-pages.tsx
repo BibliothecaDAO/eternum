@@ -72,15 +72,14 @@ const AgeFace = ({ mode, facts }: { mode: AgeMode; facts: PlayFacts }) => {
   const { chip, action } = ageState(mode, facts, "full");
   return (
     <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[1fr_24rem] lg:items-end lg:gap-8">
-      <img
-        {...paintingSources(age.painting)}
-        sizes="(min-width: 1024px) 60vw, 100vw"
-        alt=""
-        className={cn(
-          "h-56 w-full rounded-2xl border border-kit-line object-cover lg:h-[28rem]",
-          mode === "dominion" && "brightness-75 grayscale",
-        )}
-      />
+      <div className={cn("painted h-56 rounded-2xl lg:h-[28rem]", mode === "dominion" && "brightness-75 grayscale")}>
+        <img
+          {...paintingSources(age.painting)}
+          sizes="(min-width: 1024px) 60vw, 100vw"
+          alt=""
+          className="absolute inset-0 -z-10 size-full object-cover"
+        />
+      </div>
       <div className="flex flex-col gap-3">
         <div className="flex items-center gap-2">
           <AgeLabel numeral={age.numeral} />

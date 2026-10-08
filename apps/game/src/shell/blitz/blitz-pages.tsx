@@ -53,7 +53,7 @@ export const BlitzListPage = () => {
     <PageFrame back="/" title={BLITZ.name} notice={refused || undefined}>
       <div className="flex flex-col gap-3 lg:grid lg:grid-cols-[1fr_32rem] lg:items-start lg:gap-8">
         <AgeHeader />
-        <section className="rounded-2xl border border-kit-line bg-kit-plate px-3">
+        <section className="plate px-3">
           <BlitzRows facts={facts} join={join} />
         </section>
       </div>
@@ -62,7 +62,7 @@ export const BlitzListPage = () => {
 };
 
 const AgeHeader = () => (
-  <header className="relative isolate flex h-36 items-end overflow-hidden rounded-2xl border border-kit-line p-3 lg:h-[30rem]">
+  <header className="painted flex h-36 items-end rounded-2xl p-3 lg:h-[30rem]">
     <img
       {...paintingSources(BLITZ.painting)}
       sizes="(min-width: 1024px) 50vw, 100vw"

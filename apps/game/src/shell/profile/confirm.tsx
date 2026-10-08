@@ -40,11 +40,7 @@ export const Confirm = ({
     );
   return (
     <div role="presentation" className="fixed inset-0 z-50 flex items-center justify-center bg-kit-ground/70">
-      <section
-        role="dialog"
-        aria-label={question}
-        className="w-[420px] rounded-2xl border border-kit-line2 bg-kit-plate p-5"
-      >
+      <section role="dialog" aria-label={question} className="w-[420px] plate border-kit-line2 p-5">
         {body}
       </section>
     </div>

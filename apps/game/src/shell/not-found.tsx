@@ -5,7 +5,7 @@ import { APP_STATE_WORDS, WORDS } from "./words";
 
 /** A page that does not exist, also drawn inside a page whose subject does not exist (a post, a player). */
 export const NothingHere = () => (
-  <section className="flex flex-col gap-3 rounded-2xl border border-kit-line bg-kit-plate p-3.5">
+  <section className="flex flex-col gap-3 plate p-3.5">
     <img
       {...paintingSources("stormy")}
       sizes="(min-width: 1024px) 34rem, 100vw"

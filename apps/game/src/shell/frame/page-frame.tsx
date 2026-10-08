@@ -4,7 +4,7 @@ import { Link, type To } from "react-router-dom";
 import { ArrowLeft } from "@/ui/design-system/atoms/game-icons";
 import { BACK } from "@/ui/design-system/kit/words";
 
-import { paintingSources } from "../paintings";
+import { paintingSources, type Painting } from "../paintings";
 import { useAppNotice } from "./app-notice";
 import { EnvEdge } from "./env-mark";
 import { useDesktopKeys } from "./desktop-keys";
@@ -25,7 +25,7 @@ type PageFrameProps = {
   /** The four tabs; a full-screen step (sign-in, entering a match) has none. */
   tabs?: boolean;
   /** A kit landscape across the desktop window behind the page, faded into the ground in its lower third. */
-  painting?: string;
+  painting?: Painting;
   children: ReactNode;
 };
 
@@ -118,14 +118,22 @@ const DesktopTitle = ({ back, title }: { back: To | undefined; title?: string })
         <Kbd keyName="Esc" />
       </Link>
     )}
-    {title ? <h1 className="font-display text-[34px] leading-tight min-[1800px]:text-[40px]">{title}</h1> : null}
+    {title ? (
+      <h1 className="font-display text-[34px] leading-tight [text-shadow:0_2px_0_theme(colors.kit.ink/70%),0_0_24px_theme(colors.kit.ink/60%)] min-[1800px]:text-[40px]">
+        {title}
+      </h1>
+    ) : null}
   </>
 );
 
-const Backdrop = ({ painting }: { painting: string }) => (
-  <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[42rem]">
+/**
+ * The painting under a dark grade: a vignette that keeps its heart lit, faded into the ground at its foot. The grade
+ * is what lets a 1536 px lore painting stand across a 1920 px window.
+ */
+const Backdrop = ({ painting }: { painting: Painting }) => (
+  <div aria-hidden className="grain pointer-events-none absolute inset-x-0 top-0 -z-10 h-[42rem]">
     <img {...paintingSources(painting)} sizes="100vw" alt="" className="size-full object-cover object-[50%_40%]" />
-    <span className="absolute inset-0 bg-gradient-to-b from-kit-ground/40 via-kit-ground/10 to-kit-ground" />
+    <span className="absolute inset-0 bg-[radial-gradient(120%_90%_at_55%_38%,transparent_40%,theme(colors.kit.ground/85%)_100%),linear-gradient(0deg,theme(colors.kit.ground)_0%,transparent_55%)]" />
   </div>
 );
 

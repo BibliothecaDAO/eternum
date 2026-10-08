@@ -1245,3 +1245,98 @@ body.urgency-border-final::before {
     box-shadow: 0 0 80px rgba(239, 68, 68, 0.85);
   }
 }
+
+/*
+ * The app's image treatment (public/images/ornament/SOURCE.md). A phone draws plates and paintings flat; from the
+ * desktop width up, plates are leather with engraved corners, a painted card wears a gold keyline over a fine grain,
+ * and a backdrop the grain alone.
+ */
+@layer components {
+  /* The app's one panel surface. */
+  .plate {
+    @apply rounded-2xl border border-kit-line bg-kit-plate;
+  }
+
+  /* A card whose ground is a painting: the painting at -z-10 inside, the card's words over it. */
+  .painted {
+    @apply relative isolate overflow-hidden border border-kit-line;
+  }
+
+  @media (min-width: 1024px) {
+    .plate {
+      border-color: theme(colors.kit.line2);
+      background-image:
+        url("/images/ornament/corner-top-left.svg"), url("/images/ornament/corner-top-right.svg"),
+        url("/images/ornament/corner-bottom-right.svg"), url("/images/ornament/corner-bottom-left.svg"),
+        url("/images/ornament/leather.svg"), linear-gradient(180deg, theme(colors.kit.plate2), theme(colors.kit.plate));
+      background-position:
+        top 5px left 5px,
+        top 5px right 5px,
+        bottom 5px right 5px,
+        bottom 5px left 5px,
+        0 0,
+        0 0;
+      background-repeat: no-repeat, no-repeat, no-repeat, no-repeat, repeat, no-repeat;
+      background-size:
+        18px 18px,
+        18px 18px,
+        18px 18px,
+        18px 18px,
+        300px 300px,
+        100% 100%;
+      box-shadow:
+        inset 0 1px 0 rgb(255 222 160 / 0.1),
+        inset 0 0 0 1px rgb(0 0 0 / 0.6),
+        inset 0 0 0 5px theme(colors.kit.gold / 7%),
+        0 22px 50px rgb(0 0 0 / 0.55);
+    }
+
+    /* A plate's title, with a gold rule under it that fades at both ends. */
+    .plate-title {
+      padding-bottom: 10px;
+      margin-bottom: 4px;
+      background: linear-gradient(90deg, transparent, theme(colors.kit.gold / 70%) 30%, transparent) bottom / 100% 1px
+        no-repeat;
+    }
+
+    .painted {
+      border-color: theme(colors.kit.gold / 45%);
+      box-shadow: 0 18px 44px rgb(0 0 0 / 0.6);
+    }
+
+    /* The grain sits on the paint, under the card's words; a backdrop wears it too. */
+    .painted::before,
+    .grain::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: url("/images/ornament/grain.svg");
+      opacity: 0.32;
+      mix-blend-mode: overlay;
+      pointer-events: none;
+    }
+
+    /* The keyline's inner shadow sits over everything, as the frame's edge. */
+    .painted::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      box-shadow:
+        inset 0 0 0 1px rgb(0 0 0 / 0.55),
+        inset 0 0 0 4px theme(colors.kit.gold / 18%);
+      pointer-events: none;
+    }
+
+    /* The rail's ground. */
+    .leather {
+      border-color: theme(colors.kit.line2);
+      background-color: theme(colors.kit.ground);
+      background-image:
+        url("/images/ornament/leather.svg"), linear-gradient(90deg, theme(colors.kit.plate), theme(colors.kit.ground));
+      box-shadow:
+        inset -1px 0 0 rgb(255 222 160 / 0.07),
+        6px 0 24px rgb(0 0 0 / 0.5);
+    }
+  }
+}

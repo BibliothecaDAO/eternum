@@ -39,6 +39,4 @@ export const SettingRow = ({
 };
 
 /** Rows on one opaque plate. */
-export const SettingRows = ({ children }: { children: ReactNode }) => (
-  <div className="rounded-2xl border border-kit-line bg-kit-plate">{children}</div>
-);
+export const SettingRows = ({ children }: { children: ReactNode }) => <div className="plate">{children}</div>;
