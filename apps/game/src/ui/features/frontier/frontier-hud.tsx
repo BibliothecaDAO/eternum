@@ -102,7 +102,7 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
         <FrontierSurfaces realm={realm} />
         <FrontierSelectionSheet realm={realm} />
         {surface === "menu" && <HudMenu onOpen={setSurface} onClose={close} />}
-        {surface === "production" && realm && <FrontierProduction realm={realm} onClose={close} />}
+        {surface === "production" && realm && <FrontierProduction rules={rules} realm={realm} onClose={close} />}
         {surface === "settings" && (
           <Sheet label={SETTINGS} onClose={close}>
             <SettingsPanel />

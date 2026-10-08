@@ -19,7 +19,7 @@ export type ProductionLine = {
   held: number | undefined;
   limit: number | undefined;
   tone: Tone;
-  /** How long until it is full, in whole steps; undefined while the limit is unknown. */
+  /** Seconds until it is full; 0 when full, undefined while the limit or the rate is unknown. */
   fullIn: number | undefined;
   /** No building makes it: Build is the way. */
   noBuilding: boolean;

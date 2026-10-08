@@ -1,49 +1,59 @@
 import { useGame } from "@/hooks/context/game-context";
-import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
-import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LeftView } from "@/types";
-import { knownBalance } from "@/ui/utils/utils";
-import { getBalance, ResourceManager } from "@bibliothecadao/eternum";
-import type { NativeRows } from "@bibliothecadao/eternum/game-client";
+import { type ExpeditionRules, realmLearned, ResourceManager } from "@bibliothecadao/eternum";
+import { nativeResearchConstants as research, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { ResourcesIds } from "@bibliothecadao/types";
 
 import { useGoToFrontierPlace } from "../frontier-home";
-import { realmPerHour } from "../hud/army-order";
+import { useRealmStores } from "../realm-stores";
+import { sidesTaken } from "../research/sides-taken";
 import { type ProductionLine, ProductionSheet, type SpentAt } from "./production-sheet";
 
-const PRODUCTION_MODELS = ["ResourceBalance", "ResourceProduction", "Building"] as const;
-
-/** The three stores Production shows, the resource each holds and where it is spent when full. */
-const STORES: { icon: ProductionLine["icon"]; resource: ResourcesIds; spentAt: SpentAt }[] = [
-  { icon: "Wh", resource: ResourcesIds.Wheat, spentAt: "deploy" },
-  { icon: "La", resource: ResourcesIds.Labor, spentAt: "realm" },
+/** The three stores Production shows, the store each reads, its research row and where it is spent when full. */
+const STORES: {
+  icon: ProductionLine["icon"];
+  store: "wheat" | "labor" | "troops";
+  resource: ResourcesIds;
+  row: number;
+  spentAt: SpentAt;
+}[] = [
+  { icon: "Wh", store: "wheat", resource: ResourcesIds.Wheat, row: research.ROW_FARM, spentAt: "deploy" },
+  { icon: "La", store: "labor", resource: ResourcesIds.Labor, row: research.ROW_WORKSHOP, spentAt: "realm" },
   // One troop type: the barracks train the realm's troops.
-  { icon: "Tr", resource: ResourcesIds.Knight, spentAt: "deploy" },
+  { icon: "Tr", store: "troops", resource: ResourcesIds.Knight, row: research.ROW_BARRACKS, spentAt: "deploy" },
 ];
 
 /**
- * Production over the game's facts: each store's rate an hour, what it holds and whether a building makes it. Store
- * limits, Full in and the side marks arrive with the contracts' store limits and building tiers.
+ * Production over the game's facts: each store's rate an hour with the sides its row has taken, what it holds against
+ * its limit, when it is full, and whether a building makes it.
  */
-export const FrontierProduction = ({ realm, onClose }: { realm: NativeRows["Structure"]; onClose: () => void }) => {
+export const FrontierProduction = ({
+  rules,
+  realm,
+  onClose,
+}: {
+  rules: ExpeditionRules;
+  realm: NativeRows["Structure"];
+  onClose: () => void;
+}) => {
   const { setup } = useGame();
-  const tick = useCurrentDefaultTick();
-  useNativeRevision(PRODUCTION_MODELS);
+  const stores = useRealmStores(realm, rules);
   const goToPlace = useGoToFrontierPlace(realm);
   const setLeftNavigationView = useUIStore((state) => state.setLeftNavigationView);
   const manager = new ResourceManager(setup.store, realm.entity_id);
-  const lines = STORES.map(({ icon, resource, spentAt }): ProductionLine => {
-    const balance = knownBalance(getBalance(realm.entity_id, resource, tick, setup.store).balance);
-    const buildings = manager.current(resource)?.production?.building_count;
+  const learned = realmLearned(setup.store, realm.game_id, realm.entity_id);
+  const lines = STORES.map(({ icon, store, resource, row, spentAt }): ProductionLine => {
+    const reading = stores?.[store];
     return {
       icon,
-      perHour: realmPerHour(setup.store, realm.entity_id, resource, tick),
-      held: balance === undefined ? undefined : Math.floor(balance),
-      limit: undefined,
-      tone: "calm",
-      fullIn: undefined,
-      noBuilding: buildings === 0,
+      perHour: reading?.perHour,
+      sides: learned === undefined ? undefined : sidesTaken(learned, row),
+      held: reading?.amount,
+      limit: reading?.limit,
+      tone: reading?.tone ?? "calm",
+      fullIn: reading?.fullIn,
+      noBuilding: manager.current(resource)?.production?.building_count === 0,
       spentAt,
     };
   });

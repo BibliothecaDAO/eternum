@@ -83,6 +83,7 @@ const STORE_MODELS = [
   "ResourceProduction",
   "ResourceWeight",
   "BoardRules",
+  "RealmKnowledge",
   "Structure",
   "ExplorerTroops",
   "ArmyProgress",
