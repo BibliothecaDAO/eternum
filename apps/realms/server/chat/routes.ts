@@ -5,7 +5,8 @@ import type { IdentityAuth } from "../auth";
 import type { IdentityEnv } from "../env";
 import { json } from "../http";
 import { chatMemberHeaders } from "./chat-sockets";
-import { gameRoomsOf, isRoomMember, parseChatRoom } from "./rooms";
+import { gameRoomsOf, parseChatRoom } from "./rooms";
+import { ChatAccessError, readRoomAccess } from "./room-access";
 
 const HISTORY_LIMIT = 50;
 const HISTORY_MAX = 100;
@@ -20,6 +21,15 @@ export const routeChat = async (
   auth: IdentityAuth,
   pathname: string,
 ): Promise<Response> => {
+  try {
+    return await routeAuthenticatedChat(request, env, auth, pathname);
+  } catch (error) {
+    if (error instanceof ChatAccessError) return json({ error: error.code }, error.status);
+    throw error;
+  }
+};
+
+const routeAuthenticatedChat = async (request: Request, env: IdentityEnv, auth: IdentityAuth, pathname: string) => {
   const member = await chatMemberFrom(request, auth);
   if (!member) return json({ error: "unauthorized" }, 401);
   const url = new URL(request.url);
@@ -33,18 +43,22 @@ export const routeChat = async (
 
   const roomSocket = /^\/api\/chat\/rooms\/([^/]+)$/.exec(pathname);
   if (roomSocket && isSocketUpgrade(request)) {
-    const room = parseChatRoom(decodeURIComponent(roomSocket[1]!));
+    const room = parseEncodedRoom(roomSocket[1]!);
     if (!room) return json({ error: "invalid_channel" }, 400);
-    if (!(await isRoomMember(env.DB, member.realmsId, room))) return json({ error: "channel_access_denied" }, 403);
+    const access = await readRoomAccess(env, member.realmsId, room);
     return env.CHAT_ROOM.get(env.CHAT_ROOM.idFromName(room)).fetch(
-      forward(request, { ...chatMemberHeaders(member), "x-chat-room": room }),
+      forward(request, {
+        ...chatMemberHeaders(member),
+        "x-chat-room": room,
+        "x-chat-can-write": String(access.canWrite),
+      }),
     );
   }
 
   if (pathname === "/api/chat/world" && request.method === "GET") {
     const room = parseChatRoom(url.searchParams.get("zoneId"));
     if (!room) return json({ error: "invalid_channel" }, 400);
-    if (!(await isRoomMember(env.DB, member.realmsId, room))) return json({ error: "channel_access_denied" }, 403);
+    await readRoomAccess(env, member.realmsId, room);
     return json(
       await env.CHAT_ROOM.get(env.CHAT_ROOM.idFromName(room)).history(
         url.searchParams.get("cursor") ?? undefined,
@@ -107,10 +121,19 @@ const chatMemberFrom = async (request: Request, auth: IdentityAuth) => {
 const isSocketUpgrade = (request: Request) =>
   request.method === "GET" && request.headers.get("upgrade")?.toLowerCase() === "websocket";
 
+const parseEncodedRoom = (value: string) => {
+  try {
+    return parseChatRoom(decodeURIComponent(value));
+  } catch {
+    return null;
+  }
+};
+
 /** The client's upgrade request, carrying the member the Worker authenticated and nothing it could forge. */
 const forward = (request: Request, headers: Record<string, string>) => {
   const forwarded = new Headers(request.headers);
-  for (const name of ["x-realms-id", "x-display-name", "x-chat-room", "x-chat-rooms"]) forwarded.delete(name);
+  for (const name of ["x-realms-id", "x-display-name", "x-chat-room", "x-chat-rooms", "x-chat-can-write"])
+    forwarded.delete(name);
   for (const [name, value] of Object.entries(headers)) forwarded.set(name, value);
   return new Request(request.url, { method: "GET", headers: forwarded });
 };

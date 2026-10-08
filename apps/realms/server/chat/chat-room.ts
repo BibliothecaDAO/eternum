@@ -7,6 +7,9 @@ import {
 } from "@bibliothecadao/types";
 
 import { chatMemberOf, consumeChatBudget, readChatFrame, sendChat, type ChatMember } from "./chat-sockets";
+import type { IdentityEnv } from "../env";
+import { ChatAccessError, readRoomAccess } from "./room-access";
+import { parseChatRoom } from "./rooms";
 
 /** A room keeps thirty days of messages, and never more than its last five hundred. */
 const RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
@@ -26,8 +29,8 @@ interface MessageRow extends Record<string, SqlStorageValue> {
  * One chat room: its members' sockets and its history. Sockets use the hibernation API only, with no timer or
  * interval, so a room with no traffic is evicted from memory and costs nothing until the next message wakes it.
  */
-export class ChatRoom extends DurableObject<Record<string, unknown>> {
-  constructor(ctx: DurableObjectState, env: Record<string, unknown>) {
+export class ChatRoom extends DurableObject<Pick<IdentityEnv, "DB" | "LAUNCH">> {
+  constructor(ctx: DurableObjectState, env: Pick<IdentityEnv, "DB" | "LAUNCH">) {
     super(ctx, env);
     ctx.storage.sql.exec(
       `CREATE TABLE IF NOT EXISTS messages (id TEXT PRIMARY KEY, senderId TEXT NOT NULL, senderName TEXT, content TEXT NOT NULL,
@@ -45,7 +48,11 @@ export class ChatRoom extends DurableObject<Record<string, unknown>> {
     const [client, server] = Object.values(new WebSocketPair()) as [WebSocket, WebSocket];
     this.ctx.acceptWebSocket(server, [member.realmsId]);
     server.serializeAttachment(member);
-    sendChat(server, { type: "joined:zone", zoneId: room });
+    sendChat(server, {
+      type: "joined:zone",
+      zoneId: room,
+      canWrite: request.headers.get("x-chat-can-write") === "true",
+    });
     sendChat(server, { type: "presence:sync", players: this.presence() });
     this.broadcast({ type: "presence:update", player: presenceOf(member) }, server);
     return new Response(null, { status: 101, webSocket: client });
@@ -91,6 +98,7 @@ export class ChatRoom extends DurableObject<Record<string, unknown>> {
       sendChat(socket, { type: "error", code: "invalid_world_payload", message: "Invalid message for this room." });
       return;
     }
+    if (!(await this.canPublish(socket, member, room))) return;
     const row: MessageRow = {
       id: crypto.randomUUID(),
       senderId: member.realmsId,
@@ -115,6 +123,21 @@ export class ChatRoom extends DurableObject<Record<string, unknown>> {
       clientMessageId: message.clientMessageId,
       message: toWorldChatMessage(room, row),
     });
+  }
+
+  private async canPublish(socket: WebSocket, member: ChatMember, room: string) {
+    // Slot membership can change while an observer's socket is open. Never persist a seat on its attachment.
+    if (!room.startsWith("slot:")) return true;
+    try {
+      const parsedRoom = parseChatRoom(room);
+      if (!parsedRoom) throw new ChatAccessError("channel_not_found", 404);
+      if ((await readRoomAccess(this.env, member.realmsId, parsedRoom)).canWrite) return true;
+      sendChat(socket, { type: "error", code: "seat_required", message: "Take a seat in this slot to write." });
+    } catch (error) {
+      if (!(error instanceof ChatAccessError)) throw error;
+      sendChat(socket, { type: "error", code: error.code, message: "Slot chat permission is unavailable." });
+    }
+    return false;
   }
 
   private leave(socket: WebSocket) {

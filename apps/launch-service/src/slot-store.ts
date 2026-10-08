@@ -52,12 +52,16 @@ export class D1SlotStore implements SlotStore {
       )
       .bind(name, closes)
       .run();
-    const slot = await this.readSlot(name).catch((error: unknown) => {
+    const slot = await this.get(name).catch((error: unknown) => {
       if (error instanceof SlotNotFound) throw new SlotConflict("Registration deadline has passed");
       throw error;
     });
     if (Date.parse(slot.closesAt) !== closes) throw new SlotConflict("Slot schedule is immutable");
     return slot;
+  }
+
+  async get(name: string): Promise<PlaytestSlot> {
+    return slotFrom(await this.db.batch<SlotRow | RegistrationRow>(this.slotReads(name)));
   }
 
   async list(): Promise<PlaytestSlot[]> {
@@ -100,7 +104,7 @@ export class D1SlotStore implements SlotStore {
   }
 
   async freeze(name: string): Promise<PlaytestSlot> {
-    const slot = await this.readSlot(name);
+    const slot = await this.get(name);
     if (slot.frozenAt) return slot;
     if (!slot.closed) throw new SlotConflict("Registration is still open");
     const groups = splitPlaytestRoster(slot.registrations);
@@ -114,7 +118,7 @@ export class D1SlotStore implements SlotStore {
       // find them.
       this.db.prepare("DELETE FROM playtest_slots WHERE frozen_at IS NOT NULL AND name <> ?").bind(name),
     ]);
-    return this.readSlot(name);
+    return this.get(name);
   }
 
   async freezeNextDue(): Promise<void> {
@@ -145,10 +149,6 @@ export class D1SlotStore implements SlotStore {
       singleRealmMode: false,
       rosterAccounts: players.map(({ account }) => account),
     });
-  }
-
-  private async readSlot(name: string): Promise<PlaytestSlot> {
-    return slotFrom(await this.db.batch<SlotRow | RegistrationRow>(this.slotReads(name)));
   }
 
   private slotReads(name: string) {

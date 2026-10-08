@@ -23,6 +23,7 @@ export interface PlaytestSlot {
 export interface SlotStore {
   /** Creates the slot once; a repeat with the same closing time is the same slot, another closing time a conflict. */
   create(name: string, closesAt: string): Promise<PlaytestSlot>;
+  get(name: string): Promise<PlaytestSlot>;
   list(): Promise<PlaytestSlot[]>;
   /** Registers players while registration is open; a player already registered stays as they were. */
   register(name: string, players: readonly SlotPlayer[]): Promise<PlaytestSlot>;
