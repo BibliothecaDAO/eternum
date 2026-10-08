@@ -64,6 +64,7 @@ const PhoneSeason = () => {
  */
 const DesktopSeason = () => {
   const { season, directory } = useSeason();
+  const { data: player } = useRealmsPlayer();
   return (
     <PageFrame title={season ? seasonTitle(season) : WORDS.season}>
       <div className="grid grid-cols-[minmax(0,1fr)_34rem] items-start gap-6">
@@ -74,7 +75,7 @@ const DesktopSeason = () => {
         ) : (
           <NoSeason />
         )}
-        <BlitzPanel games={<BlitzGames framed={false} />} />
+        <BlitzPanel games={player ? <BlitzGames framed={false} /> : null} />
       </div>
     </PageFrame>
   );

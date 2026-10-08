@@ -149,11 +149,13 @@ const Stage = ({ facts, join }: { facts: PlayFacts; join: Join }) => {
   );
 };
 
-const BlitzPanel = ({ title, facts, join, limit }: { title: string; facts: PlayFacts; join: Join; limit: number }) => (
-  <Panel icon="Pl" title={title}>
-    <BlitzRows facts={facts} join={join} limit={limit} />
-  </Panel>
-);
+/** Blitz's next games; with the lists read and no game in them, no panel (an empty plate reads as broken). */
+const BlitzPanel = ({ title, facts, join, limit }: { title: string; facts: PlayFacts; join: Join; limit: number }) =>
+  facts.slots.isSuccess && facts.directory.isSuccess && facts.blitz.length === 0 ? null : (
+    <Panel icon="Pl" title={title}>
+      <BlitzRows facts={facts} join={join} limit={limit} />
+    </Panel>
+  );
 
 const NewsPanel = () => (
   <Panel icon="Pc" title={LEARN_WORDS.news}>
