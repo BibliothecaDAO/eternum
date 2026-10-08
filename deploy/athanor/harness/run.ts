@@ -1,14 +1,14 @@
 #!/usr/bin/env bun
+import { observeHarnessWorker, sendPreparedReport, superviseHarnessProcess } from "./terminal-report";
 import { launchFrontierSeason, runFrontierWorkload, type FrontierBurst } from "./frontier";
 import { FRONTIER_ACCELERATED_PRESET_ID } from "../../../config/source/common/native-preset-modes";
 import { createBuildOrderWorkload } from "./build-order";
-import { catchUncaughtFailures, onWorkerExit, recordWorkerFailure } from "./worker-boundary";
+import { catchUncaughtFailures, recordWorkerFailure } from "./worker-boundary";
 import { runLayerRoundTrip } from "./layer-round-trip";
 import { closeHarnessSeason } from "./season-lifecycle";
 import { nativePresetForId, nativePresetIdFor } from "../../../config/source/native";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { writeFileSync } from "node:fs";
-import { Worker, isMainThread, parentPort, workerData, threadId } from "node:worker_threads";
+import { Worker, isMainThread, parentPort, workerData } from "node:worker_threads";
 import path from "node:path";
 import { DeviceSigner, deviceKeyOf, signGameplayIntent } from "@bibliothecadao/eternum";
 import { splitPlaytestRoster } from "../../../apps/launch-service/src/slots";
@@ -30,7 +30,7 @@ import {
   assessRosterRun,
   readDriverPlacement,
   runRevision,
-  writeHarnessReport,
+  prepareHarnessReport,
   type HarnessGameInstance,
   type WorkerWorkloadSummary,
 } from "./report";
@@ -196,7 +196,7 @@ async function main(): Promise<void> {
     connect,
   );
 
-  let reportInput: Parameters<typeof writeHarnessReport>[0];
+  let reportInput: Parameters<typeof prepareHarnessReport>[0];
   try {
     const harnessGame = createHarnessGame(client, heraldConfirmations, actorClients);
     const setupTransactions: TrackedTransaction[] = [];
@@ -310,10 +310,7 @@ async function main(): Promise<void> {
       }
     }
   }
-  await writeHarnessReport(reportInput, (report) => {
-    parentPort?.postMessage({ type: "result", ...report, pid: process.pid, threadId });
-    console.log(`Report: ${report.path}`);
-  });
+  await sendPreparedReport(await prepareHarnessReport(reportInput));
 }
 
 export const createHarnessProvider = (rpcUrl: string): HarnessProvider => new HarnessProvider(rpcUrl);
@@ -589,15 +586,8 @@ async function runRosterGroups(options: HarnessCliOptions, players: PreparedGame
     error: failure instanceof Error ? failure.message : failure === undefined ? undefined : String(failure),
   };
   const output = path.join(directory, "summary.json");
-  onWorkerExit(
-    (exitCode, workerBoundary) => {
-      const finalPassed = passed && exitCode === 0 && workerBoundary.uncaughtFailures.length === 0;
-      const finalSummary = { ...summary, passed: finalPassed, workerBoundary, driverExitCode: exitCode };
-      writeFileSync(output, JSON.stringify(finalSummary, null, 2) + "\n");
-      return { passed: finalPassed };
-    },
-    () => console.log(`Report: ${output}`),
-  );
+  const { passed: workloadPassed, ...report } = summary;
+  await sendPreparedReport({ path: output, workloadPassed, report });
   if (!passed) throw new Error(`Roster workload failed: ${output}`, { cause: failure });
 }
 
@@ -695,39 +685,50 @@ export async function waitForGameWorkers(
     workers.map(
       ({ label, worker }) =>
         new Promise<WorkerOutcome>((resolve) => {
-          let reported: GameWorkerReport | undefined;
-          let failed: WorkerOutcome | undefined;
-          worker.on("message", (message) => {
-            if (message.type === "failure") {
-              failed ??= { worker: label, outcome: "failure", error: message.error, stack: message.stack };
-            } else if (message.type === "ready" && !ready.has(worker)) {
-              ready.add(worker);
-              if (ready.size === workers.length) {
-                started = true;
-                const startAt = Date.now() + 1_000;
-                for (const player of workers) player.worker.postMessage({ type: "start", startAt });
-              }
-            } else if (message.type === "result" && !reported) {
-              reported = message;
-              reports.push(message);
+          const workerThreadId = worker.threadId;
+          const readyWorker = () => {
+            if (ready.has(worker)) return;
+            ready.add(worker);
+            if (ready.size === workers.length) {
+              started = true;
+              const startAt = Date.now() + 1_000;
+              for (const player of workers) player.worker.postMessage({ type: "start", startAt });
             }
-          });
-          worker.once("error", (error: Error) => {
-            failed ??= { worker: label, outcome: "error", error: error.message, stack: error.stack };
-          });
-          worker.once("exit", (code: number) => {
-            if (!started) for (const other of workers) if (other.worker !== worker) void other.worker.terminate?.();
-            if (reported && code === (reported.passed ? 0 : 1))
-              return resolve({ worker: label, outcome: "result", passed: reported.passed, exitCode: code });
-            resolve(
-              failed ?? {
+          };
+          void observeHarnessWorker(worker, readyWorker)
+            .then((outcome) => {
+              if (!started) for (const other of workers) if (other.worker !== worker) void other.worker.terminate?.();
+              const report = outcome.reports[0];
+              if (report?.workload) {
+                reports.push({ ...report, workload: report.workload, pid: process.pid, threadId: workerThreadId });
+                return resolve({ worker: label, outcome: "result", passed: report.passed, exitCode: outcome.exitCode });
+              }
+              resolve(
+                outcome.failure
+                  ? {
+                      worker: label,
+                      outcome: outcome.failure.kind,
+                      error: outcome.failure.error,
+                      stack: outcome.failure.stack,
+                    }
+                  : {
+                      worker: label,
+                      outcome: "exit",
+                      exitCode: outcome.exitCode,
+                      error: started
+                        ? `exited ${outcome.exitCode} without a matching result`
+                        : `stopped before the start (exit ${outcome.exitCode})`,
+                    },
+              );
+            })
+            .catch((error) =>
+              resolve({
                 worker: label,
-                outcome: "exit",
-                exitCode: code,
-                error: started ? `exited ${code} without a matching result` : `stopped before the start (exit ${code})`,
-              },
+                outcome: "error",
+                error: String(error),
+                stack: error instanceof Error ? error.stack : undefined,
+              }),
             );
-          });
         }),
     ),
   );
@@ -818,15 +819,28 @@ https://play.dev-realms.party/api) and OPERATOR_TOKEN are required unless --prep
 `);
 }
 
-// A failure is recorded in the run's own output directory, so its stack survives whatever the caller does with stderr.
+// Setup failures are evidence too; their file and verdict belong to the supervisor after actual exit.
 async function recordFailure(error: unknown): Promise<{ error: string; stack?: string }> {
   const failure = error instanceof Error ? { error: error.message, stack: error.stack } : { error: String(error) };
-  await mkdir(HARNESS_OUTPUT_DIRECTORY, { recursive: true, mode: 0o700 });
-  await writeFile(path.join(HARNESS_OUTPUT_DIRECTORY, "failure.json"), JSON.stringify(failure, null, 2) + "\n");
+  await sendPreparedReport({
+    path: path.join(HARNESS_OUTPUT_DIRECTORY, "failure.json"),
+    workloadPassed: false,
+    report: failure,
+  });
   return failure;
 }
 
-if (import.meta.main || (!isMainThread && workerData?.harness)) {
+if (import.meta.main && !process.send) {
+  if (process.argv.includes("--help")) printUsage();
+  else {
+    const outcome = await superviseHarnessProcess([process.execPath, import.meta.filename, ...process.argv.slice(2)], {
+      ...process.env,
+      HARNESS_OUTPUT_DIRECTORY,
+    });
+    for (const report of outcome.reports) console.log(`Report: ${report.path}`);
+    process.exitCode = outcome.exitCode;
+  }
+} else if (import.meta.main || (!isMainThread && workerData?.harness)) {
   catchUncaughtFailures();
   await main().catch(async (error: unknown) => {
     const failure = await recordFailure(error);
