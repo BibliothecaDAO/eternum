@@ -1,0 +1,316 @@
+// Throwaway part2 COPY of the tier1 driver; never reuse without rewrite.
+import { Worker } from "node:worker_threads";
+import { resolve } from "node:path";
+import { RpcProvider } from "starknet";
+import { mapWithConcurrency } from "../harness/account-factory";
+import {
+  args,
+  required,
+  load,
+  save,
+  loopback,
+  trialDirectory,
+  now,
+  ms,
+  percentile,
+  presign,
+  storageSlot,
+  normalize,
+  type Fixture,
+} from "../spikes/node-first/common";
+import { cpu, metricCounters, executorLogs, textLength } from "../spikes/node-first/telemetry";
+
+async function subscribe(
+  url: string,
+  received: Map<string, { at: bigint; status: string; l2Gas: number | null }>,
+  heads: number[],
+) {
+  const socket = new WebSocket(url);
+  let failure: string | null = null;
+  await new Promise<void>((ok, bad) => {
+    socket.onopen = () => {
+      socket.send(
+        JSON.stringify({
+          jsonrpc: "2.0",
+          id: 1,
+          method: "starknet_subscribeNewTransactionReceipts",
+          params: { finality_status: ["PRE_CONFIRMED"] },
+        }),
+      );
+      socket.send(JSON.stringify({ jsonrpc: "2.0", id: 2, method: "starknet_subscribeNewHeads", params: {} }));
+    };
+    socket.onerror = () => {
+      failure = "receipt socket error";
+      bad(new Error(failure));
+    };
+    const ready = new Set<number>();
+    socket.onmessage = (event) => {
+      const at = now();
+      try {
+        const p = JSON.parse(String(event.data));
+        if (p.error) {
+          failure = "subscription rejected";
+          bad(new Error(failure));
+          return;
+        }
+        if (p.id) {
+          ready.add(p.id);
+          if (ready.has(1) && ready.has(2)) ok();
+          return;
+        }
+        const value = p.params?.result;
+        if (value?.transaction_hash && !received.has(normalize(value.transaction_hash)))
+          received.set(normalize(value.transaction_hash), {
+            at,
+            status: value.execution_status,
+            l2Gas: typeof value.execution_resources?.l2_gas === "number" ? value.execution_resources.l2_gas : null,
+          });
+        if (value?.block_number !== undefined && !value.transaction_hash) heads.push(value.block_number);
+      } catch {
+        failure = "invalid receipt frame";
+      }
+    };
+    socket.onclose = () => {
+      failure = "receipt socket closed";
+    };
+    setTimeout(() => {
+      if (ready.size < 2) bad(new Error("subscription timeout"));
+    }, 10000).unref();
+  });
+  return { close: () => socket.close(), failure: () => failure };
+}
+export async function burst(
+  url: string,
+  payloads: { hash: string; body: string }[],
+  count: number,
+  before: () => void,
+) {
+  const barrier = new SharedArrayBuffer(4);
+  const gate = new Int32Array(barrier);
+  const width = Math.ceil(payloads.length / count);
+  const jobs = Array.from({ length: count }, (_, i) => payloads.slice(i * width, (i + 1) * width))
+    .filter((p) => p.length)
+    .map((group) => {
+      const worker = new Worker(new URL("./part2-send-worker.ts", import.meta.url), {
+        workerData: { url, payloads: group, barrier },
+      });
+      let rows: { hash: string; sentNs: string; error: string | null }[] | undefined;
+      let ready!: () => void;
+      let failReady!: (error: Error) => void;
+      const initialized = new Promise<void>((ok, bad) => {
+        ready = ok;
+        failReady = bad;
+      });
+      const finished = new Promise<typeof rows>((ok, bad) => {
+        worker.on("message", (value) => {
+          if (value.ready) ready();
+          if (value.rows) rows = value.rows;
+          if (value.failed) {
+            failReady(new Error("sender failed"));
+            bad(new Error("sender failed"));
+          }
+        });
+        worker.on("error", (error) => {
+          failReady(error);
+          bad(error);
+        });
+        worker.on("exit", (code) => (code === 0 && rows ? ok(rows) : bad(new Error("sender did not finish cleanly"))));
+      });
+      finished.catch(() => {});
+      return { worker, initialized, finished };
+    });
+  try {
+    await Promise.all(jobs.map((j) => j.initialized));
+    before();
+    Atomics.store(gate, 0, 1);
+    Atomics.notify(gate, 0);
+    return (await Promise.all(jobs.map((j) => j.finished))).flatMap((v) => v ?? []);
+  } finally {
+    await Promise.all(jobs.map((j) => j.worker.terminate()));
+  }
+}
+async function main() {
+  const a = args([
+    "fixture",
+    "rpc-url",
+    "ws-url",
+    "out",
+    "arms",
+    "work",
+    "workers",
+    "node-pid",
+    "node-log",
+    "node-metrics",
+    "node-image",
+    "timeout-ms",
+    "warm-ms",
+  ]);
+  const out = trialDirectory(required(a.out, "out"));
+  const fixture = load<Fixture & { verifyProofs: boolean }>(required(a.fixture, "fixture"));
+  if (typeof fixture.verifyProofs !== "boolean") throw new Error("Part2 fixture must name verification mode");
+  const url = loopback(required(a["rpc-url"], "rpc-url"));
+  const provider = new RpcProvider({ nodeUrl: url });
+  if (BigInt(await provider.getChainId()) !== BigInt(fixture.chainId)) throw new Error("Trial chain mismatch");
+  const [writes, hashes] = (a.work ?? "32:256").split(":").map(Number);
+  if (!writes || !hashes || writes > 128 || hashes > 4096 || writes * hashes > 65536)
+    throw new Error("Invalid work size");
+  const workers = Number(a.workers ?? 8);
+  const nodePid = Number(required(a["node-pid"], "node-pid"));
+  if (!Number.isInteger(workers) || workers < 1 || workers > 32 || !Number.isInteger(nodePid) || nodePid < 1)
+    throw new Error("Invalid workers/PID");
+  const arms = (a.arms ?? "Y").split(",");
+  if (arms.some((arm) => arm !== "Y")) throw new Error("Part2 only runs Y");
+  for (const [index, arm] of arms.entries()) {
+    const run = Date.now() + index;
+    const file = resolve(out, `${run}-${arm}-${writes}x${hashes}.json`);
+    let sampler: ReturnType<typeof cpu> | undefined;
+    let stream: Awaited<ReturnType<typeof subscribe>> | undefined;
+    const header = {
+      tier: 2,
+      verifyProofs: fixture.verifyProofs,
+      arm,
+      run,
+      writes,
+      hashes,
+      accounts: fixture.players.length,
+      nodeImage: required(a["node-image"], "node-image"),
+      chainId: fixture.chainId,
+      contract: fixture.contract,
+      classHash: fixture.classHash,
+      visibleDefinition: "first PRE_CONFIRMED receipt arrival at the subscribed observer",
+      status: "preparing",
+      passed: false,
+    };
+    save(file, header);
+    try {
+      // One real probe before the window warms the new class. Its nonce is consumed and reread before presigning the wave.
+      const warm = await presign(fixture, fixture.players[0]!, provider, run - 1, arm === "X" ? 0 : 1, writes, hashes);
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: warm.body,
+      });
+      if ((await response.json()).error) throw new Error("warmup submit failed");
+      await provider.waitForTransaction(warm.hash);
+      await new Promise((ok) => setTimeout(ok, Number(a["warm-ms"] ?? 15000)));
+      const payloads = await mapWithConcurrency(fixture.players, 32, (p) =>
+        presign(fixture, p, provider, run, arm === "X" ? 0 : 1, writes, hashes),
+      );
+      const received = new Map<string, { at: bigint; status: string; l2Gas: number | null }>();
+      const heads: number[] = [];
+      stream = await subscribe(required(a["ws-url"], "ws-url"), received, heads);
+      let metricsBefore = metricCounters(a["node-metrics"]);
+      let logOffset = textLength(a["node-log"]);
+      const rows = await burst(url, payloads, workers, () => {
+        heads.length = 0;
+        metricsBefore = metricCounters(a["node-metrics"]);
+        logOffset = textLength(a["node-log"]);
+        sampler = cpu(nodePid);
+      });
+      const sent = rows.map((r) => BigInt(r.sentNs));
+      const first = sent.reduce((a, b) => (a < b ? a : b));
+      const lastSend = sent.reduce((a, b) => (a > b ? a : b));
+      const deadline = now() + BigInt(Number(a["timeout-ms"] ?? 90000)) * 1_000_000n;
+      while (payloads.some((p) => !received.has(p.hash)) && now() < deadline && !stream.failure())
+        await new Promise((ok) => setTimeout(ok, 10));
+      const nodeCpu = sampler!.finish();
+      sampler = undefined;
+      const executionEvidence = executorLogs(a["node-log"], logOffset);
+      const burstHeads = [...heads];
+      const actions = rows.map((row) => ({
+        hash: row.hash,
+        sentNs: row.sentNs,
+        sendMs: ms(BigInt(row.sentNs) - first),
+        receiptMs: received.has(row.hash) ? ms(received.get(row.hash)!.at - first) : null,
+        executionStatus: received.get(row.hash)?.status ?? null,
+        submitError: row.error,
+        l2Gas: received.get(row.hash)?.l2Gas ?? null,
+      }));
+      const succeeded = actions.filter((row) => row.executionStatus === "SUCCEEDED" && !row.submitError);
+      const latencies = actions.flatMap((row) => (row.receiptMs === null ? [] : [row.receiptMs]));
+      const complete = succeeded.length === payloads.length;
+      const lastVisibleMs = complete ? Math.max(...latencies) : null;
+      const spreadMs = ms(lastSend - first);
+      const releaseValid = spreadMs < 100;
+      // Let the existing collector flush counters; this wait is outside the reported visibility window.
+      await new Promise((ok) => setTimeout(ok, 16000));
+      const metricsAfter = metricCounters(a["node-metrics"]);
+      const deltas = Object.fromEntries(
+        Object.entries(metricsAfter.values).map(([name, value]) => [
+          name,
+          metricsBefore.values[name] === undefined ? null : value - metricsBefore.values[name]!,
+        ]),
+      );
+      const sharedCounter = storageSlot("counters", 1, run);
+      const sharedHead = storageSlot("heads", 1, run);
+      const counter = await provider.getStorageAt(fixture.contract, sharedCounter, "pre_confirmed");
+      const counterValid = BigInt(counter) === BigInt(arm === "X" ? payloads.length : 0);
+      // Missing stream gas is fetched only after every timed observation and counter snapshot.
+      await mapWithConcurrency(
+        actions.filter((row) => row.receiptMs !== null && row.l2Gas === null),
+        8,
+        async (row) => {
+          const response = await fetch(url, {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({
+              jsonrpc: "2.0",
+              id: 1,
+              method: "starknet_getTransactionReceipt",
+              params: [row.hash],
+            }),
+          });
+          const body = await response.json();
+          if (typeof body.result?.execution_resources?.l2_gas === "number")
+            row.l2Gas = body.result.execution_resources.l2_gas;
+        },
+      );
+      const gasValues = actions.flatMap((row) => (row.l2Gas === null ? [] : [row.l2Gas]));
+      save(file, {
+        ...header,
+        status: "finished",
+        passed: counterValid && complete && releaseValid && !stream.failure() && lastVisibleMs! < 5000,
+        firstSendNs: first.toString(),
+        sendSpreadMs: spreadMs,
+        releaseValid,
+        completed: succeeded.length,
+        lastVisibleMs,
+        p50Ms: percentile(latencies, 0.5),
+        p95Ms: percentile(latencies, 0.95),
+        stretch: complete && releaseValid && lastVisibleMs! < 2000,
+        streamError: stream.failure(),
+        sharedSlots: { counter: sharedCounter, head: sharedHead, counterValue: counter, valid: counterValid },
+        actions,
+        nodeCpu,
+        gas: {
+          source: "receipt stream/post-window RPC",
+          available: gasValues.length,
+          expected: fixture.players.length,
+          meanL2Gas: gasValues.length ? gasValues.reduce((sum, gas) => sum + gas, 0) / gasValues.length : null,
+        },
+        node: {
+          ...executionEvidence,
+          headsObserved: burstHeads,
+          metricDeltas: deltas,
+          unavailableMetrics: metricsAfter.missing,
+        },
+      });
+      console.log(JSON.stringify({ result: file, arm, lastVisibleMs, sendSpreadMs: spreadMs, complete }));
+    } catch {
+      save(file, {
+        ...header,
+        status: "failed",
+        error: "run did not complete; no credentials or request bodies are emitted",
+      });
+      process.exitCode = 1;
+    } finally {
+      sampler?.finish();
+      stream?.close();
+    }
+  }
+}
+if (import.meta.main)
+  main().catch(() => {
+    console.error("node-first runner failed; no credentials emitted");
+    process.exitCode = 1;
+  });

@@ -183,19 +183,34 @@ if (import.meta.main) {
   const manifestPath = required("NATIVE_WORLD_MANIFEST");
   const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
   const deployment = JSON.parse(readFileSync(join(dirname(manifestPath), "gameplay-contracts.json"), "utf8"));
-  const pool = new ProverPool(required("SPIKE_VRF_KEY_FILE"), 4);
-  await pool.ready;
-  startReadRpc(
+  const fixture = JSON.parse(readFileSync(required("SPIKE_PART2_FIXTURE"), "utf8"));
+  if (typeof fixture.verifyProofs !== "boolean" || BigInt(fixture.chainId) !== BigInt(manifest.shard.chainId))
+    throw new Error("Part2 proxy fixture mode/chain mismatch");
+  const pool = fixture.verifyProofs ? new ProverPool(required("SPIKE_VRF_KEY_FILE"), 4) : undefined;
+  if (pool) {
+    const key = await pool.ready;
+    if (
+      !Array.isArray(fixture.vrfPublicKey) ||
+      key.some((value, index) => BigInt(value) !== BigInt(fixture.vrfPublicKey[index]))
+    )
+      throw new Error("Part2 proxy VRF key mismatch");
+  }
+  const server = startReadRpc(
     required("NODE_RPC_URL"),
     Number(required("PORT")),
     { ...manifest.shard, operatorAccountAddress: deployment.operatorAccountAddress },
     process.env.RPC_TRUSTED_PROXY,
     "127.0.0.1",
     {
-      games: required("SPIKE_GAMES_ADDRESS"),
-      chain: manifest.shard.chainId,
-      accountClass: required("SPIKE_ACCOUNT_CLASS_HASH"),
-      stamp: (tx, chain) => pool.stamp(tx, chain),
+      games: fixture.contract,
+      chain: fixture.chainId,
+      accountClass: fixture.accountClassHash,
+      stamp: (tx, chain) => (pool ? pool.stamp(tx, chain) : Promise.resolve(tx)),
     },
   );
+  process.once("SIGTERM", () => {
+    server.stop(true);
+    pool?.stop();
+    process.exit(0);
+  });
 }

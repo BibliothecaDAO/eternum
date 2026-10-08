@@ -1,5 +1,6 @@
 pub mod vendor;
 pub mod account;
+pub mod y;
 use starknet::get_tx_info;
 use vendor::ecvrf::{ECVRFImpl, ECVRFTrait, Point, Proof};
 
