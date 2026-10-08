@@ -14,10 +14,11 @@ import { loadQuaterniusCharacterAssetTemplates } from "./quaternius-character-as
 const ARM_BONES = ["upperarm_l", "lowerarm_l", "upperarm_r", "lowerarm_r"] as const;
 
 /**
- * Local rotations (x, y, z, w per bone, in ARM_BONES order) of the Quaternius arms, taken from the code before arms
- * could ask to be posed as hinges. A pose is `<mode>-<seconds>-<base|melee>`.
+ * Local rotations (x, y, z, w per bone, in ARM_BONES order) of the Quaternius arms: a rig that asks for no hinge arms
+ * and wears no gear with arm poses is posed by the shortest arc, to these values. A pose is
+ * `<mode>-<seconds>-<base|melee>`.
  */
-const ARM_ROTATIONS_BEFORE_HINGE_ARMS: Readonly<Record<string, readonly number[]>> = {
+const SHORTEST_ARC_ARM_ROTATIONS: Readonly<Record<string, readonly number[]>> = {
   "idle-0.1-base": [
     -0.204525, 0.691624, -0.565598, 0.399906, -0.15492, -0.963551, -0.076036, -0.204421, -0.206322, -0.690855, 0.564718,
     0.401552, 0.155119, -0.96417, -0.075629, 0.201481,
@@ -50,7 +51,7 @@ afterEach(() => {
 });
 
 describe("Quaternius arms", () => {
-  it("are posed exactly as before arms could ask to be hinges", async () => {
+  it("keep their shortest-arc rotations: the rig asks for no hinge arms and its gear declares no arm poses", async () => {
     await withCharacterLibrary(
       {
         loadTemplates: loadQuaterniusCharacterAssetTemplates,
@@ -71,7 +72,7 @@ describe("Quaternius arms", () => {
           mounted: false,
           state: { ...createIdleProceduralMeleeAttackState(), phase: "strike", phaseElapsedSeconds: 0.08 },
         });
-        for (const [pose, expected] of Object.entries(ARM_ROTATIONS_BEFORE_HINGE_ARMS)) {
+        for (const [pose, expected] of Object.entries(SHORTEST_ARC_ARM_ROTATIONS)) {
           // A fresh figure per pose: the solver keeps the bend plane of the pose before.
           const asset = library.instantiate(config.appearanceId, config.tier, "hero");
           const avatar = new ProceduralCharacterAvatar(asset, resolveCharacterRig(config), config);

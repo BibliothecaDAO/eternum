@@ -125,5 +125,6 @@ function clamp(value: number, min: number, max: number): number {
 /** A bearer that starts or stops moving takes its arms to guard or back to carry over a moment, not in one frame. */
 function easeGuardHold(current: number, moving: boolean, deltaSeconds: number): number {
   const target = moving ? 1 : 0;
-  return current + (target - current) * (1 - Math.exp(-Math.max(0, deltaSeconds) / GUARD_HOLD_EASE_SECONDS));
+  const elapsed = Number.isFinite(deltaSeconds) ? Math.max(0, deltaSeconds) : 0;
+  return current + (target - current) * (1 - Math.exp(-elapsed / GUARD_HOLD_EASE_SECONDS));
 }

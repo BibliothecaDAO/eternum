@@ -158,8 +158,8 @@ describe("T1 Knight arm poses", () => {
       await withKnightLibrary((library) => {
         const subject = createKnightGuardSubject(library, renderDetail, STATURE);
         try {
-          // One figure goes through the motions in turn, as in play. An elbow left on the far side by one of them puts
-          // the blade through the shield in the next: it did while hinge arms still kept the last frame's bend plane.
+          // One figure goes through the motions in turn, as in play: an elbow left on the far side of its pole by one
+          // motion would put the blade through the shield in the next.
           for (const motion of ["idle", "walk", "run"] as const) {
             const samples = sampleLocomotionGuard(subject, motion);
             expectNothingTouches(samples);

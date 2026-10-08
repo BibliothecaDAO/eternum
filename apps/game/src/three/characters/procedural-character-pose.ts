@@ -492,8 +492,9 @@ function resolveChestFrame(torso: CharacterTorsoJoints): MeleeFrame {
 }
 
 /**
- * Places a declared arm pose in the chest's own frame. The pose is measured from the midpoint of the shoulders, so it is
- * taken from the arm's own shoulder, which stands `shoulderLeft` (negative on the right) along the shoulder line from it.
+ * Places a declared arm pose in the chest's own frame. The pose is measured from the midpoint of the skeleton's shoulder
+ * joints, each `shoulderLeft` (negative on the right) along the shoulder line from it, so it is laid off from the arm's
+ * own shoulder. The avatar then moves wrist and pole onto the skeleton's shoulder, which the controller's stands near.
  */
 function placeDeclaredArm(
   pose: ProceduralMeleeArmPose,

@@ -51,7 +51,7 @@ export class ProceduralMeleeWeaponLibrary {
     const fittedTemplates = new Map<FittedGearId, GLTF>();
     try {
       if (options.includeT1KnightDefault) {
-        for (const id of FITTED_GEAR_IDS) fittedTemplates.set(id, await loadKnightGear(resolveFittedGearFile(id), id));
+        for (const id of FITTED_GEAR_IDS) fittedTemplates.set(id, await loadFittedGear(resolveFittedGearFile(id), id));
       }
       return new ProceduralMeleeWeaponLibrary(fittedTemplates);
     } catch (error) {
@@ -81,7 +81,7 @@ export class ProceduralMeleeWeaponLibrary {
     if (!loadout.detailedEquipment) return;
     for (const id of [loadout.weaponId, loadout.offhandId]) {
       if (isFittedGearId(id) && !this.fittedTemplates.has(id)) {
-        throw new Error(`Knight gear ${id} was not loaded`);
+        throw new Error(`Fitted gear ${id} was not loaded`);
       }
     }
   }
@@ -122,7 +122,7 @@ export class ProceduralMeleeWeaponLibrary {
     alignment: ProceduralMeleeAssetAlignment | undefined,
   ): ProceduralMeleeAssetInstance {
     const template = this.fittedTemplates.get(id);
-    if (!template) throw new Error(`Knight gear ${id} was not loaded`);
+    if (!template) throw new Error(`Fitted gear ${id} was not loaded`);
     const clone = template.scene.clone(true);
     setEquipmentShadows(clone);
     const wrapper = new Group();
@@ -139,10 +139,10 @@ export class ProceduralMeleeWeaponLibrary {
   }
 }
 
-async function loadKnightGear(url: string, id: FittedGearId): Promise<GLTF> {
+async function loadFittedGear(url: string, id: FittedGearId): Promise<GLTF> {
   const gltf = await new GLTFLoader().loadAsync(url);
   try {
-    validateKnightGear(gltf, id);
+    validateFittedGear(gltf, id);
     return gltf;
   } catch (error) {
     disposeSkinnedSceneTemplates([gltf.scene]);
@@ -150,7 +150,7 @@ async function loadKnightGear(url: string, id: FittedGearId): Promise<GLTF> {
   }
 }
 
-export function validateKnightGear(gltf: Pick<GLTF, "animations" | "scene">, id: FittedGearId): void {
+export function validateFittedGear(gltf: Pick<GLTF, "animations" | "scene">, id: FittedGearId): void {
   if (gltf.animations.length > 0) throw new Error(`${id} must be clip-free`);
   let meshCount = 0;
   let skinnedMeshCount = 0;

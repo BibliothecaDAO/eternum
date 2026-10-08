@@ -80,7 +80,7 @@ function resolveDeclaredArms(
   guardHold: number,
 ): ProceduralMeleeUpperBodyPose["arms"] {
   const weights = {
-    attackWeight: Math.max(signals.actionWeight, guardHold),
+    guardWeight: Math.max(signals.actionWeight, guardHold),
     followThrough: signals.followThrough,
     strikeProgress: signals.strikeProgress,
     windupProgress: signals.windupProgress,

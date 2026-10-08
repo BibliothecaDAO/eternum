@@ -43,5 +43,7 @@ describe("procedural melee controller", () => {
     expect(shieldWristHeight(true, 2)).toBeCloseTo(shield.guard.wrist[1], 6);
     expect(shieldWristHeight(false, 1 / 60)).toBeLessThan(shield.guard.wrist[1]);
     expect(shieldWristHeight(false, 2)).toBeCloseTo(shield.carry.wrist[1], 6);
+    expect(shieldWristHeight(true, Number.NaN)).toBeCloseTo(shield.carry.wrist[1], 6);
+    expect(shieldWristHeight(true, 2)).toBeCloseTo(shield.guard.wrist[1], 6);
   });
 });

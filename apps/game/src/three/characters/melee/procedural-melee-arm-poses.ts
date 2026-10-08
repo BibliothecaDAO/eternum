@@ -2,9 +2,10 @@ import { Quaternion, Vector3 } from "three";
 
 import type { ProceduralMeleeArmPose, ProceduralMeleeArmPoses } from "./procedural-melee-weapon-catalog";
 
-/** How far the attack has moved an arm on from carrying the gear: the weights of the chain carry, guard, windup, contact, follow. */
+/** How far an arm has moved on from carrying the gear: the weights of the chain carry, guard, windup, contact, follow. */
 export interface ProceduralMeleeArmWeights {
-  attackWeight: number;
+  /** How far towards guard: the attack's action weight, or a guard held for another reason, whichever is more. */
+  guardWeight: number;
   followThrough: number;
   strikeProgress: number;
   windupProgress: number;
@@ -14,19 +15,19 @@ const scratchPosition = new Vector3();
 const scratchTurn = new Quaternion();
 
 /**
- * The arm's pose for the moment of the attack: it starts at `carry` and the controller's own blend chain moves it on,
- * guard by the action weight, windup by the windup progress, contact by the strike progress, follow by the
- * follow-through (each scaled by the action weight). The hand's turn is blended with the same weights.
+ * The arm's pose for the moment: it starts at `carry` and the controller's own blend chain moves it on, guard by the
+ * guard weight, then windup by the windup progress, contact by the strike progress and follow by the follow-through,
+ * each of those three scaled by the guard weight. The hand's turn is blended with the same weights.
  */
 export function blendProceduralMeleeArmPoses(
   poses: ProceduralMeleeArmPoses,
   weights: ProceduralMeleeArmWeights,
 ): ProceduralMeleeArmPose {
   const chain: readonly (readonly [ProceduralMeleeArmPose | undefined, number])[] = [
-    [poses.guard, weights.attackWeight],
-    [poses.windup, weights.windupProgress * weights.attackWeight],
-    [poses.contact, weights.strikeProgress * weights.attackWeight],
-    [poses.follow, weights.followThrough * weights.attackWeight],
+    [poses.guard, weights.guardWeight],
+    [poses.windup, weights.windupProgress * weights.guardWeight],
+    [poses.contact, weights.strikeProgress * weights.guardWeight],
+    [poses.follow, weights.followThrough * weights.guardWeight],
   ];
   const elbow = new Vector3(...poses.carry.elbow);
   const wrist = new Vector3(...poses.carry.wrist);

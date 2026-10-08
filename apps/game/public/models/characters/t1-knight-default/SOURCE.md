@@ -43,7 +43,10 @@ measured from, which is among the sources kept by the author.
 follow) measured from the pose set the model was approved with, each giving where the wrist goes, the point the elbow
 bends toward and the hand's turn on the forearm, with what the game should then show. The sword and shield declare these
 poses in the catalog (`procedural-melee-weapon-catalog.ts`), and `t1-knight-default-arms.test.ts` compares the catalog
-with the file and the posed skeleton with its expected values.
+with the file and the posed skeleton with its expected values. Its `from` block names the pose set and the two scripts
+that measured it, which are proposed with the tools in #5031, and the bound model, which is kept by the author. For the
+reader it also records how close each state is to the approved pose it comes from and how far sword, shield and body
+stay apart.
 
 ## Checking the files
 

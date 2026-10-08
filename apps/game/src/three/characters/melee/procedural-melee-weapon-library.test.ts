@@ -2,7 +2,7 @@ import { BoxGeometry, Group, Mesh, MeshStandardMaterial, Skeleton, SkinnedMesh }
 import { GLTFLoader, type GLTF } from "three/addons/loaders/GLTFLoader.js";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { ProceduralMeleeWeaponLibrary, validateKnightGear } from "./procedural-melee-weapon-library";
+import { ProceduralMeleeWeaponLibrary, validateFittedGear } from "./procedural-melee-weapon-library";
 
 function rigidGear(): GLTF {
   const scene = new Group();
@@ -49,11 +49,11 @@ describe("procedural melee Knight assets", () => {
   });
 
   it("rejects empty, clipped and skinned gear", () => {
-    expect(() => validateKnightGear({ animations: [], scene: new Group() }, "t1-knight-default-sword")).toThrow(
+    expect(() => validateFittedGear({ animations: [], scene: new Group() }, "t1-knight-default-sword")).toThrow(
       "no mesh",
     );
     expect(() =>
-      validateKnightGear(
+      validateFittedGear(
         { animations: [{}] as GLTF["animations"], scene: rigidGear().scene },
         "t1-knight-default-sword",
       ),
@@ -62,6 +62,6 @@ describe("procedural melee Knight assets", () => {
     const skinned = new SkinnedMesh(new BoxGeometry(), new MeshStandardMaterial());
     skinned.bind(new Skeleton([]));
     scene.add(skinned);
-    expect(() => validateKnightGear({ animations: [], scene }, "t1-knight-default-shield")).toThrow("rigid");
+    expect(() => validateFittedGear({ animations: [], scene }, "t1-knight-default-shield")).toThrow("rigid");
   });
 });

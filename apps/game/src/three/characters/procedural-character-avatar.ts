@@ -555,8 +555,8 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
 
   /**
    * A declared arm pose is measured from the skeleton's own shoulder, which stands a little off the controller's: both
-   * the wrist and the elbow's pole move by that much, so the arm keeps its approved place against the body whatever the
-   * torso does.
+   * the wrist and the elbow's pole move by that much, so both arms keep their approved place against that shoulder and
+   * each other. The frame is the controller's chest; the visible chest follows it through the pose filter, a little late.
    */
   private moveTargetsWithSkeletonShoulder(poseShoulder: Vector3Tuple): void {
     this.scratchIkOffset.copy(this.scratchIkRoot).sub(this.scratchIkShoulderPose.fromArray(poseShoulder));

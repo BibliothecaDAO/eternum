@@ -26,6 +26,7 @@ import {
   type ProceduralCharacterRenderDetail,
 } from "../src/three/characters/procedural-character-config";
 import { resolveProceduralCharacterPose } from "../src/three/characters/procedural-character-pose";
+import { ProceduralCharacterPoseFilter } from "../src/three/characters/procedural-character-pose-filter";
 import {
   applyCharacterRigLimbLengths,
   resolveCharacterRig,
@@ -53,7 +54,7 @@ const BLADE_LENGTH = SWORD.visualLength;
 
 export type KnightMotion = "idle" | "walk" | "run" | "attack";
 
-/** Everything the criteria of work order M are measured from, for one moment. */
+/** Everything the clearance criteria are measured from, for one moment. */
 export interface GuardClearance {
   armToShield: number;
   bladeToShieldArm: number;
@@ -114,7 +115,10 @@ export function createKnightGuardSubject(
   return { asset, avatar, config, headRadius: rig.morphology.headRadius, rig, stature };
 }
 
-/** Samples idle, walk or run frame by frame, as the runtime does, at the eight sample times. */
+/**
+ * Samples idle, walk or run frame by frame at the eight sample times, through the pose filter the runtime applies: the
+ * visible chest lags the controller's, and the clearances are measured as they then stand.
+ */
 export function sampleLocomotionGuard(
   subject: KnightGuardSubject,
   motion: "idle" | "walk" | "run",
@@ -124,9 +128,14 @@ export function sampleLocomotionGuard(
   const action = createGuardAction({ ...createIdleProceduralMeleeAttackState() }, motion !== "idle");
   subject.avatar.setUpperBodyAction(action);
   const samples: KnightGuardSample[] = [];
+  const filter = new ProceduralCharacterPoseFilter();
   for (let frame = 0; frame <= LOCOMOTION_SAMPLE_FRAMES[LOCOMOTION_SAMPLE_FRAMES.length - 1]; frame++) {
     subject.avatar.applyPose(
-      resolveProceduralCharacterPose(subject.rig, posed, frame / FRAMES_PER_SECOND, undefined, undefined, action),
+      filter.apply(
+        resolveProceduralCharacterPose(subject.rig, posed, frame / FRAMES_PER_SECOND, undefined, undefined, action),
+        1 / FRAMES_PER_SECOND,
+        posed.secondaryMotion,
+      ),
     );
     if (!(LOCOMOTION_SAMPLE_FRAMES as readonly number[]).includes(frame)) continue;
     samples.push({
@@ -145,11 +154,16 @@ export function sampleAttackCycle(subject: KnightGuardSubject): KnightGuardSampl
   const meleeConfig = createKnightMeleeConfig();
   let state: ProceduralMeleeAttackState = startProceduralMeleeAttack(createIdleProceduralMeleeAttackState());
   const cycle: { action: ReturnType<typeof createGuardAction>; clearance: GuardClearance }[] = [];
+  const filter = new ProceduralCharacterPoseFilter();
   for (let frame = 0; state.phase !== "idle" && frame < 600; frame++) {
     const action = createGuardAction(state);
     subject.avatar.setUpperBodyAction(action);
     subject.avatar.applyPose(
-      resolveProceduralCharacterPose(subject.rig, posed, frame / FRAMES_PER_SECOND, undefined, undefined, action),
+      filter.apply(
+        resolveProceduralCharacterPose(subject.rig, posed, frame / FRAMES_PER_SECOND, undefined, undefined, action),
+        1 / FRAMES_PER_SECOND,
+        posed.secondaryMotion,
+      ),
     );
     cycle.push({ action, clearance: measureGuardClearance(subject) });
     state = advanceProceduralMeleeAttack(state, meleeConfig, 1 / FRAMES_PER_SECOND, false).state;

@@ -17,7 +17,7 @@ import { ProceduralCharacterLibrary } from "./procedural-character-assets";
 import { createDefaultProceduralCharacterConfig } from "./procedural-character-config";
 import { resolveProceduralCharacterPose } from "./procedural-character-pose";
 import { applyCharacterRigLimbLengths, resolveCharacterRig } from "./procedural-character-rig";
-import { validateKnightGear } from "./melee/procedural-melee-weapon-library";
+import { validateFittedGear } from "./melee/procedural-melee-weapon-library";
 import { parseTextureFreeGlb } from "../../../test-support/parse-texture-free-glb";
 
 const PREFIX = "/models/characters/t1-knight-default/";
@@ -176,7 +176,7 @@ describe("T1 Knight exports", () => {
       ["near/shield.glb", "t1-knight-default-shield"],
     ] as const) {
       const gltf = await parseTextureFreeGlb(PREFIX + relativePath);
-      expect(() => validateKnightGear(gltf, id)).not.toThrow();
+      expect(() => validateFittedGear(gltf, id)).not.toThrow();
     }
   }, 30_000);
 });

@@ -16,7 +16,6 @@ import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 
 import {
-  PROCEDURAL_CHARACTER_APPEARANCES,
   PROCEDURAL_CHARACTER_PRESETS,
   PROCEDURAL_HORSE_APPEARANCES,
   PROCEDURAL_MELEE_OFFHANDS,

@@ -243,9 +243,9 @@ export class ProceduralMeleeEquipment {
 
   private placeAtSocket(target: Group | AxesHelper, socketId: CharacterSocketId): void {
     if (!this.sockets.writeSocketWorldTransform(socketId, this.scratchWorldPosition, this.scratchWorldQuaternion)) {
-      // Only the forearm socket is optional on a rig; fitted gear that needs it must not drift loose without a word.
+      // Only an optional socket can be missing on a rig; fitted gear that needs it must not drift loose without a word.
       if (isOptionalCharacterSocketId(socketId))
-        throw new Error("The equipped gear needs a forearmLeft socket this rig does not have");
+        throw new Error(`The equipped gear needs a ${socketId} socket this rig does not have`);
       return;
     }
     this.actorRoot.worldToLocal(this.scratchWorldPosition);
