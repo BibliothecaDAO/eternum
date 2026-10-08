@@ -21,7 +21,9 @@ let call: MockInstance<RpcProvider["callContract"]>;
 beforeEach(() => {
   query.mockClear();
   vi.spyOn(RpcProvider.prototype, "getChainId").mockResolvedValue("0x534e5f4d41494e");
-  vi.spyOn(RpcProvider.prototype, "getBlockNumber").mockResolvedValue(77);
+  vi.spyOn(RpcProvider.prototype, "getBlock").mockResolvedValue({ block_number: 77, block_hash: "0xabc" } as Awaited<
+    ReturnType<RpcProvider["getBlock"]>
+  >);
   call = vi
     .spyOn(RpcProvider.prototype, "callContract")
     .mockResolvedValue([`0x${(1000n * 10n ** 18n).toString(16)}`, "0x0"]);
@@ -41,6 +43,7 @@ it("reads a linked identity's ledger owner, distinguishing unlinked and unknown 
   expect(response.headers.get("cache-control")).toBe("no-store");
   expect(await response.json()).toEqual({
     block_number: 77,
+    block_hash: "0xabc",
     ratings: {
       "0x01": { status: "rated", player: "0xa", rating: "1000" },
       "0x2": { status: "unlinked", player: null, rating: null },
@@ -48,7 +51,10 @@ it("reads a linked identity's ledger owner, distinguishing unlinked and unknown 
     },
   });
   expect(query).toHaveBeenCalledWith(["0x1", "0x2", "0x3"]);
-  expect(call).toHaveBeenCalledWith(expect.objectContaining({ entrypoint: "get_player_mmr", calldata: ["0xa"] }), 77);
+  expect(call).toHaveBeenCalledWith(
+    expect.objectContaining({ entrypoint: "get_player_mmr", calldata: ["0xa"] }),
+    "0xabc",
+  );
 });
 
 it("serves direct L2 owners through the same read, deduplicates, and preserves decimal/u256 precision", async () => {
@@ -57,6 +63,7 @@ it("serves direct L2 owners through the same read, deduplicates, and preserves d
   const response = await request("players=0x0a,0xa");
   expect(await response.json()).toEqual({
     block_number: 77,
+    block_hash: "0xabc",
     ratings: {
       "0x0a": { status: "rated", player: "0xa", rating: "340282366920938463464.624607431768211456" },
       "0xa": { status: "rated", player: "0xa", rating: "340282366920938463464.624607431768211456" },
@@ -85,6 +92,7 @@ it("does not ask the chain for identities without linked wallets", async () => {
   const response = await request("realmsIds=0x2,0x3");
   expect(await response.json()).toEqual({
     block_number: null,
+    block_hash: null,
     ratings: {
       "0x2": { status: "unlinked", player: null, rating: null },
       "0x3": { status: "unknown_identity", player: null, rating: null },
@@ -143,7 +151,7 @@ it("bounds simultaneous calls, keeps one confirmed block, and reads changes afre
   expect((await request(`players=${owners}`)).status).toBe(200);
   expect(peak).toBeGreaterThan(1);
   expect(peak).toBeLessThanOrEqual(8);
-  for (const args of call.mock.calls) expect(args[1]).toBe(77);
+  for (const args of call.mock.calls) expect(args[1]).toBe("0xabc");
   rating = 1300n;
   expect(await (await request("players=0x1")).json()).toMatchObject({ ratings: { "0x1": { rating: "1300" } } });
 });
@@ -154,4 +162,12 @@ it("uses the existing public budget before reading identities or calling the led
   expect(response.status).toBe(429);
   expect(await response.json()).toEqual({ error: "too_many_requests" });
   expect(call).not.toHaveBeenCalled();
+});
+
+it("reads the top list's named hash and rejects a response for another block", async () => {
+  const first = await request("players=0xa&block_hash=0xabc");
+  expect(first.status).toBe(200);
+  expect(RpcProvider.prototype.getBlock).toHaveBeenCalledWith("0xabc");
+  expect((await request("players=0xa&block_hash=0xdef")).status).toBe(503);
+  expect((await request("players=0xa&block_hash=0x0")).status).toBe(400);
 });
