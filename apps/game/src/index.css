@@ -519,9 +519,11 @@ html.frontier-type .frontier-chip > :first-child {
   height: 28px;
   flex-shrink: 0;
 }
+/* A chip is one line: an amount, a gain or a "from -> to" never wraps inside it; the card around it makes the room. */
 html.frontier-type .frontier-chip-number {
   font-size: 17px;
   color: var(--cream);
+  white-space: nowrap;
 }
 /* A number that is good or bad news (mockup 2's wheat), the one an upgrade reaches, and the price it pays. */
 html.frontier-type .frontier-chip[data-tone="gain"] {

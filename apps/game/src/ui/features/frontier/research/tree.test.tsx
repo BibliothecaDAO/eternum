@@ -72,7 +72,7 @@ describe("the castle's tree", () => {
         tier={tier}
         sides={[
           { icon: "Fi", name: "Fields", gain: { icon: "Wh", label: "wheat", value: "1,500 → 1,800/h" } },
-          { icon: "Gr", name: "Granary", gain: { icon: "Sg", label: "limit", value: "18k → 27k" } },
+          { icon: "Gr", name: "Granary", gain: { icon: "Sg", label: "limit", value: "18K → 27K" } },
         ]}
         lifted={1}
         onLift={onLift}
