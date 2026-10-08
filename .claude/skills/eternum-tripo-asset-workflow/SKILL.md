@@ -5,7 +5,7 @@ description:
   deformation gate, optimisation and hosted in-game approval. Use for new assets or approved-source revisions; animation
   development is excluded.
 metadata:
-  version: "4.5.1"
+  version: "4.5.2"
 ---
 
 # Eternum concept-to-game assets
@@ -445,6 +445,15 @@ Build the asset into the hosted comparison instance with the game's renderer, te
 static poses at close and gameplay views, at every count (1–6 foot, 1–3 mounted), with the largest loadout. Assert the
 requested asset, count and preset actually loaded before taking evidence. Record triangles, draws, joints, textures,
 transfer size and frame time with device and backend.
+
+The comparison instance sets joint rotations directly, so it shows nothing of what the game's own controller does with
+the rig. Before the game side is called done, put the model under that controller in the game's development gym and
+capture it standing, walking, running and attacking, large enough to judge the arms and whatever they hold. A controller
+that works at another figure's size, or gives a limb a direction and no roll, shows only there. Gear fixed to bones
+needs the arm poses it was approved in: measure wrist, elbow and the hand's turn from the approved pose set, have the
+game pose the arms in the elbow's hinge frame, and check clearances by computation through the motions in turn. Do not
+write arm poses from a description. The baseline's README ("Under the game's controller") has the measurements, and
+`baseline/examples/knight-arm-poses/` the two scripts.
 
 ## 9. Final approval and handoff
 

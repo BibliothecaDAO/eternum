@@ -59,18 +59,19 @@ usage is the comment at the top of each). `SPEC.md` lists what a new troop's `ch
 
 ## Contents
 
-| Path                 | What                                                                                                                                                                                                                                                              |
-| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `CONTRACT.md`        | Frame, skeleton with helper joints and their runtime formula, binding rules, hands and sockets per troop, counts and budgets, mounts                                                                                                                              |
-| `template/`          | Reference body: MakeHuman/MPFB base mesh with its game-engine weights on the family joints (CC0; licence in `template/mpfb/`; where the sources come from: `template/SOURCE.md`). `template.npz` + `template.json`                                                |
-| `harness/`           | `thresholds.json` (pass criteria). The template's own harness reports are not kept; `tools/hb_selftest.sh` writes them again                                                                                                                                      |
-| `poses/`             | Pose library: `general`, `knight`, `crossbowman`, `paladin`, `mount` (133 poses), `SCHEMA.md`, `limits.json`, `index.json`, authors' notes. Each pose's `sources` names its reference and licence; the reference images (`refs/`) are not in this repository      |
-| `tools/`             | The pipeline (below)                                                                                                                                                                                                                                              |
-| `probe/`             | (not in this repository) Tripo probe on the baseline test subject: the single-generation Knight, auto-rig and segmentation results, `PROBE.md`, `credit-ledger.json`; `assess/ASSESSMENT.md` (why the test subject's armpits fail and what the views must change) |
-| `facts/inventory.md` | Extracted runtime and asset facts for the three T1 troops, with sources                                                                                                                                                                                           |
-| `skill/`             | (not in this repository) Skill text by version (`SKILL-v3.0.2.md` backup, `SKILL-v4.0.0.md` … ; the highest version is the installed copy); `CODEX-FOUR-VIEW-PROMPT.md` (the prompt that asks Codex for a troop's view packet)                                    |
-| `examples/id-map/`   | Format example of flat-colour part-ID maps and their legend                                                                                                                                                                                                       |
-| `review/`            | (not in this repository) Pose sheets (probe renders are in `probe/review/`)                                                                                                                                                                                       |
+| Path                         | What                                                                                                                                                                                                                                                              |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `CONTRACT.md`                | Frame, skeleton with helper joints and their runtime formula, binding rules, hands and sockets per troop, counts and budgets, mounts                                                                                                                              |
+| `template/`                  | Reference body: MakeHuman/MPFB base mesh with its game-engine weights on the family joints (CC0; licence in `template/mpfb/`; where the sources come from: `template/SOURCE.md`). `template.npz` + `template.json`                                                |
+| `harness/`                   | `thresholds.json` (pass criteria). The template's own harness reports are not kept; `tools/hb_selftest.sh` writes them again                                                                                                                                      |
+| `poses/`                     | Pose library: `general`, `knight`, `crossbowman`, `paladin`, `mount` (133 poses), `SCHEMA.md`, `limits.json`, `index.json`, authors' notes. Each pose's `sources` names its reference and licence; the reference images (`refs/`) are not in this repository      |
+| `tools/`                     | The pipeline (below)                                                                                                                                                                                                                                              |
+| `probe/`                     | (not in this repository) Tripo probe on the baseline test subject: the single-generation Knight, auto-rig and segmentation results, `PROBE.md`, `credit-ledger.json`; `assess/ASSESSMENT.md` (why the test subject's armpits fail and what the views must change) |
+| `facts/inventory.md`         | Extracted runtime and asset facts for the three T1 troops, with sources                                                                                                                                                                                           |
+| `skill/`                     | (not in this repository) Skill text by version (`SKILL-v3.0.2.md` backup, `SKILL-v4.0.0.md` … ; the highest version is the installed copy); `CODEX-FOUR-VIEW-PROMPT.md` (the prompt that asks Codex for a troop's view packet)                                    |
+| `examples/id-map/`           | Format example of flat-colour part-ID maps and their legend                                                                                                                                                                                                       |
+| `examples/knight-arm-poses/` | The two scripts that measured the Knight's in-game arm poses from its approved pose set, and what they write                                                                                                                                                      |
+| `review/`                    | (not in this repository) Pose sheets (probe renders are in `probe/review/`)                                                                                                                                                                                       |
 
 ## Pipeline
 
@@ -563,6 +564,48 @@ general reducer does to a layered mesh that a one-sided renderer then shows.
 - **Tried and dropped:** keeping the bind's texture seams whole in the reducer (`--seams`: the budgets could not be
   reached); a list of faces no camera ever sees, to drop before reducing (`hb_never_seen.py`: 3,889 of 23,319 generated
   faces at a 70 degree cone; they are what closes gaps in poses); the three tuck variants above.
+
+## Under the game's controller, 2026-10-09
+
+The Knight in the game's own pose controller, after it had passed every gate above and stood correctly in the comparison
+instance. Evidence: `../t1-knight-claude/v4/review/gym-motion/` (first capture), `gym-arms-final/` (last),
+`../t1-knight-claude/v4/work/integration/` (work orders K to N, `pose-reference.json`, `arm-poses.json`),
+`examples/knight-arm-poses/`.
+
+The comparison instance sets joint rotations directly. It shows that the files are right and nothing about what the
+game's controller will do with them. Every fault below was invisible until the model was captured in the game's
+development gym, standing, walking, running and attacking, large enough to judge the arms.
+
+- **The controller works at another figure's size.** Its offsets are metres for a figure about 1.9 tall, scaled by one
+  number. A model kept at its own size (0.61, so that gear and sockets stay as fitted) had its legs folded and its feet
+  9 cm off the floor until that number followed the measured leg length.
+- **A limb is given a direction, not a roll.** The controller turns an arm bone by the shortest arc from straight up to
+  where it should point. Gear the game orients itself never shows this. A shield fixed to the forearm does: it lay flat,
+  face up, with the forearm forward, and faced the knight's own chest with the forearm across the body.
+- **Posing the arm in the elbow's hinge frame is exact.** Upper arm and forearm each point where the solver puts them
+  and both keep the hinge axis, the normal of the plane through shoulder, elbow and wrist. From the same three points
+  this gives the turns of this baseline's pose solver to 0.00 degrees in every pose measured, so everything approved
+  about plates, sleeves and gear carries over. The game does it for a rig that asks.
+- **An elbow has one side.** The game's arm solver keeps the last frame's bend plane so elbows do not flicker. With
+  hinge arms a kept plane can leave the elbow on the far side of its pole for good, and everything fixed to the arm then
+  faces the wrong way round: the blade lay across the body and through the shield after one motion followed another. A
+  hinge arm bends towards its pole only.
+- **Do not describe arm poses in words.** Two rounds of targets written from a description ("shield half open on the
+  left, sword at the ready, elbow low") removed the contact between sword and shield and looked wrong: the sword held
+  out to the side, the blade pointing away from the target at contact, a shoulder plate showing its inside from behind.
+  The pose set approved with the gear already says how the arms are held. Measure it (`examples/knight-arm-poses/`):
+  wrist, the point the elbow bends towards, and the hand's turn on the forearm, relative to the chest.
+- **The wrist moves in the approved poses.** The hand turns 16 to 48 degrees on the forearm in the guard and cut poses.
+  With the wrist rigid the approved guard puts the blade through the shield; with the turn carried over it passes 24 mm
+  clear. Carry the turn with the pose.
+- **The game's legs are not the pose set's legs.** The approved walk carries the shield low. The game's walk and run
+  lift the knee higher than the pose set's walk does: the low shield came within 1 mm of the thigh in the game's walk
+  and 17 mm into it in its run. Standing still holds the carry; on the move the arms hold the guard.
+- **Check clearances by computation, on one figure, through the motions in turn.** Blade as a segment, arms and legs as
+  capsules, shield as a disc, sampled over idle, walk, run and the whole attack. Each motion on a fresh figure passed
+  while the elbow fault above was live; it showed only when one motion followed another.
+- **Open the frames.** A capture is evidence only at a size where the thing in question can be judged, and only once
+  someone has looked at it. A worker's sentence about a frame is not a look.
 
 ## Known limits (2026-10-04)
 
