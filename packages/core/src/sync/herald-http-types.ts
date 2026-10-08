@@ -54,6 +54,12 @@ export interface HeraldGameDirectoryEntry {
   dev_mode_on: boolean;
   /** A game with days: its day unit and the seed its bags of days are drawn from (decimal). */
   expedition: { day_unit_seconds: number; seed: string } | null;
+  /** Unknown on older Heralds; null outside a current Frontier day. Index is zero-based; times/durations are seconds. */
+  day_index?: number | null;
+  day_ends_at?: number | null;
+  next_day_length?: number | null;
+  /** One-based Frontier registry ordinal on this world, retained across finalization. */
+  season_number?: number | null;
   game_id: number;
   mode: "blitz" | "eternum" | "frontier" | "duel" | null;
   name: string;
