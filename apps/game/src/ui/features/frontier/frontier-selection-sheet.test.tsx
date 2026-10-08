@@ -72,7 +72,7 @@ it("offers depth entry from Frontier for an own army at the computed spire", asy
   const { store } = campBeside();
   store.applyFacts([
     // research.cairo: the depth row's tier sits at bit 46; Ethereal I is researched.
-    { model: "RealmKnowledge", key: "0x901", value: { game_id: 1, structure_id: 7, learned: 1n << 46n } },
+    { model: "RealmKnowledge", key: "0xd", value: { game_id: 1, structure_id: 7, learned: 1n << 46n } },
     {
       model: "DepthRules",
       key: "0x903",
@@ -89,6 +89,11 @@ it("offers depth entry from Frontier for an own army at the computed spire", asy
         ruin_guard_upper: 2,
         guard_step: 1,
       },
+    },
+    {
+      model: "TileOccupancy",
+      key: "0x75",
+      value: null,
     },
     {
       model: "TileOccupancy",
