@@ -352,7 +352,7 @@ const OWN_ROW: SeasonListRow = { key: "you", rank: 12, order: 12, name: YOU, sit
 const GUIDE_LINES = {
   reveal: "first-reveal",
   deploy: "deploy",
-  realm: "build-on-the-mark",
+  realm: "build-barracks",
   rest: "rest",
   fight: "losing-fight",
   season: "season-over",

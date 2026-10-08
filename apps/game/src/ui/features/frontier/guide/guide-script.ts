@@ -78,9 +78,9 @@ export const GUIDE_STEPS: readonly GuideStep[] = [
     when: (facts) => facts.realm,
   },
   {
-    id: "build-on-the-mark",
+    id: "build-barracks",
     mark: "speaking",
-    line: say("Build barracks on the marked plot. It trains troops twice as fast."),
+    line: say("Build barracks. Only barracks train new troops for your armies."),
     place: "realm",
     when: (facts) => facts.realm && !facts.barracks,
   },
