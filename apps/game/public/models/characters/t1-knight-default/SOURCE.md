@@ -36,7 +36,8 @@ centre; the shield's front faces +Z from an origin at the centre of its rear fac
 `apps/game/asset-sources/characters/t1-knight-default/runtime-fit.json` is the measured data the adapter is filled from:
 rest positions, helper rules and twist axes with 66 worked cases, both sockets, three knuckle points per hand and the
 feet. The adapter test and the driver test read it: the first compares the adapter's hands, feet, sockets and driven
-joints with it, the second takes its 66 worked cases from it.
+joints with it, the second takes its 66 worked cases from it. Its `from` field names the bound model file the data was
+measured from, which is among the sources kept by the author.
 
 ## Checking the files
 
