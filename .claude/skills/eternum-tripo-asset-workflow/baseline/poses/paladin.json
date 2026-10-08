@@ -1,0 +1,2354 @@
+{
+ "set": "paladin",
+ "applies_to": "paladin",
+ "version": 1,
+ "poses": [
+  {
+   "id": "seat-neutral",
+   "name": "Seated neutral at halt, sword upright at the right shoulder",
+   "description": "Seat and legs first: pelvis centred and upright (tilt 3), thighs 50 below horizontal, knees bent 70, heels down. Then trunk straight, ear over shoulder over hip over heel. Right fist holds the sword upright with the hilt at the shoulder; left fist holds both reins low behind the withers, little finger between them; the shield hangs on the left forearm, face to the left.",
+   "support": [
+    "seat",
+    "foot_l",
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "none",
+    "seat": {
+     "lean": 3,
+     "twist": 0,
+     "side": 0
+    }
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": 0,
+     "pitch": 3,
+     "roll": 0
+    },
+    "spine": {
+     "flex": 0,
+     "twist": 0,
+     "side": 0
+    },
+    "head": {
+     "yaw": 0,
+     "pitch": 3,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 43,
+     "elev": 28,
+     "rot": -20,
+     "elbow": 100,
+     "pron": 0,
+     "wrist_flex": 0,
+     "wrist_dev": -5
+    },
+    "arm_l": {
+     "plane": 78,
+     "elev": 25,
+     "rot": 0,
+     "elbow": 100,
+     "pron": 0,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 43,
+     "hip_abd": 20,
+     "hip_rot": -10,
+     "knee": 70,
+     "ankle": 10,
+     "toe": 0
+    },
+    "leg_l": {
+     "hip_flex": 43,
+     "hip_abd": 20,
+     "hip_rot": -10,
+     "knee": 70,
+     "ankle": 10,
+     "toe": 0
+    }
+   },
+   "items": {
+    "sword": {
+     "blade": [
+      0.1,
+      -0.15,
+      0.95
+     ]
+    },
+    "shield": {
+     "face": [
+      0.3,
+      0.95,
+      0.0
+     ]
+    }
+   },
+   "confidence": "estimated",
+   "refs": [
+    "../../t1-paladin-claude/research/poses/refs/seat-neutral-1.jpg",
+    "../../t1-paladin-claude/research/poses/refs/seat-neutral-3.jpg"
+   ],
+   "ref_notes": "seat-neutral-1: halted rider with the sword upright and a large round shield (Carnuntum). -3: distant halted riders for the sitting posture. Converted from the earlier table by hand; no still shows the sword exactly at the shoulder.",
+   "sources": [
+    {
+     "file": "../../t1-paladin-claude/research/poses/refs/seat-neutral-1.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Roman_cavalry_reenactment_Carnuntum_2008_09.jpg",
+     "credit": "User:MatthiasKabel via Wikimedia Commons",
+     "licence": "CC BY-SA 3.0"
+    },
+    {
+     "file": "../../t1-paladin-claude/research/poses/refs/seat-neutral-3.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Roman_Cavalry_Reenactment_-_Roman_Festival_at_Augusta_Raurica_-_August_2013-021.JPG",
+     "credit": "Codrin.B (uploader of the series; verified on the -021 page) via Wikimedia Commons",
+     "licence": "CC BY-SA 3.0"
+    }
+   ]
+  },
+  {
+   "id": "seat-at-ease",
+   "name": "Seated at ease, sword resting point down on the right thigh",
+   "description": "Relaxed halt. Pelvis settled back (tilt -5), back slightly rounded, legs hanging looser. The sword hangs from an almost straight right arm, point down against the right thigh. Left fist holds the reins low and loose; shield lies on the left thigh.",
+   "support": [
+    "seat",
+    "foot_l",
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "none",
+    "seat": {
+     "lean": -1,
+     "twist": 0,
+     "side": 0
+    }
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": 0,
+     "pitch": -5,
+     "roll": 0
+    },
+    "spine": {
+     "flex": 4,
+     "twist": 0,
+     "side": 0
+    },
+    "head": {
+     "yaw": 10,
+     "pitch": 8,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 32,
+     "elev": 9,
+     "rot": 10,
+     "elbow": 20,
+     "pron": 0,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "arm_l": {
+     "plane": 76,
+     "elev": 21,
+     "rot": 0,
+     "elbow": 110,
+     "pron": 0,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 33,
+     "hip_abd": 22,
+     "hip_rot": -10,
+     "knee": 72,
+     "ankle": 5,
+     "toe": 0
+    },
+    "leg_l": {
+     "hip_flex": 33,
+     "hip_abd": 22,
+     "hip_rot": -10,
+     "knee": 72,
+     "ankle": 5,
+     "toe": 0
+    }
+   },
+   "items": {
+    "sword": {
+     "blade": [
+      0.2,
+      -0.1,
+      -0.95
+     ]
+    },
+    "shield": {
+     "face": [
+      0.1,
+      1.0,
+      0.0
+     ]
+    }
+   },
+   "confidence": "estimated",
+   "refs": [
+    "../../t1-paladin-claude/research/poses/refs/seat-at-ease-1.jpg",
+    "../../t1-paladin-claude/research/poses/refs/seat-at-ease-2.jpg"
+   ],
+   "ref_notes": "seat-at-ease-1 and -2: riders sitting relaxed at a halt; the point-down sword is from general practice, no still shows it.",
+   "sources": [
+    {
+     "file": "../../t1-paladin-claude/research/poses/refs/seat-at-ease-1.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Hrrr_na_ne_43.jpg",
+     "credit": "Octopus moldavicus via Wikimedia Commons",
+     "licence": "CC BY-SA 3.0"
+    },
+    {
+     "file": "../../t1-paladin-claude/research/poses/refs/seat-at-ease-2.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Feira_Medieval_Vilela_2.jpg",
+     "credit": "MunParedes via Wikimedia Commons",
+     "licence": "CC BY-SA 4.0"
+    }
+   ]
+  },
+  {
+   "id": "walk-seat",
+   "name": "Seated walk, sword at the shoulder",
+   "description": "Seat follows the horse's back; pelvis rolls forward a few degrees each stride, shoulders level. Sword rests upright in the hollow of the right shoulder; reins in the left fist in light contact.",
+   "support": [
+    "seat",
+    "foot_l",
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "none",
+    "seat": {
+     "lean": 5,
+     "twist": 3,
+     "side": 0
+    }
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": 0,
+     "pitch": 5,
+     "roll": 0
+    },
+    "spine": {
+     "flex": 0,
+     "twist": 3,
+     "side": 0
+    },
+    "head": {
+     "yaw": 0,
+     "pitch": 3,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 35,
+     "elev": 25,
+     "rot": -20,
+     "elbow": 100,
+     "pron": 0,
+     "wrist_flex": 0,
+     "wrist_dev": -5
+    },
+    "arm_l": {
+     "plane": 78,
+     "elev": 25,
+     "rot": 0,
+     "elbow": 100,
+     "pron": 0,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 45,
+     "hip_abd": 20,
+     "hip_rot": -10,
+     "knee": 70,
+     "ankle": 10,
+     "toe": 0
+    },
+    "leg_l": {
+     "hip_flex": 45,
+     "hip_abd": 20,
+     "hip_rot": -10,
+     "knee": 70,
+     "ankle": 10,
+     "toe": 0
+    }
+   },
+   "items": {
+    "sword": {
+     "blade": [
+      0.0,
+      -0.2,
+      0.95
+     ]
+    },
+    "shield": {
+     "face": [
+      0.3,
+      0.95,
+      0.0
+     ]
+    }
+   },
+   "confidence": "estimated",
+   "refs": [
+    "../../t1-paladin-claude/research/poses/refs/walk-seat-1.jpg",
+    "../../t1-paladin-claude/research/poses/refs/walk-seat-2.jpg"
+   ],
+   "ref_notes": "walk-seat-1 and -2: medieval reenactment riders at a walk from the side and rear; seat and rein hand taken, weapons are lances.",
+   "sources": [
+    {
+     "file": "../../t1-paladin-claude/research/poses/refs/walk-seat-1.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Hrrr_na_ne_37.jpg",
+     "credit": "Octopus moldavicus via Wikimedia Commons",
+     "licence": "CC BY-SA 3.0"
+    },
+    {
+     "file": "../../t1-paladin-claude/research/poses/refs/walk-seat-2.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Hrrr_na_ne_38.jpg",
+     "credit": "Octopus moldavicus via Wikimedia Commons",
+     "licence": "CC BY-SA 3.0"
+    }
+   ]
+  },
+  {
+   "id": "rising-trot-up",
+   "name": "Rising trot, up",
+   "phase_of": "rising-trot",
+   "description": "Pelvis lifted just clear of the saddle by the knees, trunk inclined a little forward, hips and knees closed. The seat support is nominal for this instant. Sword carried at the shoulder, left fist steady.",
+   "support": [
+    "seat",
+    "foot_l",
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "none",
+    "seat": {
+     "lean": 18,
+     "twist": 0,
+     "side": 0
+    }
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": 0,
+     "pitch": 12,
+     "roll": 0
+    },
+    "spine": {
+     "flex": 6,
+     "twist": 0,
+     "side": 0
+    },
+    "head": {
+     "yaw": 0,
+     "pitch": 0,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 35,
+     "elev": 25,
+     "rot": -20,
+     "elbow": 100,
+     "pron": 0,
+     "wrist_flex": 0,
+     "wrist_dev": -5
+    },
+    "arm_l": {
+     "plane": 79,
+     "elev": 28,
+     "rot": 0,
+     "elbow": 100,
+     "pron": 0,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 64,
+     "hip_abd": 20,
+     "hip_rot": -10,
+     "knee": 80,
+     "ankle": 12,
+     "toe": 0
+    },
+    "leg_l": {
+     "hip_flex": 64,
+     "hip_abd": 20,
+     "hip_rot": -10,
+     "knee": 80,
+     "ankle": 12,
+     "toe": 0
+    }
+   },
+   "items": {
+    "sword": {
+     "blade": [
+      0.05,
+      -0.2,
+      0.95
+     ]
+    },
+    "shield": {
+     "face": [
+      0.3,
+      0.95,
+      0.0
+     ]
+    }
+   },
+   "confidence": "designed",
+   "refs": [
+    "refs/paladin/trot-seat-dressage.jpg"
+   ],
+   "ref_notes": "trot-seat-dressage: dressage trot, side view; trunk inclination taken. The rise itself is not shown; built from the half-seat notes.",
+   "sources": [
+    {
+     "file": "refs/paladin/trot-seat-dressage.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Abram_Hall_Dressage_June_2011_(66a).jpg",
+     "credit": "John Harwood via Wikimedia Commons",
+     "licence": "CC BY 2.0"
+    }
+   ]
+  },
+  {
+   "id": "rising-trot-down",
+   "name": "Rising trot, down",
+   "phase_of": "rising-trot",
+   "description": "Back in the saddle: pelvis down and slightly tilted, trunk nearly upright. Same arms as the up phase.",
+   "support": [
+    "seat",
+    "foot_l",
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "none",
+    "seat": {
+     "lean": 8,
+     "twist": 0,
+     "side": 0
+    }
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": 0,
+     "pitch": 5,
+     "roll": 0
+    },
+    "spine": {
+     "flex": 3,
+     "twist": 0,
+     "side": 0
+    },
+    "head": {
+     "yaw": 0,
+     "pitch": 2,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 35,
+     "elev": 25,
+     "rot": -20,
+     "elbow": 100,
+     "pron": 0,
+     "wrist_flex": 0,
+     "wrist_dev": -5
+    },
+    "arm_l": {
+     "plane": 79,
+     "elev": 26,
+     "rot": 0,
+     "elbow": 100,
+     "pron": 0,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 47,
+     "hip_abd": 20,
+     "hip_rot": -10,
+     "knee": 70,
+     "ankle": 10,
+     "toe": 0
+    },
+    "leg_l": {
+     "hip_flex": 47,
+     "hip_abd": 20,
+     "hip_rot": -10,
+     "knee": 70,
+     "ankle": 10,
+     "toe": 0
+    }
+   },
+   "items": {
+    "sword": {
+     "blade": [
+      0.05,
+      -0.2,
+      0.95
+     ]
+    },
+    "shield": {
+     "face": [
+      0.3,
+      0.95,
+      0.0
+     ]
+    }
+   },
+   "confidence": "designed",
+   "refs": [
+    "refs/paladin/trot-seat-dressage.jpg"
+   ],
+   "ref_notes": "trot-seat-dressage: a dressage rider seated in trot, trunk nearly upright; used for the down phase only.",
+   "sources": [
+    {
+     "file": "refs/paladin/trot-seat-dressage.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Abram_Hall_Dressage_June_2011_(66a).jpg",
+     "credit": "John Harwood via Wikimedia Commons",
+     "licence": "CC BY 2.0"
+    }
+   ]
+  },
+  {
+   "id": "canter-seat",
+   "name": "Canter seat",
+   "description": "Deep seat with the pelvis rocking forward and back through the three-beat stride; trunk upright, small inward twist of the chest. Sword at the shoulder, reins low.",
+   "support": [
+    "seat",
+    "foot_l",
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "none",
+    "seat": {
+     "lean": 10,
+     "twist": 3,
+     "side": 0
+    }
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": 0,
+     "pitch": 8,
+     "roll": 0
+    },
+    "spine": {
+     "flex": 2,
+     "twist": 3,
+     "side": 0
+    },
+    "head": {
+     "yaw": 0,
+     "pitch": 2,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 35,
+     "elev": 25,
+     "rot": -20,
+     "elbow": 100,
+     "pron": 0,
+     "wrist_flex": 0,
+     "wrist_dev": -5
+    },
+    "arm_l": {
+     "plane": 78,
+     "elev": 25,
+     "rot": 0,
+     "elbow": 100,
+     "pron": 0,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 48,
+     "hip_abd": 20,
+     "hip_rot": -10,
+     "knee": 72,
+     "ankle": 10,
+     "toe": 0
+    },
+    "leg_l": {
+     "hip_flex": 48,
+     "hip_abd": 20,
+     "hip_rot": -10,
+     "knee": 72,
+     "ankle": 10,
+     "toe": 0
+    }
+   },
+   "items": {
+    "sword": {
+     "blade": [
+      0.0,
+      -0.2,
+      0.95
+     ]
+    },
+    "shield": {
+     "face": [
+      0.3,
+      0.95,
+      0.0
+     ]
+    }
+   },
+   "confidence": "designed",
+   "refs": [
+    "../../t1-paladin-claude/research/poses/refs/seat-neutral-3.jpg"
+   ],
+   "ref_notes": "No canter still of a sword-carrying rider was kept; built from the walk seat and the seated canter description in the seat note.",
+   "sources": [
+    {
+     "file": "../../t1-paladin-claude/research/poses/refs/seat-neutral-3.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Roman_Cavalry_Reenactment_-_Roman_Festival_at_Augusta_Raurica_-_August_2013-021.JPG",
+     "credit": "Codrin.B (uploader of the series; verified on the -021 page) via Wikimedia Commons",
+     "licence": "CC BY-SA 3.0"
+    }
+   ]
+  },
+  {
+   "id": "gallop-two-point",
+   "name": "Gallop, forward (two-point) seat",
+   "description": "Seat out of the saddle and over the heels: pelvis pitched forward 18, trunk folded 14 more, knees closed to 90, heels down. Head up to look ahead. Sword carried forward and up in a bent arm; left fist forward over the withers.",
+   "support": [
+    "seat",
+    "foot_l",
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "none",
+    "seat": {
+     "lean": 32,
+     "twist": 0,
+     "side": 0
+    }
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": 0,
+     "pitch": 18,
+     "roll": 0
+    },
+    "spine": {
+     "flex": 14,
+     "twist": 0,
+     "side": 0
+    },
+    "head": {
+     "yaw": 0,
+     "pitch": -15,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 45,
+     "elev": 45,
+     "rot": -10,
+     "elbow": 115,
+     "pron": 0,
+     "wrist_flex": 0,
+     "wrist_dev": -10
+    },
+    "arm_l": {
+     "plane": 78,
+     "elev": 41,
+     "rot": 0,
+     "elbow": 95,
+     "pron": 0,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 83,
+     "hip_abd": 20,
+     "hip_rot": -10,
+     "knee": 90,
+     "ankle": 15,
+     "toe": 0
+    },
+    "leg_l": {
+     "hip_flex": 83,
+     "hip_abd": 20,
+     "hip_rot": -10,
+     "knee": 90,
+     "ankle": 15,
+     "toe": 0
+    }
+   },
+   "items": {
+    "sword": {
+     "blade": [
+      0.55,
+      -0.1,
+      0.75
+     ]
+    },
+    "shield": {
+     "face": [
+      0.5,
+      0.85,
+      0.0
+     ]
+    }
+   },
+   "confidence": "estimated",
+   "refs": [
+    "../../t1-paladin-claude/research/poses/refs/gallop-forward-seat-1.jpg",
+    "../../t1-paladin-claude/research/poses/refs/gallop-forward-seat-2.jpg"
+   ],
+   "ref_notes": "gallop-forward-seat-1 and -2: jockey and cavalry riders in the forward seat; torso and knee angles by eye.",
+   "sources": [
+    {
+     "file": "../../t1-paladin-claude/research/poses/refs/gallop-forward-seat-1.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:A_galloping_horse_and_rider._Plate_6_Wellcome_L0038062.jpg",
+     "credit": "Eadweard Muybridge and University of Pennsylvania (Wellcome Library, London) via Wikimedia Commons",
+     "licence": "CC BY 4.0"
+    },
+    {
+     "file": "../../t1-paladin-claude/research/poses/refs/gallop-forward-seat-2.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Tentpegging_Individual_Lance_Sequence.jpg",
+     "credit": "Xenophon16 via Wikimedia Commons",
+     "licence": "CC BY-SA 4.0"
+    }
+   ]
+  },
+  {
+   "id": "halt-rein-back-lean",
+   "name": "Halt and rein-back, leaning back",
+   "description": "Pelvis tilts back (-8) and the trunk leans a few degrees behind the vertical, heels pushed down, left fist raised and drawn back toward the belly to ask the horse to stop or step back.",
+   "support": [
+    "seat",
+    "foot_l",
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "none",
+    "seat": {
+     "lean": -14,
+     "twist": 0,
+     "side": 0
+    }
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": 0,
+     "pitch": -8,
+     "roll": 0
+    },
+    "spine": {
+     "flex": -6,
+     "twist": 0,
+     "side": 0
+    },
+    "head": {
+     "yaw": 0,
+     "pitch": -2,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 43,
+     "elev": 28,
+     "rot": -20,
+     "elbow": 100,
+     "pron": 0,
+     "wrist_flex": 0,
+     "wrist_dev": -5
+    },
+    "arm_l": {
+     "plane": 76,
+     "elev": 21,
+     "rot": 0,
+     "elbow": 95,
+     "pron": 0,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 27,
+     "hip_abd": 20,
+     "hip_rot": -10,
+     "knee": 65,
+     "ankle": 15,
+     "toe": 0
+    },
+    "leg_l": {
+     "hip_flex": 27,
+     "hip_abd": 20,
+     "hip_rot": -10,
+     "knee": 65,
+     "ankle": 15,
+     "toe": 0
+    }
+   },
+   "items": {
+    "sword": {
+     "blade": [
+      0.05,
+      -0.1,
+      0.95
+     ]
+    },
+    "shield": {
+     "face": [
+      0.1,
+      1.0,
+      0.0
+     ]
+    }
+   },
+   "confidence": "estimated",
+   "refs": [
+    "../../t1-paladin-claude/research/poses/refs/rein-check-1.jpg",
+    "../../t1-paladin-claude/research/poses/refs/rein-check-2.jpg"
+   ],
+   "ref_notes": "rein-check-1 and -2: riders sitting back with the hand drawn in; lean amount judged by eye.",
+   "sources": [
+    {
+     "file": "../../t1-paladin-claude/research/poses/refs/rein-check-1.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Backward_canter_of_K%C5%8Dhei_Yusa%27s_horse.jpg",
+     "credit": "Unknown author (1932 book by Yusa Kohei; public domain, Japan, published before 1958) via Wikimedia Commons",
+     "licence": "Public domain"
+    },
+    {
+     "file": "../../t1-paladin-claude/research/poses/refs/rein-check-2.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Beudant-Mabrouk_galop3jambes.jpg",
+     "credit": "Unknown author (E. Beudant, Exterieur et Haute Ecole, 1923; public domain, anonymous pre-1931) via Wikimedia Commons",
+     "licence": "Public domain"
+    }
+   ]
+  },
+  {
+   "id": "turn-saddle-left",
+   "name": "Turn in the saddle, left",
+   "description": "Pelvis follows the horse's left turn (+5), chest twists 20 left and head looks 60 left into the turn. Left fist moves left over the neck; shield swings forward.",
+   "support": [
+    "seat",
+    "foot_l",
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "none",
+    "seat": {
+     "lean": 3,
+     "twist": 25,
+     "side": 3
+    }
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": 5,
+     "pitch": 3,
+     "roll": 0
+    },
+    "spine": {
+     "flex": 0,
+     "twist": 20,
+     "side": 3
+    },
+    "head": {
+     "yaw": 60,
+     "pitch": 3,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 43,
+     "elev": 28,
+     "rot": -20,
+     "elbow": 100,
+     "pron": 0,
+     "wrist_flex": 0,
+     "wrist_dev": -5
+    },
+    "arm_l": {
+     "plane": 78,
+     "elev": 25,
+     "rot": 0,
+     "elbow": 100,
+     "pron": 0,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 43,
+     "hip_abd": 20,
+     "hip_rot": -10,
+     "knee": 70,
+     "ankle": 10,
+     "toe": 0
+    },
+    "leg_l": {
+     "hip_flex": 43,
+     "hip_abd": 20,
+     "hip_rot": -10,
+     "knee": 70,
+     "ankle": 10,
+     "toe": 0
+    }
+   },
+   "items": {
+    "sword": {
+     "blade": [
+      0.1,
+      -0.15,
+      0.95
+     ]
+    },
+    "shield": {
+     "face": [
+      0.7,
+      0.7,
+      0.0
+     ]
+    }
+   },
+   "confidence": "estimated",
+   "refs": [
+    "../../t1-paladin-claude/research/poses/refs/turn-left-1.jpg",
+    "../../t1-paladin-claude/research/poses/refs/turn-left-2.jpg"
+   ],
+   "ref_notes": "turn-left-1 and -2: riders looking into a left turn; chest and head twist by eye.",
+   "sources": [
+    {
+     "file": "../../t1-paladin-claude/research/poses/refs/turn-left-1.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Roman_cavalry_reenactment_Carnuntum_2008_13.jpg",
+     "credit": "User:MatthiasKabel via Wikimedia Commons",
+     "licence": "CC BY-SA 3.0"
+    },
+    {
+     "file": "../../t1-paladin-claude/research/poses/refs/turn-left-2.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Roman_cavalry_reenactment_Carnuntum_2008_04.jpg",
+     "credit": "User:MatthiasKabel via Wikimedia Commons",
+     "licence": "CC BY-SA 3.0"
+    }
+   ]
+  },
+  {
+   "id": "turn-saddle-right",
+   "name": "Turn in the saddle, right",
+   "description": "Mirror of the left turn with a bearing rein: pelvis -5, chest twists 20 right, head 60 right; the left fist crosses to the right over the withers; shield stays near the left thigh.",
+   "support": [
+    "seat",
+    "foot_l",
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "none",
+    "seat": {
+     "lean": 3,
+     "twist": -25,
+     "side": -3
+    }
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": -5,
+     "pitch": 3,
+     "roll": 0
+    },
+    "spine": {
+     "flex": 0,
+     "twist": -20,
+     "side": -3
+    },
+    "head": {
+     "yaw": -60,
+     "pitch": 3,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 43,
+     "elev": 28,
+     "rot": -20,
+     "elbow": 100,
+     "pron": 0,
+     "wrist_flex": 0,
+     "wrist_dev": -5
+    },
+    "arm_l": {
+     "plane": 90,
+     "elev": 28,
+     "rot": 10,
+     "elbow": 100,
+     "pron": 0,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 43,
+     "hip_abd": 20,
+     "hip_rot": -10,
+     "knee": 70,
+     "ankle": 10,
+     "toe": 0
+    },
+    "leg_l": {
+     "hip_flex": 43,
+     "hip_abd": 20,
+     "hip_rot": -10,
+     "knee": 70,
+     "ankle": 10,
+     "toe": 0
+    }
+   },
+   "items": {
+    "sword": {
+     "blade": [
+      0.1,
+      -0.15,
+      0.95
+     ]
+    },
+    "shield": {
+     "face": [
+      0.2,
+      0.95,
+      0.0
+     ]
+    }
+   },
+   "confidence": "designed",
+   "refs": [
+    "../../t1-paladin-claude/research/poses/refs/turn-left-1.jpg"
+   ],
+   "ref_notes": "Mirror variant of the left-turn references; not photographed.",
+   "sources": [
+    {
+     "file": "../../t1-paladin-claude/research/poses/refs/turn-left-1.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Roman_cavalry_reenactment_Carnuntum_2008_13.jpg",
+     "credit": "User:MatthiasKabel via Wikimedia Commons",
+     "licence": "CC BY-SA 3.0"
+    }
+   ]
+  },
+  {
+   "id": "look-behind",
+   "name": "Look behind",
+   "description": "Seat fixed; chest twisted 35 right and head 70 right to look back over the right shoulder. Sword and reins unchanged.",
+   "support": [
+    "seat",
+    "foot_l",
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "none",
+    "seat": {
+     "lean": 3,
+     "twist": -43,
+     "side": 0
+    }
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": -8,
+     "pitch": 3,
+     "roll": 0
+    },
+    "spine": {
+     "flex": 0,
+     "twist": -35,
+     "side": 0
+    },
+    "head": {
+     "yaw": -70,
+     "pitch": 3,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 43,
+     "elev": 28,
+     "rot": -20,
+     "elbow": 100,
+     "pron": 0,
+     "wrist_flex": 0,
+     "wrist_dev": -5
+    },
+    "arm_l": {
+     "plane": 78,
+     "elev": 25,
+     "rot": 0,
+     "elbow": 100,
+     "pron": 0,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 43,
+     "hip_abd": 20,
+     "hip_rot": -10,
+     "knee": 70,
+     "ankle": 10,
+     "toe": 0
+    },
+    "leg_l": {
+     "hip_flex": 43,
+     "hip_abd": 20,
+     "hip_rot": -10,
+     "knee": 70,
+     "ankle": 10,
+     "toe": 0
+    }
+   },
+   "items": {
+    "sword": {
+     "blade": [
+      0.1,
+      -0.15,
+      0.95
+     ]
+    },
+    "shield": {
+     "face": [
+      0.3,
+      0.95,
+      0.0
+     ]
+    }
+   },
+   "confidence": "estimated",
+   "refs": [
+    "../../t1-paladin-claude/research/poses/refs/look-behind-1.jpg",
+    "../../t1-paladin-claude/research/poses/refs/look-behind-2.jpg"
+   ],
+   "ref_notes": "look-behind-1 and -2: riders twisted round to look back; twist split between chest and head by eye.",
+   "sources": [
+    {
+     "file": "../../t1-paladin-claude/research/poses/refs/look-behind-1.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Hrrr_na_ne_36.jpg",
+     "credit": "Octopus moldavicus via Wikimedia Commons",
+     "licence": "CC BY-SA 3.0"
+    },
+    {
+     "file": "../../t1-paladin-claude/research/poses/refs/look-behind-2.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Roman_cavalry_reenactment_Carnuntum_2008_14.jpg",
+     "credit": "User:MatthiasKabel via Wikimedia Commons",
+     "licence": "CC BY-SA 3.0"
+    }
+   ]
+  },
+  {
+   "id": "cut-windup",
+   "name": "Cut down to the right, wind-up",
+   "phase_of": "cut-down-right",
+   "description": "Seat and legs unchanged. Chest turns 15 right, right arm raised and cocked: upper arm turned out so the sword rests behind the right shoulder, blade leaning back. Left fist stays low.",
+   "support": [
+    "seat",
+    "foot_l",
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "none",
+    "seat": {
+     "lean": 0,
+     "twist": -15,
+     "side": 0
+    }
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": 0,
+     "pitch": 3,
+     "roll": 0
+    },
+    "spine": {
+     "flex": -3,
+     "twist": -15,
+     "side": 0
+    },
+    "head": {
+     "yaw": 10,
+     "pitch": 3,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 20,
+     "elev": 93,
+     "rot": -55,
+     "elbow": 110,
+     "pron": 20,
+     "wrist_flex": 0,
+     "wrist_dev": 15
+    },
+    "arm_l": {
+     "plane": 78,
+     "elev": 25,
+     "rot": 0,
+     "elbow": 100,
+     "pron": 0,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 43,
+     "hip_abd": 20,
+     "hip_rot": -10,
+     "knee": 70,
+     "ankle": 10,
+     "toe": 0
+    },
+    "leg_l": {
+     "hip_flex": 43,
+     "hip_abd": 20,
+     "hip_rot": -10,
+     "knee": 70,
+     "ankle": 10,
+     "toe": 0
+    }
+   },
+   "items": {
+    "sword": {
+     "blade": [
+      -0.6,
+      -0.35,
+      0.7
+     ]
+    },
+    "shield": {
+     "face": [
+      0.4,
+      0.85,
+      0.3
+     ]
+    }
+   },
+   "confidence": "estimated",
+   "refs": [
+    "../../t1-paladin-claude/research/poses/refs/cut-windup-high-1.jpg",
+    "../../t1-paladin-claude/research/poses/refs/cut-windup-high-2.jpg"
+   ],
+   "ref_notes": "cut-windup-high-1 and -2: sword raised behind the shoulder on horseback; arm external rotation chosen so the forearm points up.",
+   "sources": [
+    {
+     "file": "../../t1-paladin-claude/research/poses/refs/cut-windup-high-1.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Roman_cavalry_reenactment_Carnuntum_2008_09.jpg",
+     "credit": "User:MatthiasKabel via Wikimedia Commons",
+     "licence": "CC BY-SA 3.0"
+    },
+    {
+     "file": "../../t1-paladin-claude/research/poses/refs/cut-windup-high-2.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Cedar_Creek_reenactment_VA4.jpg",
+     "credit": "Acroterion via Wikimedia Commons",
+     "licence": "CC BY-SA 4.0"
+    }
+   ]
+  },
+  {
+   "id": "cut-strike-right",
+   "name": "Cut down to the right, strike",
+   "phase_of": "cut-down-right",
+   "description": "Seat bones stay down. Trunk bends from the waist 20 forward and 24 to the right with the chest turned 25 right; right arm extends outward and down, blade angled down and outward. Right thigh opens slightly.",
+   "support": [
+    "seat",
+    "foot_l",
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "none",
+    "seat": {
+     "lean": 23,
+     "twist": -35,
+     "side": -24
+    }
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": -10,
+     "pitch": 3,
+     "roll": 3
+    },
+    "spine": {
+     "flex": 20,
+     "twist": -25,
+     "side": -24
+    },
+    "head": {
+     "yaw": -20,
+     "pitch": 20,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 30,
+     "elev": 71,
+     "rot": 10,
+     "elbow": 25,
+     "pron": -30,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "arm_l": {
+     "plane": 76,
+     "elev": 21,
+     "rot": 0,
+     "elbow": 110,
+     "pron": 0,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 45,
+     "hip_abd": 24,
+     "hip_rot": -10,
+     "knee": 75,
+     "ankle": 10,
+     "toe": 0
+    },
+    "leg_l": {
+     "hip_flex": 43,
+     "hip_abd": 20,
+     "hip_rot": -10,
+     "knee": 68,
+     "ankle": 10,
+     "toe": 0
+    }
+   },
+   "items": {
+    "sword": {
+     "blade": [
+      0.5,
+      -0.65,
+      -0.55
+     ]
+    },
+    "shield": {
+     "face": [
+      0.1,
+      1.0,
+      0.0
+     ]
+    }
+   },
+   "confidence": "estimated",
+   "refs": [
+    "../../t1-paladin-claude/research/poses/refs/cut-down-right-1.jpg",
+    "../../t1-paladin-claude/research/poses/refs/cut-down-right-2.jpg"
+   ],
+   "ref_notes": "cut-down-right-1 and -2: riders striking down on the right side; lean and arm line by eye.",
+   "sources": [
+    {
+     "file": "../../t1-paladin-claude/research/poses/refs/cut-down-right-1.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Roman_cavalry_reenactment_Carnuntum_2008_10.jpg",
+     "credit": "User:MatthiasKabel via Wikimedia Commons",
+     "licence": "CC BY-SA 3.0"
+    },
+    {
+     "file": "../../t1-paladin-claude/research/poses/refs/cut-down-right-2.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Roman_cavalry_reenactment_Carnuntum_2008_08.jpg",
+     "credit": "User:MatthiasKabel via Wikimedia Commons",
+     "licence": "CC BY-SA 3.0"
+    }
+   ]
+  },
+  {
+   "id": "cut-follow-right",
+   "name": "Cut down to the right, follow-through",
+   "phase_of": "cut-down-right",
+   "description": "Blade swept down past the right leg and backward; trunk bent 25 forward and 25 right, chest turned 30 right, head following the blade. Left fist still low.",
+   "support": [
+    "seat",
+    "foot_l",
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "none",
+    "seat": {
+     "lean": 28,
+     "twist": -42,
+     "side": -25
+    }
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": -12,
+     "pitch": 3,
+     "roll": 4
+    },
+    "spine": {
+     "flex": 25,
+     "twist": -30,
+     "side": -25
+    },
+    "head": {
+     "yaw": -30,
+     "pitch": 15,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 11,
+     "elev": 62,
+     "rot": 10,
+     "elbow": 25,
+     "pron": -20,
+     "wrist_flex": 0,
+     "wrist_dev": -5
+    },
+    "arm_l": {
+     "plane": 78,
+     "elev": 25,
+     "rot": 0,
+     "elbow": 110,
+     "pron": 0,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 47,
+     "hip_abd": 26,
+     "hip_rot": -10,
+     "knee": 78,
+     "ankle": 10,
+     "toe": 0
+    },
+    "leg_l": {
+     "hip_flex": 43,
+     "hip_abd": 20,
+     "hip_rot": -10,
+     "knee": 66,
+     "ankle": 10,
+     "toe": 0
+    }
+   },
+   "items": {
+    "sword": {
+     "blade": [
+      -0.3,
+      -0.3,
+      -0.9
+     ]
+    },
+    "shield": {
+     "face": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    }
+   },
+   "confidence": "estimated",
+   "refs": [
+    "../../t1-paladin-claude/research/poses/refs/cut-followthrough-right-1.jpg",
+    "../../t1-paladin-claude/research/poses/refs/cut-followthrough-right-2.jpg"
+   ],
+   "ref_notes": "cut-followthrough-right-1 and -2: end of a downward cut on horseback.",
+   "sources": [
+    {
+     "file": "../../t1-paladin-claude/research/poses/refs/cut-followthrough-right-1.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Roman_cavalry_reenactment_Carnuntum_2008_07.jpg",
+     "credit": "User:MatthiasKabel via Wikimedia Commons",
+     "licence": "CC BY-SA 3.0"
+    },
+    {
+     "file": "../../t1-paladin-claude/research/poses/refs/cut-followthrough-right-2.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Cedar_Creek_reenactment_VA3.jpg",
+     "credit": "Acroterion via Wikimedia Commons",
+     "licence": "CC BY-SA 4.0"
+    }
+   ]
+  },
+  {
+   "id": "cut-cross-left",
+   "name": "Cross-body cut to the left over the horse's neck",
+   "description": "Chest turned 25 left, trunk bent 8 forward; the right arm crosses the body, forearm turned over (pronated 60), the sword sweeping from the right shoulder across to the left past the horse's neck. Left fist held back and low so the reins stay slack.",
+   "support": [
+    "seat",
+    "foot_l",
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "none",
+    "seat": {
+     "lean": 11,
+     "twist": 33,
+     "side": 0
+    }
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": 8,
+     "pitch": 3,
+     "roll": 0
+    },
+    "spine": {
+     "flex": 8,
+     "twist": 25,
+     "side": 0
+    },
+    "head": {
+     "yaw": 15,
+     "pitch": 3,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 111,
+     "elev": 71,
+     "rot": 20,
+     "elbow": 60,
+     "pron": 60,
+     "wrist_flex": 0,
+     "wrist_dev": -15
+    },
+    "arm_l": {
+     "plane": 90,
+     "elev": 15,
+     "rot": 0,
+     "elbow": 115,
+     "pron": 0,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 43,
+     "hip_abd": 20,
+     "hip_rot": -10,
+     "knee": 70,
+     "ankle": 10,
+     "toe": 0
+    },
+    "leg_l": {
+     "hip_flex": 43,
+     "hip_abd": 20,
+     "hip_rot": -10,
+     "knee": 70,
+     "ankle": 10,
+     "toe": 0
+    }
+   },
+   "items": {
+    "sword": {
+     "blade": [
+      0.5,
+      0.8,
+      0.3
+     ]
+    },
+    "shield": {
+     "face": [
+      0.5,
+      0.8,
+      0.3
+     ]
+    }
+   },
+   "confidence": "estimated",
+   "refs": [
+    "../../t1-paladin-claude/research/poses/refs/cut-left-across-1.jpg",
+    "../../t1-paladin-claude/research/poses/refs/cut-left-across-2.jpg"
+   ],
+   "ref_notes": "cut-left-across-1 and -2: riders cutting across to the left; arm roll by eye.",
+   "sources": [
+    {
+     "file": "../../t1-paladin-claude/research/poses/refs/cut-left-across-1.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Roman_cavalry_reenactment_Carnuntum_2008_11.jpg",
+     "credit": "User:MatthiasKabel via Wikimedia Commons",
+     "licence": "CC BY-SA 3.0"
+    },
+    {
+     "file": "../../t1-paladin-claude/research/poses/refs/cut-left-across-2.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Roman_cavalry_reenactment_Carnuntum_2008_13.jpg",
+     "credit": "User:MatthiasKabel via Wikimedia Commons",
+     "licence": "CC BY-SA 3.0"
+    }
+   ]
+  },
+  {
+   "id": "thrust-forward",
+   "name": "Forward point at the charge",
+   "description": "Trunk leaning 18 forward over the pommel, chest turned 12 left, right arm extended forward with the sword level at the front, elbow still bent 25. Shield held forward on the left forearm.",
+   "support": [
+    "seat",
+    "foot_l",
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "none",
+    "seat": {
+     "lean": 18,
+     "twist": 12,
+     "side": 0
+    }
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": 0,
+     "pitch": 8,
+     "roll": 0
+    },
+    "spine": {
+     "flex": 10,
+     "twist": 12,
+     "side": 0
+    },
+    "head": {
+     "yaw": -8,
+     "pitch": 0,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 75,
+     "elev": 85,
+     "rot": 0,
+     "elbow": 25,
+     "pron": -15,
+     "wrist_flex": 0,
+     "wrist_dev": -20
+    },
+    "arm_l": {
+     "plane": 78,
+     "elev": 25,
+     "rot": 0,
+     "elbow": 100,
+     "pron": 0,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 48,
+     "hip_abd": 20,
+     "hip_rot": -10,
+     "knee": 70,
+     "ankle": 10,
+     "toe": 0
+    },
+    "leg_l": {
+     "hip_flex": 48,
+     "hip_abd": 20,
+     "hip_rot": -10,
+     "knee": 70,
+     "ankle": 10,
+     "toe": 0
+    }
+   },
+   "items": {
+    "sword": {
+     "blade": [
+      0.97,
+      0.0,
+      0.05
+     ]
+    },
+    "shield": {
+     "face": [
+      0.5,
+      0.85,
+      0.1
+     ]
+    }
+   },
+   "confidence": "estimated",
+   "refs": [
+    "../../t1-paladin-claude/research/poses/refs/sword-point-forward-1.jpg",
+    "../../t1-paladin-claude/research/poses/refs/sword-point-forward-2.jpg"
+   ],
+   "ref_notes": "sword-point-forward-1 and -2: riders with an arm and weapon level to the front; wrist ulnar deviation taken at the 20 limit.",
+   "sources": [
+    {
+     "file": "../../t1-paladin-claude/research/poses/refs/sword-point-forward-1.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Roman_cavalry_reenactment_Carnuntum_2008_07.jpg",
+     "credit": "User:MatthiasKabel via Wikimedia Commons",
+     "licence": "CC BY-SA 3.0"
+    },
+    {
+     "file": "../../t1-paladin-claude/research/poses/refs/sword-point-forward-2.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Roman_cavalry_reenactment_Carnuntum_2008_10.jpg",
+     "credit": "User:MatthiasKabel via Wikimedia Commons",
+     "licence": "CC BY-SA 3.0"
+    }
+   ]
+  },
+  {
+   "id": "cut-overhead",
+   "name": "Overhead cut, at the strike",
+   "phase_of": "cut-overhead",
+   "description": "Sword brought up and over, now falling forward: right arm elevated 105 and bent 65, trunk folded 15 forward, chin tucked. Seat down; left fist low.",
+   "support": [
+    "seat",
+    "foot_l",
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "none",
+    "seat": {
+     "lean": 21,
+     "twist": -5,
+     "side": 0
+    }
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": 0,
+     "pitch": 6,
+     "roll": 0
+    },
+    "spine": {
+     "flex": 15,
+     "twist": -5,
+     "side": 0
+    },
+    "head": {
+     "yaw": 0,
+     "pitch": 10,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 60,
+     "elev": 105,
+     "rot": -30,
+     "elbow": 65,
+     "pron": 10,
+     "wrist_flex": 0,
+     "wrist_dev": 10
+    },
+    "arm_l": {
+     "plane": 78,
+     "elev": 25,
+     "rot": 0,
+     "elbow": 100,
+     "pron": 0,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 46,
+     "hip_abd": 20,
+     "hip_rot": -10,
+     "knee": 70,
+     "ankle": 10,
+     "toe": 0
+    },
+    "leg_l": {
+     "hip_flex": 46,
+     "hip_abd": 20,
+     "hip_rot": -10,
+     "knee": 70,
+     "ankle": 10,
+     "toe": 0
+    }
+   },
+   "items": {
+    "sword": {
+     "blade": [
+      0.75,
+      -0.1,
+      -0.65
+     ]
+    },
+    "shield": {
+     "face": [
+      0.3,
+      0.95,
+      0.0
+     ]
+    }
+   },
+   "confidence": "designed",
+   "refs": [],
+   "ref_notes": "No usable photograph of a mounted overhead strike; numbers built from the wind-up reference and keeping elevation under the 120 armour limit.",
+   "sources": []
+  },
+  {
+   "id": "shield-cover-left",
+   "name": "Shield cover, left",
+   "description": "Chest turned 10 left, left arm raised and out 40 so the shield covers the rider's left side; the reins stay in the fist, which lifts with the forearm.",
+   "support": [
+    "seat",
+    "foot_l",
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "none",
+    "seat": {
+     "lean": 8,
+     "twist": 10,
+     "side": 0
+    }
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": 0,
+     "pitch": 3,
+     "roll": 0
+    },
+    "spine": {
+     "flex": 5,
+     "twist": 10,
+     "side": 0
+    },
+    "head": {
+     "yaw": 0,
+     "pitch": 5,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 43,
+     "elev": 28,
+     "rot": -20,
+     "elbow": 100,
+     "pron": 0,
+     "wrist_flex": 0,
+     "wrist_dev": -5
+    },
+    "arm_l": {
+     "plane": 46,
+     "elev": 67,
+     "rot": 0,
+     "elbow": 100,
+     "pron": 0,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 43,
+     "hip_abd": 20,
+     "hip_rot": -10,
+     "knee": 70,
+     "ankle": 10,
+     "toe": 0
+    },
+    "leg_l": {
+     "hip_flex": 43,
+     "hip_abd": 20,
+     "hip_rot": -10,
+     "knee": 70,
+     "ankle": 10,
+     "toe": 0
+    }
+   },
+   "items": {
+    "sword": {
+     "blade": [
+      0.1,
+      -0.1,
+      0.9
+     ]
+    },
+    "shield": {
+     "face": [
+      0.1,
+      0.9,
+      0.4
+     ]
+    }
+   },
+   "confidence": "estimated",
+   "refs": [
+    "../../t1-paladin-claude/research/poses/refs/shield-cover-left-1.jpg",
+    "../../t1-paladin-claude/research/poses/refs/shield-cover-left-2.jpg"
+   ],
+   "ref_notes": "shield-cover-left-1 and -2: riders with the shield raised to the left.",
+   "sources": [
+    {
+     "file": "../../t1-paladin-claude/research/poses/refs/shield-cover-left-1.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Roman_cavalry_reenactment_Carnuntum_2008_04.jpg",
+     "credit": "User:MatthiasKabel via Wikimedia Commons",
+     "licence": "CC BY-SA 3.0"
+    },
+    {
+     "file": "../../t1-paladin-claude/research/poses/refs/shield-cover-left-2.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Roman_cavalry_reenactment_Carnuntum_2008_11.jpg",
+     "credit": "User:MatthiasKabel via Wikimedia Commons",
+     "licence": "CC BY-SA 3.0"
+    }
+   ]
+  },
+  {
+   "id": "shield-cover-front",
+   "name": "Shield cover, front",
+   "description": "Trunk leans 18 forward, head ducks behind the shield; the left upper arm is raised to horizontal and the forearm stands up, holding the shield in front of face and chest.",
+   "support": [
+    "seat",
+    "foot_l",
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "none",
+    "seat": {
+     "lean": 18,
+     "twist": 0,
+     "side": 0
+    }
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": 0,
+     "pitch": 8,
+     "roll": 0
+    },
+    "spine": {
+     "flex": 10,
+     "twist": 0,
+     "side": 0
+    },
+    "head": {
+     "yaw": 0,
+     "pitch": 10,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 43,
+     "elev": 28,
+     "rot": -20,
+     "elbow": 100,
+     "pron": 0,
+     "wrist_flex": 0,
+     "wrist_dev": -5
+    },
+    "arm_l": {
+     "plane": 75,
+     "elev": 90,
+     "rot": 0,
+     "elbow": 100,
+     "pron": 0,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 48,
+     "hip_abd": 20,
+     "hip_rot": -10,
+     "knee": 70,
+     "ankle": 10,
+     "toe": 0
+    },
+    "leg_l": {
+     "hip_flex": 48,
+     "hip_abd": 20,
+     "hip_rot": -10,
+     "knee": 70,
+     "ankle": 10,
+     "toe": 0
+    }
+   },
+   "items": {
+    "sword": {
+     "blade": [
+      0.2,
+      -0.1,
+      0.9
+     ]
+    },
+    "shield": {
+     "face": [
+      0.85,
+      0.2,
+      0.4
+     ]
+    }
+   },
+   "confidence": "estimated",
+   "refs": [
+    "../../t1-paladin-claude/research/poses/refs/shield-cover-front-high-1.jpg",
+    "../../t1-paladin-claude/research/poses/refs/shield-cover-front-high-2.jpg"
+   ],
+   "ref_notes": "shield-cover-front-high-1 and -2: shield raised in front of the face.",
+   "sources": [
+    {
+     "file": "../../t1-paladin-claude/research/poses/refs/shield-cover-front-high-1.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Roman_cavalry_reenactment_Carnuntum_2008_01.jpg",
+     "credit": "User:MatthiasKabel via Wikimedia Commons",
+     "licence": "CC BY-SA 3.0"
+    },
+    {
+     "file": "../../t1-paladin-claude/research/poses/refs/shield-cover-front-high-2.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Roman_cavalry_reenactment_Carnuntum_2008_02.jpg",
+     "credit": "User:MatthiasKabel via Wikimedia Commons",
+     "licence": "CC BY-SA 3.0"
+    }
+   ]
+  },
+  {
+   "id": "brace-impact",
+   "name": "Brace for impact",
+   "description": "Pelvis forward 10 and trunk bent 20 more, head tucked behind the shield; legs clamp tight (knees 80). Shield raised in front on the left; the sword held upright against the right side, elbow bent about 120.",
+   "support": [
+    "seat",
+    "foot_l",
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "none",
+    "seat": {
+     "lean": 30,
+     "twist": 0,
+     "side": 0
+    }
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": 0,
+     "pitch": 10,
+     "roll": 0
+    },
+    "spine": {
+     "flex": 20,
+     "twist": 0,
+     "side": 0
+    },
+    "head": {
+     "yaw": 0,
+     "pitch": 25,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 30,
+     "elev": 20,
+     "rot": 0,
+     "elbow": 120,
+     "pron": 0,
+     "wrist_flex": 5,
+     "wrist_dev": -5
+    },
+    "arm_l": {
+     "plane": 75,
+     "elev": 90,
+     "rot": 0,
+     "elbow": 110,
+     "pron": 0,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 60,
+     "hip_abd": 20,
+     "hip_rot": -10,
+     "knee": 80,
+     "ankle": 10,
+     "toe": 0
+    },
+    "leg_l": {
+     "hip_flex": 60,
+     "hip_abd": 20,
+     "hip_rot": -10,
+     "knee": 80,
+     "ankle": 10,
+     "toe": 0
+    }
+   },
+   "items": {
+    "sword": {
+     "blade": [
+      0.2,
+      -0.1,
+      0.97
+     ]
+    },
+    "shield": {
+     "face": [
+      0.9,
+      0.2,
+      0.3
+     ]
+    }
+   },
+   "confidence": "designed",
+   "refs": [
+    "../../t1-paladin-claude/research/poses/refs/shield-cover-front-high-1.jpg"
+   ],
+   "ref_notes": "shield-cover-front-high-1 for the raised shield. The crouch, tuck and sword position have no reference.",
+   "sources": [
+    {
+     "file": "../../t1-paladin-claude/research/poses/refs/shield-cover-front-high-1.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Roman_cavalry_reenactment_Carnuntum_2008_01.jpg",
+     "credit": "User:MatthiasKabel via Wikimedia Commons",
+     "licence": "CC BY-SA 3.0"
+    }
+   ]
+  },
+  {
+   "id": "hit-reaction-saddle",
+   "name": "Hit reaction in the saddle",
+   "description": "Struck on the right: pelvis tilts back, trunk folds 18 forward and twists 22 left, bent 12 left; head snaps away. Right arm flung out, the sword swinging down and out; left fist jerks up, shield slides forward.",
+   "support": [
+    "seat",
+    "foot_l",
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "none",
+    "seat": {
+     "lean": 12,
+     "twist": 27,
+     "side": 12
+    }
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": 5,
+     "pitch": -6,
+     "roll": 0
+    },
+    "spine": {
+     "flex": 18,
+     "twist": 22,
+     "side": 12
+    },
+    "head": {
+     "yaw": -20,
+     "pitch": 15,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 15,
+     "elev": 55,
+     "rot": 10,
+     "elbow": 70,
+     "pron": 0,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "arm_l": {
+     "plane": 80,
+     "elev": 40,
+     "rot": 0,
+     "elbow": 90,
+     "pron": 0,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 34,
+     "hip_abd": 20,
+     "hip_rot": -10,
+     "knee": 70,
+     "ankle": 10,
+     "toe": 0
+    },
+    "leg_l": {
+     "hip_flex": 34,
+     "hip_abd": 20,
+     "hip_rot": -10,
+     "knee": 70,
+     "ankle": 10,
+     "toe": 0
+    }
+   },
+   "items": {
+    "sword": {
+     "blade": [
+      0.3,
+      -0.5,
+      0.3
+     ]
+    },
+    "shield": {
+     "face": [
+      0.6,
+      0.7,
+      0.3
+     ]
+    }
+   },
+   "confidence": "designed",
+   "refs": [],
+   "ref_notes": "No reference; built from the spine limits and kept inside the armour limits (twist 35, side bend 25).",
+   "sources": []
+  },
+  {
+   "id": "victory-sword-raised",
+   "name": "Victory, sword raised",
+   "description": "Seat firm, chest lifted and slightly arched, head up. Right arm raised to 118 with the sword upright overhead; left fist keeps the reins at the belly.",
+   "support": [
+    "seat",
+    "foot_l",
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "none",
+    "seat": {
+     "lean": -10,
+     "twist": 0,
+     "side": 0
+    }
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": 0,
+     "pitch": -2,
+     "roll": 0
+    },
+    "spine": {
+     "flex": -8,
+     "twist": 0,
+     "side": 0
+    },
+    "head": {
+     "yaw": 0,
+     "pitch": -10,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 70,
+     "elev": 118,
+     "rot": -20,
+     "elbow": 25,
+     "pron": -10,
+     "wrist_flex": 0,
+     "wrist_dev": 5
+    },
+    "arm_l": {
+     "plane": 78,
+     "elev": 25,
+     "rot": 0,
+     "elbow": 100,
+     "pron": 0,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 38,
+     "hip_abd": 20,
+     "hip_rot": -10,
+     "knee": 70,
+     "ankle": 10,
+     "toe": 0
+    },
+    "leg_l": {
+     "hip_flex": 38,
+     "hip_abd": 20,
+     "hip_rot": -10,
+     "knee": 70,
+     "ankle": 10,
+     "toe": 0
+    }
+   },
+   "items": {
+    "sword": {
+     "blade": [
+      0.1,
+      -0.1,
+      0.99
+     ]
+    },
+    "shield": {
+     "face": [
+      0.3,
+      0.95,
+      0.1
+     ]
+    }
+   },
+   "confidence": "designed",
+   "refs": [
+    "../../t1-paladin-claude/research/poses/refs/seat-neutral-1.jpg"
+   ],
+   "ref_notes": "seat-neutral-1 for the upright seat and sword; the overhead arm is built from the limits (118 is under the 120 armour limit).",
+   "sources": [
+    {
+     "file": "../../t1-paladin-claude/research/poses/refs/seat-neutral-1.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Roman_cavalry_reenactment_Carnuntum_2008_09.jpg",
+     "credit": "User:MatthiasKabel via Wikimedia Commons",
+     "licence": "CC BY-SA 3.0"
+    }
+   ]
+  },
+  {
+   "id": "balance-horse-rears",
+   "name": "Balance while the horse rears",
+   "description": "The horse's back is tilted about 45 up, so the rider folds forward to stay over the feet: pelvis 25 and trunk 25 more forward, knees closed to 100, heels down. Left fist forward and low on the neck with the shield on the forearm; right arm out with the sword up for balance.",
+   "support": [
+    "seat",
+    "foot_l",
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "none",
+    "seat": {
+     "lean": 50,
+     "twist": 0,
+     "side": 0
+    }
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": 0,
+     "pitch": 25,
+     "roll": 0
+    },
+    "spine": {
+     "flex": 25,
+     "twist": 0,
+     "side": 0
+    },
+    "head": {
+     "yaw": 0,
+     "pitch": -15,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 35,
+     "elev": 40,
+     "rot": 0,
+     "elbow": 45,
+     "pron": 0,
+     "wrist_flex": 0,
+     "wrist_dev": -5
+    },
+    "arm_l": {
+     "plane": 80,
+     "elev": 55,
+     "rot": 0,
+     "elbow": 70,
+     "pron": 0,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 90,
+     "hip_abd": 20,
+     "hip_rot": -10,
+     "knee": 100,
+     "ankle": 5,
+     "toe": 0
+    },
+    "leg_l": {
+     "hip_flex": 90,
+     "hip_abd": 20,
+     "hip_rot": -10,
+     "knee": 100,
+     "ankle": 5,
+     "toe": 0
+    }
+   },
+   "items": {
+    "sword": {
+     "blade": [
+      0.3,
+      -0.2,
+      0.9
+     ]
+    },
+    "shield": {
+     "face": [
+      0.4,
+      0.9,
+      0.0
+     ]
+    }
+   },
+   "confidence": "estimated",
+   "refs": [
+    "refs/paladin/rear-balance-by-horse.jpg",
+    "refs/mount/rear-rider-2009-115.jpg"
+   ],
+   "ref_notes": "rear-balance-by-horse: rider leaning forward and gripping while the horse rears. rear-rider-2009-115: rider holding a lance upright through a rear. Trunk lean read by eye from both.",
+   "sources": [
+    {
+     "file": "refs/paladin/rear-balance-by-horse.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:By_Horse_1.jpg",
+     "credit": "Mona Hassan Abo-Abda via Wikimedia Commons",
+     "licence": "CC BY-SA 4.0"
+    },
+    {
+     "file": "refs/mount/rear-rider-2009-115.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:2009_115.jpg",
+     "credit": "RUET via Wikimedia Commons",
+     "licence": "CC0"
+    }
+   ]
+  }
+ ]
+}

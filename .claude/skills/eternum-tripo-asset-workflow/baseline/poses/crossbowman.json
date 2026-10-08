@@ -1,0 +1,2191 @@
+{
+ "set": "crossbowman",
+ "applies_to": "crossbowman",
+ "version": 1,
+ "poses": [
+  {
+   "id": "idle-port-arms",
+   "name": "Idle, crossbow at port arms",
+   "description": "Square relaxed stand. The crossbow lies flat across the belly, stirrup end forward and to the left, both palms under the stock: right hand handshake-like at the grip, left a relaxed cup under the fore-end. Elbows bent about 100.",
+   "support": [
+    "foot_l",
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "none",
+    "width": 0.25,
+    "length": 0.0,
+    "weight_front": 0.5,
+    "facing_yaw": 0
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": 0,
+     "pitch": 0,
+     "roll": 0,
+     "height": 1.0
+    },
+    "spine": {
+     "flex": 2,
+     "twist": 0,
+     "side": 0
+    },
+    "head": {
+     "yaw": 0,
+     "pitch": 0,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 85,
+     "elev": 28,
+     "rot": 0,
+     "elbow": 100,
+     "pron": -10,
+     "wrist_flex": 5,
+     "wrist_dev": -5
+    },
+    "arm_l": {
+     "plane": 75,
+     "elev": 32,
+     "rot": -15,
+     "elbow": 95,
+     "pron": -45,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 2,
+     "hip_abd": 4,
+     "hip_rot": -5,
+     "knee": 4,
+     "ankle": 0,
+     "toe": 0
+    },
+    "leg_l": {
+     "hip_flex": 2,
+     "hip_abd": 4,
+     "hip_rot": -5,
+     "knee": 4,
+     "ankle": 0,
+     "toe": 0
+    }
+   },
+   "items": {
+    "crossbow": {
+     "bolt_axis": [
+      0.8,
+      0.5,
+      0.25
+     ]
+    }
+   },
+   "confidence": "estimated",
+   "refs": [
+    "refs/crossbowman/port-arms-belfort.jpg",
+    "../../t1-crossbowman-claude/references/user-grip-reference-03.jpg"
+   ],
+   "ref_notes": "port-arms-belfort: soldier standing square with the crossbow across the waist, both forearms under it; legs and carry height taken. grip-03: the left palm-up support. Hand roll follows the owner's grips.",
+   "sources": [
+    {
+     "file": "refs/crossbowman/port-arms-belfort.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:2017-07-09_11-40-50_reconst-histo-belfort.jpg",
+     "credit": "Thomas Bresson via Wikimedia Commons",
+     "licence": "CC BY 4.0"
+    },
+    {
+     "file": "../../t1-crossbowman-claude/references/user-grip-reference-03.jpg",
+     "page": "user-supplied reference image (not redistributed)",
+     "credit": "supplied by the project owner",
+     "licence": "internal reference only"
+    }
+   ]
+  },
+  {
+   "id": "idle-at-ease",
+   "name": "Idle at ease, crossbow lowered",
+   "description": "Weight on the right leg, left knee soft and the left foot a little forward. Crossbow hangs low in front of the thighs, nose down, held close by bent arms; head tipped slightly down.",
+   "support": [
+    "foot_l",
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "l",
+    "width": 0.3,
+    "length": 0.2,
+    "weight_front": 0.4,
+    "facing_yaw": 0
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": -4,
+     "pitch": 0,
+     "roll": -3,
+     "height": 1.0
+    },
+    "spine": {
+     "flex": 3,
+     "twist": 2,
+     "side": 3
+    },
+    "head": {
+     "yaw": 0,
+     "pitch": 8,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 60,
+     "elev": 20,
+     "rot": 0,
+     "elbow": 65,
+     "pron": -10,
+     "wrist_flex": 5,
+     "wrist_dev": -5
+    },
+    "arm_l": {
+     "plane": 80,
+     "elev": 25,
+     "rot": -10,
+     "elbow": 80,
+     "pron": -40,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 0,
+     "hip_abd": 2,
+     "hip_rot": -3,
+     "knee": 3,
+     "ankle": 0,
+     "toe": 0
+    },
+    "leg_l": {
+     "hip_flex": 8,
+     "hip_abd": 6,
+     "hip_rot": -12,
+     "knee": 12,
+     "ankle": 2,
+     "toe": 0
+    }
+   },
+   "items": {
+    "crossbow": {
+     "bolt_axis": [
+      0.55,
+      0.15,
+      -0.8
+     ]
+    }
+   },
+   "confidence": "estimated",
+   "refs": [
+    "refs/crossbowman/lowered-belfort.jpg",
+    "refs/crossbowman/at-ease-ballestero-1470.jpg"
+   ],
+   "ref_notes": "lowered-belfort: crossbow hanging low at the side, nose down. at-ease-ballestero: relaxed contrapposto stand. Weight shift and hand heights from both.",
+   "sources": [
+    {
+     "file": "refs/crossbowman/lowered-belfort.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:2017-07-08_16-11-43_reconst-histo-belfort.jpg",
+     "credit": "Thomas Bresson via Wikimedia Commons",
+     "licence": "CC BY 4.0"
+    },
+    {
+     "file": "refs/crossbowman/at-ease-ballestero-1470.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Ballestero,_de_acostamiento_de_las_monta%C3%B1as_de_Leon_((A%C3%B1o)_1470)_(NYPL_b14896507-87412).jpg",
+     "credit": "Scan by NYPL via Wikimedia Commons",
+     "licence": "Public domain"
+    }
+   ]
+  },
+  {
+   "id": "low-ready",
+   "name": "Low ready",
+   "description": "Slightly side-on, knees soft, weight forward. Crossbow held against the belly with the nose about 30 below horizontal, ready to be raised. Elbows tucked.",
+   "support": [
+    "foot_l",
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "l",
+    "width": 0.3,
+    "length": 0.45,
+    "weight_front": 0.6,
+    "facing_yaw": -20
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": -20,
+     "pitch": 3,
+     "roll": 0,
+     "height": 0.97
+    },
+    "spine": {
+     "flex": 4,
+     "twist": 10,
+     "side": 0
+    },
+    "head": {
+     "yaw": 10,
+     "pitch": 0,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 55,
+     "elev": 32,
+     "rot": 10,
+     "elbow": 95,
+     "pron": -10,
+     "wrist_flex": 5,
+     "wrist_dev": -5
+    },
+    "arm_l": {
+     "plane": 62,
+     "elev": 48,
+     "rot": -15,
+     "elbow": 70,
+     "pron": -50,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": -10,
+     "hip_abd": 3,
+     "hip_rot": -22,
+     "knee": 8,
+     "ankle": -2,
+     "toe": 12
+    },
+    "leg_l": {
+     "hip_flex": 14,
+     "hip_abd": 5,
+     "hip_rot": -18,
+     "knee": 14,
+     "ankle": 4,
+     "toe": 0
+    }
+   },
+   "items": {
+    "crossbow": {
+     "bolt_axis": [
+      0.87,
+      0.0,
+      -0.5
+     ]
+    }
+   },
+   "confidence": "designed",
+   "refs": [
+    "refs/crossbowman/lowered-belfort.jpg"
+   ],
+   "ref_notes": "lowered-belfort supports only the carried-low look; the side-on stance is built from the joint limits and the owner's side-on grip references.",
+   "sources": [
+    {
+     "file": "refs/crossbowman/lowered-belfort.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:2017-07-08_16-11-43_reconst-histo-belfort.jpg",
+     "credit": "Thomas Bresson via Wikimedia Commons",
+     "licence": "CC BY 4.0"
+    }
+   ]
+  },
+  {
+   "id": "walk-carry-contact",
+   "name": "Walk carrying, right heel contact",
+   "phase_of": "walk-carry",
+   "description": "Right foot lands on the heel, left foot rolling off the toe. Pelvis turned a few degrees left, chest counter-turns right. Crossbow at port arms, held close, little arm swing.",
+   "support": [
+    "foot_r",
+    "toe_l"
+   ],
+   "stance": {
+    "lead": "r",
+    "width": 0.15,
+    "length": 0.7,
+    "weight_front": 0.55,
+    "facing_yaw": 0
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": 6,
+     "pitch": 2,
+     "roll": -1,
+     "height": 0.985
+    },
+    "spine": {
+     "flex": 3,
+     "twist": -5,
+     "side": 0
+    },
+    "head": {
+     "yaw": 0,
+     "pitch": 0,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 82,
+     "elev": 26,
+     "rot": 0,
+     "elbow": 100,
+     "pron": -10,
+     "wrist_flex": 5,
+     "wrist_dev": -5
+    },
+    "arm_l": {
+     "plane": 72,
+     "elev": 34,
+     "rot": -15,
+     "elbow": 95,
+     "pron": -45,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 26,
+     "hip_abd": 3,
+     "hip_rot": -6,
+     "knee": 4,
+     "ankle": 12,
+     "toe": 0
+    },
+    "leg_l": {
+     "hip_flex": -14,
+     "hip_abd": 4,
+     "hip_rot": -6,
+     "knee": 12,
+     "ankle": -8,
+     "toe": 30
+    }
+   },
+   "items": {
+    "crossbow": {
+     "bolt_axis": [
+      0.8,
+      0.5,
+      0.25
+     ]
+    }
+   },
+   "confidence": "estimated",
+   "refs": [
+    "refs/crossbowman/carry-walk-belfort.jpg"
+   ],
+   "ref_notes": "carry-walk-belfort: marching crossbowmen carrying at port arms in step; stride and carry height taken, angles judged by eye.",
+   "sources": [
+    {
+     "file": "refs/crossbowman/carry-walk-belfort.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:2017-07-09_11-47-47_reconst-histo-belfort.jpg",
+     "credit": "Thomas Bresson via Wikimedia Commons",
+     "licence": "CC BY 4.0"
+    }
+   ]
+  },
+  {
+   "id": "walk-carry-passing",
+   "name": "Walk carrying, left leg passing",
+   "phase_of": "walk-carry",
+   "description": "Left leg carries the weight, straight under the hip; right leg swings through with the knee bent about 45. Pelvis at its highest. Crossbow steady at port arms.",
+   "support": [
+    "foot_l"
+   ],
+   "stance": {
+    "lead": "none",
+    "width": 0.1,
+    "length": 0.1,
+    "weight_front": 0.5,
+    "facing_yaw": 0
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": 0,
+     "pitch": 0,
+     "roll": 2,
+     "height": 1.0
+    },
+    "spine": {
+     "flex": 2,
+     "twist": 0,
+     "side": 0
+    },
+    "head": {
+     "yaw": 0,
+     "pitch": 0,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 85,
+     "elev": 28,
+     "rot": 0,
+     "elbow": 100,
+     "pron": -10,
+     "wrist_flex": 5,
+     "wrist_dev": -5
+    },
+    "arm_l": {
+     "plane": 75,
+     "elev": 32,
+     "rot": -15,
+     "elbow": 95,
+     "pron": -45,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 18,
+     "hip_abd": 4,
+     "hip_rot": -6,
+     "knee": 45,
+     "ankle": 5,
+     "toe": 0
+    },
+    "leg_l": {
+     "hip_flex": 3,
+     "hip_abd": 3,
+     "hip_rot": -5,
+     "knee": 6,
+     "ankle": 2,
+     "toe": 0
+    }
+   },
+   "items": {
+    "crossbow": {
+     "bolt_axis": [
+      0.8,
+      0.5,
+      0.25
+     ]
+    }
+   },
+   "confidence": "estimated",
+   "refs": [
+    "refs/crossbowman/carry-walk-belfort.jpg"
+   ],
+   "ref_notes": "carry-walk-belfort: the second marcher shows the passing phase with the weapon level and close.",
+   "sources": [
+    {
+     "file": "refs/crossbowman/carry-walk-belfort.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:2017-07-09_11-47-47_reconst-histo-belfort.jpg",
+     "credit": "Thomas Bresson via Wikimedia Commons",
+     "licence": "CC BY 4.0"
+    }
+   ]
+  },
+  {
+   "id": "run-carry",
+   "name": "Run carrying, push-off",
+   "description": "Forward lean, left knee driving up, right leg pushing off on the toe. Crossbow tucked against the chest in bent arms, nose forward and up.",
+   "support": [
+    "toe_r"
+   ],
+   "stance": {
+    "lead": "l",
+    "width": 0.15,
+    "length": 0.9,
+    "weight_front": 0.3,
+    "facing_yaw": 0
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": -6,
+     "pitch": 10,
+     "roll": 0,
+     "height": 0.95
+    },
+    "spine": {
+     "flex": 8,
+     "twist": 6,
+     "side": 0
+    },
+    "head": {
+     "yaw": -5,
+     "pitch": -8,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 70,
+     "elev": 40,
+     "rot": 0,
+     "elbow": 105,
+     "pron": -10,
+     "wrist_flex": 5,
+     "wrist_dev": -5
+    },
+    "arm_l": {
+     "plane": 65,
+     "elev": 48,
+     "rot": -15,
+     "elbow": 100,
+     "pron": -45,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": -14,
+     "hip_abd": 3,
+     "hip_rot": -6,
+     "knee": 25,
+     "ankle": -25,
+     "toe": 45
+    },
+    "leg_l": {
+     "hip_flex": 68,
+     "hip_abd": 4,
+     "hip_rot": -6,
+     "knee": 95,
+     "ankle": 10,
+     "toe": 0
+    }
+   },
+   "items": {
+    "crossbow": {
+     "bolt_axis": [
+      0.85,
+      0.4,
+      0.3
+     ]
+    }
+   },
+   "confidence": "designed",
+   "refs": [
+    "refs/crossbowman/carry-walk-belfort.jpg"
+   ],
+   "ref_notes": "No run reference with a crossbow was found; built from the walk reference plus joint limits (hip 68, knee 95 on the drive leg).",
+   "sources": [
+    {
+     "file": "refs/crossbowman/carry-walk-belfort.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:2017-07-09_11-47-47_reconst-histo-belfort.jpg",
+     "credit": "Thomas Bresson via Wikimedia Commons",
+     "licence": "CC BY 4.0"
+    }
+   ]
+  },
+  {
+   "id": "aim-shoulder-stand",
+   "name": "Shouldered aim, standing, side-on",
+   "description": "Stance and chest first: pelvis turned about 45 to the shooter's right, chest twisted back 16 toward the target, head turned along the stock. Trigger elbow up and out, support arm folded close with the palm-up cup under the fore-end; wrists near neutral. Wide stance, both knees slightly bent, left foot toward the target, weight centred. Bolt points at the target.",
+   "support": [
+    "foot_l",
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "l",
+    "width": 0.4,
+    "length": 0.5,
+    "weight_front": 0.5,
+    "facing_yaw": -45
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": -45,
+     "pitch": 2,
+     "roll": 0,
+     "height": 0.97
+    },
+    "spine": {
+     "flex": 2,
+     "twist": 16,
+     "side": 0
+    },
+    "head": {
+     "yaw": 28,
+     "pitch": 6,
+     "roll": -6
+    },
+    "arm_r": {
+     "plane": 40,
+     "elev": 82,
+     "rot": 25,
+     "elbow": 100,
+     "pron": -10,
+     "wrist_flex": 5,
+     "wrist_dev": -5
+    },
+    "arm_l": {
+     "plane": 62,
+     "elev": 62,
+     "rot": -20,
+     "elbow": 75,
+     "pron": -50,
+     "wrist_flex": -5,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": -8,
+     "hip_abd": 4,
+     "hip_rot": -35,
+     "knee": 10,
+     "ankle": -2,
+     "toe": 8
+    },
+    "leg_l": {
+     "hip_flex": 12,
+     "hip_abd": 6,
+     "hip_rot": -25,
+     "knee": 14,
+     "ankle": 4,
+     "toe": 0
+    }
+   },
+   "items": {
+    "crossbow": {
+     "bolt_axis": [
+      1.0,
+      0.0,
+      0.02
+     ]
+    }
+   },
+   "confidence": "estimated",
+   "refs": [
+    "../../t1-crossbowman-claude/references/user-grip-reference-02.jpg",
+    "refs/crossbowman/aim-picquigny.jpg",
+    "../../t1-crossbowman-claude/references/user-grip-reference-03.jpg"
+   ],
+   "ref_notes": "grip-02: side-on, stock at the cheek, head turned along it, left arm folded under the fore-end. aim-picquigny: stock to the right shoulder, cheek on the stock, trigger elbow raised. grip-03: palm-up support cup. Angles judged by eye.",
+   "sources": [
+    {
+     "file": "../../t1-crossbowman-claude/references/user-grip-reference-02.jpg",
+     "page": "user-supplied reference image (not redistributed)",
+     "credit": "supplied by the project owner",
+     "licence": "internal reference only"
+    },
+    {
+     "file": "refs/crossbowman/aim-picquigny.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Picquigny_f%C3%AAte_m%C3%A9di%C3%A9vale_2008_-_tir_%C3%A0_l%27arbal%C3%A8te_2.jpg",
+     "credit": "Markus3 (Marc ROUSSEL) via Wikimedia Commons",
+     "licence": "CC BY-SA 3.0"
+    },
+    {
+     "file": "../../t1-crossbowman-claude/references/user-grip-reference-03.jpg",
+     "page": "user-supplied reference image (not redistributed)",
+     "credit": "supplied by the project owner",
+     "licence": "internal reference only"
+    }
+   ]
+  },
+  {
+   "id": "aim-high-volley",
+   "name": "Aim high for a volley",
+   "description": "Side-on stance as the standing aim, weight on the rear leg, pelvis tilted back a little and the chest extended so the crossbow points about 40 up. Head back and chin up to look along the stock.",
+   "support": [
+    "foot_l",
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "l",
+    "width": 0.4,
+    "length": 0.55,
+    "weight_front": 0.4,
+    "facing_yaw": -45
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": -45,
+     "pitch": -3,
+     "roll": 0,
+     "height": 0.97
+    },
+    "spine": {
+     "flex": -10,
+     "twist": 16,
+     "side": 0
+    },
+    "head": {
+     "yaw": 28,
+     "pitch": -15,
+     "roll": -6
+    },
+    "arm_r": {
+     "plane": 42,
+     "elev": 100,
+     "rot": 25,
+     "elbow": 105,
+     "pron": -10,
+     "wrist_flex": 5,
+     "wrist_dev": -5
+    },
+    "arm_l": {
+     "plane": 65,
+     "elev": 88,
+     "rot": -20,
+     "elbow": 80,
+     "pron": -50,
+     "wrist_flex": -5,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": -4,
+     "hip_abd": 4,
+     "hip_rot": -35,
+     "knee": 6,
+     "ankle": -2,
+     "toe": 8
+    },
+    "leg_l": {
+     "hip_flex": 10,
+     "hip_abd": 6,
+     "hip_rot": -25,
+     "knee": 18,
+     "ankle": 4,
+     "toe": 0
+    }
+   },
+   "items": {
+    "crossbow": {
+     "bolt_axis": [
+      0.75,
+      0.0,
+      0.65
+     ]
+    }
+   },
+   "confidence": "estimated",
+   "refs": [
+    "refs/crossbowman/aim-rutenfest.jpg",
+    "../../t1-crossbowman-claude/references/user-grip-reference-01.jpg"
+   ],
+   "ref_notes": "aim-rutenfest: crossbow raised well above horizontal, shooter leaning back. grip-01: raised stock, cheek on it. Lean and elbow heights judged by eye.",
+   "sources": [
+    {
+     "file": "refs/crossbowman/aim-rutenfest.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Rutenfest_2010_Adlerschie%C3%9Fen_Jungsch%C3%BCtze.jpg",
+     "credit": "Photo: Andreas Praefcke via Wikimedia Commons",
+     "licence": "Public domain"
+    },
+    {
+     "file": "../../t1-crossbowman-claude/references/user-grip-reference-01.jpg",
+     "page": "user-supplied reference image (not redistributed)",
+     "credit": "supplied by the project owner",
+     "licence": "internal reference only"
+    }
+   ]
+  },
+  {
+   "id": "aim-kneel",
+   "name": "Kneeling aim",
+   "description": "Right knee down, left foot forward with the shin vertical. Pelvis lowered, chest upright and side-on. Support arm rests with the elbow near the left knee; stock at the cheek.",
+   "support": [
+    "knee_r",
+    "foot_l",
+    "toe_r"
+   ],
+   "stance": {
+    "lead": "l",
+    "width": 0.3,
+    "length": 0.55,
+    "weight_front": 0.6,
+    "facing_yaw": -40
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": -40,
+     "pitch": 10,
+     "roll": 0,
+     "height": 0.56
+    },
+    "spine": {
+     "flex": 4,
+     "twist": 16,
+     "side": 0
+    },
+    "head": {
+     "yaw": 28,
+     "pitch": 6,
+     "roll": -6
+    },
+    "arm_r": {
+     "plane": 38,
+     "elev": 76,
+     "rot": 25,
+     "elbow": 100,
+     "pron": -10,
+     "wrist_flex": 5,
+     "wrist_dev": -5
+    },
+    "arm_l": {
+     "plane": 60,
+     "elev": 50,
+     "rot": -20,
+     "elbow": 70,
+     "pron": -50,
+     "wrist_flex": -5,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 8,
+     "hip_abd": 8,
+     "hip_rot": -30,
+     "knee": 130,
+     "ankle": -35,
+     "toe": 50
+    },
+    "leg_l": {
+     "hip_flex": 90,
+     "hip_abd": 5,
+     "hip_rot": -20,
+     "knee": 100,
+     "ankle": 12,
+     "toe": 0
+    }
+   },
+   "items": {
+    "crossbow": {
+     "bolt_axis": [
+      1.0,
+      0.0,
+      0.0
+     ]
+    }
+   },
+   "confidence": "designed",
+   "refs": [
+    "../../t1-crossbowman-claude/references/user-grip-reference-01.jpg"
+   ],
+   "ref_notes": "grip-01 shows the crouched cheek aim over a bent front leg; no kneeling photo was found. Knee and hip values built from the joint limits.",
+   "sources": [
+    {
+     "file": "../../t1-crossbowman-claude/references/user-grip-reference-01.jpg",
+     "page": "user-supplied reference image (not redistributed)",
+     "credit": "supplied by the project owner",
+     "licence": "internal reference only"
+    }
+   ]
+  },
+  {
+   "id": "aim-crouch",
+   "name": "Crouched aim behind cover",
+   "description": "Deep crouch, side-on, both heels down, trunk leaning forward over the knees. Head lifted to look along the stock; crossbow at cheek height.",
+   "support": [
+    "foot_l",
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "l",
+    "width": 0.45,
+    "length": 0.4,
+    "weight_front": 0.5,
+    "facing_yaw": -45
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": -45,
+     "pitch": 12,
+     "roll": 0,
+     "height": 0.62
+    },
+    "spine": {
+     "flex": 15,
+     "twist": 16,
+     "side": 0
+    },
+    "head": {
+     "yaw": 28,
+     "pitch": -18,
+     "roll": -6
+    },
+    "arm_r": {
+     "plane": 40,
+     "elev": 80,
+     "rot": 25,
+     "elbow": 105,
+     "pron": -10,
+     "wrist_flex": 5,
+     "wrist_dev": -5
+    },
+    "arm_l": {
+     "plane": 62,
+     "elev": 60,
+     "rot": -20,
+     "elbow": 75,
+     "pron": -50,
+     "wrist_flex": -5,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 88,
+     "hip_abd": 12,
+     "hip_rot": -35,
+     "knee": 115,
+     "ankle": 18,
+     "toe": 0
+    },
+    "leg_l": {
+     "hip_flex": 92,
+     "hip_abd": 10,
+     "hip_rot": -25,
+     "knee": 112,
+     "ankle": 18,
+     "toe": 0
+    }
+   },
+   "items": {
+    "crossbow": {
+     "bolt_axis": [
+      1.0,
+      0.0,
+      0.05
+     ]
+    }
+   },
+   "confidence": "estimated",
+   "refs": [
+    "../../t1-crossbowman-claude/references/user-grip-reference-01.jpg"
+   ],
+   "ref_notes": "grip-01: crouch over a bent front leg with the stock at the cheek; depth and trunk lean taken, back leg built from the limits.",
+   "sources": [
+    {
+     "file": "../../t1-crossbowman-claude/references/user-grip-reference-01.jpg",
+     "page": "user-supplied reference image (not redistributed)",
+     "credit": "supplied by the project owner",
+     "licence": "internal reference only"
+    }
+   ]
+  },
+  {
+   "id": "loose-recoil",
+   "name": "Loose, recoil",
+   "phase_of": "shoot",
+   "description": "The moment after release. Same side-on stance, weight a touch back, support arm drawn in a few degrees, trigger elbow slightly back. A crossbow has little recoil; the nose lifts slightly.",
+   "support": [
+    "foot_l",
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "l",
+    "width": 0.4,
+    "length": 0.5,
+    "weight_front": 0.4,
+    "facing_yaw": -45
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": -45,
+     "pitch": 2,
+     "roll": 0,
+     "height": 0.97
+    },
+    "spine": {
+     "flex": 0,
+     "twist": 16,
+     "side": 0
+    },
+    "head": {
+     "yaw": 28,
+     "pitch": 4,
+     "roll": -6
+    },
+    "arm_r": {
+     "plane": 36,
+     "elev": 84,
+     "rot": 22,
+     "elbow": 108,
+     "pron": -10,
+     "wrist_flex": 5,
+     "wrist_dev": -5
+    },
+    "arm_l": {
+     "plane": 62,
+     "elev": 60,
+     "rot": -20,
+     "elbow": 78,
+     "pron": -50,
+     "wrist_flex": -5,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": -8,
+     "hip_abd": 4,
+     "hip_rot": -35,
+     "knee": 10,
+     "ankle": -2,
+     "toe": 8
+    },
+    "leg_l": {
+     "hip_flex": 12,
+     "hip_abd": 6,
+     "hip_rot": -25,
+     "knee": 14,
+     "ankle": 4,
+     "toe": 0
+    }
+   },
+   "items": {
+    "crossbow": {
+     "bolt_axis": [
+      1.0,
+      0.0,
+      0.12
+     ]
+    }
+   },
+   "confidence": "designed",
+   "refs": [
+    "../../t1-crossbowman-claude/references/user-grip-reference-02.jpg"
+   ],
+   "ref_notes": "No still of a shot release was found; offsets from the standing aim are small by design.",
+   "sources": [
+    {
+     "file": "../../t1-crossbowman-claude/references/user-grip-reference-02.jpg",
+     "page": "user-supplied reference image (not redistributed)",
+     "credit": "supplied by the project owner",
+     "licence": "internal reference only"
+    }
+   ]
+  },
+  {
+   "id": "span-1-ground",
+   "name": "Spanning 1, bow set nose down",
+   "phase_of": "span",
+   "description": "Standing on the right leg, the left foot lifted to the stirrup. Crossbow upright in front, stirrup end on the ground, butt held in the right hand close to the body.",
+   "support": [
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "r",
+    "width": 0.2,
+    "length": 0.2,
+    "weight_front": 0.3,
+    "facing_yaw": 0
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": 0,
+     "pitch": 4,
+     "roll": 0,
+     "height": 0.99
+    },
+    "spine": {
+     "flex": 6,
+     "twist": 0,
+     "side": 0
+    },
+    "head": {
+     "yaw": 0,
+     "pitch": 15,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 70,
+     "elev": 35,
+     "rot": 0,
+     "elbow": 50,
+     "pron": 0,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "arm_l": {
+     "plane": 85,
+     "elev": 30,
+     "rot": 0,
+     "elbow": 60,
+     "pron": 10,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 3,
+     "hip_abd": 4,
+     "hip_rot": -5,
+     "knee": 4,
+     "ankle": 0,
+     "toe": 0
+    },
+    "leg_l": {
+     "hip_flex": 35,
+     "hip_abd": 6,
+     "hip_rot": -8,
+     "knee": 60,
+     "ankle": -5,
+     "toe": 0
+    }
+   },
+   "items": {
+    "crossbow": {
+     "bolt_axis": [
+      0.25,
+      0.0,
+      -0.97
+     ]
+    }
+   },
+   "confidence": "designed",
+   "refs": [
+    "refs/crossbowman/span-foot-nordisk.jpg"
+   ],
+   "ref_notes": "span-foot-nordisk is a woodcut of a windlass-spanned bow, the only upright spanning figure found; no stirrup photo. Pose built from the limits.",
+   "sources": [
+    {
+     "file": "refs/crossbowman/span-foot-nordisk.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Armborst_4,_Nordisk_familjebok.png",
+     "credit": "Nordisk familjebok via Wikimedia Commons",
+     "licence": "Public domain"
+    }
+   ]
+  },
+  {
+   "id": "span-2-bent",
+   "name": "Spanning 2, foot in stirrup, both hands on the string, bent",
+   "phase_of": "span",
+   "description": "Foot in the stirrup, both knees bent about 70, trunk folded forward. Both hands grip the string near the nut with the arms hanging forward from the shoulders; head down to watch the string.",
+   "support": [
+    "foot_l",
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "l",
+    "width": 0.2,
+    "length": 0.2,
+    "weight_front": 0.55,
+    "facing_yaw": 0
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": 0,
+     "pitch": 25,
+     "roll": 0,
+     "height": 0.78
+    },
+    "spine": {
+     "flex": 35,
+     "twist": 0,
+     "side": 0
+    },
+    "head": {
+     "yaw": 0,
+     "pitch": 0,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 100,
+     "elev": 60,
+     "rot": 0,
+     "elbow": 40,
+     "pron": 30,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "arm_l": {
+     "plane": 85,
+     "elev": 60,
+     "rot": 0,
+     "elbow": 40,
+     "pron": 30,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 72,
+     "hip_abd": 6,
+     "hip_rot": -6,
+     "knee": 68,
+     "ankle": 12,
+     "toe": 0
+    },
+    "leg_l": {
+     "hip_flex": 80,
+     "hip_abd": 6,
+     "hip_rot": -8,
+     "knee": 70,
+     "ankle": 12,
+     "toe": 0
+    }
+   },
+   "items": {
+    "crossbow": {
+     "bolt_axis": [
+      0.25,
+      0.0,
+      -0.97
+     ]
+    }
+   },
+   "confidence": "designed",
+   "refs": [
+    "refs/crossbowman/span-foot-nordisk.jpg",
+    "refs/crossbowman/span-windlass-loeffelholz.jpg"
+   ],
+   "ref_notes": "No usable stirrup-spanning photograph; the windlass plate and woodcut only show the bow held down and the body bent. Built from the limits.",
+   "sources": [
+    {
+     "file": "refs/crossbowman/span-foot-nordisk.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Armborst_4,_Nordisk_familjebok.png",
+     "credit": "Nordisk familjebok via Wikimedia Commons",
+     "licence": "Public domain"
+    },
+    {
+     "file": "refs/crossbowman/span-windlass-loeffelholz.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:L%C3%B6ffelholz-Codex_Ms-Berol-Germ-Qu-132_Fol_020r.png",
+     "credit": "Martin Löffelholz von Kolberg [?] via Wikimedia Commons",
+     "licence": "Public domain"
+    }
+   ]
+  },
+  {
+   "id": "span-3-rise",
+   "name": "Spanning 3, standing up to draw",
+   "phase_of": "span",
+   "description": "Straightening the legs and back to pull the string up toward the nut. Knees about 40, trunk still tilted. Arms stay bent and close; hands at thigh level with the string.",
+   "support": [
+    "foot_l",
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "l",
+    "width": 0.2,
+    "length": 0.2,
+    "weight_front": 0.5,
+    "facing_yaw": 0
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": 0,
+     "pitch": 12,
+     "roll": 0,
+     "height": 0.9
+    },
+    "spine": {
+     "flex": 15,
+     "twist": 0,
+     "side": 0
+    },
+    "head": {
+     "yaw": 0,
+     "pitch": 0,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 95,
+     "elev": 35,
+     "rot": 0,
+     "elbow": 60,
+     "pron": 30,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "arm_l": {
+     "plane": 85,
+     "elev": 35,
+     "rot": 0,
+     "elbow": 60,
+     "pron": 30,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 37,
+     "hip_abd": 5,
+     "hip_rot": -5,
+     "knee": 40,
+     "ankle": 5,
+     "toe": 0
+    },
+    "leg_l": {
+     "hip_flex": 40,
+     "hip_abd": 5,
+     "hip_rot": -6,
+     "knee": 42,
+     "ankle": 5,
+     "toe": 0
+    }
+   },
+   "items": {
+    "crossbow": {
+     "bolt_axis": [
+      0.2,
+      0.0,
+      -0.95
+     ]
+    }
+   },
+   "confidence": "designed",
+   "refs": [
+    "refs/crossbowman/span-foot-nordisk.jpg"
+   ],
+   "ref_notes": "Intermediate frame between span-2 and span-4; no reference.",
+   "sources": [
+    {
+     "file": "refs/crossbowman/span-foot-nordisk.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Armborst_4,_Nordisk_familjebok.png",
+     "credit": "Nordisk familjebok via Wikimedia Commons",
+     "licence": "Public domain"
+    }
+   ]
+  },
+  {
+   "id": "span-4-latch",
+   "name": "Spanning 4, string at the nut, latch",
+   "phase_of": "span",
+   "description": "Upright. The string is seated in the nut, thumbs press to latch it. Hands at the belly with elbows bent about 75, head tipped down to watch the nut. The foot is just leaving the stirrup.",
+   "support": [
+    "foot_l",
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "none",
+    "width": 0.2,
+    "length": 0.0,
+    "weight_front": 0.5,
+    "facing_yaw": 0
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": 0,
+     "pitch": 0,
+     "roll": 0,
+     "height": 1.0
+    },
+    "spine": {
+     "flex": 0,
+     "twist": 0,
+     "side": 0
+    },
+    "head": {
+     "yaw": 0,
+     "pitch": 20,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 90,
+     "elev": 20,
+     "rot": 0,
+     "elbow": 75,
+     "pron": 25,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "arm_l": {
+     "plane": 90,
+     "elev": 20,
+     "rot": 0,
+     "elbow": 75,
+     "pron": 25,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 2,
+     "hip_abd": 4,
+     "hip_rot": -5,
+     "knee": 4,
+     "ankle": 0,
+     "toe": 0
+    },
+    "leg_l": {
+     "hip_flex": 5,
+     "hip_abd": 4,
+     "hip_rot": -5,
+     "knee": 8,
+     "ankle": 0,
+     "toe": 0
+    }
+   },
+   "items": {
+    "crossbow": {
+     "bolt_axis": [
+      0.45,
+      0.0,
+      -0.88
+     ]
+    }
+   },
+   "confidence": "designed",
+   "refs": [
+    "refs/crossbowman/span-windlass-loeffelholz.jpg"
+   ],
+   "ref_notes": "No reference for the latch moment; arms near the belly follow the held-close rule.",
+   "sources": [
+    {
+     "file": "refs/crossbowman/span-windlass-loeffelholz.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:L%C3%B6ffelholz-Codex_Ms-Berol-Germ-Qu-132_Fol_020r.png",
+     "credit": "Martin Löffelholz von Kolberg [?] via Wikimedia Commons",
+     "licence": "Public domain"
+    }
+   ]
+  },
+  {
+   "id": "draw-bolt-quiver",
+   "name": "Draw a bolt from the lower-back quiver",
+   "phase_of": "reload",
+   "description": "Chest twisted to the right and bent slightly right, the right hand reaching round to the quiver at the lower back (shoulder extended, upper arm turned in). The crossbow rests against the body held in the left hand.",
+   "support": [
+    "foot_l",
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "none",
+    "width": 0.3,
+    "length": 0.1,
+    "weight_front": 0.45,
+    "facing_yaw": 0
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": 6,
+     "pitch": 2,
+     "roll": 0,
+     "height": 1.0
+    },
+    "spine": {
+     "flex": 2,
+     "twist": -22,
+     "side": -8
+    },
+    "head": {
+     "yaw": 10,
+     "pitch": 0,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": -20,
+     "elev": 38,
+     "rot": 55,
+     "elbow": 95,
+     "pron": 35,
+     "wrist_flex": 0,
+     "wrist_dev": -10
+    },
+    "arm_l": {
+     "plane": 70,
+     "elev": 38,
+     "rot": -15,
+     "elbow": 100,
+     "pron": -45,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 2,
+     "hip_abd": 5,
+     "hip_rot": -6,
+     "knee": 5,
+     "ankle": 0,
+     "toe": 0
+    },
+    "leg_l": {
+     "hip_flex": 4,
+     "hip_abd": 5,
+     "hip_rot": -8,
+     "knee": 8,
+     "ankle": 0,
+     "toe": 0
+    }
+   },
+   "items": {
+    "crossbow": {
+     "bolt_axis": [
+      0.9,
+      0.1,
+      0.2
+     ]
+    }
+   },
+   "confidence": "designed",
+   "refs": [
+    "../../t1-crossbowman-claude/references/user-grip-reference-03.jpg"
+   ],
+   "ref_notes": "No photograph of drawing from a back quiver; hand-behind-back reach built from the limits (extension plus internal rotation). Quiver position from the asset record.",
+   "sources": [
+    {
+     "file": "../../t1-crossbowman-claude/references/user-grip-reference-03.jpg",
+     "page": "user-supplied reference image (not redistributed)",
+     "credit": "supplied by the project owner",
+     "licence": "internal reference only"
+    }
+   ]
+  },
+  {
+   "id": "place-bolt",
+   "name": "Place the bolt",
+   "phase_of": "reload",
+   "description": "Crossbow flat in front of the chest, left palm-up cup under the fore-end, right hand laying the bolt in the groove. Head tipped down to watch it.",
+   "support": [
+    "foot_l",
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "l",
+    "width": 0.25,
+    "length": 0.2,
+    "weight_front": 0.5,
+    "facing_yaw": -12
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": -12,
+     "pitch": 2,
+     "roll": 0,
+     "height": 1.0
+    },
+    "spine": {
+     "flex": 8,
+     "twist": 6,
+     "side": 0
+    },
+    "head": {
+     "yaw": 0,
+     "pitch": 25,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 70,
+     "elev": 38,
+     "rot": 5,
+     "elbow": 90,
+     "pron": -5,
+     "wrist_flex": 5,
+     "wrist_dev": -5
+    },
+    "arm_l": {
+     "plane": 68,
+     "elev": 34,
+     "rot": -15,
+     "elbow": 95,
+     "pron": -50,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": -3,
+     "hip_abd": 4,
+     "hip_rot": -12,
+     "knee": 5,
+     "ankle": 0,
+     "toe": 0
+    },
+    "leg_l": {
+     "hip_flex": 6,
+     "hip_abd": 5,
+     "hip_rot": -12,
+     "knee": 6,
+     "ankle": 1,
+     "toe": 0
+    }
+   },
+   "items": {
+    "crossbow": {
+     "bolt_axis": [
+      0.97,
+      0.2,
+      0.0
+     ]
+    }
+   },
+   "confidence": "estimated",
+   "refs": [
+    "refs/crossbowman/port-arms-belfort.jpg",
+    "../../t1-crossbowman-claude/references/user-grip-reference-03.jpg"
+   ],
+   "ref_notes": "port-arms-belfort: weapon flat across the front. grip-03: support palm up. Head and right-hand offset designed.",
+   "sources": [
+    {
+     "file": "refs/crossbowman/port-arms-belfort.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:2017-07-09_11-40-50_reconst-histo-belfort.jpg",
+     "credit": "Thomas Bresson via Wikimedia Commons",
+     "licence": "CC BY 4.0"
+    },
+    {
+     "file": "../../t1-crossbowman-claude/references/user-grip-reference-03.jpg",
+     "page": "user-supplied reference image (not redistributed)",
+     "credit": "supplied by the project owner",
+     "licence": "internal reference only"
+    }
+   ]
+  },
+  {
+   "id": "scan-loaded",
+   "name": "Look and scan while loaded",
+   "description": "Half side-on, crossbow carried at the low ready with the bolt laid, chest turned slightly right, head swung far to the left to scan. Weight even, knees soft.",
+   "support": [
+    "foot_l",
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "l",
+    "width": 0.3,
+    "length": 0.35,
+    "weight_front": 0.5,
+    "facing_yaw": -25
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": -25,
+     "pitch": 0,
+     "roll": 0,
+     "height": 0.98
+    },
+    "spine": {
+     "flex": -2,
+     "twist": 12,
+     "side": 0
+    },
+    "head": {
+     "yaw": 50,
+     "pitch": -3,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 60,
+     "elev": 38,
+     "rot": 5,
+     "elbow": 100,
+     "pron": -10,
+     "wrist_flex": 5,
+     "wrist_dev": -5
+    },
+    "arm_l": {
+     "plane": 66,
+     "elev": 45,
+     "rot": -15,
+     "elbow": 85,
+     "pron": -50,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": -4,
+     "hip_abd": 4,
+     "hip_rot": -18,
+     "knee": 8,
+     "ankle": 0,
+     "toe": 6
+    },
+    "leg_l": {
+     "hip_flex": 8,
+     "hip_abd": 5,
+     "hip_rot": -14,
+     "knee": 10,
+     "ankle": 2,
+     "toe": 0
+    }
+   },
+   "items": {
+    "crossbow": {
+     "bolt_axis": [
+      0.9,
+      0.2,
+      0.2
+     ]
+    }
+   },
+   "confidence": "designed",
+   "refs": [
+    "refs/crossbowman/lowered-belfort.jpg"
+   ],
+   "ref_notes": "Head turn built from the head limits; carry from the lowered-belfort reference.",
+   "sources": [
+    {
+     "file": "refs/crossbowman/lowered-belfort.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:2017-07-08_16-11-43_reconst-histo-belfort.jpg",
+     "credit": "Thomas Bresson via Wikimedia Commons",
+     "licence": "CC BY 4.0"
+    }
+   ]
+  },
+  {
+   "id": "turn-while-aiming",
+   "name": "Turn while aiming",
+   "description": "Pivoting on the balls of the feet to track a target to the left. Shoulders and chest lead the pelvis; head ahead of the chest. Crossbow stays at the cheek, nose about 30 left of the pelvis front.",
+   "support": [
+    "foot_l",
+    "toe_r"
+   ],
+   "stance": {
+    "lead": "l",
+    "width": 0.35,
+    "length": 0.3,
+    "weight_front": 0.5,
+    "facing_yaw": -5
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": -5,
+     "pitch": 2,
+     "roll": 0,
+     "height": 0.97
+    },
+    "spine": {
+     "flex": 2,
+     "twist": 24,
+     "side": 0
+    },
+    "head": {
+     "yaw": 15,
+     "pitch": 5,
+     "roll": -6
+    },
+    "arm_r": {
+     "plane": 50,
+     "elev": 84,
+     "rot": 25,
+     "elbow": 100,
+     "pron": -10,
+     "wrist_flex": 5,
+     "wrist_dev": -5
+    },
+    "arm_l": {
+     "plane": 75,
+     "elev": 65,
+     "rot": -20,
+     "elbow": 72,
+     "pron": -50,
+     "wrist_flex": -5,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": -6,
+     "hip_abd": 4,
+     "hip_rot": -22,
+     "knee": 12,
+     "ankle": 0,
+     "toe": 30
+    },
+    "leg_l": {
+     "hip_flex": 6,
+     "hip_abd": 6,
+     "hip_rot": -5,
+     "knee": 12,
+     "ankle": 4,
+     "toe": 0
+    }
+   },
+   "items": {
+    "crossbow": {
+     "bolt_axis": [
+      0.87,
+      0.5,
+      0.03
+     ]
+    }
+   },
+   "confidence": "designed",
+   "refs": [
+    "../../t1-crossbowman-claude/references/user-grip-reference-02.jpg"
+   ],
+   "ref_notes": "Built from the standing aim (grip-02) with the pelvis half unwound; no reference of a tracking turn.",
+   "sources": [
+    {
+     "file": "../../t1-crossbowman-claude/references/user-grip-reference-02.jpg",
+     "page": "user-supplied reference image (not redistributed)",
+     "credit": "supplied by the project owner",
+     "licence": "internal reference only"
+    }
+   ]
+  },
+  {
+   "id": "hit-reaction-crossbow",
+   "name": "Hit reaction, holding the crossbow",
+   "description": "Struck from behind the left side: trunk folds forward and twists, head snaps right, the left foot steps to catch the balance. Both hands stay on the crossbow, clutched against the chest.",
+   "support": [
+    "foot_l",
+    "toe_r"
+   ],
+   "stance": {
+    "lead": "l",
+    "width": 0.3,
+    "length": 0.5,
+    "weight_front": 0.6,
+    "facing_yaw": 0
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": 12,
+     "pitch": 14,
+     "roll": 4,
+     "height": 0.93
+    },
+    "spine": {
+     "flex": 28,
+     "twist": -22,
+     "side": -14
+    },
+    "head": {
+     "yaw": -30,
+     "pitch": 18,
+     "roll": 10
+    },
+    "arm_r": {
+     "plane": 60,
+     "elev": 50,
+     "rot": 10,
+     "elbow": 85,
+     "pron": -5,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "arm_l": {
+     "plane": 85,
+     "elev": 70,
+     "rot": -15,
+     "elbow": 70,
+     "pron": -40,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": -6,
+     "hip_abd": 4,
+     "hip_rot": -12,
+     "knee": 10,
+     "ankle": -6,
+     "toe": 20
+    },
+    "leg_l": {
+     "hip_flex": 30,
+     "hip_abd": 8,
+     "hip_rot": -8,
+     "knee": 35,
+     "ankle": 8,
+     "toe": 0
+    }
+   },
+   "items": {
+    "crossbow": {
+     "bolt_axis": [
+      0.5,
+      0.4,
+      0.6
+     ]
+    }
+   },
+   "confidence": "designed",
+   "refs": [],
+   "ref_notes": "No reference; reaction built from the spine and head limits, kept inside armour limits.",
+   "sources": []
+  },
+  {
+   "id": "club-windup",
+   "name": "Club with the stock, wind-up",
+   "phase_of": "club",
+   "description": "Crossbow gripped by the bow end in both hands beside the right ear, butt trailing up and back. Pelvis turned right, chest cocked further, weight on the back foot.",
+   "support": [
+    "foot_l",
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "l",
+    "width": 0.4,
+    "length": 0.5,
+    "weight_front": 0.35,
+    "facing_yaw": -35
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": -35,
+     "pitch": 3,
+     "roll": 0,
+     "height": 0.97
+    },
+    "spine": {
+     "flex": 3,
+     "twist": -15,
+     "side": 0
+    },
+    "head": {
+     "yaw": 10,
+     "pitch": 0,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 20,
+     "elev": 115,
+     "rot": -40,
+     "elbow": 95,
+     "pron": 0,
+     "wrist_flex": 0,
+     "wrist_dev": 5
+    },
+    "arm_l": {
+     "plane": 80,
+     "elev": 100,
+     "rot": -20,
+     "elbow": 110,
+     "pron": 0,
+     "wrist_flex": 0,
+     "wrist_dev": 10
+    },
+    "leg_r": {
+     "hip_flex": -8,
+     "hip_abd": 5,
+     "hip_rot": -25,
+     "knee": 14,
+     "ankle": -2,
+     "toe": 6
+    },
+    "leg_l": {
+     "hip_flex": 12,
+     "hip_abd": 6,
+     "hip_rot": -18,
+     "knee": 16,
+     "ankle": 4,
+     "toe": 0
+    }
+   },
+   "items": {
+    "crossbow": {
+     "bolt_axis": [
+      0.5,
+      0.1,
+      -0.85
+     ]
+    }
+   },
+   "confidence": "designed",
+   "refs": [],
+   "ref_notes": "No reference for a crossbow used as a club; swing built like a two-handed bat swing within the limits. bolt_axis points the bolt end, which is held; the butt is the striking end.",
+   "sources": []
+  },
+  {
+   "id": "club-strike",
+   "name": "Club with the stock, strike",
+   "phase_of": "club",
+   "description": "Lunge on the left foot, pelvis and chest unwinding to the left, both arms extended down and across in front. Butt end of the crossbow driven forward and down.",
+   "support": [
+    "foot_l",
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "l",
+    "width": 0.4,
+    "length": 0.8,
+    "weight_front": 0.65,
+    "facing_yaw": 15
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": 20,
+     "pitch": 10,
+     "roll": 0,
+     "height": 0.92
+    },
+    "spine": {
+     "flex": 20,
+     "twist": 20,
+     "side": -4
+    },
+    "head": {
+     "yaw": -10,
+     "pitch": 15,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 55,
+     "elev": 70,
+     "rot": 10,
+     "elbow": 45,
+     "pron": 0,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "arm_l": {
+     "plane": 75,
+     "elev": 60,
+     "rot": -10,
+     "elbow": 50,
+     "pron": 0,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": -12,
+     "hip_abd": 4,
+     "hip_rot": -15,
+     "knee": 15,
+     "ankle": -4,
+     "toe": 25
+    },
+    "leg_l": {
+     "hip_flex": 30,
+     "hip_abd": 6,
+     "hip_rot": -15,
+     "knee": 40,
+     "ankle": 8,
+     "toe": 0
+    }
+   },
+   "items": {
+    "crossbow": {
+     "bolt_axis": [
+      -0.6,
+      -0.1,
+      0.78
+     ]
+    }
+   },
+   "confidence": "designed",
+   "refs": [],
+   "ref_notes": "No reference; see club-windup.",
+   "sources": []
+  },
+  {
+   "id": "cheer-raised",
+   "name": "Cheer with the crossbow raised",
+   "description": "Wide stance, chest lifted, head back. Both arms up holding the crossbow level above the head, palms under the stock, elbows slightly bent.",
+   "support": [
+    "foot_l",
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "none",
+    "width": 0.5,
+    "length": 0.0,
+    "weight_front": 0.5,
+    "facing_yaw": 0
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": 0,
+     "pitch": -2,
+     "roll": 0,
+     "height": 1.0
+    },
+    "spine": {
+     "flex": -8,
+     "twist": 0,
+     "side": 0
+    },
+    "head": {
+     "yaw": 0,
+     "pitch": -15,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 95,
+     "elev": 150,
+     "rot": -30,
+     "elbow": 25,
+     "pron": -20,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "arm_l": {
+     "plane": 85,
+     "elev": 150,
+     "rot": -30,
+     "elbow": 25,
+     "pron": -20,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 0,
+     "hip_abd": 10,
+     "hip_rot": -5,
+     "knee": 3,
+     "ankle": 0,
+     "toe": 0
+    },
+    "leg_l": {
+     "hip_flex": 0,
+     "hip_abd": 10,
+     "hip_rot": -5,
+     "knee": 3,
+     "ankle": 0,
+     "toe": 0
+    }
+   },
+   "items": {
+    "crossbow": {
+     "bolt_axis": [
+      0.0,
+      0.95,
+      0.2
+     ]
+    }
+   },
+   "confidence": "designed",
+   "refs": [],
+   "ref_notes": "No reference; overhead arms kept at 150 elevation (limit 170) with external rotation so the palms stay under the stock.",
+   "sources": []
+  },
+  {
+   "id": "kneel-reload-cover",
+   "name": "Kneeling reload behind cover",
+   "phase_of": "reload",
+   "description": "Right knee down, left knee up as the rest for the forearm. Trunk bent forward and head low behind cover. Crossbow tilted in the lap, left hand cupping the fore-end, right hand setting the bolt.",
+   "support": [
+    "knee_r",
+    "foot_l",
+    "toe_r"
+   ],
+   "stance": {
+    "lead": "l",
+    "width": 0.3,
+    "length": 0.4,
+    "weight_front": 0.5,
+    "facing_yaw": -35
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": -35,
+     "pitch": 18,
+     "roll": 0,
+     "height": 0.55
+    },
+    "spine": {
+     "flex": 30,
+     "twist": 10,
+     "side": -4
+    },
+    "head": {
+     "yaw": 10,
+     "pitch": 10,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 65,
+     "elev": 40,
+     "rot": 0,
+     "elbow": 95,
+     "pron": -5,
+     "wrist_flex": 5,
+     "wrist_dev": -5
+    },
+    "arm_l": {
+     "plane": 70,
+     "elev": 40,
+     "rot": -15,
+     "elbow": 100,
+     "pron": -50,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 10,
+     "hip_abd": 8,
+     "hip_rot": -30,
+     "knee": 130,
+     "ankle": -35,
+     "toe": 50
+    },
+    "leg_l": {
+     "hip_flex": 95,
+     "hip_abd": 8,
+     "hip_rot": -15,
+     "knee": 115,
+     "ankle": 15,
+     "toe": 0
+    }
+   },
+   "items": {
+    "crossbow": {
+     "bolt_axis": [
+      0.8,
+      0.0,
+      0.55
+     ]
+    }
+   },
+   "confidence": "designed",
+   "refs": [
+    "../../t1-crossbowman-claude/references/user-grip-reference-01.jpg"
+   ],
+   "ref_notes": "grip-01 gives the bent front leg and low trunk; kneeling reload is built from the limits.",
+   "sources": [
+    {
+     "file": "../../t1-crossbowman-claude/references/user-grip-reference-01.jpg",
+     "page": "user-supplied reference image (not redistributed)",
+     "credit": "supplied by the project owner",
+     "licence": "internal reference only"
+    }
+   ]
+  }
+ ]
+}
