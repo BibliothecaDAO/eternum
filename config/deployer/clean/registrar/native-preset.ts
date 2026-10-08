@@ -119,7 +119,7 @@ export function buildNativeGameParams(
  */
 function seasonStart(config: Config, input: CreateGamePayloadInput): number {
   const preset = nativePresetForId(input.presetId);
-  if (preset.epochSeconds === 0) return input.startMainAt;
+  if (preset.dayUnitSeconds === 0) return input.startMainAt;
   const tick = preset.clockScale
     ? clockScaled(config.tick.armiesTickIntervalInSeconds, preset.clockScale, "armies tick")
     : config.tick.armiesTickIntervalInSeconds;
