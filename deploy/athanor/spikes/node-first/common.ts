@@ -26,7 +26,7 @@ export interface Fixture {
   classHash: string;
   players: Player[];
 }
-export const now = () => process.hrtime.bigint();
+export { now } from "./clock";
 export const ms = (n: bigint) => Number(n) / 1e6;
 const felt = (v: string | bigint | number) => `0x${BigInt(v).toString(16)}`;
 export const normalize = (v: string) => felt(v);

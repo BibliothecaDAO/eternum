@@ -66,6 +66,7 @@ Bun.serve({
           "starknet_getNonce",
           "starknet_getClassHashAt",
           "starknet_getTransactionReceipt",
+          "starknet_getTransactionStatus",
           "starknet_getStorageAt",
           "starknet_blockNumber",
         ].includes(call.method)

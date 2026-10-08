@@ -37,7 +37,7 @@ bun deploy/athanor/spikes/node-first/proxy.ts \
 SPIKE_PROXY_PID=$!
 docker logs --follow --since 0s "$NODE_CONTAINER" > "$TRIAL/data/node-first-node.log" 2>&1 &
 SPIKE_LOG_PID=$!
-NODE_PID=$(docker inspect --format '{{.State.Pid}}' "$NODE_CONTAINER")
+NODE_PID=$(python3 deploy/athanor/spikes/node-first/node-pid.py "$NODE_CONTAINER")
 NODE_IMAGE=$(docker inspect --format '{{.Config.Image}}' "$NODE_CONTAINER")
 
 bun deploy/athanor/spikes/node-first/run.ts \
@@ -47,7 +47,7 @@ bun deploy/athanor/spikes/node-first/run.ts \
   --out "$TRIAL/data/node-first-results" --arms X,Y --work 32:256 --workers 8 \
   --node-pid "$NODE_PID" --node-image "$NODE_IMAGE" \
   --node-log "$TRIAL/data/node-first-node.log" \
-  --node-metrics "$TRIAL/data/metrics/metrics.jsonl"
+  --node-metrics "$TRIAL/data/metrics/metrics.jsonl" --timeout-ms 600000
 kill "$SPIKE_PROXY_PID" "$SPIKE_LOG_PID"
 ```
 

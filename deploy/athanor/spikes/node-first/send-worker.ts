@@ -1,5 +1,6 @@
 import { parentPort, workerData } from "node:worker_threads";
 import { request, Agent } from "node:http";
+import { now } from "./clock";
 
 const { url, payloads, barrier } = workerData as {
   url: string;
@@ -15,10 +16,10 @@ function send(body: string): Promise<{ sentNs: string; error: string | null }> {
       agent,
       headers: { "content-type": "application/json", "content-length": Buffer.byteLength(body) },
     });
-    let sentNs = process.hrtime.bigint().toString();
+    let sentNs = now().toString();
     req.on("socket", (socket) => {
       socket.setNoDelay(true);
-      sentNs = process.hrtime.bigint().toString();
+      sentNs = now().toString();
       req.end(body);
     });
     req.on("response", (response) => {
