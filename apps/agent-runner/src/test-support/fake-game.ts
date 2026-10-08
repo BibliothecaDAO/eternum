@@ -211,15 +211,7 @@ export const seedExplorer = (
         stamina: { Inline: { amount: input.stamina ?? 20n, updated_tick: 0n } },
       },
     },
-    positionFacts(
-      store,
-      input.explorerId,
-      input.x,
-      input.y,
-      input.alt ?? false,
-      TileOccupier.ExplorerKnightT1Regular,
-      false,
-    ),
+    positionFacts(store, input.explorerId, input.x, input.y, input.alt ?? false, TileOccupier.ExplorerKnightT1, false),
   );
 };
 

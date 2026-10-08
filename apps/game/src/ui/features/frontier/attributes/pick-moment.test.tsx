@@ -8,35 +8,28 @@ vi.mock("@/audio/core/AudioManager", () => ({
 }));
 vi.mock("@/ui/motion/motion-settings", () => ({ playHaptic: () => {}, useReducedMotion: () => true }));
 
-import type { ArmyProgressFacts, AttributeOfferFacts, ProgressionRulesFacts } from "./attributes";
-import {
-  closePick,
-  commitPick,
-  liftChoice,
-  onAttributeChosen,
-  openPick,
-  shouldAutoOpenPick,
-  usePick,
-} from "./pick-moment";
+import type { ArmyProgressFacts, ProgressionRulesFacts } from "./attributes";
+import { closePick, commitPick, liftChoice, onTierBought, openPick, usePick } from "./pick-moment";
 import { PickPanel } from "./pick-panel";
 
-const LEVEL_OFFER: AttributeOfferFacts = {
-  id: 7,
-  source: "Level",
-  amount: 1,
-  choices: ["Battle", "Scouting", "Support"],
+const RULES: ProgressionRulesFacts = {
+  game_id: 1,
+  reveal_xp: 2,
+  fixed_xp: 200,
+  uncommon_xp: 100,
+  rare_xp: 200,
+  epic_xp: 400,
+  legendary_xp: 800,
 };
-const RULES: ProgressionRulesFacts = { game_id: 1, reveal_xp: 10, clear_xp: 25, level_step_xp: 20 };
 const ARMY: ArmyProgressFacts = {
   game_id: 1,
   explorer_id: 201,
-  level: 3,
-  xp: 40,
+  xp: 250,
   battle: 2,
   logistics: 1,
-  scouting: 4,
-  support: 1,
-  pending: LEVEL_OFFER,
+  scouting: 5,
+  scouting_kinds: 0b10_10_10_10,
+  homecoming: 1,
 };
 
 let read: () => ReturnType<typeof usePick> = () => null;
@@ -51,68 +44,49 @@ beforeEach(() => {
   plays.length = 0;
 });
 
-describe("the pick", () => {
-  it("opens on its own for the session's first level-up and for every Shrine offer", () => {
-    expect(shouldAutoOpenPick({ ...LEVEL_OFFER, source: "Relic" })).toBe(false);
-    expect(shouldAutoOpenPick(LEVEL_OFFER)).toBe(true);
-    expect(shouldAutoOpenPick({ ...LEVEL_OFFER, id: 8 })).toBe(false);
-    // Every Shrine offer opens it: the player used the Shrine to pick.
-    expect(shouldAutoOpenPick({ ...LEVEL_OFFER, id: 9, source: "Shrine" })).toBe(true);
-    expect(shouldAutoOpenPick({ ...LEVEL_OFFER, id: 10, source: "Shrine" })).toBe(true);
-  });
-
-  it("takes two taps, keeps the offer with its reason on a refusal, and flies home only on its own story", async () => {
+describe("the Upgrade", () => {
+  it("takes two taps, keeps the card with its reason on a refusal, and flies home only on its own army's story", async () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     const root = createRoot(document.createElement("div"));
     await act(async () => root.render(<Probe />));
-    const send = vi.fn(() => Promise.reject(new Error("This offer was already answered.")));
+    let reject: (error: Error) => void = () => {};
+    const send = vi.fn(() => new Promise<void>((_, fail) => (reject = fail)));
 
-    await act(async () => openPick(201, LEVEL_OFFER));
+    await act(async () => openPick(201));
     expect(plays).toEqual(["card.deal"]);
     await act(async () => commitPick(send));
     expect(send).not.toHaveBeenCalled();
-    await act(async () => liftChoice("Scouting"));
+    await act(async () => liftChoice("Battle"));
     await act(async () => commitPick(send));
-    expect(send).toHaveBeenCalledWith("Scouting");
-    expect(read()).toMatchObject({ phase: "failed", error: "This offer was already answered.", lifted: "Scouting" });
-
-    await act(async () =>
-      onAttributeChosen({ explorerId: 201, offerId: 99, attribute: "Scouting", applied: 1, lost: 0 }),
-    );
-    expect(read()?.phase).toBe("failed");
-    await act(async () =>
-      onAttributeChosen({ explorerId: 201, offerId: 7, attribute: "Scouting", applied: 1, lost: 0 }),
-    );
-    expect(read()).toMatchObject({ phase: "chosen", chosen: { applied: 1, lost: 0 } });
+    expect(send).toHaveBeenCalledWith("Battle");
+    // Another army's purchase lands nothing here.
+    await act(async () => onTierBought({ explorerId: 202, attribute: "Battle", tier: 3, price: 200 }));
+    expect(read()?.phase).toBe("committing");
+    await act(async () => onTierBought({ explorerId: 201, attribute: "Battle", tier: 3, price: 200 }));
+    expect(read()).toMatchObject({ phase: "chosen", chosen: { tier: 3, price: 200 } });
     expect(plays).toContain("card.pick");
+
+    await act(async () => openPick(201));
+    await act(async () => liftChoice("Logistics"));
+    await act(async () => commitPick(send));
+    await act(async () => reject(new Error("not enough XP")));
+    expect(read()).toMatchObject({ phase: "failed", error: "not enough XP", lifted: "Logistics" });
     await act(async () => root.unmount());
   });
 
-  it("closes when the offer leaves the army's progress, however it was answered", async () => {
+  it("deals every attribute priced at its next tier, and lights only those the army can pay for", async () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     const host = document.createElement("div");
     const root = createRoot(host);
-    const commit = () => Promise.resolve();
-    await act(async () =>
-      root.render(
-        <>
-          <Probe />
-          <PickPanel progress={ARMY} rules={RULES} commit={commit} />
-        </>,
-      ),
-    );
-    await act(async () => openPick(201, LEVEL_OFFER));
-    expect(host.querySelector('[aria-label="Choose an attribute"]')).not.toBeNull();
-    await act(async () =>
-      root.render(
-        <>
-          <Probe />
-          <PickPanel progress={{ ...ARMY, pending: null }} rules={RULES} commit={commit} />
-        </>,
-      ),
-    );
-    expect(read()).toBeNull();
-    expect(host.textContent).not.toContain("+1 to one attribute");
+    await act(async () => root.render(<PickPanel progress={ARMY} rules={RULES} commit={() => Promise.resolve()} />));
+    await act(async () => openPick(201));
+    const card = (attribute: string) => host.querySelector<HTMLButtonElement>(`[aria-label^="${attribute}, tier"]`)!;
+    expect(host.textContent).toContain("250 XP");
+    expect(card("Battle").disabled).toBe(false);
+    expect(card("Battle").textContent).toContain("200 XP");
+    expect(card("Logistics").textContent).toContain("100 XP");
+    // Legendary is the last tier: nothing to buy.
+    expect(card("Scouting").disabled).toBe(true);
     await act(async () => root.unmount());
   });
 });

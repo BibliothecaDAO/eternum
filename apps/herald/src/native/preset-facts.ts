@@ -89,15 +89,24 @@ function deriveResources(emit: EmitRule, resources: PresetRecord) {
 
 function deriveStructures(emit: EmitRule, structures: PresetRecord) {
   for (const { category, rule } of records(structures.buildings)) emit("BuildingRule", record(rule), { category });
-  // Historical registration predates the research tree; current presets carry both arrays.
-  if ("research" in structures) {
-    for (const { node, rule } of records(structures.research)) emit("ResearchNode", record(rule), { node });
-    for (const { category, tier, rule } of records(structures.building_tiers))
-      emit("BuildingTierRule", record(rule), { category, tier });
+  for (const entry of records(structures.research ?? [])) {
+    if ("row" in entry) {
+      const { row, tier, price } = entry;
+      emit("ResearchPrice", record(price), { row, tier });
+    } else {
+      // Archived registrations replay their node facts under the schema that recorded them.
+      const { node, rule } = entry;
+      emit("ResearchNode", record(rule), { node });
+    }
   }
+  // Archived building tiers belong to their verified registration as well.
+  for (const { category, tier, rule } of records(structures.building_tiers ?? []))
+    emit("BuildingTierRule", record(rule), { category, tier });
   const board = some(structures.board);
   if (board) emit("BoardRules", board);
-  emit("CampResources", { resources: structures.camps });
+  // Registrations before CampRules carry the camp's grants alone.
+  if (Array.isArray(structures.camps)) emit("CampResources", { resources: structures.camps });
+  else emit("CampRules", record(structures.camps));
   emit("FaithRules", record(structures.faith));
   emit("UpgradeLimits", record(structures.upgrade_limits));
   records(structures.upgrades).forEach((recipe, index) => emit("UpgradeRecipe", recipe, { level: index + 1 }));

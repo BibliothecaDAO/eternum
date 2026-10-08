@@ -12,7 +12,6 @@ import { useSpectatorWatchesTheLeader } from "./board/spectator-watch";
 import { TodayCard } from "./log/today-card";
 import { FrontierResearch } from "./research/frontier-research";
 import { ChestMomentView } from "./chest/chest-moment-view";
-import { useChestResults } from "./chest/chest-results";
 import { SiteClearCardView } from "./sites/site-clear-card";
 import { FrontierSurfaces } from "./frontier-surfaces";
 import { FrontierArmyDock } from "./frontier-army-dock";
@@ -49,7 +48,6 @@ export const FrontierHud = ({ rules }: { rules: NonNullable<ReturnType<typeof us
   const [chatOpen, setChatOpen] = useState(false);
   const armySelected = useUIStore((state) => state.entityActions.selectedEntityId !== null);
   const guideLine = useGuideLine(rules, realm);
-  useChestResults();
   // Picking an army is the moment to play, not to read: chat folds away.
   useEffect(() => {
     if (armySelected) setChatOpen(false);

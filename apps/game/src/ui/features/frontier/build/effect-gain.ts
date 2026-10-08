@@ -4,6 +4,5 @@ import type { BuildEffect } from "./build-options";
 export const effectGain = (effect: BuildEffect): { icon: string; value: number; perHour: boolean } => {
   if (effect.kind === "produces")
     return { icon: `/images/resources/${effect.resource}.png`, value: effect.perHour, perHour: true };
-  if (effect.kind === "capacity") return { icon: "/image-icons/resources.png", value: effect.amount, perHour: false };
   return { icon: "/image-icons/ui-person.png", value: effect.amount, perHour: false };
 };

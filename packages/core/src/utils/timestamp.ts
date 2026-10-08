@@ -39,7 +39,7 @@ export const setChainProvenTimestampSource = (source: (() => number | null) | nu
 // A chain-written timestamp ahead of the local chain-time estimate is proof the
 // chain's clock has reached that moment. Reporting it lets the clock re-anchor
 // instead of silently under-reporting elapsed time (the invariant the display
-// math needs is client-time >= every last_updated_at the client holds).
+// math needs is client-time >= every settled production tick the client holds).
 type ChainTimestampEvidenceSink = (timestampSeconds: number) => void;
 let chainTimestampEvidenceSink: ChainTimestampEvidenceSink | null = null;
 

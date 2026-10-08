@@ -1,4 +1,5 @@
 import { CairoCustomEnum } from "starknet";
+import { dayOf } from "@bibliothecadao/eternum/expeditions";
 import { describe, expect, it, vi } from "vitest";
 import { LiveWorld } from "./live-world";
 import type { HistoryStore } from "./history-store";
@@ -84,11 +85,11 @@ describe("native live publication", () => {
     expect(messages.some((message) => message.type === "head")).toBe(true);
   });
 
-  it("advances completeness even when the confirmed block has no story events", async () => {
+  it("advances history and closing-rank completeness even when the confirmed block has no story events", async () => {
     const appendEvents = vi.fn(async () => {});
     const { live } = fixture({ appendEvents, freezeReviewSnapshot: vi.fn() } as unknown as HistoryStore);
     await live.acceptSubscribedHead({ block_number: 10, timestamp: 100 });
-    expect(appendEvents).toHaveBeenCalledWith([], 10);
+    expect(appendEvents).toHaveBeenCalledWith([], 10, []);
   });
 
   it("does not republish repeated heads or a clock that has not advanced", async () => {
@@ -121,7 +122,7 @@ describe("native live publication", () => {
     expect(hello()).toMatchObject({ type: "hello", confirmed_block: 10, confirmed_timestamp: 100 });
   });
 
-  it("warns for a LORDS commitment only after its receipt is confirmed, once per day", async () => {
+  it("warns for a LORDS ceiling only after its receipt is confirmed, once per day", async () => {
     const { live, native, fold, confirmed, pending, decoder } = fixture();
     native.applyReceipt(
       fold,
@@ -136,7 +137,8 @@ describe("native live publication", () => {
             dev_mode_on: false,
             start_settling_at: 0,
             start_main_at: 100,
-            end_at: 99999999,
+            // Fourteen bags of four-hour units: 70 days.
+            end_at: 100 + 14 * 288_000,
             end_grace_seconds: 0,
             seed: 42,
           }),
@@ -148,11 +150,12 @@ describe("native live publication", () => {
             spacing: 100,
           }),
           rowEvent("ChestRules", ["1"], {
-            relic_probability: 90,
-            token_cap: 1,
-            lords_amounts: { common: 100, uncommon: 400, rare: 1500, epic: 6000 },
-            lords_pool: 1000000,
-            season_epochs: 70,
+            pool: 1000000,
+            price_ceiling: 50,
+            shares: { common: 1, uncommon: 2, rare: 4, epic: 10, legendary: 20 },
+            surge_factor: 3,
+            surge_minimum_shares: 60,
+            estimate_days: 5,
           }),
         ]),
       ),
@@ -160,12 +163,26 @@ describe("native live publication", () => {
       0,
     );
     seedDerivedRows(fold, decoder, [
-      rowEvent("SliceRules", ["1"], { ...fold.modelRows("SliceRules")[0].value, epoch_seconds: 86400 }),
+      rowEvent("SliceRules", ["1"], { ...fold.modelRows("SliceRules")[0].value, day_unit_seconds: 14_400 }),
     ]);
     await live.acceptSubscribedHead({ block_number: 10, timestamp: 100 });
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     try {
-      const reward = receipt([rowEvent("LordsBudget", ["1"], { lords_committed: 11428 })], "0x991");
+      const reward = receipt(
+        [
+          rowEvent("LordsBudget", ["1"], {
+            pool_left: 1000000,
+            open: 2400,
+            spent: 2400,
+            day: 0,
+            price: 50,
+            ceiling: 3000,
+            estimate: 0,
+            paid_shares: 0,
+          }),
+        ],
+        "0x991",
+      );
       live.acceptReceipt({ ...reward, finality_status: "PRE_CONFIRMED" });
       pending.timestamp = 86401;
       await live.publishChainClock();
@@ -176,10 +193,10 @@ describe("native live publication", () => {
       await live.acceptSubscribedHead({ block_number: 11, timestamp: 200 });
       expect(warn).toHaveBeenCalledTimes(1);
       expect(JSON.parse(warn.mock.calls[0][0])).toMatchObject({
-        event: "frontier_lords_allowance_80_percent",
-        absolute_epoch: 0,
-        season_day: 0,
-        allowance: "14285",
+        event: "frontier_lords_ceiling_80_percent",
+        day: "0",
+        spent: "2400",
+        ceiling: "3000",
       });
       await live.acceptSubscribedHead({ block_number: 11, timestamp: 201 });
       expect(warn).toHaveBeenCalledTimes(1);
@@ -214,9 +231,11 @@ describe("native live publication", () => {
     const event = rulesEvent();
     const rules = decoder.decodeRowSet("SliceRules", ["1"], event.data.slice(3));
     if (rules.kind !== "set") throw new Error("Expected rules row");
-    rules.value.epoch_seconds = 86_400;
+    rules.value.day_unit_seconds = 14_400;
     const dayStart = Date.parse("2026-09-22T00:00:00Z") / 1000;
-    const beforeMidnight = dayStart + 86_399;
+    // The season's day 0, drawn from the game's seed 7 below; its last second is the eve of the rollover.
+    const dayZero = dayOf({ seed: 7n, startMainAt: dayStart + 120, dayUnitSeconds: 14_400 }, dayStart + 120)!;
+    const beforeMidnight = dayZero.end - 1;
     fold.apply(rules);
     const homes = [1, 2].map((id) =>
       rowEvent("Structure", ["1", String(id)], {
@@ -255,7 +274,7 @@ describe("native live publication", () => {
             dev_mode_on: false,
             start_settling_at: String(dayStart + 120),
             start_main_at: String(dayStart + 120),
-            end_at: String(dayStart + 864_000),
+            end_at: String(dayStart + 120 + 2 * 288_000),
             end_grace_seconds: "0",
             seed: "7",
           }),
@@ -268,8 +287,8 @@ describe("native live publication", () => {
           ...homes,
           ...armies,
           ...positions,
-          rowEvent("ExpeditionDiscovery", ["1", "1", String(Math.floor(dayStart / 86400))], { empty_reveals: 7 }),
-          rowEvent("ExpeditionDiscovery", ["1", "2", String(Math.floor(dayStart / 86400))], { empty_reveals: 3 }),
+          rowEvent("ExpeditionDiscovery", ["1", "1", "0"], { empty_reveals: 7, ruin_found: false }),
+          rowEvent("ExpeditionDiscovery", ["1", "2", "0"], { empty_reveals: 3, ruin_found: false }),
           rowEvent("TileOccupancy", ["1", "0", "51", "50"], { entity_id: 300, category: 34, is_structure: false }),
           rowEvent("ResourceBalance", ["1", "1", "28"], { balance: 100n }),
           rowEvent("ResourceBalance", ["1", "2", "28"], { balance: 200n }),
@@ -281,13 +300,13 @@ describe("native live publication", () => {
             building_count: 1n,
             production_rate: 10n,
             output_amount_left: 100n,
-            last_updated_at: 120n,
+            last_settled_tick: 2n,
           }),
           rowEvent("ResourceProduction", ["1", "99", "29"], {
             building_count: 1n,
             production_rate: 10n,
             output_amount_left: 100n,
-            last_updated_at: 120n,
+            last_settled_tick: 2n,
           }),
           rowEvent("TileOpt", ["1", "0", "50", "50"], { data: 1n }),
           rowEvent("TileOpt", ["1", "0", "150", "50"], { data: 1n }),
@@ -424,7 +443,7 @@ describe("native live publication", () => {
     messages.forEach((stream) => {
       stream.length = 0;
     });
-    pending.timestamp = dayStart + 86_400;
+    pending.timestamp = dayZero.end;
     await live.publishChainClock();
     for (const [index, stream] of messages.entries()) {
       expect(stream.some((message) => message.type === "hello" || message.type === "snapshot")).toBe(false);

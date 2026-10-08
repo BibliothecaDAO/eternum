@@ -11,7 +11,10 @@ export interface ResearchPlan {
 }
 
 export interface ResearchNodeView {
+  /** The tier's own id on the sheet. */
   node: number;
+  /** Its research row; buying it buys the row's next tier. */
+  row: number;
   state: "learned" | "open" | "locked";
   /** Whole Essence. */
   price: number;
@@ -23,11 +26,11 @@ export interface ResearchNodeView {
   gain?: { icon: string; now: number; next: number };
 }
 
-/** The tree's building columns, in the mockup's order; each holds its tier II and III nodes. */
+/** The tree's building columns; each holds its tier II and III nodes. */
 export const TREE_BUILDINGS = [
   BuildingType.ResourceWheat,
   BuildingType.WorkersHut,
-  BuildingType.Storehouse,
+  BuildingType.ResourceLabor,
   BuildingType.ResourceKnightT1,
 ] as const;
 

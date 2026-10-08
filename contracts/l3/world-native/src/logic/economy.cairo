@@ -452,13 +452,14 @@ pub mod EconomyLogic {
         }
         fn bank_structure(self: @ContractState, game_id: u32, bank_id: u32) -> Structure {
             let bank = self.structure(game_id, bank_id);
-            assert!(bank.base.category == 3, "structure is not a bank");
+            assert!(bank.base.category == crate::taxonomy::BANK_CATEGORY, "structure is not a bank");
             bank
         }
         fn assert_liquidity_resource(self: @ContractState, player: Structure, resource_type: u8) {
             assert!(resource_type != crate::resources::LORDS, "resource type cannot be lords");
             assert!(
-                player.base.category != 5 || !crate::resources::is_troop_resource(resource_type),
+                player.base.category != crate::taxonomy::VILLAGE_CATEGORY
+                    || !crate::resources::is_troop_resource(resource_type),
                 "villages cannot use troop liquidity",
             );
         }

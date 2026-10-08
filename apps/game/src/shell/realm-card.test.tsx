@@ -8,10 +8,11 @@ vi.mock("./herald", () => ({
   useRealmsPlayer: () => ({ data: null }),
 }));
 
+import { dayOf } from "@bibliothecadao/eternum";
 import type { DirectoryGame } from "./herald";
 import { RealmCard } from "./realm-card";
 
-const DAY = 3_600;
+const UNIT = 900;
 const START = 1_790_410_020;
 
 const season = (level: number) =>
@@ -20,8 +21,8 @@ const season = (level: number) =>
     game_id: 1,
     mode: "frontier",
     status: "Live",
-    clock: { start_settling_at: START, start_main_at: START, end_at: START + 70 * DAY, end_grace_seconds: 0 },
-    expedition: { epoch_seconds: DAY },
+    clock: { start_settling_at: START, start_main_at: START, end_at: START + 21 * 20 * UNIT, end_grace_seconds: 0 },
+    expedition: { day_unit_seconds: UNIT, seed: "7" },
     player_state: {
       registered: true,
       settled: true,
@@ -34,7 +35,10 @@ afterEach(() => vi.useRealTimers());
 
 it("draws the realm's castle at its tier, and the expedition day's dial from the season's clock", async () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-  vi.useFakeTimers({ now: (START + 7 * DAY + 600) * 1000, toFake: ["Date"] });
+  const calendar = { seed: 7n, startMainAt: START, dayUnitSeconds: UNIT };
+  let day = dayOf(calendar, START)!;
+  while (day.index < 7) day = dayOf(calendar, day.end)!;
+  vi.useFakeTimers({ now: (day.start + 600) * 1000, toFake: ["Date"] });
   const container = document.createElement("div");
   const root = createRoot(container);
   await act(async () =>

@@ -1,6 +1,6 @@
 import { TroopTier, TroopType, type Troops } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
-import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { battleBonusBps, logisticsStamina } from "../utils/attribute-tiers";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 
 /** One game's stamina rules, exactly as its SliceRules carries them. */
@@ -78,7 +78,7 @@ export function inlineTroops(troops: NativeRows["ExplorerTroops"]["troops"], rul
   return {
     ...troops,
     stamina: troops.stamina.Inline,
-    ...(rules && rules.epoch_seconds !== 0
+    ...(rules && rules.day_unit_seconds !== 0
       ? {
           staminaMax: troopStaminaLimits(rules.troop_stamina_config, troops.category, TroopTier.T1).staminaMax,
         }
@@ -110,10 +110,10 @@ export function resolveExplorerTroops(
   return {
     ...explorer.troops,
     stamina: result.known.stamina,
-    staminaMax: base + (progress.logistics - 1) * nativeRuleConstants.ATTRIBUTE_STAMINA,
+    staminaMax: base + logisticsStamina(progress.logistics),
     boosts: {
       ...explorer.troops.boosts,
-      incr_damage_dealt_percent_num: (progress.battle - 1) * nativeRuleConstants.ATTRIBUTE_DAMAGE_PERCENT,
+      incr_damage_dealt_percent_num: battleBonusBps(progress.battle),
       incr_damage_dealt_end_tick: 0,
     },
   };
@@ -151,16 +151,22 @@ export function openArmySlots(
   return open;
 }
 
-/** The bar a new army of this troop starts on in the slot, at the tick, under the game's rules. */
+/**
+ * The bar a new army of this troop starts on in the slot, at the tick, under the game's rules, when its realm has
+ * trained Logistics to `trainedLogistics` tiers above common (the Supply yard's row).
+ */
 export function musterStamina(
   slot: OpenArmySlot,
   troop: { category: TroopType; tier: TroopTier },
   currentArmiesTick: number,
   rules: TroopStaminaRules,
+  trainedLogistics: number,
 ): { amount: number; max: number } {
-  // A new slot occupant starts at Logistics 1, regardless of its troop tier.
-  const { staminaInitial, staminaMax } = troopStaminaLimits(rules, troop.category, TroopTier.T1);
-  if (!slot.inherited) return { amount: Math.min(staminaInitial, staminaMax), max: staminaMax };
+  // A new slot occupant starts at its realm's trained Logistics, regardless of its troop tier.
+  const staminaMax =
+    troopStaminaLimits(rules, troop.category, TroopTier.T1).staminaMax + logisticsStamina(trainedLogistics + 1);
+  // A slot's first army of the day starts full at its own maximum.
+  if (!slot.inherited) return { amount: staminaMax, max: staminaMax };
   const newArmy: Troops = {
     ...troop,
     count: 0n,
@@ -185,9 +191,9 @@ const NO_BOOSTS: Troops["boosts"] = {
   incr_explore_reward_end_tick: 0,
 };
 
-/** Slots are keyed by the absolute epoch, known once the expedition scope and its clock are. */
+/** Slots are keyed by the season day, known once the expedition scope and its clock are. */
 const slotEpoch = (store: NativeFactStore): bigint | undefined => {
   const scope = store.subscriptionScope();
-  if (!scope.known?.expedition || scope.known.expedition.absoluteEpoch < 0) return undefined;
-  return BigInt(scope.known.expedition.absoluteEpoch);
+  if (!scope.known?.expedition || scope.known.expedition.day < 0) return undefined;
+  return BigInt(scope.known.expedition.day);
 };

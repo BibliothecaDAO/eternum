@@ -23,7 +23,7 @@ const entry = (index: number) => ({
   address: `0x${(0xa00 + index).toString(16)}`,
   structure_id: String(500 + index),
   rank: index + 1,
-  sites_cleared: { total: 60 - index, camps: 60 - index, rifts: 0, fallen_realms: 0 },
+  sites_cleared: { total: 60 - index, camps: 60 - index, rifts: 0, ruins: 0, stragglers: 0 },
   chests_earned: 1,
   rewards: { lords: "100", essence: "0", labor: "0" },
   deepest_depth: 0,

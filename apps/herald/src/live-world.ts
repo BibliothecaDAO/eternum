@@ -1,4 +1,5 @@
-import { LordsAllowanceAlerts } from "./native/lords-allowance-alert";
+import { replayWithFrontierDays } from "./native/frontier-day-ranks";
+import { LordsCeilingAlerts } from "./native/lords-ceiling-alert";
 import { NativePresetCalldataUnavailable } from "./native/preset-preimages";
 import { worldView } from "@bibliothecadao/eternum";
 import { GameSubscription } from "./game-subscription";
@@ -68,7 +69,7 @@ const setBoundedTransactionEntry = <Value>(map: Map<string, Value>, key: string,
 const overlayIdentity = (receipt: RpcReceipt): string => `receipt:${normalizeFelt(receipt.transaction_hash)}`;
 
 export class LiveWorld {
-  private readonly lordsAllowanceAlerts = new LordsAllowanceAlerts();
+  private readonly lordsCeilingAlerts = new LordsCeilingAlerts();
   private readonly changeListeners = new Set<(models: ReadonlySet<string>) => void>();
 
   public readonly hub: GameStreamHub;
@@ -358,7 +359,7 @@ export class LiveWorld {
     // Recorded with the block it belongs to, before any other await, so an attach never pairs this block with an
     // older head's time.
     this.confirmedHeadTimestamp = head.timestamp;
-    this.lordsAllowanceAlerts.observe((model) => this.confirmedFold.modelRows(model), head.timestamp);
+    this.lordsCeilingAlerts.observe((model) => this.confirmedFold.modelRows(model));
     await this.archiveFinalizedGames();
     let publishedChanges = false;
     for (const [block, changes] of confirmed.changes) {
@@ -527,17 +528,21 @@ export class LiveWorld {
   }
 
   private async applyConfirmedThrough(target: number) {
-    const result = await this.native.replay({
+    const replayInput = {
       fold: this.confirmedFold,
       rpc: this.input.rpc,
       fromBlock: this.confirmedBlockValue + 1,
       toBlock: target,
-      preconfirmed: (receipt) => this.overlayReceipts.get(overlayIdentity(receipt)),
-    });
-    await this.input.historyStore?.appendEvents(
-      result.events.filter((event) => event.kind === "event"),
-      target,
-    );
+      preconfirmed: (receipt: RpcReceipt) => this.overlayReceipts.get(overlayIdentity(receipt)),
+    };
+    const result = this.input.historyStore
+      ? await replayWithFrontierDays(
+          this.native,
+          this.input.historyStore,
+          replayInput,
+          this.confirmedHeadTimestamp ?? undefined,
+        )
+      : { ...(await this.native.replay(replayInput)), frontierDays: [] };
     this.confirmedBlockValue = target;
     return result;
   }

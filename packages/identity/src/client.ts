@@ -152,8 +152,8 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
     );
 
   /** Emails a one-time sign-in code; the service limits how many an address and a client get a minute. */
-  const sendSignInCode = async (email: string): Promise<void> => {
-    await readJson(
+  const sendSignInCode = async (email: string): Promise<{ success: true; expires_at: number }> => {
+    return readJson(
       await request("/auth/email-otp/send-verification-otp", {
         method: "POST",
         body: JSON.stringify({ email, type: "sign-in" }),

@@ -11,7 +11,6 @@ const step = (tier: 1 | 2, value: number) => ({
 });
 const plan = (overrides: Partial<UpgradePlan> = {}): UpgradePlan => ({
   name: "Farm",
-  doubled: true,
   population: 1,
   now: step(1, 600),
   next: step(2, 1_200),
@@ -31,9 +30,8 @@ const render = (value: UpgradePlan, upgrade = vi.fn(() => Promise.resolve())) =>
 };
 
 describe("the upgrade sheet", () => {
-  it("shows now and next with the plot's ×2, and upgrades only when the realm holds the price", async () => {
+  it("shows now and next, and upgrades only when the realm holds the price", async () => {
     const ready = render(plan());
-    expect(ready.host.querySelector('[aria-label="Doubled on this plot"]')).not.toBeNull();
     expect([...ready.host.querySelectorAll(".frontier-tier")].map((banner) => banner.textContent)).toEqual(["I", "II"]);
     await act(async () => ready.button()!.click());
     expect(ready.upgrade).toHaveBeenCalledOnce();

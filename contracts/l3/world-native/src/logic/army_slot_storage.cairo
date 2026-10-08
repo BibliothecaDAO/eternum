@@ -2,8 +2,8 @@ use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
 use crate::events::RowSet;
 use crate::stamina::{StaminaSourceTrait, StaminaTrait};
 use crate::troops::{
-    ArmySlot, ArmySlotKey, ArmySlotRecord, Coord, ExplorerKey, ExplorerRecord, ExplorerRecordTrait, ExplorerTroops,
-    Stamina, StaminaSource, Troops,
+    ArmySlot, ArmySlotKey, ArmySlotRecord, Coord, ExplorerKey, ExplorerRecord, ExplorerTroops, Stamina, StaminaSource,
+    Troops,
 };
 
 pub fn read(key: ArmySlotKey) -> Option<ArmySlot> {
@@ -32,13 +32,9 @@ fn write(key: ArmySlotKey, value: ArmySlot) {
 }
 
 fn key_for(key: ExplorerKey, home: u32, coord: Coord, slot: u8) -> ArmySlotKey {
-    let game = crate::logic::game::game(key.game_id);
-    let seconds = crate::logic::game::rules(key.game_id).epoch_seconds;
-    assert!(seconds != 0 && !coord.alt, "slot outside expedition");
-    let spacing = crate::logic::settlement::rules(key.game_id).spacing;
-    let epoch = crate::expeditions::absolute_epoch(seconds, game.start_main_at)
-        + Into::<u32, u64>::into(coord.y / spacing / 4);
-    ArmySlotKey { game_id: key.game_id, structure_id: home, epoch, slot }
+    assert!(!coord.alt, "slot outside expedition");
+    let day = crate::expeditions::region_day(coord, crate::logic::settlement::rules(key.game_id).spacing);
+    ArmySlotKey { game_id: key.game_id, structure_id: home, epoch: day, slot }
 }
 
 fn occupied(key: ArmySlotKey, explorer_id: u32) -> ArmySlot {
@@ -123,14 +119,4 @@ pub fn release(key: ExplorerKey, explorer: ExplorerTroops) {
         value.explorer_id = 0;
         write(slot_key, value);
     }
-}
-
-pub fn grant_logistics(
-    key: ExplorerKey, mut explorer: ExplorerTroops, award: crate::troops::LogisticsStamina,
-) -> StaminaSource {
-    let previous = explorer.into_record();
-    let mut stamina = award.stamina.inline();
-    stamina.amount += Into::<u8, u64>::into(award.levels) * crate::rules::ATTRIBUTE_STAMINA.into();
-    explorer.troops.stamina = StaminaSource::Inline(stamina);
-    persist(key, previous, explorer.troops).stamina
 }

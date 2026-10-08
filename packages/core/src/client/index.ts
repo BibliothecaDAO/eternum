@@ -7,10 +7,7 @@ export * from "./submit";
 export * from "./shard";
 
 export type { NativeRows, NativeKeys, NativeModelName } from "../../../../contracts/l3/world-native/schema/client.gen";
-export {
-  nativeRuleConstants,
-  nativeTileOccupierConstants,
-} from "../../../../contracts/l3/world-native/schema/client.gen";
+export { nativeResearchConstants, nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
 
 export type { GameClientSetup } from "./game-client";
 

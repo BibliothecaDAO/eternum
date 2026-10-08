@@ -9,7 +9,7 @@ import type { WorldFold } from "./world-fold";
 const expeditionScope = (): GameSyncScope => ({
   actor: "0x111",
   expedition: {
-    absoluteEpoch: 0,
+    day: 0,
     spacing: 21,
     owners: new Set(["273"]),
     realms: new Set(["7"]),

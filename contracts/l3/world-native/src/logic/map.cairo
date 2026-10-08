@@ -55,7 +55,7 @@ pub mod MapState {
     use starknet::Event as EventTrait;
     use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
     use crate::events::{RowDeleted, RowSet};
-    use crate::map::{BIOME_SCALE, BYTE_RANGE, RESERVED_HYPERSTRUCTURE, TileKey, TileOccupancy};
+    use crate::map::{BIOME_SCALE, BYTE_RANGE, TileKey, TileOccupancy};
 
     #[derive(Drop, starknet::Event)]
     pub enum Event {
@@ -81,17 +81,9 @@ pub mod MapState {
     }
 
     pub fn occupy(key: TileKey, entity_id: u32, category: u8, is_structure: bool) {
-        assert!(entity_id != 0 && category != 0, "empty occupier");
+        assert!(entity_id != 0 && category != crate::taxonomy::NONE_OCCUPIER, "empty occupier");
         assert!(crate::logic::map::occupancy(key).is_none(), "occupied tile");
         write_occupancy(key, Some(TileOccupancy { entity_id, category, is_structure }));
-    }
-
-    pub fn close_site_chest(key: TileKey, site_id: u32) {
-        let previous = crate::logic::map::occupancy(key).expect('missing fallen realm');
-        assert!(previous.entity_id == site_id && previous.is_structure, "fallen realm occupancy mismatch");
-        write_occupancy(
-            key, Some(TileOccupancy { entity_id: site_id, category: crate::map::CHEST_OCCUPIER, is_structure: false }),
-        );
     }
 
     pub fn reserve_hyperstructure(key: TileKey) {
@@ -102,7 +94,7 @@ pub mod MapState {
             key,
             Some(
                 TileOccupancy {
-                    entity_id: 0, category: RESERVED_HYPERSTRUCTURE.try_into().unwrap(), is_structure: true,
+                    entity_id: 0, category: crate::taxonomy::RESERVED_HYPERSTRUCTURE_OCCUPIER, is_structure: true,
                 },
             ),
         );
@@ -110,7 +102,9 @@ pub mod MapState {
 
     pub fn release_hyperstructure(key: TileKey) {
         let previous = crate::logic::map::occupancy(key).expect('missing reservation');
-        assert!(previous.category.into() == RESERVED_HYPERSTRUCTURE, "hyperstructure already created");
+        assert!(
+            previous.category == crate::taxonomy::RESERVED_HYPERSTRUCTURE_OCCUPIER, "hyperstructure already created",
+        );
         write_occupancy(key, None);
     }
 
@@ -118,13 +112,18 @@ pub mod MapState {
         let previous = crate::logic::map::occupancy(key).expect('missing realm tile');
         assert!(!key.alt && previous.is_structure, "not a surface structure");
         assert!(previous.entity_id == entity_id, "occupier mismatch");
-        assert!(previous.category >= 1 && previous.category <= 8, "not a realm tile");
+        assert!(
+            previous.category >= crate::taxonomy::REALM_REGULAR_LEVEL_1_OCCUPIER
+                && previous.category <= crate::taxonomy::REALM_WONDER_LEVEL_4_OCCUPIER,
+            "not a realm tile",
+        );
         assert!(level <= 3, "invalid realm level");
-        let category = level + if wonder {
-            5
-        } else {
-            1
-        };
+        let category = level
+            + if wonder {
+                crate::taxonomy::REALM_WONDER_LEVEL_1_OCCUPIER
+            } else {
+                crate::taxonomy::REALM_REGULAR_LEVEL_1_OCCUPIER
+            };
         write_occupancy(key, Some(TileOccupancy { category, ..previous }));
     }
 
@@ -152,8 +151,8 @@ pub mod MapState {
     // Chests and spires are tile-only facts; reservations have no entity yet.
     fn has_single_position(occupier: TileOccupancy) -> bool {
         occupier.entity_id != 0
-            && occupier.category != crate::map::CHEST_OCCUPIER
-            && occupier.category != crate::map::SPIRE_OCCUPIER
+            && occupier.category != crate::taxonomy::CHEST_OCCUPIER
+            && occupier.category != crate::taxonomy::SPIRE_OCCUPIER
     }
 
     // The occupancy fact and its private reverse index are changed only here.
@@ -309,7 +308,7 @@ pub mod MapLogic {
             if stored.map(|tile| tile.data / BIOME_SCALE % BYTE_RANGE != 0).unwrap_or(false) {
                 return stored;
             }
-            if game_context.epoch_seconds == 0
+            if game_context.day_unit_seconds == 0
                 || !crate::expeditions::is_home_ring(
                     Coord { alt: key.alt, x: key.col, y: key.row },
                     crate::logic::settlement::rules(key.game_id).spacing,
@@ -339,8 +338,8 @@ pub mod MapLogic {
             let occupied = crate::logic::map::occupancy(key).expect('missing site');
             assert!(
                 !occupied.is_structure
-                    && (occupied.category == crate::map::SHRINE_OCCUPIER
-                        || occupied.category == crate::map::WELL_OCCUPIER),
+                    && (occupied.category == crate::taxonomy::SHRINE_OCCUPIER
+                        || occupied.category == crate::taxonomy::WELL_OCCUPIER),
                 "tile is not a shrine or well",
             );
             crate::logic::map::MapState::vacate(key, occupied.entity_id);
@@ -365,22 +364,40 @@ pub mod MapLogic {
             assert!(home != 0, "missing exploring army");
             let progress = crate::logic::progression::require(explorer_key);
             let home_key = crate::resources::ResourceKey { game_id: key.game_id, entity_id: home };
-            use crate::research::{MapContentKind, ResearchEffect};
-            if rules.shrine_bps != 0
-                && !crate::logic::research::has_effect(home_key, ResearchEffect::MapContent(MapContentKind::Shrine)) {
+            let learned = crate::logic::research::require(home_key).learned;
+            if crate::research::tier(learned, crate::research::ROW_SHRINE) == 0 {
                 rules.shrine_bps = 0;
             }
-            if rules.well_bps != 0
-                && !crate::logic::research::has_effect(home_key, ResearchEffect::MapContent(MapContentKind::Well)) {
+            if crate::research::tier(learned, crate::research::ROW_WELL) == 0 {
                 rules.well_bps = 0;
             }
             let counter = crate::expeditions::ExpeditionDiscoveryKey {
                 game_id: key.game_id,
                 structure_id: home,
-                epoch: crate::expeditions::absolute_epoch(context.rules.unbox().epoch_seconds, context.timestamp),
+                epoch: crate::expeditions::region_day(
+                    crate::troops::Coord { alt: key.alt, x: key.col, y: key.row },
+                    crate::logic::settlement::rules(key.game_id).spacing,
+                ),
             };
-            let empty = crate::logic::expeditions::discovery(counter).map(|row| row.empty_reveals).unwrap_or(0);
-            let result = crate::discovery::frontier(rules, progress.scouting, empty, seed, context.timestamp);
+            let day = crate::logic::expeditions::discovery(counter)
+                .unwrap_or(crate::expeditions::ExpeditionDiscovery { empty_reveals: 0, ruin_found: false });
+            // The ruin's chest is fixed before the draw: no chest that fits, no ruin, and the day stays free.
+            let ruin = if day.ruin_found {
+                None
+            } else {
+                let odds = crate::logic::expeditions::depth_rules_at(
+                    key.game_id, Coord { alt: key.alt, x: key.col, y: key.row },
+                )
+                    .chest;
+                crate::logic::lords_budget::offer(key.game_id, odds, seed, context)
+            };
+            let (camp, rift, stragglers) = crate::progression::scouting_bonus(progress);
+            let result = crate::discovery::frontier(
+                rules, camp, rift, stragglers, day.empty_reveals, ruin, seed, context.timestamp,
+            );
+            if let crate::discovery::Discovery::Ruin(chest) = result {
+                crate::logic::lords_budget::reserve(key.game_id, chest, context);
+            }
             crate::logic::expeditions::record_discovery(counter, result);
             if let Some(category) = crate::discovery::tile_occupier(result) {
                 crate::logic::map::MapState::occupy(
@@ -480,12 +497,11 @@ pub mod MapLogic {
                 crate::commands::resource_context(context),
             );
             crate::logic::map::MapState::mark_reward_extracted(key);
-            if rules.epoch_seconds != 0 {
+            if rules.day_unit_seconds != 0 {
                 crate::progression::IArmyProgressionDispatcherTrait::grant_army_xp(
                     crate::progression::IArmyProgressionLibraryDispatcher { class_hash: classes.relics.read() },
                     crate::troops::ExplorerKey { game_id, explorer_id },
                     crate::progression::XpAward::Reveal,
-                    crate::commands::action_context(context),
                 );
             }
             self
@@ -517,18 +533,8 @@ pub mod MapLogic {
             game_context: crate::commands::ActionContext,
         ) {
             let game_context = crate::commands::load_context(game_id, game_context);
-
-            let classes = self.release.classes(game_id);
-
             let rules = game_context.rules.unbox();
             if !crate::rules::rule_enabled(rules, crate::rules::DISCOVER_CHESTS) || coord.alt {
-                return;
-            }
-            if rules.epoch_seconds != 0
-                && crate::relics::IRelicsDispatcherTrait::chest_rules(
-                    crate::relics::IRelicsLibraryDispatcher { class_hash: classes.relics.read() }, game_id,
-                )
-                    .is_some() {
                 return;
             }
             if self.data.map_rules.last_relic_discovery.read(game_id)
@@ -551,7 +557,7 @@ pub mod MapLogic {
                         );
                     }
                     crate::logic::map::MapState::occupy(
-                        key, crate::logic::game::allocate_entity(game_id), crate::map::CHEST_OCCUPIER, false,
+                        key, crate::logic::game::allocate_entity(game_id), crate::taxonomy::CHEST_OCCUPIER, false,
                     );
                     break;
                 }
@@ -568,19 +574,11 @@ pub mod MapLogic {
                     },
                 );
         }
-        fn close_site_chest(ref self: ContractState, site: crate::resources::ResourceKey) {
-            let status = crate::logic::expeditions::expedition_site(site).expect('missing expedition site');
-            assert!(
-                status.cleared && status.kind == crate::expeditions::SiteKind::FallenRealm, "fallen realm not cleared",
-            );
-            let coord = crate::structures::structure_coord(site);
-            crate::logic::map::MapState::close_site_chest(tile_key(site.game_id, coord), site.entity_id);
-        }
         fn consume_relic_chest(ref self: ContractState, game_id: u32, coord: Coord) {
             let key = tile_key(game_id, coord);
             let tile = crate::logic::map::tile(key).expect('missing chest tile');
             assert!(
-                tile.data % 2 == 0 && (tile.data / 2) % BYTE_RANGE == crate::map::CHEST_OCCUPIER.into(),
+                tile.data % 2 == 0 && (tile.data / 2) % BYTE_RANGE == crate::taxonomy::CHEST_OCCUPIER.into(),
                 "tile is not a relic chest",
             );
             let id = ((tile.data / crate::map::OCCUPIER_SCALE) % crate::map::ENTITY_RANGE).try_into().unwrap();
