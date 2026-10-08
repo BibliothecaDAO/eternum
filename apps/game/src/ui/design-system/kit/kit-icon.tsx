@@ -1,6 +1,20 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ResourcesIds } from "@bibliothecadao/types";
 
+import { orderEmblem } from "./order-emblem";
+
+/**
+ * The Aspects wear their Orders' sigils, in their colours (the owner, 8 October 2026): Rage for Battle, Skill for
+ * Logistics and for the guide (the Aspect of Skill speaks it), Detection for Scouting, Enlightenment, the Aspect of
+ * Light, for Homecoming. By the Orders' ids as the game numbers them.
+ */
+const ASPECT_SIGILS = {
+  rage: orderEmblem(3).art,
+  skill: orderEmblem(9).art,
+  detection: orderEmblem(8).art,
+  light: orderEmblem(16).art,
+};
+
 /**
  * The handoff's icon codes (frontier-mobile-ui/handoff.html, Icons) drawn with the art that exists today. A code the
  * art pass redraws changes here and nowhere else.
@@ -39,16 +53,16 @@ const ICONS = {
   Lk: "/image-icons/ui-lock.png",
   Tp: "/image-icons/trophy.png",
   Hm: "/image-icons/leave.png",
-  // The four Aspect marks wait for the art pass; the attribute glyphs stand in (Homecoming wears Support's).
-  Ba: "/images/frontier/attributes/battle.svg",
-  Lg: "/images/frontier/attributes/logistics.svg",
-  Sc: "/images/frontier/attributes/scouting.svg",
-  Su: "/images/frontier/attributes/support.svg",
-  // The four training buildings wait for their art; the attribute each trains stands in.
-  Wa: "/images/frontier/attributes/battle.svg",
-  Sy: "/images/frontier/attributes/logistics.svg",
-  Ld: "/images/frontier/attributes/scouting.svg",
-  He: "/images/frontier/attributes/support.svg",
+  // The four army attributes, each its Aspect's sigil.
+  Ba: ASPECT_SIGILS.rage,
+  Lg: ASPECT_SIGILS.skill,
+  Sc: ASPECT_SIGILS.detection,
+  Su: ASPECT_SIGILS.light,
+  // The four training buildings wait for their paintings; the sigil of the attribute each trains stands in.
+  Wa: ASPECT_SIGILS.rage,
+  Sy: ASPECT_SIGILS.skill,
+  Ld: ASPECT_SIGILS.detection,
+  He: ASPECT_SIGILS.light,
   // The six sides wait for their art; the building or the store each lifts stands in.
   Fi: "/images/buildings/construction/farm.png",
   Gr: "/image-icons/ui-layers.png",
@@ -61,9 +75,10 @@ const ICONS = {
   // Army slots and a store's limit wait for their new icons; these stand in.
   Sl: "/image-icons/ui-people.png",
   Sg: "/image-icons/ui-gauge.png",
-  // The kit's clock and the guide's mark wait for the art pass; these stand in.
+  // The kit's clock waits for the art pass; the calendar stands in.
   Cl: "/image-icons/ui-calendar.png",
-  Gd: "/image-icons/question.png",
+  // The guide's mark: the Aspect of Skill's sigil.
+  Gd: ASPECT_SIGILS.skill,
   Of: "/image-icons/ui-network-off.png",
   Cv: "/image-icons/ui-chevron-down.png",
   // The kit's back waits for the art pass; the chevron, turned to point back, stands in.
@@ -97,7 +112,10 @@ export type IconCode = keyof typeof ICONS;
 /** Codes drawn turned: the chevron that says a row opens points right, the one that says back points left. */
 const TURNS: Partial<Record<IconCode, number>> = { Cv: -90, Bk: 90 };
 
-/** An icon by its code; decorative, since the control around it carries the word. */
+/**
+ * An icon by its code, in a square of its size whatever its art's shape (the page's img rule would otherwise let a
+ * tall sigil grow past its row); decorative, since the control around it carries the word.
+ */
 export const KitIcon = ({ code, size = 20, className }: { code: IconCode; size?: number; className?: string }) => (
   <img
     src={ICONS[code]}
@@ -106,7 +124,7 @@ export const KitIcon = ({ code, size = 20, className }: { code: IconCode; size?:
     width={size}
     height={size}
     draggable={false}
-    className={cn("inline-block shrink-0 object-contain", className)}
+    className={cn("inline-block aspect-square shrink-0 object-contain", className)}
     style={TURNS[code] ? { rotate: `${TURNS[code]}deg` } : undefined}
   />
 );

@@ -6,7 +6,7 @@ import { forwardRef } from "react";
 
 import type { GuideMark } from "./guide-script";
 
-/** The mark's four states, until the art pass draws them: dim, gold, glowing, amber. */
+/** The Aspect of Skill's sigil in the mark's four states: dim, as drawn, glowing gold, glowing amber. */
 const MARKS: Record<GuideMark, string> = {
   rest: "opacity-45",
   speaking: "",

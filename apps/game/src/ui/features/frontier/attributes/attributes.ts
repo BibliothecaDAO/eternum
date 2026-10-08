@@ -36,24 +36,21 @@ export const xpGained = (before: Pick<ArmyProgressFacts, "xp">, after: Pick<Army
 export const attributeBadgeTarget = (explorerId: number): string => `attributes-${explorerId}`;
 
 /**
- * Each attribute's glyph and what it gives at a tier, as the contract's constants apply it: damage in percent and
+ * What each attribute gives at a tier, as the contract's constants apply it: damage in percent and
  * stamina from their tier tables, the chosen kind's find rate in percent of its base, and the share of surviving troops
  * returned home at the day's end in percent.
  */
-export const ATTRIBUTE_LOOK: Record<Attribute, { glyph: string; atTier: (tier: number) => number; unit: "%" | "" }> = {
-  Battle: { glyph: "/images/frontier/attributes/battle.svg", atTier: (tier) => battleBonusBps(tier) / 100, unit: "%" },
-  Logistics: { glyph: "/images/frontier/attributes/logistics.svg", atTier: logisticsStamina, unit: "" },
+export const ATTRIBUTE_LOOK: Record<Attribute, { atTier: (tier: number) => number; unit: "%" | "" }> = {
+  Battle: { atTier: (tier) => battleBonusBps(tier) / 100, unit: "%" },
+  Logistics: { atTier: logisticsStamina, unit: "" },
   Scouting: {
-    glyph: "/images/frontier/attributes/scouting.svg",
     // Cumulative on one kind: +10%, +30%, +60%, +100%.
     atTier: (tier) =>
       Array.from({ length: tier }, (_, index) => scoutingIncrementBps(index + 1)).reduce((sum, bps) => sum + bps, 0) /
       100,
     unit: "%",
   },
-  // Support's glyph stands in until the narrative lane deals Homecoming's Aspect mark.
   Homecoming: {
-    glyph: "/images/frontier/attributes/support.svg",
     atTier: (tier) => homecomingBps(tier) / 100,
     unit: "%",
   },
