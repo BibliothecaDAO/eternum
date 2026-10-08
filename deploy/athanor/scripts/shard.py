@@ -97,8 +97,11 @@ def validate_configuration(config, allowed_cpus):
     owned = ("--base-path", "--chain-config", "--rpc", "--name", "--db", "--devnet", "--l1", "--no-charge", "--otel")
     levers = ("--db-max-kept-snapshots=",)
     for flag in config["node_flags"]:
+        execution_override = isinstance(flag, str) and re.fullmatch(
+            r"--chain-config-override=block_production_concurrency\.disable_concurrency=(?:true|false)", flag
+        )
         if not isinstance(flag, str) or not flag.startswith("--") or (flag.startswith(owned)
-                                                                     and not flag.startswith(levers)):
+                                                                     and not (flag.startswith(levers) or execution_override)):
             raise ValueError(f"node flag overrides shard ownership: {flag}")
     if not any(flag.startswith("--enable-native-execution=") for flag in config["node_flags"]):
         raise ValueError("record the native execution setting explicitly")

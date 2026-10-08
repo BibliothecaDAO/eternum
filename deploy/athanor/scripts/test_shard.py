@@ -55,6 +55,19 @@ def load_package_script(name):
 
 
 class ShardTest(unittest.TestCase):
+    def test_execution_lever_cannot_override_shard_ownership_or_add_unknown_keys(self):
+        config = configuration()
+        prefix = "--chain-config-override=block_production_concurrency.disable_concurrency="
+        for value in ("true", "false"):
+            shard.validate_configuration({**config, "node_flags": [*config["node_flags"], prefix + value]},
+                                         set(range(24)))
+        for flag in (prefix + "true,chain_id=OTHER", prefix + "yes", prefix + "true,block_time=4s",
+                     "--chain-config-override=block_production_concurrency.unknown=true",
+                     "--chain-config-path=/other/config.yaml", "--chain-config-override=chain_id=OTHER"):
+            with self.subTest(flag=flag), self.assertRaises(ValueError):
+                shard.validate_configuration({**config, "node_flags": [*config["node_flags"], flag]},
+                                             set(range(24)))
+
     def test_allocator_trial_changes_only_the_nodes_environment_and_read_only_mounts(self):
         config = configuration()
         mount = {"source": "/opt/athanor/allocators/jemalloc/libjemalloc.so.2",
