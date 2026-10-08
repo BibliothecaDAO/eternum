@@ -604,6 +604,13 @@ development gym, standing, walking, running and attacking, large enough to judge
 - **Check clearances by computation, on one figure, through the motions in turn.** Blade as a segment, arms and legs as
   capsules, shield as a disc, sampled over idle, walk, run and the whole attack. Each motion on a fresh figure passed
   while the elbow fault above was live; it showed only when one motion followed another.
+- **A switch is a jump.** The game eases the rotations of body parts, not the positions its arm solver reaches for. A
+  guard held "while moving" as a yes or no put shield and sword there in one frame when a unit set off, and back in one
+  frame when it stopped. The melee controller eases a weight instead.
+- **Measure what the game shows.** The game's pose filter makes the visible chest follow the controller's a little late,
+  so arms placed in the controller's chest frame lead the trunk in a fast attack (up to 5 cm on this figure) and stand
+  closer to head and trunk than the unfiltered pose says (shield to head 8 mm against 18). Measure clearances with the
+  filter on.
 - **Open the frames.** A capture is evidence only at a size where the thing in question can be judged, and only once
   someone has looked at it. A worker's sentence about a frame is not a look.
 
