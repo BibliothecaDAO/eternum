@@ -31,8 +31,8 @@ bun deploy/athanor/spikes/node-first/game-setup.ts \
   --fixture "$TRIAL/data/node-first-private.json" \
   --private-rpc "http://127.0.0.1:$BASE/rpc/v0_10_2" --preset 101 --amount 1000
 
-NODE_PID=$(docker inspect --format '{{.State.Pid}}' "$NODE_CONTAINER")
-NODE_IMAGE=$(docker inspect --format '{{.Config.Image}}' "$NODE_CONTAINER")
+NODE_PID=$(python3 deploy/athanor/spikes/node-first/node-pid.py "$NODE_CONTAINER")
+NODE_IMAGE=$(sudo -n docker inspect --format '{{.Config.Image}}' "$NODE_CONTAINER")
 # Start/keep the existing read-only node log watcher as in tier1.
 for ARM in X Y; do
   bun deploy/athanor/spikes/node-first/proxy.ts \
