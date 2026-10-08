@@ -32,7 +32,7 @@ it("covers every native story and tests every cumulative level", () => {
       "BankLiquidity",
       "HyperstructurePoints",
       "RelicChestOpened",
-      "AttributeChosen",
+      "TierBought",
       "SitePayout",
       "ExplorationReward",
       "SeasonEnded",
@@ -59,6 +59,7 @@ it("covers every native story and tests every cumulative level", () => {
 
 it("knows no retired Dojo story: a variant the chain no longer emits is unknown", () => {
   expect(() => storyNotificationRule("BattleStory")).toThrow("Unknown notification story: BattleStory");
+  expect(() => storyNotificationRule("AttributeChosen")).toThrow("Unknown notification story: AttributeChosen");
 });
 
 it("uses event-time recipients, normalizes duplicates, and excludes neutral addresses", () => {
@@ -72,7 +73,7 @@ it("uses event-time recipients, normalizes duplicates, and excludes neutral addr
     }),
   ).toEqual(["0x1", "0x2"]);
   expect(storyRecipients("RealmCreatedStory", "0x003", battle)).toEqual(["0x3"]);
-  expect(storyRecipients("AttributeChosen", "0x003", { explorer_id: 7 })).toEqual(["0x3"]);
+  expect(storyRecipients("TierBought", "0x003", { explorer_id: 7 })).toEqual(["0x3"]);
   expect(storyRecipients("BattleEvent", "0xff", { attacker: { player: "0x1" }, defender: { player: "0x01" } })).toEqual(
     ["0x1"],
   );
