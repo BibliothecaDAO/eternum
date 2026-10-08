@@ -19,7 +19,7 @@ describe("procedural melee Knight assets", () => {
     expect(load).not.toHaveBeenCalled();
     expect(library.isWeaponReady("t1-knight-default-sword")).toBe(false);
     expect(() =>
-      library.assertDirectLoadoutAvailable({
+      library.assertFittedLoadoutAvailable({
         detailedEquipment: true,
         offhandId: "t1-knight-default-shield",
         weaponId: "t1-knight-default-sword",
@@ -37,7 +37,7 @@ describe("procedural melee Knight assets", () => {
       "/models/characters/t1-knight-default/near/shield.glb",
     ]);
     expect(() =>
-      library.assertDirectLoadoutAvailable({
+      library.assertFittedLoadoutAvailable({
         detailedEquipment: true,
         offhandId: "t1-knight-default-shield",
         weaponId: "t1-knight-default-sword",

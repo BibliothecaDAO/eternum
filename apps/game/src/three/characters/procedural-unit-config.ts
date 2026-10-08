@@ -1,4 +1,9 @@
 import {
+  DEFAULT_PROCEDURAL_CHARACTER_APPEARANCE_ID,
+  isProceduralCharacterAppearanceCompatibleWithKind,
+  resolveProceduralCharacterAppearance,
+} from "./procedural-character-appearance";
+import {
   applyProceduralCharacterConfigPatch,
   createDefaultProceduralCharacterConfig,
   type ProceduralCharacterConfig,
@@ -13,6 +18,12 @@ import {
   createDefaultProceduralArcherConfig,
   type ProceduralArcherConfig,
 } from "./archer/procedural-archer-config";
+import {
+  isProceduralMeleeGearFittedToRig,
+  resolveProceduralMeleeOffhand,
+  resolveProceduralMeleeWeapon,
+  resolveRigFittedMeleeLoadout,
+} from "./melee/procedural-melee-weapon-catalog";
 import {
   applyDefaultMeleeLoadoutForKind,
   applyProceduralMeleeConfigPatch,
@@ -88,7 +99,7 @@ export function applyProceduralUnitConfigPatch(
   const humanoidPatch = { ...patch.humanoid };
   if (kind === "paladin") humanoidPatch.animationMode = "mounted";
   else if (current.kind === "paladin" && !humanoidPatch.animationMode) humanoidPatch.animationMode = "walk";
-  const humanoid = applyProceduralCharacterConfigPatch(current.humanoid, humanoidPatch);
+  const humanoid = applyProceduralCharacterConfigPatch(keepAppearanceThatServes(current.humanoid, kind), humanoidPatch);
   const horsePatch = { ...patch.horse };
   if (patch.humanoid?.seed !== undefined && patch.horse?.seed === undefined) horsePatch.seed = humanoid.seed;
   const boatPatch = { ...patch.boat };
@@ -96,6 +107,7 @@ export function applyProceduralUnitConfigPatch(
   const dragonPatch = { ...patch.dragon };
   if (patch.humanoid?.seed !== undefined && patch.dragon?.seed === undefined) dragonPatch.seed = humanoid.seed;
   const meleeBase = kind === current.kind ? current.melee : applyDefaultMeleeLoadoutForKind(current.melee, kind);
+  const melee = fitMeleeLoadoutToAppearance(meleeBase, kind, current.humanoid.appearanceId, humanoid.appearanceId);
   return {
     archer: applyProceduralArcherConfigPatch(current.archer, patch.archer ?? {}),
     boat: applyProceduralBoatConfigPatch(current.boat, boatPatch),
@@ -103,6 +115,36 @@ export function applyProceduralUnitConfigPatch(
     kind,
     humanoid,
     horse: applyProceduralHorseConfigPatch(current.horse, horsePatch),
-    melee: applyProceduralMeleeConfigPatch(meleeBase, patch.melee ?? {}),
+    melee: applyProceduralMeleeConfigPatch(melee, patch.melee ?? {}),
   };
+}
+
+/** A kind that cannot use the current appearance gets the default one, in the same step as its melee loadout. */
+function keepAppearanceThatServes(
+  humanoid: ProceduralCharacterConfig,
+  kind: ProceduralUnitKind,
+): ProceduralCharacterConfig {
+  if (isProceduralCharacterAppearanceCompatibleWithKind(humanoid.appearanceId, kind)) return humanoid;
+  return applyProceduralCharacterConfigPatch(humanoid, { appearanceId: DEFAULT_PROCEDURAL_CHARACTER_APPEARANCE_ID });
+}
+
+/**
+ * Gear fitted to one rig goes with that rig's appearance: choosing the appearance brings its gear, and leaving it
+ * takes the gear off for the kind's default.
+ */
+function fitMeleeLoadoutToAppearance(
+  melee: ProceduralMeleeConfig,
+  kind: ProceduralUnitKind,
+  previousAppearanceId: ProceduralCharacterConfig["appearanceId"],
+  appearanceId: ProceduralCharacterConfig["appearanceId"],
+): ProceduralMeleeConfig {
+  const { rigAdapterId } = resolveProceduralCharacterAppearance(appearanceId);
+  const fittedLoadout = resolveRigFittedMeleeLoadout(rigAdapterId);
+  const choseAppearance = appearanceId !== previousAppearanceId;
+  if (fittedLoadout && choseAppearance && (kind === "knight" || kind === "paladin")) {
+    return applyProceduralMeleeConfigPatch(melee, fittedLoadout);
+  }
+  const wornGear = [resolveProceduralMeleeWeapon(melee.weaponId), resolveProceduralMeleeOffhand(melee.offhandId)];
+  if (wornGear.every((gear) => isProceduralMeleeGearFittedToRig(gear, rigAdapterId))) return melee;
+  return applyDefaultMeleeLoadoutForKind(melee, kind);
 }

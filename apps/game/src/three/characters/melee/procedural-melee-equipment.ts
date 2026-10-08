@@ -22,16 +22,15 @@ import {
   resolveProceduralMeleeOffhand,
   resolveProceduralMeleeWeapon,
   type ProceduralMeleeOffhandId,
+  type ProceduralMeleeOffhandSocket,
   type ProceduralMeleeWeaponId,
 } from "./procedural-melee-weapon-catalog";
 import { ProceduralMeleeWeaponLibrary, type ProceduralMeleeEquipmentSource } from "./procedural-melee-weapon-library";
 
-export type ProceduralMeleeOffhandSocket = Extract<CharacterSocketId, "gripLeft" | "forearmLeft">;
-
 export interface ProceduralMeleeEquipmentStats {
   offhandId: ProceduralMeleeOffhandId;
   offhandSource: ProceduralMeleeEquipmentSource | "none";
-  offhandSocket?: ProceduralMeleeOffhandSocket;
+  offhandSocket: ProceduralMeleeOffhandSocket;
   weaponId: ProceduralMeleeWeaponId;
   weaponSource: ProceduralMeleeEquipmentSource;
 }
@@ -126,10 +125,6 @@ export class ProceduralMeleeEquipment {
     this.placeAtSocket(this.leftSocketHelper, this.offhandSocket);
   }
 
-  public setOffhandSocket(socketId: ProceduralMeleeOffhandSocket): void {
-    this.offhandSocket = socketId;
-  }
-
   public writeWeaponTipWorldPosition(outPosition: Vector3): boolean {
     if (!this.group.visible || !this.weapon.visible) return false;
     const visualLength = resolveProceduralMeleeWeapon(this.weaponId).visualLength;
@@ -189,6 +184,7 @@ export class ProceduralMeleeEquipment {
     this.offhand.removeFromParent();
     const weaponAsset = this.detailedEquipment ? this.library.instantiateWeapon(this.weaponId) : undefined;
     const offhandDefinition = resolveProceduralMeleeOffhand(this.offhandId);
+    this.offhandSocket = offhandDefinition.attachmentSocket ?? "gripLeft";
     const offhandAsset = this.detailedEquipment ? this.library.instantiateOffhand(this.offhandId) : undefined;
     this.weapon =
       weaponAsset?.object ??
@@ -245,15 +241,21 @@ export class ProceduralMeleeEquipment {
       this.scratchWeaponDirection.applyAxisAngle(LOCAL_Y_AXIS, pose.aimYawRadians);
     }
     this.scratchWeaponDirection.normalize();
-    if (resolveProceduralMeleeWeapon(this.weaponId).assetAlignment?.pivot !== "authored") {
+    // Gear fitted to a rig is oriented by its socket alone.
+    if (!resolveProceduralMeleeWeapon(this.weaponId).fittedRigAdapterId) {
       this.weapon.quaternion.setFromUnitVectors(LOCAL_Y_AXIS, this.scratchWeaponDirection);
     }
     this.scratchOffhandEuler.set(-0.08, pose?.aimYawRadians ?? 0, 0.06);
-    if (this.offhandSocket !== "forearmLeft") this.offhand.quaternion.setFromEuler(this.scratchOffhandEuler);
+    if (!resolveProceduralMeleeOffhand(this.offhandId).fittedRigAdapterId) {
+      this.offhand.quaternion.setFromEuler(this.scratchOffhandEuler);
+    }
   }
 
   private placeAtSocket(target: Group | AxesHelper, socketId: CharacterSocketId): void {
     if (!this.sockets.writeSocketWorldTransform(socketId, this.scratchWorldPosition, this.scratchWorldQuaternion)) {
+      // Only the forearm socket is optional on a rig; fitted gear that needs it must not drift loose without a word.
+      if (socketId === "forearmLeft")
+        throw new Error("The equipped gear needs a forearmLeft socket this rig does not have");
       return;
     }
     this.actorRoot.worldToLocal(this.scratchWorldPosition);

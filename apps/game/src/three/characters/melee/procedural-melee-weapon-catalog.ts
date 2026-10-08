@@ -1,7 +1,8 @@
+import type { HumanoidRigAdapterId } from "../humanoid-rig-adapters";
 import type { ProceduralUnitKind } from "../procedural-unit-config";
 import type { CharacterSocketId } from "../procedural-character-sockets";
 
-type ProceduralMeleeOffhandAttachmentSocket = Extract<CharacterSocketId, "gripLeft" | "forearmLeft">;
+export type ProceduralMeleeOffhandSocket = Extract<CharacterSocketId, "gripLeft" | "forearmLeft">;
 
 export type ProceduralMeleeWeaponId =
   | "iron-longsword"
@@ -30,6 +31,8 @@ export interface ProceduralMeleeWeaponDefinition {
   attackStyle: ProceduralMeleeAttackStyle;
   assetAlignment?: ProceduralMeleeAssetAlignment;
   compatibleKinds: readonly Extract<ProceduralUnitKind, "knight" | "paladin">[];
+  /** Set when the gear was fitted to one rig's hand and cannot be worn on another. */
+  fittedRigAdapterId?: HumanoidRigAdapterId;
   id: ProceduralMeleeWeaponId;
   label: string;
   registryEntryId?: string;
@@ -37,9 +40,11 @@ export interface ProceduralMeleeWeaponDefinition {
 }
 
 export interface ProceduralMeleeOffhandDefinition {
-  attachmentSocket?: ProceduralMeleeOffhandAttachmentSocket;
+  attachmentSocket?: ProceduralMeleeOffhandSocket;
   assetAlignment?: ProceduralMeleeAssetAlignment;
   compatibleKinds: readonly Extract<ProceduralUnitKind, "knight" | "paladin">[];
+  /** Set when the gear was fitted to one rig's forearm and cannot be worn on another. */
+  fittedRigAdapterId?: HumanoidRigAdapterId;
   gripToCenter: readonly [number, number, number];
   id: ProceduralMeleeOffhandId;
   label: string;
@@ -54,6 +59,7 @@ export const PROCEDURAL_MELEE_WEAPONS: readonly ProceduralMeleeWeaponDefinition[
     attackStyle: "slash",
     assetAlignment: { pivot: "authored" },
     compatibleKinds: ["knight"],
+    fittedRigAdapterId: "t1-knight-default",
     id: "t1-knight-default-sword",
     label: "T1 Knight Default sword",
     visualLength: 0.298393189907074, // sword.glb bounds: blade tip on +Y from the grip centre
@@ -97,6 +103,7 @@ export const PROCEDURAL_MELEE_OFFHANDS: readonly ProceduralMeleeOffhandDefinitio
     attachmentSocket: "forearmLeft",
     assetAlignment: { pivot: "authored" },
     compatibleKinds: ["knight"],
+    fittedRigAdapterId: "t1-knight-default",
     gripToCenter: [0, 0, 0],
     id: "t1-knight-default-shield",
     label: "T1 Knight Default shield",
@@ -155,6 +162,23 @@ export function resolveProceduralMeleeOffhand(id: ProceduralMeleeOffhandId): Pro
   const definition = PROCEDURAL_MELEE_OFFHANDS.find((offhand) => offhand.id === id);
   if (!definition) throw new Error(`Unknown procedural melee offhand: ${id}`);
   return definition;
+}
+
+/** Gear without a fitted rig fits every rig. */
+export function isProceduralMeleeGearFittedToRig(
+  gear: { fittedRigAdapterId?: HumanoidRigAdapterId },
+  rigAdapterId: HumanoidRigAdapterId,
+): boolean {
+  return gear.fittedRigAdapterId === undefined || gear.fittedRigAdapterId === rigAdapterId;
+}
+
+/** The gear fitted to one rig, if any was made for it. */
+export function resolveRigFittedMeleeLoadout(
+  rigAdapterId: HumanoidRigAdapterId,
+): { weaponId: ProceduralMeleeWeaponId; offhandId: ProceduralMeleeOffhandId } | undefined {
+  const weapon = PROCEDURAL_MELEE_WEAPONS.find(({ fittedRigAdapterId }) => fittedRigAdapterId === rigAdapterId);
+  const offhand = PROCEDURAL_MELEE_OFFHANDS.find(({ fittedRigAdapterId }) => fittedRigAdapterId === rigAdapterId);
+  return weapon && offhand ? { weaponId: weapon.id, offhandId: offhand.id } : undefined;
 }
 
 export function resolveDefaultProceduralMeleeLoadout(kind: ProceduralUnitKind): {

@@ -260,7 +260,7 @@ function assertProceduralUnitAssetsAvailable(
   meleeLibrary: ProceduralMeleeWeaponLibrary,
 ): void {
   if (config.kind !== "knight" && config.kind !== "paladin") return;
-  meleeLibrary.assertDirectLoadoutAvailable(config.melee);
+  meleeLibrary.assertFittedLoadoutAvailable(config.melee);
 }
 
 function createUnitActor(

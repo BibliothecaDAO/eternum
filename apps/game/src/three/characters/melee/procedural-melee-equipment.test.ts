@@ -49,3 +49,24 @@ describe("procedural melee shield handle", () => {
     expect(countShieldHandles(buildOffhand("round-shield", assetShield))).toBe(1);
   });
 });
+
+describe("procedural melee socket placement", () => {
+  it("throws when fitted gear needs a forearm socket the rig lacks, instead of leaving it loose", () => {
+    const sockets: ProceduralCharacterSocketReader = {
+      writeSocketWorldTransform: (socketId, position) => {
+        position.set(0, 0, 0);
+        return socketId !== "forearmLeft";
+      },
+    };
+    const library = {
+      instantiateWeapon: () => undefined,
+      instantiateOffhand: () => undefined,
+      isWeaponReady: () => false,
+      isOffhandReady: () => false,
+    } as unknown as ProceduralMeleeWeaponLibrary;
+    const equipment = new ProceduralMeleeEquipment(new Group(), sockets, library);
+    const config = { ...createDefaultProceduralMeleeConfig("knight"), offhandId: "t1-knight-default-shield" as const };
+
+    expect(() => equipment.update("knight", config, createDefaultProceduralCharacterConfig())).toThrow("forearmLeft");
+  });
+});

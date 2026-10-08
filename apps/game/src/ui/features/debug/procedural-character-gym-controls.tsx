@@ -48,8 +48,11 @@ import {
   type ProceduralCollisionGymConfig,
   type ProceduralCollisionGymScenario,
 } from "@/three/characters/gym/procedural-collision-gym-config";
+import { isProceduralMeleeGearFittedToRig } from "@/three/characters/melee/procedural-melee-weapon-catalog";
+import { resolveProceduralCharacterAppearance } from "@/three/characters/procedural-character-appearance";
 import {
   filterProceduralCharacterReviewOptions,
+  listOfferedProceduralCharacterAppearances,
   resolveActiveProceduralCharacterReviewCapability,
 } from "@/three/characters/procedural-character-review-capability";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -139,10 +142,9 @@ interface MeleeNumericField {
 }
 
 const reviewCapability = resolveActiveProceduralCharacterReviewCapability();
-const availableCharacterAppearances = filterProceduralCharacterReviewOptions(
-  PROCEDURAL_CHARACTER_APPEARANCES,
-  reviewCapability,
-);
+const availableCharacterAppearances = listOfferedProceduralCharacterAppearances(reviewCapability, {
+  mixesUnitKinds: false,
+});
 const availableMeleeWeapons = filterProceduralCharacterReviewOptions(PROCEDURAL_MELEE_WEAPONS, reviewCapability);
 const availableMeleeOffhands = filterProceduralCharacterReviewOptions(PROCEDURAL_MELEE_OFFHANDS, reviewCapability);
 
@@ -454,53 +456,58 @@ const CollisionGymControls = ({ collisionConfig, onPatchCollisionConfig }: Chara
   </ControlSection>
 );
 
-const MeleeControls = ({ config, onPatchConfig }: CharacterGymControlsProps) => (
-  <>
-    <ControlSection title="Melee loadout" icon={<Swords />} defaultOpen>
-      <SelectControl
-        label="Weapon cosmetic"
-        value={config.melee.weaponId}
-        options={availableMeleeWeapons.map(({ id, label }) => ({ value: id, label }))}
-        onChange={(weaponId) => onPatchConfig({ melee: { weaponId: weaponId as ProceduralMeleeWeaponId } })}
-      />
-      <SelectControl
-        label="Offhand cosmetic"
-        value={config.melee.offhandId}
-        options={availableMeleeOffhands.map(({ id, label }) => ({ value: id, label }))}
-        onChange={(offhandId) => onPatchConfig({ melee: { offhandId: offhandId as ProceduralMeleeOffhandId } })}
-      />
-      <ToggleControl
-        label="Load cosmetic GLBs"
-        checked={config.melee.detailedEquipment}
-        onChange={(detailedEquipment) => onPatchConfig({ melee: { detailedEquipment } })}
-      />
-    </ControlSection>
-    <ControlSection title="Melee attack cycle" icon={<Crosshair />} defaultOpen>
-      <ToggleControl
-        label="Auto attack"
-        checked={config.melee.autoAttack}
-        onChange={(autoAttack) => onPatchConfig({ melee: { autoAttack } })}
-      />
-      <MeleeRangeFieldList fields={MELEE_TIMING_FIELDS} config={config.melee} onPatchConfig={onPatchConfig} />
-    </ControlSection>
-    <ControlSection title="Weapon pose" icon={<Activity />} defaultOpen>
-      <MeleeRangeFieldList fields={MELEE_POSE_FIELDS} config={config.melee} onPatchConfig={onPatchConfig} />
-      <ToggleControl
-        label="Contact arc"
-        checked={config.melee.showArc}
-        onChange={(showArc) => onPatchConfig({ melee: { showArc } })}
-      />
-      <ToggleControl
-        label="Socket diagnostics"
-        checked={config.melee.showSockets}
-        onChange={(showSockets) => onPatchConfig({ melee: { showSockets } })}
-      />
-    </ControlSection>
-    <ControlSection title="Melee target lane" icon={<Target />} defaultOpen>
-      <MeleeRangeFieldList fields={MELEE_TARGET_FIELDS} config={config.melee} onPatchConfig={onPatchConfig} />
-    </ControlSection>
-  </>
-);
+const MeleeControls = ({ config, onPatchConfig }: CharacterGymControlsProps) => {
+  const { rigAdapterId } = resolveProceduralCharacterAppearance(config.humanoid.appearanceId);
+  const fitsAppearance = (gear: { fittedRigAdapterId?: typeof rigAdapterId }) =>
+    isProceduralMeleeGearFittedToRig(gear, rigAdapterId);
+  return (
+    <>
+      <ControlSection title="Melee loadout" icon={<Swords />} defaultOpen>
+        <SelectControl
+          label="Weapon cosmetic"
+          value={config.melee.weaponId}
+          options={availableMeleeWeapons.filter(fitsAppearance).map(({ id, label }) => ({ value: id, label }))}
+          onChange={(weaponId) => onPatchConfig({ melee: { weaponId: weaponId as ProceduralMeleeWeaponId } })}
+        />
+        <SelectControl
+          label="Offhand cosmetic"
+          value={config.melee.offhandId}
+          options={availableMeleeOffhands.filter(fitsAppearance).map(({ id, label }) => ({ value: id, label }))}
+          onChange={(offhandId) => onPatchConfig({ melee: { offhandId: offhandId as ProceduralMeleeOffhandId } })}
+        />
+        <ToggleControl
+          label="Load cosmetic GLBs"
+          checked={config.melee.detailedEquipment}
+          onChange={(detailedEquipment) => onPatchConfig({ melee: { detailedEquipment } })}
+        />
+      </ControlSection>
+      <ControlSection title="Melee attack cycle" icon={<Crosshair />} defaultOpen>
+        <ToggleControl
+          label="Auto attack"
+          checked={config.melee.autoAttack}
+          onChange={(autoAttack) => onPatchConfig({ melee: { autoAttack } })}
+        />
+        <MeleeRangeFieldList fields={MELEE_TIMING_FIELDS} config={config.melee} onPatchConfig={onPatchConfig} />
+      </ControlSection>
+      <ControlSection title="Weapon pose" icon={<Activity />} defaultOpen>
+        <MeleeRangeFieldList fields={MELEE_POSE_FIELDS} config={config.melee} onPatchConfig={onPatchConfig} />
+        <ToggleControl
+          label="Contact arc"
+          checked={config.melee.showArc}
+          onChange={(showArc) => onPatchConfig({ melee: { showArc } })}
+        />
+        <ToggleControl
+          label="Socket diagnostics"
+          checked={config.melee.showSockets}
+          onChange={(showSockets) => onPatchConfig({ melee: { showSockets } })}
+        />
+      </ControlSection>
+      <ControlSection title="Melee target lane" icon={<Target />} defaultOpen>
+        <MeleeRangeFieldList fields={MELEE_TARGET_FIELDS} config={config.melee} onPatchConfig={onPatchConfig} />
+      </ControlSection>
+    </>
+  );
+};
 
 const ArcherControls = ({ config, onPatchConfig }: CharacterGymControlsProps) => (
   <>

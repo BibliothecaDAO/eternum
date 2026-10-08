@@ -57,6 +57,16 @@ describe("procedural unit runtime asset preflight", () => {
     runtime.dispose();
   });
 
+  it("rejects Knight gear asked for on another rig before creating a character actor", async () => {
+    const runtime = await ProceduralUnitRuntime.create();
+    const config = createUnavailableKnightGearConfig();
+    config.humanoid.appearanceId = "modular-fantasy";
+
+    expect(() => runtime.createActor(config)).toThrow("fitted to t1-knight-default");
+    expect(runtimeMocks.characterCreateActor).not.toHaveBeenCalled();
+    runtime.dispose();
+  });
+
   it("rejects unavailable review gear before mutating an existing actor", async () => {
     const runtime = await ProceduralUnitRuntime.create();
     const actor = { dispose: vi.fn(), updateConfig: vi.fn() };
@@ -73,7 +83,7 @@ describe("procedural unit runtime asset preflight", () => {
 function createUnavailableKnightGearConfig() {
   const config = createDefaultProceduralUnitConfig();
   config.kind = "knight";
-  config.humanoid.appearanceId = "modular-fantasy";
+  config.humanoid.appearanceId = "t1-knight-default";
   config.melee.weaponId = "t1-knight-default-sword";
   config.melee.offhandId = "t1-knight-default-shield";
   return config;

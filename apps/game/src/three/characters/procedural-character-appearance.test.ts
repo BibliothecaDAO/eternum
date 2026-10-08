@@ -28,7 +28,10 @@ describe("procedural character appearances", () => {
     ]);
     expect(resolveProceduralCharacterAppearance("t1-knight-default").compatibleKinds).toEqual(["knight"]);
     expect(resolveProceduralCharacterAppearance("universal-base").label).toBe("Universal base body");
-    expect(resolveProceduralCharacterAppearance("modular-fantasy").materials.outfit.test("MI_Ranger_Armor")).toBe(true);
+    expect(resolveProceduralCharacterAppearance("t1-knight-default").materials).toEqual({ authoredSource: true });
+    expect(resolveProceduralCharacterAppearance("modular-fantasy").materials).toMatchObject({
+      outfit: /ranger|peasant/i,
+    });
     expect(normalizeProceduralCharacterAppearanceId("unknown-family")).toBe(DEFAULT_PROCEDURAL_CHARACTER_APPEARANCE_ID);
     expect(normalizeProceduralCharacterAppearanceId("toString")).toBe(DEFAULT_PROCEDURAL_CHARACTER_APPEARANCE_ID);
     expect(warning).toHaveBeenCalledWith(

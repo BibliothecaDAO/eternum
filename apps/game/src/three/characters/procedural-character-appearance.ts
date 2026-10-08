@@ -14,23 +14,31 @@ type ProceduralCharacterAppearanceTier = 1 | 2 | 3;
 export interface ProceduralCharacterAppearanceDefinition {
   assetByTier: Readonly<Record<ProceduralCharacterAppearanceTier, ProceduralCharacterAssetId>>;
   crowdAssetId?: ProceduralCharacterAssetId;
-  compatibleKinds?: readonly Extract<ProceduralUnitKind, "knight">[];
+  compatibleKinds?: readonly ProceduralUnitKind[];
   id: ProceduralCharacterAppearanceId;
   label: string;
   materials: ProceduralCharacterMaterialProfile;
   rigAdapterId: HumanoidRigAdapterId;
 }
 
-export interface ProceduralCharacterMaterialProfile {
+/** Materials told apart by name, restyled and merged by the runtime. */
+export interface ProceduralCharacterNamedMaterialProfile {
   body: RegExp;
   crowdHiddenMesh: RegExp;
   mergeableOutfit: RegExp;
   outfit: RegExp;
-  /** Authored palette and surface settings are retained as exported. */
-  authoredSource?: boolean;
 }
 
-const QUATERNIUS_MATERIAL_PROFILE: ProceduralCharacterMaterialProfile = {
+/** Authored palette and surface settings are retained as exported. */
+export interface ProceduralCharacterAuthoredMaterialProfile {
+  authoredSource: true;
+}
+
+export type ProceduralCharacterMaterialProfile =
+  | ProceduralCharacterNamedMaterialProfile
+  | ProceduralCharacterAuthoredMaterialProfile;
+
+const QUATERNIUS_MATERIAL_PROFILE: ProceduralCharacterNamedMaterialProfile = {
   body: /regular|eyes|hair/i,
   crowdHiddenMesh: /(?:^|_)(?:Eyebrows|Eyes)(?:$|_)|Acc_Pauldron|Arms_Bracer|Body_Belt/i,
   mergeableOutfit: /^MI_(?:Peasant|Ranger)$/i,
@@ -46,13 +54,7 @@ export const PROCEDURAL_CHARACTER_APPEARANCES: readonly ProceduralCharacterAppea
     compatibleKinds: ["knight"],
     id: "t1-knight-default",
     label: "T1 Knight Default",
-    materials: {
-      body: /$a/,
-      crowdHiddenMesh: /$a/,
-      mergeableOutfit: /$a/,
-      outfit: /$a/,
-      authoredSource: true,
-    },
+    materials: { authoredSource: true },
     rigAdapterId: "t1-knight-default",
   },
   {
@@ -91,6 +93,15 @@ export function resolveProceduralCharacterAppearance(
   id: ProceduralCharacterAppearanceId,
 ): ProceduralCharacterAppearanceDefinition {
   return APPEARANCE_BY_ID[id];
+}
+
+/** An appearance with no `compatibleKinds` serves every unit kind that renders a humanoid. */
+export function isProceduralCharacterAppearanceCompatibleWithKind(
+  id: ProceduralCharacterAppearanceId,
+  kind: ProceduralUnitKind,
+): boolean {
+  const { compatibleKinds } = resolveProceduralCharacterAppearance(id);
+  return compatibleKinds === undefined || compatibleKinds.includes(kind);
 }
 
 export function resolveProceduralCharacterAppearanceAssetId(

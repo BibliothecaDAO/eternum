@@ -1,5 +1,12 @@
-import { resolveProceduralCharacterAppearance } from "./procedural-character-appearance";
-import { resolveProceduralMeleeOffhand, resolveProceduralMeleeWeapon } from "./melee/procedural-melee-weapon-catalog";
+import {
+  isProceduralCharacterAppearanceCompatibleWithKind,
+  resolveProceduralCharacterAppearance,
+} from "./procedural-character-appearance";
+import {
+  isProceduralMeleeGearFittedToRig,
+  resolveProceduralMeleeOffhand,
+  resolveProceduralMeleeWeapon,
+} from "./melee/procedural-melee-weapon-catalog";
 import {
   applyProceduralUnitConfigPatch,
   PROCEDURAL_UNIT_KINDS,
@@ -7,14 +14,17 @@ import {
   type ProceduralUnitKind,
 } from "./procedural-unit-config";
 
-/** Validate family-owned appearance and gear before creating or updating an actor. */
+/**
+ * The last line of defence before an actor is created or updated: it throws on a combination the config patch should
+ * never have produced. The patch replaces what a new kind cannot use; this refuses what is still wrong.
+ */
 export function prepareProceduralUnitAssembly(requested: ProceduralUnitConfig): ProceduralUnitConfig {
   const kind = requested.kind;
   if (!PROCEDURAL_UNIT_KINDS.some(({ id }) => id === kind)) {
     throw new Error(`Unknown procedural unit kind: ${String(kind)}`);
   }
   if (rendersHumanoid(kind)) validateAppearance(kind, requested.humanoid.appearanceId);
-  if (rendersMelee(kind)) validateMelee(kind, requested.melee.weaponId, requested.melee.offhandId);
+  if (rendersMelee(kind)) validateMelee(kind, requested);
   return applyProceduralUnitConfigPatch(requested, {});
 }
 
@@ -27,21 +37,22 @@ function rendersMelee(kind: ProceduralUnitKind): kind is "knight" | "paladin" {
 }
 
 function validateAppearance(kind: ProceduralUnitKind, id: ProceduralUnitConfig["humanoid"]["appearanceId"]): void {
-  const appearance = resolveProceduralCharacterAppearance(id);
-  if (appearance.compatibleKinds && !appearance.compatibleKinds.includes(kind as "knight")) {
+  if (!isProceduralCharacterAppearanceCompatibleWithKind(id, kind)) {
     throw new Error(`Appearance ${id} is incompatible with ${kind}`);
   }
 }
 
-function validateMelee(
-  kind: "knight" | "paladin",
-  weaponId: ProceduralUnitConfig["melee"]["weaponId"],
-  offhandId: ProceduralUnitConfig["melee"]["offhandId"],
-): void {
-  if (!resolveProceduralMeleeWeapon(weaponId).compatibleKinds.includes(kind)) {
-    throw new Error(`Weapon ${weaponId} is incompatible with ${kind}`);
+function validateMelee(kind: "knight" | "paladin", requested: ProceduralUnitConfig): void {
+  const { weaponId, offhandId } = requested.melee;
+  const weapon = resolveProceduralMeleeWeapon(weaponId);
+  const offhand = resolveProceduralMeleeOffhand(offhandId);
+  if (!weapon.compatibleKinds.includes(kind)) throw new Error(`Weapon ${weaponId} is incompatible with ${kind}`);
+  if (!offhand.compatibleKinds.includes(kind)) throw new Error(`Offhand ${offhandId} is incompatible with ${kind}`);
+  const { rigAdapterId } = resolveProceduralCharacterAppearance(requested.humanoid.appearanceId);
+  if (!isProceduralMeleeGearFittedToRig(weapon, rigAdapterId)) {
+    throw new Error(`Weapon ${weaponId} is fitted to ${weapon.fittedRigAdapterId}, not to ${rigAdapterId}`);
   }
-  if (!resolveProceduralMeleeOffhand(offhandId).compatibleKinds.includes(kind)) {
-    throw new Error(`Offhand ${offhandId} is incompatible with ${kind}`);
+  if (!isProceduralMeleeGearFittedToRig(offhand, rigAdapterId)) {
+    throw new Error(`Offhand ${offhandId} is fitted to ${offhand.fittedRigAdapterId}, not to ${rigAdapterId}`);
   }
 }

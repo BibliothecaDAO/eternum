@@ -22,11 +22,11 @@ export interface ProceduralMeleeAssetInstance {
 
 const scratchBounds = new Box3();
 const scratchSize = new Vector3();
-const DIRECT_KNIGHT_GEAR = {
+const T1_KNIGHT_DEFAULT_GEAR = {
   "t1-knight-default-sword": "/models/characters/t1-knight-default/near/sword.glb",
   "t1-knight-default-shield": "/models/characters/t1-knight-default/near/shield.glb",
 } as const;
-type DirectKnightGearId = keyof typeof DIRECT_KNIGHT_GEAR;
+type T1KnightDefaultGearId = keyof typeof T1_KNIGHT_DEFAULT_GEAR;
 
 /**
  * Preloads registered cosmetic equipment once, then returns shallow scene
@@ -36,38 +36,38 @@ type DirectKnightGearId = keyof typeof DIRECT_KNIGHT_GEAR;
 export class ProceduralMeleeWeaponLibrary {
   private disposed = false;
 
-  private constructor(private readonly directTemplates: ReadonlyMap<DirectKnightGearId, GLTF>) {}
+  private constructor(private readonly fittedTemplates: ReadonlyMap<T1KnightDefaultGearId, GLTF>) {}
 
   public static async create(
     options: { includeT1KnightDefault?: boolean } = {},
   ): Promise<ProceduralMeleeWeaponLibrary> {
-    const directTemplates = new Map<DirectKnightGearId, GLTF>();
+    const fittedTemplates = new Map<T1KnightDefaultGearId, GLTF>();
     try {
       if (options.includeT1KnightDefault) {
-        for (const [id, url] of Object.entries(DIRECT_KNIGHT_GEAR) as [DirectKnightGearId, string][]) {
-          directTemplates.set(id, await loadKnightGear(url, id));
+        for (const [id, url] of Object.entries(T1_KNIGHT_DEFAULT_GEAR) as [T1KnightDefaultGearId, string][]) {
+          fittedTemplates.set(id, await loadKnightGear(url, id));
         }
       }
-      return new ProceduralMeleeWeaponLibrary(directTemplates);
+      return new ProceduralMeleeWeaponLibrary(fittedTemplates);
     } catch (error) {
-      disposeSkinnedSceneTemplates([...directTemplates.values()].map(({ scene }) => scene));
+      disposeSkinnedSceneTemplates([...fittedTemplates.values()].map(({ scene }) => scene));
       throw error;
     }
   }
 
   public isWeaponReady(id: ProceduralMeleeWeaponId): boolean {
     this.assertActive();
-    if (isDirectKnightGearId(id)) return this.directTemplates.has(id);
+    if (isT1KnightDefaultGearId(id)) return this.fittedTemplates.has(id);
     return isRegisteredAssetReady(resolveProceduralMeleeWeapon(id).registryEntryId);
   }
 
   public isOffhandReady(id: ProceduralMeleeOffhandId): boolean {
     this.assertActive();
-    if (isDirectKnightGearId(id)) return this.directTemplates.has(id);
+    if (isT1KnightDefaultGearId(id)) return this.fittedTemplates.has(id);
     return isRegisteredAssetReady(resolveProceduralMeleeOffhand(id).registryEntryId);
   }
 
-  public assertDirectLoadoutAvailable(loadout: {
+  public assertFittedLoadoutAvailable(loadout: {
     detailedEquipment: boolean;
     offhandId: ProceduralMeleeOffhandId;
     weaponId: ProceduralMeleeWeaponId;
@@ -75,7 +75,7 @@ export class ProceduralMeleeWeaponLibrary {
     this.assertActive();
     if (!loadout.detailedEquipment) return;
     for (const id of [loadout.weaponId, loadout.offhandId]) {
-      if (isDirectKnightGearId(id) && !this.directTemplates.has(id)) {
+      if (isT1KnightDefaultGearId(id) && !this.fittedTemplates.has(id)) {
         throw new Error(`Knight gear ${id} was not loaded`);
       }
     }
@@ -84,7 +84,7 @@ export class ProceduralMeleeWeaponLibrary {
   public instantiateWeapon(id: ProceduralMeleeWeaponId): ProceduralMeleeAssetInstance | undefined {
     this.assertActive();
     const definition = resolveProceduralMeleeWeapon(id);
-    if (isDirectKnightGearId(id)) return this.instantiateDirect(id, `melee-weapon:${id}`, definition.assetAlignment);
+    if (isT1KnightDefaultGearId(id)) return this.instantiateFitted(id, `melee-weapon:${id}`, definition.assetAlignment);
     return instantiateRegisteredAsset(
       definition.registryEntryId,
       definition.visualLength,
@@ -96,7 +96,8 @@ export class ProceduralMeleeWeaponLibrary {
   public instantiateOffhand(id: ProceduralMeleeOffhandId): ProceduralMeleeAssetInstance | undefined {
     this.assertActive();
     const definition = resolveProceduralMeleeOffhand(id);
-    if (isDirectKnightGearId(id)) return this.instantiateDirect(id, `melee-offhand:${id}`, definition.assetAlignment);
+    if (isT1KnightDefaultGearId(id))
+      return this.instantiateFitted(id, `melee-offhand:${id}`, definition.assetAlignment);
     return instantiateRegisteredAsset(
       definition.registryEntryId,
       definition.visualDiameter,
@@ -108,15 +109,15 @@ export class ProceduralMeleeWeaponLibrary {
   public dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
-    disposeSkinnedSceneTemplates([...this.directTemplates.values()].map(({ scene }) => scene));
+    disposeSkinnedSceneTemplates([...this.fittedTemplates.values()].map(({ scene }) => scene));
   }
 
-  private instantiateDirect(
-    id: DirectKnightGearId,
+  private instantiateFitted(
+    id: T1KnightDefaultGearId,
     name: string,
     alignment: ProceduralMeleeAssetAlignment | undefined,
   ): ProceduralMeleeAssetInstance {
-    const template = this.directTemplates.get(id);
+    const template = this.fittedTemplates.get(id);
     if (!template) throw new Error(`Knight gear ${id} was not loaded`);
     const clone = template.scene.clone(true);
     setEquipmentShadows(clone);
@@ -134,7 +135,7 @@ export class ProceduralMeleeWeaponLibrary {
   }
 }
 
-async function loadKnightGear(url: string, id: DirectKnightGearId): Promise<GLTF> {
+async function loadKnightGear(url: string, id: T1KnightDefaultGearId): Promise<GLTF> {
   const gltf = await new GLTFLoader().loadAsync(url);
   try {
     validateKnightGear(gltf, id);
@@ -145,7 +146,7 @@ async function loadKnightGear(url: string, id: DirectKnightGearId): Promise<GLTF
   }
 }
 
-export function validateKnightGear(gltf: Pick<GLTF, "animations" | "scene">, id: DirectKnightGearId): void {
+export function validateKnightGear(gltf: Pick<GLTF, "animations" | "scene">, id: T1KnightDefaultGearId): void {
   if (gltf.animations.length > 0) throw new Error(`${id} must be clip-free`);
   let meshCount = 0;
   let skinnedMeshCount = 0;
@@ -157,8 +158,8 @@ export function validateKnightGear(gltf: Pick<GLTF, "animations" | "scene">, id:
   if (skinnedMeshCount > 0) throw new Error(`${id} must be rigid, not skinned`);
 }
 
-function isDirectKnightGearId(id: string): id is DirectKnightGearId {
-  return Object.hasOwn(DIRECT_KNIGHT_GEAR, id);
+function isT1KnightDefaultGearId(id: string): id is T1KnightDefaultGearId {
+  return Object.hasOwn(T1_KNIGHT_DEFAULT_GEAR, id);
 }
 
 function instantiateRegisteredAsset(

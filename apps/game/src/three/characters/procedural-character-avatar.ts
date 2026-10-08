@@ -802,7 +802,7 @@ function prepareCharacterModel(asset: LoadedProceduralCharacterAsset): PreparedC
     object.castShadow = true;
     object.receiveShadow = false;
     object.frustumCulled = false;
-    if (asset.materials.crowdHiddenMesh.test(object.name)) {
+    if (isCrowdHiddenMesh(asset.materials, object.name)) {
       crowdHiddenMeshes.push({ heroVisible: object.visible, mesh: object });
     }
     const meshMaterials = Array.isArray(object.material) ? object.material : [object.material];
@@ -870,9 +870,7 @@ function mergeCompatibleOutfitMeshes(
   const candidates = new Map<string, SkinnedMesh[]>();
   scene.traverse((object) => {
     if (!(object instanceof SkinnedMesh) || Array.isArray(object.material) || !object.parent) return;
-    if (!materials.mergeableOutfit.test(object.material.name) || materials.crowdHiddenMesh.test(object.name)) {
-      return;
-    }
+    if (!isMergeableOutfit(materials, object.material.name) || isCrowdHiddenMesh(materials, object.name)) return;
     if (!hasIdentityLocalTransform(object)) return;
     const key = `${object.parent.uuid}:${object.material.name}`;
     const group = candidates.get(key) ?? [];
@@ -1265,11 +1263,19 @@ function createStyledMaterial(
   };
 }
 
+function isCrowdHiddenMesh(materials: LoadedProceduralCharacterAsset["materials"], meshName: string): boolean {
+  return !("authoredSource" in materials) && materials.crowdHiddenMesh.test(meshName);
+}
+
+function isMergeableOutfit(materials: LoadedProceduralCharacterAsset["materials"], materialName: string): boolean {
+  return !("authoredSource" in materials) && materials.mergeableOutfit.test(materialName);
+}
+
 function resolveMaterialRole(
   materials: LoadedProceduralCharacterAsset["materials"],
   materialName: string,
 ): StyledCharacterMaterial["role"] {
-  if (materials.authoredSource) return "authoredSource";
+  if ("authoredSource" in materials) return "authoredSource";
   if (materials.outfit.test(materialName)) return "outfit";
   if (materials.body.test(materialName)) return "body";
   return "other";

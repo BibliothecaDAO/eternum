@@ -1,3 +1,5 @@
+import { PROCEDURAL_CHARACTER_APPEARANCES } from "./procedural-character-appearance";
+
 const T1_KNIGHT_DEFAULT_REVIEW_IDS = new Set([
   "t1-knight-default",
   "t1-knight-default-sword",
@@ -30,4 +32,16 @@ export function filterProceduralCharacterReviewOptions<T extends { id: string }>
 ): readonly T[] {
   if (capability.includeT1KnightDefault) return options;
   return options.filter(({ id }) => !T1_KNIGHT_DEFAULT_REVIEW_IDS.has(id));
+}
+
+/**
+ * The one answer to which appearances a selector may offer. A review-only appearance needs the flag, and a selector
+ * that mixes unit kinds never offers an appearance restricted to some of them.
+ */
+export function listOfferedProceduralCharacterAppearances(
+  capability: ProceduralCharacterReviewCapability,
+  selector: { mixesUnitKinds: boolean },
+) {
+  const reviewed = filterProceduralCharacterReviewOptions(PROCEDURAL_CHARACTER_APPEARANCES, capability);
+  return selector.mixesUnitKinds ? reviewed.filter(({ compatibleKinds }) => !compatibleKinds) : reviewed;
 }
