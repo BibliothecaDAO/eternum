@@ -9,6 +9,7 @@
     "scripts/codemod-lucide-imports.mjs",
     "config/generated/**",
     "contracts/**",
+    ".claude/skills/**",
     "**/global.d.ts"
   ],
   "ignoreFiles": [
