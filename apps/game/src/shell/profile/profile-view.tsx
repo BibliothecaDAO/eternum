@@ -10,7 +10,7 @@ import { findOwnEntry } from "@/ui/features/frontier/board/standings";
 import { useLayout } from "../frame/layout";
 import { useDirectory, useLeaderboard, useRecentResults } from "../herald";
 import { Loading } from "../loading";
-import { OwnRatingLine } from "../own-rating";
+import { RatingLine } from "../rating-line";
 import { paintingSources } from "../paintings";
 import { Panel } from "../panel";
 import { AgeLabel } from "../play/age-card";
@@ -52,8 +52,7 @@ export const ProfileView = ({ account, own }: { account: string; own: boolean })
 
 /**
  * The desktop's card for a player: Frontier's painting above, the portrait on its edge, the name, the season's place
- * with the Order, and on the player's own card the Blitz rating (another player's rating is not read: the rating
- * answers for a Realms id or a wallet, and a player's page knows their gameplay account).
+ * with the Order, and the player's Blitz rating, read by their gameplay account.
  */
 export const PlayerCard = ({ account, own }: { account: string; own: boolean }) => {
   const profile = usePlayerProfile(account);
@@ -87,7 +86,7 @@ export const PlayerCard = ({ account, own }: { account: string; own: boolean }) 
         <AgeLabel numeral={frontier.numeral} />
         <span className="text-kit-cream">{frontier.name}</span>
       </p>
-      {own && <OwnRatingLine />}
+      <RatingLine account={account} own={own} />
     </section>
   );
 };

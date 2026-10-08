@@ -18,7 +18,7 @@ import { PageFrame } from "../frame/page-frame";
 import { type DirectoryGame, useDirectory, useLeaderboard, useRealmsPlayer, useRecentResults } from "../herald";
 import { Loading } from "../loading";
 import { NothingHere } from "../not-found";
-import { OwnRatingLine } from "../own-rating";
+import { RatingLine } from "../rating-line";
 import { paintingSources, type Painting } from "../paintings";
 import { ageOf } from "../play/ages";
 import { gameKey } from "../play/next-step";
@@ -206,7 +206,7 @@ const BlitzResult = ({
           <p className="text-[15px] text-kit-muted">
             {game ? `${gameTitle(game)} · ${clockLine(null, game.clock.end_at, now)}` : "—"}
           </p>
-          {desktop && <OwnRatingLine />}
+          {desktop && player && <RatingLine account={player} own />}
         </>
       }
       rows={

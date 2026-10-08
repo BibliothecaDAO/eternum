@@ -14,12 +14,16 @@ export const PlayerName = ({
   account,
   you = false,
   portrait = false,
+  profile: known,
 }: {
   account: string | bigint;
   you?: boolean;
   portrait?: boolean;
+  /** The player's profile when the host already holds it (a rating row names its owner); nothing is looked up then. */
+  profile?: { name: string | null; portrait: string | null };
 }) => {
-  const profile = usePlayerProfile(account);
+  const looked = usePlayerProfile(known ? null : account);
+  const profile = known ?? looked;
   return (
     <span className="inline-flex min-w-0 max-w-full items-center gap-2">
       {portrait && (

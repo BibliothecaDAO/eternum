@@ -3,6 +3,8 @@ import type { ReactNode } from "react";
 import { useIdentitySession } from "@/hooks/context/identity-session";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { formatExact } from "@/ui/design-system/kit/amount";
+import { playerPortraitUrl } from "@/services/identity/player-portrait";
+import { shortAddress } from "@/ui/design-system/kit/address";
 import { PlayerName } from "@/ui/design-system/kit/player-name";
 
 import { sameAddress } from "../format";
@@ -10,7 +12,7 @@ import { Loading } from "../loading";
 import { Panel } from "../panel";
 import { ageOf } from "../play/ages";
 import { RatingFigure, TierMark } from "../rating-mark";
-import { ratingPoints, tierOf, useRatingTop } from "../ratings";
+import { type RatingProfile, ratingPoints, tierOf, useRatingTop } from "../ratings";
 import { ServiceFailure } from "../service-failure";
 import { RATING_WORDS } from "../words";
 
@@ -79,15 +81,9 @@ const TopRows = ({ top }: { top: RatingTop }) => {
   return (
     <ol className="flex flex-col">
       {top.entries.map((entry) => (
-        <RatingRow
-          key={entry.player}
-          rank={entry.rank}
-          player={entry.player}
-          rating={entry.rating}
-          own={self !== null && sameAddress(entry.player, self.player)}
-        />
+        <RatingRow key={entry.player} {...entry} own={self !== null && sameAddress(entry.player, self.player)} />
       ))}
-      {self && !ownInTop && <RatingRow rank={self.rank} player={self.player} rating={self.rating} own />}
+      {self && !ownInTop && <RatingRow {...self} own />}
     </ol>
   );
 };
@@ -96,11 +92,13 @@ const RatingRow = ({
   rank,
   player,
   rating,
+  profile,
   own,
 }: {
   rank: number | null;
   player: string;
   rating: string;
+  profile: RatingProfile;
   own: boolean;
 }) => (
   <li
@@ -113,8 +111,26 @@ const RatingRow = ({
       {rank === null ? "—" : rank}
     </span>
     <span className="min-w-0 flex-1">
-      <PlayerName account={player} you={own} portrait />
+      <RatedOwner player={player} profile={profile} own={own} />
     </span>
     <RatingFigure rating={rating} />
   </li>
 );
+
+/**
+ * A rated wallet's owner by the service's profile: their name by the kit's one rule (never looked up by the wallet);
+ * an owner with no Realms identity, or one that chose no name, as the wallet's address. The reader's own row is You.
+ */
+const RatedOwner = ({ player, profile, own }: { player: string; profile: RatingProfile; own: boolean }) =>
+  own || profile?.name ? (
+    <PlayerName account={player} you={own} portrait profile={profile ?? undefined} />
+  ) : (
+    <span className="inline-flex min-w-0 items-center gap-2">
+      <img
+        src={playerPortraitUrl(player, profile?.portrait ?? null)}
+        alt=""
+        className="size-7 shrink-0 rounded-full border-[1.5px] border-kit-line2 object-cover"
+      />
+      <span className="truncate text-kit-muted">{shortAddress(player)}</span>
+    </span>
+  );

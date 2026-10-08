@@ -1,8 +1,5 @@
 import { formatExact } from "@/ui/design-system/kit/amount";
 
-export const shortAddress = (address: string): string =>
-  address.length > 12 ? `${address.slice(0, 6)}…${address.slice(-4)}` : address;
-
 export const ordinal = (rank: number): string => {
   const mod100 = rank % 100;
   if (mod100 >= 11 && mod100 <= 13) return `${rank}th`;

@@ -31,6 +31,7 @@ import { Pencil } from "@/ui/design-system/atoms/game-icons";
 import { type ReactNode, useState } from "react";
 import { NotificationsCard } from "@/shell/profile/notifications";
 import { PwaInstallControl } from "@/pwa/pwa-install-control";
+import { shortAddress } from "@/ui/design-system/kit/address";
 
 export const SETTINGS_POPOVER_ID = "settings";
 const effectsCategories = Object.values(AudioCategory).filter((category) => category !== AudioCategory.MUSIC);
@@ -48,8 +49,6 @@ export const SettingsPanel = () => (
     <SessionActions />
   </div>
 );
-
-const shortAddress = (address: string) => `${address.slice(0, 6)}…${address.slice(-4)}`;
 
 function ProfileHeader() {
   const { session } = useIdentitySession();

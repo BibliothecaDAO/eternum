@@ -10,7 +10,7 @@ import { BlitzListPage, BlitzLobbyPage } from "../blitz/blitz-pages";
 import { LearnPage } from "../learn/learn-page";
 import { DominionPage, EternumPage, FrontierPage } from "../play/age-pages";
 import { PlayPage } from "../play/play-page";
-import { ProfilePage } from "../profile/profile-pages";
+import { PlayerPage, ProfilePage } from "../profile/profile-pages";
 import { ResultsPage } from "../season-tab/results-page";
 import { SeasonPage } from "../season-tab/season-page";
 import {
@@ -62,6 +62,7 @@ const LabScreenView = ({ screen }: { screen: LabScreen }) => {
         <Route path="season" element={<SeasonPage />} />
         <Route path="results/:id" element={<ResultsPage />} />
         <Route path="profile" element={<ProfilePage />} />
+        <Route path="p/:address" element={<PlayerPage />} />
         <Route path="learn" element={<LearnPage />} />
       </Routes>
     </QueryClientProvider>
@@ -106,7 +107,7 @@ const answerAppReads = (screen: LabScreen) => {
     "/api/slots": () => json(labSlots(LAB_SCREENS[screen].joined)),
     "/api/profiles": (url) => json({ profiles: profilesOf(url.searchParams.get("accounts")?.split(",") ?? []) }),
     "/api/ratings/top": () => json(LAB_RATING_TOP),
-    "/api/ratings": (url) => json(labRatings(url.searchParams.get("realmsIds")?.split(",") ?? [])),
+    "/api/ratings": (url) => json(labRatings(url.searchParams.get("accounts")?.split(",") ?? [])),
     "/api/chat/world": () => json({ messages: LAB_CHAT, nextCursor: null }),
   };
   window.fetch = (input, init) => {

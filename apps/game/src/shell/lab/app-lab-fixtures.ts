@@ -210,8 +210,9 @@ export const LAB_FINISHED_BLITZ = {
 };
 
 /**
- * The Blitz rating's top six and the player 41st of 1,240 (/api/ratings/top). The rows are L2 wallets, which the
- * identity Worker names for no one yet, so they read "Lord" and their last four as they would live.
+ * The Blitz rating's top six and the player 41st of 1,240 (/api/ratings/top): each row's L2 owner with the Realms
+ * profile behind it; the fourth wallet is linked to no Realms identity and the sixth chose no name, so both read as
+ * their addresses.
  */
 export const LAB_RATING_TOP = {
   block_number: 812_345,
@@ -219,10 +220,24 @@ export const LAB_RATING_TOP = {
   total: 1240,
   entries: ["2480", "2210", "2050", "1960", "1880", "1820"].map((rating, index) => ({
     rank: index + 1,
-    player: `0x${(0xe000 + index).toString(16)}`,
+    player: `0x0${(0xe000 + index).toString(16)}${"7c4b".repeat(14)}${(0x9a10 + index * 0x111).toString(16)}`,
     rating,
+    profile:
+      index === 3
+        ? null
+        : {
+            realmsId: `0x${(0x200 + index).toString(16)}`,
+            name: index === 5 ? null : NAMES[index],
+            portrait: `0${index + 1}`,
+          },
   })),
-  self: { status: "rated" as const, player: "0xe0f1", rating: "1744", rank: 41 },
+  self: {
+    status: "rated" as const,
+    player: "0xe0f1",
+    rating: "1744",
+    rank: 41,
+    profile: { realmsId: REALMS_ID, name: LAB_SESSION.user.name, portrait: LAB_SESSION.user.image },
+  },
 };
 
 /** The 16:30 lobby's seated players' names (their gameplay accounts resolve like any player's). */
@@ -235,22 +250,29 @@ export const LAB_SEAT_PROFILES = Object.fromEntries(
 );
 
 /**
- * The seats' Blitz ratings (/api/ratings?realmsIds): falling down the roster, the seventh seat with no linked wallet,
- * the player 1,744.
+ * Blitz ratings by gameplay account (/api/ratings?accounts): the player 1,744; the 16:30 lobby's seats falling down the
+ * roster, the seventh with no linked wallet; the Frontier rivals; any other account no Realms identity owns.
  */
-export const labRatings = (realmsIds: readonly string[]) => ({
+export const labRatings = (accounts: readonly string[]) => ({
   block_number: 812_345,
   block_hash: "0x5ea1",
-  ratings: Object.fromEntries(
-    realmsIds.map((realmsId) => {
-      const position = Number(BigInt(realmsId)) - 100;
-      if (BigInt(realmsId) === BigInt(REALMS_ID))
-        return [realmsId, { status: "rated", player: "0xe0f1", rating: "1744" }];
-      if (position === 6) return [realmsId, { status: "unlinked", player: null, rating: null }];
-      return [realmsId, { status: "rated", player: `0xe1${position}`, rating: String(2480 - position * 45) }];
-    }),
-  ),
+  ratings: Object.fromEntries(accounts.map((account) => [account, labRatingOf(BigInt(account))])),
 });
+
+const labRatingOf = (account: bigint) => {
+  const rated = (rating: number) => ({
+    status: "rated",
+    player: `0xe1${account.toString(16)}`,
+    rating: String(rating),
+  });
+  if (account === BigInt(LAB_PLAYER)) return { status: "rated", player: "0xe0f1", rating: "1744" };
+  const seat = Number(account - 0xa000n);
+  if (seat >= 0 && seat < 24)
+    return seat === 6 ? { status: "unlinked", player: null, rating: null } : rated(2480 - seat * 45);
+  const rival = Number(account - 0xb000n);
+  if (rival >= 0 && rival < 16) return rated(2400 - rival * 60);
+  return { status: "unknown_identity", player: null, rating: null };
+};
 
 /** The lobby's chat so far (/api/chat/world), oldest first, from seated players. */
 export const LAB_CHAT = [

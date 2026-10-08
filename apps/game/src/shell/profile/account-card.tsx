@@ -12,8 +12,8 @@ import { Button } from "@/ui/design-system/kit/button";
 import { PlayerName } from "@/ui/design-system/kit/player-name";
 import { Sheet } from "@/ui/design-system/kit/sheet";
 import { failureSentence, nameRefusal } from "@/ui/modules/identity/identity-failures";
+import { shortAddress } from "@/ui/design-system/kit/address";
 
-import { shortAddress } from "../format";
 import { Loading } from "../loading";
 import { FailureLine } from "../sign-in/failure-line";
 import { NameField, PortraitGrid } from "../sign-in/fields";

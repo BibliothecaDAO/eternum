@@ -17,12 +17,21 @@ interface RatingsResponse {
   ratings: Record<string, RatingAnswer>;
 }
 
+/**
+ * Who stands behind a rated wallet, read fresh by the service: the owner's Realms identity, or null when the wallet is
+ * linked to none. A null name (no name chosen) and a null profile both draw the owner as an address.
+ */
+export type RatingProfile = { realmsId: string; name: string | null; portrait: string | null } | null;
+
 interface RatingTopResponse {
   block_number: number;
   block_hash: string;
   total: number;
-  entries: { rank: number; player: string; rating: string }[];
-  self: null | (RatingAnswer & { rank: number | null });
+  entries: { rank: number; player: string; rating: string; profile: RatingProfile }[];
+  self:
+    | null
+    | { status: "rated"; player: string; rating: string; rank: number | null; profile: RatingProfile }
+    | { status: "unlinked" | "unknown_identity"; player: null; rating: null; rank: null };
 }
 
 const readJson = async <T>(path: string): Promise<T> => {
@@ -43,12 +52,15 @@ export const useRatingTop = (limit: number, realmsId: string | null) =>
     retry: 1,
   });
 
-/** Each Realms account's rating, keyed by its Realms id as sent; a player with no linked wallet answers unlinked. */
-export const useRatings = (realmsIds: readonly string[]) =>
+/**
+ * Each player's rating by their gameplay account, keyed by the account as sent: a player with no linked wallet answers
+ * unlinked, an account no Realms identity owns answers unknown_identity (a bot).
+ */
+export const useRatings = (accounts: readonly string[]) =>
   useQuery({
-    queryKey: ["shell", "ratings", "players", ...realmsIds],
-    queryFn: () => readJson<RatingsResponse>(`/api/ratings?realmsIds=${realmsIds.join(",")}`),
-    enabled: realmsIds.length > 0,
+    queryKey: ["shell", "ratings", "accounts", ...accounts],
+    queryFn: () => readJson<RatingsResponse>(`/api/ratings?accounts=${accounts.join(",")}`),
+    enabled: accounts.length > 0,
     staleTime: 0,
     retry: 1,
   });
