@@ -168,6 +168,13 @@ export function resolveProceduralMeleeOffhand(id: ProceduralMeleeOffhandId): Pro
   return definition;
 }
 
+/** How the weapon is oriented: by the controller in actor space, or only by the hand it is fitted to. */
+export type ProceduralMeleeWeaponCarry = "oriented" | "fitted";
+
+export function resolveProceduralMeleeWeaponCarry(weapon: ProceduralMeleeWeaponDefinition): ProceduralMeleeWeaponCarry {
+  return weapon.fittedRigAdapterId === undefined ? "oriented" : "fitted";
+}
+
 /** How the offhand is carried: in the fist, strapped along the forearm, or not at all. */
 export type ProceduralMeleeOffhandCarry = "none" | "gripped" | "strapped";
 

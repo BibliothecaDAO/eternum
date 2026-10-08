@@ -3,8 +3,11 @@ import { resolveProceduralMeleeAttackSignals, type ProceduralMeleeAttackState } 
 import {
   resolveProceduralMeleeOffhand,
   resolveProceduralMeleeOffhandCarry,
+  resolveProceduralMeleeWeapon,
+  resolveProceduralMeleeWeaponCarry,
   type ProceduralMeleeAttackStyle,
   type ProceduralMeleeOffhandCarry,
+  type ProceduralMeleeWeaponCarry,
   type ProceduralMeleeWeaponId,
 } from "./procedural-melee-weapon-catalog";
 
@@ -24,6 +27,8 @@ export interface ProceduralMeleeUpperBodyPose {
   stepThrough: number;
   strikeProgress: number;
   torsoWeight: number;
+  /** How the weapon is oriented, resolved once from the catalog. */
+  weaponCarry: ProceduralMeleeWeaponCarry;
   weaponId: ProceduralMeleeWeaponId;
   windupProgress: number;
 }
@@ -51,6 +56,7 @@ export function resolveProceduralMeleeUpperBodyPose(input: {
     reach: input.config.reach,
     stepThrough: input.config.stepThrough,
     torsoWeight: input.config.torsoWeight,
+    weaponCarry: resolveProceduralMeleeWeaponCarry(resolveProceduralMeleeWeapon(input.config.weaponId)),
     weaponId: input.config.weaponId,
   };
 }
