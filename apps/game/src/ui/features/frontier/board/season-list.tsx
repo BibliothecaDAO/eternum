@@ -62,8 +62,11 @@ export const SeasonList = ({
         <KitIcon code="Bk" size={26} />
       </button>
       <h2 className="frontier-title flex-1 !text-[20px]">{SEASON}</h2>
-      {chest && <ChestChip tier={chest.tier} lords={chest.lords} />}
-      {rank !== null && <Chip icons={["Tp"]} label={SEASON} value={rank === undefined ? "—" : `#${rank}`} />}
+      {chest ? (
+        <ChestChip tier={chest.tier} lords={chest.lords} rank={rank} />
+      ) : (
+        rank !== null && <Chip icons={["Tp"]} label={SEASON} value={rankShown(rank)} />
+      )}
     </header>
     {state === "failed" ? (
       <Failed onRetry={onRetry} />
@@ -109,14 +112,30 @@ const BoardHead = () => (
   </div>
 );
 
-/** Today's common chest: the chest, its tier, and the LORDS it pays. */
-const ChestChip = ({ tier, lords }: { tier: Tier; lords: number }) => (
-  <span role="img" aria-label={`${LORDS} ${lords}`} className="frontier-chip h-7 shrink-0 !gap-1 !py-0">
+const rankShown = (rank: number | undefined) => (rank === undefined ? "—" : `#${rank}`);
+
+/**
+ * Today's common chest (the chest, its tier, the LORDS it pays) and, after a rule, the player's rank: one chip, so the
+ * header holds Back, the title and both numbers at 360 px.
+ */
+const ChestChip = ({ tier, lords, rank }: { tier: Tier; lords: number; rank: number | null | undefined }) => (
+  <span
+    role="img"
+    aria-label={rank === null ? `${LORDS} ${lords}` : `${LORDS} ${lords}, ${SEASON} ${rankShown(rank)}`}
+    className="frontier-chip h-7 shrink-0 !gap-1 !py-0"
+  >
     <span className="contents">
       <KitIcon code="Ch" size={18} />
       <TierChip tier={tier} showWord={false} />
       <KitIcon code="Lo" size={18} />
       <span className="frontier-chip-number tabular-nums !text-[15px]">{formatAmount(lords)}</span>
+      {rank !== null && (
+        <>
+          <span aria-hidden className="mx-0.5 h-4 w-px bg-kit-line2" />
+          <KitIcon code="Tp" size={18} />
+          <span className="frontier-chip-number tabular-nums !text-[15px]">{rankShown(rank)}</span>
+        </>
+      )}
     </span>
   </span>
 );
