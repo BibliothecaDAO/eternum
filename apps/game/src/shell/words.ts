@@ -123,6 +123,15 @@ export const SEASON_WORDS = {
   vp: "VP",
 } as const;
 
+/** The Blitz rating (MMR): its panel's words. The rating is automatic at settlement; nothing here asks for it. */
+export const RATING_WORDS = {
+  rating: "Rating",
+  blitzRating: "Blitz rating",
+  yourGames: "Your games",
+  /** A Realms account with no linked wallet carries no rating (not 0, not 1000). */
+  unlinked: "Link a wallet in Account to carry a rating.",
+} as const;
+
 /** Profile and its pages: Account, Devices and Notifications, their rows, sheets and confirms. */
 export const PROFILE_WORDS = {
   account: "Account",

@@ -21,6 +21,7 @@ import {
   LAB_GUARDIAN,
   LAB_PLAYER,
   LAB_PROFILES,
+  LAB_RATING_TOP,
   LAB_SCREENS,
   LAB_SESSION,
   labSlots,
@@ -100,6 +101,7 @@ const answerAppReads = (screen: LabScreen) => {
     "/api/guardian": () => json(LAB_GUARDIAN),
     "/api/slots": () => json(labSlots(LAB_SCREENS[screen].joined)),
     "/api/profiles": (url) => json({ profiles: profilesOf(url.searchParams.get("accounts")?.split(",") ?? []) }),
+    "/api/ratings/top": () => json(LAB_RATING_TOP),
   };
   window.fetch = (input, init) => {
     const url = new URL(input instanceof Request ? input.url : String(input), window.location.origin);

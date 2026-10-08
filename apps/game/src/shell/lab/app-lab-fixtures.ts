@@ -208,3 +208,19 @@ export const LAB_FINISHED_BLITZ = {
   status: "Settled" as const,
   shardUrl: "https://lab",
 };
+
+/**
+ * The Blitz rating's top six and the player 41st of 1,240 (/api/ratings/top). The rows are L2 wallets, which the
+ * identity Worker names for no one yet, so they read "Lord" and their last four as they would live.
+ */
+export const LAB_RATING_TOP = {
+  block_number: 812_345,
+  block_hash: "0x5ea1",
+  total: 1240,
+  entries: ["2480", "2210", "2050", "1960", "1880", "1820"].map((rating, index) => ({
+    rank: index + 1,
+    player: `0x${(0xe000 + index).toString(16)}`,
+    rating,
+  })),
+  self: { status: "rated" as const, player: "0xe0f1", rating: "1744", rank: 41 },
+};

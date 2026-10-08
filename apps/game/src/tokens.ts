@@ -35,6 +35,10 @@ export const COLORS = {
   hot: "#f6ac1d",
   /** Text on a gold face. */
   ink: "#1b1207",
+  /** The Blitz rating's top three tiers' marks (Storm Lord, Warlord, Conqueror); the lower three wear gold2, gold, muted. */
+  stormLord: "#b9a3ff",
+  warlord: "#ff7a62",
+  conqueror: "#6fb6ff",
 } as const;
 
 /**

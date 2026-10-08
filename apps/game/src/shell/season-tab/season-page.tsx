@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { KitIcon } from "@/ui/design-system/kit/kit-icon";
 import { PlayerName } from "@/ui/design-system/kit/player-name";
 import { SeasonRow } from "@/ui/design-system/kit/season-row";
@@ -12,11 +13,14 @@ import { useLayout } from "../frame/layout";
 import { PageFrame } from "../frame/page-frame";
 import { type DirectoryGame, useDirectory, useLeaderboard, useRealmsPlayer, useRecentResults } from "../herald";
 import { Loading } from "../loading";
+import { paintingSources } from "../paintings";
+import { Panel } from "../panel";
 import { ageOf } from "../play/ages";
 import { chooseSeason, directoryDay, seasonTitle } from "../season";
 import { ServiceFailure } from "../service-failure";
 import { useNowSeconds } from "../use-now";
 import { SEASON_WORDS, WORDS } from "../words";
+import { BlitzPanel } from "./blitz-rating";
 import { HistoryRow } from "./history-row";
 
 type SeasonView = "frontier" | "blitz";
@@ -28,37 +32,69 @@ const ROWS_SHOWN = { phone: 12, desktop: 15 } as const;
 const BLITZ_GAMES = 20;
 
 /**
- * The Season tab (spec 09): where the player stands in Frontier's season, and their finished Blitz games. A switch
- * sits above the one list on a phone; desktop shows both side by side.
+ * The Season tab (spec 09): where the player stands in Frontier's season, and in Blitz: a switch above the one list
+ * on a phone (Blitz there is the player's finished games); the desktop shows both side by side, Blitz with its rating.
  */
-export const SeasonPage = () => {
-  const layout = useLayout();
+export const SeasonPage = () => (useLayout() === "phone" ? <PhoneSeason /> : <DesktopSeason />);
+
+const PhoneSeason = () => {
   const [view, setView] = useState<SeasonView>("frontier");
   return (
     <PageFrame>
       <div className="flex min-h-0 flex-col gap-3">
         <SeasonHeader />
-        {layout === "phone" ? (
-          <>
-            <ViewSwitch
-              label={SEASON_WORDS.views}
-              views={[
-                { id: "frontier", word: ageOf("frontier").name },
-                { id: "blitz", word: ageOf("blitz").name },
-              ]}
-              lit={view}
-              onChange={setView}
-            />
-            {view === "frontier" ? <FrontierBoard rowsShown={ROWS_SHOWN.phone} /> : <BlitzGames />}
-          </>
-        ) : (
-          <div className="grid grid-cols-2 items-start gap-6">
-            <FrontierBoard rowsShown={ROWS_SHOWN.desktop} />
-            <BlitzGames />
-          </div>
-        )}
+        <ViewSwitch
+          label={SEASON_WORDS.views}
+          views={[
+            { id: "frontier", word: ageOf("frontier").name },
+            { id: "blitz", word: ageOf("blitz").name },
+          ]}
+          lit={view}
+          onChange={setView}
+        />
+        {view === "frontier" ? <FrontierBoard rowsShown={ROWS_SHOWN.phone} /> : <BlitzGames />}
       </div>
     </PageFrame>
+  );
+};
+
+/**
+ * The desktop's Season: the season's title above, Frontier's board on the left with its day, and Blitz on the right:
+ * the rating and the reader's own Blitz games.
+ */
+const DesktopSeason = () => {
+  const { season, directory } = useSeason();
+  return (
+    <PageFrame title={season ? seasonTitle(season) : WORDS.season}>
+      <div className="grid grid-cols-[minmax(0,1fr)_34rem] items-start gap-6">
+        {season || directory.isPending || directory.isError ? (
+          <Panel icon="Tp" title={ageOf("frontier").name} aside={season && <SeasonDay season={season} />}>
+            <FrontierBoard rowsShown={ROWS_SHOWN.desktop} framed={false} />
+          </Panel>
+        ) : (
+          <NoSeason />
+        )}
+        <BlitzPanel games={<BlitzGames framed={false} />} />
+      </div>
+    </PageFrame>
+  );
+};
+
+/** No Frontier season runs: the plains and the one line that says so. */
+const NoSeason = () => (
+  <section className="plate flex flex-col gap-4 p-4">
+    <img {...paintingSources("brooding-plains")} sizes="50vw" alt="" className="h-40 w-full rounded-xl object-cover" />
+    <p className="font-display text-[34px] leading-none text-kit-cream">{WORDS.noSeason}</p>
+  </section>
+);
+
+const SeasonDay = ({ season }: { season: DirectoryGame }) => {
+  const now = useNowSeconds();
+  return (
+    <span className="flex items-center gap-1 text-[15px] font-normal text-kit-muted">
+      <KitIcon code="Hg" size={20} />
+      {`${DAY} ${directoryDay(season, now).day ?? "—"}`}
+    </span>
   );
 };
 
@@ -88,7 +124,7 @@ const SeasonHeader = () => {
 };
 
 /** Frontier's board: its first rows, the player's own lit in place, or pinned under them when it ranks below. */
-const FrontierBoard = ({ rowsShown }: { rowsShown: number }) => {
+const FrontierBoard = ({ rowsShown, framed = true }: { rowsShown: number; framed?: boolean }) => {
   const navigate = useNavigate();
   const { season, directory } = useSeason();
   const { data: player } = useRealmsPlayer();
@@ -105,7 +141,7 @@ const FrontierBoard = ({ rowsShown }: { rowsShown: number }) => {
   if (board.isPending) return <Loading />;
   const rows = board.data?.mode === "frontier" ? boardRows(board.data.entries, player, rowsShown) : [];
   return (
-    <section className="flex min-h-0 flex-col plate px-2">
+    <section className={cn("flex min-h-0 flex-col", framed && "plate px-2")}>
       {rows.map(({ entry, own }) => (
         <SeasonRow
           key={entry.address}
@@ -123,7 +159,7 @@ const FrontierBoard = ({ rowsShown }: { rowsShown: number }) => {
 };
 
 /** The player's finished Blitz games, newest first; a row opens its Results. Signed out, there are none to list. */
-const BlitzGames = () => {
+const BlitzGames = ({ framed = true }: { framed?: boolean }) => {
   const { data: player } = useRealmsPlayer();
   const history = useRecentResults(BLITZ_GAMES, player);
   const now = useNowSeconds();
@@ -133,7 +169,7 @@ const BlitzGames = () => {
   if (history.isPending) return <Loading />;
   const games = history.data.games.filter((game) => game.mode === "blitz");
   return (
-    <ul className="plate px-2">
+    <ul className={cn(framed && "plate px-2")}>
       {games.map((game) => (
         <HistoryRow key={`${game.chainId}:${game.game_id}`} game={game} player={player} now={now} />
       ))}

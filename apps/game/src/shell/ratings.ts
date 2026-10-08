@@ -1,0 +1,53 @@
+import { useQuery } from "@tanstack/react-query";
+
+/**
+ * The Blitz rating (MMR), read from the identity service's /api/ratings (lobby-chat-mmr.txt): the token's current
+ * rating, pinned to one mainnet block per answer. The app keeps no rating of its own; every read asks again.
+ */
+type RatingAnswer =
+  | { status: "rated"; player: string; rating: string }
+  | { status: "unlinked" | "unknown_identity"; player: null; rating: null };
+
+interface RatingTopResponse {
+  block_number: number;
+  block_hash: string;
+  total: number;
+  entries: { rank: number; player: string; rating: string }[];
+  self: null | (RatingAnswer & { rank: number | null });
+}
+
+const readJson = async <T>(path: string): Promise<T> => {
+  const response = await fetch(path);
+  if (!response.ok) throw new Error(`Ratings answered ${response.status}`);
+  return (await response.json()) as T;
+};
+
+/** The rating's top rows, and the reader's own rating and rank when a Realms id is given. */
+export const useRatingTop = (limit: number, realmsId: string | null) =>
+  useQuery({
+    queryKey: ["shell", "ratings", "top", limit, realmsId],
+    queryFn: () =>
+      readJson<RatingTopResponse>(
+        `/api/ratings/top?limit=${limit}${realmsId ? `&realmsId=${encodeURIComponent(realmsId)}` : ""}`,
+      ),
+    staleTime: 0,
+    retry: 1,
+  });
+
+/** A rating as the screens show it: whole points (the service answers exact decimals; the fraction is dropped). */
+export const ratingPoints = (rating: string): number => Number(rating.split(".")[0]);
+
+/** The game's six tiers, highest first, each from its floor in rating points (the earlier client's mmr-tiers). */
+const TIERS = [
+  { name: "Storm Lord", floor: 2400, mark: "text-kit-stormLord" },
+  { name: "Warlord", floor: 2000, mark: "text-kit-warlord" },
+  { name: "Conqueror", floor: 1600, mark: "text-kit-conqueror" },
+  { name: "Marauder", floor: 1200, mark: "text-kit-gold2" },
+  { name: "Raider", floor: 600, mark: "text-kit-gold" },
+  { name: "Scrapper", floor: 0, mark: "text-kit-muted" },
+] as const;
+
+type RatingTier = (typeof TIERS)[number];
+
+// Scrapper's floor is 0 and a rating is never negative, so every rating has a tier.
+export const tierOf = (points: number): RatingTier => TIERS.find((tier) => points >= tier.floor)!;
