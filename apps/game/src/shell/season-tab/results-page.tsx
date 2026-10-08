@@ -21,7 +21,7 @@ import { paintingSources } from "../paintings";
 import { ageOf } from "../play/ages";
 import { gameKey } from "../play/next-step";
 import { markResultsSeen } from "../play/seen-results";
-import { StateCard } from "../play/state-card";
+import { FailureCard } from "../play/state-card";
 import { useNowSeconds } from "../use-now";
 import { SEASON_WORDS, WORDS } from "../words";
 import { gameTitle } from "./history-row";
@@ -90,7 +90,7 @@ const Result = ({ gameRef, fromList }: { gameRef: GameRef; fromList: boolean }) 
   if (board.isError)
     return (
       <ResultsFrame fromList={fromList}>
-        <StateCard service="results" error={board.error} retry={() => void board.refetch()} />
+        <FailureCard service="results" error={board.error} retry={() => void board.refetch()} />
       </ResultsFrame>
     );
   if (board.isPending)

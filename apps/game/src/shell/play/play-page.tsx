@@ -10,7 +10,7 @@ import { ageOfStep, type NextStep } from "./next-step";
 import { NextStepCard } from "./next-step-card";
 import { type PlayFacts, usePlayFacts } from "./play-facts";
 import { SeasonTop } from "./season-top";
-import { StateCard } from "./state-card";
+import { FailureCard } from "./state-card";
 
 /**
  * The Play tab (spec 01, 03, 04): the next step in one card, the other three ages beside it, and on a phone the four
@@ -33,7 +33,7 @@ const isFirstVisit = (step: NextStep | undefined) => step?.kind === "play" && st
 /** The card, or the directory's failure in its place; the tiles and the tabs keep working either way. */
 const HomeCard = ({ facts }: { facts: PlayFacts }) =>
   facts.directory.isError ? (
-    <StateCard service="directory" error={facts.directory.error} retry={() => void facts.directory.refetch()} />
+    <FailureCard service="directory" error={facts.directory.error} retry={() => void facts.directory.refetch()} />
   ) : (
     <NextStepCard step={facts.step} facts={facts} />
   );

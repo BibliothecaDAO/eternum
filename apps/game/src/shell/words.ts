@@ -27,6 +27,8 @@ export const WORDS = {
   /** A game under way. */
   live: "Live",
   seasonOver: "Season over",
+  /** The home card when no age has a game live or scheduled; awaiting the owner's wording (a gap in spec 03's table). */
+  noSeason: "No season running",
   /** Before an age's numeral: "Age II". */
   age: "Age",
 } as const;

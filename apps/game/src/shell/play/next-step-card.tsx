@@ -25,6 +25,7 @@ import { paintingSources } from "../paintings";
 import { GoButton } from "./go-button";
 import type { NextStep } from "./next-step";
 import type { PlayFacts } from "./play-facts";
+import { StateCard } from "./state-card";
 import { LiveChip } from "./state-chip";
 
 /** The home card: the step the table chose, with its age, its picture, its figure and clock, and the one verb. */
@@ -51,6 +52,8 @@ export const NextStepCard = ({ step, facts }: { step: NextStep | undefined; fact
           }
         />
       );
+    case "quiet":
+      return <QuietCard />;
     case "blitz":
     case "eternum": {
       const { chip, action } = ageState(step.kind, facts, "full");
@@ -103,6 +106,13 @@ const Painting = ({ painting }: { painting: string }) => (
     alt=""
     className="h-36 w-full rounded-xl object-cover"
   />
+);
+
+/** Nothing live or scheduled in any age: the plains under the storm and the one line that says so; no verb. */
+const QuietCard = () => (
+  <StateCard painting="brooding-plains">
+    <p className="font-ui text-[19px] font-bold text-kit-cream">{WORDS.noSeason}</p>
+  </StateCard>
 );
 
 /** While the table resolves the card keeps its place and its button; unknown values are dashes. */

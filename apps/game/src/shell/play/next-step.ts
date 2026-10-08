@@ -12,7 +12,8 @@ export type NextStep =
   | { kind: "results"; season: DirectoryGame }
   | { kind: "play"; season: DirectoryGame; firstVisit: boolean }
   | { kind: "blitz"; row: BlitzRow }
-  | { kind: "eternum"; game: DirectoryGame | undefined };
+  | { kind: "eternum"; game: DirectoryGame }
+  | { kind: "quiet" };
 
 type NextStepFacts = {
   signedIn: boolean;
@@ -47,7 +48,8 @@ const nextEternum = ({ games }: NextStepFacts) =>
 /**
  * The home card's one table, first match wins (spec 03): a Blitz seat in a live game → Enter; a Frontier day under
  * way → Resume; a season over and unseen → Results; else Frontier's season → Play (Play free signed out). With no
- * Frontier season, the next age that has one: a Blitz to watch or join, else Eternum's opening.
+ * Frontier season, the next age that has one: a Blitz to watch or join, else Eternum's opening. With none of these,
+ * nothing is running: the spec's table has no such row, so the card says so (a design gap, wording for the owner).
  */
 export const nextStep = (facts: NextStepFacts): NextStep => {
   const blitzSeat = ownBlitzToEnter(facts);
@@ -60,7 +62,8 @@ export const nextStep = (facts: NextStepFacts): NextStep => {
   if (season) return { kind: "play", season, firstVisit: !facts.signedIn };
   const blitz = facts.blitz[0];
   if (blitz) return { kind: "blitz", row: blitz };
-  return { kind: "eternum", game: nextEternum(facts) };
+  const eternum = nextEternum(facts);
+  return eternum ? { kind: "eternum", game: eternum } : { kind: "quiet" };
 };
 
 /** The age a step belongs to, so the other three show as tiles; Frontier's while the table resolves. */
