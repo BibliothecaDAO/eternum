@@ -10,7 +10,7 @@ import {
   unclaimedSharePoints,
 } from "@bibliothecadao/eternum/game-sync";
 import { nativeGameModeOf } from "@bibliothecadao/eternum";
-import { expeditionRealmSite, isRealmCategory } from "@bibliothecadao/eternum/expeditions";
+import { dayOf, expeditionRealmSite, isRealmCategory } from "@bibliothecadao/eternum/expeditions";
 import { StructureType } from "@bibliothecadao/types";
 import { resolveDirectoryStatus, type DirectoryInput } from "../game-directory";
 import type { FoldRow } from "../types";
@@ -45,8 +45,13 @@ interface DirectoryRows {
 export function buildNativeDirectory(input: DirectoryInput): HeraldGameDirectory {
   const rows = (model: string) => input.fold.modelRows(model);
   const facts = directoryRows(input);
+  const seasons = rows("GameRegistry")
+    .filter(({ value }) => nativeGameModeOf(number(value.preset_id)) === "frontier")
+    .sort((a, b) => number(a.value.game_id) - number(b.value.game_id));
+  const seasonNumbers = new Map(seasons.map(({ value }, index) => [number(value.game_id), index + 1]));
   const games = rows("GameRegistry")
     .map(({ value }) => directoryEntry(value, facts, input))
+    .map((game) => ({ ...game, season_number: seasonNumbers.get(game.game_id) ?? null }))
     .sort((left, right) => right.game_id - left.game_id);
   return { chain: input.chain, confirmed_block: input.confirmedBlock, games };
 }
@@ -154,11 +159,21 @@ function directoryEntry(game: Row, facts: DirectoryRows, input: DirectoryInput):
     end_at: number(game.end_at),
     end_grace_seconds: number(game.end_grace_seconds),
   };
+  const calendar =
+    mode === "frontier" && dayUnitSeconds !== 0
+      ? { seed: integer(game.seed), startMainAt: clock.start_main_at, dayUnitSeconds }
+      : null;
+  const day =
+    calendar && input.timestamp < clock.end_at && game.settled !== true ? dayOf(calendar, input.timestamp) : null;
+
   return {
     game_id: number(game.game_id),
     name: shortString(game.name),
     preset_id: number(game.preset_id),
     mode,
+    day_index: day?.index ?? null,
+    day_ends_at: day?.end ?? null,
+    next_day_length: day ? dayOf(calendar!, day.end)!.end - day.end : null,
     expedition: dayUnitSeconds === 0 ? null : { day_unit_seconds: dayUnitSeconds, seed: integer(game.seed).toString() },
     dev_mode_on: game.dev_mode_on === true,
     ready: game.ready === true,
@@ -167,6 +182,11 @@ function directoryEntry(game: Row, facts: DirectoryRows, input: DirectoryInput):
     player_count: new Set(settlements.map((row) => address(row.owner))).size,
     player_state: directoryPlayerState(game, facts, input),
     roster_count: roster.length,
+    roster: roster.map((row) => {
+      const account = address(row.account);
+      const entered = gameRows(facts.entries, game.game_id).some((entry) => address(entry.player) === account);
+      return { account, prepared: entered && realms.some((realm) => address(realm.owner) === account) };
+    }),
     registration: {
       count: state ? number(state.registered) : 0,
       max: number(settlement.registration_limit),

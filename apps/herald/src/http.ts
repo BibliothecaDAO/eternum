@@ -45,7 +45,13 @@ interface HeraldHttpState {
   metrics: ReplayMetrics;
   history?: Pick<
     HistoryStore,
-    "queryStoryCursor" | "queryEvents" | "reviewSnapshot" | "transactionCount" | "activity" | "frontierHistory"
+    | "queryStoryCursor"
+    | "queryEvents"
+    | "reviewSnapshot"
+    | "transactionCount"
+    | "activity"
+    | "frontierHistory"
+    | "frontierDayRanks"
   >;
   undecodableEventCount: () => number;
 }
@@ -117,6 +123,7 @@ export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: R
   const snapshotPath = /^\/games\/([0-9]+)\/snapshot$/;
   const historyPath = /^\/games\/([0-9]+)\/history$/;
   const reviewSnapshotPath = /^\/games\/([0-9]+)\/review\/snapshot$/;
+  const dayRanksPath = /^\/games\/([0-9]+)\/days\/([0-9]+)\/ranks$/;
   const leaderboardPath = /^\/games\/([0-9]+)\/leaderboard$/;
   const transactionCountPath = /^\/games\/([0-9]+)\/transactions\/count$/;
 
@@ -157,6 +164,24 @@ export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: R
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         return jsonResponse({ error: message }, 400);
+      }
+    }
+
+    const dayRanksMatch = request.method === "GET" ? dayRanksPath.exec(url.pathname) : null;
+    if (dayRanksMatch) {
+      const dayIndex = Number(dayRanksMatch[2]);
+      if (!Number.isSafeInteger(dayIndex)) return jsonResponse({ error: "invalid_day_index" }, 400);
+      if (!state.history || state.undecodableEventCount() > 0)
+        return jsonResponse({ error: "day_ranks_unavailable" }, 503);
+      try {
+        const ranks = await state.history.frontierDayRanks(
+          BigInt(dayRanksMatch[1]).toString(),
+          dayIndex,
+          state.confirmedBlock(),
+        );
+        return ranks ? jsonResponse(ranks) : jsonResponse({ error: "day_ranks_not_closed" }, 404);
+      } catch {
+        return jsonResponse({ error: "day_ranks_unavailable" }, 503);
       }
     }
 

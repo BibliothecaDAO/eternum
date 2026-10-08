@@ -25,7 +25,7 @@ describe("existing history progress", () => {
     try {
       await store.initialize();
       await admin.query(
-        `INSERT INTO ${schema}.herald_history_progress (chain, world_address, complete_through_block) VALUES ('madara', '0x123', 500001)`,
+        `INSERT INTO ${schema}.herald_history_progress (chain, world_address, complete_through_block, frontier_ranks_through_block) VALUES ('madara', '0x123', 500001, 500001)`,
       );
       await store.close();
       store = new HistoryStore(url.toString(), "madara", "0x123", createNativeHistoryCodec(nativeSchema));
@@ -287,4 +287,44 @@ describe("Frontier confirmed season history", () => {
       await admin.end();
     }
   });
+});
+
+it("commits day ranks with history, deduplicates replay and recovers them after restart", async () => {
+  const admin = new Pool({ connectionString: databaseUrl });
+  const schema = `day_ranks_${randomUUID().replaceAll("-", "")}`;
+  await admin.query(`CREATE SCHEMA ${schema}`);
+  const url = new URL(databaseUrl!);
+  url.searchParams.set("options", `-c search_path=${schema}`);
+  let store = new HistoryStore(url.toString(), "madara", "0x123", createNativeHistoryCodec(nativeSchema));
+  const ranks = {
+    game_id: "1",
+    day_index: 0,
+    ends_at: 1800010000,
+    confirmed_block: 10,
+    entries: [{ address: "0x1", structure_id: "7", rank: 1 }],
+  };
+  try {
+    await store.initialize();
+    await store.appendEvents([], 10);
+    expect(await store.historyProgress(true)).toBeNull(); // Old checkpoints require boundary replay.
+    await expect(store.frontierDayRanks("1", 0, 10)).rejects.toThrow("incomplete");
+    await store.appendEvents([], 11, [ranks]);
+    expect(await store.frontierDayRanks("1", 0, 10)).toBeNull(); // No next-day result before its closing block.
+    expect(await store.frontierDayRanks("1", 1, 11)).toBeNull();
+    expect(await store.frontierDayRanks("1", 0, 11)).toEqual(ranks);
+    await store.appendEvents([], 11, [{ ...ranks, entries: [] }]);
+    expect(await store.frontierDayRanks("1", 0, 11)).toEqual(ranks);
+    await admin.query(`ALTER TABLE ${schema}.herald_frontier_day_ranks ADD CONSTRAINT fail_day CHECK (day_index < 1)`);
+    await expect(store.appendEvents([], 12, [{ ...ranks, day_index: 1 }])).rejects.toThrow();
+    expect(await store.historyProgress(true)).toBe(11);
+    expect(await store.historyProgress()).toBe(11);
+    await store.close();
+    store = new HistoryStore(url.toString(), "madara", "0x123", createNativeHistoryCodec(nativeSchema));
+    await store.initialize();
+    expect(await store.frontierDayRanks("1", 0, 11)).toEqual(ranks);
+  } finally {
+    await store.close();
+    await admin.query(`DROP SCHEMA ${schema} CASCADE`);
+    await admin.end();
+  }
 });

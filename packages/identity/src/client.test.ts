@@ -123,3 +123,10 @@ it("bounds a stalled push request with an abort signal", async () => {
     timeout.mockRestore();
   }
 });
+
+it("returns the service's code expiry to the device", async () => {
+  const expiry = { success: true, expires_at: 1800000300.125 };
+  const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(Response.json(expiry));
+  const client = createIdentityClient({ apiUrl: "https://realms.test/api", fetch });
+  expect(await client.sendSignInCode("lord@realms.test")).toEqual(expiry);
+});
