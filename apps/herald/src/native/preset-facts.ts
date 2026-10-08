@@ -89,9 +89,19 @@ function deriveResources(emit: EmitRule, resources: PresetRecord) {
 
 function deriveStructures(emit: EmitRule, structures: PresetRecord) {
   for (const { category, rule } of records(structures.buildings)) emit("BuildingRule", record(rule), { category });
-  // Older registrations carry no research prices: none at all, or the deleted node tree.
-  for (const { row, tier, price } of records(structures.research ?? []).filter((entry) => "row" in entry))
-    emit("ResearchPrice", record(price), { row, tier });
+  for (const entry of records(structures.research ?? [])) {
+    if ("row" in entry) {
+      const { row, tier, price } = entry;
+      emit("ResearchPrice", record(price), { row, tier });
+    } else {
+      // Archived registrations replay their node facts under the schema that recorded them.
+      const { node, rule } = entry;
+      emit("ResearchNode", record(rule), { node });
+    }
+  }
+  // Archived building tiers belong to their verified registration as well.
+  for (const { category, tier, rule } of records(structures.building_tiers ?? []))
+    emit("BuildingTierRule", record(rule), { category, tier });
   const board = some(structures.board);
   if (board) emit("BoardRules", board);
   // Registrations before CampRules carry the camp's grants alone.
