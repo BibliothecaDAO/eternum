@@ -9,7 +9,7 @@ const { url, payloads, barrier } = workerData as {
 };
 const gate = new Int32Array(barrier);
 const agent = new Agent({ keepAlive: true, maxSockets: payloads.length, maxFreeSockets: payloads.length });
-function send(body: string): Promise<{ sentNs: string; error: string | null }> {
+function send(body: string): Promise<{ sentNs: string; acknowledgedNs: string | null; error: string | null }> {
   return new Promise((resolve) => {
     const req = request(url, {
       method: "POST",
@@ -29,13 +29,17 @@ function send(body: string): Promise<{ sentNs: string; error: string | null }> {
       response.on("end", () => {
         try {
           const parsed = JSON.parse(data);
-          resolve({ sentNs, error: parsed.error ? `RPC ${parsed.error.code}` : null });
+          resolve({
+            sentNs,
+            acknowledgedNs: now().toString(),
+            error: parsed.error ? `RPC ${parsed.error.code}` : null,
+          });
         } catch {
-          resolve({ sentNs, error: "invalid response" });
+          resolve({ sentNs, acknowledgedNs: now().toString(), error: "invalid response" });
         }
       });
     });
-    req.on("error", () => resolve({ sentNs, error: "transport error" }));
+    req.on("error", () => resolve({ sentNs, acknowledgedNs: null, error: "transport error" }));
     req.setTimeout(90000, () => req.destroy());
   });
 }

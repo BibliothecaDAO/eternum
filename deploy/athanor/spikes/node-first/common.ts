@@ -41,6 +41,12 @@ export function args(names: string[]) {
     strict: true,
   }).values;
 }
+export function selectedArms(value: string): ("X" | "Y")[] {
+  const arms = value.split(",");
+  if (arms.some((arm) => arm !== "X" && arm !== "Y") || new Set(arms).size !== arms.length)
+    throw new Error("Choose X, Y or X,Y without duplicates");
+  return arms as ("X" | "Y")[];
+}
 export function required(value: string | undefined, name: string): string {
   if (!value) throw new Error(`Missing ${name}`);
   return value;

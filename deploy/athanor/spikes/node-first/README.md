@@ -115,3 +115,30 @@ after the final burst receipt. Its output keeps the first 120 seconds, burst ove
 Join the individual action timestamps to the node's close records to distinguish the actual final seal from the rest of
 that period. A missing or incomplete burst is not a passing mixed gate. Receipt block numbers are retained when supplied
 by the node. Raw receipt visibility does not establish that Herald can serve this separate spike host.
+
+## Follow-up behind a final seal
+
+`follow-up.ts` uses a separate 24-account CreateExplorer Y fixture, presigned before the primary wave. Prepare its homes
+outside every timer. Commit and discard a full-size cold wave on that configuration, then retain one quiet warm wave as
+the latency control. The 24 accounts and game must be distinct from the 2,000-player burst and the Blitz flow. Fresh
+homes are needed for each creation wave.
+
+Start the follow-up before the primary burst and wait for its `--ready-file`. The workers have warm connections and wait
+at the shared barrier. Give the primary `run.ts` a fresh `--receipt-checkpoint` path. The follow-up accepts that path as
+`--checkpoint` and one `--offset-ms` of `0`, `250` or `1000`. It releases after the last successful primary receipt, and
+reports actual offset and target lateness; checkpoint writing, polling and scheduling prevent an exact zero-offset
+promise. An incomplete primary burst never releases a follow-up. Omit both trigger options for the quiet control.
+
+A separate `--close-log` mode releases on an observed `close_block_worker_started` whose block already has a matching
+nonempty `received_executor_batch_executed` record. That diagnostic needs
+`info,mc_block_production::close_pipeline=debug` on both its control and candidate. It ignores empty seals and retains
+the observed trigger time; the emission-to-observation delay must be joined from the node's timestamped log. This wider
+logging filter is an explicit diagnostic input, not part of the primary settings comparison.
+
+The evidence records each actual send, addInvoke acknowledgement, first PRE_CONFIRMED receipt and receipt block number.
+Join those to batch persistence and close records before attributing a stall. A later seal may continue after the
+primary's last receipt. Public receipt visibility alone does not establish Herald or client fact visibility.
+
+For subsequent Y-only settings comparisons, `game-setup.ts --arms Y` omits the unused X game and its 2,000 homes. The
+default remains `X,Y` for the initial arm references. Use the same selection for a fresh matched control and every
+candidate in that comparison; do not silently compare their different prepared database histories.

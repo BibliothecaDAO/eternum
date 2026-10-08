@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import { provisioningWindow, preconfirmedSuccess } from "./provision";
 import { assertCreatedWave } from "./game-explore";
 import { RpcProvider } from "starknet";
-import type { Fixture } from "./common";
+import { selectedArms, type Fixture } from "./common";
 
 const turn = () => new Promise((resolve) => setTimeout(resolve, 0));
 test("provisioning submits a bounded window with consecutive nonces before any receipt", async () => {
@@ -192,4 +192,11 @@ test("presigning a scheduled nonce does not read an older projected nonce", asyn
   };
   const signed = await presign(fixture, player, provider, 0, 1, 1, 1, 42n);
   expect(JSON.parse(signed.body).params[0].nonce).toBe("0x2a");
+});
+
+test("fixture and driver share arm selection, refusing duplicate or unsupported arms", () => {
+  expect(selectedArms("Y")).toEqual(["Y"]);
+  expect(selectedArms("X,Y")).toEqual(["X", "Y"]);
+  expect(() => selectedArms("Y,Y")).toThrow("without duplicates");
+  expect(() => selectedArms("Z")).toThrow("Choose X");
 });

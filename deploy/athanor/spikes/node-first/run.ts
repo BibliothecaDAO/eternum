@@ -4,6 +4,7 @@ import { RpcProvider } from "starknet";
 import { mapWithConcurrency } from "../../harness/account-factory";
 import {
   args,
+  selectedArms,
   required,
   load,
   save,
@@ -21,13 +22,18 @@ import { settledHomes, settleCloseFootprint } from "./settlement";
 import { discoveryFacts } from "./discovery";
 import { cpu, metricCounters, executorLogs, textLength } from "./telemetry";
 
-type ObservedReceipt = {
+export type ObservedReceipt = {
   at: bigint;
   status: string;
   blockNumber?: number;
   discovery?: ReturnType<typeof discoveryFacts>;
 };
-async function subscribe(url: string, received: Map<string, ObservedReceipt>, heads: number[], fixture: Fixture) {
+export async function subscribe(
+  url: string,
+  received: Map<string, ObservedReceipt>,
+  heads: number[],
+  fixture: Fixture,
+) {
   const socket = new WebSocket(url);
   let failure: string | null = null;
   await new Promise<void>((ok, bad) => {
@@ -90,7 +96,7 @@ export async function burst(
   url: string,
   payloads: { hash: string; body: string }[],
   count: number,
-  before: () => void,
+  before: () => void | Promise<void>,
 ) {
   const barrier = new SharedArrayBuffer(4);
   const gate = new Int32Array(barrier);
@@ -101,7 +107,7 @@ export async function burst(
       const worker = new Worker(new URL("./send-worker.ts", import.meta.url), {
         workerData: { url, payloads: group, barrier },
       });
-      let rows: { hash: string; sentNs: string; error: string | null }[] | undefined;
+      let rows: { hash: string; sentNs: string; acknowledgedNs: string | null; error: string | null }[] | undefined;
       let ready!: () => void;
       let failReady!: (error: Error) => void;
       const initialized = new Promise<void>((ok, bad) => {
@@ -128,7 +134,7 @@ export async function burst(
     });
   try {
     await Promise.all(jobs.map((j) => j.initialized));
-    before();
+    await before();
     Atomics.store(gate, 0, 1);
     Atomics.notify(gate, 0);
     return (await Promise.all(jobs.map((j) => j.finished))).flatMap((v) => v ?? []);
@@ -165,8 +171,7 @@ async function main() {
   const nodePid = Number(required(a["node-pid"], "node-pid"));
   if (!Number.isInteger(workers) || workers < 1 || workers > 32 || !Number.isInteger(nodePid) || nodePid < 1)
     throw new Error("Invalid workers/PID");
-  const arms = (a.arms ?? fixture.game?.arm ?? "X,Y").split(",");
-  if (arms.some((arm) => !["X", "Y"].includes(arm))) throw new Error("Arm X or Y required");
+  const arms = selectedArms(a.arms ?? fixture.game?.arm ?? "X,Y");
   for (const [index, arm] of arms.entries()) {
     const run = Date.now() + index;
     const file = resolve(out, `${run}-${arm}-${writes}x${hashes}.json`);

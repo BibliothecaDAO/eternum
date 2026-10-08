@@ -11,6 +11,7 @@ import {
 } from "starknet";
 import {
   args,
+  selectedArms,
   load,
   save,
   required,
@@ -42,7 +43,9 @@ async function main() {
     "prepare-explore",
     "window",
     "action",
+    "arms",
   ]);
+  const arms = selectedArms(a.arms ?? "X,Y");
   const settle = a.action === "settle";
   if (a.action && !settle) throw new SetupFailure("Only --action settle is supported");
   if (settle && a["prepare-explore"]) throw new SetupFailure("Settle starts with zero homes and armies");
@@ -178,7 +181,7 @@ async function main() {
   const fixtures: Fixture[] = [];
   const tick = Number(definition.rules.tick_config.armies_tick_in_seconds);
   const scheduledStart = Math.ceil((now + 86400) / tick) * tick;
-  for (const [index, arm] of ["X", "Y"].entries()) {
+  for (const [index, arm] of arms.entries()) {
     const game = index + 1;
     await send("create_game", {
       params: {
@@ -224,7 +227,7 @@ async function main() {
     await send("start_now", { game: fixture.game!.id });
     if (a["prepare-explore"] === "true") await prepareExplore(provider, fixture, rpc);
   }
-  // Keep both games in day zero after preparation; actual measured calls still use node block time.
+  // Keep the prepared games in day zero after preparation; actual measured calls still use node block time.
   for (const fixture of fixtures) {
     await send("start_now", { game: fixture.game!.id });
     save(resolve(dir, fixtureName(fixture)), fixture, true);
