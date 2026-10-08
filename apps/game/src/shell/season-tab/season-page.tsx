@@ -13,7 +13,7 @@ import { PageFrame } from "../frame/page-frame";
 import { type DirectoryGame, useDirectory, useLeaderboard, useRealmsPlayer, useRecentResults } from "../herald";
 import { Loading } from "../loading";
 import { ageOf } from "../play/ages";
-import { chooseSeason, directoryDay } from "../season";
+import { chooseSeason, directoryDay, seasonTitle } from "../season";
 import { ServiceFailure } from "../service-failure";
 import { useNowSeconds } from "../use-now";
 import { SEASON_WORDS, WORDS } from "../words";
@@ -68,7 +68,7 @@ const useSeason = (): { season: DirectoryGame | undefined; directory: ReturnType
   return { season: chooseSeason(directory.data?.games ?? [], true), directory };
 };
 
-/** Season and its day: the trophy, the word, and "Day 12" while a season runs. */
+/** Season and its day: the trophy and the word, and "Season 3" with "Day 12" while a season runs. */
 const SeasonHeader = () => {
   const { season } = useSeason();
   const now = useNowSeconds();
@@ -76,7 +76,7 @@ const SeasonHeader = () => {
   return (
     <h1 className="flex items-center gap-2 font-ui text-[22px] font-bold text-kit-cream">
       <KitIcon code="Tp" size={26} />
-      {WORDS.season}
+      {season ? seasonTitle(season) : WORDS.season}
       {season && (
         <span className="ml-auto flex items-center gap-1 text-[15px] text-kit-muted">
           <KitIcon code="Hg" size={20} />

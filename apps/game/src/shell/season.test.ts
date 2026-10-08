@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { DirectoryGame } from "./herald";
-import { chooseSeason, directoryDay } from "./season";
+import { chooseSeason, directoryDay, seasonTitle } from "./season";
 
 const season = (gameId: number, startMainAt: number, ownRealm: boolean): DirectoryGame =>
   ({
@@ -64,5 +64,16 @@ describe("Frontier's day from the directory", () => {
     expect(directoryDay({ day_index: 11, day_ends_at: now + 26_040, next_day_length: 86_400 }, now).shareLeft).toBe(
       undefined,
     );
+  });
+});
+
+describe("the season's number", () => {
+  it("names the season by the number the directory serves", () => {
+    expect(seasonTitle({ season_number: 3 })).toBe("Season 3");
+  });
+
+  it("is a dash when the directory serves none, never a zero", () => {
+    expect(seasonTitle({})).toBe("Season —");
+    expect(seasonTitle({ season_number: null })).toBe("Season —");
   });
 });

@@ -1,4 +1,5 @@
 import { isGameOver } from "@/runtime/world/directory";
+import { SEASON } from "@/ui/design-system/kit/words";
 import { type DayClock, dayTone } from "@/ui/features/frontier/hud/day-clock";
 import { isRealmCategory } from "@bibliothecadao/eternum/expeditions";
 
@@ -43,3 +44,7 @@ export const directoryDay = (
     tone: secondsLeft === undefined ? "calm" : dayTone(secondsLeft),
   };
 };
+
+/** The season by its number, as the glossary writes it ("Season 3"); a number the directory does not serve is a dash. */
+export const seasonTitle = (season: Pick<DirectoryGame, "season_number">): string =>
+  `${SEASON} ${season.season_number ?? "—"}`;
