@@ -12,6 +12,7 @@ the harness's reports in data/measure/NAME/workload.
 """
 
 import argparse
+from bisect import bisect_left, bisect_right
 import calendar
 import json
 import math
@@ -68,11 +69,12 @@ def admission_split(directory):
     """Completed actions' admission-to-visible latency, overall, in bursts (many submissions around it) and in calm."""
     actions = list(reported_actions(directory))
     done = [a for a in actions if a.get("outcome") == "completed" and a.get("visibleAt") and a.get("submittedAt")]
-    starts = [iso_ms(a["submitStartedAt"]) for a in done]
+    starts = sorted(iso_ms(a["submitStartedAt"]) for a in done)
 
     def neighbours(action):
         start = iso_ms(action["submitStartedAt"])
-        return sum(1 for other in starts if abs(other - start) <= NEIGHBOUR_WINDOW_MS) - 1
+        return (bisect_right(starts, start + NEIGHBOUR_WINDOW_MS)
+                - bisect_left(starts, start - NEIGHBOUR_WINDOW_MS) - 1)
 
     return {
         "all": phases(done),

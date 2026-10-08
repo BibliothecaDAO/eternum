@@ -42,6 +42,20 @@ class MeasuresTests(unittest.TestCase):
         self.assertEqual(split["all"]["afterRecordedMs"][95], 250)
         self.assertEqual(split["all"]["admissionToVisibleMs"][95], 350)
 
+    def test_burst_window_includes_both_boundaries_and_duplicate_submission_times(self):
+        def action(milliseconds):
+            return {"outcome": "completed", "submitStartedAt": f"2026-10-08T00:00:00.{milliseconds:03}Z",
+                    "submittedAt": "2026-10-08T00:00:01.000Z", "visibleAt": "2026-10-08T00:00:01.100Z",
+                    "submitMs": 10, "admissionToVisibleMs": 100}
+
+        actions = [*[action(0) for _ in range(12)], action(500), action(501)]
+        with tempfile.TemporaryDirectory() as temporary:
+            (Path(temporary) / "report.json").write_text(json.dumps({"workload": {"actions": actions}}))
+            split = measures.admission_split(temporary)
+        self.assertEqual(split["burst"]["n"], 13)
+        self.assertEqual(split["calm"]["n"], 1)
+        self.assertEqual(split["all"]["n"], 14)
+
     def test_node_memory_is_read_from_the_containers_own_cgroup(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
