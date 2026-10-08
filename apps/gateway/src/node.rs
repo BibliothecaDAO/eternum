@@ -2,6 +2,7 @@ use crate::{
     protocol::Intent,
     socket::{NodeSocket, Notifications},
     ticket::{ActionStatus, RecordedTicket},
+    timing::{Stage, StageTimer, Stages},
     transaction::{selector, Invoke},
 };
 use anyhow::{ensure, Context};
@@ -19,7 +20,7 @@ use starknet_types_core::felt::Felt;
 use std::{
     collections::HashMap,
     sync::{Arc, Mutex},
-    time::Duration,
+    time::{Duration, Instant},
 };
 use tokio::sync::{oneshot, watch};
 
@@ -92,7 +93,7 @@ pub(crate) enum Execution {
 /// Submissions waiting for their receipt from the sequencing account's receipt stream. A waiter is
 /// registered before its transaction is sent, so the receipt cannot arrive unclaimed.
 #[derive(Default)]
-struct ReceiptWaiters(Mutex<HashMap<Felt, oneshot::Sender<Receipt>>>);
+struct ReceiptWaiters(Mutex<HashMap<Felt, oneshot::Sender<(Receipt, Instant)>>>);
 
 impl ReceiptWaiters {
     fn wait_for(self: &Arc<Self>, hash: Felt) -> ReceiptWait {
@@ -103,14 +104,14 @@ impl ReceiptWaiters {
 
     fn deliver(&self, receipt: Receipt) {
         if let Some(waiter) = self.0.lock().expect("receipt waiters poisoned").remove(&receipt.transaction_hash) {
-            waiter.send(receipt).ok();
+            waiter.send((receipt, Instant::now())).ok();
         }
     }
 }
 
 struct ReceiptWait {
     hash: Felt,
-    receiver: oneshot::Receiver<Receipt>,
+    receiver: oneshot::Receiver<(Receipt, Instant)>,
     waiters: Arc<ReceiptWaiters>,
 }
 
@@ -178,8 +179,18 @@ impl Node {
     }
 
     /// Signs one account call at the account's next nonce, including pre-confirmed transactions.
-    pub async fn prepare(&self, to: Felt, entrypoint: &str, payload: Vec<Felt>) -> anyhow::Result<(Felt, Value)> {
-        let nonce: Felt = self.request("starknet_getNonce", rpc_params!["pre_confirmed", self.account]).await?;
+    pub async fn prepare(
+        &self,
+        to: Felt,
+        entrypoint: &str,
+        payload: Vec<Felt>,
+        mut timing: Option<&mut Stages>,
+    ) -> anyhow::Result<(Felt, Value)> {
+        let nonce: Felt = {
+            let _timer = timing.as_deref_mut().map(|stages| StageTimer::start(Stage::NonceRead, Some(stages)));
+            self.request("starknet_getNonce", rpc_params!["pre_confirmed", self.account]).await?
+        };
+        let _timer = timing.map(|stages| StageTimer::start(Stage::HashSign, Some(stages)));
         Invoke::single_call(self.account, nonce, to, entrypoint, payload, self.l2_gas).signed(self.chain, self.key)
     }
 
@@ -221,10 +232,18 @@ impl Node {
     /// The receipt arrives from the account's pre-confirmed receipt stream. Only a failed send or a
     /// silent stream asks the node directly: a retry of a transaction the node already holds, or a
     /// stream that dropped while reconnecting.
-    pub async fn execute(&self, hash: Felt, transaction: Value) -> anyhow::Result<Execution> {
+    pub async fn execute(
+        &self,
+        hash: Felt,
+        transaction: Value,
+        mut timing: Option<&mut Stages>,
+    ) -> anyhow::Result<Execution> {
         let mut wait = self.receipts.wait_for(hash);
-        let submitted: anyhow::Result<Value> =
-            self.request("starknet_addInvokeTransaction", rpc_params![transaction.clone()]).await;
+        let submitted: anyhow::Result<Value> = {
+            let _timer = timing.as_deref_mut().map(|stages| StageTimer::start(Stage::AddInvoke, Some(stages)));
+            self.request("starknet_addInvokeTransaction", rpc_params![transaction.clone()]).await
+        };
+        let acknowledged = submitted.is_ok();
         match submitted {
             Ok(accepted) => ensure!(
                 accepted["transaction_hash"].as_str().and_then(|hash| Felt::from_hex(hash).ok()) == Some(hash),
@@ -239,12 +258,22 @@ impl Node {
                 }
             }
         }
+        let receipt_timer =
+            timing.filter(|_| acknowledged).map(|stages| StageTimer::start(Stage::ReceiptWait, Some(stages)));
         loop {
             match tokio::time::timeout(QUIET, &mut wait.receiver).await {
-                Ok(Ok(receipt)) => return Ok(Execution::Included(Box::new(receipt))),
+                Ok(Ok((receipt, received))) => {
+                    if let Some(timer) = receipt_timer {
+                        timer.finish_at(received);
+                    }
+                    return Ok(Execution::Included(Box::new(receipt)));
+                }
                 Ok(Err(_)) => anyhow::bail!("node receipt stream closed"),
                 Err(_) => {
                     if let Some(receipt) = self.receipt(hash).await? {
+                        if let Some(timer) = receipt_timer {
+                            timer.finish_at(Instant::now());
+                        }
                         return Ok(Execution::Included(Box::new(receipt)));
                     }
                     if !self.known(hash).await? {
@@ -483,7 +512,7 @@ mod tests {
         let result = tokio::time::timeout(Duration::from_secs(2), async {
             subscribed.notified().await;
             for hash in [Felt::from(11), Felt::from(12)] {
-                let execution = node.execute(hash, json!({"hash": hash})).await.unwrap();
+                let execution = node.execute(hash, json!({"hash": hash}), None).await.unwrap();
                 assert!(matches!(execution, Execution::Included(receipt) if receipt.transaction_hash == hash));
             }
         })
@@ -514,12 +543,11 @@ mod tests {
             revert_reason: None,
             events: vec![],
         });
-        assert_eq!((&mut live.receiver).await.unwrap().transaction_hash, Felt::TWO);
+        assert_eq!((&mut live.receiver).await.unwrap().0.transaction_hash, Felt::TWO);
         assert!(waiters.0.lock().unwrap().is_empty());
     }
 
-    #[test]
-    fn restart_reconciliation_attributes_the_matching_intent_inside_a_batch() {
+    fn recorded_ticket() -> RecordedTicket {
         let intent = Intent {
             chain: Felt::ONE,
             deployment: Felt::TWO,
@@ -534,7 +562,7 @@ mod tests {
             last_order: 100,
             arguments: vec![Felt::from(7)],
         };
-        let first = RecordedTicket {
+        RecordedTicket {
             envelope: Envelope {
                 action: intent.identity().unwrap(),
                 order: 7,
@@ -544,9 +572,132 @@ mod tests {
                 epoch: 1,
                 root: [123; 32],
             },
-            intent: intent.clone(),
+            intent,
             signature: vec![Felt::ONE, Felt::TWO],
+        }
+    }
+
+    #[tokio::test]
+    async fn a_flight_records_signing_submission_receipt_and_parsing_timings() {
+        use crate::{
+            admission::{AdmissionSlots, Slot},
+            execution::{self, PendingTicket},
+            metrics::METRICS,
         };
+        use jsonrpsee::{server::ServerBuilder, RpcModule};
+
+        let record = recorded_ticket();
+        let slots = AdmissionSlots::new(1, Felt::ZERO);
+        let Slot::New(permit) = slots.reserve(record.intent.game, record.intent.actor, record.envelope.action).unwrap()
+        else {
+            panic!("new actor");
+        };
+        let status = permit.subscribe();
+        let receipts = Arc::new(ReceiptWaiters::default());
+        let mut module = RpcModule::new((receipts.clone(), record.clone()));
+        module
+            .register_method("starknet_getNonce", |params, _| {
+                assert_eq!(params.parse::<(String, Felt)>().unwrap(), ("pre_confirmed".into(), Felt::from(7)));
+                json!(Felt::from(9))
+            })
+            .unwrap();
+        module
+            .register_method("starknet_addInvokeTransaction", |params, context| {
+                let transaction: Value = params.one().unwrap();
+                let invoke = Invoke {
+                    sender: Felt::from_hex(transaction["sender_address"].as_str().unwrap()).unwrap(),
+                    nonce: Felt::from_hex(transaction["nonce"].as_str().unwrap()).unwrap(),
+                    calldata: serde_json::from_value(transaction["calldata"].clone()).unwrap(),
+                    l2_gas: 1_200_000_000,
+                };
+                assert_eq!(invoke.nonce, Felt::from(9));
+                assert_eq!(transaction["resource_bounds"]["l2_gas"]["max_amount"], "0x47868c00");
+                let hash = invoke.hash(Felt::ONE);
+                let ticket = &context.1;
+                context.0.deliver(Receipt {
+                    transaction_hash: hash,
+                    execution_status: ExecutionStatus::Succeeded,
+                    revert_reason: None,
+                    events: vec![Event {
+                        from_address: ticket.intent.deployment,
+                        keys: vec![selector("RecordingEvent"), selector("ExecutionRecorded")],
+                        data: vec![
+                            ticket.intent.game,
+                            ticket.intent.actor,
+                            ticket.intent.nonce.into(),
+                            Felt::ONE,
+                            ticket.envelope.order.into(),
+                            Felt::ONE,
+                            Felt::ZERO,
+                            Felt::ZERO,
+                            Felt::ZERO,
+                            Felt::ZERO,
+                        ],
+                    }],
+                });
+                json!({"transaction_hash": hash})
+            })
+            .unwrap();
+        let server = ServerBuilder::default().build("127.0.0.1:0").await.unwrap();
+        let url = format!("http://{}", server.local_addr().unwrap());
+        let handle = server.start(module);
+        let (_, head) = watch::channel(Head::default());
+        let node = Arc::new(Node {
+            http: HttpClientBuilder::default().build(url).unwrap(),
+            head,
+            receipts,
+            chain: Felt::ONE,
+            deployment: Felt::TWO,
+            account: Felt::from(7),
+            key: Felt::ONE,
+            l2_gas: 1_200_000_000,
+        });
+        let before = METRICS.render(0);
+        let mut timing = crate::timing::FlightTiming::new(1, Some(Instant::now()));
+        let result = execution::execute_flight(
+            node.as_ref(),
+            &[PendingTicket { record, permit, received: Instant::now() }],
+            &mut timing,
+        )
+        .await;
+        handle.stop().unwrap();
+        result.unwrap();
+        assert_eq!(slots.held(), 0);
+        assert!(matches!(
+            *status.borrow(),
+            ActionStatus::Recorded { order: 7, succeeded: true, nonce_consumed: true, .. }
+        ));
+        for stage in [Stage::NonceRead, Stage::HashSign, Stage::AddInvoke, Stage::ReceiptWait, Stage::OutcomeParsing] {
+            assert_eq!(timing.stages.count(stage), 1);
+        }
+        assert_eq!(
+            timing.stages.duration(Stage::ReceiptWait),
+            Duration::ZERO,
+            "a receipt delivered before acknowledgement has no acknowledgement-to-receipt wait"
+        );
+        drop(timing);
+        let after = METRICS.render(0);
+        for name in [
+            "gateway_flight_pack_size",
+            "gateway_flight_seconds",
+            "gateway_flight_nonce_read_seconds",
+            "gateway_flight_hash_sign_seconds",
+            "gateway_flight_add_invoke_seconds",
+            "gateway_flight_receipt_wait_seconds",
+            "gateway_flight_outcome_parsing_seconds",
+            "gateway_flight_idle_gap_seconds",
+        ] {
+            let count = |metrics: &str| -> u64 {
+                metrics.lines().find_map(|line| line.strip_prefix(&format!("{name}_count "))).unwrap().parse().unwrap()
+            };
+            assert!(count(&after) > count(&before), "histogram not recorded: {name}");
+        }
+    }
+
+    #[test]
+    fn restart_reconciliation_attributes_the_matching_intent_inside_a_batch() {
+        let first = recorded_ticket();
+        let intent = first.intent.clone();
         // Another game at the same order: attribution follows the intent, never the order alone.
         let mut second = first.clone();
         second.intent.game = Felt::from(10);
