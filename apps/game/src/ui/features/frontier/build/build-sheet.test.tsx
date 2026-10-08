@@ -9,7 +9,7 @@ vi.mock("@/audio/core/AudioManager", () => ({
 import { GameProvider } from "@/hooks/context/game-context";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { disposeGameSyncSession, installActiveGameClient } from "@/sync/active-game-client";
-import { type GameClient, markedPlot, setBlockTimestampSource } from "@bibliothecadao/eternum";
+import { type GameClient, setBlockTimestampSource } from "@bibliothecadao/eternum";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import { BuildingType } from "@bibliothecadao/types";
 import { realmBoard } from "./build-fixture";
@@ -25,7 +25,7 @@ describe("the build sheet", () => {
   it("stands the chosen building on the plot as a ghost, builds it there and takes the ghost away", async () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     const { store, realm } = realmBoard();
-    const plot = markedPlot(1, 1);
+    const plot = { col: 10, row: 9 };
     const placeBuilding = vi.fn(() => Promise.resolve());
     installActiveGameClient({
       connect() {},
@@ -47,8 +47,6 @@ describe("the build sheet", () => {
     const card = (name: string) => host.querySelector<HTMLButtonElement>(`[aria-label="${name}"]`)!;
     expect(card("Farm").getAttribute("aria-pressed")).toBe("true");
     expect(useUIStore.getState().previewBuilding).toEqual({ type: BuildingType.ResourceWheat, plot });
-    // A farm's wheat after is good news; the ring's marked plot doubles nothing.
-    expect(card("Farm").querySelector('[aria-label="Doubled on this plot"]')).toBeNull();
     expect(card("Farm").querySelector('[aria-label^="Wheat an hour after"]')?.getAttribute("data-tone")).toBe("gain");
     expect(card("Hut").querySelector('[aria-label^="Wheat an hour after"]')).toBeNull();
 

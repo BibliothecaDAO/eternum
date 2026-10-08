@@ -34,6 +34,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-10-09",
+    title: "Clearer Frontier building plots",
+    description: "Removed special plot markers so every available building plot uses the same appearance.",
+    type: "improvement",
+    gameSlug: "frontier",
+  },
+  {
     date: "2026-10-07",
     title: "Site rewards before attacking",
     description:
