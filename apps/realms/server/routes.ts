@@ -9,6 +9,7 @@ import { json } from "./http";
 import { consumeSignInBudget } from "./sign-in-budget";
 import { handleNotificationPreferences } from "./notification-preferences";
 import { handleProfile, handleProfiles } from "./profiles";
+import { handleRatings } from "./ratings";
 import { handlePushSubscriptions } from "./push-notifications";
 
 /** What the Worker reaches outside its bindings: the colo cache and the shards' Heralds. */
@@ -48,6 +49,10 @@ export const routeIdentityRequest = async (
   if (pathname === "/api/devices/bots" && request.method === "POST") {
     if (!(await isOperator(env, request))) return json({ error: "unauthorized" }, 401);
     return handleBotDeviceApproval(request, { guardian: env.GUARDIAN, accountClassHash: env.ACCOUNT_CLASS_HASH });
+  }
+  if (pathname === "/api/ratings" && request.method === "GET") {
+    if (!(await withinPublicBudget(env, "ratings", request))) return json({ error: "too_many_requests" }, 429);
+    return handleRatings(env, new URL(request.url));
   }
   if (pathname === "/api/profiles" && request.method === "GET") {
     if (!(await withinPublicBudget(env, "profiles", request))) return json({ error: "too_many_requests" }, 429);

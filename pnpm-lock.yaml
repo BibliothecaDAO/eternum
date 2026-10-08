@@ -801,6 +801,9 @@ importers:
       '@block65/webcrypto-web-push':
         specifier: 2.0.0
         version: 2.0.0
+      '@realms-world/chain':
+        specifier: workspace:*
+        version: link:../../packages/chain
       '@realms-world/identity':
         specifier: workspace:*
         version: link:../../packages/identity

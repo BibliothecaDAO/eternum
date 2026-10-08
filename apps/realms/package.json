@@ -16,7 +16,8 @@
     "zod": "catalog:web",
     "@bibliothecadao/notifications": "workspace:*",
     "@bibliothecadao/eternum": "workspace:*",
-    "@bibliothecadao/types": "workspace:*"
+    "@bibliothecadao/types": "workspace:*",
+    "@realms-world/chain": "workspace:*"
   },
   "devDependencies": {
     "@realms-world/eslint-config": "workspace:*",
