@@ -527,10 +527,12 @@ it("reads a new chain at the same URL from its own head, and sends nothing twice
 }, 60_000);
 
 /** Put the shared calendar's first reminder a few seconds ahead; no player needs to have acted. */
-const remindSoon = (herald: ReturnType<typeof createHerald>, seconds = 8) => {
+const remindSoon = (herald: ReturnType<typeof createHerald>, seconds = 8, dayIndex = 0) => {
   const dueAt = (Math.floor(Date.now() / 1000) + seconds) * 1000;
-  const first = dayOf({ seed: 1n, startMainAt: 0, dayUnitSeconds: DAY_UNIT_SECONDS }, 0)!;
-  herald.state.seasonStart = dueAt / 1000 + 3600 - first.end;
+  const calendar = { seed: 1n, startMainAt: 0, dayUnitSeconds: DAY_UNIT_SECONDS };
+  let day = dayOf(calendar, 0)!;
+  for (let index = 0; index < dayIndex; index++) day = dayOf(calendar, day.end)!;
+  herald.state.seasonStart = dueAt / 1000 + 3600 - day.end;
   return dueAt;
 };
 
@@ -724,3 +726,31 @@ it("rule 9.6 starts device 101 in its scheduled second while an endpoint in the 
     await worker.dispose();
   }
 }, 45_000);
+
+it.each([false, true])(
+  "rule 9.6 fixes eligibility at preparation (empty cohort: %s), then includes a late enrolment next day",
+  async (initiallyEmpty) => {
+    const { herald, push, worker } = await createHarness("important", 1000);
+    try {
+      const [late] = await addReminderPlayers(worker, 1);
+      if (initiallyEmpty) herald.state.members = [];
+      const dueAt = remindSoon(herald, 8);
+      await worker.runCron();
+      await waitUntil(() => herald.state.snapshotReads > 0, 4000);
+      expect(herald.state.snapshotReads).toBeGreaterThan(0);
+      herald.state.members.push(late!.account);
+      await pause(Math.max(0, dueAt + 1500 - Date.now()));
+      expect(push.endpoints).toEqual(initiallyEmpty ? [] : [PUSH_ENDPOINT]);
+      const nextDue = remindSoon(herald, 8, 1); // Advance the fake shard to the next seeded day.
+      await worker.runCron();
+      await waitUntil(() => push.endpoints.includes(late!.endpoint), 12_000);
+      expect(push.endpoints.filter((endpoint) => endpoint === late!.endpoint)).toHaveLength(1);
+      const attempt = push.endpoints.indexOf(late!.endpoint);
+      expect(push.times[attempt]).toBeGreaterThanOrEqual(nextDue);
+      expect(push.times[attempt]).toBeLessThan(nextDue + 1000);
+    } finally {
+      await worker.dispose();
+    }
+  },
+  45_000,
+);
