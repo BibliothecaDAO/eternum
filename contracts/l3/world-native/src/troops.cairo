@@ -50,6 +50,7 @@ impl StaminaIntoSource of Into<Stamina, StaminaSource> {
 pub struct ArmySlotKey {
     pub game_id: u32,
     pub structure_id: u32,
+    // The season day index (crate::days), under the field's historical name.
     pub epoch: u64,
     pub slot: u8,
 }
@@ -244,15 +245,23 @@ pub fn troop_resource(category: TroopType, tier: u8) -> u8 {
         TroopType::Crossbowman => 29,
     }) + tier
 }
+/// The realm resource that stocks troops of this category and tier.
+pub fn stock_resource(category: TroopType, tier: TroopTier) -> u8 {
+    troop_resource(category, match tier {
+        TroopTier::T1 => 0,
+        TroopTier::T2 => 1,
+        TroopTier::T3 => 2,
+    })
+}
 pub(crate) fn explorer_occupier(explorer: ExplorerTroops) -> u8 {
     troop_occupier(explorer.troops)
 }
 
 pub(crate) fn troop_occupier(troops: Troops) -> u8 {
     let category = match troops.category {
-        TroopType::Knight => 15,
-        TroopType::Paladin => 18,
-        TroopType::Crossbowman => 21,
+        TroopType::Knight => crate::taxonomy::EXPLORER_KNIGHT_T1_OCCUPIER,
+        TroopType::Paladin => crate::taxonomy::EXPLORER_PALADIN_T1_OCCUPIER,
+        TroopType::Crossbowman => crate::taxonomy::EXPLORER_CROSSBOWMAN_T1_OCCUPIER,
     };
     let tier = match troops.tier {
         TroopTier::T1 => 0,
@@ -261,14 +270,18 @@ pub(crate) fn troop_occupier(troops: Troops) -> u8 {
     };
     category + tier
 }
-pub fn max_army_size(config: crate::rules::TroopLimitConfig, level: u8, tier: TroopTier) -> u32 {
-    let cap = match level {
+pub fn deployment_cap(config: crate::rules::TroopLimitConfig, level: u8) -> u32 {
+    match level {
         0 => config.settlement_deployment_cap,
         1 => config.city_deployment_cap,
         2 => config.kingdom_deployment_cap,
         3 => config.empire_deployment_cap,
         _ => panic!("invalid structure level"),
-    };
+    }
+}
+
+pub fn max_army_size(config: crate::rules::TroopLimitConfig, level: u8, tier: TroopTier) -> u32 {
+    let cap = deployment_cap(config, level);
     let (strength, modifier) = match tier {
         TroopTier::T1 => (config.t1_tier_strength, config.t1_tier_modifier),
         TroopTier::T2 => (config.t2_tier_strength, config.t2_tier_modifier),
@@ -314,8 +327,9 @@ pub(crate) fn discovery_guards(
     category: u8, seed: u256, rules: crate::rules::SliceRules, timestamp: u64,
 ) -> Span<Troops> {
     use crate::troops::{TroopTier, TroopType};
-    let light_guard = category == 4 || category == crate::camps::CAMP_CATEGORY;
-    let three_guards = category == 2 || category == 3;
+    let light_guard = category == crate::taxonomy::MINE_CATEGORY || category == crate::taxonomy::CAMP_CATEGORY;
+    let three_guards = category == crate::taxonomy::HYPERSTRUCTURE_CATEGORY
+        || category == crate::taxonomy::BANK_CATEGORY;
     let count = if light_guard {
         1_u8
     } else if three_guards {
@@ -363,29 +377,36 @@ pub(crate) fn discovery_guard(
     discovered_guard(category, tier, count, rules, timestamp)
 }
 
+// Camps, rifts and ruins are guarded by Knight beasts. Only stragglers draw among the three troop categories and
+// keep a third of the site grid draw.
 pub(crate) fn frontier_guard(
-    kind: crate::expeditions::SiteKind,
-    depth: crate::expeditions::DepthRules,
-    seed: u256,
-    rules: crate::rules::SliceRules,
-    timestamp: u64,
+    category: u8, depth: crate::expeditions::DepthRules, seed: u256, rules: crate::rules::SliceRules, timestamp: u64,
 ) -> Troops {
-    let (category, tier, lower, upper) = if kind == crate::expeditions::SiteKind::FallenRealm {
-        (TroopType::Knight, depth.fallen_guard_tier, depth.fallen_guard_lower, depth.fallen_guard_upper)
+    let (troop, lower, upper) = if category == crate::taxonomy::RUIN_CATEGORY {
+        (TroopType::Knight, depth.ruin_guard_lower, depth.ruin_guard_upper)
     } else {
-        let category = match crate::random::range(seed, 2, 3) {
-            0 => TroopType::Knight,
-            1 => TroopType::Paladin,
-            _ => TroopType::Crossbowman,
+        let troop = if category == crate::taxonomy::STRAGGLERS_CATEGORY {
+            match crate::random::range(seed, 2, 3) {
+                0 => TroopType::Knight,
+                1 => TroopType::Paladin,
+                _ => TroopType::Crossbowman,
+            }
+        } else {
+            TroopType::Knight
         };
-        (category, TroopTier::T1, depth.guard_lower.into(), depth.guard_upper.into())
+        (troop, depth.site_guard_lower.into(), depth.site_guard_upper.into())
     };
     let step: u128 = depth.guard_step.into();
     let lower: u128 = lower.into();
     let upper: u128 = upper.into();
     // Preset validation makes both inclusive endpoints reachable on the grid.
     let count = lower + step * crate::random::range(seed, 1, (upper - lower) / step + 1);
-    discovered_guard(category, tier, count, rules, timestamp)
+    let count = if category == crate::taxonomy::STRAGGLERS_CATEGORY {
+        count / 3
+    } else {
+        count
+    };
+    discovered_guard(troop, TroopTier::T1, count, rules, timestamp)
 }
 
 fn discovered_guard(
@@ -406,6 +427,13 @@ fn discovered_guard(
 
 #[starknet::interface]
 pub trait IBattleResolution<T> {
+    // The explorer a command acts with: active this day, and owned by the actor when one is given.
+    fn command_explorer(
+        self: @T,
+        key: ExplorerKey,
+        actor: Option<starknet::ContractAddress>,
+        game_context: crate::commands::ActionContext,
+    ) -> ExplorerTroops;
     fn finish_battle(
         ref self: T,
         key: ExplorerKey,
@@ -421,12 +449,7 @@ pub struct ArmySlotAllocation {
     pub epoch: u64,
     pub allowance: u8,
     pub initial: Stamina,
-    pub maximum: u64,
-}
-#[derive(Copy, Drop, Serde)]
-pub struct LogisticsStamina {
-    pub stamina: StaminaSource,
-    pub levels: u8,
+    pub category: TroopType,
 }
 #[derive(Copy, Drop, Serde)]
 pub enum ArmySlotAction {
@@ -434,11 +457,11 @@ pub enum ArmySlotAction {
     Allocate: ArmySlotAllocation,
     Persist: StaminaSource,
     Release: StaminaSource,
-    GrantLogistics: LogisticsStamina,
 }
 #[derive(Copy, Drop, Serde)]
 pub struct ResolvedArmySlot {
     pub stamina: StaminaSource,
+    // In basis points, the unit of every damage boost; the name predates that and is part of the declared schema.
     pub battle_bonus_percent: u16,
 }
 #[starknet::interface]

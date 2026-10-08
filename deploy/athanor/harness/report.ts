@@ -336,13 +336,8 @@ function frontierChecks(frontier: FrontierEvidence, actions: TrackedTransaction[
 
 function frontierDesignChecks(frontier: FrontierEvidence) {
   return {
-    frontierTokenCap: frontier.players.every((player) =>
-      player.days.every(
-        (day) =>
-          player.chests.filter(
-            (chest) => chest.epoch === Math.floor(day.startedAt / frontier.epochSeconds) && chest.kind === "Token",
-          ).length <= frontier.tokenCap,
-      ),
+    frontierOneRuinADay: frontier.players.every((player) =>
+      player.days.every((day) => player.chests.filter((chest) => chest.epoch === day.epoch).length <= 1),
     ),
     frontierRollovers: frontier.players.every(
       (player) =>

@@ -43,7 +43,6 @@ export const ChestLab = ({ intensity }: { intensity: Intensity }) => {
       <div className="flex flex-wrap justify-center gap-2">
         <LabButton onClick={() => open("lords")}>Open · LORDS</LabButton>
         <LabButton onClick={() => open("relic")}>Open · relic</LabButton>
-        <LabButton onClick={() => open("spent")}>Open · LORDS spent</LabButton>
         <LabButton onClick={() => setSlow(!slow)}>{slow ? "Result in 3.2 s" : "Result in 0.3 s"}</LabButton>
       </div>
     </div>

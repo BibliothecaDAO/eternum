@@ -1,5 +1,5 @@
-import { nativeTileOccupierConstants } from "@bibliothecadao/eternum/game-client";
-import { absoluteEpoch } from "@bibliothecadao/eternum/expeditions";
+import { dayOf, seasonSeconds } from "@bibliothecadao/eternum/expeditions";
+import { StructureType, TileOccupier } from "@bibliothecadao/types";
 /**
  * A Frontier day in facts: the current Frontier launch's rules, projected from today's preset by `pnpm lab:frontier`
  * through Herald's own projection, plus a hand-built player in the same shapes — one realm with its castle producing
@@ -41,17 +41,19 @@ type LabClock = ReturnType<typeof readLabClock>;
 const readLabClock = (rules: WireRow[]) => {
   const slice = requireRow(rules, "SliceRules") as {
     game_id: string;
-    epoch_seconds: string;
+    day_unit_seconds: string;
     tick_config: { armies_tick_in_seconds: string };
   };
   const spacing = Number((requireRow(rules, "SettlementRules") as { spacing: string }).spacing);
-  const epochSeconds = Number(slice.epoch_seconds);
-  const startMainAt = 20 * epochSeconds;
-  const nowSeconds = startMainAt + DAY * epochSeconds + Math.floor(epochSeconds * 0.4) + 7;
+  const dayUnitSeconds = Number(slice.day_unit_seconds);
+  // The lab's game draws its days from seed 1 (gameRegistry below).
+  const calendar = { seed: 1n, startMainAt: 20 * dayUnitSeconds, dayUnitSeconds };
+  let today = dayOf(calendar, calendar.startMainAt)!;
+  while (today.index < DAY) today = dayOf(calendar, today.end)!;
+  const nowSeconds = today.start + Math.floor((today.end - today.start) * 0.4) + 7;
   return {
     gameId: Number(slice.game_id),
-    epochSeconds,
-    startMainAt,
+    ...calendar,
     nowSeconds,
     currentTick: Math.floor(nowSeconds / Number(slice.tick_config.armies_tick_in_seconds)),
     siteCol: (REALM_TRAIT_ID - 1) * spacing + Math.floor(spacing / 2),
@@ -88,7 +90,6 @@ const playerRows = (clock: LabClock): WireRow[] => [
       category: 25,
       paused: false,
       labor_paid: "0",
-      tier: "1",
     },
   },
   {
@@ -100,7 +101,7 @@ const playerRows = (clock: LabClock): WireRow[] => [
       building_count: 1,
       production_rate: String((100n * PRECISION) / 3600n),
       output_amount_left: "0",
-      last_updated_at: clock.nowSeconds,
+      last_settled_tick: clock.currentTick,
     },
   },
   // Today's ground around the site is explored grassland, so its tiles open their panels.
@@ -114,7 +115,7 @@ const playerRows = (clock: LabClock): WireRow[] => [
       col: clock.siteCol,
       row: clock.siteRow,
       entity_id: LAB_REALM_ID,
-      category: 1,
+      category: TileOccupier.RealmRegularLevel1,
       is_structure: true,
     },
   },
@@ -129,32 +130,13 @@ const playerRows = (clock: LabClock): WireRow[] => [
       population: { current: 0, max: 6 },
     },
   },
-  { model: "RealmKnowledge", value: { game_id: clock.gameId, structure_id: LAB_REALM_ID, learned: 0 } },
-  // The realm earned Support III today: its production runs 20% faster until midnight.
-  {
-    model: "RealmSupport",
-    value: {
-      game_id: clock.gameId,
-      structure_id: LAB_REALM_ID,
-      epoch: String(absoluteEpoch(clock, clock.nowSeconds)),
-      level: 3,
-    },
-  },
+  { model: "RealmKnowledge", value: { game_id: clock.gameId, structure_id: LAB_REALM_ID, learned: "0" } },
   { model: "ArmySlot", value: armySlot(clock, 201, 0, 30) },
   { model: "ArmySlot", value: armySlot(clock, 202, 1, 150) },
   // The day's third army fell this morning: its slot keeps the tired bar for the next muster.
   { model: "ArmySlot", value: armySlot(clock, 0, 2, 40) },
-  // Army 1 reached level 2 this morning and its pick is still waiting, with more XP banking behind it.
-  {
-    model: "ArmyProgress",
-    value: {
-      ...armyProgress(clock, 201),
-      level: 2,
-      xp: 45,
-      battle: 2,
-      pending: { id: 1, source: "Level", amount: 1, choices: ["Battle", "Scouting", "Support"] },
-    },
-  },
+  // Army 1 has earned enough XP this morning for an Upgrade it has not bought yet.
+  { model: "ArmyProgress", value: { ...armyProgress(clock, 201), xp: 145, battle: 2 } },
   { model: "ArmyProgress", value: armyProgress(clock, 202) },
   { model: "ExplorerTroops", value: army(clock, 201, 1_498, 0) },
   { model: "ExplorerTroops", value: army(clock, 202, 1, 1) },
@@ -162,9 +144,9 @@ const playerRows = (clock: LabClock): WireRow[] => [
   { model: "TileOccupancy", value: armyTile(clock, 202, -3, 2) },
   // A camp beside army 1, held by 1,100 T1 knights, so the tile card has a site to show.
   ...campSite(clock, LAB_CAMP_ID, 3, 1),
-  // A Well beside army 1 and a Shrine beside army 2, whose pick is not waiting: single-use sites to use.
-  { model: "TileOccupancy", value: mapSiteTile(clock, 811, 1, 1, nativeTileOccupierConstants.WELL_OCCUPIER) },
-  { model: "TileOccupancy", value: mapSiteTile(clock, 812, -2, 2, nativeTileOccupierConstants.SHRINE_OCCUPIER) },
+  // A Well beside army 1 and a Shrine beside army 2: single-use sites to use.
+  { model: "TileOccupancy", value: mapSiteTile(clock, 811, 1, 1, TileOccupier.Well) },
+  { model: "TileOccupancy", value: mapSiteTile(clock, 812, -2, 2, TileOccupier.Shrine) },
 ];
 
 const LAB_CAMP_ID = 710;
@@ -176,7 +158,12 @@ const campSite = (clock: LabClock, entityId: number, colOffset: number, rowOffse
       ...realm(clock),
       entity_id: entityId,
       owner: "0x0",
-      base: { ...realm(clock).base, category: 7, troop_max_guard_count: 1, troop_max_explorer_count: 0 },
+      base: {
+        ...realm(clock).base,
+        category: StructureType.Camp,
+        troop_max_guard_count: 1,
+        troop_max_explorer_count: 0,
+      },
     },
   },
   {
@@ -197,7 +184,6 @@ const campSite = (clock: LabClock, entityId: number, colOffset: number, rowOffse
     value: {
       game_id: clock.gameId,
       entity_id: entityId,
-      kind: "Camp",
       initial_guard_count: amount(1_100),
       cleared: false,
     },
@@ -211,7 +197,7 @@ const campSite = (clock: LabClock, entityId: number, colOffset: number, rowOffse
       col: clock.siteCol + colOffset,
       row: clock.siteRow + rowOffset,
       entity_id: entityId,
-      category: 37,
+      category: TileOccupier.Camp,
       is_structure: true,
     },
   },
@@ -225,9 +211,9 @@ const gameRegistry = (clock: LabClock) => ({
   settled: false,
   ready: true,
   dev_mode_on: false,
-  start_settling_at: String(clock.startMainAt - clock.epochSeconds),
+  start_settling_at: String(clock.startMainAt - clock.dayUnitSeconds),
   start_main_at: String(clock.startMainAt),
-  end_at: String(clock.startMainAt + 30 * clock.epochSeconds),
+  end_at: String(clock.startMainAt + seasonSeconds(2, clock.dayUnitSeconds)),
   end_grace_seconds: 0,
   seed: "0x1",
 });
@@ -240,7 +226,7 @@ const realm = (clock: LabClock) => ({
     troop_max_guard_count: 0,
     troop_max_explorer_count: 3,
     created_at: clock.startMainAt,
-    category: 1,
+    category: StructureType.Realm,
     level: 0,
     starting_troops_granted: true,
   },
@@ -288,19 +274,18 @@ const army = (clock: LabClock, explorerId: number, count: number, slot: number) 
 const armyProgress = (clock: LabClock, explorerId: number) => ({
   game_id: clock.gameId,
   explorer_id: explorerId,
-  level: 1,
   xp: 0,
   battle: 1,
   logistics: 1,
   scouting: 1,
-  support: 1,
-  pending: null,
+  scouting_kinds: 0,
+  homecoming: 1,
 });
 
 const armySlot = (clock: LabClock, explorerId: number, slot: number, stamina: number) => ({
   game_id: clock.gameId,
   structure_id: LAB_REALM_ID,
-  epoch: String(absoluteEpoch(clock, clock.nowSeconds)),
+  epoch: String(DAY),
   slot,
   explorer_id: explorerId,
   stamina: { amount: String(stamina), updated_tick: String(clock.currentTick) },
@@ -323,7 +308,7 @@ const armyTile = (clock: LabClock, explorerId: number, colOffset: number, rowOff
   col: clock.siteCol + colOffset,
   row: clock.siteRow + rowOffset,
   entity_id: explorerId,
-  category: 15,
+  category: TileOccupier.ExplorerKnightT1,
   is_structure: false,
 });
 
@@ -360,7 +345,7 @@ export const labSeasonBoard = (gameId: number) => ({
       address: index === 56 ? LAB_PLAYER : `0x${(0xa000 + index).toString(16)}`,
       structure_id: String(index === 56 ? LAB_REALM_ID : 500 + index),
       rank: index + 1,
-      sites_cleared: { total, camps: total - rifts - fallen, rifts, fallen_realms: fallen },
+      sites_cleared: { total, camps: total - rifts - fallen, rifts, ruins: fallen, stragglers: 0 },
       chests_earned: Math.floor(total / 3),
       rewards: {
         lords: String(Math.floor(total / 3) * 400),

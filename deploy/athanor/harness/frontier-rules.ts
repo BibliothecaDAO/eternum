@@ -19,7 +19,7 @@ type ChargedKind = "CreateExplorer" | "Explore" | "Move";
 export type WheatCharge =
   | { kind: "CreateExplorer"; troopResource: number; troops: bigint }
   | { kind: "Explore" | "Move"; troops: bigint };
-/** A realm's wheat as the client projects it: its balance, its production row and the day's Support. */
+/** A realm's wheat as the client projects it: its balance, production row and armies tick. */
 export type WheatState = NonNullable<ReturnType<ResourceManager["current"]>>;
 
 const precision = BigInt(RESOURCE_PRECISION);
@@ -45,13 +45,14 @@ export function expectedWheat(definition: PresetDefinition, charge: WheatCharge)
 
 /**
  * What an action took from the realm's wheat: the balance before, plus what its farms grew up to the block that
- * settled the action, less the balance after. Null when the action did not settle the realm's wheat.
+ * settled the action, less the balance after. Null when neither its tick nor its balance changed.
  */
 export function wheatCharged(before: WheatState, after: WheatState): bigint | null {
-  if (after.production.last_updated_at <= before.production.last_updated_at) return null;
+  if (after.production.last_settled_tick === before.production.last_settled_tick && after.balance === before.balance)
+    return null;
   return (
     before.balance +
-    productionOutput(before.production, after.production.last_updated_at, before.support) -
+    productionOutput(before.production, after.production.last_settled_tick * after.tickSeconds, before.tickSeconds) -
     after.balance
   );
 }

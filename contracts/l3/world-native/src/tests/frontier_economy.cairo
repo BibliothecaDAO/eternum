@@ -1,23 +1,23 @@
 use eternum_randomness_protocol::entrypoint::IRecordedExecutionViewsDispatcher;
 use snforge_std::{EventSpyTrait, EventsFilterTrait, start_cheat_caller_address, stop_cheat_caller_address};
-use crate::buildings::{BoardRules, ChangeBuilding, CreateBuilding};
+use crate::buildings::{ChangeBuilding, CreateBuilding};
 use crate::commands::{Command, CreateExplorer};
 use crate::production::RefillProduction;
 use crate::resources::{
     IResourceOperationsDispatcher, IResourceOperationsDispatcherTrait, IResourceOperationsSafeDispatcher,
-    IResourceOperationsSafeDispatcherTrait, ResourceKey, ResourceRule, ResourceSlot, Weight,
+    IResourceOperationsSafeDispatcherTrait, ResourceAmount, ResourceKey, ResourceRule, ResourceSlot,
 };
 use crate::rules::RESOURCE_PRECISION;
 use crate::structures::IStructureOperationsDispatcher;
 use crate::tests::state::{ResourceObservationTrait, StructureObservationTrait};
 use crate::troop_management::{ManageTroops, RecruitExplorer};
 use crate::troops::Coord;
+use crate::upgrades::{UpgradeLimits, UpgradeRecipe};
 use super::recorded_receipts::RecordedReceiptsTrait;
 use super::resource_commands::{assert_terminal_rejection, execute, grant, set_fixture};
 
 const KNIGHT: u8 = 26;
 const WHEAT: u8 = 35;
-const STOREHOUSE: u8 = 2;
 const BARRACKS: u8 = 28;
 const FARM: u8 = 37;
 const EAST: u8 = 0;
@@ -25,9 +25,7 @@ const WEST: u8 = 3;
 
 /// A board realm carrying Frontier's own recipes: two wheat for each troop.
 fn frontier_preset() -> crate::presets::PresetDefinition {
-    let mut preset = super::building_commands::building_preset(
-        Some(BoardRules { demolition_refund_bps: 5000, workshop_rate: 20 }),
-    );
+    let mut preset = super::building_commands::building_preset(Some(super::building_commands::board_rules()));
     let (_, frontier) = super::preset_projection::current_definition("frontier");
     preset.resources.production = frontier.resources.production;
     preset
@@ -128,16 +126,35 @@ fn spend(deployment: super::Deployment, home: ResourceKey, resource_type: u8, am
     stop_cheat_caller_address(deployment.games);
 }
 
-/// Leaves exactly `room` free under the realm's storage limit.
-fn leave_room(deployment: super::Deployment, home: ResourceKey, room: u128) {
-    let weight = resources(deployment).resource_weight(home).weight;
+/// The castle's limit on each of wheat, labor and troops: two full deploys of its level's cap.
+fn castle_limit(level: u8) -> u128 {
+    let cap = crate::troops::deployment_cap(super::recorded::rules().troop_limit_config, level);
+    2 * Into::<u32, u128>::into(cap) * RESOURCE_PRECISION
+}
+
+/// Stores exactly `amount`, under the limit, to leave a store a known room.
+fn store_exactly(deployment: super::Deployment, home: ResourceKey, resource_type: u8, amount: u128) {
     set_fixture(
         deployment.games,
         selector!("resources"),
-        selector!("weights"),
-        array![home.game_id.into(), home.entity_id.into()].span(),
-        Weight { capacity: weight + room, weight },
+        selector!("balances"),
+        array![home.game_id.into(), home.entity_id.into(), resource_type.into()].span(),
+        amount,
     );
+}
+
+fn level_up_once(mut preset: crate::presets::PresetDefinition) -> crate::presets::PresetDefinition {
+    preset.structures.upgrade_limits = UpgradeLimits { realm_max: 1, village_max: 1 };
+    preset
+        .structures
+        .upgrades =
+            array![
+                UpgradeRecipe {
+                    costs: array![ResourceAmount { resource_type: crate::resources::LABOR, amount: 17 }].span(),
+                },
+            ]
+        .span();
+    preset
 }
 
 fn allow_armies(deployment: super::Deployment, home: ResourceKey) {
@@ -168,8 +185,9 @@ fn a_farm_produces_wheat_from_nothing_and_barracks_take_none_of_it() {
     let (deployment, home) = frontier_realm(frontier_preset());
     assert!(execute(deployment, build(home, FARM, WEST), 40));
     assert!(execute(deployment, build(home, BARRACKS, EAST), 40));
+    // The fixture's armies tick is a minute: by 90 the tick from 0 to 60 has ended, and the farm is paid all of it.
     settle(deployment, home, WHEAT, 90);
-    assert_eq!(stored(deployment, home, WHEAT), 50 * rate(deployment, home, WHEAT));
+    assert_eq!(stored(deployment, home, WHEAT), 60 * rate(deployment, home, WHEAT));
     assert_eq!(rate(deployment, home, WHEAT), 2);
 }
 
@@ -180,17 +198,17 @@ fn troops_train_with_no_wheat_and_settle_without_touching_it() {
     assert_eq!(stored(deployment, home, WHEAT), 0);
     let mut spy = snforge_std::spy_events();
     settle(deployment, home, KNIGHT, 90);
-    assert_eq!(stored(deployment, home, KNIGHT), 100);
-    // One touch writes the troop's balance, its production and the realm's weight, and nothing of the family.
-    assert_eq!(spy.get_events().emitted_by(deployment.games).events.len(), 3);
+    assert_eq!(stored(deployment, home, KNIGHT), 120);
+    // One touch writes the troop's balance and its production, and nothing of the family: a board realm has no weight.
+    assert_eq!(spy.get_events().emitted_by(deployment.games).events.len(), 2);
 
     assert!(execute(deployment, build(home, FARM, WEST), 100));
     settle(deployment, home, KNIGHT, 150);
-    assert_eq!(stored(deployment, home, KNIGHT), 220);
+    assert_eq!(stored(deployment, home, KNIGHT), 240);
     assert_eq!(stored(deployment, home, WHEAT), 0);
     settle(deployment, home, WHEAT, 150);
-    assert_eq!(stored(deployment, home, WHEAT), 100);
-    assert_eq!(stored(deployment, home, KNIGHT), 220);
+    assert_eq!(stored(deployment, home, WHEAT), 120);
+    assert_eq!(stored(deployment, home, KNIGHT), 240);
 }
 
 #[test]
@@ -203,99 +221,151 @@ fn raising_troops_pays_two_wheat_each_from_settled_wheat_and_fails_when_the_real
     grant(deployment, home, KNIGHT, 20 * RESOURCE_PRECISION);
     assert!(execute(deployment, build(home, FARM, WEST), 40));
 
-    // Forty seconds of farming is ten wheat: three troops cost six of it.
+    // One minute tick of farming is fifteen wheat: three troops cost six of it.
     assert!(execute(deployment, raise(home, 3, 0), 80));
     assert_eq!(stored(deployment, home, KNIGHT), 17 * RESOURCE_PRECISION);
-    assert_eq!(stored(deployment, home, WHEAT), 4 * RESOURCE_PRECISION);
+    assert_eq!(stored(deployment, home, WHEAT), 9 * RESOURCE_PRECISION);
     let army = *IStructureOperationsDispatcher { contract_address: deployment.games }.home_armies(home).at(0);
     assert!(execute(deployment, reinforce(army, 1), 80));
     assert_eq!(stored(deployment, home, KNIGHT), 16 * RESOURCE_PRECISION);
-    assert_eq!(stored(deployment, home, WHEAT), 2 * RESOURCE_PRECISION);
+    assert_eq!(stored(deployment, home, WHEAT), 7 * RESOURCE_PRECISION);
 
     let before = super::resource_commands::resource_facts(deployment, home);
-    assert_terminal_rejection(deployment, raise(home, 2, 1), 80);
+    assert_terminal_rejection(deployment, raise(home, 4, 1), 80);
     assert_eq!(last_rejection(deployment), "realm cannot pay to raise troops");
-    assert_terminal_rejection(deployment, reinforce(army, 2), 80);
+    assert_terminal_rejection(deployment, reinforce(army, 4), 80);
     assert_eq!(last_rejection(deployment), "realm cannot pay to raise troops");
     assert_eq!(super::resource_commands::resource_facts(deployment, home), before);
     assert_eq!(IStructureOperationsDispatcher { contract_address: deployment.games }.home_armies(home).len(), 1);
 
-    // Eight more seconds of farming make up the two wheat the realm lacked.
-    assert!(execute(deployment, raise(home, 2, 1), 88));
-    assert_eq!(stored(deployment, home, KNIGHT), 14 * RESOURCE_PRECISION);
-    assert_eq!(stored(deployment, home, WHEAT), 0);
+    // The next tick's fifteen wheat make up what the realm lacked.
+    assert!(execute(deployment, raise(home, 4, 1), 120));
+    assert_eq!(stored(deployment, home, KNIGHT), 12 * RESOURCE_PRECISION);
+    assert_eq!(stored(deployment, home, WHEAT), 14 * RESOURCE_PRECISION);
+}
+
+#[test]
+fn stores_step_on_the_armies_tick_and_never_between() {
+    let (deployment, home) = frontier_realm(frontier_preset());
+    assert!(execute(deployment, build(home, BARRACKS, EAST), 40));
+    // Production pulses on the stamina clock: the armies tick, counted from absolute time.
+    assert_eq!(super::recorded::rules().tick_config.armies_tick_in_seconds, 60);
+    settle(deployment, home, KNIGHT, 59);
+    assert_eq!(stored(deployment, home, KNIGHT), 0);
+    settle(deployment, home, KNIGHT, 60);
+    assert_eq!(stored(deployment, home, KNIGHT), 120);
+    settle(deployment, home, KNIGHT, 119);
+    assert_eq!(stored(deployment, home, KNIGHT), 120);
+    settle(deployment, home, KNIGHT, 120);
+    assert_eq!(stored(deployment, home, KNIGHT), 240);
+}
+
+fn learn_barracks(deployment: super::Deployment, home: ResourceKey, sides: Span<u8>) {
+    let mut learned = 0;
+    for side in sides {
+        learned = crate::research::learn(learned, crate::research::ROW_BARRACKS, *side);
+    }
+    let learned = learned;
+    snforge_std::interact_with_state(
+        deployment.games, || crate::logic::research::write(home, crate::research::RealmKnowledge { learned }),
+    );
+}
+
+#[test]
+fn each_rations_pick_takes_a_quarter_wheat_off_every_troop_deployed() {
+    let (deployment, home) = frontier_realm(frontier_preset());
+    allow_armies(deployment, home);
+    grant(deployment, home, KNIGHT, 20 * RESOURCE_PRECISION);
+    grant(deployment, home, WHEAT, 20 * RESOURCE_PRECISION);
+    // Drill then Rations: 1.75 wheat a troop.
+    learn_barracks(deployment, home, array![crate::research::CHOICE_DRILL, crate::research::CHOICE_RATIONS].span());
+    assert!(execute(deployment, raise(home, 4, 0), 40));
+    assert_eq!(stored(deployment, home, WHEAT), 13 * RESOURCE_PRECISION);
+    // Rations twice: 1.5 wheat a troop.
+    learn_barracks(deployment, home, array![crate::research::CHOICE_RATIONS, crate::research::CHOICE_RATIONS].span());
+    assert!(execute(deployment, raise(home, 4, 1), 40));
+    assert_eq!(stored(deployment, home, WHEAT), 7 * RESOURCE_PRECISION);
+}
+
+#[test]
+fn wheat_labor_and_troops_each_fill_to_their_own_limit_and_essence_has_none() {
+    let (deployment, home) = frontier_realm(frontier_preset());
+    let limit = castle_limit(0);
+    assert_eq!(resources(deployment).resource_weight(home).capacity, core::num::traits::Bounded::<u128>::MAX);
+    grant(deployment, home, WHEAT, 2 * limit);
+    assert_eq!(stored(deployment, home, WHEAT), limit);
+    // A full granary leaves every other store its whole room.
+    grant(deployment, home, crate::resources::LABOR, 2 * limit);
+    assert_eq!(stored(deployment, home, crate::resources::LABOR), limit);
+    grant(deployment, home, KNIGHT, 2 * limit);
+    assert_eq!(stored(deployment, home, KNIGHT), limit);
+    grant(deployment, home, crate::resources::ESSENCE, 2 * limit);
+    assert_eq!(stored(deployment, home, crate::resources::ESSENCE), 2 * limit);
+}
+
+#[test]
+fn a_payout_pays_what_fits_and_never_blocks() {
+    let (deployment, home) = frontier_realm(frontier_preset());
+    assert!(execute(deployment, build(home, FARM, WEST), 40));
+    let limit = castle_limit(0);
+    store_exactly(deployment, home, crate::resources::LABOR, limit - 10);
+    // Half the farm's hundred labor comes back, and only ten of it fits.
+    assert!(execute(deployment, demolish(home, WEST), 50));
+    assert_eq!(stored(deployment, home, crate::resources::LABOR), limit);
+
+    start_cheat_caller_address(deployment.games, deployment.games);
+    let granted = resources(deployment)
+        .grant_resource(
+            home,
+            crate::resources::LABOR,
+            50,
+            50,
+            crate::commands::resource_context(super::context(deployment.games, home.game_id)),
+        );
+    stop_cheat_caller_address(deployment.games);
+    assert_eq!(granted, 0);
 }
 
 #[test]
 #[feature("safe_dispatcher")]
-fn settling_keeps_only_what_fits_the_storage_limit_and_later_spending_sees_that_amount() {
+fn production_past_a_limit_is_gone_and_later_spending_sees_what_was_kept() {
     let (deployment, home) = frontier_realm(frontier_preset());
     assert!(execute(deployment, build(home, BARRACKS, EAST), 40));
-    leave_room(deployment, home, 30);
-    // Sixty seconds train 120 troops; the realm has room for 30 and the rest is gone.
+    let limit = castle_limit(0);
+    store_exactly(deployment, home, KNIGHT, limit - 30);
+    // A minute tick trains 120 troops; the store has room for 30 and the rest is gone.
     settle(deployment, home, KNIGHT, 100);
-    assert_eq!(stored(deployment, home, KNIGHT), 30);
-    let weight = resources(deployment).resource_weight(home);
-    assert_eq!(weight.weight, weight.capacity);
+    assert_eq!(stored(deployment, home, KNIGHT), limit);
 
     start_cheat_caller_address(deployment.games, deployment.games);
     let refused = IResourceOperationsSafeDispatcher { contract_address: deployment.games }
         .spend_resource(
-            home, KNIGHT, 31, 100, crate::commands::resource_context(super::context(deployment.games, home.game_id)),
+            home,
+            KNIGHT,
+            limit + 1,
+            100,
+            crate::commands::resource_context(super::context(deployment.games, home.game_id)),
         );
     stop_cheat_caller_address(deployment.games);
     assert!(refused.is_err());
-    spend(deployment, home, KNIGHT, 30, 100);
-    assert_eq!(stored(deployment, home, KNIGHT), 0);
-    settle(deployment, home, KNIGHT, 105);
-    assert_eq!(stored(deployment, home, KNIGHT), 10);
+    spend(deployment, home, KNIGHT, 200, 100);
+    // The next tick's 120 all fit.
+    settle(deployment, home, KNIGHT, 125);
+    assert_eq!(stored(deployment, home, KNIGHT), limit - 80);
 }
 
 #[test]
-fn a_storehouse_raises_the_limit_only_after_production_settles_against_the_old_one() {
-    let mut preset = frontier_preset();
-    preset.rules.capacity_config.storehouse_boost_capacity = 1;
-    let (deployment, home) = frontier_realm(preset);
-    assert!(execute(deployment, build(home, FARM, WEST), 40));
-    // The fixture's own producer runs dry before the limit is pinned, so only wheat is pending afterwards.
-    settle(deployment, home, 1, 90);
-    settle(deployment, home, WHEAT, 90);
-    assert_eq!(stored(deployment, home, WHEAT), 100);
-    leave_room(deployment, home, 20);
-
-    // Thirty seconds made 60 wheat under a limit with room for 20: the storehouse cannot rescue the other 40.
-    assert!(execute(deployment, build(home, STOREHOUSE, EAST), 120));
-    settle(deployment, home, WHEAT, 120);
-    assert_eq!(stored(deployment, home, WHEAT), 120);
-    settle(deployment, home, WHEAT, 130);
-    assert_eq!(stored(deployment, home, WHEAT), 140);
-}
-
-#[test]
-fn a_lost_storehouse_lowers_the_limit_only_after_production_settles_against_the_old_one() {
-    let mut preset = frontier_preset();
-    preset.rules.capacity_config.storehouse_boost_capacity = 1;
-    let (deployment, home) = frontier_realm(preset);
-    assert!(execute(deployment, build(home, FARM, WEST), 40));
-    assert!(execute(deployment, build(home, STOREHOUSE, EAST), 40));
-    settle(deployment, home, 1, 90);
-    settle(deployment, home, WHEAT, 90);
-    // Without the storehouse the realm would have room for ten more.
-    let weight = resources(deployment).resource_weight(home).weight;
-    set_fixture(
-        deployment.games,
-        selector!("resources"),
-        selector!("weights"),
-        array![home.game_id.into(), home.entity_id.into()].span(),
-        Weight { capacity: weight + 10 + RESOURCE_PRECISION, weight },
-    );
-
-    // Thirty seconds made 60 wheat the storehouse still holds, so the realm cannot give the storehouse up.
-    assert_terminal_rejection(deployment, demolish(home, EAST), 120);
-    assert_eq!(last_rejection(deployment), "structure exceeds reduced capacity");
-    spend(deployment, home, WHEAT, 160, 120);
-    assert!(execute(deployment, demolish(home, EAST), 120));
-    assert_eq!(stored(deployment, home, WHEAT), 0);
+fn a_level_up_settles_production_under_the_old_limits_before_raising_them() {
+    let (deployment, home) = frontier_realm(level_up_once(frontier_preset()));
+    assert!(execute(deployment, build(home, BARRACKS, EAST), 40));
+    store_exactly(deployment, home, KNIGHT, castle_limit(0) - 30);
+    // The ended tick trained 120 troops against room for 30: the castle's rise cannot rescue the other 90.
+    assert!(execute(deployment, Command::LevelUp(home.entity_id), 100));
+    settle(deployment, home, KNIGHT, 100);
+    assert_eq!(stored(deployment, home, KNIGHT), castle_limit(0));
+    settle(deployment, home, KNIGHT, 130);
+    assert_eq!(stored(deployment, home, KNIGHT), castle_limit(0) + 120);
+    assert!(castle_limit(1) > castle_limit(0) + 120);
 }
 
 #[test]
@@ -306,13 +376,14 @@ fn a_changed_rate_applies_only_after_production_settles_at_the_old_one() {
     assert!(execute(deployment, build(home, BARRACKS, WEST), 100));
     let two = rate(deployment, home, KNIGHT);
     assert!(two > one);
-    settle(deployment, home, KNIGHT, 110);
-    assert_eq!(stored(deployment, home, KNIGHT), 60 * one + 10 * two);
+    // Each ended tick pays the rate standing when it settles.
+    settle(deployment, home, KNIGHT, 130);
+    assert_eq!(stored(deployment, home, KNIGHT), 60 * one + 60 * two);
 
     assert!(execute(deployment, demolish(home, WEST), 150));
     assert_eq!(rate(deployment, home, KNIGHT), one);
-    settle(deployment, home, KNIGHT, 160);
-    assert_eq!(stored(deployment, home, KNIGHT), 60 * one + 50 * two + 10 * one);
+    settle(deployment, home, KNIGHT, 190);
+    assert_eq!(stored(deployment, home, KNIGHT), 60 * one + 60 * two + 60 * one);
 }
 
 #[test]
@@ -356,8 +427,8 @@ fn outside_a_board_troops_are_still_produced_only_from_the_wheat_their_recipe_bu
     };
     assert!(execute(deployment, Command::BurnResourceForResourceProduction(refill), 100));
     assert_eq!(stored(deployment, home, WHEAT), 0);
-    settle(deployment, home, KNIGHT, 110);
-    assert_eq!(stored(deployment, home, KNIGHT), 10 * rate(deployment, home, KNIGHT));
+    settle(deployment, home, KNIGHT, 160);
+    assert_eq!(stored(deployment, home, KNIGHT), 60 * rate(deployment, home, KNIGHT));
     assert_terminal_rejection(deployment, Command::BurnResourceForResourceProduction(refill), 110);
 }
 

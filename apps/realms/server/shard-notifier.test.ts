@@ -1,4 +1,3 @@
-import { absoluteEpoch } from "@bibliothecadao/eternum/expeditions";
 import type { HeraldHistoryEvent } from "@bibliothecadao/eternum/game-sync";
 import { beforeAll, expect, it } from "vitest";
 
@@ -44,10 +43,13 @@ const ARMIES_TICK_SECONDS = 1;
 const STAMINA_GAIN_PER_TICK = 40;
 const REST_TICKS = 3;
 const ticks = (count: number) => count * ARMIES_TICK_SECONDS * 1000;
-/** A Frontier season that began yesterday: today is its second daily expedition, each day a row of 40-hex regions. */
-const DAY_SECONDS = 86_400;
+/**
+ * A Frontier season in its second day, each day a row of 40-hex regions. Its four-hour units draw from seed 1, whose
+ * first bag opens with a 12-hour day and a 16-hour one: the season started 13 hours ago, an hour into day 1.
+ */
+const DAY_UNIT_SECONDS = 14_400;
 const REGION_SPACING = 40;
-const SEASON_START = (Math.floor(Date.now() / 1000 / DAY_SECONDS) - 1) * DAY_SECONDS;
+const SEASON_START = Math.floor(Date.now() / 1000) - 13 * 3_600;
 const TODAY = 1;
 
 let bundle: string;
@@ -188,7 +190,7 @@ const snapshot = (army: ArmyState | null, neighbour: ArmyState | null, owner: st
               ...preset.rules.troop_stamina_config,
               stamina_gain_per_tick: STAMINA_GAIN_PER_TICK,
             },
-            epoch_seconds: DAY_SECONDS,
+            day_unit_seconds: DAY_UNIT_SECONDS,
           },
         },
       ],
@@ -223,7 +225,7 @@ const snapshot = (army: ArmyState | null, neighbour: ArmyState | null, owner: st
             dev_mode_on: false,
             start_settling_at: SEASON_START,
             start_main_at: SEASON_START,
-            end_at: SEASON_START + 30 * DAY_SECONDS,
+            end_at: SEASON_START + 2 * 20 * DAY_UNIT_SECONDS,
             end_grace_seconds: 0,
             seed: "0x1",
           },
@@ -286,13 +288,12 @@ const armyProgressRow = (explorerId: number, home: number) => ({
   value: {
     game_id: GAME_ID,
     explorer_id: explorerId,
-    level: 1,
     xp: 0,
     battle: 1,
     logistics: 1,
     scouting: 1,
-    support: 1,
-    pending: null,
+    scouting_kinds: 0,
+    homecoming: 1,
   },
 });
 
@@ -301,7 +302,7 @@ const armySlotRow = (explorerId: number, home: number, army: ArmyState) => ({
   value: {
     game_id: GAME_ID,
     structure_id: home,
-    epoch: absoluteEpoch({ epochSeconds: DAY_SECONDS }, SEASON_START) + army.day,
+    epoch: army.day,
     slot: 0,
     explorer_id: explorerId,
     stamina: { amount: army.amount, updated_tick: army.updatedTick },

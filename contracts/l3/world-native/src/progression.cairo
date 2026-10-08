@@ -1,10 +1,14 @@
 use crate::troops::ExplorerKey;
 
+/// A game's XP rules: what a reveal and a fixed award pay, and the price of each tier above common.
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
 pub struct ArmyProgressionRules {
     pub reveal_xp: u32,
-    pub clear_xp: u32,
-    pub level_step_xp: u32,
+    pub fixed_xp: u32,
+    pub uncommon_xp: u32,
+    pub rare_xp: u32,
+    pub epic_xp: u32,
+    pub legendary_xp: u32,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
@@ -12,273 +16,199 @@ pub enum Attribute {
     Battle,
     Logistics,
     Scouting,
-    Support,
+    Homecoming,
 }
 
+/// What a Scouting tier raises: the find rate of one kind of site. Ruins, shrines and wells never change.
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
-pub enum OfferSource {
-    Level,
-    Relic,
-    Shrine,
+pub enum ScoutingKind {
+    Camp,
+    Rift,
+    Stragglers,
 }
 
-#[derive(Copy, Drop, Serde, Debug, PartialEq)]
-pub struct AttributeOffer {
-    pub id: u32,
-    pub source: OfferSource,
-    pub amount: u8,
-    pub choices: Span<Attribute>,
-}
-
+/// An army's unspent XP and its tier in each attribute, from 1 (common) to 5 (legendary). `scouting_kinds` holds the
+/// kind each Scouting tier above common applies to, two bits per tier from uncommon up: 1 camp, 2 rift, 3 stragglers.
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct ArmyProgress {
-    pub level: u16,
     pub xp: u32,
     pub battle: u8,
     pub logistics: u8,
     pub scouting: u8,
-    pub support: u8,
-    pub pending: Option<AttributeOffer>,
+    pub scouting_kinds: u8,
+    pub homecoming: u8,
 }
 
-// The public fact stays expanded; storage reads two words instead of walking nested fields.
-#[derive(Copy, Drop, Serde, Debug, PartialEq, Default, starknet::Store)]
-pub struct PackedArmyProgress {
-    pub levels: u128,
-    pub pending: u128,
-}
-
-pub impl ProgressPacking of starknet::storage_access::StorePacking<ArmyProgress, PackedArmyProgress> {
-    #[inline(never)]
-    fn pack(value: ArmyProgress) -> PackedArmyProgress {
-        assert!(value.level != 0, "invalid army level");
-        PackedArmyProgress {
-            levels: value.level.into()
-                + Into::<u32, u128>::into(value.xp) * 0x10000
-                + Into::<u8, u128>::into(value.battle) * 0x1000000000000
-                + Into::<u8, u128>::into(value.logistics) * 0x100000000000000
-                + Into::<u8, u128>::into(value.scouting) * 0x10000000000000000
-                + Into::<u8, u128>::into(value.support) * 0x1000000000000000000,
-            pending: match value.pending {
-                Some(offer) => OfferPacking::pack(offer) + 1,
-                None => 0,
-            },
-        }
+// Tiers start at common, so a stored zero word means no progress.
+pub impl ProgressPacking of starknet::storage_access::StorePacking<ArmyProgress, u128> {
+    fn pack(value: ArmyProgress) -> u128 {
+        value.xp.into()
+            + Into::<u8, u128>::into(value.battle) * 0x100000000
+            + Into::<u8, u128>::into(value.logistics) * 0x10000000000
+            + Into::<u8, u128>::into(value.scouting) * 0x1000000000000
+            + Into::<u8, u128>::into(value.homecoming) * 0x100000000000000
+            + Into::<u8, u128>::into(value.scouting_kinds) * 0x10000000000000000
     }
-    #[inline(never)]
-    fn unpack(value: PackedArmyProgress) -> ArmyProgress {
-        let level = (value.levels % 0x10000).try_into().unwrap();
-        assert!(level != 0, "missing army progress");
+    fn unpack(value: u128) -> ArmyProgress {
         ArmyProgress {
-            level,
-            xp: (value.levels / 0x10000 % 0x100000000).try_into().unwrap(),
-            battle: (value.levels / 0x1000000000000 % 256).try_into().unwrap(),
-            logistics: (value.levels / 0x100000000000000 % 256).try_into().unwrap(),
-            scouting: (value.levels / 0x10000000000000000 % 256).try_into().unwrap(),
-            support: (value.levels / 0x1000000000000000000).try_into().unwrap(),
-            pending: if value.pending == 0 {
-                None
-            } else {
-                Some(OfferPacking::unpack(value.pending - 1))
-            },
+            xp: (value % 0x100000000).try_into().unwrap(),
+            battle: (value / 0x100000000 % 256).try_into().unwrap(),
+            logistics: (value / 0x10000000000 % 256).try_into().unwrap(),
+            scouting: (value / 0x1000000000000 % 256).try_into().unwrap(),
+            homecoming: (value / 0x100000000000000 % 256).try_into().unwrap(),
+            scouting_kinds: (value / 0x10000000000000000 % 256).try_into().unwrap(),
         }
     }
 }
 
+/// An Upgrade; a Scouting tier names the kind it applies to, every other attribute none.
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
-pub struct ChooseAttribute {
+pub struct BuyTier {
     pub explorer_id: u32,
-    pub offer_id: u32,
     pub attribute: Attribute,
+    pub kind: Option<ScoutingKind>,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
-pub struct AttributeChosen {
+pub struct TierBought {
     pub explorer_id: u32,
-    pub offer_id: u32,
-    pub source: OfferSource,
     pub attribute: Attribute,
-    pub applied: u8,
-    pub lost: u8,
+    pub kind: Option<ScoutingKind>,
+    pub tier: u8,
+    pub price: u32,
 }
 
 #[derive(Copy, Drop, Serde)]
 pub enum XpAward {
     Reveal,
-    Clear,
+    /// A clear, by the guard's starting strength in resource precision.
+    Clear: u128,
 }
 
 #[starknet::interface]
 pub trait IArmyProgression<T> {
     fn army_progress(self: @T, key: ExplorerKey) -> Option<ArmyProgress>;
     fn army_progression_rules(self: @T, game_id: u32) -> Option<ArmyProgressionRules>;
-    fn grant_army_xp(ref self: T, key: ExplorerKey, award: XpAward, context: crate::commands::ActionContext);
-    fn choose_attribute(
+    fn grant_army_xp(ref self: T, key: ExplorerKey, award: XpAward);
+    fn buy_tier(
         ref self: T,
         game_id: u32,
         actor: starknet::ContractAddress,
-        command: ChooseAttribute,
+        command: BuyTier,
         context: crate::commands::ActionContext,
         story_cursor: crate::ownership::StoryCursor,
     ) -> ((), crate::ownership::StoryCursor);
 }
 
 pub fn initial() -> ArmyProgress {
-    ArmyProgress { level: 1, xp: 0, battle: 1, logistics: 1, scouting: 1, support: 1, pending: None }
+    ArmyProgress { xp: 0, battle: 1, logistics: 1, scouting: 1, scouting_kinds: 0, homecoming: 1 }
 }
 
-pub fn attribute_level(progress: ArmyProgress, attribute: Attribute) -> u8 {
+// A new army starts each attribute at its realm's trained tier, common being level 1: the War hall's Battle, the
+// Supply yard's Logistics, the Scouts' lodge's Scouting and the Hearth's Homecoming.
+pub fn trained(learned: u64) -> ArmyProgress {
+    let scouting = 1 + crate::research::tier(learned, crate::research::ROW_SCOUTS_LODGE);
+    let mut scouting_kinds = 0;
+    for at in 1_u8..scouting {
+        let kind = crate::research::choice(learned, crate::research::ROW_SCOUTS_LODGE, at) + 1;
+        scouting_kinds += kind * scouting_kind_shift(at + 1);
+    }
+    ArmyProgress {
+        battle: 1 + crate::research::tier(learned, crate::research::ROW_WAR_HALL),
+        logistics: 1 + crate::research::tier(learned, crate::research::ROW_SUPPLY_YARD),
+        scouting,
+        scouting_kinds,
+        homecoming: 1 + crate::research::tier(learned, crate::research::ROW_HEARTH),
+        ..initial(),
+    }
+}
+
+pub fn attribute_tier(progress: ArmyProgress, attribute: Attribute) -> u8 {
     match attribute {
         Attribute::Battle => progress.battle,
         Attribute::Logistics => progress.logistics,
         Attribute::Scouting => progress.scouting,
-        Attribute::Support => progress.support,
+        Attribute::Homecoming => progress.homecoming,
     }
 }
 
-pub fn eligible(progress: ArmyProgress) -> Span<Attribute> {
-    let mut choices = array![];
-    for attribute in array![Attribute::Battle, Attribute::Logistics, Attribute::Scouting, Attribute::Support] {
-        if attribute_level(progress, attribute) < crate::rules::ATTRIBUTE_CAP {
-            choices.append(attribute);
-        }
+/// The XP the next tier above `tier` costs.
+pub fn tier_price(rules: ArmyProgressionRules, tier: u8) -> u32 {
+    match tier {
+        0 => panic!("invalid attribute tier"),
+        1 => rules.uncommon_xp,
+        2 => rules.rare_xp,
+        3 => rules.epic_xp,
+        4 => rules.legendary_xp,
+        _ => panic!("attribute is legendary"),
     }
-    choices.span()
 }
 
-pub fn draw_choices(progress: ArmyProgress, seed: u256, salt: u128) -> Span<Attribute> {
-    let mut available = eligible(progress);
-    let count = core::cmp::min(3, available.len());
-    let mut chosen = array![];
-    for draw in 0..count {
-        let index: u32 = crate::random::range(seed, salt + draw.into(), available.len().into()).try_into().unwrap();
-        chosen.append(*available.at(index));
-        let mut remaining = array![];
-        for other in 0..available.len() {
-            if other != index {
-                remaining.append(*available.at(other));
-            }
-        }
-        available = remaining.span();
-    }
-    chosen.span()
-}
-
-pub fn advance_level(ref progress: ArmyProgress, rules: ArmyProgressionRules) -> bool {
-    assert!(rules.level_step_xp != 0, "empty level threshold");
-    if progress.pending.is_some() || eligible(progress).is_empty() {
-        return false;
-    }
-    let threshold = rules.level_step_xp * progress.level.into();
-    if progress.xp < threshold {
-        return false;
-    }
-    progress.xp -= threshold;
-    progress.level += 1;
-    true
-}
-
-pub fn apply_choice(ref progress: ArmyProgress, command: ChooseAttribute) -> AttributeChosen {
-    let offer = progress.pending.expect('no pending attribute offer');
-    assert!(command.offer_id == offer.id, "stale attribute offer");
-    let mut offered = false;
-    for attribute in offer.choices {
-        offered = offered || *attribute == command.attribute;
-    }
-    assert!(offered, "attribute was not offered");
-    let before = attribute_level(progress, command.attribute);
-    let applied = core::cmp::min(offer.amount, crate::rules::ATTRIBUTE_CAP - before);
-    let after = before + applied;
+/// Spends the next tier's price and raises the attribute by one tier.
+pub fn buy_tier(ref progress: ArmyProgress, rules: ArmyProgressionRules, command: BuyTier) -> TierBought {
+    let price = tier_price(rules, attribute_tier(progress, command.attribute));
+    assert!(progress.xp >= price, "not enough XP");
+    progress.xp -= price;
+    let tier = attribute_tier(progress, command.attribute) + 1;
     match command.attribute {
-        Attribute::Battle => progress.battle = after,
-        Attribute::Logistics => progress.logistics = after,
-        Attribute::Scouting => progress.scouting = after,
-        Attribute::Support => progress.support = after,
+        Attribute::Battle => progress.battle = tier,
+        Attribute::Logistics => progress.logistics = tier,
+        Attribute::Scouting => progress.scouting = tier,
+        Attribute::Homecoming => progress.homecoming = tier,
     }
-    progress.pending = None;
-    AttributeChosen {
-        explorer_id: command.explorer_id,
-        offer_id: offer.id,
-        source: offer.source,
-        attribute: command.attribute,
-        applied,
-        lost: offer.amount - applied,
+    if command.attribute == Attribute::Scouting {
+        let code: u8 = match command.kind.expect('Scouting needs a kind') {
+            ScoutingKind::Camp => 1,
+            ScoutingKind::Rift => 2,
+            ScoutingKind::Stragglers => 3,
+        };
+        progress.scouting_kinds += code * scouting_kind_shift(tier);
+    } else {
+        assert!(command.kind.is_none(), "only Scouting takes a kind");
+    }
+    TierBought { explorer_id: command.explorer_id, attribute: command.attribute, kind: command.kind, tier, price }
+}
+
+/// The place of a Scouting tier's kind in `scouting_kinds`: two bits per tier from uncommon (tier 2) up.
+fn scouting_kind_shift(tier: u8) -> u8 {
+    match tier {
+        2 => 1,
+        3 => 4,
+        4 => 16,
+        5 => 64,
+        _ => panic!("invalid attribute tier"),
     }
 }
 
-// Three ordered choices fit in one word; the public offer remains a Span.
-pub impl OfferPacking of starknet::storage_access::StorePacking<AttributeOffer, u128> {
-    #[inline(never)]
-    fn pack(value: AttributeOffer) -> u128 {
-        let offer = value;
-        assert!(offer.choices.len() <= 3, "too many attribute choices");
-        let source = match offer.source {
-            OfferSource::Level => 0_u128,
-            OfferSource::Relic => 1,
-            OfferSource::Shrine => 2,
-        };
-        let mut packed = offer.id.into()
-            + source * 0x100000000
-            + Into::<u8, u128>::into(offer.amount) * 0x10000000000
-            + Into::<u32, u128>::into(offer.choices.len()) * 0x1000000000000;
-        let mut scale = 0x100000000000000_u128;
-        for attribute in offer.choices {
-            let index = match *attribute {
-                Attribute::Battle => 0_u128,
-                Attribute::Logistics => 1,
-                Attribute::Scouting => 2,
-                Attribute::Support => 3,
-            };
-            packed += index * scale;
-            scale *= 256;
+/// What the army's Scouting tiers add to camp, rift and straggler find rates, in basis points of each kind's base rate.
+pub fn scouting_bonus(progress: ArmyProgress) -> (u32, u32, u32) {
+    let mut camp = 0;
+    let mut rift = 0;
+    let mut stragglers = 0;
+    let mut tier = 2;
+    while tier <= progress.scouting {
+        let increment = crate::rules::scouting_increment_bps(tier);
+        match progress.scouting_kinds / scouting_kind_shift(tier) % 4 {
+            1 => camp += increment,
+            2 => rift += increment,
+            3 => stragglers += increment,
+            _ => panic!("missing Scouting kind"),
         }
-        packed
+        tier += 1;
     }
-
-    #[inline(never)]
-    fn unpack(value: u128) -> AttributeOffer {
-        let packed = value;
-        let source = match packed / 0x100000000 % 256 {
-            0 => OfferSource::Level,
-            1 => OfferSource::Relic,
-            2 => OfferSource::Shrine,
-            _ => panic!("invalid offer source"),
-        };
-        let count: u32 = (packed / 0x1000000000000 % 256).try_into().unwrap();
-        assert!(count <= 3, "invalid choice count");
-        let mut choices = array![];
-        let mut indices = packed / 0x100000000000000;
-        for _ in 0..count {
-            choices
-                .append(
-                    match indices % 256 {
-                        0 => Attribute::Battle,
-                        1 => Attribute::Logistics,
-                        2 => Attribute::Scouting,
-                        3 => Attribute::Support,
-                        _ => panic!("invalid attribute"),
-                    },
-                );
-            indices /= 256;
-        }
-        AttributeOffer {
-            id: (packed % 0x100000000).try_into().unwrap(),
-            source,
-            amount: (packed / 0x10000000000 % 256).try_into().unwrap(),
-            choices: choices.span(),
-        }
-    }
+    (camp, rift, stragglers)
 }
 
+/// A clear pays 2.5 x the square root of the guard's starting strength in whole troops, rounded down: exactly
+/// floor(sqrt(25 x strength)) / 2.
+pub fn clear_xp(strength: u128) -> u32 {
+    let root: u64 = core::num::traits::Sqrt::sqrt(strength / crate::rules::RESOURCE_PRECISION * 25);
+    (root / 2).try_into().unwrap()
+}
 
 pub fn stamina_max(
     progress: ArmyProgress, category: crate::troops::TroopType, rules: crate::rules::TroopStaminaConfig,
 ) -> u64 {
     crate::stamina::StaminaImpl::max(category, crate::troops::TroopTier::T1, rules)
-        + Into::<u8, u64>::into(progress.logistics - 1) * crate::rules::ATTRIBUTE_STAMINA.into()
-}
-
-pub fn relic_levels(quality: u8) -> u8 {
-    assert!(quality <= 3, "invalid chest quality");
-    quality + 1
+        + crate::rules::logistics_stamina(progress.logistics).into()
 }

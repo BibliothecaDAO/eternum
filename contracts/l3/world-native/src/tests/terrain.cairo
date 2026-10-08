@@ -18,17 +18,16 @@ fn settlement_terrain_keeps_map_biomes_and_daily_home_rings() {
     let (game_id, preset, _) = super::registrar::expedition_home(d);
     let map = IMapLogicDispatcher { contract_address: d.games };
     let game = IGameDispatcher { contract_address: d.games }.game(game_id);
-    for timestamp in array![350_u64, 450, 550] {
-        let site = crate::expeditions::site(
-            game.start_main_at, preset.rules.epoch_seconds, preset.settlement.spacing, 1, timestamp, 0,
-        );
+    for day in 0_u64..3 {
+        let timestamp = super::registrar::day_start(d, game_id, day) + 50;
+        let site = crate::expeditions::site(preset.settlement.spacing, 1, day, 0);
         let ring = map.expedition_home_ring(game_id, 1, timestamp);
         assert_eq!(ring.len(), 7);
         let (center, _) = *ring.at(0);
         assert_eq!(center, site);
         let context = crate::commands::BiomeContext {
             climate: preset.rules.biome_climate_config,
-            epoch_seconds: preset.rules.epoch_seconds,
+            day_unit_seconds: preset.rules.day_unit_seconds,
             start_main_at: game.start_main_at,
         };
         for index in 0_u32..7 {
@@ -37,14 +36,14 @@ fn settlement_terrain_keeps_map_biomes_and_daily_home_rings() {
                 assert_eq!(coord, crate::geometry::neighbor(site, (index - 1).try_into().unwrap()));
             }
             let climate = crate::expeditions::climate(
-                context.climate, coord, context.start_main_at, context.epoch_seconds, preset.settlement.spacing,
+                context.climate, coord, context.start_main_at, context.day_unit_seconds, preset.settlement.spacing,
             );
             let expected: u8 = crate::biome::get_biome_with_climate(coord.alt, coord.x.into(), coord.y.into(), climate)
                 .into();
             assert_eq!(biome, expected);
             assert_eq!(map.biome(crate::geometry::tile_key(game_id, coord), context), expected);
         }
-        let ordinary = crate::commands::BiomeContext { epoch_seconds: 0, ..context };
+        let ordinary = crate::commands::BiomeContext { day_unit_seconds: 0, ..context };
         for alt in array![false, true] {
             let coord = crate::troops::Coord { alt, ..site };
             let expected: u8 = crate::biome::get_biome_with_climate(
@@ -68,11 +67,12 @@ fn home_ring_materializes_once_each_day_and_all_six_deployments_work() {
     let state = GameState { contract_address: d.games };
     let context = crate::commands::BiomeContext {
         climate: preset.rules.biome_climate_config,
-        epoch_seconds: preset.rules.epoch_seconds,
+        day_unit_seconds: preset.rules.day_unit_seconds,
         start_main_at: game.start_main_at,
     };
     let mut serialized = array![1_felt252, 21];
-    for timestamp in array![350_u64, 450, 550] {
+    for day in 0_u64..3 {
+        let timestamp = super::registrar::day_start(d, game_id, day) + 50;
         let ring = map.expedition_home_ring(game_id, 1, timestamp);
         let (center, _) = *ring.at(0);
         let mut spy = snforge_std::spy_events();

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CairoCustomEnum, hash } from "starknet";
+import { hash } from "starknet";
 import setFixture from "../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
 import memberFixture from "../../../../contracts/l3/world-native/schema/fixtures/row-member-set.json";
 import deleteFixture from "../../../../contracts/l3/world-native/schema/fixtures/row-deleted.json";
@@ -12,26 +12,6 @@ import { NativeIngestion } from "./ingestion";
 import { pointsAward, schema, manifest, receipt, raw, setup, battleEvent, rowEvent } from "./fixtures";
 
 describe("native row decoder", () => {
-  it("refuses reserved chest wire tag 1 and retains Token at tag 2", () => {
-    const decoder = new NativeDecoder(manifest);
-    const reward = (kind: "Reserved" | "Token") =>
-      rowEvent("ChestReward", ["1", "2", "0"], {
-        player: 17,
-        explorer_id: 7,
-        epoch: 3,
-        depth: 0,
-        kind: new CairoCustomEnum({ [kind]: {} }),
-        quality: 0,
-        lords_exhausted: false,
-      });
-    expect(() => decoder.decode(raw(reward("Reserved")))).toThrow("Invalid native enum");
-    expect(decoder.decode(raw(reward("Token"))).kind).toBe("set");
-    const model = schema.models.find(({ name }) => name === "ChestReward")!;
-    const kind = schema.types[model.members.find(({ name }) => name === "kind")!.type];
-    if (kind.type !== "enum") throw new Error("Expected chest kind enum");
-    expect(kind.variants.map(({ name }) => name)).toEqual(["Relic", "Reserved", "Token"]);
-  });
-
   it("folds a known same-schema hotfix and refuses an unavailable decoder before its migration rows", () => {
     const released = structuredClone(manifest);
     released.native.releaseSchemas["2"] = schema.identity;
@@ -71,24 +51,20 @@ describe("native row decoder", () => {
       ),
     ).toThrow("unavailable-schema");
   });
-  it("keys chest results by game, recorded action and story index in both overlays", () => {
+  it("keys LORDS withdrawals by game, recorded action and story index in both overlays", () => {
     const { native, fold } = setup();
     const rewards = [0, 1].map((index) =>
-      rowEvent("ChestReward", ["1", "9007199254740993", String(index)], {
+      rowEvent("LordsWithdrawal", ["1", "9007199254740993", String(index)], {
         player: "0x111",
-        explorer_id: 7,
-        epoch: 3,
-        depth: 2,
-        kind: new CairoCustomEnum({ Token: {} }),
-        quality: 0,
-        lords_exhausted: false,
+        structure_id: 7,
+        amount: 200,
       }),
     );
     const overlay = fold.overlay();
     native.applyReceipt(overlay, receipt(rewards), null, 0);
     native.applyReceipt(fold, receipt(rewards), 10, 0);
-    const rows = fold.modelRows("ChestReward");
-    expect(rows).toEqual(overlay.modelRows("ChestReward"));
+    const rows = fold.modelRows("LordsWithdrawal");
+    expect(rows).toEqual(overlay.modelRows("LordsWithdrawal"));
     expect(rows.map(({ value }) => [value.game_id, value.order, value.index])).toEqual([
       ["0x1", "0x20000000000001", "0x0"],
       ["0x1", "0x20000000000001", "0x1"],

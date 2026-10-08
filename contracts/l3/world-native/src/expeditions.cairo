@@ -1,17 +1,17 @@
 use crate::rules::BiomeClimateConfig;
 use crate::troops::Coord;
 
-#[allow(starknet::store_no_default_variant)]
-#[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
-pub enum SiteKind {
-    Camp,
-    Rift,
-    FallenRealm,
+// A guarded site's kind is its structure category. The camp keeps its shared category (crate::camps).
+
+pub fn is_site_category(category: u8) -> bool {
+    category == crate::taxonomy::CAMP_CATEGORY
+        || category == crate::taxonomy::RIFT_CATEGORY
+        || category == crate::taxonomy::RUIN_CATEGORY
+        || category == crate::taxonomy::STRAGGLERS_CATEGORY
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
 pub struct ExpeditionSite {
-    pub kind: SiteKind,
     pub initial_guard_count: u128,
     pub cleared: bool,
 }
@@ -26,53 +26,49 @@ pub struct SitePayout {
     pub structure_id: u32,
     pub explorer_id: u32,
     pub site_id: u32,
-    pub kind: SiteKind,
+    pub category: u8,
     pub reward: Option<crate::resources::ResourceAmount>,
 }
 
-pub fn site_reward(site: ExpeditionSite) -> Option<crate::resources::ResourceAmount> {
+// Stragglers pay only the clear's XP; a ruin pays the chest stored with it (crate::relics::SiteChest).
+pub fn site_reward(category: u8, site: ExpeditionSite) -> Option<crate::resources::ResourceAmount> {
     use crate::resources::{ESSENCE, LABOR, ResourceAmount};
-    match site.kind {
-        SiteKind::Camp => Some(ResourceAmount { resource_type: LABOR, amount: site.initial_guard_count / 2 }),
-        SiteKind::Rift => Some(ResourceAmount { resource_type: ESSENCE, amount: site.initial_guard_count * 3 }),
-        SiteKind::FallenRealm => None,
+    if category == crate::taxonomy::CAMP_CATEGORY {
+        Some(ResourceAmount { resource_type: LABOR, amount: site.initial_guard_count / 2 })
+    } else if category == crate::taxonomy::RIFT_CATEGORY {
+        Some(ResourceAmount { resource_type: ESSENCE, amount: site.initial_guard_count * 3 })
+    } else {
+        None
     }
 }
 
-pub fn absolute_epoch(seconds: u32, timestamp: u64) -> u64 {
-    assert!(seconds != 0, "game has no expeditions");
-    timestamp / seconds.into()
-}
-
-pub fn season_day(start: u64, seconds: u32, timestamp: u64) -> u64 {
-    assert!(timestamp >= start, "expedition has not started");
-    absolute_epoch(seconds, timestamp) - absolute_epoch(seconds, start)
-}
-
-pub fn validate_game(seconds: u32, spacing: u32, duration: u64) {
-    if seconds == 0 {
+pub fn validate_game(rules: crate::registrar::LaunchRules, start: u64, duration: u64) {
+    if rules.day_unit_seconds == 0 {
         return;
     }
-    assert!(spacing >= 16, "expedition regions are too small");
-    let spacing: u128 = spacing.into();
-    let season_days: u128 = Into::<u64, u128>::into(duration) / Into::<u32, u128>::into(seconds) + 2;
+    assert!(rules.spacing >= 16, "expedition regions are too small");
+    assert!(start % rules.armies_tick_seconds == 0, "season does not start on a tick");
+    let spacing: u128 = rules.spacing.into();
+    let season_days: u128 = crate::days::season_days(duration, rules.day_unit_seconds).into() + 2;
     assert!(spacing * crate::realms::CANONICAL_REALM_COUNT.into() < 0x7fffffff, "expedition map exhausted");
     assert!(season_days * 4 * spacing < 0x7fffffff, "expedition season exceeds map");
 }
 
-pub fn site(start: u64, seconds: u32, spacing: u32, realm_id: u16, timestamp: u64, depth: u8) -> Coord {
-    assert!(timestamp >= start, "expedition has not started");
+/// A realm's site on a day's map: its region's centre, one region per realm and day, four bands deep.
+pub fn site(spacing: u32, realm_id: u16, day: u64, depth: u8) -> Coord {
     assert!(realm_id > 0 && realm_id.into() <= crate::realms::CANONICAL_REALM_COUNT, "invalid expedition realm");
     assert!(depth < 4, "invalid expedition depth");
-    let season_day = season_day(start, seconds, timestamp);
     let width: u64 = spacing.into();
     Coord {
         alt: false,
         x: ((Into::<u16, u64>::into(realm_id) - 1) * width + width / 2).try_into().expect('expedition map exhausted'),
-        y: ((season_day * 4 + Into::<u8, u64>::into(depth)) * width + width / 2)
-            .try_into()
-            .expect('expedition map exhausted'),
+        y: ((day * 4 + Into::<u8, u64>::into(depth)) * width + width / 2).try_into().expect('expedition map exhausted'),
     }
+}
+
+/// The day a map coordinate belongs to: its band of four regions.
+pub fn region_day(coord: Coord, spacing: u32) -> u64 {
+    (coord.y / spacing / 4).into()
 }
 
 // A realm's home ring: its region's surface site and the six tiles around it. It counts as explored from the day's
@@ -97,18 +93,13 @@ pub fn home_ring_center(coord: Coord, spacing: u32) -> Coord {
 
 // The day's spire, which depth research lights: one of the home ring's six tiles, turning one step each day so the
 // first march from home differs daily. It is a rule, not a stored structure.
-pub fn spire(start: u64, seconds: u32, spacing: u32, realm_id: u16, timestamp: u64) -> Coord {
-    let site = site(start, seconds, spacing, realm_id, timestamp, 0);
-    let season_day = season_day(start, seconds, timestamp);
-    crate::geometry::neighbor(site, (season_day % 6).try_into().unwrap())
+pub fn spire(spacing: u32, realm_id: u16, day: u64) -> Coord {
+    crate::geometry::neighbor(site(spacing, realm_id, day, 0), (day % 6).try_into().unwrap())
 }
 
-pub fn is_current(coord: Coord, start: u64, seconds: u32, spacing: u32, timestamp: u64) -> bool {
-    if coord.alt || timestamp < start {
-        return false;
-    }
-    let season_day = season_day(start, seconds, timestamp);
-    Into::<u32, u64>::into(coord.y / spacing / 4) == season_day
+/// An army lives only on its own day's map: on any later day it is gone.
+pub fn is_current(coord: Coord, spacing: u32, day: u64) -> bool {
+    !coord.alt && region_day(coord, spacing) == day
 }
 
 pub fn assert_same_region(origin: Coord, destination: Coord, spacing: u32) {
@@ -122,11 +113,15 @@ pub fn assert_same_region(origin: Coord, destination: Coord, spacing: u32) {
     assert!(!destination.alt && same_region && inside_region, "outside expedition region");
 }
 
-pub fn climate(config: BiomeClimateConfig, coord: Coord, start: u64, seconds: u32, spacing: u32) -> BiomeClimateConfig {
-    let epoch = (absolute_epoch(seconds, start) + Into::<u32, u64>::into(coord.y / spacing / 4)) % 0x100000000;
+// Each day's map draws its own terrain: the climate seeds move by the day, counted in units from absolute time so
+// two seasons' days differ too.
+pub fn climate(
+    config: BiomeClimateConfig, coord: Coord, start: u64, unit_seconds: u32, spacing: u32,
+) -> BiomeClimateConfig {
+    let shift = (start / unit_seconds.into() + region_day(coord, spacing)) % 0x100000000;
     BiomeClimateConfig {
-        elevation_seed: ((Into::<u32, u64>::into(config.elevation_seed) + epoch) % 0x100000000).try_into().unwrap(),
-        moisture_seed: ((Into::<u32, u64>::into(config.moisture_seed) + epoch) % 0x100000000).try_into().unwrap(),
+        elevation_seed: ((Into::<u32, u64>::into(config.elevation_seed) + shift) % 0x100000000).try_into().unwrap(),
+        moisture_seed: ((Into::<u32, u64>::into(config.moisture_seed) + shift) % 0x100000000).try_into().unwrap(),
         ..config,
     }
 }
@@ -134,15 +129,15 @@ pub fn climate(config: BiomeClimateConfig, coord: Coord, start: u64, seconds: u3
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
 pub struct DepthRules {
     pub reveal_percent: u16,
-    pub guard_lower: u16,
-    pub guard_upper: u16,
+    pub site_guard_lower: u16,
+    pub site_guard_upper: u16,
     pub reveal_site_neighbors: bool,
     pub entry_stamina: u16,
-    pub chest: crate::relics::ChestGround,
-    pub fallen_guard_lower: u32,
-    pub fallen_guard_upper: u32,
+    // Each chest tier's odds, in basis points, for a ruin found at this depth.
+    pub chest: crate::relics::ChestTiers,
+    pub ruin_guard_lower: u32,
+    pub ruin_guard_upper: u32,
     pub guard_step: u32,
-    pub fallen_guard_tier: crate::troops::TroopTier,
 }
 
 #[starknet::interface]
@@ -153,10 +148,10 @@ pub trait IExpeditionRules<T> {
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
 pub struct FrontierDiscoveryRules {
+    pub stragglers_bps: u16,
     pub camp_bps: u16,
     pub rift_bps: u16,
-    pub fallen_realm_bps: u16,
-    pub loose_chest_bps: u16,
+    pub ruin_bps: u16,
     pub shrine_bps: u16,
     pub well_bps: u16,
     pub empty_reveal_limit: u8,
@@ -165,11 +160,14 @@ pub struct FrontierDiscoveryRules {
 pub struct ExpeditionDiscoveryKey {
     pub game_id: u32,
     pub structure_id: u32,
+    // The season day index (crate::days), under the field's historical name.
     pub epoch: u64,
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct ExpeditionDiscovery {
     pub empty_reveals: u8,
+    // A player finds at most one ruin a day, counted when it is found.
+    pub ruin_found: bool,
 }
 #[starknet::interface]
 pub trait IFrontierDiscovery<T> {

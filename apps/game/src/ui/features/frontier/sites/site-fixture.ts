@@ -1,4 +1,5 @@
-import { BiomeType } from "@bibliothecadao/types";
+import { BiomeType, StructureType, TileOccupier } from "@bibliothecadao/types";
+import type { SiteKind } from "@bibliothecadao/eternum";
 import { nativeRuleConstants } from "../../../../../../../contracts/l3/world-native/schema/client.gen";
 import rowFixture from "../../../../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
 import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
@@ -19,7 +20,14 @@ const troops = (count: bigint, stamina: bigint) => ({
  * The muster's Frontier day with a camp guarded by 1,100 T1 knights on row 12 and the realm's 1,498-knight army beside
  * it, in a game without combat dice as Frontier plays.
  */
-export const campBeside = (kind: "Camp" | "Rift" | "FallenRealm" = "Camp", guardKnown = true) => {
+const SITE_CATEGORY: Record<SiteKind, StructureType> = {
+  Camp: StructureType.Camp,
+  Rift: StructureType.Rift,
+  Ruin: StructureType.Ruin,
+  Stragglers: StructureType.Stragglers,
+};
+
+export const campBeside = (kind: SiteKind = "Camp", guardKnown = true) => {
   const { store } = frontierDay();
   const noDice =
     preset.rules.mode_rules & ~(nativeRuleConstants.COMBAT_DICE | nativeRuleConstants.COMBAT_DICE_ETHEREAL);
@@ -27,7 +35,7 @@ export const campBeside = (kind: "Camp" | "Rift" | "FallenRealm" = "Camp", guard
     set("0x100", "SliceRules", {
       ...preset.rules,
       game_id: 1,
-      epoch_seconds: 100,
+      day_unit_seconds: 100,
       mode_rules: noDice,
       battle_config: { ...preset.rules.battle_config, cooldown_seconds: 0 },
     }),
@@ -36,7 +44,7 @@ export const campBeside = (kind: "Camp" | "Rift" | "FallenRealm" = "Camp", guard
       entity_id: SITE,
       owner: "0x0",
       base: {
-        category: 7,
+        category: SITE_CATEGORY[kind],
         level: 0,
         created_at: "0x1",
         troop_max_guard_count: 1,
@@ -47,10 +55,10 @@ export const campBeside = (kind: "Camp" | "Rift" | "FallenRealm" = "Camp", guard
     set("0x72", "ExpeditionSite", {
       game_id: 1,
       entity_id: SITE,
-      kind,
       initial_guard_count: String(1_100n * PRECISION),
       cleared: false,
     }),
+    ...(kind === "Ruin" ? [set("0x76", "SiteChest", { game_id: 1, entity_id: SITE, tier: 3, amount: "500" })] : []),
     ...(guardKnown
       ? [
           set("0x73", "Guard", {
@@ -63,6 +71,15 @@ export const campBeside = (kind: "Camp" | "Rift" | "FallenRealm" = "Camp", guard
         ]
       : []),
     set("0x74", "ExplorerTroops", { game_id: 1, explorer_id: 201, owner: 7, troops: troops(1_498n, 100n) }),
+    set("0x75", "TileOccupancy", {
+      game_id: 1,
+      alt: false,
+      col: 41,
+      row: 12,
+      entity_id: 201,
+      category: TileOccupier.ExplorerKnightT1,
+      is_structure: false,
+    }),
   ] as never);
   const army = store.require("ExplorerTroops", { game_id: 1, explorer_id: 201 });
   const attack = (armyTile: SiteAttack["armyTile"]): SiteAttack => ({

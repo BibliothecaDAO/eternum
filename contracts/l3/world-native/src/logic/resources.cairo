@@ -1,5 +1,5 @@
-use starknet::storage::StorageMapReadAccess;
-use crate::resources::{Production, ResourceKey, Weight, assert_resource, has_production};
+use starknet::storage::{StorageMapReadAccess, StoragePathEntry, StoragePointerReadAccess};
+use crate::resources::{Production, ResourceKey, Weight, assert_resource, has_castle_limit, has_production};
 
 #[inline(never)]
 pub fn assert_exists(key: ResourceKey) {
@@ -32,6 +32,37 @@ pub fn weight(key: ResourceKey) -> Weight {
     state.resources.weights.read((key.game_id, key.entity_id))
 }
 
+/// A board realm keeps each of wheat, labor and troops up to its castle's base: that many deploys of its castle level's
+/// cap. Every other store, and every store off a board, has no limit of its own.
+#[inline(never)]
+pub fn store_limit(key: ResourceKey, resource_type: u8) -> Option<u128> {
+    if !has_castle_limit(resource_type) {
+        return None;
+    }
+    let preset = crate::logic::preset_record::for_game(key.game_id);
+    let board = preset.board_terms.read()?;
+    let base = crate::state::read().structures.structures.entry((key.game_id, key.entity_id)).base.read();
+    if base.category != crate::taxonomy::REALM_CATEGORY {
+        return None;
+    }
+    let cap = crate::troops::deployment_cap(preset.rules.troop_limit_config.read(), base.level);
+    let castle_base = Into::<u32, u128>::into(cap)
+        * Into::<u8, u128>::into(board.castle_store_deploys)
+        * crate::rules::RESOURCE_PRECISION;
+    let row = if resource_type == crate::resources::WHEAT {
+        Some(crate::research::ROW_FARM)
+    } else if resource_type == crate::resources::LABOR {
+        Some(crate::research::ROW_WORKSHOP)
+    } else {
+        None
+    };
+    let stores: u128 = row
+        .map(|row| crate::research::picks(crate::logic::research::learned(key), row, crate::research::CHOICE_STORE))
+        .unwrap_or(0)
+        .into();
+    Some(castle_base * (10000 + stores * board.storage_step_bps.into()) / 10000)
+}
+
 pub fn rule(game_id: u32, resource_type: u8) -> crate::resources::ResourceRule {
     let preset = crate::logic::preset_record::for_game(game_id);
     assert_resource(resource_type);
@@ -42,6 +73,11 @@ pub fn rule(game_id: u32, resource_type: u8) -> crate::resources::ResourceRule {
         realm_rate: (rates % crate::resources::RESOURCE_RATE_SCALE).try_into().unwrap(),
         village_rate: (rates / crate::resources::RESOURCE_RATE_SCALE).try_into().unwrap(),
     }
+}
+
+/// The armies tick in seconds: production pays in whole ticks of it.
+pub fn production_tick(game_id: u32) -> u32 {
+    crate::logic::preset_record::for_game(game_id).rules.tick_config.armies_tick_in_seconds.read().try_into().unwrap()
 }
 
 pub fn production_start(game_id: u32, game_context: crate::commands::ExecutionContext) -> u32 {
@@ -74,19 +110,6 @@ pub mod ResourceState {
     }
     #[generate_trait]
     pub impl InternalImpl<TContractState, +HasComponent<TContractState>> of InternalTrait<TContractState> {
-        fn write_lords_budget(ref self: ComponentState<TContractState>, game_id: u32, lords_committed: u128) {
-            self.data.relics.lords_committed.write(game_id, Some(lords_committed));
-            self
-                .emit(
-                    crate::events::RowSet {
-                        version: 1,
-                        model: 'LordsBudget',
-                        keys: array![game_id.into()].span(),
-                        values: array![lords_committed.into()].span(),
-                    },
-                );
-        }
-
         fn burn_resource(
             ref self: ComponentState<TContractState>,
             key: ResourceKey,
@@ -212,7 +235,9 @@ pub mod ResourceState {
             start_at: u32,
         ) -> u128 {
             let mut resource = self.load_settled(key, resource_type, unit_weight, now, start_at);
-            let granted = add(resource_type, ref resource.balance, ref resource.weight, amount, unit_weight);
+            let granted = add(
+                resource_type, ref resource.balance, ref resource.weight, amount, unit_weight, resource.limit,
+            );
             self.commit_resource(key, resource_type, resource);
             granted
         }
@@ -227,7 +252,9 @@ pub mod ResourceState {
         ) {
             assert_production(resource_type);
             let mut resource = self.load_settled(key, resource_type, unit_weight, now, start_at);
-            resource.production.output_amount_left += output;
+            if !crate::resources::is_unlimited(resource.production.output_amount_left) {
+                resource.production.output_amount_left += output;
+            }
             self.commit_resource(key, resource_type, resource);
         }
         fn start_production(
@@ -244,14 +271,11 @@ pub mod ResourceState {
             let mut resource = self.load_settled(key, resource_type, unit_weight, now, start_at);
             resource.production.building_count += 1;
             resource.production.production_rate += rate;
-            resource
-                .production
-                .output_amount_left =
-                    if output == crate::resources::UNLIMITED_OUTPUT {
-                        output
-                    } else {
-                        resource.production.output_amount_left + output
-                    };
+            if crate::resources::is_unlimited(output) {
+                resource.production.output_amount_left = output;
+            } else if !crate::resources::is_unlimited(resource.production.output_amount_left) {
+                resource.production.output_amount_left += output;
+            }
             self.commit_resource(key, resource_type, resource);
         }
         fn stop_production(
@@ -306,22 +330,25 @@ pub mod ResourceState {
                 balance: crate::logic::resources::balance(key, resource_type),
                 production: crate::logic::resources::production(key, resource_type),
                 weight: self.data.resources.weights.read((key.game_id, key.entity_id)),
+                limit: crate::logic::resources::store_limit(key, resource_type),
             };
-            resource
-                .production
-                .last_updated_at = core::cmp::max(resource.production.last_updated_at, core::cmp::min(now, start_at));
-            if resource.production.last_updated_at != now {
-                let bonus = crate::logic::production::support_bonus(
-                    key, resource.production.production_rate, resource.production.last_updated_at, now,
-                );
+            // Production runs on the armies tick, counted from absolute time, as stamina does.
+            let tick_seconds = crate::logic::resources::production_tick(key.game_id);
+            let tick = now / tick_seconds;
+            let since = core::cmp::max(
+                resource.production.last_settled_tick, core::cmp::min(tick, start_at / tick_seconds),
+            );
+            resource.production.last_settled_tick = since;
+            if since != tick {
                 settle(
                     resource_type,
                     ref resource.balance,
                     ref resource.production,
                     ref resource.weight,
                     unit_weight,
-                    now,
-                    bonus,
+                    resource.limit,
+                    tick,
+                    tick_seconds,
                 );
             }
             resource
@@ -356,7 +383,7 @@ pub mod ResourceState {
                 return;
             }
             let production = if production.building_count == 0 {
-                Production { last_updated_at: 0, ..production }
+                Production { last_settled_tick: 0, ..production }
             } else {
                 production
             };

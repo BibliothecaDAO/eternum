@@ -3,11 +3,7 @@ import { blitzPreset } from "./blitz/native";
 import { eternumPreset } from "./eternum/native";
 import { duelPreset } from "./duel/native";
 import type { NativePreset } from "./common/native-preset";
-import {
-  FRONTIER_ACCELERATED_PRESET_ID,
-  FRONTIER_PLAYTEST_PRESET_ID,
-  nativeGameModeOf,
-} from "./common/native-preset-modes";
+import { FRONTIER_ACCELERATED_PRESET_ID, nativeGameModeOf } from "./common/native-preset-modes";
 import type { GameType } from "./common/types";
 
 const modes: Record<GameType, NativePreset> = {
@@ -16,21 +12,18 @@ const modes: Record<GameType, NativePreset> = {
   eternum: eternumPreset,
   duel: duelPreset,
 };
-/** Frontier with 720 s days, for fixtures and harness design runs; presets are immutable, so it has its own id. */
+/**
+ * Frontier 120 times faster, for automated tests only: a 1 s armies tick and a 120 s day unit, so its drawn days last 4
+ * to 12 minutes, a bag 40 minutes and its season of 21 bags 14 hours. Presets are immutable, so it has its own id.
+ */
 const frontierAcceleratedPreset: NativePreset = {
   ...frontierPreset,
   id: FRONTIER_ACCELERATED_PRESET_ID,
   clockScale: 120,
 };
-/** Frontier's design compressed exactly 24 times: one-hour days, a 150 s armies tick and every rate 24 times over. */
-const frontierPlaytestPreset: NativePreset = {
-  ...frontierPreset,
-  id: FRONTIER_PLAYTEST_PRESET_ID,
-  clockScale: 24,
-};
 
 export const nativePresets: Record<number, NativePreset> = Object.fromEntries(
-  [...Object.values(modes), frontierAcceleratedPreset, frontierPlaytestPreset].map((preset) => {
+  [...Object.values(modes), frontierAcceleratedPreset].map((preset) => {
     if (nativeGameModeOf(preset.id) !== preset.gameType)
       throw new Error(`Native preset ${preset.id} plays ${preset.gameType}, not ${nativeGameModeOf(preset.id)}`);
     return [preset.id, preset];

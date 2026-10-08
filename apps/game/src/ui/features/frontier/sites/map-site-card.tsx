@@ -10,13 +10,14 @@ import { configManager } from "@bibliothecadao/eternum";
 import type { TileSpatialRenderable } from "@bibliothecadao/eternum/game-sync";
 import { useMemo, useState } from "react";
 import { Chip } from "../frontier-chips";
-import { BoltGlyph, CardFanGlyph } from "../glyphs";
+import { BoltGlyph } from "../glyphs";
+import { XP_STAR_ICON } from "../attributes/xp-star";
 import { type MapSiteKind, mapSiteKind, readMapSite } from "./map-site-plan";
 import { useSelectedOwnArmy } from "./selected-army";
 import { armWellRefill } from "./well-refill";
 import { FrontierSheet } from "../frontier-sheet";
 
-const MAP_SITE_MODELS = ["ArmyProgress", "ExplorerTroops", "TileOccupancy"] as const;
+const MAP_SITE_MODELS = ["ArmyProgress", "ArmyProgressionRules", "ExplorerTroops", "TileOccupancy"] as const;
 
 /** The map tile the player tapped, when a Shrine or Well stands on it. */
 export const useSelectedMapSite = (): { kind: MapSiteKind; tile: TileSpatialRenderable } | null => {
@@ -47,7 +48,8 @@ export const MapSiteCard = ({
   const progress =
     user &&
     setup.store.get("ArmyProgress", { game_id: configManager.getActiveGameId(), explorer_id: user.army.explorer_id });
-  const plan = readMapSite(selected.kind, siteTile, user && { ...user, progress: progress ?? undefined });
+  const rules = setup.store.get("ArmyProgressionRules", { game_id: configManager.getActiveGameId() });
+  const plan = readMapSite(selected.kind, siteTile, user && { ...user, progress: progress ?? undefined }, rules);
   const [pending, setPending] = useState(false);
 
   const use = async () => {
@@ -75,7 +77,12 @@ export const MapSiteCard = ({
         <span className="flex flex-col items-start gap-2">
           <h2 className="frontier-title">{plan.kind}</h2>
           {plan.kind === "Shrine" ? (
-            <Chip tone="gain" label="Levels" icon={<CardFanGlyph />} value={`+${plan.gain}`} />
+            <Chip
+              tone="gain"
+              label="XP"
+              icon={<img src={XP_STAR_ICON} alt="" />}
+              value={plan.gain === undefined ? "—" : `+${plan.gain}`}
+            />
           ) : (
             <Chip tone="gain" label="Stamina" icon={<BoltGlyph />} value={`+${plan.gain}`} />
           )}

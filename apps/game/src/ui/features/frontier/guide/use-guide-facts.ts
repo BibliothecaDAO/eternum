@@ -7,7 +7,7 @@ import {
   configManager,
   entityMapPosition,
   expeditionDepth,
-  learnedResearchNodes,
+  realmLearned,
   getBalance,
   getBuildingQuantity,
   getGuardsByStructure,
@@ -26,9 +26,8 @@ import {
   type TroopTier,
   type TroopType,
 } from "@bibliothecadao/types";
-import { useAccountStore } from "@/hooks/store/use-account-store";
-import { useStoryEvents } from "@/hooks/store/use-story-events-store";
 import { knownBalance } from "@/ui/utils/utils";
+import { affordableUpgrades } from "../attributes/attributes";
 import { useMemo } from "react";
 import { troopsOnHand, type useExpeditionRules } from "../frontier-home";
 import type { GuideFacts } from "./guide-script";
@@ -47,28 +46,21 @@ const GUIDE_MODELS = [
   "ArmyProgress",
   "ExpeditionSite",
   "RealmKnowledge",
-  "ResearchNode",
+  "ResearchPrice",
 ] as const;
 
-/**
- * What the guide answers to, read from the store at chain time, and from the player's chest history for the one first
- * no current fact keeps; it never listens for events.
- */
+/** What the guide answers to, read from the store at chain time; it never listens for events. */
 export const useGuideFacts = (rules: ExpeditionRules, realm: NativeRows["Structure"] | null): GuideFacts => {
   const { setup } = useGame();
-  const player = useAccountStore((state) => state.account?.address ?? null);
-  // A LORDS roll the day could not pay leaves only its story; no row keeps it.
-  const { data: chests } = useStoryEvents(100, "ChestReward", player ?? ZERO_ADDRESS);
-  const lordsSpent = player !== null && chests.some(({ storyPayload }) => storyPayload?.lords_exhausted === true);
   const revision = useNativeRevision(GUIDE_MODELS);
   const now = useNowSeconds();
   const tick = useCurrentDefaultTick();
   const armiesTick = useCurrentArmiesTick();
   const { isMapView } = useQuery();
   return useMemo(
-    () => ({ ...readGuideFacts(setup.store, rules, realm, { now, tick, armiesTick, onMap: isMapView }), lordsSpent }),
+    () => readGuideFacts(setup.store, rules, realm, { now, tick, armiesTick, onMap: isMapView }),
     // The revision is the recompute signal for store writes; the clocks for time passing.
-    [setup.store, rules, realm, now, tick, armiesTick, isMapView, revision, lordsSpent],
+    [setup.store, rules, realm, now, tick, armiesTick, isMapView, revision],
   );
 };
 
@@ -77,7 +69,7 @@ const readGuideFacts = (
   rules: ExpeditionRules,
   realm: NativeRows["Structure"] | null,
   clock: { now: number; tick: number; armiesTick: number; onMap: boolean },
-): Omit<GuideFacts, "lordsSpent"> => {
+): GuideFacts => {
   if (!realm) return { ...NO_REALM, onMap: clock.onMap };
   const armies = liveHomeArmies(store, realm.entity_id, realm.game_id);
   const stamina = armies.flatMap((army) => {
@@ -107,9 +99,11 @@ const readGuideFacts = (
     onMap: clock.onMap,
     armiesTired:
       stamina.length === armies.length && stamina.length > 0 && stamina.every((bar) => bar.current < exploreCost),
-    pickWaiting: armies.some(
-      (army) => store.get("ArmyProgress", { game_id: army.game_id, explorer_id: army.explorer_id })?.pending,
-    ),
+    pickWaiting: armies.some((army) => {
+      const progress = store.get("ArmyProgress", { game_id: army.game_id, explorer_id: army.explorer_id });
+      const xpRules = store.get("ArmyProgressionRules", { game_id: army.game_id });
+      return progress !== undefined && xpRules !== undefined && affordableUpgrades(progress, xpRules).length > 0;
+    }),
     ...readSiteFirsts(store, realm.game_id),
     firstResearchAffordable: canAffordFirstResearch(store, realm, clock.tick),
     armyBelowSurface: armies.some(
@@ -118,13 +112,12 @@ const readGuideFacts = (
   };
 };
 
-/** Nothing learned yet, and the realm's Essence covers the cheapest node on the table. */
+/** Nothing learned yet, and the realm's Essence covers the cheapest first tier on the table. */
 const canAffordFirstResearch = (store: NativeFactStore, realm: NativeRows["Structure"], tick: number): boolean => {
-  const learned = learnedResearchNodes(store, realm.game_id, realm.entity_id);
-  if (learned === undefined || learned.length > 0) return false;
-  const prices = [...store.inGame("ResearchNode", realm.game_id)].map(
-    ({ essence_cost }) => Number(essence_cost) / RESOURCE_PRECISION,
-  );
+  if (realmLearned(store, realm.game_id, realm.entity_id) !== 0n) return false;
+  const prices = [...store.inGame("ResearchPrice", realm.game_id)]
+    .filter(({ tier }) => tier === 1)
+    .map(({ essence }) => Number(essence) / RESOURCE_PRECISION);
   const essence = knownBalance(getBalance(realm.entity_id, ResourcesIds.Essence, tick, store).balance);
   return prices.length > 0 && essence !== undefined && essence >= Math.min(...prices);
 };
@@ -134,14 +127,16 @@ const readSiteFirsts = (store: NativeFactStore, gameId: number) => {
   const sites = [...store.inGame("ExpeditionSite", gameId)];
   return {
     siteCleared: sites.some((site) => site.cleared),
-    fallenRealm: sites.some((site) => site.kind === "FallenRealm" && !site.cleared),
+    fallenRealm: sites.some(
+      (site) =>
+        !site.cleared &&
+        store.get("Structure", { game_id: gameId, entity_id: site.entity_id })?.base.category === StructureType.Ruin,
+    ),
     closedChest: [...store.inGame("TileOccupancy", gameId)].some((tile) => tile.category === TileOccupier.Chest),
   };
 };
 
-const ZERO_ADDRESS = "0x0";
-
-const NO_REALM: Omit<GuideFacts, "lordsSpent"> = {
+const NO_REALM: GuideFacts = {
   realm: false,
   barracks: false,
   troopsAtHome: undefined,

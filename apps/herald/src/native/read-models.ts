@@ -11,6 +11,7 @@ import {
 } from "@bibliothecadao/eternum/game-sync";
 import { nativeGameModeOf } from "@bibliothecadao/eternum";
 import { expeditionRealmSite, isRealmCategory } from "@bibliothecadao/eternum/expeditions";
+import { StructureType } from "@bibliothecadao/types";
 import { resolveDirectoryStatus, type DirectoryInput } from "../game-directory";
 import type { FoldRow } from "../types";
 
@@ -18,7 +19,6 @@ import type { FoldRow } from "../types";
 export const FINALIZED_GAME_MODELS: ReadonlySet<string> = new Set([
   "GameRegistry",
   "SliceRules",
-  "ChestRules",
   "SettlementRules",
   "SettlementProgress",
   "Structure",
@@ -90,7 +90,7 @@ function directoryPlayerState(
   const settlement = required(facts.settlementRules, game.game_id, "SettlementRules");
   return {
     registered: gameRows(facts.entries, game.game_id).some((row) => address(row.player) === player),
-    settled: structures.some((row) => number(record(row.base).category) === 1),
+    settled: structures.some((row) => isRealmCategory(number(record(row.base).category))),
     roster_member: roster.some((row) => address(row.account) === player),
     structures: structures.map((row) => playerStructure(row, game, settlement, facts, input.timestamp)),
   };
@@ -103,7 +103,7 @@ export function directoryFact(model: string, row: Row | undefined): unknown {
     case "GameRegistry":
       return row;
     case "SliceRules":
-      return row.epoch_seconds;
+      return row.day_unit_seconds;
     case "SettlementRules":
       return row;
     case "SettlementProgress":
@@ -135,16 +135,18 @@ export function directoryStatus(game: Row, timestamp: number) {
   );
 }
 
+const SETTLEMENT_CATEGORIES: readonly number[] = [StructureType.Realm, StructureType.Village];
+
 function directoryEntry(game: Row, facts: DirectoryRows, input: DirectoryInput): HeraldGameDirectoryEntry {
   const { settlementRules, progress, structures, rosters } = facts;
   const mode = nativeGameModeOf(number(game.preset_id));
   const settlement = required(settlementRules, game.game_id, "SettlementRules");
-  const epochSeconds = number(required(facts.rules, game.game_id, "SliceRules").epoch_seconds);
+  const dayUnitSeconds = number(required(facts.rules, game.game_id, "SliceRules").day_unit_seconds);
   const state = gameRows(progress, game.game_id)[0];
   const settlements = gameRows(structures, game.game_id).filter(
-    (row) => [1, 5].includes(number(record(row.base).category)) && integer(row.owner) !== 0n,
+    (row) => SETTLEMENT_CATEGORIES.includes(number(record(row.base).category)) && integer(row.owner) !== 0n,
   );
-  const realms = settlements.filter((row) => number(record(row.base).category) === 1);
+  const realms = settlements.filter((row) => isRealmCategory(number(record(row.base).category)));
   const roster = (gameRows(rosters, game.game_id)[0]?.players as Row[] | undefined) ?? [];
   const clock = {
     start_settling_at: number(game.start_settling_at),
@@ -157,7 +159,7 @@ function directoryEntry(game: Row, facts: DirectoryRows, input: DirectoryInput):
     name: shortString(game.name),
     preset_id: number(game.preset_id),
     mode,
-    expedition: epochSeconds === 0 ? null : { epoch_seconds: epochSeconds },
+    expedition: dayUnitSeconds === 0 ? null : { day_unit_seconds: dayUnitSeconds, seed: integer(game.seed).toString() },
     dev_mode_on: game.dev_mode_on === true,
     ready: game.ready === true,
     status: directoryStatus(game, input.timestamp),
@@ -205,10 +207,15 @@ function structurePosition(
   timestamp: number,
 ): { col: number; row: number } | null {
   const rules = required(facts.rules, game.game_id, "SliceRules");
-  const epochSeconds = number(rules.epoch_seconds);
-  if (epochSeconds !== 0 && isRealmCategory(number(record(row.base).category))) {
+  const dayUnitSeconds = number(rules.day_unit_seconds);
+  if (dayUnitSeconds !== 0 && isRealmCategory(number(record(row.base).category))) {
     return expeditionRealmSite(
-      { epochSeconds, spacing: number(settlement.spacing), startMainAt: number(game.start_main_at) },
+      {
+        dayUnitSeconds,
+        spacing: number(settlement.spacing),
+        startMainAt: number(game.start_main_at),
+        seed: integer(game.seed),
+      },
       number(record(row.metadata).realm_id),
       timestamp,
     );

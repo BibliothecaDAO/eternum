@@ -602,7 +602,7 @@ export class StructureManager {
       entityId: renderable.entityId,
       structureName:
         structureComponent && this.store
-          ? getStructureName(this.store, structureComponent, getIsBlitz()).name
+          ? getStructureName(structureComponent, getIsBlitz()).name
           : `${StructureType[renderInfo.type] ?? "Structure"} ${renderable.entityId}`,
       hexCoords: {
         col: renderable.hexCoords.col - FELT_CENTER(),
@@ -615,7 +615,7 @@ export class StructureManager {
       isAlly: arePlayersAllied(this.store, accountAddress(), ownerAddress),
       owner: { address: ownerAddress, ownerName, guildName: "" },
       structureType: renderInfo.type,
-      mineKind: structureComponent && this.store ? presentedMineKind(this.store, structureComponent) : undefined,
+      mineKind: structureComponent ? presentedMineKind(structureComponent) : undefined,
       hasWonder: renderInfo.hasWonder,
       fallenRealm: this.store
         ? readStandingFallenRealm(

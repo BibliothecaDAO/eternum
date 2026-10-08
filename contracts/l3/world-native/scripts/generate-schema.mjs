@@ -4,6 +4,7 @@ import { execFileSync } from "node:child_process";
 import { mkdtemp, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { eventLayouts, uniqueEventLayouts } from "./event-layouts.mjs";
+import { readCheckedTaxonomy } from "./taxonomy.mjs";
 import { defineFactModels, factWireTypes, syncScopes, executionRecordedVersion } from "../schema/fact-models.mjs";
 import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
@@ -156,13 +157,27 @@ const ruleConstants = Object.fromEntries(
   ]),
 );
 
-const mapSource = await readFile(new URL("src/map.cairo", root), "utf8");
-const tileOccupierConstants = Object.fromEntries(
-  [...mapSource.matchAll(/^pub const ([A-Z][A-Z0-9_]*_OCCUPIER): u8 = ([0-9]+);$/gm)].map(([, name, value]) => [
+// Research rows, tier choices and the building categories that have a row.
+const researchSource = await readFile(new URL("src/research.cairo", root), "utf8");
+const researchConstants = Object.fromEntries(
+  [...researchSource.matchAll(/^pub const ([A-Z][A-Z0-9_]*): u8 = ([0-9]+);$/gm)].map(([, name, value]) => [
     name,
     Number(value),
   ]),
 );
+
+const taxonomy = await readCheckedTaxonomy(fileURLToPath(new URL("src/", root)));
+// The schema identity hashes these four, and every recorded run pins that identity. They leave the schema at its next
+// declared shape change; readers take the full taxonomy from the generated enums.
+
+const tileOccupierConstants = Object.fromEntries(
+  ["Chest", "Spire", "Shrine", "Well"].map((member) => [
+    `${member.toUpperCase()}_OCCUPIER`,
+    taxonomy.tileOccupiers[member],
+  ]),
+);
+
+const mapSource = await readFile(new URL("src/map.cairo", root), "utf8");
 
 const tilePackingConstants = Object.fromEntries(
   ["BIOME_SCALE", "BYTE_RANGE", "REWARD_EXTRACTED_FLAG"].map((name) => {
@@ -180,6 +195,7 @@ const productionAbi = Object.values(artifacts).flat();
 
 const schema = {
   ruleConstants,
+  researchConstants,
   tileOccupierConstants,
   tilePackingConstants,
   logicClasses,
@@ -376,9 +392,7 @@ function factType(type) {
   }
   const definition = types.get(type);
   if (definition?.type === "enum" && definition.variants.every((variant) => variant.type === "()")) {
-    const variants = definition.variants
-      .filter((variant) => variant.name !== "Reserved")
-      .map((variant) => variant.name);
+    const variants = definition.variants.map((variant) => variant.name);
     return { ts: variants.map(JSON.stringify).join(" | "), wire: { enum: variants } };
   }
   if (definition?.type === "enum") {
@@ -432,7 +446,13 @@ const declarations = [
   "// Generated from native fact models and contract ABIs. Run the native schema generator to update.",
   `export const nativeFactSchemaIdentity = ${JSON.stringify(schema.identity)};`,
   `export const nativeRuleConstants = ${JSON.stringify(ruleConstants, null, 2)} as const;`,
-  `export const nativeTileOccupierConstants = ${JSON.stringify(tileOccupierConstants, null, 2)} as const;`,
+  `export const nativeResearchConstants = ${JSON.stringify(researchConstants, null, 2)} as const;`,
+  typeScriptEnum(
+    "NativeStructureCategory",
+    "Structure categories named in src/taxonomy.cairo.",
+    taxonomy.structureCategories,
+  ),
+  typeScriptEnum("NativeTileOccupier", "Tile occupiers named in src/taxonomy.cairo.", taxonomy.tileOccupiers),
   `export const nativeTilePackingConstants = ${JSON.stringify(tilePackingConstants, null, 2)} as const;`,
   `export const nativeStoryVariants = ${JSON.stringify(storyVariants(), null, 2)} as const;`,
   "export type NativeStoryVariant = (typeof nativeStoryVariants)[number];",
@@ -461,6 +481,11 @@ const declarations = [
   `export const nativeSyncScopes = ${JSON.stringify(validatedSyncScopes(), null, 2)} as const;`,
 ];
 await writeText("schema/client.gen.ts", declarations.join("\n") + "\n");
+
+function typeScriptEnum(name, summary, members) {
+  const lines = Object.entries(members).map(([member, value]) => `  ${member} = ${value},`);
+  return [`/** ${summary} */`, `export enum ${name} {`, ...lines, "}"].join("\n");
+}
 
 function commandType(type) {
   if (type === "()") return "undefined";

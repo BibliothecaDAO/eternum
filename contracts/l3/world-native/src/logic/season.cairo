@@ -149,7 +149,7 @@ pub mod SeasonLogic {
             let game_context = crate::commands::load_context(game_id, game_context);
 
             let rules = game_context.rules.unbox().victory_points_grant_config;
-            let amount = if category == 2 {
+            let amount = if category == crate::taxonomy::HYPERSTRUCTURE_CATEGORY {
                 rules.claim_hyperstructure_points
             } else {
                 rules.claim_otherstructure_points
@@ -159,7 +159,7 @@ pub mod SeasonLogic {
                     game_id,
                     actor,
                     amount.into(),
-                    if category == 2 {
+                    if category == crate::taxonomy::HYPERSTRUCTURE_CATEGORY {
                         crate::game::PointActivity::HyperstructureCapture
                     } else {
                         crate::game::PointActivity::StructureCapture

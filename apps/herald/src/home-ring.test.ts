@@ -1,7 +1,6 @@
-import { productionOutput } from "@bibliothecadao/eternum";
 import { readFileSync } from "node:fs";
 import { CairoCustomEnum } from "starknet";
-import { absoluteEpoch } from "@bibliothecadao/eternum/expeditions";
+import { dayOf } from "@bibliothecadao/eternum/expeditions";
 import { GameSubscription } from "./game-subscription";
 import { describe, expect, it, vi } from "vitest";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
@@ -28,6 +27,10 @@ import { WorldFold } from "./world-fold";
 
 const DAY_START = Date.parse("2026-09-22T00:00:00Z") / 1000;
 const MID_DAY = DAY_START + 43_200;
+// frontierWorld's season: four-hour units from DAY_START + 120, days drawn from seed 7. No bag opens with its 2-unit
+// day, so day 0 lasts at least 12 hours and holds MID_DAY.
+const CALENDAR = { seed: 7n, startMainAt: DAY_START + 120, dayUnitSeconds: 14_400 };
+const TODAY = dayOf(CALENDAR, MID_DAY)!;
 
 // Realm 1's day-one site with spacing 100 is (50, 50); its ring is the site and the six tiles around it.
 const RING: HomeRingTile[] = [
@@ -40,13 +43,13 @@ const RING: HomeRingTile[] = [
   [51, 49],
 ].map(([col, row]) => ({ col: col!, row: row!, biome: 5 }));
 
-/** A Frontier game (days of 86,400 s, regions of 100) with realm 1 owned by 0xa and realm 2 by 0xb, and no armies. */
+/** A Frontier game (CALENDAR's days, regions of 100) with realm 1 owned by 0xa and realm 2 by 0xb, and no armies. */
 const frontierWorld = (homeRingView?: HomeRingView, call?: MadaraRpc["call"]) => {
   const { native, decoder, fold } = setup();
   const event = rulesEvent();
   const rules = decoder.decodeRowSet("SliceRules", ["1"], event.data.slice(3));
   if (rules.kind !== "set") throw new Error("Expected rules row");
-  rules.value.epoch_seconds = 86_400;
+  rules.value.day_unit_seconds = CALENDAR.dayUnitSeconds;
   fold.apply(rules);
   const home = (id: number) =>
     rowEvent("Structure", ["1", String(id)], {
@@ -74,7 +77,7 @@ const frontierWorld = (homeRingView?: HomeRingView, call?: MadaraRpc["call"]) =>
           dev_mode_on: false,
           start_settling_at: String(DAY_START + 120),
           start_main_at: String(DAY_START + 120),
-          end_at: String(DAY_START + 864_000),
+          end_at: String(DAY_START + 120 + 2 * 288_000),
           end_grace_seconds: "0",
           seed: "7",
         }),
@@ -233,7 +236,6 @@ describe("home ring", () => {
           category: 28,
           paused: false,
           labor_paid: 0n,
-          tier: 1,
         }),
         rowEvent("ActionNonce", ["1", "30"], { next_nonce: 1n }),
       ]),
@@ -264,77 +266,40 @@ describe("home ring", () => {
       .map(BigInt);
     expect(values.slice(0, 2)).toEqual([1n, 21n]);
     expect(values).toHaveLength(2 + 21 * 5);
+    // The Cairo test's season draws from seed 42 in 60 s units from t=300, and reads each ring 50 s into its day.
+    const fixtureSeason = { seed: 42n, startMainAt: 300, dayUnitSeconds: 60 };
+    let dayStart = fixtureSeason.startMainAt;
     for (let day = 0; day < 3; day++) {
       const wire = ["7"];
       const materialized: bigint[] = [];
       for (let tile = 0; tile < 7; tile++) {
         const offset = 2 + (day * 7 + tile) * 5;
         const [timestamp, col, row, biome, data] = values.slice(offset, offset + 5);
-        expect(timestamp).toBe(350n + BigInt(day) * 100n);
+        expect(timestamp).toBe(BigInt(dayStart + 50));
         wire.push("0", col!.toString(), row!.toString(), biome!.toString());
         materialized.push(data!);
       }
       expect(decodeHomeRing(wire).map(homeRingTileData)).toEqual(materialized);
+      dayStart = dayOf(fixtureSeason, dayStart)!.end;
     }
   });
 
-  it("scopes slot and chest rows by absolute epoch on a nonzero launch day", () => {
+  it("scopes slot and discovery rows by the season day", () => {
     const { fold } = frontierWorld();
-    const absolute = absoluteEpoch({ epochSeconds: 86_400 }, MID_DAY);
     const scope = fold.subscriptionScope("1", "0xa", MID_DAY);
-    expect(scope.expedition?.absoluteEpoch).toBe(absolute);
+    expect(scope.expedition?.day).toBe(0);
     expect(scope.expedition?.regions).toEqual(new Set(["0:0"]));
     for (const [model, key] of [
       ["ArmySlot", { structure_id: "1", slot: "0" }],
-      ["ChestTokens", { player: "10" }],
-      ["ChestReward", { player: "10", explorer_id: "11", index: "0" }],
+      ["ExpeditionDiscovery", { structure_id: "1" }],
     ] as const) {
-      expect(rowInGameSyncScope(model, { ...key, epoch: String(absolute) }, scope)).toBe(true);
-      expect(rowInGameSyncScope(model, { ...key, epoch: "0" }, scope)).toBe(false);
-      const next = fold.subscriptionScope("1", "0xa", MID_DAY + 86_400);
-      expect(rowInGameSyncScope(model, { ...key, epoch: String(absolute) }, next)).toBe(false);
-      expect(rowInGameSyncScope(model, { ...key, epoch: String(absolute + 1) }, next)).toBe(true);
+      expect(rowInGameSyncScope(model, { ...key, epoch: "0" }, scope)).toBe(true);
+      expect(rowInGameSyncScope(model, { ...key, epoch: "1" }, scope)).toBe(false);
+      const next = fold.subscriptionScope("1", "0xa", TODAY.end);
+      expect(rowInGameSyncScope(model, { ...key, epoch: "0" }, next)).toBe(false);
+      expect(rowInGameSyncScope(model, { ...key, epoch: "1" }, next)).toBe(true);
     }
-    expect(fold.subscriptionScope("1", "0xa", DAY_START).expedition?.absoluteEpoch).toBe(-1);
-  });
-
-  it("retains Support accrual inputs across midnight, visit and refreshed snapshots", () => {
-    const { native, fold } = frontierWorld();
-    const midnight = DAY_START + 86_400;
-    const epoch = absoluteEpoch({ epochSeconds: 86400 }, midnight - 10);
-    native.applyReceipt(
-      fold,
-      receipt([
-        rowEvent("RealmSupport", ["1", "1", String(epoch)], { level: 3 }),
-        rowEvent("RealmSupport", ["1", "2", String(epoch)], { level: 2 }),
-        rowEvent("ResourceWeight", ["1", "1"], { capacity: 100000, weight: 0 }),
-        rowEvent("ResourceProduction", ["1", "1", "35"], {
-          building_count: 1,
-          production_rate: 100,
-          output_amount_left: (1n << 128n) - 1n,
-          last_updated_at: midnight - 10,
-        }),
-      ]),
-      11,
-      0,
-    );
-    const visited = fold.subscriptionSnapshot("1", 11, fold.subscriptionScope("1", "0xa", midnight + 10, "0xb"));
-    expect(visited.models.find((m) => m.model === "RealmSupport")!.rows).toHaveLength(2);
-    const snapshot = fold.subscriptionSnapshot("1", 11, fold.subscriptionScope("1", "0xa", midnight + 10));
-    expect(snapshot.models.find((m) => m.model === "RealmSupport")!.rows).toHaveLength(1);
-    for (let refresh = 0; refresh < 2; refresh++) {
-      const store = new NativeFactStore();
-      store.applyFacts(snapshot.models.flatMap(({ model, rows }) => rows.map((row) => ({ model, ...row }))));
-      store.setSnapshot({ gameId: 1, complete: true, actor: "0xa", timestamp: midnight + 10 });
-      const production = store.require("ResourceProduction", { game_id: 1, entity_id: 1, resource_type: 35 });
-      const support = store.requireOrAbsent("RealmSupport", { game_id: 1, structure_id: 1, epoch: BigInt(epoch) });
-      expect(productionOutput(production, midnight + 10, { epochSeconds: 86400, level: support.known!.level })).toBe(
-        2200n,
-      );
-      expect(
-        store.requireOrAbsent("RealmSupport", { game_id: 1, structure_id: 1, epoch: BigInt(epoch + 1) }).known?.level,
-      ).toBe(0);
-    }
+    expect(fold.subscriptionScope("1", "0xa", DAY_START).expedition?.day).toBe(-1);
   });
 
   it("refuses an empty or short view response instead of reading a ring of no tiles", () => {
@@ -486,7 +451,6 @@ describe("client and Herald subscription scope parity", () => {
             category: 28,
             paused: false,
             labor_paid: 200_000_000_000n,
-            tier: 1,
           }),
         ],
         "0x56",
@@ -552,8 +516,8 @@ describe("client and Herald subscription scope parity", () => {
       fold,
       receipt(
         [
-          rowEvent("ArmySlot", ["1", "1", String(absoluteEpoch({ epochSeconds: 86_400 }, MID_DAY)), "0"], {
-            epoch: absoluteEpoch({ epochSeconds: 86_400 }, MID_DAY),
+          rowEvent("ArmySlot", ["1", "1", String(TODAY.index), "0"], {
+            epoch: TODAY.index,
             explorer_id: 20,
             stamina: { amount: 30, updated_tick: 1 },
           }),
@@ -694,23 +658,9 @@ describe("client and Herald subscription scope parity", () => {
       "OUTSIDE_SNAPSHOT_SCOPE",
     );
 
-    timestamp += 86_400;
+    timestamp = TODAY.end + 60;
     deliver(subscription!.project({ type: "head", block: 12, preconfirmed: true, timestamp }));
     expect(store.subscriptionScope().known).toEqual(overlay.subscriptionScope("1", actor, timestamp));
-    expect(
-      store.requireOrAbsent("ChestTokens", {
-        game_id: 1,
-        player: 0xbn,
-        epoch: BigInt(absoluteEpoch({ epochSeconds: 86_400 }, DAY_START)),
-      }).unknown,
-    ).toContain("OUTSIDE_SNAPSHOT_SCOPE");
-    expect(
-      store.requireOrAbsent("ChestTokens", {
-        game_id: 1,
-        player: 0xbn,
-        epoch: BigInt(absoluteEpoch({ epochSeconds: 86_400 }, timestamp)),
-      }).known?.count,
-    ).toBe(0);
     expect(guardReads.some((read) => (read as { unknown?: string }).unknown === "UNKNOWN_SCOPE_CLOCK")).toBe(true);
   });
 });
@@ -730,7 +680,6 @@ describe("visited realm subscription", () => {
           category: 37,
           paused: false,
           labor_paid: 200000000000n,
-          tier: 2,
         }),
         rowEvent("ExplorerTroops", ["1", "20"], explorerValue("2", 1000n, 30n, 1n)),
         rowEvent("TileOccupancy", ["1", "0", "150", "150"], { entity_id: 20, category: 15, is_structure: false }),

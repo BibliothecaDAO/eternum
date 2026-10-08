@@ -104,7 +104,7 @@ describe("native leaderboard", () => {
   it("keeps an unseen Frontier player's score unknown and gives zero to in-scope owners", () => {
     const store = new NativeFactStore();
     store.setSnapshot({ gameId: 23, complete: true, actor: PLAYER.toString(), timestamp: 250 });
-    upsert(store, [23], "SliceRules", { ...preset.rules, game_id: 23, epoch_seconds: 100 });
+    upsert(store, [23], "SliceRules", { ...preset.rules, game_id: 23, day_unit_seconds: 100 });
     upsert(store, [23], "SettlementRules", {
       game_id: 23,
       registration_start: 1,

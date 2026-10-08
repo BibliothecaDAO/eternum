@@ -6,24 +6,41 @@ import { fetchHeraldGameHistory } from "@bibliothecadao/eternum/game-client";
 import {
   ArmyActionManager,
   canPayTroopRaise,
-  researchedBuildingTier,
-  researchedDepths,
+  realmLearned,
+  researchedDepth,
+  researchRowCategory,
+  researchTier,
   createGameActions,
   configManager,
   getBuildingCosts,
+  dayOf,
+  DAY_UNITS_PER_BAG,
+  DAYS_PER_BAG,
   getBlockTimestamp,
   getTileAt,
   entityMapPosition,
   liveHomeArmies,
+  readExpeditionRules,
   readTroopRaiseCost,
   ResourceManager,
+  seasonSeconds,
   type GameClient,
   waitForWorldState,
 } from "@bibliothecadao/eternum";
 import { generateBuildablePositions } from "@bibliothecadao/eternum/automation";
-import { BUILDINGS_CENTER, getNeighborHexes, RESOURCE_PRECISION, ResourcesIds, TroopTier } from "@bibliothecadao/types";
+import {
+  BUILDINGS_CENTER,
+  getNeighborHexes,
+  RESOURCE_PRECISION,
+  ResourcesIds,
+  StructureType,
+  TroopTier,
+} from "@bibliothecadao/types";
 import type { NativeCommand } from "../../../contracts/l3/world-native/schema/commands.gen";
-import type { NativeRows } from "../../../contracts/l3/world-native/schema/client.gen";
+import {
+  nativeResearchConstants as research,
+  type NativeRows,
+} from "../../../contracts/l3/world-native/schema/client.gen";
 import { buildNativePreset } from "../../../config/deployer/clean/config/native-preset";
 import { nativePresetForId } from "../../../config/source/native";
 import { FRONTIER_ACCELERATED_PRESET_ID } from "../../../config/source/common/native-preset-modes";
@@ -49,8 +66,16 @@ import {
   type WheatState,
 } from "./frontier-rules";
 
-const PRODUCTION_EPOCH_SECONDS = 86400;
+// Frontier's own day unit: the evidence's time scale is how much faster a run's unit is.
+const DESIGN_DAY_UNIT_SECONDS = 14_400;
 const precision = BigInt(RESOURCE_PRECISION);
+/** Every guarded Frontier site an army may attack: camps, rifts, stragglers and the day's ruin. */
+const GUARDED_SITES = new Set<number>([
+  StructureType.Camp,
+  StructureType.Rift,
+  StructureType.Stragglers,
+  StructureType.Ruin,
+]);
 
 /**
  * Creates a Frontier season from a registered preset. The design run creates from the accelerated fixture preset, which
@@ -71,13 +96,17 @@ export async function launchFrontierSeason(
   const config = loadNativePresetConfiguration("madara.frontier", presetId);
   const preset = buildNativePreset(config, presetId);
   if (nativePresetForId(presetId).clockScale) await registerFixturePreset(account, presetId, manifest, preset);
-  const startAt = Math.floor(Date.now() / 1000) + 60;
+  // The season starts on an armies tick and lasts whole bags of days, covering the run and its longest last day.
+  const tick = Number(preset.rules.tick_config.armies_tick_in_seconds);
+  const startAt = Math.ceil((Math.floor(Date.now() / 1000) + 60) / tick) * tick;
+  const unit = preset.rules.day_unit_seconds;
+  const bags = Math.ceil((Math.ceil(minutes * 60) + 6 * unit) / seasonSeconds(1, unit));
   const params = buildNativeGameParams(config, {
     gameName,
     presetId,
     startMainAt: startAt,
     chainTimestamp: startAt - 60,
-    durationSeconds: Math.ceil(minutes * 60) + preset.rules.epoch_seconds,
+    durationSeconds: seasonSeconds(bags, unit),
     devModeOn: false,
     singleRealmMode: true,
     twoPlayerMode: false,
@@ -89,7 +118,7 @@ export async function launchFrontierSeason(
     JSON.stringify({
       frontierSeason: created.gameId,
       presetId,
-      epochSeconds: preset.rules.epoch_seconds,
+      dayUnitSeconds: unit,
       createTransaction: created.transactionHash,
     }),
   );
@@ -109,10 +138,10 @@ async function registerFixturePreset(
   console.log(JSON.stringify({ fixturePreset: presetId, commitment: registration.commitment, transaction }));
 }
 
-/** A design run's day: the accelerated fixture preset's, which the season it plays must match. */
-const acceleratedEpochSeconds = (): number => {
+/** A design run's day unit: the accelerated fixture preset's, which the season it plays must match. */
+const acceleratedDayUnitSeconds = (): number => {
   const preset = nativePresetForId(FRONTIER_ACCELERATED_PRESET_ID);
-  return preset.epochSeconds / preset.clockScale!;
+  return preset.dayUnitSeconds / preset.clockScale!;
 };
 
 type Army = NativeRows["ExplorerTroops"];
@@ -172,14 +201,15 @@ export interface FrontierEvidence {
   burst?: FrontierBurst;
   /** A functional pass at the season's own speed: what it observed of its preset's rates and charges. */
   rules?: FrontierRuleEvidence;
-  epochSeconds: number;
+  /** The mean day of a bag (20 units over 5 days), the length the summaries count days in. */
+  meanDaySeconds: number;
   timeScale: number;
-  tokenCap: number;
   players: Array<
     Omit<Player, "identity" | "siteExchanges" | "nextActionAt"> & {
       botId: number;
       owner: string;
-      chests: Array<{ epoch: number; depth: number; kind: string; quality: number }>;
+      /** Each ruin the player cleared: its day and the whole LORDS its stored chest paid. */
+      chests: Array<{ epoch: number; lords: number }>;
     }
   >;
 }
@@ -202,16 +232,13 @@ interface RunFrontierOptions {
 /** Decisions use the same synchronized native facts and command submission as a player. */
 export async function runFrontierWorkload(options: RunFrontierOptions): Promise<WorkloadResult> {
   const { client, game, accounts } = options;
-  const epochSeconds = epochSecondsOf(client);
-  // A burst measures one moment of load, which is the same on any day length; the capacity shape plays its own days.
-  if (!options.burst && !options.functional && epochSeconds === acceleratedEpochSeconds())
-    throw new Error(`The Frontier capacity shape needs production-length days, not the design run's ${epochSeconds} s`);
-  const rules = options.functional && epochSeconds !== acceleratedEpochSeconds() ? recordRules(client) : undefined;
+  const dayUnitSeconds = calendarOf(client).dayUnitSeconds;
+  const rules = options.functional && dayUnitSeconds !== acceleratedDayUnitSeconds() ? recordRules(client) : undefined;
   await game.waitUntilPlaying();
-  if (options.burst?.shape === "booth") return runBoothBurst(options, epochSeconds);
+  if (options.burst?.shape === "booth") return runBoothBurst(options, dayUnitSeconds);
   const players = await settleFrontierPlayers(options, accounts);
   await Promise.all(players.map((player) => waitForRealmResources(player.client, player)));
-  if (options.burst?.shape === "rollover") return runRolloverBurst(options, players, epochSeconds);
+  if (options.burst?.shape === "rollover") return runRolloverBurst(options, players, dayUnitSeconds);
   for (const player of players) observeDay(player);
   rules?.observeRates(players);
   await options.onReady?.();
@@ -252,7 +279,7 @@ export async function runFrontierWorkload(options: RunFrontierOptions): Promise<
     await sleep(1000);
   }
   for (const player of players) currentDay(player).endedAt = now();
-  return frontierResult(options, { players, actions, startedAt, ticks, epochSeconds, rules: rules?.evidence });
+  return frontierResult(options, { players, actions, startedAt, ticks, dayUnitSeconds, rules: rules?.evidence });
 }
 
 type RuleRecorder = ReturnType<typeof recordRules>;
@@ -296,7 +323,7 @@ function wheatState(player: Player): WheatState {
  * The booth burst: every bot founds its realm inside the window, released evenly across it, and the foundings are the
  * measured workload.
  */
-async function runBoothBurst(options: RunFrontierOptions, epochSeconds: number): Promise<WorkloadResult> {
+async function runBoothBurst(options: RunFrontierOptions, dayUnitSeconds: number): Promise<WorkloadResult> {
   await options.onReady?.();
   const startedAt = new Date().toISOString();
   const releaseAtMs = Date.now();
@@ -313,7 +340,7 @@ async function runBoothBurst(options: RunFrontierOptions, epochSeconds: number):
     actions: founded.map(({ transaction }) => transaction),
     startedAt,
     ticks: 0,
-    epochSeconds,
+    dayUnitSeconds,
   });
 }
 
@@ -324,14 +351,14 @@ async function runBoothBurst(options: RunFrontierOptions, epochSeconds: number):
 async function runRolloverBurst(
   options: RunFrontierOptions,
   players: Player[],
-  epochSeconds: number,
+  dayUnitSeconds: number,
 ): Promise<WorkloadResult> {
   const { client } = options;
   // Workers sharing the season are all settled before any waits, so they wait for the same boundary.
   await options.onReady?.();
-  const settledEpoch = currentEpoch(client);
-  console.log(JSON.stringify({ frontierRolloverWaitSeconds: epochSeconds - (now() % epochSeconds) }));
-  while (currentEpoch(client) === settledEpoch) await sleep(1000);
+  const settledDay = today(client);
+  console.log(JSON.stringify({ frontierRolloverWaitSeconds: settledDay.end - now() }));
+  while (today(client).index === settledDay.index) await sleep(1000);
   for (const player of players) observeDay(player);
   const startedAt = new Date().toISOString();
   const releaseAtMs = Date.now();
@@ -343,7 +370,7 @@ async function runRolloverBurst(
       return playRollover(options, player, scheduledAtMs);
     }),
   );
-  return frontierResult(options, { players, actions: actions.flat(), startedAt, ticks: 0, epochSeconds });
+  return frontierResult(options, { players, actions: actions.flat(), startedAt, ticks: 0, dayUnitSeconds });
 }
 
 /** One bot's rollover: a fresh army, then, once the army is in view, its first move of the day. */
@@ -398,27 +425,29 @@ async function frontierResult(
     actions: TrackedTransaction[];
     startedAt: string;
     ticks: number;
-    epochSeconds: number;
+    dayUnitSeconds: number;
     rules?: FrontierRuleEvidence;
   },
 ): Promise<WorkloadResult> {
-  const { client, game, provider } = options;
-  const { players, actions, epochSeconds } = run;
+  const { client, provider } = options;
+  const { players, actions, dayUnitSeconds } = run;
   await attachAcceptedBlocks(provider, actions);
-  const chests = await readChestHistory(client, Math.max(0, ...actions.map((action) => action.acceptedOnL2Block ?? 0)));
+  const chests = await readRuinChestHistory(
+    client,
+    Math.max(0, ...actions.map((action) => action.acceptedOnL2Block ?? 0)),
+  );
   const evidence: FrontierEvidence = {
     ...(options.burst ? { burst: options.burst } : {}),
     ...(run.rules ? { rules: run.rules } : {}),
-    epochSeconds,
-    timeScale: PRODUCTION_EPOCH_SECONDS / epochSeconds,
-    tokenCap: client.setup.store.require("ChestRules", { game_id: game.gameId }).token_cap,
+    meanDaySeconds: (DAY_UNITS_PER_BAG / DAYS_PER_BAG) * dayUnitSeconds,
+    timeScale: DESIGN_DAY_UNIT_SECONDS / dayUnitSeconds,
     players: players.map(({ identity, siteExchanges: _exchanges, nextActionAt: _next, ...player }) => ({
       ...player,
       botId: identity.botId,
       owner: identity.owner,
       chests: chests
         .filter((row) => row.player === BigInt(identity.address))
-        .map((row) => ({ epoch: Number(row.epoch), depth: row.depth, kind: row.kind, quality: row.quality })),
+        .map(({ epoch, lords }) => ({ epoch, lords })),
     })),
   };
   return {
@@ -434,36 +463,33 @@ async function frontierResult(
   };
 }
 
-async function readChestHistory(client: GameClient, confirmedBlock: number) {
-  const rewards: Array<{ player: bigint; epoch: number; depth: number; kind: string; quality: number }> = [];
+/** A ruin's chest pays at its clear, as the LORDS reward of the ruin's SitePayout story. */
+async function readRuinChestHistory(client: GameClient, confirmedBlock: number) {
+  const chests: Array<{ player: bigint; epoch: number; lords: number }> = [];
   for (let offset = 0; ; ) {
     const page = await fetchHeraldGameHistory(client.shard, client.gameId, {
       model: "StoryEvent",
-      story: "ChestReward",
+      story: "SitePayout",
       limit: 500,
       offset,
     });
     if (page.complete_through_block === null || page.complete_through_block < confirmedBlock)
-      throw new Error("Chest history has not reached the final confirmed action");
+      throw new Error("Site history has not reached the final confirmed action");
     for (const event of page.items) {
-      const row = (event.value.story as Record<string, Record<string, string>>).ChestReward;
-      const reward = {
-        player: BigInt(row.player),
-        epoch: Number(row.epoch),
-        depth: Number(row.depth),
-        kind: row.kind,
-        quality: Number(row.quality),
-      };
-      if (
-        ![reward.epoch, reward.depth, reward.quality].every(Number.isSafeInteger) ||
-        !["Relic", "Token"].includes(reward.kind)
-      )
-        throw new Error("Malformed chest reward history");
-      rewards.push(reward);
+      const payout = (event.value.story as Record<string, Record<string, unknown>>).SitePayout;
+      if (Number(payout.category) !== StructureType.Ruin) continue;
+      const reward = payout.reward as { resource_type: string; amount: string } | null;
+      if (!reward || Number(reward.resource_type) !== ResourcesIds.Lords)
+        throw new Error("A ruin cleared without its chest");
+      chests.push({
+        player: BigInt(String(event.value.owner)),
+        epoch: known(dayOf(calendarOf(client), Number(event.value.timestamp)), client.gameId, "ruin clear day").index,
+        lords: Number(BigInt(reward.amount) / precision),
+      });
     }
     offset += page.items.length;
-    if (offset >= page.total) return rewards;
-    if (page.items.length === 0) throw new Error("Chest history ended before its declared total");
+    if (offset >= page.total) return chests;
+    if (page.items.length === 0) throw new Error("Site history ended before its declared total");
   }
 }
 
@@ -536,17 +562,20 @@ function home(client: GameClient, player: Player): Home {
 function activeArmies(client: GameClient, player: Player): Army[] {
   return liveHomeArmies(client.setup.store, player.realmId, client.gameId);
 }
-function epochSecondsOf(client: GameClient): number {
-  return client.setup.store.require("SliceRules", { game_id: client.gameId }).epoch_seconds;
+function calendarOf(client: GameClient) {
+  const rules = readExpeditionRules(client.setup.store, client.gameId);
+  if (!rules) throw new Error("A Frontier season has days");
+  return rules;
 }
-function currentEpoch(client: GameClient): number {
-  const registry = client.setup.store.require("GameRegistry", { game_id: client.gameId });
-  const epochSeconds = epochSecondsOf(client);
-  return Math.floor(now() / epochSeconds) - Math.floor(Number(registry.start_main_at) / epochSeconds);
+/** The season day the chain clock is in; the workload only runs once the season has started. */
+function today(client: GameClient) {
+  const day = dayOf(calendarOf(client), now());
+  if (!day) throw new Error("The Frontier season has not started");
+  return day;
 }
 function observeDay(player: Player) {
   const { client, game } = player;
-  const epoch = currentEpoch(client);
+  const epoch = today(client).index;
   if (currentDay(player)?.epoch === epoch) return;
   const previous = currentDay(player);
   if (previous) {
@@ -584,15 +613,18 @@ function observeDay(player: Player) {
   });
   observeProgress(client, game, player);
 }
+/** A profile plays a few sessions spread over today, however long today lasts. */
 function sessionPeriod(client: GameClient, player: Player): number {
-  return epochSecondsOf(client) / (player.profile === "check-in" ? 3 : 9);
+  const day = today(client);
+  return (day.end - day.start) / (player.profile === "check-in" ? 3 : 9);
 }
 function session(client: GameClient, player: Player): number {
-  return Math.floor((now() % epochSecondsOf(client)) / sessionPeriod(client, player));
+  return Math.floor((now() - today(client).start) / sessionPeriod(client, player));
 }
 function inSession(client: GameClient, player: Player): boolean {
   const period = sessionPeriod(client, player);
-  return now() % epochSecondsOf(client) >= 2 && (now() - player.settledAt < period / 3 || now() % period < period / 3);
+  const intoDay = now() - today(client).start;
+  return intoDay >= 2 && (now() - player.settledAt < period / 3 || intoDay % period < period / 3);
 }
 interface Action {
   kind: string;
@@ -667,39 +699,30 @@ function planUpgrade(client: GameClient, player: Player): Action | undefined {
       cost: recipe.costs.find((cost) => cost.resource_type === 38)?.amount ?? 0n,
       action: { kind: "LevelUp", value: player.realmId },
     });
+  // Research the cheapest open row's next tier, always on its first side: Fields, Tools, Drill, camps.
   const learned = store.require("RealmKnowledge", { game_id: client.gameId, structure_id: player.realmId }).learned;
-  for (const node of store.inGame("ResearchNode", client.gameId)) {
-    if ((learned & (1 << node.node)) !== 0 || (learned & node.prerequisites) !== node.prerequisites) continue;
-    if (node.essence_cost <= essence)
+  const labor = balance(client, player, 23);
+  for (let row = 0; row < research.ROW_COUNT; row++) {
+    const category = researchRowCategory[row];
+    if (category !== undefined && !standing(client, player, category)) continue;
+    const price = store.get("ResearchPrice", { game_id: client.gameId, row, tier: researchTier(learned, row) + 1 });
+    if (price && price.essence <= essence && price.labor <= labor)
       candidates.push({
-        cost: node.essence_cost,
-        action: { kind: "Research", value: { structure_id: player.realmId, node: node.node } },
-      });
-  }
-  for (const building of store.inGame("Building", client.gameId)) {
-    if (building.structure_id !== player.realmId) continue;
-    const unlocked = known(
-      researchedBuildingTier(store, client.gameId, player.realmId, building.category),
-      player.realmId,
-      "researched tier",
-    );
-    if (building.tier >= unlocked) continue;
-    const rule = store.require("BuildingTierRule", {
-      game_id: client.gameId,
-      category: building.category,
-      tier: building.tier + 1,
-    });
-    if (rule.labor_upgrade_cost <= balance(client, player, 23))
-      candidates.push({
-        cost: rule.labor_upgrade_cost,
-        action: {
-          kind: "UpgradeBuilding",
-          value: { structure_id: player.realmId, coord: { alt: false, x: building.inner_col, y: building.inner_row } },
-        },
+        cost: price.essence,
+        action: { kind: "Research", value: { structure_id: player.realmId, row, choice: 0 } },
       });
   }
   const selected = candidates.sort((a, b) => Number(a.cost - b.cost))[0];
   return selected ? command(client, player, selected.action) : undefined;
+}
+// Buildings of a type on the realm board, the castle's own workshop aside.
+function standing(client: GameClient, player: Player, category: number): number {
+  return [...client.setup.store.inGame("Building", client.gameId)].filter(
+    (row) =>
+      row.structure_id === player.realmId &&
+      row.category === category &&
+      (row.inner_col !== BUILDINGS_CENTER[0] || row.inner_row !== BUILDINGS_CENTER[1]),
+  ).length;
 }
 function planBuilding(client: GameClient, player: Player): Action | undefined {
   const realm = home(client, player);
@@ -713,12 +736,7 @@ function planBuilding(client: GameClient, player: Player): Action | undefined {
   const training = known(
     new ResourceManager(client.setup.store, player.realmId, client.gameId).balanceWithProduction(
       getBlockTimestamp().currentDefaultTick,
-      (25 +
-        known(
-          researchedBuildingTier(client.setup.store, client.gameId, player.realmId, 28),
-          player.realmId,
-          "researched barracks tier",
-        )) as ResourcesIds,
+      ResourcesIds.Knight,
     ),
     player.realmId,
     "troop training balance",
@@ -790,32 +808,19 @@ function planMuster(client: GameClient, player: Player): Action | undefined {
     realm.base.level
   ]!;
   if (armies.length >= slots) return;
-  let tier =
-    known(
-      researchedBuildingTier(client.setup.store, client.gameId, player.realmId, 28),
-      player.realmId,
-      "researched barracks tier",
-    ) - 1;
-  let troops = 0n;
-  for (; tier >= 0; tier--) {
-    const resource = (26 + tier) as ResourcesIds;
-    const cap = BigInt(
-      configManager.getMaxArmySize(realm.base.level, [TroopTier.T1, TroopTier.T2, TroopTier.T3][tier]!),
-    );
-    const available = balance(client, player, resource) / precision;
-    troops = available < cap ? (available * 9n) / 10n : cap;
-    if (troops >= 1000n) break;
-  }
-  if (tier < 0) return;
-  // The realm pays its troops' recipe wheat to deploy them, so it raises what it can pay for, as a player's deploy sheet
-  // offers: at real speed a new realm's wheat pays for fewer troops than its barracks hold.
-  troops = affordableTroops(client, player, (26 + tier) as ResourcesIds, troops);
+  // One troop type: every army deploys Knight T1.
+  const cap = BigInt(configManager.getMaxArmySize(realm.base.level, TroopTier.T1));
+  const available = balance(client, player, ResourcesIds.Knight) / precision;
+  let troops = available < cap ? (available * 9n) / 10n : cap;
+  if (troops < 1000n) return;
+  // Deploy only the troops whose recipe inputs the realm can pay for now.
+  troops = affordableTroops(client, player, ResourcesIds.Knight, troops);
   if (troops < 1n) return;
   const cost = readTroopRaiseCost(
     client.setup.store,
     client.gameId,
     player.realmId,
-    (26 + tier) as ResourcesIds,
+    ResourcesIds.Knight,
     Number(troops),
     getBlockTimestamp().currentDefaultTick,
   );
@@ -833,12 +838,12 @@ function planMuster(client: GameClient, player: Player): Action | undefined {
       value: {
         structure_id: player.realmId,
         category: 0,
-        tier,
+        tier: 0,
         amount: troops * precision,
         direction: spawn.direction,
       },
     }),
-    charge: { kind: "CreateExplorer", troopResource: 26 + tier, troops },
+    charge: { kind: "CreateExplorer", troopResource: ResourcesIds.Knight, troops },
   };
 }
 /** At most `troops`, and no more than every input of one troop's raise, held now, pays for. */
@@ -866,30 +871,28 @@ function planExpedition(client: GameClient, game: HarnessGame, player: Player): 
   const stamina = rules.troop_stamina_config;
   for (const army of activeArmies(client, player)) {
     const amount = game.explorerStamina(army.explorer_id, game.currentTicks().armies);
-    const offer = client.setup.store.require("ArmyProgress", {
-      game_id: client.gameId,
-      explorer_id: army.explorer_id,
-    }).pending;
-    if (offer)
+    const upgrade = affordableUpgrade(client, army.explorer_id);
+    if (upgrade)
       return command(client, player, {
-        kind: "ChooseAttribute",
+        kind: "BuyTier",
         value: {
           explorer_id: army.explorer_id,
-          offer_id: offer.id,
-          attribute: { kind: offer.choices[0]!, value: undefined },
+          attribute: { kind: upgrade, value: undefined },
+          // A bot's Scouting raises rifts, the Essence it spends on research and depths.
+          kind:
+            upgrade === "Scouting"
+              ? { kind: "Some", value: { kind: "Rift", value: undefined } }
+              : { kind: "None", value: undefined },
         },
       });
     const coord = entityMapPosition(client.setup.store, client.gameId, army.explorer_id);
     const neighbors = getNeighborHexes(coord.x, coord.y);
     const spacing = client.setup.store.require("SettlementRules", { game_id: client.gameId }).spacing;
     const realm = home(client, player);
-    const depth = Math.max(
-      0,
-      ...known(
-        researchedDepths(client.setup.store, client.gameId, player.realmId),
-        player.realmId,
-        "researched depths",
-      ),
+    const depth = known(
+      researchedDepth(client.setup.store, client.gameId, player.realmId),
+      player.realmId,
+      "researched depth",
     );
     const atEntrance =
       Math.floor(coord.y / spacing) % 4 === 0 &&
@@ -911,13 +914,13 @@ function planExpedition(client: GameClient, game: HarnessGame, player: Player): 
       .map((spot) => getTileAt(client.setup.store, false, spot.col, spot.row, client.gameId)?.occupier_id)
       .filter((id): id is number => Boolean(id))
       .map((id) => client.setup.store.get("Structure", { game_id: client.gameId, entity_id: id }))
-      .find((site) => site && site.owner === 0n && (site.base.category === 4 || site.base.category === 7));
+      .find((site) => site && site.owner === 0n && GUARDED_SITES.has(site.base.category));
     if (target) {
       if (holdsForSite(amount, stamina.stamina_attack_req)) continue;
       let campAttempt = day.campAttempts.find(
         (attempt) => attempt.armyId === army.explorer_id && attempt.siteId === target.entity_id,
       );
-      if (target.base.category === 7 && !campAttempt) {
+      if (target.base.category === StructureType.Camp && !campAttempt) {
         campAttempt = { armyId: army.explorer_id, siteId: target.entity_id, lost: false };
         day.campAttempts.push(campAttempt);
       }
@@ -935,7 +938,7 @@ function planExpedition(client: GameClient, game: HarnessGame, player: Player): 
         day.attackStamina += stamina.stamina_attack_req - (captured ? stamina.capture_stamina_refund : 0);
         if (captured) {
           day.captures++;
-          if (target.base.category === 7) {
+          if (target.base.category === StructureType.Camp) {
             day.campCaptures++;
             player.firstCampAt ??= now();
           }
@@ -1004,6 +1007,24 @@ function planExpedition(client: GameClient, game: HarnessGame, player: Player): 
   }
 }
 /** An army beside a guard site waits to attack it: exploring on would walk it away from the capture it found. */
+/** The army's lowest attribute it can afford to Upgrade, as a player spreading XP would; none while it cannot pay. */
+function affordableUpgrade(client: GameClient, explorerId: number) {
+  const progress = client.setup.store.require("ArmyProgress", { game_id: client.gameId, explorer_id: explorerId });
+  const rules = client.setup.store.require("ArmyProgressionRules", { game_id: client.gameId });
+  const prices = [rules.uncommon_xp, rules.rare_xp, rules.epic_xp, rules.legendary_xp];
+  const tiers = [
+    ["Battle", progress.battle],
+    ["Logistics", progress.logistics],
+    ["Scouting", progress.scouting],
+    ["Homecoming", progress.homecoming],
+  ] as const;
+  const [attribute] =
+    tiers
+      .filter(([, tier]) => tier < prices.length + 1 && progress.xp >= prices[tier - 1]!)
+      .toSorted((a, b) => a[1] - b[1])[0] ?? [];
+  return attribute;
+}
+
 export function holdsForSite(stamina: number, attackRequirement: number): boolean {
   return stamina < attackRequirement;
 }
@@ -1035,22 +1056,14 @@ function observeProgress(client: GameClient, game: HarnessGame, player: Player) 
     ["castle", realm.base.level],
     [
       "barracks",
-      known(
-        researchedBuildingTier(client.setup.store, client.gameId, player.realmId, 28),
-        player.realmId,
-        "researched barracks tier",
-      ) - 1,
+      researchTier(
+        known(realmLearned(client.setup.store, client.gameId, player.realmId), player.realmId, "realm knowledge"),
+        research.ROW_BARRACKS,
+      ),
     ],
     [
       "depth",
-      Math.max(
-        0,
-        ...known(
-          researchedDepths(client.setup.store, client.gameId, player.realmId),
-          player.realmId,
-          "researched depths",
-        ),
-      ),
+      known(researchedDepth(client.setup.store, client.gameId, player.realmId), player.realmId, "researched depth"),
     ],
   ] as const) {
     if (level > 0 && !player.rungs.some((rung) => rung.lane === lane && rung.level === level))
@@ -1072,7 +1085,7 @@ export function summarizeFrontierDesign(evidence: FrontierEvidence) {
   return (["check-in", "daily"] as const).map((profile) => {
     const players = evidence.players.filter((player) => player.profile === profile);
     const observedDays = players.map(
-      (player) => ((player.days.at(-1)?.endedAt ?? player.settledAt) - player.settledAt) / evidence.epochSeconds,
+      (player) => ((player.days.at(-1)?.endedAt ?? player.settledAt) - player.settledAt) / evidence.meanDaySeconds,
     );
     const playerDays = observedDays.reduce((sum, days) => sum + days, 0);
     const days = players.flatMap((player) => player.days);
@@ -1080,16 +1093,6 @@ export function summarizeFrontierDesign(evidence: FrontierEvidence) {
     const attackStamina = days.reduce((sum, day) => sum + day.attackStamina, 0);
     const otherStamina = days.reduce((sum, day) => sum + day.otherStamina, 0);
     const chests = players.flatMap((player) => player.chests);
-    const deepDays = players.reduce(
-      (total, player) =>
-        total +
-        player.days.filter((day) =>
-          player.chests.some(
-            (chest) => chest.epoch === Math.floor(day.startedAt / evidence.epochSeconds) && chest.depth === 3,
-          ),
-        ).length,
-      0,
-    );
     return {
       profile,
       players: players.length,
@@ -1105,7 +1108,7 @@ export function summarizeFrontierDesign(evidence: FrontierEvidence) {
         target: 4,
         values: players.map((player, index) =>
           observedDays[index] >= 7
-            ? player.rungs.filter((rung) => rung.at - player.settledAt <= 7 * evidence.epochSeconds).length
+            ? player.rungs.filter((rung) => rung.at - player.settledAt <= 7 * evidence.meanDaySeconds).length
             : null,
         ),
       },
@@ -1113,14 +1116,14 @@ export function summarizeFrontierDesign(evidence: FrontierEvidence) {
         target: profile === "check-in" ? "20–28 days" : null,
         values: players.map((player) => {
           const rung = player.rungs.find((rung) => rung.lane === "depth" && rung.level === 1);
-          return rung ? (rung.at - player.settledAt) / evidence.epochSeconds : null;
+          return rung ? (rung.at - player.settledAt) / evidence.meanDaySeconds : null;
         }),
         note: "Null means not reached within observedDays, not an estimated completion date",
       },
       rungIntervalsDays: {
         target: "5–9 days",
         values: players.flatMap((player) =>
-          player.rungs.slice(1).map((rung, index) => (rung.at - player.rungs[index].at) / evidence.epochSeconds),
+          player.rungs.slice(1).map((rung, index) => (rung.at - player.rungs[index].at) / evidence.meanDaySeconds),
         ),
       },
       actionsPerPlayerDay: {
@@ -1148,16 +1151,10 @@ export function summarizeFrontierDesign(evidence: FrontierEvidence) {
         opened: chests.length,
         value: playerDays ? (chests.length * 7) / playerDays : null,
       },
-      deepestEpics: {
-        target: "~1 per week",
-        opened: chests.filter((chest) => chest.depth === 3 && chest.quality === 3).length,
-        daysWithDeepChests: deepDays,
-        note: "No weekly estimate without a week of deepest-ground exposure",
-      },
-      tokenResults: {
-        target: "preset daily cap; value set by budget",
-        recorded: chests.filter((chest) => chest.kind === "Token").length,
-        note: "Claims recorded only; no token fulfilment",
+      ruinChestLords: {
+        target: "at most the day price ceiling per share",
+        paid: chests.reduce((sum, chest) => sum + chest.lords, 0),
+        note: "Paid into the realm at each ruin's clear; withdrawal is not exercised",
       },
     };
   });

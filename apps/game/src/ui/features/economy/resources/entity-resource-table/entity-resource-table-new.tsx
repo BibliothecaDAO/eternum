@@ -188,7 +188,7 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
           ? getRealmNameById(realmId) || `Realm #${realmId}`
           : mode.structure.getTypeName(
               structure.structure.base.category as StructureType,
-              presentedMineKind(store, structure.structure),
+              presentedMineKind(structure.structure),
             ) || "Structure";
 
         return {

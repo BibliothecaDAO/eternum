@@ -4,9 +4,11 @@ import {
   getBalance,
   getTroopResourceId,
   readRevealPercent,
+  realmLearned,
+  researchTier,
   revealYield,
 } from "@bibliothecadao/eternum";
-import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
+import { nativeResearchConstants, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { musterStamina, type OpenArmySlot, openArmySlots } from "@bibliothecadao/eternum/troop-stamina";
 import { type Direction, RESOURCE_PRECISION, TroopTier, TroopType } from "@bibliothecadao/types";
 
@@ -29,6 +31,8 @@ interface MusterPlan {
   slots: { used: number; allowed: number };
   /** Only the stacks the realm holds, tier by tier. */
   stacks: MusterStack[];
+  /** The Logistics tiers above common the realm's Supply yard gives every new army. */
+  trainedLogistics: number;
 }
 
 const TYPES = [TroopType.Knight, TroopType.Crossbowman, TroopType.Paladin] as const;
@@ -43,7 +47,8 @@ export const readMusterPlan = (
 ): MusterPlan | undefined => {
   const allowed = realm.base.troop_max_explorer_count;
   const open = openArmySlots(store, { game_id: realm.game_id, entity_id: realm.entity_id, allowedSlots: allowed });
-  if (!open) return undefined;
+  const learned = realmLearned(store, realm.game_id, realm.entity_id);
+  if (!open || learned === undefined) return undefined;
   const stacks: MusterStack[] = [];
   for (const tier of TIERS)
     for (const type of TYPES) {
@@ -53,7 +58,12 @@ export const readMusterPlan = (
       if (available > 0)
         stacks.push({ type, tier, available, cap: configManager.getMaxArmySize(realm.base.level, tier) });
     }
-  return { next: open[0] ?? null, slots: { used: allowed - open.length, allowed }, stacks };
+  return {
+    next: open[0] ?? null,
+    slots: { used: allowed - open.length, allowed },
+    stacks,
+    trainedLogistics: researchTier(learned, nativeResearchConstants.ROW_SUPPLY_YARD),
+  };
 };
 
 /** The most one army can take from a stack: what the realm holds, up to the castle's cap. */
@@ -81,7 +91,13 @@ export const previewMuster = (
     count: whole,
     revealYield: percent === undefined ? undefined : revealYield(troops, limits, percent),
     stamina: plan.next
-      ? musterStamina(plan.next, { category: stack.type, tier: stack.tier }, armiesTick, staminaRules)
+      ? musterStamina(
+          plan.next,
+          { category: stack.type, tier: stack.tier },
+          armiesTick,
+          staminaRules,
+          plan.trainedLogistics,
+        )
       : null,
   };
 };

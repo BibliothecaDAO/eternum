@@ -1,5 +1,5 @@
 import { normalizeLeaderboardAddress } from "@/services/leaderboard/landing-leaderboard-service";
-import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
+import { RESOURCE_PRECISION, ResourcesIds, StructureType } from "@bibliothecadao/types";
 
 /**
  * What the player's day added up to, for the top of Frontier's log: reveals and what they paid, sites cleared and
@@ -36,9 +36,11 @@ export const totalToday = (
       addReward(totals, storyPayload.resource_type, storyPayload.amount);
     } else if (story === "SitePayout") {
       totals.sitesCleared += 1;
+      // A ruin's clear is the day's chest.
+      if (Number(storyPayload.category) === StructureType.Ruin) totals.chests += 1;
       const reward = someReward(storyPayload.reward);
       if (reward) addReward(totals, reward.resource_type, reward.amount);
-    } else if (story === "ChestReward") totals.chests += 1;
+    }
   }
   return totals;
 };

@@ -17,6 +17,7 @@ pub mod game;
 pub mod guards;
 pub mod guilds;
 pub mod hyperstructures;
+pub mod lords_budget;
 pub mod map;
 pub mod market;
 pub mod mines;

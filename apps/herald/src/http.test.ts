@@ -60,7 +60,7 @@ const httpState: Parameters<typeof createHeraldRequestHandler>[0] = {
             value: {
               game_id: "7",
               mode_rules: 0,
-              epoch_seconds: 0,
+              day_unit_seconds: 0,
               victory_points_grant_config: { hyp_points_per_second: "1" },
             },
           },
@@ -400,11 +400,7 @@ it("serves Frontier history at one confirmed head, caches successes only and kee
       }),
   );
   const modelRows = (model: string) => {
-    if (model === "SliceRules") return [{ key: "7", value: { game_id: "7", epoch_seconds: 86400 } }];
-    if (model === "ChestRules")
-      return [
-        { key: "7", value: { game_id: "7", lords_amounts: { common: 100, uncommon: 400, rare: 1500, epic: 6000 } } },
-      ];
+    if (model === "SliceRules") return [{ key: "7", value: { game_id: "7", day_unit_seconds: 14400 } }];
     if (model === "Structure")
       return [
         {

@@ -2,10 +2,16 @@ import { EASE } from "@/ui/motion/motion-scale";
 import { useReducedMotion } from "@/ui/motion/motion-settings";
 import { animate } from "framer-motion";
 import { useEffect, useRef } from "react";
-import { type ArmyProgressFacts, attributeBadgeTarget, levelProgress, type ProgressionRulesFacts } from "./attributes";
+import {
+  type ArmyProgressFacts,
+  ATTRIBUTES,
+  attributeBadgeTarget,
+  attributeLevel,
+  nextTierPrice,
+  type ProgressionRulesFacts,
+} from "./attributes";
 
 const FILL_MS = 300;
-const LEVEL_UP_MS = 400;
 const RING_RADIUS = 21;
 const RING_LENGTH = 2 * Math.PI * RING_RADIUS;
 
@@ -13,12 +19,18 @@ const RING_LENGTH = 2 * Math.PI * RING_RADIUS;
 const armyArt = (troops: { category: string; tier: string }) =>
   `/images/armies/${troops.category.toLowerCase()}${troops.tier}.png`;
 
+/** The cheapest Upgrade the army has left: what its ring fills toward; null once every attribute is legendary. */
+const cheapestUpgrade = (progress: ArmyProgressFacts, rules: ProgressionRulesFacts): number | null =>
+  ATTRIBUTES.map((attribute) => nextTierPrice(rules, attributeLevel(progress, attribute))).reduce<number | null>(
+    (cheapest, price) => (price === null ? cheapest : cheapest === null ? price : Math.min(cheapest, price)),
+    null,
+  );
+
 /**
- * An army's portrait (design §3.12, mockup 7): its diorama inside a ring that fills with XP toward the next level,
- * and the level as a badge. A chosen attribute card flies into it. On a level-up the ring flashes full before the
- * new level's fill and the badge pops; the motion runs from effects on the fact's changes, so the card's other
- * re-renders (its countdown) never cut it short. Before the army's progress is known, the ring is empty and no badge
- * shows.
+ * An army's portrait (design §3.12, mockup 7): its diorama inside a ring that fills with XP toward its cheapest Upgrade,
+ * and its XP as a badge. A chosen attribute card flies into it. The fill runs from effects on the fact's changes, so the
+ * card's other re-renders (its countdown) never cut it short. Before the army's progress is known, the ring is empty
+ * and no badge shows.
  */
 export const ArmyPortrait = ({
   explorerId,
@@ -32,42 +44,26 @@ export const ArmyPortrait = ({
   rules: ProgressionRulesFacts | undefined;
 }) => {
   const reduced = useReducedMotion();
-  const level = progress && rules ? levelProgress(progress, rules) : null;
-  const share = level ? Math.min(1, level.into / level.needed) : 0;
+  const target = progress && rules ? cheapestUpgrade(progress, rules) : null;
+  const share = progress && rules ? (target === null ? 1 : Math.min(1, progress.xp / target)) : 0;
   const arc = useRef<SVGCircleElement>(null);
-  const badge = useRef<HTMLSpanElement>(null);
-  const shown = useRef({ level: progress?.level ?? 0, share });
 
   useEffect(() => {
-    const previous = shown.current;
-    shown.current = { level: progress?.level ?? 0, share };
     const ring = arc.current;
     if (!ring) return;
-    const offset = (fill: number) => RING_LENGTH * (1 - fill);
+    const offset = RING_LENGTH * (1 - share);
     if (reduced || !progress) {
-      ring.style.strokeDashoffset = String(offset(share));
+      ring.style.strokeDashoffset = String(offset);
       return;
     }
-    if (progress.level > previous.level && badge.current) {
-      const flash = animate(
-        ring,
-        { strokeDashoffset: [offset(previous.share), offset(1), offset(1), offset(share)] },
-        { duration: LEVEL_UP_MS / 1000, times: [0, 0.35, 0.6, 1], ease: EASE.outQuart },
-      );
-      const pop = animate(badge.current, { scale: [1.35, 1] }, { duration: LEVEL_UP_MS / 1000, ease: EASE.outQuart });
-      return () => {
-        flash.stop();
-        pop.stop();
-      };
-    }
-    const fill = animate(ring, { strokeDashoffset: offset(share) }, { duration: FILL_MS / 1000, ease: EASE.outQuart });
+    const fill = animate(ring, { strokeDashoffset: offset }, { duration: FILL_MS / 1000, ease: EASE.outQuart });
     return () => fill.stop();
   }, [progress, reduced, share]);
 
   return (
     <span
       data-fly-target={attributeBadgeTarget(explorerId)}
-      aria-label={progress && level ? `Level ${progress.level}, ${level.into} of ${level.needed} XP` : "Level unknown"}
+      aria-label={progress ? `${progress.xp} XP` : "XP unknown"}
       className="relative block size-12 shrink-0"
     >
       <svg viewBox="0 0 48 48" className="absolute inset-0 -rotate-90" aria-hidden>
@@ -89,11 +85,8 @@ export const ArmyPortrait = ({
         <img src={armyArt(troops)} alt="" className="size-full object-cover" />
       </span>
       {progress && (
-        <span
-          ref={badge}
-          className="absolute -bottom-0.5 -right-0.5 flex size-5 items-center justify-center rounded-full border border-[#1b1207] bg-[#dfaa54] text-[11px] text-[#1b1207] tabular-nums"
-        >
-          {progress.level}
+        <span className="absolute -bottom-0.5 -right-0.5 flex h-5 min-w-5 items-center justify-center rounded-full border border-[#1b1207] bg-[#dfaa54] px-1 text-[11px] text-[#1b1207] tabular-nums">
+          {progress.xp}
         </span>
       )}
     </span>

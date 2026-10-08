@@ -30,8 +30,6 @@ export interface GuideFacts {
   closedChest: boolean;
   /** A fallen realm stands on the map. */
   fallenRealm: boolean;
-  /** One of the player's chests paid a relic because the day's LORDS were spent. */
-  lordsSpent: boolean;
   /** The realm has learned nothing yet and holds the Essence for its cheapest research. */
   firstResearchAffordable: boolean;
   /** An army of today stands at Ethereal I or deeper. */
@@ -124,11 +122,6 @@ export const GUIDE_STEPS: readonly GuideStep[] = [
     id: "first-ethereal-depth",
     line: "Below the surface the Mist is older. Bigger guards, better chests. Your reveals pay a little more.",
     when: (facts) => facts.armyBelowSurface,
-  },
-  {
-    id: "first-lords-spent",
-    line: "The coin is gone for today; the Mist gave you a relic instead. More coin at midnight.",
-    when: (facts) => facts.lordsSpent,
   },
 ];
 

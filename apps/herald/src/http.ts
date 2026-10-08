@@ -10,7 +10,7 @@ import {
   directoryStatus,
 } from "./native/read-models";
 import { type DirectoryInput, type GameDirectorySource } from "./game-directory";
-import { seasonDay } from "@bibliothecadao/eternum/expeditions";
+import { dayOf } from "@bibliothecadao/eternum/expeditions";
 import type { GameSnapshot, ReplayMetrics } from "./types";
 import type { HistoryQuery, HistoryStore } from "./history-store";
 import type { ShardManifest } from "@bibliothecadao/eternum/game-sync";
@@ -251,12 +251,10 @@ function cachedLeaderboard(state: HeraldHttpState, build: WorldReadModels["leade
     if (cached) return cached;
     const rules = required(state.fold.modelRows("SliceRules"), gameId, "SliceRules");
     let response: HeraldGameLeaderboard;
-    if (number(rules.epoch_seconds) > 0) {
+    if (number(rules.day_unit_seconds) > 0) {
       if (!state.history || state.undecodableEventCount() > 0) throw new Error("Frontier history unavailable");
       // Capture current facts before awaiting SQL, so a newer head cannot mix into this board.
-      const facts = new Map(
-        ["GameRegistry", "ChestRules", "Structure"].map((model) => [model, state.fold.modelRows(model)]),
-      );
+      const facts = new Map(["GameRegistry", "Structure"].map((model) => [model, state.fold.modelRows(model)]));
       const history = await state.history.frontierHistory(gameId, head);
       response = buildFrontierLeaderboard((model) => facts.get(model) ?? [], gameId, history);
     } else {
@@ -335,14 +333,16 @@ function directoryClock(state: Pick<HeraldHttpState, "chainTimestamp"> & { fold:
     state.fold.modelRows("GameRegistry").map(({ value: game }) => {
       const config = rules.get(BigInt(game.game_id as string).toString());
       if (!config) throw new Error(`Missing native SliceRules for game ${game.game_id}`);
-      const epochSeconds = Number(config.epoch_seconds);
-      const startMainAt = Number(game.start_main_at);
-      return [
-        directoryStatus(game, state.chainTimestamp()),
-        epochSeconds === 0 ? null : seasonDay({ epochSeconds, startMainAt }, state.chainTimestamp()),
-      ];
+      const dayUnitSeconds = Number(config.day_unit_seconds);
+      const now = state.chainTimestamp();
+      return [directoryStatus(game, now), dayUnitSeconds === 0 ? null : seasonDayOf(game, dayUnitSeconds, now)];
     }),
   );
+}
+
+function seasonDayOf(game: Record<string, unknown>, dayUnitSeconds: number, now: number): number | null {
+  const calendar = { dayUnitSeconds, seed: BigInt(game.seed as string), startMainAt: Number(game.start_main_at) };
+  return dayOf(calendar, now)?.index ?? null;
 }
 
 function streamDirectoryUpdates(request: Request, state: HeraldHttpState, revision: () => string): Response {

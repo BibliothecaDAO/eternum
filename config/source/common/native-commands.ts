@@ -40,6 +40,7 @@ export const arenaCommandMask = commandMask([
   "Raid",
   "EnterDepth",
   "Research",
-  "UpgradeBuilding",
   "InteractSite",
+  "RefillStamina",
+  "WithdrawLords",
 ]);

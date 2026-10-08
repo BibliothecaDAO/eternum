@@ -19,6 +19,7 @@ import type { NativeRows } from "../../../../contracts/l3/world-native/schema/cl
 import { DEFAULT_COORD_ALT } from "../utils/tile";
 import { structureLocalPosition } from "../utils/expeditions";
 import { configManager } from "./config-manager";
+import { buildingTypeTier } from "../utils/realm-research";
 
 const BUILDING_SLOT_COORDINATES = [
   { col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1] },
@@ -84,7 +85,7 @@ export class TileManager {
           category,
           resource: getProducedResource(category),
           paused: value.paused,
-          tier: Number(value.tier),
+          tier: buildingTypeTier(this.store, this.gameId, this.structure.entity_id, category),
           structureType: null,
           pending: false,
         },

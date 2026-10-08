@@ -123,7 +123,6 @@ export const useArmyCreation = ({
   const revision = useNativeRevision([
     "ResourceBalance",
     "ResourceProduction",
-    "RealmSupport",
     "ResourceWeight",
     "Guard",
     "ExplorerTroops",

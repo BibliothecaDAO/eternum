@@ -2,67 +2,49 @@ import { ArmyPortrait } from "@/ui/features/frontier/attributes/army-portrait";
 import {
   type ArmyProgressFacts,
   type Attribute,
-  type AttributeOfferFacts,
-  levelProgress,
-  progressChange,
+  attributeLevel,
+  nextTierPrice,
   type ProgressionRulesFacts,
+  xpGained,
 } from "@/ui/features/frontier/attributes/attributes";
 import { PickChip } from "@/ui/features/frontier/attributes/pick-chip";
-import { onAttributeChosen, openPick, shouldAutoOpenPick } from "@/ui/features/frontier/attributes/pick-moment";
+import { onTierBought } from "@/ui/features/frontier/attributes/pick-moment";
 import { PickPanel } from "@/ui/features/frontier/attributes/pick-panel";
 import { playArmyProgress } from "@/ui/features/frontier/attributes/progress-moment";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 
-/** ArmyProgressionRules and ArmyProgress exactly as the agreed shapes carry them (backend shapes v6). */
-const RULES: ProgressionRulesFacts = { game_id: 1, reveal_xp: 10, clear_xp: 25, level_step_xp: 20 };
+/** ArmyProgressionRules and ArmyProgress exactly as the native store carries them. */
+const RULES: ProgressionRulesFacts = {
+  game_id: 1,
+  reveal_xp: 2,
+  fixed_xp: 200,
+  uncommon_xp: 100,
+  rare_xp: 200,
+  epic_xp: 400,
+  legendary_xp: 800,
+};
 const ARMY: ArmyProgressFacts = {
   game_id: 1,
   explorer_id: 201,
-  level: 3,
-  xp: 40,
+  xp: 140,
   battle: 2,
   logistics: 1,
   scouting: 4,
-  support: 1,
-  pending: null,
+  scouting_kinds: 0b10_01_10,
+  homecoming: 1,
 };
-const RELIC_OFFER: AttributeOfferFacts = {
-  id: 900,
-  source: "Relic",
-  amount: 3,
-  choices: ["Battle", "Scouting", "Logistics"],
-};
-const LEVEL_CHOICES: readonly Attribute[] = ["Battle", "Scouting", "Support"];
-const COLUMN: Record<Attribute, "battle" | "logistics" | "scouting" | "support"> = {
+const COLUMN: Record<Attribute, "battle" | "logistics" | "scouting" | "homecoming"> = {
   Battle: "battle",
   Logistics: "logistics",
   Scouting: "scouting",
-  Support: "support",
+  Homecoming: "homecoming",
 };
 /** Herald's pre-confirmed result, simulated. */
 const RESULT_AFTER_MS = 500;
 
-let offers = 0;
-
 /**
- * The contract's earned-level step (backend shapes v6): with no offer waiting, XP that covers the level's threshold
- * spends it, carries the rest, levels the army once and persists its offer. While an offer waits, XP only banks.
- */
-const withOffer = (progress: ArmyProgressFacts): ArmyProgressFacts => {
-  const { needed } = levelProgress(progress, RULES);
-  if (progress.pending || progress.xp < needed) return progress;
-  return {
-    ...progress,
-    level: progress.level + 1,
-    xp: progress.xp - needed,
-    pending: { id: (offers += 1), source: "Level", amount: 1, choices: LEVEL_CHOICES },
-  };
-};
-
-/**
- * The army's progress from fixture rows: reveals and clears earn XP, a covered threshold levels the army and emits its
- * offer (the session's first opens the panel), and XP earned while it waits banks toward the next. The watcher below plays the world's flourish from the
- * fact's changes, as the world map will.
+ * The army's progress from fixture rows: reveals, clears and shrines earn XP, and an Upgrade spends the next tier's
+ * price. The watcher below plays the world's flourish from the fact's changes, as the world map does.
  */
 export const PickLab = () => {
   const [progress, setProgress] = useState<ArmyProgressFacts>(ARMY);
@@ -70,30 +52,19 @@ export const PickLab = () => {
   const tile = useRef<HTMLDivElement>(null);
   useProgressFlourish(progress, tile);
 
-  useEffect(() => {
-    if (progress.pending && shouldAutoOpenPick(progress.pending)) openPick(progress.explorer_id, progress.pending);
-  }, [progress.explorer_id, progress.pending]);
-
-  const award = (amount: number) => setProgress((now) => withOffer({ ...now, xp: now.xp + amount }));
+  const award = (amount: number) => setProgress((now) => ({ ...now, xp: now.xp + amount }));
 
   const commit = (attribute: Attribute) =>
     new Promise<void>((resolve, reject) =>
       window.setTimeout(() => {
-        if (refuse) return reject(new Error("This offer was already answered."));
-        const pending = progress.pending;
-        if (!pending) return reject(new Error("No offer is waiting."));
-        const before = progress[COLUMN[attribute]];
-        const applied = Math.min(5, before + pending.amount) - before;
-        onAttributeChosen({
-          explorerId: progress.explorer_id,
-          offerId: pending.id,
-          attribute,
-          applied,
-          lost: pending.amount - applied,
-        });
-        // The story starts the flight; the fact changes as it lands: the pick applies, then the next earned level, if due.
+        if (refuse) return reject(new Error("Not enough XP."));
+        const tier = attributeLevel(progress, attribute);
+        const price = nextTierPrice(RULES, tier);
+        if (price === null || progress.xp < price) return reject(new Error("Not enough XP."));
+        onTierBought({ explorerId: progress.explorer_id, attribute, tier: tier + 1, price });
+        // The story starts the flight; the fact changes as it lands.
         window.setTimeout(
-          () => setProgress((now) => withOffer({ ...now, [COLUMN[attribute]]: before + applied, pending: null })),
+          () => setProgress((now) => ({ ...now, xp: now.xp - price, [COLUMN[attribute]]: tier + 1 })),
           450,
         );
         resolve();
@@ -118,30 +89,23 @@ export const PickLab = () => {
       </div>
       <div className="flex flex-wrap justify-center gap-2">
         <LabButton onClick={() => award(RULES.reveal_xp)}>Reveal · +{RULES.reveal_xp} XP</LabButton>
-        <LabButton onClick={() => award(RULES.clear_xp)}>Clear · +{RULES.clear_xp} XP</LabButton>
-        <LabButton onClick={() => setProgress((now) => (now.pending ? now : { ...now, pending: RELIC_OFFER }))}>
-          Relic · +3
-        </LabButton>
+        <LabButton onClick={() => award(90)}>Camp clear · +90 XP</LabButton>
+        <LabButton onClick={() => award(RULES.fixed_xp)}>Shrine · +{RULES.fixed_xp} XP</LabButton>
         <LabButton onClick={() => setRefuse(!refuse)}>{refuse ? "Chain refuses" : "Chain accepts"}</LabButton>
       </div>
     </div>
   );
 };
 
-/** The world map's watcher, in the lab: each change to the army's progress plays its flourish from the stand-in tile. */
+/** The world map's watcher, in the lab: each XP gain on the army's progress floats from the stand-in tile. */
 const useProgressFlourish = (progress: ArmyProgressFacts, tile: React.RefObject<HTMLDivElement | null>) => {
   const before = useRef(progress);
   useEffect(() => {
-    const change = progressChange(before.current, progress, RULES);
+    const xp = xpGained(before.current, progress);
     before.current = progress;
-    if (change.xp <= 0 && change.levels <= 0) return;
+    if (xp <= 0) return;
     const box = tile.current?.getBoundingClientRect();
-    playArmyProgress({
-      ...change,
-      at: box ? { x: box.left + box.width / 2, y: box.top } : null,
-      // The world's ring burst plays through the scene's playBurst; the lab has no world.
-      burst: () => {},
-    });
+    playArmyProgress({ xp, at: box ? { x: box.left + box.width / 2, y: box.top } : null });
   }, [progress, tile]);
 };
 

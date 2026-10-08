@@ -1,37 +1,38 @@
-import { getBuildingCosts, isRealmMarkedPlot, researchedBuildingTier, ResourceManager } from "@bibliothecadao/eternum";
+import {
+  getBuildingCosts,
+  realmLearned,
+  researchChoice,
+  researchRowOf,
+  researchTier,
+  ResourceManager,
+} from "@bibliothecadao/eternum";
 import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
 import { BuildingType, getProducedResource, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 
 /**
  * What Frontier's build sheet needs for one plot, read from facts with no UI of its own: each building the realm may
- * raise there, at the tier its research has reached, with its price (the tiers' labor included), what it gives (the
- * tier's multipliers and the marked ring plot's ×2, as the contract's building_effect applies them), its population
- * cost and the realm's wheat an hour after it stands. Unknown while the realm's research is.
+ * raise there, its type's tier, its price, what it gives (with its type's tiers, as the contract's board_output and
+ * hut_bonus apply them), its population cost and the realm's wheat an hour after it stands. Unknown while the realm's
+ * research is.
  */
 const FRONTIER_BUILDINGS = [
   BuildingType.ResourceWheat,
   BuildingType.ResourceKnightT1,
   BuildingType.ResourceLabor,
-  BuildingType.Storehouse,
   BuildingType.WorkersHut,
 ] as const;
 
-const TROOP_RESOURCES = new Set<number>([ResourcesIds.Knight, ResourcesIds.Crossbowman, ResourcesIds.Paladin]);
-
 export type BuildEffect =
   | { kind: "produces"; resource: ResourcesIds; perHour: number }
-  | { kind: "capacity"; amount: number }
   | { kind: "population"; amount: number };
 
 export interface BuildOption {
   category: BuildingType;
-  /** The tier it rises at: the highest the realm has researched. */
-  tier: 1 | 2 | 3;
+  /** Its type's tier, 1 (common) to 5 (legendary): tiers apply to every building of the type. */
+  tier: 1 | 2 | 3 | 4 | 5;
   cost: { resource: number; amount: number }[];
   effect: BuildEffect;
   populationCost: number;
-  /** The ring's marked plot doubles what the building gives. */
-  doubled: boolean;
   /** What it adds to the realm's wheat an hour, and the realm's wheat an hour once it stands (unknown while that is). */
   wheat: { change: number; after: number | undefined };
 }
@@ -39,27 +40,26 @@ export interface BuildOption {
 export const readBuildOptions = (
   store: NativeFactStore,
   realm: NativeRows["Structure"],
-  plot: { col: number; row: number },
   useSimpleCost: boolean,
   tick: number,
 ): BuildOption[] | undefined => {
-  const doubled = isRealmMarkedPlot(store, realm, plot);
+  const learned = realmLearned(store, realm.game_id, realm.entity_id);
+  if (learned === undefined) return undefined;
   const wheat = new ResourceManager(store, realm.entity_id).wheatPerHour(tick);
   const options: BuildOption[] = [];
   for (const category of FRONTIER_BUILDINGS) {
-    const tier = researchedBuildingTier(store, realm.game_id, realm.entity_id, category);
     const cost = getBuildingCosts(realm.entity_id, store, category, useSimpleCost);
-    if (tier === undefined || cost === undefined) return undefined;
+    if (cost === undefined) return undefined;
     const rule = store.require("BuildingRule", { game_id: realm.game_id, category });
-    const effect = readBuildingEffect(store, realm, category, tier as BuildOption["tier"], doubled ? 2 : 1);
+    const effect = readBuildingEffect(store, realm, category, learned);
     const change = wheatChange(effect);
+    const row = researchRowOf(category);
     options.push({
       category,
-      tier: tier as BuildOption["tier"],
+      tier: (row === undefined ? 1 : researchTier(learned, row) + 1) as BuildOption["tier"],
       cost,
       effect,
       populationCost: rule.population_cost,
-      doubled,
       wheat: { change, after: wheat === undefined ? undefined : wheat + change },
     });
   }
@@ -67,41 +67,37 @@ export const readBuildOptions = (
 };
 
 /**
- * What a building gives at the realm, as the contract's building_effect computes it at its tier and on its plot (×2 on
- * the marked one): the one reading of it, for the build sheet, the upgrade sheet and research's gains.
+ * What one building of a type gives at the realm with the given research, as the contract's board_output and
+ * hut_bonus compute it: each Fields, Tools or Drill pick adds a share of the base output, each hut tier a share of a
+ * hut's population. The one reading of it, for the build sheet and research's gains.
  */
 export const readBuildingEffect = (
   store: NativeFactStore,
   realm: NativeRows["Structure"],
   category: BuildingType,
-  tier: BuildOption["tier"],
-  multiplier: number,
+  learned: bigint,
 ): BuildEffect => {
   const rule = store.require("BuildingRule", { game_id: realm.game_id, category });
-  // Tier I has no rule of its own: it is the base building.
-  const tierRule = tier > 1 ? store.require("BuildingTierRule", { game_id: realm.game_id, category, tier }) : undefined;
-  const scaled = (value: number, bps: number | undefined) => ((value * (bps ?? 10_000)) / 10_000) * multiplier;
-  if (category === BuildingType.Storehouse) {
-    const { capacity_config } = store.require("SliceRules", { game_id: realm.game_id });
-    return {
-      kind: "capacity",
-      amount: scaled(capacity_config.storehouse_boost_capacity, tierRule?.capacity_multiplier_bps),
-    };
-  }
+  const board = store.require("BoardRules", { game_id: realm.game_id });
+  const row = researchRowOf(category);
+  const tier = row === undefined ? 0 : researchTier(learned, row);
   if (category === BuildingType.WorkersHut)
-    return { kind: "population", amount: scaled(rule.capacity_grant, tierRule?.population_multiplier_bps) };
-  let resource = getProducedResource(category);
+    return {
+      kind: "population",
+      amount: rule.capacity_grant + (rule.capacity_grant * tier * board.population_step_bps) / 10_000,
+    };
+  const resource = getProducedResource(category);
   if (resource === undefined) throw new Error(`Building ${category} produces nothing`);
-  // A barracks trains the troop of its own tier.
-  if (TROOP_RESOURCES.has(resource)) resource = (resource + tier - 1) as ResourcesIds;
+  let makes = 0;
+  for (let at = 1; at <= tier; at++) if (researchChoice(learned, row!, at) === 0) makes++;
   const perSecond =
     category === BuildingType.ResourceLabor
-      ? store.require("BoardRules", { game_id: realm.game_id }).workshop_rate
+      ? board.workshop_rate
       : store.require("ResourceRule", { game_id: realm.game_id, resource_type: resource }).realm_rate;
   return {
     kind: "produces",
     resource,
-    perHour: scaled((Number(perSecond) / RESOURCE_PRECISION) * 3600, tierRule?.output_multiplier_bps),
+    perHour: ((Number(perSecond) / RESOURCE_PRECISION) * 3600 * (10_000 + makes * board.output_step_bps)) / 10_000,
   };
 };
 

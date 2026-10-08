@@ -4,9 +4,13 @@ import {
   configManager,
   expeditionDepth,
   forecastFight,
+  getBlockTimestamp,
+  ResourceManager,
   getGuardsByStructure,
   readExpeditionRules,
+  siteKindOf,
   siteReward,
+  type SiteKind,
 } from "@bibliothecadao/eternum";
 import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
 import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
@@ -15,7 +19,8 @@ import {
   getLayeredAttackDistance,
   getTroopAttackRange,
   RESOURCE_PRECISION,
-  type ResourcesIds,
+  ResourcesIds,
+  StructureType,
   type Troops,
   type TroopTier,
   type TroopType,
@@ -44,8 +49,12 @@ export interface SiteCardPlan {
   art: string;
   name: string;
   guard: { type: TroopType; tier: TroopTier; count: number } | null | undefined;
-  /** Whole units paid home; null for a fallen realm, which pays its chest. */
-  payout: { resourceId: ResourcesIds; amount: number } | null;
+  kind: SiteKind;
+  xp: number;
+  /** A ruin's stored tier and whole LORDS; unknown until its chest fact arrives. */
+  chest: { tier: number; amount: number } | null | undefined;
+  /** Whole units that fit at home; null for XP-only sites, undefined until the relevant home facts arrive. */
+  payout: { resourceId: ResourcesIds; amount: number } | null | undefined;
   attackStamina: number;
   fight: SiteFight | undefined;
 }
@@ -63,22 +72,65 @@ export const readSiteCard = (
 ): SiteCardPlan => {
   const guards = getGuardsByStructure(structure, store);
   const guard = guards && guards.find((candidate) => candidate.troops.count > 0n);
-  const reward = siteReward(site);
+  const kind = siteKindOf(structure.base.category);
+  const chest = kind === "Ruin" ? store.get("SiteChest", { game_id: site.game_id, entity_id: site.entity_id }) : null;
+  const reward =
+    kind === "Ruin"
+      ? chest && { resourceType: ResourcesIds.Lords, amount: chest.amount * PRECISION }
+      : siteReward(kind, site);
   return {
-    art: SITE_ART[site.kind],
-    name: siteName(store, site, siteTile),
+    art: SITE_ART[kind],
+    name: siteName(store, kind, site, siteTile),
     guard: guards === undefined ? undefined : guard ? troopsOf(guard.troops) : null,
-    payout: reward && { resourceId: reward.resourceType, amount: Number(reward.amount / PRECISION) },
+    kind,
+    xp: Math.floor(Math.sqrt(25 * Number(site.initial_guard_count / PRECISION)) / 2),
+    chest: chest && { tier: chest.tier, amount: Number(chest.amount) },
+    payout: reward && fittingPayout(store, site.game_id, reward, attack),
     attackStamina: activeCombatRules().stamina.stamina_attack_req,
     fight: guard && attack ? forecastSiteFight(store, guard.troops, siteTile, attack) : undefined,
   };
 };
 
-/** A camp or rift by its kind; a fallen realm by the Loot Survivor beast that holds it at its depth. */
-const siteName = (store: NativeFactStore, site: NativeRows["ExpeditionSite"], siteTile: { row: number }): string => {
-  if (site.kind !== "FallenRealm") return site.kind;
+/** A capped reward keeps only the room left after the home's accrued production settles. */
+const fittingPayout = (
+  store: NativeFactStore,
+  gameId: number,
+  reward: { resourceType: ResourcesIds; amount: bigint },
+  attack: SiteAttack | null,
+): SiteCardPlan["payout"] => {
+  const raw = Number(reward.amount) / Number(PRECISION);
+  if (reward.resourceType !== ResourcesIds.Labor) return { resourceId: reward.resourceType, amount: raw };
+  const actor = store.subscriptionScope().known?.actor;
+  const home =
+    attack?.army.owner ??
+    (actor === undefined
+      ? undefined
+      : [...store.inGame("Structure", gameId)].find(
+          (row) => row.owner === BigInt(actor) && row.base.category === StructureType.Realm,
+        )?.entity_id);
+  if (home === undefined) return undefined;
+  const manager = new ResourceManager(store, home, gameId);
+  const held = manager.balanceWithProduction(
+    attack?.timestamp ?? getBlockTimestamp().currentDefaultTick,
+    reward.resourceType,
+  );
+  if (!held) return undefined;
+  const limit = manager.storeLimit(reward.resourceType);
+  if (limit === undefined) return { resourceId: reward.resourceType, amount: raw };
+  const amount = Math.min(raw, Math.max(0, (Number(limit) - held.balance) / Number(PRECISION)));
+  return { resourceId: reward.resourceType, amount };
+};
+
+/** A site by its kind; a ruin by the Loot Survivor beast that holds it at its depth. */
+const siteName = (
+  store: NativeFactStore,
+  kind: SiteKind,
+  site: NativeRows["ExpeditionSite"],
+  siteTile: { row: number },
+): string => {
+  if (kind !== "Ruin") return kind;
   const rules = readExpeditionRules(store, site.game_id);
-  if (!rules) throw new Error(`Fallen realm ${site.entity_id} stands in a game without expedition rules`);
+  if (!rules) throw new Error(`Ruin ${site.entity_id} stands in a game without expedition rules`);
   return fallenRealmBeast(expeditionDepth(rules, { y: siteTile.row })).name;
 };
 

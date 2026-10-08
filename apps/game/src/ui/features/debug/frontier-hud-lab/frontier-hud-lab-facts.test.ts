@@ -11,7 +11,7 @@ it("provides the progress fact needed to resolve each lab army's slot bar", () =
       value: {
         ...preset.rules,
         game_id: 1,
-        epoch_seconds: 86400,
+        day_unit_seconds: 86400,
         tick_config: { ...preset.rules.tick_config, armies_tick_in_seconds: 120 },
         troop_stamina_config: { ...preset.rules.troop_stamina_config, stamina_knight_max: 150, stamina_initial: 150 },
       },
