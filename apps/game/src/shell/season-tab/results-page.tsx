@@ -8,6 +8,7 @@ import { Button } from "@/ui/design-system/kit/button";
 import { Chip } from "@/ui/design-system/kit/chip";
 import { PlayerName } from "@/ui/design-system/kit/player-name";
 import { SeasonRow } from "@/ui/design-system/kit/season-row";
+import { CONTINUE, SEASON_ENDINGS, SEASON_OVER, YOU_PLACED } from "@/ui/design-system/kit/words";
 import { boardRows, findOwnEntry, wholeLords } from "@/ui/features/frontier/board/standings";
 
 import { clockLine } from "../clock-chip";
@@ -167,13 +168,7 @@ const Buttons = ({ fromList, children }: { fromList: boolean; children: ReactNod
   return (
     <div className="flex gap-2">
       {!fromList && (
-        <Button
-          role="primary"
-          word={SEASON_WORDS.continue}
-          icon="Pl"
-          className="flex-1"
-          onClick={() => navigate("/")}
-        />
+        <Button role="primary" word={CONTINUE} icon="Pl" className="flex-1" onClick={() => navigate("/")} />
       )}
       {children}
     </div>
@@ -275,9 +270,9 @@ const FrontierResult = ({
       fromList={fromList}
       outcome={
         <>
-          <p className="font-display text-[44px] leading-tight text-kit-cream lg:text-[56px]">{WORDS.seasonOver}</p>
-          <p className="font-ui text-[17px] font-bold text-kit-gold2">{SEASON_WORDS.mistLifted}</p>
-          {own && <Placed lead={SEASON_WORDS.youPlaced} place={`#${own.rank}`} field={entries.length} />}
+          <p className="font-display text-[44px] leading-tight text-kit-cream lg:text-[56px]">{SEASON_OVER}</p>
+          <p className="font-ui text-[17px] font-bold text-kit-gold2">{SEASON_ENDINGS.lifted}</p>
+          {own && <Placed lead={YOU_PLACED} place={`#${own.rank}`} field={entries.length} />}
           {own && (
             <div className="flex flex-wrap gap-2 pt-1">
               <Chip icons={["Fl"]} value={formatAmount(own.sites_cleared.total)} label="Sites cleared" />

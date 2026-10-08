@@ -2,9 +2,9 @@ import type { ReactNode } from "react";
 import { Link, type To } from "react-router-dom";
 
 import { ArrowLeft } from "@/ui/design-system/atoms/game-icons";
+import { BACK } from "@/ui/design-system/kit/words";
 
 import { paintingSources } from "../paintings";
-import { WORDS } from "../words";
 import { useAppNotice } from "./app-notice";
 import { EnvEdge } from "./env-mark";
 import { type Layout, useLayout } from "./layout";
@@ -111,7 +111,7 @@ const BackTitle = ({ back, title, layout }: { back: To; title?: string; layout: 
     <Link
       to={back}
       data-role="back"
-      aria-label={WORDS.back}
+      aria-label={BACK}
       className="-ml-2 flex size-12 shrink-0 items-center justify-center rounded-xl"
     >
       <ArrowLeft size={26} />

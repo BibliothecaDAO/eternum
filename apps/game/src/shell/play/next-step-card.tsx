@@ -7,6 +7,7 @@ import { ClockLine } from "@/ui/design-system/kit/clock-line";
 import { DayDial } from "@/ui/design-system/kit/day-dial";
 import { formatAmount } from "@/ui/design-system/kit/amount";
 import { OrderEmblem } from "@/ui/design-system/kit/order-emblem";
+import { SEASON_OVER } from "@/ui/design-system/kit/words";
 import { findOwnEntry, wholeLords } from "@/ui/features/frontier/board/standings";
 
 import { ClockChip } from "../clock-chip";
@@ -216,7 +217,7 @@ const ResultsCard = ({ season }: { season: DirectoryGame }) => {
       mode="frontier"
       picture={<Painting painting={ageOf("eternum").painting} />}
       figure={<Chip icons={["Tp"]} value={own ? `#${own.rank}` : "—"} label={WORDS.season} />}
-      line={<p className="font-ui text-[17px] font-bold text-kit-gold2">{WORDS.seasonOver}</p>}
+      line={<p className="font-ui text-[17px] font-bold text-kit-gold2">{SEASON_OVER}</p>}
       verb={<GoButton role="primary" word={WORDS.results} icon="Tp" to={resultsHref(season, false)} />}
     />
   );
