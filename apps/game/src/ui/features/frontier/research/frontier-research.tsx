@@ -1,37 +1,49 @@
 import { useGame } from "@/hooks/context/game-context";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
+import { formatAmount } from "@/ui/design-system/kit/amount";
 import { Button } from "@/ui/design-system/kit/button";
 import { Chip } from "@/ui/design-system/kit/chip";
 import type { IconCode } from "@/ui/design-system/kit/kit-icon";
+import type { Tier } from "@/ui/design-system/kit/tier-chip";
 import { ETHEREAL, MAP, REACH_NUMERALS, SHRINE, STAMINA, WELL, XP } from "@/ui/design-system/kit/words";
 import { toast } from "@/ui/features/event-feed/notify";
 import { knownBalance } from "@/ui/utils/utils";
 import { extractReadableErrorMessage } from "@/utils/error-message";
-import { getBalance } from "@bibliothecadao/eternum";
-import { nativeRuleConstants, type NativeRows } from "@bibliothecadao/eternum/game-client";
+import { type ExpeditionRules, getBalance } from "@bibliothecadao/eternum";
+import {
+  nativeResearchConstants as research,
+  nativeRuleConstants,
+  type NativeRows,
+} from "@bibliothecadao/eternum/game-client";
 import { ResourcesIds } from "@bibliothecadao/types";
 import { type ReactNode, useState } from "react";
 import type { Account } from "starknet";
 
 import { useGoToFrontierPlace } from "../frontier-home";
 import { realmPerHour, secondsUntilHeld } from "../hud/army-order";
-import { depthNode, type ResearchNodeView, siteNode } from "./research-plan";
+import { buildingIcon, buildingName } from "../build/building-names";
+import { depthNode, type ResearchNodeView, siteNode, type TypeRowView } from "./research-plan";
 import { useResearchPlan } from "./research-reader";
-import { type CastleNode, CastleNodeSheet, TreePage } from "./tree-page";
+import { sidesTaken } from "./sides-taken";
+import { type CastleNode, CastleNodeSheet, TreePage, type TreeRow } from "./tree-page";
+import { TypeUpgrade } from "./type-upgrade";
 
 /**
- * The castle's tree over the game's facts, a nav page: the castle rows from the realm's research (shrine, well and the
- * three reaches), each opening its sheet with Research. The building type rows arrive with the contracts' research
- * rows (RealmKnowledge.learned, read through core's realm-research decoder).
+ * The castle's tree over the game's facts, a nav page: a row per building type that stands (its tier, the sides taken,
+ * the next tier's Essence and labor), each opening its Upgrade sheet, then the castle rows (shrine, well and the three
+ * reaches), each opening its sheet with Research.
  */
-export const FrontierResearch = ({ realm }: { realm: NativeRows["Structure"] }) => {
+export const FrontierResearch = ({ rules, realm }: { rules: ExpeditionRules; realm: NativeRows["Structure"] }) => {
   const { setup, account } = useGame();
   const tick = useCurrentDefaultTick();
   const plan = useResearchPlan(realm);
   const goToPlace = useGoToFrontierPlace(realm);
   const [open, setOpen] = useState<string | null>(null);
+  const [openRow, setOpenRow] = useState<number | null>(null);
+  const typeRow = plan?.types.find(({ row }) => row === openRow);
   const [sending, setSending] = useState(false);
-  const castle = plan ? castleNodes(plan) : [];
+  const shrineXp = setup.store.get("ArmyProgressionRules", { game_id: realm.game_id })?.fixed_xp;
+  const castle = plan ? castleNodes(plan, shrineXp) : [];
   const labor = knownBalance(getBalance(realm.entity_id, ResourcesIds.Labor, tick, setup.store).balance);
   const chosen = castle.find((node) => node.node.key === open);
 
@@ -59,11 +71,15 @@ export const FrontierResearch = ({ realm }: { realm: NativeRows["Structure"] }) 
       <TreePage
         essence={essence === undefined ? undefined : Math.floor(essence)}
         labor={labor === undefined ? undefined : Math.floor(labor)}
-        rows={[]}
+        rows={plan ? plan.types.map(treeRow) : []}
+        chosen={openRow === null ? undefined : String(openRow)}
         castle={castle.map(({ node }) => node)}
-        onRow={() => undefined}
+        onRow={(key) => setOpenRow(Number(key))}
         onCastle={setOpen}
       />
+      {typeRow && (
+        <TypeUpgrade realm={realm} rules={rules} view={typeRow} essence={essence} onClose={() => setOpenRow(null)} />
+      )}
       {chosen && (
         <CastleNodeSheet
           node={chosen.node}
@@ -106,17 +122,38 @@ export const FrontierResearch = ({ realm }: { realm: NativeRows["Structure"] }) 
   );
 };
 
+/** A building type's row as the tree draws it: its tier, the sides taken, the next price and whether it is a choice. */
+const treeRow = (view: TypeRowView): TreeRow => ({
+  key: String(view.row),
+  icon: buildingIcon(view.category),
+  name: buildingName(view.category),
+  tier: (view.tier + 1) as Tier,
+  sides: sidesTaken(view.learned, view.row),
+  next: view.next,
+  choice: CHOOSING_ROWS.has(view.row),
+});
+
+/** The rows whose every tier is a final choice: two sides, or the Scouts' lodge's kind. */
+const CHOOSING_ROWS = new Set<number>([
+  research.ROW_FARM,
+  research.ROW_WORKSHOP,
+  research.ROW_BARRACKS,
+  research.ROW_SCOUTS_LODGE,
+]);
+
 /** The castle rows as the tree draws them: shrine and well, then the three reaches, each with what it gives. */
 const castleNodes = (
   plan: NonNullable<ReturnType<typeof useResearchPlan>>,
+  shrineXp: number | undefined,
 ): { node: CastleNode; view: ResearchNodeView; gives: ReactNode }[] => {
   const entries: { view: ResearchNodeView | undefined; icon: IconCode; label: string; gives: ReactNode }[] = [
-    // A shrine's fixed XP is read from the preset with the contracts' progression rules.
     {
       view: siteNode(plan, "Shrine"),
       icon: "Sh",
       label: SHRINE,
-      gives: <Chip icons={["Sh"]} label={XP} value="—" unit={XP} />,
+      gives: (
+        <Chip icons={["Sh"]} label={XP} value={shrineXp === undefined ? "—" : `+${formatAmount(shrineXp)}`} unit={XP} />
+      ),
     },
     {
       view: siteNode(plan, "Well"),

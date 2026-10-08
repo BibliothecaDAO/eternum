@@ -120,15 +120,27 @@ const readBuildingEffect = (
   if (resource === undefined) throw new Error(`Building ${category} produces nothing`);
   let makes = 0;
   for (let at = 1; at <= tier; at++) if (researchChoice(learned, row!, at) === 0) makes++;
+  return { kind: "produces", resource, perHour: outputPerHour(store, realm, category, makes) };
+};
+
+/**
+ * What one building of a producing type makes an hour with `makes` Fields, Tools or Drill picks, as the contract's
+ * board_output adds a share of the base output for each.
+ */
+export const outputPerHour = (
+  store: NativeFactStore,
+  realm: NativeRows["Structure"],
+  category: BuildingType,
+  makes: number,
+): number => {
+  const resource = getProducedResource(category);
+  if (resource === undefined) throw new Error(`Building ${category} produces nothing`);
+  const board = store.require("BoardRules", { game_id: realm.game_id });
   const perSecond =
     category === BuildingType.ResourceLabor
       ? board.workshop_rate
       : store.require("ResourceRule", { game_id: realm.game_id, resource_type: resource }).realm_rate;
-  return {
-    kind: "produces",
-    resource,
-    perHour: ((Number(perSecond) / RESOURCE_PRECISION) * 3600 * (10_000 + makes * board.output_step_bps)) / 10_000,
-  };
+  return ((Number(perSecond) / RESOURCE_PRECISION) * 3600 * (10_000 + makes * board.output_step_bps)) / 10_000;
 };
 
 /** A farm adds its wheat; nothing a building produces consumes any (armies pay theirs when they deploy). */

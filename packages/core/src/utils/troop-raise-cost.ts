@@ -34,9 +34,7 @@ export const readTroopRaiseCost = (
   const recipe = store.require("ProductionRecipe", { game_id: gameId, resource_type: troopResource });
   if (recipe.simple_output === 0n) throw new Error(`Troop ${troopResource} has no recipe to deploy from`);
   const deployed = BigInt(troops) * BigInt(RESOURCE_PRECISION);
-  const rationCut =
-    (rationPicks(realmLearned(store, gameId, structureId) ?? 0n) * board.ration_step * recipe.simple_output) /
-    BigInt(RESOURCE_PRECISION);
+  const rationCut = rationCutOf(rationPicks(realmLearned(store, gameId, structureId) ?? 0n), board, recipe);
   const manager = new ResourceManager(store, structureId, gameId);
   const costs: TroopRaiseCost[] = [];
   for (const input of recipe.simple_inputs) {
@@ -53,6 +51,27 @@ export const readTroopRaiseCost = (
     });
   }
   return costs;
+};
+
+/** The wheat each Rations pick cuts from a recipe's simple output, as resources_domain.cairo's ration_cut does. */
+const rationCutOf = (picks: bigint, board: { ration_step: bigint }, recipe: { simple_output: bigint }): bigint =>
+  (picks * board.ration_step * recipe.simple_output) / BigInt(RESOURCE_PRECISION);
+
+/**
+ * The wheat one troop of `troopResource` deploys for with `picks` Rations picks on the Barracks row, in whole wheat:
+ * the recipe's wheat, less each pick's cut, never below nothing.
+ */
+export const rationedWheatPerTroop = (
+  store: NativeFactStore,
+  gameId: number,
+  troopResource: ResourcesIds,
+  picks: number,
+): number => {
+  const board = store.require("BoardRules", { game_id: gameId });
+  const recipe = store.require("ProductionRecipe", { game_id: gameId, resource_type: troopResource });
+  const wheat = recipe.simple_inputs.find(({ resource_type }) => resource_type === ResourcesIds.Wheat)?.amount ?? 0n;
+  const cut = rationCutOf(BigInt(picks), board, recipe);
+  return Number(wheat - (cut < wheat ? cut : wheat)) / Number(recipe.simple_output);
 };
 
 // The Barracks row's Rations picks, as resources_domain.cairo's ration_cut counts them.

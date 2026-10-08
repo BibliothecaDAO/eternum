@@ -153,9 +153,9 @@ describe("the place bar", () => {
       price,
       effect: { kind: "depth" as const, depth: 1 as const },
     });
-    expect(canResearchNow({ essence: 500, nodes: [node("open", 400)] })).toBe(true);
-    expect(canResearchNow({ essence: 300, nodes: [node("open", 400), node("locked", 100)] })).toBe(false);
-    expect(canResearchNow({ essence: undefined, nodes: [node("open", 0)] })).toBe(false);
+    expect(canResearchNow({ essence: 500, types: [], nodes: [node("open", 400)] })).toBe(true);
+    expect(canResearchNow({ essence: 300, types: [], nodes: [node("open", 400), node("locked", 100)] })).toBe(false);
+    expect(canResearchNow({ essence: undefined, types: [], nodes: [node("open", 0)] })).toBe(false);
     expect(canResearchNow(undefined)).toBe(false);
   });
 });

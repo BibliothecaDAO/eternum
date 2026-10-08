@@ -74,7 +74,7 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
           surface === "chat" ? (
             <ChatPage gameZoneId={chat.gameZoneId} signedIn={chat.initializer !== null} onSignIn={chat.requestSignIn} />
           ) : surface === "research" && realm ? (
-            <FrontierResearch realm={realm} />
+            <FrontierResearch rules={rules} realm={realm} />
           ) : surface === "season" ? (
             <FrontierSeason onBack={close} />
           ) : (

@@ -32,7 +32,7 @@ import { useGoToFrontierPlace } from "../frontier-home";
 import { realmPerHour, secondsUntilHeld } from "../hud/army-order";
 import { type BuildOption, readBuildOptions } from "./build-options";
 import { type BuildGain, type BuildTile, BuildView } from "./build-view";
-import { buildingName } from "./building-names";
+import { buildingIcon, buildingName } from "./building-names";
 
 const BUILD_MODELS = [
   "Building",
@@ -176,17 +176,6 @@ export const BuildSheet = ({
   );
 };
 
-const BUILDING_ICONS: Partial<Record<BuildingType, IconCode>> = {
-  [BuildingType.ResourceWheat]: "Fm",
-  [BuildingType.ResourceLabor]: "Wk",
-  [BuildingType.ResourceKnightT1]: "Bs",
-  [BuildingType.WorkersHut]: "Ht",
-  [BuildingType.WarHall]: "Wa",
-  [BuildingType.SupplyYard]: "Sy",
-  [BuildingType.ScoutsLodge]: "Ld",
-  [BuildingType.Hearth]: "He",
-};
-
 /** Each attribute's mark, as a training building's gain shows it. */
 const ATTRIBUTE_MARKS: Record<Extract<BuildOption["effect"], { kind: "trains" }>["attribute"], IconCode> = {
   Battle: "Ba",
@@ -225,8 +214,7 @@ const iconOf = (resource: number): IconCode => {
 };
 
 const buildTile = (option: BuildOption, labor: number | undefined): BuildTile => {
-  const icon = BUILDING_ICONS[option.category];
-  if (!icon) throw new Error(`No icon for building ${option.category}`);
+  const icon = buildingIcon(option.category);
   const price = option.cost.find(({ resource }) => resource === ResourcesIds.Labor)?.amount ?? 0;
   return {
     key: String(option.category),

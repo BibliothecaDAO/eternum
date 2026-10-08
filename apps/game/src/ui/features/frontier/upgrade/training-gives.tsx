@@ -22,7 +22,8 @@ export const TrainingGives = ({
   attribute: string;
   /** The attribute's effect at the tier now and next, as the preset's table says it. */
   effect: string;
-  xpSaved: number;
+  /** The XP each new army no longer has to spend on this tier; unknown is undefined. */
+  xpSaved: number | undefined;
   tier: Tier;
   /** The realm's army portrait. */
   armyArt: string;

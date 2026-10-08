@@ -1,13 +1,26 @@
 import { BuildingType } from "@bibliothecadao/types";
 
 /**
- * The research tree as its sheet draws it (design §3.9, mockup 3): each node's state, Essence price and effect, and
- * what a building tier changes. Built from facts by the research reader; the sheet owns no rule of its own.
+ * The castle's tree as its page draws it (wireframe 09): a row per building type that stands, and the castle rows
+ * (shrine, well, the three reaches) with their state and Essence price. Built from facts by the research reader; the
+ * page owns no rule of its own.
  */
 export interface ResearchPlan {
   /** The realm's Essence in whole units; unknown shows as "—". */
   essence: number | undefined;
   nodes: readonly ResearchNodeView[];
+  types: readonly TypeRowView[];
+}
+
+/** A building type's research row, for a type standing on the realm: its tier, the sides taken, its next price. */
+export interface TypeRowView {
+  row: number;
+  category: BuildingType;
+  /** The row's tier above common, 0 (common) to 4 (legendary). */
+  tier: number;
+  learned: bigint;
+  /** The next tier's Essence and labor in whole units; undefined at legendary. */
+  next: { essence: number; labor: number } | undefined;
 }
 
 export interface ResearchNodeView {
@@ -18,10 +31,7 @@ export interface ResearchNodeView {
   state: "learned" | "open" | "locked";
   /** Whole Essence. */
   price: number;
-  effect:
-    | { kind: "tier"; category: BuildingType; tier: 2 | 3 }
-    | { kind: "site"; site: "Shrine" | "Well" }
-    | { kind: "depth"; depth: 1 | 2 | 3 };
+  effect: { kind: "site"; site: "Shrine" | "Well" } | { kind: "depth"; depth: 1 | 2 | 3 };
 }
 
 export const siteNode = (plan: ResearchPlan, site: "Shrine" | "Well") =>
@@ -30,12 +40,9 @@ export const siteNode = (plan: ResearchPlan, site: "Shrine" | "Well") =>
 export const depthNode = (plan: ResearchPlan, depth: 1 | 2 | 3) =>
   plan.nodes.find(({ effect }) => effect.kind === "depth" && effect.depth === depth);
 
-/**
- * Whether the realm can research a castle row now: one is open and its Essence is held. The nav's Research dot; the
- * building tiers move to the type rows' Upgrade with the contracts' research rows.
- */
+/** Whether the realm can research a castle row now: one is open and its Essence is held. The nav's Research dot. */
 export const canResearchNow = (plan: ResearchPlan | undefined): boolean => {
   const essence = plan?.essence;
   if (!plan || essence === undefined) return false;
-  return plan.nodes.some(({ state, price, effect }) => effect.kind !== "tier" && state === "open" && price <= essence);
+  return plan.nodes.some(({ state, price }) => state === "open" && price <= essence);
 };

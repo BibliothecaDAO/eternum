@@ -74,7 +74,9 @@ export const TypeUpgradeSheet = ({
           ))}
         </div>
       )}
+      {/* A tier with two sides waits for one to be lifted: the choice is final for the season. */}
       {!top &&
+        !(sides && lifted === undefined) &&
         (short ? (
           <ReasonPlate reason={short.reason} step={short.step} />
         ) : (
