@@ -15,6 +15,7 @@ interface StoryTotals {
   chests: number;
   essence: number;
   labor: number;
+  lords: number;
 }
 
 const PRECISION = BigInt(RESOURCE_PRECISION);
@@ -35,11 +36,11 @@ export const ownStoriesOfDay = <Story extends OwnStory>(
 };
 
 /**
- * What the player's day added up to: reveals and what they paid, sites cleared and chests opened, folded from the
- * player's own stories within the day.
+ * What the player's day added up to: reveals and what they paid, sites cleared, the ruin's chest and the LORDS it paid,
+ * folded from the player's own stories within the day.
  */
 export const totalToday = (stories: readonly OwnStory[], player: string, day: DayBounds): StoryTotals => {
-  const totals: StoryTotals = { reveals: 0, cleared: 0, chests: 0, essence: 0, labor: 0 };
+  const totals: StoryTotals = { reveals: 0, cleared: 0, chests: 0, essence: 0, labor: 0, lords: 0 };
   for (const { story, storyPayload } of ownStoriesOfDay(stories, player, day)) {
     if (story === "ExplorationReward") {
       totals.reveals += 1;
@@ -59,6 +60,7 @@ const addReward = (totals: StoryTotals, resourceType: unknown, amount: unknown):
   const whole = Number(BigInt(String(amount)) / PRECISION);
   if (Number(resourceType) === ResourcesIds.Essence) totals.essence += whole;
   else if (Number(resourceType) === ResourcesIds.Labor) totals.labor += whole;
+  else if (Number(resourceType) === ResourcesIds.Lords) totals.lords += whole;
 };
 
 /** A payout's reward in either option form Herald writes: the value itself, {"Some": value}, or none. */

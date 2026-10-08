@@ -3,7 +3,7 @@ import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { buildStaminaDisplayModel } from "@/lib/army-stamina/presentation";
 import { getExplorerStaminaSnapshot } from "@/utils/explorer-stamina";
-import { configManager, getArmyName, liveHomeArmies } from "@bibliothecadao/eternum";
+import { configManager, getArmyName, homecomingReturn, liveHomeArmies } from "@bibliothecadao/eternum";
 import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
 import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { RESOURCE_PRECISION } from "@bibliothecadao/types";
@@ -27,6 +27,8 @@ export type DockArmy = {
   troops: number;
   /** Its XP buys a tier of an attribute now: the card fan on its token. */
   canBuyTier: boolean;
+  /** The whole troops its Homecoming returns when its day ends; unknown while its progress is. */
+  returnsHome: number | undefined;
 };
 
 /** The realm's armies out today, in the order the castle granted their slots; none without a realm. */
@@ -65,6 +67,8 @@ export const useDockArmies = (realm: NativeRows["Structure"] | null): DockArmy[]
       secondsToFull: stamina?.secondsUntilFull,
       troops: Number(army.troops.count / BigInt(RESOURCE_PRECISION)),
       canBuyTier: progress !== undefined && xpRules !== undefined && affordableUpgrades(progress, xpRules).length > 0,
+      returnsHome:
+        progress && homecomingReturn(Number(army.troops.count / BigInt(RESOURCE_PRECISION)), progress.homecoming),
     };
   });
 };

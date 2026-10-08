@@ -172,12 +172,22 @@ const PendingOrder = ({
   );
 };
 
-/** In the day's last hour, the bubble of what the day's end takes and returns: the troops still out. */
+/**
+ * In the day's last hour, the bubble of what the day's end takes and returns: the troops still out, what their
+ * Homecoming returns, and the armies that can still buy a tier.
+ */
 const LastHour = ({ rules, realm }: { rules: ExpeditionRules; realm: NativeRows["Structure"] }) => {
   const armies = useDockArmies(realm);
   const clock = dayClock(rules, useNowSeconds());
   if (clock.tone !== "ember" || armies.length === 0) return null;
-  return <LastHourBubble troopsOut={armies.reduce((sum, army) => sum + army.troops, 0)} />;
+  const returns = armies.map(({ returnsHome }) => returnsHome);
+  return (
+    <LastHourBubble
+      troopsOut={armies.reduce((sum, army) => sum + army.troops, 0)}
+      returned={returns.every((back) => back !== undefined) ? returns.reduce((sum, back) => sum + back!, 0) : undefined}
+      tiersToBuy={armies.filter(({ canBuyTier }) => canBuyTier).length}
+    />
+  );
 };
 
 /** The Menu over the game: each row opens its way and closes the menu; Exit leaves for the app. */

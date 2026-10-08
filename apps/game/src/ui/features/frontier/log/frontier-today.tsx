@@ -14,8 +14,8 @@ type ExpeditionRules = NonNullable<ReturnType<typeof readExpeditionRules>>;
 const OWN_STORIES = 350;
 
 /**
- * Today over the player's own stories: today's totals and log, stepping back through earlier days. The armies with a
- * tier to buy wait for the army's XP in the contracts' schema; LORDS for the ruin chest's paid amount.
+ * Today over the player's own stories: today's totals (the ruin's LORDS among them) and log, stepping back through
+ * earlier days.
  */
 export const FrontierToday = ({ rules, onClose }: { rules: ExpeditionRules; onClose: () => void }) => {
   const now = useNowSeconds();

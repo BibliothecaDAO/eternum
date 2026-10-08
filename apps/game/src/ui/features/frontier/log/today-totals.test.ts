@@ -34,6 +34,7 @@ describe("the player's day in totals", () => {
       chests: 1,
       essence: 150,
       labor: 699,
+      lords: 200,
     });
   });
 });

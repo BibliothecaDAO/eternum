@@ -136,3 +136,23 @@ export const troopsAtHome = (
   const stocks = stocksAtNextDeploy(store, realm, rules, now, tick);
   return stocks && [...stocks.values()].reduce((sum, stock) => sum + stock.held + stock.fits, 0);
 };
+
+/**
+ * What Homecoming returns at the realm's next deploy, in whole troops: what the armies whose day has ended send, and
+ * what of it fits the troop stores. Unknown while any stock is.
+ */
+export const homecomingAtNextDeploy = (
+  store: NativeFactStore,
+  realm: NativeRows["Structure"],
+  rules: ExpeditionRules,
+  now: number,
+  tick: number,
+): { sent: number; fitted: number } | undefined => {
+  const stocks = stocksAtNextDeploy(store, realm, rules, now, tick);
+  if (!stocks) return undefined;
+  const all = [...stocks.values()];
+  return {
+    sent: all.reduce((sum, stock) => sum + stock.returning, 0),
+    fitted: all.reduce((sum, stock) => sum + stock.fits, 0),
+  };
+};
