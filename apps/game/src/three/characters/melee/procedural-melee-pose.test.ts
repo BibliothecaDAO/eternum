@@ -103,8 +103,8 @@ describe("procedural melee pose", () => {
         aimYawRadians: 0,
         attackStyle: "slash",
         config: { ...createDefaultProceduralMeleeConfig(), offhandId },
+        guardHold: 0,
         mounted: false,
-        moving: false,
         state: { attackGeneration: 0, contactCount: 0, phase: "idle", phaseElapsedSeconds: 0 },
       }).offhandCarry;
 
@@ -113,15 +113,15 @@ describe("procedural melee pose", () => {
     expect(carryOf("t1-knight-default-shield")).toBe("strapped");
   });
 
-  it("holds the arms of gear that declares arm poses at carry standing still and at guard on the move, and only those arms", () => {
-    const armsOf = (weaponId: ProceduralMeleeWeaponId, offhandId: ProceduralMeleeOffhandId, moving = false) =>
+  it("holds the arms of gear that declares arm poses at carry, and at guard when told to hold it, and only those arms", () => {
+    const armsOf = (weaponId: ProceduralMeleeWeaponId, offhandId: ProceduralMeleeOffhandId, guardHold = 0) =>
       resolveProceduralMeleeUpperBodyPose({
         aimPitchRadians: 0,
         aimYawRadians: 0,
         attackStyle: "slash",
         config: { ...createDefaultProceduralMeleeConfig(), offhandId, weaponId },
+        guardHold,
         mounted: false,
-        moving,
         state: { attackGeneration: 0, contactCount: 0, phase: "idle", phaseElapsedSeconds: 0 },
       }).arms;
     const sword = resolveProceduralMeleeWeapon("t1-knight-default-sword").armPoses;
@@ -137,11 +137,11 @@ describe("procedural melee pose", () => {
     expect(flatten(arms.right)).toHaveLength(10);
     flatten(arms.left).forEach((value, index) => expect(value).toBeCloseTo(flatten(shield?.carry)[index], 5));
     flatten(arms.right).forEach((value, index) => expect(value).toBeCloseTo(flatten(sword?.carry)[index], 5));
-    const moving = armsOf("t1-knight-default-sword", "t1-knight-default-shield", true);
-    flatten(moving.left).forEach((value, index) => expect(value).toBeCloseTo(flatten(shield?.guard)[index], 5));
-    flatten(moving.right).forEach((value, index) => expect(value).toBeCloseTo(flatten(sword?.guard)[index], 5));
+    const held = armsOf("t1-knight-default-sword", "t1-knight-default-shield", 1);
+    flatten(held.left).forEach((value, index) => expect(value).toBeCloseTo(flatten(shield?.guard)[index], 5));
+    flatten(held.right).forEach((value, index) => expect(value).toBeCloseTo(flatten(sword?.guard)[index], 5));
     expect(armsOf("iron-longsword", "round-shield")).toEqual({});
-    expect(armsOf("iron-longsword", "round-shield", true)).toEqual({});
+    expect(armsOf("iron-longsword", "round-shield", 1)).toEqual({});
   });
 });
 
@@ -159,8 +159,8 @@ function createMeleeAction(
     aimYawRadians: 0,
     attackStyle,
     config,
+    guardHold: 0,
     mounted,
-    moving: false,
     state: {
       attackGeneration: 1,
       contactCount: phase === "contact" ? 1 : 0,

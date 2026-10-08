@@ -41,9 +41,12 @@ export function resolveProceduralMeleeUpperBodyPose(input: {
   aimYawRadians: number;
   attackStyle: ProceduralMeleeAttackStyle;
   config: ProceduralMeleeConfig;
+  /**
+   * How far the arms of gear that declares arm poses are held at guard for a reason other than the attack, from 0 to 1.
+   * The melee controller raises it while the bearer walks or runs on its own legs.
+   */
+  guardHold: number;
   mounted: boolean;
-  /** Whether the bearer is walking or running on its own legs. */
-  moving: boolean;
   state: ProceduralMeleeAttackState;
 }): ProceduralMeleeUpperBodyPose {
   const signals = resolveProceduralMeleeAttackSignals(input.state, input.config);
@@ -51,7 +54,7 @@ export function resolveProceduralMeleeUpperBodyPose(input: {
   return {
     ...signals,
     actionWeight: Math.max(signals.actionWeight, carryWeight),
-    arms: resolveDeclaredArms(input.config, signals, input.moving),
+    arms: resolveDeclaredArms(input.config, signals, input.guardHold),
     aimPitchRadians: input.aimPitchRadians,
     aimYawRadians: input.aimYawRadians,
     attackArcRadians: (input.config.attackArcDegrees * Math.PI) / 180,
@@ -67,16 +70,17 @@ export function resolveProceduralMeleeUpperBodyPose(input: {
 }
 
 /**
- * The arms of gear that declares arm poses. Standing still they hold `carry` and the attack's own weights move them
- * on. On the move they hold `guard`: `carry` holds the shield low, and a walking or running knee comes up into it.
+ * The arms of gear that declares arm poses. They hold `carry` and the attack's own weights move them on. `guardHold`
+ * keeps them at `guard` outside an attack as well: `carry` holds the shield low, and a walking or running knee comes
+ * up into it.
  */
 function resolveDeclaredArms(
   config: ProceduralMeleeConfig,
   signals: ReturnType<typeof resolveProceduralMeleeAttackSignals>,
-  moving: boolean,
+  guardHold: number,
 ): ProceduralMeleeUpperBodyPose["arms"] {
   const weights = {
-    attackWeight: moving ? 1 : signals.actionWeight,
+    attackWeight: Math.max(signals.actionWeight, guardHold),
     followThrough: signals.followThrough,
     strikeProgress: signals.strikeProgress,
     windupProgress: signals.windupProgress,

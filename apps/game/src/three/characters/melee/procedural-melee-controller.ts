@@ -15,6 +15,8 @@ const APPROXIMATE_HAND_HEIGHT = 1.25;
 const MIN_PITCH = (-45 * Math.PI) / 180;
 const MAX_PITCH = (30 * Math.PI) / 180;
 const MAX_YAW = (60 * Math.PI) / 180;
+/** Time constant, in seconds, of the arms going between carry and guard when the bearer starts or stops moving. */
+const GUARD_HOLD_EASE_SECONDS = 0.12;
 
 export interface ProceduralMeleeControllerStats {
   attackGeneration: number;
@@ -30,6 +32,7 @@ export class ProceduralMeleeController {
   private readonly targetLocal = new Vector3();
   private readonly pendingContactGenerations: number[] = [];
   private hasTarget = false;
+  private guardHold = 0;
 
   public constructor(
     config: ProceduralMeleeConfig,
@@ -77,13 +80,14 @@ export class ProceduralMeleeController {
     const horizontal = Math.max(1e-6, Math.hypot(this.targetLocal.x, this.targetLocal.z));
     const yaw = clamp(Math.atan2(this.targetLocal.x, this.targetLocal.z), -MAX_YAW, MAX_YAW);
     const pitch = clamp(Math.atan2(this.targetLocal.y, horizontal), MIN_PITCH, MAX_PITCH);
+    this.guardHold = easeGuardHold(this.guardHold, moving, deltaSeconds);
     return resolveProceduralMeleeUpperBodyPose({
       aimPitchRadians: pitch,
       aimYawRadians: yaw,
       attackStyle: resolveProceduralMeleeWeapon(this.config.weaponId).attackStyle,
       config: this.config,
+      guardHold: this.guardHold,
       mounted: this.mounted,
-      moving,
       state: this.state,
     });
   }
@@ -109,10 +113,17 @@ export class ProceduralMeleeController {
 
   public reset(): void {
     this.state = createIdleProceduralMeleeAttackState();
+    this.guardHold = 0;
     this.pendingContactGenerations.length = 0;
   }
 }
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
+}
+
+/** A bearer that starts or stops moving takes its arms to guard or back to carry over a moment, not in one frame. */
+function easeGuardHold(current: number, moving: boolean, deltaSeconds: number): number {
+  const target = moving ? 1 : 0;
+  return current + (target - current) * (1 - Math.exp(-Math.max(0, deltaSeconds) / GUARD_HOLD_EASE_SECONDS));
 }

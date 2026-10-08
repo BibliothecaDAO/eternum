@@ -201,8 +201,8 @@ function createGuardAction(state: ProceduralMeleeAttackState, moving = false) {
     aimYawRadians: 0,
     attackStyle: "slash",
     config: createKnightMeleeConfig(),
+    guardHold: moving ? 1 : 0,
     mounted: false,
-    moving,
     state,
   });
 }
