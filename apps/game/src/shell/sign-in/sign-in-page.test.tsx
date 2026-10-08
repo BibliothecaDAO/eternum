@@ -1,4 +1,4 @@
-import { IDENTITY_PORTRAITS, IdentityRequestError, type Session } from "@realms-world/identity";
+import { IDENTITY_PORTRAITS, IdentityRequestError, SIGN_IN_CODE_SECONDS, type Session } from "@realms-world/identity";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
@@ -60,7 +60,10 @@ afterEach(() => {
 describe("the sign-in flow", () => {
   it("takes a new player from an emailed code through their name and portrait to Play, back where they asked", async () => {
     useIdentitySessionStore.setState({ status: "anonymous", session: null });
-    const sendCode = vi.spyOn(identityClient, "sendSignInCode").mockResolvedValue();
+    const sendCode = vi.spyOn(identityClient, "sendSignInCode").mockResolvedValue({
+      success: true,
+      expires_at: Date.now() / 1000 + SIGN_IN_CODE_SECONDS,
+    });
     vi.spyOn(identityClient, "signInWithCode").mockResolvedValue(sessionOf({}));
     const save = vi.spyOn(identityClient, "updateUser").mockResolvedValue();
     // The app's one first session load finds nobody; the refresh after the profile is saved finds the named player.
@@ -99,7 +102,10 @@ describe("the sign-in flow", () => {
 
   it("clears the boxes and says why when the code is refused", async () => {
     useIdentitySessionStore.setState({ status: "anonymous", session: null });
-    vi.spyOn(identityClient, "sendSignInCode").mockResolvedValue();
+    vi.spyOn(identityClient, "sendSignInCode").mockResolvedValue({
+      success: true,
+      expires_at: Date.now() / 1000 + SIGN_IN_CODE_SECONDS,
+    });
     vi.spyOn(identityClient, "signInWithCode").mockRejectedValue(new IdentityRequestError(401, "INVALID_OTP"));
     vi.spyOn(console, "error").mockImplementation(() => {});
     const ui = await mount("/sign-in?next=%2Fresults");

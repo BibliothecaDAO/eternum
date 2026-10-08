@@ -340,7 +340,8 @@ the node p95 500 ms (`heraldConfirmedLagMs`: Herald's confirmed notice for the t
 ACCEPTED_ON_L2 for it, both on the driver's clock). Pre-confirmed, accepted-on-L2 and block close latencies are reported
 beside them as diagnostics. The summary records the driver's placement (host, pid, cpuset, cgroup, available threads)
 and, per game, the number of transactions its settlement burst took at start. Worker reports under `players/` carry no
-gates of their own.
+gates of their own. Reports are committed at process exit after client and socket teardown; their verdict includes late
+callback failures and the exit code. The console names the report path without announcing an earlier PASS.
 
 The capacity campaign's shapes are run configurations of the same harness. `--preset <id>` names the preset new games
 are created from (default: the game type's). The slot shape's start burst is `--bots 96 --workload burst`: four games of

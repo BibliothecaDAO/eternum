@@ -314,9 +314,61 @@ function recordRules(client: GameClient) {
   };
 }
 
-function wheatState(player: Player): WheatState {
-  const manager = new ResourceManager(player.client.setup.store, player.realmId, player.client.gameId);
-  return known(manager.current(ResourcesIds.Wheat), player.realmId, "wheat state");
+/** Confirmation can precede the refreshed scope's end; a deleted sparse balance is unknown until then. */
+export function waitForWheatState(client: GameClient, realmId: number, timeoutMs = 30_000): Promise<WheatState> {
+  const manager = new ResourceManager(client.setup.store, realmId, client.gameId);
+  return waitForWorldState(
+    client.setup.store,
+    () => manager.current(ResourcesIds.Wheat),
+    timeoutMs,
+    () => resourceSnapshotState(client, { realmId }),
+  );
+}
+
+/** A completed fight can remove the last army and its deep region from the actor's view. Absence is not victory. */
+export async function resolveFrontierSiteCapture(
+  client: GameClient,
+  siteId: number,
+  owner: string,
+  transactionHash: string | undefined,
+  confirmedBlock: number | null,
+): Promise<boolean> {
+  const { store } = client.setup;
+  const state = await waitForWorldState(
+    store,
+    () => {
+      const scope = store.subscriptionScope().known;
+      return scope ? { scope, site: store.get("Structure", { game_id: client.gameId, entity_id: siteId }) } : undefined;
+    },
+    30_000,
+    () => `Guard battle for site ${siteId}: ${store.subscriptionScope().unknown ?? "scope known"}`,
+  );
+  if (state.site) return state.site.owner === BigInt(owner);
+  if (!state.scope.expedition || state.scope.expedition.entities.has(String(siteId)))
+    throw new Error(`Site ${siteId} is missing from its completed scope`);
+  if (!transactionHash || confirmedBlock === null)
+    throw new Error("Off-scope capture requires a confirmed transaction");
+  // Current facts stay in the native store; the receipt's immutable story answers a historical outcome after scope loss.
+  for (let offset = 0; ; ) {
+    const page = await fetchHeraldGameHistory(client.shard, client.gameId, {
+      model: "StoryEvent",
+      entityId: siteId,
+      limit: 500,
+      offset,
+    });
+    if (page.complete_through_block === null || page.complete_through_block < confirmedBlock)
+      throw new Error(`Capture history is incomplete for site ${siteId}`);
+    for (const event of page.items) {
+      if (BigInt(event.transaction_hash) !== BigInt(transactionHash)) continue;
+      const story = event.value.story as Record<string, Record<string, unknown>>;
+      const capture = story.StructureCapturedStory;
+      if (capture) return BigInt(String(capture.new_owner)) === BigInt(owner);
+      if (story.SitePayout) return BigInt(String(event.value.owner)) === BigInt(owner);
+    }
+    offset += page.items.length;
+    if (offset >= page.total) return false;
+    if (!page.items.length) throw new Error("Capture history ended before its declared total");
+  }
 }
 
 /**
@@ -399,7 +451,7 @@ async function playAction(
   scheduledAtMs?: number,
   rules?: RuleRecorder,
 ): Promise<TrackedTransaction> {
-  const before = rules && action.charge ? wheatState(player) : undefined;
+  const before = rules && action.charge ? await waitForWheatState(player.client, player.realmId) : undefined;
   const result = await trackTransaction({
     botId: player.identity.botId,
     gameId: game.gameId,
@@ -411,9 +463,10 @@ async function playAction(
     send: () => player.game.submit(player.identity.account, action.run),
   });
   if (result.outcome !== "completed") return result;
-  if (before) rules!.recordCharge(player, action.charge!, before, wheatState(player));
+  if (before)
+    rules!.recordCharge(player, action.charge!, before, await waitForWheatState(player.client, player.realmId));
   currentDay(player).actions++;
-  action.after?.();
+  await action.after?.(result);
   observeProgress(player.client, player.game, player);
   return result;
 }
@@ -629,7 +682,7 @@ function inSession(client: GameClient, player: Player): boolean {
 interface Action {
   kind: string;
   run(): Promise<unknown>;
-  after?(): void;
+  after?(result: TrackedTransaction): void | Promise<void>;
   /** What the action takes from its realm's wheat, for the real-speed pass to check against the preset. */
   charge?: WheatCharge;
 }
@@ -667,16 +720,17 @@ async function waitForRealmResources(client: GameClient, player: Player): Promis
   );
 }
 
-function resourceSnapshotState(client: GameClient, player: Player): string {
+function resourceSnapshotState(client: GameClient, player: Pick<Player, "realmId">): string {
   const store = client.setup.store;
   const scope = store.subscriptionScope();
   const resource = new ResourceManager(store, player.realmId, client.gameId);
   const inRealmScope = scope.known?.expedition?.realms.has(String(player.realmId));
   const balance = resource.current(ResourcesIds.Essence);
+  const wheat = resource.current(ResourcesIds.Wheat);
   return (
     `Frontier resource snapshot for realm ${player.realmId} in game ${client.gameId} ` +
     `(scope=${scope.known ? "known" : scope.unknown}, inRealmScope=${inRealmScope ?? "unknown"}, ` +
-    `resourceOwner=${resource.hasResources()}, essence=${balance?.balance ?? "unknown"})`
+    `resourceOwner=${resource.hasResources()}, essence=${balance?.balance ?? "unknown"}, wheat=${wheat?.balance ?? "unknown"})`
   );
 }
 
@@ -928,13 +982,17 @@ function planExpedition(client: GameClient, game: HarnessGame, player: Player): 
         kind: "BattleGuard",
         value: { attacker_id: army.explorer_id, defender_id: target.entity_id },
       });
-      attack.after = () => {
+      attack.after = async (result) => {
         day.exchanges++;
         const exchanges = (player.siteExchanges.get(target.entity_id) ?? 0) + 1;
         player.siteExchanges.set(target.entity_id, exchanges);
-        const captured =
-          client.setup.store.require("Structure", { game_id: client.gameId, entity_id: target.entity_id }).owner ===
-          BigInt(player.identity.address);
+        const captured = await resolveFrontierSiteCapture(
+          client,
+          target.entity_id,
+          player.identity.address,
+          result.transactionHash,
+          player.game.factHeadBlock(),
+        );
         day.attackStamina += stamina.stamina_attack_req - (captured ? stamina.capture_stamina_refund : 0);
         if (captured) {
           day.captures++;

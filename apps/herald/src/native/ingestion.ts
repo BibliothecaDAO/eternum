@@ -127,6 +127,8 @@ export class NativeIngestion {
     retainTransactions?: boolean;
     /** The overlay's decode of a receipt it holds, reused when the confirmed receipt repeats its events. */
     preconfirmed?: (receipt: RpcReceipt) => PreconfirmedDecode | undefined;
+    beforeBlock?: (fold: WorldFold, block: RpcBlockWithReceipts, events: readonly DecodedWorldEvent[]) => Promise<void>;
+    beforeCommit?: (events: readonly DecodedWorldEvent[]) => Promise<void>;
   }) {
     if (this.halted) throw this.halted;
     const preview = input.fold.overlay();
@@ -142,6 +144,7 @@ export class NativeIngestion {
       const block = await input.rpc.getBlockWithReceipts(number);
       if (block.block_number !== number) throw new Error("Native replay block number mismatch");
       pages++;
+      await input.beforeBlock?.(preview, block, events);
       block.transactions.forEach(({ receipt, transaction }, index) => {
         try {
           const validated = this.validateReceipt(
@@ -164,6 +167,7 @@ export class NativeIngestion {
         }
       });
     }
+    await input.beforeCommit?.(events);
     presets.forEach((preset) => input.fold.rememberPreset(preset));
     const changes = this.commit(input.fold, events);
     const byBlock = new Map<number, FoldChange[]>();

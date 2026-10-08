@@ -1,5 +1,7 @@
 import { addBattleSummaries, summarizeBattles, type BattleSummary } from "./combat";
 import type { WorkerBoundaryEvidence } from "./worker-boundary";
+import { workerBoundaryEvidence } from "./worker-boundary";
+import type { PreparedTerminalReport } from "./terminal-report";
 import { summarizeFrontierDesign, type FrontierEvidence } from "./frontier";
 import { frontierRuleChecks } from "./frontier-rules";
 import type { HarnessRpcRequests } from "./provider";
@@ -7,7 +9,7 @@ import { PROCESS_INTERVAL_MS } from "@bibliothecadao/eternum/automation";
 import type { LayerRoundTripEvidence } from "./layer-round-trip";
 import type { SeasonFinalizationEvidence } from "./season-lifecycle";
 import { collectGas, type CollectedTransaction, type GasSummary, type TransactionReceiptReader } from "./gas-collector";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import type { HarnessAccount } from "./account-factory";
@@ -128,19 +130,15 @@ export async function runRevision(): Promise<HarnessEvidence> {
   return { gitRevision: gitRevision.trim(), gitDirty: gitStatus.trim().length > 0 };
 }
 
-export async function writeHarnessReport(
-  input: HarnessReportInput,
-): Promise<{ passed: boolean; path: string; workload: WorkerWorkloadSummary }> {
-  const analysis = analyzeHarnessResult(input);
+export async function prepareHarnessReport(input: HarnessReportInput): Promise<PreparedTerminalReport> {
   const gas = await collectRunGas(input);
   const createdAt = new Date().toISOString();
   const runId = `${createdAt.replace(/[-:.]/g, "")}-g${input.games.map(({ gameId }) => gameId).join("-")}`;
   const outputPath = path.join(HARNESS_OUTPUT_DIRECTORY, `${runId}.json`);
-  const manifest = buildHarnessManifest(input, analysis, gas, runId, createdAt);
-
-  await mkdir(HARNESS_OUTPUT_DIRECTORY, { recursive: true });
-  await writeFile(outputPath, `${JSON.stringify(manifest, null, 2)}\n`);
-  return { passed: analysis.passed, path: outputPath, workload: summarizeWorkerWorkload(input, analysis) };
+  const finalInput = { ...input, workerBoundary: workerBoundaryEvidence() };
+  const analysis = analyzeHarnessResult(finalInput);
+  const { passed: workloadPassed, ...report } = buildHarnessManifest(finalInput, analysis, gas, runId, createdAt);
+  return { path: outputPath, workloadPassed, report, workload: summarizeWorkerWorkload(finalInput, analysis) };
 }
 
 function summarizeWorkerWorkload(

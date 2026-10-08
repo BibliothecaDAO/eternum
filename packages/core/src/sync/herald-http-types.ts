@@ -54,6 +54,12 @@ export interface HeraldGameDirectoryEntry {
   dev_mode_on: boolean;
   /** A game with days: its day unit and the seed its bags of days are drawn from (decimal). */
   expedition: { day_unit_seconds: number; seed: string } | null;
+  /** Unknown on older Heralds; null outside a current Frontier day. Index is zero-based; times/durations are seconds. */
+  day_index?: number | null;
+  day_ends_at?: number | null;
+  next_day_length?: number | null;
+  /** One-based Frontier registry ordinal on this world, retained across finalization. */
+  season_number?: number | null;
   game_id: number;
   mode: "blitz" | "eternum" | "frontier" | "duel" | null;
   name: string;
@@ -61,6 +67,8 @@ export interface HeraldGameDirectoryEntry {
   player_state: HeraldPlayerGameState | null;
   /** Players on a Blitz game's fixed roster; 0 for open-entry games. */
   roster_count: number;
+  /** Fixed onchain roster; prepared means that account has an entry and its own settled realm. */
+  roster?: { account: string; prepared: boolean }[];
   preset_id: number;
   registration: HeraldGameRegistration | null;
   settled_realms_count: number;
@@ -154,6 +162,15 @@ export interface HeraldFrontierLeaderboard {
   game_id: string;
   mode: "frontier";
   entries: HeraldFrontierLeaderboardEntry[];
+}
+
+/** Immutable ranks at a seeded day's end; confirmed_block is the last block strictly before that instant. */
+export interface HeraldFrontierDayRanks {
+  game_id: string;
+  day_index: number;
+  ends_at: number;
+  confirmed_block: number;
+  entries: { address: string; structure_id: string; rank: number }[];
 }
 
 export type HeraldGameLeaderboard = HeraldLeaderboard | HeraldFrontierLeaderboard;

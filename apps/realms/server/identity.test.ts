@@ -264,6 +264,23 @@ describe("identity Worker", () => {
     expect(await userCount()).toBe(before + 1);
   });
 
+  it("returns the stored code expiry rather than starting another countdown at response time", async () => {
+    const browser = createBrowser();
+    const response = await browser.request("/api/auth/email-otp/send-verification-otp", {
+      body: { email: "expiry@realms.test", type: "sign-in" },
+    });
+    expect(response.status).toBe(200);
+    const context = await auth.$context;
+    const code = await context.internalAdapter.findVerificationValue("sign-in-otp-expiry@realms.test");
+    expect(code).not.toBeNull();
+    expect(await response.json()).toEqual({ success: true, expires_at: code!.expiresAt.getTime() / 1000 });
+    const refused = await browser.request("/api/auth/email-otp/send-verification-otp", {
+      body: { email: "invalid", type: "sign-in" },
+    });
+    expect(refused.status).toBe(400);
+    expect(await refused.json()).not.toHaveProperty("expires_at");
+  });
+
   it("refuses a wrong code, an expired code and a code after three wrong tries", async () => {
     const browser = createBrowser();
     const signIn = (email: string, otp: string | undefined) =>

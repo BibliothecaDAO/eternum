@@ -1,3 +1,4 @@
+import { replayWithFrontierDays } from "./native/frontier-day-ranks";
 import { LordsCeilingAlerts } from "./native/lords-ceiling-alert";
 import { NativePresetCalldataUnavailable } from "./native/preset-preimages";
 import { worldView } from "@bibliothecadao/eternum";
@@ -527,17 +528,21 @@ export class LiveWorld {
   }
 
   private async applyConfirmedThrough(target: number) {
-    const result = await this.native.replay({
+    const replayInput = {
       fold: this.confirmedFold,
       rpc: this.input.rpc,
       fromBlock: this.confirmedBlockValue + 1,
       toBlock: target,
-      preconfirmed: (receipt) => this.overlayReceipts.get(overlayIdentity(receipt)),
-    });
-    await this.input.historyStore?.appendEvents(
-      result.events.filter((event) => event.kind === "event"),
-      target,
-    );
+      preconfirmed: (receipt: RpcReceipt) => this.overlayReceipts.get(overlayIdentity(receipt)),
+    };
+    const result = this.input.historyStore
+      ? await replayWithFrontierDays(
+          this.native,
+          this.input.historyStore,
+          replayInput,
+          this.confirmedHeadTimestamp ?? undefined,
+        )
+      : { ...(await this.native.replay(replayInput)), frontierDays: [] };
     this.confirmedBlockValue = target;
     return result;
   }
