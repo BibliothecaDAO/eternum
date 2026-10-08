@@ -92,6 +92,8 @@ export function applyCharacterRigLimbLengths(
   }
   const morphology = {
     ...rig.morphology,
+    // The pose controller sizes its offsets by `scale`: a figure measured from its own skeleton is that much of nominal.
+    scale: body ? rig.morphology.scale * (measuredLegLength / rigLegLength) : rig.morphology.scale,
     forearmLength,
     shinLength,
     thighLength,

@@ -74,7 +74,6 @@ interface CharacterTorsoJoints {
 const Y_AXIS = new Vector3(0, 1, 0);
 const X_AXIS = new Vector3(1, 0, 0);
 const Z_AXIS = new Vector3(0, 0, 1);
-const CHARACTER_GROUND_Y = 0.12;
 
 export function resolveProceduralCharacterPose(
   rig: ResolvedCharacterRig,
@@ -599,8 +598,8 @@ function resolveGroundedPelvis(
     Math.sin(elapsedSeconds * 0.72 + resolveSeededMotionValue(config.seed, 47) * Math.PI) *
     config.motionVariation *
     0.008;
-  const ankleHeight = config.animationMode === "walk" ? morphology.foot.ankleHeight : CHARACTER_GROUND_Y;
-  const baseHeight = ankleHeight + morphology.thighLength + morphology.shinLength - morphology.scale * 0.055;
+  const baseHeight =
+    morphology.foot.ankleHeight + morphology.thighLength + morphology.shinLength - morphology.scale * 0.055;
   return new Vector3(
     balancedWeightShift * config.hipSway * lateralScale * locomotionWeight + lateralVariation,
     baseHeight + verticalStep,
@@ -641,7 +640,7 @@ function resolveGroundedLeg(
   const morphology = rig.morphology;
   const sideSign = side === "left" ? 1 : -1;
   const signedHipWidth = morphology.hipWidth * sideSign;
-  const hip = pelvis.clone().add(new Vector3(signedHipWidth * 0.5, -0.08, 0));
+  const hip = pelvis.clone().add(new Vector3(signedHipWidth * 0.5, -0.08 * morphology.scale, 0));
   const locomotionWeight = config.animationMode === "idle" ? 0 : 1;
   const gaitProfile = resolveProceduralCharacterGaitProfile(config);
   const strideVariation =
@@ -662,7 +661,7 @@ function resolveGroundedLeg(
   const roll = config.animationMode === "walk" ? resolveWalkingFootRoll(gait.feet[side], morphology.foot) : undefined;
   const ankleTarget = new Vector3(
     sideSign * stepWidth * 0.5,
-    (roll ? 0 : CHARACTER_GROUND_Y) + trajectory.lift,
+    (roll ? 0 : morphology.foot.ankleHeight) + trajectory.lift,
     targetPelvis.z + trajectory.forward - (1 - locomotionWeight) * morphology.scale * 0.055,
   );
   if (resolvePlantTarget) {

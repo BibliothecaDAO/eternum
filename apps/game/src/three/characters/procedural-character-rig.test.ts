@@ -38,6 +38,14 @@ describe("procedural character rig", () => {
     expect(fitted.morphology.shoulderWidth).toBeCloseTo(measured.body.shoulderWidth);
     expect(fitted.morphology.thighLength).toBeCloseTo(measured.thighLength);
     expect(fitted.parts.chest.halfExtents?.[1]).toBeCloseTo(measured.body.chestToNeck);
+    // The pose controller sizes its offsets by scale, so a figure a quarter of nominal size must say so.
+    const rigLegLength = base.morphology.thighLength + base.morphology.shinLength;
+    expect(fitted.morphology.scale).toBeCloseTo(
+      base.morphology.scale * ((measured.thighLength + measured.shinLength) / rigLegLength),
+    );
+    expect(applyCharacterRigLimbLengths(base, { ...measured, body: undefined }).morphology.scale).toBe(
+      base.morphology.scale,
+    );
     for (const body of [
       { ...measured.body, hipWidth: 0 },
       { ...measured.body, chestToNeck: -0.01 },
