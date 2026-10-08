@@ -99,7 +99,7 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
         }
       >
         <FrontierSurfaces realm={realm} />
-        <FrontierSelectionSheet realm={realm} />
+        <FrontierSelectionSheet rules={rules} realm={realm} />
         {surface === "menu" && <HudMenu onOpen={setSurface} onClose={close} />}
         {surface === "army" && realm && !visit && <FrontierArmy realm={realm} onClose={close} />}
         {surface === "production" && realm && <FrontierProduction rules={rules} realm={realm} onClose={close} />}
