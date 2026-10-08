@@ -1,5 +1,5 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { formatAmount, formatExact } from "@/ui/design-system/kit/amount";
+import { formatAmount } from "@/ui/design-system/kit/amount";
 import { Button } from "@/ui/design-system/kit/button";
 import { FullIn } from "@/ui/design-system/kit/chip";
 import { type IconCode, KitIcon } from "@/ui/design-system/kit/kit-icon";
@@ -75,9 +75,11 @@ const Row = ({
         ))}
       </span>
       <span className="flex min-w-0 flex-1 flex-col gap-1">
-        <span className="truncate whitespace-nowrap text-[14px] tabular-nums text-kit-cream">
-          {formatExact(line.held)}
-          {line.limit !== undefined && ` / ${formatExact(line.limit)}`}
+        {/* The kit's amount rule, as on the strip: a phone's row has no room for two exact five-digit amounts. A full
+            store holds its limit, so its row says the one number beside Full. */}
+        <span className="whitespace-nowrap text-[14px] tabular-nums text-kit-cream">
+          {formatAmount(line.held)}
+          {line.limit !== undefined && !full && ` / ${formatAmount(line.limit)}`}
         </span>
         <StoreBar amount={line.held} limit={line.limit} tone={line.tone} />
       </span>

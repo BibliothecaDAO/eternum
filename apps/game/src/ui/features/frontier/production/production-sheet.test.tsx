@@ -37,8 +37,8 @@ describe("Production", () => {
       ),
     );
     const rows = [...host.querySelectorAll("section[aria-label='Production'] > div > div")];
-    expect(rows[0].textContent).toBe("+500/h9,640 / 18,000Full in16h 44m");
-    expect(rows[1].textContent).toBe("+0/h18,000 / 18,000FullRealm");
+    expect(rows[0].textContent).toBe("+500/h9,640 / 18KFull in16h 44m");
+    expect(rows[1].textContent).toBe("+0/h18KFullRealm");
     act(() => [...host.querySelectorAll("button")].find((button) => button.textContent === "Realm")!.click());
     expect(onSpend).toHaveBeenCalledWith("realm");
     act(() => [...host.querySelectorAll("button")].find((button) => button.textContent === "Build")!.click());
