@@ -2,21 +2,21 @@ import { usePlayerProfile } from "@/hooks/use-player-profile";
 import { playerPortraitUrl } from "@/services/identity/player-portrait";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { KitIcon } from "@/ui/design-system/kit/kit-icon";
+import { PlayerName } from "@/ui/design-system/kit/player-name";
 
 import { BLITZ_SEATS } from "../blitz-slot";
+import { RatingFigure } from "../rating-mark";
+import { useRatings } from "../ratings";
 import { BLITZ_WORDS } from "../words";
 import type { Seat } from "./lobby";
 
 /**
  * The lobby's 24 sockets (spec 06): a taken seat shows its player's portrait, the player's own on the peach ring,
  * an open one stays empty. While the roster's realms are prepared, each socket ticks once its player's realm is ready,
- * and shows a dash while that is unknown. Six by four on a phone, twelve by two on desktop.
+ * and shows a dash while that is unknown. Six by four.
  */
 export const SeatGrid = ({ seats, preparing }: { seats: readonly Seat[]; preparing: boolean }) => (
-  <ul
-    aria-label={`${BLITZ_WORDS.seats} ${seats.length}/${BLITZ_SEATS}`}
-    className="grid grid-cols-6 gap-2.5 lg:grid-cols-12"
-  >
+  <ul aria-label={`${BLITZ_WORDS.seats} ${seats.length}/${BLITZ_SEATS}`} className="grid grid-cols-6 gap-2.5">
     {Array.from({ length: BLITZ_SEATS }, (_, index) => (
       <li key={index} className="relative aspect-square">
         {seats[index] ? (
@@ -67,5 +67,44 @@ const PreparedMark = ({ prepared }: { prepared: boolean | undefined }) => {
     >
       {prepared ? <KitIcon code="Ok" size={16} /> : "—"}
     </span>
+  );
+};
+
+/**
+ * The desktop lobby's roster: the same 24 seats, large, each with its player's name and Blitz rating under the
+ * portrait (a dash where no rating answers: a bot, a launched roster, a player with no linked wallet).
+ */
+export const RosterGrid = ({ seats, preparing }: { seats: readonly Seat[]; preparing: boolean }) => {
+  const ratings = useRatings(seats.flatMap((seat) => (seat.realmsId ? [seat.realmsId] : [])));
+  return (
+    <ul aria-label={`${BLITZ_WORDS.seats} ${seats.length}/${BLITZ_SEATS}`} className="grid grid-cols-6 gap-x-6 gap-y-5">
+      {Array.from({ length: BLITZ_SEATS }, (_, index) => {
+        const seat = seats[index];
+        const answer = seat?.realmsId ? ratings.data?.ratings[seat.realmsId] : undefined;
+        return (
+          <li key={index} className="flex flex-col items-center gap-1.5">
+            <span className="relative block aspect-square w-full max-w-24">
+              {seat ? (
+                <TakenSocket seat={seat} preparing={preparing} />
+              ) : (
+                <span className="block size-full rounded-full border-2 border-dashed border-kit-line" />
+              )}
+            </span>
+            {seat && (
+              <>
+                <span className="max-w-full font-ui text-[13px] text-kit-cream">
+                  {seat.account ? <PlayerName account={seat.account} you={seat.own} /> : "—"}
+                </span>
+                {answer?.status === "rated" ? (
+                  <RatingFigure rating={answer.rating} />
+                ) : (
+                  <span className="text-[13px] text-kit-muted">—</span>
+                )}
+              </>
+            )}
+          </li>
+        );
+      })}
+    </ul>
   );
 };

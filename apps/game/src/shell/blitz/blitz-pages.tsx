@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 
 import { Button } from "@/ui/design-system/kit/button";
 import { ReasonPlate } from "@/ui/design-system/kit/reason-plate";
@@ -11,6 +11,7 @@ import { ClockChip } from "../clock-chip";
 import { useLayout } from "../frame/layout";
 import { useRealmsPlayer } from "../herald";
 import { PageFrame } from "../frame/page-frame";
+import { StepVerb } from "../frame/step-verb";
 import { entryHref } from "../game-links";
 import { Loading } from "../loading";
 import { NothingHere } from "../not-found";
@@ -23,7 +24,8 @@ import { ServiceFailure } from "../service-failure";
 import { BLITZ_WORDS, WORDS } from "../words";
 import { GameRow, SeatsChip } from "./game-row";
 import { type LobbyStep, lobbyId, lobbyStep, lobbyTitle, seatsOf } from "./lobby";
-import { SeatGrid } from "./seat-grid";
+import { LobbyChatPanel } from "./lobby-chat-panel";
+import { RosterGrid, SeatGrid } from "./seat-grid";
 
 const BLITZ = ageOf("blitz");
 
@@ -49,27 +51,67 @@ const useBlitz = () => {
 
 /**
  * Blitz's games (spec 05): live first, then by start, each with when, its seats and one action; a row opens its
- * lobby. The age's painting heads the list on a phone and stands beside it on desktop.
+ * lobby. The age's painting heads the list on a phone; the desktop stands the list on it, the next filling game's
+ * lobby beside it.
  */
 export const BlitzListPage = () => {
   const { facts, join, refused } = useBlitz();
+  const desktop = useLayout() === "desktop";
+  const rows = (
+    <section className="plate px-3">
+      <BlitzRows facts={facts} join={join} />
+    </section>
+  );
   return (
-    <PageFrame back="/" title={BLITZ.name} notice={refused || undefined}>
-      <div className="flex flex-col gap-3 lg:grid lg:grid-cols-[1fr_32rem] lg:items-start lg:gap-8">
-        <AgeHeader />
-        <section className="plate px-3">
-          <BlitzRows facts={facts} join={join} />
-        </section>
-      </div>
+    <PageFrame back="/" title={BLITZ.name} notice={refused || undefined} painting={BLITZ.painting} stage>
+      {desktop ? (
+        <div className="grid grid-cols-[minmax(0,1fr)_34rem] items-start gap-6">
+          {rows}
+          <NextLobby facts={facts} join={join} />
+        </div>
+      ) : (
+        <div className="flex flex-col gap-3">
+          <AgeHeader />
+          {rows}
+        </div>
+      )}
     </PageFrame>
   );
 };
 
+/** Beside the desktop's rows: the next game filling its seats, as its lobby shows it, with its one step. */
+const NextLobby = ({ facts, join }: { facts: PlayFacts; join: ReturnType<typeof useJoinSlot> }) => {
+  const { data: player } = useRealmsPlayer();
+  const row = facts.blitz.find((candidate) => candidate.kind === "slot");
+  if (!row) return null;
+  const step = lobbyStep(row, facts.blitz, join.realmsId);
+  return (
+    <section className="plate flex flex-col gap-4 p-5">
+      <Link to={`/blitz/${lobbyId(row)}`} className="painted flex h-36 items-end rounded-xl p-4">
+        <img
+          {...paintingSources(BLITZ.painting)}
+          sizes="34rem"
+          alt=""
+          className="absolute inset-0 -z-10 size-full object-cover"
+        />
+        <span className="absolute inset-0 -z-10 bg-gradient-to-b from-transparent to-kit-ground/90" />
+        <span className="flex items-baseline gap-2">
+          <AgeLabel numeral={BLITZ.numeral} />
+          <h2 className="font-display text-[34px] leading-none text-kit-cream">{lobbyTitle(row)}</h2>
+        </span>
+      </Link>
+      <LobbyClock row={row} step={step} now={facts.now} />
+      <SeatGrid seats={seatsOf(row, join.realmsId, player)} preparing={false} />
+      <LobbyAction row={row} step={step} join={join} desktop />
+    </section>
+  );
+};
+
 const AgeHeader = () => (
-  <header className="painted flex h-36 items-end rounded-2xl p-3 lg:h-[30rem]">
+  <header className="painted flex h-36 items-end rounded-2xl p-3">
     <img
       {...paintingSources(BLITZ.painting)}
-      sizes="(min-width: 1024px) 50vw, 100vw"
+      sizes="100vw"
       alt=""
       className="absolute inset-0 -z-10 size-full object-cover"
     />
@@ -131,31 +173,63 @@ export const BlitzLobbyPage = () => {
   const step = lobbyStep(row, facts.blitz, join.realmsId);
   const seats = seatsOf(row, join.realmsId, player);
   const clock = <LobbyClock row={row} step={step} now={facts.now} />;
-  const action = <LobbyAction row={row} step={step} join={join} />;
+  const desktop = layout === "desktop";
+  const action = <LobbyAction row={row} step={step} join={join} desktop={desktop} />;
   return (
     <PageFrame
       back="/blitz"
       title={lobbyTitle(row)}
       tabs={false}
       notice={refused || undefined}
-      foot={layout === "phone" ? action : undefined}
+      foot={desktop ? undefined : action}
+      painting={BLITZ.painting}
+      stage
     >
-      {layout === "phone" ? (
+      {desktop ? (
+        <div className="grid grid-cols-[minmax(0,1fr)_26rem] items-start gap-6">
+          <section className="plate p-6">
+            <RosterGrid seats={seats} preparing={step.kind === "preparing"} />
+          </section>
+          <div className="flex flex-col gap-5">
+            <section className="plate flex flex-col gap-4 p-5">
+              <Countdown row={row} now={facts.now} />
+              {clock}
+              {action}
+            </section>
+            {row.kind === "slot" && <LobbyChatPanel slotName={row.slot.name} seated={step.kind === "joined"} />}
+          </div>
+        </div>
+      ) : (
         <div className="flex flex-col gap-4">
           {clock}
           <SeatGrid seats={seats} preparing={step.kind === "preparing"} />
         </div>
-      ) : (
-        <div className="grid grid-cols-[1fr_22rem] items-start gap-8">
-          <SeatGrid seats={seats} preparing={step.kind === "preparing"} />
-          <div className="flex flex-col gap-4">
-            {clock}
-            {action}
-          </div>
-        </div>
       )}
     </PageFrame>
   );
+};
+
+/** The desktop lobby's large clock: the time to the start, or to the end of a live game, to the second. */
+const Countdown = ({ row, now }: { row: BlitzRow; now: number }) => {
+  const live = row.startsAt === null;
+  const at = live ? (row.kind === "game" ? row.game.clock.end_at : undefined) : row.startsAt;
+  return (
+    <div className="flex flex-col gap-1">
+      <span className="font-ui text-[14px] tracking-[.06em] text-kit-muted">
+        {live ? BLITZ_WORDS.endsIn : BLITZ_WORDS.startsIn}
+      </span>
+      <span className="font-display text-[64px] leading-none text-kit-cream">
+        {at === undefined || at === null ? "—" : countdown(at - now)}
+      </span>
+    </div>
+  );
+};
+
+/** Hours, minutes and seconds left: "2:04:12"; never below zero. */
+const countdown = (seconds: number) => {
+  const left = Math.max(0, Math.floor(seconds));
+  const pad = (value: number) => String(value).padStart(2, "0");
+  return `${Math.floor(left / 3600)}:${pad(Math.floor(left / 60) % 60)}:${pad(left % 60)}`;
 };
 
 const LobbyClock = ({ row, step, now }: { row: BlitzRow; step: LobbyStep; now: number }) => (
@@ -177,21 +251,35 @@ const LobbyClock = ({ row, step, now }: { row: BlitzRow; step: LobbyStep; now: n
 );
 
 /** The lobby's one step, or the fact standing where it would. */
-const LobbyAction = ({ row, step, join }: { row: BlitzRow; step: LobbyStep; join: ReturnType<typeof useJoinSlot> }) => {
+const LobbyAction = ({
+  row,
+  step,
+  join,
+  desktop,
+}: {
+  row: BlitzRow;
+  step: LobbyStep;
+  join: ReturnType<typeof useJoinSlot>;
+  desktop: boolean;
+}) => {
   const navigate = useNavigate();
+  // On the desktop the step answers Enter.
+  const verb = (button: ReactNode) => (desktop ? <StepVerb>{button}</StepVerb> : button);
   switch (step.kind) {
     case "join":
       return (
         row.kind === "slot" && (
           <Stack>
             <p className="text-center text-[15px] text-kit-muted">{BLITZ_WORDS.seatKept}</p>
-            <Button
-              role="primary"
-              word={WORDS.join}
-              icon="Pl"
-              loading={join.joining === row.slot.name ? BLITZ_WORDS.joining : undefined}
-              onClick={() => join.join(row.slot)}
-            />
+            {verb(
+              <Button
+                role="primary"
+                word={WORDS.join}
+                icon="Pl"
+                loading={join.joining === row.slot.name ? BLITZ_WORDS.joining : undefined}
+                onClick={() => join.join(row.slot)}
+              />,
+            )}
           </Stack>
         )
       );
@@ -201,19 +289,21 @@ const LobbyAction = ({ row, step, join }: { row: BlitzRow; step: LobbyStep; join
       return <Button role="primary" word={WORDS.enter} loading={BLITZ_WORDS.preparing} />;
     case "enter":
       return (
-        row.kind === "game" && (
-          <Button role="primary" word={WORDS.enter} icon="Pl" onClick={() => navigate(entryHref(row.game, "play"))} />
+        row.kind === "game" &&
+        verb(
+          <Button role="primary" word={WORDS.enter} icon="Pl" onClick={() => navigate(entryHref(row.game, "play"))} />,
         )
       );
     case "watch":
       return (
-        row.kind === "game" && (
+        row.kind === "game" &&
+        verb(
           <Button
             role="secondary"
             word={WORDS.watch}
             icon="Wc"
             onClick={() => navigate(entryHref(row.game, "spectate"))}
-          />
+          />,
         )
       );
     case "full": {

@@ -224,3 +224,45 @@ export const LAB_RATING_TOP = {
   })),
   self: { status: "rated" as const, player: "0xe0f1", rating: "1744", rank: 41 },
 };
+
+/** The 16:30 lobby's seated players' names (their gameplay accounts resolve like any player's). */
+const SEAT_NAMES = ["Ysabeau", "Aldric", "Corwin", "Tybalt", "Isolde", "Brannoc", "Caradoc", "Gwenllian", "Osric"];
+export const LAB_SEAT_PROFILES = Object.fromEntries(
+  SEAT_NAMES.map((name, position) => [
+    `0x${(0xa000 + position).toString(16)}`,
+    { name, portrait: `0${(position % 9) + 1}` },
+  ]),
+);
+
+/**
+ * The seats' Blitz ratings (/api/ratings?realmsIds): falling down the roster, the seventh seat with no linked wallet,
+ * the player 1,744.
+ */
+export const labRatings = (realmsIds: readonly string[]) => ({
+  block_number: 812_345,
+  block_hash: "0x5ea1",
+  ratings: Object.fromEntries(
+    realmsIds.map((realmsId) => {
+      const position = Number(BigInt(realmsId)) - 100;
+      if (BigInt(realmsId) === BigInt(REALMS_ID))
+        return [realmsId, { status: "rated", player: "0xe0f1", rating: "1744" }];
+      if (position === 6) return [realmsId, { status: "unlinked", player: null, rating: null }];
+      return [realmsId, { status: "rated", player: `0xe1${position}`, rating: String(2480 - position * 45) }];
+    }),
+  ),
+});
+
+/** The lobby's chat so far (/api/chat/world), oldest first, from seated players. */
+export const LAB_CHAT = [
+  ["Aldric", "gl hf"],
+  ["Tybalt", "who takes the north ridge?"],
+  ["Brannoc", "storm lords keep together"],
+  ["Osric", "see you at the spires"],
+  ["Ysabeau", "two minutes"],
+].map(([name, content], index) => ({
+  id: `lab-chat-${index}`,
+  sender: { playerId: `0x${(100 + SEAT_NAMES.indexOf(name)).toString(16)}`, displayName: name },
+  zoneId: "slot:blitz-1630",
+  content,
+  createdAt: new Date((NOW - 600 + index * 60) * 1000).toISOString(),
+}));

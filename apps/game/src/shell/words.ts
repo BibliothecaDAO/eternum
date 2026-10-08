@@ -95,6 +95,20 @@ export const BLITZ_WORDS = {
   /** Shown only to assistive technology; the seats are drawn. */
   seats: "Seats",
   full: (nextStart: string) => `Full. The ${nextStart} game has seats.`,
+  /** Above the lobby's countdown. */
+  startsIn: "Starts in",
+  endsIn: "Ends in",
+} as const;
+
+/** A Blitz lobby's chat: its panel, its field and the lines that stand where a message cannot go. */
+export const CHAT_WORDS = {
+  chat: "Chat",
+  message: "Message",
+  /** The field's placeholder for a reader without a seat: the Worker lets only seated players write. */
+  takeASeat: "Take a seat to write",
+  signInToRead: "Sign in to read the lobby's chat.",
+  rateLimited: "A few messages a second at most. Wait a moment.",
+  refused: "That message was not sent.",
 } as const;
 
 /** The doorway into a match: its four steps and what holds it until the player acts. */

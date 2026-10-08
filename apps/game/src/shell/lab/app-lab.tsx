@@ -23,7 +23,10 @@ import {
   LAB_PROFILES,
   LAB_RATING_TOP,
   LAB_SCREENS,
+  LAB_SEAT_PROFILES,
   LAB_SESSION,
+  LAB_CHAT,
+  labRatings,
   labSlots,
   type LabScreen,
 } from "./app-lab-fixtures";
@@ -78,6 +81,7 @@ const useLabSession = (screen: LabScreen) => {
 /** The lab's own query client: the app's /api answered from the fixtures, the shard boards seeded by game. */
 const createLabClient = (screen: LabScreen) => {
   answerAppReads(screen);
+  answerLobbyChat();
   const client = new QueryClient({ defaultOptions: { queries: { staleTime: Infinity, retry: false } } });
   for (const gameId of [1, 3]) client.setQueryData(["shell", "leaderboard", LAB_CHAIN, gameId], LAB_FRONTIER_BOARD);
   client.setQueryData(["shell", "leaderboard", LAB_CHAIN, 7], LAB_BLITZ_BOARD);
@@ -102,6 +106,8 @@ const answerAppReads = (screen: LabScreen) => {
     "/api/slots": () => json(labSlots(LAB_SCREENS[screen].joined)),
     "/api/profiles": (url) => json({ profiles: profilesOf(url.searchParams.get("accounts")?.split(",") ?? []) }),
     "/api/ratings/top": () => json(LAB_RATING_TOP),
+    "/api/ratings": (url) => json(labRatings(url.searchParams.get("realmsIds")?.split(",") ?? [])),
+    "/api/chat/world": () => json({ messages: LAB_CHAT, nextCursor: null }),
   };
   window.fetch = (input, init) => {
     const url = new URL(input instanceof Request ? input.url : String(input), window.location.origin);
@@ -110,13 +116,48 @@ const answerAppReads = (screen: LabScreen) => {
   };
 };
 
+/**
+ * The lobby chat's room socket, answered in the tab: it admits the reader and echoes what a seated player sends as the
+ * room would broadcast it. Any other socket opens as before.
+ */
+const answerLobbyChat = () => {
+  const Network = window.WebSocket;
+  class LabRoom extends EventTarget {
+    readyState = 1;
+    constructor() {
+      super();
+      setTimeout(() => this.#emit({ type: "joined:zone", zoneId: "slot:blitz-1630", canWrite: true }), 50);
+    }
+    send(data: string) {
+      const sent = JSON.parse(data) as { payload: { content: string }; clientMessageId?: string };
+      const message = {
+        id: sent.clientMessageId ?? String(Date.now()),
+        sender: { playerId: LAB_SESSION.user.realmsId, displayName: LAB_SESSION.user.name },
+        zoneId: "slot:blitz-1630",
+        content: sent.payload.content,
+        createdAt: new Date().toISOString(),
+      };
+      this.#emit({ type: "world:message", zoneId: "slot:blitz-1630", message });
+    }
+    close() {
+      this.readyState = 3;
+    }
+    #emit(body: unknown) {
+      this.dispatchEvent(new MessageEvent("message", { data: JSON.stringify(body) }));
+    }
+  }
+  window.WebSocket = function (url: string | URL) {
+    return String(url).includes("/api/chat/rooms/") ? new LabRoom() : new Network(url);
+  } as unknown as typeof WebSocket;
+};
+
 const profilesOf = (accounts: readonly string[]) =>
   Object.fromEntries(
     accounts.flatMap((account) => {
       const profile =
         BigInt(account) === BigInt(LAB_PLAYER)
           ? { name: LAB_SESSION.user.name, portrait: LAB_SESSION.user.image }
-          : LAB_PROFILES[account];
+          : (LAB_PROFILES[account] ?? LAB_SEAT_PROFILES[account]);
       return profile ? [[account, profile]] : [];
     }),
   );

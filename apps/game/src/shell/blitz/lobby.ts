@@ -14,11 +14,12 @@ export const lobbyTitle = (row: BlitzRow) =>
 export const lobbyId = (row: Pick<BlitzRow, "key">) => row.key.replaceAll(":", "-");
 
 /**
- * One taken seat: the account in it (null when the seat is known taken but Herald does not name its player), whether
- * it is the player's own, and whether that player's realm is ready (undefined while unknown: a slot not launched, or
+ * One taken seat: the account in it (null when the seat is known taken but Herald does not name its player), its
+ * player's Realms id where the launch service registered one (a slot's seats; a launched roster and a bot carry none),
+ * whether it is the player's own, and whether that player's realm is ready (undefined while unknown: a slot not launched, or
  * a Herald that does not serve the roster).
  */
-export type Seat = { account: string | null; own: boolean; prepared: boolean | undefined };
+export type Seat = { account: string | null; realmsId: string | null; own: boolean; prepared: boolean | undefined };
 
 /** What a lobby offers: the one action, or the fact that stands where it would. */
 export type LobbyStep =
@@ -44,6 +45,7 @@ export const seatsOf = (row: BlitzRow, realmsId: string | undefined, player: str
   if (row.kind === "slot")
     return fillingNow(row.slot).map((registration) => ({
       account: registration.account,
+      realmsId: registration.realmsId,
       own:
         realmsId !== undefined && registration.realmsId !== null && BigInt(registration.realmsId) === BigInt(realmsId),
       prepared: undefined,
@@ -51,12 +53,13 @@ export const seatsOf = (row: BlitzRow, realmsId: string | undefined, player: str
   if (!row.game.roster) return Array.from({ length: row.seats.filled }, () => UNNAMED_SEAT);
   return row.game.roster.map(({ account, prepared }) => ({
     account,
+    realmsId: null,
     own: player !== null && sameAddress(account, player),
     prepared,
   }));
 };
 
-const UNNAMED_SEAT: Seat = { account: null, own: false, prepared: undefined };
+const UNNAMED_SEAT: Seat = { account: null, realmsId: null, own: false, prepared: undefined };
 
 /**
  * The lobby's one step (spec 06): Join while the player has no seat, then nothing while they wait (a seat cannot be
