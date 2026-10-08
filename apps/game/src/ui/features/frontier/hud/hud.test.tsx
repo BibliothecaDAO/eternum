@@ -212,6 +212,26 @@ describe("the HUD's surfaces", () => {
 describe("the order bar", () => {
   const covered = { cost: 30, held: 90, wait: undefined };
 
+  it("reads the labor half of a reveal apart, in ember, when labor no longer fits", () => {
+    act(() =>
+      root.render(
+        <OrderBar
+          kind="explore"
+          tiles={1}
+          stamina={covered}
+          wheat={{ cost: 100, held: 4_410, wait: undefined }}
+          revealYield={500}
+          laborFits={0}
+          xp={2}
+          onCancel={() => {}}
+          onGo={() => {}}
+        />,
+      ),
+    );
+    expect(host.querySelector('[aria-label="Essence +500"]')).not.toBeNull();
+    expect(host.querySelector('[aria-label="labor +0"]')?.getAttribute("data-tone")).toBe("loss");
+  });
+
   it("shows what an order leaves and earns, then Cancel and the verb", () => {
     const onGo = vi.fn();
     act(() =>

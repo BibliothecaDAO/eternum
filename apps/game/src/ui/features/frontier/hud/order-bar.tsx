@@ -20,6 +20,7 @@ export const OrderBar = ({
   stamina,
   wheat,
   revealYield,
+  laborFits,
   xp,
   onCancel,
   onGo,
@@ -30,6 +31,8 @@ export const OrderBar = ({
   wheat: Cost;
   /** Explore only; null in a game whose reveals pay no supplies. */
   revealYield: number | undefined | null;
+  /** What of a labor reveal fits the labor store; less than the yield splits the chip, labor's half in ember. */
+  laborFits?: number;
   xp: number | undefined;
   onCancel: () => void;
   onGo: () => void;
@@ -42,11 +45,7 @@ export const OrderBar = ({
         <CostChip icon="St" label={STAMINA} cost={stamina} after={(held) => `${held} → ${held - stamina.cost}`} />
         <CostChip icon="Wh" label={WHEAT} cost={wheat} after={() => `−${formatExact(Math.ceil(wheat.cost))}`} />
         {covered && kind === "explore" && revealYield !== null && (
-          <Chip
-            icons={["Es", "La"]}
-            label={`${ESSENCE}, ${LABOR}`}
-            value={revealYield === undefined ? "—" : `+${formatAmount(revealYield)}`}
-          />
+          <RevealYield revealYield={revealYield} laborFits={laborFits} />
         )}
         {covered && kind === "explore" && <Chip icons={[]} label={XP} value={`+${formatAmount(xp)}`} unit={XP} />}
         {covered && kind === "move" && <Chip icons={["Bt"]} label={MOVE} value={formatAmount(tiles)} />}
@@ -89,3 +88,18 @@ const CostChip = ({
     </>
   );
 };
+
+/** What a reveal sends home: Essence or labor, one amount; when labor no longer fits, its half reads apart in ember. */
+const RevealYield = ({ revealYield, laborFits }: { revealYield: number | undefined; laborFits: number | undefined }) =>
+  revealYield !== undefined && laborFits !== undefined && laborFits < revealYield ? (
+    <>
+      <Chip icons={["Es"]} label={ESSENCE} value={`+${formatAmount(revealYield)}`} />
+      <Chip icons={["La"]} label={LABOR} value={`+${formatAmount(laborFits)}`} ember />
+    </>
+  ) : (
+    <Chip
+      icons={["Es", "La"]}
+      label={`${ESSENCE}, ${LABOR}`}
+      value={revealYield === undefined ? "—" : `+${formatAmount(revealYield)}`}
+    />
+  );

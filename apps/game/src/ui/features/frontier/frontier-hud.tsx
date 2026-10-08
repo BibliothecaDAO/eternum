@@ -13,6 +13,7 @@ import { useSpectatorWatchesTheLeader } from "./board/spectator-watch";
 import { ChestMomentView } from "./chest/chest-moment-view";
 import { useExpeditionRules, useFrontierRealm } from "./frontier-home";
 import { FrontierSelectionSheet } from "./frontier-selection-sheet";
+import { useRealmStores } from "./realm-stores";
 import { FrontierSurfaces } from "./frontier-surfaces";
 import { GuideProvider, GuideSlot, useGuideSwitch } from "./guide/frontier-guide";
 import { SelectedArmyBar, useArmyRevealYield } from "./hud/action-bar";
@@ -89,7 +90,7 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
             </div>
             <SiteClearCardView />
             <OfflineNotice />
-            {dockRealm && <Foot realm={dockRealm} />}
+            {dockRealm && <Foot rules={rules} realm={dockRealm} />}
             <RealmVisitFoot home={realm} />
             {!visit && (
               <FrontierNav rules={rules} realm={realm} surface={surface} onSurface={setSurface} unread={chat.unread} />
@@ -120,12 +121,12 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
  * The foot's army rows: with an order pending, its costs and verb take the foot; otherwise the selected army's status
  * over the dock.
  */
-const Foot = ({ realm }: { realm: NativeRows["Structure"] }) => {
+const Foot = ({ rules, realm }: { rules: ExpeditionRules; realm: NativeRows["Structure"] }) => {
   const armies = useDockArmies(realm);
   const order = useArmyOrder();
   const selectedId = useUIStore((state) => state.entityActions.selectedEntityId);
   const selected = armies.find((army) => army.explorerId === selectedId);
-  if (order && selected) return <PendingOrder order={order} army={selected} />;
+  if (order && selected) return <PendingOrder rules={rules} realm={realm} order={order} army={selected} />;
   return (
     <>
       <RealmBuildingsRow realm={realm} />
@@ -135,18 +136,34 @@ const Foot = ({ realm }: { realm: NativeRows["Structure"] }) => {
   );
 };
 
-const PendingOrder = ({ order, army }: { order: ArmyOrder; army: DockArmy }) => (
-  <OrderBar
-    kind={order.kind}
-    tiles={order.tiles}
-    stamina={order.stamina}
-    wheat={order.wheat}
-    revealYield={useArmyRevealYield(army)}
-    xp={order.xp}
-    onCancel={() => useUIStore.getState().updateEntityActionHoveredHex(null)}
-    onGo={() => requestOrderAt(order.target)}
-  />
-);
+const PendingOrder = ({
+  rules,
+  realm,
+  order,
+  army,
+}: {
+  rules: ExpeditionRules;
+  realm: NativeRows["Structure"];
+  order: ArmyOrder;
+  army: DockArmy;
+}) => {
+  const labor = useRealmStores(realm, rules)?.labor;
+  return (
+    <OrderBar
+      kind={order.kind}
+      tiles={order.tiles}
+      stamina={order.stamina}
+      wheat={order.wheat}
+      revealYield={useArmyRevealYield(army)}
+      laborFits={
+        labor?.limit === undefined || labor.amount === undefined ? undefined : Math.max(0, labor.limit - labor.amount)
+      }
+      xp={order.xp}
+      onCancel={() => useUIStore.getState().updateEntityActionHoveredHex(null)}
+      onGo={() => requestOrderAt(order.target)}
+    />
+  );
+};
 
 /** In the day's last hour, the bubble of what the day's end takes and returns: the troops still out. */
 const LastHour = ({ rules, realm }: { rules: ExpeditionRules; realm: NativeRows["Structure"] }) => {
