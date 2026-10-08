@@ -462,16 +462,16 @@ html.frontier-type .hud-body {
 html.frontier-type .hud-value {
   font-size: 0.9375rem;
 }
-/* Frontier's visual direction (design §3.12): warm ink surfaces and numbers in the UI family's figures (Atkinson,
-   tabular so a rolling count never jitters). The palette is the one token file's (src/tokens.ts). Scoped here so every
-   Frontier sheet gets them and no other mode changes. */
+/* Frontier's visual direction (design §3.12): warm ink surfaces and numbers in the text face (Atkinson 700, tabular so a
+   rolling count never jitters), so a number and its unit ("7h 14m", "18.3K") read in one face. The palette is the one
+   token file's (src/tokens.ts). Scoped here so every Frontier sheet gets them and no other mode changes. */
 html.frontier-type {
   --overlay-surface-from: rgba(38, 29, 17, 0.98);
   --overlay-surface-to: rgba(16, 12, 8, 0.99);
 }
 html.frontier-type :is(.tabular-nums, .hud-value) {
-  font-family: var(--font-ui);
-  font-weight: 800;
+  font-family: var(--font-body);
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.01em;
 }

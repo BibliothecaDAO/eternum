@@ -15,6 +15,14 @@ const NO_RETIRED_TOKENS = {
   message: "The --frontier-* variables are retired: use the token file's kit-* classes or theme(colors.kit.*).",
 };
 
+// A face named in a component is a second type system: the faces live in the token file (src/tokens.ts) and reach a
+// component as font-display, font-ui or font-body.
+const NO_NAMED_FONT = {
+  selector:
+    "Literal[value=/font-\\[|font-family/], TemplateElement[value.raw=/font-\\[|font-family/], Property[key.name='fontFamily']",
+  message: "Faces come from the token file (src/tokens.ts): use font-display, font-ui or font-body.",
+};
+
 // A colour written into a shell component is a second palette; the shell's colours come from src/tokens.ts.
 const COLOUR_LITERAL = "/#[0-9a-fA-F]{3,8}(?![0-9a-zA-Z])|rgba?\\(/";
 const COLOUR_MESSAGE =
@@ -83,6 +91,13 @@ export default tseslint.config(
         { selector: `TemplateElement[value.raw=${COLOUR_LITERAL}]`, message: COLOUR_MESSAGE },
         ...OWNED_FORMATS.slice(0, 2),
       ],
+    },
+  },
+  {
+    // The match HUD and the kit it draws with take their faces from the token file only.
+    files: ["src/ui/features/frontier/**/*.{ts,tsx}", "src/ui/design-system/kit/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-syntax": ["error", NO_MUTATING_SORT, NO_RETIRED_TOKENS, NO_NAMED_FONT],
     },
   },
   {

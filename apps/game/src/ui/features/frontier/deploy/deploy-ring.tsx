@@ -71,7 +71,7 @@ export const DeployRing = ({
           )}
         >
           {!tile.explored && (
-            <span aria-hidden className="font-[Lexend] text-[15px] font-extrabold text-[#a8b0b8]">
+            <span aria-hidden className="text-[15px] font-extrabold text-[#a8b0b8]">
               ?
             </span>
           )}
