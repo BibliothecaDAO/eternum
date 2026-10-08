@@ -11,6 +11,8 @@ import { useMemo } from "react";
 
 import { ARMY } from "@/ui/design-system/kit/words";
 
+import { affordableUpgrades } from "../attributes/attributes";
+
 const ARMY_MODELS = ["ArmySlot", "ArmyProgress", "ExplorerTroops", "TileOccupancy", "EntityName"] as const;
 
 /** One army as the dock and the action bar read it. Unknown is undefined, never zero. */
@@ -23,6 +25,8 @@ export type DockArmy = {
   stamina: { current: number; max: number } | undefined;
   secondsToFull: number | undefined;
   troops: number;
+  /** Its XP buys a tier of an attribute now: the card fan on its token. */
+  canBuyTier: boolean;
 };
 
 /** The realm's armies out today, in the order the castle granted their slots; none without a realm. */
@@ -50,6 +54,7 @@ export const useDockArmies = (realm: NativeRows["Structure"] | null): DockArmy[]
         })
       : null;
     const progress = setup.store.get("ArmyProgress", { game_id: army.game_id, explorer_id: army.explorer_id });
+    const xpRules = setup.store.get("ArmyProgressionRules", { game_id: army.game_id });
     return {
       explorerId: army.explorer_id,
       troopsFact: army.troops,
@@ -59,6 +64,7 @@ export const useDockArmies = (realm: NativeRows["Structure"] | null): DockArmy[]
       stamina: stamina ? { current: stamina.committedCurrent, max: stamina.committedMax } : undefined,
       secondsToFull: stamina?.secondsUntilFull,
       troops: Number(army.troops.count / BigInt(RESOURCE_PRECISION)),
+      canBuyTier: progress !== undefined && xpRules !== undefined && affordableUpgrades(progress, xpRules).length > 0,
     };
   });
 };

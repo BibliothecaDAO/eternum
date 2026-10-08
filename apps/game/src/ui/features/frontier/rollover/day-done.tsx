@@ -3,16 +3,12 @@ import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useStoryEvents } from "@/hooks/store/use-story-events-store";
-import {
-  configManager,
-  entityMapPosition,
-  isCurrentExpeditionArmy,
-  type readExpeditionRules,
-} from "@bibliothecadao/eternum";
-import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
+import { configManager, type readExpeditionRules } from "@bibliothecadao/eternum";
+import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { useState } from "react";
 
+import { endedHomeArmies } from "../frontier-home";
 import { dayClock, endedDay } from "../hud/day-clock";
 import { totalToday } from "../log/today-totals";
 import { DayDoneCard } from "./day-done-card";
@@ -37,7 +33,7 @@ export const DayDone = ({ rules, realm }: { rules: ExpeditionRules; realm: Nativ
   const ended = endedDay(rules, now);
   if (!ended || !player || (seen !== null && seen >= ended.day)) return null;
   const totals = totalToday(stories, player, { startMs: ended.start * 1_000, endMs: ended.end * 1_000 });
-  const gone = endedArmies(setup.store, realm, rules, now);
+  const gone = endedHomeArmies(setup.store, realm, rules, now);
   if (gone.length === 0 && totals.reveals === 0 && totals.cleared === 0) return null;
   return (
     <DayDoneCard
@@ -51,19 +47,6 @@ export const DayDone = ({ rules, realm }: { rules: ExpeditionRules; realm: Nativ
     />
   );
 };
-
-/** The realm's armies the day ended: still at home in the facts, no longer in today's region. */
-const endedArmies = (
-  store: NativeFactStore,
-  realm: NativeRows["Structure"],
-  rules: ExpeditionRules,
-  now: number,
-): NativeRows["ExplorerTroops"][] =>
-  [...store.armiesAtHome(realm.game_id, realm.entity_id)].filter(
-    (army) =>
-      army.troops.count > 0n &&
-      !isCurrentExpeditionArmy(rules, entityMapPosition(store, realm.game_id, army.explorer_id), now),
-  );
 
 /**
  * The last ended day this device has shown its card for. A convenience in the browser's storage: losing it only shows

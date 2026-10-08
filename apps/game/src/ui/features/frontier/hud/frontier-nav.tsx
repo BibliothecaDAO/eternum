@@ -1,9 +1,11 @@
 import { useQuery } from "@/hooks/helpers/use-query";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useState } from "react";
+import type { ExpeditionRules } from "@bibliothecadao/eternum";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 
 import { useGoToFrontierPlace } from "../frontier-home";
+import { realmDot, useRealmStores } from "../realm-stores";
 import { canResearchNow } from "../research/research-plan";
 import { useResearchPlan } from "../research/research-reader";
 import { type Place, PlaceNav } from "./place-nav";
@@ -31,14 +33,17 @@ export const useHudSurface = () => {
 
 /**
  * The place bar over the game: Map and Realm move the camera between the day's map and the realm board, the other
- * slots open their page or the Menu (a second tap closes it). A spectator with no realm has only the map.
+ * slots open their page or the Menu (a second tap closes it). The Realm slot carries a dot while a store the realm
+ * spends is full or fills within the hour. A spectator with no realm has only the map.
  */
 export const FrontierNav = ({
+  rules,
   realm,
   surface,
   onSurface,
   unread,
 }: {
+  rules: ExpeditionRules;
   realm: NativeRows["Structure"] | null;
   surface: HudSurface | null;
   onSurface: (surface: HudSurface | null) => void;
@@ -55,6 +60,7 @@ export const FrontierNav = ({
           : "realm";
   const goToPlace = useGoToFrontierPlace(realm);
   const researchDot = canResearchNow(useResearchPlan(realm));
+  const stores = useRealmStores(realm, rules);
   const go = (to: Place) => {
     if (to === "map" || to === "realm") {
       onSurface(null);
@@ -63,5 +69,13 @@ export const FrontierNav = ({
     }
     onSurface(surface === to ? null : to);
   };
-  return <PlaceNav place={place} onGo={go} researchDot={researchDot} unread={unread} />;
+  return (
+    <PlaceNav
+      place={place}
+      onGo={go}
+      realmDot={stores ? realmDot([stores.wheat, stores.labor, stores.troops]) : undefined}
+      researchDot={researchDot}
+      unread={unread}
+    />
+  );
 };

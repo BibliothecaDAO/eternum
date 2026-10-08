@@ -20,7 +20,7 @@ import { BuildingType, StructureType, type TroopTier, type TroopType } from "@bi
 import { knownBalance } from "@/ui/utils/utils";
 import { useMemo } from "react";
 import { affordableUpgrades } from "../attributes/attributes";
-import { troopsOnHand, type useExpeditionRules } from "../frontier-home";
+import { troopsAtHome, type useExpeditionRules } from "../frontier-home";
 import type { GuideFacts } from "./guide-script";
 
 type ExpeditionRules = NonNullable<ReturnType<typeof useExpeditionRules>>;
@@ -85,7 +85,7 @@ const readGuideFacts = (
     ...NOT_YET_READ,
     realm: true,
     barracks: getBuildingQuantity(realm.entity_id, BuildingType.ResourceKnightT1, store) > 0,
-    troopsAtHome: troopsOnHand(store, realm.entity_id, clock.tick),
+    troopsAtHome: troopsAtHome(store, realm, rules, clock.now, clock.tick),
     armies: armies.length,
     armyActed: stamina.some((bar) => bar.current < bar.max),
     camp: guardedCampToday(store, rules, realm, clock.now),

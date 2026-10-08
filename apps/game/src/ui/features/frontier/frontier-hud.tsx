@@ -91,7 +91,9 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
             <OfflineNotice />
             {dockRealm && <Foot realm={dockRealm} />}
             <RealmVisitFoot home={realm} />
-            {!visit && <FrontierNav realm={realm} surface={surface} onSurface={setSurface} unread={chat.unread} />}
+            {!visit && (
+              <FrontierNav rules={rules} realm={realm} surface={surface} onSurface={setSurface} unread={chat.unread} />
+            )}
           </>
         }
       >

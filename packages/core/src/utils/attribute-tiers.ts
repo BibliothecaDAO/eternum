@@ -50,3 +50,10 @@ export const logisticsStamina = (tier: number): number => LOGISTICS_STAMINA[tier
 
 /** The share of its surviving troops an army returns home at a Homecoming tier, in basis points (rules::homecoming_bps). */
 export const homecomingBps = (tier: number): number => HOMECOMING_BPS[tierIndex(tier)]!;
+
+/**
+ * The whole troops an army whose day has ended returns home, as troops.cairo's return_troops counts them: its
+ * Homecoming tier's share of its surviving whole troops, rounded down. The realm keeps only what fits its troop store.
+ */
+export const homecomingReturn = (wholeTroops: number, homecomingTier: number): number =>
+  Math.floor((Math.floor(wholeTroops) * homecomingBps(homecomingTier)) / 10_000);
