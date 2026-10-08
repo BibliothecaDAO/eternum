@@ -40,12 +40,12 @@ describe("Frontier's muster", () => {
       return previewMuster(store, 1, plan, plan.stacks[0], 100, 3).stamina!;
     };
     const untrained = max();
-    expect(untrained.amount).toBe(untrained.max);
+    expect(untrained).toEqual({ amount: 150, max: 150 });
     // research.cairo: the Supply yard's tier at bit 27; two tiers trained.
     store.applyFacts([
       { model: "RealmKnowledge", key: "0xd", value: { game_id: 1, structure_id: 7, learned: 2n << 27n } },
     ] as never);
-    expect(max()).toEqual({ amount: untrained.max + 60, max: untrained.max + 60 });
+    expect(max()).toEqual({ amount: 200, max: 200 });
   });
 
   it("deploys onto the picked tile while it stays open, else the first open one, never onto unknown or taken ground", () => {
