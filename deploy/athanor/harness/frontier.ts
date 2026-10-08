@@ -298,6 +298,52 @@ export function waitForWheatState(client: GameClient, realmId: number, timeoutMs
   );
 }
 
+/** A completed fight can remove the last army and its deep region from the actor's view. Absence is not victory. */
+export async function resolveFrontierSiteCapture(
+  client: GameClient,
+  siteId: number,
+  owner: string,
+  transactionHash: string | undefined,
+  confirmedBlock: number | null,
+): Promise<boolean> {
+  const { store } = client.setup;
+  const state = await waitForWorldState(
+    store,
+    () => {
+      const scope = store.subscriptionScope().known;
+      return scope ? { scope, site: store.get("Structure", { game_id: client.gameId, entity_id: siteId }) } : undefined;
+    },
+    30_000,
+    () => `Guard battle for site ${siteId}: ${store.subscriptionScope().unknown ?? "scope known"}`,
+  );
+  if (state.site) return state.site.owner === BigInt(owner);
+  if (!state.scope.expedition || state.scope.expedition.entities.has(String(siteId)))
+    throw new Error(`Site ${siteId} is missing from its completed scope`);
+  if (!transactionHash || confirmedBlock === null)
+    throw new Error("Off-scope capture requires a confirmed transaction");
+  // Current facts stay in the native store; the receipt's immutable story answers a historical outcome after scope loss.
+  for (let offset = 0; ; ) {
+    const page = await fetchHeraldGameHistory(client.shard, client.gameId, {
+      model: "StoryEvent",
+      entityId: siteId,
+      limit: 500,
+      offset,
+    });
+    if (page.complete_through_block === null || page.complete_through_block < confirmedBlock)
+      throw new Error(`Capture history is incomplete for site ${siteId}`);
+    for (const event of page.items) {
+      if (BigInt(event.transaction_hash) !== BigInt(transactionHash)) continue;
+      const story = event.value.story as Record<string, Record<string, unknown>>;
+      const capture = story.StructureCapturedStory;
+      if (capture) return BigInt(String(capture.new_owner)) === BigInt(owner);
+      if (story.SitePayout) return BigInt(String(event.value.owner)) === BigInt(owner);
+    }
+    offset += page.items.length;
+    if (offset >= page.total) return false;
+    if (!page.items.length) throw new Error("Capture history ended before its declared total");
+  }
+}
+
 /**
  * The booth burst: every bot founds its realm inside the window, released evenly across it, and the foundings are the
  * measured workload.
@@ -393,7 +439,7 @@ async function playAction(
   if (before)
     rules!.recordCharge(player, action.charge!, before, await waitForWheatState(player.client, player.realmId));
   currentDay(player).actions++;
-  action.after?.();
+  await action.after?.(result);
   observeProgress(player.client, player.game, player);
   return result;
 }
@@ -604,7 +650,7 @@ function inSession(client: GameClient, player: Player): boolean {
 interface Action {
   kind: string;
   run(): Promise<unknown>;
-  after?(): void;
+  after?(result: TrackedTransaction): void | Promise<void>;
   /** What the action takes from its realm's wheat, for the real-speed pass to check against the preset. */
   charge?: WheatCharge;
 }
@@ -933,13 +979,17 @@ function planExpedition(client: GameClient, game: HarnessGame, player: Player): 
         kind: "BattleGuard",
         value: { attacker_id: army.explorer_id, defender_id: target.entity_id },
       });
-      attack.after = () => {
+      attack.after = async (result) => {
         day.exchanges++;
         const exchanges = (player.siteExchanges.get(target.entity_id) ?? 0) + 1;
         player.siteExchanges.set(target.entity_id, exchanges);
-        const captured =
-          client.setup.store.require("Structure", { game_id: client.gameId, entity_id: target.entity_id }).owner ===
-          BigInt(player.identity.address);
+        const captured = await resolveFrontierSiteCapture(
+          client,
+          target.entity_id,
+          player.identity.address,
+          result.transactionHash,
+          player.game.factHeadBlock(),
+        );
         day.attackStamina += stamina.stamina_attack_req - (captured ? stamina.capture_stamina_refund : 0);
         if (captured) {
           day.captures++;
