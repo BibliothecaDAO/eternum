@@ -679,10 +679,14 @@ const noop = () => undefined;
 /**
  * Dev only: the Map HUD's states on the lab fixtures, at /lab/kit/hud/<state> (idle, selected, full, offline, menu,
  * empty, explore, move, wheat-short, stamina-short): the components the live HUD draws, on the handoff's fiction.
+ * /lab/kit/hud/line-<step> speaks any of the guide's lines at the foot.
  */
 export const HudLab = () => {
   const { state = "idle" } = useParams();
-  const lab: LabState = STATES[state as keyof typeof STATES] ?? STATES.idle;
+  const line = state.startsWith("line-") ? state.slice("line-".length) : undefined;
+  const lab: LabState = line ? STATES.idle : (STATES[state as keyof typeof STATES] ?? STATES.idle);
+  const footLine =
+    line ?? (lab.guide && lab.guide !== "fight" && lab.guide !== "season" ? GUIDE_LINES[lab.guide] : undefined);
   const selected = lab.selected === undefined ? undefined : lab.armies[lab.selected];
   return (
     <>
@@ -717,7 +721,7 @@ export const HudLab = () => {
           ) : undefined
         }
         stage={lab.lastHour && <LastHourBubble troopsOut={6_021} returned={470} tiersToBuy={2} />}
-        guide={lab.guide && lab.guide !== "fight" && lab.guide !== "season" && <LabGuide guide={lab.guide} />}
+        guide={footLine && <LabGuide stepId={footLine} />}
         notices={
           <>
             {lab.offline && <Notice icon="Of" line={OFFLINE} verb={TRY_AGAIN} onVerb={noop} ember />}
@@ -835,7 +839,7 @@ export const HudLab = () => {
         {lab.site && (
           <SiteCardView
             {...lab.site}
-            guide={lab.guide === "fight" ? <LabGuide guide="fight" /> : undefined}
+            guide={lab.guide === "fight" ? <LabGuide stepId={GUIDE_LINES.fight} /> : undefined}
             onRealm={noop}
             onClose={noop}
           />
@@ -1058,11 +1062,11 @@ const LabTraining = ({ training }: { training: "battle" | "hearth" | "scouts" | 
   );
 };
 
-/** A guide line on the lab fixtures, with its thread to the control it names. */
-const LabGuide = ({ guide }: { guide: keyof typeof GUIDE_LINES }) => {
+/** A guide line on the lab fixtures, by its step, with its thread to the control it names. */
+const LabGuide = ({ stepId }: { stepId: string }) => {
   const card = useRef<HTMLElement>(null);
-  const step = GUIDE_STEPS.find(({ id }) => id === GUIDE_LINES[guide]);
-  if (!step) throw new Error(`No guide step ${GUIDE_LINES[guide]}`);
+  const step = GUIDE_STEPS.find(({ id }) => id === stepId);
+  if (!step) throw new Error(`No guide step ${stepId}`);
   return (
     <>
       <GuideCard
@@ -1133,7 +1137,7 @@ const LabResults = ({ results, guided }: { results: NonNullable<LabState["result
         { key: "3", rank: 3, name: "Corwin", sitesCleared: 397 },
       ]}
       totals={{ sitesCleared: 288, chests: 61, lords: 2_003, reach: 2, essence: 2_100_000, labor: 1_400_000 }}
-      guide={guided ? <LabGuide guide="season" /> : undefined}
+      guide={guided ? <LabGuide stepId={GUIDE_LINES.season} /> : undefined}
       onSeason={noop}
       onExit={noop}
     />

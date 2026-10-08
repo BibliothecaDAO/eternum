@@ -1,6 +1,6 @@
+import { KitIcon } from "@/ui/design-system/kit/kit-icon";
 import { type RefObject, useEffect, useState } from "react";
 
-import { GuideMarkIcon } from "./guide-card";
 import type { GuideTarget } from "./guide-script";
 
 /** The attribute a HUD control carries when a guide line may name it. */
@@ -8,7 +8,7 @@ export const guideTarget = (target: GuideTarget) => ({ "data-guide-target": targ
 
 type Ends = { x1: number; y1: number; x2: number; y2: number };
 
-/** The mark laid on the target, faint. */
+/** The guide's mark, the Aspect of Skill's sigil, laid faintly on the target. */
 const TARGET_MARK = 30;
 
 /**
@@ -28,7 +28,7 @@ export const GuideThread = ({ from, target }: { from: RefObject<HTMLElement | nu
         className="pointer-events-none fixed z-30 opacity-55"
         style={{ left: ends.x2 - TARGET_MARK / 2, top: ends.y2 - TARGET_MARK / 2 }}
       >
-        <GuideMarkIcon mark="speaking" size={TARGET_MARK} />
+        <KitIcon code="Gd" size={TARGET_MARK} />
       </span>
     </>
   );
