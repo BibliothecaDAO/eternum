@@ -134,10 +134,24 @@ pub(crate) fn discovered_structure(
     timestamp: u64,
 ) -> (StructureRecord, u8, u128) {
     let (category, occupier, level, capacity) = match discovery {
-        Discovery::Mine => (crate::taxonomy::MINE_CATEGORY, crate::taxonomy::MINE_OCCUPIER, 0_u8, capacities.fragment_mine_capacity),
-        Discovery::Hyperstructure => (crate::taxonomy::HYPERSTRUCTURE_CATEGORY, crate::taxonomy::HYPERSTRUCTURE_OCCUPIER, 3, capacities.hyperstructure_capacity),
-        Discovery::BitcoinMine => (crate::taxonomy::BITCOIN_MINE_CATEGORY, crate::taxonomy::BITCOIN_MINE_OCCUPIER, 3, capacities.bitcoin_mine_capacity),
-        Discovery::Camp => (crate::taxonomy::CAMP_CATEGORY, crate::taxonomy::CAMP_OCCUPIER, 0, capacities.camp_capacity),
+        Discovery::Mine => (
+            crate::taxonomy::MINE_CATEGORY, crate::taxonomy::MINE_OCCUPIER, 0_u8, capacities.fragment_mine_capacity,
+        ),
+        Discovery::Hyperstructure => (
+            crate::taxonomy::HYPERSTRUCTURE_CATEGORY,
+            crate::taxonomy::HYPERSTRUCTURE_OCCUPIER,
+            3,
+            capacities.hyperstructure_capacity,
+        ),
+        Discovery::BitcoinMine => (
+            crate::taxonomy::BITCOIN_MINE_CATEGORY,
+            crate::taxonomy::BITCOIN_MINE_OCCUPIER,
+            3,
+            capacities.bitcoin_mine_capacity,
+        ),
+        Discovery::Camp => (
+            crate::taxonomy::CAMP_CATEGORY, crate::taxonomy::CAMP_OCCUPIER, 0, capacities.camp_capacity,
+        ),
         // Frontier's other guarded sites hold nothing; they share the camp's capacity.
         Discovery::Rift => (
             crate::taxonomy::RIFT_CATEGORY, crate::taxonomy::RIFT_OCCUPIER, 0, capacities.camp_capacity,

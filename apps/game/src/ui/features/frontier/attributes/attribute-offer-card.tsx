@@ -36,7 +36,9 @@ export const AttributeOfferCard = ({
           />
         ))}
       </span>
-      {price !== undefined && <span className="frontier-scale-end tabular-nums">{price === null ? "—" : `${price} XP`}</span>}
+      {price !== undefined && (
+        <span className="frontier-scale-end tabular-nums">{price === null ? "—" : `${price} XP`}</span>
+      )}
     </span>
   );
 };

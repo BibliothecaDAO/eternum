@@ -284,7 +284,8 @@ fn inactive_resources_have_no_clock_and_activation_starts_at_the_recorded_time()
     let (balance, production, _) = resources.read_slot(key, 1);
     assert_eq!(balance, 8);
     assert_eq!(
-        production, Production { building_count: 1, production_rate: 2, output_amount_left: 100, last_settled_tick: 200 },
+        production,
+        Production { building_count: 1, production_rate: 2, output_amount_left: 100, last_settled_tick: 200 },
     );
     resources.spend_at(key, 1, 0, 1, 205);
     let (balance, production, weight) = resources.read_slot(key, 1);
@@ -321,16 +322,16 @@ fn whole_ticks_pay_exactly_however_often_production_settles() {
 #[test]
 fn frontier_rates_pay_exactly_for_ten_thousand_ticks_at_every_output_tier() {
     for (resource, rate, base_cents) in array![
-        (crate::resources::WHEAT, 84_000_000_u64, 1008_u128),
-        (crate::resources::LABOR, 56_000_000, 672),
-        (26, 28_000_000, 336),
-        (crate::resources::LABOR, 28_000_000, 336),
+        (crate::resources::WHEAT, 84_000_000_u64, 1008_u128), (crate::resources::LABOR, 56_000_000, 672),
+        (26, 28_000_000, 336), (crate::resources::LABOR, 28_000_000, 336),
     ] {
         for picks in 0_u128..5 {
             let tier_rate = Into::<u64, u128>::into(rate) * (10000 + picks * 2500) / 10000;
             let mut production = Production {
-                building_count: 1, production_rate: tier_rate.try_into().unwrap(),
-                output_amount_left: crate::resources::UNLIMITED_OUTPUT, last_settled_tick: 0,
+                building_count: 1,
+                production_rate: tier_rate.try_into().unwrap(),
+                output_amount_left: crate::resources::UNLIMITED_OUTPUT,
+                last_settled_tick: 0,
             };
             let mut balance = 0;
             let mut weight = Weight { capacity: core::num::traits::Bounded::MAX, weight: 0 };

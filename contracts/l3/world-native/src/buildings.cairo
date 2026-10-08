@@ -31,12 +31,11 @@ const PAUSED_SCALE: u64 = 0x10000000000;
 
 pub impl BuildingPacking of starknet::storage_access::StorePacking<Building, felt252> {
     fn pack(value: Building) -> felt252 {
-        let identity: u64 = value.category.into()
-            + if value.paused {
-                PAUSED_SCALE
-            } else {
-                0
-            };
+        let identity: u64 = value.category.into() + if value.paused {
+            PAUSED_SCALE
+        } else {
+            0
+        };
         identity.into() + Into::<u128, felt252>::into(value.labor_paid) * 0x10000000000000000
     }
     fn unpack(value: felt252) -> Building {

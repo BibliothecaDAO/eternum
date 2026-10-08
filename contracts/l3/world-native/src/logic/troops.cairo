@@ -264,7 +264,11 @@ pub mod TroopsLogic {
             let guarded = if site {
                 crate::expeditions::is_site_category(category)
             } else {
-                category == crate::taxonomy::HYPERSTRUCTURE_CATEGORY || category == crate::taxonomy::BANK_CATEGORY || category == crate::taxonomy::MINE_CATEGORY || category == crate::taxonomy::CAMP_CATEGORY || category == crate::taxonomy::BITCOIN_MINE_CATEGORY
+                category == crate::taxonomy::HYPERSTRUCTURE_CATEGORY
+                    || category == crate::taxonomy::BANK_CATEGORY
+                    || category == crate::taxonomy::MINE_CATEGORY
+                    || category == crate::taxonomy::CAMP_CATEGORY
+                    || category == crate::taxonomy::BITCOIN_MINE_CATEGORY
             };
             assert!(guarded, "invalid guarded structure category");
             let guards = if site {

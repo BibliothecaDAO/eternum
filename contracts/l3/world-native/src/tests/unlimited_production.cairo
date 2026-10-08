@@ -103,7 +103,14 @@ fn a_marker_already_worn_by_a_running_game_still_never_runs_out_or_wears_further
         selector!("resources"),
         selector!("productions"),
         array![home.game_id.into(), home.entity_id.into(), LABOR.into()].span(),
-        Production { building_count: 1, production_rate: 3, output_amount_left: WORN, last_settled_tick: 40 },
+        Production {
+            building_count: 1,
+            production_rate: 3,
+            output_amount_left: WORN,
+            last_settled_tick: (40_u64 / super::recorded::rules().tick_config.armies_tick_in_seconds)
+                .try_into()
+                .unwrap(),
+        },
     );
     let before = resources(deployment).resource_balance(slot(home, LABOR));
     assert_eq!(settle(deployment, home, LABOR, 100).output_amount_left, WORN);
@@ -120,8 +127,9 @@ fn a_marker_already_worn_by_a_running_game_still_never_runs_out_or_wears_further
 fn a_limited_producer_still_counts_down_to_nothing() {
     // The fixture realm's producer makes two of resource 1 a second from time 30, a hundred in all.
     let (deployment, home, _) = super::resource_commands::setup();
-    assert_eq!(settle(deployment, home, 1, 40).output_amount_left, 80);
-    assert_eq!(settle(deployment, home, 1, 60).output_amount_left, 40);
+    assert_eq!(settle(deployment, home, 1, 40).output_amount_left, 100);
+    assert_eq!(settle(deployment, home, 1, 59).output_amount_left, 100);
+    assert_eq!(settle(deployment, home, 1, 60).output_amount_left, 0);
     assert_eq!(settle(deployment, home, 1, 200).output_amount_left, 0);
     assert_eq!(resources(deployment).resource_balance(slot(home, 1)), 200);
 }

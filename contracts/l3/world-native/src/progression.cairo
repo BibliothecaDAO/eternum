@@ -119,7 +119,7 @@ pub fn trained(learned: u64) -> ArmyProgress {
         scouting,
         scouting_kinds,
         homecoming: 1 + crate::research::tier(learned, crate::research::ROW_HEARTH),
-        ..initial()
+        ..initial(),
     }
 }
 

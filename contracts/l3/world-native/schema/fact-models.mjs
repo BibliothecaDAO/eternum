@@ -251,7 +251,6 @@ export const factWireTypes = [
         name: "labor_paid",
         type: "core::integer::u128",
       },
-      { name: "tier", type: "core::integer::u8" },
     ],
   },
   {

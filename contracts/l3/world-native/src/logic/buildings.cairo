@@ -76,7 +76,10 @@ pub mod BuildingState {
             board: crate::buildings::BoardRules,
             learned: u64,
         ) -> u32 {
-            let grant: u32 = self.rule(BuildingRuleKey { game_id, category: crate::research::HUT }).capacity_grant.into();
+            let grant: u32 = self
+                .rule(BuildingRuleKey { game_id, category: crate::research::HUT })
+                .capacity_grant
+                .into();
             let tiers: u32 = crate::research::tier(learned, crate::research::ROW_HUT).into();
             Into::<u8, u32>::into(huts) * grant * tiers * board.population_step_bps.into() / 10000
         }
@@ -99,7 +102,10 @@ pub mod BuildingState {
 
         fn rule(self: @ComponentState<TContractState>, key: BuildingRuleKey) -> BuildingRule {
             let preset = crate::logic::preset_record::for_game(key.game_id);
-            assert!(key.category > 0 && key.category <= crate::buildings::BUILDING_CATEGORY_COUNT, "invalid building category");
+            assert!(
+                key.category > 0 && key.category <= crate::buildings::BUILDING_CATEGORY_COUNT,
+                "invalid building category",
+            );
             let terms = preset.building_terms.read(key.category);
             BuildingRule {
                 population_cost: terms.population_cost,

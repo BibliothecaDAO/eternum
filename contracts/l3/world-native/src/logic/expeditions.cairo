@@ -53,7 +53,11 @@ pub fn discovery(key: ExpeditionDiscoveryKey) -> Option<ExpeditionDiscovery> {
         .map_rules
         .empty_reveals
         .read(storage_key)
-        .map(|empty_reveals| ExpeditionDiscovery { empty_reveals, ruin_found: state.map_rules.ruin_found.read(storage_key) })
+        .map(
+            |
+                empty_reveals,
+            | ExpeditionDiscovery { empty_reveals, ruin_found: state.map_rules.ruin_found.read(storage_key) },
+        )
 }
 
 fn is_ruin(discovery: crate::discovery::Discovery) -> bool {
@@ -85,7 +89,9 @@ pub fn record_discovery(key: ExpeditionDiscoveryKey, result: crate::discovery::D
     next.serialize(ref values);
     crate::logic::map::MapState::emit(
         crate::logic::map::MapState::Event::RowSet(
-            crate::events::RowSet { version: 1, model: 'ExpeditionDiscovery', keys: keys.span(), values: values.span() },
+            crate::events::RowSet {
+                version: 1, model: 'ExpeditionDiscovery', keys: keys.span(), values: values.span(),
+            },
         ),
     );
 }

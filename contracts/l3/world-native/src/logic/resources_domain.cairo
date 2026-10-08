@@ -1,7 +1,7 @@
 #[starknet::contract]
 pub mod ResourcesLogic {
     use starknet::ContractAddress;
-    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
+    use starknet::storage::StoragePointerReadAccess;
     use crate::arrivals::{ArrivalKey, OffloadArrival, has_arrived};
     use crate::events::RowSet;
     use crate::logic::arrivals::ArrivalState;
@@ -47,9 +47,6 @@ pub mod ResourcesLogic {
         ProductionEvent: ProductionState::Event,
         RowSet: RowSet,
         StoryEvent: StoryEvent,
-    }
-    #[abi(embed_v0)]
-        }
     }
     #[abi(embed_v0)]
     impl SiteRewards of crate::expeditions::ISiteRewards<ContractState> {

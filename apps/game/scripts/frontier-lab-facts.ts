@@ -7,7 +7,7 @@ import { currentPresetFixture } from "../../herald/src/native/current-preset-fix
 const out = process.argv[2];
 if (!out) throw new Error("Usage: bun frontier-lab-facts.ts <out.json>");
 const target = resolve(out);
-const facts = currentPresetFixture(5).rows.map((row) => {
+const facts = (await currentPresetFixture(5)).rows.map((row) => {
   if (row.kind !== "set") throw new Error(`Projected ${row.model.name} is not a complete fact`);
   return { model: row.model.name, value: toJsonValue({ ...row.key, ...row.value }) };
 });

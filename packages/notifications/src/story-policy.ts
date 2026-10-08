@@ -1,4 +1,5 @@
 import { NOTIFICATION_LEVELS, type NotificationLevel } from "./preferences";
+import type { NativeStoryVariant } from "../../../contracts/l3/world-native/schema/client.gen";
 
 type RecipientSource = "capture" | "owner" | "transfer" | "nativeBattle" | "raid";
 type StoryRule = { level: Exclude<NotificationLevel, "off">; recipients: RecipientSource } | { excluded: string };
@@ -15,7 +16,7 @@ const STORY_RULES = {
   HyperstructurePoints: { level: "all", recipients: "owner" },
   RelicChestOpened: { level: "all", recipients: "owner" },
   SitePayout: { level: "all", recipients: "owner" },
-  AttributeChosen: { level: "all", recipients: "owner" },
+  TierBought: { level: "all", recipients: "owner" },
   ExplorationReward: { level: "all", recipients: "owner" },
   SeasonEnded: { level: "all", recipients: "owner" },
   FaithPledged: { level: "all", recipients: "owner" },
@@ -41,7 +42,7 @@ const STORY_RULES = {
   TroopsTransferred: { level: "all", recipients: "owner" },
   FaithPointsClaimedStory: { excluded: "Recipient and notification UX deferred" },
   LordsWithdrawn: { excluded: "The player's own withdrawal needs no notification" },
-} satisfies Record<string, StoryRule>;
+} satisfies Record<NativeStoryVariant | "BattleEvent" | "RaidEvent", StoryRule>;
 
 export function storyNotificationRule(story: string): StoryRule {
   if (!Object.hasOwn(STORY_RULES, story)) {

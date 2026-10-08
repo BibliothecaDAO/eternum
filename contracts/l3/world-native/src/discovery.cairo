@@ -95,20 +95,22 @@ pub fn frontier(
         None => (crate::relics::SiteChest { tier: 0, amount: 0 }, 0),
     };
     let kinds = array![
-        (Discovery::Stragglers, stragglers), (Discovery::Camp, camp),
-        (Discovery::Rift, rift), (Discovery::Ruin(chest), ruin_weight),
-        (Discovery::Shrine, rules.shrine_bps.into()), (Discovery::Well, rules.well_bps.into()),
+        (Discovery::Stragglers, stragglers), (Discovery::Camp, camp), (Discovery::Rift, rift),
+        (Discovery::Ruin(chest), ruin_weight), (Discovery::Shrine, rules.shrine_bps.into()),
+        (Discovery::Well, rules.well_bps.into()),
     ];
     let mut total: u128 = 0;
     for (_, weight) in kinds.span() {
         total += *weight;
     }
     let floor = empty_reveals >= rules.empty_reveal_limit;
-    let mut draw = crate::random::range(seed, Into::<u64, u128>::into(timestamp) + 29, if floor {
-        total
-    } else {
-        10000
-    });
+    let mut draw = crate::random::range(
+        seed, Into::<u64, u128>::into(timestamp) + 29, if floor {
+            total
+        } else {
+            10000
+        },
+    );
     for (kind, weight) in kinds {
         if draw < weight {
             return kind;

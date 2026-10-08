@@ -35,10 +35,16 @@ describe("construction groups", () => {
   });
 });
 
-it("keeps an unknown researched construction price unknown for the requirement chips", () => {
+it("requires a known base construction price but no realm research", () => {
   vi.spyOn(configManager, "getActiveGameId").mockReturnValue(7);
-  vi.spyOn(configManager, "getBuildingCosts").mockReturnValue([{ resource: ResourcesIds.Labor, amount: 100 }]);
+  const prices = vi
+    .spyOn(configManager, "getBuildingCosts")
+    .mockReturnValue([{ resource: ResourcesIds.Labor, amount: 100 }]);
   vi.spyOn(configManager, "getBuildingBaseCostPercentIncrease").mockReturnValue(0);
   const store = { get: (model: string) => (model === "BoardRules" ? {} : undefined) } as never;
+  expect(resolveBuildingRequirements(9, store, BuildingType.ResourceWheat, true, 0)).toEqual([
+    { resource: ResourcesIds.Labor, amount: 100, current: undefined },
+  ]);
+  prices.mockReturnValueOnce(undefined);
   expect(resolveBuildingRequirements(9, store, BuildingType.ResourceWheat, true, 0)).toBeUndefined();
 });

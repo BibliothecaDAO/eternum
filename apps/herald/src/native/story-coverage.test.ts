@@ -132,8 +132,8 @@ const stories: Record<string, { fields: number[]; expected: unknown }> = {
     },
   },
   TierBought: {
-    fields: [7, 1, 3, 200],
-    expected: { explorer_id: 7n, attribute: "Logistics", tier: 3n, price: 200n },
+    fields: [7, 1, 1, 3, 200],
+    expected: { explorer_id: 7n, attribute: "Logistics", kind: null, tier: 3n, price: 200n },
   },
   LordsWithdrawn: {
     fields: [17, 3, 200],

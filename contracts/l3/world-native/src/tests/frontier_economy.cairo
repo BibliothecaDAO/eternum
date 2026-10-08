@@ -148,7 +148,11 @@ fn level_up_once(mut preset: crate::presets::PresetDefinition) -> crate::presets
     preset
         .structures
         .upgrades =
-            array![UpgradeRecipe { costs: array![ResourceAmount { resource_type: crate::resources::LABOR, amount: 17 }].span() }]
+            array![
+                UpgradeRecipe {
+                    costs: array![ResourceAmount { resource_type: crate::resources::LABOR, amount: 17 }].span(),
+                },
+            ]
         .span();
     preset
 }
@@ -261,6 +265,7 @@ fn learn_barracks(deployment: super::Deployment, home: ResourceKey, sides: Span<
     for side in sides {
         learned = crate::research::learn(learned, crate::research::ROW_BARRACKS, *side);
     }
+    let learned = learned;
     snforge_std::interact_with_state(
         deployment.games, || crate::logic::research::write(home, crate::research::RealmKnowledge { learned }),
     );

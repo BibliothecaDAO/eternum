@@ -1,20 +1,23 @@
 import { CallData, CairoOption, CairoOptionVariant, shortString, type Abi } from "starknet";
 import { buildNativePreset } from "../../../../config/deployer/clean/config/native-preset";
-import { loadNativePresetConfiguration } from "../../../../config/deployer/clean/registrar/native-preset";
+import { buildConfig } from "../../../../config/source/build-config";
+import { nativePresetForId } from "../../../../config/source/native";
+import { applyBiomeClimateDefaults } from "../../../../config/deployer/biome-climate-defaults";
 import { NativeDecoder } from "./decoder";
 import { manifest, schema } from "./fixtures";
 import { derivePresetFacts } from "./preset-facts";
 import { decodePresetPreimage } from "./preset-preimages";
 import { encodeMembers } from "./serde";
 import type { DecodedWorldEvent } from "../types";
-import { seasonSeconds } from "@bibliothecadao/eternum/expeditions";
+import { seasonSeconds } from "../../../../packages/core/src/utils/days";
 
 const codec = new CallData([...Object.values(schema.types), ...schema.games.entrypoints] as Abi);
 
 /** Generated inputs for current contract validation, separate from immutable launch recordings. */
-export function currentPresetFixture(presetId: 2 | 3 | 5) {
-  const environment = presetId === 5 ? "madara.frontier" : presetId === 3 ? "madara.eternum" : "madara.blitz";
-  const definition = buildNativePreset(loadNativePresetConfiguration(environment, presetId), presetId);
+export async function currentPresetFixture(presetId: 2 | 3 | 5) {
+  const gameType = nativePresetForId(presetId).gameType;
+  const config = applyBiomeClimateDefaults(await buildConfig({ chain: "madara", gameType }));
+  const definition = buildNativePreset(config, presetId);
   const params = fixtureLaunchParams(presetId, definition);
   const registration = codec.compile("register_preset", { preset_id: presetId, definition });
   return {

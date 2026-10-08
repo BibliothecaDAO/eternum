@@ -1,6 +1,7 @@
 use starknet::storage::StorageMapWriteAccess;
 use crate::progression::{ArmyProgress, ArmyProgressionRules, Attribute, BuyTier, ProgressPacking, ScoutingKind};
-use crate::stamina::StaminaSourceTrait;
+use crate::resources::IResourceOperationsDispatcherTrait;
+use crate::stamina::{StaminaSourceTrait, StaminaTrait};
 use crate::tests::state::{ResourceObservationTrait, TroopObservationTrait};
 
 fn rules() -> ArmyProgressionRules {
@@ -264,7 +265,6 @@ fn logistics_tiers_set_the_maximum_stamina_by_the_ruled_table() {
 
 #[test]
 fn added_stamina_stops_at_the_armys_own_maximum() {
-    use crate::stamina::StaminaTrait;
     let (_, frontier) = super::preset_projection::current_definition("frontier");
     let rules = frontier.rules.troop_stamina_config;
     let maximum = crate::progression::stamina_max(
@@ -308,7 +308,6 @@ fn homecoming_returns_each_expired_armys_own_share_of_its_survivors() {
     let d = super::registrar::setup();
     let (game_id, _, category) = super::registrar::expedition_home(d);
     let (first, second) = super::registrar::expedition_armies(d, game_id, category);
-    let home = crate::resources::ResourceKey { game_id, entity_id: 1 };
     let troop = crate::rules::RESOURCE_PRECISION;
     let stock = snforge_std::interact_with_state(
         d.games,
@@ -337,7 +336,9 @@ fn homecoming_returns_each_expired_armys_own_share_of_its_survivors() {
     let tomorrow = super::registrar::day_start(d, game_id, 1);
     // The next day's first deploy removes yesterday's armies: 18% of 10,000 and 9% of 1,000 come home.
     assert!(
-        super::resource_commands::execute_in_game(d, game_id, super::registrar::muster_command(category, 0), tomorrow, tomorrow),
+        super::resource_commands::execute_in_game(
+            d, game_id, super::registrar::muster_command(category, 0), tomorrow, tomorrow,
+        ),
     );
     let troops = super::state::GameState { contract_address: d.games };
     assert!(troops.explorer(first).is_none() && troops.explorer(second).is_none());
@@ -361,7 +362,7 @@ fn deploy(d: super::Deployment, game_id: u32, category: u8, direction: u8) -> cr
         },
     );
     assert!(super::resource_commands::execute_in_game(d, game_id, command, 351, 351));
-    let armies = crate::structures::IStructureOperationsDispatcherTrait::home_armies(
+    let armies = crate::tests::state::StructureObservationTrait::home_armies(
         crate::structures::IStructureOperationsDispatcher { contract_address: d.games }, home,
     );
     crate::troops::ExplorerKey { game_id, explorer_id: *armies.at(armies.len() - 1) }
@@ -396,14 +397,14 @@ fn training_starts_only_later_armies_at_their_realms_tiers_and_full_at_their_log
             learned = crate::research::learn(learned, row, 0);
         }
     }
+    let learned = learned;
     snforge_std::interact_with_state(
         d.games, || crate::logic::research::write(home, crate::research::RealmKnowledge { learned }),
     );
     let trained = deploy(d, game_id, category, 1);
     let progress = read_progress(d, trained);
     assert_eq!(
-        (progress.battle, progress.logistics, progress.scouting, progress.homecoming, progress.xp),
-        (3, 2, 1, 4, 0),
+        (progress.battle, progress.logistics, progress.scouting, progress.homecoming, progress.xp), (3, 2, 1, 4, 0),
     );
     // Training changes no army already deployed.
     assert_eq!(read_progress(d, untrained), crate::progression::initial());
@@ -414,7 +415,9 @@ fn training_starts_only_later_armies_at_their_realms_tiers_and_full_at_their_log
     );
     assert_eq!(
         troops.stamina.inline().amount,
-        crate::stamina::StaminaImpl::max(troops.category, crate::troops::TroopTier::T1, preset.rules.troop_stamina_config)
+        crate::stamina::StaminaImpl::max(
+            troops.category, crate::troops::TroopTier::T1, preset.rules.troop_stamina_config,
+        )
             + crate::rules::logistics_stamina(2).into(),
     );
 }
@@ -422,8 +425,10 @@ fn training_starts_only_later_armies_at_their_realms_tiers_and_full_at_their_log
 #[test]
 fn trained_scouting_carries_every_choice_from_the_lodge() {
     let mut learned = 0;
-    for kind in array![crate::research::KIND_RIFTS, crate::research::KIND_CAMPS,
-        crate::research::KIND_STRAGGLERS, crate::research::KIND_RIFTS] {
+    for kind in array![
+        crate::research::KIND_RIFTS, crate::research::KIND_CAMPS, crate::research::KIND_STRAGGLERS,
+        crate::research::KIND_RIFTS,
+    ] {
         learned = crate::research::learn(learned, crate::research::ROW_SCOUTS_LODGE, kind);
     }
     let progress = crate::progression::trained(learned);

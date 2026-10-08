@@ -56,9 +56,10 @@ pub fn store_limit(key: ResourceKey, resource_type: u8) -> Option<u128> {
     } else {
         None
     };
-    let stores: u128 = row.map(|row| crate::research::picks(
-        crate::logic::research::learned(key), row, crate::research::CHOICE_STORE,
-    )).unwrap_or(0).into();
+    let stores: u128 = row
+        .map(|row| crate::research::picks(crate::logic::research::learned(key), row, crate::research::CHOICE_STORE))
+        .unwrap_or(0)
+        .into();
     Some(castle_base * (10000 + stores * board.storage_step_bps.into()) / 10000)
 }
 
@@ -334,7 +335,9 @@ pub mod ResourceState {
             // Production runs on the armies tick, counted from absolute time, as stamina does.
             let tick_seconds = crate::logic::resources::production_tick(key.game_id);
             let tick = now / tick_seconds;
-            let since = core::cmp::max(resource.production.last_settled_tick, core::cmp::min(tick, start_at / tick_seconds));
+            let since = core::cmp::max(
+                resource.production.last_settled_tick, core::cmp::min(tick, start_at / tick_seconds),
+            );
             resource.production.last_settled_tick = since;
             if since != tick {
                 settle(
