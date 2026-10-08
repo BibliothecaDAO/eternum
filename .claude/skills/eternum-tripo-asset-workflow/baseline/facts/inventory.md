@@ -1,5 +1,10 @@
 # T1 Troops Runtime and Asset Contract Inventory
 
+> A dated snapshot, kept as the record the contract was first written from. It describes the game client and the troop
+> records as they stood in early October 2026, before the T1 Knight Default model of #5029: 25 joints, and game files
+> then named `bastion-knight-…` and `validate-bastion-final-exports.mjs`. Those files now carry 31 joints and the names
+> `t1-knight-default-…`; line numbers below are the old files'. `CONTRACT.md` is the current statement.
+
 Fact sheet for Knight, Crossbowman, and Paladin rider. Sources: asset records, goal prompts, runtime-fit-contract.json,
 and rig adapters. All values as quoted from source files with file paths and keys/lines.
 
