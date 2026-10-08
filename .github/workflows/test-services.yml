@@ -32,11 +32,14 @@ jobs:
         run: pnpm --dir apps/realms test
       - name: Test the launch Worker on D1
         run: pnpm --dir apps/launch-service test
+      - name: Test independent status publication
+        run: pnpm --dir apps/status-monitor test
       - name: Typecheck services
         run: |
           pnpm --dir apps/realms typecheck
           pnpm --dir apps/guardian typecheck
           pnpm --dir apps/launch-service typecheck
+          pnpm --dir apps/status-monitor typecheck
 
   # The DAO pages (apps/web) are the only service still on Postgres; the Workers run on D1.
   portal:

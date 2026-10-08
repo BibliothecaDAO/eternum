@@ -11,6 +11,7 @@ import { handleNotificationPreferences } from "./notification-preferences";
 import { handleProfile, handleProfiles } from "./profiles";
 import { handleRatings } from "./ratings";
 import { handleRatingTop } from "./rating-top";
+import { handleAccountsHealth, handleChatHealth } from "./health";
 import { handlePushSubscriptions } from "./push-notifications";
 
 /** What the Worker reaches outside its bindings: the colo cache and the shards' Heralds. */
@@ -65,6 +66,8 @@ export const routeIdentityRequest = async (
     if (!(await withinPublicBudget(env, "profiles", request))) return json({ error: "too_many_requests" }, 429);
     return handleProfile(env.DB, pathname.slice("/api/profiles/".length));
   }
+  if (pathname === "/api/health/accounts" && request.method === "GET") return handleAccountsHealth(env.DB);
+  if (pathname === "/api/chat/health" && request.method === "GET") return handleChatHealth(env);
   if (pathname.startsWith("/api/chat/")) return routeChat(request, env, auth, pathname);
   if (pathname === "/api/notifications/preferences") return handleNotificationPreferences(request, auth, env.DB);
   if (pathname.startsWith("/api/notifications/push/")) return handlePushSubscriptions(request, auth, env);

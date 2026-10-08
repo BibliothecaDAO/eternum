@@ -77,6 +77,12 @@ export class ChatRoom extends DurableObject<Pick<IdentityEnv, "DB" | "LAUNCH">> 
     this.leave(socket);
   }
 
+  /** Read-only readiness for the external monitor; it opens no socket and writes no message. */
+  async health(): Promise<{ success: true }> {
+    this.ctx.storage.sql.exec("SELECT id FROM messages LIMIT 1").toArray();
+    return { success: true };
+  }
+
   /** The room's history, newest first, a page before the cursor (an ISO time). */
   async history(
     cursor: string | undefined,

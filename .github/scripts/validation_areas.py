@@ -51,6 +51,8 @@ AREAS = {
         ".github/workflows/test-services.yml",
         "apps/launch-service/**",
         "apps/realms/**",
+        "apps/status-monitor/**",
+        "apps/status/**",
         "apps/guardian/**",
         "apps/web/**",
         "apps/herald/src/native/schema.ts",
