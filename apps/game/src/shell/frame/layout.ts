@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from "react";
 
 /** The two layouts on one foundation: a phone composition below the desktop width, the desktop one at and above it. */
-export type Layout = "phone" | "desktop";
+type Layout = "phone" | "desktop";
 
 const DESKTOP_QUERY = "(min-width: 1024px)";
 

@@ -7,16 +7,18 @@ import { BACK } from "@/ui/design-system/kit/words";
 import { paintingSources } from "../paintings";
 import { useAppNotice } from "./app-notice";
 import { EnvEdge } from "./env-mark";
-import { type Layout, useLayout } from "./layout";
+import { useDesktopKeys } from "./desktop-keys";
+import { Kbd } from "./kbd";
+import { useLayout } from "./layout";
 import { Lockup } from "./lockup";
-import { TabBar, TopNav } from "./tabs";
+import { PLACES, Rail, TabBar } from "./tabs";
 
 type PageFrameProps = {
   /** A page opened from another names where Back leads; a tab page has none. */
   back?: To;
   /** The page's title: beside Back on the phone, in the title row on desktop. A tab page shows the lockup instead. */
   title?: string;
-  /** One notice, directly above the foot row (phone) or bottom centre over the page (desktop). */
+  /** One notice, directly above the foot row (phone) or at the top right over the page (desktop). */
   notice?: ReactNode;
   /** The foot row: the page's buttons (one primary) or its stepper. */
   foot?: ReactNode;
@@ -30,7 +32,8 @@ type PageFrameProps = {
 /**
  * The composer: the only code that places a page's parts. Each part sits in its band, tagged so a test can hold every
  * control to its place: Back top left and nothing else there, nothing to tap in a phone's top right, one foot row,
- * notices directly above it, the tabs at the phone's foot or in the desktop top bar.
+ * notices directly above it on a phone and at the desktop's top right, the tabs at the phone's foot or in the desktop
+ * rail, with the desktop's keys (1–4 the places, Esc Back).
  */
 export const PageFrame = (props: PageFrameProps) => {
   const layout = useLayout();
@@ -48,7 +51,7 @@ export const PageFrame = (props: PageFrameProps) => {
 const PhoneFrame = ({ back, title, notice, foot, tabs = true, children }: PageFrameProps) => (
   <div className="flex h-dvh flex-col">
     <header data-band="top" className="flex min-h-12 shrink-0 items-center gap-1 px-4 pt-[env(safe-area-inset-top)]">
-      {back === undefined ? <Lockup size="phone" /> : <BackTitle back={back} title={title} layout="phone" />}
+      {back === undefined ? <Lockup /> : <PhoneTitle back={back} title={title} />}
     </header>
     <main data-band="body" className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
       {children}
@@ -71,42 +74,63 @@ const PhoneFrame = ({ back, title, notice, foot, tabs = true, children }: PageFr
   </div>
 );
 
-const DesktopFrame = ({ back, title, notice, foot, tabs = true, painting, children }: PageFrameProps) => (
-  <div className="relative isolate flex min-h-screen flex-col">
-    <div data-band="top">
-      <TopNav places={tabs} />
+const DesktopFrame = ({ back, title, notice, foot, tabs = true, painting, children }: PageFrameProps) => {
+  useDesktopKeys({ places: tabs ? PLACES : [], back });
+  return (
+    <div className="relative isolate flex min-h-screen">
+      <Rail places={tabs} />
+      <div className="relative flex min-w-0 flex-1 flex-col">
+        {painting && <Backdrop painting={painting} />}
+        {back !== undefined || title ? (
+          <div data-band="title" className="flex items-center gap-3 px-8 pt-7 min-[1800px]:px-12">
+            <DesktopTitle back={back} title={title} />
+          </div>
+        ) : null}
+        <main data-band="body" className="w-full flex-1 px-8 py-6 min-[1800px]:px-12">
+          {children}
+        </main>
+        {foot ? (
+          <div data-band="foot" className="w-full px-8 pb-8 min-[1800px]:px-12">
+            {foot}
+          </div>
+        ) : null}
+      </div>
+      {notice ? (
+        <div data-band="notice" className="fixed right-6 top-6 z-40 w-[26rem]">
+          {notice}
+        </div>
+      ) : null}
     </div>
-    {painting && <Backdrop painting={painting} />}
-    {back !== undefined ? (
-      <div data-band="title" className="mx-auto flex w-full max-w-6xl items-center gap-2 px-10 pt-6">
-        <BackTitle back={back} title={title} layout="desktop" />
-      </div>
-    ) : null}
-    <main data-band="body" className="mx-auto w-full max-w-6xl flex-1 px-10 py-6">
-      {children}
-    </main>
-    {foot ? (
-      <div data-band="foot" className="mx-auto w-full max-w-6xl px-10 pb-8">
-        {foot}
-      </div>
-    ) : null}
-    {notice ? (
-      <div data-band="notice" className="fixed bottom-6 left-1/2 z-40 w-[min(32rem,calc(100%-5rem))] -translate-x-1/2">
-        {notice}
-      </div>
-    ) : null}
-  </div>
+  );
+};
+
+/** The desktop's title row: Back with its key, then the page's title in the display face. */
+const DesktopTitle = ({ back, title }: { back: To | undefined; title?: string }) => (
+  <>
+    {back !== undefined && (
+      <Link
+        to={back}
+        data-role="back"
+        aria-label={BACK}
+        className="-ml-2 flex h-12 shrink-0 items-center gap-1.5 rounded-xl px-2 hover:bg-kit-gold/[.06]"
+      >
+        <ArrowLeft size={26} />
+        <Kbd keyName="Esc" />
+      </Link>
+    )}
+    {title ? <h1 className="font-display text-[34px] leading-tight min-[1800px]:text-[40px]">{title}</h1> : null}
+  </>
 );
 
 const Backdrop = ({ painting }: { painting: string }) => (
-  <div aria-hidden className="pointer-events-none absolute inset-x-0 top-[68px] -z-10 h-[38rem]">
+  <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[42rem]">
     <img {...paintingSources(painting)} sizes="100vw" alt="" className="size-full object-cover object-[50%_40%]" />
     <span className="absolute inset-0 bg-gradient-to-b from-kit-ground/40 via-kit-ground/10 to-kit-ground" />
   </div>
 );
 
-/** Back, wordless at the top left, and the page's title beside it. */
-const BackTitle = ({ back, title, layout }: { back: To; title?: string; layout: Layout }) => (
+/** The phone's top row: Back, wordless at the top left, and the page's title beside it. */
+const PhoneTitle = ({ back, title }: { back: To; title?: string }) => (
   <>
     <Link
       to={back}
@@ -116,16 +140,6 @@ const BackTitle = ({ back, title, layout }: { back: To; title?: string; layout: 
     >
       <ArrowLeft size={26} />
     </Link>
-    {title ? (
-      <h1
-        className={
-          layout === "phone"
-            ? "truncate font-display text-[24px] leading-tight"
-            : "font-display text-[34px] leading-tight"
-        }
-      >
-        {title}
-      </h1>
-    ) : null}
+    {title ? <h1 className="truncate font-display text-[24px] leading-tight">{title}</h1> : null}
   </>
 );

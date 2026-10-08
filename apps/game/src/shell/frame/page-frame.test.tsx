@@ -15,6 +15,7 @@ const SIZES = [
   [390, 844],
   [360, 640],
   [1440, 900],
+  [1920, 1080],
 ] as const;
 
 /**
@@ -24,7 +25,7 @@ const SIZES = [
 const TAB_PATHS = new Set(["/", "/season", "/learn", "/profile", "/nothing-here", "/results/0x111"]);
 /** Profile's rows: pages with Back on a phone, the open panel beside Profile's rows on desktop. */
 const PROFILE_PANELS = new Set(["/profile/account", "/profile/notifications", "/profile/devices"]);
-/** Full-screen steps: no tabs, the desktop bar keeps the lockup alone (sign-in, a Blitz lobby). */
+/** Full-screen steps: no tabs, the desktop rail keeps the lockup alone (sign-in, a Blitz lobby). */
 const STEP_PATHS = ["/sign-in", "/blitz/0x111"];
 const CONTROLS = "a[href], button, input, select, textarea";
 
@@ -97,11 +98,12 @@ describe.each(SIZES)("every page at %i × %i keeps each control in its band", (w
         isStep ? 0 : 4,
       );
     } else {
-      // One top bar: the lockup, Play · Season · Learn and the player; Back sits in the title row under it.
-      const [lockup, ...rest] = controlsIn(top);
+      // One rail: the lockup, the four places and the player; Back sits in the title row beside it.
+      expect(top).toBeNull();
+      const [lockup, ...rest] = controlsIn(band(container, "rail"));
       const tabs = rest.filter((control) => control.dataset.role === "tab");
       expect(lockup.dataset.role).toBe("lockup");
-      expect(tabs).toHaveLength(isStep ? 0 : 3);
+      expect(tabs).toHaveLength(isStep ? 0 : 4);
       for (const control of rest.filter((other) => !tabs.includes(other)))
         expect(control.closest('[data-role="player"]'), control.outerHTML).not.toBeNull();
       expect(band(container, "tabs")).toBeNull();

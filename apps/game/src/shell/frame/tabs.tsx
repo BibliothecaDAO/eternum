@@ -9,9 +9,10 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 
 import { IdentityChip } from "../identity-chip";
 import { WORDS } from "../words";
-import { Lockup } from "./lockup";
+import { EnvChip } from "./env-mark";
+import { Kbd } from "./kbd";
 
-/** The app's four places, one list for both layouts: the phone's tab bar and the desktop top bar. */
+/** The app's four places, one list for both layouts: the phone's tab bar and the desktop rail. */
 const TABS: readonly { to: string; word: string; icon: GameIcon; matches: readonly string[] }[] = [
   { to: "/", word: WORDS.play, icon: Play, matches: ["/", "/blitz", "/frontier", "/eternum", "/dominion"] },
   { to: "/season", word: WORDS.season, icon: Trophy, matches: ["/season", "/results"] },
@@ -20,8 +21,9 @@ const TABS: readonly { to: string; word: string; icon: GameIcon; matches: readon
 ];
 
 const PROFILE_TAB = TABS[3];
-/** Desktop shows the first three in the bar; Profile is the player chip at its right. */
-const DESKTOP_TABS = TABS.slice(0, 3);
+
+/** The places' addresses in order: the desktop's keys 1–4 open them. */
+export const PLACES = TABS.map((tab) => tab.to);
 
 const matchesPath = (pathname: string, match: string) =>
   match === "/" ? pathname === "/" : pathname.startsWith(match);
@@ -82,20 +84,24 @@ export const TabBar = () => {
 };
 
 /**
- * The desktop's one top bar: the lockup, Play · Season · Learn, and the player chip (or Sign in) at the right; a
- * full-screen step keeps the lockup alone.
+ * The desktop's rail, the full height of the window: the lockup, the four places with their keys, and the player (or
+ * Sign in) at its foot; a full-screen step keeps the lockup alone.
  */
-export const TopNav = ({ places }: { places: boolean }) => {
+export const Rail = ({ places }: { places: boolean }) => {
   const active = useActiveTab();
   return (
-    <header className="relative z-30 flex h-[68px] shrink-0 items-center gap-7 border-b border-kit-line bg-kit-ground px-10">
-      <NavLink to="/" data-role="lockup" aria-label={WORDS.play}>
-        <Lockup size="desktop" />
+    <header
+      data-band="rail"
+      className="sticky top-0 z-30 flex h-screen w-24 shrink-0 flex-col items-center gap-1 border-r border-kit-line bg-kit-ground pb-5 pt-5 min-[1800px]:w-28"
+    >
+      <NavLink to="/" data-role="lockup" aria-label={WORDS.play} className="mb-6 flex flex-col items-center gap-2">
+        <img src="/images/logos/realms-lockup-stacked.svg" alt="Realms" className="block w-16" />
+        <EnvChip />
       </NavLink>
       {places && (
         <>
-          <nav aria-label="Tabs" className="flex gap-1">
-            {DESKTOP_TABS.map((tab) => {
+          <nav aria-label="Tabs" className="flex w-full flex-col gap-1">
+            {TABS.map((tab, index) => {
               const current = active === tab.to;
               const Icon = tab.icon;
               return (
@@ -105,17 +111,20 @@ export const TopNav = ({ places }: { places: boolean }) => {
                   data-role="tab"
                   aria-current={current ? "page" : undefined}
                   className={cn(
-                    "flex h-12 items-center gap-2 rounded-xl px-4 font-ui text-[15px] font-semibold",
-                    current ? "bg-kit-peach/[.07] text-kit-peach" : "text-kit-muted",
+                    "relative flex w-full flex-col items-center gap-1.5 py-3.5 font-ui text-[13px] transition-colors",
+                    current
+                      ? "bg-kit-gold/[.09] text-kit-cream before:absolute before:inset-y-2.5 before:left-0 before:w-1 before:rounded-r before:bg-kit-gold"
+                      : "text-kit-muted hover:bg-kit-gold/[.05] hover:text-kit-cream",
                   )}
                 >
-                  <Icon size={24} className={current ? undefined : "brightness-[.8] grayscale-[.6]"} />
+                  <Icon size={30} className={current ? undefined : "brightness-[.8] grayscale-[.6]"} />
                   {tab.word}
+                  <Kbd keyName={String(index + 1)} className="absolute right-2 top-2" />
                 </NavLink>
               );
             })}
           </nav>
-          <div className="ml-auto" data-role="player">
+          <div className="mt-auto flex w-full justify-center" data-role="player">
             <IdentityChip />
           </div>
         </>
