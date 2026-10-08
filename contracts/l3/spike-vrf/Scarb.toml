@@ -1,0 +1,20 @@
+[package]
+name = "node_first_vrf"
+version = "0.1.0"
+edition = "2024_07"
+cairo-version = "=2.17.0"
+license = "MIT"
+
+[dependencies]
+starknet = "=2.17.0"
+openzeppelin_account = "=2.0.0"
+
+[[target.starknet-contract]]
+sierra = true
+casm = true
+
+[lib]
+
+[tool.fmt]
+max-line-length = 120
+sort-module-level-items = true

@@ -1,0 +1,13 @@
+[package]
+name = "node-first-vrf-prover"
+version = "0.1.0"
+edition = "2021"
+publish = false
+[lib]
+crate-type = ["cdylib"]
+[dependencies]
+node-first-stark-vrf-math = { path = "vendor" }
+ark-ff = "0.5.0"
+[profile.release]
+lto = "thin"
+codegen-units = 1
