@@ -10,16 +10,16 @@ const facts = (overrides: Partial<GuideFacts> = {}): GuideFacts => ({
   armyTierAffordable: false,
   camp: null,
   siteCleared: false,
-  stragglers: undefined,
+  stragglers: false,
   castleAffordable: false,
   onMap: true,
-  typeTierAffordable: undefined,
+  typeTierAffordable: null,
   armiesTired: false,
   ruin: false,
-  chestPaid: undefined,
+  chestPaid: false,
   armyBeyondSpire: false,
   losingFight: false,
-  storeFull: undefined,
+  storeFull: null,
   seasonOver: false,
   ...overrides,
 });
@@ -54,7 +54,7 @@ describe("the Aspect of Skill's script", () => {
     });
   });
 
-  it("never speaks on a fact it cannot read yet, and fills a line's slot from the fact", () => {
+  it("stays silent while no fact holds, and fills a line's slot from the fact", () => {
     const played = seen("arrival", "build-on-the-mark", "deploy", "first-reveal");
     const ready = { barracks: true, armies: 2 };
     expect(foot(facts(ready), played)).toBeNull();
@@ -77,6 +77,8 @@ describe("the Aspect of Skill's script", () => {
     });
     expect(foot(facts({ ...ready, ruin: true }), played)?.id).toBe("first-fallen-site");
     expect(foot(facts({ ...ready, armyBeyondSpire: true }), played)?.id).toBe("first-ethereal");
+    expect(foot(facts({ ...ready, stragglers: true }), played)?.id).toBe("first-stragglers");
+    expect(foot(facts({ ...ready, chestPaid: true }), played)?.id).toBe("first-chest");
     expect(foot(facts({ ...ready, ruin: true }), seen(...played, "first-fallen-site"))).toBeNull();
   });
 

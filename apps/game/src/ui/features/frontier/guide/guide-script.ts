@@ -1,8 +1,8 @@
 /**
  * The Aspect of Skill's script (frontier-narrative-2026-10/script.html, beat for beat). Each step names the game state
  * it answers; a slot shows the first step for its place not yet seen whose state holds, so a reload lands on the same
- * line and a player who is ahead never waits on an old one. A fact the client cannot read yet is undefined, and a step
- * never speaks on one.
+ * line and a player who is ahead never waits on an old one. A fact the client does not know yet never makes a line
+ * speak.
  */
 export interface GuideFacts {
   /** The player's Frontier realm exists. */
@@ -21,26 +21,26 @@ export interface GuideFacts {
   camp: { x: number; y: number } | null;
   /** A site of the expedition has been cleared. */
   siteCleared: boolean;
-  /** Stragglers are in view (the generated site taxonomy). */
-  stragglers: boolean | undefined;
+  /** Stragglers stand in view. */
+  stragglers: boolean;
   /** The realm can pay for its next castle level. */
   castleAffordable: boolean;
   /** The player is looking at the expedition map, not the realm. */
   onMap: boolean;
-  /** The building whose first tier the realm can afford (RealmKnowledge, with the contracts' schema); null for none. */
-  typeTierAffordable: string | null | undefined;
+  /** The building whose first tier the realm can afford (Farm or Workshop), by its word; null for none. */
+  typeTierAffordable: string | null;
   /** Every army of today lacks the stamina to explore. */
   armiesTired: boolean;
   /** A ruin stands on the map. */
   ruin: boolean;
-  /** The player's first ruin chest has paid (its LORDS, with the contracts' ruin chests). */
-  chestPaid: boolean | undefined;
+  /** A ruin has been cleared: its chest has paid. */
+  chestPaid: boolean;
   /** An army of today stands at Ethereal I or further. */
   armyBeyondSpire: boolean;
   /** The selected army's forecast on the open site says it cannot win. */
   losingFight: boolean;
-  /** The store a payout or reveal did not fit (the contracts' store limits); null for none. */
-  storeFull: string | null | undefined;
+  /** The store at its limit, where a payout or reveal no longer fits, by its word; null for none. */
+  storeFull: string | null;
   /** The season is over. */
   seasonOver: boolean;
 }
@@ -123,7 +123,7 @@ export const GUIDE_STEPS: readonly GuideStep[] = [
     id: "first-stragglers",
     mark: "speaking",
     line: say("Stragglers. They went too far, long ago. Learn from them."),
-    when: (facts) => facts.stragglers === true,
+    when: (facts) => facts.stragglers,
   },
   {
     id: "come-home",
@@ -157,7 +157,7 @@ export const GUIDE_STEPS: readonly GuideStep[] = [
     id: "first-chest",
     mark: "pleased",
     line: say("Only one a day. The next one comes tomorrow."),
-    when: (facts) => facts.chestPaid === true,
+    when: (facts) => facts.chestPaid,
   },
   {
     id: "first-ethereal",
