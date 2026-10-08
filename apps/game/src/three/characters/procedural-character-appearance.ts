@@ -22,7 +22,7 @@ export interface ProceduralCharacterAppearanceDefinition {
 }
 
 /** Materials told apart by name, restyled and merged by the runtime. */
-export interface ProceduralCharacterNamedMaterialProfile {
+interface ProceduralCharacterNamedMaterialProfile {
   body: RegExp;
   crowdHiddenMesh: RegExp;
   mergeableOutfit: RegExp;
@@ -30,7 +30,7 @@ export interface ProceduralCharacterNamedMaterialProfile {
 }
 
 /** Authored palette and surface settings are retained as exported. */
-export interface ProceduralCharacterAuthoredMaterialProfile {
+interface ProceduralCharacterAuthoredMaterialProfile {
   authoredSource: true;
 }
 
