@@ -12,7 +12,7 @@ import {
   type StoryEventScope,
 } from "@bibliothecadao/eternum/game-sync";
 import { useGame } from "@/hooks/context/game-context";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo } from "react";
 import { create } from "zustand";
 import { useConnectionStore } from "./use-connection-store";
@@ -179,6 +179,32 @@ const processStoryEvent = (
   return { ...event, id: event.event_id, timestampMs, presentation };
 };
 
+/** What one story read asks for: its game's scope, and optionally one story and one owner. */
+type StoryRead = { scopeKey: string; story?: string; owner?: string };
+
+const matchesRead = (event: StoryEventData, read: StoryRead): boolean =>
+  event.scopeKey === read.scopeKey &&
+  (!read.story || event.story === read.story) &&
+  (!read.owner || (event.owner !== null && BigInt(event.owner) === BigInt(read.owner)));
+
+/** The latest `limit` stories, each once at its most confirmed copy. */
+const latestStories = (events: StoryEventData[], limit: number): StoryEventData[] => {
+  const latest = new Map<string, StoryEventData>();
+  for (const event of events) {
+    const previous = latest.get(event.event_id);
+    if (!previous || eventConfirmationRank(event.confirmation) > eventConfirmationRank(previous.confirmation))
+      latest.set(event.event_id, event);
+  }
+  return [...latest.values()]
+    .sort((left, right) => Number(BigInt(right.timestamp) - BigInt(left.timestamp)))
+    .slice(0, limit);
+};
+
+/**
+ * Stories as the stream delivers them, recovered from Herald's history: a read fetches history at each handshake (the
+ * first connect and every reconnect), never on a block, and keeps what the stream delivers for it, so a story outlives
+ * the stream's mixed ring.
+ */
 export const useStoryEvents = (limit: number = 100, story?: string, owner?: string) => {
   const {
     setup: { store },
@@ -188,12 +214,12 @@ export const useStoryEvents = (limit: number = 100, story?: string, owner?: stri
   const gameId = configManager.getActiveGameId();
   const scope = { chainId: shard.chainId, worldAddress: shard.worldAddress, gameId };
   const scopeKey = storyEventScopeKey(scope);
-
-  const confirmedBlock = useConnectionStore((state) => (story ? state.lastConfirmedBlock : null));
-  const handshake = useConnectionStore((state) => (story ? state.lastGlobalHandshake : null));
+  const handshake = useConnectionStore((state) => state.lastGlobalHandshake);
+  const queryClient = useQueryClient();
+  const queryKey = ["heraldStoryEvents", shard.url, scopeKey, limit, story, owner];
 
   const query = useQuery({
-    queryKey: ["heraldStoryEvents", shard.url, scopeKey, limit, story, owner],
+    queryKey,
     queryFn: async (): Promise<StoryEventData[]> => {
       const page = await fetchHeraldGameHistory(shard, gameId, {
         limit,
@@ -211,25 +237,29 @@ export const useStoryEvents = (limit: number = 100, story?: string, owner?: stri
 
   const { refetch, isError } = query;
   useEffect(() => {
-    // Filtered history must recover battles after they leave the mixed stream ring.
-    if (story && !isError) void refetch({ cancelRefetch: false });
-  }, [confirmedBlock, handshake, story, refetch, isError]);
+    if (!isError) void refetch({ cancelRefetch: false });
+  }, [handshake, refetch, isError]);
 
-  const data = useMemo(() => {
-    const events = new Map<string, StoryEventData>();
-    for (const event of [...streamed, ...(query.data ?? [])]) {
-      if (event.scopeKey !== scopeKey || (story && event.story !== story)) continue;
-      if (owner && (event.owner === null || BigInt(event.owner) !== BigInt(owner))) continue;
-      const previous = events.get(event.event_id);
-      if (!previous || eventConfirmationRank(event.confirmation) > eventConfirmationRank(previous.confirmation))
-        events.set(event.event_id, event);
-    }
-    return [...events.values()]
-      .sort((left, right) => Number(BigInt(right.timestamp) - BigInt(left.timestamp)))
-      .slice(0, limit)
-      .filter(isPresentableStory)
-      .map((event) => processStoryEvent(event, store));
-  }, [store, limit, query.data, streamed, story, scopeKey, owner]);
+  const delivered = useMemo(
+    () => streamed.filter((event) => matchesRead(event, { scopeKey, story, owner })),
+    [streamed, scopeKey, story, owner],
+  );
+  // The read's key follows the same filter, so a new delivery is the one thing that changes what it keeps.
+  useEffect(() => {
+    if (delivered.length === 0) return;
+    queryClient.setQueryData<StoryEventData[]>(
+      queryKey,
+      (held) => held && latestStories([...delivered, ...held], limit),
+    );
+  }, [delivered]);
+
+  const data = useMemo(
+    () =>
+      latestStories([...delivered, ...(query.data ?? [])], limit)
+        .filter(isPresentableStory)
+        .map((event) => processStoryEvent(event, store)),
+    [store, limit, query.data, delivered],
+  );
 
   return { ...query, data };
 };
