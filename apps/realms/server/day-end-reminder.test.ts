@@ -3,15 +3,11 @@ import { fetchHeraldGameSnapshot } from "@bibliothecadao/eternum/game-client";
 import { describe, expect, it, vi } from "vitest";
 import { planDayEndReminders, readReminderPlayers, type ReminderGame } from "./day-end-reminder";
 
-// Exercise the shared source mirror; planner tests do not read a live shard or depend on SDK build artifacts.
-vi.mock("@bibliothecadao/eternum/expeditions", () => import("../../../packages/core/src/utils/days"));
-vi.mock("@bibliothecadao/eternum/game-client", async () => ({
+// Mock only the network; enrollment decoding and the seeded schedule use the built public SDK.
+vi.mock("@bibliothecadao/eternum/game-client", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@bibliothecadao/eternum/game-client")>()),
   fetchHeraldGameSnapshot: vi.fn(),
-  NativeFactStore: (await import("../../../packages/core/src/client/native-fact-store")).NativeFactStore,
 }));
-// Enrollment decoding uses the real store; tile positioning and expedition scope are unrelated to this snapshot.
-vi.mock("../../../packages/core/src/client/native-occupancy", () => ({ hasSingleTilePosition: vi.fn() }));
-vi.mock("../../../packages/core/src/utils/expeditions", () => ({ readExpeditionRules: vi.fn() }));
 
 const calendar = { seed: 0x5eedn, startMainAt: 1_800_000_000, dayUnitSeconds: 14_400 };
 const game: ReminderGame = {

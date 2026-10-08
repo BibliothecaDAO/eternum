@@ -597,6 +597,7 @@ export class WorldFold {
     previous: StoredModelRow | undefined,
     current: StoredModelRow | null | undefined,
   ): void {
+    if (this.scopeIndexes.size === 0) return;
     if (!isScopedGameSyncModel(model, true)) return;
     if (previous) this.removeFromScopeIndex(model, entityId, previous);
     if (current) this.addToScopeIndex(model, entityId, current);

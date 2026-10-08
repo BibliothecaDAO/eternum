@@ -96,7 +96,7 @@ describe("verified preset configuration facts", () => {
     world.native.applyReceipt(world.fold, receipt(launch(preset)), 11, 0);
     expect(world.fold.gameRows("ResourceRule", "1")).toHaveLength(58);
     expect(world.fold.gameRows("ProductionRecipe", "1")).toHaveLength(58);
-    expect(world.fold.gameRows("BuildingRule", "1")).toHaveLength(40);
+    expect(world.fold.gameRows("BuildingRule", "1")).toHaveLength(44);
     const depths = world.fold.gameRows("DepthRules", "1").map(({ value }) => value);
     expect(depths.map((row) => Number(row.guard_step))).toEqual([100, 100, 100, 100]);
     expect(depths.map((row) => Number(row.reveal_percent))).toEqual([10, 15, 20, 25]);

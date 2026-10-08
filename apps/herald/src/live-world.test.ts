@@ -85,11 +85,11 @@ describe("native live publication", () => {
     expect(messages.some((message) => message.type === "head")).toBe(true);
   });
 
-  it("advances completeness even when the confirmed block has no story events", async () => {
+  it("advances history and closing-rank completeness even when the confirmed block has no story events", async () => {
     const appendEvents = vi.fn(async () => {});
     const { live } = fixture({ appendEvents, freezeReviewSnapshot: vi.fn() } as unknown as HistoryStore);
     await live.acceptSubscribedHead({ block_number: 10, timestamp: 100 });
-    expect(appendEvents).toHaveBeenCalledWith([], 10);
+    expect(appendEvents).toHaveBeenCalledWith([], 10, []);
   });
 
   it("does not republish repeated heads or a clock that has not advanced", async () => {
@@ -287,8 +287,8 @@ describe("native live publication", () => {
           ...homes,
           ...armies,
           ...positions,
-          rowEvent("ExpeditionDiscovery", ["1", "1", "0"], { empty_reveals: 7 }),
-          rowEvent("ExpeditionDiscovery", ["1", "2", "0"], { empty_reveals: 3 }),
+          rowEvent("ExpeditionDiscovery", ["1", "1", "0"], { empty_reveals: 7, ruin_found: false }),
+          rowEvent("ExpeditionDiscovery", ["1", "2", "0"], { empty_reveals: 3, ruin_found: false }),
           rowEvent("TileOccupancy", ["1", "0", "51", "50"], { entity_id: 300, category: 34, is_structure: false }),
           rowEvent("ResourceBalance", ["1", "1", "28"], { balance: 100n }),
           rowEvent("ResourceBalance", ["1", "2", "28"], { balance: 200n }),
