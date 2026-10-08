@@ -69,8 +69,11 @@ const frontier = (withRealm: boolean) =>
   game({
     game_id: 1,
     name: "frontier-1",
-    // A day averages four units, so twelve days back lands near Day 12 on seed 1.
-    expedition: { day_unit_seconds: DAY / 4, seed: "1" },
+    // Day 12 (zero-based 11), ending in 7h 14m; tomorrow lasts a day; the third Frontier season on this world.
+    day_index: 11,
+    day_ends_at: NOW + LEFT_TODAY,
+    next_day_length: DAY,
+    season_number: 3,
     clock: {
       start_settling_at: NOW - 12 * DAY + LEFT_TODAY,
       start_main_at: NOW - 12 * DAY + LEFT_TODAY,

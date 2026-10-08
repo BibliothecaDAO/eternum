@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { DirectoryGame } from "./herald";
-import { chooseSeason } from "./season";
+import { chooseSeason, directoryDay } from "./season";
 
 const season = (gameId: number, startMainAt: number, ownRealm: boolean): DirectoryGame =>
   ({
@@ -38,4 +38,31 @@ it("prefers a live season over a future one, even with realms in both", () => {
   const live = season(1, 100, true);
   const future = { ...season(2, 200, true), status: "Registration" } as DirectoryGame;
   for (const signedIn of [false, true]) expect(chooseSeason([future, live], signedIn)?.game_id).toBe(1);
+});
+
+describe("Frontier's day from the directory", () => {
+  const now = 1_790_000_000;
+
+  it("reads the served day: one-based, today's end, the time left and tomorrow's length", () => {
+    const day = directoryDay({ day_index: 11, day_ends_at: now + 26_040, next_day_length: 86_400 }, now);
+    expect(day).toMatchObject({ day: 12, endsAt: now + 26_040, secondsLeft: 26_040, tomorrowSeconds: 86_400 });
+    expect(day.tone).toBe("calm");
+    expect(directoryDay({ day_index: 11, day_ends_at: now + 600, next_day_length: 86_400 }, now).tone).toBe("ember");
+  });
+
+  it("leaves every field unknown when the directory serves none, never a zero", () => {
+    const unknown = { day: undefined, endsAt: undefined, secondsLeft: undefined, tomorrowSeconds: undefined };
+    expect(directoryDay({}, now)).toMatchObject(unknown);
+    expect(directoryDay({ day_index: null, day_ends_at: null, next_day_length: null }, now)).toMatchObject(unknown);
+  });
+
+  it("drops a day whose end has passed until the directory reads again", () => {
+    expect(directoryDay({ day_index: 11, day_ends_at: now - 1, next_day_length: 86_400 }, now).day).toBeUndefined();
+  });
+
+  it("never guesses the share of today it does not know", () => {
+    expect(directoryDay({ day_index: 11, day_ends_at: now + 26_040, next_day_length: 86_400 }, now).shareLeft).toBe(
+      undefined,
+    );
+  });
 });

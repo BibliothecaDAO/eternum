@@ -13,8 +13,7 @@ import { PageFrame } from "../frame/page-frame";
 import { type DirectoryGame, useDirectory, useLeaderboard, useRealmsPlayer, useRecentResults } from "../herald";
 import { Loading } from "../loading";
 import { ageOf } from "../play/ages";
-import { seasonDay } from "../play/age-state";
-import { chooseSeason } from "../season";
+import { chooseSeason, directoryDay } from "../season";
 import { ServiceFailure } from "../service-failure";
 import { useNowSeconds } from "../use-now";
 import { SEASON_WORDS, WORDS } from "../words";
@@ -73,7 +72,7 @@ const useSeason = (): { season: DirectoryGame | undefined; directory: ReturnType
 const SeasonHeader = () => {
   const { season } = useSeason();
   const now = useNowSeconds();
-  const day = season && seasonDay(season, now)?.day;
+  const day = season && directoryDay(season, now).day;
   return (
     <h1 className="flex items-center gap-2 font-ui text-[22px] font-bold text-kit-cream">
       <KitIcon code="Tp" size={26} />

@@ -4,13 +4,11 @@ import { canEnterGame, isGameOver } from "@/runtime/world/directory";
 import type { IconCode } from "@/ui/design-system/kit/kit-icon";
 import { formatClockTime } from "@/ui/design-system/kit/time";
 import { DAY } from "@/ui/design-system/kit/words";
-import { dayClock } from "@/ui/features/frontier/hud/day-clock";
 
 import { type BlitzRow, leadBlitzRow } from "../blitz-rows";
 import { ClockChip, clockLine } from "../clock-chip";
 import { entryHref } from "../game-links";
-import type { DirectoryGame } from "../herald";
-import { chooseSeason, seasonRealm } from "../season";
+import { chooseSeason, directoryDay, seasonRealm } from "../season";
 import { WORDS } from "../words";
 import type { AgeMode } from "./ages";
 import type { PlayFacts } from "./play-facts";
@@ -23,19 +21,6 @@ export type AgeAction = { word: string; icon: IconCode; to: string; role: "prima
 type AgeState = { chip: ReactNode; action: AgeAction | null };
 
 const NOTHING: AgeState = { chip: null, action: null };
-
-/** Frontier's day, from the season's clock: "Day 12". */
-export const seasonDay = (season: DirectoryGame, now: number) =>
-  season.expedition
-    ? dayClock(
-        {
-          dayUnitSeconds: season.expedition.day_unit_seconds,
-          seed: BigInt(season.expedition.seed),
-          startMainAt: season.clock.start_main_at,
-        },
-        now,
-      )
-    : undefined;
 
 const blitzAction = (row: BlitzRow): AgeAction | null => {
   if (row.kind === "slot")
@@ -66,7 +51,7 @@ const blitzState = ({ blitz, now }: PlayFacts, tile: boolean): AgeState => {
 const frontierState = ({ games, signedIn, now }: PlayFacts): AgeState => {
   const season = chooseSeason(games, signedIn);
   if (!season) return NOTHING;
-  const day = seasonDay(season, now)?.day;
+  const { day } = directoryDay(season, now);
   const action: AgeAction | null = season.error
     ? null
     : {

@@ -17,10 +17,10 @@ import { ServiceFailure } from "../service-failure";
 import { entryHref } from "../game-links";
 import { type DirectoryGame, useLeaderboard, useRealmsPlayer } from "../herald";
 import { realmStill } from "../mode-art";
-import { seasonRealm } from "../season";
+import { directoryDay, seasonRealm } from "../season";
 import { PITCH, WORDS } from "../words";
 import { AgeLabel } from "./age-card";
-import { ageState, seasonDay } from "./age-state";
+import { ageState } from "./age-state";
 import { ageOf, type AgeMode } from "./ages";
 import { paintingSources } from "../paintings";
 import { GoButton } from "./go-button";
@@ -128,7 +128,7 @@ const WaitingCard = () => (
 
 /** Frontier's season for a player without a realm in it: Play (Play free on a first visit, under the hero). */
 export const PlayCard = ({ season, firstVisit, now }: { season: DirectoryGame; firstVisit: boolean; now: number }) => {
-  const clock = seasonDay(season, now);
+  const clock = directoryDay(season, now);
   return (
     <StepCard
       mode="frontier"
@@ -139,10 +139,10 @@ export const PlayCard = ({ season, firstVisit, now }: { season: DirectoryGame; f
           <p className="text-[15px] text-kit-cream">{PITCH}</p>
         ) : (
           <ClockLine
-            endsAt={clock?.endsAt}
-            secondsLeft={clock?.secondsLeft}
-            tomorrowSeconds={clock?.tomorrowSeconds}
-            tone={clock?.tone ?? "calm"}
+            endsAt={clock.endsAt}
+            secondsLeft={clock.secondsLeft}
+            tomorrowSeconds={clock.tomorrowSeconds}
+            tone={clock.tone}
           />
         )
       }
@@ -167,7 +167,7 @@ export const ResumeCard = ({ season, now }: { season: DirectoryGame; now: number
   const own = useOwnSeasonEntry(season);
   const realm = seasonRealm(season);
   const still = realm && realmStill(realm.level);
-  const clock = seasonDay(season, now);
+  const clock = directoryDay(season, now);
   return (
     <StepCard
       mode="frontier"
@@ -182,13 +182,13 @@ export const ResumeCard = ({ season, now }: { season: DirectoryGame; now: number
           </div>
         )
       }
-      figure={<DayDial day={clock?.day} shareLeft={clock?.shareLeft} tone={clock?.tone ?? "calm"} />}
+      figure={<DayDial day={clock.day} shareLeft={clock.shareLeft} tone={clock.tone} />}
       line={
         <ClockLine
-          endsAt={clock?.endsAt}
-          secondsLeft={clock?.secondsLeft}
-          tomorrowSeconds={clock?.tomorrowSeconds}
-          tone={clock?.tone ?? "calm"}
+          endsAt={clock.endsAt}
+          secondsLeft={clock.secondsLeft}
+          tomorrowSeconds={clock.tomorrowSeconds}
+          tone={clock.tone}
         />
       }
       chips={

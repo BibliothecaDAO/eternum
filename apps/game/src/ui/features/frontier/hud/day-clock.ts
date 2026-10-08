@@ -15,6 +15,9 @@ export type DayClock = {
   tone: Tone;
 };
 
+/** The dial and the clock line turn ember in today's last hour. */
+export const dayTone = (secondsLeft: number): Tone => (secondsLeft <= LAST_HOUR_SECONDS ? "ember" : "calm");
+
 const BEFORE_THE_SEASON: DayClock = {
   day: undefined,
   endsAt: undefined,
@@ -39,7 +42,7 @@ export const dayClock = (calendar: SeasonCalendar, now: number): DayClock => {
     secondsLeft,
     tomorrowSeconds: tomorrow ? tomorrow.end - tomorrow.start : undefined,
     shareLeft: secondsLeft / (today.end - today.start),
-    tone: secondsLeft <= LAST_HOUR_SECONDS ? "ember" : "calm",
+    tone: dayTone(secondsLeft),
   };
 };
 
