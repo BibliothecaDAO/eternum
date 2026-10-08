@@ -1,5 +1,6 @@
 import { resolve } from "node:path";
 import { publicSetupFailure } from "./setup-failure";
+import { configureAccountConfirmation } from "./account-confirmation";
 import { existsSync } from "node:fs";
 import { RpcProvider, hash } from "starknet";
 import { createHarnessAccounts, mapWithConcurrency } from "../../harness/account-factory";
@@ -15,6 +16,7 @@ async function main() {
   );
   const provider = new RpcProvider({ nodeUrl: loopback(required(a["public-rpc"], "public-rpc")) });
   const privateProvider = new RpcProvider({ nodeUrl: required(a["private-rpc"], "private-rpc") });
+  configureAccountConfirmation(privateProvider);
   if (
     BigInt(await provider.getChainId()) !== BigInt(manifest.shard.chainId) ||
     BigInt(await privateProvider.getChainId()) !== BigInt(manifest.shard.chainId)
