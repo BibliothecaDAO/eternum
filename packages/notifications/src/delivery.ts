@@ -8,13 +8,27 @@ export interface LocalNotificationPayload {
   target: string;
   createdAt: number;
   expiresAt: number;
+  kind?: "day-end";
+  dayEnd?: { endsAt: number; asOf: number; tomorrowSeconds: number };
 }
 
 /** A display envelope only; no entity rows or arbitrary navigation URLs cross this boundary. */
 export function parseNotificationPayload(value: unknown, now: number): LocalNotificationPayload {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("invalid_notification");
   const input = value as Record<string, unknown>;
-  const fields = ["version", "id", "owner", "title", "body", "tag", "target", "createdAt", "expiresAt"];
+  const fields = [
+    "version",
+    "id",
+    "owner",
+    "title",
+    "body",
+    "tag",
+    "target",
+    "createdAt",
+    "expiresAt",
+    "kind",
+    "dayEnd",
+  ];
   if (
     Object.keys(input).some((key) => !fields.includes(key)) ||
     input.version !== 1 ||
@@ -24,6 +38,7 @@ export function parseNotificationPayload(value: unknown, now: number): LocalNoti
     !boundedText(input.title, 80) ||
     !boundedText(input.body, 240) ||
     (input.tag !== undefined && !boundedText(input.tag, 240)) ||
+    (input.kind !== undefined && input.kind !== "day-end") ||
     typeof input.target !== "string" ||
     !isNotificationTarget(input.target) ||
     !Number.isSafeInteger(input.createdAt) ||
@@ -31,15 +46,37 @@ export function parseNotificationPayload(value: unknown, now: number): LocalNoti
   )
     throw new Error("invalid_notification");
   const payload = input as unknown as LocalNotificationPayload;
+  if ((input.kind === "day-end") !== (input.dayEnd !== undefined)) throw new Error("invalid_day_end_reminder");
+  if (input.kind === "day-end") validateDayEnd(payload);
   if (
     payload.createdAt > now + 30_000 ||
     payload.expiresAt <= now ||
     payload.expiresAt <= payload.createdAt ||
-    payload.expiresAt - payload.createdAt > 120_000
+    payload.expiresAt - payload.createdAt > 120_000 ||
+    (payload.dayEnd !== undefined && payload.createdAt > now)
   )
     throw new Error("expired_notification");
   if (new TextEncoder().encode(JSON.stringify(payload)).byteLength > 3072) throw new Error("notification_too_large");
   return payload;
+}
+
+function validateDayEnd(payload: LocalNotificationPayload): void {
+  const day = payload.dayEnd;
+  if (
+    !day ||
+    typeof day !== "object" ||
+    Array.isArray(day) ||
+    Object.keys(day).some((key) => key !== "endsAt" && key !== "asOf" && key !== "tomorrowSeconds") ||
+    !Number.isSafeInteger(day.endsAt) ||
+    !Number.isSafeInteger(day.asOf) ||
+    !Number.isSafeInteger(day.tomorrowSeconds) ||
+    day.endsAt <= 0 ||
+    day.tomorrowSeconds <= 0 ||
+    day.endsAt - day.asOf !== 3600 ||
+    payload.createdAt !== day.asOf * 1000 ||
+    payload.expiresAt !== payload.createdAt + 1000
+  )
+    throw new Error("invalid_day_end_reminder");
 }
 
 function boundedText(value: unknown, max: number): value is string {

@@ -32,6 +32,7 @@ export const routeIdentityRequest = async (
   if (requestsCodeAccess && !(await withinSignInBudget(env, request, sendsCode))) {
     return json({ error: sendsCode ? "too_many_codes" : "too_many_attempts" }, 429);
   }
+  if (requestsCodeAccess && sendsCode) return sendCodeWithExpiry(request, auth);
   if (pathname.startsWith("/api/auth/")) return auth.handler(request);
   if (requiresSameOrigin(request, pathname) && request.headers.get("origin") !== new URL(env.BASE_URL).origin) {
     return json({ error: "invalid_origin" }, 403);
@@ -117,5 +118,26 @@ const requiresSameOrigin = (request: Request, pathname: string): boolean => {
   return (
     !["GET", "HEAD", "OPTIONS"].includes(request.method) ||
     request.headers.get("upgrade")?.toLowerCase() === "websocket"
+  );
+};
+
+/** Read the verification the auth plugin wrote; mail delivery time must not extend the code's life. */
+const sendCodeWithExpiry = async (request: Request, auth: IdentityAuth): Promise<Response> => {
+  const body = (await request
+    .clone()
+    .json()
+    .catch(() => ({}))) as { email?: unknown; type?: unknown };
+  const response = await auth.handler(request);
+  if (!response.ok) return response;
+  if (typeof body.email !== "string" || body.type !== "sign-in") return json({ error: "code_expiry_unavailable" }, 503);
+  const context = await auth.$context;
+  const verification = await context.internalAdapter.findVerificationValue(`sign-in-otp-${body.email.toLowerCase()}`);
+  if (!verification) return json({ error: "code_expiry_unavailable" }, 503);
+  const headers = new Headers(response.headers);
+  headers.set("cache-control", "no-store");
+  headers.delete("content-length");
+  return Response.json(
+    { ...((await response.json()) as Record<string, unknown>), expires_at: verification.expiresAt.getTime() / 1000 },
+    { status: response.status, headers },
   );
 };
