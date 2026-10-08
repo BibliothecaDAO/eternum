@@ -6,7 +6,8 @@ const WIDTH = 32;
 const RECORD = 6 * WIDTH;
 
 export function feltBytes(value: string): Buffer {
-  const integer = BigInt(value);
+  let integer: bigint;
+  try { integer = BigInt(value); } catch { throw new Error("Invalid VRF input encoding"); }
   if (integer < 0n || integer >= FIELD) throw new Error("Noncanonical VRF input");
   return Buffer.from(integer.toString(16).padStart(64, "0"), "hex");
 }

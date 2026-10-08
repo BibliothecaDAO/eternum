@@ -1,6 +1,6 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { Account, ec, hash, RpcProvider, legacyDeployer } from "starknet";
+import { Account, ec, hash, RpcProvider, legacyDeployer, shortString } from "starknet";
 import { DeviceSigner, deviceKeyOf, joinRealmsAccount } from "@bibliothecadao/eternum";
 import { deviceChangeHash } from "@realms-world/identity/account";
 import { declareClass, readClassArtifact, waitForSuccess } from "../../../config/deployer/clean/shared/declare";
@@ -16,6 +16,7 @@ const bootstrap = JSON.parse(readFileSync(join(data, "host-keys.json"), "utf8"))
 const manifest = JSON.parse(readFileSync(join(data, "native-world.json"), "utf8")) as { shard: { chainId: string; accountClassHash: string } };
 const provider = new RpcProvider({ nodeUrl: rpcUrl });
 const chain = await provider.getChainId();
+if (!shortString.decodeShortString(chain).startsWith('OPS_SPIKE_')) throw new Error('Refusing a chain outside OPS_SPIKE_');
 if (BigInt(chain) !== BigInt(manifest.shard.chainId)) throw new Error("Fixture chain does not match isolated RPC");
 const admin = new Account({ provider, address: bootstrap.deployerAddress, signer: bootstrap.deployerPrivateKey, deployer: legacyDeployer });
 const target = resolve(import.meta.dir, '../../../contracts/l3/spike-vrf/target/dev');

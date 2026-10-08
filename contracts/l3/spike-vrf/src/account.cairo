@@ -45,7 +45,7 @@ pub fn device_change_hash(
 pub mod VrfSpikeAccount {
     use core::ecdsa::check_ecdsa_signature;
     use core::num::traits::Zero;
-    use openzeppelin_account::utils::{execute_calls, is_tx_version_valid};
+    use crate::vendor::account_helpers::{execute_calls, is_tx_version_valid};
     use starknet::account::Call;
     use starknet::storage::{Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess};
     use starknet::{VALIDATED, get_contract_address, get_tx_info};
