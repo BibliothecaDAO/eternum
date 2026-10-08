@@ -6,6 +6,8 @@ import { GLTFLoader, type GLTF } from "three/addons/loaders/GLTFLoader.js";
 import { disposeSkinnedSceneTemplates } from "../skinned-asset-resources";
 
 import {
+  PROCEDURAL_MELEE_OFFHANDS,
+  PROCEDURAL_MELEE_WEAPONS,
   resolveProceduralMeleeOffhand,
   resolveProceduralMeleeWeapon,
   type ProceduralMeleeOffhandId,
@@ -22,31 +24,34 @@ export interface ProceduralMeleeAssetInstance {
 
 const scratchBounds = new Box3();
 const scratchSize = new Vector3();
-const T1_KNIGHT_DEFAULT_GEAR = {
+type FittedGearId = ProceduralMeleeWeaponId | ProceduralMeleeOffhandId;
+
+/** Asset data: the file of each piece of gear the catalog marks as fitted to a rig. */
+const FITTED_GEAR_FILES: Readonly<Partial<Record<FittedGearId, string>>> = {
   "t1-knight-default-sword": "/models/characters/t1-knight-default/near/sword.glb",
   "t1-knight-default-shield": "/models/characters/t1-knight-default/near/shield.glb",
-} as const;
-type T1KnightDefaultGearId = keyof typeof T1_KNIGHT_DEFAULT_GEAR;
+};
+const FITTED_GEAR_IDS: readonly FittedGearId[] = [...PROCEDURAL_MELEE_WEAPONS, ...PROCEDURAL_MELEE_OFFHANDS]
+  .filter(({ fittedRigAdapterId }) => fittedRigAdapterId !== undefined)
+  .map(({ id }) => id);
 
 /**
  * Hands out shallow scene clones of melee equipment. Registered cosmetic assets are loaded by, and stay owned by, the
- * global cosmetic asset cache. The T1 Knight Default's sword and shield are not registered: this library loads them
- * itself, only when asked, and disposes them. Actors own only their clone hierarchy.
+ * global cosmetic asset cache. Gear fitted to a rig (the T1 Knight Default's sword and shield) is not registered: this
+ * library loads it itself, only when asked, and disposes it. Actors own only their clone hierarchy.
  */
 export class ProceduralMeleeWeaponLibrary {
   private disposed = false;
 
-  private constructor(private readonly fittedTemplates: ReadonlyMap<T1KnightDefaultGearId, GLTF>) {}
+  private constructor(private readonly fittedTemplates: ReadonlyMap<FittedGearId, GLTF>) {}
 
   public static async create(
     options: { includeT1KnightDefault?: boolean } = {},
   ): Promise<ProceduralMeleeWeaponLibrary> {
-    const fittedTemplates = new Map<T1KnightDefaultGearId, GLTF>();
+    const fittedTemplates = new Map<FittedGearId, GLTF>();
     try {
       if (options.includeT1KnightDefault) {
-        for (const [id, url] of Object.entries(T1_KNIGHT_DEFAULT_GEAR) as [T1KnightDefaultGearId, string][]) {
-          fittedTemplates.set(id, await loadKnightGear(url, id));
-        }
+        for (const id of FITTED_GEAR_IDS) fittedTemplates.set(id, await loadKnightGear(resolveFittedGearFile(id), id));
       }
       return new ProceduralMeleeWeaponLibrary(fittedTemplates);
     } catch (error) {
@@ -57,13 +62,13 @@ export class ProceduralMeleeWeaponLibrary {
 
   public isWeaponReady(id: ProceduralMeleeWeaponId): boolean {
     this.assertActive();
-    if (isT1KnightDefaultGearId(id)) return this.fittedTemplates.has(id);
+    if (isFittedGearId(id)) return this.fittedTemplates.has(id);
     return isRegisteredAssetReady(resolveProceduralMeleeWeapon(id).registryEntryId);
   }
 
   public isOffhandReady(id: ProceduralMeleeOffhandId): boolean {
     this.assertActive();
-    if (isT1KnightDefaultGearId(id)) return this.fittedTemplates.has(id);
+    if (isFittedGearId(id)) return this.fittedTemplates.has(id);
     return isRegisteredAssetReady(resolveProceduralMeleeOffhand(id).registryEntryId);
   }
 
@@ -75,7 +80,7 @@ export class ProceduralMeleeWeaponLibrary {
     this.assertActive();
     if (!loadout.detailedEquipment) return;
     for (const id of [loadout.weaponId, loadout.offhandId]) {
-      if (isT1KnightDefaultGearId(id) && !this.fittedTemplates.has(id)) {
+      if (isFittedGearId(id) && !this.fittedTemplates.has(id)) {
         throw new Error(`Knight gear ${id} was not loaded`);
       }
     }
@@ -84,7 +89,7 @@ export class ProceduralMeleeWeaponLibrary {
   public instantiateWeapon(id: ProceduralMeleeWeaponId): ProceduralMeleeAssetInstance | undefined {
     this.assertActive();
     const definition = resolveProceduralMeleeWeapon(id);
-    if (isT1KnightDefaultGearId(id)) return this.instantiateFitted(id, `melee-weapon:${id}`, definition.assetAlignment);
+    if (isFittedGearId(id)) return this.instantiateFitted(id, `melee-weapon:${id}`, definition.assetAlignment);
     return instantiateRegisteredAsset(
       definition.registryEntryId,
       definition.visualLength,
@@ -96,8 +101,7 @@ export class ProceduralMeleeWeaponLibrary {
   public instantiateOffhand(id: ProceduralMeleeOffhandId): ProceduralMeleeAssetInstance | undefined {
     this.assertActive();
     const definition = resolveProceduralMeleeOffhand(id);
-    if (isT1KnightDefaultGearId(id))
-      return this.instantiateFitted(id, `melee-offhand:${id}`, definition.assetAlignment);
+    if (isFittedGearId(id)) return this.instantiateFitted(id, `melee-offhand:${id}`, definition.assetAlignment);
     return instantiateRegisteredAsset(
       definition.registryEntryId,
       definition.visualDiameter,
@@ -113,7 +117,7 @@ export class ProceduralMeleeWeaponLibrary {
   }
 
   private instantiateFitted(
-    id: T1KnightDefaultGearId,
+    id: FittedGearId,
     name: string,
     alignment: ProceduralMeleeAssetAlignment | undefined,
   ): ProceduralMeleeAssetInstance {
@@ -135,7 +139,7 @@ export class ProceduralMeleeWeaponLibrary {
   }
 }
 
-async function loadKnightGear(url: string, id: T1KnightDefaultGearId): Promise<GLTF> {
+async function loadKnightGear(url: string, id: FittedGearId): Promise<GLTF> {
   const gltf = await new GLTFLoader().loadAsync(url);
   try {
     validateKnightGear(gltf, id);
@@ -146,7 +150,7 @@ async function loadKnightGear(url: string, id: T1KnightDefaultGearId): Promise<G
   }
 }
 
-export function validateKnightGear(gltf: Pick<GLTF, "animations" | "scene">, id: T1KnightDefaultGearId): void {
+export function validateKnightGear(gltf: Pick<GLTF, "animations" | "scene">, id: FittedGearId): void {
   if (gltf.animations.length > 0) throw new Error(`${id} must be clip-free`);
   let meshCount = 0;
   let skinnedMeshCount = 0;
@@ -158,8 +162,14 @@ export function validateKnightGear(gltf: Pick<GLTF, "animations" | "scene">, id:
   if (skinnedMeshCount > 0) throw new Error(`${id} must be rigid, not skinned`);
 }
 
-function isT1KnightDefaultGearId(id: string): id is T1KnightDefaultGearId {
-  return Object.hasOwn(T1_KNIGHT_DEFAULT_GEAR, id);
+function isFittedGearId(id: FittedGearId): boolean {
+  return FITTED_GEAR_IDS.includes(id);
+}
+
+function resolveFittedGearFile(id: FittedGearId): string {
+  const file = FITTED_GEAR_FILES[id];
+  if (!file) throw new Error(`Gear ${id} is fitted to a rig but has no asset file`);
+  return file;
 }
 
 function instantiateRegisteredAsset(
