@@ -8,7 +8,7 @@ import { derivePresetFacts } from "./preset-facts";
 import { nativeEntityId } from "./entity-id";
 import { gameplayRejection } from "@bibliothecadao/provider";
 import { transactionScopes } from "./transactions";
-import type { MadaraRpc } from "../madara-rpc";
+import type { MadaraRpc, ReadBlockOptions } from "../madara-rpc";
 import { normalizeFelt } from "../model-registry";
 import type {
   DecodedWorldEvent,
@@ -50,6 +50,8 @@ const sameEvents = (left: readonly RpcEvent[], right: readonly RpcEvent[]) =>
       sameFelts(event.data, right[index]!.data) &&
       (event.event_index ?? index) === (right[index]!.event_index ?? index),
   );
+
+const REPLAY_EVENT_BUDGET = 16_384;
 
 export class NativeIngestion {
   receiptFailures = 0;
@@ -136,10 +138,11 @@ export class NativeIngestion {
     toBlock: number;
     /** Live confirmation publishes receipt outcomes; cold replay needs only history and folded rows. */
     retainTransactions?: boolean;
+    readOptions?: ReadBlockOptions;
     /** The overlay's decode of a receipt it holds, reused when the confirmed receipt repeats its events. */
     preconfirmed?: (receipt: RpcReceipt) => PreconfirmedDecode | undefined;
     beforeBlock?: (fold: WorldFold, block: RpcBlockWithReceipts, events: readonly DecodedWorldEvent[]) => Promise<void>;
-    beforeCommit?: (events: readonly DecodedWorldEvent[]) => Promise<void>;
+    beforeCommit?: (events: readonly DecodedWorldEvent[], throughBlock: number) => Promise<void>;
   }) {
     if (this.halted) throw this.halted;
     const preview = input.fold.overlay();
@@ -147,12 +150,18 @@ export class NativeIngestion {
     const presets: VerifiedPreset[] = [];
     const transactions: RpcBlockTransaction[] = [];
     let pages = 0;
+    let throughBlock = input.toBlock;
+    let timestamp: number | undefined;
     for (
       let number = Math.max(input.fromBlock, this.decoder.manifest.native.deploymentBlock);
       number <= input.toBlock;
       number++
     ) {
-      const block = await input.rpc.readBlock(number, this.decoder.manifest.world.address);
+      const block = await input.rpc.readBlock(number, this.decoder.manifest.world.address, {
+        ...input.readOptions,
+        retainTransactions: input.retainTransactions,
+        needsCalldata: (events) => this.decoder.needsPresetCalldata(events),
+      });
       if (block.block_number !== number) throw new Error("Native replay block number mismatch");
       pages++;
       await input.beforeBlock?.(preview, block, events);
@@ -177,8 +186,11 @@ export class NativeIngestion {
           throw this.rejectReceipt(receipt, number, error, true);
         }
       });
+      throughBlock = number;
+      timestamp = block.timestamp;
+      if (events.length >= REPLAY_EVENT_BUDGET) break;
     }
-    await input.beforeCommit?.(events);
+    await input.beforeCommit?.(events, throughBlock);
     presets.forEach((preset) => input.fold.rememberPreset(preset));
     const changes = this.commit(input.fold, events);
     const byBlock = new Map<number, FoldChange[]>();
@@ -190,6 +202,8 @@ export class NativeIngestion {
       byBlock.set(block, batch);
     });
     return {
+      throughBlock,
+      timestamp,
       events,
       transactions,
       changes: byBlock,
@@ -259,7 +273,11 @@ export class NativeIngestion {
     transactionIndex: number,
     earlier?: PreconfirmedDecode,
   ): DecodedWorldEvent[] {
-    if (earlier && sameEvents(earlier.events, receipt.events))
+    const owned = (events: readonly RpcEvent[]) =>
+      events.flatMap((event, index) =>
+        this.decoder.owns(event.from_address) ? [{ ...event, event_index: event.event_index ?? index }] : [],
+      );
+    if (earlier && sameEvents(owned(earlier.events), owned(receipt.events)))
       return earlier.decoded.map((event) => atPosition(event, { ...event.position, blockNumber, transactionIndex }));
     return receipt.events.flatMap((raw, eventIndex) =>
       this.decoder.owns(raw.from_address)

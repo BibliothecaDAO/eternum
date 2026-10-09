@@ -119,10 +119,10 @@ export async function replayWithFrontierDays(
       }
       previousTimestamp = block.timestamp;
     },
-    beforeCommit: (events) =>
+    beforeCommit: (events, throughBlock) =>
       history.appendEvents(
         events.filter((event) => event.kind === "event"),
-        input.toBlock,
+        throughBlock,
         frontierDays,
       ),
   });

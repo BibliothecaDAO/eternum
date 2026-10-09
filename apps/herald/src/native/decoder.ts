@@ -61,6 +61,19 @@ export class NativeDecoder {
   owns(address: string): boolean {
     return normalizeFelt(address) === this.emitter;
   }
+  needsPresetCalldata(events: readonly RpcEvent[]): boolean {
+    const preset = this.schema.models.find((model) => model.name === "Preset");
+    if (!preset) throw new Error("Schema has no Preset model");
+    return events.some((event) =>
+      this.layouts.some(
+        (layout) =>
+          layout.name === "RowSet" &&
+          layout.prefix.every((key, index) => BigInt(key) === BigInt(event.keys[index] ?? -1)) &&
+          BigInt(event.keys[layout.prefix.length + 1] ?? -1) === BigInt(preset.identity),
+      ),
+    );
+  }
+
   /** Decode an off-chain projection with the same typed members, without accepting a chain event. */
   decodeRowSet(model: string, keys: readonly string[], values: readonly string[]): DecodedWorldEvent {
     const row = this.schema.models.find((candidate) => candidate.name === model);
