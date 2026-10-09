@@ -493,6 +493,12 @@ fn empty_blitz_launches_keep_the_game_id_until_an_immutable_roster_is_frozen() {
     assert!(!IGameDispatcher { contract_address: d.games }.game(game_id).ready);
     let views = ISettlementViewsDispatcher { contract_address: d.games };
     assert_eq!(views.settlement_rules(game_id).registration_limit, 0);
+    let launcher = super::bind_authority(d);
+    let (release, commitment) = super::play_fixture::pins(d.games, game_id);
+    super::play_fixture::caller(d.games, launcher.actor, 205);
+    super::assert_entry_refusal(
+        launcher, game_id, release, commitment, super::play_fixture::encode(Command::SettleBlitzRoster), "roster not frozen",
+    );
     assert!(safe(d, d.actor).freeze_blitz_roster(game_id, roster(2)).is_err());
     for players in array![
         array![].span(), roster(25), array![*roster(1).at(0), *roster(1).at(0)].span(),
