@@ -284,7 +284,7 @@ class WorkerLauncherTest(unittest.TestCase):
         with (
             patch.object(deploy, "deployed_facts", return_value=(manifest, {})),
             patch.object(deploy, "launcher_service", side_effect=service),
-            patch.object(deploy, "launcher_chain_check", side_effect=lambda *args: events.append(args[2])),
+            patch.object(deploy, "launcher_chain_check", side_effect=lambda *args: events.append(args[1])),
         ):
             deploy.confirm_worker_launcher({"public_herald_url": "https://herald.test", "presets": [5]}, Path("/unused"))
         self.assertEqual(events, ["enrol", "handoff", "check", "verify"])
