@@ -30,6 +30,7 @@ AREAS = {
         "apps/launch-service/wrangler.jsonc",
         "packages/**",
         "config/**",
+        "contracts/l2/ledger/scripts/chest-preset.js",
         "contracts/l3/world-native/schema/**",
         "contracts/l3/world-native/tests/fixtures/**",
         "contracts/common/addresses/**",
@@ -40,6 +41,7 @@ AREAS = {
         "apps/herald/**",
         "packages/**",
         "config/**",
+        "contracts/l2/ledger/scripts/chest-preset.js",
         "contracts/l3/world-native/schema/**",
         "contracts/l3/world-native/tests/fixtures/**",
         "contracts/common/addresses/**",
@@ -58,6 +60,7 @@ AREAS = {
         "apps/herald/src/shard-manifest.ts",
         "packages/**",
         "config/**",
+        "contracts/l2/ledger/scripts/chest-preset.js",
         "contracts/l3/world-native/schema/**",
         "contracts/l3/world-native/tests/fixtures/**",
         "contracts/common/addresses/**",
@@ -73,6 +76,7 @@ AREAS = {
         "contracts/utils/**",
         "packages/**",
         "config/**",
+        "contracts/l2/ledger/scripts/chest-preset.js",
         "deploy/athanor/**",
         "deploy/release/**",
         "deploy/shard/**",
@@ -91,7 +95,8 @@ AREAS = {
         "deploy/athanor/**",
         "deploy/shard/**",
         "packages/**",
-        "config/**"
+        "config/**",
+        "contracts/l2/ledger/scripts/chest-preset.js"
     ],
     "terrain": [
         ".github/workflows/verify-terrain.yml",
