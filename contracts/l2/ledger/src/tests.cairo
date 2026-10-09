@@ -350,7 +350,7 @@ fn deploy_village_pass_fixture() -> (Fixture, ContractAddress, ITestVillagePassD
 fn fund_and_approve_player(fixture: @Fixture, owner: ContractAddress, amount: u256) {
     fixture.lords_minter.mint(owner, amount);
     start_cheat_caller_address(*fixture.lords_address, owner);
-    fixture.lords.approve(*fixture.ledger_address, amount);
+    IERC20Dispatcher { contract_address: fixture.ledger.lords() }.approve(*fixture.ledger_address, amount);
     stop_cheat_caller_address(*fixture.lords_address);
 }
 
@@ -2140,4 +2140,15 @@ fn village_pass_cannot_name_an_account_already_paid_for() {
     let token_id = pass.mint(player(1));
     start_cheat_caller_address(fixture.ledger_address, player(1));
     fixture.ledger.register_village(GAME_KEY, shard_account(player(0)), token_id);
+}
+
+#[test]
+fn asset_views_return_this_deployments_tokens_to_any_reader_even_when_paused() {
+    let fixture = deploy_ledger();
+    start_cheat_caller_address(fixture.ledger_address, ADMIN());
+    fixture.ledger.pause();
+    start_cheat_caller_address(fixture.ledger_address, player(42));
+    assert!(fixture.ledger.lords() == fixture.lords_address);
+    assert!(fixture.ledger.chest_collection() == fixture.chest_address);
+    assert!(fixture.ledger.chest_collection() != fixture.cosmetics_address);
 }
