@@ -1,0 +1,11 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "realms-status-monitor",
+  "main": "src/worker.ts",
+  "compatibility_date": "2026-09-15",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": false,
+  "observability": { "enabled": true },
+  "r2_buckets": [{ "binding": "STATUS_BUCKET", "bucket_name": "realms-status" }],
+  "triggers": { "crons": ["* * * * *"] },
+}

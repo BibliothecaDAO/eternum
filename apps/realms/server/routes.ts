@@ -9,6 +9,9 @@ import { json } from "./http";
 import { consumeSignInBudget } from "./sign-in-budget";
 import { handleNotificationPreferences } from "./notification-preferences";
 import { handleProfile, handleProfiles } from "./profiles";
+import { handleRatings } from "./ratings";
+import { handleRatingTop } from "./rating-top";
+import { handleAccountsHealth, handleChatHealth } from "./health";
 import { handlePushSubscriptions } from "./push-notifications";
 
 /** What the Worker reaches outside its bindings: the colo cache and the shards' Heralds. */
@@ -49,6 +52,12 @@ export const routeIdentityRequest = async (
     if (!(await isOperator(env, request))) return json({ error: "unauthorized" }, 401);
     return handleBotDeviceApproval(request, { guardian: env.GUARDIAN, accountClassHash: env.ACCOUNT_CLASS_HASH });
   }
+  if ((pathname === "/api/ratings" || pathname === "/api/ratings/top") && request.method === "GET") {
+    if (!(await withinPublicBudget(env, "ratings", request))) return json({ error: "too_many_requests" }, 429);
+    return pathname === "/api/ratings/top"
+      ? handleRatingTop(env, new URL(request.url))
+      : handleRatings(env, new URL(request.url));
+  }
   if (pathname === "/api/profiles" && request.method === "GET") {
     if (!(await withinPublicBudget(env, "profiles", request))) return json({ error: "too_many_requests" }, 429);
     return handleProfiles(env.DB, new URL(request.url).searchParams.get("accounts"));
@@ -57,6 +66,8 @@ export const routeIdentityRequest = async (
     if (!(await withinPublicBudget(env, "profiles", request))) return json({ error: "too_many_requests" }, 429);
     return handleProfile(env.DB, pathname.slice("/api/profiles/".length));
   }
+  if (pathname === "/api/health/accounts" && request.method === "GET") return handleAccountsHealth(env.DB);
+  if (pathname === "/api/chat/health" && request.method === "GET") return handleChatHealth(env);
   if (pathname.startsWith("/api/chat/")) return routeChat(request, env, auth, pathname);
   if (pathname === "/api/notifications/preferences") return handleNotificationPreferences(request, auth, env.DB);
   if (pathname.startsWith("/api/notifications/push/")) return handlePushSubscriptions(request, auth, env);

@@ -1,3 +1,4 @@
+import { BLITZ_SLOT_NAME_PATTERN } from "@realms-world/identity";
 import { Schema } from "effect";
 import { Hono, type Context } from "hono";
 import { isLauncher, type LaunchAccess, type LaunchAppEnv } from "./auth";
@@ -13,7 +14,7 @@ const RegisterRequest = Schema.Struct({
   ),
 });
 const CreateSlotRequest = Schema.Struct({
-  name: Schema.String.pipe(Schema.check(Schema.isPattern(/^[a-z0-9][a-z0-9-]{0,23}$/))),
+  name: Schema.String.pipe(Schema.check(Schema.isPattern(BLITZ_SLOT_NAME_PATTERN))),
   closesAt: Schema.String.pipe(Schema.check(Schema.makeFilter((value: string) => Number.isFinite(Date.parse(value))))),
 });
 
@@ -51,6 +52,12 @@ export function createSlotRoutes(
     context.json({ error: "This identity is not allowed to launch games." }, 403);
 
   app.get("/", async (context) => context.json({ slots: await store.list() }));
+  app.get("/:name", async (context) => {
+    context.header("Cache-Control", "no-store");
+    const name = context.req.param("name");
+    if (!BLITZ_SLOT_NAME_PATTERN.test(name)) return context.json({ error: "Invalid slot name" }, 400);
+    return context.json(await store.get(name));
+  });
 
   app.post("/", async (context) => {
     if (!isLauncher(context.get("caller"), access)) return forbidden(context);

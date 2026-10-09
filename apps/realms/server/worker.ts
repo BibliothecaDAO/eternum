@@ -32,6 +32,7 @@ const fetchLaunchDirectory = async (launch: IdentityEnv["LAUNCH"]) => {
   return (await response.json()) as { chains: { chainId: string; gameIds: number[] }[] };
 };
 
+export { RatingReader } from "./rating-reader";
 export { ChatInbox } from "./chat/chat-inbox";
 export { ChatRoom } from "./chat/chat-room";
 export { ShardNotifier } from "./shard-notifier";
