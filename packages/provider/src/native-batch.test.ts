@@ -103,7 +103,7 @@ describe("recorded batch results", () => {
   });
   it("never treats a transaction hash as batch completion", () => {
     expect(() => requireBatchReceipt({ transaction_hash: "0x44" } as GetTransactionReceiptResponse)).toThrow(
-      "not available",
+      "missing from the receipt",
     );
     const receipt = { transaction_hash: "0x44", batch_remaining: "1" } as unknown as GetTransactionReceiptResponse;
     expect(requireBatchReceipt(receipt).remaining).toBe(1n);

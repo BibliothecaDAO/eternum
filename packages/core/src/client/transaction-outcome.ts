@@ -34,7 +34,7 @@ export async function waitForActionOutcome(
   if (refused) return refused;
   const remaining = "events" in receipt ? batchRemaining(receipt.events, games, transactionHash) : undefined;
   // Herald keeps recent statuses, so one it streamed while the receipt was read is still found here.
-  const { block } = await settledByHerald(runtime, transactionHash);
+  const { block } = await settledByHerald(runtime, transactionHash, blockOf(receipt));
   return {
     hash: transactionHash,
     block,
@@ -67,13 +67,16 @@ async function receiptOf(
   }
 }
 
+const blockOf = (receipt: GetTransactionReceiptResponse): number | null =>
+  "block_number" in receipt && typeof receipt.block_number === "number" ? receipt.block_number : null;
+
 /** A revert or the game's rejection, read from the receipt; nothing of either applied. */
 function refusalIn(
   receipt: GetTransactionReceiptResponse,
   games: string,
   transactionHash: string,
 ): ActionOutcome | undefined {
-  const block = "block_number" in receipt && typeof receipt.block_number === "number" ? receipt.block_number : null;
+  const block = blockOf(receipt);
   if ("execution_status" in receipt && receipt.execution_status === "REVERTED")
     return { hash: transactionHash, block, status: "REVERTED", revertReason: receipt.revert_reason };
   const rejection = "events" in receipt ? gameplayRejection(receipt.events, games, transactionHash) : undefined;
@@ -81,14 +84,21 @@ function refusalIn(
   return { hash: transactionHash, block, status: "REJECTED", revertReason: rejection.reason || rejection.statusClass };
 }
 
-/** Herald's status for the transaction, or the next resync's snapshot, which holds its facts. */
+/**
+ * Herald's status for the transaction, or a reconnect's fresh snapshot that reaches the receipt's block and so holds
+ * its facts. A snapshot older than the receipt, or a receipt with no block yet, leaves the action pending until
+ * Herald's status arrives.
+ */
 function settledByHerald(
   runtime: Pick<GameSyncRuntime, "waitForTransaction" | "subscribeResynced">,
   transactionHash: string,
+  receiptBlock: number | null,
 ): Promise<{ block: number | null }> {
   let stopWatching = () => {};
-  const resynced = new Promise<{ block: null }>((resolve) => {
-    stopWatching = runtime.subscribeResynced(() => resolve({ block: null }));
+  const resynced = new Promise<{ block: number }>((resolve) => {
+    stopWatching = runtime.subscribeResynced((throughBlock) => {
+      if (receiptBlock !== null && throughBlock >= receiptBlock) resolve({ block: receiptBlock });
+    });
   });
   return Promise.race([runtime.waitForTransaction(transactionHash), resynced]).finally(() => stopWatching());
 }

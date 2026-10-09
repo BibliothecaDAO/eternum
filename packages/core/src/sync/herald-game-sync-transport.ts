@@ -408,7 +408,7 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
     }
     this.snapshotStreaming = false;
     this.firstSnapshotEnded = true;
-    this.finishActorSnapshot(this.snapshotSelection, this.handlers?.onSnapshotEnd());
+    this.finishActorSnapshot(this.snapshotSelection, this.handlers?.onSnapshotEnd(this.attachedThroughBlock));
     this.epoch = message.epoch;
     this.seq = message.seq;
     this.forceFreshSnapshot = false;
