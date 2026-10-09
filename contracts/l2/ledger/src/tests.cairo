@@ -243,6 +243,7 @@ fn player(index: u16) -> ContractAddress {
 fn default_preset() -> Preset {
     Preset {
         entry_fee: 500,
+        protocol_cut_bps: 0,
         chest_lords_bps: 2000,
         chest_metadata: 0x301,
         paid_fraction_bps: 2_000,
@@ -1536,4 +1537,29 @@ fn a_chest_open_requires_the_owners_burn_approval() {
     apply_results(@fixture, ranked_players(1));
     start_cheat_caller_address(fixture.ledger_address, player(0));
     fixture.ledger.open_chest(1);
+}
+
+#[test]
+fn treasury_cut_is_taken_once_from_entries_flags_and_sponsors() {
+    let mut preset = default_preset();
+    preset.protocol_cut_bps = 2000;
+    let fixture = deploy_fixture(preset);
+    let owner = player(0);
+    fund_and_approve_player(@fixture, owner, 2500);
+    start_cheat_caller_address(fixture.ledger_address, owner);
+    fixture.ledger.register(GAME_KEY, true, true);
+    fixture.ledger.fund(GAME_KEY, 1000);
+    stop_cheat_caller_address(fixture.ledger_address);
+    apply_results(@fixture, ranked_players(1));
+    assert!(fixture.lords.balance_of(TREASURY()) == 500);
+    assert!(fixture.ledger.get_season(1).pool == 2000);
+    assert!(fixture.lords.balance_of(fixture.ledger_address) == 2000);
+}
+
+#[test]
+#[should_panic(expected: "Ledger: invalid protocol cut")]
+fn rejects_treasury_cut_above_the_whole_pot() {
+    let mut preset = default_preset();
+    preset.protocol_cut_bps = 10001;
+    deploy_fixture(preset);
 }

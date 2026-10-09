@@ -6,6 +6,7 @@ const LORDS = 10n ** 18n;
 
 export interface LedgerEconomicPreset {
   entry_fee: ReturnType<typeof uint256.bnToUint256>;
+  protocol_cut_bps: number;
   chest_lords_bps: number;
   chest_metadata: number;
   paid_fraction_bps: number;
@@ -29,11 +30,12 @@ function lords(amount: bigint) {
 
 export function buildLedgerEconomicPreset(
   gameType: DeploymentGameType,
-  options: { sponsored?: boolean; chestLordsBps?: number } = {},
+  options: { sponsored?: boolean; chestLordsBps?: number; protocolCutBps?: number } = {},
 ): LedgerEconomicPreset {
   const balance = nativePresetForId(nativePresetIdFor(gameType)).ledger;
   return {
     entry_fee: lords(options.sponsored ? 0n : BigInt(balance.entryFee)),
+    protocol_cut_bps: options.protocolCutBps ?? balance.protocolCutBps,
     chest_lords_bps: options.chestLordsBps ?? 500,
     chest_metadata: 0x301,
     paid_fraction_bps: 2_000,

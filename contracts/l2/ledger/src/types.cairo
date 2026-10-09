@@ -14,6 +14,7 @@ pub struct MmrParams {
 #[derive(Copy, Drop, Serde, starknet::Store)]
 pub struct Preset {
     pub entry_fee: u256,
+    pub protocol_cut_bps: u16,
     pub chest_lords_bps: u16,
     pub chest_metadata: u128,
     pub paid_fraction_bps: u16,
