@@ -1,5 +1,5 @@
 use snforge_std::{EventSpyTrait, EventsFilterTrait};
-use starknet::storage::{StorageMapWriteAccess, StoragePathEntry, StoragePointerWriteAccess};
+use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerWriteAccess};
 use crate::commands::Command;
 use crate::tests::play_fixture::{IPlayFixtureSafeDispatcher, IPlayFixtureSafeDispatcherTrait, TestAction};
 use crate::tests::{Deployment, play_fixture};
@@ -964,7 +964,9 @@ fn draw_case(case: u8) -> (Deployment, TestAction, u64) {
 
 fn explorer_case(explore: bool) -> (Deployment, TestAction, u64) {
     let (d, home) = super::camps::setup(false);
-    super::resource_commands::grant(d, home, 26, 100 * crate::rules::RESOURCE_PRECISION);
+    for resource in array![26_u8, 35, 36] {
+        super::resource_commands::grant(d, home, resource, 100 * crate::rules::RESOURCE_PRECISION);
+    }
     let create = Command::CreateExplorer(
         crate::commands::CreateExplorer {
             structure_id: home.entity_id, category: 0, tier: 0, amount: crate::rules::RESOURCE_PRECISION, direction: 0,
@@ -1077,13 +1079,13 @@ fn live_loot_case(raid: bool, insufficient: bool, full: bool) -> (Deployment, Te
         super::combat_actions::set_guard(d, target, 0, 1000);
     }
     if full {
-        snforge_std::interact_with_state(
-            d.games,
-            || crate::state::write()
-                .resources
-                .weights
-                .write((3, attacker), crate::resources::Weight { capacity: 0, weight: 0 }),
-        );
+        let key = crate::resources::ResourceKey { game_id: 3, entity_id: attacker };
+        let free = snforge_std::interact_with_state(d.games, || {
+            let weight = crate::state::read().resources.weights.read((3, attacker));
+            weight.capacity - weight.weight
+        });
+        // Fill the real army's carrying capacity; a zero capacity cannot survive casualty deductions.
+        super::resource_commands::grant(d, key, 1, free);
     }
     let loot = array![crate::resources::ResourceAmount { resource_type: 2, amount: if insufficient {
         91
@@ -1179,10 +1181,18 @@ fn real_movement_reward_stays_applied_at_full_and_fractional_stores(capacity: u1
                     },
                 )
                     .unwrap();
+                let key = crate::resources::ResourceKey { game_id: action.game_id, entity_id: explorer.owner };
+                let mut weight = 0;
+                for resource_type in 1_u8..59 {
+                    weight += crate::logic::resources::balance(key, resource_type)
+                        * crate::logic::resources::rule(action.game_id, resource_type).unit_weight;
+                }
+                // The fixture normally has unlimited capacity and does not track weight. Reconstruct it before
+                // switching to finite stores so spending real wheat and fish cannot underflow the held weight.
                 crate::state::write()
                     .resources
                     .weights
-                    .write((action.game_id, explorer.owner), crate::resources::Weight { capacity, weight: 0 });
+                    .write((action.game_id, explorer.owner), crate::resources::Weight { capacity: weight + capacity, weight });
             },
         );
         assert!(play_fixture::play(d.games, action, root.into(), timestamp), "capacity {} root {}", capacity, root);
