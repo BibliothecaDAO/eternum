@@ -44,15 +44,17 @@ import {
   clampFrameIndex,
   createProceduralAnimationCapturePlan,
   isProceduralMeleeAttackCaptureSequence,
-  resolveAnimationCapturePhase,
-  resolveAnimationFrameIssues,
-  type ProceduralAnimationCaptureResult,
   type ProceduralAnimationCaptureOptions,
+  type ProceduralAnimationCaptureResult,
   type ProceduralAnimationCaptureSampling,
   type ProceduralAnimationCaptureSequence,
   type ProceduralAnimationCaptureView,
+  type ProceduralAnimationCaptureViewId,
   type ProceduralAnimationFrameCapture,
   type ProceduralAnimationViewCapture,
+  resolveAnimationCapturePhase,
+  resolveAnimationFrameIssues,
+  resolveProceduralAnimationCaptureView,
 } from "./procedural-animation-capture";
 import { createProceduralAnimationFrameAnnotations } from "./procedural-animation-annotations";
 import { renderProceduralAnimationAnnotations } from "./procedural-animation-annotation-renderer";
@@ -149,6 +151,7 @@ export interface ProceduralCharacterGymRendererHandle {
     frameIndex: number,
     sequence: ProceduralAnimationCaptureSequence,
     rootMotionSpeed?: number,
+    viewId?: ProceduralAnimationCaptureViewId,
   ): Promise<ProceduralAnimationFrameCapture>;
   startRagdoll(): Promise<void>;
   stepOnce(): void;
@@ -185,6 +188,7 @@ class ProceduralCharacterGymRuntime {
   private readonly camera: PerspectiveCamera;
   private readonly controls: OrbitControls;
   private readonly inspectionFill = new DirectionalLight(0xe6efff, 0);
+  private inspectionFigureScale = 1;
   private readonly stage = new Group();
   private readonly resizeObserver: ResizeObserver;
   private readonly onStats?: (stats: ProceduralCharacterGymStats) => void;
@@ -300,8 +304,8 @@ class ProceduralCharacterGymRuntime {
       resetCamera: () => this.resetCamera(),
       runSmoke: () => this.runSmoke(),
       setPaused: (paused) => this.setPaused(paused),
-      seekAnimationFrame: (frameIndex, sequence, rootMotionSpeed) =>
-        this.seekAnimationFrame(frameIndex, sequence, rootMotionSpeed),
+      seekAnimationFrame: (frameIndex, sequence, rootMotionSpeed, viewId) =>
+        this.seekAnimationFrame(frameIndex, sequence, rootMotionSpeed, viewId),
       startRagdoll: () => this.startRagdoll(),
       stepOnce: () => this.stepOnce(),
       updateConfig: (config) => this.updateConfig(config),
@@ -470,6 +474,7 @@ class ProceduralCharacterGymRuntime {
     frameIndex: number,
     sequence: ProceduralAnimationCaptureSequence,
     rootMotionSpeed?: number,
+    viewId?: ProceduralAnimationCaptureViewId,
   ): Promise<ProceduralAnimationFrameCapture> {
     const plan = createProceduralAnimationCapturePlan(this.config, "key-phases", {
       overlay: "clean",
@@ -482,7 +487,18 @@ class ProceduralCharacterGymRuntime {
     for (let currentFrame = 0; currentFrame < targetFrame; currentFrame += 1) {
       this.advanceInspectionFrame(plan.rootMotionSpeed);
     }
-    return this.captureInspectionFrame(plan, targetFrame, generation);
+    const frame = await this.captureInspectionFrame(plan, targetFrame, generation);
+    if (viewId) this.showInspectionView(viewId, frame.diagnostics);
+    return frame;
+  }
+
+  /** Leaves the inspection camera on a named capture angle, so the viewport shows the sought frame from it. */
+  private showInspectionView(
+    viewId: ProceduralAnimationCaptureViewId,
+    diagnostics: ProceduralAnimationFrameCapture["diagnostics"],
+  ): void {
+    this.focusAnimationInspectionCamera(resolveProceduralAnimationCaptureView(viewId), diagnostics);
+    this.renderFrame();
   }
 
   private prepareAnimationCapture(sequence: ProceduralAnimationCaptureSequence): void {
@@ -493,7 +509,6 @@ class ProceduralCharacterGymRuntime {
     this.resetRuntimeState();
     this.inspectionSequence = sequence;
     this.inspectionFill.intensity = 2.2;
-    this.focusAnimationInspectionCamera();
     this.archerStage.group.visible = false;
     this.meleeStage.group.visible = false;
     this.boatStage.setTargetVisible(false);
@@ -503,6 +518,9 @@ class ProceduralCharacterGymRuntime {
     if (sequence === "dragon-fire") this.fireArrow();
     if (isProceduralMeleeAttackCaptureSequence(sequence)) this.attackMelee();
     this.unitRuntime.update(0);
+    // Measured once per capture, standing at its start, so the framing holds still while the figure crouches or steps.
+    this.inspectionFigureScale = resolveInspectionFigureScale(this.character.getPoseDiagnostics());
+    this.focusAnimationInspectionCamera();
   }
 
   private advanceInspectionFrame(rootMotionSpeed = 0): void {
@@ -785,9 +803,15 @@ class ProceduralCharacterGymRuntime {
     const dragon = this.config.kind === "dragon" || (this.config.kind === "paladin" && this.config.dragon.tier === 3);
     const aspectFitScale = Math.max(1, 1.15 / Math.max(0.5, this.camera.aspect));
     const distanceScale = view.distanceScale ?? 1;
+    // The distances and heights are for the nominal figure. A figure on foot is framed by its own height, so one kept
+    // at its own size (the Knight is a third of nominal) fills the view as the nominal one does instead of being a speck.
+    const figureScale = mounted || naval || dragon ? 1 : this.inspectionFigureScale;
     const distance =
-      (naval ? 6.8 : dragon ? 7.5 : mounted ? 6.3 : 4.7) * (view.detailTarget ? 1 : aspectFitScale) * distanceScale;
-    const targetHeight = naval ? 0.95 : dragon ? 2.25 : mounted ? 1.55 : 1.4;
+      (naval ? 6.8 : dragon ? 7.5 : mounted ? 6.3 : 4.7) *
+      (view.detailTarget ? 1 : aspectFitScale) *
+      distanceScale *
+      figureScale;
+    const targetHeight = (naval ? 0.95 : dragon ? 2.25 : mounted ? 1.55 : 1.4) * figureScale;
     const detailTarget = view.detailTarget;
     const targetTuple = detailTarget
       ? diagnostics?.humanoid?.socketGrips[detailTarget === "gripLeft" ? "left" : "right"]
@@ -1017,6 +1041,17 @@ function createGymCamera(): PerspectiveCamera {
   const camera = new PerspectiveCamera(38, 1, 0.05, 60);
   camera.position.set(8.4, 4.4, 11.5);
   return camera;
+}
+
+/** Where the nominal figure's head top stands, metres: the inspection camera's distances and heights were tuned for it. */
+const NOMINAL_FIGURE_HEAD_TOP = 2.2;
+
+/** How tall a figure on foot stands against the nominal one, from the head top its diagnostics report; 1 without one. */
+function resolveInspectionFigureScale(diagnostics: ProceduralAnimationFrameCapture["diagnostics"]): number {
+  const humanoid = diagnostics.humanoid;
+  if (!humanoid) return 1;
+  const headTop = humanoid.joints.head[1] + humanoid.headRadius - humanoid.rootPosition[1];
+  return headTop > 0 ? headTop / NOMINAL_FIGURE_HEAD_TOP : 1;
 }
 
 function createGymControls(camera: PerspectiveCamera, element: HTMLCanvasElement): OrbitControls {

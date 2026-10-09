@@ -168,6 +168,21 @@ const PHASE_ATLAS_GRIP_VIEWS: readonly ProceduralAnimationCaptureView[] = [
   },
 ];
 
+const CAPTURE_VIEWS: readonly ProceduralAnimationCaptureView[] = [
+  TIMELINE_CAPTURE_VIEW,
+  ...PHASE_ATLAS_BODY_VIEWS,
+  ...PHASE_ATLAS_GRIP_VIEWS,
+];
+
+/** The capture view with this id, for a scrub that wants the inspection camera left on a named angle. */
+export function resolveProceduralAnimationCaptureView(
+  id: ProceduralAnimationCaptureViewId,
+): ProceduralAnimationCaptureView {
+  const view = CAPTURE_VIEWS.find((candidate) => candidate.id === id);
+  if (!view) throw new Error(`Unknown animation capture view "${id}"`);
+  return view;
+}
+
 /** One melee attack: settled briefly after it, or long enough that a guard held after the attack lets go. */
 export function isProceduralMeleeAttackCaptureSequence(sequence: ProceduralAnimationCaptureSequence): boolean {
   return sequence === "melee-attack" || sequence === "melee-attack-and-rest";

@@ -146,6 +146,7 @@ interface CharacterGymDebugBridge {
     frameIndex: number,
     sequence?: ProceduralAnimationCaptureSequence,
     rootMotionSpeed?: number,
+    viewId?: ProceduralAnimationCaptureViewId,
   ): Promise<ProceduralAnimationFrameCapture>;
   updateConfig(patch: ProceduralUnitConfigPatch): void;
   updateCollisionConfig(patch: Partial<ProceduralCollisionGymConfig>): void;
@@ -266,7 +267,12 @@ export const ProceduralCharacterGymView = () => {
     [],
   );
   const seekFrame = useCallback(
-    async (frameIndex: number, sequence?: ProceduralAnimationCaptureSequence, rootMotionSpeed?: number) => {
+    async (
+      frameIndex: number,
+      sequence?: ProceduralAnimationCaptureSequence,
+      rootMotionSpeed?: number,
+      viewId?: ProceduralAnimationCaptureViewId,
+    ) => {
       const renderer = rendererRef.current;
       const resolvedSequence = sequence ?? captureResultRef.current?.plan.sequence;
       if (!renderer || !resolvedSequence) throw new Error("No animation capture is available to scrub");
@@ -278,6 +284,7 @@ export const ProceduralCharacterGymView = () => {
           frameIndex,
           resolvedSequence,
           rootMotionSpeed ?? captureResultRef.current?.plan.rootMotionSpeed,
+          viewId,
         );
         const capturedFrame = captureResultRef.current?.frames.find((candidate) => candidate.frameIndex === frameIndex);
         setSelectedCaptureFrame(capturedFrame ?? frame);
