@@ -50,7 +50,11 @@ export const routeIdentityRequest = async (
   }
   if (pathname === "/api/devices/bots" && request.method === "POST") {
     if (!(await isOperator(env, request))) return json({ error: "unauthorized" }, 401);
-    return handleBotDeviceApproval(request, { guardian: env.GUARDIAN, accountClassHash: env.ACCOUNT_CLASS_HASH });
+    return handleBotDeviceApproval(request, {
+      db: env.DB,
+      guardian: env.GUARDIAN,
+      accountClassHash: env.ACCOUNT_CLASS_HASH,
+    });
   }
   if ((pathname === "/api/ratings" || pathname === "/api/ratings/top") && request.method === "GET") {
     if (!(await withinPublicBudget(env, "ratings", request))) return json({ error: "too_many_requests" }, 429);

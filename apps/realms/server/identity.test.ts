@@ -399,6 +399,53 @@ describe("identity Worker", () => {
     expect(await refused.json()).toEqual({ error: "account_not_secured" });
   });
 
+  it("signs player and bot changes only for listed active or draining chains", async () => {
+    const browser = createBrowser();
+    await signInWithCode(browser, "chain-allow-list@realms.test");
+    const player = deviceChangeFor((await browser.session())!.user.realmsId);
+    const bot = {
+      ...player,
+      label: "0xb07",
+      account: realmsAccountAddress(botRealmsId("0xb07"), ACCOUNT_CLASS_HASH, await env.GUARDIAN.publicKey()),
+    };
+    await env.DB.prepare(`INSERT INTO shards (url, chainId, status, addedAt) VALUES (?, ?, 'active', ?)`)
+      .bind("https://devices.realms.test", CHAIN_ID, Date.now())
+      .run();
+    const signing = vi.spyOn(env.GUARDIAN, "signDeviceChange");
+    try {
+      for (const status of ["active", "draining", "retired"]) {
+        await env.DB.prepare("UPDATE shards SET status = ? WHERE chainId = ?").bind(status, CHAIN_ID).run();
+        for (const [path, change] of [
+          ["/api/devices", player],
+          ["/api/devices/bots", bot],
+        ] as const) {
+          signing.mockClear();
+          const response = await browser.request(path, {
+            body: { ...change, chainId: `0x0${CHAIN_ID.slice(2)}` },
+            token: OPERATOR_TOKEN,
+          });
+          expect(response.status).toBe(status === "retired" ? 403 : 200);
+          expect(signing).toHaveBeenCalledTimes(status === "retired" ? 0 : 1);
+        }
+      }
+      for (const chainId of ["0x123", "0x534e5f4d41494e", "0x534e5f5345504f4c4941"]) {
+        for (const [path, change] of [
+          ["/api/devices", player],
+          ["/api/devices/bots", bot],
+        ] as const) {
+          signing.mockClear();
+          const response = await browser.request(path, { body: { ...change, chainId }, token: OPERATOR_TOKEN });
+          expect(response.status).toBe(403);
+          expect(await response.json()).toEqual({ error: "chain_not_approved" });
+          expect(signing).not.toHaveBeenCalled();
+        }
+      }
+    } finally {
+      signing.mockRestore();
+      await env.DB.prepare("UPDATE shards SET status = 'active' WHERE chainId = ?").bind(CHAIN_ID).run();
+    }
+  });
+
   it("approves only a verified account's own exact change, and never re-adds a revoked key", async () => {
     const browser = createBrowser();
     expect((await signInWithCode(browser, "approver@realms.test")).status).toBe(200);
@@ -516,7 +563,7 @@ describe("identity Worker", () => {
     expect((await ask({ ...request, action: "REVOKE", account: playerAccount }, OPERATOR_TOKEN)).status).toBe(403);
   });
 
-  it("enrols a community shard's operator through their own Realms account, then signs that session out", async () => {
+  it("enrols a listed shard's operator through their own Realms account, then signs that session out", async () => {
     const email = "community-operator@realms.test";
     const deviceKey = "0x0be7a702";
     const guardianPublicKey = ec.starkCurve.getStarkKey(GUARDIAN_KEY);
@@ -617,6 +664,7 @@ describe("identity Worker", () => {
   });
 
   it("lists each shard's live games under that shard, settled ones in a paged history, with a player's standing when asked, names a shard it cannot read, and refuses a listed chain id or another guardian's shard", async () => {
+    await env.DB.prepare("DELETE FROM shards WHERE url = ?").bind("https://devices.realms.test").run();
     const operator = createBrowser();
     const game = (gameId: number, name: string) => ({ game_id: gameId, name, status: "Running" });
     launchDirectory = { chains: [{ chainId: "0xa", gameIds: [1, 3] }] };
