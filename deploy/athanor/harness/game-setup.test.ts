@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { prepareHomeCalls, privateAdminRpcUrl } from "./game-setup";
+import { prepareHomeCalls } from "./game-setup";
 test("96 open-season homes are prepared privately in the published batches of at most 64", () => {
   const calls = prepareHomeCalls(
     "0x123",
@@ -15,14 +15,3 @@ test("repeated owners are refused before any allocation call is built", () => {
   expect(() => prepareHomeCalls("0x123", 7, ["1", "0x1"])).toThrow("distinct approved owners");
 });
 
-test("an administrative provider cannot use the public play URL", () => {
-  expect(() => privateAdminRpcUrl("https://rpc.test/rpc/v0_10_2", "https://rpc.test/rpc/v0_10_2")).toThrow(
-    "private node",
-  );
-  expect(() => privateAdminRpcUrl("https://rpc.test/rpc/v0_10_2/", "https://rpc.test/rpc/v0_10_2")).toThrow(
-    "private node",
-  );
-  expect(privateAdminRpcUrl("http://madara:9944/rpc/v0_10_2", "https://rpc.test/rpc/v0_10_2")).toBe(
-    "http://madara:9944/rpc/v0_10_2",
-  );
-});

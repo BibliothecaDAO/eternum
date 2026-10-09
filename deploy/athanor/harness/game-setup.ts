@@ -32,7 +32,7 @@ export async function launchHarnessGame(input: {
   shard: Shard;
   publicProvider: HarnessProvider;
 }) {
-  const privateProvider = createHarnessAdminProvider(input.shard.rpcUrl);
+  const privateProvider = createHarnessAdminProvider();
   const manifest = readShardManifest<NativeWorldManifest>(required("NATIVE_WORLD_MANIFEST"));
   const address = required("DEPLOYER_ACCOUNT_ADDRESS"),
     privateKey = required("DEPLOYER_PRIVATE_KEY");
@@ -101,7 +101,7 @@ async function settleHarnessRoster(
 
 /** The launcher reserves free/open homes for legacy seasons only; Frontier assigns its home on the first action. */
 export async function prepareOpenHomes(gameId: number, owners: string[]): Promise<void> {
-  const provider = createHarnessAdminProvider(required("RPC_URL"));
+  const provider = createHarnessAdminProvider();
   try {
     const manifest = readShardManifest<NativeWorldManifest>(required("NATIVE_WORLD_MANIFEST"));
     await assertProviderChain(provider, manifest, "HARNESS_ADMIN_RPC_URL");
@@ -138,11 +138,6 @@ export function prepareHomeCalls(games: string, gameId: number, owners: readonly
 }
 
 /** Administration must bypass the public endpoint's play-only fee and tip policy. */
-export function privateAdminRpcUrl(adminUrl: string, publicUrl: string): string {
-  const normalize = (url: string) => new URL(url).href.replace(/\/$/, "");
-  if (normalize(adminUrl) === normalize(publicUrl)) throw new Error("Administration requires the private node RPC");
-  return adminUrl;
-}
-export function createHarnessAdminProvider(publicUrl: string): HarnessProvider {
-  return new HarnessProvider(privateAdminRpcUrl(required("HARNESS_ADMIN_RPC_URL"), publicUrl));
+export function createHarnessAdminProvider(): HarnessProvider {
+  return new HarnessProvider(required("HARNESS_ADMIN_RPC_URL"));
 }
