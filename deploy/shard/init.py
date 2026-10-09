@@ -13,7 +13,7 @@ import time
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "deploy/athanor/scripts"))
 import shard
-from operator_token import read_operator_token
+from operator_token import operator_environment
 
 DATA = Path("/data")
 # Each service's config volume. It holds only copies of files in DATA, republished on every start, so a backup of
@@ -83,16 +83,8 @@ def publish_trusted_proxy():
     target.chmod(0o644)
 
 
-def operator_environment(environ):
-    path = environ.get("OPERATOR_TOKEN_FILE")
-    if not path:
-        raise ValueError("OPERATOR_TOKEN_FILE is required")
-    owner = int(environ.get("HOST_UID", os.geteuid()))
-    return {"OPERATOR_TOKEN": read_operator_token(path, owner)}
-
-
 def environment(config):
-    return {**shard.deployment_environment(config, DATA), **operator_environment(os.environ), "RPC_URL": shard.PRIVATE_NODE_RPC_URL,
+    return {**shard.deployment_environment(config, DATA), **operator_environment(), "RPC_URL": shard.PRIVATE_NODE_RPC_URL,
             "HERALD_URL": "http://herald:3003"}
 
 
@@ -201,7 +193,7 @@ def chain_commitment(preset, on_chain, released):
 def harness_invocation(args, environ, data=DATA, started=None):
     """The harness command against this shard: its private settings from harness.env, its reports under
     data/harness/<start time> unless the caller names a directory."""
-    environment = {**environ, **operator_environment(environ),
+    environment = {**environ, **operator_environment(),
                    **shard.read_private_environment(data / "harness.env"), **shard.host_credentials(data)}
     operator = json.loads((data / "gameplay-contracts.json").read_text())["operatorAccountAddress"]
     environment["DEPLOYER_ACCOUNT_ADDRESS"] = operator
@@ -251,7 +243,7 @@ if __name__ == "__main__":
     run_as_host_user()
     action = sys.argv[1]
     if action == "probe":
-        os.environ.update(operator_environment(os.environ))
+        os.environ.update(operator_environment())
         probe()
         raise SystemExit(0)
     if action == "launcher-check":

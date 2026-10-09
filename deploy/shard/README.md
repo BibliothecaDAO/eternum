@@ -5,11 +5,11 @@ A shard hosts games on an unmodified Madara node, Herald and one public stamping
 
 ## Initialize a fresh shard
 
-Use reviewed environment inputs with `deploy/athanor/scripts/deploy-official.py ENVIRONMENT DIRECTORY`, or the existing
+Use reviewed environment inputs with `deploy/athanor/scripts/operator-command.py deploy ENVIRONMENT DIRECTORY`, or the existing
 local runner `deploy/athanor/scripts/shard.py CONFIGURATION DIRECTORY`. Neither reuses another shard's chain state. Ops
 provisions `/opt/athanor/operator-token` as an owner-only regular `0600` file. The wrapper reads it in memory; Compose
 binds it read-only into initialization and the harness. Its value never appears in arguments, rendered environments or
-Docker container configuration. An alternate path uses `--operator-token-file PATH`.
+Docker container configuration. There is no alternate credential path.
 
 Required package inputs:
 
@@ -84,12 +84,18 @@ The compose services restart on failure. Initializer logs and `harness.env` are 
 
 | Path                             | Registration and visibility                                            | Operator command                                                                                                                                                                                                        |
 | -------------------------------- | ---------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Official deployment              | PENDING before enrolment; same self-check then ACTIVE on a pass        | `operator-command.py ENVIRONMENT deploy PACKAGE_DIRECTORY`                                                                                                                                                              |
-| Measurement runner               | PENDING before enrolment; matrix stops and retires it; never activates | `operator-command.py ENVIRONMENT runner CONFIGURATION RUNNER_DATA_DIRECTORY --matrix`                                                                                                                                   |
-| Dev shard from an untagged trunk | Start PENDING; explicitly check and activate; stop retires it          | `operator-command.py ENVIRONMENT runner CONFIGURATION RUNNER_DATA_DIRECTORY`, then `operator-command.py ENVIRONMENT activate RUNNER_DATA_DIRECTORY`; later `operator-command.py ENVIRONMENT stop RUNNER_DATA_DIRECTORY` |
+| Official deployment              | PENDING before enrolment; same self-check then ACTIVE on a pass        | `operator-command.py deploy ENVIRONMENT PACKAGE_DIRECTORY`                                                                                                                                                              |
+| Measurement runner               | PENDING before enrolment; matrix stops and retires it; never activates | `operator-command.py runner CONFIGURATION RUNNER_DATA_DIRECTORY --matrix`                                                                                                                                   |
+| Dev shard from an untagged trunk | Start PENDING; explicitly check and activate; stop retires it          | `operator-command.py runner CONFIGURATION RUNNER_DATA_DIRECTORY`, then `operator-command.py activate RUNNER_DATA_DIRECTORY`; later `operator-command.py stop RUNNER_DATA_DIRECTORY` |
 
-Run each command above as `python3 deploy/athanor/scripts/operator-command.py ...`. The wrapper reads the environment's
+Run each command above as `python3 deploy/athanor/scripts/operator-command.py ...`. The wrapper reads the box's
 protected token file; ops provisions it. Use `stop.py` for a manually started runner so its directory entry is retired.
+
+Runner activation uses the same confirmed Worker enrolment, `set_launcher` and Worker-signed creation checks as a
+released package. Its cached gameplay evidence binds native-world.json, initialized.json, configuration.json and the
+complete rendered compose.json (including pinned local images); package evidence binds release.json instead. Local
+services must expose the same operator enrolment/check routes at the identity API's factory path. Missing routes leave
+the shard PENDING; local images never bypass the Worker gate.
 
 ## Operations: back up and restore
 

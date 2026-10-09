@@ -5,6 +5,7 @@ import unittest
 from unittest.mock import patch
 import importlib.util
 import shard
+import operator_token
 
 spec = importlib.util.spec_from_file_location("shard_operator", Path(__file__).with_name("operator-command.py"))
 operator = importlib.util.module_from_spec(spec)
@@ -19,8 +20,8 @@ class OperatorCredentialTest(unittest.TestCase):
             token = root / "staging/operator-token"
             token.write_text("fixture-credential\n")
             token.chmod(0o600)
-            with patch.object(operator, "CREDENTIALS", root), patch.object(operator.os, "execve") as execute:
-                operator.run("staging", "deploy", ["/srv/shard"])
+            with patch.object(operator_token, "OPERATOR_TOKEN_FILE", token), patch.object(operator.os, "execve") as execute:
+                operator.run("deploy", ["staging", "/srv/shard"])
             _, arguments, environment = execute.call_args.args
             self.assertNotIn("fixture-credential", " ".join(arguments))
             self.assertEqual(arguments[-2:], ["staging", "/srv/shard"])
@@ -41,6 +42,6 @@ class OperatorCredentialTest(unittest.TestCase):
             with self.assertRaises(ValueError):
                 shard.read_protected_text(link)
 
-    def test_an_environment_cannot_escape_the_credential_directory(self):
+    def test_a_command_cannot_escape_the_allowed_script_list(self):
         with self.assertRaises(ValueError):
-            operator.run("../other", "deploy", ["/srv/shard"])
+            operator.run("../other", ["/srv/shard"])

@@ -101,9 +101,9 @@ class EnrolmentTest(unittest.TestCase):
             directory = Path(temporary)
             with patch.dict(deploy.os.environ, {}, clear=True):
                 with self.assertRaisesRegex(ValueError, "protected operator"):
-                    deploy.check_operator_approval(directory, {"OPERATOR_TOKEN_FILE": "/run/secrets/operator-token"})
+                    deploy.check_operator_approval(directory, {"OPERATOR_TOKEN_FILE": "/opt/athanor/operator-token"})
             with patch.dict(deploy.os.environ, {"OPERATOR_TOKEN": "test-token"}):
-                deploy.check_operator_approval(directory, {"OPERATOR_TOKEN_FILE": "/run/secrets/operator-token"})
+                deploy.check_operator_approval(directory, {"OPERATOR_TOKEN_FILE": "/opt/athanor/operator-token"})
                 with self.assertRaisesRegex(ValueError, "protected operator"):
                     deploy.check_operator_approval(directory, {"OPERATOR_TOKEN": "test-token"})
 
@@ -186,6 +186,18 @@ class WorkerLauncherTest(unittest.TestCase):
             release.write_text(json.dumps({"commit": "a", "images": {"init": "sha256:1"}}))
             first = deploy.gameplay_check_identity(data)
             release.write_text(json.dumps({"commit": "b", "images": {"init": "sha256:2"}}))
+            self.assertNotEqual(first, deploy.gameplay_check_identity(data))
+
+    def test_runner_gameplay_evidence_binds_local_images_without_a_downloaded_package(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            data = Path(temporary)
+            for name in ("native-world.json", "initialized.json"):
+                (data / name).write_text("{}")
+            (data / "configuration.json").write_text(json.dumps({"init_image": "sha256:1"}))
+            stack = data / "compose.json"
+            stack.write_text(json.dumps({"services": {"init": {"image": "sha256:1"}}}))
+            first = deploy.gameplay_check_identity(data)
+            stack.write_text(json.dumps({"services": {"init": {"image": "sha256:2"}}}))
             self.assertNotEqual(first, deploy.gameplay_check_identity(data))
 
     def test_activation_waits_for_confirmed_worker_handoff_and_its_real_creation(self):

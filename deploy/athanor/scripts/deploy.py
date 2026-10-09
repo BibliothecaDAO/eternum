@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Deploy one of our shards from its release and prove it runs that release.
 
-    python3 deploy/athanor/scripts/deploy-official.py ENVIRONMENT DIRECTORY
+    python3 deploy/athanor/scripts/operator-command.py deploy ENVIRONMENT DIRECTORY
 
 ENVIRONMENT names deploy/release/ENVIRONMENT.json, the deployment's inputs: the shard-v* package tag, the shard's
 identity and public endpoints, its size and the presets it registers. That committed file is the environment's only
@@ -89,7 +89,7 @@ def render_environment(inputs, images):
         # Each environment sizes its shard: a small staging playtest, a large perf or production shard.
         "NODE_MEMORY": inputs["node_memory"], "HERALD_MEMORY": inputs["herald_memory"],
         "HOST_UID": os.getuid(), "HOST_GID": os.getgid(),
-        "OPERATOR_TOKEN_FILE": os.environ.get("OPERATOR_TOKEN_FILE", "/opt/athanor/operator-token"),
+        "OPERATOR_TOKEN_FILE": "/opt/athanor/operator-token",
     }
     return images.rstrip("\n") + "\n" + "".join(f"{key}={value}\n" for key, value in values.items())
 
@@ -163,8 +163,13 @@ def verify_and_activate(config, directory, command=None):
 
 def gameplay_check_identity(directory):
     manifest, initialized = deployed_facts(directory)
-    release = json.loads((directory.parent / "release.json").read_text())
-    encoded = json.dumps([manifest, initialized, release], sort_keys=True, separators=(",", ":")).encode()
+    if (directory / "compose.json").exists():
+        # A runner has no downloaded package. Bind its pinned images, complete rendered stack and configuration instead.
+        deployment = {"configuration": json.loads((directory / "configuration.json").read_text()),
+                      "compose": json.loads((directory / "compose.json").read_text())}
+    else:
+        deployment = {"release": json.loads((directory.parent / "release.json").read_text())}
+    encoded = json.dumps([manifest, initialized, deployment], sort_keys=True, separators=(",", ":")).encode()
     return hashlib.sha256(encoded).hexdigest()
 
 

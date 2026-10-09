@@ -16,10 +16,11 @@ import shard
 NODE_IMAGE = "ghcr.io/madara-alliance/madara@sha256:" + "a" * 64
 
 
-def operator_fixture(data):
+def operator_fixture(data, testcase):
     path = data / "operator-token"
     path.write_text("test-token")
     path.chmod(0o600)
+    testcase.enterContext(patch("operator_token.OPERATOR_TOKEN_FILE", path))
     return {"OPERATOR_TOKEN_FILE": str(path)}
 
 
@@ -182,7 +183,7 @@ class ShardTest(unittest.TestCase):
             shard.write_json(data / "gameplay-contracts.json", {"operatorAccountAddress": "0x9"})
             shard.write_private_environment(data / "harness.env", {"RPC_URL": "http://madara:9944/rpc/v0_10_2"})
             started = time.struct_time((2026, 10, 7, 16, 2, 47, 0, 0, 0))
-            argv, environment = package.harness_invocation(["--bots", "1"], operator_fixture(data), data, started)
+            argv, environment = package.harness_invocation(["--bots", "1"], operator_fixture(data, self), data, started)
             self.assertEqual(argv, ["bun", "deploy/athanor/harness/run.ts", "--bots", "1"])
             self.assertEqual(environment["RPC_URL"], "http://rpc:8080/rpc/v0_10_2")
             self.assertEqual(environment["HARNESS_ADMIN_RPC_URL"], "http://madara:9944/rpc/v0_10_2")
@@ -190,7 +191,7 @@ class ShardTest(unittest.TestCase):
             self.assertEqual(environment["DEPLOYER_ACCOUNT_ADDRESS"], "0x9")
             self.assertEqual(environment["OPERATOR_TOKEN"], "test-token")
             self.assertEqual(environment["HARNESS_OUTPUT_DIRECTORY"], str(data / "harness" / "20261007T160247Z"))
-            chosen = {**operator_fixture(data), "HARNESS_OUTPUT_DIRECTORY": "/data/measure/soak/workload"}
+            chosen = {**operator_fixture(data, self), "HARNESS_OUTPUT_DIRECTORY": "/data/measure/soak/workload"}
             _, environment = package.harness_invocation([], chosen, data, started)
             self.assertEqual(environment["HARNESS_OUTPUT_DIRECTORY"], "/data/measure/soak/workload")
 
@@ -206,7 +207,7 @@ class ShardTest(unittest.TestCase):
                 "GAMEPLAY_CONTRACTS_PATH": "/opt/run/data/gameplay-contracts.json",
                 "SHARD_HOST_ACCOUNTS": "/opt/run/data/host-accounts.json",
             })
-            _, environment = package.harness_invocation([], operator_fixture(data), data)
+            _, environment = package.harness_invocation([], operator_fixture(data, self), data)
             for field, filename in [("NATIVE_WORLD_MANIFEST", "native-world.json"),
                                     ("GAMEPLAY_CONTRACTS_PATH", "gameplay-contracts.json"),
                                     ("SHARD_HOST_ACCOUNTS", "host-accounts.json")]:
@@ -284,7 +285,7 @@ class ShardTest(unittest.TestCase):
 
     def test_the_rendered_shard_keeps_the_operator_token_out_of_its_files(self):
         rendered = {"name": "athanor-smoke", "services": {
-            name: {"environment": {"OPERATOR_TOKEN_FILE": "/run/secrets/operator-token"}, "volumes": []}
+            name: {"environment": {"OPERATOR_TOKEN_FILE": "/opt/athanor/operator-token"}, "volumes": []}
             for name in ("prepare", "init", "harness")
         } | {name: {"command": [], "environment": {}} for name in ("madara", "postgres", "herald", "rpc")}}
         with tempfile.TemporaryDirectory() as directory, \
@@ -293,7 +294,7 @@ class ShardTest(unittest.TestCase):
         self.assertNotIn("operator-secret", json.dumps(compose))
         for name in ("prepare", "init", "harness"):
             self.assertNotIn("OPERATOR_TOKEN", compose["services"][name]["environment"])
-            self.assertEqual(compose["services"][name]["environment"]["OPERATOR_TOKEN_FILE"], "/run/secrets/operator-token")
+            self.assertEqual(compose["services"][name]["environment"]["OPERATOR_TOKEN_FILE"], "/opt/athanor/operator-token")
 
     def test_runner_exposes_neither_the_node_nor_postgres(self):
         compose = shard.compose_configuration(configuration(), Path("/tmp/not-deployed"))
@@ -548,7 +549,7 @@ class PackageStartTest(unittest.TestCase):
             volume.mkdir()
         self.write_initialized_data()
         self.environ = {
-            **operator_fixture(self.data),
+            **operator_fixture(self.data, self),
             "CHAIN_ID": "COMMUNITY", "GUARDIAN_URL": "https://identity.test/api/guardian",
             "PUBLIC_RPC_URL": "https://rpc.test/rpc/v0_10_2", "PUBLIC_HERALD_URL": "https://herald.test", "VRF_WORKERS": "8", "L2_GAS_BOUND": "0x47868c00",
             "PLAYER_CAPACITY": "16",
