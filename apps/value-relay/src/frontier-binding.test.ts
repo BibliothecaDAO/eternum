@@ -110,3 +110,20 @@ it("reuses a durable binding after settlement and Worker recreation without read
   expect(rpc.shardCall.mock.calls.length).toBe(calls);
   await expect(Effect.runPromise(bind().frontierSeason(7, 604910))).rejects.toThrow();
 });
+
+it("discovers funding one pinned page at a time and resumes after recreation without rereading the game", async () => {
+  const funded = rpc.events.getMockImplementation()!;
+  rpc.events.mockImplementation(async (query) =>
+    query.continuation_token ? funded(query) : { events: [], continuation_token: "second" },
+  );
+  await expect(Effect.runPromise(bind().frontierSeason(7, 50))).rejects.toMatchObject({
+    operation: "resolve_frontier_funding",
+  });
+  expect(rpc.events).toHaveBeenCalledTimes(1);
+  const reads = rpc.shardCall.mock.calls.length;
+  expect(await Effect.runPromise(bind().frontierSeason(7, 50))).toBe(42);
+  expect(rpc.events).toHaveBeenLastCalledWith(
+    expect.objectContaining({ to_block: { block_number: 100 }, continuation_token: "second" }),
+  );
+  expect(rpc.shardCall.mock.calls.length).toBe(reads);
+});
