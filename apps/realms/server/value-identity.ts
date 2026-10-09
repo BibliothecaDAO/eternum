@@ -1,3 +1,4 @@
+import { createIdentityAuth } from "./auth";
 import { WorkerEntrypoint } from "cloudflare:workers";
 import { normalizeStarknetAddress } from "@realms-world/identity";
 import { realmsAccountAddress } from "@realms-world/identity/account";
@@ -26,5 +27,17 @@ export class ValueIdentity extends WorkerEntrypoint<IdentityEnv> {
   }
   async realmsIdForAccount(account: string): Promise<string | null> {
     return (await realmsIdsOfAccounts(this.env.DB, [account])).get(normalizeStarknetAddress(account)) ?? null;
+  }
+  async authenticate(cookie: string): Promise<{ realmsId: string; account: string } | null> {
+    const session = await createIdentityAuth(this.env).api.getSession({ headers: new Headers({ cookie }) });
+    if (!session || session.user.emailVerified !== true || !session.user.realmsId) return null;
+    return {
+      realmsId: session.user.realmsId,
+      account: realmsAccountAddress(
+        session.user.realmsId,
+        this.env.ACCOUNT_CLASS_HASH,
+        await this.env.GUARDIAN.publicKey(),
+      ),
+    };
   }
 }

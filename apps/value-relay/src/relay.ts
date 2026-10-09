@@ -94,5 +94,5 @@ export const grantDailyLabor = (ports: RelayPorts, claim: LaborClaim) =>
     if (!wallet) return yield* Effect.fail(new RelayFailure({ operation: "labor_wallet_missing" }));
     const owner = yield* ports.realms.ownerOf(claim.realmId);
     if (BigInt(owner) !== BigInt(wallet)) return yield* Effect.fail(new RelayFailure({ operation: "realm_not_owned" }));
-    yield* ports.shard.grantLabor(claim);
+    return yield* ports.shard.grantLabor(claim);
   });

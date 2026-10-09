@@ -1,3 +1,5 @@
+import { currentLaborDay, writeLaborGrant } from "./shard-labor";
+import { handleLaborRequest } from "./labor-route";
 import { ShardReader } from "./shard-rpc";
 import { shardWithdrawalPorts } from "./shard-withdrawals";
 import { chestLedgerReads, finishChestOnLedger } from "./chest-ledger";
@@ -13,6 +15,11 @@ import { RelayFailure, relayOperation, type RelayPorts, type LaborClaim } from "
 
 interface RelayEnv {
   SHARD_CHAIN_ID: string;
+  BASE_URL: string;
+  SHARD_HERALD_URL: string;
+  SHARD_ADMIN_RPC_URL: string;
+  SHARD_LEDGER_OPERATOR_ADDRESS: string;
+  SHARD_LEDGER_OPERATOR_PRIVATE_KEY: string;
   SHARD_RPC_URL: string;
   SHARD_GAMES_ADDRESS: string;
   LEDGER_RPC_URL: string;
@@ -23,6 +30,7 @@ interface RelayEnv {
   IDENTITY: {
     payoutWallet(id: string): Promise<import("@realms-world/identity").PayoutWallet>;
     linkedWallet(id: string): Promise<string | null>;
+    authenticate(cookie: string): Promise<{ realmsId: string; account: string } | null>;
     realmsIdForAccount(account: string): Promise<string | null>;
   };
   RELAY: DurableObjectNamespace<ValueRelay>;
@@ -82,7 +90,7 @@ export class ValueRelay extends DurableObject<RelayEnv> {
           const progress = yield* relayOperation("read relay progress", () => relay.store.progress());
           if (BigInt(claim.chainId) !== BigInt(relay.env.SHARD_CHAIN_ID) || progress.halted)
             return yield* Effect.fail(new Error("relay_halted_or_wrong_chain"));
-          yield* grantDailyLabor(relay.ports, claim);
+          return yield* grantDailyLabor(relay.ports, claim);
         }),
       ),
     );
@@ -103,6 +111,16 @@ const relayPortsOf = (env: RelayEnv): RelayPorts => {
     ...ports,
     shard: {
       ...ports.shard,
+      grantLabor: (claim) =>
+        writeLaborGrant(
+          {
+            connection: shardConnectionOf(env),
+            adminRpcUrl: env.SHARD_ADMIN_RPC_URL,
+            operatorAddress: env.SHARD_LEDGER_OPERATOR_ADDRESS,
+            privateKey: env.SHARD_LEDGER_OPERATOR_PRIVATE_KEY,
+          },
+          claim,
+        ),
       ...shardWithdrawalPorts(
         new ShardReader({
           rpcUrl: env.SHARD_RPC_URL,
@@ -118,6 +136,11 @@ const relayPortsOf = (env: RelayEnv): RelayPorts => {
     },
   };
 };
+const shardConnectionOf = (env: RelayEnv) => ({
+  rpcUrl: env.SHARD_RPC_URL,
+  gamesAddress: env.SHARD_GAMES_ADDRESS,
+  chainId: env.SHARD_CHAIN_ID,
+});
 const ledgerPortsOf = (env: RelayEnv): RelayPorts["ledger"] => ({
   pay: (withdrawal, wallet) =>
     relayOperation("pay Frontier claim", () =>
@@ -149,6 +172,14 @@ const chestPortsOf = (env: RelayEnv) => ({
 const relayOf = (env: RelayEnv) => env.RELAY.get(env.RELAY.idFromName(env.SHARD_CHAIN_ID));
 export default {
   async fetch(request: Request, env: RelayEnv): Promise<Response> {
+    if (new URL(request.url).pathname === "/api/value/labor" && request.method === "POST")
+      return handleLaborRequest(request, {
+        origin: env.BASE_URL,
+        chainId: env.SHARD_CHAIN_ID,
+        authenticate: (cookie) => env.IDENTITY.authenticate(cookie),
+        currentDay: (gameId) => currentLaborDay(shardConnectionOf(env), env.SHARD_HERALD_URL, gameId),
+        grant: (claim) => relayOf(env).labor(claim),
+      });
     if (new URL(request.url).pathname !== "/health") return new Response(null, { status: 404 });
     const health = await relayOf(env).health();
     return Response.json(health, { status: health.success ? 200 : 503, headers: { "cache-control": "no-store" } });

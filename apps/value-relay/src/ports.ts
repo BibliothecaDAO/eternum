@@ -53,7 +53,14 @@ export interface ConfirmedBlock {
 export interface PaidClaim extends Omit<Withdrawal, "realmsId" | "confirmedAt"> {
   wallet: string;
 }
+export interface LaborGrant {
+  account: string;
+  home: string;
+  amount: string;
+}
 export interface LaborClaim {
+  gameId: number;
+  home: string;
   chainId: string;
   realmId: string;
   day: number;
@@ -72,7 +79,7 @@ export interface RelayPorts {
     block(number: number): RelayEffect<ConfirmedBlock>;
     withdrawal(chainId: string, transactionHash: string): RelayEffect<Withdrawal | null>;
     result(chainId: string, gameId: number): RelayEffect<BlitzResult | null>;
-    grantLabor(claim: LaborClaim): RelayEffect<void>;
+    grantLabor(claim: LaborClaim): RelayEffect<LaborGrant>;
   };
   identity: {
     payoutWallet(realmsId: string): RelayEffect<PayoutWallet>;

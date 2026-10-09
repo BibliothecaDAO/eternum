@@ -59,7 +59,7 @@ const fixture = () => {
       block: () => Effect.succeed(block),
       withdrawal: () => Effect.succeed(withdrawal),
       result: () => Effect.succeed(result),
-      grantLabor: vi.fn(() => Effect.void),
+      grantLabor: vi.fn(() => Effect.succeed({ account: "0x3", home: "9", amount: "1000000000000" })),
     },
     identity: {
       payoutWallet: () => Effect.succeed({ status: "ready", address: "0x123" }),
@@ -137,7 +137,7 @@ describe("confirmed value relay", () => {
   );
   it("checks Realm ownership on every labor claim", async () => {
     const f = fixture();
-    const claim = { chainId: "0x1", realmId: "7", day: 20000, realmsId: "0x2", account: "0x3" };
+    const claim = { gameId: 1, home: "9", chainId: "0x1", realmId: "7", day: 20000, realmsId: "0x2", account: "0x3" };
     await Effect.runPromise(grantDailyLabor(f.ports, claim));
     f.ports.realms.ownerOf = () => Effect.succeed("0x456");
     await expect(Effect.runPromise(grantDailyLabor(f.ports, claim))).rejects.toThrow();
