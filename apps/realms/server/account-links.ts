@@ -99,13 +99,15 @@ export const matchesLedgerLinkWrite = async (db: D1Database, pins: Pins, write: 
     ![
       [row.wallet, write.wallet],
       [row.account, write.account],
-      [row.previous_account, write.previousAccount],
-      [row.previous_wallet, write.previousWallet],
     ].every(([a, b]) => BigInt(a!) === BigInt(b!))
   )
     return false;
   try {
-    await requireHistoryAuthority(db, pins, JSON.parse(row.authority) as AccountLinkTarget, write);
+    await requireHistoryAuthority(db, pins, JSON.parse(row.authority) as AccountLinkTarget, {
+      ...write,
+      previousAccount: row.previous_account,
+      previousWallet: row.previous_wallet,
+    });
     return true;
   } catch {
     return false;

@@ -51,19 +51,14 @@ it("enumerates current links immediately without a hold and retains former walle
   expect(page.rows).toContainEqual({ key: "account:0x1", realmsId: "0x1", wallet: null, account, historyId: 1 });
   expect(page.rows).toContainEqual({ key: "wallet:" + wallet, realmsId: "0x1", wallet, account: null, historyId: 1 });
 });
-it("checks all displacement fields against the identity-authorized historical broadcast, after later unlink", async () => {
+it("checks the signed intent and authority after later unlink, after later unlink", async () => {
   const target = await accountLinkTarget(db, pins, "account:0x1");
   const write = { transactionHash: "0xabc", wallet, account, previousAccount: "0x0", previousWallet: "0x0" };
   await recordLedgerLinkWrite(db, pins, target, write);
   await db.prepare('UPDATE "user" SET address=NULL').run();
   await db.prepare("UPDATE wallet_link_history SET replaced_at=2000").run();
   expect(await matchesLedgerLinkWrite(db, pins, write)).toBe(true);
-  for (const change of [
-    { account: "0x999" },
-    { previousAccount: "0x999" },
-    { previousWallet: "0x999" },
-    { wallet: "0x999" },
-  ])
+  for (const change of [{ account: "0x999" }, { wallet: "0x999" }])
     expect(await matchesLedgerLinkWrite(db, pins, { ...write, ...change })).toBe(false);
   expect(await matchesLedgerLinkWrite(db, pins, { ...write, transactionHash: "0xdef" })).toBe(false);
   expect(await matchesLedgerLinkWrite(db, pins, { ...write, wallet: "0x999", transactionHash: "0xdef" })).toBe(false);
@@ -107,4 +102,19 @@ it("returns one bounded cursor page for large histories", async () => {
   const next = await accountLinkTargets(db, pins, page.next);
   expect(next.rows.length).toBeGreaterThan(0);
   expect(next.rows.some((row) => !page.rows.some((old) => old.key === row.key))).toBe(true);
+});
+
+it("matches authorized set and clear intents when earlier pending writes change displacement fields", async () => {
+  const target = await accountLinkTarget(db, pins, "account:0x1");
+  const write = { transactionHash: "0xabc", wallet, account, previousAccount: "0x0", previousWallet: "0x0" };
+  await recordLedgerLinkWrite(db, pins, target, write);
+  expect(await matchesLedgerLinkWrite(db, pins, { ...write, previousAccount: "0x999", previousWallet: "0x888" })).toBe(
+    true,
+  );
+  await db.prepare('UPDATE "user" SET address=NULL').run();
+  await db.prepare("UPDATE wallet_link_history SET replaced_at=2000").run();
+  const cleared = await accountLinkTarget(db, pins, "account:0x1");
+  const clear = { ...write, transactionHash: "0xdef", account: "0x0", previousAccount: account };
+  await recordLedgerLinkWrite(db, pins, cleared, clear);
+  expect(await matchesLedgerLinkWrite(db, pins, { ...clear, previousAccount: "0x777" })).toBe(true);
 });
