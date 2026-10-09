@@ -7,7 +7,10 @@ import sys
 import shard
 
 CREDENTIALS = Path("/etc/athanor")
-COMMANDS = {"deploy": "deploy.py", "runner": "shard.py", "activate": "activate.py", "stop": "stop.py", "measure": "measures.py"}
+COMMANDS = {
+    "deploy": "deploy.py", "runner": "shard.py", "activate": "activate.py",
+    "stop": "stop.py", "measure": "measures.py",
+}
 
 
 def run(environment, command, arguments):

@@ -30,7 +30,11 @@ def directory_status(config, status):
     if not token:
         raise ValueError("OPERATOR_TOKEN required for official directory activation")
     base = config["guardian_url"].removesuffix("/guardian")
-    suffix = {"pending": "/directory/shards/pending", "active": "/directory/shards", "retired": "/directory/shards/status"}[status]
+    suffix = {
+        "pending": "/directory/shards/pending",
+        "active": "/directory/shards",
+        "retired": "/directory/shards/status",
+    }[status]
     body = {"url": config["public_herald_url"]}
     if status == "retired":
         body["status"] = "retired"
@@ -46,7 +50,7 @@ def directory_status(config, status):
             error.close()
             raise RuntimeError(PENDING_ROUTE_PREREQUISITE) from None
         raise
-    allowed = ("pending", "active", "draining") if status == "pending" else ("retired",) if status == "retired" else ("active", "draining")
+    allowed = {"pending": ("pending", "active", "draining"), "active": ("active", "draining"), "retired": ("retired",)}[status]
     if result.get("status") not in allowed:
         raise RuntimeError("Directory returned an unexpected shard status")
     return result
