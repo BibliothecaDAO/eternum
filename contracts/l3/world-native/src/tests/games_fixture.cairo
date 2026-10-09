@@ -183,11 +183,11 @@ pub mod GamesFixture {
             )
         }
         fn expedition_home_ring(
-            self: @TContractState, game_id: u32, realm_id: u32, timestamp: u64,
+            self: @TContractState, game_id: u32, region_id: u32, timestamp: u64,
         ) -> Span<(crate::troops::Coord, u8)> {
             let classes = fixture_classes(game_id);
             crate::map::IMapLogicDispatcherTrait::expedition_home_ring(
-                crate::map::IMapLogicLibraryDispatcher { class_hash: classes.map.read() }, game_id, realm_id, timestamp,
+                crate::map::IMapLogicLibraryDispatcher { class_hash: classes.map.read() }, game_id, region_id, timestamp,
             )
         }
     }
@@ -482,7 +482,7 @@ pub mod GamesFixture {
             coord: crate::troops::Coord,
             grants: Span<(u8, u128)>,
         ) -> u64 {
-            crate::entity_ids::reserve_homes(game_id, actor);
+            crate::tests::play_fixture::prepare_fixture_home(game_id, actor);
             let classes = fixture_classes(game_id);
             crate::structures::IStructureOperationsDispatcherTrait::provision_realm(
                 crate::structures::IStructureOperationsLibraryDispatcher { class_hash: classes.structures.read() },
@@ -505,7 +505,7 @@ pub mod GamesFixture {
             creation: crate::settlement::SettlementCreation,
             context: crate::commands::ActionContext,
         ) -> u64 {
-            crate::entity_ids::reserve_homes(game_id, actor);
+            crate::tests::play_fixture::prepare_fixture_home(game_id, actor);
             let classes = fixture_classes(game_id);
             crate::settlement::ISettlementCreationDispatcherTrait::create_settlement(
                 crate::settlement::ISettlementCreationLibraryDispatcher { class_hash: classes.structures.read() },

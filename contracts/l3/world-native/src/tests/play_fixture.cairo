@@ -228,14 +228,18 @@ pub fn gameplay_snapshot(games: ContractAddress) -> Array<felt252> {
 }
 
 pub fn prepare_homes(games: ContractAddress, game_id: u32, owner: ContractAddress) {
-    snforge_std::interact_with_state(games, || {
-        use starknet::storage::StorageMapReadAccess;
-        crate::entity_ids::reserve_homes(game_id, owner);
-        let rules = crate::logic::game::rules(game_id);
-        if rules.entry_rule == crate::rules::ENTRY_OPEN && rules.day_unit_seconds != 0 {
-            // Existing synthetic fixtures pin low home ids; real unprepared settlement is covered separately.
-            let first = crate::state::read().games.home_reservations.read((game_id, owner)) % 0x100000000;
-            crate::state::write().games.open_homes.write((game_id, owner), first);
+    snforge_std::interact_with_state(games, || prepare_fixture_home(game_id, owner));
+}
+
+// Synthetic fixture builders retain their small ids. Unprepared production settlement is tested separately.
+pub fn prepare_fixture_home(game_id: u32, owner: ContractAddress) {
+    let state = crate::state::write();
+    let rules = crate::logic::game::rules(game_id);
+    if rules.entry_rule == crate::rules::ENTRY_OPEN && rules.day_unit_seconds != 0 {
+        if state.games.open_homes.read((game_id, owner)) == 0 {
+            let first = crate::logic::game::allocate_setup_entity(game_id);
+            state.games.open_homes.write((game_id, owner), first.into());
+            state.games.namespace_owners.write((game_id, first), owner);
         }
-    });
+    } else { crate::entity_ids::reserve_homes(game_id, owner); }
 }

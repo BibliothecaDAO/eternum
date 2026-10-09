@@ -55,13 +55,13 @@ pub fn validate_game(rules: crate::registrar::LaunchRules, start: u64, duration:
 }
 
 /// A realm's site on a day's map: its region's centre, one region per realm and day, four bands deep.
-pub fn site(spacing: u32, realm_id: u32, day: u64, depth: u8) -> Coord {
-    assert!(realm_id > 0, "invalid expedition region");
+pub fn site(spacing: u32, region_id: u32, day: u64, depth: u8) -> Coord {
+    assert!(region_id > 0, "invalid expedition region");
     assert!(depth < 4, "invalid expedition depth");
     let width: u64 = spacing.into();
     Coord {
         alt: false,
-        x: ((Into::<u32, u64>::into(realm_id) - 1) * width + width / 2).try_into().expect('expedition map exhausted'),
+        x: ((Into::<u32, u64>::into(region_id) - 1) * width + width / 2).try_into().expect('expedition map exhausted'),
         y: ((day * 4 + Into::<u8, u64>::into(depth)) * width + width / 2).try_into().expect('expedition map exhausted'),
     }
 }
@@ -93,8 +93,8 @@ pub fn home_ring_center(coord: Coord, spacing: u32) -> Coord {
 
 // The day's spire, which depth research lights: one of the home ring's six tiles, turning one step each day so the
 // first march from home differs daily. It is a rule, not a stored structure.
-pub fn spire(spacing: u32, realm_id: u32, day: u64) -> Coord {
-    crate::geometry::neighbor(site(spacing, realm_id, day, 0), (day % 6).try_into().unwrap())
+pub fn spire(spacing: u32, region_id: u32, day: u64) -> Coord {
+    crate::geometry::neighbor(site(spacing, region_id, day, 0), (day % 6).try_into().unwrap())
 }
 
 /// An army lives only on its own day's map: on any later day it is gone.

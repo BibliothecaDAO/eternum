@@ -27,6 +27,8 @@ pub fn allocate_home(game_id: u32, home: EntityId) -> EntityId {
 pub fn reserve_homes(game_id: u32, owner: ContractAddress) {
     assert!(crate::logic::game::game_exists(game_id), "prepare an existing game");
     assert!(owner.is_non_zero(), "zero home owner");
+    let rules = crate::logic::game::rules(game_id);
+    if rules.entry_rule == crate::rules::ENTRY_OPEN && rules.day_unit_seconds != 0 { return; }
     let state = crate::state::write();
     if state.games.home_reservations.read((game_id, owner)) != 0 { return; }
     let count: u8 = match crate::logic::settlement::rules(game_id).mode {

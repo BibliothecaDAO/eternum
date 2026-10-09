@@ -76,9 +76,9 @@ pub mod SettlementLogic {
             crate::logic::terrain::biome(key, context)
         }
         fn expedition_home_ring(
-            self: @ContractState, game_id: u32, realm_id: u32, timestamp: u64,
+            self: @ContractState, game_id: u32, region_id: u32, timestamp: u64,
         ) -> Span<(crate::troops::Coord, u8)> {
-            crate::logic::terrain::expedition_home_ring(game_id, realm_id, timestamp)
+            crate::logic::terrain::expedition_home_ring(game_id, region_id, timestamp)
         }
     }
 
