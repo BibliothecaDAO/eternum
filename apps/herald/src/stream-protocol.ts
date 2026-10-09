@@ -1,4 +1,3 @@
-import type { NativeExecutionOutcome } from "@bibliothecadao/provider";
 import type { FoldDelete, FoldRow, FoldSet } from "./types";
 
 // Model values retain starknet.js' decoded wire shape. In particular, Cairo tuples
@@ -33,8 +32,10 @@ export type HeraldStreamMessage =
       hash: string;
       status: string;
       block: number | null;
+      /** The reason of a REVERTED transaction, or the game's reason for a REJECTED action. */
       revert_reason?: string;
-      executions?: NativeExecutionOutcome[];
+      /** A REJECTED action's class (GameplayRejected status_class), e.g. GAMEPLAY_REJECTED. */
+      status_class?: string;
     })
   | (StreamMessageBase & { type: "head"; block: number; timestamp: number; preconfirmed: boolean });
 

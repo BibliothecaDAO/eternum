@@ -133,10 +133,32 @@ describe("native row decoder", () => {
     native.applyReceipt(fold, receipt([battleEvent()]), 11, 0);
     expect(fold.checkpoint()).toEqual(before);
   });
-  it("keeps repeated native events distinct and their identity stable at confirmation", () => {
+  it("reads each event at the version its compiled projection names, and refuses any other", () => {
+    const battle = (version: string) => {
+      const event = raw(battleEvent());
+      const layout = schema.games.events.find((candidate) => candidate.name === "BattleEvent")!;
+      event.keys[layout.prefix.length] = version;
+      return event;
+    };
+    expect(setup().decoder.decode(battle("1")).kind).toBe("event");
+    expect(() => setup().decoder.decode(battle("2"))).toThrow("Unsupported native event version");
+    // Compiled at version 2 (StoryEvent, BattleEvent and RaidEvent move there), the same event takes 2 only.
+    const { decoder } = setup();
+    const projection = schema.events.find((candidate) => candidate.name === "BattleEvent")!;
+    const compiled = projection.version;
+    projection.version = 2;
+    try {
+      expect(decoder.decode(battle("2")).kind).toBe("event");
+      expect(() => decoder.decode(battle("1"))).toThrow("Unsupported native event version");
+    } finally {
+      projection.version = compiled;
+    }
+  });
+
+  it("keeps repeated native events distinct, and their identity (transaction, event index) at confirmation", () => {
     const { native, fold } = setup();
     const battles = [battleEvent(), battleEvent("7", "8", "1920", "42", "1")];
-    const changes = native.applyReceipt(fold, receipt(battles), null, 0).changes;
+    const changes = native.applyReceipt(fold.overlay(), receipt(battles), null, 0).changes;
     expect(changes[0].change!.set!.key).not.toBe(changes[1].change!.set!.key);
     expect(changes[0].change!.set!.value.event_position).toEqual({
       block_number: null,
@@ -144,14 +166,15 @@ describe("native row decoder", () => {
       transaction_index: 0,
       event_index: 0,
     });
+    // The confirmed receipt repeats its events at its place in the block: same identities, real position.
     const confirmed = native
-      .applyReceipt(fold, receipt([pointsAward("1", "0x111", "5", "5", "5"), ...battles]), 10, 0)
+      .applyReceipt(fold, receipt(battles), 10, 3)
       .changes.filter(({ change }) => change?.event && change.set?.model === "BattleEvent");
     expect(confirmed.map(({ change }) => change!.set!.key)).toEqual(changes.map(({ change }) => change!.set!.key));
-    expect(confirmed[0].change!.set!.value.event_position).toEqual({
+    expect(confirmed[1].change!.set!.value.event_position).toEqual({
       block_number: 10,
       transaction_hash: "0x55",
-      transaction_index: 0,
+      transaction_index: 3,
       event_index: 1,
     });
     const later = native.applyReceipt(fold, receipt([battleEvent("7", "8", "1920", "43")], "0x56"), 11, 0).changes;

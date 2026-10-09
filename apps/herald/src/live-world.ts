@@ -282,7 +282,7 @@ export class LiveWorld {
     if (this.native.halted) return;
     if (receipt.finality_status === "PRE_CONFIRMED") {
       // Applying it to the overlay validated it, and a receipt the overlay refused was rejected there.
-      if (this.publishPreconfirmedReceipt(receipt)) this.publishReceiptStatus(this.native.executionReceipt(receipt));
+      if (this.publishPreconfirmedReceipt(receipt)) this.publishReceiptStatus(this.native.outcomeReceipt(receipt));
       return;
     }
     let actionReceipt: RpcReceipt;
@@ -299,7 +299,6 @@ export class LiveWorld {
       this.publishOverlayReverts();
       return;
     }
-    // Ticket rejections do not change the enclosing transaction or its other outcomes.
     this.publishReceiptStatus(actionReceipt);
   }
 
@@ -620,7 +619,9 @@ export class LiveWorld {
   }
 
   private publishTransactionReceipt(hash: string, _sender: string | null | undefined, receipt: RpcReceipt): void {
-    const status = receipt.execution_status === "REVERTED" ? "REVERTED" : receipt.finality_status;
+    // Sent after the receipt's facts were handled: REVERTED before the roll, REJECTED by the game, else its finality.
+    const status =
+      receipt.execution_status === "REVERTED" ? "REVERTED" : receipt.rejection ? "REJECTED" : receipt.finality_status;
     const scopes = this.transactionGames.get(hash) ?? [];
     for (const gameId of new Set(scopes.map((scope) => scope.gameId))) {
       // Only a game someone streams has states to send it to; the hub skips any other.
@@ -629,10 +630,8 @@ export class LiveWorld {
         {
           block: receipt.block_number ?? null,
           hash,
-          revert_reason: receipt.revert_reason,
-          ...(receipt.executions !== undefined
-            ? { executions: receipt.executions.filter((outcome) => BigInt(outcome.gameId) === BigInt(gameId)) }
-            : {}),
+          revert_reason: receipt.rejection?.reason ?? receipt.revert_reason,
+          ...(receipt.rejection ? { status_class: receipt.rejection.statusClass } : {}),
           status,
         },
         scopes.filter((scope) => scope.gameId === gameId).map((scope) => scope.actor),
