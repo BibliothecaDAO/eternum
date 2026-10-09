@@ -127,9 +127,10 @@ it("runs the actual Workers together with D1, private local email and named bind
     expect((await request("/api/directory/shards", { url: workers.origin }, "local-test-operator")).status).toBe(201);
     expect(((await (await request("/api/directory")).json()) as { shards: unknown[] }).shards).toHaveLength(1);
     expect((await request("/api/operator/monitor/reset", { reason: "rehearsal" })).status).toBe(401);
-    expect((await request("/api/operator/monitor/reset", { reason: "rehearsal" }, "local-test-operator")).status).toBe(
-      200,
-    );
+    expect(
+      (await request("/api/operator/monitor/reset", { row: "unavailable", reason: "rehearsal" }, "local-test-operator"))
+        .status,
+    ).toBe(409);
     expect(
       (await request("/api/auth/email-otp/send-verification-otp", { email: "player@localhost.test", type: "sign-in" }))
         .status,

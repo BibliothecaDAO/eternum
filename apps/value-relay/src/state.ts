@@ -57,6 +57,34 @@ export class DurableRelayStore implements RelayStore {
   async halt(reason: string) {
     await this.storage.put("progress", { ...(await this.progress()), halted: reason });
   }
+  async reset(row: string, reason: string, hash: string) {
+    if (!reason.trim() || reason.length > 500) throw new Error("reset_reason_required");
+    return this.storage.transaction(async (tx) => {
+      const previous = await tx.get<RelayProgress>("progress");
+      if (!previous || previous.halted !== row) throw new Error("fault_row_mismatch");
+      const number = Number(row.split(":").at(-1));
+      let progress: RelayProgress;
+      if (row.startsWith("confirmed_block_changed:") && number === (previous.page?.head ?? previous.nextBlock - 1)) {
+        progress = { ...previous, halted: null, lastHash: previous.page ? previous.lastHash : hash };
+        if (previous.page) progress.page = { ...previous.page, hash, token: "" };
+      } else if (Number.isSafeInteger(number) && number === previous.nextBlock)
+        progress = { ...previous, halted: null, nextBlock: number + 1, lastHash: hash, page: null };
+      else if (row === "confirmed_head_regressed") progress = { ...previous, halted: null, lastHash: hash };
+      else throw new Error("fault_row_checkpoint_differs");
+      const sequence = ((await tx.get<number>("reset:sequence")) ?? 0) + 1;
+      await tx.put(`reset:${sequence}`, {
+        row,
+        reason: reason.trim(),
+        at: Math.floor(Date.now() / 1000),
+        previous,
+        progress,
+      });
+      await tx.put("reset:sequence", sequence);
+      await tx.put("progress", progress);
+      await tx.delete("lastTick");
+      return progress;
+    });
+  }
   async held() {
     return [...(await this.storage.list<HeldObligation>({ prefix: "held:", limit: 100 })).values()];
   }

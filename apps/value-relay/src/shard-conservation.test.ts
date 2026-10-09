@@ -175,7 +175,7 @@ const monitorFixture = () => {
 it("persists and pauses a conservation violation before the unavailable paid-claim binding", async () => {
   const f = monitorFixture();
   f.ports.ledger.paidClaims = vi.fn(() => Effect.fail(new RelayFailure({ operation: "must_not_read" })));
-  expect(await Effect.runPromise(runMonitor(f.ports, f.store))).toEqual({ halted: "lords_conservation:7:10" });
+  expect(await Effect.runPromise(runMonitor(f.ports, f.store))).toMatchObject({ halted: "lords_conservation:7:10" });
   expect(f.ports.ledger.pause).toHaveBeenCalledOnce();
   expect(f.ports.ledger.paidClaims).not.toHaveBeenCalled();
 });
@@ -185,7 +185,7 @@ it("still detects a posted-result mismatch when conservation and paid-claim read
   f.ports.ledger.paidClaims = () => Effect.fail(new RelayFailure({ operation: "binding_missing" }));
   f.ports.ledger.postedResults = () =>
     Effect.succeed({ rows: [{ chainId: "0x1", gameId: 8, commitment: "0xabc" }], next: null, head: 1000 });
-  expect(await Effect.runPromise(runMonitor(f.ports, f.store))).toEqual({ halted: "blitz_result_mismatch:8" });
+  expect(await Effect.runPromise(runMonitor(f.ports, f.store))).toMatchObject({ halted: "blitz_result_mismatch:8" });
   expect(f.ports.ledger.pause).toHaveBeenCalledOnce();
 });
 it("returns an unavailable audit rather than green when no violation is provable", async () => {

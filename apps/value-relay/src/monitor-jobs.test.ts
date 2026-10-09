@@ -68,6 +68,12 @@ it("requires an operator token and a recorded reason to clear a monitor halt wit
   const progress = {
     halted: "paid_wallet_mismatch:0xabc",
     unverifiedTicks: 3,
+    fault: {
+      row: "paidClaims:0x1:0xabc",
+      stream: "paidClaims",
+      cursor: { fromBlock: 11, page: JSON.stringify({ head: 20, token: "" }) },
+      offset: 0,
+    },
     cursors: { paidClaims: { fromBlock: 11, page: null } },
   };
   f.data.set("progress", progress);
@@ -79,12 +85,16 @@ it("requires an operator token and a recorded reason to clear a monitor halt wit
     new Request("https://monitor.test/api/operator/monitor/reset", {
       method: "POST",
       headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
-      body: JSON.stringify({ reason }),
+      body: JSON.stringify({ row: "paidClaims:0x1:0xabc", reason }),
     });
   expect((await worker.fetch(request("Investigated", "wrong-token"), env)).status).toBe(401);
   expect((await worker.fetch(request(""), env)).status).toBe(400);
   expect((await worker.fetch(request("Receipt RPC corrected; replay verified"), env)).status).toBe(200);
-  expect(await f.monitor.status()).toMatchObject({ halted: null, unverifiedTicks: 0, cursors: progress.cursors });
+  expect(await f.monitor.status()).toMatchObject({
+    halted: null,
+    unverifiedTicks: 0,
+    cursors: { paidClaims: { fromBlock: 11, page: JSON.stringify({ head: 20, token: "" }), offset: 1 } },
+  });
   expect(f.data.get("reset:sequence")).toBe(1);
   expect(f.data.get("reset:1")).toMatchObject({ reason: "Receipt RPC corrected; replay verified", previous: progress });
 });

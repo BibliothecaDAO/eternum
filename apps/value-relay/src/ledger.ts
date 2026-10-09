@@ -128,12 +128,7 @@ const ledgerEventPage = async <A>(
 };
 const readCursor = (value: string): { head: number; token: string } => {
   const cursor = JSON.parse(value) as { head?: unknown; token?: unknown };
-  if (
-    !Number.isSafeInteger(cursor.head) ||
-    Number(cursor.head) < 0 ||
-    typeof cursor.token !== "string" ||
-    !cursor.token
-  )
+  if (!Number.isSafeInteger(cursor.head) || Number(cursor.head) < 0 || typeof cursor.token !== "string")
     throw new Error("invalid_ledger_cursor");
   return { head: Number(cursor.head), token: cursor.token };
 };

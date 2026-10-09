@@ -11,7 +11,7 @@ import { frontierReceiptBindings } from "./frontier-binding";
 import { shardResultPort } from "./shard-results";
 import { shardWithdrawalPorts } from "./shard-withdrawals";
 import { relayOperation } from "./ports";
-import { runMonitor, type MonitorProgress } from "./monitor";
+import { runMonitor, resetMonitorRow, type MonitorProgress } from "./monitor";
 
 interface MonitorEnv {
   OPERATOR_TOKEN: string;
@@ -89,22 +89,29 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
         !progress.halted,
     };
   }
-  async reset(reason: string) {
+  async reset(row: string, reason: string) {
     if (!reason.trim() || reason.length > 500) throw new Error("reset_reason_required");
     return Effect.runPromise(
       this.checking.withPermit(
-        relayOperation("reset monitor halt", () =>
-          this.ctx.storage.transaction(async (tx) => {
+        relayOperation("reset monitor halt", async () => {
+          const snapshot = await this.status();
+          const fault = snapshot.fault ?? (await legacyFault(this.env, snapshot, row));
+          return this.ctx.storage.transaction(async (tx) => {
             const previous = (await tx.get<MonitorProgress>("progress")) ?? { halted: null };
             const sequence = ((await tx.get<number>("reset:sequence")) ?? 0) + 1;
-            const progress = { ...previous, halted: null, unverifiedTicks: 0 };
-            await tx.put(`reset:${sequence}`, { reason: reason.trim(), at: Math.floor(Date.now() / 1000), previous });
+            const progress = resetMonitorRow({ ...previous, fault }, row);
+            await tx.put(`reset:${sequence}`, {
+              row,
+              reason: reason.trim(),
+              at: Math.floor(Date.now() / 1000),
+              previous,
+            });
             await tx.put("reset:sequence", sequence);
             await tx.put("progress", progress);
             await tx.delete("observation");
             return progress;
-          }),
-        ),
+          });
+        }),
       ),
     );
   }
@@ -112,6 +119,43 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
     return (await this.ctx.storage.get<MonitorProgress>("progress")) ?? { halted: null };
   }
 }
+const legacyFault = async (
+  env: MonitorEnv,
+  previous: MonitorProgress,
+  row: string,
+): Promise<NonNullable<MonitorProgress["fault"]>> => {
+  const paid = /^paid_(?:claim|wallet)_mismatch:(0x[0-9a-f]+)$/i.exec(previous.halted ?? "");
+  const result = /^blitz_result_mismatch:(\d+)$/.exec(previous.halted ?? "");
+  const stream = paid ? "paidClaims" : result ? "postedResults" : null;
+  if (!stream) {
+    if (row === `availability:${previous.halted}` && previous.halted?.startsWith("unverified_value:")) return { row };
+    throw new Error("fault_row_unavailable");
+  }
+  const cursor = previous.cursors?.[stream] ?? { fromBlock: 0, page: null };
+  const reads = ledgerMonitorReads(env.LEDGER_RPC_URL, env.LEDGER_ADDRESS);
+  const page =
+    stream === "paidClaims"
+      ? await Effect.runPromise(reads.paidClaims(cursor.page, cursor.fromBlock))
+      : await Effect.runPromise(reads.postedResults(cursor.page, cursor.fromBlock));
+  const index = page.rows.findIndex((value) =>
+    paid
+      ? "transactionHash" in value && BigInt(value.transactionHash) === BigInt(paid[1]!)
+      : "gameId" in value && value.gameId === Number(result![1]),
+  );
+  const value = page.rows[index];
+  if (
+    !value ||
+    row !== `${stream}:${value.chainId}:${"transactionHash" in value ? value.transactionHash : value.gameId}`
+  )
+    throw new Error("fault_row_mismatch");
+  return {
+    row,
+    stream,
+    cursor: { fromBlock: cursor.fromBlock, page: cursor.page ?? JSON.stringify({ head: page.head, token: "" }) },
+    offset: index,
+  };
+};
+
 const monitorPortsOf = (env: MonitorEnv, storage: DurableObjectStorage) => {
   const reader = new ShardReader({
     rpcUrl: env.SHARD_RPC_URL,
@@ -155,16 +199,24 @@ export default {
     if (new URL(request.url).pathname === "/api/operator/monitor/reset" && request.method === "POST") {
       if (!(await presentsOperatorToken(request, env.OPERATOR_TOKEN)))
         return Response.json({ error: "unauthorized" }, { status: 401 });
-      const body = (await request.json().catch(() => null)) as { reason?: unknown } | null;
+      const body = (await request.json().catch(() => null)) as { row?: unknown; reason?: unknown } | null;
       if (
         !body ||
+        typeof body.row !== "string" ||
+        !body.row ||
         typeof body.reason !== "string" ||
         !body.reason.trim() ||
         body.reason.length > 500 ||
-        Object.keys(body).join() !== "reason"
+        Object.keys(body).sort().join() !== "reason,row"
       )
         return Response.json({ error: "reset_reason_required" }, { status: 400 });
-      return Response.json(await monitorOf(env).reset(body.reason), { headers: { "cache-control": "no-store" } });
+      try {
+        return Response.json(await monitorOf(env).reset(body.row, body.reason), {
+          headers: { "cache-control": "no-store" },
+        });
+      } catch {
+        return Response.json({ error: "fault_row_mismatch" }, { status: 409 });
+      }
     }
     if (new URL(request.url).pathname !== "/health") return new Response(null, { status: 404 });
     const health = await monitorOf(env).health();

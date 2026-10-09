@@ -22,6 +22,7 @@ it("persists confirmed obligations, cursor and halt across actual Worker restart
       async fetch(request) {
         const path = new URL(request.url).pathname;
         if (path === '/observe') await this.store.observe(await request.json());
+        if (path === '/reset') { const body=await request.json(); await this.store.reset(body.row,body.reason,body.hash); }
         if (path === '/halt') await this.store.halt('confirmed_block_changed:0');
         if (path === '/observe-chests') await this.chests.observe(await request.json());
         if (path === '/complete-chest') await this.chests.complete('7');
@@ -109,6 +110,18 @@ it("persists confirmed obligations, cursor and halt across actual Worker restart
     });
     await worker.dispatchFetch("https://state.test/complete");
     expect(await (await worker.dispatchFetch("https://state.test/read")).json()).toMatchObject({ withdrawals: [] });
+    await worker.dispatchFetch("https://state.test/reset", {
+      method: "POST",
+      body: JSON.stringify({
+        row: "confirmed_block_changed:0",
+        reason: "Confirmed false header response",
+        hash: "0xb",
+      }),
+    });
+    const restored = (await (await worker.dispatchFetch("https://state.test/read")).json()) as {
+      progress: { halted: string | null; nextBlock: number; lastHash: string };
+    };
+    expect(restored.progress).toMatchObject({ halted: null, nextBlock: 1, lastHash: "0xb" });
   } finally {
     await worker.dispose();
   }

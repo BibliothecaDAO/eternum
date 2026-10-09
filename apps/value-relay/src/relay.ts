@@ -70,7 +70,7 @@ const validateBlock = (
       return yield* haltRelay(store, `invalid_confirmed_block:${number}`);
     }
     if (parentHash !== null && BigInt(block.parentHash) !== BigInt(parentHash))
-      return yield* haltRelay(store, `parent_hash_changed:${number}`);
+      return yield* haltRelay(store, `parent_hash_changed:${block.fromBlock ?? number}`);
     if (block.results.some((result) => BigInt(blitzCommitment(result)) !== BigInt(result.commitment)))
       return yield* haltRelay(store, `invalid_result_commitment:${number}`);
     if ([...block.withdrawals, ...block.results].some((row) => BigInt(row.chainId) !== BigInt(chainId)))

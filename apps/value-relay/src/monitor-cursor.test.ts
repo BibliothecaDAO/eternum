@@ -44,3 +44,45 @@ it("keeps checked-through block and page continuation across ticks without rerea
   await Effect.runPromise(runMonitor(ports, store));
   expect(paidClaims.mock.calls[2]).toEqual([null, 11]);
 });
+
+it("an exact row reset skips only that claim and still faults on the next unchecked claim", async () => {
+  const { resetMonitorRow } = await import("./monitor");
+  let progress: MonitorProgress = { halted: null };
+  const rows = ["0xabc", "0xdef"].map((transactionHash) => ({
+    chainId: "0x1",
+    seasonId: 1,
+    transactionHash,
+    wallet: "0x123",
+    amount: "1",
+    paidAt: 1,
+  }));
+  const checked = vi.fn((chainId: string, transactionHash: string) =>
+    Effect.succeed({
+      ...rows.find((row) => row.transactionHash === transactionHash)!,
+      chainId,
+      realmsId: "0x2",
+      confirmedAt: 1,
+    }),
+  );
+  const ports: MonitorPorts = {
+    identity: { wasReadyPayoutWallet: () => Effect.succeed(false) },
+    shard: { conservation: () => Effect.succeed([]), withdrawal: checked, result: () => Effect.succeed(null) },
+    ledger: {
+      paidClaims: () => Effect.succeed({ rows, head: 10, next: null }),
+      postedResults: () => Effect.succeed({ rows: [], head: 10, next: null }),
+      pause: () => Effect.void,
+    },
+  };
+  const store = {
+    load: async () => progress,
+    save: async (p: MonitorProgress) => {
+      progress = p;
+    },
+  };
+  await Effect.runPromise(runMonitor(ports, store));
+  expect(() => resetMonitorRow(progress, "paidClaims:0x1:wrong")).toThrow("fault_row_mismatch");
+  progress = resetMonitorRow(progress, "paidClaims:0x1:0xabc");
+  await Effect.runPromise(runMonitor(ports, store));
+  expect(progress.fault?.row).toBe("paidClaims:0x1:0xdef");
+  expect(checked.mock.calls.map((call) => call[1])).toEqual(["0xabc", "0xdef"]);
+});

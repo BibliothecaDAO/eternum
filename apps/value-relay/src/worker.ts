@@ -12,12 +12,14 @@ import { DurableObject, WorkerEntrypoint } from "cloudflare:workers";
 import { Effect, Result, Semaphore } from "effect";
 import { ledgerResultAdapter, ledgerMonitorReads } from "./ledger";
 import { ledgerPaymentAdapter, ledgerPaymentRead, ledgerReportAdapter, realmsOwnershipAdapter } from "./chain";
+import { presentsOperatorToken } from "@realms-world/identity";
 import { identityAdapter } from "./adapters";
 import { runRelay, grantDailyLabor } from "./relay";
 import { DurableRelayStore } from "./state";
 import { RelayFailure, relayOperation, type RelayPorts, type LaborClaim } from "./ports";
 
 interface RelayEnv {
+  OPERATOR_TOKEN: string;
   SHARD_HERALD_URL: string;
   SHARD_CHAIN_ID: string;
   BASE_URL: string;
@@ -62,6 +64,23 @@ export class ValueRelay extends DurableObject<RelayEnv> {
           };
           yield* relayOperation("publish relay health", () => relay.ctx.storage.put("lastTick", observation));
           return observation;
+        }),
+      ),
+    );
+  }
+  async reset(row: string, reason: string) {
+    return Effect.runPromise(
+      this.signing.withPermit(
+        relayOperation("reset relay row", async () => {
+          const progress = await this.store.progress();
+          if (progress.halted !== row) throw new Error("fault_row_mismatch");
+          const number =
+            row === "confirmed_head_regressed"
+              ? (progress.page?.head ?? progress.nextBlock - 1)
+              : Number(row.split(":").at(-1));
+          if (!Number.isSafeInteger(number) || number < 0) throw new Error("fault_row_unavailable");
+          const hash = await Effect.runPromise(this.ports.shard.blockHash(number));
+          return this.store.reset(row, reason, hash);
         }),
       ),
     );
@@ -236,6 +255,27 @@ export class ValueLaunch extends WorkerEntrypoint<RelayEnv> {
 }
 export default {
   async fetch(request: Request, env: RelayEnv): Promise<Response> {
+    if (new URL(request.url).pathname === "/api/value/operator/reset" && request.method === "POST") {
+      if (!(await presentsOperatorToken(request, env.OPERATOR_TOKEN)))
+        return Response.json({ error: "unauthorized" }, { status: 401 });
+      const body = (await request.json().catch(() => null)) as { row?: unknown; reason?: unknown } | null;
+      if (
+        !body ||
+        typeof body.row !== "string" ||
+        !body.row ||
+        typeof body.reason !== "string" ||
+        !body.reason.trim() ||
+        body.reason.length > 500 ||
+        Object.keys(body).sort().join() !== "reason,row"
+      )
+        return Response.json({ error: "reset_row_and_reason_required" }, { status: 400 });
+      try {
+        return Response.json(await relayOf(env).reset(body.row, body.reason));
+      } catch {
+        return Response.json({ error: "fault_row_mismatch_or_unavailable" }, { status: 409 });
+      }
+    }
+
     if (new URL(request.url).pathname === "/api/value/labor" && request.method === "POST")
       return handleLaborRequest(request, {
         origin: env.BASE_URL,
