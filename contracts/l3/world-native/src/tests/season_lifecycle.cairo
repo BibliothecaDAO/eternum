@@ -346,7 +346,10 @@ pub fn execute_batch_in_game(d: super::Deployment, game_id: u32, command: Comman
     let tx_hash = 54321;
     snforge_std::start_cheat_transaction_hash(d.games, tx_hash);
     let mut spy = snforge_std::spy_events();
-    assert!(super::resource_commands::execute_in_game(d, game_id, command, timestamp));
+    if !super::resource_commands::execute_in_game(d, game_id, command, timestamp) {
+        let rejected = super::play_fixture::rejection(ref spy, d.games);
+        panic!("batch rejected: {}", rejected.reason);
+    }
     let mut count = 0;
     for (_, event) in spy.get_events().emitted_by(d.games).events.span() {
         if event.keys.span() == array![selector!("BatchProgress"), game_id.into()].span() {
