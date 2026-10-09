@@ -384,9 +384,15 @@ const deliver = (env: IdentityEnv, entry: OutboxEntry, now: number) =>
     ),
   );
 
-/** History and the live page use the same action-local identity for stories, battles and raids. */
+/**
+ * History and the live page use one identity for stories, battles and raids: the event's transaction and its index in
+ * the receipt, read from the history row's own position.
+ */
 const historyStoryIdentity = (scope: StoryEventScope, item: HeraldHistoryEvent) =>
-  storyEventIdentity(scope, item.value);
+  storyEventIdentity(scope, {
+    ...item.value,
+    event_position: { transaction_hash: item.transaction_hash, event_index: item.event_index },
+  });
 
 const outboxKey = (entry: OutboxEntry) => `outbox:${entry.envelope.notification.id}:${entry.subscriptionId}`;
 
