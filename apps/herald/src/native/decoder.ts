@@ -179,6 +179,24 @@ function readFrame(data: string[], withValue: boolean): { keys: string[]; values
   return { keys, values };
 }
 
+/**
+ * An event's place on the chain as its value carries it to clients: its canonical order (block, transaction, event),
+ * by which a client orders stories, never by a counter.
+ */
+const eventPosition = (position: DecodedWorldEvent["position"]) => ({
+  block_number: position.blockNumber,
+  transaction_hash: position.transactionHash,
+  transaction_index: position.transactionIndex,
+  event_index: position.eventIndex,
+});
+
+/** A decode moved to another position (a pre-confirmed decode reused where it confirmed): its value moves with it. */
+export function atPosition(event: DecodedWorldEvent, position: DecodedWorldEvent["position"]): DecodedWorldEvent {
+  return event.kind === "event"
+    ? { ...event, position, value: { ...event.value, event_position: eventPosition(position) } }
+    : { ...event, position };
+}
+
 function decodeEvent(event: NativeRawEvent, schema: NativeSchema, layout: NativeEventLayout): DecodedWorldEvent {
   const header = event.keys.slice(layout.prefix.length);
   const keyMembers = layout.members.filter((member) => member.kind === "key");
@@ -213,9 +231,6 @@ function decodeEvent(event: NativeRawEvent, schema: NativeSchema, layout: Native
     ),
     position,
     key,
-    value: {
-      ...value,
-      event_position: { transaction_hash: position.transactionHash, event_index: position.eventIndex },
-    },
+    value: { ...value, event_position: eventPosition(position) },
   };
 }
