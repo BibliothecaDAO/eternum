@@ -78,7 +78,7 @@ it("generates distinct native bot credentials bound to the local guardian, class
         account: bot.address,
         action: "ADD" as const,
         deviceKey: bot.deviceKey,
-        counter: 0,
+        counter: 1,
       };
       expect(
         ec.starkCurve.verify(signature, deviceChangeHash(change), ec.starkCurve.getPublicKey(guardian.privateKey)),

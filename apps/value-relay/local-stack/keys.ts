@@ -21,7 +21,7 @@ export const generateKeys = async (directory: string, classHash: string, chainId
     const deviceKey = ec.starkCurve.getStarkKey(privateKey);
     const realmsId = botRealmsId(label);
     const address = realmsAccountAddress(realmsId, classHash, guardianPublicKey);
-    const change = { chainId, account: address, action: "ADD" as const, deviceKey, counter: 0 };
+    const change = { chainId, account: address, action: "ADD" as const, deviceKey, counter: 1 };
     const signature = ec.starkCurve.sign(deviceChangeHash(change), guardianKey);
     await privateWrite(join(directory, `${name}.json`), { address, privateKey });
     accounts.push({
