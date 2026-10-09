@@ -37,7 +37,7 @@ export const seasonSourceOf = (games: readonly DirectoryGame[]) => {
  * remainder to the last place.
  */
 export const placeShares = (pool: bigint, participants: number, curve: PayoutCurve): bigint[] => {
-  const places = Math.ceil((participants * curve.paidFractionBps) / 10_000);
+  const places = paidPlaces(participants, curve);
   if (places === 0 || pool === 0n) return [];
   const weights: bigint[] = [10n ** 18n];
   while (weights.length < places) weights.push((weights[weights.length - 1] * BigInt(curve.decayBps)) / 10_000n);
@@ -47,17 +47,22 @@ export const placeShares = (pool: bigint, participants: number, curve: PayoutCur
   return shares;
 };
 
+/** How many places the ledger pays: ceil(participants × paid fraction). */
+const paidPlaces = (participants: number, curve: PayoutCurve) =>
+  Math.ceil((participants * curve.paidFractionBps) / 10_000);
+
 type SeasonState = "running" | "closing" | "review" | "held" | "claim" | "no-strk" | "claimed" | "out";
 
 /**
- * Running until its end; closing until the top list is posted; the review hour; held while a challenge stands; then
- * a winner's claim (waiting on STRK for the fee when the wallet has none), claimed, or out of the paid places.
+ * Running until its end; closing until the top list is posted; the review hour; held while a challenge stands or the
+ * posted list is shorter than the places the ledger pays (it refuses every claim until the list is whole); then a
+ * winner's claim (waiting on STRK for the fee when the wallet has none), claimed, or out of the paid places.
  */
 export const seasonState = (prize: SeasonPrize, now: number): SeasonState => {
   const { season } = prize;
   if (now < season.end) return "running";
   if (!season.posted) return "closing";
-  if (season.challenged) return "held";
+  if (season.challenged || season.winners < paidPlaces(season.participants, prize.curve)) return "held";
   if (now < season.reviewUntil) return "review";
   if (prize.share === null) return "out";
   if (prize.claimed) return "claimed";

@@ -80,6 +80,9 @@ it("runs, closes, reviews, holds, then claims, waits on the fee, is claimed, or 
   expect(seasonState(prize({ posted: false }), 150)).toBe("closing");
   expect(seasonState(prize({}), 150)).toBe("review");
   expect(seasonState(prize({ challenged: true }), 250)).toBe("held");
+  // ceil(500 × 10%) = 50 paid places: a list of 49 is refused by the ledger, so nobody is offered Claim.
+  expect(seasonState(prize({ winners: 49 }), 250)).toBe("held");
+  expect(seasonState(prize({ winners: 49 }), 150)).toBe("held");
   expect(seasonState(prize({}), 250)).toBe("claim");
   expect(seasonState(prize({}, { strk: 0n }), 250)).toBe("no-strk");
   expect(seasonState(prize({}, { claimed: true }), 250)).toBe("claimed");
