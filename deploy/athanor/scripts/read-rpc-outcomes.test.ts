@@ -445,3 +445,74 @@ test("disconnecting while a stamp is queued never forwards its late result", asy
     f.close();
   }
 });
+
+for (const method of ["starknet_estimateFee", "starknet_estimateMessageFee"]) {
+  test(`${method} distinguishes deterministic refusal without leaking diagnostics`, async () => {
+    const f = await fixture();
+    const transaction = {
+      ...invoke(),
+      calldata: ["0x1", invoke().sender_address, hash.getSelectorFromName("revoke_device"), "0x3", "0x1", "0x2", "0x3"],
+    };
+    const params = method === "starknet_estimateFee" ? [[transaction], [], "pre_confirmed"] : [];
+    try {
+      for (const code of [-32602, 21, 40, 41, 52, 53, 54, 55, 58, 61, 64, 65, 69]) {
+        const intercepted = f.intercept(async () =>
+          Response.json({
+            jsonrpc: "2.0",
+            id: 42,
+            error: { code, message: "internal diagnostic", data: { signature: [STAMP_TAG] } },
+          }),
+        );
+        try {
+          expect((await f.call(method, params)).error).toEqual({ code: -32013, message: "Estimate refused" });
+        } finally {
+          intercepted.mockRestore();
+        }
+      }
+      for (const code of [20, 24, 28]) {
+        const intercepted = f.intercept(async () => Response.json({ jsonrpc: "2.0", id: 42, error: { code } }));
+        try {
+          expect((await f.call(method, params)).error.code).toBe(code);
+        } finally {
+          intercepted.mockRestore();
+        }
+      }
+      for (const answer of [
+        { jsonrpc: "2.0", id: 42, error: { code: 63 } },
+        { jsonrpc: "2.0", id: 42, error: { code: -32603 } },
+        { jsonrpc: "2.0", id: 42, error: { code: 99 } },
+        { jsonrpc: "2.0", id: 42, error: { code: "41" } },
+        { jsonrpc: "2.0", id: 43, error: { code: 41 } },
+        { jsonrpc: "2.0", id: 42, result: [], error: { code: 41 } },
+      ]) {
+        const intercepted = f.intercept(async () => Response.json(answer));
+        try {
+          expect((await f.call(method, params)).error).toEqual({ code: -32012, message: "RPC read unavailable" });
+        } finally {
+          intercepted.mockRestore();
+        }
+      }
+      const intercepted = f.intercept(async () =>
+        Response.json({ jsonrpc: "2.0", id: 42, error: { code: 41 } }, { status: 503 }),
+      );
+      try {
+        expect((await f.call(method, params)).error).toEqual({ code: -32012, message: "RPC read unavailable" });
+      } finally {
+        intercepted.mockRestore();
+      }
+    } finally {
+      f.close();
+    }
+  });
+}
+
+test("a deterministic execution error on an ordinary read remains read unavailable", async () => {
+  const f = await fixture();
+  const intercepted = f.intercept(async () => Response.json({ jsonrpc: "2.0", id: 42, error: { code: 41 } }));
+  try {
+    expect((await f.call("starknet_call", [])).error).toEqual({ code: -32012, message: "RPC read unavailable" });
+  } finally {
+    intercepted.mockRestore();
+    f.close();
+  }
+});
