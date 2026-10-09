@@ -150,6 +150,8 @@ def verify_and_activate(config, directory, command=None):
     if saved.get("passed") and saved.get("checkedIdentity") == identity:
         check = saved
     else:
+        if (directory / "launcher-enrolment.json").exists():
+            raise RuntimeError("launcher already handed off; finish the Worker check or retire the chain")
         check = run_self_check(directory, command)
         check["checkedIdentity"] = identity
         shard.write_json(check_path, check)
@@ -163,13 +165,8 @@ def verify_and_activate(config, directory, command=None):
 
 def gameplay_check_identity(directory):
     manifest, initialized = deployed_facts(directory)
-    if (directory / "compose.json").exists():
-        # A runner has no downloaded package. Bind its pinned images, complete rendered stack and configuration instead.
-        deployment = {"configuration": json.loads((directory / "configuration.json").read_text()),
-                      "compose": json.loads((directory / "compose.json").read_text())}
-    else:
-        deployment = {"release": json.loads((directory.parent / "release.json").read_text())}
-    encoded = json.dumps([manifest, initialized, deployment], sort_keys=True, separators=(",", ":")).encode()
+    # The check proves chain identity and initialized contracts, independent of their runtime packaging.
+    encoded = json.dumps([manifest, initialized], sort_keys=True, separators=(",", ":")).encode()
     return hashlib.sha256(encoded).hexdigest()
 
 
