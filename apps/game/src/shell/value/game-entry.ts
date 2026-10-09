@@ -14,7 +14,7 @@ export interface LedgerRef {
  * A paid game whose ledger reference is missing or malformed is broken, a fault shown as such and never the free join.
  * A payload with no `entry` at all comes from services that open no paid game yet: free.
  */
-export type GameEntry = { kind: "free" } | { kind: "paid"; ledger: LedgerRef } | { kind: "broken" };
+type GameEntry = { kind: "free" } | { kind: "paid"; ledger: LedgerRef } | { kind: "broken" };
 
 const FREE: GameEntry = { kind: "free" };
 const BROKEN: GameEntry = { kind: "broken" };
