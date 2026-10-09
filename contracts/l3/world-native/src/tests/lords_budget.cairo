@@ -100,7 +100,7 @@ fn a_refill_cannot_add_lords_that_the_pool_never_issued() {
 }
 
 #[test]
-fn price_uses_rollover_over_expected_rolled_shares_without_a_floor() {
+fn price_uses_rollover_over_expected_rolled_shares_with_a_floor_of_one() {
     let rules = rules();
     let mut previous = empty_day(rules, 0);
     previous.rolled_shares = 1800;
@@ -115,17 +115,20 @@ fn price_uses_rollover_over_expected_rolled_shares_without_a_floor() {
         today.estimate, 1800 * crate::relics::LORDS_ESTIMATE_SCALE / yesterday_ticks / rules.estimate_days.into(),
     );
     let expected = today.estimate * current_ticks;
-    let price = core::cmp::min(
-        rules.price_ceiling, available(rules, today, clock) * crate::relics::LORDS_ESTIMATE_SCALE / expected,
+    let price = core::cmp::max(
+        1,
+        core::cmp::min(
+            rules.price_ceiling, available(rules, today, clock) * crate::relics::LORDS_ESTIMATE_SCALE / expected,
+        ),
     );
     assert_eq!(today.price, price);
     assert_eq!((today.open, today.rolled_shares, today.day), (0, 0, 1));
     let exhausted = LordsBudget { pool_left: 0, ..empty_day(rules, 0) };
-    assert_eq!(open_day(rules, exhausted, clock).price, 0);
+    assert_eq!(open_day(rules, exhausted, clock).price, 1);
     assert!(!fits(rules, exhausted, clock, 1));
     let busy = open_day(rules, LordsBudget { estimate: 1_000_000_000_000, ..empty_day(rules, 0) }, clock);
     assert!(available(rules, busy, clock) > 0);
-    assert_eq!(busy.price, 0);
+    assert_eq!(busy.price, 1);
 }
 
 #[test]
