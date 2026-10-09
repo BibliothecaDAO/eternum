@@ -1685,7 +1685,7 @@ fn assert_capture_at(depth: u8, count: u128, tier: crate::troops::TroopTier, rev
     let discovery_rules = preset.economy.discovery.unwrap();
     let mut reveal_at = opening + 2;
     while crate::discovery::frontier(
-        discovery_rules, 0, 0, 0, 0, None, seed, reveal_at,
+        discovery_rules, 0, 0, 0, 0, None, seed,
     ) != crate::discovery::Discovery::Camp {
         reveal_at += 1;
     }
@@ -2348,7 +2348,7 @@ fn frontier_finds_at_most_one_ruin_a_day_and_holds_its_chest_against_the_budget(
     let seed = crate::random::game_root(ref root, game_id, context.game.unbox().seed);
     let mut time = 360_u64;
     while crate::discovery::frontier(
-        ruins_only, 0, 0, 0, 0, Some(any_chest()), seed, time,
+        ruins_only, 0, 0, 0, 0, Some(any_chest()), seed,
     ) != crate::discovery::Discovery::Ruin(any_chest()) {
         time += 1;
     }
@@ -2776,7 +2776,7 @@ fn frontier_floor_counts_seven_player_reveals_across_armies_and_depths_then_rese
         );
         while index < 7
             && crate::discovery::frontier(
-                discovery, 0, 0, 0, index, Some(any_chest()), seed, time,
+                discovery, 0, 0, 0, index, Some(any_chest()), seed,
             ) != crate::discovery::Discovery::None {
             time += 1;
         }
@@ -2830,7 +2830,7 @@ fn frontier_floor_counts_seven_player_reveals_across_armies_and_depths_then_rese
     let third = *IStructureOperationsDispatcher { contract_address: d.games }.home_armies(home).at(0);
     let mut time = tomorrow + 1;
     while crate::discovery::frontier(
-        discovery, 0, 0, 0, 0, Some(any_chest()), seed, time,
+        discovery, 0, 0, 0, 0, Some(any_chest()), seed,
     ) != crate::discovery::Discovery::None {
         time += 1;
     }
@@ -3002,7 +3002,7 @@ fn frontier_site_discovery_reads_home_knowledge_and_places_only_tile_occupancy()
             ..rules,
         };
         let mut seed = 0_u256;
-        while crate::discovery::frontier(enabled, 0, 0, 0, 0, Some(any_chest()), seed, 360) != expected {
+        while crate::discovery::frontier(enabled, 0, 0, 0, 0, Some(any_chest()), seed) != expected {
             seed += 1;
         }
         let seed = seed;

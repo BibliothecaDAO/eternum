@@ -10,11 +10,11 @@ pub fn range(seed: u256, salt: u128, upper_bound: u128) -> u128 {
     (value % upper_bound.into()).try_into().unwrap()
 }
 
-pub fn lottery(seed: u256, offset: u256, success: u128, failure: u128, timestamp: u64) -> bool {
+pub fn lottery(seed: u256, offset: u256, success: u128, failure: u128) -> bool {
     let seed = if seed > offset {
         seed - offset
     } else {
         seed + offset
     };
-    range(seed, timestamp.into() + 18, success + failure) < success
+    range(seed, 18, success + failure) < success
 }

@@ -372,15 +372,15 @@ fn raid_rounding_and_weighted_outcomes_keep_the_declared_thresholds() {
         damage_to_guards: 10,
         guarded: true,
     };
-    assert!(crate::raid::success(crate::raid::RaidResolution { damage_to_guards: 21, ..result }, 0, 80));
-    assert!(!crate::raid::success(crate::raid::RaidResolution { damage_to_explorer: 21, ..result }, 0, 80));
+    assert!(crate::raid::success(crate::raid::RaidResolution { damage_to_guards: 21, ..result }, 0));
+    assert!(!crate::raid::success(crate::raid::RaidResolution { damage_to_explorer: 21, ..result }, 0));
     let mut wins = 0_u32;
     for root in 0_u128..30 {
-        if crate::raid::success(result, root.into(), 80) {
+        if crate::raid::success(result, root.into()) {
             wins += 1;
         }
     }
-    // Pinned RNG: Poseidon(root.low, root.high, timestamp + 18) modulo 20, draw < 10.
+    // Pinned RNG: Poseidon(root.low, root.high, 18) modulo 20, draw < 10.
     assert_eq!(wins, 15);
 }
 

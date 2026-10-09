@@ -566,6 +566,7 @@ dependencies = [
 name = "realms-vrf-prover"
 version = "0.1.0"
 dependencies = [
+ "ark-ec",
  "ark-ff",
  "realms-stark-vrf-math",
  "serde",

@@ -14,6 +14,8 @@ pub mod GamesTest {
     #[abi(embed_v0)]
     impl AuthenticationViews = GamesEntry::AuthenticationImpl<ContractState>;
     #[abi(embed_v0)]
+    impl RandomnessViews = GamesEntry::RandomnessImpl<ContractState>;
+    #[abi(embed_v0)]
     impl Roles = GamesEntry::RolesImpl<ContractState>;
     #[abi(embed_v0)]
     impl Play = GamesEntry::PlayImpl<ContractState>;
@@ -43,8 +45,10 @@ pub mod GamesTest {
         authentication: Authentication,
         release_id: u32,
         release: crate::logic::release::Release,
+        vrf_public_key: realms_vrf_verifier::vendor::ecvrf::Point,
+        l2_gas_bound: u64,
     ) {
-        self.entry.initializer(owner, launcher, authentication, release_id, release);
+        self.entry.initializer(owner, launcher, authentication, release_id, release, vrf_public_key, l2_gas_bound);
     }
     #[abi(embed_v0)]
     impl RootFixture of crate::tests::play_fixture::IPlayFixture<ContractState> {

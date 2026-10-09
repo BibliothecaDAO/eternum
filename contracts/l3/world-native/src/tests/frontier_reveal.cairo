@@ -13,16 +13,16 @@ fn frontier_reveal_keeps_scaled_precision_and_ignores_boosts() {
     let mut troops = Troops {
         count: 1500 * RESOURCE_PRECISION + RESOURCE_PRECISION / 2, tier: TroopTier::T1, ..Default::default(),
     };
-    assert_eq!(reveal_reward(troops, limits, 15, 123, 100).amount, 225075000000);
+    assert_eq!(reveal_reward(troops, limits, 15, 123).amount, 225075000000);
     troops.boosts.incr_explore_reward_percent_num = 5000;
     troops.boosts.incr_explore_reward_end_tick = 100000;
     troops.boosts.incr_damage_dealt_percent_num = 40;
     troops.boosts.incr_stamina_regen_percent_num = 5000;
-    assert_eq!(reveal_reward(troops, limits, 15, 123, 100).amount, 225075000000);
+    assert_eq!(reveal_reward(troops, limits, 15, 123).amount, 225075000000);
     troops.count = 999999999;
-    assert_eq!(reveal_reward(troops, limits, 15, 123, 100).amount, 149999999);
+    assert_eq!(reveal_reward(troops, limits, 15, 123).amount, 149999999);
     troops.tier = TroopTier::T3;
-    assert_eq!(reveal_reward(troops, limits, 25, 123, 100).amount, 2249999997);
+    assert_eq!(reveal_reward(troops, limits, 25, 123).amount, 2249999997);
 }
 
 #[test]
@@ -31,8 +31,8 @@ fn frontier_reveal_draws_only_essence_or_labor_evenly_over_ten_thousand_reveals(
     let troops = Troops { count: 1500 * RESOURCE_PRECISION, tier: TroopTier::T1, ..Default::default() };
     let mut essence = 0_u32;
     let mut labor = 0_u32;
-    for timestamp in 0_u64..10000 {
-        let reward = reveal_reward(troops, limits, 10, 0x46524f4e54494552, timestamp);
+    for sample in 0_u64..10000 {
+        let reward = reveal_reward(troops, limits, 10, 0x46524f4e54494552 + Into::<u64, u256>::into(sample));
         if reward.resource_type == ESSENCE {
             essence += 1;
         } else {

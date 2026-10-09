@@ -62,6 +62,7 @@ fn fresh_shard_uses_the_published_release_without_running_its_upgrade_migration(
     authentication.serialize(ref args);
     args.append(7);
     release.serialize(ref args);
+    super::append_vrf_configuration(ref args);
     let (games, _) = super::deploy("Games", @args);
     let releases = IReleasesDispatcher { contract_address: games };
     let safe = IReleasesSafeDispatcher { contract_address: games };
