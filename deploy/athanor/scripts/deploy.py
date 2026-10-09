@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Deploy one of our shards from its release and prove it runs that release.
 
-    OPERATOR_TOKEN=... python3 deploy/athanor/scripts/deploy.py ENVIRONMENT DIRECTORY
+    python3 deploy/athanor/scripts/operator-command.py ENVIRONMENT deploy DIRECTORY
 
 ENVIRONMENT names deploy/release/ENVIRONMENT.json, the deployment's inputs: the shard-v* package tag, the shard's
 identity and public endpoints, its size and the presets it registers. That committed file is the environment's only

@@ -12,6 +12,7 @@ import re
 import secrets
 import signal
 import socket
+import stat
 import subprocess
 import sys
 import tarfile
@@ -261,11 +262,15 @@ def deploy_world(config, directory, environment):
     environment["DEPLOYER_ACCOUNT_ADDRESS"] = identity["operatorAccountAddress"]
 
 
+def read_protected_text(path):
+    owner = path.lstat()
+    if not stat.S_ISREG(owner.st_mode) or owner.st_mode & 0o777 != 0o600 or owner.st_uid != os.geteuid():
+        raise ValueError("Protected file must belong to the reading process with owner-only mode 0600")
+    return path.read_text()
+
+
 def host_credentials(directory):
-    path = directory / "host-keys.json"
-    if path.stat().st_mode & 0o777 != 0o600 or path.stat().st_uid != os.geteuid():
-        raise ValueError("host-keys.json must be owner-only mode 0600")
-    keys = json.loads(path.read_text())
+    keys = json.loads(read_protected_text(directory / "host-keys.json"))
     return {"DEPLOYER_ACCOUNT_ADDRESS": keys["deployerAddress"],
             "DEPLOYER_PRIVATE_KEY": keys["deployerPrivateKey"]}
 
