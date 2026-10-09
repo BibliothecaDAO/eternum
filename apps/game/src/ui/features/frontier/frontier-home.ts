@@ -12,10 +12,9 @@ import {
   readExpeditionRules,
   structureMapPosition,
 } from "@bibliothecadao/eternum";
-import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
+import { safeInteger, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { type ID, TroopTier, TroopType } from "@bibliothecadao/types";
 import { useMemo } from "react";
-import { safeInteger } from "@/utils/native-id";
 
 const RULE_MODELS = ["SliceRules", "SettlementRules", "GameRegistry"] as const;
 const HOME_MODELS = ["Structure"] as const;

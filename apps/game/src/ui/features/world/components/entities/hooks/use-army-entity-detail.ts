@@ -19,7 +19,7 @@ import { buildStaminaDisplayModel } from "@/lib/army-stamina/presentation";
 import type { ArmyStaminaPresentation } from "@/lib/army-stamina/types";
 import { useCallback, useMemo, useState } from "react";
 import { useAccountAddress } from "@/hooks/store/use-account-store";
-import { safeInteger } from "@/utils/native-id";
+import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
 interface UseArmyEntityDetailOptions {
   armyEntityId: ID;

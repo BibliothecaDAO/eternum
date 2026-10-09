@@ -1,10 +1,9 @@
-import type { NativeRows } from "@bibliothecadao/eternum/game-client";
+import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { ResourceManager } from "@bibliothecadao/eternum";
 import { useBuildings } from "@/hooks/helpers/use-buildings";
 import { ResourcesIds, getProducedResource } from "@bibliothecadao/types";
 import { useMemo } from "react";
-import { safeInteger } from "@/utils/native-id";
 
 export interface ResourceProductionSummaryItem {
   resourceId: ResourcesIds;

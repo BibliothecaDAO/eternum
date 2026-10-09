@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { type ArmyProgressFacts, affordableUpgrades, type ProgressionRulesFacts } from "./attributes";
 import { CardFanGlyph } from "../glyphs";
 import { openPick, usePick } from "./pick-moment";
-import { safeInteger } from "@/utils/native-id";
+import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
 /**
  * An affordable Upgrade on its army (design §3.12, mockup 7): a pulsing fan of cards with the number of attributes its

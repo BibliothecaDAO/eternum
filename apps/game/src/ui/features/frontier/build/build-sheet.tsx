@@ -14,7 +14,7 @@ import { canIssueOrders } from "@/utils/can-issue-orders";
 import { extractReadableErrorMessage } from "@/utils/error-message";
 import { buildableRadius, configManager, getRealmInfo, resolveUseSimpleCost } from "@bibliothecadao/eternum";
 import { resolveConstructionBuildability } from "@bibliothecadao/eternum/automation";
-import type { NativeRows } from "@bibliothecadao/eternum/game-client";
+import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { BUILDINGS_CENTER, BuildingType, getHexDistance, type HexPosition, ResourcesIds } from "@bibliothecadao/types";
 import { useEffect, useMemo, useState } from "react";
 import { Chip, TierBanner } from "../frontier-chips";
@@ -23,7 +23,6 @@ import { PersonGlyph } from "../glyphs";
 import { type BuildOption, readBuildOptions } from "./build-options";
 import { FRONTIER_BUILDING_NAMES } from "./building-names";
 import { FrontierSheet } from "../frontier-sheet";
-import { safeInteger } from "@/utils/native-id";
 
 const BUILD_MODELS = [
   "Building",

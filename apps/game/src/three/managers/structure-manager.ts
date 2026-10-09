@@ -39,7 +39,7 @@ import {
 import { FLAT_TERRAIN_SURFACE, placePositionOnTerrain, type TerrainSurface } from "@/three/terrain/terrain-surface";
 import { gltfLoader, isAddressEqualToAccount } from "@/three/utils/utils";
 import { FELT_CENTER } from "@/ui/config";
-import type { GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
+import { safeInteger, type GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
 import {
   divideByPrecision,
   getIsBlitz,
@@ -125,7 +125,6 @@ import {
 } from "./structure-label-state";
 import { removeStructureLabels, syncStructureLabelVisibility } from "./structure-label-visibility";
 import { normalizeStructureEntityId as normalizeEntityId } from "./structure-entity-id";
-import { safeInteger } from "@/utils/native-id";
 import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
 import { recordGameEntryDuration } from "@/ui/layouts/game-entry-timeline";
 import {

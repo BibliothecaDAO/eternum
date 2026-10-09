@@ -1,4 +1,4 @@
-import { getScopedGameId } from "@bibliothecadao/eternum/game-client";
+import { safeInteger, getScopedGameId } from "@bibliothecadao/eternum/game-client";
 import { useSeasonWinner } from "@/hooks/store/use-story-events-store";
 import { useFactView } from "@/hooks/use-fact-view";
 import { seasonClockView } from "@/sync/fact-views";
@@ -28,7 +28,6 @@ import { type Headline, HEADLINE_DISPLAY_MS } from "./headline-types";
 import { NewsHeadlineBanner } from "./news-headline-banner";
 import { createWorldEventEntityReader } from "../story-events/world-event-entity-reader";
 import { getPlayerDisplayName } from "@/hooks/use-player-profile";
-import { safeInteger } from "@/utils/native-id";
 
 const NEWSWORTHY_CAPTURES = new Set<StructureType>([StructureType.Realm, StructureType.Hyperstructure]);
 

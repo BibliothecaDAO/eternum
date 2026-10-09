@@ -12,7 +12,7 @@ import { onTierBought } from "@/ui/features/frontier/attributes/pick-moment";
 import { PickPanel } from "@/ui/features/frontier/attributes/pick-panel";
 import { playArmyProgress } from "@/ui/features/frontier/attributes/progress-moment";
 import { type ReactNode, useEffect, useRef, useState } from "react";
-import { safeInteger } from "@/utils/native-id";
+import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
 /** ArmyProgressionRules and ArmyProgress exactly as the native store carries them. */
 const RULES: ProgressionRulesFacts = {

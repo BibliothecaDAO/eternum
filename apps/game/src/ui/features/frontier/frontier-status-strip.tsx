@@ -8,7 +8,7 @@ import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { knownBalance } from "@/ui/utils/utils";
 import { getBalance } from "@bibliothecadao/eternum";
-import type { NativeRows } from "@bibliothecadao/eternum/game-client";
+import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { ResourcesIds } from "@bibliothecadao/types";
 import type { ReactNode } from "react";
 import { useLandedValue, useLandingDelta } from "@/ui/motion/landing-hold";
@@ -21,7 +21,6 @@ import { DayDial } from "./day-dial";
 import { formatAmount } from "./frontier-format";
 import { CastleGlyph, MapGlyph } from "./glyphs";
 import { troopsOnHand, useExpeditionRules, useGoToFrontierPlace } from "./frontier-home";
-import { safeInteger } from "@/utils/native-id";
 
 type ExpeditionRules = NonNullable<ReturnType<typeof useExpeditionRules>>;
 

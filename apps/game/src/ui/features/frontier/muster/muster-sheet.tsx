@@ -14,7 +14,7 @@ import {
   structureMapPosition,
   TROOP_RAISE_SHORT_REASON,
 } from "@bibliothecadao/eternum";
-import type { NativeRows } from "@bibliothecadao/eternum/game-client";
+import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { type Direction, getNeighborHexes, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { useEffect, useMemo, useState } from "react";
 import { formatAmount } from "../frontier-format";
@@ -30,7 +30,6 @@ import {
 } from "./muster-plan";
 import { FrontierSheet } from "../frontier-sheet";
 import { DeployRing } from "./deploy-ring";
-import { safeInteger } from "@/utils/native-id";
 
 const MUSTER_MODELS = [
   "ArmySlot",

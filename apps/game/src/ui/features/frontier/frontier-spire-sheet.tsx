@@ -12,11 +12,10 @@ import {
   readExpeditionRules,
   researchedDepth,
 } from "@bibliothecadao/eternum";
-import type { NativeRows } from "@bibliothecadao/eternum/game-client";
+import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { FrontierSheet } from "./frontier-sheet";
 import { SpireDepthActions } from "./spire-depth-actions";
-import { safeInteger } from "@/utils/native-id";
 
 /** Rule-drawn spires have no occupancy row, so select them from the same rules as the map. */
 export const FrontierSpireSheet = ({ realm, onClose }: { realm: NativeRows["Structure"]; onClose: () => void }) => {

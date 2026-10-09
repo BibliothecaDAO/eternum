@@ -94,7 +94,7 @@ import { ProductionModal } from "@/ui/features/settlement";
 import { resolveConstructionBuildability } from "@bibliothecadao/eternum/automation";
 import { requireActiveGameClient } from "@/sync/active-game-client";
 import { playerStructuresView, readFactView, watchFactView } from "@/sync/fact-views";
-import type { GameClientSetup as SetupResult, NativeRows } from "@bibliothecadao/eternum/game-client";
+import { safeInteger, type GameClientSetup as SetupResult, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import {
   ActionType,
   type BuildingTiles,
@@ -144,7 +144,6 @@ import { LOCAL_HEX_SPACE, type HexSpace } from "../utils/utils";
 import { localHexPosition } from "./hexception-layout";
 import { HexHoverLabel } from "../utils/labels/hex-hover-label";
 import { getPlayerName } from "@/services/identity/player-profiles";
-import { safeInteger } from "@/utils/native-id";
 
 const loader = gltfLoader;
 const BUILDING_RENDER_SIGNATURE = "eternumBuildingRenderSignature";

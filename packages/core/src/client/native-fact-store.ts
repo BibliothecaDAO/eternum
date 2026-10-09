@@ -22,7 +22,7 @@ import {
 } from "../sync/model-manifest";
 
 // Key readers accept safe numeric ids; decoding still validates width and preserves bigint rows.
-type ReadKeys<M extends NativeModelName> = {
+export type ReadKeys<M extends NativeModelName> = {
   [Field in keyof NativeKeys[M]]: NativeKeys[M][Field] extends bigint ? number | bigint : NativeKeys[M][Field];
 };
 

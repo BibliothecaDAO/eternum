@@ -24,7 +24,7 @@ import { ContractAddress, ID, BANDITS_NAME, RelicEffectWithEndTick, StructureTyp
 import { useCallback, useMemo } from "react";
 import { useAccountAddress } from "@/hooks/store/use-account-store";
 import { presentedMineKind } from "@bibliothecadao/eternum";
-import { safeInteger } from "@/utils/native-id";
+import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
 interface UseStructureEntityDetailOptions {
   structureEntityId: ID;

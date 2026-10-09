@@ -16,7 +16,7 @@ import { useNativeRow, useNativeRevision } from "@/hooks/helpers/use-native-fact
 import { memo, useCallback, useMemo } from "react";
 
 import { TooltipContent, type ActionFoodCosts } from "./tooltip-content";
-import { safeInteger } from "@/utils/native-id";
+import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
 export const ActionInfo = memo(() => {
   const hoveredHex = useUIStore(useCallback((state) => state.entityActions.hoveredHex, []));

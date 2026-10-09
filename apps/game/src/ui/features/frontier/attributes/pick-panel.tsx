@@ -17,7 +17,7 @@ import {
 } from "./attributes";
 import { SheetClose, useEscapeCloses } from "../frontier-sheet";
 import { closePick, commitPick, liftChoice, usePick } from "./pick-moment";
-import { safeInteger } from "@/utils/native-id";
+import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
 const DEAL_MS = 280;
 const DEAL_STAGGER_MS = 60;

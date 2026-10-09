@@ -1,14 +1,6 @@
-import type { NativeKeys, NativeModelName, NativeRows } from "@bibliothecadao/eternum/game-client";
+import type { NativeModelName, NativeRows, ReadKeys } from "@bibliothecadao/eternum/game-client";
 import { useCallback, useMemo, useSyncExternalStore } from "react";
 import { useGame } from "@/hooks/context/game-context";
-
-/**
- * The keys the store reads by: an id field takes a safe number or the bigint a row carries. Mirrors the store's own
- * read-key type (packages/core/src/client/native-fact-store.ts), which the game-client subpath does not export yet.
- */
-type NativeReadKeys<M extends NativeModelName> = {
-  [Field in keyof NativeKeys[M]]: NativeKeys[M][Field] extends bigint ? number | bigint : NativeKeys[M][Field];
-};
 
 export const useNativeRevision = (models: readonly NativeModelName[]): number => {
   const {
@@ -26,7 +18,7 @@ export const useNativeRevision = (models: readonly NativeModelName[]): number =>
 
 export const useNativeRow = <M extends NativeModelName>(
   model: M,
-  keys: NativeReadKeys<M> | undefined,
+  keys: ReadKeys<M> | undefined,
 ): NativeRows[M] | undefined => {
   const {
     setup: { store },
@@ -45,7 +37,7 @@ export const useNativeRow = <M extends NativeModelName>(
 /** Missing sparse facts are readable only through the schema's declared absence gate. */
 export const useNativeRowOrAbsent = <M extends NativeModelName>(
   model: M,
-  keys: NativeReadKeys<M> | undefined,
+  keys: ReadKeys<M> | undefined,
 ): NativeRows[M] | undefined => {
   const {
     setup: { store },

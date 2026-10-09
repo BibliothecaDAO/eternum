@@ -57,8 +57,7 @@ import { requireActiveGameClient } from "@/sync/active-game-client";
 import { BOTTOM_PANEL_HEIGHT, BOTTOM_PANEL_MARGIN, MINIMAP_SIZE } from "./constants";
 import { HexMinimap, readMinimapTiles, type MinimapTile } from "./hex-minimap";
 import { presentedMineKind } from "@bibliothecadao/eternum";
-import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { safeInteger } from "@/utils/native-id";
+import { safeInteger, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
 
 const compactResourceFormatter = new Intl.NumberFormat("en-US", {
   notation: "compact",

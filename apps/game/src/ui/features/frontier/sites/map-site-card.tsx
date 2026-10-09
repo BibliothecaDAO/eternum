@@ -16,7 +16,7 @@ import { type MapSiteKind, mapSiteKind, readMapSite } from "./map-site-plan";
 import { useSelectedOwnArmy } from "./selected-army";
 import { armWellRefill } from "./well-refill";
 import { FrontierSheet } from "../frontier-sheet";
-import { safeInteger } from "@/utils/native-id";
+import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
 const MAP_SITE_MODELS = ["ArmyProgress", "ArmyProgressionRules", "ExplorerTroops", "TileOccupancy"] as const;
 

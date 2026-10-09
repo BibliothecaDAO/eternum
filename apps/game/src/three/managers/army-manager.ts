@@ -46,7 +46,7 @@ import { GRAPHICS_DEV_GUI_ENABLED, createGuiFolder } from "@/three/utils/gui-man
 import { isAddressEqualToAccount } from "@/three/utils/utils";
 import { getExplorerStaminaSnapshot } from "@/utils/explorer-stamina";
 import { readArmyMovementReadiness } from "@/ui/features/world/components/armies/army-movement-readiness";
-import type { GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
+import { safeInteger, type GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
 import {
   FELT_CENTER,
   Position,
@@ -154,7 +154,7 @@ import {
 } from "../frame-budget-work-queue";
 import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
 import type { PipelineCompiler } from "../pipeline-compiler";
-import { armyHomeStructureId, safeInteger } from "@/utils/native-id";
+import { armyHomeStructureId } from "@/utils/native-id";
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
 
