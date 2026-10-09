@@ -20,6 +20,7 @@ from urllib.request import Request, urlopen
 from urllib.parse import urlparse
 
 import measures
+from directory import directory_status, wait_for_identity
 
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -399,12 +400,7 @@ def start_shard(config, directory):
     write_json(directory / "configuration.json", config)
     write_json(directory / "compose.json", compose)
     command = [*DOCKER, "compose", "-f", str(directory / "compose.json")]
-    run([*command, "run", "--rm", "--no-deps", "prepare"], directory, "shard-prepare")
-    run([*command, "up", "-d"], directory, "shard-start")
-    run([*command, "wait", "init"], directory, "shard-init-wait")
-    code = subprocess.check_output([*command, "ps", "--all", "--format", "{{.ExitCode}}", "init"], text=True).strip()
-    if code != "0":
-        raise RuntimeError("initialization failed; read private deployment logs")
+    start_runner_stack(config, directory, command)
     manifest = json.loads((directory / "native-world.json").read_text())
     run([*command, "run", "--rm", "--no-deps", "--entrypoint", "python3", "harness",
          "/app/deploy/shard/init.py", "probe"], directory, "network-probes")
@@ -413,6 +409,35 @@ def start_shard(config, directory):
     result = deployment_manifest(config, compose, directory, manifest, rpc_rtt, herald_rtt)
     write_json(directory / "manifest.json", result)
     return result
+
+
+def start_runner_stack(config, directory, command):
+    run([*command, "run", "--rm", "--no-deps", "prepare"], directory, "shard-prepare")
+    run([*command, "up", "-d", "herald", "metrics"], directory, "shard-bootstrap")
+    wait_for_identity(config)
+    listing = directory_status(config, "pending")
+    if listing["status"] != "pending":
+        raise RuntimeError("Fresh runner shard must register PENDING")
+    write_json(directory / "directory-registration.json", {"url": config["public_herald_url"], "chainId": listing["chainId"]})
+    run([*command, "up", "-d"], directory, "shard-start")
+    run([*command, "wait", "init"], directory, "shard-init-wait")
+    code = subprocess.check_output([*command, "ps", "--all", "--format", "{{.ExitCode}}", "init"], text=True).strip()
+    if code != "0":
+        raise RuntimeError("initialization failed; read private deployment logs")
+
+
+def stop_shard(directory):
+    command = [*DOCKER, "compose", "-f", str(directory / "compose.json")]
+    run([*command, "stop"], directory, "shard-stop")
+    # This is the immutable registration receipt, not a cached directory status. Failed preparation may never list.
+    receipt = directory / "directory-registration.json"
+    if receipt.exists():
+        config = json.loads((directory / "configuration.json").read_text())
+        registered = json.loads(receipt.read_text())
+        chain_id = "0x" + config["chain_id"].encode("ascii").hex()
+        if registered["url"] != config["public_herald_url"] or int(registered["chainId"], 16) != int(chain_id, 16):
+            raise RuntimeError("Directory registration differs from the runner's shard identity")
+        directory_status(config, "retired")
 
 
 # Each workload key is a harness option (underscores for dashes, true for a bare flag), so a matrix can run every shape
@@ -472,7 +497,7 @@ def run_matrix(matrix, directory):
         finally:
             if (target / "compose.json").exists():
                 write_json(target / "matrix-result.json", result)
-                run([*DOCKER, "compose", "-f", str(target / "compose.json"), "stop"], target, "shard-stop")
+                stop_shard(target)
     return {"passed": True, "directory": str(directory)}
 
 
