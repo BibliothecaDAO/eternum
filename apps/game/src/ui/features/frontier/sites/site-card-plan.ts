@@ -12,7 +12,7 @@ import {
   siteReward,
   type SiteKind,
 } from "@bibliothecadao/eternum";
-import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
+import { safeInteger, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import {
   type BiomeType,
@@ -26,7 +26,6 @@ import {
   type TroopType,
 } from "@bibliothecadao/types";
 import { SITE_ART } from "./site-art";
-import { safeInteger } from "@/utils/native-id";
 
 const PRECISION = BigInt(RESOURCE_PRECISION);
 

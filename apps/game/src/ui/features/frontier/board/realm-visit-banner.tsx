@@ -6,10 +6,9 @@ import { leaveRealmVisit, type RealmVisit, useRealmVisit } from "@/sync/active-g
 import { Eye } from "@/ui/design-system/atoms/game-icons";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { configManager, Position, structureMapPosition } from "@bibliothecadao/eternum";
-import type { NativeRows } from "@bibliothecadao/eternum/game-client";
+import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useEffect, useRef } from "react";
-import { safeInteger } from "@/utils/native-id";
 
 /** The visited realm's row, once the visit's scope has brought it into the store. */
 export const useVisitedRealm = (visit: RealmVisit | null): NativeRows["Structure"] | null => {

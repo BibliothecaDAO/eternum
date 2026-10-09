@@ -23,7 +23,7 @@ import {
   liveHomeArmies,
   Position,
 } from "@bibliothecadao/eternum";
-import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
+import { safeInteger, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { RESOURCE_PRECISION, type TroopTier, type TroopType } from "@bibliothecadao/types";
 import { useMemo } from "react";
 import { Sweep } from "@/ui/motion/sweep";
@@ -38,7 +38,6 @@ import { useRevealYield } from "./frontier-reveal-yield";
 import { useWellRefill } from "./sites/well-refill";
 import { useReducedMotion } from "@/ui/motion/motion-settings";
 import { useMusterPointed } from "./guide/guide-pointer";
-import { safeInteger } from "@/utils/native-id";
 
 const ARMY_MODELS = [
   "ArmySlot",

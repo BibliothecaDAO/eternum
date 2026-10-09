@@ -21,7 +21,7 @@ import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { runWithFrameWorkOwner } from "@/three/frame-work-owner";
 import { DEV_MODE_ENABLED, VERBOSE_LOGS_ENABLED, verboseLog } from "@/utils/dev-mode";
 import { formatReadableErrorForConsole } from "@/utils/error-message";
-import { armyHomeStructureId, safeInteger } from "@/utils/native-id";
+import { armyHomeStructureId } from "@/utils/native-id";
 import { toast } from "@/ui/features/event-feed/notify";
 
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
@@ -102,7 +102,7 @@ import {
   recordClientActionRendered,
   recordClientActionSubmitted,
 } from "@/observability/client-action-latency";
-import type { GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
+import { safeInteger, type GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
 import {
   ActionPath,
   ActionPaths,

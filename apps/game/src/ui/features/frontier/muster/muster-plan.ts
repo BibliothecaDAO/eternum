@@ -8,10 +8,14 @@ import {
   researchTier,
   revealYield,
 } from "@bibliothecadao/eternum";
-import { nativeResearchConstants, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
+import {
+  safeInteger,
+  nativeResearchConstants,
+  type NativeFactStore,
+  type NativeRows,
+} from "@bibliothecadao/eternum/game-client";
 import { musterStamina, type OpenArmySlot, openArmySlots } from "@bibliothecadao/eternum/troop-stamina";
 import { type Direction, RESOURCE_PRECISION, TroopTier, TroopType } from "@bibliothecadao/types";
-import { safeInteger } from "@/utils/native-id";
 
 /**
  * What Frontier's muster needs, read from facts with no UI of its own: the realm's next open slot and the troop stacks

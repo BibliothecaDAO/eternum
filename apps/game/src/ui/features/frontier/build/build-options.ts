@@ -6,9 +6,8 @@ import {
   researchTier,
   ResourceManager,
 } from "@bibliothecadao/eternum";
-import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
+import { safeInteger, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { BuildingType, getProducedResource, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
-import { safeInteger } from "@/utils/native-id";
 
 /**
  * What Frontier's build sheet needs for one plot, read from facts with no UI of its own: each building the realm may

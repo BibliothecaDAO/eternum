@@ -1,6 +1,5 @@
 import { entityMapPosition, structureMapPosition } from "@bibliothecadao/eternum";
 import { getActiveGameStore } from "@/sync/active-game-client";
-import { safeInteger } from "@/utils/native-id";
 import { accountAddress, useAccountStore } from "@/hooks/store/use-account-store";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import type { PlayerRelicsData } from "@/types";
@@ -17,7 +16,12 @@ import {
   ResourceManager,
   summarizeIncomingTroopArrivals,
 } from "@bibliothecadao/eternum";
-import type { NativeFactStore, NativeModelName, NativeRows } from "@bibliothecadao/eternum/game-client";
+import {
+  safeInteger,
+  type NativeFactStore,
+  type NativeModelName,
+  type NativeRows,
+} from "@bibliothecadao/eternum/game-client";
 import { ContractAddress, EntityType, type Player, ResourcesIds, type Structure } from "@bibliothecadao/types";
 
 /**

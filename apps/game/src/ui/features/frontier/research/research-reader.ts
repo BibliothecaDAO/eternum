@@ -11,6 +11,7 @@ import {
   rowAtTier,
 } from "@bibliothecadao/eternum";
 import {
+  safeInteger,
   nativeResearchConstants as research,
   type NativeFactStore,
   type NativeRows,
@@ -20,7 +21,6 @@ import { useMemo } from "react";
 import { readBuildingEffect } from "../build/build-options";
 import { effectGain } from "../build/effect-gain";
 import type { ResearchNodeView, ResearchPlan } from "./research-plan";
-import { safeInteger } from "@/utils/native-id";
 
 const RESEARCH_MODELS = [
   "RealmKnowledge",

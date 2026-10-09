@@ -1,7 +1,6 @@
-import type { NativeRows } from "@bibliothecadao/eternum/game-client";
+import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import type { Structure, ID } from "@bibliothecadao/types";
 import { getBattleTimerLeft } from "@/three/utils/combat-directions";
-import { safeInteger } from "@/utils/native-id";
 
 export function resolveStructureAttention(
   structures: Structure[],

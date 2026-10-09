@@ -6,7 +6,7 @@ import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import Button from "@/ui/design-system/atoms/button";
 import { toast } from "@/ui/features/event-feed/notify";
-import { safeInteger } from "@/utils/native-id";
+import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
 const accessOptions = ["Public", "Private", "GuildOnly"] as const;
 const precision = BigInt(RESOURCE_PRECISION);

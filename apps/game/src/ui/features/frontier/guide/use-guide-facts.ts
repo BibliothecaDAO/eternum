@@ -16,7 +16,7 @@ import {
   StaminaManager,
   structureMapPosition,
 } from "@bibliothecadao/eternum";
-import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
+import { safeInteger, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import {
   BuildingType,
   RESOURCE_PRECISION,
@@ -31,7 +31,6 @@ import { affordableUpgrades } from "../attributes/attributes";
 import { useMemo } from "react";
 import { troopsOnHand, type useExpeditionRules } from "../frontier-home";
 import type { GuideFacts } from "./guide-script";
-import { safeInteger } from "@/utils/native-id";
 
 type ExpeditionRules = NonNullable<ReturnType<typeof useExpeditionRules>>;
 

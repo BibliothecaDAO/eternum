@@ -9,7 +9,7 @@ import { Skull, TreasureChest } from "@/ui/design-system/atoms/game-icons";
 import { toast } from "@/ui/features/event-feed/notify";
 import { extractReadableErrorMessage } from "@/utils/error-message";
 import { biomeTypeOf, configManager } from "@bibliothecadao/eternum";
-import type { NativeRows } from "@bibliothecadao/eternum/game-client";
+import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import type { TileSpatialRenderable } from "@bibliothecadao/eternum/game-sync";
 import { type ReactNode, useMemo, useState } from "react";
 import { Chip, TroopChip } from "../frontier-chips";
@@ -19,7 +19,6 @@ import { useSelectedOwnArmy } from "./selected-army";
 import { readSiteCard, type SiteAttack, type SiteCardPlan } from "./site-card-plan";
 import { XP_STAR_ICON } from "../attributes/xp-star";
 import { FrontierSheet } from "../frontier-sheet";
-import { safeInteger } from "@/utils/native-id";
 
 const SITE_MODELS = [
   "ExpeditionSite",

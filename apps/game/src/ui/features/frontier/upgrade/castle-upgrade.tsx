@@ -3,11 +3,10 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useStructureUpgrade } from "@/ui/modules/entity-details/hooks/use-structure-upgrade";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { buildableRadius } from "@bibliothecadao/eternum";
-import type { NativeRows } from "@bibliothecadao/eternum/game-client";
+import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { BUILDINGS_CENTER } from "@bibliothecadao/types";
 import type { UpgradePlan, UpgradeStep } from "./upgrade-plan";
 import { UpgradeSheet } from "./upgrade-sheet";
-import { safeInteger } from "@/utils/native-id";
 
 const CASTLE_ART = ["castleZero", "castleOne", "castleTwo", "castleThree"].map(
   (name) => `/images/buildings/construction/${name}.png`,
