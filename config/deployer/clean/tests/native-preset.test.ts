@@ -413,7 +413,8 @@ describe("native presets", () => {
     ]);
     expect(() => nativeGameModeOf(9)).toThrow("Unknown native preset 9");
     expect(nativeGameModeOf(SELF_CHECK_PRESET_ID)).toBe("eternum");
-    expect(() => nativeGameModeOf(104)).toThrow("Unknown native preset 104");
+    expect(nativeGameModeOf(104)).toBe("frontier");
+    expect(() => nativeGameModeOf(105)).toThrow("Unknown native preset 105");
   });
 
   test("native balances and mine ladders come only from the selected sheet", () => {
