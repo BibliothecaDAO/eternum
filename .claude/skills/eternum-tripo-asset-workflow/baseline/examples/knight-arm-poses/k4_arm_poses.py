@@ -118,7 +118,7 @@ def seg_to_seg(A, B, Cc, D): return min(min(point_to_seg(P, Cc, D) for P in seg_
 
 
 def orient(R):
-    """yaw (left positive), pitch (leaning forward positive), roll (right side down positive) of a frame turned by R from rest."""
+    """yaw (left positive), pitch (leaning forward positive), roll (left side down positive) of a frame turned by R from rest."""
     f = R @ F; l = R @ L
     yaw = math.atan2(float(np.dot(f, L)), float(np.dot(f, F))); pitch = math.asin(max(-1.0, min(1.0, -float(f[2])))); roll = math.asin(max(-1.0, min(1.0, -float(l[2]))))
     return math.degrees(yaw), math.degrees(pitch), math.degrees(roll)
@@ -197,7 +197,7 @@ if __name__ == "__main__":
 
     src = {st: {"l": arm_source(*STATES[st], "l"), "r": arm_source(*STATES[st], "r"), "body": body_source(*STATES[st])} for st in STATES}
     out = {"from": dict(ref["from"], tool="k4_pose_reference.py, k4_arm_poses.py"),
-           "frame": "the game's axes (+X left, +Y up, +Z forward), metres and degrees. Arms relative to the chest (the point midway between the shoulder joints, in spine_03's frame). Body in the actor's frame: pelvis yaw left positive, pitch leaning forward positive, roll right side down positive, height a fraction of the rest pelvis height, forward and left of the midpoint between the ankles; spine against the pelvis; head against the chest. Stance: each ankle forward and left of that midpoint, toes' yaw left positive.",
+           "frame": "the game's axes (+X left, +Y up, +Z forward), metres and degrees. Arms relative to the chest (the point midway between the shoulder joints, in spine_03's frame). Body in the actor's frame: pelvis yaw left positive, pitch leaning forward positive, roll left side down positive, height a fraction of the rest pelvis height, forward and left of the midpoint between the ankles; spine against the pelvis; head against the chest. Stance: each ankle forward and left of that midpoint, toes' yaw left positive.",
            "what": "Where the Knight holds itself with shield and sword, from the pose set approved with the gear: idle variants, the guard standing and on the move, four attacks in three moments each, and the hit reaction. wrist: where the wrist goes. elbow: the point the elbow bends toward. hand_turn_xyzw: the hand's turn on the forearm. expect: what a game arm posed in the elbow's hinge frame from an unmoving shoulder then shows, with the chest in the body's frame.",
            "groups": GROUPS, "states": {}}
     worst = {}

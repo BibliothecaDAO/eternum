@@ -47,7 +47,7 @@ def deg(a): return math.degrees(a)
 
 
 def orient(R):
-    """yaw (left positive), pitch (forward lean positive), roll (right side down positive) of a frame turned by R from rest."""
+    """yaw (left positive), pitch (forward lean positive), roll (left side down positive) of a frame turned by R from rest."""
     f = R @ F; l = R @ L
     yaw = math.atan2(-f[0], -f[1])                    # rest forward is -Y; turning left brings it toward -X... check sign below
     yaw = math.atan2(float(np.dot(f, L)), float(np.dot(f, F)))
