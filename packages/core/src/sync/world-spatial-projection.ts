@@ -1,7 +1,8 @@
 import { safeInteger } from "../utils/safe-integer";
 import type { ID, Tile, TroopTier, TroopType } from "@bibliothecadao/types";
 import { TileOccupier } from "@bibliothecadao/types";
-import type { NativeFactStore } from "../client/native-fact-store";
+import type { NativeFactChange, NativeFactStore } from "../client/native-fact-store";
+import { notifyEach } from "../utils/notify-each";
 import type { NativeKeys, NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { isExpeditionRealm, structureMapPosition } from "../utils/expeditions";
 import { isTileOccupierStructure } from "../utils/map/hex";
@@ -147,6 +148,17 @@ interface SpatialIndexChange<TKey, TRenderable> {
 }
 
 const DEFAULT_SPATIAL_BUCKET_SIZE = 32;
+const PROJECTION = "WorldSpatialProjection";
+
+/** One row's projection on its own: a row that cannot be projected is reported and left out of the rebuild. */
+const projectedRow = <T>(kind: string, project: () => T): T | undefined => {
+  try {
+    return project();
+  } catch (error) {
+    console.error(`[${PROJECTION}] left a ${kind} row out of the rebuild:`, error);
+    return undefined;
+  }
+};
 
 const layerIndex = (alt: boolean): 0 | 1 => (alt ? 1 : 0);
 
@@ -524,20 +536,12 @@ export class WorldSpatialProjection {
   public start(): void {
     if (this.unsubscribe) return;
     this.unsubscribe = this.store.subscribe((changes) => {
-      for (const change of changes) {
-        if (change.model === "TileOpt" || change.model === "TileOccupancy") {
-          const tile = change.current ?? change.previous;
-          if (tile) this.applyTileUpdate(change.key, tile);
-        }
-        if (change.model === "TileOccupancy") {
-          for (const tile of [change.previous, change.current]) {
-            if (!tile || tile.entity_id === 0n) continue;
-            const army = this.store.get("ExplorerTroops", { game_id: tile.game_id, explorer_id: tile.entity_id });
-            this.armyIndex.update(safeInteger(tile.entity_id), resolveArmyRenderable(this.store, army));
-          }
-        }
-        if (change.model === "ExplorerTroops") this.applyExplorerTroopsUpdate([change.current, change.previous]);
-        if (change.model === "Structure") this.applyStructureUpdate([change.current, change.previous]);
+      try {
+        this.applyChanges(changes);
+      } catch (error) {
+        // An update that failed halfway may have left an index partial: every index is rebuilt from the store.
+        console.error(`[${PROJECTION}] update failed; rebuilding from the store:`, error);
+        this.rebuild();
       }
     });
     try {
@@ -548,6 +552,28 @@ export class WorldSpatialProjection {
     }
   }
 
+  private applyChanges(changes: readonly NativeFactChange[]): void {
+    for (const change of changes) {
+      if (change.model === "TileOpt" || change.model === "TileOccupancy") {
+        const tile = change.current ?? change.previous;
+        if (tile) this.applyTileUpdate(change.key, tile);
+      }
+      if (change.model === "TileOccupancy") {
+        for (const tile of [change.previous, change.current]) {
+          if (!tile || tile.entity_id === 0n) continue;
+          const army = this.store.get("ExplorerTroops", { game_id: tile.game_id, explorer_id: tile.entity_id });
+          this.armyIndex.update(safeInteger(tile.entity_id), resolveArmyRenderable(this.store, army));
+        }
+      }
+      if (change.model === "ExplorerTroops") this.applyExplorerTroopsUpdate([change.current, change.previous]);
+      if (change.model === "Structure") this.applyStructureUpdate([change.current, change.previous]);
+    }
+  }
+
+  /**
+   * Every index from the store at once, each row on its own: a row that cannot be projected is reported and left
+   * out, so a rebuild always ends whole.
+   */
   public rebuild(): void {
     const nextChests = new Map<ID, ChestSpatialRenderable>();
     const nextStructures = new Map<StructureSpatialRenderable["spatialId"], StructureSpatialRenderable>();
@@ -560,20 +586,26 @@ export class WorldSpatialProjection {
     const tiles = new Map<string, NativeKeys["TileOccupancy"]>(this.store.entries("TileOpt"));
     for (const [key, occupancy] of this.store.entries("TileOccupancy")) tiles.set(key, occupancy);
     for (const [entity, key] of tiles) {
-      const source = this.tileAt(key);
-      const tile = resolveTileRenderable(source);
+      const projected = projectedRow("tile", () => {
+        const source = this.tileAt(key);
+        return {
+          tile: resolveTileRenderable(source),
+          chest: resolveChestRenderable(source),
+          structure: resolveStructureRenderable(source),
+        };
+      });
+      if (!projected) continue;
+      const { tile, chest, structure } = projected;
       if (tile) {
         this.tilesByTileEntity.set(entity, tile);
         nextTiles.set(tile.spatialId, tile);
       }
 
-      const chest = resolveChestRenderable(source);
       if (chest) {
         this.chestsByTileEntity.set(entity, chest);
         nextChests.set(chest.entityId, chest);
       }
 
-      const structure = resolveStructureRenderable(source);
       if (structure) {
         this.structuresByTileEntity.set(entity, structure);
         nextStructures.set(structure.spatialId, structure);
@@ -581,12 +613,12 @@ export class WorldSpatialProjection {
     }
 
     for (const [, explorerTroops] of this.store.entries("ExplorerTroops")) {
-      const army = resolveArmyRenderable(this.store, explorerTroops);
+      const army = projectedRow("army", () => resolveArmyRenderable(this.store, explorerTroops));
       if (army) nextArmies.set(army.entityId, army);
     }
 
     for (const [, structure] of this.store.entries("Structure")) {
-      const realm = resolveExpeditionRealmRenderable(this.store, structure);
+      const realm = projectedRow("realm", () => resolveExpeditionRealmRenderable(this.store, structure));
       if (realm) nextStructures.set(realm.spatialId, realm);
     }
 
@@ -703,17 +735,17 @@ export class WorldSpatialProjection {
     structureChanges: readonly StructureSpatialProjectionChange[],
     armyChanges: readonly ArmySpatialProjectionChange[],
   ): void {
-    if (tileChanges.length > 0) this.tileListeners.forEach((listener) => listener(tileChanges));
-    if (chestChanges.length > 0) this.chestListeners.forEach((listener) => listener(chestChanges));
-    if (structureChanges.length > 0) this.structureListeners.forEach((listener) => listener(structureChanges));
-    if (armyChanges.length > 0) this.armyListeners.forEach((listener) => listener(armyChanges));
+    if (tileChanges.length > 0) notifyEach(PROJECTION, this.tileListeners, tileChanges);
+    if (chestChanges.length > 0) notifyEach(PROJECTION, this.chestListeners, chestChanges);
+    if (structureChanges.length > 0) notifyEach(PROJECTION, this.structureListeners, structureChanges);
+    if (armyChanges.length > 0) notifyEach(PROJECTION, this.armyListeners, armyChanges);
     const changes: WorldSpatialProjectionChange[] = [
       ...tileChanges,
       ...chestChanges,
       ...structureChanges,
       ...armyChanges,
     ];
-    if (changes.length > 0) this.listeners.forEach((listener) => listener(changes));
+    if (changes.length > 0) notifyEach(PROJECTION, this.listeners, changes);
   }
 
   public getChest(entityId: ID): ChestSpatialRenderable | undefined {
