@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { afterEach, describe, expect, test } from "bun:test";
-import { mkdtempSync, readFileSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, unlinkSync, writeFileSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
@@ -91,3 +91,35 @@ test("interrupted preparation reconstructs public host metadata without replacin
     rmSync(data, { recursive: true });
   }
 });
+
+for (const marker of ["native-world.json", "initialized.json"]) {
+  for (const missing of ["host-keys.json", "vrf-key.json", "both"]) {
+    test(`refuses to create ${missing} when ${marker} records a deployed shard`, async () => {
+      const data = mkdtempSync(join(tmpdir(), "host-damaged-"));
+      const initialize = () =>
+        Bun.spawn([process.execPath, "deploy/athanor/scripts/host-accounts.ts", "initialize", data], {
+          cwd: root,
+          stdout: "ignore",
+          stderr: "pipe",
+        });
+      try {
+        expect(await initialize().exited).toBe(0);
+        unlinkSync(join(data, "host-accounts.json"));
+        writeFileSync(join(data, marker), "{}");
+        const removed = missing === "both" ? ["host-keys.json", "vrf-key.json"] : [missing];
+        for (const file of removed) unlinkSync(join(data, file));
+        const retained = ["host-keys.json", "vrf-key.json"].filter((file) => !removed.includes(file));
+        const before = retained.map((file) => readFileSync(join(data, file), "utf8"));
+        const child = initialize();
+        const [status, error] = await Promise.all([child.exited, new Response(child.stderr).text()]);
+        expect(status).not.toBe(0);
+        expect(error).toContain("restore the same shard backup");
+        for (const file of removed) expect(existsSync(join(data, file))).toBe(false);
+        expect(existsSync(join(data, "host-accounts.json"))).toBe(false);
+        expect(retained.every((file, index) => readFileSync(join(data, file), "utf8") === before[index])).toBe(true);
+      } finally {
+        rmSync(data, { recursive: true });
+      }
+    });
+  }
+}

@@ -19,7 +19,10 @@ interface HostKeys {
 function initializeHostAccounts(directory: string): void {
   const keyPath = resolve(directory, "host-keys.json");
   const publicPath = resolve(directory, "host-accounts.json");
-  if (existsSync(publicPath) && (!existsSync(keyPath) || !existsSync(resolve(directory, "vrf-key.json"))))
+  const recordedIdentity = ["host-accounts.json", "native-world.json", "initialized.json"].some((name) =>
+    existsSync(resolve(directory, name)),
+  );
+  if (recordedIdentity && (!existsSync(keyPath) || !existsSync(resolve(directory, "vrf-key.json"))))
     throw new Error("Existing host identity is missing credentials; restore the same shard backup before retrying");
   const existing = existsSync(keyPath) ? readPrivateJson<HostKeys>(keyPath) : undefined;
   const deployerPrivateKey = existing?.deployerPrivateKey ?? privateKey();
