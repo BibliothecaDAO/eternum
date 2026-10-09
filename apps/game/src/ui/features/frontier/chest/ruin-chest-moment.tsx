@@ -7,25 +7,31 @@ import { EASE } from "@/ui/motion/motion-scale";
 import { useReducedMotion } from "@/ui/motion/motion-settings";
 import { motion } from "framer-motion";
 
+import { DayPot, type PotDay } from "../value/day-pot";
+
 /** The chest's glow grows with its tier: one intensity per step, common to legendary. */
 const GLOW_PX: Record<Tier, number> = { 1: 0, 2: 12, 3: 22, 4: 34, 5: 48 };
 
 /**
  * A ruin's chest opening in the clear's result (wireframe 07): over a scrim, the chest, the exact LORDS it pays (the
- * figure stored with it when it was found), its tier, the clear's XP and the troops lost. No button: a tap anywhere
- * goes on.
+ * figure stored with it when it was found), its tier, the clear's XP and the troops lost; where the day's pot is known,
+ * its shares at the day price and the last days' pots, so a busy day after quiet ones shows why it pays more. No
+ * button: a tap anywhere goes on.
  */
 export const RuinChestMoment = ({
   tier,
   lords,
   xp,
   troopsLost,
+  pot,
   onClose,
 }: {
   tier: Tier;
   lords: number;
   xp: number | undefined;
   troopsLost: number;
+  /** The chest's tier shares and the last days' pots, today last. */
+  pot?: { shares: number; days: readonly PotDay[] };
   onClose: () => void;
 }) => {
   const reduced = useReducedMotion();
@@ -52,11 +58,20 @@ export const RuinChestMoment = ({
           <KitIcon code="Lo" size={34} />
           <span className="text-[44px] leading-none tabular-nums text-kit-gold2">+{formatExact(lords)}</span>
         </span>
-        <TierChip tier={tier} showWord />
+        <span className="flex items-center gap-2">
+          <TierChip tier={tier} showWord />
+          {pot && (
+            <>
+              <span className="text-[15px] tabular-nums text-kit-muted">{pot.shares} ×</span>
+              <Chip icons={["Lo"]} label={LORDS} value={formatExact(pot.days.at(-1)?.price)} />
+            </>
+          )}
+        </span>
         <span className="flex items-center gap-2">
           {xp !== undefined && <Chip icons={[]} label={XP} value={`+${formatExact(xp)}`} unit={XP} />}
           <Chip icons={["Sk"]} label={TROOPS} value={`−${formatExact(troopsLost)}`} />
         </span>
+        {pot && <DayPot days={pot.days} />}
       </motion.span>
     </button>
   );

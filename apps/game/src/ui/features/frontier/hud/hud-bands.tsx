@@ -53,7 +53,7 @@ export const HudBands = ({
     className="pointer-events-none fixed inset-0 z-30 flex flex-col gap-1.5 font-sans lg:block [&:has([data-kit-sheet])_[data-guide]]:hidden [&:has([data-kit-sheet])_[data-peek]]:hidden lg:[&:has([data-kit-sheet])_[data-page]]:invisible"
     style={SAFE_AREA}
   >
-    <div className="lg:absolute lg:left-2 lg:top-2 lg:w-[560px]">{strip}</div>
+    <div className="relative lg:absolute lg:left-2 lg:top-2 lg:w-[560px]">{strip}</div>
     {page ? (
       <div
         data-page

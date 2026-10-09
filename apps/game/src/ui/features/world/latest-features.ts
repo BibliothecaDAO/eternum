@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-09",
+    title: "Your LORDS under the strip",
+    description:
+      "Frontier now shows the LORDS your realm holds right under the strip, so the chests you open and the refills you buy read at a glance.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-09",
     title: "Desktop panels dock under the bar",
     description:
       "On desktop every Frontier panel now opens under the place bar, as tall as what it shows, with a close mark or a back arrow, and the bar stays in reach.",

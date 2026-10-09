@@ -127,3 +127,23 @@ export const NEXT = "Next";
 /** Filling an army's stamina for LORDS, a full refill only. */
 export const REFILL = "Refill";
 export const REFILLING = "Refilling…";
+
+/** LORDS leaving the game for the wallet linked to the account. */
+export const WITHDRAW = "Withdraw";
+export const SENDING = "Sending…";
+export const ALL = "All";
+export const LINK_WALLET = "Link wallet";
+export const NO_WALLET = "No wallet linked";
+export const NEW_WALLET = "New wallet";
+export const TRANSACTION = "Transaction";
+export const PAYOUTS_PAUSED = "Payouts paused. Your LORDS stay here.";
+export const paidWhenResumed = (amount: string) => `Payouts paused. These ${amount} pay when they resume.`;
+
+/** The labor a player's Realms give once a game day. */
+export const REALMS = "Realms";
+export const CLAIM = "Claim";
+export const CLAIM_ALL = "Claim all";
+export const CLAIMED_TODAY = "Claimed today";
+export const fitOf = (fits: string, of: string) => `${fits} of ${of} fit`;
+export const REALMS_ELSEWHERE = "Only Realms in this Starknet wallet count. Not on Ethereum, not in another wallet.";
+export const realmsADay = (cap: number) => `${cap} a day`;

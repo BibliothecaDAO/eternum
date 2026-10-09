@@ -1,9 +1,9 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { formatAmount, formatExact } from "@/ui/design-system/kit/amount";
+import { AmountSlider } from "@/ui/design-system/kit/amount-slider";
 import { Button } from "@/ui/design-system/kit/button";
 import { Chip } from "@/ui/design-system/kit/chip";
 import { DayEnds } from "@/ui/design-system/kit/clock-line";
-import { KitIcon } from "@/ui/design-system/kit/kit-icon";
 import { ReasonPlate } from "@/ui/design-system/kit/reason-plate";
 import { Sheet } from "@/ui/design-system/kit/sheet";
 import { BUILD, DEPLOY, DEPLOYING, MOVE, STAMINA, TROOPS, WHEAT } from "@/ui/design-system/kit/words";
@@ -77,7 +77,16 @@ export const DeployView = ({
         {slots && <SlotMarks used={slots.used} allowed={slots.allowed} />}
       </header>
       <Hero art={art} count={count} />
-      <TroopSlider value={count ?? 0} max={troopsMax} stop={wheatStop} disabled={noTroops} onChange={onCount} />
+      <AmountSlider
+        label={TROOPS}
+        icon="Ey"
+        value={count ?? 0}
+        max={troopsMax}
+        stop={wheatStop}
+        end={formatExact(troopsMax)}
+        disabled={noTroops}
+        onChange={onCount}
+      />
       {noTroops ? (
         <ReasonPlate
           reason={{ kind: "short", icon: "Tr", held: 0, need: 1 }}
@@ -146,54 +155,6 @@ const Hero = ({ art, count }: { art: string | undefined; count: number | undefin
     </span>
   </div>
 );
-
-/**
- * The count: one troop (a scout, the eye) up to the most this army can take. Where wheat runs out first, a line marks
- * it on the track and the thumb stops there.
- */
-const TroopSlider = ({
-  value,
-  max,
-  stop,
-  disabled,
-  onChange,
-}: {
-  value: number;
-  max: number;
-  stop: number | undefined;
-  disabled: boolean;
-  onChange: (count: number) => void;
-}) => {
-  const share = (amount: number) => (max > 1 ? (amount - 1) / (max - 1) : 0);
-  return (
-    <div className={cn("flex h-12 items-center gap-2.5", disabled && "opacity-40")}>
-      <span className="flex w-14 shrink-0 items-center gap-1">
-        <KitIcon code="Ey" size={18} />
-        <span className="text-[15px] tabular-nums text-kit-cream">1</span>
-      </span>
-      <span className="relative flex h-12 flex-1 items-center">
-        <input
-          type="range"
-          aria-label={TROOPS}
-          min={max > 0 ? 1 : 0}
-          max={max}
-          value={value}
-          disabled={disabled}
-          onChange={(event) => onChange(Math.min(Number(event.target.value), stop ?? max))}
-          className="h-2 w-full cursor-pointer appearance-none rounded bg-kit-line accent-kit-amber"
-        />
-        {stop !== undefined && (
-          <u
-            aria-hidden
-            className="absolute bottom-2 top-2 w-[3px] bg-light-red"
-            style={{ left: `${share(stop) * 100}%` }}
-          />
-        )}
-      </span>
-      <span className="w-[60px] shrink-0 text-right text-[15px] tabular-nums text-kit-cream">{formatExact(max)}</span>
-    </div>
-  );
-};
 
 /** The day's army slots: one mark each, lit where an army stands. */
 const SlotMarks = ({ used, allowed }: { used: number; allowed: number }) => (

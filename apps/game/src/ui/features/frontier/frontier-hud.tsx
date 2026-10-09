@@ -29,6 +29,8 @@ import { FrontierNav, type HudSurface, useHudSurface } from "./hud/frontier-nav"
 import { FrontierStrip } from "./hud/frontier-strip";
 import { HudBands } from "./hud/hud-bands";
 import { MenuSheet } from "./hud/menu-sheet";
+import { LordsPurse, PurseRow } from "./value/lords-purse";
+import { useRealmLords } from "./value/use-realm-lords";
 import { OfflineNotice } from "./hud/offline-notice";
 import { OrderBar } from "./hud/order-bar";
 import { FrontierToday } from "./log/frontier-today";
@@ -82,11 +84,14 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
     <GuideProvider rules={rules} realm={visit ? null : realm}>
       <HudBands
         strip={
-          <FrontierStrip
-            rules={rules}
-            realm={realm ?? visited}
-            onOpenStores={realm && !visit ? () => setSurface("production") : undefined}
-          />
+          <>
+            <FrontierStrip
+              rules={rules}
+              realm={realm ?? visited}
+              onOpenStores={realm && !visit ? () => setSurface("production") : undefined}
+            />
+            {realm && !visit && <RealmPurse realm={realm} />}
+          </>
         }
         page={
           surface === "chat" && !desktop ? (
@@ -264,3 +269,13 @@ const HudMenu = ({
     />
   );
 };
+
+/**
+ * The realm's LORDS under the strip. Withdraw and the Realms chip join it when their facts are served (the value
+ * relay's claims and the held Realms); until then they live in the lab only, so nothing unwired reaches a player.
+ */
+const RealmPurse = ({ realm }: { realm: NativeRows["Structure"] }) => (
+  <PurseRow>
+    <LordsPurse lords={useRealmLords(realm)} />
+  </PurseRow>
+);

@@ -48,8 +48,14 @@ import { useLayout } from "@/shell/frame/layout";
 import { GuideCard } from "@/ui/features/frontier/guide/guide-card";
 import { type GuideFacts, GUIDE_STEPS } from "@/ui/features/frontier/guide/guide-script";
 import { GuideThread } from "@/ui/features/frontier/guide/guide-thread";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { RefillButton, RefillConfirm } from "@/ui/features/frontier/army/refill";
+import type { PotDay } from "@/ui/features/frontier/value/day-pot";
+import { LordsPurse, PurseRow, RealmsChip } from "@/ui/features/frontier/value/lords-purse";
+import type { PayoutWallet } from "@/ui/features/frontier/value/payout-wallet";
+import { type HeldRealm, planRealmLabor } from "@/ui/features/frontier/value/realm-labor";
+import { RealmsSheet } from "@/ui/features/frontier/value/realms-sheet";
+import { type WithdrawStep, WithdrawSheet } from "@/ui/features/frontier/value/withdraw-sheet";
 
 const HOUR = 3_600;
 const NOW = new Date(2026, 9, 7, 14, 26).getTime() / 1000;
@@ -180,6 +186,45 @@ const RUIN_CARD: LabSite = {
   xp: 145,
   verb: ATTACK_30,
 };
+
+/**
+ * The value screens' fiction: a realm holding 1,240 LORDS, a linked wallet, and three Realms in it. LAB_PRESET is the
+ * numbers page's proposal for the presets the Realm holder's labor reads (1,000 labor a Realm a game day, five Realms an
+ * account a day); the live screen reads them from the preset when Herald serves it.
+ */
+const LAB_PRESET = { realmLabor: 1_000, realmsADay: 5 };
+const WALLET_ADDRESS = "0x04a1d2c3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f99f3c";
+const READY: PayoutWallet = { status: "ready", address: WALLET_ADDRESS };
+const REALMS_HELD: readonly HeldRealm[] = [
+  { realmId: 1_088, name: "Stolsli", order: 9, claimedToday: true },
+  { realmId: 4_512, name: "Uw Rohi", order: 3, claimedToday: false },
+  { realmId: 6_077, name: "Mamaalan", order: 8, claimedToday: false },
+];
+const SEVEN_REALMS: readonly HeldRealm[] = [
+  ...REALMS_HELD,
+  { realmId: 212, name: "Ilbarn", order: 1, claimedToday: false },
+  { realmId: 3_301, name: "Kelvos", order: 5, claimedToday: false },
+  { realmId: 5_990, name: "Orrin", order: 12, claimedToday: false },
+  { realmId: 7_421, name: "Tamsel", order: 14, claimedToday: false },
+];
+type LabWithdraw = { held: number; wallet: PayoutWallet; paused?: boolean; step: WithdrawStep; amount: number };
+type LabRealms = { wallet: PayoutWallet; realms: readonly HeldRealm[]; labor: number; limit: number };
+const WITHDRAW_500: LabWithdraw = { held: 1_240, wallet: READY, step: { kind: "pick" }, amount: 500 };
+/** Days 8 to 12 of the pot: about 14,300 unlocked a day; days 10 and 11 were quiet and roll 18,600 into day 12. */
+const QUIET_THEN_BUSY: readonly PotDay[] = [
+  { day: 8, unlocked: 14_300, carried: 0, spent: 14_000, price: 32 },
+  { day: 9, unlocked: 14_300, carried: 300, spent: 14_400, price: 32 },
+  { day: 10, unlocked: 14_300, carried: 0, spent: 5_000, price: 32 },
+  { day: 11, unlocked: 14_300, carried: 9_300, spent: 5_000, price: 32 },
+  { day: 12, unlocked: 14_300, carried: 18_600, spent: 26_000, price: 50 },
+];
+const ORDINARY: readonly PotDay[] = [
+  { day: 8, unlocked: 14_300, carried: 0, spent: 14_000, price: 32 },
+  { day: 9, unlocked: 14_300, carried: 300, spent: 14_200, price: 32 },
+  { day: 10, unlocked: 14_300, carried: 400, spent: 14_500, price: 32 },
+  { day: 11, unlocked: 14_300, carried: 200, spent: 14_300, price: 32 },
+  { day: 12, unlocked: 14_300, carried: 200, spent: 10_000, price: 32 },
+];
 
 /** Day 13 at 22:30: an 8-hour day from 21:40 that ends in the night, at 05:40; tomorrow lasts 20h. */
 const NIGHT: DayClock = {
@@ -643,6 +688,134 @@ const STATES = {
     },
   },
   "guide-season": { clock: CLOCK, stores: STORES, armies: ARMIES, results: "over", guide: "season" },
+  "value-hud": { clock: CLOCK, stores: STORES, armies: ARMIES, purse: { lords: 1_240, realms: 2_000 } },
+  "value-hud-claimed": { clock: CLOCK, stores: STORES, armies: ARMIES, purse: { lords: 1_240 } },
+  "value-menu": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    purse: { lords: 1_240, realms: 2_000 },
+    menu: true,
+    menuRealms: true,
+  },
+  withdraw: { clock: CLOCK, stores: STORES, armies: ARMIES, purse: { lords: 1_240 }, withdraw: WITHDRAW_500 },
+  "withdraw-no-wallet": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    purse: { lords: 1_240 },
+    withdraw: { ...WITHDRAW_500, wallet: { status: "no_wallet" } },
+  },
+  "withdraw-hold": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    purse: { lords: 1_240 },
+    withdraw: {
+      ...WITHDRAW_500,
+      wallet: { status: "on_hold", address: WALLET_ADDRESS, until: (NOW + 18 * HOUR + 40 * 60) * 1000 },
+    },
+  },
+  "withdraw-sending": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    purse: { lords: 740 },
+    withdraw: { ...WITHDRAW_500, held: 740, step: { kind: "sending", amount: 500 } },
+  },
+  "withdraw-paid": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    purse: { lords: 740 },
+    withdraw: {
+      ...WITHDRAW_500,
+      held: 740,
+      step: { kind: "paid", amount: 500, transactionUrl: "https://voyager.online/tx/0x7f3a21" },
+    },
+  },
+  "withdraw-paused": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    purse: { lords: 1_240 },
+    withdraw: { ...WITHDRAW_500, paused: true },
+  },
+  "withdraw-waiting": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    purse: { lords: 740 },
+    withdraw: { ...WITHDRAW_500, held: 740, paused: true, step: { kind: "waiting", amount: 500 } },
+  },
+  realms: {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    purse: { lords: 1_240, realms: 2_000 },
+    realms: { wallet: READY, realms: REALMS_HELD, labor: 9_640, limit: 18_000 },
+  },
+  "realms-claimed": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    purse: { lords: 1_240 },
+    realms: {
+      wallet: READY,
+      realms: REALMS_HELD.map((realm) => ({ ...realm, claimedToday: true })),
+      labor: 9_640,
+      limit: 18_000,
+    },
+  },
+  "realms-full": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    purse: { lords: 1_240, realms: 2_000 },
+    realms: { wallet: READY, realms: REALMS_HELD, labor: 17_600, limit: 18_000 },
+  },
+  "realms-cap": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    purse: { lords: 1_240, realms: 4_000 },
+    realms: { wallet: READY, realms: SEVEN_REALMS, labor: 9_640, limit: 18_000 },
+  },
+  "realms-none": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    purse: { lords: 1_240 },
+    realms: { wallet: READY, realms: [], labor: 9_640, limit: 18_000 },
+  },
+  "chest-busy": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    purse: { lords: 1_440, gain: 200 },
+    chest: {
+      tier: 3,
+      lords: 200,
+      xp: 145,
+      troopsLost: 1_250,
+      pot: { shares: 4, days: QUIET_THEN_BUSY },
+      onClose: () => undefined,
+    },
+  },
+  "chest-ordinary": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    purse: { lords: 1_368, gain: 128 },
+    chest: {
+      tier: 3,
+      lords: 128,
+      xp: 145,
+      troopsLost: 1_250,
+      pot: { shares: 4, days: ORDINARY },
+      onClose: () => undefined,
+    },
+  },
 } as const;
 
 type LabState = {
@@ -671,6 +844,11 @@ type LabState = {
   realmDot?: "ember";
   offline?: boolean;
   menu?: boolean;
+  /** The LORDS count under the strip, what a chest just added, and the labor the player's Realms have waiting. */
+  purse?: { lords: number; gain?: number; realms?: number };
+  menuRealms?: boolean;
+  withdraw?: LabWithdraw;
+  realms?: LabRealms;
 };
 
 const SLOTS = 4;
@@ -695,7 +873,17 @@ export const HudLab = () => {
         className="fixed inset-0 bg-[radial-gradient(ellipse_at_center,theme(colors.kit.line),theme(colors.kit.ground))]"
       />
       <HudBands
-        strip={<StatusStrip clock={lab.clock} stores={[...lab.stores]} />}
+        strip={
+          <>
+            <StatusStrip clock={lab.clock} stores={[...lab.stores]} />
+            {lab.purse && (
+              <PurseRow>
+                {lab.purse.realms !== undefined && <RealmsChip labor={lab.purse.realms} onOpen={noop} />}
+                <LordsPurse lords={lab.purse.lords} gain={lab.purse.gain} onOpen={noop} />
+              </PurseRow>
+            )}
+          </>
+        }
         page={
           lab.tree ? (
             // A row's sheet opens from the page, as FrontierResearch opens it, so it takes the page's place.
@@ -850,12 +1038,15 @@ export const HudLab = () => {
           />
         )}
         {lab.chest && <RuinChestMoment {...lab.chest} />}
+        {lab.withdraw && <LabWithdrawSheet withdraw={lab.withdraw} />}
+        {lab.realms && <LabRealmsSheet realms={lab.realms} />}
         {lab.menu && (
           <MenuSheet
             rank="#12"
             onToday={noop}
             onSeason={noop}
             onProduction={noop}
+            realms={lab.menuRealms ? { waiting: true, onOpen: noop } : undefined}
             guide={{ on: true, onToggle: noop }}
             onSettings={noop}
             onExit={noop}
@@ -1161,3 +1352,44 @@ const LabResults = ({ results, guided }: { results: NonNullable<LabState["result
       onClose={noop}
     />
   );
+
+/** Withdraw on the fiction: the amount moves with the slider and All. */
+const LabWithdrawSheet = ({ withdraw }: { withdraw: LabWithdraw }) => {
+  const [amount, setAmount] = useState(withdraw.amount);
+  return (
+    <WithdrawSheet
+      held={withdraw.held}
+      wallet={withdraw.wallet}
+      paused={withdraw.paused ?? false}
+      step={withdraw.step}
+      amount={amount}
+      now={NOW * 1000}
+      onAmount={setAmount}
+      onWithdraw={noop}
+      onLinkWallet={noop}
+      onClose={noop}
+    />
+  );
+};
+
+/** Realms on the fiction, planned with the lab's presets against the labor store. */
+const LabRealmsSheet = ({ realms }: { realms: LabRealms }) => (
+  <RealmsSheet
+    wallet={realms.wallet}
+    plan={planRealmLabor({
+      realms: realms.realms,
+      perRealm: LAB_PRESET.realmLabor,
+      cap: LAB_PRESET.realmsADay,
+      labor: { held: realms.labor, limit: realms.limit },
+    })}
+    perRealm={LAB_PRESET.realmLabor}
+    cap={LAB_PRESET.realmsADay}
+    labor={realms.labor}
+    secondsLeft={CLOCK.secondsLeft}
+    sending={false}
+    onClaim={noop}
+    onRealm={noop}
+    onLinkWallet={noop}
+    onClose={noop}
+  />
+);
