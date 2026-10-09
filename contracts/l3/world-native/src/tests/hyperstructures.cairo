@@ -463,11 +463,13 @@ fn blitz_multiplier_counts_realms_in_the_configured_geometry_and_preserves_old_r
         4,
     )
         .unwrap();
+    let (new_owner, _) = super::deploy_player(3, super::GUARDIAN);
+    super::play_fixture::prepare_homes(deployment.games, 3, new_owner);
     start_cheat_caller_address(deployment.games, deployment.games);
     crate::settlement::ISettlementCreationDispatcherTrait::create_settlement(
         crate::settlement::ISettlementCreationDispatcher { contract_address: deployment.games },
         3,
-        deployment.actor,
+        new_owner,
         coord,
         crate::settlement::SettlementCreation::Realm(
             crate::settlement::RealmCreation {
