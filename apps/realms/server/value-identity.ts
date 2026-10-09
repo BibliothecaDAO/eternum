@@ -1,5 +1,13 @@
 import { recordPayDecision, matchesPayDecision } from "./pay-decisions";
-import { accountLinkTargets, accountLinkTarget, recordLedgerLinkWrite, matchesLedgerLinkWrite } from "./account-links";
+import {
+  dirtyAccountLinks,
+  completeAccountLinkSync,
+  accountLinkDirtyRevision,
+  accountLinkTargets,
+  accountLinkTarget,
+  recordLedgerLinkWrite,
+  matchesLedgerLinkWrite,
+} from "./account-links";
 import type { AccountLinkTarget, LedgerAccountLinkWrite, LedgerPayDecision } from "@realms-world/identity";
 import { createIdentityAuth } from "./auth";
 import { WorkerEntrypoint } from "cloudflare:workers";
@@ -25,6 +33,15 @@ export class ValueIdentity extends WorkerEntrypoint<IdentityEnv> {
   }
   private async linkPins() {
     return { accountClassHash: this.env.ACCOUNT_CLASS_HASH, guardianPublicKey: await this.env.GUARDIAN.publicKey() };
+  }
+  async dirtyAccountLinks() {
+    return dirtyAccountLinks(this.env.DB, await this.linkPins());
+  }
+  completeAccountLinkSync(account: string, revision: string) {
+    return completeAccountLinkSync(this.env.DB, account, revision);
+  }
+  accountLinkDirtyRevision(account: string) {
+    return accountLinkDirtyRevision(this.env.DB, account);
   }
   async accountLinkTargets(after: string | null) {
     return accountLinkTargets(this.env.DB, await this.linkPins(), after);

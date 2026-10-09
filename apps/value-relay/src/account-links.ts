@@ -3,6 +3,8 @@ import type { AccountLinkTarget, LedgerAccountLinkWrite } from "@realms-world/id
 import { RelayFailure, relayOperation } from "./ports";
 interface LinkPorts {
   identity: {
+    dirty(): Promise<{ target: AccountLinkTarget; revision: string }[]>;
+    complete(account: string, revision: string): Promise<void>;
     targets(after: string | null): Promise<{ rows: AccountLinkTarget[]; next: string | null }>;
     refresh(target: AccountLinkTarget): Promise<AccountLinkTarget>;
     record(target: AccountLinkTarget, write: LedgerAccountLinkWrite): Promise<void>;
@@ -49,6 +51,17 @@ export const synchronizeAccountLink = (target: AccountLinkTarget, ports: LinkPor
 /** Current accounts and historical wallets share one bounded, restarting cursor. No notification is sole truth. */
 export const reconcileAccountLinks = (ports: LinkPorts, store: Store) =>
   Effect.gen(function* () {
+    const dirty = yield* relayOperation("read dirty identity links", () => ports.identity.dirty());
+    if (dirty.length > 25) return yield* Effect.fail(new RelayFailure({ operation: "invalid_dirty_link_page" }));
+    const dirtyPending: string[] = [];
+    for (const row of dirty) {
+      const result = yield* Effect.result(synchronizeAccountLink(row.target, ports));
+      if (Result.isSuccess(result) && result.success === "confirmed")
+        yield* relayOperation("acknowledge identity link", () =>
+          ports.identity.complete(row.target.realmsId, row.revision),
+        );
+      else dirtyPending.push(row.target.key);
+    }
     const cursor = (yield* relayOperation("read link cursor", () => store.get<string | null>("link-cursor"))) ?? null;
     const page = yield* relayOperation("read identity link page", () => ports.identity.targets(cursor));
     if (page.rows.length > 25 || (page.next !== null && page.next === cursor))
@@ -59,5 +72,5 @@ export const reconcileAccountLinks = (ports: LinkPorts, store: Store) =>
       if (Result.isFailure(result) || result.success === "linking") failed.push(target.key);
     }
     yield* relayOperation("advance identity link cursor", () => store.put("link-cursor", page.next));
-    return { checked: page.rows.length, pending: failed };
+    return { checked: page.rows.length + dirty.length, pending: [...dirtyPending, ...failed] };
   });

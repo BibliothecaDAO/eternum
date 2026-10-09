@@ -32,6 +32,8 @@ const set = vi.fn(
   },
 );
 const identity = {
+  dirty: vi.fn(async (): Promise<{ target: AccountLinkTarget; revision: string }[]> => []),
+  complete: vi.fn(async (_account: string, _revision: string) => {}),
   targets: vi.fn(
     async (_after: string | null): Promise<{ rows: AccountLinkTarget[]; next: string | null }> => ({
       rows: [target],
@@ -63,6 +65,8 @@ const store = {
 };
 beforeEach(() => {
   vi.clearAllMocks();
+  identity.dirty = vi.fn(async () => []);
+  identity.complete = vi.fn(async () => {});
   forward.clear();
   reverse.clear();
   state.clear();
@@ -148,4 +152,23 @@ it("keeps an authorized link auditable if the submit response is lost after broa
   expect(identity.record).toHaveBeenCalledOnce();
   expect(await Effect.runPromise(synchronizeAccountLink(target, { identity, ledger }))).toBe("confirmed");
   expect(set).toHaveBeenCalledOnce();
+});
+
+it("repairs durable dirty accounts before the rotating sweep and acknowledges only confirmed rows", async () => {
+  const dirty = vi.fn(async () => [{ target, revision: "change-1" }]);
+  const complete = vi.fn(async () => {});
+  Object.assign(identity, { dirty, complete });
+  identity.targets.mockResolvedValue({ rows: [], next: null });
+  await Effect.runPromise(reconcileAccountLinks({ identity, ledger }, store));
+  expect(set).toHaveBeenCalledOnce();
+  expect(dirty.mock.invocationCallOrder[0]).toBeLessThan(identity.targets.mock.invocationCallOrder[0]!);
+  expect(complete).toHaveBeenCalledWith(target.realmsId, "change-1");
+});
+it("leaves an unconfirmed dirty row for the next tick", async () => {
+  const complete = vi.fn(async () => {});
+  Object.assign(identity, { dirty: async () => [{ target, revision: "change-2" }], complete });
+  ledger.paused.mockResolvedValue(true);
+  identity.targets.mockResolvedValue({ rows: [], next: null });
+  await Effect.runPromise(reconcileAccountLinks({ identity, ledger }, store));
+  expect(complete).not.toHaveBeenCalled();
 });

@@ -1062,6 +1062,11 @@ describe("identity Worker", () => {
     const initial = changed.mock.calls.length;
     expect((await proveWallet(browser, address, "link")).status).toBe(200);
     const session = (await browser.session())!;
+    expect(
+      await env.DB.prepare("SELECT revision FROM dirty_account_links WHERE account=?")
+        .bind(session.user.realmsId)
+        .first(),
+    ).not.toBeNull();
     expect(changed.mock.calls.length).toBe(initial + 1);
     expect(changed).toHaveBeenLastCalledWith(session.user.realmsId);
     expect(session.user.ledgerLink).toEqual({ status: "linking" });
@@ -1082,6 +1087,11 @@ describe("identity Worker", () => {
     await signInWithCode(paused, "paused-ledger-link@realms.test");
     changed.mockRejectedValueOnce(new Error("relay paused"));
     expect((await proveWallet(paused, createWallet(), "link")).status).toBe(200);
+    expect(
+      await env.DB.prepare("SELECT revision FROM dirty_account_links WHERE account=?")
+        .bind((await paused.session())!.user.realmsId)
+        .first(),
+    ).not.toBeNull();
     expect((await paused.session())!.user.ledgerLink?.status).toBe("linking");
   });
 

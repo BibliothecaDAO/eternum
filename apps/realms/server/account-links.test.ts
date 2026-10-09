@@ -3,7 +3,14 @@ import { Miniflare } from "miniflare";
 import { beforeAll, afterAll, beforeEach, expect, it } from "vitest";
 import { normalizeStarknetAddress } from "@realms-world/identity";
 import { realmsAccountAddress } from "@realms-world/identity/account";
-import { accountLinkTarget, accountLinkTargets, recordLedgerLinkWrite, matchesLedgerLinkWrite } from "./account-links";
+import {
+  accountLinkTarget,
+  accountLinkTargets,
+  recordLedgerLinkWrite,
+  matchesLedgerLinkWrite,
+  dirtyAccountLinks,
+  completeAccountLinkSync,
+} from "./account-links";
 let mf: Miniflare, db: D1Database;
 const pins = { accountClassHash: "0x2", guardianPublicKey: "0x3" };
 const wallet = normalizeStarknetAddress("0x10");
@@ -12,7 +19,7 @@ beforeAll(async () => {
   mf = new Miniflare({ modules: true, script: "export default {}", d1Databases: ["DB"] });
   db = (await mf.getD1Database("DB")) as unknown as D1Database;
   await db.exec('CREATE TABLE "user" (id TEXT PRIMARY KEY, "realmsId" TEXT, address TEXT, "emailVerified" INTEGER)');
-  for (const file of ["0012_wallet_link_history.sql", "0013_ledger_link_writes.sql"]) {
+  for (const file of ["0012_wallet_link_history.sql", "0013_ledger_link_writes.sql", "0015_dirty_account_links.sql"]) {
     let sql = readFileSync(new URL("../migrations/" + file, import.meta.url), "utf8");
     if (file.startsWith("0012")) sql = sql.slice(0, sql.indexOf("INSERT INTO"));
     await db.batch(
@@ -30,6 +37,7 @@ beforeEach(async () => {
     db.prepare('DELETE FROM "user"'),
     db.prepare("DELETE FROM wallet_link_history"),
     db.prepare("DELETE FROM ledger_link_writes"),
+    db.prepare("DELETE FROM dirty_account_links"),
   ]);
   await db.prepare("INSERT INTO \"user\" VALUES('u','0x1',?,1)").bind(wallet).run();
   await db
@@ -117,4 +125,16 @@ it("matches authorized set and clear intents when earlier pending writes change 
   const clear = { ...write, transactionHash: "0xdef", account: "0x0", previousAccount: account };
   await recordLedgerLinkWrite(db, pins, cleared, clear);
   expect(await matchesLedgerLinkWrite(db, pins, { ...clear, previousAccount: "0x777" })).toBe(true);
+});
+
+it("keeps a newer dirty revision when an older confirmed sync acknowledges", async () => {
+  await db.prepare("INSERT INTO dirty_account_links VALUES('0x1','change-1')").run();
+  const first = await dirtyAccountLinks(db, pins);
+  expect(first).toHaveLength(1);
+  expect(first[0]!.target.realmsId).toBe("0x1");
+  await db.prepare("UPDATE dirty_account_links SET revision='change-2'").run();
+  await completeAccountLinkSync(db, "0x1", "change-1");
+  expect((await dirtyAccountLinks(db, pins))[0]!.revision).toBe("change-2");
+  await completeAccountLinkSync(db, "0x1", "change-2");
+  expect(await dirtyAccountLinks(db, pins)).toEqual([]);
 });

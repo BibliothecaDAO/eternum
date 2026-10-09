@@ -145,3 +145,23 @@ const requireHistoryAuthority = async (
     throw new Error("link_history_missing");
   if ((!target.wallet || !target.account) && history.replaced_at === null) throw new Error("link_clear_not_requested");
 };
+
+/** Dirty work is committed with identity changes and acknowledged only at its exact revision. */
+export const dirtyAccountLinks = async (db: D1Database, pins: Pins) => {
+  const { results } = await db
+    .prepare(
+      `SELECT target.*,d.revision FROM dirty_account_links d JOIN (${ACCOUNT_TARGET}) target ON target.realmsId=d.account ORDER BY (target.wallet IS NULL) DESC,d.rowid LIMIT 25`,
+    )
+    .all<Candidate & { revision: string }>();
+  return results.map((row) => ({ target: toTarget(row, pins), revision: row.revision }));
+};
+export const completeAccountLinkSync = async (db: D1Database, account: string, revision: string) => {
+  await db.prepare("DELETE FROM dirty_account_links WHERE account=? AND revision=?").bind(account, revision).run();
+};
+export const accountLinkDirtyRevision = async (db: D1Database, account: string) =>
+  (
+    await db
+      .prepare("SELECT revision FROM dirty_account_links WHERE account=?")
+      .bind(account)
+      .first<{ revision: string }>()
+  )?.revision ?? null;

@@ -61,7 +61,10 @@ it("reconciles identity links on its startup alarm independently of unavailable 
   finish.mockReturnValue(Effect.succeed({ finished: 0, failed: 0, pending: 0 }));
   const relay = new ValueRelay(
     ctx as unknown as DurableObjectState,
-    { SHARD_CHAIN_ID: "0x1", IDENTITY: { l2ChainId: async () => "0x1", accountLinkTargets: targets } } as never,
+    {
+      SHARD_CHAIN_ID: "0x1",
+      IDENTITY: { l2ChainId: async () => "0x1", dirtyAccountLinks: async () => [], accountLinkTargets: targets },
+    } as never,
   );
   expect(alarm).toHaveBeenCalledWith(expect.any(Number));
   await relay.alarm();

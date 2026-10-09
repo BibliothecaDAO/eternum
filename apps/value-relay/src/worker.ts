@@ -38,6 +38,9 @@ interface RelayEnv {
   LEDGER_OPERATOR_PRIVATE_KEY: string;
   IDENTITY: {
     l2ChainId(): Promise<string>;
+    dirtyAccountLinks(): Promise<{ target: AccountLinkTarget; revision: string }[]>;
+    completeAccountLinkSync(account: string, revision: string): Promise<void>;
+    accountLinkDirtyRevision(account: string): Promise<string | null>;
     realmOwnerOf(realmId: string): Promise<string>;
     accountLinkTargets(after: string | null): Promise<{ rows: AccountLinkTarget[]; next: string | null }>;
     accountLinkTarget(key: string): Promise<AccountLinkTarget>;
@@ -72,9 +75,22 @@ export class ValueRelay extends DurableObject<RelayEnv> {
   async accountChanged(realmsId: string) {
     return Effect.runPromise(
       this.ledgerPermit(
-        relayOperation("load changed identity link", () =>
-          this.env.IDENTITY.accountLinkTarget(`account:${realmsId}`),
-        ).pipe(Effect.flatMap((target) => synchronizeAccountLink(target, linkPortsOf(this.env)))),
+        Effect.gen(
+          function* (this: ValueRelay) {
+            const revision = yield* relayOperation("read changed identity revision", () =>
+              this.env.IDENTITY.accountLinkDirtyRevision(realmsId),
+            );
+            const target = yield* relayOperation("load changed identity link", () =>
+              this.env.IDENTITY.accountLinkTarget(`account:${realmsId}`),
+            );
+            const result = yield* synchronizeAccountLink(target, linkPortsOf(this.env));
+            if (result === "confirmed" && revision)
+              yield* relayOperation("acknowledge changed identity link", () =>
+                this.env.IDENTITY.completeAccountLinkSync(realmsId, revision),
+              );
+            return result;
+          }.bind(this),
+        ),
       ),
     );
   }
@@ -222,6 +238,8 @@ export class ValueRelay extends DurableObject<RelayEnv> {
 
 const linkPortsOf = (env: RelayEnv) => ({
   identity: {
+    dirty: () => env.IDENTITY.dirtyAccountLinks(),
+    complete: (account: string, revision: string) => env.IDENTITY.completeAccountLinkSync(account, revision),
     targets: (after: string | null) => env.IDENTITY.accountLinkTargets(after),
     refresh: (target: AccountLinkTarget) => env.IDENTITY.accountLinkTarget(target.key),
     record: (target: AccountLinkTarget, write: LedgerAccountLinkWrite) =>

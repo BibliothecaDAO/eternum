@@ -82,6 +82,13 @@ const writeWalletChange = (
       AND NOT EXISTS(SELECT 1 FROM wallet_link_history WHERE account="user"."realmsId" AND replaced_at IS NULL)`,
       )
       .bind(user.id, id),
+    db
+      .prepare(
+        `INSERT INTO dirty_account_links(account,revision)
+      SELECT "realmsId",?2 FROM "user" WHERE id=?1 AND EXISTS(SELECT 1 FROM wallet_change_notices WHERE id=?2)
+      ON CONFLICT(account) DO UPDATE SET revision=excluded.revision`,
+      )
+      .bind(user.id, id),
     db.prepare("DELETE FROM verification WHERE id = ? AND value = ?").bind(verification.id, verification.value),
   ]);
 
