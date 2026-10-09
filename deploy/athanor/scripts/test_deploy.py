@@ -23,11 +23,11 @@ def deployed():
 
 class DeployTest(unittest.TestCase):
     def test_prepare_materializes_the_key_before_the_rpc_file_bind_is_created(self):
-        with patch.object(deploy.subprocess,"run") as run,patch.object(deploy.subprocess,"check_output",return_value="0"):
-            deploy.start(Path("/unused"))
+        with patch.object(deploy.subprocess,"run") as run, patch.object(deploy.subprocess,"check_output",return_value="0"), patch.object(deploy, "wait_for_identity"), patch.object(deploy, "directory_status", return_value={"status":"pending"}):
+            deploy.start(Path("/unused"), {"public_herald_url": "https://herald.test"})
         commands=[call.args[0] for call in run.call_args_list]
         self.assertEqual(commands[0][-4:],["run","--rm","--no-deps","prepare"][-5:])
-        self.assertEqual(commands[1][-2:],["up","-d"])
+        self.assertEqual(commands[1][-4:],["up","-d","herald","metrics"])
 
     def test_a_shard_running_its_release_has_no_differences(self):
         manifest, initialized = deployed()
@@ -107,25 +107,38 @@ class EnrolmentTest(unittest.TestCase):
         self.assertIn("OPERATOR_TOKEN", preserved[0].removeprefix("--preserve-env=").split(","))
 
 
-class ActivationTest(unittest.TestCase):
-    def test_failed_self_check_never_promotes_and_names_first_route(self):
-        events=[]
-        with tempfile.TemporaryDirectory() as temporary:
-            directory=Path(temporary)
-            (directory/"data").mkdir()
-            with patch.object(deploy,"run_self_check",return_value={"passed":False,"firstFailedRoute":"Explore"}), \
-                 patch.object(deploy,"directory_status",side_effect=lambda *_:events.append("active")):
-                with self.assertRaisesRegex(RuntimeError,"Explore"):
-                    deploy.verify_and_activate({"guardian_url":"https://identity.test/api/guardian","public_herald_url":"https://herald.test"},directory)
-        self.assertEqual(events,[])
 
-    def test_only_a_successful_check_promotes_the_registered_pending_shard(self):
-        events=[]
-        config={"guardian_url":"https://identity.test/api/guardian","public_herald_url":"https://herald.test"}
-        with patch.object(deploy.shard,"write_json"),patch.object(deploy,"run_self_check",side_effect=lambda *_:(events.append("check") or {"passed":True})), \
-             patch.object(deploy,"directory_status",side_effect=lambda *args:events.append(args[1])):
-            deploy.verify_and_activate(config,Path("/unused"))
-        self.assertEqual(events,["check","active"])
+class ActivationTest(unittest.TestCase):
+    def test_real_data_directory_records_a_failed_check_without_promoting(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            data = Path(temporary)
+            with patch.object(deploy, "run_self_check", return_value={"passed": False, "firstFailedRoute": "Explore"}), patch.object(deploy, "directory_status") as directory:
+                with self.assertRaisesRegex(RuntimeError, "Explore; directory status unchanged"):
+                    deploy.verify_and_activate({}, data)
+                directory.assert_not_called()
+            self.assertEqual(json.loads((data / "self-check.json").read_text())["firstFailedRoute"], "Explore")
+
+    def test_real_data_directory_records_success_before_promoting(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            data = Path(temporary)
+            def activate(*args):
+                self.assertTrue(json.loads((data / "self-check.json").read_text())["passed"])
+                return {"status": "active"}
+            with patch.object(deploy, "run_self_check", return_value={"passed": True}), patch.object(deploy, "directory_status", side_effect=activate):
+                deploy.verify_and_activate({}, data)
+            self.assertFalse((data / "data").exists())
+
+    def test_official_deployment_registers_pending_after_identity_before_initialization(self):
+        events = []
+        with patch.object(deploy.subprocess, "run", side_effect=lambda args, **_: events.append(args[-1])), patch.object(deploy.subprocess, "check_output", return_value="0"), patch.object(deploy, "wait_for_identity", side_effect=lambda *_: events.append("identity")), patch.object(deploy, "directory_status", side_effect=lambda *_: (events.append("pending") or {"status": "pending"})):
+            deploy.start(Path("/unused"), {})
+        self.assertEqual(events[:5], ["prepare", "metrics", "identity", "pending", "-d"])
+
+    def test_missing_pending_route_names_the_required_service_order(self):
+        from urllib.error import HTTPError
+        with patch.dict(deploy.os.environ, {"OPERATOR_TOKEN": "test-token"}), patch.object(deploy, "urlopen", side_effect=HTTPError("https://identity.test", 404, "Not found", {}, None)):
+            with self.assertRaisesRegex(RuntimeError, "identity service must carry the pending route before a shard from this code starts"):
+                deploy.directory_status({"guardian_url": "https://identity.test/api/guardian", "public_herald_url": "https://herald.test"}, "pending")
 
 if __name__ == "__main__":
     unittest.main()

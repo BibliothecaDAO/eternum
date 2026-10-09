@@ -429,8 +429,6 @@ def start_shard(config, directory):
          f"http://127.0.0.1:{config['port_base'] + 5}/rpc/v0_10_2"], directory, "account-rpc-smoke")
     result = deployment_manifest(config, compose, directory, manifest, rpc_rtt, herald_rtt)
     write_json(directory / "manifest.json", result)
-    from deploy import verify_and_activate
-    verify_and_activate(config, directory, command)
     return result
 
 
