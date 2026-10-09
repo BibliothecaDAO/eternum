@@ -1,3 +1,4 @@
+import { isCheckGame } from "../game-directory";
 import { dayOf } from "@bibliothecadao/eternum/expeditions";
 import type { HeraldFrontierDayRanks, HeraldHistoryEvent } from "@bibliothecadao/eternum/game-sync";
 import { buildFrontierLeaderboard } from "./frontier-leaderboard";
@@ -39,6 +40,7 @@ function closedDayBounds(
 ): Omit<HeraldFrontierDayRanks, "entries">[] {
   const closed: Omit<HeraldFrontierDayRanks, "entries">[] = [];
   for (const { value: game } of modelRows("GameRegistry")) {
+    if (isCheckGame(game)) continue;
     const unit = number(required(modelRows("SliceRules"), game.game_id, "SliceRules").day_unit_seconds);
     if (unit === 0 || game.settled === true) continue;
     const calendar = { seed: integer(game.seed), startMainAt: number(game.start_main_at), dayUnitSeconds: unit };
@@ -63,7 +65,8 @@ export async function replayWithFrontierDays(
 ) {
   const frontierDays: HeraldFrontierDayRanks[] = [];
   const previousHistory = new Map<string, HeraldHistoryEvent[]>();
-  const hasCalendar = input.fold.modelRows("SliceRules").some(({ value }) => number(value.day_unit_seconds) !== 0);
+  const publicGames = new Set(input.fold.modelRows("GameRegistry").filter(({ value }) => !isCheckGame(value)).map(({ value }) => integer(value.game_id).toString()));
+  const hasCalendar = input.fold.modelRows("SliceRules").some(({ value }) => publicGames.has(integer(value.game_id).toString()) && number(value.day_unit_seconds) !== 0);
   let previousTimestamp =
     confirmedTimestamp ??
     (hasCalendar && input.fromBlock > native.decoder.manifest.native.deploymentBlock

@@ -469,3 +469,12 @@ it("serves immutable per-day ranks, with explicit unavailable and unclosed respo
   expect((await request("0")).status).toBe(503);
   expect((await request("9007199254740992")).status).toBe(400);
 });
+
+it("hidden check games never enter the directory clock or require public directory rules", async () => {
+  const handle = createHeraldRequestHandler({ ...httpState,
+    fold: { ...httpState.fold, modelRows: (model) => model === "GameRegistry" ? [{ key: "8", value: { game_id: "8", name: "0x" + Buffer.from("check-frontier-abc").toString("hex") } }] : [] },
+  });
+  const response = await handle(new Request("http://herald/games"));
+  expect(response.status).toBe(200);
+  expect((await response.json()).games).toEqual([]);
+});
