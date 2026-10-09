@@ -40,9 +40,7 @@
     "apps/value-relay": {
       "entry": [
         "src/worker.ts",
-        "src/monitor-worker.ts",
-        "local-stack/bundle.ts",
-        "local-stack/edge.ts"
+        "src/monitor-worker.ts"
       ],
       "ignoreDependencies": [
         "cloudflare"

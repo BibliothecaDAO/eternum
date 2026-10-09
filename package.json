@@ -98,10 +98,7 @@
     "images:analyze": "node scripts/analyze-images.js",
     "images:compress": "node scripts/compress-images-with-sharp.js",
     "images:compress:dry-run": "node scripts/compress-images-with-sharp.js --dry-run",
-    "images:compress:webp": "node scripts/compress-images-with-sharp.js --webp",
-    "value-stack:up": "pnpm --dir apps/value-relay value-stack:up",
-    "value-stack:down": "pnpm --dir apps/value-relay value-stack:down",
-    "value-stack:keys": "pnpm --dir apps/value-relay value-stack:keys"
+    "images:compress:webp": "node scripts/compress-images-with-sharp.js --webp"
   },
   "dependencies": {
     "@bibliothecadao/provider": "workspace:*",

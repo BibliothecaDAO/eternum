@@ -7,7 +7,7 @@ import { normalizeAddress } from "./address";
  * `OPERATOR_TOKEN` are secrets and are never committed.
  */
 const LaunchVars = Schema.Struct({
-  ENVIRONMENT: Schema.Literals(["local", "staging", "production"]),
+  ENVIRONMENT: Schema.Literals(["staging", "production"]),
   /** The app's origin; the launch routes are served under its /api, beside identity. */
   BASE_URL: Schema.NonEmptyString,
   /** Comma-separated Starknet addresses allowed to launch games; a wildcard is refused. */
