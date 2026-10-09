@@ -4,6 +4,7 @@ import { RelayFailure, relayOperation } from "./ports";
 
 export interface MonitorProgress {
   halted: string | null;
+  unverifiedTicks?: number;
 }
 interface MonitorStore {
   load(): Promise<MonitorProgress>;
@@ -25,7 +26,18 @@ export const runMonitor = (ports: MonitorPorts, store: MonitorStore) =>
       if (Result.isFailure(observation)) unavailable ??= observation.failure;
       else if (observation.success) return yield* pausePayouts(ports, store, observation.success);
     }
-    if (unavailable) return yield* Effect.fail(unavailable);
+    if (unavailable) {
+      const unverifiedTicks = (progress.unverifiedTicks ?? 0) + 1;
+      yield* relayOperation("record unverified monitor tick", () => store.save({ ...progress, unverifiedTicks }));
+      if (unverifiedTicks >= 3)
+        return yield* pausePayouts(ports, store, `unverified_value:${unverifiedTicks}:${unavailable.operation}`);
+      return yield* Effect.fail(unavailable);
+    }
+    if (progress.unverifiedTicks) {
+      const verified = { ...progress, unverifiedTicks: 0 };
+      yield* relayOperation("clear unverified monitor ticks", () => store.save(verified));
+      return verified;
+    }
     return progress;
   });
 
@@ -81,7 +93,7 @@ const findMismatch = <A>(
 
 const pausePayouts = (ports: MonitorPorts, store: MonitorStore, reason: string) =>
   Effect.gen(function* () {
-    const halted = { halted: reason };
+    const halted = { ...(yield* relayOperation("read monitor stop state", () => store.load())), halted: reason };
     yield* relayOperation("persist payout stop", () => store.save(halted));
     yield* ports.ledger.pause();
     return halted;
