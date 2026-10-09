@@ -12,7 +12,6 @@ import re
 import secrets
 import signal
 import socket
-import stat
 import subprocess
 import sys
 import tarfile
@@ -28,6 +27,7 @@ ROOT = Path(__file__).resolve().parents[3]
 # The box lock ships with the shard package, beside backup.py, which takes it too.
 sys.path.insert(0, str(ROOT / "deploy/shard"))
 from stack_lock import isolated_stack_lock
+from operator_token import read_protected_text
 
 
 # Only the public credential path and driver placement pass through sudo.
@@ -255,13 +255,6 @@ def deploy_world(config, directory, environment):
     bun("config/deployer/clean/cli/deploy-world.ts", *command, name="world-deploy")
     bun("config/deployer/clean/cli/deploy-world.ts", *command, "--inspect", name="world-inspect")
     environment["DEPLOYER_ACCOUNT_ADDRESS"] = identity["operatorAccountAddress"]
-
-
-def read_protected_text(path):
-    owner = path.lstat()
-    if not stat.S_ISREG(owner.st_mode) or owner.st_mode & 0o777 != 0o600 or owner.st_uid != os.geteuid():
-        raise ValueError("Protected file must belong to the reading process with owner-only mode 0600")
-    return path.read_text()
 
 
 def host_credentials(directory):

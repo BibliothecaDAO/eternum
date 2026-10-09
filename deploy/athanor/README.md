@@ -17,7 +17,7 @@ The shard package in [deploy/shard](../shard/README.md) owns Madara, PostgreSQL,
 The init image carries the compiled contracts and native verifier; the Herald image also carries the stamping bundle,
 worker and native prover. CI publishes only init, Herald and metrics images. There is no gateway image or service.
 
-For released packages use `python3 deploy/athanor/scripts/deploy-official.py ENVIRONMENT DIRECTORY`.
+For released packages use `python3 deploy/athanor/scripts/operator-command.py deploy ENVIRONMENT DIRECTORY`.
 `deploy/release/ENVIRONMENT.json` is the reviewed input source. For a fresh local build use the existing
 `python3 deploy/athanor/scripts/shard.py CONFIGURATION DIRECTORY` runner with explicit local image digests, unique chain
 identity, official RPC/Herald URLs, guardian, presets, worker count and fixed play bound. The runner writes its resolved
