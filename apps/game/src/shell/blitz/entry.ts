@@ -1,36 +1,21 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { mainnetProvider } from "@/runtime/mainnet-rpc";
-import type { PlaytestSlot } from "@/ui/features/factory-v2/api/factory-worker";
 
 import {
   type Credits,
   type EntrySplit,
-  type GameKey,
   type LedgerPrices,
   ledgerReader,
   type Registration,
   registerCalls,
 } from "../value/ledger";
+import type { LedgerRef } from "../value/game-entry";
 
-/**
+/*
  * A paid Blitz (design 5h): its seat, sword and shield are bought on the ledger from the payout wallet, a credit won
- * from a chest paying for a flag. The launch service names the ledger game a slot fills; a slot it does not name is
- * the free playtest join.
+ * from a chest paying for a flag. The launch service names the ledger game a slot fills (game-entry.ts).
  */
-export interface SlotLedger {
-  address: string;
-  key: GameKey;
-}
-
-export const slotLedgerOf = (slot: PlaytestSlot): SlotLedger | null => {
-  const ledger = (slot as { ledger?: unknown }).ledger;
-  if (typeof ledger !== "object" || ledger === null) return null;
-  const { address, shard, gameId } = ledger as Record<string, unknown>;
-  return typeof address === "string" && typeof shard === "string" && typeof gameId === "number"
-    ? { address, key: { shard, gameId } }
-    : null;
-};
 
 /** What the entry panel draws from: the game's prices and state, and the payer's credits, seat and balances. */
 export interface EntryTerms {
@@ -86,22 +71,22 @@ export const entryState = (terms: EntryTerms, choice: EntryChoice): EntryState =
 };
 
 /** The wallet's calls for the chosen entry: approve what it pays in LORDS, then register. */
-export const entryCalls = (ledger: SlotLedger, terms: EntryTerms, choice: EntryChoice) =>
+export const entryCalls = (ledger: LedgerRef, terms: EntryTerms, choice: EntryChoice) =>
   registerCalls(ledger.address, ledger.key, choice.sword, choice.shield, entryCost(terms, choice).cash);
 
-export const entryTermsKey = (ledger: SlotLedger, wallet: string) =>
+export const entryTermsKey = (ledger: LedgerRef, wallet: string) =>
   ["ledger", "entry", ledger.address, ledger.key.shard, ledger.key.gameId, wallet] as const;
 
 /** The entry's terms for the payout wallet, read from the ledger and the two tokens at the latest block. */
-export const useEntryTerms = (ledger: SlotLedger | null, wallet: string | null) =>
+export const useEntryTerms = (ledger: LedgerRef | null, wallet: string | null) =>
   useQuery({
-    queryKey: entryTermsKey(ledger ?? { address: "", key: { shard: "", gameId: 0 } }, wallet ?? ""),
-    queryFn: () => readEntryTerms(ledger as SlotLedger, wallet as string),
+    queryKey: entryTermsKey(ledger ?? { address: "", chest: "", key: { shard: "", gameId: 0 } }, wallet ?? ""),
+    queryFn: () => readEntryTerms(ledger as LedgerRef, wallet as string),
     enabled: ledger !== null && wallet !== null,
     refetchInterval: 15_000,
   });
 
-const readEntryTerms = async (ledger: SlotLedger, wallet: string): Promise<EntryTerms> => {
+const readEntryTerms = async (ledger: LedgerRef, wallet: string): Promise<EntryTerms> => {
   const read = ledgerReader(mainnetProvider(), ledger.address);
   const game = await read.game(ledger.key);
   const [preset, credits, registration, lords, strk] = await Promise.all([

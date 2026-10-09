@@ -2,35 +2,14 @@ import { useQuery } from "@tanstack/react-query";
 
 import { mainnetProvider } from "@/runtime/mainnet-rpc";
 
-import type { DirectoryGame } from "../herald";
-import {
-  type Chest,
-  type ChestContent,
-  type GameKey,
-  ledgerReader,
-  type PlayerResult,
-  type Registration,
-} from "../value/ledger";
+import { type Chest, type ChestContent, ledgerReader, type PlayerResult, type Registration } from "../value/ledger";
+import type { LedgerRef } from "../value/game-entry";
 
-/**
+/*
  * A finished paid Blitz on the ledger (design 5h, owner 9 Oct: the result mints a chest token the player holds,
- * opens with their own wallet, or keeps and trades). The directory names the ledger and the chest collection a game
- * was played on; a game it does not name has no reward to show.
+ * opens with their own wallet, or keeps and trades). The directory names the ledger a game was played on
+ * (game-entry.ts); a free game has no reward to show.
  */
-export interface GameLedger {
-  address: string;
-  chest: string;
-  key: GameKey;
-}
-
-export const gameLedgerOf = (game: DirectoryGame): GameLedger | null => {
-  const ledger = (game as { ledger?: unknown }).ledger;
-  if (typeof ledger !== "object" || ledger === null) return null;
-  const { address, chest } = ledger as Record<string, unknown>;
-  return typeof address === "string" && typeof chest === "string"
-    ? { address, chest, key: { shard: game.chainId, gameId: game.game_id } }
-    : null;
-};
 
 export interface Reward {
   result: PlayerResult;
@@ -60,20 +39,20 @@ export const rewardState = (reward: Reward, wallet: string): RewardState => {
   return reward.strk === 0n ? "no-strk" : "sealed";
 };
 
-export const rewardKey = (ledger: GameLedger, wallet: string) =>
+export const rewardKey = (ledger: LedgerRef, wallet: string) =>
   ["ledger", "reward", ledger.address, ledger.key.shard, ledger.key.gameId, wallet] as const;
 
 /** Read every 30 s, every 5 s while the chest's draw is under way so the reveal comes as soon as it lands. */
-export const useReward = (ledger: GameLedger | null, wallet: string | null) =>
+export const useReward = (ledger: LedgerRef | null, wallet: string | null) =>
   useQuery({
     queryKey: rewardKey(ledger ?? { address: "", chest: "", key: { shard: "", gameId: 0 } }, wallet ?? ""),
-    queryFn: () => readReward(ledger as GameLedger, wallet as string),
+    queryFn: () => readReward(ledger as LedgerRef, wallet as string),
     enabled: ledger !== null && wallet !== null,
     refetchInterval: (query) =>
       query.state.data?.chest?.requested && !query.state.data.chest.finished ? 5_000 : 30_000,
   });
 
-const readReward = async (ledger: GameLedger, wallet: string): Promise<Reward> => {
+const readReward = async (ledger: LedgerRef, wallet: string): Promise<Reward> => {
   const read = ledgerReader(mainnetProvider(), ledger.address);
   const [result, registration, strk] = await Promise.all([
     read.result(ledger.key, wallet),

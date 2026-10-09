@@ -27,10 +27,11 @@ import { gameKey } from "../play/next-step";
 import { markResultsSeen } from "../play/seen-results";
 import { FailureCard } from "../play/state-card";
 import { useNowSeconds } from "../use-now";
-import { SEASON_WORDS, WORDS } from "../words";
+import { FailureLine } from "../sign-in/failure-line";
+import { directoryGameEntryOf } from "../value/game-entry";
+import { REWARD_WORDS, SEASON_WORDS, WALLET_WORDS, WORDS } from "../words";
 import { gameTitle } from "./history-row";
 import { gameOfResults, isFromList } from "./results-link";
-import { gameLedgerOf } from "./reward";
 import { RewardPanel } from "./reward-panel";
 
 /** The post-game score and share cards; heavy, so they load only when a player taps Share. */
@@ -202,7 +203,7 @@ const BlitzResult = ({
   const rows = own && !top.includes(own) ? [...top, own] : top;
   // A game played on the ledger shows the payout wallet's rating change and chest under the board.
   const { session } = useIdentitySession();
-  const ledger = game ? gameLedgerOf(game) : null;
+  const entry = game ? directoryGameEntryOf(game) : null;
   const wallet = session ? payoutWalletOf(session.user) : null;
   return (
     <ResultLayout
@@ -238,7 +239,10 @@ const BlitzResult = ({
               );
             })}
           </ol>
-          {ledger && wallet && <RewardPanel ledger={ledger} wallet={wallet} />}
+          {entry?.kind === "paid" && wallet && <RewardPanel ledger={entry.ledger} wallet={wallet} />}
+          {(entry?.kind === "broken" || (entry?.kind === "paid" && !wallet)) && (
+            <FailureLine line={entry.kind === "broken" ? REWARD_WORDS.unreadable : WALLET_WORDS.unavailableLine} />
+          )}
         </div>
       }
       buttons={

@@ -20,11 +20,12 @@ vi.mock("@/ui/modules/identity/wallet-actions", () => ({
 }));
 vi.mock("@/runtime/mainnet-rpc", () => ({ mainnetProvider: () => ({ waitForTransaction: async () => ({}) }) }));
 
-import { type GameLedger, type Reward, rewardKey } from "./reward";
+import type { LedgerRef } from "../value/game-entry";
+import { type Reward, rewardKey } from "./reward";
 import { RewardPanel } from "./reward-panel";
 
 const WEI = 10n ** 18n;
-const LEDGER: GameLedger = { address: "0x1ed9e7", chest: "0xc4e57", key: { shard: "0x52", gameId: 7 } };
+const LEDGER: LedgerRef = { address: "0x1ed9e7", chest: "0xc4e57", key: { shard: "0x52", gameId: 7 } };
 const CHEST = { seasonId: 3, band: 0, requested: false, finished: false, requester: "0x0", requestBlock: 0 };
 const OPENED = { ...CHEST, requested: true, finished: true, requester: "0x4a1", requestBlock: 812300 };
 const SEALED: Reward = {

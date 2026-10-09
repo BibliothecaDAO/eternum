@@ -1,8 +1,6 @@
 import { expect, it } from "vitest";
 
-import type { PlaytestSlot } from "@/ui/features/factory-v2/api/factory-worker";
-
-import { entryCost, entryShares, entryState, type EntryTerms, slotLedgerOf } from "./entry";
+import { entryCost, entryShares, entryState, type EntryTerms } from "./entry";
 
 const WEI = 10n ** 18n;
 const terms = (overrides: Partial<EntryTerms> = {}): EntryTerms => ({
@@ -48,14 +46,4 @@ it("tells choosing, short of LORDS, no STRK for the fee, seated, refund and refu
   expect(entryState(terms({ registration: seated, cancelled: true }), both)).toBe("refund");
   const back = { ...seated, swordCredit: false, paid: 0n };
   expect(entryState(terms({ registration: back, cancelled: true }), both)).toBe("refunded");
-});
-
-it("reads the ledger game a slot fills, and none from a slot that names none", () => {
-  const slot = (ledger: unknown) => ({ name: "blitz-1630", ledger }) as unknown as PlaytestSlot;
-  expect(slotLedgerOf(slot(undefined))).toBeNull();
-  expect(slotLedgerOf(slot({ address: "0xl", shard: "0x52", gameId: 7 }))).toEqual({
-    address: "0xl",
-    key: { shard: "0x52", gameId: 7 },
-  });
-  expect(slotLedgerOf(slot({ address: "0xl", shard: "0x52" }))).toBeNull();
 });

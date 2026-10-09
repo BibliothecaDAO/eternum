@@ -23,8 +23,9 @@ import { ageOf } from "../play/ages";
 import { type PlayFacts, usePlayFacts } from "../play/play-facts";
 import { LiveChip, StateChip } from "../play/state-chip";
 import { ServiceFailure } from "../service-failure";
-import { BLITZ_WORDS, WORDS } from "../words";
-import { slotLedgerOf } from "./entry";
+import { FailureLine } from "../sign-in/failure-line";
+import { gameEntryOf } from "../value/game-entry";
+import { BLITZ_WORDS, ENTRY_WORDS, WALLET_WORDS, WORDS } from "../words";
 import { PaidEntry } from "./entry-panel";
 import { GameRow, SeatsChip } from "./game-row";
 import { type LobbyStep, lobbyId, lobbyStep, lobbyTitle, seatsOf } from "./lobby";
@@ -179,14 +180,18 @@ export const BlitzLobbyPage = () => {
   const seats = seatsOf(row, join.realmsId, player);
   const clock = <LobbyClock row={row} step={step} now={facts.now} />;
   const desktop = layout === "desktop";
-  // A slot the launch service names on the ledger is paid from the payout wallet; any other is the free join.
-  const ledger = row.kind === "slot" ? slotLedgerOf(row.slot) : null;
+  // A slot's entry is free or paid on the ledger the launch service names; a paid slot is never the free join.
+  const entry = row.kind === "slot" ? gameEntryOf(row.slot) : ({ kind: "free" } as const);
   const wallet = session ? payoutWalletOf(session.user) : null;
   const action =
-    ledger && wallet ? (
-      <PaidEntry ledger={ledger} wallet={wallet} />
-    ) : (
+    entry.kind === "free" ? (
       <LobbyAction row={row} step={step} join={join} desktop={desktop} />
+    ) : entry.kind === "broken" ? (
+      <FailureLine line={ENTRY_WORDS.unreadable} />
+    ) : wallet ? (
+      <PaidEntry ledger={entry.ledger} wallet={wallet} />
+    ) : (
+      <FailureLine line={WALLET_WORDS.unavailableLine} />
     );
   return (
     <PageFrame

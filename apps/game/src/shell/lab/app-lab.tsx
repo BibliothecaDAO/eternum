@@ -33,6 +33,7 @@ import {
   LAB_EMAIL_CODE,
   LAB_ENTRY_TERMS,
   LAB_GAME_LEDGER,
+  paidEntryPayload,
   LAB_REWARDS,
   LAB_SEASON_PRIZES,
   LAB_PAYOUT_WALLETS,
@@ -118,7 +119,7 @@ const createLabClient = (screen: LabScreen) => {
 const labGames = (screen: LabScreen) =>
   LAB_SCREENS[screen].games.map((game) =>
     (LAB_REWARDS[screen] || LAB_SEASON_PRIZES[screen]) && game.game_id === LAB_GAME_LEDGER.key.gameId
-      ? { ...game, ledger: LAB_GAME_LEDGER }
+      ? { ...game, entry: paidEntryPayload(LAB_GAME_LEDGER) }
       : game,
   );
 
@@ -135,7 +136,11 @@ const answerAppReads = (screen: LabScreen) => {
       }),
     "/api/directory/history": () =>
       json({
-        games: [LAB_REWARDS[screen] ? { ...LAB_FINISHED_BLITZ, ledger: LAB_GAME_LEDGER } : LAB_FINISHED_BLITZ],
+        games: [
+          LAB_REWARDS[screen]
+            ? { ...LAB_FINISHED_BLITZ, entry: paidEntryPayload(LAB_GAME_LEDGER) }
+            : LAB_FINISHED_BLITZ,
+        ],
         next: null,
         failures: [],
       }),

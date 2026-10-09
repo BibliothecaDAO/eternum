@@ -4,7 +4,7 @@ import { mainnetProvider } from "@/runtime/mainnet-rpc";
 
 import type { DirectoryGame } from "../herald";
 import { type BlitzSeason, ledgerReader, type PayoutCurve } from "../value/ledger";
-import { gameLedgerOf } from "./reward";
+import { directoryGameEntryOf, type LedgerRef } from "../value/game-entry";
 
 /**
  * The Blitz season's prize (design 5h step 8): the pool held by GameLedger, growing as games settle; at its end the
@@ -26,9 +26,9 @@ export const seasonSourceOf = (games: readonly DirectoryGame[]) => {
   const newest = games
     .filter((game) => game.mode === "blitz")
     .toSorted((a, b) => b.clock.start_main_at - a.clock.start_main_at)
-    .map(gameLedgerOf)
-    .find((ledger) => ledger !== null);
-  return newest ?? null;
+    .map(directoryGameEntryOf)
+    .find((entry): entry is { kind: "paid"; ledger: LedgerRef } => entry.kind === "paid");
+  return newest?.ledger ?? null;
 };
 
 /**

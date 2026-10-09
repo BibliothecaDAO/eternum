@@ -19,9 +19,9 @@ import {
   entryShares,
   entryState,
   type EntryTerms,
-  type SlotLedger,
   useEntryTerms,
 } from "./entry";
+import type { LedgerRef } from "../value/game-entry";
 
 const WalletSign = lazy(() =>
   import("@/ui/modules/identity/wallet-actions").then((module) => ({ default: module.WalletSign })),
@@ -31,7 +31,7 @@ const WalletSign = lazy(() =>
  * The lobby's step for a paid Blitz: its entry read from the ledger for the payout wallet, read again once the
  * wallet has sent its call.
  */
-export const PaidEntry = ({ ledger, wallet }: { ledger: SlotLedger; wallet: PayoutWallet }) => {
+export const PaidEntry = ({ ledger, wallet }: { ledger: LedgerRef; wallet: PayoutWallet }) => {
   const terms = useEntryTerms(ledger, wallet.status === "no_wallet" ? null : wallet.address);
   return <EntryPanel ledger={ledger} terms={terms.data} wallet={wallet} onSent={() => void terms.refetch()} />;
 };
@@ -47,7 +47,7 @@ const EntryPanel = ({
   wallet,
   onSent,
 }: {
-  ledger: SlotLedger;
+  ledger: LedgerRef;
   terms: EntryTerms | undefined;
   wallet: PayoutWallet;
   onSent: () => void;

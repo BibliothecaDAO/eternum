@@ -15,7 +15,8 @@ import { useNowSeconds } from "../use-now";
 import { type ChestContent, lordsOf, openChestCalls } from "../value/ledger";
 import { NoStrkLine } from "../value/no-strk-line";
 import { REWARD_WORDS } from "../words";
-import { type GameLedger, type Reward, rewardState, useReward } from "./reward";
+import type { LedgerRef } from "../value/game-entry";
+import { type Reward, rewardState, useReward } from "./reward";
 
 const WalletSign = lazy(() =>
   import("@/ui/modules/identity/wallet-actions").then((module) => ({ default: module.WalletSign })),
@@ -31,7 +32,7 @@ const chestArt = (band: number, opened: boolean) =>
  * payout wallet; the draw then lands by itself about ten blocks later, and the reveal plays inside this panel. Keep
  * leaves it in the collection to trade.
  */
-export const RewardPanel = ({ ledger, wallet }: { ledger: GameLedger; wallet: PayoutWallet }) => {
+export const RewardPanel = ({ ledger, wallet }: { ledger: LedgerRef; wallet: PayoutWallet }) => {
   const reward = useReward(ledger, wallet.status === "no_wallet" ? null : wallet.address);
   if (wallet.status === "no_wallet" || !reward.data) return null;
   return (
@@ -80,7 +81,7 @@ const ChestPlate = ({
   reward,
   onRequested,
 }: {
-  ledger: GameLedger;
+  ledger: LedgerRef;
   owner: string;
   reward: Reward;
   onRequested: () => void;

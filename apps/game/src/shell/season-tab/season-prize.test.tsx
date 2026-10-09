@@ -32,7 +32,7 @@ vi.mock("../herald", () => ({
           game_id: 7,
           mode: "blitz",
           clock: { start_main_at: 1 },
-          ledger: { address: "0xl", chest: "0xc" },
+          entry: { kind: "paid", ledger: { address: "0xl", chest: "0xc", shard: "0x52", gameId: 7 } },
         },
       ],
     },

@@ -6,9 +6,10 @@ import type { Session } from "@realms-world/identity";
 import type { DirectoryGame } from "../herald";
 import type { PayoutWallet } from "@/hooks/context/payout-wallet";
 
-import type { EntryTerms, SlotLedger } from "../blitz/entry";
+import type { EntryTerms } from "../blitz/entry";
+import type { LedgerRef } from "../value/game-entry";
 import type { SeasonPrize } from "../season-tab/blitz-season";
-import type { GameLedger, Reward } from "../season-tab/reward";
+import type { Reward } from "../season-tab/reward";
 
 /**
  * The app lab's one fiction, the handoff's: Day 12 of a Frontier season, today ends with 7h 14m left, the player
@@ -186,7 +187,11 @@ export const LAB_PAYOUT_WALLETS: Partial<Record<keyof typeof LAB_SCREENS, Payout
 };
 
 /** The ledger game the lab's slot fills, on a paid Blitz's screens. */
-export const LAB_SLOT_LEDGER: SlotLedger = { address: "0x1ed9e7", key: { shard: LAB_CHAIN, gameId: 7 } };
+export const LAB_SLOT_LEDGER: LedgerRef = {
+  address: "0x1ed9e7",
+  chest: "0xc4e57",
+  key: { shard: LAB_CHAIN, gameId: 7 },
+};
 
 const WEI = 10n ** 18n;
 const NOT_REGISTERED = {
@@ -231,12 +236,18 @@ export const LAB_EMAIL_CODE = "111111";
 
 export type LabScreen = keyof typeof LAB_SCREENS;
 
+/** A paid game's entry as the services send it with a slot or a directory game (game-entry.ts reads it). */
+export const paidEntryPayload = (ledger: LedgerRef) => ({
+  kind: "paid",
+  ledger: { address: ledger.address, chest: ledger.chest, shard: ledger.key.shard, gameId: ledger.key.gameId },
+});
+
 /** A slot filling for 16:30, two hours away, with 17 of 24 seats taken; the player's among them when joined. */
-export const labSlots = (joined: boolean, ledger?: SlotLedger) => ({
+export const labSlots = (joined: boolean, ledger?: LedgerRef) => ({
   slots: [
     {
       name: "blitz-1630",
-      ...(ledger && { ledger: { address: ledger.address, shard: ledger.key.shard, gameId: ledger.key.gameId } }),
+      ...(ledger && { entry: paidEntryPayload(ledger) }),
       closesAt: new Date((NOW + 2 * 3600 + 4 * 60) * 1000).toISOString(),
       frozenAt: null,
       closed: false,
@@ -396,7 +407,7 @@ export const LAB_CHAT = [
 }));
 
 /** The ledger and chest collection the lab's finished Blitz was played on, on the reward screens. */
-export const LAB_GAME_LEDGER: GameLedger = {
+export const LAB_GAME_LEDGER: LedgerRef = {
   address: "0x1ed9e7",
   chest: "0xc4e57",
   key: { shard: LAB_CHAIN, gameId: 7 },

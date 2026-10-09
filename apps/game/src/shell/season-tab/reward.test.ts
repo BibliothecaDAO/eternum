@@ -1,8 +1,7 @@
 import { expect, it } from "vitest";
 
-import type { DirectoryGame } from "../herald";
 import { decodeChest, decodeChestContent, decodePlayerResult, openChestCalls } from "../value/ledger";
-import { gameLedgerOf, type Reward, rewardState } from "./reward";
+import { type Reward, rewardState } from "./reward";
 
 const WEI = 10n ** 18n;
 const WALLET = "0x4a1";
@@ -62,14 +61,4 @@ it("waits for the results, offers a held chest, waits on the draw after the requ
   expect(rewardState(reward({ held: false }), WALLET)).toBe("traded");
   // Opened by whoever bought it: gone from this player.
   expect(rewardState(reward({ chest: { ...requested, requester: "0xb0b" }, held: false }), WALLET)).toBe("traded");
-});
-
-it("reads the ledger a finished game was played on, and none for a game the directory names none for", () => {
-  const game = (ledger: unknown) => ({ chainId: "0x52", game_id: 7, ledger }) as unknown as DirectoryGame;
-  expect(gameLedgerOf(game(undefined))).toBeNull();
-  expect(gameLedgerOf(game({ address: "0xl", chest: "0xc" }))).toEqual({
-    address: "0xl",
-    chest: "0xc",
-    key: { shard: "0x52", gameId: 7 },
-  });
 });

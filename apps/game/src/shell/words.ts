@@ -262,11 +262,13 @@ export const ENTRY_WORDS = {
   back: "Back",
   refunded: "Refunded",
   refundedLine: "Your LORDS and credits are back in your wallet.",
+  unreadable: "This game's paid entry could not be read, so it cannot be joined yet.",
   whereItGoes: "Where this entry goes: the season pool, the season's chests, the treasury",
 } as const;
 
 /** After a paid Blitz: the rating's change and the chest the result minted. */
 export const REWARD_WORDS = {
+  unreadable: "This game's reward could not be read.",
   rating: "Blitz rating",
   chest: "Chest",
   arrives: "Arrives with the results",

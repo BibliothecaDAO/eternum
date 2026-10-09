@@ -93,7 +93,7 @@ it("takes the season from the newest Blitz game that names a ledger", () => {
       game_id: id,
       mode: "blitz",
       clock: { start_main_at: start },
-      ledger,
+      ...(ledger && { entry: { kind: "paid", ledger: { ...ledger, shard: "0x52", gameId: id } } }),
     }) as unknown as DirectoryGame;
   expect(seasonSourceOf([game(1, 10)])).toBeNull();
   expect(
