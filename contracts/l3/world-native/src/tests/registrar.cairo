@@ -2461,6 +2461,62 @@ fn frontier_ruin_clear_pays_its_stored_chest_into_the_realm_and_leaves_no_chest(
 }
 
 #[test]
+fn an_exhausted_day_quotes_one_but_discovers_no_ruin_and_pays_nothing() {
+    let rules = crate::expeditions::FrontierDiscoveryRules {
+        stragglers_bps: 1, camp_bps: 0, rift_bps: 0, ruin_bps: 8000, shrine_bps: 0, well_bps: 0, empty_reveal_limit: 7,
+    };
+    let (d, game_id, key) = setup_frontier_chests_with_rules(Some(rules));
+    let context = crate::tests::context(d.games, game_id);
+    let raw_root = discovery_root(
+        game_id, context.game.unbox().seed, rules, 0, Some(any_chest()), crate::discovery::Discovery::Ruin(any_chest()),
+    );
+    let army = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
+    let time = 360_u64;
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            let chest_rules = crate::logic::lords_budget::chest_rules(game_id);
+            let day = crate::days::day_of(context.game.unbox(), context.rules.unbox().day_unit_seconds, time).index;
+            let exhausted = crate::logic::lords_budget::open_day(
+                chest_rules,
+                crate::relics::LordsBudget {
+                    pool_left: 0, open: 0, day, price: 0, estimate: 1_000_000_000_000, rolled_shares: 0,
+                },
+                crate::logic::lords_budget::SeasonClock {
+                    game: context.game.unbox(),
+                    day_unit_seconds: context.rules.unbox().day_unit_seconds,
+                    tick: context.rules.unbox().tick_config.armies_tick_in_seconds,
+                },
+            );
+            assert_eq!(exhausted.price, 1);
+            crate::state::write().relics.rollover_budget.write(game_id, Some(exhausted));
+        },
+    );
+    let lords = ResourceSlot { game_id, entity_id: army.owner, resource_type: crate::resources::LORDS };
+    let resources = IResourceOperationsDispatcher { contract_address: d.games };
+    let before = resources.resource_balance(lords);
+    let mut spy = snforge_std::spy_events();
+    assert!(explore_with_root(d, game_id, key.explorer_id, raw_root, time));
+    let tile = crate::geometry::tile_key(game_id, crate::geometry::neighbor(army.coord, 0));
+    assert_eq!(snforge_std::interact_with_state(d.games, || crate::map::structure_occupant(tile)), None);
+    let budget = IRelicsDispatcher { contract_address: d.games }.lords_budget(game_id).unwrap();
+    assert_eq!((budget.price, budget.pool_left, budget.open), (1, 0, 0));
+    assert!(budget.rolled_shares > 0);
+    assert_eq!(resources.resource_balance(lords), before);
+    for (_, event) in spy.get_events().emitted_by(d.games).events.span() {
+        for selector in event.keys.span() {
+            if *selector == selector!("StoryEvent") {
+                let mut data = event.data.span();
+                let story: crate::ownership::Story = Serde::deserialize(ref data).unwrap();
+                if let crate::ownership::Story::SitePayout(_) = story {
+                    panic!("unfunded site paid LORDS");
+                }
+            }
+        }
+    }
+}
+
+#[test]
 fn frontier_finds_at_most_one_ruin_a_day_and_holds_its_chest_against_the_budget() {
     let ruins_only = crate::expeditions::FrontierDiscoveryRules {
         stragglers_bps: 1, camp_bps: 0, rift_bps: 0, ruin_bps: 8000, shrine_bps: 0, well_bps: 0, empty_reveal_limit: 7,

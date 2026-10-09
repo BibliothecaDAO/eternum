@@ -189,20 +189,21 @@ pub fn roll(rules: ChestRules, previous: LordsBudget, clock: SeasonClock, day: u
     open_day(rules, LordsBudget { open: 0, day, estimate, rolled_shares: 0, price: 0, ..previous }, clock)
 }
 
-// Freeze the day's common price from its rollover budget and expected rolled shares. Zero budget/price yields no ruin.
+// Freeze the day's common price; available LORDS alone decide whether its chest can be reserved.
 pub fn open_day(rules: ChestRules, mut budget: LordsBudget, clock: SeasonClock) -> LordsBudget {
     let expected = Into::<u128, u256>::into(budget.estimate) * day_ticks(clock, budget.day).into();
     let remaining = available(rules, budget, clock);
     budget
         .price =
-            if remaining == 0 {
-                0
-            } else if expected == 0 {
+            if expected == 0 {
                 rules.price_ceiling
             } else {
-                core::cmp::min(
-                    rules.price_ceiling.into(),
-                    Into::<u128, u256>::into(remaining) * LORDS_ESTIMATE_SCALE.into() / expected,
+                core::cmp::max(
+                    1,
+                    core::cmp::min(
+                        rules.price_ceiling.into(),
+                        Into::<u128, u256>::into(remaining) * LORDS_ESTIMATE_SCALE.into() / expected,
+                    ),
                 )
                     .try_into()
                     .unwrap()
