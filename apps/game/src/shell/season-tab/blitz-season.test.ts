@@ -7,10 +7,27 @@ import { placeShares, type SeasonPrize, seasonSourceOf, seasonState } from "./bl
 const WEI = 10n ** 18n;
 
 it("reads a season in the interface's order, and claims with one call", () => {
-  // participants, top count, posted, challenged, review until, settlement started, paid (2), exists, preset,
-  // start, end, pool (2).
+  // chest reserve (2), participants, top count, posted, challenged, review until, settlement started, paid (2),
+  // exists, preset, start, end, pool (2).
   expect(
-    decodeSeason(["500", "50", "1", "0", "7200", "0", "0", "0", "1", "4", "100", "3600", String(9n * WEI), "0"]),
+    decodeSeason([
+      "0",
+      "0",
+      "500",
+      "50",
+      "1",
+      "0",
+      "7200",
+      "0",
+      "0",
+      "0",
+      "1",
+      "4",
+      "100",
+      "3600",
+      String(9n * WEI),
+      "0",
+    ]),
   ).toEqual({
     participants: 500,
     winners: 50,

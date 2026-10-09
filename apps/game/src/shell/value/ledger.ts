@@ -1,4 +1,4 @@
-import type { Call, ProviderInterface } from "starknet";
+import { type Call, hash, num, type ProviderInterface } from "starknet";
 
 /**
  * The client's side of GameLedger on Starknet (infra-pr/ledger-interface.txt): the reads the value screens show and
@@ -47,6 +47,15 @@ export interface BlitzSeason {
   pool: bigint;
 }
 
+/**
+ * Where a game's pot goes at settle: the treasury's cut first, then the chests' share of what is left to the season's
+ * chest reserve, the rest to the season pool.
+ */
+interface EntrySplit {
+  protocolCutBps: number;
+  chestLordsBps: number;
+}
+
 export interface Credits {
   swords: number;
   shields: number;
@@ -64,22 +73,30 @@ export interface Registration {
 /** A game's result for one wallet: rank 0 until the results are on the ledger. MMR in whole points. */
 export interface PlayerResult {
   rank: number;
-  points: bigint;
   chestId: bigint;
   mmrBefore: number;
   mmrAfter: number;
 }
 
-/** What a chest holds, fixed when it was minted: a cosmetic, a sword or shield credit, or LORDS. */
+/** What an opened chest delivered (the ChestOpened event): a cosmetic, a sword or shield credit, or LORDS. */
 export type ChestContent =
   | { kind: "cosmetic"; attributes: string }
   | { kind: "sword" }
   | { kind: "shield" }
   | { kind: "lords"; amount: bigint };
 
+/**
+ * A mystery chest: its season and rank band (0 best .. 4) are all it carries. Its holder's open request burns it and
+ * fixes a future block; the draw is finished from that block's hash about ten blocks later, by anyone.
+ */
 export interface Chest {
-  opened: boolean;
-  content: ChestContent;
+  seasonId: number;
+  band: number;
+  requested: boolean;
+  finished: boolean;
+  /** Who asked to open it: the delivery goes to them. */
+  requester: string;
+  requestBlock: number;
 }
 
 /** LORDS and STRK on Starknet mainnet: LORDS pays the entry, STRK the network fee. */
@@ -88,6 +105,8 @@ const STRK_TOKEN = "0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f428
 
 /** LORDS in whole units, as a player counts them (18 decimals on chain). */
 export const lordsOf = (wei: bigint): number => Number(wei / 10n ** 18n);
+
+const CHEST_OPENED = hash.getSelectorFromName("ChestOpened");
 
 const keyCalldata = (key: GameKey) => [key.shard, String(key.gameId)];
 const u256 = (value: bigint) => [String(value & ((1n << 128n) - 1n)), String(value >> 128n)];
@@ -99,10 +118,10 @@ export const registerCalls = (ledger: string, key: GameKey, sword: boolean, shie
   { contractAddress: ledger, entrypoint: "register", calldata: [...keyCalldata(key), flag(sword), flag(shield)] },
 ];
 
-/** Chest.approve(ledger, token) then open_chest(token): the holder's own call; the chest burns as it delivers. */
+/** Chest.approve(ledger, token) then open_request(token): the holder's one signature; the chest burns, no way back. */
 export const openChestCalls = (ledger: string, chest: string, tokenId: bigint): Call[] => [
   { contractAddress: chest, entrypoint: "approve", calldata: [ledger, ...u256(tokenId)] },
-  { contractAddress: ledger, entrypoint: "open_chest", calldata: u256(tokenId) },
+  { contractAddress: ledger, entrypoint: "open_request", calldata: u256(tokenId) },
 ];
 
 /** claim_season(season): a winner pulls their share once the review hour has passed. */
@@ -130,6 +149,7 @@ const fields = (felts: readonly string[]) => {
     number: () => Number(next()),
     bool: () => next() !== 0n,
     u128: () => next(),
+    address: () => `0x${next().toString(16)}`,
     u256: () => {
       const low = next();
       return low + (next() << 128n);
@@ -140,7 +160,7 @@ const fields = (felts: readonly string[]) => {
   };
 };
 
-/** Game: season_id, exists, preset_id, start, end, pool, entries, result_commitment, registered_count, cancelled, finalized. */
+/** Game: season_id, exists, preset_id, start, end, pool, result_commitment, registered_count, cancelled, finalized. */
 export const decodeGame = (felts: readonly string[]): LedgerGame => {
   const read = fields(felts);
   const seasonId = read.number();
@@ -148,7 +168,7 @@ export const decodeGame = (felts: readonly string[]): LedgerGame => {
   const presetId = read.number();
   const start = read.number();
   const end = read.number();
-  read.skip(5);
+  read.skip(3);
   return {
     seasonId,
     presetId,
@@ -160,22 +180,24 @@ export const decodeGame = (felts: readonly string[]): LedgerGame => {
   };
 };
 
-/** Preset: entry_fee, chest_lords_bps, chest_metadata, paid_fraction_bps, decay_bps, sword_price, shield_price, mmr. */
-export const decodePreset = (felts: readonly string[]): LedgerPrices & PayoutCurve => {
+/** Preset: entry_fee, protocol_cut_bps, chest_lords_bps, paid_fraction_bps, decay_bps, sword_price, shield_price, mmr. */
+export const decodePreset = (felts: readonly string[]): LedgerPrices & PayoutCurve & EntrySplit => {
   const read = fields(felts);
   const seat = read.u256();
-  read.skip(2);
+  const protocolCutBps = read.number();
+  const chestLordsBps = read.number();
   const paidFractionBps = read.number();
   const decayBps = read.number();
-  return { seat, sword: read.u256(), shield: read.u256(), paidFractionBps, decayBps };
+  return { seat, sword: read.u256(), shield: read.u256(), paidFractionBps, decayBps, protocolCutBps, chestLordsBps };
 };
 
 /**
- * BlitzSeason: participant_count, top_count, posted, challenged, review_until, settlement_started, paid, exists,
+ * BlitzSeason: chest_reserve, participant_count, top_count, posted, challenged, review_until, settlement_started, paid, exists,
  * preset_id, start, end, pool.
  */
 export const decodeSeason = (felts: readonly string[]): BlitzSeason => {
   const read = fields(felts);
+  read.skip(2);
   const participants = read.number();
   const winners = read.number();
   const posted = read.bool();
@@ -205,30 +227,35 @@ export const decodeRegistration = (felts: readonly string[]): Registration => {
   return { registered, sword, shield, swordCredit: read.bool(), shieldCredit: read.bool(), paid: read.u256() };
 };
 
-/** PlayerResult: rank, points, chest_id, mmr_before, mmr_after. */
+/** PlayerResult: rank, chest_id, mmr_before, mmr_after. */
 export const decodePlayerResult = (felts: readonly string[]): PlayerResult => {
   const read = fields(felts);
   return {
     rank: read.number(),
-    points: read.u128(),
     chestId: read.u256(),
     mmrBefore: read.number(),
     mmrAfter: read.number(),
   };
 };
 
-/** Chest: exists, opened, content { kind, cosmetic, lords }. */
+/** Chest: exists, season_id, band, requested, finished, requester, request_block. */
 export const decodeChest = (felts: readonly string[]): Chest => {
   const read = fields(felts);
   read.skip(1);
-  const opened = read.bool();
+  const seasonId = read.number();
+  const band = read.number();
+  const requested = read.bool();
+  const finished = read.bool();
+  const requester = read.address();
+  return { seasonId, band, requested, finished, requester, requestBlock: read.number() };
+};
+
+/** ChestContent: kind, cosmetic, lords; kind 0 cosmetic, 1 sword credit, 2 shield credit, 3 LORDS (possibly zero). */
+export const decodeChestContent = (felts: readonly string[]): ChestContent => {
+  const read = fields(felts);
   const kind = read.number();
   const cosmetic = read.u128();
   const lords = read.u256();
-  return { opened, content: chestContent(kind, cosmetic, lords) };
-};
-
-const chestContent = (kind: number, cosmetic: bigint, lords: bigint): ChestContent => {
   if (kind === 0) return { kind: "cosmetic", attributes: `0x${cosmetic.toString(16)}` };
   if (kind === 1) return { kind: "sword" };
   if (kind === 2) return { kind: "shield" };
@@ -270,6 +297,17 @@ export const ledgerReader = (provider: ProviderInterface, ledger: string) => {
     result: async (key: GameKey, owner: string) =>
       decodePlayerResult(await view("get_player_result", [...keyCalldata(key), owner])),
     chest: async (tokenId: bigint) => decodeChest(await view("get_chest", u256(tokenId))),
+    /** What a finished chest delivered: its ChestOpened event, searched from the block its request fixed. */
+    chestContent: async (tokenId: bigint, fromBlock: number): Promise<ChestContent | null> => {
+      const { events } = await provider.getEvents({
+        address: ledger,
+        from_block: { block_number: fromBlock },
+        to_block: "latest",
+        keys: [[CHEST_OPENED], ...u256(tokenId).map((limb) => [num.toHex(limb)])],
+        chunk_size: 10,
+      });
+      return events[0] ? decodeChestContent(events[0].data) : null;
+    },
     chestOwner: async (chest: string, tokenId: bigint) =>
       (await provider.callContract({ contractAddress: chest, entrypoint: "owner_of", calldata: u256(tokenId) }))[0],
     lords: (owner: string) => balanceOf(LORDS_TOKEN, owner),

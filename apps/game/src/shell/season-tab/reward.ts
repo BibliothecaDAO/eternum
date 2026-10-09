@@ -3,7 +3,14 @@ import { useQuery } from "@tanstack/react-query";
 import { mainnetProvider } from "@/runtime/mainnet-rpc";
 
 import type { DirectoryGame } from "../herald";
-import { type Chest, type GameKey, ledgerReader, type PlayerResult, type Registration } from "../value/ledger";
+import {
+  type Chest,
+  type ChestContent,
+  type GameKey,
+  ledgerReader,
+  type PlayerResult,
+  type Registration,
+} from "../value/ledger";
 
 /**
  * A finished paid Blitz on the ledger (design 5h, owner 9 Oct: the result mints a chest token the player holds,
@@ -25,36 +32,30 @@ export const gameLedgerOf = (game: DirectoryGame): GameLedger | null => {
     : null;
 };
 
-/** The chest's rank band, the one fact a sealed chest shows (rewards.html 3b: (rank − 1) ÷ (players − 1)). */
-type Band = "top" | "upper" | "middle" | "lower" | "bottom";
-
-export const bandOf = (rank: number, players: number): Band => {
-  const share = players > 1 ? (rank - 1) / (players - 1) : 0;
-  if (share <= 0.1) return "top";
-  if (share <= 0.25) return "upper";
-  if (share <= 0.5) return "middle";
-  if (share <= 0.75) return "lower";
-  return "bottom";
-};
-
 export interface Reward {
   result: PlayerResult;
   chest: Chest | null;
-  /** Whether the payout wallet still holds the chest token. */
+  /** Whether the payout wallet holds the chest token (a requested chest is burnt and held by nobody). */
   held: boolean;
+  /** What the chest delivered, once its opening is finished. */
+  content: ChestContent | null;
+  /** The chest's season end: after it, the season's chest LORDS are swept into the prize pool. */
+  seasonEnd: number;
   registration: Registration;
   strk: bigint;
 }
 
-type RewardState = "pending" | "sealed" | "no-strk" | "opened" | "traded";
+type RewardState = "pending" | "sealed" | "no-strk" | "opening" | "opened" | "traded";
 
 /**
- * Pending until the results are on the ledger; then a sealed chest the wallet holds (no STRK for the fee to open it,
- * or ready to), what it held once opened, or a chest that has left the wallet.
+ * Pending until the results are on the ledger; then a sealed chest the wallet holds (or no STRK for the open's fee);
+ * opening from the wallet's request until the draw is finished about ten blocks later; then what it delivered. A chest
+ * that left the wallet unopened, or that someone else opened, is gone from this player.
  */
-export const rewardState = (reward: Reward): RewardState => {
-  if (reward.result.rank === 0 || !reward.chest) return "pending";
-  if (reward.chest.opened) return "opened";
+export const rewardState = (reward: Reward, wallet: string): RewardState => {
+  const { chest } = reward;
+  if (reward.result.rank === 0 || !chest) return "pending";
+  if (chest.requested && BigInt(chest.requester) === BigInt(wallet)) return chest.finished ? "opened" : "opening";
   if (!reward.held) return "traded";
   return reward.strk === 0n ? "no-strk" : "sealed";
 };
@@ -62,12 +63,14 @@ export const rewardState = (reward: Reward): RewardState => {
 export const rewardKey = (ledger: GameLedger, wallet: string) =>
   ["ledger", "reward", ledger.address, ledger.key.shard, ledger.key.gameId, wallet] as const;
 
+/** Read every 30 s, every 5 s while the chest's draw is under way so the reveal comes as soon as it lands. */
 export const useReward = (ledger: GameLedger | null, wallet: string | null) =>
   useQuery({
     queryKey: rewardKey(ledger ?? { address: "", chest: "", key: { shard: "", gameId: 0 } }, wallet ?? ""),
     queryFn: () => readReward(ledger as GameLedger, wallet as string),
     enabled: ledger !== null && wallet !== null,
-    refetchInterval: 30_000,
+    refetchInterval: (query) =>
+      query.state.data?.chest?.requested && !query.state.data.chest.finished ? 5_000 : 30_000,
   });
 
 const readReward = async (ledger: GameLedger, wallet: string): Promise<Reward> => {
@@ -77,9 +80,16 @@ const readReward = async (ledger: GameLedger, wallet: string): Promise<Reward> =
     read.registration(ledger.key, wallet),
     read.strk(wallet),
   ]);
-  if (result.rank === 0 || result.chestId === 0n) return { result, chest: null, held: false, registration, strk };
+  const none = { chest: null, held: false, content: null, seasonEnd: 0, registration, strk };
+  if (result.rank === 0 || result.chestId === 0n) return { result, ...none };
   const chest = await read.chest(result.chestId);
-  // An opened chest is burnt: no owner to ask.
-  const held = !chest.opened && BigInt(await read.chestOwner(ledger.chest, result.chestId)) === BigInt(wallet);
-  return { result, chest, held, registration, strk };
+  const [season, held, content] = await Promise.all([
+    read.season(chest.seasonId),
+    // A requested chest is burnt: no owner to ask.
+    chest.requested
+      ? false
+      : read.chestOwner(ledger.chest, result.chestId).then((owner) => BigInt(owner) === BigInt(wallet)),
+    chest.finished ? read.chestContent(result.chestId, chest.requestBlock) : null,
+  ]);
+  return { result, chest, held, content, seasonEnd: season.end, registration, strk };
 };

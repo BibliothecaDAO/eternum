@@ -140,6 +140,8 @@ export const LAB_SCREENS = {
   "reward-pending": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
   "reward-sealed": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
   "reward-no-strk": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
+  "reward-after-season": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
+  "reward-opening": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
   "reward-epic": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
   "reward-lords": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
   "reward-credit": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
@@ -169,6 +171,8 @@ export const LAB_PAYOUT_WALLETS: Partial<Record<keyof typeof LAB_SCREENS, Payout
   "reward-pending": { status: "ready", address: LAB_WALLET },
   "reward-sealed": { status: "ready", address: LAB_WALLET },
   "reward-no-strk": { status: "ready", address: LAB_WALLET },
+  "reward-after-season": { status: "ready", address: LAB_WALLET },
+  "reward-opening": { status: "ready", address: LAB_WALLET },
   "reward-epic": { status: "ready", address: LAB_WALLET },
   "reward-lords": { status: "ready", address: LAB_WALLET },
   "reward-credit": { status: "ready", address: LAB_WALLET },
@@ -397,12 +401,16 @@ export const LAB_GAME_LEDGER: GameLedger = {
   key: { shard: LAB_CHAIN, gameId: 7 },
 };
 
-const RESULT = { rank: 3, points: 352n, chestId: 41n, mmrBefore: 1744, mmrAfter: 1780 };
+const RESULT = { rank: 3, chestId: 41n, mmrBefore: 1744, mmrAfter: 1780 };
 const SWORD = { registered: true, sword: true, shield: false, swordCredit: false, shieldCredit: false, paid: 0n };
+const CHEST = { seasonId: 3, band: 0, requested: false, finished: false, requester: "0x0", requestBlock: 0 };
+const OPENED = { ...CHEST, requested: true, finished: true, requester: LAB_WALLET, requestBlock: 812_300 };
 const SEALED: Reward = {
   result: RESULT,
-  chest: { opened: false, content: { kind: "cosmetic", attributes: "0x4040d01" } },
+  chest: CHEST,
   held: true,
+  content: null,
+  seasonEnd: NOW + 52 * DAY,
   registration: SWORD,
   strk: 10n ** 17n,
 };
@@ -412,14 +420,17 @@ export const LAB_REWARDS: Partial<Record<keyof typeof LAB_SCREENS, Reward>> = {
   "reward-pending": { ...SEALED, result: { ...RESULT, rank: 0, chestId: 0n }, chest: null },
   "reward-sealed": SEALED,
   "reward-no-strk": { ...SEALED, strk: 0n },
-  "reward-epic": { ...SEALED, chest: { ...SEALED.chest!, opened: true }, held: false },
-  "reward-lords": { ...SEALED, chest: { opened: true, content: { kind: "lords", amount: 700n * WEI } }, held: false },
+  "reward-after-season": { ...SEALED, chest: { ...CHEST, band: 3 }, seasonEnd: NOW - DAY },
+  "reward-opening": { ...SEALED, chest: { ...OPENED, finished: false }, held: false },
+  "reward-epic": { ...SEALED, chest: OPENED, held: false, content: { kind: "cosmetic", attributes: "0x4040d01" } },
+  "reward-lords": { ...SEALED, chest: OPENED, held: false, content: { kind: "lords", amount: 700n * WEI } },
   "reward-credit": {
     ...SEALED,
     result: { ...RESULT, mmrAfter: 1732 },
     registration: { ...SWORD, sword: false, shield: true },
-    chest: { opened: true, content: { kind: "shield" } },
+    chest: { ...OPENED, band: 3 },
     held: false,
+    content: { kind: "shield" },
   },
 };
 

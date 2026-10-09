@@ -2,6 +2,7 @@ import { lazy, type ReactNode, Suspense, useState } from "react";
 
 import type { PayoutWallet } from "@/hooks/context/payout-wallet";
 import { formatExact } from "@/ui/design-system/kit/amount";
+import { formatDate } from "@/ui/design-system/kit/time";
 import { Button } from "@/ui/design-system/kit/button";
 import { type IconCode, KitIcon } from "@/ui/design-system/kit/kit-icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -10,32 +11,27 @@ import { getChestAssetFromAttributesRaw } from "@/ui/features/cosmetics/chest-op
 import { mainnetProvider } from "@/runtime/mainnet-rpc";
 
 import { Loading } from "../loading";
+import { useNowSeconds } from "../use-now";
 import { type ChestContent, lordsOf, openChestCalls } from "../value/ledger";
 import { NoStrkLine } from "../value/no-strk-line";
 import { REWARD_WORDS } from "../words";
-import { bandOf, type GameLedger, type Reward, rewardState, useReward } from "./reward";
+import { type GameLedger, type Reward, rewardState, useReward } from "./reward";
 
 const WalletSign = lazy(() =>
   import("@/ui/modules/identity/wallet-actions").then((module) => ({ default: module.WalletSign })),
 );
 
-const CHEST = "/images/relic-chest/chest-closed.png";
-const CHEST_OPEN = "/images/relic-chest/chest-opened.png";
+/** Each rank band's chest, sealed or opened (0 the top 10 percent .. 4 the bottom 25). */
+const chestArt = (band: number, opened: boolean) =>
+  `/images/blitz-chests/band-${band}-${opened ? "opened" : "sealed"}.webp`;
 
 /**
- * After a paid Blitz: the rated game's MMR change with the sword or shield applied, and the chest the result minted
- * for the player's rank band, which the payout wallet opens with its own signature or keeps to trade. A sealed chest
- * shows its band and nothing else; the reveal plays inside this panel.
+ * After a paid Blitz: the rated game's MMR change with the sword or shield applied, and the mystery chest the result
+ * minted for the player's rank band. A sealed chest shows its band and nothing else. Open is one signature from the
+ * payout wallet; the draw then lands by itself about ten blocks later, and the reveal plays inside this panel. Keep
+ * leaves it in the collection to trade.
  */
-export const RewardPanel = ({
-  ledger,
-  wallet,
-  players,
-}: {
-  ledger: GameLedger;
-  wallet: PayoutWallet;
-  players: number;
-}) => {
+export const RewardPanel = ({ ledger, wallet }: { ledger: GameLedger; wallet: PayoutWallet }) => {
   const reward = useReward(ledger, wallet.status === "no_wallet" ? null : wallet.address);
   if (wallet.status === "no_wallet" || !reward.data) return null;
   return (
@@ -45,8 +41,7 @@ export const RewardPanel = ({
         ledger={ledger}
         owner={wallet.address}
         reward={reward.data}
-        players={players}
-        onOpened={() => void reward.refetch()}
+        onRequested={() => void reward.refetch()}
       />
     </div>
   );
@@ -83,54 +78,45 @@ const ChestPlate = ({
   ledger,
   owner,
   reward,
-  players,
-  onOpened,
+  onRequested,
 }: {
   ledger: GameLedger;
   owner: string;
   reward: Reward;
-  players: number;
-  onOpened: () => void;
+  onRequested: () => void;
 }) => {
+  const now = useNowSeconds();
   const [kept, setKept] = useState(false);
   const [signing, setSigning] = useState(false);
-  const [opening, setOpening] = useState(false);
-  const state = rewardState(reward);
-  const band = REWARD_WORDS.band[bandOf(reward.result.rank, players)];
-  const title = REWARD_WORDS.chest;
+  const state = rewardState(reward, owner);
+  const band = reward.chest?.band ?? 0;
 
   if (state === "pending")
     return (
-      <Plate icon="Ch" title={title}>
-        <ChestArt dim />
+      <Plate icon="Ch" title={REWARD_WORDS.chest}>
+        <ChestArt band={band} dim />
         <Line icon="Hg">{REWARD_WORDS.arrives}</Line>
       </Plate>
     );
-  if (state === "opened" && reward.chest)
+  if (state === "opened")
     return (
-      <Plate icon="Ch" title={title}>
-        <Stage>
-          <Prize content={reward.chest.content} />
-        </Stage>
+      <Plate icon="Ch" title={REWARD_WORDS.chest}>
+        <Stage>{reward.content ? <Prize content={reward.content} /> : <Loading />}</Stage>
       </Plate>
     );
-  if (opening)
+  if (state === "opening")
     return (
-      <Plate icon="Ch" title={title}>
+      <Plate icon="Ch" title={REWARD_WORDS.chest}>
         <Stage>
-          <img
-            src={CHEST_OPEN}
-            alt=""
-            className="relative size-52 object-contain drop-shadow-[0_0_40px_theme(colors.kit.gold)]"
-          />
-          <span className="relative font-ui text-[26px] text-kit-gold2">…</span>
+          <img src={chestArt(band, true)} alt="" className="relative size-48 animate-pulse object-contain" />
+          <span className="relative font-ui text-[20px] text-kit-gold2">{REWARD_WORDS.opening}</span>
         </Stage>
       </Plate>
     );
   if (state === "traded")
     return (
-      <Plate icon="Ch" title={title}>
-        <ChestArt dim band={band} />
+      <Plate icon="Ch" title={REWARD_WORDS.chest}>
+        <ChestArt band={band} dim />
         <Line icon="Pc">{REWARD_WORDS.traded}</Line>
       </Plate>
     );
@@ -141,22 +127,19 @@ const ChestPlate = ({
         calls={openChestCalls(ledger.address, ledger.chest, reward.result.chestId)}
         onSent={(hash) => {
           setSigning(false);
-          setOpening(true);
-          // Read the chest again once the opening is on chain: its contents show then.
-          void mainnetProvider().waitForTransaction(hash).finally(onOpened);
+          // The request is the chest's last move from this wallet: read it again once it is on chain.
+          void mainnetProvider().waitForTransaction(hash).finally(onRequested);
         }}
       />
     </Suspense>
   ) : null;
   return (
-    <Plate icon="Ch" title={title}>
+    <Plate icon="Ch" title={REWARD_WORDS.chest}>
       <ChestArt band={band} glow={state === "sealed" && !kept} />
-      {kept && (
-        <p className="flex flex-wrap gap-2">
-          <Chip icon="Ok" word={REWARD_WORDS.inCollection} tone="text-kit-sage" />
-          <Chip icon="Pc" word={REWARD_WORDS.tradeable} tone="text-kit-muted" />
-        </p>
-      )}
+      <p className="flex flex-wrap gap-2">
+        <LordsUntil seasonEnd={reward.seasonEnd} now={now} />
+        {kept && <Chip icon="Pc" word={REWARD_WORDS.tradeable} tone="text-kit-muted" />}
+      </p>
       {state === "no-strk" && <NoStrkLine />}
       {open ?? (
         <div className={cn("grid gap-3", kept ? "grid-cols-1" : "grid-cols-2")}>
@@ -174,7 +157,15 @@ const ChestPlate = ({
   );
 };
 
-/** What the chest held, fixed when it was minted. */
+/** The one rule a sealed chest carries: it can pay LORDS only while its season runs. */
+const LordsUntil = ({ seasonEnd, now }: { seasonEnd: number; now: number }) =>
+  now < seasonEnd ? (
+    <Chip icon="Lo" word={REWARD_WORDS.lordsUntil(formatDate(seasonEnd))} tone="text-kit-gold2" />
+  ) : (
+    <Chip icon="Lo" word={REWARD_WORDS.noLords} tone="text-kit-muted" struck />
+  );
+
+/** What the chest delivered: an item, LORDS (possibly none once its season's reserve ran out), or a credit. */
 const Prize = ({ content }: { content: ChestContent }) => {
   if (content.kind === "cosmetic") {
     const item = getChestAssetFromAttributesRaw(content.attributes);
@@ -209,19 +200,17 @@ const Prize = ({ content }: { content: ChestContent }) => {
   );
 };
 
-const ChestArt = ({ band, dim = false, glow = false }: { band?: string; dim?: boolean; glow?: boolean }) => (
+const ChestArt = ({ band, dim = false, glow = false }: { band: number; dim?: boolean; glow?: boolean }) => (
   <div
     className={cn(
       "relative flex h-48 items-center justify-center rounded-xl",
       glow && "bg-[radial-gradient(circle,theme(colors.kit.gold/30%),transparent_65%)]",
     )}
   >
-    <img src={CHEST} alt="" className={cn("size-44 object-contain", dim && "opacity-40 grayscale")} />
-    {band && (
-      <span className="absolute bottom-1 left-1">
-        <Chip icon="Tp" word={band} tone="text-kit-muted" />
-      </span>
-    )}
+    <img src={chestArt(band, false)} alt="" className={cn("size-44 object-contain", dim && "opacity-40 grayscale")} />
+    <span className="absolute bottom-1 left-1">
+      <Chip icon="Tp" word={REWARD_WORDS.band[band] ?? REWARD_WORDS.band[0]} tone="text-kit-muted" />
+    </span>
   </div>
 );
 
@@ -258,14 +247,27 @@ const Line = ({ icon, children }: { icon: IconCode; children: ReactNode }) => (
   </p>
 );
 
-const Chip = ({ icon, word, tone }: { icon: IconCode; word: string; tone: string }) => (
+const Chip = ({
+  icon,
+  word,
+  tone,
+  struck = false,
+}: {
+  icon: IconCode;
+  word: string;
+  tone: string;
+  struck?: boolean;
+}) => (
   <span
     className={cn(
       "inline-flex h-9 items-center gap-1.5 rounded-full border border-kit-line2 bg-kit-ink pl-2 pr-3 font-body text-[15px] font-bold",
       tone,
     )}
   >
-    <KitIcon code={icon} size={20} />
+    <span className={cn("relative", struck && "opacity-60")}>
+      <KitIcon code={icon} size={20} />
+      {struck && <span aria-hidden className="absolute left-0 top-1/2 h-0.5 w-5 -rotate-45 bg-kit-red" />}
+    </span>
     {word}
   </span>
 );

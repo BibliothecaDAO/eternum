@@ -238,7 +238,7 @@ const BlitzResult = ({
               );
             })}
           </ol>
-          {ledger && wallet && <RewardPanel ledger={ledger} wallet={wallet} players={entries.length} />}
+          {ledger && wallet && <RewardPanel ledger={ledger} wallet={wallet} />}
         </div>
       }
       buttons={

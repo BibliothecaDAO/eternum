@@ -25,10 +25,14 @@ import { RewardPanel } from "./reward-panel";
 
 const WEI = 10n ** 18n;
 const LEDGER: GameLedger = { address: "0x1ed9e7", chest: "0xc4e57", key: { shard: "0x52", gameId: 7 } };
+const CHEST = { seasonId: 3, band: 0, requested: false, finished: false, requester: "0x0", requestBlock: 0 };
+const OPENED = { ...CHEST, requested: true, finished: true, requester: "0x4a1", requestBlock: 812300 };
 const SEALED: Reward = {
-  result: { rank: 3, points: 2570n, chestId: 41n, mmrBefore: 1744, mmrAfter: 1780 },
-  chest: { opened: false, content: { kind: "cosmetic", attributes: "0x4040d01" } },
+  result: { rank: 3, chestId: 41n, mmrBefore: 1744, mmrAfter: 1780 },
+  chest: CHEST,
   held: true,
+  content: null,
+  seasonEnd: Math.floor(Date.now() / 1000) + 86_400,
   registration: { registered: true, sword: true, shield: false, swordCredit: false, shieldCredit: false, paid: 0n },
   strk: 10n ** 17n,
 };
@@ -44,7 +48,7 @@ const mount = async (reward: Reward) => {
   await act(async () =>
     root.render(
       <QueryClientProvider client={client}>
-        <RewardPanel ledger={LEDGER} wallet={{ status: "ready", address: "0x4a1" }} players={24} />
+        <RewardPanel ledger={LEDGER} wallet={{ status: "ready", address: "0x4a1" }} />
       </QueryClientProvider>,
     ),
   );
@@ -65,34 +69,43 @@ afterEach(async () => {
   signed.calls = [];
 });
 
-it("shows the sword's doubled gain and a sealed chest's band only, opened by the holder's own calls", async () => {
+it("shows the sword's doubled gain and a sealed chest's band only, opened by the holder's one signature", async () => {
   const panel = await mount(SEALED);
   expect(panel.textContent).toContain("+36");
   expect(panel.textContent).toContain("×2");
   expect(panel.textContent).toContain("Top 10%");
-  // Sealed, the chest names nothing of what it holds.
-  expect(panel.textContent).not.toContain("Overgrown Wreath");
+  expect(panel.textContent).toContain("LORDS until");
+  expect(panel.querySelector('img[src*="blitz-chests"]')?.getAttribute("src")).toBe(
+    "/images/blitz-chests/band-0-sealed.webp",
+  );
   await press(panel, "Open");
   await press(panel, "Sign");
   expect(signed.calls).toEqual([
     [
       { contractAddress: "0xc4e57", entrypoint: "approve", calldata: ["0x1ed9e7", "41", "0"] },
-      { contractAddress: "0x1ed9e7", entrypoint: "open_chest", calldata: ["41", "0"] },
+      { contractAddress: "0x1ed9e7", entrypoint: "open_request", calldata: ["41", "0"] },
     ],
   ]);
 });
 
-it("keeps a chest to trade, and names a missing fee, what an opened one held, and a chest still to come", async () => {
+it("keeps a chest to trade, waits on the draw, and shows what an opened one delivered", async () => {
   const kept = await mount(SEALED);
   await press(kept, "Keep");
-  expect(kept.textContent).toContain("In your collection");
   expect(kept.textContent).toContain("Tradeable");
 
   expect((await mount({ ...SEALED, strk: 0n })).textContent).toContain("No STRK for the fee");
-  expect((await mount({ ...SEALED, chest: { ...SEALED.chest!, opened: true } })).textContent).toContain(
-    "Overgrown Wreath",
+  expect((await mount({ ...SEALED, seasonEnd: 1 })).textContent).toContain("No LORDS now");
+  expect((await mount({ ...SEALED, chest: { ...OPENED, finished: false }, held: false })).textContent).toContain(
+    "Opening",
   );
-  const lords = await mount({ ...SEALED, chest: { opened: true, content: { kind: "lords", amount: 700n * WEI } } });
+  const item = await mount({
+    ...SEALED,
+    chest: OPENED,
+    held: false,
+    content: { kind: "cosmetic", attributes: "0x4040d01" },
+  });
+  expect(item.textContent).toContain("Overgrown Wreath");
+  const lords = await mount({ ...SEALED, chest: OPENED, held: false, content: { kind: "lords", amount: 700n * WEI } });
   expect(lords.textContent).toContain("700");
   const pending = await mount({ ...SEALED, result: { ...SEALED.result, rank: 0, chestId: 0n }, chest: null });
   expect(pending.textContent).toContain("Arrives with the results");

@@ -283,8 +283,11 @@ export const REWARD_WORDS = {
   swordCredit: "Sword credit",
   shieldCredit: "Shield credit",
   nextEntry: "Used at your next entry",
-  /** A chest's rank band, the one fact it shows sealed (rewards.html 3b). */
-  band: { top: "Top 10%", upper: "Top 25%", middle: "Top half", lower: "Top 75%", bottom: "Bottom 25%" },
+  /** A chest's rank band (0 best .. 4), the one fact it shows sealed. */
+  band: ["Top 10%", "Top 25%", "Top half", "Top 75%", "Bottom 25%"],
+  opening: "Opening…",
+  lordsUntil: (date: string) => `LORDS until ${date}`,
+  noLords: "No LORDS now",
 } as const;
 
 /** The Blitz season's prize on Season. */
