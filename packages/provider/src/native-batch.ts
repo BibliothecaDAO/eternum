@@ -1,3 +1,4 @@
+import { decodeBatchProgress } from "./batch-progress";
 import { byteArray, hash, shortString, type GetTransactionReceiptResponse } from "starknet";
 
 import type { BatchTransactionReceipt, NativeExecutionOutcome, NativeTicketIdentity } from "@bibliothecadao/types";
@@ -68,10 +69,9 @@ function decodeReason(fields: string[]): string {
 }
 
 function attachBatchProgress(outcomes: NativeExecutionOutcome[], event: Event): void {
-  if (event.keys.length !== 2 || event.data.length !== 3) throw new Error("Malformed native batch result");
-  const [game, actor, nonce, remaining] = [event.keys[1], ...event.data].map(BigInt);
-  if (game < 1n || game >= 2n ** 32n || nonce < 0n || nonce >= 2n ** 64n || remaining < 0n || remaining >= 2n ** 64n)
-    throw new Error("Invalid native batch result");
+  const decoded = decodeBatchProgress(event);
+  const { gameId: game, actor, transactionHash: nonce, remaining } = decoded;
+  if (nonce >= 2n ** 64n) throw new Error("Invalid native batch result");
   const matching = outcomes.filter(
     (outcome) =>
       BigInt(outcome.gameId) === game &&

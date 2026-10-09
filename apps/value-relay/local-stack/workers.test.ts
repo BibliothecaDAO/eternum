@@ -117,6 +117,8 @@ it("runs the actual Workers together with D1, private local email and named bind
         },
         ...(body ? { body: JSON.stringify(body) } : {}),
       });
+    const health = await request("/api/health");
+    expect(((await health.json()) as { environment: string }).environment).toBe("local");
     const guardianResponse = await request("/api/guardian");
     expect(await guardianResponse.clone().text()).toMatch(/^\{/);
     expect(((await guardianResponse.json()) as { publicKey: string }).publicKey).toBe(manifest.guardianPublicKey);

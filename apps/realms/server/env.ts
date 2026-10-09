@@ -8,7 +8,7 @@ import type { Guardian } from "@realms-world/guardian";
  * per environment and never committed.
  */
 const IdentityVars = Schema.Struct({
-  ENVIRONMENT: Schema.Literals(["staging", "production"]),
+  ENVIRONMENT: Schema.Literals(["local", "staging", "production"]),
   /** The app's origin; identity is served under its /api. */
   BASE_URL: Schema.NonEmptyString,
   /** The RealmsAccount class every shard deploys player accounts from. */

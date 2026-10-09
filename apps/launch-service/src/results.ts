@@ -1,6 +1,5 @@
 import { blitzCommitment } from "@realms-world/value-ledger/commitment";
 import { batchRemaining } from "@realms-world/value-ledger/shard";
-import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
 import type { FinalizedGameSummary } from "./model";
 import type { FinalizeGameRequest } from "./schemas";
 import type { LaunchShard } from "./shard-client";
@@ -62,7 +61,7 @@ export const finalizeGame = async (request: FinalizeGameRequest, shard: LaunchSh
     secondsUntilEnd: async () => Number((await shard.game(gameId)).end_at) - (await shard.head()).timestamp,
     settle: async () => {
       while (!(await shard.game(gameId)).settled) {
-        const result = await shard.play(gameId, [String(commandId("MarkGameSettled"))]);
+        const result = await shard.playCommand(gameId, "MarkGameSettled");
         const remaining = batchRemaining(result.events, shard.target.gamesAddress, gameId, result.transactionHash);
         if (!remaining && !(await shard.game(gameId)).settled) throw new Error("point_settlement_not_complete");
       }
@@ -78,8 +77,7 @@ export const finalizeGame = async (request: FinalizeGameRequest, shard: LaunchSh
       );
     },
     record: (start, players) =>
-      shard.play(gameId, [
-        String(commandId("RecordBlitzResults")),
+      shard.playCommand(gameId, "RecordBlitzResults", [
         String(start),
         String(players.length),
         ...players.flatMap(({ wallet, rank }) => [String(wallet), String(rank)]),
@@ -92,14 +90,4 @@ export const finalizeGame = async (request: FinalizeGameRequest, shard: LaunchSh
   )
     throw new Error("shard_result_commitment_differs");
   return { ...request, resultCommitment: `0x${commitment.toString(16)}` };
-};
-
-// Only the canonical enum order is read here; the retired player/points payload ABI never encodes a ranked row.
-const commandId = (name: string) => {
-  const command = bindings.commandAbi.find((type) => type.type === "enum" && type.name.endsWith("::Command")) as
-    | { variants: { name: string }[] }
-    | undefined;
-  const id = command?.variants.findIndex((variant) => variant.name === name) ?? -1;
-  if (id < 0) throw new Error("native_command_not_published");
-  return id;
 };

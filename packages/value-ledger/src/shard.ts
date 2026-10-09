@@ -1,4 +1,6 @@
-import { Account, Signer, CallData, ec, stark, hash, byteArray, type Abi, type RpcProvider } from "starknet";
+import { DeviceSigner } from "@bibliothecadao/eternum/device-signer";
+export { batchRemaining } from "@bibliothecadao/provider/batch-progress";
+import { Account, CallData, ec, hash, byteArray, type Abi, type RpcProvider } from "starknet";
 import { rpcAt } from "./rpc";
 
 export interface ShardTarget {
@@ -7,15 +9,6 @@ export interface ShardTarget {
   gamesAddress: string;
   accountAddress: string;
   privateKey: string;
-}
-
-class DeviceSigner extends Signer {
-  constructor(private readonly deviceKey: string) {
-    super(deviceKey);
-  }
-  override async signRaw(digest: string): Promise<string[]> {
-    return [ec.starkCurve.getStarkKey(this.deviceKey), ...stark.formatSignature(await super.signRaw(digest))];
-  }
 }
 
 /** Administrative invokes and stamped play use the same approved device and public RPC, with no fee estimation. */
@@ -27,7 +20,10 @@ export class ShardOperator {
     this.account = new Account({
       provider: this.provider,
       address: target.accountAddress,
-      signer: new DeviceSigner(target.privateKey),
+      signer: new DeviceSigner({
+        privateKey: target.privateKey,
+        publicKey: ec.starkCurve.getStarkKey(target.privateKey),
+      }),
       cairoVersion: "1",
     });
   }
@@ -71,11 +67,32 @@ export class ShardOperator {
       ...command,
     ]);
   }
+  private cachedAbi: Promise<Abi> | undefined;
+  async playCommand(gameId: number, name: string, args: readonly string[] = []) {
+    const abi = await this.runtimeAbi((await this.head()).block_number);
+    const command = abi.find((type) => type.type === "enum" && type.name.endsWith("::Command")) as
+      | { variants: { name: string }[] }
+      | undefined;
+    const id = command?.variants.findIndex((variant) => variant.name === name) ?? -1;
+    if (id < 0) throw new Error("native_command_not_published");
+    return this.play(gameId, [String(id), ...args]);
+  }
+  private async runtimeAbi(head: number): Promise<Abi> {
+    this.cachedAbi ??= this.provider
+      .getClassAt(this.target.gamesAddress, head)
+      .then((contract) => {
+        const abi = typeof contract.abi === "string" ? JSON.parse(contract.abi) : contract.abi;
+        if (!Array.isArray(abi)) throw new Error("shard_abi_unavailable");
+        return abi as Abi;
+      })
+      .catch((error) => {
+        this.cachedAbi = undefined;
+        throw error;
+      });
+    return this.cachedAbi;
+  }
   private async codec(head: number) {
-    const contract = await this.provider.getClassAt(this.target.gamesAddress, head);
-    const abi = typeof contract.abi === "string" ? JSON.parse(contract.abi) : contract.abi;
-    if (!Array.isArray(abi)) throw new Error("shard_abi_unavailable");
-    return new CallData(abi as Abi);
+    return new CallData(await this.runtimeAbi(head));
   }
   private async invoke(entrypoint: string, calldata: string[]) {
     const bound = await this.view<bigint>("l2_gas_bound", []);
@@ -150,28 +167,4 @@ const rejectGameplayRefusal = (
     pending_word_len: Number(BigInt(event.data[3 + words]!)),
   });
   throw new Error(`gameplay_refused:${reason}`);
-};
-
-export const batchRemaining = (
-  events: readonly { from_address: string; keys: string[]; data: string[] }[],
-  address: string,
-  gameId: number,
-  transactionHash: string,
-): bigint => {
-  const rows = events.filter(
-    (event) =>
-      BigInt(event.from_address) === BigInt(address) &&
-      BigInt(event.keys[0] ?? "0") === BigInt(hash.getSelectorFromName("BatchProgress")),
-  );
-  if (
-    rows.length !== 1 ||
-    rows[0]!.keys.length !== 2 ||
-    rows[0]!.data.length !== 3 ||
-    BigInt(rows[0]!.keys[1]!) !== BigInt(gameId) ||
-    BigInt(rows[0]!.data[1]!) !== BigInt(transactionHash)
-  )
-    throw new Error("batch_progress_missing_or_invalid");
-  const remaining = BigInt(rows[0]!.data[2]!);
-  if (remaining < 0n || remaining >= 2n ** 64n) throw new Error("invalid_batch_remaining");
-  return remaining;
 };

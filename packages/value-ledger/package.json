@@ -13,7 +13,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "starknet": "catalog:web"
+    "starknet": "catalog:web",
+    "@bibliothecadao/eternum": "workspace:*",
+    "@bibliothecadao/provider": "workspace:*"
   },
   "devDependencies": {
     "typescript": "catalog:web",

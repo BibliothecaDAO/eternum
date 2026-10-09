@@ -186,7 +186,7 @@ const createDevnetContainer = (config: StackConfig, container: string, stateDire
       "none",
       "--publish",
       `127.0.0.1:${config.devnetPort}:5050`,
-      "docker.io/shardlabs/starknet-devnet-rs:0.10.0",
+      "docker.io/shardlabs/starknet-devnet-rs@sha256:93aef975b4e67e3349aa256f6fa3a91190aedeb6cc458ab2c45e80f71e833466",
       "--host",
       "0.0.0.0",
       "--port",

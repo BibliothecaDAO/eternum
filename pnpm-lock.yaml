@@ -1515,6 +1515,12 @@ importers:
 
   packages/value-ledger:
     dependencies:
+      '@bibliothecadao/eternum':
+        specifier: workspace:*
+        version: link:../core
+      '@bibliothecadao/provider':
+        specifier: workspace:*
+        version: link:../provider
       starknet:
         specifier: catalog:web
         version: 9.4.2(typescript@5.9.3)(zod@4.3.6)

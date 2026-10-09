@@ -9,7 +9,7 @@ import {
 import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { Readable } from "node:stream";
-import { loopbackUrl, type StackConfig } from "./config";
+import { type StackConfig } from "./config";
 import type { Assets, LocalAccount } from "./assets";
 
 export interface NativeCredentials {
@@ -183,7 +183,7 @@ const buildWorkerOptions = (input: StackWorkers, origin: string, l2: string, boo
         SIGN_IN_CODE_RATE_LIMIT: { namespace_id: "1003", simple: { limit: 3, period: 60 } },
       },
       bindings: {
-        ENVIRONMENT: "staging",
+        ENVIRONMENT: "local",
         BASE_URL: origin,
         ACCOUNT_CLASS_HASH: manifest.accountClassHash,
         BETTER_AUTH_SECRET: secrets.authSecret,
@@ -209,7 +209,7 @@ const buildWorkerOptions = (input: StackWorkers, origin: string, l2: string, boo
             serviceBindings: { IDENTITY: "identity", VALUE_RELAY: service("relay", "ValueLaunch") },
             bindings: {
               ...common,
-              ENVIRONMENT: "staging",
+              ENVIRONMENT: "local",
               SHARD_URL: origin,
               LAUNCHER_ALLOWLIST: launcher.address,
               DEPLOYER_ACCOUNT_ADDRESS: launcher.address,

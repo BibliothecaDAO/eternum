@@ -27,6 +27,14 @@ vi.mock("starknet", async (original) => ({
   }),
 }));
 const abi = [
+  {
+    type: "enum",
+    name: "world::Command",
+    variants: ["Unused", "Unrelated", "SettleBlitzRoster", "MarkGameSettled", "RecordBlitzResults"].map((name) => ({
+      name,
+      type: "core::unit",
+    })),
+  },
   { type: "struct", name: "Game", members: [{ name: "preset_id", type: "core::integer::u32" }] },
   ...["l2_gas_bound", "game_release", "preset_commitment"].map((name) => ({
     type: "function",
@@ -60,9 +68,9 @@ it("uses the fixed ordinary v3 play frame and a native three-felt device signatu
     accountAddress: "0x20",
     privateKey: device,
   });
-  await operator.play(7, ["7"]);
+  await operator.playCommand(7, "SettleBlitzRoster");
   expect(rpc.execute).toHaveBeenCalledWith(
-    { contractAddress: "0x10", entrypoint: "play", calldata: ["7", "2", "2", "1", "7"] },
+    { contractAddress: "0x10", entrypoint: "play", calldata: ["7", "2", "2", "1", "2"] },
     expect.objectContaining({
       tip: 0,
       paymasterData: [],
@@ -87,4 +95,17 @@ it("requires the exact transaction-correlated BatchProgress; an absent record is
   };
   expect(batchRemaining([event], "0x10", 7, "0xabc")).toBe(0n);
   expect(() => batchRemaining([event], "0x10", 7, "0xdef")).toThrow();
+});
+
+it("resolves result and settlement command ordinals from the deployed ABI and refuses unknown commands", async () => {
+  const operator = new ShardOperator({
+    chainId: "0x1",
+    rpcUrl: "https://shard.test",
+    gamesAddress: "0x10",
+    accountAddress: "0x20",
+    privateKey: "0x1",
+  });
+  await operator.playCommand(7, "RecordBlitzResults", ["0", "1", "0x123", "1"]);
+  expect(rpc.execute.mock.calls[0]![0].calldata[4]).toBe("4");
+  await expect(operator.playCommand(7, "Missing")).rejects.toThrow("native_command_not_published");
 });
