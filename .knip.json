@@ -27,7 +27,9 @@
         "deploy/athanor/scripts/inspect-shard-roles.ts",
         "deploy/athanor/scripts/read-rpc.ts",
         "deploy/athanor/scripts/account-rpc-smoke.ts",
-        "deploy/athanor/scripts/enrol-operator.ts"
+        "deploy/athanor/scripts/enrol-operator.ts",
+        "deploy/athanor/vrf/worker.ts",
+        "deploy/athanor/vrf/benchmark.ts"
       ],
       "paths": {
         "@bibliothecadao/eternum": [

@@ -1,7 +1,6 @@
 import { hash } from "starknet";
 
 export interface ShardIdentity {
-  operatorAccountAddress: string;
   accountClassHash: string;
   guardianPublicKey: string;
 }
@@ -37,7 +36,6 @@ async function permitsAccountTransaction(
   if (!equal(t.tip, "0x0") || !felts(t.signature)) return false;
   if (t.type === "DEPLOY_ACCOUNT") return permitsDeploy(t, identity, query);
   if (t.type !== "INVOKE") return false;
-  if (equal(t.sender_address, identity.operatorAccountAddress)) return felts(t.calldata);
   if (!permitsSelfCall(t, query)) return false;
   try {
     return equal(await classAt(t.sender_address as string), identity.accountClassHash);

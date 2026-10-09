@@ -1,6 +1,15 @@
+import { identity as playIdentity } from "../vrf/fixtures";
 import { expect, test } from "bun:test";
 import { startReadRpc } from "./read-rpc";
 import { assertPublicRpcBoundary } from "./public-rpc-check";
+import { hash } from "starknet";
+import { rpcClientAddress } from "./rpc-client-limit";
+
+const noStamp = {
+  async stamp() {
+    throw new Error("Unexpected stamp");
+  },
+};
 
 test("public RPC forwards reads but never forwards writes, mixed batches, escaped methods or upgrades", async () => {
   const received: unknown[] = [];
@@ -12,13 +21,7 @@ test("public RPC forwards reads but never forwards writes, mixed batches, escape
       return Response.json({ jsonrpc: "2.0", id: 1, result: "0x123" });
     },
   });
-  const proxy = startReadRpc(
-    node.url.origin,
-    0,
-    { accountClassHash: "0x123", guardianPublicKey: "0x456", operatorAccountAddress: "0x789" },
-    undefined,
-    "127.0.0.1",
-  );
+  const proxy = startReadRpc(node.url.origin, 0, playIdentity, noStamp, undefined, "127.0.0.1");
   const url = new URL("/rpc/v0_10_2", proxy.url).href;
   try {
     const result = await assertPublicRpcBoundary(url);
@@ -68,11 +71,8 @@ test("the public audit rejects a directly exposed node even when malformed write
   }
 });
 
-import { hash } from "starknet";
-import { rpcClientAddress } from "./rpc-client-limit";
-
 test("only manifest-bound deploys and one self join/revoke pass the public transaction boundary", async () => {
-  const identity = { accountClassHash: "0x123", guardianPublicKey: "0x456", operatorAccountAddress: "0x789" };
+  const identity = playIdentity;
   const forwarded: string[] = [];
   const node = Bun.serve({
     hostname: "127.0.0.1",
@@ -85,7 +85,7 @@ test("only manifest-bound deploys and one self join/revoke pass the public trans
       return Response.json({ jsonrpc: "2.0", id: 1, result: { transaction_hash: "0x777" } });
     },
   });
-  const proxy = startReadRpc(node.url.origin, 0, identity, undefined, "127.0.0.1");
+  const proxy = startReadRpc(node.url.origin, 0, identity, noStamp, undefined, "127.0.0.1");
   const deploy = {
     type: "DEPLOY_ACCOUNT",
     version: "0x3",
@@ -171,13 +171,7 @@ test("only the configured tunnel peer may supply the last forwarded client addre
 });
 
 test("forged forwarded prefixes cannot reset the trusted client's account request allowance", async () => {
-  const proxy = startReadRpc(
-    "http://127.0.0.1:1",
-    0,
-    { accountClassHash: "0x123", guardianPublicKey: "0x456", operatorAccountAddress: "0x789" },
-    "127.0.0.1",
-    "127.0.0.1",
-  );
+  const proxy = startReadRpc("http://127.0.0.1:1", 0, playIdentity, noStamp, "127.0.0.1", "127.0.0.1");
   const request = (address: string) =>
     fetch(proxy.url, {
       method: "POST",
@@ -193,8 +187,8 @@ test("forged forwarded prefixes cannot reset the trusted client's account reques
   }
 });
 
-test("only the operator from shard init state may invoke arbitrary calls and estimate their fees", async () => {
-  const identity = { accountClassHash: "0x123", guardianPublicKey: "0x456", operatorAccountAddress: "0x789" };
+test("operator addresses have no public arbitrary-invoke or estimation exemption", async () => {
+  const identity = playIdentity;
   const forwarded: unknown[] = [];
   const node = Bun.serve({
     hostname: "127.0.0.1",
@@ -204,13 +198,13 @@ test("only the operator from shard init state may invoke arbitrary calls and est
       return Response.json({ jsonrpc: "2.0", id: 1, result: { transaction_hash: "0x777" } });
     },
   });
-  const proxy = startReadRpc(node.url.origin, 0, identity, undefined, "127.0.0.1");
+  const proxy = startReadRpc(node.url.origin, 0, identity, noStamp, undefined, "127.0.0.1");
   const invoke = {
     type: "INVOKE",
     version: "0x3",
     tip: "0x0",
     sender_address: "0x0789",
-    calldata: ["0x1", "0xabc", hash.starknetKeccak("create_game").toString(), "0x1", "0x1"],
+    calldata: ["0x1", "0xabc", hash.starknetKeccak("execute_gameplay").toString(), "0x1", "0x1"],
     signature: ["0x1", "0x2", "0x3"],
   };
   const submit = async (method: string, params: unknown) =>
@@ -221,9 +215,11 @@ test("only the operator from shard init state may invoke arbitrary calls and est
       })
     ).json();
   try {
-    expect((await submit("starknet_addInvokeTransaction", { invoke_transaction: invoke })).result).toBeDefined();
+    expect((await submit("starknet_addInvokeTransaction", { invoke_transaction: invoke })).error.code).toBe(-32601);
     const query = { ...invoke, signature: [], version: "0x100000000000000000000000000000003" };
-    expect((await submit("starknet_estimateFee", [[query], ["SKIP_VALIDATE"], "pre_confirmed"])).result).toBeDefined();
+    expect((await submit("starknet_estimateFee", [[query], ["SKIP_VALIDATE"], "pre_confirmed"])).error.code).toBe(
+      -32601,
+    );
     for (const sender_address of ["0x42", "0x78a"]) {
       expect((await submit("starknet_addInvokeTransaction", [{ ...invoke, sender_address }])).error.code).toBe(-32601);
       expect(
@@ -238,7 +234,7 @@ test("only the operator from shard init state may invoke arbitrary calls and est
     }
     expect((await submit("starknet_addInvokeTransaction", [{ ...invoke, tip: "0x1" }])).error.code).toBe(-32601);
     expect((await submit("starknet_estimateFee", [[query], [], "pre_confirmed"])).error.code).toBe(-32601);
-    expect(forwarded).toHaveLength(2);
+    expect(forwarded).toHaveLength(0);
     for (let n = 8; n < 30; n++) await submit("starknet_addInvokeTransaction", [invoke]);
     expect((await submit("starknet_addInvokeTransaction", [invoke])).error.code).toBe(-32005);
   } finally {
