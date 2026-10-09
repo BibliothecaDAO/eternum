@@ -123,10 +123,12 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-/** The player's own account: it signs and sends the play invoke itself. */
+/** The player's own account: it signs and sends the play invoke itself, which lands in the next block. */
 const playerAccount = (address = "0x111") => {
   const execute = vi.fn(async (..._args: unknown[]) => ({ transaction_hash: "0xabc" }));
-  return { account: { address, execute } as unknown as AccountInterface, execute };
+  const getNonce = async () => "0x0";
+  const getTransactionStatus = async () => ({ finality_status: "PRE_CONFIRMED" });
+  return { account: { address, execute, getNonce, getTransactionStatus } as unknown as AccountInterface, execute };
 };
 const explore = { kind: "Explore", value: { explorer_id: 9, direction: 2 } } as const;
 /** The play call's calldata: game, release id, preset commitment, then the command span. */

@@ -15,6 +15,7 @@ import { isRelicCompatible, useRelicEssenceStatus, useRelicMetadata } from "../h
 import type { RelicHolderPreview } from "./player-relic-tray";
 import { RelicEssenceRequirement, RelicIncompatibilityNotice, RelicSummary } from "./relic-activation-shared";
 import { accountAddress } from "@/hooks/store/use-account-store";
+import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
 interface RelicActivationSelectorProps {
   resourceId: ID;
@@ -191,7 +192,7 @@ export const RelicActivationSelector = ({
   const structureNameMap = useMemo(() => {
     const map = new Map<string, string>();
     playerStructures.forEach((structure) => {
-      const id = Number(structure.entityId);
+      const id = safeInteger(structure.entityId);
       if (Number.isNaN(id)) {
         return;
       }

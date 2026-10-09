@@ -17,6 +17,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { buildVillageTimerSummary } from "@/ui/shared/lib/village-timers";
 import { ID, StructureType } from "@bibliothecadao/types";
 import { configManager, formatTime, toHexString } from "@bibliothecadao/eternum";
+import { safeInteger } from "@bibliothecadao/eternum/game-client";
 import { playerAvatarUrl } from "@/hooks/use-player-profile";
 import { LeftView } from "@/types";
 
@@ -27,7 +28,6 @@ import { useStructureProductionSummary } from "../structure-production-summary";
 import { MergedResourcePanel } from "@/ui/features/world/containers/left-facets/merged-resource-panel";
 import { BitcoinMiningActionPanel } from "../../actions/bitcoin-mining-action-panel";
 import { FaithDevotionActionPanel } from "../../actions/faith-devotion-action-panel";
-import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
 interface StructureBannerEntityDetailProps {
   structureEntityId: ID;
@@ -275,7 +275,7 @@ const StructureBannerEntityDetailContent = memo(
               troops={guards}
               slotsUsed={guardSlotsUsed}
               slotsMax={guardSlotsMax}
-              structureId={Number(structure.entity_id ?? 0)}
+              structureId={safeInteger(structure.entity_id)}
               canManageDefense={isMine}
               variant={defenseDisplayVariant}
               hideSlotSummary

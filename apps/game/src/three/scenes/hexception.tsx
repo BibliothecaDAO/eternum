@@ -1631,7 +1631,7 @@ export default class HexceptionScene extends HexagonScene {
     if (!this.hyperstructureModel || this.tileManager.structureType() !== StructureType.Hyperstructure) return;
     this.hyperstructureModel.setConstructionAt(
       0,
-      readHyperstructureConstruction(this.game.store, Number(this.state.structureEntityId)),
+      readHyperstructureConstruction(this.game.store, safeInteger(this.state.structureEntityId)),
     );
   }
 

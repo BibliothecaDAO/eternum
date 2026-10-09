@@ -1140,8 +1140,9 @@ export default class WorldmapScene extends WarpTravel {
     this.handleTransactionProgress = (payload: { stage?: string; type?: string; explorerId?: number | string }) => {
       if (payload?.type !== "explore") return;
 
-      const explorerId = Number(payload.explorerId);
-      if (!Number.isFinite(explorerId) || explorerId <= 0) return;
+      if (payload.explorerId === undefined) return;
+      const explorerId = safeInteger(payload.explorerId);
+      if (explorerId <= 0) return;
 
       const phase = resolveExploreClientLatencyPhase(payload.stage);
       const pendingAction = this.pendingExploreLatencyActions.get(explorerId);
@@ -1685,7 +1686,8 @@ export default class WorldmapScene extends WarpTravel {
     return {
       isSpectator: isExplicitSpectateSession(),
       topOwnerAddresses: this.resolveTopOwnerAddresses(),
-      selectedEntityId: selectedEntityId === undefined || selectedEntityId === null ? null : Number(selectedEntityId),
+      selectedEntityId:
+        selectedEntityId === undefined || selectedEntityId === null ? null : safeInteger(selectedEntityId),
       hoveredEntityId: hovered?.army?.id ?? hovered?.structure?.id ?? null,
     };
   }
@@ -3054,7 +3056,7 @@ export default class WorldmapScene extends WarpTravel {
   private isStandingExpeditionSite(entityId: ID): boolean {
     const site = this.game.store.get("ExpeditionSite", {
       game_id: configManager.getActiveGameId(),
-      entity_id: Number(entityId),
+      entity_id: safeInteger(entityId),
     });
     return site !== undefined && !site.cleared;
   }
@@ -3283,7 +3285,7 @@ export default class WorldmapScene extends WarpTravel {
     for (const [key, path] of actionPaths.getPaths()) {
       const destination = path[path.length - 1].hex;
       const tile = this.worldSpatialProjection.getTileAtHex({ ...destination, alt: activeMapLayer() });
-      const occupierId = tile ? Number(tile.occupierId) : undefined;
+      const occupierId = tile ? safeInteger(tile.occupierId) : undefined;
       if (ActionPaths.getActionType(path) === ActionType.CreateArmy && !isOpenSpawnHex(occupierId)) {
         actionPaths.getPaths().delete(key);
       }

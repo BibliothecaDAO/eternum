@@ -45,10 +45,9 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
   const goToStructure = useGoToStructure(setup);
 
   const userAddress = useAccountAddress();
-  const structureEntityIdNumber = Number(structureEntityId ?? 0);
-  const keys = { game_id: configManager.getActiveGameId(), entity_id: structureEntityIdNumber };
+  const keys = { game_id: configManager.getActiveGameId(), entity_id: structureEntityId };
   const structure = useNativeRow("Structure", keys);
-  const resources = useResourceManager(structureEntityIdNumber);
+  const resources = useResourceManager(structureEntityId);
   const productionBoostBonus = useNativeRowOrAbsent("ProductionBonus", structure ? keys : undefined);
   const shares = useNativeRow("HyperstructureShares", keys);
   const revision = useNativeRevision([
@@ -194,7 +193,6 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
 
   return {
     structureEntityId,
-    structureEntityIdNumber,
     structureDetails,
     structure,
     resources,

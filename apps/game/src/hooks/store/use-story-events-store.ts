@@ -1,5 +1,6 @@
 import { getPlayerName } from "@/hooks/use-player-profile";
 import { fetchHeraldGameHistory, requireShard } from "@bibliothecadao/eternum/game-client";
+import { storyPayloadId } from "@/utils/native-id";
 import { getActiveGame } from "@/runtime/world";
 import { buildStoryEventPresentation, configManager, hasStoryPresentation } from "@bibliothecadao/eternum";
 import * as Sentry from "@sentry/react";
@@ -75,15 +76,9 @@ const useStoryEventsStore = create<StoryEventsState>((set) => ({
 const asRecord = (value: unknown): Record<string, unknown> | null =>
   typeof value === "object" && value !== null && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
 
-const toOptionalNumber = (value: unknown): number | null => {
-  if (value === null || value === undefined) return null;
-  try {
-    const number = Number(BigInt(String(value)));
-    return Number.isSafeInteger(number) ? number : null;
-  } catch {
-    return null;
-  }
-};
+/** A story's entity id, exact or loud: a malformed one is a broken story, never a silently missing entity. */
+const storyEntityId = (value: unknown): number | null =>
+  value === null || value === undefined ? null : storyPayloadId(value);
 
 const storyVariant = (story: unknown): { payload: Record<string, unknown>; type: string } | null => {
   if (typeof story === "string") return { payload: {}, type: story };
@@ -123,7 +118,7 @@ const storyEventFromValue = (
     confirmation: confirmation ?? null,
     position: chainPosition,
     owner: owner === null || owner === undefined ? null : String(owner),
-    entity_id: toOptionalNumber(value.entity_id ?? value.explorer_id ?? value.attacker_id),
+    entity_id: storyEntityId(value.entity_id ?? value.explorer_id ?? value.attacker_id),
     tx_hash: transactionHash,
     story: variant.type,
     timestamp: String(value.timestamp),

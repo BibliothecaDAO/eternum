@@ -8,7 +8,7 @@ import { startRealmVisit } from "@/sync/active-game-client";
 import { PlayerName } from "@/ui/design-system/kit/player-name";
 import type { Tier } from "@/ui/design-system/kit/tier-chip";
 import { configManager, dayOf, type ExpeditionRules } from "@bibliothecadao/eternum";
-import { fetchHeraldLeaderboard, requireShard } from "@bibliothecadao/eternum/game-client";
+import { fetchHeraldLeaderboard, requireShard, safeInteger } from "@bibliothecadao/eternum/game-client";
 import type { HeraldFrontierLeaderboardEntry } from "@bibliothecadao/eternum/game-sync";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
@@ -66,7 +66,7 @@ export const FrontierSeason = ({ rules, onBack }: { rules: ExpeditionRules; onBa
   const { rows, pinned } = useSeasonListRows(board.data, LIST_LENGTH);
   const chosen = entries.find((entry) => entry.address === opened);
   const visit = (entry: Entry) => {
-    startRealmVisit({ player: entry.address, structureId: Number(entry.structure_id) });
+    startRealmVisit({ player: entry.address, structureId: safeInteger(entry.structure_id) });
     onBack();
   };
   return (

@@ -2,16 +2,12 @@ import { batchRemaining, gameplayRejection } from "@bibliothecadao/provider";
 import type { GetTransactionReceiptResponse, RpcProvider } from "starknet";
 
 import type { GameSyncRuntime } from "../sync/game-sync-runtime";
-import { forgetSentTransaction, isDroppedTransaction } from "./submit";
 
-/**
- * How an action ended: applied (its facts are in the store), refused by the game, reverted before the roll, or dropped:
- * never included, its nonce taken by the account's next transaction.
- */
+/** How an action ended: applied (its facts are in the store), refused by the game, or reverted before the roll. */
 export interface ActionOutcome {
   hash: string;
   block: number | null;
-  status: "SUCCEEDED" | "REJECTED" | "REVERTED" | "DROPPED";
+  status: "SUCCEEDED" | "REJECTED" | "REVERTED";
   /** The game's reason, or the revert's, for an action that did not apply. */
   revertReason?: string;
   /** What a batched command still has to do after this transaction. */
@@ -19,26 +15,22 @@ export interface ActionOutcome {
 }
 
 const RECEIPT_POLL_MS = 250;
-const DROPPED_REASON = "The transaction was dropped before it was included; nothing of it applied.";
-type OutcomeRpc = Pick<RpcProvider, "getTransactionReceipt" | "getNonceForAddress">;
 
 /**
  * An action's outcome from its receipt, then Herald: the receipt says whether the shard reverted it before the roll or
  * the game refused it (GameplayRejected, effects rolled back), and an applied action settles once Herald has applied
  * its facts, either from its streamed status or, after a reconnect that would never stream it, from the fresh
- * snapshot. A transaction with no receipt whose nonce the account has passed is dropped. Until one of these the action
- * is pending; the wait stops when the client does.
+ * snapshot. Until then the action is pending; the wait stops when the client does. The hash arrives in a block already:
+ * the gameplay submit returns it only then, and rejects an action proven not sent, so no wait starts on a lost one.
  */
 export async function waitForActionOutcome(
   runtime: Pick<GameSyncRuntime, "waitForTransaction" | "subscribeResynced">,
-  rpc: OutcomeRpc,
+  rpc: Pick<RpcProvider, "getTransactionReceipt">,
   games: string,
   transactionHash: string,
   stopped: AbortSignal,
 ): Promise<ActionOutcome> {
-  const receipt = await receiptOf(rpc, transactionHash, stopped).finally(() => forgetSentTransaction(transactionHash));
-  if (receipt === "dropped")
-    return { hash: transactionHash, block: null, status: "DROPPED", revertReason: DROPPED_REASON };
+  const receipt = await receiptOf(rpc, transactionHash, stopped);
   const refused = refusalIn(receipt, games, transactionHash);
   if (refused) return refused;
   const remaining = "events" in receipt ? batchRemaining(receipt.events, games, transactionHash) : undefined;
@@ -52,22 +44,16 @@ export async function waitForActionOutcome(
   };
 }
 
-/**
- * The transaction's receipt once it is in a block, pre-confirmed or later, or dropped once its nonce has passed
- * without one (read again after the nonce, which an inclusion between the two reads moves too); not found yet is still
- * pending.
- */
+/** The receipt of a transaction already in a block; a read that fails is retried until the client stops. */
 async function receiptOf(
-  rpc: OutcomeRpc,
+  rpc: Pick<RpcProvider, "getTransactionReceipt">,
   transactionHash: string,
   stopped: AbortSignal,
-): Promise<GetTransactionReceiptResponse | "dropped"> {
-  const read = () => rpc.getTransactionReceipt(transactionHash).catch(() => undefined);
+): Promise<GetTransactionReceiptResponse> {
   while (true) {
     stopped.throwIfAborted();
-    const receipt = await read();
+    const receipt = await rpc.getTransactionReceipt(transactionHash).catch(() => undefined);
     if (receipt) return receipt;
-    if (await isDroppedTransaction(rpc, transactionHash)) return (await read()) ?? "dropped";
     await new Promise<void>((resolve, reject) => {
       const timer = setTimeout(() => {
         stopped.removeEventListener("abort", abort);

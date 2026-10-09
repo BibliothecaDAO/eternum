@@ -33,6 +33,7 @@ import {
   ResourcesIds,
 } from "@bibliothecadao/types";
 import { getPlayerName } from "@/services/identity/player-profiles";
+import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
 type ProductionItem = StructureProductionSummary["items"][number];
 
@@ -77,7 +78,7 @@ export const MergedResourcePanel = memo(
     const requestedSimpleCost = useUIStore((state) => state.useSimpleCost);
     const useSimpleCost = resolveUseSimpleCost(configManager.buildingCostMode, requestedSimpleCost);
 
-    const entityId = Number(structureEntityId);
+    const entityId = safeInteger(structureEntityId);
     const realm = useMemo(
       () => (Number.isFinite(entityId) && entityId > 0 ? getRealmInfo(entityId, store, getPlayerName) : undefined),
       [entityId, store],

@@ -3,6 +3,7 @@ import { startRealmVisit, useRealmVisit } from "@/sync/active-game-client";
 import { useEffect } from "react";
 
 import { useSeasonBoard } from "./season-board";
+import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
 /**
  * A spectator watches a realm, never an empty map: with no account to play, the stream visits the season board's
@@ -16,6 +17,6 @@ export const useSpectatorWatchesTheLeader = (): void => {
 
   useEffect(() => {
     if (!spectator || watching || !leader) return;
-    startRealmVisit({ player: leader.address, structureId: Number(leader.structure_id) });
+    startRealmVisit({ player: leader.address, structureId: safeInteger(leader.structure_id) });
   }, [leader, spectator, watching]);
 };

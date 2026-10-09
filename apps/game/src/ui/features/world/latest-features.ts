@@ -35,6 +35,20 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-09",
+    title: "Clearer Blitz results",
+    description:
+      "The results table now says when it is still waiting for the final result instead of showing an empty game, and the end of a Blitz game is announced once, with its winners.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-09",
+    title: "No more stuck actions",
+    description:
+      "An action that never reached the game now says so in the event feed within a few seconds, and your next actions go through instead of waiting behind it until a reload.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-09",
     title: "Clearer Frontier building plots",
     description: "Removed special plot markers so every available building plot uses the same appearance.",
     type: "improvement",
