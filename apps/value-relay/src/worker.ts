@@ -34,7 +34,6 @@ interface RelayEnv {
   SHARD_GAMES_ADDRESS: string;
   LEDGER_RPC_URL: string;
   LEDGER_ADDRESS: string;
-  LEDGER_FEE_TOKEN_ADDRESS: string;
   LEDGER_OPERATOR_ADDRESS: string;
   LEDGER_OPERATOR_PRIVATE_KEY: string;
   IDENTITY: {
@@ -175,12 +174,7 @@ export class ValueRelay extends DurableObject<RelayEnv> {
     return Effect.runPromise(
       this.ledgerPermit(
         Effect.gen(function* () {
-          const entry = yield* paidGameEntry(
-            relay.env.LEDGER_RPC_URL,
-            relay.env.LEDGER_ADDRESS,
-            relay.env.LEDGER_FEE_TOKEN_ADDRESS,
-            key,
-          );
+          const entry = yield* paidGameEntry(relay.env.LEDGER_RPC_URL, relay.env.LEDGER_ADDRESS, key);
           yield* openBlitzOnLedger(ledgerCredentialsOf(relay.env), key, window);
           return entry;
         }),
