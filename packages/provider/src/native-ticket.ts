@@ -42,7 +42,7 @@ export class StaleActionNonceError extends Error {
 }
 
 /** The game changed releases before admission or execution; its nonce remains available. */
-export class StaleGameReleaseError extends Error {
+class StaleGameReleaseError extends Error {
   constructor() {
     super("STALE_RELEASE: reload the game's release before signing again");
     this.name = "StaleGameReleaseError";

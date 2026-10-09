@@ -1,5 +1,4 @@
 import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
-import { requireNativeExecutionOutcome } from "@bibliothecadao/provider";
 import { setTimeout as sleep } from "node:timers/promises";
 import { actorKey, type HarnessGameClient, type HeraldConfirmations } from "./game-client";
 import {
@@ -20,7 +19,7 @@ import {
   waitForWorldState,
 } from "@bibliothecadao/eternum";
 import { shortString, type Account } from "starknet";
-import { ResourcesIds, StructureType, TroopType, type ID, type NativeTicketIdentity } from "@bibliothecadao/types";
+import { ResourcesIds, StructureType, TroopType, type ID } from "@bibliothecadao/types";
 
 export interface Coord {
   x: number;
@@ -57,7 +56,6 @@ export interface HarnessSubmission {
 }
 
 interface SubmittedEvent {
-  ticket?: NativeTicketIdentity;
   signerAddress?: string;
   transactionHash: string;
 }
@@ -312,13 +310,8 @@ const captureSubmission = (
     const onSubmitted = (event: SubmittedEvent) => {
       if (!event.signerAddress || actorKey(event.signerAddress) !== signer) return;
       settle();
-      if (!event.ticket) return reject(new Error("Native submission has no ticket identity"));
-      const ticket = event.ticket;
       const confirmed = client.runtime.waitForTransaction(event.transactionHash).then((transaction) => {
         if (transaction.status === "REVERTED") throw new Error(transaction.revertReason ?? "Transaction reverted");
-        const outcome = requireNativeExecutionOutcome(transaction.executions, ticket);
-        if (outcome.status === "REVERTED")
-          throw new Error(`Native action rejected: ${outcome.statusClass}: ${outcome.reason}`);
       });
       resolve({
         transactionHash: event.transactionHash,

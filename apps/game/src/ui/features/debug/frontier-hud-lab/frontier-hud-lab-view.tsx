@@ -107,7 +107,7 @@ const openLabShard = async (gameId: number) => {
             chainId: LAB_CHAIN_ID,
             releaseSchemas: { "1": LAB_SCHEMA },
             rpcUrl: LAB_SHARD_URL,
-            admissionUrl: LAB_SHARD_URL,
+            l2GasBound: "0x47868c00",
             accountClassHash: "0x1",
             guardianPublicKey: "0x1",
             contracts: { games: "0x1" },

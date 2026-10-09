@@ -1,79 +1,94 @@
-import { extractErrorMessage } from "@bibliothecadao/provider/errors";
 import {
   BlockTag,
+  TransactionFinalityStatus,
   type AccountInterface,
   type AllowArray,
   type Call,
   type InvokeFunctionResponse,
+  type ResourceBoundsBN,
   type UniversalDetails,
 } from "starknet";
 
-import { resolveGameTransactionResourceBounds } from "../account/transaction-resource-bounds";
+import type { Shard } from "./shard";
 
-type GameplaySubmitAccount = Pick<AccountInterface, "address" | "execute" | "getNonce">;
+/** What a gameplay account needs of its shard: the chain it signs for and the one gas bound the shard takes. */
+export type GameplayShard = Pick<Shard, "chainId" | "l2GasBound">;
+
+type GameplaySubmitAccount = Pick<AccountInterface, "address" | "execute" | "getNonce" | "waitForTransaction">;
 type RawExecute = (calls: AllowArray<Call>, details?: UniversalDetails) => Promise<InvokeFunctionResponse>;
 
 interface ConfiguredGameplaySubmit {
-  chainId: string;
+  shard: GameplayShard;
   execute: RawExecute;
-}
-
-/**
- * Nonces are dispensed locally so a burst of actions signs and sends in
- * parallel: waiting for the previous send to return before allocating the
- * next nonce cost one node round trip per action. `nextNonce` is unknown
- * before the first read and after any failed send (the failed nonce may be
- * unconsumed); while it is unknown, every waiting action shares one
- * pre-confirmed read.
- */
-interface AccountNonceDispenser {
-  nextNonce?: bigint;
-  nonceRead?: Promise<void>;
 }
 
 interface ExecuteGameplayAccountTransactionOptions {
   account: GameplaySubmitAccount;
   calls: AllowArray<Call>;
-  chainId: string;
+  shard: GameplayShard;
   details?: UniversalDetails;
 }
 
-interface GameplaySubmit extends ExecuteGameplayAccountTransactionOptions {
-  dispenser: AccountNonceDispenser;
-  execute: RawExecute;
-}
-
 const configuredGameplaySubmits = new WeakMap<object, ConfiguredGameplaySubmit>();
-const accountNonceDispensers = new Map<string, AccountNonceDispenser>();
+/** Per account, the last send until its transaction is in a block: the next send waits on it. */
+const sendsInFlight = new Map<string, Promise<void>>();
+const RECEIPT_POLL_MS = 250;
 
+/**
+ * Every send of this account, raw or through a game client, becomes an ordinary v3 invoke at the account's current
+ * nonce with the shard's fixed bounds and tip 0: the shape the shard's endpoint takes and stamps.
+ */
 export function configureGameplayAccountSubmits<TAccount extends AccountInterface>(
   account: TAccount,
-  chainId: string,
+  shard: GameplayShard,
 ): TAccount {
   const configured = configuredGameplaySubmits.get(account);
   if (configured) {
-    assertConfiguredChain(account.address, configured.chainId, chainId);
+    assertConfiguredChain(account.address, configured.shard.chainId, shard.chainId);
     return account;
   }
 
-  configuredGameplaySubmits.set(account, { chainId, execute: account.execute.bind(account) });
+  configuredGameplaySubmits.set(account, { shard, execute: account.execute.bind(account) });
   account.execute = ((calls: AllowArray<Call>, details?: UniversalDetails) =>
-    executeGameplayAccountTransaction({ account, calls, chainId, details })) as AccountInterface["execute"];
+    executeGameplayAccountTransaction({ account, calls, shard, details })) as AccountInterface["execute"];
   return account;
 }
 
+/**
+ * One transaction in flight per account: the shard takes only the account's current nonce, so each send reads it
+ * fresh, and the next send starts once this one is in a block (a reverted one used its nonce too) or failed to send.
+ */
 export function executeGameplayAccountTransaction({
   account,
   calls,
-  chainId,
+  shard,
   details,
 }: ExecuteGameplayAccountTransactionOptions): Promise<InvokeFunctionResponse> {
   const configured = configuredGameplaySubmits.get(account);
-  if (configured) assertConfiguredChain(account.address, configured.chainId, chainId);
-
+  if (configured) assertConfiguredChain(account.address, configured.shard.chainId, shard.chainId);
   const execute = configured?.execute ?? account.execute.bind(account);
-  const dispenser = resolveNonceDispenser(`${chainId}:${account.address.toLowerCase()}`);
-  return submitWithLocalNonce({ account, calls, chainId, details, dispenser, execute });
+
+  const key = `${shard.chainId}:${BigInt(account.address)}`;
+  const previous = sendsInFlight.get(key) ?? Promise.resolve();
+  const sent = previous.then(() => sendAtCurrentNonce(account, execute, calls, shard, details));
+  const settled = sent.then(
+    ({ transaction_hash }) => untilInBlock(account, transaction_hash),
+    () => undefined,
+  );
+  sendsInFlight.set(key, settled);
+  void settled.then(() => {
+    if (sendsInFlight.get(key) === settled) sendsInFlight.delete(key);
+  });
+  return sent;
+}
+
+/** The fee-free shard's bounds: l2 gas at its fixed amount, every price and the other resources zero. */
+function playResourceBounds(l2GasBound: bigint): ResourceBoundsBN {
+  return {
+    l1_gas: { max_amount: 0n, max_price_per_unit: 0n },
+    l1_data_gas: { max_amount: 0n, max_price_per_unit: 0n },
+    l2_gas: { max_amount: l2GasBound, max_price_per_unit: 0n },
+  };
 }
 
 function assertConfiguredChain(address: string, configuredChain: string, requestedChain: string): void {
@@ -82,66 +97,26 @@ function assertConfiguredChain(address: string, configuredChain: string, request
   }
 }
 
-function resolveNonceDispenser(key: string): AccountNonceDispenser {
-  const dispenser = accountNonceDispensers.get(key) ?? {};
-  accountNonceDispensers.set(key, dispenser);
-  return dispenser;
-}
-
-async function submitWithLocalNonce(submit: GameplaySubmit): Promise<InvokeFunctionResponse> {
-  try {
-    return await submitOnce(submit);
-  } catch (error) {
-    if (isNonceRejection(error)) return submitOnce(submit);
-    throw error;
-  }
-}
-
-async function submitOnce({
-  account,
-  calls,
-  details,
-  dispenser,
-  execute,
-}: GameplaySubmit): Promise<InvokeFunctionResponse> {
-  const nonce = await takeNonce(account, dispenser);
-  try {
-    return await execute(calls, { ...details, nonce, tip: 0, resourceBounds: resolveGameTransactionResourceBounds() });
-  } catch (error) {
-    dispenser.nextNonce = undefined;
-    throw error;
-  }
+async function sendAtCurrentNonce(
+  account: GameplaySubmitAccount,
+  execute: RawExecute,
+  calls: AllowArray<Call>,
+  shard: GameplayShard,
+  details: UniversalDetails | undefined,
+): Promise<InvokeFunctionResponse> {
+  const nonce = await account.getNonce(BlockTag.PRE_CONFIRMED);
+  return execute(calls, { ...details, nonce, tip: 0, resourceBounds: playResourceBounds(shard.l2GasBound) });
 }
 
 /**
- * A known nonce is taken synchronously, so concurrent callers receive
- * distinct, increasing nonces in call order. Waiters on a shared read re-enter
- * in registration order once it lands, which keeps that same ordering; if a
- * failed send marks the dispenser stale again in between, they read anew
- * instead of reusing anything.
+ * Until the transaction is in a pre-confirmed block, where the account's nonce has moved past it. A revert also used
+ * the nonce, and a failed read lets the next send go too: it reads the nonce anew either way.
  */
-function takeNonce(account: GameplaySubmitAccount, dispenser: AccountNonceDispenser): Promise<bigint> {
-  if (dispenser.nextNonce !== undefined) {
-    const nonce = dispenser.nextNonce;
-    dispenser.nextNonce = nonce + 1n;
-    return Promise.resolve(nonce);
-  }
-  dispenser.nonceRead ??= readPreConfirmedNonce(account, dispenser);
-  return dispenser.nonceRead.then(() => takeNonce(account, dispenser));
-}
-
-function readPreConfirmedNonce(account: GameplaySubmitAccount, dispenser: AccountNonceDispenser): Promise<void> {
-  return account
-    .getNonce(BlockTag.PRE_CONFIRMED)
-    .then((nonce) => {
-      dispenser.nextNonce = BigInt(nonce);
+async function untilInBlock(account: GameplaySubmitAccount, transactionHash: string): Promise<void> {
+  await account
+    .waitForTransaction(transactionHash, {
+      retryInterval: RECEIPT_POLL_MS,
+      successStates: [TransactionFinalityStatus.PRE_CONFIRMED, TransactionFinalityStatus.ACCEPTED_ON_L2],
     })
-    .finally(() => {
-      dispenser.nonceRead = undefined;
-    });
-}
-
-function isNonceRejection(error: unknown): boolean {
-  const message = extractErrorMessage(error, "");
-  return /nonce/i.test(message) && /(already|expected|got|invalid|mismatch|too high|too low)/i.test(message);
+    .catch(() => undefined);
 }

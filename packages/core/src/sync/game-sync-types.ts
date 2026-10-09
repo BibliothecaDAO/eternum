@@ -1,4 +1,3 @@
-import type { NativeExecutionOutcome } from "@bibliothecadao/types";
 import type { GameSyncScheduler } from "./scheduler";
 
 /** One Herald fact: a model row named by its Herald key. A null value removes the row. */
@@ -88,7 +87,6 @@ export interface GameSyncHead {
 }
 
 export interface GameSyncTransaction {
-  executions?: NativeExecutionOutcome[];
   block: number | null;
   hash: string;
   revertReason?: string;

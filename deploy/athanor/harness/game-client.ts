@@ -1,10 +1,8 @@
 import { setTimeout as sleep } from "node:timers/promises";
 import {
   createGameClient,
-  createNativeTicketSubmission,
   setChainProvenTimestampSource,
   setBlockTimestampSource,
-  type CreateGameClientInput,
   type GameClient,
 } from "@bibliothecadao/eternum";
 import { fetchHeraldGameDirectory, type GameClientObserver, type Shard } from "@bibliothecadao/eternum/game-client";
@@ -16,7 +14,6 @@ interface ConnectHarnessGameClientOptions {
   actor: string;
   gameId: number;
   shard: Shard;
-  signIntent: NonNullable<CreateGameClientInput["native"]>["signIntent"];
 }
 
 const GAME_LISTING_TIMEOUT_MS = 120_000;
@@ -48,12 +45,7 @@ export async function connectHarnessGameClient(options: ConnectHarnessGameClient
     presetId,
     // Harness bots read no Realms profiles, so they name no player.
     playerNames: () => null,
-    native: {
-      bindings: bindings as unknown as NativeWorldBindings,
-      chainId: options.shard.chainId,
-      signIntent: options.signIntent,
-      submitIntent: createNativeTicketSubmission(options.shard.admissionUrl),
-    },
+    bindings: bindings as unknown as NativeWorldBindings,
     scheduler: createMicrotaskGameSyncScheduler(),
     observer: createLoggingObserver(options.gameId, heraldConfirmations),
   });

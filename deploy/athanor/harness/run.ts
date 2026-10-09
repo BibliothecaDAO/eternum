@@ -10,7 +10,7 @@ import { nativePresetForId, nativePresetIdFor } from "../../../config/source/nat
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { Worker, isMainThread, parentPort, workerData } from "node:worker_threads";
 import path from "node:path";
-import { DeviceSigner, deviceKeyOf, signGameplayIntent } from "@bibliothecadao/eternum";
+import { DeviceSigner, deviceKeyOf } from "@bibliothecadao/eternum";
 import { splitPlaytestRoster } from "../../../apps/launch-service/src/slots";
 import { configureGameplayAccountSubmits, openShard, type Shard } from "@bibliothecadao/eternum/game-client";
 import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
@@ -173,21 +173,10 @@ async function main(): Promise<void> {
     ...account,
     account: configureGameplayAccountSubmits(
       new Account({ provider, address: account.address, signer: new DeviceSigner(deviceKeyOf(account.privateKey)) }),
-      chainId,
+      shard,
     ),
   }));
-  const signingKeys = new Map(accounts.map(({ address, privateKey }) => [BigInt(address), privateKey]));
-  const connect = (actor: string) =>
-    connectHarnessGameClient({
-      actor,
-      shard,
-      signIntent: async (signer, digest) => {
-        const key = signingKeys.get(BigInt(signer.address));
-        if (!key) throw new Error(`No harness signing key for ${signer.address}`);
-        return signGameplayIntent(digest, key);
-      },
-      gameId: game.gameId,
-    });
+  const connect = (actor: string) => connectHarnessGameClient({ actor, shard, gameId: game.gameId });
   // The shared client launches and observes the game; every bot acts through its own client, as a player does.
   const { client, heraldConfirmations } = await connect(accounts[0].address);
   const actorClients = await connectActorClients(

@@ -1,4 +1,3 @@
-import type { NativeExecutionOutcome, NativeTicketIdentity } from "@bibliothecadao/types";
 /**
  * Details about a single transaction type within a batch.
  * Used to display breakdown of batched transactions in the UI.
@@ -10,7 +9,7 @@ export interface BatchedTransactionDetail {
 
 export type TransactionFailureStage = "submit" | "confirmation" | "revert" | "background_confirmation";
 
-export type TransactionSubmitFailureKind = "provider_connection_destroyed" | "action_outcome_unknown" | "submit_failed";
+export type TransactionSubmitFailureKind = "provider_connection_destroyed" | "submit_failed";
 
 export type TransactionProviderState = "ready" | "destroyed" | "unavailable" | "unknown";
 
@@ -48,7 +47,6 @@ export interface TransactionSubmitGuardContext extends TransactionLifecycleMeta 
 export type TransactionSubmitGuard = (context: TransactionSubmitGuardContext) => Promise<void> | void;
 
 interface TransactionStreamStatus {
-  executions?: NativeExecutionOutcome[];
   block: number | null;
   hash: string;
   batchRemaining?: string;
@@ -56,11 +54,8 @@ interface TransactionStreamStatus {
   status: string;
 }
 
-/** Waits for a transaction's status on the stream; a native action passes its ticket so the wait can settle from the store. */
-export type TransactionStreamWaiter = (
-  transactionHash: string,
-  ticket?: NativeTicketIdentity,
-) => Promise<TransactionStreamStatus>;
+/** Waits for a transaction's outcome, settled once Herald has applied it. */
+export type TransactionStreamWaiter = (transactionHash: string) => Promise<TransactionStreamStatus>;
 
 export enum TransactionType {
   PROVISION_REALM = "provision_realm",
