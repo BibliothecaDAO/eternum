@@ -79,6 +79,14 @@ fn current_frontier_launch_readers_match_herald_projection() {
 }
 
 #[test]
+fn current_frontier_check_launch_has_no_payable_pool_and_matches_herald_projection() {
+    let (preset_id, definition) = current_definition("frontier-check");
+    assert_eq!(preset_id, 104);
+    assert_eq!(definition.economy.chests.unwrap().pool, 0);
+    compare_current_launch("frontier-check");
+}
+
+#[test]
 fn current_eternum_optional_sections_and_map_match_herald_projection() {
     compare_current_launch("eternum");
 }
