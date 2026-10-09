@@ -6,6 +6,8 @@ import type { Session } from "@realms-world/identity";
 import type { DirectoryGame } from "../herald";
 import type { PayoutWallet } from "@/hooks/context/payout-wallet";
 
+import type { EntryTerms, SlotLedger } from "../blitz/entry";
+
 /**
  * The app lab's one fiction, the handoff's: Day 12 of a Frontier season, today ends with 7h 14m left, the player
  * (Maelis) ranks 12th of 1,240 with a realm; a Blitz fills for 16:30 with 17 of 24 seats, another is live; Eternum
@@ -126,6 +128,13 @@ export const LAB_SCREENS = {
   "wallet-none": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
   "wallet-hold": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
   "wallet-ready": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
+  "entry-choose": { signedIn: true, joined: false, games: [frontier(true), liveBlitz(false), eternum] },
+  "entry-short": { signedIn: true, joined: false, games: [frontier(true), liveBlitz(false), eternum] },
+  "entry-no-strk": { signedIn: true, joined: false, games: [frontier(true), liveBlitz(false), eternum] },
+  "entry-seated": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
+  "entry-cancelled": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
+  "entry-refunded": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
+  "entry-no-wallet": { signedIn: true, joined: false, games: [frontier(true), liveBlitz(false), eternum] },
 } as const;
 
 const LAB_WALLET = "0x04a1c0de5eed000000000000000000000000000000000000000000000009c2e";
@@ -135,6 +144,53 @@ export const LAB_PAYOUT_WALLETS: Partial<Record<keyof typeof LAB_SCREENS, Payout
   "wallet-none": { status: "no_wallet" },
   "wallet-hold": { status: "on_hold", address: LAB_WALLET, until: (NOW + 17 * 3600 + 42 * 60) * 1000 },
   "wallet-ready": { status: "ready", address: LAB_WALLET },
+  "entry-choose": { status: "ready", address: LAB_WALLET },
+  "entry-short": { status: "ready", address: LAB_WALLET },
+  "entry-no-strk": { status: "ready", address: LAB_WALLET },
+  "entry-seated": { status: "ready", address: LAB_WALLET },
+  "entry-cancelled": { status: "ready", address: LAB_WALLET },
+  "entry-refunded": { status: "ready", address: LAB_WALLET },
+  "entry-no-wallet": { status: "no_wallet" },
+};
+
+/** The ledger game the lab's slot fills, on a paid Blitz's screens. */
+export const LAB_SLOT_LEDGER: SlotLedger = { address: "0x1ed9e7", key: { shard: LAB_CHAIN, gameId: 7 } };
+
+const WEI = 10n ** 18n;
+const NOT_REGISTERED = {
+  registered: false,
+  sword: false,
+  shield: false,
+  swordCredit: false,
+  shieldCredit: false,
+  paid: 0n,
+};
+const SEATED = {
+  registered: true,
+  sword: true,
+  shield: true,
+  swordCredit: true,
+  shieldCredit: false,
+  paid: 1_000n * WEI,
+};
+const ENTRY: EntryTerms = {
+  prices: { seat: 500n * WEI, sword: 500n * WEI, shield: 500n * WEI },
+  cancelled: false,
+  credits: { swords: 2, shields: 0 },
+  registration: NOT_REGISTERED,
+  lords: 2_140n * WEI,
+  strk: 10n ** 17n,
+};
+
+/** A paid Blitz's terms for the payout wallet on each entry screen: what the ledger and the tokens would answer. */
+export const LAB_ENTRY_TERMS: Partial<Record<keyof typeof LAB_SCREENS, EntryTerms>> = {
+  "entry-choose": ENTRY,
+  "entry-short": { ...ENTRY, credits: { swords: 0, shields: 0 }, lords: 320n * WEI },
+  "entry-no-strk": { ...ENTRY, strk: 0n },
+  "entry-seated": { ...ENTRY, credits: { swords: 1, shields: 0 }, registration: SEATED, lords: 1_140n * WEI },
+  "entry-cancelled": { ...ENTRY, cancelled: true, registration: SEATED, lords: 1_140n * WEI },
+  "entry-refunded": { ...ENTRY, cancelled: true, registration: { ...SEATED, swordCredit: false, paid: 0n } },
+  "entry-no-wallet": ENTRY,
 };
 
 /** The lab's emailed code: this one is right, any other is refused as the identity service refuses it. */
@@ -143,10 +199,11 @@ export const LAB_EMAIL_CODE = "111111";
 export type LabScreen = keyof typeof LAB_SCREENS;
 
 /** A slot filling for 16:30, two hours away, with 17 of 24 seats taken; the player's among them when joined. */
-export const labSlots = (joined: boolean) => ({
+export const labSlots = (joined: boolean, ledger?: SlotLedger) => ({
   slots: [
     {
       name: "blitz-1630",
+      ...(ledger && { ledger: { address: ledger.address, shard: ledger.key.shard, gameId: ledger.key.gameId } }),
       closesAt: new Date((NOW + 2 * 3600 + 4 * 60) * 1000).toISOString(),
       frozenAt: null,
       closed: false,

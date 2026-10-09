@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
+import { payoutWalletOf } from "@/hooks/context/payout-wallet";
+import { useIdentitySession } from "@/hooks/context/identity-session";
 import { Button } from "@/ui/design-system/kit/button";
 import { ReasonPlate } from "@/ui/design-system/kit/reason-plate";
 import { formatClockTime } from "@/ui/design-system/kit/time";
@@ -22,6 +24,8 @@ import { type PlayFacts, usePlayFacts } from "../play/play-facts";
 import { LiveChip, StateChip } from "../play/state-chip";
 import { ServiceFailure } from "../service-failure";
 import { BLITZ_WORDS, WORDS } from "../words";
+import { slotLedgerOf } from "./entry";
+import { PaidEntry } from "./entry-panel";
 import { GameRow, SeatsChip } from "./game-row";
 import { type LobbyStep, lobbyId, lobbyStep, lobbyTitle, seatsOf } from "./lobby";
 import { LobbyChatPanel } from "./lobby-chat-panel";
@@ -162,6 +166,7 @@ export const BlitzLobbyPage = () => {
   const { facts, join, refused } = useBlitz();
   const layout = useLayout();
   const { data: player } = useRealmsPlayer();
+  const { session } = useIdentitySession();
   const row = facts.blitz.find((candidate) => lobbyId(candidate) === id);
   if (!row) {
     return (
@@ -174,7 +179,15 @@ export const BlitzLobbyPage = () => {
   const seats = seatsOf(row, join.realmsId, player);
   const clock = <LobbyClock row={row} step={step} now={facts.now} />;
   const desktop = layout === "desktop";
-  const action = <LobbyAction row={row} step={step} join={join} desktop={desktop} />;
+  // A slot the launch service names on the ledger is paid from the payout wallet; any other is the free join.
+  const ledger = row.kind === "slot" ? slotLedgerOf(row.slot) : null;
+  const wallet = session ? payoutWalletOf(session.user) : null;
+  const action =
+    ledger && wallet ? (
+      <PaidEntry ledger={ledger} wallet={wallet} />
+    ) : (
+      <LobbyAction row={row} step={step} join={join} desktop={desktop} />
+    );
   return (
     <PageFrame
       back="/blitz"

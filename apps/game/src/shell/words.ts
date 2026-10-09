@@ -229,6 +229,42 @@ export const WALLET_WORDS = {
   nothingPaysOut: "Nothing pays out until a wallet is linked",
   opening: "Opening…",
   noneHere: "No wallet this browser can open. Ready by email needs none.",
+  notPayoutWallet: "This is not your payout wallet. Open the one linked in Account.",
+  paymentFailed: "The wallet did not send it. Try again in a moment.",
+} as const;
+
+/** What every value screen shares: a fee the payout wallet cannot pay yet. */
+export const VALUE_WORDS = {
+  noStrk: "No STRK for the fee",
+  swapOnAvnu: "Swap on AVNU",
+} as const;
+
+/** A paid Blitz's entry, in its lobby. */
+export const ENTRY_WORDS = {
+  entry: "Entry",
+  seat: "Seat",
+  seatEffect: "Entry",
+  sword: "Sword",
+  swordEffect: "Win ×2",
+  shield: "Shield",
+  shieldEffect: "Loss ½",
+  total: "Total",
+  payAndJoin: "Pay & join",
+  confirming: "Confirming…",
+  needMore: (amount: string) => `Need ${amount} more LORDS`,
+  paidFromWallet: "Entry is paid from your payout wallet",
+  seated: "Seated",
+  paid: "Paid",
+  credit: "Credit",
+  credits: (count: number) => `Credit ×${count}`,
+  cancelled: "Cancelled",
+  takeRefund: "Take refund",
+  lords: "LORDS",
+  swordCredit: "Sword credit",
+  shieldCredit: "Shield credit",
+  back: "Back",
+  refunded: "Refunded",
+  refundedLine: "Your LORDS and credits are back in your wallet.",
 } as const;
 
 /** The three alert levels (ruled) and what each carries, in one line. */

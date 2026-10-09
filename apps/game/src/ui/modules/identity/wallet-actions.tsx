@@ -5,7 +5,7 @@ import type { SignInOptions } from "@realms-world/identity";
 import { useConnect, useDisconnect, useProvider } from "@starknet-react/core";
 import type { Connector } from "@starknet-react/core";
 import { useCallback, useRef, useState } from "react";
-import { addAddressPadding, constants, stark } from "starknet";
+import { type AccountInterface, addAddressPadding, type Call, constants, stark } from "starknet";
 
 import { WALLET_WORDS } from "@/shell/words";
 
@@ -22,28 +22,65 @@ const WALLET_CHOICES = [
   { id: "controller", name: WALLET_WORDS.controller, note: "" },
 ] as const;
 
-type WalletId = (typeof WALLET_CHOICES)[number]["id"];
-
 /**
- * The only surface with wallet connectors, loaded as its own chunk when a signed-in player links a wallet on the
- * account page. Nothing else loads a wallet, so signing in never starts one.
+ * The only surface with wallet connectors, loaded as its own chunk when a signed-in player links a wallet or pays from
+ * it. Nothing else loads a wallet, so signing in never starts one.
  */
-export const WalletPicker = (props: WalletPickerProps) => (
+export const WalletPicker = ({
+  only,
+  onProof,
+}: {
+  only?: readonly WalletId[];
+  onProof: (proof: SignInOptions) => void;
+}) => (
   <StarknetProvider>
-    <WalletRows {...props} />
+    <WalletRows only={only} failure="link" onAccount={async (account) => onProof(proofOf(account))} />
   </StarknetProvider>
 );
 
-interface WalletPickerProps {
+/**
+ * The payout wallet signs the ledger's calls: the player opens it from the same rows, and a wallet that is not the
+ * one linked in Account is refused before anything is sent.
+ */
+export const WalletSign = ({
+  owner,
+  calls,
+  onSent,
+}: {
+  owner: string;
+  calls: Call[];
+  onSent: (transactionHash: string) => void;
+}) => (
+  <StarknetProvider>
+    <WalletRows
+      failure="pay"
+      onAccount={async (account) => {
+        if (!sameAddress(account.address, owner)) throw new NotPayoutWalletError();
+        onSent((await account.execute(calls)).transaction_hash);
+      }}
+    />
+  </StarknetProvider>
+);
+
+class NotPayoutWalletError extends Error {}
+
+const sameAddress = (one: string, other: string) => BigInt(one) === BigInt(other);
+
+type WalletId = (typeof WALLET_CHOICES)[number]["id"];
+
+const WalletRows = ({
+  only,
+  failure,
+  onAccount,
+}: {
   /** The wallets offered; all of them when absent. */
   only?: readonly WalletId[];
-  /** The chosen wallet, connected on mainnet, with the signature it will give when the link asks for one. */
-  onProof: (proof: SignInOptions) => void;
-}
-
-const WalletRows = ({ only, onProof }: WalletPickerProps) => {
+  failure: "link" | "pay";
+  /** The chosen wallet's account, connected on mainnet. */
+  onAccount: (account: AccountInterface) => Promise<void>;
+}) => {
   const { connectors } = useConnect();
-  const prove = useWalletProof();
+  const connect = useMainnetAccount();
   const [pending, setPending] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const running = useRef(false);
@@ -54,9 +91,9 @@ const WalletRows = ({ only, onProof }: WalletPickerProps) => {
     setPending(connector.id);
     setError(null);
     try {
-      onProof(await prove(connector));
+      await onAccount(await connect(connector));
     } catch (cause) {
-      setError(failureSentence("link", cause));
+      setError(cause instanceof NotPayoutWalletError ? WALLET_WORDS.notPayoutWallet : failureLine(failure, cause));
     } finally {
       running.current = false;
       setPending(null);
@@ -91,30 +128,38 @@ const WalletRows = ({ only, onProof }: WalletPickerProps) => {
   );
 };
 
-/** The wallet's proof as the identity service reads it, from the connector the player just chose. */
-const useWalletProof = () => {
+const failureLine = (failure: "link" | "pay", cause: unknown) => {
+  if (failure === "link") return failureSentence("link", cause);
+  console.error("wallet_payment_failed", { error: cause instanceof Error ? cause.message : cause });
+  return cause instanceof WrongNetworkError ? failureSentence("link", cause) : WALLET_WORDS.paymentFailed;
+};
+
+/** The chosen wallet, connected and on Starknet mainnet. */
+const useMainnetAccount = () => {
   const { connectAsync, connector: connectedConnector } = useConnect();
   const { disconnectAsync } = useDisconnect();
   const { provider } = useProvider();
   return useCallback(
-    async (connector: Connector): Promise<SignInOptions> => {
+    async (connector: Connector): Promise<AccountInterface> => {
       if (connectedConnector) await disconnectAsync();
       await connectAsync({ connector });
       if ((await connector.chainId()) !== BigInt(constants.StarknetChainId.SN_MAIN)) throw new WrongNetworkError();
       // Use the selected connector immediately; React's account state may still describe the previous wallet.
-      const account = await connector.account(provider);
-      return {
-        address: addAddressPadding(account.address),
-        chainId: "SN_MAIN",
-        domain: window.location.host,
-        uri: window.location.origin,
-        signTypedData: async (message) =>
-          stark.formatSignature(await account.signMessage(message as Parameters<typeof account.signMessage>[0])),
-      };
+      return connector.account(provider);
     },
     [connectAsync, connectedConnector, disconnectAsync, provider],
   );
 };
+
+/** The wallet's proof as the identity service reads it: the signature it gives when the link asks for one. */
+const proofOf = (account: AccountInterface): SignInOptions => ({
+  address: addAddressPadding(account.address),
+  chainId: "SN_MAIN",
+  domain: window.location.host,
+  uri: window.location.origin,
+  signTypedData: async (message) =>
+    stark.formatSignature(await account.signMessage(message as Parameters<typeof account.signMessage>[0])),
+});
 
 /**
  * The plain link, for an identity service that asks no email code: the chosen wallet is linked at once. It goes when

@@ -33,6 +33,7 @@ const ICONS = {
   Ey: kit("ui-eye"),
   Bt: kit("ui-footprints"),
   At: kit("attack"),
+  Sd: kit("shield"),
   Sk: kit("ui-skull"),
   Ch: kit("ui-chest"),
   Cp: kit("ui-camp"),

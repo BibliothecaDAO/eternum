@@ -362,6 +362,11 @@
       "slug": "mmr-scrapper",
       "master": "masters/mmr-scrapper.png",
       "subject": "plain wooden buckler (under 600)"
+    },
+    {
+      "slug": "shield",
+      "master": "masters/shield.png",
+      "subject": "shield (Blitz shield flag; stand-in until its master)"
     }
   ]
 }

@@ -8,6 +8,7 @@ import { useFrontierType } from "@/ui/features/frontier/use-frontier-type";
 import { useBootDocumentState } from "@/ui/modules/boot-loader";
 
 import { BlitzListPage, BlitzLobbyPage } from "../blitz/blitz-pages";
+import { entryTermsKey } from "../blitz/entry";
 import { LearnPage } from "../learn/learn-page";
 import { DominionPage, EternumPage, FrontierPage } from "../play/age-pages";
 import { PlayPage } from "../play/play-page";
@@ -28,7 +29,9 @@ import {
   LAB_SESSION,
   LAB_CHAT,
   LAB_EMAIL_CODE,
+  LAB_ENTRY_TERMS,
   LAB_PAYOUT_WALLETS,
+  LAB_SLOT_LEDGER,
   labRatings,
   labSlots,
   type LabScreen,
@@ -93,6 +96,9 @@ const createLabClient = (screen: LabScreen) => {
   const client = new QueryClient({ defaultOptions: { queries: { staleTime: Infinity, retry: false } } });
   for (const gameId of [1, 3]) client.setQueryData(["shell", "leaderboard", LAB_CHAIN, gameId], LAB_FRONTIER_BOARD);
   client.setQueryData(["shell", "leaderboard", LAB_CHAIN, 7], LAB_BLITZ_BOARD);
+  const wallet = LAB_PAYOUT_WALLETS[screen];
+  const terms = LAB_ENTRY_TERMS[screen];
+  if (terms && wallet?.status === "ready") client.setQueryData(entryTermsKey(LAB_SLOT_LEDGER, wallet.address), terms);
   return client;
 };
 
@@ -111,7 +117,7 @@ const answerAppReads = (screen: LabScreen) => {
       }),
     "/api/directory/history": () => json({ games: [LAB_FINISHED_BLITZ], next: null, failures: [] }),
     "/api/guardian": () => json(LAB_GUARDIAN),
-    "/api/slots": () => json(labSlots(LAB_SCREENS[screen].joined)),
+    "/api/slots": () => json(labSlots(LAB_SCREENS[screen].joined, LAB_ENTRY_TERMS[screen] && LAB_SLOT_LEDGER)),
     "/api/profiles": (url) => json({ profiles: profilesOf(url.searchParams.get("accounts")?.split(",") ?? []) }),
     "/api/ratings/top": () => json(LAB_RATING_TOP),
     "/api/ratings": (url) => json(labRatings(url.searchParams.get("accounts")?.split(",") ?? [])),
