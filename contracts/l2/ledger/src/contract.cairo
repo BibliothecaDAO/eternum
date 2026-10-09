@@ -1,7 +1,8 @@
 use core::poseidon::poseidon_hash_span;
-use game_ledger::types::{Game, PlayerResult, Preset, Registration};
+use game_ledger::types::{FrontierSeason, Game, PlayerResult, Preset, Registration, WithdrawalPayment};
 use starknet::ContractAddress;
 
+pub const PAUSER_ROLE: felt252 = selector!("PAUSER_ROLE");
 pub const OPERATOR_ROLE: felt252 = selector!("OPERATOR_ROLE");
 const BPS: u256 = 10_000;
 const PAYOUT_WEIGHT_SCALE: u256 = 1_000_000_000_000_000_000;
@@ -24,6 +25,12 @@ pub fn result_commitment(game_id: u32, ranked: Span<(ContractAddress, u16, u16)>
 pub trait IGameLedger<TState> {
     fn pause(ref self: TState);
     fn unpause(ref self: TState);
+    fn fund_frontier(ref self: TState, shard: felt252, season_id: u32, start: u64, end: u64, amount: u256);
+    fn pay(ref self: TState, shard: felt252, season_id: u32, claim_id: felt252, wallet: ContractAddress, amount: u256);
+    fn close_frontier(ref self: TState, shard: felt252, season_id: u32);
+    fn get_frontier(self: @TState, shard: felt252, season_id: u32) -> FrontierSeason;
+    fn frontier_unlocked(self: @TState, shard: felt252, season_id: u32) -> u256;
+    fn get_payment(self: @TState, shard: felt252, claim_id: felt252) -> WithdrawalPayment;
     fn rescue_token(ref self: TState, token: ContractAddress, recipient: ContractAddress, amount: u256);
     fn register_preset(ref self: TState, preset_id: u32, preset: Preset);
     fn open_game(ref self: TState, game_id: u32, preset_id: u32, start: u64, end: u64);
@@ -70,7 +77,7 @@ pub mod GameLedger {
     use core::dict::Felt252Dict;
     use core::num::traits::Zero;
     use game_ledger::mmr::MmrCalculatorImpl;
-    use game_ledger::types::{Game, PlayerResult, Preset, Registration};
+    use game_ledger::types::{FrontierSeason, Game, PlayerResult, Preset, Registration, WithdrawalPayment};
     use openzeppelin::access::accesscontrol::{AccessControlComponent, DEFAULT_ADMIN_ROLE};
     use openzeppelin::introspection::src5::SRC5Component;
     use openzeppelin::security::PausableComponent;
@@ -83,8 +90,8 @@ pub mod GameLedger {
     use super::{
         BPS, IGameLedger, IMMRTokenDispatcher, IMMRTokenDispatcherTrait, IPassBurnDispatcher, IPassBurnDispatcherTrait,
         IPassRestoreDispatcher, IPassRestoreDispatcherTrait, ISeasonPassMetadataDispatcher,
-        ISeasonPassMetadataDispatcherTrait, MMR_PRECISION, NO_PASS, OPERATOR_ROLE, PAYOUT_WEIGHT_SCALE, SEASON_PASS,
-        VILLAGE_PASS, result_commitment,
+        ISeasonPassMetadataDispatcherTrait, MMR_PRECISION, NO_PASS, OPERATOR_ROLE, PAUSER_ROLE, PAYOUT_WEIGHT_SCALE,
+        SEASON_PASS, VILLAGE_PASS, result_commitment,
     };
 
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
@@ -102,6 +109,8 @@ pub mod GameLedger {
 
     #[storage]
     struct Storage {
+        frontier: Map<(felt252, u32), FrontierSeason>,
+        payments: Map<(felt252, felt252), WithdrawalPayment>,
         treasury: ContractAddress,
         lords: ContractAddress,
         mmr_token: ContractAddress,
@@ -140,6 +149,9 @@ pub mod GameLedger {
         PausableEvent: PausableComponent::Event,
         #[flat]
         UpgradeableEvent: UpgradeableComponent::Event,
+        FrontierFunded: FrontierFunded,
+        WithdrawalPaid: WithdrawalPaid,
+        FrontierClosed: FrontierClosed,
         PresetRegistered: PresetRegistered,
         GameOpened: GameOpened,
         Registered: Registered,
@@ -149,6 +161,37 @@ pub mod GameLedger {
         Refunded: Refunded,
         PlayerPaid: PlayerPaid,
         ResultsApplied: ResultsApplied,
+    }
+
+    #[derive(Drop, starknet::Event)]
+    struct FrontierFunded {
+        #[key]
+        shard: felt252,
+        #[key]
+        season_id: u32,
+        start: u64,
+        end: u64,
+        amount: u256,
+    }
+
+    #[derive(Drop, starknet::Event)]
+    struct WithdrawalPaid {
+        #[key]
+        shard: felt252,
+        #[key]
+        claim_id: felt252,
+        season_id: u32,
+        wallet: ContractAddress,
+        amount: u256,
+    }
+
+    #[derive(Drop, starknet::Event)]
+    struct FrontierClosed {
+        #[key]
+        shard: felt252,
+        #[key]
+        season_id: u32,
+        returned: u256,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -278,13 +321,91 @@ pub mod GameLedger {
     #[abi(embed_v0)]
     impl GameLedgerImpl of IGameLedger<ContractState> {
         fn pause(ref self: ContractState) {
-            self.accesscontrol.assert_only_role(DEFAULT_ADMIN_ROLE);
+            let caller = starknet::get_caller_address();
+            assert!(
+                self.accesscontrol.has_role(DEFAULT_ADMIN_ROLE, caller)
+                    || self.accesscontrol.has_role(PAUSER_ROLE, caller),
+                "Ledger: caller cannot pause",
+            );
             self.pausable.pause();
         }
 
         fn unpause(ref self: ContractState) {
             self.accesscontrol.assert_only_role(DEFAULT_ADMIN_ROLE);
             self.pausable.unpause();
+        }
+
+        fn fund_frontier(ref self: ContractState, shard: felt252, season_id: u32, start: u64, end: u64, amount: u256) {
+            self.accesscontrol.assert_only_role(DEFAULT_ADMIN_ROLE);
+            assert!(shard != 0, "Ledger: zero shard");
+            assert!(!self.frontier.entry((shard, season_id)).read().funded, "Ledger: season already funded");
+            assert!(starknet::get_block_timestamp() <= start && start < end, "Ledger: invalid season window");
+            assert!(amount > 0 && amount <= 0xffffffffffffffffffffffffffffffff, "Ledger: invalid season funding");
+            self
+                .frontier
+                .entry((shard, season_id))
+                .write(FrontierSeason { funded: true, start, end, pool: amount, ..Default::default() });
+            self.pull_lords(starknet::get_caller_address(), amount);
+            self.emit(FrontierFunded { shard, season_id, start, end, amount });
+        }
+
+        fn pay(
+            ref self: ContractState,
+            shard: felt252,
+            season_id: u32,
+            claim_id: felt252,
+            wallet: ContractAddress,
+            amount: u256,
+        ) {
+            self.accesscontrol.assert_only_role(OPERATOR_ROLE);
+            if self.payments.entry((shard, claim_id)).read().paid {
+                return;
+            }
+            self.pausable.assert_not_paused();
+            assert!(claim_id != 0 && wallet.is_non_zero() && amount > 0, "Ledger: invalid withdrawal");
+            let mut season = self.get_frontier(shard, season_id);
+            assert!(!season.closed, "Ledger: season closed");
+            assert!(amount <= self.frontier_unlocked(shard, season_id) - season.paid, "Ledger: unlock exceeded");
+            season.paid += amount;
+            self.frontier.entry((shard, season_id)).write(season);
+            self.payments.entry((shard, claim_id)).write(WithdrawalPayment { paid: true, season_id, wallet, amount });
+            self.send_lords(wallet, amount);
+            self.emit(WithdrawalPaid { shard, claim_id, season_id, wallet, amount });
+        }
+
+        fn close_frontier(ref self: ContractState, shard: felt252, season_id: u32) {
+            self.accesscontrol.assert_only_role(DEFAULT_ADMIN_ROLE);
+            self.pausable.assert_not_paused();
+            let mut season = self.get_frontier(shard, season_id);
+            assert!(!season.closed, "Ledger: season closed");
+            assert!(starknet::get_block_timestamp() >= season.end, "Ledger: season has not ended");
+            let returned = season.pool - season.paid;
+            season.closed = true;
+            self.frontier.entry((shard, season_id)).write(season);
+            self.send_lords(self.treasury.read(), returned);
+            self.emit(FrontierClosed { shard, season_id, returned });
+        }
+
+        fn get_frontier(self: @ContractState, shard: felt252, season_id: u32) -> FrontierSeason {
+            let season = self.frontier.entry((shard, season_id)).read();
+            assert!(season.funded, "Ledger: unknown Frontier season");
+            season
+        }
+
+        fn frontier_unlocked(self: @ContractState, shard: felt252, season_id: u32) -> u256 {
+            let season = self.get_frontier(shard, season_id);
+            let now = starknet::get_block_timestamp();
+            if now <= season.start {
+                0
+            } else if now >= season.end {
+                season.pool
+            } else {
+                season.pool * (now - season.start).into() / (season.end - season.start).into()
+            }
+        }
+
+        fn get_payment(self: @ContractState, shard: felt252, claim_id: felt252) -> WithdrawalPayment {
+            self.payments.entry((shard, claim_id)).read()
         }
 
         fn rescue_token(ref self: ContractState, token: ContractAddress, recipient: ContractAddress, amount: u256) {
@@ -307,7 +428,6 @@ pub mod GameLedger {
 
         fn open_game(ref self: ContractState, game_id: u32, preset_id: u32, start: u64, end: u64) {
             self.accesscontrol.assert_only_role(OPERATOR_ROLE);
-            self.pausable.assert_not_paused();
             assert!(!self.games.entry(game_id).read().exists, "Ledger: game already opened");
             assert!(self.preset_exists.entry(preset_id).read(), "Ledger: unknown preset");
             assert!(starknet::get_block_timestamp() < start, "Ledger: start must be in the future");
@@ -371,7 +491,6 @@ pub mod GameLedger {
         }
 
         fn fund(ref self: ContractState, game_id: u32, amount: u256) {
-            self.pausable.assert_not_paused();
             let funder = starknet::get_caller_address();
             let game = self.assert_game_open_before_start(game_id);
             assert!(amount > 0, "Ledger: zero funding");
@@ -549,7 +668,6 @@ pub mod GameLedger {
         }
 
         fn assert_registration_open(self: @ContractState, game_id: u32, owner: ContractAddress) -> Game {
-            self.pausable.assert_not_paused();
             let game = self.assert_game_open_before_start(game_id);
             assert!(!self.registrations.entry((game_id, owner)).read().registered, "Ledger: already registered");
             game
