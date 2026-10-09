@@ -103,7 +103,7 @@ export const useAttackTargetData = (
       ? { game_id: configManager.getActiveGameId(), explorer_id: targetEntityId }
       : undefined,
   );
-  const targetResource = useResourceManager(targetEntityId ?? 0);
+  const targetResource = useResourceManager(targetEntityId);
   const targetProductionBoost = useNativeRowOrAbsent(
     "ProductionBonus",
     targetStructure !== undefined
@@ -199,7 +199,7 @@ export const useAttackTargetData = (
   ]);
 
   const targetResources = useMemo<Array<{ resourceId: number; amount: number }>>(() => {
-    if (!targetResource.hasResources()) return [];
+    if (!targetResource?.hasResources()) return [];
 
     if (targetTile?.occupier_is_structure) {
       const oneMinuteAgo = currentBlockTimestamp - 60;

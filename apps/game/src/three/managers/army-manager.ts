@@ -3122,7 +3122,6 @@ ${
     }
 
     const staminaSnapshot = getExplorerStaminaSnapshot({
-      entityId,
       currentArmiesTick,
       liveTroops: this.resolveLiveExplorerTroops(entityId),
     });

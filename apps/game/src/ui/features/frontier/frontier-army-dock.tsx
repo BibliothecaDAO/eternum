@@ -109,7 +109,6 @@ const ArmyCard = ({
   const selected = useUIStore((state) => state.entityActions.selectedEntityId === explorerId);
   const { currentArmiesTick, armiesTickTimeRemaining } = useBlockTimestamp();
   const snapshot = getExplorerStaminaSnapshot({
-    entityId: explorerId,
     currentArmiesTick,
     liveTroops: resolveExplorerTroops(setup.store, army),
   });

@@ -69,7 +69,6 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
 
   const staminaSnapshot = useMemo(() => {
     return getExplorerStaminaSnapshot({
-      entityId: armyEntityId,
       currentArmiesTick,
       liveTroops: explorer ? resolveExplorerTroops(store, explorer) : undefined,
     });

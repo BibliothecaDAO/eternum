@@ -473,7 +473,7 @@ const LocalTilePanel = () => {
     if (buildCost.length === 0) return false;
     if (!hasAvailableTile) return false;
     return buildCost.every((entry) => {
-      const { balance } = getBalance(structureEntityId ?? 0, entry.resource, currentDefaultTick, setup.store);
+      const { balance } = getBalance(structureEntityId, entry.resource, currentDefaultTick, setup.store);
       return balance !== undefined && divideByPrecision(balance) >= entry.amount;
     });
   })();
@@ -605,12 +605,7 @@ const LocalTilePanel = () => {
               <SectionRow label="Build cost">
                 {buildCost.map((entry, index) => {
                   const name = findResourceById(Number(entry.resource))?.trait ?? `Resource ${entry.resource}`;
-                  const balanceInfo = getBalance(
-                    structureEntityId ?? 0,
-                    entry.resource,
-                    currentDefaultTick,
-                    setup.store,
-                  );
+                  const balanceInfo = getBalance(structureEntityId, entry.resource, currentDefaultTick, setup.store);
                   const balance = knownBalance(balanceInfo.balance);
                   const hasEnough = balance !== undefined && balance >= entry.amount;
                   return (
