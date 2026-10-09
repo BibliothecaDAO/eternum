@@ -9,6 +9,7 @@ import { type IconCode, KitIcon } from "@/ui/design-system/kit/kit-icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
 import { Loading } from "../loading";
+import { useNowSeconds } from "../use-now";
 import { NoStrkLine } from "../value/no-strk-line";
 import { lordsOf, refundCall } from "../value/ledger";
 import { ENTRY_WORDS, WALLET_WORDS } from "../words";
@@ -55,9 +56,10 @@ const EntryPanel = ({
   const [choice, setChoice] = useState<EntryChoice>({ sword: false, shield: false });
   const [signing, setSigning] = useState(false);
   const [sent, setSent] = useState(false);
+  const now = useNowSeconds();
   if (wallet.status === "no_wallet") return <NoWallet />;
   if (!terms) return <Loading />;
-  const state = entryState(terms, choice);
+  const state = entryState(terms, choice, now);
   const cost = entryCost(terms, choice);
   const done = () => {
     setSigning(false);
@@ -67,6 +69,7 @@ const EntryPanel = ({
 
   if (state === "seated") return <Seated terms={terms} />;
   if (state === "refunded") return <Refunded terms={terms} />;
+  if (state === "closed") return <Closed />;
   const sign = signing && (
     <Suspense fallback={<Loading />}>
       <WalletSign
@@ -223,6 +226,12 @@ const Seated = ({ terms }: { terms: EntryTerms }) => {
     </Plate>
   );
 };
+
+const Closed = () => (
+  <Plate icon="Lk" title={ENTRY_WORDS.closed}>
+    <p className="font-body text-[16px] text-kit-cream">{ENTRY_WORDS.closedLine}</p>
+  </Plate>
+);
 
 const Refunded = ({ terms }: { terms: EntryTerms }) => (
   <Plate icon="Ok" title={ENTRY_WORDS.refunded}>

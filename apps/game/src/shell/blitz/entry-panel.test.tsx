@@ -33,6 +33,7 @@ const TERMS: EntryTerms = {
   prices: { seat: 500n * WEI, sword: 500n * WEI, shield: 500n * WEI },
   split: { protocolCutBps: 2000, chestLordsBps: 500 },
   cancelled: false,
+  start: Math.floor(Date.now() / 1000) + 3600,
   credits: { swords: 2, shields: 0 },
   registration: { registered: false, sword: false, shield: false, swordCredit: false, shieldCredit: false, paid: 0n },
   lordsToken: "0x10e5",

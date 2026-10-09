@@ -7,6 +7,7 @@ const terms = (overrides: Partial<EntryTerms> = {}): EntryTerms => ({
   prices: { seat: 500n * WEI, sword: 500n * WEI, shield: 500n * WEI },
   split: { protocolCutBps: 2000, chestLordsBps: 500 },
   cancelled: false,
+  start: 1_000,
   credits: { swords: 0, shields: 0 },
   registration: { registered: false, sword: false, shield: false, swordCredit: false, shieldCredit: false, paid: 0n },
   lordsToken: "0x10e5",
@@ -32,9 +33,9 @@ it("splits what an entry pays as the ledger settles it: the treasury's cut, then
 
 it("tells choosing, short of LORDS, no STRK for the fee, seated, refund and refunded apart", () => {
   const both = { sword: true, shield: true };
-  expect(entryState(terms(), both)).toBe("choose");
-  expect(entryState(terms({ lords: 320n * WEI }), both)).toBe("short");
-  expect(entryState(terms({ strk: 0n }), both)).toBe("no-strk");
+  expect(entryState(terms(), both, 900)).toBe("choose");
+  expect(entryState(terms({ lords: 320n * WEI }), both, 900)).toBe("short");
+  expect(entryState(terms({ strk: 0n }), both, 900)).toBe("no-strk");
   const seated = {
     registered: true,
     sword: true,
@@ -43,8 +44,18 @@ it("tells choosing, short of LORDS, no STRK for the fee, seated, refund and refu
     shieldCredit: false,
     paid: 1_000n * WEI,
   };
-  expect(entryState(terms({ registration: seated }), both)).toBe("seated");
-  expect(entryState(terms({ registration: seated, cancelled: true }), both)).toBe("refund");
+  expect(entryState(terms({ registration: seated }), both, 900)).toBe("seated");
+  expect(entryState(terms({ registration: seated, cancelled: true }), both, 900)).toBe("refund");
   const back = { ...seated, swordCredit: false, paid: 0n };
-  expect(entryState(terms({ registration: back, cancelled: true }), both)).toBe("refunded");
+  expect(entryState(terms({ registration: back, cancelled: true }), both, 900)).toBe("refunded");
+});
+
+it("closes the entry once the game has started, for anyone not already seated", () => {
+  const both = { sword: true, shield: true };
+  expect(entryState(terms(), both, 999)).toBe("choose");
+  expect(entryState(terms(), both, 1_000)).toBe("closed");
+  expect(entryState(terms({ lords: 0n }), both, 2_000)).toBe("closed");
+  const seated = { registered: true, sword: false, shield: false, swordCredit: false, shieldCredit: false, paid: 1n };
+  expect(entryState(terms({ registration: seated }), both, 2_000)).toBe("seated");
+  expect(entryState(terms({ registration: seated, cancelled: true }), both, 2_000)).toBe("refund");
 });

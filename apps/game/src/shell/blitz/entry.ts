@@ -22,6 +22,8 @@ export interface EntryTerms {
   prices: LedgerPrices;
   split: EntrySplit;
   cancelled: boolean;
+  /** The game's start (Unix seconds): the ledger takes no registration from then on. */
+  start: number;
   credits: Credits;
   registration: Registration;
   /** The ledger's LORDS token, which the entry approves. */
@@ -56,17 +58,19 @@ export const entryCost = (terms: Pick<EntryTerms, "prices" | "credits">, choice:
   return { cash, swordCredit, shieldCredit };
 };
 
-type EntryState = "choose" | "short" | "no-strk" | "seated" | "refund" | "refunded";
+type EntryState = "choose" | "short" | "no-strk" | "seated" | "refund" | "refunded" | "closed";
 
 /**
  * The panel's state: seated once registered; on a cancelled game, a refund until the paid LORDS and spent credits are
- * back; otherwise choosing, short of LORDS, or holding LORDS with no STRK for the network fee.
+ * back; closed to anyone else once the game has started; otherwise choosing, short of LORDS, or holding LORDS with no
+ * STRK for the network fee.
  */
-export const entryState = (terms: EntryTerms, choice: EntryChoice): EntryState => {
+export const entryState = (terms: EntryTerms, choice: EntryChoice, now: number): EntryState => {
   const { registration } = terms;
   if (registration.registered && terms.cancelled)
     return registration.paid > 0n || registration.swordCredit || registration.shieldCredit ? "refund" : "refunded";
   if (registration.registered) return "seated";
+  if (now >= terms.start) return "closed";
   if (terms.lords < entryCost(terms, choice).cash) return "short";
   if (terms.strk === 0n) return "no-strk";
   return "choose";
@@ -107,5 +111,15 @@ const readEntryTerms = async (ledger: LedgerRef, wallet: string): Promise<EntryT
   ]);
   const prices = { seat: preset.seat, sword: preset.sword, shield: preset.shield };
   const split = { protocolCutBps: preset.protocolCutBps, chestLordsBps: preset.chestLordsBps };
-  return { prices, split, cancelled: game.cancelled, credits, registration, lordsToken, lords, strk };
+  return {
+    prices,
+    split,
+    cancelled: game.cancelled,
+    start: game.start,
+    credits,
+    registration,
+    lordsToken,
+    lords,
+    strk,
+  };
 };

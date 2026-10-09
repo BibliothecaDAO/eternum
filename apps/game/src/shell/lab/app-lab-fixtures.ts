@@ -217,6 +217,7 @@ const ENTRY: EntryTerms = {
   prices: { seat: 500n * WEI, sword: 500n * WEI, shield: 500n * WEI },
   split: { protocolCutBps: 2000, chestLordsBps: 500 },
   cancelled: false,
+  start: NOW + 2 * 3600 + 4 * 60,
   credits: { swords: 2, shields: 0 },
   registration: NOT_REGISTERED,
   lordsToken: "0x10e5",
