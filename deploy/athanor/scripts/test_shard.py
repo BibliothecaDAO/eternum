@@ -73,6 +73,7 @@ class ShardTest(unittest.TestCase):
             self.assertEqual(events[:5], ["prepare", "metrics", "identity", "pending", "-d"])
             self.assertNotIn("active", events)
             self.assertEqual(json.loads((data / "directory-registration.json").read_text())["chainId"], chain)
+            self.assertEqual(json.loads((data / "directory-registration-ack.json").read_text())["status"], "pending")
 
     def test_registration_intent_survives_a_lost_post_response(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -91,7 +92,8 @@ class ShardTest(unittest.TestCase):
             shard.write_json(data / "configuration.json", config)
             with patch.object(shard, "run", side_effect=lambda *_: events.append("stop")), patch.object(shard, "directory_status", side_effect=lambda _, status: events.append(status)):
                 shard.stop_shard(data)
-            self.assertEqual(events, ["stop", "retired"])
+            self.assertEqual(events, ["stop"])
+            self.assertFalse((data / "directory-registration-ack.json").exists())
 
     def test_failed_single_start_stops_and_retires_its_registration(self):
         for failure in (RuntimeError("init failed"), KeyboardInterrupt()):
@@ -102,7 +104,7 @@ class ShardTest(unittest.TestCase):
                     if str(path) == "/sys/fs/cgroup/athanor.slice/cpuset.cpus.effective": return "8-11,20-23"
                     return read_text(path, *args, **kwargs)
                 def fail_start(config, data, _):
-                    shard.write_json(data / "directory-registration.json", {"url": config["public_herald_url"], "chainId": "0x" + config["chain_id"].encode().hex()})
+                    shard.write_json(data / "directory-registration-ack.json", {"url": config["public_herald_url"], "chainId": "0x" + config["chain_id"].encode().hex(), "status": "pending"})
                     raise failure
                 events = []
                 with (
@@ -116,7 +118,7 @@ class ShardTest(unittest.TestCase):
                         shard.start_shard(configuration(), directory)
                 self.assertEqual(events, ["stop", "retired"])
                 self.assertTrue((directory / "compose.json").exists())
-                self.assertTrue((directory / "directory-registration.json").exists())
+                self.assertTrue((directory / "directory-registration-ack.json").exists())
 
     def test_stopping_a_registered_runner_retires_after_stop_without_activation(self):
         events = []
@@ -124,7 +126,7 @@ class ShardTest(unittest.TestCase):
             data = Path(temporary)
             config = configuration()
             shard.write_json(data / "configuration.json", config)
-            shard.write_json(data / "directory-registration.json", {"url": config["public_herald_url"], "chainId": "0x" + config["chain_id"].encode().hex()})
+            shard.write_json(data / "directory-registration-ack.json", {"url": config["public_herald_url"], "chainId": "0x" + config["chain_id"].encode().hex(), "status": "pending"})
             with patch.object(shard, "run", side_effect=lambda *_: events.append("stop")), patch.object(shard, "directory_status", side_effect=lambda _, status: events.append(status)):
                 shard.stop_shard(data)
         self.assertEqual(events, ["stop", "retired"])
@@ -535,7 +537,7 @@ class ShardTest(unittest.TestCase):
                     (directory / "compose.json").write_text("{}")
                     (directory / "harness.env").write_text("COMPOSE_PROJECT_NAME=athanor-smoke\n")
                     shard.write_json(directory / "configuration.json", config)
-                    shard.write_json(directory / "directory-registration.json", {"url": config["public_herald_url"], "chainId": "0x" + config["chain_id"].encode().hex()})
+                    shard.write_json(directory / "directory-registration-ack.json", {"url": config["public_herald_url"], "chainId": "0x" + config["chain_id"].encode().hex(), "status": "pending"})
 
                 def measure(_docker, run_workload, node, *_paths):
                     measured.append(node)
@@ -702,3 +704,35 @@ class LocalEnrollmentTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class RegistrationAcknowledgementTest(unittest.TestCase):
+    def test_active_or_draining_response_never_acknowledges_or_retires_another_listing(self):
+        config = configuration()
+        for status in ("active", "draining"):
+            with self.subTest(status=status), tempfile.TemporaryDirectory() as temporary:
+                data = Path(temporary)
+                shard.write_json(data / "configuration.json", config)
+                with patch.object(shard, "run"), patch.object(shard, "wait_for_identity"), patch.object(shard, "directory_status", return_value={"status": status}) as directory:
+                    with self.assertRaisesRegex(RuntimeError, "must register PENDING"):
+                        shard.start_runner_stack(config, data, ["compose"])
+                    shard.stop_shard(data)
+                directory.assert_called_once_with(config, "pending")
+                self.assertTrue((data / "directory-registration.json").exists())
+                self.assertFalse((data / "directory-registration-ack.json").exists())
+
+    def test_unacknowledged_post_failure_is_preserved_after_cleanup(self):
+        config = configuration()
+        with tempfile.TemporaryDirectory() as temporary:
+            data = Path(temporary)
+            shard.write_json(data / "configuration.json", config)
+            with patch.object(shard, "run"), patch.object(shard, "wait_for_identity"), patch.object(shard, "directory_status", side_effect=RuntimeError("pending POST failed")) as directory:
+                try:
+                    shard.start_runner_stack(config, data, ["compose"])
+                except RuntimeError as error:
+                    shard.stop_shard(data)
+                    self.assertEqual(str(error), "pending POST failed")
+                else:
+                    self.fail("pending POST should fail")
+            directory.assert_called_once_with(config, "pending")
+            self.assertFalse((data / "directory-registration-ack.json").exists())
