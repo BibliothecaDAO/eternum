@@ -11,7 +11,6 @@ function game(store: NativeFactStore, endAt = 100) {
         game_id: 1,
         name: 0,
         preset_id: 2,
-        creator: 1,
         settled: false,
         ready: true,
         dev_mode_on: false,
