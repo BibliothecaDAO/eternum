@@ -83,6 +83,7 @@
     "lab:deploy-gameplay": "bun deploy/athanor/scripts/deploy-gameplay-contracts.ts",
     "lab:harness": "bun --tsconfig-override deploy/athanor/harness/tsconfig.json deploy/athanor/harness/run.ts",
     "lab:harness:test": "bun test --tsconfig-override deploy/athanor/harness/tsconfig.json deploy/athanor/harness",
+    "lab:self-check": "bun --tsconfig-override deploy/athanor/harness/tsconfig.json deploy/athanor/harness/self-check.ts",
     "lab:push-receiver": "bun deploy/athanor/harness/push-receiver.ts",
     "lab:slice:prepare-authority": "bun deploy/athanor/harness/native/prepare-authority.ts",
     "lab:probe-account": "bun deploy/athanor/scripts/probe-deploy-account.ts",

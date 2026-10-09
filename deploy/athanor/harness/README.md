@@ -14,3 +14,17 @@ private node, while gameplay goes through the public proxy. `NATIVE_WORLD_MANIFE
 `pnpm lab:harness:test` resolves workspace sources through this directory's tsconfig, so tests and workers use the
 checkout's command bindings rather than another checkout's built packages. Run commands under
 `flock /tmp/eternum-client.lock` on a shared development machine.
+
+## Deployment listing gate
+
+`pnpm lab:self-check --fixture <module.ts>` runs one throwaway game provided by a typed `DeploymentCheckPort` (see
+`self-check.ts`). The deployment fixture creates it through the current launcher, approves its bot devices and prepares
+domain prerequisites. Each `RouteCase` supplies a generated command, its signing account and isolated client, and an
+assertion over that client's Herald store. Entity identifiers are resolved from facts by the fixture, never guessed from
+a namespace layout.
+
+The script checks coverage against every generated command variant, then sends each case through `Games.play`, waits for
+both its receipt and Herald facts and checks its effect. Missing cases, rejected commands, wrong scope, timeouts, fact
+failures and teardown failure refuse the listing gate. It prints one public JSON result with `passed`,
+`firstFailedRoute`, `completed`, `gameId` and `elapsedMs`; exit 0 is the deployment's permission to list. The
+launcher/ID regeneration and complete domain fixture binding must land before this can pass on a fresh shard.
