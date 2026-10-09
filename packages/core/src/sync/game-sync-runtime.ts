@@ -105,6 +105,8 @@ export class GameSyncRuntime {
   private snapshotExpectedOperations = 0;
   private snapshotStreaming = false;
   private readonly resyncListeners = new Set<(throughBlock: number) => void>();
+  /** The confirmed block the last applied snapshot describes: the store holds every fact through it. */
+  private snapshotThroughBlock: number | null = null;
   private transactionWaiters = new Map<
     string,
     Array<{ reject: (error: Error) => void; resolve: (transaction: GameSyncTransaction) => void }>
@@ -161,6 +163,7 @@ export class GameSyncRuntime {
     this.rejectTransactionWaiters("Game sync session was replaced");
     this.recentTransactions.clear();
     this.localTransactions.clear();
+    this.snapshotThroughBlock = null;
     this.liveUpdateSamples = [];
     this.snapshotAppliedOperations = 0;
     this.snapshotExpectedOperations = 0;
@@ -210,12 +213,14 @@ export class GameSyncRuntime {
   }
 
   /**
-   * Fires once a reconnect's fresh snapshot has replaced the store, with the confirmed block it describes. Herald
-   * streams a transaction's status only once, so a status it sent before the reconnect will never arrive; a wait for
-   * one may settle from the store after this, if the snapshot reaches the transaction's block.
+   * Fires once a reconnect's fresh snapshot has replaced the store, with the confirmed block it describes, and at once
+   * with the last applied snapshot's block when there is one. Herald streams a transaction's status only once, so a
+   * status it sent before a reconnect will never arrive; a wait for one settles from the store when a snapshot
+   * reaches the transaction's block, including a snapshot applied before the wait began listening.
    */
   public subscribeResynced(listener: (throughBlock: number) => void): () => void {
     this.resyncListeners.add(listener);
+    if (this.snapshotThroughBlock !== null) listener(this.snapshotThroughBlock);
     return () => this.resyncListeners.delete(listener);
   }
 
@@ -318,10 +323,11 @@ export class GameSyncRuntime {
         const { held, retained } = snapshot;
         snapshot = null;
         const replaced = this.enqueueReplacement(generation, held ?? [], retained);
-        if (held)
-          void replaced.then((applied) => {
-            if (applied && current()) this.resyncListeners.forEach((listener) => listener(throughBlock));
-          });
+        void replaced.then((applied) => {
+          if (!applied || !current()) return;
+          this.snapshotThroughBlock = throughBlock;
+          if (held) this.resyncListeners.forEach((listener) => listener(throughBlock));
+        });
         firstSnapshot.resolve();
         return replaced.then((applied) => applied && current());
       },

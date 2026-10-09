@@ -26,15 +26,21 @@ const rpcAnswering = (answer: ReturnType<typeof receipt>) => ({
   getTransactionReceipt: vi.fn(async () => answer as never),
 });
 const running = new AbortController().signal;
+/** The runtime's contract: a resync reaches its listeners, and a new listener hears the last applied snapshot. */
 const runtimeWith = (status: Promise<{ block: number | null; hash: string; status: string }>) => {
-  let resync = (_throughBlock: number) => {};
+  const listeners = new Set<(throughBlock: number) => void>();
+  let snapshotThroughBlock: number | null = null;
   return {
     waitForTransaction: vi.fn(() => status),
     subscribeResynced: vi.fn((listener: (throughBlock: number) => void) => {
-      resync = listener;
-      return () => {};
+      listeners.add(listener);
+      if (snapshotThroughBlock !== null) listener(snapshotThroughBlock);
+      return () => listeners.delete(listener);
     }),
-    resync: (throughBlock: number) => resync(throughBlock),
+    resync: (throughBlock: number) => {
+      snapshotThroughBlock = throughBlock;
+      listeners.forEach((listener) => listener(throughBlock));
+    },
   };
 };
 
@@ -114,6 +120,34 @@ describe("an action's outcome", () => {
     expect(settled).toBe(false);
     applied({ block: 12, hash: TX, status: "ACCEPTED_ON_L2" });
     await expect(outcome).resolves.toEqual({ hash: TX, block: 12, status: "SUCCEEDED" });
+  });
+
+  it("settles from a reconnect that finished while the receipt was still being read", async () => {
+    const runtime = runtimeWith(new Promise(() => {}));
+    let answerReceipt!: (value: ReturnType<typeof receipt>) => void;
+    const rpc = {
+      getTransactionReceipt: vi.fn(() => new Promise<never>((resolve) => (answerReceipt = resolve as never))),
+    };
+    const outcome = waitForActionOutcome(runtime, rpc, GAMES, TX, running);
+    await vi.waitFor(() => expect(rpc.getTransactionReceipt).toHaveBeenCalled());
+    // The status was missed and the fresh snapshot covering block 12 applied before the receipt came back.
+    runtime.resync(12);
+    answerReceipt(receipt({ block_number: 12 }));
+    await expect(outcome).resolves.toMatchObject({ status: "SUCCEEDED", block: 12 });
+  });
+
+  it("promotes a pre-confirmed receipt with no block once a snapshot's re-read finds its block", async () => {
+    const runtime = runtimeWith(new Promise(() => {}));
+    const rpc = {
+      getTransactionReceipt: vi
+        .fn()
+        .mockResolvedValueOnce(receipt({ block_number: undefined }))
+        .mockResolvedValue(receipt({ block_number: 12, finality_status: "ACCEPTED_ON_L2" })),
+    };
+    const outcome = waitForActionOutcome(runtime, rpc, GAMES, TX, running);
+    await vi.waitFor(() => expect(runtime.subscribeResynced).toHaveBeenCalled());
+    runtime.resync(12);
+    await expect(outcome).resolves.toMatchObject({ status: "SUCCEEDED", block: 12 });
   });
 
   it("never settles a pre-confirmed receipt with no block from a snapshot; only Herald's status does", async () => {

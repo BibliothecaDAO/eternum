@@ -37,7 +37,7 @@ export async function waitForActionOutcome(
   if (refused) return refused;
   const remaining = "events" in receipt ? batchRemaining(receipt.events, games, transactionHash) : undefined;
   // Herald keeps recent statuses, so one it streamed while the receipt was read is still found here.
-  const { block } = await settledByHerald(runtime, transactionHash, blockOf(receipt));
+  const { block } = await settledByHerald(runtime, rpc, transactionHash, blockOf(receipt));
   return {
     hash: transactionHash,
     block,
@@ -88,19 +88,26 @@ function refusalIn(
 }
 
 /**
- * Herald's status for the transaction, or a reconnect's fresh snapshot that reaches the receipt's block and so holds
- * its facts. A snapshot older than the receipt, or a receipt with no block yet, leaves the action pending until
- * Herald's status arrives.
+ * Herald's status for the transaction, or an applied snapshot that reaches the receipt's block and so holds its
+ * facts: the runtime replays the last one when the wait starts listening, so a reconnect that finished while the
+ * receipt was being read still counts. A pre-confirmed receipt has no block yet; each snapshot re-reads it, so a
+ * confirmed one can settle it once its block is known. Until then the action is pending.
  */
 function settledByHerald(
   runtime: Pick<GameSyncRuntime, "waitForTransaction" | "subscribeResynced">,
+  rpc: Pick<RpcProvider, "getTransactionReceipt">,
   transactionHash: string,
   receiptBlock: number | null,
 ): Promise<{ block: number | null }> {
   let stopWatching = () => {};
+  let block = receiptBlock;
+  const blockOnceKnown = async (): Promise<number | null> =>
+    (block ??= await rpc.getTransactionReceipt(transactionHash).then(blockOf, () => null));
   const resynced = new Promise<{ block: number }>((resolve) => {
     stopWatching = runtime.subscribeResynced((throughBlock) => {
-      if (receiptBlock !== null && throughBlock >= receiptBlock) resolve({ block: receiptBlock });
+      void blockOnceKnown().then((known) => {
+        if (known !== null && throughBlock >= known) resolve({ block: known });
+      });
     });
   });
   return Promise.race([runtime.waitForTransaction(transactionHash), resynced]).finally(() => stopWatching());
