@@ -17,11 +17,11 @@ export interface ActionOutcome {
 const RECEIPT_POLL_MS = 250;
 
 /**
- * An action's outcome from its receipt, then Herald: the receipt says whether the shard reverted it before the roll or
+ * An action's outcome: first its reconciliation, when its submission gives one (in a block, or rejected on proof it
+ * was never sent), then its receipt, then Herald: the receipt says whether the shard reverted it before the roll or
  * the game refused it (GameplayRejected, effects rolled back), and an applied action settles once Herald has applied
  * its facts, either from its streamed status or, after a reconnect that would never stream it, from the fresh
- * snapshot. Until then the action is pending; the wait stops when the client does. The hash arrives in a block already:
- * the gameplay submit returns it only then, and rejects an action proven not sent, so no wait starts on a lost one.
+ * snapshot. Until then the action is pending; the wait stops when the client does.
  */
 export async function waitForActionOutcome(
   runtime: Pick<GameSyncRuntime, "waitForTransaction" | "subscribeResynced">,
@@ -29,7 +29,9 @@ export async function waitForActionOutcome(
   games: string,
   transactionHash: string,
   stopped: AbortSignal,
+  inBlock?: Promise<void>,
 ): Promise<ActionOutcome> {
+  await inBlock;
   const receipt = await receiptOf(rpc, transactionHash, stopped);
   const refused = refusalIn(receipt, games, transactionHash);
   if (refused) return refused;
@@ -44,7 +46,7 @@ export async function waitForActionOutcome(
   };
 }
 
-/** The receipt of a transaction already in a block; a read that fails is retried until the client stops. */
+/** The transaction's receipt once it is in a block, pre-confirmed or later; until then it is still pending. */
 async function receiptOf(
   rpc: Pick<RpcProvider, "getTransactionReceipt">,
   transactionHash: string,

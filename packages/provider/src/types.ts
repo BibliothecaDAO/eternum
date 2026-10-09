@@ -55,8 +55,14 @@ interface TransactionStreamStatus {
   status: string;
 }
 
-/** Waits for a transaction's outcome, settled once Herald has applied it. */
-export type TransactionStreamWaiter = (transactionHash: string) => Promise<TransactionStreamStatus>;
+/**
+ * Waits for a transaction's outcome, settled once Herald has applied it; `inBlock`, when the submission reconciles
+ * its sends, settles first and rejects only on proof the transaction was never sent.
+ */
+export type TransactionStreamWaiter = (
+  transactionHash: string,
+  inBlock?: Promise<void>,
+) => Promise<TransactionStreamStatus>;
 
 export enum TransactionType {
   PROVISION_REALM = "provision_realm",

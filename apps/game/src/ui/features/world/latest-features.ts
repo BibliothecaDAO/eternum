@@ -44,7 +44,7 @@ const allLatestFeatures: LatestFeature[] = [
     date: "2026-10-09",
     title: "No more stuck actions",
     description:
-      "An action that never reached the game now says so in the event feed within a few seconds, and your next actions go through instead of waiting behind it until a reload.",
+      "Each action in the event feed now says sending, checking, done, refused with the reason, or not sent. An action still being checked no longer holds up your next ones, and an action is only called not sent once the game has confirmed it never arrived.",
     type: "fix",
   },
   {

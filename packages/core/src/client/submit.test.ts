@@ -15,9 +15,12 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { configureGameplayAccountSubmits, executeGameplayAccountTransaction } from "./submit";
 
 const CALL = { contractAddress: "0x1", entrypoint: "play", calldata: [] };
+const OTHER_CALL = { contractAddress: "0x1", entrypoint: "play", calldata: ["0x2"] };
 const SHARD = { chainId: "0x1", l2GasBound: 0x47868c00n };
-/** Three 2 s blocks: how long a hash the node never held may stay unseen before the nonce settles it as not sent. */
+/** Three 2 s blocks of the node answering "unknown hash" with the nonce unmoved: the proof a send was dropped. */
 const NOT_SEEN_LIMIT_MS = 6_000;
+/** Five blocks without proof either way: the action is unknown, checking, and stops holding the queue. */
+const UNKNOWN_AFTER_MS = 10_000;
 
 afterEach(() => {
   vi.useRealTimers();
@@ -27,8 +30,9 @@ describe("gameplay account submits", () => {
   it("sends an ordinary invoke at the current pre-confirmed nonce with the shard's bound and tip 0", async () => {
     const shard = fakeShard("0xabc", (invoke) => shard.land(invoke));
 
-    expect(await send(shard)).toEqual({ transaction_hash: shard.hashAt(0) });
-
+    const sent = await send(shard);
+    expect(sent.transaction_hash).toBe(shard.hashAt(0));
+    await expect(sent.inclusion).resolves.toBe("included");
     expect(shard.account.getNonce).toHaveBeenCalledWith(BlockTag.PRE_CONFIRMED);
     expect(shard.account.execute).toHaveBeenCalledWith(
       CALL,
@@ -44,134 +48,205 @@ describe("gameplay account submits", () => {
     );
   });
 
-  it("resolves once the transaction is in a block, and only then reads the next send's nonce", async () => {
+  it("returns the hash as soon as the send does, and reads the next nonce only after the first answer", async () => {
     const shard = fakeShard("0x999", (invoke) => shard.hold(invoke));
 
-    const first = send(shard);
+    const first = await send(shard);
     const second = send(shard);
-    await vi.waitFor(() => expect(shard.account.execute).toHaveBeenCalledOnce());
     await endOfMacrotask();
-    expect(shard.account.getNonce).toHaveBeenCalledTimes(1);
+    expect(shard.account.execute).toHaveBeenCalledOnce();
 
-    shard.include(shard.hashAt(0));
-    await expect(first).resolves.toEqual({ transaction_hash: shard.hashAt(0) });
-    await vi.waitFor(() => expect(shard.account.execute).toHaveBeenCalledTimes(2));
-    shard.include(shard.hashAt(1));
-    await expect(second).resolves.toEqual({ transaction_hash: shard.hashAt(1) });
+    shard.include(first.transaction_hash);
+    await expect(first.inclusion).resolves.toBe("included");
+    shard.include((await second).transaction_hash);
     expect(shard.sentNonces()).toEqual(["0x7", "0x8"]);
   });
 
-  it("refused by the stamping proxy: not sent at once, and the next send goes at a fresh nonce", async () => {
-    const shard = fakeShard("0x789", (invoke) => {
-      if (shard.sent.length === 1) throw transactionRefused();
+  it("accepted, then the proxy's outcome unknown: reconciled into the block it landed in, never resent", async () => {
+    const shard = fakeShard("0x9876", (invoke) => {
+      shard.land(invoke);
+      throw outcomeUnknown();
+    });
+
+    const sent = await send(shard);
+    expect(sent.transaction_hash).toBe(shard.hashAt(0));
+    await expect(sent.inBlock).resolves.toBeUndefined();
+    expect(shard.account.execute).toHaveBeenCalledOnce();
+  });
+
+  it("names the hash the proxy computed when its outcome is unknown, and reconciles that hash", async () => {
+    const shard = fakeShard("0x9877", (invoke) => {
+      shard.land(invoke);
+      throw outcomeUnknown(invoke.hash);
+    });
+
+    const sent = await send(shard);
+    expect(sent.transaction_hash).toBe(shard.hashAt(0));
+    await expect(sent.inBlock).resolves.toBeUndefined();
+  });
+
+  it.each([
+    ["the proxy's refusal of this request", -32010],
+    ["a request the proxy does not admit", -32601],
+  ])("%s is no proof of absence: not sent only once the node proves it", async (_, code) => {
+    vi.useFakeTimers();
+    const shard = fakeShard(`0x79${-code}`, (invoke) => {
+      if (shard.sent.length === 1) throw Object.assign(new Error("Transaction refused"), { code });
       return shard.land(invoke);
     });
 
-    await expect(send(shard)).rejects.toThrow(notSent("refused"));
-    expect(await send(shard)).toEqual({ transaction_hash: shard.hashAt(1) });
-    expect(shard.sentNonces()).toEqual(["0x7", "0x7"]);
+    const sent = await send(shard);
+    const answer = sent.inclusion.catch((error: unknown) => error);
+    await vi.advanceTimersByTimeAsync(NOT_SEEN_LIMIT_MS + 500);
+    expect(String(await answer)).toMatch(notSent("dropped"));
+    expect((await send(shard)).transaction_hash).toBe(shard.hashAt(1));
   });
 
-  it("dropped after acceptance: unseen with an unmoved nonce for three blocks, then not sent", async () => {
+  it("dropped: the node answers unknown hash with the nonce unmoved for three blocks, then not sent", async () => {
     vi.useFakeTimers();
     const shard = fakeShard("0x9988", (invoke) => ({ transaction_hash: invoke.hash }));
 
-    const first = send(shard);
-    const outcome = first.catch((error: unknown) => error);
-    const next = send(shard);
+    const sent = await send(shard);
+    const answer = sent.inclusion.catch((error: unknown) => error);
     await vi.advanceTimersByTimeAsync(NOT_SEEN_LIMIT_MS - 500);
-    expect(shard.account.execute).toHaveBeenCalledOnce();
+    expect(shard.account.getTransactionStatus).toHaveBeenCalled();
 
     await vi.advanceTimersByTimeAsync(1_000);
-    expect(await outcome).toBeInstanceOf(TransactionNotSentError);
-    expect(await outcome).toHaveProperty("message", `Transaction ${shard.hashAt(0)} not sent (dropped)`);
-    await vi.waitFor(() => expect(shard.account.execute).toHaveBeenCalledTimes(2));
-    shard.include(shard.hashAt(1));
-    await vi.advanceTimersByTimeAsync(250);
-    await expect(next).resolves.toEqual({ transaction_hash: shard.hashAt(1) });
+    expect(await answer).toBeInstanceOf(TransactionNotSentError);
+    expect(String(await answer)).toMatch(notSent("dropped"));
+    await expect(sent.inBlock).rejects.toThrow(notSent("dropped"));
   });
 
-  it("an opaque send error that never reached the node is not sent once the window passes", async () => {
+  it("both reads unavailable after acceptance: no proof, so the action is unknown and keeps reconciling", async () => {
     vi.useFakeTimers();
-    const shard = fakeShard("0x5150", () => {
-      throw new Error("502 Bad Gateway");
+    const shard = fakeShard("0x5150", (invoke) => {
+      if (shard.sent.length > 1) return shard.land(invoke);
+      shard.hold(invoke);
+      shard.readable = false;
+      throw outcomeUnknown();
     });
 
-    const outcome = send(shard).catch((error: unknown) => error);
-    await vi.advanceTimersByTimeAsync(NOT_SEEN_LIMIT_MS + 250);
-    expect(String(await outcome)).toMatch(notSent("dropped"));
-    expect(shard.account.execute).toHaveBeenCalledOnce();
+    const sent = await send(shard);
+    await vi.advanceTimersByTimeAsync(UNKNOWN_AFTER_MS + 250);
+    await expect(sent.inclusion).resolves.toBe("unknown");
+
+    shard.readable = true;
+    // The queue is free while the first action is still being checked.
+    expect((await send(shard, OTHER_CALL)).transaction_hash).toBe(shard.hashAt(1));
+    shard.include(sent.transaction_hash);
+    await vi.advanceTimersByTimeAsync(250);
+    await expect(sent.inBlock).resolves.toBeUndefined();
   });
 
-  it("slow but included: a hash the node holds keeps the wait open past the window, and lands", async () => {
+  it("a failed status read after the nonce moved is no proof of replacement: the hash is still reconciled", async () => {
     vi.useFakeTimers();
-    const shard = fakeShard("0x5105", (invoke) => shard.hold(invoke));
+    const shard = fakeShard("0x4321", (invoke) => {
+      shard.include(invoke.hash);
+      shard.statusReadable = false;
+      throw outcomeUnknown();
+    });
 
+    const sent = await send(shard);
     const settled = vi.fn();
-    const first = send(shard);
-    void first.then(settled, settled);
-    await vi.advanceTimersByTimeAsync(NOT_SEEN_LIMIT_MS * 3);
+    void sent.inBlock.then(settled, settled);
+    await vi.advanceTimersByTimeAsync(UNKNOWN_AFTER_MS + 250);
+    await expect(sent.inclusion).resolves.toBe("unknown");
     expect(settled).not.toHaveBeenCalled();
 
-    shard.include(shard.hashAt(0));
+    shard.statusReadable = true;
     await vi.advanceTimersByTimeAsync(250);
-    await expect(first).resolves.toEqual({ transaction_hash: shard.hashAt(0) });
+    await expect(sent.inBlock).resolves.toBeUndefined();
   });
 
-  it("a lost invoke reply observes the ordinary hash and resolves when it lands, never resending", async () => {
-    const shard = fakeShard("0x9876", (invoke) => {
-      shard.land(invoke);
-      throw new Error("upstream response lost");
-    });
-
-    expect(await send(shard)).toEqual({ transaction_hash: shard.hashAt(0) });
-    expect(shard.account.execute).toHaveBeenCalledOnce();
-  });
-
-  it("replaced at the same nonce: another transaction took it, so this one is not sent without waiting out the window", async () => {
-    const shard = fakeShard("0x4242", () => {
-      shard.include("0xelsewhere");
-      throw new Error("upstream response lost");
-    });
-
-    await expect(send(shard)).rejects.toThrow(notSent("replaced"));
-  });
-
-  it("two tabs race one nonce: the loser is not sent and its tab's next action goes at the fresh nonce", async () => {
-    const shard = fakeShard("0x7ab", (invoke) => {
-      // The other tab's invoke at the same nonce reached the proxy first; the proxy refuses a spent nonce.
-      if (shard.sent.length === 1) {
-        shard.include("0xothertab");
-        throw transactionRefused();
-      }
-      return shard.land(invoke);
-    });
-
-    await expect(send(shard)).rejects.toThrow(notSent("refused"));
-    expect(await send(shard)).toEqual({ transaction_hash: shard.hashAt(1) });
-    expect(shard.sentNonces()).toEqual(["0x7", "0x8"]);
-  });
-
-  it("a nonce that cannot be read never proves a replacement: the window settles it as dropped", async () => {
+  it("an unreadable nonce never proves a replacement or a drop: the action stays unknown", async () => {
     vi.useFakeTimers();
     const shard = fakeShard("0x1010", () => {
       shard.nonceReadable = false;
-      throw new Error("upstream response lost");
+      throw outcomeUnknown();
     });
 
-    const outcome = send(shard).catch((error: unknown) => error);
-    await vi.advanceTimersByTimeAsync(NOT_SEEN_LIMIT_MS + 250);
-    expect(String(await outcome)).toMatch(notSent("dropped"));
+    const sent = await send(shard);
+    const settled = vi.fn();
+    void sent.inBlock.then(settled, settled);
+    await vi.advanceTimersByTimeAsync(UNKNOWN_AFTER_MS * 3);
+    await expect(sent.inclusion).resolves.toBe("unknown");
+    expect(settled).not.toHaveBeenCalled();
   });
 
-  it("keeps a policy refusal's own error and lets the next send go with a fresh nonce", async () => {
-    const shard = fakeShard("0x790", (invoke) => {
-      if (shard.sent.length === 1) throw Object.assign(new Error("Method not found"), { code: -32601 });
-      return shard.land(invoke);
+  it("slow but included: a hash the node holds is unknown after the window, never not sent, and lands", async () => {
+    vi.useFakeTimers();
+    const shard = fakeShard("0x5105", (invoke) => shard.hold(invoke));
+
+    const sent = await send(shard);
+    await vi.advanceTimersByTimeAsync(NOT_SEEN_LIMIT_MS * 3);
+    await expect(sent.inclusion).resolves.toBe("unknown");
+
+    shard.include(sent.transaction_hash);
+    await vi.advanceTimersByTimeAsync(250);
+    await expect(sent.inBlock).resolves.toBeUndefined();
+  });
+
+  it("replaced at the same nonce: another transaction spent it and the node does not know this hash", async () => {
+    const shard = fakeShard("0x4242", () => {
+      shard.include("0xelsewhere");
+      throw outcomeUnknown();
     });
 
-    await expect(send(shard)).rejects.toThrow("Method not found");
-    expect(await send(shard)).toEqual({ transaction_hash: shard.hashAt(1) });
+    const sent = await send(shard);
+    await expect(sent.inclusion).rejects.toThrow(notSent("replaced"));
+  });
+
+  it("held, then replaced: a known hash is reconciled against the nonce, and not sent once the node forgets it", async () => {
+    vi.useFakeTimers();
+    const shard = fakeShard("0x4343", (invoke) => {
+      shard.hold(invoke);
+      shard.include("0xelsewhere");
+    });
+
+    const sent = await send(shard);
+    await vi.advanceTimersByTimeAsync(UNKNOWN_AFTER_MS + 250);
+    await expect(sent.inclusion).resolves.toBe("unknown");
+
+    shard.forget(sent.transaction_hash);
+    await vi.advanceTimersByTimeAsync(250);
+    await expect(sent.inBlock).rejects.toThrow(notSent("replaced"));
+  });
+
+  it("two tabs race one nonce: the other tab's identical action is this one, a different one replaces it", async () => {
+    // The other tab sent the identical command at the same nonce, so the same hash; the proxy refused this copy.
+    const same = fakeShard("0x7ab", (invoke) => {
+      same.land(invoke);
+      throw refusedThisRequest();
+    });
+    await expect((await send(same)).inclusion).resolves.toBe("included");
+
+    const different = fakeShard("0x7ac", (invoke) => {
+      if (different.sent.length > 1) return different.land(invoke);
+      different.include("0xothertab");
+      throw refusedThisRequest();
+    });
+    await expect((await send(different)).inclusion).rejects.toThrow(notSent("replaced"));
+    expect((await send(different)).transaction_hash).toBe(different.hashAt(1));
+    expect(different.sentNonces()).toEqual(["0x7", "0x8"]);
+  });
+
+  it("disposed while held: reconciling stops without claiming anything, and the account's queue is free", async () => {
+    vi.useFakeTimers();
+    const shard = fakeShard("0x6006", (invoke) => shard.hold(invoke));
+    const client = new AbortController();
+
+    const sent = await send(shard, CALL, client.signal);
+    await vi.advanceTimersByTimeAsync(1_000);
+    client.abort(new Error("Game client disposed"));
+    await expect(sent.inBlock).rejects.toThrow("Game client disposed");
+    await expect(sent.inclusion).rejects.toThrow("Game client disposed");
+
+    const reads = shard.account.getTransactionStatus.mock.calls.length;
+    await vi.advanceTimersByTimeAsync(UNKNOWN_AFTER_MS);
+    expect(shard.account.getTransactionStatus.mock.calls.length).toBe(reads);
+    const next = send(shard, OTHER_CALL);
+    await vi.waitFor(() => expect(shard.account.execute).toHaveBeenCalledTimes(2));
+    expect((await next).transaction_hash).toBe(shard.hashAt(1));
   });
 
   it("puts every send of a configured account, raw or generated, through the same policy", async () => {
@@ -179,7 +254,7 @@ describe("gameplay account submits", () => {
     const rawExecute = shard.account.execute;
     const configured = configureGameplayAccountSubmits(shard.account as unknown as AccountInterface, SHARD);
 
-    expect(await configured.execute(CALL)).toEqual({ transaction_hash: shard.hashAt(0) });
+    expect((await configured.execute(CALL)).transaction_hash).toBe(shard.hashAt(0));
     expect(rawExecute).toHaveBeenCalledWith(
       CALL,
       expect.objectContaining({ nonce: "0x7", tip: 0, resourceBounds: expect.any(Object) }),
@@ -196,8 +271,8 @@ describe("gameplay account submits", () => {
   });
 });
 
-const send = (shard: FakeShard) =>
-  executeGameplayAccountTransaction({ account: shard.account, calls: CALL, shard: SHARD });
+const send = (shard: FakeShard, calls: Call = CALL, stopped?: AbortSignal) =>
+  executeGameplayAccountTransaction({ account: shard.account, calls, shard: SHARD, stopped });
 
 interface SentInvoke {
   hash: string;
@@ -207,7 +282,8 @@ type FakeShard = ReturnType<typeof fakeShard>;
 
 /**
  * One account's view of a shard: its pre-confirmed nonce, the hashes in a block (nonce spent) and the hashes the node
- * holds but has not included. `onSend` plays the node and proxy for each invoke the account signs.
+ * holds but has not included. An unknown hash answers the node's own error 29; an unreadable read fails otherwise.
+ * `onSend` plays the node and proxy for each invoke the account signs.
  */
 function fakeShard(address: string, onSend: (invoke: SentInvoke) => { transaction_hash: string } | void) {
   const statuses = new Map<string, "RECEIVED" | "PRE_CONFIRMED">();
@@ -215,6 +291,11 @@ function fakeShard(address: string, onSend: (invoke: SentInvoke) => { transactio
   const shard = {
     nonce: 7n,
     nonceReadable: true,
+    statusReadable: true,
+    set readable(readable: boolean) {
+      shard.nonceReadable = readable;
+      shard.statusReadable = readable;
+    },
     sent,
     hashAt: (index: number) => sent[index]!.hash,
     sentNonces: () => sent.map(({ nonce }) => nonce),
@@ -223,6 +304,8 @@ function fakeShard(address: string, onSend: (invoke: SentInvoke) => { transactio
       statuses.set(invoke.hash, "RECEIVED");
       return { transaction_hash: invoke.hash };
     },
+    /** The node no longer knows the hash (its mempool lost it). */
+    forget: (transactionHash: string) => statuses.delete(transactionHash),
     /** A transaction lands in the next block and spends the account's nonce. */
     include: (transactionHash: string) => {
       statuses.set(transactionHash, "PRE_CONFIRMED");
@@ -245,8 +328,9 @@ function fakeShard(address: string, onSend: (invoke: SentInvoke) => { transactio
         return `0x${shard.nonce.toString(16)}`;
       }),
       getTransactionStatus: vi.fn(async (transactionHash: string) => {
+        if (!shard.statusReadable) throw Object.assign(new Error("RPC read unavailable"), { code: -32012 });
         const status = statuses.get(transactionHash);
-        if (!status) throw new Error("TXN_HASH_NOT_FOUND");
+        if (!status) throw Object.assign(new Error("Transaction hash not found"), { baseError: { code: 29 } });
         return { finality_status: status };
       }),
     },
@@ -268,7 +352,13 @@ function invokeHash(address: string, calls: AllowArray<Call>, details: Universal
 
 /** The message of an action proven not sent for this reason. */
 const notSent = (reason: string) => new RegExp(`Transaction 0x[0-9a-f]+ not sent \\(${reason}\\)$`);
-const transactionRefused = () => Object.assign(new Error("Transaction refused"), { code: -32000 });
+/** The stamping proxy tried to forward this invoke and cannot say whether the node took it. */
+const outcomeUnknown = (transactionHash?: string) =>
+  Object.assign(new Error("Transaction outcome unknown"), {
+    baseError: { code: -32011, ...(transactionHash ? { data: { transaction_hash: transactionHash } } : {}) },
+  });
+/** The stamping proxy refused this request before forwarding it: about this request only, not this hash. */
+const refusedThisRequest = () => Object.assign(new Error("Transaction refused"), { code: -32010 });
 
 /** Flushes every pending microtask and the next macrotask. */
 function endOfMacrotask(): Promise<void> {
