@@ -265,6 +265,7 @@ pub mod RelicState {
             context: crate::commands::ActionContext,
         ) -> () {
             let context = crate::commands::load_context(game_id, context);
+            crate::relics::assert_claim_window(context.game.unbox(), crate::logic::lords_budget::chest_rules(game_id), context.timestamp);
             assert!(command.amount != 0, "zero LORDS withdrawal");
             let realm = ResourceKey { game_id, entity_id: command.structure_id };
             let record = crate::logic::structures::record(realm);

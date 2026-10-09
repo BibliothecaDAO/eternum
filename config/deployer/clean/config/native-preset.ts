@@ -290,10 +290,10 @@ function buildEconomy(
       chests.shares.legendary,
     ];
     if (
-      ![chests.pool, chests.priceCeiling, chests.estimateDays, ...shares].every(
+      ![chests.pool, chests.priceCeiling, chests.estimateDays, chests.claimWindowSeconds, ...shares].every(
         (value) => Number.isSafeInteger(value) && value > 0,
       ) ||
-      [chests.estimateDays, ...shares].some((value) => value > 0xffff) ||
+      [chests.estimateDays, chests.claimWindowSeconds, ...shares].some((value) => value > 0xffff) ||
       shares.some((value, index) => value > (shares[index + 1] ?? value))
     )
       throw new Error("Invalid ruin chest rules");
@@ -345,6 +345,7 @@ function buildEconomy(
             price_ceiling: BigInt(chests.priceCeiling),
             shares: chests.shares,
             estimate_days: chests.estimateDays,
+            claim_window_seconds: chests.claimWindowSeconds,
           }),
     trade: { max_count: config.trade.maxCount },
     banks: {

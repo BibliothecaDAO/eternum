@@ -227,3 +227,19 @@ fn skipped_day_decay_is_exact_beyond_sixty_four_days() {
     assert!(expected != 0);
     assert_eq!(roll(rules, previous, clock(), 100).estimate, expected);
 }
+
+#[test]
+fn withdrawals_remain_open_through_the_last_second_of_the_preset_claim_window() {
+    let game = clock().game;
+    let rules = rules();
+    crate::relics::assert_claim_window(game, rules, game.end_at);
+    crate::relics::assert_claim_window(game, rules, game.end_at + rules.claim_window_seconds - 1);
+}
+
+#[test]
+#[should_panic(expected: "LORDS claim window closed")]
+fn no_receipt_can_start_at_the_ledgers_close_deadline() {
+    let game = clock().game;
+    let rules = rules();
+    crate::relics::assert_claim_window(game, rules, game.end_at + rules.claim_window_seconds);
+}

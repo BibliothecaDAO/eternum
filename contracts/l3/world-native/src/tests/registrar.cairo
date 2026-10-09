@@ -2574,6 +2574,11 @@ fn a_lords_withdrawal_after_season_end_spends_the_realm_once() {
     snforge_std::start_cheat_transaction_hash(d.games, 56789);
     let duplicate = Command::WithdrawLords(crate::relics::WithdrawLords { structure_id: home.entity_id, amount: 50 });
     assert!(!execute_in_game(d, game_id, duplicate, after_end + 2));
+    let deadline = IGameDispatcher { contract_address: d.games }.game(game_id).end_at
+        + snforge_std::interact_with_state(d.games, || crate::logic::lords_budget::chest_rules(game_id).claim_window_seconds);
+    super::play_fixture::assert_preflight_rejection(
+        d.games, super::play_fixture::TestAction { game_id, actor: d.actor, command: duplicate }, deadline,
+    );
     let lords = ResourceSlot { game_id, entity_id: home.entity_id, resource_type: crate::resources::LORDS };
     assert_eq!(
         IResourceOperationsDispatcher { contract_address: d.games }.resource_balance(lords), 100 * RESOURCE_PRECISION,

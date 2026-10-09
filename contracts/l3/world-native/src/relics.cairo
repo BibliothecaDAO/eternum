@@ -77,6 +77,7 @@ pub struct ChestRules {
     pub price_ceiling: u128,
     pub shares: ChestTiers,
     pub estimate_days: u16,
+    pub claim_window_seconds: u64,
 }
 
 // A ruin's chest, fixed when the ruin is found: its tier and the whole LORDS its clear pays.
@@ -323,4 +324,9 @@ pub trait IFrontierSites<T> {
         command: InteractSite,
         context: crate::commands::ActionContext,
     );
+}
+
+// The ledger closes at this same exclusive deadline; no new receipt may be created at or beyond it.
+pub fn assert_claim_window(game: crate::game::GameRegistry, rules: ChestRules, timestamp: u64) {
+    assert!(timestamp < game.end_at + rules.claim_window_seconds, "LORDS claim window closed");
 }

@@ -131,6 +131,9 @@ pub mod GamesEntry {
             let rules = crate::logic::game::rules(game_id);
             assert!(crate::rules::command_enabled(rules.command_mask, index.into()), "command disabled");
             assert!(game.ready || index == crate::command_routes::SETTLE_BLITZ_ROSTER, "roster not ready");
+            if route.selector == selector!("withdraw_lords") {
+                crate::relics::assert_claim_window(game, crate::logic::lords_budget::chest_rules(game_id), starknet::get_block_timestamp());
+            }
             if route.selector == selector!("create_banks") || route.selector == selector!("settle_blitz_roster") {
                 crate::logic::release::assert_launcher();
             }

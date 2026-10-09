@@ -85,6 +85,7 @@ export interface NativePreset {
     priceCeiling: number;
     shares: ChestTiers;
     estimateDays: number;
+    claimWindowSeconds: number;
   };
   depths: Array<{
     revealPercent: number;

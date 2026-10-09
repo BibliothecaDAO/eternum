@@ -114,6 +114,7 @@ export const frontierPreset: NativePreset = {
     priceCeiling: 50,
     shares: { common: 1, uncommon: 2, rare: 4, epic: 10, legendary: 20 },
     estimateDays: 5,
+    claimWindowSeconds: 7 * 86400,
   },
   depths: [
     {

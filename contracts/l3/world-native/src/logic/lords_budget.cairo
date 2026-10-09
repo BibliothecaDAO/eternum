@@ -108,7 +108,7 @@ fn season_clock(context: ExecutionContext) -> SeasonClock {
     }
 }
 
-fn chest_rules(game_id: u32) -> ChestRules {
+pub fn chest_rules(game_id: u32) -> ChestRules {
     crate::logic::preset_record::for_game(game_id).rollover_chest_rules.read().expect('missing chest rules')
 }
 
