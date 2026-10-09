@@ -1,5 +1,9 @@
 import {
   BlockTag,
+  EDAMode,
+  EDataAvailabilityMode,
+  hash,
+  transaction,
   TransactionFinalityStatus,
   type AccountInterface,
   type AllowArray,
@@ -7,6 +11,7 @@ import {
   type InvokeFunctionResponse,
   type ResourceBoundsBN,
   type UniversalDetails,
+  type InvocationsSignerDetails,
 } from "starknet";
 
 import type { Shard } from "./shard";
@@ -33,8 +38,6 @@ const configuredGameplaySubmits = new WeakMap<object, ConfiguredGameplaySubmit>(
 /** Per account, the last send until its transaction is in a block: the next send waits on it. */
 const sendsInFlight = new Map<string, Promise<void>>();
 const RECEIPT_POLL_MS = 250;
-/** Answered "not found" this many polls in a row (ten seconds), a sent transaction was dropped: its nonce is free. */
-const DROPPED_AFTER_POLLS = 40;
 const IN_BLOCK = new Set<string>([
   TransactionFinalityStatus.PRE_CONFIRMED,
   TransactionFinalityStatus.ACCEPTED_ON_L2,
@@ -112,28 +115,51 @@ async function sendAtCurrentNonce(
   details: UniversalDetails | undefined,
 ): Promise<InvokeFunctionResponse> {
   const nonce = await account.getNonce(BlockTag.PRE_CONFIRMED);
-  return execute(calls, { ...details, nonce, tip: 0, resourceBounds: playResourceBounds(shard.l2GasBound) });
+  const frame = {
+    ...details,
+    nonce,
+    version: "0x3" as const,
+    tip: 0,
+    resourceBounds: playResourceBounds(shard.l2GasBound),
+    paymasterData: [],
+    accountDeploymentData: [],
+    nonceDataAvailabilityMode: EDataAvailabilityMode.L1,
+    feeDataAvailabilityMode: EDataAvailabilityMode.L1,
+  };
+  const expectedHash = hash.calculateInvokeTransactionHash({
+    ...frame,
+    senderAddress: account.address,
+    compiledCalldata: transaction.getExecuteCalldata(Array.isArray(calls) ? calls : [calls], "1"),
+    chainId: shard.chainId as InvocationsSignerDetails["chainId"],
+    nonceDataAvailabilityMode: EDAMode.L1,
+    feeDataAvailabilityMode: EDAMode.L1,
+  });
+  try {
+    return await execute(calls, frame);
+  } catch (error) {
+    if (isPolicyRefusal(error)) throw error;
+    // A lost response or opaque node/stamping error may follow inclusion. Observe the ordinary hash, never resend.
+    return { transaction_hash: expectedHash };
+  }
+}
+
+function isPolicyRefusal(error: unknown): boolean {
+  const candidate = error as { code?: number; baseError?: { code?: number } } | null;
+  const code = candidate?.baseError?.code ?? candidate?.code;
+  return code !== undefined && [-32700, -32600, -32601, -32005].includes(code);
 }
 
 /**
  * Until the transaction is in a block (pre-confirmed or later, a revert included), where the account's nonce has moved
- * past it, or until the node has answered "not found" long enough that it was dropped. A read that fails keeps the
- * lock: releasing it behind an accepted transaction would sign the next action at the same nonce.
+ * past it. A read that fails or says not found keeps the lock: elapsed time cannot prove a nonce is free.
  */
 async function untilInBlock(account: GameplaySubmitAccount, transactionHash: string): Promise<void> {
-  let notFound = 0;
   while (true) {
     const status = await account.getTransactionStatus(transactionHash).then(
       (result: { finality_status?: string }) => result.finality_status,
-      (error: unknown) => (isNotFound(error) ? null : undefined),
+      () => undefined,
     );
     if (status !== undefined && status !== null && IN_BLOCK.has(status)) return;
-    notFound = status === null ? notFound + 1 : 0;
-    if (notFound >= DROPPED_AFTER_POLLS) return;
     await new Promise((resolve) => setTimeout(resolve, RECEIPT_POLL_MS));
   }
 }
-
-/** The node's own answer that it holds no such transaction (TXN_HASH_NOT_FOUND), not a read that failed. */
-const isNotFound = (error: unknown): boolean =>
-  /transaction hash not found|TXN_HASH_NOT_FOUND/i.test(error instanceof Error ? error.message : String(error));
