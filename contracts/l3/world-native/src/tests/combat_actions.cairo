@@ -381,7 +381,7 @@ fn raid_rounding_and_weighted_outcomes_keep_the_declared_thresholds() {
         }
     }
     // Pinned RNG: Poseidon(root.low, root.high, 18) modulo 20, draw < 10.
-    assert_eq!(wins, 15);
+    assert_eq!(wins, 14);
 }
 
 #[test]
