@@ -16,7 +16,15 @@ pub impl MmrCalculatorImpl of MmrCalculatorTrait {
         let regressed_delta = Self::apply_mean_regression(
             capped_delta, current_mmr, params.mean.into(), params.regression_bps.into(),
         );
-        Self::apply_delta(current_mmr, regressed_delta)
+        let calculated = Self::apply_delta(current_mmr, regressed_delta);
+        let maximum: u128 = params.max_delta.into();
+        if calculated > current_mmr && calculated - current_mmr > maximum {
+            current_mmr + maximum
+        } else if calculated < current_mmr && current_mmr - calculated > maximum {
+            current_mmr - maximum
+        } else {
+            calculated
+        }
     }
 
     fn apply_flag_modifier(current_mmr: u128, calculated_mmr: u128, sword: bool, shield: bool) -> u128 {
@@ -181,5 +189,14 @@ mod tests {
     fn mmr_never_falls_below_the_token_floor() {
         let loss = FixedTrait::new_unscaled(50, true);
         assert!(MmrCalculatorImpl::apply_delta(110, loss) == 100, "ledger MMR should match the token floor");
+    }
+    #[test]
+    fn mean_regression_cannot_escape_the_per_game_delta_cap() {
+        let high = MmrCalculatorImpl::calculate_player_mmr(params(), 10000, 6, 1, 6, 10000);
+        let low = MmrCalculatorImpl::calculate_player_mmr(params(), 100, 1, 1, 6, 100);
+        assert!(10000 - high <= 45);
+        assert!(low - 100 <= 45);
+        let sword = MmrCalculatorImpl::apply_flag_modifier(100, low, true, false);
+        assert!(sword - 100 <= 90);
     }
 }

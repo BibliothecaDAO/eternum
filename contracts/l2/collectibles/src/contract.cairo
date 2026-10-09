@@ -33,6 +33,8 @@ trait ERC721MintBurnTrait<TState> {
     /// * Clears all approvals for the token
     /// * Emits Transfer event with zero address as recipient
     /// * Attribute data remains in storage but becomes inaccessible
+    fn mint_with_id(ref self: TState, recipient: ContractAddress, attributes_raw: u128) -> u256;
+
     fn burn(ref self: TState, token_id: u256);
 
     fn mint(ref self: TState, recipient: ContractAddress, attributes_raw: u128);
@@ -923,6 +925,10 @@ mod RealmsCollectible {
         }
 
         fn mint(ref self: ContractState, recipient: ContractAddress, attributes_raw: u128) {
+            self.mint_with_id(recipient, attributes_raw);
+        }
+
+        fn mint_with_id(ref self: ContractState, recipient: ContractAddress, attributes_raw: u128) -> u256 {
             self.accesscontrol.assert_only_role(MINTER_ROLE);
 
             // increment counter
@@ -940,6 +946,7 @@ mod RealmsCollectible {
 
             // mint token
             self.erc721.mint(recipient, token_id.into());
+            token_id.into()
         }
 
         fn mint_many(

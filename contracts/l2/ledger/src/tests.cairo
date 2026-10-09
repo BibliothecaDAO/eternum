@@ -1,5 +1,5 @@
 use game_ledger::contract::{IGameLedgerDispatcher, IGameLedgerDispatcherTrait, result_commitment};
-use game_ledger::types::{GameKey, MmrParams, Preset};
+use game_ledger::types::{ChestContent, GameKey, MmrParams, Preset, RankedPlayer};
 use openzeppelin::access::accesscontrol::interface::{IAccessControlDispatcher, IAccessControlDispatcherTrait};
 use openzeppelin::security::interface::{IPausableDispatcher, IPausableDispatcherTrait};
 use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
@@ -292,6 +292,8 @@ fn player(index: u16) -> ContractAddress {
 fn default_preset() -> Preset {
     Preset {
         entry_fee: 500,
+        chest_lords_bps: 2000,
+        chest_metadata: 0x301,
         paid_fraction_bps: 2_000,
         decay_bps: 9_600,
         sword_price: 500,
@@ -307,6 +309,8 @@ struct Fixture {
     ledger_address: ContractAddress,
     ledger: IGameLedgerDispatcher,
     lords_address: ContractAddress,
+    chest_address: ContractAddress,
+    cosmetics_address: ContractAddress,
     lords: IERC20Dispatcher,
     lords_minter: ITestLordsDispatcher,
 }
@@ -323,19 +327,24 @@ fn deploy_ledger_with_passes(season_pass: ContractAddress, village_pass: Contrac
     TREASURY().serialize(ref constructor);
     lords_address.serialize(ref constructor);
     mmr_address.serialize(ref constructor);
-    let loot_chest: ContractAddress = 'loot_chest'.try_into().unwrap();
-    let cosmetics: ContractAddress = 'cosmetics'.try_into().unwrap();
+    let collectible_class = declare("TestCollectible").unwrap().contract_class();
+    let (loot_chest, _) = collectible_class.deploy(@array![]).unwrap();
+    let (cosmetics, _) = collectible_class.deploy(@array![]).unwrap();
     season_pass.serialize(ref constructor);
     village_pass.serialize(ref constructor);
     loot_chest.serialize(ref constructor);
     cosmetics.serialize(ref constructor);
     let (ledger_address, _) = ledger_class.deploy(@constructor).unwrap();
     let ledger = IGameLedgerDispatcher { contract_address: ledger_address };
+    ITestCollectibleDispatcher { contract_address: loot_chest }.set_minter(ledger_address);
+    ITestCollectibleDispatcher { contract_address: cosmetics }.set_minter(ledger_address);
 
     Fixture {
         ledger_address,
         ledger,
         lords_address,
+        chest_address: loot_chest,
+        cosmetics_address: cosmetics,
         lords: IERC20Dispatcher { contract_address: lords_address },
         lords_minter: ITestLordsDispatcher { contract_address: lords_address },
     }
@@ -400,31 +409,34 @@ fn register_players(fixture: @Fixture, count: u16) {
     }
 }
 
-fn ranked_players(count: u16) -> Array<(ContractAddress, u16, u16)> {
+fn ranked_players(count: u16) -> Array<RankedPlayer> {
     let mut ranked = array![];
     for index in 0..count {
-        ranked.append((player(index), index + 1, 0));
+        ranked.append(row(player(index), index + 1));
     }
     ranked
 }
 
-#[test]
-fn result_commitment_binds_game_order_and_chests() {
-    let ranked = array![(player(0), 1, 3), (player(1), 1, 2)];
-    assert!(
-        result_commitment(
-            GAME_KEY, ranked.span(),
-        ) == core::poseidon::poseidon_hash_span(array!['shard', 7, 2, 1000, 1, 3, 1001, 1, 2].span()),
-        "result commitment should remain stable",
-    );
-    let reordered = array![(player(1), 1, 2), (player(0), 1, 3)];
-    assert!(
-        result_commitment(GAME_KEY, reordered.span()) != result_commitment(GAME_KEY, ranked.span()),
-        "result commitment should bind row order",
-    );
+fn row(wallet: ContractAddress, rank: u16) -> RankedPlayer {
+    RankedPlayer { wallet, points: 1000 - rank.into(), rank, chest: ChestContent { kind: 1, ..Default::default() } }
 }
 
-fn apply_results_at(fixture: @Fixture, timestamp: u64, ranked: Array<(ContractAddress, u16, u16)>) {
+#[test]
+fn result_commitment_binds_game_order_and_fixed_contents() {
+    let ranked = array![row(player(0), 1), row(player(1), 1)];
+    let expected = core::poseidon::poseidon_hash_span(
+        array!['ETERNUM_BLITZ_RESULT', 2, 'shard', 7, 2, 1000, 999, 1, 1, 0, 0, 0, 1001, 999, 1, 1, 0, 0, 0].span(),
+    );
+    assert!(result_commitment(GAME_KEY, ranked.span()) == expected);
+    assert!(expected == 0x102225df66fcd07e38c6f76adda282ed067d97501d28d57d05349e472c13858);
+    let reordered = array![row(player(1), 1), row(player(0), 1)];
+    assert!(result_commitment(GAME_KEY, reordered.span()) != expected);
+    let mut different = row(player(0), 1);
+    different.chest.kind = 2;
+    assert!(result_commitment(GAME_KEY, array![different, row(player(1), 1)].span()) != expected);
+}
+
+fn apply_results_at(fixture: @Fixture, timestamp: u64, ranked: Array<RankedPlayer>) {
     start_cheat_block_timestamp(*fixture.ledger_address, timestamp);
     start_cheat_caller_address(*fixture.ledger_address, OPERATOR());
     fixture.ledger.apply_results(GAME_KEY, ranked);
@@ -432,7 +444,7 @@ fn apply_results_at(fixture: @Fixture, timestamp: u64, ranked: Array<(ContractAd
     stop_cheat_block_timestamp(*fixture.ledger_address);
 }
 
-fn apply_results(fixture: @Fixture, ranked: Array<(ContractAddress, u16, u16)>) {
+fn apply_results(fixture: @Fixture, ranked: Array<RankedPlayer>) {
     apply_results_at(fixture, START, ranked);
 }
 
@@ -838,8 +850,8 @@ fn rejects_unordered_ranks() {
     let fixture = deploy_fixture(default_preset());
     register_players(@fixture, 6);
     let ranked = array![
-        (player(0), 1, 0), (player(1), 3, 0), (player(2), 2, 0), (player(3), 4, 0), (player(4), 5, 0),
-        (player(5), 6, 0),
+        row(player(0), 1), row(player(1), 3), row(player(2), 2), row(player(3), 4), row(player(4), 5),
+        row(player(5), 6),
     ];
     apply_results(@fixture, ranked);
 }
@@ -850,8 +862,8 @@ fn rejects_dense_rank_after_tie() {
     let fixture = deploy_fixture(default_preset());
     register_players(@fixture, 6);
     let ranked = array![
-        (player(0), 1, 0), (player(1), 1, 0), (player(2), 2, 0), (player(3), 4, 0), (player(4), 5, 0),
-        (player(5), 6, 0),
+        row(player(0), 1), row(player(1), 1), row(player(2), 2), row(player(3), 4), row(player(4), 5),
+        row(player(5), 6),
     ];
     apply_results(@fixture, ranked);
 }
@@ -887,7 +899,7 @@ fn tie_fixture_one_one_three_preserves_mmr() {
     preset.mmr.min_players = 3;
     let fixture = deploy_fixture(preset);
     register_players(@fixture, 3);
-    apply_results(@fixture, array![(player(0), 1, 0), (player(1), 1, 0), (player(2), 3, 0)]);
+    apply_results(@fixture, array![row(player(0), 1), row(player(1), 1), row(player(2), 3)]);
 
     let first = fixture.ledger.get_player_result(GAME_KEY, player(0));
     let second = fixture.ledger.get_player_result(GAME_KEY, player(1));
@@ -902,7 +914,7 @@ fn tie_fixture_one_two_two_four_preserves_mmr() {
     preset.mmr.min_players = 4;
     let fixture = deploy_fixture(preset);
     register_players(@fixture, 4);
-    apply_results(@fixture, array![(player(0), 1, 0), (player(1), 2, 0), (player(2), 2, 0), (player(3), 4, 0)]);
+    apply_results(@fixture, array![row(player(0), 1), row(player(1), 2), row(player(2), 2), row(player(3), 4)]);
 
     let first = fixture.ledger.get_player_result(GAME_KEY, player(0));
     let second = fixture.ledger.get_player_result(GAME_KEY, player(1));
@@ -922,7 +934,7 @@ fn consumes_paid_flags_when_the_roster_is_below_the_mmr_minimum() {
     start_cheat_caller_address(fixture.ledger_address, owner);
     fixture.ledger.register(GAME_KEY, true, false);
     stop_cheat_caller_address(fixture.ledger_address);
-    apply_results(@fixture, array![(owner, 1, 0)]);
+    apply_results(@fixture, array![row(owner, 1)]);
 
     let registration = fixture.ledger.get_registration(GAME_KEY, owner);
     assert!(registration.sword, "sword purchase should be recorded");
@@ -1115,4 +1127,192 @@ fn result_commitment_binds_the_shard_namespace() {
     let ranked = ranked_players(1);
     let other = GameKey { shard: 'other', game_id: GAME_KEY.game_id };
     assert!(result_commitment(GAME_KEY, ranked.span()) != result_commitment(other, ranked.span()));
+}
+
+#[starknet::interface]
+trait ITestCollectible<TState> {
+    fn set_minter(ref self: TState, minter: ContractAddress);
+    fn get_metadata_raw(self: @TState, token_id: u256) -> u128;
+}
+
+#[starknet::contract]
+mod TestCollectible {
+    use core::num::traits::Zero;
+    use game_ledger::contract::ICollectible;
+    use openzeppelin::introspection::src5::SRC5Component;
+    use openzeppelin::token::erc721::{ERC721Component, ERC721HooksEmptyImpl};
+    use starknet::ContractAddress;
+    use starknet::storage::{Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess};
+    component!(path: ERC721Component, storage: erc721, event: ERC721Event);
+    component!(path: SRC5Component, storage: src5, event: SRC5Event);
+    #[abi(embed_v0)]
+    impl ERC721Impl = ERC721Component::ERC721Impl<ContractState>;
+    impl ERC721InternalImpl = ERC721Component::InternalImpl<ContractState>;
+    #[storage]
+    struct Storage {
+        minter: ContractAddress,
+        counter: u256,
+        attributes: Map<u256, u128>,
+        #[substorage(v0)]
+        erc721: ERC721Component::Storage,
+        #[substorage(v0)]
+        src5: SRC5Component::Storage,
+    }
+    #[event]
+    #[derive(Drop, starknet::Event)]
+    enum Event {
+        #[flat]
+        ERC721Event: ERC721Component::Event,
+        #[flat]
+        SRC5Event: SRC5Component::Event,
+    }
+    #[constructor]
+    fn constructor(ref self: ContractState) {
+        self.erc721.initializer("Test collectible", "TEST", "");
+    }
+    #[abi(embed_v0)]
+    impl CollectibleImpl of ICollectible<ContractState> {
+        fn mint_with_id(ref self: ContractState, recipient: ContractAddress, attributes_raw: u128) -> u256 {
+            assert!(starknet::get_caller_address() == self.minter.read(), "only minter");
+            let token_id = self.counter.read() + 1;
+            self.counter.write(token_id);
+            self.attributes.entry(token_id).write(attributes_raw);
+            self.erc721.mint(recipient, token_id);
+            token_id
+        }
+        fn safe_mint(ref self: ContractState, recipient: ContractAddress, attributes_raw: u128) {
+            self.mint_with_id(recipient, attributes_raw);
+        }
+        fn burn(ref self: ContractState, token_id: u256) {
+            self.erc721.update(Zero::zero(), token_id, starknet::get_caller_address());
+        }
+    }
+    #[abi(embed_v0)]
+    impl TestCollectibleImpl of super::ITestCollectible<ContractState> {
+        fn set_minter(ref self: ContractState, minter: ContractAddress) {
+            self.minter.write(minter);
+        }
+        fn get_metadata_raw(self: @ContractState, token_id: u256) -> u128 {
+            self.attributes.entry(token_id).read()
+        }
+    }
+}
+
+fn open_reward(fixture: @Fixture, wallet: ContractAddress, token_id: u256) {
+    start_cheat_caller_address(*fixture.chest_address, wallet);
+    IERC721Dispatcher { contract_address: *fixture.chest_address }.approve(*fixture.ledger_address, token_id);
+    start_cheat_caller_address(*fixture.ledger_address, wallet);
+    fixture.ledger.open_chest(token_id);
+}
+
+#[test]
+fn fixed_lords_and_cosmetics_are_reserved_at_mint_and_delivered_on_open() {
+    let fixture = deploy_fixture(default_preset());
+    register_players(@fixture, 2);
+    let mut first = row(player(0), 1);
+    first.chest = ChestContent { kind: 3, lords: 200, ..Default::default() };
+    let mut second = row(player(1), 2);
+    second.chest = ChestContent { kind: 0, cosmetic: 0x207050c01, ..Default::default() };
+    apply_results(@fixture, array![first, second]);
+    assert!(fixture.ledger.get_season(1).pool == 800);
+    assert!(fixture.ledger.get_chest(1).content.lords == 200);
+    assert!(fixture.ledger.get_chest(2).content.cosmetic == 0x207050c01);
+    assert!(fixture.ledger.get_game(GAME_KEY).result_commitment != 0);
+    start_cheat_block_timestamp(fixture.ledger_address, END + 5000);
+    open_reward(@fixture, player(0), 1);
+    open_reward(@fixture, player(1), 2);
+    assert!(fixture.lords.balance_of(player(0)) == 200);
+    assert!(fixture.lords.balance_of(fixture.ledger_address) == 800);
+    assert!(
+        ITestCollectibleDispatcher { contract_address: fixture.cosmetics_address }.get_metadata_raw(1) == 0x207050c01,
+    );
+    assert!(fixture.ledger.get_chest(1).opened);
+    assert!(fixture.ledger.get_chest(2).opened);
+}
+
+#[test]
+fn chest_owner_can_transfer_the_fixed_reward() {
+    let fixture = deploy_fixture(default_preset());
+    register_players(@fixture, 1);
+    apply_results(@fixture, ranked_players(1));
+    start_cheat_caller_address(fixture.chest_address, player(0));
+    IERC721Dispatcher { contract_address: fixture.chest_address }.transfer_from(player(0), player(1), 1);
+    open_reward(@fixture, player(1), 1);
+    assert!(fixture.ledger.get_credits(player(1)).swords == 1);
+    assert!(fixture.ledger.get_credits(player(0)).swords == 0);
+}
+
+#[test]
+fn sword_and_shield_credits_are_spent_and_refunded_once() {
+    let fixture = deploy_fixture(default_preset());
+    register_players(@fixture, 2);
+    let mut shield = row(player(1), 2);
+    shield.chest.kind = 2;
+    apply_results(@fixture, array![row(player(0), 1), shield]);
+    open_reward(@fixture, player(0), 1);
+    open_reward(@fixture, player(1), 2);
+    let next = GameKey { shard: 'shard', game_id: 8 };
+    start_cheat_caller_address(fixture.ledger_address, OPERATOR());
+    fixture.ledger.open_game(next, 1, PRESET_ID, START, END);
+    fund_and_approve_player(@fixture, player(0), 500);
+    fund_and_approve_player(@fixture, player(1), 500);
+    start_cheat_caller_address(fixture.ledger_address, player(0));
+    fixture.ledger.register(next, true, false);
+    start_cheat_caller_address(fixture.ledger_address, player(1));
+    fixture.ledger.register(next, false, true);
+    assert!(fixture.ledger.get_credits(player(0)).swords == 0);
+    assert!(fixture.ledger.get_credits(player(1)).shields == 0);
+    assert!(fixture.ledger.get_game(next).pool == 1000);
+    start_cheat_caller_address(fixture.ledger_address, OPERATOR());
+    fixture.ledger.cancel_game(next);
+    start_cheat_caller_address(fixture.ledger_address, player(0));
+    fixture.ledger.refund(next);
+    start_cheat_caller_address(fixture.ledger_address, player(1));
+    fixture.ledger.refund(next);
+    assert!(fixture.ledger.get_credits(player(0)).swords == 1);
+    assert!(fixture.ledger.get_credits(player(1)).shields == 1);
+}
+
+#[test]
+#[should_panic(expected: "Ledger: chest already opened")]
+fn fixed_chest_cannot_be_opened_twice() {
+    let fixture = deploy_fixture(default_preset());
+    register_players(@fixture, 1);
+    apply_results(@fixture, ranked_players(1));
+    open_reward(@fixture, player(0), 1);
+    fixture.ledger.open_chest(1);
+}
+
+#[test]
+#[should_panic(expected: "Ledger: chest share exceeded")]
+fn paid_flags_and_sponsorship_cannot_expand_the_chest_lords_budget() {
+    let fixture = deploy_fixture(default_preset());
+    fund_and_approve_player(@fixture, player(0), 2000);
+    start_cheat_caller_address(fixture.ledger_address, player(0));
+    fixture.ledger.register(GAME_KEY, true, true);
+    fixture.ledger.fund(GAME_KEY, 500);
+    let mut result = row(player(0), 1);
+    result.chest = ChestContent { kind: 3, lords: 101, ..Default::default() };
+    apply_results(@fixture, array![result]);
+}
+
+#[test]
+#[should_panic(expected: 'Pausable: paused')]
+fn payout_pause_stops_chest_opening() {
+    let fixture = deploy_fixture(default_preset());
+    register_players(@fixture, 1);
+    apply_results(@fixture, ranked_players(1));
+    start_cheat_caller_address(fixture.ledger_address, ADMIN());
+    fixture.ledger.pause();
+    open_reward(@fixture, player(0), 1);
+}
+
+#[test]
+#[should_panic(expected: "Ledger: invalid credit chest")]
+fn results_reject_ambiguous_chest_payloads() {
+    let fixture = deploy_fixture(default_preset());
+    register_players(@fixture, 1);
+    let mut result = row(player(0), 1);
+    result.chest.lords = 1;
+    apply_results(@fixture, array![result]);
 }

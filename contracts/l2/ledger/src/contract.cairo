@@ -1,6 +1,7 @@
 use core::poseidon::poseidon_hash_span;
 use game_ledger::types::{
-    BlitzSeason, FrontierSeason, Game, GameKey, PlayerResult, Preset, Registration, WithdrawalPayment,
+    BlitzSeason, Chest, Credits, FrontierSeason, Game, GameKey, PlayerResult, Preset, RankedPlayer, Registration,
+    WithdrawalPayment,
 };
 use starknet::ContractAddress;
 
@@ -13,12 +14,16 @@ const NO_PASS: u8 = 0;
 const SEASON_PASS: u8 = 1;
 const VILLAGE_PASS: u8 = 2;
 
-pub fn result_commitment(key: GameKey, ranked: Span<(ContractAddress, u16, u16)>) -> felt252 {
-    let mut payload = array![key.shard, key.game_id.into(), ranked.len().into()];
-    for (owner, rank, chests) in ranked {
-        payload.append((*owner).into());
-        payload.append((*rank).into());
-        payload.append((*chests).into());
+pub fn result_commitment(key: GameKey, ranked: Span<RankedPlayer>) -> felt252 {
+    let mut payload = array!['ETERNUM_BLITZ_RESULT', 2, key.shard, key.game_id.into(), ranked.len().into()];
+    for row in ranked {
+        payload.append((*row.wallet).into());
+        payload.append((*row.points).into());
+        payload.append((*row.rank).into());
+        payload.append((*row.chest.kind).into());
+        payload.append((*row.chest.cosmetic).into());
+        payload.append((*row.chest.lords.low).into());
+        payload.append((*row.chest.lords.high).into());
     }
     poseidon_hash_span(payload.span())
 }
@@ -45,7 +50,10 @@ pub trait IGameLedger<TState> {
     fn cancel_game(ref self: TState, key: GameKey);
     fn abort_game(ref self: TState, key: GameKey);
     fn refund(ref self: TState, key: GameKey);
-    fn apply_results(ref self: TState, key: GameKey, ranked: Array<(ContractAddress, u16, u16)>);
+    fn apply_results(ref self: TState, key: GameKey, ranked: Array<RankedPlayer>);
+    fn open_chest(ref self: TState, token_id: u256);
+    fn get_chest(self: @TState, token_id: u256) -> Chest;
+    fn get_credits(self: @TState, owner: ContractAddress) -> Credits;
     fn get_preset(self: @TState, preset_id: u32) -> Preset;
     fn get_game(self: @TState, key: GameKey) -> Game;
     fn get_registration(self: @TState, key: GameKey, owner: ContractAddress) -> Registration;
@@ -74,13 +82,21 @@ pub trait ISeasonPassMetadata<TState> {
     fn get_encoded_metadata(self: @TState, token_id: u16) -> (felt252, felt252, felt252);
 }
 
+#[starknet::interface]
+pub trait ICollectible<TState> {
+    fn mint_with_id(ref self: TState, recipient: ContractAddress, attributes_raw: u128) -> u256;
+    fn safe_mint(ref self: TState, recipient: ContractAddress, attributes_raw: u128);
+    fn burn(ref self: TState, token_id: u256);
+}
+
 #[starknet::contract]
 pub mod GameLedger {
     use core::dict::Felt252Dict;
     use core::num::traits::Zero;
     use game_ledger::mmr::MmrCalculatorImpl;
     use game_ledger::types::{
-        BlitzSeason, FrontierSeason, Game, GameKey, PlayerResult, Preset, Registration, WithdrawalPayment,
+        BlitzSeason, Chest, ChestContent, Credits, FrontierSeason, Game, GameKey, PlayerResult, Preset, RankedPlayer,
+        Registration, WithdrawalPayment,
     };
     use openzeppelin::access::accesscontrol::{AccessControlComponent, DEFAULT_ADMIN_ROLE};
     use openzeppelin::introspection::src5::SRC5Component;
@@ -92,10 +108,10 @@ pub mod GameLedger {
     use starknet::storage::{Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess};
     use starknet::{ClassHash, ContractAddress};
     use super::{
-        BPS, IGameLedger, IMMRTokenDispatcher, IMMRTokenDispatcherTrait, IPassBurnDispatcher, IPassBurnDispatcherTrait,
-        IPassRestoreDispatcher, IPassRestoreDispatcherTrait, ISeasonPassMetadataDispatcher,
-        ISeasonPassMetadataDispatcherTrait, MMR_PRECISION, NO_PASS, OPERATOR_ROLE, PAUSER_ROLE, PAYOUT_WEIGHT_SCALE,
-        SEASON_PASS, VILLAGE_PASS, result_commitment,
+        BPS, ICollectibleDispatcher, ICollectibleDispatcherTrait, IGameLedger, IMMRTokenDispatcher,
+        IMMRTokenDispatcherTrait, IPassBurnDispatcher, IPassBurnDispatcherTrait, IPassRestoreDispatcher,
+        IPassRestoreDispatcherTrait, ISeasonPassMetadataDispatcher, ISeasonPassMetadataDispatcherTrait, MMR_PRECISION,
+        NO_PASS, OPERATOR_ROLE, PAUSER_ROLE, PAYOUT_WEIGHT_SCALE, SEASON_PASS, VILLAGE_PASS, result_commitment,
     };
 
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
@@ -123,6 +139,8 @@ pub mod GameLedger {
         loot_chest: ContractAddress,
         cosmetics: ContractAddress,
         seasons: Map<u32, BlitzSeason>,
+        chests: Map<u256, Chest>,
+        credits: Map<ContractAddress, Credits>,
         presets: Map<u32, Preset>,
         preset_exists: Map<u32, bool>,
         games: Map<GameKey, Game>,
@@ -163,6 +181,8 @@ pub mod GameLedger {
         Refunded: Refunded,
         SeasonOpened: SeasonOpened,
         ResultsApplied: ResultsApplied,
+        ChestMinted: ChestMinted,
+        ChestOpened: ChestOpened,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -268,6 +288,25 @@ pub mod GameLedger {
         season_id: u32,
         result_commitment: felt252,
         pool: u256,
+    }
+
+    #[derive(Drop, starknet::Event)]
+    struct ChestMinted {
+        #[key]
+        key: GameKey,
+        #[key]
+        wallet: ContractAddress,
+        token_id: u256,
+        content: ChestContent,
+    }
+
+    #[derive(Drop, starknet::Event)]
+    struct ChestOpened {
+        #[key]
+        token_id: u256,
+        #[key]
+        wallet: ContractAddress,
+        content: ChestContent,
     }
 
     #[constructor]
@@ -451,19 +490,22 @@ pub mod GameLedger {
             let owner = starknet::get_caller_address();
             let game = self.assert_registration_open(key, owner);
             let preset = self.presets.entry(game.preset_id).read();
+            let (sword_credit, shield_credit) = self.spend_credits(owner, sword, shield);
             let payment = preset.entry_fee
-                + if sword {
+                + if sword && !sword_credit {
                     preset.sword_price
                 } else {
                     0
                 }
-                + if shield {
+                + if shield && !shield_credit {
                     preset.shield_price
                 } else {
                     0
                 };
-
-            self.record_registration(key, owner, sword, shield, payment, 0, NO_PASS);
+            self
+                .record_registration(
+                    key, owner, sword, shield, sword_credit, shield_credit, payment, preset.entry_fee, 0, NO_PASS,
+                );
             self.pull_lords(owner, payment);
             self.emit_registration(key, owner, 0, (0, 0, 0), NO_PASS);
         }
@@ -480,7 +522,7 @@ pub mod GameLedger {
             let metadata = ISeasonPassMetadataDispatcher { contract_address: season_pass }
                 .get_encoded_metadata(pass_id.try_into().unwrap());
 
-            self.record_registration(key, owner, false, false, 0, pass_id, SEASON_PASS);
+            self.record_registration(key, owner, false, false, false, false, 0, 0, pass_id, SEASON_PASS);
             IPassBurnDispatcher { contract_address: season_pass }.burn(pass_id);
             self.emit_registration(key, owner, pass_id, metadata, SEASON_PASS);
         }
@@ -495,7 +537,7 @@ pub mod GameLedger {
             );
             assert!(village_pass_id <= 0xffff, "Ledger: village pass id exceeds u16");
 
-            self.record_registration(key, owner, false, false, 0, village_pass_id, VILLAGE_PASS);
+            self.record_registration(key, owner, false, false, false, false, 0, 0, village_pass_id, VILLAGE_PASS);
             IPassBurnDispatcher { contract_address: village_pass }.burn(village_pass_id);
             self.emit_registration(key, owner, village_pass_id, (0, 0, 0), VILLAGE_PASS);
         }
@@ -540,8 +582,13 @@ pub mod GameLedger {
             let amount = registration.paid;
             let pass_kind = registration.pass_kind;
             let pass_id = registration.realm_id;
-            assert!(amount > 0 || pass_kind != NO_PASS, "Ledger: nothing to refund");
-
+            assert!(
+                amount > 0 || pass_kind != NO_PASS || registration.sword_credit || registration.shield_credit,
+                "Ledger: nothing to refund",
+            );
+            self.restore_credits(owner, registration);
+            registration.sword_credit = false;
+            registration.shield_credit = false;
             registration.paid = 0;
             registration.pass_kind = NO_PASS;
             game.pool -= amount;
@@ -554,7 +601,7 @@ pub mod GameLedger {
             self.emit(Refunded { key, owner, amount });
         }
 
-        fn apply_results(ref self: ContractState, key: GameKey, ranked: Array<(ContractAddress, u16, u16)>) {
+        fn apply_results(ref self: ContractState, key: GameKey, ranked: Array<RankedPlayer>) {
             self.accesscontrol.assert_only_role(OPERATOR_ROLE);
             let mut game = self.games.entry(key).read();
             self.assert_results_open(game);
@@ -563,19 +610,48 @@ pub mod GameLedger {
             let preset = self.presets.entry(game.preset_id).read();
             let mut season = self.get_season(game.season_id);
             assert!(starknet::get_block_timestamp() < season.end, "Ledger: MMR frozen");
-            let pool = game.pool;
+            let chest_lords = self.validate_chest_budget(game, ranked.span(), preset);
+            let pool = game.pool - chest_lords;
             season.pool += pool;
             self.seasons.entry(game.season_id).write(season);
             game.finalized = true;
             game.pool = 0;
+            game.result_commitment = result_commitment(key, ranked.span());
             self.games.entry(key).write(game);
             self.apply_mmr(key, ranked.span(), preset);
+            self.mint_chests(key, ranked.span(), preset);
             self
                 .emit(
                     ResultsApplied {
                         key, season_id: game.season_id, result_commitment: result_commitment(key, ranked.span()), pool,
                     },
                 );
+        }
+
+        fn open_chest(ref self: ContractState, token_id: u256) {
+            self.pausable.assert_not_paused();
+            let wallet = starknet::get_caller_address();
+            let mut chest = self.get_chest(token_id);
+            assert!(!chest.opened, "Ledger: chest already opened");
+            assert!(
+                IERC721Dispatcher { contract_address: self.loot_chest.read() }.owner_of(token_id) == wallet,
+                "Ledger: not chest owner",
+            );
+            chest.opened = true;
+            self.chests.entry(token_id).write(chest);
+            ICollectibleDispatcher { contract_address: self.loot_chest.read() }.burn(token_id);
+            self.deliver_chest(wallet, chest.content);
+            self.emit(ChestOpened { token_id, wallet, content: chest.content });
+        }
+
+        fn get_chest(self: @ContractState, token_id: u256) -> Chest {
+            let chest = self.chests.entry(token_id).read();
+            assert!(chest.exists, "Ledger: unknown chest");
+            chest
+        }
+
+        fn get_credits(self: @ContractState, owner: ContractAddress) -> Credits {
+            self.credits.entry(owner).read()
         }
 
         fn get_preset(self: @ContractState, preset_id: u32) -> Preset {
@@ -633,6 +709,11 @@ pub mod GameLedger {
         }
 
         fn assert_valid_preset(self: @ContractState, preset: Preset) {
+            assert!(preset.chest_lords_bps <= 10_000, "Ledger: invalid chest share");
+            assert!(
+                preset.chest_metadata != 0 && preset.chest_metadata != 0x101 && preset.chest_metadata != 0x201,
+                "Ledger: legacy chest metadata",
+            );
             assert!(
                 preset.paid_fraction_bps > 0 && preset.paid_fraction_bps <= 10_000, "Ledger: invalid paid fraction",
             );
@@ -682,7 +763,10 @@ pub mod GameLedger {
             owner: ContractAddress,
             sword: bool,
             shield: bool,
+            sword_credit: bool,
+            shield_credit: bool,
             payment: u256,
+            entry_fee: u256,
             realm_id: u256,
             pass_kind: u8,
         ) {
@@ -691,6 +775,8 @@ pub mod GameLedger {
             registration.registered = true;
             registration.sword = sword;
             registration.shield = shield;
+            registration.sword_credit = sword_credit;
+            registration.shield_credit = shield_credit;
             registration.paid += payment;
             registration.realm_id = realm_id;
             registration.pass_kind = pass_kind;
@@ -698,6 +784,7 @@ pub mod GameLedger {
             self.registered_owners.entry((key, game.registered_count)).write(owner);
             game.registered_count += 1;
             game.pool += payment;
+            game.entries += entry_fee;
             self.games.entry(key).write(game);
         }
 
@@ -729,33 +816,110 @@ pub mod GameLedger {
     #[generate_trait]
     impl ResultsValidatorImpl of ResultsValidatorTrait {
         fn validate_and_record_results(
-            ref self: ContractState, key: GameKey, registered_count: u16, ranked: Span<(ContractAddress, u16, u16)>,
+            ref self: ContractState, key: GameKey, registered_count: u16, ranked: Span<RankedPlayer>,
         ) {
             assert!(ranked.len() == registered_count.into(), "Ledger: roster size mismatch");
-            let mut index: u32 = 0;
-            let mut expected_rank: u32 = 1;
-            while index < ranked.len() {
-                let (_, rank, _) = *ranked.at(index);
-                assert!(rank.into() == expected_rank, "Ledger: invalid competition rank");
-                let group_start = index;
-                loop {
-                    if index >= ranked.len() {
-                        break;
+            for index in 0..ranked.len() {
+                let row = *ranked.at(index);
+                let expected_rank = if index == 0 {
+                    1
+                } else {
+                    let previous = *ranked.at(index - 1);
+                    assert!(row.points <= previous.points, "Ledger: unordered points");
+                    if row.points == previous.points {
+                        assert!(previous.wallet < row.wallet, "Ledger: unordered tie");
+                        previous.rank
+                    } else {
+                        (index + 1).try_into().unwrap()
                     }
-                    let (owner, current_rank, chests) = *ranked.at(index);
-                    if current_rank != rank {
-                        break;
-                    }
-                    assert!(
-                        self.registrations.entry((key, owner)).read().registered, "Ledger: unregistered result owner",
-                    );
-                    assert!(!self.result_seen.entry((key, owner)).read(), "Ledger: duplicate result owner");
-                    self.result_seen.entry((key, owner)).write(true);
-                    self.results.entry((key, owner)).write(PlayerResult { rank, chests, ..Default::default() });
-                    index += 1;
-                }
-                expected_rank += index - group_start;
+                };
+                assert!(row.rank == expected_rank, "Ledger: invalid competition rank");
+                assert!(
+                    self.registrations.entry((key, row.wallet)).read().registered, "Ledger: unregistered result owner",
+                );
+                assert!(!self.result_seen.entry((key, row.wallet)).read(), "Ledger: duplicate result owner");
+                self.result_seen.entry((key, row.wallet)).write(true);
+                self
+                    .results
+                    .entry((key, row.wallet))
+                    .write(PlayerResult { rank: row.rank, points: row.points, ..Default::default() });
             }
+        }
+    }
+
+    #[generate_trait]
+    impl ChestWriterImpl of ChestWriterTrait {
+        fn validate_chest_budget(self: @ContractState, game: Game, ranked: Span<RankedPlayer>, preset: Preset) -> u256 {
+            let mut total_lords = 0;
+            for row in ranked {
+                let content = *row.chest;
+                if content.kind == 0 {
+                    assert!(content.cosmetic != 0 && content.lords == 0, "Ledger: invalid cosmetic chest");
+                } else if content.kind == 1 || content.kind == 2 {
+                    assert!(content.cosmetic == 0 && content.lords == 0, "Ledger: invalid credit chest");
+                } else {
+                    assert!(
+                        content.kind == 3 && content.cosmetic == 0 && content.lords > 0, "Ledger: invalid LORDS chest",
+                    );
+                    total_lords += content.lords;
+                }
+            }
+            assert!(total_lords <= game.entries * preset.chest_lords_bps.into() / BPS, "Ledger: chest share exceeded");
+            total_lords
+        }
+
+        fn mint_chests(ref self: ContractState, key: GameKey, ranked: Span<RankedPlayer>, preset: Preset) {
+            let chest_token = ICollectibleDispatcher { contract_address: self.loot_chest.read() };
+            for row in ranked {
+                let token_id = chest_token.mint_with_id(*row.wallet, preset.chest_metadata);
+                assert!(!self.chests.entry(token_id).read().exists, "Ledger: duplicate chest id");
+                self.chests.entry(token_id).write(Chest { exists: true, opened: false, content: *row.chest });
+                let mut result = self.results.entry((key, *row.wallet)).read();
+                result.chest_id = token_id;
+                self.results.entry((key, *row.wallet)).write(result);
+                self.emit(ChestMinted { key, wallet: *row.wallet, token_id, content: *row.chest });
+            }
+        }
+
+        fn deliver_chest(ref self: ContractState, wallet: ContractAddress, content: ChestContent) {
+            if content.kind == 0 {
+                ICollectibleDispatcher { contract_address: self.cosmetics.read() }.safe_mint(wallet, content.cosmetic);
+            } else if content.kind == 3 {
+                self.send_lords(wallet, content.lords);
+            } else {
+                let mut credits = self.credits.entry(wallet).read();
+                if content.kind == 1 {
+                    credits.swords += 1;
+                } else {
+                    credits.shields += 1;
+                }
+                self.credits.entry(wallet).write(credits);
+            }
+        }
+
+        fn spend_credits(ref self: ContractState, owner: ContractAddress, sword: bool, shield: bool) -> (bool, bool) {
+            let mut credits = self.credits.entry(owner).read();
+            let sword_credit = sword && credits.swords > 0;
+            let shield_credit = shield && credits.shields > 0;
+            if sword_credit {
+                credits.swords -= 1;
+            }
+            if shield_credit {
+                credits.shields -= 1;
+            }
+            self.credits.entry(owner).write(credits);
+            (sword_credit, shield_credit)
+        }
+
+        fn restore_credits(ref self: ContractState, owner: ContractAddress, registration: Registration) {
+            let mut credits = self.credits.entry(owner).read();
+            if registration.sword_credit {
+                credits.swords += 1;
+            }
+            if registration.shield_credit {
+                credits.shields += 1;
+            }
+            self.credits.entry(owner).write(credits);
         }
     }
 
@@ -786,7 +950,7 @@ pub mod GameLedger {
 
     #[generate_trait]
     impl MmrWriterImpl of MmrWriterTrait {
-        fn apply_mmr(ref self: ContractState, key: GameKey, ranked: Span<(ContractAddress, u16, u16)>, preset: Preset) {
+        fn apply_mmr(ref self: ContractState, key: GameKey, ranked: Span<RankedPlayer>, preset: Preset) {
             if !preset.mmr.enabled || ranked.len() < preset.mmr.min_players.into() {
                 self.consume_registration_flags(key, ranked);
                 return;
@@ -797,7 +961,7 @@ pub mod GameLedger {
             let mut sorted_mmrs: Felt252Dict<u128> = Default::default();
             let mut index: u32 = 0;
             while index < ranked.len() {
-                let (owner, _, _) = *ranked.at(index);
+                let owner = *ranked.at(index).wallet;
                 let current_mmr: u128 = (mmr_token.get_player_mmr(owner) / MMR_PRECISION).try_into().unwrap();
                 current_mmrs.append(current_mmr);
                 Self::insert_sorted(ref sorted_mmrs, index, current_mmr);
@@ -808,7 +972,8 @@ pub mod GameLedger {
             let mut updates = array![];
             index = 0;
             while index < ranked.len() {
-                let (owner, rank, _) = *ranked.at(index);
+                let owner = *ranked.at(index).wallet;
+                let rank = *ranked.at(index).rank;
                 let group_size = Self::tie_count(ranked, index, rank);
                 let current_mmr = *current_mmrs.at(index);
                 let calculated_mmr = MmrCalculatorImpl::calculate_player_mmr(
@@ -830,11 +995,9 @@ pub mod GameLedger {
             mmr_token.update_mmr_batch(updates);
         }
 
-        fn consume_registration_flags(
-            ref self: ContractState, key: GameKey, ranked: Span<(ContractAddress, u16, u16)>,
-        ) {
+        fn consume_registration_flags(ref self: ContractState, key: GameKey, ranked: Span<RankedPlayer>) {
             for entry in ranked {
-                let (owner, _, _) = *entry;
+                let owner = *entry.wallet;
                 let mut registration = self.registrations.entry((key, owner)).read();
                 registration.flags_consumed = true;
                 self.registrations.entry((key, owner)).write(registration);
@@ -858,10 +1021,10 @@ pub mod GameLedger {
             }
         }
 
-        fn tie_count(ranked: Span<(ContractAddress, u16, u16)>, index: u32, rank: u16) -> u16 {
+        fn tie_count(ranked: Span<RankedPlayer>, index: u32, rank: u16) -> u16 {
             let mut first = index;
             while first > 0 {
-                let (_, previous_rank, _) = *ranked.at(first - 1);
+                let previous_rank = *ranked.at(first - 1).rank;
                 if previous_rank != rank {
                     break;
                 }
@@ -869,7 +1032,7 @@ pub mod GameLedger {
             }
             let mut last = index;
             while last + 1 < ranked.len() {
-                let (_, next_rank, _) = *ranked.at(last + 1);
+                let next_rank = *ranked.at(last + 1).rank;
                 if next_rank != rank {
                     break;
                 }

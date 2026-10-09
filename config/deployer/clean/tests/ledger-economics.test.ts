@@ -11,7 +11,7 @@ describe("ledger economics", () => {
       mmr: { enabled: true, mean: 1_500, spread: 450, max_delta: 45, k: 50, regression_bps: 150, min_players: 6 },
     });
     expect(BigInt(preset.entry_fee.low)).toBe(500_000_000_000_000_000_000n);
-    expect(buildRegisterLedgerPresetCalldata(1, preset).length).toBe(16);
+    expect(buildRegisterLedgerPresetCalldata(1, preset).length).toBe(18);
   });
 
   it("disables fees and MMR for Eternum without creating an invalid payout preset", () => {
@@ -30,5 +30,11 @@ describe("ledger economics", () => {
     expect(BigInt(preset.sword_price.low)).toBe(500_000_000_000_000_000_000n);
     expect(preset.paid_fraction_bps).toBe(2_000);
     expect(preset.mmr.enabled).toBe(true);
+  });
+  it("serializes the chest LORDS share as an admin preset", () => {
+    const preset = buildLedgerEconomicPreset("blitz", { chestLordsBps: 500 });
+    expect(preset.chest_lords_bps).toBe(500);
+    expect(preset.chest_metadata).toBe(0x301);
+    expect(buildRegisterLedgerPresetCalldata(1, preset).slice(3, 5)).toEqual(["500", "769"]);
   });
 });

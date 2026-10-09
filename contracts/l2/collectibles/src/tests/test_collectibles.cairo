@@ -2163,4 +2163,29 @@ mod tests {
         assert!(metadata.get_metadata_raw(TOKEN_ID_2) == legendary_attrs, "Token 2 should have legendary attributes");
         assert!(metadata.get_metadata_raw(TOKEN_ID_3) == common_attrs, "Token 3 should have common attributes");
     }
+    #[test]
+    fn mint_with_id_returns_the_token_it_minted_across_legacy_calls() {
+        let contract = COLLECTIBLES_CONTRACT();
+        let alice = ALICE();
+        setup_basic_attributes(contract, METADATA_UPDATER(), 0x301, "fixed-chest");
+        let mint_burn = ERC721MintBurnTraitDispatcher { contract_address: contract };
+        start_cheat_caller_address(contract, MINTER());
+        mint_burn.mint(alice, 0x301);
+        let token_id = mint_burn.mint_with_id(alice, 0x301);
+        mint_burn.safe_mint(alice, 0x301);
+        let next = mint_burn.mint_with_id(alice, 0x301);
+        assert!(token_id == 2 && next == 4);
+        assert!(IERC721Dispatcher { contract_address: contract }.owner_of(token_id) == alice);
+        assert!(IRealmsCollectibleMetadataDispatcher { contract_address: contract }.get_metadata_raw(next) == 0x301);
+    }
+
+    #[test]
+    #[should_panic(expected: 'Caller is missing role')]
+    fn mint_with_id_requires_the_existing_minter_role() {
+        let contract = COLLECTIBLES_CONTRACT();
+        let alice = ALICE();
+        setup_basic_attributes(contract, METADATA_UPDATER(), 0x301, "fixed-chest");
+        start_cheat_caller_address(contract, alice);
+        ERC721MintBurnTraitDispatcher { contract_address: contract }.mint_with_id(alice, 0x301);
+    }
 }
