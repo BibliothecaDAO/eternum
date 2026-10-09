@@ -11,3 +11,6 @@
 **/host-keys.json
 **/authority.json
 **/harness.env
+
+**/vrf-key.json
+**/operator-enrolment.json

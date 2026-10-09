@@ -1,3 +1,4 @@
+import { safeInteger } from "../utils/safe-integer";
 import { nativeModelDefinition } from "./native-models";
 import { nativePlay } from "./native-submission";
 import { EternumProvider } from "@bibliothecadao/provider";
@@ -173,7 +174,7 @@ const startSync = async (
   setupResult.network.provider.setNativeSubmission(submit, input.bindings.commandAbi, (actor) => {
     let owned: number | undefined;
     for (const row of setupResult.store.structuresOwnedBy(input.gameId, BigInt(actor)))
-      if (owned === undefined || row.entity_id < owned) owned = row.entity_id;
+      if (owned === undefined || row.entity_id < BigInt(owned)) owned = safeInteger(row.entity_id);
     if (owned === undefined) throw new Error("Action requires an owned structure in the current game");
     return owned;
   });

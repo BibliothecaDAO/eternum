@@ -242,3 +242,49 @@ test("operator addresses have no public arbitrary-invoke or estimation exemption
     node.stop(true);
   }
 });
+
+test("configured proxy names an absent private node without printing credentials or proofs", async () => {
+  const { mkdtemp, writeFile, rm } = await import("node:fs/promises");
+  const { tmpdir } = await import("node:os");
+  const { join, resolve } = await import("node:path");
+  const { createShardVrfKey } = await import("../vrf/key-file");
+  const directory = await mkdtemp(join(tmpdir(), "proxy-startup-"));
+  try {
+    const point = createShardVrfKey(directory);
+    const manifest = join(directory, "native-world.json");
+    await writeFile(
+      manifest,
+      JSON.stringify({
+        shard: {
+          chainId: "0x1",
+          accountClassHash: "0x2",
+          guardianPublicKey: "0x3",
+          l2GasBound: "0x47868c00",
+          vrfPublicKey: point,
+        },
+        world: { address: "0x77" },
+      }),
+    );
+    const child = Bun.spawn([process.execPath, resolve(import.meta.dir, "read-rpc.ts")], {
+      env: {
+        NODE_RPC_URL: "http://127.0.0.1:9",
+        NATIVE_WORLD_MANIFEST: manifest,
+        VRF_KEY_FILE: join(directory, "vrf-key.json"),
+        VRF_WORKERS: "8",
+        PORT: "8080",
+      },
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+    const [code, output, error] = await Promise.all([
+      child.exited,
+      new Response(child.stdout).text(),
+      new Response(child.stderr).text(),
+    ]);
+    expect(code).toBe(1);
+    expect(output).toBe("");
+    expect(error.trim()).toBe("Private node unavailable");
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});

@@ -19,14 +19,14 @@ from pathlib import Path
 import subprocess
 import sys
 import tarfile
-from urllib.request import urlopen
+from urllib.request import Request, urlopen
 
 import shard
 
 RELEASES = "https://github.com/BibliothecaDAO/eternum/releases/download"
 ENVIRONMENTS = shard.ROOT / "deploy/release"
-INPUTS = ("package", "shard_name", "chain_id", "guardian_url", "public_rpc_url", "public_admission_url",
-          "player_capacity", "presets", "node_memory", "herald_memory")
+INPUTS = ("package", "shard_name", "chain_id", "guardian_url", "public_rpc_url", "public_herald_url",
+          "player_capacity", "presets", "node_memory", "herald_memory", "vrf_workers", "l2_gas_bound")
 
 
 def main(environment, directory):
@@ -38,6 +38,8 @@ def main(environment, directory):
         check_operator_approval(directory, rendered_init_environment(directory))
         start(directory)
         differences = release_differences(release, *deployed_facts(directory / "data"), inputs["presets"])
+        if not differences:
+            verify_and_activate(inputs,directory)
     if differences:
         print(f"{environment} does not run {inputs['package']}:", *differences, sep="\n  ", file=sys.stderr)
         return 1
@@ -79,7 +81,8 @@ def fetch_package(tag, directory):
 def render_environment(inputs, images):
     values = {
         "SHARD_NAME": inputs["shard_name"], "CHAIN_ID": inputs["chain_id"], "GUARDIAN_URL": inputs["guardian_url"],
-        "PUBLIC_RPC_URL": inputs["public_rpc_url"], "PUBLIC_ADMISSION_URL": inputs["public_admission_url"],
+        "PUBLIC_RPC_URL": inputs["public_rpc_url"], "PUBLIC_HERALD_URL": inputs["public_herald_url"],
+        "VRF_WORKERS": inputs["vrf_workers"],"L2_GAS_BOUND":inputs["l2_gas_bound"],
         "PLAYER_CAPACITY": inputs["player_capacity"], "PRESETS": ",".join(str(preset) for preset in inputs["presets"]),
         # Each environment sizes its shard: a small staging playtest, a large perf or production shard.
         "NODE_MEMORY": inputs["node_memory"], "HERALD_MEMORY": inputs["herald_memory"],
@@ -107,12 +110,59 @@ def check_operator_approval(directory, init_environment):
 
 
 def start(directory):
+    # Materialize the protected file before Compose creates the RPC container's file bind.
+    subprocess.run([*compose(directory), "run", "--rm", "--no-deps", "prepare"], check=True)
     subprocess.run([*compose(directory), "up", "-d"], check=True)
     subprocess.run([*compose(directory), "wait", "init"], check=True, stdout=subprocess.DEVNULL)
     code = subprocess.check_output([*compose(directory), "ps", "--all", "--format", "{{.ExitCode}}", "init"],
                                    text=True).strip()
     if code != "0":
         raise RuntimeError(f"initialization exited {code}; read {directory / 'data'}/*.log")
+
+
+def directory_status(config, status):
+    if status not in ("pending", "active"):
+        raise ValueError("Deployment can only register pending or activate a checked shard")
+    token = os.environ.get("OPERATOR_TOKEN")
+    if not token:
+        raise ValueError("OPERATOR_TOKEN required for official directory activation")
+    base = config["guardian_url"].removesuffix("/guardian")
+    suffix = "/directory/shards/pending" if status == "pending" else "/directory/shards"
+    request = Request(
+        base + suffix, data=json.dumps({"url": config["public_herald_url"]}).encode(),
+        headers={"Content-Type": "application/json", "Authorization": "Bearer " + token}, method="POST",
+    )
+    with urlopen(request, timeout=30) as response:
+        result = json.load(response)
+    allowed = ("pending", "active", "draining") if status == "pending" else ("active", "draining")
+    if result.get("status") not in allowed:
+        raise RuntimeError("Directory returned an unexpected shard status")
+    return result
+
+
+def run_self_check(directory, command=None):
+    result = subprocess.run(
+        [*(command or compose(directory)), "run", "--rm", "--no-deps", "--entrypoint", "python3",
+         "harness", "/app/deploy/shard/init.py", "self-check"], capture_output=True, text=True,
+    )
+    # The runner emits public route/status JSON only. Never echo arbitrary setup failures/credentials.
+    rows = [line for line in result.stdout.splitlines() if line.startswith("{")]
+    if not rows:
+        raise RuntimeError("self-check failed at load_deployment_fixture")
+    check = json.loads(rows[-1])
+    if result.returncode != 0:
+        check["passed"] = False
+    return check
+
+
+def verify_and_activate(config, directory, command=None):
+    check = run_self_check(directory, command) if command else run_self_check(directory)
+    shard.write_json(directory / "data" / "self-check.json", check)
+    if not check.get("passed"):
+        route = check.get("firstFailedRoute", "unknown_route")
+        raise RuntimeError(f"self-check failed at {route}; shard remains pending")
+    directory_status(config, "active")
+    print(json.dumps({"event": "shard_self_check_passed", "routes": len(check.get("completed", [])), "status": "active"}))
 
 
 def deployed_facts(data):
@@ -133,6 +183,8 @@ def release_differences(release, manifest, initialized, presets):
         differences.append(f"schema {native['activeSchema']}, release has {release['schema']}")
     if not same(native["gamesClassHash"], classes["games"]):
         differences.append(f"Games class {native['gamesClassHash']}, release has {classes['games']}")
+    if not same(native.get("verifierClassHash"),classes.get("verifier")):
+        differences.append(f"verifier class {native.get('verifierClassHash')}, release has {classes.get('verifier')}")
     for name in sorted(set(native["logic"]) | set(classes["logic"])):
         if not same(native["logic"].get(name), classes["logic"].get(name)):
             differences.append(f"{name} class {native['logic'].get(name)}, release has {classes['logic'].get(name)}")

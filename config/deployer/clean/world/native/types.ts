@@ -22,7 +22,6 @@ export interface RegistrarWorld {
 }
 
 export interface NativeAuthentication {
-  submitter: string;
   account_class: string;
   guardian_public_key: string;
 }
@@ -37,6 +36,11 @@ export interface NativeGames extends ClassArtifact {
 export interface NativeWorld {
   seed: string;
   authority: string;
+  launcher: string;
+  ledgerOperator: string;
+  vrfPublicKey: { x: string; y: string };
+  l2GasBound: string;
+  verifier: NativeLogic;
   authentication: NativeAuthentication;
   schema: NativeSchema;
   games: NativeGames;
@@ -49,7 +53,7 @@ export interface NativeReleaseFacts {
   releaseId: number;
   schema: string;
   migrationClassHash: string;
-  classes: { games: string; logic: Record<string, string>; account: string };
+  classes: { games: string; logic: Record<string, string>; account: string; verifier: string };
 }
 export interface NativeClassPlan {
   name: string;
@@ -63,8 +67,7 @@ export interface NativePlan {
   deployedClassHash: string | null;
   realmCatalogue?: { initialized: number; digest: string };
   releaseRegistered: boolean;
-  /** The deployed submitter differs from the one asked for: the authority rotates it (set_authentication). */
-  submitterRotation?: { from: string; to: string };
+  roleChanges?: Array<{ entrypoint: "set_launcher" | "set_ledger_operator"; address: string }>;
   blockers: string[];
   synced: boolean;
 }
@@ -75,7 +78,8 @@ export interface NativeTransaction {
     | "initialize_realm_traits"
     | "register_release"
     | "apply_release"
-    | "set_authentication";
+    | "set_launcher"
+    | "set_ledger_operator";
   domain: string;
   hash: string;
 }

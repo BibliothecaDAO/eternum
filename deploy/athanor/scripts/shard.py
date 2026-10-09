@@ -32,22 +32,12 @@ from stack_lock import isolated_stack_lock
 # the harness service, only when they are kept.
 DOCKER = ["sudo", "-n", "--preserve-env=OPERATOR_TOKEN,HARNESS_CPUSET", "docker"]
 RELEASES = "https://github.com/BibliothecaDAO/eternum/releases/download"
-# Gateway connections: each player holds about two (a 100-connection server refused a 96-player slot at its 48th
-# player), plus a fixed allowance for the sequencing authority, Herald and tooling. The node's own limit is the
-# package's: players never reach the node directly.
-CONNECTIONS_PER_PLAYER = 2
-TOOLING_CONNECTIONS = 32
-# The gateway's descriptors beyond its admission connections: up to 256 concurrent node requests (its jsonrpsee
-# client's limit), two node subscriptions, its two listeners, metrics scrapes and the runtime's own, with headroom.
-# It does not raise its open-file limit itself, unlike the node, Herald, the RPC proxy, Postgres and the collector, and
-# Docker starts containers at a soft limit of 1024.
-GATEWAY_OWN_FILES = 384
 # Campaign G's target, not yet a measured ceiling: a larger shard waits for a G measurement that supports it.
 MAX_PLAYER_CAPACITY = 2000
 DEFAULT_NODE_MEMORY_MIB = 24576
 SLICE = Path("/sys/fs/cgroup/athanor.slice")
 # The services that hold memory for the shard's lifetime; prepare and init exit once the shard is deployed.
-LONG_RUNNING = ("madara", "postgres", "herald", "gateway", "rpc", "metrics")
+LONG_RUNNING = ("madara", "postgres", "herald", "rpc", "metrics")
 
 
 def cpu_numbers(value):
@@ -63,24 +53,22 @@ def cpu_numbers(value):
     return numbers
 
 
-def admission_connections(config):
-    return config["player_capacity"] * CONNECTIONS_PER_PLAYER + TOOLING_CONNECTIONS
-
-
-def gateway_open_files(config):
-    return admission_connections(config) + GATEWAY_OWN_FILES
-
-
 def validate_configuration(config, allowed_cpus):
     if not re.fullmatch(r"[a-z][a-z0-9-]{0,39}", config["shard"]):
         raise ValueError("shard must be a lowercase identifier")
+    if any(key in config for key in ("gateway_image","gateway_revision","public_admission_url")):
+        raise ValueError("retired gateway settings are not accepted")
+    if type(config.get("vrf_workers")) is not int or not 1 <= config["vrf_workers"] <= 64:
+        raise ValueError("vrf_workers must be explicit 1..64")
+    if not re.fullmatch(r"0x[0-9a-fA-F]{1,16}", config.get("l2_gas_bound", "")) or int(config["l2_gas_bound"], 16) == 0:
+        raise ValueError("l2_gas_bound must be nonzero hex u64")
     validate_shard_identity(config)
     presets = config.get("presets")
     if not presets or not all(isinstance(preset, int) and preset > 0 for preset in presets):
         raise ValueError("presets must list the preset ids the shard registers")
     if "madara_image" in config:
         raise ValueError("the node image is the package's pin in deploy/shard/compose.yml")
-    for key in ("herald_image", "gateway_image", "init_image", "metrics_image"):
+    for key in ("herald_image", "init_image", "metrics_image"):
         if not re.fullmatch(r"(?:[^\s]+@)?sha256:[a-f0-9]{64}", config[key]):
             raise ValueError(f"{key} must be pinned by digest")
     port = config["port_base"]
@@ -109,7 +97,7 @@ def validate_configuration(config, allowed_cpus):
 def validate_shard_identity(config):
     if not re.fullmatch(r"[A-Za-z][A-Za-z0-9_-]{0,30}", config.get("chain_id", "")):
         raise ValueError("chain_id must be a unique 1-31 character ASCII shard name")
-    for key in ("guardian_url", "public_rpc_url", "public_admission_url"):
+    for key in ("guardian_url", "public_rpc_url", "public_herald_url"):
         url = urlparse(config[key])
         if url.scheme not in ("http", "https") or not url.netloc or url.username or url.password:
             raise ValueError(f"{key} must be an explicit HTTP endpoint without credentials")
@@ -151,22 +139,18 @@ def identity_url(config):
     return config["guardian_url"].removesuffix("/guardian")
 
 
-def admission_url(config):
-    return f"http://127.0.0.1:{config['port_base'] + 3}"
-
-
 def compose_configuration(config, directory):
     environment = {
         **os.environ, "SHARD_NAME": f"athanor-{config['shard']}", "CHAIN_ID": config["chain_id"],
         "SHARD_DATA": str(directory), "SHARD_INIT_IMAGE": config["init_image"],
         "SHARD_METRICS_IMAGE": config["metrics_image"],
-        "SHARD_HERALD_IMAGE": config["herald_image"], "SHARD_GATEWAY_IMAGE": config["gateway_image"],
+        "SHARD_HERALD_IMAGE": config["herald_image"],
         "GUARDIAN_URL": config["guardian_url"], "PUBLIC_RPC_URL": config["public_rpc_url"],
-        "PUBLIC_ADMISSION_URL": config["public_admission_url"], "PLAYER_CAPACITY": str(config["player_capacity"]),
+        "PUBLIC_HERALD_URL": config["public_herald_url"], "PLAYER_CAPACITY": str(config["player_capacity"]),
+        "VRF_WORKERS":str(config["vrf_workers"]),"L2_GAS_BOUND":config["l2_gas_bound"],
         "TRUSTED_PROXY": config.get("trusted_proxy", ""),
         "HOST_UID": str(os.getuid()), "HOST_GID": str(os.getgid()), "BIND_ADDRESS": "127.0.0.1",
         "RPC_PORT": str(config["port_base"] + 5), "HERALD_PORT": str(config["port_base"] + 1),
-        "ADMISSION_PORT": str(config["port_base"] + 3),
         "NODE_MEMORY": f"{config.get('node_memory_mib', DEFAULT_NODE_MEMORY_MIB)}m",
         "PRESETS": ",".join(str(preset) for preset in config["presets"]),
     }
@@ -259,20 +243,15 @@ def wait_for_endpoint(url, rpc=False):
 def deploy_world(config, directory, environment):
     def bun(script, *args, name):
         run(["bun", script, *args], directory, name, environment)
-
     seed = f"athanor-{config['shard']}"
-    prepare = "deploy/athanor/harness/native/prepare-authority.ts"
     bun("deploy/athanor/scripts/deploy-gameplay-contracts.ts", name="identity-deploy")
     identity = json.loads((directory / "gameplay-contracts.json").read_text())
-    bun(prepare, seed, name="authority-deploy")
-    authority = json.loads((directory / "authority.json").read_text())["address"]
-    command = [
-        "--seed", seed, "--manifest", environment["NATIVE_WORLD_MANIFEST"],
-        "--identity", environment["GAMEPLAY_CONTRACTS_PATH"], "--submitter", authority,
-        "--world-address-file", str(directory / "world-address"),
-    ]
+    # Bootstrap's one enrolled operator owns all roles until an explicit service-role transaction changes them.
+    command = ["--seed", seed, "--manifest", environment["NATIVE_WORLD_MANIFEST"],
+               "--identity", environment["GAMEPLAY_CONTRACTS_PATH"],
+               "--launcher",identity["operatorAccountAddress"],"--ledger-operator",identity["operatorAccountAddress"],
+               "--world-address-file",str(directory/"world-address")]
     bun("config/deployer/clean/cli/deploy-world.ts", *command, name="world-deploy")
-    bun(prepare, seed, environment["NATIVE_WORLD_MANIFEST"], name="authority-bind")
     bun("config/deployer/clean/cli/deploy-world.ts", *command, "--inspect", name="world-inspect")
     environment["DEPLOYER_ACCOUNT_ADDRESS"] = identity["operatorAccountAddress"]
 
@@ -284,15 +263,15 @@ def deployment_environment(config, directory):
     base = config["port_base"]
     return {
         **os.environ, **credentials, "RPC_URL": f"http://127.0.0.1:{base}/rpc/v0_10_2",
-        "ADMISSION_URL": admission_url(config),
         "IDENTITY_URL": identity_url(config),
         "HERALD_URL": f"http://127.0.0.1:{base + 1}",
         "HERALD_PUBLIC_RPC_URL": config["public_rpc_url"],
-        "HERALD_PUBLIC_ADMISSION_URL": config["public_admission_url"],
+        "PUBLIC_HERALD_URL":config["public_herald_url"],
+        "VRF_WORKERS":str(config["vrf_workers"]),
+        "L2_GAS_BOUND":config["l2_gas_bound"],
+        "VRF_KEY_FILE":str(directory/"vrf-key.json"),
         "COMPOSE_PROJECT_NAME": f"athanor-{config['shard']}",
-        "RANDOMNESS_PRIVATE_KEY": keys["sequencingPrivateKey"],
         "SHARD_HOST_ACCOUNTS": str(directory / "host-accounts.json"),
-        "NATIVE_AUTHORITY_FILE": str(directory / "authority.json"),
         "NATIVE_WORLD_MANIFEST": str(directory / "native-world.json"),
         "GAMEPLAY_CONTRACTS_PATH": str(directory / "gameplay-contracts.json"),
         "OPERATOR_ENROLMENT_PATH": str(directory / "operator-enrolment.json"),
@@ -300,20 +279,9 @@ def deployment_environment(config, directory):
 
 
 def collector_configuration():
-    # Replace node-only telemetry with admission timing and container cost in the same run directory.
-    gateway = {"job_name": "gateway", "scrape_interval": "5s", "static_configs": [{"targets": ["gateway:9951"]}]}
-    return {
-        "receivers": {
-            "otlp": {"protocols": {"grpc": {"endpoint": "0.0.0.0:4317"}}},
-            "prometheus": {"config": {"scrape_configs": [gateway]}},
-        },
-        "exporters": {
-            "file": {"path": "/data/metrics.jsonl", "rotation": {"max_megabytes": 100, "max_backups": 2}},
-        },
-        "service": {"pipelines": {
-            "metrics": {"receivers": ["otlp", "prometheus"], "exporters": ["file"]},
-        }},
-    }
+    return {"receivers":{"otlp":{"protocols":{"grpc":{"endpoint":"0.0.0.0:4317"}}}},
+            "exporters":{"file":{"path":"/data/metrics.jsonl","rotation":{"max_megabytes":100,"max_backups":2}}},
+            "service":{"pipelines":{"metrics":{"receivers":["otlp"],"exporters":["file"]}}}}
 
 
 # Rendered on every start from the shard's settings; the database password is the one secret made here, once.
@@ -329,36 +297,16 @@ def prepare_runtime_files(directory, environment):
     write_private_environment(directory / "herald.env", {
         "PORT": "3003", "HERALD_RPC_URL": "http://madara:9944/rpc/v0_10_2",
         "HERALD_PUBLIC_RPC_URL": environment["HERALD_PUBLIC_RPC_URL"],
-        "HERALD_PUBLIC_ADMISSION_URL": environment["HERALD_PUBLIC_ADMISSION_URL"],
         "NATIVE_WORLD_MANIFEST": "/config/native-world.json",
         "DATABASE_URL": f"postgres://herald:{password}@postgres:5432/herald",
     })
 
 
-# The gateway starts once the world exists: it signs as the sequencing account authority.json records for that
-# world, and reserves the operator's administrative work beside the players' capacity.
-def write_gateway_environment(config, directory):
-    authority = json.loads((directory / "authority.json").read_text())
-    world = json.loads((directory / "native-world.json").read_text())["world"]["address"]
-    write_private_environment(directory / "gateway.env", {
-        "RANDOMNESS_ACCOUNT": authority["address"], "RANDOMNESS_DEPLOYMENT": world,
-        "RANDOMNESS_PRIVATE_KEY": authority["signingKey"],
-        "RANDOMNESS_EPOCH_SECRET": "/data/game-epoch-secret.json", "RUST_LOG": "info",
-        "GATEWAY_LISTEN": "0.0.0.0:9950", "GATEWAY_METRICS_LISTEN": "0.0.0.0:9951",
-        "GATEWAY_MAX_CONNECTIONS": admission_connections(config), "GATEWAY_OPEN_FILES": gateway_open_files(config),
-        "GATEWAY_PLAYER_CAPACITY": config["player_capacity"],
-        "GATEWAY_AUTHORITY": json.loads((directory / "gameplay-contracts.json").read_text())["operatorAccountAddress"],
-        "NODE_RPC_URL": "http://madara:9944/rpc/v0_10_2", "NODE_WS_URL": "ws://madara:9944/rpc/v0_10_2",
-    })
-
-
-# The sequencing key stays out: only the gateway signs with it, and a key in this file would overwrite the one an
-# operator passes to any command that sources it, such as a rotation.
 def save_harness_environment(directory, environment):
     keys = (
-        "DEPLOYER_ACCOUNT_ADDRESS", "DEPLOYER_PRIVATE_KEY", "RPC_URL", "ADMISSION_URL", "HERALD_URL", "IDENTITY_URL",
+        "DEPLOYER_ACCOUNT_ADDRESS", "DEPLOYER_PRIVATE_KEY", "RPC_URL", "HERALD_URL", "IDENTITY_URL",
         "SHARD_HOST_ACCOUNTS",
-        "NATIVE_AUTHORITY_FILE", "NATIVE_WORLD_MANIFEST", "GAMEPLAY_CONTRACTS_PATH", "COMPOSE_PROJECT_NAME",
+        "NATIVE_WORLD_MANIFEST", "GAMEPLAY_CONTRACTS_PATH", "COMPOSE_PROJECT_NAME",
     )
     write_private_environment(directory / "harness.env", {key: environment[key] for key in keys})
 
@@ -372,7 +320,7 @@ def deployment_manifest(config, compose, directory, manifest, rpc_rtt, herald_rt
                                       "memory.swap.max")},
         "chain_config_sha256": hashlib.sha256((directory / "chain-config.yaml").read_bytes()).hexdigest(),
         "node_command": compose["services"]["madara"]["command"], "rpc_url": f"http://127.0.0.1:{config['port_base']}/rpc/v0_10_2",
-        "herald_url": f"http://127.0.0.1:{config['port_base'] + 1}", "admission_url": admission_url(config),
+        "herald_url": f"http://127.0.0.1:{config['port_base'] + 1}",
         "rtt_ms": {"rpc": rpc_rtt, "herald": herald_rtt},
         "world": manifest["world"]["address"], "native_schema": manifest["native"]["activeSchema"],
     }
@@ -395,7 +343,16 @@ def read_guardian_identity(url):
 def initialize_shard_identity(config, directory, deployer_address):
     identity = read_guardian_identity(config["guardian_url"])
     chain_id = "0x" + config["chain_id"].encode("ascii").hex()
-    write_json(directory / "native-world.json", {"shard": {"chainId": chain_id, **identity}})
+    host = json.loads((directory / "host-accounts.json").read_text())
+    bound = config["l2_gas_bound"]
+    if not re.fullmatch(r"0x[0-9a-fA-F]{1,16}", bound) or int(bound, 16) == 0:
+        raise ValueError("l2_gas_bound must be nonzero hex u64")
+    workers = config["vrf_workers"]
+    if type(workers) is not int or not 1 <= workers <= 64:
+        raise ValueError("vrf_workers must be explicit 1..64")
+    write_json(directory / "native-world.json", {"shard": {
+        "chainId": chain_id, **identity, "l2GasBound": bound, "vrfPublicKey": host["vrfPublicKey"],
+    }})
     template = (ROOT / config["chain_config"]).read_text()
     # Identity belongs to the initialized shard, not to a benchmark template.
     template = re.sub(r"^(chain_id|sequencer_address):.*\n?", "", template, flags=re.MULTILINE)
@@ -411,24 +368,12 @@ def release_images(tag):
     lines = archive.extractfile("shard/images.env").read().decode().splitlines()
     images = dict(line.split("=", 1) for line in lines if line)
     return {"init_image": images["SHARD_INIT_IMAGE"], "herald_image": images["SHARD_HERALD_IMAGE"],
-            "gateway_image": images["SHARD_GATEWAY_IMAGE"], "metrics_image": images["SHARD_METRICS_IMAGE"]}
-
-
-def gateway_image_at(revision):
-    """Builds the gateway at a revision of this repository, for a lever trial, and returns the image's digest."""
-    tag = f"realms-gateway:{revision}"
-    context = subprocess.run(["git", "archive", "--format=tar", f"{revision}:apps/gateway"], cwd=ROOT,
-                             capture_output=True, check=True).stdout
-    subprocess.run([*DOCKER, "build", "-t", tag, "-"], input=context, capture_output=True, check=True)
-    return read([*DOCKER, "image", "inspect", "--format", "{{.Id}}", tag])
+            "metrics_image": images["SHARD_METRICS_IMAGE"]}
 
 
 def resolve_images(config):
-    """A configuration names a shard-v* package and, for a lever trial, a gateway revision built beside it; images a
-    configuration pins by digest win over the package's."""
+    """The published package supplies immutable images; explicit image digests may select a reviewed local build."""
     resolved = {**(release_images(config["package"]) if "package" in config else {}), **config}
-    if "gateway_revision" in config:
-        resolved["gateway_image"] = gateway_image_at(config["gateway_revision"])
     return resolved
 
 
@@ -448,7 +393,12 @@ def start_shard(config, directory):
     write_json(directory / "configuration.json", config)
     write_json(directory / "compose.json", compose)
     command = [*DOCKER, "compose", "-f", str(directory / "compose.json")]
+    run([*command, "run", "--rm", "--no-deps", "prepare"], directory, "shard-prepare")
     run([*command, "up", "-d"], directory, "shard-start")
+    run([*command, "wait", "init"], directory, "shard-init-wait")
+    code = subprocess.check_output([*command, "ps", "--all", "--format", "{{.ExitCode}}", "init"], text=True).strip()
+    if code != "0":
+        raise RuntimeError("initialization failed; read private deployment logs")
     environment = deployment_environment(config, directory)
     identity = json.loads((directory / "gameplay-contracts.json").read_text())
     environment["DEPLOYER_ACCOUNT_ADDRESS"] = identity["operatorAccountAddress"]
@@ -463,6 +413,8 @@ def start_shard(config, directory):
          f"http://127.0.0.1:{config['port_base'] + 5}/rpc/v0_10_2"], directory, "account-rpc-smoke")
     result = deployment_manifest(config, compose, directory, manifest, rpc_rtt, herald_rtt)
     write_json(directory / "manifest.json", result)
+    from deploy import verify_and_activate
+    verify_and_activate(config, directory, command)
     return result
 
 

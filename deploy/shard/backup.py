@@ -5,7 +5,7 @@
 
 PROJECT is the shard's compose project and DATA_DIR its private data directory (the package's SHARD_DATA). Capture
 writes DEST once: Herald's Postgres hot (a base backup plus a dump), the chain as a cold copy of the node's volume
-taken while the node is stopped, the gateway's epoch secret, the data directory, the images every service runs and
+taken while the node is stopped, the private VRF key, the data directory, the images every service runs and
 checksums of all of it, then `capture.json`. The node is down only while its volume is copied; capture.json records
 how long. Restore-test brings the copy up in scratch containers without a network, compares the restored chain's
 block at the captured head with the running node's, restores both Postgres copies, and writes
@@ -88,7 +88,6 @@ def capture_chain(project, dest):
 
 
 def capture_files(project, data, dest):
-    archive(volume_path(f"{project}_gateway"), dest / "gateway.tar.zst")
     archive(data, dest / "data.tar.zst")
     return {"data": str(data)}
 

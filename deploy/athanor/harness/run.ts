@@ -17,8 +17,6 @@ import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
 import { Account, logger } from "starknet";
 import { assertChainId } from "../../../packages/chain/chain-guard.js";
 import { launchHarnessGame, prepareOpenHomes } from "./game-setup";
-import type { NativeWorldManifest } from "../../../config/deployer/clean/world/native/types";
-import { readShardManifest } from "../../../packages/chain/shard-manifest.js";
 import { createHarnessAccounts, type HarnessAccount } from "./account-factory";
 import { connectActorClients, connectHarnessGameClient } from "./game-client";
 import { createHarnessGame } from "./harness-game";

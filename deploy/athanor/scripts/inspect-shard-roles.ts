@@ -18,10 +18,6 @@ const provider = new RpcProvider({ nodeUrl: rpcUrl });
 const manifest = readShardManifest<NativeWorldManifest>(resolve(directory, "native-world.json"));
 const host: { deployer: { address: string; publicKey: string; classHash: string } } = readJson("host-accounts.json");
 const identity: { operatorAccountAddress: string } = readJson("gameplay-contracts.json");
-// The shard's current submitter: the genesis sequencing account, or the one a rotation replaced it with.
-const authority: { address: string; signingKey: string } = readJson("authority.json");
-const sequencingPublicKey = ec.starkCurve.getStarkKey(authority.signingKey);
-
 await assertProviderChain(provider, manifest, "RPC_URL");
 await assertGenesisHasNoAccounts();
 await assertHostKeys();
@@ -64,15 +60,6 @@ async function assertGenesisHasNoAccounts(): Promise<void> {
 async function assertHostKeys(): Promise<void> {
   equal(await provider.getClassHashAt(host.deployer.address, "latest"), host.deployer.classHash, "deployer class");
   equal(await storage(host.deployer.address, "Account_public_key"), host.deployer.publicKey, "deployer key");
-  const [sequencingKey] = await provider.callContract(
-    {
-      contractAddress: authority.address,
-      entrypoint: "get_public_key",
-      calldata: [],
-    },
-    "latest",
-  );
-  equal(sequencingKey, sequencingPublicKey, "sequencing key");
   const operator = identity.operatorAccountAddress;
   equal(await provider.getClassHashAt(operator, "latest"), manifest.shard.accountClassHash, "operator class");
   equal(await storage(operator, "guardian_public_key"), manifest.shard.guardianPublicKey, "operator guardian");
@@ -85,40 +72,45 @@ async function assertHostKeys(): Promise<void> {
     "latest",
   );
   equal(device, "0x1", "operator device");
-  if (
-    [host.deployer.publicKey, sequencingPublicKey].some(
-      (key) => BigInt(key) === BigInt(manifest.shard.guardianPublicKey),
-    )
-  ) {
-    throw new Error("A shard key must not be the identity service guardian key");
-  }
+  if (BigInt(host.deployer.publicKey) === BigInt(manifest.shard.guardianPublicKey))
+    throw new Error("Shard signing key cannot be guardian key");
 }
 
 async function readRoleHolders(): Promise<Array<{ role: string; address: string }>> {
-  const [submitter, accountClass] = await provider.callContract(
-    { contractAddress: manifest.world.address, entrypoint: "authentication", calldata: [] },
-    "latest",
-  );
-  equal(submitter, authority.address, "admission submitter");
-  equal(accountClass, manifest.shard.accountClassHash, "authentication account class");
-  const block = await provider.getBlock("latest");
-  equal(block.sequencer_address, host.deployer.address, "current block sequencer");
-  const administrator = await storage(submitter, "administrator");
-  equal(administrator, host.deployer.address, "sequencing administrator");
-  const roles = [
+  const read = (entrypoint: string) =>
+    provider.callContract({ contractAddress: manifest.world.address, entrypoint, calldata: [] }, "latest");
+  const [auth, owner, launcher, ledger, key, bound] = await Promise.all([
+    read("authentication"),
+    read("owner"),
+    read("launcher"),
+    read("ledger_operator"),
+    read("vrf_public_key"),
+    read("l2_gas_bound"),
+  ]);
+  if (auth.length !== 2) throw new Error("Authentication shape differs");
+  equal(auth[0]!, manifest.shard.accountClassHash, "account class");
+  equal(auth[1]!, manifest.shard.guardianPublicKey, "guardian");
+  for (const [name, value] of [
+    ["owner", owner],
+    ["launcher", launcher],
+    ["ledger operator", ledger],
+  ] as const) {
+    if (value.length !== 1) throw new Error("Role view shape differs");
+    equal(value[0]!, identity.operatorAccountAddress, name);
+  }
+  if (key.length !== 2 || bound.length !== 1) throw new Error("VRF configuration shape differs");
+  equal(key[0]!, manifest.shard.vrfPublicKey.x, "VRF x");
+  equal(key[1]!, manifest.shard.vrfPublicKey.y, "VRF y");
+  equal(bound[0]!, manifest.shard.l2GasBound, "L2 gas bound");
+  if (BigInt(key[0]!) === BigInt(host.deployer.publicKey)) throw new Error("VRF key must be separate from signing key");
+  return [
     { role: "deployer", address: host.deployer.address },
-    { role: "block sequencer", address: block.sequencer_address },
-    { role: "sequencing account", address: submitter },
-    { role: "sequencing administrator", address: administrator },
-    { role: "operator", address: identity.operatorAccountAddress },
+    ...[
+      ["Games owner", owner],
+      ["Games launcher", launcher],
+      ["Games ledger operator", ledger],
+    ].map(([role, values]) => ({ role: role as string, address: (values as string[])[0]! })),
   ];
-  const [address] = await provider.callContract(
-    { contractAddress: manifest.world.address, entrypoint: "deployment_configuration", calldata: [] },
-    "latest",
-  );
-  equal(address, identity.operatorAccountAddress, "Games shard authority");
-  roles.push({ role: "Games shard authority", address });
-  return roles;
 }
 
 function devnetAddresses(): Set<bigint> {

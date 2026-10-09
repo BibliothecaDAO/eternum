@@ -170,6 +170,8 @@ async function nodeCall(node: URL, method: string, params: unknown): Promise<unk
     body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
     signal: AbortSignal.timeout(5000),
     redirect: "error",
+  }).catch(() => {
+    throw new Error("Private node unavailable");
   });
   const value = (await response.json()) as { result?: unknown };
   if (!response.ok || value.result === undefined) throw new Error("Node unavailable");
@@ -290,16 +292,23 @@ async function startConfiguredProxy() {
     throw new Error("Invalid shard VRF manifest");
   const node = privateNode(upstream);
   await assertChainIdentity(node, identity, limit);
-  const pool = await startStampPool(keyFile, identity, count);
+  const pool = await startStampPool(keyFile, identity, count).catch(() => {
+    throw new Error("VRF prover initialization failed");
+  });
   try {
     startReadRpc(upstream, port, identity, pool, process.env.RPC_TRUSTED_PROXY);
+    console.log(JSON.stringify({ event: "public_rpc_ready", workers: count }));
   } catch {
     pool.close();
     throw new Error("Public RPC startup failed");
   }
 }
 if (import.meta.main)
-  startConfiguredProxy().catch(() => {
-    console.error("Public RPC initialization failed");
+  startConfiguredProxy().catch((error: unknown) => {
+    console.error(
+      error instanceof Error && ["Private node unavailable", "VRF prover initialization failed"].includes(error.message)
+        ? error.message
+        : "Public RPC initialization failed",
+    );
     process.exitCode = 1;
   });

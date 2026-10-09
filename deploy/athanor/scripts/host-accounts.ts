@@ -1,3 +1,4 @@
+import { createShardVrfKey, readShardVrfPoint } from "../vrf/key-file";
 import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { ec, hash, RpcProvider } from "starknet";
@@ -12,22 +13,21 @@ const ACCOUNT_CLASS_HASH = "0xe2eb8f5672af4e6a4e8a8f1b44989685e668489b0a25437733
 interface HostKeys {
   deployerAddress: string;
   deployerPrivateKey: string;
-  sequencingPrivateKey: string;
 }
 
 function initializeHostAccounts(directory: string): void {
   const deployerPrivateKey = privateKey();
-  const sequencingPrivateKey = privateKey();
+  const vrfPublicKey = createShardVrfKey(directory);
   const publicKey = ec.starkCurve.getStarkKey(deployerPrivateKey);
   const deployerAddress = hash.calculateContractAddressFromHash("0x0", ACCOUNT_CLASS_HASH, [publicKey], "0x0");
-  const keys: HostKeys = { deployerAddress, deployerPrivateKey, sequencingPrivateKey };
+  const keys: HostKeys = { deployerAddress, deployerPrivateKey };
   writeFileSync(resolve(directory, "host-keys.json"), `${JSON.stringify(keys)}\n`, { mode: 0o600, flag: "wx" });
   writeFileSync(
     resolve(directory, "host-accounts.json"),
     `${JSON.stringify(
       {
         deployer: { address: deployerAddress, publicKey, classHash: ACCOUNT_CLASS_HASH },
-        sequencingPublicKey: ec.starkCurve.getStarkKey(sequencingPrivateKey),
+        vrfPublicKey,
       },
       null,
       2,
@@ -76,8 +76,14 @@ async function deployHostAccount(directory: string): Promise<void> {
 }
 
 const [action, directory] = process.argv.slice(2);
-if (!directory || !["initialize", "deploy"].includes(action)) {
-  throw new Error("Usage: bun host-accounts.ts initialize|deploy RUN_DIRECTORY");
+if (!directory || !["initialize", "deploy", "verify-vrf"].includes(action)) {
+  throw new Error("Usage: bun host-accounts.ts initialize|deploy|verify-vrf RUN_DIRECTORY");
 }
 if (action === "initialize") initializeHostAccounts(directory);
-else await deployHostAccount(directory);
+else if (action === "verify-vrf") {
+  const expected = JSON.parse(readFileSync(resolve(directory, "host-accounts.json"), "utf8")).vrfPublicKey;
+  const actual = readShardVrfPoint(directory);
+  if (!expected || BigInt(expected.x) !== BigInt(actual.x) || BigInt(expected.y) !== BigInt(actual.y))
+    throw new Error("Shard VRF credential and recorded identity differ");
+  console.log(JSON.stringify({ event: "shard_vrf_key_verified" }));
+} else await deployHostAccount(directory);

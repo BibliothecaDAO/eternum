@@ -9,6 +9,7 @@ export interface ShardRecord {
   guardianPublicKey: string;
   /** The exact l2 gas bound of every play, which the shard's stamping endpoint enforces (canonical hex u64). */
   l2GasBound: string;
+  vrfPublicKey: { x: string; y: string };
 }
 
 export type ShardDocument = NativeManifest & { shard: ShardRecord };
@@ -30,6 +31,10 @@ export function readShardDocument(json: string): ShardDocument {
     throw new Error("Shard record has no guardian public key; initialize the shard with one");
   if (!/^0x[0-9a-f]{1,16}$/i.test(document.shard.l2GasBound ?? "") || BigInt(document.shard.l2GasBound!) === 0n)
     throw new Error("Shard record has no l2GasBound; initialize the shard with its play gas bound");
+  for (const value of [document.shard.vrfPublicKey?.x, document.shard.vrfPublicKey?.y]) {
+    if (!/^0x[0-9a-f]{1,64}$/i.test(value ?? "") || BigInt(value!) === 0n)
+      throw new Error("Shard record has no VRF public point; initialize the shard with its key");
+  }
   return document as ShardDocument;
 }
 

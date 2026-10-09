@@ -1,3 +1,4 @@
+import { safeInteger } from "./safe-integer";
 import { inlineTroops, resolveExplorerTroops } from "../managers/troop-stamina";
 import { entityMapPosition } from "./tile";
 import { structureMapPosition } from "./expeditions";
@@ -19,7 +20,7 @@ import type { PlayerNameResolver } from "./entities";
 import { isViewerOwner } from "./viewer";
 
 export const getExplorerOwner = (store: NativeFactStore, explorer: NativeRows["ExplorerTroops"]): bigint =>
-  explorer.owner === 0
+  explorer.owner === 0n
     ? 0n
     : store.require("Structure", { game_id: explorer.game_id, entity_id: explorer.owner }).owner;
 
@@ -40,12 +41,12 @@ export const formatArmies = (
     const position = entityMapPosition(store, explorer.game_id, explorer.explorer_id);
     return [
       {
-        entityId: explorer.explorer_id,
+        entityId: safeInteger(explorer.explorer_id),
         troops,
         totalCapacity: weight ? getArmyTotalCapacityInKg(weight) : 0,
         weight: weight ? gramToKg(divideByPrecision(Number(weight.weight))) : 0,
         position,
-        entity_owner_id: explorer.owner,
+        entity_owner_id: safeInteger(explorer.owner),
         stamina: troops.stamina.amount,
         owner,
         ownerName: owner === 0n ? "" : (playerName(owner) ?? ""),
@@ -54,7 +55,7 @@ export const formatArmies = (
         isMine: isViewerOwner(owner, playerAddress),
         isMercenary: owner === 0n,
         isHome: home != null && isArmyAdjacentToStructure(position, home.x, home.y, home.alt),
-        name: getArmyName(explorer.explorer_id, store),
+        name: getArmyName(safeInteger(explorer.explorer_id), store),
         hasAdjacentStructure: hasAdjacentOwnedStructure(position, playerAddress, store),
       },
     ];

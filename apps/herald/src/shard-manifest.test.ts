@@ -11,6 +11,7 @@ const document = {
     contracts: { bridge: "0x789" },
     guardianPublicKey: "0xabc",
     l2GasBound: "0x47868c00",
+    vrfPublicKey: { x: "0x1", y: "0x2" },
   },
 };
 

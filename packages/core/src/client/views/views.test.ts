@@ -25,7 +25,7 @@ describe("game views", () => {
     expect(views.structures(RIVAL).map(({ entityId, isMine }) => ({ entityId, isMine }))).toEqual([
       { entityId: 7, isMine: false },
     ]);
-    expect(views.allRealms().map((realm) => realm.entity_id)).toEqual([20, 7, 12]);
+    expect(views.allRealms().map((realm) => realm.entity_id)).toEqual([20n, 7n, 12n]);
     expect(views.hyperstructureIds(PLAYER)).toEqual([30]);
   });
 
