@@ -123,20 +123,20 @@ it("confirms an immutable withdrawal report separately from payment and recogniz
   };
   rpc.call.mockResolvedValueOnce(["0", "0", "0", "0", "0"]);
   expect(await Effect.runPromise(ledgerPaymentRead(credentials.rpcUrl, credentials.contractAddress)(claim))).toBeNull();
-  rpc.call.mockResolvedValueOnce(["0", "0", "0", "0", "0"]).mockResolvedValue(["0", "7", "0x456", "17", "0"]);
-  await Effect.runPromise(ledgerReportAdapter(credentials)(claim, "0x456"));
+  rpc.call.mockResolvedValueOnce(["0", "0", "0", "0", "0"]).mockResolvedValue(["0", "7", "0", "17", "0"]);
+  await Effect.runPromise(ledgerReportAdapter(credentials)(claim));
   expect(rpc.execute).toHaveBeenCalledWith({
     contractAddress: "0x10",
     entrypoint: "report_withdrawal",
-    calldata: ["0x1", "7", "0xdef", "0x456", "17", "0"],
+    calldata: ["0x1", "7", "0xdef", "17", "0"],
   });
   expect(await Effect.runPromise(ledgerPaymentRead(credentials.rpcUrl, credentials.contractAddress)(claim))).toEqual({
     paid: false,
     seasonId: 7,
-    wallet: "0x456",
+    wallet: "0",
     amount: "17",
   });
-  await expect(Effect.runPromise(ledgerReportAdapter(credentials)(claim, "0x999"))).rejects.toMatchObject({
+  await expect(Effect.runPromise(ledgerReportAdapter(credentials)({ ...claim, amount: "18" }))).rejects.toMatchObject({
     operation: "ledger_report_mismatch",
   });
   expect(rpc.execute).toHaveBeenCalledTimes(1);

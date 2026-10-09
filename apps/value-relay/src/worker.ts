@@ -197,7 +197,7 @@ const shardConnectionOf = (env: RelayEnv) => ({
 });
 const ledgerPortsOf = (env: RelayEnv): RelayPorts["ledger"] => ({
   payment: (withdrawal) => ledgerPaymentRead(env.LEDGER_RPC_URL, env.LEDGER_ADDRESS)(withdrawal),
-  report: (withdrawal, wallet) => ledgerReportAdapter(ledgerCredentialsOf(env))(withdrawal, wallet),
+  report: (withdrawal) => ledgerReportAdapter(ledgerCredentialsOf(env))(withdrawal),
   pay: (withdrawal, wallet) =>
     relayOperation("pay Frontier claim", () =>
       Effect.runPromise(

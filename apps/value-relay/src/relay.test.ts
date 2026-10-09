@@ -385,12 +385,17 @@ it("reports a held wallet's receipt before payout and keeps an unlock refusal in
   expect(await f.store.withdrawals()).toHaveLength(1);
   expect(await f.store.held()).toEqual([]);
 });
-it("never redirects an immutable report after a wallet change", async () => {
+it("reports without a wallet and pays reported debt to the ready wallet at payment time", async () => {
   const f = fixture();
-  f.ports.ledger.payment = () => Effect.succeed({ paid: false, seasonId: 4, wallet: "0x999", amount: "17" });
+  f.ports.identity.payoutWallet = () => Effect.succeed({ status: "no_wallet" });
   await f.run();
+  expect(f.ports.ledger.report).toHaveBeenCalledWith(withdrawal);
   expect(f.ports.ledger.pay).not.toHaveBeenCalled();
-  expect(await f.store.held()).toMatchObject([{ reason: "reported_wallet_changed" }]);
+  f.ports.ledger.payment = () => Effect.succeed({ paid: false, seasonId: 4, wallet: "0", amount: "17" });
+  f.ports.identity.payoutWallet = () => Effect.succeed({ status: "ready", address: "0x999" });
+  await f.run();
+  expect(f.ports.ledger.pay).toHaveBeenCalledWith(withdrawal, "0x999");
+  expect(await f.store.held()).toEqual([]);
 });
 
 it("keeps a pinned event-page cursor through retries and checks its hash before continuing", async () => {

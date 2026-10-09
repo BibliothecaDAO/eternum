@@ -85,14 +85,7 @@ const payWithdrawals = (ports: RelayPorts, store: RelayStore) =>
       const payment = yield* Effect.result(payEligibleWithdrawal(ports, withdrawal));
       if (Result.isFailure(payment)) {
         const reason = payment.failure.operation;
-        if (
-          [
-            "ledger_season_closed",
-            "ledger_invalid_withdrawal",
-            "ledger_report_mismatch",
-            "reported_wallet_changed",
-          ].includes(reason)
-        )
+        if (["ledger_season_closed", "ledger_invalid_withdrawal", "ledger_report_mismatch"].includes(reason))
           yield* relayOperation("set aside refused payment", () => store.hold({ kind: "payment", withdrawal, reason }));
         else deferred.push({ key: withdrawal.transactionHash, reason });
         continue;
@@ -105,7 +98,6 @@ const payWithdrawals = (ports: RelayPorts, store: RelayStore) =>
 
 const payEligibleWithdrawal = (ports: RelayPorts, withdrawal: import("./ports").Withdrawal) =>
   Effect.gen(function* () {
-    const wallet = yield* ports.identity.payoutWallet(withdrawal.realmsId);
     const recorded = yield* ports.ledger.payment(withdrawal);
     if (
       recorded &&
@@ -113,10 +105,8 @@ const payEligibleWithdrawal = (ports: RelayPorts, withdrawal: import("./ports").
     )
       return yield* Effect.fail(new RelayFailure({ operation: "ledger_report_mismatch" }));
     if (recorded?.paid) return true;
-    if (wallet.status === "no_wallet") return false;
-    if (recorded && BigInt(recorded.wallet) !== BigInt(wallet.address))
-      return yield* Effect.fail(new RelayFailure({ operation: "reported_wallet_changed" }));
-    yield* ports.ledger.report(withdrawal, wallet.address);
+    yield* ports.ledger.report(withdrawal);
+    const wallet = yield* ports.identity.payoutWallet(withdrawal.realmsId);
     if (wallet.status !== "ready") return false;
     yield* ports.ledger.pay(withdrawal, wallet.address);
     return true;

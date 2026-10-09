@@ -113,7 +113,7 @@ export interface RelayPorts {
     payment(
       withdrawal: Withdrawal,
     ): RelayEffect<{ paid: boolean; seasonId: number; wallet: string; amount: string } | null>;
-    report(withdrawal: Withdrawal, wallet: string): RelayEffect<void>;
+    report(withdrawal: Withdrawal): RelayEffect<void>;
     pay(withdrawal: Withdrawal, wallet: string): RelayEffect<void>;
     postResult(result: BlitzResult): RelayEffect<void>;
     paidClaims(after: string | null, fromBlock?: number): RelayEffect<LedgerPage<PaidClaim>>;

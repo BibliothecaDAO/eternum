@@ -31,7 +31,12 @@ export const ledgerPaymentRead =
       const amount = low + (high << 128n);
       if (amount === 0n && BigInt(fields[0]!) === 0n && BigInt(fields[1]!) === 0n && BigInt(fields[2]!) === 0n)
         return null;
-      if (!amount || BigInt(fields[2]!) === 0n) throw new Error("invalid_payment_report");
+      if (
+        !amount ||
+        (BigInt(fields[0]!) === 1n && BigInt(fields[2]!) === 0n) ||
+        (BigInt(fields[0]!) === 0n && BigInt(fields[2]!) !== 0n)
+      )
+        throw new Error("invalid_payment_report");
       return {
         paid: BigInt(fields[0]!) === 1n,
         seasonId: Number(BigInt(fields[1]!)),
@@ -43,18 +48,14 @@ export const ledgerPaymentRead =
 /** Reporting is a separate confirmed transaction; a failed later payment cannot erase the custody guard. */
 export const ledgerReportAdapter =
   (credentials: LedgerCredentials): RelayPorts["ledger"]["report"] =>
-  (withdrawal, wallet) =>
+  (withdrawal) =>
     relayOperation("report Frontier withdrawal", async () => {
       const previous = await Effect.runPromise(
         ledgerPaymentRead(credentials.rpcUrl, credentials.contractAddress)(withdrawal),
       );
       if (previous?.paid) return;
       if (previous) {
-        if (
-          previous.seasonId !== withdrawal.seasonId ||
-          BigInt(previous.wallet) !== BigInt(wallet) ||
-          BigInt(previous.amount) !== BigInt(withdrawal.amount)
-        )
+        if (previous.seasonId !== withdrawal.seasonId || BigInt(previous.amount) !== BigInt(withdrawal.amount))
           throw new RelayFailure({ operation: "ledger_report_mismatch" });
         return;
       }
@@ -68,7 +69,6 @@ export const ledgerReportAdapter =
             withdrawal.chainId,
             String(withdrawal.seasonId),
             withdrawal.transactionHash,
-            wallet,
             String(amount & (2n ** 128n - 1n)),
             String(amount >> 128n),
           ],
@@ -82,12 +82,7 @@ export const ledgerReportAdapter =
       const reported = await Effect.runPromise(
         ledgerPaymentRead(credentials.rpcUrl, credentials.contractAddress)(withdrawal),
       );
-      if (
-        !reported ||
-        reported.seasonId !== withdrawal.seasonId ||
-        BigInt(reported.wallet) !== BigInt(wallet) ||
-        BigInt(reported.amount) !== amount
-      )
+      if (!reported || reported.seasonId !== withdrawal.seasonId || BigInt(reported.amount) !== amount)
         throw new Error("withdrawal_report_not_recorded");
     });
 
