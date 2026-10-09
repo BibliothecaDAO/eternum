@@ -61,9 +61,9 @@ export const realmsOwnershipAdapter = (rpcUrl: string, contractAddress: string):
 
 /** Pausing is idempotent at the port, including a retry after the pause transaction landed. */
 export const ledgerPauserAdapter = (credentials: LedgerCredentials): (() => import("./ports").RelayEffect<void>) => {
-  const { provider, account } = ledgerAccountOf(credentials);
   return () =>
     relayOperation("pause ledger payouts", async () => {
+      const { provider, account } = ledgerAccountOf(credentials);
       const paused = await provider.callContract(
         { contractAddress: credentials.contractAddress, entrypoint: "is_paused", calldata: [] },
         "latest",

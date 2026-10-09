@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, Result } from "effect";
 import type { MonitorPorts, Page, PaidClaim, BlitzCommitment, Withdrawal, BlitzResult, RelayEffect } from "./ports";
 import { RelayFailure, relayOperation } from "./ports";
 
@@ -18,12 +18,24 @@ export const runMonitor = (ports: MonitorPorts, store: MonitorStore) =>
       yield* ports.ledger.pause();
       return progress;
     }
-    const claimFault = yield* checkPaidClaims(ports);
-    if (claimFault) return yield* pausePayouts(ports, store, claimFault);
-    const resultFault = yield* checkPostedResults(ports);
-    if (resultFault) return yield* pausePayouts(ports, store, resultFault);
+    const checks = [checkConservation(ports), checkPaidClaims(ports), checkPostedResults(ports)];
+    let unavailable: RelayFailure | null = null;
+    for (const check of checks) {
+      const observation = yield* Effect.result(check);
+      if (Result.isFailure(observation)) unavailable ??= observation.failure;
+      else if (observation.success) return yield* pausePayouts(ports, store, observation.success);
+    }
+    if (unavailable) return yield* Effect.fail(unavailable);
     return progress;
   });
+
+const checkConservation = (ports: MonitorPorts) =>
+  ports.shard.conservation().pipe(
+    Effect.map((balances) => {
+      const violation = balances.find((balance) => BigInt(balance.receipts) > BigInt(balance.netIssued));
+      return violation ? `lords_conservation:${violation.gameId}:${violation.confirmedBlock}` : null;
+    }),
+  );
 
 const checkPaidClaims = (ports: MonitorPorts) =>
   findMismatch(ports.ledger.paidClaims, (paid) =>

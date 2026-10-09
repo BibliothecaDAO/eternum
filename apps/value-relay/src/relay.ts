@@ -11,7 +11,7 @@ export const runRelay = (chainId: string, ports: RelayPorts, store: RelayStore) 
     if (progress.halted) return { status: "halted" as const, reason: progress.halted };
     const head = yield* ports.shard.confirmedHead();
     if (head < progress.nextBlock - 1) return yield* haltRelay(store, "confirmed_head_regressed");
-    yield* verifyObservedHead(chainId, ports, store, progress);
+    yield* verifyObservedHead(ports, store, progress);
     let parentHash = progress.lastHash;
     for (let number = progress.nextBlock; number <= Math.min(head, progress.nextBlock + 99); number++) {
       const block = yield* ports.shard.block(number);
@@ -30,14 +30,13 @@ const haltRelay = (store: RelayStore, reason: string) =>
   );
 
 /** A rewrite of any ancestor changes the head hash: one anchor verifies the whole observed chain. */
-const verifyObservedHead = (chainId: string, ports: RelayPorts, store: RelayStore, progress: RelayProgress) =>
+const verifyObservedHead = (ports: RelayPorts, store: RelayStore, progress: RelayProgress) =>
   Effect.gen(function* () {
     if (progress.nextBlock === 0) return;
     const number = progress.nextBlock - 1;
-    const block = yield* ports.shard.block(number);
-    if (BigInt(block.hash) !== BigInt(progress.lastHash!))
+    const hash = yield* ports.shard.blockHash(number);
+    if (BigInt(hash) !== BigInt(progress.lastHash!))
       return yield* haltRelay(store, `confirmed_block_changed:${number}`);
-    yield* validateBlock(chainId, number, block, null, store);
   });
 
 const validateBlock = (

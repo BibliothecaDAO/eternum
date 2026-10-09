@@ -4,7 +4,14 @@ import { blitzCommitment } from "./blitz-commitment";
 import { runRelay, grantDailyLabor } from "./relay";
 import { runMonitor, type MonitorProgress } from "./monitor";
 import { frontierPayment } from "./adapters";
-import { RelayFailure, type RelayPorts, type ConfirmedBlock, type Withdrawal, type BlitzResult } from "./ports";
+import {
+  RelayFailure,
+  type RelayPorts,
+  type MonitorPorts,
+  type ConfirmedBlock,
+  type Withdrawal,
+  type BlitzResult,
+} from "./ports";
 import type { RelayStore } from "./state";
 
 const withdrawal: Withdrawal = {
@@ -53,9 +60,11 @@ const fixture = () => {
       progress = { ...progress, halted: reason };
     },
   };
-  const ports: RelayPorts = {
+  const ports: RelayPorts & { shard: RelayPorts["shard"] & Pick<MonitorPorts["shard"], "conservation"> } = {
     shard: {
+      conservation: () => Effect.succeed([]),
       confirmedHead: () => Effect.succeed(0),
+      blockHash: () => Effect.succeed(block.hash),
       block: () => Effect.succeed(block),
       withdrawal: () => Effect.succeed(withdrawal),
       result: () => Effect.succeed(result),
@@ -119,7 +128,7 @@ describe("confirmed value relay", () => {
     const f = fixture();
     f.ports.identity.payoutWallet = () => Effect.succeed({ status: "no_wallet" });
     await f.run();
-    f.ports.shard.block = () => Effect.succeed({ ...block, hash: "0xb" });
+    f.ports.shard.blockHash = () => Effect.succeed("0xb");
     await expect(f.run()).rejects.toThrow();
     expect(await f.store.progress()).toMatchObject({ halted: "confirmed_block_changed:0" });
     expect(await f.run()).toMatchObject({ status: "halted" });
@@ -280,4 +289,16 @@ it("does not acknowledge a clock-lagged payment and still delivers other result 
   f.ports.ledger.pay = vi.fn(() => Effect.void);
   await f.run();
   expect(await f.store.withdrawals()).toEqual([]);
+});
+
+it("checks the observed hash without decoding receipts or resolving account/season bindings", async () => {
+  const f = fixture();
+  f.ports.identity.payoutWallet = () => Effect.succeed({ status: "no_wallet" });
+  await f.run();
+  f.ports.shard.block = vi.fn(() => Effect.fail(new RelayFailure({ operation: "binding_unavailable" })));
+  f.ports.shard.blockHash = () => Effect.succeed("0xb");
+  await expect(f.run()).rejects.toThrow();
+  expect(await f.store.progress()).toMatchObject({ halted: "confirmed_block_changed:0" });
+  expect(f.ports.shard.block).not.toHaveBeenCalled();
+  expect(f.ports.ledger.pay).not.toHaveBeenCalled();
 });

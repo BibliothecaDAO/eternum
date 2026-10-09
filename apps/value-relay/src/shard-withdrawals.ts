@@ -19,8 +19,10 @@ export const pendingFrontierBindings = (identity: Pick<ReceiptBindings, "realmsI
 export const shardWithdrawalPorts = (
   reader: ShardReader,
   bindings: ReceiptBindings,
-): Pick<RelayPorts["shard"], "confirmedHead" | "block" | "withdrawal"> => ({
+): Pick<RelayPorts["shard"], "confirmedHead" | "blockHash" | "block" | "withdrawal"> => ({
   confirmedHead: () => relayOperation("read confirmed shard head", () => reader.head()),
+  blockHash: (number) =>
+    relayOperation("read confirmed shard anchor", async () => (await reader.header(number)).block_hash),
   block: (number) =>
     Effect.gen(function* () {
       const { block, rows } = yield* relayOperation("read confirmed shard receipts", () => reader.block(number));

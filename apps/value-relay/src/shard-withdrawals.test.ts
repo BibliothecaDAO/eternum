@@ -144,3 +144,12 @@ it("refuses old receipt layouts rather than applying the new interpretation", as
   });
   await expect(Effect.runPromise(fixture().ports.block(10))).rejects.toThrow();
 });
+
+it("reads an accepted hash anchor without loading the ABI or resolving a receipt binding", async () => {
+  const f = fixture();
+  expect(await Effect.runPromise(f.ports.blockHash(10))).toBe("0xa");
+  expect(rpc.contract).not.toHaveBeenCalled();
+  expect(f.bindings.frontierSeason).not.toHaveBeenCalled();
+  rpc.header.mockResolvedValue({ ...header, status: "PRE_CONFIRMED" });
+  await expect(Effect.runPromise(f.ports.blockHash(10))).rejects.toThrow();
+});

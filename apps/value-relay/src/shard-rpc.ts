@@ -6,18 +6,18 @@ export interface ShardConnection {
   gamesAddress: string;
   chainId: string;
 }
-export interface ShardEvent {
+interface ShardEvent {
   from_address: string;
   keys: string[];
   data: string[];
 }
-export interface ShardReceipt {
+interface ShardReceipt {
   transaction_hash: string;
   execution_status: string;
   finality_status?: string;
   events: ShardEvent[];
 }
-export interface ShardBlock {
+interface ShardBlock {
   block_number: number;
   block_hash: string;
   parent_hash: string;
@@ -46,11 +46,14 @@ export class ShardReader {
     return rpcAt(this.connection.rpcUrl);
   }
   async head(): Promise<number> {
+    return (await this.header("latest")).block_number;
+  }
+  async header(number: number | "latest"): Promise<ShardBlock> {
     const provider = this.provider();
     await this.assertChain(provider);
-    const block = await provider.getBlock("latest");
-    validateHeader(block);
-    return block.block_number;
+    const block = await provider.getBlock(number);
+    validateHeader(block, number === "latest" ? undefined : number);
+    return block;
   }
   async block(number: number): Promise<{ block: ShardBlock; rows: ValueRow[] }> {
     const provider = this.provider();
@@ -207,6 +210,7 @@ export const felt = (value: string): string => {
 export const sameFelt = (left: string, right: string | undefined): boolean =>
   right !== undefined && BigInt(felt(left)) === BigInt(felt(right));
 export const uint = (value: string, bits: number): bigint => {
+  if (typeof value !== "string" || !/^(?:0x[0-9a-fA-F]+|[0-9]+)$/.test(value)) throw new Error("invalid_integer_text");
   const n = BigInt(value);
   if (n < 0n || n >= 2n ** BigInt(bits)) throw new Error("invalid_unsigned_integer");
   return n;

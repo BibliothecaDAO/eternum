@@ -5,12 +5,14 @@ import { Effect, Result, Semaphore } from "effect";
 import { ledgerMonitorReads } from "./ledger";
 import { ledgerPauserAdapter } from "./chain";
 import { ShardReader } from "./shard-rpc";
+import { shardConservationPort } from "./shard-conservation";
 import { shardResultPort } from "./shard-results";
 import { shardWithdrawalPorts, pendingFrontierBindings } from "./shard-withdrawals";
 import { relayOperation } from "./ports";
 import { runMonitor, type MonitorProgress } from "./monitor";
 
 interface MonitorEnv {
+  SHARD_HERALD_URL: string;
   SHARD_RPC_URL: string;
   SHARD_GAMES_ADDRESS: string;
   SHARD_CHAIN_ID: string;
@@ -45,6 +47,7 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
           const observation = {
             checked_at: Math.floor(Date.now() / 1000),
             value: Result.isSuccess(value) ? value.success : null,
+            value_error: Result.isFailure(value) ? value.failure.operation : null,
             chests: Result.isSuccess(chests) ? chests.success : null,
           };
           yield* relayOperation("publish chest monitor", () => monitor.ctx.storage.put("observation", observation));
@@ -54,7 +57,25 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
     );
   }
   async health() {
-    return { ...(await this.status()), ...(await this.ctx.storage.get<object>("observation")) };
+    const observation = await this.ctx.storage.get<{
+      checked_at: number;
+      value: MonitorProgress | null;
+      chests: { overdue: string[]; pending: number } | null;
+      value_error: string | null;
+    }>("observation");
+    const progress = await this.status();
+    const age = observation ? Math.floor(Date.now() / 1000) - observation.checked_at : Infinity;
+    return {
+      ...progress,
+      ...observation,
+      success:
+        age >= 0 &&
+        age <= 300 &&
+        observation?.value !== null &&
+        observation?.value !== undefined &&
+        observation.chests !== null &&
+        !progress.halted,
+    };
   }
   async status(): Promise<MonitorProgress> {
     return (await this.ctx.storage.get<MonitorProgress>("progress")) ?? { halted: null };
@@ -68,6 +89,7 @@ const monitorPortsOf = (env: MonitorEnv) => {
   });
   return {
     shard: {
+      conservation: shardConservationPort(reader.connection, env.SHARD_HERALD_URL),
       withdrawal: shardWithdrawalPorts(reader, pendingFrontierBindings(env.IDENTITY)).withdrawal,
       result: shardResultPort(reader),
     },
@@ -87,9 +109,10 @@ const monitorOf = (env: MonitorEnv) => env.MONITOR.get(env.MONITOR.idFromName("m
 export default {
   async fetch(request: Request, env: MonitorEnv): Promise<Response> {
     if (new URL(request.url).pathname !== "/health") return new Response(null, { status: 404 });
+    const health = await monitorOf(env).health();
     return Response.json(
-      { service: "value-monitor", interfaces: "pending", ...(await monitorOf(env).health()) },
-      { status: 503 },
+      { service: "value-monitor", ...health },
+      { status: health.success ? 200 : 503, headers: { "cache-control": "no-store" } },
     );
   },
   async scheduled(_controller: ScheduledController, env: MonitorEnv): Promise<void> {

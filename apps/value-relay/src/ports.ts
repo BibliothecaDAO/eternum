@@ -76,6 +76,7 @@ export interface Page<A> {
 export interface RelayPorts {
   shard: {
     confirmedHead(): RelayEffect<number>;
+    blockHash(number: number): RelayEffect<string>;
     block(number: number): RelayEffect<ConfirmedBlock>;
     withdrawal(chainId: string, transactionHash: string): RelayEffect<Withdrawal | null>;
     result(chainId: string, gameId: number): RelayEffect<BlitzResult | null>;
@@ -94,8 +95,17 @@ export interface RelayPorts {
   realms: { ownerOf(realmId: string): RelayEffect<string> };
 }
 export interface MonitorPorts {
-  shard: Pick<RelayPorts["shard"], "withdrawal" | "result">;
+  shard: Pick<RelayPorts["shard"], "withdrawal" | "result"> & {
+    conservation(): RelayEffect<readonly ConservationBalance[]>;
+  };
   ledger: Pick<RelayPorts["ledger"], "paidClaims" | "postedResults"> & { pause(): RelayEffect<void> };
+}
+
+export interface ConservationBalance {
+  gameId: number;
+  confirmedBlock: number;
+  receipts: string;
+  netIssued: string;
 }
 
 export const relayOperation = <A>(operation: string, run: () => Promise<A>): RelayEffect<A> =>
