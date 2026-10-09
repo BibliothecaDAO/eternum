@@ -7,7 +7,7 @@ import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { rowInGameSyncScope, isClientGameSyncModel } from "@bibliothecadao/eternum/game-sync-models";
 import { GameSyncRuntime, type GameSyncSubscriptionHandlers } from "@bibliothecadao/eternum/game-sync";
 
-import { decodeHomeRing, homeRingTileData, type HomeRingTile, type HomeRingView } from "./home-ring";
+import { HomeRing, decodeHomeRing, homeRingTileData, type HomeRingTile, type HomeRingView } from "./home-ring";
 import { LiveWorld } from "./live-world";
 import type { MadaraRpc } from "./madara-rpc";
 import {
@@ -31,6 +31,23 @@ const MID_DAY = DAY_START + 43_200;
 // day, so day 0 lasts at least 12 hours and holds MID_DAY.
 const CALENDAR = { seed: 7n, startMainAt: DAY_START + 120, dayUnitSeconds: 14_400 };
 const TODAY = dayOf(CALENDAR, MID_DAY)!;
+
+it("reads a full-width home's ring by namespace instead of its reusable trait id", async () => {
+  const { fold } = frontierWorld();
+  const scope = fold.subscriptionScope("1", "0xa", MID_DAY);
+  if (!scope.expedition) throw new Error("Expected Frontier scope");
+  scope.expedition.realms = new Set(["72057594037927937"]);
+  scope.expedition.realmTraits = new Set(["1"]);
+  const view = vi.fn(async () => RING);
+  const ring = new HomeRing({
+    view,
+    rowOf: (_game, tile) => ({ model: "TileOpt", key: String(tile.col), value: { ...tile } }),
+    onReady: vi.fn(),
+  });
+  expect(ring.rows("1", scope, MID_DAY)).toEqual([]);
+  await vi.waitFor(() => expect(ring.rows("1", scope, MID_DAY)).toHaveLength(7));
+  expect(view).toHaveBeenCalledWith("1", 16777216, MID_DAY);
+});
 
 // Realm 1's day-one site with spacing 100 is (50, 50); its ring is the site and the six tiles around it.
 const RING: HomeRingTile[] = [
@@ -495,7 +512,7 @@ describe("client and Herald subscription scope parity", () => {
               { bytesReceived: 0, model, modelsReceived: index + 1, rowsReceived: rows.length },
             ),
           );
-          await handlers.onSnapshotEnd();
+          await handlers.onSnapshotEnd(10);
           handlers.onSnapshotState?.({ gameId: 1, actor: "0xa", complete: true, timestamp: MID_DAY });
           handlers.onHead({ block: 10, preconfirmed: false, timestamp: MID_DAY });
           return { cancel: () => undefined };
