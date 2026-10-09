@@ -62,6 +62,27 @@ const createApp = (
 };
 
 describe("free slot registration", () => {
+  test("reads one authoritative slot anonymously without scanning other rosters, and fails loudly", async () => {
+    const { app, slots } = createApp(signedOut);
+    await slots.create("friday", day(0).toISOString());
+    await slots.create("saturday", day(1).toISOString());
+    await slots.register("friday", [{ realmsId: PLAYER, account: PLAYER_ACCOUNT }]);
+    await slots.register("saturday", [{ realmsId: "0x8", account: "0xbcd" }]);
+    vi.spyOn(slots, "list").mockRejectedValue(new Error("A scoped read must not scan the directory"));
+    const response = await app.request("https://play.realms.party/api/slots/friday");
+    expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    expect(await response.json()).toMatchObject({
+      name: "friday",
+      registrations: [{ realmsId: PLAYER, account: PLAYER_ACCOUNT }],
+    });
+    expect((await app.request("https://play.realms.party/api/slots/missing")).status).toBe(404);
+    expect((await app.request("https://play.realms.party/api/slots/Invalid")).status).toBe(400);
+    vi.spyOn(slots, "get").mockRejectedValue(new Error("Slot read unavailable"));
+    const failure = await app.request("https://play.realms.party/api/slots/friday");
+    expect(failure.status).toBe(503);
+    expect(failure.headers.get("cache-control")).toBe("no-store");
+  });
   const registerRequest = () =>
     new Request("https://play.realms.party/api/slots/friday/register", {
       method: "POST",

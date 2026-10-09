@@ -78,8 +78,7 @@ and `packages/*`.
    reconciliation channel.
 6. **Wired or deleted.** If it is exported, something imports it; if it is config, something reads it. Do not land a
    capability without its call site. The one exception is an asset variant kept for a later cosmetic: its generator or
-   source may stay unwired if it writes to its own path, its output is not committed, and the family's `SOURCE.md` names
-   what it waits on.
+   source may stay unwired if it writes to its own path and its output is not committed.
 
 ## Clean Code Standard
 

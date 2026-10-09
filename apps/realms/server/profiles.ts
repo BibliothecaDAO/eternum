@@ -45,9 +45,7 @@ export const handleProfiles = async (db: D1Database, accountsParameter: string |
 };
 
 const approvedProfiles = async (db: D1Database, addresses: string[]): Promise<Map<string, IdentityProfile>> => {
-  const chunks = Array.from({ length: Math.ceil(addresses.length / ADDRESSES_PER_STATEMENT) }, (_, index) =>
-    addresses.slice(index * ADDRESSES_PER_STATEMENT, (index + 1) * ADDRESSES_PER_STATEMENT),
-  );
+  const chunks = addressChunks(addresses);
   if (chunks.length === 0) return new Map();
   const results = await db.batch<NamedAccountRow>(
     chunks.map((chunk) =>
@@ -64,3 +62,30 @@ const approvedProfiles = async (db: D1Database, addresses: string[]): Promise<Ma
 };
 
 const canonical = (address: string) => `0x${BigInt(address).toString(16)}`;
+
+/** Verified L2 wallet links use the same public profile source as gameplay accounts, never the rating cache. */
+export async function profilesOfRatingOwners(db: D1Database, owners: string[]) {
+  const chunks = addressChunks([...new Set(owners.map(canonical))]);
+  if (!chunks.length) return new Map<string, IdentityProfile & { realmsId: string }>();
+  const results = await db.batch<NamedAccountRow & { realmsId: string }>(
+    chunks.map((chunk) =>
+      db
+        .prepare(
+          `SELECT "address", "realmsId", "id", "name", "image" FROM "user"
+      WHERE "address" IN (${chunk.map(() => "?").join(", ")})`,
+        )
+        .bind(...chunk),
+    ),
+  );
+  return new Map(
+    results.flatMap(({ results: rows }) =>
+      rows.map((row) => [canonical(row.address), { realmsId: row.realmsId, ...profileOfIdentityUser(row) }] as const),
+    ),
+  );
+}
+
+function addressChunks(addresses: string[]) {
+  return Array.from({ length: Math.ceil(addresses.length / ADDRESSES_PER_STATEMENT) }, (_, index) =>
+    addresses.slice(index * ADDRESSES_PER_STATEMENT, (index + 1) * ADDRESSES_PER_STATEMENT),
+  );
+}
