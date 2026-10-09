@@ -272,6 +272,7 @@ test("configured proxy names an absent private node without printing credentials
         NATIVE_WORLD_MANIFEST: manifest,
         VRF_KEY_FILE: join(directory, "vrf-key.json"),
         VRF_WORKERS: "8",
+        PLAYER_CAPACITY: "2000",
         PORT: "8080",
       },
       stdout: "pipe",

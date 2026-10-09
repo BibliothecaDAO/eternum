@@ -33,6 +33,8 @@ const READ_METHODS = new Set([
 const PREPARATION_TIMEOUT_MS = 2000;
 const FORWARD_TIMEOUT_MS = 5000;
 type Preparation = { signal: AbortSignal; deadline: number };
+type ProxyIdentity = ShardIdentity & PlayIdentity & { playerCapacity: number };
+type AccountClassReader = (sender: string, signal: AbortSignal) => Promise<string>;
 
 function assertBeforeForward(preparation: Preparation) {
   preparation.signal.throwIfAborted();
@@ -89,11 +91,16 @@ function privateNode(upstream: string): URL {
   return node;
 }
 
+function assertPlayerCapacity(capacity: number) {
+  if (!Number.isSafeInteger(capacity) || capacity < 1)
+    throw new Error("PLAYER_CAPACITY must be a positive safe integer");
+}
+
 // The node stays private: Games play/control-plane writes and manifest-bound device/account management share this endpoint.
 export function startReadRpc(
   upstream: string,
   port: number,
-  identity: ShardIdentity & PlayIdentity,
+  identity: ProxyIdentity,
   stamper: StampProvider,
   trustedProxy?: string,
   hostname = "0.0.0.0",
@@ -107,6 +114,8 @@ export function startReadRpc(
   ) {
     throw new Error("Shard init state must contain its account class, guardian key and Games address");
   }
+  assertPlayerCapacity(identity.playerCapacity);
+  const readAccountClass = accountClassReader(node, identity);
   const allowance = accountRequestLimiter();
   const inFlightAccounts = new Set<string>();
   return Bun.serve({
@@ -116,9 +125,42 @@ export function startReadRpc(
     fetch(request, server) {
       const peer = server.requestIP(request)?.address;
       const client = peer ? rpcClientAddress(peer, trustedProxy, request.headers) : undefined;
-      return handlePublicRequest(request, node, identity, stamper, client, allowance, inFlightAccounts);
+      return handlePublicRequest(
+        request,
+        node,
+        identity,
+        stamper,
+        client,
+        allowance,
+        inFlightAccounts,
+        readAccountClass,
+      );
     },
   });
+}
+
+// Only the pinned player-account class is immutable; foreign contracts cannot fill this cache.
+function accountClassReader(node: URL, identity: ProxyIdentity): AccountClassReader {
+  const classes = new Map<string, string>();
+  return async (sender, signal) => {
+    signal.throwIfAborted();
+    const account = BigInt(sender).toString(16);
+    const cached = classes.get(account);
+    if (cached !== undefined) {
+      classes.delete(account);
+      classes.set(account, cached);
+      return cached;
+    }
+    const value = await readNodeClass(node, sender, signal);
+    signal.throwIfAborted();
+    if (felt(value) === felt(identity.accountClassHash)) {
+      // A concurrent lookup may already have inserted this account while this read was pending.
+      classes.delete(account);
+      if (classes.size >= identity.playerCapacity) classes.delete(classes.keys().next().value!);
+      classes.set(account, value);
+    }
+    return value;
+  };
 }
 
 async function readNodeClass(node: URL, sender: string, signal?: AbortSignal): Promise<string> {
@@ -135,6 +177,7 @@ async function handlePublicRequest(
   client: string | undefined,
   allowance: ReturnType<typeof accountRequestLimiter>,
   inFlightAccounts: Set<string>,
+  readAccountClass: AccountClassReader,
 ): Promise<Response> {
   const preparation: Preparation = {
     deadline: performance.now() + PREPARATION_TIMEOUT_MS,
@@ -165,7 +208,7 @@ async function handlePublicRequest(
   try {
     // Validate the entire batch before producing any proof. Independent accounts then stamp concurrently.
     admitted = await untilAborted(
-      Promise.all(calls.map((call) => admitRequest(call, node, identity, preparation.signal))),
+      Promise.all(calls.map((call) => admitRequest(call, identity, preparation.signal, readAccountClass))),
       preparation.signal,
     );
   } catch {
@@ -176,7 +219,17 @@ async function handlePublicRequest(
   if (admitted.some((call) => !call)) return refuse(-32601, "RPC method is not public");
   const answers = await Promise.all(
     admitted.map((call) =>
-      forwardRequest(call!, path, node, identity, stamper, inFlightAccounts, preparation, request.signal),
+      forwardRequest(
+        call!,
+        path,
+        node,
+        identity,
+        stamper,
+        inFlightAccounts,
+        preparation,
+        request.signal,
+        readAccountClass,
+      ),
     ),
   );
   return Response.json(Array.isArray(payload) ? answers : answers[0], { headers: CORS });
@@ -197,9 +250,9 @@ function isGameRequest(value: unknown, identity: PlayIdentity): boolean {
 }
 async function admitRequest(
   value: unknown,
-  node: URL,
   identity: ShardIdentity & PlayIdentity,
   signal: AbortSignal,
+  readAccountClass: AccountClassReader,
 ): Promise<Admitted | undefined> {
   if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
   const call = value as RpcCall;
@@ -209,7 +262,7 @@ async function admitRequest(
   if (game) return { call, game };
   if (
     await permitsAccountRequest(call as unknown as Record<string, unknown>, identity, (sender) =>
-      readNodeClass(node, sender, signal),
+      readAccountClass(sender, signal),
     )
   )
     return { call };
@@ -231,7 +284,7 @@ async function nodeCall(
     throw new Error("Private node unavailable");
   });
   const value = (await response.json()) as { result?: unknown };
-  if (!response.ok || value.result === undefined) throw new Error("Node unavailable");
+  if (!response.ok || value.result === undefined || Object.hasOwn(value, "error")) throw new Error("Node unavailable");
   return value.result;
 }
 function transactionRefused(id: unknown) {
@@ -308,6 +361,7 @@ async function forwardRequest(
   inFlightAccounts: Set<string>,
   preparation: Preparation,
   clientSignal: AbortSignal,
+  readAccountClass: AccountClassReader,
 ): Promise<unknown> {
   const { call, game } = admitted;
   const play = game?.entrypoint.stamp ? game.transaction : undefined;
@@ -323,7 +377,7 @@ async function forwardRequest(
       const [nonce, accountClass] = await untilAborted(
         Promise.all([
           nodeCall(node, "starknet_getNonce", ["pre_confirmed", play.sender_address], preparation.signal),
-          readNodeClass(node, play.sender_address, preparation.signal),
+          readAccountClass(play.sender_address, preparation.signal),
         ]),
         preparation.signal,
       );
@@ -405,7 +459,12 @@ async function startConfiguredProxy() {
     count = workerCount(process.env.VRF_WORKERS);
   if (!Number.isSafeInteger(port) || port < 1 || port > 65535) throw new Error("Invalid PORT");
   const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
-  const identity: ShardIdentity & PlayIdentity = { ...manifest.shard, games: manifest.world?.address };
+  const identity: ProxyIdentity = {
+    ...manifest.shard,
+    games: manifest.world?.address,
+    playerCapacity: Number(process.env.PLAYER_CAPACITY),
+  };
+  assertPlayerCapacity(identity.playerCapacity);
   const limit = felt(identity.l2GasBound);
   if (
     !limit ||
