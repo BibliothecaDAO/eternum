@@ -93,7 +93,5 @@ Closed blocks remain 2 seconds. Block caps are 10,000 transactions, 1,000,000 st
 10^13 for each of Sierra, proving and receipt L2 gas. Parallel Merkle construction is enabled and historical database
 snapshots are disabled (`--db-max-kept-snapshots=0`). These are the shipped leader configuration, not trial scripts.
 
-`RPC_MAX_RESPONSE_SIZE_MIB` is the one response-size setting, default 15 MiB from pinned upstream 802086d. Environment
-inputs and the local runner may set `rpc_max_response_size_mib` to pass it through. The size needed by Herald for a full
-2,000-action block has not been measured; keep 15 until ops records the uncompressed response size and selects a limit.
-No response-limit measurement or larger value is inferred from transaction count.
+The node keeps its own response-size default. The response size of a full 2,000-action block remains unmeasured;
+ops must measure it before adding an override. Execution batches are 4; block-production batches are explicitly 1,024.

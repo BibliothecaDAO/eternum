@@ -56,14 +56,7 @@ def cpu_numbers(value):
 def validate_configuration(config, allowed_cpus):
     if not re.fullmatch(r"[a-z][a-z0-9-]{0,39}", config["shard"]):
         raise ValueError("shard must be a lowercase identifier")
-    if type(config.get("vrf_workers")) is not int or not 1 <= config["vrf_workers"] <= 64:
-        raise ValueError("vrf_workers must be explicit 1..64")
-    if not re.fullmatch(r"0x[0-9a-fA-F]{1,16}", config.get("l2_gas_bound", "")) or int(config["l2_gas_bound"], 16) == 0:
-        raise ValueError("l2_gas_bound must be nonzero hex u64")
-    if "rpc_max_response_size_mib" in config:
-        size = config["rpc_max_response_size_mib"]
-        if type(size) is not int or not 1 <= size <= 2**32 - 1:
-            raise ValueError("rpc_max_response_size_mib must be a positive u32 MiB count")
+    validate_runtime_configuration(config)
     validate_shard_identity(config)
     presets = config.get("presets")
     if not presets or not all(isinstance(preset, int) and preset > 0 for preset in presets):
@@ -97,6 +90,13 @@ def validate_configuration(config, allowed_cpus):
         raise ValueError("record the native execution setting explicitly")
     if not any(flag.startswith("--native-compilation-mode=") for flag in config["node_flags"]):
         raise ValueError("record the native compilation mode explicitly")
+
+
+def validate_runtime_configuration(config):
+    if type(config.get("vrf_workers")) is not int or not 1 <= config["vrf_workers"] <= 64:
+        raise ValueError("vrf_workers must be explicit 1..64")
+    if not re.fullmatch(r"0x[0-9a-fA-F]{1,16}", config.get("l2_gas_bound", "")) or int(config["l2_gas_bound"], 16) == 0:
+        raise ValueError("l2_gas_bound must be nonzero hex u64")
 
 
 def validate_shard_identity(config):
@@ -159,8 +159,6 @@ def compose_configuration(config, directory):
         "NODE_MEMORY": f"{config.get('node_memory_mib', DEFAULT_NODE_MEMORY_MIB)}m",
         "PRESETS": ",".join(str(preset) for preset in config["presets"]),
     }
-    if "rpc_max_response_size_mib" in config:
-        environment["RPC_MAX_RESPONSE_SIZE_MIB"] = str(config["rpc_max_response_size_mib"])
     compose = json.loads(subprocess.check_output([
         "docker", "compose", "-f", str(ROOT / "deploy/shard/compose.yml"), "--profile", "harness", "config",
         "--format", "json",
@@ -355,15 +353,11 @@ def read_guardian_identity(url):
 
 
 def initialize_shard_identity(config, directory, deployer_address):
+    validate_runtime_configuration(config)
     identity = read_guardian_identity(config["guardian_url"])
     chain_id = "0x" + config["chain_id"].encode("ascii").hex()
     host = json.loads((directory / "host-accounts.json").read_text())
     bound = config["l2_gas_bound"]
-    if not re.fullmatch(r"0x[0-9a-fA-F]{1,16}", bound) or int(bound, 16) == 0:
-        raise ValueError("l2_gas_bound must be nonzero hex u64")
-    workers = config["vrf_workers"]
-    if type(workers) is not int or not 1 <= workers <= 64:
-        raise ValueError("vrf_workers must be explicit 1..64")
     write_json(directory / "native-world.json", {"shard": {
         "chainId": chain_id, **identity, "l2GasBound": bound, "vrfPublicKey": host["vrfPublicKey"],
     }})

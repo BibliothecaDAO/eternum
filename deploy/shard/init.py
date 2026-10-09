@@ -36,6 +36,7 @@ def configuration():
         "chain_config": os.environ.get("CHAIN_CONFIG", str(ROOT / "deploy/athanor/chain-config.yaml")),
     }
     shard.validate_shard_identity(config)
+    shard.validate_runtime_configuration(config)
     return config
 
 
