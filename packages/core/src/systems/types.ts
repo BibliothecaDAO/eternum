@@ -1,4 +1,5 @@
 import { BuildingType, ContractAddress, ID, ResourcesIds } from "@bibliothecadao/types";
+import type { SiteKind } from "../utils/expeditions";
 
 export const TROOP_TIERS: Record<string, number> = {
   T1: 1,
@@ -33,38 +34,26 @@ export type ExplorerRewardSystemUpdate = {
 };
 /**
  * A site cleared, as its payout story and the winning exchange before it tell it (one transaction): what the site was,
- * what it paid home in whole units (a fallen realm pays its chest instead), where it stood and what the fight cost.
+ * what it paid home in whole units (stragglers pay only XP, a ruin its chest), where it stood and what the fight cost.
  */
 export type SitePayoutSystemUpdate = {
   explorerId: ID;
   siteId: ID;
   ownerAddress: bigint | null;
-  kind: "Camp" | "Rift" | "FallenRealm";
+  kind: SiteKind;
   reward: { resourceId: ResourcesIds; amount: number } | null;
   /** The site's tile, in contract coordinates. */
   coord: { x: number; y: number };
   /** Whole troops the army lost in the winning exchange. */
   troopsLost: number;
 };
-/** An army's answer to its attribute offer: the attribute raised, the levels it gained and any lost past the cap. */
-export type AttributeChosenSystemUpdate = {
+/** An army's Upgrade: the attribute raised, the tier it reached and the XP it paid. */
+export type TierBoughtSystemUpdate = {
   explorerId: ID;
-  offerId: number;
-  attribute: "Battle" | "Logistics" | "Scouting" | "Support";
-  applied: number;
-  lost: number;
+  attribute: "Battle" | "Logistics" | "Scouting" | "Homecoming";
+  tier: number;
+  price: number;
 };
-/** A Frontier chest opened on capture: what the army found and how deep it stood. */
-export type ChestRewardSystemUpdate = {
-  resultKey: readonly [gameId: string, order: string, index: string];
-  explorerId: ID;
-  kind: "Relic" | "Token";
-  lordsExhausted: boolean;
-  quality: number;
-  depth: number;
-  timestamp: number;
-};
-
 /** A relic crate opened by an explorer: the contract hex it stood on and the relics it yielded. */
 export type RelicChestOpenedSystemUpdate = {
   explorerId: ID;

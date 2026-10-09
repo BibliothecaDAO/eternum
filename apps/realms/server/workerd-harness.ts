@@ -47,6 +47,7 @@ export const startWorker = async (options: {
     d1Persist: join(options.storage, "d1"),
     durableObjects: {
       SHARD_NOTIFIER: { className: "ShardNotifier", useSQLite: true },
+      RATING_READER: { className: "RatingReader", useSQLite: true },
       CHAT_ROOM: { className: "ChatRoom", useSQLite: true },
       CHAT_INBOX: { className: "ChatInbox", useSQLite: true },
     },

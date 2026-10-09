@@ -1,4 +1,4 @@
-import { expeditionDayEndsAt, seasonDay } from "@bibliothecadao/eternum";
+import { dayOf, type SeasonCalendar } from "@bibliothecadao/eternum";
 
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
@@ -11,18 +11,12 @@ const DIAL_LENGTH = 2 * Math.PI * DIAL_RADIUS;
  * The expedition day: its number in a ring that drains as the day runs out; the time left is its label. The caller
  * gives the clock it reads: the game's block clock in the HUD, the wall clock in the shell.
  */
-export const DayDial = ({
-  rules,
-  now,
-  className,
-}: {
-  rules: { epochSeconds: number; startMainAt: number };
-  now: number;
-  className?: string;
-}) => {
-  const day = seasonDay(rules, now);
-  const left = (day === null ? rules.startMainAt : expeditionDayEndsAt(rules, now)) - now;
-  const share = Math.min(1, Math.max(0, left / rules.epochSeconds));
+export const DayDial = ({ rules, now, className }: { rules: SeasonCalendar; now: number; className?: string }) => {
+  const today = dayOf(rules, now);
+  const day = today?.index ?? null;
+  const left = (today ? today.end : rules.startMainAt) - now;
+  // Days differ in length, so the ring drains over today's own.
+  const share = today ? Math.min(1, Math.max(0, left / (today.end - today.start))) : 1;
   return (
     <div
       role="timer"

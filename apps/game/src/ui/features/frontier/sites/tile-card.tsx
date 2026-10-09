@@ -17,9 +17,22 @@ import { formatAmount } from "../frontier-format";
 import { BoltGlyph, FlagGlyph, SwordGlyph } from "../glyphs";
 import { useSelectedOwnArmy } from "./selected-army";
 import { readSiteCard, type SiteAttack, type SiteCardPlan } from "./site-card-plan";
+import { XP_STAR_ICON } from "../attributes/xp-star";
 import { FrontierSheet } from "../frontier-sheet";
 
-const SITE_MODELS = ["ExpeditionSite", "ExplorerTroops", "ArmySlot", "Guard", "Structure", "TileOccupancy"] as const;
+const SITE_MODELS = [
+  "ExpeditionSite",
+  "SiteChest",
+  "ExplorerTroops",
+  "ArmyProgress",
+  "ArmySlot",
+  "Guard",
+  "Structure",
+  "TileOccupancy",
+  "ResourceBalance",
+  "ResourceProduction",
+  "RealmKnowledge",
+] as const;
 
 interface SelectedSite {
   site: NativeRows["ExpeditionSite"];
@@ -83,12 +96,13 @@ export const TileCard = ({ selected, onClose }: { selected: SelectedSite; onClos
         <img src={plan.art} alt="" className="size-24 shrink-0 rounded-xl bg-black/50 object-cover" />
         <span className="flex flex-col items-start gap-2">
           <h2 className="frontier-title">{plan.name}</h2>
+          <span className="frontier-label">{plan.kind}</span>
           <GuardChip guard={plan.guard} />
         </span>
       </header>
       <div className="grid grid-cols-2 gap-3">
         <FightBox fight={plan.fight} />
-        <PayoutBox payout={plan.payout} />
+        <PayoutBox plan={plan} />
       </div>
       <button
         type="button"
@@ -155,20 +169,29 @@ const PAYOUT_GLOW = {
     "radial-gradient(circle at 50% 75%, rgba(246, 172, 29, 0.2), transparent 70%), linear-gradient(180deg, #2a2013, #15100a)",
 };
 
-/** What clearing the site pays home, large: a camp's labor, a rift's Essence, a fallen realm's chest. */
-const PayoutBox = ({ payout }: { payout: SiteCardPlan["payout"] }) => (
+/** The resource payout that fits, the stored chest tier and the XP every clear awards. */
+const PayoutBox = ({ plan }: { plan: SiteCardPlan }) => (
   <div
     className="frontier-card flex flex-col items-center justify-center gap-1 p-3"
     style={PAYOUT_GLOW}
-    aria-label={payout ? `Pays ${formatAmount(payout.amount)}` : "Pays a chest"}
+    aria-label="Clear rewards"
   >
-    {payout ? (
+    {plan.payout ? (
       <>
-        <img src={`/images/resources/${payout.resourceId}.png`} alt="" className="size-10" />
-        <span className="frontier-hero tabular-nums">+{formatAmount(payout.amount)}</span>
+        <img src={`/images/resources/${plan.payout.resourceId}.png`} alt="" className="size-10" />
+        <span className="frontier-hero tabular-nums">+{formatAmount(plan.payout.amount)}</span>
       </>
-    ) : (
-      <TreasureChest className="size-16" />
+    ) : plan.payout === undefined ? (
+      <span className="frontier-title">—</span>
+    ) : null}
+    {plan.chest && (
+      <Chip
+        small
+        label="Chest tier"
+        icon={<TreasureChest />}
+        value={["Common", "Uncommon", "Rare", "Epic", "Legendary"][plan.chest.tier]}
+      />
     )}
+    <Chip small label="XP" icon={<img src={XP_STAR_ICON} alt="" />} value={`+${formatAmount(plan.xp)}`} />
   </div>
 );

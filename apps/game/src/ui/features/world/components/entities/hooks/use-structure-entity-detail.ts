@@ -102,7 +102,7 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
 
   const typeLabel = useMemo(() => {
     if (!structure?.base?.category) return undefined;
-    return mode.structure.getTypeName(structure.base.category as StructureType, presentedMineKind(store, structure));
+    return mode.structure.getTypeName(structure.base.category as StructureType, presentedMineKind(structure));
   }, [mode, store, structure]);
 
   const backgroundImage = useMemo(() => {

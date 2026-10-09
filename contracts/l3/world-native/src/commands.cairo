@@ -123,14 +123,14 @@ pub fn resource_context(context: ExecutionContext) -> ResourceContext {
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct BiomeContext {
     pub climate: crate::rules::BiomeClimateConfig,
-    pub epoch_seconds: u32,
+    pub day_unit_seconds: u32,
     pub start_main_at: u64,
 }
 
 pub fn biome_context(context: ExecutionContext) -> BiomeContext {
     BiomeContext {
         climate: context.rules.unbox().biome_climate_config,
-        epoch_seconds: context.rules.unbox().epoch_seconds,
+        day_unit_seconds: context.rules.unbox().day_unit_seconds,
         start_main_at: context.game.unbox().start_main_at,
     }
 }

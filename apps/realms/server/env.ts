@@ -37,6 +37,7 @@ export interface IdentityEnv extends Schema.Schema.Type<typeof IdentityVars> {
   GUARDIAN: Guardian;
   /** The launch Worker, reached by service binding only. */
   LAUNCH: { fetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> };
+  RATING_READER: DurableObjectNamespace<import("./rating-reader").RatingReader>;
   PUBLIC_RATE_LIMIT: RateLimit;
   /** 100 viewers behind one NAT: four polls and two history reads each per minute. */
   DIRECTORY_RATE_LIMIT: RateLimit;
@@ -58,6 +59,7 @@ export const decodeIdentityEnv = (raw: Record<string, unknown>): IdentityEnv => 
   DB: raw.DB as D1Database,
   GUARDIAN: raw.GUARDIAN as Guardian,
   LAUNCH: raw.LAUNCH as IdentityEnv["LAUNCH"],
+  RATING_READER: raw.RATING_READER as IdentityEnv["RATING_READER"],
   PUBLIC_RATE_LIMIT: raw.PUBLIC_RATE_LIMIT as RateLimit,
   DIRECTORY_RATE_LIMIT: raw.DIRECTORY_RATE_LIMIT as RateLimit,
   SIGN_IN_CODE_RATE_LIMIT: raw.SIGN_IN_CODE_RATE_LIMIT as RateLimit,

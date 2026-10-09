@@ -6,6 +6,7 @@ use crate::{
     node::{Execution, ExecutionStatus, Node},
     protocol::{Envelope, Intent},
     ticket::{context_matches, ActionRequest, ActionStatus, RecordedTicket},
+    timing::{AdmissionTiming, Stage, StageTimer},
 };
 use anyhow::{ensure, Context};
 use futures::{future::BoxFuture, FutureExt};
@@ -100,12 +101,20 @@ impl<N: GatewayNode> GameApi<N> {
         let intent = action.decode(chain, deployment)?;
         let digest = intent.identity()?;
         // get_admission refuses, by name, an actor outside the shard's account class or guardian.
-        let fields = read_admission(node.as_ref(), intent.game, intent.actor).await?;
+        let mut timing = AdmissionTiming::new(intent.game, digest);
+        let fields = {
+            let _timer = StageTimer::start(Stage::AdmissionRead, Some(&mut timing.stages));
+            read_admission(node.as_ref(), intent.game, intent.actor).await?
+        };
         let [release_id, preset_commitment, nonce, _, _] = fields.as_slice() else {
             anyhow::bail!("malformed admission view")
         };
         // A forged or revoked key never takes the actor's slot.
-        ensure!(node.signed_by(intent.actor, digest, &action.signature).await?, "invalid player signature");
+        let signed = {
+            let _timer = StageTimer::start(Stage::SignatureRead, Some(&mut timing.stages));
+            node.signed_by(intent.actor, digest, &action.signature).await?
+        };
+        ensure!(signed, "invalid player signature");
         if *nonce != Felt::from(intent.nonce) {
             if *nonce > Felt::from(intent.nonce) {
                 if let Some(outcome) = node.recorded_action(&intent).await? {
@@ -212,13 +221,17 @@ async fn run<N: GatewayNode>(api: GameApi<N>, path: &Path) -> anyhow::Result<()>
     tracing::info!(target: "gateway", epoch = assignments.epoch.epoch, "admission open");
     let mut packer = Packer::new(api.0.slots.authority());
     let mut flight: Option<BoxFuture<'static, anyhow::Result<()>>> = None;
+    let mut previous_finished = None;
     loop {
         if flight.is_none() && packer.ready() {
             let batch = packer.take();
             for ticket in &batch {
-                METRICS.left_queue_after(ticket.received.elapsed());
+                let wait = ticket.received.elapsed();
+                METRICS.left_queue_after(wait);
+                tracing::info!(target: "gateway", action = %ticket.record.envelope.action,
+                    queue_wait_ms = wait.as_secs_f64() * 1000.0, "gateway_admission_queue_wait");
             }
-            flight = Some(execution::execute(node.clone(), batch).boxed());
+            flight = Some(execution::execute(node.clone(), batch, previous_finished).boxed());
         }
         if flight.is_none() && packer.is_empty() && assignments.rotation_due() {
             assignments.rotate(node.as_ref(), path).await?;
@@ -242,6 +255,7 @@ async fn run<N: GatewayNode>(api: GameApi<N>, path: &Path) -> anyhow::Result<()>
             result = async { flight.as_mut().expect("flight branch enabled").await }, if flight.is_some() => {
                 result?;
                 flight = None;
+                previous_finished = Some(Instant::now());
             }
             _ = tokio::time::sleep_until(packer.deadline), if flight.is_none() && !packer.is_empty() => {}
         }
@@ -330,8 +344,8 @@ impl AssignmentNode for Node {
     /// Any outcome but inclusion fails the run; the restart re-reads the epoch from the chain, so a
     /// command that did land is never sent twice.
     async fn account_command(&self, name: &'static str, payload: Vec<Felt>) -> anyhow::Result<()> {
-        let (hash, transaction) = Node::prepare(self, self.account, name, payload).await?;
-        match Node::execute(self, hash, transaction).await? {
+        let (hash, transaction) = Node::prepare(self, self.account, name, payload, None).await?;
+        match Node::execute(self, hash, transaction, None).await? {
             Execution::Included(receipt) if receipt.execution_status == ExecutionStatus::Succeeded => Ok(()),
             Execution::Included(receipt) => {
                 anyhow::bail!("randomness epoch transition reverted: {}", receipt.revert_reason.unwrap_or_default())
@@ -632,12 +646,13 @@ mod tests {
             _: Felt,
             entrypoint: &'static str,
             payload: Vec<Felt>,
+            _: &mut crate::timing::Stages,
         ) -> anyhow::Result<(Felt, Value)> {
             let mut chain = self.0.lock().unwrap();
             chain.prepared.push((entrypoint, payload));
             Ok((Felt::from(chain.prepared.len() as u64), Value::Null))
         }
-        async fn execute(&self, hash: Felt, _: Value) -> anyhow::Result<Execution> {
+        async fn execute(&self, hash: Felt, _: Value, _: &mut crate::timing::Stages) -> anyhow::Result<Execution> {
             let mut chain = self.0.lock().unwrap();
             if let Some(receipt) = chain.receipts.get(&hash) {
                 return Ok(Execution::Included(Box::new(receipt.clone())));

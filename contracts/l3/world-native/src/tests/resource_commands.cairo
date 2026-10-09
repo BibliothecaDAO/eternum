@@ -173,7 +173,7 @@ fn explicit_burn_does_not_harvest_and_rejection_keeps_the_stream_moving() {
     let burn = ResourceBurn { entity_id: source.entity_id, resources: amount(1, 10) };
     assert!(execute(deployment, Command::BurnStructureResources(burn), 40));
     assert_eq!(resources.resource_balance(slot), 90);
-    assert_eq!(resources.resource_production(slot).last_updated_at, 30);
+    assert_eq!(resources.resource_production(slot).last_settled_tick, 0);
     let production = resources.resource_production(slot);
     assert!(
         !execute(deployment, Command::BurnStructureResources(ResourceBurn { resources: amount(1, 120), ..burn }), 45),
@@ -340,10 +340,11 @@ fn structure_transfer_harvests_but_rejects_all_nine_troop_resources() {
     let transfer = crate::resources::ResourceTransfer {
         from_entity_id: home.entity_id, to_entity_id: explorer.entity_id, resources: amount(1, 110),
     };
-    assert!(execute(deployment, Command::TransferStructureResourcesToExplorer(transfer), 40));
+    // By 70 the minute tick from 0 has ended and paid the producer's whole 100: 200 held, 110 sent.
+    assert!(execute(deployment, Command::TransferStructureResourcesToExplorer(transfer), 70));
     let resources = IResourceOperationsDispatcher { contract_address: deployment.games };
     assert_eq!(
-        resources.resource_balance(ResourceSlot { game_id: 3, entity_id: home.entity_id, resource_type: 1 }), 10,
+        resources.resource_balance(ResourceSlot { game_id: 3, entity_id: home.entity_id, resource_type: 1 }), 90,
     );
     assert_eq!(
         resources.resource_balance(ResourceSlot { game_id: 3, entity_id: explorer.entity_id, resource_type: 1 }), 100,
@@ -356,7 +357,7 @@ fn structure_transfer_harvests_but_rejects_all_nine_troop_resources() {
                 Command::TransferStructureResourcesToExplorer(
                     crate::resources::ResourceTransfer { resources: amount(resource_type, 1), ..transfer },
                 ),
-                40,
+                70,
             ),
         );
         assert_eq!(
@@ -476,7 +477,7 @@ fn village_arrivals_wait_for_both_season_and_creation_immunity() {
             StructureRecord {
                 owner: structure.owner,
                 base: crate::structures::StructureBase {
-                    category: crate::ownership::VILLAGE_CATEGORY, ..structure.base,
+                    category: crate::taxonomy::VILLAGE_CATEGORY, ..structure.base,
                 },
                 resources_packed: structure.resources_packed,
                 metadata: structure.metadata,
@@ -710,7 +711,7 @@ fn troop_deposit_ownership(blitz_mode_on: bool, category: u8) {
     let explorer = explorer_fixture(deployment, 70, home.entity_id, Coord { alt: false, x: 2000009, y: 2000000 }, 1000);
     grant(deployment, explorer, 26, 100);
     grant(deployment, explorer, 1, 100);
-    let coord = if category == 8 {
+    let coord = if category == crate::taxonomy::BITCOIN_MINE_CATEGORY {
         Coord { alt: true, x: 1999995, y: 2000000 }
     } else {
         Coord { alt: false, x: 2000009, y: 2000000 }
@@ -782,7 +783,7 @@ fn village_fixture(deployment: Deployment, key: ResourceKey, owner: starknet::Co
         array![key.game_id.into(), key.entity_id.into()].span(),
         StructureRecord {
             owner,
-            base: crate::structures::StructureBase { category: crate::ownership::VILLAGE_CATEGORY, ..structure.base },
+            base: crate::structures::StructureBase { category: crate::taxonomy::VILLAGE_CATEGORY, ..structure.base },
             resources_packed: structure.resources_packed,
             metadata: crate::structures::StructureMetadata { village_realm: 12345, ..structure.metadata },
         },

@@ -47,7 +47,6 @@ const FrontierOpening = ({ onOpen }: { onOpen: (variant: ChestVariant, intensity
       </label>
       <button onClick={() => onOpen("lords", intensity)}>Open · LORDS</button>
       <button onClick={() => onOpen("relic", intensity)}>Open · relic</button>
-      <button onClick={() => onOpen("spent", intensity)}>Open · LORDS spent</button>
     </>
   );
 };

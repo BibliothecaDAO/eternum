@@ -4,7 +4,6 @@ import { INTENSITY, type Intensity, momentSpeed } from "@/ui/motion/motion-scale
 import { create } from "zustand";
 import type { ChestBeat } from "@/three/rewards/chest-opening-beats";
 import type { ChestOutcome } from "./chest-outcome";
-import type { Attribute } from "../attributes/attributes";
 
 /**
  * Design §3.11 §1, the chest: tap, anticipation until the result arrives, the rarity's tell, the burst, then the LORDS
@@ -13,15 +12,10 @@ import type { Attribute } from "../attributes/attributes";
  */
 type ChestPhase = "anticipation" | "tell" | "burst" | "reveal";
 
-/** A relic's pending attribute offer as its cards show it: each choice with the army's level in it now. */
-export interface RelicOffer {
-  amount: number;
-  choices: readonly { attribute: Attribute; level: number }[];
-}
-
+/** A relic pays the army the game's fixed XP, whatever its quality, until relics leave chests. */
 export type ChestResult =
   | { outcome: Extract<ChestOutcome, { kind: "lords" }> }
-  | { outcome: Extract<ChestOutcome, { kind: "relic" }>; relic: { name: string; offer: RelicOffer } };
+  | { outcome: Extract<ChestOutcome, { kind: "relic" }>; relic: { name: string; xp: number } };
 
 export interface ChestOpening {
   gameId: number;
@@ -114,14 +108,6 @@ export const resolveChestOpening = (result: ChestResult, now = performance.now()
   const moment = current();
   if (!moment || moment.result) return;
   set({ ...moment, result, speed: momentSpeed("chest", result.outcome.intensity, now) });
-};
-
-/** Facts can finish an unresolved opening, but must not replace a story delivered in the same update. */
-export const recoverChestOpening = (opening: ChestOpening, result: ChestResult | null): void => {
-  const moment = current();
-  if (moment?.opening !== opening || moment.result) return;
-  if (result) resolveChestOpening(result);
-  else cancelChestOpening(opening);
 };
 
 /** The opening failed: the hold ends where it is, and the caller says why. */

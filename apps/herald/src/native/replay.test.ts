@@ -196,7 +196,7 @@ it("rebuilds state and history from genesis in one replay when history lags the 
     load: vi.fn(async () => ({ fold: stale, confirmedBlock: 12 })),
     save: vi.fn(),
   };
-  const history = { appendEvents: vi.fn(), historyProgress: vi.fn(async () => 11) };
+  const history = { frontierHistory: async () => [], appendEvents: vi.fn(), historyProgress: vi.fn(async () => 11) };
   const loaded = await loadNativeWorld({ chain: "madara", checkpointStore, history, native, rpc });
   expect(rpc.getBlockWithReceipts).toHaveBeenCalledTimes(4);
   expect(loaded.fold).not.toBe(stale);
@@ -264,7 +264,7 @@ it("halts a confirmed rejection at the last checkpoint without killing receipt s
     load: vi.fn(async () => ({ fold, confirmedBlock: 9 })),
     save: vi.fn(),
   };
-  const history = { appendEvents: vi.fn(), historyProgress: vi.fn(async () => 9) };
+  const history = { frontierHistory: async () => [], appendEvents: vi.fn(), historyProgress: vi.fn(async () => 9) };
   const loaded = await loadNativeWorld({ chain: "madara", checkpointStore, history, native, rpc });
   expect(loaded.confirmedBlock).toBe(9);
   expect(loaded.fold.checkpoint()).toEqual(before);
@@ -406,6 +406,7 @@ it("retains only one 64-block cold-replay window and no receipts, checkpointing 
     },
   };
   const history = {
+    frontierHistory: async () => [],
     historyProgress: async () => null,
     appendEvents: async (events: readonly unknown[], head?: number) => {
       expect(events.length).toBeLessThanOrEqual(64);
@@ -445,6 +446,7 @@ it("keeps a completed startup window when the next window rejects a receipt and 
     },
   };
   const history = {
+    frontierHistory: async () => [],
     historyProgress: async () => historyThrough,
     appendEvents: async (_events: readonly unknown[], head?: number) => {
       expect(head).toBeDefined();

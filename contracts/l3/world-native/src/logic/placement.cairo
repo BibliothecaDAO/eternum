@@ -190,13 +190,20 @@ pub mod PlacementLogic {
         ) -> u32 {
             for alt in array![false, true] {
                 let tile = crate::logic::map::tile(tile_key(game_id, Coord { alt, ..coord }));
-                assert!(tile.map(|value| (value.data / 2) % BYTE_RANGE == 0).unwrap_or(true), "spire tile occupied");
+                assert!(
+                    tile
+                        .map(|value| (value.data / 2) % BYTE_RANGE == crate::taxonomy::NONE_OCCUPIER.into())
+                        .unwrap_or(true),
+                    "spire tile occupied",
+                );
             }
             let id = crate::logic::game::allocate_entity(game_id);
             for alt in array![false, true] {
                 let center = Coord { alt, ..coord };
                 self.reveal_spire_access(game_id, center, game_context);
-                crate::logic::map::MapState::occupy(tile_key(game_id, center), id, 35, true);
+                crate::logic::map::MapState::occupy(
+                    tile_key(game_id, center), id, crate::taxonomy::SPIRE_OCCUPIER, true,
+                );
                 for direction in 0_u8..6 {
                     self.reveal_spire_access(game_id, spire_neighbor(center, direction), game_context);
                 }

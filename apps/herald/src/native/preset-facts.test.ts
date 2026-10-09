@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { CallData, CairoCustomEnum, CairoOption, CairoOptionVariant, hash, type Abi } from "starknet";
+import { CallData, CairoOption, CairoOptionVariant, hash, type Abi } from "starknet";
 import { buildNativePreset } from "../../../../config/deployer/clean/config/native-preset";
 import { loadNativePresetConfiguration } from "../../../../config/deployer/clean/registrar/native-preset";
 import { LiveWorld } from "../live-world";
@@ -70,34 +70,23 @@ function applyRegistration(world: ReturnType<typeof setup>, preset: ReturnType<t
 }
 
 describe("verified preset configuration facts", () => {
-  it("reads each Token rarity in whole LORDS from the game-pinned table", () => {
+  it("projects the ruin chest rules and each depth's five tier odds", () => {
     const world = setup();
     const preset = registration();
     applyRegistration(world, preset);
     world.native.applyReceipt(world.fold, receipt(launch(preset)), 11, 0);
     const rules = world.fold.gameRows("ChestRules", "1")[0]!.value;
-    const amounts = rules.lords_amounts as Record<string, string>;
-    const qualities = ["common", "uncommon", "rare", "epic"];
-    const events = qualities.map((_, quality) =>
-      rowEvent("ChestReward", ["1", "12", String(quality)], {
-        player: "0x111",
-        explorer_id: 7,
-        epoch: 3,
-        depth: 0,
-        kind: new CairoCustomEnum({ Token: {} }),
-        quality,
-        lords_exhausted: false,
-      }),
-    );
-    world.native.applyReceipt(world.fold, receipt(events), 12, 0);
-    const won = world.fold
-      .gameRows("ChestReward", "1")
-      .map(({ value }) => ({
-        quality: Number(value.quality),
-        amount: BigInt(amounts[qualities[Number(value.quality)]]),
-      }))
-      .sort((a, b) => a.quality - b.quality);
-    expect(won.map(({ amount }) => amount)).toEqual([100n, 400n, 1500n, 6000n]);
+    expect([rules.pool, rules.price_ceiling, rules.surge_factor, rules.surge_minimum_shares].map(Number)).toEqual([
+      1_000_000, 50, 3, 60,
+    ]);
+    const tiers = ["common", "uncommon", "rare", "epic", "legendary"];
+    const shares = rules.shares as Record<string, unknown>;
+    expect(tiers.map((tier) => Number(shares[tier]))).toEqual([1, 2, 4, 10, 20]);
+    const odds = world.fold
+      .gameRows("DepthRules", "1")
+      .map(({ value }) => value.chest as Record<string, unknown>)
+      .map((chest) => tiers.reduce((sum, tier) => sum + Number(chest[tier]), 0));
+    expect(odds).toEqual([10000, 10000, 10000, 10000]);
   });
 
   it("derives the complete launch config, preserving the chain's overrides", () => {
@@ -107,23 +96,20 @@ describe("verified preset configuration facts", () => {
     world.native.applyReceipt(world.fold, receipt(launch(preset)), 11, 0);
     expect(world.fold.gameRows("ResourceRule", "1")).toHaveLength(58);
     expect(world.fold.gameRows("ProductionRecipe", "1")).toHaveLength(58);
-    expect(world.fold.gameRows("BuildingRule", "1")).toHaveLength(40);
+    expect(world.fold.gameRows("BuildingRule", "1")).toHaveLength(44);
     const depths = world.fold.gameRows("DepthRules", "1").map(({ value }) => value);
     expect(depths.map((row) => Number(row.guard_step))).toEqual([100, 100, 100, 100]);
-    expect(depths.map((row) => row.fallen_guard_tier)).toEqual(["T1", "T2", "T3", "T3"]);
     expect(depths.map((row) => Number(row.reveal_percent))).toEqual([10, 15, 20, 25]);
     expect(depths.every((row) => !Object.hasOwn(row, "supply_multiplier"))).toBe(true);
     const discovery = world.fold.gameRows("FrontierDiscoveryRules", "1")[0]!.value;
     expect(
-      ["camp_bps", "rift_bps", "fallen_realm_bps", "loose_chest_bps", "empty_reveal_limit"].map((key) =>
-        Number(discovery[key]),
-      ),
-    ).toEqual([400, 400, 200, 200, 7]);
-    expect(depths.map((row) => [Number(row.fallen_guard_lower), Number(row.fallen_guard_upper)])).toEqual([
+      ["stragglers_bps", "camp_bps", "rift_bps", "ruin_bps", "empty_reveal_limit"].map((key) => Number(discovery[key])),
+    ).toEqual([600, 400, 400, 100, 7]);
+    expect(depths.map((row) => [Number(row.ruin_guard_lower), Number(row.ruin_guard_upper)])).toEqual([
       [2000, 4000],
-      [2000, 3500],
-      [2000, 2500],
-      [4500, 6500],
+      [6000, 10500],
+      [18000, 22500],
+      [52500, 76000],
     ]);
 
     expect(world.fold.gameRows("GameOverrides", "1")).toHaveLength(1);

@@ -12,7 +12,7 @@ for (const [name, id] of [
   ["eternum", 3],
   ["frontier", 5],
 ] as const) {
-  const fixture = currentPresetFixture(id);
+  const fixture = await currentPresetFixture(id);
   write(`${name}-register.txt`, fixture.registration);
   write(`${name}-create.txt`, fixture.creation);
   write(`${name}-rows.txt`, serializePresetRows(fixture.rows));
@@ -27,7 +27,7 @@ for (const [name, id] of [
 }
 console.log("Generated current Blitz, Eternum and Frontier preset inputs and Herald projections");
 
-function conformancePreset(definition: ReturnType<typeof currentPresetFixture>["definition"]) {
+function conformancePreset(definition: Awaited<ReturnType<typeof currentPresetFixture>>["definition"]) {
   const value = {
     rules: { ...definition.rules, map_center_offset: 20 },
     resources: definition.resources.resources,

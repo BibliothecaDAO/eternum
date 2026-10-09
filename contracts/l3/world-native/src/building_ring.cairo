@@ -1,6 +1,10 @@
 use core::poseidon::poseidon_hash_span;
 use crate::troops::Coord;
 
+// Each ring of a realm board has one marked plot. The owner ruled on 7 October 2026 that it gives each building type an
+// effect of its own; that design is not written, so the plot changes nothing: no building reads it. It stays here, the
+// one place that names it, for the client to draw and for that design to land in.
+
 pub fn marked_plot(realm_id: u16, ring: u32) -> Coord {
     assert!(realm_id > 0 && realm_id.into() <= crate::realms::CANONICAL_REALM_COUNT, "invalid ring realm");
     assert!(ring > 0 && ring < 10, "invalid building ring");

@@ -141,7 +141,7 @@ const RealmVillageDetails = () => {
   );
 };
 
-const PRODUCTION_MODELS = ["ResourceProduction", "ResourceWeight", "RealmSupport"] as const;
+const PRODUCTION_MODELS = ["ResourceProduction", "ResourceWeight"] as const;
 
 /** The realm's labor income as the chain produces it, the castle's and every workshop's together, per hour. */
 const LaborRateRow = ({ structureId }: { structureId: ID }) => {

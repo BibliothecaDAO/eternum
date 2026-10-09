@@ -12,7 +12,7 @@ const season = (address: string, rank: number) => ({
   address,
   structure_id: String(rank),
   rank,
-  sites_cleared: { total: 10 - rank, camps: 0, rifts: 0, fallen_realms: 0 },
+  sites_cleared: { total: 10 - rank, camps: 0, rifts: 0, ruins: 0, stragglers: 0 },
   chests_earned: 2,
   rewards: { lords: "400", essence: "0", labor: "0" },
   deepest_depth: 1,

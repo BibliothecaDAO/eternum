@@ -11,7 +11,7 @@ import {
 import { Color } from "three";
 import { HyperstructureTypesNames } from "../types";
 import { HYPERSTRUCTURE_MODEL_PATH } from "../structures/hyperstructure-design";
-import { FALLEN_REALM_CAMP_MODEL_PATHS } from "../structures/fallen-realm";
+import { FALLEN_REALM_MODEL_PATHS } from "../structures/fallen-realm";
 
 export const HEX_SIZE = 1;
 
@@ -46,6 +46,7 @@ enum BuildingFilenames {
 export const ChestModelPath = "/models/reward-tiles/chest-c2.glb";
 export const RiftModelPath = "/models/reward-tiles/rift.glb";
 const BITCOIN_MINE_MODEL_PATH = "/models/ethereal/bitcoin-mine.glb";
+const RIFT_MODEL_PATH = "/models/reward-tiles/rift.glb";
 
 export const VILLAGE_MODEL_PATH = "/models/settlements/village.glb";
 export const REALM_MODEL_PATHS = {
@@ -80,6 +81,9 @@ export const structureTypeToBuildingType: Record<StructureType, BuildingType> = 
   [StructureType.Village]: BuildingType.ResourceLabor,
   [StructureType.Camp]: BuildingType.ResourceLabor,
   [StructureType.BitcoinMine]: BuildingType.ResourceLabor,
+  [StructureType.Rift]: BuildingType.ResourceEssence,
+  [StructureType.Ruin]: BuildingType.ResourceLabor,
+  [StructureType.Stragglers]: BuildingType.ResourceLabor,
 };
 
 export const castleLevelToRealmCastle: Record<RealmLevels, RealmLevelNames> = {
@@ -177,8 +181,12 @@ export function getStructureModelPaths(): Record<StructureType, string[]> {
     [StructureType.Bank]: [BUILDINGS_MODELS_PATH + BuildingFilenames.Bank],
     [StructureType.Mine]: Object.values(MineKinds).map((kind) => kind.model),
     [StructureType.Village]: [VILLAGE_MODEL_PATH],
-    [StructureType.Camp]: [VILLAGE_MODEL_PATH, ...FALLEN_REALM_CAMP_MODEL_PATHS],
+    [StructureType.Camp]: [VILLAGE_MODEL_PATH],
     [StructureType.BitcoinMine]: [BITCOIN_MINE_MODEL_PATH],
+    [StructureType.Rift]: [RIFT_MODEL_PATH],
+    [StructureType.Ruin]: FALLEN_REALM_MODEL_PATHS,
+    // Stragglers wait on their own art and stand as a camp until it lands.
+    [StructureType.Stragglers]: [VILLAGE_MODEL_PATH],
   };
 }
 

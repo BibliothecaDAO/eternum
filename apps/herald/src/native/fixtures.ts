@@ -133,7 +133,7 @@ export function seedDerivedRows(fold: WorldFold, decoder: NativeDecoder, events:
   });
 }
 
-export function rulesEvent(gameId = "1", epochSeconds = "0") {
+export function rulesEvent(gameId = "1", dayUnitSeconds = "0") {
   const model = schema.models.find((model) => model.name === "SliceRules")!;
   const defaults = (type: string): string[] => {
     const definition = schema.types[type];
@@ -153,7 +153,7 @@ export function rulesEvent(gameId = "1", epochSeconds = "0") {
     return defaults(member.type);
   });
   const decoded = decodeMembers(schema, model.members, values);
-  decoded.epoch_seconds = BigInt(epochSeconds);
+  decoded.day_unit_seconds = BigInt(dayUnitSeconds);
   return rowEvent("SliceRules", [gameId], decoded);
 }
 

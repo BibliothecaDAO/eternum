@@ -252,5 +252,5 @@ const AvatarImage = ({ address }: { address: string }) => {
 /** The mine kind a structure is drawn as, when the game's facts hold it. */
 const mineKindOf = (store: NativeFactStore, entityId: number) => {
   const row = store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: entityId });
-  return row ? presentedMineKind(store, row) : undefined;
+  return row ? presentedMineKind(row) : undefined;
 };

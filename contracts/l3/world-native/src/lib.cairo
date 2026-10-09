@@ -11,6 +11,7 @@ pub mod combat;
 pub mod combat_actions;
 pub mod command_routes;
 pub mod commands;
+pub mod days;
 pub mod discovery;
 pub mod entry;
 pub mod events;
@@ -50,6 +51,7 @@ pub mod spires;
 pub mod stamina;
 pub mod state;
 pub mod structures;
+pub mod taxonomy;
 
 #[cfg(test)]
 mod tests;

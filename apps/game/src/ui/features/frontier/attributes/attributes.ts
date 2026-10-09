@@ -1,106 +1,74 @@
+import { battleBonusBps, homecomingBps, logisticsStamina, scoutingIncrementBps } from "@bibliothecadao/eternum";
 import { nativeRuleConstants, type NativeRows } from "@bibliothecadao/eternum/game-client";
 
-/** An army's progress, its pending offer and the game's XP rules, exactly as the native store carries them. */
+/** An army's XP and attribute tiers, and the game's XP rules, exactly as the native store carries them. */
 export type ArmyProgressFacts = NativeRows["ArmyProgress"];
-export type AttributeOfferFacts = NonNullable<ArmyProgressFacts["pending"]>;
-export type Attribute = AttributeOfferFacts["choices"][number];
+export type Attribute = "Battle" | "Logistics" | "Scouting" | "Homecoming";
 export type ProgressionRulesFacts = NativeRows["ArmyProgressionRules"];
 
-/** The contract's attribute cap: levels past it are lost. */
+export const ATTRIBUTES: readonly Attribute[] = ["Battle", "Logistics", "Scouting", "Homecoming"];
+
+/** The contract's top tier, legendary. */
 export const MAX_ATTRIBUTE_LEVEL = nativeRuleConstants.ATTRIBUTE_CAP;
 
-/** Whether an army can take a new offer, as the contract checks: none waiting, and an attribute below the cap. */
-export const canReceiveOffer = (progress: ArmyProgressFacts): boolean =>
-  progress.pending === null &&
-  [progress.battle, progress.logistics, progress.scouting, progress.support].some(
-    (level) => level < MAX_ATTRIBUTE_LEVEL,
-  );
-
-/** The army's level in one attribute. */
+/** The army's tier in one attribute, 1 (common) to 5 (legendary). */
 export const attributeLevel = (progress: ArmyProgressFacts, attribute: Attribute): number =>
   ({
     Battle: progress.battle,
     Logistics: progress.logistics,
     Scouting: progress.scouting,
-    Support: progress.support,
+    Homecoming: progress.homecoming,
   })[attribute];
 
-/**
- * How far an army is into its level, where level L costs `level_step_xp × L`. While an offer waits, XP keeps banking
- * past the threshold and the level holds, so the bar stops at full.
- */
-export const levelProgress = (progress: Pick<ArmyProgressFacts, "level" | "xp">, rules: ProgressionRulesFacts) => {
-  const needed = rules.level_step_xp * progress.level;
-  return { into: Math.min(progress.xp, needed), needed };
-};
+/** What the next tier above `tier` costs in XP, as the contract prices it; null at legendary. */
+export const nextTierPrice = (rules: ProgressionRulesFacts, tier: number): number | null =>
+  [rules.uncommon_xp, rules.rare_xp, rules.epic_xp, rules.legendary_xp][tier - 1] ?? null;
 
 /**
- * The picks banked behind an army's waiting offer (backend shapes v6): that offer already spent its level's threshold,
- * and the XP it keeps earning meanwhile buys one more level and offer per threshold it covers, each claimed after the
- * pick before it.
+ * The attributes the army can Upgrade here now: below legendary, with the next tier's price in hand. Scouting waits
+ * for the frontend's kind choice: its tier must name camps or rifts, which this panel cannot ask yet.
  */
-export const bankedPicks = (
-  progress: Pick<ArmyProgressFacts, "level" | "xp">,
-  rules: ProgressionRulesFacts,
-): number => {
-  let picks = 0;
-  let xp = progress.xp;
-  for (let level = progress.level; xp >= rules.level_step_xp * level; level += 1) {
-    xp -= rules.level_step_xp * level;
-    picks += 1;
-  }
-  return picks;
-};
+export const affordableUpgrades = (progress: ArmyProgressFacts, rules: ProgressionRulesFacts): Attribute[] =>
+  ATTRIBUTES.filter((attribute) => {
+    const price = nextTierPrice(rules, attributeLevel(progress, attribute));
+    return attribute !== "Scouting" && price !== null && progress.xp >= price;
+  });
 
-/** The XP an army earned between two readings, across however many levels it crossed; a pick alone earns none. */
-export const xpGained = (
-  before: Pick<ArmyProgressFacts, "level" | "xp">,
-  after: Pick<ArmyProgressFacts, "level" | "xp">,
-  rules: ProgressionRulesFacts,
-): number => {
-  if (after.level === before.level) return after.xp - before.xp;
-  let gained = levelProgress(before, rules).needed - before.xp + after.xp;
-  for (let level = before.level + 1; level < after.level; level += 1) gained += rules.level_step_xp * level;
-  return gained;
-};
-
-/** What changed in an army's progress between two readings: the XP it earned and the levels it gained. */
-export const progressChange = (
-  before: Pick<ArmyProgressFacts, "level" | "xp">,
-  after: Pick<ArmyProgressFacts, "level" | "xp">,
-  rules: ProgressionRulesFacts,
-) => ({ xp: xpGained(before, after, rules), levels: after.level - before.level });
+/** The XP an army earned between two readings; an Upgrade spends XP and earns none. */
+export const xpGained = (before: Pick<ArmyProgressFacts, "xp">, after: Pick<ArmyProgressFacts, "xp">): number =>
+  Math.max(0, after.xp - before.xp);
 
 /** Where a chosen attribute's card lands: the army's attribute badge. */
 export const attributeBadgeTarget = (explorerId: number): string => `attributes-${explorerId}`;
 
 /**
- * Each attribute's glyph and what one level of it gives, as the contract's constants apply it: damage in percent,
- * stamina, camp and rift odds in points, and the home realm's production in percent for the day.
+ * Each attribute's glyph and what it gives at a tier, as the contract's constants apply it: damage in percent and
+ * stamina from their tier tables, the chosen kind's find rate in percent of its base, and the share of surviving troops
+ * returned home at the day's end in percent.
  */
-export const ATTRIBUTE_LOOK: Record<Attribute, { glyph: string; perLevel: { value: number; unit: "%" | "" } }> = {
-  Battle: {
-    glyph: "/images/frontier/attributes/battle.svg",
-    perLevel: { value: nativeRuleConstants.ATTRIBUTE_DAMAGE_PERCENT, unit: "%" },
-  },
-  Logistics: {
-    glyph: "/images/frontier/attributes/logistics.svg",
-    perLevel: { value: nativeRuleConstants.ATTRIBUTE_STAMINA, unit: "" },
-  },
+export const ATTRIBUTE_LOOK: Record<Attribute, { glyph: string; atTier: (tier: number) => number; unit: "%" | "" }> = {
+  Battle: { glyph: "/images/frontier/attributes/battle.svg", atTier: (tier) => battleBonusBps(tier) / 100, unit: "%" },
+  Logistics: { glyph: "/images/frontier/attributes/logistics.svg", atTier: logisticsStamina, unit: "" },
   Scouting: {
     glyph: "/images/frontier/attributes/scouting.svg",
-    perLevel: { value: nativeRuleConstants.ATTRIBUTE_SCOUTING_BPS / 100, unit: "" },
+    // Cumulative on one kind: +10%, +30%, +60%, +100%.
+    atTier: (tier) =>
+      Array.from({ length: tier }, (_, index) => scoutingIncrementBps(index + 1)).reduce((sum, bps) => sum + bps, 0) /
+      100,
+    unit: "%",
   },
-  Support: {
+  // Support's glyph stands in until the narrative lane deals Homecoming's Aspect mark.
+  Homecoming: {
     glyph: "/images/frontier/attributes/support.svg",
-    perLevel: { value: nativeRuleConstants.ATTRIBUTE_SUPPORT_PERCENT, unit: "%" },
+    atTier: (tier) => homecomingBps(tier) / 100,
+    unit: "%",
   },
 };
 
 const gain = new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 });
 
-/** What taking `levels` more of an attribute gives, "+20%" or "+1.5". */
-export const attributeGain = (attribute: Attribute, levels: number): string => {
-  const { perLevel } = ATTRIBUTE_LOOK[attribute];
-  return `+${gain.format(levels * perLevel.value)}${perLevel.unit}`;
+/** What going from one tier of an attribute to another gives, "+20%" or "+1.5". */
+export const attributeGain = (attribute: Attribute, from: number, to: number): string => {
+  const { atTier, unit } = ATTRIBUTE_LOOK[attribute];
+  return `+${gain.format(atTier(to) - atTier(from))}${unit}`;
 };

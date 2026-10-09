@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import { rowInGameSyncScope } from "./model-manifest";
 import { deriveGameSyncScope, scopeInputKeys, type ScopeRowReader } from "./subscription-scope";
 
-const expedition = { epochSeconds: 100, spacing: 1024, startMainAt: 300 };
+// Day 0 runs from 300 for at least three 60 s units, so t=350 is on it.
+const expedition = { dayUnitSeconds: 60, spacing: 1024, startMainAt: 300, seed: 1n };
 const rows = [
   { model: "PlayerEntry", value: { owner: "11", player: "3003" } },
   { model: "Structure", value: { entity_id: "1", owner: "10", base: { category: 1 }, metadata: { realm_id: 1 } } },
@@ -27,7 +28,7 @@ describe("visited realm scope", () => {
     expect(scope.expedition?.regions).toEqual(new Set(["0:1"]));
     expect(scope.expedition?.entities).toEqual(new Set(["1", "2", "101", "102"]));
     for (const model of ["Building", "RealmKnowledge", "ArmySlot"])
-      expect(rowInGameSyncScope(model, { structure_id: "2", epoch: 3 }, scope)).toBe(true);
+      expect(rowInGameSyncScope(model, { structure_id: "2", epoch: 0 }, scope)).toBe(true);
     expect(rowInGameSyncScope("TileOpt", { alt: false, col: 1600, row: 2700 }, scope)).toBe(false);
     expect(rowInGameSyncScope("TileOccupancy", rows[6].value, scope)).toBe(true);
     expect(rowInGameSyncScope("ActionNonce", { actor: "11" }, scope)).toBe(false);

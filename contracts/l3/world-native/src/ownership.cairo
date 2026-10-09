@@ -1,7 +1,5 @@
 use starknet::ContractAddress;
 
-pub const VILLAGE_CATEGORY: u8 = 5;
-
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct TransferOwnership {
     pub entity_id: u32,
@@ -65,8 +63,8 @@ pub enum Story {
     ExplorerDeleteStory: crate::troop_management::ExplorerRemoved,
     GuardDeleteStory: crate::troop_management::GuardSlot,
     TroopsTransferred: crate::troop_management::TransferTroops,
-    ChestReward: crate::relics::ChestReward,
-    AttributeChosen: crate::progression::AttributeChosen,
+    LordsWithdrawn: crate::relics::LordsWithdrawal,
+    TierBought: crate::progression::TierBought,
     SitePayout: crate::expeditions::SitePayout,
 }
 

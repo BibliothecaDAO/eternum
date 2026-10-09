@@ -34,9 +34,9 @@ let players = 0;
 const signIn = (worker: Worker) => worker.signInWithEmailCode(`player-${(players += 1)}@realms.test`);
 
 /** A socket to a chat path, with every message it receives. */
-const connect = async (worker: Worker, cookie: string, path: string) => {
+const connect = async (worker: Worker, cookie: string, path: string, extraHeaders: Record<string, string> = {}) => {
   const response = await worker.mf.dispatchFetch(`${ORIGIN}${path}`, {
-    headers: { upgrade: "websocket", cookie, origin: ORIGIN },
+    headers: { ...extraHeaders, upgrade: "websocket", cookie, origin: ORIGIN },
   });
   const socket = response.webSocket;
   if (!socket) return { status: response.status, received: [] as Record<string, unknown>[] };
@@ -48,6 +48,93 @@ const connect = async (worker: Worker, cookie: string, path: string) => {
 
 const ofType = (received: Record<string, unknown>[], type: string) =>
   received.filter((message) => message.type === type);
+
+it("opens a slot to readers, admits only its seats to writing, and checks the live roster on every message", async () => {
+  const registrations: { realmsId: string | null }[] = [];
+  let unavailable = false;
+  const worker = await startWorker({
+    bundle,
+    storage: newStorage(),
+    vapid: await vapidKeys(),
+    outbound: () => new Response(null, { status: 599 }),
+    launchDirectory: (request) => {
+      const path = new URL(request.url).pathname;
+      expect(path.startsWith("/api/slots/")).toBe(true);
+      if (path === "/api/slots/missing") return new Response(null, { status: 404 });
+      return unavailable
+        ? new Response(null, { status: 503 })
+        : Response.json(
+            path === "/api/slots/blitz-noon"
+              ? { name: "blitz-noon", registrations }
+              : { name: "another", registrations: [] },
+          );
+    },
+  });
+  try {
+    await worker.db.batch(migrationStatements().map((statement) => worker.db.prepare(statement)));
+    const [player, observer] = [await signIn(worker), await signIn(worker)];
+    const room = "slot:blitz-noon";
+    const path = `/api/chat/rooms/${encodeURIComponent(room)}`;
+    expect((await connect(worker, "", path)).status).toBe(401);
+    expect((await connect(worker, player.cookie, "/api/chat/rooms/slot%3Amissing")).status).toBe(404);
+    expect((await connect(worker, player.cookie, "/api/chat/rooms/slot%3AInvalid")).status).toBe(400);
+    expect((await connect(worker, player.cookie, "/api/chat/rooms/%FF")).status).toBe(400);
+    const reader = await connect(worker, observer.cookie, path, {
+      "x-realms-id": player.realmsId,
+      "x-chat-can-write": "true",
+    });
+    await waitUntil(() => ofType(reader.received, "joined:zone").length > 0, 5_000);
+    expect(ofType(reader.received, "joined:zone")[0]).toEqual({ type: "joined:zone", zoneId: room, canWrite: false });
+    const writer = await connect(worker, player.cookie, path);
+    const send = (socket: { send(data: string): void }, content: string, zoneId = room) =>
+      socket.send(JSON.stringify({ type: "world:publish", zoneId, payload: { zoneId, content } }));
+    send(writer.socket!, "no seat yet");
+    await waitUntil(() => ofType(writer.received, "error").length > 0, 5_000);
+    expect(ofType(writer.received, "error")[0]).toMatchObject({ code: "seat_required" });
+
+    // A seat obtained after the observer socket opened takes effect without a second membership store or reconnect.
+    registrations.push({ realmsId: player.realmsId });
+    send(reader.socket!, "forged seat");
+    await waitUntil(() => ofType(reader.received, "error").length > 0, 5_000);
+    expect(ofType(reader.received, "error")[0]).toMatchObject({ code: "seat_required" });
+    send(writer.socket!, "hold this seat");
+    await waitUntil(() => ofType(reader.received, "world:message").length > 0, 5_000);
+    expect(ofType(reader.received, "world:message")[0]!.message).toMatchObject({
+      content: "hold this seat",
+      sender: { playerId: player.realmsId },
+      zoneId: room,
+    });
+    const seated = await connect(worker, player.cookie, path);
+    await waitUntil(() => ofType(seated.received, "joined:zone").length > 0, 5_000);
+    expect(ofType(seated.received, "joined:zone")[0]).toMatchObject({ canWrite: true });
+    const otherRoom = await connect(worker, player.cookie, "/api/chat/rooms/slot%3Aanother");
+    send(otherRoom.socket!, "wrong seat", "slot:another");
+    await waitUntil(() => ofType(otherRoom.received, "error").length > 0, 5_000);
+    expect(ofType(otherRoom.received, "error")[0]).toMatchObject({ code: "seat_required" });
+
+    unavailable = true;
+    send(writer.socket!, "permission service failed");
+    await waitUntil(() => ofType(writer.received, "error").length === 2, 5_000);
+    expect(ofType(writer.received, "error")[1]).toMatchObject({ code: "chat_membership_unavailable" });
+    expect((await connect(worker, player.cookie, path)).status).toBe(503);
+    unavailable = false;
+    registrations.length = 0;
+    await worker.mf.unsafeEvictDurableObject(WORKER_NAME, "ChatRoom", { name: room, webSockets: "hibernate" });
+    send(seated.socket!, "stale permission after hibernation");
+    await waitUntil(() => ofType(seated.received, "error").length > 0, 5_000);
+    expect(ofType(seated.received, "error")[0]).toMatchObject({ code: "seat_required" });
+    const history = await worker.mf.dispatchFetch(`${ORIGIN}/api/chat/world?zoneId=${encodeURIComponent(room)}`, {
+      headers: { cookie: observer.cookie },
+    });
+    expect(history.status).toBe(200);
+    expect(
+      ((await history.json()) as { messages: { content: string }[] }).messages.map(({ content }) => content),
+    ).toEqual(["hold this seat"]);
+    expect(ofType(reader.received, "world:message")).toHaveLength(1);
+  } finally {
+    await worker.dispose();
+  }
+}, 120_000);
 
 it("lets two players chat in their Blitz room, keeps its history, survives eviction, and refuses a stranger", async () => {
   const registered = new Set<string>();

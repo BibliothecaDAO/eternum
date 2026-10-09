@@ -1,5 +1,4 @@
-import { expeditionDayEndsAt } from "@bibliothecadao/eternum/expeditions";
-import { readExpeditionRules } from "@bibliothecadao/eternum/expeditions";
+import { expeditionDayEndsAt, readExpeditionRules, type ExpeditionRules } from "@bibliothecadao/eternum/expeditions";
 import { hasSingleTilePosition } from "@bibliothecadao/eternum/game-client";
 import {
   NativePresetPreimageUnavailable,
@@ -387,10 +386,10 @@ export class WorldFold {
   }
 
   /**
-   * The game's expedition clock and grid, read once for scopes, their expiry and routing: null for a game without
+   * The game's season calendar and grid, read once for scopes, their expiry and routing: null for a game without
    * expeditions or not yet created. A game with expedition rules but no game or settlement rules is refused.
    */
-  private expeditionRules(gameId: string): { epochSeconds: number; spacing: number; startMainAt: number } | null {
+  private expeditionRules(gameId: string): ExpeditionRules | null {
     return readExpeditionRules((model) => this.gameRows(model, gameId)[0]?.value, Number(gameId));
   }
 
@@ -598,6 +597,7 @@ export class WorldFold {
     previous: StoredModelRow | undefined,
     current: StoredModelRow | null | undefined,
   ): void {
+    if (this.scopeIndexes.size === 0) return;
     if (!isScopedGameSyncModel(model, true)) return;
     if (previous) this.removeFromScopeIndex(model, entityId, previous);
     if (current) this.addToScopeIndex(model, entityId, current);

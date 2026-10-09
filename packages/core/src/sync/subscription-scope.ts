@@ -1,4 +1,10 @@
-import { absoluteEpoch, expeditionRealmSite, isCurrentExpeditionArmy, isRealmCategory } from "../utils/expeditions";
+import {
+  expeditionRealmSite,
+  isCurrentExpeditionArmy,
+  isRealmCategory,
+  seasonDay,
+  type ExpeditionRules,
+} from "../utils/expeditions";
 import { hasSingleTilePosition } from "../client/native-occupancy";
 import { gameSyncRegion, syncScalar, type GameSyncScope } from "./model-manifest";
 
@@ -13,7 +19,7 @@ export type ScopeRowReader = (
 export function deriveGameSyncScope(
   actor: string | undefined,
   timestamp: number,
-  expedition: { epochSeconds: number; spacing: number; startMainAt: number } | null,
+  expedition: ExpeditionRules | null,
   read: ScopeRowReader,
   visit?: string,
 ): GameSyncScope {
@@ -31,7 +37,7 @@ export function deriveGameSyncScope(
   const scope: GameSyncScope = { actor, ...(visit === undefined ? {} : { visit }) };
   if (!expedition) return scope;
   const { spacing } = expedition;
-  const currentAbsoluteEpoch = timestamp < expedition.startMainAt ? -1 : absoluteEpoch(expedition, timestamp);
+  const today = seasonDay(expedition, timestamp) ?? -1;
   const actingOwners = resolveOwners(actor, spacing, read);
   const owners = new Set([...actingOwners, ...resolveOwners(visit, spacing, read)]);
   const homes = read("Structure", spacing, [...owners].map(scopeLookup.structuresOf)).filter(({ value }) =>
@@ -55,7 +61,7 @@ export function deriveGameSyncScope(
   });
   // With no current army, morning muster starts on the surface, at the site the contract raises the realm on today.
   const actingArmies = armies.filter(({ value }) => actingRealms.has(syncScalar(value.owner)));
-  if (currentAbsoluteEpoch >= 0 && actingArmies.length === 0)
+  if (today >= 0 && actingArmies.length === 0)
     for (const { value } of actingHomes) {
       const site = expeditionRealmSite(
         expedition,
@@ -77,7 +83,7 @@ export function deriveGameSyncScope(
       entities.add(syncScalar(value.entity_id));
   }
   scope.expedition = {
-    absoluteEpoch: currentAbsoluteEpoch,
+    day: today,
     spacing,
     owners,
     realms,

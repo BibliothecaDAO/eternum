@@ -1,7 +1,7 @@
 #[starknet::contract]
 pub mod ResourcesLogic {
     use starknet::ContractAddress;
-    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
+    use starknet::storage::StoragePointerReadAccess;
     use crate::arrivals::{ArrivalKey, OffloadArrival, has_arrived};
     use crate::events::RowSet;
     use crate::logic::arrivals::ArrivalState;
@@ -9,7 +9,6 @@ pub mod ResourcesLogic {
     use crate::logic::release::ReleaseState;
     use crate::logic::resources::ResourceState;
     use crate::ownership::{Story, StoryEvent};
-    use crate::relics::{IRelicMapDispatcherTrait, IRelicMapLibraryDispatcher};
     use crate::resources::ResourceKey;
     use crate::troops::ExplorerKey;
 
@@ -50,74 +49,6 @@ pub mod ResourcesLogic {
         StoryEvent: StoryEvent,
     }
     #[abi(embed_v0)]
-    impl RealmSupport of crate::production::IRealmSupport<ContractState> {
-        fn realm_support(
-            self: @ContractState, key: crate::production::RealmSupportKey,
-        ) -> Option<crate::production::RealmSupport> {
-            crate::logic::production::realm_support(key)
-        }
-        fn raise_realm_support(
-            ref self: ContractState, key: ResourceKey, level: u8, context: crate::commands::ActionContext,
-        ) {
-            let context = crate::commands::load_context(key.game_id, context);
-            assert!(level >= 1 && level <= crate::rules::ATTRIBUTE_CAP, "invalid Support level");
-            let epoch_seconds = context.rules.unbox().epoch_seconds;
-            let epoch = crate::expeditions::absolute_epoch(epoch_seconds, context.timestamp);
-            let storage_key = (key.game_id, key.entity_id, epoch);
-            let previous = crate::state::read().production.realm_support.read(storage_key);
-            if level <= 1 || level <= previous {
-                return;
-            }
-            self
-                .resources
-                .settle_production(
-                    key,
-                    context.timestamp.try_into().unwrap(),
-                    crate::commands::resource_context(context).production_start,
-                );
-            crate::state::write().production.realm_support.write(storage_key, level);
-            self
-                .emit(
-                    RowSet {
-                        version: 1,
-                        model: 'RealmSupport',
-                        keys: array![key.game_id.into(), key.entity_id.into(), epoch.into()].span(),
-                        values: array![level.into()].span(),
-                    },
-                );
-        }
-    }
-    #[abi(embed_v0)]
-    impl LordsCommitment of crate::relics::ILordsCommitment<ContractState> {
-        fn initialize_lords_budget(ref self: ContractState, game_id: u32) {
-            crate::logic::preset_record::for_game(game_id).chest_rules.read().expect('missing chest rules');
-            assert!(
-                crate::state::read().relics.lords_committed.read(game_id).is_none(), "LORDS budget already initialized",
-            );
-            self.resources.write_lords_budget(game_id, 0);
-        }
-        fn commit_lords(
-            ref self: ContractState, game_id: u32, quality: u8, context: crate::commands::ActionContext,
-        ) -> bool {
-            let context = crate::commands::load_context(game_id, context);
-            let game = context.game.unbox();
-            crate::game::assert_playing(game, context.timestamp);
-            let rules = crate::logic::preset_record::for_game(game_id).chest_rules.read().expect('missing chest rules');
-            let season_day = crate::expeditions::season_day(
-                game.start_main_at, context.rules.unbox().epoch_seconds, context.timestamp,
-            );
-            let allowance = crate::relics::lords_allowance(rules, season_day);
-            let amount = crate::relics::lords_amount(rules.lords_amounts, quality);
-            let committed = crate::state::read().relics.lords_committed.read(game_id).expect('missing LORDS budget');
-            assert!(committed <= allowance, "LORDS budget exceeds allowance");
-            if amount > allowance - committed {
-                return false;
-            }
-            self.resources.write_lords_budget(game_id, committed + amount);
-            true
-        }
-    }
-    #[abi(embed_v0)]
     impl SiteRewards of crate::expeditions::ISiteRewards<ContractState> {
         fn pay_expedition_site(
             ref self: ContractState,
@@ -129,11 +60,12 @@ pub mod ResourcesLogic {
         ) -> ((), crate::ownership::StoryCursor) {
             let context = crate::commands::load_context(key.game_id, context);
             let site = crate::logic::expeditions::clear_site(key);
-            let reward = crate::expeditions::site_reward(site);
-            if site.kind == crate::expeditions::SiteKind::FallenRealm {
-                IRelicMapLibraryDispatcher { class_hash: self.release.classes(key.game_id).map.read() }
-                    .close_site_chest(key);
-            }
+            let category = crate::logic::structures::structure(key).expect('missing site').base.category;
+            let reward = if category == crate::taxonomy::RUIN_CATEGORY {
+                Some(crate::logic::lords_budget::pay(key, context))
+            } else {
+                crate::expeditions::site_reward(category, site)
+            };
             let home = ResourceKey { game_id: key.game_id, entity_id: home_id };
             if let Some(reward) = reward {
                 self
@@ -150,8 +82,7 @@ pub mod ResourcesLogic {
                     class_hash: self.release.classes(key.game_id).relics.read(),
                 },
                 explorer,
-                crate::progression::XpAward::Clear,
-                crate::commands::action_context(context),
+                crate::progression::XpAward::Clear(site.initial_guard_count),
             );
             let actor = crate::logic::structures::structure(home).expect('missing home structure').owner;
             crate::logic::stories::emit_entity_story(
@@ -162,7 +93,7 @@ pub mod ResourcesLogic {
                         structure_id: home_id,
                         explorer_id: explorer.explorer_id,
                         site_id: key.entity_id,
-                        kind: site.kind,
+                        category,
                         reward,
                     },
                 ),
@@ -218,7 +149,7 @@ pub mod ResourcesLogic {
             let game_context = crate::commands::load_context(key.game_id, game_context);
 
             self.resources.initialize(key, capacity);
-            if category == 8 {
+            if category == crate::taxonomy::BITCOIN_MINE_CATEGORY {
                 crate::bitcoin::IBitcoinFundingDispatcherTrait::register_bitcoin_structure(
                     crate::bitcoin::IBitcoinFundingLibraryDispatcher {
                         class_hash: self.release.classes(key.game_id).prizes.read(),
@@ -294,6 +225,11 @@ pub mod ResourcesLogic {
                     timestamp.try_into().unwrap(),
                     game_context.production_start,
                 );
+        }
+        fn settle_production(
+            ref self: ContractState, key: ResourceKey, timestamp: u64, game_context: crate::commands::ResourceContext,
+        ) {
+            self.resources.settle_production(key, timestamp.try_into().unwrap(), game_context.production_start);
         }
         fn change_structure_capacity(
             ref self: ContractState,
@@ -561,6 +497,16 @@ pub mod ResourcesLogic {
         }
     }
     // A board's buildings produce for ever from nothing, so its troops are paid for when they are raised.
+    // Each Rations pick cuts the wheat a deployed troop costs; the cut is per troop, the recipe per `per_troops`.
+    fn ration_cut(key: ResourceKey, per_troops: u128) -> u128 {
+        let board = crate::logic::preset_record::for_game(key.game_id).board_terms.read().unwrap();
+        let rations: u128 = crate::research::picks(
+            crate::logic::research::learned(key), crate::research::ROW_BARRACKS, crate::research::CHOICE_RATIONS,
+        )
+            .into();
+        rations * board.ration_step * per_troops / crate::rules::RESOURCE_PRECISION
+    }
+
     fn produces_without_inputs(game_id: u32) -> bool {
         crate::logic::preset_record::for_game(game_id).board_terms.read().is_some()
     }
@@ -577,11 +523,17 @@ pub mod ResourcesLogic {
         ) {
             let recipe = self.production.recipe(crate::production::RecipeKey { game_id: key.game_id, resource_type });
             let per_troops: u128 = recipe.simple_output.into();
+            let ration_cut = ration_cut(key, per_troops);
             let now: u32 = timestamp.try_into().unwrap();
             for input in recipe.simple_inputs {
                 let unit_weight = crate::logic::resources::rule(key.game_id, *input.resource_type).unit_weight;
+                let amount = if *input.resource_type == crate::resources::WHEAT {
+                    *input.amount - core::cmp::min(*input.amount, ration_cut)
+                } else {
+                    *input.amount
+                };
                 // A realm never underpays a fraction of a recipe.
-                let cost = (*input.amount * troops + per_troops - 1) / per_troops;
+                let cost = (amount * troops + per_troops - 1) / per_troops;
                 let mut stock = self
                     .resources
                     .load_settled(key, *input.resource_type, unit_weight, now, game_context.production_start);
@@ -601,7 +553,7 @@ pub mod ResourcesLogic {
             self: @ContractState, key: ResourceKey, timestamp: u64, game_context: crate::commands::ExecutionContext,
         ) {
             let structure = crate::logic::structures::structure(key).expect('missing destination structure');
-            if structure.base.category != crate::ownership::VILLAGE_CATEGORY {
+            if structure.base.category != crate::taxonomy::VILLAGE_CATEGORY {
                 return;
             }
             let rules = game_context.rules.unbox();

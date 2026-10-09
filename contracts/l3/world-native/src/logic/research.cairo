@@ -1,5 +1,5 @@
 use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
-use crate::research::{BuildingTierRule, NODE_COUNT, RealmKnowledge, ResearchEffect, ResearchNode, node_bit};
+use crate::research::{RealmKnowledge, ResearchPrice};
 use crate::resources::ResourceKey;
 
 pub fn knowledge(key: ResourceKey) -> Option<RealmKnowledge> {
@@ -12,6 +12,11 @@ pub fn knowledge(key: ResourceKey) -> Option<RealmKnowledge> {
 
 pub fn require(key: ResourceKey) -> RealmKnowledge {
     knowledge(key).expect('missing realm knowledge')
+}
+
+// A realm without a board has nothing to research, and nothing it learns changes its buildings or armies.
+pub fn learned(key: ResourceKey) -> u64 {
+    knowledge(key).map(|value| value.learned).unwrap_or(0)
 }
 
 pub fn write(key: ResourceKey, value: RealmKnowledge) {
@@ -27,42 +32,6 @@ pub fn write(key: ResourceKey, value: RealmKnowledge) {
     crate::logic::structures::StructureState::emit(event);
 }
 
-pub fn node(game_id: u32, id: u8) -> ResearchNode {
-    assert!(id < NODE_COUNT, "invalid research node");
-    crate::logic::preset_record::for_game(game_id).research_nodes.read(id).expect('missing research node')
-}
-
-pub fn building_tier(key: ResourceKey, category: u8) -> u8 {
-    let learned = require(key).learned;
-    let mut tier = 1;
-    for id in 0..NODE_COUNT {
-        let rule = node(key.game_id, id);
-        if learned & node_bit(id) != 0 {
-            if let ResearchEffect::BuildingTier((target, unlocked)) = rule.effect {
-                if target == category {
-                    tier = core::cmp::max(tier, unlocked);
-                }
-            }
-        }
-    }
-    tier
-}
-
-pub fn has_effect(key: ResourceKey, effect: ResearchEffect) -> bool {
-    let learned = require(key).learned;
-    for id in 0..NODE_COUNT {
-        let rule = node(key.game_id, id);
-        if rule.effect == effect {
-            return learned & node_bit(id) != 0;
-        }
-    }
-    panic!("missing research effect")
-}
-
-pub fn tier_rule(game_id: u32, category: u8, tier: u8) -> BuildingTierRule {
-    assert!(tier == 2 || tier == 3, "tier rule requires II or III");
-    crate::logic::preset_record::for_game(game_id)
-        .building_tiers
-        .read((category, tier))
-        .expect('missing building tier rule')
+pub fn price(game_id: u32, row: u8, tier: u8) -> ResearchPrice {
+    crate::logic::preset_record::for_game(game_id).research_prices.read((row, tier)).expect('missing research price')
 }

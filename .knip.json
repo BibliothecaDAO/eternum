@@ -188,6 +188,12 @@
         "deployer/clean/registrar/register-preset.ts",
         "utils/utils.ts"
       ]
+    },
+    "apps/status-monitor": {
+      "entry": [
+        "src/worker.ts",
+        "../status/functions/status.json.ts"
+      ]
     }
   },
   "ignoreIssues": {

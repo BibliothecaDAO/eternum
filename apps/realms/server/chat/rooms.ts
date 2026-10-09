@@ -1,14 +1,18 @@
+import { BLITZ_SLOT_NAME_PATTERN } from "@realms-world/identity";
 import { fetchHeraldGameDirectory } from "@bibliothecadao/eternum/game-client";
 import { GLOBAL_CHAT_CHANNEL_ID } from "@bibliothecadao/types";
 
-/** A chat room: the world room everyone shares, or one Blitz game on one shard, named by chain and game. */
-type ChatRoomId = typeof GLOBAL_CHAT_CHANNEL_ID | `game:${string}:${number}`;
+/** Global chat, a shard's Blitz game, or the lobby of an environment's launch slot. */
+export type ChatRoomId = typeof GLOBAL_CHAT_CHANNEL_ID | `game:${string}:${number}` | `slot:${string}`;
 
 const GAME_ROOM = /^game:(0x[0-9a-f]{1,64}):([1-9][0-9]{0,9})$/;
 
 export const parseChatRoom = (value: unknown): ChatRoomId | null => {
   if (value === GLOBAL_CHAT_CHANNEL_ID) return GLOBAL_CHAT_CHANNEL_ID;
-  return typeof value === "string" && GAME_ROOM.test(value) ? (value as ChatRoomId) : null;
+  return typeof value === "string" &&
+    (GAME_ROOM.test(value) || (value.startsWith("slot:") && BLITZ_SLOT_NAME_PATTERN.test(value.slice(5))))
+    ? (value as ChatRoomId)
+    : null;
 };
 
 const gameRoomOf = (chainId: string, gameId: number): ChatRoomId => `game:${chainId}:${gameId}`;

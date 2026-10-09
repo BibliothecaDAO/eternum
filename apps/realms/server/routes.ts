@@ -9,6 +9,9 @@ import { json } from "./http";
 import { consumeSignInBudget } from "./sign-in-budget";
 import { handleNotificationPreferences } from "./notification-preferences";
 import { handleProfile, handleProfiles } from "./profiles";
+import { handleRatings } from "./ratings";
+import { handleRatingTop } from "./rating-top";
+import { handleAccountsHealth, handleChatHealth } from "./health";
 import { handlePushSubscriptions } from "./push-notifications";
 
 /** What the Worker reaches outside its bindings: the colo cache and the shards' Heralds. */
@@ -32,6 +35,7 @@ export const routeIdentityRequest = async (
   if (requestsCodeAccess && !(await withinSignInBudget(env, request, sendsCode))) {
     return json({ error: sendsCode ? "too_many_codes" : "too_many_attempts" }, 429);
   }
+  if (requestsCodeAccess && sendsCode) return sendCodeWithExpiry(request, auth);
   if (pathname.startsWith("/api/auth/")) return auth.handler(request);
   if (requiresSameOrigin(request, pathname) && request.headers.get("origin") !== new URL(env.BASE_URL).origin) {
     return json({ error: "invalid_origin" }, 403);
@@ -48,6 +52,12 @@ export const routeIdentityRequest = async (
     if (!(await isOperator(env, request))) return json({ error: "unauthorized" }, 401);
     return handleBotDeviceApproval(request, { guardian: env.GUARDIAN, accountClassHash: env.ACCOUNT_CLASS_HASH });
   }
+  if ((pathname === "/api/ratings" || pathname === "/api/ratings/top") && request.method === "GET") {
+    if (!(await withinPublicBudget(env, "ratings", request))) return json({ error: "too_many_requests" }, 429);
+    return pathname === "/api/ratings/top"
+      ? handleRatingTop(env, new URL(request.url))
+      : handleRatings(env, new URL(request.url));
+  }
   if (pathname === "/api/profiles" && request.method === "GET") {
     if (!(await withinPublicBudget(env, "profiles", request))) return json({ error: "too_many_requests" }, 429);
     return handleProfiles(env.DB, new URL(request.url).searchParams.get("accounts"));
@@ -56,6 +66,8 @@ export const routeIdentityRequest = async (
     if (!(await withinPublicBudget(env, "profiles", request))) return json({ error: "too_many_requests" }, 429);
     return handleProfile(env.DB, pathname.slice("/api/profiles/".length));
   }
+  if (pathname === "/api/health/accounts" && request.method === "GET") return handleAccountsHealth(env.DB);
+  if (pathname === "/api/chat/health" && request.method === "GET") return handleChatHealth(env);
   if (pathname.startsWith("/api/chat/")) return routeChat(request, env, auth, pathname);
   if (pathname === "/api/notifications/preferences") return handleNotificationPreferences(request, auth, env.DB);
   if (pathname.startsWith("/api/notifications/push/")) return handlePushSubscriptions(request, auth, env);
@@ -117,5 +129,26 @@ const requiresSameOrigin = (request: Request, pathname: string): boolean => {
   return (
     !["GET", "HEAD", "OPTIONS"].includes(request.method) ||
     request.headers.get("upgrade")?.toLowerCase() === "websocket"
+  );
+};
+
+/** Read the verification the auth plugin wrote; mail delivery time must not extend the code's life. */
+const sendCodeWithExpiry = async (request: Request, auth: IdentityAuth): Promise<Response> => {
+  const body = (await request
+    .clone()
+    .json()
+    .catch(() => ({}))) as { email?: unknown; type?: unknown };
+  const response = await auth.handler(request);
+  if (!response.ok) return response;
+  if (typeof body.email !== "string" || body.type !== "sign-in") return json({ error: "code_expiry_unavailable" }, 503);
+  const context = await auth.$context;
+  const verification = await context.internalAdapter.findVerificationValue(`sign-in-otp-${body.email.toLowerCase()}`);
+  if (!verification) return json({ error: "code_expiry_unavailable" }, 503);
+  const headers = new Headers(response.headers);
+  headers.set("cache-control", "no-store");
+  headers.delete("content-length");
+  return Response.json(
+    { ...((await response.json()) as Record<string, unknown>), expires_at: verification.expiresAt.getTime() / 1000 },
+    { status: response.status, headers },
   );
 };

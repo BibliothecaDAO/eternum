@@ -100,18 +100,17 @@ pub impl StaminaImpl of StaminaTrait {
         }
     }
 
+    /// Adds stamina up to `maximum`, the army's own: nothing fills past it.
     fn add(
         ref self: Stamina,
         ref troop_boosts: TroopBoosts,
-        troop_type: TroopType,
-        troop_tier: TroopTier,
+        maximum: u64,
         troop_stamina_config: TroopStaminaConfig,
         amount: u64,
         current_tick: u64,
     ) {
-        // increase stamina, limited to max of troop type stamina
-        self.refill(ref troop_boosts, troop_type, troop_tier, troop_stamina_config, current_tick);
-        self.amount = core::cmp::min(self.amount + amount, Self::max(troop_type, troop_tier, troop_stamina_config));
+        self.refill_to_max(ref troop_boosts, maximum, troop_stamina_config, current_tick);
+        self.amount = core::cmp::min(self.amount + amount, maximum);
     }
 
 
@@ -188,14 +187,13 @@ pub impl StaminaSourceImpl of StaminaSourceTrait {
     fn add(
         ref self: StaminaSource,
         ref troop_boosts: TroopBoosts,
-        troop_type: TroopType,
-        troop_tier: TroopTier,
+        maximum: u64,
         troop_stamina_config: TroopStaminaConfig,
         amount: u64,
         current_tick: u64,
     ) {
         let mut bar = self.inline();
-        bar.add(ref troop_boosts, troop_type, troop_tier, troop_stamina_config, amount, current_tick);
+        bar.add(ref troop_boosts, maximum, troop_stamina_config, amount, current_tick);
         self = StaminaSource::Inline(bar);
     }
 }

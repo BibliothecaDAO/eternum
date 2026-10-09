@@ -86,7 +86,7 @@ type PresenceRemoveBroadcastMessage = {
 
 export type RealtimeServerMessage =
   | { type: "connected"; playerId: string; displayName?: string | null; channels: string[] }
-  | { type: "joined:zone"; zoneId: string }
+  | { type: "joined:zone"; zoneId: string; canWrite?: boolean }
   | { type: "left:zone"; zoneId: string }
   | WorldBroadcastMessage
   | DirectBroadcastMessage

@@ -35,31 +35,31 @@ export const getExplorerInfoFromTileOccupier = (
   occupierType: number,
 ): { troopType: TroopType; troopTier: TroopTier } | undefined => {
   switch (occupierType) {
-    case TileOccupier.ExplorerKnightT1Regular:
+    case TileOccupier.ExplorerKnightT1:
       return { troopType: "Knight" as TroopType, troopTier: "T1" as TroopTier };
 
-    case TileOccupier.ExplorerKnightT2Regular:
+    case TileOccupier.ExplorerKnightT2:
       return { troopType: "Knight" as TroopType, troopTier: "T2" as TroopTier };
 
-    case TileOccupier.ExplorerKnightT3Regular:
+    case TileOccupier.ExplorerKnightT3:
       return { troopType: "Knight" as TroopType, troopTier: "T3" as TroopTier };
 
-    case TileOccupier.ExplorerPaladinT1Regular:
+    case TileOccupier.ExplorerPaladinT1:
       return { troopType: "Paladin" as TroopType, troopTier: "T1" as TroopTier };
 
-    case TileOccupier.ExplorerPaladinT2Regular:
+    case TileOccupier.ExplorerPaladinT2:
       return { troopType: "Paladin" as TroopType, troopTier: "T2" as TroopTier };
 
-    case TileOccupier.ExplorerPaladinT3Regular:
+    case TileOccupier.ExplorerPaladinT3:
       return { troopType: "Paladin" as TroopType, troopTier: "T3" as TroopTier };
 
-    case TileOccupier.ExplorerCrossbowmanT1Regular:
+    case TileOccupier.ExplorerCrossbowmanT1:
       return { troopType: "Crossbowman" as TroopType, troopTier: "T1" as TroopTier };
 
-    case TileOccupier.ExplorerCrossbowmanT2Regular:
+    case TileOccupier.ExplorerCrossbowmanT2:
       return { troopType: "Crossbowman" as TroopType, troopTier: "T2" as TroopTier };
 
-    case TileOccupier.ExplorerCrossbowmanT3Regular:
+    case TileOccupier.ExplorerCrossbowmanT3:
       return { troopType: "Crossbowman" as TroopType, troopTier: "T3" as TroopTier };
 
     default:
@@ -147,6 +147,12 @@ export const getStructureInfoFromTileOccupier = (
       return { type: StructureType.Camp, stage: StructureProgress.STAGE_1, level: 1, hasWonder: false };
     case TileOccupier.BitcoinMine:
       return { type: StructureType.BitcoinMine, stage: StructureProgress.STAGE_1, level: 1, hasWonder: false };
+    case TileOccupier.Rift:
+      return { type: StructureType.Rift, stage: StructureProgress.STAGE_1, level: 1, hasWonder: false };
+    case TileOccupier.Ruin:
+      return { type: StructureType.Ruin, stage: StructureProgress.STAGE_1, level: 1, hasWonder: false };
+    case TileOccupier.Stragglers:
+      return { type: StructureType.Stragglers, stage: StructureProgress.STAGE_1, level: 1, hasWonder: false };
 
     default:
       return undefined;

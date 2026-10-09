@@ -119,6 +119,7 @@ export function createNativeTicketSubmission(baseUrl: string) {
   };
 
   const receive = (event: MessageEvent) => {
+    if (disposed) return;
     let message;
     try {
       message = JSON.parse(String(event.data));
@@ -176,17 +177,19 @@ export function createNativeTicketSubmission(baseUrl: string) {
 
   const connect = () => {
     if (channel) return;
-    channel = new WebSocketChannel({ nodeUrl: url.toString(), autoReconnect: true });
-    channel.on("open", () => {
-      if (connectedSocket === channel!.websocket) return;
-      connectedSocket = channel!.websocket;
+    const connection = new WebSocketChannel({ nodeUrl: url.toString(), autoReconnect: true });
+    channel = connection;
+    connection.on("open", () => {
+      if (disposed || channel !== connection) return;
+      if (connectedSocket === connection.websocket) return;
+      connectedSocket = connection.websocket;
       requests.clear();
       subscriptions.clear();
       // A restart can discard unexecuted assignments. Retry the signed intent,
       // allowing the node to recover its recorded outcome or assign a new order.
       for (const pending of actions.values()) subscribe(pending);
     });
-    channel.on("message", receive);
+    connection.on("message", receive);
   };
 
   const submit = (signed: SignedNativeIntent): Promise<RecordedTransaction> => {
@@ -219,10 +222,12 @@ export function createNativeTicketSubmission(baseUrl: string) {
     return promise;
   };
   submit.dispose = () => {
+    if (disposed) return;
     disposed = true;
     for (const pending of actions.values()) finish(pending, new Error("Action transport is disposed"));
-    channel?.disconnect();
+    const connection = channel;
     channel = undefined;
+    connection?.disconnect();
   };
   return submit;
 }

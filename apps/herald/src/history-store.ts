@@ -12,6 +12,7 @@ import type {
   HeraldGameSnapshot,
   HeraldHistoryPage,
   HeraldHistoryEvent,
+  HeraldFrontierDayRanks,
   HeraldTransactionCount,
 } from "@bibliothecadao/eternum/game-sync";
 
@@ -71,25 +72,32 @@ const jsonRecord = (value: unknown): Record<string, unknown> => {
   return converted as Record<string, unknown>;
 };
 
-const storedHistoryEvent = (event: DecodedWorldEvent, codec: HistoryCodec): StoredHistoryEvent | null => {
+/** The same receipt shape feeds durable history and boundary read models during replay. */
+export const historyEventOf = (event: DecodedWorldEvent): HeraldHistoryEvent | null => {
   if (event.kind !== "event" || event.position.blockNumber === null) return null;
-  const value = jsonRecord({ ...event.key, ...event.value });
   const gameId = scalarString(event.key.game_id);
   if (!gameId) return null;
-  const participants = codec.participants?.(value);
-
   return {
     block_number: event.position.blockNumber,
-    entity_id: scalarString(value.entity_id),
     event_index: event.position.eventIndex,
     game_id: gameId,
     model: event.model.name,
-    owner: addressString(value.owner),
-    participants: participants?.owners ?? [],
-    entities: participants?.entities ?? [],
     transaction_hash: normalizeFelt(event.position.transactionHash),
     transaction_index: event.position.transactionIndex,
-    value,
+    value: jsonRecord({ ...event.key, ...event.value }),
+  };
+};
+
+const storedHistoryEvent = (event: DecodedWorldEvent, codec: HistoryCodec): StoredHistoryEvent | null => {
+  const stored = historyEventOf(event);
+  if (!stored) return null;
+  const participants = codec.participants?.(stored.value);
+  return {
+    ...stored,
+    entity_id: scalarString(stored.value.entity_id),
+    owner: addressString(stored.value.owner),
+    participants: participants?.owners ?? [],
+    entities: participants?.entities ?? [],
   };
 };
 
@@ -149,6 +157,17 @@ export class HistoryStore {
         PRIMARY KEY (chain, world_address)
       );
 
+      ALTER TABLE herald_history_progress ADD COLUMN IF NOT EXISTS frontier_ranks_through_block BIGINT;
+      CREATE TABLE IF NOT EXISTS herald_frontier_day_ranks (
+        chain TEXT NOT NULL,
+        world_address TEXT NOT NULL,
+        game_id NUMERIC NOT NULL,
+        day_index INTEGER NOT NULL,
+        confirmed_block BIGINT NOT NULL,
+        ranks JSONB NOT NULL,
+        PRIMARY KEY (chain, world_address, game_id, day_index)
+      );
+
       CREATE TABLE IF NOT EXISTS herald_game_transactions (
         chain TEXT NOT NULL,
         world_address TEXT NOT NULL,
@@ -180,19 +199,27 @@ export class HistoryStore {
     await this.restorePointsLeaderboard();
   }
 
-  public async appendEvents(events: readonly DecodedWorldEvent[], completeThroughBlock?: number): Promise<void> {
+  public async appendEvents(
+    events: readonly DecodedWorldEvent[],
+    completeThroughBlock?: number,
+    frontierDays?: readonly HeraldFrontierDayRanks[],
+  ): Promise<void> {
     const rows = events.flatMap((event) => {
       const stored = storedHistoryEvent(event, this.codec);
       return stored ? [stored] : [];
     });
-    if (rows.length === 0 && completeThroughBlock === undefined) return;
+    if (rows.length === 0 && completeThroughBlock === undefined && !frontierDays?.length) return;
 
     const client = await this.pool.connect();
     let registrations: Array<{ gameId: string; points: PointsRegistration }> = [];
     try {
       await client.query("BEGIN");
       registrations = await this.insertNewHistory(client, rows);
-      if (completeThroughBlock !== undefined) await this.advanceHistoryProgress(client, completeThroughBlock);
+      await this.insertFrontierDays(client, frontierDays ?? []);
+      if (completeThroughBlock !== undefined) {
+        await this.advanceHistoryProgress(client, completeThroughBlock);
+        if (frontierDays !== undefined) await this.advanceFrontierRanksProgress(client, completeThroughBlock);
+      }
       await client.query("COMMIT");
       for (const registration of registrations) this.points.accept(registration.gameId, registration.points);
     } catch (error) {
@@ -201,6 +228,24 @@ export class HistoryStore {
     } finally {
       client.release();
     }
+  }
+
+  private async insertFrontierDays(client: PoolClient, days: readonly HeraldFrontierDayRanks[]) {
+    for (const day of days) {
+      await client.query(
+        `INSERT INTO herald_frontier_day_ranks (chain, world_address, game_id, day_index, confirmed_block, ranks)
+         VALUES ($1, $2, $3, $4, $5, $6::jsonb) ON CONFLICT DO NOTHING`,
+        [this.chain, this.worldAddress, day.game_id, day.day_index, day.confirmed_block, JSON.stringify(day)],
+      );
+    }
+  }
+
+  private async advanceFrontierRanksProgress(client: PoolClient, block: number) {
+    await client.query(
+      `UPDATE herald_history_progress SET frontier_ranks_through_block = GREATEST(frontier_ranks_through_block, $3)
+       WHERE chain = $1 AND world_address = $2`,
+      [this.chain, this.worldAddress, block],
+    );
   }
 
   private async insertNewHistory(client: PoolClient, rows: StoredHistoryEvent[]) {
@@ -307,15 +352,30 @@ export class HistoryStore {
     return result.rows[0]?.snapshot ?? null;
   }
 
-  public async historyProgress(): Promise<number | null> {
+  public async historyProgress(requireFrontierRanks = false): Promise<number | null> {
     const result = await this.pool.query<{ complete_through_block: string }>(
-      `SELECT complete_through_block
+      `SELECT ${requireFrontierRanks ? "frontier_ranks_through_block" : "complete_through_block"} AS complete_through_block
        FROM herald_history_progress
        WHERE chain = $1 AND world_address = $2`,
       [this.chain, this.worldAddress],
     );
     const value = result.rows[0]?.complete_through_block;
-    return value === undefined ? null : Number(value);
+    return value == null ? null : Number(value);
+  }
+
+  public async frontierDayRanks(
+    gameId: string,
+    dayIndex: number,
+    confirmedBlock: number,
+  ): Promise<HeraldFrontierDayRanks | null> {
+    const complete = await this.historyProgress(true);
+    if (complete === null || complete < confirmedBlock) throw new Error("Frontier closing ranks are incomplete");
+    const result = await this.pool.query<{ ranks: HeraldFrontierDayRanks }>(
+      `SELECT ranks FROM herald_frontier_day_ranks WHERE chain = $1 AND world_address = $2
+       AND game_id = $3 AND day_index = $4 AND confirmed_block < $5`,
+      [this.chain, this.worldAddress, gameId, dayIndex, confirmedBlock],
+    );
+    return result.rows[0]?.ranks ?? null;
   }
 
   /** Confirmed season rewards use the existing deduplicated receipt history, never current site rows. */
@@ -327,7 +387,7 @@ export class HistoryStore {
               model, transaction_hash, value
        FROM herald_history_events
        WHERE chain = $1 AND world_address = $2 AND game_id = $3 AND block_number <= $4
-         AND model = 'StoryEvent' AND value->'story' ?| ARRAY['SitePayout','ChestReward','ExplorationReward']
+         AND model = 'StoryEvent' AND value->'story' ?| ARRAY['SitePayout','ExplorationReward']
        ORDER BY block_number, transaction_index, event_index`,
       [this.chain, this.worldAddress, gameId, confirmedBlock],
     );

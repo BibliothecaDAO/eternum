@@ -81,8 +81,6 @@ export function storyNotificationCopy(
       return { title: "The walls are reinforced", body: "Fresh defenders have taken their posts." };
     case "GuardDeleteStory":
       return { title: "A guard post is clear", body: "Those troops are ready for new orders." };
-    case "ChestReward":
-      return { title: "A chest cracks open", body: "Your army's find is yours to keep." };
     case "RelicChestOpened":
       return { title: "A crate is open", body: "Your army has pulled relics from the fog." };
     default:
