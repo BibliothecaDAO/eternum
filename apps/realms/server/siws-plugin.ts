@@ -14,6 +14,7 @@ interface SiwsPluginOptions {
   verifySignature: VerifyWalletSignature;
   db: D1Database;
   checkCode(context: AuthContext, email: string, otp: string): Promise<unknown>;
+  notifyChange(realmsId: string): Promise<unknown>;
   sendNotice(email: string, address: string | null, id: string): Promise<void>;
 }
 

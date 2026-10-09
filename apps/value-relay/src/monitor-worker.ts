@@ -20,6 +20,7 @@ interface MonitorEnv {
   SHARD_GAMES_ADDRESS: string;
   SHARD_CHAIN_ID: string;
   IDENTITY: {
+    matchesLedgerLinkWrite(write: import("@realms-world/identity").LedgerAccountLinkWrite): Promise<boolean>;
     realmsIdForAccount(account: string): Promise<string | null>;
     wasReadyPayoutWallet(account: string, wallet: string, at: number): Promise<boolean>;
   };
@@ -164,6 +165,8 @@ const monitorPortsOf = (env: MonitorEnv, storage: DurableObjectStorage) => {
   });
   return {
     identity: {
+      matchesLedgerLinkWrite: (write: import("@realms-world/identity").LedgerAccountLinkWrite) =>
+        relayOperation("verify identity ledger link history", () => env.IDENTITY.matchesLedgerLinkWrite(write)),
       wasReadyPayoutWallet: (account: string, wallet: string, at: number) =>
         relayOperation("verify historical payout wallet", () => env.IDENTITY.wasReadyPayoutWallet(account, wallet, at)),
     },

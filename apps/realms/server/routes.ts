@@ -44,7 +44,7 @@ export const routeIdentityRequest = async (
     return json({ error: sendsCode ? "too_many_codes" : "too_many_attempts" }, 429);
   }
   if (requestsCodeAccess && sendsCode) return sendCodeWithExpiry(request, auth);
-  if (pathname === "/api/auth/get-session" && request.method === "GET") return accountSession(request, auth, env.DB);
+  if (pathname === "/api/auth/get-session" && request.method === "GET") return accountSession(request, auth, env);
   if (pathname.startsWith("/api/auth/")) return auth.handler(request);
   if (requiresSameOrigin(request, pathname) && request.headers.get("origin") !== new URL(env.BASE_URL).origin) {
     return json({ error: "invalid_origin" }, 403);
@@ -171,13 +171,16 @@ const sendCodeWithExpiry = async (request: Request, auth: IdentityAuth): Promise
 };
 
 /** The account page and the relay receive the same eligibility decision from the database. */
-const accountSession = async (request: Request, auth: IdentityAuth, db: D1Database): Promise<Response> => {
+const accountSession = async (request: Request, auth: IdentityAuth, env: IdentityEnv): Promise<Response> => {
   const response = await auth.handler(request);
   if (!response.ok) return response;
   const session = (await response.json()) as { user: { realmsId: string } } | null;
   if (!session) return responseWithSession(response, null);
-  const payoutWallet = await Effect.runPromise(lookupPayoutWallet(db, session.user.realmsId));
-  return responseWithSession(response, { ...session, user: { ...session.user, payoutWallet } });
+  const payoutWallet = await Effect.runPromise(lookupPayoutWallet(env.DB, session.user.realmsId));
+  const ledgerLink = await Promise.resolve()
+    .then(() => env.ACCOUNT_LINKS.status(session.user.realmsId))
+    .catch(() => ({ status: "linking" as const }));
+  return responseWithSession(response, { ...session, user: { ...session.user, payoutWallet, ledgerLink } });
 };
 const responseWithSession = (response: Response, session: unknown) => {
   const headers = new Headers(response.headers);

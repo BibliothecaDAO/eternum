@@ -109,6 +109,10 @@ beforeAll(async () => {
     CHAT_INBOX: {} as IdentityEnv["CHAT_INBOX"],
     DB: proxy.env.DB,
     GUARDIAN: createGuardian(GUARDIAN_KEY),
+    ACCOUNT_LINKS: {
+      changed: vi.fn(async () => undefined),
+      status: vi.fn(async () => ({ status: "linking" as const })),
+    },
     LAUNCH: { fetch: vi.fn(async () => Response.json({ chains: [] })) },
     DIRECTORY_RATE_LIMIT: { limit: async () => ({ success: true }) },
     PUBLIC_RATE_LIMIT: { limit: async () => ({ success: true }) },
@@ -171,6 +175,7 @@ const createBrowser = (parentDomainCookies: string[] = []) => {
     (await (await request("/api/auth/get-session")).json()) as {
       user: {
         payoutWallet: import("@realms-world/identity").PayoutWallet;
+        ledgerLink: import("@realms-world/identity").LedgerLinkStatus;
         walletLinkedAt: number | null;
         email: string;
         id: string;
@@ -1006,6 +1011,37 @@ describe("identity Worker", () => {
     expect((await proveWallet(other, second, "link")).status).toBe(200);
     expect(BigInt((await other.session())?.user.address ?? 0)).toBe(BigInt(second));
     expect((await proveWallet(holder, first, "link")).status).toBe(200);
+  });
+
+  it("notifies the relay immediately on every link change and exposes ledger confirmation separately from the hold", async () => {
+    const browser = createBrowser();
+    await signInWithCode(browser, "ledger-link@realms.test");
+    const address = createWallet();
+    const changed = vi.spyOn(env.ACCOUNT_LINKS, "changed");
+    const initial = changed.mock.calls.length;
+    expect((await proveWallet(browser, address, "link")).status).toBe(200);
+    const session = (await browser.session())!;
+    expect(changed.mock.calls.length).toBe(initial + 1);
+    expect(changed).toHaveBeenLastCalledWith(session.user.realmsId);
+    expect(session.user.ledgerLink).toEqual({ status: "linking" });
+    expect(session.user.payoutWallet?.status).toBe("on_hold");
+    vi.spyOn(env.ACCOUNT_LINKS, "status").mockResolvedValueOnce({
+      status: "confirmed",
+      ledger: { address: "0x10", chainId: "0x1" },
+      account: "0x20",
+      wallet: address,
+    });
+    expect((await browser.session())!.user.ledgerLink?.status).toBe("confirmed");
+    expect((await proveWallet(browser, createWallet(), "link")).status).toBe(200);
+    expect((await browser.request("/api/auth/siws/unlink", { body: { otp: await walletCode(browser) } })).status).toBe(
+      200,
+    );
+    expect(changed.mock.calls.length).toBe(initial + 3);
+    const paused = createBrowser();
+    await signInWithCode(paused, "paused-ledger-link@realms.test");
+    changed.mockRejectedValueOnce(new Error("relay paused"));
+    expect((await proveWallet(paused, createWallet(), "link")).status).toBe(200);
+    expect((await paused.session())!.user.ledgerLink?.status).toBe("linking");
   });
 
   it("requires a fresh six-digit code from the account email for every wallet mutation", async () => {

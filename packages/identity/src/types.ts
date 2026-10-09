@@ -4,6 +4,7 @@ export interface IdentityUser {
   /** The Realms account's on-chain id; notifications, profiles and gameplay accounts are keyed by it. */
   realmsId: string;
   payoutWallet?: PayoutWallet;
+  ledgerLink?: LedgerLinkStatus;
   walletLinkedAt?: number | null;
   address?: string | null;
   name: string;
@@ -34,3 +35,22 @@ export interface Session {
 }
 
 export type IdentityChainId = "SN_MAIN" | "SN_SEPOLIA";
+
+/** A current identity reconciliation target; null clears that side of the ledger's bijection. */
+export interface AccountLinkTarget {
+  key: string;
+  realmsId: string;
+  wallet: string | null;
+  account: string | null;
+  historyId: number;
+}
+export interface LedgerAccountLinkWrite {
+  transactionHash: string;
+  wallet: string;
+  account: string;
+  previousAccount: string;
+  previousWallet: string;
+}
+export type LedgerLinkStatus =
+  | { status: "linking" }
+  | { status: "confirmed"; ledger: { address: string; chainId: string }; wallet: string | null; account: string };

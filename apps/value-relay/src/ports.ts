@@ -1,5 +1,5 @@
 import { Data, Effect } from "effect";
-import type { PayoutWallet } from "@realms-world/identity";
+import type { LedgerAccountLinkWrite, PayoutWallet } from "@realms-world/identity";
 
 export class RelayFailure extends Data.TaggedError("RelayFailure")<{ operation: string }> {}
 export type RelayEffect<A> = Effect.Effect<A, RelayFailure>;
@@ -121,12 +121,20 @@ export interface RelayPorts {
   };
   realms: { ownerOf(realmId: string): RelayEffect<string> };
 }
+export interface AccountLinkChanged extends LedgerAccountLinkWrite {
+  id: string;
+}
 export interface MonitorPorts {
-  identity: Pick<RelayPorts["identity"], "wasReadyPayoutWallet">;
+  identity: Pick<RelayPorts["identity"], "wasReadyPayoutWallet"> & {
+    matchesLedgerLinkWrite(write: LedgerAccountLinkWrite): RelayEffect<boolean>;
+  };
   shard: Pick<RelayPorts["shard"], "withdrawal" | "result"> & {
     conservation(): RelayEffect<readonly ConservationBalance[]>;
   };
-  ledger: Pick<RelayPorts["ledger"], "paidClaims" | "postedResults"> & { pause(): RelayEffect<void> };
+  ledger: Pick<RelayPorts["ledger"], "paidClaims" | "postedResults"> & {
+    pause(): RelayEffect<void>;
+    accountLinks(after: string | null, fromBlock?: number): RelayEffect<LedgerPage<AccountLinkChanged>>;
+  };
 }
 
 export interface ConservationBalance {

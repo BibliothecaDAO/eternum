@@ -22,9 +22,10 @@ it("keeps checked-through block and page continuation across ticks without rerea
     ),
   );
   const ports: MonitorPorts = {
-    identity: { wasReadyPayoutWallet: () => Effect.succeed(true) },
+    identity: { matchesLedgerLinkWrite: () => Effect.succeed(true), wasReadyPayoutWallet: () => Effect.succeed(true) },
     shard: { conservation: () => Effect.succeed([]), withdrawal, result: () => Effect.succeed(null) },
     ledger: {
+      accountLinks: () => Effect.succeed({ rows: [], head: 1000, next: null }),
       paidClaims,
       postedResults: () => Effect.succeed({ rows: [], next: null, head: 10 }),
       pause: () => Effect.void,
@@ -65,9 +66,10 @@ it("an exact row reset skips only that claim and still faults on the next unchec
     }),
   );
   const ports: MonitorPorts = {
-    identity: { wasReadyPayoutWallet: () => Effect.succeed(false) },
+    identity: { matchesLedgerLinkWrite: () => Effect.succeed(true), wasReadyPayoutWallet: () => Effect.succeed(false) },
     shard: { conservation: () => Effect.succeed([]), withdrawal: checked, result: () => Effect.succeed(null) },
     ledger: {
+      accountLinks: () => Effect.succeed({ rows: [], head: 1000, next: null }),
       paidClaims: () => Effect.succeed({ rows, head: 10, next: null }),
       postedResults: () => Effect.succeed({ rows: [], head: 10, next: null }),
       pause: () => Effect.void,

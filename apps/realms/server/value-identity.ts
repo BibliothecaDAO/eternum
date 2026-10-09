@@ -1,3 +1,5 @@
+import { accountLinkTargets, accountLinkTarget, recordLedgerLinkWrite, matchesLedgerLinkWrite } from "./account-links";
+import type { AccountLinkTarget, LedgerAccountLinkWrite } from "@realms-world/identity";
 import { createIdentityAuth } from "./auth";
 import { WorkerEntrypoint } from "cloudflare:workers";
 import { normalizeStarknetAddress } from "@realms-world/identity";
@@ -11,6 +13,21 @@ import { lookupPayoutWallet, readLinkedWallet, wasReadyPayoutWallet } from "./pa
 export class ValueIdentity extends WorkerEntrypoint<IdentityEnv> {
   override fetch() {
     return new Response(null, { status: 404 });
+  }
+  private async linkPins() {
+    return { accountClassHash: this.env.ACCOUNT_CLASS_HASH, guardianPublicKey: await this.env.GUARDIAN.publicKey() };
+  }
+  async accountLinkTargets(after: string | null) {
+    return accountLinkTargets(this.env.DB, await this.linkPins(), after);
+  }
+  async accountLinkTarget(key: string) {
+    return accountLinkTarget(this.env.DB, await this.linkPins(), key);
+  }
+  async recordLedgerLinkWrite(target: AccountLinkTarget, write: LedgerAccountLinkWrite) {
+    return recordLedgerLinkWrite(this.env.DB, await this.linkPins(), target, write);
+  }
+  async matchesLedgerLinkWrite(write: LedgerAccountLinkWrite) {
+    return matchesLedgerLinkWrite(this.env.DB, await this.linkPins(), write);
   }
   payoutWallet(realmsId: string) {
     return Effect.runPromise(lookupPayoutWallet(this.env.DB, realmsId));

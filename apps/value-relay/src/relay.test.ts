@@ -83,7 +83,11 @@ const fixture = () => {
       progress = { ...progress, halted: reason };
     },
   };
-  const ports: RelayPorts & { shard: RelayPorts["shard"] & Pick<MonitorPorts["shard"], "conservation"> } = {
+  const ports: RelayPorts & {
+    identity: MonitorPorts["identity"] & RelayPorts["identity"];
+    ledger: RelayPorts["ledger"] & Pick<MonitorPorts["ledger"], "accountLinks">;
+    shard: RelayPorts["shard"] & Pick<MonitorPorts["shard"], "conservation">;
+  } = {
     shard: {
       conservation: () => Effect.succeed([]),
       confirmedHead: () => Effect.succeed(0),
@@ -94,6 +98,7 @@ const fixture = () => {
       grantLabor: vi.fn(() => Effect.succeed({ gameId: 1, account: "0x3", home: "9", amount: "1000000000000" })),
     },
     identity: {
+      matchesLedgerLinkWrite: () => Effect.succeed(true),
       wasReadyPayoutWallet: (_account: string, wallet: string, _at: number) =>
         Effect.succeed(BigInt(wallet) === 0x123n),
       payoutWallet: () => Effect.succeed({ status: "ready", address: "0x123" }),
@@ -101,6 +106,7 @@ const fixture = () => {
       linkedWallet: () => Effect.succeed("0x123"),
     },
     ledger: {
+      accountLinks: () => Effect.succeed({ rows: [], head: 1000, next: null }),
       payment: () => Effect.succeed(null),
       report: vi.fn(() => Effect.void),
       pay: vi.fn(() => Effect.void),

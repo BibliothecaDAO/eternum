@@ -17,7 +17,7 @@ interface AuditCursor {
 }
 interface FaultRow {
   row: string;
-  stream?: "paidClaims" | "postedResults";
+  stream?: "paidClaims" | "postedResults" | "accountLinks";
   cursor?: AuditCursor;
   offset?: number;
 }
@@ -26,7 +26,7 @@ export interface MonitorProgress {
   skippedConservation?: string;
   halted: string | null;
   unverifiedTicks?: number;
-  cursors?: Partial<Record<"paidClaims" | "postedResults", AuditCursor>>;
+  cursors?: Partial<Record<"paidClaims" | "postedResults" | "accountLinks", AuditCursor>>;
 }
 interface MonitorStore {
   load(): Promise<MonitorProgress>;
@@ -42,7 +42,12 @@ export const runMonitor = (ports: MonitorPorts, store: MonitorStore) =>
       return progress;
     }
     yield* relayOperation("start exact row audit", () => store.save({ ...progress, fault: null }));
-    const checks = [checkConservation(ports, store), checkPaidClaims(ports, store), checkPostedResults(ports, store)];
+    const checks = [
+      checkAccountLinks(ports, store),
+      checkConservation(ports, store),
+      checkPaidClaims(ports, store),
+      checkPostedResults(ports, store),
+    ];
     let unavailable: RelayFailure | null = null;
     for (const check of checks) {
       const observation = yield* Effect.result(check);
@@ -65,6 +70,18 @@ export const runMonitor = (ports: MonitorPorts, store: MonitorStore) =>
     }
     return yield* relayOperation("read checked monitor progress", () => store.load());
   });
+
+const checkAccountLinks = (ports: MonitorPorts, store: MonitorStore) =>
+  checkLedgerPage(
+    "accountLinks",
+    ports.ledger.accountLinks,
+    (row) => `accountLinks:${row.id}`,
+    (row) =>
+      ports.identity
+        .matchesLedgerLinkWrite(row)
+        .pipe(Effect.map((matches) => (matches ? null : `account_link_mismatch:${row.id}`))),
+    store,
+  );
 
 const checkConservation = (ports: MonitorPorts, store: MonitorStore) =>
   Effect.gen(function* () {
@@ -114,7 +131,7 @@ const checkPostedResults = (ports: MonitorPorts, store: MonitorStore) =>
 
 /** A tick checks at most one 100-event page per stream; only verified pages advance the durable cursor. */
 const checkLedgerPage = <A>(
-  stream: "paidClaims" | "postedResults",
+  stream: "paidClaims" | "postedResults" | "accountLinks",
   read: (cursor: string | null, fromBlock?: number) => RelayEffect<LedgerPage<A>>,
   key: (row: A) => string,
   check: (row: A) => RelayEffect<string | null>,

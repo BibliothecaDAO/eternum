@@ -35,6 +35,7 @@
       "services": [
         { "binding": "GUARDIAN", "service": "realms-guardian-staging" },
         { "binding": "LAUNCH", "service": "realms-launch-staging" },
+        { "binding": "ACCOUNT_LINKS", "service": "realms-value-relay-staging", "entrypoint": "ValueAccountLinks" },
       ],
       "durable_objects": {
         "bindings": [
@@ -69,6 +70,7 @@
       "services": [
         { "binding": "GUARDIAN", "service": "realms-guardian" },
         { "binding": "LAUNCH", "service": "realms-launch" },
+        { "binding": "ACCOUNT_LINKS", "service": "realms-value-relay", "entrypoint": "ValueAccountLinks" },
       ],
       "durable_objects": {
         "bindings": [

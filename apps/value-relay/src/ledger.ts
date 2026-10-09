@@ -10,6 +10,8 @@ import {
   type Page,
   type PaidClaim,
   type RelayPorts,
+  type AccountLinkChanged,
+  type MonitorPorts,
 } from "./ports";
 
 interface LedgerCredentials {
@@ -59,8 +61,30 @@ const resultCalldata = (result: BlitzResult): string[] => {
 export const ledgerMonitorReads = (
   rpcUrl: string,
   address: string,
-): Pick<RelayPorts["ledger"], "paidClaims" | "postedResults"> => {
+): Pick<MonitorPorts["ledger"], "paidClaims" | "postedResults" | "accountLinks"> => {
   return {
+    accountLinks: (cursor, fromBlock = 0) =>
+      relayOperation("read ledger account links", () =>
+        ledgerEventPage(
+          rpcAt(rpcUrl),
+          address,
+          ["AccountLinkChanged"],
+          cursor,
+          fromBlock,
+          (event, index, position): AccountLinkChanged => {
+            if (event.keys.length !== 3 || event.data.length !== 2 || typeof event.block_number !== "number")
+              throw new Error("invalid_account_link_event");
+            return {
+              id: `${event.transaction_hash}:${event.block_number}:${position}:${index}`,
+              transactionHash: event.transaction_hash,
+              wallet: event.keys[1]!,
+              account: event.keys[2]!,
+              previousAccount: event.data[0]!,
+              previousWallet: event.data[1]!,
+            };
+          },
+        ),
+      ),
     paidClaims: (cursor, fromBlock = 0) =>
       relayOperation("read ledger paid claims", async () => {
         const provider = rpcAt(rpcUrl);
@@ -98,7 +122,7 @@ const ledgerEventPage = async <A>(
   names: readonly string[],
   after: string | null,
   fromBlock: number,
-  decode: (event: EmittedEvent) => A | Promise<A>,
+  decode: (event: EmittedEvent, index: number, position: string) => A | Promise<A>,
 ): Promise<Page<A> & { head: number }> => {
   const selectors = names.map((name) => hash.getSelectorFromName(name));
   const cursor = after === null ? { head: await provider.getBlockNumber(), token: undefined } : readCursor(after);
@@ -112,13 +136,14 @@ const ledgerEventPage = async <A>(
     ...(cursor.token ? { continuation_token: cursor.token } : {}),
   });
   const rows: A[] = [];
-  for (const event of page.events) {
+  for (const [index, event] of page.events.entries()) {
     if (
       BigInt(event.from_address) !== BigInt(address) ||
       !selectors.some((selector) => BigInt(event.keys[0] ?? "0") === BigInt(selector))
     )
       throw new Error("invalid_ledger_event");
-    rows.push(await decode(event));
+    const position = `${fromBlock}:${cursor.head}:${hash.starknetKeccak(cursor.token ?? "").toString(16)}`;
+    rows.push(await decode(event, index, position));
   }
   return {
     rows,

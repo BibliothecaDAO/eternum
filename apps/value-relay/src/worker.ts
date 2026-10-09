@@ -1,3 +1,6 @@
+import { accountLinkLedger } from "./account-link-ledger";
+import { synchronizeAccountLink, reconcileAccountLinks, hasMatchingAccountLink } from "./account-links";
+import type { AccountLinkTarget, LedgerAccountLinkWrite, LedgerLinkStatus } from "@realms-world/identity";
 import { openBlitzOnLedger, refundBlitzOnLedger, validateBlitzWindow } from "./blitz-launch";
 import type { LedgerGameKey } from "@realms-world/value-ledger";
 import { currentLaborDay, writeLaborGrant } from "./shard-labor";
@@ -33,6 +36,9 @@ interface RelayEnv {
   LEDGER_OPERATOR_PRIVATE_KEY: string;
   REALMS_ADDRESS: string;
   IDENTITY: {
+    accountLinkTargets(after: string | null): Promise<{ rows: AccountLinkTarget[]; next: string | null }>;
+    accountLinkTarget(key: string): Promise<AccountLinkTarget>;
+    recordLedgerLinkWrite(target: AccountLinkTarget, write: LedgerAccountLinkWrite): Promise<void>;
     wasReadyPayoutWallet(account: string, wallet: string, at: number): Promise<boolean>;
     payoutWallet(id: string): Promise<import("@realms-world/identity").PayoutWallet>;
     linkedWallet(id: string): Promise<string | null>;
@@ -50,14 +56,44 @@ export class ValueRelay extends DurableObject<RelayEnv> {
   private readonly ports = relayPortsOf(this.env, this.ctx.storage);
   private readonly chests = new DurableChestStore(this.ctx.storage);
 
+  constructor(ctx: DurableObjectState, env: RelayEnv) {
+    super(ctx, env);
+    ctx.blockConcurrencyWhile(() => ctx.storage.setAlarm(Date.now()));
+  }
+  override alarm() {
+    return this.tick().then(() => undefined);
+  }
+  async accountChanged(realmsId: string) {
+    return Effect.runPromise(
+      this.signing.withPermit(
+        relayOperation("load changed identity link", () =>
+          this.env.IDENTITY.accountLinkTarget(`account:${realmsId}`),
+        ).pipe(Effect.flatMap((target) => synchronizeAccountLink(target, linkPortsOf(this.env)))),
+      ),
+    );
+  }
+  async accountLinkStatus(realmsId: string): Promise<LedgerLinkStatus> {
+    const target = await this.env.IDENTITY.accountLinkTarget(`account:${realmsId}`);
+    const ledger = accountLinkLedger(ledgerCredentialsOf(this.env));
+    const views = await ledger.read(target.wallet, target.account);
+    if (!hasMatchingAccountLink(target, views)) return { status: "linking" };
+    return {
+      status: "confirmed",
+      ledger: { address: this.env.LEDGER_ADDRESS, chainId: await ledger.chainId() },
+      account: target.account!,
+      wallet: target.wallet,
+    };
+  }
   async tick() {
     const relay = this;
     return Effect.runPromise(
       this.signing.withPermit(
         Effect.gen(function* () {
+          const links = yield* Effect.result(reconcileAccountLinks(linkPortsOf(relay.env), relay.ctx.storage));
           const value = yield* Effect.result(runRelay(relay.env.SHARD_CHAIN_ID, relay.ports, relay.store));
           const chests = yield* Effect.result(finishRequestedChests(chestPortsOf(relay.env), relay.chests));
           const observation = {
+            links: Result.isSuccess(links) ? links.success : { error: links.failure.operation },
             checked_at: Math.floor(Date.now() / 1000),
             value: Result.isSuccess(value) ? value.success : { status: "unavailable", reason: value.failure.operation },
             chests: Result.isSuccess(chests) ? chests.success : null,
@@ -90,6 +126,7 @@ export class ValueRelay extends DurableObject<RelayEnv> {
       checked_at: number;
       value: { status: string };
       chests: { failed: number } | null;
+      links?: { pending?: string[]; error?: string };
     }>("lastTick");
     const progress = await this.store.progress();
     const success =
@@ -97,7 +134,9 @@ export class ValueRelay extends DurableObject<RelayEnv> {
       observation.value.status === "ready" &&
       observation.chests !== null &&
       observation.chests.failed === 0 &&
-      !progress.halted;
+      !progress.halted &&
+      observation.links?.error === undefined &&
+      (observation.links?.pending?.length ?? 0) === 0;
     return {
       service: "value-relay",
       success,
@@ -155,6 +194,15 @@ export class ValueRelay extends DurableObject<RelayEnv> {
   }
 }
 
+const linkPortsOf = (env: RelayEnv) => ({
+  identity: {
+    targets: (after: string | null) => env.IDENTITY.accountLinkTargets(after),
+    refresh: (target: AccountLinkTarget) => env.IDENTITY.accountLinkTarget(target.key),
+    record: (target: AccountLinkTarget, write: LedgerAccountLinkWrite) =>
+      env.IDENTITY.recordLedgerLinkWrite(target, write),
+  },
+  ledger: accountLinkLedger(ledgerCredentialsOf(env)),
+});
 const relayPortsOf = (env: RelayEnv, storage: DurableObjectStorage): RelayPorts => {
   const reader = new ShardReader(shardConnectionOf(env));
   return {
@@ -237,6 +285,18 @@ export class RelayDiagnostics extends WorkerEntrypoint<RelayEnv> {
   }
   held() {
     return relayOf(this.env).held();
+  }
+}
+/** Only identity's service binding can notify or read ledger linkage; callers never supply a wallet or account. */
+export class ValueAccountLinks extends WorkerEntrypoint<RelayEnv> {
+  override fetch() {
+    return new Response(null, { status: 404 });
+  }
+  changed(realmsId: string) {
+    return relayOf(this.env).accountChanged(realmsId);
+  }
+  status(realmsId: string) {
+    return relayOf(this.env).accountLinkStatus(realmsId);
   }
 }
 export class ValueLaunch extends WorkerEntrypoint<RelayEnv> {
