@@ -207,7 +207,7 @@ fn shares_checkpoint_old_owners_before_reallocation_and_stop_at_game_end() {
 }
 
 #[test]
-fn one_action_numbers_two_stories_without_writing_the_entity_counter() {
+fn one_action_emits_two_ordered_stories_without_writing_the_entity_counter() {
     let (deployment, hyper, from, _) = setup();
     complete(deployment, hyper, from);
     let other = 987.try_into().unwrap();
@@ -228,15 +228,30 @@ fn one_action_numbers_two_stories_without_writing_the_entity_counter() {
     );
     let mut stories = 0_u32;
     let mut points = 0_u32;
+    let mut last_player = 0_felt252;
+    let mut transaction = None;
     for (_, event) in spy.get_events().emitted_by(deployment.games).events.span() {
         for key in event.keys.span() {
             if *key == selector!("PointsAwarded") {
                 points += 1;
+                last_player = *event.keys.at(event.keys.len() - 1);
             }
         }
         if *event.keys.at(1) == selector!("StoryEvent") {
-            assert_eq!(*event.keys.at(4), order.into());
-            assert_eq!(*event.keys.at(5), stories.into());
+            let mut keys = event.keys.span();
+            keys.pop_front().unwrap();
+            keys.pop_front().unwrap();
+            assert_eq!(*keys.pop_front().unwrap(), 2);
+            assert_eq!(*keys.pop_front().unwrap(), 3);
+            let player = Serde::<Option<starknet::ContractAddress>>::deserialize(ref keys).unwrap().unwrap();
+            assert_eq!(player.into(), last_player);
+            assert_eq!(Serde::<Option<u64>>::deserialize(ref keys).unwrap(), Some(hyper.entity_id));
+            let hash = *keys.pop_front().unwrap();
+            if let Some(previous) = transaction {
+                assert_eq!(hash, previous);
+            }
+            transaction = Some(hash);
+            assert!(keys.is_empty());
             // Each share emits its points fact before its story; facts precede their corresponding story.
             assert_eq!(points, stories + 1);
             stories += 1;
