@@ -22,7 +22,8 @@ fit), which are not in this repository, and Blender's Python; they find the base
    through the game's own controller (idle, guard, walk, run, an attack) and writes every bone's world position and turn
    per moment.
 4. `k4_body_compare.py` measures that dump and the approved poses the same way (pelvis, spine, head, hips, knees, feet)
-   and prints the differences, state by state.
+   and prints the differences, state by state; each attack's moments are held against that attack's own approved poses
+   (the cut against cut-windup and cut-mid, the chop against the overhead raise and strike).
 5. `k4_game_pose_render.py` (run inside Blender) skins the bound model with the game's joints, draws the gear on its
    sockets and renders each moment beside the approved pose at the same framing; `k4_controller_pass_render.sh` is the
    command line that runs it.

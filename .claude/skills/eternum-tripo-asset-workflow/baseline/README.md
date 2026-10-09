@@ -634,6 +634,17 @@ development gym, standing, walking, running and attacking, large enough to judge
   that bear weight now stand on their soles, opt-in.
 - **Open the frames.** A capture is evidence only at a size where the thing in question can be judged, and only once
   someone has looked at it. A worker's sentence about a frame is not a look.
+- **Capture a windup at its apex, not at the phase's end.** Declared states lead the attack by the pose filter's lag
+  (0.12 s, seven frames at 60 fps), so the raise or chamber is fullest seven frames before the windup phase ends and is
+  already on its way down at the end. The chop's raise read as "hand at helmet height" until the frame was taken at the
+  apex, where it matches the approved raise; the numbers (the wrist's height over the shoulders at every frame, from
+  the skeleton dump) said so before the frame did.
+- **Capture with the gym's own camera.** `seekFrame(frame, sequence, rootMotionSpeed, viewId)` leaves the inspection
+  camera on a named view (front, rear, profiles, three-quarters), framed by the figure's measured height; mouse orbits of
+  the viewport overshoot and have no repeatable framing. A part missing from one view is a question for the other
+  views and for several moments before it is a question for the model or the controller: the Knight's head, shield and
+  sword vanished from behind because the gym's floor stood on edge at the figure's root plane and hid everything in
+  front of it, which only the profiles and a frame series showed.
 
 ## Known limits (2026-10-04)
 

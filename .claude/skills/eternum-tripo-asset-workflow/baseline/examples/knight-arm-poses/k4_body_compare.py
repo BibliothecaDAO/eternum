@@ -29,7 +29,10 @@ U, F, L = H.U, H.F, H.L
 # which approved poses each game moment is held against
 MATCH = {"idle": ["idle-relaxed", "idle-at-ease"], "guard-standing": ["guard-middle"], "walk": ["walk-contact", "walk-passing"],
          "run": ["run-charge"], "attack-acquire": ["guard-middle"], "attack-windup": ["cut-windup"], "attack-strike": ["cut-mid"],
-         "attack-contact": ["cut-mid", "cut-followthrough"], "attack-followThrough": ["cut-followthrough"], "attack-recover": ["guard-middle", "idle-relaxed"]}
+         "attack-contact": ["cut-mid", "cut-followthrough"], "attack-followThrough": ["cut-followthrough"], "attack-recover": ["guard-middle", "idle-relaxed"],
+         # the chop's moments (labels attack-chop-<phase>-<frame>) are held against the chop's approved poses
+         "attack-chop-acquire": ["guard-middle"], "attack-chop-windup": ["chop-overhead-raise"], "attack-chop-strike": ["chop-overhead-strike"],
+         "attack-chop-contact": ["chop-overhead-strike"], "attack-chop-followThrough": ["chop-overhead-strike"], "attack-chop-recover": ["guard-middle", "idle-relaxed"]}
 
 
 def unit(v):
@@ -121,7 +124,7 @@ if __name__ == "__main__":
     print("DIFFERENCES game minus approved (degrees; height as a fraction; feet in metres)")
     rows = []
     for label, m in game.items():
-        key = next((k for k in sorted(MATCH, key=len, reverse=True) if label.startswith(k) or label.replace("attack-cut-", "attack-").replace("attack-chop-", "attack-").startswith(k)), None)   # attack labels may carry the variant
+        key = next((k for k in sorted(MATCH, key=len, reverse=True) if label.startswith(k) or label.replace("attack-cut-", "attack-").startswith(k)), None)   # the cut's labels may carry its variant
         if key is None: continue
         for pid in MATCH[key]:
             q = approved[pid]
