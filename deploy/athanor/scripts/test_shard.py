@@ -595,9 +595,11 @@ class PackageStartTest(unittest.TestCase):
         self.assertEqual(initialize.call_args.args[2], "0x789")
 
     def test_failed_first_prepare_can_resume_with_the_same_keys(self):
-        (self.data / "init-configuration.json").unlink()
+        for name in ("init-configuration.json", "initialized.json", "gameplay-contracts.json", "native-world.json", "chain-config.yaml"):
+            (self.data / name).unlink()
+        shard.write_json(self.data / "host-accounts.json", {"vrfPublicKey": {"x": "0x1", "y": "0x2"}})
         original = (self.data / "host-keys.json").read_bytes()
-        with patch.dict(shard.os.environ, self.environ):
+        with patch.dict(shard.os.environ, self.environ), patch.object(shard, "read_guardian_identity", return_value={"guardianPublicKey": "0x1", "accountClassHash": "0x2"}):
             config = self.package.configuration()
             with patch.object(self.package, "publish_prepared_config", side_effect=OSError("temporary publication failure")):
                 with self.assertRaisesRegex(OSError, "publication failure"):

@@ -217,9 +217,9 @@ it("rejects future clocks and unavailable storage at the static read", async () 
   ).toBe(503);
 });
 
-it("does not mark a world healthy when its admission listener is unreachable", async () => {
+it("does not mark a world healthy when its stamping RPC is unreachable", async () => {
   const result = await probeServices(
-    network({ "https://admission.public.test": new Response(null, { status: 503 }) }),
+    network({ "https://rpc.public.test": new Response(null, { status: 503 }) }),
     now,
     [],
   );
