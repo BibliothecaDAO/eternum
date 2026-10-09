@@ -10,7 +10,7 @@ import {
   unclaimedSharePoints,
 } from "@bibliothecadao/eternum/game-sync";
 import { nativeGameModeOf } from "@bibliothecadao/eternum";
-import { dayOf, expeditionRealmSite, isRealmCategory } from "@bibliothecadao/eternum/expeditions";
+import { dayOf, expeditionRealmSite, entityHomeNamespace, isRealmCategory } from "@bibliothecadao/eternum/expeditions";
 import { StructureType } from "@bibliothecadao/types";
 import { resolveDirectoryStatus, type DirectoryInput } from "../game-directory";
 import type { FoldRow } from "../types";
@@ -188,7 +188,12 @@ function directoryEntry(game: Row, facts: DirectoryRows, input: DirectoryInput):
       return { account, prepared: entered && realms.some((realm) => address(realm.owner) === account) };
     }),
     registration: {
-      count: state ? number(state.registered) : 0,
+      count:
+        mode === "frontier"
+          ? new Set(gameRows(facts.entries, game.game_id).map((entry) => address(entry.player))).size
+          : state
+            ? number(state.registered)
+            : 0,
       max: number(settlement.registration_limit),
       start_at: number(settlement.registration_start),
     },
@@ -236,7 +241,7 @@ function structurePosition(
         startMainAt: number(game.start_main_at),
         seed: integer(game.seed),
       },
-      number(record(row.metadata).realm_id),
+      entityHomeNamespace(integer(row.entity_id)),
       timestamp,
     );
   }

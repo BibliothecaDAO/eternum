@@ -1,438 +1,161 @@
-import { WorldFold } from "../world-fold";
-import { CallData, byteArray, hash, shortString, type RawArgs } from "starknet";
+import { CallData, byteArray, hash, shortString } from "starknet";
 import { describe, expect, it, vi } from "vitest";
 import { LiveWorld } from "../live-world";
 import type { MadaraRpc } from "../madara-rpc";
 import type { RpcBlockWithReceipts } from "../types";
-import { manifest, receipt, rowEvent, schema, setup } from "./fixtures";
+import setFixture from "../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
+import { manifest, receipt, setup } from "./fixtures";
 import { transactionScopes } from "./transactions";
 
-function executionEvent(status: number, nonceConsumed = true, nonce = 0, order = 1) {
-  const layout = schema.games.events.find((event) => event.name === "ExecutionRecorded")!;
+const SENDER = "0x111";
+
+/** One account call of Games.play: game, release, preset commitment, then the command span. */
+function playCall(game: number | string) {
+  const calldata = [String(game), "1", "0x789", "1", "7"];
+  return [manifest.world.address, hash.getSelectorFromName("play"), String(calldata.length), ...calldata];
+}
+
+const play = (game: number | string) => ({
+  type: "INVOKE",
+  sender_address: SENDER,
+  calldata: ["1", ...playCall(game)],
+});
+
+function rejectedEvent(transactionHash: string) {
   return {
     from_address: manifest.world.address,
-    keys: layout.prefix,
+    keys: [hash.getSelectorFromName("GameplayRejected"), "0x1", "0x1", SENDER, transactionHash],
     data: [
-      "1",
-      "0x111",
-      String(nonce),
-      nonceConsumed ? "1" : "0",
-      String(order),
-      String(status),
-      status === 2 ? shortString.encodeShortString("GAMEPLAY_REJECTED") : "0",
-      ...CallData.compile(byteArray.byteArrayFromString(status === 2 ? "settlement geometry exhausted" : "")),
+      shortString.encodeShortString("GAMEPLAY_REJECTED"),
+      ...CallData.compile(byteArray.byteArrayFromString("explorer is dead")),
     ],
   };
 }
 
-function action(game: number) {
-  return {
-    intent: {
-      chain: 1,
-      deployment: manifest.world.address,
-      game_id: game,
-      actor: "0x111",
-      nonce: 0,
-      valid_from: 2000,
-      valid_until: 3000,
-      last_order: 1,
-      release_id: 1,
-      preset_commitment: 1,
-      command: 1,
-      arguments: [2, 1],
-    },
-    context: { envelope: [] },
-    signature: [1, 2],
-  };
+function liveWorld(
+  native: ReturnType<typeof setup>["native"],
+  decoder: ReturnType<typeof setup>["decoder"],
+  fold: ReturnType<typeof setup>["fold"],
+  rpc = {} as MadaraRpc,
+  historyStore?: unknown,
+) {
+  return new LiveWorld({
+    native,
+    registry: decoder.registry,
+    chain: "madara",
+    checkpointEveryBlocks: 100,
+    checkpointStore: { save: vi.fn() },
+    confirmedBlock: 9,
+    confirmedFold: fold,
+    rpc,
+    ...(historyStore ? { historyStore: historyStore as never } : {}),
+  });
 }
 
-function encodedCall(entrypoint: string, args: RawArgs) {
-  const abi = [...Object.values(schema.types), ...schema.games.entrypoints];
-  const calldata = new CallData(abi).compile(entrypoint, args);
-  return [manifest.world.address, hash.getSelectorFromName(entrypoint), String(calldata.length), ...calldata];
-}
-
-function call(game: number, entrypoint = "execute") {
-  return encodedCall(entrypoint, action(game));
-}
-
-function batchCall(games: number[]) {
-  return encodedCall("execute_batch", { actions: games.map(action) });
+function streamOf(live: LiveWorld, gameId = "1") {
+  const messages: Record<string, unknown>[] = [];
+  const connection = live.attach(gameId, { send: (value) => messages.push(JSON.parse(value)) }, SENDER);
+  live.resume(connection, { type: "resume", epoch: "old", seq: 0 });
+  messages.length = 0;
+  return messages;
 }
 
 describe("native transaction receipt routing", () => {
-  it.each(["both", "receipt", "transaction"])(
-    "recovers batched outcomes from confirmed history when %s notifications are lost",
-    async (missing) => {
-      const { native, decoder, fold } = setup();
-      const rejected = executionEvent(2, false, 0, 2);
-      rejected.data[0] = "2";
-      const accepted = receipt(
-        [rowEvent("ActionNonce", ["1", "0x111"], { next_nonce: 1n }), executionEvent(1), rejected],
-        "0xabc",
-      );
-      const transaction = {
-        type: "INVOKE",
-        sender_address: "0x999",
-        calldata: ["1", ...batchCall([1, 2])],
-      };
-      const block: RpcBlockWithReceipts = {
-        block_number: 10,
-        timestamp: 100,
-        transactions: [{ receipt: accepted, transaction }],
-      };
-      const live = new LiveWorld({
-        native,
-        registry: decoder.registry,
-        chain: "madara",
-        checkpointEveryBlocks: 100,
-        checkpointStore: { save: vi.fn() },
-        confirmedBlock: 9,
-        confirmedFold: fold,
-        rpc: {
-          getBlockWithReceipts: async (number: unknown) =>
-            number === "pre_confirmed" ? { ...block, block_number: 11, transactions: [] } : block,
-        } as unknown as MadaraRpc,
-      });
-      const streams = ["1", "2"].map((gameId) => {
-        const messages: Record<string, unknown>[] = [];
-        const connection = live.attach(gameId, { send: (value) => messages.push(JSON.parse(value)) }, "0x111");
-        live.resume(connection, { type: "resume", epoch: "old", seq: 0 });
-        messages.length = 0;
-        return messages;
-      });
-      if (missing === "receipt")
-        live.acceptTransaction({ ...transaction, transaction_hash: "0xabc", finality_status: "PRE_CONFIRMED" });
-      if (missing === "transaction") live.acceptReceipt(accepted);
-      expect(streams.flat().filter((message) => message.type === "tx")).toEqual([]);
-
-      await live.acceptSubscribedHead({ block_number: 10, timestamp: 100 });
-      for (const [index, messages] of streams.entries()) {
-        const outcomes = messages.filter((message) => message.type === "tx");
-        expect(outcomes.at(-1)).toMatchObject({
-          hash: "0xabc",
-          block: 10,
-          status: "ACCEPTED_ON_L2",
-          executions: [
-            expect.objectContaining({
-              gameId: String(index + 1),
-              status: index === 0 ? "SUCCEEDED" : "REVERTED",
-              nonceConsumed: index === 0,
-            }),
-          ],
-        });
-        expect((outcomes.at(-1)!.executions as unknown[]).length).toBe(1);
-      }
-      expect(streams[0].findIndex((message) => message.type === "diff")).toBeLessThan(
-        streams[0].findIndex((message) => message.type === "tx"),
-      );
-      const nonce = fold.modelRows("ActionNonce");
-      expect(nonce).toHaveLength(1);
-      expect(BigInt(String(nonce[0].value.next_nonce))).toBe(1n);
-      const count = streams[0].length;
-      await live.acceptSubscribedHead({ block_number: 10, timestamp: 100 });
-      expect(streams[0]).toHaveLength(count);
-    },
-  );
-
-  it("routes every game in one compiled execution batch and rejects malformed batches", () => {
-    const batch = batchCall([1, 2, 1, 3]);
-    expect(transactionScopes(manifest, ["1", ...batch])).toEqual(
-      ["1", "2", "3"].map((gameId) => ({ gameId, actor: "273" })),
-    );
-    const truncated = batch.slice(0, -1);
-    truncated[2] = String(Number(truncated[2]) - 1);
-    expect(() => transactionScopes(manifest, ["1", ...truncated])).toThrow();
+  it("routes a play call to its game, with the sending account as the actor", () => {
+    expect(transactionScopes(manifest, play(4))).toEqual([{ gameId: "4", actor: String(BigInt(SENDER)) }]);
   });
-  it("recovers an enclosing transaction revert without execution events", async () => {
+
+  it("routes nothing that is not Games.play, and refuses a malformed account call", () => {
+    const foreign = playCall(1);
+    foreign[0] = "0x999";
+    expect(transactionScopes(manifest, { sender_address: SENDER, calldata: ["1", ...foreign] })).toEqual([]);
+    const other = playCall(1);
+    other[1] = hash.getSelectorFromName("create_game");
+    expect(transactionScopes(manifest, { sender_address: SENDER, calldata: ["1", ...other] })).toEqual([]);
+    expect(transactionScopes(manifest, { calldata: ["1", ...playCall(1)] })).toEqual([]);
+    expect(() => transactionScopes(manifest, play(0))).toThrow("Malformed play call");
+    expect(() => transactionScopes(manifest, { ...play(1), calldata: ["1", ...playCall(1).slice(0, -1)] })).toThrow();
+    expect(() => transactionScopes(manifest, { ...play(1), calldata: ["1", ...playCall(1), "0"] })).toThrow();
+  });
+
+  it("streams a pre-roll revert to its game with the revert reason, though it emitted nothing", async () => {
     const { native, decoder, fold } = setup();
-    const reverted = {
-      ...receipt([], "0xdead"),
-      execution_status: "REVERTED",
-      revert_reason: "execution exhausted",
-    };
+    const reverted = { ...receipt([], "0xdead"), execution_status: "REVERTED", revert_reason: "stale release" };
     const block: RpcBlockWithReceipts = {
       block_number: 10,
       timestamp: 100,
-      transactions: [{ receipt: reverted, transaction: { type: "INVOKE", calldata: ["1", ...call(1)] } }],
+      transactions: [{ receipt: reverted, transaction: play(1) }],
     };
-    const live = new LiveWorld({
-      native,
-      registry: decoder.registry,
-      chain: "madara",
-      checkpointEveryBlocks: 100,
-      checkpointStore: { save: vi.fn() },
-      confirmedBlock: 9,
-      confirmedFold: fold,
-      rpc: {
-        getBlockWithReceipts: async (number: unknown) =>
-          number === "pre_confirmed" ? { ...block, block_number: 11, transactions: [] } : block,
-      } as unknown as MadaraRpc,
-    });
-    const messages: Record<string, unknown>[] = [];
-    const connection = live.attach("1", { send: (value) => messages.push(JSON.parse(value)) }, "0x111");
-    live.resume(connection, { type: "resume", epoch: "old", seq: 0 });
+    const live = liveWorld(native, decoder, fold, {
+      getBlockWithReceipts: async (number: unknown) =>
+        number === "pre_confirmed" ? { ...block, block_number: 11, transactions: [] } : block,
+    } as unknown as MadaraRpc);
+    const messages = streamOf(live);
     await live.acceptSubscribedHead({ block_number: 10, timestamp: 100 });
     expect(messages.filter((message) => message.type === "tx")).toEqual([
-      expect.objectContaining({ hash: "0xdead", block: 10, status: "REVERTED", revert_reason: "execution exhausted" }),
+      expect.objectContaining({ hash: "0xdead", block: 10, status: "REVERTED", revert_reason: "stale release" }),
     ]);
-    expect(fold.modelRows("ActionNonce")).toEqual([]);
   });
-  it("uses the authenticated intent's game for every action call", () => {
-    const calldata = ["3", ...call(1), ...call(2, "execute"), ...call(1)];
-    expect(transactionScopes(manifest, calldata)).toEqual(["1", "2"].map((gameId) => ({ gameId, actor: "273" })));
-    expect(() => transactionScopes(manifest, ["1", ...call(1).slice(0, -1)])).toThrow();
-    expect(() => transactionScopes(manifest, ["1", ...call(1), "0"])).toThrow();
-    expect(() => transactionScopes(manifest, ["invalid"])).toThrow();
-    const foreign = call(1);
-    foreign[0] = "0x999";
-    expect(transactionScopes(manifest, ["1", ...foreign])).toEqual([]);
-  });
-  it("decodes a compiled batch result and publishes it with the matching transaction", () => {
+
+  it("streams an applied action after its facts, by its finality, when either notification was lost", async () => {
     const { native, decoder, fold } = setup();
-    const layout = schema.games.events.find((event) => event.name === "BatchProgress")!;
-    const progress = { from_address: manifest.world.address, keys: [...layout.prefix, "1"], data: ["0x111", "0", "9"] };
-    const decoded = decoder.decode({
-      ...progress,
+    const applied = receipt([setFixture.raw], "0xabc");
+    const block: RpcBlockWithReceipts = {
       block_number: 10,
-      transaction_hash: "0x123",
-      transaction_index: 0,
-      event_index: 0,
-    });
-    expect(decoded.kind).toBe("event");
-    const messages: Record<string, unknown>[] = [];
-    const live = new LiveWorld({
-      native,
-      registry: decoder.registry,
-      chain: "madara",
-      checkpointEveryBlocks: 100,
-      checkpointStore: { save: vi.fn() },
-      confirmedBlock: 9,
-      confirmedFold: fold,
-      rpc: {} as MadaraRpc,
-    });
-    const connection = live.attach("1", { send: (value) => messages.push(JSON.parse(value)) }, "0x111");
-    live.resume(connection, { type: "resume", epoch: "old", seq: 0 });
-    live.acceptTransaction({
-      finality_status: "PRE_CONFIRMED",
-      transaction_hash: "0x123",
-      sender_address: "0x999",
-      calldata: ["1", ...call(1)],
-    });
-    live.acceptReceipt(receipt([progress, executionEvent(1)], "0x123"));
+      timestamp: 100,
+      transactions: [{ receipt: applied, transaction: play(1) }],
+    };
+    const live = liveWorld(native, decoder, fold, {
+      getBlockWithReceipts: async (number: unknown) =>
+        number === "pre_confirmed" ? { ...block, block_number: 11, transactions: [] } : block,
+    } as unknown as MadaraRpc);
+    const messages = streamOf(live);
+    await live.acceptSubscribedHead({ block_number: 10, timestamp: 100 });
     expect(messages.filter((message) => message.type === "tx").at(-1)).toMatchObject({
-      hash: "0x123",
-      executions: [expect.objectContaining({ order: "1", status: "SUCCEEDED", batchRemaining: "9" })],
+      hash: "0xabc",
+      block: 10,
+      status: "ACCEPTED_ON_L2",
     });
+    expect(messages.findIndex((message) => message.type === "diff")).toBeLessThan(
+      messages.findIndex((message) => message.type === "tx"),
+    );
   });
+
+  it("reads the game's refusal from the receipt: rolled back, its class and reason, never applied", () => {
+    const { native } = setup();
+    const refused = receipt([rejectedEvent("0x124")], "0x124");
+    expect(native.outcomeReceipt(refused)).toMatchObject({
+      rejection: { statusClass: "GAMEPLAY_REJECTED", reason: "explorer is dead" },
+    });
+    expect(native.outcomeReceipt(receipt([], "0x125"))).not.toHaveProperty("rejection");
+  });
+
   it.each(["PRE_CONFIRMED", "ACCEPTED_ON_L2"])(
-    "reports a recorded rejection at %s without reverting ticket state",
+    "streams a refused action at %s as REJECTED with the game's class and reason",
     (finality_status) => {
       const { native, decoder, fold } = setup();
-      const messages: Record<string, unknown>[] = [];
       const historyStore = { recordTransaction: vi.fn() };
-      const live = new LiveWorld({
-        native,
-        registry: decoder.registry,
-        chain: "madara",
-        checkpointEveryBlocks: 100,
-        checkpointStore: { save: vi.fn() },
-        confirmedBlock: 9,
-        confirmedFold: fold,
-        rpc: {} as MadaraRpc,
-        historyStore: historyStore as never,
+      const live = liveWorld(native, decoder, fold, {} as MadaraRpc, historyStore);
+      const messages = streamOf(live);
+      // The compiled schema on this branch predates GameplayRejected, so its decode is the receipt reader's alone.
+      vi.spyOn(native, "outcomeReceipt").mockImplementation((value) => ({
+        ...value,
+        rejection: { statusClass: "GAMEPLAY_REJECTED", reason: "explorer is dead" },
+      }));
+      live.acceptTransaction({ finality_status: "PRE_CONFIRMED", transaction_hash: "0x124", ...play(1) });
+      live.acceptReceipt({ ...receipt([], "0x124"), finality_status });
+      expect(messages.filter((message) => message.type === "tx").at(-1)).toMatchObject({
+        hash: "0x124",
+        status: "REJECTED",
+        status_class: "GAMEPLAY_REJECTED",
+        revert_reason: "explorer is dead",
       });
-      const connection = live.attach("1", { send: (value) => messages.push(JSON.parse(value)) }, "0x111");
-      live.resume(connection, { type: "resume", epoch: "old", seq: 0 });
-      messages.length = 0;
-      const result = executionEvent(2);
-      const rejected = {
-        ...receipt([rowEvent("ActionNonce", ["1", "0x111"], { next_nonce: 1n }), result], "0x124"),
-        finality_status,
-      };
-      live.acceptReceipt(rejected);
-      live.acceptTransaction({
-        finality_status: "PRE_CONFIRMED",
-        transaction_hash: "0x124",
-        sender_address: "0x999",
-        calldata: ["1", ...call(1)],
-      });
-      const transactions = messages.filter((message) => message.type === "tx");
-      expect(transactions.at(-1)).toMatchObject({
-        status: finality_status,
-        executions: [expect.objectContaining({ status: "REVERTED" })],
-      });
-      expect(JSON.stringify(transactions)).toContain("GAMEPLAY_REJECTED");
-      expect(JSON.stringify(transactions)).toContain("settlement geometry exhausted");
-      expect(rejected.execution_status).toBe("SUCCEEDED");
-      native.applyReceipt(fold, rejected, 10, 0);
-      expect(BigInt(String(fold.modelRows("ActionNonce")[0].value.next_nonce))).toBe(1n);
-      expect(native.receiptFailures).toBe(0);
-      expect(native.halted).toBeUndefined();
-      if (finality_status === "ACCEPTED_ON_L2") {
+      if (finality_status === "ACCEPTED_ON_L2")
         expect(historyStore.recordTransaction).toHaveBeenCalledWith(
           "1",
-          expect.objectContaining({
-            execution_status: "SUCCEEDED",
-            executions: [
-              expect.objectContaining({
-                status: "REVERTED",
-                statusClass: "GAMEPLAY_REJECTED",
-                reason: "settlement geometry exhausted",
-              }),
-            ],
-          }),
+          expect.objectContaining({ rejection: expect.anything() }),
         );
-      } else expect(historyStore.recordTransaction).not.toHaveBeenCalled();
+      else expect(historyStore.recordTransaction).not.toHaveBeenCalled();
     },
   );
-
-  it("preserves a successful recorded action's finality", () => {
-    const { native, fold } = setup();
-    const succeeded = receipt([rowEvent("ActionNonce", ["1", "0x111"], { next_nonce: 1n }), executionEvent(1)]);
-    expect(native.actionReceipt(fold, succeeded)).toMatchObject({
-      ...succeeded,
-      executions: [expect.objectContaining({ order: "1", status: "SUCCEEDED" })],
-    });
-  });
-
-  it.each(["PRE_CONFIRMED", "ACCEPTED_ON_L2"])(
-    "delivers mixed ticket outcomes only to their game and actor at %s",
-    (finality_status) => {
-      const { native, decoder, fold } = setup();
-      const messages: Record<string, unknown>[] = [];
-      const live = new LiveWorld({
-        native,
-        registry: decoder.registry,
-        chain: "madara",
-        checkpointEveryBlocks: 100,
-        checkpointStore: { save: vi.fn() },
-        confirmedBlock: 9,
-        confirmedFold: fold,
-        rpc: {} as MadaraRpc,
-      });
-      const connection = live.attach("1", { send: (value) => messages.push(JSON.parse(value)) }, "0x111");
-      live.resume(connection, { type: "resume", epoch: "old", seq: 0 });
-      const otherMessages: Record<string, unknown>[] = [];
-      for (const [gameId, actor] of [
-        ["1", "0x222"],
-        ["3", "0x111"],
-      ]) {
-        const other = live.attach(gameId, { send: (value) => otherMessages.push(JSON.parse(value)) }, actor);
-        live.resume(other, { type: "resume", epoch: "", seq: 0 });
-      }
-      otherMessages.length = 0;
-      const rejected = executionEvent(2, false, 0, 2);
-      const otherGame = executionEvent(1, true, 0, 3);
-      otherGame.data[0] = "2";
-      live.acceptTransaction({
-        finality_status: "PRE_CONFIRMED",
-        transaction_hash: "0xabc",
-        sender_address: "0x999",
-        calldata: ["1", ...batchCall([1, 1, 2])],
-      });
-      live.acceptReceipt({ ...receipt([executionEvent(1), rejected, otherGame], "0xabc"), finality_status });
-      expect(otherMessages).toEqual([]);
-      const transaction = messages.filter((message) => message.type === "tx").at(-1);
-      expect(transaction).toMatchObject({
-        status: finality_status,
-        executions: [
-          expect.objectContaining({ gameId: "1", order: "1", status: "SUCCEEDED", nonceConsumed: true }),
-          expect.objectContaining({ gameId: "1", order: "2", status: "REVERTED", nonceConsumed: false }),
-        ],
-      });
-      expect(native.receiptFailures).toBe(0);
-    },
-  );
-
-  it("keeps an unconsumed actor nonce absent and streams only chain nonce facts", () => {
-    const { native, fold } = setup();
-    const nonceRows = (actor: string) =>
-      fold
-        .subscriptionSnapshot("1", 10, fold.subscriptionScope("1", actor, 100))
-        .models.find(({ model }) => model === "ActionNonce")!.rows;
-    expect(nonceRows("0x111")).toHaveLength(0);
-    expect(fold.modelRows("ActionNonce")).toHaveLength(0);
-    native.applyReceipt(
-      fold,
-      receipt([rowEvent("ActionNonce", ["1", "0x111"], { next_nonce: 1n }), executionEvent(1)]),
-      10,
-      0,
-    );
-    expect(nonceRows("0x111")).toHaveLength(1);
-    expect(BigInt(String(nonceRows("0x111")[0].value.next_nonce))).toBe(1n);
-    expect(nonceRows("0x222")).toHaveLength(0);
-    expect(() => nonceRows("0x0")).toThrow("Invalid gameplay account");
-    expect(() => nonceRows("0x800000000000000000000000000000000000000000000000000000000000000")).toThrow(
-      "Invalid gameplay account",
-    );
-  });
-
-  it("never synthesizes a nonce from an execution outcome", () => {
-    const { native, fold } = setup();
-    native.applyReceipt(fold, receipt([executionEvent(1)]), 10, 0);
-    expect(fold.modelRows("ActionNonce")).toEqual([]);
-  });
-
-  it("leaves the nonce row unchanged for a stale-nonce rejection and restores it from a checkpoint", () => {
-    const { native, decoder, fold } = setup();
-    native.applyReceipt(
-      fold,
-      receipt([rowEvent("ActionNonce", ["1", "0x111"], { next_nonce: 1n }), executionEvent(1)]),
-      10,
-      0,
-    );
-    const before = fold.modelRows("ActionNonce");
-    native.applyReceipt(fold, receipt([executionEvent(2, false, 0, 2)], "0x999"), 11, 0);
-    expect(fold.modelRows("ActionNonce")).toEqual(before);
-    const restored = WorldFold.restore(decoder.registry, fold.checkpoint());
-    expect(restored.modelRows("ActionNonce")).toEqual(before);
-    native.applyReceipt(
-      restored,
-      receipt([rowEvent("ActionNonce", ["1", "0x111"], { next_nonce: 2n }), executionEvent(1, true, 1, 3)], "0x998"),
-      12,
-      0,
-    );
-    expect(BigInt(String(restored.modelRows("ActionNonce")[0].value.next_nonce))).toBe(2n);
-  });
-
-  it("delivers a reverted receipt received before its sequencer-submitted transaction", () => {
-    const { native, decoder, fold } = setup();
-    const messages: Record<string, unknown>[] = [];
-    const live = new LiveWorld({
-      native,
-      registry: decoder.registry,
-      chain: "madara",
-      checkpointEveryBlocks: 100,
-      checkpointStore: { save: vi.fn() },
-      confirmedBlock: 9,
-      confirmedFold: fold,
-      rpc: {} as MadaraRpc,
-    });
-    const connection = live.attach("1", { send: (value) => messages.push(JSON.parse(value)) }, "0x111");
-    live.resume(connection, { type: "resume", epoch: "old", seq: 0 });
-    messages.length = 0;
-    const log = vi.spyOn(console, "error").mockImplementation(() => {});
-    expect(() =>
-      live.acceptTransaction({ finality_status: "PRE_CONFIRMED", transaction_hash: "0xbad", calldata: ["invalid"] }),
-    ).not.toThrow();
-    expect(native.routingFailures).toBe(1);
-    expect(log).toHaveBeenCalledWith(expect.stringContaining("herald_native_transaction_routing_failed"));
-    expect(JSON.parse(log.mock.calls.at(-1)![0])).toMatchObject({
-      event: "herald_native_transaction_routing_failed",
-      transactionHash: "0xbad",
-    });
-    log.mockRestore();
-    live.acceptReceipt({ ...receipt([], "0x123"), execution_status: "REVERTED", revert_reason: "invalid command" });
-    expect(messages).toEqual([]);
-    live.acceptTransaction({
-      finality_status: "PRE_CONFIRMED",
-      transaction_hash: "0x123",
-      sender_address: "0x999",
-      calldata: ["1", ...call(1)],
-    });
-    expect(messages).toHaveLength(1);
-    expect(JSON.stringify(messages[0])).toContain("REVERTED");
-    expect(fold.retainedRowCount()).toBe(0);
-  });
 });

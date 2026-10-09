@@ -6,7 +6,7 @@ import {
 } from "./preset-preimages";
 import { derivePresetFacts } from "./preset-facts";
 import { nativeEntityId } from "./entity-id";
-import { nativeExecutionOutcomes } from "@bibliothecadao/provider";
+import { gameplayRejection } from "@bibliothecadao/provider";
 import { transactionScopes } from "./transactions";
 import type { MadaraRpc } from "../madara-rpc";
 import { normalizeFelt } from "../model-registry";
@@ -84,8 +84,8 @@ export class NativeIngestion {
     );
   }
 
-  transactionScopes(transaction: Pick<RpcTransaction, "calldata">) {
-    return transactionScopes(this.decoder.manifest, transaction.calldata);
+  transactionScopes(transaction: Pick<RpcTransaction, "calldata" | "sender_address">) {
+    return transactionScopes(this.decoder.manifest, transaction);
   }
 
   applyReceipt(
@@ -109,13 +109,21 @@ export class NativeIngestion {
 
   actionReceipt(fold: WorldFold, receipt: RpcReceipt, calldata?: string[]): RpcReceipt {
     this.validateReceipt(fold.overlay(), receipt, receipt.block_number ?? null, 0, calldata);
-    return this.executionReceipt(receipt);
+    return this.outcomeReceipt(receipt);
   }
 
-  /** The receipt with its native execution outcomes, for a receipt already validated. */
-  executionReceipt(receipt: RpcReceipt): RpcReceipt {
+  /**
+   * The receipt with the game's refusal, if Games recorded one (GameplayRejected v1): the action rolled back, so its
+   * status is REJECTED with the game's reason, distinct from a pre-roll REVERTED. For a receipt already validated.
+   */
+  outcomeReceipt(receipt: RpcReceipt): RpcReceipt {
     if (receipt.execution_status === "REVERTED") return receipt;
-    return { ...receipt, executions: nativeExecutionOutcomes(receipt.events, this.decoder.manifest.world.address) };
+    const rejection = gameplayRejection(
+      receipt.events,
+      this.decoder.manifest.world.address,
+      normalizeFelt(receipt.transaction_hash),
+    );
+    return rejection ? { ...receipt, rejection } : receipt;
   }
 
   async replay(input: {
@@ -160,7 +168,7 @@ export class NativeIngestion {
           if (input.retainTransactions !== false)
             transactions.push({
               transaction,
-              receipt: this.executionReceipt({ ...receipt, block_number: number }),
+              receipt: this.outcomeReceipt({ ...receipt, block_number: number }),
             });
         } catch (error) {
           throw this.rejectReceipt(receipt, number, error, true);
