@@ -61,6 +61,7 @@ import {
   resolveTroopAvailabilityReason,
   type TroopSupply,
 } from "./army-creation-policy";
+import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
 interface ArmyCreationOptions {
   structureId: number;
@@ -316,7 +317,7 @@ export const useArmyCreation = ({
             const tile = neighborTiles.find(
               (candidate) => candidate.hexCoords.col === hex.col && candidate.hexCoords.row === hex.row,
             );
-            return tile ? Number(tile.occupierId) : undefined;
+            return tile ? safeInteger(tile.occupierId) : undefined;
           })
         : [],
     [neighborTiles, store, structureComponent],

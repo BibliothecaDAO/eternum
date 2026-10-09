@@ -6,7 +6,7 @@ import { startRealmVisit } from "@/sync/active-game-client";
 import { Trophy } from "@/ui/design-system/atoms/game-icons";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { configManager } from "@bibliothecadao/eternum";
-import { fetchHeraldLeaderboard, requireShard } from "@bibliothecadao/eternum/game-client";
+import { safeInteger, fetchHeraldLeaderboard, requireShard } from "@bibliothecadao/eternum/game-client";
 import type { HeraldFrontierLeaderboardEntry } from "@bibliothecadao/eternum/game-sync";
 import { useQuery } from "@tanstack/react-query";
 import { Chip } from "../frontier-chips";
@@ -101,7 +101,7 @@ const SeasonBoardSheet = ({ rank }: { rank: string }) => {
   const viewer = useViewer();
   const close = usePopoverStore((state) => state.close);
   const visit = (entry: HeraldFrontierLeaderboardEntry) => {
-    startRealmVisit({ player: entry.address, structureId: Number(entry.structure_id) });
+    startRealmVisit({ player: entry.address, structureId: safeInteger(entry.structure_id) });
     close(BOARD_ID);
   };
 

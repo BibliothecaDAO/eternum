@@ -5,6 +5,7 @@ import type { WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
 import type { HexEntityInfo } from "@bibliothecadao/types";
 import { BiomeType, ETHEREAL_STRIDE, TileOccupier } from "@bibliothecadao/types";
 import type { ExplorationMapSnapshot } from "./types";
+import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
 const setNestedValue = <T>(map: Map<number, Map<number, T>>, col: number, row: number, value: T) => {
   const column = map.get(col) ?? new Map<number, T>();
@@ -63,7 +64,7 @@ export const buildExplorationSnapshot = async ({
     }
     if (tile.occupierId === 0 || tile.occupierType === TileOccupier.None) return;
 
-    const info = buildHexInfo(Number(tile.occupierId), 0n);
+    const info = buildHexInfo(safeInteger(tile.occupierId), 0n);
     if (tile.occupierType === TileOccupier.Chest) {
       setNestedValue(chestHexes, normalized.x, normalized.y, info);
     }
@@ -79,7 +80,7 @@ export const buildExplorationSnapshot = async ({
       structureHexes,
       normalized.x,
       normalized.y,
-      buildHexInfo(Number(structure.entityId), getStructureOwnerAddress(store, Number(structure.entityId))),
+      buildHexInfo(safeInteger(structure.entityId), getStructureOwnerAddress(store, safeInteger(structure.entityId))),
     );
   });
 
@@ -89,7 +90,7 @@ export const buildExplorationSnapshot = async ({
       armyHexes,
       normalized.x,
       normalized.y,
-      buildHexInfo(Number(army.entityId), getArmyOwnerAddress(store, Number(army.entityId))),
+      buildHexInfo(safeInteger(army.entityId), getArmyOwnerAddress(store, safeInteger(army.entityId))),
     );
   });
 

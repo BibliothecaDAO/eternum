@@ -15,6 +15,7 @@ import { isEntityOwnedByAccount } from "@/utils/entity-ownership";
 import { useTransferAutomationStore } from "./store/use-transfer-automation-store";
 import { assessDonkeyCapacity, buildSendResourcesArgs, planTransferAmounts } from "./transfer-automation-planner";
 import { accountAddress } from "@/hooks/store/use-account-store";
+import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
 type PlannedDebits = Map<string, number>;
 
@@ -140,8 +141,8 @@ export const useTransferAutomationRunner = () => {
       try {
         for (const entry of due) {
           try {
-            const sourceId = Number(entry.sourceEntityId);
-            const destId = Number(entry.destinationEntityId);
+            const sourceId = safeInteger(entry.sourceEntityId);
+            const destId = safeInteger(entry.destinationEntityId);
             if (!Number.isFinite(sourceId) || !Number.isFinite(destId) || sourceId <= 0 || destId <= 0) {
               scheduleNext(entry.id, nowMs);
               continue;

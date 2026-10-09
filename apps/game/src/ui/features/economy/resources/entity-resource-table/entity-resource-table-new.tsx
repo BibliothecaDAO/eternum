@@ -59,6 +59,7 @@ import {
 } from "./utils";
 import { knownBalance } from "@/ui/utils/utils";
 import { presentedMineKind } from "@bibliothecadao/eternum";
+import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
 interface StructureColumn {
   entityId: number;
@@ -177,7 +178,7 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
   const goToStructure = useGoToStructure(setup);
   const currentDefaultTick = useCurrentDefaultTick();
 
-  const selectedStructureId = entityId && entityId !== 0 ? Number(entityId) : null;
+  const selectedStructureId = entityId && entityId !== 0 ? safeInteger(entityId) : null;
 
   const structureColumns = useMemo<StructureColumn[]>(() => {
     const columns = playerStructures
@@ -192,10 +193,10 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
             ) || "Structure";
 
         return {
-          entityId: Number(structure.entityId),
+          entityId: safeInteger(structure.entityId),
           label,
           level: structure.structure.base.level || 1,
-          isSelected: selectedStructureId ? Number(structure.entityId) === selectedStructureId : false,
+          isSelected: selectedStructureId ? safeInteger(structure.entityId) === selectedStructureId : false,
         };
       })
       .toSorted((a, b) => a.entityId - b.entityId);
