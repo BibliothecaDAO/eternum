@@ -1,3 +1,4 @@
+import { resolveRegistrarExecutionDetails } from "./transaction-details";
 import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { resolveDeploymentEnvironment } from "../environment";
 import { nativePresetForId } from "../../../source/native";
@@ -70,11 +71,14 @@ export async function registerNativePreset(
     throw new Error(
       `Preset ${presetId} is registered with commitment ${existing}; this definition commits to ${registration.commitment}`,
     );
-  const receipt = await account.execute({
-    contractAddress: registration.address,
-    entrypoint: "register_preset",
-    calldata: registration.calldata,
-  });
+  const receipt = await account.execute(
+    {
+      contractAddress: registration.address,
+      entrypoint: "register_preset",
+      calldata: registration.calldata,
+    },
+    resolveRegistrarExecutionDetails(),
+  );
   await waitForSuccess(account, receipt.transaction_hash);
   return receipt.transaction_hash;
 }

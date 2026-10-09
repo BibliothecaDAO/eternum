@@ -19,14 +19,14 @@ import {
   loadNativePresetConfiguration,
   registerNativePreset,
 } from "../../../config/deployer/clean/registrar/native-preset";
-import { createRegistrarGame } from "../../../config/deployer/clean/registrar/calls";
+import { createRegistrarGame, resolveRegistrarExecutionDetails } from "../../../config/deployer/clean/registrar/calls";
 import { createOperatorAccount } from "../../../config/deployer/clean/shared/madara-account";
 import type { NativeWorldManifest } from "../../../config/deployer/clean/world/native/types";
 import { readShardManifest } from "../../../packages/chain/shard-manifest.js";
 import { assertProviderChain } from "../../../packages/chain/chain-guard.js";
 import { createHarnessAccounts } from "./account-factory";
 import { connectHarnessGameClient } from "./game-client";
-import { prepareOpenHomes } from "./game-setup";
+import { prepareOpenHomes, createHarnessAdminProvider } from "./game-setup";
 import { createHarnessGame, EXPLORER_TROOP_COUNT } from "./harness-game";
 import { HarnessProvider } from "./provider";
 import { readPlayBounds } from "./player-invoke";
@@ -49,7 +49,7 @@ const fixture: DeploymentCheckPort = {
     const manifest = readShardManifest<NativeWorldManifest>(required("NATIVE_WORLD_MANIFEST"));
     const shard = await openShard(required("HERALD_URL"), bindings.schemaIdentity);
     const rpc = new HarnessProvider(shard.rpcUrl);
-    const admin = new HarnessProvider(required("HARNESS_ADMIN_RPC_URL"));
+    const admin = createHarnessAdminProvider(shard.rpcUrl);
     const clients: RouteCase["client"][] = [];
     const dispose = () => {
       stopped.removeEventListener("abort", abortSetup);
@@ -227,11 +227,14 @@ async function createModeCheckGame(
   if (!created.gameId) throw new Error("Mode self-check game not created");
   if (mode === "blitz") {
     // This is an unpaid throwaway seat, not a paid ledger registration or an identity lookup.
-    const sent = await launcher.execute({
-      contractAddress: manifest.world.address,
-      entrypoint: "freeze_blitz_roster",
-      calldata: CallData.compile({ game_id: created.gameId, players: [{ account: actor, wallet: actor }] }),
-    });
+    const sent = await launcher.execute(
+      {
+        contractAddress: manifest.world.address,
+        entrypoint: "freeze_blitz_roster",
+        calldata: CallData.compile({ game_id: created.gameId, players: [{ account: actor, wallet: actor }] }),
+      },
+      resolveRegistrarExecutionDetails(),
+    );
     await launcher.waitForTransaction(sent.transaction_hash);
   }
   stopped.throwIfAborted();

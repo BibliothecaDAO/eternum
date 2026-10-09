@@ -16,7 +16,7 @@ import { configureGameplayAccountSubmits, openShard, type Shard } from "@bibliot
 import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
 import { Account, logger } from "starknet";
 import { assertChainId } from "../../../packages/chain/chain-guard.js";
-import { launchHarnessGame, prepareOpenHomes } from "./game-setup";
+import { createHarnessAdminProvider, launchHarnessGame, prepareOpenHomes } from "./game-setup";
 import { createHarnessAccounts, type HarnessAccount } from "./account-factory";
 import { connectActorClients, connectHarnessGameClient } from "./game-client";
 import { createHarnessGame } from "./harness-game";
@@ -317,7 +317,7 @@ async function resolveHarnessGame(
 
   const gameName = options.gameName ?? `lab-${Date.now().toString(36)}`;
   if (options.gameType === "frontier") {
-    const provider = createHarnessProvider(requiredEnvironmentValue("HARNESS_ADMIN_RPC_URL", "private game setup"));
+    const provider = createHarnessAdminProvider(shard.rpcUrl);
     try {
       return await launchFrontierSeason(provider, gameName, options.minutes, options.presetId);
     } finally {

@@ -1,3 +1,5 @@
+import { resolveRegistrarExecutionDetails } from "./transaction-details";
+export { resolveRegistrarExecutionDetails } from "./transaction-details";
 import { createOperatorAccount } from "../shared/madara-account";
 import { presetRegistrationCall } from "./native-preset";
 import { confirmedTransactionReceipt } from "../shared/transaction";
@@ -5,7 +7,7 @@ import { completeNativeAdminCommand } from "../world/native/command";
 import { nativeGamesAbi, nativeWorldSchema } from "../world/native/manifest";
 import type { RegistrarWorld } from "../world/native/types";
 import type { buildNativePreset } from "../config/native-preset";
-import { resolveGameTransactionResourceBounds, worldView } from "@bibliothecadao/eternum";
+import { worldView } from "@bibliothecadao/eternum";
 import { Account, CallData, shortString, type Call, type RawArgs, RpcProvider } from "starknet";
 import { loadRepoJsonFile } from "../shared/repo";
 import type { DeploymentEnvironmentId } from "../types";
@@ -103,14 +105,6 @@ function buildRegistrarCall(
     contractAddress: registrar.address!,
     entrypoint,
     calldata,
-  };
-}
-
-export function resolveRegistrarExecutionDetails() {
-  return {
-    version: 3 as const,
-    tip: 0,
-    resourceBounds: resolveGameTransactionResourceBounds(),
   };
 }
 
