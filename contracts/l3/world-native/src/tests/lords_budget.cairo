@@ -216,13 +216,65 @@ fn simulate(ruins_per_day: u32, quiet_days: u64, clear: bool) -> (u128, u128) {
     (paid, refused)
 }
 
+// Each scenario gets its own VM; all rates, days, roots and assertions are unchanged.
 #[test]
-fn busy_and_quiet_stretches_never_borrow_the_next_days_unlock() {
-    for ruins in array![2_u32, 20, 300, 2000] {
-        simulate(ruins, 0, true);
-        simulate(ruins, 30, true);
-        simulate(ruins, 0, false);
-    }
+fn busy_2_ruins_per_day_never_borrow_future_unlocks() {
+    simulate(2, 0, true);
+}
+
+#[test]
+fn quiet_then_busy_2_ruins_per_day_never_borrow_future_unlocks() {
+    simulate(2, 30, true);
+}
+
+#[test]
+fn unopened_2_ruins_per_day_never_borrow_future_unlocks() {
+    simulate(2, 0, false);
+}
+
+#[test]
+fn busy_20_ruins_per_day_never_borrow_future_unlocks() {
+    simulate(20, 0, true);
+}
+
+#[test]
+fn quiet_then_busy_20_ruins_per_day_never_borrow_future_unlocks() {
+    simulate(20, 30, true);
+}
+
+#[test]
+fn unopened_20_ruins_per_day_never_borrow_future_unlocks() {
+    simulate(20, 0, false);
+}
+
+#[test]
+fn busy_300_ruins_per_day_never_borrow_future_unlocks() {
+    simulate(300, 0, true);
+}
+
+#[test]
+fn quiet_then_busy_300_ruins_per_day_never_borrow_future_unlocks() {
+    simulate(300, 30, true);
+}
+
+#[test]
+fn unopened_300_ruins_per_day_never_borrow_future_unlocks() {
+    simulate(300, 0, false);
+}
+
+#[test]
+fn busy_2000_ruins_per_day_never_borrow_future_unlocks() {
+    simulate(2000, 0, true);
+}
+
+#[test]
+fn quiet_then_busy_2000_ruins_per_day_never_borrow_future_unlocks() {
+    simulate(2000, 30, true);
+}
+
+#[test]
+fn unopened_2000_ruins_per_day_never_borrow_future_unlocks() {
+    simulate(2000, 0, false);
 }
 
 #[test]
