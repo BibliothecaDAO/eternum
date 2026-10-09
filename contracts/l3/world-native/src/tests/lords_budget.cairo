@@ -233,7 +233,7 @@ fn withdrawals_remain_open_through_the_last_second_of_the_preset_claim_window() 
     let game = clock().game;
     let rules = rules();
     crate::relics::assert_claim_window(game, rules, game.end_at);
-    crate::relics::assert_claim_window(game, rules, game.end_at + rules.claim_window_seconds - 1);
+    crate::relics::assert_claim_window(game, rules, game.end_at + Into::<u32, u64>::into(rules.claim_window_seconds) - 1);
 }
 
 #[test]
@@ -241,7 +241,7 @@ fn withdrawals_remain_open_through_the_last_second_of_the_preset_claim_window() 
 fn no_receipt_can_start_at_the_ledgers_close_deadline() {
     let game = clock().game;
     let rules = rules();
-    crate::relics::assert_claim_window(game, rules, game.end_at + rules.claim_window_seconds);
+    crate::relics::assert_claim_window(game, rules, game.end_at + Into::<u32, u64>::into(rules.claim_window_seconds));
 }
 
 #[test]

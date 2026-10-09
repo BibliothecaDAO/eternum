@@ -294,6 +294,7 @@ function buildEconomy(
         (value) => Number.isSafeInteger(value) && value > 0,
       ) ||
       [chests.estimateDays, ...shares].some((value) => value > 0xffff) ||
+      chests.claimWindowSeconds > 0xffffffff ||
       shares.some((value, index) => value > (shares[index + 1] ?? value))
     )
       throw new Error("Invalid ruin chest rules");
