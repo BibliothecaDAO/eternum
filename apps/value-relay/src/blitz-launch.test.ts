@@ -34,7 +34,20 @@ const credentials = {
   privateKey: "unused-test-key",
 };
 const key = { chainId: "0x1", gameId: 7 };
-const game = (cancelled = false) => ["3", "1", "9", "100", "160", "0", "0", "0x0", "1", cancelled ? "1" : "0", "0"];
+const game = (cancelled = false) => [
+  "3",
+  "1",
+  "9",
+  "100",
+  "160",
+  "0",
+  "0",
+  "0x0",
+  "1",
+  cancelled ? "1" : "0",
+  "0",
+  "24",
+];
 beforeEach(() => {
   vi.clearAllMocks();
   rpc.block.mockResolvedValue({ status: "ACCEPTED_ON_L2", block_number: 10, timestamp: 50 });

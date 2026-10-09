@@ -53,6 +53,7 @@ const game = (finalized: boolean, commitment = "0x0") => [
   "1",
   "0",
   finalized ? "1" : "0",
+  "24",
 ];
 beforeEach(() => {
   vi.clearAllMocks();

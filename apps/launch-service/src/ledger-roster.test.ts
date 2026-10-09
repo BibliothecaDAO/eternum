@@ -14,7 +14,7 @@ const source = () =>
     ledgerAddress: "0x10",
     resolveGameKey: () => Effect.succeed({ chainId: "0x1", gameId: 7 }),
   });
-const game = (start = "200") => ["1", "1", "1", start, "300", "0", "0", "0", "1", "0", "0"];
+const game = (start = "200") => ["1", "1", "1", start, "300", "0", "0", "0", "1", "0", "0", "1"];
 beforeEach(() => {
   vi.clearAllMocks();
   rpc.block.mockResolvedValue({ block_number: 100, block_hash: "0xabc", timestamp: 200 });
@@ -49,4 +49,13 @@ it("refuses a pending head instead of freezing provisional registration", async 
   rpc.block.mockResolvedValue({ timestamp: 200 });
   await expect(Effect.runPromise(source().readClosed(key))).rejects.toThrow();
   expect(rpc.call).not.toHaveBeenCalled();
+});
+
+it("uses the ledger game cap and refuses an oversold roster before fetching seats", async () => {
+  const fields = game();
+  fields[8] = "3";
+  fields[11] = "2";
+  rpc.call.mockResolvedValue(fields);
+  await expect(Effect.runPromise(source().readClosed(key))).rejects.toThrow();
+  expect(rpc.call).toHaveBeenCalledTimes(1);
 });

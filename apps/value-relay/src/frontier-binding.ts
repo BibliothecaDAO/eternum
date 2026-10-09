@@ -98,7 +98,7 @@ export const frontierReceiptBindings = (
             head,
           );
           if (
-            preset.length !== 20 ||
+            preset.length !== 21 ||
             uint(preset[17]!, 32) !== unit ||
             uint(preset[18]!, 32) !== (end - start) / (20n * unit) ||
             uint(preset[19]!, 32) !== window ||

@@ -71,7 +71,7 @@ beforeEach(() => {
     query.entrypoint === "frontier_claim_deadline"
       ? ["604910"]
       : query.entrypoint === "get_preset"
-        ? [...Array(17).fill("0"), "1", "5", "604800"]
+        ? [...Array(17).fill("0"), "1", "5", "604800", "24"]
         : ["1", "10", "110", "100000000000000000000", "0", "0", "0", "0", "2", "0x99"],
   );
 });

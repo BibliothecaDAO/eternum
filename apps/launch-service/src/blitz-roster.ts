@@ -75,7 +75,6 @@ const hasConfirmedLedgerHead = (roster: FrozenBlitzRoster) =>
   /^0x[0-9a-fA-F]+$/.test(roster.blockHash);
 const hasValidRoster = (registrations: readonly BlitzRegistration[]) =>
   registrations.length > 0 &&
-  registrations.length <= 24 &&
   registrations.every(({ wallet, account }) => BigInt(wallet) !== 0n && BigInt(account) !== 0n) &&
   new Set(registrations.map((r) => r.wallet)).size === registrations.length &&
   new Set(registrations.map((r) => r.account)).size === registrations.length;

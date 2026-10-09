@@ -49,6 +49,7 @@ const readLedgerRoster = async (dependencies: LedgerRosterDependencies, key: Led
           key,
           block.block_number,
           game.registeredCount,
+          game.registrationLimit,
         );
   return { blockNumber: block.block_number, blockHash: block.block_hash, secondsUntilClose, players };
 };

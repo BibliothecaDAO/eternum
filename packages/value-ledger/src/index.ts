@@ -10,6 +10,7 @@ interface LedgerGame {
   start: number;
   end: number;
   registeredCount: number;
+  registrationLimit: number;
   cancelled: boolean;
   finalized: boolean;
   commitment: string;
@@ -26,13 +27,14 @@ export async function readLedgerGame(
     { contractAddress: address, entrypoint: "get_game", calldata: [key.chainId, String(key.gameId)] },
     head,
   );
-  if (fields.length !== 11 || BigInt(fields[1]!) !== 1n) throw new Error("invalid_ledger_game");
+  if (fields.length !== 12 || BigInt(fields[1]!) !== 1n) throw new Error("invalid_ledger_game");
   return {
     seasonId: ledgerInteger(fields[0]!),
     presetId: ledgerInteger(fields[2]!),
     start: ledgerInteger(fields[3]!),
     end: ledgerInteger(fields[4]!),
     registeredCount: ledgerInteger(fields[8]!),
+    registrationLimit: ledgerInteger(fields[11]!),
     commitment: fields[7]!,
     cancelled: bool(fields[9]!),
     finalized: bool(fields[10]!),
@@ -46,9 +48,18 @@ export async function readRegisteredPlayers(
   key: LedgerGameKey,
   head: number,
   count: number,
+  limit: number,
 ): Promise<{ wallet: string; account: string }[]> {
   const players: { wallet: string; account: string }[] = [];
-  if (!Number.isInteger(count) || count < 0 || count > 24) throw new Error("unsupported_ledger_roster_size");
+  if (
+    !Number.isInteger(limit) ||
+    limit <= 0 ||
+    limit > 0xffff ||
+    !Number.isInteger(count) ||
+    count < 0 ||
+    count > limit
+  )
+    throw new Error("unsupported_ledger_roster_size");
   for (let index = 0; index < count; index++) {
     const fields = await provider.callContract(
       {
