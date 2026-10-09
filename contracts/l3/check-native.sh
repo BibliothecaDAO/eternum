@@ -14,7 +14,7 @@ bun "$verifier/scripts/pin-class.ts" --check
 (cd "$verifier" && snforge test)
 
 (cd "$world" && scarb build)
-node --test "$world/scripts/check-class-sizes.test.mjs" "$world/scripts/check-fact-wire.test.mjs" "$world/scripts/event-layouts.test.mjs" "$world/scripts/taxonomy.test.mjs"
+node --test "$world/scripts/check-class-sizes.test.mjs" "$world/scripts/check-fact-wire.test.mjs" "$world/scripts/event-layouts.test.mjs" "$world/scripts/taxonomy.test.mjs" "$world/scripts/rule-constants.test.mjs"
 node "$world/scripts/check-class-sizes.mjs"
 
 (cd "$world" && scarb build --test)

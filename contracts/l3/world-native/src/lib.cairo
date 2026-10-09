@@ -43,6 +43,7 @@ pub mod registrar;
 pub mod relics;
 pub mod research;
 pub mod resources;
+pub mod roster_limits;
 pub mod rules;
 pub mod settlement;
 pub mod settlement_grid;

@@ -1037,6 +1037,10 @@ pub mod GameLedger {
         }
 
         fn assert_valid_preset(self: @ContractState, preset: Preset) {
+            assert!(
+                Into::<u16, u32>::into(preset.registration_limit) <= crate::roster_limits::MAX_BLITZ_ROSTER_PLAYERS,
+                "Ledger: roster limit exceeds shard",
+            );
             assert!((preset.day_unit_seconds == 0) == (preset.season_bags == 0), "Ledger: incomplete calendar");
             let duration = Into::<u32, u128>::into(preset.day_unit_seconds)
                 * Into::<u64, u128>::into(crate::days::UNITS_PER_BAG)
