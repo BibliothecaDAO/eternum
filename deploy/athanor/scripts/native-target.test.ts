@@ -52,7 +52,7 @@ describe("native deployment target is explicit", () => {
       const environment = service.environment ?? {};
       expect(Object.hasOwn(environment, "OPERATOR_TOKEN")).toBe(false);
       if (["prepare", "init", "harness"].includes(name)) {
-        expect(environment.OPERATOR_TOKEN_FILE).toBe("/opt/athanor/operator-token");
+        expect(Object.hasOwn(environment, "OPERATOR_TOKEN_FILE")).toBe(false);
         const mount = service.volumes?.find((volume) => volume.target === "/opt/athanor/operator-token");
         expect(mount?.read_only).toBe(true);
         expect(mount?.bind?.create_host_path).toBe(false);

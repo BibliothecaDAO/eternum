@@ -22,6 +22,7 @@ class OperatorCredentialTest(unittest.TestCase):
             token.chmod(0o600)
             with patch.object(operator_token, "OPERATOR_TOKEN_FILE", token), patch.object(operator.os, "execve") as execute:
                 operator.run("deploy", ["staging", "/srv/shard"])
+                self.assertNotIn("OPERATOR_TOKEN_FILE", operator_token.operator_environment())
             _, arguments, environment = execute.call_args.args
             self.assertNotIn("fixture-credential", " ".join(arguments))
             self.assertEqual(arguments[-2:], ["staging", "/srv/shard"])

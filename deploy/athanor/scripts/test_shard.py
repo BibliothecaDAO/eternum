@@ -21,7 +21,7 @@ def operator_fixture(data, testcase):
     path.write_text("test-token")
     path.chmod(0o600)
     testcase.enterContext(patch("operator_token.OPERATOR_TOKEN_FILE", path))
-    return {"OPERATOR_TOKEN_FILE": str(path)}
+    return {}
 
 
 def configuration():
@@ -329,7 +329,7 @@ class ShardTest(unittest.TestCase):
 
     def test_the_rendered_shard_keeps_the_operator_token_out_of_its_files(self):
         rendered = {"name": "athanor-smoke", "services": {
-            name: {"environment": {"OPERATOR_TOKEN_FILE": "/opt/athanor/operator-token"}, "volumes": []}
+            name: {"environment": {}, "volumes": []}
             for name in ("prepare", "init", "harness")
         } | {name: {"command": [], "environment": {}} for name in ("madara", "postgres", "herald", "rpc")}}
         with tempfile.TemporaryDirectory() as directory, \
@@ -338,7 +338,7 @@ class ShardTest(unittest.TestCase):
         self.assertNotIn("operator-secret", json.dumps(compose))
         for name in ("prepare", "init", "harness"):
             self.assertNotIn("OPERATOR_TOKEN", compose["services"][name]["environment"])
-            self.assertEqual(compose["services"][name]["environment"]["OPERATOR_TOKEN_FILE"], "/opt/athanor/operator-token")
+            self.assertNotIn("OPERATOR_TOKEN_FILE", compose["services"][name]["environment"])
 
     def test_runner_exposes_neither_the_node_nor_postgres(self):
         compose = shard.compose_configuration(configuration(), Path("/tmp/not-deployed"))
@@ -423,11 +423,10 @@ class ShardTest(unittest.TestCase):
             # The holder text is drafted beside the lock and linked into place; no draft outlives either outcome.
             self.assertEqual(list(Path(temporary).iterdir()), [])
 
-    def test_docker_keeps_exactly_the_operator_token_and_the_driver_cpus_through_sudo(self):
-        # sudo resets the environment: without this the token never reaches initialization, and a measured driver
-        # would share the shard's CPUs.
+    def test_docker_preserves_only_the_driver_cpus_through_sudo(self):
+        # Containers read their token from the fixed mount; only measured driver placement crosses sudo.
         preserved = [flag for flag in shard.DOCKER if flag.startswith("--preserve-env")]
-        self.assertEqual(preserved, ["--preserve-env=OPERATOR_TOKEN_FILE,HARNESS_CPUSET"])
+        self.assertEqual(preserved, ["--preserve-env=HARNESS_CPUSET"])
 
     def test_the_collector_has_no_retired_gateway_scrape(self):
         collector = shard.collector_configuration()
