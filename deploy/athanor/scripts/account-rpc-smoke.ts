@@ -19,7 +19,8 @@ const env = Object.fromEntries(
 );
 const keyPath = `${directory}/host-keys.json`;
 const keyStat = statSync(keyPath);
-if ((keyStat.mode & 0o777) !== 0o600 || keyStat.uid !== process.getuid!()) throw new Error("host-keys.json must be owner-only mode 0600");
+if ((keyStat.mode & 0o777) !== 0o600 || keyStat.uid !== process.getuid!())
+  throw new Error("host-keys.json must be owner-only mode 0600");
 const { deployerPrivateKey } = JSON.parse(readFileSync(keyPath, "utf8"));
 const manifest = JSON.parse(readFileSync(`${directory}/native-world.json`, "utf8"));
 const { operatorAccountAddress: operator } = JSON.parse(readFileSync(`${directory}/gameplay-contracts.json`, "utf8"));

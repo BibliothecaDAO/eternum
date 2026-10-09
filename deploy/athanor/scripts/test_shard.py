@@ -26,7 +26,7 @@ def configuration():
         "chain_config": "/tmp/chain-config.yaml",
         "guardian_url": "https://identity.test/api/guardian",
         "public_rpc_url": "https://rpc.test/rpc/v0_10_2",
-        "public_herald_url":"https://herald.test","vrf_workers":8,"l2_gas_bound":"0x47868c00",
+        "public_herald_url": "https://herald.test", "vrf_workers": 8, "l2_gas_bound": "0x47868c00",
         "node_flags": ["--enable-native-execution=true", "--native-compilation-mode=async"],
         "presets": [2],
     }
@@ -64,7 +64,7 @@ class ShardTest(unittest.TestCase):
         for key, value in (
             ("chain_id", ""), ("chain_id", "a" * 32), ("chain_id", "a\nb"),
             ("port_base", 5050), ("cpuset", "0-23"), ("node_memory_mib", 512), ("player_capacity", 0),
-            ("madara_image", NODE_IMAGE), ("vrf_workers",0), ("shard", "../live"),
+            ("madara_image", NODE_IMAGE), ("vrf_workers", 0), ("shard", "../live"),
             ("trusted_proxy", "cloudflared"), ("presets", []), ("presets", ["2"]),
             ("guardian_url", "https://identity.test/api"),
             ("node_flags", ["--base-path=/live"]),
@@ -198,7 +198,7 @@ class ShardTest(unittest.TestCase):
             for name in ("SHARD_A", "SHARD_B"):
                 directory = root / name
                 directory.mkdir()
-                (directory/"host-accounts.json").write_text(json.dumps({"vrfPublicKey":{"x":"0x4","y":"0x5"}}))
+                (directory / "host-accounts.json").write_text(json.dumps({"vrfPublicKey": {"x": "0x4", "y": "0x5"}}))
                 config = {**configuration(), "chain_id": name, "chain_config": str(template)}
                 guardian = {"publicKey": "0x123", "accountClassHash": "0x456"}
                 with patch("urllib.request.OpenerDirector.open", return_value=io.StringIO(json.dumps(guardian))):
@@ -260,7 +260,10 @@ class ShardTest(unittest.TestCase):
 
     def test_existing_containers_or_volumes_are_never_reused(self):
         for replies in (["container"], ["", "volume"]):
-            with patch.object(shard, "read", side_effect=replies), self.assertRaisesRegex(ValueError, "already owns state"):
+            with (
+                patch.object(shard, "read", side_effect=replies),
+                self.assertRaisesRegex(ValueError, "already owns state"),
+            ):
                 shard.ensure_fresh_project(configuration())
 
     def test_private_outputs_exclude_inherited_credentials(self):
@@ -340,14 +343,31 @@ class ShardTest(unittest.TestCase):
         self.assertEqual(preserved, ["--preserve-env=OPERATOR_TOKEN,HARNESS_CPUSET"])
 
     def test_the_collector_has_no_retired_gateway_scrape(self):
-        collector=shard.collector_configuration()
-        self.assertEqual(set(collector["receivers"]),{"otlp"})
-        self.assertNotIn("gateway",json.dumps(collector))
+        collector = shard.collector_configuration()
+        self.assertEqual(set(collector["receivers"]), {"otlp"})
+        self.assertNotIn("gateway", json.dumps(collector))
+
+    def test_initializer_uses_the_same_runtime_setting_validation_as_the_runner(self):
+        package = load_package_script("init")
+        environment = {"CHAIN_ID": "CHECK", "GUARDIAN_URL": "https://id.test/api/guardian",
+                       "PUBLIC_RPC_URL": "https://rpc.test", "PUBLIC_HERALD_URL": "https://herald.test",
+                       "PLAYER_CAPACITY": "24", "VRF_WORKERS": "8", "L2_GAS_BOUND": "0x47868c00"}
+        for invalid in ({"VRF_WORKERS": "0"}, {"VRF_WORKERS": "65"}, {"L2_GAS_BOUND": "0x0"}):
+            with patch.dict(shard.os.environ, {**environment, **invalid}), self.assertRaises(ValueError):
+                package.configuration()
+
+    def test_harness_key_loading_refuses_a_group_readable_file(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            data = Path(temporary)
+            shard.write_json(data / "host-keys.json", {"deployerAddress": "0x1", "deployerPrivateKey": "0x2"})
+            (data / "host-keys.json").chmod(0o640)
+            with self.assertRaisesRegex(ValueError, "owner-only mode 0600"):
+                shard.host_credentials(data)
 
     def test_worker_count_and_fixed_bound_are_required(self):
-        config=configuration()
-        for changes in ({"vrf_workers":0},{"vrf_workers":65},{"l2_gas_bound":"0x0"},{"l2_gas_bound":"0x10000000000000000"}):
-            with self.assertRaises(ValueError):shard.validate_configuration({**config,**changes},set(range(8,12))|set(range(20,24)))
+        config = configuration()
+        for changes in ({"vrf_workers": 0}, {"vrf_workers": 65}, {"l2_gas_bound": "0x0"}, {"l2_gas_bound": "0x10000000000000000"}):
+            with self.assertRaises(ValueError): shard.validate_configuration({**config, **changes}, set(range(8, 12))|set(range(20, 24)))
 
     def test_the_package_runs_its_collector_within_its_budget_and_the_node_exports_to_it(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -419,9 +439,9 @@ class ShardTest(unittest.TestCase):
             shard.write_private_environment(Path(temporary) / "private.env", {"KEY": "value\nOTHER=bad"})
 
     def test_release_image_resolution_has_no_gateway_build(self):
-        package={"init_image":"sha256:"+"1"*64,"herald_image":"sha256:"+"2"*64,"metrics_image":"sha256:"+"3"*64}
-        with patch.object(shard,"release_images",return_value=package):
-            self.assertEqual(shard.resolve_images({"package":"shard-v1"}),{"package":"shard-v1",**package})
+        package = {"init_image": "sha256:"+"1"*64, "herald_image": "sha256:"+"2"*64, "metrics_image": "sha256:"+"3"*64}
+        with patch.object(shard, "release_images", return_value=package):
+            self.assertEqual(shard.resolve_images({"package": "shard-v1"}), {"package": "shard-v1", **package})
 
     def test_matrix_runs_in_order_and_stops_only_its_own_projects(self):
         for failure in (None, RuntimeError("workload failed")):
@@ -483,7 +503,7 @@ class PackageStartTest(unittest.TestCase):
         self.write_initialized_data()
         self.environ = {
             "CHAIN_ID": "COMMUNITY", "GUARDIAN_URL": "https://identity.test/api/guardian",
-            "PUBLIC_RPC_URL": "https://rpc.test/rpc/v0_10_2", "PUBLIC_HERALD_URL":"https://herald.test","VRF_WORKERS":"8","L2_GAS_BOUND":"0x47868c00",
+            "PUBLIC_RPC_URL": "https://rpc.test/rpc/v0_10_2", "PUBLIC_HERALD_URL": "https://herald.test", "VRF_WORKERS": "8", "L2_GAS_BOUND": "0x47868c00",
             "PLAYER_CAPACITY": "16",
             "TRUSTED_PROXY": "172.18.0.1",
         }
@@ -503,7 +523,7 @@ class PackageStartTest(unittest.TestCase):
             "initialized.json": {"chainId": "0x1", "world": "0x4"},
             # A record written before init kept only identity: operational settings beside it are ignored.
             "init-configuration.json": {"shard": "community", "chain_id": "COMMUNITY", "port_base": 0,
-                                        "guardian_url": "https://identity.test/api/guardian", "l2_gas_bound":"0x47868c00", "player_capacity": 16,
+                                        "guardian_url": "https://identity.test/api/guardian", "l2_gas_bound": "0x47868c00", "player_capacity": 16,
                                         "madara_image": NODE_IMAGE, "public_rpc_url": "https://rpc.test/rpc/v0_10_2"},
         }
         for name, value in files.items():
@@ -550,13 +570,13 @@ class PackageStartTest(unittest.TestCase):
         self.start(PLAYER_CAPACITY="200", PUBLIC_RPC_URL="https://rpc.moved.test/rpc/v0_10_2")
         herald = shard.read_private_environment(self.published("HERALD_CONFIG", "herald.env"))
         self.assertEqual(herald["HERALD_PUBLIC_RPC_URL"], "https://rpc.moved.test/rpc/v0_10_2")
-        for settings in ({"CHAIN_ID": "OTHER"}, {"GUARDIAN_URL": "https://other.test/api/guardian"}, {"L2_GAS_BOUND":"0x1"}):
+        for settings in ({"CHAIN_ID": "OTHER"}, {"GUARDIAN_URL": "https://other.test/api/guardian"}, {"L2_GAS_BOUND": "0x1"}):
             with self.subTest(settings=settings), self.assertRaisesRegex(ValueError, "never reinitialize"):
                 self.start(**settings)
 
     def test_restart_verifies_the_existing_vrf_credential_without_rotation(self):
         self.start()
-        run_calls=shard.run.call_args_list
+        run_calls = shard.run.call_args_list
         self.assertTrue(any("verify-vrf" in call.args[0] for call in run_calls))
         self.assertFalse(any("prepare-authority" in str(call.args[0]) for call in run_calls))
 
@@ -568,7 +588,14 @@ class LocalEnrollmentTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             data = Path(temporary)
             (data / "native-world.json").write_text(json.dumps({"shard": {"chainId": "0x1"}, "world": {"address": "0x2"}}))
-            with patch.object(package, "DATA", data), patch("deploy.directory_status") as listing, patch.object(shard, "wait_for_endpoint"), patch.object(shard, "save_harness_environment"), patch.object(shard, "deploy_world"), patch.object(shard, "run"):
+            with (
+                patch.object(package, "DATA", data),
+                patch("deploy.directory_status") as listing,
+                patch.object(shard, "wait_for_endpoint"),
+                patch.object(shard, "save_harness_environment"),
+                patch.object(shard, "deploy_world"),
+                patch.object(shard, "run"),
+            ):
                 package.deploy_world_once(configuration(), {"RPC_URL": "http://node", "HERALD_URL": "http://herald"})
             listing.assert_not_called()
 

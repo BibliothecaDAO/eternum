@@ -51,18 +51,20 @@ Behind a tunnel, set TRUSTED_PROXY to its actual socket peer. With loopback bind
 from the Compose network route; exposed bindings trust no proxy unless explicitly configured.
 
 The identity service must carry the pending route before a shard from this code starts. Deploy the identity Worker
-containing `/api/directory/shards/pending` before running official deployment; a missing route fails with this prerequisite.
-The local runner and initializer never list shards, including measurement shards.
+containing `/api/directory/shards/pending` before running official deployment; a missing route fails with this
+prerequisite. The local runner and initializer never list shards, including measurement shards.
 
-Herald's existing listener first serves the real prepared identity at `/manifest`, with other routes unavailable. Official deployment
-registers the Herald URL as pending after starting Herald and before starting initialization or enrolling the operator. Pending shards are hidden from players. Init
-then deploys Games, sets owner/launcher/ledger roles and registers the selected presets. This bootstrap assigns all
-three roles to the enrolled operator; later role changes use the contract's existing owner-authorized setters.
+Herald's existing listener first serves the real prepared identity at `/manifest`, with other routes unavailable.
+Official deployment registers the Herald URL as pending after starting Herald and before starting initialization or
+enrolling the operator. Pending shards are hidden from players. Init then deploys Games, sets owner/launcher/ledger
+roles and registers the selected presets. This bootstrap assigns all three roles to the enrolled operator; later role
+changes use the contract's existing owner-authorized setters.
 
 Deployment's last step runs `deploy/athanor/harness/self-check.ts` in the harness container against the same public
 stamping RPC. Only a passing result promotes the directory entry to active. A failure writes `data/self-check.json`,
-exits nonzero naming the first failed route and leaves directory status unchanged. Re-run deployment after correcting the fault;
-it repeats the check only while PENDING. An ACTIVE or DRAINING rerun creates no check games. The runner and fixture are the harness implementation, not a separate deployment test suite.
+exits nonzero naming the first failed route and leaves directory status unchanged. Re-run deployment after correcting
+the fault; it repeats the check only while PENDING. An ACTIVE or DRAINING rerun creates no check games. The runner and
+fixture are the harness implementation, not a separate deployment test suite.
 
 Metrics collect OTLP and sample container CPU from a read-only cgroup mount, without a Docker socket or write access.
 The compose services restart on failure. Initializer logs and `harness.env` are private and must never be published.
@@ -93,5 +95,5 @@ Closed blocks remain 2 seconds. Block caps are 10,000 transactions, 1,000,000 st
 10^13 for each of Sierra, proving and receipt L2 gas. Parallel Merkle construction is enabled and historical database
 snapshots are disabled (`--db-max-kept-snapshots=0`). These are the shipped leader configuration, not trial scripts.
 
-The node keeps its own response-size default. The response size of a full 2,000-action block remains unmeasured;
-ops must measure it before adding an override. Execution batches are 4; block-production batches are explicitly 1,024.
+The node keeps its own response-size default. The response size of a full 2,000-action block remains unmeasured; ops
+must measure it before adding an override. Execution batches are 4; block-production batches are explicitly 1,024.
