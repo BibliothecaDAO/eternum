@@ -46,3 +46,12 @@ the sender workers are warmed. These commands preserve public send timestamps, p
 offsets and round trips. Visibility is measured at Herald's first transaction notice rather than a private node
 WebSocket; the file declares that observer. Every pass also requires confirmed Herald facts and real domain assertions.
 Request bodies and signing material stay in worker memory.
+
+## 96 bots
+
+`pnpm lab:harness:96 --rpc-url <public-rpc> --herald-url <herald>` plays four legal 24-player Blitz rosters for 10
+minutes at 15-second cadence, retaining the existing 3,500-action acceptance gate. The contract caps a Blitz roster at
+24; the driver does not relax it. `pnpm lab:harness:96:frontier` plays all 96 bots in one Frontier season with six
+workers. Each prepared account is checked once, assigned to its own worker group and reads its own Herald store.
+Duplicate accounts, duplicate bot IDs, missing participants and mismatched game assignments fail before workers start.
+Prepared credential files remain private; public result files contain neither device keys nor signed bodies.

@@ -163,6 +163,7 @@ async function main(): Promise<void> {
   const prepared = options.preparedGamePath
     ? await readJson<PreparedGame>(path.resolve(options.preparedGamePath))
     : await prepareGames(options, shard, provider);
+  validatePreparedRoster(prepared, options.bots);
   const players = playersOf(options.workload, prepared, options.workers);
   if (players.kind === "roster") {
     provider.dispose();
@@ -434,6 +435,24 @@ function parseFlags(args: string[]): Record<string, string> {
 interface PreparedGame {
   game: LaunchedGame;
   accounts: Omit<HarnessAccount, "account">[];
+}
+
+/** Each approved account belongs to one worker; duplicated fixtures would break nonce serialization across workers. */
+export function validatePreparedRoster(prepared: PreparedGame | PreparedGame[], expectedBots: number): void {
+  const games = Array.isArray(prepared) ? prepared : [prepared];
+  const accounts = games.flatMap((game) => game.accounts);
+  if (accounts.length !== expectedBots) throw new Error("Prepared roster size differs from the requested bot count");
+  const addresses = new Set<string>();
+  const bots = new Set<number>();
+  for (const group of games)
+    for (const account of group.accounts) {
+      const address = BigInt(account.address).toString();
+      if (addresses.has(address) || bots.has(account.botId))
+        throw new Error("Prepared roster repeats a player account or bot id");
+      if (account.gameId !== group.game.gameId) throw new Error("Prepared player belongs to another game");
+      addresses.add(address);
+      bots.add(account.botId);
+    }
 }
 
 async function prepareGames(
