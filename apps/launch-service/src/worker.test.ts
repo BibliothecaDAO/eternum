@@ -26,7 +26,6 @@ const SHARD_MANIFEST = {
   chainId: SHARD_CHAIN,
   releaseSchemas: { "1": schema.identity },
   rpcUrl: `${SHARD_URL}/rpc`,
-  admissionUrl: `${SHARD_URL}/admission`,
   accountClassHash: "0x2",
   guardianPublicKey: "0x9",
   contracts: { games: "0x77" },

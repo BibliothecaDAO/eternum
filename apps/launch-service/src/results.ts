@@ -19,7 +19,6 @@ interface ResultProgress {
 interface ResultTarget {
   provider: RpcProvider;
   manifest: RegistrarWorld;
-  admissionUrl: string;
   accountAddress: string;
   privateKey: string;
   gameId: number;
@@ -83,12 +82,11 @@ function view<T>(target: ResultTarget, name: string, calldata: (number | string 
 
 export async function finalizeGame(
   request: FinalizeGameRequest,
-  rpc: { url: string; admissionUrl: string },
+  rpc: { url: string },
   credentials: { manifest: RegistrarWorld; accountAddress: string; privateKey: string },
 ): Promise<FinalizedGameSummary> {
   const target: ResultTarget = {
     ...credentials,
-    admissionUrl: rpc.admissionUrl,
     gameId: request.gameId,
     provider: new RpcProvider({ nodeUrl: rpc.url }),
   };

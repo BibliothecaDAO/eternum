@@ -21,12 +21,9 @@ const network =
       return response({
         chainId: "0xa",
         rpcUrl: "https://rpc.public.test",
-        admissionUrl: "https://admission.public.test",
       });
     if (url.endsWith("/health"))
       return response({ service: "herald", success: true, confirmed_block: 10, undecodable_events: 0 });
-    if (url === "https://admission.public.test")
-      return response({ jsonrpc: "2.0", id: 1, error: { code: -32601, message: "Method not found" } });
     if (url === "https://rpc.public.test") {
       const rpc = JSON.parse(String(init?.body));
       return response({ jsonrpc: "2.0", id: rpc.id, result: { block_number: 10, timestamp: now } });
