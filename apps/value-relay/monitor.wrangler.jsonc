@@ -1,0 +1,24 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "realms-value-monitor",
+  "main": "src/monitor-worker.ts",
+  "compatibility_date": "2026-09-15",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": false,
+  "observability": { "enabled": true },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["ValueMonitor"] }],
+  "env": {
+    "staging": {
+      "name": "realms-value-monitor-staging",
+      "workers_dev": false,
+      "durable_objects": { "bindings": [{ "name": "MONITOR", "class_name": "ValueMonitor" }] },
+      "triggers": { "crons": ["* * * * *"] },
+    },
+    "production": {
+      "name": "realms-value-monitor",
+      "workers_dev": false,
+      "durable_objects": { "bindings": [{ "name": "MONITOR", "class_name": "ValueMonitor" }] },
+      "triggers": { "crons": ["* * * * *"] },
+    },
+  },
+}

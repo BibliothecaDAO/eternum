@@ -1,0 +1,26 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "realms-value-relay",
+  "main": "src/worker.ts",
+  "compatibility_date": "2026-09-15",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": false,
+  "observability": { "enabled": true },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["ValueRelay"] }],
+  "env": {
+    "staging": {
+      "name": "realms-value-relay-staging",
+      "workers_dev": false,
+      "services": [{ "binding": "IDENTITY", "service": "realms-identity-staging", "entrypoint": "ValueIdentity" }],
+      "durable_objects": { "bindings": [{ "name": "RELAY", "class_name": "ValueRelay" }] },
+      "triggers": { "crons": ["* * * * *"] },
+    },
+    "production": {
+      "name": "realms-value-relay",
+      "workers_dev": false,
+      "services": [{ "binding": "IDENTITY", "service": "realms-identity", "entrypoint": "ValueIdentity" }],
+      "durable_objects": { "bindings": [{ "name": "RELAY", "class_name": "ValueRelay" }] },
+      "triggers": { "crons": ["* * * * *"] },
+    },
+  },
+}

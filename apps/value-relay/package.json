@@ -1,0 +1,8 @@
+{
+  "name": "@realms-world/value-relay",
+  "private": true,
+  "type": "module",
+  "scripts": { "typecheck": "tsc --noEmit", "test": "vitest run" },
+  "dependencies": { "@realms-world/identity": "workspace:*", "effect": "4.0.0-rc.108", "starknet": "catalog:web" },
+  "devDependencies": { "@cloudflare/workers-types": "5.20260922.1", "@types/node": "^22.19.13", "miniflare": "4.20260730.0", "typescript": "catalog:web", "vitest": "^3.2.4", "wrangler": "4.136.3" }
+}

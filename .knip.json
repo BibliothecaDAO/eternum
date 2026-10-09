@@ -35,6 +35,10 @@
         ]
       }
     },
+    "apps/value-relay": {
+      "entry": ["src/worker.ts", "src/monitor-worker.ts"],
+      "ignoreDependencies": ["cloudflare"]
+    },
     "apps/launch-service": {
       "entry": [
         "src/worker.ts"

@@ -1,0 +1,87 @@
+import { Effect } from "effect";
+import type { MonitorPorts, Page, PaidClaim, BlitzCommitment, Withdrawal, BlitzResult, RelayEffect } from "./ports";
+import { RelayFailure, relayOperation } from "./ports";
+
+export interface MonitorProgress {
+  halted: string | null;
+}
+interface MonitorStore {
+  load(): Promise<MonitorProgress>;
+  save(progress: MonitorProgress): Promise<void>;
+}
+
+/** The monitor has a separate pauser credential. A failed pause retries from its durable stop condition. */
+export const runMonitor = (ports: MonitorPorts, store: MonitorStore) =>
+  Effect.gen(function* () {
+    const progress = yield* relayOperation("read monitor progress", () => store.load());
+    if (progress.halted) {
+      yield* ports.ledger.pause();
+      return progress;
+    }
+    const claimFault = yield* checkPaidClaims(ports);
+    if (claimFault) return yield* pausePayouts(ports, store, claimFault);
+    const resultFault = yield* checkPostedResults(ports);
+    if (resultFault) return yield* pausePayouts(ports, store, resultFault);
+    return progress;
+  });
+
+const checkPaidClaims = (ports: MonitorPorts) =>
+  findMismatch(ports.ledger.paidClaims, (paid) =>
+    ports.shard
+      .withdrawal(paid.chainId, paid.transactionHash)
+      .pipe(
+        Effect.map((receipt) =>
+          matchesPaidClaim(receipt, paid) ? null : `paid_claim_mismatch:${paid.transactionHash}`,
+        ),
+      ),
+  );
+
+const checkPostedResults = (ports: MonitorPorts) =>
+  findMismatch(ports.ledger.postedResults, (posted) =>
+    ports.shard
+      .result(posted.chainId, posted.gameId)
+      .pipe(
+        Effect.map((result) => (matchesPostedResult(result, posted) ? null : `blitz_result_mismatch:${posted.gameId}`)),
+      ),
+  );
+
+const findMismatch = <A>(
+  read: (cursor: string | null) => RelayEffect<Page<A>>,
+  check: (row: A) => RelayEffect<string | null>,
+) =>
+  Effect.gen(function* () {
+    let cursor: string | null = null;
+    const seen = new Set<string>();
+    do {
+      const page: Page<A> = yield* read(cursor);
+      for (const row of page.rows) {
+        const reason = yield* check(row);
+        if (reason) return reason;
+      }
+      if (page.next !== null && seen.has(page.next))
+        return yield* Effect.fail(new RelayFailure({ operation: "ledger_page_cycle" }));
+      if (page.next !== null) seen.add(page.next);
+      cursor = page.next;
+    } while (cursor !== null);
+    return null;
+  });
+
+const pausePayouts = (ports: MonitorPorts, store: MonitorStore, reason: string) =>
+  Effect.gen(function* () {
+    const halted = { halted: reason };
+    yield* relayOperation("persist payout stop", () => store.save(halted));
+    yield* ports.ledger.pause();
+    return halted;
+  });
+
+const matchesPaidClaim = (receipt: Withdrawal | null, paid: PaidClaim) =>
+  receipt !== null &&
+  BigInt(receipt.chainId) === BigInt(paid.chainId) &&
+  BigInt(receipt.transactionHash) === BigInt(paid.transactionHash) &&
+  receipt.seasonId === paid.seasonId &&
+  BigInt(receipt.amount) === BigInt(paid.amount);
+const matchesPostedResult = (result: BlitzResult | null, posted: BlitzCommitment) =>
+  result !== null &&
+  BigInt(result.chainId) === BigInt(posted.chainId) &&
+  result.gameId === posted.gameId &&
+  BigInt(result.commitment) === BigInt(posted.commitment);
