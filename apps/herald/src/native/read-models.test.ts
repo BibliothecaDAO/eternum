@@ -1,3 +1,5 @@
+import { buildNativePreset } from "../../../../config/deployer/clean/config/native-preset";
+import { loadNativePresetConfiguration } from "../../../../config/deployer/clean/registrar/native-preset";
 import { CairoCustomEnum } from "starknet";
 import { WorldFold } from "../world-fold";
 import { describe, expect, it } from "vitest";
@@ -425,4 +427,50 @@ it("exposes each roster member's preparation from their own entry and realm, not
   expect(buildNativeDirectory({ ...input, fold: restored }).games.find((game) => game.game_id === 1)!.roster).toEqual(
     prepared,
   );
+});
+
+it("keeps finalized Frontier custody facts through the claim window and checkpoint recovery", () => {
+  const state = world();
+  const models = ["ChestRules", "LordsBudget", "LordsWithdrawal"];
+  const chests = {
+    pool: 1000n,
+    price_ceiling: 50n,
+    estimate_days: 5n,
+    claim_window_seconds: 604800n,
+    shares: { common: 1n, uncommon: 2n, rare: 4n, epic: 10n, legendary: 20n },
+  };
+  state.native.applyReceipt(
+    state.fold,
+    receipt(
+      seedDerivedRows(state.fold, state.decoder, [
+        rowEvent("SliceRules", ["1"], buildNativePreset(loadNativePresetConfiguration("madara.frontier", 5), 5).rules),
+        rowEvent("ChestRules", ["1"], chests),
+        rowEvent("LordsBudget", ["1"], {
+          pool_left: 900n,
+          open: 20n,
+          day: 1n,
+          price: 1n,
+          estimate: 10n,
+          rolled_shares: 20n,
+        }),
+        rowEvent("LordsWithdrawal", ["1", "85"], { account: 273n, amount: 100n }),
+        gameEvent("1", "1", "0", "5"),
+      ]),
+    ),
+    11,
+    0,
+  );
+  const before = state.fold.snapshot("1", 11, models).models;
+  state.fold.evictFinalizedGames();
+  expect(state.fold.finalizedGameIds()).toContain("1");
+  expect(state.fold.snapshot("1", 12, models).models).toEqual(before);
+  const restored = WorldFold.restore(state.decoder.registry, state.fold.checkpoint());
+  expect(restored.snapshot("1", 12, models).models).toEqual(before);
+  state.native.applyReceipt(
+    restored,
+    receipt([rowEvent("LordsWithdrawal", ["1", "86"], { account: 273n, amount: 50n })]),
+    12,
+    0,
+  );
+  expect(restored.snapshot("1", 12, ["LordsWithdrawal"]).models[0]!.rows).toHaveLength(2);
 });
