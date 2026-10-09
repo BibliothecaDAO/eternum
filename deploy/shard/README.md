@@ -59,7 +59,8 @@ from the Compose network route; exposed bindings trust no proxy unless explicitl
 
 The identity service must carry the pending route before a shard from this code starts. Deploy the identity Worker
 containing `/api/directory/shards/pending` before running official deployment; a missing route fails with this
-prerequisite. The local runner and initializer never list shards, including measurement shards.
+prerequisite. The initializer never lists. The runner registers PENDING before enrolment and retires that registration on stop;
+it never activates by itself.
 
 Herald's existing listener first serves the real prepared identity at `/manifest`, with other routes unavailable.
 Official deployment registers the Herald URL as pending after starting Herald and before starting initialization or
@@ -78,6 +79,15 @@ harness implementation, not a separate deployment test suite.
 
 Metrics collect OTLP and sample container CPU from a read-only cgroup mount, without a Docker socket or write access.
 The compose services restart on failure. Initializer logs and `harness.env` are private and must never be published.
+
+| Path | Registration and visibility | Operator command |
+| --- | --- | --- |
+| Official deployment | PENDING before enrolment; same self-check then ACTIVE on a pass | `operator.py ENVIRONMENT deploy ENVIRONMENT PACKAGE_DIRECTORY` |
+| Measurement runner | PENDING before enrolment; matrix stops and retires it; never activates | `operator.py ENVIRONMENT runner CONFIGURATION RUNNER_DATA_DIRECTORY --matrix` |
+| Dev shard from an untagged trunk | Start PENDING; explicitly check and activate; stop retires it | `operator.py ENVIRONMENT runner CONFIGURATION RUNNER_DATA_DIRECTORY`, then `operator.py ENVIRONMENT activate RUNNER_DATA_DIRECTORY`; later `operator.py ENVIRONMENT stop RUNNER_DATA_DIRECTORY` |
+
+Commands above run with `python3 deploy/athanor/scripts/` before `operator.py`. The wrapper reads the environment's
+protected token file; ops provisions it. Use `stop.py` for a manually started runner so its directory entry is retired.
 
 ## Operations: back up and restore
 

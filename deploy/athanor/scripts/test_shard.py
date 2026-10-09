@@ -61,6 +61,41 @@ def load_package_script(name):
 
 
 class ShardTest(unittest.TestCase):
+    def test_runner_registration_and_explicit_activation_share_the_official_gate(self):
+        import activate
+        import deploy
+        self.assertIs(shard.directory_status, deploy.directory_status)
+        with tempfile.TemporaryDirectory() as temporary:
+            data = Path(temporary)
+            shard.write_json(data / "configuration.json", configuration())
+            with patch.object(shard, "isolated_stack_lock"), patch.object(deploy, "verify_and_activate") as gate:
+                activate.activate(data)
+            self.assertEqual(gate.call_args.args[1], data)
+            self.assertEqual(gate.call_args.args[2][-2:], ["-f", str(data / "compose.json")])
+
+    def test_runner_registers_pending_before_initialization_and_never_activates(self):
+        events = []
+        config = configuration()
+        chain = "0x" + config["chain_id"].encode().hex()
+        with tempfile.TemporaryDirectory() as temporary:
+            data = Path(temporary)
+            with patch.object(shard, "run", side_effect=lambda command, *_: events.append(command[-1])), patch.object(shard, "wait_for_identity", side_effect=lambda *_: events.append("identity")), patch.object(shard, "directory_status", side_effect=lambda _, status: (events.append(status) or {"status": "pending", "chainId": chain})), patch.object(shard.subprocess, "check_output", return_value="0"):
+                shard.start_runner_stack(config, data, ["compose"])
+            self.assertEqual(events[:5], ["prepare", "metrics", "identity", "pending", "-d"])
+            self.assertNotIn("active", events)
+            self.assertEqual(json.loads((data / "directory-registration.json").read_text())["chainId"], chain)
+
+    def test_stopping_a_registered_runner_retires_after_stop_without_activation(self):
+        events = []
+        with tempfile.TemporaryDirectory() as temporary:
+            data = Path(temporary)
+            config = configuration()
+            shard.write_json(data / "configuration.json", config)
+            shard.write_json(data / "directory-registration.json", {"url": config["public_herald_url"], "chainId": "0x" + config["chain_id"].encode().hex()})
+            with patch.object(shard, "run", side_effect=lambda *_: events.append("stop")), patch.object(shard, "directory_status", side_effect=lambda _, status: events.append(status)):
+                shard.stop_shard(data)
+        self.assertEqual(events, ["stop", "retired"])
+
     def test_resource_and_target_validation_precedes_deployment(self):
         config = configuration()
         allowed = set(range(8, 12)) | set(range(20, 24))
