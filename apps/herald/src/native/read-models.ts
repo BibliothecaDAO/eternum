@@ -45,11 +45,13 @@ interface DirectoryRows {
 export function buildNativeDirectory(input: DirectoryInput): HeraldGameDirectory {
   const rows = (model: string) => input.fold.modelRows(model);
   const facts = directoryRows(input);
-  const seasons = rows("GameRegistry")
+  // Launcher-created check names are reserved for deployment; they never offer a player a joinable listing.
+  const publicGames = rows("GameRegistry").filter(({ value }) => !shortString(value.name).startsWith("check-"));
+  const seasons = publicGames
     .filter(({ value }) => nativeGameModeOf(number(value.preset_id)) === "frontier")
     .sort((a, b) => number(a.value.game_id) - number(b.value.game_id));
   const seasonNumbers = new Map(seasons.map(({ value }, index) => [number(value.game_id), index + 1]));
-  const games = rows("GameRegistry")
+  const games = publicGames
     .map(({ value }) => directoryEntry(value, facts, input))
     .map((game) => ({ ...game, season_number: seasonNumbers.get(game.game_id) ?? null }))
     .sort((left, right) => right.game_id - left.game_id);

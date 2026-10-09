@@ -76,6 +76,28 @@ function structure(id: string, category: string, owner: string, level = "0") {
   });
 }
 
+it("never lists deployment check games or counts them as Frontier seasons", () => {
+  const { fold, native } = world();
+  const name = BigInt("0x" + Buffer.from("check-frontier-abc").toString("hex"));
+  native.applyReceipt(fold, receipt([rowEvent("GameRegistry", ["1"], { ...eventValue(), name })]), 11, 0);
+  function eventValue() {
+    return {
+      name,
+      preset_id: 5n,
+      settled: false,
+      ready: true,
+      dev_mode_on: false,
+      start_settling_at: 10n,
+      start_main_at: 20n,
+      end_at: 200n,
+      end_grace_seconds: 10n,
+      seed: 42n,
+    };
+  }
+  const directory = buildNativeDirectory({ chain: "madara", confirmedBlock: 11, timestamp: 30, fold });
+  expect(directory.games.map(({ game_id }) => game_id)).toEqual([2]);
+});
+
 describe("native directory and leaderboard", () => {
   it("reads native entries, structures and the clock without mirrored configuration rows", () => {
     const { fold, native } = world();

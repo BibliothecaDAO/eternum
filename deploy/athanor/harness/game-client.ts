@@ -14,6 +14,8 @@ import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
 interface ConnectHarnessGameClientOptions {
   actor: string;
   gameId: number;
+  /** A private deployment fixture knows its immutable preset from the confirmed creation receipt. */
+  presetId?: number;
   shard: Shard;
 }
 
@@ -38,7 +40,7 @@ export interface HarnessGameClient {
 
 /** Each player reads and acts through its own Herald subscription and native store. */
 export async function connectHarnessGameClient(options: ConnectHarnessGameClientOptions): Promise<HarnessGameClient> {
-  const presetId = await waitForHeraldToListGame(options.shard, options.gameId);
+  const presetId = options.presetId ?? (await waitForHeraldToListGame(options.shard, options.gameId));
   const heraldConfirmations = createHeraldConfirmations();
   const client = await createGameClient({
     actor: options.actor,

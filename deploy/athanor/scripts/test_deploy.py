@@ -112,21 +112,29 @@ class ActivationTest(unittest.TestCase):
     def test_real_data_directory_records_a_failed_check_without_promoting(self):
         with tempfile.TemporaryDirectory() as temporary:
             data = Path(temporary)
-            with patch.object(deploy, "run_self_check", return_value={"passed": False, "firstFailedRoute": "Explore"}), patch.object(deploy, "directory_status") as directory:
+            with patch.object(deploy, "run_self_check", return_value={"passed": False, "firstFailedRoute": "Explore"}), patch.object(deploy, "directory_status", return_value={"status": "pending"}) as directory:
                 with self.assertRaisesRegex(RuntimeError, "Explore; directory status unchanged"):
                     deploy.verify_and_activate({}, data)
-                directory.assert_not_called()
+                directory.assert_called_once_with({}, "pending")
             self.assertEqual(json.loads((data / "self-check.json").read_text())["firstFailedRoute"], "Explore")
 
     def test_real_data_directory_records_success_before_promoting(self):
         with tempfile.TemporaryDirectory() as temporary:
             data = Path(temporary)
             def activate(*args):
+                if args[1] == "pending":
+                    return {"status": "pending"}
                 self.assertTrue(json.loads((data / "self-check.json").read_text())["passed"])
                 return {"status": "active"}
             with patch.object(deploy, "run_self_check", return_value={"passed": True}), patch.object(deploy, "directory_status", side_effect=activate):
                 deploy.verify_and_activate({}, data)
             self.assertFalse((data / "data").exists())
+
+    def test_active_rechecks_create_no_games_and_leave_status_unchanged(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            with patch.object(deploy, "directory_status", return_value={"status": "active"}), patch.object(deploy, "run_self_check") as check:
+                deploy.verify_and_activate({}, Path(temporary))
+            check.assert_not_called()
 
     def test_official_deployment_registers_pending_after_identity_before_initialization(self):
         events = []
