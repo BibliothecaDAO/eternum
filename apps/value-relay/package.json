@@ -4,7 +4,11 @@
   "type": "module",
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "value-stack:up": "bun local-stack/up.ts",
+    "value-stack:down": "bun local-stack/down.ts",
+    "typecheck:stack": "tsc --noEmit --project local-stack/tsconfig.json",
+    "value-stack:keys": "bun local-stack/keys.ts"
   },
   "dependencies": {
     "@realms-world/identity": "workspace:*",

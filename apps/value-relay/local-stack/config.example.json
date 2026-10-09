@@ -1,0 +1,12 @@
+{
+  "stateDirectory": "/home/operator/.local/state/eternum-value-stack",
+  "port": 18443,
+  "devnetPort": 15050,
+  "shardRpcUrl": "http://127.0.0.1:5050/rpc/v0_9",
+  "shardHeraldUrl": "http://127.0.0.1:8080",
+  "guardianKeyFile": "/home/operator/.local/state/fresh-shard/guardian.json",
+  "launcherKeyFile": "/home/operator/.local/state/fresh-shard/launcher.json",
+  "ledgerOperatorKeyFile": "/home/operator/.local/state/fresh-shard/ledger-operator.json",
+  "frontierGameId": 1,
+  "frontendDirectory": "/home/operator/projects/eternum/apps/game/dist"
+}
