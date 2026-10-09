@@ -11,7 +11,7 @@ pub trait IGameplay<T> {
 
 #[starknet::contract]
 pub mod SeasonLogic {
-    use crate::commands::{Rejection, rejection, domain_rejection};
+    use crate::commands::{rejection, domain_rejection};
     use games_storage::release::LogicClasses;
     use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
     use starknet::{ContractAddress, get_tx_info};

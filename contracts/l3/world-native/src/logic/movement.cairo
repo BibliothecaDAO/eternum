@@ -208,7 +208,7 @@ pub mod MovementLogic {
             let key = ExplorerKey { game_id, explorer_id: command.explorer_id };
             let mut explorer = crate::logic::troops::authorized_explorer(key, actor, context.timestamp, context);
             assert!(explorer.troops.count != 0, "explorer is dead");
-            let home = crate::logic::troops::owned_structure(game_id, explorer.owner, actor);
+            let _home = crate::logic::troops::owned_structure(game_id, explorer.owner, actor);
             let home_key = crate::resources::ResourceKey { game_id, entity_id: explorer.owner };
             assert!(command.depth > 0 && command.depth < 4, "invalid expedition depth");
             assert!(

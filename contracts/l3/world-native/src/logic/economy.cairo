@@ -181,7 +181,7 @@ pub mod EconomyLogic {
             assert!(banks.len() == 6, "six regional banks required");
             for index in 0..6_u32 {
                 let bank = *banks.at(index);
-                let key = ResourceKey { game_id, entity_id: 0xfffffffe - index };
+                let key = ResourceKey { game_id, entity_id: (0xfffffffe - index).into() };
                 IBankCreationLibraryDispatcher { class_hash: self.release.classes(game_id).structures.read() }
                     .create_bank(key, actor, bank.coord, context.timestamp, crate::commands::action_context(context));
                 self.markets.name_bank(key, bank.name);

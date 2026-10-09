@@ -1,6 +1,6 @@
 #[starknet::component]
 pub mod BlitzResultState {
-    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
+    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
     use starknet::{ContractAddress, get_tx_info};
     use crate::blitz_results::{BlitzResult, RankedPlayer, RecordBlitzResults};
     use crate::events::RowSet;

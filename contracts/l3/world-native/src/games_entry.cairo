@@ -1,7 +1,7 @@
 #[starknet::component]
 pub mod GamesEntry {
     use core::num::traits::Zero;
-    use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess, StoragePointerWriteAccess};
+    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess, StoragePointerWriteAccess};
     use starknet::{ContractAddress, get_caller_address, get_tx_info};
     use crate::games::Authentication;
     use realms_vrf_verifier::vendor::ecvrf::Point;

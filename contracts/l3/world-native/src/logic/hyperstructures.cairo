@@ -539,7 +539,7 @@ pub mod HyperstructureState {
                 )
                     .unwrap();
                 let tile = crate::logic::map::tile(tile_key(key.game_id, coord));
-                if let Some(tile) = tile {
+                if let Some(_tile) = tile {
                     if let Some(id) = crate::map::structure_occupant(tile_key(key.game_id, coord)) {
                         if self
                             .structure(ResourceKey { game_id: key.game_id, entity_id: id })
