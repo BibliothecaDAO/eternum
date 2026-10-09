@@ -25,7 +25,6 @@ interface HeraldConfig {
   databaseUrl: string;
   manifestPath: string;
   port: number;
-  publicAdmissionUrl: string;
   publicRpcUrl: string;
   rpcUrl: string;
   wsUrl: string;
@@ -56,7 +55,6 @@ const readConfig = (): HeraldConfig => {
     databaseUrl: requireEnvironment("DATABASE_URL"),
     manifestPath: requireEnvironment("NATIVE_WORLD_MANIFEST"),
     port: readPort(),
-    publicAdmissionUrl: requireEnvironment("HERALD_PUBLIC_ADMISSION_URL"),
     publicRpcUrl: requireEnvironment("HERALD_PUBLIC_RPC_URL"),
     rpcUrl,
     wsUrl: websocketUrl(rpcUrl),
@@ -68,10 +66,7 @@ const streamGameId = (pathname: string): string | undefined => /^\/games\/([0-9]
 const main = async (): Promise<void> => {
   const config = readConfig();
   const manifest = readShardDocument(await readFile(config.manifestPath, "utf8"));
-  const shardManifest = buildShardManifest(manifest, {
-    rpcUrl: config.publicRpcUrl,
-    admissionUrl: config.publicAdmissionUrl,
-  });
+  const shardManifest = buildShardManifest(manifest, { rpcUrl: config.publicRpcUrl });
   const native = new NativeIngestion(new NativeDecoder(manifest));
   const ingestion = createNativeWorldIngestion(native);
   const registry = ingestion.registry;

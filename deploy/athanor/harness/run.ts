@@ -175,16 +175,12 @@ async function main(): Promise<void> {
   if (players.game.accounts.length !== options.bots) throw new Error("Prepared roster size does not match --bots");
   const accounts: HarnessAccount[] = players.game.accounts.map((account) => ({
     ...account,
-    account: new Account({
-      provider,
-      address: account.address,
-      signer: new DeviceSigner(deviceKeyOf(account.privateKey)),
-      cairoVersion: "1",
-    }),
+    account: configureGameplayAccountSubmits(
+      new Account({ provider, address: account.address, signer: new DeviceSigner(deviceKeyOf(account.privateKey)) }),
+      shard,
+    ),
   }));
-  const playBounds = readPlayBounds(readShardManifest(process.env.NATIVE_WORLD_MANIFEST));
-  const connect = (actor: string) =>
-    connectHarnessGameClient({ actor, shard, provider, playBounds, gameId: game.gameId });
+  const connect = (actor: string) => connectHarnessGameClient({ actor, shard, gameId: game.gameId });
   // The shared client launches and observes the game; every bot acts through its own client, as a player does.
   const { client, heraldConfirmations } = await connect(accounts[0].address);
   const actorClients = await connectActorClients(

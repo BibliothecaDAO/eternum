@@ -1,5 +1,4 @@
 import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
-import { waitForPlayerAction } from "./player-actions";
 import { setTimeout as sleep } from "node:timers/promises";
 import { actorKey, type HarnessGameClient, type HeraldConfirmations } from "./game-client";
 import {
@@ -311,7 +310,9 @@ const captureSubmission = (
     const onSubmitted = (event: SubmittedEvent) => {
       if (!event.signerAddress || actorKey(event.signerAddress) !== signer) return;
       settle();
-      const confirmed = waitForPlayerAction(client, event.transactionHash);
+      const confirmed = client.runtime.waitForTransaction(event.transactionHash).then((transaction) => {
+        if (transaction.status === "REVERTED") throw new Error(transaction.revertReason ?? "Transaction reverted");
+      });
       resolve({
         transactionHash: event.transactionHash,
         heraldConfirmedAtMs: heraldConfirmations?.confirmedAt(event.transactionHash),

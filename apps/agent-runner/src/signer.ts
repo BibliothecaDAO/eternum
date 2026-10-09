@@ -1,17 +1,10 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import {
-  DeviceSigner,
-  deviceKeyOf,
-  joinBotAccount,
-  signGameplayIntent,
-  type DeviceKey,
-  type GameClient,
-} from "@bibliothecadao/eternum";
+import { DeviceSigner, deviceKeyOf, joinBotAccount, type DeviceKey, type GameClient } from "@bibliothecadao/eternum";
 import { configureGameplayAccountSubmits, type Shard } from "@bibliothecadao/eternum/game-client";
 import { Account, BlockTag, RpcProvider, stark, type AccountInterface } from "starknet";
 
-import { resolveDataDir, type RunnerConfig, type RunnerSigner } from "./config";
+import type { RunnerConfig, RunnerSigner } from "./config";
 
 const BOT_KEY_FILE = "bot-key.json";
 
@@ -29,7 +22,7 @@ export async function resolveRunnerSigner(
       ? await connectBotAccount(config.signer, shard, provider, dataDir)
       : connectKeyAccount(config.signer, provider);
   // Every send, raw or through the client's provider, takes the gameplay nonce and fee path.
-  const signer = configureGameplayAccountSubmits(account, shard.chainId);
+  const signer = configureGameplayAccountSubmits(account, shard);
   client.connect(signer);
   return signer;
 }
@@ -83,21 +76,3 @@ const readStoredKey = async (file: string): Promise<DeviceKey | null> => {
   if (typeof record.privateKey !== "string") throw new Error(`Bot key file ${file} has no privateKey`);
   return deviceKeyOf(record.privateKey);
 };
-
-/** The same persisted gameplay key signs action commitments; no separate action key is created. */
-export async function signRunnerIntent(
-  config: RunnerConfig,
-  gameId: number,
-  actor: AccountInterface,
-  digest: string,
-): Promise<string[]> {
-  if (config.signer.mode === "none") throw new Error("A spectator cannot sign an action");
-  if (config.signer.mode === "key") {
-    if (BigInt(actor.address) !== BigInt(config.signer.gameplayAccountAddress))
-      throw new Error("Gameplay identity changed before signing");
-    return signGameplayIntent(digest, config.signer.gameplayPrivateKey);
-  }
-  const key = await readStoredKey(path.join(resolveDataDir(config, gameId), BOT_KEY_FILE));
-  if (!key) throw new Error("The bot gameplay key is missing");
-  return signGameplayIntent(digest, key.privateKey);
-}

@@ -84,11 +84,12 @@ export interface ShardManifest {
   chainId: string;
   releaseSchemas: Record<string, string>;
   rpcUrl: string;
-  admissionUrl?: string;
   accountClassHash: string;
   contracts: Record<string, string>;
   /** The key that authorizes device keys on this shard's Realms accounts. */
   guardianPublicKey: string;
+  /** The exact l2 gas max_amount every play carries (a canonical hex u64); the shard refuses any other bounds. */
+  l2GasBound: string;
 }
 
 export interface HeraldGameDirectory {
