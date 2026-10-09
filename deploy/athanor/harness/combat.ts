@@ -1,3 +1,4 @@
+import { playerRejectionReason } from "./player-actions";
 import type { ID } from "@bibliothecadao/types";
 import type { TrackedTransaction } from "./driver";
 import { rejectionOf, type Rejection } from "./rejections";
@@ -53,7 +54,7 @@ export function pickBattle(candidates: readonly BattleCandidate[]): BattleCandid
  */
 export function classifyBattleOutcome(action: Pick<TrackedTransaction, "outcome" | "error">): BattleOutcome {
   if (action.outcome === "completed") return { result: "succeeded" };
-  const rejection = /Native action rejected: GAMEPLAY_REJECTED: (.*)/.exec(action.error ?? "")?.[1];
+  const rejection = playerRejectionReason(action.error ?? "");
   if (action.outcome !== "rejected" || rejection === undefined) return { result: "failed" };
   const reason = rejectionOf(rejection);
   return isBattleRefusal(reason) ? { result: "refused", reason } : { result: "failed" };

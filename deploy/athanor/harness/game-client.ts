@@ -1,22 +1,24 @@
 import { setTimeout as sleep } from "node:timers/promises";
 import {
   createGameClient,
-  createNativeTicketSubmission,
   setChainProvenTimestampSource,
   setBlockTimestampSource,
-  type CreateGameClientInput,
   type GameClient,
 } from "@bibliothecadao/eternum";
 import { fetchHeraldGameDirectory, type GameClientObserver, type Shard } from "@bibliothecadao/eternum/game-client";
 import { createMicrotaskGameSyncScheduler, type GameSyncTransaction } from "@bibliothecadao/eternum/game-sync";
 import type { NativeWorldBindings } from "@bibliothecadao/types";
+import { playerActions } from "./player-actions";
+import type { PlayBounds } from "./player-invoke";
+import type { HarnessProvider } from "./provider";
 import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
 
 interface ConnectHarnessGameClientOptions {
   actor: string;
   gameId: number;
   shard: Shard;
-  signIntent: NonNullable<CreateGameClientInput["native"]>["signIntent"];
+  provider: HarnessProvider;
+  playBounds: PlayBounds;
 }
 
 const GAME_LISTING_TIMEOUT_MS = 120_000;
@@ -51,8 +53,15 @@ export async function connectHarnessGameClient(options: ConnectHarnessGameClient
     native: {
       bindings: bindings as unknown as NativeWorldBindings,
       chainId: options.shard.chainId,
-      signIntent: options.signIntent,
-      submitIntent: createNativeTicketSubmission(options.shard.admissionUrl),
+      configure: playerActions({
+        gameId: options.gameId,
+        actor: options.actor,
+        games: options.shard.worldAddress,
+        rpcUrl: options.shard.rpcUrl,
+        provider: options.provider,
+        bounds: options.playBounds,
+        commandAbi: (bindings as unknown as NativeWorldBindings).commandAbi,
+      }),
     },
     scheduler: createMicrotaskGameSyncScheduler(),
     observer: createLoggingObserver(options.gameId, heraldConfirmations),

@@ -4,7 +4,7 @@ import type { ShardManifest } from "../sync/herald-http-types";
 
 /**
  * A shard is one chain with its games, reached through one URL: its Herald. Everything else a client needs — the
- * chain id, the node and admission endpoints, the contracts and the release — comes from the manifest Herald serves.
+ * chain id, the node endpoint, the contracts and the release — comes from the manifest Herald serves.
  * A game is named by (chain id, game id) because game ids are only unique within a shard.
  */
 export interface Shard {
@@ -13,7 +13,7 @@ export interface Shard {
   chainId: string;
   releaseSchemas: Readonly<Record<string, string>>;
   rpcUrl: string;
-  admissionUrl: string;
+  admissionUrl?: string;
   accountClassHash: string;
   /** The key that authorizes device keys on this shard's Realms accounts; with the class, it fixes their addresses. */
   guardianPublicKey: string;
@@ -89,7 +89,9 @@ const buildShard = (url: string, manifest: ShardManifest): Shard => {
     chainId: normalizeChainId(manifest.chainId),
     releaseSchemas: manifest.releaseSchemas,
     rpcUrl: resolveEndpoint(manifest.rpcUrl, { name: `RPC URL of shard ${url}` }),
-    admissionUrl: resolveEndpoint(manifest.admissionUrl, { name: `Admission URL of shard ${url}` }),
+    admissionUrl: manifest.admissionUrl
+      ? resolveEndpoint(manifest.admissionUrl, { name: `Admission URL of shard ${url}` })
+      : undefined,
     accountClassHash: manifest.accountClassHash,
     guardianPublicKey: manifest.guardianPublicKey,
     contracts: manifest.contracts,

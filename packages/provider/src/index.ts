@@ -55,7 +55,7 @@ import {
 export type NativeSubmission = (
   signer: AccountInterface,
   calls: AllowArray<Call>,
-) => Promise<{ transaction_hash: string; ticket: NativeTicketIdentity }>;
+) => Promise<{ transaction_hash: string; ticket?: NativeTicketIdentity }>;
 type SubmittedTransaction = { transaction_hash: string; ticket?: NativeTicketIdentity };
 
 export {

@@ -84,7 +84,7 @@ export interface ShardManifest {
   chainId: string;
   releaseSchemas: Record<string, string>;
   rpcUrl: string;
-  admissionUrl: string;
+  admissionUrl?: string;
   accountClassHash: string;
   contracts: Record<string, string>;
   /** The key that authorizes device keys on this shard's Realms accounts. */
