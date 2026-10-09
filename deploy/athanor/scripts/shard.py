@@ -62,6 +62,10 @@ def validate_configuration(config, allowed_cpus):
         raise ValueError("vrf_workers must be explicit 1..64")
     if not re.fullmatch(r"0x[0-9a-fA-F]{1,16}", config.get("l2_gas_bound", "")) or int(config["l2_gas_bound"], 16) == 0:
         raise ValueError("l2_gas_bound must be nonzero hex u64")
+    if "rpc_max_response_size_mib" in config:
+        size = config["rpc_max_response_size_mib"]
+        if type(size) is not int or not 1 <= size <= 2**32 - 1:
+            raise ValueError("rpc_max_response_size_mib must be a positive u32 MiB count")
     validate_shard_identity(config)
     presets = config.get("presets")
     if not presets or not all(isinstance(preset, int) and preset > 0 for preset in presets):
@@ -80,14 +84,17 @@ def validate_configuration(config, allowed_cpus):
     memory = config.get("node_memory_mib", DEFAULT_NODE_MEMORY_MIB)
     if not isinstance(memory, int) or memory < 1024:
         raise ValueError("node memory must be at least 1024 MiB")
-    # These options belong to the shard lifecycle, never to a performance lever, except the database levers named
-    # after them.
+    # Lifecycle flags belong to the package. Repeating its fixed snapshot setting is harmless;
+    # the renderer keeps one instance and refuses a different snapshot policy.
     owned = ("--base-path", "--chain-config", "--rpc", "--name", "--db", "--devnet", "--l1", "--no-charge", "--otel")
-    levers = ("--db-max-kept-snapshots=",)
+    fixed_snapshot_flag = "--db-max-kept-snapshots=0"
     for flag in config["node_flags"]:
         if not isinstance(flag, str) or not flag.startswith("--") or (flag.startswith(owned)
-                                                                     and not flag.startswith(levers)):
+                                                                     and flag != fixed_snapshot_flag):
             raise ValueError(f"node flag overrides shard ownership: {flag}")
+    if any(flag.startswith("--parallel-merkle-enabled") and flag != "--parallel-merkle-enabled"
+           for flag in config["node_flags"]):
+        raise ValueError("parallel Merkle is the shipped node setting")
     if not any(flag.startswith("--enable-native-execution=") for flag in config["node_flags"]):
         raise ValueError("record the native execution setting explicitly")
     if not any(flag.startswith("--native-compilation-mode=") for flag in config["node_flags"]):
@@ -154,6 +161,8 @@ def compose_configuration(config, directory):
         "NODE_MEMORY": f"{config.get('node_memory_mib', DEFAULT_NODE_MEMORY_MIB)}m",
         "PRESETS": ",".join(str(preset) for preset in config["presets"]),
     }
+    if "rpc_max_response_size_mib" in config:
+        environment["RPC_MAX_RESPONSE_SIZE_MIB"] = str(config["rpc_max_response_size_mib"])
     compose = json.loads(subprocess.check_output([
         "docker", "compose", "-f", str(ROOT / "deploy/shard/compose.yml"), "--profile", "harness", "config",
         "--format", "json",
@@ -178,8 +187,8 @@ def compose_configuration(config, directory):
         service["volumes"].append({"type": "bind", "source": str((ROOT / config["chain_config"]).resolve()),
                                    "target": "/template/chain-config.yaml", "read_only": True})
     node = compose["services"]["madara"]
-    replaced = ("--enable-native-execution=", "--native-compilation-mode=")
-    node["command"] = [flag for flag in node["command"] if not flag.startswith(replaced)] + config["node_flags"]
+    replaced = {flag.split("=", 1)[0] for flag in config["node_flags"]}
+    node["command"] = [flag for flag in node["command"] if flag.split("=", 1)[0] not in replaced] + config["node_flags"]
     node["ports"] = [f"127.0.0.1:{config['port_base']}:9944"]
     compose["services"]["postgres"]["ports"] = [f"127.0.0.1:{config['port_base'] + 2}:5432"]
     return compose
