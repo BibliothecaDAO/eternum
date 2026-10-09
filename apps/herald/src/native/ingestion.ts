@@ -20,7 +20,7 @@ import type {
   RpcTransaction,
 } from "../types";
 import { WorldFold } from "../world-fold";
-import { NativeDecoder } from "./decoder";
+import { atPosition, NativeDecoder } from "./decoder";
 
 export class NativeReceiptRejected extends Error {
   constructor(
@@ -249,10 +249,7 @@ export class NativeIngestion {
     earlier?: PreconfirmedDecode,
   ): DecodedWorldEvent[] {
     if (earlier && sameEvents(earlier.events, receipt.events))
-      return earlier.decoded.map((event) => ({
-        ...event,
-        position: { ...event.position, blockNumber, transactionIndex },
-      }));
+      return earlier.decoded.map((event) => atPosition(event, { ...event.position, blockNumber, transactionIndex }));
     return receipt.events.flatMap((raw, eventIndex) =>
       this.decoder.owns(raw.from_address)
         ? [

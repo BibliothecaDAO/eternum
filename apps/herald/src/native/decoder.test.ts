@@ -134,12 +134,22 @@ describe("native row decoder", () => {
     const battles = [battleEvent(), battleEvent("7", "8", "1920", "42", "1")];
     const changes = native.applyReceipt(fold, receipt(battles), null, 0).changes;
     expect(changes[0].change!.set!.key).not.toBe(changes[1].change!.set!.key);
-    expect(changes[0].change!.set!.value.event_position).toEqual({ transaction_hash: "0x55", event_index: 0 });
+    expect(changes[0].change!.set!.value.event_position).toEqual({
+      block_number: null,
+      transaction_hash: "0x55",
+      transaction_index: 0,
+      event_index: 0,
+    });
     const confirmed = native
       .applyReceipt(fold, receipt([pointsAward("1", "0x111", "5", "5", "5"), ...battles]), 10, 0)
       .changes.filter(({ change }) => change?.event && change.set?.model === "BattleEvent");
     expect(confirmed.map(({ change }) => change!.set!.key)).toEqual(changes.map(({ change }) => change!.set!.key));
-    expect(confirmed[0].change!.set!.value.event_position).toEqual({ transaction_hash: "0x55", event_index: 1 });
+    expect(confirmed[0].change!.set!.value.event_position).toEqual({
+      block_number: 10,
+      transaction_hash: "0x55",
+      transaction_index: 0,
+      event_index: 1,
+    });
     const later = native.applyReceipt(fold, receipt([battleEvent("7", "8", "1920", "43")], "0x56"), 11, 0).changes;
     expect(later[0].change!.set!.key).not.toBe(changes[0].change!.set!.key);
   });
