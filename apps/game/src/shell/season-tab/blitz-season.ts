@@ -88,7 +88,7 @@ const readSeasonPrize = async (
   source: NonNullable<ReturnType<typeof seasonSourceOf>>,
   wallet: string,
 ): Promise<SeasonPrize> => {
-  const read = await ledgerOf(source);
+  const read = ledgerOf(source);
   const { seasonId } = await read.game(source.key);
   const season = await read.season(seasonId);
   const [curve, claimed, strk, share] = await Promise.all([

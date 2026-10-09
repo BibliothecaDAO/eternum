@@ -1,8 +1,8 @@
 import { expect, it, vi } from "vitest";
 
 const SN_MAIN = "0x534e5f4d41494e";
-vi.mock("@/runtime/l2-rpc", () => ({
-  l2ChainId: async () => SN_MAIN,
+vi.mock("@/runtime/l2-rpc", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/runtime/l2-rpc")>()),
   l2Provider: () => ({ callContract: async () => ["0x10e5"] }),
 }));
 
@@ -42,8 +42,8 @@ it("refuses a directory game whose ledger key names another game", () => {
 
 it("reads a ledger on this build's chain, and refuses, loudly, one the entry places on another", async () => {
   const onThisChain = { address: "0xl", chainId: SN_MAIN, feeToken: "0xf", key: { shard: "0x52", gameId: 7 } };
-  await expect((await ledgerOf(onThisChain)).lordsToken()).resolves.toBe("0x10e5");
-  await expect(ledgerOf({ ...onThisChain, chainId: "0x534e5f5345504f4c4941" })).rejects.toThrow(
-    "Ledger 0xl is on chain 0x534e5f5345504f4c4941; this build reads chain 0x534e5f4d41494e",
+  await expect(ledgerOf(onThisChain).lordsToken()).resolves.toBe("0x10e5");
+  expect(() => ledgerOf({ ...onThisChain, chainId: "0x534e5f5345504f4c4941" })).toThrow(
+    "Ledger 0xl is on chain 0x534e5f5345504f4c4941; this build reads SN_MAIN",
   );
 });

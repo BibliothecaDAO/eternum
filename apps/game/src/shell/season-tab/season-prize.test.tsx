@@ -21,6 +21,11 @@ vi.mock("@/ui/modules/identity/wallet-actions", () => ({
 const session = vi.hoisted(() => ({
   user: { realmsId: "0x7", payoutWallet: { status: "ready", address: "0x4a1" } },
 }));
+// The ledger answers nothing here: a refetch after the claim stays pending, never reaching a network.
+vi.mock("@/runtime/l2-rpc", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/runtime/l2-rpc")>()),
+  l2Provider: () => ({ callContract: () => new Promise(() => {}) }),
+}));
 vi.mock("@/hooks/context/identity-session", () => ({ useIdentitySession: () => ({ status: "signed-in", session }) }));
 vi.mock("../herald", () => ({
   useRealmsPlayer: () => ({ data: "0xplayer" }),

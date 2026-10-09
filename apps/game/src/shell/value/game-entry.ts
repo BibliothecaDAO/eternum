@@ -1,4 +1,4 @@
-import { l2ChainId, l2Provider } from "@/runtime/l2-rpc";
+import { isL2Chain, L2_CHAIN, l2Provider } from "@/runtime/l2-rpc";
 
 import { type GameKey, ledgerReader } from "./ledger";
 
@@ -44,10 +44,9 @@ export const directoryGameEntryOf = (game: { chainId: string; game_id: number })
 };
 
 /** The ledger's reads on this build's L2; a ledger the entry places on another chain is refused, loudly. */
-export const ledgerOf = async (ledger: LedgerRef) => {
-  const chain = await l2ChainId();
-  if (BigInt(ledger.chainId) !== BigInt(chain))
-    throw new Error(`Ledger ${ledger.address} is on chain ${ledger.chainId}; this build reads chain ${chain}`);
+export const ledgerOf = (ledger: LedgerRef) => {
+  if (!isL2Chain(ledger.chainId))
+    throw new Error(`Ledger ${ledger.address} is on chain ${ledger.chainId}; this build reads ${L2_CHAIN.name}`);
   return ledgerReader(l2Provider(), ledger.address);
 };
 

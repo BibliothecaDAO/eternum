@@ -4,11 +4,12 @@ import type { SignInOptions } from "@realms-world/identity";
 import { useConnect, useDisconnect, useProvider } from "@starknet-react/core";
 import type { Connector } from "@starknet-react/core";
 import { useCallback, useRef, useState } from "react";
-import { type AccountInterface, addAddressPadding, type Call, constants, stark } from "starknet";
+import type { AccountInterface, Call } from "starknet";
 
 import { WALLET_WORDS } from "@/shell/words";
 
 import { failureSentence, WrongNetworkError } from "./identity-failures";
+import { assertWalletOnL2, walletProof } from "./l2-wallet";
 
 /**
  * The wallets a Realms account links, in the order the picker lists them, each as the player knows it. A wallet whose
@@ -33,7 +34,7 @@ export const WalletPicker = ({
   onProof: (proof: SignInOptions) => void;
 }) => (
   <StarknetProvider>
-    <WalletRows only={only} failure="link" onAccount={async (account) => onProof(proofOf(account))} />
+    <WalletRows only={only} failure="link" onAccount={async (account) => onProof(walletProof(account))} />
   </StarknetProvider>
 );
 
@@ -75,11 +76,11 @@ const WalletRows = ({
   /** The wallets offered; all of them when absent. */
   only?: readonly WalletId[];
   failure: "link" | "pay";
-  /** The chosen wallet's account, connected on mainnet. */
+  /** The chosen wallet's account, connected on the build's L2. */
   onAccount: (account: AccountInterface) => Promise<void>;
 }) => {
   const { connectors } = useConnect();
-  const connect = useMainnetAccount();
+  const connect = useL2Account();
   const [pending, setPending] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const running = useRef(false);
@@ -133,8 +134,8 @@ const failureLine = (failure: "link" | "pay", cause: unknown) => {
   return cause instanceof WrongNetworkError ? failureSentence("link", cause) : WALLET_WORDS.paymentFailed;
 };
 
-/** The chosen wallet, connected and on Starknet mainnet. */
-const useMainnetAccount = () => {
+/** The chosen wallet, connected and on the build's L2. */
+const useL2Account = () => {
   const { connectAsync, connector: connectedConnector } = useConnect();
   const { disconnectAsync } = useDisconnect();
   const { provider } = useProvider();
@@ -142,20 +143,10 @@ const useMainnetAccount = () => {
     async (connector: Connector): Promise<AccountInterface> => {
       if (connectedConnector) await disconnectAsync();
       await connectAsync({ connector });
-      if ((await connector.chainId()) !== BigInt(constants.StarknetChainId.SN_MAIN)) throw new WrongNetworkError();
+      assertWalletOnL2(await connector.chainId());
       // Use the selected connector immediately; React's account state may still describe the previous wallet.
       return connector.account(provider);
     },
     [connectAsync, connectedConnector, disconnectAsync, provider],
   );
 };
-
-/** The wallet's proof as the identity service reads it: the signature it gives when the link asks for one. */
-const proofOf = (account: AccountInterface): SignInOptions => ({
-  address: addAddressPadding(account.address),
-  chainId: "SN_MAIN",
-  domain: window.location.host,
-  uri: window.location.origin,
-  signTypedData: async (message) =>
-    stark.formatSignature(await account.signMessage(message as Parameters<typeof account.signMessage>[0])),
-});

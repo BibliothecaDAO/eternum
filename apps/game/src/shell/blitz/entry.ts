@@ -109,7 +109,7 @@ export const useEntryTerms = (ledger: LedgerRef | null, wallet: string | null) =
   });
 
 const readEntryTerms = async (ledger: LedgerRef, wallet: string): Promise<EntryTerms> => {
-  const read = await ledgerOf(ledger);
+  const read = ledgerOf(ledger);
   const [game, lordsToken, linkedAccount] = await Promise.all([
     read.game(ledger.key),
     read.lordsToken(),

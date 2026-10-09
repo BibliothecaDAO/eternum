@@ -7,6 +7,8 @@ const optionalUrlOrEmpty = z.union([z.string().url(), z.literal("")]).optional()
 
 const envSchema = z.object({
   VITE_PUBLIC_IDENTITY_RPC_URL: z.string().url(),
+  /** The environment's one L2: SN_SEPOLIA for dev, SN_MAIN for production. Required, never inferred. */
+  VITE_PUBLIC_L2_CHAIN: z.enum(["SN_MAIN", "SN_SEPOLIA"]),
   VITE_PUBLIC_EXPLORER_URL: optionalUrlOrEmpty.default(""),
   VITE_PUBLIC_GRAPHICS_DEV: z
     .string()

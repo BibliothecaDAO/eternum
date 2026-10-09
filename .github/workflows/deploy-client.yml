@@ -3,8 +3,8 @@ name: Deploy Client
 # Ships the game client as a Cloudflare Pages project per GitHub environment, by dispatch only: production is the
 # live client, and it moves to the native client only as the cutover's switch step, never on a push to next. Each
 # environment names its Pages project (vars.CLOUDFLARE_PAGES_PROJECT), the origin the client is served from
-# (vars.CLIENT_ORIGIN, whose /api belongs to that environment's identity Worker) and its zone (vars.CLIENT_ZONE), and
-# holds its identity RPC secret; the custom domain is attached in the Pages dashboard once. The build reads
+# (vars.CLIENT_ORIGIN, whose /api belongs to that environment's identity Worker), its zone (vars.CLIENT_ZONE) and its
+# one L2 (vars.CLIENT_L2_CHAIN: SN_SEPOLIA or SN_MAIN), and holds the Alchemy RPC secret for that L2; the custom domain is attached in the Pages dashboard once. The build reads
 # .env.production plus the identity RPC secret and stamps the version from the ref.
 on:
   workflow_dispatch:
@@ -42,6 +42,8 @@ jobs:
     environment: ${{ inputs.environment }}
     env:
       VITE_PUBLIC_IDENTITY_RPC_URL: ${{ secrets.CLIENT_IDENTITY_RPC_URL }}
+      # The environment's one L2: SN_SEPOLIA on staging, SN_MAIN on production.
+      VITE_PUBLIC_L2_CHAIN: ${{ vars.CLIENT_L2_CHAIN }}
       CLIENT_ORIGIN: ${{ vars.CLIENT_ORIGIN }}
       CLIENT_ZONE: ${{ vars.CLIENT_ZONE }}
       PAGES_PROJECT: ${{ vars.CLOUDFLARE_PAGES_PROJECT }}
@@ -49,11 +51,11 @@ jobs:
       - name: Validate the environment's configuration
         run: |
           missing=()
-          for name in VITE_PUBLIC_IDENTITY_RPC_URL CLIENT_ORIGIN CLIENT_ZONE PAGES_PROJECT; do
+          for name in VITE_PUBLIC_IDENTITY_RPC_URL VITE_PUBLIC_L2_CHAIN CLIENT_ORIGIN CLIENT_ZONE PAGES_PROJECT; do
             [ -n "${!name}" ] || missing+=("$name")
           done
           if [ ${#missing[@]} -gt 0 ]; then
-            echo "::error::this environment has no ${missing[*]} (CLIENT_IDENTITY_RPC_URL secret; CLIENT_ORIGIN, CLIENT_ZONE, CLOUDFLARE_PAGES_PROJECT vars)"
+            echo "::error::this environment has no ${missing[*]} (CLIENT_IDENTITY_RPC_URL secret; CLIENT_L2_CHAIN, CLIENT_ORIGIN, CLIENT_ZONE, CLOUDFLARE_PAGES_PROJECT vars)"
             exit 1
           fi
 

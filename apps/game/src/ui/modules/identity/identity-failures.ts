@@ -1,4 +1,5 @@
 import { IdentityRequestError } from "@realms-world/identity";
+import { L2_CHAIN } from "@/runtime/l2-rpc";
 
 /** What the player asked for; each names its own failure. */
 export type IdentityAction = "discord" | "send-code" | "code" | "link" | "unlink" | "portrait";
@@ -10,8 +11,7 @@ const NAMED_REFUSALS: Record<string, string> = {
   OTP_EXPIRED: "That code has expired. Ask for a new one.",
   TOO_MANY_ATTEMPTS: "Too many tries with that code. Ask for a new one.",
   too_many_codes: "Too many codes for this address. Wait a minute and ask again.",
-  WALLET_NOT_DEPLOYED:
-    "This wallet is not deployed on Starknet mainnet. Deploy it in your wallet app, then link it again.",
+  WALLET_NOT_DEPLOYED: `This wallet is not deployed on ${L2_CHAIN.label}. Deploy it in your wallet app, then link it again.`,
   WALLET_LINKED_ELSEWHERE: "This wallet is linked to another Realms account.",
   email_not_verified: "Your Discord email is not verified. Verify it in Discord, or sign in with an email code.",
   email_not_found: "Your Discord account has no email. Add one in Discord, or sign in with an email code.",
@@ -32,7 +32,7 @@ export const failureSentence = (action: IdentityAction, cause: unknown): string 
   console.error("identity_action_failed", { action, error: cause instanceof Error ? cause.message : cause });
   const code = cause instanceof IdentityRequestError ? cause.code : undefined;
   if (code && NAMED_REFUSALS[code]) return NAMED_REFUSALS[code];
-  if (cause instanceof WrongNetworkError) return "Switch this wallet to Starknet mainnet.";
+  if (cause instanceof WrongNetworkError) return `Switch this wallet to ${L2_CHAIN.label}.`;
   return FALLBACK[action];
 };
 

@@ -33,6 +33,7 @@ jobs:
         env:
           # A placeholder the dev server requires to start; the terrain lab never signs in, so nothing calls it.
           VITE_PUBLIC_IDENTITY_RPC_URL: http://127.0.0.1:1
+          VITE_PUBLIC_L2_CHAIN: SN_SEPOLIA
         run: |
           pnpm --dir apps/game dev --host 127.0.0.1 --port 4173 > terrain-vite.log 2>&1 &
           for attempt in $(seq 1 60); do

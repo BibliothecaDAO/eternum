@@ -56,7 +56,7 @@ export const useReward = (ledger: LedgerRef | null, wallet: string | null) =>
   });
 
 const readReward = async (ledger: LedgerRef, wallet: string): Promise<Reward> => {
-  const read = await ledgerOf(ledger);
+  const read = ledgerOf(ledger);
   const [result, registration, strk, collection] = await Promise.all([
     read.result(ledger.key, wallet),
     read.registration(ledger.key, wallet),

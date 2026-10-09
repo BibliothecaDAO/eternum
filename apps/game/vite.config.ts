@@ -16,16 +16,22 @@ import { isDevEnvironment } from "./src/shell/frame/environment";
 import { COLORS } from "./src/tokens";
 
 /**
- * The identity RPC is the team's keyed mainnet URL and is never committed: a build without it would ship a public,
- * rate-limited node that fails sign-in under load. Checked once Vite has resolved its env, so the dev server and the
- * build fail at once, by name; tools that only read this file for its settings (knip) are not stopped by it.
+ * The environment's one L2: its chain, named by VITE_PUBLIC_L2_CHAIN (SN_SEPOLIA for dev, SN_MAIN for production), and
+ * its RPC, the team's keyed Alchemy URL for that chain, never committed: a build without it would ship a public,
+ * rate-limited node that fails sign-in under load. Both are checked once Vite has resolved its env, so the dev server
+ * and the build fail at once, by name; tools that only read this file for its settings (knip) are not stopped by it.
  */
-const requireIdentityRpcUrl = (): PluginOption => ({
-  name: "require-identity-rpc-url",
+const requireL2Environment = (): PluginOption => ({
+  name: "require-l2-environment",
   configResolved(config) {
+    if (!["SN_MAIN", "SN_SEPOLIA"].includes(config.env.VITE_PUBLIC_L2_CHAIN?.trim() ?? "")) {
+      throw new Error(
+        "VITE_PUBLIC_L2_CHAIN is required: SN_SEPOLIA for dev, SN_MAIN for production, from .env.local or the CLIENT_L2_CHAIN variable",
+      );
+    }
     if (!config.env.VITE_PUBLIC_IDENTITY_RPC_URL?.trim()) {
       throw new Error(
-        "VITE_PUBLIC_IDENTITY_RPC_URL is required: the team's Alchemy mainnet URL, from .env.local or the CLIENT_IDENTITY_RPC_URL secret",
+        "VITE_PUBLIC_IDENTITY_RPC_URL is required: the team's Alchemy URL for the build's L2, from .env.local or the CLIENT_IDENTITY_RPC_URL secret",
       );
     }
   },
@@ -75,7 +81,7 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
     undefined;
 
   const plugins = [
-    requireIdentityRpcUrl(),
+    requireL2Environment(),
     appIdentityHtml(identity),
     svgr({ dimensions: false, svgo: false, typescript: true }),
     react(),
