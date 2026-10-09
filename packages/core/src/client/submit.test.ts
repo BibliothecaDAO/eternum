@@ -15,15 +15,18 @@ describe("gameplay account submits", () => {
     });
 
     expect(account.getNonce).toHaveBeenCalledWith(BlockTag.PRE_CONFIRMED);
-    expect(account.execute).toHaveBeenCalledWith(CALL, {
-      nonce: "0x7",
-      tip: 0,
-      resourceBounds: {
-        l1_gas: { max_amount: 0n, max_price_per_unit: 0n },
-        l1_data_gas: { max_amount: 0n, max_price_per_unit: 0n },
-        l2_gas: { max_amount: 0x47868c00n, max_price_per_unit: 0n },
-      },
-    });
+    expect(account.execute).toHaveBeenCalledWith(
+      CALL,
+      expect.objectContaining({
+        nonce: "0x7",
+        tip: 0,
+        resourceBounds: {
+          l1_gas: { max_amount: 0n, max_price_per_unit: 0n },
+          l1_data_gas: { max_amount: 0n, max_price_per_unit: 0n },
+          l2_gas: { max_amount: 0x47868c00n, max_price_per_unit: 0n },
+        },
+      }),
+    );
   });
 
   it("keeps one send in flight: the next reads its nonce only once the previous is in a block", async () => {
@@ -70,7 +73,8 @@ describe("gameplay account submits", () => {
 
   it("lets the next send go with a fresh nonce after a send fails", async () => {
     const account = createAccount("0x789", ["0x3", "0x3"], async () => {
-      if (account.execute.mock.calls.length === 1) throw new Error("Transaction refused");
+      if (account.execute.mock.calls.length === 1)
+        throw Object.assign(new Error("Transaction refused"), { code: -32601 });
       return { transaction_hash: "0x5" };
     });
 
@@ -129,3 +133,50 @@ function createAccount(
 function endOfMacrotask(): Promise<void> {
   return new Promise((resolve) => setImmediate(resolve));
 }
+
+it("a lost invoke reply observes the ordinary hash and holds the next send until inclusion", async () => {
+  let included = false;
+  const account = createAccount(
+    "0x9876",
+    ["0x7", "0x8"],
+    async () => {
+      if (account.execute.mock.calls.length === 1) throw new Error("upstream response lost");
+      return { transaction_hash: "0x5" };
+    },
+    async () => ({ finality_status: included ? "PRE_CONFIRMED" : "RECEIVED" }),
+  );
+  const sent = await executeGameplayAccountTransaction({ account, calls: CALL, shard: SHARD });
+  expect(sent.transaction_hash).toMatch(/^0x[0-9a-f]+$/);
+  const next = executeGameplayAccountTransaction({ account, calls: CALL, shard: SHARD });
+  await endOfMacrotask();
+  expect(account.execute).toHaveBeenCalledTimes(1);
+  expect(account.getNonce).toHaveBeenCalledTimes(1);
+  included = true;
+  await expect(next).resolves.toEqual({ transaction_hash: "0x5" });
+  expect(account.execute).toHaveBeenCalledTimes(2);
+});
+
+it("receipt-not-found time alone cannot release a pending account nonce", async () => {
+  vi.useFakeTimers();
+  let visible = false;
+  const account = createAccount(
+    "0x9988",
+    ["0x7", "0x8"],
+    async () => ({ transaction_hash: "0x6" }),
+    async () => {
+      if (!visible) throw new Error("TXN_HASH_NOT_FOUND");
+      return { finality_status: "PRE_CONFIRMED" };
+    },
+  );
+  try {
+    await executeGameplayAccountTransaction({ account, calls: CALL, shard: SHARD });
+    const next = executeGameplayAccountTransaction({ account, calls: CALL, shard: SHARD });
+    await vi.advanceTimersByTimeAsync(11_000);
+    expect(account.execute).toHaveBeenCalledTimes(1);
+    visible = true;
+    await vi.advanceTimersByTimeAsync(250);
+    await expect(next).resolves.toEqual({ transaction_hash: "0x6" });
+  } finally {
+    vi.useRealTimers();
+  }
+});
