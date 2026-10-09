@@ -39,12 +39,9 @@ const network =
       return response({
         chainId: "0xa",
         rpcUrl: "https://rpc.public.test",
-        admissionUrl: "https://admission.public.test",
       });
     if (url.endsWith("/health"))
       return response({ service: "herald", success: true, confirmed_block: 10, undecodable_events: 0 });
-    if (url === "https://admission.public.test")
-      return response({ jsonrpc: "2.0", id: 1, error: { code: -32601, message: "Method not found" } });
     if (url === "https://rpc.public.test") {
       const rpc = JSON.parse(String(init?.body));
       return response({ jsonrpc: "2.0", id: rpc.id, result: { block_number: 10, timestamp: now } });
@@ -247,9 +244,9 @@ it("rejects future clocks and unavailable storage at the static read", async () 
   ).toBe(503);
 });
 
-it("does not mark a world healthy when its admission listener is unreachable", async () => {
+it("does not mark a world healthy when its RPC listener is unreachable", async () => {
   const result = await probeServices(
-    network({ "https://admission.public.test": new Response(null, { status: 503 }) }),
+    network({ "https://rpc.public.test": new Response(null, { status: 503 }) }),
     now,
     [],
     valueTargets,
@@ -314,4 +311,13 @@ it("pins the independent ledger flag read to the confirmed header it checked", a
     request: { contract_address: "0x123", calldata: [] },
     block_id: { block_number: 10 },
   });
+});
+
+it("probes a single-RPC shard manifest without a removed admission endpoint", async () => {
+  const read = vi.fn(
+    network({ "https://shard.public.test/manifest": response({ chainId: "0xa", rpcUrl: "https://rpc.public.test" }) }),
+  );
+  const result = await probeServices(read, now, [], valueTargets);
+  expect(result.probes.find((p) => p.id === "shard:0xa")!.status).toBe("up");
+  expect(read.mock.calls.some((call) => String(call[0]).includes("admission"))).toBe(false);
 });
