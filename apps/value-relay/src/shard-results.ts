@@ -1,6 +1,6 @@
 import { relayOperation, type BlitzResult, type RelayPorts } from "./ports";
 import { ShardReader, felt, sameFelt, uint, type ValueRow } from "./shard-rpc";
-import { blitzCommitment } from "./blitz-commitment";
+import { blitzCommitment } from "@realms-world/value-ledger/commitment";
 
 /** Only a complete, canonical wallet/rank record with its matching v3 commitment is deliverable. */
 export const decodeBlitzResult = (chainId: string, row: ValueRow): BlitzResult | null => {

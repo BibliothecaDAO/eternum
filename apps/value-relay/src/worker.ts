@@ -1,3 +1,5 @@
+import { openBlitzOnLedger, refundBlitzOnLedger, validateBlitzWindow } from "./blitz-launch";
+import type { LedgerGameKey } from "@realms-world/value-ledger";
 import { currentLaborDay, writeLaborGrant } from "./shard-labor";
 import { handleLaborRequest } from "./labor-route";
 import { ShardReader } from "./shard-rpc";
@@ -98,6 +100,27 @@ export class ValueRelay extends DurableObject<RelayEnv> {
       ),
     );
   }
+  async openBlitz(key: LedgerGameKey, window: { start: number; end: number }) {
+    this.requireLaunchChain(key);
+    return Effect.runPromise(this.signing.withPermit(openBlitzOnLedger(ledgerCredentialsOf(this.env), key, window)));
+  }
+  async validateBlitz(key: LedgerGameKey, window: { start: number; end: number }) {
+    this.requireLaunchChain(key);
+    return Effect.runPromise(validateBlitzWindow(ledgerCredentialsOf(this.env), key, window));
+  }
+  async refundBlitz(key: LedgerGameKey) {
+    this.requireLaunchChain(key);
+    return Effect.runPromise(this.signing.withPermit(refundBlitzOnLedger(ledgerCredentialsOf(this.env), key)));
+  }
+  private requireLaunchChain(key: LedgerGameKey) {
+    if (
+      BigInt(key.chainId) !== BigInt(this.env.SHARD_CHAIN_ID) ||
+      !Number.isInteger(key.gameId) ||
+      key.gameId <= 0 ||
+      key.gameId > 0xffffffff
+    )
+      throw new Error("wrong_launch_chain_or_game");
+  }
   async held() {
     return (await this.store.held()).map((row) => ({
       kind: row.kind,
@@ -177,6 +200,20 @@ export class RelayDiagnostics extends WorkerEntrypoint<RelayEnv> {
   }
   held() {
     return relayOf(this.env).held();
+  }
+}
+export class ValueLaunch extends WorkerEntrypoint<RelayEnv> {
+  override fetch() {
+    return new Response(null, { status: 404 });
+  }
+  openBlitz(key: LedgerGameKey, window: { start: number; end: number }) {
+    return relayOf(this.env).openBlitz(key, window);
+  }
+  validateBlitz(key: LedgerGameKey, window: { start: number; end: number }) {
+    return relayOf(this.env).validateBlitz(key, window);
+  }
+  refundBlitz(key: LedgerGameKey) {
+    return relayOf(this.env).refundBlitz(key);
   }
 }
 export default {

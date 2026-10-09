@@ -1,6 +1,6 @@
 import { rpcAt, readLedgerGame, ledgerInteger } from "@realms-world/value-ledger";
 import { Account, hash, RpcProvider, type EmittedEvent } from "starknet";
-import { blitzCommitment } from "./blitz-commitment";
+import { blitzCommitment } from "@realms-world/value-ledger/commitment";
 import {
   relayOperation,
   type BlitzCommitment,

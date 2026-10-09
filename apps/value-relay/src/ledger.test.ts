@@ -1,7 +1,7 @@
 import { Effect } from "effect";
 import { hash } from "starknet";
 import { beforeEach, expect, it, vi } from "vitest";
-import { blitzCommitment } from "./blitz-commitment";
+import { blitzCommitment } from "@realms-world/value-ledger/commitment";
 import { ledgerMonitorReads, ledgerResultAdapter } from "./ledger";
 
 const rpc = vi.hoisted(() => ({ call: vi.fn(), execute: vi.fn(), wait: vi.fn(), events: vi.fn(), head: vi.fn() }));

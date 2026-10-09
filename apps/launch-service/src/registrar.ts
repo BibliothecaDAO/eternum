@@ -4,6 +4,8 @@ import { D1BlitzRosterStore, RosterFailure } from "./blitz-roster";
 import { ledgerBlitzRegistrations } from "./ledger-roster";
 import { decodeLaunchEnv, type LaunchEnv } from "./env";
 import { launchExecutorLayer, launchTargetOf, shardChainOf } from "./executor";
+import { LaunchShard } from "./shard-client";
+import { readLaunchShard } from "./executor";
 import { processNextLaunch } from "./process-launch";
 import { D1LaunchStore, databaseLayer } from "./store";
 
@@ -29,7 +31,7 @@ export class Registrar extends DurableObject<Record<string, unknown>> {
     const store = new D1LaunchStore(env.DB, shardChainOf(env));
     const services = Layer.mergeAll(
       databaseLayer(store),
-      launchExecutorLayer(launchTargetOf(env), rosterSourceOf(env), new D1BlitzRosterStore(env.DB)),
+      launchExecutorLayer(launchTargetOf(env), env.VALUE_RELAY, rosterSourceOf(env), new D1BlitzRosterStore(env.DB)),
     );
     await Effect.runPromise(processNextLaunch(Date.now()).pipe(Effect.provide(services)));
     const next = await store.nextDue();
@@ -41,6 +43,22 @@ const rosterSourceOf = (env: LaunchEnv) =>
   ledgerBlitzRegistrations({
     rpcUrl: env.LEDGER_RPC_URL,
     ledgerAddress: env.LEDGER_ADDRESS,
-    resolveGameKey: () => Effect.fail(new RosterFailure({ operation: "game_key_reservation_interface_unavailable" })),
-    accountForWallet: (wallet) => env.VALUE_IDENTITY.accountForWallet(wallet),
+    resolveGameKey: (chainId, gameName) =>
+      Effect.tryPromise({
+        try: async () => {
+          const { shard } = await readLaunchShard(env.SHARD_URL);
+          if (BigInt(shard.chainId) !== BigInt(chainId)) throw new Error("launch_chain_changed");
+          const native = new LaunchShard({
+            rpcUrl: shard.rpcUrl,
+            chainId,
+            gamesAddress: shard.contracts.games!,
+            accountAddress: env.DEPLOYER_ACCOUNT_ADDRESS,
+            privateKey: env.DEPLOYER_PRIVATE_KEY,
+          });
+          const gameId = await native.gameId(gameName);
+          if (!gameId) throw new Error("game_not_created");
+          return { chainId, gameId };
+        },
+        catch: () => new RosterFailure({ operation: "resolve_created_game" }),
+      }),
   });

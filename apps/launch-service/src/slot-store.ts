@@ -1,11 +1,9 @@
 import { nativePresetIdFor } from "../../../config/source/native";
 import { normalizeAddress } from "./address";
-import type { CreateGameRequest } from "./schemas";
 import type { D1LaunchStore } from "./store";
 import {
   SlotConflict,
   SlotNotFound,
-  splitPlaytestRoster,
   type PlaytestSlot,
   type SlotPlayer,
   type SlotRegistration,
@@ -42,7 +40,10 @@ export class D1SlotStore implements SlotStore {
   ) {}
 
   async create(name: string, closesAt: string): Promise<PlaytestSlot> {
-    if (await this.launches.find("game", "madara.blitz", `${name}-1`)) {
+    if (
+      (await this.launches.find("game", "madara.blitz", `${name}-1`)) &&
+      !(await this.db.prepare("SELECT name FROM playtest_slots WHERE name = ?").bind(name).first())
+    ) {
       throw new SlotConflict("Slot name was already used for a launch");
     }
     const closes = Date.parse(closesAt);
@@ -57,6 +58,16 @@ export class D1SlotStore implements SlotStore {
       throw error;
     });
     if (Date.parse(slot.closesAt) !== closes) throw new SlotConflict("Slot schedule is immutable");
+    await this.db.batch([
+      await this.launches.scheduleStatement("game", {
+        environment: "madara.blitz",
+        version: String(nativePresetIdFor("blitz")),
+        gameName: `${name}-1`,
+        gameStartTime: closesAt,
+        devModeOn: false,
+        singleRealmMode: false,
+      }),
+    ]);
     return slot;
   }
 
@@ -107,10 +118,8 @@ export class D1SlotStore implements SlotStore {
     const slot = await this.get(name);
     if (slot.frozenAt) return slot;
     if (!slot.closed) throw new SlotConflict("Registration is still open");
-    const groups = splitPlaytestRoster(slot.registrations);
     await this.db.batch([
-      ...groups.map((group, index) => this.assignGame(name, group, index + 1)),
-      ...(await Promise.all(groups.map((group, index) => this.queueSlotGame(slot, index + 1, group)))),
+      this.db.prepare("UPDATE playtest_registrations SET game_number = 1 WHERE slot_name = ?").bind(name),
       this.db
         .prepare("UPDATE playtest_slots SET frozen_at = ? WHERE name = ? AND frozen_at IS NULL")
         .bind(Date.now(), name),
@@ -128,27 +137,6 @@ export class D1SlotStore implements SlotStore {
       )
       .first<{ name: string }>();
     if (due) await this.freeze(due.name);
-  }
-
-  /** One statement numbers a whole game: its positions travel as one JSON list, whatever order grouped them. */
-  private assignGame(slotName: string, group: readonly SlotRegistration[], gameNumber: number) {
-    return this.db
-      .prepare(
-        "UPDATE playtest_registrations SET game_number = ? WHERE slot_name = ? AND position IN (SELECT value FROM json_each(?))",
-      )
-      .bind(gameNumber, slotName, JSON.stringify(group.map(({ position }) => position)));
-  }
-
-  private queueSlotGame(slot: PlaytestSlot, gameNumber: number, players: readonly SlotRegistration[]) {
-    return this.launches.scheduleStatement("game", {
-      environment: "madara.blitz",
-      version: String(nativePresetIdFor("blitz")) as CreateGameRequest["version"],
-      gameName: `${slot.name}-${gameNumber}`,
-      gameStartTime: slot.closesAt,
-      devModeOn: false,
-      singleRealmMode: false,
-      rosterAccounts: players.map(({ account }) => account),
-    });
   }
 
   private slotReads(name: string) {

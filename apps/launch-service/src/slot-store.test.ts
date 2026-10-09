@@ -59,20 +59,18 @@ test("registration and frozen groups survive concurrency, an interrupted freeze 
   const [interrupted] = await slots.list();
   expect(interrupted!.frozenAt).toBeNull();
   expect(interrupted!.registrations.every(({ gameNumber }) => gameNumber === null)).toBe(true);
-  expect(await launches.list("madara.blitz")).toEqual([]);
+  expect((await launches.list("madara.blitz")).map(({ name }) => name)).toEqual(["friday-1"]);
   await database.db.prepare("DROP TRIGGER interrupt_freeze").run();
 
   const [first, second] = await Promise.all([slots.freeze("friday"), slots.freeze("friday")]);
   expect(first).toEqual(second);
-  expect(first.registrations.map(({ gameNumber }) => gameNumber)).toEqual([...Array(13).fill(1), ...Array(12).fill(2)]);
+  expect(first.registrations.map(({ gameNumber }) => gameNumber)).toEqual(Array(25).fill(1));
   const queued = await launches.list("madara.blitz", "game");
-  expect(queued.map(({ name }) => name).sort()).toEqual(["friday-1", "friday-2"]);
+  expect(queued.map(({ name }) => name).sort()).toEqual(["friday-1"]);
   for (const run of queued) {
     expect(run.request).toMatchObject({ version: "2", devModeOn: false, singleRealmMode: false });
     expect(run.status).toBe("queued");
-    expect("rosterAccounts" in run.request && run.request.rosterAccounts).toEqual(
-      first.registrations.filter(({ gameNumber }) => run.name === `friday-${gameNumber}`).map(({ account }) => account),
-    );
+    expect("rosterAccounts" in run.request).toBe(false);
   }
 
   const restarted = new D1SlotStore(database.db, launches);
@@ -114,7 +112,10 @@ test("every tick names the same next slot and a frozen slot is pruned when the n
   expect((await slots.list()).map(({ name, frozenAt }) => ({ name, frozen: frozenAt !== null }))).toEqual([
     { name: nextMorning.name, frozen: true },
   ]);
-  expect((await launches.list("madara.blitz", "game")).map(({ name }) => name)).toEqual([`${evening.name}-1`]);
+  expect((await launches.list("madara.blitz", "game")).map(({ name }) => name)).toEqual([
+    `${nextMorning.name}-1`,
+    `${evening.name}-1`,
+  ]);
 });
 
 test("the schedule freezes zero and single-player slots without inventing players", async () => {
@@ -136,7 +137,7 @@ test("the schedule freezes zero and single-player slots without inventing player
   expect(others).toEqual([]);
   expect(solo!.frozenAt).not.toBeNull();
   expect(solo!.registrations).toMatchObject([{ ...player("0x123"), gameNumber: 1 }]);
-  expect((await launches.list("madara.blitz", "game")).map(({ name }) => name)).toEqual(["solo-1"]);
+  expect((await launches.list("madara.blitz", "game")).map(({ name }) => name)).toEqual(["solo-1", "empty-1"]);
 });
 
 test("D1 rejects a late registration even when its worker clock is before the deadline", async () => {

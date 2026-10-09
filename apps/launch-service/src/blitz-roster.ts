@@ -16,7 +16,7 @@ interface FrozenBlitzRoster {
   registrations: readonly BlitzRegistration[];
 }
 export interface BlitzRegistrationSource {
-  /** Must read a closed ledger registration at a confirmed L2 block and resolve each wallet to its shard account. */
+  /** Must read a closed ledger registration at a confirmed L2 block with its recorded shard accounts. */
   readClosed(key: BlitzRosterKey): Effect.Effect<FrozenBlitzRoster, RosterFailure | RegistrationOpen>;
 }
 export class RosterFailure extends Data.TaggedError("RosterFailure")<{ operation: string }> {}
@@ -43,7 +43,7 @@ export class D1BlitzRosterStore {
   }
 }
 
-/** Every launch uses one ledger snapshot, persisted before creation and reused after retries. */
+/** Every launch uses one ledger snapshot, persisted before seating and reused after retries. */
 export const freezeBlitzRoster = (
   key: BlitzRosterKey,
   source: BlitzRegistrationSource,

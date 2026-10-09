@@ -16,7 +16,7 @@ export const processNextLaunch = (now: number) =>
     if (!run) return false;
     if (run.attempts > MAX_ATTEMPTS) {
       const message = `Launch interrupted after ${run.attempts - 1} attempts`;
-      yield* databaseOperation("fail interrupted launch", () => store.fail(run.id, message));
+      yield* cleanUpFailedLaunch(executor, store, run, message);
       yield* Effect.logError("launch_failed", { runId: run.id, error: message });
       return true;
     }
@@ -44,8 +44,38 @@ export const processNextLaunch = (now: number) =>
       yield* databaseOperation("retry launch", () => store.retry(run.id, message, RETRY_DELAY_MS));
       yield* Effect.logWarning("launch_retry_queued", { runId: run.id, attempt: run.attempts, error: message });
     } else {
-      yield* databaseOperation("fail launch", () => store.fail(run.id, message));
+      yield* cleanUpFailedLaunch(executor, store, run, message);
       yield* Effect.logError("launch_failed", { runId: run.id, attempt: run.attempts, error: message });
     }
     return true;
+  });
+
+const cleanUpFailedLaunch = (
+  executor: {
+    refund: (
+      run: import("./model").LaunchRun,
+    ) => import("effect").Effect.Effect<number | null, import("./errors").LaunchExecutionFailure>;
+  },
+  store: import("./store").LaunchServiceStore,
+  run: import("./model").LaunchRun,
+  message: string,
+) =>
+  Effect.gen(function* () {
+    const latest = yield* databaseOperation("read failed launch custody key", () =>
+      store.find(run.kind, run.environment, run.name),
+    );
+    const cleanup = yield* Effect.result(executor.refund(latest ?? run));
+    if (Result.isFailure(cleanup)) {
+      yield* databaseOperation("retry ledger refund cleanup", () =>
+        store.retry(run.id, `${message}; refund cleanup unavailable`, RETRY_DELAY_MS),
+      );
+      return;
+    }
+    if (cleanup.success !== null) {
+      yield* databaseOperation("wait for ledger abort boundary", () =>
+        store.retry(run.id, `${message}; refunds pending ledger end`, Math.max(1000, cleanup.success! * 1000)),
+      );
+      return;
+    }
+    yield* databaseOperation("fail launch after refunds enabled", () => store.fail(run.id, message));
   });

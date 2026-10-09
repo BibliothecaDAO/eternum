@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 import { describe, expect, it, vi } from "vitest";
-import { blitzCommitment } from "./blitz-commitment";
+import { blitzCommitment } from "@realms-world/value-ledger/commitment";
 import { runRelay, grantDailyLabor } from "./relay";
 import { runMonitor, type MonitorProgress } from "./monitor";
 import { frontierPayment } from "./adapters";

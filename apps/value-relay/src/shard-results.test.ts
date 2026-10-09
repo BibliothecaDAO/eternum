@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 import { beforeEach, expect, it, vi } from "vitest";
-import { blitzCommitment } from "./blitz-commitment";
+import { blitzCommitment } from "@realms-world/value-ledger/commitment";
 import { decodeBlitzResult, shardResultPort } from "./shard-results";
 import { ShardReader, type ValueRow } from "./shard-rpc";
 import { shardWithdrawalPorts } from "./shard-withdrawals";

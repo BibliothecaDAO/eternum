@@ -29,7 +29,7 @@ export interface LaunchEnv extends Omit<LaunchVars, "LAUNCHER_ALLOWLIST"> {
   DB: D1Database;
   /** The identity Worker, which owns sessions; reached by service binding only. */
   IDENTITY: Fetcher;
-  VALUE_IDENTITY: { accountForWallet(wallet: string): Promise<string | null> };
+  VALUE_RELAY: import("./paid-blitz").BlitzValuePort;
   /** The one registrar that executes launches, one at a time. */
   REGISTRAR: DurableObjectNamespace<import("./registrar").Registrar>;
   /** The deployed version, so a deploy can tell its own answers from its predecessor's. */
@@ -45,7 +45,7 @@ export const decodeLaunchEnv = (raw: Record<string, unknown>): LaunchEnv => {
     launchers: launchersOf(LAUNCHER_ALLOWLIST),
     DB: raw.DB as D1Database,
     IDENTITY: raw.IDENTITY as Fetcher,
-    VALUE_IDENTITY: raw.VALUE_IDENTITY as LaunchEnv["VALUE_IDENTITY"],
+    VALUE_RELAY: raw.VALUE_RELAY as LaunchEnv["VALUE_RELAY"],
     REGISTRAR: raw.REGISTRAR as LaunchEnv["REGISTRAR"],
     VERSION: raw.VERSION as WorkerVersionMetadata,
   };

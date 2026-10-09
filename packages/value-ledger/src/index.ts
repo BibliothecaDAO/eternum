@@ -5,6 +5,8 @@ export interface LedgerGameKey {
   gameId: number;
 }
 interface LedgerGame {
+  seasonId: number;
+  presetId: number;
   start: number;
   end: number;
   registeredCount: number;
@@ -26,6 +28,8 @@ export async function readLedgerGame(
   );
   if (fields.length !== 11 || BigInt(fields[1]!) !== 1n) throw new Error("invalid_ledger_game");
   return {
+    seasonId: ledgerInteger(fields[0]!),
+    presetId: ledgerInteger(fields[2]!),
     start: ledgerInteger(fields[3]!),
     end: ledgerInteger(fields[4]!),
     registeredCount: ledgerInteger(fields[8]!),
@@ -35,28 +39,30 @@ export async function readLedgerGame(
   };
 }
 
-/** The registered wallets at the pinned L2 head, in the ledger's roster order. */
-export async function readRegisteredWallets(
+/** Recorded wallet/account pairs at one confirmed head; linkage changes cannot alter a paid seat. */
+export async function readRegisteredPlayers(
   provider: RpcProvider,
   address: string,
   key: LedgerGameKey,
   head: number,
   count: number,
-): Promise<string[]> {
-  const wallets: string[] = [];
+): Promise<{ wallet: string; account: string }[]> {
+  const players: { wallet: string; account: string }[] = [];
+  if (!Number.isInteger(count) || count < 0 || count > 24) throw new Error("unsupported_ledger_roster_size");
   for (let index = 0; index < count; index++) {
     const fields = await provider.callContract(
       {
         contractAddress: address,
-        entrypoint: "get_registered_owner",
+        entrypoint: "get_registered_player",
         calldata: [key.chainId, String(key.gameId), String(index)],
       },
       head,
     );
-    if (fields.length !== 1 || BigInt(fields[0]!) === 0n) throw new Error("invalid_registered_owner");
-    wallets.push(fields[0]!);
+    if (fields.length !== 2 || BigInt(fields[0]!) === 0n || BigInt(fields[1]!) === 0n)
+      throw new Error("invalid_registered_player");
+    players.push({ wallet: fields[0]!, account: fields[1]! });
   }
-  return wallets;
+  return players;
 }
 
 export const ledgerInteger = (value: string): number => {

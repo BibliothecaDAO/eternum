@@ -1,4 +1,4 @@
-import { blitzCommitment } from "./blitz-commitment";
+import { blitzCommitment } from "@realms-world/value-ledger/commitment";
 import { Effect, Result } from "effect";
 import type { ConfirmedBlock, LaborClaim, RelayPorts } from "./ports";
 import { RelayFailure, relayOperation } from "./ports";

@@ -24,7 +24,7 @@
       "d1_databases": [{ "binding": "DB", "database_name": "realms-launch-staging", "migrations_dir": "migrations" }],
       "services": [
         { "binding": "IDENTITY", "service": "realms-identity-staging" },
-        { "binding": "VALUE_IDENTITY", "service": "realms-identity-staging", "entrypoint": "ValueIdentity" },
+        { "binding": "VALUE_RELAY", "service": "realms-value-relay-staging", "entrypoint": "ValueLaunch" },
       ],
       "durable_objects": { "bindings": [{ "name": "REGISTRAR", "class_name": "Registrar" }] },
       "triggers": { "crons": ["* * * * *"] },
@@ -43,7 +43,7 @@
       ],
       "services": [
         { "binding": "IDENTITY", "service": "realms-identity" },
-        { "binding": "VALUE_IDENTITY", "service": "realms-identity", "entrypoint": "ValueIdentity" },
+        { "binding": "VALUE_RELAY", "service": "realms-value-relay", "entrypoint": "ValueLaunch" },
       ],
       "durable_objects": { "bindings": [{ "name": "REGISTRAR", "class_name": "Registrar" }] },
       "triggers": { "crons": ["* * * * *"] },
