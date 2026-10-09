@@ -8,6 +8,7 @@ import { getContractArtifactPaths, readContractArtifacts } from "../../../../../
 import { getAccount } from "../../../../../scripts-runtime/js/starknet.js";
 import { buildLedgerEconomicPreset } from "../../../../../../config/deployer/clean/ledger/economics.ts";
 import { buildMysteryChestPreset } from "../../chest-preset.js";
+import { buildFrontierFundingCall, frontierSeasonManifest } from "./frontier.js";
 
 const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 const l2Root = path.dirname(packageRoot);
@@ -111,16 +112,7 @@ async function deployAssets(account, settings) {
   return { ledger, lords, mmr, chests, cosmetics };
 }
 
-function buildPreset() {
-  // This rehearsal funds Frontier alongside Blitz rewards using the shard's configured day unit.
-  return {
-    ...buildLedgerEconomicPreset("blitz"),
-    day_unit_seconds: buildLedgerEconomicPreset("frontier").day_unit_seconds,
-    season_bags: buildLedgerEconomicPreset("frontier").season_bags,
-  };
-}
-
-function buildSetupCalls(assets, settings, preset) {
+function buildSetupCalls(assets, settings) {
   const call = (contractAddress, entrypoint, args) => ({
     contractAddress,
     entrypoint,
@@ -145,10 +137,36 @@ function buildSetupCalls(assets, settings, preset) {
     ),
     call(assets.lords, "mint", [settings.address, uint256.bnToUint256(settings.pool)]),
     call(assets.lords, "approve", [assets.ledger, uint256.bnToUint256(settings.pool)]),
-    call(assets.ledger, "register_preset", [1, preset, chestPreset.bands, chestPreset.items]),
+    call(assets.ledger, "register_preset", [
+      1,
+      buildLedgerEconomicPreset("blitz"),
+      chestPreset.bands,
+      chestPreset.items,
+    ]),
+    call(assets.ledger, "register_preset", [
+      2,
+      buildLedgerEconomicPreset("frontier"),
+      chestPreset.bands,
+      chestPreset.items,
+    ]),
     call(assets.ledger, "open_season", [1, 1, settings.start, settings.end]),
-    call(assets.ledger, "fund_frontier", [settings.shard, 1, settings.seed, uint256.bnToUint256(settings.pool)]),
+    buildFrontierFundingCall(assets.ledger, settings),
   ];
+}
+
+async function readFundedFrontier(account, assets, settings) {
+  const artifactPaths = getContractArtifactPaths(
+    path.join(packageRoot, "target", "release"),
+    "game_ledger",
+    "GameLedger",
+  );
+  const { contract } = readContractArtifacts(artifactPaths);
+  const response = await account.callContract({
+    contractAddress: assets.ledger,
+    entrypoint: "get_frontier",
+    calldata: CallData.compile([settings.shard, 1]),
+  });
+  return frontierSeasonManifest(contract.abi, response);
 }
 
 async function main() {
@@ -161,9 +179,9 @@ async function main() {
   const latest = await account.getBlock("latest");
   if (settings.start <= BigInt(latest.timestamp)) throw new Error("Season start must be in the future");
   const assets = await deployAssets(account, settings);
-  const preset = buildPreset();
-  const setup = await account.execute(buildSetupCalls(assets, settings, preset));
+  const setup = await account.execute(buildSetupCalls(assets, settings));
   await confirm(account, setup.transaction_hash);
+  const frontier = await readFundedFrontier(account, assets, settings);
   const manifest = {
     chainId,
     ...assets,
@@ -173,6 +191,7 @@ async function main() {
     start: settings.start.toString(),
     end: settings.end.toString(),
     frontierPoolWei: settings.pool.toString(),
+    frontier,
     setupTransaction: setup.transaction_hash,
   };
   await mkdir(path.dirname(manifestPath), { recursive: true });

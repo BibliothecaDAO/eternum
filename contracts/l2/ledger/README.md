@@ -93,8 +93,13 @@ flock /tmp/eternum-scarb.lock bash -c 'scarb fmt --check && scarb build && snfor
 The owner-run path is `scripts/commands/deployment/sepolia.js`. It was written for this change and has not been
 executed. It refuses any provider whose chain ID is not `SN_SEPOLIA`, deploys a publicly mintable **Test LORDS** token,
 a fresh MMR contract and two fresh collectible collections, then deploys the ledger. It grants the ledger the existing
-MMR updater and collection minter roles, configures test metadata, registers a test preset, opens a Blitz season and
-funds Frontier once. It writes only public addresses and transaction hashes under the ignored `target/` directory.
+MMR updater and collection minter roles, configures test metadata, registers separate Blitz (ID 1) and zero-cut Frontier (ID 2) test presets, opens a Blitz season and
+funds Frontier once using all six ABI arguments. The public manifest reads all eight `FrontierSeason` fields from the
+ledger; its derived Frontier end is independent of `SEPOLIA_SEASON_END`, which schedules Blitz. It writes only public
+addresses, season data and transaction hashes under the ignored `target/` directory.
+
+After the package build, `node --test scripts/commands/deployment/frontier.test.js` checks rehearsal calldata and
+Frontier response parsing against the package's actual built ABI without loading a signer or deploying.
 
 Build release artifacts first, under the same lock. These commands compile each package using its pinned toolchain:
 
