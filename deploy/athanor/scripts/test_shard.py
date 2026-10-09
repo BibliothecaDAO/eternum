@@ -414,7 +414,6 @@ class ShardTest(unittest.TestCase):
         package={"init_image":"sha256:"+"1"*64,"herald_image":"sha256:"+"2"*64,"metrics_image":"sha256:"+"3"*64}
         with patch.object(shard,"release_images",return_value=package):
             self.assertEqual(shard.resolve_images({"package":"shard-v1"}),{"package":"shard-v1",**package})
-        with self.assertRaises(ValueError):shard.validate_configuration({**configuration(),"gateway_revision":"old"},set(range(8,12))|set(range(20,24)))
 
     def test_matrix_runs_in_order_and_stops_only_its_own_projects(self):
         for failure in (None, RuntimeError("workload failed")):

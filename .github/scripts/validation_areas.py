@@ -65,7 +65,6 @@ AREAS = {
     ],
     "native": [
         ".github/workflows/test-native.yml",
-        "apps/gateway/**",
         "apps/herald/src/**",
         "apps/launch-service/src/**",
         "apps/launch-service/wrangler.jsonc",

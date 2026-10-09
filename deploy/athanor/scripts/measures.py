@@ -58,7 +58,7 @@ def phases(group):
     return {
         "n": len(group),
         "admissionToVisibleMs": {p: percentile([a["admissionToVisibleMs"] for a in group], p) for p in (50, 95, 99)},
-        "gatewayMs": {p: percentile([a["submitMs"] for a in group], p) for p in (50, 95)},
+        "submitMs": {p: percentile([a["submitMs"] for a in group], p) for p in (50, 95)},
         "afterRecordedMs": {p: percentile([iso_ms(a["visibleAt"]) - iso_ms(a["submittedAt"]) for a in group], p)
                             for p in (50, 95)},
     }

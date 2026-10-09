@@ -1242,32 +1242,6 @@ function blockRow(blockNumber: number, transactions: number, blockProductionMs: 
   };
 }
 
-// The ops collector's existing schema still requires these retired series. They carry zero in these fixtures.
-function retiredAdmissionMetrics(time: number, start: number) {
-  const point = { timeUnixNano: String(time), startTimeUnixNano: String(start) };
-  const sum = (name: string) => ({ name, sum: { dataPoints: [{ ...point, asDouble: 0 }] } });
-  return [
-    { name: "gateway_admission_queue_depth", gauge: { dataPoints: [{ ...point, asDouble: 0 }] } },
-    sum("gateway_admission_accepted_tickets"),
-    sum("gateway_executed_tickets"),
-    sum("gateway_ticket_transactions"),
-    {
-      name: "gateway_admission_queue_wait_seconds",
-      histogram: {
-        dataPoints: [
-          {
-            ...point,
-            count: "0",
-            sum: 0,
-            bucketCounts: Array(13).fill("0"),
-            explicitBounds: [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10, 30],
-          },
-        ],
-      },
-    },
-  ];
-}
-
 function metricsRow(time: number, transactions: number, ready: number, attempts: number, committed: number, start = 1) {
   const metric = (name: string, value: number, counter = false) => ({
     name,
@@ -1286,7 +1260,7 @@ function metricsRow(time: number, transactions: number, ready: number, attempts:
               metric("mempool_preconfirmed_transaction_statuses", 0),
               metric("blockifier_execution_attempts_total", attempts, true),
               metric("blockifier_committed_transactions_total", committed, true),
-              ...retiredAdmissionMetrics(time, start),
+              
             ],
           },
         ],
