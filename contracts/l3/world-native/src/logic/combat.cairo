@@ -136,6 +136,7 @@ pub fn battle(
     assert_battle_immunity(game_id, defender.owner, rules, context.timestamp, context);
     assert!(attacker.troops.count > 0 && defender.troops.count > 0, "dead combatant");
     assert_battle_range(game_id, attacker, defender);
+    assert_loot_available(game_id, command.defender_id, command.steal_resources, context);
     let attacker_before = attacker.troops.count;
     let defender_before = defender.troops.count;
     let combat = combat_context(game_id, attacker, defender, context);
@@ -260,6 +261,8 @@ pub fn raid(
     assert!(crate::geometry::adjacent(explorer.coord, destination), "raid requires adjacency");
     assert_battle_immunity(game_id, explorer.owner, rules, context.timestamp, context);
     assert_battle_immunity(game_id, command.structure_id, rules, context.timestamp, context);
+    assert_loot_available(game_id, command.structure_id, command.steal_resources, context);
+    assert_raid_loot_immunity(game_id, command, target, rules, context.timestamp);
     let result = resolve_raid(game_id, explorer, target_key, target.base.troop_max_guard_count, destination, context);
     let troops_before = explorer.troops.count;
     apply_raid_losses(key, explorer, target_key, result, context);
@@ -349,13 +352,18 @@ pub fn raid_success(game_id: u32, result: crate::raid::RaidResolution, context: 
     crate::raid::success(result, seed)
 }
 
-pub fn collect_raid_loot(
-    game_id: u32,
-    command: crate::combat_actions::Raid,
-    target: Structure,
-    rules: SliceRules,
-    timestamp: u64,
-    game_context: crate::commands::ExecutionContext,
+// Requested loot is a deterministic refusal, independent of whether the combat roll wins.
+fn assert_loot_available(game_id: u32, from: u64, resources: Span<crate::resources::ResourceAmount>, context: ExecutionContext) {
+    if resources.is_empty() { return; }
+    let key = ResourceKey { game_id, entity_id: from };
+    resources_dispatcher(game_id).settle_production(key, context.timestamp, crate::commands::resource_context(context));
+    for resource in resources {
+        assert!(crate::logic::resources::balance(key, *resource.resource_type) >= *resource.amount, "insufficient requested loot");
+    }
+}
+
+fn assert_raid_loot_immunity(
+    game_id: u32, command: crate::combat_actions::Raid, target: Structure, rules: SliceRules, timestamp: u64,
 ) {
     let village = target.base.category == crate::taxonomy::VILLAGE_CATEGORY;
     let tick = timestamp / rules.tick_config.armies_tick_in_seconds;
@@ -367,6 +375,18 @@ pub fn collect_raid_loot(
             }
         }
     }
+}
+
+pub fn collect_raid_loot(
+    game_id: u32,
+    command: crate::combat_actions::Raid,
+    target: Structure,
+    rules: SliceRules,
+    timestamp: u64,
+    game_context: crate::commands::ExecutionContext,
+) {
+    let village = target.base.category == crate::taxonomy::VILLAGE_CATEGORY;
+    let tick = timestamp / rules.tick_config.armies_tick_in_seconds;
     take_loot(
         game_id, command.structure_id, command.explorer_id, command.steal_resources, true, timestamp, game_context,
     );

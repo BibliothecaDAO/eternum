@@ -128,7 +128,7 @@ fn resources(amount: u128) -> Span<ResourceAmount> {
 fn raid(attacker: u64, target: ResourceKey, amounts: Span<ResourceAmount>) -> Command {
     Command::Raid(Raid { explorer_id: attacker, structure_id: target.entity_id, steal_resources: amounts })
 }
-fn set_guard(d: super::Deployment, key: ResourceKey, slot: u8, count: u128) {
+pub fn set_guard(d: super::Deployment, key: ResourceKey, slot: u8, count: u128) {
     set_fixture(
         d.games,
         selector!("guards"),

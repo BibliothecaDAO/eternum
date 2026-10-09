@@ -462,3 +462,62 @@ fn successful_real_draw_paths_stay_applied_across_32_roots() {
         }
     }
 }
+
+fn live_loot_case(raid: bool, insufficient: bool, full: bool) -> (Deployment, TestAction) {
+    use starknet::storage::StorageMapWriteAccess;
+    let (d, _, target, attacker, defender) = super::combat_actions::setup_with_cooldown(
+        false, 0, super::play_fixture::ETERNUM_RULES | crate::rules::COMBAT_DICE, 0, (1000, 1000),
+    );
+    let from = if raid { target.entity_id } else { defender };
+    super::resource_commands::grant(d, crate::resources::ResourceKey { game_id: 3, entity_id: from }, 2, 90);
+    if raid { super::combat_actions::set_guard(d, target, 0, 1000); }
+    if full {
+        snforge_std::interact_with_state(d.games, || crate::state::write().resources.weights.write(
+            (3, attacker), crate::resources::Weight { capacity: 0, weight: 0 },
+        ));
+    }
+    let loot = array![crate::resources::ResourceAmount { resource_type: 2, amount: if insufficient { 91 } else { 70 } }].span();
+    let command = if raid {
+        Command::Raid(crate::combat_actions::Raid { explorer_id: attacker, structure_id: target.entity_id, steal_resources: loot })
+    } else {
+        Command::Battle(crate::combat_actions::AttackExplorer { attacker_id: attacker, defender_id: defender, steal_resources: loot })
+    };
+    (d, TestAction { game_id: 3, actor: d.actor, command })
+}
+
+#[test]
+fn real_battle_and_guarded_raid_loot_verdicts_do_not_select_a_roll() {
+    for raid in array![false, true] {
+        for insufficient in array![false, true] {
+            for full in array![false, true] {
+                for root in 0..ROOTS {
+                    let (d, action) = live_loot_case(raid, insufficient, full);
+                    let before = play_fixture::gameplay_snapshot(d.games);
+                    let applied = play_fixture::play(d.games, action, root.into(), 80);
+                    assert_eq!(applied, !insufficient, "raid {} missing {} full {} root {}", raid, insufficient, full, root);
+                    if !applied { assert_eq!(play_fixture::gameplay_snapshot(d.games), before); }
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn real_movement_reward_stays_applied_at_full_and_fractional_stores() {
+    use starknet::storage::StorageMapWriteAccess;
+    for capacity in array![0_u128, crate::rules::RESOURCE_PRECISION - 1] {
+        for root in 0..ROOTS {
+            let (d, action, timestamp) = explorer_case(true);
+            snforge_std::interact_with_state(d.games, || {
+                let explorer = crate::logic::troops::explorer(crate::troops::ExplorerKey {
+                    game_id: action.game_id,
+                    explorer_id: match action.command { Command::Explore(value) => value.explorer_id, _ => panic!("explore fixture required") },
+                }).unwrap();
+                crate::state::write().resources.weights.write(
+                    (action.game_id, explorer.owner), crate::resources::Weight { capacity, weight: 0 },
+                );
+            });
+            assert!(play_fixture::play(d.games, action, root.into(), timestamp), "capacity {} root {}", capacity, root);
+        }
+    }
+}
