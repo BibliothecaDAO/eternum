@@ -8,6 +8,7 @@ cairo-version = "=2.17.0"
 starknet = "=2.17.0"
 eternum_cubit = { path = "vendor/cubit" }
 games_storage = { path = "storage" }
+realms_vrf_verifier = { path = "../vrf-verifier" }
 
 [dev-dependencies]
 snforge_std = "=0.64.0"
@@ -18,6 +19,7 @@ assert_macros = "=2.17.0"
 [[target.starknet-contract]]
 sierra = true
 casm = true
+build-external-contracts = ["realms_vrf_verifier::Verifier"]
 
 [scripts]
 test = "bash ../test-native.sh"

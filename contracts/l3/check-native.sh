@@ -6,6 +6,12 @@ set -euo pipefail
 
 cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.."
 world=contracts/l3/world-native
+verifier=contracts/l3/vrf-verifier
+
+# Pin the owned verification algorithm before compiling the world that dispatches to it.
+(cd "$verifier" && scarb build)
+bun "$verifier/scripts/pin-class.ts" --check
+(cd "$verifier" && snforge test)
 
 (cd "$world" && scarb build)
 node --test "$world/scripts/check-class-sizes.test.mjs" "$world/scripts/event-layouts.test.mjs" "$world/scripts/taxonomy.test.mjs"

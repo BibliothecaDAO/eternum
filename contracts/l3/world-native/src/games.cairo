@@ -41,6 +41,12 @@ pub trait IGamesPlay<T> {
     fn play(ref self: T, game_id: u32, release_id: u32, preset_commitment: felt252, command: Span<felt252>);
 }
 
+#[starknet::interface]
+pub trait IGamesRandomness<T> {
+    fn vrf_public_key(self: @T) -> realms_vrf_verifier::vendor::ecvrf::Point;
+    fn l2_gas_bound(self: @T) -> u64;
+}
+
 #[starknet::contract]
 pub mod Games {
     use starknet::ContractAddress;
@@ -60,6 +66,8 @@ pub mod Games {
     impl Releases = ReleaseState::ReleasesImpl<ContractState>;
     #[abi(embed_v0)]
     impl AuthenticationViews = GamesEntry::AuthenticationImpl<ContractState>;
+    #[abi(embed_v0)]
+    impl RandomnessViews = GamesEntry::RandomnessImpl<ContractState>;
     #[abi(embed_v0)]
     impl Roles = GamesEntry::RolesImpl<ContractState>;
     #[abi(embed_v0)]
@@ -92,8 +100,10 @@ pub mod Games {
         authentication: Authentication,
         release_id: u32,
         release: crate::logic::release::Release,
+        vrf_public_key: realms_vrf_verifier::vendor::ecvrf::Point,
+        l2_gas_bound: u64,
     ) {
-        self.entry.initializer(owner, launcher, authentication, release_id, release);
+        self.entry.initializer(owner, launcher, authentication, release_id, release, vrf_public_key, l2_gas_bound);
     }
 
     #[external(v0)]

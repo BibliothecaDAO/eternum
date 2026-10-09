@@ -17,28 +17,28 @@ pub enum Discovery {
 }
 
 pub fn surface(
-    config: MapConfig, seed: u256, timestamp: u64, distance: u128, hyperstructures: u32, mode_rules: u32,
+    config: MapConfig, seed: u256, distance: u128, hyperstructures: u32, mode_rules: u32,
 ) -> Discovery {
     if mode_rules & crate::rules::DISCOVER_HYPERSTRUCTURES != 0 {
         let hyper_success = hyperstructure_weight(config, distance, hyperstructures);
         let hyper_total: u128 = config.hyps_win_prob.into() + config.hyps_fail_prob.into();
-        if lottery(seed, 1, hyper_success, hyper_total - hyper_success, timestamp) {
+        if lottery(seed, 1, hyper_success, hyper_total - hyper_success) {
             return Discovery::Hyperstructure;
         }
     }
     if lottery(
-        seed, 2, config.shards_mines_win_probability.into(), config.shards_mines_fail_probability.into(), timestamp,
+        seed, 2, config.shards_mines_win_probability.into(), config.shards_mines_fail_probability.into(),
     ) {
         return Discovery::Mine;
     }
     if mode_rules & crate::rules::DISCOVER_CAMPS != 0
-        && lottery(seed, 7, config.camp_win_probability.into(), config.camp_fail_probability.into(), timestamp) {
+        && lottery(seed, 7, config.camp_win_probability.into(), config.camp_fail_probability.into()) {
         return Discovery::Camp;
     }
     Discovery::None
 }
 
-pub fn ethereal(config: MapConfig, enabled: bool, spire_adjacent: bool, seed: u256, timestamp: u64) -> Discovery {
+pub fn ethereal(config: MapConfig, enabled: bool, spire_adjacent: bool, seed: u256) -> Discovery {
     if enabled
         && !spire_adjacent
         && lottery(
@@ -46,7 +46,6 @@ pub fn ethereal(config: MapConfig, enabled: bool, spire_adjacent: bool, seed: u2
             10,
             config.bitcoin_mine_win_probability.into(),
             config.bitcoin_mine_fail_probability.into(),
-            timestamp,
         ) {
         Discovery::BitcoinMine
     } else {
@@ -85,7 +84,6 @@ pub fn frontier(
     empty_reveals: u8,
     ruin: Option<crate::relics::SiteChest>,
     seed: u256,
-    timestamp: u64,
 ) -> Discovery {
     let camp = Into::<u16, u128>::into(rules.camp_bps) * (10000 + camp_bonus_bps.into()) / 10000;
     let rift = Into::<u16, u128>::into(rules.rift_bps) * (10000 + rift_bonus_bps.into()) / 10000;
@@ -105,7 +103,7 @@ pub fn frontier(
     }
     let floor = empty_reveals >= rules.empty_reveal_limit;
     let mut draw = crate::random::range(
-        seed, Into::<u64, u128>::into(timestamp) + 29, if floor {
+        seed, 29, if floor {
             total
         } else {
             10000

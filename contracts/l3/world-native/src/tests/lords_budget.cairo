@@ -134,8 +134,8 @@ fn chest_tiers_follow_each_depths_odds_over_10k_rolls() {
     for depth in preset.settlement.depths {
         let odds = *depth.chest;
         let mut counts: Felt252Dict<u32> = Default::default();
-        for timestamp in 0_u64..10000 {
-            let tier = roll_tier(odds, 0x4348455354, timestamp);
+        for sample in 0_u64..10000 {
+            let tier = roll_tier(odds, 0x4348455354 + Into::<u64, u256>::into(sample));
             counts.insert(tier.into(), counts.get(tier.into()) + 1);
         }
         for tier in 0_u8..5 {
@@ -163,7 +163,8 @@ fn simulate(ruins_per_day: u32, seed: u256) -> (u128, u128, bool) {
         }
         at_ceiling = at_ceiling && budget.price == rules.price_ceiling;
         for ruin in 0_u32..ruins_per_day {
-            let tier = roll_tier(odds, seed, day * 1000 + ruin.into());
+            let sample: u64 = day * ruins_per_day.into() + ruin.into();
+            let tier = roll_tier(odds, seed + sample.into());
             let shares: u128 = tier_value(rules.shares, tier).into();
             let amount = shares * budget.price;
             if !fits(budget, amount) {

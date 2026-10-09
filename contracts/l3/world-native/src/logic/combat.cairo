@@ -346,7 +346,7 @@ pub fn resolve_raid(
 pub fn raid_success(game_id: u32, result: crate::raid::RaidResolution, context: ExecutionContext) -> bool {
     let mut raw_root = context.raw_root;
     let seed = crate::random::game_root(ref raw_root, game_id, context.game.unbox().seed);
-    crate::raid::success(result, seed, context.timestamp)
+    crate::raid::success(result, seed)
 }
 
 pub fn collect_raid_loot(

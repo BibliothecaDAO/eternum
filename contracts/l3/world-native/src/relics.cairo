@@ -58,8 +58,8 @@ pub fn tier_value(tiers: ChestTiers, tier: u8) -> u16 {
     }
 }
 
-pub fn roll_tier(odds: ChestTiers, seed: u256, timestamp: u64) -> u8 {
-    let mut draw = crate::random::range(seed, Into::<u64, u128>::into(timestamp) + 37, 10000);
+pub fn roll_tier(odds: ChestTiers, seed: u256) -> u8 {
+    let mut draw = crate::random::range(seed, 37, 10000);
     for tier in 0_u8..4 {
         let weight: u128 = tier_value(odds, tier).into();
         if draw < weight {
@@ -217,13 +217,13 @@ pub trait IRelicProduction<T> {
     );
 }
 
-pub fn chest_destination(origin: Coord, seed: u256, timestamp: u64, distance: u8) -> Coord {
+pub fn chest_destination(origin: Coord, seed: u256, distance: u8) -> Coord {
     let seed = if seed > 12 {
         seed - 12
     } else {
         seed + 12
     };
-    let mut salt: u128 = timestamp.into();
+    let mut salt: u128 = 0;
     let mut chosen = 0_u8;
     let mut step = 1_u32;
     let mut coord = origin;
@@ -247,14 +247,14 @@ pub fn chest_destination(origin: Coord, seed: u256, timestamp: u64, distance: u8
     }
     coord
 }
-pub fn draw_relics(rules: Span<RelicRule>, seed: u256, timestamp: u64, count: u8) -> Span<u8> {
+pub fn draw_relics(rules: Span<RelicRule>, seed: u256, count: u8) -> Span<u8> {
     let mut total: u128 = 0;
     for rule in rules {
         total += *rule.draw_weight;
     }
     assert!(total != 0, "empty relic discovery pool");
     let mut chosen = array![];
-    let mut salt: u128 = timestamp.into();
+    let mut salt: u128 = 0;
     for _ in 0..count {
         salt += 18;
         let roll = crate::random::range(seed, salt, total);

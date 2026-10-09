@@ -408,7 +408,7 @@ pub mod RelicState {
                 );
             let mut root = context.raw_root;
             let seed = crate::random::game_root(ref root, game_id, context.game.unbox().seed);
-            let relic = *crate::relics::draw_relics(self.relic_rules(game_id), seed, context.timestamp, 1).at(0);
+            let relic = *crate::relics::draw_relics(self.relic_rules(game_id), seed, 1).at(0);
             self
                 .resources(game_id)
                 .grant_resource(
@@ -487,7 +487,7 @@ pub mod RelicState {
             let seed = crate::random::game_root(ref root, game_id, context.game.unbox().seed);
             let config = context.rules.unbox();
             let relics = crate::relics::draw_relics(
-                self.relic_rules(game_id), seed, context.timestamp, config.map_config.relic_chest_relics_per_chest,
+                self.relic_rules(game_id), seed, config.map_config.relic_chest_relics_per_chest,
             );
             let key = ResourceKey { game_id, entity_id: command.explorer_id };
             for id in relics {

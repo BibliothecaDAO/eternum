@@ -61,4 +61,6 @@ pub mod troop_management;
 pub mod troops;
 pub mod upgrades;
 pub mod village;
+pub mod vrf;
+pub mod vrf_class;
 pub mod withdrawals;

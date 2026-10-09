@@ -129,7 +129,7 @@ fn map_relics(deployment: super::Deployment) -> IRelicMapDispatcher {
     IRelicMapDispatcher { contract_address: deployment.games }
 }
 pub fn chest(deployment: super::Deployment, origin: Coord, seed: u256, time: u64) -> Coord {
-    let coord = crate::relics::chest_destination(origin, seed, time, 12);
+    let coord = crate::relics::chest_destination(origin, seed, 12);
     start_cheat_block_timestamp_global(time);
     start_cheat_caller_address(deployment.games, deployment.games);
     map_relics(deployment)
@@ -311,7 +311,7 @@ fn reveal_relics_reveal_only_the_ring_without_points_or_discovery() {
 fn chest_discovery_is_surface_only_timed_and_skips_reserved_or_occupied_tiles() {
     let (deployment, _, _) = setup(true);
     let origin = Coord { alt: false, x: 2000200, y: 2000200 };
-    let expected = crate::relics::chest_destination(origin, 321, 40, 12);
+    let expected = crate::relics::chest_destination(origin, 321, 12);
     set_fixture(
         deployment.games,
         selector!("settlement_pool"),
@@ -378,7 +378,7 @@ fn opening_a_chest_draws_with_replacement_once_and_replay_cannot_reopen_it() {
     let mut root = super::context(deployment.games, 3).raw_root;
     let games = crate::game::IGameDispatcher { contract_address: deployment.games };
     let seed = crate::random::game_root(ref root, 3, crate::game::IGameDispatcherTrait::game(games, 3).seed);
-    let expected = crate::relics::draw_relics(rules(), seed, 50, 3);
+    let expected = crate::relics::draw_relics(rules(), seed, 3);
     let points = crate::game::IPointsDispatcherTrait::player_points(
         crate::game::IPointsDispatcher { contract_address: deployment.games }, 3, deployment.actor,
     );
@@ -451,15 +451,15 @@ fn relic_configuration_requires_authority_and_application_requires_owner() {
 }
 
 #[test]
-fn pinned_draw_vectors_keep_weights_timestamp_salts_and_direction_retry_order() {
-    assert_eq!(crate::relics::draw_relics(rules(), 12345, 1234, 6), array![43_u8, 48, 47, 42, 40, 55].span());
+fn pinned_draw_vectors_keep_weights_fixed_salts_and_direction_retry_order() {
+    assert_eq!(crate::relics::draw_relics(rules(), 12345, 6), array![39_u8, 41, 39, 47, 48, 52].span());
     assert_eq!(
-        crate::relics::chest_destination(Coord { alt: false, x: 2000200, y: 2000200 }, 321, 40, 12),
-        Coord { alt: false, x: 2000211, y: 2000198 },
+        crate::relics::chest_destination(Coord { alt: false, x: 2000200, y: 2000200 }, 321, 12),
+        Coord { alt: false, x: 2000199, y: 2000186 },
     );
     let mut repeated = false;
     for seed in 1_u64..32 {
-        let chosen = crate::relics::draw_relics(rules(), seed.into(), 40, 3);
+        let chosen = crate::relics::draw_relics(rules(), seed.into(), 3);
         for index in 0..chosen.len() {
             assert!(*chosen.at(index) != 53 && *chosen.at(index) != 54);
             for previous in 0..index {
@@ -624,7 +624,7 @@ fn exploration_grants_a_surface_reward_atomically_and_extraction_cannot_pay_twic
 fn chest_search_skips_the_explorers_vacated_start_tile() {
     let (deployment, _, _) = setup(true);
     let origin = Coord { alt: false, x: 2000200, y: 2000200 };
-    let vacated = Coord { alt: false, x: 2000211, y: 2000198 };
+    let vacated = Coord { alt: false, x: 2000199, y: 2000186 };
     start_cheat_block_timestamp_global(40);
     start_cheat_caller_address(deployment.games, deployment.games);
     map_relics(deployment)

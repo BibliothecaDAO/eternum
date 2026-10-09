@@ -91,13 +91,13 @@ pub fn raid_damage(damage: u128, percent: u16) -> u128 {
     scaled + RESOURCE_PRECISION - scaled % RESOURCE_PRECISION
 }
 
-pub fn success(result: RaidResolution, seed: u256, timestamp: u64) -> bool {
+pub fn success(result: RaidResolution, seed: u256) -> bool {
     if !result.guarded || result.damage_to_guards > result.damage_to_explorer * 2 {
         return true;
     }
     if result.damage_to_explorer > result.damage_to_guards * 2 {
         return false;
     }
-    crate::random::range(seed, timestamp.into() + 18, result.damage_to_guards + result.damage_to_explorer) < result
+    crate::random::range(seed, 18, result.damage_to_guards + result.damage_to_explorer) < result
         .damage_to_guards
 }

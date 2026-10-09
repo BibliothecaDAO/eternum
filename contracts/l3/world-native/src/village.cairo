@@ -59,14 +59,14 @@ pub trait IVillageArmy<T> {
     );
 }
 
-pub fn select_resource(pool: Span<VillageResource>, seed: u256, timestamp: u64) -> u8 {
+pub fn select_resource(pool: Span<VillageResource>, seed: u256) -> u8 {
     assert!(pool.len() == 22, "incomplete village resource pool");
     let mut total = 0_u128;
     for choice in pool {
         total += *choice.weight;
     }
     assert!(total > 0, "empty village resource pool");
-    let draw = crate::random::range(seed, timestamp.into() + 18, total);
+    let draw = crate::random::range(seed, 18, total);
     let mut cumulative = 0;
     for choice in pool {
         cumulative += *choice.weight;

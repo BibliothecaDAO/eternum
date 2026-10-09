@@ -4,6 +4,7 @@ pub mod GamesEntry {
     use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess, StoragePointerWriteAccess};
     use starknet::{ContractAddress, get_caller_address, get_tx_info};
     use crate::games::Authentication;
+    use realms_vrf_verifier::vendor::ecvrf::Point;
     use crate::logic::release::ReleaseState;
     use crate::logic::release::ReleaseState::InternalTrait as ReleaseInternal;
     use crate::presets::PresetDefinition;
@@ -16,6 +17,9 @@ pub mod GamesEntry {
         data: crate::state::Storage,
         #[flat]
         authentication_state: games_storage::authentication::AuthenticationStorage<Authentication>,
+        vrf_key_x: felt252,
+        vrf_key_y: felt252,
+        vrf_gas_bound: u64,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
@@ -32,6 +36,17 @@ pub mod GamesEntry {
         of crate::games::IGamesAuthentication<ComponentState<TContractState>> {
         fn authentication(self: @ComponentState<TContractState>) -> Authentication {
             self.authentication_state.authentication.read()
+        }
+    }
+
+    #[embeddable_as(RandomnessImpl)]
+    pub impl RandomnessViews<TContractState, +HasComponent<TContractState>, +Drop<TContractState>>
+        of crate::games::IGamesRandomness<ComponentState<TContractState>> {
+        fn vrf_public_key(self: @ComponentState<TContractState>) -> Point {
+            Point { x: self.vrf_key_x.read(), y: self.vrf_key_y.read() }
+        }
+        fn l2_gas_bound(self: @ComponentState<TContractState>) -> u64 {
+            self.vrf_gas_bound.read()
         }
     }
 
@@ -80,6 +95,7 @@ pub mod GamesEntry {
         fn initializer(
             ref self: ComponentState<TContractState>, owner: ContractAddress, launcher: ContractAddress,
             authentication: Authentication, release_id: u32, release: crate::logic::release::Release,
+            vrf_public_key: Point, l2_gas_bound: u64,
         ) {
             assert!(owner.is_non_zero(), "zero owner");
             assert!(launcher.is_non_zero(), "zero launcher");
@@ -87,6 +103,11 @@ pub mod GamesEntry {
             assert!(authentication.guardian_public_key.is_non_zero(), "zero guardian");
             games_storage::release::validate(release.classes);
             assert!(release_id != 0, "zero release id");
+            assert!(core::ec::EcPointImpl::new(vrf_public_key.x, vrf_public_key.y).is_some(), "invalid VRF key");
+            assert!(l2_gas_bound != 0, "zero L2 gas bound");
+            self.vrf_key_x.write(vrf_public_key.x);
+            self.vrf_key_y.write(vrf_public_key.y);
+            self.vrf_gas_bound.write(l2_gas_bound);
             self.data.authority.write(owner);
             self.data.launcher.write(launcher);
             self.data.current_release.write(release_id);
@@ -126,10 +147,11 @@ pub mod GamesEntry {
             assert!(actor == crate::games::player_account_address(*identity[0], class, authentication.guardian_public_key), "foreign guardian");
         }
 
-        // The verifier must bind this transaction's stamp before returning its root. Until it is installed, play
-        // refuses every unstamped action; there is no fixed-root or player-supplied-root production fallback.
+        // Constructor facts select the key and bound; the generated class pin selects the verification algorithm.
         fn verify_stamp_before_roll(self: @ComponentState<TContractState>) -> u256 {
-            panic!("VRF stamp required")
+            crate::vrf::checked_root(
+                Point { x: self.vrf_key_x.read(), y: self.vrf_key_y.read() }, self.vrf_gas_bound.read(),
+            )
         }
 
         fn apply_gameplay(

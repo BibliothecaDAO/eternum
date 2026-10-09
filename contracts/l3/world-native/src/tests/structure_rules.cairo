@@ -119,14 +119,14 @@ fn discovery_uses_pinned_weight_totals_offsets_and_layer_restrictions() {
     assert_eq!(config.camp_fail_probability, 48500);
     assert_eq!(config.bitcoin_mine_win_probability, 200);
     assert_eq!(config.bitcoin_mine_fail_probability, 9800);
-    // Independent draws from the pinned Poseidon RNG at time 80, offsets 2, 7 and 10.
-    assert_eq!(surface(config, 62, 80, 0, 0, crate::rules::DISCOVER_CAMPS), Discovery::Mine); // mine draw 299
-    assert_eq!(surface(config, 67, 80, 0, 0, crate::rules::DISCOVER_CAMPS), Discovery::Camp); // mine 8885, camp 299
+    // Independent draws from the pinned Poseidon RNG with fixed salt 18, offsets 2, 7 and 10.
+    assert_eq!(surface(config, 14892, 0, 0, crate::rules::DISCOVER_CAMPS), Discovery::Mine); // mine draw 299
+    assert_eq!(surface(config, 14897, 0, 0, crate::rules::DISCOVER_CAMPS), Discovery::Camp); // mine >=1000, camp 299
     assert_eq!(
-        surface(config, 53454, 80, 0, 0, crate::rules::DISCOVER_CAMPS), Discovery::Camp,
-    ); // mine threshold 1000 is excluded; camp draw 521 wins
-    assert_eq!(ethereal(config, true, false, 23568, 80), Discovery::BitcoinMine); // draw 199
-    assert_eq!(ethereal(config, true, false, 4175, 80), Discovery::None); // draw 200
-    assert_eq!(ethereal(config, false, false, 23568, 80), Discovery::None);
-    assert_eq!(ethereal(config, true, true, 23568, 80), Discovery::None);
+        surface(config, 3229451, 0, 0, crate::rules::DISCOVER_CAMPS), Discovery::Camp,
+    ); // mine threshold 1000 is excluded; camp draw 337 wins
+    assert_eq!(ethereal(config, true, false, 7496), Discovery::BitcoinMine); // draw 199
+    assert_eq!(ethereal(config, true, false, 4236), Discovery::None); // draw 200
+    assert_eq!(ethereal(config, false, false, 7496), Discovery::None);
+    assert_eq!(ethereal(config, true, true, 7496), Discovery::None);
 }

@@ -1540,6 +1540,32 @@ fn sites_pay_the_same_initial_guard_in_a_days_last_minute_as_in_its_first() {
     assert_capture_at(0, 1000 * RESOURCE_PRECISION, crate::troops::TroopTier::T1, 100 * RESOURCE_PRECISION, true);
 }
 
+// Search roll inputs, never the gameplay clock. Every chosen input is passed to the action unchanged.
+fn discovery_root(
+    game_id: u32, game_seed: felt252, rules: crate::expeditions::FrontierDiscoveryRules,
+    empty_reveals: u8, chest: Option<SiteChest>, expected: crate::discovery::Discovery,
+) -> u256 {
+    for sample in 0_u64..10000 {
+        let raw_root: u256 = sample.into();
+        let mut root = raw_root;
+        let seed = crate::random::game_root(ref root, game_id, game_seed);
+        if crate::discovery::frontier(rules, 0, 0, 0, empty_reveals, chest, seed) == expected {
+            return raw_root;
+        }
+    }
+    panic!("no matching discovery root in bounded fixture search")
+}
+fn explore_with_root(d: super::Deployment, game_id: u32, explorer_id: u64, root: u256, timestamp: u64) -> bool {
+    super::play_fixture::play(
+        d.games,
+        super::play_fixture::TestAction {
+            game_id, actor: d.actor, command: Command::Explore(Explore { explorer_id, direction: 0 }),
+        },
+        root,
+        timestamp,
+    )
+}
+
 // Settles on day 1's first second and captures in its first minute, or with `late` in its last.
 fn assert_capture_at(depth: u8, count: u128, tier: crate::troops::TroopTier, reveal_amount: u128, late: bool) {
     let d = setup();
@@ -1728,17 +1754,13 @@ fn assert_capture_at(depth: u8, count: u128, tier: crate::troops::TroopTier, rev
     let essence_supply = ResourceSlot { game_id, entity_id: 1, resource_type: 38 };
     let before_supplies = resources.resource_balance(labor_supply) + resources.resource_balance(essence_supply);
     let context = crate::tests::context(d.games, game_id);
-    let mut root = context.raw_root;
-    let seed = crate::random::game_root(ref root, game_id, context.game.unbox().seed);
     let discovery_rules = preset.economy.discovery.unwrap();
-    let mut reveal_at = opening + 2;
-    while crate::discovery::frontier(
-        discovery_rules, 0, 0, 0, 0, None, seed, reveal_at,
-    ) != crate::discovery::Discovery::Camp {
-        reveal_at += 1;
-    }
+    let root = discovery_root(
+        game_id, context.game.unbox().seed, discovery_rules, 0, None, crate::discovery::Discovery::Camp,
+    );
+    let reveal_at = opening + 2;
     assert!(reveal_at < capture_at, "camp draw must precede the fixture capture");
-    assert!(execute_in_game(d, game_id, Command::Explore(Explore { explorer_id, direction: 0 }), reveal_at));
+    assert!(explore_with_root(d, game_id, explorer_id, root, reveal_at));
     let coord = crate::geometry::neighbor(army.coord, 0);
     let map = IMapLogicDispatcher { contract_address: d.games };
     let tile = map.tile(crate::geometry::tile_key(game_id, coord)).unwrap();
@@ -2394,20 +2416,13 @@ fn frontier_finds_at_most_one_ruin_a_day_and_holds_its_chest_against_the_budget(
     };
     let (d, game_id, key) = setup_frontier_chests_with_rules(Some(ruins_only));
     let context = crate::tests::context(d.games, game_id);
-    let mut root = context.raw_root;
-    let seed = crate::random::game_root(ref root, game_id, context.game.unbox().seed);
-    let mut time = 360_u64;
-    while crate::discovery::frontier(
-        ruins_only, 0, 0, 0, 0, Some(any_chest()), seed, time,
-    ) != crate::discovery::Discovery::Ruin(any_chest()) {
-        time += 1;
-    }
-    let army = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
-    assert!(
-        execute_in_game(
-                d, game_id, Command::Explore(Explore { explorer_id: key.explorer_id, direction: 0 }), time,
-        ),
+    let raw_root = discovery_root(
+        game_id, context.game.unbox().seed, ruins_only, 0, Some(any_chest()),
+        crate::discovery::Discovery::Ruin(any_chest()),
     );
+    let time = 360_u64;
+    let army = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
+    assert!(explore_with_root(d, game_id, key.explorer_id, raw_root, time));
     let tile = crate::geometry::tile_key(game_id, crate::geometry::neighbor(army.coord, 0));
     let ruin = snforge_std::interact_with_state(d.games, || crate::logic::map::occupancy(tile).unwrap());
     assert_eq!(ruin.category, crate::taxonomy::RUIN_OCCUPIER);
@@ -2433,11 +2448,15 @@ fn frontier_finds_at_most_one_ruin_a_day_and_holds_its_chest_against_the_budget(
     let map = crate::expeditions::IFrontierDiscoveryLibraryDispatcher { class_hash: super::declare_logic("MapLogic") };
     let next = crate::geometry::tile_key(game_id, crate::geometry::neighbor(army.coord, 2));
     start_cheat_caller_address(d.games, d.games);
-    for timestamp in time + 1..time + 30 {
+    for sample in 1_u64..30 {
+        let timestamp = time + sample;
+        let raw_root: u256 = sample.into();
+        let mut root = raw_root;
+        let seed = crate::random::game_root(ref root, game_id, context.game.unbox().seed);
         let drawn = snforge_std::interact_with_state(
             d.games,
             || crate::expeditions::IFrontierDiscoveryDispatcherTrait::discover_frontier_tile(
-                map, next, key.explorer_id, seed, crate::commands::ActionContext { raw_root: 0, timestamp },
+                map, next, key.explorer_id, seed, crate::commands::ActionContext { raw_root, timestamp },
             ),
         );
         match drawn {
@@ -2806,8 +2825,6 @@ fn frontier_floor_counts_seven_player_reveals_across_armies_and_depths_then_rese
     let counter = crate::expeditions::ExpeditionDiscoveryKey { game_id, structure_id: 1, epoch: 0 };
     assert!(snforge_std::interact_with_state(d.games, || crate::logic::expeditions::discovery(counter)).is_none());
     let context = crate::tests::context(d.games, game_id);
-    let mut root = context.raw_root;
-    let seed = crate::random::game_root(ref root, game_id, context.game.unbox().seed);
     let tomorrow = day_start(d, game_id, 1);
     let mut time = 353_u64;
     for index in 0_u8..8 {
@@ -2829,18 +2846,14 @@ fn frontier_floor_counts_seven_player_reveals_across_armies_and_depths_then_rese
                 .unwrap_or(0),
             index,
         );
-        while index < 7
-            && crate::discovery::frontier(
-                discovery, 0, 0, 0, index, Some(any_chest()), seed, time,
-            ) != crate::discovery::Discovery::None {
-            time += 1;
-            }
+        let expected = if index < 7 {
+            crate::discovery::Discovery::None
+        } else {
+            crate::discovery::Discovery::Camp
+        };
+        let root = discovery_root(game_id, context.game.unbox().seed, discovery, index, Some(any_chest()), expected);
         assert!(time < tomorrow);
-        assert!(
-            execute_in_game(
-                d, game_id, Command::Explore(Explore { explorer_id: key.explorer_id, direction: 0 }), time,
-            ),
-        );
+        assert!(explore_with_root(d, game_id, key.explorer_id, root, time));
         let count = snforge_std::interact_with_state(
             d.games, || crate::logic::expeditions::discovery(counter).unwrap().empty_reveals,
         );
@@ -2883,13 +2896,11 @@ fn frontier_floor_counts_seven_player_reveals_across_armies_and_depths_then_rese
         ),
     );
     let third = *IStructureOperationsDispatcher { contract_address: d.games }.home_armies(home).at(0);
-    let mut time = tomorrow + 1;
-    while crate::discovery::frontier(
-        discovery, 0, 0, 0, 0, Some(any_chest()), seed, time,
-    ) != crate::discovery::Discovery::None {
-        time += 1;
-    }
-    assert!(execute_in_game(d, game_id, Command::Explore(Explore { explorer_id: third, direction: 0 }), time));
+    let time = tomorrow + 1;
+    let root = discovery_root(
+        game_id, context.game.unbox().seed, discovery, 0, Some(any_chest()), crate::discovery::Discovery::None,
+    );
+    assert!(explore_with_root(d, game_id, third, root, time));
     assert_eq!(
         snforge_std::interact_with_state(
             d.games,
@@ -3056,11 +3067,15 @@ fn frontier_site_discovery_reads_home_knowledge_and_places_only_tile_occupancy()
             },
             ..rules,
         };
-        let mut seed = 0_u256;
-        while crate::discovery::frontier(enabled, 0, 0, 0, 0, Some(any_chest()), seed, 360) != expected {
-            seed += 1;
+        let mut chosen = None;
+        for sample in 0_u64..10000 {
+            let seed: u256 = sample.into();
+            if crate::discovery::frontier(enabled, 0, 0, 0, 0, Some(any_chest()), seed) == expected {
+                chosen = Some(seed);
+                break;
+            }
         }
-        let seed = seed;
+        let seed = chosen.expect('MISSING_SITE_ROOT');
         let coord = crate::geometry::neighbor(army.coord, 0);
         let tile = crate::geometry::tile_key(game_id, coord);
         let context = crate::commands::ActionContext { raw_root: 0, timestamp: 360 };

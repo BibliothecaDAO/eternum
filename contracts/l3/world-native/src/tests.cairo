@@ -1,3 +1,4 @@
+use crate::games::IGamesRandomnessDispatcherTrait;
 use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
 use crate::logic::release::{IReleasesDispatcher, IReleasesDispatcherTrait};
 use crate::tests::state::{GameState, TroopObservationTrait};
@@ -88,6 +89,17 @@ struct Deployment {
 
 const GUARDIAN: felt252 = 98765;
 
+const TEST_L2_GAS_BOUND: u64 = 1200000000;
+fn vrf_key() -> realms_vrf_verifier::vendor::ecvrf::Point {
+    realms_vrf_verifier::vendor::ecvrf::Point {
+        x: core::ec::stark_curve::GEN_X, y: core::ec::stark_curve::GEN_Y,
+    }
+}
+fn append_vrf_configuration(ref calldata: Array<felt252>) {
+    vrf_key().serialize(ref calldata);
+    calldata.append(TEST_L2_GAS_BOUND.into());
+}
+
 fn player_address(realms_id: felt252) -> ContractAddress {
     crate::games::player_account_address(realms_id, declare_logic("AccountFixture"), GUARDIAN)
 }
@@ -165,6 +177,7 @@ fn setup_with_host(
     calldata.append(1);
     classes.serialize(ref calldata);
     calldata.append(0);
+    append_vrf_configuration(ref calldata);
     let (games, _) = deploy(host, @calldata);
     if seed_games {
         play_fixture::create_games(games);
@@ -351,6 +364,7 @@ fn initializer_refuses_zero_owner_launcher_class_and_guardian() {
         }.serialize(ref args);
         args.append(1);
         release.serialize(ref args);
+        append_vrf_configuration(ref args);
         assert!(declare("Games").unwrap().contract_class().deploy(@args).is_err());
     }
 }
@@ -545,6 +559,7 @@ fn games_reinitialization_is_rejected_without_changing_authentication_or_state()
     authentication.serialize(ref calldata);
     calldata.append(1);
     release.serialize(ref calldata);
+    append_vrf_configuration(ref calldata);
     start_cheat_caller_address(d.games, authority());
     for selector in array![selector!("constructor"), selector!("initializer")] {
         assert!(starknet::syscalls::call_contract_syscall(d.games, selector, calldata.span()).is_err());
@@ -676,4 +691,36 @@ fn game_registry_wire_contains_only_game_configuration() {
         game.name, game.preset_id.into(), 0, 1, 1, game.start_settling_at.into(), game.start_main_at.into(),
         game.end_at.into(), game.end_grace_seconds.into(), game.seed,
     ].span());
+}
+
+
+#[test]
+fn constructor_vrf_configuration_is_immutable_and_refuses_invalid_inputs() {
+    let d = setup_with_host(true, "MapLogic", "TroopFixture", "Games");
+    let randomness = crate::games::IGamesRandomnessDispatcher { contract_address: d.games };
+    let key = randomness.vrf_public_key();
+    assert_eq!((key.x, key.y), (vrf_key().x, vrf_key().y));
+    assert_eq!(randomness.l2_gas_bound(), TEST_L2_GAS_BOUND);
+    start_cheat_caller_address(d.games, authority());
+    assert!(
+        starknet::syscalls::call_contract_syscall(d.games, selector!("set_vrf_public_key"), array![0, 0].span()).is_err(),
+    );
+    assert!(
+        starknet::syscalls::call_contract_syscall(d.games, selector!("set_l2_gas_bound"), array![1].span()).is_err(),
+    );
+    let after = randomness.vrf_public_key();
+    assert_eq!((after.x, after.y), (key.x, key.y));
+    assert_eq!(randomness.l2_gas_bound(), TEST_L2_GAS_BOUND);
+    let authentication = IGamesAuthenticationDispatcher { contract_address: d.games }.authentication();
+    let release = IReleasesDispatcher { contract_address: d.games }.release(1);
+    for invalid_key in array![true, false] {
+        let mut args = array![authority().into(), authority().into()];
+        authentication.serialize(ref args);
+        args.append(1);
+        release.serialize(ref args);
+        let key = if invalid_key { realms_vrf_verifier::vendor::ecvrf::Point { x: 0, y: 0 } } else { vrf_key() };
+        key.serialize(ref args);
+        args.append(if invalid_key { TEST_L2_GAS_BOUND.into() } else { 0 });
+        assert!(declare("Games").unwrap().contract_class().deploy(@args).is_err());
+    }
 }

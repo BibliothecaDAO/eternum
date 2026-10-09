@@ -15,3 +15,6 @@ starknet-crypto = "0.8.1"
 [profile.release]
 lto = "thin"
 codegen-units = 1
+
+[dev-dependencies]
+ark-ec = "0.5.0"

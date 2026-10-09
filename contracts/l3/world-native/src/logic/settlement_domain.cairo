@@ -220,7 +220,7 @@ pub mod SettlementLogic {
             let mut raw_root = context.raw_root;
             let seed = crate::random::game_root(ref raw_root, game_id, game.seed);
             let village_rules = self.villages.rules(game_id);
-            let resource = crate::village::select_resource(village_rules.resource_pool, seed, context.timestamp);
+            let resource = crate::village::select_resource(village_rules.resource_pool, seed);
             let progress = self.settlements.data.settlements.progress.read(game_id);
             let coord = ISettlementPoolLibraryDispatcher { class_hash: classes.placement.read() }
                 .claim_village(game_id, progress.registered, seed, crate::commands::action_context(context));
