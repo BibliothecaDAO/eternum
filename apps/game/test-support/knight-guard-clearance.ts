@@ -1,22 +1,26 @@
 import { readFileSync } from "node:fs";
 
-import { Quaternion, Vector3, type Object3D } from "three";
+import { Group, Quaternion, Vector3, type Object3D } from "three";
 
-import {
-  advanceProceduralMeleeAttack,
-  createIdleProceduralMeleeAttackState,
-  startProceduralMeleeAttack,
-  type ProceduralMeleeAttackState,
-} from "../src/three/characters/melee/procedural-melee-attack-cycle";
+import { ProceduralContactReactionController } from "../src/three/characters/collision/procedural-contact-reaction";
+import type { ProceduralMeleeAttackState } from "../src/three/characters/melee/procedural-melee-attack-cycle";
 import {
   applyProceduralMeleeConfigPatch,
   createDefaultProceduralMeleeConfig,
 } from "../src/three/characters/melee/procedural-melee-config";
-import { resolveProceduralMeleeUpperBodyPose } from "../src/three/characters/melee/procedural-melee-pose";
+import {
+  applyProceduralMeleeHitReaction,
+  resolveProceduralMeleeUpperBodyPose,
+} from "../src/three/characters/melee/procedural-melee-pose";
+import {
+  ProceduralMeleeController,
+  type ProceduralMeleeBearerMotion,
+} from "../src/three/characters/melee/procedural-melee-controller";
+import type { ProceduralMeleeGuardHolds } from "../src/three/characters/melee/procedural-melee-pose";
 import {
   PROCEDURAL_MELEE_OFFHANDS,
   PROCEDURAL_MELEE_WEAPONS,
-  type ProceduralMeleeArmPoseState,
+  type ProceduralMeleeAttackVariantId,
 } from "../src/three/characters/melee/procedural-melee-weapon-catalog";
 import type { ProceduralCharacterLibrary } from "../src/three/characters/procedural-character-assets";
 import { ProceduralCharacterAvatar } from "../src/three/characters/procedural-character-avatar";
@@ -25,7 +29,10 @@ import {
   type ProceduralCharacterConfig,
   type ProceduralCharacterRenderDetail,
 } from "../src/three/characters/procedural-character-config";
-import { resolveProceduralCharacterPose } from "../src/three/characters/procedural-character-pose";
+import {
+  resolveProceduralCharacterPose,
+  type QuaternionTuple,
+} from "../src/three/characters/procedural-character-pose";
 import { ProceduralCharacterPoseFilter } from "../src/three/characters/procedural-character-pose-filter";
 import {
   applyCharacterRigLimbLengths,
@@ -40,9 +47,6 @@ const TRUNK_RADIUS = 0.05;
 const LIMB_RADIUS = 0.03;
 const SAMPLES_PER_SEGMENT = 64;
 const FRAMES_PER_SECOND = 60;
-/** Eight sample times, in frames, into each locomotion mode. */
-const LOCOMOTION_SAMPLE_FRAMES = [6, 11, 16, 21, 26, 31, 36, 41] as const;
-export const ATTACK_SAMPLE_COUNT = 40;
 /** Fraction of the stature at which the Knight's eyes sit. */
 const EYE_HEIGHT_RATIO = 0.92;
 
@@ -52,7 +56,7 @@ if (!SHIELD || !SWORD) throw new Error("The T1 Knight Default gear is missing fr
 const SHIELD_RADIUS = SHIELD.visualDiameter / 2;
 const BLADE_LENGTH = SWORD.visualLength;
 
-export type KnightMotion = "idle" | "walk" | "run" | "attack";
+export type KnightMotion = "idle" | "walk" | "run";
 
 /** Everything the clearance criteria are measured from, for one moment. */
 export interface GuardClearance {
@@ -80,6 +84,11 @@ export interface GuardClearance {
   shieldTurnLeftDegrees: number;
   shieldTopBelowEyes: number;
   shieldUprightDegrees: number;
+  /**
+   * How far each foot's lowest joint (ankle, ball or toe tip) stands above where it stands at rest, with the sole on the
+   * floor: negative is through the floor.
+   */
+  soleHeights: Readonly<Record<"left" | "right", number>>;
 }
 
 export interface KnightGuardSample {
@@ -115,68 +124,98 @@ export function createKnightGuardSubject(
   return { asset, avatar, config, headRadius: rig.morphology.headRadius, rig, stature };
 }
 
+/** One stretch of a sequence: how the Knight moves, for how long, and what starts at its beginning. */
+export interface KnightSequenceStep {
+  /** An attack of this variant starts as the stretch begins. */
+  attack?: ProceduralMeleeAttackVariantId;
+  /** A melee hit from the front lands as the stretch begins. */
+  hit?: true;
+  label: string;
+  motion: KnightMotion;
+  seconds: number;
+}
+
+/** Where the Knight attacks: ahead, at the height the melee controller aims level at. */
+const ATTACK_TARGET = new Vector3(0, 1.25, 1.5);
+/** A full-strength melee hit, pushing the Knight back. */
+const FRONT_HIT = {
+  localDirectionX: 0,
+  localDirectionY: 0,
+  localDirectionZ: -1,
+  source: "melee",
+  strength: 10,
+} as const;
+const SAMPLE_EVERY_FRAMES = 2;
+
 /**
- * Samples idle, walk or run frame by frame at the eight sample times, through the pose filter the runtime applies: the
- * visible chest lags the controller's, and the clearances are measured as they then stand.
+ * Runs one figure through the steps in turn, frame by frame, the way the runtime does: the melee controller eases its
+ * guards and picks the attack, a contact reaction blends the hit in, the pose filter trails the controller (and is
+ * reset when the motion changes), and the declared arms are placed in the chest the figure shows. Samples every other
+ * frame.
  */
-export function sampleLocomotionGuard(
+export function runKnightSequence(
   subject: KnightGuardSubject,
-  motion: "idle" | "walk" | "run",
+  steps: readonly KnightSequenceStep[],
+  seed = 0,
 ): KnightGuardSample[] {
-  const posed = { ...subject.config, animationMode: motion };
-  subject.avatar.updateConfig(posed);
-  const action = createGuardAction({ ...createIdleProceduralMeleeAttackState() }, motion !== "idle");
-  subject.avatar.setUpperBodyAction(action);
-  const samples: KnightGuardSample[] = [];
+  const root = new Group();
+  const melee = new ProceduralMeleeController(createKnightMeleeConfig(), false, seed);
+  const reactions = new ProceduralContactReactionController();
   const filter = new ProceduralCharacterPoseFilter();
-  for (let frame = 0; frame <= LOCOMOTION_SAMPLE_FRAMES[LOCOMOTION_SAMPLE_FRAMES.length - 1]; frame++) {
-    subject.avatar.applyPose(
-      filter.apply(
-        resolveProceduralCharacterPose(subject.rig, posed, frame / FRAMES_PER_SECOND, undefined, undefined, action),
-        1 / FRAMES_PER_SECOND,
+  const samples: KnightGuardSample[] = [];
+  let frame = 0;
+  let motion: KnightMotion | undefined;
+  let visibleChest: QuaternionTuple | undefined;
+  for (const step of steps) {
+    const posed = { ...subject.config, animationMode: step.motion };
+    if (step.motion !== motion) {
+      subject.avatar.updateConfig(posed);
+      filter.reset();
+      motion = step.motion;
+    }
+    if (step.attack) {
+      melee.updateConfig(createKnightMeleeConfig(step.attack), seed);
+      melee.attack(ATTACK_TARGET);
+    }
+    if (step.hit) reactions.trigger(FRONT_HIT);
+    for (let stepFrame = 0; stepFrame < Math.round(step.seconds * FRAMES_PER_SECOND); stepFrame++, frame++) {
+      const delta = 1 / FRAMES_PER_SECOND;
+      const meleePose = melee.update(delta, root, BEARER_MOTIONS[step.motion]);
+      const reaction = reactions.update(delta);
+      const action = applyProceduralMeleeHitReaction(meleePose, reaction?.weight ?? 0);
+      subject.avatar.setUpperBodyAction(action);
+      const pose = filter.apply(
+        resolveProceduralCharacterPose(
+          subject.rig,
+          posed,
+          frame / FRAMES_PER_SECOND,
+          undefined,
+          undefined,
+          action,
+          reaction,
+          visibleChest,
+        ),
+        delta,
         posed.secondaryMotion,
-      ),
-    );
-    if (!(LOCOMOTION_SAMPLE_FRAMES as readonly number[]).includes(frame)) continue;
-    samples.push({
-      clearance: measureGuardClearance(subject),
-      label: `${motion} ${(frame / FRAMES_PER_SECOND).toFixed(2)}s`,
-      motion,
-    });
+      );
+      subject.avatar.applyPose(pose);
+      visibleChest = pose.parts.chest.quaternion;
+      if (stepFrame % SAMPLE_EVERY_FRAMES !== 0) continue;
+      samples.push({
+        clearance: measureGuardClearance(subject),
+        label: `${step.label} ${(stepFrame / FRAMES_PER_SECOND).toFixed(2)}s`,
+        motion: step.motion,
+      });
+    }
   }
   return samples;
 }
 
-/** Samples the attack cycle, from acquire to recover, at evenly spaced frames. */
-export function sampleAttackCycle(subject: KnightGuardSubject): KnightGuardSample[] {
-  const posed = { ...subject.config, animationMode: "idle" as const };
-  subject.avatar.updateConfig(posed);
-  const meleeConfig = createKnightMeleeConfig();
-  let state: ProceduralMeleeAttackState = startProceduralMeleeAttack(
-    createIdleProceduralMeleeAttackState(),
-    meleeConfig,
-    0,
-  );
-  const cycle: { action: ReturnType<typeof createGuardAction>; clearance: GuardClearance }[] = [];
-  const filter = new ProceduralCharacterPoseFilter();
-  for (let frame = 0; state.phase !== "idle" && frame < 600; frame++) {
-    const action = createGuardAction(state);
-    subject.avatar.setUpperBodyAction(action);
-    subject.avatar.applyPose(
-      filter.apply(
-        resolveProceduralCharacterPose(subject.rig, posed, frame / FRAMES_PER_SECOND, undefined, undefined, action),
-        1 / FRAMES_PER_SECOND,
-        posed.secondaryMotion,
-      ),
-    );
-    cycle.push({ action, clearance: measureGuardClearance(subject) });
-    state = advanceProceduralMeleeAttack(state, meleeConfig, 0, 1 / FRAMES_PER_SECOND, false).state;
-  }
-  return Array.from({ length: ATTACK_SAMPLE_COUNT }, (_, index) => {
-    const frame = Math.round((index * (cycle.length - 1)) / (ATTACK_SAMPLE_COUNT - 1));
-    return { clearance: cycle[frame].clearance, label: `attack frame ${frame}`, motion: "attack" as const };
-  });
-}
+const BEARER_MOTIONS: Record<KnightMotion, ProceduralMeleeBearerMotion> = {
+  idle: "standing",
+  run: "running",
+  walk: "walking",
+};
 
 /** The worst value of every criterion over the samples, as a one-line summary for failure messages. */
 export function summariseWorstGuardClearance(samples: readonly KnightGuardSample[]): string {
@@ -203,24 +242,29 @@ export function summariseWorstGuardClearance(samples: readonly KnightGuardSample
     `blade-vertical ${max((c) => c.bladeVerticalDegrees).toFixed(0)}deg`,
     `blade-inward ${max((c) => c.bladeLeanInward).toFixed(2)}`,
     `hinge ${max((c) => c.hingeAxisDegrees).toFixed(1)}deg`,
+    `sole ${mm(min((c) => Math.min(c.soleHeights.left, c.soleHeights.right)))}`,
   ].join(", ");
 }
 
-function createKnightMeleeConfig() {
+function createKnightMeleeConfig(attackVariant: ProceduralMeleeAttackVariantId | "auto" = "auto") {
   return applyProceduralMeleeConfigPatch(createDefaultProceduralMeleeConfig("knight"), {
+    attackVariant,
     offhandId: "t1-knight-default-shield",
     weaponId: "t1-knight-default-sword",
   });
 }
 
-function createGuardAction(state: ProceduralMeleeAttackState, moving = false) {
+const NO_GUARD_HOLD: ProceduralMeleeGuardHolds = { guard: 0, move: 0, run: 0 };
+
+function createGuardAction(state: ProceduralMeleeAttackState, holds = NO_GUARD_HOLD, seed = 0) {
   return resolveProceduralMeleeUpperBodyPose({
     aimPitchRadians: 0,
     aimYawRadians: 0,
     attackStyle: "slash",
-    config: createKnightMeleeConfig(),
-    guardHold: moving ? 1 : 0,
+    config: createKnightMeleeConfig(state.variant ?? "auto"),
+    holds,
     mounted: false,
+    seed,
     state,
   });
 }
@@ -283,7 +327,16 @@ function measureGuardClearance(subject: KnightGuardSubject): GuardClearance {
     shieldUprightDegrees: radiansToDegrees(
       Math.asin(shieldFront.y / Math.max(1e-9, Math.hypot(horizontalFront, shieldFront.y))),
     ),
+    soleHeights: { left: measureSoleHeight(asset.gltf.scene, "l"), right: measureSoleHeight(asset.gltf.scene, "r") },
   };
+}
+
+function measureSoleHeight(scene: Object3D, side: "l" | "r"): number {
+  return Math.min(
+    ...[`foot_${side}`, `ball_${side}`, `ball_leaf_${side}`].map(
+      (name) => requireBone(scene, name).getWorldPosition(new Vector3()).y - restPosition(name).y,
+    ),
+  );
 }
 
 interface Segment {
@@ -378,28 +431,181 @@ export interface KnightArmStateMeasure {
   swordGrip: Vector3;
 }
 
-const STATE_ATTACK_MOMENTS: Record<ProceduralMeleeArmPoseState, ProceduralMeleeAttackState> = {
-  carry: { attackGeneration: 0, contactCount: 0, phase: "idle", phaseElapsedSeconds: 0 },
-  // The end of each phase, so the weights of its state are fully reached.
-  guard: { attackGeneration: 1, contactCount: 0, phase: "acquire", phaseElapsedSeconds: 10 },
-  windup: { attackGeneration: 1, contactCount: 0, phase: "windup", phaseElapsedSeconds: 10 },
-  contact: { attackGeneration: 1, contactCount: 1, phase: "contact", phaseElapsedSeconds: 0 },
-  follow: { attackGeneration: 1, contactCount: 1, phase: "followThrough", phaseElapsedSeconds: 10 },
+/** The Knight's states as `poses.json` names them. */
+export type KnightStateName =
+  | "idle-relaxed"
+  | "idle-at-ease"
+  | "sword-on-shoulder"
+  | "guard"
+  | "walk-guard"
+  | "run-guard"
+  | "hit"
+  | `${"cut" | "backhand" | "chop" | "thrust"}-${"windup" | "contact" | "follow"}`;
+
+interface KnightStateDrive {
+  animationMode: "idle" | "walk" | "run";
+  hitWeight: number;
+  holds: ProceduralMeleeGuardHolds;
+  seed: number;
+  state: ProceduralMeleeAttackState;
+}
+
+const IDLE_STATE: ProceduralMeleeAttackState = {
+  attackGeneration: 0,
+  contactCount: 0,
+  phase: "idle",
+  phaseElapsedSeconds: 0,
 };
+const IDLE_SEEDS: Partial<Record<KnightStateName, number>> = {
+  "idle-relaxed": 0,
+  "idle-at-ease": 1,
+  "sword-on-shoulder": 2,
+};
+
+/** The inputs that reach a state fully: the end of each phase, so its weights are fully reached. */
+function resolveStateDrive(name: KnightStateName): KnightStateDrive {
+  const standing = { animationMode: "idle" as const, hitWeight: 0, holds: NO_GUARD_HOLD, seed: 0, state: IDLE_STATE };
+  const idleSeed = IDLE_SEEDS[name];
+  if (idleSeed !== undefined) return { ...standing, seed: idleSeed };
+  if (name === "guard") return { ...standing, holds: { guard: 1, move: 0, run: 0 } };
+  if (name === "walk-guard") return { ...standing, animationMode: "walk", holds: { guard: 1, move: 1, run: 0 } };
+  if (name === "run-guard") return { ...standing, animationMode: "run", holds: { guard: 1, move: 1, run: 1 } };
+  if (name === "hit") return { ...standing, hitWeight: 1 };
+  const [variant, moment] = name.split("-") as [ProceduralMeleeAttackVariantId, "windup" | "contact" | "follow"];
+  const phase = { windup: "windup", contact: "contact", follow: "followThrough" } as const;
+  return {
+    ...standing,
+    state: {
+      attackGeneration: 1,
+      contactCount: moment === "windup" ? 0 : 1,
+      phase: phase[moment],
+      phaseElapsedSeconds: moment === "contact" ? 0 : 10,
+      variant,
+    },
+  };
+}
+
 const SETTLE_FRAMES = 40;
 
-/** Drives the weights so the state is fully reached, holds it until the arm solver has settled, and measures it. */
-export function measureKnightArmState(
+/**
+ * Drives the inputs so the state is fully reached, holds it through the pose filter until it has settled, as the
+ * runtime shows it (the declared arms placed in the visible chest), and measures it.
+ */
+export function measureKnightState(
   subject: KnightGuardSubject,
-  state: ProceduralMeleeArmPoseState,
-): KnightArmStateMeasure {
-  const posed = { ...subject.config, animationMode: "idle" as const };
+  name: KnightStateName,
+): { arms: KnightArmStateMeasure; body: KnightBodyStateMeasure } {
+  const gait = settleKnightState(subject, name);
+  return { arms: measureArms(subject), body: measureBody(subject, gait) };
+}
+
+/** Where the trunk, head and feet are, in the terms poses.json declares them in (degrees, fractions and metres). */
+export interface KnightBodyStateMeasure {
+  /** Each ankle forward and left of where the game's idle feet meet. */
+  ankles: Record<"left" | "right", { forward: number; left: number }>;
+  head: { pitch: number; yaw: number };
+  pelvis: { height: number; pitch: number; roll: number; yaw: number };
+  soleHeights: Readonly<Record<"left" | "right", number>>;
+  spine: { flex: number; side: number; twist: number };
+}
+
+/**
+ * The gait's own turns of pelvis, chest and head at the moment measured, through a pose filter of their own: a
+ * declared body is turned from them, and the figure shows both through the filter.
+ */
+interface GaitTurns {
+  chest: Quaternion;
+  head: Quaternion;
+  pelvis: Quaternion;
+}
+
+function settleKnightState(subject: KnightGuardSubject, name: KnightStateName): GaitTurns {
+  const drive = resolveStateDrive(name);
+  const posed = { ...subject.config, animationMode: drive.animationMode };
   subject.avatar.updateConfig(posed);
-  const action = createGuardAction(STATE_ATTACK_MOMENTS[state]);
+  const action = applyProceduralMeleeHitReaction(
+    createGuardAction(drive.state, drive.holds, drive.seed),
+    drive.hitWeight,
+  );
   subject.avatar.setUpperBodyAction(action);
+  const filter = new ProceduralCharacterPoseFilter();
+  const gaitFilter = new ProceduralCharacterPoseFilter();
+  let gait = resolveProceduralCharacterPose(subject.rig, posed, 0).parts;
+  let visibleChest: QuaternionTuple | undefined;
   for (let frame = 0; frame < SETTLE_FRAMES; frame++) {
-    subject.avatar.applyPose(resolveProceduralCharacterPose(subject.rig, posed, 0, undefined, undefined, action));
+    const plain = resolveProceduralCharacterPose(subject.rig, posed, frame / FRAMES_PER_SECOND);
+    gait = gaitFilter.apply(plain, 1 / FRAMES_PER_SECOND, posed.secondaryMotion).parts;
+    const pose = filter.apply(
+      resolveProceduralCharacterPose(
+        subject.rig,
+        posed,
+        frame / FRAMES_PER_SECOND,
+        undefined,
+        undefined,
+        action,
+        undefined,
+        visibleChest,
+      ),
+      1 / FRAMES_PER_SECOND,
+      posed.secondaryMotion,
+    );
+    subject.avatar.applyPose(pose);
+    visibleChest = pose.parts.chest.quaternion;
   }
+  return {
+    chest: new Quaternion(...gait.chest.quaternion),
+    head: new Quaternion(...gait.head.quaternion),
+    pelvis: new Quaternion(...gait.pelvis.quaternion),
+  };
+}
+
+/**
+ * The pelvis turn against the gait's, the chest against the gait's chest turned by that pelvis, the head against the
+ * gait's head turned by both: the terms a declared body composes its turns in.
+ */
+function measureBody(subject: KnightGuardSubject, gait: GaitTurns): KnightBodyStateMeasure {
+  const scene = subject.asset.gltf.scene;
+  const worldTurn = (name: string) => requireBone(scene, name).getWorldQuaternion(new Quaternion());
+  const pelvisTurn = gait.pelvis.clone().invert().multiply(worldTurn("pelvis"));
+  const spineTurn = gait.chest.clone().multiply(pelvisTurn).invert().multiply(worldTurn("spine_03"));
+  const headTurn = gait.head.clone().multiply(pelvisTurn).multiply(spineTurn).invert().multiply(worldTurn("Head"));
+  const restPelvisHeight = subject.rig.morphology.restPelvisHeight;
+  if (restPelvisHeight === undefined) throw new Error("The Knight rig has no rest pelvis height");
+  const originForward = -subject.rig.morphology.scale * 0.055;
+  const ankle = (side: "l" | "r") => {
+    const position = requireBone(scene, `foot_${side}`).getWorldPosition(new Vector3());
+    return { forward: position.z - originForward, left: position.x };
+  };
+  const pelvis = orient(pelvisTurn);
+  const spine = orient(spineTurn);
+  const head = orient(headTurn);
+  return {
+    ankles: { left: ankle("l"), right: ankle("r") },
+    head: { pitch: head.pitch, yaw: head.yaw },
+    pelvis: { ...pelvis, height: requireBone(scene, "pelvis").getWorldPosition(new Vector3()).y / restPelvisHeight },
+    soleHeights: { left: measureSoleHeight(scene, "l"), right: measureSoleHeight(scene, "r") },
+    spine: { flex: spine.pitch, side: spine.roll, twist: spine.yaw },
+  };
+}
+
+/** Yaw (left positive), pitch (leaning forward positive) and roll (the left side down positive) of a turn, in degrees. */
+function orient(turn: Quaternion): { pitch: number; roll: number; yaw: number } {
+  const forward = new Vector3(0, 0, 1).applyQuaternion(turn);
+  const left = new Vector3(1, 0, 0).applyQuaternion(turn);
+  return {
+    pitch: radiansToDegrees(Math.asin(Math.min(1, Math.max(-1, -forward.y)))),
+    roll: radiansToDegrees(Math.asin(Math.min(1, Math.max(-1, -left.y)))),
+    yaw: radiansToDegrees(Math.atan2(forward.x, forward.z)),
+  };
+}
+
+function requireBone(scene: Object3D, name: string): Object3D {
+  const bone = scene.getObjectByName(name);
+  if (!bone) throw new Error(`The Knight skeleton has no ${name} bone`);
+  return bone;
+}
+
+function measureArms(subject: KnightGuardSubject): KnightArmStateMeasure {
   const joints = subject.avatar.readWorldDiagnosticJoints();
   const spine = subject.asset.gltf.scene.getObjectByName("spine_03");
   if (!spine) throw new Error("The Knight skeleton has no spine_03 bone");

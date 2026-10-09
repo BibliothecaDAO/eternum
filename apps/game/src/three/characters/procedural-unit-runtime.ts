@@ -5,7 +5,7 @@ import type { ProceduralUnitImpact, ProceduralUnitReactionInput } from "./collis
 import type { ProceduralArcherUpperBodyPose } from "./archer/procedural-archer-pose";
 import type { ProceduralArcherShotPhase } from "./archer/procedural-archer-shot-cycle";
 import { resolveProceduralCrossbowCarryPose } from "./crossbow/procedural-crossbow-pose";
-import { ProceduralMeleeController } from "./melee/procedural-melee-controller";
+import { ProceduralMeleeController, type ProceduralMeleeBearerMotion } from "./melee/procedural-melee-controller";
 import type { ProceduralMeleeUpperBodyPose } from "./melee/procedural-melee-pose";
 import type { ProceduralMeleeAttackPhase } from "./melee/procedural-melee-attack-cycle";
 import type { ProceduralMeleeEquipmentSource } from "./melee/procedural-melee-weapon-library";
@@ -532,7 +532,11 @@ class HumanoidUnitActor implements ProceduralUnitActor {
       return;
     }
     if (isMeleeUnitKind(this.kind)) {
-      this.meleePose = this.melee.update(deltaSeconds, this.object, this.config.humanoid.animationMode !== "idle");
+      this.meleePose = this.melee.update(
+        deltaSeconds,
+        this.object,
+        resolveBearerMotion(this.config.humanoid.animationMode),
+      );
       this.actor.setUpperBodyAction(this.meleePose.actionWeight > 1e-4 ? this.meleePose : undefined);
       return;
     }
@@ -1288,7 +1292,7 @@ class MountedUnitActor implements ProceduralUnitActor {
       return;
     }
     // A rider's own legs do not move under the shield, whatever the mount does.
-    this.meleePose = this.melee.update(deltaSeconds, this.rider.object, false);
+    this.meleePose = this.melee.update(deltaSeconds, this.rider.object, "standing");
     this.rider.setUpperBodyAction(this.meleePose.actionWeight > 1e-4 ? this.meleePose : undefined);
   }
 
@@ -1411,3 +1415,9 @@ const EMPTY_BOAT_STATS = {
   boatSinkProgress: 0,
   boatWakeStrength: 0,
 } as const;
+
+function resolveBearerMotion(animationMode: ProceduralCharacterConfig["animationMode"]): ProceduralMeleeBearerMotion {
+  if (animationMode === "walk") return "walking";
+  if (animationMode === "run") return "running";
+  return "standing";
+}

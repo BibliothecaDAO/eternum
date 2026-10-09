@@ -32,12 +32,20 @@ describe("procedural character rig", () => {
       shinLength: 0.147,
       thighLength: 0.134,
       upperArmLength: 0.09,
-      body: { headRadius: 0.066, shoulderWidth: 0.151, hipWidth: 0.084, pelvisToChest: 0.158, chestToNeck: 0.023 },
+      body: {
+        headRadius: 0.066,
+        shoulderWidth: 0.151,
+        hipWidth: 0.084,
+        pelvisToChest: 0.158,
+        chestToNeck: 0.023,
+        pelvisHeight: 0.316,
+      },
     };
     const fitted = applyCharacterRigLimbLengths(base, measured);
     expect(fitted.morphology.shoulderWidth).toBeCloseTo(measured.body.shoulderWidth);
     expect(fitted.morphology.thighLength).toBeCloseTo(measured.thighLength);
     expect(fitted.parts.chest.halfExtents?.[1]).toBeCloseTo(measured.body.chestToNeck);
+    expect(fitted.morphology.restPelvisHeight).toBe(measured.body.pelvisHeight);
     // The pose controller sizes its offsets by scale, so a figure a quarter of nominal size must say so.
     const rigLegLength = base.morphology.thighLength + base.morphology.shinLength;
     expect(fitted.morphology.scale).toBeCloseTo(
@@ -51,6 +59,7 @@ describe("procedural character rig", () => {
       { ...measured.body, chestToNeck: -0.01 },
       { ...measured.body, shoulderWidth: Number.NaN },
       { ...measured.body, pelvisToChest: Number.POSITIVE_INFINITY },
+      { ...measured.body, pelvisHeight: 0 },
     ]) {
       expect(() => applyCharacterRigLimbLengths(base, { ...measured, body })).toThrow("Invalid source body morphology");
     }

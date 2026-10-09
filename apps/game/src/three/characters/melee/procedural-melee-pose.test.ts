@@ -103,7 +103,8 @@ describe("procedural melee pose", () => {
         aimYawRadians: 0,
         attackStyle: "slash",
         config: { ...createDefaultProceduralMeleeConfig(), offhandId },
-        guardHold: 0,
+        holds: { guard: 0, move: 0, run: 0 },
+        seed: 0,
         mounted: false,
         state: { attackGeneration: 0, contactCount: 0, phase: "idle", phaseElapsedSeconds: 0 },
       }).offhandCarry;
@@ -113,35 +114,72 @@ describe("procedural melee pose", () => {
     expect(carryOf("t1-knight-default-shield")).toBe("strapped");
   });
 
-  it("holds the arms of gear that declares arm poses at carry, and at guard when told to hold it, and only those arms", () => {
-    const armsOf = (weaponId: ProceduralMeleeWeaponId, offhandId: ProceduralMeleeOffhandId, guardHold = 0) =>
+  it("holds gear that declares states at the seed's idle, and at guard when told to hold it, and only that gear", () => {
+    const stateOf = (weaponId: ProceduralMeleeWeaponId, offhandId: ProceduralMeleeOffhandId, guard = 0, seed = 0) =>
       resolveProceduralMeleeUpperBodyPose({
         aimPitchRadians: 0,
         aimYawRadians: 0,
         attackStyle: "slash",
         config: { ...createDefaultProceduralMeleeConfig(), offhandId, weaponId },
-        guardHold,
+        holds: { guard, move: 0, run: 0 },
         mounted: false,
+        seed,
         state: { attackGeneration: 0, contactCount: 0, phase: "idle", phaseElapsedSeconds: 0 },
-      }).arms;
-    const sword = resolveProceduralMeleeWeapon("t1-knight-default-sword").armPoses;
+      });
+    const sword = resolveProceduralMeleeWeapon("t1-knight-default-sword");
     const shield = resolveProceduralMeleeOffhand("t1-knight-default-shield").armPoses;
-
-    const arms = armsOf("t1-knight-default-sword", "t1-knight-default-shield");
+    if (!sword.armPoses || !sword.bodyPoses || !shield) throw new Error("The Knight's gear declares no states");
     const flatten = (pose?: { elbow: readonly number[]; handTurn: readonly number[]; wrist: readonly number[] }) => [
       ...(pose?.elbow ?? []),
       ...(pose?.handTurn ?? []),
       ...(pose?.wrist ?? []),
     ];
-    expect(flatten(arms.left)).toHaveLength(10);
-    expect(flatten(arms.right)).toHaveLength(10);
-    flatten(arms.left).forEach((value, index) => expect(value).toBeCloseTo(flatten(shield?.carry)[index], 5));
-    flatten(arms.right).forEach((value, index) => expect(value).toBeCloseTo(flatten(sword?.carry)[index], 5));
-    const held = armsOf("t1-knight-default-sword", "t1-knight-default-shield", 1);
-    flatten(held.left).forEach((value, index) => expect(value).toBeCloseTo(flatten(shield?.guard)[index], 5));
-    flatten(held.right).forEach((value, index) => expect(value).toBeCloseTo(flatten(sword?.guard)[index], 5));
-    expect(armsOf("iron-longsword", "round-shield")).toEqual({});
-    expect(armsOf("iron-longsword", "round-shield", 1)).toEqual({});
+    const expectPose = (actual: readonly number[], expected: readonly number[]) => {
+      expect(actual).toHaveLength(10);
+      actual.forEach((value, index) => expect(value).toBeCloseTo(expected[index], 5));
+    };
+
+    for (const seed of [0, 1, 2, 5]) {
+      const idle = stateOf("t1-knight-default-sword", "t1-knight-default-shield", 0, seed);
+      expectPose(flatten(idle.arms.left), flatten(shield.idle[seed % 3]));
+      expectPose(flatten(idle.arms.right), flatten(sword.armPoses.idle[seed % 3]));
+      expect(idle.body?.pelvis.yaw).toBeCloseTo(sword.bodyPoses.idle[seed % 3].pelvis.yaw, 6);
+      expect(idle.body?.footLift).toEqual({ left: 0, right: 0 });
+    }
+    const held = stateOf("t1-knight-default-sword", "t1-knight-default-shield", 1);
+    expectPose(flatten(held.arms.left), flatten(shield.guard));
+    expectPose(flatten(held.arms.right), flatten(sword.armPoses.guard));
+    expect(held.body?.stance.left.forward).toBeCloseTo(sword.bodyPoses.guard.stance.left.forward, 6);
+    const plain = stateOf("iron-longsword", "round-shield", 1);
+    expect(plain.arms).toEqual({});
+    expect(plain.body).toBeUndefined();
+    expect(plain.hit).toBeUndefined();
+  });
+
+  it("lifts the foot a state moves forward while it steps there, and puts it down at either end", () => {
+    const sword = resolveProceduralMeleeWeapon("t1-knight-default-sword").bodyPoses;
+    if (!sword) throw new Error("The Knight's sword declares no body states");
+    const liftAt = (guard: number) =>
+      resolveProceduralMeleeUpperBodyPose({
+        aimPitchRadians: 0,
+        aimYawRadians: 0,
+        attackStyle: "slash",
+        config: {
+          ...createDefaultProceduralMeleeConfig(),
+          offhandId: "t1-knight-default-shield",
+          weaponId: "t1-knight-default-sword",
+        },
+        holds: { guard, move: 0, run: 0 },
+        mounted: false,
+        seed: 0,
+        state: { attackGeneration: 0, contactCount: 0, phase: "idle", phaseElapsedSeconds: 0 },
+      }).body?.footLift;
+
+    // Into guard the left foot steps forward and the right one draws back.
+    expect(sword.guard.stance.left.forward).toBeGreaterThan(sword.idle[0].stance.left.forward + 0.05);
+    expect(liftAt(0.5)).toEqual({ left: 1, right: 0 });
+    expect(liftAt(1)?.left).toBeCloseTo(0, 9);
+    expect(liftAt(0)).toEqual({ left: 0, right: 0 });
   });
 });
 
@@ -159,7 +197,8 @@ function createMeleeAction(
     aimYawRadians: 0,
     attackStyle,
     config,
-    guardHold: 0,
+    holds: { guard: 0, move: 0, run: 0 },
+    seed: 0,
     mounted,
     state: {
       attackGeneration: 1,

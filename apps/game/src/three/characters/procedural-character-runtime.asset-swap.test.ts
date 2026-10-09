@@ -29,6 +29,7 @@ vi.mock("./procedural-character-avatar", async () => {
       public readonly group = new Group();
 
       public applyPose(): void {}
+      public setUpperBodyAction(): void {}
       public dispose(): void {
         runtimeMocks.avatarDispose();
       }

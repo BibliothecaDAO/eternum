@@ -11,6 +11,7 @@ import { normalizeProceduralImpact, type ProceduralUnitImpact } from "./collisio
 import { applyProceduralCharacterConfigPatch, type ProceduralCharacterConfig } from "./procedural-character-config";
 import { loadProceduralCharacterLibrary, ProceduralCharacterLibrary } from "./procedural-character-assets";
 import type { ProceduralCharacterUpperBodyAction } from "./procedural-character-action";
+import { applyProceduralMeleeHitReaction } from "./melee/procedural-melee-pose";
 import { doesProceduralCharacterRenderDetailChangeAsset } from "./procedural-character-appearance";
 import {
   advanceProceduralCharacterGaitPhase,
@@ -432,6 +433,8 @@ class RuntimeProceduralCharacterActor implements ProceduralCharacterActor {
 
   private applyAnimatedPose(beginPlantFrame = true, deltaSeconds = this.config.fixedStep): void {
     if (beginPlantFrame) this.plantController.beginFrame(this.object, deltaSeconds);
+    const action = applyDeclaredHitReaction(this.upperBodyAction, this.reactionPose);
+    this.avatar.setUpperBodyAction(action);
     this.pose = this.poseFilter.apply(
       resolveProceduralCharacterPose(
         this.rig,
@@ -439,8 +442,9 @@ class RuntimeProceduralCharacterActor implements ProceduralCharacterActor {
         this.elapsedSeconds,
         this.plantController.resolveTarget,
         this.gaitPhase,
-        this.upperBodyAction,
+        action,
         this.reactionPose,
+        this.pose.parts.chest.quaternion,
       ),
       deltaSeconds,
       this.config.secondaryMotion,
@@ -507,4 +511,13 @@ async function createProceduralCharacterRagdoll(
 
 function resolveImpactPartId(partId: string | undefined): CharacterPartId {
   return partId && (CHARACTER_PART_IDS as readonly string[]).includes(partId) ? (partId as CharacterPartId) : "chest";
+}
+
+/** Gear that declares a hit state takes it by the contact reaction's weight, the arms and hands as well as the body. */
+function applyDeclaredHitReaction(
+  action: ProceduralCharacterUpperBodyAction | undefined,
+  reaction: ProceduralContactReactionPose | undefined,
+): ProceduralCharacterUpperBodyAction | undefined {
+  if (action?.kind !== "melee" || !reaction) return action;
+  return applyProceduralMeleeHitReaction(action, reaction.weight);
 }

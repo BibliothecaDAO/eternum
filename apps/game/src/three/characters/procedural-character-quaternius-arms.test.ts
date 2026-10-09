@@ -68,7 +68,8 @@ describe("Quaternius arms", () => {
           aimYawRadians: 0.2,
           attackStyle: "slash",
           config: createDefaultProceduralMeleeConfig("knight"),
-          guardHold: 0,
+          holds: { guard: 0, move: 0, run: 0 },
+          seed: 0,
           mounted: false,
           state: { ...createIdleProceduralMeleeAttackState(), phase: "strike", phaseElapsedSeconds: 0.08 },
         });

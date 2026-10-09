@@ -203,6 +203,7 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
   private readonly scratchRootForward = new Vector3();
   private readonly scratchRootLateral = new Vector3();
   private readonly scratchRootUp = new Vector3();
+  private readonly scratchKneeDirection = new Vector3();
   private activeModel: PreparedCharacterModel;
   private rig: ResolvedCharacterRig;
   private config: ProceduralCharacterConfig;
@@ -556,7 +557,7 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
   /**
    * A declared arm pose is measured from the skeleton's own shoulder, which stands a little off the controller's: both
    * the wrist and the elbow's pole move by that much, so both arms keep their approved place against that shoulder and
-   * each other. The frame is the controller's chest; the visible chest follows it through the pose filter, a little late.
+   * each other. The frame is the visible chest, which the runtime hands the controller.
    */
   private moveTargetsWithSkeletonShoulder(poseShoulder: Vector3Tuple): void {
     this.scratchIkOffset.copy(this.scratchIkRoot).sub(this.scratchIkShoulderPose.fromArray(poseShoulder));
@@ -602,13 +603,20 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
       .multiplyScalar(2)
       .sub(this.scratchIkPole.fromArray(shinPose.jointAnchor));
     const grounded = this.config.animationMode !== "mounted";
-    if (grounded) this.scratchIkPole.copy(this.scratchIkRoot).add(Z_AXIS);
+    if (grounded) this.scratchIkPole.copy(this.scratchIkRoot).add(this.resolveKneeDirection(side));
     // Grounded legs use the skinned rig's true hip as the forward pole origin. Reusing
     // an absolute solver-rig knee introduces lateral bias when the two hip sockets differ.
     this.solveTwoBoneTarget(thighLength, shinLength, !grounded, grounded ? 0.999 : 0.985);
 
     this.applySolvedLegSegment(thighBinding, this.scratchIkRoot, this.scratchIkSolvedJoint);
     this.applySolvedLegSegment(shinBinding, this.scratchIkSolvedJoint, this.scratchIkSolvedEnd);
+  }
+
+  /** A grounded knee bends forward, or towards where a declared stance turns the toes. */
+  private resolveKneeDirection(side: HumanoidSide): Vector3 {
+    const yaw = this.lastPose?.feet[side].yawRadians;
+    if (yaw === undefined) return Z_AXIS;
+    return this.scratchKneeDirection.set(Math.sin(yaw), 0, Math.cos(yaw));
   }
 
   private applySolvedLimbSegment(binding: SegmentBoneBinding, start: Vector3, end: Vector3): void {
@@ -658,6 +666,7 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
   private applyFootPose(side: HumanoidSide): void {
     const roll = this.lastPose?.feet[side].roll;
     if (!roll) {
+      if (this.lastPose?.feet[side].yawRadians !== undefined) this.levelFoot(side);
       this.alignFootProgression(side);
       return;
     }
@@ -667,6 +676,15 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
     this.scratchFootYaw.setFromAxisAngle(Y_AXIS, yaw);
     this.applyFootBoneRotation(foot.ankle, foot.neutralQuaternion, roll.pitchRadians);
     this.applyFootBoneRotation(foot.toe, foot.toeNeutralQuaternion, roll.pitchRadians - roll.toeFlexRadians);
+  }
+
+  /** A foot of a declared stance stands flat on the floor, as at rest, rather than turned with its shin. */
+  private levelFoot(side: HumanoidSide): void {
+    const foot = this.activeModel.feet[side];
+    this.group.getWorldQuaternion(this.scratchGroupQuaternion);
+    this.scratchFootYaw.identity();
+    this.applyFootBoneRotation(foot.ankle, foot.neutralQuaternion, 0);
+    this.applyFootBoneRotation(foot.toe, foot.toeNeutralQuaternion, 0);
   }
 
   private applyFootBoneRotation(bone: Bone, neutral: Quaternion, pitch: number): void {
@@ -697,12 +715,11 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
     if (this.scratchFootDirection.lengthSq() < 1e-8) return;
     this.scratchFootDirection.normalize();
 
-    const progressionRadians = (this.config.footProgressionDegrees * Math.PI) / 180;
-    const sideSign = side === "left" ? 1 : -1;
+    const yawRadians = this.lastPose?.feet[side].yawRadians ?? this.resolveToeOutRadians(side);
     this.scratchFootDesiredDirection
       .copy(this.scratchRootForward)
-      .multiplyScalar(Math.cos(progressionRadians))
-      .addScaledVector(this.scratchRootLateral, sideSign * Math.sin(progressionRadians))
+      .multiplyScalar(Math.cos(yawRadians))
+      .addScaledVector(this.scratchRootLateral, Math.sin(yawRadians))
       .normalize();
     const correctionRadians = Math.atan2(
       this.scratchFootCross
@@ -714,6 +731,11 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
     this.scratchTargetQuaternion.premultiply(this.scratchFootCorrection).normalize();
     foot.parent.getWorldQuaternion(this.scratchParentQuaternion);
     foot.quaternion.copy(this.scratchParentQuaternion.invert()).multiply(this.scratchTargetQuaternion).normalize();
+  }
+
+  /** The configured toe-out, left positive: each foot turned away from the midline. */
+  private resolveToeOutRadians(side: HumanoidSide): number {
+    return ((side === "left" ? 1 : -1) * this.config.footProgressionDegrees * Math.PI) / 180;
   }
 
   private solveTwoBoneTarget(
@@ -1258,9 +1280,18 @@ function measureSourceBody(
     shoulderWidth: distance(bones.shoulderLeft, bones.shoulderRight),
     hipWidth: distance(bones.hipLeft, bones.hipRight),
     pelvisToChest: bones.pelvis.getWorldPosition(new Vector3()).distanceTo(chest),
+    pelvisHeight: resolveRestPelvisHeight(model),
     chestToNeck: model.bindings.head.bone.getWorldPosition(new Vector3()).distanceTo(chest),
     headRadius: headRadius * model.scene.scale.x,
   };
+}
+
+/** The pelvis above the soles: the ankles stand their foot's ankle height above the floor. */
+function resolveRestPelvisHeight(model: PreparedCharacterModel): number {
+  const { left } = model.feet;
+  const pelvisY = model.diagnosticBones.pelvis.getWorldPosition(new Vector3()).y;
+  const soleY = left.ankle.getWorldPosition(new Vector3()).y - left.geometry.ankleHeight * model.scene.scale.x;
+  return pelvisY - soleY;
 }
 
 function resolveSourceBodyChestPosition(model: PreparedCharacterModel, between: readonly [string, string]): Vector3 {

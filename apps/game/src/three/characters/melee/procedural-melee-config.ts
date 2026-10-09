@@ -98,11 +98,16 @@ export function applyDefaultMeleeLoadoutForKind(
   return applyProceduralMeleeConfigPatch(current, resolveDefaultProceduralMeleeLoadout(kind));
 }
 
-/** The attacks a weapon makes, in the order a bearer makes them in turn: one, named by its attack style. */
+/**
+ * The attacks a weapon makes, in the order a bearer makes them in turn: those its body states declare, or one, named by
+ * its attack style.
+ */
 export function resolveProceduralMeleeAttackVariants(
   weaponId: ProceduralMeleeWeaponId,
 ): readonly ProceduralMeleeAttackVariantId[] {
-  return [resolveProceduralMeleeWeapon(weaponId).attackStyle];
+  const weapon = resolveProceduralMeleeWeapon(weaponId);
+  if (!weapon.bodyPoses) return [weapon.attackStyle];
+  return Object.keys(weapon.bodyPoses.attacks) as ProceduralMeleeAttackVariantId[];
 }
 
 /** A chosen attack belongs to its weapon: another weapon goes back to "auto" unless the patch chooses again. */

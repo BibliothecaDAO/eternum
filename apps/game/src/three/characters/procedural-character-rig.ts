@@ -30,6 +30,8 @@ export interface CharacterMorphology {
   thighLength: number;
   shinLength: number;
   headRadius: number;
+  /** The pelvis' height above the floor at rest, for a figure measured from its own skeleton. */
+  restPelvisHeight?: number;
 }
 
 export interface CharacterPartDefinition {
@@ -50,6 +52,8 @@ export interface CharacterSourceBodyMeasurements {
   hipWidth: number;
   pelvisToChest: number;
   chestToNeck: number;
+  /** The pelvis joint's height above the soles at rest. */
+  pelvisHeight: number;
 }
 
 export interface ResolvedCharacterRig {
@@ -126,6 +130,7 @@ function fitRigToSourceBody(
     body.chestToNeck,
     body.headRadius,
     pelvisHalfHeight,
+    body.pelvisHeight,
   ];
   if (!dimensions.every(isValidSourceDimension)) throw new Error("Invalid source body morphology measurements");
   return {
@@ -137,6 +142,7 @@ function fitRigToSourceBody(
       hipWidth: body.hipWidth,
       torsoLength: body.chestToNeck / CHEST_HALF_HEIGHT_PER_TORSO_LENGTH,
       headRadius: body.headRadius,
+      restPelvisHeight: body.pelvisHeight,
     },
     parts: {
       ...rig.parts,
