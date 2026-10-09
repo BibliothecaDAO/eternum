@@ -306,15 +306,15 @@ const KNIGHT_SEQUENCES: readonly KnightSequence[] = [
       { attack: variant, label: variant, motion: "walk", seconds: 1.4 },
     ] as const,
   })),
-  {
-    name: "hit from guard",
+  ...ATTACK_VARIANTS.map((variant) => ({
+    name: `hit from guard after the ${variant}`,
     seed: 0,
-    states: [KNIGHT_DECLARED_IDLES[0], POSES.groups.guard, ...attackStates(ATTACK_VARIANTS[0]), POSES.groups.hit],
+    states: [KNIGHT_DECLARED_IDLES[0], POSES.groups.guard, ...attackStates(variant), POSES.groups.hit],
     steps: [
-      { attack: ATTACK_VARIANTS[0], label: "attack", motion: "idle", seconds: 1.4 },
+      { attack: variant, label: variant, motion: "idle", seconds: 1.4 },
       { hit: true, label: "hit", motion: "idle", seconds: 0.8 },
-    ],
-  },
+    ] as const,
+  })),
   {
     name: "hit from idle",
     seed: 0,
