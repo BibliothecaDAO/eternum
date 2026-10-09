@@ -33,14 +33,14 @@ pub struct ResourceAmount {
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct ResourceBurn {
-    pub entity_id: u32,
+    pub entity_id: u64,
     pub resources: Span<ResourceAmount>,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct ResourceTransfer {
-    pub from_entity_id: u32,
-    pub to_entity_id: u32,
+    pub from_entity_id: u64,
+    pub to_entity_id: u64,
     pub resources: Span<ResourceAmount>,
 }
 
@@ -62,7 +62,6 @@ pub struct Production {
     // The armies tick through which production is paid: it pays in whole ticks, never a fraction of one.
     pub last_settled_tick: u32,
 }
-
 
 const PRODUCTION_TIME_SCALE: u128 = 0x10000000000000000;
 const PRODUCTION_COUNT_SCALE: u128 = 0x1000000000000000000000000;
@@ -93,12 +92,12 @@ pub struct Weight {
 #[derive(Copy, Drop, Serde, PartialEq, Debug)]
 pub struct ResourceKey {
     pub game_id: u32,
-    pub entity_id: u32,
+    pub entity_id: u64,
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct ResourceSlot {
     pub game_id: u32,
-    pub entity_id: u32,
+    pub entity_id: u64,
     pub resource_type: u8,
 }
 
@@ -200,7 +199,6 @@ pub struct ResourceRule {
     pub realm_rate: u64,
     pub village_rate: u64,
 }
-
 
 #[starknet::interface]
 pub trait IResourceOperations<T> {

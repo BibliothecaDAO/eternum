@@ -238,19 +238,19 @@ const schema = {
     {
       name: "StoryEvent",
       scope: "game",
-      version: 1,
+      version: 2,
       event: productionAbi.find((item) => item.type === "event" && item.name === "world_native::ownership::StoryEvent"),
     },
     {
       name: "BattleEvent",
       scope: "game",
-      version: 1,
+      version: 2,
       event: productionAbi.find((item) => item.type === "event" && item.name === "world_native::troops::BattleEvent"),
     },
     {
       name: "RaidEvent",
       scope: "game",
-      version: 1,
+      version: 2,
       event: productionAbi.find(
         (item) => item.type === "event" && item.name === "world_native::combat_actions::RaidEvent",
       ),

@@ -17,7 +17,7 @@ pub fn active_explorer(
     crate::logic::army_slots::resolve(key, explorer, Some(timestamp))
 }
 
-pub fn owned_structure(game_id: u32, entity_id: u32, actor: ContractAddress) -> Structure {
+pub fn owned_structure(game_id: u32, entity_id: u64, actor: ContractAddress) -> Structure {
     let home = crate::logic::structures::structure(ResourceKey { game_id, entity_id }).expect('missing home structure');
     assert!(home.owner == actor, "actor does not own structure");
     home
@@ -51,7 +51,7 @@ pub fn explorer(key: ExplorerKey) -> Option<ExplorerTroops> {
 }
 
 // This bounded reverse index is private; ExplorerTroops.owner is the emitted membership fact.
-pub fn home_armies(key: ResourceKey) -> Span<u32> {
+pub fn home_armies(key: ResourceKey) -> Span<u64> {
     let state = crate::state::read();
     let mut armies = array![];
     for slot in 0..state.troops.home_counts.read((key.game_id, key.entity_id)) {
@@ -142,7 +142,7 @@ pub mod TroopState {
         emit(Event::RowDeleted(RowDeleted { version: 1, model: 'ExplorerTroops', keys: keys.span() }));
     }
 
-    fn write_home_membership(key: ExplorerKey, previous: u32, owner: u32) {
+    fn write_home_membership(key: ExplorerKey, previous: u64, owner: u64) {
         if previous == owner {
             return;
         }
@@ -331,8 +331,7 @@ pub mod TroopsLogic {
             actor: ContractAddress,
             command: crate::troop_management::ManageTroops,
             context: crate::commands::ActionContext,
-            mut story_cursor: crate::ownership::StoryCursor,
-        ) -> ((), crate::ownership::StoryCursor) {
+        ) -> () {
             let context = crate::commands::load_context(game_id, context);
 
             let rules = self.authorize(game_id, context);
@@ -349,15 +348,15 @@ pub mod TroopsLogic {
                     .transfer_troops(game_id, actor, value, rules, context.timestamp, context),
             }
             let (entity_id, story) = crate::troop_management::management_story(command);
-            self.emit_troop_story(game_id, actor, entity_id, story, context.timestamp, ref story_cursor);
-            ((), story_cursor)
+            self.emit_troop_story(game_id, actor, entity_id, story, context.timestamp);
+            ()
         }
     }
 
     #[derive(Copy, Drop)]
     struct ManagedArmy {
         troops: Troops,
-        home: u32,
+        home: u64,
         coord: Coord,
         level: u8,
     }
@@ -367,18 +366,16 @@ pub mod TroopsLogic {
             ref self: ContractState,
             game_id: u32,
             actor: ContractAddress,
-            entity_id: u32,
+            entity_id: u64,
             story: crate::ownership::Story,
             timestamp: u64,
-            ref story_cursor: crate::ownership::StoryCursor,
         ) {
             self
                 .emit(
                     crate::ownership::StoryEvent {
-                        version: 1,
+                        version: 2,
                         game_id,
-                        order: story_cursor.order,
-                        index: crate::ownership::StoryCursorTrait::next(ref story_cursor),
+
                         owner: Some(actor),
                         entity_id: Some(entity_id),
                         tx_hash: starknet::get_tx_info().unbox().transaction_hash,
@@ -404,7 +401,7 @@ pub mod TroopsLogic {
             ref self: ContractState,
             game_id: u32,
             actor: ContractAddress,
-            id: u32,
+            id: u64,
             timestamp: u64,
             game_context: crate::commands::ExecutionContext,
         ) {
@@ -417,7 +414,7 @@ pub mod TroopsLogic {
         fn pay_troops(
             ref self: ContractState,
             game_id: u32,
-            home: u32,
+            home: u64,
             category: TroopType,
             tier: TroopTier,
             amount: u128,
@@ -698,8 +695,7 @@ pub mod TroopsLogic {
             actor: ContractAddress,
             command: CreateExplorer,
             context: crate::commands::ActionContext,
-            mut story_cursor: crate::ownership::StoryCursor,
-        ) -> ((), crate::ownership::StoryCursor) {
+        ) -> () {
             let context = crate::commands::load_context(game_id, context);
 
             let rules = self.authorize(game_id, context);
@@ -712,7 +708,7 @@ pub mod TroopsLogic {
             }
             let category = troop_type(command.category);
             let tier = troop_tier(command.tier);
-            let id = crate::logic::game::allocate_entity(game_id);
+            let id = crate::entity_ids::allocate_home(game_id, command.structure_id);
             self.pay_troops(game_id, command.structure_id, category, tier, command.amount, context.timestamp, context);
             let today = if rules.day_unit_seconds == 0 {
                 0
@@ -782,9 +778,8 @@ pub mod TroopsLogic {
                         },
                     ),
                     context.timestamp,
-                    ref story_cursor,
                 );
-            ((), story_cursor)
+            ()
         }
     }
 

@@ -42,8 +42,7 @@ pub fn tile(key: TileKey) -> Option<TileOpt> {
         Some(
             TileOpt {
                 data: crate::map::coordinate_bits(key)
-                    + state.map.tiles.read(storage_key)
-                    + occupier.map(|occupancy| crate::map::occupancy_bits(occupancy)).unwrap_or(0),
+                    + state.map.tiles.read(storage_key),
             },
         )
     } else {
@@ -80,7 +79,7 @@ pub mod MapState {
         write_terrain(key, previous + crate::map::REWARD_EXTRACTED_FLAG);
     }
 
-    pub fn occupy(key: TileKey, entity_id: u32, category: u8, is_structure: bool) {
+    pub fn occupy(key: TileKey, entity_id: u64, category: u8, is_structure: bool) {
         assert!(entity_id != 0 && category != crate::taxonomy::NONE_OCCUPIER, "empty occupier");
         assert!(crate::logic::map::occupancy(key).is_none(), "occupied tile");
         write_occupancy(key, Some(TileOccupancy { entity_id, category, is_structure }));
@@ -108,7 +107,7 @@ pub mod MapState {
         write_occupancy(key, None);
     }
 
-    pub fn upgrade_realm(key: TileKey, entity_id: u32, wonder: bool, level: u8) {
+    pub fn upgrade_realm(key: TileKey, entity_id: u64, wonder: bool, level: u8) {
         let previous = crate::logic::map::occupancy(key).expect('missing realm tile');
         assert!(!key.alt && previous.is_structure, "not a surface structure");
         assert!(previous.entity_id == entity_id, "occupier mismatch");
@@ -127,7 +126,7 @@ pub mod MapState {
         write_occupancy(key, Some(TileOccupancy { category, ..previous }));
     }
 
-    pub fn vacate(key: TileKey, entity_id: u32) {
+    pub fn vacate(key: TileKey, entity_id: u64) {
         let previous = crate::logic::map::occupancy(key).expect('undiscovered tile');
         assert!(!previous.is_structure, "cannot vacate structure");
         assert!(entity_id != 0 && previous.entity_id == entity_id, "occupier mismatch");
@@ -271,8 +270,8 @@ pub mod MapLogic {
             if key.alt {
                 let mut adjacent = false;
                 for direction in 0_u8..6 {
-                    let tile = crate::logic::map::tile(tile_key(key.game_id, spire_neighbor(coord, direction)));
-                    if tile.map(|tile| (tile.data / 2) % BYTE_RANGE == 35).unwrap_or(false) {
+                    let tile = crate::logic::map::occupancy(tile_key(key.game_id, spire_neighbor(coord, direction)));
+                    if tile.map(|tile| tile.category == crate::taxonomy::SPIRE_OCCUPIER).unwrap_or(false) {
                         adjacent = true;
                     }
                 }
@@ -353,7 +352,7 @@ pub mod MapLogic {
         fn discover_frontier_tile(
             ref self: ContractState,
             key: TileKey,
-            explorer_id: u32,
+            explorer_id: u64,
             seed: u256,
             context: crate::commands::ActionContext,
         ) -> crate::discovery::Discovery {
@@ -401,7 +400,7 @@ pub mod MapLogic {
             crate::logic::expeditions::record_discovery(counter, result);
             if let Some(category) = crate::discovery::tile_occupier(result) {
                 crate::logic::map::MapState::occupy(
-                    key, crate::logic::game::allocate_entity(key.game_id), category, false,
+                    key, crate::entity_ids::allocate_home(key.game_id, home), category, false,
                 );
             }
             result
@@ -424,11 +423,10 @@ pub mod MapLogic {
             ref self: ContractState,
             game_id: u32,
             actor: ContractAddress,
-            explorer_id: u32,
+            explorer_id: u64,
             revealed: Option<Coord>,
             context: crate::commands::ActionContext,
-            mut story_cursor: crate::ownership::StoryCursor,
-        ) -> ((), crate::ownership::StoryCursor) {
+        ) -> () {
             let context = crate::commands::load_context(game_id, context);
 
             let classes = self.release.classes(game_id);
@@ -440,16 +438,16 @@ pub mod MapLogic {
             );
             assert!(!explorer.coord.alt, "extraction requires surface");
             assert!(explorer.troops.count != 0, "explorer is dead");
-            let occupied = crate::logic::map::tile(tile_key(game_id, explorer.coord)).expect('unrevealed army tile');
+            let occupied = crate::logic::map::occupancy(tile_key(game_id, explorer.coord)).expect('missing army occupancy');
             assert!(
-                (occupied.data / crate::map::OCCUPIER_SCALE) % crate::map::ENTITY_RANGE == explorer_id.into(),
+                occupied.entity_id == explorer_id,
                 "explorer does not occupy tile",
             );
             let rules = context.rules.unbox();
             let coord = if crate::rules::rule_enabled(rules, crate::rules::REVEAL_SUPPLIES) {
                 match revealed {
                     Some(coord) => coord,
-                    None => { return ((), story_cursor); },
+                    None => { return (); },
                 }
             } else {
                 explorer.coord
@@ -460,7 +458,7 @@ pub mod MapLogic {
             let mut root = context.raw_root;
             let seed = crate::random::game_root(ref root, game_id, game.seed);
             if tile.data / crate::map::REWARD_EXTRACTED_FLAG % 2 == 1 {
-                return ((), story_cursor);
+                return ();
             }
             let reward = if crate::rules::rule_enabled(rules, crate::rules::REVEAL_SUPPLIES) {
                 crate::exploration_rewards::reveal_reward(
@@ -512,9 +510,8 @@ pub mod MapLogic {
                     crate::exploration_rewards::ExtractedReward {
                         explorer_id, receiver, coord, resource_type: reward.resource_type, amount,
                     },
-                    ref story_cursor,
                 );
-            ((), story_cursor)
+            ()
         }
     }
     #[abi(embed_v0)]
@@ -526,6 +523,7 @@ pub mod MapLogic {
         fn discover_relic_chest(
             ref self: ContractState,
             game_id: u32,
+            home_id: u64,
             coord: Coord,
             excluded: Coord,
             seed: u256,
@@ -549,7 +547,7 @@ pub mod MapLogic {
                 let data = crate::logic::map::tile(key).map(|tile| tile.data).unwrap_or(0);
                 if destination != excluded
                     && destination != coord
-                    && data % BIOME_SCALE == 0
+                    && crate::logic::map::occupancy(key).is_none()
                     && !crate::state::read().settlement_pool.reserved.read((game_id, destination.x, destination.y)) {
                     if data / BIOME_SCALE % BYTE_RANGE == 0 {
                         crate::logic::map::MapState::reveal(
@@ -557,7 +555,7 @@ pub mod MapLogic {
                         );
                     }
                     crate::logic::map::MapState::occupy(
-                        key, crate::logic::game::allocate_entity(game_id), crate::taxonomy::CHEST_OCCUPIER, false,
+                        key, crate::entity_ids::allocate_home(game_id, home_id), crate::taxonomy::CHEST_OCCUPIER, false,
                     );
                     break;
                 }
@@ -576,12 +574,12 @@ pub mod MapLogic {
         }
         fn consume_relic_chest(ref self: ContractState, game_id: u32, coord: Coord) {
             let key = tile_key(game_id, coord);
-            let tile = crate::logic::map::tile(key).expect('missing chest tile');
+            let occupied = crate::logic::map::occupancy(key).expect('missing chest tile');
             assert!(
-                tile.data % 2 == 0 && (tile.data / 2) % BYTE_RANGE == crate::taxonomy::CHEST_OCCUPIER.into(),
+                !occupied.is_structure && occupied.category == crate::taxonomy::CHEST_OCCUPIER,
                 "tile is not a relic chest",
             );
-            let id = ((tile.data / crate::map::OCCUPIER_SCALE) % crate::map::ENTITY_RANGE).try_into().unwrap();
+            let id = occupied.entity_id;
             crate::logic::map::MapState::vacate(key, id);
         }
         fn reveal_relic_ring(
@@ -615,15 +613,13 @@ pub mod MapLogic {
             actor: ContractAddress,
             timestamp: u64,
             reward: crate::exploration_rewards::ExtractedReward,
-            ref story_cursor: crate::ownership::StoryCursor,
         ) {
             self
                 .emit(
                     crate::ownership::StoryEvent {
-                        version: 1,
+                        version: 2,
                         game_id,
-                        order: story_cursor.order,
-                        index: crate::ownership::StoryCursorTrait::next(ref story_cursor),
+
                         entity_id: Some(reward.explorer_id),
                         owner: Some(actor),
                         timestamp,

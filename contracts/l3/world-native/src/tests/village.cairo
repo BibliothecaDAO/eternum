@@ -13,7 +13,6 @@ use crate::settlement::{
     ISettlementPoolDispatcherTrait, SettlementMode,
 };
 use crate::structures::IStructureOperationsDispatcher;
-use crate::tests::StoryResultTestTrait;
 use crate::tests::state::{MapObservationTrait, ResourceObservationTrait, StructureObservationTrait};
 use crate::troops::Coord;
 use crate::village::{
@@ -30,7 +29,7 @@ pub fn village_rules() -> VillageRules {
     rules
 }
 
-fn setup(dev: bool) -> (Deployment, u32) {
+pub fn setup(dev: bool) -> (Deployment, u64) {
     setup_config(dev, SettlementMode::Single, play_fixture::rules())
 }
 fn village_preset(mode: SettlementMode, game_rules: crate::rules::SliceRules) -> crate::presets::PresetDefinition {
@@ -47,10 +46,10 @@ fn village_preset(mode: SettlementMode, game_rules: crate::rules::SliceRules) ->
     preset.structures.board = None;
     preset
 }
-fn setup_config(dev: bool, mode: SettlementMode, game_rules: crate::rules::SliceRules) -> (Deployment, u32) {
+fn setup_config(dev: bool, mode: SettlementMode, game_rules: crate::rules::SliceRules) -> (Deployment, u64) {
     setup_preset(dev, village_preset(mode, game_rules))
 }
-fn setup_preset(dev: bool, preset: crate::presets::PresetDefinition) -> (Deployment, u32) {
+fn seed_world(dev: bool, preset: crate::presets::PresetDefinition) -> Deployment {
     let deployment = super::setup_with_domains(true, "StructuresLogic", "TroopsLogic");
     super::entry::set_operator(deployment, authority());
     let games = IGameDispatcher { contract_address: deployment.games };
@@ -62,6 +61,17 @@ fn setup_preset(dev: bool, preset: crate::presets::PresetDefinition) -> (Deploym
             crate::state::write().registrar.roster_sizes.write(3, 2);
         },
     );
+    deployment
+}
+
+fn season_world(dev: bool, preset: crate::presets::PresetDefinition) -> Deployment {
+    let deployment = seed_world(dev, preset);
+    play_fixture::prepare_homes(deployment.games, 3, deployment.actor);
+    deployment
+}
+
+fn setup_preset(dev: bool, preset: crate::presets::PresetDefinition) -> (Deployment, u64) {
+    let deployment = seed_world(dev, preset);
     let grants = preset.settlement.realms;
     start_cheat_caller_address(deployment.games, deployment.games);
     let realm = ISettlementCreationDispatcher { contract_address: deployment.games }
@@ -78,9 +88,7 @@ fn setup_preset(dev: bool, preset: crate::presets::PresetDefinition) -> (Deploym
                 },
             ),
             crate::commands::action_context(context(deployment.games, 3)),
-            crate::tests::story_cursor(),
-        )
-        .story_result();
+        );
     stop_cheat_caller_address(deployment.games);
     (deployment, realm)
 }
@@ -89,7 +97,7 @@ fn run(deployment: Deployment, command: Command, timestamp: u64) -> bool {
     super::resource_commands::execute(deployment, command, timestamp)
 }
 
-fn settle(realm: u32, pass_id: u16) -> Command {
+fn settle(realm: u64, pass_id: u16) -> Command {
     Command::SettleVillage(SettleVillage { pass_id, connected_realm_entity_id: realm })
 }
 
@@ -111,7 +119,7 @@ fn production_pass_is_atomic_single_use_and_army_grant_uses_block_time() {
     for direction in 0_u8..6 {
         let neighbor = crate::geometry::neighbor(Coord { alt: false, x: 2000000, y: 2000000 }, direction);
         let tile = realm_map.tile(crate::geometry::tile_key(3, neighbor)).unwrap();
-        assert!(tile.data % 0x20000000000 == 0, "realm neighbours must be biome only");
+        assert!(realm_map.occupancy(crate::geometry::tile_key(3, neighbor)).is_none());
         assert!(tile.data / 0x20000000000 % 256 != 0, "realm neighbour biome missing");
     }
     let pools = ISettlementPoolDispatcher { contract_address: deployment.games };
@@ -152,7 +160,7 @@ fn production_pass_is_atomic_single_use_and_army_grant_uses_block_time() {
     let map = IMapLogicDispatcher { contract_address: deployment.games };
     for direction in 0_u8..6 {
         let tile = map.tile(crate::geometry::tile_key(3, crate::geometry::neighbor(coord, direction))).unwrap();
-        assert!(tile.data % 0x20000000000 == 0, "settlement surroundings must have no occupant or discovery");
+        assert!(map.occupancy(crate::geometry::tile_key(3, crate::geometry::neighbor(coord, direction))).is_none());
         assert!(tile.data / 0x20000000000 % 256 != 0, "neighbour biome missing");
     }
     assert!(
@@ -202,7 +210,7 @@ fn development_villages_skip_passes_and_have_no_six_per_realm_limit() {
     assert!(ledger.village_pass(VillagePassKey { game_id: 3, pass_id: 0 }).is_none());
 }
 
-fn register_pass(deployment: Deployment, pass_id: u16) -> VillagePassKey {
+pub fn register_pass(deployment: Deployment, pass_id: u16) -> VillagePassKey {
     let key = VillagePassKey { game_id: 3, pass_id };
     start_cheat_caller_address(deployment.games, authority());
     IVillagesDispatcher { contract_address: deployment.games }.register_village_pass(key, deployment.actor);
@@ -279,7 +287,7 @@ fn exhausted_geometry_records_rejection_and_keeps_the_pass() {
 }
 
 // The realm a settlement created, read from its RealmCreatedStory.
-fn created_realm(ref spy: snforge_std::EventSpy, deployment: Deployment) -> u32 {
+fn created_realm(ref spy: snforge_std::EventSpy, deployment: Deployment) -> u64 {
     let mut created = Option::None;
     for (_, event) in spy.get_events().emitted_by(deployment.games).events.span() {
         if *event.keys.at(0) == selector!("StoryEvent") {
@@ -296,7 +304,7 @@ fn created_realm(ref spy: snforge_std::EventSpy, deployment: Deployment) -> u32 
 
 // Settles one season realm. Catalogue loading is covered separately; this draw uses the pinned salt 71419 after
 // scoping raw root 987654321 to game 3 with seed 1: realm 2239.
-fn settle_season_realm(deployment: Deployment) -> u32 {
+fn settle_season_realm(deployment: Deployment) -> u64 {
     super::entry::set_operator(deployment, 0.try_into().unwrap());
     super::resource_commands::set_fixture(
         deployment.games, selector!("realms"), selector!("catalogue_count"), array![].span(), 8000_u32,
@@ -332,7 +340,7 @@ fn a_founded_realm_castle_uses_no_population_even_where_labor_buildings_cost_it(
             );
     }
     preset.structures.buildings = buildings.span();
-    let (deployment, _) = setup_preset(true, preset);
+    let deployment = season_world(true, preset);
 
     let realm = ResourceKey { game_id: 3, entity_id: settle_season_realm(deployment) };
     let structures = IStructureOperationsDispatcher { contract_address: deployment.games };
@@ -342,7 +350,7 @@ fn a_founded_realm_castle_uses_no_population_even_where_labor_buildings_cost_it(
 
 #[test]
 fn season_settlement_random_draw_reserves_realm_and_provisions_its_economy() {
-    let (deployment, _) = setup(true);
+    let deployment = season_world(true, village_preset(SettlementMode::Single, play_fixture::rules()));
     let id = settle_season_realm(deployment);
     let key = ResourceKey { game_id: 3, entity_id: id };
     let row = IStructureOperationsDispatcher { contract_address: deployment.games }.structure(key).unwrap();
@@ -398,7 +406,7 @@ fn dev_season_entitlement_with_configured_operator_and_present_pass() {
     assert_season_entitlement_mode(true, true, true);
 }
 fn assert_season_entitlement_mode(dev: bool, has_operator: bool, has_entitlement: bool) {
-    let (d, _) = setup(dev);
+    let d = season_world(dev, village_preset(SettlementMode::Single, play_fixture::rules()));
     // The authenticated account is the player that holds entitlements.
     let owner = d.actor;
     if has_entitlement {
@@ -449,7 +457,7 @@ fn assert_season_entitlement_mode(dev: bool, has_operator: bool, has_entitlement
                 7
             });
             created = true;
-        }
+            }
     }
     assert_eq!(created, dev || has_entitlement);
 }

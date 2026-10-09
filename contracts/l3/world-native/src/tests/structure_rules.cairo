@@ -51,15 +51,15 @@ fn level_up_rejects_unowned_missing_wrong_category_unfunded_and_maximum_structur
     );
     let tile = map.tile(location).unwrap();
     let storage_key = array![3, location.alt.into(), location.col.into(), location.row.into()].span();
-    let occupancy: u64 = (tile.data % 0x20000000000).try_into().unwrap();
+    let occupancy = crate::map::occupancy_bits(map.occupancy(location).unwrap());
     set_fixture(d.games, selector!("map"), selector!("occupancy"), storage_key, occupancy + 512);
     assert_terminal_rejection(d, Command::LevelUp(home.entity_id), 80);
     assert_eq!(record(d, home), original);
-    assert_eq!(map.tile(location).unwrap().data, tile.data + 512);
+    assert_eq!(map.tile(location).unwrap().data, tile.data);
     set_fixture(d.games, selector!("map"), selector!("occupancy"), storage_key, occupancy);
     assert!(execute(d, Command::LevelUp(home.entity_id), 80));
     assert_eq!(record(d, home).base.level, 1);
-    assert_eq!(map.tile(location).unwrap().data, tile.data + 2);
+    assert_eq!(map.tile(location).unwrap().data, tile.data);
     let mut rejection_spy = snforge_std::spy_events();
     assert_terminal_rejection(d, Command::LevelUp(home.entity_id), 80);
     assert_eq!(record(d, home).base.level, 1);

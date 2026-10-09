@@ -31,30 +31,30 @@ pub struct BankPlacement {
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct Swap {
-    pub bank_id: u32,
-    pub structure_id: u32,
+    pub bank_id: u64,
+    pub structure_id: u64,
     pub resource_type: u8,
     pub amount: u128,
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct AddLiquidity {
-    pub bank_id: u32,
-    pub structure_id: u32,
+    pub bank_id: u64,
+    pub structure_id: u64,
     pub resource_type: u8,
     pub resource_amount: u128,
     pub lords_amount: u128,
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct RemoveLiquidity {
-    pub bank_id: u32,
-    pub structure_id: u32,
+    pub bank_id: u64,
+    pub structure_id: u64,
     pub resource_type: u8,
     pub shares: u128,
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct SwapStory {
-    pub bank_id: u32,
-    pub structure_id: u32,
+    pub bank_id: u64,
+    pub structure_id: u64,
     pub resource_type: u8,
     pub lords_amount: u128,
     pub resource_amount: u128,
@@ -65,8 +65,8 @@ pub struct SwapStory {
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct LiquidityStory {
-    pub bank_id: u32,
-    pub structure_id: u32,
+    pub bank_id: u64,
+    pub structure_id: u64,
     pub resource_type: u8,
     pub lords_amount: u128,
     pub resource_amount: u128,
@@ -89,7 +89,6 @@ pub trait IBank<T> {
         actor: ContractAddress,
         banks: Span<BankPlacement>,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
     );
     fn buy_from_bank(
         ref self: T,
@@ -97,32 +96,28 @@ pub trait IBank<T> {
         actor: ContractAddress,
         command: Swap,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> ((), crate::ownership::StoryCursor);
+    );
     fn sell_to_bank(
         ref self: T,
         game_id: u32,
         actor: ContractAddress,
         command: Swap,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> ((), crate::ownership::StoryCursor);
+    );
     fn add_bank_liquidity(
         ref self: T,
         game_id: u32,
         actor: ContractAddress,
         command: AddLiquidity,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> ((), crate::ownership::StoryCursor);
+    );
     fn remove_bank_liquidity(
         ref self: T,
         game_id: u32,
         actor: ContractAddress,
         command: RemoveLiquidity,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> ((), crate::ownership::StoryCursor);
+    );
 }
 #[starknet::interface]
 pub trait IBankCreation<T> {

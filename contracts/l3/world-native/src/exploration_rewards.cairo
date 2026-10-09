@@ -10,8 +10,8 @@ pub struct ExplorationReward {
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct ExtractedReward {
-    pub explorer_id: u32,
-    pub receiver: u32,
+    pub explorer_id: u64,
+    pub receiver: u64,
     pub coord: crate::troops::Coord,
     pub resource_type: u8,
     pub amount: u128,
@@ -23,11 +23,10 @@ pub trait IExtraction<T> {
         ref self: T,
         game_id: u32,
         actor: ContractAddress,
-        explorer_id: u32,
+        explorer_id: u64,
         revealed: Option<crate::troops::Coord>,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> ((), crate::ownership::StoryCursor);
+    );
 }
 #[starknet::interface]
 pub trait IExplorationGrant<T> {
@@ -88,7 +87,7 @@ pub fn boosted_amount(amount: u128, boosts: crate::troops::TroopBoosts, tick: u6
     };
     (amount + bonus) * crate::rules::RESOURCE_PRECISION
 }
-pub fn receiver(home_rewards: bool, explorer_id: u32, home: u32, resource_type: u8) -> u32 {
+pub fn receiver(home_rewards: bool, explorer_id: u64, home: u64, resource_type: u8) -> u64 {
     if !home_rewards || (resource_type >= 39 && resource_type <= 56) {
         explorer_id
     } else {

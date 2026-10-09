@@ -132,7 +132,9 @@ pub fn seed_game_with_preset(
                         map_center_offset: rules.map_center_offset,
                     },
                 );
-            state.games.next_entity.write(game_id, 1);
+            if state.games.next_entity.read(game_id) == 0 {
+                state.games.next_entity.write(game_id, 1);
+            }
         },
     );
 }
@@ -200,10 +202,30 @@ pub fn assert_preflight_rejection(games: ContractAddress, action: TestAction, ti
     assert_eq!(pins(games, action.game_id), (release, preset));
     assert_eq!(
         snforge_std::interact_with_state(games, || {
-        let state = crate::state::read();
-        (state.games.games.read(action.game_id), state.games.next_entity.read(action.game_id))
+            let state = crate::state::read();
+            (state.games.games.read(action.game_id), state.games.next_entity.read(action.game_id))
         }),
         before,
     );
     assert!(spy.get_events().emitted_by(games).events.is_empty());
+}
+
+pub fn gameplay_snapshot(games: ContractAddress) -> Array<felt252> {
+    snforge_std::interact_with_state(games, || {
+        let state = crate::state::read();
+        let mut facts = array![];
+        for game_id in array![1_u32, 2, 3] {
+            state.games.games.read(game_id).serialize(ref facts);
+            state.game_releases.read(game_id).serialize(ref facts);
+            state.games.next_entity.read(game_id).serialize(ref facts);
+            for home in 1_u32..4 {
+                state.games.home_entities.read((game_id, home)).serialize(ref facts);
+            }
+        }
+        facts
+    })
+}
+
+pub fn prepare_homes(games: ContractAddress, game_id: u32, owner: ContractAddress) {
+    snforge_std::interact_with_state(games, || crate::entity_ids::reserve_homes(game_id, owner));
 }

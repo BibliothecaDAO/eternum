@@ -10,7 +10,6 @@ use crate::settlement::{
     ISettlementCreationDispatcher, ISettlementCreationDispatcherTrait, RealmCreation, SettlementCreation,
 };
 use crate::structures::{IStructureOperationsDispatcher, StructureRecord};
-use crate::tests::StoryResultTestTrait;
 use crate::tests::state::{GameState, ResourceObservationTrait, StructureObservationTrait, TroopObservationTrait};
 use crate::troops::{Coord, ExplorerKey};
 use super::{Deployment, context, play_fixture};
@@ -69,12 +68,15 @@ pub fn setup_in_deployment(
     let creation = ISettlementCreationDispatcher { contract_address: deployment.games };
     let mut ids = array![];
     for offset in array![0_u32, 10] {
+        let owner = if offset != 0 && preset.settlement.mode != crate::settlement::SettlementMode::Triple {
+            super::authority()
+        } else { deployment.actor };
         ids
             .append(
                 creation
                     .create_settlement(
                         3,
-                        deployment.actor,
+                        owner,
                         Coord { alt: false, x: 2000000 + offset, y: 2000000 },
                         SettlementCreation::Realm(
                             RealmCreation {
@@ -87,11 +89,12 @@ pub fn setup_in_deployment(
                         crate::commands::action_context(
                             ExecutionContext { timestamp: 30, ..context(deployment.games, 3) },
                         ),
-                        crate::tests::story_cursor(),
-                    )
-                    .story_result(),
+                    ),
             );
     }
+    snforge_std::interact_with_state(deployment.games, || {
+        crate::logic::structures::StructureState::transfer_owner(ResourceKey { game_id: 3, entity_id: *ids.at(1) }, deployment.actor);
+    });
     stop_cheat_caller_address(deployment.games);
     let source = ResourceKey { game_id: 3, entity_id: *ids.at(0) };
     start_cheat_caller_address(deployment.games, deployment.games);
@@ -186,7 +189,7 @@ pub fn set_explorer_fixture(
     );
 }
 
-fn explorer_fixture(deployment: Deployment, id: u32, owner: u32, coord: Coord, capacity: u128) -> ResourceKey {
+fn explorer_fixture(deployment: Deployment, id: u64, owner: u64, coord: Coord, capacity: u128) -> ResourceKey {
     // These transfer fixtures need several armies at one home without exercising recruitment limits.
     let home = IStructureOperationsDispatcher { contract_address: deployment.games }
         .structure(ResourceKey { game_id: 3, entity_id: owner })
@@ -335,7 +338,7 @@ fn structure_transfer_harvests_but_rejects_all_nine_troop_resources() {
 }
 
 fn arrival_fixture(
-    deployment: Deployment, entity_id: u32, slot: u8, values: Span<ResourceAmount>,
+    deployment: Deployment, entity_id: u64, slot: u8, values: Span<ResourceAmount>,
 ) -> crate::arrivals::ArrivalKey {
     let key = crate::arrivals::ArrivalKey { game_id: 3, entity_id, day: 0, slot };
     set_fixture(

@@ -60,8 +60,7 @@ pub mod ConstructionLogic {
             actor: ContractAddress,
             command: crate::buildings::CreateBuilding,
             context: crate::commands::ActionContext,
-            mut story_cursor: crate::ownership::StoryCursor,
-        ) -> ((), crate::ownership::StoryCursor) {
+        ) -> () {
             let context = crate::commands::load_context(game_id, context);
 
             let key = ResourceKey { game_id, entity_id: command.structure_id };
@@ -84,7 +83,6 @@ pub mod ConstructionLogic {
                     rule,
                     context.timestamp,
                     context,
-                    ref story_cursor,
                 );
             if let Some(board) = board {
                 self.change_board_building(key, base, command.category, board, true, context);
@@ -112,13 +110,12 @@ pub mod ConstructionLogic {
                     context.rules.unbox().building_config.base_cost_percent_increase,
                     context.timestamp,
                     context,
-                    ref story_cursor,
                 );
             if board.is_some() {
                 let building = self.buildings.building(location).unwrap();
                 self.buildings.write_building(location, Building { labor_paid, ..building });
             }
-            ((), story_cursor)
+            ()
         }
         fn destroy_building(
             ref self: ContractState,
@@ -126,8 +123,7 @@ pub mod ConstructionLogic {
             actor: ContractAddress,
             command: crate::buildings::ChangeBuilding,
             context: crate::commands::ActionContext,
-            mut story_cursor: crate::ownership::StoryCursor,
-        ) -> ((), crate::ownership::StoryCursor) {
+        ) -> () {
             let context = crate::commands::load_context(game_id, context);
 
             let key = ResourceKey { game_id, entity_id: command.structure_id };
@@ -165,9 +161,8 @@ pub mod ConstructionLogic {
                     building.category,
                     crate::ownership::BuildingChange::Destroyed,
                     context.timestamp,
-                    ref story_cursor,
                 );
-            ((), story_cursor)
+            ()
         }
         fn pause_building_production(
             ref self: ContractState,
@@ -175,12 +170,11 @@ pub mod ConstructionLogic {
             actor: ContractAddress,
             command: crate::buildings::ChangeBuilding,
             context: crate::commands::ActionContext,
-            mut story_cursor: crate::ownership::StoryCursor,
-        ) -> ((), crate::ownership::StoryCursor) {
+        ) -> () {
             let context = crate::commands::load_context(game_id, context);
 
-            self.set_building_paused(game_id, actor, command, true, context.timestamp, context, ref story_cursor);
-            ((), story_cursor)
+            self.set_building_paused(game_id, actor, command, true, context.timestamp, context);
+            ()
         }
         fn resume_building_production(
             ref self: ContractState,
@@ -188,12 +182,11 @@ pub mod ConstructionLogic {
             actor: ContractAddress,
             command: crate::buildings::ChangeBuilding,
             context: crate::commands::ActionContext,
-            mut story_cursor: crate::ownership::StoryCursor,
-        ) -> ((), crate::ownership::StoryCursor) {
+        ) -> () {
             let context = crate::commands::load_context(game_id, context);
 
-            self.set_building_paused(game_id, actor, command, false, context.timestamp, context, ref story_cursor);
-            ((), story_cursor)
+            self.set_building_paused(game_id, actor, command, false, context.timestamp, context);
+            ()
         }
     }
 
@@ -205,7 +198,6 @@ pub mod ConstructionLogic {
             actor: ContractAddress,
             command: crate::research::Research,
             context: crate::commands::ActionContext,
-            story_cursor: crate::ownership::StoryCursor,
         ) {
             let context = crate::commands::load_context(game_id, context);
             let key = ResourceKey { game_id, entity_id: command.structure_id };
@@ -243,10 +235,9 @@ pub mod ConstructionLogic {
             ref self: ContractState,
             game_id: u32,
             actor: ContractAddress,
-            structure_id: u32,
+            structure_id: u64,
             context: crate::commands::ActionContext,
-            mut story_cursor: crate::ownership::StoryCursor,
-        ) -> ((), crate::ownership::StoryCursor) {
+        ) -> () {
             let context = crate::commands::load_context(game_id, context);
 
             assert_playing(context.game.unbox(), context.timestamp);
@@ -294,8 +285,8 @@ pub mod ConstructionLogic {
                     next_level,
                 );
             }
-            self.emit_structure_upgrade(key, actor, next_level, context.timestamp, ref story_cursor);
-            ((), story_cursor)
+            self.emit_structure_upgrade(key, actor, next_level, context.timestamp);
+            ()
         }
     }
     #[generate_trait]
@@ -306,15 +297,13 @@ pub mod ConstructionLogic {
             actor: ContractAddress,
             next_level: u8,
             timestamp: u64,
-            ref story_cursor: crate::ownership::StoryCursor,
         ) {
             self
                 .emit(
                     StoryEvent {
-                        version: 1,
+                        version: 2,
                         game_id: key.game_id,
-                        order: story_cursor.order,
-                        index: crate::ownership::StoryCursorTrait::next(ref story_cursor),
+
                         owner: Some(actor),
                         entity_id: Some(key.entity_id),
                         tx_hash: starknet::get_tx_info().unbox().transaction_hash,
@@ -336,7 +325,6 @@ pub mod ConstructionLogic {
             rule: crate::buildings::BuildingRule,
             timestamp: u64,
             game_context: crate::commands::ExecutionContext,
-            ref story_cursor: crate::ownership::StoryCursor,
         ) {
             let building = Building { category, paused: false, labor_paid: 0 };
             let rules = game_context.rules.unbox();
@@ -362,7 +350,6 @@ pub mod ConstructionLogic {
                     building.category,
                     crate::ownership::BuildingChange::Created,
                     timestamp,
-                    ref story_cursor,
                 );
         }
         fn resolve_building_coord(
@@ -619,7 +606,6 @@ pub mod ConstructionLogic {
             paused: bool,
             timestamp: u64,
             game_context: crate::commands::ExecutionContext,
-            ref story_cursor: crate::ownership::StoryCursor,
         ) {
             let key = ResourceKey { game_id, entity_id: command.structure_id };
             let base = self.assert_building_command(key, actor, timestamp, game_context);
@@ -638,7 +624,7 @@ pub mod ConstructionLogic {
             };
             self
                 .emit_building_change(
-                    key, actor, command.coord, building.category, change, timestamp, ref story_cursor,
+                    key, actor, command.coord, building.category, change, timestamp,
                 );
         }
         fn emit_building_change(
@@ -649,14 +635,12 @@ pub mod ConstructionLogic {
             category: u8,
             change: crate::ownership::BuildingChange,
             timestamp: u64,
-            ref story_cursor: crate::ownership::StoryCursor,
         ) {
             crate::logic::stories::emit_entity_story(
                 key,
                 actor,
                 Story::BuildingPlacementStory(crate::ownership::BuildingPlacementStory { coord, category, change }),
                 timestamp,
-                ref story_cursor,
             );
         }
         fn pay_building_costs(
@@ -670,7 +654,6 @@ pub mod ConstructionLogic {
             increase: u16,
             timestamp: u64,
             game_context: crate::commands::ExecutionContext,
-            ref story_cursor: crate::ownership::StoryCursor,
         ) -> u128 {
             assert!(!costs.is_empty(), "missing building erection cost");
             let scale: u128 = (count - 1).into();
@@ -696,7 +679,6 @@ pub mod ConstructionLogic {
                     crate::ownership::BuildingPaymentStory { coord, category, cost: paid.span() },
                 ),
                 timestamp,
-                ref story_cursor,
             );
             labor_paid
         }

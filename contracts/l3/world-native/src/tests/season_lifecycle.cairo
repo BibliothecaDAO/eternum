@@ -7,7 +7,6 @@ use crate::game::{
 };
 use crate::hyperstructures::{IHyperstructuresDispatcher, IHyperstructuresDispatcherTrait};
 use crate::registrar::IRegistrarSafeDispatcherTrait;
-use crate::tests::StoryResultTestTrait;
 use super::resource_commands::{assert_terminal_rejection, execute, setup_with_rules};
 
 fn setup_with_threshold(
@@ -42,10 +41,9 @@ fn close_settles_all_completed_shares_before_testing_the_victory_threshold() {
 }
 
 #[test]
-fn nested_economy_checkpoint_and_season_end_share_one_story_cursor() {
+fn nested_economy_checkpoint_and_season_end_emit_in_order() {
     let (deployment, hyper, home, _) = super::hyperstructures::setup_with_threshold(1);
     super::hyperstructures::complete(deployment, hyper, home);
-    let order = 0;
     let mut spy = snforge_std::spy_events();
     assert!(execute(deployment, Command::CloseSeason, 100));
     let mut index = 0_u32;
@@ -58,8 +56,7 @@ fn nested_economy_checkpoint_and_season_end_share_one_story_cursor() {
             let mut fields = keys.slice(prefix + 1, keys.len() - prefix - 1);
             let mut data = event.data.span();
             let story: crate::ownership::StoryEvent = starknet::Event::deserialize(ref fields, ref data).unwrap();
-            assert_eq!(story.order, order);
-            assert_eq!(story.index, index);
+
             match story.story {
                 crate::ownership::Story::HyperstructurePoints(_) => assert_eq!(index, 0),
                 crate::ownership::Story::SeasonEnded(winner) => {
@@ -142,12 +139,11 @@ fn season_presets_are_authorized_immutable_and_game_scoped() {
     start_cheat_caller_address(deployment.games, deployment.actor);
     assert!(registrar.register_preset(20000, preset).is_err());
     let before = games(deployment).game(3);
-    let (remaining, _) = season
+    let remaining = season
         .close_season(
             3,
             deployment.actor,
             crate::commands::action_context(super::context(deployment.games, 3)),
-            crate::tests::story_cursor(),
         )
         .unwrap();
     assert_eq!(remaining, 0);
@@ -170,6 +166,7 @@ fn closing_includes_every_completed_hyperstructure_and_skips_foundations() {
         let id = crate::structures::IStructureOperationsDispatcherTrait::create_discovery(
             crate::structures::IStructureOperationsDispatcher { contract_address: deployment.games },
             3,
+            1,
             crate::troops::Coord { alt: false, x: 2000000 + offset, y: 2000000 },
             crate::discovery::Discovery::Hyperstructure,
             101,
@@ -300,6 +297,7 @@ fn nine_completed_hyperstructures(threshold: u128) -> (super::Deployment, Array<
         let id = crate::structures::IStructureOperationsDispatcherTrait::create_discovery(
             crate::structures::IStructureOperationsDispatcher { contract_address: d.games },
             3,
+            1,
             crate::troops::Coord { alt: false, x: 2000200 + offset * 10, y: 2000000 },
             crate::discovery::Discovery::Hyperstructure,
             101,
@@ -445,9 +443,7 @@ fn final_checkpoint(d: super::Deployment) -> u32 {
         crate::commands::action_context(
             crate::commands::ExecutionContext { timestamp: 1000, ..super::context(d.games, 3) },
         ),
-        crate::tests::story_cursor(),
     )
-        .story_result()
         .try_into()
         .unwrap()
 }
@@ -482,7 +478,7 @@ fn checkpoint_member_event_uses_the_declared_short_string_identity() {
             assert_eq!(*event.keys.at(4), 'start_at');
             assert_eq!(event.data.span(), array![2, 3, hyper.entity_id.into(), 1, 100].span());
             found = true;
-        }
+            }
     }
     assert!(found);
 }

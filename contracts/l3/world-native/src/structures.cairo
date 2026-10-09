@@ -60,14 +60,16 @@ pub struct StructureMetadata {
     pub order: u8,
     pub has_wonder: bool,
     // associated with village
-    pub village_realm: u32,
+    pub village_realm: u64,
     pub mine_kind: u8,
     pub deepest_depth: u8,
 }
 const ORDER_SCALE: u128 = 0x10000;
 const WONDER_SCALE: u128 = 0x1000000;
 const CONNECTED_REALM_SCALE: u128 = 0x100000000;
-const MINE_KIND_SCALE: u128 = 0x10000000000000000;
+const MINE_KIND_SCALE: u128 = 0x1000000000000000000000000;
+const DEPTH_SCALE: u128 = 0x100000000000000000000000000;
+const U64_RANGE: u128 = 0x10000000000000000;
 pub impl StructureMetadataPacking of starknet::storage_access::StorePacking<StructureMetadata, u128> {
     fn pack(value: StructureMetadata) -> u128 {
         let wonder = if value.has_wonder {
@@ -80,16 +82,16 @@ pub impl StructureMetadataPacking of starknet::storage_access::StorePacking<Stru
             + wonder * WONDER_SCALE
             + value.village_realm.into() * CONNECTED_REALM_SCALE
             + value.mine_kind.into() * MINE_KIND_SCALE
-            + value.deepest_depth.into() * 0x1000000000000000000
+            + value.deepest_depth.into() * DEPTH_SCALE
     }
     fn unpack(value: u128) -> StructureMetadata {
         StructureMetadata {
             realm_id: (value % ORDER_SCALE).try_into().unwrap(),
             order: (value / ORDER_SCALE % 256).try_into().unwrap(),
             has_wonder: value / WONDER_SCALE % 2 != 0,
-            village_realm: (value / CONNECTED_REALM_SCALE % U32_RANGE).try_into().unwrap(),
+            village_realm: (value / CONNECTED_REALM_SCALE % U64_RANGE).try_into().unwrap(),
             mine_kind: (value / MINE_KIND_SCALE % 256).try_into().unwrap(),
-            deepest_depth: (value / 0x1000000000000000000 % 256).try_into().unwrap(),
+            deepest_depth: (value / DEPTH_SCALE % 256).try_into().unwrap(),
         }
     }
 }
@@ -108,22 +110,22 @@ pub struct StructureRecord {
     pub metadata: StructureMetadata,
 }
 
-
 #[starknet::interface]
 pub trait IStructureOperations<T> {
     fn create_discovery(
         ref self: T,
         game_id: u32,
+        home_id: u64,
         coord: Coord,
         discovery: crate::discovery::Discovery,
         seed: u256,
         timestamp: u64,
         game_context: crate::commands::ActionContext,
-    ) -> u32;
+    ) -> u64;
     #[cfg(test)]
     fn provision_realm(
         ref self: T, game_id: u32, actor: ContractAddress, coord: Coord, grants: Span<(u8, u128)>,
-    ) -> u32;
+    ) -> u64;
 }
 
 pub(crate) fn discovered_structure(

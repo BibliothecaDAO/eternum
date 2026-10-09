@@ -75,7 +75,7 @@ fn raise(home: ResourceKey, troops: u128, direction: u8) -> Command {
     )
 }
 
-fn reinforce(explorer_id: u32, troops: u128) -> Command {
+fn reinforce(explorer_id: u64, troops: u128) -> Command {
     Command::ManageTroops(
         ManageTroops::RecruitExplorer(RecruitExplorer { explorer_id, amount: troops * RESOURCE_PRECISION }),
     )

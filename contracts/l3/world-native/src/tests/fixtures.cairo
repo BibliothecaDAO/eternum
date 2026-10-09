@@ -60,8 +60,7 @@ pub mod TroopFixture {
             actor: ContractAddress,
             command: CreateExplorer,
             context: crate::commands::ActionContext,
-            mut story_cursor: crate::ownership::StoryCursor,
-        ) -> ((), crate::ownership::StoryCursor) {
+        ) {
             let context = crate::commands::load_context(game_id, context);
 
             self.actor.write(actor);
@@ -82,7 +81,7 @@ pub mod TroopFixture {
                 );
             }
             crate::logic::map::MapState::occupy(
-                crate::geometry::tile_key(game_id, Coord { alt: false, x: command.structure_id + 5, y: 34 }),
+                crate::geometry::tile_key(game_id, Coord { alt: false, x: (command.structure_id + 5).try_into().unwrap(), y: 34 }),
                 command.structure_id,
                 15,
                 false,
@@ -103,7 +102,7 @@ pub mod TroopFixture {
             );
             assert!(context.raw_root != 0, "fixture late rejection");
 
-            ((), story_cursor)
+            ()
         }
     }
     #[abi(embed_v0)]
@@ -114,8 +113,7 @@ pub mod TroopFixture {
             actor: ContractAddress,
             command: Explore,
             context: crate::commands::ActionContext,
-            mut story_cursor: crate::ownership::StoryCursor,
-        ) -> ((), crate::ownership::StoryCursor) {
+        ) {
             panic!("fixture unsupported command");
         }
     }

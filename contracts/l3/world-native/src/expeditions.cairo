@@ -23,9 +23,9 @@ pub trait IExpeditionSite<T> {
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct SitePayout {
-    pub structure_id: u32,
-    pub explorer_id: u32,
-    pub site_id: u32,
+    pub structure_id: u64,
+    pub explorer_id: u64,
+    pub site_id: u64,
     pub category: u8,
     pub reward: Option<crate::resources::ResourceAmount>,
 }
@@ -159,7 +159,7 @@ pub struct FrontierDiscoveryRules {
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct ExpeditionDiscoveryKey {
     pub game_id: u32,
-    pub structure_id: u32,
+    pub structure_id: u64,
     // The season day index (crate::days), under the field's historical name.
     pub epoch: u64,
 }
@@ -175,7 +175,7 @@ pub trait IFrontierDiscovery<T> {
     fn frontier_discovery_rules(self: @T, game_id: u32) -> Option<FrontierDiscoveryRules>;
     fn expedition_discovery(self: @T, key: ExpeditionDiscoveryKey) -> Option<ExpeditionDiscovery>;
     fn discover_frontier_tile(
-        ref self: T, key: crate::map::TileKey, explorer_id: u32, seed: u256, context: crate::commands::ActionContext,
+        ref self: T, key: crate::map::TileKey, explorer_id: u64, seed: u256, context: crate::commands::ActionContext,
     ) -> crate::discovery::Discovery;
 }
 
@@ -185,8 +185,7 @@ pub trait ISiteRewards<T> {
         ref self: T,
         key: crate::resources::ResourceKey,
         explorer: crate::troops::ExplorerKey,
-        home_id: u32,
+        home_id: u64,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> ((), crate::ownership::StoryCursor);
+    );
 }

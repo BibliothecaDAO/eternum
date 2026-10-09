@@ -179,6 +179,7 @@ fn discovered_surface_mines_use_kind_production_without_revealing_neighbors() {
         let id = structures
             .create_discovery(
                 3,
+                1,
                 coord,
                 crate::discovery::Discovery::Mine,
                 seed,

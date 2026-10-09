@@ -54,7 +54,7 @@ pub mod VillageState {
             assert!(pass.village_id == 0, "village pass already consumed");
         }
         fn consume(
-            ref self: ComponentState<TContractState>, key: VillagePassKey, owner: ContractAddress, village_id: u32,
+            ref self: ComponentState<TContractState>, key: VillagePassKey, owner: ContractAddress, village_id: u64,
         ) {
             self.require_pass(key, owner);
             assert!(village_id != 0, "invalid village identity");

@@ -3,7 +3,7 @@ use starknet::ContractAddress;
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct TradeKey {
     pub game_id: u32,
-    pub trade_id: u32,
+    pub trade_id: u64,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
@@ -13,8 +13,8 @@ pub struct TradeRules {
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
 pub struct TradeOrder {
-    pub maker_id: u32,
-    pub taker_id: u32,
+    pub maker_id: u64,
+    pub taker_id: u64,
     pub offered_resource: u8,
     pub requested_resource: u8,
     pub offered_per_lot: u64,
@@ -25,8 +25,8 @@ pub struct TradeOrder {
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct CreateOrder {
-    pub maker_id: u32,
-    pub taker_id: u32,
+    pub maker_id: u64,
+    pub taker_id: u64,
     pub offered_resource: u8,
     pub requested_resource: u8,
     pub offered_per_lot: u64,
@@ -37,7 +37,7 @@ pub struct CreateOrder {
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct TradeListing {
-    pub trade_id: u32,
+    pub trade_id: u64,
     pub order: TradeOrder,
 }
 
@@ -56,16 +56,16 @@ pub fn new_order(command: CreateOrder) -> TradeOrder {
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct AcceptOrder {
-    pub trade_id: u32,
-    pub taker_id: u32,
+    pub trade_id: u64,
+    pub taker_id: u64,
     pub lots: u64,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct TradeFill {
-    pub trade_id: u32,
-    pub maker_id: u32,
-    pub taker_id: u32,
+    pub trade_id: u64,
+    pub maker_id: u64,
+    pub taker_id: u64,
     pub offered_resource: u8,
     pub requested_resource: u8,
     pub offered_amount: u128,
@@ -84,24 +84,21 @@ pub trait ITrade<T> {
         actor: ContractAddress,
         command: CreateOrder,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> ((), crate::ownership::StoryCursor);
+    );
     fn accept_trade_order(
         ref self: T,
         game_id: u32,
         actor: ContractAddress,
         command: AcceptOrder,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> ((), crate::ownership::StoryCursor);
+    );
     fn cancel_trade_order(
         ref self: T,
         game_id: u32,
         actor: ContractAddress,
-        trade_id: u32,
+        trade_id: u64,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> ((), crate::ownership::StoryCursor);
+    );
 }
 
 // Only the economy domain can release escrow or queue purchased resources.

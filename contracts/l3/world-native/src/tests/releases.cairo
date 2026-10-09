@@ -137,8 +137,9 @@ fn launcher_hotfix_migrates_a_populated_frontier_day_once_and_play_continues() {
         d.games, selector!("realms"), selector!("traits"), array![2].span(), 0x4000001_u32,
     );
     let other_home = ResourceKey {
-        game_id, entity_id: interact_with_state(d.games, || crate::state::read().games.next_entity.read(game_id)),
+        game_id, entity_id: interact_with_state(d.games, || crate::state::read().games.next_entity.read(game_id)).into(),
     };
+    super::play_fixture::prepare_homes(d.games, game_id, other.actor);
     assert!(
         super::resource_commands::execute_in_game(
             other,

@@ -37,8 +37,7 @@ pub trait IGameSettlement<T> {
         game_id: u32,
         actor: ContractAddress,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> (u64, crate::ownership::StoryCursor);
+    ) -> u64;
 }
 
 #[derive(Copy, Drop)]

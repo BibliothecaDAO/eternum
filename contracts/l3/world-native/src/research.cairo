@@ -61,7 +61,7 @@ pub struct ResearchPriceConfig {
 // Scouts' lodge row; every other row takes 0.
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct Research {
-    pub structure_id: u32,
+    pub structure_id: u64,
     pub row: u8,
     pub choice: u8,
 }
@@ -200,7 +200,6 @@ pub trait IResearch<T> {
         actor: starknet::ContractAddress,
         command: Research,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
     );
     fn realm_knowledge(self: @T, key: ResourceKey) -> Option<RealmKnowledge>;
     #[cfg(test)]

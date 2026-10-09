@@ -43,7 +43,7 @@ pub fn rules(blitz: bool) -> crate::rules::SliceRules {
     rules.map_config.relic_discovery_interval_sec = 60000;
     rules
 }
-fn setup(blitz: bool) -> (super::Deployment, ResourceKey) {
+pub fn setup(blitz: bool) -> (super::Deployment, ResourceKey) {
     let (d, home, _) = super::resource_commands::setup_with_preset(camp_preset(blitz));
     (d, home)
 }
@@ -76,6 +76,7 @@ fn create(d: super::Deployment, coord: Coord) -> ResourceKey {
     let id = IStructureOperationsDispatcher { contract_address: d.games }
         .create_discovery(
             3,
+            1,
             coord,
             Discovery::Camp,
             101,
@@ -179,10 +180,10 @@ fn camp_reveals_six_biomes_without_neighbor_lotteries_or_points() {
     let (d, _) = setup(true);
     let key = create(d, coord());
     let map = IMapLogicDispatcher { contract_address: d.games };
-    assert_eq!((map.tile(tile_key(3, coord())).unwrap().data / 2) % 256, crate::taxonomy::CAMP_OCCUPIER.into());
+    assert_eq!(map.occupancy(tile_key(3, coord())).unwrap().category, crate::taxonomy::CAMP_OCCUPIER);
     for direction in 0_u8..6 {
         let tile = map.tile(tile_key(3, neighbor(coord(), direction))).unwrap();
-        assert_eq!(tile.data % 0x20000000000, 0);
+        assert!(map.occupancy(tile_key(3, neighbor(coord(), direction))).is_none());
         assert!((tile.data / 0x20000000000) % 256 != 0);
     }
     assert_eq!(crate::game::IPointsDispatcher { contract_address: d.games }.season_points(3), 0);
@@ -237,8 +238,9 @@ fn exploration_discovers_a_camp_without_moving_the_explorer_into_it() {
     assert_eq!(troops.explorer(key).unwrap().coord, origin);
     let destination = neighbor(origin, 0);
     let tile = IMapLogicDispatcher { contract_address: d.games }.tile(tile_key(3, destination)).unwrap();
-    assert_eq!((tile.data / 2) % 256, crate::taxonomy::CAMP_OCCUPIER.into());
-    let camp_id: u32 = (tile.data / 512 % 0x100000000).try_into().unwrap();
+    let occupancy = IMapLogicDispatcher { contract_address: d.games }.occupancy(tile_key(3, destination)).unwrap();
+    assert_eq!(occupancy.category, crate::taxonomy::CAMP_OCCUPIER);
+    let camp_id = occupancy.entity_id;
     assert_eq!(structures.structure(ResourceKey { game_id: 3, entity_id: camp_id }).unwrap().base.created_at, 140);
     assert_eq!(
         crate::game::IPointsDispatcher { contract_address: d.games }.player_points(3, d.actor),
@@ -270,5 +272,5 @@ fn eternum_exploration_does_not_create_a_camp() {
     let destination = neighbor(troops.explorer(key).unwrap().coord, 0);
     assert!(execute(d, Command::Explore(Explore { explorer_id, direction: 0 }), 140));
     let tile = IMapLogicDispatcher { contract_address: d.games }.tile(tile_key(3, destination)).unwrap();
-    assert!(crate::map::structure_occupant(tile).is_none());
+    assert!(IMapLogicDispatcher { contract_address: d.games }.occupancy(tile_key(3, destination)).is_none());
 }

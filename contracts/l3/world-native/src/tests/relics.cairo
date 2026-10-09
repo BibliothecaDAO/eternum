@@ -57,7 +57,7 @@ pub fn rules() -> Span<RelicRule> {
     }
     rules.span()
 }
-fn setup(blitz: bool) -> (super::Deployment, ResourceKey, ResourceKey) {
+pub fn setup(blitz: bool) -> (super::Deployment, ResourceKey, ResourceKey) {
     setup_with_reward(blitz, 2, 10)
 }
 fn setup_with_reward(blitz: bool, resource_type: u8, amount: u128) -> (super::Deployment, ResourceKey, ResourceKey) {
@@ -128,13 +128,14 @@ fn apply(key: ResourceKey, id: u8, recipient: Recipient) -> Command {
 fn map_relics(deployment: super::Deployment) -> IRelicMapDispatcher {
     IRelicMapDispatcher { contract_address: deployment.games }
 }
-fn chest(deployment: super::Deployment, origin: Coord, seed: u256, time: u64) -> Coord {
+pub fn chest(deployment: super::Deployment, origin: Coord, seed: u256, time: u64) -> Coord {
     let coord = crate::relics::chest_destination(origin, seed, time, 12);
     start_cheat_block_timestamp_global(time);
     start_cheat_caller_address(deployment.games, deployment.games);
     map_relics(deployment)
         .discover_relic_chest(
             3,
+            1,
             origin,
             origin,
             seed,
@@ -146,7 +147,7 @@ fn chest(deployment: super::Deployment, origin: Coord, seed: u256, time: u64) ->
     stop_cheat_caller_address(deployment.games);
     coord
 }
-fn move_fixture(deployment: super::Deployment, key: ResourceKey, coord: Coord) {
+pub fn move_fixture(deployment: super::Deployment, key: ResourceKey, coord: Coord) {
     let explorer = troop(deployment, key);
     crate::tests::resource_commands::set_explorer_fixture(
         deployment.games,
@@ -288,7 +289,7 @@ fn reveal_relics_reveal_only_the_ring_without_points_or_discovery() {
             let coord = Coord { alt: false, x, y };
             if crate::geometry::distance(origin, coord) > 0 && crate::geometry::distance(origin, coord) <= 2 {
                 let tile = map.tile(crate::geometry::tile_key(3, coord)).unwrap();
-                assert!(tile.data % 0x20000000000 == 0);
+                assert!(map.occupancy(crate::geometry::tile_key(3, coord)).is_none());
                 revealed += 1;
             }
         }
@@ -303,7 +304,7 @@ fn reveal_relics_reveal_only_the_ring_without_points_or_discovery() {
     // Moving the fixture places its occupancy but does not reveal its terrain.
     let origin_tile = map.tile(crate::geometry::tile_key(3, origin)).unwrap();
     assert_eq!(origin_tile.data / crate::map::BIOME_SCALE % crate::map::BYTE_RANGE, 0);
-    assert_eq!(origin_tile.data / crate::map::OCCUPIER_SCALE % crate::map::ENTITY_RANGE, explorer.entity_id.into());
+    assert_eq!(map.occupancy(crate::geometry::tile_key(3, origin)).unwrap().entity_id, explorer.entity_id);
     assert_eq!(balance(deployment, home, 38), 9250 * RESOURCE_PRECISION);
 }
 #[test]
@@ -323,13 +324,14 @@ fn chest_discovery_is_surface_only_timed_and_skips_reserved_or_occupied_tiles() 
     let tile = IMapLogicDispatcher { contract_address: deployment.games }
         .tile(crate::geometry::tile_key(3, actual))
         .unwrap();
-    assert_eq!(tile.data / 2 % 256, 34);
+    assert_eq!(IMapLogicDispatcher { contract_address: deployment.games }.occupancy(crate::geometry::tile_key(3, actual)).unwrap().category, 34);
     assert_eq!(map_relics(deployment).relic_discovery_time(3), 40);
     start_cheat_caller_address(deployment.games, deployment.games);
     start_cheat_block_timestamp_global(49);
     map_relics(deployment)
         .discover_relic_chest(
             3,
+            1,
             origin,
             origin,
             322,
@@ -343,6 +345,7 @@ fn chest_discovery_is_surface_only_timed_and_skips_reserved_or_occupied_tiles() 
     map_relics(deployment)
         .discover_relic_chest(
             3,
+            1,
             Coord { alt: true, ..origin },
             origin,
             322,
@@ -355,6 +358,7 @@ fn chest_discovery_is_surface_only_timed_and_skips_reserved_or_occupied_tiles() 
     map_relics(deployment)
         .discover_relic_chest(
             3,
+            1,
             origin,
             origin,
             322,
@@ -395,13 +399,7 @@ fn opening_a_chest_draws_with_replacement_once_and_replay_cannot_reopen_it() {
         points + 77,
     );
     assert_terminal_rejection(deployment, command, 51);
-    assert_eq!(
-        IMapLogicDispatcher { contract_address: deployment.games }
-            .tile(crate::geometry::tile_key(3, coord))
-            .unwrap()
-            .data % 0x20000000000,
-        0,
-    );
+    assert!(IMapLogicDispatcher { contract_address: deployment.games }.occupancy(crate::geometry::tile_key(3, coord)).is_none());
 }
 
 #[test]
@@ -447,7 +445,6 @@ fn relic_configuration_requires_authority_and_application_requires_owner() {
                 crate::commands::action_context(
                     ExecutionContext { timestamp: 40, ..super::context(deployment.games, 3) },
                 ),
-                crate::tests::story_cursor(),
             )
             .is_err(),
     );
@@ -473,7 +470,7 @@ fn pinned_draw_vectors_keep_weights_timestamp_salts_and_direction_retry_order() 
     assert!(repeated);
 }
 #[feature("safe_dispatcher")]
-fn extract_reward(deployment: super::Deployment, explorer_id: u32, timestamp: u64) -> bool {
+fn extract_reward(deployment: super::Deployment, explorer_id: u64, timestamp: u64) -> bool {
     start_cheat_block_timestamp_global(timestamp);
     start_cheat_caller_address(deployment.games, deployment.games);
     let result = IExtractionSafeDispatcher { contract_address: deployment.games }
@@ -483,7 +480,6 @@ fn extract_reward(deployment: super::Deployment, explorer_id: u32, timestamp: u6
             explorer_id,
             None,
             crate::commands::action_context(ExecutionContext { timestamp, ..super::context(deployment.games, 3) }),
-            crate::tests::story_cursor(),
         );
     stop_cheat_caller_address(deployment.games);
     result.is_ok()
@@ -549,7 +545,7 @@ fn an_explore_action_discovers_a_chest_while_eternum_does_not() {
                 deployment,
                 Command::Explore(crate::commands::Explore { explorer_id: explorer.entity_id, direction: 0 }),
                 40,
-            ),
+        ),
     );
     assert_eq!(map_relics(deployment).relic_discovery_time(3), 40);
     let (eternum, _, _) = setup(false);
@@ -634,6 +630,7 @@ fn chest_search_skips_the_explorers_vacated_start_tile() {
     map_relics(deployment)
         .discover_relic_chest(
             3,
+            1,
             origin,
             vacated,
             321,
@@ -645,5 +642,5 @@ fn chest_search_skips_the_explorers_vacated_start_tile() {
     let map = IMapLogicDispatcher { contract_address: deployment.games };
     assert!(map.tile(crate::geometry::tile_key(3, vacated)).is_none());
     let tile = map.tile(crate::geometry::tile_key(3, Coord { x: 2000212, ..vacated })).unwrap();
-    assert_eq!(tile.data / 2 % 256, 34);
+    assert_eq!(map.occupancy(crate::geometry::tile_key(3, Coord { x: 2000212, ..vacated })).unwrap().category, 34);
 }

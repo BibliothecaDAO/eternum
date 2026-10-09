@@ -6,7 +6,6 @@ pub trait IGameplay<T> {
         actor: starknet::ContractAddress,
         arguments: Span<felt252>,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
     ) -> Result<Span<felt252>, crate::commands::Rejection>;
 }
 
@@ -18,7 +17,7 @@ pub mod SeasonLogic {
     use starknet::{ContractAddress, get_tx_info};
     use crate::commands::ExecutionContext as DomainContext;
     use crate::logic::release::ReleaseState;
-    use crate::ownership::StoryResultTrait;
+
     component!(path: ReleaseState, storage: release, event: ReleaseEvent);
     impl ReleaseInternal = ReleaseState::InternalImpl<ContractState>;
     #[storage]
@@ -47,8 +46,7 @@ pub mod SeasonLogic {
             game_id: u32,
             actor: ContractAddress,
             context: crate::commands::ActionContext,
-            mut story_cursor: crate::ownership::StoryCursor,
-        ) -> (u64, crate::ownership::StoryCursor) {
+        ) -> u64 {
             let context = crate::commands::load_context(game_id, context);
 
             let classes = self.release.classes(game_id);
@@ -73,20 +71,18 @@ pub mod SeasonLogic {
                 game_id,
                 context.timestamp,
                 crate::commands::action_context(context),
-                story_cursor,
-            )
-                .resume_story(ref story_cursor);
+            );
             if remaining != 0 {
-                return (remaining.into(), story_cursor);
+                return (remaining.into());
             }
             self.data.season.close_initiators.write(game_id, None);
             if self.data.season.player_points.read((game_id, initiator)) < threshold {
-                return (0, story_cursor);
+                return (0);
             }
             game.end_at = context.timestamp;
             crate::logic::game::write_game(game_id, game);
-            self.record_season_end(game_id, initiator, context.timestamp, ref story_cursor);
-            (0, story_cursor)
+            self.record_season_end(game_id, initiator, context.timestamp);
+            (0)
         }
     }
     #[abi(embed_v0)]
@@ -96,12 +92,11 @@ pub mod SeasonLogic {
             game_id: u32,
             actor: ContractAddress,
             context: crate::commands::ActionContext,
-            mut story_cursor: crate::ownership::StoryCursor,
-        ) -> (u64, crate::ownership::StoryCursor) {
+        ) -> u64 {
             let context = crate::commands::load_context(game_id, context);
             let mut game = context.game.unbox();
             if game.settled {
-                return (0, story_cursor);
+                return (0);
             }
             assert!(
                 crate::game::status_at(game, context.timestamp) == crate::game::GameStatus::Ended, "game has not ended",
@@ -110,13 +105,13 @@ pub mod SeasonLogic {
                 game.end_grace_seconds == 0 || context.timestamp > game.end_at + game.end_grace_seconds.into(),
                 "game settlement grace period is active",
             );
-            let remaining = self.settle_final_points(game_id, context.timestamp, context, ref story_cursor);
+            let remaining = self.settle_final_points(game_id, context.timestamp, context);
             if remaining != 0 {
-                return (remaining.into(), story_cursor);
+                return (remaining.into());
             }
             game.settled = true;
             crate::logic::game::write_game(game_id, game);
-            (0, story_cursor)
+            (0)
         }
     }
     #[abi(embed_v0)]
@@ -182,7 +177,6 @@ pub mod SeasonLogic {
             game_id: u32,
             timestamp: u64,
             game_context: crate::commands::ExecutionContext,
-            ref story_cursor: crate::ownership::StoryCursor,
         ) -> u32 {
             crate::hyperstructures::IHyperstructuresDispatcherTrait::settle_final_hyperstructures(
                 crate::hyperstructures::IHyperstructuresLibraryDispatcher {
@@ -191,24 +185,20 @@ pub mod SeasonLogic {
                 game_id,
                 timestamp,
                 crate::commands::action_context(game_context),
-                story_cursor,
             )
-                .resume_story(ref story_cursor)
         }
         fn record_season_end(
             ref self: ContractState,
             game_id: u32,
             winner: ContractAddress,
             timestamp: u64,
-            ref story_cursor: crate::ownership::StoryCursor,
         ) {
             self
                 .emit(
                     crate::ownership::StoryEvent {
-                        version: 1,
+                        version: 2,
                         game_id,
-                        order: story_cursor.order,
-                        index: crate::ownership::StoryCursorTrait::next(ref story_cursor),
+
                         entity_id: None,
                         owner: Some(winner),
                         timestamp,
@@ -253,12 +243,10 @@ pub mod SeasonLogic {
         actor: ContractAddress,
         arguments: Span<felt252>,
         context: DomainContext,
-        story_cursor: crate::ownership::StoryCursor,
     ) -> Result<Span<felt252>, Array<felt252>> {
         let mut calldata = array![game_id.into(), actor.into()];
         calldata.append_span(arguments);
         crate::commands::action_context(context).serialize(ref calldata);
-        story_cursor.serialize(ref calldata);
         starknet::syscalls::library_call_syscall(
             crate::command_routes::logic_class(classes, route.logic), route.selector, calldata.span(),
         )
@@ -272,7 +260,6 @@ pub mod SeasonLogic {
             actor: ContractAddress,
             arguments: Span<felt252>,
             context: crate::commands::ActionContext,
-            mut story_cursor: crate::ownership::StoryCursor,
         ) -> Result<Span<felt252>, crate::commands::Rejection> {
             let context = crate::commands::load_context(game_id, context);
 
@@ -284,11 +271,11 @@ pub mod SeasonLogic {
             if !context.game.unbox().ready && index != crate::command_routes::SETTLE_BLITZ_ROSTER {
                 return Err(rejection('ROSTER_NOT_READY'));
             }
-            let result = dispatch(self.release.classes(game_id), route, game_id, actor, payload, context, story_cursor)
+            let result = dispatch(self.release.classes(game_id), route, game_id, actor, payload, context)
                 .map_err(|error| domain_rejection(error))?;
             if route.batch {
                 let mut output = result;
-                let (remaining, _cursor): (u64, crate::ownership::StoryCursor) = Serde::deserialize(ref output)
+                let remaining: u64 = Serde::deserialize(ref output)
                     .expect('missing batch result');
                 assert!(output.is_empty(), "invalid batch result");
                 self.emit(crate::commands::BatchProgress { game_id, actor, tx_hash: get_tx_info().unbox().transaction_hash, remaining });

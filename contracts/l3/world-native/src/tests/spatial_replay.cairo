@@ -32,7 +32,7 @@ fn row<T, +Serde<T>, +Drop<T>>(ref rows: Array<Row>, model: felt252, keys: Span<
     rows.append(Row { model, keys, values: values.span() });
 }
 
-fn observe(address: ContractAddress, game_id: u32, entities: Span<u32>, tiles: Span<Coord>) -> Array<Row> {
+fn observe(address: ContractAddress, game_id: u32, entities: Span<u64>, tiles: Span<Coord>) -> Array<Row> {
     let mut rows = array![];
     let views = crate::structures::IStructureOperationsDispatcher { contract_address: address };
     for entity_id in entities {
@@ -69,7 +69,7 @@ fn observe(address: ContractAddress, game_id: u32, entities: Span<u32>, tiles: S
 }
 
 // Seed the replay from contract readers, then use only successful command events.
-pub fn initial(address: ContractAddress, game_id: u32, entities: Span<u32>, tiles: Span<Coord>) -> Frame {
+pub fn initial(address: ContractAddress, game_id: u32, entities: Span<u64>, tiles: Span<Coord>) -> Frame {
     let rows = observe(address, game_id, entities, tiles);
     let mut events = array![];
     for row in rows.span() {
@@ -82,7 +82,7 @@ pub fn initial(address: ContractAddress, game_id: u32, entities: Span<u32>, tile
 }
 
 pub fn capture(
-    address: ContractAddress, game_id: u32, entities: Span<u32>, tiles: Span<Coord>, ref spy: EventSpy,
+    address: ContractAddress, game_id: u32, entities: Span<u64>, tiles: Span<Coord>, ref spy: EventSpy,
 ) -> Frame {
     let mut events = array![];
     for (_, event) in spy.get_events().emitted_by(address).events {
@@ -95,7 +95,7 @@ pub fn capture(
                 + 2 < event.keys.len() && selected(*event.keys.at(index + 2)) {
                 events.append((event.keys, event.data));
                 break;
-            }
+                }
         }
     }
     spy = snforge_std::spy_events();
@@ -105,6 +105,6 @@ pub fn capture(
 pub fn compare(name: ByteArray, frames: Array<Frame>) {
     let mut serialized = array![];
     frames.serialize(ref serialized);
-    let expected = read_txt(@FileTrait::new(format!("tests/fixtures/spatial-replay/{}.txt", name)));
+    let expected = read_txt(@FileTrait::new(format!("src/tests/fixtures/spatial-replay/{}.txt", name)));
     assert_eq!(serialized, expected);
 }

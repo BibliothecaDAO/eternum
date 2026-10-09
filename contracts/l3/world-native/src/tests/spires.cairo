@@ -77,16 +77,17 @@ fn production_initialization_places_the_same_spire_identity_on_both_layers_witho
         for alt in array![false, true] {
             let coord = Coord { alt, ..coord };
             let tile = map(d).tile(tile_key(3, coord)).unwrap();
-            assert_eq!((tile.data / 512) % 0x100000000, (index + 1).into());
-            assert_eq!((tile.data / 2) % 256, 35);
-            assert_eq!(tile.data % 2, 1);
+            let occupancy = map(d).occupancy(tile_key(3, coord)).unwrap();
+            assert_eq!(occupancy.entity_id, Into::<u32, u64>::into(index + 1));
+            assert_eq!(occupancy.category, 35);
+            assert!(occupancy.is_structure);
             super::state::assert_spatial_indexes(
                 d.games, 3, array![(index + 1).try_into().unwrap()].span(), array![coord].span(),
             );
             for direction in 0_u8..6 {
                 let access = map(d).tile(tile_key(3, spire_neighbor(coord, direction))).unwrap();
                 assert!(access.data / 0x20000000000 % 256 != 0);
-                assert_eq!(access.data % 0x20000000000, 0);
+                assert!(map(d).occupancy(tile_key(3, spire_neighbor(coord, direction))).is_none());
             }
         }
     }
@@ -167,8 +168,8 @@ fn an_occupied_alternate_center_rejects_before_revealing_the_surface() {
     assert!(ISpiresSafeDispatcher { contract_address: d.games }.initialize_spires(1).is_err());
     assert!(map(d).tile(tile_key(1, coord)).is_none());
     assert_eq!(spires(d).spire_layout(1), Some(layout(1)));
-    let occupied = map(d).tile(tile_key(1, Coord { alt: true, ..coord })).unwrap();
-    assert_eq!((occupied.data / 512) % 0x100000000, 99);
+    let occupied = map(d).occupancy(tile_key(1, Coord { alt: true, ..coord })).unwrap();
+    assert_eq!(occupied.entity_id, 99);
 }
 
 #[test]

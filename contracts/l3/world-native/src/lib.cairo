@@ -13,6 +13,7 @@ pub mod commands;
 pub mod days;
 pub mod discovery;
 pub mod entry;
+pub mod entity_ids;
 pub mod events;
 pub mod expeditions;
 pub mod exploration_rewards;

@@ -20,18 +20,18 @@ pub enum Recipient {
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct ApplyRelic {
-    pub entity_id: u32,
+    pub entity_id: u64,
     pub relic_id: u8,
     pub recipient: Recipient,
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct OpenChest {
-    pub explorer_id: u32,
+    pub explorer_id: u64,
     pub coord: Coord,
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct ChestOpened {
-    pub explorer_id: u32,
+    pub explorer_id: u64,
     pub coord: Coord,
     pub relics: Span<u8>,
     pub points: u128,
@@ -108,12 +108,12 @@ pub const LORDS_ESTIMATE_SCALE: u128 = 1000000;
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct RefillStamina {
-    pub explorer_id: u32,
+    pub explorer_id: u64,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct WithdrawLords {
-    pub structure_id: u32,
+    pub structure_id: u64,
     pub amount: u128,
 }
 
@@ -121,7 +121,7 @@ pub struct WithdrawLords {
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
 pub struct LordsWithdrawal {
     pub player: ContractAddress,
-    pub structure_id: u32,
+    pub structure_id: u64,
     pub amount: u128,
 }
 
@@ -133,16 +133,14 @@ pub trait ILords<T> {
         actor: ContractAddress,
         command: RefillStamina,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> ((), crate::ownership::StoryCursor);
+    );
     fn withdraw_lords(
         ref self: T,
         game_id: u32,
         actor: ContractAddress,
         command: WithdrawLords,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> ((), crate::ownership::StoryCursor);
+    );
 }
 
 #[starknet::interface]
@@ -150,10 +148,9 @@ pub trait ICaptureRewards<T> {
     fn grant_capture_rewards(
         ref self: T,
         site: ResourceKey,
-        explorer_id: u32,
+        explorer_id: u64,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> ((), crate::ownership::StoryCursor);
+    );
 }
 
 #[starknet::interface]
@@ -168,15 +165,13 @@ pub trait IRelics<T> {
         actor: ContractAddress,
         command: OpenChest,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> ((), crate::ownership::StoryCursor);
+    );
     fn apply_relic(
         ref self: T,
         game_id: u32,
         actor: ContractAddress,
         command: ApplyRelic,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
     );
 }
 #[starknet::interface]
@@ -186,6 +181,7 @@ pub trait IRelicMap<T> {
     fn discover_relic_chest(
         ref self: T,
         game_id: u32,
+        home_id: u64,
         coord: Coord,
         excluded: Coord,
         seed: u256,
@@ -322,7 +318,7 @@ pub fn boost_production(ref bonus: crate::production::ProductionBonus, id: u8, r
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct InteractSite {
-    pub explorer_id: u32,
+    pub explorer_id: u64,
     pub coord: crate::troops::Coord,
 }
 
@@ -334,6 +330,5 @@ pub trait IFrontierSites<T> {
         actor: starknet::ContractAddress,
         command: InteractSite,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> ((), crate::ownership::StoryCursor);
+    );
 }

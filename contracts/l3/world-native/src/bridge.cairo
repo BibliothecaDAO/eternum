@@ -10,14 +10,14 @@ pub struct DepositRules {
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct Deposit {
-    pub structure_id: u32,
+    pub structure_id: u64,
     pub resource_type: u8,
     pub amount: u256,
     pub client_fee_recipient: ContractAddress,
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct Withdraw {
-    pub structure_id: u32,
+    pub structure_id: u64,
     pub recipient: ContractAddress,
     pub resource_type: u8,
     pub amount: u128,
@@ -32,16 +32,14 @@ pub trait IBridge<T> {
         actor: ContractAddress,
         command: Deposit,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> ((), crate::ownership::StoryCursor);
+    );
     fn withdraw_resource(
         ref self: T,
         game_id: u32,
         actor: ContractAddress,
         command: Withdraw,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> ((), crate::ownership::StoryCursor);
+    );
 }
 #[starknet::interface]
 pub trait IBankWithdrawal<T> {
@@ -49,13 +47,12 @@ pub trait IBankWithdrawal<T> {
         ref self: T,
         game_id: u32,
         actor: ContractAddress,
-        bank_id: u32,
+        bank_id: u64,
         resource_type: u8,
         amount: u128,
         timestamp: u64,
         game_context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> ((), crate::ownership::StoryCursor);
+    );
 }
 #[starknet::interface]
 pub trait IDepositToken<T> {

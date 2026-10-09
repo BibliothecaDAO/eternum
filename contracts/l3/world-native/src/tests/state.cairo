@@ -9,6 +9,13 @@ pub struct GameState {
 
 #[generate_trait]
 pub impl MapObservation of MapObservationTrait {
+    fn occupancy(self: crate::map::IMapLogicDispatcher, key: crate::map::TileKey) -> Option<crate::map::TileOccupancy> {
+        interact_with_state(self.contract_address, || crate::logic::map::occupancy(key))
+    }
+    fn structure_occupant(self: crate::map::IMapLogicDispatcher, key: crate::map::TileKey) -> Option<u64> {
+        interact_with_state(self.contract_address, || crate::map::structure_occupant(key))
+    }
+
     fn tile(self: crate::map::IMapLogicDispatcher, key: crate::map::TileKey) -> Option<crate::map::TileOpt> {
         interact_with_state(self.contract_address, || {
             crate::logic::map::tile(key)
@@ -22,7 +29,7 @@ pub impl MapObservation of MapObservationTrait {
     fn occupy(
         self: crate::map::IMapLogicDispatcher,
         key: crate::map::TileKey,
-        entity_id: u32,
+        entity_id: u64,
         category: u8,
         is_structure: bool,
     ) {
@@ -33,7 +40,7 @@ pub impl MapObservation of MapObservationTrait {
         )
     }
 
-    fn vacate(self: crate::map::IMapLogicDispatcher, key: crate::map::TileKey, entity_id: u32) {
+    fn vacate(self: crate::map::IMapLogicDispatcher, key: crate::map::TileKey, entity_id: u64) {
         interact_with_state(self.contract_address, || {
             crate::logic::map::MapState::vacate(key, entity_id)
         })
@@ -118,7 +125,7 @@ pub impl StructureObservation of StructureObservationTrait {
     }
     fn home_armies(
         self: crate::structures::IStructureOperationsDispatcher, key: crate::resources::ResourceKey,
-    ) -> Span<u32> {
+    ) -> Span<u64> {
         interact_with_state(self.contract_address, || crate::logic::troops::home_armies(key))
     }
 
@@ -188,7 +195,7 @@ pub impl CombatObservation of CombatObservationTrait {
 
 // Check both directions, including tiles an action vacated and entities it destroyed.
 pub fn assert_spatial_indexes(
-    address: ContractAddress, game_id: u32, entities: Span<u32>, tiles: Span<crate::troops::Coord>,
+    address: ContractAddress, game_id: u32, entities: Span<u64>, tiles: Span<crate::troops::Coord>,
 ) {
     interact_with_state(
         address,
@@ -255,7 +262,7 @@ pub fn assert_spatial_indexes(
     );
 }
 
-pub fn assert_inline_armies_have_no_progress(address: ContractAddress, game_id: u32, entities: Span<u32>) {
+pub fn assert_inline_armies_have_no_progress(address: ContractAddress, game_id: u32, entities: Span<u64>) {
     for explorer_id in entities {
         interact_with_state(
             address,

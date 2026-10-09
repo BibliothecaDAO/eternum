@@ -76,6 +76,8 @@ mod season_lifecycle;
 mod structure_rules;
 mod terrain;
 mod play_fixture;
+mod roll_independence;
+mod entity_ids;
 
 #[derive(Drop, Copy)]
 struct Deployment {
@@ -171,10 +173,6 @@ fn setup_with_host(
     snforge_std::start_cheat_account_contract_address(games, actor);
     start_cheat_block_timestamp(games, 100);
     Deployment { games, actor, account_class }
-}
-
-fn story_cursor() -> crate::ownership::StoryCursor {
-    crate::ownership::StoryCursor { order: 0, index: 0 }
 }
 
 fn context(games: ContractAddress, game_id: u32) -> ExecutionContext {
@@ -301,14 +299,6 @@ fn row_set_member_and_deleted_have_exact_wire_shapes_and_zero_is_present() {
     assert!(GameState { contract_address: deployment.games }.explorer(key).is_none());
     execute(deployment, action(deployment, 1));
     assert_eq!(GameState { contract_address: deployment.games }.explorer(key).unwrap().troops.count, 0);
-}
-
-#[generate_trait]
-impl StoryResultTestImpl<T> of StoryResultTestTrait<T> {
-    fn story_result(self: (T, crate::ownership::StoryCursor)) -> T {
-        let (result, _) = self;
-        result
-    }
 }
 
 fn set_launcher(deployment: Deployment, launcher: ContractAddress) {
@@ -468,7 +458,7 @@ fn production_play_refuses_a_missing_stamp_and_exposes_no_domain_routes() {
         panic!("wrong command")
     };
     assert!(
-        ICreateExplorerSafeDispatcher { contract_address: d.games }.create_explorer(1, d.actor, command, crate::commands::ActionContext { raw_root: 1, timestamp: 100 }, story_cursor()).is_err(),
+        ICreateExplorerSafeDispatcher { contract_address: d.games }.create_explorer(1, d.actor, command, crate::commands::ActionContext { raw_root: 1, timestamp: 100 }, ).is_err(),
     );
     assert!(
         starknet::syscalls::call_contract_syscall(d.games, selector!("reveal"), array![1, 0, 12, 34, 11].span()).is_err(),

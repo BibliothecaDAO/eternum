@@ -53,10 +53,11 @@ fn emit_game(game_id: u32, game: GameRegistry) {
         RowSet { version: 1, model: 'GameRegistry', keys: array![game_id.into()].span(), values: values.span() },
     );
 }
-pub fn allocate_entity(game_id: u32) -> u32 {
+pub fn allocate_setup_entity(game_id: u32) -> u32 {
     let state = crate::state::write();
     let id = state.games.next_entity.read(game_id);
     assert!(id != 0, "game does not exist");
+    assert!(id < 0xfffffff9, "setup entity space exhausted");
     state.games.next_entity.write(game_id, id + 1);
     id
 }

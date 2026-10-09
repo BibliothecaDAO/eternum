@@ -11,7 +11,6 @@ use crate::settlement::{
     ISettlementViewsDispatcher, ISettlementViewsDispatcherTrait, ISettlementViewsSafeDispatcherTrait, SettlementMode,
     SettlementRules,
 };
-use crate::tests::StoryResultTestTrait;
 use crate::tests::state::MapObservationTrait;
 use super::{Deployment, authority, context, play_fixture, setup};
 
@@ -174,9 +173,10 @@ fn reservation_initialization_is_idempotent_and_game_scoped() {
     let center = 2147483646 - game_rules.map_center_offset;
     let key = crate::map::TileKey { game_id: 3, alt: false, col: center, row: center };
     let tile = IMapLogicDispatcher { contract_address: map }.tile(key).unwrap();
-    assert!((tile.data / 2) % 256 == 39);
-    assert!(tile.data % 2 == 1);
-    assert!((tile.data / 512) % 0x100000000 == 0);
+    let occupancy = IMapLogicDispatcher { contract_address: map }.occupancy(key).unwrap();
+    assert_eq!(occupancy.category, 39);
+    assert!(occupancy.is_structure);
+    assert_eq!(occupancy.entity_id, 0);
     start_cheat_caller_address(map, deployment.actor);
 }
 
@@ -402,7 +402,5 @@ fn a_missing_ledger_operator_never_bypasses_eternum_entitlements() {
         d.actor,
         crate::realms::SettleSeason { name: 'Player', selected_realm: None },
         crate::commands::action_context(context(d.games, 3)),
-        crate::tests::story_cursor(),
-    )
-        .story_result();
+    );
 }

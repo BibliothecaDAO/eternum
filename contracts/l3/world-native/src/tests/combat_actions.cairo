@@ -15,15 +15,15 @@ use crate::tests::state::{
 use crate::troops::{Coord, ExplorerKey, ExplorerTroops, Stamina, Troops};
 use super::resource_commands::{assert_terminal_rejection, execute, grant, set_fixture};
 
-fn setup(blitz: bool) -> (super::Deployment, ResourceKey, ResourceKey, u32, u32) {
+fn setup(blitz: bool) -> (super::Deployment, ResourceKey, ResourceKey, u64, u64) {
     setup_with_immunity(blitz, 0)
 }
-fn setup_with_immunity(blitz: bool, immunity: u8) -> (super::Deployment, ResourceKey, ResourceKey, u32, u32) {
+fn setup_with_immunity(blitz: bool, immunity: u8) -> (super::Deployment, ResourceKey, ResourceKey, u64, u64) {
     setup_with_mode(blitz, immunity, 0)
 }
 fn setup_with_mode(
     blitz: bool, immunity: u8, extra_mode_rules: u32,
-) -> (super::Deployment, ResourceKey, ResourceKey, u32, u32) {
+) -> (super::Deployment, ResourceKey, ResourceKey, u64, u64) {
     let mode_rules = extra_mode_rules
         + if blitz {
             super::play_fixture::BLITZ_RULES
@@ -34,12 +34,12 @@ fn setup_with_mode(
 }
 fn setup_with_rule_mask(
     blitz: bool, immunity: u8, mode_rules: u32,
-) -> (super::Deployment, ResourceKey, ResourceKey, u32, u32) {
+) -> (super::Deployment, ResourceKey, ResourceKey, u64, u64) {
     setup_with_cooldown(blitz, immunity, mode_rules, 5, (100, 1))
 }
-fn setup_with_cooldown(
+pub fn setup_with_cooldown(
     blitz: bool, immunity: u8, mode_rules: u32, cooldown_seconds: u32, counts: (u128, u128),
-) -> (super::Deployment, ResourceKey, ResourceKey, u32, u32) {
+) -> (super::Deployment, ResourceKey, ResourceKey, u64, u64) {
     let mut rules = super::play_fixture::rules();
     rules.mode_rules = mode_rules;
     rules
@@ -100,13 +100,13 @@ fn setup_with_cooldown(
     );
     (d, home, target, attacker, defender)
 }
-fn troop(d: super::Deployment, id: u32) -> Option<ExplorerTroops> {
+fn troop(d: super::Deployment, id: u64) -> Option<ExplorerTroops> {
     GameState { contract_address: d.games }.explorer(ExplorerKey { game_id: 3, explorer_id: id })
 }
-fn move_fixture(d: super::Deployment, id: u32, x: u32) {
+fn move_fixture(d: super::Deployment, id: u64, x: u32) {
     move_to(d, id, Coord { alt: false, x, y: 2000000 });
 }
-fn move_to(d: super::Deployment, id: u32, coord: Coord) {
+fn move_to(d: super::Deployment, id: u64, coord: Coord) {
     let mut explorer = troop(d, id).unwrap();
     let map = IMapLogicDispatcher { contract_address: d.games };
     start_cheat_caller_address(d.games, d.games);
@@ -118,14 +118,14 @@ fn move_to(d: super::Deployment, id: u32, coord: Coord) {
         d.games, crate::troops::ExplorerKey { game_id: 3, explorer_id: id }, explorer,
     );
 }
-fn balance(d: super::Deployment, id: u32, resource_type: u8) -> u128 {
+fn balance(d: super::Deployment, id: u64, resource_type: u8) -> u128 {
     IResourceOperationsDispatcher { contract_address: d.games }
         .resource_balance(ResourceSlot { game_id: 3, entity_id: id, resource_type })
 }
 fn resources(amount: u128) -> Span<ResourceAmount> {
     array![ResourceAmount { resource_type: 2, amount }].span()
 }
-fn raid(attacker: u32, target: ResourceKey, amounts: Span<ResourceAmount>) -> Command {
+fn raid(attacker: u64, target: ResourceKey, amounts: Span<ResourceAmount>) -> Command {
     Command::Raid(Raid { explorer_id: attacker, structure_id: target.entity_id, steal_resources: amounts })
 }
 fn set_guard(d: super::Deployment, key: ResourceKey, slot: u8, count: u128) {
@@ -751,7 +751,6 @@ fn capturing_a_players_realm_records_both_owners_in_one_capture_story() {
     let before = IStructureOperationsDispatcher { contract_address: d.games }.structure(target).unwrap();
     assert_eq!(before.base.category, 1);
     assert_eq!(before.owner, 999.try_into().unwrap());
-    let order = 0;
     let mut spy = spy_events();
     assert!(
         execute(
@@ -769,8 +768,7 @@ fn capturing_a_players_realm_records_both_owners_in_one_capture_story() {
         let mut keys = event.keys.span().slice(1, event.keys.len() - 1);
         let mut data = event.data.span();
         let story: crate::ownership::StoryEvent = starknet::Event::deserialize(ref keys, ref data).unwrap();
-        assert_eq!(story.order, order);
-        assert_eq!(story.index, stories);
+
         stories += 1;
         if let crate::ownership::Story::StructureCapturedStory(capture) = story.story {
             assert_eq!(capture.previous_owner, before.owner);

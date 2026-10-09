@@ -31,13 +31,13 @@ fn write(key: ArmySlotKey, value: ArmySlot) {
     );
 }
 
-fn key_for(key: ExplorerKey, home: u32, coord: Coord, slot: u8) -> ArmySlotKey {
+fn key_for(key: ExplorerKey, home: u64, coord: Coord, slot: u8) -> ArmySlotKey {
     assert!(!coord.alt, "slot outside expedition");
     let day = crate::expeditions::region_day(coord, crate::logic::settlement::rules(key.game_id).spacing);
     ArmySlotKey { game_id: key.game_id, structure_id: home, epoch: day, slot }
 }
 
-fn occupied(key: ArmySlotKey, explorer_id: u32) -> ArmySlot {
+fn occupied(key: ArmySlotKey, explorer_id: u64) -> ArmySlot {
     let slot = read(key).expect('missing army slot');
     assert!(slot.explorer_id == explorer_id, "army slot occupant mismatch");
     slot
@@ -69,7 +69,7 @@ pub fn resolve(key: ExplorerKey, mut explorer: ExplorerTroops, timestamp: Option
 }
 
 pub fn allocate(
-    key: ExplorerKey, home: u32, epoch: u64, allowance: u8, initial: Stamina, maximum: u64,
+    key: ExplorerKey, home: u64, epoch: u64, allowance: u8, initial: Stamina, maximum: u64,
 ) -> StaminaSource {
     for slot in 0..allowance {
         let slot_key = ArmySlotKey { game_id: key.game_id, structure_id: home, epoch, slot };

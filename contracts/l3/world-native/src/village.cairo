@@ -4,7 +4,7 @@ use crate::resources::ResourceAmount;
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct SettleVillage {
     pub pass_id: u16,
-    pub connected_realm_entity_id: u32,
+    pub connected_realm_entity_id: u64,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
@@ -29,7 +29,7 @@ pub struct VillagePassKey {
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
 pub struct VillagePass {
     pub owner: ContractAddress,
-    pub village_id: u32,
+    pub village_id: u64,
 }
 
 #[starknet::interface]
@@ -45,8 +45,7 @@ pub trait IVillages<T> {
         actor: ContractAddress,
         command: SettleVillage,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> ((), crate::ownership::StoryCursor);
+    );
 }
 
 #[starknet::interface]
@@ -55,10 +54,9 @@ pub trait IVillageArmy<T> {
         ref self: T,
         game_id: u32,
         actor: ContractAddress,
-        village_id: u32,
+        village_id: u64,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> ((), crate::ownership::StoryCursor);
+    );
 }
 
 pub fn select_resource(pool: Span<VillageResource>, seed: u256, timestamp: u64) -> u8 {

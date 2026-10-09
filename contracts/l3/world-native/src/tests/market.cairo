@@ -15,7 +15,7 @@ use crate::tests::state::ResourceObservationTrait;
 use crate::troops::Coord;
 use super::resource_commands::{assert_terminal_rejection, execute, grant};
 
-const BANK: u32 = 0xfffffffe;
+const BANK: u64 = 0xfffffffe;
 const STOCK: u128 = 100000 * RESOURCE_PRECISION;
 fn banks() -> Span<BankPlacement> {
     let mut banks = array![];
@@ -65,7 +65,6 @@ fn setup_market(
             super::authority(),
             banks(),
             crate::commands::action_context(ExecutionContext { timestamp: 30, ..super::context(deployment.games, 3) }),
-            crate::tests::story_cursor(),
         );
     stop_cheat_caller_address(deployment.games);
     for key in array![source, other] {
@@ -80,17 +79,17 @@ fn add(source: ResourceKey, lords_amount: u128, resource_amount: u128) -> Comman
         AddLiquidity { bank_id: BANK, structure_id: source.entity_id, resource_type: 2, lords_amount, resource_amount },
     )
 }
-fn remove(destination: u32, shares: u128) -> Command {
+fn remove(destination: u64, shares: u128) -> Command {
     Command::RemoveBankLiquidity(RemoveLiquidity { bank_id: BANK, structure_id: destination, resource_type: 2, shares })
 }
 fn view(deployment: super::Deployment) -> IBankDispatcher {
     IBankDispatcher { contract_address: deployment.games }
 }
-fn balance(deployment: super::Deployment, entity: u32, resource_type: u8) -> u128 {
+fn balance(deployment: super::Deployment, entity: u64, resource_type: u8) -> u128 {
     IResourceOperationsDispatcher { contract_address: deployment.games }
         .resource_balance(ResourceSlot { game_id: 3, entity_id: entity, resource_type })
 }
-fn arrival(deployment: super::Deployment, entity: u32, time: u64, travel: u64) -> Span<ResourceAmount> {
+fn arrival(deployment: super::Deployment, entity: u64, time: u64, travel: u64) -> Span<ResourceAmount> {
     IResourceOperationsDispatcher { contract_address: deployment.games }
         .resource_arrival(crate::arrivals::arrival_key(3, entity, 1, time, travel))
         .resources
@@ -109,7 +108,7 @@ fn regional_banks_have_pinned_ids_guards_names_and_biome_only_surroundings() {
     let guards = crate::guards::IGuardsDispatcher { contract_address: deployment.games };
     let tiles = crate::map::IMapLogicDispatcher { contract_address: deployment.games };
     for index in 0_u32..6 {
-        let id = BANK - index;
+        let id = BANK - Into::<u32, u64>::into(index);
         let key = ResourceKey { game_id: 3, entity_id: id };
         let structure = crate::tests::state::StructureObservationTrait::structure(structures, key).unwrap();
         assert_eq!(structure.owner, super::authority());
@@ -121,7 +120,7 @@ fn regional_banks_have_pinned_ids_guards_names_and_biome_only_surroundings() {
             let neighbor = crate::geometry::neighbor(coord, direction);
             let tile = crate::tests::state::MapObservationTrait::tile(tiles, crate::geometry::tile_key(3, neighbor))
                 .unwrap();
-            assert_eq!(tile.data % 0x20000000000, 0);
+            assert!(tiles.occupancy(crate::geometry::tile_key(3, neighbor)).is_none());
         }
         for slot in 0_u8..3 {
             let guard = crate::guards::IGuardsDispatcherTrait::guard(
@@ -331,8 +330,7 @@ fn bank_creation_and_configuration_reject_players_repeats_and_partial_batches() 
     assert!(
         safe
             .create_banks(
-                3, super::authority(), banks(), crate::commands::action_context(context), crate::tests::story_cursor(),
-            )
+                3, super::authority(), banks(), crate::commands::action_context(context), )
             .is_err(),
     );
     let registrar = crate::registrar::IRegistrarSafeDispatcher { contract_address: deployment.games };
@@ -343,8 +341,7 @@ fn bank_creation_and_configuration_reject_players_repeats_and_partial_batches() 
     assert!(
         safe
             .create_banks(
-                3, deployment.actor, banks(), crate::commands::action_context(context), crate::tests::story_cursor(),
-            )
+                3, deployment.actor, banks(), crate::commands::action_context(context), )
             .is_err(),
     );
     assert!(
@@ -354,15 +351,13 @@ fn bank_creation_and_configuration_reject_players_repeats_and_partial_batches() 
                 super::authority(),
                 banks().slice(0, 5),
                 crate::commands::action_context(context),
-                crate::tests::story_cursor(),
             )
             .is_err(),
     );
     assert!(
         safe
             .create_banks(
-                3, super::authority(), banks(), crate::commands::action_context(context), crate::tests::story_cursor(),
-            )
+                3, super::authority(), banks(), crate::commands::action_context(context), )
             .is_err(),
     );
     start_cheat_caller_address(deployment.games, super::authority());

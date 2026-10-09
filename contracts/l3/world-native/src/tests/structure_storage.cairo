@@ -81,11 +81,10 @@ fn troop_boost_storage_keeps_fields_independent(
     assert!(TroopBoostsPacking::unpack(TroopBoostsPacking::pack(original)) == original);
 }
 
-
 #[test]
 #[fuzzer(runs: 256)]
 fn structure_metadata_storage_preserves_realm_and_village_identities(
-    realm_id: u16, order: u8, has_wonder: bool, village_realm: u32, mine_kind: u8, deepest_depth: u8,
+    realm_id: u16, order: u8, has_wonder: bool, village_realm: u64, mine_kind: u8, deepest_depth: u8,
 ) {
     let value = StructureMetadata { realm_id, order, has_wonder, village_realm, mine_kind, deepest_depth };
     assert!(Store::<StructureMetadata>::size() == 1);

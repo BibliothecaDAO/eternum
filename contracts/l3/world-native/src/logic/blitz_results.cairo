@@ -44,8 +44,7 @@ pub mod BlitzResultState {
             actor: ContractAddress,
             command: RecordBlitzResults,
             context: crate::commands::ActionContext,
-            mut story_cursor: crate::ownership::StoryCursor,
-        ) -> (u64, crate::ownership::StoryCursor) {
+        ) -> u64 {
             let context = crate::commands::load_context(game_id, context);
             self.assert_finalizable(context);
             let roster = self.roster(game_id);
@@ -55,7 +54,7 @@ pub mod BlitzResultState {
             assert!(end <= roster.len(), "too many result players");
             if command.start < count {
                 self.assert_recorded_batch(game_id, command, count);
-                return ((roster.len() - Into::<u8, u32>::into(count)).into(), story_cursor);
+                return ((roster.len() - Into::<u8, u32>::into(count)).into());
             }
             assert!(command.start == count, "result batch out of order");
             let mut points = array![];
@@ -69,8 +68,8 @@ pub mod BlitzResultState {
                 self.data.blitz_results.results.write((game_id, index), result);
             }
             self.data.blitz_results.count.write(game_id, end.try_into().unwrap());
-            self.emit_result(game_id, crate::state::read().launcher.read(), context.timestamp, ref story_cursor);
-            ((roster.len() - end).into(), story_cursor)
+            self.emit_result(game_id, crate::state::read().launcher.read(), context.timestamp);
+            ((roster.len() - end).into())
         }
     }
     #[generate_trait]
@@ -139,7 +138,6 @@ pub mod BlitzResultState {
             game_id: u32,
             launcher: ContractAddress,
             timestamp: u64,
-            ref story_cursor: crate::ownership::StoryCursor,
         ) {
             let result = crate::blitz_results::IBlitzResults::blitz_result(@self, game_id);
             let mut values = array![];
@@ -154,10 +152,9 @@ pub mod BlitzResultState {
                 self
                     .emit(
                         StoryEvent {
-                            version: 1,
+                            version: 2,
                             game_id,
-                            order: story_cursor.order,
-                            index: crate::ownership::StoryCursorTrait::next(ref story_cursor),
+
                             owner: Some(launcher),
                             entity_id: None,
                             tx_hash: get_tx_info().unbox().transaction_hash,

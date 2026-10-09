@@ -70,9 +70,7 @@ pub mod PlacementLogic {
             for _ in 0..64_u32 {
                 let coords = self.settlements.claim(game_id, center, rules, settled_count, seed);
                 let coord = *coords.at(0);
-                let occupied = crate::logic::map::tile(tile_key(game_id, coord))
-                    .map(|tile| (tile.data / 2) % BYTE_RANGE != 0)
-                    .unwrap_or(false);
+                let occupied = crate::logic::map::occupancy(tile_key(game_id, coord)).is_some();
                 if !occupied {
                     return coord;
                 }
@@ -187,17 +185,15 @@ pub mod PlacementLogic {
 
         fn create_spire(
             ref self: ContractState, game_id: u32, coord: Coord, game_context: crate::commands::ExecutionContext,
-        ) -> u32 {
+        ) -> u64 {
             for alt in array![false, true] {
-                let tile = crate::logic::map::tile(tile_key(game_id, Coord { alt, ..coord }));
+                let occupied = crate::logic::map::occupancy(tile_key(game_id, Coord { alt, ..coord }));
                 assert!(
-                    tile
-                        .map(|value| (value.data / 2) % BYTE_RANGE == crate::taxonomy::NONE_OCCUPIER.into())
-                        .unwrap_or(true),
+                    occupied.is_none(),
                     "spire tile occupied",
                 );
             }
-            let id = crate::logic::game::allocate_entity(game_id);
+            let id: u64 = crate::logic::game::allocate_setup_entity(game_id).into();
             for alt in array![false, true] {
                 let center = Coord { alt, ..coord };
                 self.reveal_spire_access(game_id, center, game_context);

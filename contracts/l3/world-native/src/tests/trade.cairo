@@ -53,16 +53,19 @@ fn create(deployment: super::Deployment, command: CreateOrder) -> TradeKey {
     create_at(deployment, command, 40)
 }
 fn create_at(deployment: super::Deployment, command: CreateOrder, timestamp: u64) -> TradeKey {
+    let mut spy = snforge_std::spy_events();
     assert!(execute(deployment, Command::CreateTradeOrder(command), timestamp));
-    let view = ITradeDispatcher { contract_address: deployment.games };
-    let mut latest = 0;
-    for trade_id in 1_u32..100 {
-        if view.trade_order(TradeKey { game_id: 3, trade_id }).is_some() {
-            latest = trade_id;
+    for (_, event) in spy.get_events().emitted_by(deployment.games).events.span() {
+        if *event.keys.at(0) == selector!("StoryEvent") {
+            let mut keys = event.keys.span().slice(1, event.keys.len() - 1);
+            let mut data = event.data.span();
+            let story: crate::ownership::StoryEvent = starknet::Event::deserialize(ref keys, ref data).unwrap();
+            if let crate::ownership::Story::TradeCreated(listing) = story.story {
+                return TradeKey { game_id: 3, trade_id: listing.trade_id };
+            }
         }
     }
-    assert!(latest != 0);
-    TradeKey { game_id: 3, trade_id: latest }
+    panic!("missing trade creation story")
 }
 fn accept(key: TradeKey, taker: ResourceKey, lots: u64) -> Command {
     Command::AcceptTradeOrder(AcceptOrder { trade_id: key.trade_id, taker_id: taker.entity_id, lots })

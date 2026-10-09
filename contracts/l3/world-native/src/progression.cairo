@@ -64,14 +64,14 @@ pub impl ProgressPacking of starknet::storage_access::StorePacking<ArmyProgress,
 /// An Upgrade; a Scouting tier names the kind it applies to, every other attribute none.
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct BuyTier {
-    pub explorer_id: u32,
+    pub explorer_id: u64,
     pub attribute: Attribute,
     pub kind: Option<ScoutingKind>,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct TierBought {
-    pub explorer_id: u32,
+    pub explorer_id: u64,
     pub attribute: Attribute,
     pub kind: Option<ScoutingKind>,
     pub tier: u8,
@@ -96,8 +96,7 @@ pub trait IArmyProgression<T> {
         actor: starknet::ContractAddress,
         command: BuyTier,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> ((), crate::ownership::StoryCursor);
+    );
 }
 
 pub fn initial() -> ArmyProgress {

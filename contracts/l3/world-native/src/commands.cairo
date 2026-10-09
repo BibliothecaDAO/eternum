@@ -2,7 +2,7 @@ use starknet::ContractAddress;
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct CreateExplorer {
-    pub structure_id: u32,
+    pub structure_id: u64,
     pub category: u8,
     pub tier: u8,
     pub amount: u128,
@@ -11,30 +11,30 @@ pub struct CreateExplorer {
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct Explore {
-    pub explorer_id: u32,
+    pub explorer_id: u64,
     pub direction: u8,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct Battle {
-    pub attacker_id: u32,
-    pub defender_id: u32,
+    pub attacker_id: u64,
+    pub defender_id: u64,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct Move {
-    pub explorer_id: u32,
+    pub explorer_id: u64,
     pub directions: Span<u8>,
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct ToggleAlternate {
-    pub explorer_id: u32,
+    pub explorer_id: u64,
     pub spire_direction: u8,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct EnterDepth {
-    pub explorer_id: u32,
+    pub explorer_id: u64,
     pub depth: u8,
 }
 
@@ -153,7 +153,7 @@ pub fn route_command(
 }
 
 #[inline(never)]
-pub fn assert_unique_entity_ids(ids: Span<u32>) {
+pub fn assert_unique_entity_ids(ids: Span<u64>) {
     let mut seen: core::dict::Felt252Dict<u128> = Default::default();
     for id in ids {
         let key = (*id).into();
@@ -170,8 +170,7 @@ pub trait ICreateExplorer<T> {
         actor: ContractAddress,
         command: CreateExplorer,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> ((), crate::ownership::StoryCursor);
+    );
 }
 
 #[starknet::interface]
@@ -182,8 +181,7 @@ pub trait IExplore<T> {
         actor: ContractAddress,
         command: Explore,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> ((), crate::ownership::StoryCursor);
+    );
 }
 
 #[starknet::interface]
@@ -194,48 +192,42 @@ pub trait IResourceCommands<T> {
         actor: ContractAddress,
         command: crate::resources::ResourceTransfer,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> ((), crate::ownership::StoryCursor);
+    );
     fn transfer_explorer_resources_to_structure(
         ref self: T,
         game_id: u32,
         actor: ContractAddress,
         command: crate::resources::ResourceTransfer,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> ((), crate::ownership::StoryCursor);
+    );
     fn offload_arrival(
         ref self: T,
         game_id: u32,
         actor: ContractAddress,
         command: crate::arrivals::OffloadArrival,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> ((), crate::ownership::StoryCursor);
+    );
     fn burn_structure_resources(
         ref self: T,
         game_id: u32,
         actor: ContractAddress,
         command: crate::resources::ResourceBurn,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> ((), crate::ownership::StoryCursor);
+    );
     fn transfer_explorer_resources(
         ref self: T,
         game_id: u32,
         actor: ContractAddress,
         command: crate::resources::ResourceTransfer,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> ((), crate::ownership::StoryCursor);
+    );
     fn transfer_structure_resources_to_explorer(
         ref self: T,
         game_id: u32,
         actor: ContractAddress,
         command: crate::resources::ResourceTransfer,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> ((), crate::ownership::StoryCursor);
+    );
 }
 
 #[starknet::interface]
@@ -246,7 +238,6 @@ pub trait ITravelCommands<T> {
         actor: ContractAddress,
         command: EnterDepth,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
     );
     fn move_explorer(
         ref self: T,
@@ -254,7 +245,6 @@ pub trait ITravelCommands<T> {
         actor: ContractAddress,
         command: Move,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
     );
     fn toggle_alternate(
         ref self: T,
@@ -262,7 +252,6 @@ pub trait ITravelCommands<T> {
         actor: ContractAddress,
         command: ToggleAlternate,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
     );
 }
 

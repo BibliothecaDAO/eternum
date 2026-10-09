@@ -13,7 +13,7 @@ use super::resource_commands::{assert_terminal_rejection, execute, grant, set_fi
 fn view(d: super::Deployment) -> IArtificerDispatcher {
     IArtificerDispatcher { contract_address: d.games }
 }
-fn setup(blitz: bool) -> (super::Deployment, ResourceKey) {
+pub fn setup(blitz: bool) -> (super::Deployment, ResourceKey) {
     let mut rules = super::play_fixture::rules();
     rules.mode_rules = if blitz {
         super::play_fixture::BLITZ_RULES

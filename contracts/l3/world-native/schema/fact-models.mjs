@@ -6,7 +6,7 @@ export const factWireTypes = [
     name: "world_native::troops::ArmySlotKey",
     members: [
       { name: "game_id", type: "core::integer::u32" },
-      { name: "structure_id", type: "core::integer::u32" },
+      { name: "structure_id", type: "core::integer::u64" },
       { name: "epoch", type: "core::integer::u64" },
       { name: "slot", type: "core::integer::u8" },
     ],
@@ -15,7 +15,7 @@ export const factWireTypes = [
     type: "struct",
     name: "world_native::troops::ArmySlot",
     members: [
-      { name: "explorer_id", type: "core::integer::u32" },
+      { name: "explorer_id", type: "core::integer::u64" },
       { name: "stamina", type: "world_native::troops::Stamina" },
     ],
   },
@@ -67,7 +67,7 @@ export const factWireTypes = [
     type: "struct",
     name: "world_native::faith::FaithfulStructure",
     members: [
-      { name: "wonder_id", type: "core::integer::u32" },
+      { name: "wonder_id", type: "core::integer::u64" },
       { name: "faithful_since", type: "core::integer::u64" },
       { name: "fp_to_wonder_owner_per_sec", type: "core::integer::u16" },
       { name: "fp_to_struct_owner_per_sec", type: "core::integer::u16" },
@@ -94,7 +94,7 @@ export const factWireTypes = [
       },
       {
         name: "entity_id",
-        type: "core::integer::u32",
+        type: "core::integer::u64",
       },
       {
         name: "day",
@@ -120,7 +120,7 @@ export const factWireTypes = [
       },
       {
         name: "mine_id",
-        type: "core::integer::u32",
+        type: "core::integer::u64",
       },
     ],
   },
@@ -134,7 +134,7 @@ export const factWireTypes = [
       },
       {
         name: "structure_id",
-        type: "core::integer::u32",
+        type: "core::integer::u64",
       },
     ],
   },
@@ -260,7 +260,7 @@ export const factWireTypes = [
       },
       {
         name: "structure_id",
-        type: "core::integer::u32",
+        type: "core::integer::u64",
       },
       {
         name: "inner_col",
@@ -336,7 +336,7 @@ export const factWireTypes = [
       },
       {
         name: "wonder_id",
-        type: "core::integer::u32",
+        type: "core::integer::u64",
       },
     ],
   },
@@ -412,7 +412,7 @@ export const factWireTypes = [
     type: "struct",
     name: "world_native::map::TileOccupancy",
     members: [
-      { name: "entity_id", type: "core::integer::u32" },
+      { name: "entity_id", type: "core::integer::u64" },
       { name: "category", type: "core::integer::u8" },
       { name: "is_structure", type: "core::bool" },
     ],
@@ -421,7 +421,7 @@ export const factWireTypes = [
     type: "struct",
     name: "world_native::troops::ExplorerRecord",
     members: [
-      { name: "owner", type: "core::integer::u32" },
+      { name: "owner", type: "core::integer::u64" },
       { name: "troops", type: "world_native::troops::Troops" },
     ],
   },
@@ -651,7 +651,7 @@ export const factWireTypes = [
       },
       {
         name: "village_realm",
-        type: "core::integer::u32",
+        type: "core::integer::u64",
       },
       {
         name: "mine_kind",
@@ -673,7 +673,7 @@ export const factWireTypes = [
       },
       {
         name: "trade_id",
-        type: "core::integer::u32",
+        type: "core::integer::u64",
       },
     ],
   },
@@ -687,7 +687,7 @@ export const factWireTypes = [
       },
       {
         name: "village_id",
-        type: "core::integer::u32",
+        type: "core::integer::u64",
       },
     ],
   },
@@ -871,8 +871,7 @@ export function defineFactModels({ struct, model: declare }) {
       "game",
       [
         { name: "game_id", type: "core::integer::u32" },
-        { name: "order", type: "core::integer::u64" },
-        { name: "index", type: "core::integer::u32" },
+        { name: "claim_id", type: "core::felt252" },
       ],
       struct("relics::LordsWithdrawal"),
     ),
@@ -979,7 +978,7 @@ export function defineFactModels({ struct, model: declare }) {
     model(
       "RealmKnowledge",
       "game",
-      [struct("resources::ResourceKey")[0], { name: "structure_id", type: "core::integer::u32" }],
+      [struct("resources::ResourceKey")[0], { name: "structure_id", type: "core::integer::u64" }],
       struct("research::RealmKnowledge"),
     ),
     model(

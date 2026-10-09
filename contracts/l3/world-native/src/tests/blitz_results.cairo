@@ -158,7 +158,6 @@ fn results_require_finished_point_settlement_without_authority() {
                 d.actor,
                 command,
                 crate::commands::action_context(ExecutionContext { timestamp: 199, ..context }),
-                crate::tests::story_cursor(),
             )
             .is_err(),
     );

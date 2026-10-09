@@ -86,8 +86,7 @@ pub trait ISeasonLifecycle<T> {
         game_id: u32,
         actor: ContractAddress,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> (u64, crate::ownership::StoryCursor);
+    ) -> u64;
 }
 
 pub fn status_at(game: GameRegistry, timestamp: u64) -> GameStatus {

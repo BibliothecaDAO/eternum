@@ -49,6 +49,11 @@ pub mod GamesEntry {
             assert!(launcher.is_non_zero(), "zero launcher");
             self.data.launcher.write(launcher);
         }
+        fn prepare_homes(ref self: ComponentState<TContractState>, game_id: u32, owners: Span<ContractAddress>) {
+            crate::logic::release::assert_launcher();
+            assert!(owners.len() <= crate::commands::MAX_COMMAND_ITEMS, "home preparation batch too large");
+            for owner in owners { crate::entity_ids::reserve_homes(game_id, *owner); }
+        }
     }
 
     #[embeddable_as(PlayImpl)]
@@ -134,7 +139,6 @@ pub mod GamesEntry {
             let mut calldata = array![game_id.into(), actor.into()];
             command.serialize(ref calldata);
             context.serialize(ref calldata);
-            crate::ownership::StoryCursor { order: 0, index: 0 }.serialize(ref calldata);
             let outcome = match starknet::syscalls::library_call_syscall(
                 get_dep_component!(@self, Release).classes(game_id).season.read(), selector!("execute_gameplay"), calldata.span(),
             ) {

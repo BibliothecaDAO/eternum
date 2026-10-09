@@ -11,7 +11,7 @@ pub struct WonderFaith {
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
 pub struct FaithfulStructure {
-    pub wonder_id: u32,
+    pub wonder_id: u64,
     pub faithful_since: u64,
     pub fp_to_wonder_owner_per_sec: u16,
     pub fp_to_struct_owner_per_sec: u16,
@@ -29,14 +29,14 @@ pub struct PlayerFaithPoints {
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct WonderFaithWinners {
     pub high_score: u128,
-    pub wonder_ids: Span<u32>,
+    pub wonder_ids: Span<u64>,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct PlayerFaithKey {
     pub game_id: u32,
     pub player: ContractAddress,
-    pub wonder_id: u32,
+    pub wonder_id: u64,
 }
 
 #[starknet::interface]
@@ -60,13 +60,13 @@ pub struct FaithRules {
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct Pledge {
-    pub structure_id: u32,
-    pub wonder_id: u32,
+    pub structure_id: u64,
+    pub wonder_id: u64,
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct ClaimPlayer {
     pub player: ContractAddress,
-    pub wonder_id: u32,
+    pub wonder_id: u64,
 }
 #[starknet::interface]
 pub trait IFaith<T> {
@@ -77,53 +77,47 @@ pub trait IFaith<T> {
         actor: ContractAddress,
         command: Pledge,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> ((), crate::ownership::StoryCursor);
+    );
     fn remove_faith(
         ref self: T,
         game_id: u32,
         actor: ContractAddress,
-        structure_id: u32,
+        structure_id: u64,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> ((), crate::ownership::StoryCursor);
+    );
     fn update_wonder_ownership(
         ref self: T,
         game_id: u32,
         actor: ContractAddress,
-        wonder_id: u32,
+        wonder_id: u64,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> ((), crate::ownership::StoryCursor);
+    );
     fn update_faithful_ownership(
         ref self: T,
         game_id: u32,
         actor: ContractAddress,
-        structure_id: u32,
+        structure_id: u64,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> ((), crate::ownership::StoryCursor);
+    );
     fn claim_wonder_points(
         ref self: T,
         game_id: u32,
         actor: ContractAddress,
-        wonder_id: u32,
+        wonder_id: u64,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> ((), crate::ownership::StoryCursor);
+    );
     fn claim_player_faith_points(
         ref self: T,
         game_id: u32,
         actor: ContractAddress,
         command: ClaimPlayer,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
     );
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct PledgeStory {
-    pub structure_id: u32,
-    pub wonder_id: u32,
+    pub structure_id: u64,
+    pub wonder_id: u64,
     pub owner_rate: u16,
     pub pledger_rate: u16,
 }
@@ -136,6 +130,5 @@ pub trait IFaithOwnership<T> {
         owner: ContractAddress,
         timestamp: u64,
         game_context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> ((), crate::ownership::StoryCursor);
+    );
 }

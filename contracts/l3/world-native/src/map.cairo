@@ -1,11 +1,10 @@
 use crate::troops::Coord;
-// Tile views assemble the original packed layout from terrain and occupancy facts.
+// Terrain views carry coordinates and biome; occupants have their own canonical fact.
 pub(crate) const REWARD_EXTRACTED_FLAG: u128 = 0x20000000000000000000000000000;
 const LAYER_FLAG: u128 = 0x80000000000000000000000000000000;
 const COL_SCALE: u128 = 0x200000000000000000000;
 const ROW_SCALE: u128 = 0x2000000000000;
 pub(crate) const BIOME_SCALE: u128 = 0x20000000000;
-pub(crate) const ENTITY_RANGE: u128 = 0x100000000;
 pub(crate) const OCCUPIER_SCALE: u128 = 0x200;
 pub(crate) const BYTE_RANGE: u128 = 0x100;
 
@@ -24,7 +23,7 @@ pub struct TileOpt {
 
 #[derive(Copy, Drop, Serde, PartialEq, Debug)]
 pub struct TileOccupancy {
-    pub entity_id: u32,
+    pub entity_id: u64,
     pub category: u8,
     pub is_structure: bool,
 }
@@ -39,11 +38,10 @@ pub(crate) fn occupancy_bits(occupancy: TileOccupancy) -> u128 {
         }
 }
 
-pub(crate) fn occupancy_from_bits(data: u64) -> Option<TileOccupancy> {
+pub(crate) fn occupancy_from_bits(data: u128) -> Option<TileOccupancy> {
     if data == 0 {
         return None;
     }
-    let data: u128 = data.into();
     Some(
         TileOccupancy {
             entity_id: (data / OCCUPIER_SCALE).try_into().unwrap(),
@@ -52,7 +50,6 @@ pub(crate) fn occupancy_from_bits(data: u64) -> Option<TileOccupancy> {
         },
     )
 }
-
 
 #[starknet::interface]
 pub trait IMapLogic<T> {
@@ -85,10 +82,9 @@ pub(crate) fn coordinate_bits(key: TileKey) -> u128 {
     }) + key.col.into() * COL_SCALE + key.row.into() * ROW_SCALE
 }
 
-pub fn structure_occupant(tile: TileOpt) -> Option<u32> {
-    if tile.data % 2 == 1 {
-        Some(((tile.data / OCCUPIER_SCALE) % ENTITY_RANGE).try_into().unwrap())
-    } else {
-        None
+pub fn structure_occupant(key: TileKey) -> Option<u64> {
+    match crate::logic::map::occupancy(key) {
+        Some(occupancy) => if occupancy.is_structure { Some(occupancy.entity_id) } else { None },
+        None => None,
     }
 }

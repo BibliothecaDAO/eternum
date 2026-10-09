@@ -33,6 +33,7 @@ pub trait IGamesRoles<T> {
     fn owner(self: @T) -> ContractAddress;
     fn launcher(self: @T) -> ContractAddress;
     fn set_launcher(ref self: T, launcher: ContractAddress);
+    fn prepare_homes(ref self: T, game_id: u32, owners: Span<ContractAddress>);
 }
 
 #[starknet::interface]

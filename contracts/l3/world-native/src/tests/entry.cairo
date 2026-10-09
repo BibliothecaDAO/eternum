@@ -70,16 +70,18 @@ fn registration_rotation_preserves_entitlements_and_retries_emit_no_duplicate_ro
 
 #[test]
 #[feature("safe_dispatcher")]
-fn ledger_rejects_zero_game_and_owner_but_can_relay_before_game_configuration() {
+fn ledger_rejects_zero_game_and_owner_and_requires_a_prepared_game() {
     let d = setup(true);
     set_operator(d, authority());
     start_cheat_caller_address(d.games, authority());
     let key = EntryKey { game_id: 999, owner: d.actor };
     assert!(ledger(d).register_entitlement(EntryKey { game_id: 0, ..key }, entry()).is_err());
     assert!(ledger(d).register_entitlement(EntryKey { owner: 0.try_into().unwrap(), ..key }, entry()).is_err());
-    ledger(d).register_entitlement(key, entry()).unwrap();
-    assert_eq!(ledger(d).entry_entitlement(key).unwrap(), Some(entry()));
-    assert!(ledger(d).entry_entitlement(EntryKey { game_id: 998, ..key }).unwrap().is_none());
+    assert!(ledger(d).register_entitlement(key, entry()).is_err());
+    let prepared = EntryKey { game_id: 1, ..key };
+    ledger(d).register_entitlement(prepared, entry()).unwrap();
+    assert_eq!(ledger(d).entry_entitlement(prepared).unwrap(), Some(entry()));
+    assert!(ledger(d).entry_entitlement(key).unwrap().is_none());
 }
 
 #[test]

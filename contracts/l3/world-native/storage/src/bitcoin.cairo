@@ -8,6 +8,6 @@ pub struct BitcoinStateStorage<TPhase, TContribution, TMineFunding> {
     pub contributor_indices: Map<(u32, u64, ContractAddress), u32>,
     pub labor_prefixes: Map<(u32, u64, u64), u128>,
     pub contributors: Map<(u32, u64, u32), ContractAddress>,
-    pub mines: Map<(u32, u32), TMineFunding>,
+    pub mines: Map<(u32, u64), TMineFunding>,
     pub claimed: Map<(u32, u64, u32), bool>,
 }

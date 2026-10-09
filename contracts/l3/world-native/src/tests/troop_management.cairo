@@ -17,7 +17,7 @@ use crate::troop_management::{Army, GuardSlot, ManageTroops, RecruitExplorer, Re
 use crate::troops::{ExplorerKey, ExplorerTroops, TroopTier, TroopType};
 use super::resource_commands::{assert_terminal_rejection, execute, grant, set_fixture};
 
-fn setup_homes() -> (super::Deployment, ResourceKey, ResourceKey, u32, u32) {
+fn setup_homes() -> (super::Deployment, ResourceKey, ResourceKey, u64, u64) {
     let mut rules = super::play_fixture::rules();
     rules.troop_limit_config.guard_resurrection_delay = 60;
     let (d, home, other_home) = super::resource_commands::setup_with_rules(rules);
@@ -59,7 +59,7 @@ fn setup_homes() -> (super::Deployment, ResourceKey, ResourceKey, u32, u32) {
     let ids = structures.home_armies(home);
     (d, home, other_home, *ids.at(0), *ids.at(1))
 }
-fn setup() -> (super::Deployment, ResourceKey, u32, u32) {
+fn setup() -> (super::Deployment, ResourceKey, u64, u64) {
     let (d, home, _, first, second) = setup_homes();
     (d, home, first, second)
 }
@@ -101,7 +101,7 @@ fn spatial_commands_match_replay_views() {
     }
     super::spatial_replay::compare("armies", frames);
 }
-fn troop(d: super::Deployment, id: u32) -> Option<ExplorerTroops> {
+fn troop(d: super::Deployment, id: u64) -> Option<ExplorerTroops> {
     GameState { contract_address: d.games }.resolved_explorer(ExplorerKey { game_id: 3, explorer_id: id })
 }
 fn guard(d: super::Deployment, home: ResourceKey, slot: u8) -> crate::guards::Guard {
@@ -182,7 +182,7 @@ fn explorer_transfer_preserves_the_worse_stamina_and_cooldown_and_deletes_an_emp
         crate::map::IMapLogicDispatcher { contract_address: d.games }, crate::geometry::tile_key(3, old_position),
     )
         .unwrap();
-    assert_eq!(tile.data % 0x20000000000, 0);
+    assert!(crate::map::IMapLogicDispatcher { contract_address: d.games }.occupancy(crate::geometry::tile_key(3, old_position)).is_none());
     super::state::assert_spatial_indexes(
         d.games,
         3,
@@ -566,14 +566,8 @@ fn multi_tile_move_spends_each_steps_stamina_and_rejects_a_blocked_path_atomical
     crate::tests::state::assert_spatial_indexes(
         d.games, 3, array![home.entity_id, first].span(), array![start, after.coord].span(),
     );
-    assert_eq!(map.tile(crate::geometry::tile_key(3, start)).unwrap().data % 0x20000000000, 0);
-    assert_eq!(
-        map
-            .tile(crate::geometry::tile_key(3, crate::troops::Coord { x: start.x + 1, ..start }))
-            .unwrap()
-            .data % 0x20000000000,
-        0,
-    );
+    assert!(map.occupancy(crate::geometry::tile_key(3, start)).is_none());
+    assert!(map.occupancy(crate::geometry::tile_key(3, crate::troops::Coord { x: start.x + 1, ..start })).is_none());
     let occupied = map.tile(crate::geometry::tile_key(3, after.coord)).unwrap();
     let wheat = ResourceSlot { game_id: 3, entity_id: home.entity_id, resource_type: 35 };
     let fish = ResourceSlot { resource_type: 36, ..wheat };

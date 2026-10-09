@@ -8,7 +8,7 @@ use crate::combat::TroopsTrait;
 use crate::commands::{Command, CreateExplorer, Explore};
 use crate::game::{GameStatus, IGameDispatcher, IGameDispatcherTrait, status_at};
 use crate::guards::{GuardKey, IGuardsDispatcher, IGuardsDispatcherTrait};
-use crate::map::{IMapLogicDispatcher, IMapLogicDispatcherTrait, TileKey, structure_occupant};
+use crate::map::{IMapLogicDispatcher, IMapLogicDispatcherTrait, TileKey};
 use crate::presets::{
     EconomyPreset, PresetDefinition, ResourcePreset, SettlementPreset, StructurePreset, WithdrawalPreset,
 };
@@ -28,7 +28,6 @@ use crate::settlement::{
 };
 use crate::stamina::StaminaSourceTrait;
 use crate::structures::{IStructureOperationsDispatcher, IStructureOperationsDispatcherTrait};
-use crate::tests::StoryResultTestTrait;
 use crate::tests::state::{
     GameState, MapObservationTrait, ResourceObservationTrait, StructureObservationTrait, TroopObservationTrait,
 };
@@ -323,7 +322,7 @@ fn eternum_launch_initializes_spires_and_never_uses_entry_capacity() {
         let tile = IMapLogicDispatcher { contract_address: d.games }
             .tile(TileKey { game_id: 1, alt, col: center, row: center })
             .unwrap();
-        assert_eq!((tile.data / 2) % 256, 35);
+        assert_eq!(IMapLogicDispatcher { contract_address: d.games }.occupancy(TileKey { game_id: 1, alt, col: center, row: center }).unwrap().category, 35);
     }
     let spires = crate::spires::ISpiresDispatcher { contract_address: d.games };
     assert_eq!(crate::spires::ISpiresDispatcherTrait::spire_layout(spires, 1), preset.settlement.spires);
@@ -527,7 +526,6 @@ fn automatic_blitz_settlement_is_open_atomic_and_resumes_its_fixed_order() {
                 game_id,
                 super::authority(),
                 crate::commands::action_context(crate::commands::ExecutionContext { timestamp: 199, ..context }),
-                crate::tests::story_cursor(),
             )
             .is_err(),
     );
@@ -549,9 +547,7 @@ fn automatic_blitz_settlement_is_open_atomic_and_resumes_its_fixed_order() {
         assert!(
             commands
                 .settle_blitz_roster(
-                    game_id, caller, crate::commands::action_context(context), crate::tests::story_cursor(),
-                )
-                .story_result() == (1 - batch)
+                    game_id, caller, crate::commands::action_context(context), ) == (1 - batch)
                 .into(),
         );
         let order = views.blitz_settlement_order(game_id);
@@ -569,11 +565,7 @@ fn automatic_blitz_settlement_is_open_atomic_and_resumes_its_fixed_order() {
                 crate::troops::Coord { alt: false, x: center, y: center }, SettlementMode::Triple, 6, batch,
             )
                 .at(realm);
-            let entity_id = structure_occupant(
-                IMapLogicDispatcher { contract_address: d.games }
-                    .tile(TileKey { game_id, alt: false, col: coord.x, row: coord.y })
-                    .unwrap(),
-            )
+            let entity_id = IMapLogicDispatcher { contract_address: d.games }.structure_occupant(TileKey { game_id, alt: false, col: coord.x, row: coord.y })
                 .unwrap();
             let key = ResourceKey { game_id, entity_id };
             let structure = structures.structure(key).unwrap();
@@ -593,11 +585,7 @@ fn automatic_blitz_settlement_is_open_atomic_and_resumes_its_fixed_order() {
         crate::troops::Coord { alt: false, x: center, y: center }, SettlementMode::Triple, 6, 0,
     )
         .at(0);
-    let entity_id = structure_occupant(
-        IMapLogicDispatcher { contract_address: d.games }
-            .tile(TileKey { game_id, alt: false, col: coord.x, row: coord.y })
-            .unwrap(),
-    )
+    let entity_id = IMapLogicDispatcher { contract_address: d.games }.structure_occupant(TileKey { game_id, alt: false, col: coord.x, row: coord.y })
         .unwrap();
     let slot = ResourceSlot { game_id, entity_id, resource_type: 23 };
     let balance = resources.resource_balance(slot);
@@ -634,9 +622,7 @@ fn automatic_blitz_settlement_is_open_atomic_and_resumes_its_fixed_order() {
     assert!(
         commands
             .settle_blitz_roster(
-                game_id, super::authority(), crate::commands::action_context(context), crate::tests::story_cursor(),
-            )
-            .story_result() == 0,
+                game_id, super::authority(), crate::commands::action_context(context), ) == 0,
     );
     assert!(views.settlement_progress(game_id) == progress && games.game(game_id) == game);
 }
@@ -763,9 +749,7 @@ fn open_preset_exploration_discovers_a_camp_and_credits_the_home_realm() {
                 crate::commands::action_context(
                     crate::commands::ExecutionContext { timestamp: 300, ..super::context(d.games, game_id) },
                 ),
-                crate::tests::story_cursor(),
-            )
-            .story_result(),
+            ),
     };
     stop_cheat_caller_address(d.games);
     let guards = IGuardsDispatcher { contract_address: d.games };
@@ -797,7 +781,7 @@ fn open_preset_exploration_discovers_a_camp_and_credits_the_home_realm() {
     let tile = IMapLogicDispatcher { contract_address: d.games }
         .tile(crate::geometry::tile_key(game_id, target))
         .unwrap();
-    assert_eq!((tile.data / 2) % 256, crate::taxonomy::CAMP_OCCUPIER.into());
+    assert_eq!(IMapLogicDispatcher { contract_address: d.games }.occupancy(crate::geometry::tile_key(game_id, target)).unwrap().category, crate::taxonomy::CAMP_OCCUPIER);
     assert_eq!(troops.resolved_explorer(explorer).unwrap().coord, origin);
     assert_eq!(resources.resource_balance(home_slot), before + 10 * RESOURCE_PRECISION);
     assert_eq!(resources.resource_balance(ResourceSlot { entity_id: explorer_id, ..home_slot }), 0);
@@ -859,6 +843,7 @@ pub fn expedition_home(d: super::Deployment) -> (u32, PresetDefinition, u8) {
                 dev_mode_on: true, end_grace_seconds: 0, duration_seconds: 2 * BAG_SECONDS, ..params(false),
             },
         );
+    super::play_fixture::prepare_homes(d.games, game_id, d.actor);
     // The catalogue is already loaded by deployment; this fixture pins its first realm.
     super::resource_commands::set_fixture(
         d.games, selector!("realms"), selector!("catalogue_count"), array![].span(), 8000_u32,
@@ -1162,7 +1147,7 @@ fn a_materialized_home_ring_moves_and_explores_without_a_roll() {
     );
     assert_eq!(after.coord, target);
     assert_eq!(before.troops.stamina.inline().amount - after.troops.stamina.inline().amount, move_cost);
-    assert_eq!(map.tile(target_key).unwrap().data % 2, 0);
+    assert!(!map.occupancy(target_key).unwrap().is_structure);
     let mut index = 0;
     for resource in array![23_u8, 26, 38].span() {
         assert_eq!(
@@ -1184,9 +1169,9 @@ fn free_ring_neighbor(
             && coord != site
             && crate::expeditions::is_home_ring(coord, spacing)
             && map.tile(crate::geometry::tile_key(game_id, coord)).is_some()
-            && map.tile(crate::geometry::tile_key(game_id, coord)).unwrap().data % crate::map::BIOME_SCALE == 0 {
+            && map.occupancy(crate::geometry::tile_key(game_id, coord)).is_none() {
             found = Some((direction, coord));
-        }
+            }
     }
     found.expect('no free ring neighbour')
 }
@@ -1503,7 +1488,7 @@ fn assert_capture_at(depth: u8, count: u128, tier: crate::troops::TroopTier, rev
                     realm_rate: if *rule.resource_type == crate::resources::LABOR
                         || *rule.resource_type == crate::resources::ESSENCE {
                         0
-                    } else {
+                        } else {
                         *rule.realm_rate
                     },
                     ..*rule,
@@ -1652,9 +1637,7 @@ fn assert_capture_at(depth: u8, count: u128, tier: crate::troops::TroopTier, rev
     army.coord.y += Into::<u8, u32>::into(depth) * preset.settlement.spacing;
     if depth != 0 {
         start_cheat_caller_address(d.games, d.games);
-        let occupier: u8 = (map.tile(crate::geometry::tile_key(game_id, original)).unwrap().data / 2 % 256)
-            .try_into()
-            .unwrap();
+        let occupier = map.occupancy(crate::geometry::tile_key(game_id, original)).unwrap().category;
         map.vacate(crate::geometry::tile_key(game_id, original), explorer_id);
         let location = crate::geometry::tile_key(game_id, army.coord);
         map
@@ -1694,7 +1677,7 @@ fn assert_capture_at(depth: u8, count: u128, tier: crate::troops::TroopTier, rev
     let coord = crate::geometry::neighbor(army.coord, 0);
     let map = IMapLogicDispatcher { contract_address: d.games };
     let tile = map.tile(crate::geometry::tile_key(game_id, coord)).unwrap();
-    let camp_id: u32 = (tile.data / 512 % 0x100000000).try_into().unwrap();
+    let camp_id = map.occupancy(crate::geometry::tile_key(game_id, coord)).unwrap().entity_id;
     let camp = ResourceKey { game_id, entity_id: camp_id };
     assert_eq!(structures.structure(camp).unwrap().base.category, crate::taxonomy::CAMP_CATEGORY);
     assert_eq!(structures.structure(camp).unwrap().base.troop_max_explorer_count, 0);
@@ -1763,6 +1746,7 @@ fn assert_capture_at(depth: u8, count: u128, tier: crate::troops::TroopTier, rev
     let mine_id = structures
         .create_discovery(
             game_id,
+            1,
             mine_coord,
             crate::discovery::Discovery::Rift,
             101,
@@ -2017,7 +2001,7 @@ fn depth_entry_requires_research_and_spends_only_the_selected_depth_stamina() {
         // The army lands on revealed ground in the depth below, with no discovery on its landing tile.
         let landing = map.tile(crate::geometry::tile_key(game_id, inside.coord)).unwrap().data;
         assert_ne!(landing / 0x20000000000 % 256, 0);
-        assert_eq!(landing % 2, 0);
+        assert!(!map.occupancy(crate::geometry::tile_key(game_id, inside.coord)).unwrap().is_structure);
         assert_eq!(inside.coord.x, before.coord.x);
         assert_eq!(inside.coord.y, before.coord.y + Into::<u8, u32>::into(depth) * preset.settlement.spacing);
         assert_eq!(inside.troops.stamina.inline().amount, 150 - (20 + Into::<u8, u64>::into(depth) * 10));
@@ -2263,6 +2247,7 @@ fn place_ruin(d: super::Deployment, game_id: u32, coord: crate::troops::Coord, c
     let site = IStructureOperationsDispatcher { contract_address: d.games }
         .create_discovery(
             game_id,
+            1,
             coord,
             crate::discovery::Discovery::Ruin(chest),
             123,
@@ -2356,7 +2341,7 @@ fn frontier_finds_at_most_one_ruin_a_day_and_holds_its_chest_against_the_budget(
     assert!(
         execute_in_game(
                 d, game_id, Command::Explore(Explore { explorer_id: key.explorer_id, direction: 0 }), time,
-            ),
+        ),
     );
     let tile = crate::geometry::tile_key(game_id, crate::geometry::neighbor(army.coord, 0));
     let ruin = snforge_std::interact_with_state(d.games, || crate::logic::map::occupancy(tile).unwrap());
@@ -2474,7 +2459,9 @@ fn a_lords_withdrawal_after_season_end_spends_the_realm_once() {
     let withdraw = Command::WithdrawLords(crate::relics::WithdrawLords { structure_id: home.entity_id, amount: 200 });
     let mut spy = snforge_std::spy_events();
     let after_end = IGameDispatcher { contract_address: d.games }.game(game_id).end_at + 1;
+    snforge_std::start_cheat_transaction_hash(d.games, 56789);
     assert!(execute_in_game(d, game_id, withdraw, after_end));
+    snforge_std::start_cheat_transaction_hash(d.games, 56790);
     assert!(!execute_in_game(d, game_id, withdraw, after_end + 1));
     let lords = ResourceSlot { game_id, entity_id: home.entity_id, resource_type: crate::resources::LORDS };
     assert_eq!(
@@ -2492,9 +2479,11 @@ fn a_lords_withdrawal_after_season_end_spends_the_realm_once() {
                     withdrawal,
                     crate::relics::LordsWithdrawal { player: d.actor, structure_id: home.entity_id, amount: 200 },
                 );
-                let stored = snforge_std::interact_with_state(
-                    d.games, || crate::state::read().relics.lords_withdrawals.read((game_id, story.order, story.index)),
-                );
+                assert_eq!(story.version, 2);
+                assert_eq!(story.tx_hash, 56789);
+                let stored = snforge_std::interact_with_state(d.games, || {
+                    crate::state::read().relics.lords_withdrawals.read((game_id, story.tx_hash))
+                });
                 assert_eq!(stored, Some(withdrawal));
             }
         }
@@ -2575,9 +2564,10 @@ fn launcher_rotation_preserves_roster_batch_settlements() {
         assert_eq!(first_views.settlement_progress(game_id), helper_views.settlement_progress(game_id));
         assert_eq!(first_games.game(game_id), helper_games.game(game_id));
     }
-    let next = next_entity(first_run, game_id);
-    assert_eq!(next, next_entity(helper_run, game_id));
-    for entity_id in 1..next {
+    let next = next_setup_entity(first_run, game_id);
+    assert_eq!(next, next_setup_entity(helper_run, game_id));
+    for setup_id in 1..next {
+        let entity_id: u64 = setup_id.into();
         let key = ResourceKey { game_id, entity_id };
         let first = IStructureOperationsDispatcher { contract_address: first_run.games }.structure(key);
         let helper = IStructureOperationsDispatcher { contract_address: helper_run.games }.structure(key);
@@ -2585,7 +2575,7 @@ fn launcher_rotation_preserves_roster_batch_settlements() {
     }
 }
 
-fn next_entity(d: super::Deployment, game_id: u32) -> u32 {
+fn next_setup_entity(d: super::Deployment, game_id: u32) -> u32 {
     snforge_std::interact_with_state(d.games, || crate::state::read().games.next_entity.read(game_id))
 }
 
@@ -2779,7 +2769,7 @@ fn frontier_floor_counts_seven_player_reveals_across_armies_and_depths_then_rese
                 discovery, 0, 0, 0, index, Some(any_chest()), seed, time,
             ) != crate::discovery::Discovery::None {
             time += 1;
-        }
+            }
         assert!(time < tomorrow);
         assert!(
             execute_in_game(
@@ -2870,7 +2860,7 @@ fn frontier_sites_store_the_seeded_category_and_depth_tier_with_the_count_basis(
             };
             let seed = 123 + Into::<u32, u256>::into(offset);
             let id = IStructureOperationsDispatcher { contract_address: d.games }
-                .create_discovery(game_id, coord, discovery, seed, 360, crate::commands::action_context(context));
+                .create_discovery(game_id, 1, coord, discovery, seed, 360, crate::commands::action_context(context));
             let guard = IGuardsDispatcher { contract_address: d.games }
                 .guard(GuardKey { game_id, structure_id: id, slot: 0 });
             let expected = crate::troops::frontier_guard(category, depth, seed, context.rules.unbox(), 360);
