@@ -176,6 +176,12 @@ pub mod GamesEntry {
             crate::logic::release::assert_launcher();
             self.registrar().create_game(params)
         }
+        fn freeze_blitz_roster(
+            ref self: ComponentState<TContractState>, game_id: u32, players: Span<RosterPlayer>,
+        ) {
+            crate::logic::release::assert_launcher();
+            self.registrar().freeze_blitz_roster(game_id, players);
+        }
         fn preset_commitment(self: @ComponentState<TContractState>, preset_id: u32) -> felt252 {
             self.data.registrar.presets.read(preset_id)
         }

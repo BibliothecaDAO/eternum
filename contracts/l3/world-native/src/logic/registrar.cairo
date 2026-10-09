@@ -75,6 +75,35 @@ pub mod RegistrarState {
         fn blitz_roster(self: @ComponentState<TContractState>, game_id: u32) -> Span<RosterPlayer> {
             crate::logic::registrar::blitz_roster(game_id)
         }
+        fn freeze_blitz_roster(
+            ref self: ComponentState<TContractState>, game_id: u32, players: Span<RosterPlayer>,
+        ) {
+            crate::logic::release::assert_launcher();
+            let game = crate::logic::game::game(game_id);
+            let rules = crate::logic::game::rules(game_id);
+            assert!(rules.entry_rule == crate::rules::ENTRY_ROSTER, "not a Blitz game");
+            crate::registrar::validate_roster_size(players.len(), crate::logic::settlement::rules(game_id).mode);
+            let count = self.data.registrar.roster_sizes.read(game_id);
+            if count != 0 {
+                assert!(count == players.len(), "conflicting frozen roster");
+                for index in 0..count {
+                    assert!(
+                        self.data.registrar.roster_players.read((game_id, index)) == *players.at(index),
+                        "conflicting frozen roster",
+                    );
+                }
+                return;
+            }
+            assert!(!game.ready && !game.settled, "game already ready or settled");
+            assert!(starknet::get_block_timestamp() < game.end_at, "game ended");
+            self.register_roster(game_id, players);
+            for player in players {
+                crate::entity_ids::reserve_homes(game_id, (*player).account);
+            }
+            // Location reservations depend on the final roster size, so empty launches defer setup until freeze.
+            let classes = get_dep_component!(@self, Life).classes(game_id).read();
+            crate::logic::presets::initialize_gameplay(classes, game_id, rules.mode_rules);
+        }
         fn create_game(ref self: ComponentState<TContractState>, params: CreateGameParams) -> u32 {
             crate::logic::release::assert_launcher();
             let classes = get_dep_component!(@self, Life).current_classes();
@@ -105,14 +134,16 @@ pub mod RegistrarState {
             let release_id = self.data.current_release.read();
             self.data.game_releases.write(game_id, release_id);
             self.register_roster(game_id, params.roster);
-            let game = build_game(params);
+            let game = build_game(params, rules.entry_rule);
             let overrides = game_overrides(game_id, params);
             crate::logic::game::create(game_id, game, overrides);
             crate::logic::game::emit_release(game_id, release_id, crate::logic::game::preset_commitment(game));
             for player in params.roster {
                 crate::entity_ids::reserve_homes(game_id, (*player).account);
             }
-            crate::logic::presets::initialize_gameplay(classes, game_id, rules.mode_rules);
+            if rules.entry_rule != crate::rules::ENTRY_ROSTER || !params.roster.is_empty() {
+                crate::logic::presets::initialize_gameplay(classes, game_id, rules.mode_rules);
+            }
             self.data.registrar.launch_ids.write(params.name, game_id);
             self.data.registrar.launch_commitments.write(params.name, commitment);
             self.write_next_game(game_id + 1);

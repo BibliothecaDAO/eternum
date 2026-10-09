@@ -344,7 +344,6 @@ fn invalid_schedules_modes_and_registration_limits_never_allocate() {
         CreateGameParams { start_settling_at: 301, ..params(true) },
         CreateGameParams { registration_start: 200, ..params(true) },
         CreateGameParams { roster: roster(25), ..params(true) },
-        CreateGameParams { roster: array![].span(), ..params(true) },
     ] {
         assert!(safe(d, super::authority()).create_game(input).is_err());
     }
@@ -475,6 +474,72 @@ fn launch_retries_return_the_same_game_and_conflicting_rosters_reject() {
     assert!(safe(d, super::authority()).create_game(CreateGameParams { duration_seconds: 101, ..request }).is_err());
     assert_eq!(registry(d).blitz_roster(first), request.roster);
     assert_eq!(registry(d).next_game_id(), first + 1);
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn empty_blitz_launches_keep_the_game_id_until_an_immutable_roster_is_frozen() {
+    let d = setup();
+    registry(d).register_preset(1, definition(true));
+    let request = CreateGameParams { roster: array![].span(), ..params(true) };
+    let game_id = registry(d).create_game(request);
+    assert_eq!(registry(d).create_game(request), game_id);
+    assert_eq!(registry(d).game_id_by_name(request.name), game_id);
+    assert!(!IGameDispatcher { contract_address: d.games }.game(game_id).ready);
+    let views = ISettlementViewsDispatcher { contract_address: d.games };
+    assert_eq!(views.settlement_rules(game_id).registration_limit, 0);
+    assert!(safe(d, d.actor).freeze_blitz_roster(game_id, roster(2)).is_err());
+    for players in array![
+        array![].span(), roster(25), array![*roster(1).at(0), *roster(1).at(0)].span(),
+        array![RosterPlayer { account: 0.try_into().unwrap() }].span(),
+    ] {
+        assert!(safe(d, super::authority()).freeze_blitz_roster(game_id, players).is_err());
+        assert_eq!(views.settlement_rules(game_id).registration_limit, 0);
+    }
+    registry(d).freeze_blitz_roster(game_id, roster(2));
+    assert_eq!(registry(d).blitz_roster(game_id), roster(2));
+    assert_eq!(views.settlement_rules(game_id).registration_limit, 2);
+    let prepared = next_setup_entity(d, game_id);
+    registry(d).freeze_blitz_roster(game_id, roster(2));
+    assert_eq!(next_setup_entity(d, game_id), prepared);
+    assert!(safe(d, super::authority()).freeze_blitz_roster(game_id, roster(1)).is_err());
+    let swapped = array![*roster(2).at(1), *roster(2).at(0)].span();
+    assert!(safe(d, super::authority()).freeze_blitz_roster(game_id, swapped).is_err());
+    assert_eq!(registry(d).create_game(request), game_id);
+    assert_eq!(registry(d).next_game_id(), game_id + 1);
+    let launcher = super::bind_authority(d);
+    let command = crate::commands::Command::SettleBlitzRoster;
+    super::season_lifecycle::execute_batch_in_game(launcher, game_id, command, 205, 1);
+    assert!(!IGameDispatcher { contract_address: d.games }.game(game_id).ready);
+    super::season_lifecycle::execute_batch_in_game(launcher, game_id, command, 207, 0);
+    assert!(IGameDispatcher { contract_address: d.games }.game(game_id).ready);
+    registry(d).freeze_blitz_roster(game_id, roster(2));
+    assert!(safe(d, super::authority()).freeze_blitz_roster(game_id, roster(1)).is_err());
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn roster_freeze_checks_the_game_mode_and_current_launcher() {
+    let d = setup();
+    let mut duel = definition(true);
+    duel.settlement.mode = SettlementMode::Duel;
+    duel.rules.mode_rules = super::play_fixture::BLITZ_RULES - crate::rules::RESERVED_HYPERSTRUCTURES;
+    registry(d).register_preset(1, duel);
+    let request = CreateGameParams { roster: array![].span(), ..params(true) };
+    let game_id = registry(d).create_game(request);
+    assert!(safe(d, super::authority()).freeze_blitz_roster(game_id, roster(1)).is_err());
+    super::set_launcher(d, d.actor);
+    assert!(safe(d, super::authority()).freeze_blitz_roster(game_id, roster(2)).is_err());
+    assert!(safe(d, d.actor).freeze_blitz_roster(game_id, roster(2)).is_ok());
+    assert_eq!(registry(d).blitz_roster(game_id), roster(2));
+    registry(d).register_preset(2, definition(false));
+    let season = safe(d, d.actor).create_game(CreateGameParams { name: 'season', preset_id: 2, ..params(false) }).unwrap();
+    assert!(safe(d, d.actor).freeze_blitz_roster(season, roster(2)).is_err());
+    assert!(safe(d, d.actor).freeze_blitz_roster(999, roster(2)).is_err());
+    let late = safe(d, d.actor).create_game(CreateGameParams { name: 'late', ..request }).unwrap();
+    start_cheat_block_timestamp_global(400);
+    assert!(safe(d, d.actor).freeze_blitz_roster(late, roster(2)).is_err());
+    assert_eq!(ISettlementViewsDispatcher { contract_address: d.games }.settlement_rules(late).registration_limit, 0);
 }
 
 #[test]
