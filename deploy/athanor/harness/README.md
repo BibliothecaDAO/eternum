@@ -28,3 +28,21 @@ both its receipt and Herald facts and checks its effect. Missing cases, rejected
 failures and teardown failure refuse the listing gate. It prints one public JSON result with `passed`,
 `firstFailedRoute`, `completed`, `gameId` and `elapsedMs`; exit 0 is the deployment's permission to list. The
 launcher/ID regeneration and complete domain fixture binding must land before this can pass on a fresh shard.
+
+## Ops timing commands
+
+`pnpm lab:harness:burst --out <public-result.json> --receipt-checkpoint <checkpoint.json>` releases 2,000 ordinary
+signed invokes with the spike's warmed worker barrier. The built-in `wave-fixture.ts` creates an independent real game,
+approved accounts, each player's Herald client, generated command and domain assertions. `heraldConfirmations` comes
+from `connectHarnessGameClient`. No spike contracts, probe counters, simulations or synthetic forwarded IPs are used.
+Setup requires the normal harness identity/launcher environment plus `SHARD_NODE_IMAGE`, recorded as public timing
+evidence. `--fixture <module.ts>` supplies another typed `WaveFixturePort` for a different registered preset or action
+route.
+
+`pnpm lab:harness:quiet --out <quiet.json> --checkpoint <checkpoint.json> --offset-ms 250` uses 24 distinct accounts in
+an independent CreateExplorer game. Offsets are 0, 250 or 1,000 ms after the primary checkpoint. Alternatively use
+`--close-log <node.log>` to release on an executed nonempty close-worker start. `--ready-file <ready.json>` marks that
+the sender workers are warmed. These commands preserve public send timestamps, percentiles, completion counts, trigger
+offsets and round trips. Visibility is measured at Herald's first transaction notice rather than a private node
+WebSocket; the file declares that observer. Every pass also requires confirmed Herald facts and real domain assertions.
+Request bodies and signing material stay in worker memory.

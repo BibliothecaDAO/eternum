@@ -8,6 +8,7 @@ import {
 import { fetchHeraldGameDirectory, type GameClientObserver, type Shard } from "@bibliothecadao/eternum/game-client";
 import { createMicrotaskGameSyncScheduler, type GameSyncTransaction } from "@bibliothecadao/eternum/game-sync";
 import type { NativeWorldBindings } from "@bibliothecadao/types";
+import { now } from "./clock";
 import { playerActions } from "./player-actions";
 import type { PlayBounds } from "./player-invoke";
 import type { HarnessProvider } from "./provider";
@@ -30,6 +31,7 @@ const GAME_LISTING_POLL_MS = 2_000;
  */
 export interface HeraldConfirmations {
   confirmedAt(transactionHash: string): Promise<number>;
+  firstObserved(transactionHash: string): Promise<bigint>;
   /** The last block Herald confirmed: the head a bot's facts describe when it plans. */
   confirmedBlock(): number | null;
 }
@@ -94,6 +96,8 @@ export async function connectActorClients(
 }
 
 function createHeraldConfirmations() {
+  const firstAt = new Map<string, bigint>();
+  const firstWaiters = new Map<string, Array<(at: bigint) => void>>();
   const confirmedAtMs = new Map<string, number>();
   const waiters = new Map<string, Array<(atMs: number) => void>>();
   const key = (hash: string) => `0x${BigInt(hash).toString(16)}`;
@@ -103,7 +107,23 @@ function createHeraldConfirmations() {
       confirmedBlock = block;
     },
     confirmedBlock: () => confirmedBlock,
+    firstObserved(transactionHash: string): Promise<bigint> {
+      const hash = key(transactionHash);
+      const at = firstAt.get(hash);
+      if (at !== undefined) return Promise.resolve(at);
+      return new Promise((resolve) => firstWaiters.set(hash, [...(firstWaiters.get(hash) ?? []), resolve]));
+    },
     record(transaction: GameSyncTransaction): void {
+      const observedHash = key(transaction.hash);
+      if (
+        !firstAt.has(observedHash) &&
+        ["PRE_CONFIRMED", "ACCEPTED_ON_L2", "ACCEPTED_ON_L1"].includes(transaction.status)
+      ) {
+        const at = now();
+        firstAt.set(observedHash, at);
+        firstWaiters.get(observedHash)?.forEach((resolve) => resolve(at));
+        firstWaiters.delete(observedHash);
+      }
       if (transaction.block === null || !["ACCEPTED_ON_L2", "ACCEPTED_ON_L1"].includes(transaction.status)) return;
       const hash = key(transaction.hash);
       if (confirmedAtMs.has(hash)) return;
