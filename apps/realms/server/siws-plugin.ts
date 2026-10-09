@@ -88,6 +88,7 @@ export const siws = (options: SiwsPluginOptions) => {
       user: {
         fields: {
           address: { type: "string", unique: true, required: false, input: false },
+          walletLinkedAt: { type: "number", required: false, input: false },
         },
       },
     },

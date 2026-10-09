@@ -154,6 +154,8 @@ const createBrowser = (parentDomainCookies: string[] = []) => {
   const session = async () =>
     (await (await request("/api/auth/get-session")).json()) as {
       user: {
+        payoutWallet: import("@realms-world/identity").PayoutWallet;
+        walletLinkedAt: number | null;
         email: string;
         id: string;
         name: string;
@@ -1003,6 +1005,33 @@ describe("identity Worker", () => {
     });
     expect(response.status).toBe(401);
     expect((await browser.session())!.user.address).toBeNull();
+  });
+
+  it("exposes the same 24-hour hold, preserves it on repeat links, and restarts it on replacement", async () => {
+    const browser = createBrowser();
+    await signInWithCode(browser, "wallet-hold@realms.test");
+    expect((await browser.session())!.user.payoutWallet).toEqual({ status: "no_wallet" });
+    const address = createWallet();
+    expect((await proveWallet(browser, address, "link")).status).toBe(200);
+    const user = (await browser.session())!.user;
+    expect(user.payoutWallet).toEqual({
+      status: "on_hold",
+      address: user.address,
+      until: user.walletLinkedAt! + 86_400_000,
+    });
+    expect((await proveWallet(browser, address, "link")).status).toBe(200);
+    expect((await browser.session())!.user.walletLinkedAt).toBe(user.walletLinkedAt);
+    await env.DB.prepare('UPDATE "user" SET "walletLinkedAt" = ? WHERE "id" = ?')
+      .bind(Date.now() - 86_400_001, user.id)
+      .run();
+    expect((await browser.session())!.user.payoutWallet).toEqual({ status: "ready", address: user.address });
+    expect((await proveWallet(browser, createWallet(), "link")).status).toBe(200);
+    expect((await browser.session())!.user.payoutWallet.status).toBe("on_hold");
+    expect((await browser.request("/api/auth/siws/unlink", { body: { otp: await walletCode(browser) } })).status).toBe(
+      200,
+    );
+    expect((await browser.session())!.user.payoutWallet).toEqual({ status: "no_wallet" });
+    expect((await browser.session())!.user.walletLinkedAt).toBeNull();
   });
 
   it("suggests a new player's display name from their Discord name or their email", async () => {

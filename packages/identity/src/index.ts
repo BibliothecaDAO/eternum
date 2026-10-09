@@ -6,3 +6,4 @@ export * from "./operator-enrolment";
 export * from "./profiles";
 export * from "./siws";
 export * from "./types";
+export * from "./payout-wallet";

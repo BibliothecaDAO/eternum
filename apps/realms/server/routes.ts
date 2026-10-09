@@ -1,3 +1,5 @@
+import { Effect } from "effect";
+import { lookupPayoutWallet } from "./payout-wallet";
 import { presentsOperatorToken } from "@realms-world/identity";
 
 import type { IdentityAuth } from "./auth";
@@ -36,6 +38,7 @@ export const routeIdentityRequest = async (
     return json({ error: sendsCode ? "too_many_codes" : "too_many_attempts" }, 429);
   }
   if (requestsCodeAccess && sendsCode) return sendCodeWithExpiry(request, auth);
+  if (pathname === "/api/auth/get-session" && request.method === "GET") return accountSession(request, auth, env.DB);
   if (pathname.startsWith("/api/auth/")) return auth.handler(request);
   if (requiresSameOrigin(request, pathname) && request.headers.get("origin") !== new URL(env.BASE_URL).origin) {
     return json({ error: "invalid_origin" }, 403);
@@ -155,4 +158,20 @@ const sendCodeWithExpiry = async (request: Request, auth: IdentityAuth): Promise
     { ...((await response.json()) as Record<string, unknown>), expires_at: verification.expiresAt.getTime() / 1000 },
     { status: response.status, headers },
   );
+};
+
+/** The account page and the relay receive the same eligibility decision from the database. */
+const accountSession = async (request: Request, auth: IdentityAuth, db: D1Database): Promise<Response> => {
+  const response = await auth.handler(request);
+  if (!response.ok) return response;
+  const session = (await response.json()) as { user: { realmsId: string } } | null;
+  if (!session) return responseWithSession(response, null);
+  const payoutWallet = await Effect.runPromise(lookupPayoutWallet(db, session.user.realmsId));
+  return responseWithSession(response, { ...session, user: { ...session.user, payoutWallet } });
+};
+const responseWithSession = (response: Response, session: unknown) => {
+  const headers = new Headers(response.headers);
+  headers.delete("content-length");
+  headers.set("cache-control", "no-store");
+  return Response.json(session, { status: response.status, headers });
 };

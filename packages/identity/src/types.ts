@@ -1,7 +1,10 @@
+import type { PayoutWallet } from "./payout-wallet";
 export interface IdentityUser {
   id: string;
   /** The Realms account's on-chain id; notifications, profiles and gameplay accounts are keyed by it. */
   realmsId: string;
+  payoutWallet?: PayoutWallet;
+  walletLinkedAt?: number | null;
   address?: string | null;
   name: string;
   email: string;

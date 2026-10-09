@@ -50,3 +50,5 @@ const identityAuthOf = (rawEnv: object, env: IdentityEnv): IdentityAuth => {
   authByEnv.set(rawEnv, auth);
   return auth;
 };
+
+export { ValueIdentity } from "./value-identity";

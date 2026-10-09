@@ -51,7 +51,7 @@ const writeWalletChange = (
   db.batch([
     db
       .prepare(
-        `UPDATE "user" SET "address" = ?1, "updatedAt" = ?2 WHERE "id" = ?3 AND EXISTS (
+        `UPDATE "user" SET "walletLinkedAt" = CASE WHEN ?1 IS NULL THEN NULL WHEN "address" = ?1 THEN "walletLinkedAt" ELSE CAST(unixepoch('subsec') * 1000 AS INTEGER) END, "address" = ?1, "updatedAt" = ?2 WHERE "id" = ?3 AND EXISTS (
       SELECT 1 FROM verification WHERE id = ?4 AND value = ?5 AND julianday(expiresAt) > julianday('now'))`,
       )
       .bind(address, new Date().toISOString(), user.id, verification.id, verification.value),
