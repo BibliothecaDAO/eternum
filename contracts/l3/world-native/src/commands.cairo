@@ -176,11 +176,7 @@ pub trait ICreateExplorer<T> {
 #[starknet::interface]
 pub trait IExplore<T> {
     fn explore(
-        ref self: T,
-        game_id: u32,
-        actor: ContractAddress,
-        command: Explore,
-        context: crate::commands::ActionContext,
+        ref self: T, game_id: u32, actor: ContractAddress, command: Explore, context: crate::commands::ActionContext,
     );
 }
 
@@ -233,18 +229,10 @@ pub trait IResourceCommands<T> {
 #[starknet::interface]
 pub trait ITravelCommands<T> {
     fn enter_depth(
-        ref self: T,
-        game_id: u32,
-        actor: ContractAddress,
-        command: EnterDepth,
-        context: crate::commands::ActionContext,
+        ref self: T, game_id: u32, actor: ContractAddress, command: EnterDepth, context: crate::commands::ActionContext,
     );
     fn move_explorer(
-        ref self: T,
-        game_id: u32,
-        actor: ContractAddress,
-        command: Move,
-        context: crate::commands::ActionContext,
+        ref self: T, game_id: u32, actor: ContractAddress, command: Move, context: crate::commands::ActionContext,
     );
     fn toggle_alternate(
         ref self: T,
@@ -268,7 +256,10 @@ pub fn rejection(code: felt252) -> Rejection {
 pub fn short_reason(word: felt252) -> ByteArray {
     let mut remaining: u256 = word.into();
     let mut len = 0;
-    while remaining != 0 { remaining /= 256; len += 1; }
+    while remaining != 0 {
+        remaining /= 256;
+        len += 1;
+    }
     let mut reason = "";
     reason.append_word(word, len);
     reason
@@ -280,7 +271,9 @@ pub fn domain_rejection(error: Array<felt252>) -> Rejection {
     let reason = match fields.pop_front() {
         Some(word) => if *word == core::byte_array::BYTE_ARRAY_MAGIC {
             Serde::<ByteArray>::deserialize(ref fields).unwrap_or("malformed domain reason")
-        } else { short_reason(*word) },
+        } else {
+            short_reason(*word)
+        },
         None => "empty domain panic",
     };
     Rejection { status_class: 'GAMEPLAY_REJECTED', reason }
@@ -300,10 +293,21 @@ pub struct GameplayRejected {
     pub reason: ByteArray,
 }
 
-pub fn validated_command(arguments: Span<felt252>) -> Result<(u32, crate::command_routes::CommandRoute, Span<felt252>), felt252> {
+pub fn validated_command(
+    arguments: Span<felt252>,
+) -> Result<(u32, crate::command_routes::CommandRoute, Span<felt252>), felt252> {
     let route = route_command(arguments)?;
     let mut fields = arguments;
     let _command: Command = Serde::deserialize(ref fields).ok_or('INVALID_COMMAND')?;
-    if !fields.is_empty() { return Err('INVALID_COMMAND'); }
+    if !fields.is_empty() {
+        return Err('INVALID_COMMAND');
+    }
     Ok(route)
+}
+
+#[starknet::interface]
+pub trait ICommandPreparation<T> {
+    fn prepare_homes(ref self: T, game_id: u32, owners: Span<ContractAddress>);
+    fn validate_command(self: @T, command: Span<felt252>) -> u32;
+    fn assign_open_home(ref self: T, game_id: u32, actor: ContractAddress);
 }

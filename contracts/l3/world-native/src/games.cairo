@@ -53,11 +53,7 @@ pub mod Games {
     use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
     use crate::games::Authentication;
     use crate::games_entry::GamesEntry;
-    use crate::logic::entry::EntryAdministration;
     use crate::logic::release::ReleaseState;
-    component!(path: EntryAdministration, storage: administration, event: AdministrationEvent);
-    #[abi(embed_v0)]
-    impl LedgerOperator = EntryAdministration::LedgerOperatorImpl<ContractState>;
     component!(path: GamesEntry, storage: entry, event: EntryEvent);
     component!(path: ReleaseState, storage: release, event: ReleaseEvent);
     impl EntryInternal = GamesEntry::InternalImpl<ContractState>;
@@ -74,11 +70,42 @@ pub mod Games {
     impl Play = GamesEntry::PlayImpl<ContractState>;
     #[abi(embed_v0)]
     impl Registrar = GamesEntry::RegistrarImpl<ContractState>;
+    #[abi(embed_v0)]
+    impl LedgerOperator of crate::entry::ILedgerOperator<ContractState> {
+        fn ledger_operator(self: @ContractState) -> ContractAddress {
+            crate::entry::ILedgerOperatorDispatcherTrait::ledger_operator(
+                crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: self.release.current_classes().placement },
+            )
+        }
+        fn set_ledger_operator(ref self: ContractState, operator: ContractAddress) {
+            crate::entry::ILedgerOperatorDispatcherTrait::set_ledger_operator(
+                crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: self.release.current_classes().placement },
+                operator,
+            );
+        }
+        fn grant_labor(
+            ref self: ContractState, realm: crate::entry::LaborRealm, day: u64, account: ContractAddress,
+        ) -> crate::entry::LaborGrant {
+            crate::entry::ILedgerOperatorDispatcherTrait::grant_labor(
+                crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: self.release.current_classes().placement },
+                realm,
+                day,
+                account,
+            )
+        }
+        fn labor_grant(
+            self: @ContractState, realm: crate::entry::LaborRealm, day: u64,
+        ) -> Option<crate::entry::LaborGrant> {
+            crate::entry::ILedgerOperatorDispatcherTrait::labor_grant(
+                crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: self.release.current_classes().placement },
+                realm,
+                day,
+            )
+        }
+    }
     #[storage]
     #[allow(starknet::colliding_storage_paths)]
     struct Storage {
-        #[substorage(v0)]
-        administration: EntryAdministration::Storage,
         #[substorage(v0)]
         entry: GamesEntry::Storage,
         #[substorage(v0)]
@@ -87,7 +114,7 @@ pub mod Games {
     #[event]
     #[derive(Drop, starknet::Event)]
     enum Event {
-        AdministrationEvent: EntryAdministration::Event,
+        AdministrationEvent: crate::logic::entry::EntryAdministration::Event,
         #[flat]
         EntryEvent: GamesEntry::Event,
         ReleaseEvent: ReleaseState::Event,
@@ -146,7 +173,9 @@ pub mod Games {
     }
     #[external(v0)]
     fn deployment_configuration(self: @ContractState) -> super::DeploymentConfiguration {
-        super::DeploymentConfiguration { owner: self.release.authority(), launcher: crate::state::read().launcher.read() }
+        super::DeploymentConfiguration {
+            owner: self.release.authority(), launcher: crate::state::read().launcher.read(),
+        }
     }
 
     #[external(v0)]

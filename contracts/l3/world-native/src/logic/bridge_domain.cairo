@@ -14,6 +14,14 @@ pub mod BridgeLogic {
     impl Bridge = BridgeState::BridgeImpl<ContractState>;
     #[abi(embed_v0)]
     impl BankWithdrawal = BridgeState::BankWithdrawalImpl<ContractState>;
+    #[abi(embed_v0)]
+    impl PresetWithdrawals of crate::presets::IPresetWithdrawals<ContractState> {
+        fn store_withdrawal_preset(
+            ref self: ContractState, commitment: felt252, withdrawals: crate::presets::WithdrawalPreset,
+        ) {
+            crate::logic::preset_record::store_withdrawals(commitment, withdrawals);
+        }
+    }
     #[storage]
     #[allow(starknet::colliding_storage_paths)]
     struct Storage {

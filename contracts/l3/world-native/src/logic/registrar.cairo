@@ -41,27 +41,13 @@ pub mod RegistrarState {
         +Drop<TContractState>,
     > of crate::registrar::IRegistrar<ComponentState<TContractState>> {
         fn register_preset(ref self: ComponentState<TContractState>, preset_id: u32, definition: PresetDefinition) {
-            get_dep_component!(@self, Life).assert_authority();
-            assert!(preset_id != 0, "preset id zero is reserved");
-            assert!(self.data.registrar.presets.read(preset_id) == 0, "preset id already registered");
-            crate::presets::validate(definition);
-            crate::settlement_grid::validate_spacing(definition.settlement.spacing);
-            if crate::rules::rule_enabled(definition.rules, crate::rules::SPIRES) {
-                crate::spires::validate(definition.settlement.spires.expect('missing season spires'));
-            } else {
-                assert!(definition.settlement.spires.is_none(), "spires are disabled");
-            }
-            let commitment = crate::presets::commitment(definition);
-            assert!(commitment != 0, "empty preset commitment");
-            crate::logic::preset_record::store(commitment, definition);
-            self.data.registrar.presets.write(preset_id, commitment);
-            let values = array![commitment];
-            self
-                .emit(
-                    RowSet {
-                        version: 1, model: 'Preset', keys: array![preset_id.into()].span(), values: values.span(),
-                    },
-                );
+            crate::presets::IPresetRegistrationDispatcherTrait::register_preset(
+                crate::presets::IPresetRegistrationLibraryDispatcher {
+                    class_hash: get_dep_component!(@self, Life).current_classes().season,
+                },
+                preset_id,
+                definition,
+            );
         }
         fn preset_commitment(self: @ComponentState<TContractState>, preset_id: u32) -> felt252 {
             self.data.registrar.presets.read(preset_id)
@@ -75,9 +61,7 @@ pub mod RegistrarState {
         fn blitz_roster(self: @ComponentState<TContractState>, game_id: u32) -> Span<RosterPlayer> {
             crate::logic::registrar::blitz_roster(game_id)
         }
-        fn freeze_blitz_roster(
-            ref self: ComponentState<TContractState>, game_id: u32, players: Span<RosterPlayer>,
-        ) {
+        fn freeze_blitz_roster(ref self: ComponentState<TContractState>, game_id: u32, players: Span<RosterPlayer>) {
             crate::logic::release::assert_launcher();
             let game = crate::logic::game::game(game_id);
             let rules = crate::logic::game::rules(game_id);

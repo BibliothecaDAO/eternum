@@ -131,3 +131,47 @@ pub fn commitment(preset: PresetDefinition) -> felt252 {
     preset.serialize(ref values);
     core::poseidon::poseidon_hash_span(values.span())
 }
+
+// Registration shares the season domain's code budget; Games and Registry keep their existing public ABI.
+#[starknet::interface]
+pub trait IPresetRegistration<T> {
+    fn register_preset(ref self: T, preset_id: u32, definition: PresetDefinition);
+}
+
+#[starknet::interface]
+pub trait IPresetResources<T> {
+    fn store_resource_preset(
+        ref self: T,
+        commitment: felt252,
+        resources: ResourcePreset,
+        exploration: Span<crate::exploration_rewards::ExplorationReward>,
+        mode_rules: u32,
+    );
+}
+
+#[starknet::interface]
+pub trait IPresetValidation<T> {
+    fn validated_preset_commitment(self: @T, definition: PresetDefinition) -> felt252;
+}
+
+#[starknet::interface]
+pub trait IPresetStructures<T> {
+    fn store_structure_preset(ref self: T, commitment: felt252, structures: StructurePreset);
+}
+
+#[starknet::interface]
+pub trait IPresetWithdrawals<T> {
+    fn store_withdrawal_preset(ref self: T, commitment: felt252, withdrawals: WithdrawalPreset);
+}
+
+#[starknet::interface]
+pub trait IPresetSettlement<T> {
+    fn store_settlement_preset(
+        ref self: T,
+        commitment: felt252,
+        settlement: SettlementPreset,
+        entry_rule: u8,
+        mode_rules: u32,
+        day_unit_seconds: u32,
+    );
+}

@@ -11,11 +11,11 @@ pub trait IGameplay<T> {
 
 #[starknet::contract]
 pub mod SeasonLogic {
-    use crate::commands::{rejection, domain_rejection};
     use games_storage::release::LogicClasses;
     use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
     use starknet::{ContractAddress, get_tx_info};
-    use crate::commands::ExecutionContext as DomainContext;
+    use crate::commands::{ExecutionContext as DomainContext, domain_rejection, rejection};
+    use crate::events::RowSet;
     use crate::logic::release::ReleaseState;
 
     component!(path: ReleaseState, storage: release, event: ReleaseEvent);
@@ -31,10 +31,35 @@ pub mod SeasonLogic {
     #[event]
     #[derive(Drop, starknet::Event)]
     enum Event {
+        RowSet: crate::events::RowSet,
         PointsAwarded: crate::game::PointsAwarded,
         StoryEvent: crate::ownership::StoryEvent,
         ReleaseEvent: ReleaseState::Event,
         BatchProgress: crate::commands::BatchProgress,
+    }
+    #[abi(embed_v0)]
+    impl PresetRegistration of crate::presets::IPresetRegistration<ContractState> {
+        fn register_preset(ref self: ContractState, preset_id: u32, definition: crate::presets::PresetDefinition) {
+            crate::logic::release::assert_authority();
+            assert!(preset_id != 0, "preset id zero is reserved");
+            assert!(self.data.registrar.presets.read(preset_id) == 0, "preset id already registered");
+            let commitment = crate::presets::IPresetValidationDispatcherTrait::validated_preset_commitment(
+                crate::presets::IPresetValidationLibraryDispatcher {
+                    class_hash: self.release.current_classes().registry,
+                },
+                definition,
+            );
+            assert!(commitment != 0, "empty preset commitment");
+            crate::logic::preset_record::store(commitment, definition);
+            self.data.registrar.presets.write(preset_id, commitment);
+            let values = array![commitment];
+            self
+                .emit(
+                    RowSet {
+                        version: 1, model: 'Preset', keys: array![preset_id.into()].span(), values: values.span(),
+                    },
+                );
+        }
     }
     #[abi(embed_v0)]
     impl SeasonLifecycle of crate::game::ISeasonLifecycle<ContractState> {
@@ -42,10 +67,7 @@ pub mod SeasonLogic {
             crate::logic::preset_record::for_game(game_id).season_win_points.read()
         }
         fn close_season(
-            ref self: ContractState,
-            game_id: u32,
-            actor: ContractAddress,
-            context: crate::commands::ActionContext,
+            ref self: ContractState, game_id: u32, actor: ContractAddress, context: crate::commands::ActionContext,
         ) -> u64 {
             let context = crate::commands::load_context(game_id, context);
 
@@ -88,10 +110,7 @@ pub mod SeasonLogic {
     #[abi(embed_v0)]
     impl GameSettlement of crate::registrar::IGameSettlement<ContractState> {
         fn mark_game_settled(
-            ref self: ContractState,
-            game_id: u32,
-            actor: ContractAddress,
-            context: crate::commands::ActionContext,
+            ref self: ContractState, game_id: u32, actor: ContractAddress, context: crate::commands::ActionContext,
         ) -> u64 {
             let context = crate::commands::load_context(game_id, context);
             let mut game = context.game.unbox();
@@ -173,10 +192,7 @@ pub mod SeasonLogic {
     #[generate_trait]
     impl Internal of InternalTrait {
         fn settle_final_points(
-            ref self: ContractState,
-            game_id: u32,
-            timestamp: u64,
-            game_context: crate::commands::ExecutionContext,
+            ref self: ContractState, game_id: u32, timestamp: u64, game_context: crate::commands::ExecutionContext,
         ) -> u32 {
             crate::hyperstructures::IHyperstructuresDispatcherTrait::settle_final_hyperstructures(
                 crate::hyperstructures::IHyperstructuresLibraryDispatcher {
@@ -187,18 +203,12 @@ pub mod SeasonLogic {
                 crate::commands::action_context(game_context),
             )
         }
-        fn record_season_end(
-            ref self: ContractState,
-            game_id: u32,
-            winner: ContractAddress,
-            timestamp: u64,
-        ) {
+        fn record_season_end(ref self: ContractState, game_id: u32, winner: ContractAddress, timestamp: u64) {
             self
                 .emit(
                     crate::ownership::StoryEvent {
                         version: 2,
                         game_id,
-
                         entity_id: None,
                         owner: Some(winner),
                         timestamp,
@@ -275,10 +285,14 @@ pub mod SeasonLogic {
                 .map_err(|error| domain_rejection(error))?;
             if route.batch {
                 let mut output = result;
-                let remaining: u64 = Serde::deserialize(ref output)
-                    .expect('missing batch result');
+                let remaining: u64 = Serde::deserialize(ref output).expect('missing batch result');
                 assert!(output.is_empty(), "invalid batch result");
-                self.emit(crate::commands::BatchProgress { game_id, actor, tx_hash: get_tx_info().unbox().transaction_hash, remaining });
+                self
+                    .emit(
+                        crate::commands::BatchProgress {
+                            game_id, actor, tx_hash: get_tx_info().unbox().transaction_hash, remaining,
+                        },
+                    );
             }
             Ok(result)
         }

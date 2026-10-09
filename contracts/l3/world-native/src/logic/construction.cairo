@@ -17,6 +17,14 @@ pub mod ConstructionLogic {
     impl BuildingInternal = BuildingState::InternalImpl<ContractState>;
     component!(path: ReleaseState, storage: release, event: ReleaseEvent);
     impl LifeInternal = ReleaseState::InternalImpl<ContractState>;
+    #[abi(embed_v0)]
+    impl PresetStructures of crate::presets::IPresetStructures<ContractState> {
+        fn store_structure_preset(
+            ref self: ContractState, commitment: felt252, structures: crate::presets::StructurePreset,
+        ) {
+            crate::logic::preset_record::store_structures(commitment, structures);
+        }
+    }
     #[storage]
     #[allow(starknet::colliding_storage_paths)]
     struct Storage {
@@ -72,18 +80,7 @@ pub mod ConstructionLogic {
             if let Some(board) = board {
                 self.assert_board_category(key, command.category, board);
             }
-            self
-                .erect_building(
-                    key,
-                    actor,
-                    base,
-                    location,
-                    coord,
-                    command.category,
-                    rule,
-                    context.timestamp,
-                    context,
-                );
+            self.erect_building(key, actor, base, location, coord, command.category, rule, context.timestamp, context);
             if let Some(board) = board {
                 self.change_board_building(key, base, command.category, board, true, context);
             }
@@ -292,18 +289,13 @@ pub mod ConstructionLogic {
     #[generate_trait]
     impl Internal of InternalTrait {
         fn emit_structure_upgrade(
-            ref self: ContractState,
-            key: ResourceKey,
-            actor: ContractAddress,
-            next_level: u8,
-            timestamp: u64,
+            ref self: ContractState, key: ResourceKey, actor: ContractAddress, next_level: u8, timestamp: u64,
         ) {
             self
                 .emit(
                     StoryEvent {
                         version: 2,
                         game_id: key.game_id,
-
                         owner: Some(actor),
                         entity_id: Some(key.entity_id),
                         tx_hash: starknet::get_tx_info().unbox().transaction_hash,
@@ -344,12 +336,7 @@ pub mod ConstructionLogic {
             self.assert_structure_produces(key, building.category);
             self
                 .emit_building_change(
-                    key,
-                    actor,
-                    coord,
-                    building.category,
-                    crate::ownership::BuildingChange::Created,
-                    timestamp,
+                    key, actor, coord, building.category, crate::ownership::BuildingChange::Created, timestamp,
                 );
         }
         fn resolve_building_coord(
@@ -622,10 +609,7 @@ pub mod ConstructionLogic {
             } else {
                 crate::ownership::BuildingChange::Resumed
             };
-            self
-                .emit_building_change(
-                    key, actor, command.coord, building.category, change, timestamp,
-                );
+            self.emit_building_change(key, actor, command.coord, building.category, change, timestamp);
         }
         fn emit_building_change(
             ref self: ContractState,

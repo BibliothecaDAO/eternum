@@ -2,6 +2,7 @@
 pub mod PlacementLogic {
     use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
     use crate::geometry::{spire_neighbor, tile_key};
+    use crate::logic::entry::EntryAdministration;
     use crate::logic::map::MapState;
     use crate::logic::release::ReleaseState;
     use crate::logic::settlement::SettlementPoolState;
@@ -12,12 +13,55 @@ pub mod PlacementLogic {
     component!(path: SettlementPoolState, storage: settlements, event: SettlementEvent);
     impl SettlementInternal = SettlementPoolState::InternalImpl<ContractState>;
     impl LifeInternal = ReleaseState::InternalImpl<ContractState>;
+    component!(path: EntryAdministration, storage: administration, event: AdministrationEvent);
+    #[abi(embed_v0)]
+    impl LedgerOperator = EntryAdministration::LedgerOperatorImpl<ContractState>;
+    impl AdministrationInternal = EntryAdministration::InternalImpl<ContractState>;
 
+    #[abi(embed_v0)]
+    impl CommandPreparation of crate::commands::ICommandPreparation<ContractState> {
+        fn prepare_homes(ref self: ContractState, game_id: u32, owners: Span<starknet::ContractAddress>) {
+            crate::logic::release::assert_launcher();
+            let rules = crate::logic::game::rules(game_id);
+            assert!(
+                rules.entry_rule != crate::rules::ENTRY_OPEN || rules.day_unit_seconds == 0,
+                "open homes are assigned automatically",
+            );
+            assert!(owners.len() <= crate::commands::MAX_COMMAND_ITEMS, "home preparation batch too large");
+            for owner in owners {
+                crate::entity_ids::reserve_homes(game_id, *owner);
+            }
+        }
+        fn validate_command(self: @ContractState, command: Span<felt252>) -> u32 {
+            let (index, _, _) = crate::commands::validated_command(command).expect('INVALID_COMMAND');
+            index
+        }
+        fn assign_open_home(ref self: ContractState, game_id: u32, actor: starknet::ContractAddress) {
+            crate::entity_ids::assign_open_home(game_id, actor);
+        }
+    }
+    #[abi(embed_v0)]
+    impl PresetSettlement of crate::presets::IPresetSettlement<ContractState> {
+        fn store_settlement_preset(
+            ref self: ContractState,
+            commitment: felt252,
+            settlement: crate::presets::SettlementPreset,
+            entry_rule: u8,
+            mode_rules: u32,
+            day_unit_seconds: u32,
+        ) {
+            crate::logic::preset_record::store_settlement(
+                commitment, settlement, entry_rule, mode_rules, day_unit_seconds,
+            );
+        }
+    }
     #[storage]
     #[allow(starknet::colliding_storage_paths)]
     struct Storage {
         #[flat]
         pub data: crate::state::Storage,
+        #[substorage(v0)]
+        administration: EntryAdministration::Storage,
         #[substorage(v0)]
         release: ReleaseState::Storage,
         #[substorage(v0)]
@@ -26,6 +70,7 @@ pub mod PlacementLogic {
     #[event]
     #[derive(Drop, starknet::Event)]
     enum Event {
+        AdministrationEvent: EntryAdministration::Event,
         ReleaseEvent: ReleaseState::Event,
         MapEvent: MapState::Event,
         SettlementEvent: SettlementPoolState::Event,
@@ -188,10 +233,7 @@ pub mod PlacementLogic {
         ) -> u64 {
             for alt in array![false, true] {
                 let occupied = crate::logic::map::occupancy(tile_key(game_id, Coord { alt, ..coord }));
-                assert!(
-                    occupied.is_none(),
-                    "spire tile occupied",
-                );
+                assert!(occupied.is_none(), "spire tile occupied");
             }
             let id: u64 = crate::logic::game::allocate_setup_entity(game_id).into();
             for alt in array![false, true] {

@@ -12,14 +12,49 @@ pub fn store(commitment: felt252, definition: crate::presets::PresetDefinition) 
         return;
     }
     preset.rules.write(definition.rules);
-    write_resources(preset, definition.resources.resources);
-    write_production(preset, definition.resources.production);
-    write_mines(preset, definition.resources.mine_kinds, definition.resources.surface_mines);
-    write_structures(preset, definition.structures);
-    write_settlement(preset, definition.rules, definition.settlement);
-    write_economy(preset, definition.rules, definition.economy);
-    write_exploration(preset, definition.rules, definition.exploration);
+    let classes = crate::state::read().releases.read(crate::state::read().current_release.read()).classes;
+    crate::presets::IPresetResourcesDispatcherTrait::store_resource_preset(
+        crate::presets::IPresetResourcesLibraryDispatcher { class_hash: classes.production },
+        commitment,
+        definition.resources,
+        definition.exploration,
+        definition.rules.mode_rules,
+    );
+    crate::presets::IPresetStructuresDispatcherTrait::store_structure_preset(
+        crate::presets::IPresetStructuresLibraryDispatcher { class_hash: classes.construction },
+        commitment,
+        definition.structures,
+    );
+    crate::presets::IPresetSettlementDispatcherTrait::store_settlement_preset(
+        crate::presets::IPresetSettlementLibraryDispatcher { class_hash: classes.placement },
+        commitment,
+        definition.settlement,
+        definition.rules.entry_rule,
+        definition.rules.mode_rules,
+        definition.rules.day_unit_seconds,
+    );
+    write_economy(preset, commitment, definition.rules, definition.economy);
     preset.season_win_points.write(definition.season_win_points);
+}
+
+// Resource tables are owned by Production; registration remains one atomic transaction.
+pub fn store_resources(
+    commitment: felt252,
+    resources: crate::presets::ResourcePreset,
+    exploration: Span<crate::exploration_rewards::ExplorationReward>,
+    mode_rules: u32,
+) {
+    crate::logic::release::assert_authority();
+    let preset = crate::state::write().presets.entry(commitment);
+    write_resources(preset, resources.resources);
+    write_production(preset, resources.production);
+    write_mines(preset, resources.mine_kinds, resources.surface_mines);
+    write_exploration(preset, mode_rules, exploration);
+}
+
+pub fn store_structures(commitment: felt252, structures: crate::presets::StructurePreset) {
+    crate::logic::release::assert_authority();
+    write_structures(crate::state::write().presets.entry(commitment), structures);
 }
 
 fn record_exists(preset: PresetWrite) -> bool {
@@ -53,26 +88,34 @@ fn write_structures(preset: PresetWrite, structures: crate::presets::StructurePr
     write_upgrades(preset, structures.upgrade_limits, structures.upgrades);
 }
 
-fn write_settlement(
-    preset: PresetWrite, rules: crate::rules::SliceRules, settlement: crate::presets::SettlementPreset,
+pub fn store_settlement(
+    commitment: felt252,
+    settlement: crate::presets::SettlementPreset,
+    entry_rule: u8,
+    mode_rules: u32,
+    day_unit_seconds: u32,
 ) {
+    crate::logic::release::assert_authority();
+    let preset = crate::state::write().presets.entry(commitment);
     preset
         .settlement_mode
         .write(
-            if rules.entry_rule == crate::rules::ENTRY_ROSTER {
+            if entry_rule == crate::rules::ENTRY_ROSTER {
                 settlement.mode
             } else {
                 crate::settlement::SettlementMode::Single
             },
         );
     preset.settlement_spacing.write(settlement.spacing);
-    write_depths(preset, rules, settlement.depths);
+    write_depths(preset, mode_rules, day_unit_seconds, settlement.depths);
     write_realm_grants(preset, settlement.realms);
     write_villages(preset, settlement.villages);
     preset.spires.write(settlement.spires);
 }
 
-fn write_economy(preset: PresetWrite, rules: crate::rules::SliceRules, economy: crate::presets::EconomyPreset) {
+fn write_economy(
+    preset: PresetWrite, commitment: felt252, rules: crate::rules::SliceRules, economy: crate::presets::EconomyPreset,
+) {
     preset.labor_rules.write(economy.labor);
     preset.trade_rules.write(economy.trade);
     write_banks(preset, economy.banks);
@@ -82,7 +125,10 @@ fn write_economy(preset: PresetWrite, rules: crate::rules::SliceRules, economy: 
     preset.discovery_rules.write(economy.discovery);
     preset.artificer_cost.write(economy.research_cost);
     if let Some(withdrawals) = economy.withdrawals {
-        write_withdrawals(preset, withdrawals);
+        let classes = crate::state::read().releases.read(crate::state::read().current_release.read()).classes;
+        crate::presets::IPresetWithdrawalsDispatcherTrait::store_withdrawal_preset(
+            crate::presets::IPresetWithdrawalsLibraryDispatcher { class_hash: classes.bridge }, commitment, withdrawals,
+        );
     }
 }
 
@@ -283,14 +329,16 @@ fn write_villages(preset: PresetWrite, rules: crate::village::VillageRules) {
     }
 }
 
-fn write_depths(preset: PresetWrite, rules: crate::rules::SliceRules, depths: Span<crate::expeditions::DepthRules>) {
-    let enabled = crate::rules::rule_enabled(rules, crate::rules::DEPTH_CONTENTS);
+fn write_depths(
+    preset: PresetWrite, mode_rules: u32, day_unit_seconds: u32, depths: Span<crate::expeditions::DepthRules>,
+) {
+    let enabled = mode_rules & crate::rules::DEPTH_CONTENTS != 0;
     assert!(depths.len() == if enabled {
         4
     } else {
         0
     }, "incomplete depth rules");
-    assert!(!enabled || rules.day_unit_seconds != 0, "depths require expedition regions");
+    assert!(!enabled || day_unit_seconds != 0, "depths require expedition regions");
     for index in 0..depths.len() {
         let value = *depths.at(index);
         let odds = value.chest;
@@ -354,12 +402,7 @@ fn write_relics(
             game_rules.day_unit_seconds != 0 && crate::rules::rule_enabled(game_rules, crate::rules::DEPTH_CONTENTS),
             "chest tables require depth rules",
         );
-        assert!(
-            value.pool != 0
-                && value.price_ceiling != 0
-                && value.estimate_days != 0,
-            "empty chest rules",
-        );
+        assert!(value.pool != 0 && value.price_ceiling != 0 && value.estimate_days != 0, "empty chest rules");
         let shares = value.shares;
         assert!(
             shares.common != 0
@@ -386,10 +429,10 @@ fn write_relics(
 }
 
 fn write_exploration(
-    preset: PresetWrite, rules: crate::rules::SliceRules, rewards: Span<crate::exploration_rewards::ExplorationReward>,
+    preset: PresetWrite, mode_rules: u32, rewards: Span<crate::exploration_rewards::ExplorationReward>,
 ) {
-    if crate::rules::rule_enabled(rules, crate::rules::REVEAL_SUPPLIES) {
-        assert!(crate::rules::rule_enabled(rules, crate::rules::DEPTH_CONTENTS), "reveal yield requires depth rules");
+    if mode_rules & crate::rules::REVEAL_SUPPLIES != 0 {
+        assert!(mode_rules & crate::rules::DEPTH_CONTENTS != 0, "reveal yield requires depth rules");
         assert!(rewards.is_empty(), "reveal yield replaces supply pool");
         return;
     }
@@ -406,7 +449,9 @@ fn write_exploration(
     preset.exploration_reward_count.write(rewards.len());
 }
 
-fn write_withdrawals(preset: PresetWrite, withdrawals: crate::presets::WithdrawalPreset) {
+pub fn store_withdrawals(commitment: felt252, withdrawals: crate::presets::WithdrawalPreset) {
+    crate::logic::release::assert_authority();
+    let preset = crate::state::write().presets.entry(commitment);
     let deposits = withdrawals.deposits;
     let fees: u32 = deposits.realm_fee_bps.into()
         + deposits.velords_fee_bps.into()

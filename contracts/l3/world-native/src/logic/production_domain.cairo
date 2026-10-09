@@ -25,6 +25,18 @@ pub mod ProductionLogic {
     impl ArrivalInternal = ArrivalState::InternalImpl<ContractState>;
     impl ProductionInternal = ProductionState::InternalImpl<ContractState>;
 
+    #[abi(embed_v0)]
+    impl PresetResources of crate::presets::IPresetResources<ContractState> {
+        fn store_resource_preset(
+            ref self: ContractState,
+            commitment: felt252,
+            resources: crate::presets::ResourcePreset,
+            exploration: Span<crate::exploration_rewards::ExplorationReward>,
+            mode_rules: u32,
+        ) {
+            crate::logic::preset_record::store_resources(commitment, resources, exploration, mode_rules);
+        }
+    }
     #[storage]
     #[allow(starknet::colliding_storage_paths)]
     struct Storage {
