@@ -6,6 +6,7 @@ import { shortAddress } from "@/ui/design-system/kit/address";
 import { formatExact } from "@/ui/design-system/kit/amount";
 import { Button } from "@/ui/design-system/kit/button";
 import { type IconCode, KitIcon } from "@/ui/design-system/kit/kit-icon";
+import { ReasonPlate } from "@/ui/design-system/kit/reason-plate";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
 import { Loading } from "../loading";
@@ -31,12 +32,28 @@ const WalletSign = lazy(() =>
 
 /**
  * The lobby's step for a paid Blitz: its entry read from the ledger for the payout wallet, read again once the
- * wallet has sent its call.
+ * wallet has sent its call. `account` is the player's own Realms account, null until it is known.
  */
-export const PaidEntry = ({ ledger, wallet }: { ledger: LedgerRef; wallet: PayoutWallet }) => {
+export const PaidEntry = ({
+  ledger,
+  wallet,
+  account,
+}: {
+  ledger: LedgerRef;
+  wallet: PayoutWallet;
+  account: string | null;
+}) => {
   const terms = useEntryTerms(ledger, wallet.status === "no_wallet" ? null : wallet.address);
   if (terms.isError) return <ServiceFailure service="ledger" error={terms.error} retry={() => void terms.refetch()} />;
-  return <EntryPanel ledger={ledger} terms={terms.data} wallet={wallet} onSent={() => void terms.refetch()} />;
+  return (
+    <EntryPanel
+      ledger={ledger}
+      terms={terms.data}
+      wallet={wallet}
+      account={account}
+      onSent={() => void terms.refetch()}
+    />
+  );
 };
 
 /**
@@ -48,11 +65,13 @@ const EntryPanel = ({
   ledger,
   terms,
   wallet,
+  account,
   onSent,
 }: {
   ledger: LedgerRef;
   terms: EntryTerms | undefined;
   wallet: PayoutWallet;
+  account: string | null;
   onSent: () => void;
 }) => {
   const [choice, setChoice] = useState<EntryChoice>({ sword: false, shield: false });
@@ -60,8 +79,8 @@ const EntryPanel = ({
   const [sent, setSent] = useState(false);
   const now = useNowSeconds();
   if (wallet.status === "no_wallet") return <NoWallet />;
-  if (!terms) return <Loading />;
-  const state = entryState(terms, choice, now);
+  if (!terms || account === null) return <Loading />;
+  const state = entryState(terms, choice, now, account);
   const cost = entryCost(terms, choice);
   const done = () => {
     setSigning(false);
@@ -72,6 +91,8 @@ const EntryPanel = ({
   if (state === "seated") return <Seated terms={terms} />;
   if (state === "refunded") return <Refunded terms={terms} />;
   if (state === "closed") return <Closed />;
+  if (state === "linking") return <Linking />;
+  if (state === "linked-elsewhere") return <LinkedElsewhere />;
   const sign = signing && (
     <Suspense fallback={<Loading />}>
       <WalletSign
@@ -225,6 +246,24 @@ const Seated = ({ terms }: { terms: EntryTerms }) => {
         ]}
         total={registration.paid}
       />
+    </Plate>
+  );
+};
+
+/** The relay is linking the payout wallet to the player's account on the ledger; the entry opens once it has. */
+const Linking = () => (
+  <Plate icon="Hg" title={ENTRY_WORDS.linking}>
+    <p className="font-body text-[16px] text-kit-cream">{ENTRY_WORDS.linkingLine}</p>
+  </Plate>
+);
+
+/** The ledger links the payout wallet to another Realms account: paying would seat that account, so nothing is offered. */
+const LinkedElsewhere = () => {
+  const navigate = useNavigate();
+  return (
+    <Plate icon="Wt" title={ENTRY_WORDS.entry}>
+      <ReasonPlate reason={{ kind: "failed", line: ENTRY_WORDS.linkedElsewhere }} />
+      <Button role="outline" word={WALLET_WORDS.payoutWallet} icon="Wt" onClick={() => navigate("/profile/account")} />
     </Plate>
   );
 };

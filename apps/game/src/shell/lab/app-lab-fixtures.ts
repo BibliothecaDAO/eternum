@@ -223,6 +223,7 @@ const ENTRY: EntryTerms = {
   credits: { swords: 2, shields: 0 },
   registration: NOT_REGISTERED,
   lordsToken: "0x10e5",
+  linkedAccount: LAB_PLAYER,
   lords: 2_140n * WEI,
   strk: 10n ** 17n,
 };

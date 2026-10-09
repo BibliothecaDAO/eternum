@@ -42,6 +42,7 @@ const TERMS: EntryTerms = {
   credits: { swords: 2, shields: 0 },
   registration: { registered: false, sword: false, shield: false, swordCredit: false, shieldCredit: false, paid: 0n },
   lordsToken: "0x10e5",
+  linkedAccount: "0x7a",
   lords: 2_140n * WEI,
   strk: 10n ** 17n,
 };
@@ -58,7 +59,7 @@ const mount = async (terms: EntryTerms, wallet: PayoutWallet = WALLET) => {
     root.render(
       <QueryClientProvider client={client}>
         <MemoryRouter>
-          <PaidEntry ledger={LEDGER} wallet={wallet} />
+          <PaidEntry ledger={LEDGER} wallet={wallet} account="0x7a" />
         </MemoryRouter>
       </QueryClientProvider>,
     ),
@@ -91,6 +92,7 @@ it("pays the seat and the chosen flags from the payout wallet, a credit paying f
   expect(split).toBe("76040200");
   await press(panel, "Pay & join");
   await press(panel, "Sign");
+  // register names no account: the ledger registers the one it links to the paying wallet.
   expect(signed.calls).toEqual([
     [
       expect.objectContaining({ entrypoint: "approve", calldata: ["0x1ed9e7", String(1_000n * WEI), "0"] }),
@@ -125,4 +127,17 @@ it("names what is short, the missing STRK, the seat, and the refund", async () =
   expect(signed.calls).toEqual([[expect.objectContaining({ entrypoint: "refund", calldata: ["0x52", "7"] })]]);
 
   expect((await mount(TERMS, { status: "no_wallet" })).textContent).toContain("Entry is paid from your payout wallet");
+});
+
+it("shows linking until the ledger links the payout wallet to this account, and a wallet linked elsewhere as a fault", async () => {
+  const linking = await mount({ ...TERMS, linkedAccount: "0x0" });
+  expect(linking.textContent).toContain("Linking your wallet");
+  expect([...linking.querySelectorAll("button")].map((button) => button.textContent)).not.toContain("Pay & join");
+
+  const elsewhere = await mount({ ...TERMS, linkedAccount: "0x99" });
+  expect(elsewhere.textContent).toContain("This payout wallet is linked to another Realms account.");
+  expect(elsewhere.textContent).not.toContain("Pay & join");
+
+  const linked = await mount(TERMS);
+  expect(linked.textContent).toContain("Pay & join");
 });

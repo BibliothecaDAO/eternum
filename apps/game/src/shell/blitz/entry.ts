@@ -19,6 +19,8 @@ export interface EntryTerms {
   registration: Registration;
   /** The ledger's LORDS token, which the entry approves. */
   lordsToken: string;
+  /** The Realms account the ledger links to the payout wallet ("0x0" while none): the account it registers. */
+  linkedAccount: string;
   lords: bigint;
   strk: bigint;
 }
@@ -49,19 +51,31 @@ export const entryCost = (terms: Pick<EntryTerms, "prices" | "credits">, choice:
   return { cash, swordCredit, shieldCredit };
 };
 
-type EntryState = "choose" | "short" | "no-strk" | "seated" | "refund" | "refunded" | "closed";
+type EntryState =
+  | "choose"
+  | "short"
+  | "no-strk"
+  | "seated"
+  | "refund"
+  | "refunded"
+  | "closed"
+  | "linking"
+  | "linked-elsewhere";
 
 /**
  * The panel's state: seated once registered; on a cancelled game, a refund until the paid LORDS and spent credits are
- * back; closed to anyone else once the game has started; otherwise choosing, short of LORDS, or holding LORDS with no
- * STRK for the network fee.
+ * back; closed to anyone else once the game has started. The ledger registers the account it links to the payout
+ * wallet, so before paying: linking until that link names the player's own Realms account, and a fault while it names
+ * another. Then choosing, short of LORDS, or holding LORDS with no STRK for the network fee.
  */
-export const entryState = (terms: EntryTerms, choice: EntryChoice, now: number): EntryState => {
+export const entryState = (terms: EntryTerms, choice: EntryChoice, now: number, account: string): EntryState => {
   const { registration } = terms;
   if (registration.registered && terms.cancelled)
     return registration.paid > 0n || registration.swordCredit || registration.shieldCredit ? "refund" : "refunded";
   if (registration.registered) return "seated";
   if (now >= terms.start) return "closed";
+  if (BigInt(terms.linkedAccount) === 0n) return "linking";
+  if (BigInt(terms.linkedAccount) !== BigInt(account)) return "linked-elsewhere";
   if (terms.lords < entryCost(terms, choice).cash) return "short";
   if (terms.strk === 0n) return "no-strk";
   return "choose";
@@ -90,12 +104,17 @@ export const useEntryTerms = (ledger: LedgerRef | null, wallet: string | null) =
     ),
     queryFn: () => readEntryTerms(ledger as LedgerRef, wallet as string),
     enabled: ledger !== null && wallet !== null,
-    refetchInterval: 15_000,
+    // While the relay links the wallet to the account, read again soon: the entry opens as soon as the link lands.
+    refetchInterval: (query) => (query.state.data && BigInt(query.state.data.linkedAccount) === 0n ? 5_000 : 15_000),
   });
 
 const readEntryTerms = async (ledger: LedgerRef, wallet: string): Promise<EntryTerms> => {
   const read = await ledgerOf(ledger);
-  const [game, lordsToken] = await Promise.all([read.game(ledger.key), read.lordsToken()]);
+  const [game, lordsToken, linkedAccount] = await Promise.all([
+    read.game(ledger.key),
+    read.lordsToken(),
+    read.accountOfWallet(wallet),
+  ]);
   const [preset, credits, registration, lords, strk] = await Promise.all([
     read.preset(game.presetId),
     read.credits(wallet),
@@ -113,6 +132,7 @@ const readEntryTerms = async (ledger: LedgerRef, wallet: string): Promise<EntryT
     credits,
     registration,
     lordsToken,
+    linkedAccount,
     lords,
     strk,
   };
