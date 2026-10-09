@@ -631,7 +631,7 @@ pub mod GameLedger {
             assert!(start < end, "Ledger: invalid game window");
 
             let season = self.get_season(season_id);
-            assert!(start >= season.start && end <= season.end, "Ledger: game outside season");
+            assert!(start >= season.start && end < season.end, "Ledger: game outside season");
             self.games.entry(key).write(Game { exists: true, season_id, preset_id, start, end, ..Default::default() });
             self.emit(GameOpened { key, preset_id, start, end });
         }
