@@ -50,15 +50,19 @@ Simulations and fee estimates are never stamped. The node's write RPC is interna
 Behind a tunnel, set TRUSTED_PROXY to its actual socket peer. With loopback bindings initialization derives that peer
 from the Compose network route; exposed bindings trust no proxy unless explicitly configured.
 
-Herald's existing listener first serves the real prepared identity at `/manifest`, with other routes unavailable. Init
-registers the official Herald URL as pending before enrolling the operator. Pending shards are hidden from players. Init
+The identity service must carry the pending route before a shard from this code starts. Deploy the identity Worker
+containing `/api/directory/shards/pending` before running official deployment; a missing route fails with this prerequisite.
+The local runner and initializer never list shards, including measurement shards.
+
+Herald's existing listener first serves the real prepared identity at `/manifest`, with other routes unavailable. Official deployment
+registers the Herald URL as pending after starting Herald and before starting initialization or enrolling the operator. Pending shards are hidden from players. Init
 then deploys Games, sets owner/launcher/ledger roles and registers the selected presets. This bootstrap assigns all
 three roles to the enrolled operator; later role changes use the contract's existing owner-authorized setters.
 
 Deployment's last step runs `deploy/athanor/harness/self-check.ts` in the harness container against the same public
 stamping RPC. Only a passing result promotes the directory entry to active. A failure writes `data/self-check.json`,
-exits nonzero naming the first failed route and leaves the shard pending. Re-run deployment after correcting the fault;
-it repeats the check. The runner and fixture are the harness implementation, not a separate deployment test suite.
+exits nonzero naming the first failed route and leaves directory status unchanged. Re-run deployment after correcting the fault;
+it repeats the check only while PENDING. An ACTIVE or DRAINING rerun creates no check games. The runner and fixture are the harness implementation, not a separate deployment test suite.
 
 Metrics collect OTLP and sample container CPU from a read-only cgroup mount, without a Docker socket or write access.
 The compose services restart on failure. Initializer logs and `harness.env` are private and must never be published.

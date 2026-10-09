@@ -155,12 +155,6 @@ def deploy(config, presets):
 
 
 def deploy_world_once(config, env):
-    from deploy import directory_status
-    shard.wait_for_endpoint(env["HERALD_URL"] + "/manifest")
-    if os.environ.get("OPERATOR_TOKEN"):
-        directory_status(config, "pending")
-    elif not (DATA / "operator-enrolment.json").exists():
-        raise ValueError("Register community shard pending and supply its operator enrollment before deployment")
     shard.run(["bun", "deploy/athanor/scripts/host-accounts.ts", "deploy", str(DATA)], DATA, "host-account-deploy", env)
     shard.deploy_world(config, DATA, env)
     shard.run(["bun", "deploy/athanor/scripts/inspect-shard-roles.ts", str(DATA), env["RPC_URL"]], DATA, "shard-roles", env)

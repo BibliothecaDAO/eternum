@@ -19,6 +19,8 @@ from pathlib import Path
 import subprocess
 import sys
 import tarfile
+import time
+from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
 import shard
@@ -36,10 +38,10 @@ def main(environment, directory):
         release = fetch_package(inputs["package"], directory)
         (directory / ".env").write_text(render_environment(inputs, (directory / "images.env").read_text()))
         check_operator_approval(directory, rendered_init_environment(directory))
-        start(directory)
+        status = start(directory, inputs)
         differences = release_differences(release, *deployed_facts(directory / "data"), inputs["presets"])
-        if not differences:
-            verify_and_activate(inputs,directory)
+        if not differences and status["status"] == "pending":
+            verify_and_activate(inputs, directory / "data")
     if differences:
         print(f"{environment} does not run {inputs['package']}:", *differences, sep="\n  ", file=sys.stderr)
         return 1
@@ -114,15 +116,37 @@ def check_operator_approval(directory, init_environment):
         raise ValueError("Initialization would get no OPERATOR_TOKEN and data/ has no operator-enrolment.json")
 
 
-def start(directory):
+def start(directory, config):
     # Materialize the protected file before Compose creates the RPC container's file bind.
     subprocess.run([*compose(directory), "run", "--rm", "--no-deps", "prepare"], check=True)
+    subprocess.run([*compose(directory), "up", "-d", "herald", "metrics"], check=True)
+    wait_for_identity(config)
+    status = directory_status(config, "pending")
     subprocess.run([*compose(directory), "up", "-d"], check=True)
     subprocess.run([*compose(directory), "wait", "init"], check=True, stdout=subprocess.DEVNULL)
     code = subprocess.check_output([*compose(directory), "ps", "--all", "--format", "{{.ExitCode}}", "init"],
                                    text=True).strip()
     if code != "0":
         raise RuntimeError(f"initialization exited {code}; read {directory / 'data'}/*.log")
+    return status
+
+
+PENDING_ROUTE_PREREQUISITE = "The identity service must carry the pending route before a shard from this code starts"
+
+
+def wait_for_identity(config):
+    deadline = time.monotonic() + 120
+    while time.monotonic() < deadline:
+        try:
+            with urlopen(config["public_herald_url"].rstrip("/") + "/manifest", timeout=3) as response:
+                identity = json.load(response)["shard"]
+            expected = "0x" + config["chain_id"].encode("ascii").hex()
+            if int(identity["chainId"], 16) != int(expected, 16):
+                raise RuntimeError("Herald serves a different shard identity")
+            return
+        except (OSError, KeyError, ValueError):
+            time.sleep(1)
+    raise RuntimeError("Herald did not serve the prepared shard identity")
 
 
 def directory_status(config, status):
@@ -137,8 +161,13 @@ def directory_status(config, status):
         base + suffix, data=json.dumps({"url": config["public_herald_url"]}).encode(),
         headers={"Content-Type": "application/json", "Authorization": "Bearer " + token}, method="POST",
     )
-    with urlopen(request, timeout=30) as response:
-        result = json.load(response)
+    try:
+        with urlopen(request, timeout=30) as response:
+            result = json.load(response)
+    except HTTPError as error:
+        if status == "pending" and error.code == 404:
+            raise RuntimeError(PENDING_ROUTE_PREREQUISITE) from None
+        raise
     allowed = ("pending", "active", "draining") if status == "pending" else ("active", "draining")
     if result.get("status") not in allowed:
         raise RuntimeError("Directory returned an unexpected shard status")
@@ -147,7 +176,7 @@ def directory_status(config, status):
 
 def run_self_check(directory, command=None):
     result = subprocess.run(
-        [*(command or compose(directory)), "run", "--rm", "--no-deps", "--entrypoint", "python3",
+        [*(command or compose(directory.parent)), "run", "--rm", "--no-deps", "--entrypoint", "python3",
          "harness", "/app/deploy/shard/init.py", "self-check"], capture_output=True, text=True,
     )
     # The runner emits public route/status JSON only. Never echo arbitrary setup failures/credentials.
@@ -161,11 +190,11 @@ def run_self_check(directory, command=None):
 
 
 def verify_and_activate(config, directory, command=None):
-    check = run_self_check(directory, command) if command else run_self_check(directory)
-    shard.write_json(directory / "data" / "self-check.json", check)
+    check = run_self_check(directory, command)
+    shard.write_json(directory / "self-check.json", check)
     if not check.get("passed"):
         route = check.get("firstFailedRoute", "unknown_route")
-        raise RuntimeError(f"self-check failed at {route}; shard remains pending")
+        raise RuntimeError(f"self-check failed at {route}; directory status unchanged")
     directory_status(config, "active")
     print(json.dumps({"event": "shard_self_check_passed", "routes": len(check.get("completed", [])), "status": "active"}))
 
