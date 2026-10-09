@@ -1,7 +1,7 @@
-export { completeNativeBatches, nativeExecutionOutcomes } from "./native-batch";
+export { completeNativeBatches } from "./native-batch";
 export { batchRemaining, gameplayRejection } from "./native-receipt";
 export type { GameplayRejection } from "./native-receipt";
-export type { BatchTransactionReceipt, NativeExecutionOutcome } from "@bibliothecadao/types";
+export type { BatchTransactionReceipt } from "@bibliothecadao/types";
 import { requireBatchReceipt } from "./native-batch";
 export { encodeNativeCommand } from "./native-command";
 export type { NativeCommand, NativeCommandPayloads } from "./native-command";

@@ -27,12 +27,12 @@ describe("gameplay account submits", () => {
   });
 
   it("keeps one send in flight: the next reads its nonce only once the previous is in a block", async () => {
-    let includeFirst!: () => void;
+    let firstInBlock = false;
     const account = createAccount(
       "0x999",
       ["0x7", "0x8"],
       async () => ({ transaction_hash: `0x${account.execute.mock.calls.length}` }),
-      (hash) => (hash === "0x1" ? new Promise<void>((resolve) => (includeFirst = resolve)) : Promise.resolve()),
+      async (hash) => ({ finality_status: hash !== "0x1" || firstInBlock ? "PRE_CONFIRMED" : "RECEIVED" }),
     );
 
     const first = executeGameplayAccountTransaction({ account, calls: CALL, shard: SHARD });
@@ -42,7 +42,28 @@ describe("gameplay account submits", () => {
     expect(account.getNonce).toHaveBeenCalledTimes(1);
     expect(account.execute).toHaveBeenCalledTimes(1);
 
-    includeFirst();
+    firstInBlock = true;
+    await expect(second).resolves.toEqual({ transaction_hash: "0x2" });
+    expect(account.execute.mock.calls.map(([, details]) => details?.nonce)).toEqual(["0x7", "0x8"]);
+  });
+
+  it("keeps the next send waiting while the sent transaction's status cannot be read", async () => {
+    let readable = false;
+    const account = createAccount(
+      "0x555",
+      ["0x7", "0x8"],
+      async () => ({ transaction_hash: `0x${account.execute.mock.calls.length}` }),
+      async () => {
+        if (!readable) throw new Error("upstream timed out");
+        return { finality_status: "PRE_CONFIRMED" };
+      },
+    );
+    const first = executeGameplayAccountTransaction({ account, calls: CALL, shard: SHARD });
+    const second = executeGameplayAccountTransaction({ account, calls: CALL, shard: SHARD });
+    await expect(first).resolves.toEqual({ transaction_hash: "0x1" });
+    await new Promise((resolve) => setTimeout(resolve, 600));
+    expect(account.execute).toHaveBeenCalledTimes(1);
+    readable = true;
     await expect(second).resolves.toEqual({ transaction_hash: "0x2" });
     expect(account.execute.mock.calls.map(([, details]) => details?.nonce)).toEqual(["0x7", "0x8"]);
   });
@@ -88,7 +109,9 @@ function createAccount(
   address: string,
   nonces: string[],
   execute: (calls: AllowArray<Call>, details?: UniversalDetails) => Promise<{ transaction_hash: string }>,
-  inBlock: (transactionHash: string) => Promise<void> = async () => {},
+  status: (transactionHash: string) => Promise<{ finality_status: string }> = async () => ({
+    finality_status: "PRE_CONFIRMED",
+  }),
 ) {
   return {
     address,
@@ -98,7 +121,7 @@ function createAccount(
       if (!nonce) throw new Error("No nonce prepared for test");
       return nonce;
     }),
-    waitForTransaction: vi.fn(inBlock),
+    getTransactionStatus: vi.fn(status),
   };
 }
 

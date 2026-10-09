@@ -14,20 +14,26 @@ export interface GameplayRejection {
 /**
  * The game's refusal recorded in this transaction's receipt, if any (games-interface GameplayRejected v1: keys
  * version, game_id, actor, tx_hash; data status_class, reason as a ByteArray). A transaction that succeeded with no
- * rejection was applied.
+ * rejection was applied. Anything but one well-formed v1 rejection for this transaction is refused, never guessed.
  */
 export function gameplayRejection(
   events: readonly ReceiptEvent[],
   games: string,
   transactionHash: string,
 ): GameplayRejection | undefined {
-  const event = events.find(
-    (candidate) =>
-      BigInt(candidate.from_address) === BigInt(games) &&
-      BigInt(candidate.keys[0] ?? "0") === GAMEPLAY_REJECTED &&
-      BigInt(candidate.keys[4] ?? "0") === BigInt(transactionHash),
+  const event = onlyOne(
+    events.filter(
+      (candidate) =>
+        BigInt(candidate.from_address) === BigInt(games) &&
+        BigInt(candidate.keys[0] ?? "0") === GAMEPLAY_REJECTED &&
+        BigInt(candidate.keys[4] ?? "0") === BigInt(transactionHash),
+    ),
+    "gameplay rejection",
   );
   if (!event) return undefined;
+  const [, version, gameId] = event.keys.map(BigInt);
+  if (event.keys.length !== 5 || version !== 1n || gameId! <= 0n || gameId! >= 2n ** 32n)
+    throw new Error("Malformed gameplay rejection");
   const [statusClass, ...reason] = event.data;
   if (statusClass === undefined) throw new Error("Malformed gameplay rejection");
   return {
@@ -37,23 +43,33 @@ export function gameplayRejection(
 }
 
 /**
- * What a batched command left to do after this transaction (games-interface BatchProgress: key game_id; data actor,
- * tx_hash, remaining); undefined when the command is not batched.
+ * What a batched command left to do after this transaction (games-interface BatchProgress: keys selector, game_id;
+ * data actor, tx_hash, remaining:u64); undefined when the command is not batched. Missing is never zero.
  */
 export function batchRemaining(
   events: readonly ReceiptEvent[],
   games: string,
   transactionHash: string,
 ): bigint | undefined {
-  const event = events.find(
-    (candidate) =>
-      BigInt(candidate.from_address) === BigInt(games) &&
-      BigInt(candidate.keys[0] ?? "0") === BATCH_PROGRESS &&
-      BigInt(candidate.data[1] ?? "0") === BigInt(transactionHash),
+  const event = onlyOne(
+    events.filter(
+      (candidate) =>
+        BigInt(candidate.from_address) === BigInt(games) &&
+        BigInt(candidate.keys[0] ?? "0") === BATCH_PROGRESS &&
+        BigInt(candidate.data[1] ?? "0") === BigInt(transactionHash),
+    ),
+    "batch result",
   );
   if (!event) return undefined;
-  if (event.data.length !== 3) throw new Error("Malformed native batch result");
-  return BigInt(event.data[2]!);
+  if (event.keys.length !== 2 || event.data.length !== 3) throw new Error("Malformed native batch result");
+  const remaining = BigInt(event.data[2]!);
+  if (remaining < 0n || remaining >= 2n ** 64n) throw new Error("Malformed native batch result");
+  return remaining;
+}
+
+function onlyOne(events: readonly ReceiptEvent[], what: string): ReceiptEvent | undefined {
+  if (events.length > 1) throw new Error(`Ambiguous ${what}: one transaction has ${events.length}`);
+  return events[0];
 }
 
 /** A Cairo ByteArray (word count, words, pending word, its length), validated whole before it is decoded. */
