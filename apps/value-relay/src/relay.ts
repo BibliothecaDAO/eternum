@@ -1,5 +1,5 @@
 import { blitzCommitment } from "./blitz-commitment";
-import { Effect } from "effect";
+import { Effect, Result } from "effect";
 import type { ConfirmedBlock, LaborClaim, RelayPorts } from "./ports";
 import { RelayFailure, relayOperation } from "./ports";
 import type { RelayProgress, RelayStore } from "./state";
@@ -69,7 +69,11 @@ const payWithdrawals = (ports: RelayPorts, store: RelayStore) =>
     for (const withdrawal of withdrawals) {
       const wallet = yield* ports.identity.payoutWallet(withdrawal.realmsId);
       if (wallet.status !== "ready") continue;
-      yield* ports.ledger.pay(withdrawal, wallet.address);
+      const payment = yield* Effect.result(ports.ledger.pay(withdrawal, wallet.address));
+      if (Result.isFailure(payment)) {
+        if (payment.failure.operation === "ledger_clock_behind") continue;
+        return yield* Effect.fail(payment.failure);
+      }
       yield* relayOperation("complete withdrawal", () => store.completeWithdrawal(withdrawal.transactionHash));
     }
   });

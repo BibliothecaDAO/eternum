@@ -1,3 +1,5 @@
+import { ShardReader } from "./shard-rpc";
+import { shardWithdrawalPorts } from "./shard-withdrawals";
 import { chestLedgerReads, finishChestOnLedger } from "./chest-ledger";
 import { DurableChestStore, finishRequestedChests } from "./chests";
 import { DurableObject } from "cloudflare:workers";
@@ -7,10 +9,12 @@ import { ledgerPaymentAdapter, realmsOwnershipAdapter } from "./chain";
 import { pendingRelayPorts } from "./adapters";
 import { runRelay, grantDailyLabor } from "./relay";
 import { DurableRelayStore } from "./state";
-import { relayOperation, type RelayPorts, type LaborClaim } from "./ports";
+import { RelayFailure, relayOperation, type RelayPorts, type LaborClaim } from "./ports";
 
 interface RelayEnv {
   SHARD_CHAIN_ID: string;
+  SHARD_RPC_URL: string;
+  SHARD_GAMES_ADDRESS: string;
   LEDGER_RPC_URL: string;
   LEDGER_ADDRESS: string;
   LEDGER_OPERATOR_ADDRESS: string;
@@ -19,6 +23,7 @@ interface RelayEnv {
   IDENTITY: {
     payoutWallet(id: string): Promise<import("@realms-world/identity").PayoutWallet>;
     linkedWallet(id: string): Promise<string | null>;
+    realmsIdForAccount(account: string): Promise<string | null>;
   };
   RELAY: DurableObjectNamespace<ValueRelay>;
 }
@@ -87,13 +92,32 @@ export class ValueRelay extends DurableObject<RelayEnv> {
   }
 }
 
-const relayPortsOf = (env: RelayEnv): RelayPorts =>
-  pendingRelayPorts(env.IDENTITY, ledgerPortsOf(env), {
+const relayPortsOf = (env: RelayEnv): RelayPorts => {
+  const ports = pendingRelayPorts(env.IDENTITY, ledgerPortsOf(env), {
     ownerOf: (realmId) =>
       relayOperation("read Realm owner", () =>
         Effect.runPromise(realmsOwnershipAdapter(env.LEDGER_RPC_URL, env.REALMS_ADDRESS).ownerOf(realmId)),
       ),
   });
+  return {
+    ...ports,
+    shard: {
+      ...ports.shard,
+      ...shardWithdrawalPorts(
+        new ShardReader({
+          rpcUrl: env.SHARD_RPC_URL,
+          gamesAddress: env.SHARD_GAMES_ADDRESS,
+          chainId: env.SHARD_CHAIN_ID,
+        }),
+        {
+          realmsIdForAccount: (account) => env.IDENTITY.realmsIdForAccount(account),
+          frontierSeason: () =>
+            Effect.fail(new RelayFailure({ operation: "interface_unavailable:frontier.game_season_binding" })),
+        },
+      ),
+    },
+  };
+};
 const ledgerPortsOf = (env: RelayEnv): RelayPorts["ledger"] => ({
   pay: (withdrawal, wallet) =>
     relayOperation("pay Frontier claim", () =>

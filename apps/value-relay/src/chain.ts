@@ -2,7 +2,8 @@ import { rpcAt } from "./rpc";
 import { Account, RpcProvider } from "starknet";
 import type { RelayPorts } from "./ports";
 import { frontierPayment } from "./adapters";
-import { relayOperation } from "./ports";
+import { Effect } from "effect";
+import { RelayFailure, relayOperation } from "./ports";
 
 interface LedgerCredentials {
   rpcUrl: string;
@@ -14,7 +15,7 @@ interface LedgerCredentials {
 /** The operator signs in the Worker; completion means the ledger transaction was confirmed. */
 export const ledgerPaymentAdapter = (credentials: LedgerCredentials): RelayPorts["ledger"]["pay"] => {
   const { provider, account } = ledgerAccountOf(credentials);
-  return frontierPayment(async (entrypoint, calldata) => {
+  const pay = frontierPayment(async (entrypoint, calldata) => {
     const transaction = await account.execute({
       contractAddress: credentials.contractAddress,
       entrypoint,
@@ -23,6 +24,21 @@ export const ledgerPaymentAdapter = (credentials: LedgerCredentials): RelayPorts
     const receipt = await provider.waitForTransaction(transaction.transaction_hash);
     if (receipt.isReverted()) throw new Error("ledger_payment_reverted");
   });
+  return (withdrawal, wallet) =>
+    Effect.gen(function* () {
+      if (!Number.isSafeInteger(withdrawal.confirmedAt) || withdrawal.confirmedAt < 0)
+        return yield* Effect.fail(new RelayFailure({ operation: "withdrawal_clock_missing" }));
+      const block = yield* relayOperation("read confirmed payout clock", () => provider.getBlock("latest"));
+      if (
+        !("status" in block) ||
+        !["ACCEPTED_ON_L2", "ACCEPTED_ON_L1"].includes(block.status ?? "") ||
+        !Number.isSafeInteger(block.timestamp)
+      )
+        return yield* Effect.fail(new RelayFailure({ operation: "payout_clock_unconfirmed" }));
+      if (block.timestamp < withdrawal.confirmedAt)
+        return yield* Effect.fail(new RelayFailure({ operation: "ledger_clock_behind" }));
+      yield* pay(withdrawal, wallet);
+    });
 };
 
 /** Read current ERC721 ownership at a confirmed Starknet head for every labor request. */

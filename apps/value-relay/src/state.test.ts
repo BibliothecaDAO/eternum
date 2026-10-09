@@ -53,7 +53,14 @@ it("persists confirmed obligations, cursor and halt across actual Worker restart
       durableObjects: { TEST: { className: "StateTest", useSQLite: true } },
       durableObjectsPersist: join(root, "storage"),
     });
-  const withdrawal = { chainId: "0x1", seasonId: 1, transactionHash: "0xabc", realmsId: "0x2", amount: "17" };
+  const withdrawal = {
+    chainId: "0x1",
+    seasonId: 1,
+    transactionHash: "0xabc",
+    realmsId: "0x2",
+    amount: "17",
+    confirmedAt: 1000,
+  };
   const block = {
     chainId: "0x1",
     number: 0,

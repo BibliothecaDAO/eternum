@@ -3,6 +3,7 @@ import { normalizeStarknetAddress } from "@realms-world/identity";
 import { realmsAccountAddress } from "@realms-world/identity/account";
 import { Effect } from "effect";
 import type { IdentityEnv } from "./env";
+import { realmsIdsOfAccounts } from "./realms-accounts";
 import { lookupPayoutWallet, readLinkedWallet } from "./payout-wallet";
 
 /** Only a service binding exposes these reads; they have no public HTTP route. */
@@ -22,5 +23,8 @@ export class ValueIdentity extends WorkerEntrypoint<IdentityEnv> {
       .first<{ realmsId: string }>();
     if (!user) return null;
     return realmsAccountAddress(user.realmsId, this.env.ACCOUNT_CLASS_HASH, await this.env.GUARDIAN.publicKey());
+  }
+  async realmsIdForAccount(account: string): Promise<string | null> {
+    return (await realmsIdsOfAccounts(this.env.DB, [account])).get(normalizeStarknetAddress(account)) ?? null;
   }
 }

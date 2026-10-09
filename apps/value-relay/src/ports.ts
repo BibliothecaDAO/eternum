@@ -9,6 +9,7 @@ export interface Withdrawal {
   transactionHash: string;
   realmsId: string;
   amount: string;
+  confirmedAt: number;
 }
 export interface BlitzCommitment {
   chainId: string;
@@ -49,7 +50,7 @@ export interface ConfirmedBlock {
   withdrawals: readonly Withdrawal[];
   results: readonly BlitzResult[];
 }
-export interface PaidClaim extends Omit<Withdrawal, "realmsId"> {
+export interface PaidClaim extends Omit<Withdrawal, "realmsId" | "confirmedAt"> {
   wallet: string;
 }
 export interface LaborClaim {

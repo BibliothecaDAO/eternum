@@ -7,7 +7,14 @@ import { frontierPayment } from "./adapters";
 import { RelayFailure, type RelayPorts, type ConfirmedBlock, type Withdrawal, type BlitzResult } from "./ports";
 import type { RelayStore } from "./state";
 
-const withdrawal: Withdrawal = { chainId: "0x1", seasonId: 4, transactionHash: "0xabc", realmsId: "0x2", amount: "17" };
+const withdrawal: Withdrawal = {
+  chainId: "0x1",
+  seasonId: 4,
+  transactionHash: "0xabc",
+  realmsId: "0x2",
+  amount: "17",
+  confirmedAt: 1000,
+};
 const result: BlitzResult = {
   chainId: "0x1",
   gameId: 6,
@@ -262,4 +269,15 @@ it("compares chain and block identities as felts rather than hex spellings", asy
   await f.run();
   f.ports.shard.block = () => Effect.succeed({ ...block, chainId: "0x01", hash: "0x0a" });
   expect(await f.run()).toEqual({ status: "ready" });
+});
+
+it("does not acknowledge a clock-lagged payment and still delivers other result work", async () => {
+  const f = fixture();
+  f.ports.ledger.pay = vi.fn(() => Effect.fail(new RelayFailure({ operation: "ledger_clock_behind" })));
+  await f.run();
+  expect(await f.store.withdrawals()).toHaveLength(1);
+  expect(f.ports.ledger.postResult).toHaveBeenCalledOnce();
+  f.ports.ledger.pay = vi.fn(() => Effect.void);
+  await f.run();
+  expect(await f.store.withdrawals()).toEqual([]);
 });
