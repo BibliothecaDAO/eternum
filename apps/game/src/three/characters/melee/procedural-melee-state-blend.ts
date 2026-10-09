@@ -2,7 +2,6 @@ import { Quaternion, Vector3 } from "three";
 
 import type {
   ProceduralMeleeArmPose,
-  ProceduralMeleeAttackMoments,
   ProceduralMeleeAttackVariantId,
   ProceduralMeleeBodyPose,
   ProceduralMeleeBodyStates,
@@ -96,23 +95,15 @@ function resolveStateChain<T>(
   weights: ProceduralMeleeStateWeights,
 ): (readonly [T, number])[] {
   const chain: (readonly [T, number])[] = [[guard, weights.guardWeight]];
-  if (!weights.variant) return chain;
-  const attack = requireAttackMoments(states, weights.variant);
+  // Gear that declares no states for this attack (a fitted shield with a plain weapon) holds its guard through it.
+  const attack = weights.variant && states.attacks[weights.variant];
+  if (!attack) return chain;
   return [
     ...chain,
     [attack.windup, weights.windup],
     [attack.contact, weights.contact],
     [attack.follow, weights.follow],
   ];
-}
-
-function requireAttackMoments<T>(
-  states: ProceduralMeleeStates<T>,
-  variant: ProceduralMeleeAttackVariantId,
-): ProceduralMeleeAttackMoments<T> {
-  const attack = states.attacks[variant];
-  if (!attack) throw new Error(`The gear declares no states for a ${variant} attack`);
-  return attack;
 }
 
 function holdBody(pose: ProceduralMeleeBodyPose): ProceduralMeleeHeldBody {
