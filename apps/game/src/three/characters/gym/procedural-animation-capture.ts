@@ -233,8 +233,8 @@ function resolveActionCapturePhases(
   }
   if (sequence === "melee-attack") {
     const phases = traceActionCapturePhases(
-      startProceduralMeleeAttack(createIdleProceduralMeleeAttackState()),
-      (state) => advanceProceduralMeleeAttack(state, config.melee, fixedStepSeconds, false).state,
+      startProceduralMeleeAttack(createIdleProceduralMeleeAttackState(), config.melee, config.humanoid.seed),
+      (state) => advanceProceduralMeleeAttack(state, config.melee, config.humanoid.seed, fixedStepSeconds, false).state,
       "Melee",
     );
     const startFrame = phases[phases.length - 1].endFrame;

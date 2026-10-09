@@ -1,4 +1,5 @@
-import type { ProceduralMeleeConfig } from "./procedural-melee-config";
+import { resolveProceduralMeleeAttackVariants, type ProceduralMeleeConfig } from "./procedural-melee-config";
+import type { ProceduralMeleeAttackVariantId } from "./procedural-melee-weapon-catalog";
 
 const MELEE_ATTACK_PHASES = ["idle", "acquire", "windup", "strike", "contact", "followThrough", "recover"] as const;
 
@@ -9,6 +10,8 @@ export interface ProceduralMeleeAttackState {
   contactCount: number;
   phase: ProceduralMeleeAttackPhase;
   phaseElapsedSeconds: number;
+  /** The attack being made, or the last one made; absent before the first. */
+  variant?: ProceduralMeleeAttackVariantId;
 }
 
 export type ProceduralMeleeAttackEvent =
@@ -30,14 +33,35 @@ export function createIdleProceduralMeleeAttackState(): ProceduralMeleeAttackSta
   return { attackGeneration: 0, contactCount: 0, phase: "idle", phaseElapsedSeconds: 0 };
 }
 
-export function startProceduralMeleeAttack(state: ProceduralMeleeAttackState): ProceduralMeleeAttackState {
+/**
+ * Starts the next attack. Its variant is the configured one, or with "auto" the weapon's variants in turn, each bearer
+ * starting at its own place in the turn by its seed.
+ */
+export function startProceduralMeleeAttack(
+  state: ProceduralMeleeAttackState,
+  config: ProceduralMeleeConfig,
+  seed: number,
+): ProceduralMeleeAttackState {
   if (state.phase !== "idle") return state;
+  const attackGeneration = state.attackGeneration + 1;
   return {
     ...state,
-    attackGeneration: state.attackGeneration + 1,
+    attackGeneration,
     phase: "acquire",
     phaseElapsedSeconds: 0,
+    variant: chooseAttackVariant(config, attackGeneration, seed),
   };
+}
+
+function chooseAttackVariant(
+  config: ProceduralMeleeConfig,
+  attackGeneration: number,
+  seed: number,
+): ProceduralMeleeAttackVariantId {
+  if (config.attackVariant !== "auto") return config.attackVariant;
+  const variants = resolveProceduralMeleeAttackVariants(config.weaponId);
+  const seedOffset = (seed >>> 0) % variants.length;
+  return variants[(attackGeneration + seedOffset) % variants.length];
 }
 
 export function cancelProceduralMeleeAttack(state: ProceduralMeleeAttackState): ProceduralMeleeAttackState {
@@ -48,13 +72,14 @@ export function cancelProceduralMeleeAttack(state: ProceduralMeleeAttackState): 
 export function advanceProceduralMeleeAttack(
   state: ProceduralMeleeAttackState,
   config: ProceduralMeleeConfig,
+  seed: number,
   deltaSeconds: number,
   allowAutoAttack = config.autoAttack,
 ): { events: ProceduralMeleeAttackEvent[]; state: ProceduralMeleeAttackState } {
   let next = state;
   let remaining = resolveDeltaSeconds(deltaSeconds);
   const events: ProceduralMeleeAttackEvent[] = [];
-  if (next.phase === "idle" && allowAutoAttack) next = startProceduralMeleeAttack(next);
+  if (next.phase === "idle" && allowAutoAttack) next = startProceduralMeleeAttack(next, config, seed);
 
   for (let transition = 0; transition < MAX_TRANSITIONS_PER_STEP && next.phase !== "idle"; transition += 1) {
     const duration = resolvePhaseDuration(next.phase, config);
@@ -68,7 +93,8 @@ export function advanceProceduralMeleeAttack(
     const advanced = enterNextPhase(next);
     next = advanced.state;
     if (advanced.event) events.push(advanced.event);
-    if (next.phase === "idle" && allowAutoAttack && remaining > 0) next = startProceduralMeleeAttack(next);
+    if (next.phase === "idle" && allowAutoAttack && remaining > 0)
+      next = startProceduralMeleeAttack(next, config, seed);
   }
 
   return { events, state: next };

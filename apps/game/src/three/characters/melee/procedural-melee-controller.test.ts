@@ -8,7 +8,7 @@ import { resolveProceduralMeleeOffhand } from "./procedural-melee-weapon-catalog
 describe("procedural melee controller", () => {
   it("resolves a mounted downward attack and one contact generation", () => {
     const config = createDefaultProceduralMeleeConfig("paladin");
-    const controller = new ProceduralMeleeController(config, true);
+    const controller = new ProceduralMeleeController(config, true, 0);
     const root = new Group();
     expect(controller.attack(new Vector3(0, 0.5, 1.4))).toBe(true);
 
@@ -31,7 +31,7 @@ describe("procedural melee controller", () => {
     };
     const shield = resolveProceduralMeleeOffhand(config.offhandId).armPoses;
     if (!shield) throw new Error("The Knight's shield declares no arm poses");
-    const controller = new ProceduralMeleeController(config, false);
+    const controller = new ProceduralMeleeController(config, false, 0);
     const root = new Group();
     const shieldWristHeight = (moving: boolean, seconds: number) =>
       controller.update(seconds, root, moving).arms.left?.wrist[1];

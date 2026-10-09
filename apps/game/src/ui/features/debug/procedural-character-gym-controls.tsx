@@ -47,6 +47,7 @@ import {
   type ProceduralCollisionGymConfig,
   type ProceduralCollisionGymScenario,
 } from "@/three/characters/gym/procedural-collision-gym-config";
+import { resolveProceduralMeleeAttackVariants } from "@/three/characters/melee/procedural-melee-config";
 import { isProceduralMeleeGearFittedToRig } from "@/three/characters/melee/procedural-melee-weapon-catalog";
 import { resolveProceduralCharacterAppearance } from "@/three/characters/procedural-character-appearance";
 import {
@@ -478,6 +479,7 @@ const MeleeControls = ({ config, onPatchConfig }: CharacterGymControlsProps) => 
         />
       </ControlSection>
       <ControlSection title="Melee attack cycle" icon={<Crosshair />} defaultOpen>
+        <MeleeAttackVariantControl config={config} onPatchConfig={onPatchConfig} />
         <ToggleControl
           label="Auto attack"
           checked={config.melee.autoAttack}
@@ -1012,6 +1014,25 @@ const ArcherRangeFieldList = ({
     ))}
   </>
 );
+
+/** Offered only for a weapon that makes more than one attack: "auto" makes them in turn. */
+const MeleeAttackVariantControl = ({
+  config,
+  onPatchConfig,
+}: Pick<CharacterGymControlsProps, "config" | "onPatchConfig">) => {
+  const variants = resolveProceduralMeleeAttackVariants(config.melee.weaponId);
+  if (variants.length < 2) return null;
+  return (
+    <SelectControl
+      label="Attack"
+      value={config.melee.attackVariant}
+      options={["auto", ...variants].map((variant) => ({ value: variant, label: variant }))}
+      onChange={(attackVariant) =>
+        onPatchConfig({ melee: { attackVariant: attackVariant as ProceduralMeleeConfig["attackVariant"] } })
+      }
+    />
+  );
+};
 
 const MeleeRangeFieldList = ({
   fields,

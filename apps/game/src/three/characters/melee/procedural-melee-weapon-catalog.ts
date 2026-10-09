@@ -46,6 +46,9 @@ export type ProceduralMeleeArmPoses = Readonly<
 
 export type ProceduralMeleeAttackStyle = "chop" | "slash" | "smash";
 
+/** The attacks a weapon makes. Gear that declares no attack states makes one, named by its `attackStyle`. */
+export type ProceduralMeleeAttackVariantId = ProceduralMeleeAttackStyle | "backhand" | "cut" | "thrust";
+
 export interface ProceduralMeleeAssetAlignment {
   axis?: "x" | "y" | "z";
   pivot: "axis-max" | "axis-min" | "center" | "authored";

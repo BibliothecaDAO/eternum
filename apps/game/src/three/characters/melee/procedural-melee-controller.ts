@@ -34,15 +34,18 @@ export class ProceduralMeleeController {
   private hasTarget = false;
   private guardHold = 0;
 
+  /** `seed` is the bearer's: it picks where in the weapon's attack variants this bearer starts. */
   public constructor(
     config: ProceduralMeleeConfig,
     private readonly mounted: boolean,
+    private seed: number,
   ) {
     this.config = applyProceduralMeleeConfigPatch(config, {});
   }
 
-  public updateConfig(config: ProceduralMeleeConfig): void {
+  public updateConfig(config: ProceduralMeleeConfig, seed: number): void {
     this.config = applyProceduralMeleeConfigPatch(this.config, config);
+    this.seed = seed;
   }
 
   public setTarget(targetWorld?: Readonly<Vector3>): void {
@@ -53,7 +56,7 @@ export class ProceduralMeleeController {
   public attack(targetWorld: Readonly<Vector3>): boolean {
     if (this.state.phase !== "idle") return false;
     this.setTarget(targetWorld);
-    this.state = startProceduralMeleeAttack(this.state);
+    this.state = startProceduralMeleeAttack(this.state, this.config, this.seed);
     return true;
   }
 
@@ -65,6 +68,7 @@ export class ProceduralMeleeController {
     const advanced = advanceProceduralMeleeAttack(
       this.state,
       this.config,
+      this.seed,
       deltaSeconds,
       this.hasTarget && this.config.autoAttack,
     );

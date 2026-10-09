@@ -3,6 +3,7 @@ import {
   resolveDefaultProceduralMeleeLoadout,
   resolveProceduralMeleeOffhand,
   resolveProceduralMeleeWeapon,
+  type ProceduralMeleeAttackVariantId,
   type ProceduralMeleeOffhandId,
   type ProceduralMeleeWeaponId,
 } from "./procedural-melee-weapon-catalog";
@@ -10,6 +11,8 @@ import {
 export interface ProceduralMeleeConfig {
   acquireSeconds: number;
   attackArcDegrees: number;
+  /** The attack every attack makes, or "auto" for the weapon's variants in turn. */
+  attackVariant: "auto" | ProceduralMeleeAttackVariantId;
   autoAttack: boolean;
   contactSeconds: number;
   detailedEquipment: boolean;
@@ -34,6 +37,7 @@ export interface ProceduralMeleeConfig {
 const DEFAULT_MELEE_CONFIG: ProceduralMeleeConfig = {
   acquireSeconds: 0.12,
   attackArcDegrees: 118,
+  attackVariant: "auto",
   autoAttack: false,
   contactSeconds: 0.055,
   detailedEquipment: true,
@@ -63,9 +67,10 @@ export function applyProceduralMeleeConfigPatch(
   current: ProceduralMeleeConfig,
   patch: Partial<ProceduralMeleeConfig>,
 ): ProceduralMeleeConfig {
-  const input = { ...current, ...patch };
+  const input = { ...current, ...patch, attackVariant: resolvePatchedAttackVariant(current, patch) };
   resolveProceduralMeleeWeapon(input.weaponId);
   resolveProceduralMeleeOffhand(input.offhandId);
+  assertWeaponMakesAttack(input.weaponId, input.attackVariant);
   return {
     ...input,
     acquireSeconds: clamp(input.acquireSeconds, 0.02, 0.8),
@@ -91,6 +96,31 @@ export function applyDefaultMeleeLoadoutForKind(
   kind: ProceduralUnitKind,
 ): ProceduralMeleeConfig {
   return applyProceduralMeleeConfigPatch(current, resolveDefaultProceduralMeleeLoadout(kind));
+}
+
+/** The attacks a weapon makes, in the order a bearer makes them in turn: one, named by its attack style. */
+export function resolveProceduralMeleeAttackVariants(
+  weaponId: ProceduralMeleeWeaponId,
+): readonly ProceduralMeleeAttackVariantId[] {
+  return [resolveProceduralMeleeWeapon(weaponId).attackStyle];
+}
+
+/** A chosen attack belongs to its weapon: another weapon goes back to "auto" unless the patch chooses again. */
+function resolvePatchedAttackVariant(
+  current: ProceduralMeleeConfig,
+  patch: Partial<ProceduralMeleeConfig>,
+): ProceduralMeleeConfig["attackVariant"] {
+  if (patch.attackVariant) return patch.attackVariant;
+  const weaponChanged = patch.weaponId !== undefined && patch.weaponId !== current.weaponId;
+  return weaponChanged ? "auto" : current.attackVariant;
+}
+
+function assertWeaponMakesAttack(
+  weaponId: ProceduralMeleeWeaponId,
+  attackVariant: ProceduralMeleeConfig["attackVariant"],
+): void {
+  if (attackVariant === "auto" || resolveProceduralMeleeAttackVariants(weaponId).includes(attackVariant)) return;
+  throw new Error(`Procedural melee weapon ${weaponId} makes no ${attackVariant} attack`);
 }
 
 function clamp(value: number, min: number, max: number): number {

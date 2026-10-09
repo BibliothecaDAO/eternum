@@ -152,7 +152,11 @@ export function sampleAttackCycle(subject: KnightGuardSubject): KnightGuardSampl
   const posed = { ...subject.config, animationMode: "idle" as const };
   subject.avatar.updateConfig(posed);
   const meleeConfig = createKnightMeleeConfig();
-  let state: ProceduralMeleeAttackState = startProceduralMeleeAttack(createIdleProceduralMeleeAttackState());
+  let state: ProceduralMeleeAttackState = startProceduralMeleeAttack(
+    createIdleProceduralMeleeAttackState(),
+    meleeConfig,
+    0,
+  );
   const cycle: { action: ReturnType<typeof createGuardAction>; clearance: GuardClearance }[] = [];
   const filter = new ProceduralCharacterPoseFilter();
   for (let frame = 0; state.phase !== "idle" && frame < 600; frame++) {
@@ -166,7 +170,7 @@ export function sampleAttackCycle(subject: KnightGuardSubject): KnightGuardSampl
       ),
     );
     cycle.push({ action, clearance: measureGuardClearance(subject) });
-    state = advanceProceduralMeleeAttack(state, meleeConfig, 1 / FRAMES_PER_SECOND, false).state;
+    state = advanceProceduralMeleeAttack(state, meleeConfig, 0, 1 / FRAMES_PER_SECOND, false).state;
   }
   return Array.from({ length: ATTACK_SAMPLE_COUNT }, (_, index) => {
     const frame = Math.round((index * (cycle.length - 1)) / (ATTACK_SAMPLE_COUNT - 1));

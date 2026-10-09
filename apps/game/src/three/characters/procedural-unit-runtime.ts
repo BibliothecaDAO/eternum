@@ -341,7 +341,7 @@ class HumanoidUnitActor implements ProceduralUnitActor {
     this.config = config;
     this.object = actor.object;
     this.archer = new ProceduralArcherController(config.archer, config.humanoid.seed);
-    this.melee = new ProceduralMeleeController(config.melee, false);
+    this.melee = new ProceduralMeleeController(config.melee, false, config.humanoid.seed);
     this.equipment = new ProceduralUnitEquipment(
       this.object,
       actor,
@@ -381,7 +381,7 @@ class HumanoidUnitActor implements ProceduralUnitActor {
     if (kindChanged) this.crossbowElapsedSeconds = 0;
     this.config = config;
     this.archer.updateConfig(config.archer, config.humanoid.seed);
-    this.melee.updateConfig(config.melee);
+    this.melee.updateConfig(config.melee, config.humanoid.seed);
     if (kindChanged) this.actor.setUpperBodyAction(undefined);
     this.actor.updateConfig(resolveFootUnitCharacterConfig(config));
     if (config.kind !== "archer") this.clearArcherAction();
@@ -1081,7 +1081,7 @@ class MountedUnitActor implements ProceduralUnitActor {
     this.object.name = "procedural-mounted-unit";
     this.object.add(mount.object, rider.object);
     rider.object.scale.setScalar(0.84);
-    this.melee = new ProceduralMeleeController(config.melee, true);
+    this.melee = new ProceduralMeleeController(config.melee, true, config.humanoid.seed);
     this.equipment = new ProceduralUnitEquipment(
       rider.object,
       rider,
@@ -1124,7 +1124,7 @@ class MountedUnitActor implements ProceduralUnitActor {
 
   public updateConfig(config: ProceduralUnitConfig): void {
     this.config = config;
-    this.melee.updateConfig(config.melee);
+    this.melee.updateConfig(config.melee, config.humanoid.seed);
     this.mount.updateConfig(config);
     this.rider.updateConfig(resolveMountedRiderConfig(config));
     this.syncRiderToSaddle(config.humanoid.fixedStep);
