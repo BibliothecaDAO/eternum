@@ -51,7 +51,10 @@ const fixture: DeploymentCheckPort = {
     const rpc = new HarnessProvider(shard.rpcUrl);
     const admin = createHarnessAdminProvider();
     const clients: RouteCase["client"][] = [];
+    // The check's run: disposing it ends the reconciliation of every send its accounts made.
+    const run = new AbortController();
     const dispose = () => {
+      run.abort();
       stopped.removeEventListener("abort", abortSetup);
       try {
         clients.forEach((client) => client.dispose());
@@ -81,7 +84,7 @@ const fixture: DeploymentCheckPort = {
         required("DEPLOYER_ACCOUNT_ADDRESS"),
         required("DEPLOYER_PRIVATE_KEY"),
       );
-      const approved = await approveCheckBot(admin, shard);
+      const approved = await approveCheckBot(admin, shard, run.signal);
       stopped.throwIfAborted();
       const gameId = await createCheckGame(privateLauncher, admin, manifest, stopped);
       stopped.throwIfAborted();
@@ -101,11 +104,13 @@ const fixture: DeploymentCheckPort = {
           cairoVersion: "1",
         }),
         shard,
+        run.signal,
       );
       const botClient = await connect(bot.address);
       const launcher = configureGameplayAccountSubmits(
         createOperatorAccount(rpc, privateLauncher.address, required("DEPLOYER_PRIVATE_KEY")),
         shard,
+        run.signal,
       );
       const launcherClient = await connect(launcher.address);
       await createHarnessGame(botClient).waitUntilPlaying();
@@ -147,7 +152,11 @@ const fixture: DeploymentCheckPort = {
   },
 };
 
-async function approveCheckBot(admin: HarnessProvider, shard: Awaited<ReturnType<typeof openShard>>) {
+async function approveCheckBot(
+  admin: HarnessProvider,
+  shard: Awaited<ReturnType<typeof openShard>>,
+  stopped: AbortSignal,
+) {
   const [approved] = await createHarnessAccounts({
     count: 1,
     concurrency: 1,
@@ -155,6 +164,7 @@ async function approveCheckBot(admin: HarnessProvider, shard: Awaited<ReturnType
     identity: { url: required("IDENTITY_URL"), operatorToken: required("OPERATOR_TOKEN") },
     provider: admin,
     shard,
+    stopped,
   });
   if (!approved) throw new Error("Self-check bot enrollment failed");
   return approved;

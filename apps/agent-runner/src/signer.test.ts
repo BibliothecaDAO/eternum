@@ -10,7 +10,12 @@ describe("resolveRunnerSigner", () => {
   it("returns null in none mode and leaves the client spectating", async () => {
     const client = { connect: vi.fn(), signer: null } as unknown as GameClient;
 
-    const signer = await resolveRunnerSigner(SPECTATOR_CONFIG, client, "/tmp/agent-runner-test");
+    const signer = await resolveRunnerSigner(
+      SPECTATOR_CONFIG,
+      client,
+      "/tmp/agent-runner-test",
+      new AbortController().signal,
+    );
 
     expect(signer).toBeNull();
     expect(client.connect).not.toHaveBeenCalled();
