@@ -96,20 +96,21 @@ class InputsTest(unittest.TestCase):
 
 
 class EnrolmentTest(unittest.TestCase):
-    def test_initialization_needs_the_operator_token_it_will_receive_or_an_enrolment_file(self):
+    def test_initialization_requires_the_file_wrapper_instead_of_an_inherited_token(self):
         with tempfile.TemporaryDirectory() as temporary:
             directory = Path(temporary)
-            # A token this shell holds but Compose would not pass renders as null.
-            with self.assertRaisesRegex(ValueError, "no OPERATOR_TOKEN"):
-                deploy.check_operator_approval(directory, {"OPERATOR_TOKEN": None})
-            deploy.check_operator_approval(directory, {"OPERATOR_TOKEN": "secret"})
-            (directory / "data").mkdir()
-            (directory / "data" / "operator-enrolment.json").write_text("{}")
-            deploy.check_operator_approval(directory, {})
+            with patch.dict(deploy.os.environ, {}, clear=True):
+                with self.assertRaisesRegex(ValueError, "protected operator"):
+                    deploy.check_operator_approval(directory, {"OPERATOR_TOKEN_FILE": "/run/secrets/operator-token"})
+            with patch.dict(deploy.os.environ, {"OPERATOR_TOKEN": "test-token"}):
+                deploy.check_operator_approval(directory, {"OPERATOR_TOKEN_FILE": "/run/secrets/operator-token"})
+                with self.assertRaisesRegex(ValueError, "protected operator"):
+                    deploy.check_operator_approval(directory, {"OPERATOR_TOKEN": "test-token"})
 
-    def test_the_package_passes_the_operator_token_through_sudo(self):
-        preserved = [flag for flag in deploy.compose(Path("/srv/shard")) if flag.startswith("--preserve-env=")]
-        self.assertIn("OPERATOR_TOKEN", preserved[0].removeprefix("--preserve-env=").split(","))
+    def test_sudo_preserves_only_the_credential_path(self):
+        preserved = next(flag for flag in deploy.compose(Path("/srv/shard")) if flag.startswith("--preserve-env="))
+        self.assertNotIn("OPERATOR_TOKEN", preserved.removeprefix("--preserve-env=").split(","))
+        self.assertIn("OPERATOR_TOKEN_FILE", preserved.removeprefix("--preserve-env=").split(","))
 
 
 
@@ -118,6 +119,7 @@ class ActivationTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             data = Path(temporary)
             with (
+                patch.object(deploy, "gameplay_check_identity", return_value="test-identity"),
                 patch.object(deploy, "run_self_check", return_value={"passed": False, "firstFailedRoute": "Explore"}),
                 patch.object(deploy, "directory_status", return_value={"status": "pending"}) as directory,
             ):
@@ -135,6 +137,8 @@ class ActivationTest(unittest.TestCase):
                 self.assertTrue(json.loads((data / "self-check.json").read_text())["passed"])
                 return {"status": "active"}
             with (
+                patch.object(deploy, "gameplay_check_identity", return_value="test-identity"),
+                patch.object(deploy, "confirm_worker_launcher"),
                 patch.object(deploy, "run_self_check", return_value={"passed": True}),
                 patch.object(deploy, "directory_status", side_effect=activate),
             ):
@@ -169,6 +173,58 @@ class ActivationTest(unittest.TestCase):
         ):
             with self.assertRaisesRegex(RuntimeError, "identity service must carry the pending route before a shard from this code starts"):
                 deploy.directory_status({"guardian_url": "https://identity.test/api/guardian", "public_herald_url": "https://herald.test"}, "pending")
+
+class WorkerLauncherTest(unittest.TestCase):
+    def test_activation_waits_for_confirmed_worker_handoff_and_its_real_creation(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            data = Path(temporary)
+            events = []
+            with (
+                patch.object(deploy, "gameplay_check_identity", return_value="test-identity"),
+                patch.object(deploy, "run_self_check", return_value={"passed": True}),
+                patch.object(deploy, "directory_status", side_effect=lambda _, status: (events.append(status) or {"status": status})),
+                patch.object(deploy, "confirm_worker_launcher", side_effect=lambda *_: events.append("confirmed_worker")),
+            ):
+                deploy.verify_and_activate({}, data)
+            self.assertEqual(events, ["pending", "confirmed_worker", "active"])
+
+    def test_worker_unavailable_stays_pending_and_retry_uses_only_bound_gameplay_evidence(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            data = Path(temporary)
+            with (
+                patch.object(deploy, "gameplay_check_identity", return_value="test-identity"),
+                patch.object(deploy, "run_self_check", return_value={"passed": True}) as check,
+                patch.object(deploy, "directory_status", return_value={"status": "pending"}) as status,
+                patch.object(deploy, "confirm_worker_launcher", side_effect=RuntimeError("Worker unavailable")),
+            ):
+                for _ in range(2):
+                    with self.assertRaisesRegex(RuntimeError, "Worker unavailable"):
+                        deploy.verify_and_activate({}, data)
+                self.assertEqual(check.call_count, 1)
+                self.assertTrue(all(call.args[1] == "pending" for call in status.call_args_list))
+            with (
+                patch.object(deploy, "gameplay_check_identity", return_value="changed-world"),
+                patch.object(deploy, "run_self_check", return_value={"passed": False}) as check,
+                patch.object(deploy, "directory_status", return_value={"status": "pending"}),
+            ):
+                with self.assertRaises(RuntimeError):
+                    deploy.verify_and_activate({}, data)
+                check.assert_called_once()
+
+    def test_launcher_enrollment_is_checked_on_chain_before_requesting_the_signed_game(self):
+        events = []
+        manifest = {"shard": {"chainId": "0x123"}}
+        def service(_, action, payload):
+            events.append(action)
+            return {"chainId": "0x123", "launcherAccount": "0x42", "txHash": "0x456"}
+        with (
+            patch.object(deploy, "deployed_facts", return_value=(manifest, {})),
+            patch.object(deploy, "launcher_service", side_effect=service),
+            patch.object(deploy, "launcher_chain_check", side_effect=lambda *args: events.append(args[2])),
+        ):
+            deploy.confirm_worker_launcher({"public_herald_url": "https://herald.test", "presets": [5]}, Path("/unused"))
+        self.assertEqual(events, ["enrol", "handoff", "check", "verify"])
+
 
 if __name__ == "__main__":
     unittest.main()

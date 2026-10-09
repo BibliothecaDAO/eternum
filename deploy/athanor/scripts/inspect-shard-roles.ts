@@ -1,5 +1,5 @@
 import { assertPublicRpcBoundary } from "./public-rpc-check";
-import { readFileSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { ec, hash, RpcProvider } from "starknet";
 import type { NativeWorldManifest } from "../../../config/deployer/clean/world/native/types";
@@ -96,7 +96,14 @@ async function readRoleHolders(): Promise<Array<{ role: string; address: string 
     ["ledger operator", ledger],
   ] as const) {
     if (value.length !== 1) throw new Error("Role view shape differs");
-    equal(value[0]!, identity.operatorAccountAddress, name);
+    if (name === "launcher" && existsSync(resolve(directory, "launcher-enrolment.json"))) {
+      const enrolled = readJson<{ chainId: string; world: string; launcherAccount: string }>("launcher-enrolment.json");
+      equal(enrolled.chainId, manifest.shard.chainId, "launcher chain");
+      equal(enrolled.world, manifest.world.address, "launcher world");
+      const current = BigInt(value[0]!);
+      if (current !== BigInt(enrolled.launcherAccount) && current !== BigInt(identity.operatorAccountAddress))
+        throw new Error("Launcher is neither the bootstrap account nor its recorded Worker handoff");
+    } else equal(value[0]!, identity.operatorAccountAddress, name);
   }
   if (key.length !== 2 || bound.length !== 1) throw new Error("VRF configuration shape differs");
   equal(key[0]!, manifest.shard.vrfPublicKey.x, "VRF x");

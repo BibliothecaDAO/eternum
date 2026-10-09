@@ -5,10 +5,11 @@ A shard hosts games on an unmodified Madara node, Herald and one public stamping
 
 ## Initialize a fresh shard
 
-Use reviewed environment inputs with `deploy/athanor/scripts/deploy.py ENVIRONMENT DIRECTORY`, or the existing local
-runner `deploy/athanor/scripts/shard.py CONFIGURATION DIRECTORY`. Neither reuses another shard's chain state. Set the
-existing operator bearer token in the shell; it passes through to initialization and is never written to `.env`. A
-community operator supplies its existing identity approval in `data/operator-enrolment.json`.
+Use reviewed environment inputs with `deploy/athanor/scripts/deploy-official.py ENVIRONMENT DIRECTORY`, or the existing
+local runner `deploy/athanor/scripts/shard.py CONFIGURATION DIRECTORY`. Neither reuses another shard's chain state. Ops
+provisions `/opt/athanor/operator-token` as an owner-only regular `0600` file. The wrapper reads it in memory; Compose
+binds it read-only into initialization and the harness. Its value never appears in arguments, rendered environments or
+Docker container configuration. An alternate path uses `--operator-token-file PATH`.
 
 Required package inputs:
 
@@ -61,10 +62,13 @@ roles and registers the selected presets. This bootstrap assigns all three roles
 changes use the contract's existing owner-authorized setters.
 
 Deployment's last step runs `deploy/athanor/harness/self-check.ts` in the harness container against the same public
-stamping RPC. Only a passing result promotes the directory entry to active. A failure writes `data/self-check.json`,
-exits nonzero naming the first failed route and leaves directory status unchanged. Re-run deployment after correcting
-the fault; it repeats the check only while PENDING. An ACTIVE or DRAINING rerun creates no check games. The runner and
-fixture are the harness implementation, not a separate deployment test suite.
+stamping RPC. Activation also requires the launch Worker to enroll its own account on this pending shard. The owner
+confirms `Games.set_launcher(worker account)`; the Worker signs an idempotent `check-worker-*` game creation, and the
+deployment verifies its sender, call, confirmed receipt and game row. Missing Worker routes leave the shard PENDING.
+Only these checks together promote the directory entry to active. A failure writes `data/self-check.json`, exits nonzero
+naming the first failed route and leaves directory status unchanged. Re-run deployment after correcting the fault; it
+repeats the check only while PENDING. An ACTIVE or DRAINING rerun creates no check games. The runner and fixture are the
+harness implementation, not a separate deployment test suite.
 
 Metrics collect OTLP and sample container CPU from a read-only cgroup mount, without a Docker socket or write access.
 The compose services restart on failure. Initializer logs and `harness.env` are private and must never be published.

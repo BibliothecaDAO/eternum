@@ -9,6 +9,11 @@ x-init: &init
     - public-config:/public
     - herald-config:/herald-config
     - postgres-config:/postgres-config
+    - type: bind
+      source: ${OPERATOR_TOKEN_FILE:-/opt/athanor/operator-token}
+      target: /run/secrets/operator-token
+      read_only: true
+      bind: { create_host_path: false }
   environment:
     CHAIN_ID: ${CHAIN_ID:?Choose a unique chain id}
     GUARDIAN_URL: ${GUARDIAN_URL:?Set the identity guardian endpoint}
@@ -22,10 +27,7 @@ x-init: &init
     BIND_ADDRESS: ${BIND_ADDRESS:-127.0.0.1}
     HOST_UID: ${HOST_UID:?Set HOST_UID to the host user that owns data/ (id -u)}
     HOST_GID: ${HOST_GID:?Set HOST_GID to that user's group (id -g)}
-    # Our own shards' operator is approved through the identity Worker with this secret; it passes through from the
-    # shell that starts the package and is never written to a file. A community shard leaves it unset and brings
-    # data/operator-enrolment.json instead.
-    OPERATOR_TOKEN:
+    OPERATOR_TOKEN_FILE: /run/secrets/operator-token
 
 services:
   prepare:

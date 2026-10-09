@@ -17,7 +17,7 @@ The shard package in [deploy/shard](../shard/README.md) owns Madara, PostgreSQL,
 The init image carries the compiled contracts and native verifier; the Herald image also carries the stamping bundle,
 worker and native prover. CI publishes only init, Herald and metrics images. There is no gateway image or service.
 
-For released packages use `OPERATOR_TOKEN=... python3 deploy/athanor/scripts/deploy.py ENVIRONMENT DIRECTORY`.
+For released packages use `python3 deploy/athanor/scripts/deploy-official.py ENVIRONMENT DIRECTORY`.
 `deploy/release/ENVIRONMENT.json` is the reviewed input source. For a fresh local build use the existing
 `python3 deploy/athanor/scripts/shard.py CONFIGURATION DIRECTORY` runner with explicit local image digests, unique chain
 identity, official RPC/Herald URLs, guardian, presets, worker count and fixed play bound. The runner writes its resolved
@@ -55,10 +55,10 @@ use the matching codec.
 ## Gameplay validation
 
 The harness uses the shared client, native fact store, direct signed invokes and public receipt polling. On one of our
-shards, run it from the package directory with the environment's operator token in the shell:
+shards, run it from the package directory with the protected operator credential file mounted:
 
 ```bash
-OPERATOR_TOKEN=... sudo --preserve-env=OPERATOR_TOKEN docker compose run --rm harness \
+sudo docker compose run --rm harness \
   --bots 6 --minutes 6 --interval-seconds 15 --setup-concurrency 6 --workload build-order --functional
 ```
 
@@ -127,7 +127,7 @@ run's close-cost evidence: a window without a closed block fails the run.
 Measure one of our package shards from its deploy directory:
 
 ```bash
-OPERATOR_TOKEN=... python3 deploy/athanor/scripts/measures.py /opt/athanor/runs/staging-f soak-1 --cpuset 20-23 -- \
+python3 deploy/athanor/scripts/measures.py /opt/athanor/runs/staging-f soak-1 --cpuset 20-23 -- \
   --game-type frontier --frontier-burst booth --bots 2000 --setup-concurrency 32
 ```
 

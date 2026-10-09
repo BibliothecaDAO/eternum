@@ -28,9 +28,8 @@ sys.path.insert(0, str(ROOT / "deploy/shard"))
 from stack_lock import isolated_stack_lock
 
 
-# sudo resets the environment; the operator token passes through to initialization, and a measured driver's CPUs to
-# the harness service, only when they are kept.
-DOCKER = ["sudo", "-n", "--preserve-env=OPERATOR_TOKEN,HARNESS_CPUSET", "docker"]
+# Only the public credential path and driver placement pass through sudo.
+DOCKER = ["sudo", "-n", "--preserve-env=OPERATOR_TOKEN_FILE,HARNESS_CPUSET", "docker"]
 RELEASES = "https://github.com/BibliothecaDAO/eternum/releases/download"
 # Campaign G's target, not yet a measured ceiling: a larger shard waits for a G measurement that supports it.
 MAX_PLAYER_CAPACITY = 2000
@@ -172,11 +171,6 @@ def compose_configuration(config, directory):
     for name, service in compose["services"].items():
         if name != "harness":
             service.update(budget)
-    # Rendering resolved the operator secret from this shell into every service that passes it through (initialization
-    # and the harness); compose.json keeps only its name, and starting a service passes it from the same shell again.
-    for service in compose["services"].values():
-        if "OPERATOR_TOKEN" in service.get("environment", {}):
-            service["environment"]["OPERATOR_TOKEN"] = None
     for name in ("prepare", "init"):
         service = compose["services"][name]
         service.update({"mem_limit": "8g", "memswap_limit": "8g"})

@@ -84,7 +84,7 @@ jobs:
       - name: Assemble the Docker-only download
         run: |
           mkdir shard
-          cp deploy/shard/compose.yml deploy/shard/README.md deploy/shard/backup.py deploy/shard/stack_lock.py shard/
+          cp deploy/shard/compose.yml deploy/shard/README.md deploy/shard/backup.py deploy/shard/stack_lock.py deploy/shard/operator_token.py shard/
           for image in init herald metrics; do
             printf 'SHARD_%s_IMAGE=%s\n' "${image^^}" "$(cat "images/$image.image")" >> shard/images.env
           done
