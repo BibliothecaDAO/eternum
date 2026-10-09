@@ -175,3 +175,17 @@ test("three interrupted attempts fail before execution and release the queue", a
   expect(await store.failed()).toMatchObject([{ id: stuck.id, errorMessage: "Launch interrupted after 3 attempts" }]);
   expect(await store.startNext(Date.now())).toMatchObject({ id: next.id, attempts: 1 });
 });
+
+test("a played game's result retries past three failures and never calls refund cleanup", async () => {
+  await store.enqueue("result", { environment: "madara.blitz", gameName: "played-result-recovery", gameId: 4 });
+  const execute = vi.fn(() =>
+    Effect.fail(new LaunchExecutionFailure({ runId: "played", cause: new Error("result RPC unavailable") })),
+  );
+  const refund = vi.fn(() => Effect.succeed(null));
+  const services = Layer.mergeAll(databaseLayer(store), Layer.succeed(LaunchExecutor, { execute, refund }));
+  for (let attempt = 0; attempt < 4; attempt++)
+    await Effect.runPromise(processNextLaunch(Date.now() + 1000000).pipe(Effect.provide(services)));
+  expect(refund).not.toHaveBeenCalled();
+  expect(execute).toHaveBeenCalledTimes(4);
+  expect((await store.find("result", "madara.blitz", "played-result-recovery"))?.status).toBe("queued");
+});

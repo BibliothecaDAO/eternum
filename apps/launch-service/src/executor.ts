@@ -60,6 +60,7 @@ export const launchExecutorLayer = (
     refund: (run) =>
       Effect.tryPromise({
         try: () =>
+          run.kind === "game" &&
           run.environment === "madara.blitz" &&
           ("gameId" in run.request || (run.summary && "gameId" in run.summary && run.summary.gameId))
             ? value.refundBlitz({

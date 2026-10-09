@@ -14,7 +14,7 @@ export const processNextLaunch = (now: number) =>
     const executor = yield* LaunchExecutor;
     const run = yield* databaseOperation("start launch", () => store.startNext(now));
     if (!run) return false;
-    if (run.attempts > MAX_ATTEMPTS) {
+    if (run.kind === "game" && run.attempts > MAX_ATTEMPTS) {
       const message = `Launch interrupted after ${run.attempts - 1} attempts`;
       yield* cleanUpFailedLaunch(executor, store, run, message);
       yield* Effect.logError("launch_failed", { runId: run.id, error: message });
@@ -40,8 +40,16 @@ export const processNextLaunch = (now: number) =>
     }
 
     const message = describeFailure(result.failure.cause);
-    if (run.attempts < MAX_ATTEMPTS) {
-      yield* databaseOperation("retry launch", () => store.retry(run.id, message, RETRY_DELAY_MS));
+    if (run.kind === "result" || run.attempts < MAX_ATTEMPTS) {
+      yield* databaseOperation("retry launch", () =>
+        store.retry(
+          run.id,
+          message,
+          run.kind === "result"
+            ? Math.min(300000, RETRY_DELAY_MS * 2 ** Math.min(run.attempts - 1, 6))
+            : RETRY_DELAY_MS,
+        ),
+      );
       yield* Effect.logWarning("launch_retry_queued", { runId: run.id, attempt: run.attempts, error: message });
     } else {
       yield* cleanUpFailedLaunch(executor, store, run, message);
