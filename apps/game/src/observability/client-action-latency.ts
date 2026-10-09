@@ -63,7 +63,7 @@ const publish = (): void => {
 };
 
 /**
- * Every action's admission to visible, as the provider measures it: from sending the ticket to the stream reporting
+ * Every action's admission to visible, as the provider measures it: from sending the invoke to the stream reporting
  * its outcome with its facts applied. The harness reports the same figure for its bots.
  */
 export function recordAdmissionToVisible(milliseconds: number): void {
