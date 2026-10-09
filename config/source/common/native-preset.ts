@@ -84,8 +84,6 @@ export interface NativePreset {
     pool: number;
     priceCeiling: number;
     shares: ChestTiers;
-    surgeFactor: number;
-    surgeMinimumShares: number;
     estimateDays: number;
   };
   depths: Array<{

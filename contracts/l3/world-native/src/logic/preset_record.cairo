@@ -357,8 +357,6 @@ fn write_relics(
         assert!(
             value.pool != 0
                 && value.price_ceiling != 0
-                && value.surge_factor != 0
-                && value.surge_minimum_shares != 0
                 && value.estimate_days != 0,
             "empty chest rules",
         );
@@ -372,7 +370,7 @@ fn write_relics(
             "invalid chest shares",
         );
         assert!(rules.is_empty(), "ruin chests replace timed relics");
-        preset.chest_rules.write(chests);
+        preset.rollover_chest_rules.write(chests);
         return;
     }
     assert!(rules.len() == 18, "all eighteen relic rules required");
@@ -384,7 +382,7 @@ fn write_relics(
     }
     assert!(total != 0, "empty relic discovery pool");
     assert!(*rules.at(6).uses == 1 && *rules.at(7).uses == 2, "invalid reveal radii");
-    preset.chest_rules.write(chests);
+    preset.rollover_chest_rules.write(chests);
 }
 
 fn write_exploration(

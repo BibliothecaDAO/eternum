@@ -39,7 +39,7 @@ pub mod RelicState {
             crate::logic::lords_budget::budget(game_id)
         }
         fn chest_rules(self: @ComponentState<TContractState>, game_id: u32) -> Option<crate::relics::ChestRules> {
-            crate::logic::preset_record::for_game(game_id).chest_rules.read()
+            crate::logic::preset_record::for_game(game_id).rollover_chest_rules.read()
         }
         fn site_chest(self: @ComponentState<TContractState>, key: ResourceKey) -> Option<crate::relics::SiteChest> {
             crate::logic::lords_budget::site_chest(key)

@@ -65,8 +65,6 @@ describe("native presets", () => {
       pool: 1000000n,
       price_ceiling: 50n,
       shares: { common: 1, uncommon: 2, rare: 4, epic: 10, legendary: 20 },
-      surge_factor: 3,
-      surge_minimum_shares: 60,
       estimate_days: 5,
     });
     expect(preset.settlement.depths.map(({ chest }) => Object.values(chest))).toEqual([

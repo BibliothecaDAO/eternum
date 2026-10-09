@@ -381,7 +381,7 @@ pub mod MapLogic {
             };
             let day = crate::logic::expeditions::discovery(counter)
                 .unwrap_or(crate::expeditions::ExpeditionDiscovery { empty_reveals: 0, ruin_found: false });
-            // The ruin's chest is fixed before the draw: no chest that fits, no ruin, and the day stays free.
+            // A refused ruin still contributes its rolled tier, and leaves this Realm day free.
             let ruin = if day.ruin_found {
                 None
             } else {
@@ -389,14 +389,16 @@ pub mod MapLogic {
                     key.game_id, Coord { alt: key.alt, x: key.col, y: key.row },
                 )
                     .chest;
-                crate::logic::lords_budget::offer(key.game_id, odds, seed, context)
+                Some(crate::logic::lords_budget::candidate(key.game_id, odds, seed, context))
             };
             let (camp, rift, stragglers) = crate::progression::scouting_bonus(progress);
-            let result = crate::discovery::frontier(
+            let mut result = crate::discovery::frontier(
                 rules, camp, rift, stragglers, day.empty_reveals, ruin, seed, context.timestamp,
             );
             if let crate::discovery::Discovery::Ruin(chest) = result {
-                crate::logic::lords_budget::reserve(key.game_id, chest, context);
+                if !crate::logic::lords_budget::try_reserve(key.game_id, chest, context) {
+                    result = crate::discovery::Discovery::None;
+                }
             }
             crate::logic::expeditions::record_discovery(counter, result);
             if let Some(category) = crate::discovery::tile_occupier(result) {

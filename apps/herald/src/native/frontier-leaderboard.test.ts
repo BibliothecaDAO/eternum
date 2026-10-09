@@ -1,15 +1,13 @@
 import { describe, expect, it } from "vitest";
 import type { HeraldHistoryEvent } from "@bibliothecadao/eternum/game-sync";
 import { buildFrontierLeaderboard } from "./frontier-leaderboard";
-import { LordsCeilingAlerts } from "./lords-ceiling-alert";
 import type { FoldRow } from "../types";
 
-function facts(depths = [2], spent = 0) {
+function facts(depths = [2]) {
   const rows: Record<string, FoldRow[]> = {};
   const add = (model: string, value: Record<string, unknown>) =>
     (rows[model] ??= []).push({ key: String(rows[model]?.length), value: { game_id: "1", ...value } });
   add("GameRegistry", { start_main_at: 100 * 86400 + 10 });
-  add("LordsBudget", { pool_left: 990_000, spent, ceiling: 3_000, day: 100 });
   depths.forEach((depth, i) =>
     add("Structure", {
       entity_id: i + 1,
@@ -95,36 +93,5 @@ describe("Frontier season standings", () => {
     expect(() => buildFrontierLeaderboard(read, "1", [clear("Camp", 0, 999)])).toThrow("settled realm");
     delete rows.GameRegistry;
     expect(() => buildFrontierLeaderboard(read, "1", [])).toThrow("GameRegistry");
-  });
-});
-
-describe("confirmed LORDS ceiling warnings", () => {
-  it("warns once a day when its chests reach 80% of the surge ceiling", () => {
-    const warnings: unknown[] = [];
-    const alerts = new LordsCeilingAlerts((w) => warnings.push(w));
-    const { read, rows } = facts([], 2_399);
-    alerts.observe(read);
-    expect(warnings).toEqual([]);
-    rows.LordsBudget[0].value.spent = 2_400;
-    alerts.observe(read);
-    alerts.observe(read);
-    expect(warnings).toEqual([
-      expect.objectContaining({ day: "100", spent: "2400", ceiling: "3000", pool_left: "990000" }),
-    ]);
-    rows.LordsBudget[0].value.day = 101;
-    alerts.observe(read);
-    expect(warnings).toHaveLength(2);
-  });
-
-  it("keeps games independent and refuses chests past the ceiling", () => {
-    const warnings: unknown[] = [];
-    const alerts = new LordsCeilingAlerts((w) => warnings.push(w));
-    const { read, rows } = facts([], 3_000);
-    alerts.observe(read);
-    for (const values of Object.values(rows)) for (const row of values) row.value.game_id = "2";
-    alerts.observe(read);
-    expect(warnings).toHaveLength(2);
-    rows.LordsBudget[0].value.spent = 3_001;
-    expect(() => new LordsCeilingAlerts().observe(read)).toThrow("exceed the day's ceiling");
   });
 });

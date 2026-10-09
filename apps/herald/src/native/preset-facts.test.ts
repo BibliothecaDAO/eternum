@@ -76,9 +76,7 @@ describe("verified preset configuration facts", () => {
     applyRegistration(world, preset);
     world.native.applyReceipt(world.fold, receipt(launch(preset)), 11, 0);
     const rules = world.fold.gameRows("ChestRules", "1")[0]!.value;
-    expect([rules.pool, rules.price_ceiling, rules.surge_factor, rules.surge_minimum_shares].map(Number)).toEqual([
-      1_000_000, 50, 3, 60,
-    ]);
+    expect([rules.pool, rules.price_ceiling, rules.estimate_days].map(Number)).toEqual([1_000_000, 50, 5]);
     const tiers = ["common", "uncommon", "rare", "epic", "legendary"];
     const shares = rules.shares as Record<string, unknown>;
     expect(tiers.map((tier) => Number(shares[tier]))).toEqual([1, 2, 4, 10, 20]);
