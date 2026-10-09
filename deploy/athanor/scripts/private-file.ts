@@ -9,7 +9,9 @@ export function readPrivateJson<T>(path: string): T {
   try {
     return JSON.parse(readFileSync(path, "utf8")) as T;
   } catch {
-    throw new Error("Incomplete credential: restore the same shard's private backup before retrying; never replace a deployed key");
+    throw new Error(
+      "Incomplete credential: restore the same shard's private backup before retrying; never replace a deployed key",
+    );
   }
 }
 

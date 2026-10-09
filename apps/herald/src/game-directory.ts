@@ -29,5 +29,7 @@ export function resolveDirectoryStatus(
 
 /** Deployment owns the reserved short-string prefix; hidden games never enter public aggregates. */
 export function isCheckGame(game: Record<string, unknown>): boolean {
-  return BigInt(game.name as string | bigint | number).toString(16).startsWith("636865636b2d");
+  return BigInt(game.name as string | bigint | number)
+    .toString(16)
+    .startsWith("636865636b2d");
 }
