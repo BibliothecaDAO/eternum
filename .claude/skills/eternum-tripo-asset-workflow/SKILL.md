@@ -5,7 +5,7 @@ description:
   deformation gate, optimisation and hosted in-game approval. Use for new assets or approved-source revisions; animation
   development is excluded.
 metadata:
-  version: "4.5.2"
+  version: "4.5.3"
 ---
 
 # Eternum concept-to-game assets
@@ -74,22 +74,31 @@ troop's folder.
   skins; fit grips and sockets, never stretch items.
 - **Hands:** there are no finger joints. Each hand is rigid on its hand joint and is generated in its final pose, so a
   hand can only ever do what it is drawn doing. Every hand that will hold something is drawn holding a plain guide of
-  that thing's real thickness, in the hold's own position: a fist around a bar for a sword, shield arm or reins; an open
-  hand with a bar lying along it for a crossbow. No holding hand is drawn empty: a "relaxed cup" comes out as a carrying
-  hand, its channel a third of the stock's thickness and square to the forearm, and holds a stock only from above. The
-  guide fixes the channel's size and its angle to the forearm and is removed in stage 7.
+  that thing's real thickness, in the hold's own position: a fist around a bar for a sword, shield arm or reins; a hand
+  with its fingers curled round a bar lying across the palm for a crossbow. No holding hand is drawn empty: a "relaxed
+  cup" comes out as a carrying hand, its channel a third of the stock's thickness and square to the forearm, and holds a
+  stock only from above. The guide fixes the channel's size and its angle to the forearm and is removed in stage 7.
 - **Crossbows:** every crossbow and every crossbowman's hands are built to one hold, so any crossbow fits any
-  crossbowman skin (set 2026-10-07 on the T1 default Crossbowman; confirm at its equipment gate).
-  - Weapon: a rear (trigger) station and a forward (support) station **0.178 H** apart on a straight stock (107 mm at H
-    = 0.6). At each station the stock is 0.029 to 0.034 H wide and high (17.5 to 20.5 mm), with rounded edges, straight
-    for 0.058 H either side, and nothing below it between the stations but the trigger lever.
-  - Hands: both hold the stock from below, each a relaxed open hand, slightly cupped, with the stock lying along it and
-    nothing over its top. Rear hand (right): the stock in line with the forearm, the palm at its lower-right edge.
-    Forward hand (left): the stock 15 degrees off the forearm's line, forward end toward the thumb, the palm at its
-    lower-left edge.
-  - Guide in each hand: a round bar 0.037 H across (22 mm) and 0.117 H long (70 mm), seated on the palm, its centre
-    0.075 H beyond the wrist joint.
-  - These hands carry the crossbow and aim it at chest height with the trigger elbow back. They do not shoulder it.
+  crossbowman skin (set 2026-10-09 on the T1 default Crossbowman; confirm at its equipment gate).
+  - Weapon: a rear (trigger) station at the grip origin and a forward (support) station **0.178 H** ahead of it on a
+    straight stock (107 mm at H = 0.6), with **0.07 H** of stock behind the rear station (42 mm). At each station the
+    stock is 0.029 to 0.034 H wide and high (17.5 to 20.5 mm), with rounded edges, straight for 0.058 H either side, and
+    nothing below it between the stations but the trigger lever.
+  - Hands: both hold the stock from below and are drawn palm-forward in the A-pose, fingers curled round a guide bar
+    that lies across the palm, thumb along its near side. Rear hand (right): palm directly under the stock, the stock
+    45° across the fingers' line and 30° off the forearm's, the wrist straight and pivoted 16° toward the little finger.
+    Forward hand (left): palm just toward the bottom-left edge, the stock 30° off the knuckle line and 64° off the
+    forearm's, forward end toward the thumb, the wrist bent back 23° and pivoted 9° toward the thumb.
+  - Guide in each hand: a round bar 0.037 H across (22 mm) and 0.117 H long (70 mm), lying across the palm.
+  - These hands shoulder the crossbow with the trigger elbow raised to about 20° below shoulder level and carry it at
+    port arms or nose-down across the body with the trigger elbow about 45° from hanging. A hand drawn with the stock
+    along it carries at ease but cannot shoulder (butt 18 to 22 mm short); a hand with the fingers perpendicular
+    shoulders with the elbow at shoulder height but cannot carry low. The pivot at the wrist (45° in all) is what limits
+    one hand to one of the two.
+  - Posing: arms and elbows first (templates per kind of hold), the weapon's place found for both arms together, the
+    support arm solved first in carries; the bow's limbs kept off the support arm; the butt seated on the front of the
+    shoulder (14 mm above the joint, 8 mm toward the neck). Check the elbow landmark against where the arm bends before
+    posing (the T1 packet had it 22 mm low).
 - **Appearance:** fixed authored palettes, no player recolouring. Paladin mounts use the established coat set with
   stable assignments A, A/B and A/B/C for counts 1/2/3.
 - **Riders and mounts** have separate rigs joined at the seat.
@@ -382,9 +391,11 @@ Work in this order:
    - **Shield:** plain rear, seated on the forearm's outward side and leaning with it, on the forearm joint. No wrist
      joint may move it.
    - **Crossbow and quiver:** the crossbow is a two-hand item on the crossbow hold standard. It follows the rear hand
-     through its socket, seated on that hand's guide channel; the forward hand has its own seat at the forward station.
-     Give the weapon two directions in every pose, where the bolt points and which way is up, and a place. Solve the
-     rear arm from those, then solve the forward arm onto the stock where the rear arm has put it: within 2 mm of the
+     through its socket, seated on that hand's guide channel at the rear station, which is the grip origin; the forward
+     hand has its own seat at the forward station. Give the weapon two directions in every pose, where the bolt points
+     and which way is up, and a place. Pose the arms first from their templates for that kind of hold, the weapon's
+     direction a looser wish in carries (4° in aims), its place found for both arms together and the support arm solved
+     first in carries; then seat the forward hand onto the stock where the rear arm has put it: within 2 mm of the
      stock's line, free to slide a little along it. A hold in which the forward hand does not reach is restated, not
      forced. Both palms under the stock; quiver at its approved lower-back attachment.
    - **Mounted:** fit pelvis, thighs, seat, stirrups and reins-to-bit at H = 0.6. Keep the shield forearm and the rein

@@ -1,7 +1,7 @@
 {
  "set": "paladin",
  "applies_to": "paladin",
- "version": 1,
+ "version": 5,
  "poses": [
   {
    "id": "seat-neutral",
@@ -37,26 +37,26 @@
      "roll": 0
     },
     "arm_r": {
-     "plane": 43,
-     "elev": 28,
-     "rot": -20,
-     "elbow": 100,
-     "pron": 0,
-     "wrist_flex": 0,
-     "wrist_dev": -5
+     "plane": 33.0,
+     "elev": 35.0,
+     "rot": -13.0,
+     "elbow": 93.0,
+     "pron": -37.0,
+     "wrist_flex": 7.0,
+     "wrist_dev": -6.0
     },
     "arm_l": {
-     "plane": 78,
-     "elev": 25,
-     "rot": 0,
-     "elbow": 100,
+     "plane": 38.0,
+     "elev": 26.0,
+     "rot": 25.0,
+     "elbow": 93.0,
      "pron": 0,
      "wrist_flex": 0,
      "wrist_dev": 0
     },
     "leg_r": {
      "hip_flex": 43,
-     "hip_abd": 20,
+     "hip_abd": 40,
      "hip_rot": -10,
      "knee": 70,
      "ankle": 10,
@@ -64,7 +64,7 @@
     },
     "leg_l": {
      "hip_flex": 43,
-     "hip_abd": 20,
+     "hip_abd": 40,
      "hip_rot": -10,
      "knee": 70,
      "ankle": 10,
@@ -77,14 +77,32 @@
       0.1,
       -0.15,
       0.95
-     ]
+     ],
+     "at": {
+      "joint": "pelvis",
+      "offset": [
+       0.2,
+       -0.17,
+       0.21
+      ],
+      "frame": "root"
+     }
     },
     "shield": {
      "face": [
-      0.3,
-      0.95,
-      0.0
-     ]
+      0.501,
+      0.789,
+      -0.355
+     ],
+     "at": {
+      "joint": "pelvis",
+      "offset": [
+       0.108,
+       0.134,
+       0.085
+      ],
+      "frame": "root"
+     }
     }
    },
    "confidence": "estimated",
@@ -106,12 +124,163 @@
      "credit": "Codrin.B (uploader of the series; verified on the -021 page) via Wikimedia Commons",
      "licence": "CC BY-SA 3.0"
     }
-   ]
+   ],
+   "rein_arm": {
+    "rein_fist_wanted": [
+     0.15,
+     0.07,
+     0.08
+    ],
+    "shield_facing_wanted": [
+     0.35,
+     0.94,
+     0.0
+    ],
+    "from_the_text": "left fist holds both reins low behind the withers; the shield hangs on the left forearm, face to the left",
+    "fist_off_by_mm": 0.5,
+    "facing_off_by_deg": 23.9,
+    "arm_l_was": {
+     "plane": 78,
+     "elev": 25,
+     "rot": 0,
+     "elbow": 100
+    },
+    "arm_l": {
+     "plane": 44.0,
+     "elev": 20.0,
+     "rot": 37.0,
+     "elbow": 75.0
+    },
+    "rein_fist_at": [
+     0.151,
+     0.071,
+     0.08
+    ]
+   },
+   "aimed": {
+    "shield": {
+     "placed": {
+      "at": {
+       "joint": "pelvis",
+       "offset": [
+        0.108,
+        0.134,
+        0.085
+       ],
+       "frame": "root"
+      },
+      "position_error_mm": 0.4,
+      "direction_error_deg": 0.0
+     },
+     "changed": {}
+    },
+    "sword": {
+     "placed": {
+      "at": {
+       "joint": "pelvis",
+       "offset": [
+        0.2,
+        -0.17,
+        0.21
+       ],
+       "frame": "root"
+      },
+      "position_error_mm": 3.4,
+      "direction_error_deg": 0.2
+     },
+     "changed": {
+      "plane": [
+       43,
+       33.0
+      ],
+      "elev": [
+       28,
+       35.0
+      ],
+      "rot": [
+       -20,
+       -13.0
+      ],
+      "elbow": [
+       100,
+       93.0
+      ],
+      "pron": [
+       0,
+       -37.0
+      ],
+      "wrist_flex": [
+       0,
+       7.0
+      ],
+      "wrist_dev": [
+       -5,
+       -6.0
+      ]
+     }
+    },
+    "clear": {
+     "clash_score_was_now": [
+      49.2,
+      0.0
+     ],
+     "changed": {
+      "arm_r": {
+       "plane": [
+        43,
+        33.0
+       ],
+       "elev": [
+        28,
+        35.0
+       ],
+       "rot": [
+        -20,
+        -13.0
+       ],
+       "elbow": [
+        100,
+        93.0
+       ],
+       "pron": [
+        0,
+        -37.0
+       ],
+       "wrist_flex": [
+        0,
+        7.0
+       ],
+       "wrist_dev": [
+        -5,
+        -6.0
+       ]
+      },
+      "arm_l": {
+       "plane": [
+        44.0,
+        38.0
+       ],
+       "elev": [
+        20.0,
+        26.0
+       ],
+       "rot": [
+        37.0,
+        25.0
+       ],
+       "elbow": [
+        75.0,
+        93.0
+       ]
+      }
+     }
+    }
+   }
   },
   {
    "id": "seat-at-ease",
    "name": "Seated at ease, sword resting point down on the right thigh",
-   "description": "Relaxed halt. Pelvis settled back (tilt -5), back slightly rounded, legs hanging looser. The sword hangs from an almost straight right arm, point down against the right thigh. Left fist holds the reins low and loose; shield lies on the left thigh.",
+   "description": "Relaxed halt. Pelvis settled back (tilt -5), back slightly rounded, legs hanging looser. The sword hangs from an almost straight right arm beside the right thigh, blade forward and down past the knee (a fist round a handle cannot bring a blade into line with the arm, so it does not hang straight down). Left fist holds the reins low and loose; shield lies over the left thigh.",
    "support": [
     "seat",
     "foot_l",
@@ -142,26 +311,26 @@
      "roll": 0
     },
     "arm_r": {
-     "plane": 32,
-     "elev": 9,
-     "rot": 10,
-     "elbow": 20,
-     "pron": 0,
-     "wrist_flex": 0,
-     "wrist_dev": 0
+     "plane": -5.0,
+     "elev": 34.0,
+     "rot": -23.0,
+     "elbow": 15.0,
+     "pron": 45.0,
+     "wrist_flex": 14.0,
+     "wrist_dev": -25.0
     },
     "arm_l": {
-     "plane": 76,
-     "elev": 21,
-     "rot": 0,
-     "elbow": 110,
+     "plane": 38.0,
+     "elev": 36.0,
+     "rot": 42.0,
+     "elbow": 65.0,
      "pron": 0,
      "wrist_flex": 0,
      "wrist_dev": 0
     },
     "leg_r": {
      "hip_flex": 33,
-     "hip_abd": 22,
+     "hip_abd": 42,
      "hip_rot": -10,
      "knee": 72,
      "ankle": 5,
@@ -169,7 +338,7 @@
     },
     "leg_l": {
      "hip_flex": 33,
-     "hip_abd": 22,
+     "hip_abd": 42,
      "hip_rot": -10,
      "knee": 72,
      "ankle": 5,
@@ -179,17 +348,35 @@
    "items": {
     "sword": {
      "blade": [
-      0.2,
-      -0.1,
-      -0.95
-     ]
+      0.65,
+      -0.2,
+      -0.73
+     ],
+     "at": {
+      "joint": "pelvis",
+      "offset": [
+       0.06,
+       -0.24,
+       0.0
+      ],
+      "frame": "root"
+     }
     },
     "shield": {
      "face": [
-      0.1,
-      1.0,
-      0.0
-     ]
+      0.638,
+      0.762,
+      -0.112
+     ],
+     "at": {
+      "joint": "pelvis",
+      "offset": [
+       0.101,
+       0.155,
+       0.09
+      ],
+      "frame": "root"
+     }
     }
    },
    "confidence": "estimated",
@@ -211,7 +398,90 @@
      "credit": "MunParedes via Wikimedia Commons",
      "licence": "CC BY-SA 4.0"
     }
-   ]
+   ],
+   "description_v2": "Relaxed halt. Pelvis settled back (tilt -5), back slightly rounded, legs hanging looser. The sword hangs from an almost straight right arm, point down against the right thigh. Left fist holds the reins low and loose; shield lies on the left thigh.",
+   "rein_arm": {
+    "rein_fist_wanted": [
+     0.13,
+     0.09,
+     0.06
+    ],
+    "shield_facing_wanted": [
+     0.2,
+     0.9,
+     0.35
+    ],
+    "from_the_text": "reins low and loose; shield lies over the left thigh",
+    "fist_off_by_mm": 0.4,
+    "facing_off_by_deg": 38.3,
+    "arm_l_was": {
+     "plane": 76,
+     "elev": 21,
+     "rot": 0,
+     "elbow": 110
+    },
+    "arm_l": {
+     "plane": 38.0,
+     "elev": 30.0,
+     "rot": 54.0,
+     "elbow": 65.0
+    },
+    "rein_fist_at": [
+     0.131,
+     0.09,
+     0.06
+    ]
+   },
+   "aimed": {
+    "clear": {
+     "clash_score_was_now": [
+      15.7,
+      1.0
+     ],
+     "changed": {
+      "arm_r": {
+       "plane": [
+        4.0,
+        16.0
+       ],
+       "wrist_flex": [
+        12.0,
+        24.0
+       ]
+      },
+      "arm_l": {}
+     }
+    }
+   },
+   "wrist_eased": {
+    "arm_r_was": {
+     "plane": 16.0,
+     "elev": 30.0,
+     "rot": -48.0,
+     "elbow": 15.0,
+     "pron": 76.0,
+     "wrist_flex": 24.0,
+     "wrist_dev": -25.0
+    },
+    "arm_r": {
+     "plane": -5.0,
+     "elev": 34.0,
+     "rot": -23.0,
+     "elbow": 15.0,
+     "pron": 45.0,
+     "wrist_flex": 14.0,
+     "wrist_dev": -25.0
+    },
+    "sword_place_off_mm": [
+     20.4,
+     47.8
+    ],
+    "blade_off_deg": [
+     11.5,
+     5.8
+    ],
+    "forearm_roll_cap_deg": 45.0
+   }
   },
   {
    "id": "walk-seat",
@@ -247,26 +517,26 @@
      "roll": 0
     },
     "arm_r": {
-     "plane": 35,
-     "elev": 25,
-     "rot": -20,
-     "elbow": 100,
-     "pron": 0,
-     "wrist_flex": 0,
-     "wrist_dev": -5
+     "plane": 61.0,
+     "elev": 21.0,
+     "rot": -28.0,
+     "elbow": 104.0,
+     "pron": -16.0,
+     "wrist_flex": 1.0,
+     "wrist_dev": -10.0
     },
     "arm_l": {
-     "plane": 78,
-     "elev": 25,
-     "rot": 0,
-     "elbow": 100,
+     "plane": 52.0,
+     "elev": 29.0,
+     "rot": 31.0,
+     "elbow": 83.0,
      "pron": 0,
      "wrist_flex": 0,
      "wrist_dev": 0
     },
     "leg_r": {
      "hip_flex": 45,
-     "hip_abd": 20,
+     "hip_abd": 40,
      "hip_rot": -10,
      "knee": 70,
      "ankle": 10,
@@ -274,7 +544,7 @@
     },
     "leg_l": {
      "hip_flex": 45,
-     "hip_abd": 20,
+     "hip_abd": 40,
      "hip_rot": -10,
      "knee": 70,
      "ankle": 10,
@@ -287,14 +557,32 @@
       0.0,
       -0.2,
       0.95
-     ]
+     ],
+     "at": {
+      "joint": "pelvis",
+      "offset": [
+       0.2,
+       -0.17,
+       0.21
+      ],
+      "frame": "root"
+     }
     },
     "shield": {
      "face": [
-      0.3,
-      0.95,
-      0.0
-     ]
+      0.553,
+      0.767,
+      -0.326
+     ],
+     "at": {
+      "joint": "pelvis",
+      "offset": [
+       0.11,
+       0.136,
+       0.087
+      ],
+      "frame": "root"
+     }
     }
    },
    "confidence": "estimated",
@@ -316,7 +604,158 @@
      "credit": "Octopus moldavicus via Wikimedia Commons",
      "licence": "CC BY-SA 3.0"
     }
-   ]
+   ],
+   "rein_arm": {
+    "rein_fist_wanted": [
+     0.15,
+     0.07,
+     0.08
+    ],
+    "shield_facing_wanted": [
+     0.35,
+     0.94,
+     0.0
+    ],
+    "from_the_text": "left fist holds both reins low behind the withers; the shield hangs on the left forearm, face to the left",
+    "fist_off_by_mm": 0.5,
+    "facing_off_by_deg": 24.3,
+    "arm_l_was": {
+     "plane": 78,
+     "elev": 25,
+     "rot": 0,
+     "elbow": 100
+    },
+    "arm_l": {
+     "plane": 46.0,
+     "elev": 23.0,
+     "rot": 43.0,
+     "elbow": 77.0
+    },
+    "rein_fist_at": [
+     0.149,
+     0.07,
+     0.08
+    ]
+   },
+   "aimed": {
+    "shield": {
+     "placed": {
+      "at": {
+       "joint": "pelvis",
+       "offset": [
+        0.11,
+        0.136,
+        0.087
+       ],
+       "frame": "root"
+      },
+      "position_error_mm": 0.4,
+      "direction_error_deg": 0.0
+     },
+     "changed": {}
+    },
+    "sword": {
+     "placed": {
+      "at": {
+       "joint": "pelvis",
+       "offset": [
+        0.2,
+        -0.17,
+        0.21
+       ],
+       "frame": "root"
+      },
+      "position_error_mm": 4.9,
+      "direction_error_deg": 0.1
+     },
+     "changed": {
+      "plane": [
+       35,
+       61.0
+      ],
+      "elev": [
+       25,
+       21.0
+      ],
+      "rot": [
+       -20,
+       -28.0
+      ],
+      "elbow": [
+       100,
+       104.0
+      ],
+      "pron": [
+       0,
+       -16.0
+      ],
+      "wrist_flex": [
+       0,
+       1.0
+      ],
+      "wrist_dev": [
+       -5,
+       -10.0
+      ]
+     }
+    },
+    "clear": {
+     "clash_score_was_now": [
+      31.3,
+      0.0
+     ],
+     "changed": {
+      "arm_r": {
+       "plane": [
+        35,
+        61.0
+       ],
+       "elev": [
+        25,
+        21.0
+       ],
+       "rot": [
+        -20,
+        -28.0
+       ],
+       "elbow": [
+        100,
+        104.0
+       ],
+       "pron": [
+        0,
+        -16.0
+       ],
+       "wrist_flex": [
+        0,
+        1.0
+       ],
+       "wrist_dev": [
+        -5,
+        -10.0
+       ]
+      },
+      "arm_l": {
+       "plane": [
+        46.0,
+        52.0
+       ],
+       "elev": [
+        23.0,
+        29.0
+       ],
+       "rot": [
+        43.0,
+        31.0
+       ],
+       "elbow": [
+        77.0,
+        83.0
+       ]
+      }
+     }
+    }
+   }
   },
   {
    "id": "rising-trot-up",
@@ -353,26 +792,26 @@
      "roll": 0
     },
     "arm_r": {
-     "plane": 35,
-     "elev": 25,
-     "rot": -20,
-     "elbow": 100,
-     "pron": 0,
-     "wrist_flex": 0,
-     "wrist_dev": -5
+     "plane": 35.0,
+     "elev": 33.0,
+     "rot": -24.0,
+     "elbow": 108.0,
+     "pron": -41.0,
+     "wrist_flex": 8.0,
+     "wrist_dev": -7.0
     },
     "arm_l": {
-     "plane": 79,
-     "elev": 28,
-     "rot": 0,
-     "elbow": 100,
+     "plane": 33.0,
+     "elev": 31.0,
+     "rot": 18.0,
+     "elbow": 111.0,
      "pron": 0,
      "wrist_flex": 0,
      "wrist_dev": 0
     },
     "leg_r": {
      "hip_flex": 64,
-     "hip_abd": 20,
+     "hip_abd": 40,
      "hip_rot": -10,
      "knee": 80,
      "ankle": 12,
@@ -380,7 +819,7 @@
     },
     "leg_l": {
      "hip_flex": 64,
-     "hip_abd": 20,
+     "hip_abd": 40,
      "hip_rot": -10,
      "knee": 80,
      "ankle": 12,
@@ -393,14 +832,32 @@
       0.05,
       -0.2,
       0.95
-     ]
+     ],
+     "at": {
+      "joint": "pelvis",
+      "offset": [
+       0.22,
+       -0.17,
+       0.2
+      ],
+      "frame": "root"
+     }
     },
     "shield": {
      "face": [
-      0.3,
-      0.95,
-      0.0
-     ]
+      0.573,
+      0.784,
+      -0.237
+     ],
+     "at": {
+      "joint": "pelvis",
+      "offset": [
+       0.145,
+       0.165,
+       0.117
+      ],
+      "frame": "root"
+     }
     }
    },
    "confidence": "designed",
@@ -415,7 +872,176 @@
      "credit": "John Harwood via Wikimedia Commons",
      "licence": "CC BY 2.0"
     }
-   ]
+   ],
+   "rein_arm": {
+    "rein_fist_wanted": [
+     0.15,
+     0.07,
+     0.08
+    ],
+    "shield_facing_wanted": [
+     0.35,
+     0.94,
+     0.0
+    ],
+    "from_the_text": "left fist holds both reins low behind the withers; the shield hangs on the left forearm, face to the left",
+    "fist_off_by_mm": 0.5,
+    "facing_off_by_deg": 34.0,
+    "arm_l_was": {
+     "plane": 79,
+     "elev": 28,
+     "rot": 0,
+     "elbow": 100
+    },
+    "arm_l": {
+     "plane": 25.0,
+     "elev": 25.0,
+     "rot": 40.0,
+     "elbow": 97.0
+    },
+    "rein_fist_at": [
+     0.15,
+     0.071,
+     0.08
+    ]
+   },
+   "aimed": {
+    "shield": {
+     "placed": {
+      "at": {
+       "joint": "pelvis",
+       "offset": [
+        0.117,
+        0.14,
+        0.08
+       ],
+       "frame": "root"
+      },
+      "position_error_mm": 0.3,
+      "direction_error_deg": 0.0
+     },
+     "changed": {}
+    },
+    "sword": {
+     "placed": {
+      "at": {
+       "joint": "pelvis",
+       "offset": [
+        0.22,
+        -0.17,
+        0.2
+       ],
+       "frame": "root"
+      },
+      "position_error_mm": 2.9,
+      "direction_error_deg": 0.3
+     },
+     "changed": {
+      "elev": [
+       25,
+       33.0
+      ],
+      "rot": [
+       -20,
+       -24.0
+      ],
+      "elbow": [
+       100,
+       108.0
+      ],
+      "pron": [
+       0,
+       -41.0
+      ],
+      "wrist_flex": [
+       0,
+       8.0
+      ],
+      "wrist_dev": [
+       -5,
+       -7.0
+      ]
+     }
+    },
+    "clear": {
+     "clash_score_was_now": [
+      50.4,
+      13.0
+     ],
+     "changed": {
+      "arm_r": {
+       "elev": [
+        25,
+        33.0
+       ],
+       "rot": [
+        -20,
+        -24.0
+       ],
+       "elbow": [
+        100,
+        108.0
+       ],
+       "pron": [
+        0,
+        -41.0
+       ],
+       "wrist_flex": [
+        0,
+        8.0
+       ],
+       "wrist_dev": [
+        -5,
+        -7.0
+       ]
+      },
+      "arm_l": {
+       "plane": [
+        25.0,
+        40.0
+       ],
+       "rot": [
+        40.0,
+        16.0
+       ],
+       "elbow": [
+        97.0,
+        109.0
+       ]
+      }
+     }
+    }
+   },
+   "shield_clear": {
+    "arm_l_was": {
+     "plane": 40.0,
+     "elev": 25.0,
+     "rot": 16.0,
+     "elbow": 109.0
+    },
+    "arm_l": {
+     "plane": 33.0,
+     "elev": 31.0,
+     "rot": 18.0,
+     "elbow": 111.0
+    },
+    "body_inside_the_proxy_before": {
+     "vertices": 92,
+     "deepest_mm": 8.0
+    },
+    "after": {
+     "vertices": 25,
+     "deepest_mm": 3.0
+    },
+    "rein_fist_moved_mm": 3.9,
+    "shield_face_turned_deg": 6.8,
+    "margin_mm": 3.0,
+    "rein_fist_at": [
+     0.189,
+     0.105,
+     0.139
+    ]
+   }
   },
   {
    "id": "rising-trot-down",
@@ -452,26 +1078,26 @@
      "roll": 0
     },
     "arm_r": {
-     "plane": 35,
-     "elev": 25,
-     "rot": -20,
-     "elbow": 100,
-     "pron": 0,
-     "wrist_flex": 0,
-     "wrist_dev": -5
+     "plane": 46.0,
+     "elev": 29.0,
+     "rot": -23.0,
+     "elbow": 100.0,
+     "pron": -29.0,
+     "wrist_flex": 8.0,
+     "wrist_dev": -10.0
     },
     "arm_l": {
-     "plane": 79,
-     "elev": 26,
-     "rot": 0,
-     "elbow": 100,
+     "plane": 43.0,
+     "elev": 29.0,
+     "rot": 28.0,
+     "elbow": 89.0,
      "pron": 0,
      "wrist_flex": 0,
      "wrist_dev": 0
     },
     "leg_r": {
      "hip_flex": 47,
-     "hip_abd": 20,
+     "hip_abd": 40,
      "hip_rot": -10,
      "knee": 70,
      "ankle": 10,
@@ -479,7 +1105,7 @@
     },
     "leg_l": {
      "hip_flex": 47,
-     "hip_abd": 20,
+     "hip_abd": 40,
      "hip_rot": -10,
      "knee": 70,
      "ankle": 10,
@@ -492,14 +1118,32 @@
       0.05,
       -0.2,
       0.95
-     ]
+     ],
+     "at": {
+      "joint": "pelvis",
+      "offset": [
+       0.2,
+       -0.17,
+       0.21
+      ],
+      "frame": "root"
+     }
     },
     "shield": {
      "face": [
-      0.3,
-      0.95,
-      0.0
-     ]
+      0.571,
+      0.738,
+      -0.361
+     ],
+     "at": {
+      "joint": "pelvis",
+      "offset": [
+       0.112,
+       0.137,
+       0.085
+      ],
+      "frame": "root"
+     }
     }
    },
    "confidence": "designed",
@@ -514,7 +1158,150 @@
      "credit": "John Harwood via Wikimedia Commons",
      "licence": "CC BY 2.0"
     }
-   ]
+   ],
+   "rein_arm": {
+    "rein_fist_wanted": [
+     0.15,
+     0.07,
+     0.08
+    ],
+    "shield_facing_wanted": [
+     0.35,
+     0.94,
+     0.0
+    ],
+    "from_the_text": "left fist holds both reins low behind the withers; the shield hangs on the left forearm, face to the left",
+    "fist_off_by_mm": 0.6,
+    "facing_off_by_deg": 27.1,
+    "arm_l_was": {
+     "plane": 79,
+     "elev": 26,
+     "rot": 0,
+     "elbow": 100
+    },
+    "arm_l": {
+     "plane": 37.0,
+     "elev": 23.0,
+     "rot": 40.0,
+     "elbow": 83.0
+    },
+    "rein_fist_at": [
+     0.149,
+     0.07,
+     0.081
+    ]
+   },
+   "aimed": {
+    "shield": {
+     "placed": {
+      "at": {
+       "joint": "pelvis",
+       "offset": [
+        0.112,
+        0.137,
+        0.085
+       ],
+       "frame": "root"
+      },
+      "position_error_mm": 0.3,
+      "direction_error_deg": 0.0
+     },
+     "changed": {}
+    },
+    "sword": {
+     "placed": {
+      "at": {
+       "joint": "pelvis",
+       "offset": [
+        0.2,
+        -0.17,
+        0.21
+       ],
+       "frame": "root"
+      },
+      "position_error_mm": 6.2,
+      "direction_error_deg": 0.4
+     },
+     "changed": {
+      "plane": [
+       35,
+       46.0
+      ],
+      "elev": [
+       25,
+       29.0
+      ],
+      "rot": [
+       -20,
+       -23.0
+      ],
+      "pron": [
+       0,
+       -29.0
+      ],
+      "wrist_flex": [
+       0,
+       8.0
+      ],
+      "wrist_dev": [
+       -5,
+       -10.0
+      ]
+     }
+    },
+    "clear": {
+     "clash_score_was_now": [
+      33.7,
+      0.0
+     ],
+     "changed": {
+      "arm_r": {
+       "plane": [
+        35,
+        46.0
+       ],
+       "elev": [
+        25,
+        29.0
+       ],
+       "rot": [
+        -20,
+        -23.0
+       ],
+       "pron": [
+        0,
+        -29.0
+       ],
+       "wrist_flex": [
+        0,
+        8.0
+       ],
+       "wrist_dev": [
+        -5,
+        -10.0
+       ]
+      },
+      "arm_l": {
+       "plane": [
+        37.0,
+        43.0
+       ],
+       "elev": [
+        23.0,
+        29.0
+       ],
+       "rot": [
+        40.0,
+        28.0
+       ],
+       "elbow": [
+        83.0,
+        89.0
+       ]
+      }
+     }
+    }
+   }
   },
   {
    "id": "canter-seat",
@@ -550,26 +1337,26 @@
      "roll": 0
     },
     "arm_r": {
-     "plane": 35,
-     "elev": 25,
-     "rot": -20,
-     "elbow": 100,
-     "pron": 0,
-     "wrist_flex": 0,
+     "plane": 26.0,
+     "elev": 29.0,
+     "rot": -24.0,
+     "elbow": 108.0,
+     "pron": -39.0,
+     "wrist_flex": 4.0,
      "wrist_dev": -5
     },
     "arm_l": {
-     "plane": 78,
-     "elev": 25,
-     "rot": 0,
-     "elbow": 100,
+     "plane": 52.0,
+     "elev": 22.0,
+     "rot": 13.0,
+     "elbow": 102.0,
      "pron": 0,
      "wrist_flex": 0,
      "wrist_dev": 0
     },
     "leg_r": {
      "hip_flex": 48,
-     "hip_abd": 20,
+     "hip_abd": 40,
      "hip_rot": -10,
      "knee": 72,
      "ankle": 10,
@@ -577,7 +1364,7 @@
     },
     "leg_l": {
      "hip_flex": 48,
-     "hip_abd": 20,
+     "hip_abd": 40,
      "hip_rot": -10,
      "knee": 72,
      "ankle": 10,
@@ -590,14 +1377,32 @@
       0.0,
       -0.2,
       0.95
-     ]
+     ],
+     "at": {
+      "joint": "pelvis",
+      "offset": [
+       0.2,
+       -0.17,
+       0.21
+      ],
+      "frame": "root"
+     }
     },
     "shield": {
      "face": [
-      0.3,
-      0.95,
-      0.0
-     ]
+      0.529,
+      0.752,
+      -0.393
+     ],
+     "at": {
+      "joint": "pelvis",
+      "offset": [
+       0.111,
+       0.137,
+       0.083
+      ],
+      "frame": "root"
+     }
     }
    },
    "confidence": "designed",
@@ -612,7 +1417,146 @@
      "credit": "Codrin.B (uploader of the series; verified on the -021 page) via Wikimedia Commons",
      "licence": "CC BY-SA 3.0"
     }
-   ]
+   ],
+   "rein_arm": {
+    "rein_fist_wanted": [
+     0.15,
+     0.07,
+     0.08
+    ],
+    "shield_facing_wanted": [
+     0.35,
+     0.94,
+     0.0
+    ],
+    "from_the_text": "left fist holds both reins low behind the withers; the shield hangs on the left forearm, face to the left",
+    "fist_off_by_mm": 0.9,
+    "facing_off_by_deg": 27.2,
+    "arm_l_was": {
+     "plane": 78,
+     "elev": 25,
+     "rot": 0,
+     "elbow": 100
+    },
+    "arm_l": {
+     "plane": 40.0,
+     "elev": 22.0,
+     "rot": 40.0,
+     "elbow": 84.0
+    },
+    "rein_fist_at": [
+     0.151,
+     0.071,
+     0.08
+    ]
+   },
+   "aimed": {
+    "shield": {
+     "placed": {
+      "at": {
+       "joint": "pelvis",
+       "offset": [
+        0.111,
+        0.137,
+        0.083
+       ],
+       "frame": "root"
+      },
+      "position_error_mm": 0.3,
+      "direction_error_deg": 0.0
+     },
+     "changed": {}
+    },
+    "sword": {
+     "placed": {
+      "at": {
+       "joint": "pelvis",
+       "offset": [
+        0.2,
+        -0.17,
+        0.21
+       ],
+       "frame": "root"
+      },
+      "position_error_mm": 2.5,
+      "direction_error_deg": 0.4
+     },
+     "changed": {
+      "plane": [
+       35,
+       26.0
+      ],
+      "elev": [
+       25,
+       29.0
+      ],
+      "rot": [
+       -20,
+       -24.0
+      ],
+      "elbow": [
+       100,
+       108.0
+      ],
+      "pron": [
+       0,
+       -39.0
+      ],
+      "wrist_flex": [
+       0,
+       4.0
+      ]
+     }
+    },
+    "clear": {
+     "clash_score_was_now": [
+      39.1,
+      2.0
+     ],
+     "changed": {
+      "arm_r": {
+       "plane": [
+        35,
+        26.0
+       ],
+       "elev": [
+        25,
+        29.0
+       ],
+       "rot": [
+        -20,
+        -24.0
+       ],
+       "elbow": [
+        100,
+        108.0
+       ],
+       "pron": [
+        0,
+        -39.0
+       ],
+       "wrist_flex": [
+        0,
+        4.0
+       ]
+      },
+      "arm_l": {
+       "plane": [
+        40.0,
+        52.0
+       ],
+       "rot": [
+        40.0,
+        13.0
+       ],
+       "elbow": [
+        84.0,
+        102.0
+       ]
+      }
+     }
+    }
+   }
   },
   {
    "id": "gallop-two-point",
@@ -648,26 +1592,26 @@
      "roll": 0
     },
     "arm_r": {
-     "plane": 45,
-     "elev": 45,
-     "rot": -10,
-     "elbow": 115,
-     "pron": 0,
-     "wrist_flex": 0,
-     "wrist_dev": -10
+     "plane": 38.0,
+     "elev": 40.0,
+     "rot": -10.0,
+     "elbow": 106.0,
+     "pron": -45.0,
+     "wrist_flex": 2.0,
+     "wrist_dev": -19.0
     },
     "arm_l": {
-     "plane": 78,
-     "elev": 41,
-     "rot": 0,
-     "elbow": 95,
+     "plane": 68.0,
+     "elev": 48.0,
+     "rot": 16.0,
+     "elbow": 91.0,
      "pron": 0,
      "wrist_flex": 0,
      "wrist_dev": 0
     },
     "leg_r": {
      "hip_flex": 83,
-     "hip_abd": 20,
+     "hip_abd": 40,
      "hip_rot": -10,
      "knee": 90,
      "ankle": 15,
@@ -675,7 +1619,7 @@
     },
     "leg_l": {
      "hip_flex": 83,
-     "hip_abd": 20,
+     "hip_abd": 40,
      "hip_rot": -10,
      "knee": 90,
      "ankle": 15,
@@ -688,14 +1632,32 @@
       0.55,
       -0.1,
       0.75
-     ]
+     ],
+     "at": {
+      "joint": "pelvis",
+      "offset": [
+       0.28,
+       -0.14,
+       0.17
+      ],
+      "frame": "root"
+     }
     },
     "shield": {
      "face": [
-      0.5,
-      0.85,
-      0.0
-     ]
+      0.633,
+      0.711,
+      -0.308
+     ],
+     "at": {
+      "joint": "pelvis",
+      "offset": [
+       0.226,
+       0.13,
+       0.063
+      ],
+      "frame": "root"
+     }
     }
    },
    "confidence": "estimated",
@@ -717,7 +1679,85 @@
      "credit": "Xenophon16 via Wikimedia Commons",
      "licence": "CC BY-SA 4.0"
     }
-   ]
+   ],
+   "rein_arm": {
+    "rein_fist_wanted": [
+     0.26,
+     0.06,
+     0.06
+    ],
+    "shield_facing_wanted": [
+     0.4,
+     0.9,
+     0.0
+    ],
+    "from_the_text": "left fist forward over the withers",
+    "fist_off_by_mm": 0.9,
+    "facing_off_by_deg": 25.0,
+    "arm_l_was": {
+     "plane": 78,
+     "elev": 41,
+     "rot": 0,
+     "elbow": 95
+    },
+    "arm_l": {
+     "plane": 68.0,
+     "elev": 48.0,
+     "rot": 40.0,
+     "elbow": 79.0
+    },
+    "rein_fist_at": [
+     0.259,
+     0.061,
+     0.059
+    ]
+   },
+   "aimed": {
+    "clear": {
+     "clash_score_was_now": [
+      4.0,
+      1.0
+     ],
+     "changed": {
+      "arm_r": {},
+      "arm_l": {
+       "rot": [
+        28.0,
+        16.0
+       ]
+      }
+     }
+    }
+   },
+   "wrist_eased": {
+    "arm_r_was": {
+     "plane": 30.0,
+     "elev": 64.0,
+     "rot": -2.0,
+     "elbow": 102.0,
+     "pron": -76.0,
+     "wrist_flex": 7.0,
+     "wrist_dev": -10.0
+    },
+    "arm_r": {
+     "plane": 38.0,
+     "elev": 40.0,
+     "rot": -10.0,
+     "elbow": 106.0,
+     "pron": -45.0,
+     "wrist_flex": 2.0,
+     "wrist_dev": -19.0
+    },
+    "sword_place_off_mm": [
+     7.2,
+     23.9
+    ],
+    "blade_off_deg": [
+     0.5,
+     1.7
+    ],
+    "forearm_roll_cap_deg": 45.0
+   }
   },
   {
    "id": "halt-rein-back-lean",
@@ -753,26 +1793,26 @@
      "roll": 0
     },
     "arm_r": {
-     "plane": 43,
-     "elev": 28,
-     "rot": -20,
-     "elbow": 100,
-     "pron": 0,
-     "wrist_flex": 0,
-     "wrist_dev": -5
+     "plane": 41.0,
+     "elev": 31.0,
+     "rot": -9.0,
+     "elbow": 80.0,
+     "pron": -24.0,
+     "wrist_flex": 1.0,
+     "wrist_dev": -7.0
     },
     "arm_l": {
-     "plane": 76,
-     "elev": 21,
-     "rot": 0,
-     "elbow": 95,
+     "plane": 43.0,
+     "elev": 24.0,
+     "rot": 21.0,
+     "elbow": 102.0,
      "pron": 0,
      "wrist_flex": 0,
      "wrist_dev": 0
     },
     "leg_r": {
      "hip_flex": 27,
-     "hip_abd": 20,
+     "hip_abd": 40,
      "hip_rot": -10,
      "knee": 65,
      "ankle": 15,
@@ -780,7 +1820,7 @@
     },
     "leg_l": {
      "hip_flex": 27,
-     "hip_abd": 20,
+     "hip_abd": 40,
      "hip_rot": -10,
      "knee": 65,
      "ankle": 15,
@@ -793,14 +1833,32 @@
       0.05,
       -0.1,
       0.95
-     ]
+     ],
+     "at": {
+      "joint": "pelvis",
+      "offset": [
+       0.17,
+       -0.17,
+       0.22
+      ],
+      "frame": "root"
+     }
     },
     "shield": {
      "face": [
-      0.1,
-      1.0,
-      0.0
-     ]
+      0.629,
+      0.775,
+      -0.068
+     ],
+     "at": {
+      "joint": "pelvis",
+      "offset": [
+       0.085,
+       0.147,
+       0.16
+      ],
+      "frame": "root"
+     }
     }
    },
    "confidence": "estimated",
@@ -822,7 +1880,184 @@
      "credit": "Unknown author (E. Beudant, Exterieur et Haute Ecole, 1923; public domain, anonymous pre-1931) via Wikimedia Commons",
      "licence": "Public domain"
     }
-   ]
+   ],
+   "rein_arm": {
+    "rein_fist_wanted": [
+     0.1,
+     0.06,
+     0.13
+    ],
+    "shield_facing_wanted": [
+     0.3,
+     0.95,
+     0.0
+    ],
+    "from_the_text": "left fist raised and drawn back toward the belly",
+    "fist_off_by_mm": 0.2,
+    "facing_off_by_deg": 30.4,
+    "arm_l_was": {
+     "plane": 76,
+     "elev": 21,
+     "rot": 0,
+     "elbow": 95
+    },
+    "arm_l": {
+     "plane": 25.0,
+     "elev": 18.0,
+     "rot": 40.0,
+     "elbow": 90.0
+    },
+    "rein_fist_at": [
+     0.1,
+     0.06,
+     0.13
+    ]
+   },
+   "aimed": {
+    "shield": {
+     "placed": {
+      "at": {
+       "joint": "pelvis",
+       "offset": [
+        0.068,
+        0.128,
+        0.114
+       ],
+       "frame": "root"
+      },
+      "position_error_mm": 0.3,
+      "direction_error_deg": 0.0
+     },
+     "changed": {}
+    },
+    "sword": {
+     "placed": {
+      "at": {
+       "joint": "pelvis",
+       "offset": [
+        0.17,
+        -0.17,
+        0.22
+       ],
+       "frame": "root"
+      },
+      "position_error_mm": 4.0,
+      "direction_error_deg": 0.1
+     },
+     "changed": {
+      "plane": [
+       43,
+       41.0
+      ],
+      "elev": [
+       28,
+       31.0
+      ],
+      "rot": [
+       -20,
+       -9.0
+      ],
+      "elbow": [
+       100,
+       80.0
+      ],
+      "pron": [
+       0,
+       -24.0
+      ],
+      "wrist_flex": [
+       0,
+       1.0
+      ],
+      "wrist_dev": [
+       -5,
+       -7.0
+      ]
+     }
+    },
+    "clear": {
+     "clash_score_was_now": [
+      142.4,
+      1.0
+     ],
+     "changed": {
+      "arm_r": {
+       "plane": [
+        43,
+        41.0
+       ],
+       "elev": [
+        28,
+        31.0
+       ],
+       "rot": [
+        -20,
+        -9.0
+       ],
+       "elbow": [
+        100,
+        80.0
+       ],
+       "pron": [
+        0,
+        -24.0
+       ],
+       "wrist_flex": [
+        0,
+        1.0
+       ],
+       "wrist_dev": [
+        -5,
+        -7.0
+       ]
+      },
+      "arm_l": {
+       "plane": [
+        25.0,
+        52.0
+       ],
+       "rot": [
+        40.0,
+        16.0
+       ],
+       "elbow": [
+        90.0,
+        102.0
+       ]
+      }
+     }
+    }
+   },
+   "shield_clear": {
+    "arm_l_was": {
+     "plane": 52.0,
+     "elev": 18.0,
+     "rot": 16.0,
+     "elbow": 102.0
+    },
+    "arm_l": {
+     "plane": 43.0,
+     "elev": 24.0,
+     "rot": 21.0,
+     "elbow": 102.0
+    },
+    "body_inside_the_proxy_before": {
+     "vertices": 68,
+     "deepest_mm": 4.4
+    },
+    "after": {
+     "vertices": 25,
+     "deepest_mm": 3.1
+    },
+    "rein_fist_moved_mm": 0.5,
+    "shield_face_turned_deg": 7.4,
+    "margin_mm": 3.0,
+    "rein_fist_at": [
+     0.116,
+     0.091,
+     0.201
+    ]
+   }
   },
   {
    "id": "turn-saddle-left",
@@ -858,26 +2093,26 @@
      "roll": 0
     },
     "arm_r": {
-     "plane": 43,
-     "elev": 28,
-     "rot": -20,
-     "elbow": 100,
-     "pron": 0,
-     "wrist_flex": 0,
-     "wrist_dev": -5
+     "plane": -33.0,
+     "elev": 31.0,
+     "rot": -44.0,
+     "elbow": 109.0,
+     "pron": -45.0,
+     "wrist_flex": 1.0,
+     "wrist_dev": -2.0
     },
     "arm_l": {
-     "plane": 78,
-     "elev": 25,
-     "rot": 0,
-     "elbow": 100,
+     "plane": 73.0,
+     "elev": 48.0,
+     "rot": 71.0,
+     "elbow": 55.0,
      "pron": 0,
      "wrist_flex": 0,
      "wrist_dev": 0
     },
     "leg_r": {
      "hip_flex": 43,
-     "hip_abd": 20,
+     "hip_abd": 40,
      "hip_rot": -10,
      "knee": 70,
      "ankle": 10,
@@ -885,7 +2120,7 @@
     },
     "leg_l": {
      "hip_flex": 43,
-     "hip_abd": 20,
+     "hip_abd": 40,
      "hip_rot": -10,
      "knee": 70,
      "ankle": 10,
@@ -898,14 +2133,32 @@
       0.1,
       -0.15,
       0.95
-     ]
+     ],
+     "at": {
+      "joint": "pelvis",
+      "offset": [
+       0.2,
+       -0.17,
+       0.21
+      ],
+      "frame": "root"
+     }
     },
     "shield": {
      "face": [
-      0.7,
-      0.7,
-      0.0
-     ]
+      0.482,
+      0.866,
+      0.13
+     ],
+     "at": {
+      "joint": "pelvis",
+      "offset": [
+       0.119,
+       0.181,
+       0.122
+      ],
+      "frame": "root"
+     }
     }
    },
    "confidence": "estimated",
@@ -927,7 +2180,127 @@
      "credit": "User:MatthiasKabel via Wikimedia Commons",
      "licence": "CC BY-SA 3.0"
     }
-   ]
+   ],
+   "rein_arm": {
+    "rein_fist_wanted": [
+     0.17,
+     0.13,
+     0.09
+    ],
+    "shield_facing_wanted": [
+     0.6,
+     0.8,
+     0.0
+    ],
+    "from_the_text": "left fist moves left over the neck; shield swings forward",
+    "fist_off_by_mm": 3.0,
+    "facing_off_by_deg": 10.7,
+    "arm_l_was": {
+     "plane": 78,
+     "elev": 25,
+     "rot": 0,
+     "elbow": 100
+    },
+    "arm_l": {
+     "plane": 73.0,
+     "elev": 48.0,
+     "rot": 71.0,
+     "elbow": 55.0
+    },
+    "rein_fist_at": [
+     0.166,
+     0.128,
+     0.092
+    ]
+   },
+   "aimed": {
+    "shield": {
+     "placed": {
+      "at": {
+       "joint": "pelvis",
+       "offset": [
+        0.119,
+        0.181,
+        0.122
+       ],
+       "frame": "root"
+      },
+      "position_error_mm": 0.3,
+      "direction_error_deg": 0.0
+     },
+     "changed": {}
+    },
+    "sword": {
+     "placed": {
+      "at": {
+       "joint": "pelvis",
+       "offset": [
+        0.2,
+        -0.17,
+        0.21
+       ],
+       "frame": "root"
+      },
+      "position_error_mm": 5.2,
+      "direction_error_deg": 0.4
+     },
+     "changed": {
+      "plane": [
+       43,
+       -33.0
+      ],
+      "elev": [
+       28,
+       31.0
+      ],
+      "rot": [
+       -20,
+       -44.0
+      ],
+      "elbow": [
+       100,
+       109.0
+      ],
+      "pron": [
+       0,
+       -46.0
+      ],
+      "wrist_dev": [
+       -5,
+       -2.0
+      ]
+     }
+    }
+   },
+   "wrist_eased": {
+    "arm_r_was": {
+     "plane": -33.0,
+     "elev": 31.0,
+     "rot": -44.0,
+     "elbow": 109.0,
+     "pron": -46.0,
+     "wrist_flex": 0.0,
+     "wrist_dev": -2.0
+    },
+    "arm_r": {
+     "plane": -33.0,
+     "elev": 31.0,
+     "rot": -44.0,
+     "elbow": 109.0,
+     "pron": -45.0,
+     "wrist_flex": 1.0,
+     "wrist_dev": -2.0
+    },
+    "sword_place_off_mm": [
+     5.2,
+     5.4
+    ],
+    "blade_off_deg": [
+     0.4,
+     0.7
+    ],
+    "forearm_roll_cap_deg": 45.0
+   }
   },
   {
    "id": "turn-saddle-right",
@@ -963,26 +2336,26 @@
      "roll": 0
     },
     "arm_r": {
-     "plane": 43,
-     "elev": 28,
-     "rot": -20,
-     "elbow": 100,
-     "pron": 0,
-     "wrist_flex": 0,
-     "wrist_dev": -5
+     "plane": 82.0,
+     "elev": 43.0,
+     "rot": 11.0,
+     "elbow": 74.0,
+     "pron": -20.0,
+     "wrist_flex": 6.0,
+     "wrist_dev": -5.0
     },
     "arm_l": {
-     "plane": 90,
-     "elev": 28,
-     "rot": 10,
-     "elbow": 100,
+     "plane": 47.0,
+     "elev": 20.0,
+     "rot": 10.0,
+     "elbow": 98.0,
      "pron": 0,
      "wrist_flex": 0,
      "wrist_dev": 0
     },
     "leg_r": {
      "hip_flex": 43,
-     "hip_abd": 20,
+     "hip_abd": 40,
      "hip_rot": -10,
      "knee": 70,
      "ankle": 10,
@@ -990,7 +2363,7 @@
     },
     "leg_l": {
      "hip_flex": 43,
-     "hip_abd": 20,
+     "hip_abd": 40,
      "hip_rot": -10,
      "knee": 70,
      "ankle": 10,
@@ -1003,14 +2376,32 @@
       0.1,
       -0.15,
       0.95
-     ]
+     ],
+     "at": {
+      "joint": "pelvis",
+      "offset": [
+       0.2,
+       -0.17,
+       0.21
+      ],
+      "frame": "root"
+     }
     },
     "shield": {
      "face": [
-      0.2,
-      0.95,
-      0.0
-     ]
+      0.73,
+      0.605,
+      -0.318
+     ],
+     "at": {
+      "joint": "pelvis",
+      "offset": [
+       0.171,
+       0.094,
+       0.127
+      ],
+      "frame": "root"
+     }
     }
    },
    "confidence": "designed",
@@ -1025,7 +2416,86 @@
      "credit": "User:MatthiasKabel via Wikimedia Commons",
      "licence": "CC BY-SA 3.0"
     }
-   ]
+   ],
+   "rein_arm": {
+    "rein_fist_wanted": [
+     0.17,
+     -0.01,
+     0.09
+    ],
+    "shield_facing_wanted": [
+     0.55,
+     0.83,
+     0.0
+    ],
+    "from_the_text": "left fist crosses to the right over the withers",
+    "fist_off_by_mm": 0.4,
+    "facing_off_by_deg": 33.0,
+    "arm_l_was": {
+     "plane": 90,
+     "elev": 28,
+     "rot": 10,
+     "elbow": 100
+    },
+    "arm_l": {
+     "plane": 70.0,
+     "elev": 14.0,
+     "rot": 28.0,
+     "elbow": 74.0
+    },
+    "rein_fist_at": [
+     0.17,
+     -0.01,
+     0.089
+    ]
+   },
+   "aimed": {
+    "clear": {
+     "clash_score_was_now": [
+      86.0,
+      72.0
+     ],
+     "changed": {
+      "arm_r": {},
+      "arm_l": {
+       "plane": [
+        82.0,
+        79.0
+       ]
+      }
+     }
+    }
+   },
+   "shield_clear": {
+    "arm_l_was": {
+     "plane": 79.0,
+     "elev": 14.0,
+     "rot": 1.0,
+     "elbow": 98.0
+    },
+    "arm_l": {
+     "plane": 47.0,
+     "elev": 20.0,
+     "rot": 10.0,
+     "elbow": 98.0
+    },
+    "body_inside_the_proxy_before": {
+     "vertices": 265,
+     "deepest_mm": 15.5
+    },
+    "after": {
+     "vertices": 26,
+     "deepest_mm": 3.1
+    },
+    "rein_fist_moved_mm": 0.5,
+    "shield_face_turned_deg": 12.5,
+    "margin_mm": 3.0,
+    "rein_fist_at": [
+     0.2,
+     0.03,
+     0.159
+    ]
+   }
   },
   {
    "id": "look-behind",
@@ -1061,26 +2531,26 @@
      "roll": 0
     },
     "arm_r": {
-     "plane": 43,
-     "elev": 28,
-     "rot": -20,
-     "elbow": 100,
-     "pron": 0,
-     "wrist_flex": 0,
-     "wrist_dev": -5
+     "plane": 130.0,
+     "elev": 53.0,
+     "rot": 3.0,
+     "elbow": 63.0,
+     "pron": 25.0,
+     "wrist_flex": -5.0,
+     "wrist_dev": 0.0
     },
     "arm_l": {
-     "plane": 78,
-     "elev": 25,
-     "rot": 0,
-     "elbow": 100,
+     "plane": -20.0,
+     "elev": 48.0,
+     "rot": 36.0,
+     "elbow": 101.0,
      "pron": 0,
      "wrist_flex": 0,
      "wrist_dev": 0
     },
     "leg_r": {
      "hip_flex": 43,
-     "hip_abd": 20,
+     "hip_abd": 40,
      "hip_rot": -10,
      "knee": 70,
      "ankle": 10,
@@ -1088,7 +2558,7 @@
     },
     "leg_l": {
      "hip_flex": 43,
-     "hip_abd": 20,
+     "hip_abd": 40,
      "hip_rot": -10,
      "knee": 70,
      "ankle": 10,
@@ -1101,14 +2571,32 @@
       0.1,
       -0.15,
       0.95
-     ]
+     ],
+     "at": {
+      "joint": "pelvis",
+      "offset": [
+       0.2,
+       -0.17,
+       0.21
+      ],
+      "frame": "root"
+     }
     },
     "shield": {
      "face": [
-      0.3,
-      0.95,
-      0.0
-     ]
+      0.927,
+      0.28,
+      -0.248
+     ],
+     "at": {
+      "joint": "pelvis",
+      "offset": [
+       0.165,
+       0.141,
+       0.108
+      ],
+      "frame": "root"
+     }
     }
    },
    "confidence": "estimated",
@@ -1130,7 +2618,102 @@
      "credit": "User:MatthiasKabel via Wikimedia Commons",
      "licence": "CC BY-SA 3.0"
     }
-   ]
+   ],
+   "rein_arm": {
+    "rein_fist_wanted": [
+     0.15,
+     0.07,
+     0.08
+    ],
+    "shield_facing_wanted": [
+     0.35,
+     0.94,
+     0.0
+    ],
+    "from_the_text": "left fist holds both reins low behind the withers; the shield hangs on the left forearm, face to the left",
+    "fist_off_by_mm": 0.7,
+    "facing_off_by_deg": 54.1,
+    "arm_l_was": {
+     "plane": 78,
+     "elev": 25,
+     "rot": 0,
+     "elbow": 100
+    },
+    "arm_l": {
+     "plane": -20.0,
+     "elev": 48.0,
+     "rot": 36.0,
+     "elbow": 101.0
+    },
+    "rein_fist_at": [
+     0.15,
+     0.07,
+     0.081
+    ]
+   },
+   "aimed": {
+    "shield": {
+     "placed": {
+      "at": {
+       "joint": "pelvis",
+       "offset": [
+        0.165,
+        0.141,
+        0.108
+       ],
+       "frame": "root"
+      },
+      "position_error_mm": 0.3,
+      "direction_error_deg": 0.0
+     },
+     "changed": {}
+    },
+    "sword": {
+     "placed": {
+      "at": {
+       "joint": "pelvis",
+       "offset": [
+        0.2,
+        -0.17,
+        0.21
+       ],
+       "frame": "root"
+      },
+      "position_error_mm": 1.9,
+      "direction_error_deg": 0.3
+     },
+     "changed": {
+      "plane": [
+       43,
+       130.0
+      ],
+      "elev": [
+       28,
+       53.0
+      ],
+      "rot": [
+       -20,
+       3.0
+      ],
+      "elbow": [
+       100,
+       63.0
+      ],
+      "pron": [
+       0,
+       25.0
+      ],
+      "wrist_flex": [
+       0,
+       -5.0
+      ],
+      "wrist_dev": [
+       -5,
+       0.0
+      ]
+     }
+    }
+   }
   },
   {
    "id": "cut-windup",
@@ -1167,26 +2750,26 @@
      "roll": 0
     },
     "arm_r": {
-     "plane": 20,
-     "elev": 93,
-     "rot": -55,
-     "elbow": 110,
-     "pron": 20,
-     "wrist_flex": 0,
-     "wrist_dev": 15
+     "plane": 72.0,
+     "elev": 36.0,
+     "rot": -39.0,
+     "elbow": 129.0,
+     "pron": -45.0,
+     "wrist_flex": -15.0,
+     "wrist_dev": -25.0
     },
     "arm_l": {
-     "plane": 78,
-     "elev": 25,
-     "rot": 0,
-     "elbow": 100,
+     "plane": 11.0,
+     "elev": 23.0,
+     "rot": 1.0,
+     "elbow": 94.0,
      "pron": 0,
      "wrist_flex": 0,
      "wrist_dev": 0
     },
     "leg_r": {
      "hip_flex": 43,
-     "hip_abd": 20,
+     "hip_abd": 40,
      "hip_rot": -10,
      "knee": 70,
      "ankle": 10,
@@ -1194,7 +2777,7 @@
     },
     "leg_l": {
      "hip_flex": 43,
-     "hip_abd": 20,
+     "hip_abd": 40,
      "hip_rot": -10,
      "knee": 70,
      "ankle": 10,
@@ -1207,14 +2790,32 @@
       -0.6,
       -0.35,
       0.7
-     ]
+     ],
+     "at": {
+      "joint": "pelvis",
+      "offset": [
+       0.0,
+       -0.2,
+       0.36
+      ],
+      "frame": "root"
+     }
     },
     "shield": {
      "face": [
-      0.4,
-      0.85,
-      0.3
-     ]
+      0.414,
+      0.869,
+      -0.27
+     ],
+     "at": {
+      "joint": "pelvis",
+      "offset": [
+       0.129,
+       0.168,
+       0.116
+      ],
+      "frame": "root"
+     }
     }
    },
    "confidence": "estimated",
@@ -1236,7 +2837,115 @@
      "credit": "Acroterion via Wikimedia Commons",
      "licence": "CC BY-SA 4.0"
     }
-   ]
+   ],
+   "rein_arm": {
+    "rein_fist_wanted": [
+     0.15,
+     0.07,
+     0.08
+    ],
+    "shield_facing_wanted": [
+     0.35,
+     0.94,
+     0.0
+    ],
+    "from_the_text": "left fist holds both reins low behind the withers; the shield hangs on the left forearm, face to the left",
+    "fist_off_by_mm": 0.5,
+    "facing_off_by_deg": 28.2,
+    "arm_l_was": {
+     "plane": 78,
+     "elev": 25,
+     "rot": 0,
+     "elbow": 100
+    },
+    "arm_l": {
+     "plane": 0.0,
+     "elev": 14.0,
+     "rot": 19.0,
+     "elbow": 82.0
+    },
+    "rein_fist_at": [
+     0.151,
+     0.071,
+     0.08
+    ]
+   },
+   "aimed": {
+    "clear": {
+     "clash_score_was_now": [
+      148.1,
+      138.2
+     ],
+     "changed": {
+      "arm_r": {},
+      "arm_l": {
+       "plane": [
+        30.0,
+        21.0
+       ]
+      }
+     }
+    }
+   },
+   "shield_clear": {
+    "arm_l_was": {
+     "plane": 21.0,
+     "elev": 14.0,
+     "rot": -8.0,
+     "elbow": 94.0
+    },
+    "arm_l": {
+     "plane": 11.0,
+     "elev": 23.0,
+     "rot": 1.0,
+     "elbow": 94.0
+    },
+    "body_inside_the_proxy_before": {
+     "vertices": 264,
+     "deepest_mm": 10.9
+    },
+    "after": {
+     "vertices": 25,
+     "deepest_mm": 3.1
+    },
+    "rein_fist_moved_mm": 0.4,
+    "shield_face_turned_deg": 11.4,
+    "margin_mm": 3.0,
+    "rein_fist_at": [
+     0.183,
+     0.117,
+     0.136
+    ]
+   },
+   "wrist_eased": {
+    "arm_r_was": {
+     "plane": 43.0,
+     "elev": 53.0,
+     "rot": -45.0,
+     "elbow": 120.0,
+     "pron": -80.0,
+     "wrist_flex": -8.0,
+     "wrist_dev": -18.0
+    },
+    "arm_r": {
+     "plane": 72.0,
+     "elev": 36.0,
+     "rot": -39.0,
+     "elbow": 129.0,
+     "pron": -45.0,
+     "wrist_flex": -15.0,
+     "wrist_dev": -25.0
+    },
+    "sword_place_off_mm": [
+     29.8,
+     51.3
+    ],
+    "blade_off_deg": [
+     1.5,
+     2.7
+    ],
+    "forearm_roll_cap_deg": 45.0
+   }
   },
   {
    "id": "cut-strike-right",
@@ -1273,26 +2982,26 @@
      "roll": 0
     },
     "arm_r": {
-     "plane": 30,
-     "elev": 71,
-     "rot": 10,
-     "elbow": 25,
-     "pron": -30,
-     "wrist_flex": 0,
-     "wrist_dev": 0
+     "plane": 28.0,
+     "elev": 71.0,
+     "rot": 40.0,
+     "elbow": 15.0,
+     "pron": -45.0,
+     "wrist_flex": 8.0,
+     "wrist_dev": -25.0
     },
     "arm_l": {
-     "plane": 76,
-     "elev": 21,
-     "rot": 0,
-     "elbow": 110,
+     "plane": -40.0,
+     "elev": 24.0,
+     "rot": 12.0,
+     "elbow": 80.0,
      "pron": 0,
      "wrist_flex": 0,
      "wrist_dev": 0
     },
     "leg_r": {
      "hip_flex": 45,
-     "hip_abd": 24,
+     "hip_abd": 44,
      "hip_rot": -10,
      "knee": 75,
      "ankle": 10,
@@ -1300,7 +3009,7 @@
     },
     "leg_l": {
      "hip_flex": 43,
-     "hip_abd": 20,
+     "hip_abd": 40,
      "hip_rot": -10,
      "knee": 68,
      "ankle": 10,
@@ -1313,14 +3022,32 @@
       0.5,
       -0.65,
       -0.55
-     ]
+     ],
+     "at": {
+      "joint": "pelvis",
+      "offset": [
+       0.02,
+       -0.36,
+       -0.03
+      ],
+      "frame": "root"
+     }
     },
     "shield": {
      "face": [
-      0.1,
-      1.0,
-      0.0
-     ]
+      0.536,
+      0.844,
+      0.021
+     ],
+     "at": {
+      "joint": "pelvis",
+      "offset": [
+       0.131,
+       0.114,
+       0.137
+      ],
+      "frame": "root"
+     }
     }
    },
    "confidence": "estimated",
@@ -1342,7 +3069,131 @@
      "credit": "User:MatthiasKabel via Wikimedia Commons",
      "licence": "CC BY-SA 3.0"
     }
-   ]
+   ],
+   "rein_arm": {
+    "rein_fist_wanted": [
+     0.15,
+     0.07,
+     0.08
+    ],
+    "shield_facing_wanted": [
+     0.35,
+     0.94,
+     0.0
+    ],
+    "from_the_text": "left fist holds both reins low behind the withers; the shield hangs on the left forearm, face to the left",
+    "fist_off_by_mm": 1.9,
+    "facing_off_by_deg": 12.1,
+    "arm_l_was": {
+     "plane": 76,
+     "elev": 21,
+     "rot": 0,
+     "elbow": 110
+    },
+    "arm_l": {
+     "plane": -40.0,
+     "elev": 24.0,
+     "rot": 12.0,
+     "elbow": 80.0
+    },
+    "rein_fist_at": [
+     0.152,
+     0.069,
+     0.078
+    ]
+   },
+   "aimed": {
+    "shield": {
+     "placed": {
+      "at": {
+       "joint": "pelvis",
+       "offset": [
+        0.131,
+        0.114,
+        0.137
+       ],
+       "frame": "root"
+      },
+      "position_error_mm": 0.3,
+      "direction_error_deg": 0.0
+     },
+     "changed": {}
+    },
+    "sword": {
+     "placed": {
+      "at": {
+       "joint": "pelvis",
+       "offset": [
+        0.02,
+        -0.36,
+        -0.03
+       ],
+       "frame": "root"
+      },
+      "position_error_mm": 53.8,
+      "direction_error_deg": 6.3
+     },
+     "changed": {
+      "plane": [
+       30,
+       31.0
+      ],
+      "elev": [
+       71,
+       73.0
+      ],
+      "rot": [
+       10,
+       65.0
+      ],
+      "elbow": [
+       25,
+       15.0
+      ],
+      "pron": [
+       -30,
+       -75.0
+      ],
+      "wrist_flex": [
+       0,
+       11.0
+      ],
+      "wrist_dev": [
+       0,
+       -25.0
+      ]
+     }
+    }
+   },
+   "wrist_eased": {
+    "arm_r_was": {
+     "plane": 31.0,
+     "elev": 73.0,
+     "rot": 65.0,
+     "elbow": 15.0,
+     "pron": -75.0,
+     "wrist_flex": 11.0,
+     "wrist_dev": -25.0
+    },
+    "arm_r": {
+     "plane": 28.0,
+     "elev": 71.0,
+     "rot": 40.0,
+     "elbow": 15.0,
+     "pron": -45.0,
+     "wrist_flex": 8.0,
+     "wrist_dev": -25.0
+    },
+    "sword_place_off_mm": [
+     53.8,
+     59.7
+    ],
+    "blade_off_deg": [
+     6.3,
+     7.4
+    ],
+    "forearm_roll_cap_deg": 45.0
+   }
   },
   {
    "id": "cut-follow-right",
@@ -1379,26 +3230,26 @@
      "roll": 0
     },
     "arm_r": {
-     "plane": 11,
-     "elev": 62,
-     "rot": 10,
-     "elbow": 25,
-     "pron": -20,
-     "wrist_flex": 0,
-     "wrist_dev": -5
+     "plane": 83.0,
+     "elev": 68.0,
+     "rot": -80.0,
+     "elbow": 15.0,
+     "pron": -45.0,
+     "wrist_flex": -8.0,
+     "wrist_dev": -25.0
     },
     "arm_l": {
-     "plane": 78,
-     "elev": 25,
-     "rot": 0,
-     "elbow": 110,
+     "plane": -40.0,
+     "elev": 31.0,
+     "rot": 18.0,
+     "elbow": 80.0,
      "pron": 0,
      "wrist_flex": 0,
      "wrist_dev": 0
     },
     "leg_r": {
      "hip_flex": 47,
-     "hip_abd": 26,
+     "hip_abd": 45,
      "hip_rot": -10,
      "knee": 78,
      "ankle": 10,
@@ -1406,7 +3257,7 @@
     },
     "leg_l": {
      "hip_flex": 43,
-     "hip_abd": 20,
+     "hip_abd": 40,
      "hip_rot": -10,
      "knee": 66,
      "ankle": 10,
@@ -1419,14 +3270,32 @@
       -0.3,
       -0.3,
       -0.9
-     ]
+     ],
+     "at": {
+      "joint": "pelvis",
+      "offset": [
+       -0.05,
+       -0.33,
+       -0.02
+      ],
+      "frame": "root"
+     }
     },
     "shield": {
      "face": [
-      0.0,
-      1.0,
-      0.0
-     ]
+      0.683,
+      0.729,
+      0.051
+     ],
+     "at": {
+      "joint": "pelvis",
+      "offset": [
+       0.147,
+       0.105,
+       0.148
+      ],
+      "frame": "root"
+     }
     }
    },
    "confidence": "estimated",
@@ -1448,7 +3317,131 @@
      "credit": "Acroterion via Wikimedia Commons",
      "licence": "CC BY-SA 4.0"
     }
-   ]
+   ],
+   "rein_arm": {
+    "rein_fist_wanted": [
+     0.15,
+     0.07,
+     0.08
+    ],
+    "shield_facing_wanted": [
+     0.35,
+     0.94,
+     0.0
+    ],
+    "from_the_text": "left fist holds both reins low behind the withers; the shield hangs on the left forearm, face to the left",
+    "fist_off_by_mm": 0.5,
+    "facing_off_by_deg": 22.9,
+    "arm_l_was": {
+     "plane": 78,
+     "elev": 25,
+     "rot": 0,
+     "elbow": 110
+    },
+    "arm_l": {
+     "plane": -40.0,
+     "elev": 31.0,
+     "rot": 18.0,
+     "elbow": 80.0
+    },
+    "rein_fist_at": [
+     0.15,
+     0.07,
+     0.079
+    ]
+   },
+   "aimed": {
+    "shield": {
+     "placed": {
+      "at": {
+       "joint": "pelvis",
+       "offset": [
+        0.147,
+        0.105,
+        0.148
+       ],
+       "frame": "root"
+      },
+      "position_error_mm": 0.2,
+      "direction_error_deg": 0.0
+     },
+     "changed": {}
+    },
+    "sword": {
+     "placed": {
+      "at": {
+       "joint": "pelvis",
+       "offset": [
+        -0.05,
+        -0.33,
+        -0.02
+       ],
+       "frame": "root"
+      },
+      "position_error_mm": 62.7,
+      "direction_error_deg": 5.5
+     },
+     "changed": {
+      "plane": [
+       11,
+       75.0
+      ],
+      "elev": [
+       62,
+       74.0
+      ],
+      "rot": [
+       10,
+       -80.0
+      ],
+      "elbow": [
+       25,
+       16.0
+      ],
+      "pron": [
+       -20,
+       -80.0
+      ],
+      "wrist_flex": [
+       0,
+       10.0
+      ],
+      "wrist_dev": [
+       -5,
+       -25.0
+      ]
+     }
+    }
+   },
+   "wrist_eased": {
+    "arm_r_was": {
+     "plane": 75.0,
+     "elev": 74.0,
+     "rot": -80.0,
+     "elbow": 16.0,
+     "pron": -80.0,
+     "wrist_flex": 10.0,
+     "wrist_dev": -25.0
+    },
+    "arm_r": {
+     "plane": 83.0,
+     "elev": 68.0,
+     "rot": -80.0,
+     "elbow": 15.0,
+     "pron": -45.0,
+     "wrist_flex": -8.0,
+     "wrist_dev": -25.0
+    },
+    "sword_place_off_mm": [
+     62.7,
+     87.0
+    ],
+    "blade_off_deg": [
+     5.5,
+     6.4
+    ],
+    "forearm_roll_cap_deg": 45.0
+   }
   },
   {
    "id": "cut-cross-left",
@@ -1484,26 +3477,26 @@
      "roll": 0
     },
     "arm_r": {
-     "plane": 111,
-     "elev": 71,
-     "rot": 20,
-     "elbow": 60,
-     "pron": 60,
-     "wrist_flex": 0,
-     "wrist_dev": -15
+     "plane": 49.0,
+     "elev": 52.0,
+     "rot": 38.0,
+     "elbow": 62.0,
+     "pron": -45.0,
+     "wrist_flex": 11.0,
+     "wrist_dev": -25.0
     },
     "arm_l": {
-     "plane": 90,
-     "elev": 15,
-     "rot": 0,
-     "elbow": 115,
+     "plane": 57.0,
+     "elev": 40.0,
+     "rot": 55.0,
+     "elbow": 99.0,
      "pron": 0,
      "wrist_flex": 0,
      "wrist_dev": 0
     },
     "leg_r": {
      "hip_flex": 43,
-     "hip_abd": 20,
+     "hip_abd": 40,
      "hip_rot": -10,
      "knee": 70,
      "ankle": 10,
@@ -1511,7 +3504,7 @@
     },
     "leg_l": {
      "hip_flex": 43,
-     "hip_abd": 20,
+     "hip_abd": 40,
      "hip_rot": -10,
      "knee": 70,
      "ankle": 10,
@@ -1524,14 +3517,32 @@
       0.5,
       0.8,
       0.3
-     ]
+     ],
+     "at": {
+      "joint": "pelvis",
+      "offset": [
+       0.22,
+       0.05,
+       0.2
+      ],
+      "frame": "root"
+     }
     },
     "shield": {
      "face": [
-      0.5,
-      0.8,
-      0.3
-     ]
+      0.534,
+      0.838,
+      -0.112
+     ],
+     "at": {
+      "joint": "pelvis",
+      "offset": [
+       0.073,
+       0.173,
+       0.131
+      ],
+      "frame": "root"
+     }
     }
    },
    "confidence": "estimated",
@@ -1553,7 +3564,119 @@
      "credit": "User:MatthiasKabel via Wikimedia Commons",
      "licence": "CC BY-SA 3.0"
     }
-   ]
+   ],
+   "rein_arm": {
+    "rein_fist_wanted": [
+     0.1,
+     0.09,
+     0.08
+    ],
+    "shield_facing_wanted": [
+     0.3,
+     0.95,
+     0.1
+    ],
+    "from_the_text": "left fist held back and low so the reins stay slack",
+    "fist_off_by_mm": 0.7,
+    "facing_off_by_deg": 26.9,
+    "arm_l_was": {
+     "plane": 90,
+     "elev": 15,
+     "rot": 0,
+     "elbow": 115
+    },
+    "arm_l": {
+     "plane": 56.0,
+     "elev": 27.0,
+     "rot": 61.0,
+     "elbow": 83.0
+    },
+    "rein_fist_at": [
+     0.1,
+     0.09,
+     0.081
+    ]
+   },
+   "aimed": {
+    "clear": {
+     "clash_score_was_now": [
+      41.0,
+      20.0
+     ],
+     "changed": {
+      "arm_r": {},
+      "arm_l": {
+       "plane": [
+        53.0,
+        59.0
+       ],
+       "elbow": [
+        86.0,
+        98.0
+       ]
+      }
+     }
+    }
+   },
+   "shield_clear": {
+    "arm_l_was": {
+     "plane": 59.0,
+     "elev": 33.0,
+     "rot": 49.0,
+     "elbow": 98.0
+    },
+    "arm_l": {
+     "plane": 57.0,
+     "elev": 40.0,
+     "rot": 55.0,
+     "elbow": 99.0
+    },
+    "body_inside_the_proxy_before": {
+     "vertices": 78,
+     "deepest_mm": 5.9
+    },
+    "after": {
+     "vertices": 25,
+     "deepest_mm": 3.1
+    },
+    "rein_fist_moved_mm": 0.8,
+    "shield_face_turned_deg": 8.3,
+    "margin_mm": 3.0,
+    "rein_fist_at": [
+     0.12,
+     0.112,
+     0.137
+    ]
+   },
+   "wrist_eased": {
+    "arm_r_was": {
+     "plane": 30.0,
+     "elev": 73.0,
+     "rot": 44.0,
+     "elbow": 99.0,
+     "pron": -80.0,
+     "wrist_flex": -14.0,
+     "wrist_dev": -25.0
+    },
+    "arm_r": {
+     "plane": 49.0,
+     "elev": 52.0,
+     "rot": 38.0,
+     "elbow": 62.0,
+     "pron": -45.0,
+     "wrist_flex": 11.0,
+     "wrist_dev": -25.0
+    },
+    "sword_place_off_mm": [
+     44.9,
+     76.8
+    ],
+    "blade_off_deg": [
+     3.4,
+     5.4
+    ],
+    "forearm_roll_cap_deg": 45.0
+   }
   },
   {
    "id": "thrust-forward",
@@ -1589,26 +3712,26 @@
      "roll": 0
     },
     "arm_r": {
-     "plane": 75,
-     "elev": 85,
-     "rot": 0,
-     "elbow": 25,
-     "pron": -15,
-     "wrist_flex": 0,
-     "wrist_dev": -20
+     "plane": 48.0,
+     "elev": 70.0,
+     "rot": 22.0,
+     "elbow": 15.0,
+     "pron": -45.0,
+     "wrist_flex": 16.0,
+     "wrist_dev": -25.0
     },
     "arm_l": {
-     "plane": 78,
-     "elev": 25,
-     "rot": 0,
-     "elbow": 100,
+     "plane": 70.0,
+     "elev": 58.0,
+     "rot": 50.0,
+     "elbow": 70.0,
      "pron": 0,
      "wrist_flex": 0,
      "wrist_dev": 0
     },
     "leg_r": {
      "hip_flex": 48,
-     "hip_abd": 20,
+     "hip_abd": 40,
      "hip_rot": -10,
      "knee": 70,
      "ankle": 10,
@@ -1616,7 +3739,7 @@
     },
     "leg_l": {
      "hip_flex": 48,
-     "hip_abd": 20,
+     "hip_abd": 40,
      "hip_rot": -10,
      "knee": 70,
      "ankle": 10,
@@ -1629,14 +3752,32 @@
       0.97,
       0.0,
       0.05
-     ]
+     ],
+     "at": {
+      "joint": "pelvis",
+      "offset": [
+       0.3,
+       -0.15,
+       0.16
+      ],
+      "frame": "root"
+     }
     },
     "shield": {
      "face": [
-      0.5,
-      0.85,
-      0.1
-     ]
+      0.589,
+      0.806,
+      0.055
+     ],
+     "at": {
+      "joint": "pelvis",
+      "offset": [
+       0.201,
+       0.166,
+       0.132
+      ],
+      "frame": "root"
+     }
     }
    },
    "confidence": "estimated",
@@ -1658,7 +3799,131 @@
      "credit": "User:MatthiasKabel via Wikimedia Commons",
      "licence": "CC BY-SA 3.0"
     }
-   ]
+   ],
+   "rein_arm": {
+    "rein_fist_wanted": [
+     0.24,
+     0.1,
+     0.12
+    ],
+    "shield_facing_wanted": [
+     0.5,
+     0.85,
+     0.1
+    ],
+    "from_the_text": "shield held forward on the left forearm",
+    "fist_off_by_mm": 2.7,
+    "facing_off_by_deg": 6.2,
+    "arm_l_was": {
+     "plane": 78,
+     "elev": 25,
+     "rot": 0,
+     "elbow": 100
+    },
+    "arm_l": {
+     "plane": 70.0,
+     "elev": 58.0,
+     "rot": 50.0,
+     "elbow": 70.0
+    },
+    "rein_fist_at": [
+     0.243,
+     0.103,
+     0.12
+    ]
+   },
+   "aimed": {
+    "shield": {
+     "placed": {
+      "at": {
+       "joint": "pelvis",
+       "offset": [
+        0.201,
+        0.166,
+        0.132
+       ],
+       "frame": "root"
+      },
+      "position_error_mm": 0.4,
+      "direction_error_deg": 0.0
+     },
+     "changed": {}
+    },
+    "sword": {
+     "placed": {
+      "at": {
+       "joint": "pelvis",
+       "offset": [
+        0.3,
+        -0.15,
+        0.16
+       ],
+       "frame": "root"
+      },
+      "position_error_mm": 55.4,
+      "direction_error_deg": 4.8
+     },
+     "changed": {
+      "plane": [
+       75,
+       27.0
+      ],
+      "elev": [
+       85,
+       73.0
+      ],
+      "rot": [
+       0,
+       33.0
+      ],
+      "elbow": [
+       25,
+       50.0
+      ],
+      "pron": [
+       -15,
+       -80.0
+      ],
+      "wrist_flex": [
+       0,
+       1.0
+      ],
+      "wrist_dev": [
+       -20,
+       -25.0
+      ]
+     }
+    }
+   },
+   "wrist_eased": {
+    "arm_r_was": {
+     "plane": 27.0,
+     "elev": 73.0,
+     "rot": 33.0,
+     "elbow": 50.0,
+     "pron": -80.0,
+     "wrist_flex": 1.0,
+     "wrist_dev": -25.0
+    },
+    "arm_r": {
+     "plane": 48.0,
+     "elev": 70.0,
+     "rot": 22.0,
+     "elbow": 15.0,
+     "pron": -45.0,
+     "wrist_flex": 16.0,
+     "wrist_dev": -25.0
+    },
+    "sword_place_off_mm": [
+     55.4,
+     65.7
+    ],
+    "blade_off_deg": [
+     4.8,
+     4.6
+    ],
+    "forearm_roll_cap_deg": 45.0
+   }
   },
   {
    "id": "cut-overhead",
@@ -1695,26 +3960,26 @@
      "roll": 0
     },
     "arm_r": {
-     "plane": 60,
-     "elev": 105,
-     "rot": -30,
-     "elbow": 65,
-     "pron": 10,
-     "wrist_flex": 0,
-     "wrist_dev": 10
+     "plane": -26.0,
+     "elev": 150.0,
+     "rot": -80.0,
+     "elbow": 89.0,
+     "pron": 45.0,
+     "wrist_flex": 14.0,
+     "wrist_dev": -15.0
     },
     "arm_l": {
-     "plane": 78,
-     "elev": 25,
-     "rot": 0,
-     "elbow": 100,
+     "plane": 34.0,
+     "elev": 30.0,
+     "rot": 28.0,
+     "elbow": 112.0,
      "pron": 0,
      "wrist_flex": 0,
      "wrist_dev": 0
     },
     "leg_r": {
      "hip_flex": 46,
-     "hip_abd": 20,
+     "hip_abd": 40,
      "hip_rot": -10,
      "knee": 70,
      "ankle": 10,
@@ -1722,7 +3987,7 @@
     },
     "leg_l": {
      "hip_flex": 46,
-     "hip_abd": 20,
+     "hip_abd": 40,
      "hip_rot": -10,
      "knee": 70,
      "ankle": 10,
@@ -1735,20 +4000,124 @@
       0.75,
       -0.1,
       -0.65
-     ]
+     ],
+     "at": {
+      "joint": "pelvis",
+      "offset": [
+       0.2,
+       -0.14,
+       0.42
+      ],
+      "frame": "root"
+     }
     },
     "shield": {
      "face": [
-      0.3,
-      0.95,
-      0.0
-     ]
+      0.665,
+      0.604,
+      -0.439
+     ],
+     "at": {
+      "joint": "pelvis",
+      "offset": [
+       0.127,
+       0.143,
+       0.083
+      ],
+      "frame": "root"
+     }
     }
    },
    "confidence": "designed",
    "refs": [],
    "ref_notes": "No usable photograph of a mounted overhead strike; numbers built from the wind-up reference and keeping elevation under the 120 armour limit.",
-   "sources": []
+   "sources": [],
+   "rein_arm": {
+    "rein_fist_wanted": [
+     0.15,
+     0.07,
+     0.08
+    ],
+    "shield_facing_wanted": [
+     0.35,
+     0.94,
+     0.0
+    ],
+    "from_the_text": "left fist holds both reins low behind the withers; the shield hangs on the left forearm, face to the left",
+    "fist_off_by_mm": 0.4,
+    "facing_off_by_deg": 37.0,
+    "arm_l_was": {
+     "plane": 78,
+     "elev": 25,
+     "rot": 0,
+     "elbow": 100
+    },
+    "arm_l": {
+     "plane": 22.0,
+     "elev": 30.0,
+     "rot": 40.0,
+     "elbow": 100.0
+    },
+    "rein_fist_at": [
+     0.151,
+     0.07,
+     0.08
+    ]
+   },
+   "aimed": {
+    "clear": {
+     "clash_score_was_now": [
+      10.3,
+      5.7
+     ],
+     "changed": {
+      "arm_r": {
+       "pron": [
+        80.0,
+        77.0
+       ],
+       "wrist_flex": [
+        -1.0,
+        17.0
+       ],
+       "wrist_dev": [
+        12.0,
+        20.0
+       ]
+      },
+      "arm_l": {}
+     }
+    }
+   },
+   "wrist_eased": {
+    "arm_r_was": {
+     "plane": -4.0,
+     "elev": 124.0,
+     "rot": -69.0,
+     "elbow": 106.0,
+     "pron": 77.0,
+     "wrist_flex": 17.0,
+     "wrist_dev": 20.0
+    },
+    "arm_r": {
+     "plane": -26.0,
+     "elev": 150.0,
+     "rot": -80.0,
+     "elbow": 89.0,
+     "pron": 45.0,
+     "wrist_flex": 14.0,
+     "wrist_dev": -15.0
+    },
+    "sword_place_off_mm": [
+     9.9,
+     26.2
+    ],
+    "blade_off_deg": [
+     12.0,
+     1.0
+    ],
+    "forearm_roll_cap_deg": 45.0
+   }
   },
   {
    "id": "shield-cover-left",
@@ -1784,26 +4153,26 @@
      "roll": 0
     },
     "arm_r": {
-     "plane": 43,
-     "elev": 28,
-     "rot": -20,
-     "elbow": 100,
-     "pron": 0,
-     "wrist_flex": 0,
-     "wrist_dev": -5
+     "plane": 9.0,
+     "elev": 38.0,
+     "rot": -27.0,
+     "elbow": 104.0,
+     "pron": -45.0,
+     "wrist_flex": 8.0,
+     "wrist_dev": -7.0
     },
     "arm_l": {
-     "plane": 46,
-     "elev": 67,
-     "rot": 0,
-     "elbow": 100,
+     "plane": 46.0,
+     "elev": 67.0,
+     "rot": 0.0,
+     "elbow": 100.0,
      "pron": 0,
      "wrist_flex": 0,
      "wrist_dev": 0
     },
     "leg_r": {
      "hip_flex": 43,
-     "hip_abd": 20,
+     "hip_abd": 40,
      "hip_rot": -10,
      "knee": 70,
      "ankle": 10,
@@ -1811,7 +4180,7 @@
     },
     "leg_l": {
      "hip_flex": 43,
-     "hip_abd": 20,
+     "hip_abd": 40,
      "hip_rot": -10,
      "knee": 70,
      "ankle": 10,
@@ -1824,14 +4193,32 @@
       0.1,
       -0.1,
       0.9
-     ]
+     ],
+     "at": {
+      "joint": "pelvis",
+      "offset": [
+       0.2,
+       -0.17,
+       0.21
+      ],
+      "frame": "root"
+     }
     },
     "shield": {
      "face": [
-      0.1,
-      0.9,
-      0.4
-     ]
+      0.188,
+      0.915,
+      0.356
+     ],
+     "at": {
+      "joint": "pelvis",
+      "offset": [
+       0.139,
+       0.228,
+       0.244
+      ],
+      "frame": "root"
+     }
     }
    },
    "confidence": "estimated",
@@ -1853,7 +4240,119 @@
      "credit": "User:MatthiasKabel via Wikimedia Commons",
      "licence": "CC BY-SA 3.0"
     }
-   ]
+   ],
+   "rein_arm": {
+    "kept": "left arm raised and out so the shield covers the left side: the authored arm does this",
+    "arm_l_was": {
+     "plane": 46,
+     "elev": 67,
+     "rot": 0,
+     "elbow": 100
+    },
+    "arm_l": {
+     "plane": 46.0,
+     "elev": 67.0,
+     "rot": 0.0,
+     "elbow": 100.0
+    },
+    "rein_fist_at": [
+     0.184,
+     0.176,
+     0.279
+    ]
+   },
+   "aimed": {
+    "shield": {
+     "placed": {
+      "at": {
+       "joint": "pelvis",
+       "offset": [
+        0.139,
+        0.228,
+        0.244
+       ],
+       "frame": "root"
+      },
+      "position_error_mm": 0.1,
+      "direction_error_deg": 0.0
+     },
+     "changed": {}
+    },
+    "sword": {
+     "placed": {
+      "at": {
+       "joint": "pelvis",
+       "offset": [
+        0.2,
+        -0.17,
+        0.21
+       ],
+       "frame": "root"
+      },
+      "position_error_mm": 7.2,
+      "direction_error_deg": 0.6
+     },
+     "changed": {
+      "plane": [
+       43,
+       -3.0
+      ],
+      "elev": [
+       28,
+       38.0
+      ],
+      "rot": [
+       -20,
+       -22.0
+      ],
+      "elbow": [
+       100,
+       110.0
+      ],
+      "pron": [
+       0,
+       -48.0
+      ],
+      "wrist_flex": [
+       0,
+       -6.0
+      ],
+      "wrist_dev": [
+       -5,
+       0.0
+      ]
+     }
+    }
+   },
+   "wrist_eased": {
+    "arm_r_was": {
+     "plane": -3.0,
+     "elev": 38.0,
+     "rot": -22.0,
+     "elbow": 110.0,
+     "pron": -48.0,
+     "wrist_flex": -6.0,
+     "wrist_dev": 0.0
+    },
+    "arm_r": {
+     "plane": 9.0,
+     "elev": 38.0,
+     "rot": -27.0,
+     "elbow": 104.0,
+     "pron": -45.0,
+     "wrist_flex": 8.0,
+     "wrist_dev": -7.0
+    },
+    "sword_place_off_mm": [
+     7.2,
+     4.8
+    ],
+    "blade_off_deg": [
+     0.6,
+     0.2
+    ],
+    "forearm_roll_cap_deg": 45.0
+   }
   },
   {
    "id": "shield-cover-front",
@@ -1889,26 +4388,26 @@
      "roll": 0
     },
     "arm_r": {
-     "plane": 43,
-     "elev": 28,
-     "rot": -20,
-     "elbow": 100,
-     "pron": 0,
-     "wrist_flex": 0,
-     "wrist_dev": -5
+     "plane": 34.0,
+     "elev": 31.0,
+     "rot": -24.0,
+     "elbow": 101.0,
+     "pron": -29.0,
+     "wrist_flex": 7.0,
+     "wrist_dev": -8.0
     },
     "arm_l": {
-     "plane": 75,
-     "elev": 90,
-     "rot": 0,
-     "elbow": 100,
+     "plane": 91.0,
+     "elev": 75.0,
+     "rot": 61.0,
+     "elbow": 100.0,
      "pron": 0,
      "wrist_flex": 0,
      "wrist_dev": 0
     },
     "leg_r": {
      "hip_flex": 48,
-     "hip_abd": 20,
+     "hip_abd": 40,
      "hip_rot": -10,
      "knee": 70,
      "ankle": 10,
@@ -1916,7 +4415,7 @@
     },
     "leg_l": {
      "hip_flex": 48,
-     "hip_abd": 20,
+     "hip_abd": 40,
      "hip_rot": -10,
      "knee": 70,
      "ankle": 10,
@@ -1929,14 +4428,32 @@
       0.2,
       -0.1,
       0.9
-     ]
+     ],
+     "at": {
+      "joint": "pelvis",
+      "offset": [
+       0.22,
+       -0.18,
+       0.17
+      ],
+      "frame": "root"
+     }
     },
     "shield": {
      "face": [
-      0.85,
-      0.2,
-      0.4
-     ]
+      0.926,
+      0.209,
+      0.315
+     ],
+     "at": {
+      "joint": "pelvis",
+      "offset": [
+       0.237,
+       0.056,
+       0.215
+      ],
+      "frame": "root"
+     }
     }
    },
    "confidence": "estimated",
@@ -1958,7 +4475,158 @@
      "credit": "User:MatthiasKabel via Wikimedia Commons",
      "licence": "CC BY-SA 3.0"
     }
-   ]
+   ],
+   "rein_arm": {
+    "rein_fist_wanted": [
+     0.25,
+     0.08,
+     0.36
+    ],
+    "shield_facing_wanted": [
+     0.9,
+     0.2,
+     0.3
+    ],
+    "from_the_text": "the forearm stands up, holding the shield in front of face and chest",
+    "fist_off_by_mm": 92.2,
+    "facing_off_by_deg": 0.4,
+    "arm_or_shield_in_the_head": {
+     "vertices": 0,
+     "deepest_mm": 0.0
+    },
+    "arm_l_was": {
+     "plane": 121.0,
+     "elev": 100.0,
+     "rot": 48.0,
+     "elbow": 95.0
+    },
+    "arm_l": {
+     "plane": 91.0,
+     "elev": 75.0,
+     "rot": 61.0,
+     "elbow": 100.0
+    },
+    "rein_fist_at": [
+     0.213,
+     -0.012,
+     0.243
+    ]
+   },
+   "aimed": {
+    "shield": {
+     "placed": {
+      "at": {
+       "joint": "pelvis",
+       "offset": [
+        0.21,
+        0.023,
+        0.323
+       ],
+       "frame": "root"
+      },
+      "position_error_mm": 0.3,
+      "direction_error_deg": 0.0
+     },
+     "changed": {}
+    },
+    "sword": {
+     "placed": {
+      "at": {
+       "joint": "pelvis",
+       "offset": [
+        0.22,
+        -0.18,
+        0.17
+       ],
+       "frame": "root"
+      },
+      "position_error_mm": 4.5,
+      "direction_error_deg": 0.2
+     },
+     "changed": {
+      "plane": [
+       43,
+       34.0
+      ],
+      "elev": [
+       28,
+       31.0
+      ],
+      "rot": [
+       -20,
+       -24.0
+      ],
+      "elbow": [
+       100,
+       101.0
+      ],
+      "pron": [
+       0,
+       -29.0
+      ],
+      "wrist_flex": [
+       0,
+       7.0
+      ],
+      "wrist_dev": [
+       -5,
+       -8.0
+      ]
+     }
+    },
+    "clear": {
+     "clash_score_was_now": [
+      228.7,
+      0.0
+     ],
+     "changed": {
+      "arm_r": {
+       "plane": [
+        43,
+        34.0
+       ],
+       "elev": [
+        28,
+        31.0
+       ],
+       "rot": [
+        -20,
+        -24.0
+       ],
+       "elbow": [
+        100,
+        101.0
+       ],
+       "pron": [
+        0,
+        -29.0
+       ],
+       "wrist_flex": [
+        0,
+        7.0
+       ],
+       "wrist_dev": [
+        -5,
+        -8.0
+       ]
+      },
+      "arm_l": {
+       "plane": [
+        127.0,
+        121.0
+       ],
+       "rot": [
+        60.0,
+        48.0
+       ],
+       "elbow": [
+        101.0,
+        95.0
+       ]
+      }
+     }
+    }
+   }
   },
   {
    "id": "brace-impact",
@@ -1994,26 +4662,26 @@
      "roll": 0
     },
     "arm_r": {
-     "plane": 30,
-     "elev": 20,
-     "rot": 0,
-     "elbow": 120,
-     "pron": 0,
-     "wrist_flex": 5,
-     "wrist_dev": -5
+     "plane": 130.0,
+     "elev": 1.0,
+     "rot": -38.0,
+     "elbow": 126.0,
+     "pron": -16.0,
+     "wrist_flex": 4.0,
+     "wrist_dev": 0.0
     },
     "arm_l": {
-     "plane": 75,
-     "elev": 90,
-     "rot": 0,
-     "elbow": 110,
+     "plane": 59.0,
+     "elev": 80.0,
+     "rot": 45.0,
+     "elbow": 116.0,
      "pron": 0,
      "wrist_flex": 0,
      "wrist_dev": 0
     },
     "leg_r": {
      "hip_flex": 60,
-     "hip_abd": 20,
+     "hip_abd": 40,
      "hip_rot": -10,
      "knee": 80,
      "ankle": 10,
@@ -2021,7 +4689,7 @@
     },
     "leg_l": {
      "hip_flex": 60,
-     "hip_abd": 20,
+     "hip_abd": 40,
      "hip_rot": -10,
      "knee": 80,
      "ankle": 10,
@@ -2034,14 +4702,32 @@
       0.2,
       -0.1,
       0.97
-     ]
+     ],
+     "at": {
+      "joint": "pelvis",
+      "offset": [
+       0.18,
+       -0.17,
+       0.14
+      ],
+      "frame": "root"
+     }
     },
     "shield": {
      "face": [
-      0.9,
-      0.2,
-      0.3
-     ]
+      0.926,
+      0.212,
+      0.312
+     ],
+     "at": {
+      "joint": "pelvis",
+      "offset": [
+       0.255,
+       0.127,
+       0.175
+      ],
+      "frame": "root"
+     }
     }
    },
    "confidence": "designed",
@@ -2056,7 +4742,64 @@
      "credit": "User:MatthiasKabel via Wikimedia Commons",
      "licence": "CC BY-SA 3.0"
     }
-   ]
+   ],
+   "rein_arm": {
+    "rein_fist_wanted": [
+     0.31,
+     0.08,
+     0.3
+    ],
+    "shield_facing_wanted": [
+     0.9,
+     0.2,
+     0.3
+    ],
+    "from_the_text": "shield raised in front on the left",
+    "fist_off_by_mm": 84.5,
+    "facing_off_by_deg": 0.4,
+    "arm_or_shield_in_the_head": {
+     "vertices": 0,
+     "deepest_mm": 0.0
+    },
+    "arm_l_was": {
+     "plane": 93.0,
+     "elev": 87.0,
+     "rot": 33.0,
+     "elbow": 107.0
+    },
+    "arm_l": {
+     "plane": 59.0,
+     "elev": 80.0,
+     "rot": 45.0,
+     "elbow": 116.0
+    },
+    "rein_fist_at": [
+     0.242,
+     0.051,
+     0.18
+    ]
+   },
+   "aimed": {
+    "clear": {
+     "clash_score_was_now": [
+      184.0,
+      140.0
+     ],
+     "changed": {
+      "arm_r": {},
+      "arm_l": {
+       "plane": [
+        102.0,
+        99.0
+       ],
+       "elev": [
+        90.0,
+        87.0
+       ]
+      }
+     }
+    }
+   }
   },
   {
    "id": "hit-reaction-saddle",
@@ -2092,26 +4835,26 @@
      "roll": 0
     },
     "arm_r": {
-     "plane": 15,
-     "elev": 55,
-     "rot": 10,
-     "elbow": 70,
-     "pron": 0,
-     "wrist_flex": 0,
-     "wrist_dev": 0
+     "plane": -38.0,
+     "elev": 44.0,
+     "rot": -58.0,
+     "elbow": 15.0,
+     "pron": -36.0,
+     "wrist_flex": -4.0,
+     "wrist_dev": -8.0
     },
     "arm_l": {
-     "plane": 80,
-     "elev": 40,
-     "rot": 0,
-     "elbow": 90,
+     "plane": 65.0,
+     "elev": 72.0,
+     "rot": 55.0,
+     "elbow": 93.0,
      "pron": 0,
      "wrist_flex": 0,
      "wrist_dev": 0
     },
     "leg_r": {
      "hip_flex": 34,
-     "hip_abd": 20,
+     "hip_abd": 40,
      "hip_rot": -10,
      "knee": 70,
      "ankle": 10,
@@ -2119,7 +4862,7 @@
     },
     "leg_l": {
      "hip_flex": 34,
-     "hip_abd": 20,
+     "hip_abd": 40,
      "hip_rot": -10,
      "knee": 70,
      "ankle": 10,
@@ -2132,25 +4875,138 @@
       0.3,
       -0.5,
       0.3
-     ]
+     ],
+     "at": {
+      "joint": "pelvis",
+      "offset": [
+       0.05,
+       -0.33,
+       0.12
+      ],
+      "frame": "root"
+     }
     },
     "shield": {
      "face": [
-      0.6,
-      0.7,
-      0.3
-     ]
+      0.547,
+      0.79,
+      0.276
+     ],
+     "at": {
+      "joint": "pelvis",
+      "offset": [
+       0.122,
+       0.226,
+       0.171
+      ],
+      "frame": "root"
+     }
     }
    },
    "confidence": "designed",
    "refs": [],
    "ref_notes": "No reference; built from the spine limits and kept inside the armour limits (twist 35, side bend 25).",
-   "sources": []
+   "sources": [],
+   "rein_arm": {
+    "rein_fist_wanted": [
+     0.16,
+     0.16,
+     0.18
+    ],
+    "shield_facing_wanted": [
+     0.5,
+     0.8,
+     0.3
+    ],
+    "from_the_text": "left fist jerks up, shield slides forward",
+    "fist_off_by_mm": 1.5,
+    "facing_off_by_deg": 3.0,
+    "arm_l_was": {
+     "plane": 80,
+     "elev": 40,
+     "rot": 0,
+     "elbow": 90
+    },
+    "arm_l": {
+     "plane": 65.0,
+     "elev": 72.0,
+     "rot": 55.0,
+     "elbow": 93.0
+    },
+    "rein_fist_at": [
+     0.161,
+     0.161,
+     0.182
+    ]
+   },
+   "aimed": {
+    "shield": {
+     "placed": {
+      "at": {
+       "joint": "pelvis",
+       "offset": [
+        0.122,
+        0.226,
+        0.171
+       ],
+       "frame": "root"
+      },
+      "position_error_mm": 0.4,
+      "direction_error_deg": 0.0
+     },
+     "changed": {}
+    },
+    "sword": {
+     "placed": {
+      "at": {
+       "joint": "pelvis",
+       "offset": [
+        0.05,
+        -0.33,
+        0.12
+       ],
+       "frame": "root"
+      },
+      "position_error_mm": 2.1,
+      "direction_error_deg": 0.1
+     },
+     "changed": {
+      "plane": [
+       15,
+       -38.0
+      ],
+      "elev": [
+       55,
+       44.0
+      ],
+      "rot": [
+       10,
+       -58.0
+      ],
+      "elbow": [
+       70,
+       15.0
+      ],
+      "pron": [
+       0,
+       -36.0
+      ],
+      "wrist_flex": [
+       0,
+       -4.0
+      ],
+      "wrist_dev": [
+       0,
+       -8.0
+      ]
+     }
+    }
+   }
   },
   {
    "id": "victory-sword-raised",
    "name": "Victory, sword raised",
-   "description": "Seat firm, chest lifted and slightly arched, head up. Right arm raised to 118 with the sword upright overhead; left fist keeps the reins at the belly.",
+   "description": "Seat firm, chest lifted and slightly arched, head up. Right arm raised high, fist above the head, the sword pointing up and forward; left fist keeps the reins at the belly.",
    "support": [
     "seat",
     "foot_l",
@@ -2181,26 +5037,26 @@
      "roll": 0
     },
     "arm_r": {
-     "plane": 70,
-     "elev": 118,
-     "rot": -20,
-     "elbow": 25,
-     "pron": -10,
-     "wrist_flex": 0,
-     "wrist_dev": 5
+     "plane": 1.0,
+     "elev": 145.0,
+     "rot": -4.0,
+     "elbow": 15.0,
+     "pron": -45.0,
+     "wrist_flex": 13.0,
+     "wrist_dev": -25.0
     },
     "arm_l": {
-     "plane": 78,
-     "elev": 25,
-     "rot": 0,
-     "elbow": 100,
+     "plane": 90.0,
+     "elev": 32.0,
+     "rot": 64.0,
+     "elbow": 10.0,
      "pron": 0,
      "wrist_flex": 0,
      "wrist_dev": 0
     },
     "leg_r": {
      "hip_flex": 38,
-     "hip_abd": 20,
+     "hip_abd": 40,
      "hip_rot": -10,
      "knee": 70,
      "ankle": 10,
@@ -2208,7 +5064,7 @@
     },
     "leg_l": {
      "hip_flex": 38,
-     "hip_abd": 20,
+     "hip_abd": 40,
      "hip_rot": -10,
      "knee": 70,
      "ankle": 10,
@@ -2218,17 +5074,35 @@
    "items": {
     "sword": {
      "blade": [
-      0.1,
+      0.45,
       -0.1,
-      0.99
-     ]
+      0.89
+     ],
+     "at": {
+      "joint": "pelvis",
+      "offset": [
+       0.05,
+       -0.16,
+       0.5
+      ],
+      "frame": "root"
+     }
     },
     "shield": {
      "face": [
-      0.3,
-      0.95,
-      0.1
-     ]
+      0.45,
+      0.881,
+      0.148
+     ],
+     "at": {
+      "joint": "pelvis",
+      "offset": [
+       0.126,
+       0.128,
+       0.097
+      ],
+      "frame": "root"
+     }
     }
    },
    "confidence": "designed",
@@ -2243,7 +5117,218 @@
      "credit": "User:MatthiasKabel via Wikimedia Commons",
      "licence": "CC BY-SA 3.0"
     }
-   ]
+   ],
+   "description_v2": "Seat firm, chest lifted and slightly arched, head up. Right arm raised to 118 with the sword upright overhead; left fist keeps the reins at the belly.",
+   "rein_arm": {
+    "rein_fist_wanted": [
+     0.15,
+     0.07,
+     0.08
+    ],
+    "shield_facing_wanted": [
+     0.35,
+     0.94,
+     0.0
+    ],
+    "from_the_text": "left fist holds both reins low behind the withers; the shield hangs on the left forearm, face to the left",
+    "fist_off_by_mm": 0.7,
+    "facing_off_by_deg": 16.1,
+    "arm_l_was": {
+     "plane": 78,
+     "elev": 25,
+     "rot": 0,
+     "elbow": 100
+    },
+    "arm_l": {
+     "plane": 62.0,
+     "elev": 20.0,
+     "rot": 40.0,
+     "elbow": 55.0
+    },
+    "rein_fist_at": [
+     0.149,
+     0.069,
+     0.08
+    ]
+   },
+   "aimed": {
+    "shield": {
+     "placed": {
+      "at": {
+       "joint": "pelvis",
+       "offset": [
+        0.103,
+        0.13,
+        0.092
+       ],
+       "frame": "root"
+      },
+      "position_error_mm": 0.3,
+      "direction_error_deg": 0.0
+     },
+     "changed": {}
+    },
+    "sword": {
+     "placed": {
+      "at": {
+       "joint": "pelvis",
+       "offset": [
+        0.05,
+        -0.16,
+        0.5
+       ],
+       "frame": "root"
+      },
+      "position_error_mm": 89.6,
+      "direction_error_deg": 8.7
+     },
+     "changed": {
+      "plane": [
+       70,
+       5.0
+      ],
+      "elev": [
+       118,
+       152.0
+      ],
+      "rot": [
+       -20,
+       37.0
+      ],
+      "elbow": [
+       25,
+       15.0
+      ],
+      "pron": [
+       -10,
+       -80.0
+      ],
+      "wrist_flex": [
+       0,
+       12.0
+      ],
+      "wrist_dev": [
+       5,
+       -25.0
+      ]
+     }
+    },
+    "clear": {
+     "clash_score_was_now": [
+      57.1,
+      7.0
+     ],
+     "changed": {
+      "arm_r": {
+       "plane": [
+        70,
+        5.0
+       ],
+       "elev": [
+        118,
+        152.0
+       ],
+       "rot": [
+        -20,
+        37.0
+       ],
+       "elbow": [
+        25,
+        15.0
+       ],
+       "pron": [
+        -10,
+        -80.0
+       ],
+       "wrist_flex": [
+        0,
+        12.0
+       ],
+       "wrist_dev": [
+        5,
+        -25.0
+       ]
+      },
+      "arm_l": {
+       "plane": [
+        62.0,
+        59.0
+       ],
+       "elev": [
+        20.0,
+        26.0
+       ],
+       "rot": [
+        40.0,
+        52.0
+       ],
+       "elbow": [
+        55.0,
+        43.0
+       ]
+      }
+     }
+    }
+   },
+   "shield_clear": {
+    "arm_l_was": {
+     "plane": 59.0,
+     "elev": 26.0,
+     "rot": 52.0,
+     "elbow": 43.0
+    },
+    "arm_l": {
+     "plane": 90.0,
+     "elev": 32.0,
+     "rot": 64.0,
+     "elbow": 10.0
+    },
+    "body_inside_the_proxy_before": {
+     "vertices": 84,
+     "deepest_mm": 7.9
+    },
+    "after": {
+     "vertices": 28,
+     "deepest_mm": 2.8
+    },
+    "rein_fist_moved_mm": 12.1,
+    "shield_face_turned_deg": 11.0,
+    "margin_mm": 3.0,
+    "rein_fist_at": [
+     0.164,
+     0.087,
+     0.044
+    ]
+   },
+   "wrist_eased": {
+    "arm_r_was": {
+     "plane": 5.0,
+     "elev": 152.0,
+     "rot": 37.0,
+     "elbow": 15.0,
+     "pron": -80.0,
+     "wrist_flex": 12.0,
+     "wrist_dev": -25.0
+    },
+    "arm_r": {
+     "plane": 1.0,
+     "elev": 145.0,
+     "rot": -4.0,
+     "elbow": 15.0,
+     "pron": -45.0,
+     "wrist_flex": 13.0,
+     "wrist_dev": -25.0
+    },
+    "sword_place_off_mm": [
+     89.6,
+     96.6
+    ],
+    "blade_off_deg": [
+     8.7,
+     9.8
+    ],
+    "forearm_roll_cap_deg": 45.0
+   }
   },
   {
    "id": "balance-horse-rears",
@@ -2279,26 +5364,26 @@
      "roll": 0
     },
     "arm_r": {
-     "plane": 35,
-     "elev": 40,
-     "rot": 0,
-     "elbow": 45,
-     "pron": 0,
-     "wrist_flex": 0,
-     "wrist_dev": -5
+     "plane": 14.0,
+     "elev": 30.0,
+     "rot": -72.0,
+     "elbow": 90.0,
+     "pron": -40.0,
+     "wrist_flex": 8.0,
+     "wrist_dev": -2.0
     },
     "arm_l": {
-     "plane": 80,
-     "elev": 55,
-     "rot": 0,
-     "elbow": 70,
+     "plane": 86.0,
+     "elev": 61.0,
+     "rot": -18.0,
+     "elbow": 94.0,
      "pron": 0,
      "wrist_flex": 0,
      "wrist_dev": 0
     },
     "leg_r": {
      "hip_flex": 90,
-     "hip_abd": 20,
+     "hip_abd": 40,
      "hip_rot": -10,
      "knee": 100,
      "ankle": 5,
@@ -2306,7 +5391,7 @@
     },
     "leg_l": {
      "hip_flex": 90,
-     "hip_abd": 20,
+     "hip_abd": 40,
      "hip_rot": -10,
      "knee": 100,
      "ankle": 5,
@@ -2319,14 +5404,32 @@
       0.3,
       -0.2,
       0.9
-     ]
+     ],
+     "at": {
+      "joint": "pelvis",
+      "offset": [
+       0.2,
+       -0.3,
+       0.12
+      ],
+      "frame": "root"
+     }
     },
     "shield": {
      "face": [
-      0.4,
-      0.9,
-      0.0
-     ]
+      -0.038,
+      0.863,
+      -0.503
+     ],
+     "at": {
+      "joint": "pelvis",
+      "offset": [
+       0.252,
+       0.158,
+       0.004
+      ],
+      "frame": "root"
+     }
     }
    },
    "confidence": "estimated",
@@ -2348,7 +5451,52 @@
      "credit": "RUET via Wikimedia Commons",
      "licence": "CC0"
     }
-   ]
+   ],
+   "rein_arm": {
+    "kept": "left fist forward and low on the neck: the authored arm does this",
+    "arm_l_was": {
+     "plane": 80,
+     "elev": 55,
+     "rot": 0,
+     "elbow": 70
+    },
+    "arm_l": {
+     "plane": 80.0,
+     "elev": 55.0,
+     "rot": 0.0,
+     "elbow": 70.0
+    },
+    "rein_fist_at": [
+     0.323,
+     0.129,
+     0.002
+    ]
+   },
+   "aimed": {
+    "clear": {
+     "clash_score_was_now": [
+      9.2,
+      1.0
+     ],
+     "changed": {
+      "arm_r": {},
+      "arm_l": {
+       "rot": [
+        -6.0,
+        -18.0
+       ],
+       "elbow": [
+        82.0,
+        94.0
+       ]
+      }
+     }
+    }
+   }
   }
- ]
+ ],
+ "seat_width": "Version 2 (2026-10-09): every thigh is spread 20 degrees further than in version 1 (20 to 40; the pose library's limit of 45 caps the two widest). The T1 Paladin horse at withers 0.50 asks about 37 to 41 degrees of spread from this rider (output/t1-paladin-claude/v4/horse/work/tack.json, rider_on_horse.hip_spread_estimate); version 1 was written before the horse existed. Provisional until the mounted fit aims the seat on the bound horse. Version 1 is kept in output/t1-paladin-claude/v4/poses-paladin-v1.json.",
+ "items_placed": "Version 3 (2026-10-09), for the T1 Paladin Default rider as bound (output/t1-paladin-claude/v4/work/bound-b2.npz). Legs and seat are version 2's. Left arms: written from the rein fist's place and the shield's facing by output/t1-paladin-claude/v4/scripts/p4_author_reins.py (each pose's `rein_arm` record); each shield entry is where that arm puts the shield. Right arms: solved by hb_item_aim.py --fix --place --clear from a place for the sword's grip (statures from the pelvis, root axes) and the blade's direction, written from each pose's own description; two blades restated to what a fist round a handle can do (seat-at-ease, victory-sword-raised; their earlier texts are kept as description_v2). Version 2 is kept in output/t1-paladin-claude/v4/poses/paladin-v2.json. Provisional until the mounted fit checks every hand and blade against the horse.",
+ "rein_arms": "Left arms written by output/t1-paladin-claude/v4/scripts/p4_author_reins.py from the rein fist's place and the shield's facing (each pose's `rein_arm` record); each shield entry is where that arm puts the shield.",
+ "wrist_eased": "Sword arms with the forearm rolled more than 45 degrees solved again by output/t1-paladin-claude/v4/scripts/p4_ease_wrist.py (the baseline's hb_item_aim.place with the roll's range narrowed); each pose's `wrist_eased` record says what moved."
 }
