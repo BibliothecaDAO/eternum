@@ -14,13 +14,16 @@ describe("ledger economics", () => {
     expect(buildLedgerEconomicPreset("blitz").day_unit_seconds).toBe(0);
     expect(() => buildLedgerEconomicPreset("blitz", { presetId: 5 })).toThrow("game type differs");
   });
-  it("serializes the seven-day claim window and an explicit rehearsal override", () => {
-    const preset = buildLedgerEconomicPreset("frontier");
-    expect(preset.claim_window_seconds).toBe(604800);
-    expect(buildRegisterLedgerPresetCalldata(1, preset)[20]).toBe("604800");
-    const rehearsal = buildLedgerEconomicPreset("frontier", { claimWindowSeconds: 17 });
-    expect(buildRegisterLedgerPresetCalldata(1, rehearsal)[20]).toBe("17");
+  it("reads the same claim-window preset as the shard without a second override", async () => {
+    const { nativePresetForId } = await import("../../../source/native");
+    for (const presetId of [5, 101]) {
+      const preset = buildLedgerEconomicPreset("frontier", { presetId });
+      expect(preset.claim_window_seconds).toBe(nativePresetForId(presetId).chests!.claimWindowSeconds);
+      expect(buildRegisterLedgerPresetCalldata(presetId, preset)[20]).toBe(String(preset.claim_window_seconds));
+    }
+    expect(buildLedgerEconomicPreset("blitz").claim_window_seconds).toBe(0);
   });
+
   it("builds the approved Blitz preset", () => {
     const preset = buildLedgerEconomicPreset("blitz");
 

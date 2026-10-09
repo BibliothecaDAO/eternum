@@ -38,7 +38,6 @@ export function buildLedgerEconomicPreset(
     sponsored?: boolean;
     chestLordsBps?: number;
     protocolCutBps?: number;
-    claimWindowSeconds?: number;
   } = {},
 ): LedgerEconomicPreset {
   const native = nativePresetForId(options.presetId ?? nativePresetIdFor(gameType));
@@ -63,7 +62,7 @@ export function buildLedgerEconomicPreset(
     },
     day_unit_seconds: native.dayUnitSeconds,
     season_bags: native.seasonBags,
-    claim_window_seconds: options.claimWindowSeconds ?? 7 * 24 * 60 * 60,
+    claim_window_seconds: native.chests?.claimWindowSeconds ?? 0,
   };
 }
 
