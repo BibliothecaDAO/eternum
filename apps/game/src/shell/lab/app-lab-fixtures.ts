@@ -4,7 +4,7 @@ import { realmsAccountAddress } from "@realms-world/identity/account";
 import type { Session } from "@realms-world/identity";
 
 import type { DirectoryGame } from "../herald";
-import type { PayoutWallet } from "../profile/payout-wallet";
+import type { PayoutWallet } from "@/hooks/context/payout-wallet";
 
 /**
  * The app lab's one fiction, the handoff's: Day 12 of a Frontier season, today ends with 7h 14m left, the player

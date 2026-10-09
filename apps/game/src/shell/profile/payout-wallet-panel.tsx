@@ -13,7 +13,7 @@ import { useLayout } from "../frame/layout";
 import { Loading } from "../loading";
 import { CodeBoxes } from "../sign-in/fields";
 import { WALLET_WORDS } from "../words";
-import { holdShare, type PayoutWallet } from "./payout-wallet";
+import { holdShare, type PayoutWallet } from "@/hooks/context/payout-wallet";
 
 const WalletPicker = lazy(() =>
   import("@/ui/modules/identity/wallet-actions").then((module) => ({ default: module.WalletPicker })),

@@ -2,7 +2,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { PayoutWallet } from "./payout-wallet";
+import type { PayoutWallet } from "@/hooks/context/payout-wallet";
 import { type HeldRealm, planRealmLabor } from "./realm-labor";
 import { RealmsSheet } from "./realms-sheet";
 import { type WithdrawStep, WithdrawSheet } from "./withdraw-sheet";

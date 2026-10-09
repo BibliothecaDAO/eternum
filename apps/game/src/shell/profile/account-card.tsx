@@ -22,7 +22,7 @@ import { NameField, PortraitGrid } from "../sign-in/fields";
 import { useNowSeconds } from "../use-now";
 import { PROFILE_WORDS, SIGN_IN_WORDS, WALLET_WORDS } from "../words";
 import { Confirm } from "./confirm";
-import { payoutWalletOf, type PayoutWallet } from "./payout-wallet";
+import { payoutWalletOf, type PayoutWallet } from "@/hooks/context/payout-wallet";
 import { PayoutWalletPanel } from "./payout-wallet-panel";
 import { SettingRow, SettingRows } from "./setting-row";
 

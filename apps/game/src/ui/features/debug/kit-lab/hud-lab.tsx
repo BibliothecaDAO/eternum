@@ -52,7 +52,7 @@ import { useRef, useState } from "react";
 import { RefillButton, RefillConfirm } from "@/ui/features/frontier/army/refill";
 import type { PotDay } from "@/ui/features/frontier/value/day-pot";
 import { LordsPurse, PurseRow, RealmsChip } from "@/ui/features/frontier/value/lords-purse";
-import type { PayoutWallet } from "@/ui/features/frontier/value/payout-wallet";
+import type { PayoutWallet } from "@/hooks/context/payout-wallet";
 import { type HeldRealm, planRealmLabor } from "@/ui/features/frontier/value/realm-labor";
 import { RealmsSheet } from "@/ui/features/frontier/value/realms-sheet";
 import { type WithdrawStep, WithdrawSheet } from "@/ui/features/frontier/value/withdraw-sheet";

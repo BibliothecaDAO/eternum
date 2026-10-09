@@ -25,7 +25,7 @@ import {
   realmsADay,
 } from "@/ui/design-system/kit/words";
 
-import type { PayoutWallet } from "./payout-wallet";
+import type { PayoutWallet } from "@/hooks/context/payout-wallet";
 import type { RealmLaborPlan, RealmLaborState } from "./realm-labor";
 
 /**
