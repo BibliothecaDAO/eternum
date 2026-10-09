@@ -455,3 +455,16 @@ test("normal launch requests cannot use the deployment's reserved check names", 
   });
   expect((await app.request(request)).status).toBe(400);
 });
+
+test("a public slot cannot queue a game under the deployment check prefix", async () => {
+  const app = createApp(signedIn(ALLOWED_ADDRESS)).app;
+  const response = await app.request(
+    new Request(ALLOWED_ORIGIN + "/api/slots", {
+      method: "POST",
+      headers: { authorization: "Bearer " + OPERATOR_TOKEN, "content-type": "application/json" },
+      body: JSON.stringify({ name: "check-hidden", closesAt: new Date(Date.now() + 60000).toISOString() }),
+    }),
+  );
+  expect(response.status).toBe(400);
+  expect((await database.db.prepare("SELECT COUNT(*) AS n FROM playtest_slots").first<{ n: number }>())!.n).toBe(0);
+});

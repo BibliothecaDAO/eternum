@@ -1,3 +1,4 @@
+import { isPublicGameName } from "./schemas";
 import { BLITZ_SLOT_NAME_PATTERN } from "@realms-world/identity";
 import { Schema } from "effect";
 import { Hono, type Context } from "hono";
@@ -14,7 +15,10 @@ const RegisterRequest = Schema.Struct({
   ),
 });
 const CreateSlotRequest = Schema.Struct({
-  name: Schema.String.pipe(Schema.check(Schema.isPattern(BLITZ_SLOT_NAME_PATTERN))),
+  name: Schema.String.pipe(
+    Schema.check(Schema.isPattern(BLITZ_SLOT_NAME_PATTERN)),
+    Schema.check(Schema.makeFilter(isPublicGameName)),
+  ),
   closesAt: Schema.String.pipe(Schema.check(Schema.makeFilter((value: string) => Number.isFinite(Date.parse(value))))),
 });
 
