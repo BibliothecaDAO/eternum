@@ -185,8 +185,6 @@ def compose_configuration(config, directory):
     node = compose["services"]["madara"]
     replaced = {flag.split("=", 1)[0] for flag in config["node_flags"]}
     node["command"] = [flag for flag in node["command"] if flag.split("=", 1)[0] not in replaced] + config["node_flags"]
-    node["ports"] = [f"127.0.0.1:{config['port_base']}:9944"]
-    compose["services"]["postgres"]["ports"] = [f"127.0.0.1:{config['port_base'] + 2}:5432"]
     return compose
 
 
@@ -263,7 +261,7 @@ def deploy_world(config, directory, environment):
 
 def host_credentials(directory):
     path = directory / "host-keys.json"
-    if path.stat().st_mode & 0o777 != 0o600 or path.stat().st_uid != os.getuid():
+    if path.stat().st_mode & 0o777 != 0o600 or path.stat().st_uid != int(os.environ.get("HOST_UID", os.getuid())):
         raise ValueError("host-keys.json must be owner-only mode 0600")
     keys = json.loads(path.read_text())
     return {"DEPLOYER_ACCOUNT_ADDRESS": keys["deployerAddress"],
@@ -272,11 +270,10 @@ def host_credentials(directory):
 
 def deployment_environment(config, directory):
     credentials = host_credentials(directory)
-    base = config["port_base"]
     return {
-        **os.environ, **credentials, "RPC_URL": f"http://127.0.0.1:{base}/rpc/v0_10_2",
+        **os.environ, **credentials, "RPC_URL": "http://madara:9944/rpc/v0_10_2",
         "IDENTITY_URL": identity_url(config),
-        "HERALD_URL": f"http://127.0.0.1:{base + 1}",
+        "HERALD_URL": "http://herald:3003",
         "HERALD_PUBLIC_RPC_URL": config["public_rpc_url"],
         "PUBLIC_HERALD_URL":config["public_herald_url"],
         "VRF_WORKERS":str(config["vrf_workers"]),
@@ -331,8 +328,8 @@ def deployment_manifest(config, compose, directory, manifest, rpc_rtt, herald_rt
                          for name in ("cpu.max", "cpuset.cpus.effective", "memory.max", "memory.high",
                                       "memory.swap.max")},
         "chain_config_sha256": hashlib.sha256((directory / "chain-config.yaml").read_bytes()).hexdigest(),
-        "node_command": compose["services"]["madara"]["command"], "rpc_url": f"http://127.0.0.1:{config['port_base']}/rpc/v0_10_2",
-        "herald_url": f"http://127.0.0.1:{config['port_base'] + 1}",
+        "node_command": compose["services"]["madara"]["command"], "rpc_url": config["public_rpc_url"],
+        "herald_url": config["public_herald_url"],
         "rtt_ms": {"rpc": rpc_rtt, "herald": herald_rtt},
         "world": manifest["world"]["address"], "native_schema": manifest["native"]["activeSchema"],
     }
@@ -407,18 +404,11 @@ def start_shard(config, directory):
     code = subprocess.check_output([*command, "ps", "--all", "--format", "{{.ExitCode}}", "init"], text=True).strip()
     if code != "0":
         raise RuntimeError("initialization failed; read private deployment logs")
-    environment = deployment_environment(config, directory)
-    identity = json.loads((directory / "gameplay-contracts.json").read_text())
-    environment["DEPLOYER_ACCOUNT_ADDRESS"] = identity["operatorAccountAddress"]
     manifest = json.loads((directory / "native-world.json").read_text())
-    rpc_rtt = wait_for_endpoint(environment["RPC_URL"], rpc=True)
-    herald_rtt = wait_for_endpoint(environment["HERALD_URL"] + "/health")
-    wait_for_endpoint(f"http://127.0.0.1:{config['port_base'] + 5}/rpc/v0_10_2", rpc=True)
-    run(["bun", "deploy/athanor/scripts/inspect-shard-roles.ts", "--public-rpc",
-         f"http://127.0.0.1:{config['port_base'] + 5}/rpc/v0_10_2"], directory, "public-rpc-check")
-    save_harness_environment(directory, environment)
-    run(["bun", "deploy/athanor/scripts/account-rpc-smoke.ts", str(directory),
-         f"http://127.0.0.1:{config['port_base'] + 5}/rpc/v0_10_2"], directory, "account-rpc-smoke")
+    run([*command, "run", "--rm", "--no-deps", "--entrypoint", "python3", "harness",
+         "/app/deploy/shard/init.py", "probe"], directory, "network-probes")
+    probes = json.loads((directory / "network-probes.json").read_text())
+    rpc_rtt, herald_rtt = probes["rpcRttMs"], probes["heraldRttMs"]
     result = deployment_manifest(config, compose, directory, manifest, rpc_rtt, herald_rtt)
     write_json(directory / "manifest.json", result)
     return result
@@ -468,8 +458,9 @@ def run_matrix(matrix, directory):
         result = {"passed": False}
         try:
             start_shard(config, target)
-            private = read_private_environment(target / "harness.env")
-            environment = {**os.environ, **private, "HARNESS_OUTPUT_DIRECTORY": str(target / "workload")}
+            environment = dict(os.environ)
+            command = [*DOCKER, "compose", "-f", str(target / "compose.json"), "run", "--rm",
+                       "-e", "HARNESS_OUTPUT_DIRECTORY=/data/workload", "harness", *command[2:]]
             result.update(measures.measure_workload(
                 DOCKER, lambda: run_workload(command, target, environment), f"athanor-{config['shard']}-madara-1",
                 target / "metrics" / "metrics.jsonl", target / "chain-config.yaml", target / "workload"))

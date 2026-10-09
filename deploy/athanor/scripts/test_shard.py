@@ -137,6 +137,7 @@ class ShardTest(unittest.TestCase):
             data = Path(temporary)
             shard.write_json(data / "host-keys.json", {"deployerAddress": "0x1", "deployerPrivateKey": "0x2"})
             (data / "host-keys.json").chmod(0o600)
+            shard.write_json(data / "gameplay-contracts.json", {"operatorAccountAddress": "0x9"})
             shard.write_private_environment(data / "harness.env", {"RPC_URL": "http://madara:9944/rpc/v0_10_2"})
             started = time.struct_time((2026, 10, 7, 16, 2, 47, 0, 0, 0))
             argv, environment = package.harness_invocation(["--bots", "1"], {"OPERATOR_TOKEN": "t"}, data, started)
@@ -144,6 +145,7 @@ class ShardTest(unittest.TestCase):
             self.assertEqual(environment["RPC_URL"], "http://rpc:8080/rpc/v0_10_2")
             self.assertEqual(environment["HARNESS_ADMIN_RPC_URL"], "http://madara:9944/rpc/v0_10_2")
             self.assertEqual(environment["DEPLOYER_PRIVATE_KEY"], "0x2")
+            self.assertEqual(environment["DEPLOYER_ACCOUNT_ADDRESS"], "0x9")
             self.assertEqual(environment["OPERATOR_TOKEN"], "t")
             self.assertEqual(environment["HARNESS_OUTPUT_DIRECTORY"], str(data / "harness" / "20261007T160247Z"))
             chosen = {"HARNESS_OUTPUT_DIRECTORY": "/data/measure/soak/workload"}
@@ -156,6 +158,7 @@ class ShardTest(unittest.TestCase):
             data = Path(temporary)
             shard.write_json(data / "host-keys.json", {"deployerAddress": "0x1", "deployerPrivateKey": "0x2"})
             (data / "host-keys.json").chmod(0o600)
+            shard.write_json(data / "gameplay-contracts.json", {"operatorAccountAddress": "0x9"})
             shard.write_private_environment(data / "harness.env", {
                 "NATIVE_WORLD_MANIFEST": "/opt/run/data/native-world.json",
                 "GAMEPLAY_CONTRACTS_PATH": "/opt/run/data/gameplay-contracts.json",
@@ -250,6 +253,11 @@ class ShardTest(unittest.TestCase):
             self.assertIn("OPERATOR_TOKEN", compose["services"][name]["environment"])
             self.assertIsNone(compose["services"][name]["environment"]["OPERATOR_TOKEN"])
 
+    def test_runner_exposes_neither_the_node_nor_postgres(self):
+        compose = shard.compose_configuration(configuration(), Path("/tmp/not-deployed"))
+        for name in ("madara", "postgres"):
+            self.assertFalse(compose["services"][name].get("ports"))
+
     def test_existing_containers_or_volumes_are_never_reused(self):
         for replies in (["container"], ["", "volume"]):
             with patch.object(shard, "read", side_effect=replies), self.assertRaisesRegex(ValueError, "already owns state"):
@@ -276,7 +284,7 @@ class ShardTest(unittest.TestCase):
             self.assertEqual(values["DEPLOYER_ACCOUNT_ADDRESS"], "0x789")
             self.assertNotIn("DEPLOYER_PRIVATE_KEY", values)
             self.assertNotIn("0xabc", output.read_text())
-            self.assertEqual(values["RPC_URL"], "http://127.0.0.1:28050/rpc/v0_10_2")
+            self.assertEqual(values["RPC_URL"], "http://madara:9944/rpc/v0_10_2")
             self.assertEqual(values["IDENTITY_URL"], "https://identity.test/api")
             self.assertEqual(values["GAMEPLAY_CONTRACTS_PATH"], str(directory / "gameplay-contracts.json"))
             # The node's image, container and metrics belong to the host-side measurement, not to the harness.
@@ -514,6 +522,17 @@ class PackageStartTest(unittest.TestCase):
 
     def published(self, volume, name):
         return self.volumes[volume] / name
+
+    def test_readiness_probes_use_only_internal_service_addresses(self):
+        with patch.object(shard, "wait_for_endpoint", return_value=1) as wait:
+            self.package.probe()
+        self.assertEqual([call.args[0] for call in wait.call_args_list], [
+            "http://madara:9944/rpc/v0_10_2", "http://herald:3003/health", "http://rpc:8080/rpc/v0_10_2",
+        ])
+        commands = [call.args[0] for call in shard.run.call_args_list]
+        self.assertEqual(commands[0][-1], "http://madara:9944/rpc/v0_10_2")
+        self.assertEqual(commands[1][-2:], ["--public-rpc", "http://rpc:8080/rpc/v0_10_2"])
+        self.assertEqual(json.loads((self.data / "network-probes.json").read_text()), {"rpcRttMs": 1, "heraldRttMs": 1})
 
     def test_every_service_configuration_is_published_from_data_on_fresh_volumes(self):
         self.start()

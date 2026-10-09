@@ -187,6 +187,7 @@ def harness_invocation(args, environ, data=DATA, started=None):
     """The harness command against this shard: its private settings from harness.env, its reports under
     data/harness/<start time> unless the caller names a directory."""
     environment = {**environ, **shard.read_private_environment(data / "harness.env"), **shard.host_credentials(data)}
+    environment["DEPLOYER_ACCOUNT_ADDRESS"] = json.loads((data / "gameplay-contracts.json").read_text())["operatorAccountAddress"]
     environment["HARNESS_ADMIN_RPC_URL"] = "http://madara:9944/rpc/v0_10_2"
     environment["RPC_URL"] = "http://rpc:8080/rpc/v0_10_2"
     environment["HERALD_URL"] = "http://herald:3003"
@@ -200,9 +201,25 @@ def harness_invocation(args, environ, data=DATA, started=None):
     return ["bun", "deploy/athanor/harness/run.ts", *args], environment
 
 
+def probe():
+    """Readiness and account probes use only the shard's private Compose network."""
+    rpc = "http://madara:9944/rpc/v0_10_2"
+    public = "http://rpc:8080/rpc/v0_10_2"
+    rpc_rtt = shard.wait_for_endpoint(rpc, rpc=True)
+    herald_rtt = shard.wait_for_endpoint("http://herald:3003/health")
+    shard.wait_for_endpoint(public, rpc=True)
+    for args, name in [([str(DATA), rpc], "roles"), (["--public-rpc", public], "public-rpc")]:
+        shard.run(["bun", "deploy/athanor/scripts/inspect-shard-roles.ts", *args], DATA, name)
+    shard.run(["bun", "deploy/athanor/scripts/account-rpc-smoke.ts", str(DATA), public], DATA, "account-rpc-smoke")
+    shard.write_json(DATA / "network-probes.json", {"rpcRttMs": rpc_rtt, "heraldRttMs": herald_rtt})
+
+
 if __name__ == "__main__":
     os.umask(0o077)
     action = sys.argv[1]
+    if action == "probe":
+        probe()
+        raise SystemExit(0)
     if action == "self-check":
         argv, environment = harness_invocation([], os.environ)
         identity = json.loads((DATA / "gameplay-contracts.json").read_text())
