@@ -42,15 +42,15 @@ describe("paged block ingestion", () => {
       address: manifest.world.address,
       from_block: { block_hash: "0xb10" },
       to_block: { block_hash: "0xb10" },
-      chunk_size: 128,
+      chunk_size: 1000,
     });
-    expect(pages.at(-1).params[0].continuation_token).toBe(String(Math.floor((24600 - 1) / 128) * 128));
+    expect(pages.at(-1).params[0].continuation_token).toBe(String(Math.floor((24600 - 1) / 1000) * 1000));
     expect(calls.some((call) => call.method === "starknet_getBlockWithReceipts")).toBe(false);
     expect(calls.some((call) => call.method === "starknet_getTransactionReceipt")).toBe(false);
   }, 60000);
 
-  it("applies nothing on a middle-page failure and retries the same complete block", async () => {
-    const block = syntheticBlock(50),
+  it("applies nothing on a middle-page failure and retries only that page", async () => {
+    const block = syntheticBlock(200),
       { native, fold } = setup();
     const before = fold.checkpoint();
     let failed = false;
@@ -65,9 +65,9 @@ describe("paged block ingestion", () => {
     expect(failed).toBe(true);
     expect(
       calls.filter((call) => call.method === "starknet_getEvents" && !call.params[0].continuation_token),
-    ).toHaveLength(2);
-    expect(fold.modelRows("PlayerPoints")).toHaveLength(50);
-    expect(BigInt(String(fold.modelRows("PointsTotal")[0].value.total))).toBe(300n);
+    ).toHaveLength(1);
+    expect(fold.modelRows("PlayerPoints")).toHaveLength(200);
+    expect(BigInt(String(fold.modelRows("PointsTotal")[0].value.total))).toBe(1200n);
   });
 
   it("keeps receipt event positions and checkpoint commitments despite filtered foreign events", async () => {
@@ -236,7 +236,7 @@ it("finishes a pre-confirmed prefix when its block seals during the read", async
 });
 
 it("refuses a repeated continuation token and retries before any fold", async () => {
-  const block = syntheticBlock(50),
+  const block = syntheticBlock(200),
     { native, fold } = setup();
   let failed = false;
   const { rpc } = node(block, (call) => {
@@ -250,5 +250,131 @@ it("refuses a repeated continuation token and retries before any fold", async ()
   });
   await native.replay({ fold, rpc, fromBlock: 10, toBlock: 10 });
   expect(failed).toBe(true);
-  expect(fold.modelRows("PlayerPoints")).toHaveLength(50);
+  expect(fold.modelRows("PlayerPoints")).toHaveLength(200);
+});
+
+it("accepts spec-shaped pre-confirmed events without a block number or hash", async () => {
+  const block = syntheticBlock(1);
+  const { rpc } = node(block);
+  const result = await rpc.readBlock("pre_confirmed", manifest.world.address);
+  expect(result.transactions[0].receipt.events).toHaveLength(6);
+  expect(result.block_number).toBe(10);
+});
+
+it("retries only a failed page and stops after bounded persistent failure", async () => {
+  const block = syntheticBlock(200);
+  let failures = 0;
+  const { rpc, calls } = node(block, (call) => {
+    if (call.method === "starknet_getEvents" && call.params[0].continuation_token && failures++ === 0)
+      throw new Error("temporary page failure");
+  });
+  await rpc.readBlock(10, manifest.world.address);
+  expect(
+    calls.filter((call) => call.method === "starknet_getEvents" && !call.params[0].continuation_token),
+  ).toHaveLength(1);
+  let requests = 0;
+  const failed = node(block, (call) => {
+    if (call.method === "starknet_getEvents") {
+      requests++;
+      throw new Error("persistent failure");
+    }
+  });
+  await expect(failed.rpc.readBlock(10, manifest.world.address)).rejects.toThrow();
+  expect(requests).toBe(3);
+});
+
+it("steady live and cold replay skip transaction and status reads for normal native events", async () => {
+  const block = syntheticBlock(1300),
+    { rpc, calls } = node(block);
+  await rpc.readBlock(10, manifest.world.address, {
+    knownTransaction: (hash: string) =>
+      block.transactions.find((item) => item.receipt.transaction_hash === hash)?.transaction,
+  });
+  expect(
+    calls.filter(
+      (call) => call.method === "starknet_getTransactionByHash" || call.method === "starknet_getTransactionStatus",
+    ),
+  ).toHaveLength(0);
+  calls.length = 0;
+  const { native, fold } = setup();
+  await native.replay({ fold, rpc, fromBlock: 10, toBlock: 10, retainTransactions: false });
+  expect(
+    calls.filter(
+      (call) => call.method === "starknet_getTransactionByHash" || call.method === "starknet_getTransactionStatus",
+    ),
+  ).toHaveLength(0);
+});
+
+it("halts on spec-shaped events lacking a block number in a confirmed read", async () => {
+  const block = syntheticBlock(1),
+    { native, fold } = setup();
+  const { rpc } = node(block, (call) => {
+    if (call.method !== "starknet_getEvents") return;
+    const page = blockRpcResult(block, call.method, call.params) as { events: Record<string, unknown>[] };
+    page.events.forEach((event) => {
+      delete event.block_number;
+      delete event.block_hash;
+    });
+    return page;
+  });
+  await expect(native.replay({ fold, rpc, fromBlock: 10, toBlock: 10 })).rejects.toThrow("invalid_position");
+  expect(fold.retainedRowCount()).toBe(0);
+});
+
+it("logs RPC method and numeric code without node payloads on bounded failure", async () => {
+  const block = syntheticBlock(1);
+  const { rpc } = node(block);
+  const logs: unknown[] = [];
+  const warn = vi.spyOn(console, "warn").mockImplementation((value) => {
+    logs.push(value);
+  });
+  const error = vi.spyOn(console, "error").mockImplementation((value) => {
+    logs.push(value);
+  });
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (_url: unknown, init: RequestInit) => {
+      const call = JSON.parse(String(init.body));
+      return Response.json(
+        call.method === "starknet_getEvents"
+          ? {
+              jsonrpc: "2.0",
+              id: call.id,
+              error: { code: -32008, message: "untrusted-payload", data: { signature: "untrusted-payload" } },
+            }
+          : { jsonrpc: "2.0", id: call.id, result: blockRpcResult(block, call.method, call.params) },
+      );
+    }),
+  );
+  try {
+    await expect(rpc.readBlock(10, manifest.world.address)).rejects.toThrow("starknet_getEvents (-32008)");
+    const text = JSON.stringify(logs);
+    expect(text).toContain("starknet_getEvents");
+    expect(text).toContain("-32008");
+    expect(text).not.toContain("untrusted-payload");
+    expect(logs.filter((value) => JSON.parse(String(value)).event === "herald_rpc_read_failed")).toHaveLength(3);
+  } finally {
+    warn.mockRestore();
+    error.mockRestore();
+  }
+});
+
+it("cold replay still fetches the exact preset preimage calldata without a status read", async () => {
+  const { presetRegistration } = await import("./native/preset-fixtures");
+  const preset = presetRegistration(2),
+    { native, fold } = setup();
+  const block: RpcBlockWithReceipts = {
+    block_number: 10,
+    timestamp: 1800,
+    transactions: [
+      { transaction: { type: "INVOKE", calldata: preset.calldata }, receipt: receipt([preset.event], "0xabc") },
+    ],
+  };
+  const { rpc, calls } = node(block);
+  await native.replay({ fold, rpc, fromBlock: 10, toBlock: 10, retainTransactions: false });
+  expect(fold.presetPreimage(preset.commitment)).toEqual(
+    preset.calldata.slice(5).map((felt) => BigInt(felt).toString()),
+  );
+  expect(calls.filter((call) => call.method === "starknet_getTransactionByHash")).toHaveLength(1);
+  expect(calls.some((call) => call.method === "starknet_getTransactionStatus")).toBe(false);
 });

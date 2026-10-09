@@ -1,3 +1,4 @@
+import { presetRegistration } from "./native/preset-fixtures";
 import malformedRow from "../../../contracts/l3/world-native/schema/fixtures/malformed-row.json";
 import { CairoCustomEnum } from "starknet";
 import { dayOf } from "@bibliothecadao/eternum/expeditions";
@@ -421,4 +422,24 @@ it("validates the whole rebuilt overlay before publishing any of its actions", a
   expect(messages.filter((message) => message.type === "diff")).toEqual([]);
   expect(native.receiptFailures).toBe(1);
   expect(live.snapshot("1").models.find((model) => model.model === "TileOpt")!.rows).toEqual([]);
+});
+
+it("publishes an early preset from its validated block calldata after the sender LRU evicts it", async () => {
+  const { live, pending, native } = fixture();
+  const preset = presetRegistration(2);
+  pending.transactions.push({
+    transaction: { type: "INVOKE", calldata: preset.calldata },
+    receipt: receipt([preset.event], "0x100"),
+  });
+  for (let index = 0; index < 2050; index++)
+    pending.transactions.push({
+      transaction: { type: "INVOKE", calldata: ["0x0"] },
+      receipt: receipt([], `0x${(index + 1000).toString(16)}`),
+    });
+  await live.acceptSubscribedHead({ block_number: 10, timestamp: 100 });
+  expect(native.receiptFailures).toBe(0);
+  const visible = live.attach("1", { send() {} });
+  // The rebuild applied the preset, so a later launch can verify its stored preimage without another transaction fetch.
+  expect(() => (live as any).overlayFold.presetPreimage(preset.commitment)).not.toThrow();
+  live.detach(visible);
 });

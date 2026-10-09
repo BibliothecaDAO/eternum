@@ -359,23 +359,24 @@ export class LiveWorld {
     const startedAt = performance.now();
     const violationsBefore = this.confirmedFold.invariantViolations;
 
-    const confirmed = await this.applyConfirmedThrough(head.block_number);
-    // Recorded with the block it belongs to, before any other await, so an attach never pairs this block with an
-    // older head's time.
-    this.confirmedHeadTimestamp = head.timestamp;
-    await this.archiveFinalizedGames();
     let publishedChanges = false;
-    for (const [block, changes] of confirmed.changes) {
-      this.broadcastConfirmedChanges(changes, block);
-      publishedChanges ||= changes.length > 0;
-    }
-    // Subscriptions can miss a receipt during reconnect or fall behind a confirmed head.
-    // Replay publishes outcomes after their authoritative rows, so client barriers recover too.
-    for (const { receipt, transaction } of confirmed.transactions) {
-      this.pendingReceipts.delete(normalizeFelt(receipt.transaction_hash));
-      this.recordTransactionSender(receipt.transaction_hash, transaction);
-      this.publishReceiptStatus(receipt);
-    }
+    const models = new Set<string>();
+    do {
+      const confirmed = await this.applyConfirmedThrough(head.block_number);
+      this.confirmedHeadTimestamp = confirmed.timestamp ?? head.timestamp;
+      await this.archiveFinalizedGames();
+      for (const [block, changes] of confirmed.changes) {
+        this.broadcastConfirmedChanges(changes, block);
+        publishedChanges ||= changes.length > 0;
+        for (const change of changes) models.add((change.set ?? change.del)!.model);
+      }
+      for (const { receipt, transaction } of confirmed.transactions) {
+        this.pendingReceipts.delete(normalizeFelt(receipt.transaction_hash));
+        this.recordTransactionSender(receipt.transaction_hash, transaction);
+        this.publishReceiptStatus(receipt);
+      }
+      // Each committed event-budget window can be released before reading the next one.
+    } while (this.confirmedBlockValue < head.block_number);
     this.resetOverlay();
     await this.rebuildOverlay();
     this.publishOverlayReverts();
@@ -384,9 +385,6 @@ export class LiveWorld {
     if (publishedChanges || violations > 0)
       this.diffLatency.record("confirmed", performance.now() - startedAt, violations);
     this.lastClockTimestamp = Math.max(this.lastClockTimestamp, head.timestamp);
-    const models = new Set(
-      [...confirmed.changes.values()].flatMap((changes) => changes.map((change) => (change.set ?? change.del)!.model)),
-    );
     for (const listener of this.changeListeners) listener(models);
     for (const gameId of this.hub.streamedGames()) this.hub.publishHead(gameId, head.block_number, head.timestamp);
     this.homeRing.retry(this.hub.streamedGames());
@@ -536,6 +534,7 @@ export class LiveWorld {
       rpc: this.input.rpc,
       fromBlock: this.confirmedBlockValue + 1,
       toBlock: target,
+      readOptions: { knownTransaction: (hash: string) => this.knownTransaction(hash) },
       preconfirmed: (receipt: RpcReceipt) => this.overlayReceipts.get(overlayIdentity(receipt)),
     };
     const result = this.input.historyStore
@@ -546,12 +545,15 @@ export class LiveWorld {
           this.confirmedHeadTimestamp ?? undefined,
         )
       : { ...(await this.native.replay(replayInput)), frontierDays: [] };
-    this.confirmedBlockValue = target;
+    this.confirmedBlockValue = result.throughBlock;
     return result;
   }
 
   private async rebuildOverlay(): Promise<void> {
-    const block = await this.input.rpc.readBlock("pre_confirmed", this.native.decoder.manifest.world.address);
+    const block = await this.input.rpc.readBlock("pre_confirmed", this.native.decoder.manifest.world.address, {
+      knownTransaction: (hash) => this.knownTransaction(hash),
+      needsCalldata: (events) => this.native.decoder.needsPresetCalldata(events),
+    });
     const preview = this.overlayFold.overlay();
     const prepared: { receipt: RpcReceipt; transactionIndex: number; earlier: PreconfirmedDecode }[] = [];
     for (const { receipt, transactionIndex } of this.native.receipts(block)) {
@@ -574,7 +576,13 @@ export class LiveWorld {
       this.recordTransactionSender(receipt.transaction_hash, transaction);
     // Validation above is atomic for the block; publication stays atomic for each player action.
     for (const { receipt, transactionIndex, earlier } of prepared)
-      this.applyOverlayReceipt(receipt, block.block_number, transactionIndex, earlier);
+      this.applyOverlayReceipt(
+        receipt,
+        block.block_number,
+        transactionIndex,
+        earlier,
+        block.transactions[transactionIndex]!.transaction,
+      );
   }
 
   /** Applies a pre-confirmed receipt to the overlay, recording its arrival-to-publish latency the first time. */
@@ -591,6 +599,7 @@ export class LiveWorld {
     block: number | null,
     index: number,
     earlier?: PreconfirmedDecode,
+    validatedTransaction?: RpcTransaction,
   ): boolean {
     const identity = overlayIdentity(receipt);
     if (this.overlayReceipts.has(identity)) return true;
@@ -601,7 +610,9 @@ export class LiveWorld {
         receipt,
         block,
         index,
-        this.transactionCalldata.get(normalizeFelt(receipt.transaction_hash)),
+        validatedTransaction
+          ? validatedTransaction.calldata
+          : this.transactionCalldata.get(normalizeFelt(receipt.transaction_hash)),
         earlier,
       );
     } catch (error) {
@@ -616,6 +627,15 @@ export class LiveWorld {
       transactionHash: normalizeFelt(receipt.transaction_hash),
     });
     return true;
+  }
+
+  private knownTransaction(hashValue: string): RpcTransaction | undefined {
+    const hash = normalizeFelt(hashValue);
+    const calldata = this.transactionCalldata.get(hash);
+    const sender = this.transactionSenders.get(hash);
+    return calldata && sender
+      ? { type: "INVOKE", transaction_hash: hash, sender_address: sender, calldata }
+      : undefined;
   }
 
   private recordTransactionSender(
@@ -666,7 +686,11 @@ export class LiveWorld {
       );
       if (receipt.finality_status !== "PRE_CONFIRMED") this.input.historyStore?.recordTransaction(gameId, receipt);
     }
-    if (receipt.finality_status !== "PRE_CONFIRMED") {
+    if (
+      receipt.finality_status !== "PRE_CONFIRMED" &&
+      receipt.block_number != null &&
+      receipt.block_number <= this.confirmedBlockValue
+    ) {
       this.transactionGames.delete(hash);
       this.transactionSenders.delete(hash);
       this.pendingReceipts.delete(hash);
