@@ -419,10 +419,11 @@ const SEALED: Reward = {
 /** The payout wallet's result and chest on each reward screen: what the ledger would answer. */
 export const LAB_REWARDS: Partial<Record<keyof typeof LAB_SCREENS, Reward>> = {
   "reward-pending": { ...SEALED, result: { ...RESULT, rank: 0, chestId: 0n }, chest: null },
-  "reward-sealed": SEALED,
+  // The middle band, the chest the owner picked.
+  "reward-sealed": { ...SEALED, chest: { ...CHEST, band: 2 } },
   "reward-no-strk": { ...SEALED, strk: 0n },
   "reward-after-season": { ...SEALED, chest: { ...CHEST, band: 3 }, seasonEnd: NOW - DAY },
-  "reward-opening": { ...SEALED, chest: { ...OPENED, finished: false }, held: false },
+  "reward-opening": { ...SEALED, chest: { ...OPENED, band: 2, finished: false }, held: false },
   "reward-epic": { ...SEALED, chest: OPENED, held: false, content: { kind: "cosmetic", attributes: "0x4040d01" } },
   "reward-lords": { ...SEALED, chest: OPENED, held: false, content: { kind: "lords", amount: 700n * WEI } },
   "reward-credit": {
