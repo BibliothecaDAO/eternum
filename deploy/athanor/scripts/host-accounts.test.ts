@@ -69,10 +69,17 @@ describe("the host-account step of a first initialization", () => {
 test("interrupted preparation reconstructs public host metadata without replacing either private key", async () => {
   const data = mkdtempSync(join(tmpdir(), "host-prepare-"));
   const initialize = async () => {
-    const child = Bun.spawn([process.execPath, "deploy/athanor/scripts/host-accounts.ts", "initialize", data], { cwd: root, stdout: "ignore", stderr: "pipe" });
+    const child = Bun.spawn([process.execPath, "deploy/athanor/scripts/host-accounts.ts", "initialize", data], {
+      cwd: root,
+      stdout: "ignore",
+      stderr: "pipe",
+    });
     expect(await child.exited).toBe(0);
   };
-  const fingerprint = (file: string) => createHash("sha256").update(readFileSync(join(data, file))).digest("hex");
+  const fingerprint = (file: string) =>
+    createHash("sha256")
+      .update(readFileSync(join(data, file)))
+      .digest("hex");
   try {
     await initialize();
     const before = [fingerprint("host-keys.json"), fingerprint("vrf-key.json")];
@@ -80,5 +87,7 @@ test("interrupted preparation reconstructs public host metadata without replacin
     await initialize();
     expect([fingerprint("host-keys.json"), fingerprint("vrf-key.json")]).toEqual(before);
     expect(JSON.parse(readFileSync(join(data, "host-accounts.json"), "utf8")).deployer.address).toBeTruthy();
-  } finally { rmSync(data, { recursive: true }); }
+  } finally {
+    rmSync(data, { recursive: true });
+  }
 });

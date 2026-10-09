@@ -65,8 +65,15 @@ export async function replayWithFrontierDays(
 ) {
   const frontierDays: HeraldFrontierDayRanks[] = [];
   const previousHistory = new Map<string, HeraldHistoryEvent[]>();
-  const publicGames = new Set(input.fold.modelRows("GameRegistry").filter(({ value }) => !isCheckGame(value)).map(({ value }) => integer(value.game_id).toString()));
-  const hasCalendar = input.fold.modelRows("SliceRules").some(({ value }) => publicGames.has(integer(value.game_id).toString()) && number(value.day_unit_seconds) !== 0);
+  const publicGames = new Set(
+    input.fold
+      .modelRows("GameRegistry")
+      .filter(({ value }) => !isCheckGame(value))
+      .map(({ value }) => integer(value.game_id).toString()),
+  );
+  const hasCalendar = input.fold
+    .modelRows("SliceRules")
+    .some(({ value }) => publicGames.has(integer(value.game_id).toString()) && number(value.day_unit_seconds) !== 0);
   let previousTimestamp =
     confirmedTimestamp ??
     (hasCalendar && input.fromBlock > native.decoder.manifest.native.deploymentBlock
