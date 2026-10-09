@@ -65,21 +65,28 @@ fn stamped_signature(signer: StarkCurveKeyPair) -> Array<felt252> {
 }
 
 fn one_call(account: IRealmsAccountDispatcher) -> starknet::account::Call {
-    starknet::account::Call { to: account.contract_address, selector: selector!("is_device"), calldata: array![device(0).public_key].span() }
+    starknet::account::Call {
+        to: account.contract_address, selector: selector!("is_device"), calldata: array![device(0).public_key].span(),
+    }
 }
 
 #[test]
 fn stamped_single_call_validates_the_original_device_signature() {
-    let account = deploy_account(); join(account, device(0), 1);
+    let account = deploy_account();
+    join(account, device(0), 1);
     start_cheat_transaction_hash(account.contract_address, TX_HASH);
     start_cheat_signature(account.contract_address, stamped_signature(device(0)).span());
     assert!(account.__validate__(array![one_call(account)]) == VALIDATED, "stamped device refused");
-    assert!(account.is_valid_signature(TX_HASH, stamped_signature(device(0))) == 0, "message signature gained a suffix bypass");
+    assert!(
+        account.is_valid_signature(TX_HASH, stamped_signature(device(0))) == 0,
+        "message signature gained a suffix bypass",
+    );
 }
 
 #[test]
 fn unstamped_multicall_keeps_the_existing_validation_rule() {
-    let account = deploy_account(); join(account, device(0), 1);
+    let account = deploy_account();
+    join(account, device(0), 1);
     start_cheat_transaction_hash(account.contract_address, TX_HASH);
     start_cheat_signature(account.contract_address, device_signature(device(0), TX_HASH).span());
     assert!(account.__validate__(array![one_call(account), one_call(account)]) == VALIDATED, "unstamped rule changed");
@@ -88,7 +95,8 @@ fn unstamped_multicall_keeps_the_existing_validation_rule() {
 #[test]
 #[should_panic(expected: "one stamped call")]
 fn stamped_multicall_is_refused_at_validation() {
-    let account = deploy_account(); join(account, device(0), 1);
+    let account = deploy_account();
+    join(account, device(0), 1);
     start_cheat_signature(account.contract_address, stamped_signature(device(0)).span());
     account.__validate__(array![one_call(account), one_call(account)]);
 }
@@ -96,7 +104,8 @@ fn stamped_multicall_is_refused_at_validation() {
 #[test]
 #[should_panic(expected: "one stamped call")]
 fn stamped_empty_invoke_is_refused_at_validation() {
-    let account = deploy_account(); join(account, device(0), 1);
+    let account = deploy_account();
+    join(account, device(0), 1);
     start_cheat_signature(account.contract_address, stamped_signature(device(0)).span());
     account.__validate__(array![]);
 }
@@ -104,7 +113,8 @@ fn stamped_empty_invoke_is_refused_at_validation() {
 #[test]
 #[should_panic(expected: "invalid stamp tag")]
 fn unknown_nine_felt_suffix_is_not_a_stamp() {
-    let account = deploy_account(); join(account, device(0), 1);
+    let account = deploy_account();
+    join(account, device(0), 1);
     let mut signature = device_signature(device(0), TX_HASH);
     signature.append_span(array!['OTHER', 1, 2, 3, 4, 5].span());
     start_cheat_signature(account.contract_address, signature.span());
