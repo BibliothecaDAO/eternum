@@ -1,3 +1,4 @@
+import { safeInteger } from "../../../packages/core/src/utils/safe-integer";
 import type { ID } from "@bibliothecadao/types";
 import type { StreamFn } from "@mariozechner/pi-agent-core";
 import {
@@ -58,7 +59,7 @@ export const resolveOfflineScout = (game: RunnerGame, empire: SettledEmpire): Of
   const own = empire.explorers[0];
   if (own !== undefined) return { explorerId: own };
   const explorerIds = [...game.client.setup.store.inGame("ExplorerTroops", game.client.gameId)]
-    .map((row) => row.explorer_id)
+    .map((row) => safeInteger(row.explorer_id))
     .sort((left, right) => left - right);
   return explorerIds.length === 0 ? null : { explorerId: explorerIds[0]! };
 };
