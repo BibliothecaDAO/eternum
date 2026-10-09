@@ -59,7 +59,6 @@ const buildGameRequest = (
 ): LaunchGameRequest => ({
   manifest: world,
   heraldUrl: shard.url,
-  admissionUrl: shard.admissionUrl,
   rpcUrl: shard.rpcUrl,
   accountAddress: target.accountAddress,
   privateKey: target.privateKey,
@@ -91,7 +90,7 @@ const executeRun = async (run: LaunchRun, store: LaunchRunStore, target: LaunchT
   if (run.kind === "result" && "gameId" in run.request) {
     return finalizeGame(
       run.request,
-      { url: launchShard.shard.rpcUrl, admissionUrl: launchShard.shard.admissionUrl },
+      { url: launchShard.shard.rpcUrl },
       { manifest: launchShard.world, accountAddress: target.accountAddress, privateKey: target.privateKey },
     );
   }
