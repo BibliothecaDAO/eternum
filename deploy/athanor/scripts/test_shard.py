@@ -551,6 +551,26 @@ class PackageStartTest(unittest.TestCase):
     def published(self, volume, name):
         return self.volumes[volume] / name
 
+    def test_initialize_identity_ignores_host_uid_when_reading_its_own_key(self):
+        (self.data / "native-world.json").unlink()
+        (self.data / "chain-config.yaml").unlink()
+        (self.data / "initialized.json").unlink()
+        with patch.dict(shard.os.environ, {"HOST_UID": str(shard.os.geteuid() + 1)}), patch.object(shard, "initialize_shard_identity") as initialize:
+            self.package.initialize_identity(configuration())
+        self.assertEqual(initialize.call_args.args[2], "0x789")
+
+    def test_failed_first_prepare_can_resume_with_the_same_keys(self):
+        (self.data / "init-configuration.json").unlink()
+        original = (self.data / "host-keys.json").read_bytes()
+        with patch.dict(shard.os.environ, self.environ):
+            config = self.package.configuration()
+            with patch.object(self.package, "publish_prepared_config", side_effect=OSError("temporary publication failure")):
+                with self.assertRaisesRegex(OSError, "publication failure"):
+                    self.package.prepare(config)
+            self.package.prepare(config)
+        self.assertEqual((self.data / "host-keys.json").read_bytes(), original)
+        self.assertTrue((self.data / "init-configuration.json").exists())
+
     def test_readiness_probes_use_only_internal_service_addresses(self):
         with patch.object(shard, "wait_for_endpoint", return_value=1) as wait:
             self.package.probe()

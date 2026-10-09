@@ -1,5 +1,6 @@
+import { readPrivateJson } from "./private-file";
 import { assertPublicRpcBoundary } from "./public-rpc-check";
-import { readFileSync, statSync, writeFileSync, mkdtempSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdtempSync } from "node:fs";
 import { Account, BlockTag, ec, RpcProvider, stark } from "starknet";
 import { DeviceSigner, deviceKeyOf, joinBotAccount } from "../../../packages/core/src/account/realms-account";
 
@@ -18,10 +19,7 @@ const env = Object.fromEntries(
     }),
 );
 const keyPath = `${directory}/host-keys.json`;
-const keyStat = statSync(keyPath);
-if ((keyStat.mode & 0o777) !== 0o600 || keyStat.uid !== process.getuid!())
-  throw new Error("host-keys.json must be owner-only mode 0600");
-const { deployerPrivateKey } = JSON.parse(readFileSync(keyPath, "utf8"));
+const { deployerPrivateKey } = readPrivateJson<{ deployerPrivateKey: string }>(keyPath);
 const manifest = JSON.parse(readFileSync(`${directory}/native-world.json`, "utf8"));
 const { operatorAccountAddress: operator } = JSON.parse(readFileSync(`${directory}/gameplay-contracts.json`, "utf8"));
 console.log(JSON.stringify(await assertPublicRpcBoundary(url, { ...manifest.shard, operator })));
