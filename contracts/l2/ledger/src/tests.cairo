@@ -512,17 +512,15 @@ fn admin_cannot_rescue_managed_lords() {
 }
 
 #[test]
-#[should_panic(expected: 'Pausable: paused')]
-fn paused_ledger_rejects_new_sponsorship() {
+fn payout_pause_keeps_registration_and_funding_open() {
     let fixture = deploy_fixture(default_preset());
-    let sponsor = player(0);
-    fund_and_approve_player(@fixture, sponsor, 500);
+    fund_and_approve_player(@fixture, player(0), 700);
     start_cheat_caller_address(fixture.ledger_address, ADMIN());
     fixture.ledger.pause();
-    stop_cheat_caller_address(fixture.ledger_address);
-
-    start_cheat_caller_address(fixture.ledger_address, sponsor);
-    fixture.ledger.fund(GAME_ID, 500);
+    start_cheat_caller_address(fixture.ledger_address, player(0));
+    fixture.ledger.register(GAME_ID, false, false);
+    fixture.ledger.fund(GAME_ID, 200);
+    assert!(fixture.ledger.get_game(GAME_ID).pool == 700);
 }
 
 #[test]
@@ -938,4 +936,132 @@ fn consumes_paid_flags_when_the_roster_is_below_the_mmr_minimum() {
     let registration = fixture.ledger.get_registration(GAME_ID, owner);
     assert!(registration.sword, "sword purchase should be recorded");
     assert!(registration.flags_consumed, "final results should consume paid flags");
+}
+
+fn funded_frontier() -> Fixture {
+    let fixture = deploy_ledger();
+    fund_and_approve_player(@fixture, ADMIN(), 1000);
+    start_cheat_caller_address(fixture.ledger_address, ADMIN());
+    fixture.ledger.fund_frontier('shard', 1, START, END, 1000);
+    start_cheat_caller_address(fixture.ledger_address, OPERATOR());
+    fixture
+}
+
+#[test]
+fn frontier_unlock_rolls_over_and_retries_pay_once() {
+    let fixture = funded_frontier();
+    start_cheat_block_timestamp(fixture.ledger_address, START);
+    assert!(fixture.ledger.frontier_unlocked('shard', 1) == 0);
+    start_cheat_block_timestamp(fixture.ledger_address, 150);
+    assert!(fixture.ledger.frontier_unlocked('shard', 1) == 500);
+    fixture.ledger.pay('shard', 1, 'withdrawal', player(0), 500);
+    fixture.ledger.pay('shard', 1, 'withdrawal', player(1), 999);
+    assert!(fixture.lords.balance_of(player(0)) == 500);
+    assert!(fixture.lords.balance_of(player(1)) == 0);
+    assert!(fixture.ledger.get_payment('shard', 'withdrawal').amount == 500);
+    start_cheat_block_timestamp(fixture.ledger_address, END + 1);
+    fixture.ledger.pay('shard', 1, 'next', player(0), 500);
+    assert!(fixture.ledger.get_frontier('shard', 1).paid == 1000);
+}
+
+#[test]
+#[should_panic(expected: "Ledger: unlock exceeded")]
+fn frontier_refuses_borrowing_future_unlock() {
+    let fixture = funded_frontier();
+    start_cheat_block_timestamp(fixture.ledger_address, 150);
+    fixture.ledger.pay('shard', 1, 'first', player(0), 300);
+    fixture.ledger.pay('shard', 1, 'second', player(0), 201);
+}
+
+#[test]
+#[should_panic(expected: "Ledger: unlock exceeded")]
+fn frontier_refuses_before_start() {
+    let fixture = funded_frontier();
+    fixture.ledger.pay('shard', 1, 'first', player(0), 1);
+}
+
+#[test]
+#[should_panic(expected: "Ledger: season already funded")]
+fn frontier_is_funded_once() {
+    let fixture = funded_frontier();
+    start_cheat_caller_address(fixture.ledger_address, ADMIN());
+    fixture.ledger.fund_frontier('shard', 1, START, END, 1000);
+}
+
+fn grant_pauser(fixture: @Fixture) {
+    start_cheat_caller_address(*fixture.ledger_address, ADMIN());
+    IAccessControlDispatcher { contract_address: *fixture.ledger_address }
+        .grant_role(selector!("PAUSER_ROLE"), player(9));
+    start_cheat_caller_address(*fixture.ledger_address, player(9));
+}
+
+#[test]
+#[should_panic(expected: 'Pausable: paused')]
+fn pauser_stops_frontier_payments() {
+    let fixture = funded_frontier();
+    grant_pauser(@fixture);
+    fixture.ledger.pause();
+    start_cheat_caller_address(fixture.ledger_address, OPERATOR());
+    start_cheat_block_timestamp(fixture.ledger_address, END);
+    fixture.ledger.pay('shard', 1, 'first', player(0), 1000);
+}
+
+#[test]
+#[should_panic]
+fn pauser_cannot_unpause() {
+    let fixture = deploy_ledger();
+    grant_pauser(@fixture);
+    fixture.ledger.pause();
+    fixture.ledger.unpause();
+}
+
+#[test]
+#[should_panic]
+fn pauser_cannot_pay() {
+    let fixture = funded_frontier();
+    grant_pauser(@fixture);
+    start_cheat_block_timestamp(fixture.ledger_address, END);
+    fixture.ledger.pay('shard', 1, 'first', player(0), 1000);
+}
+
+#[test]
+fn frontier_close_returns_only_unspent_custody() {
+    let fixture = funded_frontier();
+    start_cheat_block_timestamp(fixture.ledger_address, 150);
+    fixture.ledger.pay('shard', 1, 'first', player(0), 300);
+    start_cheat_block_timestamp(fixture.ledger_address, END);
+    start_cheat_caller_address(fixture.ledger_address, ADMIN());
+    fixture.ledger.close_frontier('shard', 1);
+    assert!(fixture.lords.balance_of(TREASURY()) == 700);
+    assert!(fixture.ledger.get_frontier('shard', 1).closed);
+}
+
+#[test]
+#[should_panic(expected: "Ledger: season closed")]
+fn frontier_close_refuses_later_claims() {
+    let fixture = funded_frontier();
+    start_cheat_block_timestamp(fixture.ledger_address, END);
+    start_cheat_caller_address(fixture.ledger_address, ADMIN());
+    fixture.ledger.close_frontier('shard', 1);
+    start_cheat_caller_address(fixture.ledger_address, OPERATOR());
+    fixture.ledger.pay('shard', 1, 'first', player(0), 1);
+}
+
+#[test]
+fn frontier_claim_namespace_binds_shard_and_survives_season_close() {
+    let fixture = funded_frontier();
+    fund_and_approve_player(@fixture, ADMIN(), 1000);
+    start_cheat_caller_address(fixture.ledger_address, ADMIN());
+    fixture.ledger.fund_frontier('other', 1, START, END, 1000);
+    start_cheat_block_timestamp(fixture.ledger_address, END);
+    start_cheat_caller_address(fixture.ledger_address, OPERATOR());
+    fixture.ledger.pay('shard', 1, 'tx', player(0), 1000);
+    fixture.ledger.pay('other', 1, 'tx', player(1), 1000);
+    start_cheat_caller_address(fixture.ledger_address, ADMIN());
+    fixture.ledger.close_frontier('shard', 1);
+    fixture.ledger.pause();
+    start_cheat_caller_address(fixture.ledger_address, OPERATOR());
+    fixture.ledger.pay('shard', 2, 'tx', player(0), 1000);
+    assert!(fixture.lords.balance_of(player(0)) == 1000);
+    assert!(fixture.lords.balance_of(player(1)) == 1000);
 }

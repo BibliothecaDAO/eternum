@@ -71,3 +71,21 @@ pub struct RankedPlayer {
     pub rank: u16,
     pub chests: u16,
 }
+
+#[derive(Copy, Default, Drop, Serde, starknet::Store)]
+pub struct FrontierSeason {
+    pub funded: bool,
+    pub start: u64,
+    pub end: u64,
+    pub pool: u256,
+    pub paid: u256,
+    pub closed: bool,
+}
+
+#[derive(Copy, Drop, Serde, starknet::Store)]
+pub struct WithdrawalPayment {
+    pub paid: bool,
+    pub season_id: u32,
+    pub wallet: ContractAddress,
+    pub amount: u256,
+}
