@@ -1,4 +1,4 @@
-use snforge_std::{start_cheat_block_timestamp_global, start_cheat_caller_address, stop_cheat_caller_address};
+use snforge_std::{start_cheat_caller_address, stop_cheat_caller_address};
 use crate::arrivals::{ArrivalKey, has_arrived};
 use crate::commands::{Command, ExecutionContext};
 use crate::game::{IGameDispatcher, IGameDispatcherTrait};
@@ -94,11 +94,12 @@ pub fn setup_in_deployment(
                     ),
             );
     }
+    let second_id = *ids.at(1);
     snforge_std::interact_with_state(
         deployment.games,
         || {
             crate::logic::structures::StructureState::transfer_owner(
-                ResourceKey { game_id: 3, entity_id: *ids.at(1) }, deployment.actor,
+                ResourceKey { game_id: 3, entity_id: second_id }, deployment.actor,
             );
         },
     );

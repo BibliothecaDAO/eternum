@@ -10,7 +10,7 @@ use crate::bitcoin::{
 use crate::commands::{Command, ExecutionContext};
 use crate::game::{IGameDispatcher, IGameDispatcherTrait};
 use crate::resources::{IResourceOperationsDispatcher, IResourceOperationsDispatcherTrait, ResourceKey, ResourceSlot};
-use crate::tests::state::ResourceObservationTrait;
+use crate::tests::state::{MapObservationTrait, ResourceObservationTrait};
 use crate::troops::Coord;
 use super::resource_commands::{assert_terminal_rejection, execute, grant};
 
@@ -160,7 +160,7 @@ fn mine(deployment: super::Deployment, x: u32) -> ResourceKey {
         ),
     );
     stop_cheat_caller_address(deployment.games);
-    ResourceKey { game_id: 3, entity_id: id }
+    ResourceKey { game_id: 3, entity_id: id.into() }
 }
 
 fn capture(deployment: super::Deployment, mine: ResourceKey, owner: starknet::ContractAddress, timestamp: u64) {
@@ -497,7 +497,7 @@ fn attacking_explorer(deployment: super::Deployment, home: ResourceKey, x: u32) 
     start_cheat_caller_address(deployment.games, deployment.games);
     IResourceOperationsDispatcher { contract_address: deployment.games }
         .initialize_resources(
-            ResourceKey { game_id: 3, entity_id: id },
+            ResourceKey { game_id: 3, entity_id: id.into() },
             100000000000000000000,
             0,
             30,
@@ -872,7 +872,7 @@ fn claim_execution_cost_does_not_grow_with_unrelated_settlements() {
         snforge_std::interact_with_state(
             d.games,
             || crate::logic::map::MapState::relocate_fixture(
-                ResourceKey { game_id: 3, entity_id: id },
+                ResourceKey { game_id: 3, entity_id: id.into() },
                 Coord { alt: false, x: 2000300 + 10 * index, y: 2000000 },
                 home_row.base.category,
                 true,
@@ -880,7 +880,7 @@ fn claim_execution_cost_does_not_grow_with_unrelated_settlements() {
         );
         IResourceOperationsDispatcher { contract_address: d.games }
             .initialize_resources(
-                ResourceKey { game_id: 3, entity_id: id },
+                ResourceKey { game_id: 3, entity_id: id.into() },
                 1000000,
                 1,
                 50,

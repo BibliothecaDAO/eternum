@@ -110,6 +110,7 @@ pub fn seed_game_with_preset(
         registrar.register_preset(preset_id, definition);
     }
     let rules = definition.rules;
+    let preset_id = preset_id;
     snforge_std::interact_with_state(
         registry,
         || {

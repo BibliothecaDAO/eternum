@@ -3,7 +3,9 @@ use snforge_std::{
     EventSpyTrait, EventsFilterTrait, start_cheat_block_timestamp_global, start_cheat_caller_address,
     stop_cheat_caller_address,
 };
-use starknet::storage::{StorageMapReadAccess, StoragePathEntry, StoragePointerReadAccess};
+use starknet::storage::{
+    StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
+};
 use crate::combat::TroopsTrait;
 use crate::commands::{Command, CreateExplorer, Explore};
 use crate::game::{GameStatus, IGameDispatcher, IGameDispatcherTrait, status_at};
@@ -326,7 +328,7 @@ fn eternum_launch_initializes_spires_and_never_uses_entry_capacity() {
     let rules = IGameDispatcher { contract_address: d.games }.rules(1);
     let center = 2147483646 - rules.map_center_offset;
     for alt in array![false, true] {
-        let tile = IMapLogicDispatcher { contract_address: d.games }
+        let _tile = IMapLogicDispatcher { contract_address: d.games }
             .tile(TileKey { game_id: 1, alt, col: center, row: center })
             .unwrap();
         assert_eq!(
@@ -879,7 +881,7 @@ fn open_preset_exploration_discovers_a_camp_and_credits_the_home_realm() {
     assert!(execute_in_game(d, game_id, Command::Explore(Explore { explorer_id, direction: 0 }), 360));
 
     let target = crate::geometry::neighbor(origin, 0);
-    let tile = IMapLogicDispatcher { contract_address: d.games }
+    let _tile = IMapLogicDispatcher { contract_address: d.games }
         .tile(crate::geometry::tile_key(game_id, target))
         .unwrap();
     assert_eq!(
@@ -1804,7 +1806,7 @@ fn assert_capture_at(depth: u8, count: u128, tier: crate::troops::TroopTier, rev
     assert!(explore_with_root(d, game_id, explorer_id, root, reveal_at));
     let coord = crate::geometry::neighbor(army.coord, 0);
     let map = IMapLogicDispatcher { contract_address: d.games };
-    let tile = map.tile(crate::geometry::tile_key(game_id, coord)).unwrap();
+    let _tile = map.tile(crate::geometry::tile_key(game_id, coord)).unwrap();
     let camp_id = map.occupancy(crate::geometry::tile_key(game_id, coord)).unwrap().entity_id;
     let camp = ResourceKey { game_id, entity_id: camp_id };
     assert_eq!(structures.structure(camp).unwrap().base.category, crate::taxonomy::CAMP_CATEGORY);
@@ -2566,7 +2568,6 @@ fn a_full_refill_costs_one_lords_a_point_returns_to_the_pool_and_is_allowed_besi
     snforge_std::interact_with_state(
         d.games,
         || {
-            use starknet::storage::StorageMapWriteAccess;
             let mut budget = crate::logic::lords_budget::budget(game_id).unwrap();
             budget.pool_left -= missing + 7;
             crate::state::write().relics.rollover_budget.write(game_id, Some(budget));
@@ -3213,7 +3214,6 @@ fn frontier_site_discovery_reads_home_knowledge_and_places_only_tile_occupancy()
 
 #[test]
 fn open_frontier_settlement_uses_only_each_players_home_and_entry() {
-    use starknet::storage::{StorageMapWriteAccess, StoragePointerWriteAccess};
     let d = setup();
     let (_, preset) = super::preset_projection::current_definition("frontier");
     registry(d).register_preset(1, preset);

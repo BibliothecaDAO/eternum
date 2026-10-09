@@ -1,5 +1,8 @@
+use core::dict::{Felt252Dict, Felt252DictTrait};
 use snforge_std::interact_with_state;
+use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
 use crate::entity_ids::{allocate_home, claim_home, namespace, reserve_homes};
+use crate::tests::state::MapObservationTrait;
 
 #[test]
 fn home_counters_are_independent_and_game_scoped() {
@@ -74,7 +77,6 @@ fn occupancy_round_trips_full_width_ids_without_changing_terrain() {
 
 #[test]
 fn canonical_occupancy_preserves_the_one_felt_terrain_view() {
-    use crate::tests::state::MapObservationTrait;
     for is_structure in array![false, true] {
         let d = super::setup(true);
         let map = crate::map::IMapLogicDispatcher { contract_address: d.games };
@@ -126,8 +128,6 @@ fn story_v2_wire_has_entity_keys_and_no_contract_order_fields() {
 
 #[test]
 fn two_thousand_open_homes_need_no_preparation_or_shared_counter() {
-    use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
-    use core::dict::{Felt252Dict, Felt252DictTrait};
     let d = super::setup(true);
     interact_with_state(
         d.games,
@@ -151,7 +151,6 @@ fn two_thousand_open_homes_need_no_preparation_or_shared_counter() {
 
 #[test]
 fn colliding_open_namespace_is_probed_without_overwriting_its_owner() {
-    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
     let d = super::setup(true);
     interact_with_state(
         d.games,

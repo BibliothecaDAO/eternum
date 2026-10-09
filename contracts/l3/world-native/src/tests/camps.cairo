@@ -238,7 +238,7 @@ fn exploration_discovers_a_camp_without_moving_the_explorer_into_it() {
     assert!(execute(d, Command::Explore(Explore { explorer_id, direction: 0 }), 140));
     assert_eq!(troops.explorer(key).unwrap().coord, origin);
     let destination = neighbor(origin, 0);
-    let tile = IMapLogicDispatcher { contract_address: d.games }.tile(tile_key(3, destination)).unwrap();
+    let _tile = IMapLogicDispatcher { contract_address: d.games }.tile(tile_key(3, destination)).unwrap();
     let occupancy = IMapLogicDispatcher { contract_address: d.games }.occupancy(tile_key(3, destination)).unwrap();
     assert_eq!(occupancy.category, crate::taxonomy::CAMP_OCCUPIER);
     let camp_id = occupancy.entity_id;
@@ -272,6 +272,6 @@ fn eternum_exploration_does_not_create_a_camp() {
     let troops = GameState { contract_address: d.games };
     let destination = neighbor(troops.explorer(key).unwrap().coord, 0);
     assert!(execute(d, Command::Explore(Explore { explorer_id, direction: 0 }), 140));
-    let tile = IMapLogicDispatcher { contract_address: d.games }.tile(tile_key(3, destination)).unwrap();
+    let _tile = IMapLogicDispatcher { contract_address: d.games }.tile(tile_key(3, destination)).unwrap();
     assert!(IMapLogicDispatcher { contract_address: d.games }.occupancy(tile_key(3, destination)).is_none());
 }

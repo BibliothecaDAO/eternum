@@ -289,7 +289,7 @@ fn reveal_relics_reveal_only_the_ring_without_points_or_discovery() {
         for y in 2000098_u32..2000103 {
             let coord = Coord { alt: false, x, y };
             if crate::geometry::distance(origin, coord) > 0 && crate::geometry::distance(origin, coord) <= 2 {
-                let tile = map.tile(crate::geometry::tile_key(3, coord)).unwrap();
+                let _tile = map.tile(crate::geometry::tile_key(3, coord)).unwrap();
                 assert!(map.occupancy(crate::geometry::tile_key(3, coord)).is_none());
                 revealed += 1;
             }
@@ -322,7 +322,7 @@ fn chest_discovery_is_surface_only_timed_and_skips_reserved_or_occupied_tiles() 
     );
     chest(deployment, origin, 321, 40);
     let actual = crate::geometry::neighbor(expected, 0);
-    let tile = IMapLogicDispatcher { contract_address: deployment.games }
+    let _tile = IMapLogicDispatcher { contract_address: deployment.games }
         .tile(crate::geometry::tile_key(3, actual))
         .unwrap();
     assert_eq!(
@@ -443,7 +443,7 @@ fn relic_configuration_requires_authority_and_application_requires_owner() {
     assert_eq!(super::play_fixture::pins(deployment.games, 3), (release, commitment));
     assert!(
         snforge_std::EventsFilterTrait::emitted_by(
-            snforge_std::EventSpyTrait::get_events(ref rejected), deployment.games,
+            @snforge_std::EventSpyTrait::get_events(ref rejected), deployment.games,
         )
             .events
             .is_empty(),
@@ -665,6 +665,6 @@ fn chest_search_skips_the_explorers_vacated_start_tile() {
         );
     let map = IMapLogicDispatcher { contract_address: deployment.games };
     assert!(map.tile(crate::geometry::tile_key(3, vacated)).is_none());
-    let tile = map.tile(crate::geometry::tile_key(3, Coord { x: 2000212, ..vacated })).unwrap();
+    let _tile = map.tile(crate::geometry::tile_key(3, Coord { x: 2000212, ..vacated })).unwrap();
     assert_eq!(map.occupancy(crate::geometry::tile_key(3, Coord { x: 2000212, ..vacated })).unwrap().category, 34);
 }

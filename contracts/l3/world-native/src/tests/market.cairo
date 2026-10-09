@@ -11,7 +11,7 @@ use crate::market::{
 use crate::registrar::IRegistrarSafeDispatcherTrait;
 use crate::resources::{IResourceOperationsDispatcher, ResourceAmount, ResourceKey, ResourceSlot};
 use crate::rules::RESOURCE_PRECISION;
-use crate::tests::state::ResourceObservationTrait;
+use crate::tests::state::{MapObservationTrait, ResourceObservationTrait};
 use crate::troops::Coord;
 use super::resource_commands::{assert_terminal_rejection, execute, grant};
 
@@ -118,7 +118,7 @@ fn regional_banks_have_pinned_ids_guards_names_and_biome_only_surroundings() {
         let coord = crate::tests::state::StructureObservationTrait::position(structures, key).unwrap();
         for direction in 0_u8..6 {
             let neighbor = crate::geometry::neighbor(coord, direction);
-            let tile = crate::tests::state::MapObservationTrait::tile(tiles, crate::geometry::tile_key(3, neighbor))
+            let _tile = crate::tests::state::MapObservationTrait::tile(tiles, crate::geometry::tile_key(3, neighbor))
                 .unwrap();
             assert!(tiles.occupancy(crate::geometry::tile_key(3, neighbor)).is_none());
         }

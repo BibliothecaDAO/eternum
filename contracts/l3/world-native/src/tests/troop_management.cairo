@@ -178,7 +178,7 @@ fn explorer_transfer_preserves_the_worse_stamina_and_cooldown_and_deletes_an_emp
     assert_eq!(target.stamina.inline().amount, 2);
     assert_eq!(target.battle_cooldown_end, 190);
     assert_eq!(IStructureOperationsDispatcher { contract_address: d.games }.home_armies(home), array![second].span());
-    let tile = crate::tests::state::MapObservationTrait::tile(
+    let _tile = crate::tests::state::MapObservationTrait::tile(
         crate::map::IMapLogicDispatcher { contract_address: d.games }, crate::geometry::tile_key(3, old_position),
     )
         .unwrap();

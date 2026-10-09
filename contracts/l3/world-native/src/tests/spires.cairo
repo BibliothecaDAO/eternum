@@ -76,7 +76,7 @@ fn production_initialization_places_the_same_spire_identity_on_both_layers_witho
         let coord = location(center(d, 3), layout(7), index);
         for alt in array![false, true] {
             let coord = Coord { alt, ..coord };
-            let tile = map(d).tile(tile_key(3, coord)).unwrap();
+            let _tile = map(d).tile(tile_key(3, coord)).unwrap();
             let occupancy = map(d).occupancy(tile_key(3, coord)).unwrap();
             assert_eq!(occupancy.entity_id, Into::<u32, u64>::into(index + 1));
             assert_eq!(occupancy.category, 35);

@@ -1,4 +1,5 @@
 use snforge_std::{EventSpyTrait, EventsFilterTrait};
+use starknet::storage::{StorageMapWriteAccess, StoragePathEntry, StoragePointerWriteAccess};
 use crate::commands::Command;
 use crate::tests::play_fixture::{IPlayFixtureSafeDispatcher, IPlayFixtureSafeDispatcherTrait, TestAction};
 use crate::tests::{Deployment, play_fixture};
@@ -277,8 +278,11 @@ fn fresh_world(ready: bool) -> Deployment {
         snforge_std::interact_with_state(
             d.games,
             || {
-                use starknet::storage::{StoragePathEntry, StoragePointerWriteAccess};
-                crate::logic::preset_record::for_game(1).rollover_chest_rules.write(frontier.economy.chests);
+                crate::state::write()
+                    .presets
+                    .entry(crate::logic::game::preset_commitment(crate::logic::game::game(1)))
+                    .rollover_chest_rules
+                    .write(frontier.economy.chests);
             },
         );
     }
@@ -452,7 +456,6 @@ fn successful_real_draw_paths_stay_applied_across_32_roots() {
 }
 
 fn live_loot_case(raid: bool, insufficient: bool, full: bool) -> (Deployment, TestAction) {
-    use starknet::storage::StorageMapWriteAccess;
     let (d, _, target, attacker, defender) = super::combat_actions::setup_with_cooldown(
         false, 0, super::play_fixture::ETERNUM_RULES | crate::rules::COMBAT_DICE, 0, (1000, 1000),
     );
@@ -519,7 +522,6 @@ fn real_battle_and_guarded_raid_loot_verdicts_do_not_select_a_roll() {
 
 #[test]
 fn real_movement_reward_stays_applied_at_full_and_fractional_stores() {
-    use starknet::storage::StorageMapWriteAccess;
     for capacity in array![0_u128, crate::rules::RESOURCE_PRECISION - 1] {
         for root in 0..ROOTS {
             let (d, action, timestamp) = explorer_case(true);

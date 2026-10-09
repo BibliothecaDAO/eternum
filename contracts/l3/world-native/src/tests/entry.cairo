@@ -1,5 +1,6 @@
 use snforge_std::{EventSpyTrait, EventsFilterTrait, spy_events, start_cheat_caller_address, stop_cheat_caller_address};
 use starknet::ContractAddress;
+use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerWriteAccess};
 use crate::entry::{
     ILedgerOperatorDispatcher, ILedgerOperatorDispatcherTrait, ILedgerOperatorSafeDispatcher,
     ILedgerOperatorSafeDispatcherTrait,
@@ -123,7 +124,6 @@ fn labor_uses_the_held_realm_day_key_and_retry_cannot_transfer_the_claim() {
     snforge_std::interact_with_state(
         d.games,
         || {
-            use starknet::storage::StorageMapWriteAccess;
             crate::state::write()
                 .resources
                 .weights
@@ -160,8 +160,6 @@ fn a_full_labor_store_consumes_the_claim_and_the_preset_can_limit_held_realms() 
     snforge_std::interact_with_state(
         d.games,
         || {
-            use starknet::storage::StoragePathEntry;
-            use starknet::storage::{StorageMapWriteAccess, StoragePointerWriteAccess};
             let preset = crate::state::write()
                 .presets
                 .entry(crate::logic::game::preset_commitment(crate::logic::game::game(game_id)));
@@ -195,7 +193,6 @@ fn a_realm_cannot_receive_daily_labor_in_two_games_on_one_shard() {
     snforge_std::interact_with_state(
         d.games,
         || {
-            use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
             let state = crate::state::write();
             state
                 .games

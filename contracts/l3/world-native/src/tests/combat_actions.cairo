@@ -2,7 +2,6 @@ use snforge_std::{EventSpyTrait, EventsFilterTrait, spy_events, start_cheat_call
 use crate::combat::TroopsTrait;
 use crate::combat_actions::{AttackExplorer, GuardAttack, Raid};
 use crate::commands::{Command, CreateExplorer};
-use crate::games::IGamesAuthenticationDispatcher;
 use crate::guards::{Guard, GuardKey, IGuardsDispatcher, IGuardsDispatcherTrait};
 use crate::map::{IMapLogicDispatcher, IMapLogicDispatcherTrait};
 use crate::resources::{IResourceOperationsDispatcher, ResourceAmount, ResourceKey, ResourceSlot};

@@ -172,7 +172,7 @@ fn reservation_initialization_is_idempotent_and_game_scoped() {
     assert!(pool.reserved_hyperstructures(3) == 7);
     let center = 2147483646 - game_rules.map_center_offset;
     let key = crate::map::TileKey { game_id: 3, alt: false, col: center, row: center };
-    let tile = IMapLogicDispatcher { contract_address: map }.tile(key).unwrap();
+    let _tile = IMapLogicDispatcher { contract_address: map }.tile(key).unwrap();
     let occupancy = IMapLogicDispatcher { contract_address: map }.occupancy(key).unwrap();
     assert_eq!(occupancy.category, 39);
     assert!(occupancy.is_structure);

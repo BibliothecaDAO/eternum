@@ -4,7 +4,7 @@ use snforge_std::{
     ContractClassTrait, DeclareResultTrait, EventSpyTrait, EventsFilterTrait, declare, spy_events,
     start_cheat_block_timestamp, start_cheat_caller_address,
 };
-use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
+use starknet::storage::StorageMapReadAccess;
 use starknet::{ClassHash, ContractAddress};
 use crate::commands::{
     Command, CreateExplorer, ExecutionContext, ICreateExplorerSafeDispatcher, ICreateExplorerSafeDispatcherTrait,
@@ -341,7 +341,7 @@ fn initializer_refuses_zero_owner_launcher_class_and_guardian() {
     let d = setup(true);
     let authentication = IGamesAuthenticationDispatcher { contract_address: d.games }.authentication();
     let release = IReleasesDispatcher { contract_address: d.games }.release(1);
-    for field in 0..4 {
+    for field in 0_u32..4 {
         let owner = if field == 0 {
             0
         } else {
@@ -648,14 +648,14 @@ fn command_list_and_calldata_limits_are_checked_before_root() {
     let (release, preset) = play_fixture::pins(d.games, 1);
     play_fixture::caller(d.games, d.actor, 100);
     let mut directions = array![];
-    for _ in 0..65 {
+    for _ in 0_u32..65 {
         directions.append(0_u8);
     }
     let oversized_list = play_fixture::encode(
         Command::Move(crate::commands::Move { explorer_id: 7, directions: directions.span() }),
     );
     let mut oversized_calldata = array![];
-    for _ in 0..257 {
+    for _ in 0_u32..257 {
         oversized_calldata.append(0);
     }
     for command in array![oversized_list, oversized_calldata.span(), array![0, 7, 256, 0, 0, 0].span()] {

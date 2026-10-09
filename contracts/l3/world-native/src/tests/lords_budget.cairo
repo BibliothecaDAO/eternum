@@ -1,4 +1,5 @@
 use core::dict::{Felt252Dict, Felt252DictTrait};
+use starknet::storage::{StorageMapWriteAccess, StoragePointerReadAccess};
 use crate::logic::lords_budget::{SeasonClock, available, fits, open_day, roll, unlocked};
 use crate::relics::{ChestRules, LordsBudget, roll_tier, tier_value};
 
@@ -133,7 +134,6 @@ fn refused_rolls_feed_the_estimate_and_clear_does_not_count_them_again() {
     snforge_std::interact_with_state(
         d.games,
         || {
-            use starknet::storage::{StorageMapWriteAccess, StoragePointerReadAccess};
             let context = crate::commands::ExecutionContext { timestamp: 360, ..super::context(d.games, game_id) };
             let rules = crate::logic::preset_record::for_game(game_id).rollover_chest_rules.read().unwrap();
             let day = crate::days::day_of(context.game.unbox(), context.rules.unbox().day_unit_seconds, 360).index;
