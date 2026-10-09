@@ -43,7 +43,7 @@ export function NewsHeadlineBridge() {
   const { isMapView } = useQuery();
   const setSelectedHex = useUIStore((state) => state.setSelectedHex);
   const winner = useSeasonWinner();
-  const endRevision = useNativeRevision(["GameRegistry", "BlitzResult"]);
+  const endRevision = useNativeRevision(["BlitzResult", "BlitzRoster", "PlayerPoints"]);
   const goToStructure = useGoToStructure(setup);
   const navigateToMapView = useNavigateToMapView();
   const entityReader = useMemo(() => {
@@ -176,9 +176,9 @@ export function NewsHeadlineBridge() {
 
   // --- Game end detection ---
   useEffect(() => {
-    const headline = resolveGameEndHeadline(setup.store, getScopedGameId(), nowSeconds, winner, getPlayerDisplayName);
+    const headline = resolveGameEndHeadline(setup.store, getScopedGameId(), winner, getPlayerDisplayName);
     if (headline) enqueue(headline);
-  }, [setup.store, nowSeconds, winner, endRevision, enqueue]);
+  }, [setup.store, winner, endRevision, enqueue]);
 
   // --- Navigation handler ---
   const handleNavigate = useCallback(

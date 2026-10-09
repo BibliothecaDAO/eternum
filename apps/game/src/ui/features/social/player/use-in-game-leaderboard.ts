@@ -9,7 +9,7 @@ import { ContractAddress } from "@bibliothecadao/types";
 import { useMemo } from "react";
 import {
   normalizeLeaderboardAddress,
-  readFinalBlitzStandings,
+  readFinalBlitzResult,
   REGISTERED_POINTS_PRECISION,
 } from "./finalized-blitz-leaderboard";
 
@@ -44,13 +44,13 @@ const buildLiveLeaderboard = (store: NativeFactStore): InGameLeaderboard => {
 };
 
 const buildFinalizedBlitzLeaderboard = (store: NativeFactStore): InGameLeaderboard | null => {
-  const finalizedStandings = readFinalBlitzStandings(store, configManager.getActiveGameId());
-  if (!finalizedStandings?.length) return null;
+  const result = readFinalBlitzResult(store, configManager.getActiveGameId());
+  if (result.status !== "final" || !result.standings.length) return null;
 
   return {
     isFinalized: true,
     standingsByAddress: new Map(
-      finalizedStandings.map(({ account, rank, points }) => [
+      result.standings.map(({ account, rank, points }) => [
         normalizeLeaderboardAddress(account),
         {
           address: ContractAddress(account),
