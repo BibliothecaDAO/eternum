@@ -52,7 +52,6 @@ describe("an action's outcome", () => {
       status: "REVERTED",
       revertReason: "stale release",
     });
-    expect(runtime.waitForTransaction).not.toHaveBeenCalled();
   });
 
   it("ends an action the game refused with the game's reason: nothing of it applied", async () => {
@@ -67,7 +66,6 @@ describe("an action's outcome", () => {
       status: "REJECTED",
       revertReason: "explorer is dead",
     });
-    expect(runtime.waitForTransaction).not.toHaveBeenCalled();
   });
 
   it("never treats a malformed library result as applied: it ends refused with its class", async () => {
@@ -105,6 +103,38 @@ describe("an action's outcome", () => {
     await vi.waitFor(() => expect(runtime.subscribeResynced).toHaveBeenCalled());
     runtime.resync(12);
     await expect(outcome).resolves.toMatchObject({ status: "SUCCEEDED" });
+  });
+
+  it("settles from Herald's applied status while the receipt cannot be read", async () => {
+    vi.useFakeTimers();
+    const runtime = runtimeWith(Promise.resolve({ block: 12, hash: TX, status: "PRE_CONFIRMED" }));
+    const rpc = { getTransactionReceipt: vi.fn(async () => Promise.reject(new Error("RPC read unavailable"))) };
+    const outcome = waitForActionOutcome(runtime, rpc, GAMES, TX, running);
+    await vi.advanceTimersByTimeAsync(2_000);
+    await expect(outcome).resolves.toEqual({ hash: TX, block: 12, status: "SUCCEEDED" });
+    expect(vi.getTimerCount()).toBe(0);
+    vi.useRealTimers();
+  });
+
+  it("ends an action Herald says applied nothing as refused with its reason, without the receipt", async () => {
+    const runtime = runtimeWith(
+      Promise.resolve({ block: 12, hash: TX, status: "REJECTED", revertReason: "explorer is dead" }),
+    );
+    const rpc = { getTransactionReceipt: vi.fn(() => new Promise<never>(() => {})) };
+    await expect(waitForActionOutcome(runtime, rpc, GAMES, TX, running)).resolves.toEqual({
+      hash: TX,
+      block: 12,
+      status: "REJECTED",
+      revertReason: "explorer is dead",
+    });
+  });
+
+  it("falls back to the snapshot watch when the session ends Herald's wait, never failing the action", async () => {
+    const runtime = runtimeWith(Promise.reject(new Error("Game sync session was replaced")));
+    const outcome = waitForActionOutcome(runtime, rpcAnswering(receipt({ block_number: 12 })), GAMES, TX, running);
+    await vi.waitFor(() => expect(runtime.subscribeResynced).toHaveBeenCalled());
+    runtime.resync(12);
+    await expect(outcome).resolves.toMatchObject({ status: "SUCCEEDED", block: 12 });
   });
 
   it("stays pending after a reconnect whose snapshot is older than the receipt, until Herald applies it", async () => {

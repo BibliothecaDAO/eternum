@@ -128,13 +128,17 @@ export class GameSyncRuntime {
     return this.session?.transport.transactionStatusChannel === true;
   }
 
+  /**
+   * Herald's status for the transaction, whatever it says: applied, or applied nothing (REVERTED or REJECTED, with the
+   * reason). Rejects only when the wait itself ends: no status channel, or the session was replaced or stopped.
+   */
   public waitForTransaction(transactionHash: string): Promise<GameSyncTransaction> {
     if (!this.hasTransactionStatusChannel()) {
       return Promise.reject(new Error("The active game sync session has no transaction status channel"));
     }
     const identity = normalizeTransactionHash(transactionHash);
     const known = this.recentTransactions.get(identity);
-    if (known) return settleTransaction(known);
+    if (known) return Promise.resolve(known);
 
     return new Promise<GameSyncTransaction>((resolve, reject) => {
       const waiters = this.transactionWaiters.get(identity) ?? [];
@@ -515,10 +519,7 @@ export class GameSyncRuntime {
     const waiters = this.transactionWaiters.get(identity);
     if (!waiters) return;
     this.transactionWaiters.delete(identity);
-    waiters.forEach(({ reject, resolve }) => {
-      if (appliedNothing(transaction)) reject(transactionError(transaction));
-      else resolve(transaction);
-    });
+    waiters.forEach(({ resolve }) => resolve(transaction));
   }
 
   private rejectTransactionWaiters(message: string): void {
@@ -620,18 +621,6 @@ function normalizeTransactionHash(transactionHash: string): string {
   } catch {
     return transactionHash.toLowerCase();
   }
-}
-
-function transactionError(transaction: GameSyncTransaction): Error {
-  return new Error(transaction.revertReason ?? `Transaction ${transaction.hash} reverted`);
-}
-
-/** Reverted before the roll, or refused by the game (rolled back): either way none of it applied. */
-const appliedNothing = (transaction: GameSyncTransaction): boolean =>
-  transaction.status === "REVERTED" || transaction.status === "REJECTED";
-
-function settleTransaction(transaction: GameSyncTransaction): Promise<GameSyncTransaction> {
-  return appliedNothing(transaction) ? Promise.reject(transactionError(transaction)) : Promise.resolve(transaction);
 }
 
 interface Deferred {

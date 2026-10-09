@@ -10,7 +10,7 @@ import {
   addClientTransactionBreadcrumb,
   reportClientTransactionFailure,
 } from "@/observability/transaction-failure-reporting";
-import { useTransactionStore } from "@/hooks/store/use-transaction-store";
+import { statusAfterFailure, useTransactionStore } from "@/hooks/store/use-transaction-store";
 import { recordAdmissionToVisible } from "@/observability/client-action-latency";
 import { getTxMessage } from "@/ui/components/transaction-center/types";
 import { extractReadableErrorMessage } from "@/utils/error-message";
@@ -170,8 +170,7 @@ export const useTransactionListener = () => {
         },
       });
 
-      // Not sent only on proof; any other failure of a sent action is the game's (or the shard's) refusal.
-      const status = payload.failureKind === "not_sent" ? "not_sent" : "reverted";
+      const status = statusAfterFailure(payload);
       if (payload.transactionHash) {
         // Try to update existing transaction
         const existingTx = useTransactionStore.getState().transactions.find((t) => t.hash === payload.transactionHash);

@@ -483,7 +483,7 @@ describe("GameSyncRuntime recovery", () => {
 });
 
 describe("GameSyncRuntime lifecycle", () => {
-  it("resolves and rejects transaction waits from the stream channel", async () => {
+  it("answers every streamed status, an applied-nothing one included, and rejects only when the wait ends", async () => {
     const harness = createSessionHarness({ transactionStatusChannel: true });
     const runtime = new GameSyncRuntime();
     await runtime.startSession(harness.session);
@@ -495,7 +495,11 @@ describe("GameSyncRuntime lifecycle", () => {
 
     const reverted = runtime.waitForTransaction("0xdef");
     harness.emitTransaction({ block: null, hash: "0x0def", revertReason: "game rule", status: "REVERTED" });
-    await expect(reverted).rejects.toThrow("game rule");
+    await expect(reverted).resolves.toMatchObject({ status: "REVERTED", revertReason: "game rule" });
+
+    const ended = runtime.waitForTransaction("0x123");
+    runtime.dispose();
+    await expect(ended).rejects.toThrow("stopped");
   });
 
   it("waits for scheduled rows before publishing a transaction status or releasing its waiters", async () => {
