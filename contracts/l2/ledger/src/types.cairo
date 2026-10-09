@@ -21,6 +21,8 @@ pub struct Preset {
     pub sword_price: u256,
     pub shield_price: u256,
     pub mmr: MmrParams,
+    pub day_unit_seconds: u32,
+    pub season_bags: u32,
 }
 
 #[derive(Copy, Default, Drop, Serde, starknet::Store)]
@@ -115,6 +117,8 @@ pub struct FrontierSeason {
     pub pool: u256,
     pub paid: u256,
     pub closed: bool,
+    pub preset_id: u32,
+    pub seed: felt252,
 }
 
 #[derive(Copy, Drop, Serde, starknet::Store)]
@@ -146,4 +150,11 @@ pub struct BlitzSeason {
 pub struct GameKey {
     pub shard: felt252,
     pub game_id: u32,
+}
+
+// The shared day schedule reads only these launch values, not the world contract's gameplay state.
+#[derive(Copy, Drop)]
+pub struct FrontierClock {
+    pub start_main_at: u64,
+    pub seed: felt252,
 }

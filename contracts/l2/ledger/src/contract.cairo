@@ -28,7 +28,9 @@ pub fn result_commitment(key: GameKey, ranked: Span<RankedPlayer>) -> felt252 {
 pub trait IGameLedger<TState> {
     fn pause(ref self: TState);
     fn unpause(ref self: TState);
-    fn fund_frontier(ref self: TState, shard: felt252, season_id: u32, start: u64, end: u64, amount: u256);
+    fn fund_frontier(
+        ref self: TState, shard: felt252, season_id: u32, preset_id: u32, start: u64, seed: felt252, amount: u256,
+    );
     fn pay(ref self: TState, shard: felt252, season_id: u32, claim_id: felt252, wallet: ContractAddress, amount: u256);
     fn close_frontier(ref self: TState, shard: felt252, season_id: u32);
     fn get_frontier(self: @TState, shard: felt252, season_id: u32) -> FrontierSeason;
@@ -139,7 +141,7 @@ pub mod GameLedger {
 
     #[storage]
     struct Storage {
-        frontier: Map<(felt252, u32), FrontierSeason>,
+        frontier_days: Map<(felt252, u32), FrontierSeason>,
         payments: Map<(felt252, felt252), WithdrawalPayment>,
         treasury: ContractAddress,
         lords: ContractAddress,
@@ -430,16 +432,32 @@ pub mod GameLedger {
             self.pausable.unpause();
         }
 
-        fn fund_frontier(ref self: ContractState, shard: felt252, season_id: u32, start: u64, end: u64, amount: u256) {
+        fn fund_frontier(
+            ref self: ContractState,
+            shard: felt252,
+            season_id: u32,
+            preset_id: u32,
+            start: u64,
+            seed: felt252,
+            amount: u256,
+        ) {
             self.accesscontrol.assert_only_role(DEFAULT_ADMIN_ROLE);
             assert!(shard != 0, "Ledger: zero shard");
-            assert!(!self.frontier.entry((shard, season_id)).read().funded, "Ledger: season already funded");
-            assert!(starknet::get_block_timestamp() <= start && start < end, "Ledger: invalid season window");
+            assert!(!self.frontier_days.entry((shard, season_id)).read().funded, "Ledger: season already funded");
+            let preset = self.get_preset(preset_id);
+            assert!(preset.day_unit_seconds != 0 && preset.season_bags != 0, "Ledger: Frontier days disabled");
+            let duration: u64 = crate::days::UNITS_PER_BAG
+                * Into::<u32, u64>::into(preset.day_unit_seconds)
+                * preset.season_bags.into();
+            let end = start + duration;
+            assert!(starknet::get_block_timestamp() <= start, "Ledger: season already started");
             assert!(amount > 0 && amount <= 0xffffffffffffffffffffffffffffffff, "Ledger: invalid season funding");
             self
-                .frontier
+                .frontier_days
                 .entry((shard, season_id))
-                .write(FrontierSeason { funded: true, start, end, pool: amount, ..Default::default() });
+                .write(
+                    FrontierSeason { funded: true, preset_id, start, end, seed, pool: amount, ..Default::default() },
+                );
             self.pull_lords(starknet::get_caller_address(), amount);
             self.emit(FrontierFunded { shard, season_id, start, end, amount });
         }
@@ -462,7 +480,7 @@ pub mod GameLedger {
             assert!(!season.closed, "Ledger: season closed");
             assert!(amount <= self.frontier_unlocked(shard, season_id) - season.paid, "Ledger: unlock exceeded");
             season.paid += amount;
-            self.frontier.entry((shard, season_id)).write(season);
+            self.frontier_days.entry((shard, season_id)).write(season);
             self.payments.entry((shard, claim_id)).write(WithdrawalPayment { paid: true, season_id, wallet, amount });
             self.send_lords(wallet, amount);
             self.emit(WithdrawalPaid { shard, claim_id, season_id, wallet, amount });
@@ -476,13 +494,13 @@ pub mod GameLedger {
             assert!(starknet::get_block_timestamp() >= season.end, "Ledger: season has not ended");
             let returned = season.pool - season.paid;
             season.closed = true;
-            self.frontier.entry((shard, season_id)).write(season);
+            self.frontier_days.entry((shard, season_id)).write(season);
             self.send_lords(self.treasury.read(), returned);
             self.emit(FrontierClosed { shard, season_id, returned });
         }
 
         fn get_frontier(self: @ContractState, shard: felt252, season_id: u32) -> FrontierSeason {
-            let season = self.frontier.entry((shard, season_id)).read();
+            let season = self.frontier_days.entry((shard, season_id)).read();
             assert!(season.funded, "Ledger: unknown Frontier season");
             season
         }
@@ -490,12 +508,16 @@ pub mod GameLedger {
         fn frontier_unlocked(self: @ContractState, shard: felt252, season_id: u32) -> u256 {
             let season = self.get_frontier(shard, season_id);
             let now = starknet::get_block_timestamp();
-            if now <= season.start {
+            if now < season.start {
                 0
             } else if now >= season.end {
                 season.pool
             } else {
-                season.pool * (now - season.start).into() / (season.end - season.start).into()
+                let preset = self.get_preset(season.preset_id);
+                let clock = crate::types::FrontierClock { start_main_at: season.start, seed: season.seed };
+                let day = crate::days::day_of(clock, preset.day_unit_seconds, now);
+                let end = core::cmp::min(day.end, season.end);
+                season.pool * (end - season.start).into() / (season.end - season.start).into()
             }
         }
 
@@ -888,6 +910,11 @@ pub mod GameLedger {
         }
 
         fn assert_valid_preset(self: @ContractState, preset: Preset) {
+            assert!((preset.day_unit_seconds == 0) == (preset.season_bags == 0), "Ledger: incomplete calendar");
+            let duration = Into::<u32, u128>::into(preset.day_unit_seconds)
+                * Into::<u64, u128>::into(crate::days::UNITS_PER_BAG)
+                * preset.season_bags.into();
+            assert!(duration <= 0xffffffffffffffff, "Ledger: season duration exceeds u64");
             assert!(preset.protocol_cut_bps <= 10_000, "Ledger: invalid protocol cut");
             assert!(preset.chest_lords_bps <= 10_000, "Ledger: invalid chest share");
             assert!(

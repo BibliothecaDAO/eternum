@@ -4,8 +4,16 @@ The Starknet ledger holds separate liabilities for Frontier withdrawals, unfinis
 reserve and season prizes. Games use `{ shard: felt252, game_id: u32 }`; withdrawals use the shard chain ID and
 confirmed transaction hash. The ledger has no deployed state to migrate. The live MMR token remains unchanged.
 
-Frontier is funded once and unlocks linearly from season start to end. Operator payments are immediate, retry-safe and
-bounded by the cumulative unlock. They carry no treasury cut. Only the admin unpauses; the pauser can pause payouts.
+Frontier is funded once and unlocks through the end of the current seeded game day, from that day's first second.
+`fund_frontier(shard, season_id, preset_id, start, seed, amount)` reads the same native preset's `day_unit_seconds` and
+`season_bags` as the shard. Start and seed come from the funded game's single launch record; there is no independent end
+argument. End derives as `start + season_bags * 20 * day_unit_seconds`. The shared calendar's five-day bags hold each
+length 2..6 once. Frontier keeps its own window, independent of Blitz/MMR season windows. Ledger time is its Starknet
+block timestamp; shard time is Madara's block timestamp. Numeric day boundaries match exactly for equal launch inputs
+and timestamps. There is no documented hard bound on cross-chain clock lag: the relay must retain a confirmed claim
+while L2's unlocked amount is insufficient and submit once the independent L2 gate fits. Do not trust a relay-supplied
+future timestamp or unlock future days to conceal clock lag. Operator payments are immediate, retry-safe and bounded by
+the cumulative unlock. They carry no treasury cut. Only the admin unpauses; the pauser can pause payouts.
 
 Blitz settlement takes one `protocol_cut_bps` treasury cut on the whole incoming game pot: entries, paid swords/shields
 and sponsorship. The default is 2000 bps. The remaining pot splits by `chest_lords_bps` into the season's chest reserve
@@ -90,9 +98,9 @@ Build release artifacts first, under the same lock. These commands compile each 
 ```
 
 The owner supplies `SEPOLIA_RPC_URL`, `SEPOLIA_ACCOUNT_ADDRESS`, `SEPOLIA_ACCOUNT_PRIVATE_KEY`,
-`SEPOLIA_OPERATOR_ADDRESS`, `SEPOLIA_PAUSER_ADDRESS`, `SEPOLIA_SHARD_CHAIN_ID` (a non-zero felt),
-`SEPOLIA_SEASON_START`, `SEPOLIA_SEASON_END` (Unix seconds), `SEPOLIA_FRONTIER_POOL_WEI`, `SEPOLIA_CHEST_BAND_1_CID`
-through `SEPOLIA_CHEST_BAND_5_CID`, `SEPOLIA_COSMETIC_CID`, `SEPOLIA_SEASON_PASS_ADDRESS` and
+`SEPOLIA_OPERATOR_ADDRESS`, `SEPOLIA_PAUSER_ADDRESS`, `SEPOLIA_SHARD_CHAIN_ID` (a non-zero felt), `SEPOLIA_GAME_SEED`
+(the funded shard game seed), `SEPOLIA_SEASON_START`, `SEPOLIA_SEASON_END` (Unix seconds), `SEPOLIA_FRONTIER_POOL_WEI`,
+`SEPOLIA_CHEST_BAND_1_CID` through `SEPOLIA_CHEST_BAND_5_CID`, `SEPOLIA_COSMETIC_CID`, `SEPOLIA_SEASON_PASS_ADDRESS` and
 `SEPOLIA_VILLAGE_PASS_ADDRESS`. Pass addresses are required constructor dependencies; the paid-entry rehearsal does not
 invoke them. Choose a start far enough ahead to complete declarations and setup.
 

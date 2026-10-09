@@ -2,6 +2,18 @@ import { describe, expect, it } from "bun:test";
 import { buildLedgerEconomicPreset, buildRegisterLedgerPresetCalldata } from "../ledger/economics";
 
 describe("ledger economics", () => {
+  it("reads the same day unit as the shard's exact immutable preset", async () => {
+    const { nativePresetForId } = await import("../../../source/native");
+    for (const presetId of [5, 101]) {
+      const preset = buildLedgerEconomicPreset("frontier", { presetId });
+      expect(preset.day_unit_seconds).toBe(nativePresetForId(presetId).dayUnitSeconds);
+      expect(preset.season_bags).toBe(nativePresetForId(presetId).seasonBags);
+      expect(buildRegisterLedgerPresetCalldata(presetId, preset)[19]).toBe(String(preset.season_bags));
+      expect(buildRegisterLedgerPresetCalldata(presetId, preset)[18]).toBe(String(preset.day_unit_seconds));
+    }
+    expect(buildLedgerEconomicPreset("blitz").day_unit_seconds).toBe(0);
+    expect(() => buildLedgerEconomicPreset("blitz", { presetId: 5 })).toThrow("game type differs");
+  });
   it("builds the approved Blitz preset", () => {
     const preset = buildLedgerEconomicPreset("blitz");
 
@@ -12,7 +24,7 @@ describe("ledger economics", () => {
       mmr: { enabled: true, mean: 1_500, spread: 450, max_delta: 45, k: 50, regression_bps: 150, min_players: 6 },
     });
     expect(BigInt(preset.entry_fee.low)).toBe(500_000_000_000_000_000_000n);
-    expect(buildRegisterLedgerPresetCalldata(1, preset).length).toBe(85);
+    expect(buildRegisterLedgerPresetCalldata(1, preset).length).toBe(87);
   });
 
   it("disables fees and MMR for Eternum without creating an invalid payout preset", () => {
