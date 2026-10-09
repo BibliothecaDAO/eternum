@@ -195,7 +195,7 @@ describe("home ring", () => {
       live.acceptReceipt({ ...secondMove, finality_status: "PRE_CONFIRMED" });
       applyFrames();
       const assertPendingFacts = (facts = store) => {
-        const positions = [...facts.rows("TileOccupancy")].filter((row) => row.entity_id === 20);
+        const positions = [...facts.rows("TileOccupancy")].filter((row) => row.entity_id === 20n);
         expect(positions.map((row) => row.col)).toEqual([53]);
         expect(facts.require("ResourceBalance", { game_id: 1, entity_id: 1, resource_type: 23 }).balance).toBe(5n);
         expect(facts.require("ExplorerTroops", { game_id: 1, explorer_id: 20 }).troops.stamina).toEqual({
@@ -634,7 +634,7 @@ describe("client and Herald subscription scope parity", () => {
     snapshot();
     // Clock invalidation cannot block an applied actor snapshot's first action.
     store.setSnapshot({ gameId: 1, actor, complete: true, timestamp: undefined });
-    expect(store.requireOrAbsent("ActionNonce", { game_id: 1, actor: 0xbn }).known?.next_nonce).toBe(0n);
+    expect(() => store.require("Structure", { game_id: 1, entity_id: 2n })).not.toThrow();
     expect(store.requireOrAbsent("PlayerPoints", { game_id: 1, address: 0xbn }).unknown).toBe("UNKNOWN_SCOPE_CLOCK");
     state(true);
 
@@ -671,9 +671,7 @@ describe("client and Herald subscription scope parity", () => {
     deliver(subscription!.project({ type: "head", block: 11, preconfirmed: true, timestamp }));
     expect(store.subscriptionScope().known).toEqual(overlay.subscriptionScope("1", actor, timestamp));
     expect(store.requireOrAbsent("PlayerPoints", { game_id: 1, address: 0xan }).known?.points).toBe(0n);
-    expect(store.requireOrAbsent("ActionNonce", { game_id: 1, actor: 0xan }).unknown).toContain(
-      "OUTSIDE_SNAPSHOT_SCOPE",
-    );
+    expect(() => store.require("Structure", { game_id: 1, entity_id: 1n })).toThrow("not synchronized");
 
     timestamp = TODAY.end + 60;
     deliver(subscription!.project({ type: "head", block: 12, preconfirmed: true, timestamp }));

@@ -1,3 +1,4 @@
+import { safeInteger } from "../../../packages/core/src/utils/safe-integer";
 import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { setTimeout as sleep } from "node:timers/promises";
 import { actorKey, type HarnessGameClient, type HeraldConfirmations } from "./game-client";
@@ -162,7 +163,7 @@ function createClientGame(client: GameClient, heraldConfirmations?: HeraldConfir
       if (![...store.inGame("PlayerEntry", game_id)].some((row) => row.player === BigInt(player))) return undefined;
       return [...store.structuresOwnedBy(game_id, BigInt(player))]
         .filter((row) => row.base.category === StructureType.Realm)
-        .map((row) => row.entity_id);
+        .map((row) => safeInteger(row.entity_id));
     },
     structureCoord: (structureId) => {
       const structure = store.get("Structure", { game_id, entity_id: structureId });

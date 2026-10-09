@@ -21,6 +21,11 @@ import {
   type GameSyncScope,
 } from "../sync/model-manifest";
 
+// Key readers accept safe numeric ids; decoding still validates width and preserves bigint rows.
+type ReadKeys<M extends NativeModelName> = {
+  [Field in keyof NativeKeys[M]]: NativeKeys[M][Field] extends bigint ? number | bigint : NativeKeys[M][Field];
+};
+
 export type NativeFactResult<Row> = { known: Row; unknown?: never } | { known?: never; unknown: string };
 
 type UnusedArmySlot = { unused: true; known?: never; unknown?: never };
@@ -98,20 +103,20 @@ export class NativeFactStore implements GameSyncStore {
   private readonly eventListeners = new Set<(event: GameSyncEvent) => void>();
   private readonly listeners = new Set<(changes: readonly NativeFactChange[]) => void>();
 
-  get<M extends NativeModelName>(model: M, keys: NativeKeys[M]): NativeRows[M] | undefined {
+  get<M extends NativeModelName>(model: M, keys: ReadKeys<M>): NativeRows[M] | undefined {
     return this.models.get(model)?.get(factKey(model, keys))?.row as NativeRows[M] | undefined;
   }
 
-  require<M extends NativeModelName>(model: M, keys: NativeKeys[M]): NativeRows[M] {
+  require<M extends NativeModelName>(model: M, keys: ReadKeys<M>): NativeRows[M] {
     const row = this.get(model, keys);
     if (!row) throw new Error(`Native ${model} is not synchronized`);
     return row;
   }
 
-  requireOrAbsent<M extends NativeModelName>(model: M, keys: NativeKeys[M]): AbsenceResult<M>;
+  requireOrAbsent<M extends NativeModelName>(model: M, keys: ReadKeys<M>): AbsenceResult<M>;
   requireOrAbsent<M extends NativeModelName>(
     model: M,
-    keys: NativeKeys[M],
+    keys: ReadKeys<M>,
   ): NativeFactResult<NativeRows[M]> | UnusedArmySlot {
     const present = this.get(model, keys);
     if (present) return { known: present };
@@ -202,12 +207,12 @@ export class NativeFactStore implements GameSyncStore {
       yield this.models.get("Structure")!.get(key)!.row as NativeRows["Structure"];
   }
 
-  *armiesAtHome(gameId: number, home: number): IterableIterator<NativeRows["ExplorerTroops"]> {
+  *armiesAtHome(gameId: number, home: number | bigint): IterableIterator<NativeRows["ExplorerTroops"]> {
     for (const key of this.armyHomeKeys.get(`${gameId}:${home}`) ?? [])
       yield this.models.get("ExplorerTroops")!.get(key)!.row as NativeRows["ExplorerTroops"];
   }
 
-  entityOccupancy(gameId: number, entityId: number): NativeRows["TileOccupancy"] | undefined {
+  entityOccupancy(gameId: number, entityId: number | bigint): NativeRows["TileOccupancy"] | undefined {
     const keys = this.spatialKeys.get(`${gameId}:${entityId}`);
     if (!keys?.size) return undefined;
     if (keys.size !== 1) throw new Error(`Multiple native positions for entity ${gameId}:${entityId}`);

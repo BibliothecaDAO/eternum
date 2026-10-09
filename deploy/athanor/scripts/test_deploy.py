@@ -10,18 +10,25 @@ import deploy
 
 def release():
     return {"tag": "shard-v1.0.0", "commit": "abc", "releaseId": 1, "schema": "0xs", "migrationClassHash": "0x0",
-            "classes": {"games": "0x1", "logic": {"Season": "0x2", "Map": "0x3"}, "account": "0x4"},
+            "classes": {"games": "0x1", "logic": {"Season": "0x2", "Map": "0x3"}, "account": "0x4", "verifier":"0x5"},
             "presets": {"2": "0x20", "5": "0x50", "101": "0x65"}}
 
 
 def deployed():
-    manifest = {"native": {"releaseId": 1, "activeSchema": "0xs", "gamesClassHash": "0x01", "migrationClassHash": "0x0",
+    manifest = {"native": {"releaseId": 1, "activeSchema": "0xs", "gamesClassHash": "0x01", "verifierClassHash":"0x5", "migrationClassHash": "0x0",
                            "logic": {"Season": "0x2", "Map": "0x3"}},
                 "shard": {"accountClassHash": "0x4"}}
     return manifest, {"presets": {"2": "0x20", "5": "0x050"}}
 
 
 class DeployTest(unittest.TestCase):
+    def test_prepare_materializes_the_key_before_the_rpc_file_bind_is_created(self):
+        with patch.object(deploy.subprocess,"run") as run,patch.object(deploy.subprocess,"check_output",return_value="0"):
+            deploy.start(Path("/unused"))
+        commands=[call.args[0] for call in run.call_args_list]
+        self.assertEqual(commands[0][-4:],["run","--rm","--no-deps","prepare"][-5:])
+        self.assertEqual(commands[1][-2:],["up","-d"])
+
     def test_a_shard_running_its_release_has_no_differences(self):
         manifest, initialized = deployed()
         self.assertEqual(deploy.release_differences(release(), manifest, initialized, [2, 5]), [])
@@ -46,7 +53,7 @@ class DeployTest(unittest.TestCase):
         inputs = {"shard_name": "realms-staging-d", "chain_id": "REALMS_STAGING_D", "player_capacity": 96,
                   "guardian_url": "https://staging.test/api/guardian", "presets": [2, 5],
                   "public_rpc_url": "https://rpc.staging.test/rpc/v0_10_2",
-                  "public_admission_url": "https://admission.staging.test", "node_memory": "8g", "herald_memory": "6g"}
+                  "public_herald_url": "https://herald.staging.test","vrf_workers":8,"l2_gas_bound":"0x47868c00", "node_memory": "8g", "herald_memory": "6g"}
         rendered = deploy.render_environment(inputs, "SHARD_INIT_IMAGE=ghcr.io/x@sha256:1\n")
         self.assertIn("SHARD_INIT_IMAGE=ghcr.io/x@sha256:1\n", rendered)
         self.assertIn("PRESETS=2,5\n", rendered)
@@ -99,6 +106,26 @@ class EnrolmentTest(unittest.TestCase):
         preserved = [flag for flag in deploy.compose(Path("/srv/shard")) if flag.startswith("--preserve-env=")]
         self.assertIn("OPERATOR_TOKEN", preserved[0].removeprefix("--preserve-env=").split(","))
 
+
+class ActivationTest(unittest.TestCase):
+    def test_failed_self_check_never_promotes_and_names_first_route(self):
+        events=[]
+        with tempfile.TemporaryDirectory() as temporary:
+            directory=Path(temporary)
+            (directory/"data").mkdir()
+            with patch.object(deploy,"run_self_check",return_value={"passed":False,"firstFailedRoute":"Explore"}), \
+                 patch.object(deploy,"directory_status",side_effect=lambda *_:events.append("active")):
+                with self.assertRaisesRegex(RuntimeError,"Explore"):
+                    deploy.verify_and_activate({"guardian_url":"https://identity.test/api/guardian","public_herald_url":"https://herald.test"},directory)
+        self.assertEqual(events,[])
+
+    def test_only_a_successful_check_promotes_the_registered_pending_shard(self):
+        events=[]
+        config={"guardian_url":"https://identity.test/api/guardian","public_herald_url":"https://herald.test"}
+        with patch.object(deploy.shard,"write_json"),patch.object(deploy,"run_self_check",side_effect=lambda *_:(events.append("check") or {"passed":True})), \
+             patch.object(deploy,"directory_status",side_effect=lambda *args:events.append(args[1])):
+            deploy.verify_and_activate(config,Path("/unused"))
+        self.assertEqual(events,["check","active"])
 
 if __name__ == "__main__":
     unittest.main()

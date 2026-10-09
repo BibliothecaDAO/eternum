@@ -27,7 +27,7 @@ async function deployHostAccount(rpcUrl: string) {
   const data = mkdtempSync(join(tmpdir(), "host-accounts-"));
   writeFileSync(
     join(data, "host-keys.json"),
-    JSON.stringify({ deployerAddress: "0x789", deployerPrivateKey: "0xabc", sequencingPrivateKey: "0xdef" }),
+    JSON.stringify({ deployerAddress: "0x789", deployerPrivateKey: "0xabc" }),
   );
   writeFileSync(join(data, "native-world.json"), JSON.stringify({ shard: { chainId: CHAIN_ID } }));
   const child = Bun.spawn([process.execPath, "deploy/athanor/scripts/host-accounts.ts", "deploy", data], {

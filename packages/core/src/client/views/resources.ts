@@ -10,6 +10,6 @@ export const readResourceManager = (store: NativeFactStore, entityId: ID): Resou
 export const readResourceArrivals = (store: NativeFactStore, structureEntityId: ID): ResourceArrivalInfo[] =>
   formatArrivals(
     [...store.inGame("ResourceArrival", configManager.getActiveGameId())].filter(
-      (row) => row.entity_id === structureEntityId,
+      (row) => row.entity_id === BigInt(structureEntityId),
     ),
   );

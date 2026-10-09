@@ -13,7 +13,6 @@ function realm() {
       game_id: 1,
       name: 1n,
       preset_id: 5,
-      creator: 1n,
       settled: false,
       ready: true,
       dev_mode_on: false,

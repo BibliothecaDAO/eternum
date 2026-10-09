@@ -75,7 +75,8 @@ export class ResourceManager {
             return false;
           const row = change.current ?? change.previous;
           return (
-            row?.game_id === this.gameId && ("entity_id" in row ? row.entity_id : row.structure_id) === this.entityId
+            row?.game_id === this.gameId &&
+            ("entity_id" in row ? row.entity_id : row.structure_id) === BigInt(this.entityId)
           );
         })
       )
@@ -324,7 +325,7 @@ export class ResourceManager {
   }> {
     if (!this.hasResources()) return [];
     return [...this.store.inGame("ResourceProduction", this.gameId)].flatMap((row) => {
-      if (row.entity_id !== this.entityId) return [];
+      if (row.entity_id !== BigInt(this.entityId)) return [];
       const resourceId = row.resource_type as ResourcesIds;
       const production = this.productionForGameClock(row);
       if (!ResourceManager.hasActiveProduction(production, resourceId)) return [];

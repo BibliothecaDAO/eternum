@@ -21,21 +21,20 @@ def configuration():
         "shard": "smoke", "chain_id": "SHARD_A", "port_base": 28050, "cpuset": "8-11,20-23", "node_memory_mib": 16384,
         "player_capacity": 96,
         "herald_image": "sha256:" + "b" * 64,
-        "gateway_image": "sha256:" + "c" * 64, "init_image": "sha256:" + "d" * 64,
+        "init_image": "sha256:" + "d" * 64,
         "metrics_image": "sha256:" + "f" * 64,
         "chain_config": "/tmp/chain-config.yaml",
         "guardian_url": "https://identity.test/api/guardian",
         "public_rpc_url": "https://rpc.test/rpc/v0_10_2",
-        "public_admission_url": "https://rpc.test/rpc/v0_10_2",
+        "public_herald_url":"https://herald.test","vrf_workers":8,"l2_gas_bound":"0x47868c00",
         "node_flags": ["--enable-native-execution=true", "--native-compilation-mode=async"],
         "presets": [2],
     }
 
 
 def write_deployed_world(directory):
-    """The deployment records the gateway's environment is rendered from."""
+    """The deployed owner and public game address."""
     (directory / "gameplay-contracts.json").write_text(json.dumps({"operatorAccountAddress": "0x1"}))
-    (directory / "authority.json").write_text(json.dumps({"address": "0x3", "signingKey": "0x2"}))
     (directory / "native-world.json").write_text(json.dumps({"world": {"address": "0x4"}}))
 
 
@@ -65,7 +64,7 @@ class ShardTest(unittest.TestCase):
         for key, value in (
             ("chain_id", ""), ("chain_id", "a" * 32), ("chain_id", "a\nb"),
             ("port_base", 5050), ("cpuset", "0-23"), ("node_memory_mib", 512), ("player_capacity", 0),
-            ("madara_image", NODE_IMAGE), ("gateway_image", "gateway:latest"), ("shard", "../live"),
+            ("madara_image", NODE_IMAGE), ("vrf_workers",0), ("shard", "../live"),
             ("trusted_proxy", "cloudflared"), ("presets", []), ("presets", ["2"]),
             ("guardian_url", "https://identity.test/api"),
             ("node_flags", ["--base-path=/live"]),
@@ -147,6 +146,21 @@ class ShardTest(unittest.TestCase):
             _, environment = package.harness_invocation([], chosen, data, started)
             self.assertEqual(environment["HARNESS_OUTPUT_DIRECTORY"], "/data/measure/soak/workload")
 
+    def test_container_harness_resolves_files_from_its_data_mount_not_host_paths(self):
+        package = load_package_script("init")
+        with tempfile.TemporaryDirectory() as temporary:
+            data = Path(temporary)
+            shard.write_private_environment(data / "harness.env", {
+                "NATIVE_WORLD_MANIFEST": "/opt/run/data/native-world.json",
+                "GAMEPLAY_CONTRACTS_PATH": "/opt/run/data/gameplay-contracts.json",
+                "SHARD_HOST_ACCOUNTS": "/opt/run/data/host-accounts.json",
+            })
+            _, environment = package.harness_invocation([], {}, data)
+            for field, filename in [("NATIVE_WORLD_MANIFEST", "native-world.json"),
+                                    ("GAMEPLAY_CONTRACTS_PATH", "gameplay-contracts.json"),
+                                    ("SHARD_HOST_ACCOUNTS", "host-accounts.json")]:
+                self.assertEqual(environment[field], str(data / filename))
+
     def test_the_package_harness_runs_as_the_host_user_on_its_own_cpus(self):
         with tempfile.TemporaryDirectory() as temporary, patch.dict(shard.os.environ, {"HARNESS_CPUSET": "20-23"}):
             harness = shard.compose_configuration(configuration(), Path(temporary))["services"]["harness"]
@@ -175,6 +189,7 @@ class ShardTest(unittest.TestCase):
             for name in ("SHARD_A", "SHARD_B"):
                 directory = root / name
                 directory.mkdir()
+                (directory/"host-accounts.json").write_text(json.dumps({"vrfPublicKey":{"x":"0x4","y":"0x5"}}))
                 config = {**configuration(), "chain_id": name, "chain_config": str(template)}
                 guardian = {"publicKey": "0x123", "accountClassHash": "0x456"}
                 with patch("urllib.request.OpenerDirector.open", return_value=io.StringIO(json.dumps(guardian))):
@@ -209,7 +224,7 @@ class ShardTest(unittest.TestCase):
             running.mkdir()
             (running / "memory.max").write_text(str(4 * 2**30) + "\n")
             shard.check_slice_memory(compose, slice_directory)
-            (running / "memory.max").write_text(str(5 * 2**30) + "\n")
+            (running / "memory.max").write_text(str(6 * 2**30) + "\n")
             with self.assertRaisesRegex(ValueError, "over its 10240 MiB"):
                 shard.check_slice_memory(compose, slice_directory)
             (running / "memory.max").write_text("max\n")
@@ -220,7 +235,7 @@ class ShardTest(unittest.TestCase):
         rendered = {"name": "athanor-smoke", "services": {
             name: {"environment": {"OPERATOR_TOKEN": "operator-secret"}, "volumes": []}
             for name in ("prepare", "init", "harness")
-        } | {name: {"command": [], "environment": {}} for name in ("madara", "postgres", "herald", "gateway", "rpc")}}
+        } | {name: {"command": [], "environment": {}} for name in ("madara", "postgres", "herald", "rpc")}}
         with tempfile.TemporaryDirectory() as directory, \
              patch.object(shard.subprocess, "check_output", return_value=json.dumps(rendered)):
             compose = shard.compose_configuration(configuration(), Path(directory))
@@ -262,11 +277,11 @@ class ShardTest(unittest.TestCase):
     def test_collector_output_is_the_harness_metrics_input(self):
         with tempfile.TemporaryDirectory() as temporary:
             directory = Path(temporary)
-            environment = {"HERALD_PUBLIC_RPC_URL": "https://rpc.test", "HERALD_PUBLIC_ADMISSION_URL": "https://admission.test"}
+            environment = {"HERALD_PUBLIC_RPC_URL": "https://rpc.test"}
             shard.prepare_runtime_files(directory, environment)
             config = json.loads((directory / "collector.json").read_text())
             self.assertEqual(config["service"]["pipelines"]["metrics"], {
-                "receivers": ["otlp", "prometheus"], "exporters": ["file"],
+                "receivers": ["otlp"], "exporters": ["file"],
             })
             self.assertEqual(config["exporters"]["file"]["path"], "/data/metrics.jsonl")
             self.assertEqual((directory / "metrics").stat().st_mode & 0o777, 0o700)
@@ -283,7 +298,7 @@ class ShardTest(unittest.TestCase):
 
     def test_player_capacity_stops_at_campaign_g_target(self):
         config = {"chain_id": "REALMS_TEST", "guardian_url": "https://id.test/api/guardian",
-                  "public_rpc_url": "https://rpc.test", "public_admission_url": "https://admission.test"}
+                  "public_rpc_url": "https://rpc.test", "public_herald_url": "https://herald.test"}
         shard.validate_shard_identity({**config, "player_capacity": 2000})
         shard.validate_shard_identity({**config, "player_capacity": shard.MAX_PLAYER_CAPACITY})
         with self.assertRaisesRegex(ValueError, "1 to 2000, campaign G's target"):
@@ -308,38 +323,15 @@ class ShardTest(unittest.TestCase):
         preserved = [flag for flag in shard.DOCKER if flag.startswith("--preserve-env")]
         self.assertEqual(preserved, ["--preserve-env=OPERATOR_TOKEN,HARNESS_CPUSET"])
 
-    def test_the_collector_scrapes_the_gateway_metrics_listener_not_its_admission_port(self):
-        with tempfile.TemporaryDirectory() as temporary:
-            directory = Path(temporary)
-            write_deployed_world(directory)
-            shard.write_gateway_environment({"player_capacity": 96}, directory)
-            gateway = dict(line.split("=", 1) for line in (directory / "gateway.env").read_text().splitlines())
-            [target] = shard.collector_configuration()["receivers"]["prometheus"]["config"]["scrape_configs"][0][
-                "static_configs"][0]["targets"]
-            self.assertEqual(target.split(":")[1], gateway["GATEWAY_METRICS_LISTEN"].split(":")[1])
-            self.assertNotEqual(gateway["GATEWAY_METRICS_LISTEN"], gateway["GATEWAY_LISTEN"])
+    def test_the_collector_has_no_retired_gateway_scrape(self):
+        collector=shard.collector_configuration()
+        self.assertEqual(set(collector["receivers"]),{"otlp"})
+        self.assertNotIn("gateway",json.dumps(collector))
 
-    def test_the_gateway_starts_with_a_descriptor_for_every_connection_it_admits(self):
-        # Docker starts containers at a soft limit of 1024 open files, and the gateway does not raise its own.
-        config = {**configuration(), "player_capacity": 2000}
-        with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary)
-            for name in ("config", "public"):
-                (root / name).mkdir()
-            write_deployed_world(root / "config")
-            shard.write_gateway_environment(config, root / "config")
-            (root / "public" / "proxy.env").write_text("")
-            gateway = root / "realms-gateway"
-            gateway.write_text("#!/bin/sh\nulimit -Sn\n")
-            gateway.chmod(0o755)
-            # The runner renders the package's Compose file, so this is the entrypoint both start; Compose unescapes $$.
-            shell, flag, script = shard.compose_configuration(config, root / "run")["services"]["gateway"]["entrypoint"]
-            script = (script.replace("$$", "$").replace("/config/", f"{root}/config/")
-                      .replace("/public/", f"{root}/public/").replace("/usr/local/bin/realms-gateway", str(gateway)))
-            hard = resource.getrlimit(resource.RLIMIT_NOFILE)[1]
-            started = subprocess.run([shell, flag, script], capture_output=True, text=True, check=True,
-                                     preexec_fn=lambda: resource.setrlimit(resource.RLIMIT_NOFILE, (1024, hard)))
-        self.assertEqual(int(started.stdout), shard.admission_connections(config) + shard.GATEWAY_OWN_FILES)
+    def test_worker_count_and_fixed_bound_are_required(self):
+        config=configuration()
+        for changes in ({"vrf_workers":0},{"vrf_workers":65},{"l2_gas_bound":"0x0"},{"l2_gas_bound":"0x10000000000000000"}):
+            with self.assertRaises(ValueError):shard.validate_configuration({**config,**changes},set(range(8,12))|set(range(20,24)))
 
     def test_the_package_runs_its_collector_within_its_budget_and_the_node_exports_to_it(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -408,23 +400,13 @@ class ShardTest(unittest.TestCase):
 
     def test_environment_rejects_line_injection(self):
         with tempfile.TemporaryDirectory() as temporary, self.assertRaises(ValueError):
-            shard.write_private_environment(Path(temporary) / "gateway.env", {"KEY": "value\nOTHER=bad"})
+            shard.write_private_environment(Path(temporary) / "private.env", {"KEY": "value\nOTHER=bad"})
 
-    def test_a_trial_runs_its_package_images_and_builds_a_lever_gateway(self):
-        package = {"init_image": "ghcr.io/i@sha256:" + "1" * 64, "herald_image": "ghcr.io/h@sha256:" + "2" * 64,
-                   "gateway_image": "ghcr.io/g@sha256:" + "3" * 64}
-        lever = "sha256:" + "4" * 64
-        with patch.object(shard, "release_images", return_value=package) as release, \
-             patch.object(shard, "gateway_image_at", return_value=lever) as build:
-            base = shard.resolve_images({"package": "shard-v1.0.0"})
-            trial = shard.resolve_images({"package": "shard-v1.0.0", "gateway_revision": "abc1234",
-                                          "herald_image": "sha256:" + "5" * 64})
-        self.assertEqual({key: base[key] for key in package}, package)
-        self.assertEqual(trial["gateway_image"], lever)
-        self.assertEqual(trial["herald_image"], "sha256:" + "5" * 64)
-        self.assertEqual(trial["init_image"], package["init_image"])
-        release.assert_called_with("shard-v1.0.0")
-        build.assert_called_once_with("abc1234")
+    def test_release_image_resolution_has_no_gateway_build(self):
+        package={"init_image":"sha256:"+"1"*64,"herald_image":"sha256:"+"2"*64,"metrics_image":"sha256:"+"3"*64}
+        with patch.object(shard,"release_images",return_value=package):
+            self.assertEqual(shard.resolve_images({"package":"shard-v1"}),{"package":"shard-v1",**package})
+        with self.assertRaises(ValueError):shard.validate_configuration({**configuration(),"gateway_revision":"old"},set(range(8,12))|set(range(20,24)))
 
     def test_matrix_runs_in_order_and_stops_only_its_own_projects(self):
         for failure in (None, RuntimeError("workload failed")):
@@ -480,13 +462,13 @@ class PackageStartTest(unittest.TestCase):
         self.addCleanup(temporary.cleanup)
         root = Path(temporary.name)
         self.data = root / "data"
-        self.volumes = {name: root / name for name in ("PUBLIC", "HERALD_CONFIG", "GATEWAY_CONFIG", "POSTGRES_CONFIG")}
+        self.volumes = {name: root / name for name in ("PUBLIC", "HERALD_CONFIG", "POSTGRES_CONFIG")}
         for volume in self.volumes.values():
             volume.mkdir()
         self.write_initialized_data()
         self.environ = {
             "CHAIN_ID": "COMMUNITY", "GUARDIAN_URL": "https://identity.test/api/guardian",
-            "PUBLIC_RPC_URL": "https://rpc.test/rpc/v0_10_2", "PUBLIC_ADMISSION_URL": "https://admission.test",
+            "PUBLIC_RPC_URL": "https://rpc.test/rpc/v0_10_2", "PUBLIC_HERALD_URL":"https://herald.test","VRF_WORKERS":"8","L2_GAS_BOUND":"0x47868c00",
             "PLAYER_CAPACITY": "16",
             "TRUSTED_PROXY": "172.18.0.1",
         }
@@ -506,7 +488,7 @@ class PackageStartTest(unittest.TestCase):
             "initialized.json": {"chainId": "0x1", "world": "0x4"},
             # A record written before init kept only identity: operational settings beside it are ignored.
             "init-configuration.json": {"shard": "community", "chain_id": "COMMUNITY", "port_base": 0,
-                                        "guardian_url": "https://identity.test/api/guardian", "player_capacity": 16,
+                                        "guardian_url": "https://identity.test/api/guardian", "l2_gas_bound":"0x47868c00", "player_capacity": 16,
                                         "madara_image": NODE_IMAGE, "public_rpc_url": "https://rpc.test/rpc/v0_10_2"},
         }
         for name, value in files.items():
@@ -529,7 +511,7 @@ class PackageStartTest(unittest.TestCase):
         self.start()
         for volume, name in (("PUBLIC", "chain-config.yaml"), ("PUBLIC", "collector.json"), ("PUBLIC", "proxy.env"),
                              ("PUBLIC", "native-world.json"), ("PUBLIC", "gameplay-contracts.json"),
-                             ("HERALD_CONFIG", "herald.env"), ("GATEWAY_CONFIG", "gateway.env")):
+                             ("HERALD_CONFIG", "herald.env")):
             with self.subTest(name=name):
                 self.assertTrue(self.published(volume, name).exists())
         self.assertEqual(self.published("POSTGRES_CONFIG", "postgres-password").read_text(), "restored-password")
@@ -539,21 +521,33 @@ class PackageStartTest(unittest.TestCase):
     def test_operational_settings_change_on_restart_and_identity_never_does(self):
         self.start()
         self.start(PLAYER_CAPACITY="200", PUBLIC_RPC_URL="https://rpc.moved.test/rpc/v0_10_2")
-        gateway = shard.read_private_environment(self.published("GATEWAY_CONFIG", "gateway.env"))
-        self.assertEqual(gateway["GATEWAY_PLAYER_CAPACITY"], "200")
         herald = shard.read_private_environment(self.published("HERALD_CONFIG", "herald.env"))
         self.assertEqual(herald["HERALD_PUBLIC_RPC_URL"], "https://rpc.moved.test/rpc/v0_10_2")
-        for settings in ({"CHAIN_ID": "OTHER"}, {"GUARDIAN_URL": "https://other.test/api/guardian"}):
+        for settings in ({"CHAIN_ID": "OTHER"}, {"GUARDIAN_URL": "https://other.test/api/guardian"}, {"L2_GAS_BOUND":"0x1"}):
             with self.subTest(settings=settings), self.assertRaisesRegex(ValueError, "never reinitialize"):
                 self.start(**settings)
 
-    def test_the_gateway_signs_as_the_submitter_authority_json_records(self):
+    def test_restart_verifies_the_existing_vrf_credential_without_rotation(self):
         self.start()
-        (self.data / "authority.json").write_text(json.dumps({"address": "0x7", "signingKey": "0x8"}))
-        self.start()
-        gateway = shard.read_private_environment(self.published("GATEWAY_CONFIG", "gateway.env"))
-        self.assertEqual((gateway["RANDOMNESS_ACCOUNT"], gateway["RANDOMNESS_PRIVATE_KEY"]), ("0x7", "0x8"))
+        run_calls=shard.run.call_args_list
+        self.assertTrue(any("verify-vrf" in call.args[0] for call in run_calls))
+        self.assertFalse(any("prepare-authority" in str(call.args[0]) for call in run_calls))
 
+
+class PendingEnrollmentTest(unittest.TestCase):
+    def test_pending_registration_precedes_every_operator_enrollment(self):
+        package=load_package_script("init")
+        events=[]
+        with tempfile.TemporaryDirectory() as temporary:
+            data=Path(temporary)
+            (data/"native-world.json").write_text(json.dumps({"shard":{"chainId":"0x1"},"world":{"address":"0x2"}}))
+            with patch.object(package,"DATA",data),patch.dict("os.environ",{"OPERATOR_TOKEN":"test-token"}), \
+                 patch("deploy.directory_status",side_effect=lambda *_:events.append("pending")), \
+                 patch.object(shard,"wait_for_endpoint"),patch.object(shard,"save_harness_environment"), \
+                 patch.object(shard,"deploy_world",side_effect=lambda *_:events.append("enroll-and-deploy")), \
+                 patch.object(shard,"run"):
+                package.deploy_world_once(configuration(),{"RPC_URL":"http://node","HERALD_URL":"http://herald"})
+        self.assertEqual(events,["pending","enroll-and-deploy"])
 
 if __name__ == "__main__":
     unittest.main()

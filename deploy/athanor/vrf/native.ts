@@ -1,9 +1,10 @@
+import { ec } from "starknet";
 import { dlopen, FFIType, ptr } from "bun:ffi";
 import { lstatSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { felt, STAMP_TAG, type PlayInvoke } from "./transaction";
 
-const ORDER = 0x800000000000010fffffffffffffffffb781126dcae7b2321e66a241adc64d2fn;
+const ORDER = ec.starkCurve.CURVE.n;
 function bytes(value: string): Uint8Array {
   if (!/^0x[0-9a-fA-F]{1,64}$/.test(value)) throw new Error("Invalid fixed-width value");
   return new Uint8Array(Buffer.from(value.slice(2).padStart(64, "0"), "hex"));

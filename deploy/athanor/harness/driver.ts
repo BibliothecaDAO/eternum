@@ -1423,16 +1423,6 @@ export function createRpcMetrics(): RpcMetrics {
   };
 }
 
-async function measureRpc<T>(rpc: RpcMetrics, method: MeasuredRpcMethod, call: () => Promise<T>): Promise<T> {
-  const startedAt = performance.now();
-  rpc[method].calls += 1;
-  try {
-    return await call();
-  } finally {
-    rpc[method].wallMs += performance.now() - startedAt;
-  }
-}
-
 function snapshotRpcMetrics(rpc: RpcMetrics): RpcMetrics {
   return {
     estimateInvokeFee: snapshotRpcMethod(rpc.estimateInvokeFee),

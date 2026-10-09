@@ -1,3 +1,4 @@
+import { safeInteger } from "./safe-integer";
 import { type ID, type MarketInterface, type Resource, ResourcesIds } from "@bibliothecadao/types";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import type { NativeFactStore } from "../client/native-fact-store";
@@ -25,14 +26,14 @@ export const computeTrades = (
   [...orders]
     .filter((order) => order.remaining_lots > 0n && order.expires_at > currentBlockTimestamp)
     .map((order) => {
-      const { takerGets, makerGets } = getTradeResources(order.trade_id, store);
+      const { takerGets, makerGets } = getTradeResources(safeInteger(order.trade_id), store);
       const maker = store.require("Structure", { game_id: order.game_id, entity_id: order.maker_id });
       return {
         makerName: maker.owner === 0n ? "" : (playerName(maker.owner) ?? ""),
         originName: getStructureName(maker, isBlitz).name,
-        tradeId: order.trade_id,
-        makerId: order.maker_id,
-        takerId: order.taker_id,
+        tradeId: safeInteger(order.trade_id),
+        makerId: safeInteger(order.maker_id),
+        takerId: safeInteger(order.taker_id),
         makerGivesMinResourceAmount: Number(order.offered_per_lot),
         takerPaysMinResourceAmount: Number(order.requested_per_lot),
         makerGivesMaxResourceCount: Number(order.remaining_lots),

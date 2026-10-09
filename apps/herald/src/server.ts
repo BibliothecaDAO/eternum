@@ -1,3 +1,4 @@
+import { waitForWorldDocument } from "./deployment";
 import { createNativeWorldIngestion } from "./native/world-ingestion";
 import { NativeDecoder } from "./native/decoder";
 import { NativeIngestion } from "./native/ingestion";
@@ -65,6 +66,7 @@ const streamGameId = (pathname: string): string | undefined => /^\/games\/([0-9]
 
 const main = async (): Promise<void> => {
   const config = readConfig();
+  await waitForWorldDocument(config.manifestPath, config.port, config.publicRpcUrl);
   const manifest = readShardDocument(await readFile(config.manifestPath, "utf8"));
   const shardManifest = buildShardManifest(manifest, { rpcUrl: config.publicRpcUrl });
   const native = new NativeIngestion(new NativeDecoder(manifest));
