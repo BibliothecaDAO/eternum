@@ -1,4 +1,6 @@
-import { byteArray, hash, shortString, type GetTransactionReceiptResponse } from "starknet";
+import { hash, shortString, type GetTransactionReceiptResponse } from "starknet";
+
+import { decodeByteArray } from "./native-receipt";
 
 import type { BatchTransactionReceipt, NativeExecutionOutcome, NativeTicketIdentity } from "@bibliothecadao/types";
 
@@ -25,7 +27,7 @@ export function nativeExecutionOutcomes(events: readonly Event[], games: string)
 function decodeExecution(event: Event): NativeExecutionOutcome {
   if (event.data.length < 10) throw new Error("Malformed native execution outcome");
   const [game, actor, nonce, consumed, order, status, statusClass] = event.data.slice(0, 7).map(BigInt);
-  const reason = decodeReason(event.data.slice(7));
+  const reason = decodeByteArray(event.data.slice(7));
   if (
     nonce < 0n ||
     nonce >= 2n ** 64n ||
@@ -46,25 +48,6 @@ function decodeExecution(event: Event): NativeExecutionOutcome {
     statusClass: statusClass === 0n ? "" : shortString.decodeShortString(`0x${statusClass.toString(16)}`),
     reason,
   };
-}
-
-/** Replaces the old one-felt reason decoder; validate the entire Cairo ByteArray before decoding it. */
-function decodeReason(fields: string[]): string {
-  const count = Number(BigInt(fields[0]));
-  if (!Number.isSafeInteger(count) || count < 0 || fields.length !== count + 3)
-    throw new Error("Malformed native rejection reason");
-  const data = fields.slice(1, count + 1);
-  const pending = BigInt(fields[count + 1]);
-  const length = BigInt(fields[count + 2]);
-  if (
-    data.some((word) => BigInt(word) < 0n || BigInt(word) >= 1n << 248n) ||
-    length < 0n ||
-    length >= 31n ||
-    pending < 0n ||
-    pending >= 1n << (8n * length)
-  )
-    throw new Error("Invalid native rejection reason");
-  return byteArray.stringFromByteArray({ data, pending_word: pending.toString(), pending_word_len: Number(length) });
 }
 
 function attachBatchProgress(outcomes: NativeExecutionOutcome[], event: Event): void {

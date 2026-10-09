@@ -1,4 +1,6 @@
 export { completeNativeBatches, nativeExecutionOutcomes } from "./native-batch";
+export { batchRemaining, gameplayRejection } from "./native-receipt";
+export type { GameplayRejection } from "./native-receipt";
 export type { BatchTransactionReceipt, NativeExecutionOutcome } from "@bibliothecadao/types";
 import { requireBatchReceipt } from "./native-batch";
 export { encodeNativeCommand } from "./native-command";
@@ -554,7 +556,9 @@ export class EternumProvider extends EventEmitter {
       throw attachTransactionFailureStage(error, "confirmation");
     });
 
-    if (transaction.status === "REVERTED") {
+    // Reverted before the roll (the shard's checks) or refused by the game (rolled back, reason recorded): either way
+    // nothing applied, and the player reads the reason.
+    if (transaction.status === "REVERTED" || transaction.status === "REJECTED") {
       const rawRevertReason = transaction.revertReason;
       const revertReason = extractErrorMessage(rawRevertReason, "Unknown revert reason");
       const message = `Transaction failed with reason: ${revertReason}`;
