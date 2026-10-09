@@ -34,6 +34,12 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-10-09",
+    title: "Email codes protect wallet changes",
+    description: "Link, replace or unlink your payout wallet with a six-digit code sent to your verified email.",
+    type: "fix",
+  },
+  {
     date: "2026-10-07",
     title: "Site rewards before attacking",
     description:

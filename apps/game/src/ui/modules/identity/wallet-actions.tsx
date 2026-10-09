@@ -13,13 +13,13 @@ import { failureSentence, WrongNetworkError } from "./identity-failures";
  * The only surface with wallet connectors, loaded as its own chunk when a signed-in player links a wallet on the
  * account page. Nothing else loads a wallet, so signing in never starts one.
  */
-export const WalletLink = () => (
+export const WalletLink = ({ code }: { code: string }) => (
   <StarknetProvider>
-    <WalletConnectors />
+    <WalletConnectors code={code} />
   </StarknetProvider>
 );
 
-const WalletConnectors = () => {
+const WalletConnectors = ({ code }: { code: string }) => {
   const refresh = useIdentitySessionStore((state) => state.refresh);
   const { connectAsync, connectors, connector: connectedConnector } = useConnect();
   const { disconnectAsync } = useDisconnect();
@@ -49,12 +49,12 @@ const WalletConnectors = () => {
   );
 
   const linkWallet = async (connector: Connector) => {
-    if (running.current) return;
+    if (running.current || !/^\d{6}$/.test(code)) return;
     running.current = true;
     setPending(connector.id);
     setError(null);
     try {
-      await identityClient.linkWallet(await walletProof(connector));
+      await identityClient.linkWallet({ ...(await walletProof(connector)), code });
       await refresh();
     } catch (cause) {
       setError(failureSentence("link", cause));
@@ -70,7 +70,7 @@ const WalletConnectors = () => {
         <Button
           key={connector.id}
           className="w-full !whitespace-normal px-4 py-2 leading-tight"
-          disabled={pending !== null}
+          disabled={pending !== null || !/^\d{6}$/.test(code)}
           isLoading={pending === connector.id}
           onClick={() => void linkWallet(connector)}
         >
