@@ -9,7 +9,7 @@ const ACCOUNT_CLASSES = new Map([
   [felt("0x03d16c7a9a60b0593bd202f660a28c5d76e0403601d9ccc7e4fa253b6a70c201"), "braavos"],
 ]);
 
-/** This runs only after mainnet confirms absence. Address, constructor authorities and every required signature bind together. */
+/** This runs only after the environment chain confirms absence. Address, constructor authorities and every required signature bind together. */
 export const verifyUndeployedProof = (
   message: SiwsTypedData,
   signature: string[],

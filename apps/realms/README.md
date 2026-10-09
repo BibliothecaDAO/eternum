@@ -1,10 +1,10 @@
 # Rating reads and their operating cost
 
-The identity Worker serves one mainnet token rating fact. `RatingReader` shares immutable values and a full ranking by
-block hash across callers and isolates. Its SQLite cache keeps 32 recent snapshots and survives a restart. There is no
-mutable current-rating table. D1 identity/wallet resolution happens outside that cache, so a link change does not freeze
-the reader's identity. An explicit `block_hash` reads a retained snapshot; unknown/evicted hashes return 503 without
-requesting arbitrary historical blocks from the paid RPC.
+The identity Worker serves one environment-chain token rating fact. `RatingReader` shares immutable values and a full
+ranking by block hash across callers and isolates. Its SQLite cache keeps 32 recent snapshots and survives a restart.
+There is no mutable current-rating table. D1 identity/wallet resolution happens outside that cache, so a link change
+does not freeze the reader's identity. An explicit `block_hash` reads a retained snapshot; unknown/evicted hashes return
+503 without requesting arbitrary historical blocks from the paid RPC.
 
 Token reads use Starknet RPC 0.9 read methods over JSON-RPC 2.0, batches of at most 100 and no scalar fallback if the
 provider rejects a batch. The provider must support this read surface and batch size. A persisted limit of 10,000
@@ -21,17 +21,17 @@ at the named hash. Deploy the portal route and corrected existing MMR indexer be
 advances the watermark on empty confirmed blocks, and its insert-only rollback identity is the transaction hash: every
 inserted event in a reverted transaction is removed together. No new Postgres table/migration.
 
-Costs below count upstream mainnet HTTP requests / RPC methods. P is the former event-page count and N is the total
-indexed holder count (top 20 still ranks against everyone). The before counts were measured against the pre-fix reader.
+Costs below count upstream L2 HTTP requests / RPC methods. P is the former event-page count and N is the total indexed
+holder count (top 20 still ranks against everyone). The before counts were measured against the pre-fix reader.
 
 | Read          | Before cold or repeated | After cold object/snapshot | After warm same hash     |
 | ------------- | ----------------------- | -------------------------- | ------------------------ |
-| 24-seat lobby | 26 /26                  | 2 /26                      | latest:1 /1; pinned:0 /0 |
-| top 20        | N+P+2 /N+P+2            | 1+ceil(N/100) /N+2         | 0 /0                     |
+| 24-seat lobby | 26 /26                  | 3 /26                      | latest:1 /1; pinned:0 /0 |
+| top 20        | N+P+2 /N+P+2            | 2+ceil(N/100) /N+2         | 0 /0                     |
 
-After the object has verified mainnet, another cold snapshot saves that one chain-check method. Top cold adds two portal
-SQL requests (HEAD, GET); warm adds one cheap watermark read (HEAD), with no history scan or paid token call. For
-N=1000, top 20 costs 11 mainnet HTTP requests /1002 methods cold, zero warm. These numbers are pinned by local
+After the object has verified its configured chain, another cold snapshot saves that one chain-check method. Top cold
+adds two portal SQL requests (HEAD, GET); warm adds one cheap watermark read (HEAD), with no history scan or paid token
+call. For N=1000, top 20 costs 12 L2 HTTP requests /1002 methods cold, zero warm. These numbers are pinned by local
 network-count tests; no paid live-provider benchmark was run.
 
 ## Consumer cadence
@@ -52,11 +52,11 @@ code, not a request for the frontend lane to change it.
 - The existing factory slots query really polls every3s (20 requests/minute per visible factory). This is a separate
   caller and does not turn ratings into a three-second poll. Population HEAD/GET is backend traffic only.
 
-For24 lobby viewers mounting once during one minute/block:624 mainnet HTTP requests /624 methods before;25 /49 after
-(one cold reader plus23 warm latest readers), or2 /26 with a shared explicit pin. With100 Season mounts per minute,
-N=1000 and P=10:101200 /101200 before;11 /1002 after plus101 portal SQL reads. These are entry/remount workload
-examples, not measured or configured polling frequencies. An unchanged mounted screen generates no subsequent rating
-requests. A different hash incurs cold work, and the fixed method ceiling still bounds aggregate demand.
+For24 lobby viewers mounting once during one minute/block:624 L2 HTTP requests /624 methods before;26 /49 after (one
+cold reader plus23 warm latest readers), or3 /26 with a shared explicit pin. With100 Season mounts per minute, N=1000
+and P=10:101200 /101200 before;12 /1002 after plus101 portal SQL reads. These are entry/remount workload examples, not
+measured or configured polling frequencies. An unchanged mounted screen generates no subsequent rating requests. A
+different hash incurs cold work, and the fixed method ceiling still bounds aggregate demand.
 
 ## Rating identities
 
@@ -72,3 +72,20 @@ guardian-approved `realms_accounts` mapping and the user's linked wallet. It is 
 identity returns `unknown_identity`; an approved identity without a wallet returns `unlinked`. An account's self-claimed
 onchain Realms id is never used. This adds one D1 join, no store or polling schedule. Native Blitz automatic rating
 commits and game deltas remain deferred; these endpoints are read-only.
+
+## Environment L2
+
+`L2_CHAIN_ID` is required for the environment. Wallet proofs, Realm ownership and rating reads use that chain and
+`IDENTITY_RPC_URL`, which must be its HTTPS Alchemy endpoint; redirects are refused. The Worker checks the provider's
+chain before reading contracts. A missing or invalid setting fails environment initialization, and a proof naming
+another chain is refused before signature verification or nonce consumption. Deployed accounts retain contract
+verification; offchain verification still requires confirmed absence and allow-listed deployment data.
+
+`REALMS_ADDRESS`, `RATING_TOKEN_ADDRESS` and `RATING_HISTORY_URL` name this environment's collections and indexed
+population. No mainnet address or population source is inferred for staging. Labor ownership runs through the private
+`ValueIdentity.realmOwnerOf` service binding; the relay's second Realms RPC is removed. Rating readers are named by the
+configured chain, so staging cannot reuse a mainnet reader cache.
+
+The deployment workflow maps the existing `CLIENT_L2_CHAIN` environment variable to `L2_CHAIN_ID` and the existing
+`CLIENT_IDENTITY_RPC_URL` secret to `IDENTITY_RPC_URL`. It checks the public contract/history settings before migrations
+or secret writes. This is repository wiring only; operators configure and deploy the environment.

@@ -15,7 +15,7 @@ import { DurableChestStore, finishRequestedChests } from "./chests";
 import { DurableObject, WorkerEntrypoint } from "cloudflare:workers";
 import { Effect, Result, Semaphore } from "effect";
 import { ledgerResultAdapter, ledgerMonitorReads } from "./ledger";
-import { ledgerPaymentAdapter, ledgerPaymentRead, ledgerReportAdapter, realmsOwnershipAdapter } from "./chain";
+import { ledgerPaymentAdapter, ledgerPaymentRead, ledgerReportAdapter } from "./chain";
 import { presentsOperatorToken } from "@realms-world/identity";
 import { identityAdapter } from "./adapters";
 import { runRelay, grantDailyLabor } from "./relay";
@@ -36,8 +36,8 @@ interface RelayEnv {
   LEDGER_FEE_TOKEN_ADDRESS: string;
   LEDGER_OPERATOR_ADDRESS: string;
   LEDGER_OPERATOR_PRIVATE_KEY: string;
-  REALMS_ADDRESS: string;
   IDENTITY: {
+    realmOwnerOf(realmId: string): Promise<string>;
     accountLinkTargets(after: string | null): Promise<{ rows: AccountLinkTarget[]; next: string | null }>;
     accountLinkTarget(key: string): Promise<AccountLinkTarget>;
     recordLedgerLinkWrite(target: AccountLinkTarget, write: LedgerAccountLinkWrite): Promise<void>;
@@ -225,10 +225,7 @@ const relayPortsOf = (env: RelayEnv, storage: DurableObjectStorage): RelayPorts 
     identity: identityAdapter(env.IDENTITY),
     ledger: ledgerPortsOf(env),
     realms: {
-      ownerOf: (realmId) =>
-        relayOperation("read Realm owner", () =>
-          Effect.runPromise(realmsOwnershipAdapter(env.LEDGER_RPC_URL, env.REALMS_ADDRESS).ownerOf(realmId)),
-        ),
+      ownerOf: (realmId) => relayOperation("read Realm owner", () => env.IDENTITY.realmOwnerOf(realmId)),
     },
     shard: {
       ...shardWithdrawalPorts(

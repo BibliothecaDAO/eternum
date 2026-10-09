@@ -1,8 +1,10 @@
 import type { SiwsTypedData, WalletDeployment } from "@realms-world/identity";
 import { verifyUndeployedProof } from "./undeployed-proof";
 import { RpcError, RpcProvider, verifyMessageInStarknet } from "starknet";
+import { identityL2Configuration, identityProvider, verifyIdentityChain } from "./l2";
+import type { IdentityChainId } from "@realms-world/identity";
 
-/** Deployed wallets use their confirmed mainnet contract; absent wallets require bound deployment data. */
+/** Deployed wallets use their confirmed environment-chain contract; absent wallets require bound deployment data. */
 export type VerifyWalletSignature = (
   message: SiwsTypedData,
   signature: string[],
@@ -12,11 +14,14 @@ export type VerifyWalletSignature = (
 
 export class WalletNotDeployedError extends Error {}
 
-/** Offchain verification is allowed only after mainnet explicitly reports that the account is absent. */
-export const verifyWalletOnMainnet =
-  (rpcUrl: string): VerifyWalletSignature =>
+/** Offchain verification is allowed only after the environment chain explicitly reports that the account is absent. */
+export const verifyWalletOnL2 =
+  (env: { L2_CHAIN_ID: IdentityChainId; IDENTITY_RPC_URL: string }): VerifyWalletSignature =>
   async (message, signature, address, deployment) => {
-    const provider = new RpcProvider({ nodeUrl: rpcUrl, blockIdentifier: "latest" });
+    const { chainId } = identityL2Configuration(env);
+    if (message.domain.chainId !== chainId) throw new Error("identity_proof_chain_mismatch");
+    const provider = identityProvider(env);
+    await verifyIdentityChain(provider, env);
     try {
       return await verifyMessageInStarknet(
         provider,
@@ -26,7 +31,7 @@ export const verifyWalletOnMainnet =
       );
     } catch (error) {
       if (!(await isUndeployedWallet(provider, address))) throw error;
-      if (!deployment) throw new WalletNotDeployedError("Wallet is not deployed on Starknet mainnet");
+      if (!deployment) throw new WalletNotDeployedError("Wallet is not deployed on the environment chain");
       return verifyUndeployedProof(message, signature, address, deployment);
     }
   };

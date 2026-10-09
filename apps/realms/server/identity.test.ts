@@ -48,7 +48,7 @@ const countSignInCode = (email: string) => {
   return codesRequested.get(email)!;
 };
 
-/** Mainnet wallets by address: each signs the SIWS message's SNIP-12 hash with its own Stark key. */
+/** Environment-chain wallets by address: each signs the SIWS message's SNIP-12 hash with its own Stark key. */
 const walletKeys = new Map<string, string>();
 const createWallet = (): string => {
   const privateKey = `0x${Buffer.from(crypto.getRandomValues(new Uint8Array(31))).toString("hex")}`;
@@ -58,8 +58,8 @@ const createWallet = (): string => {
   walletKeys.set(BigInt(address).toString(16), privateKey);
   return address;
 };
-// The wallet contract's own check runs on mainnet; this one checks the same signature over the same message hash.
-const verifyAsMainnet = vi.fn<VerifyWalletSignature>(async (message, signature, address) => {
+// The wallet contract's own check runs on its configured chain; this one checks the same signature over the same message hash.
+const verifyAsWallet = vi.fn<VerifyWalletSignature>(async (message, signature, address) => {
   const privateKey = walletKeys.get(BigInt(address).toString(16));
   if (!privateKey || signature.length !== 2) return false;
   const hash = typedData.getMessageHash(message as unknown as TypedData, address);
@@ -97,7 +97,11 @@ beforeAll(async () => {
     ACCOUNT_CLASS_HASH,
     BETTER_AUTH_SECRET: "identity-test-secret-identity-test-secret",
     RATING_READER: {} as IdentityEnv["RATING_READER"],
-    IDENTITY_RPC_URL: "http://127.0.0.1:1",
+    L2_CHAIN_ID: "SN_SEPOLIA",
+    REALMS_ADDRESS: "0x30",
+    RATING_TOKEN_ADDRESS: "0x31",
+    RATING_HISTORY_URL: "https://realms.world/api/ratings/population",
+    IDENTITY_RPC_URL: "https://starknet-sepolia.g.alchemy.com/v2/test",
     OPERATOR_TOKEN: OPERATOR_TOKEN,
     DISCORD_CLIENT_ID: "discord-client",
     DISCORD_CLIENT_SECRET: "discord-secret",
@@ -122,7 +126,7 @@ beforeAll(async () => {
     VERSION: { id: "test", tag: "", timestamp: "" },
   };
   auth = createIdentityAuth(env, {
-    verifyWalletSignature: verifyAsMainnet,
+    verifyWalletSignature: verifyAsWallet,
     sendWalletNotice: notices,
     sendSignInCode: async (email, code) => void sentCodes.set(email, code),
   });
@@ -191,14 +195,19 @@ const createBrowser = (parentDomainCookies: string[] = []) => {
 };
 
 /** Proves a wallet to the identity service, to link it or to recover the account it is linked to. */
-const proveWallet = async (browser: ReturnType<typeof createBrowser>, address: string, path: "link") => {
+const proveWallet = async (
+  browser: ReturnType<typeof createBrowser>,
+  address: string,
+  path: "link",
+  chainId = env.L2_CHAIN_ID,
+) => {
   const { nonce, realmsId } = (await (await browser.request("/api/auth/siws/nonce", { body: { address } })).json()) as {
     nonce: string;
     realmsId: string;
   };
   const message = buildSiwsMessage({
     address,
-    chainId: "SN_MAIN",
+    chainId,
     domain: new URL(ORIGIN).host,
     nonce,
     uri: ORIGIN,
@@ -966,11 +975,24 @@ describe("identity Worker", () => {
     expect(after!.count).toBe(before!.count + 1);
   });
 
+  it("accepts the environment proof chain and rejects a mainnet proof before signature verification", async () => {
+    const browser = createBrowser();
+    await signInWithCode(browser, "sepolia-proof@realms.test");
+    const address = createWallet();
+    verifyAsWallet.mockClear();
+    const refused = await proveWallet(browser, address, "link", "SN_MAIN");
+    expect(refused.status).toBe(401);
+    expect(verifyAsWallet).not.toHaveBeenCalled();
+    expect((await browser.session())!.user.address).toBeNull();
+    expect((await proveWallet(browser, address, "link")).status).toBe(200);
+    expect(verifyAsWallet.mock.calls.at(-1)![0].domain.chainId).toBe("SN_SEPOLIA");
+  });
+
   it("names an undeployed wallet without linking it or consuming its nonce", async () => {
     const browser = createBrowser();
     await signInWithCode(browser, "undeployed-wallet@realms.test");
     const address = createWallet();
-    verifyAsMainnet.mockRejectedValueOnce(new WalletNotDeployedError("Wallet is not deployed"));
+    verifyAsWallet.mockRejectedValueOnce(new WalletNotDeployedError("Wallet is not deployed"));
     const refused = await proveWallet(browser, address, "link");
     expect(refused.status).toBe(400);
     expect(await refused.json()).toMatchObject({ code: "WALLET_NOT_DEPLOYED" });
@@ -1107,7 +1129,7 @@ describe("identity Worker", () => {
     };
     const message = buildSiwsMessage({
       address,
-      chainId: "SN_MAIN",
+      chainId: env.L2_CHAIN_ID,
       domain: new URL(ORIGIN).host,
       nonce,
       uri: ORIGIN,
@@ -1192,7 +1214,7 @@ describe("identity Worker", () => {
     const address = createWallet();
     expect((await proveWallet(browser, address, "link")).status).toBe(200);
     const before = (await browser.session())!.user;
-    const proof = verifyAsMainnet.mock.calls.at(-1)!;
+    const proof = verifyAsWallet.mock.calls.at(-1)!;
     expect(
       (
         await browser.request("/api/auth/siws/link", {

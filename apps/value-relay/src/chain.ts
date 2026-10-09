@@ -1,5 +1,5 @@
 import { rpcAt } from "@realms-world/value-ledger";
-import { Account, RpcProvider } from "starknet";
+import { Account } from "starknet";
 import type { RelayPorts } from "./ports";
 import { frontierPayment } from "./adapters";
 import { Effect } from "effect";
@@ -127,24 +127,6 @@ export const ledgerPaymentAdapter = (
         return yield* Effect.fail(new RelayFailure({ operation: "ledger_clock_behind_wallet_hold" }));
       yield* pay(withdrawal, wallet);
     });
-};
-
-/** Read current ERC721 ownership at a confirmed Starknet head for every labor request. */
-export const realmsOwnershipAdapter = (rpcUrl: string, contractAddress: string): RelayPorts["realms"] => {
-  const provider = rpcAt(rpcUrl);
-  return {
-    ownerOf: (realmId) =>
-      relayOperation("read Realm owner", async () => {
-        const id = BigInt(realmId);
-        if (id < 0n || id >= 2n ** 256n) throw new Error("invalid_realm_id");
-        const owner = await provider.callContract(
-          { contractAddress, entrypoint: "owner_of", calldata: [String(id & (2n ** 128n - 1n)), String(id >> 128n)] },
-          "latest",
-        );
-        if (owner.length !== 1) throw new Error("invalid_realm_owner");
-        return owner[0]!;
-      }),
-  };
 };
 
 /** Pausing is idempotent at the port, including a retry after the pause transaction landed. */

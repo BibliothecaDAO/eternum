@@ -24,11 +24,12 @@ implemented. Result retries first check the stored game commitment; event cursor
 receipts, result decoding and labor grants are pending their published schemas. Those ports fail explicitly and relay
 health remains unavailable while that value job cannot run. Shard-originated payouts and labor await those interfaces.
 
-Relay runtime values: `SHARD_CHAIN_ID`, `LEDGER_RPC_URL`, `LEDGER_ADDRESS`, `LEDGER_OPERATOR_ADDRESS`, `REALMS_ADDRESS`.
-`LEDGER_OPERATOR_PRIVATE_KEY` is a Worker secret for the Starknet operator. The shard ledger-operator adapter will use
-its own Worker secret when the grant interface arrives; no host-held signing key is reused. Monitor runtime values:
-`LEDGER_RPC_URL`, `LEDGER_ADDRESS`, `PAUSER_ACCOUNT_ADDRESS`; its separate Worker secret is `PAUSER_PRIVATE_KEY`. Do not
-place either credential in variables, source, logs, deployment artifacts or shard files.
+Relay runtime values: `SHARD_CHAIN_ID`, `LEDGER_RPC_URL`, `LEDGER_ADDRESS`, `LEDGER_OPERATOR_ADDRESS`. Realm ownership
+is read through private identity on its configured L2 chain. `LEDGER_OPERATOR_PRIVATE_KEY` is a Worker secret for the
+Starknet operator. The shard ledger-operator adapter will use its own Worker secret when the grant interface arrives; no
+host-held signing key is reused. Monitor runtime values: `LEDGER_RPC_URL`, `LEDGER_ADDRESS`, `PAUSER_ACCOUNT_ADDRESS`;
+its separate Worker secret is `PAUSER_PRIVATE_KEY`. Do not place either credential in variables, source, logs,
+deployment artifacts or shard files.
 
 `wrangler.jsonc` describes the relay and `monitor.wrangler.jsonc` the independent monitor. No deployment is part of this
 change. The new persistence replaces an otherwise lossy block poll; no existing relay existed to remove.

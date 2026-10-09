@@ -1,4 +1,5 @@
 import { Schema } from "effect";
+import { identityL2Configuration } from "./l2";
 import type { Guardian } from "@realms-world/guardian";
 
 /**
@@ -14,7 +15,12 @@ const IdentityVars = Schema.Struct({
   /** The RealmsAccount class every shard deploys player accounts from. */
   ACCOUNT_CLASS_HASH: Schema.NonEmptyString,
   BETTER_AUTH_SECRET: Schema.NonEmptyString,
-  /** A Starknet mainnet RPC, for Sign in with Starknet signature checks. */
+  /** The environment's one L2 chain, shared by proofs, Realm ownership and ratings. */
+  L2_CHAIN_ID: Schema.Literals(["SN_MAIN", "SN_SEPOLIA"]),
+  REALMS_ADDRESS: Schema.NonEmptyString,
+  RATING_TOKEN_ADDRESS: Schema.NonEmptyString,
+  RATING_HISTORY_URL: Schema.NonEmptyString,
+  /** Only the configured chain's HTTPS Alchemy RPC is accepted. */
   IDENTITY_RPC_URL: Schema.NonEmptyString,
   /** The environment's one operator token for all automation: listing shards and changing their status here. */
   OPERATOR_TOKEN: Schema.NonEmptyString,
@@ -58,21 +64,54 @@ export interface IdentityEnv extends Schema.Schema.Type<typeof IdentityVars> {
 
 const decodeIdentityVars = Schema.decodeUnknownSync(IdentityVars, { onExcessProperty: "ignore" });
 
-export const decodeIdentityEnv = (raw: Record<string, unknown>): IdentityEnv => ({
-  ...decodeIdentityVars(raw),
-  DB: raw.DB as D1Database,
-  ACCOUNT_LINKS: raw.ACCOUNT_LINKS as IdentityEnv["ACCOUNT_LINKS"],
-  GUARDIAN: raw.GUARDIAN as Guardian,
-  LAUNCH: raw.LAUNCH as IdentityEnv["LAUNCH"],
-  RATING_READER: raw.RATING_READER as IdentityEnv["RATING_READER"],
-  PUBLIC_RATE_LIMIT: raw.PUBLIC_RATE_LIMIT as RateLimit,
-  DIRECTORY_RATE_LIMIT: raw.DIRECTORY_RATE_LIMIT as RateLimit,
-  SIGN_IN_CODE_RATE_LIMIT: raw.SIGN_IN_CODE_RATE_LIMIT as RateLimit,
-  VERSION: raw.VERSION as WorkerVersionMetadata,
-  SHARD_NOTIFIER: raw.SHARD_NOTIFIER as IdentityEnv["SHARD_NOTIFIER"],
-  CHAT_ROOM: raw.CHAT_ROOM as IdentityEnv["CHAT_ROOM"],
-  CHAT_INBOX: raw.CHAT_INBOX as IdentityEnv["CHAT_INBOX"],
-});
+export const decodeIdentityEnv = (raw: Record<string, unknown>): IdentityEnv => {
+  // Validate private RPC configuration without putting its value in a schema error.
+  identityL2Configuration(raw as unknown as IdentityEnv);
+  requireIdentityReadTargets(raw);
+  const vars = decodeWithoutValues(raw);
+  return {
+    ...vars,
+    DB: raw.DB as D1Database,
+    ACCOUNT_LINKS: raw.ACCOUNT_LINKS as IdentityEnv["ACCOUNT_LINKS"],
+    GUARDIAN: raw.GUARDIAN as Guardian,
+    LAUNCH: raw.LAUNCH as IdentityEnv["LAUNCH"],
+    RATING_READER: raw.RATING_READER as IdentityEnv["RATING_READER"],
+    PUBLIC_RATE_LIMIT: raw.PUBLIC_RATE_LIMIT as RateLimit,
+    DIRECTORY_RATE_LIMIT: raw.DIRECTORY_RATE_LIMIT as RateLimit,
+    SIGN_IN_CODE_RATE_LIMIT: raw.SIGN_IN_CODE_RATE_LIMIT as RateLimit,
+    VERSION: raw.VERSION as WorkerVersionMetadata,
+    SHARD_NOTIFIER: raw.SHARD_NOTIFIER as IdentityEnv["SHARD_NOTIFIER"],
+    CHAT_ROOM: raw.CHAT_ROOM as IdentityEnv["CHAT_ROOM"],
+    CHAT_INBOX: raw.CHAT_INBOX as IdentityEnv["CHAT_INBOX"],
+  };
+};
+
+const decodeWithoutValues = (raw: Record<string, unknown>) => {
+  try {
+    return decodeIdentityVars(raw);
+  } catch {
+    throw new Error("identity_environment_invalid");
+  }
+};
+const requireIdentityReadTargets = (raw: Record<string, unknown>) => {
+  for (const name of ["REALMS_ADDRESS", "RATING_TOKEN_ADDRESS"] as const) {
+    const value = raw[name];
+    if (
+      typeof value !== "string" ||
+      !/^0x[0-9a-fA-F]{1,64}$/.test(value) ||
+      BigInt(value) <= 0n ||
+      BigInt(value) >= (1n << 251n) - 256n
+    )
+      throw new Error(`${name} requires a nonzero contract address`);
+  }
+  let url: URL;
+  try {
+    url = new URL(String(raw.RATING_HISTORY_URL));
+  } catch {
+    throw new Error("RATING_HISTORY_URL requires HTTPS");
+  }
+  if (url.protocol !== "https:") throw new Error("RATING_HISTORY_URL requires HTTPS");
+};
 
 export const vapidKeysOf = (env: IdentityEnv) => ({
   publicKey: env.WEB_PUSH_VAPID_PUBLIC_KEY,

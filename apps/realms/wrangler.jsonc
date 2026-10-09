@@ -21,6 +21,7 @@
       "routes": [{ "pattern": "play.dev-realms.party/api/*", "zone_name": "dev-realms.party" }],
       "vars": {
         "ENVIRONMENT": "staging",
+        "L2_CHAIN_ID": "SN_SEPOLIA",
         "BASE_URL": "https://play.dev-realms.party",
         "ACCOUNT_CLASS_HASH": "0x68995feeefffc1647118073e1ff16179f07eb8eed6c8fb03cce73109f5fbacd",
         "SHARD_NOTIFIER_POLL_MS": "3000",
@@ -54,6 +55,7 @@
       "routes": [{ "pattern": "play.realms.party/api/*", "zone_name": "realms.party" }],
       "vars": {
         "ENVIRONMENT": "production",
+        "L2_CHAIN_ID": "SN_MAIN",
         "BASE_URL": "https://play.realms.party",
         "ACCOUNT_CLASS_HASH": "0x68995feeefffc1647118073e1ff16179f07eb8eed6c8fb03cce73109f5fbacd",
         "SHARD_NOTIFIER_POLL_MS": "3000",

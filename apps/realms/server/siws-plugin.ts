@@ -9,6 +9,7 @@ import { authorizeSiwsNonce, SiwsVerificationError } from "./siws-verification";
 import { WalletNotDeployedError, type VerifyWalletSignature } from "./wallet-signature";
 
 interface SiwsPluginOptions {
+  chainId: import("@realms-world/identity").IdentityChainId;
   /** The app's origin: a signed message must name its host. */
   origin: string;
   verifySignature: VerifyWalletSignature;
@@ -66,7 +67,7 @@ export const siws = (options: SiwsPluginOptions) => {
     if (nonce.value !== message.message.nonce) throw unauthorized("Nonce mismatch");
     if (normalizeStarknetAddress(message.message.address) !== owner) throw unauthorized("Address mismatch");
     if (message.domain.name !== expectedHost) throw unauthorized(`Domain mismatch (signed=${message.domain.name})`);
-    if (message.domain.chainId !== "SN_MAIN") throw unauthorized("Unsupported network");
+    if (message.domain.chainId !== options.chainId) throw unauthorized("Unsupported network");
     try {
       await authorizeSiwsNonce({
         verifySignature: () => options.verifySignature(message, proof.signature, proof.address, proof.deployment),

@@ -1,3 +1,5 @@
+import { identityL2Configuration, verifyIdentityChain, fetchIdentityRpc } from "./l2";
+import type { IdentityEnv } from "./env";
 import { DurableObject } from "cloudflare:workers";
 import { RpcProvider } from "starknet";
 import { openRatingLedger, readLedgerRatings, ratingPoints } from "./rating-ledger";
@@ -8,10 +10,7 @@ interface Snapshot {
   values: Record<string, string>;
   entries: { player: string; rating: string; rank: number }[] | null;
 }
-interface Env {
-  IDENTITY_RPC_URL: string;
-}
-const HISTORY_URL = "https://realms.world/api/ratings/population";
+type Env = Pick<IdentityEnv, "L2_CHAIN_ID" | "IDENTITY_RPC_URL" | "RATING_TOKEN_ADDRESS" | "RATING_HISTORY_URL">;
 const RPC_METHODS_PER_MINUTE = 10000;
 
 /** One cache and budget across callers and isolates. Every cached value belongs to a verified immutable block hash. */
@@ -20,6 +19,7 @@ export class RatingReader extends DurableObject<Env> {
   private provider: RpcProvider;
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
+    identityL2Configuration(env);
     ctx.storage.sql.exec(
       "CREATE TABLE IF NOT EXISTS snapshots (hash TEXT PRIMARY KEY, data TEXT NOT NULL, used INTEGER NOT NULL)",
     );
@@ -54,7 +54,7 @@ export class RatingReader extends DurableObject<Env> {
       const history = await this.history();
       let snapshot = this.cached(history.block_hash);
       if (!snapshot) {
-        const ledger = await openRatingLedger(this.provider, history.block_hash);
+        const ledger = await openRatingLedger(this.provider, this.env, history.block_hash);
         if (ledger.block !== history.block_number) throw new Error("History checkpoint does not match chain");
         snapshot = this.newSnapshot(ledger.block, ledger.blockHash);
       }
@@ -79,7 +79,7 @@ export class RatingReader extends DurableObject<Env> {
     return row ? (JSON.parse(row.data) as Snapshot) : null;
   }
   private async latest() {
-    const ledger = await openRatingLedger(this.provider);
+    const ledger = await openRatingLedger(this.provider, this.env);
     return this.cached(ledger.blockHash) ?? this.newSnapshot(ledger.block, ledger.blockHash);
   }
   private newSnapshot(block: number, hash: string): Snapshot {
@@ -100,7 +100,9 @@ export class RatingReader extends DurableObject<Env> {
   private async completeValues(snapshot: Snapshot, owners: string[]) {
     const missing = [...new Set(owners)].filter((owner) => snapshot.values[owner] === undefined);
     if (!missing.length) return;
+    await verifyIdentityChain(this.provider, this.env);
     const ledger = {
+      ratingToken: this.env.RATING_TOKEN_ADDRESS,
       provider: this.provider,
       signal: AbortSignal.timeout(10000),
       block: snapshot.block_number,
@@ -130,7 +132,7 @@ export class RatingReader extends DurableObject<Env> {
     });
   }
   private async historyHead() {
-    const response = await fetch(HISTORY_URL, {
+    const response = await fetch(this.env.RATING_HISTORY_URL, {
       method: "HEAD",
       signal: AbortSignal.timeout(5000),
       redirect: "manual",
@@ -151,7 +153,7 @@ export class RatingReader extends DurableObject<Env> {
     return { block_number: Number(number), block_hash: `0x${BigInt(hash).toString(16)}` };
   }
   private async history() {
-    const response = await fetch(HISTORY_URL, {
+    const response = await fetch(this.env.RATING_HISTORY_URL, {
       signal: AbortSignal.timeout(5000),
       redirect: "manual",
       headers: { "cache-control": "no-cache" },
@@ -188,6 +190,6 @@ export class RatingReader extends DurableObject<Env> {
     const used = saved?.minute === minute ? saved.used : 0;
     if (used + cost > RPC_METHODS_PER_MINUTE) throw new Error("Rating RPC budget exhausted");
     await this.ctx.storage.put("rpc-budget", { minute, used: used + cost });
-    return fetch(input, { ...init, signal: AbortSignal.timeout(10000) });
+    return fetchIdentityRpc(input, { ...init, signal: AbortSignal.timeout(10000) });
   }
 }

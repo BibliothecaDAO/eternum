@@ -1,12 +1,6 @@
 import { Effect } from "effect";
 import { beforeEach, expect, it, vi } from "vitest";
-import {
-  ledgerPaymentAdapter,
-  ledgerPaymentRead,
-  ledgerReportAdapter,
-  ledgerPauserAdapter,
-  realmsOwnershipAdapter,
-} from "./chain";
+import { ledgerPaymentAdapter, ledgerPaymentRead, ledgerReportAdapter, ledgerPauserAdapter } from "./chain";
 
 const rpc = vi.hoisted(() => ({ execute: vi.fn(), call: vi.fn(), wait: vi.fn(), block: vi.fn() }));
 vi.mock("starknet", () => ({
@@ -67,17 +61,6 @@ it("makes a monitor pause retry harmless once the pause already landed", async (
   expect(rpc.execute).toHaveBeenCalledWith({ contractAddress: "0x10", entrypoint: "pause", calldata: [] });
   expect(rpc.wait).toHaveBeenCalledWith("0xabc");
 });
-it("reads live Realm ownership at latest confirmed with u256 input", async () => {
-  rpc.call.mockResolvedValue(["0x123"]);
-  expect(
-    await Effect.runPromise(realmsOwnershipAdapter("https://ledger.test", "0x30").ownerOf(String(2n ** 128n + 4n))),
-  ).toBe("0x123");
-  expect(rpc.call).toHaveBeenCalledWith(
-    { contractAddress: "0x30", entrypoint: "owner_of", calldata: ["4", "1"] },
-    "latest",
-  );
-});
-
 it("keeps a confirmed claim queued until L2 reaches the shard receipt clock", async () => {
   rpc.block.mockResolvedValue({ status: "ACCEPTED_ON_L2", timestamp: 999 });
   const pay = ledgerPaymentAdapter(credentials, async () => true);

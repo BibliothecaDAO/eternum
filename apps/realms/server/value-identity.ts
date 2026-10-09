@@ -5,7 +5,8 @@ import { WorkerEntrypoint } from "cloudflare:workers";
 import { normalizeStarknetAddress } from "@realms-world/identity";
 import { realmsAccountAddress } from "@realms-world/identity/account";
 import { Effect } from "effect";
-import type { IdentityEnv } from "./env";
+import { decodeIdentityEnv, type IdentityEnv } from "./env";
+import { realmOwnerOf } from "./l2";
 import { realmsIdsOfAccounts } from "./realms-accounts";
 import { lookupPayoutWallet, readLinkedWallet, wasReadyPayoutWallet } from "./payout-wallet";
 
@@ -13,6 +14,9 @@ import { lookupPayoutWallet, readLinkedWallet, wasReadyPayoutWallet } from "./pa
 export class ValueIdentity extends WorkerEntrypoint<IdentityEnv> {
   override fetch() {
     return new Response(null, { status: 404 });
+  }
+  realmOwnerOf(realmId: string) {
+    return realmOwnerOf(decodeIdentityEnv(this.env as unknown as Record<string, unknown>), realmId);
   }
   private async linkPins() {
     return { accountClassHash: this.env.ACCOUNT_CLASS_HASH, guardianPublicKey: await this.env.GUARDIAN.publicKey() };

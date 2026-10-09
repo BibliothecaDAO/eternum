@@ -15,19 +15,21 @@ import { realmsIdOf } from "./realms-id";
 import { resendSignInCodes, type SendSignInCode } from "./sign-in-codes";
 import { resendWalletNotices } from "./wallet-notices";
 import { siws } from "./siws-plugin";
-import { verifyWalletOnMainnet, type VerifyWalletSignature } from "./wallet-signature";
+import { verifyWalletOnL2, type VerifyWalletSignature } from "./wallet-signature";
 
 const DAY_SECONDS = 24 * 60 * 60;
 
-/** What the identity service reaches outside its database: mainnet for wallet signatures, and the email provider. */
+/** What the identity service reaches outside its database: the environment L2 for wallet signatures, and the email provider. */
 interface IdentityServices {
   verifyWalletSignature: VerifyWalletSignature;
   sendSignInCode: SendSignInCode;
   sendWalletNotice?: (email: string, address: string | null, id: string) => Promise<void>;
 }
 
-const identityServicesOf = (env: Pick<IdentityEnv, "IDENTITY_RPC_URL" | "RESEND_API_KEY">): IdentityServices => ({
-  verifyWalletSignature: verifyWalletOnMainnet(env.IDENTITY_RPC_URL),
+const identityServicesOf = (
+  env: Pick<IdentityEnv, "L2_CHAIN_ID" | "IDENTITY_RPC_URL" | "RESEND_API_KEY">,
+): IdentityServices => ({
+  verifyWalletSignature: verifyWalletOnL2(env),
   sendSignInCode: resendSignInCodes(env.RESEND_API_KEY),
 });
 
@@ -69,6 +71,7 @@ export const createIdentityAuth = (
     | "DB"
     | "BASE_URL"
     | "BETTER_AUTH_SECRET"
+    | "L2_CHAIN_ID"
     | "IDENTITY_RPC_URL"
     | "DISCORD_CLIENT_ID"
     | "DISCORD_CLIENT_SECRET"
@@ -130,6 +133,7 @@ export const createIdentityAuth = (
       emailCodes,
       siws({
         origin: env.BASE_URL,
+        chainId: env.L2_CHAIN_ID,
         verifySignature: services.verifyWalletSignature,
         db: env.DB,
         checkCode: (context, email, otp) =>
