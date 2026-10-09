@@ -1,3 +1,4 @@
+import { isCheckGame } from "./game-directory";
 import { expeditionDayEndsAt, readExpeditionRules, type ExpeditionRules } from "@bibliothecadao/eternum/expeditions";
 import { hasSingleTilePosition } from "@bibliothecadao/eternum/game-client";
 import {
@@ -451,7 +452,7 @@ export class WorldFold {
     );
     return this.modelRows("GameRegistry")
       .filter(({ value }) => {
-        if (value.settled !== true) return false;
+        if (isCheckGame(value) || value.settled !== true) return false;
         const gameId = BigInt(value.game_id as string).toString();
         const config = rules.get(gameId);
         if (!config) throw new Error(`Finalized game ${gameId} has no rules`);
