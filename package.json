@@ -89,7 +89,6 @@
     "lab:harness:96": "bun --tsconfig-override deploy/athanor/harness/tsconfig.json deploy/athanor/harness/run.ts --bots 96 --minutes 10 --interval-seconds 15",
     "lab:harness:96:frontier": "bun --tsconfig-override deploy/athanor/harness/tsconfig.json deploy/athanor/harness/run.ts --game-type frontier --bots 96 --workers 6 --minutes 10",
     "lab:push-receiver": "bun deploy/athanor/harness/push-receiver.ts",
-    "lab:slice:prepare-authority": "bun deploy/athanor/harness/native/prepare-authority.ts",
     "lab:probe-account": "bun deploy/athanor/scripts/probe-deploy-account.ts",
     "lab:probe-herald": "node deploy/athanor/scripts/probe-herald-client.mjs",
     "lab:probe-sandbox-proxy": "bun deploy/athanor/scripts/probe-sandbox-proxy.ts",
