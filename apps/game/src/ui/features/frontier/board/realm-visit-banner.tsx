@@ -9,6 +9,7 @@ import { configManager, Position, structureMapPosition } from "@bibliothecadao/e
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useEffect, useRef } from "react";
+import { safeInteger } from "@/utils/native-id";
 
 /** The visited realm's row, once the visit's scope has brought it into the store. */
 export const useVisitedRealm = (visit: RealmVisit | null): NativeRows["Structure"] | null => {
@@ -34,7 +35,7 @@ export const RealmVisitBanner = ({ home }: { home: NativeRows["Structure"] | nul
   const goToStructure = useGoToStructure(setup);
   const openRealm = (realm: NativeRows["Structure"], spectator: boolean) => {
     const site = structureMapPosition(setup.store, realm);
-    if (site) void goToStructure(realm.entity_id, Position.fromContract(site), false, { spectator });
+    if (site) void goToStructure(safeInteger(realm.entity_id), Position.fromContract(site), false, { spectator });
   };
 
   useEffect(() => {

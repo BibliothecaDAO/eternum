@@ -17,7 +17,7 @@ vi.mock("./frontier-home", () => ({ useExpeditionRules: () => null }));
 vi.mock("@bibliothecadao/eternum/troop-stamina", () => ({ resolveExplorerTroops: () => undefined }));
 vi.mock("@bibliothecadao/eternum", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@bibliothecadao/eternum")>()),
-  liveHomeArmies: () => [{ game_id: 1, explorer_id: 201, troops: { category: "Knight", tier: "T1", count: 0n } }],
+  liveHomeArmies: () => [{ game_id: 1, explorer_id: 201n, troops: { category: "Knight", tier: "T1", count: 0n } }],
   entityMapPosition: () => ({ x: 0, y: 0, alt: false }),
 }));
 
@@ -27,7 +27,7 @@ import { configManager } from "@bibliothecadao/eternum";
 import { type GameClientSetup, NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { FrontierArmyDock } from "./frontier-army-dock";
 
-const realm = { entity_id: 100, owner: 0x111n, base: { troop_max_explorer_count: 3 } } as NativeRows["Structure"];
+const realm = { entity_id: 100n, owner: 0x111n, base: { troop_max_explorer_count: 3 } } as NativeRows["Structure"];
 
 const renderDockAs = (actor: string) => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;

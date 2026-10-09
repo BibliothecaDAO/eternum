@@ -11,6 +11,7 @@ import {
 import { nativeResearchConstants, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { musterStamina, type OpenArmySlot, openArmySlots } from "@bibliothecadao/eternum/troop-stamina";
 import { type Direction, RESOURCE_PRECISION, TroopTier, TroopType } from "@bibliothecadao/types";
+import { safeInteger } from "@/utils/native-id";
 
 /**
  * What Frontier's muster needs, read from facts with no UI of its own: the realm's next open slot and the troop stacks
@@ -52,7 +53,12 @@ export const readMusterPlan = (
   const stacks: MusterStack[] = [];
   for (const tier of TIERS)
     for (const type of TYPES) {
-      const balance = getBalance(realm.entity_id, getTroopResourceId(type, tier), defaultTick, store).balance;
+      const balance = getBalance(
+        safeInteger(realm.entity_id),
+        getTroopResourceId(type, tier),
+        defaultTick,
+        store,
+      ).balance;
       if (balance === undefined) return undefined;
       const available = Number(BigInt(balance) / PRECISION);
       if (available > 0)
@@ -123,7 +129,7 @@ export const musterArmy = (
   direction: Direction,
 ): Promise<void> =>
   actions.createExplorerArmy({
-    structureId: realm.entity_id,
+    structureId: safeInteger(realm.entity_id),
     troopType: stack.type,
     troopTier: stack.tier,
     troopCount: count,

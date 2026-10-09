@@ -154,6 +154,7 @@ import {
 } from "../frame-budget-work-queue";
 import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
 import type { PipelineCompiler } from "../pipeline-compiler";
+import { armyHomeStructureId, safeInteger } from "@/utils/native-id";
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
 
@@ -427,7 +428,7 @@ export class ArmyManager {
           continue;
         const current = change.current;
         this.armyPresentations.forEach((army, entityId) => {
-          if (army.owningStructureId !== current.entity_id) return;
+          if (army.owningStructureId !== safeInteger(current.entity_id)) return;
           this.refreshExplorerOwner(entityId);
         });
       }
@@ -505,7 +506,7 @@ export class ArmyManager {
     renderable: ArmySpatialRenderable,
     explorerTroops: ExplorerTroopsComponentValue,
   ): AddArmyParams {
-    const ownerStructureId = explorerTroops.owner === 0 ? null : explorerTroops.owner;
+    const ownerStructureId = armyHomeStructureId(explorerTroops);
     const resolvedOwner = this.resolveArmyOwnerFromStructure({
       armyEntityId: renderable.entityId,
       ownerStructureId,
@@ -975,7 +976,7 @@ export class ArmyManager {
       ownerAddress,
       ownerName: this.resolveArmyOwnerNameForAddress(ownerAddress),
       guildName: "",
-      ownerStructureId: explorer.owner || null,
+      ownerStructureId: armyHomeStructureId(explorer),
     });
   }
 
@@ -2769,7 +2770,7 @@ export class ArmyManager {
     return Boolean(
       readArmyMovementReadiness({
         army,
-        structureResources: new ResourceManager(this.store, army.owner),
+        structureResources: new ResourceManager(this.store, safeInteger(army.owner)),
         store: this.store,
         currentArmiesTick,
         currentDefaultTick,
@@ -3240,7 +3241,7 @@ ${
   }
 
   private applyExplorerTroopsPresentationUpdate(explorerTroops: ExplorerTroopsComponentValue): void {
-    const entityId = explorerTroops.explorer_id as ID;
+    const entityId = safeInteger(explorerTroops.explorer_id);
     const army = this.armyPresentations.get(entityId);
     if (!army) return;
 
@@ -3262,7 +3263,7 @@ ${
     army.currentStamina = staminaSnapshot?.current;
     army.maxStamina = staminaSnapshot?.max ?? army.maxStamina;
 
-    const ownerStructureId = explorerTroops.owner === 0 ? null : explorerTroops.owner;
+    const ownerStructureId = armyHomeStructureId(explorerTroops);
     const resolvedOwnerFromStructure = this.resolveArmyOwnerFromStructure({
       armyEntityId: entityId,
       ownerStructureId,

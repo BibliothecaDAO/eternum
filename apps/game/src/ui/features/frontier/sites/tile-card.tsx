@@ -19,6 +19,7 @@ import { useSelectedOwnArmy } from "./selected-army";
 import { readSiteCard, type SiteAttack, type SiteCardPlan } from "./site-card-plan";
 import { XP_STAR_ICON } from "../attributes/xp-star";
 import { FrontierSheet } from "../frontier-sheet";
+import { safeInteger } from "@/utils/native-id";
 
 const SITE_MODELS = [
   "ExpeditionSite",
@@ -80,8 +81,8 @@ export const TileCard = ({ selected, onClose }: { selected: SelectedSite; onClos
       playUnitCommandSound("attack");
       await setup.systemCalls.attack_explorer_vs_guard({
         signer: account.account,
-        explorer_id: attack.army.explorer_id,
-        structure_id: selected.structure.entity_id,
+        explorer_id: safeInteger(attack.army.explorer_id),
+        structure_id: safeInteger(selected.structure.entity_id),
       });
     } catch (error) {
       toast.error(extractReadableErrorMessage(error, "The attack could not be sent."));

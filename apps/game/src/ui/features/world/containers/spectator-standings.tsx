@@ -60,7 +60,7 @@ function StandingsRows() {
   useEffect(() => {
     setHistory((previous) => advanceStandingsTick(previous, tick, standings));
   }, [standings, tick]);
-  const selectedOwner = structures.find((structure) => structure.entity_id === selectedId)?.owner;
+  const selectedOwner = structures.find((structure) => structure.entity_id === BigInt(selectedId))?.owner;
   const rows = selectSpectatorStandings(standings, selectedOwner, history);
 
   return (
@@ -77,7 +77,7 @@ function StandingsRows() {
         const name = displayPlayerName(address, players.find((player) => player.address === address)?.name);
         const capital = structures
           .filter((structure) => structure.owner === address && structure.base.category === StructureType.Realm)
-          .toSorted((a, b) => a.entity_id - b.entity_id)[0];
+          .toSorted((a, b) => (a.entity_id < b.entity_id ? -1 : 1))[0];
         return (
           <button
             key={row.address}

@@ -1,5 +1,6 @@
 import { entityMapPosition, structureMapPosition } from "@bibliothecadao/eternum";
 import { getActiveGameStore } from "@/sync/active-game-client";
+import { safeInteger } from "@/utils/native-id";
 import { accountAddress, useAccountStore } from "@/hooks/store/use-account-store";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import type { PlayerRelicsData } from "@/types";
@@ -172,7 +173,7 @@ export const buildingTilesView: FactView<Array<{ innerCol: number; innerRow: num
     inActiveGame("Building")(store).map((building) => ({
       innerCol: building.inner_col,
       innerRow: building.inner_row,
-      structureId: building.structure_id,
+      structureId: safeInteger(building.structure_id),
     })),
 };
 

@@ -1,5 +1,6 @@
 import { useUIStore, type AppStore } from "@/hooks/store/use-ui-store";
 import { isExplicitSpectateSession } from "@/utils/spectator-session";
+import { safeInteger } from "@/utils/native-id";
 import { accountAddress, useAccountStore } from "@/hooks/store/use-account-store";
 import type { GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
 import { Position, configManager, structureMapPosition } from "@bibliothecadao/eternum";
@@ -23,7 +24,7 @@ const readInitialSelectableStructures = (setup: SetupResult, owner?: bigint): In
       if (!position) return [];
       return [
         {
-          entity_id: structure.entity_id,
+          entity_id: safeInteger(structure.entity_id),
           coord_x: position.x,
           coord_y: position.y,
           category: structure.base.category,

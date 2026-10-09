@@ -1,6 +1,7 @@
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import type { Structure, ID } from "@bibliothecadao/types";
 import { getBattleTimerLeft } from "@/three/utils/combat-directions";
+import { safeInteger } from "@/utils/native-id";
 
 export function resolveStructureAttention(
   structures: Structure[],
@@ -11,7 +12,7 @@ export function resolveStructureAttention(
   const attackedIds = new Set(
     guards
       .filter((guard) => getBattleTimerLeft(guard.troops.battle_cooldown_end, now) !== undefined)
-      .map((guard) => guard.structure_id),
+      .map((guard) => safeInteger(guard.structure_id)),
   );
   const attacked = structures.filter((structure) => attackedIds.has(structure.entityId));
   const attentionIds = new Set([...attacked.map((structure) => structure.entityId), ...arrivedStructureIds]);

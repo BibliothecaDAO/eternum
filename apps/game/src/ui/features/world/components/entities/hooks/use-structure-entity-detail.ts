@@ -24,6 +24,7 @@ import { ContractAddress, ID, BANDITS_NAME, RelicEffectWithEndTick, StructureTyp
 import { useCallback, useMemo } from "react";
 import { useAccountAddress } from "@/hooks/store/use-account-store";
 import { presentedMineKind } from "@bibliothecadao/eternum";
+import { safeInteger } from "@/utils/native-id";
 
 interface UseStructureEntityDetailOptions {
   structureEntityId: ID;
@@ -176,7 +177,9 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
   }, [structure, isMine, isAlly]);
 
   const progress = useMemo(() => {
-    return isHyperstructure ? getHyperstructureProgress(structure?.entity_id, store) : undefined;
+    return isHyperstructure && structure
+      ? getHyperstructureProgress(safeInteger(structure.entity_id), store)
+      : undefined;
   }, [isHyperstructure, structure?.entity_id, store, revision]);
 
   const structureName = useMemo(() => {

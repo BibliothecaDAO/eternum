@@ -17,6 +17,7 @@ import {
 } from "./attributes";
 import { SheetClose, useEscapeCloses } from "../frontier-sheet";
 import { closePick, commitPick, liftChoice, usePick } from "./pick-moment";
+import { safeInteger } from "@/utils/native-id";
 
 const DEAL_MS = 280;
 const DEAL_STAGGER_MS = 60;
@@ -39,7 +40,8 @@ export const PickPanel = ({
   commit: (attribute: Attribute) => Promise<void>;
 }) => {
   const pick = usePick();
-  const open = pick !== null && pick.explorerId === progress.explorer_id;
+  const explorerId = safeInteger(progress.explorer_id);
+  const open = pick !== null && pick.explorerId === explorerId;
 
   useEffect(() => {
     if (pick?.error) toast.error(pick.error);
@@ -71,7 +73,7 @@ export const PickPanel = ({
               affordable={attribute !== "Scouting" && price !== null && progress.xp >= price}
               lifted={pick.lifted === attribute}
               phase={pick.phase}
-              badge={attributeBadgeTarget(progress.explorer_id)}
+              badge={attributeBadgeTarget(explorerId)}
               onLift={() => liftChoice(attribute)}
             />
           );

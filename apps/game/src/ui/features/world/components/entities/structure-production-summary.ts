@@ -4,6 +4,7 @@ import { ResourceManager } from "@bibliothecadao/eternum";
 import { useBuildings } from "@/hooks/helpers/use-buildings";
 import { ResourcesIds, getProducedResource } from "@bibliothecadao/types";
 import { useMemo } from "react";
+import { safeInteger } from "@/utils/native-id";
 
 export interface ResourceProductionSummaryItem {
   resourceId: ResourcesIds;
@@ -117,7 +118,7 @@ export const useStructureProductionSummary = (
   resources?: ResourceManager | null,
 ): StructureProductionSummary => {
   const currentDefaultTick = useCurrentDefaultTick();
-  const buildingsData = useBuildings(structure?.entity_id);
+  const buildingsData = useBuildings(structure ? safeInteger(structure.entity_id) : undefined);
 
   return useMemo(() => {
     if (!structure || !resources) return EMPTY_PRODUCTION_SUMMARY;

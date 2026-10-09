@@ -28,6 +28,7 @@ import { type Headline, HEADLINE_DISPLAY_MS } from "./headline-types";
 import { NewsHeadlineBanner } from "./news-headline-banner";
 import { createWorldEventEntityReader } from "../story-events/world-event-entity-reader";
 import { getPlayerDisplayName } from "@/hooks/use-player-profile";
+import { safeInteger } from "@/utils/native-id";
 
 const NEWSWORTHY_CAPTURES = new Set<StructureType>([StructureType.Realm, StructureType.Hyperstructure]);
 
@@ -109,12 +110,13 @@ export function NewsHeadlineBridge() {
         if (!entityReader) continue;
         const isHyperstructure = current.base.category === StructureType.Hyperstructure;
         const player = address ? BigInt(address) : null;
-        const structureName = entityReader.getStructure(current.entity_id)?.structureName ?? `#${current.entity_id}`;
+        const structureId = safeInteger(current.entity_id);
+        const structureName = entityReader.getStructure(structureId)?.structureName ?? `#${structureId}`;
         const captor = entityReader.getPlayerName(ContractAddress(current.owner).toString());
         const previousOwner = entityReader.getPlayerName(ContractAddress(previous.owner).toString());
         const site = structureMapPosition(setup.store, current);
         enqueue({
-          id: `capture:${current.entity_id}:${previous.owner}:${current.owner}:${Date.now()}`,
+          id: `capture:${structureId}:${previous.owner}:${current.owner}:${Date.now()}`,
           type: isHyperstructure ? "hyper-capture" : "realm-fall",
           icon: isHyperstructure ? "hyper-capture" : "realm-fall",
           title: resolveCaptureTitle(
@@ -123,7 +125,7 @@ export function NewsHeadlineBridge() {
             isViewerOwner(previous.owner, player),
           ),
           description: `${captor} took ${structureName} from ${previousOwner}`,
-          location: site ? { ...site, entityId: current.entity_id } : undefined,
+          location: site ? { ...site, entityId: structureId } : undefined,
           timestamp: Date.now(),
         });
       }
@@ -157,7 +159,7 @@ export function NewsHeadlineBridge() {
         if (!current || current.game_id !== getScopedGameId()) continue;
         const buildingName = resolveMilestone(current, getActiveGameSyncRuntime()?.getStatus() === "running");
         if (!buildingName) continue;
-        const structureId = current.structure_id;
+        const structureId = safeInteger(current.structure_id);
         const structure = entityReader?.getStructure(structureId);
         const realmName = structure?.structureName || `Realm #${structureId}`;
         enqueue({
