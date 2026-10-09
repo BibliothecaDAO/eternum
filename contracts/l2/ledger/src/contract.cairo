@@ -34,9 +34,7 @@ pub trait IGameLedger<TState> {
         ref self: TState, shard: felt252, season_id: u32, preset_id: u32, start: u64, seed: felt252, amount: u256,
     );
     fn pay(ref self: TState, shard: felt252, season_id: u32, claim_id: felt252, wallet: ContractAddress, amount: u256);
-    fn report_withdrawal(
-        ref self: TState, shard: felt252, season_id: u32, claim_id: felt252, amount: u256,
-    );
+    fn report_withdrawal(ref self: TState, shard: felt252, season_id: u32, claim_id: felt252, amount: u256);
     fn frontier_unpaid_count(self: @TState, shard: felt252, season_id: u32) -> u64;
     fn close_frontier(ref self: TState, shard: felt252, season_id: u32);
     fn get_frontier(self: @TState, shard: felt252, season_id: u32) -> FrontierSeason;
@@ -485,9 +483,7 @@ pub mod GameLedger {
             self.emit(FrontierFunded { shard, season_id, start, end, amount });
         }
 
-        fn report_withdrawal(
-            ref self: ContractState, shard: felt252, season_id: u32, claim_id: felt252, amount: u256,
-        ) {
+        fn report_withdrawal(ref self: ContractState, shard: felt252, season_id: u32, claim_id: felt252, amount: u256) {
             self.accesscontrol.assert_only_role(OPERATOR_ROLE);
             let previous = self.get_payment(shard, claim_id);
             if previous.amount != 0 {
@@ -503,9 +499,10 @@ pub mod GameLedger {
                 starknet::get_block_timestamp() < self.frontier_claim_deadline(shard, season_id),
                 "Ledger: claim window ended",
             );
-            self.payments.entry((shard, claim_id)).write(
-                WithdrawalPayment { paid: false, season_id, wallet: 0.try_into().unwrap(), amount },
-            );
+            self
+                .payments
+                .entry((shard, claim_id))
+                .write(WithdrawalPayment { paid: false, season_id, wallet: 0.try_into().unwrap(), amount });
             let pending = self.frontier_unpaid.entry((shard, season_id)).read();
             self.frontier_unpaid.entry((shard, season_id)).write(pending + 1);
         }
@@ -534,8 +531,7 @@ pub mod GameLedger {
             let reported = self.get_payment(shard, claim_id);
             assert!(reported.amount != 0, "Ledger: withdrawal unreported");
             assert!(
-                reported.season_id == season_id && reported.amount == amount,
-                "Ledger: conflicting withdrawal report",
+                reported.season_id == season_id && reported.amount == amount, "Ledger: conflicting withdrawal report",
             );
             assert!(amount <= self.frontier_unlocked(shard, season_id) - season.paid, "Ledger: unlock exceeded");
             season.paid += amount;
@@ -752,9 +748,12 @@ pub mod GameLedger {
             assert!(start >= season.start && end < season.end, "Ledger: game outside season");
             let registration_limit = self.get_preset(preset_id).registration_limit;
             assert!(registration_limit != 0, "Ledger: preset has no roster");
-            self.games.entry(key).write(
-                Game { exists: true, season_id, preset_id, start, end, registration_limit, ..Default::default() },
-            );
+            self
+                .games
+                .entry(key)
+                .write(
+                    Game { exists: true, season_id, preset_id, start, end, registration_limit, ..Default::default() },
+                );
             self.emit(GameOpened { key, preset_id, start, end, registration_limit });
         }
 
