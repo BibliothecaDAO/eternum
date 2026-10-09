@@ -189,4 +189,3 @@ async function nodeHeader(read: Reader, url: string, block: "latest" | { block_n
   if (block !== "latest" && payload.result.block_number !== block.block_number) throw new Error("Wrong Herald head");
   return { block_number: payload.result.block_number, timestamp: payload.result.timestamp };
 }
-

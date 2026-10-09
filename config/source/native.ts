@@ -3,7 +3,12 @@ import { blitzPreset } from "./blitz/native";
 import { eternumPreset } from "./eternum/native";
 import { duelPreset } from "./duel/native";
 import type { NativePreset } from "./common/native-preset";
-import { FRONTIER_ACCELERATED_PRESET_ID, SELF_CHECK_PRESET_ID, FRONTIER_SELF_CHECK_PRESET_ID, nativeGameModeOf } from "./common/native-preset-modes";
+import {
+  FRONTIER_ACCELERATED_PRESET_ID,
+  SELF_CHECK_PRESET_ID,
+  FRONTIER_SELF_CHECK_PRESET_ID,
+  nativeGameModeOf,
+} from "./common/native-preset-modes";
 import { nativeCommandBits } from "../../contracts/l3/world-native/schema/commands.gen";
 import type { GameType } from "./common/types";
 

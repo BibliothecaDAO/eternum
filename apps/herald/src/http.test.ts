@@ -471,8 +471,15 @@ it("serves immutable per-day ranks, with explicit unavailable and unclosed respo
 });
 
 it("hidden check games never enter the directory clock or require public directory rules", async () => {
-  const handle = createHeraldRequestHandler({ ...httpState,
-    fold: { ...httpState.fold, modelRows: (model) => model === "GameRegistry" ? [{ key: "8", value: { game_id: "8", name: "0x" + Buffer.from("check-frontier-abc").toString("hex") } }] : [] },
+  const handle = createHeraldRequestHandler({
+    ...httpState,
+    fold: {
+      ...httpState.fold,
+      modelRows: (model) =>
+        model === "GameRegistry"
+          ? [{ key: "8", value: { game_id: "8", name: "0x" + Buffer.from("check-frontier-abc").toString("hex") } }]
+          : [],
+    },
   });
   const response = await handle(new Request("http://herald/games"));
   expect(response.status).toBe(200);

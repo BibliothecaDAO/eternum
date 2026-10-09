@@ -65,7 +65,12 @@ export function buildNativeDirectory(input: DirectoryInput): HeraldGameDirectory
 export function directoryForPlayer(directory: HeraldGameDirectory, input: DirectoryInput): HeraldGameDirectory {
   if (!input.playerAddress) return directory;
   const facts = directoryRows(input);
-  const games = new Map(input.fold.modelRows("GameRegistry").filter(({ value }) => !isCheckGame(value)).map(({ value }) => [number(value.game_id), value]));
+  const games = new Map(
+    input.fold
+      .modelRows("GameRegistry")
+      .filter(({ value }) => !isCheckGame(value))
+      .map(({ value }) => [number(value.game_id), value]),
+  );
   return {
     ...directory,
     games: directory.games.map((entry) => ({

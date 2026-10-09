@@ -7,7 +7,15 @@ import { WorldFold } from "../world-fold";
 
 const start = 1800000000;
 const calendar = { seed: 42n, startMainAt: start, dayUnitSeconds: 3600 };
-const game = { name: "0x46526f6e74696572", game_id: 1, preset_id: 5, seed: 42n, start_main_at: start, end_at: start + 1000000, settled: false };
+const game = {
+  name: "0x46526f6e74696572",
+  game_id: 1,
+  preset_id: 5,
+  seed: 42n,
+  start_main_at: start,
+  end_at: start + 1000000,
+  settled: false,
+};
 const rows = {
   GameRegistry: [{ key: "1", value: game }],
   SliceRules: [{ key: "1", value: { game_id: 1, day_unit_seconds: 3600 } }],
@@ -162,6 +170,6 @@ it("uses the existing receipt leaderboard for closing rank, retaining cumulative
 
 it("never records closing ranks for a hidden check game, even without its rules", () => {
   const check = { ...game, name: "0x" + Buffer.from("check-frontier-abc").toString("hex") };
-  const readCheck = (model: string): FoldRow[] => model === "GameRegistry" ? [{ key: "1", value: check }] : [];
+  const readCheck = (model: string): FoldRow[] => (model === "GameRegistry" ? [{ key: "1", value: check }] : []);
   expect(closingFrontierDays(readCheck, start, start + 1000000, 20, [])).toEqual([]);
 });

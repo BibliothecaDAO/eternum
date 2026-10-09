@@ -14,4 +14,3 @@ test("96 open-season homes are prepared privately in the published batches of at
 test("repeated owners are refused before any allocation call is built", () => {
   expect(() => prepareHomeCalls("0x123", 7, ["1", "0x1"])).toThrow("distinct approved owners");
 });
-

@@ -23,17 +23,23 @@ function initializeHostAccounts(directory: string): void {
     throw new Error("Existing host identity is missing credentials; restore the same shard backup before retrying");
   const existing = existsSync(keyPath) ? readPrivateJson<HostKeys>(keyPath) : undefined;
   const deployerPrivateKey = existing?.deployerPrivateKey ?? privateKey();
-  const vrfPublicKey = existsSync(resolve(directory, "vrf-key.json")) ? readShardVrfPoint(directory) : createShardVrfKey(directory);
+  const vrfPublicKey = existsSync(resolve(directory, "vrf-key.json"))
+    ? readShardVrfPoint(directory)
+    : createShardVrfKey(directory);
   const publicKey = ec.starkCurve.getStarkKey(deployerPrivateKey);
   const deployerAddress = hash.calculateContractAddressFromHash("0x0", ACCOUNT_CLASS_HASH, [publicKey], "0x0");
   const keys: HostKeys = { deployerAddress, deployerPrivateKey };
-  if (existing && BigInt(existing.deployerAddress) !== BigInt(deployerAddress)) throw new Error("Host key and recorded deployer identity differ");
+  if (existing && BigInt(existing.deployerAddress) !== BigInt(deployerAddress))
+    throw new Error("Host key and recorded deployer identity differ");
   if (!existing) writePrivateJsonOnce(keyPath, keys);
   const host = { deployer: { address: deployerAddress, publicKey, classHash: ACCOUNT_CLASS_HASH }, vrfPublicKey };
   if (!existsSync(publicPath)) writePrivateJsonOnce(publicPath, host);
   else {
     const recorded = JSON.parse(readFileSync(publicPath, "utf8"));
-    if (BigInt(recorded.deployer.address) !== BigInt(deployerAddress) || BigInt(recorded.deployer.publicKey) !== BigInt(publicKey))
+    if (
+      BigInt(recorded.deployer.address) !== BigInt(deployerAddress) ||
+      BigInt(recorded.deployer.publicKey) !== BigInt(publicKey)
+    )
       throw new Error("Host key and public identity differ; restore the same shard backup before retrying");
   }
   console.log(JSON.stringify({ event: "host_accounts_initialized", deployerAddress }));
