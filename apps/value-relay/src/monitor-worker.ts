@@ -4,11 +4,17 @@ import { DurableObject } from "cloudflare:workers";
 import { Effect, Result, Semaphore } from "effect";
 import { ledgerMonitorReads } from "./ledger";
 import { ledgerPauserAdapter } from "./chain";
-import { pendingMonitorPorts } from "./adapters";
+import { ShardReader } from "./shard-rpc";
+import { shardResultPort } from "./shard-results";
+import { shardWithdrawalPorts, pendingFrontierBindings } from "./shard-withdrawals";
 import { relayOperation } from "./ports";
 import { runMonitor, type MonitorProgress } from "./monitor";
 
 interface MonitorEnv {
+  SHARD_RPC_URL: string;
+  SHARD_GAMES_ADDRESS: string;
+  SHARD_CHAIN_ID: string;
+  IDENTITY: { realmsIdForAccount(account: string): Promise<string | null> };
   MONITOR: DurableObjectNamespace<ValueMonitor>;
   LEDGER_RPC_URL: string;
   LEDGER_ADDRESS: string;
@@ -54,28 +60,28 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
     return (await this.ctx.storage.get<MonitorProgress>("progress")) ?? { halted: null };
   }
 }
-const monitorPortsOf = (env: MonitorEnv) =>
-  pendingMonitorPorts({
-    paidClaims: (cursor) =>
-      relayOperation("read ledger paid claims", () =>
-        Effect.runPromise(ledgerMonitorReads(env.LEDGER_RPC_URL, env.LEDGER_ADDRESS).paidClaims(cursor)),
-      ),
-    postedResults: (cursor) =>
-      relayOperation("read ledger posted results", () =>
-        Effect.runPromise(ledgerMonitorReads(env.LEDGER_RPC_URL, env.LEDGER_ADDRESS).postedResults(cursor)),
-      ),
-    pause: () =>
-      relayOperation("pause ledger payouts", () =>
-        Effect.runPromise(
-          ledgerPauserAdapter({
-            rpcUrl: env.LEDGER_RPC_URL,
-            contractAddress: env.LEDGER_ADDRESS,
-            accountAddress: env.PAUSER_ACCOUNT_ADDRESS,
-            privateKey: env.PAUSER_PRIVATE_KEY,
-          })(),
-        ),
-      ),
+const monitorPortsOf = (env: MonitorEnv) => {
+  const reader = new ShardReader({
+    rpcUrl: env.SHARD_RPC_URL,
+    gamesAddress: env.SHARD_GAMES_ADDRESS,
+    chainId: env.SHARD_CHAIN_ID,
   });
+  return {
+    shard: {
+      withdrawal: shardWithdrawalPorts(reader, pendingFrontierBindings(env.IDENTITY)).withdrawal,
+      result: shardResultPort(reader),
+    },
+    ledger: {
+      ...ledgerMonitorReads(env.LEDGER_RPC_URL, env.LEDGER_ADDRESS),
+      pause: ledgerPauserAdapter({
+        rpcUrl: env.LEDGER_RPC_URL,
+        contractAddress: env.LEDGER_ADDRESS,
+        accountAddress: env.PAUSER_ACCOUNT_ADDRESS,
+        privateKey: env.PAUSER_PRIVATE_KEY,
+      }),
+    },
+  };
+};
 
 const monitorOf = (env: MonitorEnv) => env.MONITOR.get(env.MONITOR.idFromName("monitor"));
 export default {

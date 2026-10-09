@@ -55,7 +55,7 @@ beforeEach(() => {
 
 it("submits the published ranked result and completes an identical retry without a second write", async () => {
   const post = ledgerResultAdapter(credentials);
-  rpc.call.mockResolvedValue(game(false));
+  rpc.call.mockResolvedValueOnce(game(false)).mockResolvedValue(game(true, result.commitment));
   await Effect.runPromise(post(result));
   expect(rpc.execute).toHaveBeenCalledWith({
     contractAddress: "0x10",
@@ -112,4 +112,10 @@ it("decodes result commitments and refuses malformed payment events", async () =
     ],
   });
   await expect(Effect.runPromise(reads.paidClaims(null))).rejects.toThrow();
+});
+
+it("keeps a result queued unless the confirmed ledger state records the same commitment", async () => {
+  rpc.call.mockResolvedValueOnce(game(false)).mockResolvedValue(game(true, "0xbad"));
+  await expect(Effect.runPromise(ledgerResultAdapter(credentials)(result))).rejects.toThrow();
+  expect(rpc.execute).toHaveBeenCalledOnce();
 });

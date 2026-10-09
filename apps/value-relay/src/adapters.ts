@@ -1,37 +1,12 @@
-import { Effect } from "effect";
-import { RelayFailure, relayOperation, type RelayPorts, type MonitorPorts, type Withdrawal } from "./ports";
+import { relayOperation, type RelayPorts, type Withdrawal } from "./ports";
 
 interface IdentityPort {
   payoutWallet(realmsId: string): Promise<import("@realms-world/identity").PayoutWallet>;
   linkedWallet(realmsId: string): Promise<string | null>;
 }
-const identityAdapter = (identity: IdentityPort): RelayPorts["identity"] => ({
+export const identityAdapter = (identity: IdentityPort): RelayPorts["identity"] => ({
   payoutWallet: (id) => relayOperation("read payout wallet", () => identity.payoutWallet(id)),
   linkedWallet: (id) => relayOperation("read linked wallet", () => identity.linkedWallet(id)),
-});
-
-/** Contract adapters remain closed until the shard receipt schema and the complete ledger ABI arrive. */
-const unavailable = (operation: string) =>
-  Effect.fail(new RelayFailure({ operation: `interface_unavailable:${operation}` }));
-export const pendingRelayPorts = (
-  identity: IdentityPort,
-  ledger: RelayPorts["ledger"],
-  realms: RelayPorts["realms"],
-): RelayPorts => ({
-  identity: identityAdapter(identity),
-  shard: {
-    confirmedHead: () => unavailable("shard.confirmedHead"),
-    block: () => unavailable("shard.block"),
-    withdrawal: () => unavailable("shard.withdrawal"),
-    result: () => unavailable("shard.result"),
-    grantLabor: () => unavailable("shard.grantLabor"),
-  },
-  ledger,
-  realms,
-});
-export const pendingMonitorPorts = (ledger: MonitorPorts["ledger"]): MonitorPorts => ({
-  shard: { withdrawal: () => unavailable("shard.withdrawal"), result: () => unavailable("shard.result") },
-  ledger,
 });
 
 /** Published Frontier call; confirmation is part of the injected transport, never fire-and-forget. */

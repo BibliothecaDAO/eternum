@@ -82,6 +82,7 @@ export const ledgerResultAdapter =
   (credentials: LedgerCredentials): RelayPorts["ledger"]["postResult"] =>
   (result) =>
     relayOperation("post Blitz result", async () => {
+      if (BigInt(blitzCommitment(result)) !== BigInt(result.commitment)) throw new Error("invalid_result_commitment");
       const provider = rpcAt(credentials.rpcUrl);
       const head = await provider.getBlockNumber();
       const game = await readLedgerGame(provider, credentials.contractAddress, result, head);
@@ -89,7 +90,6 @@ export const ledgerResultAdapter =
         if (BigInt(game.commitment) !== BigInt(result.commitment)) throw new Error("ledger_result_differs");
         return;
       }
-      if (BigInt(blitzCommitment(result)) !== BigInt(result.commitment)) throw new Error("invalid_result_commitment");
       const account = new Account({ provider, address: credentials.accountAddress, signer: credentials.privateKey });
       const transaction = await account.execute({
         contractAddress: credentials.contractAddress,
@@ -98,6 +98,14 @@ export const ledgerResultAdapter =
       });
       const receipt = await provider.waitForTransaction(transaction.transaction_hash);
       if (receipt.isReverted()) throw new Error("ledger_result_reverted");
+      const posted = await readLedgerGame(
+        provider,
+        credentials.contractAddress,
+        result,
+        await provider.getBlockNumber(),
+      );
+      if (!posted.finalized || BigInt(posted.commitment) !== BigInt(result.commitment))
+        throw new Error("ledger_result_not_recorded");
     });
 
 const resultCalldata = (result: BlitzResult): string[] => {

@@ -1,14 +1,15 @@
 import { currentLaborDay, writeLaborGrant } from "./shard-labor";
 import { handleLaborRequest } from "./labor-route";
 import { ShardReader } from "./shard-rpc";
-import { shardWithdrawalPorts } from "./shard-withdrawals";
+import { shardResultPort } from "./shard-results";
+import { shardWithdrawalPorts, pendingFrontierBindings } from "./shard-withdrawals";
 import { chestLedgerReads, finishChestOnLedger } from "./chest-ledger";
 import { DurableChestStore, finishRequestedChests } from "./chests";
 import { DurableObject } from "cloudflare:workers";
 import { Effect, Result, Semaphore } from "effect";
 import { ledgerResultAdapter, ledgerMonitorReads } from "./ledger";
 import { ledgerPaymentAdapter, realmsOwnershipAdapter } from "./chain";
-import { pendingRelayPorts } from "./adapters";
+import { identityAdapter } from "./adapters";
 import { runRelay, grantDailyLabor } from "./relay";
 import { DurableRelayStore } from "./state";
 import { RelayFailure, relayOperation, type RelayPorts, type LaborClaim } from "./ports";
@@ -101,16 +102,19 @@ export class ValueRelay extends DurableObject<RelayEnv> {
 }
 
 const relayPortsOf = (env: RelayEnv): RelayPorts => {
-  const ports = pendingRelayPorts(env.IDENTITY, ledgerPortsOf(env), {
-    ownerOf: (realmId) =>
-      relayOperation("read Realm owner", () =>
-        Effect.runPromise(realmsOwnershipAdapter(env.LEDGER_RPC_URL, env.REALMS_ADDRESS).ownerOf(realmId)),
-      ),
-  });
+  const reader = new ShardReader(shardConnectionOf(env));
   return {
-    ...ports,
+    identity: identityAdapter(env.IDENTITY),
+    ledger: ledgerPortsOf(env),
+    realms: {
+      ownerOf: (realmId) =>
+        relayOperation("read Realm owner", () =>
+          Effect.runPromise(realmsOwnershipAdapter(env.LEDGER_RPC_URL, env.REALMS_ADDRESS).ownerOf(realmId)),
+        ),
+    },
     shard: {
-      ...ports.shard,
+      ...shardWithdrawalPorts(reader, pendingFrontierBindings(env.IDENTITY)),
+      result: shardResultPort(reader),
       grantLabor: (claim) =>
         writeLaborGrant(
           {
@@ -120,18 +124,6 @@ const relayPortsOf = (env: RelayEnv): RelayPorts => {
           },
           claim,
         ),
-      ...shardWithdrawalPorts(
-        new ShardReader({
-          rpcUrl: env.SHARD_RPC_URL,
-          gamesAddress: env.SHARD_GAMES_ADDRESS,
-          chainId: env.SHARD_CHAIN_ID,
-        }),
-        {
-          realmsIdForAccount: (account) => env.IDENTITY.realmsIdForAccount(account),
-          frontierSeason: () =>
-            Effect.fail(new RelayFailure({ operation: "interface_unavailable:frontier.game_season_binding" })),
-        },
-      ),
     },
   };
 };

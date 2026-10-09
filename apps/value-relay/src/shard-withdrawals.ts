@@ -1,4 +1,5 @@
 import { Effect } from "effect";
+import { decodeBlitzResult } from "./shard-results";
 import { ShardReader, felt, sameFelt, uint, type ValueRow } from "./shard-rpc";
 import { RelayFailure, relayOperation, type RelayEffect, type RelayPorts, type Withdrawal } from "./ports";
 
@@ -6,6 +7,13 @@ interface ReceiptBindings {
   realmsIdForAccount(account: string): Promise<string | null>;
   frontierSeason(gameId: number): RelayEffect<number>;
 }
+
+/** A game id or a display ordinal cannot substitute for the unpublished funded-season binding. */
+export const pendingFrontierBindings = (identity: Pick<ReceiptBindings, "realmsIdForAccount">): ReceiptBindings => ({
+  realmsIdForAccount: (account) => identity.realmsIdForAccount(account),
+  frontierSeason: () =>
+    Effect.fail(new RelayFailure({ operation: "interface_unavailable:frontier.game_season_binding" })),
+});
 
 /** Receipt fields are immutable shard facts; identity and funding bindings are resolved separately. */
 export const shardWithdrawalPorts = (
@@ -16,8 +24,14 @@ export const shardWithdrawalPorts = (
   block: (number) =>
     Effect.gen(function* () {
       const { block, rows } = yield* relayOperation("read confirmed shard receipts", () => reader.block(number));
-      if (rows.some((row) => row.model === "BlitzResult"))
-        return yield* Effect.fail(new RelayFailure({ operation: "interface_unavailable:shard.result_decoder" }));
+      const results = yield* relayOperation("decode confirmed Blitz results", async () =>
+        rows
+          .filter((row) => row.model === "BlitzResult")
+          .flatMap((row) => {
+            const result = decodeBlitzResult(reader.connection.chainId, row);
+            return result ? [result] : [];
+          }),
+      );
       const withdrawals: Withdrawal[] = [];
       for (const row of rows.filter((row) => row.model === "LordsWithdrawal"))
         withdrawals.push(yield* resolveWithdrawal(reader, bindings, row, block.timestamp));
@@ -28,7 +42,7 @@ export const shardWithdrawalPorts = (
         parentHash: block.parent_hash,
         status: block.status,
         withdrawals,
-        results: [],
+        results,
       };
     }),
   withdrawal: (chainId, transactionHash) =>
