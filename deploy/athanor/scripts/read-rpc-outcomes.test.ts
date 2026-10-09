@@ -10,7 +10,15 @@ afterEach(() => {
 });
 
 async function fixture(
-  options: { stampFails?: boolean; admissionFails?: boolean; forwardWait?: Promise<void>; accountClass?: string } = {},
+  options: {
+    stampFails?: boolean;
+    admissionFails?: boolean;
+    forwardWait?: Promise<void>;
+    accountClass?: string;
+    stampWait?: Promise<void>;
+    admissionWait?: Promise<void>;
+    stampStarted?: () => void;
+  } = {},
 ) {
   const writes: unknown[] = [];
   const node = Bun.serve({
@@ -19,6 +27,7 @@ async function fixture(
     async fetch(request) {
       const call = await request.json();
       if (call.method === "starknet_getNonce" || call.method === "starknet_getClassHashAt") {
+        await options.admissionWait;
         if (options.admissionFails) return Response.json({ error: { code: 99, data: "internal diagnostic" } });
         return Response.json({
           result: call.method === "starknet_getNonce" ? "0x0" : (options.accountClass ?? identity.accountClassHash),
@@ -31,6 +40,8 @@ async function fixture(
   });
   const stamper = {
     async stamp(_transaction: PlayInvoke) {
+      options.stampStarted?.();
+      await options.stampWait;
       if (options.stampFails) throw new Error("internal stamping diagnostic");
       return { transactionHash: "0x777", suffix: [STAMP_TAG, "0x1", "0x2", "0x3", "0x4", "0x5"] };
     },
@@ -248,7 +259,7 @@ test("the forward timeout is ambiguous even after the node received the write", 
     release = resolve;
   });
   const timeout = AbortSignal.timeout.bind(AbortSignal);
-  const timed = spyOn(AbortSignal, "timeout").mockImplementation((ms) => timeout(ms === 30000 ? 20 : ms));
+  const timed = spyOn(AbortSignal, "timeout").mockImplementation((ms) => timeout(ms === 5000 ? 20 : ms));
   const f = await fixture({ forwardWait: waiting });
   try {
     expect(await f.call("starknet_addInvokeTransaction", [invoke()])).toEqual({
@@ -358,6 +369,79 @@ test("forwarded account management is unknown, and a failed estimate is only a r
     });
   } finally {
     intercepted.mockRestore();
+    f.close();
+  }
+});
+
+for (const phase of ["admission", "preflight", "stamp"] as const) {
+  test(`the preparation deadline bounds ${phase} and discards a late completion`, async () => {
+    let release!: () => void;
+    const waiting = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const timeout = AbortSignal.timeout.bind(AbortSignal);
+    const timed = spyOn(AbortSignal, "timeout").mockImplementation((ms) => timeout(ms === 2000 ? 30 : ms));
+    const f = await fixture(phase === "stamp" ? { stampWait: waiting } : { admissionWait: waiting });
+    try {
+      const transaction =
+        phase !== "admission"
+          ? invoke()
+          : {
+              ...invoke(),
+              calldata: [
+                "0x1",
+                invoke().sender_address,
+                hash.getSelectorFromName("revoke_device"),
+                "0x3",
+                "0x1",
+                "0x2",
+                "0x3",
+              ],
+            };
+      expect((await f.call("starknet_addInvokeTransaction", [transaction])).error).toEqual({
+        code: -32010,
+        message: "Transaction refused",
+      });
+      release();
+      await Bun.sleep(20);
+      expect(f.writes).toHaveLength(0);
+      timed.mockRestore();
+      expect((await f.call("starknet_addInvokeTransaction", [invoke()])).result).toEqual({ transaction_hash: "0x777" });
+    } finally {
+      timed.mockRestore();
+      release();
+      f.close();
+    }
+  });
+}
+
+test("disconnecting while a stamp is queued never forwards its late result", async () => {
+  let release!: () => void;
+  let started!: () => void;
+  const waiting = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const stamping = new Promise<void>((resolve) => {
+    started = resolve;
+  });
+  const f = await fixture({ stampWait: waiting, stampStarted: started });
+  const controller = new AbortController();
+  try {
+    const sent = originalFetch(f.proxy.url, {
+      method: "POST",
+      signal: controller.signal,
+      body: JSON.stringify({ jsonrpc: "2.0", id: 42, method: "starknet_addInvokeTransaction", params: [invoke()] }),
+    }).catch(() => undefined);
+    await stamping;
+    controller.abort();
+    await sent;
+    await Bun.sleep(30);
+    release();
+    await Bun.sleep(30);
+    expect(f.writes).toHaveLength(0);
+    expect((await f.call("starknet_addInvokeTransaction", [invoke()])).result).toEqual({ transaction_hash: "0x777" });
+  } finally {
+    release();
     f.close();
   }
 });

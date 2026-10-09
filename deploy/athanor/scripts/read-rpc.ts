@@ -29,6 +29,35 @@ const READ_METHODS = new Set([
   "starknet_getStorageProof",
   "starknet_getCompiledCasm",
 ]);
+// CPU-only 2,000-stamp waves took 381–395 ms; bound queued work and private reads too.
+const PREPARATION_TIMEOUT_MS = 2000;
+const FORWARD_TIMEOUT_MS = 5000;
+type Preparation = { signal: AbortSignal; deadline: number };
+
+function assertBeforeForward(preparation: Preparation) {
+  preparation.signal.throwIfAborted();
+  // A busy event loop can delay the abort event; elapsed time still refuses a late forward.
+  if (performance.now() >= preparation.deadline) throw new Error("Transaction refused");
+}
+
+function untilAborted<T>(work: Promise<T>, signal: AbortSignal): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const aborted = () => reject(signal.reason);
+    signal.addEventListener("abort", aborted, { once: true });
+    if (signal.aborted) aborted();
+    work.then(
+      (value) => {
+        signal.removeEventListener("abort", aborted);
+        resolve(value);
+      },
+      (error) => {
+        signal.removeEventListener("abort", aborted);
+        reject(error);
+      },
+    );
+  });
+}
+
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "Content-Type",
@@ -90,8 +119,8 @@ export function startReadRpc(
   });
 }
 
-async function readNodeClass(node: URL, sender: string): Promise<string> {
-  const value = await nodeCall(node, "starknet_getClassHashAt", ["pre_confirmed", sender]);
+async function readNodeClass(node: URL, sender: string, signal?: AbortSignal): Promise<string> {
+  const value = await nodeCall(node, "starknet_getClassHashAt", ["pre_confirmed", sender], signal);
   if (typeof value !== "string" || felt(value) === undefined) throw new Error("Sender class is unavailable");
   return value;
 }
@@ -105,6 +134,10 @@ async function handlePublicRequest(
   allowance: ReturnType<typeof accountRequestLimiter>,
   inFlightAccounts: Set<string>,
 ): Promise<Response> {
+  const preparation: Preparation = {
+    deadline: performance.now() + PREPARATION_TIMEOUT_MS,
+    signal: AbortSignal.any([request.signal, AbortSignal.timeout(PREPARATION_TIMEOUT_MS)]),
+  };
   const path = new URL(request.url).pathname;
   if (!/^\/(?:rpc\/v0_\d+_\d+)?$/.test(path)) return refuse(-32601, "RPC path is not public", 404);
   // Public state streams use Herald; exposing an unfiltered node WebSocket would bypass this boundary.
@@ -113,7 +146,7 @@ async function handlePublicRequest(
   if (request.method !== "POST") return refuse(-32600, "POST required", 405);
   let payload: unknown;
   try {
-    payload = await request.json();
+    payload = await untilAborted(request.json(), preparation.signal);
   } catch {
     return refuse(-32700, "Invalid JSON", 400);
   }
@@ -126,7 +159,10 @@ async function handlePublicRequest(
   let admitted: (Admitted | undefined)[];
   try {
     // Validate the entire batch before producing any proof. Independent accounts then stamp concurrently.
-    admitted = await Promise.all(calls.map((call) => admitRequest(call, node, identity)));
+    admitted = await untilAborted(
+      Promise.all(calls.map((call) => admitRequest(call, node, identity, preparation.signal))),
+      preparation.signal,
+    );
   } catch {
     return calls.some((call) => isWrite(call as RpcCall))
       ? refuse(-32010, "Transaction refused", 502)
@@ -134,7 +170,9 @@ async function handlePublicRequest(
   }
   if (admitted.some((call) => !call)) return refuse(-32601, "RPC method is not public");
   const answers = await Promise.all(
-    admitted.map((call) => forwardRequest(call!, path, node, identity, stamper, inFlightAccounts)),
+    admitted.map((call) =>
+      forwardRequest(call!, path, node, identity, stamper, inFlightAccounts, preparation, request.signal),
+    ),
   );
   return Response.json(Array.isArray(payload) ? answers : answers[0], { headers: CORS });
 }
@@ -156,6 +194,7 @@ async function admitRequest(
   value: unknown,
   node: URL,
   identity: ShardIdentity & PlayIdentity,
+  signal: AbortSignal,
 ): Promise<Admitted | undefined> {
   if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
   const call = value as RpcCall;
@@ -165,18 +204,23 @@ async function admitRequest(
   if (game) return { call, game };
   if (
     await permitsAccountRequest(call as unknown as Record<string, unknown>, identity, (sender) =>
-      readNodeClass(node, sender),
+      readNodeClass(node, sender, signal),
     )
   )
     return { call };
   return undefined;
 }
-async function nodeCall(node: URL, method: string, params: unknown): Promise<unknown> {
+async function nodeCall(
+  node: URL,
+  method: string,
+  params: unknown,
+  signal = AbortSignal.timeout(5000),
+): Promise<unknown> {
   const response = await fetch(new URL("/rpc/v0_10_2", node), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
-    signal: AbortSignal.timeout(5000),
+    signal,
     redirect: "error",
   }).catch(() => {
     throw new Error("Private node unavailable");
@@ -245,6 +289,8 @@ async function forwardRequest(
   identity: PlayIdentity,
   stamper: StampProvider,
   inFlightAccounts: Set<string>,
+  preparation: Preparation,
+  clientSignal: AbortSignal,
 ): Promise<unknown> {
   const { call, game } = admitted;
   const play = game?.entrypoint.stamp ? game.transaction : undefined;
@@ -254,16 +300,21 @@ async function forwardRequest(
   let forwarded = false;
   let expectedHash: string | undefined;
   try {
+    assertBeforeForward(preparation);
     let outgoing = game ? { ...call, params: [game.transaction] } : call;
     if (play) {
-      const [nonce, accountClass] = await Promise.all([
-        nodeCall(node, "starknet_getNonce", ["pre_confirmed", play.sender_address]),
-        readNodeClass(node, play.sender_address),
-      ]);
+      const [nonce, accountClass] = await untilAborted(
+        Promise.all([
+          nodeCall(node, "starknet_getNonce", ["pre_confirmed", play.sender_address], preparation.signal),
+          readNodeClass(node, play.sender_address, preparation.signal),
+        ]),
+        preparation.signal,
+      );
       // No speculative future nonce: retrying the same accepted transaction uses the same root.
       if (felt(nonce) !== felt(play.nonce) || felt(accountClass) !== felt(identity.accountClassHash))
         return transactionRefused(call.id);
-      const stamp = await stamper.stamp(play);
+      assertBeforeForward(preparation);
+      const stamp = await untilAborted(stamper.stamp(play), preparation.signal);
       const hash = felt(stamp.transactionHash);
       if (hash === undefined) return transactionRefused(call.id);
       expectedHash = `0x${hash.toString(16)}`;
@@ -271,15 +322,17 @@ async function forwardRequest(
     }
     const body = JSON.stringify(outgoing);
     // Once fetch is invoked, a failed reply cannot prove that the node did not accept the write.
+    assertBeforeForward(preparation);
+    const forwardSignal = AbortSignal.any([clientSignal, AbortSignal.timeout(FORWARD_TIMEOUT_MS)]);
     forwarded = true;
     const response = await fetch(new URL(path, node), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body,
-      signal: AbortSignal.timeout(30000),
+      signal: forwardSignal,
       redirect: "error",
     });
-    const answer: unknown = await response.json();
+    const answer: unknown = await untilAborted(response.json(), forwardSignal);
     if (!response.ok || !validReply(answer, call)) throw new Error("Invalid private node reply");
     return isWrite(call) ? writeAnswer(answer, call, expectedHash) : readAnswer(answer, call);
   } catch {
