@@ -16,8 +16,6 @@ import { RelayFailure, relayOperation, type RelayPorts, type LaborClaim } from "
 interface RelayEnv {
   SHARD_CHAIN_ID: string;
   BASE_URL: string;
-  SHARD_HERALD_URL: string;
-  SHARD_ADMIN_RPC_URL: string;
   SHARD_LEDGER_OPERATOR_ADDRESS: string;
   SHARD_LEDGER_OPERATOR_PRIVATE_KEY: string;
   SHARD_RPC_URL: string;
@@ -90,6 +88,8 @@ export class ValueRelay extends DurableObject<RelayEnv> {
           const progress = yield* relayOperation("read relay progress", () => relay.store.progress());
           if (BigInt(claim.chainId) !== BigInt(relay.env.SHARD_CHAIN_ID) || progress.halted)
             return yield* Effect.fail(new Error("relay_halted_or_wrong_chain"));
+          const day = yield* currentLaborDay();
+          if (claim.day !== day) return yield* Effect.fail(new RelayFailure({ operation: "labor_day_differs" }));
           return yield* grantDailyLabor(relay.ports, claim);
         }),
       ),
@@ -115,7 +115,6 @@ const relayPortsOf = (env: RelayEnv): RelayPorts => {
         writeLaborGrant(
           {
             connection: shardConnectionOf(env),
-            adminRpcUrl: env.SHARD_ADMIN_RPC_URL,
             operatorAddress: env.SHARD_LEDGER_OPERATOR_ADDRESS,
             privateKey: env.SHARD_LEDGER_OPERATOR_PRIVATE_KEY,
           },
@@ -177,7 +176,7 @@ export default {
         origin: env.BASE_URL,
         chainId: env.SHARD_CHAIN_ID,
         authenticate: (cookie) => env.IDENTITY.authenticate(cookie),
-        currentDay: (gameId) => currentLaborDay(shardConnectionOf(env), env.SHARD_HERALD_URL, gameId),
+        currentDay: currentLaborDay,
         grant: (claim) => relayOf(env).labor(claim),
       });
     if (new URL(request.url).pathname !== "/health") return new Response(null, { status: 404 });

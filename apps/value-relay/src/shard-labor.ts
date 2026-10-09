@@ -1,46 +1,18 @@
-import { dayOf } from "../../../packages/core/src/utils/days";
 import { Account, type Abi } from "starknet";
 import { ShardReader, sameFelt, felt, uint, type ShardConnection } from "./shard-rpc";
-import { readConfirmedSnapshot, singleRow } from "./shard-snapshot";
-import { relayOperation, type LaborClaim, type LaborGrant } from "./ports";
+import { Effect } from "effect";
+import { RelayFailure, relayOperation, type LaborClaim, type LaborGrant, type RelayEffect } from "./ports";
 import { rpcAt } from "./rpc";
 
 interface LaborTarget {
   connection: ShardConnection;
-  adminRpcUrl: string;
   operatorAddress: string;
   privateKey: string;
 }
 
-/** The server derives the current seeded day; a client cannot supply its account or substitute a UTC day. */
-export const currentLaborDay = (connection: ShardConnection, heraldUrl: string, gameId: number) =>
-  relayOperation("read current labor day", async () => {
-    const snapshot = await readConfirmedSnapshot(connection, heraldUrl, gameId, ["GameRegistry", "SliceRules"]);
-    const game = singleRow(snapshot, "GameRegistry");
-    const rules = singleRow(snapshot, "SliceRules");
-    const latest = await new ShardReader(connection).head();
-    const block = await rpcAt(connection.rpcUrl).getBlock(latest);
-    const startMainAt = safeClock(game.start_main_at);
-    const end = safeClock(game.end_at);
-    if (
-      block.timestamp < startMainAt ||
-      block.timestamp >= end ||
-      game.settled === true ||
-      game.settled === 1 ||
-      game.settled === "1"
-    )
-      throw new Error("labor_game_not_playing");
-    const day = dayOf(
-      {
-        seed: BigInt(String(game.seed)),
-        startMainAt,
-        dayUnitSeconds: Number(uint(String(rules.day_unit_seconds), 32)),
-      },
-      block.timestamp,
-    );
-    if (!day) throw new Error("labor_day_unavailable");
-    return day.index;
-  });
+/** Global eligibility supersedes seeded game days; its published clock/key ABI is still pending. */
+export const currentLaborDay = (): RelayEffect<number> =>
+  Effect.fail(new RelayFailure({ operation: "interface_unavailable:labor.global_day" }));
 
 /** Direct role entry: a configured server account signs one grant; limits and exact retry rules remain on the shard. */
 export const writeLaborGrant = (target: LaborTarget, claim: LaborClaim) =>
@@ -60,7 +32,7 @@ export const writeLaborGrant = (target: LaborTarget, claim: LaborClaim) =>
       throw new Error("only_ledger_operator");
     const prior = await laborGrantAt(target.connection, calldata.slice(0, 4));
     if (prior) return matchingGrant(prior, claim);
-    const admin = rpcAt(target.adminRpcUrl);
+    const admin = rpcAt(target.connection.rpcUrl);
     if (!sameFelt(await admin.getChainId(), target.connection.chainId)) throw new Error("labor_admin_chain_differs");
     const account = new Account({ provider: admin, address: target.operatorAddress, signer: target.privateKey });
     const transaction = await account.execute({
@@ -96,11 +68,6 @@ const matchingGrant = (grant: LaborGrant, claim: LaborClaim) => {
   if (!sameFelt(grant.account, claim.account) || BigInt(grant.home) !== BigInt(claim.home))
     throw new Error("labor_already_claimed");
   return grant;
-};
-const safeClock = (value: unknown) => {
-  const number = Number(uint(String(value), 64));
-  if (!Number.isSafeInteger(number)) throw new Error("unsafe_game_clock");
-  return number;
 };
 const validateLaborAbi = (raw: unknown) => {
   const abi = (typeof raw === "string" ? JSON.parse(raw) : raw) as Abi;

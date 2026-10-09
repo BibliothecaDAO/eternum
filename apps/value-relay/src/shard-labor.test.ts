@@ -4,7 +4,6 @@ import { currentLaborDay, writeLaborGrant } from "./shard-labor";
 import { handleLaborRequest } from "./labor-route";
 import { grantDailyLabor } from "./relay";
 import type { RelayPorts, LaborClaim } from "./ports";
-import { dayOf } from "../../../packages/core/src/utils/days";
 
 const rpc = vi.hoisted(() => ({
   chain: vi.fn(),
@@ -32,8 +31,6 @@ vi.mock("starknet", async (original) => ({
 const connection = { chainId: "0x1", rpcUrl: "https://shard.test/rpc", gamesAddress: "0x10" };
 const target = {
   connection,
-  heraldUrl: "https://shard.test",
-  adminRpcUrl: "https://shard.test/admin",
   operatorAddress: "0x20",
   privateKey: "unused-test-key",
 };
@@ -120,34 +117,24 @@ it("fails closed on an unpublished widened home ABI or on reverted grants", asyn
   rpc.wait.mockResolvedValue({ isReverted: () => true });
   await expect(Effect.runPromise(writeLaborGrant(target, claim))).rejects.toThrow();
 });
-it("chooses the seeded game day from confirmed facts instead of UTC day", async () => {
-  const start = 1000;
-  const timestamp = dayOf({ seed: 42n, startMainAt: start, dayUnitSeconds: 100 }, start)!.end;
-  rpc.block.mockResolvedValue({
-    status: "ACCEPTED_ON_L2",
-    block_number: 10,
-    block_hash: "0xa",
-    parent_hash: "0x9",
-    timestamp,
-  });
-  const network = vi.spyOn(globalThis, "fetch").mockResolvedValue(
-    Response.json({
-      game_id: "7",
-      confirmed_block: 10,
-      models: [
-        {
-          model: "GameRegistry",
-          rows: [{ key: "7", value: { game_id: 7, seed: "42", start_main_at: start, end_at: 10000, settled: false } }],
-        },
-        { model: "SliceRules", rows: [{ key: "7", value: { game_id: 7, day_unit_seconds: 100 } }] },
-      ],
+it("holds the public route closed until the global labor day interface is published", async () => {
+  const grant = vi.fn(async () => ({ account: "0x123", home: "9", amount: "0" }));
+  const response = await handleLaborRequest(
+    new Request("https://play.test/api/value/labor", {
+      method: "POST",
+      headers: { origin: "https://play.test", "content-type": "application/json" },
+      body: JSON.stringify({ gameId: 7, realmId: 8, home: "9" }),
     }),
+    {
+      origin: "https://play.test",
+      chainId: "0x1",
+      authenticate: async () => ({ realmsId: "0x2", account: "0x123" }),
+      currentDay: currentLaborDay,
+      grant,
+    },
   );
-  try {
-    expect(await Effect.runPromise(currentLaborDay(connection, "https://shard.test", 7))).toBe(1);
-  } finally {
-    network.mockRestore();
-  }
+  expect(response.status).toBe(503);
+  expect(grant).not.toHaveBeenCalled();
 });
 it("authenticates the public request, rejects account/day injection and checks current wallet NFT ownership before writing", async () => {
   const write = vi.fn(() => Effect.succeed({ account: "0x123", home: "9", amount: "0" }));
