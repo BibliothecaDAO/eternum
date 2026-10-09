@@ -141,9 +141,9 @@ describe("procedural melee pose", () => {
 
     for (const seed of [0, 1, 2, 5]) {
       const idle = stateOf("t1-knight-default-sword", "t1-knight-default-shield", 0, seed);
-      expectPose(flatten(idle.arms.left), flatten(shield.idle[seed % 3]));
-      expectPose(flatten(idle.arms.right), flatten(sword.armPoses.idle[seed % 3]));
-      expect(idle.body?.pelvis.yaw).toBeCloseTo(sword.bodyPoses.idle[seed % 3].pelvis.yaw, 6);
+      expectPose(flatten(idle.arms.left), flatten(shield.idle[seed % shield.idle.length]));
+      expectPose(flatten(idle.arms.right), flatten(sword.armPoses.idle[seed % sword.armPoses.idle.length]));
+      expect(idle.body?.pelvis.yaw).toBeCloseTo(sword.bodyPoses.idle[seed % sword.bodyPoses.idle.length].pelvis.yaw, 6);
       expect(idle.body?.footLift).toEqual({ left: 0, right: 0 });
     }
     const held = stateOf("t1-knight-default-sword", "t1-knight-default-shield", 1);

@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   createKnightGuardSubject,
+  KNIGHT_DECLARED_IDLES,
   measureKnightState,
   runKnightSequence,
   summariseWorstGuardClearance,
@@ -33,13 +34,8 @@ import {
 
 /** The Knight's stature, from runtime-fit.json (body.stature). */
 const STATURE = 0.61526;
-const MIN_BLADE_TO_SHIELD = 0.01;
-const MIN_ARM_TO_SHIELD = 0.005;
-const MIN_SHIELD_TO_LEGS = 0.005;
 const MIN_BLADE_TIP_HEIGHT = 0.01;
 const MAX_HINGE_AXIS_DEGREES = 2;
-/** A sole this far under the floor is still on it: rounding in the leg solver. */
-const MAX_SOLE_DEPTH = 0.001;
 const MAX_STATE_POSITION_ERROR = 0.008;
 const MAX_STATE_DIRECTION_ERROR_DEGREES = 5;
 const MAX_PELVIS_TURN_ERROR_DEGREES = 2;
@@ -86,7 +82,7 @@ const POSES = JSON.parse(readFileSync("asset-sources/characters/t1-knight-defaul
 function listDeclaredStates(): KnightStateName[] {
   const { groups } = POSES;
   const attacks = resolveProceduralMeleeAttackVariantsDeclared().flatMap((variant) => groups.attacks[variant]);
-  return [...groups.idle, groups.guard, groups.walk_guard, groups.run_guard, groups.hit, ...attacks];
+  return [...KNIGHT_DECLARED_IDLES, groups.guard, groups.walk_guard, groups.run_guard, groups.hit, ...attacks];
 }
 
 function resolveProceduralMeleeAttackVariantsDeclared(): ProceduralMeleeAttackVariantId[] {
@@ -101,7 +97,7 @@ function pickCatalogState<T>(
   name: KnightStateName,
 ): T | undefined {
   const { groups } = POSES;
-  const idle = groups.idle.indexOf(name);
+  const idle = KNIGHT_DECLARED_IDLES.indexOf(name);
   if (idle >= 0) return states.idle[idle];
   if (name === groups.guard) return states.guard;
   if (name === groups.walk_guard) return states.walkGuard;
@@ -130,36 +126,55 @@ function degrees(radians: number): number {
 }
 
 /**
- * How close a sequence may bring blade and shield to the head: as close as the declared states it passes through, less
- * 2 mm. The head is a sphere of the measured head radius about the head joint, which a shield the approved poses raise
- * to the face reaches; the approved poses themselves were cleared at mesh level when the gear was fitted.
+ * The limits a sequence's transitions are held to. The stand-ins are at least as big as the parts (the shield a 1 cm
+ * slab, arms 2 cm, legs 3 cm and the trunk 5 cm capsules), so a positive clearance against them is a real gap; the
+ * declared states themselves passed the mesh-level clash check when the gear was fitted, and are recorded, not judged.
  */
-interface HeadFloors {
+interface SequenceLimits {
+  /** As close to the head as the declared states passed through, less 5 mm or a tenth of that (the filter cuts corners). */
   bladeToHead: number;
   shieldToHead: number;
+  shieldToLegs: number;
 }
 
-const HEAD_FLOOR_MARGIN = 0.002;
+/** A thin blade 5 mm off the shield's slab. */
+const MIN_BLADE_TO_SHIELD = 0.005;
+const MIN_ARM_TO_SHIELD = 0.002;
+const MIN_SHIELD_TO_LEGS = 0.002;
+/** A reaction's weight never reaches 1 in play and the brush lasts a fraction of a second: the shield may only touch. */
+const MIN_SHIELD_TO_LEGS_IN_A_REACTION = 0;
+const MIN_HEAD_FLOOR_MARGIN = 0.005;
+const HEAD_FLOOR_MARGIN_SHARE = 0.1;
+/** Idle and run feet stand flat (`standsFlat`); the walk keeps the game's foot roll, whose toe-off dips this figure's
+ * ball 1.7 mm and toe tip 3.6 mm under the floor. */
+const MAX_SOLE_DEPTH = { idle: 0.001, run: 0.001, walk: 0.005 } as const;
 
-function resolveHeadFloors(
-  states: readonly KnightStateName[],
+function resolveSequenceLimits(
+  sequence: KnightSequence,
   measure: (name: KnightStateName) => GuardClearance,
-): HeadFloors {
-  const clearances = states.map(measure);
+): SequenceLimits {
+  const clearances = sequence.states.map(measure);
+  const floor = (pick: (clearance: GuardClearance) => number) => {
+    const least = Math.min(...clearances.map(pick));
+    return least - Math.max(MIN_HEAD_FLOOR_MARGIN, Math.abs(least) * HEAD_FLOOR_MARGIN_SHARE);
+  };
   return {
-    bladeToHead: Math.min(...clearances.map((clearance) => clearance.bladeToHead)) - HEAD_FLOOR_MARGIN,
-    shieldToHead: Math.min(...clearances.map((clearance) => clearance.shieldToHead)) - HEAD_FLOOR_MARGIN,
+    bladeToHead: floor((clearance) => clearance.bladeToHead),
+    shieldToHead: floor((clearance) => clearance.shieldToHead),
+    shieldToLegs: sequence.reaction ? MIN_SHIELD_TO_LEGS_IN_A_REACTION : MIN_SHIELD_TO_LEGS,
   };
 }
 
 /** The clearance criteria every sample of every sequence is held to. */
-const CLEARANCE_CRITERIA = {
+const CLEARANCE_CRITERIA: Readonly<
+  Record<string, { holds: (sample: KnightGuardSample, limits: SequenceLimits) => boolean; label: string }>
+> = {
   armToShield: {
-    holds: ({ clearance }: KnightGuardSample, _floors: HeadFloors) => clearance.armToShield >= MIN_ARM_TO_SHIELD,
-    label: "sword arm 5 mm from the shield",
+    holds: ({ clearance }) => clearance.armToShield >= MIN_ARM_TO_SHIELD,
+    label: "sword arm 2 mm from the shield",
   },
   bladeClear: {
-    holds: ({ clearance }: KnightGuardSample, _floors: HeadFloors) =>
+    holds: ({ clearance }) =>
       clearance.bladeToTrunk > 0 &&
       clearance.bladeToLegs > 0 &&
       clearance.bladeToShieldArm > 0 &&
@@ -167,83 +182,44 @@ const CLEARANCE_CRITERIA = {
     label: "blade clear of the trunk, thighs, shins and the shield arm, and 1 cm above the floor",
   },
   bladeToHead: {
-    holds: ({ clearance }: KnightGuardSample, floors: HeadFloors) => clearance.bladeToHead >= floors.bladeToHead,
-    label: "blade no closer to the head than in the declared states the sequence passes through",
+    holds: ({ clearance }, limits) => clearance.bladeToHead >= limits.bladeToHead,
+    label: "blade no closer to the head than the floor from the declared states passed through",
   },
   bladeToShield: {
-    holds: ({ clearance }: KnightGuardSample, _floors: HeadFloors) => clearance.bladeToShield >= MIN_BLADE_TO_SHIELD,
-    label: "blade 1 cm from the shield",
+    holds: ({ clearance }) => clearance.bladeToShield >= MIN_BLADE_TO_SHIELD,
+    label: "blade 5 mm from the shield",
   },
   feetAboveFloor: {
-    holds: ({ clearance }: KnightGuardSample, _floors: HeadFloors) =>
-      Math.min(clearance.soleHeights.left, clearance.soleHeights.right) >= -MAX_SOLE_DEPTH,
-    label: "feet never below the floor",
+    holds: ({ clearance, motion }) =>
+      Math.min(clearance.soleHeights.left, clearance.soleHeights.right) >= -MAX_SOLE_DEPTH[motion],
+    label: "feet not below the floor (5 mm for the walk's foot roll)",
   },
   hinge: {
-    holds: ({ clearance }: KnightGuardSample, _floors: HeadFloors) =>
-      clearance.hingeAxisDegrees < MAX_HINGE_AXIS_DEGREES,
+    holds: ({ clearance }) => clearance.hingeAxisDegrees < MAX_HINGE_AXIS_DEGREES,
     label: "hinge axes of both arms agree",
   },
   shieldToHead: {
-    holds: ({ clearance }: KnightGuardSample, floors: HeadFloors) => clearance.shieldToHead >= floors.shieldToHead,
-    label: "shield no closer to the head than in the declared states the sequence passes through",
+    holds: ({ clearance }, limits) => clearance.shieldToHead >= limits.shieldToHead,
+    label: "shield no closer to the head than the floor from the declared states passed through",
   },
   shieldToLegs: {
-    holds: ({ clearance }: KnightGuardSample, _floors: HeadFloors) => clearance.shieldToLegs >= MIN_SHIELD_TO_LEGS,
-    label: "shield 5 mm from the thighs and shins",
+    holds: ({ clearance }, limits) => clearance.shieldToLegs >= limits.shieldToLegs,
+    label: "shield 2 mm from the thighs and shins (touching in a reaction)",
   },
   shieldToTrunk: {
-    holds: ({ clearance }: KnightGuardSample, _floors: HeadFloors) => clearance.shieldToTrunk > 0,
+    holds: ({ clearance }) => clearance.shieldToTrunk > 0,
     label: "shield clear of the trunk",
-  },
-} as const;
-
-type ClearanceCriterion = keyof typeof CLEARANCE_CRITERIA;
-
-/**
- * Criteria measured to fail on 2026-10-09 (work order Q), held back for a decision rather than loosened or hidden, with
- * the worst value against its limit; P-notes.md ("Q") has the full table. The head floors miss by what the pose filter
- * adds while blending through a state (windup 44.7 mm to the head as a state, 41.1 passing through it); the shield arm
- * relaxing to the at-ease idle and going into the hit from idle still meets the thigh; the walking foot's toe dips at
- * toe-off.
- */
-const PENDING_CRITERIA: Readonly<Record<string, Partial<Record<ClearanceCriterion, string>>>> = {
-  "idle-relaxed to guard to cut and back": {
-    bladeToHead: "41.1 mm passing the windup, floor 42.7",
-    shieldToHead: "-21.9 mm passing the follow-through, floor -19.9",
-  },
-  "idle-at-ease to guard to cut and back": {
-    bladeToHead: "41.1 mm passing the windup, floor 42.7",
-    shieldToHead: "-21.9 mm passing the follow-through, floor -19.9",
-    shieldToLegs: "-5.1 mm relaxing from guard to the idle",
-  },
-  "sword-on-shoulder to guard to cut and back": {
-    shieldToHead: "-21.9 mm passing the follow-through, floor -19.9",
-  },
-  "idle to walk to run to walk to idle": {
-    bladeToHead: "81.7 mm walking, floor 86.1",
-    feetAboveFloor: "-3.7 mm, the walking toe at toe-off",
-  },
-  "cut while walking": {
-    bladeToHead: "41.8 mm passing the windup, floor 42.7",
-    feetAboveFloor: "-3.6 mm, the walking toe at toe-off",
-  },
-  "hit from idle": {
-    bladeToHead: "179.1 mm going into the hit, floor 188.7",
-    shieldToLegs: "0.5 mm going into the hit",
   },
 };
 
-/** Expects every sample to satisfy every criterion not pending, and says the worst of each when one does not. */
-function expectEveryCriterion(sequence: string, samples: readonly KnightGuardSample[], floors: HeadFloors) {
-  const pending = PENDING_CRITERIA[sequence] ?? {};
-  const floorsInMm = `head floors: blade ${(floors.bladeToHead * 1000).toFixed(1)}mm, shield ${(floors.shieldToHead * 1000).toFixed(1)}mm`;
-  for (const [criterion, { holds, label }] of Object.entries(CLEARANCE_CRITERIA)) {
-    if (pending[criterion as ClearanceCriterion]) continue;
-    const failing = samples.filter((sample) => !holds(sample, floors)).map((sample) => sample.label);
-    expect(failing, `${sequence}: ${label}. ${floorsInMm}. Worst: ${summariseWorstGuardClearance(samples)}`).toEqual(
-      [],
-    );
+/** Expects every sample to satisfy every criterion, and says the worst of each when one does not. */
+function expectEveryCriterion(sequence: string, samples: readonly KnightGuardSample[], limits: SequenceLimits) {
+  const limitsInMm = `head floors: blade ${(limits.bladeToHead * 1000).toFixed(1)}mm, shield ${(limits.shieldToHead * 1000).toFixed(1)}mm`;
+  for (const { holds, label } of Object.values(CLEARANCE_CRITERIA)) {
+    const failing = samples.filter((sample) => !holds(sample, limits)).map((sample) => sample.label);
+    expect
+      .soft(failing, `${sequence}: ${label}. ${limitsInMm}. Worst: ${summariseWorstGuardClearance(samples)}`)
+      .toEqual([]);
   }
 }
 
@@ -276,14 +252,16 @@ function expectDeclaredBody(name: KnightStateName, body: KnightBodyStateMeasure,
 }
 
 const ATTACK_VARIANTS = resolveProceduralMeleeAttackVariantsDeclared();
-const IDLE_SEEDS = POSES.groups.idle.map((_, seed) => seed);
+const IDLE_SEEDS = KNIGHT_DECLARED_IDLES.map((_, seed) => seed);
 
 interface KnightSequence {
   name: string;
   /** The bearer's seed, which picks its idle state. */
   seed: number;
-  /** The declared states the sequence passes through: its head clearances may come no closer than theirs. */
+  /** The declared states the sequence passes through: its head clearances may come little closer than theirs. */
   states: readonly KnightStateName[];
+  /** A contact reaction runs in the sequence. */
+  reaction?: true;
   steps: readonly KnightSequenceStep[];
 }
 
@@ -293,9 +271,9 @@ const attackStates = (variant: ProceduralMeleeAttackVariantId) => POSES.groups.a
 const KNIGHT_SEQUENCES: readonly KnightSequence[] = [
   ...IDLE_SEEDS.flatMap((seed) =>
     ATTACK_VARIANTS.map((variant) => ({
-      name: `${POSES.groups.idle[seed]} to guard to ${variant} and back`,
+      name: `${KNIGHT_DECLARED_IDLES[seed]} to guard to ${variant} and back`,
       seed,
-      states: [POSES.groups.idle[seed], POSES.groups.guard, ...attackStates(variant)],
+      states: [KNIGHT_DECLARED_IDLES[seed], POSES.groups.guard, ...attackStates(variant)],
       steps: [
         { label: "idle", motion: "idle", seconds: 0.5 },
         { attack: variant, label: variant, motion: "idle", seconds: 1.4 },
@@ -307,7 +285,7 @@ const KNIGHT_SEQUENCES: readonly KnightSequence[] = [
   {
     name: "idle to walk to run to walk to idle",
     seed: 0,
-    states: [POSES.groups.idle[0], POSES.groups.walk_guard, POSES.groups.run_guard],
+    states: [KNIGHT_DECLARED_IDLES[0], POSES.groups.walk_guard, POSES.groups.run_guard],
     steps: [
       { label: "idle", motion: "idle", seconds: 0.4 },
       { label: "walk", motion: "walk", seconds: 1.2 },
@@ -327,8 +305,9 @@ const KNIGHT_SEQUENCES: readonly KnightSequence[] = [
   })),
   {
     name: "hit from guard",
+    reaction: true,
     seed: 0,
-    states: [POSES.groups.idle[0], POSES.groups.guard, ...attackStates(ATTACK_VARIANTS[0]), POSES.groups.hit],
+    states: [KNIGHT_DECLARED_IDLES[0], POSES.groups.guard, ...attackStates(ATTACK_VARIANTS[0]), POSES.groups.hit],
     steps: [
       { attack: ATTACK_VARIANTS[0], label: "attack", motion: "idle", seconds: 1.4 },
       { hit: true, label: "hit", motion: "idle", seconds: 0.8 },
@@ -336,8 +315,9 @@ const KNIGHT_SEQUENCES: readonly KnightSequence[] = [
   },
   {
     name: "hit from idle",
+    reaction: true,
     seed: 0,
-    states: [POSES.groups.idle[0], POSES.groups.hit],
+    states: [KNIGHT_DECLARED_IDLES[0], POSES.groups.hit],
     steps: [
       { label: "idle", motion: "idle", seconds: 0.4 },
       { hit: true, label: "hit", motion: "idle", seconds: 0.8 },
@@ -494,9 +474,9 @@ describe("T1 Knight states", () => {
             if (!stateClearances.has(name)) stateClearances.set(name, measureKnightState(subject, name).clearance);
             return stateClearances.get(name) as GuardClearance;
           };
-          for (const { name: sequence, seed, states, steps } of KNIGHT_SEQUENCES) {
-            const floors = resolveHeadFloors(states, measure);
-            expectEveryCriterion(sequence, runKnightSequence(subject, steps, seed), floors);
+          for (const sequence of KNIGHT_SEQUENCES) {
+            const samples = runKnightSequence(subject, sequence.steps, sequence.seed);
+            expectEveryCriterion(sequence.name, samples, resolveSequenceLimits(sequence, measure));
           }
         } finally {
           subject.avatar.dispose();

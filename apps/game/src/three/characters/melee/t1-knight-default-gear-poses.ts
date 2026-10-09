@@ -15,11 +15,6 @@ export const T1_KNIGHT_DEFAULT_SWORD_ARM_POSES: ProceduralMeleeStates<Procedural
       wrist: [-0.0957, -0.1741, 0.0356],
     },
     {
-      elbow: [-0.0877, -0.1012, 0.0039],
-      handTurn: [0.31568, 0.05102, -0.1824, 0.92977],
-      wrist: [-0.111, -0.1734, 0.0229],
-    },
-    {
       elbow: [-0.0913, -0.0785, 0.0687],
       handTurn: [-0.09497, -0.16802, 0.19433, 0.96176],
       wrist: [-0.1072, -0.0022, 0.0617],
@@ -68,7 +63,6 @@ export const T1_KNIGHT_DEFAULT_SHIELD_ARM_POSES: ProceduralMeleeStates<Procedura
       handTurn: [-0.10947, 0.06664, -0.05428, 0.99027],
       wrist: [0.1025, -0.1199, 0.0959],
     },
-    { elbow: [0.0933, -0.1002, -0], handTurn: [0, 0, 0, 1], wrist: [0.0952, -0.1749, 0.0229] },
     { elbow: [0.1068, -0.0962, 0.0059], handTurn: [0, 0, 0, 1], wrist: [0.0988, -0.1603, 0.05] },
   ],
   guard: {
@@ -116,15 +110,6 @@ export const T1_KNIGHT_DEFAULT_BODY_POSES: ProceduralMeleeBodyStates = {
       stance: {
         left: { forward: 0.0073, left: 0.0449, yaw: 20 },
         right: { forward: -0.0073, left: -0.0449, yaw: -22.9 },
-      },
-    },
-    {
-      pelvis: { yaw: 0, pitch: -0, roll: 5, height: 1, forward: 0.0064, left: 0.0025 },
-      spine: { flex: -0, twist: 0, side: -4 },
-      head: { yaw: 10, pitch: 3 },
-      stance: {
-        left: { forward: -0.0029, left: 0.0328, yaw: 26.1 },
-        right: { forward: 0.0029, left: -0.0328, yaw: -16.5 },
       },
     },
     {

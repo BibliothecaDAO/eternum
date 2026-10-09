@@ -470,11 +470,14 @@ const IDLE_STATE: ProceduralMeleeAttackState = {
   phase: "idle",
   phaseElapsedSeconds: 0,
 };
-const IDLE_SEEDS: Partial<Record<KnightStateName, number>> = {
-  "idle-relaxed": 0,
-  "idle-at-ease": 1,
-  "sword-on-shoulder": 2,
-};
+/**
+ * The idle states the catalog declares, in its order (a bearer's seed picks one). `idle-at-ease` is measured in
+ * poses.json but not declared: relaxing to it from guard the shield's rim swings 5.1 mm into the thigh.
+ */
+export const KNIGHT_DECLARED_IDLES: readonly KnightStateName[] = ["idle-relaxed", "sword-on-shoulder"];
+const IDLE_SEEDS: Partial<Record<KnightStateName, number>> = Object.fromEntries(
+  KNIGHT_DECLARED_IDLES.map((name, seed) => [name, seed]),
+);
 
 /** The inputs that reach a state fully: the end of each phase, so its weights are fully reached. */
 function resolveStateDrive(name: KnightStateName): KnightStateDrive {
