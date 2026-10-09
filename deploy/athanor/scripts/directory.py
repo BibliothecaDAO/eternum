@@ -54,4 +54,3 @@ def directory_status(config, status):
     if result.get("status") not in allowed:
         raise RuntimeError("Directory returned an unexpected shard status")
     return result
-
