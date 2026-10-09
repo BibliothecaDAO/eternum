@@ -45,6 +45,7 @@ const fixture = () => {
   const store: RelayStore = {
     progress: async () => progress,
     observe: async (block) => {
+      held.push(...(block.held ?? []));
       block.withdrawals.forEach((w) => withdrawals.set(w.transactionHash, w));
       block.results.forEach((r) => results.set(r.gameId, r));
       if (block.next)
@@ -306,12 +307,6 @@ it("matches the ledger and shard golden commitment vector", () => {
     "0x5d912378a36e87b3b4331c33a3cb97ad23ddfbcab670825f2fa18743f34c6d6",
   );
 });
-it("halts before storing a result whose payload differs from its commitment", async () => {
-  const f = fixture();
-  f.ports.shard.eventsPage = () => Effect.succeed({ ...block, results: [{ ...result, commitment: "0xbad" }] });
-  await expect(f.run()).rejects.toThrow();
-  expect(f.ports.ledger.postResult).not.toHaveBeenCalled();
-});
 
 it("compares chain and block identities as felts rather than hex spellings", async () => {
   const f = fixture();
@@ -433,4 +428,15 @@ it("accepts a historical ready payout even when the player has since changed or 
   await Effect.runPromise(runMonitor({ ...f.ports, ledger: { ...f.ports.ledger, pause } }, store));
   expect(progress.halted).toBeNull();
   expect(pause).not.toHaveBeenCalled();
+});
+
+it("holds only a corrupt result while recording and paying the rest of its page", async () => {
+  const f = fixture();
+  f.ports.shard.eventsPage = () => Effect.succeed({ ...block, results: [{ ...result, commitment: "0xbad" }] });
+  expect((await f.run()).status).toBe("ready");
+  expect(f.ports.ledger.pay).toHaveBeenCalledOnce();
+  expect(f.ports.ledger.postResult).not.toHaveBeenCalled();
+  expect(await f.store.held()).toContainEqual(
+    expect.objectContaining({ kind: "result", reason: "invalid_result_commitment" }),
+  );
 });

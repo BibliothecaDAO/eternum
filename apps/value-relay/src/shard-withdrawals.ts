@@ -28,16 +28,27 @@ export const shardWithdrawalPorts = (
       const { block, first, rows, next } = yield* relayOperation("read confirmed shard receipts", () =>
         reader.page(from, to, cursor),
       );
-      const results = yield* relayOperation("decode confirmed Blitz results", async () =>
-        rows
-          .filter((row) => row.model === "BlitzResult")
-          .flatMap((row) => {
-            const result = decodeBlitzResult(reader.connection.chainId, row);
-            return result ? [result] : [];
-          }),
-      );
+      const results: import("./ports").BlitzResult[] = [];
       const withdrawals: Withdrawal[] = [];
-      const held: HeldObligation[] = [];
+      const held: HeldObligation[] = rows
+        .filter((row) => row.model === "MalformedValueEvent")
+        .map((row) => ({
+          kind: "row",
+          reason: "decode confirmed value event",
+          row: { ...row, chainId: reader.connection.chainId, blockNumber: row.blockNumber ?? block.block_number },
+        }));
+      for (const row of rows.filter((row) => row.model === "BlitzResult")) {
+        try {
+          const result = decodeBlitzResult(reader.connection.chainId, row);
+          if (result) results.push({ ...result, blockNumber: row.blockNumber ?? block.block_number });
+        } catch {
+          held.push({
+            kind: "row",
+            reason: "decode confirmed Blitz result",
+            row: { ...row, chainId: reader.connection.chainId, blockNumber: row.blockNumber ?? block.block_number },
+          });
+        }
+      }
       for (const row of rows.filter((row) => row.model === "LordsWithdrawal")) {
         const resolved = yield* Effect.result(resolveWithdrawal(reader, bindings, row, row.confirmedAt));
         if (Result.isSuccess(resolved)) withdrawals.push(resolved.success);
@@ -95,6 +106,7 @@ const resolveWithdrawal = (reader: ShardReader, bindings: ReceiptBindings, row: 
     if (!realmsId) return yield* Effect.fail(new RelayFailure({ operation: "withdrawal_account_unknown" }));
     const seasonId = yield* bindings.frontierSeason(receipt.gameId, confirmedAt);
     return {
+      ...(row.blockNumber === undefined ? {} : { blockNumber: row.blockNumber }),
       chainId: felt(reader.connection.chainId),
       seasonId,
       transactionHash: row.transactionHash,

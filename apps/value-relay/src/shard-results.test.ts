@@ -99,7 +99,7 @@ it("ingests only completed records while retaining withdrawals in the same confi
     frontierSeason: () => Effect.succeed(4),
   });
   const block = await Effect.runPromise(ports.eventsPage(10, 10, null));
-  expect(block.results).toEqual([result]);
+  expect(block.results).toEqual([{ ...result, blockNumber: 10 }]);
   expect(block.withdrawals[0]).toMatchObject({ transactionHash: "0xdef", seasonId: 4, amount: "9000000000000000000" });
 });
 it("ignores a genuinely incomplete result but rejects its premature commitment", () => {

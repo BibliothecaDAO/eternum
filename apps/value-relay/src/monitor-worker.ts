@@ -24,7 +24,7 @@ interface MonitorEnv {
     realmsIdForAccount(account: string): Promise<string | null>;
     wasReadyPayoutWallet(account: string, wallet: string, at: number): Promise<boolean>;
   };
-  RELAY_REPORT: { held(): Promise<{ kind: string; reason: string; transactionHash: string }[]> };
+  RELAY_REPORT: { held(): Promise<{ kind: string; reason: string; transactionHash: string | null }[]> };
   MONITOR: DurableObjectNamespace<ValueMonitor>;
   LEDGER_RPC_URL: string;
   LEDGER_ADDRESS: string;
@@ -74,7 +74,7 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
       value: MonitorProgress | null;
       chests: { overdue: string[]; pending: number } | null;
       value_error: string | null;
-      held?: { kind: string; reason: string; transactionHash: string }[] | null;
+      held?: { kind: string; reason: string; transactionHash: string | null }[] | null;
     }>("observation");
     const progress = await this.status();
     const age = observation ? Math.floor(Date.now() / 1000) - observation.checked_at : Infinity;

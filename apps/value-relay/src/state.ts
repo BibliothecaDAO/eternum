@@ -29,8 +29,13 @@ export class DurableRelayStore implements RelayStore {
   }
   async observe(block: ConfirmedBlock): Promise<void> {
     await this.storage.transaction(async (tx) => {
-      for (const withdrawal of block.withdrawals) await tx.put(`withdrawal:${withdrawal.transactionHash}`, withdrawal);
-      for (const result of block.results) await tx.put(`result:${result.gameId}`, result);
+      for (const withdrawal of block.withdrawals)
+        await tx.put(`withdrawal:${withdrawal.transactionHash}`, {
+          ...withdrawal,
+          blockNumber: withdrawal.blockNumber ?? block.number,
+        });
+      for (const result of block.results)
+        await tx.put(`result:${result.gameId}`, { ...result, blockNumber: result.blockNumber ?? block.number });
       for (const held of block.held ?? []) await tx.put(heldKey(held), held);
       const previous = (await tx.get<RelayProgress>("progress")) ?? { nextBlock: 0, lastHash: null, halted: null };
       await tx.put("progress", {
@@ -57,20 +62,47 @@ export class DurableRelayStore implements RelayStore {
   async halt(reason: string) {
     await this.storage.put("progress", { ...(await this.progress()), halted: reason });
   }
-  async reset(row: string, reason: string, hash: string) {
+  async resetStart(row: string) {
+    const previous = await this.progress();
+    if (previous.halted !== row) throw new Error("fault_row_mismatch");
+    const number =
+      row === "confirmed_head_regressed"
+        ? (previous.page?.head ?? previous.nextBlock - 1)
+        : Number(row.split(":").at(-1));
+    if (!Number.isSafeInteger(number) || number < 0) throw new Error("fault_row_checkpoint_differs");
+    const queued = [
+      ...(await listStoredValues<Withdrawal>(this.storage, "withdrawal:")),
+      ...(await listStoredValues<BlitzResult>(this.storage, "result:")),
+    ];
+    return queued.some((value) => value.blockNumber === undefined) ? 0 : Math.min(previous.nextBlock, number);
+  }
+  async reset(row: string, reason: string, hash: string | null) {
     if (!reason.trim() || reason.length > 500) throw new Error("reset_reason_required");
+    const start = await this.resetStart(row);
     return this.storage.transaction(async (tx) => {
       const previous = await tx.get<RelayProgress>("progress");
       if (!previous || previous.halted !== row) throw new Error("fault_row_mismatch");
-      const number = Number(row.split(":").at(-1));
-      let progress: RelayProgress;
-      if (row.startsWith("confirmed_block_changed:") && number === (previous.page?.head ?? previous.nextBlock - 1)) {
-        progress = { ...previous, halted: null, lastHash: previous.page ? previous.lastHash : hash };
-        if (previous.page) progress.page = { ...previous.page, hash, token: "" };
-      } else if (Number.isSafeInteger(number) && number === previous.nextBlock)
-        progress = { ...previous, halted: null, nextBlock: number + 1, lastHash: hash, page: null };
-      else if (row === "confirmed_head_regressed") progress = { ...previous, halted: null, lastHash: hash };
-      else throw new Error("fault_row_checkpoint_differs");
+      const progress: RelayProgress = {
+        ...previous,
+        nextBlock: start,
+        lastHash: start === 0 ? null : hash,
+        page: null,
+        halted: null,
+      };
+      for (const prefix of ["withdrawal:", "result:"]) {
+        await tx.delete(`queue:${prefix}`);
+        let startAfter: string | undefined;
+        do {
+          const rows = await tx.list<{ blockNumber?: number }>({
+            prefix,
+            limit: 1000,
+            ...(startAfter ? { startAfter } : {}),
+          });
+          for (const [key, value] of rows)
+            if (value.blockNumber === undefined || value.blockNumber >= start) await tx.delete(key);
+          startAfter = rows.size === 1000 ? [...rows.keys()].at(-1) : undefined;
+        } while (startAfter);
+      }
       const sequence = ((await tx.get<number>("reset:sequence")) ?? 0) + 1;
       await tx.put(`reset:${sequence}`, {
         row,
@@ -111,8 +143,11 @@ export class DurableRelayStore implements RelayStore {
   }
 }
 
-const heldKey = (held: HeldObligation) =>
-  `held:${held.kind === "receipt" ? held.receipt.transactionHash : held.withdrawal.transactionHash}`;
+const heldKey = (held: HeldObligation) => {
+  if (held.kind === "result") return `held:result:${held.result.gameId}`;
+  if (held.kind === "row") return `held:row:${held.row.transactionHash}:${held.row.model}`;
+  return `held:${held.kind === "receipt" ? held.receipt.transactionHash : held.withdrawal.transactionHash}`;
+};
 
 export async function listStoredValues<A>(storage: DurableObjectStorage, prefix: string): Promise<A[]> {
   const values: A[] = [];

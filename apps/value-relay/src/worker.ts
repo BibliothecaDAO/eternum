@@ -117,12 +117,8 @@ export class ValueRelay extends DurableObject<RelayEnv> {
         relayOperation("reset relay row", async () => {
           const progress = await this.store.progress();
           if (progress.halted !== row) throw new Error("fault_row_mismatch");
-          const number =
-            row === "confirmed_head_regressed"
-              ? (progress.page?.head ?? progress.nextBlock - 1)
-              : Number(row.split(":").at(-1));
-          if (!Number.isSafeInteger(number) || number < 0) throw new Error("fault_row_unavailable");
-          const hash = await Effect.runPromise(this.ports.shard.blockHash(number));
+          const start = await this.store.resetStart(row);
+          const hash = start === 0 ? null : await Effect.runPromise(this.ports.shard.blockHash(start - 1));
           return this.store.reset(row, reason, hash);
         }),
       ),
@@ -208,7 +204,15 @@ export class ValueRelay extends DurableObject<RelayEnv> {
     return (await this.store.held()).map((row) => ({
       kind: row.kind,
       reason: row.reason,
-      transactionHash: row.kind === "receipt" ? row.receipt.transactionHash : row.withdrawal.transactionHash,
+      transactionHash:
+        row.kind === "receipt"
+          ? row.receipt.transactionHash
+          : row.kind === "payment"
+            ? row.withdrawal.transactionHash
+            : row.kind === "row"
+              ? row.row.transactionHash
+              : null,
+      ...(row.kind === "result" ? { gameId: row.result.gameId } : {}),
     }));
   }
   async status() {

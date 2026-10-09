@@ -4,6 +4,7 @@ import type { LedgerAccountLinkWrite, PayoutWallet } from "@realms-world/identit
 export class RelayFailure extends Data.TaggedError("RelayFailure")<{ operation: string }> {}
 export type RelayEffect<A> = Effect.Effect<A, RelayFailure>;
 export interface Withdrawal {
+  blockNumber?: number;
   chainId: string;
   seasonId: number;
   transactionHash: string;
@@ -39,6 +40,7 @@ export interface ChestPorts {
   finish(tokenId: string): RelayEffect<void>;
 }
 export interface BlitzResult extends BlitzCommitment {
+  blockNumber?: number;
   rows: readonly BlitzResultRow[];
 }
 export interface ConfirmedBlock {
@@ -54,6 +56,19 @@ export interface ConfirmedBlock {
   next?: string | null;
 }
 export type HeldObligation =
+  | { kind: "result"; reason: string; result: BlitzResult }
+  | {
+      kind: "row";
+      reason: string;
+      row: {
+        chainId: string;
+        model: string;
+        keys: readonly string[];
+        values: readonly string[];
+        transactionHash: string;
+        blockNumber: number;
+      };
+    }
   | {
       kind: "receipt";
       reason: string;

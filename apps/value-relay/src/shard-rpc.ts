@@ -1,3 +1,4 @@
+import { RelayFailure } from "./ports";
 import { hash, shortString, type RpcProvider } from "starknet";
 import { rpcAt } from "@realms-world/value-ledger";
 
@@ -28,6 +29,7 @@ interface ShardBlock {
   transactions?: string[];
 }
 export interface ValueRow {
+  blockNumber?: number;
   model: string;
   keys: string[];
   values: string[];
@@ -102,7 +104,8 @@ export class ShardReader {
         header = await this.header(event.block_number);
         headers.set(event.block_number, header);
       }
-      if (!sameFelt(header.block_hash, event.block_hash)) throw new Error("event_block_changed");
+      if (!sameFelt(header.block_hash, event.block_hash))
+        throw new RelayFailure({ operation: `confirmed_block_changed:${event.block_number}` });
       const receipt: ShardReceipt = {
         transaction_hash: event.transaction_hash,
         block_number: event.block_number,
@@ -111,7 +114,18 @@ export class ShardReader {
         finality_status: header.status,
         events: [event],
       };
-      rows.push(...this.rows(receipt, prefixes).map((row) => ({ ...row, confirmedAt: header!.timestamp })));
+      try {
+        rows.push(...this.rows(receipt, prefixes).map((row) => ({ ...row, confirmedAt: header!.timestamp })));
+      } catch {
+        rows.push({
+          model: "MalformedValueEvent",
+          keys: event.keys,
+          values: event.data,
+          transactionHash: event.transaction_hash,
+          blockNumber: event.block_number,
+          confirmedAt: header.timestamp,
+        });
+      }
     }
     return { block, first, rows, next: page.continuation_token || null };
   }
@@ -176,7 +190,9 @@ export class ShardReader {
       )
         throw new Error("unconfirmed_value_receipt");
       const frame = rowFrame(event.data);
-      return [{ model: name, ...frame, transactionHash: felt(receipt.transaction_hash) }];
+      return [
+        { model: name, ...frame, transactionHash: felt(receipt.transaction_hash), blockNumber: receipt.block_number },
+      ];
     });
     return rows;
   }

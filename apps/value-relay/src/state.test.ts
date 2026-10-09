@@ -55,6 +55,7 @@ it("persists confirmed obligations, cursor and halt across actual Worker restart
       durableObjectsPersist: join(root, "storage"),
     });
   const withdrawal = {
+    blockNumber: 0,
     chainId: "0x1",
     seasonId: 1,
     transactionHash: "0xabc",
@@ -121,7 +122,7 @@ it("persists confirmed obligations, cursor and halt across actual Worker restart
     const restored = (await (await worker.dispatchFetch("https://state.test/read")).json()) as {
       progress: { halted: string | null; nextBlock: number; lastHash: string };
     };
-    expect(restored.progress).toMatchObject({ halted: null, nextBlock: 1, lastHash: "0xb" });
+    expect(restored.progress).toMatchObject({ halted: null, nextBlock: 0, lastHash: null });
   } finally {
     await worker.dispose();
   }

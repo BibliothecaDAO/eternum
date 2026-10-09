@@ -94,6 +94,7 @@ it("reads a confirmed debit receipt and pays exact wei to the resolved account's
   const block = await Effect.runPromise(f.ports.eventsPage(10, 10, null));
   expect(block.withdrawals).toEqual([
     {
+      blockNumber: 10,
       chainId: "0x1",
       seasonId: 3,
       transactionHash: "0xabc",

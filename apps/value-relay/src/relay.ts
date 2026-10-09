@@ -10,15 +10,24 @@ export const runRelay = (chainId: string, ports: RelayPorts, store: RelayStore) 
     const progress = yield* relayOperation("read relay progress", () => store.progress());
     if (progress.halted) return { status: "halted" as const, reason: progress.halted };
     const head = yield* ports.shard.confirmedHead();
-    if (head < progress.nextBlock - 1) return yield* haltRelay(store, "confirmed_head_regressed");
+    if (head < progress.nextBlock - 1)
+      return yield* haltRelay(store, `confirmed_head_regressed:${progress.page?.head ?? progress.nextBlock - 1}`);
     yield* verifyObservedHead(ports, store, progress);
     const end = progress.page?.head ?? head;
     if (progress.nextBlock <= end) {
-      const page = yield* ports.shard.eventsPage(progress.nextBlock, end, progress.page?.token ?? null);
+      const observed = yield* Effect.result(
+        ports.shard.eventsPage(progress.nextBlock, end, progress.page?.token ?? null),
+      );
+      if (Result.isFailure(observed)) {
+        if (/^confirmed_block_changed:\d+$/.test(observed.failure.operation))
+          return yield* haltRelay(store, observed.failure.operation);
+        return yield* Effect.fail(observed.failure);
+      }
+      const page = observed.success;
       if (page.number !== end || (page.fromBlock ?? progress.nextBlock) !== progress.nextBlock)
-        return yield* haltRelay(store, "invalid_shard_page_range");
+        return yield* haltRelay(store, `invalid_shard_page_range:${progress.nextBlock}`);
       yield* validateBlock(chainId, end, page, progress.lastHash, store);
-      yield* relayOperation("persist confirmed obligations", () => store.observe(page));
+      yield* relayOperation("persist confirmed obligations", () => store.observe(separateInvalidRows(chainId, page)));
     }
     const payments = yield* payWithdrawals(ports, store);
     const results = yield* postResults(ports, store);
@@ -71,11 +80,28 @@ const validateBlock = (
     }
     if (parentHash !== null && BigInt(block.parentHash) !== BigInt(parentHash))
       return yield* haltRelay(store, `parent_hash_changed:${block.fromBlock ?? number}`);
-    if (block.results.some((result) => BigInt(blitzCommitment(result)) !== BigInt(result.commitment)))
-      return yield* haltRelay(store, `invalid_result_commitment:${number}`);
-    if ([...block.withdrawals, ...block.results].some((row) => BigInt(row.chainId) !== BigInt(chainId)))
-      return yield* haltRelay(store, `receipt_chain_differs:${number}`);
   });
+
+/** Content errors keep their evidence without suppressing valid obligations in the same page. */
+const separateInvalidRows = (chainId: string, page: ConfirmedBlock): ConfirmedBlock => {
+  const held = [...(page.held ?? [])];
+  const withdrawals = page.withdrawals.filter((withdrawal) => {
+    try {
+      if (BigInt(withdrawal.chainId) === BigInt(chainId)) return true;
+    } catch {}
+    held.push({ kind: "payment", withdrawal, reason: "receipt_chain_differs" });
+    return false;
+  });
+  const results = page.results.filter((result) => {
+    try {
+      if (BigInt(result.chainId) === BigInt(chainId) && BigInt(blitzCommitment(result)) === BigInt(result.commitment))
+        return true;
+    } catch {}
+    held.push({ kind: "result", result, reason: "invalid_result_commitment" });
+    return false;
+  });
+  return { ...page, withdrawals, results, held };
+};
 
 const payWithdrawals = (ports: RelayPorts, store: RelayStore) =>
   Effect.gen(function* () {
