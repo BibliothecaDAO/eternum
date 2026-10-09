@@ -192,6 +192,9 @@ def harness_invocation(args, environ, data=DATA, started=None):
     """The harness command against this shard: its private settings from harness.env, its reports under
     data/harness/<start time> unless the caller names a directory."""
     environment = {**environ, **shard.read_private_environment(data / "harness.env")}
+    environment["HARNESS_ADMIN_RPC_URL"] = "http://madara:9944/rpc/v0_10_2"
+    environment["RPC_URL"] = "http://rpc:8080/rpc/v0_10_2"
+    environment["HERALD_URL"] = "http://herald:3003"
     # The host runner may rewrite harness.env with host paths. Inside the image, DATA is the mounted copy.
     for field, filename in (("NATIVE_WORLD_MANIFEST", "native-world.json"),
                             ("GAMEPLAY_CONTRACTS_PATH", "gameplay-contracts.json"),
@@ -210,7 +213,7 @@ if __name__ == "__main__":
         identity = json.loads((DATA / "gameplay-contracts.json").read_text())
         environment["DEPLOYER_ACCOUNT_ADDRESS"] = identity["operatorAccountAddress"]
         environment["RPC_URL"] = "http://rpc:8080/rpc/v0_10_2"
-        environment["HARNESS_ADMIN_RPC_URL"] = environment["RPC_URL"]
+        environment["HARNESS_ADMIN_RPC_URL"] = "http://madara:9944/rpc/v0_10_2"
         environment["HERALD_URL"] = "http://herald:3003"
         os.execvpe("bun", ["bun", "deploy/athanor/harness/self-check.ts"], environment)
     if action == "harness":

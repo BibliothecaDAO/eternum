@@ -1,6 +1,6 @@
 import { CallData } from "starknet";
 import { createOperatorAccount } from "../../../config/deployer/clean/shared/madara-account";
-import { createRegistrarGame } from "../../../config/deployer/clean/registrar/calls";
+import { createRegistrarGame, resolveRegistrarExecutionDetails } from "../../../config/deployer/clean/registrar/calls";
 import {
   buildNativeGameParams,
   loadNativePresetConfiguration,
@@ -32,7 +32,7 @@ export async function launchHarnessGame(input: {
   shard: Shard;
   publicProvider: HarnessProvider;
 }) {
-  const privateProvider = new HarnessProvider(required("HARNESS_ADMIN_RPC_URL"));
+  const privateProvider = createHarnessAdminProvider(input.shard.rpcUrl);
   const manifest = readShardManifest<NativeWorldManifest>(required("NATIVE_WORLD_MANIFEST"));
   const address = required("DEPLOYER_ACCOUNT_ADDRESS"),
     privateKey = required("DEPLOYER_PRIVATE_KEY");
@@ -101,7 +101,7 @@ async function settleHarnessRoster(
 
 /** The launcher reserves free/open homes for legacy seasons only; Frontier assigns its home on the first action. */
 export async function prepareOpenHomes(gameId: number, owners: string[]): Promise<void> {
-  const provider = new HarnessProvider(required("HARNESS_ADMIN_RPC_URL"));
+  const provider = createHarnessAdminProvider(required("RPC_URL"));
   try {
     const manifest = readShardManifest<NativeWorldManifest>(required("NATIVE_WORLD_MANIFEST"));
     await assertProviderChain(provider, manifest, "HARNESS_ADMIN_RPC_URL");
@@ -111,7 +111,7 @@ export async function prepareOpenHomes(gameId: number, owners: string[]): Promis
       required("DEPLOYER_PRIVATE_KEY"),
     );
     for (const call of prepareHomeCalls(manifest.world.address, gameId, owners)) {
-      const sent = await launcher.execute(call);
+      const sent = await launcher.execute(call, resolveRegistrarExecutionDetails());
       await confirmedTransactionReceipt(provider, sent.transaction_hash);
     }
   } finally {
@@ -135,4 +135,14 @@ export function prepareHomeCalls(games: string, gameId: number, owners: readonly
       calldata: CallData.compile({ game_id: gameId, owners: owners.slice(offset, offset + 64) }),
     });
   return calls;
+}
+
+/** Administration must bypass the public endpoint's play-only fee and tip policy. */
+export function privateAdminRpcUrl(adminUrl: string, publicUrl: string): string {
+  const normalize = (url: string) => new URL(url).href.replace(/\/$/, "");
+  if (normalize(adminUrl) === normalize(publicUrl)) throw new Error("Administration requires the private node RPC");
+  return adminUrl;
+}
+export function createHarnessAdminProvider(publicUrl: string): HarnessProvider {
+  return new HarnessProvider(privateAdminRpcUrl(required("HARNESS_ADMIN_RPC_URL"), publicUrl));
 }

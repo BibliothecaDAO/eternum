@@ -9,7 +9,7 @@ import { createHarnessAccounts } from "./account-factory";
 import { connectActorClients, actorKey } from "./game-client";
 import { connectHarnessGameClient } from "./game-client";
 import { createHarnessGame, EXPLORER_TROOP_COUNT } from "./harness-game";
-import { launchHarnessGame } from "./game-setup";
+import { launchHarnessGame, createHarnessAdminProvider } from "./game-setup";
 import { launchFrontierSeason } from "./frontier";
 import { readPlayBounds } from "./player-invoke";
 import { HarnessProvider } from "./provider";
@@ -30,7 +30,7 @@ const fixture: WaveFixturePort = {
     const bounds = readPlayBounds(manifest);
     const shard = await openShard(required("HERALD_URL"), bindings.schemaIdentity);
     const provider = new HarnessProvider(shard.rpcUrl);
-    const privateProvider = new HarnessProvider(required("HARNESS_ADMIN_RPC_URL"));
+    const privateProvider = createHarnessAdminProvider(shard.rpcUrl);
     let clients: Awaited<ReturnType<typeof connectActorClients>> | undefined;
     const dispose = () => {
       clients?.forEach(({ client }) => client.dispose());
