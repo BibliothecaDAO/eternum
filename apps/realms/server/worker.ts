@@ -26,14 +26,16 @@ export default {
   },
 };
 
-/** Reads completed game ids from the launch Worker through its service binding. */
+/** Reads declared game entry terms from the launch Worker through its service binding. */
 const fetchLaunchDirectory = async (launch: IdentityEnv["LAUNCH"]) => {
   const response = await launch.fetch("https://launch/api/factory/directory-games", {
     signal: AbortSignal.timeout(5_000),
     redirect: "manual",
   });
   if (!response.ok) throw new Error(`Launch directory answered ${response.status}`);
-  return (await response.json()) as { chains: { chainId: string; gameIds: number[] }[] };
+  return (await response.json()) as {
+    chains: { chainId: string; games: { gameId: number; entry: import("@realms-world/identity").GameEntry }[] }[];
+  };
 };
 
 export { RatingReader } from "./rating-reader";

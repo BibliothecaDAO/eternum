@@ -39,7 +39,7 @@ export class D1SlotStore implements SlotStore {
     private readonly launches: D1LaunchStore,
   ) {}
 
-  async create(name: string, closesAt: string): Promise<PlaytestSlot> {
+  async create(name: string, closesAt: string): Promise<void> {
     if (
       (await this.launches.find("game", "madara.blitz", `${name}-1`)) &&
       !(await this.db.prepare("SELECT name FROM playtest_slots WHERE name = ?").bind(name).first())
@@ -53,7 +53,7 @@ export class D1SlotStore implements SlotStore {
       )
       .bind(name, closes)
       .run();
-    const slot = await this.get(name).catch((error: unknown) => {
+    const slot = await this.rawSlot(name).catch((error: unknown) => {
       if (error instanceof SlotNotFound) throw new SlotConflict("Registration deadline has passed");
       throw error;
     });
@@ -68,11 +68,14 @@ export class D1SlotStore implements SlotStore {
         singleRealmMode: false,
       }),
     ]);
-    return slot;
   }
 
-  async get(name: string): Promise<PlaytestSlot> {
+  private async rawSlot(name: string) {
     return slotFrom(await this.db.batch<SlotRow | RegistrationRow>(this.slotReads(name)));
+  }
+  async get(name: string): Promise<PlaytestSlot> {
+    const slot = await this.rawSlot(name);
+    return { ...slot, entry: await this.launches.entryForSlot(name) };
   }
 
   async list(): Promise<PlaytestSlot[]> {
@@ -81,10 +84,24 @@ export class D1SlotStore implements SlotStore {
       this.db.prepare("SELECT * FROM playtest_registrations ORDER BY position"),
     ]);
     const rosters = rosterBySlot(registrations!.results as RegistrationRow[]);
-    return (slots!.results as SlotRow[]).map((row) => toSlot(row, rosters.get(row.name) ?? []));
+    const visible: PlaytestSlot[] = [];
+    for (const row of slots!.results as SlotRow[]) {
+      try {
+        visible.push({
+          ...toSlot(row, rosters.get(row.name) ?? []),
+          entry: await this.launches.entryForSlot(row.name),
+        });
+      } catch (error) {
+        if (error instanceof Error && error.message === "slot_entry_opening") continue;
+        throw error;
+      }
+    }
+    return visible;
   }
 
   async register(name: string, players: readonly SlotPlayer[]): Promise<PlaytestSlot> {
+    const entry = await this.launches.entryForSlot(name);
+    if (entry.kind !== "free") throw new SlotConflict("Paid registration is on the ledger");
     const entries = players.map(({ realmsId, account }) => ({
       realmsId: realmsId === null ? null : normalizeAddress(realmsId),
       account: normalizeAddress(account),
@@ -99,7 +116,7 @@ export class D1SlotStore implements SlotStore {
     const registered = new Set(slot.registrations.map(({ account }) => account));
     if (slot.frozenAt || slot.closed || !entries.every(({ account }) => registered.has(account)))
       throw new SlotConflict("Registration is closed");
-    return slot;
+    return { ...slot, entry };
   }
 
   /** One registration, written only while the slot is open, after every earlier one; a repeat changes nothing. */
@@ -115,8 +132,8 @@ export class D1SlotStore implements SlotStore {
   }
 
   async freeze(name: string): Promise<PlaytestSlot> {
-    const slot = await this.get(name);
-    if (slot.frozenAt) return slot;
+    const slot = await this.rawSlot(name);
+    if (slot.frozenAt) return this.get(name);
     if (!slot.closed) throw new SlotConflict("Registration is still open");
     await this.db.batch([
       this.db.prepare("UPDATE playtest_registrations SET game_number = 1 WHERE slot_name = ?").bind(name),
@@ -148,7 +165,7 @@ export class D1SlotStore implements SlotStore {
 }
 
 /** A slot from the two reads of slotReads, in order. */
-const slotFrom = (results: D1Result<SlotRow | RegistrationRow>[]): PlaytestSlot => {
+const slotFrom = (results: D1Result<SlotRow | RegistrationRow>[]): Omit<PlaytestSlot, "entry"> => {
   const row = results[0]!.results[0] as SlotRow | undefined;
   if (!row) throw new SlotNotFound("Playtest slot not found");
   return toSlot(row, (results[1]!.results as RegistrationRow[]).map(toRegistration));
@@ -167,7 +184,7 @@ const rosterBySlot = (rows: RegistrationRow[]) => {
   return rosters;
 };
 
-const toSlot = (row: SlotRow, registrations: SlotRegistration[]): PlaytestSlot => ({
+const toSlot = (row: SlotRow, registrations: SlotRegistration[]): Omit<PlaytestSlot, "entry"> => ({
   name: row.name,
   closesAt: new Date(row.closes_at).toISOString(),
   frozenAt: row.frozen_at === null ? null : new Date(row.frozen_at).toISOString(),

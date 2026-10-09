@@ -97,7 +97,9 @@ it("opens a Blitz window, ticks the schedule, queues an authorized launch and re
   expect(opened.status).toBe(200);
   await (await mf.getWorker()).scheduled({ cron: "* * * * *" });
   const slots = (await (await mf.dispatchFetch(`${ORIGIN}/api/slots`)).json()) as { slots: { name: string }[] };
-  expect(slots.slots.map(({ name }) => name)).toEqual([expect.stringMatching(/^blitz-\d{8}-(11|20)00$/)]);
+  expect(slots.slots).toEqual([]);
+  const waiting = await db.prepare("SELECT name FROM playtest_slots").first<{ name: string }>();
+  expect(waiting?.name).toMatch(/^blitz-\d{8}-(11|20)00$/);
 
   expect(await (await mf.dispatchFetch(`${ORIGIN}/api/factory/health`)).json()).toMatchObject({
     service: "launch",

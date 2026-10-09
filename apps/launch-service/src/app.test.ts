@@ -6,7 +6,7 @@ import type { IdentityResolver } from "./auth";
 import { D1CalendarStore } from "./calendar-store";
 import { D1SlotStore } from "./slot-store";
 import { D1LaunchStore } from "./store";
-import { createLaunchTestDatabase, testChain } from "./test-database";
+import { completeFreeFixture, createLaunchTestDatabase, testChain } from "./test-database";
 import { day, frontierSeasonEnd } from "./test-dates";
 
 const ALLOWED_ORIGIN = "https://play.realms.party";
@@ -24,9 +24,11 @@ const signedOut: IdentityResolver = { resolve: () => Effect.succeed(null) };
 
 let database: Awaited<ReturnType<typeof createLaunchTestDatabase>>;
 beforeEach(async () => {
+  vi.spyOn(D1LaunchStore.prototype, "entryForSlot").mockResolvedValue({ kind: "free" });
   database = await createLaunchTestDatabase();
 });
 afterEach(async () => {
+  vi.restoreAllMocks();
   await database.close();
 });
 
@@ -145,7 +147,7 @@ describe("launcher rosters and off-timetable slots", () => {
   test("a launcher creates a slot and registers accounts beside a player, once each, until it closes", async () => {
     const { app, slots } = createApp(signedIn(ALLOWED_ADDRESS));
     const closesAt = soon();
-    expect((await app.request(post("/api/slots", { name: "campaign-1", closesAt }))).status).toBe(200);
+    expect((await app.request(post("/api/slots", { name: "campaign-1", closesAt }))).status).toBe(202);
     expect((await app.request(post("/api/slots", { name: "campaign-1", closesAt: soon() + "x" }))).status).toBe(400);
     const moved = new Date(Date.parse(closesAt) + 60_000).toISOString();
     expect((await app.request(post("/api/slots", { name: "campaign-1", closesAt: moved }))).status).toBe(409);
@@ -204,7 +206,7 @@ describe("launcher rosters and off-timetable slots", () => {
     await calendar.set(season, now);
     await scheduleFrontierSeason(store, season);
     const frontier = (await store.startNext(Date.now() + 1_000))!;
-    await store.complete(frontier.id, {
+    await completeFreeFixture(store, frontier.id, {
       environment: "madara.frontier",
       chain: "madara",
       gameType: "frontier",
@@ -227,7 +229,7 @@ describe("launcher rosters and off-timetable slots", () => {
       .run();
     await slots.freeze("directory-blitz");
     const blitz = (await store.startNext(Date.now() + 1_000))!;
-    await store.complete(blitz.id, {
+    await completeFreeFixture(store, blitz.id, {
       environment: "madara.blitz",
       chain: "madara",
       gameType: "blitz",
@@ -245,7 +247,7 @@ describe("launcher rosters and off-timetable slots", () => {
     const directory = await app.request("https://play.realms.party/api/factory/directory-games");
     expect(directory.status).toBe(200);
     expect(await directory.json()).toEqual({
-      chains: [{ chainId: frontier.chainId, gameIds: [11, 12] }],
+      chains: [{ chainId: frontier.chainId, games: [11, 12].map((gameId) => ({ gameId, entry: { kind: "free" } })) }],
     });
   });
 
@@ -253,7 +255,7 @@ describe("launcher rosters and off-timetable slots", () => {
     const operator = createApp(signedOut);
     const token = { token: OPERATOR_TOKEN };
     expect((await operator.app.request(post("/api/slots", { name: "bots", closesAt: soon() }, token))).status).toBe(
-      200,
+      202,
     );
     const bots = await operator.app.request(post("/api/slots/bots/register", { accounts: ["0xb07"] }, token));
     expect(bots.status).toBe(200);

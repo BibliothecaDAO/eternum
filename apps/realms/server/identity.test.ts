@@ -28,7 +28,9 @@ const OPERATOR_TOKEN = "operator-test-token";
 
 /** The Heralds this test's shards answer from, by URL; a missing entry answers 503. */
 const heralds = new Map<string, unknown>();
-let launchDirectory: { chains: { chainId: string; gameIds: number[] }[] } = { chains: [] };
+let launchDirectory: {
+  chains: { chainId: string; games: { gameId: number; entry: import("@realms-world/identity").GameEntry }[] }[];
+} = { chains: [] };
 const fetchShard = (async (input: RequestInfo | URL) => {
   const body = heralds.get(new URL(input instanceof Request ? input.url : input).href);
   return body === undefined ? new Response("unavailable", { status: 503 }) : Response.json(body);
@@ -760,8 +762,15 @@ describe("identity Worker", () => {
   it("lists each shard's live games under that shard, settled ones in a paged history, with a player's standing when asked, names a shard it cannot read, and refuses a listed chain id or another guardian's shard", async () => {
     await env.DB.prepare("DELETE FROM shards WHERE url = ?").bind("https://devices.realms.test").run();
     const operator = createBrowser();
-    const game = (gameId: number, name: string) => ({ game_id: gameId, name, status: "Running" });
-    launchDirectory = { chains: [{ chainId: "0xa", gameIds: [1, 3] }] };
+    const game = (gameId: number, name: string) => ({
+      game_id: gameId,
+      name,
+      status: "Running",
+      entry: { kind: "free" },
+    });
+    launchDirectory = {
+      chains: [{ chainId: "0xa", games: [1, 3].map((gameId) => ({ gameId, entry: { kind: "free" as const } })) }],
+    };
     heralds.set("https://shard-a.test/manifest", shardManifest("0xa"));
     heralds.set("https://shard-a.test/games", {
       chain: "0xa",
@@ -806,7 +815,10 @@ describe("identity Worker", () => {
     ]);
 
     heralds.set("https://shard-b.test/games", { chain: "0xb", games: [game(1, "blitz-b")] });
-    launchDirectory.chains.push({ chainId: "0xb", gameIds: [1] });
+    launchDirectory.chains.push({
+      chainId: "0xb",
+      games: [1].map((gameId) => ({ gameId, entry: { kind: "free" as const } })),
+    });
     const listed = [
       {
         url: "https://shard-a.test",
@@ -845,6 +857,7 @@ describe("identity Worker", () => {
     const settled = (gameId: number, name: string, endAt: number) => ({
       ...game(gameId, name),
       status: "Settled",
+      entry: { kind: "free" },
       clock: { end_at: endAt },
     });
     const live = { ...game(1, "blitz-d"), clock: { end_at: 900 } };
@@ -863,7 +876,10 @@ describe("identity Worker", () => {
         201,
       );
     }
-    launchDirectory.chains.push({ chainId: "0xd", gameIds: [1, 2] }, { chainId: "0xe", gameIds: [1, 2] });
+    launchDirectory.chains.push(
+      { chainId: "0xd", games: [1, 2].map((gameId) => ({ gameId, entry: { kind: "free" as const } })) },
+      { chainId: "0xe", games: [1, 2].map((gameId) => ({ gameId, entry: { kind: "free" as const } })) },
+    );
     expect(await list()).toEqual([
       ...listed,
       { url: "https://shard-d.test", chainId: "0xd", status: "active", games: [live] },
@@ -923,7 +939,10 @@ describe("identity Worker", () => {
     const relisted = await admitE();
     expect(relisted.status).toBe(201);
     expect(await relisted.json()).toEqual({ url: "https://shard-e.test", chainId: "0xee", status: "active" });
-    launchDirectory.chains.push({ chainId: "0xee", gameIds: [1] });
+    launchDirectory.chains.push({
+      chainId: "0xee",
+      games: [1].map((gameId) => ({ gameId, entry: { kind: "free" as const } })),
+    });
     expect((await list()).at(-1)).toEqual({
       url: "https://shard-e.test",
       chainId: "0xee",

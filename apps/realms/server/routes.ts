@@ -26,7 +26,9 @@ import { handlePushSubscriptions } from "./push-notifications";
 interface WorkerPlatform {
   cache: Cache;
   fetchShard: typeof fetch;
-  readLaunchDirectory: () => Promise<{ chains: { chainId: string; gameIds: number[] }[] }>;
+  readLaunchDirectory: () => Promise<{
+    chains: { chainId: string; games: { gameId: number; entry: import("@realms-world/identity").GameEntry }[] }[];
+  }>;
 }
 
 /** Every /api route: identity under /api/auth, then devices, profiles, chat, notification settings and the directory. */

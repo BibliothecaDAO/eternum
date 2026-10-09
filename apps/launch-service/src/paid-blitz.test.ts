@@ -37,6 +37,10 @@ const fixture = () => {
   const value = {
     openBlitz: vi.fn(async () => {
       order.push("open");
+      return {
+        kind: "paid" as const,
+        ledger: { address: "0x10", chainId: "0x2", feeToken: "0x30", shard: "0x1", gameId: 7 },
+      };
     }),
     validateBlitz: vi.fn(async () => {}),
     refundBlitz: vi.fn(async () => null),
@@ -50,14 +54,20 @@ const fixture = () => {
   let saved: typeof frozen | null = null;
   const rosters = { read: async () => saved, save: async (_key: unknown, row: typeof frozen) => (saved = row) };
   const source = { readClosed: vi.fn(() => Effect.succeed(frozen)) };
-  const store = { loadGame: async () => null, saveGame: vi.fn(async (row: LaunchGameSummary) => row) };
+  const store = {
+    saveEntry: vi.fn(async () => {
+      order.push("terms");
+    }),
+    loadGame: async () => null,
+    saveGame: vi.fn(async (row: LaunchGameSummary) => row),
+  };
   const run = () => launchPaidBlitz("0x1", "paid-game", shard, value, source, rosters, store, 100);
   return { order, shard, value, source, store, run };
 };
 it("creates an empty shard game before paid registration and installs exactly the pinned ledger pairs", async () => {
   const f = fixture();
   const result = await f.run();
-  expect(f.order).toEqual(["create", "open", "freeze", "seat"]);
+  expect(f.order).toEqual(["create", "open", "terms", "freeze", "seat"]);
   expect(f.value.openBlitz).toHaveBeenCalledWith({ chainId: "0x1", gameId: 7 }, { start: 100, end: 160 });
   expect(f.shard.install).toHaveBeenCalledWith(7, [{ wallet: "0x123", account: "0x456" }]);
   expect(result).toMatchObject({ gameId: 7, startTime: 105, finalizeAt: 165, settlementTransactions: 2 });
@@ -68,8 +78,22 @@ it("keeps the real game key while waiting for registration and reuses the frozen
   await expect(f.run()).rejects.toMatchObject({ secondsUntilClose: 60 });
   expect(f.store.saveGame).toHaveBeenCalledWith(expect.objectContaining({ gameId: 7 }));
   expect(f.shard.install).not.toHaveBeenCalled();
+  expect(f.store.saveEntry).toHaveBeenCalledWith(
+    "madara.blitz",
+    "paid-game",
+    expect.objectContaining({ kind: "paid" }),
+  );
   f.shard.install.mockRejectedValueOnce(new Error("lost freeze acknowledgment"));
   await expect(f.run()).rejects.toThrow("lost freeze");
   await f.run();
   expect(f.source.readClosed).toHaveBeenCalledTimes(2);
+});
+
+it("does not declare paid terms until the ledger opening confirms", async () => {
+  const f = fixture();
+  f.value.openBlitz.mockRejectedValueOnce(new Error("ledger unavailable"));
+  await expect(f.run()).rejects.toThrow("ledger unavailable");
+  expect(f.store.saveGame).toHaveBeenCalled();
+  expect(f.store.saveEntry).not.toHaveBeenCalled();
+  expect(f.shard.install).not.toHaveBeenCalled();
 });

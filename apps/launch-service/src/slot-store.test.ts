@@ -8,9 +8,11 @@ import { blitzSlotName, day } from "./test-dates";
 
 let database: Awaited<ReturnType<typeof createLaunchTestDatabase>>;
 beforeEach(async () => {
+  vi.spyOn(D1LaunchStore.prototype, "entryForSlot").mockResolvedValue({ kind: "free" });
   database = await createLaunchTestDatabase();
 });
 afterEach(async () => {
+  vi.restoreAllMocks();
   await database.close();
 });
 
@@ -31,7 +33,8 @@ test("registration and frozen groups survive concurrency, an interrupted freeze 
   const slots = new D1SlotStore(database.db, launches);
   const closesAt = new Date(Date.now() + 60_000).toISOString();
   await slots.create("friday", closesAt);
-  expect(await slots.create("friday", closesAt)).toMatchObject({ name: "friday", closesAt });
+  await slots.create("friday", closesAt);
+  expect(await slots.get("friday")).toMatchObject({ name: "friday", closesAt, entry: { kind: "free" } });
   await expect(slots.create("friday", new Date(Date.now() + 120_000).toISOString())).rejects.toThrow("immutable");
   await expect(slots.create("late", new Date(Date.now() - 1_000).toISOString())).rejects.toThrow("deadline");
   expect((await slots.list()).map((slot) => slot.closesAt)).toEqual([closesAt]);

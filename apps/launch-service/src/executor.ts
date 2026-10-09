@@ -1,6 +1,6 @@
 import { Context, Effect, Layer } from "effect";
 import type { ShardManifest } from "@bibliothecadao/eternum/game-sync";
-import type { LaunchRunStore } from "../../../config/deployer/clean/launch/run-store";
+import type { LaunchEntryStore } from "./entry";
 import type { LaunchEnv } from "./env";
 import { LaunchExecutionFailure } from "./errors";
 import type { LaunchRun, LaunchSummary } from "./model";
@@ -15,7 +15,7 @@ interface LaunchTarget {
   privateKey: string;
 }
 interface LaunchExecutorService {
-  execute(run: LaunchRun, store: LaunchRunStore): Effect.Effect<LaunchSummary, LaunchExecutionFailure>;
+  execute(run: LaunchRun, store: LaunchEntryStore): Effect.Effect<LaunchSummary, LaunchExecutionFailure>;
   refund(run: LaunchRun): Effect.Effect<number | null, LaunchExecutionFailure>;
 }
 export class LaunchExecutor extends Context.Service<LaunchExecutor, LaunchExecutorService>()("launch/LaunchExecutor") {}
@@ -73,7 +73,7 @@ export const launchExecutorLayer = (
   });
 const executeRun = async (
   run: LaunchRun,
-  store: LaunchRunStore,
+  store: LaunchEntryStore,
   target: LaunchTarget,
   value: BlitzValuePort,
   source: BlitzRegistrationSource,

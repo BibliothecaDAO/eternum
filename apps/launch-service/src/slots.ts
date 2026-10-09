@@ -15,6 +15,7 @@ export interface SlotRegistration extends SlotPlayer {
 }
 
 export interface PlaytestSlot {
+  entry: import("@realms-world/identity").GameEntry;
   name: string;
   closesAt: string;
   frozenAt: string | null;
@@ -24,7 +25,7 @@ export interface PlaytestSlot {
 
 export interface SlotStore {
   /** Creates the slot once; a repeat with the same closing time is the same slot, another closing time a conflict. */
-  create(name: string, closesAt: string): Promise<PlaytestSlot>;
+  create(name: string, closesAt: string): Promise<void>;
   get(name: string): Promise<PlaytestSlot>;
   list(): Promise<PlaytestSlot[]>;
   /** Registers players while registration is open; a player already registered stays as they were. */

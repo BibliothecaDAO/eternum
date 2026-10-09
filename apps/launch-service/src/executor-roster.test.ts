@@ -74,7 +74,14 @@ it("replaces the launcher's supplied Blitz roster with the persisted ledger rost
   };
   const layer = launchExecutorLayer(
     target,
-    { openBlitz: async () => {}, validateBlitz: async () => {}, refundBlitz: async () => null },
+    {
+      openBlitz: async (key) => ({
+        kind: "paid",
+        ledger: { address: "0x10", chainId: "0x2", feeToken: "0x30", shard: key.chainId, gameId: key.gameId },
+      }),
+      validateBlitz: async () => {},
+      refundBlitz: async () => null,
+    },
     source,
     new D1BlitzRosterStore(database.db),
   );

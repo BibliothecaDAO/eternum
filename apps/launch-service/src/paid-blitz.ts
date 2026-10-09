@@ -1,11 +1,12 @@
 import { Effect } from "effect";
 import type { LedgerGameKey } from "@realms-world/value-ledger";
 import { freezeBlitzRoster, type BlitzRegistrationSource, type D1BlitzRosterStore } from "./blitz-roster";
-import type { LaunchRunStore } from "../../../config/deployer/clean/launch/run-store";
+import type { LaunchEntryStore } from "./entry";
+import type { GameEntry } from "@realms-world/identity";
 import type { LaunchGameSummary } from "../../../config/deployer/clean/types";
 
 export interface BlitzValuePort {
-  openBlitz(key: LedgerGameKey, window: { start: number; end: number }): Promise<void>;
+  openBlitz(key: LedgerGameKey, window: { start: number; end: number }): Promise<GameEntry>;
   validateBlitz(key: LedgerGameKey, window: { start: number; end: number }): Promise<void>;
   refundBlitz(key: LedgerGameKey): Promise<number | null>;
 }
@@ -24,14 +25,15 @@ export const launchPaidBlitz = async (
   value: BlitzValuePort,
   source: BlitzRegistrationSource,
   rosters: Pick<D1BlitzRosterStore, "read" | "save">,
-  store: LaunchRunStore,
+  store: LaunchEntryStore,
   plannedStart: number,
 ): Promise<LaunchGameSummary> => {
   const created = await shard.create();
   if (!created.gameId) throw new Error("created_blitz_has_no_id");
   await store.saveGame(created);
   const key = { chainId, gameId: created.gameId };
-  await value.openBlitz(key, { start: plannedStart, end: plannedStart + created.durationSeconds! });
+  const entry = await value.openBlitz(key, { start: plannedStart, end: plannedStart + created.durationSeconds! });
+  await store.saveEntry(created.environment, created.gameName, entry);
   const roster = await Effect.runPromise(freezeBlitzRoster({ chainId, gameName }, source, rosters));
   if (roster.gameId !== key.gameId) throw new Error("frozen_ledger_game_differs");
   await shard.install(key.gameId, roster.registrations);

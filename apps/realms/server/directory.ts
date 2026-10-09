@@ -1,3 +1,4 @@
+import { readGameEntry, type GameEntry } from "@realms-world/identity";
 import { Effect } from "effect";
 import type { HeraldGameDirectory, HeraldGameDirectoryEntry, ShardManifest } from "@bibliothecadao/eternum/game-sync";
 
@@ -29,7 +30,7 @@ interface DirectoryDependencies {
 }
 
 interface LaunchDirectory {
-  chains: { chainId: string; gameIds: number[] }[];
+  chains: { chainId: string; games: { gameId: number; entry: GameEntry }[] }[];
 }
 
 /**
@@ -45,8 +46,8 @@ export const handleDirectory = async (request: Request, dependencies: DirectoryD
   const listings = await listShards(dependencies, player);
   return json({
     shards: listings.map((listing) =>
-      listing.games === null
-        ? listing
+      listing.games === null || launchDirectory === null
+        ? { ...listing, games: null, error: "unavailable" }
         : {
             ...listing,
             games: playerGames(listing, launchDirectory).filter((game) => !isSettled(game)),
@@ -81,7 +82,9 @@ export const handleDirectoryHistory = async (request: Request, dependencies: Dir
   return json({
     games,
     next: after.length > limit ? cursorOf(games.at(-1)!) : null,
-    failures: listings.filter((listing) => listing.games === null).map(({ url }) => ({ url, error: "unavailable" })),
+    failures: listings
+      .filter((listing) => listing.games === null || launchDirectory === null)
+      .map(({ url }) => ({ url, error: "unavailable" })),
   });
 };
 
@@ -116,19 +119,15 @@ const listShards = async (dependencies: DirectoryDependencies, player: string | 
 
 const isSettled = (game: HeraldGameDirectoryEntry) => game.status === "Settled";
 
-/** An unreadable launch list leaves shard games visible, with entry unavailable until it recovers. */
+/** Only declared entry terms can make a game visible; missing launch evidence never becomes free. */
 const playerGames = (listing: ShardListing, directory: LaunchDirectory | null) => {
-  const games = listing.games ?? [];
-  return directory === null
-    ? games.map((game) => ({ ...game, error: "unavailable" as const }))
-    : games.filter((game) => isPlayerGame(game, listing.chainId, directory));
+  if (directory === null) return [];
+  const records = directory.chains.find((row) => BigInt(row.chainId) === BigInt(listing.chainId))?.games ?? [];
+  return (listing.games ?? []).flatMap((game) => {
+    const declared = records.find((row) => row.gameId === game.game_id);
+    return declared ? [{ ...game, entry: declared.entry }] : [];
+  });
 };
-
-/** Only a completed launch-service run makes a game a player season. Chain id prevents numeric game-id collisions. */
-const isPlayerGame = (game: HeraldGameDirectoryEntry, shardChainId: string, directory: LaunchDirectory) =>
-  directory.chains.some(
-    ({ chainId, gameIds }) => BigInt(chainId) === BigInt(shardChainId) && gameIds.includes(game.game_id),
-  );
 
 const readLaunchDirectoryRecords = async ({ readLaunchDirectory }: DirectoryDependencies) => {
   try {
@@ -136,11 +135,13 @@ const readLaunchDirectoryRecords = async ({ readLaunchDirectory }: DirectoryDepe
     if (
       !Array.isArray(directory.chains) ||
       directory.chains.some(
-        ({ chainId, gameIds }) =>
+        ({ chainId, games }) =>
           typeof chainId !== "string" ||
           !isFelt(chainId) ||
-          !Array.isArray(gameIds) ||
-          gameIds.some((gameId) => !Number.isSafeInteger(gameId) || gameId < 0),
+          !Array.isArray(games) ||
+          games.some(
+            ({ gameId, entry }) => !Number.isSafeInteger(gameId) || gameId <= 0 || !validEntry(entry, chainId, gameId),
+          ),
       )
     ) {
       throw new Error("Launch directory has an invalid shape");
@@ -152,6 +153,10 @@ const readLaunchDirectoryRecords = async ({ readLaunchDirectory }: DirectoryDepe
   }
 };
 
+const validEntry = (value: unknown, chainId: string, gameId: number) => {
+  const entry = readGameEntry(value);
+  return entry.kind === "free" || (BigInt(entry.ledger.shard) === BigInt(chainId) && entry.ledger.gameId === gameId);
+};
 const isFelt = (value: string) => {
   try {
     return BigInt(value) >= 0n;

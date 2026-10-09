@@ -12,7 +12,11 @@ const game = (game_id: number, status: HeraldGameDirectoryEntry["status"], end_a
   ({ game_id, status, clock: { end_at }, player_state: { registered: game_id !== 4 } }) as HeraldGameDirectoryEntry;
 const games = [game(1, "Live"), game(2, "Registration"), game(3, "Settled", 100), game(4, "Settled", 200)];
 
-const dependencies = (readLaunchDirectory: () => Promise<{ chains: { chainId: string; gameIds: number[] }[] }>) => ({
+const dependencies = (
+  readLaunchDirectory: () => Promise<{
+    chains: { chainId: string; games: { gameId: number; entry: import("@realms-world/identity").GameEntry }[] }[];
+  }>,
+) => ({
   db: { prepare: () => ({ all: async () => ({ results: shards }) }) } as unknown as D1Database,
   cache: { match: async () => undefined, put: async () => undefined } as unknown as Cache,
   fetchShard: vi.fn<typeof fetch>(async (input) => {
@@ -24,7 +28,7 @@ const dependencies = (readLaunchDirectory: () => Promise<{ chains: { chainId: st
 
 afterEach(() => vi.restoreAllMocks());
 
-test("a failed launch read keeps both shards' games visible as unavailable", async () => {
+test("a failed entry read keeps both shard names visible as unavailable", async () => {
   vi.spyOn(console, "error").mockImplementation(() => undefined);
   const deps = dependencies(async () => {
     throw new Error("launch unavailable");
@@ -34,12 +38,13 @@ test("a failed launch read keeps both shards' games visible as unavailable", asy
   expect(await response.json()).toEqual({
     shards: shards.map((shard) => ({
       ...shard,
-      games: games.slice(0, 2).map((game) => ({ ...game, error: "unavailable" })),
+      games: null,
+      error: "unavailable",
     })),
   });
 });
 
-test("a failed launch read preserves settled history, pagination and player filtering", async () => {
+test("a failed entry read refuses history terms and reports the affected shards", async () => {
   vi.spyOn(console, "error").mockImplementation(() => undefined);
   const deps = dependencies(async () => {
     throw new Error("launch unavailable");
@@ -48,35 +53,35 @@ test("a failed launch read preserves settled history, pagination and player filt
   const first = await handleDirectoryHistory(request(), deps);
   expect(first.status).toBe(200);
   expect(await first.json()).toEqual({
-    games: [{ ...games[2], chainId: "0x2", shardUrl: "https://second.test", error: "unavailable" }],
-    next: "100:0x2:3",
-    failures: [],
+    games: [],
+    next: null,
+    failures: shards.map(({ url }) => ({ url, error: "unavailable" })),
   });
   const second = await handleDirectoryHistory(request("&cursor=100:0x2:3"), deps);
   expect(await second.json()).toEqual({
-    games: [{ ...games[2], chainId: "0x1", shardUrl: "https://first.test", error: "unavailable" }],
+    games: [],
     next: null,
-    failures: [],
+    failures: shards.map(({ url }) => ({ url, error: "unavailable" })),
   });
 });
 
 test("healthy launch records filter games independently on both chains", async () => {
   const deps = dependencies(async () => ({
     chains: [
-      { chainId: "0x1", gameIds: [1] },
-      { chainId: "0x2", gameIds: [2, 4] },
+      { chainId: "0x1", games: [{ gameId: 1, entry: { kind: "free" as const } }] },
+      { chainId: "0x2", games: [2, 4].map((gameId) => ({ gameId, entry: { kind: "free" as const } })) },
     ],
   }));
   const response = await handleDirectory(new Request("https://app.test/api/directory"), deps);
   expect(await response.json()).toEqual({
     shards: [
-      { ...shards[0], games: [games[0]] },
-      { ...shards[1], games: [games[1]] },
+      { ...shards[0], games: [{ ...games[0], entry: { kind: "free" } }] },
+      { ...shards[1], games: [{ ...games[1], entry: { kind: "free" } }] },
     ],
   });
   const history = await handleDirectoryHistory(new Request("https://app.test/api/directory/history"), deps);
   expect(await history.json()).toEqual({
-    games: [{ ...games[3], chainId: "0x2", shardUrl: "https://second.test" }],
+    games: [{ ...games[3], entry: { kind: "free" }, chainId: "0x2", shardUrl: "https://second.test" }],
     next: null,
     failures: [],
   });
@@ -103,4 +108,32 @@ test("pending and retired shards have no player notification watcher", async () 
   expect(stop).toHaveBeenCalledTimes(2);
   expect(watch).toHaveBeenCalledOnce();
   expect(watch).toHaveBeenCalledWith({ url: "https://active.test", chainId: "0x3" });
+});
+
+test("uses the launch record's paid terms, including L2 chain, even when Herald claims free", async () => {
+  const paid = {
+    kind: "paid" as const,
+    ledger: { address: "0x10", chainId: "0x534e5f5345504f4c4941", feeToken: "0x30", shard: "0x1", gameId: 1 },
+  };
+  const deps = dependencies(async () => ({ chains: [{ chainId: "0x1", games: [{ gameId: 1, entry: paid }] }] }));
+  deps.fetchShard.mockResolvedValue(Response.json({ chain: "0x1", games: [{ ...games[0], entry: { kind: "free" } }] }));
+  const result = await handleDirectory(new Request("https://app.test/api/directory"), deps);
+  expect(((await result.json()) as { shards: { games: { entry: unknown }[] }[] }).shards[0]!.games[0]!.entry).toEqual(
+    paid,
+  );
+});
+
+test("an invalid or missing entry faults the shard instead of becoming a free game", async () => {
+  vi.spyOn(console, "error").mockImplementation(() => undefined);
+  for (const entry of [
+    undefined,
+    { kind: "paid", ledger: { address: "0x10", chainId: "0x1", feeToken: "0x2", shard: "0x9", gameId: 1 } },
+  ]) {
+    const deps = dependencies(async () => ({ chains: [{ chainId: "0x1", games: [{ gameId: 1, entry }] }] }) as never);
+    const response = await handleDirectory(new Request("https://app.test/api/directory"), deps);
+    expect(((await response.json()) as { shards: { games: unknown; error?: string }[] }).shards[0]).toMatchObject({
+      games: null,
+      error: "unavailable",
+    });
+  }
 });

@@ -1,3 +1,4 @@
+import { paidGameEntry } from "./game-entry";
 import { accountLinkLedger } from "./account-link-ledger";
 import { synchronizeAccountLink, reconcileAccountLinks, hasMatchingAccountLink } from "./account-links";
 import type { AccountLinkTarget, LedgerAccountLinkWrite, LedgerLinkStatus } from "@realms-world/identity";
@@ -32,6 +33,7 @@ interface RelayEnv {
   SHARD_GAMES_ADDRESS: string;
   LEDGER_RPC_URL: string;
   LEDGER_ADDRESS: string;
+  LEDGER_FEE_TOKEN_ADDRESS: string;
   LEDGER_OPERATOR_ADDRESS: string;
   LEDGER_OPERATOR_PRIVATE_KEY: string;
   REALMS_ADDRESS: string;
@@ -163,7 +165,21 @@ export class ValueRelay extends DurableObject<RelayEnv> {
   }
   async openBlitz(key: LedgerGameKey, window: { start: number; end: number }) {
     this.requireLaunchChain(key);
-    return Effect.runPromise(this.signing.withPermit(openBlitzOnLedger(ledgerCredentialsOf(this.env), key, window)));
+    const relay = this;
+    return Effect.runPromise(
+      this.signing.withPermit(
+        Effect.gen(function* () {
+          const entry = yield* paidGameEntry(
+            relay.env.LEDGER_RPC_URL,
+            relay.env.LEDGER_ADDRESS,
+            relay.env.LEDGER_FEE_TOKEN_ADDRESS,
+            key,
+          );
+          yield* openBlitzOnLedger(ledgerCredentialsOf(relay.env), key, window);
+          return entry;
+        }),
+      ),
+    );
   }
   async validateBlitz(key: LedgerGameKey, window: { start: number; end: number }) {
     this.requireLaunchChain(key);

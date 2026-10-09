@@ -54,3 +54,12 @@ export interface LedgerAccountLinkWrite {
 export type LedgerLinkStatus =
   | { status: "linking" }
   | { status: "confirmed"; ledger: { address: string; chainId: string }; wallet: string | null; account: string };
+
+export interface PaidGameLedger {
+  address: string;
+  chainId: string;
+  feeToken: string;
+  shard: string;
+  gameId: number;
+}
+export type GameEntry = { kind: "free" } | { kind: "paid"; ledger: PaidGameLedger };
