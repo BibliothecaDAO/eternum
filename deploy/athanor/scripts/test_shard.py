@@ -135,11 +135,15 @@ class ShardTest(unittest.TestCase):
         package = load_package_script("init")
         with tempfile.TemporaryDirectory() as temporary:
             data = Path(temporary)
+            shard.write_json(data / "host-keys.json", {"deployerAddress": "0x1", "deployerPrivateKey": "0x2"})
+            (data / "host-keys.json").chmod(0o600)
             shard.write_private_environment(data / "harness.env", {"RPC_URL": "http://madara:9944/rpc/v0_10_2"})
             started = time.struct_time((2026, 10, 7, 16, 2, 47, 0, 0, 0))
             argv, environment = package.harness_invocation(["--bots", "1"], {"OPERATOR_TOKEN": "t"}, data, started)
             self.assertEqual(argv, ["bun", "deploy/athanor/harness/run.ts", "--bots", "1"])
-            self.assertEqual(environment["RPC_URL"], "http://madara:9944/rpc/v0_10_2")
+            self.assertEqual(environment["RPC_URL"], "http://rpc:8080/rpc/v0_10_2")
+            self.assertEqual(environment["HARNESS_ADMIN_RPC_URL"], "http://madara:9944/rpc/v0_10_2")
+            self.assertEqual(environment["DEPLOYER_PRIVATE_KEY"], "0x2")
             self.assertEqual(environment["OPERATOR_TOKEN"], "t")
             self.assertEqual(environment["HARNESS_OUTPUT_DIRECTORY"], str(data / "harness" / "20261007T160247Z"))
             chosen = {"HARNESS_OUTPUT_DIRECTORY": "/data/measure/soak/workload"}
@@ -150,6 +154,8 @@ class ShardTest(unittest.TestCase):
         package = load_package_script("init")
         with tempfile.TemporaryDirectory() as temporary:
             data = Path(temporary)
+            shard.write_json(data / "host-keys.json", {"deployerAddress": "0x1", "deployerPrivateKey": "0x2"})
+            (data / "host-keys.json").chmod(0o600)
             shard.write_private_environment(data / "harness.env", {
                 "NATIVE_WORLD_MANIFEST": "/opt/run/data/native-world.json",
                 "GAMEPLAY_CONTRACTS_PATH": "/opt/run/data/gameplay-contracts.json",
@@ -255,6 +261,7 @@ class ShardTest(unittest.TestCase):
             (directory / "host-keys.json").write_text(json.dumps({
                 "deployerAddress": "0x789", "deployerPrivateKey": "0xabc", "sequencingPrivateKey": "0xdef",
             }))
+            (directory / "host-keys.json").chmod(0o600)
             with patch.dict(shard.os.environ, {
                 "DEPLOYER_ACCOUNT_ADDRESS": "0x123", "DEPLOYER_PRIVATE_KEY": "0x456",
                 "UNRELATED_SECRET": "not-for-this-shard",
@@ -267,7 +274,8 @@ class ShardTest(unittest.TestCase):
             self.assertNotIn("UNRELATED_SECRET", values)
             self.assertNotIn("RANDOMNESS_PRIVATE_KEY", values)
             self.assertEqual(values["DEPLOYER_ACCOUNT_ADDRESS"], "0x789")
-            self.assertEqual(values["DEPLOYER_PRIVATE_KEY"], "0xabc")
+            self.assertNotIn("DEPLOYER_PRIVATE_KEY", values)
+            self.assertNotIn("0xabc", output.read_text())
             self.assertEqual(values["RPC_URL"], "http://127.0.0.1:28050/rpc/v0_10_2")
             self.assertEqual(values["IDENTITY_URL"], "https://identity.test/api")
             self.assertEqual(values["GAMEPLAY_CONTRACTS_PATH"], str(directory / "gameplay-contracts.json"))
@@ -493,6 +501,7 @@ class PackageStartTest(unittest.TestCase):
         }
         for name, value in files.items():
             (self.data / name).write_text(json.dumps(value))
+        (self.data / "host-keys.json").chmod(0o600)
         (self.data / "chain-config.yaml").write_text('chain_id: "COMMUNITY"\n')
         shard.write_private_environment(self.data / "postgres.env", {
             "POSTGRES_USER": "herald", "POSTGRES_DB": "herald", "POSTGRES_PASSWORD": "restored-password",
@@ -532,6 +541,7 @@ class PackageStartTest(unittest.TestCase):
         run_calls=shard.run.call_args_list
         self.assertTrue(any("verify-vrf" in call.args[0] for call in run_calls))
         self.assertFalse(any("prepare-authority" in str(call.args[0]) for call in run_calls))
+
 
 
 class PendingEnrollmentTest(unittest.TestCase):

@@ -265,10 +265,17 @@ def deploy_world(config, directory, environment):
     environment["DEPLOYER_ACCOUNT_ADDRESS"] = identity["operatorAccountAddress"]
 
 
+def host_credentials(directory):
+    path = directory / "host-keys.json"
+    if path.stat().st_mode & 0o777 != 0o600 or path.stat().st_uid != os.getuid():
+        raise ValueError("host-keys.json must be owner-only mode 0600")
+    keys = json.loads(path.read_text())
+    return {"DEPLOYER_ACCOUNT_ADDRESS": keys["deployerAddress"],
+            "DEPLOYER_PRIVATE_KEY": keys["deployerPrivateKey"]}
+
+
 def deployment_environment(config, directory):
-    keys = json.loads((directory / "host-keys.json").read_text())
-    credentials = {"DEPLOYER_ACCOUNT_ADDRESS": keys["deployerAddress"],
-                   "DEPLOYER_PRIVATE_KEY": keys["deployerPrivateKey"]}
+    credentials = host_credentials(directory)
     base = config["port_base"]
     return {
         **os.environ, **credentials, "RPC_URL": f"http://127.0.0.1:{base}/rpc/v0_10_2",
@@ -313,7 +320,7 @@ def prepare_runtime_files(directory, environment):
 
 def save_harness_environment(directory, environment):
     keys = (
-        "DEPLOYER_ACCOUNT_ADDRESS", "DEPLOYER_PRIVATE_KEY", "RPC_URL", "HERALD_URL", "IDENTITY_URL",
+        "DEPLOYER_ACCOUNT_ADDRESS", "RPC_URL", "HERALD_URL", "IDENTITY_URL",
         "SHARD_HOST_ACCOUNTS",
         "NATIVE_WORLD_MANIFEST", "GAMEPLAY_CONTRACTS_PATH", "COMPOSE_PROJECT_NAME",
     )
