@@ -460,8 +460,9 @@ describe("identity Worker", () => {
             body: { ...change, chainId: `0x0${CHAIN_ID.slice(2)}` },
             token: OPERATOR_TOKEN,
           });
-          expect(response.status).toBe(status === "retired" ? 403 : 200);
-          expect(signing).toHaveBeenCalledTimes(status === "retired" ? 0 : 1);
+          const approved = status !== "retired" && (status !== "pending" || path === "/api/devices/bots");
+          expect(response.status).toBe(approved ? 200 : 403);
+          expect(signing).toHaveBeenCalledTimes(approved ? 1 : 0);
         }
       }
       for (const chainId of ["0x123", "0x534e5f4d41494e", "0x534e5f5345504f4c4941"]) {
