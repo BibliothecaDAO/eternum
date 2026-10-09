@@ -250,7 +250,7 @@ fn default_preset() -> Preset {
         day_unit_seconds: 1,
         season_bags: 5,
         claim_window_seconds: 7 * 24 * 60 * 60,
-        registration_limit: 24,
+        registration_limit: crate::roster_limits::MAX_BLITZ_ROSTER_PLAYERS.try_into().unwrap(),
         entry_fee: 500,
         protocol_cut_bps: 0,
         chest_lords_bps: 0,
@@ -416,7 +416,7 @@ fn apply_results(fixture: @Fixture, ranked: Array<RankedPlayer>) {
 }
 
 fn assert_conservation(count: u16) {
-    let fixture = deploy_fixture(Preset { registration_limit: count, ..default_preset() });
+    let fixture = deploy_fixture(default_preset());
     register_players(@fixture, count);
     let initial_pool: u256 = count.into() * 500;
     apply_results(@fixture, ranked_players(count));
@@ -862,13 +862,8 @@ fn conserves_six_player_pool() {
 }
 
 #[test]
-fn conserves_twenty_four_player_pool() {
-    assert_conservation(24);
-}
-
-#[test]
-fn conserves_ninety_six_player_pool() {
-    assert_conservation(96);
+fn conserves_maximum_shard_roster_pool() {
+    assert_conservation(crate::roster_limits::MAX_BLITZ_ROSTER_PLAYERS.try_into().unwrap());
 }
 
 #[test]
@@ -2543,4 +2538,21 @@ fn a_paused_operator_link_reports_the_pause_error() {
     start_cheat_caller_address(fixture.ledger_address, ADMIN());
     fixture.ledger.pause();
     link_account(@fixture, player(0), shard_account(player(0)));
+}
+
+#[test]
+#[should_panic(expected: "Ledger: roster limit exceeds shard")]
+fn a_preset_cannot_accept_one_more_than_the_shard_roster_maximum() {
+    deploy_fixture(
+        Preset {
+            registration_limit: (crate::roster_limits::MAX_BLITZ_ROSTER_PLAYERS + 1).try_into().unwrap(),
+            ..default_preset(),
+        },
+    );
+}
+
+#[test]
+#[should_panic(expected: "Ledger: roster limit exceeds shard")]
+fn a_preset_cannot_accept_the_full_u16_roster_range() {
+    deploy_fixture(Preset { registration_limit: 0xffff, ..default_preset() });
 }

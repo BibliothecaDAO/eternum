@@ -27,6 +27,11 @@ and sponsorship. The default is 2000 bps. The remaining pot splits by `chest_lor
 and season prize pool. Refunds return the original payment before any settlement cut. Chest and season payouts have no
 second cut. Frontier's configuration preset keeps its cut at zero.
 
+Economic presets cannot admit more than the shard's `MAX_BLITZ_ROSTER_PLAYERS`. The ledger and shard compile the same
+`roster_limits.cairo` source; the existing shard rule exports and generated client constants keep their names. Duel's
+two-player restriction still belongs to its native mode and preset builder. A zero paid-roster limit remains valid for a
+preset that never opens a paid game; `open_game` still refuses that preset.
+
 The relay holds the existing `OPERATOR_ROLE` and maintains the one-to-one identity link with
 `set_account_link(wallet, account)`. A zero account clears the wallet's link; a zero wallet refuses. Replacing either
 side clears the displaced account and wallet atomically. Identical retries and clearing an unlinked wallet do nothing.

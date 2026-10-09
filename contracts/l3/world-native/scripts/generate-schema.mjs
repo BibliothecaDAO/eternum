@@ -1,5 +1,6 @@
 import { tupleTypes } from "../../../../apps/herald/src/native/serde.ts";
 import { compileCommandRoutes } from "./command-routes.mjs";
+import { readRuleConstants } from "./rule-constants.mjs";
 import { execFileSync } from "node:child_process";
 import { mkdtemp, rm } from "node:fs/promises";
 import { join } from "node:path";
@@ -149,13 +150,7 @@ for (const model of models) {
   );
 }
 
-const ruleSource = await readFile(new URL("src/rules.cairo", root), "utf8");
-const ruleConstants = Object.fromEntries(
-  [...ruleSource.matchAll(/^pub const ([A-Z][A-Z0-9_]*): u(?:8|32) = ([0-9]+);$/gm)].map(([, name, value]) => [
-    name,
-    Number(value),
-  ]),
-);
+const ruleConstants = await readRuleConstants(root);
 
 // Research rows, tier choices and the building categories that have a row.
 const researchSource = await readFile(new URL("src/research.cairo", root), "utf8");
