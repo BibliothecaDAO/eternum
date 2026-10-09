@@ -39,14 +39,18 @@ feet. The adapter test and the driver test read it: the first compares the adapt
 joints with it, the second takes its 66 worked cases from it. Its `from` field names the bound model file the data was
 measured from, which is among the sources kept by the author.
 
-`arm-poses.json` beside it is how the arms hold the shield and the sword: five states (carry, guard, windup, contact,
-follow) measured from the pose set the model was approved with, each giving where the wrist goes, the point the elbow
-bends toward and the hand's turn on the forearm, with what the game should then show. The sword and shield declare these
-poses in the catalog (`procedural-melee-weapon-catalog.ts`), and `t1-knight-default-arms.test.ts` compares the catalog
-with the file and the posed skeleton with its expected values. Its `from` block names the pose set and the two scripts
-that measured it, which are proposed with the tools in #5031, and the bound model, which is kept by the author. For the
-reader it also records how close each state is to the approved pose it comes from and how far sword, shield and body
-stay apart.
+`poses.json` beside it is how the Knight holds itself with the shield and the sword, measured from the pose set the
+model was approved with: three idle states, the guard standing, walking and running, the hit reaction, and four attacks
+(cut, backhand, chop, thrust) in three moments each. Each state gives, for both arms, where the wrist goes, the point
+the elbow bends toward and the hand's turn on the forearm; for the body, the pelvis' turn, height and place over the
+feet, the chest's turn against the pelvis and the head's against the chest; and where each foot stands and points. It
+also records what the game should then show. The sword and shield declare these states in the catalog
+(`melee/t1-knight-default-gear-poses.ts`), and `t1-knight-default-arms.test.ts` compares the catalog with the file and
+the posed skeleton with its expected values. The catalog declares the cut only: the backhand, chop and thrust bring
+sword, arm and shield into each other on this figure (measured by the same test, reported in #5029). Its `from` block
+names the pose set and the two scripts that measured it, which are proposed with the tools in #5031, and the bound
+model, which is kept by the author. For the reader it also records how close each state is to the approved pose it comes
+from and how far sword, shield and body stay apart.
 
 ## Checking the files
 
