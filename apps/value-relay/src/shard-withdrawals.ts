@@ -1,7 +1,14 @@
-import { Effect } from "effect";
+import { Effect, Result } from "effect";
 import { decodeBlitzResult } from "./shard-results";
 import { ShardReader, felt, sameFelt, uint, type ValueRow } from "./shard-rpc";
-import { RelayFailure, relayOperation, type RelayEffect, type RelayPorts, type Withdrawal } from "./ports";
+import {
+  RelayFailure,
+  relayOperation,
+  type RelayEffect,
+  type RelayPorts,
+  type Withdrawal,
+  type HeldObligation,
+} from "./ports";
 
 interface ReceiptBindings {
   realmsIdForAccount(account: string): Promise<string | null>;
@@ -35,8 +42,23 @@ export const shardWithdrawalPorts = (
           }),
       );
       const withdrawals: Withdrawal[] = [];
-      for (const row of rows.filter((row) => row.model === "LordsWithdrawal"))
-        withdrawals.push(yield* resolveWithdrawal(reader, bindings, row, block.timestamp));
+      const held: HeldObligation[] = [];
+      for (const row of rows.filter((row) => row.model === "LordsWithdrawal")) {
+        const resolved = yield* Effect.result(resolveWithdrawal(reader, bindings, row, block.timestamp));
+        if (Result.isSuccess(resolved)) withdrawals.push(resolved.success);
+        else
+          held.push({
+            kind: "receipt",
+            reason: resolved.failure.operation,
+            receipt: {
+              chainId: felt(reader.connection.chainId),
+              transactionHash: row.transactionHash,
+              keys: row.keys,
+              values: row.values,
+              confirmedAt: block.timestamp,
+            },
+          });
+      }
       return {
         chainId: felt(reader.connection.chainId),
         number: block.block_number,
@@ -45,6 +67,7 @@ export const shardWithdrawalPorts = (
         status: block.status,
         withdrawals,
         results,
+        held,
       };
     }),
   withdrawal: (chainId, transactionHash) =>

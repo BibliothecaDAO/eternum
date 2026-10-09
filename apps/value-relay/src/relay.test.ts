@@ -39,6 +39,7 @@ const block: ConfirmedBlock = {
 };
 const fixture = () => {
   let progress = { nextBlock: 0, lastHash: null as string | null, halted: null as string | null };
+  const held: import("./ports").HeldObligation[] = [];
   const withdrawals = new Map<string, Withdrawal>();
   const results = new Map<number, BlitzResult>();
   const store: RelayStore = {
@@ -55,6 +56,11 @@ const fixture = () => {
     },
     completeResult: async (id) => {
       results.delete(id);
+    },
+    held: async () => held,
+    hold: async (row) => {
+      held.push(row);
+      if (row.kind === "payment") withdrawals.delete(row.withdrawal.transactionHash);
     },
     halt: async (reason) => {
       progress = { ...progress, halted: reason };
@@ -119,7 +125,7 @@ describe("confirmed value relay", () => {
       }
       return Effect.void;
     };
-    await expect(f.run()).rejects.toThrow();
+    expect(await f.run()).toMatchObject({ deferred: [{ reason: "lost_ack" }] });
     await f.run();
     expect(transfers).toBe(1);
     expect(await f.store.withdrawals()).toEqual([]);
@@ -279,7 +285,7 @@ it("compares chain and block identities as felts rather than hex spellings", asy
   const f = fixture();
   await f.run();
   f.ports.shard.block = () => Effect.succeed({ ...block, chainId: "0x01", hash: "0x0a" });
-  expect(await f.run()).toEqual({ status: "ready" });
+  expect(await f.run()).toMatchObject({ status: "ready" });
 });
 
 it("does not acknowledge a clock-lagged payment and still delivers other result work", async () => {
@@ -303,4 +309,21 @@ it("checks the observed hash without decoding receipts or resolving account/seas
   expect(await f.store.progress()).toMatchObject({ halted: "confirmed_block_changed:0" });
   expect(f.ports.shard.block).not.toHaveBeenCalled();
   expect(f.ports.ledger.pay).not.toHaveBeenCalled();
+});
+
+it("sets aside a permanently refused claim and pays the next claim without retrying the refusal", async () => {
+  const f = fixture();
+  const later = { ...withdrawal, transactionHash: "0xdef" };
+  f.ports.shard.block = () => Effect.succeed({ ...block, withdrawals: [withdrawal, later] });
+  f.ports.ledger.pay = vi.fn((claim) =>
+    claim.transactionHash === withdrawal.transactionHash
+      ? Effect.fail(new RelayFailure({ operation: "ledger_season_closed" }))
+      : Effect.void,
+  );
+  await f.run();
+  expect(await f.store.progress()).toMatchObject({ nextBlock: 1 });
+  expect(f.ports.ledger.pay).toHaveBeenCalledWith(later, "0x123");
+  expect(f.ports.ledger.postResult).toHaveBeenCalledOnce();
+  await f.run();
+  expect(f.ports.ledger.pay).toHaveBeenCalledTimes(2);
 });

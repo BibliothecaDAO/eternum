@@ -71,7 +71,7 @@ const receipt = () => ({
 const header = { block_number: 10, block_hash: "0xa", parent_hash: "0x9", timestamp: 1000, status: "ACCEPTED_ON_L2" };
 const fixture = () => {
   const reader = new ShardReader({ chainId: "0x1", rpcUrl: "https://shard.test/rpc", gamesAddress: address });
-  const bindings = { realmsIdForAccount: vi.fn(async () => "0x2"), frontierSeason: vi.fn(() => Effect.succeed(3)) };
+  const bindings = { realmsIdForAccount: vi.fn(async (_account: string) => "0x2"), frontierSeason: vi.fn(() => Effect.succeed(3)) };
   return { reader, bindings, ports: shardWithdrawalPorts(reader, bindings) };
 };
 beforeEach(() => {
@@ -104,7 +104,10 @@ it("reads a confirmed debit receipt and pays exact wei to the resolved account's
 it("does not infer a season when its funding binding is unavailable", async () => {
   const f = fixture();
   f.bindings.frontierSeason.mockReturnValue(Effect.fail(new RelayFailure({ operation: "binding_missing" })) as never);
-  await expect(Effect.runPromise(f.ports.block(10))).rejects.toMatchObject({ operation: "binding_missing" });
+  expect(await Effect.runPromise(f.ports.block(10))).toMatchObject({
+    withdrawals: [],
+    held: [{ reason: "binding_missing" }],
+  });
 });
 it("rejects unconfirmed blocks, wrong chain and transaction/claim mismatches", async () => {
   const f = fixture();
@@ -116,7 +119,10 @@ it("rejects unconfirmed blocks, wrong chain and transaction/claim mismatches", a
   forged.events[0]!.data[2] = "0xdef";
   rpc.hashes.mockResolvedValue({ ...header, transactions: ["0xabc"] });
   rpc.receipt.mockResolvedValue(forged);
-  await expect(Effect.runPromise(f.ports.block(10))).rejects.toThrow();
+  expect(await Effect.runPromise(f.ports.block(10))).toMatchObject({
+    withdrawals: [],
+    held: [{ reason: "decode withdrawal receipt" }],
+  });
   rpc.chain.mockResolvedValue("0x2");
   await expect(Effect.runPromise(f.ports.confirmedHead())).rejects.toThrow();
 });
@@ -133,7 +139,10 @@ it("refuses old receipt layouts rather than applying the new interpretation", as
   const old = receipt();
   old.events[0]!.data = ["3", "7", "8", "9", "3", "0x123", "5", "17"];
   rpc.receipt.mockResolvedValue(old);
-  await expect(Effect.runPromise(fixture().ports.block(10))).rejects.toThrow();
+  expect(await Effect.runPromise(fixture().ports.block(10))).toMatchObject({
+    withdrawals: [],
+    held: [{ reason: "decode withdrawal receipt" }],
+  });
 });
 
 it("reads an accepted hash anchor without loading the ABI or resolving a receipt binding", async () => {
@@ -152,4 +161,21 @@ it("reads confirmed rows when the public proxy refuses block-with-receipts", asy
   expect(rows.rows[0]).toMatchObject({ model: "LordsWithdrawal", transactionHash: "0xabc" });
   expect(rpc.block).not.toHaveBeenCalled();
   expect(rpc.hashes).toHaveBeenCalledWith(10);
+});
+
+it("sets aside a bot receipt with no Realms id while still decoding the next player's receipt", async () => {
+  const f = fixture();
+  f.bindings.realmsIdForAccount.mockImplementation(async (account) => (account === "0x123" ? (null as never) : "0x2"));
+  rpc.hashes.mockResolvedValue({ ...header, transactions: ["0xabc", "0xdef"] });
+  rpc.receipt.mockImplementation(async (transactionHash) => {
+    const row = receipt();
+    row.transaction_hash = transactionHash;
+    row.events[0]!.data[2] = transactionHash;
+    row.events[0]!.data[4] = transactionHash === "0xabc" ? "0x123" : "0x456";
+    return row;
+  });
+  expect(await Effect.runPromise(f.ports.block(10))).toMatchObject({
+    withdrawals: [{ transactionHash: "0xdef" }],
+    held: [{ kind: "receipt", reason: "withdrawal_account_unknown", receipt: { transactionHash: "0xabc" } }],
+  });
 });

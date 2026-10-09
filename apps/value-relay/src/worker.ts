@@ -5,7 +5,7 @@ import { shardResultPort } from "./shard-results";
 import { shardWithdrawalPorts, pendingFrontierBindings } from "./shard-withdrawals";
 import { chestLedgerReads, finishChestOnLedger } from "./chest-ledger";
 import { DurableChestStore, finishRequestedChests } from "./chests";
-import { DurableObject } from "cloudflare:workers";
+import { DurableObject, WorkerEntrypoint } from "cloudflare:workers";
 import { Effect, Result, Semaphore } from "effect";
 import { ledgerResultAdapter, ledgerMonitorReads } from "./ledger";
 import { ledgerPaymentAdapter, realmsOwnershipAdapter } from "./chain";
@@ -78,6 +78,7 @@ export class ValueRelay extends DurableObject<RelayEnv> {
       success,
       checked_at: observation?.checked_at ?? null,
       jobs: observation ?? null,
+      held: await this.held(),
       ...progress,
     };
   }
@@ -95,6 +96,13 @@ export class ValueRelay extends DurableObject<RelayEnv> {
         }),
       ),
     );
+  }
+  async held() {
+    return (await this.store.held()).map((row) => ({
+      kind: row.kind,
+      reason: row.reason,
+      transactionHash: row.kind === "receipt" ? row.receipt.transactionHash : row.withdrawal.transactionHash,
+    }));
   }
   async status() {
     return this.store.progress();
@@ -161,6 +169,15 @@ const chestPortsOf = (env: RelayEnv) => ({
 });
 
 const relayOf = (env: RelayEnv) => env.RELAY.get(env.RELAY.idFromName(env.SHARD_CHAIN_ID));
+/** Diagnostics expose reasons only; the monitor independently verifies contract evidence. */
+export class RelayDiagnostics extends WorkerEntrypoint<RelayEnv> {
+  override fetch() {
+    return new Response(null, { status: 404 });
+  }
+  held() {
+    return relayOf(this.env).held();
+  }
+}
 export default {
   async fetch(request: Request, env: RelayEnv): Promise<Response> {
     if (new URL(request.url).pathname === "/api/value/labor" && request.method === "POST")

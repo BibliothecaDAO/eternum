@@ -10,14 +10,20 @@
   "env": {
     "staging": {
       "name": "realms-value-monitor-staging",
-      "services": [{ "binding": "IDENTITY", "service": "realms-identity-staging", "entrypoint": "ValueIdentity" }],
+      "services": [
+        { "binding": "IDENTITY", "service": "realms-identity-staging", "entrypoint": "ValueIdentity" },
+        { "binding": "RELAY_REPORT", "service": "realms-value-relay-staging", "entrypoint": "RelayDiagnostics" },
+      ],
       "workers_dev": false,
       "durable_objects": { "bindings": [{ "name": "MONITOR", "class_name": "ValueMonitor" }] },
       "triggers": { "crons": ["* * * * *"] },
     },
     "production": {
       "name": "realms-value-monitor",
-      "services": [{ "binding": "IDENTITY", "service": "realms-identity", "entrypoint": "ValueIdentity" }],
+      "services": [
+        { "binding": "IDENTITY", "service": "realms-identity", "entrypoint": "ValueIdentity" },
+        { "binding": "RELAY_REPORT", "service": "realms-value-relay", "entrypoint": "RelayDiagnostics" },
+      ],
       "workers_dev": false,
       "durable_objects": { "bindings": [{ "name": "MONITOR", "class_name": "ValueMonitor" }] },
       "triggers": { "crons": ["* * * * *"] },

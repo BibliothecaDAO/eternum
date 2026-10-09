@@ -3,6 +3,7 @@ import { expect, it, vi } from "vitest";
 import { ValueRelay } from "./worker";
 
 vi.mock("cloudflare:workers", () => ({
+  WorkerEntrypoint: class {},
   DurableObject: class {
     constructor(
       public ctx: unknown,
@@ -17,6 +18,7 @@ it("runs and publishes the chest job even while shard ingestion remains unavaila
   const ctx = {
     storage: {
       get: async (key: string) => data.get(key),
+      list: async () => new Map(),
       put: async (key: string, value: unknown) => {
         data.set(key, value);
       },

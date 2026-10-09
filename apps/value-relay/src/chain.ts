@@ -16,13 +16,18 @@ interface LedgerCredentials {
 export const ledgerPaymentAdapter = (credentials: LedgerCredentials): RelayPorts["ledger"]["pay"] => {
   const { provider, account } = ledgerAccountOf(credentials);
   const pay = frontierPayment(async (entrypoint, calldata) => {
-    const transaction = await account.execute({
-      contractAddress: credentials.contractAddress,
-      entrypoint,
-      calldata: [...calldata],
-    });
-    const receipt = await provider.waitForTransaction(transaction.transaction_hash);
-    if (receipt.isReverted()) throw new Error("ledger_payment_reverted");
+    try {
+      const transaction = await account.execute({
+        contractAddress: credentials.contractAddress,
+        entrypoint,
+        calldata: [...calldata],
+      });
+      const receipt = await provider.waitForTransaction(transaction.transaction_hash, { errorStates: [] });
+      if (receipt.isReverted()) throw paymentFailure(receipt.revert_reason);
+    } catch (error) {
+      if (error instanceof RelayFailure) throw error;
+      throw paymentFailure(error instanceof Error ? error.message : "");
+    }
   });
   return (withdrawal, wallet) =>
     Effect.gen(function* () {
@@ -85,4 +90,16 @@ const ledgerAccountOf = (credentials: LedgerCredentials) => {
   const provider = rpcAt(credentials.rpcUrl);
   const account = new Account({ provider, address: credentials.accountAddress, signer: credentials.privateKey });
   return { provider, account };
+};
+
+/** Only ruled terminal failures leave the retry queue; a day-boundary unlock refusal stays retryable. */
+const paymentFailure = (reason = "") => {
+  const operation = reason.includes("Ledger: season closed")
+    ? "ledger_season_closed"
+    : reason.includes("Ledger: invalid withdrawal")
+      ? "ledger_invalid_withdrawal"
+      : reason.includes("Ledger: unlock exceeded")
+        ? "ledger_unlock_exceeded"
+        : "pay Frontier claim";
+  return new RelayFailure({ operation });
 };

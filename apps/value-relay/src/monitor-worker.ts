@@ -20,6 +20,7 @@ interface MonitorEnv {
     realmsIdForAccount(account: string): Promise<string | null>;
     payoutWallet(id: string): Promise<import("@realms-world/identity").PayoutWallet>;
   };
+  RELAY_REPORT: { held(): Promise<{ kind: string; reason: string; transactionHash: string }[]> };
   MONITOR: DurableObjectNamespace<ValueMonitor>;
   LEDGER_RPC_URL: string;
   LEDGER_ADDRESS: string;
@@ -47,11 +48,15 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
               monitor.chests,
             ),
           );
+          const held = yield* Effect.result(
+            relayOperation("read relay held obligations", () => monitor.env.RELAY_REPORT.held()),
+          );
           const observation = {
             checked_at: Math.floor(Date.now() / 1000),
             value: Result.isSuccess(value) ? value.success : null,
             value_error: Result.isFailure(value) ? value.failure.operation : null,
             chests: Result.isSuccess(chests) ? chests.success : null,
+            held: Result.isSuccess(held) ? held.success : null,
           };
           yield* relayOperation("publish chest monitor", () => monitor.ctx.storage.put("observation", observation));
           return observation;
@@ -65,6 +70,7 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
       value: MonitorProgress | null;
       chests: { overdue: string[]; pending: number } | null;
       value_error: string | null;
+      held?: { kind: string; reason: string; transactionHash: string }[] | null;
     }>("observation");
     const progress = await this.status();
     const age = observation ? Math.floor(Date.now() / 1000) - observation.checked_at : Infinity;

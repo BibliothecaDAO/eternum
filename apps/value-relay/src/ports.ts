@@ -49,7 +49,21 @@ export interface ConfirmedBlock {
   status: "ACCEPTED_ON_L2" | "ACCEPTED_ON_L1";
   withdrawals: readonly Withdrawal[];
   results: readonly BlitzResult[];
+  held?: readonly HeldObligation[];
 }
+export type HeldObligation =
+  | {
+      kind: "receipt";
+      reason: string;
+      receipt: {
+        chainId: string;
+        transactionHash: string;
+        keys: readonly string[];
+        values: readonly string[];
+        confirmedAt: number;
+      };
+    }
+  | { kind: "payment"; reason: string; withdrawal: Withdrawal };
 export interface PaidClaim extends Omit<Withdrawal, "realmsId" | "confirmedAt"> {
   wallet: string;
 }
@@ -110,4 +124,7 @@ export interface ConservationBalance {
 }
 
 export const relayOperation = <A>(operation: string, run: () => Promise<A>): RelayEffect<A> =>
-  Effect.tryPromise({ try: run, catch: () => new RelayFailure({ operation }) });
+  Effect.tryPromise({
+    try: run,
+    catch: (error) => (error instanceof RelayFailure ? error : new RelayFailure({ operation })),
+  });

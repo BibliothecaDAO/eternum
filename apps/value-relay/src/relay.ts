@@ -19,9 +19,9 @@ export const runRelay = (chainId: string, ports: RelayPorts, store: RelayStore) 
       yield* relayOperation("persist confirmed obligations", () => store.observe(block));
       parentHash = block.hash;
     }
-    yield* payWithdrawals(ports, store);
-    yield* postResults(ports, store);
-    return { status: "ready" as const };
+    const payments = yield* payWithdrawals(ports, store);
+    const results = yield* postResults(ports, store);
+    return { status: "ready" as const, deferred: [...payments, ...results] };
   });
 
 const haltRelay = (store: RelayStore, reason: string) =>
@@ -64,26 +64,44 @@ const validateBlock = (
 
 const payWithdrawals = (ports: RelayPorts, store: RelayStore) =>
   Effect.gen(function* () {
+    const deferred: { key: string; reason: string }[] = [];
     const withdrawals = yield* relayOperation("read pending withdrawals", () => store.withdrawals());
     for (const withdrawal of withdrawals) {
-      const wallet = yield* ports.identity.payoutWallet(withdrawal.realmsId);
-      if (wallet.status !== "ready") continue;
-      const payment = yield* Effect.result(ports.ledger.pay(withdrawal, wallet.address));
+      const payment = yield* Effect.result(payEligibleWithdrawal(ports, withdrawal));
       if (Result.isFailure(payment)) {
-        if (payment.failure.operation === "ledger_clock_behind") continue;
-        return yield* Effect.fail(payment.failure);
+        const reason = payment.failure.operation;
+        if (["ledger_season_closed", "ledger_invalid_withdrawal"].includes(reason))
+          yield* relayOperation("set aside refused payment", () => store.hold({ kind: "payment", withdrawal, reason }));
+        else deferred.push({ key: withdrawal.transactionHash, reason });
+        continue;
       }
+      if (!payment.success) continue;
       yield* relayOperation("complete withdrawal", () => store.completeWithdrawal(withdrawal.transactionHash));
     }
+    return deferred;
+  });
+
+const payEligibleWithdrawal = (ports: RelayPorts, withdrawal: import("./ports").Withdrawal) =>
+  Effect.gen(function* () {
+    const wallet = yield* ports.identity.payoutWallet(withdrawal.realmsId);
+    if (wallet.status !== "ready") return false;
+    yield* ports.ledger.pay(withdrawal, wallet.address);
+    return true;
   });
 
 const postResults = (ports: RelayPorts, store: RelayStore) =>
   Effect.gen(function* () {
+    const deferred: { key: string; reason: string }[] = [];
     const results = yield* relayOperation("read pending results", () => store.results());
     for (const result of results) {
-      yield* ports.ledger.postResult(result);
+      const posted = yield* Effect.result(ports.ledger.postResult(result));
+      if (Result.isFailure(posted)) {
+        deferred.push({ key: String(result.gameId), reason: posted.failure.operation });
+        continue;
+      }
       yield* relayOperation("complete result", () => store.completeResult(result.gameId));
     }
+    return deferred;
   });
 
 /** Realm ownership is read for every claim; the shard enforces the Realm/day first-write rule. */
