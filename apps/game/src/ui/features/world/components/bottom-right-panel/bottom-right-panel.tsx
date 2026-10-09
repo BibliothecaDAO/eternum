@@ -827,6 +827,9 @@ BottomRightPanel.displayName = "BottomRightPanel";
 /** The mine kind a minimap tile's occupier is drawn as, when it is a mine. */
 const mineKindOnTile = (store: NativeFactStore, occupierId: number | string | bigint | null | undefined) => {
   if (!occupierId) return undefined;
-  const structure = store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: Number(occupierId) });
+  const structure = store.get("Structure", {
+    game_id: configManager.getActiveGameId(),
+    entity_id: safeInteger(occupierId),
+  });
   return structure ? presentedMineKind(structure) : undefined;
 };

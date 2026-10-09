@@ -133,7 +133,7 @@ export const useStructuresWithMetadata = ({
         realmLevelLabel,
         population,
         guardCount: getGuardsByStructure(structure.structure, store)?.filter((guard) => guard.troops.count > 0n).length,
-        explorerCount: liveHomeArmies(store, Number(structure.entityId), configManager.getActiveGameId()).length,
+        explorerCount: liveHomeArmies(store, structure.entityId, configManager.getActiveGameId()).length,
         populationCapacity,
         buildingTilesOccupied: buildingTileSummary?.occupied ?? null,
         buildingTilesTotal: buildingTileSummary?.total ?? null,

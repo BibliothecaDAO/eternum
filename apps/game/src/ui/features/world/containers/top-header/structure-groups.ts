@@ -1,4 +1,15 @@
 import { useCallback, useEffect, useState } from "react";
+import { safeInteger } from "@bibliothecadao/eternum/game-client";
+
+/** A stored group's key is a structure id; a malformed one is reported and dropped, never read as another id. */
+const storedStructureId = (key: string): number | undefined => {
+  try {
+    return safeInteger(key);
+  } catch (error) {
+    console.warn(`Dropped a structure group stored under the malformed id "${key}"`, error);
+    return undefined;
+  }
+};
 
 const STRUCTURE_GROUPS_STORAGE_KEY = "structureGroups";
 const STRUCTURE_GROUPS_EVENT = "structureGroups:updated";
@@ -61,13 +72,10 @@ const loadStructureGroups = (): StructureGroupsMap => {
         return accumulator;
       }
 
-      const numericId = Number.parseInt(key, 10);
+      const structureId = storedStructureId(key);
+      if (structureId === undefined) return accumulator;
 
-      if (!Number.isFinite(numericId)) {
-        return accumulator;
-      }
-
-      accumulator[numericId] = color;
+      accumulator[structureId] = color;
       return accumulator;
     }, {} as StructureGroupsMap);
   } catch (error) {
