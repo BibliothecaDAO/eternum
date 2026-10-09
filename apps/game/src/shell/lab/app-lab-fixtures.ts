@@ -186,12 +186,14 @@ export const LAB_PAYOUT_WALLETS: Partial<Record<keyof typeof LAB_SCREENS, Payout
   "season-out": { status: "ready", address: LAB_WALLET },
 };
 
-/** The lab ledger network's fee token. */
+/** The lab ledger network and its fee token. */
+const LAB_L2_CHAIN = "0x534e5f4d41494e";
 const LAB_FEE_TOKEN = "0x57e1";
 
 /** The ledger game the lab's slot fills, on a paid Blitz's screens. */
 export const LAB_SLOT_LEDGER: LedgerRef = {
   address: "0x1ed9e7",
+  chainId: LAB_L2_CHAIN,
   feeToken: LAB_FEE_TOKEN,
   key: { shard: LAB_CHAIN, gameId: 7 },
 };
@@ -244,7 +246,13 @@ export type LabScreen = keyof typeof LAB_SCREENS;
 /** A paid game's entry as the services send it with a slot or a directory game (game-entry.ts reads it). */
 export const paidEntryPayload = (ledger: LedgerRef) => ({
   kind: "paid",
-  ledger: { address: ledger.address, feeToken: ledger.feeToken, shard: ledger.key.shard, gameId: ledger.key.gameId },
+  ledger: {
+    address: ledger.address,
+    chainId: ledger.chainId,
+    feeToken: ledger.feeToken,
+    shard: ledger.key.shard,
+    gameId: ledger.key.gameId,
+  },
 });
 
 /** A slot filling for 16:30, two hours away, with 17 of 24 seats taken; the player's among them when joined. */
@@ -414,6 +422,7 @@ export const LAB_CHAT = [
 /** The ledger the lab's finished Blitz was played on, on the reward screens. */
 export const LAB_GAME_LEDGER: LedgerRef = {
   address: "0x1ed9e7",
+  chainId: LAB_L2_CHAIN,
   feeToken: LAB_FEE_TOKEN,
   key: { shard: LAB_CHAIN, gameId: 7 },
 };

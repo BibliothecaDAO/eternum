@@ -9,6 +9,7 @@ import { type IconCode, KitIcon } from "@/ui/design-system/kit/kit-icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
 import { Loading } from "../loading";
+import { ServiceFailure } from "../service-failure";
 import { useNowSeconds } from "../use-now";
 import { NoStrkLine } from "../value/no-strk-line";
 import { lordsOf, refundCall } from "../value/ledger";
@@ -34,6 +35,7 @@ const WalletSign = lazy(() =>
  */
 export const PaidEntry = ({ ledger, wallet }: { ledger: LedgerRef; wallet: PayoutWallet }) => {
   const terms = useEntryTerms(ledger, wallet.status === "no_wallet" ? null : wallet.address);
+  if (terms.isError) return <ServiceFailure service="ledger" error={terms.error} retry={() => void terms.refetch()} />;
   return <EntryPanel ledger={ledger} terms={terms.data} wallet={wallet} onSent={() => void terms.refetch()} />;
 };
 

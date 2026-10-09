@@ -8,9 +8,10 @@ import { type IconCode, KitIcon } from "@/ui/design-system/kit/kit-icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { getChestAssetFromAttributesRaw } from "@/ui/features/cosmetics/chest-opening/utils/cosmetics";
 
-import { mainnetProvider } from "@/runtime/mainnet-rpc";
+import { l2Provider } from "@/runtime/l2-rpc";
 
 import { Loading } from "../loading";
+import { ServiceFailure } from "../service-failure";
 import { useNowSeconds } from "../use-now";
 import { type ChestContent, lordsOf, openChestCalls } from "../value/ledger";
 import { NoStrkLine } from "../value/no-strk-line";
@@ -34,6 +35,8 @@ const chestArt = (band: number, opened: boolean) =>
  */
 export const RewardPanel = ({ ledger, wallet }: { ledger: LedgerRef; wallet: PayoutWallet }) => {
   const reward = useReward(ledger, wallet.status === "no_wallet" ? null : wallet.address);
+  if (reward.isError)
+    return <ServiceFailure service="ledger" error={reward.error} retry={() => void reward.refetch()} />;
   if (wallet.status === "no_wallet" || !reward.data) return null;
   return (
     <div className="flex flex-col gap-4">
@@ -129,7 +132,7 @@ const ChestPlate = ({
         onSent={(hash) => {
           setSigning(false);
           // The request is the chest's last move from this wallet: read it again once it is on chain.
-          void mainnetProvider().waitForTransaction(hash).finally(onRequested);
+          void l2Provider().waitForTransaction(hash).finally(onRequested);
         }}
       />
     </Suspense>

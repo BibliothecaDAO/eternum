@@ -18,14 +18,19 @@ vi.mock("@/ui/modules/identity/wallet-actions", () => ({
     </button>
   ),
 }));
-vi.mock("@/runtime/mainnet-rpc", () => ({ mainnetProvider: () => ({ waitForTransaction: async () => ({}) }) }));
+vi.mock("@/runtime/l2-rpc", () => ({ l2Provider: () => ({ waitForTransaction: async () => ({}) }) }));
 
 import type { LedgerRef } from "../value/game-entry";
 import { type Reward, rewardKey } from "./reward";
 import { RewardPanel } from "./reward-panel";
 
 const WEI = 10n ** 18n;
-const LEDGER: LedgerRef = { address: "0x1ed9e7", feeToken: "0x57e1", key: { shard: "0x52", gameId: 7 } };
+const LEDGER: LedgerRef = {
+  address: "0x1ed9e7",
+  chainId: "0x534e5f4d41494e",
+  feeToken: "0x57e1",
+  key: { shard: "0x52", gameId: 7 },
+};
 const CHEST = { seasonId: 3, band: 0, requested: false, finished: false, requester: "0x0", requestBlock: 0 };
 const OPENED = { ...CHEST, requested: true, finished: true, requester: "0x4a1", requestBlock: 812300 };
 const SEALED: Reward = {

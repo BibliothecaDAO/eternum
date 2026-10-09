@@ -1,16 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 
-import { mainnetProvider } from "@/runtime/mainnet-rpc";
-
-import {
-  type Credits,
-  type EntrySplit,
-  type LedgerPrices,
-  ledgerReader,
-  type Registration,
-  registerCalls,
-} from "../value/ledger";
-import type { LedgerRef } from "../value/game-entry";
+import { type Credits, type EntrySplit, type LedgerPrices, type Registration, registerCalls } from "../value/ledger";
+import { ledgerOf, type LedgerRef } from "../value/game-entry";
 
 /*
  * A paid Blitz (design 5h): its seat, sword and shield are bought on the ledger from the payout wallet, a credit won
@@ -93,14 +84,17 @@ export const entryTermsKey = (ledger: LedgerRef, wallet: string) =>
 /** The entry's terms for the payout wallet, read from the ledger and the two tokens at the latest block. */
 export const useEntryTerms = (ledger: LedgerRef | null, wallet: string | null) =>
   useQuery({
-    queryKey: entryTermsKey(ledger ?? { address: "", feeToken: "", key: { shard: "", gameId: 0 } }, wallet ?? ""),
+    queryKey: entryTermsKey(
+      ledger ?? { address: "", chainId: "", feeToken: "", key: { shard: "", gameId: 0 } },
+      wallet ?? "",
+    ),
     queryFn: () => readEntryTerms(ledger as LedgerRef, wallet as string),
     enabled: ledger !== null && wallet !== null,
     refetchInterval: 15_000,
   });
 
 const readEntryTerms = async (ledger: LedgerRef, wallet: string): Promise<EntryTerms> => {
-  const read = ledgerReader(mainnetProvider(), ledger.address);
+  const read = await ledgerOf(ledger);
   const [game, lordsToken] = await Promise.all([read.game(ledger.key), read.lordsToken()]);
   const [preset, credits, registration, lords, strk] = await Promise.all([
     read.preset(game.presetId),

@@ -6,7 +6,7 @@ import { WebWalletConnector } from "starknetkit/webwallet";
 import { QueryClient } from "@tanstack/react-query";
 import type React from "react";
 import { useCallback } from "react";
-import { MAINNET_RPC_URL } from "@/runtime/mainnet-rpc";
+import { L2_RPC_URL } from "@/runtime/l2-rpc";
 
 // Controller is a wallet a player links to their Realms account from the account page: it signs
 // the one SIWS message on mainnet. No session policies, no paymaster, no game-transaction signing.
@@ -18,7 +18,7 @@ const controller = new ControllerConnector({
   webauthnPopup: true,
   lazyload: true,
   // Identity is always mainnet. Pass that fact through so Controller does not synchronously probe an RPC at boot.
-  chains: [{ rpcUrl: MAINNET_RPC_URL, chainId: constants.StarknetChainId.SN_MAIN }],
+  chains: [{ rpcUrl: L2_RPC_URL, chainId: constants.StarknetChainId.SN_MAIN }],
   defaultChainId: constants.StarknetChainId.SN_MAIN,
 });
 // Ready's email wallet: Ready's own page holds the keys, shown over ours; a phone browser has no wallet extension.
@@ -37,7 +37,7 @@ const queryClient = new QueryClient({
 });
 
 export function StarknetProvider({ children }: { children: React.ReactNode }) {
-  const rpc = useCallback(() => ({ nodeUrl: MAINNET_RPC_URL }), []);
+  const rpc = useCallback(() => ({ nodeUrl: L2_RPC_URL }), []);
 
   return (
     <StarknetConfig

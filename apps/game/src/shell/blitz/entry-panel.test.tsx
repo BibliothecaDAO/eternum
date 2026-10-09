@@ -27,7 +27,12 @@ import { type EntryTerms, entryTermsKey } from "./entry";
 import { PaidEntry } from "./entry-panel";
 
 const WEI = 10n ** 18n;
-const LEDGER: LedgerRef = { address: "0x1ed9e7", feeToken: "0x57e1", key: { shard: "0x52", gameId: 7 } };
+const LEDGER: LedgerRef = {
+  address: "0x1ed9e7",
+  chainId: "0x534e5f4d41494e",
+  feeToken: "0x57e1",
+  key: { shard: "0x52", gameId: 7 },
+};
 const WALLET: PayoutWallet = { status: "ready", address: "0x4a1" };
 const TERMS: EntryTerms = {
   prices: { seat: 500n * WEI, sword: 500n * WEI, shield: 500n * WEI },

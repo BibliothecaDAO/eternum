@@ -10,6 +10,7 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 
 import { type DirectoryGame, useDirectory, useRealmsPlayer, useRecentResults } from "../herald";
 import { Loading } from "../loading";
+import { ServiceFailure } from "../service-failure";
 import { useNowSeconds } from "../use-now";
 import { claimSeasonCall, lordsOf } from "../value/ledger";
 import { NoStrkLine } from "../value/no-strk-line";
@@ -36,6 +37,7 @@ export const SeasonPrizePanel = () => {
   const wallet = session ? payoutWalletOf(session.user) : null;
   const games: DirectoryGame[] = [...(directory.data?.games ?? []), ...(history.data?.games ?? [])];
   const prize = useSeasonPrize(games, wallet && wallet.status !== "no_wallet" ? wallet.address : null);
+  if (prize.isError) return <ServiceFailure service="ledger" error={prize.error} retry={() => void prize.refetch()} />;
   if (!prize.data || !wallet || wallet.status === "no_wallet") return null;
   return <Prize prize={prize.data} owner={wallet.address} onClaimed={() => void prize.refetch()} />;
 };

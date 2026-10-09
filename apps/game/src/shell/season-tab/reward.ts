@@ -1,9 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 
-import { mainnetProvider } from "@/runtime/mainnet-rpc";
-
-import { type Chest, type ChestContent, ledgerReader, type PlayerResult, type Registration } from "../value/ledger";
-import type { LedgerRef } from "../value/game-entry";
+import { type Chest, type ChestContent, type PlayerResult, type Registration } from "../value/ledger";
+import { ledgerOf, type LedgerRef } from "../value/game-entry";
 
 /*
  * A finished paid Blitz on the ledger (design 5h, owner 9 Oct: the result mints a chest token the player holds,
@@ -47,7 +45,10 @@ export const rewardKey = (ledger: LedgerRef, wallet: string) =>
 /** Read every 30 s, every 5 s while the chest's draw is under way so the reveal comes as soon as it lands. */
 export const useReward = (ledger: LedgerRef | null, wallet: string | null) =>
   useQuery({
-    queryKey: rewardKey(ledger ?? { address: "", feeToken: "", key: { shard: "", gameId: 0 } }, wallet ?? ""),
+    queryKey: rewardKey(
+      ledger ?? { address: "", chainId: "", feeToken: "", key: { shard: "", gameId: 0 } },
+      wallet ?? "",
+    ),
     queryFn: () => readReward(ledger as LedgerRef, wallet as string),
     enabled: ledger !== null && wallet !== null,
     refetchInterval: (query) =>
@@ -55,7 +56,7 @@ export const useReward = (ledger: LedgerRef | null, wallet: string | null) =>
   });
 
 const readReward = async (ledger: LedgerRef, wallet: string): Promise<Reward> => {
-  const read = ledgerReader(mainnetProvider(), ledger.address);
+  const read = await ledgerOf(ledger);
   const [result, registration, strk, collection] = await Promise.all([
     read.result(ledger.key, wallet),
     read.registration(ledger.key, wallet),
