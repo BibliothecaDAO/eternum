@@ -10,7 +10,8 @@ vi.mock("cloudflare:workers", () => ({
     ) {}
   },
 }));
-vi.mock("./rpc", () => ({
+vi.mock("@realms-world/value-ledger", async (original) => ({
+  ...(await original<typeof import("@realms-world/value-ledger")>()),
   rpcAt: () => {
     throw new Error("unavailable_read");
   },

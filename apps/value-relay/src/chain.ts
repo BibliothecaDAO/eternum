@@ -1,4 +1,4 @@
-import { rpcAt } from "./rpc";
+import { rpcAt } from "@realms-world/value-ledger";
 import { Account, RpcProvider } from "starknet";
 import type { RelayPorts } from "./ports";
 import { frontierPayment } from "./adapters";

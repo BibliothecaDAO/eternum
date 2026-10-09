@@ -6,7 +6,10 @@ import type { ConfirmedSnapshot } from "./shard-snapshot";
 import { RelayFailure, type MonitorPorts } from "./ports";
 
 const rpc = vi.hoisted(() => ({ chain: vi.fn(), block: vi.fn() }));
-vi.mock("./rpc", () => ({ rpcAt: () => ({ getChainId: rpc.chain, getBlock: rpc.block }) }));
+vi.mock("@realms-world/value-ledger", async (original) => ({
+  ...(await original<typeof import("@realms-world/value-ledger")>()),
+  rpcAt: () => ({ getChainId: rpc.chain, getBlock: rpc.block }),
+}));
 const connection = { chainId: "0x1", gamesAddress: "0x10", rpcUrl: "https://shard.test/rpc" };
 const directory = () => ({
   chain: "0x1",

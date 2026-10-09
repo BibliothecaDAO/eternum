@@ -1,5 +1,5 @@
 import { hash, shortString, type RpcProvider } from "starknet";
-import { rpcAt } from "./rpc";
+import { rpcAt } from "@realms-world/value-ledger";
 
 export interface ShardConnection {
   rpcUrl: string;

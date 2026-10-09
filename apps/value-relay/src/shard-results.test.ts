@@ -6,7 +6,8 @@ import { ShardReader, type ValueRow } from "./shard-rpc";
 import { shardWithdrawalPorts } from "./shard-withdrawals";
 
 const rpc = vi.hoisted(() => ({ chain: vi.fn(), block: vi.fn(), contract: vi.fn(), call: vi.fn() }));
-vi.mock("./rpc", () => ({
+vi.mock("@realms-world/value-ledger", async (original) => ({
+  ...(await original<typeof import("@realms-world/value-ledger")>()),
   rpcAt: () => ({ getChainId: rpc.chain, getBlock: rpc.block, getClassAt: rpc.contract, callContract: rpc.call }),
 }));
 const rows = [

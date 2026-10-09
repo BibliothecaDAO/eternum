@@ -1,0 +1,21 @@
+{
+  "name": "@realms-world/value-ledger",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "starknet": "catalog:web"
+  },
+  "devDependencies": {
+    "typescript": "catalog:web",
+    "vitest": "^3.2.4",
+    "@types/node": "^22.19.13"
+  }
+}

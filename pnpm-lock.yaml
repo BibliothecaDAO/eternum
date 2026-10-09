@@ -773,6 +773,9 @@ importers:
       '@realms-world/identity':
         specifier: workspace:*
         version: link:../../packages/identity
+      '@realms-world/value-ledger':
+        specifier: workspace:*
+        version: link:../../packages/value-ledger
       effect:
         specifier: 4.0.0-rc.108
         version: 4.0.0-rc.108
@@ -890,6 +893,9 @@ importers:
       '@realms-world/identity':
         specifier: workspace:*
         version: link:../../packages/identity
+      '@realms-world/value-ledger':
+        specifier: workspace:*
+        version: link:../../packages/value-ledger
       effect:
         specifier: 4.0.0-rc.108
         version: 4.0.0-rc.108
@@ -1506,6 +1512,22 @@ importers:
       vitest:
         specifier: ^2.0.5
         version: 2.1.9(@types/node@20.19.33)(@vitest/ui@2.1.9)(jsdom@28.1.0(@noble/hashes@2.3.0))(lightningcss@1.32.0)(terser@5.46.0)
+
+  packages/value-ledger:
+    dependencies:
+      starknet:
+        specifier: catalog:web
+        version: 9.4.2(typescript@5.9.3)(zod@4.3.6)
+    devDependencies:
+      '@types/node':
+        specifier: ^22.19.13
+        version: 22.20.1
+      typescript:
+        specifier: catalog:web
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.4(@types/debug@4.1.12)(@types/node@22.20.1)(jiti@2.7.0)(jsdom@28.1.0(@noble/hashes@2.3.0))(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.9.0)
 
   scripts/lords-distribution:
     dependencies:

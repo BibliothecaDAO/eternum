@@ -11,7 +11,8 @@
     "@bibliothecadao/eternum": "workspace:*",
     "@realms-world/identity": "workspace:*",
     "effect": "4.0.0-rc.108",
-    "hono": "^4.9.12"
+    "hono": "^4.9.12",
+    "@realms-world/value-ledger": "workspace:*"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "5.20260922.1",

@@ -1,6 +1,5 @@
 import { Effect } from "effect";
-import { readLedgerGame, readRegisteredWallets, type LedgerGameKey } from "../../value-relay/src/ledger";
-import { rpcAt } from "../../value-relay/src/rpc";
+import { readLedgerGame, readRegisteredWallets, rpcAt, type LedgerGameKey } from "@realms-world/value-ledger";
 import { normalizeAddress } from "./address";
 import { RegistrationOpen, RosterFailure, type BlitzRegistrationSource } from "./blitz-roster";
 

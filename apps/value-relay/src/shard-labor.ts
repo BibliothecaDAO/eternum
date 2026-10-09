@@ -2,7 +2,7 @@ import { Account, type Abi } from "starknet";
 import { ShardReader, sameFelt, felt, uint, type ShardConnection } from "./shard-rpc";
 import { Effect } from "effect";
 import { RelayFailure, relayOperation, type LaborClaim, type LaborGrant, type RelayEffect } from "./ports";
-import { rpcAt } from "./rpc";
+import { rpcAt } from "@realms-world/value-ledger";
 
 interface LaborTarget {
   connection: ShardConnection;

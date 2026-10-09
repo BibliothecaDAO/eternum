@@ -3,7 +3,10 @@ import { beforeEach, expect, it, vi } from "vitest";
 import { ledgerBlitzRegistrations } from "./ledger-roster";
 
 const rpc = vi.hoisted(() => ({ block: vi.fn(), call: vi.fn() }));
-vi.mock("../../value-relay/src/rpc", () => ({ rpcAt: () => ({ getBlock: rpc.block, callContract: rpc.call }) }));
+vi.mock("@realms-world/value-ledger", async (original) => ({
+  ...(await original<typeof import("@realms-world/value-ledger")>()),
+  rpcAt: () => ({ getBlock: rpc.block, callContract: rpc.call }),
+}));
 const key = { chainId: "0x1", gameName: "blitz-registered" };
 const accountForWallet = vi.fn<() => Promise<string | null>>(async () => "0x456");
 const source = () =>

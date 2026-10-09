@@ -14,7 +14,8 @@ const rpc = vi.hoisted(() => ({
   contract: vi.fn(),
   receipt: vi.fn(),
 }));
-vi.mock("./rpc", () => ({
+vi.mock("@realms-world/value-ledger", async (original) => ({
+  ...(await original<typeof import("@realms-world/value-ledger")>()),
   rpcAt: () => ({
     getChainId: rpc.chain,
     getBlock: rpc.header,
@@ -71,7 +72,10 @@ const receipt = () => ({
 const header = { block_number: 10, block_hash: "0xa", parent_hash: "0x9", timestamp: 1000, status: "ACCEPTED_ON_L2" };
 const fixture = () => {
   const reader = new ShardReader({ chainId: "0x1", rpcUrl: "https://shard.test/rpc", gamesAddress: address });
-  const bindings = { realmsIdForAccount: vi.fn(async (_account: string) => "0x2"), frontierSeason: vi.fn(() => Effect.succeed(3)) };
+  const bindings = {
+    realmsIdForAccount: vi.fn(async (_account: string) => "0x2"),
+    frontierSeason: vi.fn(() => Effect.succeed(3)),
+  };
   return { reader, bindings, ports: shardWithdrawalPorts(reader, bindings) };
 };
 beforeEach(() => {

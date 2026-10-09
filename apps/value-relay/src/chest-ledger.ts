@@ -1,7 +1,7 @@
 import { Account } from "starknet";
 import { ledgerChestChanges } from "./ledger";
 import { relayOperation, type ChestPorts } from "./ports";
-import { rpcAt } from "./rpc";
+import { rpcAt } from "@realms-world/value-ledger";
 
 interface Connection {
   rpcUrl: string;
