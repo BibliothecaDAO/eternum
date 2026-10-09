@@ -14,6 +14,8 @@ pub struct MmrParams {
 #[derive(Copy, Drop, Serde, starknet::Store)]
 pub struct Preset {
     pub entry_fee: u256,
+    pub chest_lords_bps: u16,
+    pub chest_metadata: u128,
     pub paid_fraction_bps: u16,
     pub decay_bps: u16,
     pub sword_price: u256,
@@ -29,6 +31,8 @@ pub struct Game {
     pub start: u64,
     pub end: u64,
     pub pool: u256,
+    pub entries: u256,
+    pub result_commitment: felt252,
     pub registered_count: u16,
     pub cancelled: bool,
     pub finalized: bool,
@@ -40,6 +44,8 @@ pub struct Registration {
     pub sword: bool,
     pub shield: bool,
     pub flags_consumed: bool,
+    pub sword_credit: bool,
+    pub shield_credit: bool,
     pub paid: u256,
     pub realm_id: u256,
     pub pass_kind: u8,
@@ -48,16 +54,38 @@ pub struct Registration {
 #[derive(Copy, Default, Drop, Serde, starknet::Store)]
 pub struct PlayerResult {
     pub rank: u16,
-    pub chests: u16,
+    pub points: u128,
+    pub chest_id: u256,
     pub mmr_before: u128,
     pub mmr_after: u128,
 }
 
 #[derive(Copy, Drop, Serde)]
 pub struct RankedPlayer {
-    pub owner: ContractAddress,
+    pub wallet: ContractAddress,
+    pub points: u128,
     pub rank: u16,
-    pub chests: u16,
+    pub chest: ChestContent,
+}
+
+#[derive(Copy, Default, Drop, Serde, starknet::Store)]
+pub struct ChestContent {
+    pub kind: u8,
+    pub cosmetic: u128,
+    pub lords: u256,
+}
+
+#[derive(Copy, Default, Drop, Serde, starknet::Store)]
+pub struct Chest {
+    pub exists: bool,
+    pub opened: bool,
+    pub content: ChestContent,
+}
+
+#[derive(Copy, Default, Drop, Serde, starknet::Store)]
+pub struct Credits {
+    pub swords: u32,
+    pub shields: u32,
 }
 
 #[derive(Copy, Default, Drop, Serde, starknet::Store)]
