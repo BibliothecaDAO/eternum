@@ -35,6 +35,7 @@ pub trait IGameLedger<TState> {
     fn close_frontier(ref self: TState, shard: felt252, season_id: u32);
     fn get_frontier(self: @TState, shard: felt252, season_id: u32) -> FrontierSeason;
     fn frontier_unlocked(self: @TState, shard: felt252, season_id: u32) -> u256;
+    fn frontier_claim_deadline(self: @TState, shard: felt252, season_id: u32) -> u64;
     fn get_payment(self: @TState, shard: felt252, claim_id: felt252) -> WithdrawalPayment;
     fn rescue_token(ref self: TState, token: ContractAddress, recipient: ContractAddress, amount: u256);
     fn register_preset(
@@ -450,6 +451,10 @@ pub mod GameLedger {
                 * Into::<u32, u64>::into(preset.day_unit_seconds)
                 * preset.season_bags.into();
             let end = start + duration;
+            assert!(
+                Into::<u64, u128>::into(end) + preset.claim_window_seconds.into() <= 0xffffffffffffffff,
+                "Ledger: claim deadline exceeds u64",
+            );
             assert!(starknet::get_block_timestamp() <= start, "Ledger: season already started");
             assert!(amount > 0 && amount <= 0xffffffffffffffffffffffffffffffff, "Ledger: invalid season funding");
             self
@@ -491,7 +496,10 @@ pub mod GameLedger {
             self.pausable.assert_not_paused();
             let mut season = self.get_frontier(shard, season_id);
             assert!(!season.closed, "Ledger: season closed");
-            assert!(starknet::get_block_timestamp() >= season.end, "Ledger: season has not ended");
+            assert!(
+                starknet::get_block_timestamp() >= self.frontier_claim_deadline(shard, season_id),
+                "Ledger: claim window open",
+            );
             let returned = season.pool - season.paid;
             season.closed = true;
             self.frontier_days.entry((shard, season_id)).write(season);
@@ -523,6 +531,11 @@ pub mod GameLedger {
 
         fn get_payment(self: @ContractState, shard: felt252, claim_id: felt252) -> WithdrawalPayment {
             self.payments.entry((shard, claim_id)).read()
+        }
+
+        fn frontier_claim_deadline(self: @ContractState, shard: felt252, season_id: u32) -> u64 {
+            let season = self.get_frontier(shard, season_id);
+            season.end + self.get_preset(season.preset_id).claim_window_seconds.into()
         }
 
         fn rescue_token(ref self: ContractState, token: ContractAddress, recipient: ContractAddress, amount: u256) {
@@ -915,6 +928,7 @@ pub mod GameLedger {
                 * Into::<u64, u128>::into(crate::days::UNITS_PER_BAG)
                 * preset.season_bags.into();
             assert!(duration <= 0xffffffffffffffff, "Ledger: season duration exceeds u64");
+            assert!(preset.day_unit_seconds == 0 || preset.claim_window_seconds != 0, "Ledger: claim window is zero");
             assert!(preset.protocol_cut_bps <= 10_000, "Ledger: invalid protocol cut");
             assert!(preset.chest_lords_bps <= 10_000, "Ledger: invalid chest share");
             assert!(

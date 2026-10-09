@@ -14,6 +14,13 @@ describe("ledger economics", () => {
     expect(buildLedgerEconomicPreset("blitz").day_unit_seconds).toBe(0);
     expect(() => buildLedgerEconomicPreset("blitz", { presetId: 5 })).toThrow("game type differs");
   });
+  it("serializes the seven-day claim window and an explicit rehearsal override", () => {
+    const preset = buildLedgerEconomicPreset("frontier");
+    expect(preset.claim_window_seconds).toBe(604800);
+    expect(buildRegisterLedgerPresetCalldata(1, preset)[20]).toBe("604800");
+    const rehearsal = buildLedgerEconomicPreset("frontier", { claimWindowSeconds: 17 });
+    expect(buildRegisterLedgerPresetCalldata(1, rehearsal)[20]).toBe("17");
+  });
   it("builds the approved Blitz preset", () => {
     const preset = buildLedgerEconomicPreset("blitz");
 
@@ -24,7 +31,7 @@ describe("ledger economics", () => {
       mmr: { enabled: true, mean: 1_500, spread: 450, max_delta: 45, k: 50, regression_bps: 150, min_players: 6 },
     });
     expect(BigInt(preset.entry_fee.low)).toBe(500_000_000_000_000_000_000n);
-    expect(buildRegisterLedgerPresetCalldata(1, preset).length).toBe(87);
+    expect(buildRegisterLedgerPresetCalldata(1, preset).length).toBe(88);
   });
 
   it("disables fees and MMR for Eternum without creating an invalid payout preset", () => {

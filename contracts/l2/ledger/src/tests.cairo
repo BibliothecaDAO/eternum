@@ -245,6 +245,7 @@ fn default_preset() -> Preset {
     Preset {
         day_unit_seconds: 1,
         season_bags: 5,
+        claim_window_seconds: 7 * 24 * 60 * 60,
         entry_fee: 500,
         protocol_cut_bps: 0,
         chest_lords_bps: 0,
@@ -1063,7 +1064,7 @@ fn frontier_close_returns_only_unspent_custody() {
     let fixture = funded_frontier();
     start_cheat_block_timestamp(fixture.ledger_address, 150);
     fixture.ledger.pay('shard', 1, 'first', player(0), 300);
-    start_cheat_block_timestamp(fixture.ledger_address, END);
+    start_cheat_block_timestamp(fixture.ledger_address, END + default_preset().claim_window_seconds.into());
     start_cheat_caller_address(fixture.ledger_address, ADMIN());
     fixture.ledger.close_frontier('shard', 1);
     assert!(fixture.lords.balance_of(TREASURY()) == 700);
@@ -1074,7 +1075,7 @@ fn frontier_close_returns_only_unspent_custody() {
 #[should_panic(expected: "Ledger: season closed")]
 fn frontier_close_refuses_later_claims() {
     let fixture = funded_frontier();
-    start_cheat_block_timestamp(fixture.ledger_address, END);
+    start_cheat_block_timestamp(fixture.ledger_address, END + default_preset().claim_window_seconds.into());
     start_cheat_caller_address(fixture.ledger_address, ADMIN());
     fixture.ledger.close_frontier('shard', 1);
     start_cheat_caller_address(fixture.ledger_address, OPERATOR());
@@ -1087,7 +1088,7 @@ fn frontier_claim_namespace_binds_shard_and_survives_season_close() {
     fund_and_approve_player(@fixture, ADMIN(), 1000);
     start_cheat_caller_address(fixture.ledger_address, ADMIN());
     fixture.ledger.fund_frontier('other', 1, PRESET_ID, START, 0x5eed, 1000);
-    start_cheat_block_timestamp(fixture.ledger_address, END);
+    start_cheat_block_timestamp(fixture.ledger_address, END + default_preset().claim_window_seconds.into());
     start_cheat_caller_address(fixture.ledger_address, OPERATOR());
     fixture.ledger.pay('shard', 1, 'tx', player(0), 1000);
     fixture.ledger.pay('other', 1, 'tx', player(1), 1000);
@@ -1978,4 +1979,72 @@ fn a_missing_historical_hash_cannot_be_used_as_entropy() {
     start_cheat_block_number(fixture.ledger_address, 111);
     start_cheat_block_hash(fixture.ledger_address, 101, 0);
     fixture.ledger.open_finish(1);
+}
+
+#[test]
+fn claim_window_preserves_payments_through_its_last_second() {
+    let fixture = funded_frontier();
+    let deadline = END + default_preset().claim_window_seconds.into();
+    assert!(fixture.ledger.frontier_claim_deadline('shard', 1) == deadline);
+    start_cheat_block_timestamp(fixture.ledger_address, deadline - 1);
+    fixture.ledger.pay('shard', 1, 'last', player(0), 400);
+    start_cheat_block_timestamp(fixture.ledger_address, deadline);
+    start_cheat_caller_address(fixture.ledger_address, ADMIN());
+    fixture.ledger.close_frontier('shard', 1);
+    assert!(fixture.lords.balance_of(TREASURY()) == 600);
+    start_cheat_caller_address(fixture.ledger_address, OPERATOR());
+    fixture.ledger.pay('shard', 1, 'last', player(0), 400);
+    assert!(fixture.lords.balance_of(player(0)) == 400);
+}
+
+#[test]
+#[should_panic(expected: "Ledger: claim window open")]
+fn close_refuses_the_last_second_of_the_claim_window() {
+    let fixture = funded_frontier();
+    start_cheat_block_timestamp(fixture.ledger_address, END + default_preset().claim_window_seconds.into() - 1);
+    start_cheat_caller_address(fixture.ledger_address, ADMIN());
+    fixture.ledger.close_frontier('shard', 1);
+}
+
+#[test]
+#[should_panic(expected: "Ledger: claim window open")]
+fn ending_the_season_does_not_close_the_claim_window() {
+    let fixture = funded_frontier();
+    start_cheat_block_timestamp(fixture.ledger_address, END);
+    start_cheat_caller_address(fixture.ledger_address, ADMIN());
+    fixture.ledger.close_frontier('shard', 1);
+}
+
+#[test]
+fn an_old_receipt_can_arrive_after_the_window_until_admin_closes() {
+    let fixture = funded_frontier();
+    start_cheat_block_timestamp(fixture.ledger_address, END + default_preset().claim_window_seconds.into() + 1);
+    fixture.ledger.pay('shard', 1, 'delayed', player(0), 400);
+    assert!(fixture.lords.balance_of(player(0)) == 400);
+}
+
+#[test]
+#[should_panic(expected: "Ledger: claim window is zero")]
+fn a_frontier_calendar_requires_a_claim_window() {
+    deploy_fixture(Preset { claim_window_seconds: 0, ..default_preset() });
+}
+
+#[test]
+fn claim_window_is_an_immutable_preset_not_a_constant() {
+    let fixture = deploy_fixture(Preset { claim_window_seconds: 17, ..default_preset() });
+    fund_and_approve_player(@fixture, ADMIN(), 1000);
+    start_cheat_caller_address(fixture.ledger_address, ADMIN());
+    fixture.ledger.fund_frontier('shard', 1, PRESET_ID, START, 0x5eed, 1000);
+    assert!(fixture.ledger.frontier_claim_deadline('shard', 1) == END + 17);
+    start_cheat_block_timestamp(fixture.ledger_address, END + 17);
+    fixture.ledger.close_frontier('shard', 1);
+}
+
+#[test]
+#[should_panic(expected: "Ledger: claim deadline exceeds u64")]
+fn frontier_claim_deadline_cannot_overflow() {
+    let fixture = funded_frontier();
+    fund_and_approve_player(@fixture, ADMIN(), 1000);
+    start_cheat_caller_address(fixture.ledger_address, ADMIN());
+    fixture.ledger.fund_frontier('other', 1, PRESET_ID, 0xffffffffffffffff - 100, 0x5eed, 1000);
 }
