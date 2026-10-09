@@ -21,6 +21,7 @@ describe("story event stream", () => {
             BankSwap: { structure_id: "0x2a", bank_id: "0x2b", buy: true },
           },
           timestamp: "0x64",
+          event_position: { block_number: 12, transaction_hash: "0xfeed", transaction_index: 0, event_index: 0 },
         },
       },
       scope,
@@ -56,7 +57,13 @@ describe("story event stream", () => {
     const identities = (events: typeof overlay, preconfirmed: boolean) =>
       events.flatMap((event, event_index) => {
         const read = toStreamStoryEvent(
-          { ...event, value: { ...event.value, event_position: { transaction_hash: "0xfeed", event_index } } },
+          {
+            ...event,
+            value: {
+              ...event.value,
+              event_position: { block_number: 12, transaction_hash: "0xfeed", transaction_index: 0, event_index },
+            },
+          },
           scope,
           { block: 12, preconfirmed },
         );
@@ -79,7 +86,7 @@ describe("story event stream", () => {
       key: "0x1",
       value: {
         ...value,
-        event_position: { transaction_hash: "0xfeed", event_index },
+        event_position: { block_number: 12, transaction_hash: "0xfeed", transaction_index: 0, event_index },
       },
     });
     const overlay = toStreamStoryEvent(event(1), scope, { block: 12, preconfirmed: true });

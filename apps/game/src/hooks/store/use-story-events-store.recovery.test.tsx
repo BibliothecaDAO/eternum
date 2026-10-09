@@ -21,11 +21,22 @@ vi.mock("@bibliothecadao/eternum", () => ({
 }));
 
 import { useConnectionStore } from "./use-connection-store";
-import { acceptGameSyncStoryEvent, resetGameSyncStoryEvents, useSeasonWinner } from "./use-story-events-store";
+import {
+  acceptGameSyncStoryEvent,
+  resetGameSyncStoryEvents,
+  useSeasonWinner,
+  useStoryEvents,
+} from "./use-story-events-store";
 
 const scope = { chainId: "0x1", worldAddress: "0xabc", gameId: 1 };
 
-const story = (index: number, variant: Record<string, unknown>, owner = "0x0") =>
+/** A streamed story at its place on the chain: block (null while pre-confirmed), transaction and event index. */
+const storyAt = (
+  index: number,
+  variant: Record<string, unknown>,
+  place: { block: number | null; transaction: number; event?: number; timestamp?: number },
+  owner = "0x0",
+) =>
   acceptGameSyncStoryEvent(
     {
       model: "StoryEvent",
@@ -38,14 +49,29 @@ const story = (index: number, variant: Record<string, unknown>, owner = "0x0") =
         entity_id: "0x0",
         tx_hash: `0x${(index + 1).toString(16)}`,
         story: variant,
-        timestamp: `0x${(100 + index).toString(16)}`,
+        timestamp: `0x${(place.timestamp ?? 100 + index).toString(16)}`,
+        event_position: {
+          block_number: place.block,
+          transaction_hash: `0x${(index + 1).toString(16)}`,
+          transaction_index: place.transaction,
+          event_index: place.event ?? 0,
+        },
       },
     },
     scope,
-    { block: index, preconfirmed: false },
+    { block: place.block, preconfirmed: place.block === null },
   );
+const story = (index: number, variant: Record<string, unknown>, owner = "0x0") =>
+  storyAt(index, variant, { block: index, transaction: 0 }, owner);
 
 const Winner = () => <p>{useSeasonWinner()?.toString(16) ?? "none"}</p>;
+const Log = () => (
+  <ol>
+    {useStoryEvents(10).data.map((event) => (
+      <li key={event.id}>{event.story}</li>
+    ))}
+  </ol>
+);
 
 let host: HTMLDivElement;
 let root: Root;
@@ -85,5 +111,33 @@ describe("a story read", () => {
       for (let index = 2; index < 600; index++) story(index, { ExplorerMove: {} });
     });
     expect(host.textContent).toBe("7");
+  });
+
+  it("lists stories newest on the chain first: pre-confirmed above blocks, then block, transaction and event", async () => {
+    const log = document.createElement("div");
+    const logRoot = createRoot(log);
+    await act(async () =>
+      logRoot.render(
+        <QueryClientProvider client={new QueryClient()}>
+          <Log />
+        </QueryClientProvider>,
+      ),
+    );
+    // One block's stories share a timestamp; only their place on the chain orders them.
+    await act(async () => {
+      storyAt(1, { ExplorerMove: {} }, { block: 7, transaction: 2, timestamp: 500 });
+      storyAt(2, { BuildingPlaced: {} }, { block: 7, transaction: 0, timestamp: 500 });
+      storyAt(3, { RealmCreated: {} }, { block: 7, transaction: 2, event: 1, timestamp: 500 });
+      storyAt(4, { ExplorerExplored: {} }, { block: 6, transaction: 9, timestamp: 600 });
+      storyAt(5, { ArmyDeployed: {} }, { block: null, transaction: 0, timestamp: 400 });
+    });
+    expect([...log.querySelectorAll("li")].map((item) => item.textContent)).toEqual([
+      "ArmyDeployed",
+      "RealmCreated",
+      "ExplorerMove",
+      "BuildingPlaced",
+      "ExplorerExplored",
+    ]);
+    act(() => logRoot.unmount());
   });
 });

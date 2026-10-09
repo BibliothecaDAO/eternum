@@ -17,9 +17,17 @@ import { useEffect, useMemo } from "react";
 import { create } from "zustand";
 import { useConnectionStore } from "./use-connection-store";
 
+/** Where a story's event sits on the chain; a pre-confirmed one has no block yet. */
+interface ChainPosition {
+  block: number | null;
+  transactionIndex: number;
+  eventIndex: number;
+}
+
 interface StoryEventData {
   scopeKey: string;
   confirmation: GameSyncEventConfirmation | null;
+  position: ChainPosition;
   entity_id: number | null;
   event_id: string;
   owner: string | null;
@@ -96,16 +104,24 @@ const storyEventFromValue = (
   const variant = model === "StoryEvent" ? storyVariant(value.story) : { type: model, payload: value };
   if (!variant || !EVENT_MODELS.has(model)) return null;
   const eventId = storyEventIdentity(scope, value);
-  // An event names its transaction by its stream position, or a StoryEvent by its own tx_hash; every model carries the
-  // chain's timestamp. Missing either is a malformed event, never "undefined" or the epoch.
-  const transactionHash = asRecord(value.event_position)?.transaction_hash ?? value.tx_hash;
-  if (typeof transactionHash !== "string" || value.timestamp === undefined || value.timestamp === null) {
-    throw new Error(`${model} arrived without its transaction or timestamp`);
+  // An event names its transaction and its place on the chain by its position, and carries the chain's timestamp.
+  // Missing any of them is a malformed event, never "undefined", the epoch or the first place.
+  const position = asRecord(value.event_position);
+  const transactionHash = position?.transaction_hash ?? value.tx_hash;
+  const chainPosition = position ? chainPositionOf(position) : null;
+  if (
+    typeof transactionHash !== "string" ||
+    !chainPosition ||
+    value.timestamp === undefined ||
+    value.timestamp === null
+  ) {
+    throw new Error(`${model} arrived without its transaction, chain position or timestamp`);
   }
   const owner = value.owner ?? value.player ?? asRecord(value.attacker)?.player;
   return {
     scopeKey: storyEventScopeKey(scope),
     confirmation: confirmation ?? null,
+    position: chainPosition,
     owner: owner === null || owner === undefined ? null : String(owner),
     entity_id: toOptionalNumber(value.entity_id ?? value.explorer_id ?? value.attacker_id),
     tx_hash: transactionHash,
@@ -124,10 +140,25 @@ export const toStreamStoryEvent = (
 ): StreamStoryEvent | null =>
   EVENT_MODELS.has(event.model) ? storyEventFromValue(event.model, event.value, scope, confirmation) : null;
 
+const chainPositionOf = (position: Record<string, unknown>): ChainPosition | null => {
+  const { block_number: block, transaction_index: transactionIndex, event_index: eventIndex } = position;
+  const isIndex = (value: unknown): value is number => Number.isSafeInteger(value) && (value as number) >= 0;
+  if ((block !== null && !isIndex(block)) || !isIndex(transactionIndex) || !isIndex(eventIndex)) return null;
+  return { block, transactionIndex, eventIndex };
+};
+
 const historyStoryEvent = (event: HeraldHistoryEvent, scope: StoryEventScope): StreamStoryEvent | null =>
   storyEventFromValue(
     event.model,
-    { ...event.value, event_position: { transaction_hash: event.transaction_hash, event_index: event.event_index } },
+    {
+      ...event.value,
+      event_position: {
+        block_number: event.block_number,
+        transaction_hash: event.transaction_hash,
+        transaction_index: event.transaction_index,
+        event_index: event.event_index,
+      },
+    },
     scope,
     { block: event.block_number, preconfirmed: false },
   );
@@ -187,7 +218,18 @@ const matchesRead = (event: StoryEventData, read: StoryRead): boolean =>
   (!read.story || event.story === read.story) &&
   (!read.owner || (event.owner !== null && BigInt(event.owner) === BigInt(read.owner)));
 
-/** The latest `limit` stories, each once at its most confirmed copy. */
+/**
+ * Newest first by place on the chain: a pre-confirmed story (no block yet) above every block, then block, transaction
+ * and event, the order the contract wrote them in. Never by time: one block holds many stories at one timestamp.
+ */
+const newestOnChainFirst = (left: StoryEventData, right: StoryEventData): number =>
+  blockRank(right.position) - blockRank(left.position) ||
+  right.position.transactionIndex - left.position.transactionIndex ||
+  right.position.eventIndex - left.position.eventIndex;
+
+const blockRank = (position: ChainPosition): number => position.block ?? Number.MAX_SAFE_INTEGER;
+
+/** The latest `limit` stories, each once at its most confirmed copy, newest on the chain first. */
 const latestStories = (events: StoryEventData[], limit: number): StoryEventData[] => {
   const latest = new Map<string, StoryEventData>();
   for (const event of events) {
@@ -195,9 +237,7 @@ const latestStories = (events: StoryEventData[], limit: number): StoryEventData[
     if (!previous || eventConfirmationRank(event.confirmation) > eventConfirmationRank(previous.confirmation))
       latest.set(event.event_id, event);
   }
-  return [...latest.values()]
-    .sort((left, right) => Number(BigInt(right.timestamp) - BigInt(left.timestamp)))
-    .slice(0, limit);
+  return [...latest.values()].toSorted(newestOnChainFirst).slice(0, limit);
 };
 
 /**

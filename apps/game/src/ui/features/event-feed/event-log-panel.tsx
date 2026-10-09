@@ -37,7 +37,6 @@ export const EventLogPanel = ({
     ...headlineFeed.pinned,
     ...headlineFeed.recent,
   ]);
-  const history = [...stories].sort((left, right) => right.timestampMs - left.timestampMs);
 
   return (
     <PopoverPanel
@@ -80,7 +79,7 @@ export const EventLogPanel = ({
           <div className="px-3 py-2">
             <span className={HUD_LABEL}>World history</span>
           </div>
-          {history.map((event) => (
+          {stories.map((event) => (
             <StoryFeedRow key={event.id} event={event} />
           ))}
         </section>
