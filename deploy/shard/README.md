@@ -50,10 +50,11 @@ was ever started and no backup exists, retain the failed directory privately and
 ## Endpoints and readiness
 
 Both official and runner bootstrap require the Herald HTTPS hostname to be reachable by the identity Worker before
-enrolment, including measurement shards. Forward HTTPS hostnames to loopback 8080 (RPC) and 8081 (Herald). `RPC_PORT`, `HERALD_PORT` and `BIND_ADDRESS` change
-bindings. The public RPC admits one signed Games.play call, the data-listed role-guarded administrative entries and
-existing Realms account-management calls. Play receives a VRF proof inside the proxy; proof bodies are never served.
-Simulations and fee estimates are never stamped. The node's write RPC is internal, not exposed through another port.
+enrolment, including measurement shards. Forward HTTPS hostnames to loopback 8080 (RPC) and 8081 (Herald). `RPC_PORT`,
+`HERALD_PORT` and `BIND_ADDRESS` change bindings. The public RPC admits one signed Games.play call, the data-listed
+role-guarded administrative entries and existing Realms account-management calls. Play receives a VRF proof inside the
+proxy; proof bodies are never served. Simulations and fee estimates are never stamped. The node's write RPC is internal,
+not exposed through another port.
 
 Behind a tunnel, set TRUSTED_PROXY to its actual socket peer. With loopback bindings initialization derives that peer
 from the Compose network route; exposed bindings trust no proxy unless explicitly configured.
@@ -87,9 +88,8 @@ The compose services restart on failure. Initializer logs and `harness.env` are 
 | Measurement runner               | PENDING before enrolment; matrix stops and retires it; never activates | `operator-command.py ENVIRONMENT runner CONFIGURATION RUNNER_DATA_DIRECTORY --matrix`                                                                                                                                   |
 | Dev shard from an untagged trunk | Start PENDING; explicitly check and activate; stop retires it          | `operator-command.py ENVIRONMENT runner CONFIGURATION RUNNER_DATA_DIRECTORY`, then `operator-command.py ENVIRONMENT activate RUNNER_DATA_DIRECTORY`; later `operator-command.py ENVIRONMENT stop RUNNER_DATA_DIRECTORY` |
 
-Run each command above as `python3 deploy/athanor/scripts/operator-command.py ...`. The wrapper reads the
-environment's protected token file; ops provisions it. Use `stop.py` for a manually started runner so its directory
-entry is retired.
+Run each command above as `python3 deploy/athanor/scripts/operator-command.py ...`. The wrapper reads the environment's
+protected token file; ops provisions it. Use `stop.py` for a manually started runner so its directory entry is retired.
 
 ## Operations: back up and restore
 
