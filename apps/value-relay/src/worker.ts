@@ -1,3 +1,4 @@
+import { onIdentityChain } from "./ledger-chain";
 import { paidGameEntry } from "./game-entry";
 import { accountLinkLedger } from "./account-link-ledger";
 import { synchronizeAccountLink, reconcileAccountLinks, hasMatchingAccountLink } from "./account-links";
@@ -37,6 +38,7 @@ interface RelayEnv {
   LEDGER_OPERATOR_ADDRESS: string;
   LEDGER_OPERATOR_PRIVATE_KEY: string;
   IDENTITY: {
+    l2ChainId(): Promise<string>;
     realmOwnerOf(realmId: string): Promise<string>;
     accountLinkTargets(after: string | null): Promise<{ rows: AccountLinkTarget[]; next: string | null }>;
     accountLinkTarget(key: string): Promise<AccountLinkTarget>;
@@ -62,12 +64,15 @@ export class ValueRelay extends DurableObject<RelayEnv> {
     super(ctx, env);
     ctx.blockConcurrencyWhile(() => ctx.storage.setAlarm(Date.now()));
   }
+  private ledgerPermit<A, E>(operation: Effect.Effect<A, E>) {
+    return this.signing.withPermit(onIdentityChain(this.env.LEDGER_RPC_URL, this.env.IDENTITY, operation));
+  }
   override alarm() {
     return this.tick().then(() => undefined);
   }
   async accountChanged(realmsId: string) {
     return Effect.runPromise(
-      this.signing.withPermit(
+      this.ledgerPermit(
         relayOperation("load changed identity link", () =>
           this.env.IDENTITY.accountLinkTarget(`account:${realmsId}`),
         ).pipe(Effect.flatMap((target) => synchronizeAccountLink(target, linkPortsOf(this.env)))),
@@ -75,6 +80,7 @@ export class ValueRelay extends DurableObject<RelayEnv> {
     );
   }
   async accountLinkStatus(realmsId: string): Promise<LedgerLinkStatus> {
+    await Effect.runPromise(onIdentityChain(this.env.LEDGER_RPC_URL, this.env.IDENTITY, Effect.void));
     const target = await this.env.IDENTITY.accountLinkTarget(`account:${realmsId}`);
     const ledger = accountLinkLedger(ledgerCredentialsOf(this.env));
     const views = await ledger.read(target.wallet, target.account);
@@ -89,7 +95,7 @@ export class ValueRelay extends DurableObject<RelayEnv> {
   async tick() {
     const relay = this;
     return Effect.runPromise(
-      this.signing.withPermit(
+      this.ledgerPermit(
         Effect.gen(function* () {
           const links = yield* Effect.result(reconcileAccountLinks(linkPortsOf(relay.env), relay.ctx.storage));
           const value = yield* Effect.result(runRelay(relay.env.SHARD_CHAIN_ID, relay.ports, relay.store));
@@ -167,7 +173,7 @@ export class ValueRelay extends DurableObject<RelayEnv> {
     this.requireLaunchChain(key);
     const relay = this;
     return Effect.runPromise(
-      this.signing.withPermit(
+      this.ledgerPermit(
         Effect.gen(function* () {
           const entry = yield* paidGameEntry(
             relay.env.LEDGER_RPC_URL,
@@ -183,11 +189,17 @@ export class ValueRelay extends DurableObject<RelayEnv> {
   }
   async validateBlitz(key: LedgerGameKey, window: { start: number; end: number }) {
     this.requireLaunchChain(key);
-    return Effect.runPromise(validateBlitzWindow(ledgerCredentialsOf(this.env), key, window));
+    return Effect.runPromise(
+      onIdentityChain(
+        this.env.LEDGER_RPC_URL,
+        this.env.IDENTITY,
+        validateBlitzWindow(ledgerCredentialsOf(this.env), key, window),
+      ),
+    );
   }
   async refundBlitz(key: LedgerGameKey) {
     this.requireLaunchChain(key);
-    return Effect.runPromise(this.signing.withPermit(refundBlitzOnLedger(ledgerCredentialsOf(this.env), key)));
+    return Effect.runPromise(this.ledgerPermit(refundBlitzOnLedger(ledgerCredentialsOf(this.env), key)));
   }
   private requireLaunchChain(key: LedgerGameKey) {
     if (

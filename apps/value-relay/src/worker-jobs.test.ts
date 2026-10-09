@@ -11,6 +11,10 @@ vi.mock("cloudflare:workers", () => ({
     ) {}
   },
 }));
+vi.mock("@realms-world/value-ledger", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@realms-world/value-ledger")>()),
+  rpcAt: () => ({ getChainId: async () => "0x1" }),
+}));
 const finish = vi.hoisted(() => vi.fn());
 vi.mock("./chests", () => ({ DurableChestStore: class {}, finishRequestedChests: finish }));
 it("runs and publishes the chest job even while shard ingestion remains unavailable", async () => {
@@ -27,7 +31,10 @@ it("runs and publishes the chest job even while shard ingestion remains unavaila
     },
   };
   finish.mockReturnValue(Effect.succeed({ finished: 1, failed: 0, pending: 0 }));
-  const relay = new ValueRelay(ctx as unknown as DurableObjectState, { SHARD_CHAIN_ID: "0x1" } as never);
+  const relay = new ValueRelay(
+    ctx as unknown as DurableObjectState,
+    { SHARD_CHAIN_ID: "0x1", IDENTITY: { l2ChainId: async () => "0x1" } } as never,
+  );
   const observation = await relay.tick();
   expect(observation.value.status).toBe("unavailable");
   expect(observation.chests).toEqual({ finished: 1, failed: 0, pending: 0 });
@@ -54,7 +61,7 @@ it("reconciles identity links on its startup alarm independently of unavailable 
   finish.mockReturnValue(Effect.succeed({ finished: 0, failed: 0, pending: 0 }));
   const relay = new ValueRelay(
     ctx as unknown as DurableObjectState,
-    { SHARD_CHAIN_ID: "0x1", IDENTITY: { accountLinkTargets: targets } } as never,
+    { SHARD_CHAIN_ID: "0x1", IDENTITY: { l2ChainId: async () => "0x1", accountLinkTargets: targets } } as never,
   );
   expect(alarm).toHaveBeenCalledWith(expect.any(Number));
   await relay.alarm();

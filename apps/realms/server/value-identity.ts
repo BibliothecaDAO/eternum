@@ -6,12 +6,16 @@ import { normalizeStarknetAddress } from "@realms-world/identity";
 import { realmsAccountAddress } from "@realms-world/identity/account";
 import { Effect } from "effect";
 import { decodeIdentityEnv, type IdentityEnv } from "./env";
-import { realmOwnerOf } from "./l2";
+import { encodeChainName } from "@realms-world/chain";
+import { identityL2Configuration, realmOwnerOf } from "./l2";
 import { realmsIdsOfAccounts } from "./realms-accounts";
 import { lookupPayoutWallet, readLinkedWallet, wasReadyPayoutWallet } from "./payout-wallet";
 
 /** Only a service binding exposes these reads; they have no public HTTP route. */
 export class ValueIdentity extends WorkerEntrypoint<IdentityEnv> {
+  l2ChainId() {
+    return encodeChainName(identityL2Configuration(this.env).chainId);
+  }
   override fetch() {
     return new Response(null, { status: 404 });
   }
