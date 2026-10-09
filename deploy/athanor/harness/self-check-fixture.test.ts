@@ -8,7 +8,7 @@ import type { NativeCommand } from "../../../contracts/l3/world-native/schema/co
 import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
 import { nativePresetForId } from "../../../config/source/native";
 import { SELF_CHECK_PRESET_ID } from "../../../config/source/common/native-preset-modes";
-import { buildRoutePlan, bindModeRoutes, gameFacts } from "./self-check-fixture";
+import { buildRoutePlan, bindModeRoutes, modePlayChecks, gameFacts } from "./self-check-fixture";
 import { commandForRoute, routeReasons } from "./self-check-routes";
 import { assertDomainRefusal } from "./self-check-action";
 import { runSelfCheck, type RouteCase } from "./self-check";
@@ -156,4 +156,33 @@ test("mode routes use a frozen Blitz and a Frontier instead of accepting preflig
     expectedRejection: "missing structure",
   });
   expect(new Set(routes.map((step) => step.route)).size).toBe(Object.keys(nativeCommandBits).length);
+});
+
+test("mode coverage applies open-home Frontier settlement and a real action in both shipped modes", async () => {
+  const bot = { address: "0x10" } as Account;
+  const frontier = { ...client(bot.address), gameId: 9 };
+  const blitz = { ...client(bot.address), gameId: 8 };
+  const checks = modePlayChecks(bot, frontier, blitz);
+  expect(checks.map(({ route, client }) => [route, client.gameId])).toEqual([
+    ["SettleSeason", 9],
+    ["SetEntityName", 9],
+    ["SetEntityName", 8],
+  ]);
+  expect(checks.every(({ expectedRejection }) => expectedRejection === undefined)).toBe(true);
+  expect(checks[0]!.route).toBe("SettleSeason");
+  expect(() => checks[0]!.verify(frontier.setup.store)).toThrow();
+});
+
+test("Frontier acceptance reads the same safe entity boundary as a player's client", () => {
+  const bot = { address: "0x10" } as Account;
+  let id = 4294967297n;
+  const store = {
+    inGame: (model: string) => (model === "PlayerEntry" ? [{ player: 16n }] : []),
+    structuresOwnedBy: () => [{ entity_id: id, base: { category: StructureType.Realm } }],
+  } as unknown as RouteCase["client"]["setup"]["store"];
+  const frontier = { ...client(bot.address), gameId: 9, setup: { store } } as RouteCase["client"];
+  const settle = modePlayChecks(bot, frontier, client(bot.address))[0]!;
+  expect(() => settle.verify(store)).not.toThrow();
+  id = 9007199254740993n;
+  expect(() => settle.verify(store)).toThrow("Native integer cannot be represented as a JavaScript number");
 });

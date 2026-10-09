@@ -87,8 +87,8 @@ const fixture: DeploymentCheckPort = {
       stopped.throwIfAborted();
       await prepareOpenHomes(gameId, [approved.address]);
       stopped.throwIfAborted();
-      const connect = async (actor: string, scope = gameId) => {
-        const connection = await connectHarnessGameClient({ actor, gameId: scope, shard });
+      const connect = async (actor: string, scope = gameId, presetId = SELF_CHECK_PRESET_ID) => {
+        const connection = await connectHarnessGameClient({ actor, gameId: scope, presetId, shard });
         clients.push(connection.client);
         stopped.throwIfAborted();
         return connection.client;
@@ -128,16 +128,9 @@ const fixture: DeploymentCheckPort = {
         approved.address,
         stopped,
       );
-      const blitzClient = await connect(launcher.address, blitzId);
-      const frontierClient = await connect(bot.address, frontierId);
-      const frontier = createHarnessGame(frontierClient);
-      await frontier.waitUntilPlaying();
-      const settled = await frontier.submit(bot, () =>
-        frontier.settle(bot, bot.address, "check-open-home", "frontier"),
-      );
-      await settled.confirmed;
-      const homes = frontier.settlementStructureIds(bot.address);
-      assert(homes?.length === 1 && homes.every((home) => Number.isSafeInteger(Number(home))));
+      const blitzClient = await connect(launcher.address, blitzId, 2);
+      const frontierClient = await connect(bot.address, frontierId, 5);
+      const blitzPlayerClient = await connect(bot.address, blitzId, 2);
       const routes = bindModeRoutes(
         buildRoutePlan(bot, botClient, launcher, launcherClient),
         launcher,
@@ -145,6 +138,7 @@ const fixture: DeploymentCheckPort = {
         bot,
         frontierClient,
       );
+      routes.push(...modePlayChecks(bot, frontierClient, blitzPlayerClient));
       return { gameId, supplementalGameIds: [blitzId, frontierId], routes, dispose };
     } catch (error) {
       dispose();
@@ -579,3 +573,41 @@ export function gameFacts(store: Store, gameId: number): string {
 }
 
 export default fixture;
+
+/** Mode acceptance uses the shared client and Herald barrier, including the numeric boundaries used by real players. */
+export function modePlayChecks(bot: Account, frontier: RouteCase["client"], blitz: RouteCase["client"]): RouteCase[] {
+  const home = (client: RouteCase["client"]) => {
+    const homes = createHarnessGame(client).settlementStructureIds(bot.address);
+    assert(homes?.length === 1 && homes.every((id) => Number.isSafeInteger(Number(id))));
+    return BigInt(homes![0]!);
+  };
+  const name = shortString.encodeShortString("deployment-check");
+  const rename = (client: RouteCase["client"]): RouteCase => ({
+    route: "SetEntityName",
+    account: bot,
+    client,
+    command: () => ({ kind: "SetEntityName", value: { entity_id: home(client), name } }),
+    verify: (store) =>
+      assert(
+        [...store.inGame("EntityName", client.gameId)].some(
+          (row) => row.entity_id === home(client) && row.name === BigInt(name),
+        ),
+      ),
+  });
+  return [
+    {
+      route: "SettleSeason",
+      account: bot,
+      client: frontier,
+      command: async () => {
+        await createHarnessGame(frontier).waitUntilPlaying();
+        return commandForRoute("SettleSeason");
+      },
+      verify: () => {
+        home(frontier);
+      },
+    },
+    rename(frontier),
+    rename(blitz),
+  ];
+}

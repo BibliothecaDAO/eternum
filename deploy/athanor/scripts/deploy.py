@@ -185,6 +185,9 @@ def run_self_check(directory, command=None):
 
 
 def verify_and_activate(config, directory, command=None):
+    if directory_status(config, "pending")["status"] != "pending":
+        print(json.dumps({"event": "shard_self_check_skipped", "reason": "shard_already_listed"}))
+        return
     check = run_self_check(directory, command)
     shard.write_json(directory / "self-check.json", check)
     if not check.get("passed"):
