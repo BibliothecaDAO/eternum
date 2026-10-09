@@ -1,4 +1,5 @@
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { ensureShardVrfKey } from "../scripts/host-accounts";
+import { existsSync, readFileSync, writeFileSync, mkdirSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { ec, hash, RpcProvider } from "starknet";
 import { joinRealmsAccount, deviceKeyOf } from "../../../packages/core/src/account/realms-account";
@@ -9,16 +10,18 @@ import { mapWithConcurrency } from "../harness/account-factory";
 import { load, save, loopback, trialDirectory, normalize, type Fixture } from "../spikes/node-first/common";
 import { NativeProver, feltBytes } from "./native";
 
-const [rpc, originalFixture, outputDirectory, keyFile] = process.argv.slice(2);
-if (!rpc || !originalFixture || !outputDirectory || !keyFile)
-  throw new Error("Usage: bun part2-setup.ts PRIVATE_RPC ORIGINAL_FIXTURE OUT_DIR PRIVATE_VRF_KEY");
+const [rpc, originalFixture, hostDirectory, outputDirectory] = process.argv.slice(2);
+if (!rpc || !originalFixture || !hostDirectory || !outputDirectory)
+  throw new Error("Usage: bun part2-setup.ts PRIVATE_RPC ORIGINAL_FIXTURE HOST_DATA_DIR OUT_DIR");
 loopback(rpc);
 const directory = trialDirectory(outputDirectory);
 mkdirSync(directory, { recursive: true, mode: 0o700 });
 const original = load<Fixture>(originalFixture);
 const provider = new RpcProvider({ nodeUrl: rpc });
 if (BigInt(await provider.getChainId()) !== BigInt(original.chainId)) throw new Error("Part2 fixture chain mismatch");
-const root = resolve(originalFixture, "..");
+const root = trialDirectory(hostDirectory);
+const generatedKey = ensureShardVrfKey(root);
+const keyFile = join(root, "vrf-private.key");
 const host = load<{ deployerAddress: string; deployerPrivateKey: string }>(join(root, "host-keys.json"));
 const admin = createMadaraAccount(provider, host.deployerAddress, host.deployerPrivateKey);
 const artifactRoot = resolve(import.meta.dir, "artifacts");
@@ -37,11 +40,14 @@ if (!existsSync(guardianFile)) {
   const key = `0x${Buffer.from(ec.starkCurve.utils.randomPrivateKey()).toString("hex")}`;
   writeFileSync(guardianFile, key + "\n", { mode: 0o600, flag: "wx" });
 }
+if ((statSync(guardianFile).mode & 0o077) !== 0) throw new Error("Fixture guardian file must be private");
 const guardian = readFileSync(guardianFile, "utf8").trim();
 const guardianPublicKey = ec.starkCurve.getStarkKey(guardian);
 const prover = new NativeProver(feltBytes(readFileSync(keyFile, "utf8").trim()));
 try {
   const key = prover.publicKey();
+  if (key.some((value, index) => BigInt(value) !== BigInt(generatedKey[index]!)))
+    throw new Error("Shard key implementations disagree");
   const addresses: string[] = [];
   for (const verify of [false, true]) {
     const salt = `0x${hash.starknetKeccak(`part2:${original.chainId}:${key.join(":")}:${verify}`).toString(16)}`;

@@ -1,7 +1,9 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdtempSync, writeFileSync, readFileSync, statSync, chmodSync, unlinkSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
+
+import { initializeHostAccounts, ensureShardVrfKey } from "./host-accounts";
 
 const root = resolve(import.meta.dir, "../../..");
 const ACCOUNT_CLASS_HASH = "0xe2eb8f5672af4e6a4e8a8f1b44989685e668489b0a25437733756c5a34a1d6";
@@ -62,4 +64,32 @@ describe("the host-account step of a first initialization", () => {
     expect(status).not.toBe(0);
     expect(error).toContain("holds another class");
   });
+});
+
+test("deployment creates an independent private VRF key and resumes it without any operator input", () => {
+  const first = mkdtempSync(join(tmpdir(), "spike-host-one-")),
+    second = mkdtempSync(join(tmpdir(), "spike-host-community-"));
+  try {
+    initializeHostAccounts(first);
+    initializeHostAccounts(second);
+    const host = JSON.parse(readFileSync(join(first, "host-keys.json"), "utf8")),
+      file = join(first, "vrf-private.key"),
+      key = readFileSync(file, "utf8");
+    expect(key.trim() === host.deployerPrivateKey).toBe(false);
+    expect(key.trim() === host.sequencingPrivateKey).toBe(false);
+    expect(statSync(file).mode & 0o777).toBe(0o600);
+    expect(statSync(join(first, "host-keys.json")).mode & 0o777).toBe(0o600);
+    const publicKey = ensureShardVrfKey(first);
+    expect(readFileSync(file, "utf8") === key).toBe(true);
+    expect(JSON.parse(readFileSync(join(first, "host-accounts.json"), "utf8")).vrfPublicKey).toEqual(publicKey);
+    expect(ensureShardVrfKey(second).join() === publicKey.join()).toBe(false);
+    chmodSync(file, 0o644);
+    expect(() => ensureShardVrfKey(first)).toThrow("private");
+    chmodSync(file, 0o600);
+    unlinkSync(file);
+    expect(() => ensureShardVrfKey(first)).toThrow("Missing previously registered VRF key");
+  } finally {
+    rmSync(first, { recursive: true });
+    rmSync(second, { recursive: true });
+  }
 });
