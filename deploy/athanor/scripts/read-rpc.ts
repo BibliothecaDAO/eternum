@@ -63,6 +63,8 @@ const CORS = {
   "Access-Control-Allow-Headers": "Content-Type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
+// Starknet RPC 0.10 transaction/contract errors; internal and unknown errors stay unavailable.
+const ESTIMATE_REFUSALS = new Set([-32602, 21, 40, 41, 52, 53, 54, 55, 58, 61, 64, 65, 69]);
 const READ_NOT_FOUND = new Map<number, string>([
   [20, "Contract not found"],
   [24, "Block not found"],
@@ -258,6 +260,12 @@ function readAnswer(answer: NodeAnswer, call: RpcCall): unknown {
   if (hasResult && !hasError) return { jsonrpc: "2.0", id: call.id ?? null, result: answer.result };
   if (hasError && !hasResult) {
     const code = answer.error?.code;
+    if (
+      (call.method === "starknet_estimateFee" || call.method === "starknet_estimateMessageFee") &&
+      typeof code === "number" &&
+      ESTIMATE_REFUSALS.has(code)
+    )
+      return rpcError(call.id, -32013, "Estimate refused");
     if (
       code === 29 &&
       (call.method === "starknet_getTransactionStatus" || call.method === "starknet_getTransactionReceipt")
