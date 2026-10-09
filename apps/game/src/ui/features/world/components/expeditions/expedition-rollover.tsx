@@ -6,6 +6,7 @@ import {
   configManager,
   seasonDay,
   getBlockTimestamp,
+  entityHomeNamespace,
   expeditionRealmSite,
   isExpeditionRealm,
   Position,
@@ -57,7 +58,7 @@ export const ExpeditionRollover = () => {
       if (!realm) return;
       // The rollover fires on chain time, which runs ahead of the last block's timestamp, so the announced site is
       // computed for the day that is beginning rather than read through structureMapPosition's block clock.
-      const site = expeditionRealmSite(rules, realm.metadata.realm_id, now);
+      const site = expeditionRealmSite(rules, entityHomeNamespace(realm.entity_id), now);
       if (!site) return;
       toast.info("A new expedition has begun", {
         description: describeNewExpedition(
