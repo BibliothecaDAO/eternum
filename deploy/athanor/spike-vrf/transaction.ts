@@ -1,5 +1,7 @@
 import { hash, type Calldata } from "starknet";
 
+const L2_BOUND = 1_200_000_000n;
+
 interface Bound {
   max_amount: string;
   max_price_per_unit: string;
@@ -58,15 +60,33 @@ export function isGamesInvoke(tx: unknown, games: string): tx is Invoke {
       candidate.type === "INVOKE" &&
       BigInt(candidate.version!) === 3n &&
       BigInt(candidate.tip!) === 0n &&
+      candidate.paymaster_data?.length === 0 &&
+      candidate.account_deployment_data?.length === 0 &&
+      candidate.nonce_data_availability_mode === "L1" &&
+      candidate.fee_data_availability_mode === "L1" &&
+      fixedBounds(candidate.resource_bounds!) &&
       Array.isArray(candidate.signature) &&
       candidate.signature.length === 3 &&
       Array.isArray(calldata) &&
       calldata.length >= 4 &&
       BigInt(calldata[0]) === 1n &&
       BigInt(calldata[1]) === BigInt(games) &&
+      ["play", "create_explorer", "prepare_explorer", "explore", "settle_season"].some(
+        (name) => BigInt(calldata[2]!) === BigInt(hash.getSelectorFromName(name)),
+      ) &&
       BigInt(calldata[3]) === BigInt(calldata.length - 4)
     );
   } catch {
     return false;
   }
+}
+
+function fixedBounds(bounds: Invoke["resource_bounds"]) {
+  return (
+    BigInt(bounds.l2_gas.max_amount) === L2_BOUND &&
+    BigInt(bounds.l2_gas.max_price_per_unit) === 0n &&
+    [bounds.l1_gas, bounds.l1_data_gas].every(
+      (bound) => BigInt(bound.max_amount) === 0n && BigInt(bound.max_price_per_unit) === 0n,
+    )
+  );
 }

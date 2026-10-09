@@ -27,9 +27,13 @@ const READ_METHODS = new Set([
   "starknet_getEvents",
   "starknet_getNonce",
   "starknet_getStorageProof",
-  "starknet_traceTransaction",
-  "starknet_traceBlockTransactions",
   "starknet_getCompiledCasm",
+]);
+const BODY_READS = new Set([
+  "starknet_getBlockWithTxs",
+  "starknet_getBlockWithReceipts",
+  "starknet_getTransactionByHash",
+  "starknet_getTransactionByBlockIdAndIndex",
 ]);
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -40,7 +44,11 @@ const CORS = {
 function isRead(call: unknown): boolean {
   if (!call || typeof call !== "object" || Array.isArray(call)) return false;
   const request = call as Record<string, unknown>;
-  return request.jsonrpc === "2.0" && typeof request.method === "string" && READ_METHODS.has(request.method);
+  return (
+    request.jsonrpc === "2.0" &&
+    typeof request.method === "string" &&
+    (READ_METHODS.has(request.method) || BODY_READS.has(request.method))
+  );
 }
 
 function refuse(code: number, message: string, status = 200): Response {
@@ -120,23 +128,26 @@ async function handlePublicRequest(
   }
   let calls = Array.isArray(payload) ? payload : [payload];
   if (!calls.length) return refuse(-32601, "RPC method is not public");
-  const operations = calls.filter((call) => !isRead(call));
-  if (operations.length) {
-    if (!client || !allowance(client, operations.length)) {
-      return refuse(-32005, "Account operation rate exceeded", 429);
-    }
-    for (const call of operations) {
-      if (
-        !call ||
-        typeof call !== "object" ||
-        call.jsonrpc !== "2.0" ||
-        (!(stamp && (await permitsSpikeInvoke(call, stamp, node))) &&
-          !(await permitsAccountRequest(call, identity, (sender) => readNodeClass(node, sender))))
-      )
-        return refuse(-32601, "RPC method is not public");
-    }
-  }
   try {
+    for (const call of calls)
+      if (BODY_READS.has(call?.method) && !(await sealedBodyRead(call, node)))
+        return refuse(-32601, "Transaction body is not sealed");
+    const operations = calls.filter((call) => !isRead(call));
+    if (operations.length) {
+      if (!client || !allowance(client, operations.length)) {
+        return refuse(-32005, "Account operation rate exceeded", 429);
+      }
+      for (const call of operations) {
+        if (
+          !call ||
+          typeof call !== "object" ||
+          call.jsonrpc !== "2.0" ||
+          (!(stamp && (await permitsSpikeInvoke(call, stamp, node))) &&
+            !(await permitsAccountRequest(call, identity, (sender) => readNodeClass(node, sender))))
+        )
+          return refuse(-32601, "RPC method is not public");
+      }
+    }
     if (stamp) calls = await Promise.all(calls.map((call) => stampRequest(call, stamp)));
     const forwarded = Array.isArray(payload) ? calls : calls[0];
     const response = await fetch(new URL(path, node), {
@@ -144,15 +155,62 @@ async function handlePublicRequest(
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(forwarded),
       signal: AbortSignal.timeout(30000),
-      redirect: "error",
+      redirect: "manual",
     });
-    return new Response(response.body, {
-      status: response.status,
-      headers: { ...CORS, "Content-Type": "application/json" },
+    if (!response.ok) return refuse(-32000, "Node unavailable", 502);
+    const result = await response.json();
+    const replies = Array.isArray(result) ? result : [result];
+    const safe = calls.map((call) => {
+      const reply = replies.find((reply: any) => reply.id === call.id);
+      if (!reply) return { jsonrpc: "2.0", id: call.id, error: { code: -32000, message: "Node unavailable" } };
+      if (call.method === "starknet_addInvokeTransaction") {
+        const value = reply.result?.transaction_hash;
+        return typeof value === "string" && /^0x[0-9a-f]{1,64}$/i.test(value)
+          ? { jsonrpc: "2.0", id: call.id, result: { transaction_hash: value } }
+          : { jsonrpc: "2.0", id: call.id, error: { code: -32000, message: "Transaction refused" } };
+      }
+      return reply;
     });
+    return Response.json(Array.isArray(payload) ? safe : safe[0], { headers: CORS });
   } catch {
     return refuse(-32000, "Node unavailable", 502);
   }
+}
+
+async function sealedBodyRead(call: RpcCall, node: URL) {
+  const params = call.params;
+  let method: string, args: unknown[];
+  if (call.method === "starknet_getTransactionByHash") {
+    const hash = Array.isArray(params) ? params[0] : params?.transaction_hash;
+    if (typeof hash !== "string" || !/^0x[0-9a-f]{1,64}$/i.test(hash)) return false;
+    method = "starknet_getTransactionReceipt";
+    args = [hash];
+  } else {
+    const block = Array.isArray(params) ? params[0] : params?.block_id;
+    if (
+      block !== "latest" &&
+      !(
+        block &&
+        typeof block === "object" &&
+        !Array.isArray(block) &&
+        ((Number.isSafeInteger(block.block_number) && block.block_number >= 0) ||
+          (typeof block.block_hash === "string" && /^0x[0-9a-f]{1,64}$/i.test(block.block_hash)))
+      )
+    )
+      return false;
+    method = "starknet_getBlockWithTxHashes";
+    args = [block];
+  }
+  const response = await fetch(new URL("/rpc/v0_10_2", node), {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params: args }),
+    signal: AbortSignal.timeout(5000),
+    redirect: "manual",
+  });
+  if (!response.ok) return false;
+  const result = ((await response.json()) as any).result;
+  return ["ACCEPTED_ON_L2", "ACCEPTED_ON_L1"].includes(result?.finality_status ?? result?.status);
 }
 
 async function permitsSpikeInvoke(call: RpcCall, stamp: Stamp, node: URL): Promise<boolean> {

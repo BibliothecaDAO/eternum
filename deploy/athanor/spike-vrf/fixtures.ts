@@ -1,3 +1,4 @@
+import { hash } from "starknet";
 import type { Invoke } from "./transaction";
 
 export const fixture = (): Invoke => ({
@@ -7,10 +8,10 @@ export const fixture = (): Invoke => ({
   nonce: "0x1",
   tip: "0x0",
   signature: ["0x1", "0x2", "0x3"],
-  calldata: ["0x1", "0x456", "0x789", "0x1", "0x1"],
+  calldata: ["0x1", "0x456", hash.getSelectorFromName("create_explorer"), "0x1", "0x1"],
   resource_bounds: {
     l1_gas: { max_amount: "0x0", max_price_per_unit: "0x0" },
-    l2_gas: { max_amount: "0x47868c00", max_price_per_unit: "0x1" },
+    l2_gas: { max_amount: "0x47868c00", max_price_per_unit: "0x0" },
     l1_data_gas: { max_amount: "0x0", max_price_per_unit: "0x0" },
   },
   paymaster_data: [],

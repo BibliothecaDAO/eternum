@@ -1,3 +1,5 @@
+import { NativeProver, feltBytes } from "../../spike-vrf/native";
+import { readFileSync, statSync } from "node:fs";
 import { resolve } from "node:path";
 import {
   CallData,
@@ -44,7 +46,17 @@ async function main() {
     "window",
     "action",
     "arms",
+    "vrf-key-file",
+    "stamp-mode",
   ]);
+  const keyFile = required(a["vrf-key-file"], "vrf-key-file");
+  if ((statSync(keyFile).mode & 0o077) !== 0) throw new SetupFailure("VRF key file must be private");
+  if (a["stamp-mode"] !== "baseline" && a["stamp-mode"] !== "verified")
+    throw new SetupFailure("stamp-mode must be baseline or verified");
+  const prover = new NativeProver(feltBytes(readFileSync(keyFile, "utf8").trim()));
+  const vrfKey = prover.publicKey();
+  prover.close();
+  const verifyProofs = a["stamp-mode"] === "verified";
   const arms = selectedArms(a.arms ?? "X,Y");
   const settle = a.action === "settle";
   if (a.action && !settle) throw new SetupFailure("Only --action settle is supported");
@@ -90,6 +102,7 @@ async function main() {
   };
   for (const domain of [troops, map, structures]) await declareClass(account, domain, () => {});
   if (settlement) await declareClass(account, settlement, () => {});
+  await declareClass(account, artifact("SpikeProofVerifier"), () => {});
   await declareClass(account, games, () => {});
   const [releaseId] = await provider.callContract({
     contractAddress: manifest.world.address,
@@ -131,6 +144,9 @@ async function main() {
   const constructorCalldata = codec.compile("constructor", {
     authority: host.deployerAddress,
     account_class: base.accountClassHash,
+    verifier_class: artifact("SpikeProofVerifier").classHash,
+    vrf_key: { x: vrfKey[0], y: vrfKey[1] },
+    verify_vrf: verifyProofs,
     release,
   });
   const salt = hash.starknetKeccak(`node-first-game:${Date.now()}`).toString();
@@ -210,6 +226,8 @@ async function main() {
     });
     fixtures.push({
       ...base,
+      vrfPublicKey: vrfKey,
+      verifyProofs,
       contract,
       classHash: games.classHash,
       entrypoint: settle ? "settle_season" : "create_explorer",

@@ -28,6 +28,8 @@ export interface Fixture {
   entrypoint?: string;
   playerCalldata?: string[][];
   simulationRpc?: string;
+  vrfPublicKey?: string[];
+  verifyProofs?: boolean;
   game?: { id: number; arm: "X" | "Y"; kind: string; initialCounter: number };
 }
 export { now } from "./clock";

@@ -17,8 +17,13 @@ version = "0.1.0"
 name = "node_first_game"
 version = "0.1.0"
 dependencies = [
+ "node_first_vrf",
  "world_native",
 ]
+
+[[package]]
+name = "node_first_vrf"
+version = "0.1.0"
 
 [[package]]
 name = "world_native"

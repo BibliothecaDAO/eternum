@@ -6,12 +6,14 @@ edition = "2024_07"
 
 [dependencies]
 starknet = "=2.17.0"
+node_first_vrf = { path = "../spike-vrf" }
 world_native = { path = "../world-native" }
 
 [[target.starknet-contract]]
 sierra = true
 casm = true
 build-external-contracts = [
+  "node_first_vrf::SpikeProofVerifier",
   "world_native::logic::troops::TroopsLogic",
   "world_native::logic::map::MapLogic",
   "world_native::logic::structures::StructuresLogic",

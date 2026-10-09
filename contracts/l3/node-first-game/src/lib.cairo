@@ -3,7 +3,7 @@
 pub mod Games {
     use starknet::{ClassHash, ContractAddress, get_caller_address, get_block_timestamp};
     use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess, StoragePointerWriteAccess};
-    use world_native::commands::{ActionContext, CreateExplorer, ICreateExplorerDispatcherTrait, ICreateExplorerLibraryDispatcher, Explore, IExploreDispatcherTrait, IExploreLibraryDispatcher};
+    use world_native::commands::{ActionContext, CreateExplorer, ICreateExplorerDispatcherTrait, ICreateExplorerLibraryDispatcher, Explore};
     use world_native::registrar::{IRegistrarDispatcherTrait, IRegistrarLibraryDispatcher, CreateGameParams};
     use world_native::settlement::{ISettlementCreationDispatcherTrait, ISettlementCreationLibraryDispatcher, RealmCreation, SettlementCreation};
     use world_native::resources::{IResourceOperationsDispatcherTrait, IResourceOperationsLibraryDispatcher, ResourceAmount, ResourceKey};
@@ -14,10 +14,16 @@ pub mod Games {
         #[flat]
         data: world_native::state::Storage,
         spike_account_class: ClassHash,
+        verifier_class: ClassHash,
+        vrf_key_x: felt252,
+        vrf_key_y: felt252,
+        verify_vrf: bool,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
-    enum Event { Created: Created }
+    enum Event { Created: Created, GameplayRejected: GameplayRejected }
+    #[derive(Drop, starknet::Event)]
+    struct GameplayRejected { #[key] game: u32, #[key] actor: ContractAddress, reason: felt252 }
     #[derive(Drop, starknet::Event)]
     struct Created {
         #[key]
@@ -28,12 +34,14 @@ pub mod Games {
     }
 
     #[constructor]
-    fn constructor(ref self: ContractState, authority: ContractAddress, account_class: ClassHash, release: world_native::logic::release::Release) {
+    fn constructor(ref self: ContractState, authority: ContractAddress, account_class: ClassHash, verifier_class: ClassHash, vrf_key: node_first_vrf::vendor::ecvrf::Point, verify_vrf: bool, release: world_native::logic::release::Release) {
         self.data.authority.write(authority);
         self.data.current_release.write(1);
         self.data.releases.write(1, release);
         self.data.registrar.next_game.write(1);
         self.spike_account_class.write(account_class);
+        node_first_vrf::validate_key(vrf_key);
+        self.verifier_class.write(verifier_class); self.vrf_key_x.write(vrf_key.x); self.vrf_key_y.write(vrf_key.y); self.verify_vrf.write(verify_vrf);
     }
     fn owner(self: @ContractState) {
         assert!(get_caller_address() == self.data.authority.read(), "only spike owner");
@@ -87,9 +95,12 @@ pub mod Games {
     fn create_explorer(ref self: ContractState, game: u32, command: CreateExplorer) {
         let actor = get_caller_address();
         assert!(starknet::syscalls::get_class_hash_at_syscall(actor).unwrap() == self.spike_account_class.read(), "RealmsAccount required");
-        ICreateExplorerLibraryDispatcher { class_hash: classes(@self, game).classes.troops }
-            .create_explorer(game, actor, command, ActionContext { raw_root: 123456789, timestamp: get_block_timestamp() },
-                world_native::ownership::StoryCursor { order: 0, index: 0 });
+        let release = classes(@self, game);
+        assert!(release.classes.troops != 0.try_into().unwrap(), "unknown game release");
+        let root = node_first_vrf::checked_root(self.verifier_class.read(), node_first_vrf::vendor::ecvrf::Point { x: self.vrf_key_x.read(), y: self.vrf_key_y.read() }, self.verify_vrf.read());
+        if let Err(error) = super::invoke_gameplay(release.classes.troops, selector!("create_explorer"), game, actor, command, root, get_block_timestamp()) {
+            self.emit(GameplayRejected { game, actor, reason: core::poseidon::poseidon_hash_span(error.span()) }); return;
+        }
         self.emit(Created { game, actor, explorer: world_native::spike_ids::last(game, actor) });
     }
     // Preparation fixes day zero while the accounts' armies are provisioned. Never measured.
@@ -99,18 +110,19 @@ pub mod Games {
         assert!(starknet::syscalls::get_class_hash_at_syscall(actor).unwrap() == self.spike_account_class.read(), "RealmsAccount required");
         ICreateExplorerLibraryDispatcher { class_hash: classes(@self, game).classes.troops }
             .create_explorer(game, actor, command, ActionContext {
-                raw_root: 123456789, timestamp: world_native::logic::game::game(game).start_main_at,
+                raw_root: node_first_vrf::checked_root(self.verifier_class.read(), node_first_vrf::vendor::ecvrf::Point { x: self.vrf_key_x.read(), y: self.vrf_key_y.read() }, self.verify_vrf.read()).into(), timestamp: world_native::logic::game::game(game).start_main_at,
             }, world_native::ownership::StoryCursor { order: 0, index: 0 });
     }
     #[external(v0)]
     fn explore(ref self: ContractState, game: u32, command: Explore) {
         let actor = get_caller_address();
         assert!(starknet::syscalls::get_class_hash_at_syscall(actor).unwrap() == self.spike_account_class.read(), "RealmsAccount required");
-        // A constant root with actor-domain separation avoids a single correlated draw for the whole wave.
-        let root = core::poseidon::poseidon_hash_span(array![123456789, actor.into()].span());
-        IExploreLibraryDispatcher { class_hash: classes(@self, game).classes.movement }
-            .explore(game, actor, command, ActionContext { raw_root: root.into(), timestamp: get_block_timestamp() },
-                world_native::ownership::StoryCursor { order: 0, index: 0 });
+        let release = classes(@self, game);
+        assert!(release.classes.movement != 0.try_into().unwrap(), "unknown game release");
+        let root = node_first_vrf::checked_root(self.verifier_class.read(), node_first_vrf::vendor::ecvrf::Point { x: self.vrf_key_x.read(), y: self.vrf_key_y.read() }, self.verify_vrf.read());
+        if let Err(error) = super::invoke_gameplay(release.classes.movement, selector!("explore"), game, actor, command, root, get_block_timestamp()) {
+            self.emit(GameplayRejected { game, actor, reason: core::poseidon::poseidon_hash_span(error.span()) });
+        }
     }
     #[external(v0)]
     fn last_entity(self: @ContractState, game: u32, actor: ContractAddress) -> u32 {
@@ -171,3 +183,13 @@ pub mod Games {
 pub mod settle;
 
 pub mod blitz;
+
+
+/// One safe library call owns rollback; callers record a refusal after root selection rather than reverting the account.
+pub fn invoke_gameplay<T, +Serde<T>, +Drop<T>>(class_hash: starknet::ClassHash, entry: felt252, game: u32, actor: starknet::ContractAddress, command: T, root: felt252, timestamp: u64) -> Result<Span<felt252>, Array<felt252>> {
+    let mut args = array![game.into(), actor.into()];
+    command.serialize(ref args);
+    world_native::commands::ActionContext { raw_root: root.into(), timestamp }.serialize(ref args);
+    world_native::ownership::StoryCursor { order: 0, index: 0 }.serialize(ref args);
+    starknet::syscalls::library_call_syscall(class_hash, entry, args.span())
+}
