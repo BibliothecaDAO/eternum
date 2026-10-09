@@ -39,13 +39,14 @@ const checkConservation = (ports: MonitorPorts) =>
 
 const checkPaidClaims = (ports: MonitorPorts) =>
   findMismatch(ports.ledger.paidClaims, (paid) =>
-    ports.shard
-      .withdrawal(paid.chainId, paid.transactionHash)
-      .pipe(
-        Effect.map((receipt) =>
-          matchesPaidClaim(receipt, paid) ? null : `paid_claim_mismatch:${paid.transactionHash}`,
-        ),
-      ),
+    Effect.gen(function* () {
+      const receipt = yield* ports.shard.withdrawal(paid.chainId, paid.transactionHash);
+      if (!matchesPaidClaim(receipt, paid)) return `paid_claim_mismatch:${paid.transactionHash}`;
+      const wallet = yield* ports.identity.payoutWallet(receipt!.realmsId);
+      if (wallet.status !== "ready" || BigInt(wallet.address) !== BigInt(paid.wallet))
+        return `paid_wallet_mismatch:${paid.transactionHash}`;
+      return null;
+    }),
   );
 
 const checkPostedResults = (ports: MonitorPorts) =>

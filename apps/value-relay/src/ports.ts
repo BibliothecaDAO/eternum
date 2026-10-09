@@ -95,6 +95,7 @@ export interface RelayPorts {
   realms: { ownerOf(realmId: string): RelayEffect<string> };
 }
 export interface MonitorPorts {
+  identity: Pick<RelayPorts["identity"], "payoutWallet">;
   shard: Pick<RelayPorts["shard"], "withdrawal" | "result"> & {
     conservation(): RelayEffect<readonly ConservationBalance[]>;
   };

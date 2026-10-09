@@ -161,10 +161,12 @@ describe("confirmed value relay", () => {
 });
 
 describe("independent payout monitor", () => {
-  it.each(["missing_receipt", "wrong_amount", "wrong_season", "missing_result", "wrong_commitment"])(
+  it.each(["missing_receipt", "wrong_amount", "wrong_season", "missing_result", "wrong_commitment", "wrong_wallet"])(
     "pauses on %s",
     async (fault) => {
       const f = fixture();
+      if (fault === "wrong_wallet")
+        f.ports.ledger.paidClaims = () => Effect.succeed({ rows: [{ ...withdrawal, wallet: "0xbad" }], next: null });
       if (fault === "missing_receipt") f.ports.shard.withdrawal = () => Effect.succeed(null);
       if (fault === "wrong_amount") f.ports.shard.withdrawal = () => Effect.succeed({ ...withdrawal, amount: "18" });
       if (fault === "wrong_season") f.ports.shard.withdrawal = () => Effect.succeed({ ...withdrawal, seasonId: 5 });
