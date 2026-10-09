@@ -120,8 +120,7 @@ pub struct WithdrawLords {
 // A realm's withdrawal of whole LORDS, recorded for fulfilment on L2.
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
 pub struct LordsWithdrawal {
-    pub player: ContractAddress,
-    pub structure_id: u32,
+    pub account: ContractAddress,
     pub amount: u128,
 }
 

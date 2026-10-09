@@ -51,23 +51,19 @@ describe("native row decoder", () => {
       ),
     ).toThrow("unavailable-schema");
   });
-  it("keys LORDS withdrawals by game, recorded action and story index in both overlays", () => {
+  it("keys LORDS withdrawals by transaction hash in both overlays", () => {
     const { native, fold } = setup();
-    const rewards = [0, 1].map((index) =>
-      rowEvent("LordsWithdrawal", ["1", "9007199254740993", String(index)], {
-        player: "0x111",
-        structure_id: 7,
-        amount: 200,
-      }),
+    const rewards = ["9007199254740993", "9007199254740994"].map((claimId) =>
+      rowEvent("LordsWithdrawal", ["1", claimId], { account: "0x111", amount: 200 }),
     );
     const overlay = fold.overlay();
     native.applyReceipt(overlay, receipt(rewards), null, 0);
     native.applyReceipt(fold, receipt(rewards), 10, 0);
     const rows = fold.modelRows("LordsWithdrawal");
     expect(rows).toEqual(overlay.modelRows("LordsWithdrawal"));
-    expect(rows.map(({ value }) => [value.game_id, value.order, value.index])).toEqual([
-      ["0x1", "0x20000000000001", "0x0"],
-      ["0x1", "0x20000000000001", "0x1"],
+    expect(rows.map(({ value }) => [value.game_id, value.claim_id])).toEqual([
+      ["0x1", "0x20000000000001"],
+      ["0x1", "0x20000000000002"],
     ]);
     expect(new Set(rows.map(({ key }) => key)).size).toBe(2);
   });

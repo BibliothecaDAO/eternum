@@ -884,8 +884,7 @@ export function defineFactModels({ struct, model: declare }) {
       "game",
       [
         { name: "game_id", type: "core::integer::u32" },
-        { name: "order", type: "core::integer::u64" },
-        { name: "index", type: "core::integer::u32" },
+        { name: "claim_id", type: "core::felt252" },
       ],
       struct("relics::LordsWithdrawal"),
     ),
@@ -1375,7 +1374,7 @@ export const syncScopes = {
   BitcoinContribution: byPlayer,
   PlayerFaithPoints: byPlayer,
   PointsAwarded: byPlayer,
-  LordsWithdrawal: byPlayer,
+  LordsWithdrawal: { owners: ["account"] },
   RaidEvent: { owners: ["player", "target_owner"] },
   WonderFaith: { owners: ["last_recorded_owner"] },
   TileOpt: { regions: [{ alt: "alt", x: "col", y: "row" }] },
