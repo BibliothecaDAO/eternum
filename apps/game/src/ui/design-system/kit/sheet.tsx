@@ -8,13 +8,29 @@ import { BACK, CLOSE } from "./words";
 /** A drag on the handle this far down closes the sheet, as a tap on it does. */
 const DRAG_CLOSES_PX = 64;
 
+/** Where a desktop sheet docks: under the match's bar, or on an app page's right under its title (left of no rail). */
+const DESKTOP_PLACEMENT = {
+  bar: "lg:right-2 lg:top-[76px] lg:max-h-[calc(100dvh-84px)]",
+  page: "lg:right-8 lg:top-[100px] lg:max-h-[calc(100dvh-124px)]",
+} as const;
+
 /**
- * The kit's sheet: a bottom sheet on a phone; on a desktop a panel docked in the leaderboard's place under the bar, as
- * tall as its content, never over the bar, with no handle. It closes from its handle (a tap or a drag down) or a tap on
+ * The kit's sheet: a bottom sheet on a phone; on a desktop a panel docked in the leaderboard's place under the bar (or,
+ * placed on a page, at the page's right under its title, clear of the notice), as tall as its content, with no handle. It closes from its handle (a tap or a drag down) or a tap on
  * the stage behind it on a phone, from its mark on a desktop (a cross, or a back arrow when it opened from another
  * panel), and from Escape or the system back on both. A desktop stage stays playable beside the panel.
  */
-export const Sheet = ({ label, onClose, children }: { label: string; onClose: () => void; children: ReactNode }) => {
+export const Sheet = ({
+  label,
+  onClose,
+  placement = "bar",
+  children,
+}: {
+  label: string;
+  onClose: () => void;
+  placement?: keyof typeof DESKTOP_PLACEMENT;
+  children: ReactNode;
+}) => {
   const fromPanel = useContext(OpenedFromPanel);
   const close = useLatest(onClose);
   useSystemBackCloses(() => close.current());
@@ -36,7 +52,8 @@ export const Sheet = ({ label, onClose, children }: { label: string; onClose: ()
           // Visible even when the panel it opened from steps aside for it (HudBands hides that panel).
           "frontier-sheet pointer-events-auto visible fixed z-40 flex flex-col font-sans",
           "inset-x-0 bottom-0 max-h-[85dvh]",
-          "lg:inset-x-auto lg:bottom-auto lg:right-2 lg:top-[76px] lg:max-h-[calc(100dvh-84px)] lg:w-[440px]",
+          "lg:inset-x-auto lg:bottom-auto lg:w-[440px]",
+          DESKTOP_PLACEMENT[placement],
         )}
       >
         <Handle onClose={onClose} />

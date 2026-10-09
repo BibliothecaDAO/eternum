@@ -1,5 +1,5 @@
 import { nameRuleViolation, type Session } from "@realms-world/identity";
-import { lazy, Suspense, useEffect, useState, type FormEvent } from "react";
+import { lazy, type ReactNode, Suspense, useEffect, useState, type FormEvent } from "react";
 
 import {
   identityClient,
@@ -41,13 +41,14 @@ export const AccountCard = ({ session }: { session: Session }) => {
   const account = useAccountStore((state) => state.account?.address);
   const [open, setOpen] = useState<Open>(null);
   const close = () => setOpen(null);
+  // A row opens its setting, and the same row closes it again.
+  const toggle = (row: Exclude<Open, null>) => setOpen(open === row ? null : row);
   const done = () => {
     close();
     void refresh();
   };
   const wallet = session.user.address ?? null;
   const payout = payoutWalletOf(session.user);
-  const layout = useLayout();
   const now = useNowSeconds() * 1000;
   const payoutPanel = payout && (
     <PayoutWalletPanel wallet={payout} email={session.user.email} now={now} onChanged={() => void refresh()} />
@@ -59,52 +60,49 @@ export const AccountCard = ({ session }: { session: Session }) => {
           icon="Pf"
           name={PROFILE_WORDS.name}
           value={account ? <PlayerName account={account} /> : (identityUsername(session) ?? "—")}
-          onOpen={() => setOpen("name")}
+          onOpen={() => toggle("name")}
         />
-        <SettingRow icon="Ed" name={PROFILE_WORDS.portrait} onOpen={() => setOpen("portrait")} />
+        <SettingRow icon="Ed" name={PROFILE_WORDS.portrait} onOpen={() => toggle("portrait")} />
         <SettingRow icon="Dc" name={PROFILE_WORDS.signInMethods} value={<SignInMethods session={session} />} />
         {payout ? (
           <SettingRow
             icon="Wt"
             name={WALLET_WORDS.payoutWallet}
             value={payoutValue(payout, now)}
-            onOpen={() => setOpen(open === "payout" ? null : "payout")}
+            onOpen={() => toggle("payout")}
           />
         ) : (
           <SettingRow
             icon="Wt"
             name={PROFILE_WORDS.wallet}
             value={wallet ? shortAddress(wallet) : PROFILE_WORDS.linkWallet}
-            onOpen={() => setOpen(wallet ? "unlink" : "wallet")}
+            onOpen={() => toggle(wallet ? "unlink" : "wallet")}
           />
         )}
       </SettingRows>
-      {open === "payout" &&
-        (layout === "phone" ? (
-          <Sheet label={WALLET_WORDS.payoutWallet} onClose={close}>
-            {payoutPanel}
-          </Sheet>
-        ) : (
-          <section className="plate p-5">{payoutPanel}</section>
-        ))}
-      <Button role="outline" word={PROFILE_WORDS.signOut} icon="Xo" onClick={() => setOpen("sign-out")} />
+      {open === "payout" && (
+        <Opened label={WALLET_WORDS.payoutWallet} onClose={close}>
+          {payoutPanel}
+        </Opened>
+      )}
       {open === "name" && (
-        <Sheet label={PROFILE_WORDS.name} onClose={close}>
+        <Opened label={PROFILE_WORDS.name} onClose={close}>
           <NameSheet current={identityUsername(session) ?? session.user.suggestedName ?? ""} onDone={done} />
-        </Sheet>
+        </Opened>
       )}
       {open === "portrait" && (
-        <Sheet label={PROFILE_WORDS.portrait} onClose={close}>
+        <Opened label={PROFILE_WORDS.portrait} onClose={close}>
           <PortraitSheet current={session.user.image ?? null} onDone={done} />
-        </Sheet>
+        </Opened>
       )}
       {open === "wallet" && (
-        <Sheet label={PROFILE_WORDS.linkWallet} onClose={close}>
+        <Opened label={PROFILE_WORDS.linkWallet} onClose={close}>
           <Suspense fallback={<Loading />}>
             <WalletLink />
           </Suspense>
-        </Sheet>
+        </Opened>
       )}
+      <Button role="outline" word={PROFILE_WORDS.signOut} icon="Xo" onClick={() => setOpen("sign-out")} />
       {open === "unlink" && <UnlinkConfirm onDone={done} onKeep={close} />}
       {open === "sign-out" && (
         <Confirm
@@ -118,6 +116,21 @@ export const AccountCard = ({ session }: { session: Session }) => {
     </div>
   );
 };
+
+/**
+ * What a row opens: a sheet on a phone; on a desktop a plate under the rows, in the Account column it opened from, so
+ * nothing covers the rows or the page.
+ */
+const Opened = ({ label, onClose, children }: { label: string; onClose: () => void; children: ReactNode }) =>
+  useLayout() === "phone" ? (
+    <Sheet label={label} onClose={onClose}>
+      {children}
+    </Sheet>
+  ) : (
+    <section aria-label={label} className="plate p-5">
+      {children}
+    </section>
+  );
 
 /** The payout wallet's row: link one, the time its hold has left, or its address. */
 const payoutValue = (payout: PayoutWallet, now: number) => {

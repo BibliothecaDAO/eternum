@@ -34,7 +34,7 @@ export const Confirm = ({
   );
   if (useLayout() === "phone")
     return (
-      <Sheet label={question} onClose={onKeep}>
+      <Sheet label={question} onClose={onKeep} placement="page">
         {body}
       </Sheet>
     );

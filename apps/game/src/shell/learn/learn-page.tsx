@@ -72,7 +72,7 @@ const openOutside = (url: string) => window.open(url, "_blank", "noopener,norefe
 
 /** The guides players wrote, each by its author, in a sheet. */
 const PlayerGuides = ({ onClose }: { onClose: () => void }) => (
-  <Sheet label={LEARN_WORDS.byPlayers} onClose={onClose}>
+  <Sheet label={LEARN_WORDS.byPlayers} onClose={onClose} placement="page">
     <SettingRows>
       {PLAYER_GUIDES.map((guide) => (
         <SettingRow
