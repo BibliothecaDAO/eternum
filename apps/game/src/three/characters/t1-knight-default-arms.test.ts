@@ -169,31 +169,34 @@ const CLEARANCE_CRITERIA = {
 type ClearanceCriterion = keyof typeof CLEARANCE_CRITERIA;
 
 /**
- * Criteria measured to fail on 2026-10-09 (work order P), held back for a decision rather than loosened or hidden. The
+ * Criteria measured to fail on 2026-10-09 (work orders P and Q0), held back for a decision rather than loosened or hidden. The
  * worst value and its moment are in each reason; P-notes.md has the full table. The approved cut follow-through and
  * hit hold the shield inside even the pose file's own smaller head (`clearance_mm.shield_to_head` -9.7 and -11.3 mm);
  * the gait's own run and walk feet already went below the floor before the declared body.
  */
 const PENDING_CRITERIA: Readonly<Record<string, Partial<Record<ClearanceCriterion, string>>>> = {
-  "idle-relaxed to guard to cut and back": { shieldToHead: "-21.6 mm in the follow-through" },
+  "idle-relaxed to guard to cut and back": {
+    shieldToHead: "-21.8 mm in the follow-through",
+    shieldToLegs: "0.9 mm relaxing from guard back to idle",
+  },
   "idle-at-ease to guard to cut and back": {
-    shieldToHead: "-21.6 mm in the follow-through",
-    shieldToLegs: "-22.0 mm relaxing from guard back to idle",
+    shieldToHead: "-21.8 mm in the follow-through",
+    shieldToLegs: "-34.6 mm relaxing from guard back to idle",
   },
   "sword-on-shoulder to guard to cut and back": {
-    shieldToHead: "-21.6 mm in the follow-through",
-    shieldToLegs: "-5.2 mm relaxing from guard back to idle",
+    shieldToHead: "-21.8 mm in the follow-through",
+    shieldToLegs: "-28.7 mm relaxing from guard back to idle",
   },
   "idle to walk to run to walk to idle": {
     feetAboveFloor: "-37.6 mm, the gait's running foot",
-    shieldToHead: "-8.2 mm running",
+    shieldToHead: "-8.0 mm running",
   },
   "cut while walking": {
     feetAboveFloor: "-3.6 mm, the gait's walking foot",
-    shieldToHead: "-20.8 mm in the follow-through",
+    shieldToHead: "-20.9 mm in the follow-through",
   },
-  "hit from guard": { shieldToHead: "-21.9 mm in the hit" },
-  "hit from idle": { shieldToLegs: "-11.3 mm going into the hit" },
+  "hit from guard": { shieldToHead: "-21.8 mm in the follow-through before the hit" },
+  "hit from idle": { shieldToLegs: "-7.1 mm going into the hit" },
 };
 
 /** Expects every sample to satisfy every criterion not pending, and says the worst of each when one does not. */

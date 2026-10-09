@@ -111,7 +111,7 @@ export const T1_KNIGHT_DEFAULT_BODY_POSES: ProceduralMeleeBodyStates = {
   idle: [
     {
       pelvis: { yaw: -5, pitch: -0, roll: 2, height: 1, forward: 0.0035, left: 0.0087 },
-      spine: { flex: 0, twist: -0, side: -2 },
+      spine: { flex: -0, twist: 0, side: -2 },
       head: { yaw: -0, pitch: -0 },
       stance: {
         left: { forward: 0.0073, left: 0.0449, yaw: 20 },
@@ -120,7 +120,7 @@ export const T1_KNIGHT_DEFAULT_BODY_POSES: ProceduralMeleeBodyStates = {
     },
     {
       pelvis: { yaw: 0, pitch: -0, roll: 5, height: 1, forward: 0.0064, left: 0.0025 },
-      spine: { flex: 0, twist: -0, side: -4 },
+      spine: { flex: -0, twist: 0, side: -4 },
       head: { yaw: 10, pitch: 3 },
       stance: {
         left: { forward: -0.0029, left: 0.0328, yaw: 26.1 },
@@ -129,7 +129,7 @@ export const T1_KNIGHT_DEFAULT_BODY_POSES: ProceduralMeleeBodyStates = {
     },
     {
       pelvis: { yaw: 0, pitch: -0, roll: -0, height: 1, forward: 0.0053, left: 0 },
-      spine: { flex: 0, twist: -0, side: -0 },
+      spine: { flex: -0, twist: 0, side: -0 },
       head: { yaw: 0, pitch: -0 },
       stance: {
         left: { forward: 0.0049, left: 0.0476, yaw: 21.7 },
@@ -139,7 +139,7 @@ export const T1_KNIGHT_DEFAULT_BODY_POSES: ProceduralMeleeBodyStates = {
   ],
   guard: {
     pelvis: { yaw: -30, pitch: 8, roll: -0, height: 0.92, forward: 0.015, left: 0.015 },
-    spine: { flex: -10, twist: 8, side: 0.5 },
+    spine: { flex: 8, twist: -10, side: 0.5 },
     head: { yaw: 35, pitch: 4.9 },
     stance: {
       left: { forward: 0.1031, left: 0.0105, yaw: 5.8 },
@@ -148,13 +148,13 @@ export const T1_KNIGHT_DEFAULT_BODY_POSES: ProceduralMeleeBodyStates = {
   },
   walkGuard: {
     pelvis: { yaw: -20, pitch: 6, roll: -0, height: 0.93, forward: 0.0182, left: 0.0017 },
-    spine: { flex: -5, twist: 6, side: 0.2 },
+    spine: { flex: 6, twist: -5, side: 0.2 },
     head: { yaw: 20, pitch: 4 },
     stance: { left: { forward: 0.124, left: -0.0015, yaw: 6.9 }, right: { forward: -0.124, left: 0.0015, yaw: -46.1 } },
   },
   runGuard: {
     pelvis: { yaw: -10, pitch: 12, roll: -0, height: 1.01, forward: 0.027, left: 0.0093 },
-    spine: { flex: 10, twist: 8, side: -0.5 },
+    spine: { flex: 8, twist: 10, side: -0.5 },
     head: { yaw: -0, pitch: 8 },
     stance: {
       left: { forward: 0.0954, left: 0.0034, yaw: 4.5 },
@@ -163,7 +163,7 @@ export const T1_KNIGHT_DEFAULT_BODY_POSES: ProceduralMeleeBodyStates = {
   },
   hit: {
     pelvis: { yaw: 10, pitch: -8, roll: -0, height: 0.91, forward: -0.0756, left: -0.0207 },
-    spine: { flex: 19.2, twist: -11.6, side: -13.5 },
+    spine: { flex: -11.6, twist: 19.2, side: -13.5 },
     head: { yaw: -15.1, pitch: -10 },
     stance: {
       left: { forward: 0.048, left: 0.0564, yaw: 17.8 },
@@ -174,7 +174,7 @@ export const T1_KNIGHT_DEFAULT_BODY_POSES: ProceduralMeleeBodyStates = {
     cut: {
       windup: {
         pelvis: { yaw: -40, pitch: -0, roll: -0, height: 0.93, forward: -0.0094, left: 0.0334 },
-        spine: { flex: -19.9, twist: -5.3, side: 2.4 },
+        spine: { flex: -5.3, twist: -19.9, side: 2.4 },
         head: { yaw: 60, pitch: 0 },
         stance: {
           left: { forward: 0.0753, left: 0.0121, yaw: 2.5 },
@@ -183,7 +183,7 @@ export const T1_KNIGHT_DEFAULT_BODY_POSES: ProceduralMeleeBodyStates = {
       },
       contact: {
         pelvis: { yaw: -2.5, pitch: 12.5, roll: 0, height: 0.885, forward: 0.0261, left: 0.0026 },
-        spine: { flex: 8.5, twist: 14.05, side: 0.7 },
+        spine: { flex: 14.05, twist: 8.5, side: 0.7 },
         head: { yaw: -1.05, pitch: 7.5 },
         stance: {
           left: { forward: 0.1134, left: 0.0504, yaw: 16.25 },
@@ -192,7 +192,7 @@ export const T1_KNIGHT_DEFAULT_BODY_POSES: ProceduralMeleeBodyStates = {
       },
       follow: {
         pelvis: { yaw: 5, pitch: 15, roll: -0, height: 0.86, forward: 0.0347, left: 0.0022 },
-        spine: { flex: 12, twist: 18.1, side: 1.7 },
+        spine: { flex: 18.1, twist: 12, side: 1.7 },
         head: { yaw: -12.1, pitch: 10 },
         stance: {
           left: { forward: 0.1229, left: 0.0638, yaw: 19.3 },
