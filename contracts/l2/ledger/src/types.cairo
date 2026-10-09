@@ -86,3 +86,9 @@ pub struct BlitzSeason {
     pub end: u64,
     pub pool: u256,
 }
+
+#[derive(Copy, Drop, Serde, Hash, PartialEq, starknet::Store)]
+pub struct GameKey {
+    pub shard: felt252,
+    pub game_id: u32,
+}
