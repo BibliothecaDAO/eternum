@@ -51,9 +51,9 @@ pub trait IGameLedger<TState> {
     fn get_season_winner(self: @TState, season_id: u32, index: u32) -> (ContractAddress, u256);
     fn season_claimed(self: @TState, season_id: u32, owner: ContractAddress) -> bool;
     fn open_game(ref self: TState, key: GameKey, season_id: u32, preset_id: u32, start: u64, end: u64);
-    fn register(ref self: TState, key: GameKey, sword: bool, shield: bool);
-    fn register_with_pass(ref self: TState, key: GameKey, pass_id: u256);
-    fn register_village(ref self: TState, key: GameKey, village_pass_id: u256);
+    fn register(ref self: TState, key: GameKey, account: ContractAddress, sword: bool, shield: bool);
+    fn register_with_pass(ref self: TState, key: GameKey, account: ContractAddress, pass_id: u256);
+    fn register_village(ref self: TState, key: GameKey, account: ContractAddress, village_pass_id: u256);
     fn fund(ref self: TState, key: GameKey, amount: u256);
     fn cancel_game(ref self: TState, key: GameKey);
     fn abort_game(ref self: TState, key: GameKey);
@@ -68,7 +68,7 @@ pub trait IGameLedger<TState> {
     fn get_preset(self: @TState, preset_id: u32) -> Preset;
     fn get_game(self: @TState, key: GameKey) -> Game;
     fn get_registration(self: @TState, key: GameKey, owner: ContractAddress) -> Registration;
-    fn get_registered_owner(self: @TState, key: GameKey, index: u16) -> ContractAddress;
+    fn get_registered_player(self: @TState, key: GameKey, index: u16) -> (ContractAddress, ContractAddress);
     fn get_player_result(self: @TState, key: GameKey, owner: ContractAddress) -> PlayerResult;
 }
 
@@ -168,6 +168,7 @@ pub mod GameLedger {
         games: Map<GameKey, Game>,
         registrations: Map<(GameKey, ContractAddress), Registration>,
         registered_owners: Map<(GameKey, u16), ContractAddress>,
+        seated_accounts: Map<(GameKey, ContractAddress), bool>,
         results: Map<(GameKey, ContractAddress), PlayerResult>,
         result_seen: Map<(GameKey, ContractAddress), bool>,
         #[substorage(v0)]
@@ -264,6 +265,7 @@ pub mod GameLedger {
         key: GameKey,
         #[key]
         owner: ContractAddress,
+        account: ContractAddress,
         realm_id: u256,
         metadata: (felt252, felt252, felt252),
         pass_kind: u8,
@@ -697,18 +699,18 @@ pub mod GameLedger {
             self.emit(GameOpened { key, preset_id, start, end });
         }
 
-        fn register(ref self: ContractState, key: GameKey, sword: bool, shield: bool) {
+        fn register(ref self: ContractState, key: GameKey, account: ContractAddress, sword: bool, shield: bool) {
             let owner = starknet::get_caller_address();
-            let game = self.assert_registration_open(key, owner);
+            let game = self.assert_registration_open(key, owner, account);
             let preset = self.presets.entry(game.preset_id).read();
-            let payment = self.record_paid_registration(key, owner, sword, shield, preset);
+            let payment = self.record_paid_registration(key, owner, account, sword, shield, preset);
             self.pull_lords(owner, payment);
-            self.emit_registration(key, owner, 0, (0, 0, 0), NO_PASS);
+            self.emit_registration(key, owner, account, 0, (0, 0, 0), NO_PASS);
         }
 
-        fn register_with_pass(ref self: ContractState, key: GameKey, pass_id: u256) {
+        fn register_with_pass(ref self: ContractState, key: GameKey, account: ContractAddress, pass_id: u256) {
             let owner = starknet::get_caller_address();
-            self.assert_registration_open(key, owner);
+            self.assert_registration_open(key, owner, account);
             let season_pass = self.season_pass.read();
             assert!(
                 IERC721Dispatcher { contract_address: season_pass }.owner_of(pass_id) == owner,
@@ -718,14 +720,14 @@ pub mod GameLedger {
             let metadata = ISeasonPassMetadataDispatcher { contract_address: season_pass }
                 .get_encoded_metadata(pass_id.try_into().unwrap());
 
-            self.record_pass_registration(key, owner, pass_id, SEASON_PASS);
+            self.record_pass_registration(key, owner, account, pass_id, SEASON_PASS);
             IPassBurnDispatcher { contract_address: season_pass }.burn(pass_id);
-            self.emit_registration(key, owner, pass_id, metadata, SEASON_PASS);
+            self.emit_registration(key, owner, account, pass_id, metadata, SEASON_PASS);
         }
 
-        fn register_village(ref self: ContractState, key: GameKey, village_pass_id: u256) {
+        fn register_village(ref self: ContractState, key: GameKey, account: ContractAddress, village_pass_id: u256) {
             let owner = starknet::get_caller_address();
-            self.assert_registration_open(key, owner);
+            self.assert_registration_open(key, owner, account);
             let village_pass = self.village_pass.read();
             assert!(
                 IERC721Dispatcher { contract_address: village_pass }.owner_of(village_pass_id) == owner,
@@ -733,9 +735,9 @@ pub mod GameLedger {
             );
             assert!(village_pass_id <= 0xffff, "Ledger: village pass id exceeds u16");
 
-            self.record_pass_registration(key, owner, village_pass_id, VILLAGE_PASS);
+            self.record_pass_registration(key, owner, account, village_pass_id, VILLAGE_PASS);
             IPassBurnDispatcher { contract_address: village_pass }.burn(village_pass_id);
-            self.emit_registration(key, owner, village_pass_id, (0, 0, 0), VILLAGE_PASS);
+            self.emit_registration(key, owner, account, village_pass_id, (0, 0, 0), VILLAGE_PASS);
         }
 
         fn fund(ref self: ContractState, key: GameKey, amount: u256) {
@@ -883,10 +885,11 @@ pub mod GameLedger {
             self.registrations.entry((key, owner)).read()
         }
 
-        fn get_registered_owner(self: @ContractState, key: GameKey, index: u16) -> ContractAddress {
+        fn get_registered_player(self: @ContractState, key: GameKey, index: u16) -> (ContractAddress, ContractAddress) {
             let game = self.games.entry(key).read();
             assert!(game.exists && index < game.registered_count, "Ledger: registration index out of bounds");
-            self.registered_owners.entry((key, index)).read()
+            let wallet = self.registered_owners.entry((key, index)).read();
+            (wallet, self.registrations.entry((key, wallet)).read().account)
         }
 
         fn get_player_result(self: @ContractState, key: GameKey, owner: ContractAddress) -> PlayerResult {
@@ -952,9 +955,13 @@ pub mod GameLedger {
             game
         }
 
-        fn assert_registration_open(self: @ContractState, key: GameKey, owner: ContractAddress) -> Game {
+        fn assert_registration_open(
+            self: @ContractState, key: GameKey, owner: ContractAddress, account: ContractAddress,
+        ) -> Game {
             let game = self.assert_game_open_before_start(key);
             assert!(!self.registrations.entry((key, owner)).read().registered, "Ledger: already registered");
+            assert!(!account.is_zero(), "Ledger: shard account is zero");
+            assert!(!self.seated_accounts.entry((key, account)).read(), "Ledger: account already seated");
             game
         }
 
@@ -975,7 +982,13 @@ pub mod GameLedger {
         }
 
         fn record_paid_registration(
-            ref self: ContractState, key: GameKey, owner: ContractAddress, sword: bool, shield: bool, preset: Preset,
+            ref self: ContractState,
+            key: GameKey,
+            owner: ContractAddress,
+            account: ContractAddress,
+            sword: bool,
+            shield: bool,
+            preset: Preset,
         ) -> u256 {
             let (sword_credit, shield_credit) = self.spend_credits(owner, sword, shield);
             let payment = preset.entry_fee
@@ -992,6 +1005,7 @@ pub mod GameLedger {
             let sponsored = self.registrations.entry((key, owner)).read().paid;
             let registration = Registration {
                 registered: true,
+                account,
                 sword,
                 shield,
                 sword_credit,
@@ -1004,11 +1018,16 @@ pub mod GameLedger {
         }
 
         fn record_pass_registration(
-            ref self: ContractState, key: GameKey, owner: ContractAddress, pass_id: u256, pass_kind: u8,
+            ref self: ContractState,
+            key: GameKey,
+            owner: ContractAddress,
+            account: ContractAddress,
+            pass_id: u256,
+            pass_kind: u8,
         ) {
             let sponsored = self.registrations.entry((key, owner)).read().paid;
             let registration = Registration {
-                registered: true, realm_id: pass_id, pass_kind, paid: sponsored, ..Default::default(),
+                registered: true, account, realm_id: pass_id, pass_kind, paid: sponsored, ..Default::default(),
             };
             self.record_registration(key, owner, registration, 0);
         }
@@ -1018,6 +1037,7 @@ pub mod GameLedger {
         ) {
             let mut game = self.games.entry(key).read();
             self.registrations.entry((key, owner)).write(registration);
+            self.seated_accounts.entry((key, registration.account)).write(true);
             self.registered_owners.entry((key, game.registered_count)).write(owner);
             game.registered_count += 1;
             self.add_to_pool(key, game, payment);
@@ -1033,11 +1053,12 @@ pub mod GameLedger {
             ref self: ContractState,
             key: GameKey,
             owner: ContractAddress,
+            account: ContractAddress,
             realm_id: u256,
             metadata: (felt252, felt252, felt252),
             pass_kind: u8,
         ) {
-            self.emit(Registered { key, owner, realm_id, metadata, pass_kind });
+            self.emit(Registered { key, owner, account, realm_id, metadata, pass_kind });
         }
 
         fn restore_pass(ref self: ContractState, owner: ContractAddress, pass_id: u256, pass_kind: u8) {

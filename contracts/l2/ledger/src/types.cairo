@@ -40,7 +40,7 @@ pub struct Game {
     pub finalized: bool,
 }
 
-#[derive(Copy, Default, Drop, Serde, starknet::Store)]
+#[derive(Copy, Drop, Serde, starknet::Store)]
 pub struct Registration {
     pub registered: bool,
     pub sword: bool,
@@ -51,6 +51,24 @@ pub struct Registration {
     pub paid: u256,
     pub realm_id: u256,
     pub pass_kind: u8,
+    pub account: ContractAddress,
+}
+
+pub impl RegistrationDefault of Default<Registration> {
+    fn default() -> Registration {
+        Registration {
+            registered: false,
+            sword: false,
+            shield: false,
+            flags_consumed: false,
+            sword_credit: false,
+            shield_credit: false,
+            paid: 0,
+            realm_id: 0,
+            pass_kind: 0,
+            account: 0.try_into().unwrap(),
+        }
+    }
 }
 
 #[derive(Copy, Default, Drop, Serde, starknet::Store)]

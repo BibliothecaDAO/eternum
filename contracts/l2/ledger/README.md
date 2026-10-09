@@ -27,6 +27,20 @@ and sponsorship. The default is 2000 bps. The remaining pot splits by `chest_lor
 and season prize pool. Refunds return the original payment before any settlement cut. Chest and season payouts have no
 second cut. Frontier's configuration preset keeps its cut at zero.
 
+Each registration names its shard account explicitly: `register(key, account, sword, shield)`,
+`register_with_pass(key, account, pass_id)` or `register_village(key, account, village_pass_id)`. The ledger stores the
+paying wallet/account pair and rejects a zero account or a second seat for that account in the same shard/game. The
+launcher freezes the ordered pairs from `get_registered_player(key, index)`; the old wallet-only roster view is removed.
+No mutable identity link is consulted when the game starts. Results, MMR, refunds and prizes remain keyed by the paying
+wallet. Changing a payout-wallet link afterward cannot rewrite that game's paid roster.
+
+Registration does not prove ownership of a shard account. Naming another person's account or a nonexistent nonzero
+address buys that exact seat and gives the payer no ability to sign plays as that account. It neither grants a role nor
+transfers an account. The payer has spent their entry or burned their pass for a seat they cannot control; a holder of the
+named account may still play it, and another wallet cannot buy a duplicate seat for that account in this game. No
+cross-chain account-ownership oracle or identity lookup is introduced. The cost is one account field and one duplicate
+seat map, replacing freeze-time off-chain wallet resolution.
+
 Results contain only wallet and competition rank, sorted by rank then wallet on ties. The version-3 commitment hashes
 `['ETERNUM_BLITZ_RESULT', 3, shard, game_id, count, wallet, rank, ...]`. The shard must not draw chest contents. MMR and
 chest bands share the tie-average percentile. Five bands cover 0–20%, 20–40%, 40–60%, 60–80% and 80–100%; the 100%
