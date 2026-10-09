@@ -26,6 +26,8 @@ pub fn result_commitment(key: GameKey, ranked: Span<RankedPlayer>) -> felt252 {
 
 #[starknet::interface]
 pub trait IGameLedger<TState> {
+    fn lords(self: @TState) -> ContractAddress;
+    fn chest_collection(self: @TState) -> ContractAddress;
     fn pause(ref self: TState);
     fn unpause(ref self: TState);
     fn fund_frontier(
@@ -420,6 +422,14 @@ pub mod GameLedger {
 
     #[abi(embed_v0)]
     impl GameLedgerImpl of IGameLedger<ContractState> {
+        fn lords(self: @ContractState) -> ContractAddress {
+            self.lords.read()
+        }
+
+        fn chest_collection(self: @ContractState) -> ContractAddress {
+            self.loot_chest.read()
+        }
+
         fn pause(ref self: ContractState) {
             let caller = starknet::get_caller_address();
             assert!(

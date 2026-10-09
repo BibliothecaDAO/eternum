@@ -36,8 +36,8 @@ wallet. Changing a payout-wallet link afterward cannot rewrite that game's paid 
 
 Registration does not prove ownership of a shard account. Naming another person's account or a nonexistent nonzero
 address buys that exact seat and gives the payer no ability to sign plays as that account. It neither grants a role nor
-transfers an account. The payer has spent their entry or burned their pass for a seat they cannot control; a holder of the
-named account may still play it, and another wallet cannot buy a duplicate seat for that account in this game. No
+transfers an account. The payer has spent their entry or burned their pass for a seat they cannot control; a holder of
+the named account may still play it, and another wallet cannot buy a duplicate seat for that account in this game. No
 cross-chain account-ownership oracle or identity lookup is introduced. The cost is one account field and one duplicate
 seat map, replacing freeze-time off-chain wallet resolution.
 
@@ -102,15 +102,20 @@ cd ../collectibles
 flock /tmp/eternum-scarb.lock bash -c 'scarb fmt --check && scarb build && snforge test'
 ```
 
+Clients read `lords()` and `chest_collection()` from the ledger before balance, allowance, transfer or opening calls.
+These public views return the constructor's addresses on every network, including while paused; a mainnet token address
+is not a rehearsal dependency.
+
 ## Sepolia rehearsal
 
 The owner-run path is `scripts/commands/deployment/sepolia.js`. It was written for this change and has not been
 executed. It refuses any provider whose chain ID is not `SN_SEPOLIA`, deploys a publicly mintable **Test LORDS** token,
 a fresh MMR contract and two fresh collectible collections, then deploys the ledger. It grants the ledger the existing
-MMR updater and collection minter roles, configures test metadata, registers separate Blitz (ID 1) and zero-cut Frontier (ID 2) test presets, opens a Blitz season and
-funds Frontier once using all six ABI arguments. The public manifest reads all eight `FrontierSeason` fields from the
-ledger; its derived Frontier end is independent of `SEPOLIA_SEASON_END`, which schedules Blitz. It writes only public
-addresses, season data and transaction hashes under the ignored `target/` directory.
+MMR updater and collection minter roles, configures test metadata, registers separate Blitz (ID 1) and zero-cut Frontier
+(ID 2) test presets, opens a Blitz season and funds Frontier once using all six ABI arguments. The public manifest reads
+all eight `FrontierSeason` fields from the ledger; its derived Frontier end is independent of `SEPOLIA_SEASON_END`,
+which schedules Blitz. It writes only public addresses, season data and transaction hashes under the ignored `target/`
+directory.
 
 After the package build, `node --test scripts/commands/deployment/frontier.test.js` checks rehearsal calldata and
 Frontier response parsing against the package's actual built ABI without loading a signer or deploying.
