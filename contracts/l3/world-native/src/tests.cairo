@@ -467,6 +467,8 @@ fn malformed_commands_are_rejected_before_root() {
 #[test]
 #[feature("safe_dispatcher")]
 fn production_play_refuses_a_missing_stamp_and_exposes_no_domain_routes() {
+    let verifier = declare_logic("Verifier");
+    assert_eq!(verifier, crate::vrf_class::VRF_VERIFIER_CLASS_HASH.try_into().unwrap());
     let d = setup_with_host(true, "MapLogic", "TroopFixture", "Games");
     let (release, preset) = play_fixture::pins(d.games, 1);
     play_fixture::caller(d.games, d.actor, 100);
@@ -573,6 +575,8 @@ fn only_owner_rotates_launcher_and_authentication_is_immutable() {
 #[test]
 #[feature("safe_dispatcher")]
 fn games_reinitialization_is_rejected_without_changing_authentication_or_state() {
+    let verifier = declare_logic("Verifier");
+    assert_eq!(verifier, crate::vrf_class::VRF_VERIFIER_CLASS_HASH.try_into().unwrap());
     let d = setup_with_host(true, "MapLogic", "TroopFixture", "Games");
     let entry = IGamesAuthenticationDispatcher { contract_address: d.games };
     let authentication = entry.authentication();
@@ -724,6 +728,8 @@ fn game_registry_wire_contains_only_game_configuration() {
 
 #[test]
 fn constructor_vrf_configuration_is_immutable_and_refuses_invalid_inputs() {
+    let verifier = declare_logic("Verifier");
+    assert_eq!(verifier, crate::vrf_class::VRF_VERIFIER_CLASS_HASH.try_into().unwrap());
     let d = setup_with_host(true, "MapLogic", "TroopFixture", "Games");
     let randomness = crate::games::IGamesRandomnessDispatcher { contract_address: d.games };
     let key = randomness.vrf_public_key();
