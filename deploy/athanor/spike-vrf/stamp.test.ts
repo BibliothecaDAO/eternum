@@ -1,3 +1,4 @@
+import { VRF_STAMP_TAG } from "./wire";
 import { expect, test } from "bun:test";
 import { fixture } from "./fixtures";
 import { stampRequest, type Stamp } from "./stamp";
@@ -10,7 +11,7 @@ const context = () => {
     accountClass: "0x123",
     stamp: async (tx) => {
       calls++;
-      return { ...tx, signature: [...tx.signature, "0x4", "0x5", "0x6", "0x7", "0x8"] };
+      return { ...tx, signature: [...tx.signature, VRF_STAMP_TAG, "0x4", "0x5", "0x6", "0x7", "0x8"] };
     },
   };
   return { stamp, count: () => calls };
@@ -28,7 +29,7 @@ test("the proxy stamps only an addInvoke and forwards the original signature pre
   const result = await stampRequest(request, stamp);
   expect(count()).toBe(1);
   expect(result.params.invoke_transaction.signature.slice(0, 3)).toEqual(tx.signature);
-  expect(result.params.invoke_transaction.signature).toHaveLength(8);
+  expect(result.params.invoke_transaction.signature).toHaveLength(9);
   expect(tx.signature).toHaveLength(3);
 });
 
@@ -52,6 +53,6 @@ test("positional addInvoke params preserve the request envelope and body", async
   const request = { jsonrpc: "2.0", id: "request", method: "starknet_addInvokeTransaction", params: [fixture()] };
   const result = await stampRequest(request, stamp);
   expect(result.id).toBe("request");
-  expect(result.params[0].signature).toHaveLength(8);
+  expect(result.params[0].signature).toHaveLength(9);
   expect(request.params[0].signature).toHaveLength(3);
 });

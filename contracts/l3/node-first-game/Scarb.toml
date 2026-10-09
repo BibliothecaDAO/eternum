@@ -13,7 +13,6 @@ world_native = { path = "../world-native" }
 sierra = true
 casm = true
 build-external-contracts = [
-  "node_first_vrf::SpikeProofVerifier",
   "world_native::logic::troops::TroopsLogic",
   "world_native::logic::map::MapLogic",
   "world_native::logic::structures::StructuresLogic",

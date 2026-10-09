@@ -1,3 +1,4 @@
+import { VRF_STAMP_TAG } from "./wire";
 import { expect, test } from "bun:test";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -19,7 +20,7 @@ test("Bun worker pool produces the same native proof while preserving each trans
     const results = await Promise.all(txs.map((tx) => pool.stamp(tx, "0x5350494b45")));
     for (let index = 0; index < results.length; index++) {
       const seed = invokeHash(txs[index], "0x5350494b45");
-      expect(results[index].signature.slice(3)).toEqual(prover.proofs([seed])[0].slice(0, 5));
+      expect(results[index].signature.slice(3)).toEqual([VRF_STAMP_TAG, ...prover.proofs([seed])[0].slice(0, 5)]);
       expect(invokeHash(results[index], "0x5350494b45")).toBe(seed);
     }
   } finally {

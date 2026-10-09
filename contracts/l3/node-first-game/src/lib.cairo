@@ -14,7 +14,6 @@ pub mod Games {
         #[flat]
         data: world_native::state::Storage,
         spike_account_class: ClassHash,
-        verifier_class: ClassHash,
         vrf_key_x: felt252,
         vrf_key_y: felt252,
         verify_vrf: bool,
@@ -34,14 +33,18 @@ pub mod Games {
     }
 
     #[constructor]
-    fn constructor(ref self: ContractState, authority: ContractAddress, account_class: ClassHash, verifier_class: ClassHash, vrf_key: node_first_vrf::vendor::ecvrf::Point, verify_vrf: bool, release: world_native::logic::release::Release) {
+    fn constructor(ref self: ContractState, authority: ContractAddress, account_class: ClassHash, vrf_key: node_first_vrf::vendor::ecvrf::Point, verify_vrf: bool, release: world_native::logic::release::Release) {
         self.data.authority.write(authority);
         self.data.current_release.write(1);
         self.data.releases.write(1, release);
         self.data.registrar.next_game.write(1);
         self.spike_account_class.write(account_class);
         node_first_vrf::validate_key(vrf_key);
-        self.verifier_class.write(verifier_class); self.vrf_key_x.write(vrf_key.x); self.vrf_key_y.write(vrf_key.y); self.verify_vrf.write(verify_vrf);
+        self.vrf_key_x.write(vrf_key.x); self.vrf_key_y.write(vrf_key.y); self.verify_vrf.write(verify_vrf);
+    }
+    #[external(v0)]
+    fn vrf_config(self: @ContractState) -> (node_first_vrf::vendor::ecvrf::Point, bool) {
+        (node_first_vrf::vendor::ecvrf::Point { x: self.vrf_key_x.read(), y: self.vrf_key_y.read() }, self.verify_vrf.read())
     }
     fn owner(self: @ContractState) {
         assert!(get_caller_address() == self.data.authority.read(), "only spike owner");
@@ -97,7 +100,7 @@ pub mod Games {
         assert!(starknet::syscalls::get_class_hash_at_syscall(actor).unwrap() == self.spike_account_class.read(), "RealmsAccount required");
         let release = classes(@self, game);
         assert!(release.classes.troops != 0.try_into().unwrap(), "unknown game release");
-        let root = node_first_vrf::checked_root(self.verifier_class.read(), node_first_vrf::vendor::ecvrf::Point { x: self.vrf_key_x.read(), y: self.vrf_key_y.read() }, self.verify_vrf.read());
+        let root = node_first_vrf::checked_root(node_first_vrf::vendor::ecvrf::Point { x: self.vrf_key_x.read(), y: self.vrf_key_y.read() }, self.verify_vrf.read());
         if let Err(error) = super::invoke_gameplay(release.classes.troops, selector!("create_explorer"), game, actor, command, root, get_block_timestamp()) {
             self.emit(GameplayRejected { game, actor, reason: core::poseidon::poseidon_hash_span(error.span()) }); return;
         }
@@ -110,7 +113,7 @@ pub mod Games {
         assert!(starknet::syscalls::get_class_hash_at_syscall(actor).unwrap() == self.spike_account_class.read(), "RealmsAccount required");
         ICreateExplorerLibraryDispatcher { class_hash: classes(@self, game).classes.troops }
             .create_explorer(game, actor, command, ActionContext {
-                raw_root: node_first_vrf::checked_root(self.verifier_class.read(), node_first_vrf::vendor::ecvrf::Point { x: self.vrf_key_x.read(), y: self.vrf_key_y.read() }, self.verify_vrf.read()).into(), timestamp: world_native::logic::game::game(game).start_main_at,
+                raw_root: node_first_vrf::checked_root(node_first_vrf::vendor::ecvrf::Point { x: self.vrf_key_x.read(), y: self.vrf_key_y.read() }, self.verify_vrf.read()).into(), timestamp: world_native::logic::game::game(game).start_main_at,
             }, world_native::ownership::StoryCursor { order: 0, index: 0 });
     }
     #[external(v0)]
@@ -119,7 +122,7 @@ pub mod Games {
         assert!(starknet::syscalls::get_class_hash_at_syscall(actor).unwrap() == self.spike_account_class.read(), "RealmsAccount required");
         let release = classes(@self, game);
         assert!(release.classes.movement != 0.try_into().unwrap(), "unknown game release");
-        let root = node_first_vrf::checked_root(self.verifier_class.read(), node_first_vrf::vendor::ecvrf::Point { x: self.vrf_key_x.read(), y: self.vrf_key_y.read() }, self.verify_vrf.read());
+        let root = node_first_vrf::checked_root(node_first_vrf::vendor::ecvrf::Point { x: self.vrf_key_x.read(), y: self.vrf_key_y.read() }, self.verify_vrf.read());
         if let Err(error) = super::invoke_gameplay(release.classes.movement, selector!("explore"), game, actor, command, root, get_block_timestamp()) {
             self.emit(GameplayRejected { game, actor, reason: core::poseidon::poseidon_hash_span(error.span()) });
         }

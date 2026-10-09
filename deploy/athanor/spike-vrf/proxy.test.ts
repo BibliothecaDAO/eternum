@@ -1,3 +1,4 @@
+import { VRF_STAMP_TAG } from "./wire";
 import { expect, test } from "bun:test";
 import { startReadRpc } from "./proxy";
 import { hash } from "starknet";
@@ -29,7 +30,7 @@ test("the COPY forwards the stamped Games invoke and never exposes transaction b
     accountClass: "0xabc",
     stamp: async (tx) => {
       stamps++;
-      return { ...tx, signature: [...tx.signature, "0x4", "0x5", "0x6", "0x7", "0x8"] };
+      return { ...tx, signature: [...tx.signature, VRF_STAMP_TAG, "0x4", "0x5", "0x6", "0x7", "0x8"] };
     },
   });
   try {
@@ -43,7 +44,7 @@ test("the COPY forwards the stamped Games invoke and never exposes transaction b
     const response = await fetch(proxy.url, { method: "POST", body: JSON.stringify(request) });
     expect(((await response.json()) as any).result.transaction_hash).toBe("0x123");
     expect(stamps).toBe(1);
-    expect(forwarded[0].signature).toHaveLength(8);
+    expect(forwarded[0].signature).toHaveLength(9);
     expect(request.params.invoke_transaction.signature).toHaveLength(3);
     for (const method of [
       "starknet_getTransactionByHash",
@@ -151,7 +152,7 @@ test("upstream result extras and raw refusals cannot leak a forwarded-but-droppe
     games: "0x456",
     chain: "0x5350494b45",
     accountClass: "0xabc",
-    stamp: async (tx) => ({ ...tx, signature: [...tx.signature, "0x4", "0x5", "0x456", "0x7", "0x8"] }),
+    stamp: async (tx) => ({ ...tx, signature: [...tx.signature, VRF_STAMP_TAG, "0x4", "0x5", "0x456", "0x7", "0x8"] }),
   });
   const send = () =>
     fetch(proxy.url, {

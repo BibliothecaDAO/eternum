@@ -1,3 +1,4 @@
+import { VRF_STAMP_TAG } from "./wire";
 import { readFileSync, writeFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { cpus, availableParallelism } from "node:os";
@@ -17,7 +18,7 @@ const rows = [];
 try {
   const expectedSeeds = txs.map((tx) => invokeHash(tx, chain));
   const expected = prover.proofs(expectedSeeds);
-  for (const threads of [1, 2, 4, 8] as const) {
+  for (const threads of [1, 2, 4] as const) {
     const start = performance.now();
     const pool = new ProverPool(keyFile, threads);
     try {
@@ -30,7 +31,7 @@ try {
         const durationMs = performance.now() - started;
         for (let index = 0; index < txs.length; index++) {
           if (
-            stamped[index].signature.slice(3).join() !== expected[index].slice(0, 5).join() ||
+            stamped[index].signature.slice(3).join() !== [VRF_STAMP_TAG, ...expected[index].slice(0, 5)].join() ||
             invokeHash(stamped[index], chain) !== expectedSeeds[index]
           )
             throw new Error("Stamp/proof/hash mismatch");

@@ -102,7 +102,6 @@ async function main() {
   };
   for (const domain of [troops, map, structures]) await declareClass(account, domain, () => {});
   if (settlement) await declareClass(account, settlement, () => {});
-  await declareClass(account, artifact("SpikeProofVerifier"), () => {});
   await declareClass(account, games, () => {});
   const [releaseId] = await provider.callContract({
     contractAddress: manifest.world.address,
@@ -144,7 +143,6 @@ async function main() {
   const constructorCalldata = codec.compile("constructor", {
     authority: host.deployerAddress,
     account_class: base.accountClassHash,
-    verifier_class: artifact("SpikeProofVerifier").classHash,
     vrf_key: { x: vrfKey[0], y: vrfKey[1] },
     verify_vrf: verifyProofs,
     release,

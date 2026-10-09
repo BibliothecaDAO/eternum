@@ -12,7 +12,6 @@ pub mod SettleGames {
         #[flat]
         data: world_native::state::Storage,
         account_class: ClassHash,
-        verifier_class: ClassHash,
         vrf_key_x: felt252,
         vrf_key_y: felt252,
         verify_vrf: bool,
@@ -23,14 +22,18 @@ pub mod SettleGames {
     #[derive(Drop, starknet::Event)]
     struct GameplayRejected { #[key] game: u32, #[key] actor: ContractAddress, reason: felt252 }
     #[constructor]
-    fn constructor(ref self: ContractState, authority: ContractAddress, account_class: ClassHash, verifier_class: ClassHash, vrf_key: node_first_vrf::vendor::ecvrf::Point, verify_vrf: bool, release: world_native::logic::release::Release) {
+    fn constructor(ref self: ContractState, authority: ContractAddress, account_class: ClassHash, vrf_key: node_first_vrf::vendor::ecvrf::Point, verify_vrf: bool, release: world_native::logic::release::Release) {
         self.data.authority.write(authority);
         self.data.current_release.write(1);
         self.data.releases.write(1, release);
         self.data.registrar.next_game.write(1);
         self.account_class.write(account_class);
         node_first_vrf::validate_key(vrf_key);
-        self.verifier_class.write(verifier_class); self.vrf_key_x.write(vrf_key.x); self.vrf_key_y.write(vrf_key.y); self.verify_vrf.write(verify_vrf);
+        self.vrf_key_x.write(vrf_key.x); self.vrf_key_y.write(vrf_key.y); self.verify_vrf.write(verify_vrf);
+    }
+    #[external(v0)]
+    fn vrf_config(self: @ContractState) -> (node_first_vrf::vendor::ecvrf::Point, bool) {
+        (node_first_vrf::vendor::ecvrf::Point { x: self.vrf_key_x.read(), y: self.vrf_key_y.read() }, self.verify_vrf.read())
     }
     fn owner(self: @ContractState) { assert!(get_caller_address() == self.data.authority.read(), "only spike owner"); }
     fn realm_logic(self: @ContractState) -> ISeasonRealmsLibraryDispatcher {
@@ -80,7 +83,7 @@ pub mod SettleGames {
         assert!(starknet::syscalls::get_class_hash_at_syscall(actor).unwrap() == self.account_class.read(), "RealmsAccount required");
         let release = self.data.releases.read(self.data.game_releases.read(game));
         assert!(release.classes.settlement != 0.try_into().unwrap(), "unknown game release");
-        let root = node_first_vrf::checked_root(self.verifier_class.read(), node_first_vrf::vendor::ecvrf::Point { x: self.vrf_key_x.read(), y: self.vrf_key_y.read() }, self.verify_vrf.read());
+        let root = node_first_vrf::checked_root(node_first_vrf::vendor::ecvrf::Point { x: self.vrf_key_x.read(), y: self.vrf_key_y.read() }, self.verify_vrf.read());
         if let Err(error) = crate::invoke_gameplay(release.classes.settlement, selector!("settle_season"), game, actor, SettleSeason { name, selected_realm: None }, root, get_block_timestamp()) {
             self.emit(GameplayRejected { game, actor, reason: core::poseidon::poseidon_hash_span(error.span()) });
         }

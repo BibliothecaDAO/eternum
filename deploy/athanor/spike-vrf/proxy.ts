@@ -1,4 +1,5 @@
 // Throwaway spike COPY: never merge or reuse without rewrite.
+import { hash } from "starknet";
 import { ProverPool } from "./pool";
 import { gamesTransaction, stampRequest, type Stamp, type RpcCall } from "./stamp";
 import { readFileSync } from "node:fs";
@@ -253,6 +254,33 @@ if (import.meta.main) {
     )
       throw new Error("Part2 proxy VRF key mismatch");
   }
+  const keyResponse = await fetch(new URL("/rpc/v0_10_2", required("NODE_RPC_URL")), {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      jsonrpc: "2.0",
+      id: 1,
+      method: "starknet_call",
+      params: [
+        {
+          contract_address: fixture.contract,
+          entry_point_selector: hash.getSelectorFromName("vrf_config"),
+          calldata: [],
+        },
+        "latest",
+      ],
+    }),
+    redirect: "manual",
+    signal: AbortSignal.timeout(5000),
+  });
+  const keyAnswer = (await keyResponse.json()) as { result?: string[] };
+  if (
+    !keyResponse.ok ||
+    keyAnswer.result?.length !== 3 ||
+    keyAnswer.result.slice(0, 2).some((value, index) => BigInt(value) !== BigInt(fixture.vrfPublicKey[index])) ||
+    BigInt(keyAnswer.result[2]!) !== BigInt(fixture.verifyProofs ? 1 : 0)
+  )
+    throw new Error("Proxy fixture differs from the game's constructor VRF key/mode");
   const server = startReadRpc(
     required("NODE_RPC_URL"),
     Number(required("PORT")),

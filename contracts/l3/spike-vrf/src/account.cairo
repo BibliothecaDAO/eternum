@@ -87,14 +87,16 @@ pub mod VrfSpikeAccount {
         fn __execute__(self: @ContractState, calls: Array<Call>) {
             assert!(starknet::get_caller_address().is_zero(), "invalid caller");
             assert!(is_tx_version_valid(), "invalid tx version");
-            if get_tx_info().unbox().signature.len() == 8 {
+            if get_tx_info().unbox().signature.len() == 9 {
+                assert!(*get_tx_info().unbox().signature[3] == crate::STAMP_TAG, "invalid stamp tag");
                 assert!(calls.len() == 1, "one stamped call");
             }
             execute_calls(calls.span());
         }
 
         fn __validate__(ref self: ContractState, calls: Array<Call>) -> felt252 {
-            if get_tx_info().unbox().signature.len() == 8 {
+            if get_tx_info().unbox().signature.len() == 9 {
+                assert!(*get_tx_info().unbox().signature[3] == crate::STAMP_TAG, "invalid stamp tag");
                 assert!(calls.len() == 1, "one stamped call");
             }
             self.validate_own_transaction()
@@ -181,9 +183,10 @@ pub mod VrfSpikeAccount {
         }
 
         fn is_signed_by_device(self: @ContractState, hash: felt252, signature: Span<felt252>) -> bool {
-            if signature.len() != 3 && signature.len() != 8 {
+            if signature.len() != 3 && signature.len() != 9 {
                 return false;
             }
+            if signature.len() == 9 && *signature[3] != crate::STAMP_TAG { return false; }
             let device_key = *signature[0];
             self.devices.entry(device_key).read()
                 && check_ecdsa_signature(hash, device_key, *signature[1], *signature[2])

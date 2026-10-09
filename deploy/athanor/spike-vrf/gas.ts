@@ -1,3 +1,4 @@
+import { VRF_STAMP_TAG } from "./wire";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { Account, ec, hash, RpcProvider, legacyDeployer, shortString } from "starknet";
@@ -129,7 +130,7 @@ async function send(
     expectedRoot = witness[5];
     const proof = witness.slice(0, 5);
     if (corrupt) proof[2] = `0x${(BigInt(proof[2]) + 1n).toString(16)}`;
-    tx.signature.push(...proof);
+    tx.signature.push(VRF_STAMP_TAG, ...proof);
   }
   const result = await rpc("starknet_addInvokeTransaction", { invoke_transaction: tx });
   if (BigInt(result.transaction_hash) !== BigInt(seed)) throw new Error("Stamped hash changed");

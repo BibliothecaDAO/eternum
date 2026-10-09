@@ -1,3 +1,4 @@
+import { VRF_STAMP_TAG } from "./wire";
 import { readFileSync, writeFileSync } from "node:fs";
 import { cpus } from "node:os";
 import type { Invoke } from "./transaction";
@@ -64,7 +65,7 @@ async function measure(threads: number, echo: boolean) {
       const result = await promise;
       for (const key of Object.keys(totals) as (keyof Stages)[]) totals[key] += result.stages[key];
       const append = performance.now();
-      const stamped = { ...tx, signature: [...tx.signature, ...result.proof] };
+      const stamped = { ...tx, signature: [...tx.signature, VRF_STAMP_TAG, ...result.proof] };
       appendMs += performance.now() - append;
       return stamped;
     };

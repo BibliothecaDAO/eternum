@@ -182,3 +182,33 @@ where
         Ok(fr)
     }
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ark_ff::PrimeField;
+    use crate::{StarkCurve,ScalarField,BaseField,StarkVRF,generate_public_key};
+    use std::io::Read;
+
+    fn scalar() -> ScalarField {
+        let mut bytes=[0u8;32];
+        std::fs::File::open("/dev/urandom").unwrap().read_exact(&mut bytes).unwrap();
+        ScalarField::from_be_bytes_mod_order(&bytes) + ScalarField::from(1u64)
+    }
+    #[test]
+    fn valid_nonce_variants_have_one_gamma_and_one_output() {
+        let key=scalar(); let seed=[BaseField::from(42u64)];
+        let pk=generate_public_key(key); let vrf=StarkVRF::new(pk).unwrap();
+        let h=vrf.hash_to_curve(&seed).unwrap(); let gamma:Affine<StarkCurve>=(h*key).into();
+        let mut output=None;
+        for _ in 0..8 {
+            let k=scalar();
+            let c=vrf.hash_points(&[pk,h,gamma,(StarkCurve::GENERATOR*k).into(),(h*k).into()]).unwrap();
+            let proof=(gamma,c,k+c*key);
+            assert!(vrf.verify(&proof,&seed).is_ok());
+            let root=vrf.proof_to_hash(&proof).unwrap();
+            if let Some(expected)=output { assert!(expected==root); } else {output=Some(root);}
+        }
+    }
+}

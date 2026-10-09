@@ -1,3 +1,4 @@
+import { VRF_STAMP_TAG } from "./wire";
 import type { Invoke } from "./transaction";
 
 interface Proof {
@@ -63,7 +64,7 @@ export class ProverPool {
     const raw = new TextEncoder().encode(JSON.stringify(tx)).buffer;
     this.workers[this.next++ % this.workers.length].postMessage({ id, raw, chain }, [raw]);
     const { proof } = await work;
-    return { ...tx, signature: [...tx.signature, ...proof] };
+    return { ...tx, signature: [...tx.signature, VRF_STAMP_TAG, ...proof] };
   }
 
   stop(error = new Error("VRF pool closed")): void {

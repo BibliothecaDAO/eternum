@@ -1,6 +1,6 @@
 import { hash, type Calldata } from "starknet";
 
-const L2_BOUND = 1_200_000_000n;
+import { L2_GAS_BOUND } from "./wire";
 
 interface Bound {
   max_amount: string;
@@ -71,7 +71,7 @@ export function isGamesInvoke(tx: unknown, games: string): tx is Invoke {
       calldata.length >= 4 &&
       BigInt(calldata[0]) === 1n &&
       BigInt(calldata[1]) === BigInt(games) &&
-      ["play", "create_explorer", "prepare_explorer", "explore", "settle_season"].some(
+      ["play", "probe", "create_explorer", "prepare_explorer", "explore", "settle_season"].some(
         (name) => BigInt(calldata[2]!) === BigInt(hash.getSelectorFromName(name)),
       ) &&
       BigInt(calldata[3]) === BigInt(calldata.length - 4)
@@ -83,7 +83,7 @@ export function isGamesInvoke(tx: unknown, games: string): tx is Invoke {
 
 function fixedBounds(bounds: Invoke["resource_bounds"]) {
   return (
-    BigInt(bounds.l2_gas.max_amount) === L2_BOUND &&
+    BigInt(bounds.l2_gas.max_amount) === L2_GAS_BOUND &&
     BigInt(bounds.l2_gas.max_price_per_unit) === 0n &&
     [bounds.l1_gas, bounds.l1_data_gas].every(
       (bound) => BigInt(bound.max_amount) === 0n && BigInt(bound.max_price_per_unit) === 0n,

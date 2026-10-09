@@ -1,3 +1,4 @@
+import { VRF_STAMP_TAG } from "./wire";
 import { expect, test } from "bun:test";
 import { feltBytes, NativeProver } from "./native";
 import { fixture } from "./fixtures";
@@ -35,7 +36,7 @@ test("native V3 hashing matches SDK across every hashed field and ignores signat
         ...base,
         resource_bounds: { ...base.resource_bounds, l1_data_gas: { max_amount: "0x23", max_price_per_unit: "0x42" } },
       },
-      { ...base, signature: [...base.signature, "0x4", "0x5", "0x6", "0x7", "0x8"] },
+      { ...base, signature: [...base.signature, VRF_STAMP_TAG, "0x4", "0x5", "0x6", "0x7", "0x8"] },
     ];
     for (const tx of variants) expect(BigInt(prover.invokeHash(encode(tx), chain))).toBe(BigInt(invokeHash(tx, chain)));
     expect(BigInt(prover.invokeHash(encode(base), "0x42"))).toBe(BigInt(invokeHash(base, "0x42")));

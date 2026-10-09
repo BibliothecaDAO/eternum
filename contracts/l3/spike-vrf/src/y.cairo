@@ -26,6 +26,8 @@ pub mod VrfYProbe {
         self.key_y.write(key.y);
         self.verify_proofs.write(verify_proofs);
     }
+    #[external(v0)]
+    fn vrf_config(self: @ContractState) -> (Point, bool) { (Point { x: self.key_x.read(), y: self.key_y.read() }, self.verify_proofs.read()) }
     #[event]
     #[derive(Drop, starknet::Event)]
     enum Event { Applied: Applied }
