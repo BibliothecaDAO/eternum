@@ -37,7 +37,14 @@ export interface GameClientSetup {
 
 export interface CreateGameClientInput {
   actor?: string;
-  native: NativeClientConnection;
+  native:
+    | NativeClientConnection
+    | {
+        bindings: NativeClientConnection["bindings"];
+        chainId: string;
+        /** Installs player-signed submission and receipt waits after the authoritative fact stream is ready. */
+        configure(setup: GameClientSetup, runtime: GameSyncRuntime, release: { ready(): Promise<void> }): () => void;
+      };
   shard: Shard;
   gameId: number;
   presetId: number;
@@ -148,27 +155,35 @@ const startSync = async (
   });
   session.onDispose = () => {
     release.dispose();
-    input.native.submitIntent.dispose?.();
+    if ("submitIntent" in input.native) input.native.submitIntent.dispose?.();
   };
   await runtime.startSession(session);
   await release.ready();
   // Chain time must be known before the first spatial projection reads it.
   await runtime.waitForConfirmedHead();
-  const submit = nativeSubmission(
-    { ...input.native, release },
-    setupResult.store,
-    input.gameId,
-    input.shard.worldAddress,
-    (actor) => session.transport.prepareActor(actor),
-  );
-  setupResult.network.provider.setNativeSubmission(submit, input.native.bindings.commandAbi, (actor) => {
-    let owned: number | undefined;
-    for (const row of setupResult.store.structuresOwnedBy(input.gameId, BigInt(actor)))
-      if (owned === undefined || row.entity_id < owned) owned = row.entity_id;
-    if (owned === undefined) throw new Error("Action requires an owned structure in the current game");
-    return owned;
-  });
-  routeTransactionWaitsThroughStream(setupResult, runtime);
+  if ("configure" in input.native) {
+    const disposeSubmission = input.native.configure(setupResult, runtime, release);
+    session.onDispose = () => {
+      release.dispose();
+      disposeSubmission();
+    };
+  } else {
+    const submit = nativeSubmission(
+      { ...input.native, release },
+      setupResult.store,
+      input.gameId,
+      input.shard.worldAddress,
+      (actor) => session.transport.prepareActor(actor),
+    );
+    setupResult.network.provider.setNativeSubmission(submit, input.native.bindings.commandAbi, (actor) => {
+      let owned: number | undefined;
+      for (const row of setupResult.store.structuresOwnedBy(input.gameId, BigInt(actor)))
+        if (owned === undefined || row.entity_id < owned) owned = row.entity_id;
+      if (owned === undefined) throw new Error("Action requires an owned structure in the current game");
+      return owned;
+    });
+    routeTransactionWaitsThroughStream(setupResult, runtime);
+  }
   return { projection: installWorldSpatialProjection(runtime, setupResult), transport: session.transport };
 };
 

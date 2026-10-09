@@ -5,6 +5,7 @@ import { classifyBattleOutcome, pickBattle, type BattleCandidate, type BattleOut
 import { rejectionOf } from "./rejections";
 import { setTimeout as sleep } from "node:timers/promises";
 import { type Account } from "starknet";
+import { playerRejectionReason } from "./player-actions";
 import type { HarnessProvider } from "./provider";
 import { type ActionPath, ActionPaths, ActionType, type GameActions } from "@bibliothecadao/eternum";
 import { ContractAddress, TroopTier, type ID, type TroopType } from "@bibliothecadao/types";
@@ -1156,7 +1157,7 @@ async function waitForConfirmation(
       : {
           ...result,
           outcome: isGameplayRejection(failure) ? ("rejected" as const) : ("driver_failed" as const),
-          error: `Herald confirmation failed: ${failure}`,
+          error: isGameplayRejection(failure) ? failure : `Herald confirmation failed: ${failure}`,
         };
   });
   try {
@@ -1200,7 +1201,6 @@ async function waitForReceiptLifecycle(
   }
   return new Promise<Partial<TrackedTransaction>>((resolve) => {
     const finish = (result: Partial<TrackedTransaction>) => {
-      subscription.channel.off("open", catchUp);
       signal.removeEventListener("abort", abort);
       unsubscribe();
       resolve(result);
@@ -1243,24 +1243,7 @@ async function waitForReceiptLifecycle(
         preConfirmedMs: (preConfirmedAtMs ?? observedAtMs) - submittedAtMs,
       });
     };
-    let observedSocket: unknown;
-    const catchUp = () => {
-      if (finished || observedSocket === subscription.channel.websocket) return;
-      observedSocket = subscription.channel.websocket;
-      void measureRpc(rpc, "getTransactionStatus", () => provider.getTransactionStatus(transactionHash))
-        .then((status) => {
-          if (!finished) observe(status);
-        })
-        .catch((error: unknown) => {
-          if (!finished) {
-            finished = true;
-            finish({ outcome: "driver_failed", error: errorMessage(error) });
-          }
-        });
-    };
-    subscription.channel.on("open", catchUp);
     subscription.on(({ status }) => observe(status));
-    catchUp();
   });
 }
 
@@ -1402,10 +1385,8 @@ function driverFailure({
  * The season contract's named refusals of a well-formed intent: a game rule said no to the move. INVALID_ACTOR and
  * INVALID_COMMAND are malformed intents, which are the driver's fault, so they stay chain-or-driver failures.
  */
-const GAMEPLAY_REJECTION = /Native action rejected: (?:GAMEPLAY_REJECTED|COMMAND_DISABLED|ROSTER_NOT_READY)\b/;
-
 function isGameplayRejection(error: unknown): boolean {
-  return GAMEPLAY_REJECTION.test(errorMessage(error));
+  return playerRejectionReason(errorMessage(error)) !== undefined;
 }
 
 export function classifyWorkloadFailure(error: unknown): WorkloadFailureClass {

@@ -36,8 +36,6 @@ export interface TerminalOutcome {
 
 const emptyEvidence = (): WorkerBoundaryEvidence => ({
   uncaughtFailures: [],
-  invalidFrames: [],
-  droppedUnsubscribeFrames: 0,
 });
 
 /** Only evidence crosses this boundary. Children never write or announce a successful final verdict. */
@@ -154,8 +152,9 @@ export async function superviseHarnessProcess(
       exitCode: code || (outcome.reports.some((report) => !report.passed) || outcome.failure ? 1 : 0),
     };
   } finally {
-    process.removeListener("SIGINT", interrupt);
-    process.removeListener("SIGTERM", terminate);
+    const removeListener = process.removeListener as (event: string, listener: () => void) => void;
+    removeListener.call(process, "SIGINT", interrupt);
+    removeListener.call(process, "SIGTERM", terminate);
   }
 }
 

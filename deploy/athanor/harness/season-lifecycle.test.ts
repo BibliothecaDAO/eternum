@@ -41,6 +41,7 @@ function fixture(target: number, dev = false, batches = 1) {
         setup: { store: { require: (model: string) => rows(model)[0], inGame: rows }, systemCalls: { end_game: end } },
       },
       game: {
+        clientFor: () => ({ setup: { systemCalls: { end_game: end } } }),
         submit: async (_signer: unknown, act: () => Promise<unknown>) => ({
           transactionHash: "0xabc",
           confirmed: act(),

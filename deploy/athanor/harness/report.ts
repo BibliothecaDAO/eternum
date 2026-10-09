@@ -401,8 +401,6 @@ function buildHarnessManifest(
       failureClasses: analysis.failureClasses,
       battles: analysis.battles,
       uncaughtFailures: input.workerBoundary?.uncaughtFailures ?? [],
-      invalidFrames: input.workerBoundary?.invalidFrames ?? [],
-      droppedUnsubscribeFrames: input.workerBoundary?.droppedUnsubscribeFrames ?? 0,
       reverts: analysis.reverts.length,
       blockingReverts: analysis.blockingReverts.length,
       revertReasons: analysis.revertReasons,

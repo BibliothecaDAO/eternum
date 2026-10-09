@@ -93,7 +93,8 @@ const isStaleNonce = (message: string) => message.includes("actor nonce is not c
  * never creates a second action), and fails with ActionOutcomeUnknownError after a second window. A busy admission is
  * retried with backoff inside the window; a reopened socket re-sends every pending intent so its outcome is followed.
  */
-export function createNativeTicketSubmission(baseUrl: string) {
+export function createNativeTicketSubmission(baseUrl: string | undefined) {
+  if (!baseUrl) throw new Error("Shard does not support ticket submission; use player-signed invokes");
   const url = new URL(baseUrl);
   if (!["http:", "https:", "ws:", "wss:"].includes(url.protocol)) throw new Error("Invalid admission URL");
   url.protocol = ["https:", "wss:"].includes(url.protocol) ? "wss:" : "ws:";

@@ -80,11 +80,19 @@ describe("Madara harness workload", () => {
         HARNESS_OUTPUT_DIRECTORY: output,
       };
       delete environment[missing];
-      const child = Bun.spawn([process.execPath, new URL("./run.ts", import.meta.url).pathname], {
-        env: environment,
-        stdout: "pipe",
-        stderr: "pipe",
-      });
+      const child = Bun.spawn(
+        [
+          process.execPath,
+          "--tsconfig-override",
+          new URL("./tsconfig.json", import.meta.url).pathname,
+          new URL("./run.ts", import.meta.url).pathname,
+        ],
+        {
+          env: environment,
+          stdout: "pipe",
+          stderr: "pipe",
+        },
+      );
       const stderr = await new Response(child.stderr).text();
       expect(await child.exited).toBe(1);
       expect(stderr).toContain(missing);
@@ -292,12 +300,10 @@ describe("Madara harness workload", () => {
   });
 
   it("reports a game rule refusing a move apart from chain or driver failures", () => {
-    const rejected = new Error(
-      "Herald confirmation failed: Native action rejected: GAMEPLAY_REJECTED: not enough stamina",
-    );
+    const rejected = new Error("Herald confirmation failed: Player action rejected: not enough stamina");
     expect(classifyWorkloadFailure(rejected)).toBe("gameplay_rejection");
-    expect(classifyWorkloadFailure(new Error("Native action rejected: COMMAND_DISABLED"))).toBe("gameplay_rejection");
-    expect(classifyWorkloadFailure(new Error("Native action rejected: INVALID_ACTOR"))).toBe("chain_or_driver");
+    expect(classifyWorkloadFailure(new Error("Player action rejected: COMMAND_DISABLED"))).toBe("gameplay_rejection");
+    expect(classifyWorkloadFailure(new Error("INVALID_ACTOR"))).toBe("chain_or_driver");
     expect(
       summarizeFailureClasses([
         { failureClass: "gameplay_rejection" },
@@ -611,19 +617,13 @@ describe("Madara harness workload", () => {
     expect(classifyWorkloadRevertReason("unexpected revert")).toBe("other");
     // The native world's own texts for the same answers.
     expect(
-      classifyWorkloadRevertReason(
-        "Native action rejected: GAMEPLAY_REJECTED: insufficient stamina, you need: 30, and have: 12",
-      ),
+      classifyWorkloadRevertReason("Player action rejected: insufficient stamina, you need: 30, and have: 12"),
     ).toBe("stamina");
-    expect(classifyWorkloadRevertReason("Native action rejected: GAMEPLAY_REJECTED: destination occupied")).toBe(
-      "tile_contention",
+    expect(classifyWorkloadRevertReason("Player action rejected: destination occupied")).toBe("tile_contention");
+    expect(classifyWorkloadRevertReason("Player action rejected: insufficient resource balance")).toBe(
+      "resource_shortfall",
     );
-    expect(
-      classifyWorkloadRevertReason("Native action rejected: GAMEPLAY_REJECTED: insufficient resource balance"),
-    ).toBe("resource_shortfall");
-    expect(classifyWorkloadRevertReason("Native action rejected: GAMEPLAY_REJECTED: missing explorer")).toBe(
-      "explorer_fell",
-    );
+    expect(classifyWorkloadRevertReason("Player action rejected: missing explorer")).toBe("explorer_fell");
 
     const contention = { outcome: "reverted", revertReason: "tile_contention" } as const;
     const fell = { outcome: "rejected", revertReason: "explorer_fell" } as const;
@@ -652,7 +652,13 @@ describe("Madara harness reporting", () => {
     const evidence = async (revision?: string) => {
       const report = join(import.meta.dir, "report.ts");
       const child = Bun.spawn(
-        ["bun", "-e", `console.log(JSON.stringify(await (await import(${JSON.stringify(report)})).runRevision()))`],
+        [
+          "bun",
+          "--tsconfig-override",
+          new URL("./tsconfig.json", import.meta.url).pathname,
+          "-e",
+          `console.log(JSON.stringify(await (await import(${JSON.stringify(report)})).runRevision()))`,
+        ],
         {
           env: { ...process.env, GIT_DIR: "/nonexistent", ...(revision ? { SHARD_REVISION: revision } : {}) },
           stdout: "pipe",
@@ -910,36 +916,6 @@ describe("Madara harness reporting", () => {
       "blockifier_aborts_total",
       "blockifier_commit_phase_aborts_total",
     ]);
-  });
-  it("summarizes the gateway's admission over the window, with an unknown p95 past the last bound", async () => {
-    const bucketsWith = (entries: Record<number, number>) =>
-      Array.from({ length: QUEUE_WAIT_BOUNDS.length + 1 }, (_, index) => entries[index] ?? 0);
-    const scrape = (time: number, gateway: GatewayScrape) => metricsRow(time, 0, 0, 1, 1, 1, gateway);
-    const before = {
-      depth: 2,
-      accepted: 10,
-      executed: 0,
-      transactions: 0,
-      wait: { count: 0, sum: 0, buckets: bucketsWith({}) },
-    };
-    const after = {
-      depth: 6,
-      accepted: 40,
-      executed: 30,
-      transactions: 3,
-      wait: { count: 30, sum: 1.5, buckets: bucketsWith({ 3: 20, 4: 9, 5: 1 }) },
-    };
-    const output = await readBlockStats([blockRow(10, 1, 10)], [scrape(0, before), scrape(5_000_000_000, after)]);
-    expect(output.admission).toEqual({
-      queueDepth: { max: 6, p50: 2, p95: 6 },
-      acceptedTicketsPerSecond: 6,
-      ticketsPerTransaction: 10,
-      queueWaitMs: { count: 30, meanMs: 50, p95UpperBoundMs: 100 },
-    });
-
-    const slow = { ...after, wait: { count: 30, sum: 1_200, buckets: bucketsWith({ 12: 30 }) } };
-    const stalled = await readBlockStats([blockRow(10, 1, 10)], [scrape(0, before), scrape(5_000_000_000, slow)]);
-    expect(stalled.admission.queueWaitMs).toEqual({ count: 30, meanMs: 40_000, p95UpperBoundMs: null });
   });
   it("reads a pair's counters as window deltas, per cache kind for the hash cache", async () => {
     const counters = (time: number, calls: number, hits: number, transactions: number) => ({
@@ -1266,41 +1242,25 @@ function blockRow(blockNumber: number, transactions: number, blockProductionMs: 
   };
 }
 
-/** The gateway's admission series as the pinned collector exports them: double sums and a per-bucket histogram. */
-const QUEUE_WAIT_BOUNDS = [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10, 30];
-interface GatewayScrape {
-  depth: number;
-  accepted: number;
-  executed: number;
-  transactions: number;
-  wait: { count: number; sum: number; buckets: number[] };
-}
-const IDLE_GATEWAY: GatewayScrape = {
-  depth: 0,
-  accepted: 0,
-  executed: 0,
-  transactions: 0,
-  wait: { count: 0, sum: 0, buckets: Array(QUEUE_WAIT_BOUNDS.length + 1).fill(0) },
-};
-
-function gatewayMetrics(time: number, start: number, gateway: GatewayScrape) {
+// The ops collector's existing schema still requires these retired series. They carry zero in these fixtures.
+function retiredAdmissionMetrics(time: number, start: number) {
   const point = { timeUnixNano: String(time), startTimeUnixNano: String(start) };
-  const sum = (name: string, value: number) => ({ name, sum: { dataPoints: [{ ...point, asDouble: value }] } });
+  const sum = (name: string) => ({ name, sum: { dataPoints: [{ ...point, asDouble: 0 }] } });
   return [
-    { name: "gateway_admission_queue_depth", gauge: { dataPoints: [{ ...point, asDouble: gateway.depth }] } },
-    sum("gateway_admission_accepted_tickets", gateway.accepted),
-    sum("gateway_executed_tickets", gateway.executed),
-    sum("gateway_ticket_transactions", gateway.transactions),
+    { name: "gateway_admission_queue_depth", gauge: { dataPoints: [{ ...point, asDouble: 0 }] } },
+    sum("gateway_admission_accepted_tickets"),
+    sum("gateway_executed_tickets"),
+    sum("gateway_ticket_transactions"),
     {
       name: "gateway_admission_queue_wait_seconds",
       histogram: {
         dataPoints: [
           {
             ...point,
-            count: String(gateway.wait.count),
-            sum: gateway.wait.sum,
-            bucketCounts: gateway.wait.buckets.map(String),
-            explicitBounds: QUEUE_WAIT_BOUNDS,
+            count: "0",
+            sum: 0,
+            bucketCounts: Array(13).fill("0"),
+            explicitBounds: [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10, 30],
           },
         ],
       },
@@ -1308,15 +1268,7 @@ function gatewayMetrics(time: number, start: number, gateway: GatewayScrape) {
   ];
 }
 
-function metricsRow(
-  time: number,
-  transactions: number,
-  ready: number,
-  attempts: number,
-  committed: number,
-  start = 1,
-  gateway: GatewayScrape = IDLE_GATEWAY,
-) {
+function metricsRow(time: number, transactions: number, ready: number, attempts: number, committed: number, start = 1) {
   const metric = (name: string, value: number, counter = false) => ({
     name,
     [counter ? "sum" : "gauge"]: {
@@ -1334,7 +1286,7 @@ function metricsRow(
               metric("mempool_preconfirmed_transaction_statuses", 0),
               metric("blockifier_execution_attempts_total", attempts, true),
               metric("blockifier_committed_transactions_total", committed, true),
-              ...gatewayMetrics(time, start, gateway),
+              ...retiredAdmissionMetrics(time, start),
             ],
           },
         ],

@@ -10,18 +10,19 @@ import { nativePresetForId, nativePresetIdFor } from "../../../config/source/nat
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { Worker, isMainThread, parentPort, workerData } from "node:worker_threads";
 import path from "node:path";
-import { DeviceSigner, deviceKeyOf, signGameplayIntent } from "@bibliothecadao/eternum";
+import { DeviceSigner, deviceKeyOf } from "@bibliothecadao/eternum";
 import { splitPlaytestRoster } from "../../../apps/launch-service/src/slots";
-import { configureGameplayAccountSubmits, openShard, type Shard } from "@bibliothecadao/eternum/game-client";
+import { openShard, type Shard } from "@bibliothecadao/eternum/game-client";
 import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
 import { Account, logger } from "starknet";
 import { assertChainId } from "../../../packages/chain/chain-guard.js";
-import { launchGame } from "../../../config/deployer/clean/launch/runner";
+import { launchHarnessGame, prepareOpenHomes } from "./game-setup";
 import type { NativeWorldManifest } from "../../../config/deployer/clean/world/native/types";
 import { readShardManifest } from "../../../packages/chain/shard-manifest.js";
 import { createHarnessAccounts, type HarnessAccount } from "./account-factory";
 import { connectActorClients, connectHarnessGameClient } from "./game-client";
 import { createHarnessGame } from "./harness-game";
+import { readPlayBounds } from "./player-invoke";
 import { HarnessProvider, measureHarnessRequests } from "./provider";
 import { prepareHarnessBots, runWorkload, type HarnessGameType, type TrackedTransaction } from "./driver";
 import { registerBotsThroughSlot } from "./slot-registration";
@@ -157,6 +158,8 @@ async function main(): Promise<void> {
     openShard(options.heraldUrl, bindings.schemaIdentity),
   ]);
   assertChainId(chainId, { shard }, "RPC_URL");
+  if (new URL(shard.rpcUrl).href !== new URL(options.rpcUrl).href)
+    throw new Error("Harness RPC differs from the Herald manifest");
   const prepared = options.preparedGamePath
     ? await readJson<PreparedGame>(path.resolve(options.preparedGamePath))
     : await prepareGames(options, shard, provider);
@@ -171,23 +174,16 @@ async function main(): Promise<void> {
   if (players.game.accounts.length !== options.bots) throw new Error("Prepared roster size does not match --bots");
   const accounts: HarnessAccount[] = players.game.accounts.map((account) => ({
     ...account,
-    account: configureGameplayAccountSubmits(
-      new Account({ provider, address: account.address, signer: new DeviceSigner(deviceKeyOf(account.privateKey)) }),
-      chainId,
-    ),
+    account: new Account({
+      provider,
+      address: account.address,
+      signer: new DeviceSigner(deviceKeyOf(account.privateKey)),
+      cairoVersion: "1",
+    }),
   }));
-  const signingKeys = new Map(accounts.map(({ address, privateKey }) => [BigInt(address), privateKey]));
+  const playBounds = readPlayBounds(readShardManifest(process.env.NATIVE_WORLD_MANIFEST));
   const connect = (actor: string) =>
-    connectHarnessGameClient({
-      actor,
-      shard,
-      signIntent: async (signer, digest) => {
-        const key = signingKeys.get(BigInt(signer.address));
-        if (!key) throw new Error(`No harness signing key for ${signer.address}`);
-        return signGameplayIntent(digest, key);
-      },
-      gameId: game.gameId,
-    });
+    connectHarnessGameClient({ actor, shard, provider, playBounds, gameId: game.gameId });
   // The shared client launches and observes the game; every bot acts through its own client, as a player does.
   const { client, heraldConfirmations } = await connect(accounts[0].address);
   const actorClients = await connectActorClients(
@@ -315,37 +311,34 @@ async function main(): Promise<void> {
 
 export const createHarnessProvider = (rpcUrl: string): HarnessProvider => new HarnessProvider(rpcUrl);
 
-async function resolveHarnessGame(options: HarnessCliOptions, rosterAccounts: string[]): Promise<LaunchedGame> {
+async function resolveHarnessGame(
+  options: HarnessCliOptions,
+  rosterAccounts: string[],
+  shard: Shard,
+  publicProvider: HarnessProvider,
+): Promise<LaunchedGame> {
   if (options.gameId !== undefined) {
     return { gameId: options.gameId, gameName: options.gameName!, settlementTransactions: null };
   }
 
   const gameName = options.gameName ?? `lab-${Date.now().toString(36)}`;
   if (options.gameType === "frontier") {
-    const provider = createHarnessProvider(options.rpcUrl);
+    const provider = createHarnessProvider(requiredEnvironmentValue("HARNESS_ADMIN_RPC_URL", "private game setup"));
     try {
       return await launchFrontierSeason(provider, gameName, options.minutes, options.presetId);
     } finally {
       provider.dispose();
     }
   }
-  const startAt = Math.floor(Date.now() / 1_000) + 60;
-  const summary = await launchGame({
-    manifest: readShardManifest<NativeWorldManifest>(process.env.NATIVE_WORLD_MANIFEST),
-    heraldUrl: options.heraldUrl,
-    accountAddress: requiredEnvironmentValue("DEPLOYER_ACCOUNT_ADDRESS", "native harness"),
-    devModeOn: false,
-    durationSeconds: Math.ceil(options.minutes * 60) + 3_600,
-    environmentId: options.gameType === "eternum" ? "madara.eternum" : "madara.blitz",
+  return launchHarnessGame({
     gameName,
-    rosterAccounts: options.gameType === "blitz" ? rosterAccounts : undefined,
-    privateKey: requiredEnvironmentValue("DEPLOYER_PRIVATE_KEY", "native harness"),
-    rpcUrl: options.rpcUrl,
-    startTime: startAt,
-    version: String(options.presetId),
+    gameType: options.gameType,
+    minutes: options.minutes,
+    presetId: options.presetId,
+    rosterAccounts,
+    shard,
+    publicProvider,
   });
-  if (!summary.gameId) throw new Error(`Registrar did not return a game id for ${gameName}`);
-  return { gameId: summary.gameId, gameName, startAt, settlementTransactions: summary.settlementTransactions ?? 0 };
 }
 
 /** The campaign's windows: the booth founds every realm within ten minutes, the rollover musters in a day's first two. */
@@ -475,7 +468,14 @@ async function prepareGames(
     const game = await resolveHarnessGame(
       { ...options, gameName: groups.length > 1 ? `${prefix}-${index + 1}` : prefix },
       group.map(({ address }) => address),
+      shard,
+      provider,
     );
+    if (options.gameType !== "blitz")
+      await prepareOpenHomes(
+        game.gameId,
+        group.map(({ address }) => address),
+      );
     prepared.push({
       game,
       accounts: group.map(({ account: _account, ...entry }) => ({ ...entry, gameId: game.gameId })),
@@ -833,10 +833,19 @@ async function recordFailure(error: unknown): Promise<{ error: string; stack?: s
 if (import.meta.main && !process.send) {
   if (process.argv.includes("--help")) printUsage();
   else {
-    const outcome = await superviseHarnessProcess([process.execPath, import.meta.filename, ...process.argv.slice(2)], {
-      ...process.env,
-      HARNESS_OUTPUT_DIRECTORY,
-    });
+    const outcome = await superviseHarnessProcess(
+      [
+        process.execPath,
+        "--tsconfig-override",
+        path.join(import.meta.dir, "tsconfig.json"),
+        import.meta.filename,
+        ...process.argv.slice(2),
+      ],
+      {
+        ...process.env,
+        HARNESS_OUTPUT_DIRECTORY,
+      },
+    );
     for (const report of outcome.reports) console.log(`Report: ${report.path}`);
     process.exitCode = outcome.exitCode;
   }

@@ -1,0 +1,77 @@
+{
+  "compilerOptions": {
+    "target": "ES2023",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "types": [
+      "node", "bun-types"
+    ],
+    "paths": {
+      "@bibliothecadao/eternum": [
+        "../../../packages/core/src/index.ts"
+      ],
+      "@bibliothecadao/eternum/game-entity-keys": [
+        "../../../packages/core/src/managers/game-entity-keys.ts"
+      ],
+      "@bibliothecadao/eternum/troop-stamina": [
+        "../../../packages/core/src/managers/troop-stamina.ts"
+      ],
+      "@bibliothecadao/eternum/expeditions": [
+        "../../../packages/core/src/utils/expeditions.ts"
+      ],
+      "@bibliothecadao/eternum/game-client": [
+        "../../../packages/core/src/client/index.ts"
+      ],
+      "@bibliothecadao/eternum/shard": [
+        "../../../packages/core/src/client/shard-reader.ts"
+      ],
+      "@bibliothecadao/eternum/game-sync": [
+        "../../../packages/core/src/sync/index.ts"
+      ],
+      "@bibliothecadao/eternum/game-sync-models": [
+        "../../../packages/core/src/sync/model-manifest.ts"
+      ],
+      "@bibliothecadao/eternum/biome": [
+        "../../../packages/core/src/utils/biome/biome.ts"
+      ],
+      "@bibliothecadao/eternum/automation": [
+        "../../../packages/core/src/automation/index.ts"
+      ],
+      "@bibliothecadao/provider": [
+        "../../../packages/provider/src/index.ts"
+      ],
+      "@bibliothecadao/provider/errors": [
+        "../../../packages/provider/src/classify-transaction-error.ts"
+      ],
+      "@bibliothecadao/types": [
+        "../../../packages/types/src/index.ts"
+      ],
+      "@bibliothecadao/types/terrain": [
+        "../../../packages/types/src/terrain.ts"
+      ],
+      "@realms-world/chain": [
+        "../../../packages/chain/src/index.ts"
+      ],
+      "@realms-world/chain/chain-guard": [
+        "../../../packages/chain/chain-guard.js"
+      ],
+      "@realms-world/chain/shard-manifest": [
+        "../../../packages/chain/shard-manifest.js"
+      ],
+      "@realms-world/identity": [
+        "../../../packages/identity/src/index.ts"
+      ],
+      "@realms-world/identity/account": [
+        "../../../packages/identity/src/account.ts"
+      ]
+    }
+  },
+  "include": [
+    "./**/*.ts"
+  ]
+}

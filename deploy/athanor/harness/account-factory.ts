@@ -1,6 +1,5 @@
 import { stark, type Account, type RpcProvider } from "starknet";
 import { deviceKeyOf, joinBotAccount, type OperatorIdentity, type RealmsAccountShard } from "@bibliothecadao/eternum";
-import { configureGameplayAccountSubmits } from "@bibliothecadao/eternum/game-client";
 
 export interface HarnessAccount {
   account: Account;
@@ -40,11 +39,7 @@ export async function createHarnessAccounts({
     const startedAt = performance.now();
 
     try {
-      // Every send a bot makes, raw or through the client's provider, takes the client's nonce and fee path.
-      const account = configureGameplayAccountSubmits(
-        await joinBotAccount({ provider, shard, label: stark.randomAddress(), device, identity }),
-        shard.chainId,
-      );
+      const account = await joinBotAccount({ provider, shard, label: stark.randomAddress(), device, identity });
 
       return {
         account,
