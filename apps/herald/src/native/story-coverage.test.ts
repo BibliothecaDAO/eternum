@@ -214,7 +214,10 @@ function assertDecoded(event: ReturnType<typeof raw>, key: unknown, value: Recor
   if (decoded.kind !== "event") throw new Error("Expected native event");
   expect(toJsonValue(decoded.key)).toEqual(toJsonValue(key));
   expect(toJsonValue(decoded.value)).toEqual(
-    toJsonValue({ ...value, event_position: { transaction_hash: "0x55", event_index: 0 } }),
+    toJsonValue({
+      ...value,
+      event_position: { block_number: 10, transaction_hash: "0x55", transaction_index: 0, event_index: 0 },
+    }),
   );
 }
 
