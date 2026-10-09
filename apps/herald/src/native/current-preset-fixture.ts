@@ -38,7 +38,7 @@ function fixtureLaunchParams(presetId: number, definition: ReturnType<typeof bui
     duration_seconds: presetId === 5 ? seasonSeconds(1, definition.rules.day_unit_seconds) : 86400,
     end_grace_seconds: 0,
     dev_mode_on: false,
-    roster: presetId === 2 ? [{ account: "0x111" }] : [],
+    roster: presetId === 2 ? [{ account: "0x111", wallet: "0x222" }] : [],
     registration_start: 1700,
     biome_climate: definition.rules.biome_climate_config,
     map_override: new CairoOption(presetId === 3 ? CairoOptionVariant.Some : CairoOptionVariant.None, {

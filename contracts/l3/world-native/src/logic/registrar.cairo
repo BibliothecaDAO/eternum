@@ -129,11 +129,15 @@ pub mod RegistrarState {
                 return;
             }
             let mut accounts: core::dict::Felt252Dict<bool> = Default::default();
+            let mut wallets: core::dict::Felt252Dict<bool> = Default::default();
             for index in 0..players.len() {
                 let player = *players.at(index);
                 assert!(player.account != 0.try_into().unwrap(), "unbound roster player");
                 assert!(!accounts.get(player.account.into()), "duplicate roster player");
                 accounts.insert(player.account.into(), true);
+                assert!(player.wallet != 0.try_into().unwrap(), "unbound payout wallet");
+                assert!(!wallets.get(player.wallet.into()), "duplicate payout wallet");
+                wallets.insert(player.wallet.into(), true);
                 self.data.registrar.roster_players.write((game_id, index), player);
             }
             self.data.registrar.roster_sizes.write(game_id, players.len());

@@ -36,7 +36,7 @@ pub type Storage =
         crate::bitcoin::Phase,
         crate::bitcoin::Contribution,
         crate::bitcoin::MineFunding,
-        crate::blitz_results::PlayerResult,
+        crate::blitz_results::RankedPlayer,
         crate::buildings::Building,
         crate::buildings::StructureBuildings,
         crate::faith::WonderFaith,
