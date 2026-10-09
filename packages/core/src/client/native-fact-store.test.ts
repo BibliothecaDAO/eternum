@@ -47,6 +47,28 @@ const structure = (owner: string, game = 1) => ({
 });
 
 describe("native fact store", () => {
+  it("indexes full-width entity ids exactly without conflating adjacent values", () => {
+    const store = new NativeFactStore();
+    const home = 9007199254740993n;
+    const army = home + 1n;
+    store.applyFacts([
+      set("0x1", "ExplorerTroops", { ...explorer, explorer_id: army, owner: home }),
+      set("0x2", "TileOccupancy", {
+        game_id: 1,
+        alt: false,
+        col: 12,
+        row: 13,
+        category: 15,
+        is_structure: false,
+        entity_id: army,
+      }),
+    ]);
+    expect([...store.armiesAtHome(1, home)].map((row) => row.explorer_id)).toEqual([army]);
+    expect([...store.armiesAtHome(1, home + 1n)]).toEqual([]);
+    expect(store.entityOccupancy(1, army)?.entity_id).toBe(army);
+    expect(store.entityOccupancy(1, army + 1n)).toBeUndefined();
+  });
+
   it("decodes tagged stamina and refuses ambiguous or unknown sources", () => {
     const store = new NativeFactStore();
     for (const stamina of [{ Slot: 0 }, { Inline: { amount: "12", updated_tick: "4" } }]) {

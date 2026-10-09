@@ -137,13 +137,8 @@ describe("native transaction receipt routing", () => {
       const historyStore = { recordTransaction: vi.fn() };
       const live = liveWorld(native, decoder, fold, {} as MadaraRpc, historyStore);
       const messages = streamOf(live);
-      // The compiled schema on this branch predates GameplayRejected, so its decode is the receipt reader's alone.
-      vi.spyOn(native, "outcomeReceipt").mockImplementation((value) => ({
-        ...value,
-        rejection: { statusClass: "GAMEPLAY_REJECTED", reason: "explorer is dead" },
-      }));
       live.acceptTransaction({ finality_status: "PRE_CONFIRMED", transaction_hash: "0x124", ...play(1) });
-      live.acceptReceipt({ ...receipt([], "0x124"), finality_status });
+      live.acceptReceipt({ ...receipt([rejectedEvent("0x124")], "0x124"), finality_status });
       expect(messages.filter((message) => message.type === "tx").at(-1)).toMatchObject({
         hash: "0x124",
         status: "REJECTED",

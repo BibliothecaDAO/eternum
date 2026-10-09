@@ -336,7 +336,7 @@ it("keeps two story identities from overlay through confirmation, each its trans
   const layout = schema.games.events.find((event) => event.name === "StoryEvent")!;
   const story = (index: number): RpcEvent => ({
     from_address: decoder.registry.worldAddress,
-    keys: [...layout.prefix, "1", "1", "42", String(index), "0", "0x111", "0", "3", "0x55"],
+    keys: [...layout.prefix, "2", "1", "0", "0x111", "0", "3", "0x55"],
     data: ["1", String(index + 1), "2160"],
   });
   const points = pointsAward("1", "0x111", "100", "100", "100");
@@ -386,7 +386,7 @@ it("retains only one 64-block cold-replay window and no receipts, checkpointing 
     blockNumber: async () => 383,
     getBlockWithReceipts: async (number: number) => {
       expect(number - saved).toBeLessThanOrEqual(64);
-      return block(number, [setFixture.raw, battleEvent("7", "8", "1920", String(number))]);
+      return block(number, [setFixture.raw, battleEvent("7", "8", "1920")]);
     },
   } as unknown as MadaraRpc;
   const checkpointStore = {

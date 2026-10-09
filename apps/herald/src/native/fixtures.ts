@@ -167,11 +167,11 @@ export function rulesEvent(gameId = "1", dayUnitSeconds = "0") {
   return rowEvent("SliceRules", [gameId], decoded);
 }
 
-export function battleEvent(attacker = "7", defender = "8", timestamp = "1920", order = "42", index = "0"): RpcEvent {
+export function battleEvent(attacker = "7", defender = "8", timestamp = "1920"): RpcEvent {
   const layout = schema.games.events.find((event) => event.name === "BattleEvent")!;
   return {
     from_address: manifest.world.address,
-    keys: [...layout.prefix, "1", "1", order, index, attacker, defender, "2", "3"],
+    keys: [...layout.prefix, "2", "1", attacker, defender, "2", "3"],
     data: [
       attacker,
       "0",

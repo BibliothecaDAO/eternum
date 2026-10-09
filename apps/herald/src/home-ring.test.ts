@@ -236,7 +236,7 @@ describe("home ring", () => {
     },
   );
 
-  it("includes a post-start settlement in a watched snapshot without exposing actor-only or unwatched rows", () => {
+  it("includes a post-start settlement in a watched snapshot without exposing unwatched rows", () => {
     const { live, native, fold } = frontierWorld();
     const player = "0xbb";
     native.applyReceipt(
@@ -254,7 +254,6 @@ describe("home ring", () => {
           paused: false,
           labor_paid: 0n,
         }),
-        rowEvent("ActionNonce", ["1", "30"], { next_nonce: 1n }),
       ]),
       11,
       0,
@@ -262,12 +261,12 @@ describe("home ring", () => {
 
     expect(live.confirmedBlock).toBe(9);
     const scope = fold.subscriptionScope("1", undefined, MID_DAY, player);
-    const snapshot = fold.subscriptionSnapshot("1", 11, scope, ["PlayerEntry", "Structure", "Building", "ActionNonce"]);
+    const snapshot = fold.subscriptionSnapshot("1", 11, scope, ["PlayerEntry", "Structure", "Building"]);
     const rows = (model: string) => snapshot.models.find((entry) => entry.model === model)!.rows;
     expect(rows("PlayerEntry").some(({ value }) => value.owner === "0x1e")).toBe(true);
     expect(rows("Structure").map(({ value }) => value.entity_id)).toEqual(["0x3"]);
     expect(rows("Building").some(({ value }) => value.structure_id === "0x3")).toBe(true);
-    expect(rows("ActionNonce")).toEqual([]);
+    expect(() => fold.subscriptionSnapshot("1", 11, scope, ["ActionNonce"])).toThrow("Unknown snapshot models");
     const emptyScope = fold.subscriptionScope("1", undefined, MID_DAY);
     const emptySnapshot = fold.subscriptionSnapshot("1", 11, emptyScope, ["Structure"]);
     expect(emptySnapshot.models[0]!.rows).toEqual([]);
@@ -632,6 +631,7 @@ describe("client and Herald subscription scope parity", () => {
     );
     actor = "0xb";
     snapshot();
+    expect(() => store.require("Structure", { game_id: 1, entity_id: 1n })).toThrow("not synchronized");
     // Clock invalidation cannot block an applied actor snapshot's first action.
     store.setSnapshot({ gameId: 1, actor, complete: true, timestamp: undefined });
     expect(() => store.require("Structure", { game_id: 1, entity_id: 2n })).not.toThrow();
@@ -671,7 +671,8 @@ describe("client and Herald subscription scope parity", () => {
     deliver(subscription!.project({ type: "head", block: 11, preconfirmed: true, timestamp }));
     expect(store.subscriptionScope().known).toEqual(overlay.subscriptionScope("1", actor, timestamp));
     expect(store.requireOrAbsent("PlayerPoints", { game_id: 1, address: 0xan }).known?.points).toBe(0n);
-    expect(() => store.require("Structure", { game_id: 1, entity_id: 1n })).toThrow("not synchronized");
+    // The new entry links account 0xb to owner 0xa, so its home must become visible atomically.
+    expect(store.require("Structure", { game_id: 1, entity_id: 1n }).owner).toBe(10n);
 
     timestamp = TODAY.end + 60;
     deliver(subscription!.project({ type: "head", block: 12, preconfirmed: true, timestamp }));
@@ -699,8 +700,6 @@ describe("visited realm subscription", () => {
         rowEvent("ExplorerTroops", ["1", "20"], explorerValue("2", 1000n, 30n, 1n)),
         rowEvent("TileOccupancy", ["1", "0", "150", "150"], { entity_id: 20, category: 15, is_structure: false }),
         rowEvent("TileOpt", ["1", "0", "150", "150"], { data: 5n << 41n }),
-        rowEvent("ActionNonce", ["1", "10"], { next_nonce: 7 }),
-        rowEvent("ActionNonce", ["1", "11"], { next_nonce: 9 }),
       ]),
       9,
       1,
@@ -718,7 +717,7 @@ describe("visited realm subscription", () => {
     ).toEqual([1, 2]);
     expect(snapshot.filter((row) => row.model === "Building")).toHaveLength(1);
     expect(snapshot.filter((row) => row.model === "ExplorerTroops")).toHaveLength(1);
-    expect(snapshot.filter((row) => row.model === "ActionNonce").map((row) => Number(row.value.actor))).toEqual([10]);
+    expect(schema.models.some(({ name }) => name === "ActionNonce")).toBe(false);
     expect(tilesIn(messages).some((row) => Number(row.value.col) >= 100)).toBe(false);
     expect(fold.subscriptionScope("1", "0xa", MID_DAY, "0xbb").expedition?.regions).toEqual(new Set(["0:0"]));
     messages.length = 0;

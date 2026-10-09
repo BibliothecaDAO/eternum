@@ -45,12 +45,15 @@ function launch(preset: ReturnType<typeof registration>, gameId = 1, rosterSize 
   const roster = Array.from({ length: rosterSize }, (_, index) => [String(0x100 + index)]);
   return [
     ...(rosterSize
-      ? [rowEvent("BlitzRoster", [String(gameId)], { players: roster.map(([account]) => ({ account })) })]
+      ? [
+          rowEvent("BlitzRoster", [String(gameId)], {
+            players: roster.map(([account]) => ({ account, wallet: account })),
+          }),
+        ]
       : []),
     rowEvent("GameRegistry", [String(gameId)], {
       name: "0x123",
       preset_id: String(preset.presetId),
-      creator: "0x111",
       settled: false,
       ready: true,
       dev_mode_on: false,

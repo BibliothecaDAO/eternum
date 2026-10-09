@@ -90,7 +90,7 @@ describe("native row decoder", () => {
   it("rejects out-of-range values, trailing data and unknown versions", () => {
     const { decoder } = setup();
     const invalid = structuredClone(setFixture.raw);
-    invalid.data[4] = String(1n << 32n);
+    invalid.data[4] = String(1n << 64n);
     expect(() => decoder.decode(raw(invalid))).toThrow("exceeds");
     expect(() => decoder.decode(raw({ ...setFixture.raw, data: [...setFixture.raw.data, "0x0"] }))).toThrow("trailing");
     const version = structuredClone(setFixture.raw);
@@ -136,24 +136,14 @@ describe("native row decoder", () => {
       event.keys[layout.prefix.length] = version;
       return event;
     };
-    expect(setup().decoder.decode(battle("1")).kind).toBe("event");
-    expect(() => setup().decoder.decode(battle("2"))).toThrow("Unsupported native event version");
-    // Compiled at version 2 (StoryEvent, BattleEvent and RaidEvent move there), the same event takes 2 only.
-    const { decoder } = setup();
-    const projection = schema.events.find((candidate) => candidate.name === "BattleEvent")!;
-    const compiled = projection.version;
-    projection.version = 2;
-    try {
-      expect(decoder.decode(battle("2")).kind).toBe("event");
-      expect(() => decoder.decode(battle("1"))).toThrow("Unsupported native event version");
-    } finally {
-      projection.version = compiled;
-    }
+    expect(schema.events.find((candidate) => candidate.name === "BattleEvent")!.version).toBe(2);
+    expect(setup().decoder.decode(battle("2")).kind).toBe("event");
+    expect(() => setup().decoder.decode(battle("1"))).toThrow("Unsupported native event version");
   });
 
   it("keeps repeated native events distinct, and their identity (transaction, event index) at confirmation", () => {
     const { native, fold } = setup();
-    const battles = [battleEvent(), battleEvent("7", "8", "1920", "42", "1")];
+    const battles = [battleEvent(), battleEvent("7", "8", "1920")];
     const changes = native.applyReceipt(fold.overlay(), receipt(battles), null, 0).changes;
     expect(changes[0].change!.set!.key).not.toBe(changes[1].change!.set!.key);
     expect(changes[0].change!.set!.value.event_position).toEqual({
@@ -173,7 +163,7 @@ describe("native row decoder", () => {
       transaction_index: 3,
       event_index: 1,
     });
-    const later = native.applyReceipt(fold, receipt([battleEvent("7", "8", "1920", "43")], "0x56"), 11, 0).changes;
+    const later = native.applyReceipt(fold, receipt([battleEvent("7", "8", "1920")], "0x56"), 11, 0).changes;
     expect(later[0].change!.set!.key).not.toBe(changes[0].change!.set!.key);
   });
   it("binds checkpoints to the schema and deployment identity", () => {
