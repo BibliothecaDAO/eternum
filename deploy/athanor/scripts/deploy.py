@@ -119,9 +119,9 @@ def start(directory, config):
 
 
 
-def run_self_check(directory, command=None):
+def run_self_check(directory):
     result = subprocess.run(
-        [*(command or compose(directory.parent)), "run", "--rm", "--no-deps", "--entrypoint", "python3",
+        [*compose(directory.parent), "run", "--rm", "--no-deps", "--entrypoint", "python3",
          "harness", "/app/deploy/shard/init.py", "self-check"], capture_output=True, text=True,
     )
     # The runner emits public route/status JSON only. Never echo arbitrary setup failures/credentials.
@@ -134,7 +134,7 @@ def run_self_check(directory, command=None):
     return check
 
 
-def verify_and_activate(config, directory, command=None):
+def verify_and_activate(config, directory):
     if directory_status(config, "pending")["status"] != "pending":
         print(json.dumps({"event": "shard_self_check_skipped", "reason": "shard_already_listed"}))
         return
@@ -146,13 +146,13 @@ def verify_and_activate(config, directory, command=None):
     else:
         if (directory / "launcher-enrolment.json").exists():
             raise RuntimeError("launcher already handed off; finish the Worker check or retire the chain")
-        check = run_self_check(directory, command)
+        check = run_self_check(directory)
         check["checkedIdentity"] = identity
         shard.write_json(check_path, check)
     if not check.get("passed"):
         route = check.get("firstFailedRoute", "unknown_route")
         raise RuntimeError(f"self-check failed at {route}; directory status unchanged")
-    confirm_worker_launcher(config, directory, command)
+    confirm_worker_launcher(config, directory)
     directory_status(config, "active")
     print(json.dumps({"event": "shard_self_check_passed", "routes": len(check.get("completed", [])), "status": "active"}))
 
@@ -179,11 +179,11 @@ def launcher_service(config, suffix, payload):
         raise RuntimeError("Launch Worker enrollment/check route unavailable; directory remains pending") from None
 
 
-def launcher_chain_check(directory, command, action, account, proof=None):
+def launcher_chain_check(directory, action, account, proof=None):
     args = [action, "/data", account]
     if proof:
         args.extend([proof["txHash"], proof["name"], str(proof["presetId"])])
-    result = subprocess.run([*(command or compose(directory.parent)), "run", "--rm", "--no-deps", "-T",
+    result = subprocess.run([*compose(directory.parent), "run", "--rm", "--no-deps", "-T",
                              "--entrypoint", "python3", "harness", "/app/deploy/shard/init.py", "launcher-check", *args],
                             capture_output=True, text=True)
     if result.returncode != 0:
@@ -202,20 +202,20 @@ def public_felt(value):
     return hex(number)
 
 
-def confirm_worker_launcher(config, directory, command=None):
+def confirm_worker_launcher(config, directory):
     manifest, _ = deployed_facts(directory)
     payload = {"chainId": manifest["shard"]["chainId"], "heraldUrl": config["public_herald_url"]}
     enrolled = launcher_service(config, "enrol", payload)
     account = public_felt(enrolled.get("launcherAccount"))
     if public_felt(enrolled.get("chainId")) != public_felt(payload["chainId"]):
         raise RuntimeError("Launch Worker enrolled another chain; directory remains pending")
-    launcher_chain_check(directory, command, "handoff", account)
+    launcher_chain_check(directory, "handoff", account)
     name = "check-worker-" + hashlib.sha256(payload["chainId"].encode()).hexdigest()[:16]
     name_felt = "0x" + name.encode("ascii").hex()
     preset = config["presets"][0]
     checked = launcher_service(config, "check", {**payload, "name": name, "presetId": preset})
     proof = {"txHash": public_felt(checked.get("txHash")), "name": name_felt, "presetId": preset}
-    launcher_chain_check(directory, command, "verify", account, proof)
+    launcher_chain_check(directory, "verify", account, proof)
 
 
 def deployed_facts(data):

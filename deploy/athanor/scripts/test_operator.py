@@ -46,3 +46,9 @@ class OperatorCredentialTest(unittest.TestCase):
     def test_a_command_cannot_escape_the_allowed_script_list(self):
         with self.assertRaises(ValueError):
             operator.run("../other", ["/srv/shard"])
+
+    def test_measurement_runners_have_no_activation_command(self):
+        with patch.object(operator.os, "execve") as execute:
+            with self.assertRaisesRegex(ValueError, "listed shard command"):
+                operator.run("activate", ["/srv/shard"])
+            execute.assert_not_called()

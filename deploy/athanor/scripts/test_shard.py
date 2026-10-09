@@ -62,18 +62,6 @@ def load_package_script(name):
 
 
 class ShardTest(unittest.TestCase):
-    def test_runner_registration_and_explicit_activation_share_the_official_gate(self):
-        import activate
-        import deploy
-        self.assertIs(shard.directory_status, deploy.directory_status)
-        with tempfile.TemporaryDirectory() as temporary:
-            data = Path(temporary)
-            shard.write_json(data / "configuration.json", configuration())
-            with patch.object(shard, "isolated_stack_lock"), patch.object(deploy, "verify_and_activate") as gate:
-                activate.activate(data)
-            self.assertEqual(gate.call_args.args[1], data)
-            self.assertEqual(gate.call_args.args[2][-2:], ["-f", str(data / "compose.json")])
-
     def test_runner_registers_pending_before_initialization_and_never_activates(self):
         events = []
         config = configuration()

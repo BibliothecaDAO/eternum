@@ -22,8 +22,7 @@ For released packages use `python3 deploy/athanor/scripts/operator-command.py de
 `python3 deploy/athanor/scripts/shard.py CONFIGURATION DIRECTORY` runner with explicit local image digests, unique chain
 identity, official RPC/Herald URLs, guardian, presets, worker count and fixed play bound. The runner writes its resolved
 Compose file and public deployment manifest alongside private initialization logs. Both paths register PENDING before
-enrolment. Only official deployment automatically runs the activation gate; measurement matrices stop and retire their
-hidden entries. A manually started dev shard uses the explicit activation command.
+enrolment. Only official deployment runs the activation gate; measurement runners stay hidden and retire on stop.
 
 The dev node belongs to the operator running its trials. Deployment and workload commands take
 `/opt/athanor/isolated-stack.lock` themselves; do not hold it around those commands. No command should target the

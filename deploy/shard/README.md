@@ -62,7 +62,7 @@ from the Compose network route; exposed bindings trust no proxy unless explicitl
 The identity service must carry the pending route before a shard from this code starts. Deploy the identity Worker
 containing `/api/directory/shards/pending` before running official deployment; a missing route fails with this
 prerequisite. The initializer never lists. The runner registers PENDING before enrolment and retires that registration
-on stop; it never activates by itself.
+on stop; it never activates.
 
 Herald's existing listener first serves the real prepared identity at `/manifest`, with other routes unavailable.
 Official deployment registers the Herald URL as pending after starting Herald and before starting initialization or
@@ -82,21 +82,19 @@ harness implementation, not a separate deployment test suite.
 Metrics collect OTLP and sample container CPU from a read-only cgroup mount, without a Docker socket or write access.
 The compose services restart on failure. Initializer logs and `harness.env` are private and must never be published.
 
-| Path                             | Registration and visibility                                            | Operator command                                                                                                                                                                    |
-| -------------------------------- | ---------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Official deployment              | PENDING before enrolment; same self-check then ACTIVE on a pass        | `operator-command.py deploy ENVIRONMENT PACKAGE_DIRECTORY`                                                                                                                          |
-| Measurement runner               | PENDING before enrolment; matrix stops and retires it; never activates | `operator-command.py runner CONFIGURATION RUNNER_DATA_DIRECTORY --matrix`                                                                                                           |
-| Dev shard from an untagged trunk | Start PENDING; explicitly check and activate; stop retires it          | `operator-command.py runner CONFIGURATION RUNNER_DATA_DIRECTORY`, then `operator-command.py activate RUNNER_DATA_DIRECTORY`; later `operator-command.py stop RUNNER_DATA_DIRECTORY` |
+| Path                | Registration and visibility                                       | Operator command                                                          |
+| ------------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| Official deployment | PENDING before enrolment; self-check and Worker check then ACTIVE | `operator-command.py deploy ENVIRONMENT PACKAGE_DIRECTORY`                |
+| Measurement runner  | PENDING before enrolment; retires on stop; never activates        | `operator-command.py runner CONFIGURATION RUNNER_DATA_DIRECTORY --matrix` |
 
 Run each command above as `python3 deploy/athanor/scripts/operator-command.py ...`. The wrapper reads the box's
 protected token file; ops provisions it. Use `stop.py` for a manually started runner so its directory entry is retired.
 
-Runner activation uses the same confirmed Worker enrolment, `set_launcher` and Worker-signed creation checks as a
-released package. Both paths bind cached gameplay evidence to `native-world.json` and `initialized.json`, the chain
-identity and initialized contracts the check proves. Packaging changes do not invalidate that evidence. Once
-`launcher-enrolment.json` exists, a missing or invalid pass refuses a re-check: "launcher already handed off; finish the
-Worker check or retire the chain". Local services must expose the same operator enrolment/check routes at the identity
-API's factory path. Missing routes leave the shard PENDING; local images never bypass the Worker gate.
+Official deployment requires confirmed Worker enrolment, `set_launcher` and Worker-signed creation checks. It binds
+cached gameplay evidence to `native-world.json` and `initialized.json`, the chain identity and initialized contracts the
+check proves. Packaging changes do not invalidate that evidence. Once `launcher-enrolment.json` exists, a missing or
+invalid pass refuses a re-check: "launcher already handed off; finish the Worker check or retire the chain". Missing
+Worker routes leave the shard PENDING.
 
 ## Operations: back up and restore
 
