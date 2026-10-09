@@ -7,6 +7,7 @@ vi.mock("./directory", () => ({
   handleDirectory: handlers.directory,
   handleDirectoryHistory: handlers.directory,
   handleAdmitShard: vi.fn(),
+  handleRegisterPendingShard: vi.fn(),
   handleShardStatus: vi.fn(),
 }));
 vi.mock("./devices", () => ({ handleDeviceChange: handlers.devices, handleBotDeviceApproval: vi.fn() }));

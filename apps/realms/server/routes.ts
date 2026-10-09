@@ -5,7 +5,13 @@ import { presentsOperatorToken } from "@realms-world/identity";
 import type { IdentityAuth } from "./auth";
 import { routeChat } from "./chat/routes";
 import { handleBotDeviceApproval, handleDeviceChange } from "./devices";
-import { handleAdmitShard, handleDirectory, handleDirectoryHistory, handleShardStatus } from "./directory";
+import {
+  handleAdmitShard,
+  handleDirectory,
+  handleDirectoryHistory,
+  handleRegisterPendingShard,
+  handleShardStatus,
+} from "./directory";
 import type { IdentityEnv } from "./env";
 import { json } from "./http";
 import { consumeSignInBudget } from "./sign-in-budget";
@@ -88,8 +94,9 @@ export const routeIdentityRequest = async (
   }
   if (pathname.startsWith("/api/directory/shards") && request.method === "POST") {
     if (!(await isOperator(env, request))) return json({ error: "unauthorized" }, 401);
-    if (pathname === "/api/directory/shards") {
-      return handleAdmitShard(request, env.DB, platform.fetchShard, {
+    if (pathname === "/api/directory/shards" || pathname === "/api/directory/shards/pending") {
+      const admit = pathname.endsWith("/pending") ? handleRegisterPendingShard : handleAdmitShard;
+      return admit(request, env.DB, platform.fetchShard, {
         accountClassHash: env.ACCOUNT_CLASS_HASH,
         guardianPublicKey: await env.GUARDIAN.publicKey(),
       });
@@ -129,9 +136,12 @@ const isOperator = (env: IdentityEnv, request: Request) => presentsOperatorToken
 
 /** Cookie authority is accepted only from the app itself; operator endpoints authenticate a bearer token below. */
 const requiresSameOrigin = (request: Request, pathname: string): boolean => {
-  const operatorRoute = ["/api/devices/bots", "/api/directory/shards", "/api/directory/shards/status"].includes(
-    pathname,
-  );
+  const operatorRoute = [
+    "/api/devices/bots",
+    "/api/directory/shards",
+    "/api/directory/shards/status",
+    "/api/directory/shards/pending",
+  ].includes(pathname);
   if (operatorRoute) return false;
   return (
     !["GET", "HEAD", "OPTIONS"].includes(request.method) ||

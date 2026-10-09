@@ -126,7 +126,7 @@ const signListedDeviceChange = (db: D1Database, guardian: Guardian, change: Devi
     const { results } = yield* Effect.tryPromise({
       try: () =>
         db
-          .prepare(`SELECT "chainId" FROM "shards" WHERE "status" IN ('active', 'draining')`)
+          .prepare(`SELECT "chainId" FROM "shards" WHERE "status" IN ('pending', 'active', 'draining')`)
           .all<{ chainId: string }>(),
       catch: () => new DeviceRequestError({ code: "shard_list_unavailable", status: 503 }),
     });

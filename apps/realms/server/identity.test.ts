@@ -435,7 +435,7 @@ describe("identity Worker", () => {
     expect(await refused.json()).toEqual({ error: "account_not_secured" });
   });
 
-  it("signs player and bot changes only for listed active or draining chains", async () => {
+  it("signs player and bot changes only for listed pending, active or draining chains", async () => {
     const browser = createBrowser();
     await signInWithCode(browser, "chain-allow-list@realms.test");
     const player = deviceChangeFor((await browser.session())!.user.realmsId);
@@ -449,7 +449,7 @@ describe("identity Worker", () => {
       .run();
     const signing = vi.spyOn(env.GUARDIAN, "signDeviceChange");
     try {
-      for (const status of ["active", "draining", "retired"]) {
+      for (const status of ["pending", "active", "draining", "retired"]) {
         await env.DB.prepare("UPDATE shards SET status = ? WHERE chainId = ?").bind(status, CHAIN_ID).run();
         for (const [path, change] of [
           ["/api/devices", player],
@@ -480,6 +480,42 @@ describe("identity Worker", () => {
       signing.mockRestore();
       await env.DB.prepare("UPDATE shards SET status = 'active' WHERE chainId = ?").bind(CHAIN_ID).run();
     }
+  });
+
+  it("enrolls pending shards without exposing them until the deployment activates them", async () => {
+    const operator = createBrowser();
+    const url = "https://pending-shard.test";
+    const chainId = "0x123abc";
+    heralds.set(`${url}/manifest`, shardManifest(chainId));
+    heralds.set(`${url}/games`, { chain: chainId, games: [] });
+    const admit = (path: string) => operator.request(path, { body: { url }, token: OPERATOR_TOKEN });
+    expect((await admit("/api/directory/shards")).status).toBe(409);
+    expect((await operator.request("/api/directory/shards/pending", { body: { url } })).status).toBe(401);
+    expect((await admit("/api/directory/shards/pending")).status).toBe(201);
+    const visible = async (path: string) => JSON.stringify(await (await operator.request(path)).json());
+    expect(await visible("/api/directory")).not.toContain(url);
+    expect(await visible("/api/directory/history")).not.toContain(url);
+    const bot = {
+      label: "0xbeef",
+      chainId,
+      account: realmsAccountAddress(botRealmsId("0xbeef"), ACCOUNT_CLASS_HASH, await env.GUARDIAN.publicKey()),
+      action: "ADD",
+      deviceKey: "0x123",
+      counter: 1,
+    };
+    expect((await operator.request("/api/devices/bots", { body: bot, token: OPERATOR_TOKEN })).status).toBe(200);
+    expect(
+      (
+        await operator.request("/api/directory/shards/status", {
+          body: { url, status: "active" },
+          token: OPERATOR_TOKEN,
+        })
+      ).status,
+    ).not.toBe(200);
+    expect((await admit("/api/directory/shards")).status).toBe(201);
+    expect(await visible("/api/directory")).toContain(url);
+    expect((await admit("/api/directory/shards")).status).toBe(200);
+    await env.DB.prepare("DELETE FROM shards WHERE url = ?").bind(url).run();
   });
 
   it("approves only a verified account's own exact change, and never re-adds a revoked key", async () => {
@@ -716,6 +752,9 @@ describe("identity Worker", () => {
       401,
     );
     for (const url of ["https://shard-a.test", "https://shard-b.test"]) {
+      expect(
+        (await operator.request("/api/directory/shards/pending", { body: { url }, token: OPERATOR_TOKEN })).status,
+      ).toBe(201);
       const admitted = await operator.request("/api/directory/shards", { body: { url }, token: OPERATOR_TOKEN });
       expect(admitted.status).toBe(201);
     }
@@ -795,6 +834,9 @@ describe("identity Worker", () => {
       games: [settled(1, "e-first", 100), settled(2, "e-last", 300)],
     });
     for (const url of ["https://shard-d.test", "https://shard-e.test"]) {
+      expect(
+        (await operator.request("/api/directory/shards/pending", { body: { url }, token: OPERATOR_TOKEN })).status,
+      ).toBe(201);
       expect((await operator.request("/api/directory/shards", { body: { url }, token: OPERATOR_TOKEN })).status).toBe(
         201,
       );
@@ -842,15 +884,23 @@ describe("identity Worker", () => {
     heralds.set("https://shard-e.test/games", { chain: "0xee", games: [live] });
     const admitE = () =>
       operator.request("/api/directory/shards", { body: { url: "https://shard-e.test" }, token: OPERATOR_TOKEN });
-    expect(await (await admitE()).json()).toEqual({ error: "shard_listed" });
+    expect(await (await admitE()).json()).toEqual({ error: "shard_not_pending" });
     const retired = await operator.request("/api/directory/shards/status", {
       body: { url: "https://shard-e.test", status: "retired" },
       token: OPERATOR_TOKEN,
     });
     expect(retired.status).toBe(200);
+    expect(
+      (
+        await operator.request("/api/directory/shards/pending", {
+          body: { url: "https://shard-e.test" },
+          token: OPERATOR_TOKEN,
+        })
+      ).status,
+    ).toBe(201);
     const relisted = await admitE();
     expect(relisted.status).toBe(201);
-    expect(await relisted.json()).toEqual({ url: "https://shard-e.test", chainId: "0xee" });
+    expect(await relisted.json()).toEqual({ url: "https://shard-e.test", chainId: "0xee", status: "active" });
     launchDirectory.chains.push({ chainId: "0xee", gameIds: [1] });
     expect((await list()).at(-1)).toEqual({
       url: "https://shard-e.test",

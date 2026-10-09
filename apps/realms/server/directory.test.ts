@@ -1,7 +1,7 @@
 import type { HeraldGameDirectoryEntry } from "@bibliothecadao/eternum/game-sync";
 import { afterEach, expect, test, vi } from "vitest";
 
-import { handleDirectory, handleDirectoryHistory } from "./directory";
+import { handleDirectory, handleDirectoryHistory, superviseNotifiers } from "./directory";
 
 const shards = [
   { url: "https://first.test", chainId: "0x1", status: "active" },
@@ -80,4 +80,27 @@ test("healthy launch records filter games independently on both chains", async (
     next: null,
     failures: [],
   });
+});
+
+test("pending and retired shards have no player notification watcher", async () => {
+  const watch = vi.fn(async () => {});
+  const stop = vi.fn(async () => {});
+  const db = {
+    prepare: () => ({
+      all: async () => ({
+        results: [
+          { ...shards[0], status: "pending" },
+          { ...shards[1], status: "retired" },
+          { url: "https://active.test", chainId: "0x3", status: "active" },
+        ],
+      }),
+    }),
+  } as unknown as D1Database;
+  const namespace = { idFromName: (name: string) => name, get: () => ({ watch, stop }) } as unknown as Parameters<
+    typeof superviseNotifiers
+  >[1];
+  await superviseNotifiers(db, namespace);
+  expect(stop).toHaveBeenCalledTimes(2);
+  expect(watch).toHaveBeenCalledOnce();
+  expect(watch).toHaveBeenCalledWith({ url: "https://active.test", chainId: "0x3" });
 });

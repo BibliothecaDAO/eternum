@@ -1,9 +1,10 @@
+import { Effect } from "effect";
 import type { HeraldGameDirectory, HeraldGameDirectoryEntry, ShardManifest } from "@bibliothecadao/eternum/game-sync";
 
 import type { IdentityEnv } from "./env";
 import { json } from "./http";
 
-const SHARD_STATUSES = ["active", "draining", "retired"] as const;
+const SHARD_STATUSES = ["pending", "active", "draining", "retired"] as const;
 type ShardStatus = (typeof SHARD_STATUSES)[number];
 
 interface ListedShard {
@@ -98,7 +99,9 @@ const playerOf = (request: Request): string | null | typeof INVALID => {
 /** Every listed shard's games, each shard read on its own so one that fails is named and the rest still answer. */
 const listShards = async (dependencies: DirectoryDependencies, player: string | null) => {
   const { results } = await dependencies.db
-    .prepare(`SELECT "url", "chainId", "status" FROM "shards" WHERE "status" != 'retired' ORDER BY "addedAt"`)
+    .prepare(
+      `SELECT "url", "chainId", "status" FROM "shards" WHERE "status" IN ('active', 'draining') ORDER BY "addedAt"`,
+    )
     .all<ListedShard>();
   return Promise.all(
     results.map((shard) =>
@@ -218,60 +221,99 @@ interface AccountIdentity {
   guardianPublicKey: string;
 }
 
-/**
- * POST /api/directory/shards {url} — lists a shard by its Herald URL under the chain id its manifest declares. A chain id
- * already listed under another URL is refused; the unique index is the race-proof guarantee. A retired shard's URL is
- * listed again under its new chain. A shard whose accounts sit under another class or guardian is refused: the app
- * places a player on every listed shard at one address, the one our guardian approves devices for.
- */
-export const handleAdmitShard = async (
+/** Register the chain before enrollment; visibility starts only after the deployment's self-check. */
+export const handleRegisterPendingShard = (
   request: Request,
   db: D1Database,
   fetchShard: typeof fetch,
   identity: AccountIdentity,
-) => {
-  const url = shardUrlOf(await readJsonField(request, "url"));
-  if (!url) return json({ error: "invalid_shard_url" }, 400);
-  const manifest = await readManifest(url, fetchShard);
-  if (!manifest) return json({ error: "manifest_unavailable" }, 502);
-  if (!hasAccountIdentity(manifest, identity)) return json({ error: "account_identity_differs" }, 409);
-  const { chainId } = manifest;
+) => admitValidatedShard(request, db, fetchShard, identity, registerPendingShard);
+
+/** The deployment calls this after its self-check passes; an unregistered chain cannot be activated. */
+export const handleAdmitShard = (
+  request: Request,
+  db: D1Database,
+  fetchShard: typeof fetch,
+  identity: AccountIdentity,
+) => admitValidatedShard(request, db, fetchShard, identity, activatePendingShard);
+
+const admitValidatedShard = (
+  request: Request,
+  db: D1Database,
+  fetchShard: typeof fetch,
+  identity: AccountIdentity,
+  writeAdmission: (db: D1Database, url: string, chainId: string) => Promise<Response>,
+) =>
+  Effect.runPromise(
+    Effect.gen(function* () {
+      const url = shardUrlOf(yield* Effect.promise(() => readJsonField(request, "url")));
+      if (!url) return json({ error: "invalid_shard_url" }, 400);
+      const manifest = yield* Effect.promise(() => readManifest(url, fetchShard));
+      if (!manifest) return json({ error: "manifest_unavailable" }, 502);
+      if (!hasAccountIdentity(manifest, identity)) return json({ error: "account_identity_differs" }, 409);
+      return yield* Effect.promise(() => writeAdmission(db, url, manifest.chainId));
+    }),
+  );
+
+const registerPendingShard = async (db: D1Database, url: string, chainId: string) => {
   const listed = await db
-    .prepare('SELECT "url" FROM "shards" WHERE "chainId" = ?')
+    .prepare('SELECT "url", "status" FROM "shards" WHERE "chainId" = ?')
     .bind(chainId)
-    .first<{ url: string }>();
+    .first<{ url: string; status: ShardStatus }>();
   if (listed)
-    return listed.url === url ? json({ url, chainId }) : json({ error: "chain_id_listed", url: listed.url }, 409);
-  // A retired shard's host can serve a new chain: its URL is listed again, under the chain its manifest now names.
+    return listed.url === url
+      ? json({ url, chainId, status: listed.status })
+      : json({ error: "chain_id_listed", url: listed.url }, 409);
   const relisted = await db
     .prepare(
-      `UPDATE "shards" SET "chainId" = ?, "status" = 'active', "addedAt" = ? WHERE "url" = ? AND "status" = 'retired' RETURNING "url"`,
+      `UPDATE "shards" SET "chainId" = ?, "status" = 'pending', "addedAt" = ? WHERE "url" = ? AND "status" = 'retired' RETURNING "url"`,
     )
     .bind(chainId, Date.now(), url)
     .first();
-  if (relisted) return json({ url, chainId }, 201);
+  if (relisted) return json({ url, chainId, status: "pending" }, 201);
   try {
     await db
-      .prepare(`INSERT INTO "shards" ("url", "chainId", "status", "addedAt") VALUES (?, ?, 'active', ?)`)
+      .prepare(`INSERT INTO "shards" ("url", "chainId", "status", "addedAt") VALUES (?, ?, 'pending', ?)`)
       .bind(url, chainId, Date.now())
       .run();
   } catch {
     return json({ error: "shard_listed" }, 409);
   }
-  return json({ url, chainId }, 201);
+  return json({ url, chainId, status: "pending" }, 201);
+};
+
+const activatePendingShard = async (db: D1Database, url: string, chainId: string) => {
+  const activated = await db
+    .prepare(
+      `UPDATE "shards" SET "status" = 'active' WHERE "url" = ? AND "chainId" = ? AND "status" = 'pending' RETURNING "url"`,
+    )
+    .bind(url, chainId)
+    .first();
+  if (activated) return json({ url, chainId, status: "active" }, 201);
+  const listed = await db
+    .prepare('SELECT "url", "status" FROM "shards" WHERE "chainId" = ?')
+    .bind(chainId)
+    .first<{ url: string; status: ShardStatus }>();
+  if (listed && listed.url !== url) return json({ error: "chain_id_listed", url: listed.url }, 409);
+  if (listed && ["active", "draining"].includes(listed.status)) return json({ url, chainId, status: listed.status });
+  return json({ error: "shard_not_pending" }, 409);
 };
 
 /** POST /api/directory/shards/status {url, status} — drains or retires a listed shard. */
 export const handleShardStatus = async (request: Request, db: D1Database) => {
   const body = (await request.json().catch(() => null)) as { url?: unknown; status?: unknown } | null;
   const url = shardUrlOf(body?.url);
-  const status = SHARD_STATUSES.find((candidate) => candidate === body?.status);
+  const status = SHARD_STATUSES.filter((candidate) => candidate !== "pending").find(
+    (candidate) => candidate === body?.status,
+  );
   if (!url || !status) return json({ error: "invalid_shard_status" }, 400);
   const updated = await db
-    .prepare('UPDATE "shards" SET "status" = ? WHERE "url" = ? RETURNING "url"')
-    .bind(status, url)
+    .prepare(
+      `UPDATE "shards" SET "status" = ? WHERE "url" = ? AND ("status" IN ('active', 'draining') OR ? = 'retired') RETURNING "url"`,
+    )
+    .bind(status, url, status)
     .first();
-  return updated ? json({ url, status }) : json({ error: "shard_not_listed" }, 404);
+  return updated ? json({ url, status }) : json({ error: "shard_status_change_refused" }, 409);
 };
 
 /** One spelling per shard: an https origin with no path, so the same Herald is never listed twice. */
@@ -322,7 +364,9 @@ export const superviseNotifiers = async (db: D1Database, notifiers: IdentityEnv[
   await Promise.all(
     results.map((shard) => {
       const notifier = notifiers.get(notifiers.idFromName(shard.url));
-      return shard.status === "retired" ? notifier.stop() : notifier.watch({ url: shard.url, chainId: shard.chainId });
+      return ["pending", "retired"].includes(shard.status)
+        ? notifier.stop()
+        : notifier.watch({ url: shard.url, chainId: shard.chainId });
     }),
   );
 };
