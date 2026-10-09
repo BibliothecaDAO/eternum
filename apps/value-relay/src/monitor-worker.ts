@@ -1,3 +1,4 @@
+import { presentsOperatorToken } from "@realms-world/identity";
 import { chestLedgerReads } from "./chest-ledger";
 import { DurableChestStore, overdueChestRequests } from "./chests";
 import { DurableObject } from "cloudflare:workers";
@@ -12,6 +13,7 @@ import { relayOperation } from "./ports";
 import { runMonitor, type MonitorProgress } from "./monitor";
 
 interface MonitorEnv {
+  OPERATOR_TOKEN: string;
   SHARD_HERALD_URL: string;
   SHARD_RPC_URL: string;
   SHARD_GAMES_ADDRESS: string;
@@ -86,6 +88,25 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
         !progress.halted,
     };
   }
+  async reset(reason: string) {
+    if (!reason.trim() || reason.length > 500) throw new Error("reset_reason_required");
+    return Effect.runPromise(
+      this.checking.withPermit(
+        relayOperation("reset monitor halt", () =>
+          this.ctx.storage.transaction(async (tx) => {
+            const previous = (await tx.get<MonitorProgress>("progress")) ?? { halted: null };
+            const sequence = ((await tx.get<number>("reset:sequence")) ?? 0) + 1;
+            const progress = { ...previous, halted: null, unverifiedTicks: 0 };
+            await tx.put(`reset:${sequence}`, { reason: reason.trim(), at: Math.floor(Date.now() / 1000), previous });
+            await tx.put("reset:sequence", sequence);
+            await tx.put("progress", progress);
+            await tx.delete("observation");
+            return progress;
+          }),
+        ),
+      ),
+    );
+  }
   async status(): Promise<MonitorProgress> {
     return (await this.ctx.storage.get<MonitorProgress>("progress")) ?? { halted: null };
   }
@@ -120,6 +141,20 @@ const monitorPortsOf = (env: MonitorEnv) => {
 const monitorOf = (env: MonitorEnv) => env.MONITOR.get(env.MONITOR.idFromName("monitor"));
 export default {
   async fetch(request: Request, env: MonitorEnv): Promise<Response> {
+    if (new URL(request.url).pathname === "/api/operator/monitor/reset" && request.method === "POST") {
+      if (!(await presentsOperatorToken(request, env.OPERATOR_TOKEN)))
+        return Response.json({ error: "unauthorized" }, { status: 401 });
+      const body = (await request.json().catch(() => null)) as { reason?: unknown } | null;
+      if (
+        !body ||
+        typeof body.reason !== "string" ||
+        !body.reason.trim() ||
+        body.reason.length > 500 ||
+        Object.keys(body).join() !== "reason"
+      )
+        return Response.json({ error: "reset_reason_required" }, { status: 400 });
+      return Response.json(await monitorOf(env).reset(body.reason), { headers: { "cache-control": "no-store" } });
+    }
     if (new URL(request.url).pathname !== "/health") return new Response(null, { status: 404 });
     const health = await monitorOf(env).health();
     return Response.json(

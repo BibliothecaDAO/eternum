@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 import { beforeEach, expect, it, vi } from "vitest";
-import { ValueMonitor } from "./monitor-worker";
+import worker, { ValueMonitor } from "./monitor-worker";
 
 vi.mock("cloudflare:workers", () => ({
   DurableObject: class {
@@ -21,6 +21,8 @@ const fixture = () => {
   const data = new Map<string, unknown>();
   const ctx = {
     storage: {
+      transaction: async (run: (tx: unknown) => Promise<unknown>): Promise<unknown> => run(ctx.storage),
+      delete: async (key: string) => data.delete(key),
       get: async (key: string) => data.get(key),
       put: async (key: string, value: unknown) => {
         data.set(key, value);
@@ -58,4 +60,30 @@ it("reports a fresh completed audit as healthy, and refuses stale or paused prog
   f.data.set("progress", { halted: null });
   f.data.set("observation", { ...observation, checked_at: checked_at - 301 });
   expect((await f.monitor.health()).success).toBe(false);
+});
+
+it("requires an operator token and a recorded reason to clear a monitor halt without losing cursors", async () => {
+  const f = fixture();
+  const progress = {
+    halted: "paid_wallet_mismatch:0xabc",
+    unverifiedTicks: 3,
+    cursors: { paidClaims: { fromBlock: 11, page: null } },
+  };
+  f.data.set("progress", progress);
+  const env = {
+    OPERATOR_TOKEN: "operator-test-token",
+    MONITOR: { idFromName: () => "monitor", get: () => f.monitor },
+  } as never;
+  const request = (reason: string, token = "operator-test-token") =>
+    new Request("https://monitor.test/api/operator/monitor/reset", {
+      method: "POST",
+      headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
+      body: JSON.stringify({ reason }),
+    });
+  expect((await worker.fetch(request("Investigated", "wrong-token"), env)).status).toBe(401);
+  expect((await worker.fetch(request(""), env)).status).toBe(400);
+  expect((await worker.fetch(request("Receipt RPC corrected; replay verified"), env)).status).toBe(200);
+  expect(await f.monitor.status()).toMatchObject({ halted: null, unverifiedTicks: 0, cursors: progress.cursors });
+  expect(f.data.get("reset:sequence")).toBe(1);
+  expect(f.data.get("reset:1")).toMatchObject({ reason: "Receipt RPC corrected; replay verified", previous: progress });
 });
