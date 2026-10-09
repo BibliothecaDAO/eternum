@@ -21,8 +21,8 @@ before submitting a transaction and never unpauses it.
 
 The published Frontier `pay`, Blitz `apply_results`, ledger event enumeration and ERC721 `owner_of` adapters are
 implemented. Result retries first check the stored game commitment; event cursors pin a confirmed L2 head. Shard
-receipts, result decoding and labor grants are pending their published schemas. Those ports fail explicitly and both
-health routes return 503 with `interfaces: pending`. This skeleton is not ready to move value.
+receipts, result decoding and labor grants are pending their published schemas. Those ports fail explicitly and relay
+health remains unavailable while that value job cannot run. Shard-originated payouts and labor await those interfaces.
 
 Relay runtime values: `SHARD_CHAIN_ID`, `LEDGER_RPC_URL`, `LEDGER_ADDRESS`, `LEDGER_OPERATOR_ADDRESS`, `REALMS_ADDRESS`.
 `LEDGER_OPERATOR_PRIVATE_KEY` is a Worker secret for the Starknet operator. The shard ledger-operator adapter will use
@@ -32,3 +32,17 @@ place either credential in variables, source, logs, deployment artifacts or shar
 
 `wrangler.jsonc` describes the relay and `monitor.wrangler.jsonc` the independent monitor. No deployment is part of this
 change. The new persistence replaces an otherwise lossy block poll; no existing relay existed to remove.
+
+Blitz delivery uses the ranks-only v3 commitment and result ABI. No result row carries points or drawn contents. New
+chest requests burn the holder's token and fix its requester and block B on Starknet. The relay discovers
+ChestRequested/ChestOpened events with a confirmed block cursor and persists only unfinished requests. It calls
+open_finish from B+11 onward; the ledger alone uses block B+1 to draw, and anyone may finish. A lost acknowledgment is
+recognized by get_chest.finished. Failed finishes remain pending, and one failure does not block other requests. The
+queue and completed-block cursor commit together. Provider pagination tokens stay within a pass, so a restart replays
+the unfinished range instead of relying on a provider token's lifetime.
+
+The chest job runs even if the separate shard ingestion job is unavailable. Relay health publishes the last tick and
+both job results. The independent value monitor keeps its own chest cursor/queue and reports tokens unfinished more than
+five minutes after eligibility, using that eligibility block's timestamp and wall time. This warning does not pause
+payouts. Its existing receipt/result violations still do. The extra queue replaces repeated historical chest polling; no
+new signing key, reveal salt, expiry, retry setting or draw lives in the service.

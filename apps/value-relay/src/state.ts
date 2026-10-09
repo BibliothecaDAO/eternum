@@ -30,10 +30,10 @@ export class DurableRelayStore implements RelayStore {
     });
   }
   async withdrawals() {
-    return await this.listPending<Withdrawal>("withdrawal:");
+    return await listStoredValues<Withdrawal>(this.storage, "withdrawal:");
   }
   async results() {
-    return await this.listPending<BlitzResult>("result:");
+    return await listStoredValues<BlitzResult>(this.storage, "result:");
   }
   async completeWithdrawal(transactionHash: string) {
     await this.storage.delete(`withdrawal:${transactionHash}`);
@@ -44,15 +44,16 @@ export class DurableRelayStore implements RelayStore {
   async halt(reason: string) {
     await this.storage.put("progress", { ...(await this.progress()), halted: reason });
   }
-  private async listPending<A>(prefix: string): Promise<A[]> {
-    const values: A[] = [];
-    let startAfter: string | undefined;
-    do {
-      const page = await this.storage.list<A>({ prefix, limit: 1000, ...(startAfter ? { startAfter } : {}) });
-      values.push(...page.values());
-      if (page.size < 1000) break;
-      startAfter = [...page.keys()].at(-1);
-    } while (startAfter);
-    return values;
-  }
+}
+
+export async function listStoredValues<A>(storage: DurableObjectStorage, prefix: string): Promise<A[]> {
+  const values: A[] = [];
+  let startAfter: string | undefined;
+  do {
+    const page = await storage.list<A>({ prefix, limit: 1000, ...(startAfter ? { startAfter } : {}) });
+    values.push(...page.values());
+    if (page.size < 1000) break;
+    startAfter = [...page.keys()].at(-1);
+  } while (startAfter);
+  return values;
 }

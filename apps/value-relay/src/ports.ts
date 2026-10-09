@@ -17,9 +17,25 @@ export interface BlitzCommitment {
 }
 interface BlitzResultRow {
   wallet: string;
-  points: string;
   rank: number;
-  chest: { kind: 0 | 1 | 2 | 3; cosmetic: string; lords: string };
+}
+export interface ChestRequest {
+  tokenId: string;
+  requester: string;
+  requestBlock: number;
+}
+export type ChestChange = { kind: "requested"; request: ChestRequest } | { kind: "finished"; tokenId: string };
+export interface ChestPage extends Page<ChestChange> {
+  head: number;
+}
+export interface ChestPorts {
+  changes(fromBlock: number, cursor: string | null): RelayEffect<ChestPage>;
+  head(): RelayEffect<number>;
+  chest(
+    tokenId: string,
+  ): RelayEffect<{ requested: boolean; finished: boolean; requester: string; requestBlock: number }>;
+  blockTime(number: number): RelayEffect<number>;
+  finish(tokenId: string): RelayEffect<void>;
 }
 export interface BlitzResult extends BlitzCommitment {
   rows: readonly BlitzResultRow[];

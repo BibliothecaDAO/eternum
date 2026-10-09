@@ -243,12 +243,11 @@ it("checks later pages and revisits previously checked results on a later monito
 it("matches the ledger and shard golden commitment vector", () => {
   const rows = ["1000", "1001"].map((wallet) => ({
     wallet,
-    points: "999",
+
     rank: 1,
-    chest: { kind: 1 as const, cosmetic: "0", lords: "0" },
   }));
   expect(blitzCommitment({ chainId: "0x7368617264", gameId: 7, rows })).toBe(
-    "0x102225df66fcd07e38c6f76adda282ed067d97501d28d57d05349e472c13858",
+    "0x5d912378a36e87b3b4331c33a3cb97ad23ddfbcab670825f2fa18743f34c6d6",
   );
 });
 it("halts before storing a result whose payload differs from its commitment", async () => {

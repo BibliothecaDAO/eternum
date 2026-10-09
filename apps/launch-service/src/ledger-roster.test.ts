@@ -13,7 +13,7 @@ const source = () =>
     resolveGameKey: () => Effect.succeed({ chainId: "0x1", gameId: 7 }),
     accountForWallet,
   });
-const game = (start = "200") => ["1", "1", "1", start, "300", "0", "0", "0", "0", "0", "1", "0", "0"];
+const game = (start = "200") => ["1", "1", "1", start, "300", "0", "0", "0", "1", "0", "0"];
 beforeEach(() => {
   vi.clearAllMocks();
   rpc.block.mockResolvedValue({ block_number: 100, block_hash: "0xabc", timestamp: 200 });

@@ -1,5 +1,7 @@
+import { chestLedgerReads } from "./chest-ledger";
+import { DurableChestStore, overdueChestRequests } from "./chests";
 import { DurableObject } from "cloudflare:workers";
-import { Effect, Semaphore } from "effect";
+import { Effect, Result, Semaphore } from "effect";
 import { ledgerMonitorReads } from "./ledger";
 import { ledgerPauserAdapter } from "./chain";
 import { pendingMonitorPorts } from "./adapters";
@@ -16,15 +18,37 @@ interface MonitorEnv {
 
 export class ValueMonitor extends DurableObject<MonitorEnv> {
   private readonly checking = Semaphore.makeUnsafe(1);
+  private readonly chests = new DurableChestStore(this.ctx.storage);
   async tick() {
+    const monitor = this;
     return Effect.runPromise(
       this.checking.withPermit(
-        runMonitor(monitorPortsOf(this.env), {
-          load: () => this.status(),
-          save: (progress) => this.ctx.storage.put("progress", progress),
+        Effect.gen(function* () {
+          const value = yield* Effect.result(
+            runMonitor(monitorPortsOf(monitor.env), {
+              load: () => monitor.status(),
+              save: (progress) => monitor.ctx.storage.put("progress", progress),
+            }),
+          );
+          const chests = yield* Effect.result(
+            overdueChestRequests(
+              chestLedgerReads({ rpcUrl: monitor.env.LEDGER_RPC_URL, contractAddress: monitor.env.LEDGER_ADDRESS }),
+              monitor.chests,
+            ),
+          );
+          const observation = {
+            checked_at: Math.floor(Date.now() / 1000),
+            value: Result.isSuccess(value) ? value.success : null,
+            chests: Result.isSuccess(chests) ? chests.success : null,
+          };
+          yield* relayOperation("publish chest monitor", () => monitor.ctx.storage.put("observation", observation));
+          return observation;
         }),
       ),
     );
+  }
+  async health() {
+    return { ...(await this.status()), ...(await this.ctx.storage.get<object>("observation")) };
   }
   async status(): Promise<MonitorProgress> {
     return (await this.ctx.storage.get<MonitorProgress>("progress")) ?? { halted: null };
@@ -58,7 +82,7 @@ export default {
   async fetch(request: Request, env: MonitorEnv): Promise<Response> {
     if (new URL(request.url).pathname !== "/health") return new Response(null, { status: 404 });
     return Response.json(
-      { service: "value-monitor", interfaces: "pending", ...(await monitorOf(env).status()) },
+      { service: "value-monitor", interfaces: "pending", ...(await monitorOf(env).health()) },
       { status: 503 },
     );
   },

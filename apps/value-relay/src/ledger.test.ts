@@ -29,7 +29,7 @@ const credentials = {
 const result = {
   chainId: "0x1",
   gameId: 7,
-  rows: [{ wallet: "0x123", points: "999", rank: 1, chest: { kind: 1 as const, cosmetic: "0", lords: "0" } }],
+  rows: [{ wallet: "0x123", rank: 1 }],
   commitment: "",
 };
 result.commitment = blitzCommitment(result);
@@ -39,8 +39,6 @@ const game = (finalized: boolean, commitment = "0x0") => [
   "1",
   "100",
   "200",
-  "0",
-  "0",
   "0",
   "0",
   commitment,
@@ -62,7 +60,7 @@ it("submits the published ranked result and completes an identical retry without
   expect(rpc.execute).toHaveBeenCalledWith({
     contractAddress: "0x10",
     entrypoint: "apply_results",
-    calldata: ["0x1", "7", "1", "0x123", "999", "1", "1", "0", "0", "0"],
+    calldata: ["0x1", "7", "1", "0x123", "1"],
   });
   rpc.call.mockResolvedValue(game(true, result.commitment));
   await Effect.runPromise(post(result));
