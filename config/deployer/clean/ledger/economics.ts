@@ -1,3 +1,4 @@
+import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { buildMysteryChestPreset } from "../../../../contracts/l2/ledger/scripts/chest-preset.js";
 import { nativePresetForId, nativePresetIdFor } from "../../../source/native";
 import { CallData, uint256 } from "starknet";
@@ -9,6 +10,7 @@ export interface LedgerEconomicPreset {
   day_unit_seconds: number;
   season_bags: number;
   claim_window_seconds: number;
+  registration_limit: number;
   entry_fee: ReturnType<typeof uint256.bnToUint256>;
   protocol_cut_bps: number;
   chest_lords_bps: number;
@@ -63,6 +65,12 @@ export function buildLedgerEconomicPreset(
     day_unit_seconds: native.dayUnitSeconds,
     season_bags: native.seasonBags,
     claim_window_seconds: native.chests?.claimWindowSeconds ?? 0,
+    registration_limit:
+      native.entryRule === nativeRuleConstants.ENTRY_ROSTER
+        ? native.settlementMode === "Duel"
+          ? nativeRuleConstants.DUEL_ROSTER_PLAYERS
+          : nativeRuleConstants.MAX_BLITZ_ROSTER_PLAYERS
+        : 0,
   };
 }
 

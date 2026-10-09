@@ -72,9 +72,9 @@ pub fn validate_params(params: CreateGameParams, rules: LaunchRules) {
     }
 }
 pub(crate) fn validate_roster_size(count: u32, mode: crate::settlement::SettlementMode) {
-    assert!(count > 0 && count <= 24, "invalid Blitz roster size");
+    assert!(count > 0 && count <= crate::rules::MAX_BLITZ_ROSTER_PLAYERS, "invalid Blitz roster size");
     if mode == crate::settlement::SettlementMode::Duel {
-        assert!(count == 2, "Duel requires two players");
+        assert!(count == crate::rules::DUEL_ROSTER_PLAYERS, "Duel requires two players");
     }
 }
 

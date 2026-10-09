@@ -264,6 +264,7 @@ pub mod GameLedger {
         preset_id: u32,
         start: u64,
         end: u64,
+        registration_limit: u16,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -749,8 +750,12 @@ pub mod GameLedger {
             let season = self.get_season(season_id);
             assert!(preset_id == season.preset_id, "Ledger: game preset differs from season");
             assert!(start >= season.start && end < season.end, "Ledger: game outside season");
-            self.games.entry(key).write(Game { exists: true, season_id, preset_id, start, end, ..Default::default() });
-            self.emit(GameOpened { key, preset_id, start, end });
+            let registration_limit = self.get_preset(preset_id).registration_limit;
+            assert!(registration_limit != 0, "Ledger: preset has no roster");
+            self.games.entry(key).write(
+                Game { exists: true, season_id, preset_id, start, end, registration_limit, ..Default::default() },
+            );
+            self.emit(GameOpened { key, preset_id, start, end, registration_limit });
         }
 
         fn register(ref self: ContractState, key: GameKey, account: ContractAddress, sword: bool, shield: bool) {
@@ -1013,6 +1018,7 @@ pub mod GameLedger {
             self: @ContractState, key: GameKey, owner: ContractAddress, account: ContractAddress,
         ) -> Game {
             let game = self.assert_game_open_before_start(key);
+            assert!(game.registered_count < game.registration_limit, "Ledger: roster full");
             assert!(!self.registrations.entry((key, owner)).read().registered, "Ledger: already registered");
             assert!(!account.is_zero(), "Ledger: shard account is zero");
             assert!(!self.seated_accounts.entry((key, account)).read(), "Ledger: account already seated");

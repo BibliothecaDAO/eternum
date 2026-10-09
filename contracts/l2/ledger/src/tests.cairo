@@ -250,6 +250,7 @@ fn default_preset() -> Preset {
         day_unit_seconds: 1,
         season_bags: 5,
         claim_window_seconds: 7 * 24 * 60 * 60,
+        registration_limit: 24,
         entry_fee: 500,
         protocol_cut_bps: 0,
         chest_lords_bps: 0,
@@ -2254,4 +2255,28 @@ fn reported_amount_and_paid_recipient_are_immutable() {
     let paid = fixture.ledger.get_payment('shard', 'claim');
     assert!(paid.paid && paid.season_id == 1 && paid.wallet == player(1) && paid.amount == 40);
     assert!(fixture.lords.balance_of(player(1)) == 40 && fixture.lords.balance_of(player(0)) == 0);
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn every_registration_route_refuses_a_full_roster_before_spending() {
+    let fixture = deploy_fixture(Preset { registration_limit: 1, ..default_preset() });
+    assert!(fixture.ledger.get_game(GAME_KEY).registration_limit == 1);
+    register_players(@fixture, 1);
+    fund_and_approve_player(@fixture, player(1), 500);
+    start_cheat_caller_address(fixture.ledger_address, player(1));
+    let safe = IGameLedgerSafeDispatcher { contract_address: fixture.ledger_address };
+    let balance = fixture.lords.balance_of(player(1));
+    assert!(safe.register(GAME_KEY, shard_account(player(1)), false, false).is_err());
+    assert!(safe.register_with_pass(GAME_KEY, shard_account(player(1)), 1).is_err());
+    assert!(safe.register_village(GAME_KEY, shard_account(player(1)), 1).is_err());
+    assert!(fixture.lords.balance_of(player(1)) == balance);
+    assert!(fixture.ledger.get_game(GAME_KEY).registered_count == 1);
+    assert!(!fixture.ledger.get_registration(GAME_KEY, player(1)).registered);
+}
+
+#[test]
+#[should_panic(expected: "Ledger: preset has no roster")]
+fn a_preset_without_a_roster_cannot_open_a_paid_game() {
+    deploy_fixture(Preset { registration_limit: 0, ..default_preset() });
 }
