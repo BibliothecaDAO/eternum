@@ -16,7 +16,7 @@ export interface LedgerRef {
 /**
  * How a slot or a directory game is entered, from the services' `entry` field: free, or paid on the ledger it names.
  * A paid game whose ledger reference is missing or malformed is broken, a fault shown as such and never the free join.
- * A payload with no `entry` at all comes from services that open no paid game yet: free.
+ * A payload with no `entry` at all is read as free for now (see the marked line below).
  */
 type GameEntry = { kind: "free" } | { kind: "paid"; ledger: LedgerRef } | { kind: "broken" };
 
@@ -25,6 +25,8 @@ const BROKEN: GameEntry = { kind: "broken" };
 
 export const gameEntryOf = (payload: object): GameEntry => {
   const entry = (payload as { entry?: unknown }).entry;
+  // INTERIM, until the services branch is merged in: the services make `entry` required on every slot and directory
+  // game, and from that merge a missing one is broken, like a paid entry without its ledger.
   if (entry === undefined) return FREE;
   if (!isRecord(entry)) return BROKEN;
   if (entry.kind === "free") return FREE;
