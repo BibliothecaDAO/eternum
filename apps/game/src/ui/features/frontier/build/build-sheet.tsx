@@ -24,7 +24,7 @@ import {
   resolveUseSimpleCost,
 } from "@bibliothecadao/eternum";
 import { resolveConstructionBuildability } from "@bibliothecadao/eternum/automation";
-import type { NativeRows } from "@bibliothecadao/eternum/game-client";
+import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { BUILDINGS_CENTER, BuildingType, getHexDistance, type HexPosition, ResourcesIds } from "@bibliothecadao/types";
 import { useEffect, useMemo, useState } from "react";
 
@@ -56,7 +56,8 @@ export const useOpenPlot = (realm: NativeRows["Structure"] | null): HexPosition 
   const selected = useUIStore((state) => state.selectedBuildingHex);
   const ordersAllowed = useUIStore(canIssueOrders);
   useNativeRevision(["Building"]);
-  if (isMapView || !ordersAllowed || !realm || !selected || selected.structureId !== realm.entity_id) return null;
+  if (isMapView || !ordersAllowed || !realm || !selected || selected.structureId !== safeInteger(realm.entity_id))
+    return null;
   const plot = { col: selected.innerCol, row: selected.innerRow };
   const distance = getHexDistance({ col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1] }, plot);
   if (distance === 0 || distance > buildableRadius(realm.base.level)) return null;
@@ -83,6 +84,7 @@ export const BuildSheet = ({
   onClose: () => void;
 }) => {
   const { setup } = useGame();
+  const realmId = safeInteger(realm.entity_id);
   const requestedSimpleCost = useUIStore((state) => state.useSimpleCost);
   const useSimpleCost = resolveUseSimpleCost(configManager.buildingCostMode, requestedSimpleCost);
   const revision = useNativeRevision(BUILD_MODELS);
@@ -97,7 +99,7 @@ export const BuildSheet = ({
   const goToPlace = useGoToFrontierPlace(realm);
   const mode = useGameModeConfig();
   const realmInfo = useMemo(
-    () => getRealmInfo(realm.entity_id, setup.store, getPlayerName),
+    () => getRealmInfo(safeInteger(realm.entity_id), setup.store, getPlayerName),
     [realm.entity_id, revision, setup.store],
   );
   useBuildingGhost(option?.category, plot);
@@ -109,7 +111,7 @@ export const BuildSheet = ({
     setSending(true);
     try {
       await requireActiveGameClient().actions.placeBuilding({
-        structureId: realm.entity_id,
+        structureId: realmId,
         buildingType: option.category,
         hex: plot,
         useSimpleCost,
@@ -124,12 +126,12 @@ export const BuildSheet = ({
   };
 
   const held = (resource: number) => {
-    const balance = knownBalance(getBalance(realm.entity_id, resource, tick, setup.store).balance);
+    const balance = knownBalance(getBalance(safeInteger(realm.entity_id), resource, tick, setup.store).balance);
     return balance === undefined ? undefined : Math.floor(balance);
   };
   const shortCost = option.cost.find(({ resource, amount }) => (held(resource) ?? 0) < amount);
   const buildable = resolveConstructionBuildability({
-    entityId: realm.entity_id,
+    entityId: safeInteger(realm.entity_id),
     buildingType: option.category,
     useSimpleCost,
     store: setup.store,
@@ -158,7 +160,7 @@ export const BuildSheet = ({
               wait: secondsUntilHeld(
                 held(shortCost.resource),
                 shortCost.amount,
-                realmPerHour(setup.store, realm.entity_id, shortCost.resource, tick),
+                realmPerHour(setup.store, safeInteger(realm.entity_id), shortCost.resource, tick),
               ),
             }
           : buildable

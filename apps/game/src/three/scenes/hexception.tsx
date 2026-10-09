@@ -92,7 +92,7 @@ import { ProductionModal } from "@/ui/features/settlement";
 import { resolveConstructionBuildability } from "@bibliothecadao/eternum/automation";
 import { requireActiveGameClient } from "@/sync/active-game-client";
 import { playerStructuresView, readFactView, watchFactView } from "@/sync/fact-views";
-import type { GameClientSetup as SetupResult, NativeRows } from "@bibliothecadao/eternum/game-client";
+import { safeInteger, type GameClientSetup as SetupResult, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import {
   ActionType,
   type BuildingTiles,
@@ -276,7 +276,7 @@ export default class HexceptionScene extends HexagonScene {
           changes.some(
             (change) =>
               (change.model === "Hyperstructure" || change.model === "HyperstructureProgress") &&
-              (change.current ?? change.previous)?.entity_id === this.state.structureEntityId &&
+              (change.current ?? change.previous)?.entity_id === BigInt(this.state.structureEntityId) &&
               (change.current ?? change.previous)?.game_id === configManager.getActiveGameId(),
           )
         )
@@ -527,8 +527,8 @@ export default class HexceptionScene extends HexagonScene {
     this.newRingRadius = null;
     if (radius === null) return this.renderRestingHighlights();
     const center = { col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1] };
-    this.highlightHexManager.highlightHexes([
-      ...this.highlights
+    this.highlightHexManager.highlightHexes(
+      this.highlights
         .filter((hex) => getHexDistance(center, hex) === radius)
         .map((hex) => ({
           hex: { col: hex.col, row: hex.row },
@@ -538,7 +538,7 @@ export default class HexceptionScene extends HexagonScene {
           isSharedRoute: false,
           pathDepth: 1,
         })),
-    ]);
+    );
     window.clearTimeout(this.newRingTimer);
     this.newRingTimer = window.setTimeout(() => {
       if (!this.buildingPreview?.getPreviewBuilding()) this.renderRestingHighlights();
@@ -691,7 +691,7 @@ export default class HexceptionScene extends HexagonScene {
 
       // subscribe to building updates (create and destroy)
       this.buildingUpdateUnsubscribe = this.worldUpdateListener.Buildings.onBuildingUpdate(
-        structure.entity_id,
+        safeInteger(structure.entity_id),
         (update: BuildingSystemUpdate) => this.handleBuildingUpdate(update, realmGeneration),
       );
 
@@ -1147,7 +1147,7 @@ export default class HexceptionScene extends HexagonScene {
     if (!structure) throw new Error(`No structure is available at local route ${position.col},${position.row}`);
     const site = structureMapPosition(this.game.store, structure);
     if (!site) throw new Error("The expedition has not started");
-    useUIStore.getState().setStructureEntityId(structure.entity_id, {
+    useUIStore.getState().setStructureEntityId(safeInteger(structure.entity_id), {
       worldMapPosition: Position.fromContract({ x: site.x, y: site.y }),
     });
     return { structure, position: { col: site.x, row: site.y } };
@@ -1302,8 +1302,8 @@ export default class HexceptionScene extends HexagonScene {
   private renderBuildingPlacementHighlights(): void {
     // A pinned ghost marks its one plot; a free one shows every plot it may stand on.
     const plots = this.pinnedPlot ? [this.pinnedPlot] : this.highlights;
-    this.highlightHexManager.highlightHexes([
-      ...plots.map((hex) => ({
+    this.highlightHexManager.highlightHexes(
+      plots.map((hex) => ({
         hex: { col: hex.col, row: hex.row },
         actionType: ActionType.Build,
         kind: "destination" as const,
@@ -1311,7 +1311,7 @@ export default class HexceptionScene extends HexagonScene {
         isSharedRoute: false,
         pathDepth: 1,
       })),
-    ]);
+    );
   }
 
   updateHexceptionGrid(radius: number) {

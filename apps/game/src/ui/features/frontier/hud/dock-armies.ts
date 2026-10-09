@@ -4,7 +4,7 @@ import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { buildStaminaDisplayModel } from "@/lib/army-stamina/presentation";
 import { getExplorerStaminaSnapshot } from "@/utils/explorer-stamina";
 import { configManager, getArmyName, homecomingReturn, liveHomeArmies } from "@bibliothecadao/eternum";
-import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
+import { safeInteger, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { useMemo } from "react";
@@ -37,12 +37,13 @@ export const useDockArmies = (realm: NativeRows["Structure"] | null): DockArmy[]
   const revision = useNativeRevision(ARMY_MODELS);
   const { currentArmiesTick, armiesTickTimeRemaining } = useBlockTimestamp();
   const armies = useMemo(
-    () => (realm ? liveHomeArmies(setup.store, realm.entity_id, configManager.getActiveGameId()) : []),
+    () => (realm ? liveHomeArmies(setup.store, safeInteger(realm.entity_id), configManager.getActiveGameId()) : []),
     [realm?.entity_id, revision, setup.store, currentArmiesTick],
   );
   return armies.map((army, index) => {
+    const explorerId = safeInteger(army.explorer_id);
     const snapshot = getExplorerStaminaSnapshot({
-      entityId: army.explorer_id,
+      entityId: explorerId,
       currentArmiesTick,
       liveTroops: resolveExplorerTroops(setup.store, army),
     });
@@ -58,9 +59,9 @@ export const useDockArmies = (realm: NativeRows["Structure"] | null): DockArmy[]
     const progress = setup.store.get("ArmyProgress", { game_id: army.game_id, explorer_id: army.explorer_id });
     const xpRules = setup.store.get("ArmyProgressionRules", { game_id: army.game_id });
     return {
-      explorerId: army.explorer_id,
+      explorerId,
       troopsFact: army.troops,
-      label: armyName(setup.store, army.explorer_id, index + 1),
+      label: armyName(setup.store, explorerId, index + 1),
       art: armyArt(army.troops),
       xp: progress?.xp,
       stamina: stamina ? { current: stamina.committedCurrent, max: stamina.committedMax } : undefined,

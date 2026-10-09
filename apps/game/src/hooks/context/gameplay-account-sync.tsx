@@ -72,7 +72,7 @@ export function GameplayAccountSync({ children }: { children: ReactNode }) {
       device: getOrCreateDeviceKey(localStorage),
       approve: identityClient.approveDeviceChange,
     }).then(
-      (account) => active && setGameplayAccount(configureGameplayAccountSubmits(account, shard.chainId), realmsId),
+      (account) => active && setGameplayAccount(configureGameplayAccountSubmits(account, shard), realmsId),
       (error: unknown) => {
         const state = accountStateOf(error);
         if (!state) {

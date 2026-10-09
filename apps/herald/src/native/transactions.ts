@@ -1,29 +1,26 @@
 import { hash } from "starknet";
-import { decodeMembers } from "./serde";
 import type { NativeManifest } from "./schema";
 
-/** Receipt routing only. Authentication and game mutations are enforced by execution. */
+const PLAY = BigInt(hash.getSelectorFromName("play"));
+
+/**
+ * Receipt routing only: which game a transaction belongs to and who sent it. A game action is the sender account's
+ * own call of Games.play, whose first argument is the game id; the actor is the sending account itself. A pre-roll
+ * revert routes the same way, though it emits nothing. Authentication and game mutations are enforced by execution.
+ */
 export function transactionScopes(
   manifest: NativeManifest,
-  calldata: string[] | undefined,
+  transaction: { calldata?: string[]; sender_address?: string },
 ): { gameId: string; actor: string }[] {
-  if (!calldata?.length) return [];
-  const schema = manifest.native.schemas[manifest.native.activeSchema];
-  const commands = schema.games.entrypoints.filter((entry) =>
-    entry.inputs.some((member) => member.name === "intent" || member.name === "actions"),
-  );
+  const { calldata, sender_address: sender } = transaction;
+  if (!calldata?.length || sender === undefined) return [];
   const scopes = new Map<string, { gameId: string; actor: string }>();
   for (const call of accountCalls(calldata)) {
-    if (BigInt(call.address) !== BigInt(manifest.world.address)) continue;
-    const command = commands.find((entry) => BigInt(call.selector) === BigInt(hash.getSelectorFromName(entry.name)));
-    if (!command) continue;
-    const decoded = decodeMembers(schema, command.inputs, call.calldata);
-    const actions = command.name === "execute_batch" ? (decoded.actions as Record<string, unknown>[]) : [decoded];
-    for (const action of actions) {
-      const intent = action.intent as Record<string, bigint>;
-      const scope = { gameId: String(BigInt(intent.game_id)), actor: String(BigInt(intent.actor)) };
-      scopes.set(`${scope.gameId}:${scope.actor}`, scope);
-    }
+    if (BigInt(call.address) !== BigInt(manifest.world.address) || BigInt(call.selector) !== PLAY) continue;
+    const [game] = call.calldata;
+    if (game === undefined || BigInt(game) <= 0n || BigInt(game) >= 2n ** 32n) throw new Error("Malformed play call");
+    const scope = { gameId: String(BigInt(game)), actor: String(BigInt(sender)) };
+    scopes.set(`${scope.gameId}:${scope.actor}`, scope);
   }
   return [...scopes.values()];
 }

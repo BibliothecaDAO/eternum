@@ -10,8 +10,8 @@ pub struct ExplorationReward {
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct ExtractedReward {
-    pub explorer_id: u32,
-    pub receiver: u32,
+    pub explorer_id: u64,
+    pub receiver: u64,
     pub coord: crate::troops::Coord,
     pub resource_type: u8,
     pub amount: u128,
@@ -23,11 +23,10 @@ pub trait IExtraction<T> {
         ref self: T,
         game_id: u32,
         actor: ContractAddress,
-        explorer_id: u32,
+        explorer_id: u64,
         revealed: Option<crate::troops::Coord>,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> ((), crate::ownership::StoryCursor);
+    );
 }
 #[starknet::interface]
 pub trait IExplorationGrant<T> {
@@ -40,20 +39,19 @@ pub trait IExplorationGrant<T> {
         game_context: crate::commands::ResourceContext,
     );
 }
-pub fn draw(rewards: Span<ExplorationReward>, seed: u256, timestamp: u64) -> ExplorationReward {
+pub fn draw(rewards: Span<ExplorationReward>, seed: u256) -> ExplorationReward {
     let mut total: u128 = 0;
     for reward in rewards {
         total += *reward.weight;
     }
     assert!(total != 0, "empty exploration pool");
-    let roll = crate::random::range(seed, timestamp.into() + 18, total);
+    let roll = crate::random::range(seed, 18, total);
     let mut cumulative = 0;
     for reward in rewards {
         cumulative += *reward.weight;
         if roll < cumulative {
             return ExplorationReward {
-                amount: *reward.amount
-                    + crate::random::range(seed, timestamp.into() + 19, *reward.amount_max - *reward.amount + 1),
+                amount: *reward.amount + crate::random::range(seed, 19, *reward.amount_max - *reward.amount + 1),
                 ..*reward,
             };
         }
@@ -61,7 +59,7 @@ pub fn draw(rewards: Span<ExplorationReward>, seed: u256, timestamp: u64) -> Exp
     panic!("invalid exploration draw")
 }
 pub fn reveal_reward(
-    troops: crate::troops::Troops, limits: crate::rules::TroopLimitConfig, percent: u16, seed: u256, timestamp: u64,
+    troops: crate::troops::Troops, limits: crate::rules::TroopLimitConfig, percent: u16, seed: u256,
 ) -> crate::resources::ResourceAmount {
     let tier_strength: u128 = match troops.tier {
         crate::troops::TroopTier::T1 => limits.t1_tier_strength.into(),
@@ -71,12 +69,11 @@ pub fn reveal_reward(
     let strength_scaled = troops.count * tier_strength;
     let numerator = strength_scaled * percent.into();
     crate::resources::ResourceAmount {
-        resource_type: if crate::random::range(seed, timestamp.into() + 18, 2) == 0 {
+        resource_type: if crate::random::range(seed, 18, 2) == 0 {
             ESSENCE
         } else {
             LABOR
-        },
-        amount: numerator / 100,
+        }, amount: numerator / 100,
     }
 }
 
@@ -88,7 +85,7 @@ pub fn boosted_amount(amount: u128, boosts: crate::troops::TroopBoosts, tick: u6
     };
     (amount + bonus) * crate::rules::RESOURCE_PRECISION
 }
-pub fn receiver(home_rewards: bool, explorer_id: u32, home: u32, resource_type: u8) -> u32 {
+pub fn receiver(home_rewards: bool, explorer_id: u64, home: u64, resource_type: u8) -> u64 {
     if !home_rewards || (resource_type >= 39 && resource_type <= 56) {
         explorer_id
     } else {

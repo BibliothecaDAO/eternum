@@ -18,6 +18,7 @@ import {
   scoutingIncrementBps,
 } from "@bibliothecadao/eternum";
 import {
+  safeInteger,
   nativeResearchConstants as research,
   type NativeFactStore,
   type NativeRows,
@@ -122,7 +123,7 @@ export const TypeUpgrade = ({
       essenceWait: secondsUntilHeld(
         essence,
         view.next.essence,
-        realmPerHour(setup.store, realm.entity_id, ResourcesIds.Essence, tick),
+        realmPerHour(setup.store, safeInteger(realm.entity_id), ResourcesIds.Essence, tick),
       ),
       laborWait: secondsUntilHeld(labor?.amount, view.next.labor, labor?.perHour),
     });

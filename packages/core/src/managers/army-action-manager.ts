@@ -1,3 +1,4 @@
+import { safeInteger } from "../utils/safe-integer";
 import { entityMapPosition } from "../utils/tile";
 import {
   type BiomeType,
@@ -488,6 +489,6 @@ export class ArmyActionManager {
       game_id: configManager.getActiveGameId(),
       explorer_id: this.entityId,
     })?.owner;
-    return ownerId ? new ResourceManager(this.store, ownerId) : null;
+    return ownerId ? new ResourceManager(this.store, safeInteger(ownerId)) : null;
   }
 }

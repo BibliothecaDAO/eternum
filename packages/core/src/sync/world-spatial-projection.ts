@@ -1,3 +1,4 @@
+import { safeInteger } from "../utils/safe-integer";
 import type { ID, Tile, TroopTier, TroopType } from "@bibliothecadao/types";
 import { TileOccupier } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
@@ -222,8 +223,8 @@ const resolveExpeditionRealmRenderable = (
     (structure.metadata.has_wonder ? TileOccupier.RealmWonderLevel1 : TileOccupier.RealmRegularLevel1) + level;
   return {
     kind: "structure",
-    spatialId: `entity:${structure.entity_id}` as const,
-    entityId: structure.entity_id,
+    spatialId: `entity:${safeInteger(structure.entity_id)}` as const,
+    entityId: safeInteger(structure.entity_id),
     reserved: false,
     hexCoords: { alt: false, col: site.col, row: site.row },
     occupierType,
@@ -267,7 +268,7 @@ const resolveArmyRenderable = (
 
   return Object.freeze({
     kind: "army" as const,
-    entityId: explorerTroops.explorer_id,
+    entityId: safeInteger(explorerTroops.explorer_id),
     hexCoords: Object.freeze({ alt, col, row }),
     troopCategory: explorerTroops.troops.category as TroopType,
     troopTier: explorerTroops.troops.tier as TroopTier,
@@ -530,9 +531,9 @@ export class WorldSpatialProjection {
         }
         if (change.model === "TileOccupancy") {
           for (const tile of [change.previous, change.current]) {
-            if (!tile || tile.entity_id === 0) continue;
+            if (!tile || tile.entity_id === 0n) continue;
             const army = this.store.get("ExplorerTroops", { game_id: tile.game_id, explorer_id: tile.entity_id });
-            this.armyIndex.update(tile.entity_id, resolveArmyRenderable(this.store, army));
+            this.armyIndex.update(safeInteger(tile.entity_id), resolveArmyRenderable(this.store, army));
           }
         }
         if (change.model === "ExplorerTroops") this.applyExplorerTroopsUpdate([change.current, change.previous]);
@@ -658,7 +659,7 @@ export class WorldSpatialProjection {
     const previousEntityId = previousExplorerTroops?.explorer_id;
     const currentEntityId = currentArmy?.entityId;
     const entityIds = new Set<ID>();
-    if (previousEntityId !== undefined && previousEntityId !== null) entityIds.add(previousEntityId);
+    if (previousEntityId !== undefined && previousEntityId !== null) entityIds.add(safeInteger(previousEntityId));
     if (currentEntityId !== undefined && currentEntityId !== null) entityIds.add(currentEntityId);
 
     entityIds.forEach((entityId) => {

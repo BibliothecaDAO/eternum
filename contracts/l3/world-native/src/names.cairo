@@ -7,7 +7,7 @@ pub struct EntityName {
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct SetEntityName {
-    pub entity_id: u32,
+    pub entity_id: u64,
     pub name: felt252,
 }
 
@@ -21,6 +21,5 @@ pub trait INames<T> {
         actor: ContractAddress,
         command: SetEntityName,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
     );
 }

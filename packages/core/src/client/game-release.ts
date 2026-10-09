@@ -1,14 +1,7 @@
 import type { NativeFactStore } from "./native-fact-store";
 import { refreshShardRelease, ShardReleaseMismatchError, type Shard } from "./shard";
 
-export class StaleGameReleaseUnchangedError extends Error {
-  constructor(releaseId: number) {
-    super(`STALE_RELEASE_UNCHANGED: Herald still reports release ${releaseId} after admission refused it`);
-    this.name = "StaleGameReleaseUnchangedError";
-  }
-}
-
-/** Validate each game pin once, sharing its refresh with every concurrent signer. */
+/** Validate each game pin once, shared by every concurrent sender: an action waits until its pin is readable. */
 export function followGameRelease(
   store: NativeFactStore,
   input: { gameId: number; shard: Pick<Shard, "url" | "releaseSchemas">; schemaIdentity: string },
@@ -18,7 +11,6 @@ export function followGameRelease(
   let catalogue = input.shard.releaseSchemas;
   let validated: number | undefined;
   let validation: { releaseId: number; promise: Promise<void> } | undefined;
-  let refreshing: Promise<void> | undefined;
   const pin = () => store.require("GameRelease", { game_id: input.gameId }).release_id;
 
   const validate = (): Promise<void> => {
@@ -52,7 +44,7 @@ export function followGameRelease(
       } catch (error) {
         if (pin() !== releaseId) return;
         if (error instanceof ShardReleaseMismatchError) throw error;
-        // Manifest availability does not invalidate the live fact stream. Keep signatures gated and retry.
+        // Manifest availability does not invalidate the live fact stream. Keep actions gated and retry.
         await waitToRetry(controller.signal);
       }
     }
@@ -60,23 +52,10 @@ export function followGameRelease(
   };
 
   const ready = async (): Promise<void> => {
-    let observedRefresh: Promise<void> | undefined;
     do {
       controller.signal.throwIfAborted();
-      observedRefresh = refreshing;
-      await observedRefresh;
       await validate();
-    } while (observedRefresh !== refreshing || validated !== pin());
-  };
-
-  const refresh = (previousRelease: number): Promise<void> => {
-    if (refreshing) return refreshing;
-    refreshing = waitForChangedPin(store, input.gameId, previousRelease, controller.signal)
-      .then(validate)
-      .finally(() => {
-        refreshing = undefined;
-      });
-    return refreshing;
+    } while (validated !== pin());
   };
 
   const unsubscribe = store.subscribe((changes) => {
@@ -85,7 +64,6 @@ export function followGameRelease(
   });
   return {
     ready,
-    refresh,
     dispose: () => {
       unsubscribe();
       controller.abort(new Error("Game release subscription disposed"));
@@ -104,37 +82,6 @@ function waitToRetry(signal: AbortSignal): Promise<void> {
       signal.removeEventListener("abort", abort);
       resolve();
     }, 1_000);
-    signal.addEventListener("abort", abort, { once: true });
-  });
-}
-
-function waitForChangedPin(
-  store: NativeFactStore,
-  gameId: number,
-  previous: number,
-  signal: AbortSignal,
-): Promise<void> {
-  if (store.require("GameRelease", { game_id: gameId }).release_id !== previous) return Promise.resolve();
-  return new Promise((resolve, reject) => {
-    signal.throwIfAborted();
-    const cleanup = () => {
-      clearTimeout(timer);
-      unsubscribe();
-      signal.removeEventListener("abort", abort);
-    };
-    const abort = () => {
-      cleanup();
-      reject(signal.reason);
-    };
-    const timer = setTimeout(() => {
-      cleanup();
-      reject(new StaleGameReleaseUnchangedError(previous));
-    }, 10_000);
-    const unsubscribe = store.subscribe(() => {
-      if (store.require("GameRelease", { game_id: gameId }).release_id === previous) return;
-      cleanup();
-      resolve();
-    });
     signal.addEventListener("abort", abort, { once: true });
   });
 }

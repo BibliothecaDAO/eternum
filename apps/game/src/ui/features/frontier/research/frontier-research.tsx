@@ -11,6 +11,7 @@ import { knownBalance } from "@/ui/utils/utils";
 import { extractReadableErrorMessage } from "@/utils/error-message";
 import { type ExpeditionRules, getBalance } from "@bibliothecadao/eternum";
 import {
+  safeInteger,
   nativeResearchConstants as research,
   nativeRuleConstants,
   type NativeRows,
@@ -45,7 +46,7 @@ export const FrontierResearch = ({ rules, realm }: { rules: ExpeditionRules; rea
   const [sending, setSending] = useState(false);
   const shrineXp = setup.store.get("ArmyProgressionRules", { game_id: realm.game_id })?.fixed_xp;
   const castle = plan ? castleNodes(plan, shrineXp) : [];
-  const labor = knownBalance(getBalance(realm.entity_id, ResourcesIds.Labor, tick, setup.store).balance);
+  const labor = knownBalance(getBalance(safeInteger(realm.entity_id), ResourcesIds.Labor, tick, setup.store).balance);
   const chosen = castle.find((node) => node.node.key === open);
 
   const research = async (node: ResearchNodeView) => {
@@ -96,7 +97,7 @@ export const FrontierResearch = ({ rules, realm }: { rules: ExpeditionRules; rea
                     wait: secondsUntilHeld(
                       essence,
                       chosen.node.essence,
-                      realmPerHour(setup.store, realm.entity_id, ResourcesIds.Essence, tick),
+                      realmPerHour(setup.store, safeInteger(realm.entity_id), ResourcesIds.Essence, tick),
                     ),
                   },
                   step: (

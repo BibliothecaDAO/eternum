@@ -3,7 +3,7 @@ import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { knownBalance } from "@/ui/utils/utils";
 import { getBalance } from "@bibliothecadao/eternum";
-import type { NativeRows } from "@bibliothecadao/eternum/game-client";
+import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { ResourcesIds } from "@bibliothecadao/types";
 
 const LORDS_MODELS = ["ResourceBalance"] as const;
@@ -13,6 +13,6 @@ export const useRealmLords = (realm: NativeRows["Structure"]): number | undefine
   const { setup } = useGame();
   const tick = useCurrentDefaultTick();
   useNativeRevision(LORDS_MODELS);
-  const balance = knownBalance(getBalance(realm.entity_id, ResourcesIds.Lords, tick, setup.store).balance);
+  const balance = knownBalance(getBalance(safeInteger(realm.entity_id), ResourcesIds.Lords, tick, setup.store).balance);
   return balance === undefined ? undefined : Math.floor(balance);
 };

@@ -1,5 +1,5 @@
+import { safeInteger } from "../../../packages/core/src/utils/safe-integer";
 import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
-import { requireNativeExecutionOutcome } from "@bibliothecadao/provider";
 import { setTimeout as sleep } from "node:timers/promises";
 import { actorKey, type HarnessGameClient, type HeraldConfirmations } from "./game-client";
 import {
@@ -20,7 +20,7 @@ import {
   waitForWorldState,
 } from "@bibliothecadao/eternum";
 import { shortString, type Account } from "starknet";
-import { ResourcesIds, StructureType, TroopType, type ID, type NativeTicketIdentity } from "@bibliothecadao/types";
+import { ResourcesIds, StructureType, TroopType, type ID } from "@bibliothecadao/types";
 
 export interface Coord {
   x: number;
@@ -57,7 +57,6 @@ export interface HarnessSubmission {
 }
 
 interface SubmittedEvent {
-  ticket?: NativeTicketIdentity;
   signerAddress?: string;
   transactionHash: string;
 }
@@ -164,7 +163,7 @@ function createClientGame(client: GameClient, heraldConfirmations?: HeraldConfir
       if (![...store.inGame("PlayerEntry", game_id)].some((row) => row.player === BigInt(player))) return undefined;
       return [...store.structuresOwnedBy(game_id, BigInt(player))]
         .filter((row) => row.base.category === StructureType.Realm)
-        .map((row) => row.entity_id);
+        .map((row) => safeInteger(row.entity_id));
     },
     structureCoord: (structureId) => {
       const structure = store.get("Structure", { game_id, entity_id: structureId });
@@ -312,13 +311,9 @@ const captureSubmission = (
     const onSubmitted = (event: SubmittedEvent) => {
       if (!event.signerAddress || actorKey(event.signerAddress) !== signer) return;
       settle();
-      if (!event.ticket) return reject(new Error("Native submission has no ticket identity"));
-      const ticket = event.ticket;
-      const confirmed = client.runtime.waitForTransaction(event.transactionHash).then((transaction) => {
-        if (transaction.status === "REVERTED") throw new Error(transaction.revertReason ?? "Transaction reverted");
-        const outcome = requireNativeExecutionOutcome(transaction.executions, ticket);
-        if (outcome.status === "REVERTED")
-          throw new Error(`Native action rejected: ${outcome.statusClass}: ${outcome.reason}`);
+      const confirmed = client.waitForAction(event.transactionHash).then((transaction) => {
+        if (transaction.status !== "SUCCEEDED")
+          throw new Error(`Player action rejected: ${transaction.revertReason ?? transaction.status}`);
       });
       resolve({
         transactionHash: event.transactionHash,

@@ -39,7 +39,7 @@ import {
 import { FLAT_TERRAIN_SURFACE, placePositionOnTerrain, type TerrainSurface } from "@/three/terrain/terrain-surface";
 import { gltfLoader, isAddressEqualToAccount } from "@/three/utils/utils";
 import { FELT_CENTER } from "@/ui/config";
-import type { GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
+import { safeInteger, type GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
 import {
   divideByPrecision,
   getIsBlitz,
@@ -484,12 +484,13 @@ export class StructureManager {
           if (change.model === "Guard") {
             const guard = change.current ?? change.previous;
             if (!guard || guard.game_id !== configManager.getActiveGameId()) continue;
+            const structureId = safeInteger(guard.structure_id);
             this.playStructureGuardDifferenceFx(
-              guard.structure_id,
+              structureId,
               this.resolveGuardArmies(change.previous ? [change.previous] : []),
               this.resolveGuardArmies(change.current ? [change.current] : []),
             );
-            touched.add(guard.structure_id);
+            touched.add(structureId);
           } else if (
             change.model === "Structure" ||
             change.model === "ExpeditionSite" ||
@@ -499,7 +500,7 @@ export class StructureManager {
             change.model === "HyperstructureShares"
           ) {
             const row = change.current ?? change.previous;
-            if (row?.game_id === configManager.getActiveGameId()) touched.add(row.entity_id);
+            if (row?.game_id === configManager.getActiveGameId()) touched.add(safeInteger(row.entity_id));
           }
         }
         if (refreshAll) {

@@ -3,7 +3,7 @@ use crate::troops::Troops;
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct GuardKey {
     pub game_id: u32,
-    pub structure_id: u32,
+    pub structure_id: u64,
     pub slot: u8,
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq, Default, starknet::Store)]
@@ -19,19 +19,17 @@ pub trait IGuardCombat<T> {
         actor: starknet::ContractAddress,
         command: crate::commands::Battle,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> ((), crate::ownership::StoryCursor);
+    );
 }
 #[starknet::interface]
 pub trait IStructureCapture<T> {
     fn capture_structure(
         ref self: T,
         key: crate::resources::ResourceKey,
-        capturing_home: u32,
+        capturing_home: u64,
         timestamp: u64,
         game_context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> ((), crate::ownership::StoryCursor);
+    );
 }
 #[starknet::interface]
 pub trait IGuards<T> {

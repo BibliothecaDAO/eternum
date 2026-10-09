@@ -1,6 +1,5 @@
 import {
   createGameClient,
-  createNativeTicketSubmission,
   setBlockTimestampSource,
   setChainProvenTimestampSource,
   type GameClient,
@@ -15,7 +14,6 @@ import { createMicrotaskGameSyncScheduler } from "@bibliothecadao/eternum/game-s
 import type { GameSyncEvent, HeraldGameDirectoryEntry } from "@bibliothecadao/eternum/game-sync";
 import { type NativeWorldBindings, ContractAddress } from "@bibliothecadao/types";
 import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
-import { signRunnerIntent } from "./signer";
 
 import type { RunnerConfig, RunnerGameSelector } from "./config";
 import { logEvent } from "./log";
@@ -52,12 +50,7 @@ export async function connectRunnerGame(config: RunnerConfig): Promise<RunnerGam
     presetId: listing.preset_id,
     // The runner reads Realms profiles from nowhere, so it names no player; its prompts speak in addresses.
     playerNames: () => null,
-    native: {
-      bindings: bindings as unknown as NativeWorldBindings,
-      chainId: shard.chainId,
-      signIntent: (actor, digest) => signRunnerIntent(config, listing.game_id, actor, digest),
-      submitIntent: createNativeTicketSubmission(shard.admissionUrl),
-    },
+    bindings: bindings as unknown as NativeWorldBindings,
     scheduler: createMicrotaskGameSyncScheduler(),
     observer: createRunnerObserver(listing.game_id, events, syncFailures),
   });

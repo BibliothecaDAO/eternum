@@ -17,7 +17,7 @@ import {
   StaminaManager,
   structureMapPosition,
 } from "@bibliothecadao/eternum";
-import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
+import { safeInteger, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { FARM, LABOR, TROOPS, WHEAT, WORKSHOP } from "@/ui/design-system/kit/words";
 import { nativeResearchConstants as research } from "@bibliothecadao/eternum/game-client";
 import {
@@ -78,7 +78,7 @@ const readGuideFacts = (
   clock: { now: number; tick: number; armiesTick: number; onMap: boolean },
 ): GuideFacts => {
   if (!realm) return { ...NO_REALM, onMap: clock.onMap };
-  const armies = liveHomeArmies(store, realm.entity_id, realm.game_id);
+  const armies = liveHomeArmies(store, safeInteger(realm.entity_id), realm.game_id);
   const stamina = armies.flatMap((army) => {
     const troops = resolveExplorerTroops(store, army);
     return troops
@@ -98,7 +98,7 @@ const readGuideFacts = (
   return {
     ...HOSTED,
     realm: true,
-    barracks: getBuildingQuantity(realm.entity_id, BuildingType.ResourceKnightT1, store) > 0,
+    barracks: getBuildingQuantity(safeInteger(realm.entity_id), BuildingType.ResourceKnightT1, store) > 0,
     troopsAtHome: troopsAtHome(store, realm, rules, clock.now, clock.tick),
     armies: armies.length,
     armyActed: stamina.some((bar) => bar.current < bar.max),
@@ -148,11 +148,13 @@ const firstTypeTierAffordable = (
 ): string | null => {
   const learned = realmLearned(store, realm.game_id, realm.entity_id);
   if (learned === undefined) return null;
-  const held = (resource: ResourcesIds) => knownBalance(getBalance(realm.entity_id, resource, tick, store).balance);
+  const held = (resource: ResourcesIds) =>
+    knownBalance(getBalance(safeInteger(realm.entity_id), resource, tick, store).balance);
   for (const { row, category, word } of FIRST_TIERS) {
     // The castle's own workshop is not a building of the type.
     const own =
-      getBuildingQuantity(realm.entity_id, category, store) - (category === BuildingType.ResourceLabor ? 1 : 0);
+      getBuildingQuantity(safeInteger(realm.entity_id), category, store) -
+      (category === BuildingType.ResourceLabor ? 1 : 0);
     if (own < 1 || researchTier(learned, row) > 0) continue;
     const price = store.get("ResearchPrice", { game_id: realm.game_id, row, tier: 1 });
     const essence = held(ResourcesIds.Essence);
@@ -244,7 +246,7 @@ const canAffordNextCastleLevel = (store: NativeFactStore, realm: NativeRows["Str
   if (!costs?.length) return false;
   return costs.every((cost) => {
     // Recipe costs are in display units, as the castle panel shows them.
-    const balance = knownBalance(getBalance(realm.entity_id, cost.resource, tick, store).balance);
+    const balance = knownBalance(getBalance(safeInteger(realm.entity_id), cost.resource, tick, store).balance);
     return balance !== undefined && balance >= cost.amount;
   });
 };

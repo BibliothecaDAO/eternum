@@ -6,7 +6,7 @@ import { formatAmount } from "@/ui/design-system/kit/amount";
 import { type IconCode, KitIcon } from "@/ui/design-system/kit/kit-icon";
 import { BARRACKS, BUILDINGS, FARM, HUT, WORKSHOP } from "@/ui/design-system/kit/words";
 import { buildableRadius } from "@bibliothecadao/eternum";
-import type { NativeRows } from "@bibliothecadao/eternum/game-client";
+import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { BuildingType } from "@bibliothecadao/types";
 
 /** The four common building types the row counts, in the wireframe's order. */
@@ -76,7 +76,7 @@ export const RealmBuildingsRow = ({ realm }: { realm: NativeRows["Structure"] })
         const first = buildings.find((building) => Number(building.category) === category);
         if (first)
           setSelectedBuildingHex({
-            structureId: realm.entity_id,
+            structureId: safeInteger(realm.entity_id),
             innerCol: first.inner_col,
             innerRow: first.inner_row,
           });

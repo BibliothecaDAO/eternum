@@ -13,15 +13,16 @@ import time
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "deploy/athanor/scripts"))
 import shard
+from operator_token import read_operator_token
 
 DATA = Path("/data")
 # Each service's config volume. It holds only copies of files in DATA, republished on every start, so a backup of
 # DATA restores onto fresh volumes on a new host.
 PUBLIC, HERALD_CONFIG = Path("/public"), Path("/herald-config")
-GATEWAY_CONFIG, POSTGRES_CONFIG = Path("/gateway-config"), Path("/postgres-config")
+POSTGRES_CONFIG = Path("/postgres-config")
 # The settings that fix the shard's identity. The rest (node image, capacity, public URLs) are operational and are
 # rendered again on every start.
-IDENTITY = ("shard", "chain_id", "guardian_url")
+IDENTITY = ("shard", "chain_id", "guardian_url", "l2_gas_bound")
 # The release this image deploys, baked at build by deploy/release/facts.ts.
 RELEASE_FACTS = Path("/release/release-facts.json")
 
@@ -31,10 +32,13 @@ def configuration():
     config = {
         "shard": chain_id.lower().replace("_", "-"), "chain_id": chain_id, "port_base": 0,
         "guardian_url": os.environ["GUARDIAN_URL"], "public_rpc_url": os.environ["PUBLIC_RPC_URL"],
-        "public_admission_url": os.environ["PUBLIC_ADMISSION_URL"], "player_capacity": int(os.environ["PLAYER_CAPACITY"]),
+        "public_herald_url": os.environ["PUBLIC_HERALD_URL"],
+        "vrf_workers": int(os.environ["VRF_WORKERS"]), "l2_gas_bound": os.environ["L2_GAS_BOUND"],
+        "player_capacity": int(os.environ["PLAYER_CAPACITY"]),
         "chain_config": os.environ.get("CHAIN_CONFIG", str(ROOT / "deploy/athanor/chain-config.yaml")),
     }
     shard.validate_shard_identity(config)
+    shard.validate_runtime_configuration(config)
     return config
 
 
@@ -75,13 +79,21 @@ def trusted_proxy(environ, route_table):
 def publish_trusted_proxy():
     proxy = trusted_proxy(os.environ, Path("/proc/net/route").read_text())
     target = PUBLIC / "proxy.env"
-    target.write_text(f"GATEWAY_TRUSTED_PROXY={proxy}\nRPC_TRUSTED_PROXY={proxy}\n" if proxy else "")
+    target.write_text(f"RPC_TRUSTED_PROXY={proxy}\n" if proxy else "")
     target.chmod(0o644)
 
 
+def operator_environment(environ):
+    path = environ.get("OPERATOR_TOKEN_FILE")
+    if not path:
+        raise ValueError("OPERATOR_TOKEN_FILE is required")
+    owner = int(environ.get("HOST_UID", os.geteuid()))
+    return {"OPERATOR_TOKEN": read_operator_token(path, owner)}
+
+
 def environment(config):
-    return {**shard.deployment_environment(config, DATA), "RPC_URL": "http://madara:9944/rpc/v0_10_2",
-            "ADMISSION_URL": "http://gateway:9950", "HERALD_URL": "http://herald:3003"}
+    return {**shard.deployment_environment(config, DATA), **operator_environment(os.environ), "RPC_URL": "http://madara:9944/rpc/v0_10_2",
+            "HERALD_URL": "http://herald:3003"}
 
 
 def prepare(config):
@@ -93,6 +105,7 @@ def prepare(config):
         refuse_changed_identity(json.loads(record.read_text()), config)
     else:
         initialize_identity(config)
+    shard.run(["bun", "deploy/athanor/scripts/host-accounts.ts", "verify-vrf", str(DATA)], DATA, "verify-vrf")
     publish_prepared_config(config)
     shard.write_json(record, identity(config))
 
@@ -118,22 +131,23 @@ def publish_prepared_config(config):
     password = POSTGRES_CONFIG / "postgres-password"
     password.write_text(shard.read_private_environment(DATA / "postgres.env")["POSTGRES_PASSWORD"])
     password.chmod(0o644)
+    publish("native-world.json", PUBLIC)
     publish("chain-config.yaml", PUBLIC)
     publish("collector.json", PUBLIC)
     publish("herald.env", HERALD_CONFIG)
 
 
 def publish_deployed_config(config):
-    shard.write_gateway_environment(config, DATA)
-    publish("gateway.env", GATEWAY_CONFIG)
     publish("native-world.json", PUBLIC)
     publish("gameplay-contracts.json", PUBLIC)
 
 
 def publish(name, destination):
     target = destination / name
-    shutil.copyfile(DATA / name, target)
-    target.chmod(0o644)
+    temporary = destination / (name + ".tmp")
+    shutil.copyfile(DATA / name, temporary)
+    temporary.chmod(0o644)
+    os.replace(temporary, target)
 
 
 def deploy(config, presets):
@@ -163,7 +177,8 @@ def deploy_world_once(config, env):
 # Registration is idempotent, so every start registers the listed presets: one added later registers without
 # touching the shard's identity. The record holds the commitment each preset has on chain, which must be the release's.
 def register_presets(env, presets):
-    env = {**env, "DEPLOYER_ACCOUNT_ADDRESS": json.loads((DATA / "gameplay-contracts.json").read_text())["operatorAccountAddress"]}
+    operator = json.loads((DATA / "gameplay-contracts.json").read_text())["operatorAccountAddress"]
+    env = {**env, "DEPLOYER_ACCOUNT_ADDRESS": operator}
     commitments = {}
     for preset, released in presets.items():
         record = DATA / f"preset-{preset}.json"
@@ -182,15 +197,54 @@ def chain_commitment(preset, on_chain, released):
 def harness_invocation(args, environ, data=DATA, started=None):
     """The harness command against this shard: its private settings from harness.env, its reports under
     data/harness/<start time> unless the caller names a directory."""
-    environment = {**environ, **shard.read_private_environment(data / "harness.env")}
+    environment = {**environ, **operator_environment(environ),
+                   **shard.read_private_environment(data / "harness.env"), **shard.host_credentials(data)}
+    operator = json.loads((data / "gameplay-contracts.json").read_text())["operatorAccountAddress"]
+    environment["DEPLOYER_ACCOUNT_ADDRESS"] = operator
+    environment["HARNESS_ADMIN_RPC_URL"] = "http://madara:9944/rpc/v0_10_2"
+    environment["RPC_URL"] = "http://rpc:8080/rpc/v0_10_2"
+    environment["HERALD_URL"] = "http://herald:3003"
+    # The host runner may rewrite harness.env with host paths. Inside the image, DATA is the mounted copy.
+    for field, filename in (("NATIVE_WORLD_MANIFEST", "native-world.json"),
+                            ("GAMEPLAY_CONTRACTS_PATH", "gameplay-contracts.json"),
+                            ("SHARD_HOST_ACCOUNTS", "host-accounts.json")):
+        environment[field] = str(data / filename)
     stamp = time.strftime("%Y%m%dT%H%M%SZ", started or time.gmtime())
     environment.setdefault("HARNESS_OUTPUT_DIRECTORY", str(data / "harness" / stamp))
     return ["bun", "deploy/athanor/harness/run.ts", *args], environment
 
 
+def probe():
+    """Readiness and account probes use only the shard's private Compose network."""
+    rpc = "http://madara:9944/rpc/v0_10_2"
+    public = "http://rpc:8080/rpc/v0_10_2"
+    rpc_rtt = shard.wait_for_endpoint(rpc, rpc=True)
+    herald_rtt = shard.wait_for_endpoint("http://herald:3003/health")
+    shard.wait_for_endpoint(public, rpc=True)
+    for args, name in [([str(DATA), rpc], "roles"), (["--public-rpc", public], "public-rpc")]:
+        shard.run(["bun", "deploy/athanor/scripts/inspect-shard-roles.ts", *args], DATA, name)
+    shard.run(["bun", "deploy/athanor/scripts/account-rpc-smoke.ts", str(DATA), public], DATA, "account-rpc-smoke")
+    shard.write_json(DATA / "network-probes.json", {"rpcRttMs": rpc_rtt, "heraldRttMs": herald_rtt})
+
+
 if __name__ == "__main__":
     os.umask(0o077)
     action = sys.argv[1]
+    if action == "probe":
+        os.environ.update(operator_environment(os.environ))
+        probe()
+        raise SystemExit(0)
+    if action == "launcher-check":
+        _, environment = harness_invocation([], os.environ)
+        os.execvpe("bun", ["bun", "deploy/athanor/scripts/launcher-check.ts", *sys.argv[2:]], environment)
+    if action == "self-check":
+        argv, environment = harness_invocation([], os.environ)
+        identity = json.loads((DATA / "gameplay-contracts.json").read_text())
+        environment["DEPLOYER_ACCOUNT_ADDRESS"] = identity["operatorAccountAddress"]
+        environment["RPC_URL"] = "http://rpc:8080/rpc/v0_10_2"
+        environment["HARNESS_ADMIN_RPC_URL"] = "http://madara:9944/rpc/v0_10_2"
+        environment["HERALD_URL"] = "http://herald:3003"
+        os.execvpe("bun", ["bun", "deploy/athanor/harness/self-check.ts"], environment)
     if action == "harness":
         # The harness runs as the host user, so what it writes is already the user's: it execs before any chown.
         argv, environment = harness_invocation(sys.argv[2:], os.environ)

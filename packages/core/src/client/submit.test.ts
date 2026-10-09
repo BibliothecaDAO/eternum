@@ -1,137 +1,111 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { BlockTag, type AccountInterface, type AllowArray, type Call, type UniversalDetails } from "starknet";
 
 import { configureGameplayAccountSubmits, executeGameplayAccountTransaction } from "./submit";
 
 const CALL = { contractAddress: "0x1", entrypoint: "play", calldata: [] };
+const SHARD = { chainId: "0x1", l2GasBound: 0x47868c00n };
 
 describe("gameplay account submits", () => {
-  afterEach(() => {
-    vi.useRealTimers();
-  });
+  it("sends an ordinary invoke at the current pre-confirmed nonce with the shard's bound and tip 0", async () => {
+    const account = createAccount("0xabc", ["0x7"], async () => ({ transaction_hash: "0x1" }));
 
-  it("pipelines a 20-action burst from one pre-confirmed read", async () => {
-    let releaseAll!: () => void;
-    const blocked = new Promise<void>((resolve) => {
-      releaseAll = resolve;
-    });
-    let active = 0;
-    let maximumActive = 0;
-    const account = createAccount("0xabc", ["0x7"], async () => {
-      active += 1;
-      maximumActive = Math.max(maximumActive, active);
-      await blocked;
-      active -= 1;
-      return { transaction_hash: `0x${account.execute.mock.calls.length}` };
+    await expect(executeGameplayAccountTransaction({ account, calls: CALL, shard: SHARD })).resolves.toEqual({
+      transaction_hash: "0x1",
     });
 
-    const burst = Array.from({ length: 20 }, () =>
-      executeGameplayAccountTransaction({ account, calls: CALL, chainId: "0x1" }),
-    );
-    await vi.waitFor(() => expect(account.execute).toHaveBeenCalledTimes(20));
-    expect(maximumActive).toBe(20);
-
-    releaseAll();
-    await expect(Promise.all(burst)).resolves.toHaveLength(20);
-
-    expect(account.getNonce).toHaveBeenCalledTimes(1);
     expect(account.getNonce).toHaveBeenCalledWith(BlockTag.PRE_CONFIRMED);
-    expect(account.execute.mock.calls.map(([, details]) => details?.nonce)).toEqual(
-      Array.from({ length: 20 }, (_, index) => 7n + BigInt(index)),
+    expect(account.execute).toHaveBeenCalledWith(
+      CALL,
+      expect.objectContaining({
+        nonce: "0x7",
+        tip: 0,
+        resourceBounds: {
+          l1_gas: { max_amount: 0n, max_price_per_unit: 0n },
+          l1_data_gas: { max_amount: 0n, max_price_per_unit: 0n },
+          l2_gas: { max_amount: 0x47868c00n, max_price_per_unit: 0n },
+        },
+      }),
     );
-    expect(account.execute.mock.calls[0]?.[1]).toMatchObject({
-      tip: 0,
-      resourceBounds: {
-        l1_gas: { max_amount: 0n, max_price_per_unit: 0n },
-        l1_data_gas: { max_amount: 0n, max_price_per_unit: 0n },
-        l2_gas: { max_amount: 1_200_000_000n, max_price_per_unit: 0n },
-      },
-    });
   });
 
-  it("signs the next action without waiting for the previous send", async () => {
-    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
-    let settled = 0;
-    const account = createAccount("0x999", ["0x7"], () => {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          settled += 1;
-          resolve({ transaction_hash: `0x${settled}` });
-        }, 150);
-      });
-    });
-
-    const burst = Array.from({ length: 10 }, () =>
-      executeGameplayAccountTransaction({ account, calls: CALL, chainId: "0x1" }),
+  it("keeps one send in flight: the next reads its nonce only once the previous is in a block", async () => {
+    let firstInBlock = false;
+    const account = createAccount(
+      "0x999",
+      ["0x7", "0x8"],
+      async () => ({ transaction_hash: `0x${account.execute.mock.calls.length}` }),
+      async (hash) => ({ finality_status: hash !== "0x1" || firstInBlock ? "PRE_CONFIRMED" : "RECEIVED" }),
     );
+
+    const first = executeGameplayAccountTransaction({ account, calls: CALL, shard: SHARD });
+    const second = executeGameplayAccountTransaction({ account, calls: CALL, shard: SHARD });
+    await expect(first).resolves.toEqual({ transaction_hash: "0x1" });
     await endOfMacrotask();
+    expect(account.getNonce).toHaveBeenCalledTimes(1);
+    expect(account.execute).toHaveBeenCalledTimes(1);
 
-    expect(account.execute).toHaveBeenCalledTimes(10);
-    expect(settled).toBe(0);
-    expect(account.execute.mock.calls.map(([, details]) => details?.nonce)).toEqual(
-      Array.from({ length: 10 }, (_, index) => 7n + BigInt(index)),
+    firstInBlock = true;
+    await expect(second).resolves.toEqual({ transaction_hash: "0x2" });
+    expect(account.execute.mock.calls.map(([, details]) => details?.nonce)).toEqual(["0x7", "0x8"]);
+  });
+
+  it("keeps the next send waiting while the sent transaction's status cannot be read", async () => {
+    let readable = false;
+    const account = createAccount(
+      "0x555",
+      ["0x7", "0x8"],
+      async () => ({ transaction_hash: `0x${account.execute.mock.calls.length}` }),
+      async () => {
+        if (!readable) throw new Error("upstream timed out");
+        return { finality_status: "PRE_CONFIRMED" };
+      },
     );
-
-    await vi.advanceTimersByTimeAsync(150);
-    await expect(Promise.all(burst)).resolves.toHaveLength(10);
-    expect(settled).toBe(10);
+    const first = executeGameplayAccountTransaction({ account, calls: CALL, shard: SHARD });
+    const second = executeGameplayAccountTransaction({ account, calls: CALL, shard: SHARD });
+    await expect(first).resolves.toEqual({ transaction_hash: "0x1" });
+    await new Promise((resolve) => setTimeout(resolve, 600));
+    expect(account.execute).toHaveBeenCalledTimes(1);
+    readable = true;
+    await expect(second).resolves.toEqual({ transaction_hash: "0x2" });
+    expect(account.execute.mock.calls.map(([, details]) => details?.nonce)).toEqual(["0x7", "0x8"]);
   });
 
-  it("retries one nonce rejection with a fresh pre-confirmed nonce", async () => {
-    const account = createAccount("0xdef", ["0x6", "0x7"], async () => {
-      if (account.execute.mock.calls.length === 1) {
-        throw new Error("Invalid transaction nonce. Account nonce: 0x7; got: 0x6");
-      }
-      return { transaction_hash: "0x2" };
-    });
-
-    await expect(executeGameplayAccountTransaction({ account, calls: CALL, chainId: "0x1" })).resolves.toEqual({
-      transaction_hash: "0x2",
-    });
-    await expect(executeGameplayAccountTransaction({ account, calls: CALL, chainId: "0x1" })).resolves.toEqual({
-      transaction_hash: "0x2",
-    });
-    expect(account.getNonce).toHaveBeenCalledTimes(2);
-    expect(account.execute).toHaveBeenCalledTimes(3);
-    expect(account.execute.mock.calls.map(([, details]) => details?.nonce)).toEqual([6n, 7n, 8n]);
-  });
-
-  it("a failed send resyncs the nonce for the next action", async () => {
-    const account = createAccount("0x789", ["0x3", "0x9"], async () => {
-      if (account.execute.mock.calls.length === 1) throw new Error("RPC unreachable");
+  it("lets the next send go with a fresh nonce after a send fails", async () => {
+    const account = createAccount("0x789", ["0x3", "0x3"], async () => {
+      if (account.execute.mock.calls.length === 1)
+        throw Object.assign(new Error("Transaction refused"), { code: -32601 });
       return { transaction_hash: "0x5" };
     });
 
-    await expect(executeGameplayAccountTransaction({ account, calls: CALL, chainId: "0x1" })).rejects.toThrow(
-      "RPC unreachable",
+    await expect(executeGameplayAccountTransaction({ account, calls: CALL, shard: SHARD })).rejects.toThrow(
+      "Transaction refused",
     );
-    await expect(executeGameplayAccountTransaction({ account, calls: CALL, chainId: "0x1" })).resolves.toEqual({
+    await expect(executeGameplayAccountTransaction({ account, calls: CALL, shard: SHARD })).resolves.toEqual({
       transaction_hash: "0x5",
     });
     expect(account.getNonce).toHaveBeenCalledTimes(2);
-    expect(account.execute).toHaveBeenCalledTimes(2);
-    expect(account.execute.mock.calls.map(([, details]) => details?.nonce)).toEqual([3n, 9n]);
   });
 
-  it("installs the same submit policy on generated-system account calls", async () => {
+  it("puts every send of a configured account, raw or generated, through the same policy", async () => {
     const account = createAccount("0x123", ["0x9"], async () => ({ transaction_hash: "0x3" }));
     const rawExecute = account.execute;
-    const configured = configureGameplayAccountSubmits(account as unknown as AccountInterface, "0x1");
+    const configured = configureGameplayAccountSubmits(account as unknown as AccountInterface, SHARD);
 
     await expect(configured.execute(CALL)).resolves.toEqual({ transaction_hash: "0x3" });
     expect(rawExecute).toHaveBeenCalledWith(
       CALL,
-      expect.objectContaining({ nonce: 9n, tip: 0, resourceBounds: expect.any(Object) }),
+      expect.objectContaining({ nonce: "0x9", tip: 0, resourceBounds: expect.any(Object) }),
     );
   });
 
   it("rejects reusing a configured account on another chain", () => {
     const account = createAccount("0x456", ["0x1"], async () => ({ transaction_hash: "0x4" }));
-    configureGameplayAccountSubmits(account as unknown as AccountInterface, "0x1");
+    configureGameplayAccountSubmits(account as unknown as AccountInterface, SHARD);
 
-    expect(() => configureGameplayAccountSubmits(account as unknown as AccountInterface, "0x2")).toThrow(
-      "configured for 0x1, not 0x2",
-    );
+    expect(() =>
+      configureGameplayAccountSubmits(account as unknown as AccountInterface, { ...SHARD, chainId: "0x2" }),
+    ).toThrow("configured for 0x1, not 0x2");
   });
 });
 
@@ -139,6 +113,9 @@ function createAccount(
   address: string,
   nonces: string[],
   execute: (calls: AllowArray<Call>, details?: UniversalDetails) => Promise<{ transaction_hash: string }>,
+  status: (transactionHash: string) => Promise<{ finality_status: string }> = async () => ({
+    finality_status: "PRE_CONFIRMED",
+  }),
 ) {
   return {
     address,
@@ -148,10 +125,58 @@ function createAccount(
       if (!nonce) throw new Error("No nonce prepared for test");
       return nonce;
     }),
+    getTransactionStatus: vi.fn(status),
   };
 }
 
-/** Flushes every pending microtask without firing a faked timer. */
+/** Flushes every pending microtask and the next macrotask. */
 function endOfMacrotask(): Promise<void> {
   return new Promise((resolve) => setImmediate(resolve));
 }
+
+it("a lost invoke reply observes the ordinary hash and holds the next send until inclusion", async () => {
+  let included = false;
+  const account = createAccount(
+    "0x9876",
+    ["0x7", "0x8"],
+    async () => {
+      if (account.execute.mock.calls.length === 1) throw new Error("upstream response lost");
+      return { transaction_hash: "0x5" };
+    },
+    async () => ({ finality_status: included ? "PRE_CONFIRMED" : "RECEIVED" }),
+  );
+  const sent = await executeGameplayAccountTransaction({ account, calls: CALL, shard: SHARD });
+  expect(sent.transaction_hash).toMatch(/^0x[0-9a-f]+$/);
+  const next = executeGameplayAccountTransaction({ account, calls: CALL, shard: SHARD });
+  await endOfMacrotask();
+  expect(account.execute).toHaveBeenCalledTimes(1);
+  expect(account.getNonce).toHaveBeenCalledTimes(1);
+  included = true;
+  await expect(next).resolves.toEqual({ transaction_hash: "0x5" });
+  expect(account.execute).toHaveBeenCalledTimes(2);
+});
+
+it("receipt-not-found time alone cannot release a pending account nonce", async () => {
+  vi.useFakeTimers();
+  let visible = false;
+  const account = createAccount(
+    "0x9988",
+    ["0x7", "0x8"],
+    async () => ({ transaction_hash: "0x6" }),
+    async () => {
+      if (!visible) throw new Error("TXN_HASH_NOT_FOUND");
+      return { finality_status: "PRE_CONFIRMED" };
+    },
+  );
+  try {
+    await executeGameplayAccountTransaction({ account, calls: CALL, shard: SHARD });
+    const next = executeGameplayAccountTransaction({ account, calls: CALL, shard: SHARD });
+    await vi.advanceTimersByTimeAsync(11_000);
+    expect(account.execute).toHaveBeenCalledTimes(1);
+    visible = true;
+    await vi.advanceTimersByTimeAsync(250);
+    await expect(next).resolves.toEqual({ transaction_hash: "0x6" });
+  } finally {
+    vi.useRealTimers();
+  }
+});

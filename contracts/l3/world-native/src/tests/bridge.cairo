@@ -9,7 +9,7 @@ use crate::rules::RESOURCE_PRECISION;
 use crate::structures::{IStructureOperationsDispatcher, StructureRecord};
 use crate::tests::state::{ResourceObservationTrait, StructureObservationTrait};
 use super::fixtures::{ITokenFixtureDispatcher, ITokenFixtureDispatcherTrait};
-use super::resource_commands::{assert_terminal_rejection, execute, execute_recorded_at, grant, set_fixture};
+use super::resource_commands::{assert_terminal_rejection, execute, grant, set_fixture};
 
 const TOKENS: u256 = 1000000000000000000000;
 const STOCK: u128 = 1000 * RESOURCE_PRECISION;
@@ -23,9 +23,9 @@ fn setup(village: bool, paused: bool) -> (super::Deployment, ResourceKey, Resour
 fn setup_with_platform_fees(
     village: bool, paused: bool, velords: u16, season: u16, client: u16,
 ) -> (super::Deployment, ResourceKey, ResourceKey, ContractAddress) {
-    let mut rules = super::recorded::rules();
-    rules.mode_rules = super::recorded::ETERNUM_RULES;
-    rules.command_mask = super::recorded::ETERNUM_COMMAND_MASK;
+    let mut rules = super::play_fixture::rules();
+    rules.mode_rules = super::play_fixture::ETERNUM_RULES;
+    rules.command_mask = super::play_fixture::ETERNUM_COMMAND_MASK;
     rules.entry_rule = crate::rules::ENTRY_ENTITLEMENT;
     rules.speed_config.donkey_sec_per_km = 1;
     rules.tick_config.delivery_tick_in_seconds = 1;
@@ -106,7 +106,7 @@ fn amount(value: u128) -> Span<ResourceAmount> {
 fn deposit_applies_retention_platform_fees_and_connected_realm_fee() {
     for village in array![false, true] {
         let (d, realm, target, token) = setup(village, false);
-        assert!(execute_recorded_at(d, deposit(target), 40, 1000));
+        assert!(execute(d, deposit(target), 40));
         assert_eq!(tokens(token, d.actor), 0);
         assert_eq!(tokens(token, 0x777.try_into().unwrap()), 10000000000000000000);
         assert_eq!(tokens(token, 0x888.try_into().unwrap()), 5000000000000000000);
@@ -128,7 +128,7 @@ fn deposit_applies_retention_platform_fees_and_connected_realm_fee() {
 fn withdrawal_charges_connected_realm_fee_once_and_keeps_donkeys_and_travel() {
     for village in array![false, true] {
         let (d, realm, target, token) = setup(village, false);
-        assert!(execute_recorded_at(d, withdraw(target, d.actor), 40, 1000));
+        assert!(execute(d, withdraw(target, d.actor), 40));
         assert_eq!(balance(d, target, 2), 0);
         assert_eq!(
             tokens(token, d.actor), TOKENS + if village {
@@ -223,7 +223,7 @@ fn bridge_configuration_requires_authority_and_is_immutable() {
     let bridge = IBridgeSafeDispatcher { contract_address: d.games };
     let (mut withdrawals, _, _) = super::market::wallet_preset(d, true);
     withdrawals.deposits = deposit_rules(true);
-    let mut preset = super::resource_commands::fixture_preset(super::recorded::rules());
+    let mut preset = super::resource_commands::fixture_preset(super::play_fixture::rules());
     preset.economy.withdrawals = Some(withdrawals);
     let registrar = crate::registrar::IRegistrarSafeDispatcher { contract_address: d.games };
     start_cheat_caller_address(d.games, d.actor);
@@ -232,7 +232,7 @@ fn bridge_configuration_requires_authority_and_is_immutable() {
     let games = crate::game::IGameDispatcher { contract_address: d.games };
     assert!(registrar.register_preset(games.game(3).preset_id, preset).is_err());
     stop_cheat_caller_address(d.games);
-    super::recorded::seed_game_with_preset(d.games, 4, games.game(3), preset);
+    super::play_fixture::seed_game_with_preset(d.games, 4, games.game(3), preset);
     assert!(bridge.deposit_rules(4).unwrap().paused);
     assert!(!bridge.deposit_rules(3).unwrap().paused);
 }

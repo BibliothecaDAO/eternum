@@ -13,7 +13,6 @@ shapes are explicit ingestion faults.
 ```sh
 HERALD_RPC_URL=http://127.0.0.1:5050/rpc/v0_10_2 \
 HERALD_PUBLIC_RPC_URL=https://rpc.example/rpc/v0_10_2 \
-HERALD_PUBLIC_ADMISSION_URL=https://rpc.example/rpc/v0_10_2 \
 NATIVE_WORLD_MANIFEST=/absolute/path/to/native-manifest.json \
 DATABASE_URL=postgres://realms:realms@127.0.0.1:5432/realms \
 pnpm --dir apps/herald start

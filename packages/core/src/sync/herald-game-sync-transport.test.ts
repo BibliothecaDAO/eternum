@@ -168,75 +168,6 @@ describe("HeraldGameSyncTransport", () => {
     expect(harness.transport.completedTimestamp()).toBeUndefined();
   });
 
-  it("waits for the complete empty actor scope to be applied before proving absence", async () => {
-    const harness = streamHarness();
-    const { socket, writer } = await attached(harness);
-    socket.receive({ epoch: "epoch-a", seq: 0, type: "snapshot_end" });
-    let applied!: () => void;
-    harness.handlers.onScope = () =>
-      new Promise<boolean>((resolve) => {
-        applied = () => resolve(true);
-      });
-    const ready = vi.fn();
-    const pending = harness.transport.prepareActor("0x111").then(ready);
-    expect(ready).not.toHaveBeenCalled();
-    socket.receive({ epoch: "epoch-a", seq: 0, type: "scope", actor: "0x111", expedition: false, set: [] });
-    await Promise.resolve();
-    expect(ready).not.toHaveBeenCalled();
-    applied();
-    await pending;
-    await harness.transport.prepareActor("0x0111");
-    writer.cancel();
-  });
-
-  it.each(["applied", "failed"])("ignores an old actor's %s application after the actor changes", async (result) => {
-    const harness = streamHarness();
-    const { socket, writer } = await attached(harness);
-    let applyFirst!: () => void;
-    harness.handlers.onScope = () =>
-      new Promise<boolean>((resolve, reject) => {
-        applyFirst = () => (result === "applied" ? resolve(true) : reject(new Error("old scope failed")));
-      });
-    const first = expect(harness.transport.prepareActor("0x111")).rejects.toThrow("actor changed");
-    socket.receive({ epoch: "epoch-a", seq: 0, type: "scope", actor: "0x111", expedition: false, set: [] });
-    const ready = vi.fn();
-    const second = harness.transport.prepareActor("0x222").then(ready);
-    await first;
-    applyFirst();
-    await Promise.resolve();
-    expect(ready).not.toHaveBeenCalled();
-    harness.handlers.onScope = () => true;
-    socket.receive({ epoch: "epoch-a", seq: 0, type: "scope", actor: "0x222", expedition: false, set: [] });
-    await second;
-    writer.cancel();
-  });
-
-  it("requires explicit application success before accepting nonce absence", async () => {
-    const harness = streamHarness();
-    const { socket, writer } = await attached(harness);
-    harness.handlers.onScope = () => false;
-    const failed = expect(harness.transport.prepareActor("0x111")).rejects.toThrow("Actor snapshot was not applied");
-    socket.receive({ epoch: "epoch-a", seq: 0, type: "scope", actor: "0x111", expedition: false, set: [] });
-    await failed;
-    writer.cancel();
-  });
-
-  it("rejects an actor snapshot whose application failed and permits a later complete scope", async () => {
-    const harness = streamHarness();
-    const { socket, writer } = await attached(harness);
-    harness.handlers.onScope = async () => {
-      throw new Error("invalid fact");
-    };
-    const failed = expect(harness.transport.prepareActor("0x111")).rejects.toThrow("invalid fact");
-    socket.receive({ epoch: "epoch-a", seq: 0, type: "scope", actor: "0x111", expedition: false, set: [] });
-    await failed;
-    const retry = harness.transport.prepareActor("0x111");
-    harness.handlers.onScope = () => true;
-    socket.receive({ epoch: "epoch-a", seq: 0, type: "scope", actor: "0x111", expedition: false, set: [] });
-    await retry;
-    writer.cancel();
-  });
-
   it("knows the chain time from Herald's hello, before the first snapshot row", async () => {
     const harness = streamHarness();
     const subscribed = harness.transport.subscribe(harness.handlers);
@@ -292,16 +223,15 @@ describe("HeraldGameSyncTransport", () => {
     snapshot("epoch-a", 0, "0x1", 1).forEach((message) => socket.receive(message));
     harness.transport.selectActor("0x111");
     socket.receive({ type: "scope", epoch: "epoch-a:1", seq: 1, actor: "0x111", expedition: true, set: [] });
-    await harness.transport.prepareActor("0x111");
+    await Promise.resolve();
+    expect(gates.at(-1)).toMatchObject({ complete: true, actor: "0x111" });
 
     harness.transport.selectActor("0x111", "0x00222");
     expect(socket.sent.at(-1)).toEqual({ type: "select_actor", actor: "0x111", visit: "0x222" });
-    // A submit while visiting waits on the visit's scope and keeps it open.
-    const submitting = vi.fn();
-    const prepared = harness.transport.prepareActor("0x111").then(submitting);
+    // The gate stays shut on the actor's own scope while the visit is asked for.
     socket.receive({ type: "scope", epoch: "epoch-a:2", seq: 1, actor: "0x111", expedition: true, set: [] });
     await Promise.resolve();
-    expect(submitting).not.toHaveBeenCalled();
+    expect(gates.at(-1)).not.toMatchObject({ complete: true, visit: "0x222" });
     socket.receive({
       type: "scope",
       epoch: "epoch-a:3",
@@ -311,7 +241,7 @@ describe("HeraldGameSyncTransport", () => {
       expedition: true,
       set: [],
     });
-    await prepared;
+    await Promise.resolve();
     // The store's gate opens on the visited scope only once that scope has applied.
     expect(gates.at(-1)).toMatchObject({ complete: true, actor: "0x111", visit: "0x222" });
     expect(socket.sent.filter((message) => (message as { type: string }).type === "select_actor")).toHaveLength(2);
@@ -534,18 +464,6 @@ describe("HeraldGameSyncTransport", () => {
       seq: 2,
       status: "PRE_CONFIRMED",
       type: "tx",
-      executions: [
-        {
-          gameId: "54",
-          actor: "291",
-          nonce: "3",
-          order: "8",
-          nonceConsumed: true,
-          status: "SUCCEEDED",
-          reason: "",
-          batchRemaining: "9",
-        },
-      ],
     });
     socket.receive({ block: 13, epoch: "epoch-a", seq: 3, timestamp: 100, type: "head" });
 
@@ -558,18 +476,6 @@ describe("HeraldGameSyncTransport", () => {
         block: null,
         hash: "0xabc",
         status: "PRE_CONFIRMED",
-        executions: [
-          {
-            gameId: "54",
-            actor: "291",
-            nonce: "3",
-            order: "8",
-            nonceConsumed: true,
-            status: "SUCCEEDED",
-            reason: "",
-            batchRemaining: "9",
-          },
-        ],
       },
     ]);
     expect(harness.heads).toEqual([{ block: 13, preconfirmed: false, timestamp: 100 }]);

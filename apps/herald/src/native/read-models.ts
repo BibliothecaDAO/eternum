@@ -10,7 +10,7 @@ import {
   unclaimedSharePoints,
 } from "@bibliothecadao/eternum/game-sync";
 import { nativeGameModeOf } from "@bibliothecadao/eternum";
-import { dayOf, expeditionRealmSite, isRealmCategory } from "@bibliothecadao/eternum/expeditions";
+import { dayOf, expeditionRealmSite, entityHomeNamespace, isRealmCategory } from "@bibliothecadao/eternum/expeditions";
 import { StructureType } from "@bibliothecadao/types";
 import { resolveDirectoryStatus, type DirectoryInput } from "../game-directory";
 import type { FoldRow } from "../types";
@@ -45,11 +45,13 @@ interface DirectoryRows {
 export function buildNativeDirectory(input: DirectoryInput): HeraldGameDirectory {
   const rows = (model: string) => input.fold.modelRows(model);
   const facts = directoryRows(input);
-  const seasons = rows("GameRegistry")
+  // Launcher-created check names are reserved for deployment; they never offer a player a joinable listing.
+  const publicGames = rows("GameRegistry").filter(({ value }) => !shortString(value.name).startsWith("check-"));
+  const seasons = publicGames
     .filter(({ value }) => nativeGameModeOf(number(value.preset_id)) === "frontier")
     .sort((a, b) => number(a.value.game_id) - number(b.value.game_id));
   const seasonNumbers = new Map(seasons.map(({ value }, index) => [number(value.game_id), index + 1]));
-  const games = rows("GameRegistry")
+  const games = publicGames
     .map(({ value }) => directoryEntry(value, facts, input))
     .map((game) => ({ ...game, season_number: seasonNumbers.get(game.game_id) ?? null }))
     .sort((left, right) => right.game_id - left.game_id);
@@ -188,7 +190,12 @@ function directoryEntry(game: Row, facts: DirectoryRows, input: DirectoryInput):
       return { account, prepared: entered && realms.some((realm) => address(realm.owner) === account) };
     }),
     registration: {
-      count: state ? number(state.registered) : 0,
+      count:
+        mode === "frontier"
+          ? new Set(gameRows(facts.entries, game.game_id).map((entry) => address(entry.player))).size
+          : state
+            ? number(state.registered)
+            : 0,
       max: number(settlement.registration_limit),
       start_at: number(settlement.registration_start),
     },
@@ -236,7 +243,7 @@ function structurePosition(
         startMainAt: number(game.start_main_at),
         seed: integer(game.seed),
       },
-      number(record(row.metadata).realm_id),
+      entityHomeNamespace(integer(row.entity_id)),
       timestamp,
     );
   }
@@ -256,7 +263,14 @@ export function buildNativeLeaderboard(
   const rules = required(modelRows("SliceRules"), gameId, "SliceRules");
   const result = rows("BlitzResult")[0];
   // Standings carry addresses only: a player's name is their identity profile, resolved by the client.
-  if (result?.complete === true) return finalStandings(gameId, result, activity);
+  if (result?.complete === true)
+    return finalStandings(
+      gameId,
+      result,
+      rows("BlitzRoster"),
+      registeredPlayerPoints(rows("PlayerEntry"), rows("PlayerPoints")),
+      activity,
+    );
   const points = registeredPlayerPoints(rows("PlayerEntry"), rows("PlayerPoints"));
   addUnclaimedSharePoints(points, rows("HyperstructureShares"), game, rules, timestamp);
   return rankPlayers(gameId, points, activity);
@@ -265,17 +279,27 @@ export function buildNativeLeaderboard(
 function finalStandings(
   gameId: string,
   result: Row,
+  rosters: Row[],
+  points: Map<string, bigint>,
   activity: ReadonlyMap<string, PlayerActivityBreakdown> | null,
 ): HeraldLeaderboard {
+  const roster = (rosters[0]?.players as Row[] | undefined) ?? [];
   return {
     mode: "points",
     game_id: integer(gameId).toString(),
-    entries: (result.players as Row[]).map((player) => ({
-      address: address(player.player),
-      totalPoints: Number(integer(player.points)) / 1_000_000,
-      rank: number(player.rank),
-      activityBreakdown: activity?.get(address(player.player)) ?? createEmptyActivityBreakdown(),
-    })),
+    entries: (result.players as Row[]).map((player) => {
+      const member = roster.find((row) => address(row.wallet) === address(player.wallet));
+      if (!member) throw new Error(`Final result wallet ${player.wallet} is outside the roster`);
+      const account = address(member.account);
+      const score = points.get(account);
+      if (score === undefined) throw new Error(`Missing final PlayerPoints for ${account}`);
+      return {
+        address: account,
+        totalPoints: Number(score) / 1_000_000,
+        rank: number(player.rank),
+        activityBreakdown: activity?.get(account) ?? createEmptyActivityBreakdown(),
+      };
+    }),
   };
 }
 

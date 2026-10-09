@@ -14,9 +14,8 @@ use crate::registrar::IRegistrarSafeDispatcherTrait;
 use crate::resources::{IResourceOperationsDispatcher, ResourceAmount, ResourceKey, ResourceSlot};
 use crate::rules::RESOURCE_PRECISION;
 use crate::structures::{IStructureOperationsDispatcher, IStructureOperationsDispatcherTrait, StructureRecord};
-use crate::tests::StoryResultTestTrait;
 use crate::tests::state::{ResourceObservationTrait, StructureObservationTrait};
-use super::resource_commands::{assert_terminal_rejection, execute, execute_recorded_at, grant, set_fixture};
+use super::resource_commands::{assert_terminal_rejection, execute, grant, set_fixture};
 
 pub fn rules() -> HyperstructureRules {
     HyperstructureRules {
@@ -40,18 +39,19 @@ pub fn setup_mode(blitz: bool) -> (super::Deployment, ResourceKey, ResourceKey, 
 fn setup_mode_with_threshold(
     blitz: bool, points: u128, mode: Option<crate::settlement::SettlementMode>,
 ) -> (super::Deployment, ResourceKey, ResourceKey, ResourceKey) {
-    let mut ruleset = super::recorded::rules();
+    let mut ruleset = super::play_fixture::rules();
     ruleset.mode_rules = if blitz {
-        super::recorded::BLITZ_RULES
+        super::play_fixture::BLITZ_RULES
     } else {
-        super::recorded::ETERNUM_RULES
+        super::play_fixture::ETERNUM_RULES
     };
     ruleset
-        .command_mask = if blitz {
-            super::recorded::BLITZ_COMMAND_MASK
-        } else {
-            super::recorded::ETERNUM_COMMAND_MASK
-        };
+        .command_mask =
+            if blitz {
+                super::play_fixture::BLITZ_COMMAND_MASK
+            } else {
+                super::play_fixture::ETERNUM_COMMAND_MASK
+            };
     ruleset.entry_rule = if blitz {
         crate::rules::ENTRY_ROSTER
     } else {
@@ -72,6 +72,7 @@ fn setup_mode_with_threshold(
     let id = IStructureOperationsDispatcher { contract_address: deployment.games }
         .create_discovery(
             3,
+            1,
             crate::troops::Coord { alt: false, x: 2000100, y: 2000000 },
             crate::discovery::Discovery::Hyperstructure,
             101,
@@ -152,15 +153,12 @@ fn initialization_burns_only_shards_and_progress_completes_with_clamped_contribu
     assert_eq!(allocation.start_at, 50);
     assert_eq!(allocation.multiplier, 1);
     assert_eq!(allocation.shareholders, array![Share { player: deployment.actor, bps: 10000 }].span());
-    let tile = crate::tests::state::MapObservationTrait::tile(
-        crate::map::IMapLogicDispatcher { contract_address: deployment.games },
-        crate::map::TileKey { game_id: 3, alt: false, col: 2000100, row: 2000000 },
-    )
-        .unwrap();
-    assert_eq!(crate::map::structure_occupant(tile), Some(hyper.entity_id));
+    let key = crate::map::TileKey { game_id: 3, alt: false, col: 2000100, row: 2000000 };
+    let occupied = snforge_std::interact_with_state(deployment.games, || crate::map::structure_occupant(key));
+    assert_eq!(occupied, Some(hyper.entity_id));
 }
 #[test]
-fn contribution_rejections_roll_back_the_whole_batch_and_consume_the_ticket() {
+fn contribution_rejections_roll_back_the_whole_batch() {
     let (deployment, hyper, from, _) = setup();
     assert_terminal_rejection(deployment, contribute(hyper, from, array![amount(2, 1)].span()), 35);
     assert!(execute(deployment, Command::InitializeHyperstructure(hyper.entity_id), 40));
@@ -209,7 +207,7 @@ fn shares_checkpoint_old_owners_before_reallocation_and_stop_at_game_end() {
 }
 
 #[test]
-fn one_action_numbers_two_stories_without_writing_the_entity_counter() {
+fn one_action_emits_two_ordered_stories_without_writing_the_entity_counter() {
     let (deployment, hyper, from, _) = setup();
     complete(deployment, hyper, from);
     let other = 987.try_into().unwrap();
@@ -223,7 +221,6 @@ fn one_action_numbers_two_stories_without_writing_the_entity_counter() {
         ),
     );
     let before = snforge_std::interact_with_state(deployment.games, || crate::state::read().games.next_entity.read(3));
-    let order = super::recorded::head(deployment.games, 3).order + 1;
     let mut spy = snforge_std::spy_events();
     assert!(execute(deployment, allocate(hyper, array![Share { player: deployment.actor, bps: 10000 }].span()), 70));
     assert_eq!(
@@ -231,16 +228,31 @@ fn one_action_numbers_two_stories_without_writing_the_entity_counter() {
     );
     let mut stories = 0_u32;
     let mut points = 0_u32;
+    let mut last_player = 0_felt252;
+    let mut transaction = None;
     for (_, event) in spy.get_events().emitted_by(deployment.games).events.span() {
         for key in event.keys.span() {
             if *key == selector!("PointsAwarded") {
                 points += 1;
+                last_player = *event.keys.at(event.keys.len() - 1);
             }
         }
         if *event.keys.at(1) == selector!("StoryEvent") {
-            assert_eq!(*event.keys.at(4), order.into());
-            assert_eq!(*event.keys.at(5), stories.into());
-            // Each share emits its points fact before its story; facts do not advance this cursor.
+            let mut keys = event.keys.span();
+            keys.pop_front().unwrap();
+            keys.pop_front().unwrap();
+            assert_eq!(*keys.pop_front().unwrap(), 2);
+            assert_eq!(*keys.pop_front().unwrap(), 3);
+            let player = Serde::<Option<starknet::ContractAddress>>::deserialize(ref keys).unwrap().unwrap();
+            assert_eq!(player.into(), last_player);
+            assert_eq!(Serde::<Option<u64>>::deserialize(ref keys).unwrap(), Some(hyper.entity_id));
+            let hash = *keys.pop_front().unwrap();
+            if let Some(previous) = transaction {
+                assert_eq!(hash, previous);
+            }
+            transaction = Some(hash);
+            assert!(keys.is_empty());
+            // Each share emits its points fact before its story; facts precede their corresponding story.
             assert_eq!(points, stories + 1);
             stories += 1;
         }
@@ -249,18 +261,12 @@ fn one_action_numbers_two_stories_without_writing_the_entity_counter() {
     assert_eq!(points, 2);
 }
 #[test]
-fn delayed_construction_and_allocation_use_recorded_time_and_keep_same_rewards() {
+fn construction_and_allocation_use_block_time_and_keep_the_same_rewards() {
     let (deployment, hyper, from, _) = setup();
-    assert!(execute_recorded_at(deployment, Command::InitializeHyperstructure(hyper.entity_id), 40, 5000));
-    assert!(
-        execute_recorded_at(deployment, contribute(hyper, from, array![amount(2, 10), amount(3, 20)].span()), 50, 5001),
-    );
+    assert!(execute(deployment, Command::InitializeHyperstructure(hyper.entity_id), 40));
+    assert!(execute(deployment, contribute(hyper, from, array![amount(2, 10), amount(3, 20)].span()), 50));
     let old = points(deployment, deployment.actor);
-    assert!(
-        execute_recorded_at(
-            deployment, allocate(hyper, array![Share { player: deployment.actor, bps: 10000 }].span()), 100, 5002,
-        ),
-    );
+    assert!(execute(deployment, allocate(hyper, array![Share { player: deployment.actor, bps: 10000 }].span()), 100));
     assert_eq!(points(deployment, deployment.actor) - old, 50000);
     assert_eq!(view(deployment).hyperstructure_shares(hyper).start_at, 100);
 }
@@ -308,7 +314,6 @@ fn construction_access_applies_to_contributor_and_current_owners_guild() {
                 crate::commands::action_context(
                     ExecutionContext { timestamp: 45, ..super::context(deployment.games, 3) },
                 ),
-                crate::tests::story_cursor(),
             )
             .is_err(),
     );
@@ -332,7 +337,6 @@ fn construction_access_applies_to_contributor_and_current_owners_guild() {
                 crate::commands::action_context(
                     ExecutionContext { timestamp: 45, ..super::context(deployment.games, 3) },
                 ),
-                crate::tests::story_cursor(),
             )
             .is_err(),
     );
@@ -348,7 +352,6 @@ fn construction_access_applies_to_contributor_and_current_owners_guild() {
                 crate::commands::action_context(
                     ExecutionContext { timestamp: 45, ..super::context(deployment.games, 3) },
                 ),
-                crate::tests::story_cursor(),
             )
             .is_ok(),
     );
@@ -368,7 +371,6 @@ fn construction_access_applies_to_contributor_and_current_owners_guild() {
                 crate::commands::action_context(
                     ExecutionContext { timestamp: 46, ..super::context(deployment.games, 3) },
                 ),
-                crate::tests::story_cursor(),
             )
             .is_ok(),
     );
@@ -381,7 +383,6 @@ fn construction_access_applies_to_contributor_and_current_owners_guild() {
                 crate::commands::action_context(
                     ExecutionContext { timestamp: 46, ..super::context(deployment.games, 3) },
                 ),
-                crate::tests::story_cursor(),
             )
             .is_err(),
     );
@@ -391,7 +392,7 @@ fn construction_access_applies_to_contributor_and_current_owners_guild() {
 fn hyperstructure_configuration_requires_authority_and_initialization_requires_owner() {
     let (deployment, hyper, from, _) = setup();
     let registry = crate::registrar::IRegistrarSafeDispatcher { contract_address: deployment.games };
-    let mut preset = super::recorded::fixture_preset(super::recorded::rules());
+    let mut preset = super::play_fixture::fixture_preset(super::play_fixture::rules());
     preset.economy.hyperstructures = rules();
     assert!(registry.register_preset(20000, preset).is_err());
     start_cheat_caller_address(deployment.games, super::authority());
@@ -462,11 +463,13 @@ fn blitz_multiplier_counts_realms_in_the_configured_geometry_and_preserves_old_r
         4,
     )
         .unwrap();
+    let (new_owner, _) = super::deploy_player(3, super::GUARDIAN);
+    super::play_fixture::prepare_homes(deployment.games, 3, new_owner);
     start_cheat_caller_address(deployment.games, deployment.games);
     crate::settlement::ISettlementCreationDispatcherTrait::create_settlement(
         crate::settlement::ISettlementCreationDispatcher { contract_address: deployment.games },
         3,
-        deployment.actor,
+        new_owner,
         coord,
         crate::settlement::SettlementCreation::Realm(
             crate::settlement::RealmCreation {
@@ -477,9 +480,7 @@ fn blitz_multiplier_counts_realms_in_the_configured_geometry_and_preserves_old_r
             },
         ),
         crate::commands::action_context(ExecutionContext { timestamp: 55, ..super::context(deployment.games, 3) }),
-        crate::tests::story_cursor(),
-    )
-        .story_result();
+    );
     stop_cheat_caller_address(deployment.games);
     let before = points(deployment, deployment.actor);
     assert!(execute(deployment, allocate(hyper, array![Share { player: deployment.actor, bps: 10000 }].span()), 60));
@@ -558,9 +559,7 @@ pub fn checkpoint(deployment: super::Deployment, timestamp: u64) {
                         timestamp: timestamp, ..crate::tests::context(deployment.games, 3),
                     },
                 ),
-                crate::tests::story_cursor(),
-            )
-            .story_result(),
+            ),
         0,
     );
     stop_cheat_caller_address(deployment.games);

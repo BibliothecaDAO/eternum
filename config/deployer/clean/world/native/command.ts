@@ -1,18 +1,12 @@
-import {
-  completeNativeBatches,
-  nativeExecutionOutcomes,
-  requireNativeExecutionOutcome,
-} from "../../../../../packages/provider/src/native-batch";
-import { hash, RpcProvider } from "starknet";
-import {
-  encodeNativeCommand,
-  frameNativeIntent,
-  type NativeCommand,
-} from "../../../../../packages/provider/src/native-command";
-import { createNativeTicketSubmission, signGameplayIntent } from "../../../../../packages/provider/src/native-ticket";
+import { completeNativeBatches } from "../../../../../packages/provider/src/native-batch";
+import { batchRemaining, gameplayRejection } from "../../../../../packages/provider/src/native-receipt";
+import { encodeNativeCommand, type NativeCommand } from "../../../../../packages/provider/src/native-command";
+import { executeGameplayAccountTransaction } from "../../../../../packages/core/src/client/submit";
+import { CallData, RpcProvider } from "starknet";
 import bindings from "../../../../../contracts/l3/world-native/schema/bindings.json";
-import type { Abi } from "starknet";
+import { createOperatorAccount } from "../../shared/madara-account";
 import { confirmedTransactionReceipt } from "../../shared/transaction";
+import { nativeGamesAbi } from "./manifest";
 import type { RegistrarWorld } from "./types";
 
 const administrativeCommands = new Set<NativeCommand["kind"]>([
@@ -27,7 +21,6 @@ const repeatableBatches = new Set<NativeCommand["kind"]>(["SettleBlitzRoster", "
 type AdminCommandInput = {
   provider: RpcProvider;
   manifest: RegistrarWorld;
-  admissionUrl: string;
   gameId: number;
   accountAddress: string;
   privateKey: string;
@@ -59,20 +52,18 @@ export async function executeNativeAdminCommand(
 ): Promise<{ transactionHash: string; remaining?: string }> {
   if (!administrativeCommands.has(input.command.kind)) throw new Error("Not an administrative command");
   if (!Number.isSafeInteger(input.gameId) || input.gameId <= 0) throw new Error("Native command requires a game id");
-  const season = input.manifest.world.address;
-  const { intent, nonce } = await buildAdminIntent(input, season);
-  const accepted = await submitAdminIntent(input, intent);
+  const games = input.manifest.world.address;
+  const shard = adminPlayShard(input.manifest);
+  if (BigInt(await input.provider.getChainId()) !== BigInt(shard.chainId)) throw new Error("Admin RPC chain mismatch");
+  const account = createOperatorAccount(input.provider, input.accountAddress, input.privateKey);
+  const call = await buildAdminPlay(input);
+  const accepted = await executeGameplayAccountTransaction({ account, calls: call, shard });
   const receipt = await confirmedTransactionReceipt(input.provider, accepted.transaction_hash);
   if (!("events" in receipt)) throw new Error("Native command receipt has no events");
-  const outcome = requireNativeExecutionOutcome(nativeExecutionOutcomes(receipt.events, season), {
-    gameId: String(input.gameId),
-    actor: input.accountAddress,
-    nonce: nonce.toString(),
-    order: accepted.order.toString(),
-  });
-  if (outcome.status === "REVERTED")
-    throw new Error(`Native command rejected: ${outcome.statusClass}: ${outcome.reason}`);
-  const remaining = outcome.batchRemaining;
+  const scope = { gameId: input.gameId, actor: input.accountAddress };
+  const rejection = gameplayRejection(receipt.events, games, accepted.transaction_hash, scope);
+  if (rejection) throw new Error(`Native command rejected: ${rejection.statusClass}: ${rejection.reason}`);
+  const remaining = batchRemaining(receipt.events, games, accepted.transaction_hash, scope)?.toString();
   if (
     (repeatableBatches.has(input.command.kind) || input.command.kind === "RecordBlitzResults") &&
     remaining === undefined
@@ -81,38 +72,26 @@ export async function executeNativeAdminCommand(
   return { transactionHash: accepted.transaction_hash, ...(remaining !== undefined ? { remaining } : {}) };
 }
 
-async function submitAdminIntent(input: AdminCommandInput, intent: string[]) {
-  const signature = signGameplayIntent(hash.computePoseidonHashOnElements(intent), input.privateKey);
-  const submit = createNativeTicketSubmission(input.admissionUrl);
-  try {
-    return await submit({ intent, signature });
-  } finally {
-    submit.dispose();
-  }
+function adminPlayShard(manifest: RegistrarWorld) {
+  const bound = manifest.shard.l2GasBound;
+  if (!bound || !/^0x[1-9a-f][0-9a-f]*$/.test(bound) || BigInt(bound) >= 2n ** 64n)
+    throw new Error("Admin manifest requires canonical nonzero u64 l2GasBound");
+  return { chainId: manifest.shard.chainId, l2GasBound: BigInt(bound) };
 }
 
-async function buildAdminIntent(input: AdminCommandInput, season: string) {
-  const [chain, admission] = await Promise.all([
-    input.provider.getChainId(),
-    input.provider.callContract(
-      { contractAddress: season, entrypoint: "get_admission", calldata: [input.gameId, input.accountAddress] },
-      "pre_confirmed",
-    ),
-  ]);
-  if (admission.length !== 5) throw new Error("Unexpected native admission view");
-  const [releaseId, presetCommitment, nonce, , timestamp] = admission;
-  const intent = frameNativeIntent({
-    chain,
-    deployment: season,
-    gameId: input.gameId,
-    actor: input.accountAddress,
-    nonce,
-    releaseId,
-    presetCommitment,
-    validFrom: 0,
-    validUntil: BigInt(timestamp) + 300n,
-    lastOrder: 0xffffffffffffffffn,
-    arguments: encodeNativeCommand(bindings.commandAbi as Abi, input.command),
-  });
-  return { intent, nonce: BigInt(nonce) };
+async function buildAdminPlay(input: AdminCommandInput) {
+  const contractAddress = input.manifest.world.address;
+  const read = (entrypoint: string, value: number | bigint) =>
+    input.provider.callContract({ contractAddress, entrypoint, calldata: [String(value)] }, "pre_confirmed");
+  const codec = new CallData(nativeGamesAbi(input.manifest));
+  const [game, release] = await Promise.all([read("game", input.gameId), read("game_release", input.gameId)]);
+  const registry = codec.parse("game", game) as { preset_id: bigint };
+  const commitment = await read("preset_commitment", registry.preset_id);
+  if (release.length !== 1 || commitment.length !== 1) throw new Error("Malformed admin release pins");
+  const command = encodeNativeCommand(bindings.commandAbi, input.command);
+  return {
+    contractAddress,
+    entrypoint: "play",
+    calldata: [String(input.gameId), release[0]!, commitment[0]!, String(command.length), ...command],
+  };
 }

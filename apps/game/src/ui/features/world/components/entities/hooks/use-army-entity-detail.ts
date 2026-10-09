@@ -19,6 +19,7 @@ import { buildStaminaDisplayModel } from "@/lib/army-stamina/presentation";
 import type { ArmyStaminaPresentation } from "@/lib/army-stamina/types";
 import { useCallback, useMemo, useState } from "react";
 import { useAccountAddress } from "@/hooks/store/use-account-store";
+import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
 interface UseArmyEntityDetailOptions {
   armyEntityId: ID;
@@ -61,7 +62,7 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
     "Structure",
     explorer ? { game_id: configManager.getActiveGameId(), entity_id: explorer.owner } : undefined,
   );
-  const structureResources = useResourceManager(explorer?.owner ?? 0);
+  const structureResources = useResourceManager(explorer ? safeInteger(explorer.owner) : 0);
   const ownershipRevision = useNativeRevision(["GuildMember", "Guild", "EntityName"]);
   const slotRevision = useNativeRevision(["ArmySlot"]);
   const owner = explorer ? getExplorerOwner(store, explorer) : 0n;

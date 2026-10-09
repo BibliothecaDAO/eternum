@@ -1,9 +1,11 @@
+import { safeInteger } from "../utils/safe-integer";
 import { nativeModelDefinition } from "./native-models";
-import { nativeSubmission, type NativeClientConnection } from "./native-submission";
+import { nativePlay } from "./native-submission";
 import { EternumProvider } from "@bibliothecadao/provider";
 import { NativeFactStore } from "./native-fact-store";
 import {
   ContractAddress,
+  type NativeWorldBindings,
   type SystemCallAuthHandler,
   createSystemCalls,
   type SystemCalls,
@@ -25,9 +27,9 @@ import { setGameScope } from "./game-scope";
 import { createHeraldGameSyncSession, type GameClientObserver } from "./herald-session";
 import type { PlayerNameResolver } from "../utils/entities";
 import { createGameViews, type GameViews } from "./views";
-import { waitForTransactionOutcome } from "./transaction-outcome";
 import { type Shard } from "./shard";
 import { followGameRelease } from "./game-release";
+import { waitForActionOutcome, type ActionOutcome } from "./transaction-outcome";
 
 export interface GameClientSetup {
   store: NativeFactStore;
@@ -37,7 +39,8 @@ export interface GameClientSetup {
 
 export interface CreateGameClientInput {
   actor?: string;
-  native: NativeClientConnection;
+  /** The compiled world's models, events and command ABI this client reads and sends. */
+  bindings: NativeWorldBindings;
   shard: Shard;
   gameId: number;
   presetId: number;
@@ -82,6 +85,8 @@ export interface GameClient {
   visit(player: string | null): void;
   /** Reconnect through the same convergent subscribe → snapshot → replay routine used at boot. */
   recover(): Promise<void>;
+  /** Receipt outcome and Herald fact barrier; cancelled when this client stops. */
+  waitForAction(transactionHash: string): Promise<ActionOutcome>;
   /** Tears down the runtime and its transport, including a subscribe that never resolved. */
   dispose(): void;
 }
@@ -93,9 +98,9 @@ export async function createGameClient(input: CreateGameClientInput): Promise<Ga
   input.observer?.onSetupCompleted?.(setupResult);
   const runtime = (input.createRuntime ?? (() => new GameSyncRuntime()))();
   try {
-    const { projection, transport } = await startSync(runtime, setupResult, input);
+    const { projection, transport, waitForAction } = await startSync(runtime, setupResult, input);
     applyGameConfig(setupResult);
-    return buildGameClient(input, setupResult, runtime, projection, transport);
+    return buildGameClient(input, setupResult, runtime, projection, transport, waitForAction);
   } catch (error) {
     // A superseding session owns the runtime now; anything else leaves a half-started client to tear down.
     if (!(error instanceof SupersededGameSyncStartError)) disposeRuntime(runtime);
@@ -123,10 +128,14 @@ const startSync = async (
   runtime: GameSyncRuntime,
   setupResult: GameClientSetup,
   input: CreateGameClientInput,
-): Promise<{ projection: WorldSpatialProjection; transport: HeraldGameSyncTransport }> => {
+): Promise<{
+  projection: WorldSpatialProjection;
+  transport: HeraldGameSyncTransport;
+  waitForAction: GameClient["waitForAction"];
+}> => {
   const release = followGameRelease(
     setupResult.store,
-    { gameId: input.gameId, shard: input.shard, schemaIdentity: input.native.bindings.schemaIdentity },
+    { gameId: input.gameId, shard: input.shard, schemaIdentity: input.bindings.schemaIdentity },
     (error) => {
       input.observer?.onLiveApplyFailed?.(error);
       disposeRuntime(runtime);
@@ -136,9 +145,9 @@ const startSync = async (
     actor: input.actor,
     baseUrl: input.shard.url,
     chainId: input.shard.chainId,
-    entityModels: input.native.bindings.models.map((model) => model.name),
-    eventModels: input.native.bindings.events.map((event) => event.name),
-    modelDefinition: nativeModelDefinition(input.native.bindings),
+    entityModels: input.bindings.models.map((model) => model.name),
+    eventModels: input.bindings.events.map((event) => event.name),
+    modelDefinition: nativeModelDefinition(input.bindings),
     gameId: input.gameId,
     worldAddress: input.shard.worldAddress,
     observer: input.observer,
@@ -146,38 +155,48 @@ const startSync = async (
     store: setupResult.store,
     socketFactory: input.socketFactory,
   });
+  // Pending action waits stop with the client, so none outlives it.
+  const outcomes = new AbortController();
   session.onDispose = () => {
     release.dispose();
-    input.native.submitIntent.dispose?.();
+    outcomes.abort(new Error("Game client disposed"));
   };
   await runtime.startSession(session);
   await release.ready();
   // Chain time must be known before the first spatial projection reads it.
   await runtime.waitForConfirmedHead();
-  const submit = nativeSubmission(
-    { ...input.native, release },
+  const submit = nativePlay(
+    { bindings: input.bindings, release },
     setupResult.store,
     input.gameId,
     input.shard.worldAddress,
-    (actor) => session.transport.prepareActor(actor),
   );
-  setupResult.network.provider.setNativeSubmission(submit, input.native.bindings.commandAbi, (actor) => {
+  setupResult.network.provider.setNativeSubmission(submit, input.bindings.commandAbi, (actor) => {
     let owned: number | undefined;
     for (const row of setupResult.store.structuresOwnedBy(input.gameId, BigInt(actor)))
-      if (owned === undefined || row.entity_id < owned) owned = row.entity_id;
+      if (owned === undefined || row.entity_id < BigInt(owned)) owned = safeInteger(row.entity_id);
     if (owned === undefined) throw new Error("Action requires an owned structure in the current game");
     return owned;
   });
-  routeTransactionWaitsThroughStream(setupResult, runtime);
-  return { projection: installWorldSpatialProjection(runtime, setupResult), transport: session.transport };
+  const waitForAction = routeActionOutcomes(setupResult, runtime, outcomes.signal);
+  return {
+    projection: installWorldSpatialProjection(runtime, setupResult),
+    transport: session.transport,
+    waitForAction,
+  };
 };
 
-/** Herald's stream carries transaction status, so submits wait on the stream instead of polling the RPC. */
-const routeTransactionWaitsThroughStream = (setupResult: GameClientSetup, runtime: GameSyncRuntime): void => {
-  setupResult.network.provider.setTransactionStreamWaiter(
-    (transactionHash, ticket) => waitForTransactionOutcome(runtime, setupResult.store, transactionHash, ticket),
-    (transactionHash) => runtime.recordSubmittedTransaction(transactionHash),
-  );
+/** An action's outcome: the receipt says whether it applied, and an applied one settles once Herald has applied it. */
+const routeActionOutcomes = (
+  setupResult: GameClientSetup,
+  runtime: GameSyncRuntime,
+  stopped: AbortSignal,
+): GameClient["waitForAction"] => {
+  const { provider } = setupResult.network;
+  const wait = (transactionHash: string) =>
+    waitForActionOutcome(runtime, provider.provider, provider.contracts.world, transactionHash, stopped);
+  provider.setTransactionStreamWaiter(wait, (transactionHash) => runtime.recordSubmittedTransaction(transactionHash));
+  return wait;
 };
 
 const installWorldSpatialProjection = (
@@ -202,6 +221,7 @@ const buildGameClient = (
   runtime: GameSyncRuntime,
   projection: WorldSpatialProjection,
   transport: HeraldGameSyncTransport,
+  waitForAction: GameClient["waitForAction"],
 ): GameClient => {
   let signer: AccountInterface | null = null;
   let views: GameViews | null = null;
@@ -234,6 +254,7 @@ const buildGameClient = (
     },
     visit: (player) => transport.selectActor(signer?.address, player ?? undefined),
     recover: () => runtime.recover(),
+    waitForAction,
     dispose: () => disposeRuntime(runtime),
   };
   return client;

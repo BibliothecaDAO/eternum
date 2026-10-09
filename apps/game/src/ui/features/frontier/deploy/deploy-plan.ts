@@ -12,7 +12,12 @@ import {
   researchTier,
   revealYield,
 } from "@bibliothecadao/eternum";
-import { nativeResearchConstants, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
+import {
+  safeInteger,
+  nativeResearchConstants,
+  type NativeFactStore,
+  type NativeRows,
+} from "@bibliothecadao/eternum/game-client";
 import { musterStamina, type OpenArmySlot, openArmySlots } from "@bibliothecadao/eternum/troop-stamina";
 import { type Direction, RESOURCE_PRECISION, ResourcesIds, TroopTier, TroopType } from "@bibliothecadao/types";
 
@@ -63,7 +68,7 @@ export const readDeployPlan = (
   const { defaultTick } = clock;
   const allowed = realm.base.troop_max_explorer_count;
   const open = openArmySlots(store, { game_id: realm.game_id, entity_id: realm.entity_id, allowedSlots: allowed });
-  const wheat = getBalance(realm.entity_id, ResourcesIds.Wheat, defaultTick, store).balance;
+  const wheat = getBalance(safeInteger(realm.entity_id), ResourcesIds.Wheat, defaultTick, store).balance;
   const learned = realmLearned(store, realm.game_id, realm.entity_id);
   if (!open || wheat === undefined || learned === undefined) return undefined;
   const troops = readTroopsAtHome(store, realm, rules, clock);
@@ -126,7 +131,7 @@ const wheatToDeploy = (
   const costs = readTroopRaiseCost(
     store,
     realm.game_id,
-    realm.entity_id,
+    safeInteger(realm.entity_id),
     getTroopResourceId(troops.type, troops.tier),
     count,
     defaultTick,
@@ -212,7 +217,7 @@ export const deployArmy = (
   direction: Direction,
 ): Promise<void> =>
   actions.createExplorerArmy({
-    structureId: realm.entity_id,
+    structureId: safeInteger(realm.entity_id),
     troopType: troops.type,
     troopTier: troops.tier,
     troopCount: count,

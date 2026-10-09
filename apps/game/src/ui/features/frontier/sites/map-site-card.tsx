@@ -14,6 +14,7 @@ import { MOVE, SHRINE, STAMINA, USE, USING, WELL, XP } from "@/ui/design-system/
 import { toast } from "@/ui/features/event-feed/notify";
 import { extractReadableErrorMessage } from "@/utils/error-message";
 import { configManager } from "@bibliothecadao/eternum";
+import { safeInteger } from "@bibliothecadao/eternum/game-client";
 import type { TileSpatialRenderable } from "@bibliothecadao/eternum/game-sync";
 import { RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { useMemo, useState } from "react";
@@ -59,7 +60,7 @@ export const MapSiteCard = ({
   const rules = setup.store.get("ArmyProgressionRules", { game_id: configManager.getActiveGameId() });
   const plan = readMapSite(selected.kind, siteTile, user && { ...user, progress: progress ?? undefined }, rules);
   const approach = useOrderAt(useApproachTile(siteTile, user !== null && !plan.usable));
-  const stamina = useUserStamina(user?.army.explorer_id);
+  const stamina = useUserStamina(user ? safeInteger(user.army.explorer_id) : undefined);
   const [sending, setSending] = useState(false);
 
   const use = async () => {
@@ -72,7 +73,7 @@ export const MapSiteCard = ({
         explorer_id: user.army.explorer_id,
         coord: { alt: siteTile.alt, x: siteTile.col, y: siteTile.row },
       });
-      if (plan.kind === "Well") armWellRefill(user.army.explorer_id);
+      if (plan.kind === "Well") armWellRefill(safeInteger(user.army.explorer_id));
     } catch (error) {
       toast.error(extractReadableErrorMessage(error, "The site could not be used."));
     } finally {

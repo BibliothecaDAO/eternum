@@ -2,7 +2,7 @@ import { useGame } from "@/hooks/context/game-context";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LeftView } from "@/types";
 import { type ExpeditionRules, realmLearned, ResourceManager } from "@bibliothecadao/eternum";
-import { nativeResearchConstants as research, type NativeRows } from "@bibliothecadao/eternum/game-client";
+import { safeInteger, nativeResearchConstants as research, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { ResourcesIds } from "@bibliothecadao/types";
 
 import { useGoToFrontierPlace } from "../frontier-home";
@@ -41,7 +41,7 @@ export const FrontierProduction = ({
   const stores = useRealmStores(realm, rules);
   const goToPlace = useGoToFrontierPlace(realm);
   const setLeftNavigationView = useUIStore((state) => state.setLeftNavigationView);
-  const manager = new ResourceManager(setup.store, realm.entity_id);
+  const manager = new ResourceManager(setup.store, safeInteger(realm.entity_id));
   const learned = realmLearned(setup.store, realm.game_id, realm.entity_id);
   const lines = STORES.map(({ icon, store, resource, row, spentAt }): ProductionLine => {
     const reading = stores?.[store];

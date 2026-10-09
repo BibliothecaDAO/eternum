@@ -1,20 +1,52 @@
+import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { describe, expect, it } from "vitest";
 
 import {
-  buildFinalizedBlitzStandingLookup,
-  normalizeLeaderboardAddress,
+  readFinalBlitzRanking,
+  readFinalBlitzStandings,
   resolveFinalizedBlitzStanding,
 } from "./finalized-blitz-leaderboard";
 
-describe("finalized blitz leaderboard helpers", () => {
-  it("builds finalized standings from the final native result", () => {
-    const standingLookup = buildFinalizedBlitzStandingLookup([
-      { player: 0x2n, points: 9_000_000n, rank: 2 },
-      { player: 0x1n, points: 12_500_000n, rank: 1 },
-    ]);
+const GAME = 1;
 
-    expect(standingLookup.get(normalizeLeaderboardAddress(0x1n))).toEqual({ rank: 1, points: 12.5 });
-    expect(standingLookup.get(normalizeLeaderboardAddress(0x2n))).toEqual({ rank: 2, points: 9 });
+const finalResult = (store: NativeFactStore, players: { wallet: bigint; rank: number }[]) =>
+  store.applyFacts([
+    { model: "BlitzResult", key: "0x1", value: { game_id: GAME, players, complete: true, commitment: 1 } },
+  ]);
+const roster = (store: NativeFactStore, players: { account: bigint; wallet: bigint }[]) =>
+  store.applyFacts([{ model: "BlitzRoster", key: "0x2", value: { game_id: GAME, players } }]);
+const registeredPoints = (store: NativeFactStore, address: bigint, points: bigint) =>
+  store.applyFacts([
+    { model: "PlayerPoints", key: `0x${(0x100n + address).toString(16)}`, value: { game_id: GAME, address, points } },
+  ]);
+
+describe("finalized blitz leaderboard helpers", () => {
+  it("ranks the result's wallets as the accounts that played them, scored by their registered points", () => {
+    const store = new NativeFactStore();
+    finalResult(store, [
+      { wallet: 0xb2n, rank: 2 },
+      { wallet: 0xb1n, rank: 1 },
+    ]);
+    roster(store, [
+      { account: 0xa1n, wallet: 0xb1n },
+      { account: 0xa2n, wallet: 0xb2n },
+    ]);
+    registeredPoints(store, 0xa1n, 12_500_000n);
+    registeredPoints(store, 0xa2n, 9_000_000n);
+
+    expect(readFinalBlitzStandings(store, GAME)).toEqual([
+      { account: 0xa1n, rank: 1, points: 12_500_000n },
+      { account: 0xa2n, rank: 2, points: 9_000_000n },
+    ]);
+  });
+
+  it("waits for the roster, and refuses a ranked wallet the known roster does not hold", () => {
+    const store = new NativeFactStore();
+    finalResult(store, [{ wallet: 0xb1n, rank: 1 }]);
+    expect(readFinalBlitzRanking(store, GAME)).toBeUndefined();
+
+    roster(store, [{ account: 0xa2n, wallet: 0xb2n }]);
+    expect(() => readFinalBlitzRanking(store, GAME)).toThrow("outside game 1's roster");
   });
 
   it("marks players outside the finalized roster as unranked when finalized standings are active", () => {

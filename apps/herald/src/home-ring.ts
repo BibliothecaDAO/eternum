@@ -1,3 +1,4 @@
+import { entityHomeNamespace } from "@bibliothecadao/eternum/expeditions";
 import { nativeTilePackingConstants } from "../../../contracts/l3/world-native/schema/client.gen";
 import type { GameSyncScope } from "@bibliothecadao/eternum/game-sync-models";
 import type { FoldSet } from "./types";
@@ -10,7 +11,7 @@ export interface HomeRingTile {
 }
 
 /** Reads a realm's home ring for the day at `timestamp` from the chain's own rule. */
-export type HomeRingView = (gameId: string, realmId: number, timestamp: number) => Promise<HomeRingTile[]>;
+export type HomeRingView = (gameId: string, regionId: number, timestamp: number) => Promise<HomeRingTile[]>;
 
 interface HomeRingInput {
   view: HomeRingView;
@@ -38,13 +39,15 @@ export class HomeRing {
   public rows(gameId: string, scope: GameSyncScope, timestamp: number): FoldSet[] {
     const expedition = scope.expedition;
     if (!expedition || expedition.day < 0) return [];
-    return [...expedition.realmTraits].flatMap((realm) => {
-      const ring = ringKey(gameId, realm, expedition.day);
-      const cached = this.rings.get(ring);
-      if (cached) return cached;
-      this.fetch(ring, { gameId, realmId: Number(realm), day: expedition.day }, timestamp);
-      return [];
-    });
+    return [...expedition.realms]
+      .map((home) => String(entityHomeNamespace(home)))
+      .flatMap((realm) => {
+        const ring = ringKey(gameId, realm, expedition.day);
+        const cached = this.rings.get(ring);
+        if (cached) return cached;
+        this.fetch(ring, { gameId, regionId: Number(realm), day: expedition.day }, timestamp);
+        return [];
+      });
   }
 
   /** The cached ring row at this key, if a ring holds it. */
@@ -62,11 +65,11 @@ export class HomeRing {
   }
 
   private fetch(ring: string, day: RingDay, timestamp: number): void {
-    const { gameId, realmId } = day;
+    const { gameId, regionId } = day;
     if (this.fetching.has(ring)) return;
     this.fetching.add(ring);
     this.input
-      .view(gameId, realmId, timestamp)
+      .view(gameId, regionId, timestamp)
       .then((tiles) => {
         const rows = tiles.map((tile) => this.input.rowOf(gameId, tile));
         this.failed.delete(ring);
@@ -81,7 +84,7 @@ export class HomeRing {
           JSON.stringify({
             event: "herald_home_ring_failed",
             gameId,
-            realmId,
+            regionId,
             error: error instanceof Error ? error.message : String(error),
           }),
         );
@@ -93,7 +96,7 @@ export class HomeRing {
   private forgetEarlierDays(day: RingDay): void {
     for (const [ring, rows] of this.rings) {
       const [gameId, realm, ringDay] = ring.split(":");
-      if (gameId !== day.gameId || Number(realm) !== day.realmId || Number(ringDay) >= day.day - 1) continue;
+      if (gameId !== day.gameId || Number(realm) !== day.regionId || Number(ringDay) >= day.day - 1) continue;
       this.rings.delete(ring);
       for (const row of rows) this.byKey.delete(row.key);
     }
@@ -102,7 +105,7 @@ export class HomeRing {
 
 interface RingDay {
   gameId: string;
-  realmId: number;
+  regionId: number;
   day: number;
 }
 

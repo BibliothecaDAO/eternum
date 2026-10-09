@@ -12,7 +12,7 @@ import type { Tier } from "@/ui/design-system/kit/tier-chip";
 import { toast } from "@/ui/features/event-feed/notify";
 import { extractReadableErrorMessage } from "@/utils/error-message";
 import { biomeTypeOf, configManager, entityMapPosition } from "@bibliothecadao/eternum";
-import type { NativeRows } from "@bibliothecadao/eternum/game-client";
+import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import type { TileSpatialRenderable } from "@bibliothecadao/eternum/game-sync";
 import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import { useMemo, useState } from "react";
@@ -81,7 +81,7 @@ export const TileCard = ({ selected, onClose }: { selected: SelectedSite; onClos
   );
   const choices = useSiteChoices(selected, actor === null);
   const approach = useOrderAt(useApproachTile(siteTile, actor !== null && plan.fight === undefined));
-  const stamina = useArmyStamina(actor?.army.explorer_id ?? null, plan.attackStamina);
+  const stamina = useArmyStamina(actor ? safeInteger(actor.army.explorer_id) : null, plan.attackStamina);
   const realm = useFrontierRealm();
   const goToPlace = useGoToFrontierPlace(realm);
   const [sending, setSending] = useState(false);
@@ -93,8 +93,8 @@ export const TileCard = ({ selected, onClose }: { selected: SelectedSite; onClos
       playUnitCommandSound("attack");
       await setup.systemCalls.attack_explorer_vs_guard({
         signer: account.account,
-        explorer_id: attack.army.explorer_id,
-        structure_id: selected.structure.entity_id,
+        explorer_id: safeInteger(attack.army.explorer_id),
+        structure_id: safeInteger(selected.structure.entity_id),
       });
     } catch (error) {
       toast.error(extractReadableErrorMessage(error, "The attack could not be sent."));

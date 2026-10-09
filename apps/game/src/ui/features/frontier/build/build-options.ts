@@ -7,7 +7,12 @@ import {
   researchTier,
   ResourceManager,
 } from "@bibliothecadao/eternum";
-import { nativeResearchConstants, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
+import {
+  safeInteger,
+  nativeResearchConstants,
+  type NativeFactStore,
+  type NativeRows,
+} from "@bibliothecadao/eternum/game-client";
 import { BuildingType, getProducedResource, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 
 /**
@@ -64,12 +69,12 @@ export const readBuildOptions = (
 ): BuildOption[] | undefined => {
   const learned = realmLearned(store, realm.game_id, realm.entity_id);
   if (learned === undefined) return undefined;
-  const wheat = new ResourceManager(store, realm.entity_id).wheatPerHour(tick);
+  const wheat = new ResourceManager(store, safeInteger(realm.entity_id)).wheatPerHour(tick);
   const board = store.require("BoardRules", { game_id: realm.game_id });
   const barracksTier = researchTier(learned, nativeResearchConstants.ROW_BARRACKS);
   const options: BuildOption[] = [];
   for (const category of FRONTIER_BUILDINGS) {
-    const cost = getBuildingCosts(realm.entity_id, store, category, useSimpleCost);
+    const cost = getBuildingCosts(safeInteger(realm.entity_id), store, category, useSimpleCost);
     if (cost === undefined) return undefined;
     const rule = store.require("BuildingRule", { game_id: realm.game_id, category });
     const effect = readBuildingEffect(store, realm, category, learned);
@@ -83,7 +88,7 @@ export const readBuildOptions = (
       populationCost: rule.population_cost,
       standing: !TRAINS[category]
         ? "open"
-        : getBuildingQuantity(realm.entity_id, category, store) > 0
+        : getBuildingQuantity(safeInteger(realm.entity_id), category, store) > 0
           ? "built"
           : barracksTier < board.training_gate_tier
             ? { gate: board.training_gate_tier }

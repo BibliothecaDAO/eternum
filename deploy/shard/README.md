@@ -1,243 +1,103 @@
-# Run a shard
+# Shard package
 
-A shard hosts games on a node, admission gateway and Herald. This package replaces the box-specific generated service
-definitions. It needs Docker with Compose, Linux amd64, and memory for the node, Herald and the remaining services.
-Identity, the directory and launches belong to the central Workers; the client is the shared app.
+A shard hosts games on an unmodified Madara node, Herald and one public stamping RPC. The package contains
+`compose.yml`, `images.env` (init, Herald and metrics digests), `release.json` and these operational scripts.
 
-Download `shard.tar.gz` from a `shard-v*` release and extract it. The archive includes this Compose file, `images.env`
-with the CI-built init, Herald and gateway image digests, and `release.json`, the release's facts: its commit, images,
-node, every contract class and every preset commitment it can register. No checkout, compiler or JavaScript runtime is
-needed on the host. Supply a unique chain id and the public endpoints in `.env`:
+## Initialize a fresh shard
+
+Use reviewed environment inputs with `deploy/athanor/scripts/deploy-official.py ENVIRONMENT DIRECTORY`, or the existing
+local runner `deploy/athanor/scripts/shard.py CONFIGURATION DIRECTORY`. Neither reuses another shard's chain state. Ops
+provisions `/opt/athanor/operator-token` as an owner-only regular `0600` file. The wrapper reads it in memory; Compose
+binds it read-only into initialization and the harness. Its value never appears in arguments, rendered environments or
+Docker container configuration. An alternate path uses `--operator-token-file PATH`.
+
+Required package inputs:
 
 ```sh
-cp images.env .env
-cat >> .env <<'CONFIG'
-SHARD_NAME=my-shard
-CHAIN_ID=MY_SHARD_20260923
-GUARDIAN_URL=https://play.realms.party/api/guardian
+SHARD_NAME=unique-shard-name
+CHAIN_ID=UNIQUE_ASCII_CHAIN_ID
+GUARDIAN_URL=https://identity.example.org/api/guardian
 PUBLIC_RPC_URL=https://rpc.example.org/rpc/v0_10_2
-PUBLIC_ADMISSION_URL=https://admission.example.org
-PRESETS=2,5
-HERALD_MEMORY=6g
-NODE_MEMORY=24g
-CONFIG
-printf 'HOST_UID=%s\nHOST_GID=%s\n' "$(id -u)" "$(id -g)" >> .env
-docker compose run --rm prepare
-docker compose run --rm -it --no-deps --entrypoint bun init deploy/athanor/scripts/enrol-operator.ts /data
-docker compose up -d
+PUBLIC_HERALD_URL=https://herald.example.org
+PLAYER_CAPACITY=2000
+PRESETS=2,5,101
+VRF_WORKERS=8
+L2_GAS_BOUND=0x47868c00
+HOST_UID=1000
+HOST_GID=1000
 ```
 
-The shard's operator, which creates games and signs the shard's administrative actions, is your own Realms account on
-this chain, under the same guardian as every player. `prepare` generates the host keys; `enrol-operator.ts` then asks
-for your Realms account's email and the sign-in code it receives, gets the guardian's approval for the host deployer key
-as that account's first device on your chain, signs the session out and writes `data/operator-enrolment.json`.
-Initialization deploys the operator with it. That device is the operator's key: keep it when you review your account's
-devices.
+Use image digests from the same release. The pinned node image and chain template are shared by package and runner. The
+host must have the athanor slice and enough memory for node, Herald, database, metrics and the stamping runtime. The
+node defaults to 24 GiB and Herald to 6 GiB. The RPC container has a 2 GiB RAM limit, with no additional swap, for its
+eight Bun worker isolates, native prover and bounded request queue. Measure its high-water RSS in the 2,000-player run;
+this is capacity provisioning, not a claim that RSS was measured on the node.
 
-`HERALD_MEMORY` defaults to `6g`: stream D's `measure:load` workload of four 24-player Blitz games (96 subscribers) held
-RSS at about 4.6–4.7 GB over 90 simulated minutes after stream cleanup
-([measurement](https://github.com/BibliothecaDAO/eternum/commit/38673965cf4)). `NODE_MEMORY` separately defaults to
-`24g`: staging exhausted its previous 12 GiB node limit on September 24. Nodes restart on failure using their persistent
-chain volumes; this gives more headroom while the memory growth is investigated. Leave additional memory for Postgres,
-the gateway and the host; size larger or Frontier workloads from their own measurements. These are RAM limits with swap
-disabled. Our box runner keeps these defaults and refuses a shard whose limits do not fit its resource slice beside the
-shards already running there.
+Deployment runs `docker compose run --rm --no-deps prepare` before creating the stack, so the RPC file bind exists and
+Docker cannot replace a missing key with a directory. Manual starts must use that order too.
 
-Every shard runs a metrics collector, `metrics`, in 256 MiB: the node exports its OTLP metrics to it, it scrapes the
-gateway's admission series and it samples every container's CPU from a read-only `/sys/fs/cgroup`, with no Docker socket
-and no capabilities. It writes `data/metrics/metrics.jsonl` and `data/metrics/container-metrics.jsonl`; each rotates at
-100 MB and keeps two older files, so the directory holds at most 600 MB. Nothing leaves the host.
+Preparation generates a host signing key and a separate VRF key on the shard. Both remain in private `data/` files;
+`vrf-key.json` is mode `0600`, owned by HOST_UID/HOST_GID. Its public point and the fixed play gas bound are recorded in
+`native-world.json` and passed to Games' constructor. Restart verifies the file against that point and refuses an
+identity or bound change. There is no VRF key setter: a leaked key retires the shard.
 
-Open files follow `PLAYER_CAPACITY` too. The gateway raises its soft limit at start to one descriptor per admission
-connection plus its own sockets; the node, Herald, the RPC proxy and Postgres size their own. Docker's default hard
-limit covers this; a host whose hard limit is lower stops the gateway at start, naming `ulimit`.
+## Endpoints and readiness
 
-Community shards use the production guardian at `https://play.realms.party/api/guardian`.
-`https://play.dev-realms.party/api/guardian` belongs to our staging tests.
+Forward HTTPS hostnames to loopback 8080 (RPC) and 8081 (Herald). `RPC_PORT`, `HERALD_PORT` and `BIND_ADDRESS` change
+bindings. The public RPC admits one signed Games.play call, the data-listed role-guarded administrative entries and
+existing Realms account-management calls. Play receives a VRF proof inside the proxy; proof bodies are never served.
+Simulations and fee estimates are never stamped. The node's write RPC is internal, not exposed through another port.
 
-Initialization generates the host's deployer and sequencing keys locally in `data/`, reads the guardian's real public
-key and account class, starts a genesis with no seeded accounts, deploys the contracts and operator, registers the
-presets `PRESETS` names (2 is Blitz, 5 is Frontier; an id outside `release.json` is refused before anything deploys) and
-writes `data/native-world.json` and `data/initialized.json`, which records each preset's commitment on chain. Every
-start registers any listed preset not yet on chain. Private keys remain in `data/` (mode 0700); back it up with the
-chain, gateway and PostgreSQL volumes (see "Operations: back up and restore"). Never publish it. Initialization refuses
-a changed identity on existing data. Inspect a failed init in `data/*.log` before retrying; do not delete chain state to
-repair a deployment.
+Behind a tunnel, set TRUSTED_PROXY to its actual socket peer. With loopback bindings initialization derives that peer
+from the Compose network route; exposed bindings trust no proxy unless explicitly configured.
 
-Forward your HTTPS hostnames to loopback ports 8080 (RPC), 8081 (Herald) and 8082 (admission). `RPC_PORT`, `HERALD_PORT`
-and `ADMISSION_PORT` can select disjoint ports for a second shard. Never expose the node itself. Gameplay writes enter
-through admission. Herald serves `/manifest`; public RPC permits Realms account deployment, device join and device
-revoke checked against the manifest, plus invokes from the host operator recorded in `data/gameplay-contracts.json`. All
-require zero tip. SDK fee estimation follows the same policy; other writes and node WebSocket upgrades are refused. The
-node still verifies every submitted transaction signature. The default loopback bindings expect a tunnel on the host.
-Set `BIND_ADDRESS` only when placing these three services behind another TLS proxy. The node has no published port. Only
-a trusted proxy may supply a client address, using the last `X-Forwarded-For` entry; other requests are keyed by their
-socket peer. The account RPC limit is 30 requests per client per minute. Behind the default loopback bindings, every
-connection arrives from the shard's Compose network gateway, so initialization trusts that address, found again on every
-start; with `BIND_ADDRESS` set, it trusts no one unless `TRUSTED_PROXY` names your proxy's socket peer IP. An explicit
-`TRUSTED_PROXY` always wins. The benchmark runner names this same setting `trusted_proxy`.
+The identity service must carry the pending route before a shard from this code starts. Deploy the identity Worker
+containing `/api/directory/shards/pending` before running official deployment; a missing route fails with this
+prerequisite. The local runner and initializer never list shards, including measurement shards.
 
-Verify the boundary and read the public manifest:
+Herald's existing listener first serves the real prepared identity at `/manifest`, with other routes unavailable.
+Official deployment registers the Herald URL as pending after starting Herald and before starting initialization or
+enrolling the operator. Pending shards are hidden from players. Init then deploys Games, sets owner/launcher/ledger
+roles and registers the selected presets. This bootstrap assigns all three roles to the enrolled operator; later role
+changes use the contract's existing owner-authorized setters.
 
-```sh
-docker compose run --rm --no-deps --entrypoint bun init \
-  deploy/athanor/scripts/inspect-shard-roles.ts --public-rpc https://rpc.example.org/rpc/v0_10_2
-curl --fail https://herald.example.org/manifest
-```
+Deployment's last step runs `deploy/athanor/harness/self-check.ts` in the harness container against the same public
+stamping RPC. Activation also requires the launch Worker to enroll its own account on this pending shard. The owner
+confirms `Games.set_launcher(worker account)`; the Worker signs an idempotent `check-worker-*` game creation, and the
+deployment verifies its sender, call, confirmed receipt and game row. Missing Worker routes leave the shard PENDING.
+Only these checks together promote the directory entry to active. A failure writes `data/self-check.json`, exits nonzero
+naming the first failed route and leaves directory status unchanged. Re-run deployment after correcting the fault; it
+repeats the check only while PENDING. An ACTIVE or DRAINING rerun creates no check games. The runner and fixture are the
+harness implementation, not a separate deployment test suite.
 
-Repeat the RPC check from outside the host. Unshaped submissions must return method-not-found, including in mixed
-batches; invalid-params means the node's write handler is exposed.
-
-The account smoke (`deploy/athanor/scripts/account-rpc-smoke.ts`), which also joins and revokes a temporary operator
-device, needs guardian approvals through our operator route, so it runs on our own shards only. So does the gameplay
-harness, whose bots are approved the same way: `docker compose run --rm harness OPTIONS`, described in
-`deploy/athanor/README.md`.
-
-Create an unranked Frontier game with the host operator (choose a future start time):
-
-```sh
-docker compose run --rm --no-deps --entrypoint /bin/sh init -ec \
-  'set -a; . /data/harness.env; exec bun config/deployer/clean/cli/create.ts \
-    --environment madara.frontier --game my-frontier --start-time 2026-09-24T12:00:00Z --dev-mode-on true'
-```
-
-Open `https://play.realms.party/play`, paste your Herald HTTPS URL into **Shard URL**, and select **Open shard**. The
-game appears beside the directory's games; sign in and enter it. A private unlisted shard does not need a directory
-entry for this flow.
-
-To create games through the central launch Worker, give its owner the shard's Herald URL and transfer registrar
-credentials from `data/harness.env` privately. Publish only the operator address. The owner lists the shard in the
-directory and approves its launchers. Open `https://play.realms.party` to create and join a game on the listed shard.
-Anyone can host unranked games; ranked games require an approved shard.
-
-Rotate the gateway's submitter only after its key leaks: the shard's authority points Games at a new sequencing account,
-and the account class and guardian stay fixed (the contract refuses changing either). The gateway must hold the new key
-before the rotation lands, or it signs with an account Games no longer accepts. With the new key in `NEW_SEQUENCING_KEY`
-in your shell only, never in a file you publish, and `SEED=athanor-<chain id in lower case, _ as ->`:
-
-```sh
-docker compose run --rm --no-deps -e NEW_SEQUENCING_KEY --entrypoint /bin/sh init -ec \
-  'set -a; . /data/harness.env; RANDOMNESS_PRIVATE_KEY=$NEW_SEQUENCING_KEY \
-   DEPLOYER_ACCOUNT_ADDRESS=$(bun -e "console.log(require(\"/data/host-keys.json\").deployerAddress)") \
-   NATIVE_AUTHORITY_FILE=/data/authority-rotated.json \
-   exec bun deploy/athanor/harness/native/prepare-authority.ts "'"$SEED"'" /data/native-world.json'
-docker compose stop gateway
-docker compose run --rm --no-deps --entrypoint /bin/sh init -ec \
-  'set -a; . /data/harness.env; exec bun config/deployer/clean/cli/deploy-world.ts --seed "'"$SEED"'" \
-   --manifest /data/native-world.json --identity /data/gameplay-contracts.json \
-   --submitter $(bun -e "console.log(require(\"/data/authority-rotated.json\").address)") \
-   --world-address-file /data/world-address'
-mv data/authority.json data/authority-leaked.json
-mv data/authority-rotated.json data/authority.json
-docker compose run --rm --no-deps init
-docker compose up -d --no-deps gateway
-```
-
-The new key and the host deployer, the authority's administrator as at initialization, are assigned after `harness.env`
-is sourced, so nothing a shard file carries can replace them, and prepare-authority refuses a key equal to the one
-`data/authority.json` records: a rotation that keeps the leaked key stops before any transaction. The deploy command
-sees the submitter differ from the deployed one and applies it with `set_authentication` as the authority; any other
-difference stops it before a transaction. `data/authority.json` is the shard's one record of its submitter: once it
-names the new account, initialization renders the gateway's configuration from it on this and every later start.
-
-`docker compose stop` retains state. Starting the same package again audits the existing deployment. Changing the
-release is a separate operator action; never recreate genesis for an existing shard. CI publishes immutable images and
-this archive from `shard-v*` tags; it does not deploy a box or change a live hostname.
+Metrics collect OTLP and sample container CPU from a read-only cgroup mount, without a Docker socket or write access.
+The compose services restart on failure. Initializer logs and `harness.env` are private and must never be published.
 
 ## Operations: back up and restore
 
-`backup.py` ships beside this file with the `stack_lock.py` it imports. Run it as root on the host, naming the package's
-compose project and data directory; on a host with `/opt/athanor` it holds the isolated-stack lock while it runs:
+`backup.py capture PROJECT DATA_DIR DEST` takes the isolated-stack lock, backs up PostgreSQL hot, stops the node only
+for its cold chain-volume copy, archives private `data/` locally and writes checksums and `capture.json`. The backup
+includes the VRF credential and must remain private on the shard. `backup.py restore-test PROJECT DEST` restores into
+isolated scratch containers without a network and checks the chain head and database contents. Its JSON verdict must
+pass before relying on the backup. Stop the public RPC during a node outage; callers receive the fixed refusal and must
+observe their original transaction hash before submitting another action.
 
-```sh
-sudo python3 backup.py capture "$COMPOSE_PROJECT_NAME" ./data /backup/<shard>-<utc time>
-sudo python3 backup.py restore-test "$COMPOSE_PROJECT_NAME" /backup/<shard>-<utc time>
-```
+To restore, use the recorded image digests, chain archive, database backup and private data archive on fresh volumes.
+Start preparation first: it verifies identity and republishes runtime files. Then start the stack and repeat the
+self-check before directory activation. Never initialize fresh host keys over an incomplete or restored data directory.
 
-Capture copies Herald's PostgreSQL hot (a base backup and a dump), then stops the node for a cold copy of its chain
-volume and starts it again; `capture.json` records the stop as `chain.downtime_seconds`. Capture also copies the
-gateway's epoch secret and `data/`, records the image every service runs and writes `SHA256SUMS`. A backup holds the
-shard's private keys: keep it where only the operator reads it, and copy it off the host.
+## Contract releases
 
-While the node is stopped nothing is sequenced. A new action is refused with "game admission is unavailable" and the
-player acts again; an action already in flight is resent once with the same signed intent and never executes twice, or
-ends as outcome unknown. Herald keeps serving the last confirmed state, sends no diffs until the node is back and then
-resumes. Capture in a quiet period. The stop grows with the chain (about 12 seconds for a 12.7 GB chain), so read
-`chain.downtime_seconds` at every capture and raise it once it passes 60 seconds: that is the point to take backups from
-a replica node, which this script does not yet do.
+Games and its VRF configuration are immutable for the life of the shard. Releases register new logic classes and
+explicitly apply them to games through the existing owner-only calls. The baked release facts include the verifier class
+hash. A schema-changing release still requires the repository's release/migration procedure; do not edit a published
+release's contents or reuse a chain identity for a fresh world.
 
-Restore-test checks the checksums, restores the chain into a scratch node without a network and compares its block at
-the captured head with the running node's, verifies and starts the base backup, and restores the dump; every table live
-Herald had must exist in both. It writes `restore-test/result.json` and exits non-zero on any mismatch. A backup counts
-only once its restore test passes.
+## Shipped node settings
 
-A restored chain resumes at the captured head, and blocks sealed after the capture are lost, so recovery from a backup
-is the last resort after the node's own restart. To recover, stop the package, extract `chain.tar.zst` and
-`gateway.tar.zst` into its `chain` and `gateway` volumes and `data.tar.zst` into `data/`, extract `base.tar` into its
-`postgres` volume owned by the image's `postgres` user, and start the package with the images `capture.json` names. The
-configuration volumes need nothing: every start renders each service's configuration from `data/` and publishes it
-again, so a new host with fresh volumes starts the same as the old one.
+Closed blocks remain 2 seconds. Block caps are 10,000 transactions, 1,000,000 state-diff entries, 1,000,000 events and
+10^13 for each of Sierra, proving and receipt L2 gas. Parallel Merkle construction is enabled and historical database
+snapshots are disabled (`--db-max-kept-snapshots=0`). These are the shipped leader configuration, not trial scripts.
 
-## Operations: register a preset
-
-Preset registration must be a direct authority account call through `__execute__`. Herald verifies the registration
-calldata against the chain's `NATIVE_PRESET v1` commitment and halts with `NativePresetRegistrationInvalid` on an
-unsupported path. A multisig, timelock or outside-execution path needs Herald decoding support before it can register
-presets. Use the init image's preset-registration path for the supported account call format.
-
-## Operations: apply a logic hotfix
-
-Use the new package's init and Herald image digests in `.env`, keeping the existing shard identity, data and Games
-address. The build's immutable release id and schema come from its published release facts; changing an existing
-release's contents is refused. A hotfix must keep the shard's fact schema. The deployer refuses a changed schema with
-`NATIVE_HOTFIX_SCHEMA_CHANGE`; a schema-changing fix requires a new shard or season. The signing key must belong to the
-game's creator (the launch operator for our games).
-
-A release that migrates data includes a production contract named `ReleaseMigration` in its build artifacts. It
-implements `IReleaseMigration.migrate(game_id, previous_release, release_id)` and updates Games storage through a
-library call. The build records its class hash in the baked release facts. The deployer declares it and checks its
-declaration before registration. If a registered release's migration class is not declared, declare it, then apply. Bump
-`NATIVE_RELEASE_ID` in `deploy/release/facts.ts` for each release; never edit a published release's contents.
-
-Run these steps in order. The init image contains the CLI, compiled classes and published facts, so no host toolchain is
-needed. This helper loads the shard's private credentials inside the container without printing them:
-
-```sh
-hotfix() {
-  docker compose run --rm --no-deps --entrypoint /bin/sh init -ec '
-    set -a
-    . /data/harness.env
-    DEPLOYER_ACCOUNT_ADDRESS=$(bun -e "console.log(require(\"/data/host-keys.json\").deployerAddress)")
-    seed=$(bun -e "console.log(require(\"/data/native-world.json\").world.seed)")
-    submitter=$(bun -e "console.log(require(\"/data/authority.json\").address)")
-    exec bun config/deployer/clean/cli/deploy-world.ts \
-      --seed "$seed" --manifest /data/native-world.json \
-      --identity /data/gameplay-contracts.json --submitter "$submitter" \
-      --rpc-url http://madara:9944/rpc/v0_10_2 \
-      --world-address-file /data/world-address \
-      --release-facts /release/release-facts.json "$@"
-  ' hotfix "$@"
-}
-
-# 1. Register once and write the release-to-schema map. Existing games keep their pins.
-hotfix
-
-# 2. Update Herald with that manifest BEFORE applying to any game: initialization publishes it from data/.
-docker compose run --rm --no-deps init
-docker compose up -d --no-deps --force-recreate herald
-curl --fail https://herald.example.org/health
-curl --fail https://herald.example.org/manifest
-
-# 3. Apply to explicitly chosen games as their creator.
-hotfix --apply-games 1,2 --herald-url http://herald:3003
-```
-
-Step 3 reads Herald's live `/manifest` and refuses unless the release is already registered on chain and Herald lists
-every release the games will traverse for this shard. The CLI advances each game one release at a time, so each
-migration runs in order. Herald and the client refuse an unavailable decoder by name.
-
-Each apply emits `GameRelease` before the migration's facts in one transaction; migration failure rolls back the pin,
-data and event. Earlier successful steps remain applied if a later migration fails; retry resumes from the game's pin.
-Repeating registration or applying the already pinned release submits no transaction. Downgrade is refused. To roll back
-logic, register the old classes again as release N+1, with any required forward migration, then follow the same
-publication and apply sequence. Never recreate genesis to recover a failed migration.
+The node keeps its own response-size default. The response size of a full 2,000-action block remains unmeasured; ops
+must measure it before adding an override. Execution batches are 4; block-production batches are explicitly 1,024.

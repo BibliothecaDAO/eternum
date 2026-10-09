@@ -38,9 +38,8 @@ export interface LaunchGameRequest {
   /** The shard's world: the registrar and the chain the launch writes to. */
   manifest: RegistrarWorld;
   heraldUrl?: string;
-  admissionUrl?: string;
-  /** A Blitz game's players, as the gameplay accounts they play with. */
-  rosterAccounts?: readonly string[];
+  /** The ledger's frozen paying-wallet/gameplay-account pairs, never a later identity lookup. */
+  roster?: readonly { account: string; wallet: string }[];
   launchKind?: "game";
   environmentId: DeploymentEnvironmentId;
   gameName: string;

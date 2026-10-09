@@ -6,7 +6,7 @@ import { requireActiveGameClient } from "@/sync/active-game-client";
 import { toast } from "@/ui/features/event-feed/notify";
 import { extractReadableErrorMessage } from "@/utils/error-message";
 import { ResourceManager, spawnRing, structureMapPosition } from "@bibliothecadao/eternum";
-import type { NativeRows } from "@bibliothecadao/eternum/game-client";
+import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { type Direction, getNeighborHexes, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { useMemo, useState } from "react";
 
@@ -52,7 +52,7 @@ export const DeploySheet = ({ realm, onClose }: { realm: NativeRows["Structure"]
   const [sending, setSending] = useState(false);
   const clock = rules ? dayClock(rules, now) : undefined;
   const goToPlace = useGoToFrontierPlace(realm);
-  const wheatPerHour = new ResourceManager(setup.store, realm.entity_id).wheatPerHour(defaultTick);
+  const wheatPerHour = new ResourceManager(setup.store, safeInteger(realm.entity_id)).wheatPerHour(defaultTick);
 
   const deploy = async () => {
     if (!plan?.troops || direction === null || !preview) return;

@@ -1,3 +1,5 @@
+import { safeInteger } from "../../../packages/core/src/utils/safe-integer";
+import { entityHomeNamespace } from "@bibliothecadao/eternum/expeditions";
 import { attachAcceptedBlocks } from "./gas-collector";
 import { setTimeout as sleep } from "node:timers/promises";
 import type { Account } from "starknet";
@@ -295,7 +297,7 @@ function recordRules(client: GameClient) {
     observeRates(players: Player[]) {
       for (const { client: own, realmId } of players) {
         const rows = [...own.setup.store.inGame("ResourceProduction", own.gameId)].filter(
-          (row) => row.entity_id === realmId,
+          (row) => row.entity_id === BigInt(realmId),
         );
         evidence.rates.push(...presetRates(definition, rows));
       }
@@ -657,7 +659,7 @@ function observeDay(player: Player) {
       wheat: storedBalance(client, player, ResourcesIds.Wheat).toString(),
       essence: storedBalance(client, player, ResourcesIds.Essence).toString(),
       production: [...client.setup.store.inGame("ResourceProduction", game.gameId)]
-        .filter((row) => row.entity_id === player.realmId)
+        .filter((row) => row.entity_id === BigInt(player.realmId))
         .map((row) => ({ resource: row.resource_type, rate: row.production_rate.toString() })),
     };
     player.rollovers.push(rollover);
@@ -787,7 +789,7 @@ function planUpgrade(client: GameClient, player: Player): Action | undefined {
 function standing(client: GameClient, player: Player, category: number): number {
   return [...client.setup.store.inGame("Building", client.gameId)].filter(
     (row) =>
-      row.structure_id === player.realmId &&
+      row.structure_id === BigInt(player.realmId) &&
       row.category === category &&
       (row.inner_col !== BUILDINGS_CENTER[0] || row.inner_row !== BUILDINGS_CENTER[1]),
   ).length;
@@ -796,7 +798,7 @@ function planBuilding(client: GameClient, player: Player): Action | undefined {
   const realm = home(client, player);
   const buildings = [...client.setup.store.inGame("Building", client.gameId)].filter(
     (row) =>
-      row.structure_id === player.realmId &&
+      row.structure_id === BigInt(player.realmId) &&
       (row.inner_col !== BUILDINGS_CENTER[0] || row.inner_row !== BUILDINGS_CENTER[1]),
   );
   const counts = (category: number) => buildings.filter((building) => building.category === category).length;
@@ -894,7 +896,7 @@ function planMuster(client: GameClient, player: Player): Action | undefined {
   );
   if (!canPayTroopRaise(cost)) return;
   const spacing = client.setup.store.require("SettlementRules", { game_id: client.gameId }).spacing;
-  const x = (realm.metadata.realm_id - 1) * spacing + spacing / 2;
+  const x = (entityHomeNamespace(realm.entity_id) - 1) * spacing + spacing / 2;
   const y = currentDay(player).epoch * 4 * spacing + spacing / 2;
   const spawn = getNeighborHexes(x, y).find(
     (spot) => !getTileAt(client.setup.store, false, spot.col, spot.row, client.gameId)?.occupier_id,
@@ -938,8 +940,8 @@ function planExpedition(client: GameClient, game: HarnessGame, player: Player): 
   const day = currentDay(player);
   const stamina = rules.troop_stamina_config;
   for (const army of activeArmies(client, player)) {
-    const amount = game.explorerStamina(army.explorer_id, game.currentTicks().armies);
-    const upgrade = affordableUpgrade(client, army.explorer_id);
+    const amount = game.explorerStamina(safeInteger(army.explorer_id), game.currentTicks().armies);
+    const upgrade = affordableUpgrade(client, safeInteger(army.explorer_id));
     if (upgrade)
       return command(client, player, {
         kind: "BuyTier",
@@ -966,7 +968,7 @@ function planExpedition(client: GameClient, game: HarnessGame, player: Player): 
       Math.floor(coord.y / spacing) % 4 === 0 &&
       neighbors.some(
         (spot) =>
-          spot.col === (realm.metadata.realm_id - 1) * spacing + spacing / 2 &&
+          spot.col === (entityHomeNamespace(realm.entity_id) - 1) * spacing + spacing / 2 &&
           spot.row === day.epoch * 4 * spacing + spacing / 2,
       );
     if (depth > 0 && atEntrance) {
@@ -986,10 +988,10 @@ function planExpedition(client: GameClient, game: HarnessGame, player: Player): 
     if (target) {
       if (holdsForSite(amount, stamina.stamina_attack_req)) continue;
       let campAttempt = day.campAttempts.find(
-        (attempt) => attempt.armyId === army.explorer_id && attempt.siteId === target.entity_id,
+        (attempt) => BigInt(attempt.armyId) === army.explorer_id && BigInt(attempt.siteId) === target.entity_id,
       );
       if (target.base.category === StructureType.Camp && !campAttempt) {
-        campAttempt = { armyId: army.explorer_id, siteId: target.entity_id, lost: false };
+        campAttempt = { armyId: safeInteger(army.explorer_id), siteId: safeInteger(target.entity_id), lost: false };
         day.campAttempts.push(campAttempt);
       }
       const attack = command(client, player, {
@@ -998,11 +1000,11 @@ function planExpedition(client: GameClient, game: HarnessGame, player: Player): 
       });
       attack.after = async (result) => {
         day.exchanges++;
-        const exchanges = (player.siteExchanges.get(target.entity_id) ?? 0) + 1;
-        player.siteExchanges.set(target.entity_id, exchanges);
+        const exchanges = (player.siteExchanges.get(safeInteger(target.entity_id)) ?? 0) + 1;
+        player.siteExchanges.set(safeInteger(target.entity_id), exchanges);
         const captured = await resolveFrontierSiteCapture(
           client,
-          target.entity_id,
+          safeInteger(target.entity_id),
           player.identity.address,
           result.transactionHash,
           player.game.factHeadBlock(),
@@ -1016,7 +1018,7 @@ function planExpedition(client: GameClient, game: HarnessGame, player: Player): 
           }
           player.captures.push({
             epoch: day.epoch,
-            siteId: target.entity_id,
+            siteId: safeInteger(target.entity_id),
             category: target.base.category,
             exchanges,
             at: now(),
@@ -1043,7 +1045,11 @@ function planExpedition(client: GameClient, game: HarnessGame, player: Player): 
       )
       .find((spot) => !getTileAt(client.setup.store, false, spot.col, spot.row, client.gameId)?.biome);
     // The game's own checks, as the player's army panel makes them: stamina, and the food the realm pays per troop.
-    const armyActions = new ArmyActionManager(client.setup.store, client.setup.systemCalls, army.explorer_id);
+    const armyActions = new ArmyActionManager(
+      client.setup.store,
+      client.setup.systemCalls,
+      safeInteger(army.explorer_id),
+    );
     const ticks = game.currentTicks();
     if (frontier && armyActions.canExplore(ticks.default, ticks.armies)) {
       const explore = {
@@ -1142,9 +1148,11 @@ function observeProgress(client: GameClient, game: HarnessGame, player: Player) 
       player.rungs.push({ lane, level, at: now() });
   }
   const day = currentDay(player);
-  day.armyIds = [...new Set([...day.armyIds, ...activeArmies(client, player).map((army) => army.explorer_id)])];
+  day.armyIds = [
+    ...new Set([...day.armyIds, ...activeArmies(client, player).map((army) => safeInteger(army.explorer_id))]),
+  ];
   day.layout = [...client.setup.store.inGame("Building", game.gameId)]
-    .filter((row) => row.structure_id === player.realmId)
+    .filter((row) => row.structure_id === BigInt(player.realmId))
     .map((row) => `${row.inner_col},${row.inner_row}:${row.category}`)
     .sort()
     .join(";");

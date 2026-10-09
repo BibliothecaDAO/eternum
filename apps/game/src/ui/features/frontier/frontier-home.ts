@@ -17,7 +17,7 @@ import {
   ResourceManager,
   structureMapPosition,
 } from "@bibliothecadao/eternum";
-import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
+import { safeInteger, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { RESOURCE_PRECISION, type ResourcesIds, TroopTier, TroopType } from "@bibliothecadao/types";
 import { useMemo } from "react";
 
@@ -55,7 +55,7 @@ export const useGoToFrontierPlace = (realm: NativeRows["Structure"] | null) => {
     const site = structureMapPosition(setup.store, realm);
     if (!site) return;
     const position = Position.fromContract(site);
-    void goToStructure(realm.entity_id, position, expedition);
+    void goToStructure(safeInteger(realm.entity_id), position, expedition);
   };
 };
 
@@ -93,10 +93,10 @@ export const stocksAtNextDeploy = (
 ): Map<ResourcesIds, StockAtDeploy> | undefined => {
   const returning = homecomingByStock(store, realm, rules, now);
   if (!returning) return undefined;
-  const manager = new ResourceManager(store, realm.entity_id, realm.game_id);
+  const manager = new ResourceManager(store, safeInteger(realm.entity_id), realm.game_id);
   const stocks = new Map<ResourcesIds, StockAtDeploy>();
   for (const resourceId of TROOP_RESOURCE_IDS) {
-    const balance = getBalance(realm.entity_id, resourceId, tick, store).balance;
+    const balance = getBalance(safeInteger(realm.entity_id), resourceId, tick, store).balance;
     if (balance === undefined) return undefined;
     const held = divideByPrecision(Number(balance));
     const back = returning.get(resourceId) ?? 0;

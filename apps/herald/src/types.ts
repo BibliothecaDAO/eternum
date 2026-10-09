@@ -1,4 +1,4 @@
-import type { NativeExecutionOutcome } from "@bibliothecadao/provider";
+import type { GameplayRejection } from "@bibliothecadao/provider";
 import type { GameSyncModelDefinition } from "@bibliothecadao/eternum/game-sync-models";
 
 export type Felt = string;
@@ -36,7 +36,8 @@ export interface RpcReceipt {
   finality_status: string;
   execution_status?: string;
   revert_reason?: string;
-  executions?: NativeExecutionOutcome[];
+  /** The game's refusal recorded in this receipt (GameplayRejected), once Herald has read it. */
+  rejection?: GameplayRejection;
   events: RpcEvent[];
 }
 

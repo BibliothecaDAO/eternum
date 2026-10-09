@@ -6,7 +6,7 @@ import { openSpawnDirections } from "./army";
 const realm = () =>
   ({
     game_id: 7,
-    entity_id: 42,
+    entity_id: 3,
     base: { category: StructureType.Realm },
     metadata: { realm_id: 3 },
   }) as never;

@@ -746,18 +746,6 @@ export class WorldFold {
 
   private applyEventRows(event: Extract<DecodedWorldEvent, { kind: "event" }>): FoldChange[] {
     if (event.model.name === "PointsAwarded") return this.applyPointsAward(event);
-    if (event.model.name !== "ExecutionRecorded") return [];
-    const { order, status, status_class, reason } = event.value;
-    const result = BigInt(String(status));
-    const code = BigInt(String(status_class));
-    if (
-      BigInt(String(order)) === 0n ||
-      !(
-        (result === 1n && code === 0n && reason === "") ||
-        (result === 2n && code !== 0n && typeof reason === "string" && reason.length > 0)
-      )
-    )
-      throw new Error("Invalid native execution outcome");
     return [];
   }
 

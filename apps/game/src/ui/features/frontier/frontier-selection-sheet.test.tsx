@@ -17,8 +17,8 @@ import { GameProvider } from "@/hooks/context/game-context";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { campBeside } from "./sites/site-fixture";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { readExpeditionRules } from "@bibliothecadao/eternum";
-import { TileOccupier } from "@bibliothecadao/types";
+import { expeditionSpireTile, readExpeditionRules } from "@bibliothecadao/eternum";
+import { getNeighborHexes, TileOccupier } from "@bibliothecadao/types";
 import { FrontierSelectionSheet } from "./frontier-selection-sheet";
 
 /** Rules for the sheets that never read them here. */
@@ -50,6 +50,13 @@ describe("Frontier's selection sheet", () => {
 it("offers depth entry from Frontier for an own army at the computed spire", async () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const { store } = campBeside();
+  // Realm 7's day-0 site is in its home region, 7; the fixture's clock (t=350) is on day 0.
+  const spire = expeditionSpireTile(
+    readExpeditionRules(store, 1)!,
+    store.require("Structure", { game_id: 1, entity_id: 7 }),
+    350,
+  )!;
+  const beside = getNeighborHexes(spire.col, spire.row)[0];
   store.applyFacts([
     // research.cairo: the depth row's tier sits at bit 46; Ethereal I is researched.
     { model: "RealmKnowledge", key: "0xd", value: { game_id: 1, structure_id: 7, learned: 1n << 46n } },
@@ -78,13 +85,21 @@ it("offers depth entry from Frontier for an own army at the computed spire", asy
     {
       model: "TileOccupancy",
       key: "0x904",
-      // Realm 1's day-0 site, beside its spire: the fixture's clock (t=350) is on day 0.
-      value: { game_id: 1, alt: false, col: 5, row: 5, entity_id: 201, category: 15, is_structure: false },
+      // The army stands beside the realm's spire.
+      value: {
+        game_id: 1,
+        alt: false,
+        col: beside.col,
+        row: beside.row,
+        entity_id: 201,
+        category: 15,
+        is_structure: false,
+      },
     },
   ] as never);
   useAccountStore.setState({ account: { address: "0x111" } as never });
   useUIStore.getState().updateEntityActionSelectedEntityId(201);
-  useUIStore.getState().setSelectedHex({ col: 5, row: 5 });
+  useUIStore.getState().setSelectedHex({ col: beside.col, row: beside.row });
   tiles.current = [];
   const enter = vi.fn().mockResolvedValue(undefined);
   const host = document.createElement("div");

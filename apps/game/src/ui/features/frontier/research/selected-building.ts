@@ -3,7 +3,7 @@ import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { canIssueOrders } from "@/utils/can-issue-orders";
-import type { NativeRows } from "@bibliothecadao/eternum/game-client";
+import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
 
 import type { TypeRowView } from "./research-plan";
 import { useResearchPlan } from "./research-reader";
@@ -21,7 +21,14 @@ export const useSelectedBuildingRow = (
   const ordersAllowed = useUIStore(canIssueOrders);
   const plan = useResearchPlan(realm);
   useNativeRevision(["Building"]);
-  if (isMapView || !ordersAllowed || !realm || !plan || !selected || selected.structureId !== realm.entity_id)
+  if (
+    isMapView ||
+    !ordersAllowed ||
+    !realm ||
+    !plan ||
+    !selected ||
+    selected.structureId !== safeInteger(realm.entity_id)
+  )
     return null;
   const building = setup.store.get("Building", {
     game_id: realm.game_id,

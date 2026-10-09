@@ -46,18 +46,18 @@ pub struct ShareAllocation {
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct Contribution {
-    pub hyperstructure_id: u32,
-    pub from_structure_id: u32,
+    pub hyperstructure_id: u64,
+    pub from_structure_id: u64,
     pub resources: Span<ResourceAmount>,
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct AllocateShares {
-    pub hyperstructure_id: u32,
+    pub hyperstructure_id: u64,
     pub shareholders: Span<Share>,
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct SetConstructionAccess {
-    pub hyperstructure_id: u32,
+    pub hyperstructure_id: u64,
     pub access: ConstructionAccess,
 }
 
@@ -71,27 +71,14 @@ pub trait IHyperstructures<T> {
     fn hyperstructure_count(self: @T, game_id: u32) -> u32;
     fn completed_hyperstructure_count(self: @T, game_id: u32) -> u32;
     fn settle_completed_hyperstructures(
-        ref self: T,
-        game_id: u32,
-        timestamp: u64,
-        game_context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> (u32, crate::ownership::StoryCursor);
+        ref self: T, game_id: u32, timestamp: u64, game_context: crate::commands::ActionContext,
+    ) -> u32;
     fn settle_final_hyperstructures(
-        ref self: T,
-        game_id: u32,
-        timestamp: u64,
-        game_context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> (u32, crate::ownership::StoryCursor);
+        ref self: T, game_id: u32, timestamp: u64, game_context: crate::commands::ActionContext,
+    ) -> u32;
     fn record_hyperstructure(ref self: T, key: ResourceKey, seed: felt252, completed: bool);
     fn initialize_hyperstructure(
-        ref self: T,
-        game_id: u32,
-        actor: ContractAddress,
-        id: u32,
-        context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
+        ref self: T, game_id: u32, actor: ContractAddress, id: u64, context: crate::commands::ActionContext,
     );
     fn contribute_hyperstructure(
         ref self: T,
@@ -99,7 +86,6 @@ pub trait IHyperstructures<T> {
         actor: ContractAddress,
         contribution: Contribution,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
     );
     fn allocate_hyperstructure_shares(
         ref self: T,
@@ -107,15 +93,13 @@ pub trait IHyperstructures<T> {
         actor: ContractAddress,
         command: AllocateShares,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> ((), crate::ownership::StoryCursor);
+    );
     fn set_construction_access(
         ref self: T,
         game_id: u32,
         actor: ContractAddress,
         command: SetConstructionAccess,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
     );
 }
 

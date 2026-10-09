@@ -23,7 +23,13 @@ function fixture(target: number, dev = false, batches = 1) {
         return [{ game_id: 1, address: 1n, points: settled ? 50000000n : 0n }];
       case "HyperstructureShares":
         return [
-          { game_id: 1, start_at: settled ? 100n : 50n, multiplier: 1, shareholders: [{ player: 1n, bps: 10000 }] },
+          {
+            game_id: 1,
+            entity_id: 1n,
+            start_at: settled ? 100n : 50n,
+            multiplier: 1,
+            shareholders: [{ player: 1n, bps: 10000 }],
+          },
         ];
       case "SliceRules":
         return [{ victory_points_grant_config: { hyp_points_per_second: 1000000 } }];
@@ -41,6 +47,7 @@ function fixture(target: number, dev = false, batches = 1) {
         setup: { store: { require: (model: string) => rows(model)[0], inGame: rows }, systemCalls: { end_game: end } },
       },
       game: {
+        clientFor: () => ({ setup: { systemCalls: { end_game: end } } }),
         submit: async (_signer: unknown, act: () => Promise<unknown>) => ({
           transactionHash: "0xabc",
           confirmed: act(),

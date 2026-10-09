@@ -12,7 +12,7 @@ import {
   siteReward,
   type SiteKind,
 } from "@bibliothecadao/eternum";
-import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
+import { safeInteger, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import {
   type BiomeType,
@@ -113,7 +113,7 @@ const fittingPayout = (
           (row) => row.owner === BigInt(actor) && row.base.category === StructureType.Realm,
         )?.entity_id);
   if (home === undefined) return undefined;
-  const manager = new ResourceManager(store, home, gameId);
+  const manager = new ResourceManager(store, safeInteger(home), gameId);
   const held = manager.balanceWithProduction(
     attack?.timestamp ?? getBlockTimestamp().currentDefaultTick,
     reward.resourceType,

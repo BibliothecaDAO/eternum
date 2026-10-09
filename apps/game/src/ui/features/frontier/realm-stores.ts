@@ -4,7 +4,7 @@ import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import type { Tone } from "@/ui/design-system/kit/tone";
 import { knownBalance } from "@/ui/utils/utils";
 import { type ExpeditionRules, getBalance, getTroopResourceId, ResourceManager } from "@bibliothecadao/eternum";
-import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
+import { safeInteger, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { RESOURCE_PRECISION, ResourcesIds, TroopTier, TroopType } from "@bibliothecadao/types";
 
 import { troopsAtHome } from "./frontier-home";
@@ -43,10 +43,10 @@ export const readRealmStore = (
   const amount =
     resourceId === "troops"
       ? troopsAtHome(store, realm, rules, clock.now, clock.tick)
-      : wholeBalance(store, realm.entity_id, resourceId, clock.tick);
-  const rawLimit = new ResourceManager(store, realm.entity_id, realm.game_id).storeLimit(stock);
+      : wholeBalance(store, safeInteger(realm.entity_id), resourceId, clock.tick);
+  const rawLimit = new ResourceManager(store, safeInteger(realm.entity_id), realm.game_id).storeLimit(stock);
   const limit = rawLimit === undefined ? undefined : Number(rawLimit / BigInt(RESOURCE_PRECISION));
-  const perHour = realmPerHour(store, realm.entity_id, stock, clock.tick);
+  const perHour = realmPerHour(store, safeInteger(realm.entity_id), stock, clock.tick);
   const fullIn = secondsUntilFull(amount, limit, perHour);
   return { amount, limit, perHour, fullIn, tone: storeTone(fullIn) };
 };

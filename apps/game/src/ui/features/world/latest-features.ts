@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-09",
+    title: "Clearer Frontier building plots",
+    description: "Removed special plot markers so every available building plot uses the same appearance.",
+    type: "improvement",
+    gameSlug: "frontier",
+  },
+  {
+    date: "2026-10-09",
     title: "Link Ready by Email",
     description:
       "Added Ready's email wallet to the wallets you can link in Account, so a phone, or a browser without a wallet extension, can link one without installing anything.",

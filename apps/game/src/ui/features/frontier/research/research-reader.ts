@@ -10,6 +10,7 @@ import {
   researchTier,
 } from "@bibliothecadao/eternum";
 import {
+  safeInteger,
   nativeResearchConstants as research,
   type NativeFactStore,
   type NativeRows,
@@ -54,7 +55,7 @@ const readResearchPlan = (
     .filter(({ row, tier }) => drawnEffect(row, tier) !== undefined)
     .toSorted((left, right) => left.row - right.row || left.tier - right.tier);
   return {
-    essence: knownBalance(getBalance(realm.entity_id, ResourcesIds.Essence, tick, store).balance),
+    essence: knownBalance(getBalance(safeInteger(realm.entity_id), ResourcesIds.Essence, tick, store).balance),
     types: readTypeRows(store, realm, learned),
     nodes: prices.map(({ row, tier, essence }) => {
       const effect = drawnEffect(row, tier)!;
@@ -111,5 +112,5 @@ const rowOpen = (store: NativeFactStore, realm: NativeRows["Structure"], row: nu
   const category = researchRowCategory[row];
   if (category === undefined) return true;
   const castle = category === BuildingType.ResourceLabor ? 1 : 0;
-  return getBuildingQuantity(realm.entity_id, category, store) > castle;
+  return getBuildingQuantity(safeInteger(realm.entity_id), category, store) > castle;
 };

@@ -231,10 +231,8 @@ describe("Frontier confirmed season history", () => {
       );
       const events = stories.map((story, index) => {
         const values = {
-          version: 1,
+          version: 2,
           game_id: 1,
-          order: 100,
-          index,
           owner: new CairoOption(CairoOptionVariant.Some, 10),
           entity_id: new CairoOption(CairoOptionVariant.Some, 1),
           tx_hash: 85,

@@ -39,6 +39,12 @@ const story = (index: number, variant: Record<string, unknown>, owner = "0x0") =
         tx_hash: `0x${(index + 1).toString(16)}`,
         story: variant,
         timestamp: `0x${(100 + index).toString(16)}`,
+        event_position: {
+          block_number: index,
+          transaction_hash: `0x${(index + 1).toString(16)}`,
+          transaction_index: 0,
+          event_index: 0,
+        },
       },
     },
     scope,

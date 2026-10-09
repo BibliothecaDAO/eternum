@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "e8e5e3846fdfed48d8e23433f22b66b7d9b521cd29774c8b795e4c175ef9ec27",
+  "schemaIdentity": "0acb9388f08caf01d93231b774183bf87c548a6e18980cf170ac71d1920283ed",
   "commandAbi": [
     {
       "type": "interface",
@@ -49,7 +49,7 @@
         },
         {
           "name": "LevelUp",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "SettleBlitzRoster",
@@ -57,7 +57,7 @@
         },
         {
           "name": "ProvisionRealm",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "CreateReservedHyperstructure",
@@ -73,7 +73,7 @@
         },
         {
           "name": "ReceiveVillageArmy",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "BurnStructureResources",
@@ -153,7 +153,7 @@
         },
         {
           "name": "CancelTradeOrder",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "CreateBanks",
@@ -177,7 +177,7 @@
         },
         {
           "name": "InitializeHyperstructure",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "ContributeHyperstructure",
@@ -209,19 +209,19 @@
         },
         {
           "name": "RemoveFaith",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "UpdateWonderOwnership",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "UpdateFaithfulOwnership",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "ClaimWonderPoints",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "ClaimPlayerFaithPoints",
@@ -233,7 +233,7 @@
         },
         {
           "name": "CraftRelic",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "CreateGuild",
@@ -281,7 +281,7 @@
         },
         {
           "name": "ProvisionAndUpgradeRealm",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "SetEntityName",
@@ -319,7 +319,7 @@
       "members": [
         {
           "name": "structure_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "category",
@@ -345,7 +345,7 @@
       "members": [
         {
           "name": "explorer_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "direction",
@@ -359,11 +359,11 @@
       "members": [
         {
           "name": "attacker_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "defender_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "steal_resources",
@@ -401,7 +401,7 @@
       "members": [
         {
           "name": "explorer_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "directions",
@@ -425,7 +425,7 @@
       "members": [
         {
           "name": "explorer_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "spire_direction",
@@ -439,7 +439,7 @@
       "members": [
         {
           "name": "entity_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "new_owner",
@@ -517,7 +517,7 @@
         },
         {
           "name": "connected_realm_entity_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         }
       ]
     },
@@ -527,7 +527,7 @@
       "members": [
         {
           "name": "entity_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "resources",
@@ -541,11 +541,11 @@
       "members": [
         {
           "name": "from_entity_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "to_entity_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "resources",
@@ -559,7 +559,7 @@
       "members": [
         {
           "name": "entity_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "day",
@@ -581,7 +581,7 @@
       "members": [
         {
           "name": "structure_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "resource_types",
@@ -609,7 +609,7 @@
       "members": [
         {
           "name": "structure_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "directions",
@@ -631,7 +631,7 @@
       "members": [
         {
           "name": "structure_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "coord",
@@ -645,7 +645,7 @@
       "members": [
         {
           "name": "structure_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "amount",
@@ -663,17 +663,17 @@
         },
         {
           "name": "mine_ids",
-          "type": "core::array::Span::<core::integer::u32>"
+          "type": "core::array::Span::<core::integer::u64>"
         }
       ]
     },
     {
       "type": "struct",
-      "name": "core::array::Span::<core::integer::u32>",
+      "name": "core::array::Span::<core::integer::u64>",
       "members": [
         {
           "name": "snapshot",
-          "type": "@core::array::Array::<core::integer::u32>"
+          "type": "@core::array::Array::<core::integer::u64>"
         }
       ]
     },
@@ -683,11 +683,11 @@
       "members": [
         {
           "name": "attacker_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "defender_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         }
       ]
     },
@@ -697,11 +697,11 @@
       "members": [
         {
           "name": "maker_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "taker_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "offered_resource",
@@ -735,11 +735,11 @@
       "members": [
         {
           "name": "trade_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "taker_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "lots",
@@ -777,11 +777,11 @@
       "members": [
         {
           "name": "bank_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "structure_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "resource_type",
@@ -799,11 +799,11 @@
       "members": [
         {
           "name": "bank_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "structure_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "resource_type",
@@ -825,11 +825,11 @@
       "members": [
         {
           "name": "bank_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "structure_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "resource_type",
@@ -847,11 +847,11 @@
       "members": [
         {
           "name": "hyperstructure_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "from_structure_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "resources",
@@ -865,7 +865,7 @@
       "members": [
         {
           "name": "hyperstructure_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "shareholders",
@@ -903,7 +903,7 @@
       "members": [
         {
           "name": "hyperstructure_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "access",
@@ -935,7 +935,7 @@
       "members": [
         {
           "name": "explorer_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "coord",
@@ -949,7 +949,7 @@
       "members": [
         {
           "name": "entity_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "relic_id",
@@ -985,11 +985,11 @@
       "members": [
         {
           "name": "structure_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "wonder_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         }
       ]
     },
@@ -1003,7 +1003,7 @@
         },
         {
           "name": "wonder_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         }
       ]
     },
@@ -1017,35 +1017,31 @@
         },
         {
           "name": "players",
-          "type": "core::array::Span::<world_native::blitz_results::PlayerResult>"
+          "type": "core::array::Span::<world_native::blitz_results::RankedPlayer>"
         }
       ]
     },
     {
       "type": "struct",
-      "name": "core::array::Span::<world_native::blitz_results::PlayerResult>",
+      "name": "core::array::Span::<world_native::blitz_results::RankedPlayer>",
       "members": [
         {
           "name": "snapshot",
-          "type": "@core::array::Array::<world_native::blitz_results::PlayerResult>"
+          "type": "@core::array::Array::<world_native::blitz_results::RankedPlayer>"
         }
       ]
     },
     {
       "type": "struct",
-      "name": "world_native::blitz_results::PlayerResult",
+      "name": "world_native::blitz_results::RankedPlayer",
       "members": [
         {
-          "name": "player",
+          "name": "wallet",
           "type": "core::starknet::contract_address::ContractAddress"
         },
         {
-          "name": "points",
-          "type": "core::integer::u128"
-        },
-        {
           "name": "rank",
-          "type": "core::integer::u8"
+          "type": "core::integer::u16"
         }
       ]
     },
@@ -1055,7 +1051,7 @@
       "members": [
         {
           "name": "owned_structure_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "public",
@@ -1073,7 +1069,7 @@
       "members": [
         {
           "name": "owned_structure_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "guild_id",
@@ -1091,7 +1087,7 @@
         },
         {
           "name": "owned_structure_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "allowed",
@@ -1117,7 +1113,7 @@
         },
         {
           "name": "RemoveExplorer",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "Transfer",
@@ -1153,7 +1149,7 @@
       "members": [
         {
           "name": "structure_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "slot",
@@ -1203,7 +1199,7 @@
       "members": [
         {
           "name": "explorer_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "amount",
@@ -1235,7 +1231,7 @@
       "variants": [
         {
           "name": "Explorer",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "Guard",
@@ -1253,7 +1249,7 @@
         },
         {
           "name": "explorer_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         }
       ]
     },
@@ -1263,11 +1259,11 @@
       "members": [
         {
           "name": "explorer_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "structure_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "steal_resources",
@@ -1281,7 +1277,7 @@
       "members": [
         {
           "name": "structure_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "resource_type",
@@ -1317,7 +1313,7 @@
       "members": [
         {
           "name": "structure_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "recipient",
@@ -1343,7 +1339,7 @@
       "members": [
         {
           "name": "entity_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "name",
@@ -1357,7 +1353,7 @@
       "members": [
         {
           "name": "explorer_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "depth",
@@ -1371,7 +1367,7 @@
       "members": [
         {
           "name": "structure_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "row",
@@ -1389,7 +1385,7 @@
       "members": [
         {
           "name": "explorer_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "attribute",
@@ -1461,7 +1457,7 @@
       "members": [
         {
           "name": "explorer_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "coord",
@@ -1475,7 +1471,7 @@
       "members": [
         {
           "name": "explorer_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         }
       ]
     },
@@ -1485,7 +1481,7 @@
       "members": [
         {
           "name": "structure_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "amount",
@@ -1500,7 +1496,7 @@
       "scope": "game"
     },
     {
-      "name": "ExecutionRecorded",
+      "name": "GameplayRejected",
       "scope": "deployment"
     },
     {
@@ -1580,6 +1576,14 @@
     {
       "name": "ExpeditionDiscovery",
       "scope": "game"
+    },
+    {
+      "name": "LaborRules",
+      "scope": "game"
+    },
+    {
+      "name": "LaborGrant",
+      "scope": "deployment"
     },
     {
       "name": "ChestRules",
@@ -1867,10 +1871,6 @@
     },
     {
       "name": "PointsTotal",
-      "scope": "game"
-    },
-    {
-      "name": "ActionNonce",
       "scope": "game"
     }
   ]

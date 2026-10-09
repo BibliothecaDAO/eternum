@@ -52,7 +52,7 @@ describe("a Well's tile card", () => {
     expect(use()?.disabled).toBe(false);
     await act(async () => use()!.click());
     expect(interact).toHaveBeenCalledWith(
-      expect.objectContaining({ explorer_id: 201, coord: { alt: false, x: SITE_TILE.col, y: SITE_TILE.row } }),
+      expect.objectContaining({ explorer_id: 201n, coord: { alt: false, x: SITE_TILE.col, y: SITE_TILE.row } }),
     );
     act(() => root.unmount());
   });

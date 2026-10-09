@@ -55,7 +55,12 @@ function world() {
         rowEvent("PlayerEntry", ["1", "0xaaa"], { player: 273n }),
         rowEvent("PlayerEntry", ["1", "0xbbb"], { player: 546n }),
         rowEvent("PlayerEntry", ["2", "0xccc"], { player: 819n }),
-        rowEvent("BlitzRoster", ["1"], { players: [{ account: 273n }, { account: 546n }] }),
+        rowEvent("BlitzRoster", ["1"], {
+          players: [
+            { account: 273n, wallet: 1000n },
+            { account: 546n, wallet: 1001n },
+          ],
+        }),
       ]),
     ),
     10,
@@ -70,6 +75,28 @@ function structure(id: string, category: string, owner: string, level = "0") {
     base: { ...structureValue.base, category, level },
   });
 }
+
+it("never lists deployment check games or counts them as Frontier seasons", () => {
+  const { fold, native } = world();
+  const name = BigInt("0x" + Buffer.from("check-frontier-abc").toString("hex"));
+  native.applyReceipt(fold, receipt([rowEvent("GameRegistry", ["1"], { ...eventValue(), name })]), 11, 0);
+  function eventValue() {
+    return {
+      name,
+      preset_id: 5n,
+      settled: false,
+      ready: true,
+      dev_mode_on: false,
+      start_settling_at: 10n,
+      start_main_at: 20n,
+      end_at: 200n,
+      end_grace_seconds: 10n,
+      seed: 42n,
+    };
+  }
+  const directory = buildNativeDirectory({ chain: "madara", confirmedBlock: 11, timestamp: 30, fold });
+  expect(directory.games.map(({ game_id }) => game_id)).toEqual([2]);
+});
 
 describe("native directory and leaderboard", () => {
   it("reads native entries, structures and the clock without mirrored configuration rows", () => {
@@ -284,7 +311,7 @@ it("waits for the complete result before freezing and restores tied standings fr
     fold,
     receipt([
       rowEvent("BlitzResult", ["1"], {
-        players: [{ player: 273n, points: 9500000n, rank: 1n }],
+        players: [{ wallet: 1000n, rank: 1n }],
         complete: false,
         commitment: 0n,
       }),
@@ -296,10 +323,12 @@ it("waits for the complete result before freezing and restores tied standings fr
   native.applyReceipt(
     fold,
     receipt([
+      pointsAward("1", "0x111", "9500000", "9500000", "9500000"),
+      pointsAward("1", "0x222", "9500000", "9500000", "9500000"),
       rowEvent("BlitzResult", ["1"], {
         players: [
-          { player: 273n, points: 9500000n, rank: 1n },
-          { player: 546n, points: 9500000n, rank: 1n },
+          { wallet: 1000n, rank: 1n },
+          { wallet: 1001n, rank: 1n },
         ],
         complete: true,
         commitment: 123n,
@@ -335,10 +364,12 @@ it("evicts a finalized game to its directory and standings, the same way live an
     rowEvent("TileOpt", ["2", "0", "5", "5"], { data: 1n }),
     gameEvent("2", "0", "0", "1"),
     gameEvent("1", "1"),
+    pointsAward("1", "0x111", "9500000", "9500000", "9500000"),
+    pointsAward("1", "0x222", "9000000", "9000000", "9000000"),
     rowEvent("BlitzResult", ["1"], {
       players: [
-        { player: 273n, points: 9500000n, rank: 1n },
-        { player: 546n, points: 9000000n, rank: 2n },
+        { wallet: 1000n, rank: 1n },
+        { wallet: 1001n, rank: 2n },
       ],
       complete: true,
       commitment: 123n,

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Summarize structured block logs and the OTLP metric export of the node and the gateway."""
+"""Summarize structured block logs and the OTLP metric export of the node."""
 
 import argparse
 from collections import namedtuple
@@ -30,12 +30,7 @@ NODE_SERIES = (
     Series("exec_hash_cache_hits_total", "hits", "counter", "hash-cache", "kind"),
     Series("exec_hash_cache_misses_total", "misses", "counter", "hash-cache", "kind"),
     Series("exec_hash_cache_capacity_clears_total", "capacityClears", "counter", "hash-cache", "kind"),
-    # The gateway's admission series (stream C), scraped into the same file; its counters have no _total suffix.
-    Series("gateway_admission_queue_depth", "queueDepth", "gauge", EVERY_RUN),
-    Series("gateway_admission_accepted_tickets", "acceptedTickets", "counter", EVERY_RUN),
-    Series("gateway_executed_tickets", "executedTickets", "counter", EVERY_RUN),
-    Series("gateway_ticket_transactions", "ticketTransactions", "counter", EVERY_RUN),
-    Series("gateway_admission_queue_wait_seconds", "queueWait", "histogram", EVERY_RUN),
+
 )
 SERIES_BY_NAME = {series.name: series for series in NODE_SERIES}
 
@@ -151,23 +146,6 @@ def counter_delta(points):
     }
 
 
-def histogram_delta(points):
-    """A histogram's growth over the window, by the same reset rule: its count, sum and per-bucket counts."""
-    count = total = 0
-    buckets = None
-    for previous, current in zip(points, points[1:]):
-        before, after = previous["value"], current["value"]
-        if current["start"] != previous["start"] or after["count"] < before["count"]:
-            continue
-        count += after["count"] - before["count"]
-        total += after["sum"] - before["sum"]
-        grown = [a - b for a, b in zip(after["buckets"], before["buckets"])]
-        buckets = grown if buckets is None else [a + b for a, b in zip(buckets, grown)]
-    if buckets is None:
-        return None
-    return {"count": count, "sum": total, "buckets": buckets, "bounds": points[-1]["value"]["bounds"]}
-
-
 def missing_series(points, pair):
     required = {EVERY_RUN, pair}
     present = {name for name, _ in points}
@@ -233,36 +211,6 @@ def summarize_hash_cache(points):
         cache["hitRate"] = hits / calls if calls and hits is not None else None
     return caches
 
-
-def summarize_admission(points):
-    """The gateway over the window: queue depth, accepted tickets per second, tickets per batch transaction and wait."""
-    depth = gauge_values(points, "gateway_admission_queue_depth")
-    accepted = counter_delta(points.get(("gateway_admission_accepted_tickets", None), []))
-    executed = counter_delta(points.get(("gateway_executed_tickets", None), []))["delta"]
-    transactions = counter_delta(points.get(("gateway_ticket_transactions", None), []))["delta"]
-    return {
-        "queueDepth": metric(depth),
-        "acceptedTicketsPerSecond": (
-            accepted["delta"] / accepted["seconds"] if accepted["delta"] is not None and accepted["seconds"] else None
-        ),
-        "ticketsPerTransaction": executed / transactions if executed is not None and transactions else None,
-        "queueWaitMs": queue_wait(histogram_delta(points.get(("gateway_admission_queue_wait_seconds", None), []))),
-    }
-
-
-def queue_wait(histogram):
-    """Mean wait and the upper bound of the bucket holding the 95th percentile; past the last bound it is unknown."""
-    if histogram is None or histogram["count"] == 0:
-        return {"count": histogram["count"] if histogram else None, "meanMs": None, "p95UpperBoundMs": None}
-    threshold = 0.95 * histogram["count"]
-    cumulative = 0
-    p95 = None
-    for index, bucket in enumerate(histogram["buckets"]):
-        cumulative += bucket
-        if cumulative >= threshold:
-            p95 = histogram["bounds"][index] * 1000 if index < len(histogram["bounds"]) else None
-            break
-    return {"count": histogram["count"], "meanMs": histogram["sum"] / histogram["count"] * 1000, "p95UpperBoundMs": p95}
 
 
 def metric(values, include_p50=True, include_p95=True):
@@ -334,7 +282,6 @@ def summarize(rows, points, pair=None):
         "executionAmplification": execution_amplification(points),
         "blockifier": summarize_blockifier(points),
         "hashCache": summarize_hash_cache(points),
-        "admission": summarize_admission(points),
     }
     summary["slowestBlock"] = summarize_slowest_block(busy or complete, mempool)
     return summary

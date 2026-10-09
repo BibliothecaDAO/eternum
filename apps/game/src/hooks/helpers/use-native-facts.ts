@@ -1,4 +1,4 @@
-import type { NativeKeys, NativeModelName, NativeRows } from "@bibliothecadao/eternum/game-client";
+import type { NativeModelName, NativeRows, ReadKeys } from "@bibliothecadao/eternum/game-client";
 import { useCallback, useMemo, useSyncExternalStore } from "react";
 import { useGame } from "@/hooks/context/game-context";
 
@@ -18,7 +18,7 @@ export const useNativeRevision = (models: readonly NativeModelName[]): number =>
 
 export const useNativeRow = <M extends NativeModelName>(
   model: M,
-  keys: NativeKeys[M] | undefined,
+  keys: ReadKeys<M> | undefined,
 ): NativeRows[M] | undefined => {
   const {
     setup: { store },
@@ -37,7 +37,7 @@ export const useNativeRow = <M extends NativeModelName>(
 /** Missing sparse facts are readable only through the schema's declared absence gate. */
 export const useNativeRowOrAbsent = <M extends NativeModelName>(
   model: M,
-  keys: NativeKeys[M] | undefined,
+  keys: ReadKeys<M> | undefined,
 ): NativeRows[M] | undefined => {
   const {
     setup: { store },

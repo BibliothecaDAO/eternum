@@ -2,7 +2,7 @@ import { useQuery } from "@/hooks/helpers/use-query";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useStructureUpgrade } from "@/ui/modules/entity-details/hooks/use-structure-upgrade";
 import { canIssueOrders } from "@/utils/can-issue-orders";
-import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
+import { safeInteger, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { useGame } from "@/hooks/context/game-context";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import type { PriceKind } from "@/ui/design-system/kit/price-chip";
@@ -28,7 +28,7 @@ export const useKeepSelected = (realm: NativeRows["Structure"] | null): boolean 
     !isMapView &&
     ordersAllowed &&
     realm !== null &&
-    selected?.structureId === realm.entity_id &&
+    selected?.structureId === safeInteger(realm.entity_id) &&
     selected.innerCol === BUILDINGS_CENTER[0] &&
     selected.innerRow === BUILDINGS_CENTER[1]
   );
@@ -38,12 +38,12 @@ export const useKeepSelected = (realm: NativeRows["Structure"] | null): boolean 
 export const CastleUpgrade = ({ realm, onClose }: { realm: NativeRows["Structure"]; onClose: () => void }) => {
   const { setup } = useGame();
   const tick = useCurrentDefaultTick();
-  const upgrade = useStructureUpgrade(realm.entity_id);
+  const upgrade = useStructureUpgrade(safeInteger(realm.entity_id));
   const goToPlace = useGoToFrontierPlace(realm);
   const [sending, setSending] = useState(false);
   if (!upgrade) return null;
   const held = (resource: number) => {
-    const balance = knownBalance(getBalance(realm.entity_id, resource, tick, setup.store).balance);
+    const balance = knownBalance(getBalance(safeInteger(realm.entity_id), resource, tick, setup.store).balance);
     return balance === undefined ? undefined : Math.floor(balance);
   };
   const short = upgrade.requirements.find(({ resource, amount }) => (held(resource) ?? 0) < amount);
@@ -69,7 +69,7 @@ export const CastleUpgrade = ({ realm, onClose }: { realm: NativeRows["Structure
           wait: secondsUntilHeld(
             held(short.resource),
             short.amount,
-            realmPerHour(setup.store, realm.entity_id, short.resource, tick),
+            realmPerHour(setup.store, safeInteger(realm.entity_id), short.resource, tick),
           ),
         }
       }

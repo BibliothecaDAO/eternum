@@ -16,6 +16,7 @@ import {
 } from "@bibliothecadao/eternum";
 import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { ResourcesIds, TickIds, type Troops } from "@bibliothecadao/types";
+import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
 const ORDER_MODELS = [
   "ExplorerTroops",
@@ -74,9 +75,9 @@ export const useOrderAt = (target: { col: number; row: number } | null): ArmyOrd
       ? computeExploreFoodCosts(army.troops).wheatPayAmount
       : computeTravelFoodCosts(army.troops).wheatPayAmount * tiles,
   );
-  const wheatBalance = getBalance(army.owner, ResourcesIds.Wheat, tick, setup.store).balance;
+  const wheatBalance = getBalance(safeInteger(army.owner), ResourcesIds.Wheat, tick, setup.store).balance;
   const wheatHeld = wheatBalance === undefined ? undefined : divideByPrecision(wheatBalance);
-  const wheatPerHour = new ResourceManager(setup.store, army.owner).wheatPerHour(tick);
+  const wheatPerHour = new ResourceManager(setup.store, safeInteger(army.owner)).wheatPerHour(tick);
 
   return {
     kind: explore ? "explore" : "move",
