@@ -21,8 +21,8 @@ For released packages use `OPERATOR_TOKEN=... python3 deploy/athanor/scripts/dep
 `deploy/release/ENVIRONMENT.json` is the reviewed input source. For a fresh local build use the existing
 `python3 deploy/athanor/scripts/shard.py CONFIGURATION DIRECTORY` runner with explicit local image digests, unique chain
 identity, official RPC/Herald URLs, guardian, presets, worker count and fixed play bound. The runner writes its resolved
-Compose file and public deployment manifest alongside private initialization logs. Only official deployment registers pending before enrollment and runs the activation gate. The local runner never
-lists measurement shards.
+Compose file and public deployment manifest alongside private initialization logs. Only official deployment registers
+pending before enrollment and runs the activation gate. The local runner never lists measurement shards.
 
 The dev node belongs to the operator running its trials. Deployment and workload commands take
 `/opt/athanor/isolated-stack.lock` themselves; do not hold it around those commands. No command should target the
@@ -38,11 +38,10 @@ account, per-game order, epoch service or second submission endpoint. Private cr
 
 ## Herald and client
 
-Create a separate PostgreSQL database and configure `HERALD_RPC_URL`, `HERALD_PUBLIC_RPC_URL`,
-`DATABASE_URL` and `NATIVE_WORLD_MANIFEST`. Start Herald with
-`pnpm --dir apps/herald start`, or build the shard package's Herald image, the one Herald build:
-`docker build --target herald -f deploy/shard/Dockerfile .`. The candidate service must use that same manifest and
-chain.
+Create a separate PostgreSQL database and configure `HERALD_RPC_URL`, `HERALD_PUBLIC_RPC_URL`, `DATABASE_URL` and
+`NATIVE_WORLD_MANIFEST`. Start Herald with `pnpm --dir apps/herald start`, or build the shard package's Herald image,
+the one Herald build: `docker build --target herald -f deploy/shard/Dockerfile .`. The candidate service must use that
+same manifest and chain.
 
 Wait for `/health` and the confirmed snapshot before connecting the client. Run `pnpm --dir apps/game dev`; the app
 reads our directory (`/api/directory`, proxied to staging in development) and lists every shard on it, and a shard the
@@ -77,8 +76,8 @@ identity API of the environment whose guardian the shard's manifest names, and `
 operator token.
 
 The node and Herald URLs are required (`--rpc-url`/`RPC_URL`, `--herald-url`/`HERALD_URL`) and have no default; the
-`harness` service takes them from `harness.env`. Player invokes use the public stamping RPC. Setup and administrative calls use HARNESS_ADMIN_RPC_URL on the private
-node inside the Compose network.
+`harness` service takes them from `harness.env`. Player invokes use the public stamping RPC. Setup and administrative
+calls use HARNESS_ADMIN_RPC_URL on the private node inside the Compose network.
 
 Every bot follows build-order suggestions, updates automation each minute and explores. The full acceptance workload
 uses 96 players and the frozen run configuration. Do not substitute a short smoke for it. Keep failed runs labeled

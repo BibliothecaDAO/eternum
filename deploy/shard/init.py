@@ -31,8 +31,9 @@ def configuration():
     config = {
         "shard": chain_id.lower().replace("_", "-"), "chain_id": chain_id, "port_base": 0,
         "guardian_url": os.environ["GUARDIAN_URL"], "public_rpc_url": os.environ["PUBLIC_RPC_URL"],
-        "public_herald_url":os.environ["PUBLIC_HERALD_URL"],
-        "vrf_workers":int(os.environ["VRF_WORKERS"]),"l2_gas_bound":os.environ["L2_GAS_BOUND"], "player_capacity": int(os.environ["PLAYER_CAPACITY"]),
+        "public_herald_url": os.environ["PUBLIC_HERALD_URL"],
+        "vrf_workers": int(os.environ["VRF_WORKERS"]), "l2_gas_bound": os.environ["L2_GAS_BOUND"],
+        "player_capacity": int(os.environ["PLAYER_CAPACITY"]),
         "chain_config": os.environ.get("CHAIN_CONFIG", str(ROOT / "deploy/athanor/chain-config.yaml")),
     }
     shard.validate_shard_identity(config)
@@ -95,7 +96,7 @@ def prepare(config):
         refuse_changed_identity(json.loads(record.read_text()), config)
     else:
         initialize_identity(config)
-    shard.run(["bun","deploy/athanor/scripts/host-accounts.ts","verify-vrf",str(DATA)], DATA, "verify-vrf")
+    shard.run(["bun", "deploy/athanor/scripts/host-accounts.ts", "verify-vrf", str(DATA)], DATA, "verify-vrf")
     publish_prepared_config(config)
     shard.write_json(record, identity(config))
 
@@ -167,7 +168,8 @@ def deploy_world_once(config, env):
 # Registration is idempotent, so every start registers the listed presets: one added later registers without
 # touching the shard's identity. The record holds the commitment each preset has on chain, which must be the release's.
 def register_presets(env, presets):
-    env = {**env, "DEPLOYER_ACCOUNT_ADDRESS": json.loads((DATA / "gameplay-contracts.json").read_text())["operatorAccountAddress"]}
+    operator = json.loads((DATA / "gameplay-contracts.json").read_text())["operatorAccountAddress"]
+    env = {**env, "DEPLOYER_ACCOUNT_ADDRESS": operator}
     commitments = {}
     for preset, released in presets.items():
         record = DATA / f"preset-{preset}.json"
@@ -187,7 +189,8 @@ def harness_invocation(args, environ, data=DATA, started=None):
     """The harness command against this shard: its private settings from harness.env, its reports under
     data/harness/<start time> unless the caller names a directory."""
     environment = {**environ, **shard.read_private_environment(data / "harness.env"), **shard.host_credentials(data)}
-    environment["DEPLOYER_ACCOUNT_ADDRESS"] = json.loads((data / "gameplay-contracts.json").read_text())["operatorAccountAddress"]
+    operator = json.loads((data / "gameplay-contracts.json").read_text())["operatorAccountAddress"]
+    environment["DEPLOYER_ACCOUNT_ADDRESS"] = operator
     environment["HARNESS_ADMIN_RPC_URL"] = "http://madara:9944/rpc/v0_10_2"
     environment["RPC_URL"] = "http://rpc:8080/rpc/v0_10_2"
     environment["HERALD_URL"] = "http://herald:3003"

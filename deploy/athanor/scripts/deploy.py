@@ -84,7 +84,7 @@ def render_environment(inputs, images):
     values = {
         "SHARD_NAME": inputs["shard_name"], "CHAIN_ID": inputs["chain_id"], "GUARDIAN_URL": inputs["guardian_url"],
         "PUBLIC_RPC_URL": inputs["public_rpc_url"], "PUBLIC_HERALD_URL": inputs["public_herald_url"],
-        "VRF_WORKERS": inputs["vrf_workers"],"L2_GAS_BOUND":inputs["l2_gas_bound"],
+        "VRF_WORKERS": inputs["vrf_workers"], "L2_GAS_BOUND": inputs["l2_gas_bound"],
         "PLAYER_CAPACITY": inputs["player_capacity"], "PRESETS": ",".join(str(preset) for preset in inputs["presets"]),
         # Each environment sizes its shard: a small staging playtest, a large perf or production shard.
         "NODE_MEMORY": inputs["node_memory"], "HERALD_MEMORY": inputs["herald_memory"],
@@ -161,6 +161,7 @@ def directory_status(config, status):
             result = json.load(response)
     except HTTPError as error:
         if status == "pending" and error.code == 404:
+            error.close()
             raise RuntimeError(PENDING_ROUTE_PREREQUISITE) from None
         raise
     allowed = ("pending", "active", "draining") if status == "pending" else ("active", "draining")
@@ -215,7 +216,7 @@ def release_differences(release, manifest, initialized, presets):
         differences.append(f"schema {native['activeSchema']}, release has {release['schema']}")
     if not same(native["gamesClassHash"], classes["games"]):
         differences.append(f"Games class {native['gamesClassHash']}, release has {classes['games']}")
-    if not same(native.get("verifierClassHash"),classes.get("verifier")):
+    if not same(native.get("verifierClassHash"), classes.get("verifier")):
         differences.append(f"verifier class {native.get('verifierClassHash')}, release has {classes.get('verifier')}")
     for name in sorted(set(native["logic"]) | set(classes["logic"])):
         if not same(native["logic"].get(name), classes["logic"].get(name)):

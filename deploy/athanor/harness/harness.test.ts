@@ -1260,7 +1260,6 @@ function metricsRow(time: number, transactions: number, ready: number, attempts:
               metric("mempool_preconfirmed_transaction_statuses", 0),
               metric("blockifier_execution_attempts_total", attempts, true),
               metric("blockifier_committed_transactions_total", committed, true),
-              
             ],
           },
         ],

@@ -56,5 +56,4 @@ describe("native deployment target is explicit", () => {
       } else expect(Object.hasOwn(environment, "OPERATOR_TOKEN")).toBe(false);
     }
   });
-
 });
