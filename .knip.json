@@ -204,6 +204,16 @@
         "src/worker.ts",
         "../status/functions/status.json.ts"
       ]
+    },
+    "packages/value-ledger": {
+      "paths": {
+        "@bibliothecadao/provider/batch-progress": [
+          "../provider/src/batch-progress.ts"
+        ],
+        "@bibliothecadao/eternum/device-signer": [
+          "../core/src/account/device-signer.ts"
+        ]
+      }
     }
   },
   "ignoreIssues": {

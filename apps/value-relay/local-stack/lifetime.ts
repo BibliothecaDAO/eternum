@@ -12,7 +12,7 @@ interface Record {
   runDirectory: string;
 }
 
-export const processAlive = (pid: number) => {
+const processAlive = (pid: number) => {
   if (!Number.isSafeInteger(pid) || pid <= 1) throw new Error("invalid_stack_pid");
   try {
     process.kill(pid, 0);
@@ -22,7 +22,7 @@ export const processAlive = (pid: number) => {
     throw error;
   }
 };
-export const readRecord = async (state: State): Promise<Record | null> => {
+const readRecord = async (state: State): Promise<Record | null> => {
   try {
     return await readPrivate<Record>(state.pid);
   } catch (error) {
