@@ -21,6 +21,7 @@ import { DayDial } from "./day-dial";
 import { formatAmount } from "./frontier-format";
 import { CastleGlyph, MapGlyph } from "./glyphs";
 import { troopsOnHand, useExpeditionRules, useGoToFrontierPlace } from "./frontier-home";
+import { safeInteger } from "@/utils/native-id";
 
 type ExpeditionRules = NonNullable<ReturnType<typeof useExpeditionRules>>;
 
@@ -62,7 +63,7 @@ const RealmHoldings = ({ realm }: { realm: NativeRows["Structure"] }) => {
   const tick = useCurrentDefaultTick();
   useNativeRevision(BALANCE_MODELS);
   const balance = (resourceId: ResourcesIds) =>
-    knownBalance(getBalance(realm.entity_id, resourceId, tick, setup.store).balance);
+    knownBalance(getBalance(safeInteger(realm.entity_id), resourceId, tick, setup.store).balance);
 
   return (
     <dl
@@ -82,7 +83,7 @@ const RealmHoldings = ({ realm }: { realm: NativeRows["Structure"] }) => {
             withTooltip={false}
           />
         }
-        value={formatAmount(troopsOnHand(setup.store, realm.entity_id, tick))}
+        value={formatAmount(troopsOnHand(setup.store, safeInteger(realm.entity_id), tick))}
       />
     </dl>
   );

@@ -23,6 +23,7 @@ import { PersonGlyph } from "../glyphs";
 import { type BuildOption, readBuildOptions } from "./build-options";
 import { FRONTIER_BUILDING_NAMES } from "./building-names";
 import { FrontierSheet } from "../frontier-sheet";
+import { safeInteger } from "@/utils/native-id";
 
 const BUILD_MODELS = [
   "Building",
@@ -46,7 +47,8 @@ export const useOpenPlot = (realm: NativeRows["Structure"] | null): HexPosition 
   const selected = useUIStore((state) => state.selectedBuildingHex);
   const ordersAllowed = useUIStore(canIssueOrders);
   useNativeRevision(["Building"]);
-  if (isMapView || !ordersAllowed || !realm || !selected || selected.structureId !== realm.entity_id) return null;
+  if (isMapView || !ordersAllowed || !realm || !selected || selected.structureId !== safeInteger(realm.entity_id))
+    return null;
   const plot = { col: selected.innerCol, row: selected.innerRow };
   const distance = getHexDistance({ col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1] }, plot);
   if (distance === 0 || distance > buildableRadius(realm.base.level)) return null;
@@ -74,6 +76,7 @@ export const BuildSheet = ({
   onClose: () => void;
 }) => {
   const { setup } = useGame();
+  const realmId = safeInteger(realm.entity_id);
   const mode = useGameModeConfig();
   const requestedSimpleCost = useUIStore((state) => state.useSimpleCost);
   const useSimpleCost = resolveUseSimpleCost(configManager.buildingCostMode, requestedSimpleCost);
@@ -83,10 +86,7 @@ export const BuildSheet = ({
     () => readBuildOptions(setup.store, realm, useSimpleCost, tick),
     [realm, revision, setup.store, tick, useSimpleCost],
   );
-  const realmInfo = useMemo(
-    () => getRealmInfo(realm.entity_id, setup.store, getPlayerName),
-    [realm.entity_id, revision, setup.store],
-  );
+  const realmInfo = useMemo(() => getRealmInfo(realmId, setup.store, getPlayerName), [realmId, revision, setup.store]);
   const [chosen, setChosen] = useState(0);
   const option = options?.[chosen];
   const [pending, setPending] = useState(false);
@@ -94,7 +94,7 @@ export const BuildSheet = ({
 
   const canBuild = (candidate: BuildOption) =>
     resolveConstructionBuildability({
-      entityId: realm.entity_id,
+      entityId: realmId,
       buildingType: candidate.category,
       useSimpleCost,
       store: setup.store,
@@ -110,7 +110,7 @@ export const BuildSheet = ({
     setPending(true);
     try {
       await requireActiveGameClient().actions.placeBuilding({
-        structureId: realm.entity_id,
+        structureId: realmId,
         buildingType: option.category,
         hex: plot,
         useSimpleCost,

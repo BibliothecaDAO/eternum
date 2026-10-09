@@ -40,7 +40,7 @@ const AddLiquidity = ({ entityId, listResourceId }: { entityId: ID; listResource
 
   const playerStructures = useFactView(playerStructuresView);
 
-  const playerStructureIds = playerStructures.map((structure) => structure.structure.entity_id);
+  const playerStructureIds = playerStructures.map((structure) => structure.entityId);
 
   const [isLoading, setIsLoading] = useState(false);
   const [resourceId, setResourceId] = useState<ResourcesIds>(ResourcesIds.Wood);

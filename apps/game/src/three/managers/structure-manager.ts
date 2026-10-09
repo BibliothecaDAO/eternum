@@ -125,6 +125,7 @@ import {
 } from "./structure-label-state";
 import { removeStructureLabels, syncStructureLabelVisibility } from "./structure-label-visibility";
 import { normalizeStructureEntityId as normalizeEntityId } from "./structure-entity-id";
+import { safeInteger } from "@/utils/native-id";
 import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
 import { recordGameEntryDuration } from "@/ui/layouts/game-entry-timeline";
 import {
@@ -484,12 +485,13 @@ export class StructureManager {
           if (change.model === "Guard") {
             const guard = change.current ?? change.previous;
             if (!guard || guard.game_id !== configManager.getActiveGameId()) continue;
+            const structureId = safeInteger(guard.structure_id);
             this.playStructureGuardDifferenceFx(
-              guard.structure_id,
+              structureId,
               this.resolveGuardArmies(change.previous ? [change.previous] : []),
               this.resolveGuardArmies(change.current ? [change.current] : []),
             );
-            touched.add(guard.structure_id);
+            touched.add(structureId);
           } else if (
             change.model === "Structure" ||
             change.model === "ExpeditionSite" ||
@@ -499,7 +501,7 @@ export class StructureManager {
             change.model === "HyperstructureShares"
           ) {
             const row = change.current ?? change.previous;
-            if (row?.game_id === configManager.getActiveGameId()) touched.add(row.entity_id);
+            if (row?.game_id === configManager.getActiveGameId()) touched.add(safeInteger(row.entity_id));
           }
         }
         if (refreshAll) {

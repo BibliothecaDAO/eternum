@@ -26,6 +26,7 @@ import {
   type TroopType,
 } from "@bibliothecadao/types";
 import { SITE_ART } from "./site-art";
+import { safeInteger } from "@/utils/native-id";
 
 const PRECISION = BigInt(RESOURCE_PRECISION);
 
@@ -109,7 +110,7 @@ const fittingPayout = (
           (row) => row.owner === BigInt(actor) && row.base.category === StructureType.Realm,
         )?.entity_id);
   if (home === undefined) return undefined;
-  const manager = new ResourceManager(store, home, gameId);
+  const manager = new ResourceManager(store, safeInteger(home), gameId);
   const held = manager.balanceWithProduction(
     attack?.timestamp ?? getBlockTimestamp().currentDefaultTick,
     reward.resourceType,

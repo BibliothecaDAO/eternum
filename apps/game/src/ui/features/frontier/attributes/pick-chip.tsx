@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { type ArmyProgressFacts, affordableUpgrades, type ProgressionRulesFacts } from "./attributes";
 import { CardFanGlyph } from "../glyphs";
 import { openPick, usePick } from "./pick-moment";
+import { safeInteger } from "@/utils/native-id";
 
 /**
  * An affordable Upgrade on its army (design §3.12, mockup 7): a pulsing fan of cards with the number of attributes its
@@ -12,14 +13,15 @@ export const PickChip = ({ progress, rules }: { progress: ArmyProgressFacts; rul
   const pick = usePick();
   const reduced = useReducedMotion();
   const waiting = affordableUpgrades(progress, rules).length;
-  if (waiting === 0 || pick?.explorerId === progress.explorer_id) return null;
+  const explorerId = safeInteger(progress.explorer_id);
+  if (waiting === 0 || pick?.explorerId === explorerId) return null;
   return (
     <motion.button
       type="button"
       aria-label={`Pick, ${waiting} waiting`}
       onClick={(event) => {
         event.stopPropagation();
-        openPick(progress.explorer_id);
+        openPick(explorerId);
       }}
       animate={reduced ? undefined : { scale: [1, 1.08, 1] }}
       transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}

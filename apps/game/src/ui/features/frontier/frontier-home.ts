@@ -15,6 +15,7 @@ import {
 import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
 import { type ID, TroopTier, TroopType } from "@bibliothecadao/types";
 import { useMemo } from "react";
+import { safeInteger } from "@/utils/native-id";
 
 const RULE_MODELS = ["SliceRules", "SettlementRules", "GameRegistry"] as const;
 const HOME_MODELS = ["Structure"] as const;
@@ -46,7 +47,7 @@ export const useGoToFrontierPlace = (realm: NativeRows["Structure"]) => {
     const site = structureMapPosition(setup.store, realm);
     if (!site) return;
     const position = Position.fromContract(site);
-    void goToStructure(realm.entity_id, position, expedition);
+    void goToStructure(safeInteger(realm.entity_id), position, expedition);
   };
 };
 

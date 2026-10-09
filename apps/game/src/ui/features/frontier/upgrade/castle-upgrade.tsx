@@ -7,6 +7,7 @@ import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { BUILDINGS_CENTER } from "@bibliothecadao/types";
 import type { UpgradePlan, UpgradeStep } from "./upgrade-plan";
 import { UpgradeSheet } from "./upgrade-sheet";
+import { safeInteger } from "@/utils/native-id";
 
 const CASTLE_ART = ["castleZero", "castleOne", "castleTwo", "castleThree"].map(
   (name) => `/images/buildings/construction/${name}.png`,
@@ -22,7 +23,7 @@ export const useKeepSelected = (realm: NativeRows["Structure"] | null): boolean 
     !isMapView &&
     ordersAllowed &&
     realm !== null &&
-    selected?.structureId === realm.entity_id &&
+    selected?.structureId === safeInteger(realm.entity_id) &&
     selected.innerCol === BUILDINGS_CENTER[0] &&
     selected.innerRow === BUILDINGS_CENTER[1]
   );
@@ -41,7 +42,7 @@ export const CastleUpgrade = ({ realm, onClose }: { realm: NativeRows["Structure
 const useCastleUpgradePlan = (
   realm: NativeRows["Structure"],
 ): { plan: UpgradePlan; upgrade: () => Promise<void> } | null => {
-  const upgrade = useStructureUpgrade(realm.entity_id);
+  const upgrade = useStructureUpgrade(safeInteger(realm.entity_id));
   if (!upgrade) return null;
   return {
     plan: {

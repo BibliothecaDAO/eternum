@@ -30,6 +30,7 @@ import {
 } from "./muster-plan";
 import { FrontierSheet } from "../frontier-sheet";
 import { DeployRing } from "./deploy-ring";
+import { safeInteger } from "@/utils/native-id";
 
 const MUSTER_MODELS = [
   "ArmySlot",
@@ -80,7 +81,7 @@ export const MusterSheet = ({ realm, onClose }: { realm: NativeRows["Structure"]
       ? readTroopRaiseCost(
           setup.store,
           realm.game_id,
-          realm.entity_id,
+          safeInteger(realm.entity_id),
           getTroopResourceId(stack.type, stack.tier),
           preview.count,
           defaultTick,

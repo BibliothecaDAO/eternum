@@ -16,6 +16,7 @@ import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { FrontierSheet } from "./frontier-sheet";
 import { SpireDepthActions } from "./spire-depth-actions";
+import { safeInteger } from "@/utils/native-id";
 
 /** Rule-drawn spires have no occupancy row, so select them from the same rules as the map. */
 export const FrontierSpireSheet = ({ realm, onClose }: { realm: NativeRows["Structure"]; onClose: () => void }) => {
@@ -36,9 +37,9 @@ export const FrontierSpireSheet = ({ realm, onClose }: { realm: NativeRows["Stru
   const spire = expeditionSpireTile(rules, realm, now);
   if (!spire) return null;
   const spireSelected = selected?.col === spire.col && selected?.row === spire.row;
-  const army = liveHomeArmies(store, realm.entity_id, realm.game_id).find(
+  const army = liveHomeArmies(store, safeInteger(realm.entity_id), realm.game_id).find(
     (army) =>
-      (spireSelected || army.explorer_id === selectedArmy) &&
+      (spireSelected || safeInteger(army.explorer_id) === selectedArmy) &&
       isAtExpeditionSpire(spire, entityMapPosition(store, realm.game_id, army.explorer_id)),
   );
   if (!army) return null;
@@ -50,7 +51,7 @@ export const FrontierSpireSheet = ({ realm, onClose }: { realm: NativeRows["Stru
         onClose();
       }}
     >
-      <SpireDepthActions armyEntityId={army.explorer_id} />
+      <SpireDepthActions armyEntityId={safeInteger(army.explorer_id)} />
     </FrontierSheet>
   );
 };

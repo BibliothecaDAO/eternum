@@ -144,6 +144,7 @@ import { LOCAL_HEX_SPACE, type HexSpace } from "../utils/utils";
 import { localHexPosition } from "./hexception-layout";
 import { HexHoverLabel } from "../utils/labels/hex-hover-label";
 import { getPlayerName } from "@/services/identity/player-profiles";
+import { safeInteger } from "@/utils/native-id";
 
 const loader = gltfLoader;
 const BUILDING_RENDER_SIGNATURE = "eternumBuildingRenderSignature";
@@ -279,7 +280,7 @@ export default class HexceptionScene extends HexagonScene {
           changes.some(
             (change) =>
               (change.model === "Hyperstructure" || change.model === "HyperstructureProgress") &&
-              (change.current ?? change.previous)?.entity_id === this.state.structureEntityId &&
+              (change.current ?? change.previous)?.entity_id === BigInt(this.state.structureEntityId) &&
               (change.current ?? change.previous)?.game_id === configManager.getActiveGameId(),
           )
         )
@@ -703,7 +704,7 @@ export default class HexceptionScene extends HexagonScene {
 
       // subscribe to building updates (create and destroy)
       this.buildingUpdateUnsubscribe = this.worldUpdateListener.Buildings.onBuildingUpdate(
-        structure.entity_id,
+        safeInteger(structure.entity_id),
         (update: BuildingSystemUpdate) => this.handleBuildingUpdate(update, realmGeneration),
       );
 
@@ -1160,7 +1161,7 @@ export default class HexceptionScene extends HexagonScene {
     if (!structure) throw new Error(`No structure is available at local route ${position.col},${position.row}`);
     const site = structureMapPosition(this.game.store, structure);
     if (!site) throw new Error("The expedition has not started");
-    useUIStore.getState().setStructureEntityId(structure.entity_id, {
+    useUIStore.getState().setStructureEntityId(safeInteger(structure.entity_id), {
       worldMapPosition: Position.fromContract({ x: site.x, y: site.y }),
     });
     return { structure, position: { col: site.x, row: site.y } };
