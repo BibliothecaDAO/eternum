@@ -6,6 +6,8 @@ export const FRONTIER_ACCELERATED_PRESET_ID = 101;
 export const FRONTIER_PRESET_ID = 5;
 /** Deployment's throwaway route check; it exposes every command to its actual domain guard. */
 export const SELF_CHECK_PRESET_ID = 103;
+/** The open-home deployment check can never create payable LORDS. */
+export const FRONTIER_SELF_CHECK_PRESET_ID = 104;
 
 /** Every registered preset id and the mode it plays: the one table Herald, the client and the tooling read. */
 const NATIVE_PRESET_MODES: Readonly<Record<number, GameType>> = {
@@ -19,6 +21,7 @@ const NATIVE_PRESET_MODES: Readonly<Record<number, GameType>> = {
   // The first playtest's preset; registered on shard A and still played by the game created from it.
   102: "frontier",
   [SELF_CHECK_PRESET_ID]: "eternum",
+  [FRONTIER_SELF_CHECK_PRESET_ID]: "frontier",
 };
 
 export function nativeGameModeOf(presetId: number): GameType {

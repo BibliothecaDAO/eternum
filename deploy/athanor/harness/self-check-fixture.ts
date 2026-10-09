@@ -11,7 +11,7 @@ import type { NativeCommand } from "../../../contracts/l3/world-native/schema/co
 import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
 import { nativeCommandBits } from "../../../contracts/l3/world-native/schema/commands.gen";
 import { seasonSeconds } from "../../../packages/core/src/utils/days";
-import { SELF_CHECK_PRESET_ID } from "../../../config/source/common/native-preset-modes";
+import { SELF_CHECK_PRESET_ID, FRONTIER_SELF_CHECK_PRESET_ID } from "../../../config/source/common/native-preset-modes";
 import { buildNativePreset } from "../../../config/deployer/clean/config/native-preset";
 import {
   buildNativeGameParams,
@@ -121,7 +121,7 @@ const fixture: DeploymentCheckPort = {
       );
       const frontierId = await createModeCheckGame(
         "frontier",
-        5,
+        FRONTIER_SELF_CHECK_PRESET_ID,
         privateLauncher,
         admin,
         manifest,
@@ -129,7 +129,7 @@ const fixture: DeploymentCheckPort = {
         stopped,
       );
       const blitzClient = await connect(launcher.address, blitzId, 2);
-      const frontierClient = await connect(bot.address, frontierId, 5);
+      const frontierClient = await connect(bot.address, frontierId, FRONTIER_SELF_CHECK_PRESET_ID);
       const blitzPlayerClient = await connect(bot.address, blitzId, 2);
       const routes = bindModeRoutes(
         buildRoutePlan(bot, botClient, launcher, launcherClient),
