@@ -24,6 +24,8 @@ const SHARD_CHAIN = "0x534e5f574f524b4552";
 const SHARD_MANIFEST = {
   version: 1,
   chainId: SHARD_CHAIN,
+  l2GasBound: "0x47868c00",
+  vrfPublicKey: { x: "0x1", y: "0x2" },
   releaseSchemas: { "1": schema.identity },
   rpcUrl: `${SHARD_URL}/rpc`,
   accountClassHash: "0x2",
