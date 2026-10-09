@@ -93,7 +93,7 @@ const readEntryTerms = async (ledger: SlotLedger, wallet: string): Promise<Entry
   const read = ledgerReader(mainnetProvider(), ledger.address);
   const game = await read.game(ledger.key);
   const [prices, credits, registration, lords, strk] = await Promise.all([
-    read.prices(game.presetId),
+    read.preset(game.presetId),
     read.credits(wallet),
     read.registration(ledger.key, wallet),
     read.lords(wallet),

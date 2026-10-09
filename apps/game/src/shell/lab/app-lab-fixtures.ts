@@ -7,6 +7,7 @@ import type { DirectoryGame } from "../herald";
 import type { PayoutWallet } from "@/hooks/context/payout-wallet";
 
 import type { EntryTerms, SlotLedger } from "../blitz/entry";
+import type { SeasonPrize } from "../season-tab/blitz-season";
 import type { GameLedger, Reward } from "../season-tab/reward";
 
 /**
@@ -142,6 +143,13 @@ export const LAB_SCREENS = {
   "reward-epic": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
   "reward-lords": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
   "reward-credit": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
+  "season-running": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
+  "season-review": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
+  "season-claim": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
+  "season-no-strk": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
+  "season-held": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
+  "season-claimed": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
+  "season-out": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
 } as const;
 
 const LAB_WALLET = "0x04a1c0de5eed000000000000000000000000000000000000000000000009c2e";
@@ -164,6 +172,13 @@ export const LAB_PAYOUT_WALLETS: Partial<Record<keyof typeof LAB_SCREENS, Payout
   "reward-epic": { status: "ready", address: LAB_WALLET },
   "reward-lords": { status: "ready", address: LAB_WALLET },
   "reward-credit": { status: "ready", address: LAB_WALLET },
+  "season-running": { status: "ready", address: LAB_WALLET },
+  "season-review": { status: "ready", address: LAB_WALLET },
+  "season-claim": { status: "ready", address: LAB_WALLET },
+  "season-no-strk": { status: "ready", address: LAB_WALLET },
+  "season-held": { status: "ready", address: LAB_WALLET },
+  "season-claimed": { status: "ready", address: LAB_WALLET },
+  "season-out": { status: "ready", address: LAB_WALLET },
 };
 
 /** The ledger game the lab's slot fills, on a paid Blitz's screens. */
@@ -406,4 +421,40 @@ export const LAB_REWARDS: Partial<Record<keyof typeof LAB_SCREENS, Reward>> = {
     chest: { opened: true, content: { kind: "shield" } },
     held: false,
   },
+};
+
+/**
+ * The Blitz season on Season: day 18 of 70 with 765,900 LORDS pooled and 500 ranked, then the season over with
+ * 2,933,300 and the player on the posted list.
+ */
+const RUNNING: SeasonPrize = {
+  ledger: LAB_GAME_LEDGER.address,
+  seasonId: 3,
+  season: {
+    participants: 500,
+    winners: 50,
+    posted: false,
+    challenged: false,
+    reviewUntil: 0,
+    presetId: 4,
+    start: NOW - 18 * DAY,
+    end: NOW + 52 * DAY,
+    pool: 765_900n * WEI,
+  },
+  curve: { paidFractionBps: 1000, decayBps: 9600 },
+  share: null,
+  claimed: false,
+  strk: 10n ** 17n,
+};
+const OVER = { ...RUNNING.season, posted: true, start: NOW - 70 * DAY, end: NOW - 2 * 3600, pool: 2_933_300n * WEI };
+const SHARE = 46_569n * WEI;
+
+export const LAB_SEASON_PRIZES: Partial<Record<keyof typeof LAB_SCREENS, SeasonPrize>> = {
+  "season-running": RUNNING,
+  "season-review": { ...RUNNING, season: { ...OVER, reviewUntil: NOW + 42 * 60 }, share: SHARE },
+  "season-claim": { ...RUNNING, season: { ...OVER, reviewUntil: NOW - 60 }, share: SHARE },
+  "season-no-strk": { ...RUNNING, season: { ...OVER, reviewUntil: NOW - 60 }, share: SHARE, strk: 0n },
+  "season-held": { ...RUNNING, season: { ...OVER, challenged: true, reviewUntil: NOW + 600 }, share: SHARE },
+  "season-claimed": { ...RUNNING, season: { ...OVER, reviewUntil: NOW - 60 }, share: SHARE, claimed: true },
+  "season-out": { ...RUNNING, season: { ...OVER, reviewUntil: NOW - 60 } },
 };

@@ -83,7 +83,7 @@ const EntryPanel = ({
           <Button
             role="primary"
             word={ENTRY_WORDS.takeRefund}
-            icon="Lo"
+            icon="Sp"
             loading={sent ? ENTRY_WORDS.confirming : undefined}
             onClick={() => setSigning(true)}
           />

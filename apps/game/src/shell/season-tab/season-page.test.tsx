@@ -3,6 +3,8 @@ import { createRoot } from "react-dom/client";
 import { MemoryRouter } from "react-router-dom";
 import { expect, it, vi } from "vitest";
 
+// The Blitz season's prize has its own test; this page test reads Frontier's board and the switch.
+vi.mock("./season-prize", () => ({ SeasonPrizePanel: () => null }));
 vi.mock("../herald", () => ({
   useDirectory: () => ({ data: undefined, isError: true, isPending: false, error: new Error("502"), refetch: vi.fn() }),
   useLeaderboard: () => ({ data: undefined, isError: false, isPending: true }),

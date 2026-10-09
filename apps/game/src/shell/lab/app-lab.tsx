@@ -9,6 +9,7 @@ import { useBootDocumentState } from "@/ui/modules/boot-loader";
 
 import { BlitzListPage, BlitzLobbyPage } from "../blitz/blitz-pages";
 import { entryTermsKey } from "../blitz/entry";
+import { seasonPrizeKey } from "../season-tab/blitz-season";
 import { rewardKey } from "../season-tab/reward";
 import { LearnPage } from "../learn/learn-page";
 import { DominionPage, EternumPage, FrontierPage } from "../play/age-pages";
@@ -33,6 +34,7 @@ import {
   LAB_ENTRY_TERMS,
   LAB_GAME_LEDGER,
   LAB_REWARDS,
+  LAB_SEASON_PRIZES,
   LAB_PAYOUT_WALLETS,
   LAB_SLOT_LEDGER,
   labRatings,
@@ -104,13 +106,20 @@ const createLabClient = (screen: LabScreen) => {
   if (terms && wallet?.status === "ready") client.setQueryData(entryTermsKey(LAB_SLOT_LEDGER, wallet.address), terms);
   const reward = LAB_REWARDS[screen];
   if (reward && wallet?.status === "ready") client.setQueryData(rewardKey(LAB_GAME_LEDGER, wallet.address), reward);
+  const prize = LAB_SEASON_PRIZES[screen];
+  if (prize && wallet?.status === "ready") {
+    const source = `${LAB_GAME_LEDGER.key.shard}:${LAB_GAME_LEDGER.key.gameId}`;
+    client.setQueryData(seasonPrizeKey(LAB_GAME_LEDGER.address, source, wallet.address), prize);
+  }
   return client;
 };
 
 /** A screen's listed games; on a reward screen the Blitz names the ledger it was played on. */
 const labGames = (screen: LabScreen) =>
   LAB_SCREENS[screen].games.map((game) =>
-    LAB_REWARDS[screen] && game.game_id === LAB_GAME_LEDGER.key.gameId ? { ...game, ledger: LAB_GAME_LEDGER } : game,
+    (LAB_REWARDS[screen] || LAB_SEASON_PRIZES[screen]) && game.game_id === LAB_GAME_LEDGER.key.gameId
+      ? { ...game, ledger: LAB_GAME_LEDGER }
+      : game,
   );
 
 const json = (body: unknown) =>

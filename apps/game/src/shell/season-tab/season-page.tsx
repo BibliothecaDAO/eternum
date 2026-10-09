@@ -22,6 +22,7 @@ import { useNowSeconds } from "../use-now";
 import { SEASON_WORDS, WORDS } from "../words";
 import { BlitzPanel } from "./blitz-rating";
 import { HistoryRow } from "./history-row";
+import { SeasonPrizePanel } from "./season-prize";
 
 type SeasonView = "frontier" | "blitz";
 
@@ -52,7 +53,14 @@ const PhoneSeason = () => {
           lit={view}
           onChange={setView}
         />
-        {view === "frontier" ? <FrontierBoard rowsShown={ROWS_SHOWN.phone} /> : <BlitzGames />}
+        {view === "frontier" ? (
+          <FrontierBoard rowsShown={ROWS_SHOWN.phone} />
+        ) : (
+          <>
+            <SeasonPrizePanel />
+            <BlitzGames />
+          </>
+        )}
       </div>
     </PageFrame>
   );
@@ -75,7 +83,10 @@ const DesktopSeason = () => {
         ) : (
           <NoSeason />
         )}
-        <BlitzPanel games={player ? <BlitzGames framed={false} /> : null} />
+        <div className="flex flex-col gap-6">
+          <SeasonPrizePanel />
+          <BlitzPanel games={player ? <BlitzGames framed={false} /> : null} />
+        </div>
       </div>
     </PageFrame>
   );

@@ -28,6 +28,25 @@ export interface LedgerPrices {
   shield: bigint;
 }
 
+/** The preset's season payout: the share of participants paid and how each place's weight decays from the one above. */
+export interface PayoutCurve {
+  paidFractionBps: number;
+  decayBps: number;
+}
+
+/** A Blitz season on the ledger: its window, its pool, and its top list once posted. Times are Unix seconds. */
+export interface BlitzSeason {
+  participants: number;
+  winners: number;
+  posted: boolean;
+  challenged: boolean;
+  reviewUntil: number;
+  presetId: number;
+  start: number;
+  end: number;
+  pool: bigint;
+}
+
 export interface Credits {
   swords: number;
   shields: number;
@@ -86,6 +105,13 @@ export const openChestCalls = (ledger: string, chest: string, tokenId: bigint): 
   { contractAddress: ledger, entrypoint: "open_chest", calldata: u256(tokenId) },
 ];
 
+/** claim_season(season): a winner pulls their share once the review hour has passed. */
+export const claimSeasonCall = (ledger: string, seasonId: number): Call => ({
+  contractAddress: ledger,
+  entrypoint: "claim_season",
+  calldata: [String(seasonId)],
+});
+
 /** refund(key): a cancelled game's paid LORDS and spent credits come back to the payer. */
 export const refundCall = (ledger: string, key: GameKey): Call => ({
   contractAddress: ledger,
@@ -135,11 +161,38 @@ export const decodeGame = (felts: readonly string[]): LedgerGame => {
 };
 
 /** Preset: entry_fee, chest_lords_bps, chest_metadata, paid_fraction_bps, decay_bps, sword_price, shield_price, mmr. */
-export const decodePrices = (felts: readonly string[]): LedgerPrices => {
+export const decodePreset = (felts: readonly string[]): LedgerPrices & PayoutCurve => {
   const read = fields(felts);
   const seat = read.u256();
+  read.skip(2);
+  const paidFractionBps = read.number();
+  const decayBps = read.number();
+  return { seat, sword: read.u256(), shield: read.u256(), paidFractionBps, decayBps };
+};
+
+/**
+ * BlitzSeason: participant_count, top_count, posted, challenged, review_until, settlement_started, paid, exists,
+ * preset_id, start, end, pool.
+ */
+export const decodeSeason = (felts: readonly string[]): BlitzSeason => {
+  const read = fields(felts);
+  const participants = read.number();
+  const winners = read.number();
+  const posted = read.bool();
+  const challenged = read.bool();
+  const reviewUntil = read.number();
   read.skip(4);
-  return { seat, sword: read.u256(), shield: read.u256() };
+  return {
+    participants,
+    winners,
+    posted,
+    challenged,
+    reviewUntil,
+    presetId: read.number(),
+    start: read.number(),
+    end: read.number(),
+    pool: read.u256(),
+  };
 };
 
 /** Registration: registered, sword, shield, flags_consumed, sword_credit, shield_credit, paid, realm_id, pass_kind. */
@@ -203,7 +256,14 @@ export const ledgerReader = (provider: ProviderInterface, ledger: string) => {
   };
   return {
     game: async (key: GameKey) => decodeGame(await view("get_game", keyCalldata(key))),
-    prices: async (presetId: number) => decodePrices(await view("get_preset", [String(presetId)])),
+    preset: async (presetId: number) => decodePreset(await view("get_preset", [String(presetId)])),
+    season: async (seasonId: number) => decodeSeason(await view("get_season", [String(seasonId)])),
+    seasonWinner: async (seasonId: number, index: number) => {
+      const [wallet, low, high] = await view("get_season_winner", [String(seasonId), String(index)]);
+      return { wallet, share: BigInt(low) + (BigInt(high) << 128n) };
+    },
+    seasonClaimed: async (seasonId: number, owner: string) =>
+      BigInt((await view("season_claimed", [String(seasonId), owner]))[0]) !== 0n,
     registration: async (key: GameKey, owner: string) =>
       decodeRegistration(await view("get_registration", [...keyCalldata(key), owner])),
     credits: async (owner: string) => decodeCredits(await view("get_credits", [owner])),

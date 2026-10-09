@@ -3,7 +3,7 @@ import { expect, it } from "vitest";
 import {
   decodeCredits,
   decodeGame,
-  decodePrices,
+  decodePreset,
   decodeRegistration,
   LORDS_TOKEN,
   lordsOf,
@@ -41,7 +41,7 @@ it("reads the ledger's answers in the interface's field order", () => {
     finalized: false,
   });
   // Preset: entry fee (2), chest bps, chest metadata, paid fraction, decay, sword (2), shield (2), mmr (7).
-  const prices = decodePrices([
+  const prices = decodePreset([
     String(500n * WEI),
     "0",
     "2000",
@@ -60,7 +60,13 @@ it("reads the ledger's answers in the interface's field order", () => {
     "150",
     "6",
   ]);
-  expect(prices).toEqual({ seat: 500n * WEI, sword: 500n * WEI, shield: 450n * WEI });
+  expect(prices).toEqual({
+    seat: 500n * WEI,
+    sword: 500n * WEI,
+    shield: 450n * WEI,
+    paidFractionBps: 1000,
+    decayBps: 9600,
+  });
   // Registration: registered, sword, shield, consumed, sword credit, shield credit, paid (2), realm (2), pass kind.
   expect(decodeRegistration(["1", "1", "0", "0", "1", "0", String(500n * WEI), "0", "0", "0", "0"])).toEqual({
     registered: true,

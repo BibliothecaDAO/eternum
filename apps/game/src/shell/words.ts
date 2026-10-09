@@ -287,6 +287,24 @@ export const REWARD_WORDS = {
   band: { top: "Top 10%", upper: "Top 25%", middle: "Top half", lower: "Top 75%", bottom: "Bottom 25%" },
 } as const;
 
+/** The Blitz season's prize on Season. */
+export const SEASON_PRIZE_WORDS = {
+  title: "Blitz season",
+  pool: "Prize pool",
+  ends: (date: string) => `Ends ${date}`,
+  final: "Final",
+  paysToday: "If the season ended now",
+  placesPaid: (count: number) => `${count} places paid`,
+  place: (place: number) => `#${place}`,
+  noPlaces: "No place is paid until players are ranked.",
+  yourShare: "Your share",
+  review: "Claims open in",
+  held: "The list is being checked",
+  claimed: "Claimed to your payout wallet",
+  notPaid: "Outside the paid places this season",
+  claim: "Claim",
+} as const;
+
 /** The three alert levels (ruled) and what each carries, in one line. */
 export const LEVEL_WORDS = {
   off: { word: "Off", line: "Nothing" },
