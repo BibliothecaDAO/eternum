@@ -127,7 +127,7 @@ fn only_deployment_authority_can_append_canonical_traits() {
 fn forged_season_commands_cannot_allocate_or_place_realms() {
     // Authorization belongs to the production Games surface, not the library-call fixture host.
     let deployment = super::setup_with_host(true, "StructuresLogic", "TroopsLogic", "Games");
-    let before = super::recorded::gameplay_snapshot(deployment.games);
+    let before = super::play_fixture::gameplay_snapshot(deployment.games);
     let season = crate::realms::ISeasonRealmsSafeDispatcher { contract_address: deployment.games };
     snforge_std::start_cheat_caller_address(deployment.games, deployment.actor);
     assert!(
@@ -155,5 +155,5 @@ fn forged_season_commands_cannot_allocate_or_place_realms() {
         )
             .is_err(),
     );
-    assert_eq!(super::recorded::gameplay_snapshot(deployment.games), before);
+    assert_eq!(super::play_fixture::gameplay_snapshot(deployment.games), before);
 }

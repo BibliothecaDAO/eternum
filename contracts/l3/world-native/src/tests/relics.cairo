@@ -12,7 +12,7 @@ use crate::resources::{IResourceOperationsDispatcher, ResourceKey, ResourceSlot}
 use crate::rules::RESOURCE_PRECISION;
 use crate::tests::state::{GameState, MapObservationTrait, ResourceObservationTrait, TroopObservationTrait};
 use crate::troops::{Coord, ExplorerKey};
-use super::resource_commands::{assert_terminal_rejection, execute, execute_recorded_at, grant, set_fixture};
+use super::resource_commands::{assert_terminal_rejection, execute, grant, set_fixture};
 
 pub fn rules() -> Span<RelicRule> {
     let rates = array![
@@ -61,17 +61,17 @@ fn setup(blitz: bool) -> (super::Deployment, ResourceKey, ResourceKey) {
     setup_with_reward(blitz, 2, 10)
 }
 fn setup_with_reward(blitz: bool, resource_type: u8, amount: u128) -> (super::Deployment, ResourceKey, ResourceKey) {
-    let mut config = super::recorded::rules();
+    let mut config = super::play_fixture::rules();
     config.mode_rules = if blitz {
-        super::recorded::BLITZ_RULES
+        super::play_fixture::BLITZ_RULES
     } else {
-        super::recorded::ETERNUM_RULES
+        super::play_fixture::ETERNUM_RULES
     };
     config
         .command_mask = if blitz {
-            super::recorded::BLITZ_COMMAND_MASK
+            super::play_fixture::BLITZ_COMMAND_MASK
         } else {
-            super::recorded::ETERNUM_COMMAND_MASK
+            super::play_fixture::ETERNUM_COMMAND_MASK
         };
     config.entry_rule = if blitz {
         crate::rules::ENTRY_ROSTER
@@ -155,11 +155,11 @@ fn move_fixture(deployment: super::Deployment, key: ResourceKey, coord: Coord) {
     );
 }
 #[test]
-fn explorer_relics_charge_the_home_and_use_the_recorded_tick_for_each_effect() {
+fn explorer_relics_charge_the_home_and_use_the_block_tick_for_each_effect() {
     let (deployment, home, explorer) = setup(false);
     for id in array![39_u8, 40, 41, 42, 43, 44, 47, 48] {
         let before = balance(deployment, home, 38);
-        assert!(execute_recorded_at(deployment, apply(explorer, id, Recipient::Explorer), 40, 5000));
+        assert!(execute(deployment, apply(explorer, id, Recipient::Explorer), 40));
         assert_eq!(balance(deployment, explorer, id), 2 * RESOURCE_PRECISION);
         let rule = *rules().at((id - 39).into());
         assert_eq!(balance(deployment, home, 38), before - rule.essence_cost * RESOURCE_PRECISION);
@@ -192,7 +192,7 @@ fn production_relics_update_only_their_bonus_and_keep_inclusive_expiry() {
     let (deployment, home, _) = setup(false);
     let view = crate::production::IProductionRulesDispatcher { contract_address: deployment.games };
     for id in 51_u8..57 {
-        assert!(execute_recorded_at(deployment, apply(home, id, Recipient::StructureProduction), 40, 5000));
+        assert!(execute(deployment, apply(home, id, Recipient::StructureProduction), 40));
         let bonus = crate::production::IProductionRulesDispatcherTrait::production_bonus(view, home);
         let resource = if id < 53 {
             2
@@ -239,7 +239,7 @@ fn guard_relics_apply_to_all_four_slots_and_preserve_destroyed_ticks() {
     }
 }
 #[test]
-fn failed_payments_and_wrong_targets_revert_effects_and_consume_only_the_ticket() {
+fn failed_payments_and_wrong_targets_roll_back_effects() {
     let (deployment, home, explorer) = setup(false);
     let original = troop(deployment, explorer);
     for (id, recipient, key) in array![
@@ -378,7 +378,7 @@ fn opening_a_chest_draws_with_replacement_once_and_replay_cannot_reopen_it() {
     let points = crate::game::IPointsDispatcherTrait::player_points(
         crate::game::IPointsDispatcher { contract_address: deployment.games }, 3, deployment.actor,
     );
-    assert!(execute_recorded_at(deployment, command, 50, 5000));
+    assert!(execute(deployment, command, 50));
     for id in 39_u8..57 {
         let mut count = 0_u128;
         for relic in expected {
@@ -410,29 +410,22 @@ fn relic_configuration_requires_authority_and_application_requires_owner() {
     let (deployment, _, explorer) = setup(false);
     let safe = IRelicsSafeDispatcher { contract_address: deployment.games };
     let registrar = crate::registrar::IRegistrarSafeDispatcher { contract_address: deployment.games };
-    let mut preset = super::resource_commands::fixture_preset(super::recorded::rules());
+    let mut preset = super::resource_commands::fixture_preset(super::play_fixture::rules());
     start_cheat_caller_address(deployment.games, deployment.actor);
     assert!(registrar.register_preset(20000, preset).is_err());
     stop_cheat_caller_address(deployment.games);
-    // Recorded time is authenticated once at Games, before any relic logic runs.
-    let action = super::recorded::FixtureAction {
-        nonce: 1, command: apply(explorer, 39, Recipient::Explorer), ..super::intent(deployment, 3),
-    };
     let relics_before = balance(deployment, explorer, 39);
-    let order_before = super::recorded::head(deployment.games, 3).order;
-    start_cheat_caller_address(deployment.games, super::submitter());
-    assert!(
-        super::recorded::FixtureSafeSeasonTrait::execute(
-            crate::games::IGamesAuthenticationSafeDispatcher { contract_address: deployment.games },
-            action,
-            super::context(deployment.games, 3),
-            super::signature(deployment, action),
-        )
-            .is_err(),
-    );
-    stop_cheat_caller_address(deployment.games);
+    let (release, commitment) = super::play_fixture::pins(deployment.games, 3);
+    super::play_fixture::caller(deployment.games, deployment.actor, 100);
+    start_cheat_caller_address(deployment.games, super::authority());
+    let mut rejected = snforge_std::spy_events();
+    assert!(super::play_fixture::IPlayFixtureSafeDispatcherTrait::play_with_root(
+        super::play_fixture::IPlayFixtureSafeDispatcher { contract_address: deployment.games },
+        3, release, commitment, super::play_fixture::encode(apply(explorer, 39, Recipient::Explorer)), 987654321,
+    ).is_err());
     assert_eq!(balance(deployment, explorer, 39), relics_before);
-    assert_eq!(super::recorded::head(deployment.games, 3).order, order_before);
+    assert_eq!(super::play_fixture::pins(deployment.games, 3), (release, commitment));
+    assert!(snforge_std::EventsFilterTrait::emitted_by(snforge_std::EventSpyTrait::get_events(ref rejected), deployment.games).events.is_empty());
     start_cheat_caller_address(deployment.games, super::authority());
     let games = crate::game::IGameDispatcher { contract_address: deployment.games };
     assert!(registrar.register_preset(games.game(3).preset_id, preset).is_err());
@@ -480,8 +473,8 @@ fn pinned_draw_vectors_keep_weights_timestamp_salts_and_direction_retry_order() 
     assert!(repeated);
 }
 #[feature("safe_dispatcher")]
-fn extract_reward(deployment: super::Deployment, explorer_id: u32, timestamp: u64, executed_at: u64) -> bool {
-    start_cheat_block_timestamp_global(executed_at);
+fn extract_reward(deployment: super::Deployment, explorer_id: u32, timestamp: u64) -> bool {
+    start_cheat_block_timestamp_global(timestamp);
     start_cheat_caller_address(deployment.games, deployment.games);
     let result = IExtractionSafeDispatcher { contract_address: deployment.games }
         .extract_exploration_reward(
@@ -502,10 +495,10 @@ fn extraction_applies_active_boost_once_and_routes_eternum_rewards_to_the_explor
     assert!(execute(deployment, apply(explorer, 48, Recipient::Explorer), 40));
     let before = balance(deployment, explorer, 2);
     let home_before = balance(deployment, home, 2);
-    assert!(extract_reward(deployment, explorer.entity_id, 70, 5000));
+    assert!(extract_reward(deployment, explorer.entity_id, 70));
     assert_eq!(balance(deployment, explorer, 2), before + 30 * RESOURCE_PRECISION);
     assert_eq!(balance(deployment, home, 2), home_before);
-    assert!(extract_reward(deployment, explorer.entity_id, 71, 71));
+    assert!(extract_reward(deployment, explorer.entity_id, 71));
     assert_eq!(balance(deployment, explorer, 2), before + 30 * RESOURCE_PRECISION);
 }
 #[test]
@@ -513,7 +506,7 @@ fn extraction_after_bonus_expiry_routes_blitz_resources_to_home() {
     let (deployment, home, explorer) = setup(true);
     assert!(execute(deployment, apply(explorer, 48, Recipient::Explorer), 40));
     let before = balance(deployment, home, 2);
-    assert!(extract_reward(deployment, explorer.entity_id, 80, 80));
+    assert!(extract_reward(deployment, explorer.entity_id, 80));
     assert_eq!(balance(deployment, home, 2), before + 10 * RESOURCE_PRECISION);
     assert_eq!(balance(deployment, explorer, 2), 0);
 }
@@ -522,7 +515,7 @@ fn blitz_relic_rewards_stay_with_the_explorer() {
     let (deployment, home, explorer) = setup_with_reward(true, 39, 1);
     let before = balance(deployment, explorer, 39);
     let home_before = balance(deployment, home, 39);
-    assert!(extract_reward(deployment, explorer.entity_id, 40, 40));
+    assert!(extract_reward(deployment, explorer.entity_id, 40));
     assert_eq!(balance(deployment, explorer, 39), before + RESOURCE_PRECISION);
     assert_eq!(balance(deployment, home, 39), home_before);
 }
@@ -531,19 +524,19 @@ fn extraction_rejects_wrong_layer_dead_explorer_and_mismatched_tile() {
     let (deployment, _, explorer) = setup(false);
     let original = troop(deployment, explorer);
     move_fixture(deployment, explorer, Coord { alt: true, ..original.coord });
-    assert!(!extract_reward(deployment, explorer.entity_id, 40, 40));
+    assert!(!extract_reward(deployment, explorer.entity_id, 40));
     move_fixture(deployment, explorer, crate::geometry::neighbor(original.coord, 0));
-    assert!(!extract_reward(deployment, explorer.entity_id, 40, 40));
+    assert!(!extract_reward(deployment, explorer.entity_id, 40));
     crate::tests::resource_commands::set_explorer_fixture(
         deployment.games,
         crate::troops::ExplorerKey { game_id: 3, explorer_id: explorer.entity_id },
         crate::troops::ExplorerTroops { troops: crate::troops::Troops { count: 0, ..original.troops }, ..original },
     );
-    assert!(!extract_reward(deployment, explorer.entity_id, 40, 40));
+    assert!(!extract_reward(deployment, explorer.entity_id, 40));
     crate::tests::resource_commands::set_explorer_fixture(
         deployment.games, crate::troops::ExplorerKey { game_id: 3, explorer_id: explorer.entity_id }, original,
     );
-    assert!(extract_reward(deployment, explorer.entity_id, 40, 40));
+    assert!(extract_reward(deployment, explorer.entity_id, 40));
 }
 
 #[test]
@@ -553,10 +546,10 @@ fn an_explore_action_discovers_a_chest_while_eternum_does_not() {
     grant(deployment, home, 36, 1000 * RESOURCE_PRECISION);
     assert!(
         execute(
-            deployment,
-            Command::Explore(crate::commands::Explore { explorer_id: explorer.entity_id, direction: 0 }),
-            40,
-        ),
+                deployment,
+                Command::Explore(crate::commands::Explore { explorer_id: explorer.entity_id, direction: 0 }),
+                40,
+            ),
     );
     assert_eq!(map_relics(deployment).relic_discovery_time(3), 40);
     let (eternum, _, _) = setup(false);
@@ -591,7 +584,7 @@ fn chest_rejections_leave_the_chest_and_points_untouched() {
 fn extraction_requires_immutable_authorized_configuration() {
     let (deployment, _, explorer) = setup(false);
     let registrar = crate::registrar::IRegistrarSafeDispatcher { contract_address: deployment.games };
-    let mut preset = super::resource_commands::fixture_preset(super::recorded::rules());
+    let mut preset = super::resource_commands::fixture_preset(super::play_fixture::rules());
     let rewards = array![ExplorationReward { resource_type: 2, amount: 10, amount_max: 10, weight: 1 }].span();
     preset.exploration = rewards;
     start_cheat_caller_address(deployment.games, deployment.actor);
@@ -603,7 +596,7 @@ fn extraction_requires_immutable_authorized_configuration() {
     assert!(registrar.register_preset(20000, preset).is_ok());
     assert!(registrar.register_preset(20000, preset).is_err());
     stop_cheat_caller_address(deployment.games);
-    assert!(extract_reward(deployment, explorer.entity_id, 40, 40));
+    assert!(extract_reward(deployment, explorer.entity_id, 40));
 }
 
 #[test]
@@ -619,15 +612,14 @@ fn exploration_grants_a_surface_reward_atomically_and_extraction_cannot_pay_twic
         };
         let before = balance(deployment, recipient, 2);
         assert!(
-            execute_recorded_at(
+            execute(
                 deployment,
                 Command::Explore(crate::commands::Explore { explorer_id: explorer.entity_id, direction: 0 }),
                 40,
-                5000,
             ),
         );
         assert_eq!(balance(deployment, recipient, 2), before + 10 * RESOURCE_PRECISION);
-        assert!(extract_reward(deployment, explorer.entity_id, 41, 5001));
+        assert!(extract_reward(deployment, explorer.entity_id, 41));
         assert_eq!(balance(deployment, recipient, 2), before + 10 * RESOURCE_PRECISION);
     }
 }

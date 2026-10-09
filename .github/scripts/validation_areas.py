@@ -32,7 +32,6 @@ AREAS = {
         "config/**",
         "contracts/l3/world-native/schema/**",
         "contracts/l3/world-native/tests/fixtures/**",
-        "contracts/l3/randomness-protocol/tests/fixtures/**",
         "contracts/common/addresses/**",
         "contracts/utils/**"
     ],
@@ -43,7 +42,6 @@ AREAS = {
         "config/**",
         "contracts/l3/world-native/schema/**",
         "contracts/l3/world-native/tests/fixtures/**",
-        "contracts/l3/randomness-protocol/tests/fixtures/**",
         "contracts/common/addresses/**",
         "contracts/utils/**"
     ],
@@ -62,7 +60,6 @@ AREAS = {
         "config/**",
         "contracts/l3/world-native/schema/**",
         "contracts/l3/world-native/tests/fixtures/**",
-        "contracts/l3/randomness-protocol/tests/fixtures/**",
         "contracts/common/addresses/**",
         "contracts/utils/**"
     ],
@@ -90,7 +87,6 @@ AREAS = {
         "apps/herald/src/shard-manifest.ts",
         "contracts/l3/world-native/schema/**",
         "contracts/l3/world-native/tests/fixtures/**",
-        "contracts/l3/randomness-protocol/tests/fixtures/**",
         "contracts/common/addresses/**",
         "contracts/utils/**",
         "deploy/athanor/**",

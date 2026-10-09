@@ -69,7 +69,7 @@ pub mod BlitzResultState {
                 self.data.blitz_results.results.write((game_id, index), result);
             }
             self.data.blitz_results.count.write(game_id, end.try_into().unwrap());
-            self.emit_result(game_id, context.game.unbox().creator, context.timestamp, ref story_cursor);
+            self.emit_result(game_id, crate::state::read().launcher.read(), context.timestamp, ref story_cursor);
             ((roster.len() - end).into(), story_cursor)
         }
     }
@@ -137,7 +137,7 @@ pub mod BlitzResultState {
         fn emit_result(
             ref self: ComponentState<TContractState>,
             game_id: u32,
-            creator: ContractAddress,
+            launcher: ContractAddress,
             timestamp: u64,
             ref story_cursor: crate::ownership::StoryCursor,
         ) {
@@ -158,7 +158,7 @@ pub mod BlitzResultState {
                             game_id,
                             order: story_cursor.order,
                             index: crate::ownership::StoryCursorTrait::next(ref story_cursor),
-                            owner: Some(creator),
+                            owner: Some(launcher),
                             entity_id: None,
                             tx_hash: get_tx_info().unbox().transaction_hash,
                             story: Story::BlitzFinalized(result.commitment),

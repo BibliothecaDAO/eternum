@@ -121,22 +121,6 @@ pub mod TroopFixture {
     }
 }
 
-/// The SNIP-6 check of the shard's account class: one device key per fixture, signatures `[device_key, r, s]`.
-#[starknet::interface]
-pub trait IDeviceSignature<T> {
-    fn is_valid_signature(self: @T, hash: felt252, signature: Array<felt252>) -> felt252;
-}
-
-pub fn device_signature_result(key: felt252, hash: felt252, signature: Span<felt252>) -> felt252 {
-    if signature.len() == 3
-        && *signature[0] == key
-        && core::ecdsa::check_ecdsa_signature(hash, key, *signature[1], *signature[2]) {
-        starknet::VALIDATED
-    } else {
-        0
-    }
-}
-
 #[starknet::interface]
 pub trait IAccountUpgrade<T> {
     fn upgrade(ref self: T, class_hash: starknet::ClassHash);
@@ -147,24 +131,16 @@ pub mod AccountFixture {
     use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
     #[storage]
     struct Storage {
-        key: felt252,
         realms_id: felt252,
     }
     #[constructor]
     fn constructor(ref self: ContractState, realms_id: felt252, guardian_public_key: felt252) {
         assert!(guardian_public_key != 0, "zero guardian");
         self.realms_id.write(realms_id);
-        self.key.write(0x399ab58e2d17603eeccae95933c81d504ce475eb1bd0080d2316b84232e133c);
     }
     #[external(v0)]
     fn realms_id(self: @ContractState) -> felt252 {
         self.realms_id.read()
-    }
-    #[abi(embed_v0)]
-    impl Signature of super::IDeviceSignature<ContractState> {
-        fn is_valid_signature(self: @ContractState, hash: felt252, signature: Array<felt252>) -> felt252 {
-            super::device_signature_result(self.key.read(), hash, signature.span())
-        }
     }
     #[abi(embed_v0)]
     impl Upgrade of super::IAccountUpgrade<ContractState> {
@@ -174,26 +150,14 @@ pub mod AccountFixture {
     }
 }
 
-
 #[starknet::interface]
 pub trait IRollbackFixture<T> {
     fn attempt_preset(
         ref self: T, registry: ContractAddress, preset_id: u32, definition: crate::presets::PresetDefinition,
     ) -> bool;
-    fn attempt(
-        ref self: T,
-        season: ContractAddress,
-        intent: eternum_randomness_protocol::Intent,
-        context: eternum_randomness_protocol::entrypoint::ExecutionContext,
-        signature: Span<felt252>,
-    ) -> bool;
 }
 #[starknet::contract]
 pub mod RollbackFixture {
-    use eternum_randomness_protocol::Intent;
-    use eternum_randomness_protocol::entrypoint::{
-        ExecutionContext, IRecordedExecutionSafeDispatcher, IRecordedExecutionSafeDispatcherTrait,
-    };
     use starknet::ContractAddress;
     #[storage]
     struct Storage {}
@@ -211,33 +175,15 @@ pub mod RollbackFixture {
             )
                 .is_ok()
         }
-
-        #[feature("safe_dispatcher")]
-        fn attempt(
-            ref self: ContractState,
-            season: ContractAddress,
-            intent: Intent,
-            context: ExecutionContext,
-            signature: Span<felt252>,
-        ) -> bool {
-            IRecordedExecutionSafeDispatcher { contract_address: season }.execute(intent, context, signature).is_ok()
-        }
     }
 }
 
 #[starknet::contract]
 pub mod AccountUpgradeFixture {
-    use starknet::storage::StoragePointerReadAccess;
     #[storage]
-    struct Storage {
-        key: felt252,
-    }
-    #[abi(embed_v0)]
-    impl Signature of super::IDeviceSignature<ContractState> {
-        fn is_valid_signature(self: @ContractState, hash: felt252, signature: Array<felt252>) -> felt252 {
-            super::device_signature_result(self.key.read(), hash, signature.span())
-        }
-    }
+    struct Storage {}
+    #[external(v0)]
+    fn realms_id(self: @ContractState) -> felt252 { 1 }
 }
 
 #[starknet::interface]

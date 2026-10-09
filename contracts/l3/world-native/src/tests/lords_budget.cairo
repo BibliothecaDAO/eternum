@@ -15,7 +15,6 @@ fn clock() -> SeasonClock {
         game: crate::game::GameRegistry {
             name: 'frontier',
             preset_id: 5,
-            creator: 1.try_into().unwrap(),
             settled: false,
             ready: true,
             dev_mode_on: false,

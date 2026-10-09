@@ -1,6 +1,3 @@
-// ExecutionRecorded v2 separates the rejection class from the full domain reason.
-export const executionRecordedVersion = 2;
-
 // Fact-only Cairo wire types replace the removed fixture getter ABIs.
 // Production definitions, when present, must agree exactly with these fields.
 export const factWireTypes = [
@@ -376,10 +373,6 @@ export const factWireTypes = [
       {
         name: "preset_id",
         type: "core::integer::u32",
-      },
-      {
-        name: "creator",
-        type: "core::starknet::contract_address::ContractAddress",
       },
       {
         name: "settled",
@@ -779,12 +772,6 @@ export function defineFactModels({ struct, model: declare }) {
       };
     if (row.name === "VillageRaid")
       row.absence = { parent: "Structure", value: "zero", meaning: "The village has not been successfully raided." };
-    if (row.name === "ActionNonce")
-      row.absence = {
-        value: "zero",
-        meaning:
-          "After a complete actor snapshot, no row means no action was consumed for this player; next_nonce is zero.",
-      };
     if (row.name === "PlayerPoints")
       row.absence = {
         value: "zero",
@@ -1100,15 +1087,6 @@ export function defineFactModels({ struct, model: declare }) {
       ),
       eventProjection: "PointsAwarded",
     },
-    model(
-      "ActionNonce",
-      "game",
-      [
-        { name: "game_id", type: "core::integer::u32" },
-        { name: "actor", type: "core::starknet::contract_address::ContractAddress" },
-      ],
-      [{ name: "next_nonce", type: "core::integer::u64" }],
-    ),
   ].map((fact) => (presetDerivedModels.has(fact.name) ? { ...fact, derivedFrom: "preset" } : fact));
 }
 
@@ -1310,8 +1288,7 @@ const byOwner = { owners: ["owner"] };
 const byPlayer = { owners: ["player"] };
 export const syncScopes = {
   GameOverrides: "internal",
-  ActionNonce: "actor",
-  ExecutionRecorded: "actor",
+  GameplayRejected: "actor",
   BatchProgress: "actor",
   ...Object.fromEntries(
     [

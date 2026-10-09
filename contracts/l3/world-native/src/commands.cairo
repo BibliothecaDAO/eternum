@@ -1,5 +1,3 @@
-#[cfg(test)]
-use core::poseidon::poseidon_hash_span;
 use starknet::ContractAddress;
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
@@ -45,10 +43,9 @@ pub struct BatchProgress {
     #[key]
     pub game_id: u32,
     pub actor: ContractAddress,
-    pub nonce: u64,
+    pub tx_hash: felt252,
     pub remaining: u64,
 }
-#[cfg(test)]
 pub use crate::command_routes::Command;
 
 #[derive(Copy, Drop, Debug)]
@@ -133,14 +130,6 @@ pub fn biome_context(context: ExecutionContext) -> BiomeContext {
         day_unit_seconds: context.rules.unbox().day_unit_seconds,
         start_main_at: context.game.unbox().start_main_at,
     }
-}
-
-// Cairo Serde encodes the variant index followed by its typed fields.
-#[cfg(test)]
-pub fn command_commitment(command: Command) -> felt252 {
-    let mut fields = array!['ETERNUM_COMMAND', 1];
-    command.serialize(ref fields);
-    poseidon_hash_span(fields.span())
 }
 
 pub const MAX_COMMAND_ITEMS: u32 = 64;
@@ -275,4 +264,57 @@ pub trait ITravelCommands<T> {
         context: crate::commands::ActionContext,
         story_cursor: crate::ownership::StoryCursor,
     );
+}
+
+#[derive(Drop, Serde)]
+pub struct Rejection {
+    pub status_class: felt252,
+    pub reason: ByteArray,
+}
+
+pub fn rejection(code: felt252) -> Rejection {
+    Rejection { status_class: code, reason: short_reason(code) }
+}
+
+pub fn short_reason(word: felt252) -> ByteArray {
+    let mut remaining: u256 = word.into();
+    let mut len = 0;
+    while remaining != 0 { remaining /= 256; len += 1; }
+    let mut reason = "";
+    reason.append_word(word, len);
+    reason
+}
+
+// A failing library call rolls back its own storage and events; its caller records the rejection without reverting.
+pub fn domain_rejection(error: Array<felt252>) -> Rejection {
+    let mut fields = error.span();
+    let reason = match fields.pop_front() {
+        Some(word) => if *word == core::byte_array::BYTE_ARRAY_MAGIC {
+            Serde::<ByteArray>::deserialize(ref fields).unwrap_or("malformed domain reason")
+        } else { short_reason(*word) },
+        None => "empty domain panic",
+    };
+    Rejection { status_class: 'GAMEPLAY_REJECTED', reason }
+}
+
+#[derive(Drop, starknet::Event)]
+pub struct GameplayRejected {
+    #[key]
+    pub version: u8,
+    #[key]
+    pub game_id: u32,
+    #[key]
+    pub actor: ContractAddress,
+    #[key]
+    pub tx_hash: felt252,
+    pub status_class: felt252,
+    pub reason: ByteArray,
+}
+
+pub fn validated_command(arguments: Span<felt252>) -> Result<(u32, crate::command_routes::CommandRoute, Span<felt252>), felt252> {
+    let route = route_command(arguments)?;
+    let mut fields = arguments;
+    let _command: Command = Serde::deserialize(ref fields).ok_or('INVALID_COMMAND')?;
+    if !fields.is_empty() { return Err('INVALID_COMMAND'); }
+    Ok(route)
 }

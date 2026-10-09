@@ -92,8 +92,7 @@ ${logic.map((name, index) => `        ${index} => classes.${name}.read(),`).join
     }
 }
 
-// Tests construct typed actions; production forwards their existing Cairo wire fields.
-#[cfg(test)]
+// Decode the complete command before reading a roll; routes retain the same wire discriminants.
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub enum Command {
 ${variants.join("\n")}

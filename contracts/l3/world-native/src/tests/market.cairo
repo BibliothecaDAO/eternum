@@ -13,7 +13,7 @@ use crate::resources::{IResourceOperationsDispatcher, ResourceAmount, ResourceKe
 use crate::rules::RESOURCE_PRECISION;
 use crate::tests::state::ResourceObservationTrait;
 use crate::troops::Coord;
-use super::resource_commands::{assert_terminal_rejection, execute, execute_recorded_at, grant};
+use super::resource_commands::{assert_terminal_rejection, execute, grant};
 
 const BANK: u32 = 0xfffffffe;
 const STOCK: u128 = 100000 * RESOURCE_PRECISION;
@@ -25,9 +25,9 @@ fn banks() -> Span<BankPlacement> {
     banks.span()
 }
 fn market_preset() -> crate::presets::PresetDefinition {
-    let mut rules = super::recorded::rules();
-    rules.mode_rules = super::recorded::ETERNUM_RULES;
-    rules.command_mask = super::recorded::ETERNUM_COMMAND_MASK;
+    let mut rules = super::play_fixture::rules();
+    rules.mode_rules = super::play_fixture::ETERNUM_RULES;
+    rules.command_mask = super::play_fixture::ETERNUM_COMMAND_MASK;
     rules.entry_rule = crate::rules::ENTRY_ENTITLEMENT;
     rules.speed_config.donkey_sec_per_km = 1;
     rules.speed_config.donkey_sec_per_km_troops = 2;
@@ -281,7 +281,7 @@ fn assert_wallet_liquidity_withdrawal(funded: bool) {
         }
     }
     assert!(execute(deployment, add(source, 1000 * RESOURCE_PRECISION, 1000 * RESOURCE_PRECISION), 40));
-    assert!(execute_recorded_at(deployment, remove(0, 1000 * RESOURCE_PRECISION), 50, 1000));
+    assert!(execute(deployment, remove(0, 1000 * RESOURCE_PRECISION), 50));
     assert_eq!(token_balance(resource, deployment.actor), 222500000000000000000);
     assert_eq!(token_balance(lords, deployment.actor), 890000000000000000000);
     assert_eq!(token_balance(resource, 0x777.try_into().unwrap()), 10000000000000000000);
@@ -373,7 +373,7 @@ fn bank_creation_and_configuration_reject_players_repeats_and_partial_batches() 
     assert!(registrar.register_preset(20000, invalid).is_err());
     assert!(registrar.register_preset(20000, preset).is_ok());
     stop_cheat_caller_address(deployment.games);
-    super::recorded::seed_game_with_preset(deployment.games, 4, games.game(3), preset);
+    super::play_fixture::seed_game_with_preset(deployment.games, 4, games.game(3), preset);
     assert_eq!(safe.bank_rules(4).unwrap().lp_fee_num, 0);
     assert_eq!(safe.bank_rules(3).unwrap().lp_fee_num, 3);
 }
@@ -453,7 +453,7 @@ fn bank_trade_and_withdrawal_configuration_are_independent_and_immutable() {
     stop_cheat_caller_address(deployment.games);
     assert!(execute(deployment, add(source, 1000 * RESOURCE_PRECISION, 1000 * RESOURCE_PRECISION), 40));
     assert!(
-        execute_recorded_at(
+        execute(
             deployment,
             Command::BuyFromBank(
                 Swap {
@@ -461,7 +461,6 @@ fn bank_trade_and_withdrawal_configuration_are_independent_and_immutable() {
                 },
             ),
             50,
-            1000,
         ),
     );
 }
@@ -486,39 +485,39 @@ fn liquidity_rejects_a_deposit_that_rounds_to_zero_shares() {
 }
 
 #[test]
-fn liquidity_changes_have_distinct_recorded_story_keys() {
+fn liquidity_changes_have_distinct_story_payloads() {
     let (d, source, _) = setup();
     let mut spy = spy_events();
     assert!(execute(d, add(source, 1000 * RESOURCE_PRECISION, 1000 * RESOURCE_PRECISION), 40));
     assert!(execute(d, add(source, 1000 * RESOURCE_PRECISION, 1000 * RESOURCE_PRECISION), 41));
-    let mut ids = array![];
+    let mut timestamps = array![];
     for (_, event) in spy.get_events().emitted_by(d.games).events.span() {
         if *event.keys.at(0) == selector!("StoryEvent") {
             let mut keys = event.keys.span().slice(1, event.keys.len() - 1);
             let mut data = event.data.span();
             let story: crate::ownership::StoryEvent = starknet::Event::deserialize(ref keys, ref data).unwrap();
             assert_eq!(story.entity_id, Some(source.entity_id));
-            ids.append(crate::ownership::StoryCursor { order: story.order, index: story.index });
+            let crate::ownership::Story::BankLiquidity(_) = story.story else { panic!("unexpected liquidity story") };
+            timestamps.append(story.timestamp);
         }
     }
-    assert_eq!(ids.len(), 2);
-    assert_ne!(*ids.at(0), *ids.at(1));
+    assert_eq!(timestamps.span(), array![40_u64, 41].span());
 }
-
 
 #[test]
 #[feature("safe_dispatcher")]
-fn the_game_creator_owns_bank_choices_and_preplay_liquidity_without_shard_authority() {
+fn the_current_launcher_owns_bank_choices_and_preplay_liquidity() {
     let (d, source, authority_source) = super::resource_commands::setup_with_preset(market_preset());
     let games = crate::game::IGameDispatcher { contract_address: d.games };
     let game = crate::game::IGameDispatcherTrait::game(games, 3);
-    let creator_game = crate::game::GameRegistry { creator: d.actor, start_main_at: 100, ..game };
+    let preplay_game = crate::game::GameRegistry { start_main_at: 100, ..game };
     super::resource_commands::set_fixture(
-        d.games, selector!("games"), selector!("games"), array![3].span(), creator_game,
+        d.games, selector!("games"), selector!("games"), array![3].span(), preplay_game,
     );
     assert!(d.actor != super::authority());
     let authority = super::bind_authority(d);
-    assert!(!execute(authority, Command::CreateBanks(banks()), 40));
+    super::set_launcher(d, d.actor);
+    super::play_fixture::assert_preflight_rejection(d.games, super::play_fixture::TestAction { game_id: 3, actor: authority.actor, command: Command::CreateBanks(banks()) }, 40);
     assert!(execute(d, Command::CreateBanks(banks()), 40));
     let structure = crate::tests::state::StructureObservationTrait::structure(
         crate::structures::IStructureOperationsDispatcher { contract_address: d.games },
@@ -538,14 +537,7 @@ fn the_game_creator_owns_bank_choices_and_preplay_liquidity_without_shard_author
     assert!(!execute(authority, add(authority_source, 1000 * RESOURCE_PRECISION, 1000 * RESOURCE_PRECISION), 40));
     assert!(execute(d, add(source, 1000 * RESOURCE_PRECISION, 1000 * RESOURCE_PRECISION), 40));
     assert_eq!(lp(d), 1000 * RESOURCE_PRECISION);
-    // The creator privilege is separate from the normal live-game liquidity permission.
-    super::resource_commands::set_fixture(
-        d.games,
-        selector!("games"),
-        selector!("games"),
-        array![3].span(),
-        crate::game::GameRegistry { creator: super::authority(), ..creator_game },
-    );
+    super::set_launcher(d, super::authority());
     assert!(!execute(d, add(source, 1000 * RESOURCE_PRECISION, 1000 * RESOURCE_PRECISION), 50));
     assert!(execute(d, add(source, 1000 * RESOURCE_PRECISION, 1000 * RESOURCE_PRECISION), 100));
     assert_eq!(lp(d), 2000 * RESOURCE_PRECISION);

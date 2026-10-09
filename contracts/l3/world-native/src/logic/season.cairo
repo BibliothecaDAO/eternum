@@ -5,15 +5,14 @@ pub trait IGameplay<T> {
         game_id: u32,
         actor: starknet::ContractAddress,
         arguments: Span<felt252>,
-        nonce: u64,
         context: crate::commands::ActionContext,
         story_cursor: crate::ownership::StoryCursor,
-    ) -> Result<Span<felt252>, eternum_randomness_protocol::recording::Rejection>;
+    ) -> Result<Span<felt252>, crate::commands::Rejection>;
 }
 
 #[starknet::contract]
 pub mod SeasonLogic {
-    use eternum_randomness_protocol::recording::{Rejection, rejection, short_reason};
+    use crate::commands::{Rejection, rejection, domain_rejection};
     use games_storage::release::LogicClasses;
     use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
     use starknet::{ContractAddress, get_tx_info};
@@ -265,23 +264,6 @@ pub mod SeasonLogic {
         )
     }
 
-    // Cairo assertions encode strings as ByteArray; expect/panic_with_felt252 use one short string.
-    // The syscall appends ENTRYPOINT_FAILED after the original panic data.
-    fn domain_rejection(error: Array<felt252>) -> Rejection {
-        let mut fields = error.span();
-        let reason = match fields.pop_front() {
-            Some(word) => {
-                if *word == core::byte_array::BYTE_ARRAY_MAGIC {
-                    Serde::<ByteArray>::deserialize(ref fields).expect('malformed domain reason')
-                } else {
-                    short_reason(*word)
-                }
-            },
-            None => "empty domain panic",
-        };
-        Rejection { status_class: 'GAMEPLAY_REJECTED', reason }
-    }
-
     #[abi(embed_v0)]
     impl Gameplay of super::IGameplay<ContractState> {
         fn execute_gameplay(
@@ -289,10 +271,9 @@ pub mod SeasonLogic {
             game_id: u32,
             actor: ContractAddress,
             arguments: Span<felt252>,
-            nonce: u64,
             context: crate::commands::ActionContext,
             mut story_cursor: crate::ownership::StoryCursor,
-        ) -> Result<Span<felt252>, eternum_randomness_protocol::recording::Rejection> {
+        ) -> Result<Span<felt252>, crate::commands::Rejection> {
             let context = crate::commands::load_context(game_id, context);
 
             let (index, route, payload) = crate::commands::route_command(arguments).map_err(|code| rejection(code))?;
@@ -310,7 +291,7 @@ pub mod SeasonLogic {
                 let (remaining, _cursor): (u64, crate::ownership::StoryCursor) = Serde::deserialize(ref output)
                     .expect('missing batch result');
                 assert!(output.is_empty(), "invalid batch result");
-                self.emit(crate::commands::BatchProgress { game_id, actor, nonce, remaining });
+                self.emit(crate::commands::BatchProgress { game_id, actor, tx_hash: get_tx_info().unbox().transaction_hash, remaining });
             }
             Ok(result)
         }

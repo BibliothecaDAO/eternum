@@ -5,7 +5,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { eventLayouts, uniqueEventLayouts } from "./event-layouts.mjs";
 import { readCheckedTaxonomy } from "./taxonomy.mjs";
-import { defineFactModels, factWireTypes, syncScopes, executionRecordedVersion } from "../schema/fact-models.mjs";
+import { defineFactModels, factWireTypes, syncScopes } from "../schema/fact-models.mjs";
 import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
@@ -167,7 +167,7 @@ const researchConstants = Object.fromEntries(
 );
 
 const taxonomy = await readCheckedTaxonomy(fileURLToPath(new URL("src/", root)));
-// The schema identity hashes these four, and every recorded run pins that identity. They leave the schema at its next
+// The schema identity hashes these four, and every shard release pins that identity. They leave the schema at its next
 // declared shape change; readers take the full taxonomy from the generated enums.
 
 const tileOccupierConstants = Object.fromEntries(
@@ -222,11 +222,11 @@ const schema = {
       ),
     },
     {
-      name: "ExecutionRecorded",
+      name: "GameplayRejected",
       scope: "deployment",
-      version: executionRecordedVersion,
+      version: 1,
       event: productionAbi.find(
-        (item) => item.type === "event" && item.name === "eternum_randomness_protocol::recording::ExecutionRecorded",
+        (item) => item.type === "event" && item.name === "world_native::commands::GameplayRejected",
       ),
     },
     {

@@ -2,24 +2,21 @@
 #[starknet::contract]
 pub mod GamesTest {
     use starknet::ContractAddress;
+    use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
     use crate::games::Authentication;
     use crate::games_entry::GamesEntry;
     use crate::logic::release::ReleaseState;
-    use crate::recording::RecordedState;
     component!(path: GamesEntry, storage: entry, event: EntryEvent);
-    component!(path: RecordedState, storage: recording, event: RecordingEvent);
     component!(path: ReleaseState, storage: release, event: ReleaseEvent);
     impl EntryInternal = GamesEntry::InternalImpl<ContractState>;
     #[abi(embed_v0)]
     impl Releases = ReleaseState::ReleasesImpl<ContractState>;
     #[abi(embed_v0)]
-    impl Season = GamesEntry::SeasonImpl<ContractState>;
+    impl AuthenticationViews = GamesEntry::AuthenticationImpl<ContractState>;
     #[abi(embed_v0)]
-    impl Execute = GamesEntry::ExecuteImpl<ContractState>;
+    impl Roles = GamesEntry::RolesImpl<ContractState>;
     #[abi(embed_v0)]
-    impl ExecutionFailure = GamesEntry::ExecutionFailureImpl<ContractState>;
-    #[abi(embed_v0)]
-    impl AdmissionViews = GamesEntry::AdmissionViewsImpl<ContractState>;
+    impl Play = GamesEntry::PlayImpl<ContractState>;
     #[abi(embed_v0)]
     impl Registrar = GamesEntry::RegistrarImpl<ContractState>;
     #[storage]
@@ -28,27 +25,47 @@ pub mod GamesTest {
         #[substorage(v0)]
         entry: GamesEntry::Storage,
         #[substorage(v0)]
-        recording: RecordedState::Storage,
-        #[substorage(v0)]
         release: ReleaseState::Storage,
+        last_applied: bool,
     }
     #[event]
     #[derive(Drop, starknet::Event)]
     enum Event {
         #[flat]
         EntryEvent: GamesEntry::Event,
-        RecordingEvent: RecordedState::Event,
         ReleaseEvent: ReleaseState::Event,
     }
     #[constructor]
     fn constructor(
         ref self: ContractState,
-        authority: ContractAddress,
+        owner: ContractAddress,
+        launcher: ContractAddress,
         authentication: Authentication,
         release_id: u32,
         release: crate::logic::release::Release,
     ) {
-        self.entry.initializer(authority, authentication, release_id, release);
+        self.entry.initializer(owner, launcher, authentication, release_id, release);
+    }
+    #[abi(embed_v0)]
+    impl RootFixture of crate::tests::play_fixture::IPlayFixture<ContractState> {
+        fn play_with_root(
+            ref self: ContractState,
+            game_id: u32,
+            release_id: u32,
+            preset_commitment: felt252,
+            command: Span<felt252>,
+            root: u256,
+        ) {
+            let actor = self.entry.validate_play(game_id, release_id, preset_commitment, command);
+            let context = crate::commands::ActionContext {
+                raw_root: root, timestamp: starknet::get_block_timestamp(),
+            };
+            let applied = self.entry.apply_gameplay(game_id, actor, command, context);
+            self.last_applied.write(applied);
+        }
+        fn last_applied(self: @ContractState) -> bool {
+            self.last_applied.read()
+        }
     }
     use crate::tests::games_fixture::GamesFixture;
     #[abi(embed_v0)]

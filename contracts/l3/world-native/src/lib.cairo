@@ -38,7 +38,6 @@ pub mod progression;
 pub mod raid;
 pub mod random;
 pub mod realms;
-pub mod recording;
 pub mod registrar;
 pub mod relics;
 pub mod research;

@@ -9,28 +9,6 @@ permissions:
 # GitHub compiles no world contracts: their build, checks and test suite run once per pull request, on the machine
 # that lands it, as contracts/l3/check-native.sh. What stays here is quick and needs no world build.
 jobs:
-  randomness-protocol:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v4
-      - uses: software-mansion/setup-scarb@v1
-        with:
-          tool-versions: contracts/l3/world-native/.tool-versions
-          scarb-lock: contracts/l3/randomness-protocol/Scarb.lock
-      - uses: foundry-rs/setup-snfoundry@v3
-        with:
-          tool-versions: contracts/l3/world-native/.tool-versions
-      - uses: software-mansion/setup-universal-sierra-compiler@v1
-        with:
-          tool-versions: contracts/l3/world-native/.tool-versions
-      - name: Build and test recorded execution protocol
-        working-directory: contracts/l3/randomness-protocol
-        run: |
-          scarb fmt --check
-          scarb build
-          /usr/bin/time -v scarb test
-
   gateway:
     runs-on: ubuntu-latest
     timeout-minutes: 20

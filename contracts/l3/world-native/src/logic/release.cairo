@@ -19,6 +19,10 @@ pub fn assert_authority() {
     assert!(starknet::get_caller_address() == crate::state::read().authority.read(), "only domain authority");
 }
 
+pub fn assert_launcher() {
+    assert!(starknet::get_caller_address() == crate::state::read().launcher.read(), "only launcher");
+}
+
 #[starknet::component]
 pub mod ReleaseState {
     use core::num::traits::Zero;
@@ -60,7 +64,7 @@ pub mod ReleaseState {
 
         fn apply_release(ref self: ComponentState<TContractState>, game_id: u32, release_id: u32) {
             let game = crate::logic::game::game(game_id);
-            assert!(starknet::get_caller_address() == game.creator, "only game creator");
+            super::assert_launcher();
             let target = self.release(release_id);
             let previous_release = self.game_release(game_id);
             if release_id == previous_release {

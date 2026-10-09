@@ -1,4 +1,4 @@
-// Storage observations replace the six fixture-only contract ABIs. Gameplay assertions use recorded commands.
+// Storage observations replace the six fixture-only contract ABIs. Gameplay assertions use direct commands.
 use snforge_std::interact_with_state;
 use starknet::ContractAddress;
 use starknet::storage::{StorageMapReadAccess, StoragePathEntry, StoragePointerReadAccess};

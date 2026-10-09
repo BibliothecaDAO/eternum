@@ -6,7 +6,6 @@ use crate::blitz_results::{
 };
 use crate::commands::{Command, ExecutionContext};
 use crate::game::{IGameDispatcher, IGameDispatcherTrait};
-use crate::games::{IGamesAuthenticationDispatcher, IGamesAuthenticationDispatcherTrait};
 use crate::registrar::RosterPlayer;
 use super::resource_commands::{execute, set_fixture, setup_with_rules};
 
@@ -25,10 +24,10 @@ fn games(d: super::Deployment) -> IGameDispatcher {
 fn setup(scores: Span<u128>) -> super::Deployment {
     let (d, _, _) = setup_with_rules(
         crate::rules::SliceRules {
-            mode_rules: super::recorded::BLITZ_RULES,
+            mode_rules: super::play_fixture::BLITZ_RULES,
             entry_rule: crate::rules::ENTRY_ROSTER,
-            command_mask: super::recorded::BLITZ_COMMAND_MASK,
-            ..super::recorded::rules(),
+            command_mask: super::play_fixture::BLITZ_COMMAND_MASK,
+            ..super::play_fixture::rules(),
         },
     );
     set_fixture(d.games, selector!("registrar"), selector!("roster_sizes"), array![3].span(), scores.len());
@@ -58,13 +57,7 @@ fn setup(scores: Span<u128>) -> super::Deployment {
     d
 }
 fn submit(d: super::Deployment, start: u8, players: Span<PlayerResult>) -> bool {
-    let season = IGamesAuthenticationDispatcher { contract_address: d.games };
-    let nonce = season.next_nonce(3, d.actor);
-    let order = super::recorded::head(d.games, 3).order;
-    let passed = execute(d, Command::RecordBlitzResults(RecordBlitzResults { start, players }), 500);
-    assert_eq!(season.next_nonce(3, d.actor), nonce + 1);
-    assert_eq!(super::recorded::head(d.games, 3).order, order + 1);
-    passed
+    execute(d, Command::RecordBlitzResults(RecordBlitzResults { start, players }), 500)
 }
 
 #[test]
@@ -121,7 +114,7 @@ fn omitted_players_never_finalize_and_batches_cannot_skip_or_overlap_the_cursor(
 }
 
 #[test]
-fn the_full_roster_stays_bounded_to_eight_results_per_ticket() {
+fn the_full_roster_stays_bounded_to_eight_results_per_call() {
     let mut scores = array![];
     for _ in 0_u32..24 {
         scores.append(0);
@@ -228,14 +221,13 @@ fn final_history_is_emitted_once_and_retry_does_not_rewrite_the_result() {
     }
 }
 
-
 #[test]
 fn result_batches_have_one_canonical_boundary_and_commitment_for_any_caller() {
     let first = setup(array![600, 600, 400, 0].span());
     let second = setup(array![600, 600, 400, 0].span());
-    let creator = super::bind_authority(second);
-    assert!(first.actor != games(first).game(3).creator);
-    assert_eq!(creator.actor, games(second).game(3).creator);
+    let owner = super::bind_authority(second);
+    assert!(first.actor != super::authority());
+    assert_eq!(owner.actor, super::authority());
     let ordered = array![result(0, 600, 1), result(1, 600, 1), result(2, 400, 3), result(3, 0, 4)].span();
     assert!(submit(first, 0, ordered.slice(0, 1)));
     let partial = view(first).blitz_result(3);
@@ -245,8 +237,8 @@ fn result_batches_have_one_canonical_boundary_and_commitment_for_any_caller() {
     assert!(!submit(first, 0, ordered.slice(0, 2)));
     assert_eq!(view(first).blitz_result(3), partial);
     assert!(submit(first, 1, ordered.slice(1, 3)));
-    assert!(submit(creator, 0, ordered.slice(0, 3)));
-    assert!(submit(creator, 3, ordered.slice(3, 1)));
+    assert!(submit(owner, 0, ordered.slice(0, 3)));
+    assert!(submit(owner, 3, ordered.slice(3, 1)));
     assert_eq!(view(first).blitz_result(3), view(second).blitz_result(3));
     assert!(view(first).blitz_result(3).complete);
 }

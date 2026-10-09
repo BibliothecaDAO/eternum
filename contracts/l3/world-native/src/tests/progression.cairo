@@ -116,7 +116,6 @@ fn execute_buy(d: super::Deployment, key: crate::troops::ExplorerKey, attribute:
         key.game_id,
         crate::commands::Command::BuyTier(BuyTier { explorer_id: key.explorer_id, attribute, kind: None }),
         360,
-        360,
     )
 }
 fn bar(d: super::Deployment, key: crate::troops::ExplorerKey, game_id: u32) -> u64 {
@@ -262,7 +261,6 @@ fn logistics_tiers_set_the_maximum_stamina_by_the_ruled_table() {
     }
 }
 
-
 #[test]
 fn added_stamina_stops_at_the_armys_own_maximum() {
     let (_, frontier) = super::preset_projection::current_definition("frontier");
@@ -337,7 +335,7 @@ fn homecoming_returns_each_expired_armys_own_share_of_its_survivors() {
     // The next day's first deploy removes yesterday's armies: 18% of 10,000 and 9% of 1,000 come home.
     assert!(
         super::resource_commands::execute_in_game(
-            d, game_id, super::registrar::muster_command(category, 0), tomorrow, tomorrow,
+            d, game_id, super::registrar::muster_command(category, 0), tomorrow,
         ),
     );
     let troops = super::state::GameState { contract_address: d.games };
@@ -361,7 +359,7 @@ fn deploy(d: super::Deployment, game_id: u32, category: u8, direction: u8) -> cr
             structure_id: 1, category, tier: 0, amount: 3 * crate::rules::RESOURCE_PRECISION, direction,
         },
     );
-    assert!(super::resource_commands::execute_in_game(d, game_id, command, 351, 351));
+    assert!(super::resource_commands::execute_in_game(d, game_id, command, 351));
     let armies = crate::tests::state::StructureObservationTrait::home_armies(
         crate::structures::IStructureOperationsDispatcher { contract_address: d.games }, home,
     );

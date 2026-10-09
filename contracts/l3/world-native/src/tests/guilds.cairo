@@ -1,15 +1,11 @@
-use eternum_randomness_protocol::entrypoint::{
-    IRecordedExecutionViewsDispatcher, IRecordedExecutionViewsDispatcherTrait,
-};
 use snforge_std::{start_cheat_block_timestamp_global, start_cheat_caller_address, stop_cheat_caller_address};
 use starknet::ContractAddress;
 use crate::commands::Command;
-use crate::games::{IGamesAuthenticationDispatcher, IGamesAuthenticationDispatcherTrait};
 use crate::guilds::{CreateGuild, IGuildsDispatcher, IGuildsDispatcherTrait, JoinGuild, SetWhitelist, WhitelistKey};
 use crate::resources::ResourceKey;
-use super::resource_commands::{execute, execute_recorded_at, setup_with_rules};
+use super::resource_commands::{execute, setup_with_rules};
 fn setup() -> (super::Deployment, ResourceKey, ResourceKey, ContractAddress) {
-    let (d, home, second) = setup_with_rules(super::recorded::rules());
+    let (d, home, second) = setup_with_rules(super::play_fixture::rules());
     let (friend, _) = super::deploy_player(3, super::GUARDIAN);
     assert!(
         execute(
@@ -38,17 +34,10 @@ fn whitelist(home: ResourceKey, player: ContractAddress, allowed: bool) -> Comma
     Command::SetGuildWhitelist(SetWhitelist { owned_structure_id: home.entity_id, player, allowed })
 }
 fn act(d: super::Deployment, actor: ContractAddress, command: Command) -> bool {
-    act_at(d, actor, command, 40, 40)
+    act_at(d, actor, command, 40)
 }
-fn act_at(d: super::Deployment, actor: ContractAddress, command: Command, accepted: u64, executed: u64) -> bool {
-    let season = IGamesAuthenticationDispatcher { contract_address: d.games };
-    start_cheat_block_timestamp_global(accepted);
-    let admission = IRecordedExecutionViewsDispatcher { contract_address: d.games }.get_admission(3, actor.into());
-    let order = super::recorded::head(d.games, 3).order;
-    let ok = execute_recorded_at(super::Deployment { actor, ..d }, command, accepted, executed);
-    assert_eq!(season.next_nonce(3, actor), admission.nonce + 1);
-    assert_eq!(super::recorded::head(d.games, 3).order, order + 1);
-    ok
+fn act_at(d: super::Deployment, actor: ContractAddress, command: Command, timestamp: u64) -> bool {
+    execute(super::Deployment { actor, ..d }, command, timestamp)
 }
 #[test]
 fn public_membership_is_unique_and_last_departure_deletes_the_guild() {
@@ -126,17 +115,17 @@ fn invalid_names_ownership_and_missing_guilds_reject_without_moving_membership()
     assert_eq!(member(d, friend), d.actor);
 }
 #[test]
-fn accepted_guild_actions_survive_outages_but_actions_accepted_after_end_reject() {
-    let (early, early_home, _) = setup_with_rules(super::recorded::rules());
-    assert!(!act_at(early, early.actor, create(early_home, true), 19, 19));
+fn guild_actions_require_the_current_block_to_be_in_the_game_window() {
+    let (early, early_home, _) = setup_with_rules(super::play_fixture::rules());
+    assert!(!act_at(early, early.actor, create(early_home, true), 19));
     let (d, home, _, _) = setup();
-    assert!(act_at(d, d.actor, create(home, true), 40, 5000));
+    assert!(act_at(d, d.actor, create(home, true), 40));
     assert!(view(d).guild(3, d.actor).is_some());
-    assert!(act_at(d, d.actor, Command::LeaveGuild, 199, 5000));
+    assert!(act_at(d, d.actor, Command::LeaveGuild, 199));
     assert!(view(d).guild(3, d.actor).is_none());
     let (late, home, _, _) = setup();
-    assert!(act_at(late, late.actor, create(home, true), 40, 5000));
-    assert!(!act_at(late, late.actor, Command::LeaveGuild, 200, 5000));
+    assert!(act_at(late, late.actor, create(home, true), 40));
+    assert!(!act_at(late, late.actor, Command::LeaveGuild, 200));
     assert_eq!(member(late, late.actor), late.actor);
 }
 #[test]

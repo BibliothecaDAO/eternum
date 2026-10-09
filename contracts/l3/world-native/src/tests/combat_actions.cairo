@@ -1,4 +1,3 @@
-use eternum_randomness_protocol::entrypoint::IRecordedExecutionViewsDispatcher;
 use snforge_std::{EventSpyTrait, EventsFilterTrait, spy_events, start_cheat_caller_address, stop_cheat_caller_address};
 use crate::combat::TroopsTrait;
 use crate::combat_actions::{AttackExplorer, GuardAttack, Raid};
@@ -14,8 +13,7 @@ use crate::tests::state::{
     TroopObservationTrait,
 };
 use crate::troops::{Coord, ExplorerKey, ExplorerTroops, Stamina, Troops};
-use super::recorded_receipts::RecordedReceiptsTrait;
-use super::resource_commands::{assert_terminal_rejection, execute, execute_recorded_at, grant, set_fixture};
+use super::resource_commands::{assert_terminal_rejection, execute, grant, set_fixture};
 
 fn setup(blitz: bool) -> (super::Deployment, ResourceKey, ResourceKey, u32, u32) {
     setup_with_immunity(blitz, 0)
@@ -28,9 +26,9 @@ fn setup_with_mode(
 ) -> (super::Deployment, ResourceKey, ResourceKey, u32, u32) {
     let mode_rules = extra_mode_rules
         + if blitz {
-            super::recorded::BLITZ_RULES
+            super::play_fixture::BLITZ_RULES
         } else {
-            super::recorded::ETERNUM_RULES
+            super::play_fixture::ETERNUM_RULES
         };
     setup_with_rule_mask(blitz, immunity, mode_rules)
 }
@@ -42,13 +40,13 @@ fn setup_with_rule_mask(
 fn setup_with_cooldown(
     blitz: bool, immunity: u8, mode_rules: u32, cooldown_seconds: u32, counts: (u128, u128),
 ) -> (super::Deployment, ResourceKey, ResourceKey, u32, u32) {
-    let mut rules = super::recorded::rules();
+    let mut rules = super::play_fixture::rules();
     rules.mode_rules = mode_rules;
     rules
         .command_mask = if blitz {
-            super::recorded::BLITZ_COMMAND_MASK
+            super::play_fixture::BLITZ_COMMAND_MASK
         } else {
-            super::recorded::ETERNUM_COMMAND_MASK
+            super::play_fixture::ETERNUM_COMMAND_MASK
         };
     rules.entry_rule = if blitz {
         crate::rules::ENTRY_ROSTER
@@ -201,7 +199,7 @@ fn a_surviving_explorer_loots_the_defeated_army_before_its_resources_are_deleted
 }
 
 #[test]
-fn failed_loot_and_duplicate_resources_roll_back_combat_but_consume_the_ticket() {
+fn failed_loot_and_duplicate_resources_roll_back_combat() {
     let (d, _, _, attacker, defender) = setup(false);
     grant(d, ResourceKey { game_id: 3, entity_id: defender }, 2, 90);
     let before_attacker = troop(d, attacker);
@@ -291,15 +289,10 @@ fn raid_mode_owner_range_and_resource_failures_preserve_the_armies() {
     assert_eq!(troop(d, attacker).unwrap().troops, before.unwrap().troops);
     let (blitz, _, target, attacker, _) = setup(true);
     assert_terminal_rejection(blitz, raid(attacker, target, array![].span()), 80);
-    let _ = IGamesAuthenticationDispatcher { contract_address: blitz.games };
-    let result = IRecordedExecutionViewsDispatcher { contract_address: blitz.games }
-        .recorded_outcome(3, super::recorded::head(blitz.games, 3).order)
-        .unwrap();
-    assert_eq!(result.status_class, 'COMMAND_DISABLED');
 }
 
 #[test]
-fn guarded_raids_keep_the_same_armies_and_outcome_after_an_outage() {
+fn guarded_raids_keep_the_same_armies_and_outcome_at_the_same_block_time() {
     let (first, _, target, attacker, _) = setup(false);
     set_guard(first, target, 3, 20);
     set_guard(first, target, 0, 10);
@@ -310,13 +303,13 @@ fn guarded_raids_keep_the_same_armies_and_outcome_after_an_outage() {
     let (late, _, target, attacker, _) = setup(false);
     set_guard(late, target, 3, 20);
     set_guard(late, target, 0, 10);
-    assert!(execute_recorded_at(late, raid(attacker, target, array![].span()), 80, 1000));
+    assert!(execute(late, raid(attacker, target, array![].span()), 80));
     assert_eq!(troop(late, attacker).unwrap().troops, after.troops);
     assert_eq!((guard(late, target, 3), guard(late, target, 0)), guards);
 }
 
 #[test]
-fn guard_attacks_use_the_guard_owner_range_and_recorded_cooldown() {
+fn guard_attacks_use_the_guard_owner_range_and_block_time_cooldown() {
     let (d, home, _, _, defender) = setup(false);
     set_guard(d, home, 0, 100);
     let command = Command::GuardAttack(
@@ -326,7 +319,7 @@ fn guard_attacks_use_the_guard_owner_range_and_recorded_cooldown() {
     );
     assert_terminal_rejection(d, command, 80);
     move_fixture(d, defender, 2000001);
-    assert!(execute_recorded_at(d, command, 80, 1000));
+    assert!(execute(d, command, 80));
     assert!(troop(d, defender).is_none());
     assert!(guard(d, home, 0).troops.count != 0);
 }
@@ -409,7 +402,7 @@ fn raiding_requires_at_least_one_whole_troop_per_occupied_guard() {
 }
 
 #[test]
-fn blitz_ethereal_battle_uses_both_recorded_d20_rolls_in_damage_and_history() {
+fn blitz_ethereal_battle_uses_both_root_d20_rolls_in_damage_and_history() {
     let (d, _, _, attacker, defender) = setup(true);
     move_to(d, attacker, Coord { alt: true, x: 2000000, y: 2000000 });
     move_to(d, defender, Coord { alt: true, x: 2000015, y: 2000000 });
@@ -447,13 +440,12 @@ fn blitz_ethereal_battle_uses_both_recorded_d20_rolls_in_damage_and_history() {
         );
     let mut spy = spy_events();
     assert!(
-        execute_recorded_at(
+        execute(
             d,
             Command::Battle(
                 AttackExplorer { attacker_id: attacker, defender_id: defender, steal_resources: array![].span() },
             ),
             80,
-            1000,
         ),
     );
     assert_eq!(troop(d, attacker).unwrap().troops, expected_attacker);
@@ -515,7 +507,7 @@ fn frontier_disabled_dice_ignore_random_roots_on_surface_and_ethereal() {
 }
 
 #[test]
-fn a_dice_game_rolls_both_recorded_d20s_on_the_surface_too() {
+fn a_dice_game_rolls_both_root_d20s_on_the_surface_too() {
     let (d, _, _, attacker, defender) = setup_with_mode(false, 0, crate::rules::COMBAT_DICE);
     // Away from the realms the fixture settles around (2000000, 2000000), so both armies stand on open surface.
     let origin = Coord { alt: false, x: 2000500, y: 2000500 };
@@ -565,13 +557,12 @@ fn a_dice_game_rolls_both_recorded_d20s_on_the_surface_too() {
         );
     let mut spy = spy_events();
     assert!(
-        execute_recorded_at(
+        execute(
             d,
             Command::Battle(
                 AttackExplorer { attacker_id: attacker, defender_id: defender, steal_resources: array![].span() },
             ),
             80,
-            1000,
         ),
     );
     assert_eq!(troop(d, attacker).unwrap().troops, expected_attacker);
@@ -622,7 +613,7 @@ fn cross_layer_battles_require_matching_coordinates_and_an_adjacent_spire() {
 }
 
 #[test]
-fn season_immunity_rejects_combat_until_the_recorded_boundary() {
+fn season_immunity_rejects_combat_until_the_block_time_boundary() {
     let (d, _, _, attacker, defender) = setup_with_immunity(false, 20);
     super::state::assert_inline_armies_have_no_progress(d.games, 3, array![attacker, defender].span());
     let before_attacker = troop(d, attacker);
@@ -633,7 +624,7 @@ fn season_immunity_rejects_combat_until_the_recorded_boundary() {
     assert_terminal_rejection(d, command, 119);
     assert_eq!(troop(d, attacker), before_attacker);
     assert_eq!(troop(d, defender), before_defender);
-    assert!(execute_recorded_at(d, command, 120, 1000));
+    assert!(execute(d, command, 120));
     assert!(troop(d, defender).is_none());
     super::state::assert_inline_armies_have_no_progress(d.games, 3, array![attacker, defender].span());
 }
@@ -760,7 +751,7 @@ fn capturing_a_players_realm_records_both_owners_in_one_capture_story() {
     let before = IStructureOperationsDispatcher { contract_address: d.games }.structure(target).unwrap();
     assert_eq!(before.base.category, 1);
     assert_eq!(before.owner, 999.try_into().unwrap());
-    let order = super::recorded::head(d.games, 3).order + 1;
+    let order = 0;
     let mut spy = spy_events();
     assert!(
         execute(
@@ -846,7 +837,7 @@ fn guard_targeting_preserves_highest_occupied_functional_slot_first() {
 
 #[test]
 fn unowned_target_rule_rejects_owned_sites_and_allows_capture_of_an_unowned_site() {
-    let mut rules = super::recorded::rules();
+    let mut rules = super::play_fixture::rules();
     rules.mode_rules = crate::rules::UNOWNED_TARGETS;
     rules.battle_config.regular_immunity_ticks = 0;
     rules.troop_stamina_config.stamina_initial = 120;
@@ -922,10 +913,7 @@ fn preset_cooldown_keeps_blitz_at_sixty_seconds_and_allows_frontier_back_to_back
             AttackExplorer { attacker_id: attacker, defender_id: defender, steal_resources: array![].span() },
         );
         let success = execute(d, attack, 80);
-        let outcome = IRecordedExecutionViewsDispatcher { contract_address: d.games }
-            .recorded_outcome(3, super::recorded::head(d.games, 3).order)
-            .unwrap();
-        assert!(success, "first attack: {}", outcome.reason);
+        assert!(success, "first attack failed");
         assert!(troop(d, attacker).is_some() && troop(d, defender).is_some());
         if blitz {
             assert_eq!(troop(d, attacker).unwrap().troops.battle_cooldown_end, 140);
@@ -933,10 +921,7 @@ fn preset_cooldown_keeps_blitz_at_sixty_seconds_and_allows_frontier_back_to_back
         } else {
             assert_eq!(troop(d, attacker).unwrap().troops.battle_cooldown_end, 80);
             let success = execute(d, attack, 80);
-            let outcome = IRecordedExecutionViewsDispatcher { contract_address: d.games }
-                .recorded_outcome(3, super::recorded::head(d.games, 3).order)
-                .unwrap();
-            assert!(success, "second attack: {}", outcome.reason);
+                assert!(success, "second attack failed");
         }
     }
 }

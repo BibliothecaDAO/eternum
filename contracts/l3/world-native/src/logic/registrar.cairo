@@ -12,7 +12,6 @@ pub fn blitz_roster(game_id: u32) -> Span<RosterPlayer> {
 }
 #[starknet::component]
 pub mod RegistrarState {
-    use starknet::get_caller_address;
     use starknet::storage::{
         StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess,
         StoragePointerWriteAccess,
@@ -77,7 +76,7 @@ pub mod RegistrarState {
             crate::logic::registrar::blitz_roster(game_id)
         }
         fn create_game(ref self: ComponentState<TContractState>, params: CreateGameParams) -> u32 {
-            get_dep_component!(@self, Life).assert_authority();
+            crate::logic::release::assert_launcher();
             let classes = get_dep_component!(@self, Life).current_classes();
             let preset_commitment = self.data.registrar.presets.read(params.preset_id);
             assert!(preset_commitment != 0, "preset is not registered");
@@ -106,7 +105,7 @@ pub mod RegistrarState {
             let release_id = self.data.current_release.read();
             self.data.game_releases.write(game_id, release_id);
             self.register_roster(game_id, params.roster);
-            let game = build_game(params, get_caller_address());
+            let game = build_game(params);
             let overrides = game_overrides(game_id, params);
             crate::logic::game::create(game_id, game, overrides);
             crate::logic::game::emit_release(game_id, release_id, crate::logic::game::preset_commitment(game));

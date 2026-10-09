@@ -49,9 +49,9 @@ fn the_surface_pool_selects_only_its_configured_kinds_and_keeps_game_configurati
     let rift = array![MineWeight { kind: 1, weight: 1 }].span();
     let game = IGameDispatcher { contract_address: deployment.games }.game(1);
     for (game_id, pool) in array![(3_u32, surface()), (4, rift)] {
-        let mut preset = super::recorded::fixture_preset(super::recorded::rules());
+        let mut preset = super::play_fixture::fixture_preset(super::play_fixture::rules());
         preset.resources.surface_mines = pool;
-        super::recorded::seed_game_with_preset(deployment.games, game_id, game, preset);
+        super::play_fixture::seed_game_with_preset(deployment.games, game_id, game, preset);
     }
     let mut seen_rift = false;
     let mut seen_fragment = false;
@@ -117,7 +117,7 @@ fn mine_configuration_is_authorized_immutable_and_rejects_unknown_or_duplicate_w
     let deployment = super::setup_with_domains(true, "StructuresLogic", "TroopsLogic");
     let rules = IMineRulesSafeDispatcher { contract_address: deployment.games };
     let registry = crate::registrar::IRegistrarSafeDispatcher { contract_address: deployment.games };
-    let mut preset = super::recorded::fixture_preset(super::recorded::rules());
+    let mut preset = super::play_fixture::fixture_preset(super::play_fixture::rules());
     preset.resources.surface_mines = surface();
     assert!(registry.register_preset(20000, preset).is_err());
     start_cheat_caller_address(deployment.games, super::authority());
@@ -142,7 +142,7 @@ fn mine_configuration_is_authorized_immutable_and_rejects_unknown_or_duplicate_w
 fn invalid_rate_cap_ladder_and_building_resource_pairs_cannot_initialize_a_game() {
     let deployment = super::setup_with_domains(true, "StructuresLogic", "TroopsLogic");
     let registry = crate::registrar::IRegistrarSafeDispatcher { contract_address: deployment.games };
-    let mut preset = super::recorded::fixture_preset(super::recorded::rules());
+    let mut preset = super::play_fixture::fixture_preset(super::play_fixture::rules());
     let valid = (*kinds().at(0)).config;
     start_cheat_caller_address(deployment.games, super::authority());
     for config in array![
@@ -163,7 +163,7 @@ fn invalid_rate_cap_ladder_and_building_resource_pairs_cannot_initialize_a_game(
 
 #[test]
 fn discovered_surface_mines_use_kind_production_without_revealing_neighbors() {
-    let mut preset = super::resource_commands::fixture_preset(super::recorded::rules());
+    let mut preset = super::resource_commands::fixture_preset(super::play_fixture::rules());
     preset.resources.surface_mines = surface();
     let (deployment, _, _) = super::resource_commands::setup_with_preset(preset);
     let mine_rules = IMineRulesDispatcher { contract_address: deployment.games };
@@ -224,7 +224,7 @@ fn discovered_surface_mines_use_kind_production_without_revealing_neighbors() {
         assert_eq!(production.output_amount_left, cap);
         assert_eq!(production.building_count, 1);
         // Discovered at time 30, it has settled through the tick that holds it.
-        let settled: u32 = (30 / super::recorded::rules().tick_config.armies_tick_in_seconds).try_into().unwrap();
+        let settled: u32 = (30 / super::play_fixture::rules().tick_config.armies_tick_in_seconds).try_into().unwrap();
         assert_eq!(production.last_settled_tick, settled);
         assert!(map.tile(crate::geometry::tile_key(3, coord)).is_some());
         for direction in 0_u8..6 {
@@ -244,13 +244,13 @@ fn discovered_surface_mines_use_kind_production_without_revealing_neighbors() {
 fn ethereal_discovery_never_draws_from_the_ordinary_mine_pool() {
     let d = super::setup(true);
     let game = IGameDispatcher { contract_address: d.games };
-    let mut rules = super::recorded::rules();
+    let mut rules = super::play_fixture::rules();
     rules.bitcoin_mine_config.enabled = false;
     rules.map_config.shards_mines_win_probability = 1;
     rules.map_config.shards_mines_fail_probability = 0;
-    let mut preset = super::recorded::fixture_preset(rules);
+    let mut preset = super::play_fixture::fixture_preset(rules);
     preset.resources.surface_mines = surface();
-    super::recorded::seed_game_with_preset(d.games, 3, game.game(1), preset);
+    super::play_fixture::seed_game_with_preset(d.games, 3, game.game(1), preset);
     let map = IMapLogicDispatcher { contract_address: d.games };
     for root in 0_u64..8 {
         assert_eq!(

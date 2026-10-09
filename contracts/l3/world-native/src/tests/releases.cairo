@@ -1,12 +1,5 @@
-use eternum_randomness_protocol::entrypoint::{
-    ExecutionContext, IRecordedExecutionDispatcher, IRecordedExecutionDispatcherTrait,
-    IRecordedExecutionViewsDispatcher, IRecordedExecutionViewsDispatcherTrait,
-};
-use eternum_randomness_protocol::{Envelope, action_identity, encode_envelope};
-use snforge_std::signature::SignerTrait;
-use snforge_std::signature::stark_curve::StarkCurveSignerImpl;
 use snforge_std::{EventSpyTrait, EventsFilterTrait, interact_with_state, spy_events, start_cheat_caller_address};
-use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
+use starknet::storage::{StorageMapReadAccess};
 use crate::game::{IGameDispatcher, IGameDispatcherTrait};
 use crate::games::{IGamesAuthenticationDispatcher, IGamesAuthenticationDispatcherTrait};
 use crate::logic::release::{
@@ -18,7 +11,6 @@ use crate::tests::state::{
     GameState, MapObservationTrait, ResourceObservationTrait, StructureObservationTrait, TroopObservationTrait,
 };
 use crate::troops::ExplorerKey;
-use super::recorded_receipts::RecordedReceiptsTrait;
 use super::{authority, declare_logic};
 
 #[starknet::contract]
@@ -66,7 +58,7 @@ fn fresh_shard_uses_the_published_release_without_running_its_upgrade_migration(
         migration: declare_logic("FailingReleaseMigrationFixture"),
         ..IReleasesDispatcher { contract_address: d.games }.release(1),
     };
-    let mut args = array![authority().into()];
+    let mut args = array![authority().into(), authority().into()];
     authentication.serialize(ref args);
     args.append(7);
     release.serialize(ref args);
@@ -136,7 +128,7 @@ fn release_registration_is_authorized_immutable_and_pins_only_new_games() {
 
 #[test]
 #[feature("safe_dispatcher")]
-fn creator_hotfix_migrates_a_populated_frontier_day_once_and_play_continues() {
+fn launcher_hotfix_migrates_a_populated_frontier_day_once_and_play_continues() {
     let d = super::registrar::setup();
     let (game_id, preset, category) = super::registrar::expedition_home(d);
     let (first, second) = super::registrar::expedition_armies(d, game_id, category);
@@ -154,7 +146,6 @@ fn creator_hotfix_migrates_a_populated_frontier_day_once_and_play_continues() {
             crate::commands::Command::SettleSeason(
                 crate::realms::SettleSeason { name: 'second', selected_realm: Some(2) },
             ),
-            351,
             351,
         ),
     );
@@ -181,7 +172,6 @@ fn creator_hotfix_migrates_a_populated_frontier_day_once_and_play_continues() {
                 },
             ),
             351,
-            351,
         ),
     );
     let third = ExplorerKey {
@@ -192,15 +182,7 @@ fn creator_hotfix_migrates_a_populated_frontier_day_once_and_play_continues() {
     };
     let homes = array![ResourceKey { game_id, entity_id: 1 }, other_home].span();
     let armies = array![first, second, third].span();
-    interact_with_state(
-        d.games,
-        || {
-            let state = crate::state::write();
-            let mut game = state.games.games.read(game_id);
-            game.creator = d.actor;
-            state.games.games.write(game_id, game);
-        },
-    );
+    super::set_launcher(d, d.actor);
     let releases = IReleasesDispatcher { contract_address: d.games };
     let safe = IReleasesSafeDispatcher { contract_address: d.games };
     let games = IGameDispatcher { contract_address: d.games };
@@ -229,7 +211,7 @@ fn creator_hotfix_migrates_a_populated_frontier_day_once_and_play_continues() {
     assert!(safe.apply_release(game_id, 1).is_err());
     assert!(safe.apply_release(game_id, 3).is_err());
     assert!(
-        super::resource_commands::execute_in_game(d, game_id, super::registrar::transfer(first, second, 1), 352, 352),
+        super::resource_commands::execute_in_game(d, game_id, super::registrar::transfer(first, second, 1), 352),
     );
 }
 
@@ -314,48 +296,31 @@ fn stored_release_fact(address: starknet::ContractAddress, game_id: u32) -> (u32
 }
 
 #[test]
-fn hotfix_refuses_an_old_signed_intent_without_gameplay_and_accepts_the_resigned_intent() {
+#[feature("safe_dispatcher")]
+fn hotfix_refuses_old_release_pins_and_accepts_current_pins() {
     let d = super::setup(true);
-    super::execute(d, super::intent(d, 1));
-    let action = super::recorded::FixtureAction {
-        nonce: 1,
-        command: crate::commands::Command::CreateExplorer(
-            crate::commands::CreateExplorer { structure_id: 8, category: 0, tier: 0, amount: 0, direction: 0 },
-        ),
-        ..super::intent(d, 1),
+    super::execute(d, super::action(d, 1));
+    let action = super::play_fixture::TestAction {
+        command: crate::commands::Command::CreateExplorer(crate::commands::CreateExplorer { structure_id: 8, category: 0, tier: 0, amount: 0, direction: 0 }),
+        ..super::action(d, 1),
     };
-    let old_intent = super::recorded::make_intent(d.games, action);
-    let envelope = Envelope {
-        action: action_identity(@old_intent),
-        order: super::recorded::head(d.games, 1).order + 1,
-        timestamp: 100,
-        release_id: old_intent.release_id,
-        preset_commitment: old_intent.preset_commitment,
-        epoch: 0,
-        root: 987654321,
-    };
-    let device = super::keypair(12345);
-    let (r, s) = device.sign(envelope.action).unwrap();
-    let signed = array![device.public_key, r, s].span();
+    let (old_release, commitment) = super::play_fixture::pins(d.games, 1);
     let releases = IReleasesDispatcher { contract_address: d.games };
     start_cheat_caller_address(d.games, authority());
     releases.register_release(2, releases.release(1));
     releases.apply_release(1, 2);
-    let views = IRecordedExecutionViewsDispatcher { contract_address: d.games };
-    let admission = views.get_admission(1, d.actor.into());
-    assert_eq!(admission.release_id, 2);
     let before = gameplay_facts(d.games);
-    start_cheat_caller_address(d.games, super::submitter());
-    IRecordedExecutionDispatcher { contract_address: d.games }
-        .execute(old_intent, ExecutionContext { envelope: encode_envelope(@envelope) }, signed);
-    let refused = views.recorded_outcome(1, envelope.order).unwrap();
-    assert_eq!(refused.status_class, 'STALE_RELEASE');
-    assert!(!refused.nonce_consumed);
-    assert_eq!(views.get_admission(1, d.actor.into()).nonce, admission.nonce);
+    super::play_fixture::caller(d.games, d.actor, 100);
+    let mut spy = spy_events();
+    assert!(super::play_fixture::IPlayFixtureSafeDispatcherTrait::play_with_root(
+        super::play_fixture::IPlayFixtureSafeDispatcher { contract_address: d.games },
+        1, old_release, commitment, super::play_fixture::encode(action.command), 987654321,
+    ).is_err());
     assert_eq!(gameplay_facts(d.games), before);
+    assert_eq!(super::play_fixture::pins(d.games, 1), (2, commitment));
+    assert!(spy.get_events().emitted_by(d.games).events.is_empty());
     super::execute(d, action);
-    assert_eq!(views.recorded_outcome(1, envelope.order + 1).unwrap().status, 1);
-    assert_eq!(views.get_admission(1, d.actor.into()).nonce, admission.nonce + 1);
+    assert!(GameState { contract_address: d.games }.explorer(ExplorerKey { game_id: 1, explorer_id: 8 }).is_some());
 }
 
 fn gameplay_facts(address: starknet::ContractAddress) -> Array<felt252> {

@@ -13,7 +13,6 @@ pub enum GameStatus {
 pub struct GameRegistry {
     pub name: felt252,
     pub preset_id: u32,
-    pub creator: ContractAddress,
     pub settled: bool,
     pub ready: bool,
     pub dev_mode_on: bool,

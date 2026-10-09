@@ -30,9 +30,9 @@ fn center(d: Deployment, game_id: u32) -> Coord {
 }
 fn seed_layout(d: Deployment, game_id: u32, config: SpireLayout) {
     let games = IGameDispatcher { contract_address: d.games };
-    let mut preset = super::recorded::fixture_preset(games.rules(game_id));
+    let mut preset = super::play_fixture::fixture_preset(games.rules(game_id));
     preset.settlement.spires = Some(config);
-    super::recorded::seed_game_with_preset(d.games, game_id, games.game(game_id), preset);
+    super::play_fixture::seed_game_with_preset(d.games, game_id, games.game(game_id), preset);
 }
 fn initialize(d: Deployment, game_id: u32) {
     start_cheat_caller_address(d.games, authority());
@@ -64,7 +64,7 @@ fn lattice_retains_center_then_point_side_order_and_hex_geometry() {
 fn production_initialization_places_the_same_spire_identity_on_both_layers_without_rewards() {
     let d = deployment();
     let games = IGameDispatcher { contract_address: d.games };
-    super::recorded::seed_game(
+    super::play_fixture::seed_game(
         d.games, 3, crate::game::GameRegistry { dev_mode_on: false, ..games.game(1) }, games.rules(1),
     );
     seed_layout(d, 3, layout(7));
@@ -113,7 +113,7 @@ fn initialization_rejects_invalid_layouts_blitz_and_repeats() {
         SpireLayout { max_layer: 1, ..layout(7) },
     ] {
         let games = IGameDispatcher { contract_address: d.games };
-        let mut preset = super::recorded::fixture_preset(games.rules(1));
+        let mut preset = super::play_fixture::fixture_preset(games.rules(1));
         preset.settlement.spires = Some(invalid);
         assert!(
             crate::registrar::IRegistrarSafeDispatcher { contract_address: d.games }
@@ -124,14 +124,14 @@ fn initialization_rejects_invalid_layouts_blitz_and_repeats() {
         assert!(map(d).tile(tile_key(1, center(d, 1))).is_none());
     }
     let games = IGameDispatcher { contract_address: d.games };
-    super::recorded::seed_game(
+    super::play_fixture::seed_game(
         d.games,
         3,
         games.game(1),
         crate::rules::SliceRules {
-            mode_rules: super::recorded::BLITZ_RULES,
+            mode_rules: super::play_fixture::BLITZ_RULES,
             entry_rule: crate::rules::ENTRY_ROSTER,
-            command_mask: super::recorded::BLITZ_COMMAND_MASK,
+            command_mask: super::play_fixture::BLITZ_COMMAND_MASK,
             ..games.rules(1),
         },
     );
@@ -188,11 +188,12 @@ fn eternum_preset_spires_follow_the_pinned_east_southwest_ring_order() {
 
 #[test]
 #[feature("safe_dispatcher")]
-fn internal_spire_initialization_accepts_a_game_with_a_different_creator() {
+fn internal_spire_initialization_accepts_a_game_with_a_different_launcher() {
     let d = deployment();
     seed_layout(d, 1, layout(1));
     let games = IGameDispatcher { contract_address: d.games };
-    let game = crate::game::GameRegistry { creator: d.actor, ..games.game(1) };
+    let game = games.game(1);
+    super::set_launcher(d, d.actor);
     super::resource_commands::set_fixture(d.games, selector!("games"), selector!("games"), array![1].span(), game);
     assert!(d.actor != authority());
     let safe = ISpiresSafeDispatcher { contract_address: d.games };

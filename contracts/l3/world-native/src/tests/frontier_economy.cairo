@@ -1,4 +1,3 @@
-use eternum_randomness_protocol::entrypoint::IRecordedExecutionViewsDispatcher;
 use snforge_std::{EventSpyTrait, EventsFilterTrait, start_cheat_caller_address, stop_cheat_caller_address};
 use crate::buildings::{ChangeBuilding, CreateBuilding};
 use crate::commands::{Command, CreateExplorer};
@@ -13,7 +12,6 @@ use crate::tests::state::{ResourceObservationTrait, StructureObservationTrait};
 use crate::troop_management::{ManageTroops, RecruitExplorer};
 use crate::troops::Coord;
 use crate::upgrades::{UpgradeLimits, UpgradeRecipe};
-use super::recorded_receipts::RecordedReceiptsTrait;
 use super::resource_commands::{assert_terminal_rejection, execute, grant, set_fixture};
 
 const KNIGHT: u8 = 26;
@@ -128,7 +126,7 @@ fn spend(deployment: super::Deployment, home: ResourceKey, resource_type: u8, am
 
 /// The castle's limit on each of wheat, labor and troops: two full deploys of its level's cap.
 fn castle_limit(level: u8) -> u128 {
-    let cap = crate::troops::deployment_cap(super::recorded::rules().troop_limit_config, level);
+    let cap = crate::troops::deployment_cap(super::play_fixture::rules().troop_limit_config, level);
     2 * Into::<u32, u128>::into(cap) * RESOURCE_PRECISION
 }
 
@@ -171,13 +169,6 @@ fn allow_armies(deployment: super::Deployment, home: ResourceKey) {
             metadata: original.metadata,
         },
     );
-}
-
-fn last_rejection(deployment: super::Deployment) -> ByteArray {
-    IRecordedExecutionViewsDispatcher { contract_address: deployment.games }
-        .recorded_outcome(3, super::recorded::head(deployment.games, 3).order)
-        .unwrap()
-        .reason
 }
 
 #[test]
@@ -231,10 +222,12 @@ fn raising_troops_pays_two_wheat_each_from_settled_wheat_and_fails_when_the_real
     assert_eq!(stored(deployment, home, WHEAT), 7 * RESOURCE_PRECISION);
 
     let before = super::resource_commands::resource_facts(deployment, home);
+    let mut rejected = snforge_std::spy_events();
     assert_terminal_rejection(deployment, raise(home, 4, 1), 80);
-    assert_eq!(last_rejection(deployment), "realm cannot pay to raise troops");
+    assert_eq!(super::play_fixture::rejection(ref rejected, deployment.games).reason, "realm cannot pay to raise troops");
+    let mut rejected = snforge_std::spy_events();
     assert_terminal_rejection(deployment, reinforce(army, 4), 80);
-    assert_eq!(last_rejection(deployment), "realm cannot pay to raise troops");
+    assert_eq!(super::play_fixture::rejection(ref rejected, deployment.games).reason, "realm cannot pay to raise troops");
     assert_eq!(super::resource_commands::resource_facts(deployment, home), before);
     assert_eq!(IStructureOperationsDispatcher { contract_address: deployment.games }.home_armies(home).len(), 1);
 
@@ -249,7 +242,7 @@ fn stores_step_on_the_armies_tick_and_never_between() {
     let (deployment, home) = frontier_realm(frontier_preset());
     assert!(execute(deployment, build(home, BARRACKS, EAST), 40));
     // Production pulses on the stamina clock: the armies tick, counted from absolute time.
-    assert_eq!(super::recorded::rules().tick_config.armies_tick_in_seconds, 60);
+    assert_eq!(super::play_fixture::rules().tick_config.armies_tick_in_seconds, 60);
     settle(deployment, home, KNIGHT, 59);
     assert_eq!(stored(deployment, home, KNIGHT), 0);
     settle(deployment, home, KNIGHT, 60);
@@ -391,10 +384,10 @@ fn outside_a_board_troops_are_still_produced_only_from_the_wheat_their_recipe_bu
     let (_, blitz) = super::preset_projection::current_definition("blitz");
     let mut preset = super::resource_commands::fixture_preset(
         crate::rules::SliceRules {
-            mode_rules: super::recorded::BLITZ_RULES,
+            mode_rules: super::play_fixture::BLITZ_RULES,
             entry_rule: crate::rules::ENTRY_ROSTER,
-            command_mask: super::recorded::BLITZ_COMMAND_MASK,
-            ..super::recorded::rules(),
+            command_mask: super::play_fixture::BLITZ_COMMAND_MASK,
+            ..super::play_fixture::rules(),
         },
     );
     preset.structures.buildings = super::building_commands::rules();

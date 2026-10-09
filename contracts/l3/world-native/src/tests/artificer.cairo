@@ -9,22 +9,22 @@ use crate::resources::{IResourceOperationsDispatcher, ResourceKey, ResourceSlot}
 use crate::rules::RESOURCE_PRECISION;
 use crate::structures::{IStructureOperationsDispatcher, StructureRecord};
 use crate::tests::state::{ResourceObservationTrait, StructureObservationTrait};
-use super::resource_commands::{assert_terminal_rejection, execute, execute_recorded_at, grant, set_fixture};
+use super::resource_commands::{assert_terminal_rejection, execute, grant, set_fixture};
 fn view(d: super::Deployment) -> IArtificerDispatcher {
     IArtificerDispatcher { contract_address: d.games }
 }
 fn setup(blitz: bool) -> (super::Deployment, ResourceKey) {
-    let mut rules = super::recorded::rules();
+    let mut rules = super::play_fixture::rules();
     rules.mode_rules = if blitz {
-        super::recorded::BLITZ_RULES
+        super::play_fixture::BLITZ_RULES
     } else {
-        super::recorded::ETERNUM_RULES
+        super::play_fixture::ETERNUM_RULES
     };
     rules
         .command_mask = if blitz {
-            super::recorded::BLITZ_COMMAND_MASK
+            super::play_fixture::BLITZ_COMMAND_MASK
         } else {
-            super::recorded::ETERNUM_COMMAND_MASK
+            super::play_fixture::ETERNUM_COMMAND_MASK
         };
     rules.entry_rule = if blitz {
         crate::rules::ENTRY_ROSTER
@@ -81,14 +81,14 @@ fn villages_craft_with_the_same_cost_and_have_no_connected_realm_requirement() {
     assert_eq!(balance(d, home, RESEARCH), 10 * RESOURCE_PRECISION);
 }
 #[test]
-fn delayed_crafting_uses_recorded_time_and_root_after_the_game_has_ended() {
+fn crafting_uses_block_time_and_the_supplied_root() {
     let (d, home) = setup(true);
-    assert!(execute_recorded_at(d, Command::CraftRelic(home.entity_id), 30, 5000));
+    assert!(execute(d, Command::CraftRelic(home.entity_id), 30));
     assert_eq!(balance(d, home, 40), RESOURCE_PRECISION);
     assert_eq!(balance(d, home, RESEARCH), 10 * RESOURCE_PRECISION);
 }
 #[test]
-fn rejected_crafting_preserves_balances_and_consumes_the_ticket() {
+fn rejected_crafting_preserves_balances() {
     let (d, home) = setup(false);
     let command = Command::CraftRelic(home.entity_id);
     assert_terminal_rejection(d, command, 19);
@@ -110,7 +110,7 @@ fn rejected_crafting_preserves_balances_and_consumes_the_ticket() {
 fn crafting_configuration_is_authorized_immutable_and_game_scoped() {
     let (d, _) = setup(false);
     let registrar = crate::registrar::IRegistrarSafeDispatcher { contract_address: d.games };
-    let mut preset = super::resource_commands::fixture_preset(super::recorded::rules());
+    let mut preset = super::resource_commands::fixture_preset(super::play_fixture::rules());
     preset.economy.research_cost = 5;
     start_cheat_caller_address(d.games, d.actor);
     assert!(registrar.register_preset(20000, preset).is_err());
@@ -118,7 +118,7 @@ fn crafting_configuration_is_authorized_immutable_and_game_scoped() {
     let games = crate::game::IGameDispatcher { contract_address: d.games };
     assert!(registrar.register_preset(games.game(3).preset_id, preset).is_err());
     stop_cheat_caller_address(d.games);
-    super::recorded::seed_game_with_preset(d.games, 4, games.game(3), preset);
+    super::play_fixture::seed_game_with_preset(d.games, 4, games.game(3), preset);
     assert_eq!(view(d).artificer_cost(4), 5);
     assert_eq!(view(d).artificer_cost(3), 10 * RESOURCE_PRECISION);
     assert!(IArtificerSafeDispatcher { contract_address: d.games }.artificer_cost(999).is_err());

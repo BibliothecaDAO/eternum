@@ -13,7 +13,7 @@ use crate::settlement::{
 };
 use crate::tests::StoryResultTestTrait;
 use crate::tests::state::MapObservationTrait;
-use super::{Deployment, authority, context, recorded, setup};
+use super::{Deployment, authority, context, play_fixture, setup};
 
 pub fn grants() -> crate::settlement::RealmGrants {
     let data = read_txt(@FileTrait::new("tests/fixtures/settlement.txt"));
@@ -29,14 +29,14 @@ fn rules() -> SettlementRules {
 
 fn seed_settlement(deployment: Deployment, game_id: u32, rules: SettlementRules) {
     let games = IGameDispatcher { contract_address: deployment.games };
-    let mut preset = recorded::fixture_preset(games.rules(game_id));
+    let mut preset = play_fixture::fixture_preset(games.rules(game_id));
     if rules.mode != SettlementMode::Single {
         preset.rules.entry_rule = crate::rules::ENTRY_ROSTER;
     }
     preset.settlement.mode = rules.mode;
     preset.settlement.spacing = rules.spacing;
     preset.settlement.realms = grants();
-    recorded::seed_game_with_preset(deployment.games, game_id, games.game(game_id), preset);
+    play_fixture::seed_game_with_preset(deployment.games, game_id, games.game(game_id), preset);
     snforge_std::interact_with_state(
         deployment.games,
         || {
@@ -58,7 +58,7 @@ fn seed_settlement(deployment: Deployment, game_id: u32, rules: SettlementRules)
 fn settlement_configuration_is_immutable_and_game_scoped() {
     let deployment = setup(true);
     let registry = crate::registrar::IRegistrarSafeDispatcher { contract_address: deployment.games };
-    let preset = recorded::fixture_preset(recorded::rules());
+    let preset = play_fixture::fixture_preset(play_fixture::rules());
     start_cheat_caller_address(deployment.games, deployment.actor);
     assert!(registry.register_preset(20000, preset).is_err());
     seed_settlement(deployment, 1, rules());
@@ -154,12 +154,12 @@ fn settlement_pool_claims_are_distinct_and_game_scoped() {
 fn reservation_initialization_is_idempotent_and_game_scoped() {
     let deployment = setup(true);
     let games = IGameDispatcher { contract_address: deployment.games };
-    let mut game_rules = recorded::rules();
-    game_rules.mode_rules = super::recorded::BLITZ_RULES;
-    game_rules.command_mask = super::recorded::BLITZ_COMMAND_MASK;
+    let mut game_rules = play_fixture::rules();
+    game_rules.mode_rules = super::play_fixture::BLITZ_RULES;
+    game_rules.command_mask = super::play_fixture::BLITZ_COMMAND_MASK;
     game_rules.entry_rule = crate::rules::ENTRY_ROSTER;
     start_cheat_caller_address(deployment.games, authority());
-    super::recorded::seed_game(deployment.games, 3, games.game(1), game_rules);
+    super::play_fixture::seed_game(deployment.games, 3, games.game(1), game_rules);
     seed_settlement(deployment, 3, SettlementRules { mode: SettlementMode::Triple, registration_limit: 2, ..rules() });
     let map = deployment.games;
     let safe = IBlitzReservationsSafeDispatcher { contract_address: map };
@@ -185,7 +185,7 @@ fn reservation_initialization_is_idempotent_and_game_scoped() {
 fn starting_troop_table_must_be_complete_before_configuration_commits() {
     let deployment = setup(true);
     let registry = crate::registrar::IRegistrarSafeDispatcher { contract_address: deployment.games };
-    let mut preset = recorded::fixture_preset(recorded::rules());
+    let mut preset = play_fixture::fixture_preset(play_fixture::rules());
     let mut incomplete = grants();
     incomplete.starting_troops = incomplete.starting_troops.slice(0, 16);
     start_cheat_caller_address(deployment.games, authority());
@@ -203,7 +203,7 @@ fn starting_troop_table_must_be_complete_before_configuration_commits() {
 fn realm_resource_table_rejects_invalid_ids_and_packing_overflow() {
     let deployment = setup(true);
     let registry = crate::registrar::IRegistrarSafeDispatcher { contract_address: deployment.games };
-    let mut preset = recorded::fixture_preset(recorded::rules());
+    let mut preset = play_fixture::fixture_preset(play_fixture::rules());
     start_cheat_caller_address(deployment.games, authority());
     for resource in array![0_u8, 59, 255].span() {
         let invalid = crate::settlement::RealmGrants { realm_resources: array![*resource].span(), ..grants() };
@@ -254,15 +254,15 @@ fn entry_entitlements_require_operator_and_compare_every_registration_field() {
 fn village_placement_shares_reservations_with_fixed_blitz_and_eternum_entries() {
     let deployment = setup(true);
     let games = IGameDispatcher { contract_address: deployment.games };
-    super::recorded::seed_game(
+    super::play_fixture::seed_game(
         deployment.games,
         3,
         games.game(1),
         crate::rules::SliceRules {
-            mode_rules: super::recorded::BLITZ_RULES,
+            mode_rules: super::play_fixture::BLITZ_RULES,
             entry_rule: crate::rules::ENTRY_ROSTER,
-            command_mask: super::recorded::BLITZ_COMMAND_MASK,
-            ..recorded::rules(),
+            command_mask: super::play_fixture::BLITZ_COMMAND_MASK,
+            ..play_fixture::rules(),
         },
     );
     seed_settlement(deployment, 1, SettlementRules { registration_limit: 2, ..rules() });
@@ -386,12 +386,12 @@ fn a_missing_ledger_operator_never_bypasses_eternum_entitlements() {
     let d = setup(true);
     let games = IGameDispatcher { contract_address: d.games };
     let game_rules = crate::rules::SliceRules {
-        mode_rules: super::recorded::ETERNUM_RULES,
+        mode_rules: super::play_fixture::ETERNUM_RULES,
         entry_rule: crate::rules::ENTRY_ENTITLEMENT,
-        command_mask: super::recorded::ETERNUM_COMMAND_MASK,
-        ..recorded::rules(),
+        command_mask: super::play_fixture::ETERNUM_COMMAND_MASK,
+        ..play_fixture::rules(),
     };
-    super::recorded::seed_game(
+    super::play_fixture::seed_game(
         d.games, 3, crate::game::GameRegistry { dev_mode_on: false, ..games.game(1) }, game_rules,
     );
     seed_settlement(d, 3, rules());

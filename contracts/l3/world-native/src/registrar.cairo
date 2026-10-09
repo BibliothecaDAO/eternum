@@ -81,11 +81,10 @@ pub fn map_center_offset(game_id: u32, seed: felt252) -> u32 {
     ((seed_step + game_id % STEPS) % STEPS) * 10
 }
 
-pub(crate) fn build_game(params: CreateGameParams, creator: ContractAddress) -> crate::game::GameRegistry {
+pub(crate) fn build_game(params: CreateGameParams) -> crate::game::GameRegistry {
     crate::game::GameRegistry {
         name: params.name,
         preset_id: params.preset_id,
-        creator,
         settled: false,
         ready: params.roster.is_empty(),
         dev_mode_on: params.dev_mode_on,

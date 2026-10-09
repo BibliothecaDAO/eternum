@@ -1,4 +1,3 @@
-use eternum_randomness_protocol::entrypoint::IRecordedExecutionViewsDispatcher;
 use snforge_std::fs::{FileTrait, read_txt};
 use snforge_std::{
     EventSpyTrait, EventsFilterTrait, spy_events, start_cheat_block_timestamp_global, start_cheat_caller_address,
@@ -7,7 +6,6 @@ use snforge_std::{
 use starknet::storage::StorageMapWriteAccess;
 use crate::commands::{Command, ExecutionContext};
 use crate::game::{IGameDispatcher, IGameDispatcherTrait, IPointsDispatcherTrait};
-use crate::games::{IGamesAuthenticationDispatcher, IGamesAuthenticationDispatcherTrait};
 use crate::map::IMapLogicDispatcher;
 use crate::resources::{IResourceOperationsDispatcher, ResourceKey, ResourceSlot};
 use crate::settlement::{
@@ -22,8 +20,7 @@ use crate::village::{
     IVillagesDispatcher, IVillagesDispatcherTrait, IVillagesSafeDispatcher, IVillagesSafeDispatcherTrait, SettleVillage,
     VillagePassKey, VillageRules,
 };
-use super::recorded_receipts::RecordedReceiptsTrait;
-use super::{Deployment, authority, context, intent, recorded, signature};
+use super::{Deployment, authority, context, play_fixture};
 
 pub fn village_rules() -> VillageRules {
     let data = read_txt(@FileTrait::new("tests/fixtures/village.txt"));
@@ -34,10 +31,10 @@ pub fn village_rules() -> VillageRules {
 }
 
 fn setup(dev: bool) -> (Deployment, u32) {
-    setup_config(dev, SettlementMode::Single, recorded::rules())
+    setup_config(dev, SettlementMode::Single, play_fixture::rules())
 }
 fn village_preset(mode: SettlementMode, game_rules: crate::rules::SliceRules) -> crate::presets::PresetDefinition {
-    let mut preset = recorded::fixture_preset(game_rules);
+    let mut preset = play_fixture::fixture_preset(game_rules);
     preset.settlement.mode = mode;
     preset.settlement.spacing = 6;
     preset.settlement.realms = super::settlement::grants();
@@ -57,7 +54,7 @@ fn setup_preset(dev: bool, preset: crate::presets::PresetDefinition) -> (Deploym
     let deployment = super::setup_with_domains(true, "StructuresLogic", "TroopsLogic");
     super::entry::set_operator(deployment, authority());
     let games = IGameDispatcher { contract_address: deployment.games };
-    recorded::seed_game_with_preset(
+    play_fixture::seed_game_with_preset(
         deployment.games, 3, crate::game::GameRegistry { dev_mode_on: dev, ..games.game(1) }, preset,
     );
     snforge_std::interact_with_state(
@@ -65,7 +62,6 @@ fn setup_preset(dev: bool, preset: crate::presets::PresetDefinition) -> (Deploym
             crate::state::write().registrar.roster_sizes.write(3, 2);
         },
     );
-    recorded::configure_submitter(deployment.games, super::submitter());
     let grants = preset.settlement.realms;
     start_cheat_caller_address(deployment.games, deployment.games);
     let realm = ISettlementCreationDispatcher { contract_address: deployment.games }
@@ -90,28 +86,7 @@ fn setup_preset(dev: bool, preset: crate::presets::PresetDefinition) -> (Deploym
 }
 
 fn run(deployment: Deployment, command: Command, timestamp: u64) -> bool {
-    start_cheat_block_timestamp_global(timestamp);
-    let season = IGamesAuthenticationDispatcher { contract_address: deployment.games };
-    let action = recorded::FixtureAction {
-        command, nonce: season.next_nonce(3, deployment.actor), deadline: 10000, ..intent(deployment, 3),
-    };
-    let signed = signature(deployment, action);
-    let ticket = recorded::make_intent(deployment.games, action);
-    let recorded_context = recorded::make_context(
-        deployment.games, action, ExecutionContext { timestamp, ..context(deployment.games, 3) },
-    );
-    snforge_std::start_cheat_block_timestamp(deployment.games, timestamp);
-    snforge_std::cheat_caller_address(deployment.games, super::submitter(), snforge_std::CheatSpan::TargetCalls(1));
-    eternum_randomness_protocol::entrypoint::IRecordedExecutionDispatcherTrait::execute(
-        eternum_randomness_protocol::entrypoint::IRecordedExecutionDispatcher { contract_address: deployment.games },
-        ticket,
-        recorded_context,
-        signed,
-    );
-    IRecordedExecutionViewsDispatcher { contract_address: deployment.games }
-        .recorded_outcome(3, super::recorded::head(deployment.games, 3).order)
-        .unwrap()
-        .status == 1
+    super::resource_commands::execute(deployment, command, timestamp)
 }
 
 fn settle(realm: u32, pass_id: u16) -> Command {
@@ -120,7 +95,7 @@ fn settle(realm: u32, pass_id: u16) -> Command {
 
 #[test]
 #[feature("safe_dispatcher")]
-fn production_pass_is_atomic_single_use_and_army_grant_uses_recorded_time() {
+fn production_pass_is_atomic_single_use_and_army_grant_uses_block_time() {
     let (deployment, realm) = setup(false);
     let ledger = IVillagesSafeDispatcher { contract_address: deployment.games };
     let pass = VillagePassKey { game_id: 3, pass_id: 7 };
@@ -185,7 +160,7 @@ fn production_pass_is_atomic_single_use_and_army_grant_uses_recorded_time() {
     );
     assert!(!run(deployment, settle(realm, 7), 100));
     assert!(!run(deployment, Command::ReceiveVillageArmy(village_id), 100));
-    let interval = recorded::rules().tick_config.armies_tick_in_seconds;
+    let interval = play_fixture::rules().tick_config.armies_tick_in_seconds;
     let claimable_at = (100 / interval + 2) * interval;
     let mut spy = spy_events();
     assert!(run(deployment, Command::ReceiveVillageArmy(village_id), claimable_at));
@@ -240,10 +215,10 @@ fn assert_blitz_village(mode: SettlementMode) {
         false,
         mode,
         crate::rules::SliceRules {
-            mode_rules: super::recorded::BLITZ_RULES,
+            mode_rules: super::play_fixture::BLITZ_RULES,
             entry_rule: crate::rules::ENTRY_ROSTER,
-            command_mask: super::recorded::BLITZ_COMMAND_MASK,
-            ..recorded::rules(),
+            command_mask: super::play_fixture::BLITZ_COMMAND_MASK,
+            ..play_fixture::rules(),
         },
     );
     let pass = register_pass(deployment, 1);
@@ -270,9 +245,10 @@ fn duel_village_consumes_one_pass_and_leaves_both_entries_available() {
 #[test]
 fn exhausted_geometry_records_rejection_and_keeps_the_pass() {
     let (deployment, realm) = setup_config(
-        false, SettlementMode::Single, crate::rules::SliceRules { map_center_offset: 2147483646, ..recorded::rules() },
+        false, SettlementMode::Single, crate::rules::SliceRules { map_center_offset: 2147483646, ..play_fixture::rules() },
     );
     let pass = register_pass(deployment, 9);
+    let mut rejection_spy = spy_events();
     assert!(!run(deployment, settle(realm, 9), 100));
     let ledger = IVillagesDispatcher { contract_address: deployment.games };
     assert!(ledger.village_pass(pass).unwrap().village_id == 0);
@@ -297,13 +273,9 @@ fn exhausted_geometry_records_rejection_and_keeps_the_pass() {
                 )
                 .opened == 0,
     );
-    let season = IGamesAuthenticationDispatcher { contract_address: deployment.games };
-    let result = IRecordedExecutionViewsDispatcher { contract_address: deployment.games }
-        .recorded_outcome(3, 1)
-        .unwrap();
-    assert!(result.status == 2 && result.status_class == 'GAMEPLAY_REJECTED');
+    let result = super::play_fixture::rejection(ref rejection_spy, deployment.games);
+    assert!(result.status_class == 'GAMEPLAY_REJECTED');
     assert_eq!(result.reason, "settlement geometry exhausted");
-    assert!(super::recorded::head(deployment.games, 3).order == 1 && season.next_nonce(3, deployment.actor) == 1);
 }
 
 // The realm a settlement created, read from its RealmCreatedStory.
@@ -345,7 +317,7 @@ fn settle_season_realm(deployment: Deployment) -> u32 {
 
 #[test]
 fn a_founded_realm_castle_uses_no_population_even_where_labor_buildings_cost_it() {
-    let mut preset = village_preset(SettlementMode::Single, recorded::rules());
+    let mut preset = village_preset(SettlementMode::Single, play_fixture::rules());
     let mut buildings = array![];
     for building in preset.structures.buildings {
         buildings

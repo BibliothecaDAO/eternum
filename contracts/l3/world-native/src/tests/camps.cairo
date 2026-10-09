@@ -14,20 +14,20 @@ use crate::tests::state::{
     GameState, MapObservationTrait, ResourceObservationTrait, StructureObservationTrait, TroopObservationTrait,
 };
 use crate::troops::{Coord, ExplorerKey, TroopTier, TroopType};
-use super::resource_commands::{execute, execute_recorded_at, grant, setup_with_rules};
+use super::resource_commands::{execute, grant, setup_with_rules};
 
 pub fn rules(blitz: bool) -> crate::rules::SliceRules {
-    let mut rules = super::recorded::rules();
+    let mut rules = super::play_fixture::rules();
     rules.mode_rules = if blitz {
-        super::recorded::BLITZ_RULES
+        super::play_fixture::BLITZ_RULES
     } else {
-        super::recorded::ETERNUM_RULES
+        super::play_fixture::ETERNUM_RULES
     };
     rules
         .command_mask = if blitz {
-            super::recorded::BLITZ_COMMAND_MASK
+            super::play_fixture::BLITZ_COMMAND_MASK
         } else {
-            super::recorded::ETERNUM_COMMAND_MASK
+            super::play_fixture::ETERNUM_COMMAND_MASK
         };
     rules.entry_rule = if blitz {
         crate::rules::ENTRY_ROSTER
@@ -206,13 +206,13 @@ fn camp_configuration_is_immutable_scoped_and_requires_authority() {
     assert!(registrar.register_preset(20000, preset).is_err());
     stop_cheat_caller_address(d.games);
     let games = crate::game::IGameDispatcher { contract_address: d.games };
-    super::recorded::seed_game_with_preset(d.games, 4, games.game(3), preset);
+    super::play_fixture::seed_game_with_preset(d.games, 4, games.game(3), preset);
     assert!(safe.camp_rules(4).unwrap().resources.is_empty());
     assert!(safe.camp_rules(999).is_err());
 }
 
 #[test]
-fn recorded_exploration_discovers_a_camp_without_moving_the_explorer_into_it() {
+fn exploration_discovers_a_camp_without_moving_the_explorer_into_it() {
     let (d, home) = setup(true);
     for resource in array![26_u8, 35, 36] {
         grant(d, home, resource, 100 * RESOURCE_PRECISION);
@@ -233,7 +233,7 @@ fn recorded_exploration_discovers_a_camp_without_moving_the_explorer_into_it() {
     let key = ExplorerKey { game_id: 3, explorer_id };
     let troops = GameState { contract_address: d.games };
     let origin = troops.explorer(key).unwrap().coord;
-    assert!(execute_recorded_at(d, Command::Explore(Explore { explorer_id, direction: 0 }), 140, 5000));
+    assert!(execute(d, Command::Explore(Explore { explorer_id, direction: 0 }), 140));
     assert_eq!(troops.explorer(key).unwrap().coord, origin);
     let destination = neighbor(origin, 0);
     let tile = IMapLogicDispatcher { contract_address: d.games }.tile(tile_key(3, destination)).unwrap();
@@ -247,7 +247,7 @@ fn recorded_exploration_discovers_a_camp_without_moving_the_explorer_into_it() {
 }
 
 #[test]
-fn recorded_eternum_exploration_does_not_create_a_camp() {
+fn eternum_exploration_does_not_create_a_camp() {
     let (d, home) = setup(false);
     for resource in array![26_u8, 35, 36] {
         grant(d, home, resource, 100 * RESOURCE_PRECISION);
@@ -268,7 +268,7 @@ fn recorded_eternum_exploration_does_not_create_a_camp() {
     let key = ExplorerKey { game_id: 3, explorer_id };
     let troops = GameState { contract_address: d.games };
     let destination = neighbor(troops.explorer(key).unwrap().coord, 0);
-    assert!(execute_recorded_at(d, Command::Explore(Explore { explorer_id, direction: 0 }), 140, 5000));
+    assert!(execute(d, Command::Explore(Explore { explorer_id, direction: 0 }), 140));
     let tile = IMapLogicDispatcher { contract_address: d.games }.tile(tile_key(3, destination)).unwrap();
     assert!(crate::map::structure_occupant(tile).is_none());
 }

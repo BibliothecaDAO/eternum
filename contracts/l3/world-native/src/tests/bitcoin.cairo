@@ -13,10 +13,10 @@ use crate::resources::{IResourceOperationsDispatcher, IResourceOperationsDispatc
 use crate::tests::StoryResultTestTrait;
 use crate::tests::state::ResourceObservationTrait;
 use crate::troops::Coord;
-use super::resource_commands::{assert_terminal_rejection, execute, execute_recorded_at, grant};
+use super::resource_commands::{assert_terminal_rejection, execute, grant};
 
 fn setup() -> (super::Deployment, ResourceKey, ResourceKey) {
-    let mut rules = super::recorded::rules();
+    let mut rules = super::play_fixture::rules();
     rules.tick_config.bitcoin_phase_in_seconds = 10;
     rules.battle_config.regular_immunity_ticks = 0;
     rules.troop_stamina_config.stamina_initial = 120;
@@ -115,11 +115,11 @@ fn binding_requires_a_closed_pool_and_cannot_replace_its_root() {
 }
 
 #[test]
-fn delayed_contribution_and_phase_binding_keep_recorded_context_after_game_end() {
+fn contribution_and_phase_binding_use_their_block_time() {
     let (deployment, first, _) = setup();
-    assert!(execute_recorded_at(deployment, contribute(first, 100), 30, 5000));
-    assert!(execute_recorded_at(deployment, Command::CloseBitcoinPhase(3), 39, 5001));
-    assert!(execute_recorded_at(deployment, Command::BindBitcoinPhase(3), 40, 5002));
+    assert!(execute(deployment, contribute(first, 100), 30));
+    assert!(execute(deployment, Command::CloseBitcoinPhase(3), 39));
+    assert!(execute(deployment, Command::BindBitcoinPhase(3), 40));
     let view = IBitcoinViewsDispatcher { contract_address: deployment.games };
     let phase = view.bitcoin_phase(PhaseKey { game_id: 3, phase: 3 });
     assert_eq!(phase.total_labor, 100);
@@ -323,7 +323,7 @@ fn a_forfeited_share_survives_an_empty_phase_without_another_owner_cut() {
 }
 
 #[test]
-fn an_invalid_batch_rolls_back_all_awards_but_consumes_the_ticket() {
+fn an_invalid_batch_rolls_back_all_awards() {
     let (deployment, home, nearest) = setup();
     let mine = mine(deployment, 2000100);
     capture(deployment, mine, deployment.actor, 30);

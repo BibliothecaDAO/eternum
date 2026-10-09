@@ -1,4 +1,3 @@
-use eternum_randomness_protocol::entrypoint::IRecordedExecutionViewsDispatcher;
 use crate::commands::Command;
 use crate::discovery::{Discovery, ethereal, surface};
 use crate::map::IMapLogicDispatcher;
@@ -7,7 +6,6 @@ use crate::resources::{ResourceAmount, ResourceKey};
 use crate::structures::{IStructureOperationsDispatcher, StructureRecord};
 use crate::tests::state::{MapObservationTrait, StructureObservationTrait};
 use crate::upgrades::{UpgradeLimits, UpgradeRecipe};
-use super::recorded_receipts::RecordedReceiptsTrait;
 use super::resource_commands::{assert_terminal_rejection, execute, grant, set_fixture, setup, setup_with_rules};
 
 fn record(d: super::Deployment, key: ResourceKey) -> StructureRecord {
@@ -26,7 +24,7 @@ fn save(d: super::Deployment, key: ResourceKey, row: StructureRecord) {
 
 #[test]
 fn level_up_rejects_unowned_missing_wrong_category_unfunded_and_maximum_structures() {
-    let mut preset = super::resource_commands::fixture_preset(super::recorded::rules());
+    let mut preset = super::resource_commands::fixture_preset(super::play_fixture::rules());
     preset.structures.upgrade_limits = UpgradeLimits { realm_max: 1, village_max: 1 };
     preset
         .structures
@@ -62,11 +60,10 @@ fn level_up_rejects_unowned_missing_wrong_category_unfunded_and_maximum_structur
     assert!(execute(d, Command::LevelUp(home.entity_id), 80));
     assert_eq!(record(d, home).base.level, 1);
     assert_eq!(map.tile(location).unwrap().data, tile.data + 2);
+    let mut rejection_spy = snforge_std::spy_events();
     assert_terminal_rejection(d, Command::LevelUp(home.entity_id), 80);
     assert_eq!(record(d, home).base.level, 1);
-    let outcome = IRecordedExecutionViewsDispatcher { contract_address: d.games }
-        .recorded_outcome(3, super::recorded::head(d.games, 3).order)
-        .unwrap();
+    let outcome = super::play_fixture::rejection(ref rejection_spy, d.games);
     assert_eq!(outcome.status_class, 'GAMEPLAY_REJECTED');
     // This nested library assertion is longer than a felt short string.
     assert_eq!(outcome.reason, "structure is already at max level");
@@ -97,9 +94,9 @@ fn ownership_transfer_rejects_zero_foreign_village_and_ended_game() {
 
 #[test]
 fn blitz_ownership_transfer_is_rejected_even_by_owner() {
-    let mut rules = super::recorded::rules();
-    rules.mode_rules = super::recorded::BLITZ_RULES;
-    rules.command_mask = super::recorded::BLITZ_COMMAND_MASK;
+    let mut rules = super::play_fixture::rules();
+    rules.mode_rules = super::play_fixture::BLITZ_RULES;
+    rules.command_mask = super::play_fixture::BLITZ_COMMAND_MASK;
     rules.entry_rule = crate::rules::ENTRY_ROSTER;
     let (d, home, _) = setup_with_rules(rules);
     assert_terminal_rejection(
@@ -114,7 +111,7 @@ fn blitz_ownership_transfer_is_rejected_even_by_owner() {
 
 #[test]
 fn discovery_uses_pinned_weight_totals_offsets_and_layer_restrictions() {
-    let config = super::recorded::rules().map_config;
+    let config = super::play_fixture::rules().map_config;
     // Pinned Eternum/Blitz exploration: mine 1000/50000, camp 1500/50000, Bitcoin 200/10000.
     assert_eq!(config.shards_mines_win_probability, 1000);
     assert_eq!(config.shards_mines_fail_probability, 49000);

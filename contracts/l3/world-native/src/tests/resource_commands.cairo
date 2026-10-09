@@ -1,11 +1,7 @@
-use eternum_randomness_protocol::entrypoint::{
-    IRecordedExecutionDispatcher, IRecordedExecutionDispatcherTrait, IRecordedExecutionViewsDispatcher,
-};
 use snforge_std::{start_cheat_block_timestamp_global, start_cheat_caller_address, stop_cheat_caller_address};
 use crate::arrivals::{ArrivalKey, has_arrived};
 use crate::commands::{Command, ExecutionContext};
 use crate::game::{IGameDispatcher, IGameDispatcherTrait};
-use crate::games::{IGamesAuthenticationDispatcher, IGamesAuthenticationDispatcherTrait};
 use crate::resources::{
     IResourceOperationsDispatcher, IResourceOperationsDispatcherTrait, ResourceAmount, ResourceBurn, ResourceKey,
     ResourceRule, ResourceSlot,
@@ -17,15 +13,14 @@ use crate::structures::{IStructureOperationsDispatcher, StructureRecord};
 use crate::tests::StoryResultTestTrait;
 use crate::tests::state::{GameState, ResourceObservationTrait, StructureObservationTrait, TroopObservationTrait};
 use crate::troops::{Coord, ExplorerKey};
-use super::recorded_receipts::RecordedReceiptsTrait;
-use super::{Deployment, context, intent, recorded, signature};
+use super::{Deployment, context, play_fixture};
 
 pub fn setup() -> (Deployment, ResourceKey, ResourceKey) {
-    setup_with_rules(recorded::rules())
+    setup_with_rules(play_fixture::rules())
 }
 
 pub fn fixture_preset(rules: crate::rules::SliceRules) -> crate::presets::PresetDefinition {
-    let mut preset = recorded::fixture_preset(rules);
+    let mut preset = play_fixture::fixture_preset(rules);
     let mut resources = array![];
     for resource_type in 1_u8..59 {
         resources
@@ -56,7 +51,7 @@ pub fn setup_in_deployment(
     deployment: Deployment, preset: crate::presets::PresetDefinition,
 ) -> (Deployment, ResourceKey, ResourceKey) {
     let games = IGameDispatcher { contract_address: deployment.games };
-    recorded::seed_game_with_preset(
+    play_fixture::seed_game_with_preset(
         deployment.games,
         3,
         crate::game::GameRegistry {
@@ -130,35 +125,11 @@ pub fn setup_in_deployment(
 }
 
 pub fn execute(deployment: Deployment, command: Command, timestamp: u64) -> bool {
-    execute_recorded_at(deployment, command, timestamp, timestamp)
+    execute_in_game(deployment, 3, command, timestamp)
 }
 
-pub fn execute_recorded_at(deployment: Deployment, command: Command, timestamp: u64, executed_at: u64) -> bool {
-    execute_in_game(deployment, 3, command, timestamp, executed_at)
-}
-
-pub fn execute_in_game(
-    deployment: Deployment, game_id: u32, command: Command, timestamp: u64, executed_at: u64,
-) -> bool {
-    let season = IGamesAuthenticationDispatcher { contract_address: deployment.games };
-    let action = recorded::FixtureAction {
-        command,
-        nonce: season.next_nonce(game_id, deployment.actor),
-        deadline: executed_at + 10000,
-        ..intent(deployment, game_id),
-    };
-    let signed = signature(deployment, action);
-    start_cheat_block_timestamp_global(executed_at);
-    let ticket = recorded::make_intent(deployment.games, action);
-    let recorded_context = recorded::make_context(
-        deployment.games, action, ExecutionContext { timestamp, ..context(deployment.games, game_id) },
-    );
-    snforge_std::cheat_caller_address(deployment.games, super::submitter(), snforge_std::CheatSpan::TargetCalls(1));
-    IRecordedExecutionDispatcher { contract_address: deployment.games }.execute(ticket, recorded_context, signed);
-    IRecordedExecutionViewsDispatcher { contract_address: deployment.games }
-        .recorded_outcome(game_id.into(), recorded::head(deployment.games, game_id).order)
-        .unwrap()
-        .status == 1
+pub fn execute_in_game(deployment: Deployment, game_id: u32, command: Command, timestamp: u64) -> bool {
+    play_fixture::play(deployment.games, play_fixture::TestAction { game_id, actor: deployment.actor, command }, 987654321, timestamp)
 }
 
 fn amount(resource_type: u8, amount: u128) -> Span<ResourceAmount> {
@@ -183,9 +154,6 @@ fn explicit_burn_does_not_harvest_and_rejection_keeps_the_stream_moving() {
     assert!(execute(deployment, Command::BurnStructureResources(burn), 45));
     assert_eq!(resources.resource_balance(slot), 80);
     assert_eq!(resources.resource_production(slot), production);
-    assert_eq!(
-        IGamesAuthenticationDispatcher { contract_address: deployment.games }.next_nonce(3, deployment.actor), 3,
-    );
 }
 
 pub fn set_fixture<T, +starknet::storage_access::Store<T>, +Drop<T>, +Copy<T>>(
@@ -463,7 +431,7 @@ fn full_capacity_discards_offloaded_excess_as_the_original_rules_do() {
 #[test]
 fn village_arrivals_wait_for_both_season_and_creation_immunity() {
     for (village_ticks, available_at) in array![(1_u8, 120_u64), (3_u8, 180_u64)] {
-        let mut rules = recorded::rules();
+        let mut rules = play_fixture::rules();
         rules.tick_config.delivery_tick_in_seconds = 30;
         rules.battle_config.regular_immunity_ticks = 2;
         rules.battle_config.village_immunity_ticks = village_ticks;
@@ -519,22 +487,30 @@ pub fn resource_facts(deployment: Deployment, key: ResourceKey) -> Array<felt252
     values
 }
 
+#[feature("safe_dispatcher")]
 pub fn assert_terminal_rejection(deployment: Deployment, command: Command, timestamp: u64) {
-    let season = IGamesAuthenticationDispatcher { contract_address: deployment.games };
-    let nonce = season.next_nonce(3, deployment.actor);
-    let order = recorded::head(deployment.games, 3).order;
+    let action = play_fixture::TestAction { game_id: 3, actor: deployment.actor, command };
+    let encoded = play_fixture::encode(command);
+    let Ok((index, _, _)) = crate::commands::validated_command(encoded) else {
+        play_fixture::assert_preflight_rejection(deployment.games, action, timestamp);
+        return;
+    };
+    let rules = snforge_std::interact_with_state(deployment.games, || crate::logic::game::rules(3));
+    if !crate::rules::command_enabled(rules.command_mask, index.into()) {
+        play_fixture::assert_preflight_rejection(deployment.games, action, timestamp);
+        return;
+    }
+    let mut spy = snforge_std::spy_events();
     assert!(!execute(deployment, command, timestamp));
-    assert_eq!(season.next_nonce(3, deployment.actor), nonce + 1);
-    assert_eq!(recorded::head(deployment.games, 3).order, order + 1);
-    let result = IRecordedExecutionViewsDispatcher { contract_address: deployment.games }
-        .recorded_outcome(3, order + 1)
-        .unwrap();
-    assert_eq!(result.status, 2);
-    assert!(result.reason.len() != 0);
+    let rejected = play_fixture::rejection(ref spy, deployment.games);
+    assert_eq!(rejected.version, 1);
+    assert_eq!(rejected.game_id, 3);
+    assert_eq!(rejected.actor, deployment.actor);
+    assert!(rejected.reason.len() != 0);
 }
 
 #[test]
-fn every_transfer_rejects_duplicates_without_changing_facts_and_consumes_the_ticket() {
+fn every_transfer_rejects_duplicates_without_changing_facts() {
     let (deployment, from, to) = setup();
     let explorer = explorer_fixture(deployment, 70, from.entity_id, Coord { alt: false, x: 2000001, y: 2000000 }, 1000);
     let other = explorer_fixture(deployment, 71, from.entity_id, Coord { alt: false, x: 2000002, y: 2000000 }, 1000);
@@ -689,21 +665,21 @@ fn troop_deposit_ownership(blitz_mode_on: bool, category: u8) {
     let (deployment, home, target) = setup_with_rules(
         crate::rules::SliceRules {
             mode_rules: if blitz_mode_on {
-                super::recorded::BLITZ_RULES
+                super::play_fixture::BLITZ_RULES
             } else {
-                super::recorded::ETERNUM_RULES
+                super::play_fixture::ETERNUM_RULES
             },
             command_mask: if blitz_mode_on {
-                super::recorded::BLITZ_COMMAND_MASK
+                super::play_fixture::BLITZ_COMMAND_MASK
             } else {
-                super::recorded::ETERNUM_COMMAND_MASK
+                super::play_fixture::ETERNUM_COMMAND_MASK
             },
             entry_rule: if blitz_mode_on {
                 crate::rules::ENTRY_ROSTER
             } else {
                 crate::rules::ENTRY_ENTITLEMENT
             },
-            ..recorded::rules(),
+            ..play_fixture::rules(),
         },
     );
     let structures = IStructureOperationsDispatcher { contract_address: deployment.games };
@@ -796,21 +772,21 @@ fn delayed_village_troops_ignore_the_connection_and_keep_transport_ownership_rul
         let (deployment, from, to) = setup_with_rules(
             crate::rules::SliceRules {
                 mode_rules: if blitz_mode_on {
-                    super::recorded::BLITZ_RULES
+                    super::play_fixture::BLITZ_RULES
                 } else {
-                    super::recorded::ETERNUM_RULES
+                    super::play_fixture::ETERNUM_RULES
                 },
                 command_mask: if blitz_mode_on {
-                    super::recorded::BLITZ_COMMAND_MASK
+                    super::play_fixture::BLITZ_COMMAND_MASK
                 } else {
-                    super::recorded::ETERNUM_COMMAND_MASK
+                    super::play_fixture::ETERNUM_COMMAND_MASK
                 },
                 entry_rule: if blitz_mode_on {
                     crate::rules::ENTRY_ROSTER
                 } else {
                     crate::rules::ENTRY_ENTITLEMENT
                 },
-                ..recorded::rules(),
+                ..play_fixture::rules(),
             },
         );
         village_fixture(deployment, to, deployment.actor);

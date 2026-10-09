@@ -8,7 +8,7 @@ use crate::game::{
 use crate::hyperstructures::{IHyperstructuresDispatcher, IHyperstructuresDispatcherTrait};
 use crate::registrar::IRegistrarSafeDispatcherTrait;
 use crate::tests::StoryResultTestTrait;
-use super::resource_commands::{assert_terminal_rejection, execute, execute_recorded_at, setup_with_rules};
+use super::resource_commands::{assert_terminal_rejection, execute, setup_with_rules};
 
 fn setup_with_threshold(
     rules: crate::rules::SliceRules, points: u128,
@@ -45,7 +45,7 @@ fn close_settles_all_completed_shares_before_testing_the_victory_threshold() {
 fn nested_economy_checkpoint_and_season_end_share_one_story_cursor() {
     let (deployment, hyper, home, _) = super::hyperstructures::setup_with_threshold(1);
     super::hyperstructures::complete(deployment, hyper, home);
-    let order = super::recorded::head(deployment.games, 3).order + 1;
+    let order = 0;
     let mut spy = snforge_std::spy_events();
     assert!(execute(deployment, Command::CloseSeason, 100));
     let mut index = 0_u32;
@@ -88,13 +88,13 @@ fn an_insufficient_score_keeps_checkpoints_and_a_later_attempt_can_close() {
 }
 
 #[test]
-fn outage_recovery_closes_at_recorded_time_with_the_same_points_as_immediate_execution() {
+fn season_close_at_the_same_block_time_has_the_same_points() {
     let (immediate, first, home, _) = super::hyperstructures::setup_with_threshold(1);
     super::hyperstructures::complete(immediate, first, home);
     assert!(execute(immediate, Command::CloseSeason, 100));
     let (delayed, second, home, _) = super::hyperstructures::setup_with_threshold(1);
     super::hyperstructures::complete(delayed, second, home);
-    assert!(execute_recorded_at(delayed, Command::CloseSeason, 100, 10000));
+    assert!(execute(delayed, Command::CloseSeason, 100));
     assert_eq!(games(delayed).game(3).end_at, games(immediate).game(3).end_at);
     assert_eq!(
         crate::game::status_at(games(delayed).game(3), 100), crate::game::status_at(games(immediate).game(3), 100),
@@ -107,7 +107,7 @@ fn outage_recovery_closes_at_recorded_time_with_the_same_points_as_immediate_exe
 
 #[test]
 fn zero_or_missing_threshold_never_ends_the_season() {
-    let (deployment, _, _) = setup_with_rules(super::recorded::rules());
+    let (deployment, _, _) = setup_with_rules(super::play_fixture::rules());
     assert_terminal_rejection(deployment, Command::CloseSeason, 40);
     assert_terminal_rejection(deployment, Command::CloseSeason, 40);
     assert_eq!(games(deployment).game(3).end_at, 200);
@@ -115,14 +115,14 @@ fn zero_or_missing_threshold_never_ends_the_season() {
 
 #[test]
 fn season_close_requires_started_eternum_and_timed_games_stop_at_their_clock() {
-    let (eternum, _, _) = setup_with_threshold(super::recorded::rules(), 1);
+    let (eternum, _, _) = setup_with_threshold(super::play_fixture::rules(), 1);
     assert_terminal_rejection(eternum, Command::CloseSeason, 19);
     assert_terminal_rejection(eternum, Command::CloseSeason, 200);
     let rules = crate::rules::SliceRules {
-        mode_rules: super::recorded::BLITZ_RULES,
+        mode_rules: super::play_fixture::BLITZ_RULES,
         entry_rule: crate::rules::ENTRY_ROSTER,
-        command_mask: super::recorded::BLITZ_COMMAND_MASK,
-        ..super::recorded::rules(),
+        command_mask: super::play_fixture::BLITZ_COMMAND_MASK,
+        ..super::play_fixture::rules(),
     };
     let (blitz, home, _) = setup_with_threshold(rules, 1);
     assert_terminal_rejection(blitz, Command::CloseSeason, 100);
@@ -134,10 +134,10 @@ fn season_close_requires_started_eternum_and_timed_games_stop_at_their_clock() {
 #[test]
 #[feature("safe_dispatcher")]
 fn season_presets_are_authorized_immutable_and_game_scoped() {
-    let (deployment, _, _) = setup_with_threshold(super::recorded::rules(), 1);
+    let (deployment, _, _) = setup_with_threshold(super::play_fixture::rules(), 1);
     let season = ISeasonLifecycleSafeDispatcher { contract_address: deployment.games };
     let registrar = crate::registrar::IRegistrarSafeDispatcher { contract_address: deployment.games };
-    let mut preset = super::resource_commands::fixture_preset(super::recorded::rules());
+    let mut preset = super::resource_commands::fixture_preset(super::play_fixture::rules());
     preset.season_win_points = 2;
     start_cheat_caller_address(deployment.games, deployment.actor);
     assert!(registrar.register_preset(20000, preset).is_err());
@@ -207,7 +207,7 @@ fn closing_includes_every_completed_hyperstructure_and_skips_foundations() {
 
 #[test]
 fn each_points_change_emits_one_award_with_absolute_player_and_season_totals() {
-    let (deployment, _, _) = setup_with_rules(super::recorded::rules());
+    let (deployment, _, _) = setup_with_rules(super::play_fixture::rules());
     let mut spy = snforge_std::spy_events();
     start_cheat_caller_address(deployment.games, deployment.games);
     points(deployment)
@@ -349,15 +349,14 @@ pub fn execute_batch(d: super::Deployment, command: Command, timestamp: u64, exp
 }
 
 pub fn execute_batch_in_game(d: super::Deployment, game_id: u32, command: Command, timestamp: u64, expected: u64) {
-    let nonce = crate::games::IGamesAuthenticationDispatcherTrait::next_nonce(
-        crate::games::IGamesAuthenticationDispatcher { contract_address: d.games }, game_id, d.actor,
-    );
+    let tx_hash = 54321;
+    snforge_std::start_cheat_transaction_hash(d.games, tx_hash);
     let mut spy = snforge_std::spy_events();
-    assert!(super::resource_commands::execute_in_game(d, game_id, command, timestamp, timestamp));
+    assert!(super::resource_commands::execute_in_game(d, game_id, command, timestamp));
     let mut count = 0;
     for (_, event) in spy.get_events().emitted_by(d.games).events.span() {
         if event.keys.span() == array![selector!("BatchProgress"), game_id.into()].span() {
-            assert_eq!(event.data.span(), array![d.actor.into(), nonce.into(), expected.into()].span());
+            assert_eq!(event.data.span(), array![d.actor.into(), tx_hash, expected.into()].span());
             count += 1;
         }
     }
@@ -366,7 +365,7 @@ pub fn execute_batch_in_game(d: super::Deployment, game_id: u32, command: Comman
 
 #[test]
 fn empty_checkpoint_work_reports_zero_without_claiming_a_win() {
-    let (d, _, _) = setup_with_threshold(super::recorded::rules(), 1);
+    let (d, _, _) = setup_with_threshold(super::play_fixture::rules(), 1);
     execute_batch(d, Command::CloseSeason, 100, 0);
     assert_eq!(games(d).game(3).end_at, 200);
 }
@@ -456,11 +455,11 @@ fn final_checkpoint(d: super::Deployment) -> u32 {
 #[test]
 fn game_finalization_waits_for_the_last_hyperstructure_checkpoint_batch() {
     let (deployment, keys) = nine_completed_hyperstructures(0);
-    let creator = super::bind_authority(deployment);
-    assert!(deployment.actor != games(deployment).game(3).creator);
+    let first_player = super::bind_authority(deployment);
+    assert!(deployment.actor != super::authority());
     let game = games(deployment).game(3);
     let timestamp = game.end_at + game.end_grace_seconds.into() + 1;
-    execute_batch(creator, Command::MarkGameSettled, timestamp, 1);
+    execute_batch(first_player, Command::MarkGameSettled, timestamp, 1);
     assert!(!games(deployment).game(3).settled);
     assert_eq!(hypers(deployment).hyperstructure_shares(*keys.at(7)).start_at, game.end_at);
     assert_eq!(hypers(deployment).hyperstructure_shares(*keys.at(8)).start_at, 50);
@@ -489,7 +488,7 @@ fn checkpoint_member_event_uses_the_declared_short_string_identity() {
 }
 
 #[test]
-fn a_winning_final_submitter_cannot_replace_an_ineligible_close_initiator() {
+fn a_winning_final_player_cannot_replace_an_ineligible_close_initiator() {
     let (d, _) = nine_completed_hyperstructures(1);
     let other = super::bind_authority(d);
     assert!(execute(other, Command::CloseSeason, 100));
@@ -505,41 +504,40 @@ fn points(deployment: super::Deployment) -> IPointsDispatcher {
     IPointsDispatcher { contract_address: deployment.games }
 }
 
-
 #[test]
-fn creator_and_non_creator_final_batches_settle_the_same_points_and_game() {
-    let (creator, creator_key, creator_home, _) = super::hyperstructures::setup();
-    super::hyperstructures::complete(creator, creator_key, creator_home);
+fn players_with_different_accounts_final_batches_settle_the_same_points_and_game() {
+    let (first_player, first_player_key, first_player_home, _) = super::hyperstructures::setup();
+    super::hyperstructures::complete(first_player, first_player_key, first_player_home);
     let (helper, helper_key, helper_home, _) = super::hyperstructures::setup();
     super::hyperstructures::complete(helper, helper_key, helper_home);
-    let game = crate::game::GameRegistry { creator: creator.actor, ..games(creator).game(3) };
-    for d in array![creator, helper] {
+    let game = games(first_player).game(3);
+    for d in array![first_player, helper] {
         super::resource_commands::set_fixture(d.games, selector!("games"), selector!("games"), array![3].span(), game);
     }
     let (helper_account, _) = super::deploy_player(3, super::GUARDIAN);
-    let helper_submitter = super::Deployment { actor: helper_account, ..helper };
-    assert!(creator.actor != super::authority() && helper_submitter.actor != game.creator);
-    let creator_before = points(creator).player_points(3, creator.actor);
+    let helper_player = super::Deployment { actor: helper_account, ..helper };
+    assert!(first_player.actor != super::authority() && helper_player.actor != first_player.actor);
+    let first_player_before = points(first_player).player_points(3, first_player.actor);
     let helper_before = points(helper).player_points(3, helper.actor);
     let timestamp = game.end_at + game.end_grace_seconds.into() + 1;
-    execute_batch(creator, Command::MarkGameSettled, timestamp, 0);
-    execute_batch(helper_submitter, Command::MarkGameSettled, timestamp, 0);
-    assert_eq!(games(creator).game(3), games(helper).game(3));
+    execute_batch(first_player, Command::MarkGameSettled, timestamp, 0);
+    execute_batch(helper_player, Command::MarkGameSettled, timestamp, 0);
+    assert_eq!(games(first_player).game(3), games(helper).game(3));
     assert_eq!(
-        points(creator).player_points(3, creator.actor) - creator_before,
+        points(first_player).player_points(3, first_player.actor) - first_player_before,
         points(helper).player_points(3, helper.actor) - helper_before,
     );
-    assert_eq!(hypers(creator).hyperstructure_shares(creator_key).start_at, game.end_at);
+    assert_eq!(hypers(first_player).hyperstructure_shares(first_player_key).start_at, game.end_at);
     assert_eq!(hypers(helper).hyperstructure_shares(helper_key).start_at, game.end_at);
     assert!(games(helper).game(3).settled);
     let final_points = points(helper).player_points(3, helper.actor);
-    execute_batch(helper_submitter, Command::MarkGameSettled, timestamp + 2, 0);
+    execute_batch(helper_player, Command::MarkGameSettled, timestamp + 2, 0);
     assert_eq!(points(helper).player_points(3, helper.actor), final_points);
 }
 
 #[test]
 fn points_awards_wire_matches_the_herald_replay_fixture() {
-    let (d, _, _) = setup_with_rules(super::recorded::rules());
+    let (d, _, _) = setup_with_rules(super::play_fixture::rules());
     let mut spy = snforge_std::spy_events();
     start_cheat_caller_address(d.games, d.games);
     let first = 273.try_into().unwrap();

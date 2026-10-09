@@ -6,7 +6,6 @@ cairo-version = "=2.17.0"
 
 [dependencies]
 starknet = "=2.17.0"
-eternum_randomness_protocol = { path = "../randomness-protocol" }
 eternum_cubit = { path = "vendor/cubit" }
 games_storage = { path = "storage" }
 
@@ -19,7 +18,6 @@ assert_macros = "=2.17.0"
 [[target.starknet-contract]]
 sierra = true
 casm = true
-build-external-contracts = ["eternum_randomness_protocol::authority::SequencingAccount"]
 
 [scripts]
 test = "bash ../test-native.sh"
