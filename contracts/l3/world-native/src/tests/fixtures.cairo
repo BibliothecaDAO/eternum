@@ -81,7 +81,9 @@ pub mod TroopFixture {
                 );
             }
             crate::logic::map::MapState::occupy(
-                crate::geometry::tile_key(game_id, Coord { alt: false, x: (command.structure_id + 5).try_into().unwrap(), y: 34 }),
+                crate::geometry::tile_key(
+                    game_id, Coord { alt: false, x: (command.structure_id + 5).try_into().unwrap(), y: 34 },
+                ),
                 command.structure_id,
                 15,
                 false,
@@ -181,7 +183,9 @@ pub mod AccountUpgradeFixture {
     #[storage]
     struct Storage {}
     #[external(v0)]
-    fn realms_id(self: @ContractState) -> felt252 { 1 }
+    fn realms_id(self: @ContractState) -> felt252 {
+        1
+    }
 }
 
 #[starknet::interface]

@@ -140,11 +140,7 @@ fn season_presets_are_authorized_immutable_and_game_scoped() {
     assert!(registrar.register_preset(20000, preset).is_err());
     let before = games(deployment).game(3);
     let remaining = season
-        .close_season(
-            3,
-            deployment.actor,
-            crate::commands::action_context(super::context(deployment.games, 3)),
-        )
+        .close_season(3, deployment.actor, crate::commands::action_context(super::context(deployment.games, 3)))
         .unwrap();
     assert_eq!(remaining, 0);
     assert_eq!(games(deployment).game(3), before);
@@ -478,7 +474,7 @@ fn checkpoint_member_event_uses_the_declared_short_string_identity() {
             assert_eq!(*event.keys.at(4), 'start_at');
             assert_eq!(event.data.span(), array![2, 3, hyper.entity_id.into(), 1, 100].span());
             found = true;
-            }
+        }
     }
     assert!(found);
 }

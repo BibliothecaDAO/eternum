@@ -93,11 +93,7 @@ pub trait IBitcoinViews<T> {
 #[starknet::interface]
 pub trait IBitcoinCommands<T> {
     fn claim_bitcoin_phase(
-        ref self: T,
-        game_id: u32,
-        actor: ContractAddress,
-        command: ClaimPhase,
-        context: crate::commands::ActionContext,
+        ref self: T, game_id: u32, actor: ContractAddress, command: ClaimPhase, context: crate::commands::ActionContext,
     ) -> u64;
     fn contribute_bitcoin_labor(
         ref self: T,
@@ -107,18 +103,10 @@ pub trait IBitcoinCommands<T> {
         context: crate::commands::ActionContext,
     );
     fn close_bitcoin_phase(
-        ref self: T,
-        game_id: u32,
-        actor: ContractAddress,
-        phase: u64,
-        context: crate::commands::ActionContext,
+        ref self: T, game_id: u32, actor: ContractAddress, phase: u64, context: crate::commands::ActionContext,
     );
     fn bind_bitcoin_phase(
-        ref self: T,
-        game_id: u32,
-        actor: ContractAddress,
-        phase: u64,
-        context: crate::commands::ActionContext,
+        ref self: T, game_id: u32, actor: ContractAddress, phase: u64, context: crate::commands::ActionContext,
     );
 }
 

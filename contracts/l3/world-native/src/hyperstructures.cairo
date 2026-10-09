@@ -71,24 +71,14 @@ pub trait IHyperstructures<T> {
     fn hyperstructure_count(self: @T, game_id: u32) -> u32;
     fn completed_hyperstructure_count(self: @T, game_id: u32) -> u32;
     fn settle_completed_hyperstructures(
-        ref self: T,
-        game_id: u32,
-        timestamp: u64,
-        game_context: crate::commands::ActionContext,
+        ref self: T, game_id: u32, timestamp: u64, game_context: crate::commands::ActionContext,
     ) -> u32;
     fn settle_final_hyperstructures(
-        ref self: T,
-        game_id: u32,
-        timestamp: u64,
-        game_context: crate::commands::ActionContext,
+        ref self: T, game_id: u32, timestamp: u64, game_context: crate::commands::ActionContext,
     ) -> u32;
     fn record_hyperstructure(ref self: T, key: ResourceKey, seed: felt252, completed: bool);
     fn initialize_hyperstructure(
-        ref self: T,
-        game_id: u32,
-        actor: ContractAddress,
-        id: u64,
-        context: crate::commands::ActionContext,
+        ref self: T, game_id: u32, actor: ContractAddress, id: u64, context: crate::commands::ActionContext,
     );
     fn contribute_hyperstructure(
         ref self: T,

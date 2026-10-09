@@ -72,39 +72,19 @@ pub struct ClaimPlayer {
 pub trait IFaith<T> {
     fn faith_rules(self: @T, game_id: u32) -> FaithRules;
     fn pledge_faith(
-        ref self: T,
-        game_id: u32,
-        actor: ContractAddress,
-        command: Pledge,
-        context: crate::commands::ActionContext,
+        ref self: T, game_id: u32, actor: ContractAddress, command: Pledge, context: crate::commands::ActionContext,
     );
     fn remove_faith(
-        ref self: T,
-        game_id: u32,
-        actor: ContractAddress,
-        structure_id: u64,
-        context: crate::commands::ActionContext,
+        ref self: T, game_id: u32, actor: ContractAddress, structure_id: u64, context: crate::commands::ActionContext,
     );
     fn update_wonder_ownership(
-        ref self: T,
-        game_id: u32,
-        actor: ContractAddress,
-        wonder_id: u64,
-        context: crate::commands::ActionContext,
+        ref self: T, game_id: u32, actor: ContractAddress, wonder_id: u64, context: crate::commands::ActionContext,
     );
     fn update_faithful_ownership(
-        ref self: T,
-        game_id: u32,
-        actor: ContractAddress,
-        structure_id: u64,
-        context: crate::commands::ActionContext,
+        ref self: T, game_id: u32, actor: ContractAddress, structure_id: u64, context: crate::commands::ActionContext,
     );
     fn claim_wonder_points(
-        ref self: T,
-        game_id: u32,
-        actor: ContractAddress,
-        wonder_id: u64,
-        context: crate::commands::ActionContext,
+        ref self: T, game_id: u32, actor: ContractAddress, wonder_id: u64, context: crate::commands::ActionContext,
     );
     fn claim_player_faith_points(
         ref self: T,

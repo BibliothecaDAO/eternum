@@ -57,10 +57,7 @@ pub struct EntryEntitlement {
 #[starknet::interface]
 pub trait ISettlementCommands<T> {
     fn settle_blitz_roster(
-        ref self: T,
-        game_id: u32,
-        actor: ContractAddress,
-        context: crate::commands::ActionContext,
+        ref self: T, game_id: u32, actor: ContractAddress, context: crate::commands::ActionContext,
     ) -> u64;
 }
 
@@ -114,18 +111,10 @@ pub struct RealmGrants {
 #[starknet::interface]
 pub trait IRealmCreation<T> {
     fn provision_and_upgrade_realm(
-        ref self: T,
-        game_id: u32,
-        actor: ContractAddress,
-        structure_id: u64,
-        context: crate::commands::ActionContext,
+        ref self: T, game_id: u32, actor: ContractAddress, structure_id: u64, context: crate::commands::ActionContext,
     );
     fn activate_realm_economy(
-        ref self: T,
-        game_id: u32,
-        actor: ContractAddress,
-        structure_id: u64,
-        context: crate::commands::ActionContext,
+        ref self: T, game_id: u32, actor: ContractAddress, structure_id: u64, context: crate::commands::ActionContext,
     );
 }
 
@@ -137,11 +126,7 @@ pub trait ISettlementDisplacement<T> {
 #[starknet::interface]
 pub trait IBlitzHyperstructures<T> {
     fn create_reserved_hyperstructure(
-        ref self: T,
-        game_id: u32,
-        actor: ContractAddress,
-        coord: Coord,
-        context: crate::commands::ActionContext,
+        ref self: T, game_id: u32, actor: ContractAddress, coord: Coord, context: crate::commands::ActionContext,
     );
 }
 

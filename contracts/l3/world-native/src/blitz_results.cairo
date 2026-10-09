@@ -32,12 +32,8 @@ pub trait IBlitzResults<T> {
 }
 
 // The ledger's version-3 preimage uses frozen L2 wallets and has no nested hashes.
-pub fn result_commitment(
-    shard_chain_id: felt252, game_id: u32, players: Span<RankedPlayer>,
-) -> felt252 {
-    let mut values = array![
-        'ETERNUM_BLITZ_RESULT', 3, shard_chain_id, game_id.into(), players.len().into(),
-    ];
+pub fn result_commitment(shard_chain_id: felt252, game_id: u32, players: Span<RankedPlayer>) -> felt252 {
+    let mut values = array!['ETERNUM_BLITZ_RESULT', 3, shard_chain_id, game_id.into(), players.len().into()];
     for row in players {
         values.append((*row.wallet).into());
         values.append((*row.rank).into());

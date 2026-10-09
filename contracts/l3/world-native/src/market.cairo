@@ -91,18 +91,10 @@ pub trait IBank<T> {
         context: crate::commands::ActionContext,
     );
     fn buy_from_bank(
-        ref self: T,
-        game_id: u32,
-        actor: ContractAddress,
-        command: Swap,
-        context: crate::commands::ActionContext,
+        ref self: T, game_id: u32, actor: ContractAddress, command: Swap, context: crate::commands::ActionContext,
     );
     fn sell_to_bank(
-        ref self: T,
-        game_id: u32,
-        actor: ContractAddress,
-        command: Swap,
-        context: crate::commands::ActionContext,
+        ref self: T, game_id: u32, actor: ContractAddress, command: Swap, context: crate::commands::ActionContext,
     );
     fn add_bank_liquidity(
         ref self: T,

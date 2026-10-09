@@ -253,7 +253,9 @@ fn duel_village_consumes_one_pass_and_leaves_both_entries_available() {
 #[test]
 fn exhausted_geometry_records_rejection_and_keeps_the_pass() {
     let (deployment, realm) = setup_config(
-        false, SettlementMode::Single, crate::rules::SliceRules { map_center_offset: 2147483646, ..play_fixture::rules() },
+        false,
+        SettlementMode::Single,
+        crate::rules::SliceRules { map_center_offset: 2147483646, ..play_fixture::rules() },
     );
     let pass = register_pass(deployment, 9);
     let mut rejection_spy = spy_events();
@@ -457,7 +459,7 @@ fn assert_season_entitlement_mode(dev: bool, has_operator: bool, has_entitlement
                 7
             });
             created = true;
-            }
+        }
     }
     assert_eq!(created, dev || has_entitlement);
 }

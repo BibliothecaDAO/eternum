@@ -139,12 +139,7 @@ pub trait ILords<T> {
 
 #[starknet::interface]
 pub trait ICaptureRewards<T> {
-    fn grant_capture_rewards(
-        ref self: T,
-        site: ResourceKey,
-        explorer_id: u64,
-        context: crate::commands::ActionContext,
-    );
+    fn grant_capture_rewards(ref self: T, site: ResourceKey, explorer_id: u64, context: crate::commands::ActionContext);
 }
 
 #[starknet::interface]
@@ -154,18 +149,10 @@ pub trait IRelics<T> {
     fn site_chest(self: @T, key: ResourceKey) -> Option<SiteChest>;
     fn relic_rules(self: @T, game_id: u32) -> Span<RelicRule>;
     fn open_relic_chest(
-        ref self: T,
-        game_id: u32,
-        actor: ContractAddress,
-        command: OpenChest,
-        context: crate::commands::ActionContext,
+        ref self: T, game_id: u32, actor: ContractAddress, command: OpenChest, context: crate::commands::ActionContext,
     );
     fn apply_relic(
-        ref self: T,
-        game_id: u32,
-        actor: ContractAddress,
-        command: ApplyRelic,
-        context: crate::commands::ActionContext,
+        ref self: T, game_id: u32, actor: ContractAddress, command: ApplyRelic, context: crate::commands::ActionContext,
     );
 }
 #[starknet::interface]

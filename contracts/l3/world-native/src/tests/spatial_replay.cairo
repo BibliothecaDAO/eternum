@@ -95,7 +95,7 @@ pub fn capture(
                 + 2 < event.keys.len() && selected(*event.keys.at(index + 2)) {
                 events.append((event.keys, event.data));
                 break;
-                }
+            }
         }
     }
     spy = snforge_std::spy_events();

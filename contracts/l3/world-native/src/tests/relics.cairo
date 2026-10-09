@@ -68,11 +68,12 @@ fn setup_with_reward(blitz: bool, resource_type: u8, amount: u128) -> (super::De
         super::play_fixture::ETERNUM_RULES
     };
     config
-        .command_mask = if blitz {
-            super::play_fixture::BLITZ_COMMAND_MASK
-        } else {
-            super::play_fixture::ETERNUM_COMMAND_MASK
-        };
+        .command_mask =
+            if blitz {
+                super::play_fixture::BLITZ_COMMAND_MASK
+            } else {
+                super::play_fixture::ETERNUM_COMMAND_MASK
+            };
     config.entry_rule = if blitz {
         crate::rules::ENTRY_ROSTER
     } else {
@@ -324,7 +325,13 @@ fn chest_discovery_is_surface_only_timed_and_skips_reserved_or_occupied_tiles() 
     let tile = IMapLogicDispatcher { contract_address: deployment.games }
         .tile(crate::geometry::tile_key(3, actual))
         .unwrap();
-    assert_eq!(IMapLogicDispatcher { contract_address: deployment.games }.occupancy(crate::geometry::tile_key(3, actual)).unwrap().category, 34);
+    assert_eq!(
+        IMapLogicDispatcher { contract_address: deployment.games }
+            .occupancy(crate::geometry::tile_key(3, actual))
+            .unwrap()
+            .category,
+        34,
+    );
     assert_eq!(map_relics(deployment).relic_discovery_time(3), 40);
     start_cheat_caller_address(deployment.games, deployment.games);
     start_cheat_block_timestamp_global(49);
@@ -399,7 +406,11 @@ fn opening_a_chest_draws_with_replacement_once_and_replay_cannot_reopen_it() {
         points + 77,
     );
     assert_terminal_rejection(deployment, command, 51);
-    assert!(IMapLogicDispatcher { contract_address: deployment.games }.occupancy(crate::geometry::tile_key(3, coord)).is_none());
+    assert!(
+        IMapLogicDispatcher { contract_address: deployment.games }
+            .occupancy(crate::geometry::tile_key(3, coord))
+            .is_none(),
+    );
 }
 
 #[test]
@@ -417,13 +428,26 @@ fn relic_configuration_requires_authority_and_application_requires_owner() {
     super::play_fixture::caller(deployment.games, deployment.actor, 100);
     start_cheat_caller_address(deployment.games, super::authority());
     let mut rejected = snforge_std::spy_events();
-    assert!(super::play_fixture::IPlayFixtureSafeDispatcherTrait::play_with_root(
-        super::play_fixture::IPlayFixtureSafeDispatcher { contract_address: deployment.games },
-        3, release, commitment, super::play_fixture::encode(apply(explorer, 39, Recipient::Explorer)), 987654321,
-    ).is_err());
+    assert!(
+        super::play_fixture::IPlayFixtureSafeDispatcherTrait::play_with_root(
+            super::play_fixture::IPlayFixtureSafeDispatcher { contract_address: deployment.games },
+            3,
+            release,
+            commitment,
+            super::play_fixture::encode(apply(explorer, 39, Recipient::Explorer)),
+            987654321,
+        )
+            .is_err(),
+    );
     assert_eq!(balance(deployment, explorer, 39), relics_before);
     assert_eq!(super::play_fixture::pins(deployment.games, 3), (release, commitment));
-    assert!(snforge_std::EventsFilterTrait::emitted_by(snforge_std::EventSpyTrait::get_events(ref rejected), deployment.games).events.is_empty());
+    assert!(
+        snforge_std::EventsFilterTrait::emitted_by(
+            snforge_std::EventSpyTrait::get_events(ref rejected), deployment.games,
+        )
+            .events
+            .is_empty(),
+    );
     start_cheat_caller_address(deployment.games, super::authority());
     let games = crate::game::IGameDispatcher { contract_address: deployment.games };
     assert!(registrar.register_preset(games.game(3).preset_id, preset).is_err());
@@ -542,9 +566,9 @@ fn an_explore_action_discovers_a_chest_while_eternum_does_not() {
     grant(deployment, home, 36, 1000 * RESOURCE_PRECISION);
     assert!(
         execute(
-                deployment,
-                Command::Explore(crate::commands::Explore { explorer_id: explorer.entity_id, direction: 0 }),
-                40,
+            deployment,
+            Command::Explore(crate::commands::Explore { explorer_id: explorer.entity_id, direction: 0 }),
+            40,
         ),
     );
     assert_eq!(map_relics(deployment).relic_discovery_time(3), 40);

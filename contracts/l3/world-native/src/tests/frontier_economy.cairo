@@ -224,10 +224,14 @@ fn raising_troops_pays_two_wheat_each_from_settled_wheat_and_fails_when_the_real
     let before = super::resource_commands::resource_facts(deployment, home);
     let mut rejected = snforge_std::spy_events();
     assert_terminal_rejection(deployment, raise(home, 4, 1), 80);
-    assert_eq!(super::play_fixture::rejection(ref rejected, deployment.games).reason, "realm cannot pay to raise troops");
+    assert_eq!(
+        super::play_fixture::rejection(ref rejected, deployment.games).reason, "realm cannot pay to raise troops",
+    );
     let mut rejected = snforge_std::spy_events();
     assert_terminal_rejection(deployment, reinforce(army, 4), 80);
-    assert_eq!(super::play_fixture::rejection(ref rejected, deployment.games).reason, "realm cannot pay to raise troops");
+    assert_eq!(
+        super::play_fixture::rejection(ref rejected, deployment.games).reason, "realm cannot pay to raise troops",
+    );
     assert_eq!(super::resource_commands::resource_facts(deployment, home), before);
     assert_eq!(IStructureOperationsDispatcher { contract_address: deployment.games }.home_armies(home).len(), 1);
 

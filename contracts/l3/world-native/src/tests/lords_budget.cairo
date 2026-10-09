@@ -24,7 +24,8 @@ fn clock() -> SeasonClock {
             end_grace_seconds: 0,
             seed: 1,
         },
-        day_unit_seconds: DAY_UNIT, tick: 120,
+        day_unit_seconds: DAY_UNIT,
+        tick: 120,
     }
 }
 
@@ -88,10 +89,13 @@ fn expired_open_chests_release_their_budget_without_spending_the_pool() {
 #[should_panic(expected: ("refill exceeds issued LORDS",))]
 fn a_refill_cannot_add_lords_that_the_pool_never_issued() {
     let (d, game_id, _) = super::registrar::setup_frontier_chests();
-    snforge_std::interact_with_state(d.games, || {
-        let context = crate::commands::ExecutionContext { timestamp: 360, ..super::context(d.games, game_id) };
-        crate::logic::lords_budget::return_to_pool(game_id, 1, context);
-    });
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            let context = crate::commands::ExecutionContext { timestamp: 360, ..super::context(d.games, game_id) };
+            crate::logic::lords_budget::return_to_pool(game_id, 1, context);
+        },
+    );
 }
 
 #[test]
@@ -126,28 +130,33 @@ fn price_uses_rollover_over_expected_rolled_shares_without_a_floor() {
 #[test]
 fn refused_rolls_feed_the_estimate_and_clear_does_not_count_them_again() {
     let (d, game_id, _) = super::registrar::setup_frontier_chests();
-    snforge_std::interact_with_state(d.games, || {
-        use starknet::storage::{StorageMapWriteAccess, StoragePointerReadAccess};
-        let context = crate::commands::ExecutionContext { timestamp: 360, ..super::context(d.games, game_id) };
-        let rules = crate::logic::preset_record::for_game(game_id).rollover_chest_rules.read().unwrap();
-        let day = crate::days::day_of(context.game.unbox(), context.rules.unbox().day_unit_seconds, 360).index;
-        let chest = crate::relics::SiteChest { tier: 3, amount: 500, reservation_day: 0 };
-        crate::state::write().relics.rollover_budget.write(
-            game_id, Some(LordsBudget { pool_left: 0, ..empty_day(rules, day) }),
-        );
-        assert!(!crate::logic::lords_budget::try_reserve(game_id, chest, context));
-        let refused = crate::logic::lords_budget::budget(game_id).unwrap();
-        assert_eq!((refused.rolled_shares, refused.open), (10, 0));
-        crate::state::write().relics.rollover_budget.write(
-            game_id, Some(LordsBudget { pool_left: rules.pool, price: rules.price_ceiling, ..refused }),
-        );
-        assert!(crate::logic::lords_budget::try_reserve(game_id, chest, context));
-        let site = crate::resources::ResourceKey { game_id, entity_id: 999 };
-        crate::logic::lords_budget::store_site_chest(site, chest);
-        let payout = crate::logic::lords_budget::pay(site, context);
-        assert_eq!(payout.amount, 500 * crate::rules::RESOURCE_PRECISION);
-        assert_eq!(crate::logic::lords_budget::budget(game_id).unwrap().rolled_shares, 20);
-    });
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            use starknet::storage::{StorageMapWriteAccess, StoragePointerReadAccess};
+            let context = crate::commands::ExecutionContext { timestamp: 360, ..super::context(d.games, game_id) };
+            let rules = crate::logic::preset_record::for_game(game_id).rollover_chest_rules.read().unwrap();
+            let day = crate::days::day_of(context.game.unbox(), context.rules.unbox().day_unit_seconds, 360).index;
+            let chest = crate::relics::SiteChest { tier: 3, amount: 500, reservation_day: 0 };
+            crate::state::write()
+                .relics
+                .rollover_budget
+                .write(game_id, Some(LordsBudget { pool_left: 0, ..empty_day(rules, day) }));
+            assert!(!crate::logic::lords_budget::try_reserve(game_id, chest, context));
+            let refused = crate::logic::lords_budget::budget(game_id).unwrap();
+            assert_eq!((refused.rolled_shares, refused.open), (10, 0));
+            crate::state::write()
+                .relics
+                .rollover_budget
+                .write(game_id, Some(LordsBudget { pool_left: rules.pool, price: rules.price_ceiling, ..refused }));
+            assert!(crate::logic::lords_budget::try_reserve(game_id, chest, context));
+            let site = crate::resources::ResourceKey { game_id, entity_id: 999 };
+            crate::logic::lords_budget::store_site_chest(site, chest);
+            let payout = crate::logic::lords_budget::pay(site, context);
+            assert_eq!(payout.amount, 500 * crate::rules::RESOURCE_PRECISION);
+            assert_eq!(crate::logic::lords_budget::budget(game_id).unwrap().rolled_shares, 20);
+        },
+    );
 }
 
 #[test]
@@ -233,7 +242,9 @@ fn withdrawals_remain_open_through_the_last_second_of_the_preset_claim_window() 
     let game = clock().game;
     let rules = rules();
     crate::relics::assert_claim_window(game, rules, game.end_at);
-    crate::relics::assert_claim_window(game, rules, game.end_at + Into::<u32, u64>::into(rules.claim_window_seconds) - 1);
+    crate::relics::assert_claim_window(
+        game, rules, game.end_at + Into::<u32, u64>::into(rules.claim_window_seconds) - 1,
+    );
 }
 
 #[test]
@@ -247,22 +258,25 @@ fn no_receipt_can_start_at_the_ledgers_close_deadline() {
 #[test]
 fn an_expired_chest_cannot_spend_another_players_reservation() {
     let (d, game_id, _) = super::registrar::setup_frontier_chests();
-    snforge_std::interact_with_state(d.games, || {
-        let first = crate::resources::ResourceKey { game_id, entity_id: 90001 };
-        let second = crate::resources::ResourceKey { game_id, entity_id: 90002 };
-        let context = crate::commands::ExecutionContext { timestamp: 360, ..super::context(d.games, game_id) };
-        let chest = crate::relics::SiteChest { tier: 0, amount: 100, reservation_day: 0 };
-        assert!(crate::logic::lords_budget::try_reserve(game_id, chest, context));
-        crate::logic::lords_budget::store_site_chest(first, chest);
-        let next = crate::days::day_of(context.game.unbox(), context.rules.unbox().day_unit_seconds, 360).end;
-        let context = crate::commands::ExecutionContext { timestamp: next, ..context };
-        let chest = crate::relics::SiteChest { tier: 0, amount: 120, reservation_day: 1 };
-        assert!(crate::logic::lords_budget::try_reserve(game_id, chest, context));
-        crate::logic::lords_budget::store_site_chest(second, chest);
-        let before = crate::logic::lords_budget::budget(game_id).unwrap();
-        assert_eq!(crate::logic::lords_budget::pay(first, context).amount, 0);
-        assert_eq!(crate::logic::lords_budget::budget(game_id).unwrap(), before);
-        assert_eq!(crate::logic::lords_budget::pay(second, context).amount, 120 * crate::rules::RESOURCE_PRECISION);
-        assert_eq!(crate::logic::lords_budget::budget(game_id).unwrap().open, 0);
-    });
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            let first = crate::resources::ResourceKey { game_id, entity_id: 90001 };
+            let second = crate::resources::ResourceKey { game_id, entity_id: 90002 };
+            let context = crate::commands::ExecutionContext { timestamp: 360, ..super::context(d.games, game_id) };
+            let chest = crate::relics::SiteChest { tier: 0, amount: 100, reservation_day: 0 };
+            assert!(crate::logic::lords_budget::try_reserve(game_id, chest, context));
+            crate::logic::lords_budget::store_site_chest(first, chest);
+            let next = crate::days::day_of(context.game.unbox(), context.rules.unbox().day_unit_seconds, 360).end;
+            let context = crate::commands::ExecutionContext { timestamp: next, ..context };
+            let chest = crate::relics::SiteChest { tier: 0, amount: 120, reservation_day: 1 };
+            assert!(crate::logic::lords_budget::try_reserve(game_id, chest, context));
+            crate::logic::lords_budget::store_site_chest(second, chest);
+            let before = crate::logic::lords_budget::budget(game_id).unwrap();
+            assert_eq!(crate::logic::lords_budget::pay(first, context).amount, 0);
+            assert_eq!(crate::logic::lords_budget::budget(game_id).unwrap(), before);
+            assert_eq!(crate::logic::lords_budget::pay(second, context).amount, 120 * crate::rules::RESOURCE_PRECISION);
+            assert_eq!(crate::logic::lords_budget::budget(game_id).unwrap().open, 0);
+        },
+    );
 }

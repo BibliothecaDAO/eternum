@@ -349,7 +349,14 @@ pub mod StructuresLogic {
             );
             self
                 .place_discovery(
-                    game_id, crate::entity_ids::home_for_actor(game_id, actor), coord, Discovery::Hyperstructure, seed.into(), context.timestamp, true, context,
+                    game_id,
+                    crate::entity_ids::home_for_actor(game_id, actor),
+                    coord,
+                    Discovery::Hyperstructure,
+                    seed.into(),
+                    context.timestamp,
+                    true,
+                    context,
                 );
         }
     }
@@ -449,10 +456,7 @@ pub mod StructuresLogic {
             let interval = context.rules.unbox().tick_config.armies_tick_in_seconds;
             let claimable_at: u64 = record.base.created_at.into() / interval + grants.troop_delay_ticks.into();
             assert!(context.timestamp / interval >= claimable_at, "army grant cannot be claimed yet");
-            self
-                .grant_starting_troops(
-                    key, grants.resources, 10 * RESOURCE_PRECISION, context.timestamp, context,
-                );
+            self.grant_starting_troops(key, grants.resources, 10 * RESOURCE_PRECISION, context.timestamp, context);
             ()
         }
     }
@@ -844,10 +848,7 @@ pub mod StructuresLogic {
         }
 
         fn provision_realm_economy(
-            ref self: ContractState,
-            key: ResourceKey,
-            timestamp: u64,
-            game_context: crate::commands::ExecutionContext,
+            ref self: ContractState, key: ResourceKey, timestamp: u64, game_context: crate::commands::ExecutionContext,
         ) {
             let counts = self.buildings.data.buildings.structure_buildings.read((key.game_id, key.entity_id));
             const LABOR_COUNT_SCALE: u128 = 0x10000000000000000;
@@ -895,20 +896,13 @@ pub mod StructuresLogic {
             }
         }
         fn grant_realm_troops(
-            ref self: ContractState,
-            key: ResourceKey,
-            timestamp: u64,
-            game_context: crate::commands::ExecutionContext,
+            ref self: ContractState, key: ResourceKey, timestamp: u64, game_context: crate::commands::ExecutionContext,
         ) {
             let grants = crate::logic::settlement::grants(key.game_id);
             let guards = game_context.rules.unbox().troop_limit_config.starting_guard;
             self
                 .grant_starting_troops(
-                    key,
-                    grants.resources,
-                    guards.into() * RESOURCE_PRECISION,
-                    timestamp,
-                    game_context,
+                    key, grants.resources, guards.into() * RESOURCE_PRECISION, timestamp, game_context,
                 );
         }
         fn grant_starting_troops(

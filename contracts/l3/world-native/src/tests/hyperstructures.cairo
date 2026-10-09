@@ -46,11 +46,12 @@ fn setup_mode_with_threshold(
         super::play_fixture::ETERNUM_RULES
     };
     ruleset
-        .command_mask = if blitz {
-            super::play_fixture::BLITZ_COMMAND_MASK
-        } else {
-            super::play_fixture::ETERNUM_COMMAND_MASK
-        };
+        .command_mask =
+            if blitz {
+                super::play_fixture::BLITZ_COMMAND_MASK
+            } else {
+                super::play_fixture::ETERNUM_COMMAND_MASK
+            };
     ruleset.entry_rule = if blitz {
         crate::rules::ENTRY_ROSTER
     } else {
@@ -248,15 +249,9 @@ fn one_action_numbers_two_stories_without_writing_the_entity_counter() {
 fn construction_and_allocation_use_block_time_and_keep_the_same_rewards() {
     let (deployment, hyper, from, _) = setup();
     assert!(execute(deployment, Command::InitializeHyperstructure(hyper.entity_id), 40));
-    assert!(
-        execute(deployment, contribute(hyper, from, array![amount(2, 10), amount(3, 20)].span()), 50),
-    );
+    assert!(execute(deployment, contribute(hyper, from, array![amount(2, 10), amount(3, 20)].span()), 50));
     let old = points(deployment, deployment.actor);
-    assert!(
-        execute(
-            deployment, allocate(hyper, array![Share { player: deployment.actor, bps: 10000 }].span()), 100,
-        ),
-    );
+    assert!(execute(deployment, allocate(hyper, array![Share { player: deployment.actor, bps: 10000 }].span()), 100));
     assert_eq!(points(deployment, deployment.actor) - old, 50000);
     assert_eq!(view(deployment).hyperstructure_shares(hyper).start_at, 100);
 }

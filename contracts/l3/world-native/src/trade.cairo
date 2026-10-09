@@ -93,11 +93,7 @@ pub trait ITrade<T> {
         context: crate::commands::ActionContext,
     );
     fn cancel_trade_order(
-        ref self: T,
-        game_id: u32,
-        actor: ContractAddress,
-        trade_id: u64,
-        context: crate::commands::ActionContext,
+        ref self: T, game_id: u32, actor: ContractAddress, trade_id: u64, context: crate::commands::ActionContext,
     );
 }
 

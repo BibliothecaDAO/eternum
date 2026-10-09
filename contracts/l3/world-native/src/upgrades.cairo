@@ -23,11 +23,7 @@ pub trait IUpgradeRules<T> {
 #[starknet::interface]
 pub trait IStructureUpgrades<T> {
     fn level_up(
-        ref self: T,
-        game_id: u32,
-        actor: ContractAddress,
-        structure_id: u64,
-        context: crate::commands::ActionContext,
+        ref self: T, game_id: u32, actor: ContractAddress, structure_id: u64, context: crate::commands::ActionContext,
     );
 }
 

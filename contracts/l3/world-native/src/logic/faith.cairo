@@ -74,14 +74,8 @@ pub mod FaithState {
                 assert!(wonder.num_structures_pledged <= 1, "wonder has active pledges");
             }
             let pledge = self.data.faith.faith_pledges.read((game_id, structure_id));
-            self
-                .remove_pledge(
-                    game_id, structure_id, pledge, ref wonder, context.timestamp, game.end_at,
-                );
-            self
-                .record_removal(
-                    game_id, structure.owner, structure_id, pledge.wonder_id, context.timestamp,
-                );
+            self.remove_pledge(game_id, structure_id, pledge, ref wonder, context.timestamp, game.end_at);
+            self.record_removal(game_id, structure.owner, structure_id, pledge.wonder_id, context.timestamp);
             ()
         }
         fn update_wonder_ownership(
@@ -242,13 +236,7 @@ pub mod FaithState {
                 }
             }
         }
-        fn refresh_wonder(
-            ref self: ComponentState<TContractState>,
-            game_id: u32,
-            id: u64,
-            timestamp: u64,
-            end: u64,
-        ) {
+        fn refresh_wonder(ref self: ComponentState<TContractState>, game_id: u32, id: u64, timestamp: u64, end: u64) {
             let structure = self.wonder(game_id, id);
             assert!(structure.owner != 0.try_into().unwrap(), "wonder has no owner");
             let mut wonder = self.data.faith.faith_wonders.read((game_id, id));
@@ -373,7 +361,6 @@ pub mod FaithState {
                     crate::ownership::StoryEvent {
                         version: 2,
                         game_id,
-
                         entity_id: Some(wonder_id),
                         owner: None,
                         timestamp,
@@ -397,7 +384,6 @@ pub mod FaithState {
                     crate::ownership::StoryEvent {
                         version: 2,
                         game_id,
-
                         entity_id: Some(command.structure_id),
                         owner: Some(owner),
                         timestamp,
@@ -426,7 +412,6 @@ pub mod FaithState {
                     crate::ownership::StoryEvent {
                         version: 2,
                         game_id,
-
                         entity_id: Some(id),
                         owner: Some(owner),
                         timestamp,

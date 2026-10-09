@@ -375,7 +375,6 @@ pub mod TroopsLogic {
                     crate::ownership::StoryEvent {
                         version: 2,
                         game_id,
-
                         owner: Some(actor),
                         entity_id: Some(entity_id),
                         tx_hash: starknet::get_tx_info().unbox().transaction_hash,
@@ -718,7 +717,9 @@ pub mod TroopsLogic {
             let origin = if rules.day_unit_seconds == 0 {
                 crate::structures::structure_coord(ResourceKey { game_id, entity_id: command.structure_id })
             } else {
-                crate::expeditions::site(self.expedition_spacing(game_id), crate::entity_ids::namespace(command.structure_id), today, 0)
+                crate::expeditions::site(
+                    self.expedition_spacing(game_id), crate::entity_ids::namespace(command.structure_id), today, 0,
+                )
             };
             let coord = neighbor(origin, command.direction);
             if rules.day_unit_seconds != 0 {

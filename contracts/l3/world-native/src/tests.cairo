@@ -1,39 +1,41 @@
-use crate::games::IGamesRandomnessDispatcherTrait;
-use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
-use crate::logic::release::{IReleasesDispatcher, IReleasesDispatcherTrait};
-use crate::tests::state::{GameState, TroopObservationTrait};
 use fixtures::{IFixtureDispatcher, IFixtureDispatcherTrait};
+use play_fixture::{IPlayFixtureSafeDispatcher, IPlayFixtureSafeDispatcherTrait, TestAction};
 use snforge_std::{
     ContractClassTrait, DeclareResultTrait, EventSpyTrait, EventsFilterTrait, declare, spy_events,
     start_cheat_block_timestamp, start_cheat_caller_address,
 };
+use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
 use starknet::{ClassHash, ContractAddress};
 use crate::commands::{
     Command, CreateExplorer, ExecutionContext, ICreateExplorerSafeDispatcher, ICreateExplorerSafeDispatcherTrait,
 };
 use crate::game::IGameDispatcherTrait;
 use crate::games::{
-    IGamesAuthenticationDispatcher, IGamesAuthenticationDispatcherTrait, IGamesRolesDispatcher,
-    IGamesRolesDispatcherTrait, IGamesRolesSafeDispatcher, IGamesRolesSafeDispatcherTrait,
-    IGamesPlaySafeDispatcher, IGamesPlaySafeDispatcherTrait,
+    IGamesAuthenticationDispatcher, IGamesAuthenticationDispatcherTrait, IGamesPlaySafeDispatcher,
+    IGamesPlaySafeDispatcherTrait, IGamesRandomnessDispatcherTrait, IGamesRolesDispatcher, IGamesRolesDispatcherTrait,
+    IGamesRolesSafeDispatcher, IGamesRolesSafeDispatcherTrait,
 };
+use crate::logic::release::{IReleasesDispatcher, IReleasesDispatcherTrait};
+use crate::tests::state::{GameState, TroopObservationTrait};
 use crate::troops::ExplorerKey;
 use crate::upgrades::{
     IUpgradeRulesDispatcher, IUpgradeRulesDispatcherTrait, IUpgradeRulesSafeDispatcher,
     IUpgradeRulesSafeDispatcherTrait, UpgradeLimits, UpgradeRecipe,
 };
-use play_fixture::{
-    IPlayFixtureSafeDispatcher,
-    IPlayFixtureSafeDispatcherTrait, TestAction,
-};
+mod artificer;
 
 mod bitcoin;
+mod blitz_results;
 mod bridge;
+mod building_commands;
+mod camps;
 mod combat_actions;
 mod combat_formula;
 mod days;
+mod entity_ids;
 mod entry;
 mod fact_wire;
+mod faith;
 mod fixtures;
 mod frontier_combat_vectors;
 mod frontier_discovery;
@@ -42,43 +44,37 @@ mod frontier_guards;
 mod frontier_reveal;
 pub(crate) mod games_fixture;
 mod games_host;
+mod guilds;
 mod hyperstructures;
 mod lords_budget;
 mod market;
 mod mines;
+mod play_fixture;
 mod preset_projection;
 mod production;
 mod progression;
+mod random_vectors;
 mod realms;
 mod registrar;
 mod releases;
 mod relics;
 mod resource_commands;
 mod resources;
+mod roll_independence;
 mod rule_storage;
+mod season_lifecycle;
 mod settlement;
 mod shared_storage;
 mod spatial_replay;
 mod spires;
 mod state;
+mod structure_rules;
 mod structure_storage;
+mod terrain;
 mod trade;
 mod troop_management;
 mod unlimited_production;
 mod village;
-mod artificer;
-mod blitz_results;
-mod building_commands;
-mod camps;
-mod faith;
-mod guilds;
-mod random_vectors;
-mod season_lifecycle;
-mod structure_rules;
-mod terrain;
-mod play_fixture;
-mod roll_independence;
-mod entity_ids;
 
 #[derive(Drop, Copy)]
 struct Deployment {
@@ -91,9 +87,7 @@ const GUARDIAN: felt252 = 98765;
 
 const TEST_L2_GAS_BOUND: u64 = 1200000000;
 fn vrf_key() -> realms_vrf_verifier::vendor::ecvrf::Point {
-    realms_vrf_verifier::vendor::ecvrf::Point {
-        x: core::ec::stark_curve::GEN_X, y: core::ec::stark_curve::GEN_Y,
-    }
+    realms_vrf_verifier::vendor::ecvrf::Point { x: core::ec::stark_curve::GEN_X, y: core::ec::stark_curve::GEN_Y }
 }
 fn append_vrf_configuration(ref calldata: Array<felt252>) {
     vrf_key().serialize(ref calldata);
@@ -169,9 +163,7 @@ fn setup_with_host(
         relics: declare_logic("RelicsLogic"),
         movement,
     };
-    let authentication = crate::games::Authentication {
-        account_class, guardian_public_key: GUARDIAN,
-    };
+    let authentication = crate::games::Authentication { account_class, guardian_public_key: GUARDIAN };
     let mut calldata = array![authority().into(), authority().into()];
     authentication.serialize(ref calldata);
     calldata.append(1);
@@ -275,10 +267,7 @@ fn row_set_member_and_deleted_have_exact_wire_shapes_and_zero_is_present() {
     }
     assert_eq!(matched.len(), 1);
     let (_, event) = matched.at(0);
-    assert_eq!(
-        event.keys.span(),
-        array![selector!("TroopEvent"), selector!("RowSet"), 1, 'ExplorerTroops'].span(),
-    );
+    assert_eq!(event.keys.span(), array![selector!("TroopEvent"), selector!("RowSet"), 1, 'ExplorerTroops'].span());
     let mut expected = array![2, 1, 7, values.len().into()];
     expected.append_span(values.span());
     assert_eq!(event.data.span(), expected.span());
@@ -321,17 +310,13 @@ fn set_launcher(deployment: Deployment, launcher: ContractAddress) {
 
 #[feature("safe_dispatcher")]
 fn assert_entry_refusal(
-    deployment: Deployment,
-    game_id: u32,
-    release: u32,
-    preset: felt252,
-    command: Span<felt252>,
-    message: ByteArray,
+    deployment: Deployment, game_id: u32, release: u32, preset: felt252, command: Span<felt252>, message: ByteArray,
 ) {
     let before = play_fixture::pins(deployment.games, 1);
     let mut spy = spy_events();
     let error = IPlayFixtureSafeDispatcher { contract_address: deployment.games }
-        .play_with_root(game_id, release, preset, command, 987654321).unwrap_err();
+        .play_with_root(game_id, release, preset, command, 987654321)
+        .unwrap_err();
     let mut expected = array![core::byte_array::BYTE_ARRAY_MAGIC];
     message.serialize(ref expected);
     expected.append('ENTRYPOINT_FAILED');
@@ -345,7 +330,9 @@ fn assert_entry_refusal(
 
 #[test]
 fn player_address_matches_the_shared_identity_encoder() {
-    let expected: ContractAddress = 0x407fc15527567765913410f7bd285549b7fc2cd7cd2ad7016d8a7f40ffd37e2.try_into().unwrap();
+    let expected: ContractAddress = 0x407fc15527567765913410f7bd285549b7fc2cd7cd2ad7016d8a7f40ffd37e2
+        .try_into()
+        .unwrap();
     assert_eq!(crate::games::player_account_address(456, 123.try_into().unwrap(), 789), expected);
 }
 
@@ -355,13 +342,30 @@ fn initializer_refuses_zero_owner_launcher_class_and_guardian() {
     let authentication = IGamesAuthenticationDispatcher { contract_address: d.games }.authentication();
     let release = IReleasesDispatcher { contract_address: d.games }.release(1);
     for field in 0..4 {
-        let owner = if field == 0 { 0 } else { authority().into() };
-        let launcher = if field == 1 { 0 } else { authority().into() };
+        let owner = if field == 0 {
+            0
+        } else {
+            authority().into()
+        };
+        let launcher = if field == 1 {
+            0
+        } else {
+            authority().into()
+        };
         let mut args = array![owner, launcher];
         crate::games::Authentication {
-            account_class: if field == 2 { 0.try_into().unwrap() } else { authentication.account_class },
-            guardian_public_key: if field == 3 { 0 } else { authentication.guardian_public_key },
-        }.serialize(ref args);
+            account_class: if field == 2 {
+                0.try_into().unwrap()
+            } else {
+                authentication.account_class
+            },
+            guardian_public_key: if field == 3 {
+                0
+            } else {
+                authentication.guardian_public_key
+            },
+        }
+            .serialize(ref args);
         args.append(1);
         release.serialize(ref args);
         append_vrf_configuration(ref args);
@@ -378,9 +382,7 @@ fn direct_actor_root_and_block_time_reach_each_game_domain() {
         assert_eq!(fixture.received_actor(), d.actor);
         assert_eq!(fixture.received_root(), 987654321);
         assert_eq!(fixture.received_timestamp(), 123);
-        assert!(
-            GameState { contract_address: d.games }.explorer(ExplorerKey { game_id, explorer_id: 7 }).is_some(),
-        );
+        assert!(GameState { contract_address: d.games }.explorer(ExplorerKey { game_id, explorer_id: 7 }).is_some());
     }
 }
 
@@ -392,7 +394,9 @@ fn indirect_or_zero_caller_is_rejected_before_root() {
     play_fixture::caller(d.games, d.actor, 100);
     for caller in array![authority(), 0.try_into().unwrap()] {
         start_cheat_caller_address(d.games, caller);
-        assert_entry_refusal(d, 1, release, preset, play_fixture::encode(action(d, 1).command), "direct account required");
+        assert_entry_refusal(
+            d, 1, release, preset, play_fixture::encode(action(d, 1).command), "direct account required",
+        );
     }
 }
 
@@ -447,7 +451,9 @@ fn malformed_commands_are_rejected_before_root() {
     for command in array![array![].span(), array![999].span(), array![0].span(), trailing.span()] {
         let mut spy = spy_events();
         assert!(
-            IPlayFixtureSafeDispatcher { contract_address: d.games }.play_with_root(1, release, preset, command, 987654321).is_err(),
+            IPlayFixtureSafeDispatcher { contract_address: d.games }
+                .play_with_root(1, release, preset, command, 987654321)
+                .is_err(),
         );
         assert_eq!(play_fixture::pins(d.games, 1), (release, preset));
         assert!(spy.get_events().emitted_by(d.games).events.is_empty());
@@ -462,20 +468,23 @@ fn production_play_refuses_a_missing_stamp_and_exposes_no_domain_routes() {
     play_fixture::caller(d.games, d.actor, 100);
     let mut spy = spy_events();
     assert!(
-        IGamesPlaySafeDispatcher { contract_address: d.games }.play(1, release, preset, play_fixture::encode(action(d, 1).command)).is_err(),
+        IGamesPlaySafeDispatcher { contract_address: d.games }
+            .play(1, release, preset, play_fixture::encode(action(d, 1).command))
+            .is_err(),
     );
     assert!(spy.get_events().emitted_by(d.games).events.is_empty());
-    assert!(
-        GameState { contract_address: d.games }.explorer(ExplorerKey { game_id: 1, explorer_id: 7 }).is_none(),
-    );
+    assert!(GameState { contract_address: d.games }.explorer(ExplorerKey { game_id: 1, explorer_id: 7 }).is_none());
     let Command::CreateExplorer(command) = action(d, 1).command else {
         panic!("wrong command")
     };
     assert!(
-        ICreateExplorerSafeDispatcher { contract_address: d.games }.create_explorer(1, d.actor, command, crate::commands::ActionContext { raw_root: 1, timestamp: 100 }, ).is_err(),
+        ICreateExplorerSafeDispatcher { contract_address: d.games }
+            .create_explorer(1, d.actor, command, crate::commands::ActionContext { raw_root: 1, timestamp: 100 })
+            .is_err(),
     );
     assert!(
-        starknet::syscalls::call_contract_syscall(d.games, selector!("reveal"), array![1, 0, 12, 34, 11].span()).is_err(),
+        starknet::syscalls::call_contract_syscall(d.games, selector!("reveal"), array![1, 0, 12, 34, 11].span())
+            .is_err(),
     );
 }
 
@@ -487,16 +496,19 @@ fn post_root_failure_rolls_back_child_storage_and_emits_rejection_wire() {
     let mut spy = spy_events();
     assert!(!play_fixture::play(d.games, action(d, 1), 0, 100));
     assert_eq!(play_fixture::pins(d.games, 1), before);
-    assert!(
-        GameState { contract_address: d.games }.explorer(ExplorerKey { game_id: 1, explorer_id: 7 }).is_none(),
-    );
+    assert!(GameState { contract_address: d.games }.explorer(ExplorerKey { game_id: 1, explorer_id: 7 }).is_none());
     let fixture = IFixtureDispatcher { contract_address: d.games };
     assert_eq!(fixture.received_actor(), 0.try_into().unwrap());
     assert_eq!(fixture.received_root(), 0);
     assert_eq!(fixture.received_timestamp(), 0);
-    assert!(snforge_std::interact_with_state(d.games, || {
-        !crate::logic::structures::exists(crate::resources::ResourceKey { game_id: 1, entity_id: 7 })
-    }));
+    assert!(
+        snforge_std::interact_with_state(
+            d.games,
+            || {
+                !crate::logic::structures::exists(crate::resources::ResourceKey { game_id: 1, entity_id: 7 })
+            },
+        ),
+    );
     let rejected = play_fixture::rejection(ref spy, d.games);
     assert_eq!(rejected.version, 1);
     assert_eq!(rejected.game_id, 1);
@@ -518,7 +530,10 @@ fn post_root_failure_rolls_back_child_storage_and_emits_rejection_wire() {
     assert_eq!(rejection_count, 1);
     // Source rows verify that every child write rolled back.
     assert!(
-        snforge_std::interact_with_state(d.games, || crate::logic::map::occupancy(crate::map::TileKey { game_id: 1, alt: false, col: 12, row: 34 })).is_none(),
+        snforge_std::interact_with_state(
+            d.games, || crate::logic::map::occupancy(crate::map::TileKey { game_id: 1, alt: false, col: 12, row: 34 }),
+        )
+            .is_none(),
     );
     execute(d, action(d, 1));
 }
@@ -544,7 +559,10 @@ fn only_owner_rotates_launcher_and_authentication_is_immutable() {
     assert_eq!(current.account_class, authentication.account_class);
     assert_eq!(current.guardian_public_key, authentication.guardian_public_key);
     assert!(
-        starknet::syscalls::call_contract_syscall(d.games, selector!("set_authentication"), array![d.actor.into(), d.account_class.into()].span()).is_err(),
+        starknet::syscalls::call_contract_syscall(
+            d.games, selector!("set_authentication"), array![d.actor.into(), d.account_class.into()].span(),
+        )
+            .is_err(),
     );
 }
 
@@ -606,7 +624,8 @@ fn only_current_launcher_can_create_banks_before_root() {
         crate::market::BankPlacement {
             name: 'bank', coord: crate::troops::Coord { alt: false, x: 2000000, y: 2000000 },
         },
-    ].span();
+    ]
+        .span();
     let command = play_fixture::encode(Command::CreateBanks(banks));
     let (release, preset) = play_fixture::pins(d.games, 1);
     play_fixture::caller(d.games, d.actor, 100);
@@ -616,9 +635,7 @@ fn only_current_launcher_can_create_banks_before_root() {
     play_fixture::caller(d.games, old_launcher.actor, 100);
     assert_entry_refusal(d, 1, release, preset, command, "only launcher");
     let mut spy = spy_events();
-    assert!(
-        !play_fixture::play(d.games, TestAction { command: Command::CreateBanks(banks), ..action(d, 1) }, 1, 100),
-    );
+    assert!(!play_fixture::play(d.games, TestAction { command: Command::CreateBanks(banks), ..action(d, 1) }, 1, 100));
     let rejected = play_fixture::rejection(ref spy, d.games);
     assert_eq!(rejected.status_class, 'GAMEPLAY_REJECTED');
     assert_eq!(rejected.reason, "six regional banks required");
@@ -644,12 +661,12 @@ fn command_list_and_calldata_limits_are_checked_before_root() {
     for command in array![oversized_list, oversized_calldata.span(), array![0, 7, 256, 0, 0, 0].span()] {
         let mut spy = spy_events();
         assert!(
-            IPlayFixtureSafeDispatcher { contract_address: d.games }.play_with_root(1, release, preset, command, 1).is_err(),
+            IPlayFixtureSafeDispatcher { contract_address: d.games }
+                .play_with_root(1, release, preset, command, 1)
+                .is_err(),
         );
         assert_eq!(play_fixture::pins(d.games, 1), (release, preset));
-        assert!(
-            GameState { contract_address: d.games }.explorer(ExplorerKey { game_id: 1, explorer_id: 7 }).is_none(),
-        );
+        assert!(GameState { contract_address: d.games }.explorer(ExplorerKey { game_id: 1, explorer_id: 7 }).is_none());
         assert!(spy.get_events().emitted_by(d.games).events.is_empty());
     }
 }
@@ -668,7 +685,10 @@ fn owner_registration_and_launcher_game_creation_have_separate_roles() {
         crate::registrar::IRegistrarSafeDispatcherTrait::register_preset(safe, 1, registrar::definition(true)).is_err(),
     );
     assert!(
-        crate::logic::release::IReleasesSafeDispatcherTrait::register_release(crate::logic::release::IReleasesSafeDispatcher { contract_address: d.games }, 2, release).is_err(),
+        crate::logic::release::IReleasesSafeDispatcherTrait::register_release(
+            crate::logic::release::IReleasesSafeDispatcher { contract_address: d.games }, 2, release,
+        )
+            .is_err(),
     );
     start_cheat_caller_address(d.games, authority());
     crate::registrar::IRegistrarDispatcherTrait::register_preset(registry, 1, registrar::definition(true));
@@ -687,10 +707,14 @@ fn game_registry_wire_contains_only_game_configuration() {
     let game = crate::game::IGameDispatcherTrait::game(crate::game::IGameDispatcher { contract_address: d.games }, 1);
     let mut encoded = array![];
     game.serialize(ref encoded);
-    assert_eq!(encoded.span(), array![
-        game.name, game.preset_id.into(), 0, 1, 1, game.start_settling_at.into(), game.start_main_at.into(),
-        game.end_at.into(), game.end_grace_seconds.into(), game.seed,
-    ].span());
+    assert_eq!(
+        encoded.span(),
+        array![
+            game.name, game.preset_id.into(), 0, 1, 1, game.start_settling_at.into(), game.start_main_at.into(),
+            game.end_at.into(), game.end_grace_seconds.into(), game.seed,
+        ]
+            .span(),
+    );
 }
 
 
@@ -703,7 +727,8 @@ fn constructor_vrf_configuration_is_immutable_and_refuses_invalid_inputs() {
     assert_eq!(randomness.l2_gas_bound(), TEST_L2_GAS_BOUND);
     start_cheat_caller_address(d.games, authority());
     assert!(
-        starknet::syscalls::call_contract_syscall(d.games, selector!("set_vrf_public_key"), array![0, 0].span()).is_err(),
+        starknet::syscalls::call_contract_syscall(d.games, selector!("set_vrf_public_key"), array![0, 0].span())
+            .is_err(),
     );
     assert!(
         starknet::syscalls::call_contract_syscall(d.games, selector!("set_l2_gas_bound"), array![1].span()).is_err(),
@@ -718,9 +743,17 @@ fn constructor_vrf_configuration_is_immutable_and_refuses_invalid_inputs() {
         authentication.serialize(ref args);
         args.append(1);
         release.serialize(ref args);
-        let key = if invalid_key { realms_vrf_verifier::vendor::ecvrf::Point { x: 0, y: 0 } } else { vrf_key() };
+        let key = if invalid_key {
+            realms_vrf_verifier::vendor::ecvrf::Point { x: 0, y: 0 }
+        } else {
+            vrf_key()
+        };
         key.serialize(ref args);
-        args.append(if invalid_key { TEST_L2_GAS_BOUND.into() } else { 0 });
+        args.append(if invalid_key {
+            TEST_L2_GAS_BOUND.into()
+        } else {
+            0
+        });
         assert!(declare("Games").unwrap().contract_class().deploy(@args).is_err());
     }
 }

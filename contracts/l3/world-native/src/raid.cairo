@@ -98,6 +98,5 @@ pub fn success(result: RaidResolution, seed: u256) -> bool {
     if result.damage_to_explorer > result.damage_to_guards * 2 {
         return false;
     }
-    crate::random::range(seed, 18, result.damage_to_guards + result.damage_to_explorer) < result
-        .damage_to_guards
+    crate::random::range(seed, 18, result.damage_to_guards + result.damage_to_explorer) < result.damage_to_guards
 }

@@ -1,10 +1,10 @@
 use snforge_std::fs::{FileTrait, read_txt};
+use snforge_std::{EventSpyTrait, EventsFilterTrait};
 use starknet::ContractAddress;
 use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
 use crate::commands::Command;
 use crate::game::GameRegistry;
 use crate::registrar::{IRegistrarDispatcher, IRegistrarDispatcherTrait};
-use snforge_std::{EventSpyTrait, EventsFilterTrait};
 
 #[derive(Copy, Drop)]
 pub struct TestAction {
@@ -16,12 +16,7 @@ pub struct TestAction {
 #[starknet::interface]
 pub trait IPlayFixture<T> {
     fn play_with_root(
-        ref self: T,
-        game_id: u32,
-        release_id: u32,
-        preset_commitment: felt252,
-        command: Span<felt252>,
-        root: u256,
+        ref self: T, game_id: u32, release_id: u32, preset_commitment: felt252, command: Span<felt252>, root: u256,
     );
     fn last_applied(self: @T) -> bool;
 }
@@ -189,10 +184,13 @@ pub fn rejection(ref spy: snforge_std::EventSpy, games: ContractAddress) -> crat
 #[feature("safe_dispatcher")]
 pub fn assert_preflight_rejection(games: ContractAddress, action: TestAction, timestamp: u64) {
     let (release, preset) = pins(games, action.game_id);
-    let before = snforge_std::interact_with_state(games, || {
-        let state = crate::state::read();
-        (state.games.games.read(action.game_id), state.games.next_entity.read(action.game_id))
-    });
+    let before = snforge_std::interact_with_state(
+        games,
+        || {
+            let state = crate::state::read();
+            (state.games.games.read(action.game_id), state.games.next_entity.read(action.game_id))
+        },
+    );
     caller(games, action.actor, timestamp);
     let mut spy = snforge_std::spy_events();
     assert!(
@@ -202,29 +200,35 @@ pub fn assert_preflight_rejection(games: ContractAddress, action: TestAction, ti
     );
     assert_eq!(pins(games, action.game_id), (release, preset));
     assert_eq!(
-        snforge_std::interact_with_state(games, || {
-            let state = crate::state::read();
-            (state.games.games.read(action.game_id), state.games.next_entity.read(action.game_id))
-        }),
+        snforge_std::interact_with_state(
+            games,
+            || {
+                let state = crate::state::read();
+                (state.games.games.read(action.game_id), state.games.next_entity.read(action.game_id))
+            },
+        ),
         before,
     );
     assert!(spy.get_events().emitted_by(games).events.is_empty());
 }
 
 pub fn gameplay_snapshot(games: ContractAddress) -> Array<felt252> {
-    snforge_std::interact_with_state(games, || {
-        let state = crate::state::read();
-        let mut facts = array![];
-        for game_id in array![1_u32, 2, 3] {
-            state.games.games.read(game_id).serialize(ref facts);
-            state.game_releases.read(game_id).serialize(ref facts);
-            state.games.next_entity.read(game_id).serialize(ref facts);
-            for home in 1_u32..4 {
-                state.games.home_entities.read((game_id, home)).serialize(ref facts);
+    snforge_std::interact_with_state(
+        games,
+        || {
+            let state = crate::state::read();
+            let mut facts = array![];
+            for game_id in array![1_u32, 2, 3] {
+                state.games.games.read(game_id).serialize(ref facts);
+                state.game_releases.read(game_id).serialize(ref facts);
+                state.games.next_entity.read(game_id).serialize(ref facts);
+                for home in 1_u32..4 {
+                    state.games.home_entities.read((game_id, home)).serialize(ref facts);
+                }
             }
-        }
-        facts
-    })
+            facts
+        },
+    )
 }
 
 pub fn prepare_homes(games: ContractAddress, game_id: u32, owner: ContractAddress) {
@@ -241,5 +245,7 @@ pub fn prepare_fixture_home(game_id: u32, owner: ContractAddress) {
             state.games.open_homes.write((game_id, owner), first.into());
             state.games.namespace_owners.write((game_id, first), owner);
         }
-    } else { crate::entity_ids::reserve_homes(game_id, owner); }
+    } else {
+        crate::entity_ids::reserve_homes(game_id, owner);
+    }
 }

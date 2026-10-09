@@ -9,7 +9,6 @@ pub mod SettlementLogic {
     use crate::logic::settlement::SettlementState;
     use crate::logic::upgrades::UpgradeState;
     use crate::logic::village::VillageState;
-
     use crate::realms::{ISeasonPlacementDispatcherTrait, ISeasonPlacementLibraryDispatcher};
     use crate::settlement::{
         EntryKey, ISettlementCreationDispatcherTrait, ISettlementCreationLibraryDispatcher,
@@ -293,10 +292,7 @@ pub mod SettlementLogic {
     #[abi(embed_v0)]
     impl SettlementCommands of crate::settlement::ISettlementCommands<ContractState> {
         fn settle_blitz_roster(
-            ref self: ContractState,
-            game_id: u32,
-            actor: ContractAddress,
-            context: crate::commands::ActionContext,
+            ref self: ContractState, game_id: u32, actor: ContractAddress, context: crate::commands::ActionContext,
         ) -> u64 {
             let context = crate::commands::load_context(game_id, context);
             let game = context.game.unbox();
@@ -335,7 +331,10 @@ pub mod SettlementLogic {
     impl Internal of InternalTrait {
         // Frontier homes are private boards. Realm ids select immutable traits, rather than scarce catalogue seats.
         fn settle_open_frontier(
-            ref self: ContractState, game_id: u32, actor: ContractAddress, command: crate::realms::SettleSeason,
+            ref self: ContractState,
+            game_id: u32,
+            actor: ContractAddress,
+            command: crate::realms::SettleSeason,
             context: DomainContext,
         ) {
             self.settlements.reserve_entry(EntryKey { game_id, owner: actor }, actor, false);
@@ -344,14 +343,21 @@ pub mod SettlementLogic {
             let realm_id = if let Some(selected) = command.selected_realm {
                 assert!(context.game.unbox().dev_mode_on, "development mode required");
                 selected
-            } else { crate::entity_ids::namespace(home) % crate::realms::CANONICAL_REALM_COUNT + 1 };
+            } else {
+                crate::entity_ids::namespace(home) % crate::realms::CANONICAL_REALM_COUNT + 1
+            };
             let traits = self.realms.traits(realm_id);
             ISettlementCreationLibraryDispatcher { class_hash: self.release.classes(game_id).structures.read() }
                 .create_settlement(
-                    game_id, actor, crate::settlement::off_map_realm_reference(realm_id),
-                    SettlementCreation::Realm(RealmCreation {
-                        realm_id: realm_id.try_into().unwrap(), traits, grant_troops: true, activate_economy: true,
-                    }), crate::commands::action_context(context),
+                    game_id,
+                    actor,
+                    crate::settlement::off_map_realm_reference(realm_id),
+                    SettlementCreation::Realm(
+                        RealmCreation {
+                            realm_id: realm_id.try_into().unwrap(), traits, grant_troops: true, activate_economy: true,
+                        },
+                    ),
+                    crate::commands::action_context(context),
                 );
         }
 

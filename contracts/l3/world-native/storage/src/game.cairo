@@ -1,5 +1,5 @@
-use starknet::storage::Map;
 use starknet::ContractAddress;
+use starknet::storage::Map;
 
 #[starknet::storage_node]
 pub struct GameStateStorage<TGameRegistry, TGameOverrides> {

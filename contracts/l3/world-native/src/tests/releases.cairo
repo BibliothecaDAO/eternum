@@ -1,5 +1,5 @@
 use snforge_std::{EventSpyTrait, EventsFilterTrait, interact_with_state, spy_events, start_cheat_caller_address};
-use starknet::storage::{StorageMapReadAccess};
+use starknet::storage::StorageMapReadAccess;
 use crate::game::{IGameDispatcher, IGameDispatcherTrait};
 use crate::games::{IGamesAuthenticationDispatcher, IGamesAuthenticationDispatcherTrait};
 use crate::logic::release::{
@@ -138,7 +138,8 @@ fn launcher_hotfix_migrates_a_populated_frontier_day_once_and_play_continues() {
         d.games, selector!("realms"), selector!("traits"), array![2].span(), 0x4000001_u32,
     );
     let other_home = ResourceKey {
-        game_id, entity_id: interact_with_state(d.games, || crate::state::read().games.next_entity.read(game_id)).into(),
+        game_id,
+        entity_id: interact_with_state(d.games, || crate::state::read().games.next_entity.read(game_id)).into(),
     };
     super::play_fixture::prepare_homes(d.games, game_id, other.actor);
     assert!(
@@ -212,9 +213,7 @@ fn launcher_hotfix_migrates_a_populated_frontier_day_once_and_play_continues() {
     assert_eq!(games.game(game_id).seed, seed + 1);
     assert!(safe.apply_release(game_id, 1).is_err());
     assert!(safe.apply_release(game_id, 3).is_err());
-    assert!(
-        super::resource_commands::execute_in_game(d, game_id, super::registrar::transfer(first, second, 1), 352),
-    );
+    assert!(super::resource_commands::execute_in_game(d, game_id, super::registrar::transfer(first, second, 1), 352));
 }
 
 fn populated_facts(
@@ -303,7 +302,9 @@ fn hotfix_refuses_old_release_pins_and_accepts_current_pins() {
     let d = super::setup(true);
     super::execute(d, super::action(d, 1));
     let action = super::play_fixture::TestAction {
-        command: crate::commands::Command::CreateExplorer(crate::commands::CreateExplorer { structure_id: 8, category: 0, tier: 0, amount: 0, direction: 0 }),
+        command: crate::commands::Command::CreateExplorer(
+            crate::commands::CreateExplorer { structure_id: 8, category: 0, tier: 0, amount: 0, direction: 0 },
+        ),
         ..super::action(d, 1),
     };
     let (old_release, commitment) = super::play_fixture::pins(d.games, 1);
@@ -314,10 +315,17 @@ fn hotfix_refuses_old_release_pins_and_accepts_current_pins() {
     let before = gameplay_facts(d.games);
     super::play_fixture::caller(d.games, d.actor, 100);
     let mut spy = spy_events();
-    assert!(super::play_fixture::IPlayFixtureSafeDispatcherTrait::play_with_root(
-        super::play_fixture::IPlayFixtureSafeDispatcher { contract_address: d.games },
-        1, old_release, commitment, super::play_fixture::encode(action.command), 987654321,
-    ).is_err());
+    assert!(
+        super::play_fixture::IPlayFixtureSafeDispatcherTrait::play_with_root(
+            super::play_fixture::IPlayFixtureSafeDispatcher { contract_address: d.games },
+            1,
+            old_release,
+            commitment,
+            super::play_fixture::encode(action.command),
+            987654321,
+        )
+            .is_err(),
+    );
     assert_eq!(gameplay_facts(d.games), before);
     assert_eq!(super::play_fixture::pins(d.games, 1), (2, commitment));
     assert!(spy.get_events().emitted_by(d.games).events.is_empty());

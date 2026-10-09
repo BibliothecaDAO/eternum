@@ -40,18 +40,9 @@ pub trait IGuilds<T> {
         context: crate::commands::ActionContext,
     );
     fn join_guild(
-        ref self: T,
-        game_id: u32,
-        actor: ContractAddress,
-        command: JoinGuild,
-        context: crate::commands::ActionContext,
+        ref self: T, game_id: u32, actor: ContractAddress, command: JoinGuild, context: crate::commands::ActionContext,
     );
-    fn leave_guild(
-        ref self: T,
-        game_id: u32,
-        actor: ContractAddress,
-        context: crate::commands::ActionContext,
-    );
+    fn leave_guild(ref self: T, game_id: u32, actor: ContractAddress, context: crate::commands::ActionContext);
     fn set_guild_whitelist(
         ref self: T,
         game_id: u32,

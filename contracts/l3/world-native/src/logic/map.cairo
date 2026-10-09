@@ -39,12 +39,7 @@ pub fn tile(key: TileKey) -> Option<TileOpt> {
     let storage_key = (key.game_id, key.alt, key.col, key.row);
     let occupier = occupancy(key);
     if state.map.exists.read(storage_key) || occupier.is_some() {
-        Some(
-            TileOpt {
-                data: crate::map::coordinate_bits(key)
-                    + state.map.tiles.read(storage_key),
-            },
-        )
+        Some(TileOpt { data: crate::map::coordinate_bits(key) + state.map.tiles.read(storage_key) })
     } else {
         None
     }
@@ -275,9 +270,7 @@ pub mod MapLogic {
                         adjacent = true;
                     }
                 }
-                crate::discovery::ethereal(
-                    rules.map_config, rules.bitcoin_mine_config.enabled, adjacent, seed,
-                )
+                crate::discovery::ethereal(rules.map_config, rules.bitcoin_mine_config.enabled, adjacent, seed)
             } else {
                 let center = Coord {
                     alt: false, x: 2147483646 - rules.map_center_offset, y: 2147483646 - rules.map_center_offset,
@@ -391,9 +384,7 @@ pub mod MapLogic {
                 Some(crate::logic::lords_budget::candidate(key.game_id, odds, seed, context))
             };
             let (camp, rift, stragglers) = crate::progression::scouting_bonus(progress);
-            let mut result = crate::discovery::frontier(
-                rules, camp, rift, stragglers, day.empty_reveals, ruin, seed,
-            );
+            let mut result = crate::discovery::frontier(rules, camp, rift, stragglers, day.empty_reveals, ruin, seed);
             if let crate::discovery::Discovery::Ruin(chest) = result {
                 if !crate::logic::lords_budget::try_reserve(key.game_id, chest, context) {
                     result = crate::discovery::Discovery::None;
@@ -440,11 +431,9 @@ pub mod MapLogic {
             );
             assert!(!explorer.coord.alt, "extraction requires surface");
             assert!(explorer.troops.count != 0, "explorer is dead");
-            let occupied = crate::logic::map::occupancy(tile_key(game_id, explorer.coord)).expect('missing army occupancy');
-            assert!(
-                occupied.entity_id == explorer_id,
-                "explorer does not occupy tile",
-            );
+            let occupied = crate::logic::map::occupancy(tile_key(game_id, explorer.coord))
+                .expect('missing army occupancy');
+            assert!(occupied.entity_id == explorer_id, "explorer does not occupy tile");
             let rules = context.rules.unbox();
             let coord = if crate::rules::rule_enabled(rules, crate::rules::REVEAL_SUPPLIES) {
                 match revealed {
@@ -620,7 +609,6 @@ pub mod MapLogic {
                     crate::ownership::StoryEvent {
                         version: 2,
                         game_id,
-
                         entity_id: Some(reward.explorer_id),
                         owner: Some(actor),
                         timestamp,

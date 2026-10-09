@@ -506,7 +506,6 @@ pub mod HyperstructureState {
                     crate::ownership::StoryEvent {
                         version: 2,
                         game_id: key.game_id,
-
                         entity_id: Some(key.entity_id),
                         owner: Some(player),
                         tx_hash: starknet::get_tx_info().unbox().transaction_hash,

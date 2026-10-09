@@ -187,7 +187,10 @@ pub mod GamesFixture {
         ) -> Span<(crate::troops::Coord, u8)> {
             let classes = fixture_classes(game_id);
             crate::map::IMapLogicDispatcherTrait::expedition_home_ring(
-                crate::map::IMapLogicLibraryDispatcher { class_hash: classes.map.read() }, game_id, region_id, timestamp,
+                crate::map::IMapLogicLibraryDispatcher { class_hash: classes.map.read() },
+                game_id,
+                region_id,
+                timestamp,
             )
         }
     }
@@ -1855,10 +1858,7 @@ pub mod GamesFixture {
             )
         }
         fn settle_completed_hyperstructures(
-            ref self: TContractState,
-            game_id: u32,
-            timestamp: u64,
-            game_context: crate::commands::ActionContext,
+            ref self: TContractState, game_id: u32, timestamp: u64, game_context: crate::commands::ActionContext,
         ) -> u32 {
             let classes = fixture_classes(game_id);
             crate::hyperstructures::IHyperstructuresDispatcherTrait::settle_completed_hyperstructures(
@@ -1869,10 +1869,7 @@ pub mod GamesFixture {
             )
         }
         fn settle_final_hyperstructures(
-            ref self: TContractState,
-            game_id: u32,
-            timestamp: u64,
-            game_context: crate::commands::ActionContext,
+            ref self: TContractState, game_id: u32, timestamp: u64, game_context: crate::commands::ActionContext,
         ) -> u32 {
             let classes = fixture_classes(game_id);
             crate::hyperstructures::IHyperstructuresDispatcherTrait::settle_final_hyperstructures(
@@ -2153,10 +2150,14 @@ pub mod GamesFixture {
             let classes = fixture_classes(realm.game_id);
             crate::entry::ILedgerOperatorDispatcherTrait::grant_labor(
                 crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: classes.settlement.read() },
-                realm, day, account,
+                realm,
+                day,
+                account,
             )
         }
-        fn labor_grant(self: @TContractState, realm: crate::entry::LaborRealm, day: u64) -> Option<crate::entry::LaborGrant> {
+        fn labor_grant(
+            self: @TContractState, realm: crate::entry::LaborRealm, day: u64,
+        ) -> Option<crate::entry::LaborGrant> {
             let classes = fixture_classes(realm.game_id);
             crate::entry::ILedgerOperatorDispatcherTrait::labor_grant(
                 crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: classes.settlement.read() }, realm, day,

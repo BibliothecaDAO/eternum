@@ -327,39 +327,19 @@ fn bank_creation_and_configuration_reject_players_repeats_and_partial_batches() 
     let safe = IBankSafeDispatcher { contract_address: deployment.games };
     start_cheat_caller_address(deployment.games, deployment.actor);
     let context = ExecutionContext { timestamp: 30, ..super::context(deployment.games, 3) };
-    assert!(
-        safe
-            .create_banks(
-                3, super::authority(), banks(), crate::commands::action_context(context), )
-            .is_err(),
-    );
+    assert!(safe.create_banks(3, super::authority(), banks(), crate::commands::action_context(context)).is_err());
     let registrar = crate::registrar::IRegistrarSafeDispatcher { contract_address: deployment.games };
     let mut preset = market_preset();
     preset.economy.banks = BankRules { lp_fee_num: 0, lp_fee_denom: 1, owner_fee_num: 0, owner_fee_denom: 1 };
     assert!(registrar.register_preset(20000, preset).is_err());
     start_cheat_caller_address(deployment.games, deployment.games);
+    assert!(safe.create_banks(3, deployment.actor, banks(), crate::commands::action_context(context)).is_err());
     assert!(
         safe
-            .create_banks(
-                3, deployment.actor, banks(), crate::commands::action_context(context), )
+            .create_banks(3, super::authority(), banks().slice(0, 5), crate::commands::action_context(context))
             .is_err(),
     );
-    assert!(
-        safe
-            .create_banks(
-                3,
-                super::authority(),
-                banks().slice(0, 5),
-                crate::commands::action_context(context),
-            )
-            .is_err(),
-    );
-    assert!(
-        safe
-            .create_banks(
-                3, super::authority(), banks(), crate::commands::action_context(context), )
-            .is_err(),
-    );
+    assert!(safe.create_banks(3, super::authority(), banks(), crate::commands::action_context(context)).is_err());
     start_cheat_caller_address(deployment.games, super::authority());
     let games = crate::game::IGameDispatcher { contract_address: deployment.games };
     assert!(registrar.register_preset(games.game(3).preset_id, preset).is_err());
@@ -492,7 +472,9 @@ fn liquidity_changes_have_distinct_story_payloads() {
             let mut data = event.data.span();
             let story: crate::ownership::StoryEvent = starknet::Event::deserialize(ref keys, ref data).unwrap();
             assert_eq!(story.entity_id, Some(source.entity_id));
-            let crate::ownership::Story::BankLiquidity(_) = story.story else { panic!("unexpected liquidity story") };
+            let crate::ownership::Story::BankLiquidity(_) = story.story else {
+                panic!("unexpected liquidity story")
+            };
             timestamps.append(story.timestamp);
         }
     }
@@ -512,7 +494,11 @@ fn the_current_launcher_owns_bank_choices_and_preplay_liquidity() {
     assert!(d.actor != super::authority());
     let authority = super::bind_authority(d);
     super::set_launcher(d, d.actor);
-    super::play_fixture::assert_preflight_rejection(d.games, super::play_fixture::TestAction { game_id: 3, actor: authority.actor, command: Command::CreateBanks(banks()) }, 40);
+    super::play_fixture::assert_preflight_rejection(
+        d.games,
+        super::play_fixture::TestAction { game_id: 3, actor: authority.actor, command: Command::CreateBanks(banks()) },
+        40,
+    );
     assert!(execute(d, Command::CreateBanks(banks()), 40));
     let structure = crate::tests::state::StructureObservationTrait::structure(
         crate::structures::IStructureOperationsDispatcher { contract_address: d.games },

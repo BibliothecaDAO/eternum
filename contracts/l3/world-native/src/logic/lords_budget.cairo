@@ -28,7 +28,9 @@ pub fn candidate(game_id: u32, odds: ChestTiers, seed: u256, context: ExecutionC
     let rules = chest_rules(game_id);
     let today = today(game_id, rules, context);
     let tier = roll_tier(odds, seed);
-    SiteChest { tier, amount: Into::<u16, u128>::into(tier_value(rules.shares, tier)) * today.price, reservation_day: today.day }
+    SiteChest {
+        tier, amount: Into::<u16, u128>::into(tier_value(rules.shares, tier)) * today.price, reservation_day: today.day,
+    }
 }
 
 /// Count a rolled chest even when refused; reserve only LORDS already unlocked and not paid or held open.
@@ -102,13 +104,15 @@ pub fn unlocked(rules: ChestRules, clock: SeasonClock, day: u64) -> u128 {
     let duration = clock.game.end_at - clock.game.start_main_at;
     assert!(duration != 0, "empty LORDS season");
     (Into::<u128, u256>::into(rules.pool) * (end - clock.game.start_main_at).into() / duration.into())
-        .try_into().unwrap()
+        .try_into()
+        .unwrap()
 }
 
 fn season_clock(context: ExecutionContext) -> SeasonClock {
     let rules = context.rules.unbox();
     SeasonClock {
-        game: context.game.unbox(), day_unit_seconds: rules.day_unit_seconds,
+        game: context.game.unbox(),
+        day_unit_seconds: rules.day_unit_seconds,
         tick: rules.tick_config.armies_tick_in_seconds,
     }
 }
@@ -130,11 +134,7 @@ fn today(game_id: u32, rules: ChestRules, context: ExecutionContext) -> LordsBud
             roll(rules, previous, clock, day)
         },
         None => open_day(
-            rules,
-            LordsBudget {
-                pool_left: rules.pool, open: 0, day, price: 0, estimate: 0, rolled_shares: 0,
-            },
-            clock,
+            rules, LordsBudget { pool_left: rules.pool, open: 0, day, price: 0, estimate: 0, rolled_shares: 0 }, clock,
         ),
     }
 }
@@ -174,7 +174,8 @@ pub fn roll(rules: ChestRules, previous: LordsBudget, clock: SeasonClock, day: u
     let window: u256 = rules.estimate_days.into();
     let ticks = core::cmp::max(day_ticks(clock, previous.day), 1);
     let sample: u128 = (Into::<u128, u256>::into(previous.rolled_shares) * LORDS_ESTIMATE_SCALE.into() / ticks.into())
-        .try_into().unwrap();
+        .try_into()
+        .unwrap();
     let mut estimate: u128 = ((Into::<u128, u256>::into(previous.estimate) * (window - 1) + sample.into()) / window)
         .try_into()
         .unwrap();
@@ -185,26 +186,27 @@ pub fn roll(rules: ChestRules, previous: LordsBudget, clock: SeasonClock, day: u
         estimate = (Into::<u128, u256>::into(estimate) * (window - 1) / window).try_into().unwrap();
         skipped -= 1;
     }
-    open_day(
-        rules,
-        LordsBudget { open: 0, day, estimate, rolled_shares: 0, price: 0, ..previous },
-        clock,
-    )
+    open_day(rules, LordsBudget { open: 0, day, estimate, rolled_shares: 0, price: 0, ..previous }, clock)
 }
 
 // Freeze the day's common price from its rollover budget and expected rolled shares. Zero budget/price yields no ruin.
 pub fn open_day(rules: ChestRules, mut budget: LordsBudget, clock: SeasonClock) -> LordsBudget {
     let expected = Into::<u128, u256>::into(budget.estimate) * day_ticks(clock, budget.day).into();
     let remaining = available(rules, budget, clock);
-    budget.price = if remaining == 0 {
-        0
-    } else if expected == 0 {
-        rules.price_ceiling
-    } else {
-        core::cmp::min(
-            rules.price_ceiling.into(), Into::<u128, u256>::into(remaining) * LORDS_ESTIMATE_SCALE.into() / expected,
-        ).try_into().unwrap()
-    };
+    budget
+        .price =
+            if remaining == 0 {
+                0
+            } else if expected == 0 {
+                rules.price_ceiling
+            } else {
+                core::cmp::min(
+                    rules.price_ceiling.into(),
+                    Into::<u128, u256>::into(remaining) * LORDS_ESTIMATE_SCALE.into() / expected,
+                )
+                    .try_into()
+                    .unwrap()
+            };
     budget
 }
 

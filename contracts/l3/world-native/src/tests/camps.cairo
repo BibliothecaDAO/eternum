@@ -24,11 +24,12 @@ pub fn rules(blitz: bool) -> crate::rules::SliceRules {
         super::play_fixture::ETERNUM_RULES
     };
     rules
-        .command_mask = if blitz {
-            super::play_fixture::BLITZ_COMMAND_MASK
-        } else {
-            super::play_fixture::ETERNUM_COMMAND_MASK
-        };
+        .command_mask =
+            if blitz {
+                super::play_fixture::BLITZ_COMMAND_MASK
+            } else {
+                super::play_fixture::ETERNUM_COMMAND_MASK
+            };
     rules.entry_rule = if blitz {
         crate::rules::ENTRY_ROSTER
     } else {

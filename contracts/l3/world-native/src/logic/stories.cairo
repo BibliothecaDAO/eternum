@@ -2,16 +2,10 @@ use starknet::Event;
 use crate::ownership::{Story, StoryEvent};
 use crate::resources::ResourceKey;
 
-pub fn emit_entity_story(
-    key: ResourceKey,
-    actor: starknet::ContractAddress,
-    story: Story,
-    timestamp: u64,
-) {
+pub fn emit_entity_story(key: ResourceKey, actor: starknet::ContractAddress, story: Story, timestamp: u64) {
     let event = StoryEvent {
         version: 2,
         game_id: key.game_id,
-
         owner: Some(actor),
         entity_id: Some(key.entity_id),
         tx_hash: starknet::get_tx_info().unbox().transaction_hash,

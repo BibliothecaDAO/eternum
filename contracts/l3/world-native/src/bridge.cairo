@@ -27,18 +27,10 @@ pub struct Withdraw {
 pub trait IBridge<T> {
     fn deposit_rules(self: @T, game_id: u32) -> DepositRules;
     fn deposit_resource(
-        ref self: T,
-        game_id: u32,
-        actor: ContractAddress,
-        command: Deposit,
-        context: crate::commands::ActionContext,
+        ref self: T, game_id: u32, actor: ContractAddress, command: Deposit, context: crate::commands::ActionContext,
     );
     fn withdraw_resource(
-        ref self: T,
-        game_id: u32,
-        actor: ContractAddress,
-        command: Withdraw,
-        context: crate::commands::ActionContext,
+        ref self: T, game_id: u32, actor: ContractAddress, command: Withdraw, context: crate::commands::ActionContext,
     );
 }
 #[starknet::interface]

@@ -8,7 +8,10 @@ use crate::troops::{TroopTier, Troops};
 #[test]
 fn frontier_reveal_keeps_scaled_precision_and_ignores_boosts() {
     let limits = crate::rules::TroopLimitConfig {
-        t1_tier_strength: 1, t2_tier_strength: 3, t3_tier_strength: 9, ..super::play_fixture::rules().troop_limit_config,
+        t1_tier_strength: 1,
+        t2_tier_strength: 3,
+        t3_tier_strength: 9,
+        ..super::play_fixture::rules().troop_limit_config,
     };
     let mut troops = Troops {
         count: 1500 * RESOURCE_PRECISION + RESOURCE_PRECISION / 2, tier: TroopTier::T1, ..Default::default(),

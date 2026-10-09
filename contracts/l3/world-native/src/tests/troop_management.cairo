@@ -182,7 +182,11 @@ fn explorer_transfer_preserves_the_worse_stamina_and_cooldown_and_deletes_an_emp
         crate::map::IMapLogicDispatcher { contract_address: d.games }, crate::geometry::tile_key(3, old_position),
     )
         .unwrap();
-    assert!(crate::map::IMapLogicDispatcher { contract_address: d.games }.occupancy(crate::geometry::tile_key(3, old_position)).is_none());
+    assert!(
+        crate::map::IMapLogicDispatcher { contract_address: d.games }
+            .occupancy(crate::geometry::tile_key(3, old_position))
+            .is_none(),
+    );
     super::state::assert_spatial_indexes(
         d.games,
         3,

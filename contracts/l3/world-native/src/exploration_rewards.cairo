@@ -51,8 +51,7 @@ pub fn draw(rewards: Span<ExplorationReward>, seed: u256) -> ExplorationReward {
         cumulative += *reward.weight;
         if roll < cumulative {
             return ExplorationReward {
-                amount: *reward.amount
-                    + crate::random::range(seed, 19, *reward.amount_max - *reward.amount + 1),
+                amount: *reward.amount + crate::random::range(seed, 19, *reward.amount_max - *reward.amount + 1),
                 ..*reward,
             };
         }
@@ -74,8 +73,7 @@ pub fn reveal_reward(
             ESSENCE
         } else {
             LABOR
-        },
-        amount: numerator / 100,
+        }, amount: numerator / 100,
     }
 }
 

@@ -70,7 +70,9 @@ pub fn setup_in_deployment(
     for offset in array![0_u32, 10] {
         let owner = if offset != 0 && preset.settlement.mode != crate::settlement::SettlementMode::Triple {
             super::authority()
-        } else { deployment.actor };
+        } else {
+            deployment.actor
+        };
         ids
             .append(
                 creation
@@ -92,9 +94,14 @@ pub fn setup_in_deployment(
                     ),
             );
     }
-    snforge_std::interact_with_state(deployment.games, || {
-        crate::logic::structures::StructureState::transfer_owner(ResourceKey { game_id: 3, entity_id: *ids.at(1) }, deployment.actor);
-    });
+    snforge_std::interact_with_state(
+        deployment.games,
+        || {
+            crate::logic::structures::StructureState::transfer_owner(
+                ResourceKey { game_id: 3, entity_id: *ids.at(1) }, deployment.actor,
+            );
+        },
+    );
     stop_cheat_caller_address(deployment.games);
     let source = ResourceKey { game_id: 3, entity_id: *ids.at(0) };
     start_cheat_caller_address(deployment.games, deployment.games);
@@ -132,7 +139,9 @@ pub fn execute(deployment: Deployment, command: Command, timestamp: u64) -> bool
 }
 
 pub fn execute_in_game(deployment: Deployment, game_id: u32, command: Command, timestamp: u64) -> bool {
-    play_fixture::play(deployment.games, play_fixture::TestAction { game_id, actor: deployment.actor, command }, 987654321, timestamp)
+    play_fixture::play(
+        deployment.games, play_fixture::TestAction { game_id, actor: deployment.actor, command }, 987654321, timestamp,
+    )
 }
 
 fn amount(resource_type: u8, amount: u128) -> Span<ResourceAmount> {

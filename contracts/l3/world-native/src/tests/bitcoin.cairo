@@ -81,12 +81,7 @@ fn contribution_requires_the_source_owner() {
     start_cheat_caller_address(deployment.games, deployment.games);
     assert!(
         calls
-            .contribute_bitcoin_labor(
-                3,
-                0x777.try_into().unwrap(),
-                command,
-                crate::commands::action_context(context),
-            )
+            .contribute_bitcoin_labor(3, 0x777.try_into().unwrap(), command, crate::commands::action_context(context))
             .is_err(),
     );
     assert_eq!(balance(deployment, first), 1000);
@@ -389,12 +384,8 @@ fn each_mine_draws_from_the_complete_player_pool_regardless_of_batch_claimant_or
         assert_eq!(view.bitcoin_contribution(ContributionKey { game_id: 3, phase, player: other }).labor, 30);
         let context = ExecutionContext { timestamp: (phase + 1) * 10, ..context };
         start_cheat_block_timestamp_global(context.timestamp);
-        calls
-            .close_bitcoin_phase(
-                3, deployment.actor, phase, crate::commands::action_context(context), );
-        calls
-            .bind_bitcoin_phase(
-                3, other, phase, crate::commands::action_context(context), );
+        calls.close_bitcoin_phase(3, deployment.actor, phase, crate::commands::action_context(context));
+        calls.bind_bitcoin_phase(3, other, phase, crate::commands::action_context(context));
         let mut winners = array![];
         for id in array![first_mine.entity_id, second_mine.entity_id] {
             let roll: u256 = core::poseidon::poseidon_hash_span(
@@ -428,10 +419,7 @@ fn each_mine_draws_from_the_complete_player_pool_regardless_of_batch_claimant_or
             for id in array![first_mine.entity_id, second_mine.entity_id] {
                 calls
                     .claim_bitcoin_phase(
-                        3,
-                        other,
-                        crate::bitcoin::ClaimPhase { phase, mine_ids: array![id].span() },
-                        unrelated_context,
+                        3, other, crate::bitcoin::ClaimPhase { phase, mine_ids: array![id].span() }, unrelated_context,
                     );
             }
         }
@@ -815,12 +803,8 @@ fn weighted_draws_include_appended_players_and_later_updates_to_earlier_contribu
         }
         let context = ExecutionContext { timestamp: (phase + 1) * 10, ..context };
         start_cheat_block_timestamp_global(context.timestamp);
-        calls
-            .close_bitcoin_phase(
-                3, d.actor, phase, crate::commands::action_context(context), );
-        calls
-            .bind_bitcoin_phase(
-                3, d.actor, phase, crate::commands::action_context(context), );
+        calls.close_bitcoin_phase(3, d.actor, phase, crate::commands::action_context(context));
+        calls.bind_bitcoin_phase(3, d.actor, phase, crate::commands::action_context(context));
         let roll: u256 = core::poseidon::poseidon_hash_span(
             array!['BITCOIN_DRAW', 1, 3, phase.into(), mine.entity_id.into(), phase.into(), 0].span(),
         )
@@ -925,8 +909,7 @@ fn measured_claim(
     context: ExecutionContext,
 ) -> u128 {
     let before = core::testing::get_available_gas();
-    calls
-        .claim_bitcoin_phase(3, actor, command, crate::commands::action_context(context), );
+    calls.claim_bitcoin_phase(3, actor, command, crate::commands::action_context(context));
     before - core::testing::get_available_gas()
 }
 

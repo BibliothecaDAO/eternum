@@ -162,10 +162,7 @@ pub mod BridgeState {
         ) -> () {
             let game_context = crate::commands::load_context(game_id, game_context);
 
-            self
-                .withdraw_liquidity_token(
-                    game_id, actor, bank_id, resource_type, amount, timestamp, game_context,
-                );
+            self.withdraw_liquidity_token(game_id, actor, bank_id, resource_type, amount, timestamp, game_context);
             ()
         }
     }
@@ -396,7 +393,6 @@ pub mod BridgeState {
                     StoryEvent {
                         version: 2,
                         game_id,
-
                         owner: Some(recipient),
                         entity_id: Some(to_id),
                         tx_hash: starknet::get_tx_info().unbox().transaction_hash,

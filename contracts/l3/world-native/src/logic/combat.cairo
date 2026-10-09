@@ -6,7 +6,6 @@ use crate::commands::{Battle, ExecutionContext};
 use crate::game::assert_playing;
 use crate::geometry::{distance, spire_neighbor, tile_key};
 use crate::map::{IMapLogicDispatcherTrait, IMapLogicLibraryDispatcher};
-
 use crate::resources::{IResourceOperationsDispatcherTrait, IResourceOperationsLibraryDispatcher, ResourceKey};
 use crate::rules::SliceRules;
 use crate::stamina::StaminaSourceTrait;
@@ -15,12 +14,7 @@ use crate::troops::{
     Coord, ExplorerKey, ExplorerTroops, IBattleResolutionDispatcherTrait, IBattleResolutionLibraryDispatcher, Troops,
 };
 
-pub fn battle_guard(
-    game_id: u32,
-    actor: ContractAddress,
-    command: Battle,
-    context: ExecutionContext,
-) {
+pub fn battle_guard(game_id: u32, actor: ContractAddress, command: Battle, context: ExecutionContext) {
     let rules = authorize(game_id, context);
     let key = ExplorerKey { game_id, explorer_id: command.attacker_id };
     let mut attacker = authorized_explorer(key, actor, context);
@@ -102,7 +96,6 @@ pub fn battle_guard(
             crate::troops::BattleEvent {
                 version: 2,
                 game_id,
-
                 attacker_id: command.attacker_id,
                 defender_id: command.defender_id,
                 attacker_owner: attacker.owner,
@@ -119,10 +112,7 @@ pub fn battle_guard(
 }
 
 pub fn battle(
-    game_id: u32,
-    actor: ContractAddress,
-    command: crate::combat_actions::AttackExplorer,
-    context: ExecutionContext,
+    game_id: u32, actor: ContractAddress, command: crate::combat_actions::AttackExplorer, context: ExecutionContext,
 ) {
     let rules = authorize(game_id, context);
     crate::resources::assert_unique_resources(command.steal_resources);
@@ -162,7 +152,6 @@ pub fn battle(
         crate::troops::BattleEvent {
             version: 2,
             game_id,
-
             attacker_id: command.attacker_id,
             defender_id: command.defender_id,
             attacker_owner: attacker.owner,
@@ -182,10 +171,7 @@ pub fn village_last_raided(key: ResourceKey) -> u64 {
 }
 
 pub fn guard_attack(
-    game_id: u32,
-    actor: ContractAddress,
-    command: crate::combat_actions::GuardAttack,
-    context: ExecutionContext,
+    game_id: u32, actor: ContractAddress, command: crate::combat_actions::GuardAttack, context: ExecutionContext,
 ) {
     let rules = authorize(game_id, context);
     let home = owned_structure(game_id, command.guard.structure_id, actor);
@@ -217,18 +203,12 @@ pub fn guard_attack(
     }
     crate::logic::guards::GuardState::save(guard_key, guard);
     try_capture(
-        defender_key,
-        defender,
-        ResourceKey { game_id, entity_id: command.guard.structure_id },
-        home,
-        rules,
-        context,
+        defender_key, defender, ResourceKey { game_id, entity_id: command.guard.structure_id }, home, rules, context,
     );
     emit(
         crate::troops::BattleEvent {
             version: 2,
             game_id,
-
             attacker_id: command.guard.structure_id,
             defender_id: command.explorer_id,
             attacker_owner: 0,
@@ -243,12 +223,7 @@ pub fn guard_attack(
     );
 }
 
-pub fn raid(
-    game_id: u32,
-    actor: ContractAddress,
-    command: crate::combat_actions::Raid,
-    context: ExecutionContext,
-) {
+pub fn raid(game_id: u32, actor: ContractAddress, command: crate::combat_actions::Raid, context: ExecutionContext) {
     let rules = authorize(game_id, context);
     crate::resources::assert_unique_resources(command.steal_resources);
     let key = ExplorerKey { game_id, explorer_id: command.explorer_id };
@@ -274,7 +249,6 @@ pub fn raid(
         crate::combat_actions::RaidEvent {
             version: 2,
             game_id,
-
             explorer_id: command.explorer_id,
             structure_id: command.structure_id,
             success,
@@ -353,12 +327,19 @@ pub fn raid_success(game_id: u32, result: crate::raid::RaidResolution, context: 
 }
 
 // Requested loot is a deterministic refusal, independent of whether the combat roll wins.
-fn assert_loot_available(game_id: u32, from: u64, resources: Span<crate::resources::ResourceAmount>, context: ExecutionContext) {
-    if resources.is_empty() { return; }
+fn assert_loot_available(
+    game_id: u32, from: u64, resources: Span<crate::resources::ResourceAmount>, context: ExecutionContext,
+) {
+    if resources.is_empty() {
+        return;
+    }
     let key = ResourceKey { game_id, entity_id: from };
     resources_dispatcher(game_id).settle_production(key, context.timestamp, crate::commands::resource_context(context));
     for resource in resources {
-        assert!(crate::logic::resources::balance(key, *resource.resource_type) >= *resource.amount, "insufficient requested loot");
+        assert!(
+            crate::logic::resources::balance(key, *resource.resource_type) >= *resource.amount,
+            "insufficient requested loot",
+        );
     }
 }
 
@@ -539,7 +520,9 @@ pub fn assert_battle_immunity(
 pub fn adjacent_to_spire(game_id: u32, coord: Coord) -> bool {
     for direction in 0_u8..6 {
         let key = tile_key(game_id, spire_neighbor(coord, direction));
-        if crate::logic::map::occupancy(key).map(|occupier| occupier.category == crate::taxonomy::SPIRE_OCCUPIER).unwrap_or(false) {
+        if crate::logic::map::occupancy(key)
+            .map(|occupier| occupier.category == crate::taxonomy::SPIRE_OCCUPIER)
+            .unwrap_or(false) {
             return true;
         }
     }

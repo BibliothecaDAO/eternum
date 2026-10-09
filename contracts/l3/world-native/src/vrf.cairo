@@ -1,5 +1,5 @@
 use realms_vrf_verifier::vendor::ecvrf::Point;
-use realms_vrf_verifier::{IVrfVerifierLibraryDispatcher, IVrfVerifierDispatcherTrait};
+use realms_vrf_verifier::{IVrfVerifierDispatcherTrait, IVrfVerifierLibraryDispatcher};
 
 /// The owned read-only library refuses invalid fees and stamps before returning a root.
 pub fn checked_root(key: Point, l2_gas_bound: u64) -> u256 {

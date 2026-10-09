@@ -84,7 +84,11 @@ pub(crate) fn coordinate_bits(key: TileKey) -> u128 {
 
 pub fn structure_occupant(key: TileKey) -> Option<u64> {
     match crate::logic::map::occupancy(key) {
-        Some(occupancy) => if occupancy.is_structure { Some(occupancy.entity_id) } else { None },
+        Some(occupancy) => if occupancy.is_structure {
+            Some(occupancy.entity_id)
+        } else {
+            None
+        },
         None => None,
     }
 }

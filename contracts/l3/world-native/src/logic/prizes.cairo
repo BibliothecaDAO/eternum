@@ -167,11 +167,7 @@ pub mod PrizesLogic {
             for mine_id in command.mine_ids {
                 remaining += self
                     .claim_bound_phases(
-                        ResourceKey { game_id, entity_id: *mine_id },
-                        command.phase,
-                        limit,
-                        context.timestamp,
-                        context,
+                        ResourceKey { game_id, entity_id: *mine_id }, command.phase, limit, context.timestamp, context,
                     );
             }
             (remaining)
@@ -343,17 +339,13 @@ pub mod PrizesLogic {
             (destination.entity_id, self.pay_bitcoin_share(destination, amount, timestamp, game_context))
         }
         fn emit_bitcoin_award(
-            ref self: ContractState,
-            game_id: u32,
-            timestamp: u64,
-            award: crate::bitcoin::BitcoinAwardStory,
+            ref self: ContractState, game_id: u32, timestamp: u64, award: crate::bitcoin::BitcoinAwardStory,
         ) {
             self
                 .emit(
                     crate::ownership::StoryEvent {
                         version: 2,
                         game_id,
-
                         owner: Some(award.winner),
                         entity_id: Some(award.mine_id),
                         tx_hash: starknet::get_tx_info().unbox().transaction_hash,

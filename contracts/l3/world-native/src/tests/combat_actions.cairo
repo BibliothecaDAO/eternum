@@ -43,11 +43,12 @@ pub fn setup_with_cooldown(
     let mut rules = super::play_fixture::rules();
     rules.mode_rules = mode_rules;
     rules
-        .command_mask = if blitz {
-            super::play_fixture::BLITZ_COMMAND_MASK
-        } else {
-            super::play_fixture::ETERNUM_COMMAND_MASK
-        };
+        .command_mask =
+            if blitz {
+                super::play_fixture::BLITZ_COMMAND_MASK
+            } else {
+                super::play_fixture::ETERNUM_COMMAND_MASK
+            };
     rules.entry_rule = if blitz {
         crate::rules::ENTRY_ROSTER
     } else {
@@ -919,7 +920,7 @@ fn preset_cooldown_keeps_blitz_at_sixty_seconds_and_allows_frontier_back_to_back
         } else {
             assert_eq!(troop(d, attacker).unwrap().troops.battle_cooldown_end, 80);
             let success = execute(d, attack, 80);
-                assert!(success, "second attack failed");
+            assert!(success, "second attack failed");
         }
     }
 }

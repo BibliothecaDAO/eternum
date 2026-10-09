@@ -62,9 +62,7 @@ pub mod GamesTest {
         ) {
             let actor = self.entry.validate_play(game_id, release_id, preset_commitment, command);
             self.entry.assign_settlement_home_before_roll(game_id, actor, command);
-            let context = crate::commands::ActionContext {
-                raw_root: root, timestamp: starknet::get_block_timestamp(),
-            };
+            let context = crate::commands::ActionContext { raw_root: root, timestamp: starknet::get_block_timestamp() };
             let applied = self.entry.apply_gameplay(game_id, actor, command, context);
             self.last_applied.write(applied);
         }

@@ -8,9 +8,7 @@ use crate::structures::IStructureOperationsDispatcher;
 use crate::tests::state::{ResourceObservationTrait, StructureObservationTrait};
 use crate::troops::Coord;
 use crate::upgrades::{UpgradeLimits, UpgradeRecipe};
-use super::resource_commands::{
-    assert_terminal_rejection, execute, resource_facts, set_fixture, setup,
-};
+use super::resource_commands::{assert_terminal_rejection, execute, resource_facts, set_fixture, setup};
 
 pub fn rules() -> Span<BuildingRuleConfig> {
     let mut values = array![];

@@ -1,6 +1,6 @@
 use core::num::traits::Zero;
 use starknet::ContractAddress;
-use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess, StoragePathEntry};
+use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess};
 
 pub type EntityId = u64;
 const LOCAL_RANGE: u64 = 0x100000000;
@@ -9,7 +9,11 @@ const FIELD_RANGE: u64 = 0x100;
 // Administrative ids occupy namespace zero. Each home owns a disjoint namespace, including after ownership changes.
 pub fn namespace(home: EntityId) -> u32 {
     assert!(home != 0, "zero allocation home");
-    let namespace = if home < LOCAL_RANGE { home } else { home / LOCAL_RANGE };
+    let namespace = if home < LOCAL_RANGE {
+        home
+    } else {
+        home / LOCAL_RANGE
+    };
     namespace.try_into().unwrap()
 }
 
@@ -28,9 +32,13 @@ pub fn reserve_homes(game_id: u32, owner: ContractAddress) {
     assert!(crate::logic::game::game_exists(game_id), "prepare an existing game");
     assert!(owner.is_non_zero(), "zero home owner");
     let rules = crate::logic::game::rules(game_id);
-    if rules.entry_rule == crate::rules::ENTRY_OPEN && rules.day_unit_seconds != 0 { return; }
+    if rules.entry_rule == crate::rules::ENTRY_OPEN && rules.day_unit_seconds != 0 {
+        return;
+    }
     let state = crate::state::write();
-    if state.games.home_reservations.read((game_id, owner)) != 0 { return; }
+    if state.games.home_reservations.read((game_id, owner)) != 0 {
+        return;
+    }
     let count: u8 = match crate::logic::settlement::rules(game_id).mode {
         crate::settlement::SettlementMode::Triple => 3,
         _ => 1,
@@ -40,7 +48,9 @@ pub fn reserve_homes(game_id: u32, owner: ContractAddress) {
         let id = crate::logic::game::allocate_setup_entity(game_id);
         assert!(state.games.namespace_owners.read((game_id, id)).is_zero(), "setup namespace already assigned");
         state.games.namespace_owners.write((game_id, id), owner);
-        if index == 0 { first = id; }
+        if index == 0 {
+            first = id;
+        }
     }
     let reservation = Into::<u32, u64>::into(first) + Into::<u8, u64>::into(count) * LOCAL_RANGE;
     state.games.home_reservations.write((game_id, owner), reservation);
@@ -50,7 +60,9 @@ pub fn reserve_homes(game_id: u32, owner: ContractAddress) {
 pub fn assign_open_home(game_id: u32, owner: ContractAddress) -> EntityId {
     let state = crate::state::write();
     let previous = state.games.open_homes.read((game_id, owner));
-    if previous != 0 { return previous; }
+    if previous != 0 {
+        return previous;
+    }
     let digest: u256 = core::poseidon::poseidon_hash_span(array![game_id.into(), owner.into()].span()).into();
     let spacing = crate::logic::settlement::rules(game_id).spacing;
     let regions = 0x7fffffff_u32 / spacing;
@@ -72,7 +84,9 @@ pub fn assign_open_home(game_id: u32, owner: ContractAddress) -> EntityId {
 
 pub fn claim_home(game_id: u32, owner: ContractAddress) -> EntityId {
     let assigned = crate::state::read().games.open_homes.read((game_id, owner));
-    if assigned != 0 { return assigned; }
+    if assigned != 0 {
+        return assigned;
+    }
     let state = crate::state::write();
     let reservation = state.games.home_reservations.read((game_id, owner));
     let first = reservation % LOCAL_RANGE;
@@ -85,8 +99,12 @@ pub fn claim_home(game_id: u32, owner: ContractAddress) -> EntityId {
 
 pub fn home_for_actor(game_id: u32, actor: ContractAddress) -> EntityId {
     let home = crate::state::read().games.open_homes.read((game_id, actor));
-    if home != 0 && crate::logic::structures::structure(crate::resources::ResourceKey { game_id, entity_id: home })
-        .map(|record| record.owner == actor).unwrap_or(false) { return home; }
+    if home != 0
+        && crate::logic::structures::structure(crate::resources::ResourceKey { game_id, entity_id: home })
+            .map(|record| record.owner == actor)
+            .unwrap_or(false) {
+        return home;
+    }
     let reservation = crate::state::read().games.home_reservations.read((game_id, actor));
     let first = reservation % LOCAL_RANGE;
     let count = reservation / LOCAL_RANGE % FIELD_RANGE;
@@ -102,5 +120,9 @@ pub fn home_for_actor(game_id: u32, actor: ContractAddress) -> EntityId {
 
 pub fn allocation_home(key: crate::resources::ResourceKey) -> EntityId {
     let home = crate::state::read().troops.explorers.entry((key.game_id, key.entity_id)).owner.read();
-    if home != 0 { home } else { key.entity_id }
+    if home != 0 {
+        home
+    } else {
+        key.entity_id
+    }
 }

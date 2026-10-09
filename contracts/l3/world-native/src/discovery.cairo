@@ -16,9 +16,7 @@ pub enum Discovery {
     Well,
 }
 
-pub fn surface(
-    config: MapConfig, seed: u256, distance: u128, hyperstructures: u32, mode_rules: u32,
-) -> Discovery {
+pub fn surface(config: MapConfig, seed: u256, distance: u128, hyperstructures: u32, mode_rules: u32) -> Discovery {
     if mode_rules & crate::rules::DISCOVER_HYPERSTRUCTURES != 0 {
         let hyper_success = hyperstructure_weight(config, distance, hyperstructures);
         let hyper_total: u128 = config.hyps_win_prob.into() + config.hyps_fail_prob.into();
@@ -26,9 +24,7 @@ pub fn surface(
             return Discovery::Hyperstructure;
         }
     }
-    if lottery(
-        seed, 2, config.shards_mines_win_probability.into(), config.shards_mines_fail_probability.into(),
-    ) {
+    if lottery(seed, 2, config.shards_mines_win_probability.into(), config.shards_mines_fail_probability.into()) {
         return Discovery::Mine;
     }
     if mode_rules & crate::rules::DISCOVER_CAMPS != 0
@@ -41,12 +37,7 @@ pub fn surface(
 pub fn ethereal(config: MapConfig, enabled: bool, spire_adjacent: bool, seed: u256) -> Discovery {
     if enabled
         && !spire_adjacent
-        && lottery(
-            seed,
-            10,
-            config.bitcoin_mine_win_probability.into(),
-            config.bitcoin_mine_fail_probability.into(),
-        ) {
+        && lottery(seed, 10, config.bitcoin_mine_win_probability.into(), config.bitcoin_mine_fail_probability.into()) {
         Discovery::BitcoinMine
     } else {
         Discovery::None
@@ -102,13 +93,11 @@ pub fn frontier(
         total += *weight;
     }
     let floor = empty_reveals >= rules.empty_reveal_limit;
-    let mut draw = crate::random::range(
-        seed, 29, if floor {
-            total
-        } else {
-            10000
-        },
-    );
+    let mut draw = crate::random::range(seed, 29, if floor {
+        total
+    } else {
+        10000
+    });
     for (kind, weight) in kinds {
         if draw < weight {
             return kind;

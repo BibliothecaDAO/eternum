@@ -133,10 +133,7 @@ pub mod BlitzResultState {
             assert!(index == expected_index, "incorrect result order");
         }
         fn emit_result(
-            ref self: ComponentState<TContractState>,
-            game_id: u32,
-            launcher: ContractAddress,
-            timestamp: u64,
+            ref self: ComponentState<TContractState>, game_id: u32, launcher: ContractAddress, timestamp: u64,
         ) {
             let result = crate::blitz_results::IBlitzResults::blitz_result(@self, game_id);
             let mut values = array![];
@@ -153,7 +150,6 @@ pub mod BlitzResultState {
                         StoryEvent {
                             version: 2,
                             game_id,
-
                             owner: Some(launcher),
                             entity_id: None,
                             tx_hash: get_tx_info().unbox().transaction_hash,

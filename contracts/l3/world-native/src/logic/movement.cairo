@@ -8,7 +8,6 @@ pub mod MovementLogic {
     use crate::logic::release::ReleaseState;
     use crate::logic::troops::TroopState;
     use crate::map::IMapLogicDispatcherTrait;
-
     use crate::resources::{IResourceOperationsDispatcherTrait, ResourceKey};
     use crate::stamina::StaminaSourceTrait;
     use crate::structures::IStructureOperationsDispatcherTrait;

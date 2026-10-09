@@ -156,7 +156,6 @@ pub mod RelicState {
                     crate::ownership::StoryEvent {
                         version: 2,
                         game_id,
-
                         entity_id: Some(command.explorer_id),
                         owner: Some(actor),
                         timestamp: context.timestamp,
@@ -265,7 +264,9 @@ pub mod RelicState {
             context: crate::commands::ActionContext,
         ) -> () {
             let context = crate::commands::load_context(game_id, context);
-            crate::relics::assert_claim_window(context.game.unbox(), crate::logic::lords_budget::chest_rules(game_id), context.timestamp);
+            crate::relics::assert_claim_window(
+                context.game.unbox(), crate::logic::lords_budget::chest_rules(game_id), context.timestamp,
+            );
             assert!(command.amount != 0, "zero LORDS withdrawal");
             let realm = ResourceKey { game_id, entity_id: command.structure_id };
             let record = crate::logic::structures::record(realm);
@@ -555,7 +556,6 @@ pub mod RelicState {
                     crate::ownership::StoryEvent {
                         version: 2,
                         game_id,
-
                         entity_id: Some(structure_id),
                         owner: Some(actor),
                         timestamp,
@@ -578,7 +578,6 @@ pub mod RelicState {
                     crate::ownership::StoryEvent {
                         version: 2,
                         game_id,
-
                         entity_id: Some(command.explorer_id),
                         owner: Some(actor),
                         timestamp,

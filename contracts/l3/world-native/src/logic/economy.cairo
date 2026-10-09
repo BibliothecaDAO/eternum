@@ -115,13 +115,9 @@ pub mod EconomyLogic {
                     && !structure_coord(ResourceKey { game_id, entity_id: command.taker_id }).alt,
                 "transportation only allowed on surface",
             );
-            let fill = self
-                .settle_fill(game_id, order, command, maker, taker, context.timestamp, context);
+            let fill = self.settle_fill(game_id, order, command, maker, taker, context.timestamp, context);
             self.trades.fill(key, order, command.lots);
-            self
-                .emit_story(
-                    game_id, command.taker_id, actor, Story::TradeAccepted(fill), context.timestamp,
-                );
+            self.emit_story(game_id, command.taker_id, actor, Story::TradeAccepted(fill), context.timestamp);
             ()
         }
 
@@ -140,14 +136,7 @@ pub mod EconomyLogic {
             self.owned_structure(game_id, order.maker_id, actor);
             self.refund_offer(game_id, order, context.timestamp, context);
             self.trades.remove(key, order);
-            self
-                .emit_story(
-                    game_id,
-                    order.maker_id,
-                    actor,
-                    Story::TradeCancelled(trade_id),
-                    context.timestamp,
-                );
+            self.emit_story(game_id, order.maker_id, actor, Story::TradeCancelled(trade_id), context.timestamp);
             ()
         }
     }
@@ -420,15 +409,7 @@ pub mod EconomyLogic {
             };
             self
                 .emit_swap(
-                    game_id,
-                    actor,
-                    command,
-                    quote.market,
-                    lords,
-                    quote.owner_fee,
-                    quote.lp_fee,
-                    buy,
-                    context.timestamp,
+                    game_id, actor, command, quote.market, lords, quote.owner_fee, quote.lp_fee, buy, context.timestamp,
                 );
         }
         fn bank_structure(self: @ContractState, game_id: u32, bank_id: u64) -> Structure {
@@ -773,19 +754,13 @@ pub mod EconomyLogic {
                 );
         }
         fn emit_story(
-            ref self: ContractState,
-            game_id: u32,
-            entity_id: u64,
-            actor: ContractAddress,
-            story: Story,
-            timestamp: u64,
+            ref self: ContractState, game_id: u32, entity_id: u64, actor: ContractAddress, story: Story, timestamp: u64,
         ) {
             self
                 .emit(
                     StoryEvent {
                         version: 2,
                         game_id,
-
                         owner: Some(actor),
                         entity_id: Some(entity_id),
                         tx_hash: starknet::get_tx_info().unbox().transaction_hash,

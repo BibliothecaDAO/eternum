@@ -75,9 +75,10 @@ fn results_resume_with_competition_ties_and_zero_point_players_tied_last() {
     assert!(complete.complete);
     let expected = core::poseidon::poseidon_hash_span(
         array![
-            'ETERNUM_BLITZ_RESULT', 3, starknet::get_tx_info().unbox().chain_id, 3, 5,
-            100, 1, 101, 1, 102, 3, 103, 4, 104, 4,
-        ].span(),
+            'ETERNUM_BLITZ_RESULT', 3, starknet::get_tx_info().unbox().chain_id, 3, 5, 100, 1, 101, 1, 102, 3, 103, 4,
+            104, 4,
+        ]
+            .span(),
     );
     assert_eq!(complete.commitment, expected);
     assert!(submit(d, 2, array![result(2, 3), result(3, 4), result(4, 4)].span()));
@@ -88,9 +89,8 @@ fn results_resume_with_competition_ties_and_zero_point_players_tied_last() {
 fn results_reject_wrong_ranks_order_duplicates_and_foreign_wallets_atomically() {
     let d = setup(array![100, 80, 20].span());
     for players in array![
-        array![result(0, 2)].span(),
-        array![result(1, 1), result(0, 2)].span(), array![result(0, 1), result(0, 1)].span(),
-        array![result(0, 1), result(99, 2)].span(),
+        array![result(0, 2)].span(), array![result(1, 1), result(0, 2)].span(),
+        array![result(0, 1), result(0, 1)].span(), array![result(0, 1), result(99, 2)].span(),
     ] {
         assert!(!submit(d, 0, players));
         assert!(view(d).blitz_result(3).players.is_empty());
@@ -157,10 +157,7 @@ fn results_require_finished_point_settlement_without_authority() {
     assert!(
         safe
             .record_blitz_results(
-                3,
-                d.actor,
-                command,
-                crate::commands::action_context(ExecutionContext { timestamp: 199, ..context }),
+                3, d.actor, command, crate::commands::action_context(ExecutionContext { timestamp: 199, ..context }),
             )
             .is_err(),
     );
@@ -260,7 +257,8 @@ fn result_commitment_matches_the_ledger_v3_golden_vector_and_separates_shards() 
     let players = array![
         RankedPlayer { wallet: 1000.try_into().unwrap(), rank: 1 },
         RankedPlayer { wallet: 1001.try_into().unwrap(), rank: 1 },
-    ].span();
+    ]
+        .span();
     let commitment = crate::blitz_results::result_commitment('shard', 7, players);
     assert_eq!(commitment, 0x5d912378a36e87b3b4331c33a3cb97ad23ddfbcab670825f2fa18743f34c6d6);
     assert!(crate::blitz_results::result_commitment('OTHER_SHARD', 7, players) != commitment);
@@ -270,11 +268,17 @@ fn result_commitment_matches_the_ledger_v3_golden_vector_and_separates_shards() 
 fn tied_results_sort_by_frozen_payout_wallet_instead_of_shard_account() {
     let d = setup(array![100, 100].span());
     set_fixture(
-        d.games, selector!("registrar"), selector!("roster_players"), array![3, 0].span(),
+        d.games,
+        selector!("registrar"),
+        selector!("roster_players"),
+        array![3, 0].span(),
         RosterPlayer { account: player(0), wallet: player(1) },
     );
     set_fixture(
-        d.games, selector!("registrar"), selector!("roster_players"), array![3, 1].span(),
+        d.games,
+        selector!("registrar"),
+        selector!("roster_players"),
+        array![3, 1].span(),
         RosterPlayer { account: player(1), wallet: player(0) },
     );
     assert!(submit(d, 0, array![result(0, 1), result(1, 1)].span()));
@@ -285,11 +289,17 @@ fn tied_results_sort_by_frozen_payout_wallet_instead_of_shard_account() {
 fn results_resolve_scores_through_the_frozen_wallet_to_account_binding() {
     let d = setup(array![100, 80].span());
     set_fixture(
-        d.games, selector!("registrar"), selector!("roster_players"), array![3, 0].span(),
+        d.games,
+        selector!("registrar"),
+        selector!("roster_players"),
+        array![3, 0].span(),
         RosterPlayer { account: player(0), wallet: player(1) },
     );
     set_fixture(
-        d.games, selector!("registrar"), selector!("roster_players"), array![3, 1].span(),
+        d.games,
+        selector!("registrar"),
+        selector!("roster_players"),
+        array![3, 1].span(),
         RosterPlayer { account: player(1), wallet: player(0) },
     );
     assert!(!submit(d, 0, array![result(0, 1)].span()));
