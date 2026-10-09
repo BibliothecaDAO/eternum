@@ -128,6 +128,9 @@ class EnrolmentTest(unittest.TestCase):
 
 
 class ActivationTest(unittest.TestCase):
+    def setUp(self):
+        self.enterContext(patch.object(deploy, "launcher_handed_off", return_value=False, create=True))
+
     def test_real_data_directory_records_a_failed_check_without_promoting(self):
         with tempfile.TemporaryDirectory() as temporary:
             data = Path(temporary)
@@ -188,6 +191,9 @@ class ActivationTest(unittest.TestCase):
                 deploy.directory_status({"guardian_url": "https://identity.test/api/guardian", "public_herald_url": "https://herald.test"}, "pending")
 
 class WorkerLauncherTest(unittest.TestCase):
+    def setUp(self):
+        self.launcher_state = self.enterContext(patch.object(deploy, "launcher_handed_off", return_value=False, create=True))
+
     def test_gameplay_evidence_survives_a_package_change(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -246,6 +252,7 @@ class WorkerLauncherTest(unittest.TestCase):
                     before = (data / changed_file).read_text()
                     (data / changed_file).write_text("{}" if changed_file == "self-check.json" else '{"changed":true}')
                     with (
+                        patch.object(deploy, "launcher_handed_off", return_value=True),
                         patch.object(deploy, "run_self_check") as check,
                         patch.object(deploy, "directory_status", return_value={"status": "pending"}) as status,
                         patch.object(deploy, "confirm_worker_launcher") as worker,
@@ -310,3 +317,46 @@ class WorkerLauncherTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class LauncherAuthorityTest(unittest.TestCase):
+    def test_failed_handoff_intent_does_not_stop_a_fresh_self_check(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            data = Path(temporary)
+            (data / "launcher-enrolment.json").write_text('{"launcherAccount":"0x42"}')
+            (data / "self-check.json").write_text('{"passed":true,"checkedIdentity":"old"}')
+            with patch.object(deploy, "gameplay_check_identity", return_value="changed"), patch.object(deploy, "launcher_handed_off", return_value=False, create=True) as state, patch.object(deploy, "directory_status", side_effect=lambda _, status: {"status": status}), patch.object(deploy, "run_self_check", return_value={"passed": True}) as check, patch.object(deploy, "confirm_worker_launcher"):
+                deploy.verify_and_activate({}, data)
+            state.assert_called_once_with(data)
+            check.assert_called_once_with(data)
+
+    def test_installed_worker_blocks_self_check_even_without_an_intent_file(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            data = Path(temporary)
+            with patch.object(deploy, "gameplay_check_identity", return_value="changed"), patch.object(deploy, "launcher_handed_off", return_value=True, create=True) as state, patch.object(deploy, "directory_status", return_value={"status": "pending"}), patch.object(deploy, "run_self_check") as check, patch.object(deploy, "confirm_worker_launcher") as worker:
+                with self.assertRaisesRegex(RuntimeError, "launcher already handed off"):
+                    deploy.verify_and_activate({}, data)
+            state.assert_called_once_with(data)
+            check.assert_not_called()
+            worker.assert_not_called()
+
+
+class LauncherStateTransportTest(unittest.TestCase):
+    def test_state_command_reads_the_private_node_without_a_worker_account_argument(self):
+        with patch.object(deploy.subprocess, "run") as run:
+            run.return_value.returncode = 0
+            run.return_value.stdout = '{"passed":true,"handedOff":false}\n'
+            self.assertFalse(deploy.launcher_handed_off(Path("/unused/data")))
+        self.assertEqual(run.call_args.args[0][-3:], ["launcher-check", "state", "/data"])
+
+    def test_unknown_state_and_failed_reads_never_assume_bootstrap_authority(self):
+        for output in ("", "null", '{"passed":false,"handedOff":false}', '{"passed":true,"handedOff":"false"}'):
+            with self.subTest(output=output), patch.object(deploy.subprocess, "run") as run:
+                run.return_value.returncode = 0
+                run.return_value.stdout = output
+                with self.assertRaisesRegex(RuntimeError, "Launcher state read failed"):
+                    deploy.launcher_handed_off(Path("/unused/data"))
+        with patch.object(deploy.subprocess, "run") as run:
+            run.return_value.returncode = 1
+            with self.assertRaisesRegex(RuntimeError, "Confirmed launcher check failed"):
+                deploy.launcher_handed_off(Path("/unused/data"))

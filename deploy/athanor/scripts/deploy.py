@@ -144,7 +144,7 @@ def verify_and_activate(config, directory):
     if saved.get("passed") and saved.get("checkedIdentity") == identity:
         check = saved
     else:
-        if (directory / "launcher-enrolment.json").exists():
+        if launcher_handed_off(directory):
             raise RuntimeError("launcher already handed off; finish the Worker check or retire the chain")
         check = run_self_check(directory)
         check["checkedIdentity"] = identity
@@ -179,8 +179,14 @@ def launcher_service(config, suffix, payload):
         raise RuntimeError("Launch Worker enrollment/check route unavailable; directory remains pending") from None
 
 
-def launcher_chain_check(directory, action, account, proof=None):
-    args = [action, "/data", account]
+def launcher_handed_off(directory):
+    return launcher_chain_check(directory, "state")["handedOff"]
+
+
+def launcher_chain_check(directory, action, account=None, proof=None):
+    args = [action, "/data"]
+    if account is not None:
+        args.append(account)
     if proof:
         args.extend([proof["txHash"], proof["name"], str(proof["presetId"])])
     result = subprocess.run([*compose(directory.parent), "run", "--rm", "--no-deps", "-T",
@@ -188,6 +194,15 @@ def launcher_chain_check(directory, action, account, proof=None):
                             capture_output=True, text=True)
     if result.returncode != 0:
         raise RuntimeError("Confirmed launcher check failed; directory remains pending")
+    if action == "state":
+        try:
+            rows = [line for line in result.stdout.splitlines() if line.startswith("{")]
+            state = json.loads(rows[-1])
+        except (ValueError, IndexError, AttributeError):
+            raise RuntimeError("Launcher state read failed; directory remains pending") from None
+        if not isinstance(state, dict) or state.get("passed") is not True or type(state.get("handedOff")) is not bool:
+            raise RuntimeError("Launcher state read failed; directory remains pending")
+        return state
 
 
 def public_felt(value):

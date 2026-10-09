@@ -29,20 +29,33 @@ export function assertWorkerCreation(
     throw new Error("Worker check must be its own single Games.create_game invoke");
 }
 
-interface LauncherCheck {
+interface LauncherContext {
   directory: string;
   manifest: NativeWorldManifest;
   provider: RpcProvider;
   bootstrap: string;
+}
+
+interface LauncherCheck extends LauncherContext {
   account: string;
 }
 
 async function main(): Promise<void> {
   const [action, directory, account, txHash, name, preset] = process.argv.slice(2);
-  if (!directory || !account || !["handoff", "verify"].includes(action!))
-    throw new Error("Invalid launcher check inputs");
-  const check = loadLauncherCheck(directory, account);
-  await assertProviderChain(check.provider, check.manifest, "launcher check RPC");
+  if (!directory || !["state", "handoff", "verify"].includes(action!)) throw new Error("Invalid launcher check inputs");
+  const context = loadLauncherContext(directory);
+  await assertProviderChain(context.provider, context.manifest, "launcher check RPC");
+  if (action === "state") {
+    const state = await readLauncherState({
+      provider: context.provider,
+      world: context.manifest.world.address,
+      bootstrap: context.bootstrap,
+    });
+    console.log(JSON.stringify({ passed: true, ...state }));
+    return;
+  }
+  if (!account) throw new Error("Invalid launcher check inputs");
+  const check = { ...context, account };
   await assertWorkerIdentity(check);
   await confirmLauncher(check, action!);
   if (action === "verify") {
@@ -52,7 +65,7 @@ async function main(): Promise<void> {
   console.log(JSON.stringify({ passed: true, launcher: account }));
 }
 
-function loadLauncherCheck(directory: string, account: string): LauncherCheck {
+function loadLauncherContext(directory: string): LauncherContext {
   const manifest = readShardManifest<NativeWorldManifest>(resolve(directory, "native-world.json"));
   const rpcUrl = process.env.HARNESS_ADMIN_RPC_URL;
   if (!rpcUrl) throw new Error("Private launcher RPC is required");
@@ -62,7 +75,6 @@ function loadLauncherCheck(directory: string, account: string): LauncherCheck {
     manifest,
     provider: new RpcProvider({ nodeUrl: rpcUrl }),
     bootstrap: identity.operatorAccountAddress,
-    account,
   };
 }
 
@@ -78,17 +90,39 @@ async function assertWorkerIdentity({ provider, manifest, account, bootstrap }: 
     throw new Error("Worker launcher identity differs");
 }
 
+async function installedLauncher(provider: Pick<RpcProvider, "callContract">, world: string): Promise<string> {
+  const values = await provider.callContract(
+    { contractAddress: world, entrypoint: "launcher", calldata: [] },
+    "latest",
+  );
+  if (values.length !== 1 || typeof values[0] !== "string" || !/^0x[0-9a-fA-F]+$/.test(values[0]))
+    throw new Error("Invalid installed launcher");
+  return values[0];
+}
+
+export async function readLauncherState({
+  provider,
+  world,
+  bootstrap,
+}: {
+  provider: Pick<RpcProvider, "callContract">;
+  world: string;
+  bootstrap: string;
+}): Promise<{ handedOff: boolean }> {
+  const installed = await installedLauncher(provider, world);
+  return { handedOff: BigInt(installed) !== BigInt(bootstrap) };
+}
+
 async function confirmLauncher(check: LauncherCheck, action: string): Promise<void> {
   const { provider, manifest, bootstrap, account } = check;
-  const read = () =>
-    provider.callContract({ contractAddress: manifest.world.address, entrypoint: "launcher", calldata: [] }, "latest");
-  const [installed] = await read();
+  const read = () => installedLauncher(provider, manifest.world.address);
+  const installed = await read();
   const needsHandoff = BigInt(installed!) !== BigInt(account);
   if (needsHandoff && (action !== "handoff" || BigInt(installed!) !== BigInt(bootstrap)))
     throw new Error("Unexpected installed launcher");
   if (action === "handoff") recordLauncherIntent(check);
   if (needsHandoff) await sendLauncherHandoff(check);
-  const [confirmed] = await read();
+  const confirmed = await read();
   if (BigInt(confirmed!) !== BigInt(account)) throw new Error("Launcher handoff was not confirmed");
 }
 
