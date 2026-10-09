@@ -46,17 +46,17 @@ the elbow bends toward and the hand's turn on the forearm; for the body, the pel
 feet, the chest's turn against the pelvis and the head's against the chest; and where each foot stands and points. It
 also records what the game should then show. The sword and shield declare these states in the catalog
 (`melee/t1-knight-default-gear-poses.ts`), and `t1-knight-default-arms.test.ts` compares the catalog with the file and
-the posed skeleton with its expected values. The catalog declares two idles (relaxed and sword on shoulder) and the cut.
-Measured in `poses.json` but not declared: relaxing from guard to `idle-at-ease` swings the shield's rim 5.1 mm into the
-thigh; the backhand puts the sword arm through the shield and the blade through the shield arm; the thrust takes the
-blade 3 mm into the shield and the sword arm to within 1 mm of it on the way to the lunge; the chop's raise passes the
-blade 47 mm from the head, where none of its states comes closer than 111 mm (the test allows a tenth). Declaring one of
-them is a data change in the catalog: the bearer then makes the declared attacks in turn. Known limit: the viewer sees
-the cut's contact about 0.1 s after the contact event, because the pose filter trails the controller and the strike is
-faster than the filter; the declared states lead by the filter's lag, which brings the blade within about 120 mm of the
-contact pose when the event fires. Its `from` block names the pose set and the two scripts that measured it, which are
-proposed with the tools in #5031, and the bound model, which is kept by the author. For the reader it also records how
-close each state is to the approved pose it comes from and how far sword, shield and body stay apart.
+the posed skeleton with its expected values. The catalog declares two idles (relaxed and sword on shoulder) and two
+attacks, the cut and the chop, which a bearer makes in turn. Measured in `poses.json` but not declared: relaxing from
+guard to `idle-at-ease` swings the shield's rim 5.1 mm into the thigh; the backhand puts the sword arm through the
+shield and the blade through the shield arm; the thrust takes the blade 3 mm into the shield and the sword arm to within
+1 mm of it on the way to the lunge. Declaring one of them is a data change in the catalog: the bearer then makes the
+declared attacks in turn. Known limit: the viewer sees the cut's contact about 0.1 s after the contact event, because
+the pose filter trails the controller and the strike is faster than the filter; the declared states lead by the filter's
+lag, which brings the blade within about 120 mm of the contact pose when the event fires. Its `from` block names the
+pose set and the two scripts that measured it, which are proposed with the tools in #5031, and the bound model, which is
+kept by the author. For the reader it also records how close each state is to the approved pose it comes from and how
+far sword, shield and body stay apart.
 
 ## Checking the files
 

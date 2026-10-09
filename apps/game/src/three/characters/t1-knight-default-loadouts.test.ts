@@ -4,6 +4,7 @@ import { GLTFLoader, type GLTF } from "three/addons/loaders/GLTFLoader.js";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { parseTextureFreeGlb } from "../../../test-support/parse-texture-free-glb";
+import { resolveProceduralMeleeAttackVariants } from "./melee/procedural-melee-config";
 import {
   PROCEDURAL_MELEE_OFFHANDS,
   PROCEDURAL_MELEE_WEAPONS,
@@ -77,7 +78,7 @@ async function withRealGlbs(run: () => Promise<void>): Promise<void> {
 }
 
 describe("T1 Knight Default loadouts", () => {
-  it("attack without throwing for every weapon and offhand the gym offers, the Knight's gear with plain gear too", async () => {
+  it("make every attack of every weapon and offhand the gym offers without throwing, the Knight's gear with plain gear too", async () => {
     await withRealGlbs(async () => {
       const runtime = await ProceduralUnitRuntime.create({ includeT1KnightDefault: true });
       const loadouts = listOfferedKnightLoadouts();
@@ -92,10 +93,15 @@ describe("T1 Knight Default loadouts", () => {
           const label = `${config.humanoid.appearanceId} ${config.melee.weaponId} ${config.melee.offhandId} ${config.humanoid.renderDetail}`;
           const actor = runtime.createActor(config);
           try {
-            expect(actor.attack(TARGET), label).toBe(true);
-            for (let frame = 0; frame < ATTACK_FRAMES; frame++) actor.update(1 / 60);
-            expect(actor.hasFiniteState(), label).toBe(true);
-            expect(actor.getStats().meleeContactCount, label).toBe(1);
+            for (const [index, attackVariant] of resolveProceduralMeleeAttackVariants(
+              config.melee.weaponId,
+            ).entries()) {
+              runtime.updateActorConfig(actor, { ...config, melee: { ...config.melee, attackVariant } });
+              expect(actor.attack(TARGET), `${label} ${attackVariant}`).toBe(true);
+              for (let frame = 0; frame < ATTACK_FRAMES; frame++) actor.update(1 / 60);
+              expect(actor.hasFiniteState(), `${label} ${attackVariant}`).toBe(true);
+              expect(actor.getStats().meleeContactCount, `${label} ${attackVariant}`).toBe(index + 1);
+            }
           } finally {
             actor.dispose();
           }

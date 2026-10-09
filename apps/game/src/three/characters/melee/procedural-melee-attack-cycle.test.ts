@@ -69,15 +69,28 @@ describe("procedural melee attack cycle", () => {
     expect(strike.actionWeight).toBe(1);
   });
 
-  it("makes a weapon's attacks in turn: its attack style, or the attacks its states declare", () => {
+  it("makes a weapon's attacks in turn by seed and generation, or the one the config names", () => {
     const idle = createIdleProceduralMeleeAttackState();
     const knight = applyProceduralMeleeConfigPatch(createDefaultProceduralMeleeConfig("knight"), {
       offhandId: "t1-knight-default-shield",
       weaponId: "t1-knight-default-sword",
     });
+    const attacksOf = (seed: number) => {
+      const first = startProceduralMeleeAttack(idle, knight, seed);
+      const second = startProceduralMeleeAttack({ ...first, phase: "idle" }, knight, seed);
+      return [first.variant, second.variant];
+    };
 
     expect(idle.variant).toBeUndefined();
     expect(startProceduralMeleeAttack(idle, createDefaultProceduralMeleeConfig("paladin"), 7).variant).toBe("smash");
-    expect(startProceduralMeleeAttack(idle, knight, 7).variant).toBe("cut");
+    expect(new Set(attacksOf(0))).toEqual(new Set(["cut", "chop"]));
+    expect(attacksOf(1)).toEqual([...attacksOf(0)].reverse());
+    const chop = applyProceduralMeleeConfigPatch(knight, { attackVariant: "chop" });
+    expect(startProceduralMeleeAttack(idle, chop, 0).variant).toBe("chop");
+    expect(startProceduralMeleeAttack(idle, chop, 1).variant).toBe("chop");
+    expect(() => applyProceduralMeleeConfigPatch(knight, { attackVariant: "thrust" })).toThrow(
+      "t1-knight-default-sword makes no thrust attack",
+    );
+    expect(applyProceduralMeleeConfigPatch(chop, { weaponId: "iron-longsword" }).attackVariant).toBe("auto");
   });
 });

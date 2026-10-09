@@ -53,6 +53,23 @@ export const T1_KNIGHT_DEFAULT_SWORD_ARM_POSES: ProceduralMeleeStates<Procedural
         wrist: [-0.1323, -0.1336, 0.102],
       },
     },
+    chop: {
+      windup: {
+        elbow: [-0.1445, 0.0553, 0.0689],
+        handTurn: [-0.3423, -0.45302, 0.32576, 0.75597],
+        wrist: [-0.1422, 0.1244, 0.1054],
+      },
+      contact: {
+        elbow: [-0.0375, -0.0712, 0.0701],
+        handTurn: [0.56047, 0.13675, -0.29229, 0.76272],
+        wrist: [-0.0532, -0.0522, 0.1443],
+      },
+      follow: {
+        elbow: [-0.0375, -0.0712, 0.0701],
+        handTurn: [0.56047, 0.13675, -0.29229, 0.76272],
+        wrist: [-0.0532, -0.0522, 0.1443],
+      },
+    },
   },
 };
 
@@ -96,6 +113,23 @@ export const T1_KNIGHT_DEFAULT_SHIELD_ARM_POSES: ProceduralMeleeStates<Procedura
         elbow: [0.1008, -0.0309, 0.1028],
         handTurn: [-0.26896, 0.16384, -0.13337, 0.9397],
         wrist: [0.0308, -0.0127, 0.1324],
+      },
+    },
+    chop: {
+      windup: {
+        elbow: [0.098, -0.0724, 0.074],
+        handTurn: [-0.21675, 0.13204, -0.10752, 0.96126],
+        wrist: [0.0567, -0.0243, 0.1198],
+      },
+      contact: {
+        elbow: [0.1278, -0.0573, 0.0711],
+        handTurn: [-0.10946, 0.0667, -0.05426, 0.99027],
+        wrist: [0.0631, -0.0568, 0.115],
+      },
+      follow: {
+        elbow: [0.1278, -0.0573, 0.0711],
+        handTurn: [-0.10946, 0.0667, -0.05426, 0.99027],
+        wrist: [0.0631, -0.0568, 0.115],
       },
     },
   },
@@ -182,6 +216,35 @@ export const T1_KNIGHT_DEFAULT_BODY_POSES: ProceduralMeleeBodyStates = {
         stance: {
           left: { forward: 0.1229, left: 0.0638, yaw: 19.3 },
           right: { forward: -0.1229, left: -0.0638, yaw: -50.7 },
+        },
+      },
+    },
+    chop: {
+      windup: {
+        pelvis: { yaw: -30, pitch: -0, roll: -0, height: 0.95, forward: -0.0133, left: 0.0216 },
+        spine: { flex: -5, twist: -12, side: -0.3 },
+        head: { yaw: 35, pitch: -4.9 },
+        stance: {
+          left: { forward: 0.0639, left: 0.019, yaw: 5.4 },
+          right: { forward: -0.0639, left: -0.019, yaw: -65 },
+        },
+      },
+      contact: {
+        pelvis: { yaw: -20, pitch: 12, roll: -0, height: 0.88, forward: 0.026, left: 0.0079 },
+        spine: { flex: 12, twist: -3, side: 0.2 },
+        head: { yaw: 20.1, pitch: 9.9 },
+        stance: {
+          left: { forward: 0.1246, left: 0.0073, yaw: 7.3 },
+          right: { forward: -0.1246, left: -0.0073, yaw: -62.3 },
+        },
+      },
+      follow: {
+        pelvis: { yaw: -20, pitch: 12, roll: -0, height: 0.88, forward: 0.026, left: 0.0079 },
+        spine: { flex: 12, twist: -3, side: 0.2 },
+        head: { yaw: 20.1, pitch: 9.9 },
+        stance: {
+          left: { forward: 0.1246, left: 0.0073, yaw: 7.3 },
+          right: { forward: -0.1246, left: -0.0073, yaw: -62.3 },
         },
       },
     },

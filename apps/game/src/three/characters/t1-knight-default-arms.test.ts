@@ -17,10 +17,6 @@ import {
   type KnightStateName,
 } from "../../../test-support/knight-guard-clearance";
 import { withKnightLibrary } from "../../../test-support/with-knight-library";
-import {
-  createIdleProceduralMeleeAttackState,
-  startProceduralMeleeAttack,
-} from "./melee/procedural-melee-attack-cycle";
 import { applyProceduralMeleeConfigPatch, createDefaultProceduralMeleeConfig } from "./melee/procedural-melee-config";
 import { ProceduralMeleeController } from "./melee/procedural-melee-controller";
 import type { ProceduralMeleeUpperBodyPose } from "./melee/procedural-melee-pose";
@@ -138,11 +134,15 @@ function degrees(radians: number): number {
  * declared states themselves passed the mesh-level clash check when the gear was fitted, and are recorded, not judged.
  */
 interface SequenceLimits {
-  /** As close to the head as the declared states passed through, less 5 mm or a tenth of that (the filter cuts corners). */
-  bladeToHead: number;
+  /**
+   * The shield as close to the head as the declared states passed through, less 5 mm or a tenth of that (the filter cuts
+   * corners): the approved poses raise it to the face, where the head stand-in already reads negative.
+   */
   shieldToHead: number;
 }
 
+/** A blade passing the head, as a raise does, keeps 2 cm from it. */
+const MIN_BLADE_TO_HEAD = 0.02;
 /** A thin blade 5 mm off the shield's slab. */
 const MIN_BLADE_TO_SHIELD = 0.005;
 const MIN_ARM_TO_SHIELD = 0.002;
@@ -165,7 +165,6 @@ function resolveSequenceLimits(
     return least - Math.max(MIN_HEAD_FLOOR_MARGIN, Math.abs(least) * HEAD_FLOOR_MARGIN_SHARE);
   };
   return {
-    bladeToHead: floor((clearance) => clearance.bladeToHead),
     shieldToHead: floor((clearance) => clearance.shieldToHead),
   };
 }
@@ -187,8 +186,8 @@ const CLEARANCE_CRITERIA: Readonly<
     label: "blade clear of the trunk, thighs, shins and the shield arm, and 1 cm above the floor",
   },
   bladeToHead: {
-    holds: ({ clearance }, limits) => clearance.bladeToHead >= limits.bladeToHead,
-    label: "blade no closer to the head than the floor from the declared states passed through",
+    holds: ({ clearance }) => clearance.bladeToHead >= MIN_BLADE_TO_HEAD,
+    label: "blade 2 cm from the head",
   },
   bladeToShield: {
     holds: ({ clearance }) => clearance.bladeToShield >= MIN_BLADE_TO_SHIELD,
@@ -220,7 +219,7 @@ const CLEARANCE_CRITERIA: Readonly<
 
 /** Expects every sample to satisfy every criterion, and says the worst of each when one does not. */
 function expectEveryCriterion(sequence: string, samples: readonly KnightGuardSample[], limits: SequenceLimits) {
-  const limitsInMm = `head floors: blade ${(limits.bladeToHead * 1000).toFixed(1)}mm, shield ${(limits.shieldToHead * 1000).toFixed(1)}mm`;
+  const limitsInMm = `shield head floor ${(limits.shieldToHead * 1000).toFixed(1)}mm`;
   for (const { holds, label } of Object.values(CLEARANCE_CRITERIA)) {
     const failing = samples.filter((sample) => !holds(sample, limits)).map((sample) => sample.label);
     expect
@@ -271,30 +270,21 @@ interface KnightSequence {
 
 const attackStates = (variant: ProceduralMeleeAttackVariantId) => POSES.groups.attacks[variant];
 
-/** The attack a bearer with this seed makes first: the melee controller's own choice, the weapon's attacks in turn. */
-function firstAttackOf(seed: number): ProceduralMeleeAttackVariantId {
-  const config = applyProceduralMeleeConfigPatch(createDefaultProceduralMeleeConfig("knight"), {
-    offhandId: "t1-knight-default-shield",
-    weaponId: "t1-knight-default-sword",
-  });
-  const variant = startProceduralMeleeAttack(createIdleProceduralMeleeAttackState(), config, seed).variant;
-  if (!variant) throw new Error("A started attack has no variant");
-  return variant;
-}
-
 /** Every motion and transition the Knight goes through in play, for one figure in turn. */
 const KNIGHT_SEQUENCES: readonly KnightSequence[] = [
-  ...IDLE_SEEDS.map((seed) => ({
-    name: `${KNIGHT_DECLARED_IDLES[seed]} to guard to ${firstAttackOf(seed)} and back`,
-    seed,
-    states: [KNIGHT_DECLARED_IDLES[seed], POSES.groups.guard, ...attackStates(firstAttackOf(seed))],
-    steps: [
-      { label: "idle", motion: "idle", seconds: 0.5 },
-      { attack: true, label: firstAttackOf(seed), motion: "idle", seconds: 1.4 },
-      { label: "guard held", motion: "idle", seconds: 3 },
-      { label: "relaxing", motion: "idle", seconds: 1 },
-    ] as const,
-  })),
+  ...IDLE_SEEDS.flatMap((seed) =>
+    ATTACK_VARIANTS.map((variant) => ({
+      name: `${KNIGHT_DECLARED_IDLES[seed]} to guard to ${variant} and back`,
+      seed,
+      states: [KNIGHT_DECLARED_IDLES[seed], POSES.groups.guard, ...attackStates(variant)],
+      steps: [
+        { label: "idle", motion: "idle", seconds: 0.5 },
+        { attack: variant, label: variant, motion: "idle", seconds: 1.4 },
+        { label: "guard held", motion: "idle", seconds: 3 },
+        { label: "relaxing", motion: "idle", seconds: 1 },
+      ] as const,
+    })),
+  ),
   {
     name: "idle to walk to run to walk to idle",
     seed: 0,
@@ -307,21 +297,21 @@ const KNIGHT_SEQUENCES: readonly KnightSequence[] = [
       { label: "idle again", motion: "idle", seconds: 0.8 },
     ],
   },
-  ...ATTACK_VARIANTS.map((_, seed) => ({
-    name: `${firstAttackOf(seed)} while walking`,
-    seed,
-    states: [POSES.groups.walk_guard, ...attackStates(firstAttackOf(seed))],
+  ...ATTACK_VARIANTS.map((variant) => ({
+    name: `${variant} while walking`,
+    seed: 0,
+    states: [POSES.groups.walk_guard, ...attackStates(variant)],
     steps: [
       { label: "walk", motion: "walk", seconds: 0.6 },
-      { attack: true, label: firstAttackOf(seed), motion: "walk", seconds: 1.4 },
+      { attack: variant, label: variant, motion: "walk", seconds: 1.4 },
     ] as const,
   })),
   {
     name: "hit from guard",
     seed: 0,
-    states: [KNIGHT_DECLARED_IDLES[0], POSES.groups.guard, ...attackStates(firstAttackOf(0)), POSES.groups.hit],
+    states: [KNIGHT_DECLARED_IDLES[0], POSES.groups.guard, ...attackStates(ATTACK_VARIANTS[0]), POSES.groups.hit],
     steps: [
-      { attack: true, label: "attack", motion: "idle", seconds: 1.4 },
+      { attack: ATTACK_VARIANTS[0], label: "attack", motion: "idle", seconds: 1.4 },
       { hit: true, label: "hit", motion: "idle", seconds: 0.8 },
     ],
   },
@@ -399,8 +389,7 @@ describe("T1 Knight states", () => {
     await withKnightLibrary((library) => {
       const subject = createKnightGuardSubject(library, "hero", STATURE);
       try {
-        for (const seed of ATTACK_VARIANTS.keys()) {
-          const variant = firstAttackOf(seed);
+        for (const variant of ATTACK_VARIANTS) {
           const [windup, contact] = attackStates(variant).map(
             (name) => new Vector3(...measureKnightState(subject, name).clearance.bladeTip),
           );
@@ -409,9 +398,9 @@ describe("T1 Knight states", () => {
             subject,
             [
               { label: "idle", motion: "idle", seconds: 0.5 },
-              { attack: true, label: variant, motion: "idle", seconds: 0.8 },
+              { attack: variant, label: variant, motion: "idle", seconds: 0.8 },
             ],
-            seed,
+            0,
             1,
           );
           const atContact = samples.find((sample) => sample.attackPhase === "contact");

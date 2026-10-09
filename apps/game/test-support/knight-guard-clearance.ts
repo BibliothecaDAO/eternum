@@ -139,8 +139,8 @@ export function createKnightGuardSubject(
 
 /** One stretch of a sequence: how the Knight moves, for how long, and what starts at its beginning. */
 export interface KnightSequenceStep {
-  /** An attack starts as the stretch begins; the melee controller picks which, the weapon's attacks in turn. */
-  attack?: true;
+  /** An attack of this variant starts as the stretch begins. */
+  attack?: ProceduralMeleeAttackVariantId;
   /** A melee hit from the front lands as the stretch begins. */
   hit?: true;
   label: string;
@@ -187,7 +187,10 @@ export function runKnightSequence(
       filter.reset();
       motion = step.motion;
     }
-    if (step.attack) melee.attack(ATTACK_TARGET);
+    if (step.attack) {
+      melee.updateConfig(createKnightMeleeConfig(step.attack), seed);
+      melee.attack(ATTACK_TARGET);
+    }
     if (step.hit) reactions.trigger(FRONT_HIT);
     for (let stepFrame = 0; stepFrame < Math.round(step.seconds * FRAMES_PER_SECOND); stepFrame++, frame++) {
       const delta = 1 / FRAMES_PER_SECOND;
@@ -259,8 +262,9 @@ export function summariseWorstGuardClearance(samples: readonly KnightGuardSample
   ].join(", ");
 }
 
-function createKnightMeleeConfig() {
+function createKnightMeleeConfig(attackVariant: ProceduralMeleeAttackVariantId | "auto" = "auto") {
   return applyProceduralMeleeConfigPatch(createDefaultProceduralMeleeConfig("knight"), {
+    attackVariant,
     offhandId: "t1-knight-default-shield",
     weaponId: "t1-knight-default-sword",
   });
