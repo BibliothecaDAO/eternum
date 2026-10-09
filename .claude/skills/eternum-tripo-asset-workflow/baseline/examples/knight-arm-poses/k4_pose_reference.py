@@ -27,8 +27,7 @@ from hb_common import p                                                 # noqa: 
 import hb_lib as H, hb_harness as HN, hb_helpers as HH                  # noqa: E402
 from hb_export import C, to_game                                        # noqa: E402
 
-POSES = ["idle-relaxed", "idle-at-ease", "walk-contact", "walk-passing", "run-charge", "guard-low", "guard-middle", "guard-high",
-         "advance-behind-shield", "cut-windup", "cut-mid", "cut-followthrough", "chop-overhead-raise", "chop-overhead-strike"]
+POSES = None                                                            # every pose of the knight set
 SWORD_LENGTH = 0.298393189907074                                        # the catalog's visualLength
 SHIELD_RADIUS = 0.250672 / 2                                            # half the catalog's visualDiameter
 
@@ -93,7 +92,7 @@ if __name__ == "__main__":
            "rest": {n: r4(rest_rel[n]) for n in ("upperarm_l", "lowerarm_l", "hand_l", "upperarm_r", "lowerarm_r", "hand_r", "spine_03", "neck_01", "Head", "pelvis")},
            "shield_radius": round(SHIELD_RADIUS, 5), "sword_length": round(SWORD_LENGTH, 5), "poses": {}}
     lines = []
-    for pid in POSES:
+    for pid in (POSES or list(library)):
         if pid not in library: print("NO POSE", pid); continue
         A_, P_ = H.solve_pose(rig, library[pid]["targets"]); Rs = A_[s3]; chest = P_[s3] + Rs @ (mid_rest - rest[s3])
         pos = lambda n: G(Rs.T @ (P_[ix(n)] - chest)); turn = lambda n: C @ (Rs.T @ A_[ix(n)]) @ C.T

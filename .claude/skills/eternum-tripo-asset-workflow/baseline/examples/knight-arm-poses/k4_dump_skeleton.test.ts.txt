@@ -1,0 +1,106 @@
+// A temporary vitest file for the game checkout (copy to apps/game/src/three/characters/zz-dump-skeleton.test.ts, run
+// `pnpm test src/three/characters/zz-dump-skeleton.test.ts` from apps/game, then delete it): dumps the Knight's posed
+// skeleton (every bone's world position and quaternion, game axes) per controller moment, for k4_body_compare.py and
+// k4_game_pose_render.py. Written 2026-10-09 against the branch after work order P (declared body states: the melee
+// pose takes `holds` and `seed`; an attack is started with the config and seed and carries its variant).
+// @vitest-environment node
+import { writeFileSync } from "node:fs";
+
+import { Quaternion, Vector3 } from "three";
+import { afterEach, it, vi } from "vitest";
+
+import runtimeFit from "../../../asset-sources/characters/t1-knight-default/runtime-fit.json";
+import { createKnightGuardSubject } from "../../../test-support/knight-guard-clearance";
+import { withKnightLibrary } from "../../../test-support/with-knight-library";
+import {
+  advanceProceduralMeleeAttack,
+  createIdleProceduralMeleeAttackState,
+  startProceduralMeleeAttack,
+  type ProceduralMeleeAttackState,
+} from "./melee/procedural-melee-attack-cycle";
+import { applyProceduralMeleeConfigPatch, createDefaultProceduralMeleeConfig } from "./melee/procedural-melee-config";
+import { resolveProceduralMeleeUpperBodyPose, type ProceduralMeleeGuardHolds } from "./melee/procedural-melee-pose";
+import { resolveProceduralCharacterPose } from "./procedural-character-pose";
+import { ProceduralCharacterPoseFilter } from "./procedural-character-pose-filter";
+
+const OUT = process.env.K4_DUMP_OUT ?? "/tmp/claude-1000/-home-krumpylumpkins-repos-realms/ce334ac3-0b7a-418b-9be1-2d2ade09ef6a/scratchpad/game-skeleton-after.json";
+const FPS = 60;
+const SEED = Number(process.env.K4_SEED ?? 0);
+const NAMES = (runtimeFit as { body: { joint_order: string[] } }).body.joint_order;
+const STANDING: ProceduralMeleeGuardHolds = { guard: 0, move: 0, run: 0 };
+const GUARD: ProceduralMeleeGuardHolds = { guard: 1, move: 0, run: 0 };
+const WALKING: ProceduralMeleeGuardHolds = { guard: 1, move: 1, run: 0 };
+const RUNNING: ProceduralMeleeGuardHolds = { guard: 1, move: 1, run: 1 };
+
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+});
+
+it("dumps", async () => {
+  const samples: Record<string, unknown>[] = [];
+  await withKnightLibrary((library) => {
+    const subject = createKnightGuardSubject(library, "hero", 0.61526);
+    const melee = applyProceduralMeleeConfigPatch(createDefaultProceduralMeleeConfig("knight"), {
+      offhandId: "t1-knight-default-shield",
+      weaponId: "t1-knight-default-sword",
+    });
+    const action = (state: ProceduralMeleeAttackState, holds: ProceduralMeleeGuardHolds) =>
+      resolveProceduralMeleeUpperBodyPose({ aimPitchRadians: 0, aimYawRadians: 0, attackStyle: "slash", config: melee, holds, mounted: false, seed: SEED, state });
+    const bones = NAMES.map((name) => {
+      const bone = subject.asset.gltf.scene.getObjectByName(name);
+      if (!bone) throw new Error(`no bone ${name}`);
+      return bone;
+    });
+    const read = (label: string, extra: Record<string, unknown>) => {
+      subject.asset.gltf.scene.updateWorldMatrix(true, true);
+      const p = new Vector3(); const q = new Quaternion();
+      samples.push({ label, ...extra, bones: bones.map((b) => { b.getWorldPosition(p); b.getWorldQuaternion(q); return { p: p.toArray(), q: q.toArray() }; }) });
+    };
+    // one pose through the filter, with last frame's filtered chest as the visible chest
+    const stepPose = (filter: ProceduralCharacterPoseFilter, posed: typeof subject.config, seconds: number, act: ReturnType<typeof action>, visible?: [number, number, number, number]) => {
+      const raw = resolveProceduralCharacterPose(subject.rig, posed, seconds, undefined, undefined, act, undefined, visible);
+      const pose = filter.apply(raw, 1 / FPS, posed.secondaryMotion);
+      subject.avatar.applyPose(pose);
+      return pose;
+    };
+    const run = (label: string, mode: "idle" | "walk" | "run", holds: ProceduralMeleeGuardHolds, frames: number[]) => {
+      const posed = { ...subject.config, animationMode: mode };
+      subject.avatar.updateConfig(posed);
+      const filter = new ProceduralCharacterPoseFilter();
+      const act = action(createIdleProceduralMeleeAttackState(), holds);
+      subject.avatar.setUpperBodyAction(act);
+      let visible: [number, number, number, number] | undefined;
+      for (let frame = 0; frame <= Math.max(...frames); frame++) {
+        const pose = stepPose(filter, posed, frame / FPS, act, visible);
+        visible = pose.parts.chest.quaternion as [number, number, number, number];
+        if (frames.includes(frame)) read(`${label}-${frame}`, { mode, frame, phase: pose.phase, pelvis: pose.parts.pelvis.position });
+      }
+    };
+    run("idle", "idle", STANDING, [60]);
+    run("guard-standing", "idle", GUARD, [60]);
+    run("walk", "walk", WALKING, [10, 25, 40, 55]);
+    run("run", "run", RUNNING, [8, 17, 26, 35]);
+    {
+      const posed = { ...subject.config, animationMode: "idle" as const };
+      subject.avatar.updateConfig(posed);
+      const filter = new ProceduralCharacterPoseFilter();
+      let state = startProceduralMeleeAttack(createIdleProceduralMeleeAttackState(), melee, SEED);
+      const seen = new Set<string>();
+      let visible: [number, number, number, number] | undefined;
+      for (let frame = 0; state.phase !== "idle" && frame < 600; frame++) {
+        const act = action(state, GUARD);
+        subject.avatar.setUpperBodyAction(act);
+        const pose = stepPose(filter, posed, frame / FPS, act, visible);
+        visible = pose.parts.chest.quaternion as [number, number, number, number];
+        const key = `${state.variant ?? "attack"}-${state.phase}`;
+        if (!seen.has(key)) { seen.add(key); read(`attack-${key}-start-${frame}`, { mode: "idle", frame, phase: state.phase, variant: state.variant, t: state.phaseElapsedSeconds }); }
+        if (frame % 6 === 0) read(`attack-${key}-${frame}`, { mode: "idle", frame, phase: state.phase, variant: state.variant, t: state.phaseElapsedSeconds, windup: act.windupProgress, strike: act.strikeProgress, follow: act.followThrough, contact: act.contactProgress, weight: act.actionWeight });
+        state = advanceProceduralMeleeAttack(state, melee, SEED, 1 / FPS, false).state;
+      }
+    }
+    subject.avatar.dispose();
+  });
+  writeFileSync(OUT, JSON.stringify({ names: NAMES, stature: 0.61526, seed: SEED, samples }));
+  console.log("DUMPED", samples.length, "samples to", OUT);
+});
