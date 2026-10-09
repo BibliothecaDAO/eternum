@@ -34,6 +34,11 @@ const CORS = {
   "Access-Control-Allow-Headers": "Content-Type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
+const READ_NOT_FOUND = new Map<number, string>([
+  [20, "Contract not found"],
+  [24, "Block not found"],
+  [28, "Class hash not found"],
+]);
 
 function isRead(call: unknown): boolean {
   if (!call || typeof call !== "object" || Array.isArray(call)) return false;
@@ -118,17 +123,20 @@ async function handlePublicRequest(
   if (operations.length && (!client || !allowance(client, operations.length))) {
     return refuse(-32005, "Account operation rate exceeded", 429);
   }
+  let admitted: (Admitted | undefined)[];
   try {
     // Validate the entire batch before producing any proof. Independent accounts then stamp concurrently.
-    const admitted = await Promise.all(calls.map((call) => admitRequest(call, node, identity)));
-    if (admitted.some((call) => !call)) return refuse(-32601, "RPC method is not public");
-    const answers = await Promise.all(
-      admitted.map((call) => forwardRequest(call!, path, node, identity, stamper, inFlightAccounts)),
-    );
-    return Response.json(Array.isArray(payload) ? answers : answers[0], { headers: CORS });
+    admitted = await Promise.all(calls.map((call) => admitRequest(call, node, identity)));
   } catch {
-    return refuse(-32000, "Node unavailable", 502);
+    return calls.some((call) => isWrite(call as RpcCall))
+      ? refuse(-32010, "Transaction refused", 502)
+      : refuse(-32012, "RPC read unavailable", 502);
   }
+  if (admitted.some((call) => !call)) return refuse(-32601, "RPC method is not public");
+  const answers = await Promise.all(
+    admitted.map((call) => forwardRequest(call!, path, node, identity, stamper, inFlightAccounts)),
+  );
+  return Response.json(Array.isArray(payload) ? answers : answers[0], { headers: CORS });
 }
 
 type RpcCall = { jsonrpc: "2.0"; id?: unknown; method: string; params?: unknown };
@@ -178,7 +186,57 @@ async function nodeCall(node: URL, method: string, params: unknown): Promise<unk
   return value.result;
 }
 function transactionRefused(id: unknown) {
-  return { jsonrpc: "2.0", id: id ?? null, error: { code: -32000, message: "Transaction refused" } };
+  return rpcError(id, -32010, "Transaction refused");
+}
+function rpcError(id: unknown, code: number, message: string, transactionHash?: string) {
+  return {
+    jsonrpc: "2.0",
+    id: id ?? null,
+    error: { code, message, ...(transactionHash ? { data: { transaction_hash: transactionHash } } : {}) },
+  };
+}
+function isWrite(call: RpcCall): boolean {
+  return call?.method === "starknet_addInvokeTransaction" || call?.method === "starknet_addDeployAccountTransaction";
+}
+type NodeAnswer = { jsonrpc?: unknown; id?: unknown; result?: unknown; error?: { code?: unknown } };
+function validReply(answer: unknown, call: RpcCall): answer is NodeAnswer {
+  return (
+    !!answer &&
+    typeof answer === "object" &&
+    !Array.isArray(answer) &&
+    (answer as NodeAnswer).jsonrpc === "2.0" &&
+    (answer as NodeAnswer).id === (call.id ?? null)
+  );
+}
+function readAnswer(answer: NodeAnswer, call: RpcCall): unknown {
+  const hasResult = Object.hasOwn(answer, "result");
+  const hasError = Object.hasOwn(answer, "error");
+  if (hasResult && !hasError) return { jsonrpc: "2.0", id: call.id ?? null, result: answer.result };
+  if (hasError && !hasResult) {
+    const code = answer.error?.code;
+    if (
+      code === 29 &&
+      (call.method === "starknet_getTransactionStatus" || call.method === "starknet_getTransactionReceipt")
+    )
+      return rpcError(call.id, 29, "Transaction hash not found");
+    if (typeof code === "number" && READ_NOT_FOUND.has(code)) return rpcError(call.id, code, READ_NOT_FOUND.get(code)!);
+  }
+  return rpcError(call.id, -32012, "RPC read unavailable");
+}
+function writeAnswer(answer: NodeAnswer, call: RpcCall, expectedHash?: string): unknown {
+  const result = answer.result as { transaction_hash?: unknown; contract_address?: unknown } | undefined;
+  const hash = felt(result?.transaction_hash);
+  if (Object.hasOwn(answer, "error") || hash === undefined || (expectedHash && hash !== felt(expectedHash)))
+    return rpcError(call.id, -32011, "Transaction outcome unknown", expectedHash);
+  const contract = call.method === "starknet_addDeployAccountTransaction" ? felt(result?.contract_address) : undefined;
+  return {
+    jsonrpc: "2.0",
+    id: call.id ?? null,
+    result: {
+      transaction_hash: expectedHash ?? `0x${hash.toString(16)}`,
+      ...(contract !== undefined ? { contract_address: `0x${contract.toString(16)}` } : {}),
+    },
+  };
 }
 async function forwardRequest(
   admitted: Admitted,
@@ -193,9 +251,10 @@ async function forwardRequest(
   const account = play ? felt(play.sender_address)!.toString() : undefined;
   if (account && inFlightAccounts.has(account)) return transactionRefused(call.id);
   if (account) inFlightAccounts.add(account);
+  let forwarded = false;
+  let expectedHash: string | undefined;
   try {
-    let outgoing = game ? { ...call, params: [game.transaction] } : call,
-      expectedHash: string | undefined;
+    let outgoing = game ? { ...call, params: [game.transaction] } : call;
     if (play) {
       const [nonce, accountClass] = await Promise.all([
         nodeCall(node, "starknet_getNonce", ["pre_confirmed", play.sender_address]),
@@ -205,35 +264,29 @@ async function forwardRequest(
       if (felt(nonce) !== felt(play.nonce) || felt(accountClass) !== felt(identity.accountClassHash))
         return transactionRefused(call.id);
       const stamp = await stamper.stamp(play);
-      expectedHash = stamp.transactionHash;
+      const hash = felt(stamp.transactionHash);
+      if (hash === undefined) return transactionRefused(call.id);
+      expectedHash = `0x${hash.toString(16)}`;
       outgoing = { ...call, params: [{ ...play, signature: [...play.signature, ...stamp.suffix] }] };
     }
+    const body = JSON.stringify(outgoing);
+    // Once fetch is invoked, a failed reply cannot prove that the node did not accept the write.
+    forwarded = true;
     const response = await fetch(new URL(path, node), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(outgoing),
+      body,
       signal: AbortSignal.timeout(30000),
       redirect: "error",
     });
-    const answer = (await response.json()) as { result?: { transaction_hash?: string }; error?: unknown };
-    if (game) {
-      if (
-        !response.ok ||
-        answer.error ||
-        felt(answer.result?.transaction_hash) === undefined ||
-        (play && felt(answer.result?.transaction_hash) !== felt(expectedHash))
-      )
-        return transactionRefused(call.id);
-      return {
-        jsonrpc: "2.0",
-        id: call.id ?? null,
-        result: { transaction_hash: expectedHash ?? answer.result!.transaction_hash },
-      };
-    }
-    if (answer.error || !response.ok) return transactionRefused(call.id);
-    return answer;
+    const answer: unknown = await response.json();
+    if (!response.ok || !validReply(answer, call)) throw new Error("Invalid private node reply");
+    return isWrite(call) ? writeAnswer(answer, call, expectedHash) : readAnswer(answer, call);
   } catch {
-    return transactionRefused(call.id);
+    if (!isWrite(call)) return rpcError(call.id, -32012, "RPC read unavailable");
+    return forwarded
+      ? rpcError(call.id, -32011, "Transaction outcome unknown", expectedHash)
+      : transactionRefused(call.id);
   } finally {
     if (account) inFlightAccounts.delete(account);
   }
