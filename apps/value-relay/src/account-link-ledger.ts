@@ -1,4 +1,5 @@
-import { Account, Signer } from "starknet";
+import { RecordedSigner } from "./recorded-signer";
+import { Account } from "starknet";
 import { rpcAt } from "@realms-world/value-ledger";
 import type { LedgerAccountLinkWrite } from "@realms-world/identity";
 
@@ -52,7 +53,7 @@ export const accountLinkLedger = (credentials: Credentials) => {
     ): Promise<LedgerAccountLinkWrite> => {
       const previous = await readAt(wallet, BigInt(account) === 0n ? null : account);
       const provider = providerOf();
-      const signing = new AccountLinkSigner(credentials.privateKey, (transactionHash) =>
+      const signing = new RecordedSigner(credentials.privateKey, (transactionHash) =>
         onSigning({
           wallet,
           account,
@@ -82,18 +83,3 @@ export const accountLinkLedger = (credentials: Credentials) => {
     chainId: () => providerOf().getChainId(),
   };
 };
-
-/** Keep the SDK's hash/signature format; attach only the private identity receipt before any network submit. */
-class AccountLinkSigner extends Signer {
-  constructor(
-    key: string,
-    private readonly onSigning: (hash: string) => Promise<void>,
-  ) {
-    super(key);
-  }
-  override async signRaw(digest: string) {
-    const signature = await super.signRaw(digest);
-    await this.onSigning(digest);
-    return signature;
-  }
-}

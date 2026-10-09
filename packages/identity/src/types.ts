@@ -63,3 +63,13 @@ export interface PaidGameLedger {
   gameId: number;
 }
 export type GameEntry = { kind: "free" } | { kind: "paid"; ledger: PaidGameLedger };
+
+export interface LedgerPayDecision {
+  chainId: string;
+  claimId: string;
+  transactionHash: string;
+  realmsId: string;
+  wallet: string;
+  seasonId: number;
+  amount: string;
+}

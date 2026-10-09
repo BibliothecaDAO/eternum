@@ -1,5 +1,5 @@
 import { Data, Effect } from "effect";
-import type { LedgerAccountLinkWrite, PayoutWallet } from "@realms-world/identity";
+import type { LedgerAccountLinkWrite, LedgerPayDecision, PayoutWallet } from "@realms-world/identity";
 
 export class RelayFailure extends Data.TaggedError("RelayFailure")<{ operation: string }> {}
 export type RelayEffect<A> = Effect.Effect<A, RelayFailure>;
@@ -84,6 +84,7 @@ export type HeldObligation =
 export interface PaidClaim extends Omit<Withdrawal, "realmsId" | "confirmedAt"> {
   wallet: string;
   paidAt: number;
+  paymentTransactionHash: string;
 }
 export interface LaborGrant {
   gameId: number;
@@ -120,7 +121,6 @@ export interface RelayPorts {
   };
   identity: {
     payoutWallet(realmsId: string): RelayEffect<PayoutWallet>;
-    wasReadyPayoutWallet(account: string, wallet: string, at: number): RelayEffect<boolean>;
     accountForRealmsId(realmsId: string): RelayEffect<string | null>;
     linkedWallet(realmsId: string): RelayEffect<string | null>;
   };
@@ -140,7 +140,8 @@ export interface AccountLinkChanged extends LedgerAccountLinkWrite {
   id: string;
 }
 export interface MonitorPorts {
-  identity: Pick<RelayPorts["identity"], "wasReadyPayoutWallet"> & {
+  identity: {
+    matchesPayDecision(decision: LedgerPayDecision): RelayEffect<boolean>;
     matchesLedgerLinkWrite(write: LedgerAccountLinkWrite): RelayEffect<boolean>;
   };
   shard: Pick<RelayPorts["shard"], "withdrawal" | "result"> & {

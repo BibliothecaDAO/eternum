@@ -3,19 +3,25 @@ import { beforeEach, expect, it, vi } from "vitest";
 import { ledgerPaymentAdapter, ledgerPaymentRead, ledgerReportAdapter, ledgerPauserAdapter } from "./chain";
 
 const rpc = vi.hoisted(() => ({ execute: vi.fn(), call: vi.fn(), wait: vi.fn(), block: vi.fn() }));
-vi.mock("starknet", () => ({
+vi.mock("starknet", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("starknet")>()),
   RpcProvider: vi.fn(function () {
     return { callContract: rpc.call, waitForTransaction: rpc.wait, getBlock: rpc.block };
   }),
-  Account: vi.fn(function () {
-    return { execute: rpc.execute };
+  Account: vi.fn(function (options: { signer?: { signRaw(hash: string): Promise<unknown> } }) {
+    return {
+      execute: async (call: unknown) => {
+        if (typeof options.signer === "object") await options.signer.signRaw("0xabc");
+        return rpc.execute(call);
+      },
+    };
   }),
 }));
 const credentials = {
   rpcUrl: "https://ledger.test",
   contractAddress: "0x10",
   accountAddress: "0x20",
-  privateKey: "unused-test-key",
+  privateKey: `0x${Array.from(crypto.getRandomValues(new Uint8Array(31)), (value) => value.toString(16).padStart(2, "0")).join("")}`,
 };
 beforeEach(() => {
   vi.clearAllMocks();
@@ -25,7 +31,7 @@ beforeEach(() => {
 });
 it("waits for the Frontier payment to confirm before completing", async () => {
   await Effect.runPromise(
-    ledgerPaymentAdapter(credentials, async () => true)(
+    ledgerPaymentAdapter(credentials, async () => {})(
       { chainId: "0x1", seasonId: 7, transactionHash: "0xdef", realmsId: "0x3", amount: "17", confirmedAt: 1000 },
       "0x456",
     ),
@@ -38,7 +44,7 @@ it("waits for the Frontier payment to confirm before completing", async () => {
   expect(rpc.wait).toHaveBeenCalledWith("0xabc", { errorStates: [] });
 });
 it("does not mark a reverted payment successful or expose a transport's error", async () => {
-  const pay = ledgerPaymentAdapter(credentials, async () => true);
+  const pay = ledgerPaymentAdapter(credentials, async () => {});
   const withdrawal = {
     chainId: "0x1",
     seasonId: 7,
@@ -61,23 +67,6 @@ it("makes a monitor pause retry harmless once the pause already landed", async (
   expect(rpc.execute).toHaveBeenCalledWith({ contractAddress: "0x10", entrypoint: "pause", calldata: [] });
   expect(rpc.wait).toHaveBeenCalledWith("0xabc");
 });
-it("keeps a confirmed claim queued until L2 reaches the shard receipt clock", async () => {
-  rpc.block.mockResolvedValue({ status: "ACCEPTED_ON_L2", timestamp: 999 });
-  const pay = ledgerPaymentAdapter(credentials, async () => true);
-  const claim = {
-    chainId: "0x1",
-    seasonId: 7,
-    transactionHash: "0xdef",
-    realmsId: "0x3",
-    amount: "17",
-    confirmedAt: 1000,
-  };
-  await expect(Effect.runPromise(pay(claim, "0x456"))).rejects.toMatchObject({ operation: "ledger_clock_behind" });
-  expect(rpc.execute).not.toHaveBeenCalled();
-  rpc.block.mockResolvedValue({ status: "ACCEPTED_ON_L2", timestamp: 1000 });
-  await Effect.runPromise(pay(claim, "0x456"));
-  expect(rpc.execute).toHaveBeenCalledOnce();
-});
 
 it("distinguishes a permanent close from the retryable whole-day unlock gate without leaking revert text", async () => {
   const claim = {
@@ -88,7 +77,7 @@ it("distinguishes a permanent close from the retryable whole-day unlock gate wit
     amount: "17",
     confirmedAt: 1000,
   };
-  const pay = ledgerPaymentAdapter(credentials, async () => true);
+  const pay = ledgerPaymentAdapter(credentials, async () => {});
   rpc.wait.mockResolvedValue({ isReverted: () => true, revert_reason: "Ledger: season closed" });
   await expect(Effect.runPromise(pay(claim, "0x456"))).rejects.toMatchObject({ operation: "ledger_season_closed" });
   rpc.wait.mockResolvedValue({ isReverted: () => true, revert_reason: "Ledger: unlock exceeded" });
@@ -125,9 +114,11 @@ it("confirms an immutable withdrawal report separately from payment and recogniz
   expect(rpc.execute).toHaveBeenCalledTimes(1);
 });
 
-it("retries while the confirmed ledger clock is earlier than the historical wallet hold", async () => {
-  const wasReady = vi.fn(async () => false);
-  const pay = ledgerPaymentAdapter(credentials, wasReady);
+it("refuses a pay before broadcast when identity cannot record ready authority", async () => {
+  const record = vi.fn(async () => {
+    throw new Error("not_ready");
+  });
+  const pay = ledgerPaymentAdapter(credentials, record);
   await expect(
     Effect.runPromise(
       pay(
@@ -135,8 +126,28 @@ it("retries while the confirmed ledger clock is earlier than the historical wall
         "0x123",
       ),
     ),
-  ).rejects.toMatchObject({ operation: "ledger_clock_behind_wallet_hold" });
+  ).rejects.toMatchObject({ operation: "pay Frontier claim" });
   expect(rpc.execute).not.toHaveBeenCalled();
+});
+it("journals the exact signed claim decision before broadcast without an inclusion clock", async () => {
+  const record = vi.fn(async () => {});
+  await Effect.runPromise(
+    ledgerPaymentAdapter(credentials, record)(
+      { chainId: "0x1", seasonId: 1, transactionHash: "0xdef", realmsId: "0x2", amount: "17", confirmedAt: 999999 },
+      "0x123",
+    ),
+  );
+  expect(record).toHaveBeenCalledWith({
+    chainId: "0x1",
+    seasonId: 1,
+    claimId: "0xdef",
+    realmsId: "0x2",
+    amount: "17",
+    wallet: "0x123",
+    transactionHash: "0xabc",
+  });
+  expect(record.mock.invocationCallOrder[0]).toBeLessThan(rpc.execute.mock.invocationCallOrder[0]!);
+  expect(rpc.block).not.toHaveBeenCalled();
 });
 
 it("sets aside a first report that permanently missed the ledger claim window", async () => {

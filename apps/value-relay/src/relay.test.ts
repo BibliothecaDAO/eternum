@@ -100,8 +100,7 @@ const fixture = () => {
     },
     identity: {
       matchesLedgerLinkWrite: () => Effect.succeed(true),
-      wasReadyPayoutWallet: (_account: string, wallet: string, _at: number) =>
-        Effect.succeed(BigInt(wallet) === 0x123n),
+      matchesPayDecision: (decision) => Effect.succeed(BigInt(decision.wallet) === 0x123n),
       payoutWallet: () => Effect.succeed({ status: "ready", address: "0x123" }),
       accountForRealmsId: () => Effect.succeed("0x3"),
       linkedWallet: () => Effect.succeed("0x123"),
@@ -113,7 +112,11 @@ const fixture = () => {
       pay: vi.fn(() => Effect.void),
       postResult: vi.fn(() => Effect.void),
       paidClaims: () =>
-        Effect.succeed({ rows: [{ ...withdrawal, paidAt: 1000, wallet: "0x123" }], next: null, head: 1000 }),
+        Effect.succeed({
+          rows: [{ ...withdrawal, paymentTransactionHash: "0xdef", paidAt: 1000, wallet: "0x123" }],
+          next: null,
+          head: 1000,
+        }),
       postedResults: () => Effect.succeed({ rows: [result], next: null, head: 1000 }),
     },
     realms: { ownerOf: () => Effect.succeed("0x123") },
@@ -203,7 +206,11 @@ describe("independent payout monitor", () => {
       const f = fixture();
       if (fault === "wrong_wallet")
         f.ports.ledger.paidClaims = () =>
-          Effect.succeed({ rows: [{ ...withdrawal, paidAt: 1000, wallet: "0xbad" }], next: null, head: 1000 });
+          Effect.succeed({
+            rows: [{ ...withdrawal, paymentTransactionHash: "0xdef", paidAt: 1000, wallet: "0xbad" }],
+            next: null,
+            head: 1000,
+          });
       if (fault === "missing_receipt") f.ports.shard.withdrawal = () => Effect.succeed(null);
       if (fault === "wrong_amount") f.ports.shard.withdrawal = () => Effect.succeed({ ...withdrawal, amount: "18" });
       if (fault === "wrong_season") f.ports.shard.withdrawal = () => Effect.succeed({ ...withdrawal, seasonId: 5 });
@@ -414,8 +421,8 @@ it("keeps a pinned event-page cursor through retries and checks its hash before 
 it("accepts a historical ready payout even when the player has since changed or unlinked the wallet", async () => {
   const f = fixture();
   f.ports.identity.payoutWallet = () => Effect.succeed({ status: "no_wallet" });
-  Object.assign(f.ports.identity, { wasReadyPayoutWallet: () => Effect.succeed(true) });
-  const paid = { ...withdrawal, wallet: "0x123", paidAt: 1000 };
+  Object.assign(f.ports.identity, { matchesPayDecision: () => Effect.succeed(true) });
+  const paid = { ...withdrawal, wallet: "0x123", paymentTransactionHash: "0xdef", paidAt: 1000 };
   f.ports.ledger.paidClaims = () => Effect.succeed({ rows: [paid], head: 1000, next: null });
   let progress: MonitorProgress = { halted: null };
   const store = {
@@ -439,4 +446,46 @@ it("holds only a corrupt result while recording and paying the rest of its page"
   expect(await f.store.held()).toContainEqual(
     expect.objectContaining({ kind: "result", reason: "invalid_result_commitment" }),
   );
+});
+
+it("audits the signed pay decision even when replacement and block clocks disagree", async () => {
+  const f = fixture();
+  const historicalClock = vi.fn(() => Effect.succeed(false));
+  Object.assign(f.ports.identity, {
+    wasReadyPayoutWallet: historicalClock,
+    matchesPayDecision: () => Effect.succeed(true),
+  });
+  const pause = vi.fn(() => Effect.void);
+  let progress: MonitorProgress = { halted: null };
+  await Effect.runPromise(
+    runMonitor(
+      { ...f.ports, ledger: { ...f.ports.ledger, pause } },
+      {
+        load: async () => progress,
+        save: async (next) => {
+          progress = next;
+        },
+      },
+    ),
+  );
+  expect(pause).not.toHaveBeenCalled();
+  expect(historicalClock).not.toHaveBeenCalled();
+});
+it("pauses on a payment with no authorized signed decision even when its wallet was once ready", async () => {
+  const f = fixture();
+  Object.assign(f.ports.identity, { matchesPayDecision: () => Effect.succeed(false) });
+  const pause = vi.fn(() => Effect.void);
+  let progress: MonitorProgress = { halted: null };
+  await Effect.runPromise(
+    runMonitor(
+      { ...f.ports, ledger: { ...f.ports.ledger, pause } },
+      {
+        load: async () => progress,
+        save: async (next) => {
+          progress = next;
+        },
+      },
+    ),
+  );
+  expect(pause).toHaveBeenCalledOnce();
 });

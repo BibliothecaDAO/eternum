@@ -17,12 +17,16 @@ it("keeps checked-through block and page continuation across ticks without rerea
   const paidClaims = vi.fn((cursor: string | null, fromBlock = 0) =>
     Effect.succeed(
       cursor === null && fromBlock === 0
-        ? { rows: [{ ...receipt, paidAt: 1, wallet: "0x123" }], next: "pinned-page2", head: 10 }
+        ? {
+            rows: [{ ...receipt, paymentTransactionHash: "0xdef", paidAt: 1, wallet: "0x123" }],
+            next: "pinned-page2",
+            head: 10,
+          }
         : { rows: [], next: null, head: 10 },
     ),
   );
   const ports: MonitorPorts = {
-    identity: { matchesLedgerLinkWrite: () => Effect.succeed(true), wasReadyPayoutWallet: () => Effect.succeed(true) },
+    identity: { matchesLedgerLinkWrite: () => Effect.succeed(true), matchesPayDecision: () => Effect.succeed(true) },
     shard: { conservation: () => Effect.succeed([]), withdrawal, result: () => Effect.succeed(null) },
     ledger: {
       accountLinks: () => Effect.succeed({ rows: [], head: 1000, next: null }),
@@ -55,6 +59,7 @@ it("an exact row reset skips only that claim and still faults on the next unchec
     transactionHash,
     wallet: "0x123",
     amount: "1",
+    paymentTransactionHash: "0xdef",
     paidAt: 1,
   }));
   const checked = vi.fn((chainId: string, transactionHash: string) =>
@@ -66,7 +71,7 @@ it("an exact row reset skips only that claim and still faults on the next unchec
     }),
   );
   const ports: MonitorPorts = {
-    identity: { matchesLedgerLinkWrite: () => Effect.succeed(true), wasReadyPayoutWallet: () => Effect.succeed(false) },
+    identity: { matchesLedgerLinkWrite: () => Effect.succeed(true), matchesPayDecision: () => Effect.succeed(false) },
     shard: { conservation: () => Effect.succeed([]), withdrawal: checked, result: () => Effect.succeed(null) },
     ledger: {
       accountLinks: () => Effect.succeed({ rows: [], head: 1000, next: null }),

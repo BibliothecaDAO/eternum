@@ -15,7 +15,7 @@ const fixture = (allowed = true) => {
   const pause = vi.fn(() => Effect.void);
   const ports = {
     identity: {
-      wasReadyPayoutWallet: () => Effect.succeed(true),
+      matchesPayDecision: () => Effect.succeed(true),
       matchesLedgerLinkWrite: vi.fn(() => Effect.succeed(allowed)),
     },
     shard: { conservation: () => Effect.succeed([]) },

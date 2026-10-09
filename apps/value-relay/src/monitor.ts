@@ -106,7 +106,17 @@ const checkPaidClaims = (ports: MonitorPorts, store: MonitorStore) =>
       Effect.gen(function* () {
         const receipt = yield* ports.shard.withdrawal(paid.chainId, paid.transactionHash);
         if (!matchesPaidClaim(receipt, paid)) return `paid_claim_mismatch:${paid.transactionHash}`;
-        if (!(yield* ports.identity.wasReadyPayoutWallet(receipt!.realmsId, paid.wallet, paid.paidAt)))
+        if (
+          !(yield* ports.identity.matchesPayDecision({
+            chainId: paid.chainId,
+            claimId: paid.transactionHash,
+            transactionHash: paid.paymentTransactionHash,
+            realmsId: receipt!.realmsId,
+            wallet: paid.wallet,
+            seasonId: paid.seasonId,
+            amount: paid.amount,
+          }))
+        )
           return `paid_wallet_mismatch:${paid.transactionHash}`;
         return null;
       }),

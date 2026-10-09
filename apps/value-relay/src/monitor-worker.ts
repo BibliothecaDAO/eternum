@@ -22,7 +22,7 @@ interface MonitorEnv {
   IDENTITY: {
     matchesLedgerLinkWrite(write: import("@realms-world/identity").LedgerAccountLinkWrite): Promise<boolean>;
     realmsIdForAccount(account: string): Promise<string | null>;
-    wasReadyPayoutWallet(account: string, wallet: string, at: number): Promise<boolean>;
+    matchesPayDecision(decision: import("@realms-world/identity").LedgerPayDecision): Promise<boolean>;
   };
   RELAY_REPORT: { held(): Promise<{ kind: string; reason: string; transactionHash: string | null }[]> };
   MONITOR: DurableObjectNamespace<ValueMonitor>;
@@ -167,8 +167,8 @@ const monitorPortsOf = (env: MonitorEnv, storage: DurableObjectStorage) => {
     identity: {
       matchesLedgerLinkWrite: (write: import("@realms-world/identity").LedgerAccountLinkWrite) =>
         relayOperation("verify identity ledger link history", () => env.IDENTITY.matchesLedgerLinkWrite(write)),
-      wasReadyPayoutWallet: (account: string, wallet: string, at: number) =>
-        relayOperation("verify historical payout wallet", () => env.IDENTITY.wasReadyPayoutWallet(account, wallet, at)),
+      matchesPayDecision: (decision: import("@realms-world/identity").LedgerPayDecision) =>
+        relayOperation("verify signed pay decision", () => env.IDENTITY.matchesPayDecision(decision)),
     },
     shard: {
       conservation: shardConservationPort(reader.connection, env.SHARD_HERALD_URL),

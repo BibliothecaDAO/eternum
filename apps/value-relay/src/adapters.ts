@@ -1,14 +1,11 @@
 import { relayOperation, type RelayPorts, type Withdrawal } from "./ports";
 
 interface IdentityPort {
-  wasReadyPayoutWallet(account: string, wallet: string, at: number): Promise<boolean>;
   payoutWallet(realmsId: string): Promise<import("@realms-world/identity").PayoutWallet>;
   accountForRealmsId(realmsId: string): Promise<string | null>;
   linkedWallet(realmsId: string): Promise<string | null>;
 }
 export const identityAdapter = (identity: IdentityPort): RelayPorts["identity"] => ({
-  wasReadyPayoutWallet: (account, wallet, at) =>
-    relayOperation("read historical payout eligibility", () => identity.wasReadyPayoutWallet(account, wallet, at)),
   payoutWallet: (id) => relayOperation("read payout wallet", () => identity.payoutWallet(id)),
   accountForRealmsId: (id) => relayOperation("derive Realms gameplay account", () => identity.accountForRealmsId(id)),
   linkedWallet: (id) => relayOperation("read linked wallet", () => identity.linkedWallet(id)),

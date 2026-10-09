@@ -158,9 +158,17 @@ const readCursor = (value: string): { head: number; token: string } => {
   return { head: Number(cursor.head), token: cursor.token };
 };
 const decodePayment = (event: EmittedEvent): Omit<PaidClaim, "paidAt"> => {
-  if (event.keys.length !== 3 || event.data.length !== 4) throw new Error("invalid_payment_event");
+  if (
+    event.keys.length !== 3 ||
+    event.data.length !== 4 ||
+    typeof event.transaction_hash !== "string" ||
+    !/^0x[0-9a-fA-F]{1,64}$/.test(event.transaction_hash) ||
+    BigInt(event.transaction_hash) === 0n
+  )
+    throw new Error("invalid_payment_event");
   return {
     chainId: event.keys[1]!,
+    paymentTransactionHash: event.transaction_hash,
     transactionHash: event.keys[2]!,
     seasonId: ledgerInteger(event.data[0]!),
     wallet: event.data[1]!,

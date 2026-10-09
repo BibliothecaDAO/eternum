@@ -14,7 +14,7 @@ const fixture = () => {
     confirmedAt: 1,
   };
   const ports: MonitorPorts = {
-    identity: { matchesLedgerLinkWrite: () => Effect.succeed(true), wasReadyPayoutWallet: () => Effect.succeed(true) },
+    identity: { matchesLedgerLinkWrite: () => Effect.succeed(true), matchesPayDecision: () => Effect.succeed(true) },
     shard: {
       conservation: () => Effect.succeed([]),
       withdrawal: vi.fn(() => Effect.fail(new RelayFailure({ operation: "shard_unavailable" }))),
@@ -22,7 +22,12 @@ const fixture = () => {
     },
     ledger: {
       accountLinks: () => Effect.succeed({ rows: [], head: 1000, next: null }),
-      paidClaims: () => Effect.succeed({ rows: [{ ...receipt, paidAt: 1, wallet: "0x123" }], next: null, head: 1000 }),
+      paidClaims: () =>
+        Effect.succeed({
+          rows: [{ ...receipt, paymentTransactionHash: "0xdef", paidAt: 1, wallet: "0x123" }],
+          next: null,
+          head: 1000,
+        }),
       postedResults: () => Effect.succeed({ rows: [], next: null, head: 1000 }),
       pause: vi.fn(() => Effect.void),
     },

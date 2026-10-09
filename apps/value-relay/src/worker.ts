@@ -42,7 +42,7 @@ interface RelayEnv {
     accountLinkTargets(after: string | null): Promise<{ rows: AccountLinkTarget[]; next: string | null }>;
     accountLinkTarget(key: string): Promise<AccountLinkTarget>;
     recordLedgerLinkWrite(target: AccountLinkTarget, write: LedgerAccountLinkWrite): Promise<void>;
-    wasReadyPayoutWallet(account: string, wallet: string, at: number): Promise<boolean>;
+    recordPayDecision(decision: import("@realms-world/identity").LedgerPayDecision): Promise<void>;
     payoutWallet(id: string): Promise<import("@realms-world/identity").PayoutWallet>;
     linkedWallet(id: string): Promise<string | null>;
     authenticate(cookie: string): Promise<{ realmsId: string } | null>;
@@ -272,9 +272,10 @@ const ledgerPortsOf = (env: RelayEnv): RelayPorts["ledger"] => ({
   pay: (withdrawal, wallet) =>
     relayOperation("pay Frontier claim", () =>
       Effect.runPromise(
-        ledgerPaymentAdapter(ledgerCredentialsOf(env), (account, wallet, at) =>
-          env.IDENTITY.wasReadyPayoutWallet(account, wallet, at),
-        )(withdrawal, wallet),
+        ledgerPaymentAdapter(ledgerCredentialsOf(env), (decision) => env.IDENTITY.recordPayDecision(decision))(
+          withdrawal,
+          wallet,
+        ),
       ),
     ),
   postResult: (result) =>

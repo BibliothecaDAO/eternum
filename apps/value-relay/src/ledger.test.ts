@@ -88,6 +88,7 @@ it("decodes confirmed payments and pins the event head across pagination", async
       events: [
         {
           from_address: "0x10",
+          transaction_hash: "0xdef",
           block_number: 100,
           block_hash: "0xa",
           keys: [selector, "0x1", "0xabc"],
@@ -105,6 +106,7 @@ it("decodes confirmed payments and pins the event head across pagination", async
       transactionHash: "0xabc",
       seasonId: 7,
       wallet: "0x123",
+      paymentTransactionHash: "0xdef",
       paidAt: 1000,
       amount: String(2n ** 128n + 5n),
     },
@@ -119,6 +121,7 @@ it("decodes result commitments and refuses malformed payment events", async () =
     events: [
       {
         from_address: "0x10",
+        transaction_hash: "0xdef",
         keys: [hash.getSelectorFromName("ResultsApplied"), "0x1", "7"],
         data: ["1", result.commitment, "0", "0"],
       },
@@ -131,6 +134,7 @@ it("decodes result commitments and refuses malformed payment events", async () =
     events: [
       {
         from_address: "0x10",
+        transaction_hash: "0xdef",
         keys: [hash.getSelectorFromName("WithdrawalPaid"), "0x1", "0xabc"],
         data: ["7", "0x123", String(2n ** 128n), "0"],
       },

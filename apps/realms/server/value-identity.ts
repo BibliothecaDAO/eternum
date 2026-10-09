@@ -1,5 +1,6 @@
+import { recordPayDecision, matchesPayDecision } from "./pay-decisions";
 import { accountLinkTargets, accountLinkTarget, recordLedgerLinkWrite, matchesLedgerLinkWrite } from "./account-links";
-import type { AccountLinkTarget, LedgerAccountLinkWrite } from "@realms-world/identity";
+import type { AccountLinkTarget, LedgerAccountLinkWrite, LedgerPayDecision } from "@realms-world/identity";
 import { createIdentityAuth } from "./auth";
 import { WorkerEntrypoint } from "cloudflare:workers";
 import { normalizeStarknetAddress } from "@realms-world/identity";
@@ -9,7 +10,7 @@ import { decodeIdentityEnv, type IdentityEnv } from "./env";
 import { encodeChainName } from "@realms-world/chain";
 import { identityL2Configuration, realmOwnerOf } from "./l2";
 import { realmsIdsOfAccounts } from "./realms-accounts";
-import { lookupPayoutWallet, readLinkedWallet, wasReadyPayoutWallet } from "./payout-wallet";
+import { lookupPayoutWallet, readLinkedWallet } from "./payout-wallet";
 
 /** Only a service binding exposes these reads; they have no public HTTP route. */
 export class ValueIdentity extends WorkerEntrypoint<IdentityEnv> {
@@ -40,9 +41,13 @@ export class ValueIdentity extends WorkerEntrypoint<IdentityEnv> {
   payoutWallet(realmsId: string) {
     return Effect.runPromise(lookupPayoutWallet(this.env.DB, realmsId));
   }
-  wasReadyPayoutWallet(account: string, wallet: string, at: number) {
-    return wasReadyPayoutWallet(this.env.DB, account, wallet, at);
+  recordPayDecision(decision: LedgerPayDecision) {
+    return recordPayDecision(this.env.DB, decision);
   }
+  matchesPayDecision(decision: LedgerPayDecision) {
+    return matchesPayDecision(this.env.DB, decision);
+  }
+
   async linkedWallet(realmsId: string) {
     return (await readLinkedWallet(this.env.DB, realmsId))?.address ?? null;
   }
