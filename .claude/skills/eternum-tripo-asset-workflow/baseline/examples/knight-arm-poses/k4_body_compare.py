@@ -121,7 +121,7 @@ if __name__ == "__main__":
     print("DIFFERENCES game minus approved (degrees; height as a fraction; feet in metres)")
     rows = []
     for label, m in game.items():
-        key = next((k for k in sorted(MATCH, key=len, reverse=True) if label.startswith(k)), None)
+        key = next((k for k in sorted(MATCH, key=len, reverse=True) if label.startswith(k) or label.replace("attack-cut-", "attack-").replace("attack-chop-", "attack-").startswith(k)), None)   # attack labels may carry the variant
         if key is None: continue
         for pid in MATCH[key]:
             q = approved[pid]

@@ -611,6 +611,27 @@ development gym, standing, walking, running and attacking, large enough to judge
   so arms placed in the controller's chest frame lead the trunk in a fast attack (up to 5 cm on this figure) and stand
   closer to head and trunk than the unfiltered pose says (shield to head 8 mm against 18). Measure clearances with the
   filter on.
+- **The whole body can follow the approved poses, measured the same way (2026-10-09, body pass).** Pelvis yaw, pitch,
+  roll and height, the spine and head against them, and where each foot stands, measured from the approved poses per
+  state and declared by the gear, with the game's chain blending between them; standing, the pelvis stands over the
+  declared stance and the feet step into it. The trunk, head and standing feet then agree with the approved poses to 0.0
+  degrees; walking and running legs stay the gait's.
+- **The filter cuts corners.** The game eases pelvis, chest and head rotations with a time constant of about 0.12 s. A
+  transition between two states therefore comes a little closer to the head or the body than either state (2 to 10 mm on
+  the Knight), and the figure reaches a fast pose late: the cut's contact shows about 0.1 s after the contact event, and
+  looking ahead by the filter's lag halves the gap but cannot close it. Judge transitions against the states they move
+  between, not against a fixed number.
+- **A table's labels are the whole truth of it.** The first pose table assigned the chest's turn about the vertical to
+  "flex" and its pitch to "twist"; the game applied them faithfully and the chest leaned back where the approved pose
+  leans forward. Found only by reading the posed skeleton back out of the game and solving the approved poses again
+  (`examples/knight-arm-poses/`, steps 3 to 5). Do that on every result; a test against the table proves the table was
+  applied, not that it is right.
+- **What the poses leave for the controller.** A shield on the forearm cannot be turned by the hand, so a transition
+  that swings it past the thigh needs a different path for the whole arm (an outward bow helped two idles, not a third,
+  which was left out). The approved follow-throughs stand the trailing foot on its toes; the game plants it flat, so no
+  attack drive is added on top of a declared body. This figure's foot points 27 degrees down at rest, so under the
+  game's rule for idle and run (the foot keeps its bind turn on the shin) the toes went 37 mm through the floor: feet
+  that bear weight now stand on their soles, opt-in.
 - **Open the frames.** A capture is evidence only at a size where the thing in question can be judged, and only once
   someone has looked at it. A worker's sentence about a frame is not a look.
 
