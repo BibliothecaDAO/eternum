@@ -35,7 +35,7 @@ export function nativePlay(
       throw new Error("Native command discriminant mismatch");
     await input.release.ready();
     const release = store.require("GameRelease", { game_id: gameId });
-    const { transaction_hash, inclusion, inBlock } = await executeGameplayAccountTransaction({
+    const { transaction_hash, inBlock } = await executeGameplayAccountTransaction({
       account: actor,
       shard: input.shard,
       stopped: input.stopped,
@@ -51,6 +51,6 @@ export function nativePlay(
         ],
       },
     });
-    return { transaction_hash, inclusion, inBlock };
+    return { transaction_hash, inBlock };
   };
 }

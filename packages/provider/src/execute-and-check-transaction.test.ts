@@ -81,23 +81,21 @@ describe("provider submission boundary", () => {
     });
   });
 
-  it("an unknown first answer says checking and frees the player's next command; the block settles it later", async () => {
+  it("any action unsettled after the checking window says checking and frees the player's next command", async () => {
+    vi.useFakeTimers();
     const provider = makeProvider();
-    let answerFirst!: (answer: "included" | "unknown") => void;
-    let landFirst!: () => void;
+    let settleFirst!: () => void;
     const submit = vi
       .fn()
-      .mockResolvedValueOnce({
-        transaction_hash: "0x7",
-        inclusion: new Promise((resolve) => (answerFirst = resolve)),
-        inBlock: new Promise<void>((resolve) => (landFirst = resolve)),
-      })
+      .mockResolvedValueOnce({ transaction_hash: "0x7" })
       .mockResolvedValue({ transaction_hash: "0x8" });
     provider.setNativeSubmission(submit, bindings.commandAbi as Abi, () => 9);
-    provider.setTransactionStreamWaiter(async (hash, inBlock) => {
-      await inBlock;
-      return { hash, block: 6, status: "PRE_CONFIRMED" };
-    });
+    // In a block already, but neither the receipt nor Herald has answered yet.
+    provider.setTransactionStreamWaiter((hash) =>
+      hash === "0x7"
+        ? new Promise((resolve) => (settleFirst = () => resolve({ hash, block: 6, status: "PRE_CONFIRMED" })))
+        : Promise.resolve({ hash, block: 7, status: "PRE_CONFIRMED" }),
+    );
     const checking = vi.fn();
     const completed = vi.fn();
     provider.on("transactionChecking", checking);
@@ -106,15 +104,17 @@ describe("provider submission boundary", () => {
 
     const first = provider.claim_wonder_points({ signer, value: 1 });
     const next = provider.claim_wonder_points({ signer, value: 2 });
-    await vi.waitFor(() => expect(submit).toHaveBeenCalledOnce());
-    answerFirst("unknown");
-    await vi.waitFor(() => expect(submit).toHaveBeenCalledTimes(2));
+    await vi.advanceTimersByTimeAsync(9_000);
+    expect(submit).toHaveBeenCalledOnce();
+    await vi.advanceTimersByTimeAsync(1_000);
     expect(checking).toHaveBeenCalledWith(expect.objectContaining({ transactionHash: "0x7" }));
+    await vi.waitFor(() => expect(submit).toHaveBeenCalledTimes(2));
     await next;
 
-    landFirst();
+    settleFirst();
     await first;
     await vi.waitFor(() => expect(completed).toHaveBeenCalledTimes(2));
+    expect(checking).toHaveBeenCalledOnce();
   });
 
   it("an action proven not sent after it was sent fails as not_sent on its own hash, never as refused", async () => {
@@ -122,7 +122,6 @@ describe("provider submission boundary", () => {
     provider.setNativeSubmission(
       async () => ({
         transaction_hash: "0x9",
-        inclusion: Promise.resolve("unknown" as const),
         inBlock: Promise.reject(new TransactionNotSentError("0x9", "replaced")),
       }),
       bindings.commandAbi as Abi,
@@ -138,6 +137,37 @@ describe("provider submission boundary", () => {
     await provider.claim_wonder_points({ signer: { address: "0x111" } as AccountInterface, value: 1 });
     await vi.waitFor(() => expect(failed).toHaveBeenCalledOnce());
     expect(failed.mock.calls[0][0]).toMatchObject({ failureKind: "not_sent", transactionHash: "0x9" });
+  });
+
+  it("a dropped action that lands late after all settles as it actually ended", async () => {
+    const provider = makeProvider();
+    let landLate!: (landed: boolean) => void;
+    const dropped = new TransactionNotSentError(
+      "0xa",
+      "dropped",
+      new Promise<boolean>((resolve) => (landLate = resolve)),
+    );
+    provider.setNativeSubmission(
+      async () => ({ transaction_hash: "0xa", inBlock: Promise.reject(dropped) }),
+      bindings.commandAbi as Abi,
+      () => 9,
+    );
+    provider.setTransactionStreamWaiter(async (hash, inBlock) => {
+      await inBlock;
+      return { hash, block: 9, status: "PRE_CONFIRMED" };
+    });
+    const failed = vi.fn();
+    const completed = vi.fn();
+    provider.on("transactionFailed", failed);
+    provider.on("transactionComplete", completed);
+
+    await provider.claim_wonder_points({ signer: { address: "0x111" } as AccountInterface, value: 1 });
+    await vi.waitFor(() => expect(failed).toHaveBeenCalledOnce());
+    expect(failed.mock.calls[0][0]).toMatchObject({ failureKind: "not_sent", transactionHash: "0xa" });
+
+    landLate(true);
+    await vi.waitFor(() => expect(completed).toHaveBeenCalledOnce());
+    expect(completed.mock.calls[0][0].details).toMatchObject({ transaction_hash: "0xa" });
   });
 
   it("keeps a slow action pending with no timeout and signs the next only after Herald applies it", async () => {

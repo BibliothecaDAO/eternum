@@ -28,7 +28,7 @@ import {
   shortString,
 } from "starknet";
 import { extractErrorMessage } from "./classify-transaction-error";
-import { TransactionNotSentError } from "./transaction-not-sent";
+import { ACTION_CHECKING_AFTER_MS, TransactionNotSentError } from "./transaction-not-sent";
 import { PromiseQueue } from "./promise-queue";
 import { ExecutionOptions } from "./transaction-executor";
 import {
@@ -47,12 +47,11 @@ import {
 /** Sends one game command as the signer's own transaction; resolves with its hash as soon as the send returns. */
 export type NativeSubmission = (signer: AccountInterface, calls: AllowArray<Call>) => Promise<SubmittedTransaction>;
 /**
- * A sent command. A submission that reconciles its sends adds the first answer (in a block, or unknown: still
- * checking) and the block itself, which rejects only on proof the command was never sent.
+ * A sent command. A submission that reconciles its sends adds its block, which rejects only on proof the command
+ * was never sent.
  */
 type SubmittedTransaction = {
   transaction_hash: string;
-  inclusion?: Promise<"included" | "unknown">;
   inBlock?: Promise<void>;
 };
 
@@ -65,7 +64,7 @@ export {
 export type { BatchDelayConfig } from "./batch-config";
 export { classifyTransactionError, extractErrorMessage, formatErrorForConsole } from "./classify-transaction-error";
 export type { ClassifiedTransactionError } from "./classify-transaction-error";
-export { isTransactionHashNotFound, TransactionNotSentError } from "./transaction-not-sent";
+export { ACTION_CHECKING_AFTER_MS, isTransactionHashNotFound, TransactionNotSentError } from "./transaction-not-sent";
 export { PromiseQueue } from "./promise-queue";
 export type { QueueableTransaction } from "./promise-queue";
 export type { TransactionExecutor, ExecutionOptions } from "./transaction-executor";
@@ -501,16 +500,13 @@ export class EternumProvider extends EventEmitter {
       } as unknown as GetTransactionReceiptResponse;
     }
     const streamReceipt = this.waitForTransactionWithCheckInternal(tx.transaction_hash, tx.inBlock);
-    // An action neither in a block nor proven absent in time is checking: the player's next command may go.
-    void tx.inclusion?.then(
-      (answer) => {
-        if (answer !== "unknown") return;
-        this.emit("transactionChecking", transactionMetaWithHash);
-        releaseActorExecutionLock?.();
-        releaseActorExecutionLock = undefined;
-      },
-      () => undefined,
-    );
+    // Any action still unsettled after the checking window is checking: the player's next command may go.
+    const checking = setTimeout(() => {
+      this.emit("transactionChecking", transactionMetaWithHash);
+      releaseActorExecutionLock?.();
+      releaseActorExecutionLock = undefined;
+    }, ACTION_CHECKING_AFTER_MS);
+    void streamReceipt.catch(() => undefined).finally(() => clearTimeout(checking));
     // The actor's next command is sent only after Herald applies this one, so its effects are visible first.
     const waitPromise = releaseActorExecutionLock
       ? streamReceipt.finally(() => {
@@ -537,6 +533,7 @@ export class EternumProvider extends EventEmitter {
             stage: resolveTransactionFailureStage(error, "background_confirmation"),
             ...buildFailureDiagnostics(error),
           });
+          this.followLateLanding(error, tx.transaction_hash, transactionMeta, submitStartedAt);
         });
 
       return {
@@ -555,6 +552,7 @@ export class EternumProvider extends EventEmitter {
         stage: resolveTransactionFailureStage(error, "confirmation"),
         ...buildFailureDiagnostics(error),
       });
+      this.followLateLanding(error, tx.transaction_hash, transactionMeta, submitStartedAt);
       throw error;
     }
 
@@ -565,6 +563,38 @@ export class EternumProvider extends EventEmitter {
     });
 
     return receipt;
+  }
+
+  /**
+   * A dropped action is watched until its nonce moves: if it lands after all, it settles as it actually ended
+   * (applied, or refused with its reason) and its row follows.
+   */
+  private followLateLanding(
+    error: unknown,
+    transactionHash: string,
+    transactionMeta: TransactionLifecycleMeta,
+    submitStartedAt: number,
+  ): void {
+    if (!(error instanceof TransactionNotSentError) || !error.landedLate) return;
+    void error.landedLate.then(async (landed) => {
+      if (!landed) return;
+      try {
+        const details = await this.waitForTransactionWithCheckInternal(transactionHash);
+        this.emit("transactionComplete", {
+          details,
+          admissionToVisibleMs: Date.now() - submitStartedAt,
+          ...transactionMeta,
+        });
+      } catch (lateError) {
+        this.emitTransactionFailure({
+          ...transactionMeta,
+          transactionHash,
+          message: extractErrorMessage(lateError),
+          stage: resolveTransactionFailureStage(lateError, "confirmation"),
+          ...buildFailureDiagnostics(lateError),
+        });
+      }
+    });
   }
 
   private async waitForTransactionWithCheckInternal(
