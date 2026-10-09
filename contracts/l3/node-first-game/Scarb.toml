@@ -15,6 +15,7 @@ casm = true
 build-external-contracts = [
   "world_native::logic::troops::TroopsLogic",
   "world_native::logic::map::MapLogic",
+  "world_native::logic::movement::MovementLogic",
   "world_native::logic::structures::StructuresLogic",
   "world_native::logic::settlement_domain::SettlementLogic",
 ]

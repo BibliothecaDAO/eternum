@@ -128,6 +128,11 @@ pub mod Games {
         }
     }
     #[external(v0)]
+    fn explorer_snapshot(self: @ContractState, game: u32, id: u32) -> (world_native::troops::Coord, u128) {
+        let explorer = world_native::logic::troops::explorer(world_native::troops::ExplorerKey { game_id: game, explorer_id: id }).expect('missing explorer');
+        (explorer.coord, explorer.troops.count)
+    }
+    #[external(v0)]
     fn last_entity(self: @ContractState, game: u32, actor: ContractAddress) -> u32 {
         world_native::spike_ids::last(game, actor)
     }
@@ -196,3 +201,5 @@ pub fn invoke_gameplay<T, +Serde<T>, +Drop<T>>(class_hash: starknet::ClassHash, 
     world_native::ownership::StoryCursor { order: 0, index: 0 }.serialize(ref args);
     starknet::syscalls::library_call_syscall(class_hash, entry, args.span())
 }
+
+pub mod draw_probe;

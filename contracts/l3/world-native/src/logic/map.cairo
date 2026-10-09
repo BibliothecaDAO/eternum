@@ -277,14 +277,14 @@ pub mod MapLogic {
                     }
                 }
                 crate::discovery::ethereal(
-                    rules.map_config, rules.bitcoin_mine_config.enabled, adjacent, seed, timestamp,
+                    rules.map_config, rules.bitcoin_mine_config.enabled, adjacent, seed, crate::random::DISCOVERY_SALT,
                 )
             } else {
                 let center = Coord {
                     alt: false, x: 2147483646 - rules.map_center_offset, y: 2147483646 - rules.map_center_offset,
                 };
                 crate::discovery::surface(
-                    rules.map_config, seed, timestamp, distance(coord, center), hyperstructures, rules.mode_rules,
+                    rules.map_config, seed, crate::random::DISCOVERY_SALT, distance(coord, center), hyperstructures, rules.mode_rules,
                 )
             }
         }
@@ -393,7 +393,7 @@ pub mod MapLogic {
             };
             let (camp, rift, stragglers) = crate::progression::scouting_bonus(progress);
             let result = crate::discovery::frontier(
-                rules, camp, rift, stragglers, day.empty_reveals, ruin, seed, context.timestamp,
+                rules, camp, rift, stragglers, day.empty_reveals, ruin, seed, crate::random::SITE_SALT,
             );
             if let crate::discovery::Discovery::Ruin(chest) = result {
                 crate::logic::lords_budget::reserve(key.game_id, chest, context);
@@ -468,10 +468,10 @@ pub mod MapLogic {
                     rules.troop_limit_config,
                     crate::logic::expeditions::depth_rules_at(game_id, coord).reveal_percent,
                     seed,
-                    context.timestamp,
+                    crate::random::REVEAL_REWARD_SALT,
                 )
             } else {
-                let drawn = crate::exploration_rewards::draw(self.extraction_rewards(game_id), seed, context.timestamp);
+                let drawn = crate::exploration_rewards::draw(self.extraction_rewards(game_id), seed, crate::random::REWARD_SALT);
                 crate::resources::ResourceAmount {
                     resource_type: drawn.resource_type,
                     amount: crate::exploration_rewards::boosted_amount(
@@ -542,7 +542,7 @@ pub mod MapLogic {
                 return;
             }
             let mut destination = crate::relics::chest_destination(
-                coord, seed, timestamp, rules.map_config.relic_hex_dist_from_center,
+                coord, seed, crate::random::RELIC_POSITION_SALT, rules.map_config.relic_hex_dist_from_center,
             );
             loop {
                 let key = tile_key(game_id, destination);

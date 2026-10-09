@@ -92,15 +92,17 @@ async function main() {
   const games = artifact(settle ? "SettleGames" : "Games"),
     troops = artifact("TroopsLogic"),
     map = artifact("MapLogic"),
+    movement = artifact("MovementLogic"),
     structures = artifact("StructuresLogic");
   const settlement = settle ? artifact("SettlementLogic") : null;
   const replacements = {
     settlement: settlement?.classHash,
     troops: troops.classHash,
     map: map.classHash,
+    movement: movement.classHash,
     structures: structures.classHash,
   };
-  for (const domain of [troops, map, structures]) await declareClass(account, domain, () => {});
+  for (const domain of [troops, map, movement, structures]) await declareClass(account, domain, () => {});
   if (settlement) await declareClass(account, settlement, () => {});
   await declareClass(account, games, () => {});
   const [releaseId] = await provider.callContract({

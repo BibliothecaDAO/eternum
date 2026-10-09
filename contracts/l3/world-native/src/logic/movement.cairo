@@ -67,6 +67,8 @@ pub mod MovementLogic {
                 .biome(tile, crate::commands::biome_context(context))
                 .into();
             let exploring = (data / 0x20000000000) % 0x100 == 0;
+            // All clock/resource/stamina refusals precede the first discovery draw.
+            self.pay_movement(game_id, ref explorer, rules, biome, exploring, context.timestamp, context);
             let mut raw_root = context.raw_root;
             let game = context.game.unbox();
             let seed = crate::random::game_root(ref raw_root, game_id, game.seed);
@@ -138,7 +140,6 @@ pub mod MovementLogic {
                 crate::troops::explorer_occupier(explorer),
                 false,
             );
-            self.pay_movement(game_id, ref explorer, rules, biome, exploring, context.timestamp, context);
             crate::logic::troops::TroopState::save(key, crate::troops::ExplorerRecordTrait::into_record(explorer));
 
             if !explorer.coord.alt {

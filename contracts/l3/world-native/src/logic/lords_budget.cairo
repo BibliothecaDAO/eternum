@@ -29,7 +29,7 @@ pub fn budget(game_id: u32) -> Option<LordsBudget> {
 pub fn offer(game_id: u32, odds: ChestTiers, seed: u256, context: ExecutionContext) -> Option<SiteChest> {
     let rules = chest_rules(game_id);
     let today = today(game_id, rules, context);
-    let tier = roll_tier(odds, seed, context.timestamp);
+    let tier = roll_tier(odds, seed, crate::random::CHEST_TIER_SALT);
     let amount = Into::<u16, u128>::into(tier_value(rules.shares, tier)) * today.price;
     if fits(today, amount) {
         Some(SiteChest { tier, amount })

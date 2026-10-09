@@ -177,3 +177,44 @@ test("upstream result extras and raw refusals cannot leak a forwarded-but-droppe
     node.stop(true);
   }
 });
+
+test("transaction bodies are withheld until execution is sealed, including pending block aliases", async () => {
+  let sealed = false;
+  const node = Bun.serve({
+    hostname: "127.0.0.1",
+    port: 0,
+    async fetch(request) {
+      const call = (await request.json()) as any;
+      const status = sealed ? "ACCEPTED_ON_L2" : "PRE_CONFIRMED";
+      return Response.json({
+        jsonrpc: "2.0",
+        id: call.id,
+        result:
+          call.method === "starknet_getTransactionReceipt"
+            ? { finality_status: status }
+            : call.method === "starknet_getBlockWithTxHashes"
+              ? { status }
+              : { signature: ["proof-body"] },
+      });
+    },
+  });
+  const proxy = startReadRpc(node.url.origin, 0, identity, undefined, "127.0.0.1");
+  const send = (method: string, params: unknown[]) =>
+    fetch(proxy.url, { method: "POST", body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }) });
+  try {
+    expect(((await (await send("starknet_getTransactionByHash", ["0x123"])).json()) as any).error).toBeDefined();
+    expect(((await (await send("starknet_getBlockWithTxs", ["pre_confirmed"])).json()) as any).error).toBeDefined();
+    expect(((await (await send("starknet_getBlockWithTxs", ["pending"])).json()) as any).error).toBeDefined();
+    expect(((await (await send("starknet_getBlockWithTxs", [{ block_number: 3 }])).json()) as any).error).toBeDefined();
+    sealed = true;
+    expect(((await (await send("starknet_getTransactionByHash", ["0x123"])).json()) as any).result.signature).toEqual([
+      "proof-body",
+    ]);
+    expect(
+      ((await (await send("starknet_getBlockWithTxs", [{ block_number: 3 }])).json()) as any).result.signature,
+    ).toEqual(["proof-body"]);
+  } finally {
+    proxy.stop(true);
+    node.stop(true);
+  }
+});
