@@ -1,3 +1,4 @@
+import { buildMysteryChestPreset } from "../../../../contracts/l2/ledger/scripts/chest-preset.js";
 import { nativePresetForId, nativePresetIdFor } from "../../../source/native";
 import { CallData, uint256 } from "starknet";
 import type { DeploymentGameType } from "../types";
@@ -8,7 +9,6 @@ export interface LedgerEconomicPreset {
   entry_fee: ReturnType<typeof uint256.bnToUint256>;
   protocol_cut_bps: number;
   chest_lords_bps: number;
-  chest_metadata: number;
   paid_fraction_bps: number;
   decay_bps: number;
   sword_price: ReturnType<typeof uint256.bnToUint256>;
@@ -35,9 +35,8 @@ export function buildLedgerEconomicPreset(
   const balance = nativePresetForId(nativePresetIdFor(gameType)).ledger;
   return {
     entry_fee: lords(options.sponsored ? 0n : BigInt(balance.entryFee)),
-    protocol_cut_bps: options.protocolCutBps ?? balance.protocolCutBps,
+    protocol_cut_bps: gameType === "frontier" ? 0 : (options.protocolCutBps ?? balance.protocolCutBps),
     chest_lords_bps: options.chestLordsBps ?? 500,
-    chest_metadata: 0x301,
     paid_fraction_bps: 2_000,
     decay_bps: 9_600,
     sword_price: lords(BigInt(balance.swordPrice)),
@@ -54,6 +53,10 @@ export function buildLedgerEconomicPreset(
   };
 }
 
-export function buildRegisterLedgerPresetCalldata(presetId: number, preset: LedgerEconomicPreset): string[] {
-  return CallData.compile([presetId, preset] as never);
+export function buildRegisterLedgerPresetCalldata(
+  presetId: number,
+  preset: LedgerEconomicPreset,
+  chestPreset = buildMysteryChestPreset(),
+): string[] {
+  return CallData.compile([presetId, preset, chestPreset.bands, chestPreset.items] as never);
 }

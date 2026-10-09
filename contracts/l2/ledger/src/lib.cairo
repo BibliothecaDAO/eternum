@@ -1,3 +1,4 @@
+pub mod chests;
 pub mod contract;
 pub mod mmr;
 

@@ -1,6 +1,14 @@
 use cubit::f128::types::fixed::{Fixed, FixedTrait};
 use game_ledger::types::MmrParams;
 
+pub fn percentile_position(rank: u16, tie_count: u16, player_count: u16) -> (u128, u128) {
+    if player_count <= 1 {
+        (0, 1)
+    } else {
+        (2 * Into::<u16, u128>::into(rank) + tie_count.into() - 3, 2 * (player_count - 1).into())
+    }
+}
+
 const BPS: u128 = 10_000;
 const MIN_MMR: u128 = 100;
 
@@ -38,15 +46,8 @@ pub impl MmrCalculatorImpl of MmrCalculatorTrait {
     }
 
     fn actual_percentile(rank: u16, tie_count: u16, player_count: u16) -> Fixed {
-        if player_count <= 1 {
-            return FixedTrait::ZERO();
-        }
-
-        let first_position: u128 = rank.into() - 1;
-        let last_position: u128 = rank.into() + tie_count.into() - 2;
-        let numerator = Self::to_fixed(first_position + last_position);
-        let denominator = Self::to_fixed(2 * (player_count - 1).into());
-        numerator / denominator
+        let (position, total) = percentile_position(rank, tie_count, player_count);
+        Self::to_fixed(position) / Self::to_fixed(total)
     }
 
     fn expected_percentile(player_mmr: u128, median_mmr: u128, spread: u128) -> Fixed {
