@@ -46,11 +46,13 @@ the elbow bends toward and the hand's turn on the forearm; for the body, the pel
 feet, the chest's turn against the pelvis and the head's against the chest; and where each foot stands and points. It
 also records what the game should then show. The sword and shield declare these states in the catalog
 (`melee/t1-knight-default-gear-poses.ts`), and `t1-knight-default-arms.test.ts` compares the catalog with the file and
-the posed skeleton with its expected values. The catalog declares the cut only: the backhand, chop and thrust bring
-sword, arm and shield into each other on this figure (measured by the same test, reported in #5029). Its `from` block
-names the pose set and the two scripts that measured it, which are proposed with the tools in #5031, and the bound
-model, which is kept by the author. For the reader it also records how close each state is to the approved pose it comes
-from and how far sword, shield and body stay apart.
+the posed skeleton with its expected values. The catalog declares the cut only. The other three attacks are measured in
+`poses.json` but not declared: on this figure the backhand puts the sword arm through the shield and the blade through
+the shield arm, the thrust takes the blade 3 mm into the shield and the sword arm to within 1 mm of it on the way to the
+lunge, and the chop's recover passes the blade 7.6 mm from the shield and the shield 2.6 mm from the thigh (the limits
+are 10 and 5 mm). Its `from` block names the pose set and the two scripts that measured it, which are proposed with the
+tools in #5031, and the bound model, which is kept by the author. For the reader it also records how close each state is
+to the approved pose it comes from and how far sword, shield and body stay apart.
 
 ## Checking the files
 
