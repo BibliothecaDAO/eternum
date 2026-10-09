@@ -31,7 +31,7 @@ beforeEach(() => {
 });
 it("waits for the Frontier payment to confirm before completing", async () => {
   await Effect.runPromise(
-    ledgerPaymentAdapter(credentials)(
+    ledgerPaymentAdapter(credentials, async () => true)(
       { chainId: "0x1", seasonId: 7, transactionHash: "0xdef", realmsId: "0x3", amount: "17", confirmedAt: 1000 },
       "0x456",
     ),
@@ -44,7 +44,7 @@ it("waits for the Frontier payment to confirm before completing", async () => {
   expect(rpc.wait).toHaveBeenCalledWith("0xabc", { errorStates: [] });
 });
 it("does not mark a reverted payment successful or expose a transport's error", async () => {
-  const pay = ledgerPaymentAdapter(credentials);
+  const pay = ledgerPaymentAdapter(credentials, async () => true);
   const withdrawal = {
     chainId: "0x1",
     seasonId: 7,
@@ -80,7 +80,7 @@ it("reads live Realm ownership at latest confirmed with u256 input", async () =>
 
 it("keeps a confirmed claim queued until L2 reaches the shard receipt clock", async () => {
   rpc.block.mockResolvedValue({ status: "ACCEPTED_ON_L2", timestamp: 999 });
-  const pay = ledgerPaymentAdapter(credentials);
+  const pay = ledgerPaymentAdapter(credentials, async () => true);
   const claim = {
     chainId: "0x1",
     seasonId: 7,
@@ -105,7 +105,7 @@ it("distinguishes a permanent close from the retryable whole-day unlock gate wit
     amount: "17",
     confirmedAt: 1000,
   };
-  const pay = ledgerPaymentAdapter(credentials);
+  const pay = ledgerPaymentAdapter(credentials, async () => true);
   rpc.wait.mockResolvedValue({ isReverted: () => true, revert_reason: "Ledger: season closed" });
   await expect(Effect.runPromise(pay(claim, "0x456"))).rejects.toMatchObject({ operation: "ledger_season_closed" });
   rpc.wait.mockResolvedValue({ isReverted: () => true, revert_reason: "Ledger: unlock exceeded" });
@@ -140,4 +140,18 @@ it("confirms an immutable withdrawal report separately from payment and recogniz
     operation: "ledger_report_mismatch",
   });
   expect(rpc.execute).toHaveBeenCalledTimes(1);
+});
+
+it("retries while the confirmed ledger clock is earlier than the historical wallet hold", async () => {
+  const wasReady = vi.fn(async () => false);
+  const pay = ledgerPaymentAdapter(credentials, wasReady);
+  await expect(
+    Effect.runPromise(
+      pay(
+        { chainId: "0x1", seasonId: 1, transactionHash: "0xabc", realmsId: "0x2", amount: "1", confirmedAt: 1 },
+        "0x123",
+      ),
+    ),
+  ).rejects.toMatchObject({ operation: "ledger_clock_behind_wallet_hold" });
+  expect(rpc.execute).not.toHaveBeenCalled();
 });

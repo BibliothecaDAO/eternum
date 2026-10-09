@@ -17,12 +17,12 @@ it("keeps checked-through block and page continuation across ticks without rerea
   const paidClaims = vi.fn((cursor: string | null, fromBlock = 0) =>
     Effect.succeed(
       cursor === null && fromBlock === 0
-        ? { rows: [{ ...receipt, wallet: "0x123" }], next: "pinned-page2", head: 10 }
+        ? { rows: [{ ...receipt, paidAt: 1, wallet: "0x123" }], next: "pinned-page2", head: 10 }
         : { rows: [], next: null, head: 10 },
     ),
   );
   const ports: MonitorPorts = {
-    identity: { payoutWallet: () => Effect.succeed({ status: "ready", address: "0x123" }) },
+    identity: { wasReadyPayoutWallet: () => Effect.succeed(true) },
     shard: { conservation: () => Effect.succeed([]), withdrawal, result: () => Effect.succeed(null) },
     ledger: {
       paidClaims,

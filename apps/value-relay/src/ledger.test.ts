@@ -4,7 +4,14 @@ import { beforeEach, expect, it, vi } from "vitest";
 import { blitzCommitment } from "@realms-world/value-ledger/commitment";
 import { ledgerMonitorReads, ledgerResultAdapter } from "./ledger";
 
-const rpc = vi.hoisted(() => ({ call: vi.fn(), execute: vi.fn(), wait: vi.fn(), events: vi.fn(), head: vi.fn() }));
+const rpc = vi.hoisted(() => ({
+  call: vi.fn(),
+  execute: vi.fn(),
+  wait: vi.fn(),
+  events: vi.fn(),
+  head: vi.fn(),
+  block: vi.fn(),
+}));
 vi.mock("starknet", async (importOriginal) => ({
   ...(await importOriginal<typeof import("starknet")>()),
   RpcProvider: vi.fn(function () {
@@ -14,6 +21,7 @@ vi.mock("starknet", async (importOriginal) => ({
       waitForTransaction: rpc.wait,
       getEvents: rpc.events,
       getBlockNumber: rpc.head,
+      getBlock: rpc.block,
     };
   }),
   Account: vi.fn(function () {
@@ -49,6 +57,7 @@ const game = (finalized: boolean, commitment = "0x0") => [
 beforeEach(() => {
   vi.clearAllMocks();
   rpc.head.mockResolvedValue(1000);
+  rpc.block.mockResolvedValue({ status: "ACCEPTED_ON_L2", block_hash: "0xa", timestamp: 1000 });
   rpc.wait.mockResolvedValue({ isReverted: () => false });
   rpc.execute.mockResolvedValue({ transaction_hash: "0xabc" });
 });
@@ -75,14 +84,29 @@ it("decodes confirmed payments and pins the event head across pagination", async
   const selector = hash.getSelectorFromName("WithdrawalPaid");
   rpc.events
     .mockResolvedValueOnce({
-      events: [{ from_address: "0x10", keys: [selector, "0x1", "0xabc"], data: ["7", "0x123", "5", "1"] }],
+      events: [
+        {
+          from_address: "0x10",
+          block_number: 100,
+          block_hash: "0xa",
+          keys: [selector, "0x1", "0xabc"],
+          data: ["7", "0x123", "5", "1"],
+        },
+      ],
       continuation_token: "next",
     })
     .mockResolvedValueOnce({ events: [], continuation_token: undefined });
   const reads = ledgerMonitorReads("https://ledger.test", "0x10");
   const page = await Effect.runPromise(reads.paidClaims(null));
   expect(page.rows).toEqual([
-    { chainId: "0x1", transactionHash: "0xabc", seasonId: 7, wallet: "0x123", amount: String(2n ** 128n + 5n) },
+    {
+      chainId: "0x1",
+      transactionHash: "0xabc",
+      seasonId: 7,
+      wallet: "0x123",
+      paidAt: 1000,
+      amount: String(2n ** 128n + 5n),
+    },
   ]);
   rpc.head.mockResolvedValue(2000);
   await Effect.runPromise(reads.paidClaims(page.next));

@@ -58,6 +58,21 @@ const writeWalletChange = (
     db
       .prepare(`INSERT INTO wallet_change_notices (id, email, address) SELECT ?, ?, ? WHERE changes() = 1`)
       .bind(id, user.email, address),
+    db
+      .prepare(
+        `UPDATE wallet_link_history SET replaced_at = (SELECT COALESCE("walletLinkedAt",CAST(unixepoch("updatedAt",'subsec')*1000 AS INTEGER)) FROM "user" WHERE id=?1)
+      WHERE account=(SELECT "realmsId" FROM "user" WHERE id=?1) AND replaced_at IS NULL
+      AND wallet IS NOT (SELECT address FROM "user" WHERE id=?1) AND EXISTS(SELECT 1 FROM wallet_change_notices WHERE id=?2)`,
+      )
+      .bind(user.id, id),
+    db
+      .prepare(
+        `INSERT INTO wallet_link_history(account,wallet,linked_at,ready_at)
+      SELECT "realmsId",address,"walletLinkedAt","walletLinkedAt"+86400000 FROM "user" WHERE id=?1 AND address IS NOT NULL
+      AND EXISTS(SELECT 1 FROM wallet_change_notices WHERE id=?2)
+      AND NOT EXISTS(SELECT 1 FROM wallet_link_history WHERE account="user"."realmsId" AND replaced_at IS NULL)`,
+      )
+      .bind(user.id, id),
     db.prepare("DELETE FROM verification WHERE id = ? AND value = ?").bind(verification.id, verification.value),
   ]);
 

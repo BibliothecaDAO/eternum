@@ -62,9 +62,29 @@ export const ledgerMonitorReads = (
 ): Pick<RelayPorts["ledger"], "paidClaims" | "postedResults"> => {
   return {
     paidClaims: (cursor, fromBlock = 0) =>
-      relayOperation("read ledger paid claims", () =>
-        ledgerEventPage(rpcAt(rpcUrl), address, ["WithdrawalPaid"], cursor, fromBlock, decodePayment),
-      ),
+      relayOperation("read ledger paid claims", async () => {
+        const provider = rpcAt(rpcUrl);
+        const times = new Map<number, number>();
+        return ledgerEventPage(provider, address, ["WithdrawalPaid"], cursor, fromBlock, async (event) => {
+          if (typeof event.block_number !== "number" || typeof event.block_hash !== "string")
+            throw new Error("payment_block_missing");
+          let time = times.get(event.block_number);
+          if (time === undefined) {
+            const block = await provider.getBlock(event.block_number);
+            if (
+              !("status" in block) ||
+              !["ACCEPTED_ON_L2", "ACCEPTED_ON_L1"].includes(block.status ?? "") ||
+              !("block_hash" in block) ||
+              typeof block.block_hash !== "string" ||
+              BigInt(block.block_hash) !== BigInt(event.block_hash)
+            )
+              throw new Error("payment_block_unconfirmed");
+            time = block.timestamp;
+            times.set(event.block_number, time);
+          }
+          return { ...decodePayment(event), paidAt: time };
+        });
+      }),
     postedResults: (cursor, fromBlock = 0) =>
       relayOperation("read ledger posted results", () =>
         ledgerEventPage(rpcAt(rpcUrl), address, ["ResultsApplied"], cursor, fromBlock, decodeResult),
@@ -78,7 +98,7 @@ const ledgerEventPage = async <A>(
   names: readonly string[],
   after: string | null,
   fromBlock: number,
-  decode: (event: EmittedEvent) => A,
+  decode: (event: EmittedEvent) => A | Promise<A>,
 ): Promise<Page<A> & { head: number }> => {
   const selectors = names.map((name) => hash.getSelectorFromName(name));
   const cursor = after === null ? { head: await provider.getBlockNumber(), token: undefined } : readCursor(after);
@@ -91,14 +111,15 @@ const ledgerEventPage = async <A>(
     chunk_size: 100,
     ...(cursor.token ? { continuation_token: cursor.token } : {}),
   });
-  const rows = page.events.map((event) => {
+  const rows: A[] = [];
+  for (const event of page.events) {
     if (
       BigInt(event.from_address) !== BigInt(address) ||
       !selectors.some((selector) => BigInt(event.keys[0] ?? "0") === BigInt(selector))
     )
       throw new Error("invalid_ledger_event");
-    return decode(event);
-  });
+    rows.push(await decode(event));
+  }
   return {
     rows,
     head: cursor.head,
@@ -116,7 +137,7 @@ const readCursor = (value: string): { head: number; token: string } => {
     throw new Error("invalid_ledger_cursor");
   return { head: Number(cursor.head), token: cursor.token };
 };
-const decodePayment = (event: EmittedEvent): PaidClaim => {
+const decodePayment = (event: EmittedEvent): Omit<PaidClaim, "paidAt"> => {
   if (event.keys.length !== 3 || event.data.length !== 4) throw new Error("invalid_payment_event");
   return {
     chainId: event.keys[1]!,

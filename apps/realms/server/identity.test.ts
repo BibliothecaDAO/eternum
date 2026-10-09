@@ -7,6 +7,7 @@ import { getPlatformProxy } from "wrangler";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { Effect } from "effect";
+import { wasReadyPayoutWallet } from "./payout-wallet";
 import { deliverWalletNotices } from "./wallet-changes";
 import { createIdentityAuth } from "./auth";
 import { WalletNotDeployedError, type VerifyWalletSignature } from "./wallet-signature";
@@ -1083,6 +1084,36 @@ describe("identity Worker", () => {
     );
     expect((await browser.session())!.user.payoutWallet).toEqual({ status: "no_wallet" });
     expect((await browser.session())!.user.walletLinkedAt).toBeNull();
+  });
+
+  it("keeps historical eligibility after replacement and unlink without changing the hold", async () => {
+    const browser = createBrowser();
+    await signInWithCode(browser, "wallet-history@realms.test");
+    const first = createWallet();
+    await proveWallet(browser, first, "link");
+    const user = (await browser.session())!.user;
+    const ready = user.walletLinkedAt! + 86400000;
+    const at = Math.ceil(ready / 1000);
+    expect(await wasReadyPayoutWallet(env.DB, user.realmsId, first, at - 1)).toBe(false);
+    expect(await wasReadyPayoutWallet(env.DB, user.realmsId, first, at)).toBe(true);
+    // Historical interval fixture: the payment precedes the later wallet change.
+    await env.DB.prepare(
+      "UPDATE wallet_link_history SET linked_at=?,ready_at=? WHERE account=? AND replaced_at IS NULL",
+    )
+      .bind(Date.now() - 172800000, Date.now() - 86400000, user.realmsId)
+      .run();
+    const paidAt = Math.floor(Date.now() / 1000) - 10;
+    const second = createWallet();
+    await proveWallet(browser, second, "link");
+    expect(await wasReadyPayoutWallet(env.DB, user.realmsId, first, paidAt)).toBe(true);
+    expect(await wasReadyPayoutWallet(env.DB, user.realmsId, second, paidAt)).toBe(false);
+    await browser.request("/api/auth/siws/unlink", { body: { otp: await walletCode(browser) } });
+    expect(await wasReadyPayoutWallet(env.DB, user.realmsId, first, paidAt)).toBe(true);
+    expect(
+      await env.DB.prepare("SELECT COUNT(*) AS n FROM wallet_link_history WHERE account=?")
+        .bind(user.realmsId)
+        .first<number>("n"),
+    ).toBe(2);
   });
 
   it("cannot bypass the wallet code or hold through the generic account update", async () => {

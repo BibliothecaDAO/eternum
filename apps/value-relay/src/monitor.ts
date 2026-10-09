@@ -68,8 +68,7 @@ const checkPaidClaims = (ports: MonitorPorts, store: MonitorStore) =>
       Effect.gen(function* () {
         const receipt = yield* ports.shard.withdrawal(paid.chainId, paid.transactionHash);
         if (!matchesPaidClaim(receipt, paid)) return `paid_claim_mismatch:${paid.transactionHash}`;
-        const wallet = yield* ports.identity.payoutWallet(receipt!.realmsId);
-        if (wallet.status !== "ready" || BigInt(wallet.address) !== BigInt(paid.wallet))
+        if (!(yield* ports.identity.wasReadyPayoutWallet(receipt!.realmsId, paid.wallet, paid.paidAt)))
           return `paid_wallet_mismatch:${paid.transactionHash}`;
         return null;
       }),

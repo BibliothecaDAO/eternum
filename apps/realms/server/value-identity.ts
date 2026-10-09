@@ -5,7 +5,7 @@ import { realmsAccountAddress } from "@realms-world/identity/account";
 import { Effect } from "effect";
 import type { IdentityEnv } from "./env";
 import { realmsIdsOfAccounts } from "./realms-accounts";
-import { lookupPayoutWallet, readLinkedWallet } from "./payout-wallet";
+import { lookupPayoutWallet, readLinkedWallet, wasReadyPayoutWallet } from "./payout-wallet";
 
 /** Only a service binding exposes these reads; they have no public HTTP route. */
 export class ValueIdentity extends WorkerEntrypoint<IdentityEnv> {
@@ -14,6 +14,9 @@ export class ValueIdentity extends WorkerEntrypoint<IdentityEnv> {
   }
   payoutWallet(realmsId: string) {
     return Effect.runPromise(lookupPayoutWallet(this.env.DB, realmsId));
+  }
+  wasReadyPayoutWallet(account: string, wallet: string, at: number) {
+    return wasReadyPayoutWallet(this.env.DB, account, wallet, at);
   }
   async linkedWallet(realmsId: string) {
     return (await readLinkedWallet(this.env.DB, realmsId))?.address ?? null;

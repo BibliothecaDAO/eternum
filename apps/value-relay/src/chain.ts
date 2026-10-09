@@ -92,7 +92,10 @@ export const ledgerReportAdapter =
     });
 
 /** The operator signs in the Worker; completion means the ledger transaction was confirmed. */
-export const ledgerPaymentAdapter = (credentials: LedgerCredentials): RelayPorts["ledger"]["pay"] => {
+export const ledgerPaymentAdapter = (
+  credentials: LedgerCredentials,
+  wasReady: (account: string, wallet: string, at: number) => Promise<boolean>,
+): RelayPorts["ledger"]["pay"] => {
   const { provider, account } = ledgerAccountOf(credentials);
   const pay = frontierPayment(async (entrypoint, calldata) => {
     try {
@@ -121,6 +124,12 @@ export const ledgerPaymentAdapter = (credentials: LedgerCredentials): RelayPorts
         return yield* Effect.fail(new RelayFailure({ operation: "payout_clock_unconfirmed" }));
       if (block.timestamp < withdrawal.confirmedAt)
         return yield* Effect.fail(new RelayFailure({ operation: "ledger_clock_behind" }));
+      if (
+        !(yield* relayOperation("check payout clock eligibility", () =>
+          wasReady(withdrawal.realmsId, wallet, block.timestamp),
+        ))
+      )
+        return yield* Effect.fail(new RelayFailure({ operation: "ledger_clock_behind_wallet_hold" }));
       yield* pay(withdrawal, wallet);
     });
 };

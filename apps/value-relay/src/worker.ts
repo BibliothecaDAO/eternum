@@ -31,6 +31,7 @@ interface RelayEnv {
   LEDGER_OPERATOR_PRIVATE_KEY: string;
   REALMS_ADDRESS: string;
   IDENTITY: {
+    wasReadyPayoutWallet(account: string, wallet: string, at: number): Promise<boolean>;
     payoutWallet(id: string): Promise<import("@realms-world/identity").PayoutWallet>;
     linkedWallet(id: string): Promise<string | null>;
     authenticate(cookie: string): Promise<{ realmsId: string } | null>;
@@ -180,7 +181,11 @@ const ledgerPortsOf = (env: RelayEnv): RelayPorts["ledger"] => ({
   report: (withdrawal, wallet) => ledgerReportAdapter(ledgerCredentialsOf(env))(withdrawal, wallet),
   pay: (withdrawal, wallet) =>
     relayOperation("pay Frontier claim", () =>
-      Effect.runPromise(ledgerPaymentAdapter(ledgerCredentialsOf(env))(withdrawal, wallet)),
+      Effect.runPromise(
+        ledgerPaymentAdapter(ledgerCredentialsOf(env), (account, wallet, at) =>
+          env.IDENTITY.wasReadyPayoutWallet(account, wallet, at),
+        )(withdrawal, wallet),
+      ),
     ),
   postResult: (result) =>
     relayOperation("post Blitz result", () => Effect.runPromise(ledgerResultAdapter(ledgerCredentialsOf(env))(result))),

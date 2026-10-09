@@ -68,6 +68,7 @@ export type HeldObligation =
   | { kind: "payment"; reason: string; withdrawal: Withdrawal };
 export interface PaidClaim extends Omit<Withdrawal, "realmsId" | "confirmedAt"> {
   wallet: string;
+  paidAt: number;
 }
 export interface LaborGrant {
   gameId: number;
@@ -104,6 +105,7 @@ export interface RelayPorts {
   };
   identity: {
     payoutWallet(realmsId: string): RelayEffect<PayoutWallet>;
+    wasReadyPayoutWallet(account: string, wallet: string, at: number): RelayEffect<boolean>;
     accountForRealmsId(realmsId: string): RelayEffect<string | null>;
     linkedWallet(realmsId: string): RelayEffect<string | null>;
   };
@@ -120,7 +122,7 @@ export interface RelayPorts {
   realms: { ownerOf(realmId: string): RelayEffect<string> };
 }
 export interface MonitorPorts {
-  identity: Pick<RelayPorts["identity"], "payoutWallet">;
+  identity: Pick<RelayPorts["identity"], "wasReadyPayoutWallet">;
   shard: Pick<RelayPorts["shard"], "withdrawal" | "result"> & {
     conservation(): RelayEffect<readonly ConservationBalance[]>;
   };

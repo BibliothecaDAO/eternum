@@ -21,7 +21,7 @@ interface MonitorEnv {
   SHARD_CHAIN_ID: string;
   IDENTITY: {
     realmsIdForAccount(account: string): Promise<string | null>;
-    payoutWallet(id: string): Promise<import("@realms-world/identity").PayoutWallet>;
+    wasReadyPayoutWallet(account: string, wallet: string, at: number): Promise<boolean>;
   };
   RELAY_REPORT: { held(): Promise<{ kind: string; reason: string; transactionHash: string }[]> };
   MONITOR: DurableObjectNamespace<ValueMonitor>;
@@ -120,7 +120,8 @@ const monitorPortsOf = (env: MonitorEnv, storage: DurableObjectStorage) => {
   });
   return {
     identity: {
-      payoutWallet: (id: string) => relayOperation("verify paid wallet", () => env.IDENTITY.payoutWallet(id)),
+      wasReadyPayoutWallet: (account: string, wallet: string, at: number) =>
+        relayOperation("verify historical payout wallet", () => env.IDENTITY.wasReadyPayoutWallet(account, wallet, at)),
     },
     shard: {
       conservation: shardConservationPort(reader.connection, env.SHARD_HERALD_URL),

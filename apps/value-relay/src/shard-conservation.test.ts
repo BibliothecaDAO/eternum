@@ -152,7 +152,7 @@ it("fails closed on unavailable finalized state or a transport fault", async () 
 const monitorFixture = () => {
   let progress: MonitorProgress = { halted: null };
   const ports: MonitorPorts = {
-    identity: { payoutWallet: () => Effect.succeed({ status: "ready", address: "0x123" }) },
+    identity: { wasReadyPayoutWallet: () => Effect.succeed(true) },
     shard: {
       conservation: shardConservationPort(connection, "https://shard.test", network(snapshot("84"))),
       withdrawal: () => Effect.fail(new RelayFailure({ operation: "binding_missing" })),
