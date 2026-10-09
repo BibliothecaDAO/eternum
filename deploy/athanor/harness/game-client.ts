@@ -18,8 +18,6 @@ interface ConnectHarnessGameClientOptions {
   actor: string;
   gameId: number;
   shard: Shard;
-  provider: HarnessProvider;
-  playBounds: PlayBounds;
 }
 
 const GAME_LISTING_TIMEOUT_MS = 120_000;
@@ -52,19 +50,7 @@ export async function connectHarnessGameClient(options: ConnectHarnessGameClient
     presetId,
     // Harness bots read no Realms profiles, so they name no player.
     playerNames: () => null,
-    native: {
-      bindings: bindings as unknown as NativeWorldBindings,
-      chainId: options.shard.chainId,
-      configure: playerActions({
-        gameId: options.gameId,
-        actor: options.actor,
-        games: options.shard.worldAddress,
-        rpcUrl: options.shard.rpcUrl,
-        provider: options.provider,
-        bounds: options.playBounds,
-        commandAbi: (bindings as unknown as NativeWorldBindings).commandAbi,
-      }),
-    },
+    bindings: bindings as unknown as NativeWorldBindings,
     scheduler: createMicrotaskGameSyncScheduler(),
     observer: createLoggingObserver(options.gameId, heraldConfirmations),
   });

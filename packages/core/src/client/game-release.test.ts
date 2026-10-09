@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { afterEach, expect, it, vi } from "vitest";
 import { hash } from "starknet";
-import { followGameRelease, StaleGameReleaseUnchangedError } from "./game-release";
+import { followGameRelease } from "./game-release";
 import { NativeFactStore } from "./native-fact-store";
 
 const setup = () => {
@@ -32,48 +32,38 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-it("holds all concurrent signers throughout a stale-pin refresh and shares that refresh", async () => {
-  const { gate, write } = setup();
-  await gate.ready();
-  const refresh = gate.refresh(1);
-  expect(gate.refresh(1)).toBe(refresh);
-  const signed = vi.fn();
-  const waiting = [gate.ready().then(signed), gate.ready().then(signed)];
-  await Promise.resolve();
-  await Promise.resolve();
-  expect(signed).not.toHaveBeenCalled();
-  write(2);
-  await refresh;
-  await Promise.all(waiting);
-  expect(signed).toHaveBeenCalledTimes(2);
-  gate.dispose();
-});
-
-it("names an unchanged stale pin and releases the wait without poisoning future refreshes", async () => {
+it("holds every action until a changed pin's release is readable, then lets them all go", async () => {
   vi.useFakeTimers();
   const { gate, write, failed } = setup();
-  const refresh = expect(gate.refresh(1)).rejects.toBeInstanceOf(StaleGameReleaseUnchangedError);
-  const blocked = expect(gate.ready()).rejects.toThrow("STALE_RELEASE_UNCHANGED");
-  await vi.advanceTimersByTimeAsync(10_000);
-  await Promise.all([refresh, blocked]);
-  expect(failed).not.toHaveBeenCalled();
-  write(2);
-  await gate.refresh(1);
   await gate.ready();
+  const fetched = vi.fn().mockRejectedValueOnce(new Error("offline"));
+  vi.stubGlobal("fetch", fetched);
+  write(3);
+  const sent = vi.fn();
+  const waiting = [gate.ready().then(sent), gate.ready().then(sent)];
+  await vi.advanceTimersByTimeAsync(0);
+  expect(sent).not.toHaveBeenCalled();
+  write(2);
+  await vi.advanceTimersByTimeAsync(1_000);
+  await Promise.all(waiting);
+  expect(sent).toHaveBeenCalledTimes(2);
+  expect(failed).not.toHaveBeenCalled();
   gate.dispose();
-  expect(vi.getTimerCount()).toBe(0);
 });
 
-it("cancels the pending pin wait on disposal", async () => {
+it("cancels a pending wait on disposal", async () => {
   vi.useFakeTimers();
-  const { gate } = setup();
-  const refresh = expect(gate.refresh(1)).rejects.toThrow("disposed");
+  const { gate, write } = setup();
+  vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("offline")));
+  write(3);
+  const pending = expect(gate.ready()).rejects.toThrow("disposed");
+  await vi.advanceTimersByTimeAsync(0);
   gate.dispose();
-  await refresh;
+  await pending;
   expect(vi.getTimerCount()).toBe(0);
 });
 
-it("revalidates a pin after a failed refresh was superseded by another pin", async () => {
+it("revalidates a pin after a failed manifest read was superseded by another pin", async () => {
   vi.useFakeTimers();
   const store = new NativeFactStore();
   const write = (release_id: number) =>
@@ -95,7 +85,7 @@ it("revalidates a pin after a failed refresh was superseded by another pin", asy
           chainId: "0x1",
           releaseSchemas: { "1": "schema", "2": "schema" },
           rpcUrl: "http://rpc.test",
-          admissionUrl: "http://admission.test",
+          l2GasBound: "0x47868c00",
           contracts: { games: "0x1" },
           accountClassHash: "0x2",
           guardianPublicKey: "0x3",

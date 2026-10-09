@@ -25,8 +25,17 @@ export const manifest: NativeManifest = {
   },
 };
 export const shardManifest = buildShardManifest(
-  { ...manifest, shard: { chainId: "0x4c4142", accountClassHash: "0x456", contracts: {}, guardianPublicKey: "0xabc" } },
-  { rpcUrl: "https://rpc.shard.test", admissionUrl: "https://admission.shard.test" },
+  {
+    ...manifest,
+    shard: {
+      chainId: "0x4c4142",
+      accountClassHash: "0x456",
+      contracts: {},
+      guardianPublicKey: "0xabc",
+      l2GasBound: "0x47868c00",
+    },
+  },
+  { rpcUrl: "https://rpc.shard.test" },
 );
 export const receipt = (events: RpcEvent[], transaction_hash = "0x55"): RpcReceipt => ({
   transaction_hash,

@@ -1,7 +1,7 @@
 import type { Abi, AccountInterface, Call } from "starknet";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
-import { ActionOutcomeUnknownError, EternumProvider } from "./index";
+import { EternumProvider } from "./index";
 import type { TransactionStreamWaiter } from "./types";
 
 const makeProvider = (scope: NonNullable<ConstructorParameters<typeof EternumProvider>[3]> = {}) =>
@@ -13,7 +13,7 @@ afterEach(() => {
 });
 
 describe("provider submission boundary", () => {
-  it("refuses a command before the shard's signed-intent submission is configured", async () => {
+  it("refuses a command before the shard's play submission is configured", async () => {
     const execute = vi.fn();
     const signer = { address: "0x111", execute } as unknown as AccountInterface;
     const calls: Call = { contractAddress: "0x77", entrypoint: "settle", calldata: [] };
@@ -23,67 +23,45 @@ describe("provider submission boundary", () => {
     expect(execute).not.toHaveBeenCalled();
   });
 
-  it("holds one player's next command until its outcome and separates rejected tickets in a shared transaction", async () => {
+  it("holds one player's next command until its outcome, and a reverted one fails with its reason", async () => {
     const provider = makeProvider();
-    let release!: (value: Awaited<ReturnType<TransactionStreamWaiter>>) => void;
-    const receipt = new Promise<Awaited<ReturnType<TransactionStreamWaiter>>>((resolve) => {
-      release = resolve;
-    });
-    const tickets = [
-      { gameId: "7", actor: "0x111", nonce: "0", order: "1" },
-      { gameId: "7", actor: "0x222", nonce: "0", order: "2" },
-      { gameId: "7", actor: "0x111", nonce: "1", order: "3" },
-    ];
-    let firstActorSubmissions = 0;
-    const submit = vi.fn(async (actor: AccountInterface) => ({
-      transaction_hash: "0xabc",
-      ticket: tickets[actor.address === "0x222" ? 1 : firstActorSubmissions++ === 0 ? 0 : 2],
-    }));
+    const outcomes = new Map<string, (value: Awaited<ReturnType<TransactionStreamWaiter>>) => void>();
+    let sent = 0;
+    const submit = vi.fn(async () => ({ transaction_hash: `0x${(sent += 1)}` }));
     provider.setNativeSubmission(submit, bindings.commandAbi as Abi, () => 9);
-    provider.setTransactionStreamWaiter(() => receipt);
-    const submitted = vi.fn(),
-      complete = vi.fn(),
+    provider.setTransactionStreamWaiter((hash) => new Promise((resolve) => outcomes.set(hash, resolve)));
+    const complete = vi.fn(),
       failed = vi.fn();
-    provider.on("transactionSubmitted", submitted);
     provider.on("transactionComplete", complete);
     provider.on("transactionFailed", failed);
     const signer = { address: "0x111" } as AccountInterface;
-    await provider.claim_wonder_points({ signer, value: 1 });
+    const first = provider.claim_wonder_points({ signer, value: 1 }).catch(() => undefined);
     const next = provider.claim_wonder_points({ signer, value: 2 });
-    await provider.claim_wonder_points({ signer: { address: "0x222" } as AccountInterface, value: 3 });
-    expect(submit.mock.calls.map(([actor]) => actor.address)).toEqual(["0x111", "0x222"]);
-    expect(complete).not.toHaveBeenCalled();
-    release({
-      hash: "0xabc",
-      block: 4,
-      status: "PRE_CONFIRMED",
-      executions: tickets.map((ticket, index) => ({
-        ...ticket,
-        nonceConsumed: true,
-        status: index === 0 ? "REVERTED" : "SUCCEEDED",
-        statusClass: index === 0 ? "GAMEPLAY_REJECTED" : "",
-        reason: index === 0 ? "not enough stamina" : "",
-        batchRemaining: "0",
-      })),
-    });
-    await next;
+    const other = provider.claim_wonder_points({ signer: { address: "0x222" } as AccountInterface, value: 3 });
+    await vi.waitFor(() => expect(submit).toHaveBeenCalledTimes(2));
+    expect(submit.mock.calls.map(([actor]) => (actor as AccountInterface).address)).toEqual(["0x111", "0x222"]);
+
+    outcomes.get("0x1")!({ hash: "0x1", block: 4, status: "REVERTED", revertReason: "not enough stamina" });
+    await first;
+    await vi.waitFor(() => expect(submit).toHaveBeenCalledTimes(3));
+    outcomes.get("0x2")!({ hash: "0x2", block: 4, status: "PRE_CONFIRMED" });
+    outcomes.get("0x3")!({ hash: "0x3", block: 5, status: "PRE_CONFIRMED" });
+    await Promise.all([next, other]);
     await vi.waitFor(() => expect(complete).toHaveBeenCalledTimes(2));
     expect(failed).toHaveBeenCalledOnce();
     expect(failed.mock.calls[0][0]).toMatchObject({
       signerAddress: "0x111",
       stage: "revert",
-      transactionHash: "0xabc",
+      transactionHash: "0x1",
       message: expect.stringContaining("not enough stamina"),
     });
-    expect(submitted.mock.calls.map(([event]) => event.ticket)).toEqual(tickets);
   });
 
   it("keeps a slow action pending with no timeout and signs the next only after Herald applies it", async () => {
     vi.useFakeTimers();
     const provider = makeProvider();
-    const ticket = { gameId: "7", actor: "0x111", nonce: "0", order: "1" };
-    let admit!: (value: { transaction_hash: string; ticket: typeof ticket }) => void;
-    const admission = new Promise<{ transaction_hash: string; ticket: typeof ticket }>((resolve) => {
+    let admit!: (value: { transaction_hash: string }) => void;
+    const admission = new Promise<{ transaction_hash: string }>((resolve) => {
       admit = resolve;
     });
     const submit = vi.fn().mockReturnValueOnce(admission).mockResolvedValue({ transaction_hash: "0xdef" });
@@ -104,34 +82,14 @@ describe("provider submission boundary", () => {
     const slow = provider.claim_wonder_points({ signer, value: 1 });
     const next = provider.claim_wonder_points({ signer, value: 2 });
     await vi.advanceTimersByTimeAsync(70_000);
-    admit({ transaction_hash: "0xabc", ticket });
+    admit({ transaction_hash: "0xabc" });
     await vi.advanceTimersByTimeAsync(0);
     expect(submit).toHaveBeenCalledOnce();
-    apply({
-      hash: "0xabc",
-      block: 5,
-      status: "PRE_CONFIRMED",
-      executions: [{ ...ticket, nonceConsumed: true, status: "SUCCEEDED", statusClass: "", reason: "" }],
-    });
+    apply({ hash: "0xabc", block: 5, status: "PRE_CONFIRMED" });
     await Promise.all([slow, next]);
     expect(submit).toHaveBeenCalledTimes(2);
     expect(failed).not.toHaveBeenCalled();
-    // Admission to visible runs from sending the ticket to the stream reporting its outcome.
+    // Admission to visible runs from sending the invoke to the stream reporting its outcome.
     expect(completed.mock.calls[0][0].admissionToVisibleMs).toBe(70_000);
-  });
-
-  it("reports an intent with no outcome as unknown, never as a failed submit to retry", async () => {
-    const provider = makeProvider();
-    provider.setNativeSubmission(
-      vi.fn().mockRejectedValue(new ActionOutcomeUnknownError("0x1")),
-      bindings.commandAbi as Abi,
-      () => 9,
-    );
-    const failed = vi.fn();
-    provider.on("transactionFailed", failed);
-    await expect(
-      provider.claim_wonder_points({ signer: { address: "0x111" } as AccountInterface, value: 1 }),
-    ).rejects.toThrow(ActionOutcomeUnknownError);
-    expect(failed.mock.calls[0][0]).toMatchObject({ stage: "submit", failureKind: "action_outcome_unknown" });
   });
 });

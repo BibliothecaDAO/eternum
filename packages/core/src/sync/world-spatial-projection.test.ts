@@ -222,16 +222,16 @@ describe("WorldSpatialProjection", () => {
       harness.writeRealm(21, 3, 1);
       harness.writeRealm(22, 4, 0);
       harness.projection.start();
-      const surface = { alt: false, minCol: 0, maxCol: 200, minRow: 0, maxRow: 200 };
+      const surface = { alt: false, minCol: 0, maxCol: 400, minRow: 0, maxRow: 200 };
       expect(harness.projection.getStructuresInBounds(surface)).toEqual([
-        expect.objectContaining({ entityId: 21, hexCoords: { alt: false, col: 40, row: 8 }, occupierType: 2 }),
-        expect.objectContaining({ entityId: 22, hexCoords: { alt: false, col: 56, row: 8 } }),
+        expect.objectContaining({ entityId: 21, hexCoords: { alt: false, col: 328, row: 8 }, occupierType: 2 }),
+        expect.objectContaining({ entityId: 22, hexCoords: { alt: false, col: 344, row: 8 } }),
       ]);
       setBlockTimestampSource(() => 86_400 * 11 + 100);
       harness.projection.rebuild();
       expect(harness.projection.getStructuresInBounds(surface)).toEqual([
-        expect.objectContaining({ entityId: 21, hexCoords: { alt: false, col: 40, row: 72 } }),
-        expect.objectContaining({ entityId: 22, hexCoords: { alt: false, col: 56, row: 72 } }),
+        expect.objectContaining({ entityId: 21, hexCoords: { alt: false, col: 328, row: 72 } }),
+        expect.objectContaining({ entityId: 22, hexCoords: { alt: false, col: 344, row: 72 } }),
       ]);
     } finally {
       setBlockTimestampSource(null);

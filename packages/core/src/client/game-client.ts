@@ -1,9 +1,10 @@
 import { nativeModelDefinition } from "./native-models";
-import { nativeSubmission, type NativeClientConnection } from "./native-submission";
+import { nativePlay } from "./native-submission";
 import { EternumProvider } from "@bibliothecadao/provider";
 import { NativeFactStore } from "./native-fact-store";
 import {
   ContractAddress,
+  type NativeWorldBindings,
   type SystemCallAuthHandler,
   createSystemCalls,
   type SystemCalls,
@@ -25,7 +26,6 @@ import { setGameScope } from "./game-scope";
 import { createHeraldGameSyncSession, type GameClientObserver } from "./herald-session";
 import type { PlayerNameResolver } from "../utils/entities";
 import { createGameViews, type GameViews } from "./views";
-import { waitForTransactionOutcome } from "./transaction-outcome";
 import { type Shard } from "./shard";
 import { followGameRelease } from "./game-release";
 
@@ -37,14 +37,8 @@ export interface GameClientSetup {
 
 export interface CreateGameClientInput {
   actor?: string;
-  native:
-    | NativeClientConnection
-    | {
-        bindings: NativeClientConnection["bindings"];
-        chainId: string;
-        /** Installs player-signed submission and receipt waits after the authoritative fact stream is ready. */
-        configure(setup: GameClientSetup, runtime: GameSyncRuntime, release: { ready(): Promise<void> }): () => void;
-      };
+  /** The compiled world's models, events and command ABI this client reads and sends. */
+  bindings: NativeWorldBindings;
   shard: Shard;
   gameId: number;
   presetId: number;
@@ -133,7 +127,7 @@ const startSync = async (
 ): Promise<{ projection: WorldSpatialProjection; transport: HeraldGameSyncTransport }> => {
   const release = followGameRelease(
     setupResult.store,
-    { gameId: input.gameId, shard: input.shard, schemaIdentity: input.native.bindings.schemaIdentity },
+    { gameId: input.gameId, shard: input.shard, schemaIdentity: input.bindings.schemaIdentity },
     (error) => {
       input.observer?.onLiveApplyFailed?.(error);
       disposeRuntime(runtime);
@@ -143,9 +137,9 @@ const startSync = async (
     actor: input.actor,
     baseUrl: input.shard.url,
     chainId: input.shard.chainId,
-    entityModels: input.native.bindings.models.map((model) => model.name),
-    eventModels: input.native.bindings.events.map((event) => event.name),
-    modelDefinition: nativeModelDefinition(input.native.bindings),
+    entityModels: input.bindings.models.map((model) => model.name),
+    eventModels: input.bindings.events.map((event) => event.name),
+    modelDefinition: nativeModelDefinition(input.bindings),
     gameId: input.gameId,
     worldAddress: input.shard.worldAddress,
     observer: input.observer,
@@ -153,44 +147,32 @@ const startSync = async (
     store: setupResult.store,
     socketFactory: input.socketFactory,
   });
-  session.onDispose = () => {
-    release.dispose();
-    if ("submitIntent" in input.native) input.native.submitIntent.dispose?.();
-  };
+  session.onDispose = () => release.dispose();
   await runtime.startSession(session);
   await release.ready();
   // Chain time must be known before the first spatial projection reads it.
   await runtime.waitForConfirmedHead();
-  if ("configure" in input.native) {
-    const disposeSubmission = input.native.configure(setupResult, runtime, release);
-    session.onDispose = () => {
-      release.dispose();
-      disposeSubmission();
-    };
-  } else {
-    const submit = nativeSubmission(
-      { ...input.native, release },
-      setupResult.store,
-      input.gameId,
-      input.shard.worldAddress,
-      (actor) => session.transport.prepareActor(actor),
-    );
-    setupResult.network.provider.setNativeSubmission(submit, input.native.bindings.commandAbi, (actor) => {
-      let owned: number | undefined;
-      for (const row of setupResult.store.structuresOwnedBy(input.gameId, BigInt(actor)))
-        if (owned === undefined || row.entity_id < owned) owned = row.entity_id;
-      if (owned === undefined) throw new Error("Action requires an owned structure in the current game");
-      return owned;
-    });
-    routeTransactionWaitsThroughStream(setupResult, runtime);
-  }
+  const submit = nativePlay(
+    { bindings: input.bindings, release },
+    setupResult.store,
+    input.gameId,
+    input.shard.worldAddress,
+  );
+  setupResult.network.provider.setNativeSubmission(submit, input.bindings.commandAbi, (actor) => {
+    let owned: number | undefined;
+    for (const row of setupResult.store.structuresOwnedBy(input.gameId, BigInt(actor)))
+      if (owned === undefined || row.entity_id < owned) owned = row.entity_id;
+    if (owned === undefined) throw new Error("Action requires an owned structure in the current game");
+    return owned;
+  });
+  routeTransactionWaitsThroughStream(setupResult, runtime);
   return { projection: installWorldSpatialProjection(runtime, setupResult), transport: session.transport };
 };
 
 /** Herald's stream carries transaction status, so submits wait on the stream instead of polling the RPC. */
 const routeTransactionWaitsThroughStream = (setupResult: GameClientSetup, runtime: GameSyncRuntime): void => {
   setupResult.network.provider.setTransactionStreamWaiter(
-    (transactionHash, ticket) => waitForTransactionOutcome(runtime, setupResult.store, transactionHash, ticket),
+    (transactionHash) => runtime.waitForTransaction(transactionHash),
     (transactionHash) => runtime.recordSubmittedTransaction(transactionHash),
   );
 };

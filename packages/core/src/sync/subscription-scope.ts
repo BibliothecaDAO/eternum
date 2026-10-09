@@ -1,5 +1,6 @@
 import {
   expeditionRealmSite,
+  entityHomeNamespace,
   isCurrentExpeditionArmy,
   isRealmCategory,
   seasonDay,
@@ -63,11 +64,7 @@ export function deriveGameSyncScope(
   const actingArmies = armies.filter(({ value }) => actingRealms.has(syncScalar(value.owner)));
   if (today >= 0 && actingArmies.length === 0)
     for (const { value } of actingHomes) {
-      const site = expeditionRealmSite(
-        expedition,
-        Number((value.metadata as Record<string, unknown>).realm_id),
-        timestamp,
-      );
+      const site = expeditionRealmSite(expedition, entityHomeNamespace(syncScalar(value.entity_id)), timestamp);
       if (site) regions.add(gameSyncRegion({ alt: false, x: site.col, y: site.row }, spacing)!);
     }
   for (const { value } of actingArmies) {
