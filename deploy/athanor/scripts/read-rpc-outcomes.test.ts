@@ -21,12 +21,14 @@ async function fixture(
   } = {},
 ) {
   const writes: unknown[] = [];
+  const lookups: unknown[] = [];
   const node = Bun.serve({
     hostname: "127.0.0.1",
     port: 0,
     async fetch(request) {
       const call = await request.json();
       if (call.method === "starknet_getNonce" || call.method === "starknet_getClassHashAt") {
+        lookups.push(call);
         await options.admissionWait;
         if (options.admissionFails) return Response.json({ error: { code: 99, data: "internal diagnostic" } });
         return Response.json({
@@ -49,6 +51,7 @@ async function fixture(
   const proxy = startReadRpc(node.url.origin, 0, identity, stamper, undefined, "127.0.0.1");
   return {
     writes,
+    lookups,
     node,
     proxy,
     call(method: string, params: unknown, id = 42) {
@@ -511,6 +514,71 @@ test("a deterministic execution error on an ordinary read remains read unavailab
   const intercepted = f.intercept(async () => Response.json({ jsonrpc: "2.0", id: 42, error: { code: 41 } }));
   try {
     expect((await f.call("starknet_call", [])).error).toEqual({ code: -32012, message: "RPC read unavailable" });
+  } finally {
+    intercepted.mockRestore();
+    f.close();
+  }
+});
+
+test("mixed read/write batches refuse at the gate before lookup, stamp or forwarding", async () => {
+  let stamps = 0;
+  const f = await fixture({
+    admissionFails: true,
+    stampFails: true,
+    stampStarted: () => {
+      stamps++;
+    },
+  });
+  try {
+    const read = { jsonrpc: "2.0", id: 41, method: "starknet_getTransactionStatus", params: ["0x777"] };
+    for (const method of [
+      "starknet_addInvokeTransaction",
+      "starknet_addDeployAccountTransaction",
+      "starknet_addDeclareTransaction",
+    ]) {
+      const write = { jsonrpc: "2.0", id: 42, method, params: [invoke()] };
+      for (const payload of [
+        [read, write],
+        [write, read],
+      ]) {
+        const response = await originalFetch(f.proxy.url, { method: "POST", body: JSON.stringify(payload) });
+        expect(response.status).toBe(200);
+        expect(await response.json()).toEqual({
+          jsonrpc: "2.0",
+          id: null,
+          error: { code: -32600, message: "Mixed read and write batch refused" },
+        });
+        expect(f.writes).toHaveLength(0);
+        expect(f.lookups).toHaveLength(0);
+        expect(stamps).toBe(0);
+      }
+    }
+  } finally {
+    f.close();
+  }
+});
+
+test("read-only batches keep independent successful and absent replies", async () => {
+  const f = await fixture();
+  const intercepted = f.intercept(async (call) =>
+    Response.json(
+      call.id === 41
+        ? { jsonrpc: "2.0", id: call.id, result: "0x1" }
+        : { jsonrpc: "2.0", id: call.id, error: { code: 29 } },
+    ),
+  );
+  try {
+    const response = await originalFetch(f.proxy.url, {
+      method: "POST",
+      body: JSON.stringify([
+        { jsonrpc: "2.0", id: 41, method: "starknet_getNonce", params: ["pre_confirmed", "0x42"] },
+        { jsonrpc: "2.0", id: 42, method: "starknet_getTransactionStatus", params: ["0x777"] },
+      ]),
+    });
+    expect(await response.json()).toEqual([
+      { jsonrpc: "2.0", id: 41, result: "0x1" },
+      { jsonrpc: "2.0", id: 42, error: { code: 29, message: "Transaction hash not found" } },
+    ]);
   } finally {
     intercepted.mockRestore();
     f.close();

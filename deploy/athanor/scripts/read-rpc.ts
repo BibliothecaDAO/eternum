@@ -154,6 +154,9 @@ async function handlePublicRequest(
   }
   const calls = Array.isArray(payload) ? payload : [payload];
   if (!calls.length) return refuse(-32601, "RPC method is not public");
+  if (calls.some(isWrite) && calls.some((call) => !isWrite(call))) {
+    return refuse(-32600, "Mixed read and write batch refused");
+  }
   const operations = calls.filter((call) => !isRead(call) && !isGameRequest(call, identity));
   if (operations.length && (!client || !allowance(client, operations.length))) {
     return refuse(-32005, "Account operation rate exceeded", 429);
@@ -166,7 +169,7 @@ async function handlePublicRequest(
       preparation.signal,
     );
   } catch {
-    return calls.some((call) => isWrite(call as RpcCall))
+    return calls.some(isWrite)
       ? refuse(-32010, "Transaction refused", 502)
       : refuse(-32012, "RPC read unavailable", 502);
   }
@@ -241,8 +244,14 @@ function rpcError(id: unknown, code: number, message: string, transactionHash?: 
     error: { code, message, ...(transactionHash ? { data: { transaction_hash: transactionHash } } : {}) },
   };
 }
-function isWrite(call: RpcCall): boolean {
-  return call?.method === "starknet_addInvokeTransaction" || call?.method === "starknet_addDeployAccountTransaction";
+function isWrite(value: unknown): boolean {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const { method } = value as RpcCall;
+  return (
+    method === "starknet_addInvokeTransaction" ||
+    method === "starknet_addDeployAccountTransaction" ||
+    method === "starknet_addDeclareTransaction"
+  );
 }
 type NodeAnswer = { jsonrpc?: unknown; id?: unknown; result?: unknown; error?: { code?: unknown } };
 function validReply(answer: unknown, call: RpcCall): answer is NodeAnswer {

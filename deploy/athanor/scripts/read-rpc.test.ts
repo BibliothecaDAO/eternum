@@ -326,3 +326,24 @@ test("the public relay can page Games events with the address filter intact", as
     node.stop(true);
   }
 });
+
+test("the public audit requires the fixed mixed-batch gate, not any invalid-request error", async () => {
+  const node = Bun.serve({
+    hostname: "127.0.0.1",
+    port: 0,
+    async fetch(request) {
+      const payload = await request.json();
+      if (payload.method === "starknet_chainId") return Response.json({ result: "0x123" });
+      return Response.json({
+        error: Array.isArray(payload)
+          ? { code: -32600, message: "Some node parameter error" }
+          : { code: -32601, message: "RPC method is not public" },
+      });
+    },
+  });
+  try {
+    await expect(assertPublicRpcBoundary(node.url.href)).rejects.toThrow("not blocked before parameter validation");
+  } finally {
+    node.stop(true);
+  }
+});
