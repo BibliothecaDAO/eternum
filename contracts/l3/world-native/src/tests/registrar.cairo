@@ -2489,9 +2489,7 @@ fn an_exhausted_day_price_never_funds_a_ruin_or_payout(estimate: u128) {
             let day = crate::days::day_of(context.game.unbox(), context.rules.unbox().day_unit_seconds, time).index;
             let exhausted = crate::logic::lords_budget::open_day(
                 chest_rules,
-                crate::relics::LordsBudget {
-                    pool_left: 0, open: 0, day, price: 0, estimate, rolled_shares: 0,
-                },
+                crate::relics::LordsBudget { pool_left: 0, open: 0, day, price: 0, estimate, rolled_shares: 0 },
                 crate::logic::lords_budget::SeasonClock {
                     game: context.game.unbox(),
                     day_unit_seconds: context.rules.unbox().day_unit_seconds,
