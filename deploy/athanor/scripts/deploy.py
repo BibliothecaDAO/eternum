@@ -90,11 +90,6 @@ def render_environment(inputs, images):
         "NODE_MEMORY": inputs["node_memory"], "HERALD_MEMORY": inputs["herald_memory"],
         "HOST_UID": os.getuid(), "HOST_GID": os.getgid(),
     }
-    if "rpc_max_response_size_mib" in inputs:
-        size = inputs["rpc_max_response_size_mib"]
-        if type(size) is not int or not 1 <= size <= 2**32 - 1:
-            raise ValueError("rpc_max_response_size_mib must be a positive u32 MiB count")
-        values["RPC_MAX_RESPONSE_SIZE_MIB"] = size
     return images.rstrip("\n") + "\n" + "".join(f"{key}={value}\n" for key, value in values.items())
 
 

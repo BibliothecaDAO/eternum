@@ -17,6 +17,8 @@ pending_block_update_time: "250ms"
 # Pre-confirmed state is persisted after each execution batch. Four bounds the work before that observation. The
 # block caps are the measured leader settings for the 2,000-action workload, not trial overrides.
 execution_batch_size: 4
+block_production_concurrency:
+  batch_size: 1024
 bouncer_config:
   block_max_capacity:
     sierra_gas: 10000000000000

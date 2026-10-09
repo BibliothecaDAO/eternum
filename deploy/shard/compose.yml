@@ -52,7 +52,6 @@ services:
       - --parallel-merkle-enabled
       - --db-max-kept-snapshots=0
       # Upstream 802086d defaults to 15 MiB. Measure the full 2,000-action block before changing it.
-      - --rpc-max-response-size=${RPC_MAX_RESPONSE_SIZE_MIB:-15}
       - --otel-collector-endpoint=http://metrics:4317
       - --otel-export-metrics=true
     volumes: ["chain:/data", "public-config:/config:ro"]
