@@ -96,21 +96,16 @@ class InputsTest(unittest.TestCase):
 
 
 class EnrolmentTest(unittest.TestCase):
-    def test_initialization_requires_the_file_wrapper_instead_of_an_inherited_token(self):
-        with tempfile.TemporaryDirectory() as temporary:
-            directory = Path(temporary)
-            with patch.dict(deploy.os.environ, {}, clear=True):
-                with self.assertRaisesRegex(ValueError, "protected operator"):
-                    deploy.check_operator_approval(directory, {"OPERATOR_TOKEN_FILE": "/opt/athanor/operator-token"})
-            with patch.dict(deploy.os.environ, {"OPERATOR_TOKEN": "test-token"}):
-                deploy.check_operator_approval(directory, {"OPERATOR_TOKEN_FILE": "/opt/athanor/operator-token"})
-                with self.assertRaisesRegex(ValueError, "protected operator"):
-                    deploy.check_operator_approval(directory, {"OPERATOR_TOKEN": "test-token"})
+    def test_initialization_requires_the_wrapper_supplied_credential(self):
+        with patch.dict(deploy.os.environ, {}, clear=True):
+            with self.assertRaisesRegex(ValueError, "protected operator"):
+                deploy.check_operator_approval()
+        with patch.dict(deploy.os.environ, {"OPERATOR_TOKEN": "test-token"}):
+            deploy.check_operator_approval()
 
-    def test_sudo_preserves_only_the_credential_path(self):
+    def test_sudo_preserves_only_driver_placement(self):
         preserved = next(flag for flag in deploy.compose(Path("/srv/shard")) if flag.startswith("--preserve-env="))
-        self.assertNotIn("OPERATOR_TOKEN", preserved.removeprefix("--preserve-env=").split(","))
-        self.assertIn("OPERATOR_TOKEN_FILE", preserved.removeprefix("--preserve-env=").split(","))
+        self.assertEqual(preserved, "--preserve-env=HARNESS_CPUSET")
 
 
 

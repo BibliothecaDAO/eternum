@@ -30,8 +30,8 @@ from stack_lock import isolated_stack_lock
 from operator_token import read_protected_text
 
 
-# Only the public credential path and driver placement pass through sudo.
-DOCKER = ["sudo", "-n", "--preserve-env=OPERATOR_TOKEN_FILE,HARNESS_CPUSET", "docker"]
+# Only driver placement passes through sudo; containers read the fixed protected file mount.
+DOCKER = ["sudo", "-n", "--preserve-env=HARNESS_CPUSET", "docker"]
 RELEASES = "https://github.com/BibliothecaDAO/eternum/releases/download"
 # Campaign G's target, not yet a measured ceiling: a larger shard waits for a G measurement that supports it.
 MAX_PLAYER_CAPACITY = 2000

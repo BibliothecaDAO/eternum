@@ -23,7 +23,7 @@ import tarfile
 from urllib.request import Request, urlopen
 
 import shard
-from directory import directory_status, wait_for_identity, PENDING_ROUTE_PREREQUISITE
+from directory import directory_status, wait_for_identity
 
 RELEASES = "https://github.com/BibliothecaDAO/eternum/releases/download"
 ENVIRONMENTS = shard.ROOT / "deploy/release"
@@ -37,7 +37,7 @@ def main(environment, directory):
         directory.mkdir(mode=0o700, parents=True, exist_ok=True)
         release = fetch_package(inputs["package"], directory)
         (directory / ".env").write_text(render_environment(inputs, (directory / "images.env").read_text()))
-        check_operator_approval(directory, rendered_init_environment(directory))
+        check_operator_approval()
         status = start(directory, inputs)
         differences = release_differences(release, *deployed_facts(directory / "data"), inputs["presets"])
         if not differences and status["status"] == "pending":
@@ -89,7 +89,6 @@ def render_environment(inputs, images):
         # Each environment sizes its shard: a small staging playtest, a large perf or production shard.
         "NODE_MEMORY": inputs["node_memory"], "HERALD_MEMORY": inputs["herald_memory"],
         "HOST_UID": os.getuid(), "HOST_GID": os.getgid(),
-        "OPERATOR_TOKEN_FILE": "/opt/athanor/operator-token",
     }
     return images.rstrip("\n") + "\n" + "".join(f"{key}={value}\n" for key, value in values.items())
 
@@ -98,13 +97,8 @@ def compose(directory):
     return [*shard.DOCKER, "compose", "--project-directory", str(directory)]
 
 
-def rendered_init_environment(directory):
-    rendered = json.loads(subprocess.check_output([*compose(directory), "config", "--format", "json"], text=True))
-    return rendered["services"]["init"].get("environment") or {}
-
-
-def check_operator_approval(directory, init_environment):
-    if not init_environment.get("OPERATOR_TOKEN_FILE") or not os.environ.get("OPERATOR_TOKEN"):
+def check_operator_approval():
+    if not os.environ.get("OPERATOR_TOKEN"):
         raise ValueError("Official deployment needs the protected operator credential wrapper")
 
 
