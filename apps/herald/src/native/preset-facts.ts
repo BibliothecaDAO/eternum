@@ -125,6 +125,10 @@ function deriveEconomy(emit: EmitRule, economy: PresetRecord) {
   emit("BankRules", record(economy.banks));
   emit("HyperstructureRules", record(economy.hyperstructures));
   emit("RelicRules", { rules: economy.relics });
+  if ("labor" in economy) {
+    const labor = some(economy.labor);
+    if (labor) emit("LaborRules", labor);
+  }
   const chests = some(economy.chests);
   if (chests) emit("ChestRules", chests);
   // Older preset provenance predates progression; current registration requires it for expeditions.

@@ -2147,6 +2147,21 @@ pub mod GamesFixture {
                 crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: classes.settlement.read() }, operator,
             )
         }
+        fn grant_labor(
+            ref self: TContractState, realm: crate::entry::LaborRealm, day: u64, account: starknet::ContractAddress,
+        ) -> crate::entry::LaborGrant {
+            let classes = fixture_classes(realm.game_id);
+            crate::entry::ILedgerOperatorDispatcherTrait::grant_labor(
+                crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: classes.settlement.read() },
+                realm, day, account,
+            )
+        }
+        fn labor_grant(self: @TContractState, realm: crate::entry::LaborRealm, day: u64) -> Option<crate::entry::LaborGrant> {
+            let classes = fixture_classes(realm.game_id);
+            crate::entry::ILedgerOperatorDispatcherTrait::labor_grant(
+                crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: classes.settlement.read() }, realm, day,
+            )
+        }
     }
     #[starknet::embeddable]
     pub impl BlitzResultsFixture<

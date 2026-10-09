@@ -38,6 +38,7 @@ export const duelPreset: NativePreset = {
   seasonBags: 0,
   progression: null,
   discovery: null,
+  labor: null,
   chests: null,
   board: null,
   research: [],

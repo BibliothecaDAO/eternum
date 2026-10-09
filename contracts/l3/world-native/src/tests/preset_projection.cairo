@@ -297,6 +297,9 @@ fn observe_economy(ref rows: Array<ObservedRow>, address: ContractAddress, game_
     row(ref rows, 'BankRules', key, bank.bank_rules(game_id));
     row(ref rows, 'HyperstructureRules', key, hyperstructures.hyperstructure_rules(game_id));
     row(ref rows, 'RelicRules', key, relics.relic_rules(game_id));
+    if let Some(labor) = interact_with_state(address, || crate::logic::preset_record::for_game(game_id).labor_rules.read()) {
+        row(ref rows, 'LaborRules', key, labor);
+    }
     if let Some(chests) = relics.chest_rules(game_id) {
         row(ref rows, 'ChestRules', key, chests);
     }
