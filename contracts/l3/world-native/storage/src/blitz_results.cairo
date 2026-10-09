@@ -1,7 +1,7 @@
 use starknet::storage::Map;
 
 #[starknet::storage_node]
-pub struct BlitzResultStateStorage<TPlayerResult> {
-    pub results: Map<(u32, u8), TPlayerResult>,
-    pub count: Map<u32, u8>,
+pub struct BlitzResultStateStorage<TRankedPlayer> {
+    pub ranked_results: Map<(u32, u8), TRankedPlayer>,
+    pub ranked_count: Map<u32, u8>,
 }

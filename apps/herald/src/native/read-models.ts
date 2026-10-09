@@ -256,7 +256,14 @@ export function buildNativeLeaderboard(
   const rules = required(modelRows("SliceRules"), gameId, "SliceRules");
   const result = rows("BlitzResult")[0];
   // Standings carry addresses only: a player's name is their identity profile, resolved by the client.
-  if (result?.complete === true) return finalStandings(gameId, result, activity);
+  if (result?.complete === true)
+    return finalStandings(
+      gameId,
+      result,
+      rows("BlitzRoster"),
+      registeredPlayerPoints(rows("PlayerEntry"), rows("PlayerPoints")),
+      activity,
+    );
   const points = registeredPlayerPoints(rows("PlayerEntry"), rows("PlayerPoints"));
   addUnclaimedSharePoints(points, rows("HyperstructureShares"), game, rules, timestamp);
   return rankPlayers(gameId, points, activity);
@@ -265,17 +272,27 @@ export function buildNativeLeaderboard(
 function finalStandings(
   gameId: string,
   result: Row,
+  rosters: Row[],
+  points: Map<string, bigint>,
   activity: ReadonlyMap<string, PlayerActivityBreakdown> | null,
 ): HeraldLeaderboard {
+  const roster = (rosters[0]?.players as Row[] | undefined) ?? [];
   return {
     mode: "points",
     game_id: integer(gameId).toString(),
-    entries: (result.players as Row[]).map((player) => ({
-      address: address(player.player),
-      totalPoints: Number(integer(player.points)) / 1_000_000,
-      rank: number(player.rank),
-      activityBreakdown: activity?.get(address(player.player)) ?? createEmptyActivityBreakdown(),
-    })),
+    entries: (result.players as Row[]).map((player) => {
+      const member = roster.find((row) => address(row.wallet) === address(player.wallet));
+      if (!member) throw new Error(`Final result wallet ${player.wallet} is outside the roster`);
+      const account = address(member.account);
+      const score = points.get(account);
+      if (score === undefined) throw new Error(`Missing final PlayerPoints for ${account}`);
+      return {
+        address: account,
+        totalPoints: Number(score) / 1_000_000,
+        rank: number(player.rank),
+        activityBreakdown: activity?.get(account) ?? createEmptyActivityBreakdown(),
+      };
+    }),
   };
 }
 
