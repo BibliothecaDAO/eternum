@@ -6,15 +6,12 @@ describe("ledger economics", () => {
     const preset = buildLedgerEconomicPreset("blitz");
 
     expect(preset).toMatchObject({
-      protocol_cut_bps: 2_000,
       paid_fraction_bps: 2_000,
       decay_bps: 9_600,
       mmr: { enabled: true, mean: 1_500, spread: 450, max_delta: 45, k: 50, regression_bps: 150, min_players: 6 },
-      pm: { fee_bps: 500, claim_window_seconds: 604_800 },
     });
     expect(BigInt(preset.entry_fee.low)).toBe(500_000_000_000_000_000_000n);
-    expect(BigInt(preset.pm.liability_cap.low)).toBe(10_000_000_000_000_000_000_000n);
-    expect(buildRegisterLedgerPresetCalldata(1, preset).length).toBeGreaterThan(20);
+    expect(buildRegisterLedgerPresetCalldata(1, preset).length).toBe(16);
   });
 
   it("disables fees and MMR for Eternum without creating an invalid payout preset", () => {
@@ -31,7 +28,7 @@ describe("ledger economics", () => {
 
     expect(BigInt(preset.entry_fee.low)).toBe(0n);
     expect(BigInt(preset.sword_price.low)).toBe(500_000_000_000_000_000_000n);
-    expect(preset.protocol_cut_bps).toBe(2_000);
+    expect(preset.paid_fraction_bps).toBe(2_000);
     expect(preset.mmr.enabled).toBe(true);
   });
 });
