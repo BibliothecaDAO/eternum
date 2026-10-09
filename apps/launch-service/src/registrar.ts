@@ -1,6 +1,8 @@
 import { DurableObject } from "cloudflare:workers";
 import { Effect, Layer } from "effect";
-import { decodeLaunchEnv } from "./env";
+import { D1BlitzRosterStore, RosterFailure } from "./blitz-roster";
+import { ledgerBlitzRegistrations } from "./ledger-roster";
+import { decodeLaunchEnv, type LaunchEnv } from "./env";
 import { launchExecutorLayer, launchTargetOf, shardChainOf } from "./executor";
 import { processNextLaunch } from "./process-launch";
 import { D1LaunchStore, databaseLayer } from "./store";
@@ -25,9 +27,20 @@ export class Registrar extends DurableObject<Record<string, unknown>> {
     console.log("registrar_alarm", { at: new Date().toISOString() });
     const env = decodeLaunchEnv(this.env);
     const store = new D1LaunchStore(env.DB, shardChainOf(env));
-    const services = Layer.mergeAll(databaseLayer(store), launchExecutorLayer(launchTargetOf(env)));
+    const services = Layer.mergeAll(
+      databaseLayer(store),
+      launchExecutorLayer(launchTargetOf(env), rosterSourceOf(env), new D1BlitzRosterStore(env.DB)),
+    );
     await Effect.runPromise(processNextLaunch(Date.now()).pipe(Effect.provide(services)));
     const next = await store.nextDue();
     if (next !== null) await this.ctx.storage.setAlarm(Math.max(next, Date.now()));
   }
 }
+
+const rosterSourceOf = (env: LaunchEnv) =>
+  ledgerBlitzRegistrations({
+    rpcUrl: env.LEDGER_RPC_URL,
+    ledgerAddress: env.LEDGER_ADDRESS,
+    resolveGameKey: () => Effect.fail(new RosterFailure({ operation: "game_key_reservation_interface_unavailable" })),
+    accountForWallet: (wallet) => env.VALUE_IDENTITY.accountForWallet(wallet),
+  });

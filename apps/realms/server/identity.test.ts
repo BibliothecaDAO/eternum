@@ -1034,6 +1034,27 @@ describe("identity Worker", () => {
     expect((await browser.session())!.user.walletLinkedAt).toBeNull();
   });
 
+  it("cannot bypass the wallet code or hold through the generic account update", async () => {
+    const browser = createBrowser();
+    await signInWithCode(browser, "wallet-write-path@realms.test");
+    const address = createWallet();
+    expect((await proveWallet(browser, address, "link")).status).toBe(200);
+    const before = (await browser.session())!.user;
+    const proof = verifyAsMainnet.mock.calls.at(-1)!;
+    expect(
+      (
+        await browser.request("/api/auth/siws/link", {
+          body: { address, message: JSON.stringify(proof[0]), signature: proof[1] },
+        })
+      ).status,
+    ).toBe(400);
+    await browser.request("/api/auth/update-user", { body: { address: createWallet(), walletLinkedAt: 0 } });
+    const after = (await browser.session())!.user;
+    expect(after.address).toBe(before.address);
+    expect(after.walletLinkedAt).toBe(before.walletLinkedAt);
+    expect(after.payoutWallet).toEqual(before.payoutWallet);
+  });
+
   it("suggests a new player's display name from their Discord name or their email", async () => {
     const byEmail = createBrowser();
     await signInWithCode(byEmail, "ser.galen+play@realms.test");

@@ -1,3 +1,4 @@
+import { freezeBlitzRoster, type BlitzRegistrationSource, type D1BlitzRosterStore } from "./blitz-roster";
 import { finalizeGame } from "./results";
 import { Context, Effect, Layer } from "effect";
 import { openShard, type Shard } from "@bibliothecadao/eternum/shard";
@@ -77,7 +78,13 @@ const buildGameRequest = (
   startTime: requirePersistedStartTime(request),
 });
 
-const executeRun = async (run: LaunchRun, store: LaunchRunStore, target: LaunchTarget): Promise<LaunchSummary> => {
+const executeRun = async (
+  run: LaunchRun,
+  store: LaunchRunStore,
+  target: LaunchTarget,
+  rosterSource: BlitzRegistrationSource,
+  rosters: D1BlitzRosterStore,
+): Promise<LaunchSummary> => {
   const launchShard = await readLaunchShard(target.shardUrl);
   // The shard behind SHARD_URL can change under a queued run; a run only ever executes on the chain it was queued for.
   if (run.chainId !== launchShard.shard.chainId) {
@@ -86,7 +93,8 @@ const executeRun = async (run: LaunchRun, store: LaunchRunStore, target: LaunchT
     );
   }
   if (run.kind === "game" && !("gameId" in run.request)) {
-    return launchGame(buildGameRequest(run.request, target, launchShard), store);
+    const request = await requestWithLedgerRoster(run, rosterSource, rosters);
+    return launchGame(buildGameRequest(request, target, launchShard), store);
   }
   if (run.kind === "result" && "gameId" in run.request) {
     return finalizeGame(
@@ -98,11 +106,28 @@ const executeRun = async (run: LaunchRun, store: LaunchRunStore, target: LaunchT
   throw new Error(`Stored request does not match ${run.kind} launch ${run.id}`);
 };
 
-export const launchExecutorLayer = (target: LaunchTarget) =>
+const requestWithLedgerRoster = async (
+  run: LaunchRun,
+  source: BlitzRegistrationSource,
+  rosters: D1BlitzRosterStore,
+): Promise<CreateGameRequest> => {
+  if ("gameId" in run.request) throw new Error("Result request cannot create a game");
+  if (run.request.environment !== "madara.blitz") return run.request;
+  const roster = await Effect.runPromise(
+    freezeBlitzRoster({ chainId: run.chainId, gameName: run.name }, source, rosters),
+  );
+  return { ...run.request, rosterAccounts: roster.registrations.map(({ account }) => account) };
+};
+
+export const launchExecutorLayer = (
+  target: LaunchTarget,
+  source: BlitzRegistrationSource,
+  rosters: D1BlitzRosterStore,
+) =>
   Layer.succeed(LaunchExecutor, {
     execute: (run, store) =>
       Effect.tryPromise({
-        try: () => executeRun(run, store, target),
+        try: () => executeRun(run, store, target, source, rosters),
         catch: (cause) => new LaunchExecutionFailure({ runId: run.id, cause }),
       }),
   });

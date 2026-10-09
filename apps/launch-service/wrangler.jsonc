@@ -22,7 +22,10 @@
       ],
       "vars": { "ENVIRONMENT": "staging", "BASE_URL": "https://play.dev-realms.party" },
       "d1_databases": [{ "binding": "DB", "database_name": "realms-launch-staging", "migrations_dir": "migrations" }],
-      "services": [{ "binding": "IDENTITY", "service": "realms-identity-staging" }],
+      "services": [
+        { "binding": "IDENTITY", "service": "realms-identity-staging" },
+        { "binding": "VALUE_IDENTITY", "service": "realms-identity-staging", "entrypoint": "ValueIdentity" },
+      ],
       "durable_objects": { "bindings": [{ "name": "REGISTRAR", "class_name": "Registrar" }] },
       "triggers": { "crons": ["* * * * *"] },
       "version_metadata": { "binding": "VERSION" },
@@ -38,7 +41,10 @@
       "d1_databases": [
         { "binding": "DB", "database_name": "realms-launch-production", "migrations_dir": "migrations" },
       ],
-      "services": [{ "binding": "IDENTITY", "service": "realms-identity" }],
+      "services": [
+        { "binding": "IDENTITY", "service": "realms-identity" },
+        { "binding": "VALUE_IDENTITY", "service": "realms-identity", "entrypoint": "ValueIdentity" },
+      ],
       "durable_objects": { "bindings": [{ "name": "REGISTRAR", "class_name": "Registrar" }] },
       "triggers": { "crons": ["* * * * *"] },
       "version_metadata": { "binding": "VERSION" },

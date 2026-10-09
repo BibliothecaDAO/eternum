@@ -11,6 +11,7 @@ Configuration, per environment (see `wrangler.jsonc` and `.github/workflows/depl
 - `SHARD_URL` — the shard it launches on: its Herald, whose `/manifest` names the chain, node, admission endpoint and
   contracts. It is read at each launch, and a shard running a release other than the one this Worker was built with is
   refused; the ABIs are that release's committed schema.
+- `LEDGER_RPC_URL` and `LEDGER_ADDRESS` — the confirmed Starknet registration source
 - `DEPLOYER_ACCOUNT_ADDRESS` and the secret `DEPLOYER_PRIVATE_KEY` — the registrar writer
 - `LAUNCHER_ALLOWLIST` — comma-separated Starknet addresses; a wildcard is refused
 - the secret `OPERATOR_TOKEN` — the environment's one token for operator automation
@@ -19,7 +20,8 @@ Launchers are allowlisted wallets and the operator: automation that presents the
 secret as a bearer token, the same token the identity Worker's directory routes accept. A launcher can also create a
 slot off the timetable (`POST /api/slots {name, closesAt}`) and register gameplay accounts into it directly
 (`POST /api/slots/:name/register {accounts}`, at most 96 per call) for harness runs and invited rosters, under the same
-duplicate and close-time rules as a player. A slot freezes at the first cron tick after it closes.
+duplicate and close-time rules as a player. A slot freezes at the first cron tick after it closes. These local lists
+queue games; every Blitz execution replaces the queued account list with its frozen L2 registration roster.
 
 Runs, slots and the season calendar live in D1 (`migrations/`). The calendar holds each phase's planned start and end,
 the Frontier season and the Blitz window; launchers edit it on the launcher screen (`PUT /api/factory/calendar/:phase`)
@@ -54,3 +56,16 @@ and runs. Restore the previous `SHARD_URL` and drain that work before retrying t
 
 `/api/factory/version` names the running code and reads nothing else; `deploy-workers.yml` verifies a deploy against it.
 The deploy reports `/api/factory/health` as a separate shard-health signal that never fails the deploy.
+
+Every Blitz launch reads its closed ledger registration at one confirmed block, resolves every registered wallet to its
+verified Realms account through the `ValueIdentity` service binding, and stores the complete wallet/account mapping and
+ledger game id in `blitz_ledger_rosters`. Retry and restart use that same snapshot. An open registration requeues the
+launch for its closing time without spending an attempt; a missing linked account or an invalid roster fails explicitly.
+This replaces launcher-supplied roster authority. The extra table keeps the mapping after links change and local slots
+are pruned.
+
+The published `get_game` and `get_registered_owner` adapter is implemented. The registrar's GameKey resolver remains
+closed until the shard provides a persisted reservation before L2 registration opens: native `create_game` currently
+assigns its id only when created. Guessing the next id would let another launch change which game holds paid entries.
+The shard's forthcoming roster schema must also carry the frozen wallet mapping; the current create payload carries only
+accounts. No paid Blitz launch proceeds while that reservation interface is unavailable.

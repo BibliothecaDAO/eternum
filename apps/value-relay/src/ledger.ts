@@ -16,7 +16,7 @@ interface LedgerCredentials {
   accountAddress: string;
   privateKey: string;
 }
-interface LedgerGameKey {
+export interface LedgerGameKey {
   chainId: string;
   gameId: number;
 }
@@ -30,7 +30,7 @@ interface LedgerGame {
 }
 
 /** Published Game field order, read at one confirmed head for all roster entries. */
-async function readLedgerGame(
+export async function readLedgerGame(
   provider: RpcProvider,
   address: string,
   key: LedgerGameKey,
@@ -49,6 +49,30 @@ async function readLedgerGame(
     cancelled: bool(fields[11]!),
     finalized: bool(fields[12]!),
   };
+}
+
+/** The registered wallets at the pinned L2 head, in the ledger's roster order. */
+export async function readRegisteredWallets(
+  provider: RpcProvider,
+  address: string,
+  key: LedgerGameKey,
+  head: number,
+  count: number,
+): Promise<string[]> {
+  const wallets: string[] = [];
+  for (let index = 0; index < count; index++) {
+    const fields = await provider.callContract(
+      {
+        contractAddress: address,
+        entrypoint: "get_registered_owner",
+        calldata: [key.chainId, String(key.gameId), String(index)],
+      },
+      head,
+    );
+    if (fields.length !== 1 || BigInt(fields[0]!) === 0n) throw new Error("invalid_registered_owner");
+    wallets.push(fields[0]!);
+  }
+  return wallets;
 }
 
 /** Replay-safe result delivery: an already finalized matching result is complete, a different one is refused. */

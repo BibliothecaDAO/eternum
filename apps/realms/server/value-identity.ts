@@ -1,4 +1,6 @@
 import { WorkerEntrypoint } from "cloudflare:workers";
+import { normalizeStarknetAddress } from "@realms-world/identity";
+import { realmsAccountAddress } from "@realms-world/identity/account";
 import { Effect } from "effect";
 import type { IdentityEnv } from "./env";
 import { lookupPayoutWallet, readLinkedWallet } from "./payout-wallet";
@@ -13,5 +15,12 @@ export class ValueIdentity extends WorkerEntrypoint<IdentityEnv> {
   }
   async linkedWallet(realmsId: string) {
     return (await readLinkedWallet(this.env.DB, realmsId))?.address ?? null;
+  }
+  async accountForWallet(wallet: string): Promise<string | null> {
+    const user = await this.env.DB.prepare('SELECT "realmsId" FROM "user" WHERE "address" = ? AND "emailVerified" = 1')
+      .bind(normalizeStarknetAddress(wallet))
+      .first<{ realmsId: string }>();
+    if (!user) return null;
+    return realmsAccountAddress(user.realmsId, this.env.ACCOUNT_CLASS_HASH, await this.env.GUARDIAN.publicKey());
   }
 }

@@ -5,6 +5,8 @@ const vars = (launchers: string) => ({
   ENVIRONMENT: "staging",
   BASE_URL: "https://play.dev-realms.party",
   LAUNCHER_ALLOWLIST: launchers,
+  LEDGER_RPC_URL: "https://ledger.test",
+  LEDGER_ADDRESS: "0x10",
   SHARD_URL: "https://herald.dev-realms.party",
   DEPLOYER_ACCOUNT_ADDRESS: "0x1",
   DEPLOYER_PRIVATE_KEY: "0x2",

@@ -56,6 +56,8 @@ beforeAll(async () => {
       BASE_URL: ORIGIN,
       LAUNCHER_ALLOWLIST: LAUNCHER,
       SHARD_URL,
+      LEDGER_RPC_URL: "https://ledger.test",
+      LEDGER_ADDRESS: "0x10",
       DEPLOYER_ACCOUNT_ADDRESS: "0x456",
       DEPLOYER_PRIVATE_KEY: "0x1",
       OPERATOR_TOKEN: "operator-test-token",

@@ -1,3 +1,4 @@
+import { RegistrationOpen } from "./blitz-roster";
 import { Effect, Layer } from "effect";
 import { RpcError } from "starknet";
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
@@ -79,6 +80,23 @@ describe("the registrar's launch step", () => {
     await Effect.runPromise(processNextLaunch(Date.now()).pipe(Effect.provide(services)));
 
     expect(await store.find("result", "madara.blitz", "bltz-early")).toMatchObject({ status: "queued", attempts: 0 });
+    expect(await store.startNext(Date.now())).toBeNull();
+    expect(await store.nextDue()).toBeGreaterThanOrEqual(Date.now() + 80_000);
+  });
+
+  test("defers a Blitz launch while ledger registration is open without spending an attempt", async () => {
+    await store.enqueue("game", request);
+    const services = Layer.mergeAll(
+      databaseLayer(store),
+      Layer.succeed(LaunchExecutor, {
+        execute: (run) =>
+          Effect.fail(
+            new LaunchExecutionFailure({ runId: run.id, cause: new RegistrationOpen({ secondsUntilClose: 90 }) }),
+          ),
+      }),
+    );
+    await Effect.runPromise(processNextLaunch(Date.now()).pipe(Effect.provide(services)));
+    expect(await store.find("game", "madara.blitz", request.gameName)).toMatchObject({ status: "queued", attempts: 0 });
     expect(await store.startNext(Date.now())).toBeNull();
     expect(await store.nextDue()).toBeGreaterThanOrEqual(Date.now() + 80_000);
   });
