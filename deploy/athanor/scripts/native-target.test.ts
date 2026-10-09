@@ -33,12 +33,9 @@ describe("native deployment target is explicit", () => {
   }
 
   test("gameplay deployment names the missing operator approval before contacting the chain", async () => {
-    const error = await runWithoutTarget("deploy/athanor/scripts/deploy-gameplay-contracts.ts", {
-      ...target,
-      OPERATOR_ENROLMENT_PATH: "/nonexistent/operator-enrolment.json",
-    });
-    expect(error).toContain("OPERATOR_TOKEN");
-    expect(error).toContain("enrol-operator.ts");
+    const error = await runWithoutTarget("deploy/athanor/scripts/deploy-gameplay-contracts.ts", target);
+    expect(error).toContain("protected operator credential");
+    expect(error).toContain("operator-command.py");
   });
 
   test("the package mounts the protected operator file instead of rendering its value", async () => {

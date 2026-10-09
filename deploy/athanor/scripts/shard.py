@@ -278,7 +278,6 @@ def deployment_environment(config, directory):
         "SHARD_HOST_ACCOUNTS": str(directory / "host-accounts.json"),
         "NATIVE_WORLD_MANIFEST": str(directory / "native-world.json"),
         "GAMEPLAY_CONTRACTS_PATH": str(directory / "gameplay-contracts.json"),
-        "OPERATOR_ENROLMENT_PATH": str(directory / "operator-enrolment.json"),
     }
 
 
