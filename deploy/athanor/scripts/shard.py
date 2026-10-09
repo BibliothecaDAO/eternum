@@ -393,7 +393,15 @@ def start_shard(config, directory):
     write_json(directory / "configuration.json", config)
     write_json(directory / "compose.json", compose)
     command = [*DOCKER, "compose", "-f", str(directory / "compose.json")]
-    start_runner_stack(config, directory, command)
+    try:
+        start_runner_stack(config, directory, command)
+        return record_runner_readiness(config, compose, directory, command)
+    except BaseException:
+        stop_shard(directory)
+        raise
+
+
+def record_runner_readiness(config, compose, directory, command):
     manifest = json.loads((directory / "native-world.json").read_text())
     run([*command, "run", "--rm", "--no-deps", "--entrypoint", "python3", "harness",
          "/app/deploy/shard/init.py", "probe"], directory, "network-probes")
@@ -408,10 +416,13 @@ def start_runner_stack(config, directory, command):
     run([*command, "run", "--rm", "--no-deps", "prepare"], directory, "shard-prepare")
     run([*command, "up", "-d", "herald", "metrics"], directory, "shard-bootstrap")
     wait_for_identity(config)
+    # Persist the intended identity before the request: its response can be lost after registration succeeds.
+    write_json(directory / "directory-registration.json", {
+        "url": config["public_herald_url"], "chainId": "0x" + config["chain_id"].encode("ascii").hex(),
+    })
     listing = directory_status(config, "pending")
     if listing["status"] != "pending":
         raise RuntimeError("Fresh runner shard must register PENDING")
-    write_json(directory / "directory-registration.json", {"url": config["public_herald_url"], "chainId": listing["chainId"]})
     run([*command, "up", "-d"], directory, "shard-start")
     run([*command, "wait", "init"], directory, "shard-init-wait")
     code = subprocess.check_output([*command, "ps", "--all", "--format", "{{.ExitCode}}", "init"], text=True).strip()
