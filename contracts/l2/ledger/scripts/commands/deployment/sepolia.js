@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
@@ -6,13 +6,12 @@ import { fileURLToPath } from "node:url";
 import { CallData, byteArray, hash, shortString, uint256 } from "starknet";
 import { getContractArtifactPaths, readContractArtifacts } from "../../../../../scripts-runtime/js/artifacts.js";
 import { getAccount } from "../../../../../scripts-runtime/js/starknet.js";
+import { buildLedgerEconomicPreset } from "../../../../../../config/deployer/clean/ledger/economics.ts";
 import { buildMysteryChestPreset } from "../../chest-preset.js";
 
 const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 const l2Root = path.dirname(packageRoot);
 const manifestPath = path.join(packageRoot, "target", "sepolia-deployment.json");
-
-const LORDS = 10n ** 18n;
 
 function required(name) {
   const value = process.env[name]?.trim();
@@ -27,6 +26,7 @@ function loadSettings() {
     operator: required("SEPOLIA_OPERATOR_ADDRESS"),
     pauser: required("SEPOLIA_PAUSER_ADDRESS"),
     shard: required("SEPOLIA_SHARD_CHAIN_ID"),
+    seed: required("SEPOLIA_GAME_SEED"),
     start: BigInt(required("SEPOLIA_SEASON_START")),
     end: BigInt(required("SEPOLIA_SEASON_END")),
     pool: BigInt(required("SEPOLIA_FRONTIER_POOL_WEI")),
@@ -112,15 +112,11 @@ async function deployAssets(account, settings) {
 }
 
 function buildPreset() {
+  // This rehearsal funds Frontier alongside Blitz rewards using the shard's configured day unit.
   return {
-    entry_fee: uint256.bnToUint256(500n * LORDS),
-    protocol_cut_bps: 2_000,
-    chest_lords_bps: 500,
-    paid_fraction_bps: 2000,
-    decay_bps: 9600,
-    sword_price: uint256.bnToUint256(500n * LORDS),
-    shield_price: uint256.bnToUint256(500n * LORDS),
-    mmr: { enabled: true, mean: 1500, spread: 450, max_delta: 45, k: 50, regression_bps: 150, min_players: 6 },
+    ...buildLedgerEconomicPreset("blitz"),
+    day_unit_seconds: buildLedgerEconomicPreset("frontier").day_unit_seconds,
+    season_bags: buildLedgerEconomicPreset("frontier").season_bags,
   };
 }
 
@@ -151,13 +147,7 @@ function buildSetupCalls(assets, settings, preset) {
     call(assets.lords, "approve", [assets.ledger, uint256.bnToUint256(settings.pool)]),
     call(assets.ledger, "register_preset", [1, preset, chestPreset.bands, chestPreset.items]),
     call(assets.ledger, "open_season", [1, 1, settings.start, settings.end]),
-    call(assets.ledger, "fund_frontier", [
-      settings.shard,
-      1,
-      settings.start,
-      settings.end,
-      uint256.bnToUint256(settings.pool),
-    ]),
+    call(assets.ledger, "fund_frontier", [settings.shard, 1, settings.seed, uint256.bnToUint256(settings.pool)]),
   ];
 }
 

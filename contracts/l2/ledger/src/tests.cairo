@@ -243,6 +243,8 @@ fn player(index: u16) -> ContractAddress {
 
 fn default_preset() -> Preset {
     Preset {
+        day_unit_seconds: 1,
+        season_bags: 5,
         entry_fee: 500,
         protocol_cut_bps: 0,
         chest_lords_bps: 0,
@@ -897,25 +899,102 @@ fn funded_frontier() -> Fixture {
     let fixture = deploy_ledger();
     fund_and_approve_player(@fixture, ADMIN(), 1000);
     start_cheat_caller_address(fixture.ledger_address, ADMIN());
-    fixture.ledger.fund_frontier('shard', 1, START, END, 1000);
+    fixture.ledger.register_preset(PRESET_ID, default_preset(), test_bands(), test_items());
+    fixture.ledger.fund_frontier('shard', 1, PRESET_ID, START, 0x5eed, 1000);
     start_cheat_caller_address(fixture.ledger_address, OPERATOR());
     fixture
+}
+
+#[test]
+fn frontier_unlock_uses_the_shards_seeded_boundaries_including_the_first_second() {
+    let fixture = funded_frontier();
+    start_cheat_block_timestamp(fixture.ledger_address, START - 1);
+    assert!(fixture.ledger.frontier_unlocked('shard', 1) == 0);
+    // The shard/client golden vector: variable days, including crossings between bags.
+    let units = array![4_u64, 6, 3, 2, 5, 4, 3, 5, 2, 6, 3, 6, 4, 2, 5];
+    let mut elapsed = 0;
+    for length in units {
+        let end = elapsed + length;
+        let expected: u256 = 1000_u256 * end.into() / (END - START).into();
+        start_cheat_block_timestamp(fixture.ledger_address, START + elapsed);
+        assert!(fixture.ledger.frontier_unlocked('shard', 1) == expected);
+        start_cheat_block_timestamp(fixture.ledger_address, START + end - 1);
+        assert!(fixture.ledger.frontier_unlocked('shard', 1) == expected);
+        elapsed = end;
+    }
+    start_cheat_block_timestamp(fixture.ledger_address, END - 1);
+    assert!(fixture.ledger.frontier_unlocked('shard', 1) == 1000);
+    start_cheat_block_timestamp(fixture.ledger_address, END);
+    assert!(fixture.ledger.frontier_unlocked('shard', 1) == 1000);
+}
+
+#[test]
+fn frontier_reads_the_seasons_start_and_its_exact_preset_day_unit() {
+    let fixture = funded_frontier();
+    let preset = Preset { day_unit_seconds: 2, season_bags: 1, ..default_preset() };
+    start_cheat_caller_address(fixture.ledger_address, ADMIN());
+    fixture.ledger.register_preset(2, preset, test_bands(), test_items());
+    fund_and_approve_player(@fixture, ADMIN(), 1000);
+    fixture.ledger.fund_frontier('shard', 2, 2, 300, 0x5eed, 1000);
+    start_cheat_block_timestamp(fixture.ledger_address, 299);
+    assert!(fixture.ledger.frontier_unlocked('shard', 2) == 0);
+    start_cheat_block_timestamp(fixture.ledger_address, 300);
+    assert!(fixture.ledger.frontier_unlocked('shard', 2) == 200);
+    start_cheat_block_timestamp(fixture.ledger_address, 307);
+    assert!(fixture.ledger.frontier_unlocked('shard', 2) == 200);
+    start_cheat_block_timestamp(fixture.ledger_address, 308);
+    assert!(fixture.ledger.frontier_unlocked('shard', 2) == 500);
+}
+
+#[test]
+fn frontier_unlocks_the_last_day_from_its_start_and_stops_at_the_preset_end() {
+    let fixture = deploy_ledger();
+    start_cheat_caller_address(fixture.ledger_address, ADMIN());
+    fixture
+        .ledger
+        .register_preset(PRESET_ID, Preset { season_bags: 1, ..default_preset() }, test_bands(), test_items());
+    fund_and_approve_player(@fixture, ADMIN(), 1000);
+    fixture.ledger.fund_frontier('shard', 1, PRESET_ID, START, 0x5eed, 1000);
+    start_cheat_block_timestamp(fixture.ledger_address, START + 14);
+    assert!(fixture.ledger.frontier_unlocked('shard', 1) == 750);
+    start_cheat_block_timestamp(fixture.ledger_address, START + 15);
+    assert!(fixture.ledger.frontier_unlocked('shard', 1) == 1000);
+    start_cheat_block_timestamp(fixture.ledger_address, START + 20);
+    assert!(fixture.ledger.frontier_unlocked('shard', 1) == 1000);
+}
+
+#[test]
+#[should_panic(expected: "Ledger: Frontier days disabled")]
+fn frontier_funding_requires_an_enabled_preset_calendar() {
+    let fixture = deploy_fixture(Preset { day_unit_seconds: 0, season_bags: 0, ..default_preset() });
+    start_cheat_caller_address(fixture.ledger_address, ADMIN());
+    fixture.ledger.fund_frontier('shard', 1, PRESET_ID, START, 0x5eed, 1000);
+}
+
+#[test]
+#[should_panic(expected: "Ledger: incomplete calendar")]
+fn calendar_preset_requires_both_unit_and_bag_count_or_neither() {
+    deploy_fixture(Preset { season_bags: 0, ..default_preset() });
+}
+
+#[test]
+#[should_panic(expected: "Ledger: season duration exceeds u64")]
+fn calendar_duration_is_checked_before_funding() {
+    deploy_fixture(Preset { day_unit_seconds: 0xffffffff, season_bags: 0xffffffff, ..default_preset() });
 }
 
 #[test]
 fn frontier_unlock_rolls_over_and_retries_pay_once() {
     let fixture = funded_frontier();
     start_cheat_block_timestamp(fixture.ledger_address, START);
-    assert!(fixture.ledger.frontier_unlocked('shard', 1) == 0);
-    start_cheat_block_timestamp(fixture.ledger_address, 150);
-    assert!(fixture.ledger.frontier_unlocked('shard', 1) == 500);
-    fixture.ledger.pay('shard', 1, 'withdrawal', player(0), 500);
+    assert!(fixture.ledger.frontier_unlocked('shard', 1) == 40);
+    fixture.ledger.pay('shard', 1, 'withdrawal', player(0), 40);
     fixture.ledger.pay('shard', 1, 'withdrawal', player(1), 999);
-    assert!(fixture.lords.balance_of(player(0)) == 500);
+    assert!(fixture.lords.balance_of(player(0)) == 40);
     assert!(fixture.lords.balance_of(player(1)) == 0);
-    assert!(fixture.ledger.get_payment('shard', 'withdrawal').amount == 500);
+    assert!(fixture.ledger.get_payment('shard', 'withdrawal').amount == 40);
     start_cheat_block_timestamp(fixture.ledger_address, END + 1);
-    fixture.ledger.pay('shard', 1, 'next', player(0), 500);
+    fixture.ledger.pay('shard', 1, 'next', player(0), 960);
     assert!(fixture.ledger.get_frontier('shard', 1).paid == 1000);
 }
 
@@ -923,9 +1002,9 @@ fn frontier_unlock_rolls_over_and_retries_pay_once() {
 #[should_panic(expected: "Ledger: unlock exceeded")]
 fn frontier_refuses_borrowing_future_unlock() {
     let fixture = funded_frontier();
-    start_cheat_block_timestamp(fixture.ledger_address, 150);
-    fixture.ledger.pay('shard', 1, 'first', player(0), 300);
-    fixture.ledger.pay('shard', 1, 'second', player(0), 201);
+    start_cheat_block_timestamp(fixture.ledger_address, START);
+    fixture.ledger.pay('shard', 1, 'first', player(0), 30);
+    fixture.ledger.pay('shard', 1, 'second', player(0), 11);
 }
 
 #[test]
@@ -940,7 +1019,7 @@ fn frontier_refuses_before_start() {
 fn frontier_is_funded_once() {
     let fixture = funded_frontier();
     start_cheat_caller_address(fixture.ledger_address, ADMIN());
-    fixture.ledger.fund_frontier('shard', 1, START, END, 1000);
+    fixture.ledger.fund_frontier('shard', 1, PRESET_ID, START, 0x5eed, 1000);
 }
 
 fn grant_pauser(fixture: @Fixture) {
@@ -1007,7 +1086,7 @@ fn frontier_claim_namespace_binds_shard_and_survives_season_close() {
     let fixture = funded_frontier();
     fund_and_approve_player(@fixture, ADMIN(), 1000);
     start_cheat_caller_address(fixture.ledger_address, ADMIN());
-    fixture.ledger.fund_frontier('other', 1, START, END, 1000);
+    fixture.ledger.fund_frontier('other', 1, PRESET_ID, START, 0x5eed, 1000);
     start_cheat_block_timestamp(fixture.ledger_address, END);
     start_cheat_caller_address(fixture.ledger_address, OPERATOR());
     fixture.ledger.pay('shard', 1, 'tx', player(0), 1000);
@@ -1633,7 +1712,7 @@ fn frontier_season_chests_and_unfinished_game_custody_are_conserved_together() {
     let fixture = deploy_reward_fixture(5, 2000, 200);
     fund_and_approve_player(@fixture, ADMIN(), 1000);
     start_cheat_caller_address(fixture.ledger_address, ADMIN());
-    fixture.ledger.fund_frontier('shard', 1, START, END, 1000);
+    fixture.ledger.fund_frontier('shard', 1, PRESET_ID, START, 0x5eed, 1000);
     let unfinished = GameKey { shard: 'other', game_id: 8 };
     start_cheat_caller_address(fixture.ledger_address, OPERATOR());
     fixture.ledger.open_game(unfinished, 1, PRESET_ID, START, END);
