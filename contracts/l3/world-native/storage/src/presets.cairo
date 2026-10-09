@@ -72,7 +72,7 @@ pub struct PresetStorage<
     pub hyper_shards: u128,
     pub hyper_costs: Map<u32, TConstructionResource>,
     pub relic_rules: Map<u8, TRelicRule>,
-    pub chest_rules: Option<TChestRules>,
+    pub rollover_chest_rules: Option<TChestRules>,
     pub discovery_rules: Option<TFrontierDiscoveryRules>,
     pub progression_rules: Option<TArmyProgressionRules>,
     pub artificer_cost: u128,

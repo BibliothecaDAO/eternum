@@ -2340,6 +2340,9 @@ fn strong_frontier_army(d: super::Deployment, game_id: u32, key: ExplorerKey) ->
 
 fn place_ruin(d: super::Deployment, game_id: u32, coord: crate::troops::Coord, chest: SiteChest) -> ResourceKey {
     let context = crate::commands::ExecutionContext { timestamp: 360, ..crate::tests::context(d.games, game_id) };
+    snforge_std::interact_with_state(d.games, || {
+        assert!(crate::logic::lords_budget::try_reserve(game_id, chest, context));
+    });
     start_cheat_caller_address(d.games, d.games);
     let site = IStructureOperationsDispatcher { contract_address: d.games }
         .create_discovery(
@@ -2390,7 +2393,7 @@ fn frontier_ruin_clear_pays_its_stored_chest_into_the_realm_and_leaves_no_chest(
     assert_eq!(resources.resource_balance(lords) - before, CHEST.amount * RESOURCE_PRECISION);
     let pool = relics.chest_rules(game_id).unwrap().pool;
     assert_eq!(relics.lords_budget(game_id).unwrap().pool_left, pool - CHEST.amount);
-    assert_eq!(relics.lords_budget(game_id).unwrap().paid_shares, 10);
+    assert_eq!(relics.lords_budget(game_id).unwrap().rolled_shares, 10);
     // Nothing stays on the tile: the ruin stands captured, with no chest occupancy.
     let tile = crate::geometry::tile_key(game_id, coord);
     let occupied = snforge_std::interact_with_state(d.games, || crate::logic::map::occupancy(tile).unwrap());
@@ -2445,7 +2448,10 @@ fn frontier_finds_at_most_one_ruin_a_day_and_holds_its_chest_against_the_budget(
         chest.amount,
         budget.price * crate::relics::tier_value(relics.chest_rules(game_id).unwrap().shares, chest.tier).into(),
     );
-    assert_eq!((budget.open, budget.spent), (chest.amount, chest.amount));
+    assert_eq!(budget.open, chest.amount);
+    assert_eq!(
+        budget.rolled_shares, crate::relics::tier_value(relics.chest_rules(game_id).unwrap().shares, chest.tier).into(),
+    );
     let counter = crate::expeditions::ExpeditionDiscoveryKey {
         game_id,
         structure_id: army.owner,
@@ -2516,6 +2522,13 @@ fn a_full_refill_costs_one_lords_a_point_returns_to_the_pool_and_is_allowed_besi
             ),
         );
     stop_cheat_caller_address(d.games);
+    // The synthetic grant has the same backing debit as a real chest payout.
+    snforge_std::interact_with_state(d.games, || {
+        use starknet::storage::StorageMapWriteAccess;
+        let mut budget = crate::logic::lords_budget::budget(game_id).unwrap();
+        budget.pool_left -= missing + 7;
+        crate::state::write().relics.rollover_budget.write(game_id, Some(budget));
+    });
     let relics = IRelicsDispatcher { contract_address: d.games };
     let pool_before = relics
         .lords_budget(game_id)

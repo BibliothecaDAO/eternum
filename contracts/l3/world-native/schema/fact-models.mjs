@@ -717,6 +717,7 @@ const presetDerivedModels = new Set([
   "HyperstructureRules",
   "RelicRules",
   "ChestRules",
+  "LaborRules",
   "ArmyProgressionRules",
   "FrontierDiscoveryRules",
   "ArtificerCost",

@@ -8,23 +8,23 @@ import { manifest, schema } from "./fixtures";
 import { derivePresetFacts } from "./preset-facts";
 import { decodePresetPreimage } from "./preset-preimages";
 import { encodeMembers } from "./serde";
+import type { NativeSchema } from "./schema";
 import type { DecodedWorldEvent } from "../types";
 import { seasonSeconds } from "../../../../packages/core/src/utils/days";
 
-const codec = new CallData([...Object.values(schema.types), ...schema.games.entrypoints] as Abi);
-
 /** Generated inputs for current contract validation, separate from immutable launch recordings. */
-export async function currentPresetFixture(presetId: 2 | 3 | 5) {
+export async function currentPresetFixture(presetId: 2 | 3 | 5, fixtureSchema: NativeSchema = schema) {
   const gameType = nativePresetForId(presetId).gameType;
   const config = applyBiomeClimateDefaults(await buildConfig({ chain: "madara", gameType }));
   const definition = buildNativePreset(config, presetId);
   const params = fixtureLaunchParams(presetId, definition);
+  const codec = new CallData([...Object.values(fixtureSchema.types), ...fixtureSchema.games.entrypoints] as Abi);
   const registration = codec.compile("register_preset", { preset_id: presetId, definition });
   return {
     definition,
     registration,
     creation: codec.compile("create_game", { params }),
-    rows: projectLaunch(registration, params),
+    rows: projectLaunch(fixtureSchema, registration, params),
   };
 }
 
@@ -49,8 +49,16 @@ function fixtureLaunchParams(presetId: number, definition: ReturnType<typeof bui
   };
 }
 
-function projectLaunch(registration: string[], params: ReturnType<typeof fixtureLaunchParams>) {
-  const decoder = new NativeDecoder(manifest);
+function projectLaunch(schema: NativeSchema, registration: string[], params: ReturnType<typeof fixtureLaunchParams>) {
+  const decoder = new NativeDecoder({
+    ...manifest,
+    native: {
+      ...manifest.native,
+      activeSchema: schema.identity,
+      schemas: { [schema.identity]: schema },
+      releaseSchemas: { "1": schema.identity },
+    },
+  });
   const launch = decoder.decodeRowSet("GameRelease", ["1"], ["1", "1"]);
   const overrides = {
     registration_start: params.registration_start,
@@ -67,15 +75,15 @@ function projectLaunch(registration: string[], params: ReturnType<typeof fixture
   );
 }
 
-export function serializePresetRows(rows: DecodedWorldEvent[]): string[] {
+export function serializePresetRows(rows: DecodedWorldEvent[], fixtureSchema: NativeSchema = schema): string[] {
   return [
     String(rows.length),
     ...rows.flatMap((row) => {
       if (row.kind !== "set") throw new Error("A preset projection must contain complete rows");
-      const model = schema.models.find(({ name }) => name === row.model.name);
+      const model = fixtureSchema.models.find(({ name }) => name === row.model.name);
       if (!model) throw new Error(`Missing preset model ${row.model.name}`);
-      const keys = encodeMembers(schema, model.keys, row.key);
-      const values = encodeMembers(schema, model.members, row.value);
+      const keys = encodeMembers(fixtureSchema, model.keys, row.key);
+      const values = encodeMembers(fixtureSchema, model.members, row.value);
       return [
         shortString.encodeShortString(model.name),
         String(keys.length),

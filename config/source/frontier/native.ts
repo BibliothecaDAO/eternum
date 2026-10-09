@@ -113,8 +113,6 @@ export const frontierPreset: NativePreset = {
     pool: 1000000,
     priceCeiling: 50,
     shares: { common: 1, uncommon: 2, rare: 4, epic: 10, legendary: 20 },
-    surgeFactor: 3,
-    surgeMinimumShares: 60,
     estimateDays: 5,
   },
   depths: [

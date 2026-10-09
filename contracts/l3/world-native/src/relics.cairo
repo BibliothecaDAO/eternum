@@ -70,16 +70,12 @@ pub fn roll_tier(odds: ChestTiers, seed: u256) -> u8 {
     4
 }
 
-// The season's LORDS: a pool paid out through the day price, which never exceeds `price_ceiling` per share. A day's
-// expected shares are a moving average over `estimate_days` days; a day's surge ceiling is `surge_factor` times its
-// expected shares, never below `surge_minimum_shares`.
+// A common chest's price is capped by the preset and priced from unlocked rollover over expected rolled shares.
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
 pub struct ChestRules {
     pub pool: u128,
     pub price_ceiling: u128,
     pub shares: ChestTiers,
-    pub surge_factor: u16,
-    pub surge_minimum_shares: u32,
     pub estimate_days: u16,
 }
 
@@ -90,18 +86,15 @@ pub struct SiteChest {
     pub amount: u128,
 }
 
-// The season pool as it stands. `open` is LORDS in today's chests not yet paid, `spent` all LORDS chests found today
-// hold, `paid_shares` the shares cleared today; `estimate` is shares per tick scaled by LORDS_ESTIMATE_SCALE.
+// Open chests reserve unlocked LORDS. Rolled shares include found and refused ruins; estimate is shares per tick.
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
 pub struct LordsBudget {
     pub pool_left: u128,
     pub open: u128,
-    pub spent: u128,
     pub day: u64,
     pub price: u128,
-    pub ceiling: u128,
     pub estimate: u128,
-    pub paid_shares: u128,
+    pub rolled_shares: u128,
 }
 
 pub const LORDS_ESTIMATE_SCALE: u128 = 1000000;
