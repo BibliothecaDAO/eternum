@@ -49,7 +49,7 @@ const fixture: DeploymentCheckPort = {
     const manifest = readShardManifest<NativeWorldManifest>(required("NATIVE_WORLD_MANIFEST"));
     const shard = await openShard(required("HERALD_URL"), bindings.schemaIdentity);
     const rpc = new HarnessProvider(shard.rpcUrl);
-    const admin = createHarnessAdminProvider(shard.rpcUrl);
+    const admin = createHarnessAdminProvider();
     const clients: RouteCase["client"][] = [];
     const dispose = () => {
       stopped.removeEventListener("abort", abortSetup);

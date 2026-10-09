@@ -39,6 +39,7 @@ MAX_PLAYER_CAPACITY = 2000
 DEFAULT_NODE_MEMORY_MIB = 24576
 SLICE = Path("/sys/fs/cgroup/athanor.slice")
 # The services that hold memory for the shard's lifetime; prepare and init exit once the shard is deployed.
+PRIVATE_NODE_RPC_URL = "http://madara:9944/rpc/v0_10_2"
 LONG_RUNNING = ("madara", "postgres", "herald", "rpc", "metrics")
 
 
@@ -278,7 +279,7 @@ def host_credentials(directory):
 def deployment_environment(config, directory):
     credentials = host_credentials(directory)
     return {
-        **os.environ, **credentials, "RPC_URL": "http://madara:9944/rpc/v0_10_2",
+        **os.environ, **credentials, "RPC_URL": PRIVATE_NODE_RPC_URL,
         "IDENTITY_URL": identity_url(config),
         "HERALD_URL": "http://herald:3003",
         "HERALD_PUBLIC_RPC_URL": config["public_rpc_url"],

@@ -317,7 +317,7 @@ async function resolveHarnessGame(
 
   const gameName = options.gameName ?? `lab-${Date.now().toString(36)}`;
   if (options.gameType === "frontier") {
-    const provider = createHarnessAdminProvider(shard.rpcUrl);
+    const provider = createHarnessAdminProvider();
     try {
       return await launchFrontierSeason(provider, gameName, options.minutes, options.presetId);
     } finally {

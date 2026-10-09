@@ -83,7 +83,7 @@ def publish_trusted_proxy():
 
 
 def environment(config):
-    return {**shard.deployment_environment(config, DATA), "RPC_URL": "http://madara:9944/rpc/v0_10_2",
+    return {**shard.deployment_environment(config, DATA), "RPC_URL": shard.PRIVATE_NODE_RPC_URL,
             "HERALD_URL": "http://herald:3003"}
 
 
@@ -95,6 +95,8 @@ def prepare(config):
     if record.exists():
         refuse_changed_identity(json.loads(record.read_text()), config)
     else:
+        if (DATA / "initialized.json").exists():
+            raise ValueError("Incomplete deployed identity: restore init-configuration.json from the same shard backup before retrying")
         shard.write_json(record, identity(config))
     initialize_identity(config)
     shard.run(["bun", "deploy/athanor/scripts/host-accounts.ts", "verify-vrf", str(DATA)], DATA, "verify-vrf")
@@ -193,7 +195,7 @@ def harness_invocation(args, environ, data=DATA, started=None):
     environment = {**environ, **shard.read_private_environment(data / "harness.env"), **shard.host_credentials(data)}
     operator = json.loads((data / "gameplay-contracts.json").read_text())["operatorAccountAddress"]
     environment["DEPLOYER_ACCOUNT_ADDRESS"] = operator
-    environment["HARNESS_ADMIN_RPC_URL"] = "http://madara:9944/rpc/v0_10_2"
+    environment["HARNESS_ADMIN_RPC_URL"] = shard.PRIVATE_NODE_RPC_URL
     environment["RPC_URL"] = "http://rpc:8080/rpc/v0_10_2"
     environment["HERALD_URL"] = "http://herald:3003"
     # The host runner may rewrite harness.env with host paths. Inside the image, DATA is the mounted copy.
@@ -208,7 +210,7 @@ def harness_invocation(args, environ, data=DATA, started=None):
 
 def probe():
     """Readiness and account probes use only the shard's private Compose network."""
-    rpc = "http://madara:9944/rpc/v0_10_2"
+    rpc = shard.PRIVATE_NODE_RPC_URL
     public = "http://rpc:8080/rpc/v0_10_2"
     rpc_rtt = shard.wait_for_endpoint(rpc, rpc=True)
     herald_rtt = shard.wait_for_endpoint("http://herald:3003/health")
@@ -246,7 +248,7 @@ if __name__ == "__main__":
         identity = json.loads((DATA / "gameplay-contracts.json").read_text())
         environment["DEPLOYER_ACCOUNT_ADDRESS"] = identity["operatorAccountAddress"]
         environment["RPC_URL"] = "http://rpc:8080/rpc/v0_10_2"
-        environment["HARNESS_ADMIN_RPC_URL"] = "http://madara:9944/rpc/v0_10_2"
+        environment["HARNESS_ADMIN_RPC_URL"] = shard.PRIVATE_NODE_RPC_URL
         environment["HERALD_URL"] = "http://herald:3003"
         os.execvpe("bun", ["bun", "deploy/athanor/harness/self-check.ts"], environment)
     if action == "harness":

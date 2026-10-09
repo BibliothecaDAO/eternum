@@ -30,7 +30,7 @@ const fixture: WaveFixturePort = {
     const bounds = readPlayBounds(manifest);
     const shard = await openShard(required("HERALD_URL"), bindings.schemaIdentity);
     const provider = new HarnessProvider(shard.rpcUrl);
-    const privateProvider = createHarnessAdminProvider(shard.rpcUrl);
+    const privateProvider = createHarnessAdminProvider();
     let clients: Awaited<ReturnType<typeof connectActorClients>> | undefined;
     const dispose = () => {
       clients?.forEach(({ client }) => client.dispose());
