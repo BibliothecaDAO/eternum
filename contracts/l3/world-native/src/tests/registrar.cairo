@@ -1307,10 +1307,11 @@ fn expedition_rollover_expires_armies_and_preserves_the_home_economy() {
     let old = ExplorerKey { game_id, explorer_id: old_id };
     let yesterday = troops.resolved_explorer(old).unwrap().coord;
     assert!(execute_in_game(d, game_id, Command::Explore(Explore { explorer_id: old_id, direction: 0 }), 360));
+    let after_explore = troops.resolved_explorer(old).unwrap().coord;
     let old_tile = map.tile(crate::geometry::tile_key(game_id, crate::geometry::neighbor(yesterday, 0)));
     let tomorrow = day_start(d, game_id, 1);
     assert!(!execute_in_game(d, game_id, Command::Explore(Explore { explorer_id: old_id, direction: 1 }), tomorrow));
-    assert_eq!(troops.resolved_explorer(old).unwrap().coord, crate::geometry::neighbor(yesterday, 0));
+    assert_eq!(troops.resolved_explorer(old).unwrap().coord, after_explore);
     assert!(execute_in_game(d, game_id, muster, tomorrow + 1));
     assert!(troops.resolved_explorer(old).is_none());
     let new_id = *structures.home_armies(home).at(0);
@@ -1455,6 +1456,7 @@ fn expedition_army_limits_follow_castle_level_without_guards_or_returning_troops
     super::resource_commands::set_fixture(
         d.games, selector!("realms"), selector!("traits"), array![1].span(), 0x4000001_u32,
     );
+    super::play_fixture::prepare_homes(d.games, game_id, d.actor);
     assert!(
         execute_in_game(
             d,
@@ -1723,6 +1725,7 @@ fn assert_capture_at(depth: u8, count: u128, tier: crate::troops::TroopTier, rev
     super::resource_commands::set_fixture(
         d.games, selector!("realms"), selector!("traits"), array![1].span(), 0x4000001_u32,
     );
+    super::play_fixture::prepare_homes(d.games, game_id, d.actor);
     assert!(
         execute_in_game(
             d,
@@ -2039,6 +2042,7 @@ fn depth_entry_requires_research_and_spends_only_the_selected_depth_stamina() {
     super::resource_commands::set_fixture(
         d.games, selector!("realms"), selector!("traits"), array![1].span(), 0x4000001_u32,
     );
+    super::play_fixture::prepare_homes(d.games, game_id, d.actor);
     assert!(
         execute_in_game(
             d,
