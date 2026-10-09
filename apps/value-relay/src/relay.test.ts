@@ -83,8 +83,8 @@ const fixture = () => {
     ledger: {
       pay: vi.fn(() => Effect.void),
       postResult: vi.fn(() => Effect.void),
-      paidClaims: () => Effect.succeed({ rows: [{ ...withdrawal, wallet: "0x123" }], next: null }),
-      postedResults: () => Effect.succeed({ rows: [result], next: null }),
+      paidClaims: () => Effect.succeed({ rows: [{ ...withdrawal, wallet: "0x123" }], next: null, head: 1000 }),
+      postedResults: () => Effect.succeed({ rows: [result], next: null, head: 1000 }),
     },
     realms: { ownerOf: () => Effect.succeed("0x123") },
   };
@@ -172,7 +172,8 @@ describe("independent payout monitor", () => {
     async (fault) => {
       const f = fixture();
       if (fault === "wrong_wallet")
-        f.ports.ledger.paidClaims = () => Effect.succeed({ rows: [{ ...withdrawal, wallet: "0xbad" }], next: null });
+        f.ports.ledger.paidClaims = () =>
+          Effect.succeed({ rows: [{ ...withdrawal, wallet: "0xbad" }], next: null, head: 1000 });
       if (fault === "missing_receipt") f.ports.shard.withdrawal = () => Effect.succeed(null);
       if (fault === "wrong_amount") f.ports.shard.withdrawal = () => Effect.succeed({ ...withdrawal, amount: "18" });
       if (fault === "wrong_season") f.ports.shard.withdrawal = () => Effect.succeed({ ...withdrawal, seasonId: 5 });
@@ -244,7 +245,7 @@ it("stops on a regressed confirmed head before paying pending withdrawals", asyn
   await expect(f.run()).rejects.toThrow();
   expect(f.ports.ledger.pay).not.toHaveBeenCalled();
 });
-it("checks later pages and revisits previously checked results on a later monitor pass", async () => {
+it("checks later pages on a later tick without scanning the ledger history again", async () => {
   const f = fixture();
   const pause = vi.fn(() => Effect.void);
   let progress: MonitorProgress = { halted: null };
@@ -255,7 +256,9 @@ it("checks later pages and revisits previously checked results on a later monito
     },
   };
   f.ports.ledger.postedResults = (cursor) =>
-    Effect.succeed(cursor === null ? { rows: [], next: "page2" } : { rows: [result], next: null });
+    Effect.succeed(
+      cursor === null ? { rows: [], next: "page2", head: 1000 } : { rows: [result], next: null, head: 1000 },
+    );
   const monitor = () => Effect.runPromise(runMonitor({ ...f.ports, ledger: { ...f.ports.ledger, pause } }, store));
   await monitor();
   expect(pause).not.toHaveBeenCalled();

@@ -21,8 +21,8 @@ const fixture = () => {
       result: () => Effect.succeed(null),
     },
     ledger: {
-      paidClaims: () => Effect.succeed({ rows: [{ ...receipt, wallet: "0x123" }], next: null }),
-      postedResults: () => Effect.succeed({ rows: [], next: null }),
+      paidClaims: () => Effect.succeed({ rows: [{ ...receipt, wallet: "0x123" }], next: null, head: 1000 }),
+      postedResults: () => Effect.succeed({ rows: [], next: null, head: 1000 }),
       pause: vi.fn(() => Effect.void),
     },
   };

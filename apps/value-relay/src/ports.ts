@@ -81,6 +81,9 @@ export interface LaborClaim {
   realmsId: string;
   account: string;
 }
+export interface LedgerPage<A> extends Page<A> {
+  head: number;
+}
 export interface Page<A> {
   rows: readonly A[];
   next: string | null;
@@ -103,8 +106,8 @@ export interface RelayPorts {
   ledger: {
     pay(withdrawal: Withdrawal, wallet: string): RelayEffect<void>;
     postResult(result: BlitzResult): RelayEffect<void>;
-    paidClaims(after: string | null): RelayEffect<Page<PaidClaim>>;
-    postedResults(after: string | null): RelayEffect<Page<BlitzCommitment>>;
+    paidClaims(after: string | null, fromBlock?: number): RelayEffect<LedgerPage<PaidClaim>>;
+    postedResults(after: string | null, fromBlock?: number): RelayEffect<LedgerPage<BlitzCommitment>>;
   };
   realms: { ownerOf(realmId: string): RelayEffect<string> };
 }

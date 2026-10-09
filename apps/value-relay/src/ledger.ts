@@ -120,13 +120,13 @@ export const ledgerMonitorReads = (
   address: string,
 ): Pick<RelayPorts["ledger"], "paidClaims" | "postedResults"> => {
   return {
-    paidClaims: (cursor) =>
+    paidClaims: (cursor, fromBlock = 0) =>
       relayOperation("read ledger paid claims", () =>
-        ledgerEventPage(rpcAt(rpcUrl), address, ["WithdrawalPaid"], cursor, 0, decodePayment),
+        ledgerEventPage(rpcAt(rpcUrl), address, ["WithdrawalPaid"], cursor, fromBlock, decodePayment),
       ),
-    postedResults: (cursor) =>
+    postedResults: (cursor, fromBlock = 0) =>
       relayOperation("read ledger posted results", () =>
-        ledgerEventPage(rpcAt(rpcUrl), address, ["ResultsApplied"], cursor, 0, decodeResult),
+        ledgerEventPage(rpcAt(rpcUrl), address, ["ResultsApplied"], cursor, fromBlock, decodeResult),
       ),
   };
 };

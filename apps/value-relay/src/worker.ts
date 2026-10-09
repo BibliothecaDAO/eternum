@@ -147,13 +147,13 @@ const ledgerPortsOf = (env: RelayEnv): RelayPorts["ledger"] => ({
     ),
   postResult: (result) =>
     relayOperation("post Blitz result", () => Effect.runPromise(ledgerResultAdapter(ledgerCredentialsOf(env))(result))),
-  paidClaims: (cursor) =>
+  paidClaims: (cursor, fromBlock) =>
     relayOperation("read ledger paid claims", () =>
-      Effect.runPromise(ledgerMonitorReads(env.LEDGER_RPC_URL, env.LEDGER_ADDRESS).paidClaims(cursor)),
+      Effect.runPromise(ledgerMonitorReads(env.LEDGER_RPC_URL, env.LEDGER_ADDRESS).paidClaims(cursor, fromBlock)),
     ),
-  postedResults: (cursor) =>
+  postedResults: (cursor, fromBlock) =>
     relayOperation("read ledger posted results", () =>
-      Effect.runPromise(ledgerMonitorReads(env.LEDGER_RPC_URL, env.LEDGER_ADDRESS).postedResults(cursor)),
+      Effect.runPromise(ledgerMonitorReads(env.LEDGER_RPC_URL, env.LEDGER_ADDRESS).postedResults(cursor, fromBlock)),
     ),
 });
 const ledgerCredentialsOf = (env: RelayEnv) => ({

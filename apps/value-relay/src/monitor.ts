@@ -1,10 +1,19 @@
 import { Effect, Result } from "effect";
-import type { MonitorPorts, Page, PaidClaim, BlitzCommitment, Withdrawal, BlitzResult, RelayEffect } from "./ports";
+import type {
+  MonitorPorts,
+  LedgerPage,
+  PaidClaim,
+  BlitzCommitment,
+  Withdrawal,
+  BlitzResult,
+  RelayEffect,
+} from "./ports";
 import { RelayFailure, relayOperation } from "./ports";
 
 export interface MonitorProgress {
   halted: string | null;
   unverifiedTicks?: number;
+  cursors?: Partial<Record<"paidClaims" | "postedResults", { fromBlock: number; page: string | null }>>;
 }
 interface MonitorStore {
   load(): Promise<MonitorProgress>;
@@ -19,7 +28,7 @@ export const runMonitor = (ports: MonitorPorts, store: MonitorStore) =>
       yield* ports.ledger.pause();
       return progress;
     }
-    const checks = [checkConservation(ports), checkPaidClaims(ports), checkPostedResults(ports)];
+    const checks = [checkConservation(ports), checkPaidClaims(ports, store), checkPostedResults(ports, store)];
     let unavailable: RelayFailure | null = null;
     for (const check of checks) {
       const observation = yield* Effect.result(check);
@@ -28,17 +37,19 @@ export const runMonitor = (ports: MonitorPorts, store: MonitorStore) =>
     }
     if (unavailable) {
       const unverifiedTicks = (progress.unverifiedTicks ?? 0) + 1;
-      yield* relayOperation("record unverified monitor tick", () => store.save({ ...progress, unverifiedTicks }));
+      yield* relayOperation("record unverified monitor tick", async () =>
+        store.save({ ...(await store.load()), unverifiedTicks }),
+      );
       if (unverifiedTicks >= 3)
         return yield* pausePayouts(ports, store, `unverified_value:${unverifiedTicks}:${unavailable.operation}`);
       return yield* Effect.fail(unavailable);
     }
     if (progress.unverifiedTicks) {
-      const verified = { ...progress, unverifiedTicks: 0 };
+      const verified = { ...(yield* relayOperation("read checked cursors", () => store.load())), unverifiedTicks: 0 };
       yield* relayOperation("clear unverified monitor ticks", () => store.save(verified));
       return verified;
     }
-    return progress;
+    return yield* relayOperation("read checked monitor progress", () => store.load());
   });
 
 const checkConservation = (ports: MonitorPorts) =>
@@ -49,45 +60,66 @@ const checkConservation = (ports: MonitorPorts) =>
     }),
   );
 
-const checkPaidClaims = (ports: MonitorPorts) =>
-  findMismatch(ports.ledger.paidClaims, (paid) =>
-    Effect.gen(function* () {
-      const receipt = yield* ports.shard.withdrawal(paid.chainId, paid.transactionHash);
-      if (!matchesPaidClaim(receipt, paid)) return `paid_claim_mismatch:${paid.transactionHash}`;
-      const wallet = yield* ports.identity.payoutWallet(receipt!.realmsId);
-      if (wallet.status !== "ready" || BigInt(wallet.address) !== BigInt(paid.wallet))
-        return `paid_wallet_mismatch:${paid.transactionHash}`;
-      return null;
-    }),
+const checkPaidClaims = (ports: MonitorPorts, store: MonitorStore) =>
+  checkLedgerPage(
+    "paidClaims",
+    ports.ledger.paidClaims,
+    (paid) =>
+      Effect.gen(function* () {
+        const receipt = yield* ports.shard.withdrawal(paid.chainId, paid.transactionHash);
+        if (!matchesPaidClaim(receipt, paid)) return `paid_claim_mismatch:${paid.transactionHash}`;
+        const wallet = yield* ports.identity.payoutWallet(receipt!.realmsId);
+        if (wallet.status !== "ready" || BigInt(wallet.address) !== BigInt(paid.wallet))
+          return `paid_wallet_mismatch:${paid.transactionHash}`;
+        return null;
+      }),
+    store,
   );
 
-const checkPostedResults = (ports: MonitorPorts) =>
-  findMismatch(ports.ledger.postedResults, (posted) =>
-    ports.shard
-      .result(posted.chainId, posted.gameId)
-      .pipe(
-        Effect.map((result) => (matchesPostedResult(result, posted) ? null : `blitz_result_mismatch:${posted.gameId}`)),
-      ),
+const checkPostedResults = (ports: MonitorPorts, store: MonitorStore) =>
+  checkLedgerPage(
+    "postedResults",
+    ports.ledger.postedResults,
+    (posted) =>
+      ports.shard
+        .result(posted.chainId, posted.gameId)
+        .pipe(
+          Effect.map((result) =>
+            matchesPostedResult(result, posted) ? null : `blitz_result_mismatch:${posted.gameId}`,
+          ),
+        ),
+    store,
   );
 
-const findMismatch = <A>(
-  read: (cursor: string | null) => RelayEffect<Page<A>>,
+/** A tick checks at most one 100-event page per stream; only verified pages advance the durable cursor. */
+const checkLedgerPage = <A>(
+  stream: "paidClaims" | "postedResults",
+  read: (cursor: string | null, fromBlock?: number) => RelayEffect<LedgerPage<A>>,
   check: (row: A) => RelayEffect<string | null>,
+  store: MonitorStore,
 ) =>
   Effect.gen(function* () {
-    let cursor: string | null = null;
-    const seen = new Set<string>();
-    do {
-      const page: Page<A> = yield* read(cursor);
-      for (const row of page.rows) {
-        const reason = yield* check(row);
-        if (reason) return reason;
-      }
-      if (page.next !== null && seen.has(page.next))
-        return yield* Effect.fail(new RelayFailure({ operation: "ledger_page_cycle" }));
-      if (page.next !== null) seen.add(page.next);
-      cursor = page.next;
-    } while (cursor !== null);
+    const progress = yield* relayOperation("read ledger audit cursor", () => store.load());
+    const cursor = progress.cursors?.[stream] ?? { fromBlock: 0, page: null };
+    const page = yield* read(cursor.page, cursor.fromBlock);
+    if (
+      !Number.isSafeInteger(page.head) ||
+      page.head < cursor.fromBlock - 1 ||
+      page.rows.length > 100 ||
+      (page.rows.length > 0 && page.head < cursor.fromBlock) ||
+      (page.next !== null && page.next === cursor.page)
+    )
+      return yield* Effect.fail(new RelayFailure({ operation: "invalid_ledger_audit_page" }));
+    for (const row of page.rows) {
+      const fault = yield* check(row);
+      if (fault) return fault;
+    }
+    const next =
+      page.next === null ? { fromBlock: page.head + 1, page: null } : { fromBlock: cursor.fromBlock, page: page.next };
+    yield* relayOperation("persist checked ledger page", async () => {
+      const latest = await store.load();
+      await store.save({ ...latest, cursors: { ...latest.cursors, [stream]: next } });
+    });
     return null;
   });
 
