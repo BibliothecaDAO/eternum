@@ -86,6 +86,8 @@
     "lab:self-check": "bun --tsconfig-override deploy/athanor/harness/tsconfig.json deploy/athanor/harness/self-check.ts",
     "lab:harness:burst": "bun --tsconfig-override deploy/athanor/harness/tsconfig.json deploy/athanor/harness/burst.ts --players 2000",
     "lab:harness:quiet": "bun --tsconfig-override deploy/athanor/harness/tsconfig.json deploy/athanor/harness/burst.ts --players 24",
+    "lab:harness:96": "bun --tsconfig-override deploy/athanor/harness/tsconfig.json deploy/athanor/harness/run.ts --bots 96 --minutes 10 --interval-seconds 15",
+    "lab:harness:96:frontier": "bun --tsconfig-override deploy/athanor/harness/tsconfig.json deploy/athanor/harness/run.ts --game-type frontier --bots 96 --workers 6 --minutes 10",
     "lab:push-receiver": "bun deploy/athanor/harness/push-receiver.ts",
     "lab:slice:prepare-authority": "bun deploy/athanor/harness/native/prepare-authority.ts",
     "lab:probe-account": "bun deploy/athanor/scripts/probe-deploy-account.ts",
