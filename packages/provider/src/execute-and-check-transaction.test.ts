@@ -57,6 +57,30 @@ describe("provider submission boundary", () => {
     });
   });
 
+  it("fails an action the game refused with the game's own reason for the player", async () => {
+    const provider = makeProvider();
+    provider.setNativeSubmission(
+      async () => ({ transaction_hash: "0x9" }),
+      bindings.commandAbi as Abi,
+      () => 9,
+    );
+    provider.setTransactionStreamWaiter(async (hash) => ({
+      hash,
+      block: 4,
+      status: "REJECTED",
+      revertReason: "Not enough stamina to explore",
+    }));
+    const failed = vi.fn();
+    provider.on("transactionFailed", failed);
+    provider.claim_wonder_points({ signer: { address: "0x111" } as AccountInterface, value: 1 }).catch(() => undefined);
+    await vi.waitFor(() => expect(failed).toHaveBeenCalledOnce());
+    expect(failed.mock.calls[0][0]).toMatchObject({
+      stage: "revert",
+      transactionHash: "0x9",
+      revertReason: "Not enough stamina to explore",
+    });
+  });
+
   it("keeps a slow action pending with no timeout and signs the next only after Herald applies it", async () => {
     vi.useFakeTimers();
     const provider = makeProvider();

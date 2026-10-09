@@ -28,6 +28,7 @@ import type { PlayerNameResolver } from "../utils/entities";
 import { createGameViews, type GameViews } from "./views";
 import { type Shard } from "./shard";
 import { followGameRelease } from "./game-release";
+import { waitForActionOutcome } from "./transaction-outcome";
 
 export interface GameClientSetup {
   store: NativeFactStore;
@@ -147,7 +148,12 @@ const startSync = async (
     store: setupResult.store,
     socketFactory: input.socketFactory,
   });
-  session.onDispose = () => release.dispose();
+  // Pending action waits stop with the client, so none outlives it.
+  const outcomes = new AbortController();
+  session.onDispose = () => {
+    release.dispose();
+    outcomes.abort(new Error("Game client disposed"));
+  };
   await runtime.startSession(session);
   await release.ready();
   // Chain time must be known before the first spatial projection reads it.
@@ -165,14 +171,16 @@ const startSync = async (
     if (owned === undefined) throw new Error("Action requires an owned structure in the current game");
     return owned;
   });
-  routeTransactionWaitsThroughStream(setupResult, runtime);
+  routeActionOutcomes(setupResult, runtime, outcomes.signal);
   return { projection: installWorldSpatialProjection(runtime, setupResult), transport: session.transport };
 };
 
-/** Herald's stream carries transaction status, so submits wait on the stream instead of polling the RPC. */
-const routeTransactionWaitsThroughStream = (setupResult: GameClientSetup, runtime: GameSyncRuntime): void => {
-  setupResult.network.provider.setTransactionStreamWaiter(
-    (transactionHash) => runtime.waitForTransaction(transactionHash),
+/** An action's outcome: the receipt says whether it applied, and an applied one settles once Herald has applied it. */
+const routeActionOutcomes = (setupResult: GameClientSetup, runtime: GameSyncRuntime, stopped: AbortSignal): void => {
+  const { provider } = setupResult.network;
+  provider.setTransactionStreamWaiter(
+    (transactionHash) =>
+      waitForActionOutcome(runtime, provider.provider, provider.contracts.world, transactionHash, stopped),
     (transactionHash) => runtime.recordSubmittedTransaction(transactionHash),
   );
 };
