@@ -7,7 +7,11 @@ import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { ContractAddress } from "@bibliothecadao/types";
 import { useMemo } from "react";
-import { buildFinalizedBlitzStandingLookup, normalizeLeaderboardAddress } from "./finalized-blitz-leaderboard";
+import {
+  normalizeLeaderboardAddress,
+  readFinalBlitzStandings,
+  REGISTERED_POINTS_PRECISION,
+} from "./finalized-blitz-leaderboard";
 
 interface InGameLeaderboardStanding {
   address: ContractAddress;
@@ -40,21 +44,18 @@ const buildLiveLeaderboard = (store: NativeFactStore): InGameLeaderboard => {
 };
 
 const buildFinalizedBlitzLeaderboard = (store: NativeFactStore): InGameLeaderboard | null => {
-  const result = store.get("BlitzResult", { game_id: configManager.getActiveGameId() });
-  if (!result?.complete) return null;
-
-  const finalizedStandings = buildFinalizedBlitzStandingLookup(result.players);
-  if (finalizedStandings.size === 0) return null;
+  const finalizedStandings = readFinalBlitzStandings(store, configManager.getActiveGameId());
+  if (!finalizedStandings?.length) return null;
 
   return {
     isFinalized: true,
     standingsByAddress: new Map(
-      Array.from(finalizedStandings, ([normalizedAddress, standing]) => [
-        normalizedAddress,
+      finalizedStandings.map(({ account, rank, points }) => [
+        normalizeLeaderboardAddress(account),
         {
-          address: ContractAddress(BigInt(normalizedAddress)),
-          rank: standing.rank,
-          points: standing.points,
+          address: ContractAddress(account),
+          rank,
+          points: Number(points) / Number(REGISTERED_POINTS_PRECISION),
           includesLiveShareholderPoints: false,
         },
       ]),
@@ -66,6 +67,7 @@ const LEADERBOARD_FACTS = [
   "Hyperstructure",
   "HyperstructureShares",
   "BlitzResult",
+  "BlitzRoster",
   "PlayerPoints",
   "GameRegistry",
 ] as const;

@@ -4,18 +4,16 @@ import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { ContractAddress } from "@bibliothecadao/types";
 import { useMemo } from "react";
 import { getPlayerDisplayName, usePlayerNamesRevision } from "@/hooks/use-player-profile";
+import {
+  readFinalBlitzStandings,
+  REGISTERED_POINTS_PRECISION,
+} from "@/ui/features/social/player/finalized-blitz-leaderboard";
 
-type WinnerRow = {
-  player: bigint;
-  points: bigint;
-  rank: number;
-};
-
-const POINTS_PRECISION = 1_000_000n;
+const RESULT_FACTS = ["BlitzResult", "BlitzRoster", "PlayerPoints"] as const;
 
 const formatPoints = (value: bigint): string => {
-  const whole = value / POINTS_PRECISION;
-  const remainder = value % POINTS_PRECISION;
+  const whole = value / REGISTERED_POINTS_PRECISION;
+  const remainder = value % REGISTERED_POINTS_PRECISION;
   const wholeFormatted = whole.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
   if (remainder === 0n) return wholeFormatted;
   return `${wholeFormatted}.${remainder.toString().padStart(6, "0").replace(/0+$/, "")}`;
@@ -25,14 +23,12 @@ export const WinnersTable = () => {
   const {
     setup: { store },
   } = useGame();
-  const leaderboardRevision = useNativeRevision(["BlitzResult"]);
+  const leaderboardRevision = useNativeRevision(RESULT_FACTS);
   usePlayerNamesRevision();
 
-  const rows = useMemo<WinnerRow[]>(() => {
+  const rows = useMemo(() => {
     void leaderboardRevision;
-    const result = store.get("BlitzResult", { game_id: configManager.getActiveGameId() });
-    if (!result?.complete) return [];
-    return result.players.toSorted((left, right) => left.rank - right.rank || (left.player < right.player ? -1 : 1));
+    return readFinalBlitzStandings(store, configManager.getActiveGameId()) ?? [];
   }, [store, leaderboardRevision]);
 
   const playerName = (address: bigint): string => getPlayerDisplayName(address);
@@ -51,9 +47,9 @@ export const WinnersTable = () => {
         </thead>
         <tbody>
           {rows.map((row) => (
-            <tr key={`${row.player}-${row.rank}`} className="border-t border-gray-700/40">
+            <tr key={`${row.account}-${row.rank}`} className="border-t border-gray-700/40">
               <td className="py-2 pr-4">{row.rank}</td>
-              <td className="py-2 pr-4">{playerName(row.player)}</td>
+              <td className="py-2 pr-4">{playerName(row.account)}</td>
               <td className="py-2 pr-4">{formatPoints(row.points)}</td>
             </tr>
           ))}
