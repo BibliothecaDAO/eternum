@@ -23,13 +23,13 @@ test("the real Ruin tier caller gives the same draw for the same root at every c
   }
 });
 
-test("Explore pays every root-independent stamina/food cost before its first discovery draw",()=>{
-  const source=readFileSync(new URL("logic/movement.cairo",root),"utf8");
-  const start=source.indexOf("fn explore(");
-  const end=source.indexOf("\n        fn ",start+1);
-  const explore=source.slice(start,end<0?source.length:end);
+test("Explore pays every root-independent stamina/food cost before its first discovery draw", () => {
+  const source = readFileSync(new URL("logic/movement.cairo", root), "utf8");
+  const start = source.indexOf("fn explore(");
+  const end = source.indexOf("\n        fn ", start + 1);
+  const explore = source.slice(start, end < 0 ? source.length : end);
   expect(explore.indexOf("self.pay_movement(")).toBeGreaterThan(0);
   expect(explore.indexOf("discover_frontier_tile(")).toBeGreaterThan(0);
-  expect(explore.indexOf("self.pay_movement(")<explore.indexOf("discover_frontier_tile(")).toBe(true);
-  expect(explore.indexOf("self.pay_movement(")<explore.indexOf(".discovery(")).toBe(true);
+  expect(explore.indexOf("self.pay_movement(") < explore.indexOf("discover_frontier_tile(")).toBe(true);
+  expect(explore.indexOf("self.pay_movement(") < explore.indexOf(".discovery(")).toBe(true);
 });

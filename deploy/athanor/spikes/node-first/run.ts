@@ -199,30 +199,41 @@ async function main() {
         const empty = await settledHomes(provider, fixture);
         if (empty.homes !== 0 || empty.aggregateRealmCount !== 0) throw new Error("Settle fixture is not empty");
       }
-      // One real probe before the window warms the new class. Its nonce is consumed and reread before presigning the wave.
-      const warm = await presign(fixture, fixture.players[0]!, provider, run - 1, arm === "X" ? 0 : 1, writes, hashes);
-      const response = await fetch(fixture.simulationRpc ?? url, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: fixture.simulationRpc
-          ? JSON.stringify({
-              jsonrpc: "2.0",
-              id: 1,
-              method: "starknet_simulateTransactions",
-              // Simulation otherwise charges fees despite the trial node's --no-charge-fee mode.
-              params: ["pre_confirmed", [JSON.parse(warm.body).params[0]], ["SKIP_FEE_CHARGE"]],
-            })
-          : warm.body,
-      });
-      const warmResult = await response.json();
-      if (
-        warmResult.error ||
-        (fixture.simulationRpc &&
-          warmResult.result?.[0]?.transaction_trace?.execute_invocation?.revert_reason !== undefined)
-      )
-        throw new Error("warmup submit or simulation execution failed");
-      if (!fixture.simulationRpc) await provider.waitForTransaction(warm.hash);
-      await new Promise((ok) => setTimeout(ok, Number(a["warm-ms"] ?? 15000)));
+      // VRF real-action comparisons use a full cold wave first; never simulate or consume a measured Settle seat.
+      if (!fixture.vrfPublicKey) {
+        // One real probe before the window warms the new class. Its nonce is consumed and reread before presigning the wave.
+        const warm = await presign(
+          fixture,
+          fixture.players[0]!,
+          provider,
+          run - 1,
+          arm === "X" ? 0 : 1,
+          writes,
+          hashes,
+        );
+        const response = await fetch(fixture.simulationRpc ?? url, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: fixture.simulationRpc
+            ? JSON.stringify({
+                jsonrpc: "2.0",
+                id: 1,
+                method: "starknet_simulateTransactions",
+                // Simulation otherwise charges fees despite the trial node's --no-charge-fee mode.
+                params: ["pre_confirmed", [JSON.parse(warm.body).params[0]], ["SKIP_FEE_CHARGE"]],
+              })
+            : warm.body,
+        });
+        const warmResult = await response.json();
+        if (
+          warmResult.error ||
+          (fixture.simulationRpc &&
+            warmResult.result?.[0]?.transaction_trace?.execute_invocation?.revert_reason !== undefined)
+        )
+          throw new Error("warmup submit or simulation execution failed");
+        if (!fixture.simulationRpc) await provider.waitForTransaction(warm.hash);
+        await new Promise((ok) => setTimeout(ok, Number(a["warm-ms"] ?? 15000)));
+      }
       const payloads = await mapWithConcurrency(fixture.players, 32, (p) =>
         presign(fixture, p, provider, run, arm === "X" ? 0 : 1, writes, hashes),
       );

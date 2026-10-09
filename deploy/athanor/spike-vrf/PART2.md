@@ -1,80 +1,30 @@
-Throwaway spike. Never merge or reuse without rewrite.
+# Transaction-hash VRF spike
 
-The paired `VrfYProbe` uses tier1 Y's caller/run-keyed attempts and word writes, with identical configurable
-storage/hash work. Two immutable constructor modes select baseline and proof verification. Both check work, tip and the
-fixed L2 bound before work; verified mode derives and uses the transaction-hash root. Neither writes a game
-counter/head. Both use the same suffix-compatible account class. Baseline forwards the original signature; verified mode
-appends five proof felts through four Bun/native workers.
+Throwaway code; never merge or reuse without rewriting. The current operational handoff is
+`~/projects/.reviewer-inbox/spike-node-first/randomness-handoff.txt`.
 
-The original 2,000 RealmsAccounts cannot accept a proof suffix. Setup makes separate scratch accounts using their same
-device keys and an isolated local guardian; existing accounts, world configuration and identity services are unchanged.
-Setup checkpoints private fixtures and is safe to resume. Its artifacts were compiled with Cairo2.17 on DEV (four
-attempts total including two dependency failures); ops needs no Cairo rebuild or suite.
+The stamp is the original three device felts followed by `VRF1` and five proof felts. The only seed is the ordinary V3
+transaction hash. Verification is inline in each real-action host and reads its constructor public point; the root is
+`Poseidon(3, gamma.x, gamma.y, 0)`. No epoch, registry, reveal or audit service exists. Constructor keys are immutable
+in this spike. Baseline hosts are separate, explicitly deployed measurement controls.
 
-After the current timed X/Y waves finish, from the prepared DEV checkout with the published spike subtree and existing
-built workspace dependencies:
+`host-accounts.ts initialize` generates an independent `vrf-private.key` beside the host keys, mode 0600.
+`part2-setup.ts PRIVATE_RPC ORIGINAL_FIXTURE HOST_DATA_DIR OUT_DIR` also initializes that file for a pre-existing trial
+and builds suffix-compatible accounts. Public metadata is checked against the file; a missing registered key is never
+regenerated. The proxy checks its fixture and key against the game's `vrf_config` before listening.
 
-```sh
-TRIAL=/opt/athanor/runs/spike-node-first-20261008/ops-node-first-20261008
-VRF=/opt/athanor/spikes/vrf-arm
-PART2="$TRIAL/vrf-part2"
-BUN=/opt/athanor/tools/bun/bin/bun
+Real-action setup requires `--stamp-mode baseline|verified --vrf-key-file ...`. `--copies 4` prepares four games in one
+host: wave0 is the full cold burst, excluded; waves1–3 are the measured warm bursts. Settle uses separate empty games,
+so warming never consumes a measured seat. Verified Explore preparation signs ordinary addInvoke payloads and appends
+their proofs locally on the shard; the public proxy never stamps simulation or estimation. Real-action runs skip the
+legacy single-player simulation warm-up and rely on the full cold wave.
 
-taskset -c 20-23 "$BUN" deploy/athanor/spike-vrf/part2-setup.ts \
-  http://127.0.0.1:29300/rpc/v0_10_2 "$TRIAL/node-first-private.json" \
-  "$PART2" "$VRF/benchmark-key"
-```
+The loopback trusted proxy receives distinct synthetic client IPs from the sender driver. This keeps the existing
+30-operations/minute IP budget intact and models separate players; an untrusted public peer cannot select its IP.
 
-Use the retained native library at `deploy/athanor/spike-vrf/prover/target/release/libnode_first_vrf_prover.so`; copy it
-from `$VRF` into this checkout if needed. It requires GLIBC2.34 or newer. Symlink the existing workspace dependency
-directories when using an overlay checkout; do not print fixture/key files.
-
-Run the same command once with `MODE=baseline` and once with `MODE=verified`, repeating paired trials only after both
-runs complete. Resolve the actual Madara descendant PID using the existing node-pid.py, never sample tini. The
-sampler/log/metrics/image arguments must name the same node and observers as tier1.
-
-```sh
-MODE=baseline
-NATIVE_WORLD_MANIFEST="$TRIAL/native-world.json" \
-NODE_RPC_URL=http://127.0.0.1:29300 \
-RPC_TRUSTED_PROXY=127.0.0.1 PORT=29308 \
-SPIKE_PART2_FIXTURE="$PART2/part2-$MODE-private.json" \
-SPIKE_VRF_KEY_FILE="$VRF/benchmark-key" \
-taskset -c 20-23 "$BUN" deploy/athanor/spike-vrf/proxy.ts > "$PART2/proxy-$MODE.log" 2>&1 &
-PROXY_PID=$!
-
-taskset -c 20-23 "$BUN" deploy/athanor/spike-vrf/part2-run.ts \
-  --fixture "$PART2/part2-$MODE-private.json" \
-  --rpc-url http://127.0.0.1:29308/rpc/v0_10_2 \
-  --ws-url ws://127.0.0.1:29300/rpc/v0_10_2 \
-  --out "$PART2/results-$MODE" --arms Y --work 32:256 --workers 8 \
-  --timeout-ms 600000 --node-pid "$MADARA_PID" \
-  --node-image "$NODE_IMAGE" --node-log "$NODE_LOG" \
-  --node-metrics "$TRIAL/metrics/metrics.jsonl"
-kill "$PROXY_PID"
-```
-
-A timeout of600s observes a slow run; it never changes the under5s/2s verdict. Send spread >=100ms, missing/reverted
-receipts, stream failure or incomplete gas coverage stay explicit. Visibility is pre-confirmed receipt arrival, not
-Herald/client painting. Gas reads occur after timed CPU/visibility/counter snapshots. The initial digest includes the
-root so the compiler cannot discard its derivation. This adds one common digest input to both modes compared with
-original tier1Y; compare the pair, not unrelated work configurations.
-
-Separate complete-proof and full-stamp CPU measurements (no live invokes; outside node measurement windows):
-
-```sh
-taskset -c 20-23 "$BUN" deploy/athanor/spike-vrf/benchmark.ts \
-  "$VRF/benchmark-key" "$PART2/native-proof-benchmark.json"
-taskset -c 20-23 "$BUN" deploy/athanor/spike-vrf/part2-presign.ts \
-  "$PART2/part2-verified-private.json" http://127.0.0.1:29300/rpc/v0_10_2 \
-  "$PART2/presigned-private.json" 32:256
-# CHAIN_HEX is the public chainId in part2-public.json.
-taskset -c 20-23 "$BUN" deploy/athanor/spike-vrf/stamp-benchmark.ts \
-  "$VRF/benchmark-key" "$PART2/presigned-private.json" "$CHAIN_HEX" \
-  "$PART2/full-stamp-benchmark.json"
-```
-
-Each benchmark reports1/2/4threads, three repetitions, throughput and elapsed time. Full-stamp includes transaction
-hashing, worker dispatch, complete proof+hint and suffix copying; excludes class/nonce RPC checks and network
-forwarding. Paired end-to-end runs include those costs. Under500ms is the stamp bar; the native-only result must not
-stand in for it.
+The full stamping benchmark includes hashing, worker dispatch, proof and hint generation, and the tagged suffix; startup
+and reference correctness checks are outside the timed region. It excludes class/nonce RPC checks and network
+forwarding. Laptop results on 9 October: 2052–2076ms / 1050–1074ms / 539–550ms on1 /2 /4workers. The four-worker run
+does not clear500ms or reproduce390ms; it agrees with the retained same-machine541–558ms run. No new box result is
+claimed. `probes.ts` is written for ops; it checks real actions and records missing trace coverage explicitly. No Cairo
+test suite was run. The standalone native nonce test verifies eight valid nonce variants share one gamma/output.

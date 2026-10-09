@@ -14,7 +14,12 @@ function send(body: string): Promise<{ sentNs: string; acknowledgedNs: string | 
     const req = request(url, {
       method: "POST",
       agent,
-      headers: { "content-type": "application/json", "content-length": Buffer.byteLength(body) },
+      headers: {
+        "content-type": "application/json",
+        "content-length": Buffer.byteLength(body),
+        // Only a configured loopback trusted proxy uses this; real public peers cannot choose their IP.
+        "x-forwarded-for": `10.88.${Math.floor(Number(JSON.parse(body).id) / 250)}.${(Number(JSON.parse(body).id) % 250) + 1}`,
+      },
     });
     let sentNs = now().toString();
     req.on("socket", (socket) => {

@@ -3,5 +3,5 @@ import { confirmedTransactionReceipt } from "../../../../config/deployer/clean/s
 
 /** Untimed setup requires confirmed success; a missing status during publication is still pending. */
 export function configureAccountConfirmation(provider: RpcProvider): void {
-  provider.waitForTransaction = (transactionHash) => confirmedTransactionReceipt(provider, transactionHash);
+  provider.waitForTransaction = (transactionHash) => confirmedTransactionReceipt(provider, String(transactionHash));
 }

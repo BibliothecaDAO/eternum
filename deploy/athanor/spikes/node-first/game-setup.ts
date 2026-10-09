@@ -1,3 +1,4 @@
+import { ProverPool } from "../../spike-vrf/pool";
 import { NativeProver, feltBytes } from "../../spike-vrf/native";
 import { readFileSync, statSync } from "node:fs";
 import { resolve } from "node:path";
@@ -48,6 +49,7 @@ async function main() {
     "arms",
     "vrf-key-file",
     "stamp-mode",
+    "copies",
   ]);
   const keyFile = required(a["vrf-key-file"], "vrf-key-file");
   if ((statSync(keyFile).mode & 0o077) !== 0) throw new SetupFailure("VRF key file must be private");
@@ -57,6 +59,9 @@ async function main() {
   const vrfKey = prover.publicKey();
   prover.close();
   const verifyProofs = a["stamp-mode"] === "verified";
+  const copies = Number(a.copies ?? 1);
+  if (copies !== 1 && copies !== 4)
+    throw new SetupFailure("copies must be1 for probes or4 for cold plus warm measurements");
   const arms = selectedArms(a.arms ?? "X,Y");
   const settle = a.action === "settle";
   if (a.action && !settle) throw new SetupFailure("Only --action settle is supported");
@@ -197,53 +202,61 @@ async function main() {
   const fixtures: Fixture[] = [];
   const tick = Number(definition.rules.tick_config.armies_tick_in_seconds);
   const scheduledStart = Math.ceil((now + 86400) / tick) * tick;
-  for (const [index, arm] of arms.entries()) {
-    const game = index + 1;
-    await send("create_game", {
-      params: {
-        name: shortString.encodeShortString(`spike-${arm}`),
-        preset_id: preset,
-        start_settling_at: now + 1,
-        start_main_at: scheduledStart,
-        duration_seconds: 86400,
-        end_grace_seconds: 0,
-        dev_mode_on: !settle,
-        roster: [],
-        registration_start: now,
-        biome_climate: definition.rules.biome_climate_config,
-        map_override: new CairoOption(CairoOptionVariant.None),
-        seed: "0x1234567",
-      },
-    });
-    const callData = settle
-      ? await prepareSettleGame(account, provider, codec, contract, base, game, arm, window)
-      : await provisionHomes(account, provider, codec, contract, base, game, arm, grants, amount, window);
+  for (let copy = 0; copy < copies; copy++) {
+    for (const [index, arm] of arms.entries()) {
+      const game = copy * arms.length + index + 1;
+      await send("create_game", {
+        params: {
+          name: shortString.encodeShortString(`spike-${arm}`),
+          preset_id: preset,
+          start_settling_at: now + 1,
+          start_main_at: scheduledStart,
+          duration_seconds: 86400,
+          end_grace_seconds: 0,
+          dev_mode_on: !settle,
+          roster: [],
+          registration_start: now,
+          biome_climate: definition.rules.biome_climate_config,
+          map_override: new CairoOption(CairoOptionVariant.None),
+          seed: "0x1234567",
+        },
+      });
+      const callData = settle
+        ? await prepareSettleGame(account, provider, codec, contract, base, game, arm, window)
+        : await provisionHomes(account, provider, codec, contract, base, game, arm, grants, amount, window);
 
-    const [counter] = await provider.callContract({
-      contractAddress: contract,
-      entrypoint: "entity_counter",
-      calldata: [game],
-    });
-    fixtures.push({
-      ...base,
-      vrfPublicKey: vrfKey,
-      verifyProofs,
-      contract,
-      classHash: games.classHash,
-      entrypoint: settle ? "settle_season" : "create_explorer",
-      playerCalldata: callData,
-      simulationRpc: rpc,
-      game: {
-        id: game,
-        arm: arm as "X" | "Y",
-        kind: settle ? "Settle" : "CreateExplorer",
-        initialCounter: Number(BigInt(counter!)),
-      },
-    });
+      const [counter] = await provider.callContract({
+        contractAddress: contract,
+        entrypoint: "entity_counter",
+        calldata: [game],
+      });
+      fixtures.push({
+        ...base,
+        vrfPublicKey: vrfKey,
+        verifyProofs,
+        contract,
+        classHash: games.classHash,
+        entrypoint: settle ? "settle_season" : "create_explorer",
+        playerCalldata: callData,
+        simulationRpc: rpc,
+        game: {
+          id: game,
+          arm: arm as "X" | "Y",
+          kind: settle ? "Settle" : "CreateExplorer",
+          initialCounter: Number(BigInt(counter!)),
+          wave: copy,
+        },
+      });
+    }
   }
-  for (const fixture of fixtures) {
-    await send("start_now", { game: fixture.game!.id });
-    if (a["prepare-explore"] === "true") await prepareExplore(provider, fixture, rpc);
+  const pool = verifyProofs && a["prepare-explore"] === "true" ? new ProverPool(keyFile, 4) : undefined;
+  try {
+    for (const fixture of fixtures) {
+      await send("start_now", { game: fixture.game!.id });
+      if (a["prepare-explore"] === "true") await prepareExplore(provider, fixture, rpc, pool);
+    }
+  } finally {
+    pool?.stop();
   }
   // Keep the prepared games in day zero after preparation; actual measured calls still use node block time.
   for (const fixture of fixtures) {
@@ -263,7 +276,7 @@ async function main() {
 function fixtureName(fixture: Fixture) {
   const kind = fixture.game!.kind;
   const prefix = kind === "Settle" ? "settle" : kind === "Explore" ? "explore" : "game";
-  return `node-first-${prefix}-${fixture.game!.arm}.json`;
+  return `node-first-${prefix}-${fixture.game!.arm}-${fixture.game!.wave ?? 0}.json`;
 }
 async function configureSettleCatalogue(
   account: ReturnType<typeof createMadaraAccount>,
@@ -472,14 +485,19 @@ async function provisionHomes(
   );
   return callData;
 }
-async function prepareExplore(provider: RpcProvider, fixture: Fixture, rpc: string) {
+async function prepareExplore(provider: RpcProvider, fixture: Fixture, rpc: string, pool?: ProverPool) {
   const preparation = { ...fixture, entrypoint: "prepare_explorer" };
   await mapWithConcurrency(fixture.players, 32, async (player) => {
     const signed = await presign(preparation, player, provider, 0, 0, 1, 1);
     const response = await fetch(rpc, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: signed.body,
+      body: pool
+        ? JSON.stringify({
+            ...JSON.parse(signed.body),
+            params: [await pool.stamp(JSON.parse(signed.body).params[0], fixture.chainId)],
+          })
+        : signed.body,
     });
     const result = await response.json();
     if (result.error || !result.result?.transaction_hash) throw new Error("Army preparation refused");

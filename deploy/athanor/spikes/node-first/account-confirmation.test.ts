@@ -5,7 +5,9 @@ import { configureAccountConfirmation } from "./account-confirmation";
 test("setup waits for confirmed success across RECEIVED and repeated missing-status observations", async () => {
   const provider = new RpcProvider({ nodeUrl: "http://127.0.0.1:1" });
   let observations = 0;
-  const receipt = { block_number: 454, execution_status: "SUCCEEDED", finality_status: "ACCEPTED_ON_L2" };
+  const receipt = { block_number: 454, execution_status: "SUCCEEDED", finality_status: "ACCEPTED_ON_L2" } as Awaited<
+    ReturnType<RpcProvider["getTransactionReceipt"]>
+  >;
   const getTransactionStatus = mock(async () => {
     observations += 1;
     if (observations === 1) return { finality_status: "RECEIVED" };

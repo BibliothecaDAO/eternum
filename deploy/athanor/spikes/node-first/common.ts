@@ -30,7 +30,7 @@ export interface Fixture {
   simulationRpc?: string;
   vrfPublicKey?: string[];
   verifyProofs?: boolean;
-  game?: { id: number; arm: "X" | "Y"; kind: string; initialCounter: number };
+  game?: { id: number; arm: "X" | "Y"; kind: string; initialCounter: number; wave?: number };
 }
 export { now } from "./clock";
 export const ms = (n: bigint) => Number(n) / 1e6;
