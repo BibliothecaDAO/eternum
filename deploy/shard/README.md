@@ -41,6 +41,12 @@ Preparation generates a host signing key and a separate VRF key on the shard. Bo
 `native-world.json` and passed to Games' constructor. Restart verifies the file against that point and refuses an
 identity or bound change. There is no VRF key setter: a leaked key retires the shard.
 
+Preparation records immutable identity before network work and resumes an interrupted first run without replacing keys.
+The initializer prepares mount ownership as root, then runs as HOST_UID, like the harness. A credential must be owned by
+its reading process's effective uid with mode 0600. If deployed metadata or an older credential is damaged, restore the
+same shard's private backup and retry; never remove or regenerate keys or reuse the chain as a fresh shard. If no node
+was ever started and no backup exists, retain the failed directory privately and choose a fresh directory and chain id.
+
 ## Endpoints and readiness
 
 Forward HTTPS hostnames to loopback 8080 (RPC) and 8081 (Herald). `RPC_PORT`, `HERALD_PORT` and `BIND_ADDRESS` change
