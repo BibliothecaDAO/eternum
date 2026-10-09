@@ -28,16 +28,17 @@ export class ValueIdentity extends WorkerEntrypoint<IdentityEnv> {
   async realmsIdForAccount(account: string): Promise<string | null> {
     return (await realmsIdsOfAccounts(this.env.DB, [account])).get(normalizeStarknetAddress(account)) ?? null;
   }
-  async authenticate(cookie: string): Promise<{ realmsId: string; account: string } | null> {
+  async accountForRealmsId(realmsId: string): Promise<string | null> {
+    const user = await this.env.DB.prepare('SELECT "realmsId" FROM "user" WHERE "realmsId" = ? AND "emailVerified" = 1')
+      .bind(realmsId)
+      .first<{ realmsId: string }>();
+    return user
+      ? realmsAccountAddress(user.realmsId, this.env.ACCOUNT_CLASS_HASH, await this.env.GUARDIAN.publicKey())
+      : null;
+  }
+  async authenticate(cookie: string): Promise<{ realmsId: string } | null> {
     const session = await createIdentityAuth(this.env).api.getSession({ headers: new Headers({ cookie }) });
     if (!session || session.user.emailVerified !== true || !session.user.realmsId) return null;
-    return {
-      realmsId: session.user.realmsId,
-      account: realmsAccountAddress(
-        session.user.realmsId,
-        this.env.ACCOUNT_CLASS_HASH,
-        await this.env.GUARDIAN.publicKey(),
-      ),
-    };
+    return { realmsId: session.user.realmsId };
   }
 }

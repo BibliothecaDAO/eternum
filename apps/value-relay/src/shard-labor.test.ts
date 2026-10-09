@@ -123,12 +123,13 @@ it("holds the public route closed until the global labor day interface is publis
     new Request("https://play.test/api/value/labor", {
       method: "POST",
       headers: { origin: "https://play.test", "content-type": "application/json" },
-      body: JSON.stringify({ gameId: 7, realmId: 8, home: "9" }),
+      body: JSON.stringify({ realm: { gameId: 7, realmId: 8, home: "9" } }),
     }),
     {
       origin: "https://play.test",
       chainId: "0x1",
       authenticate: async () => ({ realmsId: "0x2", account: "0x123" }),
+      accountForRealmsId: async () => "0x123",
       currentDay: currentLaborDay,
       grant,
     },
@@ -139,7 +140,7 @@ it("holds the public route closed until the global labor day interface is publis
 it("authenticates the public request, rejects account/day injection and checks current wallet NFT ownership before writing", async () => {
   const write = vi.fn(() => Effect.succeed({ account: "0x123", home: "9", amount: "0" }));
   const ports = {
-    identity: { linkedWallet: () => Effect.succeed("0x456") },
+    identity: { accountForRealmsId: () => Effect.succeed("0x123"), linkedWallet: () => Effect.succeed("0x456") },
     realms: { ownerOf: () => Effect.succeed("0x456") },
     shard: { grantLabor: write },
   } as unknown as RelayPorts;
@@ -147,6 +148,7 @@ it("authenticates the public request, rejects account/day injection and checks c
     origin: "https://play.test",
     chainId: "0x1",
     authenticate: vi.fn(async () => ({ realmsId: "0x2", account: "0x123" })),
+    accountForRealmsId: vi.fn(async () => "0x123"),
     currentDay: () => Effect.succeed(5),
     grant: (claim: LaborClaim) => Effect.runPromise(grantDailyLabor(ports, claim)),
   };
@@ -156,19 +158,25 @@ it("authenticates the public request, rejects account/day injection and checks c
       headers: { origin, cookie: "test-cookie", "content-type": "application/json" },
       body: JSON.stringify(body),
     });
-  const response = await handleLaborRequest(request({ gameId: 7, realmId: 8, home: "9" }), dependencies);
+  const response = await handleLaborRequest(request({ realm: { gameId: 7, realmId: 8, home: "9" } }), dependencies);
   expect(response.status).toBe(200);
   expect(write).toHaveBeenCalledWith({ ...claim, day: 5 });
   expect(dependencies.authenticate).toHaveBeenCalledWith("test-cookie");
-  expect((await handleLaborRequest(request({ gameId: 7, realmId: 8, home: "9", day: 0 }), dependencies)).status).toBe(
-    400,
-  );
   expect(
-    (await handleLaborRequest(request({ gameId: 7, realmId: 8, home: "9" }, "https://other.test"), dependencies))
-      .status,
+    (await handleLaborRequest(request({ realm: { gameId: 7, realmId: 8, home: "9" }, day: 0 }), dependencies)).status,
+  ).toBe(400);
+  expect(
+    (
+      await handleLaborRequest(
+        request({ realm: { gameId: 7, realmId: 8, home: "9" } }, "https://other.test"),
+        dependencies,
+      )
+    ).status,
   ).toBe(403);
   ports.realms.ownerOf = () => Effect.succeed("0x999");
-  expect((await handleLaborRequest(request({ gameId: 7, realmId: 8, home: "9" }), dependencies)).status).toBe(409);
+  expect(
+    (await handleLaborRequest(request({ realm: { gameId: 7, realmId: 8, home: "9" } }), dependencies)).status,
+  ).toBe(409);
   expect(write).toHaveBeenCalledOnce();
 });
 
@@ -178,7 +186,7 @@ it("never reads a day or writes a grant for a signed-out caller", async () => {
   const request = new Request("https://play.test/api/value/labor", {
     method: "POST",
     headers: { origin: "https://play.test", "content-type": "application/json" },
-    body: JSON.stringify({ gameId: 7, realmId: 8, home: "9" }),
+    body: JSON.stringify({ realm: { gameId: 7, realmId: 8, home: "9" } }),
   });
   expect(
     (
@@ -186,6 +194,7 @@ it("never reads a day or writes a grant for a signed-out caller", async () => {
         origin: "https://play.test",
         chainId: "0x1",
         authenticate: async () => null,
+        accountForRealmsId: async () => "0x123",
         currentDay,
         grant,
       })

@@ -101,6 +101,7 @@ export interface RelayPorts {
   };
   identity: {
     payoutWallet(realmsId: string): RelayEffect<PayoutWallet>;
+    accountForRealmsId(realmsId: string): RelayEffect<string | null>;
     linkedWallet(realmsId: string): RelayEffect<string | null>;
   };
   ledger: {

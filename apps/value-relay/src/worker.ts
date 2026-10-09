@@ -29,7 +29,8 @@ interface RelayEnv {
   IDENTITY: {
     payoutWallet(id: string): Promise<import("@realms-world/identity").PayoutWallet>;
     linkedWallet(id: string): Promise<string | null>;
-    authenticate(cookie: string): Promise<{ realmsId: string; account: string } | null>;
+    authenticate(cookie: string): Promise<{ realmsId: string } | null>;
+    accountForRealmsId(id: string): Promise<string | null>;
     realmsIdForAccount(account: string): Promise<string | null>;
   };
   RELAY: DurableObjectNamespace<ValueRelay>;
@@ -184,6 +185,7 @@ export default {
       return handleLaborRequest(request, {
         origin: env.BASE_URL,
         chainId: env.SHARD_CHAIN_ID,
+        accountForRealmsId: (id) => env.IDENTITY.accountForRealmsId(id),
         authenticate: (cookie) => env.IDENTITY.authenticate(cookie),
         currentDay: currentLaborDay,
         grant: (claim) => relayOf(env).labor(claim),

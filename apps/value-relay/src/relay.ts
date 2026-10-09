@@ -107,6 +107,9 @@ const postResults = (ports: RelayPorts, store: RelayStore) =>
 /** Realm ownership is read for every claim; the shard enforces the Realm/day first-write rule. */
 export const grantDailyLabor = (ports: RelayPorts, claim: LaborClaim) =>
   Effect.gen(function* () {
+    const account = yield* ports.identity.accountForRealmsId(claim.realmsId);
+    if (!account || BigInt(account) !== BigInt(claim.account))
+      return yield* Effect.fail(new RelayFailure({ operation: "labor_account_mismatch" }));
     const wallet = yield* ports.identity.linkedWallet(claim.realmsId);
     if (!wallet) return yield* Effect.fail(new RelayFailure({ operation: "labor_wallet_missing" }));
     const owner = yield* ports.realms.ownerOf(claim.realmId);

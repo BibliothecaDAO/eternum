@@ -78,6 +78,7 @@ const fixture = () => {
     },
     identity: {
       payoutWallet: () => Effect.succeed({ status: "ready", address: "0x123" }),
+      accountForRealmsId: () => Effect.succeed("0x3"),
       linkedWallet: () => Effect.succeed("0x123"),
     },
     ledger: {
@@ -329,4 +330,14 @@ it("sets aside a permanently refused claim and pays the next claim without retry
   expect(f.ports.ledger.postResult).toHaveBeenCalledOnce();
   await f.run();
   expect(f.ports.ledger.pay).toHaveBeenCalledTimes(2);
+});
+
+it("refuses a labor claim whose recipient account is not derived from its authenticated Realms id", async () => {
+  const f = fixture();
+  Object.assign(f.ports.identity, { accountForRealmsId: () => Effect.succeed("0x3") });
+  const claim = { gameId: 1, home: "9", chainId: "0x1", realmId: "7", day: 0, realmsId: "0x2", account: "0xbad" };
+  await expect(Effect.runPromise(grantDailyLabor(f.ports, claim))).rejects.toMatchObject({
+    operation: "labor_account_mismatch",
+  });
+  expect(f.ports.shard.grantLabor).not.toHaveBeenCalled();
 });

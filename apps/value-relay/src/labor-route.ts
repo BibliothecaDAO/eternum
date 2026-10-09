@@ -1,16 +1,18 @@
 import { Effect, Data, Schema } from "effect";
 import type { LaborClaim, LaborGrant, RelayEffect } from "./ports";
 
-const LaborRequest = Schema.Struct({
+const LaborRealm = Schema.Struct({
   gameId: Schema.Int.pipe(Schema.check(Schema.isBetween({ minimum: 1, maximum: 0xffffffff }))),
   realmId: Schema.Int.pipe(Schema.check(Schema.isBetween({ minimum: 1, maximum: 8000 }))),
   home: Schema.String.pipe(Schema.check(Schema.isPattern(/^(0x[0-9a-fA-F]{1,16}|[0-9]{1,20})$/))),
 });
+const LaborRequest = Schema.Struct({ realm: LaborRealm });
 class LaborRequestError extends Data.TaggedError("LaborRequestError")<{ status: number; code: string }> {}
 interface LaborRoute {
   origin: string;
   chainId: string;
-  authenticate(cookie: string): Promise<{ realmsId: string; account: string } | null>;
+  authenticate(cookie: string): Promise<{ realmsId: string } | null>;
+  accountForRealmsId(id: string): Promise<string | null>;
   currentDay(gameId: number): RelayEffect<number>;
   grant(claim: LaborClaim): Promise<LaborGrant>;
 }
@@ -29,19 +31,25 @@ export const handleLaborRequest = (request: Request, dependencies: LaborRoute): 
         Effect.flatMap(Schema.decodeUnknownEffect(LaborRequest, { onExcessProperty: "error" })),
         Effect.mapError(() => new LaborRequestError({ status: 400, code: "invalid_labor_request" })),
       );
-      if (BigInt(body.home) === 0n || BigInt(body.home) > 0xffffffffn)
+      const realm = body.realm;
+      const account = yield* Effect.tryPromise({
+        try: () => dependencies.accountForRealmsId(identity.realmsId),
+        catch: () => new LaborRequestError({ status: 503, code: "account_unavailable" }),
+      });
+      if (!account) return yield* Effect.fail(new LaborRequestError({ status: 403, code: "account_unavailable" }));
+      if (BigInt(realm.home) === 0n || BigInt(realm.home) > 0xffffffffn)
         return yield* Effect.fail(new LaborRequestError({ status: 400, code: "unsupported_home_width" }));
-      const day = yield* dependencies.currentDay(body.gameId);
+      const day = yield* dependencies.currentDay(realm.gameId);
       const grant = yield* Effect.tryPromise({
         try: () =>
           dependencies.grant({
             chainId: dependencies.chainId,
-            gameId: body.gameId,
-            realmId: String(body.realmId),
-            home: body.home,
+            gameId: realm.gameId,
+            realmId: String(realm.realmId),
+            home: realm.home,
             day,
             realmsId: identity.realmsId,
-            account: identity.account,
+            account,
           }),
         catch: () => new LaborRequestError({ status: 409, code: "labor_grant_refused" }),
       });
