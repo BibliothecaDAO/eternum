@@ -867,9 +867,8 @@ export function defineFactModels({ struct, model: declare }) {
     model("LaborRules", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("entry::LaborRules")),
     model(
       "LaborGrant",
-      "game",
+      "deployment",
       [
-        { name: "game_id", type: "core::integer::u32" },
         { name: "realm_id", type: "core::integer::u32" },
         { name: "day", type: "core::integer::u64" },
       ],

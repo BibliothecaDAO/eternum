@@ -168,3 +168,23 @@ fn a_full_labor_store_consumes_the_claim_and_the_preset_can_limit_held_realms() 
     assert_eq!(operator.grant_labor(realm, 0, d.actor).unwrap(), grant);
     assert!(operator.grant_labor(crate::entry::LaborRealm { realm_id: 712, ..realm }, 0, d.actor).is_err());
 }
+
+#[test]
+#[feature("safe_dispatcher")]
+fn a_realm_cannot_receive_daily_labor_in_two_games_on_one_shard() {
+    let (d, game_id, army) = super::registrar::setup_frontier_chests();
+    let home = GameState { contract_address: d.games }.resolved_explorer(army).unwrap().owner;
+    let realm = crate::entry::LaborRealm { game_id, realm_id: 711, home };
+    set_operator(d, authority());
+    start_cheat_caller_address(d.games, authority());
+    snforge_std::start_cheat_block_timestamp(d.games, 362);
+    let operator = ILedgerOperatorSafeDispatcher { contract_address: d.games };
+    let first = operator.grant_labor(realm, 0, d.actor).unwrap();
+    let other = crate::entry::LaborRealm { game_id: game_id + 1, ..realm };
+    assert_eq!(operator.labor_grant(other, 0).unwrap(), Some(first));
+    assert!(operator.grant_labor(other, 0, d.actor).is_err());
+    assert!(operator.grant_labor(other, 0, authority()).is_err());
+    assert_eq!(operator.grant_labor(realm, 0, d.actor).unwrap(), first);
+    assert_eq!(crate::entry::labor_day(86399), 0);
+    assert_eq!(crate::entry::labor_day(86400), 1);
+}

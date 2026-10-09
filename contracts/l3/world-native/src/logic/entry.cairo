@@ -44,8 +44,8 @@ pub mod EntryAdministration {
             self.data.entry.operator.write(operator);
         }
         fn labor_grant(self: @ComponentState<TContractState>, realm: LaborRealm, day: u64) -> Option<LaborGrant> {
-            match self.data.entry.labor_grants.read((realm.game_id, realm.realm_id, day)) {
-                Some((account, home, amount)) => Some(LaborGrant { account, home, amount }),
+            match self.data.entry.labor_grants.read((realm.realm_id, day)) {
+                Some((game_id, account, home, amount)) => Some(LaborGrant { game_id, account, home, amount }),
                 None => None,
             }
         }
@@ -54,7 +54,7 @@ pub mod EntryAdministration {
         ) -> LaborGrant {
             super::assert_ledger_operator();
             if let Some(previous) = crate::entry::ILedgerOperator::labor_grant(@self, realm, day) {
-                assert!(previous.account == account && previous.home == realm.home, "labor already claimed");
+                assert!(previous.game_id == realm.game_id && previous.account == account && previous.home == realm.home, "labor already claimed");
                 return previous;
             }
             assert!(
@@ -69,7 +69,7 @@ pub mod EntryAdministration {
             let rules = crate::logic::preset_record::for_game(realm.game_id).labor_rules.read()
                 .expect('labor is disabled');
             assert!(
-                day == crate::days::day_of(context.game.unbox(), context.rules.unbox().day_unit_seconds, timestamp).index,
+                day == crate::entry::labor_day(timestamp),
                 "incorrect labor day",
             );
             let home = ResourceKey { game_id: realm.game_id, entity_id: realm.home };
@@ -78,7 +78,7 @@ pub mod EntryAdministration {
                 record.base.category == crate::taxonomy::REALM_CATEGORY && record.owner == account,
                 "labor requires an owned realm",
             );
-            let count = self.data.entry.labor_claim_counts.read((realm.game_id, account, day));
+            let count = self.data.entry.labor_claim_counts.read((account, day));
             assert!(rules.account_daily_limit == 0 || count < rules.account_daily_limit, "daily labor realm limit");
             let classes = get_dep_component!(@self, Life).classes(realm.game_id);
             let amount = IResourceOperationsLibraryDispatcher { class_hash: classes.resources.read() }
@@ -86,7 +86,7 @@ pub mod EntryAdministration {
                     home, crate::resources::LABOR, rules.amount * crate::rules::RESOURCE_PRECISION,
                     timestamp, crate::commands::resource_context(context),
                 );
-            let grant = LaborGrant { account, home: realm.home, amount };
+            let grant = LaborGrant { game_id: realm.game_id, account, home: realm.home, amount };
             self.record_labor_grant(realm, day, grant, count + 1);
             grant
         }
@@ -97,9 +97,9 @@ pub mod EntryAdministration {
             ref self: ComponentState<TContractState>, realm: LaborRealm, day: u64, grant: LaborGrant, count: u32,
         ) {
             self.data.entry.labor_grants.write(
-                (realm.game_id, realm.realm_id, day), Some((grant.account, grant.home, grant.amount)),
+                (realm.realm_id, day), Some((grant.game_id, grant.account, grant.home, grant.amount)),
             );
-            self.data.entry.labor_claim_counts.write((realm.game_id, grant.account, day), count);
+            self.data.entry.labor_claim_counts.write((grant.account, day), count);
             let mut values = array![];
             grant.serialize(ref values);
             self
@@ -107,7 +107,7 @@ pub mod EntryAdministration {
                     crate::events::RowSet {
                         version: 1,
                         model: 'LaborGrant',
-                        keys: array![realm.game_id.into(), realm.realm_id.into(), day.into()].span(),
+                        keys: array![realm.realm_id.into(), day.into()].span(),
                         values: values.span(),
                     },
                 );

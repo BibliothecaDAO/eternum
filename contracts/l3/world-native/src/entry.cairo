@@ -25,7 +25,11 @@ pub struct LaborRules {
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct LaborGrant {
+    pub game_id: u32,
     pub account: ContractAddress,
     pub home: u64,
     pub amount: u128,
 }
+
+// Holding a Realm earns one daily claim on the shard, independently of any game's seeded day schedule.
+pub fn labor_day(timestamp: u64) -> u64 { timestamp / 86400 }
