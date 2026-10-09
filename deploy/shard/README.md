@@ -92,10 +92,11 @@ Run each command above as `python3 deploy/athanor/scripts/operator-command.py ..
 protected token file; ops provisions it. Use `stop.py` for a manually started runner so its directory entry is retired.
 
 Runner activation uses the same confirmed Worker enrolment, `set_launcher` and Worker-signed creation checks as a
-released package. Its cached gameplay evidence binds native-world.json, initialized.json, configuration.json and the
-complete rendered compose.json (including pinned local images); package evidence binds release.json instead. Local
-services must expose the same operator enrolment/check routes at the identity API's factory path. Missing routes leave
-the shard PENDING; local images never bypass the Worker gate.
+released package. Both paths bind cached gameplay evidence to `native-world.json` and `initialized.json`, the chain
+identity and initialized contracts the check proves. Packaging changes do not invalidate that evidence. Once
+`launcher-enrolment.json` exists, a missing or invalid pass refuses a re-check: "launcher already handed off; finish the
+Worker check or retire the chain". Local services must expose the same operator enrolment/check routes at the identity
+API's factory path. Missing routes leave the shard PENDING; local images never bypass the Worker gate.
 
 ## Operations: back up and restore
 

@@ -175,7 +175,7 @@ class ActivationTest(unittest.TestCase):
                 deploy.directory_status({"guardian_url": "https://identity.test/api/guardian", "public_herald_url": "https://herald.test"}, "pending")
 
 class WorkerLauncherTest(unittest.TestCase):
-    def test_gameplay_evidence_cannot_survive_a_package_or_image_change(self):
+    def test_gameplay_evidence_survives_a_package_change(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             data = root / "data"
@@ -186,9 +186,9 @@ class WorkerLauncherTest(unittest.TestCase):
             release.write_text(json.dumps({"commit": "a", "images": {"init": "sha256:1"}}))
             first = deploy.gameplay_check_identity(data)
             release.write_text(json.dumps({"commit": "b", "images": {"init": "sha256:2"}}))
-            self.assertNotEqual(first, deploy.gameplay_check_identity(data))
+            self.assertEqual(first, deploy.gameplay_check_identity(data))
 
-    def test_runner_gameplay_evidence_binds_local_images_without_a_downloaded_package(self):
+    def test_runner_gameplay_evidence_survives_an_image_change(self):
         with tempfile.TemporaryDirectory() as temporary:
             data = Path(temporary)
             for name in ("native-world.json", "initialized.json"):
@@ -198,7 +198,51 @@ class WorkerLauncherTest(unittest.TestCase):
             stack.write_text(json.dumps({"services": {"init": {"image": "sha256:1"}}}))
             first = deploy.gameplay_check_identity(data)
             stack.write_text(json.dumps({"services": {"init": {"image": "sha256:2"}}}))
-            self.assertNotEqual(first, deploy.gameplay_check_identity(data))
+            self.assertEqual(first, deploy.gameplay_check_identity(data))
+
+    def test_handoff_then_packaging_change_resumes_worker_check_without_rechecking(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            data = Path(temporary)
+            for name in ("native-world.json", "initialized.json"):
+                (data / name).write_text("{}")
+            (data / "configuration.json").write_text("{}")
+            stack = data / "compose.json"
+            stack.write_text(json.dumps({"image": "sha256:before"}))
+            def interrupted_handoff(*_):
+                (data / "launcher-enrolment.json").write_text(json.dumps({"launcherAccount": "0x42"}))
+                raise RuntimeError("Worker check unavailable")
+            with (
+                patch.object(deploy, "run_self_check", return_value={"passed": True}) as check,
+                patch.object(deploy, "directory_status", return_value={"status": "pending"}),
+                patch.object(deploy, "confirm_worker_launcher", side_effect=interrupted_handoff),
+            ):
+                with self.assertRaisesRegex(RuntimeError, "Worker check unavailable"):
+                    deploy.verify_and_activate({}, data)
+                self.assertEqual(check.call_count, 1)
+            stack.write_text(json.dumps({"image": "sha256:after"}))
+            with (
+                patch.object(deploy, "run_self_check") as check,
+                patch.object(deploy, "directory_status", side_effect=lambda _, status: {"status": status}),
+                patch.object(deploy, "confirm_worker_launcher") as worker,
+            ):
+                deploy.verify_and_activate({}, data)
+                check.assert_not_called()
+                worker.assert_called_once()
+            for changed_file in ("native-world.json", "initialized.json", "self-check.json"):
+                with self.subTest(changed_file=changed_file):
+                    before = (data / changed_file).read_text()
+                    (data / changed_file).write_text("{}" if changed_file == "self-check.json" else '{"changed":true}')
+                    with (
+                        patch.object(deploy, "run_self_check") as check,
+                        patch.object(deploy, "directory_status", return_value={"status": "pending"}) as status,
+                        patch.object(deploy, "confirm_worker_launcher") as worker,
+                    ):
+                        with self.assertRaisesRegex(RuntimeError, "launcher already handed off; finish the Worker check or retire the chain"):
+                            deploy.verify_and_activate({}, data)
+                        check.assert_not_called()
+                        worker.assert_not_called()
+                        status.assert_called_once_with({}, "pending")
+                    (data / changed_file).write_text(before)
 
     def test_activation_waits_for_confirmed_worker_handoff_and_its_real_creation(self):
         with tempfile.TemporaryDirectory() as temporary:
