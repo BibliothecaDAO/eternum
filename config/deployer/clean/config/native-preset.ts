@@ -293,7 +293,7 @@ function buildEconomy(
       ![chests.pool, chests.priceCeiling, chests.estimateDays, chests.claimWindowSeconds, ...shares].every(
         (value) => Number.isSafeInteger(value) && value > 0,
       ) ||
-      [chests.estimateDays, chests.claimWindowSeconds, ...shares].some((value) => value > 0xffff) ||
+      [chests.estimateDays, ...shares].some((value) => value > 0xffff) ||
       shares.some((value, index) => value > (shares[index + 1] ?? value))
     )
       throw new Error("Invalid ruin chest rules");
