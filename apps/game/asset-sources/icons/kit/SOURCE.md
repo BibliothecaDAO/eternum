@@ -10,7 +10,10 @@ October 2026): every icon a painted master in the menu icons' hand, then one scr
   of the icon brief (the hourglass, the resources and research sides, the seal, slots, store limit, clock and Back, the
   site marks and the rift, the six Blitz rating tiers). The other masters the manifest lists are the menu icons' own
   approved masters, reused as they are.
-- `pnpm icons:kit:build` (from apps/game) writes `public/image-icons/kit/<slug>.png`; the masters are never edited.
+- The masters are stored at 512 px on their longer side, scaled down once from the delivered 1254 px (the owner, 9
+  October 2026): the icons are made at 128 px, and icons made from the 512 px copies cannot be told from those made from
+  the delivered files at any size the app draws. A master is otherwise never edited.
+- `pnpm icons:kit:build` (from apps/game) writes `public/image-icons/kit/<slug>.png`.
   `scripts/icons/kit-icon-pipeline.test.mjs` (run by `pnpm verify:assets`) holds every published icon to what its master
   makes.
 
