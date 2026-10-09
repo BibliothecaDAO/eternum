@@ -648,7 +648,7 @@ fn exploration_grants_a_surface_reward_atomically_and_extraction_cannot_pay_twic
 fn chest_search_skips_the_explorers_vacated_start_tile() {
     let (deployment, _, _) = setup(true);
     let origin = Coord { alt: false, x: 2000200, y: 2000200 };
-    let vacated = Coord { alt: false, x: 2000199, y: 2000186 };
+    let vacated = crate::relics::chest_destination(origin, 321, 12);
     start_cheat_block_timestamp_global(40);
     start_cheat_caller_address(deployment.games, deployment.games);
     map_relics(deployment)
@@ -665,6 +665,8 @@ fn chest_search_skips_the_explorers_vacated_start_tile() {
         );
     let map = IMapLogicDispatcher { contract_address: deployment.games };
     assert!(map.tile(crate::geometry::tile_key(3, vacated)).is_none());
-    let _tile = map.tile(crate::geometry::tile_key(3, Coord { x: 2000212, ..vacated })).unwrap();
-    assert_eq!(map.occupancy(crate::geometry::tile_key(3, Coord { x: 2000212, ..vacated })).unwrap().category, 34);
+    let _tile = map.tile(crate::geometry::tile_key(3, crate::geometry::neighbor(vacated, 0))).unwrap();
+    assert_eq!(
+        map.occupancy(crate::geometry::tile_key(3, crate::geometry::neighbor(vacated, 0))).unwrap().category, 34,
+    );
 }

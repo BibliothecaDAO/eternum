@@ -1,4 +1,6 @@
 import { beforeEach, expect, it, vi } from "vitest";
+import { readFileSync } from "node:fs";
+import { hash } from "starknet";
 import { accountLinkLedger } from "./account-link-ledger";
 const rpc = vi.hoisted(() => ({ call: vi.fn(), block: vi.fn(), execute: vi.fn(), wait: vi.fn() }));
 vi.mock("@realms-world/value-ledger", () => ({
@@ -9,12 +11,8 @@ vi.mock("@realms-world/value-ledger", () => ({
     getChainId: async () => "0x1",
   }),
 }));
-vi.mock("starknet", () => ({
-  Signer: class {
-    async signRaw(_hash: string) {
-      return ["0x1", "0x2"];
-    }
-  },
+vi.mock("starknet", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("starknet")>()),
   Account: vi.fn(function (options: { signer: { signRaw(hash: string): Promise<string[]> } }) {
     return {
       execute: async (call: unknown) => {
@@ -29,7 +27,7 @@ const ledger = () =>
     rpcUrl: "https://ledger.test",
     contractAddress: "0x10",
     accountAddress: "0x20",
-    privateKey: "unused-test-key",
+    privateKey: `0x${hash.starknetKeccak(crypto.randomUUID()).toString(16)}`,
   });
 beforeEach(() => {
   vi.clearAllMocks();
@@ -68,4 +66,27 @@ it("refuses provisional reads and distinguishes a reverted broadcast from an unk
   expect(await ledger().confirm("0xabc")).toBe(false);
   rpc.wait.mockRejectedValue(new Error("unavailable"));
   await expect(ledger().confirm("0xabc")).rejects.toThrow();
+});
+
+it("binds setter, views and displacement decoding to the landed ledger interface", () => {
+  const source = readFileSync(new URL("../../../contracts/l2/ledger/src/contract.cairo", import.meta.url), "utf8");
+  const contractInterface = source.split("#[starknet::interface]")[1]!;
+  expect(contractInterface).toContain(
+    "fn set_account_link(ref self: TState, wallet: ContractAddress, account: ContractAddress);",
+  );
+  expect(contractInterface).toContain(
+    "fn account_of_wallet(self: @TState, wallet: ContractAddress) -> ContractAddress;",
+  );
+  expect(contractInterface).toContain(
+    "fn wallet_of_account(self: @TState, account: ContractAddress) -> ContractAddress;",
+  );
+  const event = source.match(/struct AccountLinkChanged \{([^}]+)\}/)![1]!;
+  expect(
+    event.match(/(?:#\[key\]\s+)?\w+: ContractAddress/g)?.map((field) => field.replace(/\s+/g, " ").trim()),
+  ).toEqual([
+    "#[key] wallet: ContractAddress",
+    "#[key] account: ContractAddress",
+    "previous_account: ContractAddress",
+    "previous_wallet: ContractAddress",
+  ]);
 });

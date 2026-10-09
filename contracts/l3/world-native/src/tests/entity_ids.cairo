@@ -41,8 +41,7 @@ fn high_home_ids_preserve_their_namespace_and_never_overlap_other_homes() {
 fn reservations_are_idempotent_and_triple_homes_are_consumed_per_owner() {
     let d = super::setup(true);
     let game = crate::game::IGameDispatcherTrait::game(crate::game::IGameDispatcher { contract_address: d.games }, 1);
-    let mut preset = super::play_fixture::fixture_preset(super::play_fixture::rules());
-    preset.settlement.mode = crate::settlement::SettlementMode::Triple;
+    let preset = super::registrar::definition(true);
     super::play_fixture::seed_game_with_preset(d.games, 1, game, preset);
     let other = super::authority();
     interact_with_state(

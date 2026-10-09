@@ -124,9 +124,12 @@ fn price_uses_rollover_over_expected_rolled_shares_with_a_floor_of_one() {
     );
     assert_eq!(today.price, price);
     assert_eq!((today.open, today.rolled_shares, today.day), (0, 0, 1));
-    let exhausted = LordsBudget { pool_left: 0, ..empty_day(rules, 0) };
+    let exhausted = LordsBudget { pool_left: 0, estimate: 1_000_000_000_000, ..empty_day(rules, 0) };
     assert_eq!(open_day(rules, exhausted, clock).price, 1);
     assert!(!fits(rules, exhausted, clock, 1));
+    let zero_expected = LordsBudget { estimate: 0, ..exhausted };
+    assert_eq!(open_day(rules, zero_expected, clock).price, rules.price_ceiling);
+    assert!(!fits(rules, zero_expected, clock, rules.price_ceiling));
     let busy = open_day(rules, LordsBudget { estimate: 1_000_000_000_000, ..empty_day(rules, 0) }, clock);
     assert!(available(rules, busy, clock) > 0);
     assert_eq!(busy.price, 1);
