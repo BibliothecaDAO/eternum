@@ -1,5 +1,5 @@
-# The stamping runtime has no world-contract dependency, so its image target can be verified separately.
-FROM rust:1.89-bookworm AS vrf-build
+# The native prover is built once and shipped in the init and Herald runtimes.
+FROM rust:1.89-bookworm@sha256:948f9b08a66e7fe01b03a98ef1c7568292e07ec2e4fe90d88c07bb14563c84ff AS vrf-build
 WORKDIR /prover
 COPY deploy/athanor/vrf/prover/ ./
 RUN cargo build --release --locked
@@ -12,13 +12,6 @@ COPY . .
 RUN pnpm install --frozen-lockfile
 RUN mkdir -p /proxy && bun build deploy/athanor/scripts/read-rpc.ts --target=bun --outfile=/proxy/read-rpc.js && \
     bun build deploy/athanor/vrf/worker.ts --target=bun --outfile=/proxy/worker.ts
-
-FROM oven/bun@sha256:e0ee68d16ccb9927bf02aa7dd8fd4bf3369ee6d46da04faa72b05ce8bfd135f6 AS proxy-runtime
-WORKDIR /app
-COPY --from=proxy-assets /proxy/ /app/
-COPY --from=vrf-build /prover/target/release/librealms_vrf_prover.so /app/prover/target/release/librealms_vrf_prover.so
-USER bun
-ENTRYPOINT ["bun", "/app/read-rpc.js"]
 
 # Compile contract artifacts once for the init image; Herald uses a separate runtime image.
 FROM node:22-bookworm@sha256:dd5847a04b0deee391fa145f1f4c6d214196668b6bcc7988ebed67249f226844 AS contracts
