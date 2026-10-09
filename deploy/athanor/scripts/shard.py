@@ -56,8 +56,6 @@ def cpu_numbers(value):
 def validate_configuration(config, allowed_cpus):
     if not re.fullmatch(r"[a-z][a-z0-9-]{0,39}", config["shard"]):
         raise ValueError("shard must be a lowercase identifier")
-    if any(key in config for key in ("gateway_image","gateway_revision","public_admission_url")):
-        raise ValueError("retired gateway settings are not accepted")
     if type(config.get("vrf_workers")) is not int or not 1 <= config["vrf_workers"] <= 64:
         raise ValueError("vrf_workers must be explicit 1..64")
     if not re.fullmatch(r"0x[0-9a-fA-F]{1,16}", config.get("l2_gas_bound", "")) or int(config["l2_gas_bound"], 16) == 0:
@@ -77,7 +75,7 @@ def validate_configuration(config, allowed_cpus):
             raise ValueError(f"{key} must be pinned by digest")
     port = config["port_base"]
     if not isinstance(port, int) or not 28000 <= port <= 65530:
-        raise ValueError("reserve isolated ports base through base+3 and base+5 above 27999")
+        raise ValueError("reserve isolated Herald and RPC ports base+1 and base+5 above 27999")
     if not cpu_numbers(config["cpuset"]) <= allowed_cpus:
         raise ValueError("cpuset exceeds the native slice allocation")
     # The upper bound is the slice's: check_slice_memory refuses a shard whose limits exceed what the slice holds.
@@ -224,7 +222,7 @@ def ensure_fresh_project(config):
     for command in (["ps", "-aq", "--filter", label], ["volume", "ls", "-q", "--filter", label]):
         if read([*DOCKER, *command]):
             raise ValueError(f"{project} already owns state; choose a fresh shard id")
-    for port in [config["port_base"] + offset for offset in (0, 1, 2, 3, 5)]:
+    for port in [config["port_base"] + offset for offset in (1, 5)]:
         with socket.socket() as listener:
             listener.bind(("127.0.0.1", port))
 

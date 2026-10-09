@@ -39,7 +39,7 @@ account, per-game order, epoch service or second submission endpoint. Private cr
 ## Herald and client
 
 Create a separate PostgreSQL database and configure `HERALD_RPC_URL`, `HERALD_PUBLIC_RPC_URL`,
-`HERALD_PUBLIC_ADMISSION_URL`, `DATABASE_URL` and `NATIVE_WORLD_MANIFEST`. Start Herald with
+`DATABASE_URL` and `NATIVE_WORLD_MANIFEST`. Start Herald with
 `pnpm --dir apps/herald start`, or build the shard package's Herald image, the one Herald build:
 `docker build --target herald -f deploy/shard/Dockerfile .`. The candidate service must use that same manifest and
 chain.
@@ -77,8 +77,8 @@ identity API of the environment whose guardian the shard's manifest names, and `
 operator token.
 
 The node and Herald URLs are required (`--rpc-url`/`RPC_URL`, `--herald-url`/`HERALD_URL`) and have no default; the
-`harness` service takes them from `harness.env`. The node's URL is always its internal one: the public RPC refuses
-writes and WebSockets, and the harness confirms over the node's WebSocket.
+`harness` service takes them from `harness.env`. Player invokes use the public stamping RPC. Setup and administrative calls use HARNESS_ADMIN_RPC_URL on the private
+node inside the Compose network.
 
 Every bot follows build-order suggestions, updates automation each minute and explores. The full acceptance workload
 uses 96 players and the frozen run configuration. Do not substitute a short smoke for it. Keep failed runs labeled
