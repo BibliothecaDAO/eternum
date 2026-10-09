@@ -1080,10 +1080,13 @@ fn live_loot_case(raid: bool, insufficient: bool, full: bool) -> (Deployment, Te
     }
     if full {
         let key = crate::resources::ResourceKey { game_id: 3, entity_id: attacker };
-        let free = snforge_std::interact_with_state(d.games, || {
-            let weight = crate::state::read().resources.weights.read((3, attacker));
-            weight.capacity - weight.weight
-        });
+        let free = snforge_std::interact_with_state(
+            d.games,
+            || {
+                let weight = crate::state::read().resources.weights.read((3, attacker));
+                weight.capacity - weight.weight
+            },
+        );
         // Fill the real army's carrying capacity; a zero capacity cannot survive casualty deductions.
         super::resource_commands::grant(d, key, 1, free);
     }
@@ -1192,7 +1195,10 @@ fn real_movement_reward_stays_applied_at_full_and_fractional_stores(capacity: u1
                 crate::state::write()
                     .resources
                     .weights
-                    .write((action.game_id, explorer.owner), crate::resources::Weight { capacity: weight + capacity, weight });
+                    .write(
+                        (action.game_id, explorer.owner),
+                        crate::resources::Weight { capacity: weight + capacity, weight },
+                    );
             },
         );
         assert!(play_fixture::play(d.games, action, root.into(), timestamp), "capacity {} root {}", capacity, root);

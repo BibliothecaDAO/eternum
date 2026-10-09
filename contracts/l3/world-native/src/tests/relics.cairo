@@ -666,5 +666,7 @@ fn chest_search_skips_the_explorers_vacated_start_tile() {
     let map = IMapLogicDispatcher { contract_address: deployment.games };
     assert!(map.tile(crate::geometry::tile_key(3, vacated)).is_none());
     let _tile = map.tile(crate::geometry::tile_key(3, crate::geometry::neighbor(vacated, 0))).unwrap();
-    assert_eq!(map.occupancy(crate::geometry::tile_key(3, crate::geometry::neighbor(vacated, 0))).unwrap().category, 34);
+    assert_eq!(
+        map.occupancy(crate::geometry::tile_key(3, crate::geometry::neighbor(vacated, 0))).unwrap().category, 34,
+    );
 }
