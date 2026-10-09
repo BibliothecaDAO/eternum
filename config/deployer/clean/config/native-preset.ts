@@ -290,7 +290,8 @@ function buildEconomy(
       chests.shares.legendary,
     ];
     if (
-      ![chests.pool, chests.priceCeiling, chests.estimateDays, chests.claimWindowSeconds, ...shares].every(
+      (!Number.isSafeInteger(chests.pool) || chests.pool < 0) ||
+      ![chests.priceCeiling, chests.estimateDays, chests.claimWindowSeconds, ...shares].every(
         (value) => Number.isSafeInteger(value) && value > 0,
       ) ||
       [chests.estimateDays, ...shares].some((value) => value > 0xffff) ||
