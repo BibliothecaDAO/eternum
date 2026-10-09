@@ -42,6 +42,27 @@ export interface Registration {
   paid: bigint;
 }
 
+/** A game's result for one wallet: rank 0 until the results are on the ledger. MMR in whole points. */
+export interface PlayerResult {
+  rank: number;
+  points: bigint;
+  chestId: bigint;
+  mmrBefore: number;
+  mmrAfter: number;
+}
+
+/** What a chest holds, fixed when it was minted: a cosmetic, a sword or shield credit, or LORDS. */
+export type ChestContent =
+  | { kind: "cosmetic"; attributes: string }
+  | { kind: "sword" }
+  | { kind: "shield" }
+  | { kind: "lords"; amount: bigint };
+
+export interface Chest {
+  opened: boolean;
+  content: ChestContent;
+}
+
 /** LORDS and STRK on Starknet mainnet: LORDS pays the entry, STRK the network fee. */
 export const LORDS_TOKEN = "0x0124aeb495b947201f5fac96fd1138e326ad86195b98df6dec9009158a533b49";
 const STRK_TOKEN = "0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d";
@@ -57,6 +78,12 @@ const flag = (value: boolean) => (value ? "1" : "0");
 export const registerCalls = (ledger: string, key: GameKey, sword: boolean, shield: boolean, cash: bigint): Call[] => [
   ...(cash > 0n ? [{ contractAddress: LORDS_TOKEN, entrypoint: "approve", calldata: [ledger, ...u256(cash)] }] : []),
   { contractAddress: ledger, entrypoint: "register", calldata: [...keyCalldata(key), flag(sword), flag(shield)] },
+];
+
+/** Chest.approve(ledger, token) then open_chest(token): the holder's own call; the chest burns as it delivers. */
+export const openChestCalls = (ledger: string, chest: string, tokenId: bigint): Call[] => [
+  { contractAddress: chest, entrypoint: "approve", calldata: [ledger, ...u256(tokenId)] },
+  { contractAddress: ledger, entrypoint: "open_chest", calldata: u256(tokenId) },
 ];
 
 /** refund(key): a cancelled game's paid LORDS and spent credits come back to the payer. */
@@ -76,6 +103,7 @@ const fields = (felts: readonly string[]) => {
   return {
     number: () => Number(next()),
     bool: () => next() !== 0n,
+    u128: () => next(),
     u256: () => {
       const low = next();
       return low + (next() << 128n);
@@ -124,6 +152,37 @@ export const decodeRegistration = (felts: readonly string[]): Registration => {
   return { registered, sword, shield, swordCredit: read.bool(), shieldCredit: read.bool(), paid: read.u256() };
 };
 
+/** PlayerResult: rank, points, chest_id, mmr_before, mmr_after. */
+export const decodePlayerResult = (felts: readonly string[]): PlayerResult => {
+  const read = fields(felts);
+  return {
+    rank: read.number(),
+    points: read.u128(),
+    chestId: read.u256(),
+    mmrBefore: read.number(),
+    mmrAfter: read.number(),
+  };
+};
+
+/** Chest: exists, opened, content { kind, cosmetic, lords }. */
+export const decodeChest = (felts: readonly string[]): Chest => {
+  const read = fields(felts);
+  read.skip(1);
+  const opened = read.bool();
+  const kind = read.number();
+  const cosmetic = read.u128();
+  const lords = read.u256();
+  return { opened, content: chestContent(kind, cosmetic, lords) };
+};
+
+const chestContent = (kind: number, cosmetic: bigint, lords: bigint): ChestContent => {
+  if (kind === 0) return { kind: "cosmetic", attributes: `0x${cosmetic.toString(16)}` };
+  if (kind === 1) return { kind: "sword" };
+  if (kind === 2) return { kind: "shield" };
+  if (kind === 3) return { kind: "lords", amount: lords };
+  throw new Error(`Unknown chest kind ${kind}`);
+};
+
 /** Credits: swords, shields. */
 export const decodeCredits = (felts: readonly string[]): Credits => {
   const read = fields(felts);
@@ -148,6 +207,11 @@ export const ledgerReader = (provider: ProviderInterface, ledger: string) => {
     registration: async (key: GameKey, owner: string) =>
       decodeRegistration(await view("get_registration", [...keyCalldata(key), owner])),
     credits: async (owner: string) => decodeCredits(await view("get_credits", [owner])),
+    result: async (key: GameKey, owner: string) =>
+      decodePlayerResult(await view("get_player_result", [...keyCalldata(key), owner])),
+    chest: async (tokenId: bigint) => decodeChest(await view("get_chest", u256(tokenId))),
+    chestOwner: async (chest: string, tokenId: bigint) =>
+      (await provider.callContract({ contractAddress: chest, entrypoint: "owner_of", calldata: u256(tokenId) }))[0],
     lords: (owner: string) => balanceOf(LORDS_TOKEN, owner),
     strk: (owner: string) => balanceOf(STRK_TOKEN, owner),
   };

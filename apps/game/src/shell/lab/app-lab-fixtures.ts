@@ -7,6 +7,7 @@ import type { DirectoryGame } from "../herald";
 import type { PayoutWallet } from "@/hooks/context/payout-wallet";
 
 import type { EntryTerms, SlotLedger } from "../blitz/entry";
+import type { GameLedger, Reward } from "../season-tab/reward";
 
 /**
  * The app lab's one fiction, the handoff's: Day 12 of a Frontier season, today ends with 7h 14m left, the player
@@ -135,6 +136,12 @@ export const LAB_SCREENS = {
   "entry-cancelled": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
   "entry-refunded": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
   "entry-no-wallet": { signedIn: true, joined: false, games: [frontier(true), liveBlitz(false), eternum] },
+  "reward-pending": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
+  "reward-sealed": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
+  "reward-no-strk": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
+  "reward-epic": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
+  "reward-lords": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
+  "reward-credit": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
 } as const;
 
 const LAB_WALLET = "0x04a1c0de5eed000000000000000000000000000000000000000000000009c2e";
@@ -151,6 +158,12 @@ export const LAB_PAYOUT_WALLETS: Partial<Record<keyof typeof LAB_SCREENS, Payout
   "entry-cancelled": { status: "ready", address: LAB_WALLET },
   "entry-refunded": { status: "ready", address: LAB_WALLET },
   "entry-no-wallet": { status: "no_wallet" },
+  "reward-pending": { status: "ready", address: LAB_WALLET },
+  "reward-sealed": { status: "ready", address: LAB_WALLET },
+  "reward-no-strk": { status: "ready", address: LAB_WALLET },
+  "reward-epic": { status: "ready", address: LAB_WALLET },
+  "reward-lords": { status: "ready", address: LAB_WALLET },
+  "reward-credit": { status: "ready", address: LAB_WALLET },
 };
 
 /** The ledger game the lab's slot fills, on a paid Blitz's screens. */
@@ -361,3 +374,36 @@ export const LAB_CHAT = [
   content,
   createdAt: new Date((NOW - 600 + index * 60) * 1000).toISOString(),
 }));
+
+/** The ledger and chest collection the lab's finished Blitz was played on, on the reward screens. */
+export const LAB_GAME_LEDGER: GameLedger = {
+  address: "0x1ed9e7",
+  chest: "0xc4e57",
+  key: { shard: LAB_CHAIN, gameId: 7 },
+};
+
+const RESULT = { rank: 3, points: 352n, chestId: 41n, mmrBefore: 1744, mmrAfter: 1780 };
+const SWORD = { registered: true, sword: true, shield: false, swordCredit: false, shieldCredit: false, paid: 0n };
+const SEALED: Reward = {
+  result: RESULT,
+  chest: { opened: false, content: { kind: "cosmetic", attributes: "0x4040d01" } },
+  held: true,
+  registration: SWORD,
+  strk: 10n ** 17n,
+};
+
+/** The payout wallet's result and chest on each reward screen: what the ledger would answer. */
+export const LAB_REWARDS: Partial<Record<keyof typeof LAB_SCREENS, Reward>> = {
+  "reward-pending": { ...SEALED, result: { ...RESULT, rank: 0, chestId: 0n }, chest: null },
+  "reward-sealed": SEALED,
+  "reward-no-strk": { ...SEALED, strk: 0n },
+  "reward-epic": { ...SEALED, chest: { ...SEALED.chest!, opened: true }, held: false },
+  "reward-lords": { ...SEALED, chest: { opened: true, content: { kind: "lords", amount: 700n * WEI } }, held: false },
+  "reward-credit": {
+    ...SEALED,
+    result: { ...RESULT, mmrAfter: 1732 },
+    registration: { ...SWORD, sword: false, shield: true },
+    chest: { opened: true, content: { kind: "shield" } },
+    held: false,
+  },
+};

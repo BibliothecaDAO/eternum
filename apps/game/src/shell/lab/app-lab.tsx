@@ -9,6 +9,7 @@ import { useBootDocumentState } from "@/ui/modules/boot-loader";
 
 import { BlitzListPage, BlitzLobbyPage } from "../blitz/blitz-pages";
 import { entryTermsKey } from "../blitz/entry";
+import { rewardKey } from "../season-tab/reward";
 import { LearnPage } from "../learn/learn-page";
 import { DominionPage, EternumPage, FrontierPage } from "../play/age-pages";
 import { PlayPage } from "../play/play-page";
@@ -30,6 +31,8 @@ import {
   LAB_CHAT,
   LAB_EMAIL_CODE,
   LAB_ENTRY_TERMS,
+  LAB_GAME_LEDGER,
+  LAB_REWARDS,
   LAB_PAYOUT_WALLETS,
   LAB_SLOT_LEDGER,
   labRatings,
@@ -99,8 +102,16 @@ const createLabClient = (screen: LabScreen) => {
   const wallet = LAB_PAYOUT_WALLETS[screen];
   const terms = LAB_ENTRY_TERMS[screen];
   if (terms && wallet?.status === "ready") client.setQueryData(entryTermsKey(LAB_SLOT_LEDGER, wallet.address), terms);
+  const reward = LAB_REWARDS[screen];
+  if (reward && wallet?.status === "ready") client.setQueryData(rewardKey(LAB_GAME_LEDGER, wallet.address), reward);
   return client;
 };
+
+/** A screen's listed games; on a reward screen the Blitz names the ledger it was played on. */
+const labGames = (screen: LabScreen) =>
+  LAB_SCREENS[screen].games.map((game) =>
+    LAB_REWARDS[screen] && game.game_id === LAB_GAME_LEDGER.key.gameId ? { ...game, ledger: LAB_GAME_LEDGER } : game,
+  );
 
 const json = (body: unknown) =>
   new Response(JSON.stringify(body), { status: 200, headers: { "content-type": "application/json" } });
@@ -111,11 +122,14 @@ const answerAppReads = (screen: LabScreen) => {
   const answers: Record<string, (url: URL) => Response> = {
     "/api/directory": () =>
       json({
-        shards: [
-          { url: "https://lab.invalid", chainId: LAB_CHAIN, status: "active", games: LAB_SCREENS[screen].games },
-        ],
+        shards: [{ url: "https://lab.invalid", chainId: LAB_CHAIN, status: "active", games: labGames(screen) }],
       }),
-    "/api/directory/history": () => json({ games: [LAB_FINISHED_BLITZ], next: null, failures: [] }),
+    "/api/directory/history": () =>
+      json({
+        games: [LAB_REWARDS[screen] ? { ...LAB_FINISHED_BLITZ, ledger: LAB_GAME_LEDGER } : LAB_FINISHED_BLITZ],
+        next: null,
+        failures: [],
+      }),
     "/api/guardian": () => json(LAB_GUARDIAN),
     "/api/slots": () => json(labSlots(LAB_SCREENS[screen].joined, LAB_ENTRY_TERMS[screen] && LAB_SLOT_LEDGER)),
     "/api/profiles": (url) => json({ profiles: profilesOf(url.searchParams.get("accounts")?.split(",") ?? []) }),

@@ -3,6 +3,8 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 
 import type { GameRef } from "@bibliothecadao/eternum/shard";
 import type { HeraldFrontierLeaderboardEntry } from "@bibliothecadao/eternum/game-sync";
+import { useIdentitySession } from "@/hooks/context/identity-session";
+import { payoutWalletOf } from "@/hooks/context/payout-wallet";
 import { formatAmount } from "@/ui/design-system/kit/amount";
 import { Button } from "@/ui/design-system/kit/button";
 import { Chip } from "@/ui/design-system/kit/chip";
@@ -28,6 +30,8 @@ import { useNowSeconds } from "../use-now";
 import { SEASON_WORDS, WORDS } from "../words";
 import { gameTitle } from "./history-row";
 import { gameOfResults, isFromList } from "./results-link";
+import { gameLedgerOf } from "./reward";
+import { RewardPanel } from "./reward-panel";
 
 /** The post-game score and share cards; heavy, so they load only when a player taps Share. */
 const GameReviewModal = lazy(() =>
@@ -196,6 +200,10 @@ const BlitzResult = ({
   const own = player ? entries.find((entry) => sameAddress(entry.address, player)) : undefined;
   const top = entries.slice(0, ROWS[layout]);
   const rows = own && !top.includes(own) ? [...top, own] : top;
+  // A game played on the ledger shows the payout wallet's rating change and chest under the board.
+  const { session } = useIdentitySession();
+  const ledger = game ? gameLedgerOf(game) : null;
+  const wallet = session ? payoutWalletOf(session.user) : null;
   return (
     <ResultLayout
       painting={ageOf("blitz").painting}
@@ -210,25 +218,28 @@ const BlitzResult = ({
         </>
       }
       rows={
-        <ol className="plate px-2">
-          {rows.map((entry) => {
-            const isOwn = entry === own;
-            return (
-              <li
-                key={entry.address}
-                className="flex h-[52px] items-center gap-2 border-b border-kit-line px-1 last:border-b-0"
-              >
-                <span className="w-[34px] text-center text-[15px] tabular-nums">{entry.rank}</span>
-                <span className="min-w-0 flex-1 text-[15px]">
-                  <PlayerName account={entry.address} you={isOwn} portrait />
-                </span>
-                <span className="text-[15px] font-bold tabular-nums">
-                  {formatPoints(entry.totalPoints)} {SEASON_WORDS.vp}
-                </span>
-              </li>
-            );
-          })}
-        </ol>
+        <div className="flex flex-col gap-5">
+          <ol className="plate px-2">
+            {rows.map((entry) => {
+              const isOwn = entry === own;
+              return (
+                <li
+                  key={entry.address}
+                  className="flex h-[52px] items-center gap-2 border-b border-kit-line px-1 last:border-b-0"
+                >
+                  <span className="w-[34px] text-center text-[15px] tabular-nums">{entry.rank}</span>
+                  <span className="min-w-0 flex-1 text-[15px]">
+                    <PlayerName account={entry.address} you={isOwn} portrait />
+                  </span>
+                  <span className="text-[15px] font-bold tabular-nums">
+                    {formatPoints(entry.totalPoints)} {SEASON_WORDS.vp}
+                  </span>
+                </li>
+              );
+            })}
+          </ol>
+          {ledger && wallet && <RewardPanel ledger={ledger} wallet={wallet} players={entries.length} />}
+        </div>
       }
       buttons={
         <Buttons fromList={fromList}>

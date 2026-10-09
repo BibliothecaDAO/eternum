@@ -267,6 +267,26 @@ export const ENTRY_WORDS = {
   refundedLine: "Your LORDS and credits are back in your wallet.",
 } as const;
 
+/** After a paid Blitz: the rating's change and the chest the result minted. */
+export const REWARD_WORDS = {
+  rating: "Blitz rating",
+  chest: "Chest",
+  arrives: "Arrives with the results",
+  open: "Open",
+  keep: "Keep",
+  inCollection: "In your collection",
+  tradeable: "Tradeable",
+  traded: "In another collection",
+  cosmetic: "Cosmetic",
+  lords: "LORDS",
+  lordsSent: "Sent to your payout wallet",
+  swordCredit: "Sword credit",
+  shieldCredit: "Shield credit",
+  nextEntry: "Used at your next entry",
+  /** A chest's rank band, the one fact it shows sealed (rewards.html 3b). */
+  band: { top: "Top 10%", upper: "Top 25%", middle: "Top half", lower: "Top 75%", bottom: "Bottom 25%" },
+} as const;
+
 /** The three alert levels (ruled) and what each carries, in one line. */
 export const LEVEL_WORDS = {
   off: { word: "Off", line: "Nothing" },
