@@ -205,7 +205,6 @@ pub mod PlacementLogic {
                 let coord = crate::settlement_grid::reservation_location(center, rules.mode, rules.spacing, placed);
                 let key = tile_key(game_id, coord);
                 let previous = crate::logic::map::tile(key).map(|tile| tile.data).unwrap_or(0);
-                assert!(previous % BIOME_SCALE == 0, "occupied reservation tile");
                 if previous / BIOME_SCALE % BYTE_RANGE == 0 {
                     crate::logic::map::MapState::reveal(
                         key, crate::logic::map::biome(key, crate::commands::biome_context(game_context)),

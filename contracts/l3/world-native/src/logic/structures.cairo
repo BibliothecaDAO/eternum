@@ -834,12 +834,10 @@ pub mod StructuresLogic {
         fn prepare_settlement_tile(
             ref self: ContractState, game_id: u32, coord: Coord, game_context: crate::commands::ExecutionContext,
         ) {
-            let tile = crate::logic::map::tile(tile_key(game_id, coord)).map(|tile| tile.data).unwrap_or(0);
-            if tile % 0x20000000000 != 0 {
-                assert!(tile % 2 == 0, "tile occupied by structure");
-                let explorer_id = (tile / 512 % 0x100000000).try_into().unwrap();
+            if let Some(occupancy) = crate::logic::map::occupancy(tile_key(game_id, coord)) {
+                assert!(!occupancy.is_structure, "tile occupied by structure");
                 ISettlementDisplacementLibraryDispatcher { class_hash: self.release.classes(game_id).movement.read() }
-                    .displace_explorer(game_id, explorer_id, crate::commands::action_context(game_context));
+                    .displace_explorer(game_id, occupancy.entity_id, crate::commands::action_context(game_context));
             }
             self.reveal_structure_tile(game_id, coord, game_context);
             self
