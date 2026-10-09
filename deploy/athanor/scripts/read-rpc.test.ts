@@ -288,3 +288,40 @@ test("configured proxy names an absent private node without printing credentials
     await rm(directory, { recursive: true, force: true });
   }
 });
+
+test("the public relay can page Games events with the address filter intact", async () => {
+  const received: unknown[] = [];
+  const page = { events: [], continuation_token: "next-page" };
+  const node = Bun.serve({
+    hostname: "127.0.0.1",
+    port: 0,
+    async fetch(request) {
+      received.push(await request.json());
+      return Response.json({ jsonrpc: "2.0", id: 42, result: page });
+    },
+  });
+  const proxy = startReadRpc(node.url.origin, 0, playIdentity, noStamp, undefined, "127.0.0.1");
+  const query = {
+    jsonrpc: "2.0",
+    id: 42,
+    method: "starknet_getEvents",
+    params: {
+      filter: {
+        from_block: { block_number: 10 },
+        to_block: { block_number: 20 },
+        address: playIdentity.games,
+        keys: [[hash.getSelectorFromName("RowSet")]],
+        chunk_size: 100,
+        continuation_token: "previous-page",
+      },
+    },
+  };
+  try {
+    const response = await fetch(new URL("/rpc/v0_10_2", proxy.url), { method: "POST", body: JSON.stringify(query) });
+    expect((await response.json()).result).toEqual(page);
+    expect(received).toEqual([query]);
+  } finally {
+    proxy.stop(true);
+    node.stop(true);
+  }
+});
