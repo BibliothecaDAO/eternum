@@ -1534,3 +1534,55 @@ fn sponsoring_before_registration_is_preserved_in_the_refund() {
     fixture.ledger.refund(GAME_KEY);
     assert!(fixture.lords.balance_of(owner) == 700);
 }
+
+#[test]
+#[should_panic(expected: "Ledger: game outside season")]
+fn a_game_cannot_end_at_the_instant_its_result_ratings_freeze() {
+    let fixture = deploy_fixture(default_preset());
+    start_cheat_caller_address(fixture.ledger_address, OPERATOR());
+    fixture.ledger.open_game(GameKey { shard: 'shard', game_id: 99 }, 1, PRESET_ID, START, END + 100);
+}
+
+#[test]
+fn frontier_season_chests_and_unfinished_game_custody_are_conserved_together() {
+    let fixture = deploy_fixture(default_preset());
+    fund_and_approve_player(@fixture, ADMIN(), 1000);
+    start_cheat_caller_address(fixture.ledger_address, ADMIN());
+    fixture.ledger.fund_frontier('shard', 1, START, END, 1000);
+    let unfinished = GameKey { shard: 'other', game_id: 8 };
+    start_cheat_caller_address(fixture.ledger_address, OPERATOR());
+    fixture.ledger.open_game(unfinished, 1, PRESET_ID, START, END);
+    fund_and_approve_player(@fixture, player(2), 500);
+    start_cheat_caller_address(fixture.ledger_address, player(2));
+    fixture.ledger.register(unfinished, false, false);
+    register_players(@fixture, 2);
+    let mut winner = row(player(0), 1);
+    winner.chest = ChestContent { kind: 3, lords: 200, ..Default::default() };
+    apply_results(@fixture, array![winner, row(player(1), 2)]);
+    assert!(fixture.lords.balance_of(fixture.ledger_address) == 2500);
+    start_cheat_block_timestamp(fixture.ledger_address, END);
+    start_cheat_caller_address(fixture.ledger_address, OPERATOR());
+    fixture.ledger.pay('shard', 1, 'withdrawal', player(0), 1000);
+    open_reward(@fixture, player(0), 1);
+    assert!(fixture.ledger.get_season(1).pool == 800);
+    assert!(fixture.ledger.get_game(unfinished).pool == 500);
+    post_top_at(@fixture, END + 100, array![player(0)]);
+    claim_season_at(@fixture, END + 100 + 3600, player(0));
+    start_cheat_caller_address(fixture.ledger_address, OPERATOR());
+    fixture.ledger.abort_game(unfinished);
+    start_cheat_caller_address(fixture.ledger_address, player(2));
+    fixture.ledger.refund(unfinished);
+    assert!(fixture.lords.balance_of(player(0)) == 2000);
+    assert!(fixture.lords.balance_of(player(2)) == 500);
+    assert!(fixture.lords.balance_of(fixture.ledger_address) == 0);
+}
+
+#[test]
+#[should_panic(expected: 'ERC721: unauthorized caller')]
+fn a_chest_open_requires_the_owners_burn_approval() {
+    let fixture = deploy_fixture(default_preset());
+    register_players(@fixture, 1);
+    apply_results(@fixture, ranked_players(1));
+    start_cheat_caller_address(fixture.ledger_address, player(0));
+    fixture.ledger.open_chest(1);
+}
