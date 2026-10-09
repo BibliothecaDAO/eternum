@@ -3,7 +3,10 @@ import { readFileSync } from "node:fs";
 import { Group, Quaternion, Vector3, type Object3D } from "three";
 
 import { ProceduralContactReactionController } from "../src/three/characters/collision/procedural-contact-reaction";
-import type { ProceduralMeleeAttackState } from "../src/three/characters/melee/procedural-melee-attack-cycle";
+import type {
+  ProceduralMeleeAttackPhase,
+  ProceduralMeleeAttackState,
+} from "../src/three/characters/melee/procedural-melee-attack-cycle";
 import {
   applyProceduralMeleeConfigPatch,
   createDefaultProceduralMeleeConfig,
@@ -32,8 +35,12 @@ import {
 import {
   resolveProceduralCharacterPose,
   type QuaternionTuple,
+  type Vector3Tuple,
 } from "../src/three/characters/procedural-character-pose";
-import { ProceduralCharacterPoseFilter } from "../src/three/characters/procedural-character-pose-filter";
+import {
+  PROCEDURAL_POSE_FILTER_LAG_SECONDS,
+  ProceduralCharacterPoseFilter,
+} from "../src/three/characters/procedural-character-pose-filter";
 import {
   applyCharacterRigLimbLengths,
   resolveCharacterRig,
@@ -67,6 +74,8 @@ export interface GuardClearance {
   bladeToShield: number;
   bladeToTrunk: number;
   bladeTipHeight: number;
+  /** Where the blade's tip is, in the actor's frame. */
+  bladeTip: Vector3Tuple;
   /** Degrees between the blade and straight up. */
   bladeVerticalDegrees: number;
   /** The blade's x component: positive leans towards the body's midline from the right hand. */
@@ -92,6 +101,8 @@ export interface GuardClearance {
 }
 
 export interface KnightGuardSample {
+  /** The melee attack's phase at the moment. */
+  attackPhase: ProceduralMeleeAttackPhase;
   clearance: GuardClearance;
   label: string;
   motion: KnightMotion;
@@ -151,12 +162,13 @@ const SAMPLE_EVERY_FRAMES = 2;
  * Runs one figure through the steps in turn, frame by frame, the way the runtime does: the melee controller eases its
  * guards and picks the attack, a contact reaction blends the hit in, the pose filter trails the controller (and is
  * reset when the motion changes), and the declared arms are placed in the chest the figure shows. Samples every other
- * frame.
+ * frame unless told otherwise.
  */
 export function runKnightSequence(
   subject: KnightGuardSubject,
   steps: readonly KnightSequenceStep[],
   seed = 0,
+  sampleEveryFrames = SAMPLE_EVERY_FRAMES,
 ): KnightGuardSample[] {
   const root = new Group();
   const melee = new ProceduralMeleeController(createKnightMeleeConfig(), false, seed);
@@ -200,8 +212,9 @@ export function runKnightSequence(
       );
       subject.avatar.applyPose(pose);
       visibleChest = pose.parts.chest.quaternion;
-      if (stepFrame % SAMPLE_EVERY_FRAMES !== 0) continue;
+      if (stepFrame % sampleEveryFrames !== 0) continue;
       samples.push({
+        attackPhase: melee.getStats().phase,
         clearance: measureGuardClearance(subject),
         label: `${step.label} ${(stepFrame / FRAMES_PER_SECOND).toFixed(2)}s`,
         motion: step.motion,
@@ -312,6 +325,7 @@ function measureGuardClearance(subject: KnightGuardSubject): GuardClearance {
     bladeToShieldArm: Math.min(...shieldArm.map((arm) => segmentDistance(bladeSegment, arm) - ARM_RADIUS)),
     bladeToTrunk: segmentDistance(bladeSegment, trunk) - TRUNK_RADIUS,
     bladeTipHeight: bladeSegment.end.y,
+    bladeTip: [bladeSegment.end.x, bladeSegment.end.y, bladeSegment.end.z],
     bladeVerticalDegrees: radiansToDegrees(blade.angleTo(new Vector3(0, 1, 0))),
     bladeLeanInward: blade.x,
     forearmInFrontOfShield: Math.max(
@@ -472,16 +486,31 @@ function resolveStateDrive(name: KnightStateName): KnightStateDrive {
   if (name === "run-guard") return { ...standing, animationMode: "run", holds: { guard: 1, move: 1, run: 1 } };
   if (name === "hit") return { ...standing, hitWeight: 1 };
   const [variant, moment] = name.split("-") as [ProceduralMeleeAttackVariantId, "windup" | "contact" | "follow"];
-  const phase = { windup: "windup", contact: "contact", follow: "followThrough" } as const;
+  return { ...standing, state: resolveMomentReachedAfterLead(variant, moment) };
+}
+
+/**
+ * The attack state whose look ahead (declared poses lead the attack by the pose filter's lag) lands at the end of the
+ * moment's phase, so the declared weights of that moment are fully reached: windup at the end of the windup, contact at
+ * the end of the strike, follow at the end of the follow-through.
+ */
+function resolveMomentReachedAfterLead(
+  variant: ProceduralMeleeAttackVariantId,
+  moment: "windup" | "contact" | "follow",
+): ProceduralMeleeAttackState {
+  const config = createKnightMeleeConfig(variant);
+  const phase = ({ windup: "windup", contact: "strike", follow: "followThrough" } as const)[moment];
+  const duration = {
+    followThrough: config.followThroughSeconds,
+    strike: config.strikeSeconds,
+    windup: config.windupSeconds,
+  }[phase];
   return {
-    ...standing,
-    state: {
-      attackGeneration: 1,
-      contactCount: moment === "windup" ? 0 : 1,
-      phase: phase[moment],
-      phaseElapsedSeconds: moment === "contact" ? 0 : 10,
-      variant,
-    },
+    attackGeneration: 1,
+    contactCount: moment === "follow" ? 1 : 0,
+    phase,
+    phaseElapsedSeconds: duration - PROCEDURAL_POSE_FILTER_LAG_SECONDS,
+    variant,
   };
 }
 
@@ -494,9 +523,9 @@ const SETTLE_FRAMES = 40;
 export function measureKnightState(
   subject: KnightGuardSubject,
   name: KnightStateName,
-): { arms: KnightArmStateMeasure; body: KnightBodyStateMeasure } {
+): { arms: KnightArmStateMeasure; body: KnightBodyStateMeasure; clearance: GuardClearance } {
   const gait = settleKnightState(subject, name);
-  return { arms: measureArms(subject), body: measureBody(subject, gait) };
+  return { arms: measureArms(subject), body: measureBody(subject, gait), clearance: measureGuardClearance(subject) };
 }
 
 /** Where the trunk, head and feet are, in the terms poses.json declares them in (degrees, fractions and metres). */

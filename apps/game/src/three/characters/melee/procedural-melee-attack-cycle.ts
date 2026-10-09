@@ -125,6 +125,19 @@ export function resolveProceduralMeleeAttackSignals(
   };
 }
 
+/**
+ * The attack as it will stand `seconds` from now, across its phases: what a pose shown through a filter that trails by
+ * that long has to aim at, so the figure reaches each moment when the controller does. Held within a phase it would jump
+ * at every phase change; no new attack starts in the look ahead, so the seed is not used.
+ */
+export function leadProceduralMeleeAttackState(
+  state: ProceduralMeleeAttackState,
+  config: ProceduralMeleeConfig,
+  seconds: number,
+): ProceduralMeleeAttackState {
+  return advanceProceduralMeleeAttack(state, config, 0, seconds, false).state;
+}
+
 function resolvePhaseDuration(phase: ProceduralMeleeAttackPhase, config: ProceduralMeleeConfig): number {
   if (phase === "idle") return Number.POSITIVE_INFINITY;
   if (phase === "acquire") return config.acquireSeconds;

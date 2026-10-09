@@ -131,6 +131,20 @@ function resolveFootLift(
   return Math.max(body.footLift[foot] * (1 - clampUnit(weight)), lift);
 }
 
+/**
+ * How far, in metres in the chest's frame (+X left, +Z forward), the shield arm's wrist bows out of the straight line
+ * between an idle and the guard or hit: a straight line takes a shield hung at the side through the thigh while the feet
+ * step back under the body.
+ */
+const SHIELD_ARM_BOW: readonly [number, number, number] = [0.045, 0, 0.02];
+
+/** Bows the wrist out by `sin(pi w)` of the shield arm's bow, `w` the weight that moves it between the two states. */
+export function bowProceduralMeleeArmPose(pose: ProceduralMeleeArmPose, weight: number): ProceduralMeleeArmPose {
+  const bow = Math.sin(Math.PI * clampUnit(weight));
+  const [x, y, z] = pose.wrist;
+  return { ...pose, wrist: [x + SHIELD_ARM_BOW[0] * bow, y + SHIELD_ARM_BOW[1] * bow, z + SHIELD_ARM_BOW[2] * bow] };
+}
+
 /** Positions lerp, the hand's turn slerps. */
 export function lerpProceduralMeleeArmPose(
   from: ProceduralMeleeArmPose,

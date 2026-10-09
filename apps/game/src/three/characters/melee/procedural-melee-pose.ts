@@ -1,8 +1,14 @@
 import type { ProceduralMeleeConfig } from "./procedural-melee-config";
-import { resolveProceduralMeleeAttackSignals, type ProceduralMeleeAttackState } from "./procedural-melee-attack-cycle";
+import { PROCEDURAL_POSE_FILTER_LAG_SECONDS } from "../procedural-character-pose-filter";
+import {
+  leadProceduralMeleeAttackState,
+  resolveProceduralMeleeAttackSignals,
+  type ProceduralMeleeAttackState,
+} from "./procedural-melee-attack-cycle";
 import {
   blendProceduralMeleeArmStates,
   blendProceduralMeleeBodyStates,
+  bowProceduralMeleeArmPose,
   lerpProceduralMeleeArmPose,
   stepProceduralMeleeBody,
   type ProceduralMeleeHeldBody,
@@ -78,12 +84,20 @@ export function resolveProceduralMeleeUpperBodyPose(input: {
 }): ProceduralMeleeUpperBodyPose {
   const signals = resolveProceduralMeleeAttackSignals(input.state, input.config);
   const carryWeight = input.mounted ? 0.86 : 0.34;
-  const weights = resolveDeclaredStateWeights(signals, input.holds, input.seed, input.state);
+  // Declared states are shown through the pose filter and in the chest it shows: they lead the attack by the filter's
+  // lag, so the figure reaches the contact pose when the contact event fires.
+  const leadState = leadProceduralMeleeAttackState(input.state, input.config, PROCEDURAL_POSE_FILTER_LAG_SECONDS);
+  const leadSignals = resolveProceduralMeleeAttackSignals(leadState, input.config);
+  const weights = resolveDeclaredStateWeights(leadSignals, input.holds, input.seed, input.state);
+  const armWeights = { ...weights, guardWeight: leadArmsToGuard(weights.guardWeight) };
   const body = resolveProceduralMeleeWeapon(input.config.weaponId).bodyPoses;
   return {
     ...signals,
     actionWeight: Math.max(signals.actionWeight, carryWeight),
-    arms: resolveDeclaredArms(input.config, (states) => blendProceduralMeleeArmStates(states, weights)),
+    arms: bowShieldArm(
+      resolveDeclaredArms(input.config, (states) => blendProceduralMeleeArmStates(states, armWeights)),
+      armWeights.guardWeight,
+    ),
     ...(body && { body: blendProceduralMeleeBodyStates(body, weights) }),
     ...(hasDeclaredStates(input.config) && { hit: resolveDeclaredHit(input.config) }),
     aimPitchRadians: input.aimPitchRadians,
@@ -107,14 +121,15 @@ export function applyProceduralMeleeHitReaction(
 ): ProceduralMeleeUpperBodyPose {
   const { hit } = pose;
   if (!hit || weight <= 1e-4) return pose;
+  const armWeight = weight;
   const arm = (side: "left" | "right") => {
     const from = pose.arms[side];
     const to = hit.arms[side];
-    return from && to ? lerpProceduralMeleeArmPose(from, to, weight) : from;
+    return from && to ? lerpProceduralMeleeArmPose(from, to, armWeight) : from;
   };
   return {
     ...pose,
-    arms: { left: arm("left"), right: arm("right") },
+    arms: bowShieldArm({ left: arm("left"), right: arm("right") }, armWeight),
     ...(pose.body && hit.body && { body: stepProceduralMeleeBody(pose.body, hit.body, weight) }),
   };
 }
@@ -139,6 +154,21 @@ function resolveDeclaredStateWeights(
     variant: state.variant,
     windup: signals.windupProgress * signals.actionWeight,
   };
+}
+
+/** The shield is on the left arm: its wrist bows out on the way between the idle and the guard or hit (see bowProceduralMeleeArmPose). */
+function bowShieldArm(arms: ProceduralMeleeDeclaredArms, weight: number): ProceduralMeleeDeclaredArms {
+  return arms.left ? { ...arms, left: bowProceduralMeleeArmPose(arms.left, weight) } : arms;
+}
+
+/**
+ * The arms go to guard ahead of the feet and leave it after them: raising, the shield is up before the rear knee comes
+ * forward; relaxing, it stays up until the feet have stepped back, so the stepping knee never rises into it.
+ */
+const ARM_LEAD_POWER = 4;
+
+function leadArmsToGuard(guardWeight: number): number {
+  return 1 - (1 - guardWeight) ** ARM_LEAD_POWER;
 }
 
 function resolveDeclaredArms<T>(

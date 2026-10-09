@@ -40,7 +40,8 @@ describe("procedural melee controller", () => {
     expect(shieldWristHeight("standing", 1 / 60)).toBeCloseTo(idle, 6);
     const firstStep = shieldWristHeight("walking", 1 / 60) as number;
     expect(firstStep).toBeGreaterThan(idle);
-    expect(firstStep).toBeLessThan(idle + (shield.guard.wrist[1] - idle) * 0.25);
+    // The arms lead the feet to guard (leadArmsToGuard), but still over a moment, not in one frame.
+    expect(firstStep).toBeLessThan(idle + (shield.guard.wrist[1] - idle) * 0.5);
     expect(shieldWristHeight("running", 2)).toBeCloseTo(shield.runGuard.wrist[1], 6);
     expect(shieldWristHeight("walking", 2)).toBeCloseTo(shield.guard.wrist[1], 6);
     expect(shieldWristHeight("standing", 1 / 60)).toBeLessThan(shield.guard.wrist[1]);
