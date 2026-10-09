@@ -121,7 +121,12 @@ it("replays a checkpoint before closure, excluding changes at the boundary and r
   const input = {
     fold: restored,
     rpc: {
-      getBlockWithReceipts: async (number: number) => {
+      getBlockHeader: async (number: number) => {
+        const block = blocks.get(number);
+        if (!block) throw new Error("disconnected");
+        return block;
+      },
+      readBlock: async (number: number) => {
         const block = blocks.get(number);
         if (!block) throw new Error("disconnected");
         return block;

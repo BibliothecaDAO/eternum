@@ -81,6 +81,7 @@ export class LiveWorld {
   private preconfirmedBlockValue: number | null = null;
 
   private lastClockTimestamp = 0;
+  private clockInFlight = false;
   /** The last confirmed head's chain time; the pre-confirmed clock above can run ahead of it. */
   private confirmedHeadTimestamp: number | null = null;
 
@@ -301,7 +302,13 @@ export class LiveWorld {
   }
 
   public async publishChainClock(): Promise<void> {
-    if (!this.native.halted) await this.publishClock();
+    if (this.native.halted || this.clockInFlight) return;
+    this.clockInFlight = true;
+    try {
+      await this.publishClock();
+    } finally {
+      this.clockInFlight = false;
+    }
   }
 
   public async acceptSubscribedHead(head: RpcHead): Promise<void> {
@@ -342,7 +349,7 @@ export class LiveWorld {
 
   private async reconcileCurrentHead(): Promise<void> {
     const blockNumber = await this.input.rpc.blockNumber();
-    const block = await this.input.rpc.getBlockWithReceipts(blockNumber);
+    const block = await this.input.rpc.getBlockHeader(blockNumber);
     await this.reconcileHead({ block_number: block.block_number, timestamp: block.timestamp });
   }
 
@@ -544,12 +551,30 @@ export class LiveWorld {
   }
 
   private async rebuildOverlay(): Promise<void> {
-    const block = await this.input.rpc.getBlockWithReceipts("pre_confirmed");
+    const block = await this.input.rpc.readBlock("pre_confirmed", this.native.decoder.manifest.world.address);
+    const preview = this.overlayFold.overlay();
+    const prepared: { receipt: RpcReceipt; transactionIndex: number; earlier: PreconfirmedDecode }[] = [];
+    for (const { receipt, transactionIndex } of this.native.receipts(block)) {
+      try {
+        const decoded = this.native.applyReceipt(
+          preview,
+          receipt,
+          block.block_number,
+          transactionIndex,
+          block.transactions[transactionIndex]!.transaction.calldata,
+        ).decoded;
+        prepared.push({ receipt, transactionIndex, earlier: { events: receipt.events, decoded } });
+      } catch (error) {
+        this.native.rejectReceipt(receipt, block.block_number, error, false);
+        return;
+      }
+    }
     this.preconfirmedBlockValue = block.block_number;
     for (const { receipt, transaction } of block.transactions)
       this.recordTransactionSender(receipt.transaction_hash, transaction);
-    for (const { receipt, transactionIndex } of this.native.receipts(block))
-      this.applyOverlayReceipt(receipt, block.block_number, transactionIndex);
+    // Validation above is atomic for the block; publication stays atomic for each player action.
+    for (const { receipt, transactionIndex, earlier } of prepared)
+      this.applyOverlayReceipt(receipt, block.block_number, transactionIndex, earlier);
   }
 
   /** Applies a pre-confirmed receipt to the overlay, recording its arrival-to-publish latency the first time. */
@@ -561,7 +586,12 @@ export class LiveWorld {
     return true;
   }
 
-  private applyOverlayReceipt(receipt: RpcReceipt, block: number | null, index: number): boolean {
+  private applyOverlayReceipt(
+    receipt: RpcReceipt,
+    block: number | null,
+    index: number,
+    earlier?: PreconfirmedDecode,
+  ): boolean {
     const identity = overlayIdentity(receipt);
     if (this.overlayReceipts.has(identity)) return true;
     let result: ReturnType<NativeIngestion["applyReceipt"]>;
@@ -572,6 +602,7 @@ export class LiveWorld {
         block,
         index,
         this.transactionCalldata.get(normalizeFelt(receipt.transaction_hash)),
+        earlier,
       );
     } catch (error) {
       if (this.deferRegistrationReceipt(receipt, error)) return false;

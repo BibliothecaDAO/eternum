@@ -47,7 +47,8 @@ const sameEvents = (left: readonly RpcEvent[], right: readonly RpcEvent[]) =>
     (event, index) =>
       event.from_address === right[index]!.from_address &&
       sameFelts(event.keys, right[index]!.keys) &&
-      sameFelts(event.data, right[index]!.data),
+      sameFelts(event.data, right[index]!.data) &&
+      (event.event_index ?? index) === (right[index]!.event_index ?? index),
   );
 
 export class NativeIngestion {
@@ -94,6 +95,7 @@ export class NativeIngestion {
     blockNumber: number | null,
     transactionIndex: number,
     calldata?: string[],
+    earlier?: PreconfirmedDecode,
   ) {
     const preview = fold.overlay();
     const { events, decoded, presets } = this.validateReceipt(
@@ -102,6 +104,7 @@ export class NativeIngestion {
       blockNumber,
       transactionIndex,
       calldata,
+      earlier,
     );
     presets.forEach((preset) => fold.rememberPreset(preset));
     return { events, decoded, changes: this.commit(fold, events) };
@@ -128,7 +131,7 @@ export class NativeIngestion {
 
   async replay(input: {
     fold: WorldFold;
-    rpc: Pick<MadaraRpc, "getBlockWithReceipts">;
+    rpc: Pick<MadaraRpc, "readBlock">;
     fromBlock: number;
     toBlock: number;
     /** Live confirmation publishes receipt outcomes; cold replay needs only history and folded rows. */
@@ -149,7 +152,7 @@ export class NativeIngestion {
       number <= input.toBlock;
       number++
     ) {
-      const block = await input.rpc.getBlockWithReceipts(number);
+      const block = await input.rpc.readBlock(number, this.decoder.manifest.world.address);
       if (block.block_number !== number) throw new Error("Native replay block number mismatch");
       pages++;
       await input.beforeBlock?.(preview, block, events);
@@ -266,7 +269,7 @@ export class NativeIngestion {
               block_number: blockNumber,
               transaction_hash: normalizeFelt(receipt.transaction_hash),
               transaction_index: transactionIndex,
-              event_index: eventIndex,
+              event_index: raw.event_index ?? eventIndex,
             }),
           ]
         : [],

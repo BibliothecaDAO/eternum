@@ -35,7 +35,7 @@ describe("native replay provenance", () => {
       fromBlock: 10,
       toBlock: 10,
       rpc: {
-        getBlockWithReceipts: async () => ({
+        readBlock: async () => ({
           block_number: 10,
           timestamp: 1800,
           transactions: [{ receipt: observed, transaction: { type: "INVOKE" } }],

@@ -123,8 +123,9 @@ const frontierWorld = (homeRingView?: HomeRingView, call?: MadaraRpc["call"]) =>
     confirmedFold: fold,
     homeRingView,
     rpc: {
+      getBlockHeader: async () => confirmed,
       getPreconfirmedHeader: async () => pending,
-      getBlockWithReceipts: async (block: unknown) => (block === "pre_confirmed" ? pending : confirmed),
+      readBlock: async (block: unknown) => (block === "pre_confirmed" ? pending : confirmed),
       call,
     } as unknown as MadaraRpc,
   });
