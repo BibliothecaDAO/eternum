@@ -51,7 +51,7 @@ function configuration(preset: number) {
 }
 
 describe("native presets", () => {
-  test("held-Realm labor is fixed per game day and leaves the account ceiling unruled", () => {
+  test("held-Realm labor is fixed per shard calendar day and leaves the account ceiling unruled", () => {
     for (const id of [FRONTIER_PRESET_ID, FRONTIER_ACCELERATED_PRESET_ID]) {
       const preset = buildNativePreset(loadNativePresetConfiguration("madara.frontier", id), id);
       expect(preset.economy.labor.unwrap()).toEqual({ amount: 1000n, account_daily_limit: 0 });
@@ -66,6 +66,7 @@ describe("native presets", () => {
       price_ceiling: 50n,
       shares: { common: 1, uncommon: 2, rare: 4, epic: 10, legendary: 20 },
       estimate_days: 5,
+      claim_window_seconds: 604800,
     });
     expect(preset.settlement.depths.map(({ chest }) => Object.values(chest))).toEqual([
       [5000, 2700, 1400, 600, 300],

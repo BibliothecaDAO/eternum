@@ -222,7 +222,7 @@ fn typed_commands() -> Array<Command> {
                 start: 0,
                 players:
                     array![
-                        crate::blitz_results::PlayerResult { player: 999.try_into().unwrap(), points: 0, rank: 1 },
+                        crate::blitz_results::RankedPlayer { wallet: 999.try_into().unwrap(), rank: 1 },
                     ].span(),
             },
         ),
@@ -314,7 +314,15 @@ fn fresh_world(ready: bool) -> Deployment {
     play_fixture::seed_game(d.games, 1, crate::game::GameRegistry {
         ready, dev_mode_on: false, start_settling_at: 20, start_main_at: 20, end_at: 200, ..game
     }, rules);
-    if ready { super::set_launcher(d, d.actor); }
+    if ready {
+        super::set_launcher(d, d.actor);
+        // This all-routes synthetic world enables WithdrawLords too; give its pre-roll deadline a real preset value.
+        let (_, frontier) = super::preset_projection::current_definition("frontier");
+        snforge_std::interact_with_state(d.games, || {
+            use starknet::storage::{StoragePathEntry, StoragePointerWriteAccess};
+            crate::logic::preset_record::for_game(1).rollover_chest_rules.write(frontier.economy.chests);
+        });
+    }
     d
 }
 
