@@ -1,3 +1,4 @@
+import { StructureType } from "@bibliothecadao/types";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { hash } from "starknet";
 import { NativeFactStore } from "../client/native-fact-store";
@@ -103,14 +104,10 @@ describe("owner naming", () => {
   });
 });
 
-it("names a chest's quality and ground only when the story carries them", () => {
-  expect(buildStoryEventPresentation(story("ChestReward", { quality: 2, kind: "Relic", depth: 1 }))).toMatchObject({
-    title: "Chest opened: Rare relic",
-    description: "Army · On Ethereal I",
-  });
-  const bare = buildStoryEventPresentation(story("ChestReward", {}));
-  expect(bare.title).toBe("Chest opened: reward");
-  expect(bare.description).toBe("Army");
+it("names a LORDS withdrawal by its whole amount", () => {
+  expect(
+    buildStoryEventPresentation(story("LordsWithdrawn", { player: "0x1", structure_id: 3, amount: 200 })),
+  ).toMatchObject({ title: "LORDS withdrawn", description: "200 LORDS to L2" });
 });
 
 it("formats native battle sides and positive Ethereal rolls without a legacy row projection", () => {
@@ -157,19 +154,10 @@ it.each([
   }
 });
 
-it("shows applied attribute levels and lost excess from history without reconstructing current levels", () => {
+it("shows the tier an Upgrade reached and the XP it cost from history", () => {
   expect(
-    buildStoryEventPresentation(
-      story("AttributeChosen", {
-        explorer_id: 7,
-        offer_id: 9,
-        source: "Relic",
-        attribute: "Logistics",
-        applied: 1,
-        lost: 3,
-      }),
-    ),
-  ).toMatchObject({ title: "Logistics +1", description: "Army · 3 levels lost at the cap" });
+    buildStoryEventPresentation(story("TierBought", { explorer_id: 7, attribute: "Logistics", tier: 3, price: 200 })),
+  ).toMatchObject({ title: "Logistics rare", description: "Army · 200 XP" });
 });
 
 it("renders the site's recorded kind and payout without a current structure", () => {
@@ -178,7 +166,7 @@ it("renders the site's recorded kind and payout without a current structure", ()
       structure_id: 3,
       explorer_id: 7,
       site_id: 9,
-      kind: "Camp",
+      category: StructureType.Camp,
       reward: { resource_type: 23, amount: "500000000000" },
     }),
   );
@@ -190,27 +178,11 @@ it("renders the site's recorded kind and payout without a current structure", ()
         structure_id: 3,
         explorer_id: 7,
         site_id: 9,
-        kind: "FallenRealm",
+        category: StructureType.Stragglers,
         reward: null,
       }),
     ),
-  ).toMatchObject({ title: "Fallen realm cleared", description: "Army · Closed chest on the tile" });
-});
-
-it("explains a LORDS budget fallback without hiding its rarity", () => {
-  const result = buildStoryEventPresentation(
-    story("ChestReward", {
-      quality: 2,
-      kind: "Relic",
-      depth: 1,
-      lords_exhausted: true,
-    }),
-  );
-  expect(result.title).toBe("Chest opened: Rare relic");
-  expect(result.description).toContain("LORDS allowance exhausted; awarded a relic of the same rarity");
-  expect(() => buildStoryEventPresentation(story("ChestReward", { kind: "Reserved" }))).toThrow(
-    "Invalid chest reward kind",
-  );
+  ).toMatchObject({ title: "Stragglers cleared", description: "Army · XP only" });
 });
 
 describe("every story the chain can tell", () => {
@@ -302,9 +274,15 @@ describe("every story the chain can tell", () => {
     ExplorerDeleteStory: { explorer_id: 7 },
     GuardDeleteStory: { structure_id: 5, slot: 0 },
     TroopsTransferred: { source: { Explorer: 7 }, target: { Explorer: 8 }, amount },
-    ChestReward: { explorer_id: 7, kind: "Token", quality: 3, depth: 1, lords_exhausted: false },
-    AttributeChosen: { explorer_id: 7, offer_id: 1, source: "Level", attribute: "Battle", applied: 1, lost: 0 },
-    SitePayout: { structure_id: 5, explorer_id: 7, site_id: 9, kind: "Camp", reward: { resource_type: 23, amount } },
+    LordsWithdrawn: { player: "0x111", structure_id: 5, amount },
+    TierBought: { explorer_id: 7, attribute: "Battle", tier: 2, price: 100 },
+    SitePayout: {
+      structure_id: 5,
+      explorer_id: 7,
+      site_id: 9,
+      category: StructureType.Camp,
+      reward: { resource_type: 23, amount },
+    },
     BattleEvent: {
       attacker_id: 7,
       defender_id: 9,

@@ -1,4 +1,5 @@
 import { expeditionDepth, readExpeditionRules } from "@bibliothecadao/eternum";
+import { StructureType } from "@bibliothecadao/types";
 import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
 
 /**
@@ -40,26 +41,22 @@ export const fallenRealmBeast = (depth: number): { beast: FallenRealmBeast; scal
  */
 const BEAST_ORDER = Object.keys(FALLEN_REALM_BEASTS) as FallenRealmBeast[];
 
-/**
- * A fallen realm is a camp in the facts, so its models follow the camp's village (index 0) in the camp's model list:
- * the ruin, then one per beast.
- */
-export const FALLEN_REALM_CAMP_MODEL_PATHS = [
+/** A ruin is its own structure category; its model list is the ruin, then one per beast. */
+export const FALLEN_REALM_MODEL_PATHS = [
   FALLEN_REALM_RUIN_PATH,
   ...BEAST_ORDER.map((beast) => FALLEN_REALM_BEASTS[beast].path),
 ];
-export const FALLEN_REALM_RUIN_MODEL_INDEX = 1;
-export const fallenRealmBeastModelIndex = (beast: FallenRealmBeast): number => 2 + BEAST_ORDER.indexOf(beast);
+export const FALLEN_REALM_RUIN_MODEL_INDEX = 0;
+export const fallenRealmBeastModelIndex = (beast: FallenRealmBeast): number => 1 + BEAST_ORDER.indexOf(beast);
 
 export const fallenRealmOnTile = (
-  site: Pick<NativeRows["ExpeditionSite"], "kind" | "cleared">,
+  site: Pick<NativeRows["ExpeditionSite"], "cleared">,
   depth: number,
-): ReturnType<typeof fallenRealmBeast> | null =>
-  site.kind === "FallenRealm" && !site.cleared ? fallenRealmBeast(depth) : null;
+): ReturnType<typeof fallenRealmBeast> | null => (!site.cleared ? fallenRealmBeast(depth) : null);
 
 /**
- * The beast a site's tile shows, read from its facts: a camp is a fallen realm only by its ExpeditionSite kind, and
- * only while it stands. `tile` is the site's contract coordinate, whose row gives its depth.
+ * The beast a site's tile shows, read from its facts: a ruin is its own structure category, and shows its beast only
+ * while it stands. `tile` is the site's contract coordinate, whose row gives its depth.
  */
 export const readStandingFallenRealm = (
   store: Pick<NativeFactStore, "get">,
@@ -67,8 +64,9 @@ export const readStandingFallenRealm = (
   entityId: number,
   tile: { row: number },
 ): ReturnType<typeof fallenRealmBeast> | undefined => {
+  const structure = store.get("Structure", { game_id: gameId, entity_id: entityId });
   const site = store.get("ExpeditionSite", { game_id: gameId, entity_id: entityId });
-  if (site?.kind !== "FallenRealm") return undefined;
+  if (structure?.base.category !== StructureType.Ruin || !site) return undefined;
   const rules = readExpeditionRules(store, gameId);
   if (!rules) throw new Error(`Fallen realm ${entityId} stands in a game without expedition rules`);
   return fallenRealmOnTile(site, expeditionDepth(rules, { y: tile.row })) ?? undefined;

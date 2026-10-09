@@ -1,4 +1,4 @@
-import { researchedDepths } from "@bibliothecadao/eternum";
+import { researchedDepth } from "@bibliothecadao/eternum";
 import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { HUD_BODY, HUD_HEADLINE } from "@/ui/design-system/atoms/hud-typography";
@@ -30,14 +30,14 @@ export const SpireDepthActions = ({ armyEntityId }: { armyEntityId: ID }) => {
   } = useGame();
   const account = useAccountStore((state) => state.account);
   const [pending, setPending] = useState<number | null>(null);
-  useNativeRevision(["ArmySlot", "ExplorerTroops", "Structure", "RealmKnowledge", "ResearchNode", "TileOccupancy"]);
+  useNativeRevision(["ArmySlot", "ExplorerTroops", "Structure", "RealmKnowledge", "TileOccupancy"]);
   const gameId = configManager.getActiveGameId();
   const explorer = store.get("ExplorerTroops", { game_id: gameId, explorer_id: armyEntityId });
   const home = explorer ? store.get("Structure", { game_id: gameId, entity_id: explorer.owner }) : undefined;
   const rules = readExpeditionRules(store, gameId);
   if (!explorer || !home || !rules || !isExpeditionRealm(store, home) || !account) return null;
-  const unlocked = researchedDepths(store, gameId, home.entity_id);
-  if (home.owner !== BigInt(account.address) || !unlocked?.length) return null;
+  const deepest = researchedDepth(store, gameId, home.entity_id);
+  if (home.owner !== BigInt(account.address) || !deepest) return null;
 
   const spire = expeditionSpireTile(rules, home, getBlockTimestamp().currentBlockTimestamp);
   if (!spire) return null;
@@ -46,7 +46,8 @@ export const SpireDepthActions = ({ armyEntityId }: { armyEntityId: ID }) => {
   const stamina = troops
     ? Number(StaminaManager.getStamina(troops, getBlockTimestamp().currentArmiesTick).amount)
     : undefined;
-  const depths = unlocked.map((depth) => ({
+  // Depths are researched in order: every layer down to the deepest is open.
+  const depths = Array.from({ length: deepest }, (_, index) => index + 1).map((depth) => ({
     depth,
     cost: store.require("DepthRules", { game_id: gameId, depth }).entry_stamina,
   }));

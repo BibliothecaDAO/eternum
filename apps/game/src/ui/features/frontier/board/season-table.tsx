@@ -144,7 +144,8 @@ const RowDetail = ({ entry }: { entry: Entry }) => {
     <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 pb-1 pl-[2.375rem] text-[13px] text-[#eadfc8]">
       <Count art={SITE_ART.Camp} label="Camps" value={sites.camps} />
       <Count art={SITE_ART.Rift} label="Rifts" value={sites.rifts} />
-      <Count art={SITE_ART.FallenRealm} label="Fallen realms" value={sites.fallen_realms} />
+      <Count art={SITE_ART.Ruin} label="Ruins" value={sites.ruins} />
+      <Count art={SITE_ART.Stragglers} label="Stragglers" value={sites.stragglers} />
       <Count art={ESSENCE_ICON} label="Essence earned" value={wholeResource(rewards.essence)} gain />
       <Count art={LABOR_ICON} label="Labor earned" value={wholeResource(rewards.labor)} gain />
     </div>

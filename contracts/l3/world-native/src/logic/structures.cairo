@@ -201,14 +201,14 @@ pub mod StructuresLogic {
     }
     #[abi(embed_v0)]
     impl Camps of crate::camps::ICampRules<ContractState> {
-        fn camp_resources(self: @ContractState, game_id: u32) -> Span<crate::resources::ResourceAmount> {
+        fn camp_rules(self: @ContractState, game_id: u32) -> crate::camps::CampRules {
             let preset = crate::logic::preset_record::for_game(game_id);
             let count = preset.camp_resource_count.read();
             let mut resources = array![];
             for index in 0..count {
                 resources.append(preset.camp_grants.read(index));
             }
-            resources.span()
+            crate::camps::CampRules { resources: resources.span(), labor_rate: preset.camp_labor_rate.read() }
         }
     }
     #[abi(embed_v0)]
@@ -234,7 +234,7 @@ pub mod StructuresLogic {
             let record = StructureRecord {
                 owner,
                 base: StructureBase {
-                    category: 3,
+                    category: crate::taxonomy::BANK_CATEGORY,
                     level: 3,
                     troop_max_guard_count: 4,
                     troop_max_explorer_count: 0,
@@ -245,13 +245,15 @@ pub mod StructuresLogic {
                 metadata: Default::default(),
             };
             crate::logic::structures::StructureState::create(key, record);
-            crate::logic::map::MapState::occupy(tile_key(key.game_id, coord), key.entity_id, 14, true);
+            crate::logic::map::MapState::occupy(
+                tile_key(key.game_id, coord), key.entity_id, crate::taxonomy::BANK_OCCUPIER, true,
+            );
             self
                 .resources_dispatcher(key.game_id)
                 .initialize_resources(
                     key,
                     rules.structure_capacity_config.bank_structure_capacity.into() * RESOURCE_PRECISION,
-                    3,
+                    crate::taxonomy::BANK_CATEGORY,
                     timestamp,
                     crate::commands::action_context(game_context),
                 );
@@ -260,7 +262,6 @@ pub mod StructuresLogic {
                 crate::guards::IGuardsLibraryDispatcher { class_hash: self.release.classes(key.game_id).troops.read() },
                 key,
                 seed,
-                None,
                 timestamp,
                 crate::commands::action_context(game_context),
             );
@@ -377,9 +378,11 @@ pub mod StructuresLogic {
                     let connected = crate::logic::structures::record(
                         ResourceKey { game_id, entity_id: village.connected_realm },
                     );
-                    assert!(connected.base.category == 1, "connected entity is not a realm");
+                    assert!(
+                        connected.base.category == crate::taxonomy::REALM_CATEGORY, "connected entity is not a realm",
+                    );
                     assert!(village.resource >= 1 && village.resource <= 22, "invalid village resource");
-                    record.base.category = crate::ownership::VILLAGE_CATEGORY;
+                    record.base.category = crate::taxonomy::VILLAGE_CATEGORY;
                     record.metadata.village_realm = village.connected_realm;
                     record.resources_packed = pack_realm_resources(array![village.resource].span());
                 },
@@ -387,7 +390,7 @@ pub mod StructuresLogic {
             let key = self.place_settlement(game_id, coord, record, context);
             match creation {
                 crate::settlement::SettlementCreation::Realm(realm) => {
-                    if context.rules.unbox().epoch_seconds != 0 {
+                    if context.rules.unbox().day_unit_seconds != 0 {
                         crate::logic::research::write(key, crate::research::RealmKnowledge { learned: 0 });
                         self.raise_realm_home(game_id, realm.realm_id, context);
                     }
@@ -443,7 +446,7 @@ pub mod StructuresLogic {
             let key = ResourceKey { game_id, entity_id: village_id };
             let record = crate::logic::structures::record(key);
             assert!(record.owner == actor, "actor does not own village");
-            assert!(record.base.category == crate::ownership::VILLAGE_CATEGORY, "structure is not a village");
+            assert!(record.base.category == crate::taxonomy::VILLAGE_CATEGORY, "structure is not a village");
             assert!(!record.base.starting_troops_granted, "army grant already claimed");
             let grants = self.village_rules(game_id);
             let interval = context.rules.unbox().tick_config.armies_tick_in_seconds;
@@ -500,7 +503,7 @@ pub mod StructuresLogic {
             let key = ResourceKey { game_id, entity_id: structure_id };
             let record = crate::logic::structures::record(key);
             assert!(record.owner == actor, "actor does not own structure");
-            assert!(record.base.category == 1, "not a realm");
+            assert!(record.base.category == crate::taxonomy::REALM_CATEGORY, "not a realm");
             self.provision_realm_economy(key, context.timestamp, context, ref story_cursor);
             ((), story_cursor)
         }
@@ -565,7 +568,7 @@ pub mod StructuresLogic {
             assert!(record.owner == actor, "actor does not own structure");
             assert!(crate::logic::game::game_exists(game_id), "ownership rules require initialized game");
             assert!(command.new_owner != 0.try_into().unwrap(), "new owner is zero");
-            assert!(record.base.category != crate::ownership::VILLAGE_CATEGORY, "cannot transfer ownership of village");
+            assert!(record.base.category != crate::taxonomy::VILLAGE_CATEGORY, "cannot transfer ownership of village");
             if record.owner == command.new_owner {
                 return ((), story_cursor);
             }
@@ -598,7 +601,7 @@ pub mod StructuresLogic {
             )
                 .owner;
             assert!(owner != 0.try_into().unwrap(), "capturing home is unowned");
-            if record.base.category == 8 {
+            if record.base.category == crate::taxonomy::BITCOIN_MINE_CATEGORY {
                 crate::bitcoin::IBitcoinFundingDispatcherTrait::bitcoin_mine_captured(
                     crate::bitcoin::IBitcoinFundingLibraryDispatcher {
                         class_hash: self.release.classes(key.game_id).prizes.read(),
@@ -645,7 +648,7 @@ pub mod StructuresLogic {
                 troop_max_guard_count: guards,
                 troop_max_explorer_count: armies,
                 created_at: timestamp.try_into().unwrap(),
-                category: 1,
+                category: crate::taxonomy::REALM_CATEGORY,
                 level: 0,
                 starting_troops_granted: false,
             },
@@ -697,7 +700,7 @@ pub mod StructuresLogic {
                 );
             match discovery {
                 Discovery::Mine => {
-                    if rules.epoch_seconds == 0 {
+                    if rules.day_unit_seconds == 0 {
                         let (kind, config, cap) = IMineRulesLibraryDispatcher {
                             class_hash: self.release.classes(game_id).production.read(),
                         }
@@ -719,12 +722,13 @@ pub mod StructuresLogic {
                 Discovery::Hyperstructure => self.create_hyperstructure(key, seed, completed),
                 Discovery::BitcoinMine => {},
                 Discovery::Camp => {
-                    if rules.epoch_seconds == 0 {
+                    if rules.day_unit_seconds == 0 {
                         assert!(
                             crate::rules::rule_enabled(rules, crate::rules::DISCOVER_CAMPS),
                             "camp discovery is disabled",
                         );
-                        for resource in self.camp_resources(game_id) {
+                        let camp = self.camp_rules(game_id);
+                        for resource in camp.resources {
                             self
                                 .resources_dispatcher(game_id)
                                 .grant_resource(
@@ -735,13 +739,11 @@ pub mod StructuresLogic {
                                     crate::commands::resource_context(game_context),
                                 );
                         }
-                        let labor_rate = crate::logic::resources::rule(game_id, 23).village_rate;
-                        assert!(labor_rate != 0, "zero camp labor rate");
                         self
                             .create_producer(
                                 key,
-                                0xffffffffffffffffffffffffffffffff,
-                                labor_rate,
+                                crate::resources::UNLIMITED_OUTPUT,
+                                camp.labor_rate,
                                 23,
                                 25,
                                 rules.building_config.base_population,
@@ -750,29 +752,20 @@ pub mod StructuresLogic {
                             );
                     }
                 },
-                Discovery::FallenRealm => { assert!(rules.epoch_seconds != 0, "fallen realm requires expeditions"); },
-                Discovery::None | Discovery::Chest | Discovery::Shrine |
-                Discovery::Well => panic!("discovery is not a structure"),
+                Discovery::Rift |
+                Discovery::Stragglers => { assert!(rules.day_unit_seconds != 0, "site requires expeditions"); },
+                Discovery::Ruin(chest) => {
+                    assert!(rules.day_unit_seconds != 0, "site requires expeditions");
+                    crate::logic::lords_budget::store_site_chest(key, chest);
+                },
+                Discovery::None | Discovery::Shrine | Discovery::Well => panic!("discovery is not a structure"),
             }
             crate::logic::structures::StructureState::create(key, record);
             crate::logic::map::MapState::occupy(tile_key(game_id, coord), id, occupier, true);
-            let site_kind = if rules.epoch_seconds == 0 {
-                None
-            } else {
-                Some(
-                    match discovery {
-                        Discovery::Camp => crate::expeditions::SiteKind::Camp,
-                        Discovery::Mine => crate::expeditions::SiteKind::Rift,
-                        Discovery::FallenRealm => crate::expeditions::SiteKind::FallenRealm,
-                        _ => panic!("invalid expedition site"),
-                    },
-                )
-            };
             crate::guards::IGuardsDispatcherTrait::initialize_structure_guards(
                 crate::guards::IGuardsLibraryDispatcher { class_hash: self.release.classes(game_id).troops.read() },
                 key,
                 seed,
-                site_kind,
                 timestamp,
                 crate::commands::action_context(game_context),
             );
@@ -789,32 +782,35 @@ pub mod StructuresLogic {
             assert!(!coord.alt && record.owner != 0.try_into().unwrap(), "invalid realm owner or layer");
             let key = ResourceKey { game_id, entity_id: crate::logic::game::allocate_entity(game_id) };
             let rules = game_context.rules.unbox();
-            let village = record.base.category == crate::ownership::VILLAGE_CATEGORY;
-            let on_map = rules.epoch_seconds == 0 || village;
+            let village = record.base.category == crate::taxonomy::VILLAGE_CATEGORY;
+            let on_map = rules.day_unit_seconds == 0 || village;
             if on_map {
                 self.prepare_settlement_tile(game_id, coord, game_context);
             }
             crate::logic::structures::StructureState::create(key, record);
             if on_map {
                 let occupier = if village {
-                    13
+                    crate::taxonomy::VILLAGE_OCCUPIER
                 } else if record.metadata.has_wonder {
-                    5
+                    crate::taxonomy::REALM_WONDER_LEVEL_1_OCCUPIER
                 } else {
-                    1
+                    crate::taxonomy::REALM_REGULAR_LEVEL_1_OCCUPIER
                 };
                 crate::logic::map::MapState::occupy(tile_key(game_id, coord), key.entity_id, occupier, true);
             }
-            let capacity = if village {
-                rules.structure_capacity_config.village_capacity
+            // A board realm has no shared weight: each of its stores has its own limit.
+            let capacity: u128 = if crate::logic::preset_record::for_game(game_id).board_terms.read().is_some() {
+                core::num::traits::Bounded::MAX
+            } else if village {
+                rules.structure_capacity_config.village_capacity.into() * RESOURCE_PRECISION
             } else {
-                rules.structure_capacity_config.realm_capacity
+                rules.structure_capacity_config.realm_capacity.into() * RESOURCE_PRECISION
             };
             self
                 .resources_dispatcher(game_id)
                 .initialize_resources(
                     key,
-                    capacity.into() * RESOURCE_PRECISION,
+                    capacity,
                     record.base.category,
                     record.base.created_at.into(),
                     crate::commands::action_context(game_context),
@@ -827,14 +823,11 @@ pub mod StructuresLogic {
             if context.timestamp < context.game.unbox().start_main_at {
                 return;
             }
-            let origin = crate::expeditions::site(
-                context.game.unbox().start_main_at,
-                context.rules.unbox().epoch_seconds,
-                crate::logic::settlement::rules(game_id).spacing,
-                realm_id,
-                context.timestamp,
-                0,
-            );
+            let today = crate::days::day_of(
+                context.game.unbox(), context.rules.unbox().day_unit_seconds, context.timestamp,
+            )
+                .index;
+            let origin = crate::expeditions::site(crate::logic::settlement::rules(game_id).spacing, realm_id, today, 0);
             crate::logic::map::raise_expedition_home(
                 tile_key(game_id, origin), crate::commands::biome_context(context),
             );
@@ -873,7 +866,7 @@ pub mod StructuresLogic {
             self
                 .create_producer(
                     key,
-                    0xffffffffffffffffffffffffffffffff,
+                    crate::resources::UNLIMITED_OUTPUT,
                     crate::logic::resources::rule(key.game_id, 23).realm_rate,
                     23,
                     25,
@@ -941,7 +934,8 @@ pub mod StructuresLogic {
                 return;
             }
             crate::logic::structures::StructureState::mark_starting_troops(key);
-            let coord = if game_context.rules.unbox().epoch_seconds != 0 && record.base.category == 1 {
+            let coord = if game_context.rules.unbox().day_unit_seconds != 0
+                && record.base.category == crate::taxonomy::REALM_CATEGORY {
                 crate::settlement::off_map_realm_reference(record.metadata.realm_id.into())
             } else {
                 crate::structures::structure_coord(key)
@@ -1043,7 +1037,7 @@ pub mod StructuresLogic {
                 .buildings
                 .create(
                     BuildingKey { game_id: key.game_id, structure_id: key.entity_id, inner_col: 10, inner_row: 10 },
-                    Building { category: building_category, paused: false, labor_paid: 0, tier: 1 },
+                    Building { category: building_category, paused: false, labor_paid: 0 },
                     // A producer the world places at a structure's centre costs no population: only a player's
                     // building does. The centre labor producer cannot be destroyed, so nothing refunds this.
                     0,

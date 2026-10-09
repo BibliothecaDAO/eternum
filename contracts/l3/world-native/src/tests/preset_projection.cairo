@@ -117,15 +117,21 @@ fn current_frontier_rejects_a_reintroduced_supply_pool() {
 fn current_frontier_requires_complete_progression_rules() {
     let d = super::registrar::setup();
     start_cheat_caller_address(d.games, super::authority());
-    for invalid in 0_u8..4 {
+    for invalid in 0_u8..7 {
         let (preset_id, mut definition) = current_definition("frontier");
         let mut progression = definition.economy.progression.unwrap();
         if invalid == 1 {
             progression.reveal_xp = 0;
         } else if invalid == 2 {
-            progression.clear_xp = 0;
+            progression.fixed_xp = 0;
         } else if invalid == 3 {
-            progression.level_step_xp = 0;
+            progression.uncommon_xp = 0;
+        } else if invalid == 4 {
+            progression.rare_xp = 0;
+        } else if invalid == 5 {
+            progression.epic_xp = 0;
+        } else if invalid == 6 {
+            progression.legendary_xp = 0;
         }
         definition.economy.progression = if invalid == 0 {
             None
@@ -220,7 +226,7 @@ fn observe_structures(ref rows: Array<ObservedRow>, address: ContractAddress, ga
     let camp_rules = ICampRulesDispatcher { contract_address: address };
     let faith = IFaithDispatcher { contract_address: address };
     let upgrade_rules = IUpgradeRulesDispatcher { contract_address: address };
-    for category in 1_u8..41 {
+    for category in 1_u8..crate::buildings::BUILDING_CATEGORY_COUNT + 1 {
         row(
             ref rows,
             'BuildingRule',
@@ -231,26 +237,18 @@ fn observe_structures(ref rows: Array<ObservedRow>, address: ContractAddress, ga
     if let Some(board) =
         interact_with_state(address, || crate::logic::construction::ConstructionLogic::observed_board_rules(game_id)) {
         row(ref rows, 'BoardRules', key, board);
-        for node in 0..crate::research::NODE_COUNT {
-            row(
-                ref rows,
-                'ResearchNode',
-                array![game_id.into(), node.into()].span(),
-                interact_with_state(address, || crate::logic::research::node(game_id, node)),
-            );
-        }
-        for category in array![1_u8, 2, 28, 37] {
-            for tier in 2_u8..4 {
+        for research_row in 0..crate::research::ROW_COUNT {
+            for tier in 1..crate::research::max_tier(research_row) + 1 {
                 row(
                     ref rows,
-                    'BuildingTierRule',
-                    array![game_id.into(), category.into(), tier.into()].span(),
-                    interact_with_state(address, || crate::logic::research::tier_rule(game_id, category, tier)),
+                    'ResearchPrice',
+                    array![game_id.into(), research_row.into(), tier.into()].span(),
+                    interact_with_state(address, || crate::logic::research::price(game_id, research_row, tier)),
                 );
             }
         }
     }
-    row(ref rows, 'CampResources', key, camp_rules.camp_resources(game_id));
+    row(ref rows, 'CampRules', key, camp_rules.camp_rules(game_id));
     row(ref rows, 'FaithRules', key, faith.faith_rules(game_id));
     let limits = upgrade_rules.upgrade_limits(game_id);
     row(ref rows, 'UpgradeLimits', key, limits);

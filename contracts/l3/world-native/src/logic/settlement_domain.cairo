@@ -155,7 +155,7 @@ pub mod SettlementLogic {
             let (realm_id, traits) = self
                 .resolve_season_realm(key, command.selected_realm, progress.realm_count, seed, context);
             self.realms.reserve(game_id, realm_id, progress.realm_count);
-            let coord = if rules.epoch_seconds == 0 {
+            let coord = if rules.day_unit_seconds == 0 {
                 ISeasonPlacementLibraryDispatcher { class_hash: classes.placement.read() }
                     .claim_season_settlement(
                         game_id, progress.realm_count, seed, crate::commands::action_context(context),

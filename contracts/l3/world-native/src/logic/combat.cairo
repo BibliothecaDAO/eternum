@@ -24,7 +24,7 @@ pub fn battle_guard(
 ) {
     let rules = authorize(game_id, context);
     let key = ExplorerKey { game_id, explorer_id: command.attacker_id };
-    let mut attacker = crate::logic::troops::authorized_explorer(key, actor, context.timestamp, context);
+    let mut attacker = authorized_explorer(key, actor, context);
     let target_key = ResourceKey { game_id, entity_id: command.defender_id };
     let target = crate::logic::structures::structure(target_key).expect('missing guarded structure');
     if crate::rules::rule_enabled(rules, crate::rules::UNOWNED_TARGETS) {
@@ -131,8 +131,8 @@ pub fn battle(
     crate::resources::assert_unique_resources(command.steal_resources);
     let attacker_key = ExplorerKey { game_id, explorer_id: command.attacker_id };
     let defender_key = ExplorerKey { game_id, explorer_id: command.defender_id };
-    let mut attacker = crate::logic::troops::authorized_explorer(attacker_key, actor, context.timestamp, context);
-    let mut defender = crate::logic::troops::active_explorer(defender_key, context.timestamp, context);
+    let mut attacker = authorized_explorer(attacker_key, actor, context);
+    let mut defender = active_explorer(defender_key, context);
     let defender_owner = explorer_owner(defender_key, defender);
     assert!(defender_owner != actor, "actor owns defender");
     assert_battle_immunity(game_id, attacker.owner, rules, context.timestamp, context);
@@ -199,7 +199,7 @@ pub fn guard_attack(
     };
     let mut guard = crate::logic::guards::guard(guard_key);
     let defender_key = ExplorerKey { game_id, explorer_id: command.explorer_id };
-    let mut defender = crate::logic::troops::active_explorer(defender_key, context.timestamp, context);
+    let mut defender = active_explorer(defender_key, context);
     let defender_owner = explorer_owner(defender_key, defender);
     assert!(guard.troops.count != 0 && defender.troops.count != 0, "dead combatant");
     let coord = crate::structures::structure_coord(ResourceKey { game_id, entity_id: command.guard.structure_id });
@@ -259,7 +259,7 @@ pub fn raid(
     let rules = authorize(game_id, context);
     crate::resources::assert_unique_resources(command.steal_resources);
     let key = ExplorerKey { game_id, explorer_id: command.explorer_id };
-    let explorer = crate::logic::troops::authorized_explorer(key, actor, context.timestamp, context);
+    let explorer = authorized_explorer(key, actor, context);
     let target_key = ResourceKey { game_id, entity_id: command.structure_id };
     let target = crate::logic::structures::structure(target_key).expect('missing raid target');
     assert!(target.owner != actor, "actor owns defender");
@@ -366,7 +366,7 @@ pub fn collect_raid_loot(
     timestamp: u64,
     game_context: crate::commands::ExecutionContext,
 ) {
-    let village = target.base.category == 5;
+    let village = target.base.category == crate::taxonomy::VILLAGE_CATEGORY;
     let tick = timestamp / rules.tick_config.armies_tick_in_seconds;
     if village {
         let last = crate::state::write().combat_domain.village_raids.read((game_id, command.structure_id));
@@ -438,7 +438,8 @@ pub fn try_capture(
 ) {
     if explorer.troops.count == 0
         || (crate::rules::rule_enabled(rules, crate::rules::UNOWNED_TARGETS) && target.owner != 0.try_into().unwrap())
-        || (target.base.category == 5 && !crate::rules::rule_enabled(rules, crate::rules::CAPTURE_VILLAGES)) {
+        || (target.base.category == crate::taxonomy::VILLAGE_CATEGORY
+            && !crate::rules::rule_enabled(rules, crate::rules::CAPTURE_VILLAGES)) {
         return;
     }
     if !crate::geometry::adjacent(explorer.coord, crate::structures::structure_coord(key))
@@ -520,7 +521,7 @@ pub fn assert_battle_immunity(
             + rules.battle_config.regular_immunity_ticks.into(),
         "season immunity",
     );
-    if home.base.category == 5 {
+    if home.base.category == crate::taxonomy::VILLAGE_CATEGORY {
         assert!(
             tick >= home.base.created_at.into() / rules.tick_config.armies_tick_in_seconds
                 + rules.battle_config.village_immunity_ticks.into(),
@@ -616,7 +617,7 @@ pub fn resolve_battle(
     game_context: crate::commands::ExecutionContext,
 ) -> (Troops, Troops) {
     let rules = game_context.rules.unbox();
-    if rules.epoch_seconds != 0 {
+    if rules.day_unit_seconds != 0 {
         let tick = context.timestamp / rules.tick_config.armies_tick_in_seconds;
         if context.attacker_is_structure_guard {
             attacker
@@ -651,6 +652,15 @@ pub fn resolve_battle(
             rules.battle_config.cooldown_seconds,
         );
     (attacker, defender)
+}
+
+// Troops owns explorer authorisation; Combat calls it rather than inlining it, to keep its class small.
+fn authorized_explorer(key: ExplorerKey, actor: ContractAddress, context: ExecutionContext) -> ExplorerTroops {
+    combat_troops(key.game_id).command_explorer(key, Some(actor), crate::commands::action_context(context))
+}
+
+fn active_explorer(key: ExplorerKey, context: ExecutionContext) -> ExplorerTroops {
+    combat_troops(key.game_id).command_explorer(key, None, crate::commands::action_context(context))
 }
 
 pub fn combat_troops(game_id: u32) -> IBattleResolutionLibraryDispatcher {

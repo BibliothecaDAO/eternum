@@ -60,7 +60,7 @@ const httpState: Parameters<typeof createHeraldRequestHandler>[0] = {
             value: {
               game_id: "7",
               mode_rules: 0,
-              epoch_seconds: 0,
+              day_unit_seconds: 0,
               victory_points_grant_config: { hyp_points_per_second: "1" },
             },
           },
@@ -73,6 +73,7 @@ const httpState: Parameters<typeof createHeraldRequestHandler>[0] = {
   },
   metrics,
   history: {
+    frontierDayRanks: async () => null,
     frontierHistory: async () => [],
     queryStoryCursor: async () => ({
       chain: "madara",
@@ -191,6 +192,7 @@ it("passes a battle-only history filter to the store before pagination", async (
     fold: { ...httpState.fold, modelRows: () => [], snapshot: () => snapshot },
     undecodableEventCount: () => 0,
     history: {
+      frontierDayRanks: async () => null,
       frontierHistory: async () => [],
       queryStoryCursor: async () => ({
         chain: "madara",
@@ -400,11 +402,7 @@ it("serves Frontier history at one confirmed head, caches successes only and kee
       }),
   );
   const modelRows = (model: string) => {
-    if (model === "SliceRules") return [{ key: "7", value: { game_id: "7", epoch_seconds: 86400 } }];
-    if (model === "ChestRules")
-      return [
-        { key: "7", value: { game_id: "7", lords_amounts: { common: 100, uncommon: 400, rare: 1500, epic: 6000 } } },
-      ];
+    if (model === "SliceRules") return [{ key: "7", value: { game_id: "7", day_unit_seconds: 14400 } }];
     if (model === "Structure")
       return [
         {
@@ -446,4 +444,28 @@ it("serves Frontier history at one confirmed head, caches successes only and kee
   frontierHistory.mockResolvedValueOnce([]);
   expect((await read(new Request(url))).status).toBe(200);
   expect(frontierHistory).toHaveBeenCalledTimes(4);
+});
+
+it("serves immutable per-day ranks, with explicit unavailable and unclosed responses", async () => {
+  const ranks = {
+    game_id: "1",
+    day_index: 0,
+    ends_at: 1800010000,
+    confirmed_block: 11,
+    entries: [{ address: "0x1", structure_id: "7", rank: 1 }],
+  };
+  const frontierDayRanks = vi.fn().mockResolvedValue(ranks);
+  const handler = createHeraldRequestHandler({
+    ...httpState,
+    undecodableEventCount: () => 0,
+    history: { ...httpState.history!, frontierDayRanks },
+  });
+  const request = (day: string) => handler(new Request(`http://localhost/games/1/days/${day}/ranks`));
+  expect(await (await request("0")).json()).toEqual(ranks);
+  expect(frontierDayRanks).toHaveBeenCalledWith("1", 0, 12);
+  frontierDayRanks.mockResolvedValueOnce(null);
+  expect((await request("1")).status).toBe(404);
+  frontierDayRanks.mockRejectedValueOnce(new Error("history unavailable"));
+  expect((await request("0")).status).toBe(503);
+  expect((await request("9007199254740992")).status).toBe(400);
 });

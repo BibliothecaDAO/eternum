@@ -38,14 +38,14 @@ export const eternumPreset: NativePreset = {
     rule.DEV_VILLAGE_ENTRY |
     rule.COMBAT_DICE_ETHEREAL,
   entryRule: rule.ENTRY_ENTITLEMENT,
-  commandMask: commandMask(["EnterDepth", "Research", "UpgradeBuilding", "InteractSite"]),
+  commandMask: commandMask(["EnterDepth", "Research", "InteractSite", "RefillStamina", "WithdrawLords"]),
   spacing: 6,
-  epochSeconds: 0,
+  dayUnitSeconds: 0,
+  seasonBags: 0,
   progression: null,
   discovery: null,
   chests: null,
   board: null,
   research: [],
-  buildingTiers: [],
   depths: [],
 };

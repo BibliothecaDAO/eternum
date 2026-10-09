@@ -3,7 +3,7 @@ use crate::map::TileKey;
 use crate::troops::Coord;
 
 pub fn biome(key: TileKey, game_context: crate::commands::BiomeContext) -> u8 {
-    let climate = if game_context.epoch_seconds == 0 {
+    let climate = if game_context.day_unit_seconds == 0 {
         game_context.climate
     } else {
         let spacing = crate::logic::settlement::rules(key.game_id).spacing;
@@ -11,7 +11,7 @@ pub fn biome(key: TileKey, game_context: crate::commands::BiomeContext) -> u8 {
             game_context.climate,
             crate::troops::Coord { alt: key.alt, x: key.col, y: key.row },
             game_context.start_main_at,
-            game_context.epoch_seconds,
+            game_context.day_unit_seconds,
             spacing,
         )
     };
@@ -24,15 +24,9 @@ pub fn expedition_home_ring(game_id: u32, realm_id: u16, timestamp: u64) -> Span
     );
 
     let rules = game_context.rules.unbox();
-    assert!(rules.epoch_seconds != 0, "game has no expeditions");
-    let site = crate::expeditions::site(
-        game_context.game.unbox().start_main_at,
-        rules.epoch_seconds,
-        crate::logic::settlement::rules(game_id).spacing,
-        realm_id,
-        timestamp,
-        0,
-    );
+    assert!(rules.day_unit_seconds != 0, "game has no expeditions");
+    let today = crate::days::day_of(game_context.game.unbox(), rules.day_unit_seconds, timestamp).index;
+    let site = crate::expeditions::site(crate::logic::settlement::rules(game_id).spacing, realm_id, today, 0);
     home_ring(game_id, site, crate::commands::biome_context(game_context))
 }
 
@@ -49,7 +43,7 @@ pub fn raise_expedition_home(key: TileKey, context: crate::commands::BiomeContex
     use crate::map::{BIOME_SCALE, BYTE_RANGE, REWARD_EXTRACTED_FLAG};
     let spacing = crate::logic::settlement::rules(key.game_id).spacing;
     let coord = Coord { alt: key.alt, x: key.col, y: key.row };
-    assert!(context.epoch_seconds != 0 && crate::expeditions::is_home_ring(coord, spacing), "not a home ring");
+    assert!(context.day_unit_seconds != 0 && crate::expeditions::is_home_ring(coord, spacing), "not a home ring");
     let center = crate::expeditions::home_ring_center(coord, spacing);
     let center_key = tile_key(key.game_id, center);
     if ring_materialized(center_key) {

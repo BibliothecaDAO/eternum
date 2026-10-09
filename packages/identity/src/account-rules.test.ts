@@ -20,3 +20,10 @@ describe("nameRuleViolation", () => {
     }
   });
 });
+
+it("uses one slot-name grammar for registration and lobby rooms", async () => {
+  const { BLITZ_SLOT_NAME_PATTERN } = await import("./account-rules");
+  for (const value of ["a", "noon-1", "a".repeat(24)]) expect(BLITZ_SLOT_NAME_PATTERN.test(value)).toBe(true);
+  for (const value of ["", "-noon", "NOON", "noon:other", "a".repeat(25)])
+    expect(BLITZ_SLOT_NAME_PATTERN.test(value)).toBe(false);
+});

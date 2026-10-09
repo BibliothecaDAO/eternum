@@ -674,49 +674,40 @@ export class EternumProvider extends EventEmitter {
     );
   }
 
-  public async research(props: SystemProps.SystemSigner & { structureId: number; node: number }) {
+  /** Buys a research row's next tier at the realm's castle; `choice` is the tier's side or Scouts' lodge kind. */
+  public async research(props: SystemProps.SystemSigner & { structureId: number; row: number; choice: number }) {
     return this.submitCommand(
       props.signer,
       {
         kind: "Research",
-        value: { structure_id: props.structureId, node: props.node },
+        value: { structure_id: props.structureId, row: props.row, choice: props.choice },
       },
       TransactionType.RESEARCH,
     );
   }
 
-  public async upgrade_building(
-    props: SystemProps.SystemSigner & { structureId: number; coord: { alt: boolean; x: number; y: number } },
-  ) {
-    return this.submitCommand(
-      props.signer,
-      {
-        kind: "UpgradeBuilding",
-        value: { structure_id: props.structureId, coord: props.coord },
-      },
-      TransactionType.UPGRADE_BUILDING,
-    );
-  }
-
-  /** Answers an army's pending attribute offer with one of its three choices. */
-  public async choose_attribute(
+  /** Upgrades one attribute of an army by one tier, paid from its XP; a Scouting tier names the kind it raises. */
+  public async buy_tier(
     props: SystemProps.SystemSigner & {
       explorerId: number;
-      offerId: number;
-      attribute: "Battle" | "Logistics" | "Scouting" | "Support";
+      attribute: "Battle" | "Logistics" | "Scouting" | "Homecoming";
+      scoutingKind?: "Camp" | "Rift" | "Stragglers";
     },
   ) {
     return this.submitCommand(
       props.signer,
       {
-        kind: "ChooseAttribute",
+        kind: "BuyTier",
         value: {
           explorer_id: props.explorerId,
-          offer_id: props.offerId,
           attribute: { kind: props.attribute, value: undefined },
+          kind:
+            props.scoutingKind === undefined
+              ? { kind: "None", value: undefined }
+              : { kind: "Some", value: { kind: props.scoutingKind, value: undefined } },
         },
       },
-      TransactionType.CHOOSE_ATTRIBUTE,
+      TransactionType.BUY_TIER,
     );
   }
 

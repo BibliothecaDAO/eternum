@@ -1,8 +1,4 @@
 use crate::troops::Coord;
-pub const CHEST_OCCUPIER: u8 = 34;
-pub const SPIRE_OCCUPIER: u8 = 35;
-pub const SHRINE_OCCUPIER: u8 = 40;
-pub const WELL_OCCUPIER: u8 = 41;
 // Tile views assemble the original packed layout from terrain and occupancy facts.
 pub(crate) const REWARD_EXTRACTED_FLAG: u128 = 0x20000000000000000000000000000;
 const LAYER_FLAG: u128 = 0x80000000000000000000000000000000;
@@ -11,7 +7,6 @@ const ROW_SCALE: u128 = 0x2000000000000;
 pub(crate) const BIOME_SCALE: u128 = 0x20000000000;
 pub(crate) const ENTITY_RANGE: u128 = 0x100000000;
 pub(crate) const OCCUPIER_SCALE: u128 = 0x200;
-pub(crate) const RESERVED_HYPERSTRUCTURE: u128 = 39;
 pub(crate) const BYTE_RANGE: u128 = 0x100;
 
 #[derive(Copy, Drop, Serde, PartialEq, Debug)]

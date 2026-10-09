@@ -10,6 +10,7 @@ pub mod protocol;
 mod service;
 mod socket;
 mod ticket;
+mod timing;
 mod transaction;
 
 use anyhow::Context;

@@ -223,7 +223,9 @@ fn discovered_surface_mines_use_kind_production_without_revealing_neighbors() {
         assert_eq!(production.production_rate, config.production_rate);
         assert_eq!(production.output_amount_left, cap);
         assert_eq!(production.building_count, 1);
-        assert_eq!(production.last_updated_at, 30);
+        // Discovered at time 30, it has settled through the tick that holds it.
+        let settled: u32 = (30 / super::recorded::rules().tick_config.armies_tick_in_seconds).try_into().unwrap();
+        assert_eq!(production.last_settled_tick, settled);
         assert!(map.tile(crate::geometry::tile_key(3, coord)).is_some());
         for direction in 0_u8..6 {
             assert!(map.tile(crate::geometry::tile_key(3, crate::geometry::neighbor(coord, direction))).is_none());

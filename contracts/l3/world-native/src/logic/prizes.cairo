@@ -119,7 +119,7 @@ pub mod PrizesLogic {
         ) {
             let game_context = crate::commands::load_context(key.game_id, game_context);
 
-            assert!(category == 8, "not a Bitcoin mine");
+            assert!(category == crate::taxonomy::BITCOIN_MINE_CATEGORY, "not a Bitcoin mine");
             let interval = game_context.rules.unbox().tick_config.bitcoin_phase_in_seconds;
             assert!(interval != 0, "zero Bitcoin phase duration");
             self.bitcoin.register_mine(key, timestamp / interval + 1);
@@ -296,7 +296,7 @@ pub mod PrizesLogic {
             let mut funding = self.bitcoin.mine(resource_key);
             assert!(funding.next_phase == key.phase, "claim earlier Bitcoin phase first");
             let mine = crate::logic::structures::structure(resource_key).expect('missing Bitcoin mine');
-            assert!(mine.base.category == 8, "not a Bitcoin mine");
+            assert!(mine.base.category == crate::taxonomy::BITCOIN_MINE_CATEGORY, "not a Bitcoin mine");
             if mine.owner != 0.try_into().unwrap() && key.phase >= funding.eligible_from {
                 let config = game_context.rules.unbox().bitcoin_mine_config;
                 if phase.total_labor == 0 {

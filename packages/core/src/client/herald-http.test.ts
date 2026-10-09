@@ -106,7 +106,7 @@ describe("Herald leaderboards", () => {
           address: "0x111",
           structure_id: "42",
           rank: 1,
-          sites_cleared: { total: 5, camps: 3, rifts: 1, fallen_realms: 1 },
+          sites_cleared: { total: 5, camps: 3, rifts: 1, ruins: 1, stragglers: 0 },
           chests_earned: 4,
           rewards: { lords: "400", essence: "9000000000000", labor: "1500000000000" },
           deepest_depth: 2,

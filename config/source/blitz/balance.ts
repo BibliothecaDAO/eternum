@@ -146,4 +146,6 @@ export const blitzBalance: ConfigPatch = {
     { resource: ResourcesIds.Labor, min_amount: 5_000, max_amount: 5_000 },
     { resource: ResourcesIds.Donkey, min_amount: 1_000, max_amount: 1_000 },
   ],
+  // Half of Blitz's labor rate, the rate its camps produced at under the village rule.
+  campLaborPerSecond: 1,
 };

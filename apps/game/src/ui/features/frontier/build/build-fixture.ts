@@ -1,6 +1,6 @@
 import { configManager, setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { BuildingType, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
+import { BuildingType, RESOURCE_PRECISION, ResourcesIds, StructureType, TileOccupier } from "@bibliothecadao/types";
 import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
 
 const set = (key: string, model: string, value: Record<string, unknown>) => ({ model, key, value });
@@ -38,6 +38,12 @@ export const realmBoard = () => {
       game_id: 1,
       demolition_refund_bps: 0,
       workshop_rate: String((50n * PRECISION) / BigInt(HOUR)),
+      output_step_bps: 2500,
+      storage_step_bps: 5000,
+      population_step_bps: 2500,
+      ration_step: String(PRECISION / 4n),
+      training_gate_tier: 2,
+      castle_store_deploys: 2,
     }),
     set("0x71", "ProductionRecipe", {
       game_id: 1,
@@ -52,7 +58,7 @@ export const realmBoard = () => {
       entity_id: 7,
       owner: "0x111",
       base: {
-        category: 1,
+        category: StructureType.Realm,
         level: 0,
         created_at: "0x1",
         troop_max_guard_count: 0,
@@ -85,7 +91,7 @@ export const realmBoard = () => {
       building_count: 1,
       production_rate: String((300n * PRECISION) / BigInt(HOUR)),
       output_amount_left: "0",
-      last_updated_at: 100,
+      last_settled_tick: 1,
     }),
     set("0x76", "TileOccupancy", {
       game_id: 1,
@@ -93,27 +99,11 @@ export const realmBoard = () => {
       col: 30,
       row: 30,
       entity_id: 7,
-      category: 1,
+      category: TileOccupier.RealmRegularLevel1,
       is_structure: true,
     }),
-    // Nothing researched yet; Farm II is on the board's research table with its tier rule (Frontier's preset).
-    set("0x77", "RealmKnowledge", { game_id: 1, structure_id: 7, learned: 0 }),
-    set("0x78", "ResearchNode", {
-      game_id: 1,
-      node: 0,
-      prerequisites: 0,
-      essence_cost: String(150n * PRECISION),
-      effect: { BuildingTier: { 0: BuildingType.ResourceWheat, 1: 2 } },
-    }),
-    set("0x79", "BuildingTierRule", {
-      game_id: 1,
-      category: BuildingType.ResourceWheat,
-      tier: 2,
-      labor_upgrade_cost: String(200n * PRECISION),
-      output_multiplier_bps: 20_000,
-      capacity_multiplier_bps: 10_000,
-      population_multiplier_bps: 10_000,
-    }),
+    // Nothing researched yet: every building type stands at common.
+    set("0x77", "RealmKnowledge", { game_id: 1, structure_id: 7, learned: "0" }),
     set("0x75", "ResourceBalance", {
       game_id: 1,
       entity_id: 7,

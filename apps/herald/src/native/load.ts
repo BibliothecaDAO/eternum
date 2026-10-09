@@ -4,13 +4,15 @@ import type { MadaraRpc } from "../madara-rpc";
 import { WorldFold } from "../world-fold";
 import { NativeReceiptRejected, type NativeIngestion } from "./ingestion";
 
+import { replayWithFrontierDays } from "./frontier-day-ranks";
+
 const REPLAY_WINDOW_BLOCKS = 64;
 
 /** Each bounded replay window commits its history before its checkpoint; startup resumes at the last complete window. */
 export async function loadNativeWorld(input: {
   chain: string;
   checkpointStore: Pick<CheckpointStore, "initialize" | "load" | "save">;
-  history: Pick<HistoryStore, "appendEvents" | "historyProgress">;
+  history: Pick<HistoryStore, "appendEvents" | "historyProgress" | "frontierHistory">;
   rpc: MadaraRpc;
   native: NativeIngestion;
 }) {
@@ -53,11 +55,13 @@ async function replayWindow(
   fromBlock: number,
   toBlock: number,
 ) {
-  const replay = await input.native.replay({ fold, rpc: input.rpc, fromBlock, toBlock, retainTransactions: false });
-  await input.history.appendEvents(
-    replay.events.filter((event) => event.kind === "event"),
+  const replay = await replayWithFrontierDays(input.native, input.history, {
+    fold,
+    rpc: input.rpc,
+    fromBlock,
     toBlock,
-  );
+    retainTransactions: false,
+  });
   await input.checkpointStore.save(input.chain, toBlock, fold);
   return replay.metrics;
 }
@@ -66,6 +70,6 @@ async function replayWindow(
 async function resumableCheckpoint(input: Parameters<typeof loadNativeWorld>[0]) {
   const checkpoint = await input.checkpointStore.load(input.chain, input.native.decoder.registry);
   if (!checkpoint) return undefined;
-  const historyThrough = (await input.history.historyProgress()) ?? -1;
+  const historyThrough = (await input.history.historyProgress(true)) ?? -1;
   return historyThrough >= checkpoint.confirmedBlock ? checkpoint : undefined;
 }

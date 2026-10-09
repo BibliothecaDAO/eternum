@@ -1,6 +1,7 @@
-//! Admission metrics as plain counters, a gauge and a histogram, served on the metrics listener in the
-//! Prometheus text format for the shard's collector. No label names a player or a transaction.
+//! Admission counters and sequencing histograms on the existing metrics listener, in Prometheus
+//! text format for the shard's collector. No label names a player or a transaction.
 
+use crate::timing::Stage;
 use std::{
     fmt::Write,
     sync::atomic::{AtomicU64, Ordering::Relaxed},
@@ -14,19 +15,20 @@ pub(crate) struct Metrics {
     accepted: AtomicU64,
     executed_tickets: AtomicU64,
     ticket_transactions: AtomicU64,
-    /// Waits per bucket, not cumulative; waits above the last bound count only in the total.
-    wait_buckets: [AtomicU64; WAIT_BOUNDS.len()],
-    waits: AtomicU64,
-    wait_micros: AtomicU64,
+    queue_wait: Histogram<12>,
+    stages: [Histogram<12>; Stage::ALL.len()],
+    packs: Histogram<6>,
+    flights: Histogram<12>,
 }
 
 pub(crate) static METRICS: Metrics = Metrics {
     accepted: AtomicU64::new(0),
     executed_tickets: AtomicU64::new(0),
     ticket_transactions: AtomicU64::new(0),
-    wait_buckets: [const { AtomicU64::new(0) }; WAIT_BOUNDS.len()],
-    waits: AtomicU64::new(0),
-    wait_micros: AtomicU64::new(0),
+    queue_wait: Histogram::new(),
+    stages: [const { Histogram::new() }; Stage::ALL.len()],
+    packs: Histogram::new(),
+    flights: Histogram::new(),
 };
 
 impl Metrics {
@@ -37,11 +39,7 @@ impl Metrics {
 
     /// A ticket left the queue in a submitted batch this long after the gateway received it.
     pub fn left_queue_after(&self, wait: Duration) {
-        if let Some(bucket) = WAIT_BOUNDS.iter().position(|bound| wait.as_secs_f64() <= *bound) {
-            self.wait_buckets[bucket].fetch_add(1, Relaxed);
-        }
-        self.waits.fetch_add(1, Relaxed);
-        self.wait_micros.fetch_add(wait.as_micros().try_into().unwrap_or(u64::MAX), Relaxed);
+        self.queue_wait.observe(wait.as_secs_f64(), &WAIT_BOUNDS);
     }
 
     /// One included batch transaction carried this many tickets.
@@ -61,17 +59,53 @@ impl Metrics {
         line("counter", "gateway_admission_accepted_tickets", self.accepted.load(Relaxed).to_string());
         line("counter", "gateway_executed_tickets", self.executed_tickets.load(Relaxed).to_string());
         line("counter", "gateway_ticket_transactions", self.ticket_transactions.load(Relaxed).to_string());
-        let name = "gateway_admission_queue_wait_seconds";
+        self.queue_wait.render(&mut text, "gateway_admission_queue_wait_seconds", &WAIT_BOUNDS);
+        for stage in Stage::ALL {
+            self.stages[stage as usize].render(&mut text, stage.metric(), &WAIT_BOUNDS);
+        }
+        self.packs.render(&mut text, "gateway_flight_pack_size", &[1.0, 2.0, 3.0, 4.0, 5.0, 6.0]);
+        self.flights.render(&mut text, "gateway_flight_seconds", &WAIT_BOUNDS);
+        text
+    }
+
+    pub fn stage(&self, stage: Stage, duration: Duration) {
+        self.stages[stage as usize].observe(duration.as_secs_f64(), &WAIT_BOUNDS);
+    }
+    pub fn pack(&self, size: usize) {
+        self.packs.observe(size as f64, &[1.0, 2.0, 3.0, 4.0, 5.0, 6.0]);
+    }
+    pub fn flight(&self, duration: Duration) {
+        self.flights.observe(duration.as_secs_f64(), &WAIT_BOUNDS);
+    }
+}
+
+struct Histogram<const N: usize> {
+    buckets: [AtomicU64; N],
+    count: AtomicU64,
+    sum_micros: AtomicU64,
+}
+
+impl<const N: usize> Histogram<N> {
+    const fn new() -> Self {
+        Self { buckets: [const { AtomicU64::new(0) }; N], count: AtomicU64::new(0), sum_micros: AtomicU64::new(0) }
+    }
+    fn observe(&self, value: f64, bounds: &[f64; N]) {
+        if let Some(bucket) = bounds.iter().position(|bound| value <= *bound) {
+            self.buckets[bucket].fetch_add(1, Relaxed);
+        }
+        self.sum_micros.fetch_add((value * 1e6) as u64, Relaxed);
+        self.count.fetch_add(1, Relaxed);
+    }
+    fn render(&self, text: &mut String, name: &str, bounds: &[f64; N]) {
         writeln!(text, "# TYPE {name} histogram").expect("writing to a string");
         let mut cumulative = 0;
-        for (bound, bucket) in WAIT_BOUNDS.iter().zip(&self.wait_buckets) {
+        for (bound, bucket) in bounds.iter().zip(&self.buckets) {
             cumulative += bucket.load(Relaxed);
             writeln!(text, "{name}_bucket{{le=\"{bound}\"}} {cumulative}").expect("writing to a string");
         }
-        let waits = self.waits.load(Relaxed);
-        writeln!(text, "{name}_bucket{{le=\"+Inf\"}} {waits}").expect("writing to a string");
-        writeln!(text, "{name}_sum {}", self.wait_micros.load(Relaxed) as f64 / 1e6).expect("writing to a string");
-        writeln!(text, "{name}_count {waits}").expect("writing to a string");
-        text
+        let count = self.count.load(Relaxed);
+        writeln!(text, "{name}_bucket{{le=\"+Inf\"}} {count}").expect("writing to a string");
+        writeln!(text, "{name}_sum {}", self.sum_micros.load(Relaxed) as f64 / 1e6).expect("writing to a string");
+        writeln!(text, "{name}_count {count}").expect("writing to a string");
     }
 }

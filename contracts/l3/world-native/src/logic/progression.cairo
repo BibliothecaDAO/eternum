@@ -1,5 +1,5 @@
 use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
-use crate::progression::{ArmyProgress, ArmyProgressionRules, AttributeOffer, OfferSource, ProgressPacking, XpAward};
+use crate::progression::{ArmyProgress, ArmyProgressionRules, XpAward};
 use crate::troops::ExplorerKey;
 
 pub fn rules(game_id: u32) -> Option<ArmyProgressionRules> {
@@ -8,11 +8,11 @@ pub fn rules(game_id: u32) -> Option<ArmyProgressionRules> {
 
 #[inline(never)]
 pub fn read(key: ExplorerKey) -> Option<ArmyProgress> {
-    let packed = crate::state::read().troops.progress.read((key.game_id, key.explorer_id));
-    if packed.levels == 0 {
+    let progress = crate::state::read().troops.progress.read((key.game_id, key.explorer_id));
+    if progress.battle == 0 {
         None
     } else {
-        Some(ProgressPacking::unpack(packed))
+        Some(progress)
     }
 }
 
@@ -21,15 +21,17 @@ pub fn require(key: ExplorerKey) -> ArmyProgress {
     read(key).expect('missing army progress')
 }
 
-pub fn create(key: ExplorerKey) {
+pub fn create(key: ExplorerKey, learned: u64) -> ArmyProgress {
     assert!(read(key).is_none(), "army progress already exists");
     rules(key.game_id).expect('missing progression rules');
-    write(key, crate::progression::initial());
+    let progress = crate::progression::trained(learned);
+    write(key, progress);
+    progress
 }
 
 #[inline(never)]
 pub fn write(key: ExplorerKey, progress: ArmyProgress) {
-    crate::state::write().troops.progress.write((key.game_id, key.explorer_id), ProgressPacking::pack(progress));
+    crate::state::write().troops.progress.write((key.game_id, key.explorer_id), progress);
     let mut keys = array![];
     key.serialize(ref keys);
     let mut values = array![];
@@ -43,7 +45,13 @@ pub fn write(key: ExplorerKey, progress: ArmyProgress) {
 
 pub fn destroy(key: ExplorerKey) {
     require(key);
-    crate::state::write().troops.progress.write((key.game_id, key.explorer_id), Default::default());
+    crate::state::write()
+        .troops
+        .progress
+        .write(
+            (key.game_id, key.explorer_id),
+            ArmyProgress { xp: 0, battle: 0, logistics: 0, scouting: 0, scouting_kinds: 0, homecoming: 0 },
+        );
     let mut keys = array![];
     key.serialize(ref keys);
     crate::logic::troops::TroopState::emit(
@@ -53,56 +61,29 @@ pub fn destroy(key: ExplorerKey) {
     );
 }
 
-pub fn issue_offer(
-    key: ExplorerKey,
-    ref progress: ArmyProgress,
-    source: OfferSource,
-    amount: u8,
-    context: crate::commands::ExecutionContext,
-) {
-    assert_can_receive_offer(progress);
-    let id = crate::state::read().troops.offer_ids.read((key.game_id, key.explorer_id)) + 1;
-    crate::state::write().troops.offer_ids.write((key.game_id, key.explorer_id), id);
-    let mut root = context.raw_root;
-    let seed = crate::random::game_root(ref root, key.game_id, context.game.unbox().seed);
-    let salt = Into::<u64, u128>::into(context.timestamp)
-        + Into::<u32, u128>::into(key.explorer_id) * 0x100000000
-        + id.into();
-    let choices = crate::progression::draw_choices(progress, seed, salt);
-    progress.pending = Some(AttributeOffer { id, source, amount, choices });
-}
-
-pub fn offer_earned_level(key: ExplorerKey, ref progress: ArmyProgress, context: crate::commands::ExecutionContext) {
-    if crate::progression::advance_level(ref progress, rules(key.game_id).expect('missing progression rules')) {
-        issue_offer(key, ref progress, OfferSource::Level, 1, context);
+/// An army's own maximum stamina: its Logistics tier's for an expedition army, its troop's for any other.
+pub fn own_stamina_max(
+    key: ExplorerKey, troops: crate::troops::Troops, rules: crate::rules::TroopStaminaConfig,
+) -> u64 {
+    match read(key) {
+        Some(progress) => crate::progression::stamina_max(progress, troops.category, rules),
+        None => crate::stamina::StaminaImpl::max(troops.category, troops.tier, rules),
     }
 }
 
-pub fn award_xp(key: ExplorerKey, award: XpAward, context: crate::commands::ExecutionContext) {
+pub fn award_xp(key: ExplorerKey, award: XpAward) {
     let rules = rules(key.game_id).expect('missing progression rules');
     let mut progress = require(key);
     progress.xp += match award {
         XpAward::Reveal => rules.reveal_xp,
-        XpAward::Clear => rules.clear_xp,
+        XpAward::Clear(strength) => crate::progression::clear_xp(strength),
     };
-    offer_earned_level(key, ref progress, context);
     write(key, progress);
 }
 
-pub fn assert_can_receive_offer(progress: ArmyProgress) {
-    assert!(progress.pending.is_none(), "attribute offer pending");
-    assert!(!crate::progression::eligible(progress).is_empty(), "all attributes are maxed");
-}
-
-pub fn grant_relic(key: ExplorerKey, quality: u8, context: crate::commands::ExecutionContext) {
+/// A shrine's XP: a fixed amount, whatever its quality.
+pub fn grant_fixed_xp(key: ExplorerKey) {
     let mut progress = require(key);
-    issue_offer(key, ref progress, OfferSource::Relic, crate::progression::relic_levels(quality), context);
-    write(key, progress);
-}
-
-pub fn grant_shrine(key: ExplorerKey, context: crate::commands::ExecutionContext) {
-    let mut progress = require(key);
-    issue_offer(key, ref progress, OfferSource::Shrine, 1, context);
-    progress.level += 1;
+    progress.xp += rules(key.game_id).expect('missing progression rules').fixed_xp;
     write(key, progress);
 }

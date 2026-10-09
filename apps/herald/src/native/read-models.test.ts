@@ -126,14 +126,14 @@ describe("native directory and leaderboard", () => {
     expect(buildNativeDirectory(input).games.find((game) => game.game_id === 1)?.mode).toBe("frontier");
   });
 
-  it("publishes each expedition's pinned epoch duration and null for Blitz", () => {
+  it("publishes each expedition's day unit and seed, and null for Blitz", () => {
     const { fold, native, decoder } = world();
     const derived = seedDerivedRows(fold, decoder, [
-      gameEvent("1", "0", "0", "103"),
+      gameEvent("1", "0", "0", "101"),
       gameEvent("2", "0", "0", "5"),
       gameEvent("3", "0", "0", "2"),
-      rulesEvent("1", "3600"),
-      rulesEvent("2", "86400"),
+      rulesEvent("1", "120"),
+      rulesEvent("2", "14400"),
       rulesEvent("3", "0"),
       rowEvent("SettlementRules", ["3"], {
         registration_start: 5n,
@@ -146,14 +146,14 @@ describe("native directory and leaderboard", () => {
 
     const games = buildNativeDirectory({ chain: "madara", confirmedBlock: 12, timestamp: 30, fold }).games;
     expect(games.find(({ game_id }) => game_id === 1)).toMatchObject({
-      preset_id: 103,
+      preset_id: 101,
       mode: "frontier",
-      expedition: { epoch_seconds: 3600 },
+      expedition: { day_unit_seconds: 120, seed: "42" },
     });
     expect(games.find(({ game_id }) => game_id === 2)).toMatchObject({
       preset_id: 5,
       mode: "frontier",
-      expedition: { epoch_seconds: 86400 },
+      expedition: { day_unit_seconds: 14400, seed: "42" },
     });
     expect(games.find(({ game_id }) => game_id === 3)).toMatchObject({
       preset_id: 2,
@@ -375,4 +375,23 @@ it("evicts a finalized game to its directory and standings, the same way live an
   const restored = WorldFold.restore(live.decoder.registry, live.fold.checkpoint());
   live.native.applyReceipt(restored, receipt([tileData("1")]), 13, 0);
   expect(restored.checkpoint()).toEqual(live.fold.checkpoint());
+});
+
+it("exposes each roster member's preparation from their own entry and realm, not aggregate progress", () => {
+  const { native, fold, decoder } = world();
+  const input = { chain: "madara", confirmedBlock: 10, timestamp: 15, fold };
+  expect(buildNativeDirectory(input).games.find((game) => game.game_id === 1)!.roster).toEqual([
+    { account: "0x111", prepared: false },
+    { account: "0x222", prepared: false },
+  ]);
+  native.applyReceipt(fold, receipt([structure("7", "1", "0x111")]), 11, 0);
+  const prepared = buildNativeDirectory(input).games.find((game) => game.game_id === 1)!.roster;
+  expect(prepared).toEqual([
+    { account: "0x111", prepared: true },
+    { account: "0x222", prepared: false },
+  ]);
+  const restored = WorldFold.restore(decoder.registry, fold.checkpoint());
+  expect(buildNativeDirectory({ ...input, fold: restored }).games.find((game) => game.game_id === 1)!.roster).toEqual(
+    prepared,
+  );
 });

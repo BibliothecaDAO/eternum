@@ -1,7 +1,7 @@
 import { activeMapLayer } from "@/three/map-layer";
 import InstancedModel from "@/three/managers/instanced-model";
 import { FELT_CENTER } from "@/ui/config";
-import { nativeTileOccupierConstants } from "@bibliothecadao/eternum/game-client";
+import { TileOccupier } from "@bibliothecadao/types";
 import { projectionChangesForLayer, type WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
 import { Object3D, Scene } from "three";
 import { FLAT_TERRAIN_SURFACE, placePositionOnTerrain, type TerrainSurface } from "../terrain/terrain-surface";
@@ -10,8 +10,8 @@ import { gltfLoader } from "../utils/utils";
 
 /** Frontier's single-use sites: tile occupancy only, with no Structure, so the tile's category alone places them. */
 const MAP_SITES = [
-  { occupier: nativeTileOccupierConstants.SHRINE_OCCUPIER, path: "/models/frontier/shrine.glb", name: "Shrine" },
-  { occupier: nativeTileOccupierConstants.WELL_OCCUPIER, path: "/models/frontier/well.glb", name: "Well" },
+  { occupier: TileOccupier.Shrine, path: "/models/frontier/shrine.glb", name: "Shrine" },
+  { occupier: TileOccupier.Well, path: "/models/frontier/well.glb", name: "Well" },
 ] as const;
 
 type MapSite = (typeof MAP_SITES)[number];

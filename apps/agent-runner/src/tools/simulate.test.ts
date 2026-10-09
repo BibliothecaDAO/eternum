@@ -18,7 +18,7 @@ it("reports a realm without a map site before attempting a raid preview", async 
   const structure = game.store.require("Structure", { game_id: 28, entity_id: 12 });
   writeFact(game.store, "Structure", [28, 12], { ...structure, base: { ...structure.base, troop_max_guard_count: 0 } });
   const rules = game.store.require("SliceRules", { game_id: 28 });
-  writeFact(game.store, "SliceRules", [28], { ...rules, epoch_seconds: 86400 });
+  writeFact(game.store, "SliceRules", [28], { ...rules, day_unit_seconds: 14400 });
   const result = await createSimulateTool(game).execute("raid", { kind: "raid", attackerId: 101, structureId: 12 });
   expect(result.content).toEqual([{ type: "text", text: "Structure 12 has no map site yet." }]);
 });

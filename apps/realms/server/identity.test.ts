@@ -78,6 +78,7 @@ beforeAll(async () => {
     BASE_URL: ORIGIN,
     ACCOUNT_CLASS_HASH,
     BETTER_AUTH_SECRET: "identity-test-secret-identity-test-secret",
+    RATING_READER: {} as IdentityEnv["RATING_READER"],
     IDENTITY_RPC_URL: "http://127.0.0.1:1",
     OPERATOR_TOKEN: OPERATOR_TOKEN,
     DISCORD_CLIENT_ID: "discord-client",
@@ -262,6 +263,23 @@ describe("identity Worker", () => {
     expect((await signInWithCode(second, "LORD@realms.test")).status).toBe(200);
     expect((await second.session())?.user.id).toBe(created?.user.id);
     expect(await userCount()).toBe(before + 1);
+  });
+
+  it("returns the stored code expiry rather than starting another countdown at response time", async () => {
+    const browser = createBrowser();
+    const response = await browser.request("/api/auth/email-otp/send-verification-otp", {
+      body: { email: "expiry@realms.test", type: "sign-in" },
+    });
+    expect(response.status).toBe(200);
+    const context = await auth.$context;
+    const code = await context.internalAdapter.findVerificationValue("sign-in-otp-expiry@realms.test");
+    expect(code).not.toBeNull();
+    expect(await response.json()).toEqual({ success: true, expires_at: code!.expiresAt.getTime() / 1000 });
+    const refused = await browser.request("/api/auth/email-otp/send-verification-otp", {
+      body: { email: "invalid", type: "sign-in" },
+    });
+    expect(refused.status).toBe(400);
+    expect(await refused.json()).not.toHaveProperty("expires_at");
   });
 
   it("refuses a wrong code, an expired code and a code after three wrong tries", async () => {

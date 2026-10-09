@@ -37,120 +37,112 @@ pub struct ChestOpened {
     pub points: u128,
 }
 
+// Five chest tiers, common to legendary: a depth's odds in basis points, or the shares each tier pays.
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
-pub struct ChestGround {
+pub struct ChestTiers {
     pub common: u16,
     pub uncommon: u16,
     pub rare: u16,
-    pub pity: u16,
+    pub epic: u16,
+    pub legendary: u16,
 }
 
-#[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
-pub struct ChestRules {
-    pub relic_probability: u16,
-    pub token_cap: u16,
-    pub lords_amounts: LordsAmounts,
-    pub lords_pool: u128,
-    pub season_epochs: u16,
-}
-
-#[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
-pub struct LordsAmounts {
-    pub common: u128,
-    pub uncommon: u128,
-    pub rare: u128,
-    pub epic: u128,
-}
-
-#[derive(Copy, Drop, Serde, Debug, PartialEq)]
-pub struct LordsBudget {
-    pub lords_committed: u128,
-}
-
-pub fn lords_amount(amounts: LordsAmounts, quality: u8) -> u128 {
-    match quality {
-        0 => amounts.common,
-        1 => amounts.uncommon,
-        2 => amounts.rare,
-        3 => amounts.epic,
-        _ => panic!("invalid chest quality"),
+pub fn tier_value(tiers: ChestTiers, tier: u8) -> u16 {
+    match tier {
+        0 => tiers.common,
+        1 => tiers.uncommon,
+        2 => tiers.rare,
+        3 => tiers.epic,
+        4 => tiers.legendary,
+        _ => panic!("invalid chest tier"),
     }
 }
 
-pub fn lords_allowance(rules: ChestRules, season_day: u64) -> u128 {
-    let epochs: u128 = rules.season_epochs.into();
-    assert!(epochs != 0, "zero season epochs");
-    let released: u128 = core::cmp::min(Into::<u64, u128>::into(season_day) + 1, epochs);
-    // Quotient and remainder keep the exact floor without overflowing a u128 pool.
-    (rules.lords_pool / epochs) * released + (rules.lords_pool % epochs) * released / epochs
+pub fn roll_tier(odds: ChestTiers, seed: u256, timestamp: u64) -> u8 {
+    let mut draw = crate::random::range(seed, Into::<u64, u128>::into(timestamp) + 37, 10000);
+    for tier in 0_u8..4 {
+        let weight: u128 = tier_value(odds, tier).into();
+        if draw < weight {
+            return tier;
+        }
+        draw -= weight;
+    }
+    4
+}
+
+// The season's LORDS: a pool paid out through the day price, which never exceeds `price_ceiling` per share. A day's
+// expected shares are a moving average over `estimate_days` days; a day's surge ceiling is `surge_factor` times its
+// expected shares, never below `surge_minimum_shares`.
+#[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
+pub struct ChestRules {
+    pub pool: u128,
+    pub price_ceiling: u128,
+    pub shares: ChestTiers,
+    pub surge_factor: u16,
+    pub surge_minimum_shares: u32,
+    pub estimate_days: u16,
+}
+
+// A ruin's chest, fixed when the ruin is found: its tier and the whole LORDS its clear pays.
+#[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
+pub struct SiteChest {
+    pub tier: u8,
+    pub amount: u128,
+}
+
+// The season pool as it stands. `open` is LORDS in today's chests not yet paid, `spent` all LORDS chests found today
+// hold, `paid_shares` the shares cleared today; `estimate` is shares per tick scaled by LORDS_ESTIMATE_SCALE.
+#[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
+pub struct LordsBudget {
+    pub pool_left: u128,
+    pub open: u128,
+    pub spent: u128,
+    pub day: u64,
+    pub price: u128,
+    pub ceiling: u128,
+    pub estimate: u128,
+    pub paid_shares: u128,
+}
+
+pub const LORDS_ESTIMATE_SCALE: u128 = 1000000;
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct RefillStamina {
+    pub explorer_id: u32,
+}
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct WithdrawLords {
+    pub structure_id: u32,
+    pub amount: u128,
+}
+
+// A realm's withdrawal of whole LORDS, recorded for fulfilment on L2.
+#[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
+pub struct LordsWithdrawal {
+    pub player: ContractAddress,
+    pub structure_id: u32,
+    pub amount: u128,
 }
 
 #[starknet::interface]
-pub trait ILordsCommitment<T> {
-    fn initialize_lords_budget(ref self: T, game_id: u32);
-    fn commit_lords(ref self: T, game_id: u32, quality: u8, context: crate::commands::ActionContext) -> bool;
-}
-
-#[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
-#[allow(starknet::store_no_default_variant)]
-pub enum ChestKind {
-    Relic,
-    // Permanently reserve tag 1 so Token stays 2 in stored rewards and recorded receipts.
-    Reserved,
-    Token,
-}
-
-#[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
-pub struct ChestReward {
-    pub player: ContractAddress,
-    pub explorer_id: u32,
-    pub epoch: u64,
-    pub depth: u8,
-    pub kind: ChestKind,
-    pub quality: u8,
-    pub lords_exhausted: bool,
-}
-
-#[derive(Copy, Drop, Serde, Debug, PartialEq)]
-pub struct ChestRoll {
-    pub kind: ChestKind,
-    pub quality: u8,
-    pub pity: u16,
-}
-
-pub fn roll_chest(
-    rules: ChestRules, ground: ChestGround, pity: u16, tokens: u16, seed: u256, timestamp: u64,
-) -> ChestRoll {
-    let type_roll = crate::random::range(seed, Into::<u64, u128>::into(timestamp) + 31, 10000);
-    let kind = if type_roll < rules.relic_probability.into() {
-        ChestKind::Relic
-    } else if tokens < rules.token_cap {
-        ChestKind::Token
-    } else {
-        ChestKind::Relic
-    };
-    let quality_roll = crate::random::range(seed, Into::<u64, u128>::into(timestamp) + 37, 10000);
-    let mut quality = if quality_roll < ground.common.into() {
-        0
-    } else if quality_roll < Into::<u16, u128>::into(ground.common) + ground.uncommon.into() {
-        1
-    } else if quality_roll < Into::<u16, u128>::into(ground.common) + ground.uncommon.into() + ground.rare.into() {
-        2
-    } else {
-        3
-    };
-    let mut next_pity = pity;
-    if kind == ChestKind::Relic {
-        if pity + 1 >= ground.pity {
-            quality = 3;
-        }
-        next_pity = if quality == 3 {
-            0
-        } else {
-            pity + 1
-        };
-    }
-    ChestRoll { kind, quality, pity: next_pity }
+pub trait ILords<T> {
+    fn refill_stamina(
+        ref self: T,
+        game_id: u32,
+        actor: ContractAddress,
+        command: RefillStamina,
+        context: crate::commands::ActionContext,
+        story_cursor: crate::ownership::StoryCursor,
+    ) -> ((), crate::ownership::StoryCursor);
+    fn withdraw_lords(
+        ref self: T,
+        game_id: u32,
+        actor: ContractAddress,
+        command: WithdrawLords,
+        context: crate::commands::ActionContext,
+        story_cursor: crate::ownership::StoryCursor,
+    ) -> ((), crate::ownership::StoryCursor);
 }
 
 #[starknet::interface]
@@ -168,9 +160,7 @@ pub trait ICaptureRewards<T> {
 pub trait IRelics<T> {
     fn lords_budget(self: @T, game_id: u32) -> Option<LordsBudget>;
     fn chest_rules(self: @T, game_id: u32) -> Option<ChestRules>;
-    fn chest_pity(self: @T, game_id: u32, player: ContractAddress, depth: u8) -> u16;
-    fn chest_tokens(self: @T, game_id: u32, player: ContractAddress, epoch: u64) -> u16;
-    fn chest_reward(self: @T, game_id: u32, order: u64, index: u32) -> Option<ChestReward>;
+    fn site_chest(self: @T, key: ResourceKey) -> Option<SiteChest>;
     fn relic_rules(self: @T, game_id: u32) -> Span<RelicRule>;
     fn open_relic_chest(
         ref self: T,
@@ -202,7 +192,6 @@ pub trait IRelicMap<T> {
         timestamp: u64,
         game_context: crate::commands::ActionContext,
     );
-    fn close_site_chest(ref self: T, site: ResourceKey);
     fn consume_relic_chest(ref self: T, game_id: u32, coord: Coord);
     fn reveal_relic_ring(
         ref self: T, game_id: u32, coord: Coord, radius: u8, game_context: crate::commands::BiomeContext,

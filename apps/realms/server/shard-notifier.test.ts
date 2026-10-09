@@ -1,4 +1,4 @@
-import { absoluteEpoch } from "@bibliothecadao/eternum/expeditions";
+import { dayOf } from "@bibliothecadao/eternum/expeditions";
 import type { HeraldHistoryEvent } from "@bibliothecadao/eternum/game-sync";
 import { beforeAll, expect, it } from "vitest";
 
@@ -44,10 +44,13 @@ const ARMIES_TICK_SECONDS = 1;
 const STAMINA_GAIN_PER_TICK = 40;
 const REST_TICKS = 3;
 const ticks = (count: number) => count * ARMIES_TICK_SECONDS * 1000;
-/** A Frontier season that began yesterday: today is its second daily expedition, each day a row of 40-hex regions. */
-const DAY_SECONDS = 86_400;
+/**
+ * A Frontier season in its second day, each day a row of 40-hex regions. Its four-hour units draw from seed 1, whose
+ * first bag opens with a 12-hour day and a 16-hour one: the season started 13 hours ago, an hour into day 1.
+ */
+const DAY_UNIT_SECONDS = 14_400;
 const REGION_SPACING = 40;
-const SEASON_START = (Math.floor(Date.now() / 1000 / DAY_SECONDS) - 1) * DAY_SECONDS;
+const SEASON_START = Math.floor(Date.now() / 1000) - 13 * 3_600;
 const TODAY = 1;
 
 let bundle: string;
@@ -86,11 +89,25 @@ const createHerald = () => {
     /** Snapshot reads answered, and whether this Herald is failing them. */
     snapshotReads: 0,
     snapshotFails: false,
+    seasonStart: SEASON_START,
+    members: [PLAYER_ACCOUNT],
   };
   const answer = (url: URL): unknown => {
     if (url.pathname === "/manifest") return { version: 1, chainId: state.chain, contracts: { games: "0x5e45" } };
     if (url.pathname === "/games")
-      return { chain: state.chain, games: [{ game_id: GAME_ID, name: "frontier-a", status: state.status }] };
+      return {
+        chain: state.chain,
+        games: [
+          {
+            game_id: GAME_ID,
+            name: "frontier-a",
+            status: state.status,
+            mode: "frontier",
+            clock: { start_main_at: state.seasonStart, end_at: state.seasonStart + 21 * 20 * DAY_UNIT_SECONDS },
+            expedition: { seed: "1", day_unit_seconds: DAY_UNIT_SECONDS },
+          },
+        ],
+      };
     if (url.pathname === `/games/${GAME_ID}/snapshot`) state.snapshotReads++;
     if (url.pathname === `/games/${GAME_ID}/snapshot` && state.snapshotFails)
       return Response.json({ error: "snapshot unavailable" }, { status: 500 });
@@ -100,7 +117,7 @@ const createHerald = () => {
         { status: 409 },
       );
     if (url.pathname === `/games/${GAME_ID}/snapshot`)
-      return snapshot(state.army, state.neighbourArmy, url.searchParams.get("owner"));
+      return snapshot(state.army, state.neighbourArmy, url.searchParams.get("owner"), state.members);
     const page = { chain: state.chain, world_address: "0x5e45", complete_through_block: 10 + log.length };
     const after = url.searchParams.get("after");
     if (!after) return { ...page, next_cursor: { block: 10, transaction: 2147483647, event: 2147483647 }, items: [] };
@@ -171,10 +188,21 @@ const STRUCTURE_OWNERS = new Map([
   [NEIGHBOUR_HOME, "0x7e1"],
 ]);
 
-const snapshot = (army: ArmyState | null, neighbour: ArmyState | null, owner: string | null) => ({
+const snapshot = (army: ArmyState | null, neighbour: ArmyState | null, owner: string | null, members: string[]) => ({
   confirmed_block: 10,
   game_id: String(GAME_ID),
   models: [
+    {
+      model: "PlayerEntry",
+      rows: members.map((account) => ({
+        key: account,
+        value: {
+          game_id: GAME_ID,
+          owner: account,
+          player: "0xdead",
+        },
+      })),
+    },
     {
       model: "SliceRules",
       rows: [
@@ -188,7 +216,7 @@ const snapshot = (army: ArmyState | null, neighbour: ArmyState | null, owner: st
               ...preset.rules.troop_stamina_config,
               stamina_gain_per_tick: STAMINA_GAIN_PER_TICK,
             },
-            epoch_seconds: DAY_SECONDS,
+            day_unit_seconds: DAY_UNIT_SECONDS,
           },
         },
       ],
@@ -223,7 +251,7 @@ const snapshot = (army: ArmyState | null, neighbour: ArmyState | null, owner: st
             dev_mode_on: false,
             start_settling_at: SEASON_START,
             start_main_at: SEASON_START,
-            end_at: SEASON_START + 30 * DAY_SECONDS,
+            end_at: SEASON_START + 2 * 20 * DAY_UNIT_SECONDS,
             end_grace_seconds: 0,
             seed: "0x1",
           },
@@ -286,13 +314,12 @@ const armyProgressRow = (explorerId: number, home: number) => ({
   value: {
     game_id: GAME_ID,
     explorer_id: explorerId,
-    level: 1,
     xp: 0,
     battle: 1,
     logistics: 1,
     scouting: 1,
-    support: 1,
-    pending: null,
+    scouting_kinds: 0,
+    homecoming: 1,
   },
 });
 
@@ -301,7 +328,7 @@ const armySlotRow = (explorerId: number, home: number, army: ArmyState) => ({
   value: {
     game_id: GAME_ID,
     structure_id: home,
-    epoch: absoluteEpoch({ epochSeconds: DAY_SECONDS }, SEASON_START) + army.day,
+    epoch: army.day,
     slot: 0,
     explorer_id: explorerId,
     stamina: { amount: army.amount, updated_tick: army.updatedTick },
@@ -324,25 +351,35 @@ const armyPosition = (explorerId: number, home: number, army: ArmyState) => ({
 });
 
 /** The Worker in workerd over storage that survives a restart, a fake Herald, and a push service answering `status`. */
-const createHarness = async (level: "important" | "standard") => {
+const createHarness = async (level: "off" | "important" | "standard" | "all", pollMs = POLL_MS) => {
   const storage = newStorage();
   const herald = createHerald();
-  const push = { status: 201, received: [] as number[] };
+  const push = {
+    status: 201,
+    received: [] as number[],
+    times: [] as number[],
+    endpoints: [] as string[],
+    stalledEndpoint: null as string | null,
+  };
   const vapid = await vapidKeys();
   const start = () =>
     startWorker({
       bundle,
       storage,
       vapid,
-      notifierPollMs: POLL_MS,
+      notifierPollMs: pollMs,
       outbound: (request) => {
         const url = new URL(request.url);
         if (url.origin === SHARD) {
           const answer = herald.answer(url);
           return answer instanceof Response ? answer : Response.json(answer);
         }
-        if (url.href === PUSH_ENDPOINT) {
+        if (url.href.startsWith(PUSH_ENDPOINT)) {
           push.received.push(push.status);
+          push.times.push(Date.now());
+          push.endpoints.push(url.href);
+          if (url.href === push.stalledEndpoint)
+            return pause(1500).then(() => new Response(null, { status: push.status }));
           return new Response(null, { status: push.status });
         }
         return new Response("unexpected outbound request", { status: 599 });
@@ -488,3 +525,232 @@ it("reads a new chain at the same URL from its own head, and sends nothing twice
   expect(push.received).toEqual([201, 201, 201]);
   await worker.dispose();
 }, 60_000);
+
+/** Put the shared calendar's first reminder a few seconds ahead; no player needs to have acted. */
+const remindSoon = (herald: ReturnType<typeof createHerald>, seconds = 8, dayIndex = 0) => {
+  const dueAt = (Math.floor(Date.now() / 1000) + seconds) * 1000;
+  const calendar = { seed: 1n, startMainAt: 0, dayUnitSeconds: DAY_UNIT_SECONDS };
+  let day = dayOf(calendar, 0)!;
+  for (let index = 0; index < dayIndex; index++) day = dayOf(calendar, day.end)!;
+  herald.state.seasonStart = dueAt / 1000 + 3600 - day.end;
+  return dueAt;
+};
+
+it.each(["important", "all"] as const)(
+  "rule 9.6 sends one reminder to an inactive %s player at its seeded instant",
+  async (level) => {
+    const { herald, push, worker, start } = await createHarness(level, 1000);
+    const dueAt = remindSoon(herald);
+    // Being in the game is not a quiet-hours or foreground exception for the reminder.
+    await worker.db
+      .prepare('UPDATE "notification_push_subscriptions" SET "gameForegroundUntil" = ?')
+      .bind(dueAt + 60_000)
+      .run();
+    await worker.runCron();
+    await waitUntil(() => push.received.length > 0, 15_000);
+    expect(push.received).toEqual([201]);
+    expect(push.times[0]).toBeGreaterThanOrEqual(dueAt);
+    expect(push.times[0]).toBeLessThan(dueAt + 1000);
+    await worker.dispose();
+    const restarted = await start();
+    await restarted.runCron();
+    await pause(2000);
+    expect(push.received).toEqual([201]);
+    await restarted.dispose();
+  },
+  45_000,
+);
+
+it("rule 9.6 covers enrollment beyond a story page, including another inactive player", async () => {
+  const { herald, push, worker } = await createHarness("important", 1000);
+  const account = "0xbeef";
+  const owner = realmsIdOf("player-two");
+  const endpoint = `${PUSH_ENDPOINT}/two`;
+  const now = Date.now();
+  // The first hundred accounts have never registered a notification device; recipients still include later rows.
+  herald.state.members = [
+    ...Array.from({ length: 101 }, (_, index) => `0x${(0x1000 + index).toString(16)}`),
+    PLAYER_ACCOUNT,
+    account,
+  ];
+  await worker.db.batch([
+    worker.db
+      .prepare(
+        `INSERT INTO "user" ("id", "name", "email", "emailVerified", "createdAt", "updatedAt", "realmsId")
+      VALUES ('player-two', 'player-two', 'two@x.test', 0, ?, ?, ?)`,
+      )
+      .bind(new Date(now).toISOString(), new Date(now).toISOString(), owner),
+    worker.db.prepare('INSERT INTO "realms_accounts" ("address", "realmsId") VALUES (?, ?)').bind(account, owner),
+    worker.db
+      .prepare('INSERT INTO "notification_preferences" ("owner", "level", "revision") VALUES (?, ?, 1)')
+      .bind(owner, "all"),
+    worker.db
+      .prepare(
+        `INSERT INTO "notification_push_subscriptions"
+      ("id", "owner", "endpoint", "p256dh", "auth", "revocationHash", "gameAlertsEnabledAt", "createdAt")
+      SELECT '00000000-0000-4000-8000-000000000002', ?, ?, "p256dh", "auth", 'x', "gameAlertsEnabledAt", "createdAt"
+      FROM "notification_push_subscriptions" WHERE "id" = ?`,
+      )
+      .bind(owner, endpoint, DEVICE_ID),
+  ]);
+  remindSoon(herald);
+  await worker.runCron();
+  await waitUntil(() => push.received.length === 2, 15_000);
+  expect(push.endpoints.sort()).toEqual([PUSH_ENDPOINT, endpoint]);
+  await worker.dispose();
+}, 45_000);
+
+it("rule 9.6 drops a missed trigger on a newly started notifier", async () => {
+  const { herald, push, worker } = await createHarness("important", 1000);
+  remindSoon(herald, -2);
+  await worker.runCron();
+  await pause(2000);
+  expect(push.received).toEqual([]);
+  await worker.dispose();
+}, 45_000);
+
+it("rule 9.6 rechecks preferences after preparation and cancels a finished game's reminder", async () => {
+  for (const cancelledBy of ["off", "settled"] as const) {
+    const { herald, push, worker } = await createHarness("important", 1000);
+    const dueAt = remindSoon(herald);
+    await worker.runCron();
+    await waitUntil(() => herald.state.snapshotReads > 0, 4000);
+    expect(herald.state.snapshotReads).toBeGreaterThan(0);
+    if (cancelledBy === "off")
+      await worker.db.prepare('UPDATE "notification_preferences" SET "level" = ?').bind("off").run();
+    else herald.state.status = "Settled";
+    await pause(Math.max(0, dueAt + 1500 - Date.now()));
+    expect(push.received).toEqual([]);
+    await worker.dispose();
+  }
+}, 45_000);
+
+it("rule 9.6 never reminds Off or a device without game-alert consent", async () => {
+  const { herald, push, worker } = await createHarness("off", 1000);
+  const dueAt = remindSoon(herald);
+  await worker.runCron();
+  await pause(Math.max(0, dueAt + 1500 - Date.now()));
+  expect(push.received).toEqual([]);
+  await worker.dispose();
+  const other = await createHarness("important", 1000);
+  const otherDue = remindSoon(other.herald);
+  await other.worker.db.prepare('UPDATE "notification_push_subscriptions" SET "gameAlertsEnabledAt" = NULL').run();
+  await other.worker.runCron();
+  await pause(Math.max(0, otherDue + 1500 - Date.now()));
+  expect(other.push.received).toEqual([]);
+  await other.worker.dispose();
+}, 45_000);
+
+it("rule 9.6 drops a lost delivery rather than retrying after the hour", async () => {
+  const { herald, push, worker, start } = await createHarness("important", 1000);
+  const dueAt = remindSoon(herald);
+  push.status = 503;
+  await worker.runCron();
+  await waitUntil(() => push.received.length > 0, 15_000);
+  expect(push.received).toEqual([503]);
+  await worker.dispose();
+  await pause(Math.max(0, dueAt + 1500 - Date.now()));
+  const restarted = await start();
+  push.status = 201;
+  await restarted.runCron();
+  await pause(2000);
+  expect(push.received).toEqual([503]);
+  await restarted.dispose();
+}, 45_000);
+
+/** Each extra player owns one eligible device, within the production per-owner cap. */
+const addReminderPlayers = async (worker: Awaited<ReturnType<typeof startWorker>>, count: number) => {
+  const now = Date.now();
+  const players = Array.from({ length: count }, (_, index) => {
+    const id = `reminder-extra-${index}`;
+    return {
+      id,
+      owner: realmsIdOf(id),
+      account: `0x${(0x2000 + index).toString(16)}`,
+      endpoint: `${PUSH_ENDPOINT}/${index}`,
+      device: `00000000-0000-4000-8000-${(index + 2).toString().padStart(12, "0")}`,
+    };
+  });
+  await worker.db.batch(
+    players.flatMap((player) => [
+      worker.db
+        .prepare(
+          `INSERT INTO "user" ("id","name","email","emailVerified","createdAt","updatedAt","realmsId") VALUES (?,?,?,1,?,?,?)`,
+        )
+        .bind(
+          player.id,
+          player.id,
+          `${player.id}@x.test`,
+          new Date(now).toISOString(),
+          new Date(now).toISOString(),
+          player.owner,
+        ),
+      worker.db
+        .prepare('INSERT INTO "realms_accounts" ("address","realmsId") VALUES (?,?)')
+        .bind(player.account, player.owner),
+      worker.db
+        .prepare(`INSERT INTO "notification_preferences" ("owner","level","revision") VALUES (?,'important',1)`)
+        .bind(player.owner),
+      worker.db
+        .prepare(
+          `INSERT INTO "notification_push_subscriptions" ("id","owner","endpoint","p256dh","auth","revocationHash","gameAlertsEnabledAt","createdAt")
+      SELECT ?,?,?,"p256dh","auth",'x',"gameAlertsEnabledAt","createdAt" FROM "notification_push_subscriptions" WHERE "id"=?`,
+        )
+        .bind(player.device, player.owner, player.endpoint, DEVICE_ID),
+    ]),
+  );
+  return players;
+};
+
+it("rule 9.6 starts device 101 in its scheduled second while an endpoint in the first hundred stalls", async () => {
+  const { herald, push, worker } = await createHarness("important", 1000);
+  try {
+    const players = await addReminderPlayers(worker, 100);
+    herald.state.members.push(...players.map((player) => player.account));
+    const ordered = [{ owner: OWNER, endpoint: PUSH_ENDPOINT }, ...players].sort((a, b) =>
+      a.owner < b.owner ? -1 : a.owner > b.owner ? 1 : 0,
+    );
+    push.stalledEndpoint = ordered[0]!.endpoint;
+    const dueAt = remindSoon(herald, 10);
+    await worker.runCron();
+    await waitUntil(() => push.endpoints.length === 101, 15_000);
+    const last = push.endpoints.indexOf(ordered[100]!.endpoint);
+    expect(last).toBeGreaterThanOrEqual(0);
+    expect(push.times[last]).toBeGreaterThanOrEqual(dueAt);
+    expect(push.times[last]).toBeLessThan(dueAt + 1000);
+    expect(push.times.every((time) => time >= dueAt && time < dueAt + 1000)).toBe(true);
+    await pause(Math.max(0, dueAt + 2500 - Date.now()));
+    expect(new Set(push.endpoints).size).toBe(101);
+    expect(push.endpoints).toHaveLength(101);
+  } finally {
+    await worker.dispose();
+  }
+}, 45_000);
+
+it.each([false, true])(
+  "rule 9.6 fixes eligibility at preparation (empty cohort: %s), then includes a late enrolment next day",
+  async (initiallyEmpty) => {
+    const { herald, push, worker } = await createHarness("important", 1000);
+    try {
+      const [late] = await addReminderPlayers(worker, 1);
+      if (initiallyEmpty) herald.state.members = [];
+      const dueAt = remindSoon(herald, 8);
+      await worker.runCron();
+      await waitUntil(() => herald.state.snapshotReads > 0, 4000);
+      expect(herald.state.snapshotReads).toBeGreaterThan(0);
+      herald.state.members.push(late!.account);
+      await pause(Math.max(0, dueAt + 1500 - Date.now()));
+      expect(push.endpoints).toEqual(initiallyEmpty ? [] : [PUSH_ENDPOINT]);
+      const nextDue = remindSoon(herald, 8, 1); // Advance the fake shard to the next seeded day.
+      await worker.runCron();
+      await waitUntil(() => push.endpoints.includes(late!.endpoint), 12_000);
+      expect(push.endpoints.filter((endpoint) => endpoint === late!.endpoint)).toHaveLength(1);
+      const attempt = push.endpoints.indexOf(late!.endpoint);
+      expect(push.times[attempt]).toBeGreaterThanOrEqual(nextDue);
+      expect(push.times[attempt]).toBeLessThan(nextDue + 1000);
+    } finally {
+      await worker.dispose();
+    }
+  },
+  45_000,
+);

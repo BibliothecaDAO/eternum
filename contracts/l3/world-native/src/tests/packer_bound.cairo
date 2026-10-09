@@ -53,7 +53,8 @@ fn setup_realm_with_explorers(count: u8) -> (Deployment, ResourceKey) {
     preset.structures.board = None;
     preset
         .structures
-        .camps =
+        .camps
+        .resources =
             array![ResourceAmount { resource_type: 1, amount: 100 }, ResourceAmount { resource_type: 2, amount: 20 }]
         .span();
     preset
@@ -136,6 +137,6 @@ fn assert_every_explore_discovered_a_camp(d: Deployment, explorers: Span<u32>) {
             .unwrap();
         let destination = neighbor(army.coord, index.try_into().unwrap());
         let tile = map.tile(tile_key(3, destination)).unwrap();
-        assert_eq!((tile.data / 2) % 256, crate::camps::CAMP_OCCUPIER.into());
+        assert_eq!((tile.data / 2) % 256, crate::taxonomy::CAMP_OCCUPIER.into());
     }
 }

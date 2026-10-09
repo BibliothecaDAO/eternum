@@ -18,3 +18,6 @@ export const starknet_mmr_updates = pgTable(
   },
   (t) => [primaryKey({ columns: [t.transaction_hash, t.event_index] }), index("mmr_updates_player_idx").on(t.player)],
 );
+
+/** Apibara's persisted cursor id for this file and storage identifier. */
+export const MMR_HISTORY_CHECKPOINT_ID = "indexer_strk_mmr_updates_starknet_mmr_updates";

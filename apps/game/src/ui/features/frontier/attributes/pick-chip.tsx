@@ -1,26 +1,25 @@
 import { useReducedMotion } from "@/ui/motion/motion-settings";
 import { motion } from "framer-motion";
-import { type ArmyProgressFacts, bankedPicks, type ProgressionRulesFacts } from "./attributes";
+import { type ArmyProgressFacts, affordableUpgrades, type ProgressionRulesFacts } from "./attributes";
 import { CardFanGlyph } from "../glyphs";
 import { openPick, usePick } from "./pick-moment";
 
 /**
- * A waiting offer on its army (design §3.12, mockup 7): a pulsing fan of cards with the number of picks waiting, the
- * offer and those banked behind it. It opens the panel; never a forced modal.
+ * An affordable Upgrade on its army (design §3.12, mockup 7): a pulsing fan of cards with the number of attributes its
+ * XP can raise now. It opens the panel; never a forced modal.
  */
 export const PickChip = ({ progress, rules }: { progress: ArmyProgressFacts; rules: ProgressionRulesFacts }) => {
   const pick = usePick();
   const reduced = useReducedMotion();
-  const offer = progress.pending;
-  if (!offer || pick?.explorerId === progress.explorer_id) return null;
-  const waiting = 1 + bankedPicks(progress, rules);
+  const waiting = affordableUpgrades(progress, rules).length;
+  if (waiting === 0 || pick?.explorerId === progress.explorer_id) return null;
   return (
     <motion.button
       type="button"
       aria-label={`Pick, ${waiting} waiting`}
       onClick={(event) => {
         event.stopPropagation();
-        openPick(progress.explorer_id, offer);
+        openPick(progress.explorer_id);
       }}
       animate={reduced ? undefined : { scale: [1, 1.08, 1] }}
       transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}

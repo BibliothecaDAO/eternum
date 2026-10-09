@@ -46,7 +46,6 @@ const useCastleUpgradePlan = (
   return {
     plan: {
       name: upgrade.currentLevelName,
-      doubled: false,
       population: undefined,
       now: castleStep(upgrade.currentLevel),
       next: upgrade.nextLevel === null ? null : castleStep(upgrade.nextLevel),

@@ -1,3 +1,6 @@
+import { retainBoundaryEvidence } from "./worker-boundary";
+import { mkdtempSync, rmSync } from "node:fs";
+import { summarizeBattles } from "./combat";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -48,7 +51,11 @@ import { GameWorkersFailed, waitForGameWorkers } from "./run";
 const labelled = (workers: EventEmitter[]) =>
   workers.map((worker, index) => ({
     label: `1-${index}`,
-    worker: Object.assign(worker, { postMessage: () => {}, terminate: async () => 0 }) as unknown as Worker,
+    worker: Object.assign(worker, {
+      threadId: index + 1,
+      postMessage: () => {},
+      terminate: async () => 0,
+    }) as unknown as Worker,
   }));
 import { holdsForSite } from "./frontier";
 
@@ -96,11 +103,11 @@ describe("Madara harness workload", () => {
     const waiting = waitForGameWorkers(labelled(workers), reports).then(() => {
       complete = true;
     });
-    workers[0].emit("message", { type: "result", passed: false, path: "failed.json", pid: 1, threadId: 1 });
+    workers[0].emit("message", reportFrame(false));
     workers[0].emit("exit", 1);
     await Promise.resolve();
     expect(complete).toBe(false);
-    workers[1].emit("message", { type: "result", passed: true, path: "passed.json", pid: 1, threadId: 2 });
+    workers[1].emit("message", reportFrame(true));
     workers[1].emit("exit", 0);
     await waiting;
     expect(reports.map(({ passed }) => passed)).toEqual([false, true]);
@@ -126,7 +133,7 @@ describe("Madara harness workload", () => {
     const workers = [new EventEmitter(), new EventEmitter(), new EventEmitter(), new EventEmitter()];
     const waiting = waitForGameWorkers(labelled(workers), []);
     for (const worker of workers) worker.emit("message", { type: "ready" });
-    workers[0].emit("message", { type: "result", passed: true, path: "passed.json", pid: 1, threadId: 1 });
+    workers[0].emit("message", reportFrame(true));
     workers[0].emit("exit", 0);
     workers[1].emit("message", { type: "failure", error: "JSON Parse error: Expected '}'", stack: "at collectRunGas" });
     workers[1].emit("exit", 1);
@@ -1378,3 +1385,31 @@ async function readBlockStats(rows: unknown[], metrics: unknown[], options: stri
 }
 
 afterEach(() => mock.restore());
+
+const workerReportsDirectory = mkdtempSync(join(tmpdir(), "harness-worker-reports-"));
+afterAll(() => rmSync(workerReportsDirectory, { recursive: true, force: true }));
+let reportIndex = 0;
+const reportFrame = (workloadPassed: boolean) => {
+  const reportPath = join(workerReportsDirectory, `${reportIndex++}.json`);
+  retainBoundaryEvidence(`${reportPath}.boundary`);
+  return {
+    type: "report-prepared",
+    prepared: {
+      path: reportPath,
+      workloadPassed,
+      report: {},
+      workload: {
+        gameId: 1,
+        startedAt: "2026-10-07T00:00:00Z",
+        endedAt: "2026-10-07T00:01:00Z",
+        plannedActions: 0,
+        thresholdEligibleActions: 0,
+        firstSubmitAt: null,
+        admissionToVisibleMs: [],
+        admissionToVisibleMissing: 0,
+        heraldConfirmedLagMs: [],
+        battles: summarizeBattles([]),
+      },
+    },
+  };
+};

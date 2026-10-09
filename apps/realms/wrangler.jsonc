@@ -12,6 +12,7 @@
   "migrations": [
     { "tag": "v1", "new_sqlite_classes": ["ShardNotifier"] },
     { "tag": "v2", "new_sqlite_classes": ["ChatRoom", "ChatInbox"] },
+    { "tag": "v3", "new_sqlite_classes": ["RatingReader"] },
   ],
   "env": {
     "staging": {
@@ -38,6 +39,7 @@
       "durable_objects": {
         "bindings": [
           { "name": "SHARD_NOTIFIER", "class_name": "ShardNotifier" },
+          { "name": "RATING_READER", "class_name": "RatingReader" },
           { "name": "CHAT_ROOM", "class_name": "ChatRoom" },
           { "name": "CHAT_INBOX", "class_name": "ChatInbox" },
         ],
@@ -71,6 +73,7 @@
       "durable_objects": {
         "bindings": [
           { "name": "SHARD_NOTIFIER", "class_name": "ShardNotifier" },
+          { "name": "RATING_READER", "class_name": "RatingReader" },
           { "name": "CHAT_ROOM", "class_name": "ChatRoom" },
           { "name": "CHAT_INBOX", "class_name": "ChatInbox" },
         ],

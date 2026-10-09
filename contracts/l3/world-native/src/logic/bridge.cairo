@@ -55,7 +55,8 @@ pub mod BridgeState {
             let withdrawals = self.withdrawals();
             let token = withdrawals.token(crate::market::MarketKey { game_id, resource_type: command.resource_type });
             assert!(
-                target.base.category != 5 || !crate::resources::is_troop_resource(command.resource_type),
+                target.base.category != crate::taxonomy::VILLAGE_CATEGORY
+                    || !crate::resources::is_troop_resource(command.resource_type),
                 "troops cannot be bridged into villages",
             );
             assert!(
@@ -211,7 +212,9 @@ pub mod BridgeState {
             let structure = self.structure(game_id, entity_id);
             assert!(structure.owner == actor, "actor does not own structure");
             assert!(
-                structure.base.category == 1 || structure.base.category == 5, "structure is not a realm or village",
+                structure.base.category == crate::taxonomy::REALM_CATEGORY
+                    || structure.base.category == crate::taxonomy::VILLAGE_CATEGORY,
+                "structure is not a realm or village",
             );
             structure
         }
@@ -318,14 +321,14 @@ pub mod BridgeState {
             game_context: crate::commands::ExecutionContext,
             ref story_cursor: crate::ownership::StoryCursor,
         ) -> u128 {
-            if village.base.category != 5 || rate == 0 {
+            if village.base.category != crate::taxonomy::VILLAGE_CATEGORY || rate == 0 {
                 return 0;
             }
             let fee = amount * rate.into() / 10000;
             assert!(fee != 0, "amount too small to pay realm fees");
             let realm_id = village.metadata.village_realm;
             let realm = self.structure(game_id, realm_id);
-            assert!(realm.base.category == 1, "connected structure is not a realm");
+            assert!(realm.base.category == crate::taxonomy::REALM_CATEGORY, "connected structure is not a realm");
             let resource = ResourceAmount { resource_type, amount: fee };
             let mut travel_time = 0;
             if withdrawal {

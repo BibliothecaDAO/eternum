@@ -251,7 +251,6 @@ export const factWireTypes = [
         name: "labor_paid",
         type: "core::integer::u128",
       },
-      { name: "tier", type: "core::integer::u8" },
     ],
   },
   {
@@ -546,7 +545,7 @@ export const factWireTypes = [
         type: "core::integer::u128",
       },
       {
-        name: "last_updated_at",
+        name: "last_settled_tick",
         type: "core::integer::u32",
       },
     ],
@@ -711,9 +710,8 @@ const presetDerivedModels = new Set([
   "MinePool",
   "BuildingRule",
   "BoardRules",
-  "ResearchNode",
-  "BuildingTierRule",
-  "CampResources",
+  "ResearchPrice",
+  "CampRules",
   "FaithRules",
   "UpgradeLimits",
   "UpgradeRecipe",
@@ -759,19 +757,12 @@ export function defineFactModels({ struct, model: declare }) {
         value: "zero",
         meaning: "No empty player reveals in this expedition yet.",
       };
-    if (row.name === "RealmSupport")
-      row.absence = {
-        parent: "Structure",
-        parentKeys: { entity_id: "structure_id" },
-        value: "zero",
-        meaning: "No Support boost earned for this realm in this absolute epoch.",
-      };
     if (row.name === "ArmySlot")
       row.absence = {
         parent: "Structure",
         parentKeys: { entity_id: "structure_id" },
         value: "unused",
-        meaning: "This army slot has not been used in the current expedition epoch.",
+        meaning: "This army slot has not been used on this season day.",
       };
     if (row.name === "Guard")
       row.absence = {
@@ -785,11 +776,6 @@ export function defineFactModels({ struct, model: declare }) {
         parent: "SettlementRules",
         value: "zero",
         meaning: "No players have settled or registered realms in this game.",
-      };
-    if (row.name === "ChestPity" || row.name === "ChestTokens")
-      row.absence = {
-        value: "zero",
-        meaning: "No chests have advanced this counter.",
       };
     if (row.name === "VillageRaid")
       row.absence = { parent: "Structure", value: "zero", meaning: "The village has not been successfully raided." };
@@ -821,12 +807,7 @@ export function defineFactModels({ struct, model: declare }) {
       [{ name: "commitment", type: "core::felt252" }],
     ),
     model("SpireLayout", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("spires::SpireLayout")),
-    model(
-      "CampResources",
-      "game",
-      [{ name: "game_id", type: "core::integer::u32" }],
-      [{ name: "resources", type: "core::array::Span::<world_native::resources::ResourceAmount>" }],
-    ),
+    model("CampRules", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("camps::CampRules")),
     model(
       "Guild",
       "game",
@@ -895,38 +876,18 @@ export function defineFactModels({ struct, model: declare }) {
       struct("expeditions::ExpeditionDiscoveryKey"),
       struct("expeditions::ExpeditionDiscovery"),
     ),
-    model("RealmSupport", "game", struct("production::RealmSupportKey"), struct("production::RealmSupport")),
     model("ChestRules", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("relics::ChestRules")),
     model("LordsBudget", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("relics::LordsBudget")),
+    model("SiteChest", "game", struct("resources::ResourceKey"), struct("relics::SiteChest")),
     model(
-      "ChestPity",
-      "game",
-      [
-        { name: "game_id", type: "core::integer::u32" },
-        { name: "player", type: "core::starknet::contract_address::ContractAddress" },
-        { name: "depth", type: "core::integer::u8" },
-      ],
-      [{ name: "count", type: "core::integer::u16" }],
-    ),
-    model(
-      "ChestTokens",
-      "game",
-      [
-        { name: "game_id", type: "core::integer::u32" },
-        { name: "player", type: "core::starknet::contract_address::ContractAddress" },
-        { name: "epoch", type: "core::integer::u64" },
-      ],
-      [{ name: "count", type: "core::integer::u16" }],
-    ),
-    model(
-      "ChestReward",
+      "LordsWithdrawal",
       "game",
       [
         { name: "game_id", type: "core::integer::u32" },
         { name: "order", type: "core::integer::u64" },
         { name: "index", type: "core::integer::u32" },
       ],
-      struct("relics::ChestReward"),
+      struct("relics::LordsWithdrawal"),
     ),
     model(
       "RelicDiscovery",
@@ -1035,16 +996,14 @@ export function defineFactModels({ struct, model: declare }) {
       struct("research::RealmKnowledge"),
     ),
     model(
-      "ResearchNode",
+      "ResearchPrice",
       "game",
-      [struct("resources::ResourceKey")[0], { name: "node", type: "core::integer::u8" }],
-      struct("research::ResearchNode"),
-    ),
-    model(
-      "BuildingTierRule",
-      "game",
-      [...struct("buildings::BuildingRuleKey"), { name: "tier", type: "core::integer::u8" }],
-      struct("research::BuildingTierRule"),
+      [
+        struct("resources::ResourceKey")[0],
+        { name: "row", type: "core::integer::u8" },
+        { name: "tier", type: "core::integer::u8" },
+      ],
+      struct("research::ResearchPrice"),
     ),
     model("BoardRules", "game", [struct("resources::ResourceKey")[0]], struct("buildings::BoardRules")),
     model("BuildingRule", "game", struct("buildings::BuildingRuleKey"), struct("buildings::BuildingRule")),
@@ -1178,12 +1137,12 @@ const behaviouralFacts = {
     domain: "resources",
     transform: "production",
     meaning:
-      "Settlement time is meaningful only while at least one production building exists; inactive time projects to zero.",
+      "Production pays its per-second rate for each whole armies tick after the settled tick, which is meaningful only while at least one production building exists; inactive time projects to zero.",
     fields: {
       buildingCount: "building_count",
       rate: "production_rate",
       outputRemaining: "output_amount_left",
-      updatedAt: "last_updated_at",
+      settledTick: "last_settled_tick",
     },
   },
   ProductionBonus: {
@@ -1236,13 +1195,14 @@ const behaviouralFacts = {
     domain: "expedition",
     fields: {
       revealPercent: "reveal_percent",
-      guardLower: "guard_lower",
-      guardUpper: "guard_upper",
-      mineMinimum: "mine_cap_min",
-      mineMaximum: "mine_cap_max",
-      mineRate: "mine_rate",
-      mineChest: "mine_chest",
+      siteGuardLower: "site_guard_lower",
+      siteGuardUpper: "site_guard_upper",
+      ruinGuardLower: "ruin_guard_lower",
+      ruinGuardUpper: "ruin_guard_upper",
+      guardStep: "guard_step",
+      chestOdds: "chest",
       revealSiteNeighbors: "reveal_site_neighbors",
+      entryStamina: "entry_stamina",
     },
   },
   SettlementProgress: { domain: "realm/blitz", fields: { players: "registered", realms: "realm_count" } },
@@ -1342,7 +1302,7 @@ const behaviouralFacts = {
 // Which rows a player's subscription carries. "shared" rows reach every subscriber and "actor" rows only the selected
 // gameplay account. "internal" rows remain in Herald and never reach a subscription. In an expedition game every
 // other row is in scope when any listed field names one of the player's owners, entities, realms, realm traits,
-// production sources or regions; `epoch` also requires the current day.
+// production sources or regions; `epoch`, a season day index, also requires the current day.
 // Generation fails for a fact or event without an entry here.
 const shared = "shared";
 const byEntity = { entities: ["entity_id"] };
@@ -1357,7 +1317,7 @@ export const syncScopes = {
     [
       "Preset",
       "SpireLayout",
-      "CampResources",
+      "CampRules",
       "ArtificerCost",
       "BlitzResult",
       "FaithRules",
@@ -1389,8 +1349,7 @@ export const syncScopes = {
       "VillagePool",
       "ProductionRecipe",
       "BoardRules",
-      "ResearchNode",
-      "BuildingTierRule",
+      "ResearchPrice",
       "BuildingRule",
       "HyperstructureRules",
       "ResourceRule",
@@ -1413,12 +1372,10 @@ export const syncScopes = {
   Guild: { owners: ["guild_id"] },
   GuildMember: { owners: ["actor"] },
   GuildWhitelist: byPlayer,
-  ChestPity: byPlayer,
   BitcoinContribution: byPlayer,
   PlayerFaithPoints: byPlayer,
   PointsAwarded: byPlayer,
-  ChestTokens: { owners: ["player"], epoch: "epoch" },
-  ChestReward: { owners: ["player"], epoch: "epoch" },
+  LordsWithdrawal: byPlayer,
   RaidEvent: { owners: ["player", "target_owner"] },
   WonderFaith: { owners: ["last_recorded_owner"] },
   TileOpt: { regions: [{ alt: "alt", x: "col", y: "row" }] },
@@ -1426,9 +1383,9 @@ export const syncScopes = {
   Building: { realms: ["structure_id"] },
   RealmKnowledge: { realms: ["structure_id"] },
   ExpeditionSite: { entities: ["entity_id"] },
+  SiteChest: { entities: ["entity_id"] },
   ArmyProgress: { entities: ["explorer_id"] },
   ExpeditionDiscovery: { realms: ["structure_id"], epoch: "epoch" },
-  RealmSupport: { realms: ["structure_id"] },
   ArmySlot: { realms: ["structure_id"], epoch: "epoch" },
   ExplorerTroops: { entities: ["explorer_id"] },
   Guard: { entities: ["structure_id"] },

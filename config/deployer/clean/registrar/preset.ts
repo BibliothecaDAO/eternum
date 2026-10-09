@@ -26,9 +26,6 @@ export function buildMapConfig(config: Config) {
     shards_mines_fail_probability: config.exploration.shardsMinesFailProbability,
     camp_win_probability: config.exploration.campFindProbability,
     camp_fail_probability: config.exploration.campFindFailProbability,
-    // Reserved layout slots for existing games; standalone holy sites are retired.
-    holysite_win_probability: 0,
-    holysite_fail_probability: 0,
     bitcoin_mine_win_probability: config.exploration.bitcoinMineWinProbability,
     bitcoin_mine_fail_probability: config.exploration.bitcoinMineFailProbability,
     hyps_win_prob: config.exploration.hyperstructureWinProbAtCenter,

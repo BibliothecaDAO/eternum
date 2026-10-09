@@ -1,7 +1,15 @@
-import { absoluteEpoch } from "../utils/expeditions";
-import { productionOutput, type ProductionSupport } from "../utils/production-output";
+import { researchChoice, researchTier } from "../utils/realm-research";
+import { nativeResearchConstants as research } from "../../../../contracts/l3/world-native/schema/client.gen";
+import { productionOutput } from "../utils/production-output";
 import { isModeRuleEnabled } from "../utils/mode-rules";
-import { BuildingType, ID, ResourcesIds, RESOURCE_PRECISION, type Resource } from "@bibliothecadao/types";
+import {
+  BuildingType,
+  ID,
+  ResourcesIds,
+  RESOURCE_PRECISION,
+  StructureType,
+  type Resource,
+} from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { divideByPrecision, getBuildingCount, gramToKg } from "../utils";
@@ -9,12 +17,13 @@ import { configManager } from "./config-manager";
 
 type Production = Pick<
   NativeRows["ResourceProduction"],
-  "building_count" | "production_rate" | "output_amount_left" | "last_updated_at"
+  "building_count" | "production_rate" | "output_amount_left" | "last_settled_tick"
 >;
 interface ResourceState {
   balance: bigint;
   production: Production;
-  support: ProductionSupport | null;
+  /** The armies tick production settles on, in seconds. */
+  tickSeconds: number;
 }
 
 export interface ResourceProductionData {
@@ -29,6 +38,14 @@ export interface ResourceProductionData {
  * buildings) or a store's capacity. It is a sentinel, not an amount, and is never formatted as a number or duration.
  */
 const UNLIMITED_U128 = (1n << 128n) - 1n;
+/** The contract's is_unlimited: the marker, or one settlements wore below it before they stopped wearing it. */
+const isUnlimitedOutput = (outputAmountLeft: bigint) => outputAmountLeft >= UNLIMITED_U128 - (1n << 64n);
+
+/** The stores a board realm's castle keeps up to a limit of their own, as the contract's has_castle_limit. */
+const hasCastleLimit = (resourceId: ResourcesIds): boolean =>
+  resourceId === ResourcesIds.Wheat ||
+  resourceId === ResourcesIds.Labor ||
+  (resourceId >= ResourcesIds.Knight && resourceId <= ResourcesIds.PaladinT3);
 
 export class ResourceManager {
   entityId: ID;
@@ -47,18 +64,19 @@ export class ResourceManager {
         changes.length === 0 ||
         changes.some((change) => {
           if (change.model === "GameRegistry") return (change.current ?? change.previous)?.game_id === this.gameId;
-          if (change.model === "RealmSupport") {
-            const row = change.current ?? change.previous;
-            return row?.game_id === this.gameId && row.structure_id === this.entityId;
-          }
+          // A realm's level sets its stores' limits.
           if (
             change.model !== "ResourceBalance" &&
             change.model !== "ResourceProduction" &&
-            change.model !== "ResourceWeight"
+            change.model !== "ResourceWeight" &&
+            change.model !== "Structure" &&
+            change.model !== "RealmKnowledge"
           )
             return false;
           const row = change.current ?? change.previous;
-          return row?.game_id === this.gameId && row.entity_id === this.entityId;
+          return (
+            row?.game_id === this.gameId && ("entity_id" in row ? row.entity_id : row.structure_id) === this.entityId
+          );
         })
       )
         onChange();
@@ -79,22 +97,11 @@ export class ResourceManager {
     const balance = this.store.requireOrAbsent("ResourceBalance", keys);
     if (!production.known || !balance.known) return undefined;
     const adjusted = this.productionForGameClock(production.known);
-    const support = this.productionSupport(adjusted);
-    if (support === undefined) return undefined;
-    return { balance: balance.known.balance, production: adjusted, support };
+    return { balance: balance.known.balance, production: adjusted, tickSeconds: this.tickSeconds() };
   }
 
-  private productionSupport(production: Production): ProductionSupport | null | undefined {
-    if (production.building_count === 0 || production.production_rate === 0n) return null;
-    const rules = this.store.require("SliceRules", { game_id: this.gameId });
-    if (rules.epoch_seconds === 0) return null;
-    const clock = { epochSeconds: rules.epoch_seconds };
-    const support = this.store.requireOrAbsent("RealmSupport", {
-      game_id: this.gameId,
-      structure_id: this.entityId,
-      epoch: BigInt(absoluteEpoch(clock, production.last_updated_at)),
-    });
-    return support.known ? { ...clock, level: support.known.level } : undefined;
+  private tickSeconds(): number {
+    return Number(this.store.require("SliceRules", { game_id: this.gameId }).tick_config.armies_tick_in_seconds);
   }
 
   private productionForGameClock(production: Production): Production {
@@ -104,7 +111,10 @@ export class ResourceManager {
     const game = this.store.require("GameRegistry", { game_id: this.gameId });
     return {
       ...production,
-      last_updated_at: Math.max(production.last_updated_at, Number(game.start_main_at)),
+      last_settled_tick: Math.max(
+        production.last_settled_tick,
+        Math.floor(Number(game.start_main_at) / this.tickSeconds()),
+      ),
       production_rate: game.ready ? production.production_rate : 0n,
     };
   }
@@ -143,7 +153,7 @@ export class ResourceManager {
   /** Production that never runs out: continuous food, or a producer written with the unlimited output sentinel. */
   private static neverRunsOut(production: Production, resourceId: ResourcesIds): boolean {
     return (
-      ResourceManager.isContinuousProductionResource(resourceId) || production.output_amount_left === UNLIMITED_U128
+      ResourceManager.isContinuousProductionResource(resourceId) || isUnlimitedOutput(production.output_amount_left)
     );
   }
 
@@ -169,20 +179,58 @@ export class ResourceManager {
     const { balance, production } = resource;
     if (!production)
       return { balance: Number(balance), hasReachedMaxCapacity: false, amountProduced: 0n, amountProducedLimited: 0n };
-    const amountProduced = ResourceManager._amountProducedStatic(production, currentTick, resourceId, resource.support);
-    const amountProducedLimited = this._limitProductionByStoreCapacity(amountProduced, resourceId);
+    const amountProduced = ResourceManager._amountProducedStatic(resource, currentTick, resourceId);
+    // A store keeps nothing past its own limit, as the contract adds production to it.
+    const limit = this.storeLimit(resourceId);
+    const room = limit === undefined ? undefined : limit > balance ? limit - balance : 0n;
+    const fitting = this._limitProductionByStoreCapacity(amountProduced, resourceId);
+    const amountProducedLimited = room === undefined || fitting < room ? fitting : room;
+    const kept = balance + amountProducedLimited;
     return {
-      balance: Number(balance + amountProducedLimited),
-      hasReachedMaxCapacity: amountProducedLimited < amountProduced,
+      balance: Number(kept),
+      hasReachedMaxCapacity: amountProducedLimited < amountProduced || (limit !== undefined && kept >= limit),
       amountProduced,
       amountProducedLimited,
     };
   }
 
   /**
-   * What the realm's farms grow each hour at the rates running at `currentTick`, in whole units. Rates come from the one
-   * production integral, so a day's Support boost counts until its midnight. Nothing produced consumes wheat: only
-   * raising and marching armies spend it. Undefined where the entity holds no wheat.
+   * A board realm's own limit on its wheat, labor or troops, as the contract's store_limit: its castle stores that many
+   * of its level's full deploys. Undefined for every other store, which only the shared weight bounds.
+   */
+  public storeLimit(resourceId: ResourcesIds): bigint | undefined {
+    if (!hasCastleLimit(resourceId)) return undefined;
+    const board = this.store.get("BoardRules", { game_id: this.gameId });
+    if (!board) return undefined;
+    const structure = this.store.get("Structure", { game_id: this.gameId, entity_id: this.entityId });
+    if (structure?.base.category !== StructureType.Realm) return undefined;
+    const limits = this.store.require("SliceRules", { game_id: this.gameId }).troop_limit_config;
+    const cap = [
+      limits.settlement_deployment_cap,
+      limits.city_deployment_cap,
+      limits.kingdom_deployment_cap,
+      limits.empire_deployment_cap,
+    ][structure.base.level];
+    if (cap === undefined) throw new Error(`Unknown castle level ${structure.base.level}`);
+    const base = BigInt(cap) * BigInt(board.castle_store_deploys) * BigInt(RESOURCE_PRECISION);
+    const row =
+      resourceId === ResourcesIds.Wheat
+        ? research.ROW_FARM
+        : resourceId === ResourcesIds.Labor
+          ? research.ROW_WORKSHOP
+          : undefined;
+    if (row === undefined) return base;
+    const learned = this.store.require("RealmKnowledge", { game_id: this.gameId, structure_id: this.entityId }).learned;
+    let stores = 0;
+    for (let at = 1; at <= researchTier(learned, row); at++) {
+      if (researchChoice(learned, row, at) === research.CHOICE_STORE) stores++;
+    }
+    return (base * BigInt(10_000 + stores * board.storage_step_bps)) / 10_000n;
+  }
+
+  /**
+   * What the realm's farms grow each hour at the rates running at `currentTick`, in whole units. Nothing produced
+   * consumes wheat: only raising and marching armies spend it. Undefined where the entity holds no wheat.
    */
   public wheatPerHour(currentTick: number): number | undefined {
     const wheat = this.current(ResourcesIds.Wheat);
@@ -192,44 +240,30 @@ export class ResourceManager {
     );
   }
 
-  public timeUntilValueReached(currentTick: number, resourceId: ResourcesIds): number {
+  /** Seconds until a producer with a finite budget runs dry, paid out in whole ticks; 0 when it has nothing left. */
+  public timeUntilValueReached(timestamp: number, resourceId: ResourcesIds): number {
     const resource = this.current(resourceId);
     if (!resource) return 0;
     const { production } = resource;
-    if (!production || production.building_count === 0) return 0;
-
-    // Get production details
-    const lastUpdatedTick = production.last_updated_at;
-    const productionRate = production.production_rate;
-    const outputAmountLeft = production.output_amount_left;
-
-    if (productionRate === 0n) return 0;
+    if (production.building_count === 0 || production.production_rate === 0n) return 0;
     if (ResourceManager.neverRunsOut(production, resourceId)) return Number.MAX_SAFE_INTEGER;
-    if (outputAmountLeft === 0n) return 0;
-
-    // Calculate ticks since last update
-    const ticksSinceLastUpdate = currentTick - lastUpdatedTick;
-
-    // Calculate remaining ticks based on output amount left and production rate
-    const remainingTicks = Number(outputAmountLeft) / Number(productionRate);
-
-    // Return remaining ticks, accounting for ticks that have already passed
-    return Math.max(0, remainingTicks - ticksSinceLastUpdate);
+    const produced = productionOutput(production, timestamp, resource.tickSeconds);
+    const remaining = production.output_amount_left > produced ? production.output_amount_left - produced : 0n;
+    return secondsUntilPaid(remaining, production.production_rate, timestamp, resource.tickSeconds);
   }
 
+  /** The tick boundary at which a producer with a finite budget pays its last; 0 when it has none. */
   public getProductionEndsAt(resourceId: ResourcesIds): number {
     const resource = this.current(resourceId);
     if (!resource) return 0;
-    const { production } = resource;
-    if (!production || production.building_count === 0) return 0;
-
-    if (production.production_rate === 0n) return production.last_updated_at;
+    const { production, tickSeconds } = resource;
+    if (production.building_count === 0) return 0;
+    const settledAt = production.last_settled_tick * tickSeconds;
+    if (production.production_rate === 0n || production.output_amount_left === 0n) return settledAt;
     if (ResourceManager.neverRunsOut(production, resourceId)) return Number.MAX_SAFE_INTEGER;
-    if (production.output_amount_left === 0n) return production.last_updated_at;
-
-    // Calculate when production will end based on remaining output and rate
-    const remainingTicks = Number(production.output_amount_left) / Number(production.production_rate);
-    return production.last_updated_at + Math.ceil(remainingTicks);
+    return (
+      settledAt + secondsUntilPaid(production.output_amount_left, production.production_rate, settledAt, tickSeconds)
+    );
   }
 
   /** The store's capacity and use; undefined when this client holds no resource owner for the entity. */
@@ -272,28 +306,13 @@ export class ResourceManager {
     return amountProduced * unitWeight > room ? room / unitWeight : amountProduced;
   }
 
-  private static _amountProducedStatic(
-    production: {
-      building_count: number;
-      production_rate: bigint;
-      output_amount_left: bigint;
-      last_updated_at: number;
-    },
-    currentTick: number,
-    resourceId: ResourcesIds,
-    support: ProductionSupport | null,
-  ): bigint {
-    if (!production || production.building_count === 0) return 0n;
-    if (production.production_rate === 0n) return 0n;
-
-    let totalAmountProduced = productionOutput(production, currentTick, support);
-
-    const isContinuousProductionResource = ResourceManager.isContinuousProductionResource(resourceId);
-    if (!isContinuousProductionResource && totalAmountProduced > production.output_amount_left) {
-      totalAmountProduced = production.output_amount_left;
-    }
-
-    return totalAmountProduced;
+  private static _amountProducedStatic(resource: ResourceState, timestamp: number, resourceId: ResourcesIds): bigint {
+    const { production } = resource;
+    if (production.building_count === 0 || production.production_rate === 0n) return 0n;
+    const produced = productionOutput(production, timestamp, resource.tickSeconds);
+    if (!ResourceManager.isContinuousProductionResource(resourceId) && produced > production.output_amount_left)
+      return production.output_amount_left;
+    return produced;
   }
 
   public getActiveProductions(): Array<{
@@ -301,7 +320,7 @@ export class ResourceManager {
     productionRate: bigint;
     buildingCount: number;
     outputAmountLeft: bigint;
-    lastUpdatedAt: number;
+    lastSettledTick: number;
   }> {
     if (!this.hasResources()) return [];
     return [...this.store.inGame("ResourceProduction", this.gameId)].flatMap((row) => {
@@ -315,7 +334,7 @@ export class ResourceManager {
           productionRate: production.production_rate,
           buildingCount: production.building_count,
           outputAmountLeft: production.output_amount_left,
-          lastUpdatedAt: production.last_updated_at,
+          lastSettledTick: production.last_settled_tick,
         },
       ];
     });
@@ -324,17 +343,16 @@ export class ResourceManager {
   public static calculateResourceProductionData(
     resourceId: ResourcesIds,
     productionInfo: ResourceState,
-    currentTick: number,
+    timestamp: number,
   ): ResourceProductionData {
+    const { production, tickSeconds } = productionInfo;
+    const produced = productionOutput(production, timestamp, tickSeconds);
+    // One tick's output, as a rate: what the next pulse adds, spread over the tick.
     const productionPerSecond = divideByPrecision(
-      Number(
-        productionOutput(productionInfo.production, currentTick + 1, productionInfo.support) -
-          productionOutput(productionInfo.production, currentTick, productionInfo.support),
-      ),
+      Number(productionOutput(production, timestamp + tickSeconds, tickSeconds) - produced) / tickSeconds,
       false,
     );
 
-    const { production } = productionInfo;
     const isProducing = production.building_count > 0 && production.production_rate !== 0n;
     // Production that never runs out has no remaining output or time: both are infinite, never the sentinel's value.
     if (ResourceManager.neverRunsOut(production, resourceId)) {
@@ -346,17 +364,23 @@ export class ResourceManager {
       };
     }
 
-    const totalAmountProduced = productionOutput(production, currentTick, productionInfo.support);
-    const remainingOutput =
-      production.output_amount_left > totalAmountProduced ? production.output_amount_left - totalAmountProduced : 0n;
-    const outputRemainingNumber = Number(remainingOutput) / RESOURCE_PRECISION;
-    const timeRemainingSeconds = productionPerSecond > 0 ? outputRemainingNumber / productionPerSecond : 0;
-
+    const remainingOutput = production.output_amount_left > produced ? production.output_amount_left - produced : 0n;
     return {
       productionPerSecond,
       isProducing: isProducing && remainingOutput > 0n,
-      outputRemaining: outputRemainingNumber,
-      timeRemainingSeconds,
+      outputRemaining: Number(remainingOutput) / RESOURCE_PRECISION,
+      timeRemainingSeconds: secondsUntilPaid(remainingOutput, production.production_rate, timestamp, tickSeconds),
     };
   }
 }
+
+/**
+ * Seconds from `timestamp` to the tick boundary that pays `remaining` at `ratePerSecond`: production lands in whole
+ * ticks, so this is always a boundary, never a moment between two.
+ */
+const secondsUntilPaid = (remaining: bigint, ratePerSecond: bigint, timestamp: number, tickSeconds: number): number => {
+  const perTick = ratePerSecond * BigInt(tickSeconds);
+  if (remaining <= 0n || perTick <= 0n) return 0;
+  const ticks = Number((remaining + perTick - 1n) / perTick);
+  return (Math.floor(timestamp / tickSeconds) + ticks) * tickSeconds - timestamp;
+};

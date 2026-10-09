@@ -13,12 +13,13 @@ import {
 } from "./fallen-realm";
 
 /** A Frontier game whose expedition bands are ten rows deep, holding the given site at entity 9. */
-const siteFacts = (site: { kind: "Camp" | "Rift" | "FallenRealm"; cleared: boolean } | undefined) => {
+const siteFacts = (site: { category: StructureType; cleared: boolean } | undefined) => {
   const rows: Record<string, Record<string, unknown> | undefined> = {
-    SliceRules: { epoch_seconds: 86_400 },
-    GameRegistry: { start_main_at: 0 },
+    SliceRules: { day_unit_seconds: 86_400 },
+    GameRegistry: { start_main_at: 0, seed: 1 },
     SettlementRules: { spacing: 10 },
-    ExpeditionSite: site && { game_id: 1, entity_id: 9, initial_guard_count: 0n, ...site },
+    Structure: site && { game_id: 1, entity_id: 9, base: { category: site.category } },
+    ExpeditionSite: site && { game_id: 1, entity_id: 9, initial_guard_count: 0n, cleared: site.cleared },
   };
   return { get: (model: string) => rows[model] } as never;
 };
@@ -37,23 +38,24 @@ describe("a fallen realm on the map", () => {
   });
 
   it("shows the ruin and its beast only while the fallen realm stands", () => {
-    expect(fallenRealmOnTile({ kind: "FallenRealm", cleared: false }, 1)?.beast).toBe("wyvern");
+    expect(fallenRealmOnTile({ cleared: false }, 1)?.beast).toBe("wyvern");
     // Cleared: the tile's closed chest is the capture's occupancy, drawn as every closed chest.
-    expect(fallenRealmOnTile({ kind: "FallenRealm", cleared: true }, 1)).toBeNull();
-    expect(fallenRealmOnTile({ kind: "Camp", cleared: false }, 0)).toBeNull();
+    expect(fallenRealmOnTile({ cleared: true }, 1)).toBeNull();
   });
 
-  it("draws a camp whose site is a fallen realm as its ruin and its depth's beast, from the facts alone", () => {
-    const standing = siteFacts({ kind: "FallenRealm", cleared: false });
+  it("draws a standing ruin as its ruin and its depth's beast, from the facts alone", () => {
+    const standing = siteFacts({ category: StructureType.Ruin, cleared: false });
     // Row 15 lies in the second band of ten: Ethereal I.
     expect(readStandingFallenRealm(standing, 1, 9, { row: 15 })?.beast).toBe("wyvern");
     expect(
-      readStandingFallenRealm(siteFacts({ kind: "FallenRealm", cleared: true }), 1, 9, { row: 15 }),
+      readStandingFallenRealm(siteFacts({ category: StructureType.Ruin, cleared: true }), 1, 9, { row: 15 }),
     ).toBeUndefined();
-    expect(readStandingFallenRealm(siteFacts({ kind: "Camp", cleared: false }), 1, 9, { row: 15 })).toBeUndefined();
+    expect(
+      readStandingFallenRealm(siteFacts({ category: StructureType.Camp, cleared: false }), 1, 9, { row: 15 }),
+    ).toBeUndefined();
     expect(readStandingFallenRealm(siteFacts(undefined), 1, 9, { row: 15 })).toBeUndefined();
 
-    const campModels = getStructureModelPaths()[StructureType.Camp];
+    const campModels = getStructureModelPaths()[StructureType.Ruin];
     expect(campModels[FALLEN_REALM_RUIN_MODEL_INDEX]).toBe(FALLEN_REALM_RUIN_PATH);
     for (const beast of Object.keys(FALLEN_REALM_BEASTS) as (keyof typeof FALLEN_REALM_BEASTS)[])
       expect(campModels[fallenRealmBeastModelIndex(beast)]).toBe(FALLEN_REALM_BEASTS[beast].path);

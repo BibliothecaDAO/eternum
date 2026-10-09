@@ -33,6 +33,7 @@ import { Route as DelegateProfileRouteImport } from './routes/delegate.profile'
 import { Route as DelegateListRouteImport } from './routes/delegate.list'
 import { Route as StatsRewardsIndexRouteImport } from './routes/stats.rewards.index'
 import { Route as StatsRewardsTabRouteImport } from './routes/stats.rewards.$tab'
+import { Route as ApiRatingsPopulationRouteImport } from './routes/api/ratings/population'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
 const SeasonpassRoute = SeasonpassRouteImport.update({
@@ -155,6 +156,11 @@ const StatsRewardsTabRoute = StatsRewardsTabRouteImport.update({
   path: '/stats/rewards/$tab',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiRatingsPopulationRoute = ApiRatingsPopulationRouteImport.update({
+  id: '/api/ratings/population',
+  path: '/api/ratings/population',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
@@ -185,6 +191,7 @@ export interface FileRoutesByFullPath {
   '/stats/': typeof StatsIndexRoute
   '/velords/': typeof VelordsIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/ratings/population': typeof ApiRatingsPopulationRoute
   '/stats/rewards/$tab': typeof StatsRewardsTabRoute
   '/stats/rewards/': typeof StatsRewardsIndexRoute
 }
@@ -212,6 +219,7 @@ export interface FileRoutesByTo {
   '/stats': typeof StatsIndexRoute
   '/velords': typeof VelordsIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/ratings/population': typeof ApiRatingsPopulationRoute
   '/stats/rewards/$tab': typeof StatsRewardsTabRoute
   '/stats/rewards': typeof StatsRewardsIndexRoute
 }
@@ -240,6 +248,7 @@ export interface FileRoutesById {
   '/stats/': typeof StatsIndexRoute
   '/velords/': typeof VelordsIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/ratings/population': typeof ApiRatingsPopulationRoute
   '/stats/rewards/$tab': typeof StatsRewardsTabRoute
   '/stats/rewards/': typeof StatsRewardsIndexRoute
 }
@@ -269,6 +278,7 @@ export interface FileRouteTypes {
     | '/stats/'
     | '/velords/'
     | '/api/auth/$'
+    | '/api/ratings/population'
     | '/stats/rewards/$tab'
     | '/stats/rewards/'
   fileRoutesByTo: FileRoutesByTo
@@ -296,6 +306,7 @@ export interface FileRouteTypes {
     | '/stats'
     | '/velords'
     | '/api/auth/$'
+    | '/api/ratings/population'
     | '/stats/rewards/$tab'
     | '/stats/rewards'
   id:
@@ -323,6 +334,7 @@ export interface FileRouteTypes {
     | '/stats/'
     | '/velords/'
     | '/api/auth/$'
+    | '/api/ratings/population'
     | '/stats/rewards/$tab'
     | '/stats/rewards/'
   fileRoutesById: FileRoutesById
@@ -351,6 +363,7 @@ export interface RootRouteChildren {
   StatsIndexRoute: typeof StatsIndexRoute
   VelordsIndexRoute: typeof VelordsIndexRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  ApiRatingsPopulationRoute: typeof ApiRatingsPopulationRoute
   StatsRewardsTabRoute: typeof StatsRewardsTabRoute
   StatsRewardsIndexRoute: typeof StatsRewardsIndexRoute
 }
@@ -525,6 +538,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StatsRewardsTabRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/ratings/population': {
+      id: '/api/ratings/population'
+      path: '/api/ratings/population'
+      fullPath: '/api/ratings/population'
+      preLoaderRoute: typeof ApiRatingsPopulationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
@@ -559,6 +579,7 @@ const rootRouteChildren: RootRouteChildren = {
   StatsIndexRoute: StatsIndexRoute,
   VelordsIndexRoute: VelordsIndexRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
+  ApiRatingsPopulationRoute: ApiRatingsPopulationRoute,
   StatsRewardsTabRoute: StatsRewardsTabRoute,
   StatsRewardsIndexRoute: StatsRewardsIndexRoute,
 }
@@ -567,10 +588,13 @@ export const routeTree = rootRouteImport
   ._addFileTypes<FileRouteTypes>()
 
 import type { getRouter } from './router.tsx'
+
 import type { createStart } from '@tanstack/react-start'
+
 declare module '@tanstack/react-start' {
   interface Register {
     ssr: true
+
     router: Awaited<ReturnType<typeof getRouter>>
   }
 }

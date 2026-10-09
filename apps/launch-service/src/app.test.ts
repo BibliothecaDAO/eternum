@@ -7,7 +7,7 @@ import { D1CalendarStore } from "./calendar-store";
 import { D1SlotStore } from "./slot-store";
 import { D1LaunchStore } from "./store";
 import { createLaunchTestDatabase, testChain } from "./test-database";
-import { day } from "./test-dates";
+import { day, frontierSeasonEnd } from "./test-dates";
 
 const ALLOWED_ORIGIN = "https://play.realms.party";
 const ALLOWED_ADDRESS = "0x123";
@@ -61,6 +61,27 @@ const createApp = (
 };
 
 describe("free slot registration", () => {
+  test("reads one authoritative slot anonymously without scanning other rosters, and fails loudly", async () => {
+    const { app, slots } = createApp(signedOut);
+    await slots.create("friday", day(0).toISOString());
+    await slots.create("saturday", day(1).toISOString());
+    await slots.register("friday", [{ realmsId: PLAYER, account: PLAYER_ACCOUNT }]);
+    await slots.register("saturday", [{ realmsId: "0x8", account: "0xbcd" }]);
+    vi.spyOn(slots, "list").mockRejectedValue(new Error("A scoped read must not scan the directory"));
+    const response = await app.request("https://play.realms.party/api/slots/friday");
+    expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    expect(await response.json()).toMatchObject({
+      name: "friday",
+      registrations: [{ realmsId: PLAYER, account: PLAYER_ACCOUNT }],
+    });
+    expect((await app.request("https://play.realms.party/api/slots/missing")).status).toBe(404);
+    expect((await app.request("https://play.realms.party/api/slots/Invalid")).status).toBe(400);
+    vi.spyOn(slots, "get").mockRejectedValue(new Error("Slot read unavailable"));
+    const failure = await app.request("https://play.realms.party/api/slots/friday");
+    expect(failure.status).toBe(503);
+    expect(failure.headers.get("cache-control")).toBe("no-store");
+  });
   const registerRequest = () =>
     new Request("https://play.realms.party/api/slots/friday/register", {
       method: "POST",
@@ -156,7 +177,7 @@ describe("launcher rosters and off-timetable slots", () => {
         },
         body: JSON.stringify(body),
       });
-    const season = { startsAt: day(0).toISOString(), endsAt: day(120).toISOString() };
+    const season = { startsAt: day(0).toISOString(), endsAt: frontierSeasonEnd(day(0)) };
     expect((await operator.app.request(put(season, { token: OPERATOR_TOKEN }))).status).toBe(200);
     const backwards = { startsAt: season.endsAt, endsAt: season.startsAt };
     expect((await operator.app.request(put(backwards, { token: OPERATOR_TOKEN }))).status).toBe(409);
@@ -169,10 +190,12 @@ describe("launcher rosters and off-timetable slots", () => {
   test("publishes game ids only after calendar and Blitz roster launches complete", async () => {
     const { app, calendar, slots, store } = createApp(signedOut);
     const now = Math.ceil(Date.now() / 1_000) * 1_000;
+    // A season starts on Frontier's 120 s armies tick.
+    const startsAt = new Date(Math.ceil((now + 60_000) / 120_000) * 120_000);
     const season = {
       phase: "frontier" as const,
-      startsAt: new Date(now + 60_000).toISOString(),
-      endsAt: new Date(now + 7 * 24 * 60 * 60_000).toISOString(),
+      startsAt: startsAt.toISOString(),
+      endsAt: frontierSeasonEnd(startsAt),
     };
     await calendar.set(season, now);
     await scheduleFrontierSeason(store, season);

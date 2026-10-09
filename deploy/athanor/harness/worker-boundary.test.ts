@@ -65,7 +65,7 @@ async function nodeFrameRun(frame: string) {
     stderr: "pipe",
   });
   const [status, output] = await Promise.all([child.exited, new Response(child.stdout).text()]);
-  expect(status).toBe(0);
+  expect(status).toBe(frame === UNSUBSCRIBE_CLOSE ? 0 : 1);
   return JSON.parse(output.trim().split("\n").at(-1)!);
 }
 
@@ -98,7 +98,7 @@ describe("the worker boundary", () => {
   it("keeps a worker whose library callback throws alive to write a report that names the failure", async () => {
     const child = Bun.spawn([process.execPath, "-e", THROWING_WORKER], { stdout: "pipe", stderr: "pipe" });
     const [status, output] = await Promise.all([child.exited, new Response(child.stdout).text()]);
-    expect(status).toBe(0);
+    expect(status).toBe(1);
     const { analysis, workerBoundary } = JSON.parse(output.trim().split("\n").at(-1)!);
     expect(workerBoundary.uncaughtFailures).toEqual([
       expect.objectContaining({ kind: "exception", error: expect.stringContaining("JSON Parse error") }),
