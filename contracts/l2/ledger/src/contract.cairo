@@ -55,9 +55,12 @@ pub trait IGameLedger<TState> {
     fn get_season_winner(self: @TState, season_id: u32, index: u32) -> (ContractAddress, u256);
     fn season_claimed(self: @TState, season_id: u32, owner: ContractAddress) -> bool;
     fn open_game(ref self: TState, key: GameKey, season_id: u32, preset_id: u32, start: u64, end: u64);
-    fn register(ref self: TState, key: GameKey, account: ContractAddress, sword: bool, shield: bool);
-    fn register_with_pass(ref self: TState, key: GameKey, account: ContractAddress, pass_id: u256);
-    fn register_village(ref self: TState, key: GameKey, account: ContractAddress, village_pass_id: u256);
+    fn set_account_link(ref self: TState, wallet: ContractAddress, account: ContractAddress);
+    fn account_of_wallet(self: @TState, wallet: ContractAddress) -> ContractAddress;
+    fn wallet_of_account(self: @TState, account: ContractAddress) -> ContractAddress;
+    fn register(ref self: TState, key: GameKey, sword: bool, shield: bool);
+    fn register_with_pass(ref self: TState, key: GameKey, pass_id: u256);
+    fn register_village(ref self: TState, key: GameKey, village_pass_id: u256);
     fn fund(ref self: TState, key: GameKey, amount: u256);
     fn cancel_game(ref self: TState, key: GameKey);
     fn abort_game(ref self: TState, key: GameKey);
@@ -174,6 +177,8 @@ pub mod GameLedger {
         registrations: Map<(GameKey, ContractAddress), Registration>,
         registered_owners: Map<(GameKey, u16), ContractAddress>,
         seated_accounts: Map<(GameKey, ContractAddress), bool>,
+        wallet_accounts: Map<ContractAddress, ContractAddress>,
+        account_wallets: Map<ContractAddress, ContractAddress>,
         results: Map<(GameKey, ContractAddress), PlayerResult>,
         result_seen: Map<(GameKey, ContractAddress), bool>,
         #[substorage(v0)]
@@ -203,6 +208,7 @@ pub mod GameLedger {
         PresetRegistered: PresetRegistered,
         GameOpened: GameOpened,
         Registered: Registered,
+        AccountLinkChanged: AccountLinkChanged,
         Funded: Funded,
         GameCancelled: GameCancelled,
         GameAborted: GameAborted,
@@ -263,6 +269,16 @@ pub mod GameLedger {
         start: u64,
         end: u64,
         registration_limit: u16,
+    }
+
+    #[derive(Drop, starknet::Event)]
+    struct AccountLinkChanged {
+        #[key]
+        wallet: ContractAddress,
+        #[key]
+        account: ContractAddress,
+        previous_account: ContractAddress,
+        previous_wallet: ContractAddress,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -757,8 +773,42 @@ pub mod GameLedger {
             self.emit(GameOpened { key, preset_id, start, end, registration_limit });
         }
 
-        fn register(ref self: ContractState, key: GameKey, account: ContractAddress, sword: bool, shield: bool) {
+        fn set_account_link(ref self: ContractState, wallet: ContractAddress, account: ContractAddress) {
+            self.accesscontrol.assert_only_role(OPERATOR_ROLE);
+            assert!(wallet.is_non_zero(), "Ledger: wallet is zero");
+            let previous_account = self.wallet_accounts.entry(wallet).read();
+            if previous_account == account {
+                return;
+            }
+            let previous_wallet = if account.is_non_zero() {
+                self.account_wallets.entry(account).read()
+            } else {
+                Zero::zero()
+            };
+            if previous_account.is_non_zero() {
+                self.account_wallets.entry(previous_account).write(Zero::zero());
+            }
+            if previous_wallet.is_non_zero() {
+                self.wallet_accounts.entry(previous_wallet).write(Zero::zero());
+            }
+            self.wallet_accounts.entry(wallet).write(account);
+            if account.is_non_zero() {
+                self.account_wallets.entry(account).write(wallet);
+            }
+            self.emit(AccountLinkChanged { wallet, account, previous_account, previous_wallet });
+        }
+
+        fn account_of_wallet(self: @ContractState, wallet: ContractAddress) -> ContractAddress {
+            self.wallet_accounts.entry(wallet).read()
+        }
+
+        fn wallet_of_account(self: @ContractState, account: ContractAddress) -> ContractAddress {
+            self.account_wallets.entry(account).read()
+        }
+
+        fn register(ref self: ContractState, key: GameKey, sword: bool, shield: bool) {
             let owner = starknet::get_caller_address();
+            let account = self.require_linked_account(owner);
             let game = self.assert_registration_open(key, owner, account);
             let preset = self.presets.entry(game.preset_id).read();
             let payment = self.record_paid_registration(key, owner, account, sword, shield, preset);
@@ -766,8 +816,9 @@ pub mod GameLedger {
             self.emit_registration(key, owner, account, 0, (0, 0, 0), NO_PASS);
         }
 
-        fn register_with_pass(ref self: ContractState, key: GameKey, account: ContractAddress, pass_id: u256) {
+        fn register_with_pass(ref self: ContractState, key: GameKey, pass_id: u256) {
             let owner = starknet::get_caller_address();
+            let account = self.require_linked_account(owner);
             self.assert_registration_open(key, owner, account);
             let season_pass = self.season_pass.read();
             assert!(
@@ -783,8 +834,9 @@ pub mod GameLedger {
             self.emit_registration(key, owner, account, pass_id, metadata, SEASON_PASS);
         }
 
-        fn register_village(ref self: ContractState, key: GameKey, account: ContractAddress, village_pass_id: u256) {
+        fn register_village(ref self: ContractState, key: GameKey, village_pass_id: u256) {
             let owner = starknet::get_caller_address();
+            let account = self.require_linked_account(owner);
             self.assert_registration_open(key, owner, account);
             let village_pass = self.village_pass.read();
             assert!(
@@ -1013,13 +1065,18 @@ pub mod GameLedger {
             game
         }
 
+        fn require_linked_account(self: @ContractState, wallet: ContractAddress) -> ContractAddress {
+            let account = self.wallet_accounts.entry(wallet).read();
+            assert!(account.is_non_zero(), "Ledger: link Realms account first");
+            account
+        }
+
         fn assert_registration_open(
             self: @ContractState, key: GameKey, owner: ContractAddress, account: ContractAddress,
         ) -> Game {
             let game = self.assert_game_open_before_start(key);
             assert!(game.registered_count < game.registration_limit, "Ledger: roster full");
             assert!(!self.registrations.entry((key, owner)).read().registered, "Ledger: already registered");
-            assert!(!account.is_zero(), "Ledger: shard account is zero");
             assert!(!self.seated_accounts.entry((key, account)).read(), "Ledger: account already seated");
             game
         }
