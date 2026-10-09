@@ -55,7 +55,7 @@ describe("native registrar", () => {
 
 test("a ready roster submits no settlement transactions on retry", async () => {
   const provider = {
-    callContract: mock(async () => ["1", "2", "291", "0", "1", "0", "100", "200", "300", "5", "1"]),
+    callContract: mock(async () => ["1", "2", "0", "1", "0", "100", "200", "300", "5", "1"]),
   };
   const settlement = await settleBlitzRoster(
     provider as unknown as RpcProvider,
