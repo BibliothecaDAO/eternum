@@ -1,5 +1,6 @@
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import type { Headline } from "./headline-types";
+import { readFinalBlitzRanking } from "@/ui/features/social/player/finalized-blitz-leaderboard";
 
 /** Clock expiry announces the end; only finalized ranks or a season result name winners. */
 export function resolveGameEndHeadline(
@@ -13,15 +14,9 @@ export function resolveGameEndHeadline(
   const endedByClock = game && game.end_at > 0n && BigInt(nowSeconds) >= game.end_at;
   if (!seasonWinner && !endedByClock) return null;
 
-  const result = store.get("BlitzResult", { game_id: gameId });
   const winners = seasonWinner
     ? [seasonWinner]
-    : result?.complete
-      ? result.players
-          .filter((row) => row.rank === 1)
-          .map((row) => row.player)
-          .sort((left, right) => (left < right ? -1 : left > right ? 1 : 0))
-      : [];
+    : (readFinalBlitzRanking(store, gameId) ?? []).filter((row) => row.rank === 1).map((row) => row.account);
   const names = winners.map(playerName);
   return {
     id: `game-end:${gameId}:${winners.length ? "result" : "clock"}`,
