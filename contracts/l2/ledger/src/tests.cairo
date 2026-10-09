@@ -1,4 +1,7 @@
-use game_ledger::contract::{IGameLedgerDispatcher, IGameLedgerDispatcherTrait, result_commitment};
+use game_ledger::contract::{
+    IGameLedgerDispatcher, IGameLedgerDispatcherTrait, IGameLedgerSafeDispatcher, IGameLedgerSafeDispatcherTrait,
+    result_commitment,
+};
 use game_ledger::test_lords::{ITestLordsDispatcher, ITestLordsDispatcherTrait};
 use game_ledger::types::{ChestBandPreset, ChestOdds, GameKey, MmrParams, Preset, RankedPlayer};
 use openzeppelin::access::accesscontrol::interface::{IAccessControlDispatcher, IAccessControlDispatcherTrait};
@@ -2151,4 +2154,53 @@ fn asset_views_return_this_deployments_tokens_to_any_reader_even_when_paused() {
     assert!(fixture.ledger.lords() == fixture.lords_address);
     assert!(fixture.ledger.chest_collection() == fixture.chest_address);
     assert!(fixture.ledger.chest_collection() != fixture.cosmetics_address);
+}
+
+#[test]
+fn reported_withdrawals_block_custody_until_paid_and_exact_retries_do_not_count_twice() {
+    let fixture = funded_frontier();
+    fixture.ledger.report_withdrawal('shard', 1, 'pending', player(0), 400);
+    fixture.ledger.report_withdrawal('shard', 1, 'pending', player(0), 400);
+    assert!(fixture.ledger.frontier_unpaid_count('shard', 1) == 1);
+    let report = fixture.ledger.get_payment('shard', 'pending');
+    assert!(!report.paid && report.amount == 400 && report.wallet == player(0));
+    start_cheat_block_timestamp(fixture.ledger_address, END + default_preset().claim_window_seconds.into());
+    fixture.ledger.pay('shard', 1, 'pending', player(0), 400);
+    assert!(fixture.ledger.frontier_unpaid_count('shard', 1) == 0);
+    fixture.ledger.report_withdrawal('shard', 999, 'pending', player(1), 999);
+    assert!(fixture.ledger.frontier_unpaid_count('shard', 1) == 0);
+    start_cheat_caller_address(fixture.ledger_address, ADMIN());
+    fixture.ledger.close_frontier('shard', 1);
+    assert!(fixture.lords.balance_of(TREASURY()) == 600);
+}
+
+#[test]
+#[should_panic(expected: "Ledger: reported withdrawals unpaid")]
+fn close_cannot_strand_a_receipt_reported_by_the_relay() {
+    let fixture = funded_frontier();
+    fixture.ledger.report_withdrawal('shard', 1, 'pending', player(0), 400);
+    start_cheat_block_timestamp(fixture.ledger_address, END + default_preset().claim_window_seconds.into());
+    start_cheat_caller_address(fixture.ledger_address, ADMIN());
+    fixture.ledger.close_frontier('shard', 1);
+}
+
+#[test]
+#[should_panic(expected: "Ledger: conflicting withdrawal report")]
+fn a_pending_claim_cannot_be_paid_to_a_changed_wallet() {
+    let fixture = funded_frontier();
+    fixture.ledger.report_withdrawal('shard', 1, 'pending', player(0), 400);
+    start_cheat_block_timestamp(fixture.ledger_address, END);
+    fixture.ledger.pay('shard', 1, 'pending', player(1), 400);
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn a_failed_payment_preserves_the_reported_receipt() {
+    let fixture = funded_frontier();
+    fixture.ledger.report_withdrawal('shard', 1, 'pending', player(0), 1000);
+    start_cheat_block_timestamp(fixture.ledger_address, START - 1);
+    let safe = IGameLedgerSafeDispatcher { contract_address: fixture.ledger_address };
+    assert!(safe.pay('shard', 1, 'pending', player(0), 1000).is_err());
+    assert!(fixture.ledger.frontier_unpaid_count('shard', 1) == 1);
+    assert!(!fixture.ledger.get_payment('shard', 'pending').paid);
 }
