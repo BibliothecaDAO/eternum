@@ -1,5 +1,5 @@
 import { nameRuleViolation, type Session } from "@realms-world/identity";
-import { lazy, type ReactNode, Suspense, useEffect, useState, type FormEvent } from "react";
+import { type ReactNode, useEffect, useState, type FormEvent } from "react";
 
 import {
   identityClient,
@@ -16,7 +16,6 @@ import { shortAddress } from "@/ui/design-system/kit/address";
 import { formatDuration } from "@/ui/design-system/kit/time";
 
 import { useLayout } from "../frame/layout";
-import { Loading } from "../loading";
 import { FailureLine } from "../sign-in/failure-line";
 import { NameField, PortraitGrid } from "../sign-in/fields";
 import { useNowSeconds } from "../use-now";
@@ -26,11 +25,7 @@ import { payoutWalletOf, type PayoutWallet } from "@/hooks/context/payout-wallet
 import { PayoutWalletPanel } from "./payout-wallet-panel";
 import { SettingRow, SettingRows } from "./setting-row";
 
-const WalletLink = lazy(() =>
-  import("@/ui/modules/identity/wallet-actions").then((module) => ({ default: module.WalletLink })),
-);
-
-type Open = "name" | "portrait" | "wallet" | "unlink" | "payout" | "sign-out" | null;
+type Open = "name" | "portrait" | "payout" | "sign-out" | null;
 
 /**
  * Account (spec 11): the name, the portrait, how the player signs in and the payout wallet, each a row that opens its
@@ -47,12 +42,14 @@ export const AccountCard = ({ session }: { session: Session }) => {
     close();
     void refresh();
   };
-  const wallet = session.user.address ?? null;
   const payout = payoutWalletOf(session.user);
   const now = useNowSeconds() * 1000;
-  const payoutPanel = payout && (
-    <PayoutWalletPanel wallet={payout} email={session.user.email} now={now} onChanged={() => void refresh()} />
-  );
+  // Every wallet change needs the emailed code the payout panel asks for; a session that cannot say which wallet
+  // pays is an identity fault, shown as one, never an older uncoded path.
+  const payoutMissing = payout === null;
+  useEffect(() => {
+    if (payoutMissing) console.error("identity_payout_wallet_missing", { user: session.user.id });
+  }, [payoutMissing, session.user.id]);
   return (
     <div className="flex flex-col gap-4">
       <SettingRows>
@@ -64,25 +61,20 @@ export const AccountCard = ({ session }: { session: Session }) => {
         />
         <SettingRow icon="Ed" name={PROFILE_WORDS.portrait} onOpen={() => toggle("portrait")} />
         <SettingRow icon="Dc" name={PROFILE_WORDS.signInMethods} value={<SignInMethods session={session} />} />
-        {payout ? (
-          <SettingRow
-            icon="Wt"
-            name={WALLET_WORDS.payoutWallet}
-            value={payoutValue(payout, now)}
-            onOpen={() => toggle("payout")}
-          />
-        ) : (
-          <SettingRow
-            icon="Wt"
-            name={PROFILE_WORDS.wallet}
-            value={wallet ? shortAddress(wallet) : PROFILE_WORDS.linkWallet}
-            onOpen={() => toggle(wallet ? "unlink" : "wallet")}
-          />
-        )}
+        <SettingRow
+          icon="Wt"
+          name={WALLET_WORDS.payoutWallet}
+          value={payout ? payoutValue(payout, now) : WALLET_WORDS.unavailable}
+          onOpen={() => toggle("payout")}
+        />
       </SettingRows>
       {open === "payout" && (
         <Opened label={WALLET_WORDS.payoutWallet} onClose={close}>
-          {payoutPanel}
+          {payout ? (
+            <PayoutWalletPanel wallet={payout} email={session.user.email} now={now} onChanged={() => void refresh()} />
+          ) : (
+            <FailureLine line={WALLET_WORDS.unavailableLine} />
+          )}
         </Opened>
       )}
       {open === "name" && (
@@ -95,15 +87,7 @@ export const AccountCard = ({ session }: { session: Session }) => {
           <PortraitSheet current={session.user.image ?? null} onDone={done} />
         </Opened>
       )}
-      {open === "wallet" && (
-        <Opened label={PROFILE_WORDS.linkWallet} onClose={close}>
-          <Suspense fallback={<Loading />}>
-            <WalletLink />
-          </Suspense>
-        </Opened>
-      )}
       <Button role="outline" word={PROFILE_WORDS.signOut} icon="Xo" onClick={() => setOpen("sign-out")} />
-      {open === "unlink" && <UnlinkConfirm onDone={done} onKeep={close} />}
       {open === "sign-out" && (
         <Confirm
           question={PROFILE_WORDS.signOutAsk}
@@ -220,34 +204,6 @@ const PortraitSheet = ({ current, onDone }: { current: string | null; onDone: ()
       <PortraitGrid chosen={current ?? ""} onChoose={(portrait) => void choose(portrait)} />
       <FailureLine line={error} />
     </div>
-  );
-};
-
-/** Unlinking asks first; a refusal is the identity failure's one line. */
-const UnlinkConfirm = ({ onDone, onKeep }: { onDone: () => void; onKeep: () => void }) => {
-  const [unlinking, setUnlinking] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const unlink = async () => {
-    setUnlinking(true);
-    setError(null);
-    try {
-      await identityClient.unlinkWallet();
-      onDone();
-    } catch (cause) {
-      setError(failureSentence("unlink", cause));
-    } finally {
-      setUnlinking(false);
-    }
-  };
-  return (
-    <Confirm
-      question={PROFILE_WORDS.unlinkAsk}
-      cost={error ?? PROFILE_WORDS.unlinkCost}
-      verb={PROFILE_WORDS.unlink}
-      doing={unlinking ? PROFILE_WORDS.unlinking : undefined}
-      onKeep={onKeep}
-      onConfirm={() => void unlink()}
-    />
   );
 };
 

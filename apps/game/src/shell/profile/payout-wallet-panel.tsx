@@ -19,8 +19,9 @@ const WalletPicker = lazy(() =>
   import("@/ui/modules/identity/wallet-actions").then((module) => ({ default: module.WalletPicker })),
 );
 
-// The identity service's wallet changes, each proven by the code it emailed, typed as the service takes them. An
-// older client that sends no code is never reached: the panel shows only when the service holds payout wallets.
+// The identity service's wallet changes, each proven by the code it emailed, typed as the service takes them. The
+// identity client on this trunk does not take the code yet; once the services branch is in, its own signature matches
+// this one and this typed view of it goes.
 const walletChanges: {
   linkWallet: (options: SignInOptions & { code: string }) => Promise<string>;
   unlinkWallet: (code: string) => Promise<void>;

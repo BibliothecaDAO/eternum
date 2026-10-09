@@ -1,8 +1,8 @@
 /**
  * The account's payout wallet as the identity service reports it on the session (user.payoutWallet): none, linked and
  * held for 24 hours after a change, or ready to receive. Times are Unix milliseconds. One type for the account page
- * and the match. A session without it comes from an identity service that asks no email code for wallet changes; the
- * account then keeps the plain wallet row.
+ * and the match. Every wallet change needs the emailed code; a session without a valid payout wallet is an identity
+ * fault the account page shows, never a way back to an uncoded link.
  */
 export type PayoutWallet =
   | { status: "no_wallet" }

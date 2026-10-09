@@ -40,3 +40,37 @@ it("asks before signing out, with Keep as the safe choice", async () => {
     container.remove();
   }
 });
+
+it("shows a session without a payout wallet as a fault, with no uncoded link or unlink", async () => {
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  vi.spyOn(identityClient, "listSignInProviders").mockResolvedValue([]);
+  const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+  const linked = { ...session, user: { ...session.user, address: "0xabc" } } as Session;
+  const container = document.createElement("div");
+  document.body.append(container);
+  const root = createRoot(container);
+  await act(async () =>
+    root.render(
+      <MemoryRouter>
+        <AccountCard session={linked} />
+      </MemoryRouter>,
+    ),
+  );
+  try {
+    expect(container.textContent).toContain("Payout wallet");
+    expect(container.textContent).toContain("Unavailable");
+    expect(logged).toHaveBeenCalledWith("identity_payout_wallet_missing", { user: "u" });
+    const row = [...container.querySelectorAll("button")].find((button) =>
+      button.textContent?.includes("Payout wallet"),
+    );
+    await act(async () => row!.click());
+    expect(document.body.textContent).toContain("Your account did not say which wallet pays you.");
+    const words = [...document.querySelectorAll("button")].map((button) => button.textContent);
+    expect(words).not.toContain("Unlink");
+    expect(words).not.toContain("Link wallet");
+  } finally {
+    await act(async () => root.unmount());
+    container.remove();
+    logged.mockRestore();
+  }
+});

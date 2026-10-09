@@ -1,4 +1,3 @@
-import { identityClient, useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { StarknetProvider } from "@/hooks/context/starknet-provider";
 import { KitIcon } from "@/ui/design-system/kit/kit-icon";
 import type { SignInOptions } from "@realms-world/identity";
@@ -160,27 +159,3 @@ const proofOf = (account: AccountInterface): SignInOptions => ({
   signTypedData: async (message) =>
     stark.formatSignature(await account.signMessage(message as Parameters<typeof account.signMessage>[0])),
 });
-
-/**
- * The plain link, for an identity service that asks no email code: the chosen wallet is linked at once. It goes when
- * every identity service reports the payout wallet.
- */
-export const WalletLink = () => {
-  const refresh = useIdentitySessionStore((state) => state.refresh);
-  const [error, setError] = useState<string | null>(null);
-  const link = async (proof: SignInOptions) => {
-    setError(null);
-    try {
-      await identityClient.linkWallet(proof);
-      await refresh();
-    } catch (cause) {
-      setError(failureSentence("link", cause));
-    }
-  };
-  return (
-    <div className="flex flex-col gap-2">
-      <WalletPicker onProof={(proof) => void link(proof)} />
-      {error && <span className="font-body text-[14px] text-kit-red">{error}</span>}
-    </div>
-  );
-};
