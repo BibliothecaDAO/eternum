@@ -51,7 +51,7 @@ export interface BlitzSeason {
  * Where a game's pot goes at settle: the treasury's cut first, then the chests' share of what is left to the season's
  * chest reserve, the rest to the season pool.
  */
-interface EntrySplit {
+export interface EntrySplit {
   protocolCutBps: number;
   chestLordsBps: number;
 }

@@ -5,6 +5,7 @@ import type { PlaytestSlot } from "@/ui/features/factory-v2/api/factory-worker";
 
 import {
   type Credits,
+  type EntrySplit,
   type GameKey,
   type LedgerPrices,
   ledgerReader,
@@ -34,6 +35,7 @@ export const slotLedgerOf = (slot: PlaytestSlot): SlotLedger | null => {
 /** What the entry panel draws from: the game's prices and state, and the payer's credits, seat and balances. */
 export interface EntryTerms {
   prices: LedgerPrices;
+  split: EntrySplit;
   cancelled: boolean;
   credits: Credits;
   registration: Registration;
@@ -45,6 +47,16 @@ export interface EntryChoice {
   sword: boolean;
   shield: boolean;
 }
+
+/**
+ * Where the LORDS an entry pays go when its game settles (ledger-interface.txt, custody rules): the treasury's cut of
+ * the pot, then the chests' share of what is left to the season's chest reserve, the rest to the season pool.
+ */
+export const entryShares = (cash: bigint, split: EntrySplit) => {
+  const treasury = (cash * BigInt(split.protocolCutBps)) / 10_000n;
+  const chests = ((cash - treasury) * BigInt(split.chestLordsBps)) / 10_000n;
+  return { treasury, chests, pool: cash - treasury - chests };
+};
 
 /** The ledger spends a held credit before charging a flag's price (register, ledger-interface.txt). */
 export const entryCost = (terms: Pick<EntryTerms, "prices" | "credits">, choice: EntryChoice) => {
@@ -92,12 +104,14 @@ export const useEntryTerms = (ledger: SlotLedger | null, wallet: string | null) 
 const readEntryTerms = async (ledger: SlotLedger, wallet: string): Promise<EntryTerms> => {
   const read = ledgerReader(mainnetProvider(), ledger.address);
   const game = await read.game(ledger.key);
-  const [prices, credits, registration, lords, strk] = await Promise.all([
+  const [preset, credits, registration, lords, strk] = await Promise.all([
     read.preset(game.presetId),
     read.credits(wallet),
     read.registration(ledger.key, wallet),
     read.lords(wallet),
     read.strk(wallet),
   ]);
-  return { prices, cancelled: game.cancelled, credits, registration, lords, strk };
+  const prices = { seat: preset.seat, sword: preset.sword, shield: preset.shield };
+  const split = { protocolCutBps: preset.protocolCutBps, chestLordsBps: preset.chestLordsBps };
+  return { prices, split, cancelled: game.cancelled, credits, registration, lords, strk };
 };

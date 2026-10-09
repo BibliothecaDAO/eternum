@@ -207,6 +207,7 @@ const SEATED = {
 };
 const ENTRY: EntryTerms = {
   prices: { seat: 500n * WEI, sword: 500n * WEI, shield: 500n * WEI },
+  split: { protocolCutBps: 2000, chestLordsBps: 500 },
   cancelled: false,
   credits: { swords: 2, shields: 0 },
   registration: NOT_REGISTERED,

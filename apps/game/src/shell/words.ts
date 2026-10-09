@@ -265,6 +265,7 @@ export const ENTRY_WORDS = {
   back: "Back",
   refunded: "Refunded",
   refundedLine: "Your LORDS and credits are back in your wallet.",
+  whereItGoes: "Where this entry goes: the season pool, the season's chests, the treasury",
 } as const;
 
 /** After a paid Blitz: the rating's change and the chest the result minted. */

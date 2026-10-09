@@ -16,6 +16,7 @@ import {
   entryCalls,
   entryCost,
   type EntryChoice,
+  entryShares,
   entryState,
   type EntryTerms,
   type SlotLedger,
@@ -130,6 +131,7 @@ const EntryPanel = ({
           <Lords amount={cost.cash} size={28} tone={state === "short" ? "text-kit-red" : "text-kit-cream"} />
         </span>
       </div>
+      {cost.cash > 0n && <SplitBar shares={entryShares(cost.cash, terms.split)} />}
       {state === "no-strk" && <NoStrkLine />}
       {sign ||
         (state === "short" ? (
@@ -145,6 +147,35 @@ const EntryPanel = ({
           />
         ))}
     </Plate>
+  );
+};
+
+/** Where this entry's LORDS go when the game settles: the season pool, the season's chests, the treasury. */
+const SplitBar = ({ shares }: { shares: ReturnType<typeof entryShares> }) => {
+  const parts = [
+    { key: "pool", icon: "Tp" as const, amount: shares.pool, bar: "bg-kit-gold", tone: "text-kit-gold2" },
+    { key: "chests", icon: "Ch" as const, amount: shares.chests, bar: "bg-kit-line2", tone: "text-kit-cream" },
+    { key: "treasury", icon: "Fx" as const, amount: shares.treasury, bar: "bg-kit-line", tone: "text-kit-muted" },
+  ].filter((part) => part.amount > 0n);
+  return (
+    <div className="flex flex-col gap-2" aria-label={ENTRY_WORDS.whereItGoes}>
+      <div className="flex h-3 gap-0.5 overflow-hidden rounded-full">
+        {parts.map((part) => (
+          <span key={part.key} className={part.bar} style={{ flex: Number(part.amount / 10n ** 15n) }} />
+        ))}
+      </div>
+      <div className="flex justify-between gap-2">
+        {parts.map((part) => (
+          <span
+            key={part.key}
+            className={cn("inline-flex items-center gap-1 font-body text-[14px] font-bold", part.tone)}
+          >
+            <KitIcon code={part.icon} size={18} />
+            {formatExact(lordsOf(part.amount))}
+          </span>
+        ))}
+      </div>
+    </div>
   );
 };
 

@@ -2,11 +2,12 @@ import { expect, it } from "vitest";
 
 import type { PlaytestSlot } from "@/ui/features/factory-v2/api/factory-worker";
 
-import { entryCost, entryState, type EntryTerms, slotLedgerOf } from "./entry";
+import { entryCost, entryShares, entryState, type EntryTerms, slotLedgerOf } from "./entry";
 
 const WEI = 10n ** 18n;
 const terms = (overrides: Partial<EntryTerms> = {}): EntryTerms => ({
   prices: { seat: 500n * WEI, sword: 500n * WEI, shield: 500n * WEI },
+  split: { protocolCutBps: 2000, chestLordsBps: 500 },
   cancelled: false,
   credits: { swords: 0, shields: 0 },
   registration: { registered: false, sword: false, shield: false, swordCredit: false, shieldCredit: false, paid: 0n },
@@ -19,6 +20,15 @@ it("charges the seat and each flag, a held credit paying for its flag", () => {
   expect(entryCost(terms(), { sword: true, shield: true }).cash).toBe(1_500n * WEI);
   const credited = entryCost(terms({ credits: { swords: 2, shields: 0 } }), { sword: true, shield: true });
   expect(credited).toEqual({ cash: 1_000n * WEI, swordCredit: true, shieldCredit: false });
+});
+
+it("splits what an entry pays as the ledger settles it: the treasury's cut, then the chests' share, the rest to the pool", () => {
+  // 1,000 paid, 20% cut, 5% of the rest to the chests: 200 · 40 · 760.
+  expect(entryShares(1_000n * WEI, { protocolCutBps: 2000, chestLordsBps: 500 })).toEqual({
+    treasury: 200n * WEI,
+    chests: 40n * WEI,
+    pool: 760n * WEI,
+  });
 });
 
 it("tells choosing, short of LORDS, no STRK for the fee, seated, refund and refunded apart", () => {
