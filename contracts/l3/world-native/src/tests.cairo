@@ -181,19 +181,23 @@ fn setup_with_host(
 }
 
 fn context(games: ContractAddress, game_id: u32) -> ExecutionContext {
-    snforge_std::interact_with_state(
-        games,
-        || {
-            let state = crate::state::read();
-            ExecutionContext {
-                raw_root: 987654321,
-                timestamp: 100,
-                game: BoxTrait::new(state.games.games.read(game_id)),
-                rules: BoxTrait::new(crate::logic::game::rules(game_id)),
-            }
-        },
-    )
+    if starknet::get_contract_address() == games {
+        read_context(game_id)
+    } else {
+        snforge_std::interact_with_state(games, || read_context(game_id))
+    }
 }
+
+fn read_context(game_id: u32) -> ExecutionContext {
+    let state = crate::state::read();
+    ExecutionContext {
+        raw_root: 987654321,
+        timestamp: 100,
+        game: BoxTrait::new(state.games.games.read(game_id)),
+        rules: BoxTrait::new(crate::logic::game::rules(game_id)),
+    }
+}
+
 fn action(deployment: Deployment, game_id: u32) -> TestAction {
     TestAction {
         game_id,
