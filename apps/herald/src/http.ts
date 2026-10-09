@@ -9,7 +9,7 @@ import {
   directoryForPlayer,
   directoryStatus,
 } from "./native/read-models";
-import { type DirectoryInput, type GameDirectorySource } from "./game-directory";
+import { isCheckGame, type DirectoryInput, type GameDirectorySource } from "./game-directory";
 import { dayOf } from "@bibliothecadao/eternum/expeditions";
 import type { GameSnapshot, ReplayMetrics } from "./types";
 import type { HistoryQuery, HistoryStore } from "./history-store";
@@ -355,7 +355,7 @@ function directoryClock(state: Pick<HeraldHttpState, "chainTimestamp"> & { fold:
     state.fold.modelRows("SliceRules").map(({ value }) => [BigInt(value.game_id as string).toString(), value]),
   );
   return JSON.stringify(
-    state.fold.modelRows("GameRegistry").map(({ value: game }) => {
+    state.fold.modelRows("GameRegistry").filter(({ value }) => !isCheckGame(value)).map(({ value: game }) => {
       const config = rules.get(BigInt(game.game_id as string).toString());
       if (!config) throw new Error(`Missing native SliceRules for game ${game.game_id}`);
       const dayUnitSeconds = Number(config.day_unit_seconds);
