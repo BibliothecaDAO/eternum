@@ -490,9 +490,9 @@ fn admin_cannot_rescue_managed_lords() {
 fn payout_pause_keeps_registration_and_funding_open() {
     let fixture = deploy_fixture(default_preset());
     fund_and_approve_player(@fixture, player(0), 700);
+    link_account(@fixture, player(0), shard_account(player(0)));
     start_cheat_caller_address(fixture.ledger_address, ADMIN());
     fixture.ledger.pause();
-    link_account(@fixture, player(0), shard_account(player(0)));
     start_cheat_caller_address(fixture.ledger_address, player(0));
     fixture.ledger.register(GAME_KEY, false, false);
     fixture.ledger.fund(GAME_KEY, 200);
@@ -2497,12 +2497,50 @@ fn transferring_a_link_cannot_sell_the_same_account_a_second_seat() {
 }
 
 #[test]
-fn operator_link_reconciliation_and_views_remain_available_while_paused() {
+fn account_link_views_remain_available_while_paused() {
+    let fixture = deploy_ledger();
+    link_account(@fixture, player(0), shard_account(player(0)));
+    start_cheat_caller_address(fixture.ledger_address, ADMIN());
+    fixture.ledger.pause();
+    start_cheat_caller_address(fixture.ledger_address, player(1));
+    assert!(fixture.ledger.account_of_wallet(player(0)) == shard_account(player(0)));
+    assert!(fixture.ledger.wallet_of_account(shard_account(player(0))) == player(0));
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn paused_account_links_refuse_every_mutation_and_resume_on_unpause() {
+    let fixture = deploy_ledger();
+    link_account(@fixture, player(0), shard_account(player(0)));
+    link_account(@fixture, player(1), shard_account(player(1)));
+    start_cheat_caller_address(fixture.ledger_address, ADMIN());
+    fixture.ledger.pause();
+    start_cheat_caller_address(fixture.ledger_address, OPERATOR());
+    let safe = IGameLedgerSafeDispatcher { contract_address: fixture.ledger_address };
+    let mut events = spy_events();
+    assert!(safe.set_account_link(player(0), shard_account(player(1))).is_err());
+    assert!(safe.set_account_link(player(0), Zero::zero()).is_err());
+    assert!(safe.set_account_link(player(0), shard_account(player(0))).is_err());
+    assert!(safe.set_account_link(player(2), shard_account(player(2))).is_err());
+    assert!(events.get_events().events.len() == 0);
+    assert!(fixture.ledger.account_of_wallet(player(0)) == shard_account(player(0)));
+    assert!(fixture.ledger.account_of_wallet(player(1)) == shard_account(player(1)));
+    assert!(fixture.ledger.account_of_wallet(player(2)).is_zero());
+    assert_account_links_are_bijective(@fixture);
+    start_cheat_caller_address(fixture.ledger_address, ADMIN());
+    fixture.ledger.unpause();
+    link_account(@fixture, player(0), shard_account(player(1)));
+    assert!(fixture.ledger.account_of_wallet(player(1)).is_zero());
+    assert!(fixture.ledger.wallet_of_account(shard_account(player(0))).is_zero());
+    assert!(fixture.ledger.wallet_of_account(shard_account(player(1))) == player(0));
+    assert_account_links_are_bijective(@fixture);
+}
+
+#[test]
+#[should_panic(expected: 'Pausable: paused')]
+fn a_paused_operator_link_reports_the_pause_error() {
     let fixture = deploy_ledger();
     start_cheat_caller_address(fixture.ledger_address, ADMIN());
     fixture.ledger.pause();
     link_account(@fixture, player(0), shard_account(player(0)));
-    start_cheat_caller_address(fixture.ledger_address, player(1));
-    assert!(fixture.ledger.account_of_wallet(player(0)) == shard_account(player(0)));
-    assert!(fixture.ledger.wallet_of_account(shard_account(player(0))) == player(0));
 }
