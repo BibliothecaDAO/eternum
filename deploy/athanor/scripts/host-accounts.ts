@@ -18,6 +18,9 @@ interface HostKeys {
 
 function initializeHostAccounts(directory: string): void {
   const keyPath = resolve(directory, "host-keys.json");
+  const publicPath = resolve(directory, "host-accounts.json");
+  if (existsSync(publicPath) && (!existsSync(keyPath) || !existsSync(resolve(directory, "vrf-key.json"))))
+    throw new Error("Existing host identity is missing credentials; restore the same shard backup before retrying");
   const existing = existsSync(keyPath) ? readPrivateJson<HostKeys>(keyPath) : undefined;
   const deployerPrivateKey = existing?.deployerPrivateKey ?? privateKey();
   const vrfPublicKey = existsSync(resolve(directory, "vrf-key.json")) ? readShardVrfPoint(directory) : createShardVrfKey(directory);
@@ -26,7 +29,6 @@ function initializeHostAccounts(directory: string): void {
   const keys: HostKeys = { deployerAddress, deployerPrivateKey };
   if (existing && BigInt(existing.deployerAddress) !== BigInt(deployerAddress)) throw new Error("Host key and recorded deployer identity differ");
   if (!existing) writePrivateJsonOnce(keyPath, keys);
-  const publicPath = resolve(directory, "host-accounts.json");
   const host = { deployer: { address: deployerAddress, publicKey, classHash: ACCOUNT_CLASS_HASH }, vrfPublicKey };
   if (!existsSync(publicPath)) writePrivateJsonOnce(publicPath, host);
   else {
