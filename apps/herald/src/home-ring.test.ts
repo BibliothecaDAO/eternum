@@ -495,7 +495,7 @@ describe("client and Herald subscription scope parity", () => {
               { bytesReceived: 0, model, modelsReceived: index + 1, rowsReceived: rows.length },
             ),
           );
-          await handlers.onSnapshotEnd();
+          await handlers.onSnapshotEnd(10);
           handlers.onSnapshotState?.({ gameId: 1, actor: "0xa", complete: true, timestamp: MID_DAY });
           handlers.onHead({ block: 10, preconfirmed: false, timestamp: MID_DAY });
           return { cancel: () => undefined };
