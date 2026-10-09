@@ -8,7 +8,7 @@ import { join, resolve } from "node:path";
 import { expect, it } from "vitest";
 import { ec } from "starknet";
 import { buildBundles } from "./bundle";
-import { startWorkers, type Manifest } from "./workers";
+import { startIdentity, startWorkers, type Manifest } from "./workers";
 
 it("runs the actual Workers together with D1, private local email and named bindings, without hosting any external endpoint", async () => {
   const directory = await mkdtemp(join(tmpdir(), "value-stack-workers-"));
@@ -42,8 +42,9 @@ it("runs the actual Workers together with D1, private local email and named bind
     accountClassHash: "0x1",
     guardianPublicKey: ec.starkCurve.getStarkKey(key),
     rpcUrl: herald + "/rpc",
-    admissionUrl: herald + "/admission",
     contracts: { games: "0x77" },
+    releaseSchemas: {},
+    l2GasBound: "0x47868c00",
   };
   let workers: Awaited<ReturnType<typeof startWorkers>> | undefined;
   try {
@@ -69,7 +70,7 @@ it("runs the actual Workers together with D1, private local email and named bind
       ],
       { stdio: "ignore" },
     );
-    workers = await startWorkers({
+    const input = {
       root: resolve(import.meta.dirname, "../../.."),
       config: {
         stateDirectory: directory,
@@ -98,7 +99,14 @@ it("runs the actual Workers together with D1, private local email and named bind
       guardianKey: key,
       launcher: { address: "0xa", privateKey: key },
       operator: { address: "0xb", privateKey: key },
-    });
+    };
+    workers = await startIdentity(input);
+    const db = await workers.mf.getD1Database("DB", "identity");
+    expect((await db.prepare("SELECT COUNT(*) AS count FROM shards").first<{ count: number }>())!.count).toBe(0);
+    const guardian = await workers.mf.dispatchFetch(workers.origin + "/api/guardian");
+    expect(guardian.status).toBe(200);
+    expect((await workers.mf.dispatchFetch(workers.origin + "/local-value.json")).status).toBe(503);
+    workers = await startWorkers(input, workers.mf);
     const request = (path: string, body?: unknown, token?: string) =>
       workers!.mf.dispatchFetch(workers!.origin + path, {
         method: body ? "POST" : "GET",

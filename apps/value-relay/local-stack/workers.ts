@@ -22,12 +22,13 @@ interface Secrets {
   vapid: { publicKey: string; privateKey: string };
 }
 export interface Manifest {
-  version: number;
+  version: 1;
   chainId: string;
   accountClassHash: string;
   guardianPublicKey: string;
   rpcUrl: string;
-  admissionUrl: string;
+  releaseSchemas: Record<string, string>;
+  l2GasBound: string;
   contracts: Record<string, string>;
 }
 
@@ -43,16 +44,35 @@ interface StackWorkers {
   operator: NativeCredentials;
 }
 
-export const startWorkers = async (input: StackWorkers) => {
+export const startWorkers = async (input: StackWorkers, runtime?: Miniflare) => {
   const { root, config } = input;
   const origin = `https://localhost:${config.port}`;
   const l2 = `http://127.0.0.1:${config.devnetPort}/rpc`;
   const workers = buildWorkerOptions(input, origin, l2);
-  const network = localNetwork(config, origin, l2, input.manifest.admissionUrl);
+  return launchRuntime(root, config, workers, runtime);
+};
+
+export const startIdentity = async (input: Omit<StackWorkers, "assets" | "accounts">) => {
+  const origin = `https://localhost:${input.config.port}`;
+  const l2 = `http://127.0.0.1:${input.config.devnetPort}/rpc`;
+  // These values never enter a live monetary worker: boot binds only identity, guardian and their gateway.
+  const options = buildWorkerOptions(
+    { ...input, assets: { ledger: "", lords: "", mmr: "", chests: "", cosmetics: "", realms: "" }, accounts: [] },
+    origin,
+    l2,
+    true,
+  );
+  return launchRuntime(input.root, input.config, options);
+};
+
+const launchRuntime = async (root: string, config: StackConfig, workers: WorkerOptions[], runtime?: Miniflare) => {
+  const origin = `https://localhost:${config.port}`;
+  const l2 = `http://127.0.0.1:${config.devnetPort}/rpc`;
+  const network = localNetwork(config, origin, l2);
   for (const worker of workers) worker.outboundService = network;
-  let mf: Miniflare | undefined;
+  let mf: Miniflare | undefined = runtime;
   try {
-    mf = new Miniflare({
+    const options = {
       workers,
       host: "127.0.0.1",
       port: config.port,
@@ -66,7 +86,9 @@ export const startWorkers = async (input: StackWorkers) => {
         stdout.resume();
         stderr.resume();
       },
-    });
+    };
+    if (mf) await mf.setOptions(options);
+    else mf = new Miniflare(options);
     await mf.ready;
     await migrateDatabases(mf, root);
     return { mf, origin };
@@ -80,9 +102,8 @@ export const startWorkers = async (input: StackWorkers) => {
   }
 };
 
-const buildWorkerOptions = (input: StackWorkers, origin: string, l2: string): WorkerOptions[] => {
+const buildWorkerOptions = (input: StackWorkers, origin: string, l2: string, boot = false): WorkerOptions[] => {
   const { config, manifest, assets, accounts, secrets, guardianKey, launcher, operator } = input;
-  loopbackUrl(manifest.admissionUrl);
   const spec = (name: string, app: string, configFile = "wrangler.jsonc"): WorkerOptions => {
     const directory = join(
       config.stateDirectory,
@@ -133,7 +154,6 @@ const buildWorkerOptions = (input: StackWorkers, origin: string, l2: string): Wo
       bindings: {
         SHARD_HERALD_URL: config.shardHeraldUrl,
         SHARD_RPC_URL: config.shardRpcUrl,
-        SHARD_ADMISSION_URL: manifest.admissionUrl,
         LEDGER_RPC_URL: l2,
         LOCAL_VALUE: JSON.stringify({
           ...assets,
@@ -178,101 +198,109 @@ const buildWorkerOptions = (input: StackWorkers, origin: string, l2: string): Wo
         SHARD_NOTIFIER_POLL_MS: "3000",
       },
     },
-    {
-      ...spec("launch", "launch-service"),
-      d1Databases: { DB: "launch" },
-      durableObjects: { REGISTRAR: { className: "Registrar", useSQLite: true } },
-      versionMetadata: "VERSION",
-      serviceBindings: { IDENTITY: "identity", VALUE_RELAY: service("relay", "ValueLaunch") },
-      bindings: {
-        ...common,
-        ENVIRONMENT: "staging",
-        SHARD_URL: origin,
-        LAUNCHER_ALLOWLIST: launcher.address,
-        DEPLOYER_ACCOUNT_ADDRESS: launcher.address,
-        DEPLOYER_PRIVATE_KEY: launcher.privateKey,
-      },
-    },
-    {
-      ...spec("relay", "value-relay"),
-      durableObjects: { RELAY: { className: "ValueRelay", useSQLite: true } },
-      serviceBindings: { IDENTITY: service("identity", "ValueIdentity") },
-      bindings: {
-        ...common,
-        REALMS_ADDRESS: assets.realms,
-        LEDGER_OPERATOR_ADDRESS: accounts[1]!.address,
-        LEDGER_OPERATOR_PRIVATE_KEY: accounts[1]!.private_key,
-        SHARD_LEDGER_OPERATOR_ADDRESS: operator.address,
-        SHARD_LEDGER_OPERATOR_PRIVATE_KEY: operator.privateKey,
-      },
-    },
-    {
-      ...spec("monitor", "value-relay", "monitor.wrangler.jsonc"),
-      durableObjects: { MONITOR: { className: "ValueMonitor", useSQLite: true } },
-      serviceBindings: {
-        IDENTITY: service("identity", "ValueIdentity"),
-        RELAY_REPORT: service("relay", "RelayDiagnostics"),
-      },
-      bindings: {
-        ...common,
-        PAUSER_ACCOUNT_ADDRESS: accounts[2]!.address,
-        PAUSER_PRIVATE_KEY: accounts[2]!.private_key,
-      },
-    },
+    ...(boot
+      ? []
+      : [
+          {
+            ...spec("launch", "launch-service"),
+            d1Databases: { DB: "launch" },
+            durableObjects: { REGISTRAR: { className: "Registrar", useSQLite: true } },
+            versionMetadata: "VERSION",
+            serviceBindings: { IDENTITY: "identity", VALUE_RELAY: service("relay", "ValueLaunch") },
+            bindings: {
+              ...common,
+              ENVIRONMENT: "staging",
+              SHARD_URL: origin,
+              LAUNCHER_ALLOWLIST: launcher.address,
+              DEPLOYER_ACCOUNT_ADDRESS: launcher.address,
+              DEPLOYER_PRIVATE_KEY: launcher.privateKey,
+            },
+          },
+          {
+            ...spec("relay", "value-relay"),
+            durableObjects: { RELAY: { className: "ValueRelay", useSQLite: true } },
+            serviceBindings: { IDENTITY: service("identity", "ValueIdentity") },
+            bindings: {
+              ...common,
+              REALMS_ADDRESS: assets.realms,
+              LEDGER_OPERATOR_ADDRESS: accounts[1]!.address,
+              LEDGER_OPERATOR_PRIVATE_KEY: accounts[1]!.private_key,
+              SHARD_LEDGER_OPERATOR_ADDRESS: operator.address,
+              SHARD_LEDGER_OPERATOR_PRIVATE_KEY: operator.privateKey,
+            },
+          },
+          {
+            ...spec("monitor", "value-relay", "monitor.wrangler.jsonc"),
+            durableObjects: { MONITOR: { className: "ValueMonitor", useSQLite: true } },
+            serviceBindings: {
+              IDENTITY: service("identity", "ValueIdentity"),
+              RELAY_REPORT: service("relay", "RelayDiagnostics"),
+            },
+            bindings: {
+              ...common,
+              PAUSER_ACCOUNT_ADDRESS: accounts[2]!.address,
+              PAUSER_PRIVATE_KEY: accounts[2]!.private_key,
+            },
+          },
+        ]),
   ];
+  if (boot) {
+    workers[0]!.serviceBindings = {
+      IDENTITY: "identity",
+      GUARDIAN: "guardian",
+      LAUNCH: () => new Response(null, { status: 503 }),
+      RELAY: () => new Response(null, { status: 503 }),
+      MONITOR: () => new Response(null, { status: 503 }),
+    };
+    workers[0]!.bindings!.LOCAL_VALUE = "";
+    workers[2]!.serviceBindings = { GUARDIAN: "guardian", LAUNCH: () => Response.json({ chains: [] }) };
+  }
   return workers;
 };
 
-const localNetwork =
-  (config: StackConfig, origin: string, l2: string, admissionUrl: string) => async (request: Request) => {
-    const url = new URL(request.url);
-    if (url.href === "https://api.resend.com/emails") {
-      const email = await request.json();
-      const path = join(config.stateDirectory, "inbox", `${Date.now()}-${crypto.randomUUID()}.json`);
-      await mkdir(join(config.stateDirectory, "inbox"), { recursive: true, mode: 0o700 });
-      await writeFile(path, JSON.stringify(email), { mode: 0o600, flag: "wx" });
-      return Response.json({ id: "local-delivery" });
-    }
-    let target = url;
-    if (url.origin === origin) {
-      if (url.pathname === "/rpc") target = new URL(config.shardRpcUrl);
-      else if (url.pathname === "/admission") target = loopbackUrl(admissionUrl);
-      else if (url.pathname === "/l2/rpc") target = new URL(l2);
-      else if (url.pathname === "/manifest" || url.pathname === "/games" || url.pathname.startsWith("/games/"))
-        target = new URL(url.pathname + url.search, config.shardHeraldUrl);
-      else return new Response(null, { status: 403 });
-    }
-    const allowed = [
-      new URL(config.shardRpcUrl).origin,
-      new URL(config.shardHeraldUrl).origin,
-      new URL(l2).origin,
-      loopbackUrl(admissionUrl).origin,
-    ];
-    if (!allowed.includes(target.origin)) return new Response(null, { status: 403 });
-    const headers = new Headers(request.headers);
-    headers.delete("host");
-    const body = ["GET", "HEAD"].includes(request.method) ? undefined : await request.arrayBuffer();
-    const response = await localFetch(target, {
-      method: request.method,
-      headers: Object.fromEntries(headers.entries()),
-      ...(body ? { body } : {}),
-      redirect: "manual",
-      signal: request.signal,
+const localNetwork = (config: StackConfig, origin: string, l2: string) => async (request: Request) => {
+  const url = new URL(request.url);
+  if (url.href === "https://api.resend.com/emails") {
+    const email = await request.json();
+    const path = join(config.stateDirectory, "inbox", `${Date.now()}-${crypto.randomUUID()}.json`);
+    await mkdir(join(config.stateDirectory, "inbox"), { recursive: true, mode: 0o700 });
+    await writeFile(path, JSON.stringify(email), { mode: 0o600, flag: "wx" });
+    return Response.json({ id: "local-delivery" });
+  }
+  let target = url;
+  if (url.origin === origin) {
+    if (url.pathname === "/rpc") target = new URL(config.shardRpcUrl);
+    else if (url.pathname === "/l2/rpc") target = new URL(l2);
+    else if (url.pathname === "/manifest" || url.pathname === "/games" || url.pathname.startsWith("/games/"))
+      target = new URL(url.pathname + url.search, config.shardHeraldUrl);
+    else return new Response(null, { status: 403 });
+  }
+  const allowed = [new URL(config.shardRpcUrl).origin, new URL(config.shardHeraldUrl).origin, new URL(l2).origin];
+  if (!allowed.includes(target.origin)) return new Response(null, { status: 403 });
+  const headers = new Headers(request.headers);
+  headers.delete("host");
+  const body = ["GET", "HEAD"].includes(request.method) ? undefined : await request.arrayBuffer();
+  const response = await localFetch(target, {
+    method: request.method,
+    headers: Object.fromEntries(headers.entries()),
+    ...(body ? { body } : {}),
+    redirect: "manual",
+    signal: request.signal,
+  });
+  if (target.origin === new URL(config.shardHeraldUrl).origin && target.pathname === "/manifest" && response.ok)
+    return Response.json({
+      ...((await response.json()) as object),
+      rpcUrl: `${origin}/rpc`,
     });
-    if (target.origin === new URL(config.shardHeraldUrl).origin && target.pathname === "/manifest" && response.ok)
-      return Response.json({
-        ...((await response.json()) as object),
-        rpcUrl: `${origin}/rpc`,
-        admissionUrl: `${origin}/admission`,
-      });
-    return response;
-  };
+  return response;
+};
 
 const migrateDatabases = async (mf: Miniflare, root: string) => {
   for (const [name, app] of [
     ["identity", "realms"],
     ["launch", "launch-service"],
   ] as const) {
+    if (name === "launch" && !(await mf.getBindings("launch").catch(() => null))) continue;
     const db = await mf.getD1Database("DB", name);
     const migrationPath = join(root, "apps", app, "migrations");
     await db.exec("CREATE TABLE IF NOT EXISTS local_migrations (name TEXT PRIMARY KEY)");

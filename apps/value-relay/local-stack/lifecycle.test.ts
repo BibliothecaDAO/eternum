@@ -6,6 +6,7 @@ import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { expect, it } from "vitest";
 import { generateKeys } from "./keys";
+import { buildBundles } from "./bundle";
 import { privateWrite, readPrivate } from "./config";
 
 it("cleans its own created container and process record after an asset startup failure without printing credentials", async () => {
@@ -24,8 +25,9 @@ it("cleans its own created container and process record after an asset startup f
           accountClassHash: "0x1",
           guardianPublicKey: native.guardianPublicKey,
           contracts: { games: "0x77" },
+          releaseSchemas: {},
+          l2GasBound: "0x47868c00",
           rpcUrl: url + "/rpc",
-          admissionUrl: url + "/admission",
         }),
       );
     if (request.url === "/predeployed_accounts")
@@ -64,6 +66,13 @@ it("cleans its own created container and process record after an asset startup f
     const docker = join(bin, "docker");
     await writeFile(docker, '#!/bin/sh\nprintf "%s\\n" "$1" >> "$VALUE_STACK_DOCKER_TRACE"\n');
     await chmod(docker, 0o700);
+    const bundles = join(directory, "bundles");
+    await buildBundles(resolve(import.meta.dirname, "../../.."), bundles);
+    const flock = join(bin, "flock");
+    await writeFile(flock, '#!/bin/sh\nmkdir -p "$4"\ncp -R "$VALUE_STACK_BUNDLES/." "$4/"\n');
+    await chmod(flock, 0o700);
+    await mkdir(join(directory, "frontend"));
+    await writeFile(join(directory, "frontend/index.html"), "<!doctype html><p>Rehearsal</p>");
     const config = join(directory, "config.json");
     const state = join(directory, "state");
     await privateWrite(config, {
@@ -78,9 +87,14 @@ it("cleans its own created container and process record after an asset startup f
       ledgerOperatorKeyFile: join(bootstrap, "ledger-operator.json"),
       frontierGameId: 1,
     });
-    const failure = await promisify(execFile)("bun", ["local-stack/up.ts", config], {
+    const failure = await promisify(execFile)(process.execPath, ["--import", "tsx", "local-stack/up.ts", config], {
       cwd: resolve(import.meta.dirname, ".."),
-      env: { ...process.env, PATH: bin + ":" + process.env.PATH, VALUE_STACK_DOCKER_TRACE: log },
+      env: {
+        ...process.env,
+        PATH: bin + ":" + process.env.PATH,
+        VALUE_STACK_DOCKER_TRACE: log,
+        VALUE_STACK_BUNDLES: bundles,
+      },
     }).then(
       () => null,
       (error) => error as { stderr: string; stdout: string; code: number },

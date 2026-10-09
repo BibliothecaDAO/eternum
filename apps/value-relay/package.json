@@ -5,10 +5,10 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "value-stack:up": "bun local-stack/up.ts",
-    "value-stack:down": "bun local-stack/down.ts",
+    "value-stack:up": "tsx local-stack/up.ts",
+    "value-stack:down": "tsx local-stack/down.ts",
     "typecheck:stack": "tsc --noEmit --project local-stack/tsconfig.json",
-    "value-stack:keys": "bun local-stack/keys.ts"
+    "value-stack:keys": "tsx local-stack/keys.ts"
   },
   "dependencies": {
     "@realms-world/identity": "workspace:*",

@@ -3,9 +3,9 @@ import { mkdir, rm, chmod } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { ec, logger, RpcProvider, num, shortString } from "starknet";
 import { Effect } from "effect";
-import { readConfig, readPrivate, privateWrite, prepareState, loopbackUrl, type StackConfig } from "./config";
+import { readConfig, readPrivate, privateWrite, prepareState, type StackConfig } from "./config";
 import { deployAssets, type LocalAccount } from "./assets";
-import { startWorkers, type Manifest, type NativeCredentials } from "./workers";
+import { startIdentity, startWorkers, type Manifest, type NativeCredentials } from "./workers";
 import { runScheduledWorkers } from "./schedule";
 
 const configPath = process.argv[2];
@@ -44,18 +44,19 @@ const run = async () => {
   process.once("SIGINT", () => shutdown.abort());
   process.once("SIGTERM", () => shutdown.abort());
   try {
-    phase = "shard_identity";
-    const { guardian, launcher, operator, manifest } = await readNativeInputs(config);
+    const guardian = await readPrivate<{ privateKey: string }>(config.guardianKeyFile);
+    const launcher = await readPrivate<NativeCredentials>(config.launcherKeyFile);
+    const operator = await readPrivate<NativeCredentials>(config.ledgerOperatorKeyFile);
+    const bootstrap = await readPrivate<{ chainId: string; classHash: string; guardianPublicKey: string }>(
+      join(resolve(config.guardianKeyFile, ".."), "native-bootstrap.json"),
+    );
     phase = "devnet";
     createDevnetContainer(config, state.container);
     containerStarted = true;
     const accounts = await startDevnet(config, state.container);
     const secrets = await localSecrets();
     await privateWrite(join(runDirectory, "credentials.json"), { accounts, ...secrets });
-    phase = "ledger_deployment";
     const root = resolve(import.meta.dirname, "../../..");
-    const assets = await deployAssets(root, config, accounts, manifest);
-    await privateWrite(join(runDirectory, "assets.json"), assets);
     phase = "local_certificate";
     await createCertificate(runDirectory);
     phase = "worker_bundles";
@@ -64,25 +65,51 @@ const run = async () => {
       stdio: "ignore",
     });
     shutdown.signal.throwIfAborted();
-    phase = "workers";
-    const workers = await startWorkers({
+    phase = "identity";
+    const identity = await startIdentity({
       root,
       config,
-      manifest,
-      assets,
-      accounts,
       secrets,
       guardianKey: guardian.privateKey,
       launcher,
       operator,
+      manifest: {
+        version: 1,
+        chainId: bootstrap.chainId,
+        accountClassHash: bootstrap.classHash,
+        guardianPublicKey: bootstrap.guardianPublicKey,
+        rpcUrl: config.shardRpcUrl,
+        releaseSchemas: {},
+        l2GasBound: "0x47868c00",
+        contracts: {},
+      },
     });
+    mf = identity.mf;
+    console.log(JSON.stringify({ status: "identity_ready_before_shard", origin: identity.origin }));
+    phase = "shard_initialization";
+    const { manifest } = await waitForNative(config, shutdown.signal);
+    phase = "ledger_deployment";
+    const assets = await deployAssets(root, config, accounts, manifest);
+    await privateWrite(join(runDirectory, "assets.json"), assets);
+    phase = "workers";
+    const workers = await startWorkers(
+      {
+        root,
+        config,
+        manifest,
+        assets,
+        accounts,
+        secrets,
+        guardianKey: guardian.privateKey,
+        launcher,
+        operator,
+      },
+      mf,
+    );
     mf = workers.mf;
-    phase = "pending_registration";
-    await registerPending(mf, workers.origin, secrets.operatorToken);
-    // Activation is deliberately left to deployment's real self-check; merely starting services proves nothing.
     console.log(
       JSON.stringify({
-        status: "ready_pending_self_check",
+        status: "value_services_ready",
         origin: workers.origin,
         ledgerRpc: `http://127.0.0.1:${config.devnetPort}/rpc`,
         runDirectory,
@@ -116,7 +143,6 @@ const readNativeInputs = async (config: StackConfig) => {
     BigInt(manifest.guardianPublicKey) !== BigInt(ec.starkCurve.getStarkKey(guardian.privateKey))
   )
     throw new Error("fresh_shard_guardian_differs");
-  loopbackUrl(manifest.admissionUrl);
   const provider = new RpcProvider({ nodeUrl: config.shardRpcUrl });
   if (BigInt(await provider.getChainId()) !== BigInt(manifest.chainId)) throw new Error("shard_chain_differs");
   await assertApprovedDevice(provider, launcher, manifest.accountClassHash);
@@ -240,24 +266,25 @@ const createCertificate = async (directory: string) => {
   await chmod(join(directory, "tls.key"), 0o600);
 };
 
-const registerPending = async (
-  mf: Awaited<ReturnType<typeof startWorkers>>["mf"],
-  origin: string,
-  operatorToken: string,
-) => {
-  const identity = await mf.getWorker("identity");
-  const register = await identity.fetch(`${origin}/api/directory/shards/pending`, {
-    method: "POST",
-    headers: { authorization: `Bearer ${operatorToken}`, "content-type": "application/json" },
-    body: JSON.stringify({ url: origin }),
-  });
-  if (!register.ok) throw new Error("pending_registration_failed");
+const waitForNative = async (config: StackConfig, signal: AbortSignal) => {
+  while (!signal.aborted) {
+    try {
+      return await readNativeInputs(config);
+    } catch {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
+  }
+  signal.throwIfAborted();
+  throw new Error("native_startup_interrupted");
 };
 
 await Effect.runPromise(
   Effect.tryPromise({
     try: run,
-    catch: () => new Error(`Local value stack failed during ${phase}; no credential or SDK error detail was logged.`),
+    catch: (error) =>
+      new Error(
+        `Local value stack failed during ${phase}; ${error instanceof Error && /^local_workers_startup_failed(?::[A-Z_]+)?$/.test(error.message) ? error.message : "no credential or SDK error detail was logged"}.`,
+      ),
   }),
 ).catch((error) => {
   console.error(error.message);
