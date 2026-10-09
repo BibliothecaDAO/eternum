@@ -17,17 +17,26 @@ checkout's command bindings rather than another checkout's built packages. Run c
 
 ## Deployment listing gate
 
-`pnpm lab:self-check --fixture <module.ts>` runs one throwaway game provided by a typed `DeploymentCheckPort` (see
-`self-check.ts`). The deployment fixture creates it through the current launcher, approves its bot devices and prepares
-domain prerequisites. Each `RouteCase` supplies a generated command, its signing account and isolated client, and an
-assertion over that client's Herald store. Entity identifiers are resolved from facts by the fixture, never guessed from
-a namespace layout.
+`pnpm lab:self-check` creates one throwaway development game and approves one bot device. Its immutable fixture preset
+103 copies Eternum's balance and mode rules, exposing all generated commands so each reaches its real domain guard.
+Normal presets are unchanged. Setup uses the deployment's owner/launcher account on `HARNESS_ADMIN_RPC_URL`; each play
+uses that account or the bot's account on the public stamping RPC. It checks the constructor's launcher, owner, VRF
+point and gas bound against the deployment document before sending. The freshly generated schema must already be
+deployed and served by Herald; this command never generates or deploys contracts.
 
-The script checks coverage against every generated command variant, then sends each case through `Games.play`, waits for
-both its receipt and Herald facts and checks its effect. Missing cases, rejected commands, wrong scope, timeouts, fact
-failures and teardown failure refuse the listing gate. It prints one public JSON result with `passed`,
-`firstFailedRoute`, `completed`, `gameId` and `elapsedMs`; exit 0 is the deployment's permission to list. The
-launcher/ID regeneration and complete domain fixture binding must land before this can pass on a fresh shard.
+The fixture requires 14 applied routes: settlement, naming, explorer creation/exploration/movement/removal, guild
+creation/whitelist/removal/join/leave, six regional banks, and the two legitimate no-op lifecycle/faith routes. It tests
+the other 58 routes with typed missing-state or mode-specific domain refusals taken from the contract guards. Every
+refusal needs its exact `GAMEPLAY_REJECTED` receipt and matching Herald `REJECTED` reason, followed by unchanged
+serialized game facts. A disabled mask, malformed command, admission revert or internal library failure cannot pass.
+These refusal tests establish route dispatch and rollback; they do not establish successful bridge token transfers,
+Blitz finalisation or every domain's funded happy path.
+
+Missing cases, wrong scope, unexpected outcomes, timeouts, fact failures and teardown failure refuse the listing gate.
+It prints public JSON with `passed`, `firstFailedRoute`, `completed`, `applied`, `refused`, `gameId` and `elapsedMs`;
+exit 0 means this complete route smoke passed. Setup and receipt polling stop when the check ends. A deployment needing
+different domain prerequisites can supply `--fixture <module.ts>` implementing `DeploymentCheckPort`; the complete
+generated route catalogue remains mandatory. Entity identifiers always come from Herald facts.
 
 ## Ops timing commands
 

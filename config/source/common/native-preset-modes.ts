@@ -4,6 +4,8 @@ import type { GameType } from "./types";
 export const FRONTIER_ACCELERATED_PRESET_ID = 101;
 /** Frontier's own preset: the design the launcher's seasons create from. */
 export const FRONTIER_PRESET_ID = 5;
+/** Deployment's throwaway route check; it exposes every command to its actual domain guard. */
+export const SELF_CHECK_PRESET_ID = 103;
 
 /** Every registered preset id and the mode it plays: the one table Herald, the client and the tooling read. */
 const NATIVE_PRESET_MODES: Readonly<Record<number, GameType>> = {
@@ -16,6 +18,7 @@ const NATIVE_PRESET_MODES: Readonly<Record<number, GameType>> = {
   [FRONTIER_ACCELERATED_PRESET_ID]: "frontier",
   // The first playtest's preset; registered on shard A and still played by the game created from it.
   102: "frontier",
+  [SELF_CHECK_PRESET_ID]: "eternum",
 };
 
 export function nativeGameModeOf(presetId: number): GameType {
