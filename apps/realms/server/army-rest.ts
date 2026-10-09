@@ -1,3 +1,4 @@
+import { safeInteger } from "../../../packages/core/src/utils/safe-integer";
 import {
   fetchHeraldGameDirectory,
   fetchHeraldGameSnapshot,
@@ -142,7 +143,7 @@ export const readActorArmies = async (
       const fullTick = fullAtTick(troops, currentTick, rules.troop_stamina_config);
       return [
         {
-          armyId: army.explorer_id,
+          armyId: safeInteger(army.explorer_id),
           full: Number(stamina.amount) >= (troops.staminaMax ?? staminaMax),
           fullAt: fullTick === null ? null : fullTick * tickSeconds * 1000,
         },
