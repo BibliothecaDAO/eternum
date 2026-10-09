@@ -177,12 +177,14 @@ const ledgerAccountOf = (credentials: LedgerCredentials) => {
 
 /** Only ruled terminal failures leave the retry queue; a day-boundary unlock refusal stays retryable. */
 const paymentFailure = (reason = "") => {
-  const operation = reason.includes("Ledger: season closed")
-    ? "ledger_season_closed"
-    : reason.includes("Ledger: invalid withdrawal")
-      ? "ledger_invalid_withdrawal"
-      : reason.includes("Ledger: unlock exceeded")
-        ? "ledger_unlock_exceeded"
-        : "pay Frontier claim";
+  const operation = reason.includes("Ledger: claim window ended")
+    ? "ledger_claim_window_ended"
+    : reason.includes("Ledger: season closed")
+      ? "ledger_season_closed"
+      : reason.includes("Ledger: invalid withdrawal")
+        ? "ledger_invalid_withdrawal"
+        : reason.includes("Ledger: unlock exceeded")
+          ? "ledger_unlock_exceeded"
+          : "pay Frontier claim";
   return new RelayFailure({ operation });
 };

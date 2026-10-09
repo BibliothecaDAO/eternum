@@ -155,3 +155,20 @@ it("retries while the confirmed ledger clock is earlier than the historical wall
   ).rejects.toMatchObject({ operation: "ledger_clock_behind_wallet_hold" });
   expect(rpc.execute).not.toHaveBeenCalled();
 });
+
+it("sets aside a first report that permanently missed the ledger claim window", async () => {
+  rpc.call.mockResolvedValue(["0", "0", "0", "0", "0"]);
+  rpc.wait.mockResolvedValue({ isReverted: () => true, revert_reason: "Ledger: claim window ended" });
+  await expect(
+    Effect.runPromise(
+      ledgerReportAdapter(credentials)({
+        chainId: "0x1",
+        seasonId: 7,
+        transactionHash: "0xdef",
+        realmsId: "0x3",
+        amount: "17",
+        confirmedAt: 1000,
+      }),
+    ),
+  ).rejects.toMatchObject({ operation: "ledger_claim_window_ended" });
+});

@@ -85,7 +85,14 @@ const payWithdrawals = (ports: RelayPorts, store: RelayStore) =>
       const payment = yield* Effect.result(payEligibleWithdrawal(ports, withdrawal));
       if (Result.isFailure(payment)) {
         const reason = payment.failure.operation;
-        if (["ledger_season_closed", "ledger_invalid_withdrawal", "ledger_report_mismatch"].includes(reason))
+        if (
+          [
+            "ledger_season_closed",
+            "ledger_invalid_withdrawal",
+            "ledger_report_mismatch",
+            "ledger_claim_window_ended",
+          ].includes(reason)
+        )
           yield* relayOperation("set aside refused payment", () => store.hold({ kind: "payment", withdrawal, reason }));
         else deferred.push({ key: withdrawal.transactionHash, reason });
         continue;
