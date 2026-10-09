@@ -18,7 +18,7 @@ pub fn biome(key: TileKey, game_context: crate::commands::BiomeContext) -> u8 {
     crate::biome::get_biome_with_climate(key.alt, key.col.into(), key.row.into(), climate).into()
 }
 
-pub fn expedition_home_ring(game_id: u32, realm_id: u16, timestamp: u64) -> Span<(Coord, u8)> {
+pub fn expedition_home_ring(game_id: u32, realm_id: u32, timestamp: u64) -> Span<(Coord, u8)> {
     let game_context = crate::commands::load_context(
         game_id, crate::commands::ActionContext { raw_root: 0, timestamp: timestamp },
     );

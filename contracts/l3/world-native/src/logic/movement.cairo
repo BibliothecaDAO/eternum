@@ -220,7 +220,7 @@ pub mod MovementLogic {
             );
             let spacing = self.expedition_spacing(game_id);
             let today = crate::days::day_of(context.game.unbox(), rules.day_unit_seconds, context.timestamp).index;
-            let spire = crate::expeditions::spire(spacing, home.metadata.realm_id, today);
+            let spire = crate::expeditions::spire(spacing, crate::entity_ids::namespace(explorer.owner), today);
             assert!(
                 explorer.coord == spire || crate::geometry::adjacent(explorer.coord, spire),
                 "army must be at its realm's spire",

@@ -71,7 +71,7 @@ pub trait IMapLogic<T> {
         ref self: T, key: TileKey, game_context: crate::commands::BiomeContext,
     ) -> Option<TileOpt>;
     /// A realm's home ring for the day at `timestamp`: its site and six neighbours, each with its biome.
-    fn expedition_home_ring(self: @T, game_id: u32, realm_id: u16, timestamp: u64) -> Span<(Coord, u8)>;
+    fn expedition_home_ring(self: @T, game_id: u32, realm_id: u32, timestamp: u64) -> Span<(Coord, u8)>;
 }
 
 pub(crate) fn coordinate_bits(key: TileKey) -> u128 {

@@ -183,7 +183,7 @@ pub mod GamesFixture {
             )
         }
         fn expedition_home_ring(
-            self: @TContractState, game_id: u32, realm_id: u16, timestamp: u64,
+            self: @TContractState, game_id: u32, realm_id: u32, timestamp: u64,
         ) -> Span<(crate::troops::Coord, u8)> {
             let classes = fixture_classes(game_id);
             crate::map::IMapLogicDispatcherTrait::expedition_home_ring(

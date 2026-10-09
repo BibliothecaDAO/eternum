@@ -171,7 +171,7 @@ pub mod Games {
     /// a watched realm's ring before any command writes it.
     #[external(v0)]
     fn expedition_home_ring(
-        self: @ContractState, game_id: u32, realm_id: u16, timestamp: u64,
+        self: @ContractState, game_id: u32, realm_id: u32, timestamp: u64,
     ) -> Span<(crate::troops::Coord, u8)> {
         crate::map::IMapLogicDispatcherTrait::expedition_home_ring(
             crate::map::IMapLogicLibraryDispatcher { class_hash: self.release.classes(game_id).map.read() },

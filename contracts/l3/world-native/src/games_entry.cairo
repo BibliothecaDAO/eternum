@@ -66,6 +66,8 @@ pub mod GamesEntry {
         }
         fn prepare_homes(ref self: ComponentState<TContractState>, game_id: u32, owners: Span<ContractAddress>) {
             crate::logic::release::assert_launcher();
+            let rules = crate::logic::game::rules(game_id);
+            assert!(rules.entry_rule != crate::rules::ENTRY_OPEN || rules.day_unit_seconds == 0, "open homes are assigned automatically");
             assert!(owners.len() <= crate::commands::MAX_COMMAND_ITEMS, "home preparation batch too large");
             for owner in owners { crate::entity_ids::reserve_homes(game_id, *owner); }
         }
@@ -82,6 +84,7 @@ pub mod GamesEntry {
         ) {
             let actor = self.validate_play(game_id, release_id, preset_commitment, command);
             let timestamp = starknet::get_block_timestamp();
+            self.assign_settlement_home_before_roll(game_id, actor, command);
             let raw_root = self.verify_stamp_before_roll();
             self.apply_gameplay(game_id, actor, command, crate::commands::ActionContext { raw_root, timestamp });
         }
@@ -141,6 +144,17 @@ pub mod GamesEntry {
                 crate::logic::release::assert_launcher();
             }
             actor
+        }
+
+        fn assign_settlement_home_before_roll(
+            self: @ComponentState<TContractState>, game_id: u32, actor: ContractAddress, command: Span<felt252>,
+        ) {
+            let (_, route, _) = crate::commands::validated_command(command).expect('INVALID_COMMAND');
+            let rules = crate::logic::game::rules(game_id);
+            if route.selector == selector!("settle_season") && rules.entry_rule == crate::rules::ENTRY_OPEN
+                && rules.day_unit_seconds != 0 {
+                crate::entity_ids::assign_open_home(game_id, actor);
+            }
         }
 
         fn assert_approved_account(self: @ComponentState<TContractState>, actor: ContractAddress) {

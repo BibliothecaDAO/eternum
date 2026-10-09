@@ -319,7 +319,7 @@ pub mod MapLogic {
         }
 
         fn expedition_home_ring(
-            self: @ContractState, game_id: u32, realm_id: u16, timestamp: u64,
+            self: @ContractState, game_id: u32, realm_id: u32, timestamp: u64,
         ) -> Span<(Coord, u8)> {
             crate::settlement::ITerrainDerivationDispatcherTrait::expedition_home_ring(
                 crate::logic::map::terrain(game_id), game_id, realm_id, timestamp,

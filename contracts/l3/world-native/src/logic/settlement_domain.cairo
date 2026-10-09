@@ -76,7 +76,7 @@ pub mod SettlementLogic {
             crate::logic::terrain::biome(key, context)
         }
         fn expedition_home_ring(
-            self: @ContractState, game_id: u32, realm_id: u16, timestamp: u64,
+            self: @ContractState, game_id: u32, realm_id: u32, timestamp: u64,
         ) -> Span<(crate::troops::Coord, u8)> {
             crate::logic::terrain::expedition_home_ring(game_id, realm_id, timestamp)
         }
@@ -139,6 +139,10 @@ pub mod SettlementLogic {
             assert!(command.name != 0, "name cannot be empty");
             assert!(game.dev_mode_on || context.timestamp >= game.start_settling_at, "settling not started");
             assert!(game.end_at == 0 || context.timestamp < game.end_at, "game ended");
+            if rules.entry_rule == crate::rules::ENTRY_OPEN && rules.day_unit_seconds != 0 {
+                self.settle_open_frontier(game_id, actor, command, context);
+                return;
+            }
             let key = EntryKey { game_id, owner: owner };
             if command.selected_realm.is_some() {
                 assert!(game.dev_mode_on, "development mode required");
@@ -329,6 +333,28 @@ pub mod SettlementLogic {
     }
     #[generate_trait]
     impl Internal of InternalTrait {
+        // Frontier homes are private boards. Realm ids select immutable traits, rather than scarce catalogue seats.
+        fn settle_open_frontier(
+            ref self: ContractState, game_id: u32, actor: ContractAddress, command: crate::realms::SettleSeason,
+            context: DomainContext,
+        ) {
+            self.settlements.reserve_entry(EntryKey { game_id, owner: actor }, actor, false);
+            let home = crate::state::read().games.open_homes.read((game_id, actor));
+            assert!(home != 0, "open home must be assigned before the roll");
+            let realm_id = if let Some(selected) = command.selected_realm {
+                assert!(context.game.unbox().dev_mode_on, "development mode required");
+                selected
+            } else { crate::entity_ids::namespace(home) % crate::realms::CANONICAL_REALM_COUNT + 1 };
+            let traits = self.realms.traits(realm_id);
+            ISettlementCreationLibraryDispatcher { class_hash: self.release.classes(game_id).structures.read() }
+                .create_settlement(
+                    game_id, actor, crate::settlement::off_map_realm_reference(realm_id),
+                    SettlementCreation::Realm(RealmCreation {
+                        realm_id: realm_id.try_into().unwrap(), traits, grant_troops: true, activate_economy: true,
+                    }), crate::commands::action_context(context),
+                );
+        }
+
         fn resolve_season_realm(
             self: @ContractState,
             key: EntryKey,

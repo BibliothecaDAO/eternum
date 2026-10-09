@@ -391,7 +391,7 @@ pub mod StructuresLogic {
                 crate::settlement::SettlementCreation::Realm(realm) => {
                     if context.rules.unbox().day_unit_seconds != 0 {
                         crate::logic::research::write(key, crate::research::RealmKnowledge { learned: 0 });
-                        self.raise_realm_home(game_id, realm.realm_id, context);
+                        self.raise_realm_home(game_id, crate::entity_ids::namespace(key.entity_id), context);
                     }
 
                     if realm.activate_economy {
@@ -812,7 +812,7 @@ pub mod StructuresLogic {
             key
         }
         fn raise_realm_home(
-            self: @ContractState, game_id: u32, realm_id: u16, context: crate::commands::ExecutionContext,
+            self: @ContractState, game_id: u32, realm_id: u32, context: crate::commands::ExecutionContext,
         ) {
             if context.timestamp < context.game.unbox().start_main_at {
                 return;

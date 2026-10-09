@@ -1338,7 +1338,7 @@ fn expedition_regions_remain_disjoint_for_every_depth_through_a_season() {
     for day in 0_u64..105 {
         for depth in 0_u8..4 {
             for realm in array![1_u16, 2, 8000] {
-                let site = crate::expeditions::site(1024, realm, day, depth);
+                let site = crate::expeditions::site(1024, realm.into(), day, depth);
                 let region: felt252 = Into::<u32, felt252>::into(site.x / 1024) * 0x100000000
                     + Into::<u32, felt252>::into(site.y / 1024);
                 assert_eq!(regions.get(region), 0);
@@ -2291,6 +2291,7 @@ fn setup_frontier_chests_with_rules(
     super::resource_commands::set_fixture(
         d.games, selector!("realms"), selector!("traits"), array![1].span(), 0x4000001_u32,
     );
+    super::play_fixture::prepare_homes(d.games, game_id, d.actor);
     assert!(
         execute_in_game(
             d,
@@ -3161,4 +3162,44 @@ fn frontier_site_discovery_reads_home_knowledge_and_places_only_tile_occupancy()
             },
         );
     }
+}
+
+#[test]
+fn open_frontier_settlement_uses_only_each_players_home_and_entry() {
+    use starknet::storage::{StorageMapWriteAccess, StoragePointerWriteAccess};
+    let d = setup();
+    let (_, preset) = super::preset_projection::current_definition("frontier");
+    registry(d).register_preset(1, preset);
+    let game_id = registry(d).create_game(CreateGameParams {
+        start_main_at: 360, end_grace_seconds: 0,
+        duration_seconds: Into::<u32, u64>::into(preset.rules.day_unit_seconds) * 20, ..params(false)
+    });
+    snforge_std::interact_with_state(d.games, || {
+        let state = crate::state::write();
+        state.realms.catalogue_count.write(crate::realms::CANONICAL_REALM_COUNT);
+        for index in 1_u32..crate::realms::CANONICAL_REALM_COUNT + 1 {
+            state.realms.traits.write(index, 0x4000001);
+        }
+    });
+    let before = next_setup_entity(d, game_id);
+    let views = ISettlementViewsDispatcher { contract_address: d.games };
+    let progress = views.settlement_progress(game_id);
+    let other = super::bind_authority(d);
+    let command = Command::SettleSeason(crate::realms::SettleSeason { name: 'home', selected_realm: None });
+    assert!(execute_in_game(d, game_id, command, 360));
+    assert!(execute_in_game(other, game_id, command, 360));
+    let first = snforge_std::interact_with_state(d.games, || crate::entity_ids::home_for_actor(game_id, d.actor));
+    let second = snforge_std::interact_with_state(d.games, || crate::entity_ids::home_for_actor(game_id, other.actor));
+    assert_ne!(first, second);
+    assert_eq!(views.settlement_progress(game_id), progress);
+    assert_eq!(next_setup_entity(d, game_id), before);
+    snforge_std::interact_with_state(d.games, || {
+        for actor in array![d.actor, other.actor] {
+            let home = crate::entity_ids::home_for_actor(game_id, actor);
+            let record = crate::logic::structures::record(ResourceKey { game_id, entity_id: home });
+            assert_eq!(record.owner, actor);
+            assert_eq!(crate::state::read().realms.reverse_indices.read((game_id, record.metadata.realm_id.into())), 0);
+            assert_eq!(crate::state::read().games.home_reservations.read((game_id, actor)), 0);
+        }
+    });
 }

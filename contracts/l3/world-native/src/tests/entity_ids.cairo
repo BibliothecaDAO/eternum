@@ -105,3 +105,44 @@ fn story_v2_wire_has_entity_keys_and_no_contract_order_fields() {
     assert_eq!(keys.span(), array![2, 3, 0, owner.into(), 0, 0x100000001, 456].span());
     assert_eq!(data.span(), array![2, 0, 12, 34, 50].span());
 }
+
+#[test]
+fn two_thousand_open_homes_need_no_preparation_or_shared_counter() {
+    use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
+    use core::dict::{Felt252Dict, Felt252DictTrait};
+    let d = super::setup(true);
+    interact_with_state(d.games, || {
+        let before = crate::state::read().games.next_entity.read(1);
+        let mut seen: Felt252Dict<bool> = Default::default();
+        for index in 1_u32..2001 {
+            let actor: starknet::ContractAddress = Into::<u32, felt252>::into(index).try_into().unwrap();
+            let home = crate::entity_ids::assign_open_home(1, actor);
+            assert!(!seen.get(home.into()), "duplicate open home");
+            seen.insert(home.into(), true);
+            assert_eq!(crate::entity_ids::assign_open_home(1, actor), home);
+            assert_eq!(claim_home(1, actor), home);
+            assert_eq!(allocate_home(1, home), home + 1);
+            assert_eq!(crate::state::read().games.home_reservations.read((1, actor)), 0);
+        }
+        assert_eq!(crate::state::read().games.next_entity.read(1), before);
+    });
+}
+
+#[test]
+fn colliding_open_namespace_is_probed_without_overwriting_its_owner() {
+    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
+    let d = super::setup(true);
+    interact_with_state(d.games, || {
+        let actor: starknet::ContractAddress = 123.try_into().unwrap();
+        let other: starknet::ContractAddress = 456.try_into().unwrap();
+        let home = crate::entity_ids::assign_open_home(1, actor);
+        let original = namespace(home);
+        // Reconstruct the first claimant's first-action state with that slot already owned by another account.
+        crate::state::write().games.open_homes.write((1, actor), 0);
+        crate::state::write().games.namespace_owners.write((1, original), other);
+        let assigned = crate::entity_ids::assign_open_home(1, actor);
+        assert_ne!(assigned, home);
+        assert_eq!(crate::state::read().games.namespace_owners.read((1, original)), other);
+        assert_eq!(crate::state::read().games.namespace_owners.read((1, namespace(assigned))), actor);
+    });
+}
