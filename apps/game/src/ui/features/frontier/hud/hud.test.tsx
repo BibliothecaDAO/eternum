@@ -4,12 +4,14 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { Sheet } from "@/ui/design-system/kit/sheet";
 import { dayOf } from "@bibliothecadao/eternum";
 
 import { canResearchNow } from "../research/research-plan";
 import { secondsUntilHeld } from "./army-order";
 import { ArmyToken, OpenSlot } from "./army-token";
 import { dayClock } from "./day-clock";
+import { HudBands } from "./hud-bands";
 import { type HudSurface, useHudSurface } from "./frontier-nav";
 import { MenuSheet } from "./menu-sheet";
 import { OrderBar } from "./order-bar";
@@ -299,5 +301,26 @@ describe("the order bar", () => {
     expect(secondsUntilHeld(100, 100, 900)).toBeUndefined();
     expect(secondsUntilHeld(40, 100, 0)).toBeUndefined();
     expect(secondsUntilHeld(undefined, 100, 900)).toBeUndefined();
+  });
+});
+
+describe("the HUD's panels", () => {
+  it("lets a sheet opened from a nav page step back to it, and closes one opened anywhere else", () => {
+    const sheet = (label: string) => (
+      <Sheet label={label} onClose={() => undefined}>
+        <p>rows</p>
+      </Sheet>
+    );
+    act(() =>
+      root.render(
+        <HudBands strip={null} page={sheet("Farm")}>
+          {sheet("Camp")}
+        </HudBands>,
+      ),
+    );
+    const mark = (label: string) =>
+      host.querySelector(`[aria-label="${label}"][data-kit-sheet]`)!.querySelectorAll("button[aria-label]");
+    expect([...mark("Farm")].map((button) => button.getAttribute("aria-label"))).toEqual(["Close", "Back"]);
+    expect([...mark("Camp")].map((button) => button.getAttribute("aria-label"))).toEqual(["Close", "Close"]);
   });
 });

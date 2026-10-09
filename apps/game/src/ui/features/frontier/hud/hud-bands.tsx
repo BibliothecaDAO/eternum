@@ -1,5 +1,7 @@
 import type { CSSProperties, ReactNode } from "react";
 
+import { OpenedFromPanel } from "@/ui/design-system/kit/opened-from-panel";
+
 const SAFE_AREA: CSSProperties = {
   paddingTop: "max(env(safe-area-inset-top), 0.5rem)",
   paddingRight: "max(env(safe-area-inset-right), 0.5rem)",
@@ -13,8 +15,9 @@ const SAFE_AREA: CSSProperties = {
  * notices, the guide. On desktop, the corners: the strip top left with the armies down the left, the nav top right
  * with the season's top five under it, a nav page or a sheet as the right panel, the action bar and notices bottom
  * centre, and chat docked bottom left with the guide above it, beside the armies' column so a long dock never covers
- * it. Sheets and moments render beside the slots and place themselves. While a sheet is open the guide and the
- * season's peek wait out of its way.
+ * it. A nav page is as tall as its content. Sheets and moments render beside the slots and place themselves; a desktop
+ * sheet docks where the page and the peek stand, so while one is open the guide, the peek and the page wait out of its
+ * way (a sheet opened from the page takes the page's place).
  */
 export const HudBands = ({
   strip,
@@ -47,13 +50,16 @@ export const HudBands = ({
 }) => (
   <div
     aria-label="Frontier HUD"
-    className="pointer-events-none fixed inset-0 z-30 flex flex-col gap-1.5 font-sans lg:block [&:has([data-kit-sheet])_[data-guide]]:hidden [&:has([data-kit-sheet])_[data-peek]]:hidden"
+    className="pointer-events-none fixed inset-0 z-30 flex flex-col gap-1.5 font-sans lg:block [&:has([data-kit-sheet])_[data-guide]]:hidden [&:has([data-kit-sheet])_[data-peek]]:hidden lg:[&:has([data-kit-sheet])_[data-page]]:invisible"
     style={SAFE_AREA}
   >
     <div className="lg:absolute lg:left-2 lg:top-2 lg:w-[560px]">{strip}</div>
     {page ? (
-      <div className="flex min-h-0 flex-1 flex-col lg:absolute lg:bottom-2 lg:right-2 lg:top-[76px] lg:w-[440px]">
-        {page}
+      <div
+        data-page
+        className="flex min-h-0 flex-1 flex-col lg:absolute lg:right-2 lg:top-[76px] lg:max-h-[calc(100%-84px)] lg:w-[440px]"
+      >
+        <OpenedFromPanel.Provider value>{page}</OpenedFromPanel.Provider>
       </div>
     ) : (
       <div className="relative min-h-0 flex-1 lg:absolute lg:inset-x-[240px] lg:bottom-[140px] lg:top-[150px]">

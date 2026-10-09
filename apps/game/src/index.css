@@ -489,6 +489,14 @@ html.frontier-type .frontier-sheet {
     border-radius: 24px;
   }
 }
+/* From the desktop width up the sheet is a docked panel in the leaderboard's place: the peek's card edge and corners. */
+@media (min-width: 1024px) {
+  html.frontier-type .frontier-sheet {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
+  }
+}
 html.frontier-type .frontier-handle {
   width: 44px;
   height: 5px;

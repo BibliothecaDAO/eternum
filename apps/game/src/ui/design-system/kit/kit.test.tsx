@@ -12,6 +12,7 @@ import { Notice } from "./notice";
 import { PriceChip } from "./price-chip";
 import { ReasonPlate } from "./reason-plate";
 import { SeasonRow } from "./season-row";
+import { OpenedFromPanel } from "./opened-from-panel";
 import { Sheet } from "./sheet";
 import { StoreBar } from "./store-bar";
 import { TierChip } from "./tier-chip";
@@ -216,6 +217,25 @@ describe("Sheet", () => {
     act(() => host.querySelector<HTMLButtonElement>("button[aria-hidden]")!.click());
     act(() => void window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" })));
     expect(onClose).toHaveBeenCalledTimes(3);
+  });
+
+  it("on a desktop closes from its own mark: a cross, or a back arrow when it opened from another panel", () => {
+    const onClose = vi.fn();
+    renderSheet(onClose);
+    expect(host.querySelectorAll('button[aria-label="Close"]')).toHaveLength(2);
+    expect(host.querySelector('button[aria-label="Back"]')).toBeNull();
+    act(() =>
+      root.render(
+        <OpenedFromPanel.Provider value>
+          <Sheet label="Farm" onClose={onClose}>
+            <p>rows</p>
+          </Sheet>
+        </OpenedFromPanel.Provider>,
+      ),
+    );
+    expect(host.querySelectorAll('button[aria-label="Close"]')).toHaveLength(1);
+    act(() => host.querySelector<HTMLButtonElement>('button[aria-label="Back"]')!.click());
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 
   it("closes on the system back, which leaves the page under it where it was", () => {

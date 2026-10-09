@@ -698,26 +698,50 @@ export const HudLab = () => {
         strip={<StatusStrip clock={lab.clock} stores={[...lab.stores]} />}
         page={
           lab.tree ? (
-            <TreePage
-              essence={18_250}
-              labor={9_640}
-              rows={TREE_ROWS}
-              castle={CASTLE_NODES}
-              chosen={lab.tree === "page" || lab.tree === "shrine" ? undefined : lab.tree}
-              onRow={noop}
-              onCastle={noop}
-            />
+            // A row's sheet opens from the page, as FrontierResearch opens it, so it takes the page's place.
+            <>
+              <TreePage
+                essence={18_250}
+                labor={9_640}
+                rows={TREE_ROWS}
+                castle={CASTLE_NODES}
+                chosen={lab.tree === "page" || lab.tree === "shrine" ? undefined : lab.tree}
+                onRow={noop}
+                onCastle={noop}
+              />
+              {lab.tree !== "page" && <LabTreeSheet tree={lab.tree} />}
+            </>
           ) : lab.season ? (
-            <SeasonList
-              rank={12}
-              chest={{ tier: 1, lords: 32 }}
-              rows={SEASON_ROWS}
-              pinned={OWN_ROW}
-              state={lab.season === "loading" || lab.season === "failed" ? lab.season : "ready"}
-              onRetry={noop}
-              onOpen={noop}
-              onBack={noop}
-            />
+            <>
+              <SeasonList
+                rank={12}
+                chest={{ tier: 1, lords: 32 }}
+                rows={SEASON_ROWS}
+                pinned={OWN_ROW}
+                state={lab.season === "loading" || lab.season === "failed" ? lab.season : "ready"}
+                onRetry={noop}
+                onOpen={noop}
+                onBack={noop}
+              />
+              {lab.season === "detail" && (
+                <SeasonDetailSheet
+                  label="Aldric"
+                  detail={{
+                    rank: 2,
+                    order: 2,
+                    name: "Aldric",
+                    sites: { total: 132, camps: 70, rifts: 43, ruins: 9, stragglers: 10 },
+                    chests: 9,
+                    lords: 640,
+                    reach: 0,
+                    essence: 212_000,
+                    labor: 96_000,
+                  }}
+                  onVisit={noop}
+                  onClose={noop}
+                />
+              )}
+            </>
           ) : undefined
         }
         stage={lab.lastHour && <LastHourBubble troopsOut={6_021} returned={470} tiersToBuy={2} />}
@@ -773,27 +797,8 @@ export const HudLab = () => {
       >
         {lab.deploy && <LabDeploySheet deploy={lab.deploy} />}
         {lab.results && <LabResults results={lab.results} guided={lab.guide === "season"} />}
-        {lab.season === "detail" && (
-          <SeasonDetailSheet
-            label="Aldric"
-            detail={{
-              rank: 2,
-              order: 2,
-              name: "Aldric",
-              sites: { total: 132, camps: 70, rifts: 43, ruins: 9, stragglers: 10 },
-              chests: 9,
-              lords: 640,
-              reach: 0,
-              essence: 212_000,
-              labor: 96_000,
-            }}
-            onVisit={noop}
-            onClose={noop}
-          />
-        )}
         {lab.dayDone && <DayDoneCard {...lab.dayDone} />}
         {lab.army && <LabArmy army={lab.army} />}
-        {lab.tree && lab.tree !== "page" && <LabTreeSheet tree={lab.tree} />}
         {lab.training && <LabTraining training={lab.training} />}
         {lab.production && <ProductionSheet lines={lab.production} onSpend={noop} onBuild={noop} onClose={noop} />}
         {(lab.realmView === "build" || lab.realmView === "build-early") && (

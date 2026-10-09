@@ -34,6 +34,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-10-09",
+    title: "Desktop panels dock under the bar",
+    description:
+      "On desktop every Frontier panel now opens under the place bar, as tall as what it shows, with a close mark or a back arrow, and the bar stays in reach.",
+    type: "improvement",
+  },
+  {
     date: "2026-10-08",
     title: "Frontier, redrawn for phone and desktop",
     description:
