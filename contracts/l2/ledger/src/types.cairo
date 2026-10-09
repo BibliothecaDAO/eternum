@@ -16,7 +16,6 @@ pub struct Preset {
     pub entry_fee: u256,
     pub protocol_cut_bps: u16,
     pub chest_lords_bps: u16,
-    pub chest_metadata: u128,
     pub paid_fraction_bps: u16,
     pub decay_bps: u16,
     pub sword_price: u256,
@@ -32,7 +31,6 @@ pub struct Game {
     pub start: u64,
     pub end: u64,
     pub pool: u256,
-    pub entries: u256,
     pub result_commitment: felt252,
     pub registered_count: u16,
     pub cancelled: bool,
@@ -55,7 +53,6 @@ pub struct Registration {
 #[derive(Copy, Default, Drop, Serde, starknet::Store)]
 pub struct PlayerResult {
     pub rank: u16,
-    pub points: u128,
     pub chest_id: u256,
     pub mmr_before: u128,
     pub mmr_after: u128,
@@ -64,23 +61,44 @@ pub struct PlayerResult {
 #[derive(Copy, Drop, Serde)]
 pub struct RankedPlayer {
     pub wallet: ContractAddress,
-    pub points: u128,
     pub rank: u16,
-    pub chest: ChestContent,
 }
 
-#[derive(Copy, Default, Drop, Serde, starknet::Store)]
+#[derive(Copy, Drop, Serde)]
 pub struct ChestContent {
     pub kind: u8,
     pub cosmetic: u128,
     pub lords: u256,
 }
 
-#[derive(Copy, Default, Drop, Serde, starknet::Store)]
+#[derive(Copy, Drop, Serde, starknet::Store)]
 pub struct Chest {
     pub exists: bool,
-    pub opened: bool,
-    pub content: ChestContent,
+    pub season_id: u32,
+    pub band: u8,
+    pub requested: bool,
+    pub finished: bool,
+    pub requester: ContractAddress,
+    pub request_block: u64,
+}
+
+#[derive(Copy, Drop, Serde, starknet::Store)]
+pub struct ChestOdds {
+    pub common: u16,
+    pub uncommon: u16,
+    pub rare: u16,
+    pub epic: u16,
+    pub legendary: u16,
+    pub lords: u16,
+    pub sword: u16,
+    pub shield: u16,
+}
+
+#[derive(Copy, Drop, Serde, starknet::Store)]
+pub struct ChestBandPreset {
+    pub metadata: u128,
+    pub odds: ChestOdds,
+    pub lords_amount: u256,
 }
 
 #[derive(Copy, Default, Drop, Serde, starknet::Store)]
@@ -109,6 +127,7 @@ pub struct WithdrawalPayment {
 
 #[derive(Copy, Default, Drop, Serde, starknet::Store)]
 pub struct BlitzSeason {
+    pub chest_reserve: u256,
     pub participant_count: u32,
     pub top_count: u32,
     pub posted: bool,

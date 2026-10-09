@@ -6,10 +6,12 @@ import { fileURLToPath } from "node:url";
 import { CallData, byteArray, hash, shortString, uint256 } from "starknet";
 import { getContractArtifactPaths, readContractArtifacts } from "../../../../../scripts-runtime/js/artifacts.js";
 import { getAccount } from "../../../../../scripts-runtime/js/starknet.js";
+import { buildMysteryChestPreset } from "../../chest-preset.js";
 
 const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 const l2Root = path.dirname(packageRoot);
 const manifestPath = path.join(packageRoot, "target", "sepolia-deployment.json");
+
 const LORDS = 10n ** 18n;
 
 function required(name) {
@@ -28,7 +30,8 @@ function loadSettings() {
     start: BigInt(required("SEPOLIA_SEASON_START")),
     end: BigInt(required("SEPOLIA_SEASON_END")),
     pool: BigInt(required("SEPOLIA_FRONTIER_POOL_WEI")),
-    chestCid: required("SEPOLIA_CHEST_CID"),
+    chestCids: [1, 2, 3, 4, 5].map((band) => required(`SEPOLIA_CHEST_BAND_${band}_CID`)),
+    cosmeticCid: required("SEPOLIA_COSMETIC_CID"),
     // Paid-entry demonstrations do not invoke the pass contracts.
     seasonPass: required("SEPOLIA_SEASON_PASS_ADDRESS"),
     villagePass: required("SEPOLIA_VILLAGE_PASS_ADDRESS"),
@@ -113,7 +116,6 @@ function buildPreset() {
     entry_fee: uint256.bnToUint256(500n * LORDS),
     protocol_cut_bps: 2_000,
     chest_lords_bps: 500,
-    chest_metadata: 0x301,
     paid_fraction_bps: 2000,
     decay_bps: 9600,
     sword_price: uint256.bnToUint256(500n * LORDS),
@@ -128,17 +130,26 @@ function buildSetupCalls(assets, settings, preset) {
     entrypoint,
     calldata: CallData.compile(args),
   });
-  const metadata = byteArray.byteArrayFromString(settings.chestCid);
+  const chestPreset = buildMysteryChestPreset();
+  const cosmeticMetadata = byteArray.byteArrayFromString(settings.cosmeticCid);
   return [
     call(assets.mmr, "grant_role", [hash.getSelectorFromName("UPDATER_ROLE"), assets.ledger]),
     call(assets.chests, "grant_role", [hash.getSelectorFromName("MINTER_ROLE"), assets.ledger]),
     call(assets.cosmetics, "grant_role", [hash.getSelectorFromName("MINTER_ROLE"), assets.ledger]),
     call(assets.ledger, "grant_role", [hash.getSelectorFromName("PAUSER_ROLE"), settings.pauser]),
-    call(assets.chests, "set_attrs_raw_to_ipfs_cid", [preset.chest_metadata, metadata, false]),
-    call(assets.cosmetics, "set_attrs_raw_to_ipfs_cid", [0x207050c01, metadata, false]),
+    ...chestPreset.bands.map((band, index) =>
+      call(assets.chests, "set_attrs_raw_to_ipfs_cid", [
+        band.metadata,
+        byteArray.byteArrayFromString(settings.chestCids[index]),
+        false,
+      ]),
+    ),
+    ...chestPreset.items.flatMap((items) =>
+      items.map((item) => call(assets.cosmetics, "set_attrs_raw_to_ipfs_cid", [item, cosmeticMetadata, false])),
+    ),
     call(assets.lords, "mint", [settings.address, uint256.bnToUint256(settings.pool)]),
     call(assets.lords, "approve", [assets.ledger, uint256.bnToUint256(settings.pool)]),
-    call(assets.ledger, "register_preset", [1, preset]),
+    call(assets.ledger, "register_preset", [1, preset, chestPreset.bands, chestPreset.items]),
     call(assets.ledger, "open_season", [1, 1, settings.start, settings.end]),
     call(assets.ledger, "fund_frontier", [
       settings.shard,

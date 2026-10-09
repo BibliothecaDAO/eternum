@@ -12,7 +12,7 @@ describe("ledger economics", () => {
       mmr: { enabled: true, mean: 1_500, spread: 450, max_delta: 45, k: 50, regression_bps: 150, min_players: 6 },
     });
     expect(BigInt(preset.entry_fee.low)).toBe(500_000_000_000_000_000_000n);
-    expect(buildRegisterLedgerPresetCalldata(1, preset).length).toBe(19);
+    expect(buildRegisterLedgerPresetCalldata(1, preset).length).toBe(85);
   });
 
   it("disables fees and MMR for Eternum without creating an invalid payout preset", () => {
@@ -33,10 +33,28 @@ describe("ledger economics", () => {
     expect(preset.paid_fraction_bps).toBe(2_000);
     expect(preset.mmr.enabled).toBe(true);
   });
+  it("keeps the Frontier preset free of treasury cuts", () => {
+    expect(buildLedgerEconomicPreset("frontier", { protocolCutBps: 2000 }).protocol_cut_bps).toBe(0);
+  });
+
   it("serializes the chest LORDS share as an admin preset", () => {
     const preset = buildLedgerEconomicPreset("blitz", { chestLordsBps: 500 });
     expect(preset.chest_lords_bps).toBe(500);
-    expect(preset.chest_metadata).toBe(0x301);
-    expect(buildRegisterLedgerPresetCalldata(1, preset).slice(4, 6)).toEqual(["500", "769"]);
+    expect(buildRegisterLedgerPresetCalldata(1, preset).slice(3, 5)).toEqual(["2000", "500"]);
+  });
+});
+
+describe("mystery chest economics", () => {
+  it("calibrates nominal chest rewards to the 24-player net entry contribution", async () => {
+    const { buildMysteryChestPreset } = await import("../../../../contracts/l2/ledger/scripts/chest-preset.js");
+    const chest = buildMysteryChestPreset(1n);
+    const counts = [5, 5, 4, 5, 5];
+    const nominal = chest.bands.reduce((total, band, index) => {
+      expect(Object.values(band.odds).reduce((sum, weight) => sum + weight, 0)).toBe(10_000);
+      return total + BigInt(counts[index] * band.odds.lords) * BigInt(band.lords_amount.low);
+    }, 0n);
+    expect(nominal).toBe(480n * 10_000n);
+    const afterCut = (24n * 500n * 8_000n) / 10_000n;
+    expect((afterCut * 500n) / 10_000n).toBe(480n);
   });
 });

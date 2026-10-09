@@ -2167,7 +2167,7 @@ mod tests {
     fn mint_with_id_returns_the_token_it_minted_across_legacy_calls() {
         let contract = COLLECTIBLES_CONTRACT();
         let alice = ALICE();
-        setup_basic_attributes(contract, METADATA_UPDATER(), 0x301, "fixed-chest");
+        setup_basic_attributes(contract, METADATA_UPDATER(), 0x301, "mystery-chest");
         let mint_burn = ERC721MintBurnTraitDispatcher { contract_address: contract };
         start_cheat_caller_address(contract, MINTER());
         mint_burn.mint(alice, 0x301);
@@ -2184,8 +2184,50 @@ mod tests {
     fn mint_with_id_requires_the_existing_minter_role() {
         let contract = COLLECTIBLES_CONTRACT();
         let alice = ALICE();
-        setup_basic_attributes(contract, METADATA_UPDATER(), 0x301, "fixed-chest");
+        setup_basic_attributes(contract, METADATA_UPDATER(), 0x301, "mystery-chest");
         start_cheat_caller_address(contract, alice);
         ERC721MintBurnTraitDispatcher { contract_address: contract }.mint_with_id(alice, 0x301);
+    }
+    #[test]
+    fn five_mystery_band_kinds_trade_and_burn_without_changing_legacy_kinds() {
+        let contract = COLLECTIBLES_CONTRACT();
+        let alice = ALICE();
+        let bob = BOB();
+        let erc721 = IERC721Dispatcher { contract_address: contract };
+        let mint_burn = ERC721MintBurnTraitDispatcher { contract_address: contract };
+        let metadata = IRealmsCollectibleMetadataDispatcher { contract_address: contract };
+        setup_multiple_attributes(
+            contract,
+            METADATA_UPDATER(),
+            array![
+                (0x301, "QmBandOne"),
+                (0x302, "QmBandTwo"),
+                (0x303, "QmBandThree"),
+                (0x304, "QmBandFour"),
+                (0x305, "QmBandFive"),
+                (0x101, "QmLegacyEternum"),
+                (0x201, "QmLegacyBlitz"),
+            ],
+        );
+        start_cheat_caller_address(contract, MINTER());
+        for band in 0_u128..5 {
+            let token_id = mint_burn.mint_with_id(alice, 0x301 + band);
+            assert!(token_id == (band + 1).into());
+            assert!(metadata.get_metadata_raw(token_id) == 0x301 + band);
+        };
+        mint_burn.mint(alice, 0x101);
+        mint_burn.mint(alice, 0x201);
+        assert!(metadata.get_metadata_raw(6) == 0x101);
+        assert!(metadata.get_metadata_raw(7) == 0x201);
+        start_cheat_caller_address(contract, alice);
+        erc721.transfer_from(alice, bob, 3);
+        assert!(erc721.owner_of(3) == bob);
+        start_cheat_caller_address(contract, bob);
+        erc721.approve(MINTER(), 3);
+        start_cheat_caller_address(contract, MINTER());
+        mint_burn.burn(3);
+        assert!(erc721.balance_of(bob) == 0);
+        assert!(erc721.balance_of(alice) == 6);
+        assert!(erc721.owner_of(1) == alice);
     }
 }
