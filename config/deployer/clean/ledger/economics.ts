@@ -6,7 +6,6 @@ const LORDS = 10n ** 18n;
 
 export interface LedgerEconomicPreset {
   entry_fee: ReturnType<typeof uint256.bnToUint256>;
-  protocol_cut_bps: number;
   paid_fraction_bps: number;
   decay_bps: number;
   sword_price: ReturnType<typeof uint256.bnToUint256>;
@@ -19,12 +18,6 @@ export interface LedgerEconomicPreset {
     k: number;
     regression_bps: number;
     min_players: number;
-  };
-  pm: {
-    fee_bps: number;
-    liability_cap: ReturnType<typeof uint256.bnToUint256>;
-    seed: ReturnType<typeof uint256.bnToUint256>;
-    claim_window_seconds: number;
   };
 }
 
@@ -39,7 +32,6 @@ export function buildLedgerEconomicPreset(
   const balance = nativePresetForId(nativePresetIdFor(gameType)).ledger;
   return {
     entry_fee: lords(options.sponsored ? 0n : BigInt(balance.entryFee)),
-    protocol_cut_bps: balance.protocolCutBps,
     paid_fraction_bps: 2_000,
     decay_bps: 9_600,
     sword_price: lords(BigInt(balance.swordPrice)),
@@ -52,12 +44,6 @@ export function buildLedgerEconomicPreset(
       k: 50,
       regression_bps: 150,
       min_players: 6,
-    },
-    pm: {
-      fee_bps: balance.predictionFeeBps,
-      liability_cap: lords(BigInt(balance.liabilityCap)),
-      seed: lords(BigInt(balance.seed)),
-      claim_window_seconds: 604_800,
     },
   };
 }

@@ -1,5 +1,5 @@
 use game_ledger::contract::{IGameLedgerDispatcher, IGameLedgerDispatcherTrait, result_commitment};
-use game_ledger::types::{MmrParams, PmParams, Preset};
+use game_ledger::types::{MmrParams, Preset};
 use openzeppelin::access::accesscontrol::interface::{IAccessControlDispatcher, IAccessControlDispatcherTrait};
 use openzeppelin::security::interface::{IPausableDispatcher, IPausableDispatcherTrait};
 use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
@@ -292,7 +292,6 @@ fn player(index: u16) -> ContractAddress {
 fn default_preset() -> Preset {
     Preset {
         entry_fee: 500,
-        protocol_cut_bps: 2_000,
         paid_fraction_bps: 2_000,
         decay_bps: 9_600,
         sword_price: 500,
@@ -300,7 +299,6 @@ fn default_preset() -> Preset {
         mmr: MmrParams {
             enabled: true, mean: 1500, spread: 450, max_delta: 45, k: 50, regression_bps: 150, min_players: 6,
         },
-        pm: PmParams { fee_bps: 500, liability_cap: 10_000, seed: 100, claim_window_seconds: 604_800 },
     }
 }
 
@@ -326,12 +324,10 @@ fn deploy_ledger_with_passes(season_pass: ContractAddress, village_pass: Contrac
     lords_address.serialize(ref constructor);
     mmr_address.serialize(ref constructor);
     let loot_chest: ContractAddress = 'loot_chest'.try_into().unwrap();
-    let elite_invite: ContractAddress = 'elite_invite'.try_into().unwrap();
     let cosmetics: ContractAddress = 'cosmetics'.try_into().unwrap();
     season_pass.serialize(ref constructor);
     village_pass.serialize(ref constructor);
     loot_chest.serialize(ref constructor);
-    elite_invite.serialize(ref constructor);
     cosmetics.serialize(ref constructor);
     let (ledger_address, _) = ledger_class.deploy(@constructor).unwrap();
     let ledger = IGameLedgerDispatcher { contract_address: ledger_address };
@@ -352,9 +348,10 @@ fn deploy_ledger() -> Fixture {
 fn configure_game(fixture: Fixture, preset: Preset) -> Fixture {
     start_cheat_caller_address(fixture.ledger_address, ADMIN());
     fixture.ledger.register_preset(PRESET_ID, preset);
+    fixture.ledger.open_season(1, PRESET_ID, START, END + 100);
     stop_cheat_caller_address(fixture.ledger_address);
     start_cheat_caller_address(fixture.ledger_address, OPERATOR());
-    fixture.ledger.open_game(GAME_ID, PRESET_ID, START, END);
+    fixture.ledger.open_game(GAME_ID, 1, PRESET_ID, START, END);
     stop_cheat_caller_address(fixture.ledger_address);
 
     fixture
@@ -443,15 +440,14 @@ fn assert_conservation(count: u16) {
     let initial_pool: u256 = count.into() * 500;
     apply_results(@fixture, ranked_players(count));
 
-    let mut payouts = 0;
-    for index in 0..count {
-        payouts += fixture.ledger.get_player_result(GAME_ID, player(index)).payout;
-    }
     let game = fixture.ledger.get_game(GAME_ID);
     assert!(game.pool == 0, "game accounting should be zero");
-    assert!(payouts + game.protocol_cut + game.dust == initial_pool, "pool should be conserved");
-    assert!(fixture.lords.balance_of(fixture.ledger_address) == 0, "ledger token balance should be zero");
-    assert!(fixture.lords.balance_of(TREASURY()) == game.protocol_cut + game.dust, "treasury should receive remainder");
+    assert!(fixture.ledger.get_season(1).pool == initial_pool, "entries must join the season pool");
+    assert!(fixture.lords.balance_of(fixture.ledger_address) == initial_pool, "season holds all entries");
+    assert!(fixture.lords.balance_of(TREASURY()) == 0, "no per-game treasury cut");
+    for index in 0..count {
+        assert!(fixture.lords.balance_of(player(index)) == 0, "no per-game rank payment");
+    }
 }
 
 #[test]
@@ -460,8 +456,6 @@ fn deploys_with_value_plane_guardrails_engaged() {
     let pausable = IPausableDispatcher { contract_address: fixture.ledger_address };
 
     assert!(!pausable.is_paused(), "ledger should deploy active");
-    assert!(!fixture.ledger.is_pm_enabled(), "prediction markets should deploy disabled");
-    assert!(fixture.ledger.get_reserve() == 0, "prediction-market reserve should deploy empty");
     assert!(fixture.lords.balance_of(fixture.ledger_address) == 0, "ledger should deploy without LORDS custody");
 }
 
@@ -885,7 +879,7 @@ fn conserves_ninety_six_player_pool() {
 }
 
 #[test]
-fn tie_fixture_one_one_three_splits_positions_once() {
+fn tie_fixture_one_one_three_preserves_mmr() {
     let mut preset = default_preset();
     preset.paid_fraction_bps = 10_000;
     preset.mmr.min_players = 3;
@@ -896,12 +890,11 @@ fn tie_fixture_one_one_three_splits_positions_once() {
     let first = fixture.ledger.get_player_result(GAME_ID, player(0));
     let second = fixture.ledger.get_player_result(GAME_ID, player(1));
     let third = fixture.ledger.get_player_result(GAME_ID, player(2));
-    assert!((first.payout, second.payout, third.payout) == (407, 407, 383), "1,1,3 payout fixture changed");
     assert!((first.mmr_after, second.mmr_after, third.mmr_after) == (1016, 1016, 991), "1,1,3 MMR fixture changed");
 }
 
 #[test]
-fn tie_fixture_one_two_two_four_splits_positions_once() {
+fn tie_fixture_one_two_two_four_preserves_mmr() {
     let mut preset = default_preset();
     preset.paid_fraction_bps = 10_000;
     preset.mmr.min_players = 4;
@@ -913,10 +906,6 @@ fn tie_fixture_one_two_two_four_splits_positions_once() {
     let second = fixture.ledger.get_player_result(GAME_ID, player(1));
     let third = fixture.ledger.get_player_result(GAME_ID, player(2));
     let fourth = fixture.ledger.get_player_result(GAME_ID, player(3));
-    assert!(
-        (first.payout, second.payout, third.payout, fourth.payout) == (424, 399, 399, 375),
-        "1,2,2,4 payout fixture changed",
-    );
     assert!(
         (first.mmr_after, second.mmr_after, third.mmr_after, fourth.mmr_after) == (1026, 1007, 1007, 989),
         "1,2,2,4 MMR fixture changed",
@@ -1064,4 +1053,36 @@ fn frontier_claim_namespace_binds_shard_and_survives_season_close() {
     fixture.ledger.pay('shard', 2, 'tx', player(0), 1000);
     assert!(fixture.lords.balance_of(player(0)) == 1000);
     assert!(fixture.lords.balance_of(player(1)) == 1000);
+}
+
+#[test]
+fn sword_shield_and_sponsor_payments_feed_the_same_season() {
+    let fixture = deploy_fixture(default_preset());
+    let owner = player(0);
+    fund_and_approve_player(@fixture, owner, 1700);
+    start_cheat_caller_address(fixture.ledger_address, owner);
+    fixture.ledger.register(GAME_ID, true, true);
+    fixture.ledger.fund(GAME_ID, 200);
+    apply_results(@fixture, ranked_players(1));
+    assert!(fixture.ledger.get_season(1).pool == 1700);
+    assert!(fixture.lords.balance_of(fixture.ledger_address) == 1700);
+}
+
+#[test]
+fn payout_pause_still_allows_results_and_mmr() {
+    let fixture = deploy_fixture(default_preset());
+    register_players(@fixture, 6);
+    start_cheat_caller_address(fixture.ledger_address, ADMIN());
+    fixture.ledger.pause();
+    apply_results(@fixture, ranked_players(6));
+    assert!(fixture.ledger.get_game(GAME_ID).finalized);
+    assert!(fixture.ledger.get_player_result(GAME_ID, player(0)).mmr_after > 1000);
+}
+
+#[test]
+#[should_panic(expected: "Ledger: MMR frozen")]
+fn season_end_freezes_results() {
+    let fixture = deploy_fixture(default_preset());
+    register_players(@fixture, 1);
+    apply_results_at(@fixture, END + 100, ranked_players(1));
 }

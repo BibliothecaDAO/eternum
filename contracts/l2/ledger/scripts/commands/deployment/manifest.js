@@ -36,7 +36,6 @@ const constructorAddresses = {
   seasonPass: requireContractAddress("seasonPass"),
   villagePass: requireContractAddress("villagePass"),
   lootChests: requireContractAddress("lootChests"),
-  eliteInvite: requireContractAddress("eliteInvite"),
   cosmetics: requireContractAddress("cosmetics"),
 };
 const ledgerRpcUrl = requireAddressConfigValue(process.env.LEDGER_RPC_URL, "LEDGER_RPC_URL");
@@ -51,7 +50,6 @@ function buildConstructorCalldata() {
     constructorAddresses.seasonPass,
     constructorAddresses.villagePass,
     constructorAddresses.lootChests,
-    constructorAddresses.eliteInvite,
     constructorAddresses.cosmetics,
   ];
 }
@@ -66,7 +64,6 @@ async function exportLedgerAddresses(deployedAddress) {
     SEASON_PASS_ADDRESS: constructorAddresses.seasonPass,
     VILLAGE_PASS_ADDRESS: constructorAddresses.villagePass,
     LOOT_CHESTS_ADDRESS: constructorAddresses.lootChests,
-    ELITE_INVITE_ADDRESS: constructorAddresses.eliteInvite,
     COSMETICS_ADDRESS: constructorAddresses.cosmetics,
     VAULT_ADDRESS: addresses.vault ?? "",
   });

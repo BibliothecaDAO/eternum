@@ -1,5 +1,5 @@
 use core::poseidon::poseidon_hash_span;
-use game_ledger::types::{FrontierSeason, Game, PlayerResult, Preset, Registration, WithdrawalPayment};
+use game_ledger::types::{BlitzSeason, FrontierSeason, Game, PlayerResult, Preset, Registration, WithdrawalPayment};
 use starknet::ContractAddress;
 
 pub const PAUSER_ROLE: felt252 = selector!("PAUSER_ROLE");
@@ -33,7 +33,9 @@ pub trait IGameLedger<TState> {
     fn get_payment(self: @TState, shard: felt252, claim_id: felt252) -> WithdrawalPayment;
     fn rescue_token(ref self: TState, token: ContractAddress, recipient: ContractAddress, amount: u256);
     fn register_preset(ref self: TState, preset_id: u32, preset: Preset);
-    fn open_game(ref self: TState, game_id: u32, preset_id: u32, start: u64, end: u64);
+    fn open_season(ref self: TState, season_id: u32, preset_id: u32, start: u64, end: u64);
+    fn get_season(self: @TState, season_id: u32) -> BlitzSeason;
+    fn open_game(ref self: TState, game_id: u32, season_id: u32, preset_id: u32, start: u64, end: u64);
     fn register(ref self: TState, game_id: u32, sword: bool, shield: bool);
     fn register_with_pass(ref self: TState, game_id: u32, pass_id: u256);
     fn register_village(ref self: TState, game_id: u32, village_pass_id: u256);
@@ -47,8 +49,6 @@ pub trait IGameLedger<TState> {
     fn get_registration(self: @TState, game_id: u32, owner: ContractAddress) -> Registration;
     fn get_registered_owner(self: @TState, game_id: u32, index: u16) -> ContractAddress;
     fn get_player_result(self: @TState, game_id: u32, owner: ContractAddress) -> PlayerResult;
-    fn is_pm_enabled(self: @TState) -> bool;
-    fn get_reserve(self: @TState) -> u256;
 }
 
 #[starknet::interface]
@@ -77,7 +77,7 @@ pub mod GameLedger {
     use core::dict::Felt252Dict;
     use core::num::traits::Zero;
     use game_ledger::mmr::MmrCalculatorImpl;
-    use game_ledger::types::{FrontierSeason, Game, PlayerResult, Preset, Registration, WithdrawalPayment};
+    use game_ledger::types::{BlitzSeason, FrontierSeason, Game, PlayerResult, Preset, Registration, WithdrawalPayment};
     use openzeppelin::access::accesscontrol::{AccessControlComponent, DEFAULT_ADMIN_ROLE};
     use openzeppelin::introspection::src5::SRC5Component;
     use openzeppelin::security::PausableComponent;
@@ -117,10 +117,8 @@ pub mod GameLedger {
         season_pass: ContractAddress,
         village_pass: ContractAddress,
         loot_chest: ContractAddress,
-        elite_invite: ContractAddress,
         cosmetics: ContractAddress,
-        pm_enabled: bool,
-        reserve: u256,
+        seasons: Map<u32, BlitzSeason>,
         presets: Map<u32, Preset>,
         preset_exists: Map<u32, bool>,
         games: Map<u32, Game>,
@@ -159,7 +157,7 @@ pub mod GameLedger {
         GameCancelled: GameCancelled,
         GameAborted: GameAborted,
         Refunded: Refunded,
-        PlayerPaid: PlayerPaid,
+        SeasonOpened: SeasonOpened,
         ResultsApplied: ResultsApplied,
     }
 
@@ -251,23 +249,21 @@ pub mod GameLedger {
     }
 
     #[derive(Drop, starknet::Event)]
-    struct PlayerPaid {
+    struct SeasonOpened {
         #[key]
-        game_id: u32,
-        #[key]
-        owner: ContractAddress,
-        rank: u16,
-        amount: u256,
+        season_id: u32,
+        preset_id: u32,
+        start: u64,
+        end: u64,
     }
 
     #[derive(Drop, starknet::Event)]
     struct ResultsApplied {
         #[key]
         game_id: u32,
+        season_id: u32,
         result_commitment: felt252,
         pool: u256,
-        protocol_cut: u256,
-        dust: u256,
     }
 
     #[constructor]
@@ -281,21 +277,11 @@ pub mod GameLedger {
         season_pass: ContractAddress,
         village_pass: ContractAddress,
         loot_chest: ContractAddress,
-        elite_invite: ContractAddress,
         cosmetics: ContractAddress,
     ) {
         self
             .assert_constructor_addresses(
-                admin,
-                operator,
-                treasury,
-                lords,
-                mmr_token,
-                season_pass,
-                village_pass,
-                loot_chest,
-                elite_invite,
-                cosmetics,
+                admin, operator, treasury, lords, mmr_token, season_pass, village_pass, loot_chest, cosmetics,
             );
         self.accesscontrol.initializer();
         self.accesscontrol._grant_role(DEFAULT_ADMIN_ROLE, admin);
@@ -306,7 +292,6 @@ pub mod GameLedger {
         self.season_pass.write(season_pass);
         self.village_pass.write(village_pass);
         self.loot_chest.write(loot_chest);
-        self.elite_invite.write(elite_invite);
         self.cosmetics.write(cosmetics);
     }
 
@@ -426,14 +411,37 @@ pub mod GameLedger {
             self.emit(PresetRegistered { preset_id });
         }
 
-        fn open_game(ref self: ContractState, game_id: u32, preset_id: u32, start: u64, end: u64) {
+        fn open_season(ref self: ContractState, season_id: u32, preset_id: u32, start: u64, end: u64) {
+            self.accesscontrol.assert_only_role(DEFAULT_ADMIN_ROLE);
+            assert!(!self.seasons.entry(season_id).read().exists, "Ledger: season already opened");
+            assert!(self.preset_exists.entry(preset_id).read(), "Ledger: unknown preset");
+            assert!(starknet::get_block_timestamp() <= start && start < end, "Ledger: invalid season window");
+            self
+                .seasons
+                .entry(season_id)
+                .write(BlitzSeason { exists: true, preset_id, start, end, ..Default::default() });
+            self.emit(SeasonOpened { season_id, preset_id, start, end });
+        }
+
+        fn get_season(self: @ContractState, season_id: u32) -> BlitzSeason {
+            let season = self.seasons.entry(season_id).read();
+            assert!(season.exists, "Ledger: unknown Blitz season");
+            season
+        }
+
+        fn open_game(ref self: ContractState, game_id: u32, season_id: u32, preset_id: u32, start: u64, end: u64) {
             self.accesscontrol.assert_only_role(OPERATOR_ROLE);
             assert!(!self.games.entry(game_id).read().exists, "Ledger: game already opened");
             assert!(self.preset_exists.entry(preset_id).read(), "Ledger: unknown preset");
             assert!(starknet::get_block_timestamp() < start, "Ledger: start must be in the future");
             assert!(start < end, "Ledger: invalid game window");
 
-            self.games.entry(game_id).write(Game { exists: true, preset_id, start, end, ..Default::default() });
+            let season = self.get_season(season_id);
+            assert!(start >= season.start && end <= season.end, "Ledger: game outside season");
+            self
+                .games
+                .entry(game_id)
+                .write(Game { exists: true, season_id, preset_id, start, end, ..Default::default() });
             self.emit(GameOpened { game_id, preset_id, start, end });
         }
 
@@ -546,35 +554,27 @@ pub mod GameLedger {
 
         fn apply_results(ref self: ContractState, game_id: u32, ranked: Array<(ContractAddress, u16, u16)>) {
             self.accesscontrol.assert_only_role(OPERATOR_ROLE);
-            self.pausable.assert_not_paused();
             let mut game = self.games.entry(game_id).read();
             self.assert_results_open(game);
             self.validate_and_record_results(game_id, game.registered_count, ranked.span());
 
             let preset = self.presets.entry(game.preset_id).read();
+            let mut season = self.get_season(game.season_id);
+            assert!(starknet::get_block_timestamp() < season.end, "Ledger: MMR frozen");
             let pool = game.pool;
-            let protocol_cut = pool * preset.protocol_cut_bps.into() / BPS;
-            let allocations = self
-                .calculate_position_allocations(
-                    pool - protocol_cut, game.registered_count, preset.paid_fraction_bps, preset.decay_bps,
-                );
-
+            season.pool += pool;
+            self.seasons.entry(game.season_id).write(season);
             game.finalized = true;
             game.pool = 0;
             self.games.entry(game_id).write(game);
-            let total_payout = self.pay_ranked_players(game_id, ranked.span(), allocations.span());
-            let treasury_amount = pool - total_payout;
-            let dust = treasury_amount - protocol_cut;
-            self.send_lords(self.treasury.read(), treasury_amount);
             self.apply_mmr(game_id, ranked.span(), preset);
-
-            game.protocol_cut = protocol_cut;
-            game.dust = dust;
-            self.games.entry(game_id).write(game);
             self
                 .emit(
                     ResultsApplied {
-                        game_id, result_commitment: result_commitment(game_id, ranked.span()), pool, protocol_cut, dust,
+                        game_id,
+                        season_id: game.season_id,
+                        result_commitment: result_commitment(game_id, ranked.span()),
+                        pool,
                     },
                 );
         }
@@ -603,14 +603,6 @@ pub mod GameLedger {
         fn get_player_result(self: @ContractState, game_id: u32, owner: ContractAddress) -> PlayerResult {
             self.results.entry((game_id, owner)).read()
         }
-
-        fn is_pm_enabled(self: @ContractState) -> bool {
-            self.pm_enabled.read()
-        }
-
-        fn get_reserve(self: @ContractState) -> u256 {
-            self.reserve.read()
-        }
     }
 
     #[generate_trait]
@@ -625,7 +617,6 @@ pub mod GameLedger {
             season_pass: ContractAddress,
             village_pass: ContractAddress,
             loot_chest: ContractAddress,
-            elite_invite: ContractAddress,
             cosmetics: ContractAddress,
         ) {
             assert!(
@@ -637,7 +628,6 @@ pub mod GameLedger {
                     && season_pass.is_non_zero()
                     && village_pass.is_non_zero()
                     && loot_chest.is_non_zero()
-                    && elite_invite.is_non_zero()
                     && cosmetics.is_non_zero(),
                 "Ledger: zero constructor address",
             );
@@ -648,8 +638,6 @@ pub mod GameLedger {
                 preset.paid_fraction_bps > 0 && preset.paid_fraction_bps <= 10_000, "Ledger: invalid paid fraction",
             );
             assert!(preset.decay_bps > 0 && preset.decay_bps <= 10_000, "Ledger: invalid payout decay");
-            assert!(preset.protocol_cut_bps <= 10_000, "Ledger: invalid protocol cut");
-            assert!(preset.pm.fee_bps <= 10_000, "Ledger: invalid PM fee");
             assert!(preset.mmr.regression_bps <= 10_000, "Ledger: invalid MMR regression");
             if preset.mmr.enabled {
                 assert!(
@@ -795,49 +783,6 @@ pub mod GameLedger {
                 allocations.append(prize_pool * *weights.at(position.into()) / total_weight);
             }
             allocations
-        }
-
-        fn pay_ranked_players(
-            ref self: ContractState, game_id: u32, ranked: Span<(ContractAddress, u16, u16)>, allocations: Span<u256>,
-        ) -> u256 {
-            let mut total_payout = 0;
-            let mut index: u32 = 0;
-            while index < ranked.len() {
-                let (_, rank, _) = *ranked.at(index);
-                let group_start = index;
-                loop {
-                    if index >= ranked.len() {
-                        break;
-                    }
-                    let (_, current_rank, _) = *ranked.at(index);
-                    if current_rank != rank {
-                        break;
-                    }
-                    index += 1;
-                }
-
-                let group_size: u256 = (index - group_start).into();
-                let mut group_allocation = 0;
-                let mut position: u32 = (rank - 1).into();
-                while position < index - group_start + (rank - 1).into() && position < allocations.len() {
-                    group_allocation += *allocations.at(position);
-                    position += 1;
-                }
-                let payout = group_allocation / group_size;
-
-                let mut member = group_start;
-                while member < index {
-                    let (owner, _, _) = *ranked.at(member);
-                    let mut result = self.results.entry((game_id, owner)).read();
-                    result.payout = payout;
-                    self.results.entry((game_id, owner)).write(result);
-                    self.send_lords(owner, payout);
-                    self.emit(PlayerPaid { game_id, owner, rank, amount: payout });
-                    total_payout += payout;
-                    member += 1;
-                }
-            }
-            total_payout
         }
     }
 

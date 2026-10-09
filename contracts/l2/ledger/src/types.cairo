@@ -12,27 +12,18 @@ pub struct MmrParams {
 }
 
 #[derive(Copy, Drop, Serde, starknet::Store)]
-pub struct PmParams {
-    pub fee_bps: u16,
-    pub liability_cap: u256,
-    pub seed: u256,
-    pub claim_window_seconds: u64,
-}
-
-#[derive(Copy, Drop, Serde, starknet::Store)]
 pub struct Preset {
     pub entry_fee: u256,
-    pub protocol_cut_bps: u16,
     pub paid_fraction_bps: u16,
     pub decay_bps: u16,
     pub sword_price: u256,
     pub shield_price: u256,
     pub mmr: MmrParams,
-    pub pm: PmParams,
 }
 
 #[derive(Copy, Default, Drop, Serde, starknet::Store)]
 pub struct Game {
+    pub season_id: u32,
     pub exists: bool,
     pub preset_id: u32,
     pub start: u64,
@@ -41,8 +32,6 @@ pub struct Game {
     pub registered_count: u16,
     pub cancelled: bool,
     pub finalized: bool,
-    pub protocol_cut: u256,
-    pub dust: u256,
 }
 
 #[derive(Copy, Drop, Serde, starknet::Store)]
@@ -60,7 +49,6 @@ pub struct Registration {
 pub struct PlayerResult {
     pub rank: u16,
     pub chests: u16,
-    pub payout: u256,
     pub mmr_before: u128,
     pub mmr_after: u128,
 }
@@ -88,4 +76,13 @@ pub struct WithdrawalPayment {
     pub season_id: u32,
     pub wallet: ContractAddress,
     pub amount: u256,
+}
+
+#[derive(Copy, Default, Drop, Serde, starknet::Store)]
+pub struct BlitzSeason {
+    pub exists: bool,
+    pub preset_id: u32,
+    pub start: u64,
+    pub end: u64,
+    pub pool: u256,
 }
