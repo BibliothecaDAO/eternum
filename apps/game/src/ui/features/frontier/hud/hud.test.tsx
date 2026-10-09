@@ -12,7 +12,7 @@ import { secondsUntilHeld } from "./army-order";
 import { ArmyToken, OpenSlot } from "./army-token";
 import { dayClock } from "./day-clock";
 import { HudBands } from "./hud-bands";
-import { type HudSurface, useHudSurface } from "./frontier-nav";
+import { useHudSurface } from "./frontier-nav";
 import { MenuSheet } from "./menu-sheet";
 import { OrderBar } from "./order-bar";
 import { PlaceNav } from "./place-nav";
@@ -211,15 +211,17 @@ describe("the Menu", () => {
 
 describe("the HUD's surfaces", () => {
   it("lets go of the tapped plot when a surface opens, so one sheet stands at a time", () => {
-    let open: (surface: HudSurface | null) => void = () => {};
     const Host = () => {
       const [, setSurface] = useHudSurface();
-      open = setSurface;
-      return null;
+      return (
+        <button type="button" onClick={() => setSurface("research")}>
+          Research
+        </button>
+      );
     };
     useUIStore.getState().setSelectedBuildingHex({ structureId: 7, innerCol: 10, innerRow: 10 });
     act(() => root.render(<Host />));
-    act(() => open("research"));
+    act(() => host.querySelector("button")!.click());
     expect(useUIStore.getState().selectedBuildingHex).toBeNull();
   });
 });
