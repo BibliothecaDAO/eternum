@@ -1,6 +1,7 @@
 import { byteArray, hash, shortString } from "starknet";
 import { describe, expect, it, vi } from "vitest";
 
+import { executeGameplayAccountTransaction } from "./submit";
 import { waitForActionOutcome } from "./transaction-outcome";
 
 const GAMES = "0x77";
@@ -149,5 +150,62 @@ describe("an action's outcome", () => {
     await ended;
     expect(vi.getTimerCount()).toBe(0);
     vi.useRealTimers();
+  });
+});
+
+describe("a dropped action", () => {
+  /** Sends at nonce 7 a transaction no block will hold; the account's nonce moves on once `passed` says so. */
+  const sendFrom = async (address: string, transactionHash: string, passed: () => boolean) => {
+    const account = {
+      address,
+      execute: vi.fn(async () => ({ transaction_hash: transactionHash })),
+      getNonce: vi.fn(async () => "0x7"),
+      getNonceForAddress: vi.fn(async () => (passed() ? "0x8" : "0x7")),
+      getTransactionStatus: vi.fn(async () => {
+        throw new Error("TXN_HASH_NOT_FOUND");
+      }),
+    };
+    await executeGameplayAccountTransaction({
+      account,
+      calls: { contractAddress: GAMES, entrypoint: "play", calldata: [] },
+      shard: { chainId: "0x1", l2GasBound: 1n },
+    });
+  };
+
+  it("ends dropped once the account's pre-confirmed nonce has passed it with no receipt", async () => {
+    await sendFrom("0x5e1", "0xd1", () => true);
+    const runtime = runtimeWith(new Promise(() => {}));
+    const rpc = {
+      getTransactionReceipt: vi.fn(async () => {
+        throw new Error("TXN_HASH_NOT_FOUND");
+      }),
+      getNonceForAddress: vi.fn(async () => "0x8"),
+    };
+    await expect(waitForActionOutcome(runtime, rpc, GAMES, "0xd1", running)).resolves.toMatchObject({
+      hash: "0xd1",
+      status: "DROPPED",
+    });
+    expect(rpc.getNonceForAddress).toHaveBeenCalledWith("0x5e1", "pre_confirmed");
+    expect(runtime.waitForTransaction).not.toHaveBeenCalled();
+  });
+
+  it("keeps waiting while the nonce has not passed it, and never calls an unknown transaction dropped", async () => {
+    let passed = false;
+    await sendFrom("0x5e2", "0xd2", () => passed);
+    const rpc = {
+      getTransactionReceipt: vi.fn(async () => {
+        throw new Error("TXN_HASH_NOT_FOUND");
+      }),
+      getNonceForAddress: vi.fn(async () => "0x7"),
+    };
+    for (const hash of ["0xd2", "0xe0"]) {
+      const stop = new AbortController();
+      const outcome = waitForActionOutcome(runtimeWith(new Promise(() => {})), rpc, GAMES, hash, stop.signal);
+      await new Promise((resolve) => setTimeout(resolve, 600));
+      stop.abort(new Error("stopped"));
+      await expect(outcome).rejects.toThrow("stopped");
+    }
+    expect(rpc.getTransactionReceipt.mock.calls.length).toBeGreaterThan(2);
+    passed = true;
   });
 });

@@ -81,6 +81,30 @@ describe("provider submission boundary", () => {
     });
   });
 
+  it("fails an action dropped before inclusion, with the reason, instead of leaving it pending", async () => {
+    const provider = makeProvider();
+    provider.setNativeSubmission(
+      async () => ({ transaction_hash: "0xd" }),
+      bindings.commandAbi as Abi,
+      () => 9,
+    );
+    provider.setTransactionStreamWaiter(async (hash) => ({
+      hash,
+      block: null,
+      status: "DROPPED",
+      revertReason: "The transaction was dropped before it was included; nothing of it applied.",
+    }));
+    const failed = vi.fn();
+    provider.on("transactionFailed", failed);
+    provider.claim_wonder_points({ signer: { address: "0x111" } as AccountInterface, value: 1 }).catch(() => undefined);
+    await vi.waitFor(() => expect(failed).toHaveBeenCalledOnce());
+    expect(failed.mock.calls[0][0]).toMatchObject({
+      stage: "revert",
+      transactionHash: "0xd",
+      revertReason: "The transaction was dropped before it was included; nothing of it applied.",
+    });
+  });
+
   it("keeps a slow action pending with no timeout and signs the next only after Herald applies it", async () => {
     vi.useFakeTimers();
     const provider = makeProvider();

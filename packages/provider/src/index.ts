@@ -556,9 +556,9 @@ export class EternumProvider extends EventEmitter {
       throw attachTransactionFailureStage(error, "confirmation");
     });
 
-    // Reverted before the roll (the shard's checks) or refused by the game (rolled back, reason recorded): either way
-    // nothing applied, and the player reads the reason.
-    if (transaction.status === "REVERTED" || transaction.status === "REJECTED") {
+    // Reverted before the roll (the shard's checks), refused by the game (rolled back, reason recorded), or dropped
+    // before inclusion: nothing applied, and the player reads the reason.
+    if (transaction.status === "REVERTED" || transaction.status === "REJECTED" || transaction.status === "DROPPED") {
       const rawRevertReason = transaction.revertReason;
       const revertReason = extractErrorMessage(rawRevertReason, "Unknown revert reason");
       const message = `Transaction failed with reason: ${revertReason}`;

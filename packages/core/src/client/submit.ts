@@ -9,6 +9,7 @@ import {
   type AllowArray,
   type Call,
   type InvokeFunctionResponse,
+  type ProviderInterface,
   type ResourceBoundsBN,
   type UniversalDetails,
   type InvocationsSignerDetails,
@@ -19,12 +20,20 @@ import type { Shard } from "./shard";
 /** What a gameplay account needs of its shard: the chain it signs for and the one gas bound the shard takes. */
 export type GameplayShard = Pick<Shard, "chainId" | "l2GasBound">;
 
-type GameplaySubmitAccount = Pick<AccountInterface, "address" | "execute" | "getNonce" | "getTransactionStatus">;
+type GameplaySubmitAccount = Pick<
+  AccountInterface,
+  "address" | "execute" | "getNonce" | "getNonceForAddress" | "getTransactionStatus"
+>;
 type RawExecute = (calls: AllowArray<Call>, details?: UniversalDetails) => Promise<InvokeFunctionResponse>;
 
 interface ConfiguredGameplaySubmit {
   shard: GameplayShard;
   execute: RawExecute;
+}
+
+interface SentTransaction {
+  address: string;
+  nonce: bigint;
 }
 
 interface ExecuteGameplayAccountTransactionOptions {
@@ -35,6 +44,8 @@ interface ExecuteGameplayAccountTransactionOptions {
 }
 
 const configuredGameplaySubmits = new WeakMap<object, ConfiguredGameplaySubmit>();
+/** Each sent transaction's account and nonce, until it is seen in a block or its dropped outcome is settled. */
+const sentTransactions = new Map<bigint, SentTransaction>();
 /** Per account, the last send until its transaction is in a block: the next send waits on it. */
 const sendsInFlight = new Map<string, Promise<void>>();
 const RECEIPT_POLL_MS = 250;
@@ -82,7 +93,7 @@ export function executeGameplayAccountTransaction({
   const previous = sendsInFlight.get(key) ?? Promise.resolve();
   const sent = previous.then(() => sendAtCurrentNonce(account, execute, calls, shard, details));
   const settled = sent.then(
-    ({ transaction_hash }) => untilInBlock(account, transaction_hash),
+    ({ transaction_hash }) => untilSettled(account, transaction_hash),
     () => undefined,
   );
   sendsInFlight.set(key, settled);
@@ -134,13 +145,35 @@ async function sendAtCurrentNonce(
     nonceDataAvailabilityMode: EDAMode.L1,
     feeDataAvailabilityMode: EDAMode.L1,
   });
-  try {
-    return await execute(calls, frame);
-  } catch (error) {
+  const response = await execute(calls, frame).catch((error: unknown) => {
     if (isPolicyRefusal(error)) throw error;
     // A lost response or opaque node/stamping error may follow inclusion. Observe the ordinary hash, never resend.
     return { transaction_hash: expectedHash };
-  }
+  });
+  sentTransactions.set(BigInt(response.transaction_hash), { address: account.address, nonce: BigInt(nonce) });
+  return response;
+}
+
+/**
+ * Whether a transaction this client sent can no longer be included: no receipt, and its account's pre-confirmed nonce
+ * has moved past the nonce it was sent at (another transaction took it, or the account went on). Unknown for a
+ * transaction this client did not send, or while the nonce cannot be read.
+ */
+export async function isDroppedTransaction(
+  rpc: Pick<ProviderInterface, "getNonceForAddress">,
+  transactionHash: string,
+): Promise<boolean> {
+  const sent = sentTransactions.get(BigInt(transactionHash));
+  if (!sent) return false;
+  const next = await Promise.resolve()
+    .then(() => rpc.getNonceForAddress(sent.address, BlockTag.PRE_CONFIRMED))
+    .then(BigInt, () => undefined);
+  return next !== undefined && next > sent.nonce;
+}
+
+/** Forgets a sent transaction once its outcome is settled. */
+export function forgetSentTransaction(transactionHash: string): void {
+  sentTransactions.delete(BigInt(transactionHash));
 }
 
 function isPolicyRefusal(error: unknown): boolean {
@@ -150,16 +183,19 @@ function isPolicyRefusal(error: unknown): boolean {
 }
 
 /**
- * Until the transaction is in a block (pre-confirmed or later, a revert included), where the account's nonce has moved
- * past it. A read that fails or says not found keeps the lock: elapsed time cannot prove a nonce is free.
+ * Until the transaction is in a block (pre-confirmed or later, a revert included), or the account's nonce has moved
+ * past it without it: either way its nonce is used. A read that fails or says not found keeps the lock otherwise:
+ * elapsed time cannot prove a nonce is free.
  */
-async function untilInBlock(account: GameplaySubmitAccount, transactionHash: string): Promise<void> {
+async function untilSettled(account: GameplaySubmitAccount, transactionHash: string): Promise<void> {
   while (true) {
     const status = await account.getTransactionStatus(transactionHash).then(
       (result: { finality_status?: string }) => result.finality_status,
       () => undefined,
     );
-    if (status !== undefined && status !== null && IN_BLOCK.has(status)) return;
+    if (status !== undefined && status !== null && IN_BLOCK.has(status)) return forgetSentTransaction(transactionHash);
+    // A dropped transaction stays known until its outcome wait settles it.
+    if (await isDroppedTransaction(account, transactionHash)) return;
     await new Promise((resolve) => setTimeout(resolve, RECEIPT_POLL_MS));
   }
 }

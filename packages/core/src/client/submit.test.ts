@@ -116,6 +116,7 @@ function createAccount(
   status: (transactionHash: string) => Promise<{ finality_status: string }> = async () => ({
     finality_status: "PRE_CONFIRMED",
   }),
+  accountNonce = "0x0",
 ) {
   return {
     address,
@@ -126,6 +127,7 @@ function createAccount(
       return nonce;
     }),
     getTransactionStatus: vi.fn(status),
+    getNonceForAddress: vi.fn(async () => accountNonce),
   };
 }
 
@@ -179,4 +181,24 @@ it("receipt-not-found time alone cannot release a pending account nonce", async 
   } finally {
     vi.useRealTimers();
   }
+});
+
+it("frees the account's next send once its pre-confirmed nonce has passed a transaction no block holds", async () => {
+  let passed = false;
+  const account = createAccount(
+    "0x9a",
+    ["0x7", "0x8"],
+    async () => ({ transaction_hash: `0x${account.execute.mock.calls.length}d` }),
+    async () => {
+      throw new Error("TXN_HASH_NOT_FOUND");
+    },
+  );
+  account.getNonceForAddress.mockImplementation(async () => (passed ? "0x8" : "0x7"));
+  await executeGameplayAccountTransaction({ account, calls: CALL, shard: SHARD });
+  const next = executeGameplayAccountTransaction({ account, calls: CALL, shard: SHARD });
+  await new Promise((resolve) => setTimeout(resolve, 600));
+  expect(account.execute).toHaveBeenCalledTimes(1);
+  passed = true;
+  await expect(next).resolves.toEqual({ transaction_hash: "0x2d" });
+  expect(account.getNonceForAddress).toHaveBeenCalledWith("0x9a", BlockTag.PRE_CONFIRMED);
 });
