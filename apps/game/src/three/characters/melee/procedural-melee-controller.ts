@@ -13,7 +13,7 @@ import {
   type ProceduralMeleeGuardHolds,
   type ProceduralMeleeUpperBodyPose,
 } from "./procedural-melee-pose";
-import { resolveProceduralMeleeWeapon, type ProceduralMeleeAttackVariantId } from "./procedural-melee-weapon-catalog";
+import { resolveProceduralMeleeWeapon } from "./procedural-melee-weapon-catalog";
 
 const APPROXIMATE_HAND_HEIGHT = 1.25;
 const MIN_PITCH = (-45 * Math.PI) / 180;
@@ -29,8 +29,6 @@ export type ProceduralMeleeBearerMotion = "standing" | "walking" | "running";
 
 export interface ProceduralMeleeControllerStats {
   attackGeneration: number;
-  /** The attack being made, or the last one made. */
-  attackVariant?: ProceduralMeleeAttackVariantId;
   contactCount: number;
   phase: ProceduralMeleeAttackPhase;
   weaponId: ProceduralMeleeConfig["weaponId"];
@@ -128,7 +126,6 @@ export class ProceduralMeleeController {
   public getStats(): ProceduralMeleeControllerStats {
     return {
       attackGeneration: this.state.attackGeneration,
-      attackVariant: this.state.variant,
       contactCount: this.state.contactCount,
       phase: this.state.phase,
       weaponId: this.config.weaponId,

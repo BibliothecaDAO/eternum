@@ -1,7 +1,7 @@
 import { Group, Vector3 } from "three";
 import { describe, expect, it } from "vitest";
 
-import { createDefaultProceduralMeleeConfig, resolveProceduralMeleeAttackVariants } from "./procedural-melee-config";
+import { createDefaultProceduralMeleeConfig } from "./procedural-melee-config";
 import { ProceduralMeleeController, type ProceduralMeleeBearerMotion } from "./procedural-melee-controller";
 import { resolveProceduralMeleeOffhand } from "./procedural-melee-weapon-catalog";
 
@@ -71,27 +71,5 @@ describe("procedural melee controller", () => {
     for (let step = 0; step < 120; step += 1) shieldWristHeight(1 / 60);
     controller.reset();
     expect(shieldWristHeight(1 / 60)).toBeCloseTo(shield.idle[0].wrist[1], 6);
-  });
-
-  it("makes the weapon's attacks in turn, from the bearer's seed", () => {
-    const config = {
-      ...createDefaultProceduralMeleeConfig("knight"),
-      offhandId: "t1-knight-default-shield" as const,
-      weaponId: "t1-knight-default-sword" as const,
-    };
-    const variants = resolveProceduralMeleeAttackVariants(config.weaponId);
-    const attacksOf = (seed: number) => {
-      const controller = new ProceduralMeleeController(config, false, seed);
-      const root = new Group();
-      return variants.map(() => {
-        controller.attack(new Vector3(0, 0, 1));
-        const variant = controller.getStats().attackVariant;
-        for (let step = 0; step < 120; step += 1) controller.update(1 / 60, root, "standing");
-        return variant;
-      });
-    };
-
-    expect(new Set(attacksOf(0))).toEqual(new Set(variants));
-    expect(attacksOf(1)).toEqual([...attacksOf(0).slice(1), attacksOf(0)[0]]);
   });
 });

@@ -58,7 +58,6 @@ function chooseAttackVariant(
   attackGeneration: number,
   seed: number,
 ): ProceduralMeleeAttackVariantId {
-  if (config.attackVariant !== "auto") return config.attackVariant;
   const variants = resolveProceduralMeleeAttackVariants(config.weaponId);
   const seedOffset = (seed >>> 0) % variants.length;
   return variants[(attackGeneration + seedOffset) % variants.length];

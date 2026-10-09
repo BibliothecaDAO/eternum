@@ -69,17 +69,15 @@ describe("procedural melee attack cycle", () => {
     expect(strike.actionWeight).toBe(1);
   });
 
-  it("makes a weapon's one attack, named by its attack style, unless the config names one it makes", () => {
-    const config = createDefaultProceduralMeleeConfig("paladin");
+  it("makes a weapon's attacks in turn: its attack style, or the attacks its states declare", () => {
     const idle = createIdleProceduralMeleeAttackState();
+    const knight = applyProceduralMeleeConfigPatch(createDefaultProceduralMeleeConfig("knight"), {
+      offhandId: "t1-knight-default-shield",
+      weaponId: "t1-knight-default-sword",
+    });
 
     expect(idle.variant).toBeUndefined();
-    expect(startProceduralMeleeAttack(idle, config, 7).variant).toBe("smash");
-    expect(() => applyProceduralMeleeConfigPatch(config, { attackVariant: "thrust" })).toThrow(
-      "runic-warhammer makes no thrust attack",
-    );
-    const chosen = applyProceduralMeleeConfigPatch(config, { attackVariant: "smash" });
-    expect(startProceduralMeleeAttack(idle, chosen, 7).variant).toBe("smash");
-    expect(applyProceduralMeleeConfigPatch(chosen, { weaponId: "winter-broadaxe" }).attackVariant).toBe("auto");
+    expect(startProceduralMeleeAttack(idle, createDefaultProceduralMeleeConfig("paladin"), 7).variant).toBe("smash");
+    expect(startProceduralMeleeAttack(idle, knight, 7).variant).toBe("cut");
   });
 });

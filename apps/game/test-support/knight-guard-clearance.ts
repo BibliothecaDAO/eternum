@@ -103,6 +103,8 @@ export interface GuardClearance {
 export interface KnightGuardSample {
   /** The melee attack's phase at the moment. */
   attackPhase: ProceduralMeleeAttackPhase;
+  /** The contact reaction's weight at the moment, 0 without one. */
+  reactionWeight: number;
   clearance: GuardClearance;
   label: string;
   motion: KnightMotion;
@@ -137,8 +139,8 @@ export function createKnightGuardSubject(
 
 /** One stretch of a sequence: how the Knight moves, for how long, and what starts at its beginning. */
 export interface KnightSequenceStep {
-  /** An attack of this variant starts as the stretch begins. */
-  attack?: ProceduralMeleeAttackVariantId;
+  /** An attack starts as the stretch begins; the melee controller picks which, the weapon's attacks in turn. */
+  attack?: true;
   /** A melee hit from the front lands as the stretch begins. */
   hit?: true;
   label: string;
@@ -185,10 +187,7 @@ export function runKnightSequence(
       filter.reset();
       motion = step.motion;
     }
-    if (step.attack) {
-      melee.updateConfig(createKnightMeleeConfig(step.attack), seed);
-      melee.attack(ATTACK_TARGET);
-    }
+    if (step.attack) melee.attack(ATTACK_TARGET);
     if (step.hit) reactions.trigger(FRONT_HIT);
     for (let stepFrame = 0; stepFrame < Math.round(step.seconds * FRAMES_PER_SECOND); stepFrame++, frame++) {
       const delta = 1 / FRAMES_PER_SECOND;
@@ -215,6 +214,7 @@ export function runKnightSequence(
       if (stepFrame % sampleEveryFrames !== 0) continue;
       samples.push({
         attackPhase: melee.getStats().phase,
+        reactionWeight: reaction?.weight ?? 0,
         clearance: measureGuardClearance(subject),
         label: `${step.label} ${(stepFrame / FRAMES_PER_SECOND).toFixed(2)}s`,
         motion: step.motion,
@@ -259,9 +259,8 @@ export function summariseWorstGuardClearance(samples: readonly KnightGuardSample
   ].join(", ");
 }
 
-function createKnightMeleeConfig(attackVariant: ProceduralMeleeAttackVariantId | "auto" = "auto") {
+function createKnightMeleeConfig() {
   return applyProceduralMeleeConfigPatch(createDefaultProceduralMeleeConfig("knight"), {
-    attackVariant,
     offhandId: "t1-knight-default-shield",
     weaponId: "t1-knight-default-sword",
   });
@@ -274,7 +273,7 @@ function createGuardAction(state: ProceduralMeleeAttackState, holds = NO_GUARD_H
     aimPitchRadians: 0,
     aimYawRadians: 0,
     attackStyle: "slash",
-    config: createKnightMeleeConfig(state.variant ?? "auto"),
+    config: createKnightMeleeConfig(),
     holds,
     mounted: false,
     seed,
@@ -501,7 +500,7 @@ function resolveMomentReachedAfterLead(
   variant: ProceduralMeleeAttackVariantId,
   moment: "windup" | "contact" | "follow",
 ): ProceduralMeleeAttackState {
-  const config = createKnightMeleeConfig(variant);
+  const config = createKnightMeleeConfig();
   const phase = ({ windup: "windup", contact: "strike", follow: "followThrough" } as const)[moment];
   const duration = {
     followThrough: config.followThroughSeconds,
@@ -520,8 +519,9 @@ function resolveMomentReachedAfterLead(
 const SETTLE_FRAMES = 40;
 
 /**
- * Drives the inputs so the state is fully reached, holds it through the pose filter until it has settled, as the
- * runtime shows it (the declared arms placed in the visible chest), and measures it.
+ * Drives the pose function with injected guard holds, seed and attack state (not the melee controller) so the state
+ * is fully reached, holds it through the pose filter until it has settled, as the runtime shows it (the declared arms
+ * placed in the visible chest), and measures it.
  */
 export function measureKnightState(
   subject: KnightGuardSubject,

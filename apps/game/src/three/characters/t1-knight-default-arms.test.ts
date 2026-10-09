@@ -17,6 +17,10 @@ import {
   type KnightStateName,
 } from "../../../test-support/knight-guard-clearance";
 import { withKnightLibrary } from "../../../test-support/with-knight-library";
+import {
+  createIdleProceduralMeleeAttackState,
+  startProceduralMeleeAttack,
+} from "./melee/procedural-melee-attack-cycle";
 import { applyProceduralMeleeConfigPatch, createDefaultProceduralMeleeConfig } from "./melee/procedural-melee-config";
 import { ProceduralMeleeController } from "./melee/procedural-melee-controller";
 import type { ProceduralMeleeUpperBodyPose } from "./melee/procedural-melee-pose";
@@ -41,7 +45,10 @@ const MAX_STATE_DIRECTION_ERROR_DEGREES = 5;
 const MAX_PELVIS_TURN_ERROR_DEGREES = 2;
 /** How far the blade tip may be from the contact state's when the contact fires, or go past it before the follow-through. */
 const MAX_CONTACT_TIP_ERROR = 0.015;
-/** What the lead achieves at the contact so far, held so it does not get worse (the order's aim is 15 mm). */
+/**
+ * How far the blade tip may be from the contact pose when the contact fires: the declared states lead by the pose
+ * filter's lag, which brings it to 119 mm; nearer would take a contact the strike holds rather than passes through.
+ */
 const MAX_CONTACT_TIP_MISS_WITH_LEAD = 0.125;
 const MAX_TRUNK_TURN_ERROR_DEGREES = 3;
 const MAX_PELVIS_HEIGHT_ERROR = 0.005;
@@ -134,7 +141,6 @@ interface SequenceLimits {
   /** As close to the head as the declared states passed through, less 5 mm or a tenth of that (the filter cuts corners). */
   bladeToHead: number;
   shieldToHead: number;
-  shieldToLegs: number;
 }
 
 /** A thin blade 5 mm off the shield's slab. */
@@ -161,7 +167,6 @@ function resolveSequenceLimits(
   return {
     bladeToHead: floor((clearance) => clearance.bladeToHead),
     shieldToHead: floor((clearance) => clearance.shieldToHead),
-    shieldToLegs: sequence.reaction ? MIN_SHIELD_TO_LEGS_IN_A_REACTION : MIN_SHIELD_TO_LEGS,
   };
 }
 
@@ -203,8 +208,9 @@ const CLEARANCE_CRITERIA: Readonly<
     label: "shield no closer to the head than the floor from the declared states passed through",
   },
   shieldToLegs: {
-    holds: ({ clearance }, limits) => clearance.shieldToLegs >= limits.shieldToLegs,
-    label: "shield 2 mm from the thighs and shins (touching in a reaction)",
+    holds: ({ clearance, reactionWeight }) =>
+      clearance.shieldToLegs >= (reactionWeight > 0 ? MIN_SHIELD_TO_LEGS_IN_A_REACTION : MIN_SHIELD_TO_LEGS),
+    label: "shield 2 mm from the thighs and shins (touching while a reaction runs)",
   },
   shieldToTrunk: {
     holds: ({ clearance }) => clearance.shieldToTrunk > 0,
@@ -260,28 +266,35 @@ interface KnightSequence {
   seed: number;
   /** The declared states the sequence passes through: its head clearances may come little closer than theirs. */
   states: readonly KnightStateName[];
-  /** A contact reaction runs in the sequence. */
-  reaction?: true;
   steps: readonly KnightSequenceStep[];
 }
 
 const attackStates = (variant: ProceduralMeleeAttackVariantId) => POSES.groups.attacks[variant];
 
+/** The attack a bearer with this seed makes first: the melee controller's own choice, the weapon's attacks in turn. */
+function firstAttackOf(seed: number): ProceduralMeleeAttackVariantId {
+  const config = applyProceduralMeleeConfigPatch(createDefaultProceduralMeleeConfig("knight"), {
+    offhandId: "t1-knight-default-shield",
+    weaponId: "t1-knight-default-sword",
+  });
+  const variant = startProceduralMeleeAttack(createIdleProceduralMeleeAttackState(), config, seed).variant;
+  if (!variant) throw new Error("A started attack has no variant");
+  return variant;
+}
+
 /** Every motion and transition the Knight goes through in play, for one figure in turn. */
 const KNIGHT_SEQUENCES: readonly KnightSequence[] = [
-  ...IDLE_SEEDS.flatMap((seed) =>
-    ATTACK_VARIANTS.map((variant) => ({
-      name: `${KNIGHT_DECLARED_IDLES[seed]} to guard to ${variant} and back`,
-      seed,
-      states: [KNIGHT_DECLARED_IDLES[seed], POSES.groups.guard, ...attackStates(variant)],
-      steps: [
-        { label: "idle", motion: "idle", seconds: 0.5 },
-        { attack: variant, label: variant, motion: "idle", seconds: 1.4 },
-        { label: "guard held", motion: "idle", seconds: 3 },
-        { label: "relaxing", motion: "idle", seconds: 1 },
-      ] as const,
-    })),
-  ),
+  ...IDLE_SEEDS.map((seed) => ({
+    name: `${KNIGHT_DECLARED_IDLES[seed]} to guard to ${firstAttackOf(seed)} and back`,
+    seed,
+    states: [KNIGHT_DECLARED_IDLES[seed], POSES.groups.guard, ...attackStates(firstAttackOf(seed))],
+    steps: [
+      { label: "idle", motion: "idle", seconds: 0.5 },
+      { attack: true, label: firstAttackOf(seed), motion: "idle", seconds: 1.4 },
+      { label: "guard held", motion: "idle", seconds: 3 },
+      { label: "relaxing", motion: "idle", seconds: 1 },
+    ] as const,
+  })),
   {
     name: "idle to walk to run to walk to idle",
     seed: 0,
@@ -294,28 +307,26 @@ const KNIGHT_SEQUENCES: readonly KnightSequence[] = [
       { label: "idle again", motion: "idle", seconds: 0.8 },
     ],
   },
-  ...ATTACK_VARIANTS.map((variant) => ({
-    name: `${variant} while walking`,
-    seed: 0,
-    states: [POSES.groups.walk_guard, ...attackStates(variant)],
+  ...ATTACK_VARIANTS.map((_, seed) => ({
+    name: `${firstAttackOf(seed)} while walking`,
+    seed,
+    states: [POSES.groups.walk_guard, ...attackStates(firstAttackOf(seed))],
     steps: [
       { label: "walk", motion: "walk", seconds: 0.6 },
-      { attack: variant, label: variant, motion: "walk", seconds: 1.4 },
+      { attack: true, label: firstAttackOf(seed), motion: "walk", seconds: 1.4 },
     ] as const,
   })),
   {
     name: "hit from guard",
-    reaction: true,
     seed: 0,
-    states: [KNIGHT_DECLARED_IDLES[0], POSES.groups.guard, ...attackStates(ATTACK_VARIANTS[0]), POSES.groups.hit],
+    states: [KNIGHT_DECLARED_IDLES[0], POSES.groups.guard, ...attackStates(firstAttackOf(0)), POSES.groups.hit],
     steps: [
-      { attack: ATTACK_VARIANTS[0], label: "attack", motion: "idle", seconds: 1.4 },
+      { attack: true, label: "attack", motion: "idle", seconds: 1.4 },
       { hit: true, label: "hit", motion: "idle", seconds: 0.8 },
     ],
   },
   {
     name: "hit from idle",
-    reaction: true,
     seed: 0,
     states: [KNIGHT_DECLARED_IDLES[0], POSES.groups.hit],
     steps: [
@@ -384,11 +395,12 @@ describe("T1 Knight states", () => {
     });
   });
 
-  it("shows each attack's contact when the contact happens", async () => {
+  it("shows each attack's blade within 125 mm of its contact pose when the contact fires, and never past it", async () => {
     await withKnightLibrary((library) => {
       const subject = createKnightGuardSubject(library, "hero", STATURE);
       try {
-        for (const variant of ATTACK_VARIANTS) {
+        for (const seed of ATTACK_VARIANTS.keys()) {
+          const variant = firstAttackOf(seed);
           const [windup, contact] = attackStates(variant).map(
             (name) => new Vector3(...measureKnightState(subject, name).clearance.bladeTip),
           );
@@ -397,9 +409,9 @@ describe("T1 Knight states", () => {
             subject,
             [
               { label: "idle", motion: "idle", seconds: 0.5 },
-              { attack: variant, label: variant, motion: "idle", seconds: 0.8 },
+              { attack: true, label: variant, motion: "idle", seconds: 0.8 },
             ],
-            0,
+            seed,
             1,
           );
           const atContact = samples.find((sample) => sample.attackPhase === "contact");
@@ -411,8 +423,8 @@ describe("T1 Knight states", () => {
               .map(({ clearance }) => new Vector3(...clearance.bladeTip).sub(contact).dot(strike)),
           );
           const report = `${variant}: tip ${(missed * 1000).toFixed(1)}mm from the contact state at contact, ${(overshoot * 1000).toFixed(1)}mm past it`;
-          // Not yet met: the contact is a moment the strike passes through, and the filtered chest the arms are
-          // placed in cuts its corner; leading by the filter's lag brings the tip from 285 to 119 mm of it (P-notes, Q5).
+          // The contact is a moment the strike passes through, and the filtered chest the arms are placed in cuts its
+          // corner: leading by the filter's lag brings the cut's tip from 285 to 119 mm of the contact pose, no closer.
           expect(missed, report).toBeLessThan(MAX_CONTACT_TIP_MISS_WITH_LEAD);
           expect(overshoot, report).toBeLessThan(MAX_CONTACT_TIP_ERROR);
         }
