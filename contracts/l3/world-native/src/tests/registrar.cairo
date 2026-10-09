@@ -111,6 +111,7 @@ pub(crate) fn definition(blitz: bool) -> PresetDefinition {
             },
         },
         economy: EconomyPreset {
+            labor: None,
             progression: None,
             discovery: None,
             trade: crate::trade::TradeRules { max_count: 2 },
@@ -847,6 +848,7 @@ fn expedition_preset() -> PresetDefinition {
     preset.economy.discovery = Some(super::preset_projection::frontier_discovery_rules());
     let (_, frontier) = super::preset_projection::current_definition("frontier");
     preset.economy.chests = frontier.economy.chests;
+    preset.economy.labor = frontier.economy.labor;
     preset.economy.relics = array![].span();
     preset.settlement.depths = frontier.settlement.depths;
     preset.structures.board = frontier.structures.board;
@@ -1322,6 +1324,7 @@ fn expedition_army_limits_follow_castle_level_without_guards_or_returning_troops
     preset.economy.discovery = Some(super::preset_projection::frontier_discovery_rules());
     let (_, frontier) = super::preset_projection::current_definition("frontier");
     preset.economy.chests = frontier.economy.chests;
+    preset.economy.labor = frontier.economy.labor;
     preset.economy.relics = array![].span();
     preset.settlement.depths = frontier.settlement.depths;
     preset.rules.mode_rules = preset.rules.mode_rules | crate::rules::DEPTH_CONTENTS;
@@ -1535,6 +1538,7 @@ fn assert_capture_at(depth: u8, count: u128, tier: crate::troops::TroopTier, rev
     preset.economy.discovery = Some(super::preset_projection::frontier_discovery_rules());
     let (_, frontier) = super::preset_projection::current_definition("frontier");
     preset.economy.chests = frontier.economy.chests;
+    preset.economy.labor = frontier.economy.labor;
     preset.economy.relics = array![].span();
     preset.settlement.depths = frontier.settlement.depths;
     preset.rules.mode_rules = preset.rules.mode_rules | crate::rules::DEPTH_CONTENTS;
@@ -1895,6 +1899,7 @@ fn depth_entry_requires_research_and_spends_only_the_selected_depth_stamina() {
     preset.economy.discovery = Some(super::preset_projection::frontier_discovery_rules());
     let (_, frontier) = super::preset_projection::current_definition("frontier");
     preset.economy.chests = frontier.economy.chests;
+    preset.economy.labor = frontier.economy.labor;
     preset.economy.relics = array![].span();
     preset.settlement.depths = frontier.settlement.depths;
     preset.rules.mode_rules = preset.rules.mode_rules | crate::rules::DEPTH_CONTENTS;
@@ -2139,7 +2144,7 @@ fn an_army_enters_a_depth_only_from_its_realms_spire_which_turns_each_day() {
     assert_eq!(troops.resolved_explorer(ExplorerKey { game_id, explorer_id: away }).unwrap(), before);
 }
 
-fn setup_frontier_chests() -> (super::Deployment, u32, ExplorerKey) {
+pub fn setup_frontier_chests() -> (super::Deployment, u32, ExplorerKey) {
     setup_frontier_chests_with_rules(None)
 }
 fn setup_frontier_chests_with_rules(
@@ -2212,6 +2217,7 @@ fn setup_frontier_chests_with_rules(
     }
     preset.settlement.depths = depths.span();
     preset.economy.chests = Some(chests);
+    preset.economy.labor = frontier.economy.labor;
     preset.economy.relics = array![].span();
     if let Some(discovery) = discovery {
         preset.economy.discovery = Some(discovery);
@@ -2639,6 +2645,7 @@ fn frontier_refuses_off_map_economy_commands_before_reading_positions() {
     preset.economy.discovery = Some(super::preset_projection::frontier_discovery_rules());
     let (_, frontier) = super::preset_projection::current_definition("frontier");
     preset.economy.chests = frontier.economy.chests;
+    preset.economy.labor = frontier.economy.labor;
     preset.economy.relics = array![].span();
     preset.settlement.depths = frontier.settlement.depths;
     preset.rules.mode_rules = preset.rules.mode_rules | crate::rules::DEPTH_CONTENTS;

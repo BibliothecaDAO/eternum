@@ -73,6 +73,7 @@ fn write_settlement(
 }
 
 fn write_economy(preset: PresetWrite, rules: crate::rules::SliceRules, economy: crate::presets::EconomyPreset) {
+    preset.labor_rules.write(economy.labor);
     preset.trade_rules.write(economy.trade);
     write_banks(preset, economy.banks);
     write_hyperstructures(preset, rules, economy.hyperstructures);

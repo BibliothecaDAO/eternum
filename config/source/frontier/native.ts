@@ -107,6 +107,7 @@ export const frontierPreset: NativePreset = {
     emptyRevealLimit: 7,
   },
   progression: { revealXp: 2, fixedXp: 200, uncommonXp: 100, rareXp: 200, epicXp: 400, legendaryXp: 800 },
+  labor: { amount: 1000, accountDailyLimit: 0 },
   // The ruin's chest: the season pool paid through a day price of at most 50 LORDS a share.
   chests: {
     pool: 1000000,

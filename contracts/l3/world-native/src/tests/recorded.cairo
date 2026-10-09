@@ -426,6 +426,7 @@ pub fn fixture_preset(rules: crate::rules::SliceRules) -> crate::presets::Preset
     let mut preset = super::registrar::definition(rules.entry_rule == crate::rules::ENTRY_ROSTER);
     preset.rules = rules;
     if rules.day_unit_seconds != 0 {
+        preset.economy.labor = Some(crate::entry::LaborRules { amount: 1000, account_daily_limit: 0 });
         preset.economy.progression = Some(super::preset_projection::frontier_progression_rules());
     }
     preset.season_win_points = 0;

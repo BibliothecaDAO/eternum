@@ -195,8 +195,7 @@ pub mod SettlementLogic {
         }
         fn register_village_pass(ref self: ContractState, key: VillagePassKey, owner: ContractAddress) {
             assert!(key.game_id != 0, "game id zero is reserved");
-            let operator = self.entry.data.entry.operator.read();
-            assert!(operator.is_non_zero() && get_caller_address() == operator, "only ledger operator");
+            crate::logic::entry::assert_ledger_operator();
             self.villages.register(key, owner);
         }
         fn settle_village(
@@ -284,8 +283,7 @@ pub mod SettlementLogic {
                     "Blitz uses a fixed roster",
                 );
             }
-            let operator = self.entry.data.entry.operator.read();
-            assert!(operator.is_non_zero() && get_caller_address() == operator, "only ledger operator");
+            crate::logic::entry::assert_ledger_operator();
             assert!(key.owner.is_non_zero(), "invalid entitlement owner");
             self.settlements.register_entitlement(key, entitlement);
         }

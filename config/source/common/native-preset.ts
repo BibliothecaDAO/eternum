@@ -79,6 +79,7 @@ export interface NativePreset {
     epicXp: number;
     legendaryXp: number;
   };
+  labor: null | { amount: number; accountDailyLimit: number };
   chests: null | {
     pool: number;
     priceCeiling: number;
