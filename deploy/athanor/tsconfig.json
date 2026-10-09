@@ -1,12 +1,25 @@
 {
   "extends": "../../packages/tsconfig.base.json",
   "compilerOptions": {
-    "lib": ["ES2023", "DOM"],
+    "lib": [
+      "ES2023",
+      "DOM"
+    ],
     "noEmit": true,
     "declaration": false,
     "sourceMap": false,
-    "types": ["bun-types", "node"]
+    "types": [
+      "bun-types",
+      "node"
+    ]
   },
-  "include": ["harness/**/*.ts", "scripts/**/*.ts", "../release/**/*.ts"],
-  "exclude": ["node_modules"]
+  "include": [
+    "harness/**/*.ts",
+    "scripts/**/*.ts",
+    "../release/**/*.ts",
+    "vrf/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }
