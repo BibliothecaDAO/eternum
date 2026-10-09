@@ -21,6 +21,14 @@ const SiwsProof = z.object({
   message: z.string(),
   signature: z.string().array(),
   address: z.string(),
+  deployment: z
+    .object({
+      classHash: z.string().min(1).max(80),
+      salt: z.string().min(1).max(80),
+      constructorCalldata: z.string().min(1).max(80).array().max(8),
+    })
+    .strict()
+    .optional(),
 });
 
 const NONCE_LIFETIME_MS = 15 * 60 * 1000;
@@ -60,7 +68,7 @@ export const siws = (options: SiwsPluginOptions) => {
     if (message.domain.chainId !== "SN_MAIN") throw unauthorized("Unsupported network");
     try {
       await authorizeSiwsNonce({
-        verifySignature: () => options.verifySignature(message, proof.signature, proof.address),
+        verifySignature: () => options.verifySignature(message, proof.signature, proof.address, proof.deployment),
         consumeNonce: async () =>
           (await ctx.context.adapter.deleteMany({
             model: "verification",

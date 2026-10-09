@@ -39,7 +39,14 @@ export interface IdentityClientOptions {
   fetch?: IdentityFetch;
 }
 
+export interface WalletDeployment {
+  classHash: string;
+  salt: string;
+  constructorCalldata: string[];
+}
+
 export interface SignInOptions {
+  deployment?: WalletDeployment;
   address: string;
   chainId: IdentityChainId;
   domain: string;
@@ -119,6 +126,7 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
       address: options.address,
       message: JSON.stringify(message),
       signature: await options.signTypedData(message),
+      ...(linking && options.deployment ? { deployment: options.deployment } : {}),
     };
   };
 
