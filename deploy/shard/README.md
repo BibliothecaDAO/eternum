@@ -5,11 +5,11 @@ A shard hosts games on an unmodified Madara node, Herald and one public stamping
 
 ## Initialize a fresh shard
 
-Use reviewed environment inputs with `deploy/athanor/scripts/operator-command.py deploy ENVIRONMENT DIRECTORY`, or the existing
-local runner `deploy/athanor/scripts/shard.py CONFIGURATION DIRECTORY`. Neither reuses another shard's chain state. Ops
-provisions `/opt/athanor/operator-token` as an owner-only regular `0600` file. The wrapper reads it in memory; Compose
-binds it read-only into initialization and the harness. Its value never appears in arguments, rendered environments or
-Docker container configuration. There is no alternate credential path.
+Use reviewed environment inputs with `deploy/athanor/scripts/operator-command.py deploy ENVIRONMENT DIRECTORY`, or the
+existing local runner `deploy/athanor/scripts/shard.py CONFIGURATION DIRECTORY`. Neither reuses another shard's chain
+state. Ops provisions `/opt/athanor/operator-token` as an owner-only regular `0600` file. The wrapper reads it in
+memory; Compose binds it read-only into initialization and the harness. Its value never appears in arguments, rendered
+environments or Docker container configuration. There is no alternate credential path.
 
 Required package inputs:
 
@@ -82,10 +82,10 @@ harness implementation, not a separate deployment test suite.
 Metrics collect OTLP and sample container CPU from a read-only cgroup mount, without a Docker socket or write access.
 The compose services restart on failure. Initializer logs and `harness.env` are private and must never be published.
 
-| Path                             | Registration and visibility                                            | Operator command                                                                                                                                                                                                        |
-| -------------------------------- | ---------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Official deployment              | PENDING before enrolment; same self-check then ACTIVE on a pass        | `operator-command.py deploy ENVIRONMENT PACKAGE_DIRECTORY`                                                                                                                                                              |
-| Measurement runner               | PENDING before enrolment; matrix stops and retires it; never activates | `operator-command.py runner CONFIGURATION RUNNER_DATA_DIRECTORY --matrix`                                                                                                                                   |
+| Path                             | Registration and visibility                                            | Operator command                                                                                                                                                                    |
+| -------------------------------- | ---------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Official deployment              | PENDING before enrolment; same self-check then ACTIVE on a pass        | `operator-command.py deploy ENVIRONMENT PACKAGE_DIRECTORY`                                                                                                                          |
+| Measurement runner               | PENDING before enrolment; matrix stops and retires it; never activates | `operator-command.py runner CONFIGURATION RUNNER_DATA_DIRECTORY --matrix`                                                                                                           |
 | Dev shard from an untagged trunk | Start PENDING; explicitly check and activate; stop retires it          | `operator-command.py runner CONFIGURATION RUNNER_DATA_DIRECTORY`, then `operator-command.py activate RUNNER_DATA_DIRECTORY`; later `operator-command.py stop RUNNER_DATA_DIRECTORY` |
 
 Run each command above as `python3 deploy/athanor/scripts/operator-command.py ...`. The wrapper reads the box's
