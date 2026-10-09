@@ -64,7 +64,10 @@ it("cleans its own created container and process record after an asset startup f
     await mkdir(bin);
     const log = join(directory, "docker-commands.txt");
     const docker = join(bin, "docker");
-    await writeFile(docker, '#!/bin/sh\nprintf "%s\\n" "$1" >> "$VALUE_STACK_DOCKER_TRACE"\n');
+    await writeFile(
+      docker,
+      '#!/bin/sh\nprintf "%s\\n" "$1" >> "$VALUE_STACK_DOCKER_TRACE"\nif [ "$1" = ps ]; then printf "abcdef012345\\n"; fi\n',
+    );
     await chmod(docker, 0o700);
     const bundles = join(directory, "bundles");
     await buildBundles(resolve(import.meta.dirname, "../../.."), bundles);
@@ -102,8 +105,8 @@ it("cleans its own created container and process record after an asset startup f
     expect(failure?.code).toBe(1);
     expect(failure?.stderr).toContain("ledger_deployment");
     expect((failure!.stderr + failure!.stdout).includes(wallet.privateKey)).toBe(false);
-    expect((await readFile(log, "utf8")).trim().split("\n")).toEqual(["create", "start", "rm"]);
-    await expect(stat(join(state, "process.json"))).rejects.toMatchObject({ code: "ENOENT" });
+    expect((await readFile(log, "utf8")).trim().split("\n")).toEqual(["create", "start", "ps", "rm"]);
+    await expect(stat(state)).rejects.toMatchObject({ code: "ENOENT" });
   } finally {
     await new Promise<void>((resolve, reject) => server.close((error) => (error ? reject(error) : resolve())));
     await rm(directory, { recursive: true, force: true });

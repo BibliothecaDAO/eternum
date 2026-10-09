@@ -1,11 +1,12 @@
 import { execFileSync } from "node:child_process";
-import { mkdir, rm, chmod } from "node:fs/promises";
+import { mkdir, chmod } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { ec, logger, RpcProvider, num, shortString } from "starknet";
 import { Effect } from "effect";
 import { readConfig, readPrivate, privateWrite, prepareState, type StackConfig } from "./config";
 import { deployAssets, type LocalAccount } from "./assets";
 import { startIdentity, startWorkers, type Manifest, type NativeCredentials } from "./workers";
+import { recoverStaleState, removeStackState } from "./lifetime";
 import { runScheduledWorkers } from "./schedule";
 
 const configPath = process.argv[2];
@@ -17,9 +18,9 @@ logger.setLogLevel("FATAL");
 const run = async () => {
   const base = await readConfig(configPath);
   const state = await prepareState(base);
+  await recoverStaleState(state);
   const runDirectory = join(state.directory, `run-${Date.now()}`);
   const config = { ...base, stateDirectory: runDirectory };
-  await mkdir(runDirectory, { mode: 0o700 });
   // Exclusive ownership prevents a second supervisor from replacing a live stack's record.
   await privateWrite(state.pid, {
     pid: process.pid,
@@ -27,8 +28,8 @@ const run = async () => {
     container: state.container,
     runDirectory,
   });
+  await mkdir(runDirectory, { mode: 0o700 });
   let mf: Awaited<ReturnType<typeof startWorkers>>["mf"] | undefined;
-  let containerStarted = false;
   let stopping = false;
   const stop = async () => {
     if (stopping) return;
@@ -36,9 +37,8 @@ const run = async () => {
     try {
       if (mf) await mf.dispose();
     } finally {
-      if (containerStarted) execFileSync("docker", ["rm", "-f", state.container], { stdio: "ignore" });
+      await removeStackState(state);
     }
-    await rm(state.pid, { force: true });
   };
   const shutdown = new AbortController();
   process.once("SIGINT", () => shutdown.abort());
@@ -51,8 +51,7 @@ const run = async () => {
       join(resolve(config.guardianKeyFile, ".."), "native-bootstrap.json"),
     );
     phase = "devnet";
-    createDevnetContainer(config, state.container);
-    containerStarted = true;
+    createDevnetContainer(config, state.container, state.directory);
     const accounts = await startDevnet(config, state.container);
     const secrets = await localSecrets();
     await privateWrite(join(runDirectory, "credentials.json"), { accounts, ...secrets });
@@ -173,12 +172,14 @@ const assertApprovedDevice = async (provider: RpcProvider, device: NativeCredent
     throw new Error("native_operator_device_not_approved");
 };
 
-const createDevnetContainer = (config: StackConfig, container: string) => {
+const createDevnetContainer = (config: StackConfig, container: string, stateDirectory: string) => {
   // No Docker log storage: the node's startup output contains pre-funded private keys.
   execFileSync(
     "docker",
     [
       "create",
+      "--label",
+      `eternum.value-state=${resolve(stateDirectory)}`,
       "--name",
       container,
       "--log-driver",
