@@ -89,7 +89,7 @@ describe("recorded spatial and board commands", () => {
       fromBlock: 10,
       toBlock: recorded.length + 9,
       rpc: {
-        getBlockWithReceipts: async (block) => ({
+        readBlock: async (block) => ({
           block_number: Number(block),
           timestamp: 0,
           transactions: [

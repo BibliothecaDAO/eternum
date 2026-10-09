@@ -9,7 +9,7 @@ const PLAY = BigInt(hash.getSelectorFromName("play"));
  * revert routes the same way, though it emits nothing. Authentication and game mutations are enforced by execution.
  */
 export function transactionScopes(
-  manifest: NativeManifest,
+  manifest: Pick<NativeManifest, "world">,
   transaction: { calldata?: string[]; sender_address?: string },
 ): { gameId: string; actor: string }[] {
   const { calldata, sender_address: sender } = transaction;

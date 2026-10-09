@@ -25,6 +25,8 @@ export interface RawWorldEvent {
 }
 
 export interface RpcEvent {
+  /** Original receipt offset returned by RPC 0.10 getEvents, even when other emitters are filtered out. */
+  event_index?: number;
   from_address: Felt;
   keys: Felt[];
   data: Felt[];

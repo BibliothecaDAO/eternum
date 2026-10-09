@@ -1,3 +1,4 @@
+import malformedRow from "../../../contracts/l3/world-native/schema/fixtures/malformed-row.json";
 import { CairoCustomEnum } from "starknet";
 import { dayOf } from "@bibliothecadao/eternum/expeditions";
 import { describe, expect, it, vi } from "vitest";
@@ -24,8 +25,9 @@ function fixture(historyStore?: HistoryStore) {
   const pending: RpcBlockWithReceipts = { block_number: 11, timestamp: 101, transactions: [] };
   const rpc = {
     blockNumber: async () => confirmed.block_number,
+    getBlockHeader: async () => confirmed,
     getPreconfirmedHeader: async () => pending,
-    getBlockWithReceipts: async (block: unknown) => (block === "pre_confirmed" ? pending : confirmed),
+    readBlock: async (block: unknown) => (block === "pre_confirmed" ? pending : confirmed),
   } as unknown as MadaraRpc;
   const live = new LiveWorld({
     native,
@@ -246,8 +248,9 @@ describe("native live publication", () => {
       confirmedBlock: 9,
       confirmedFold: fold,
       rpc: {
+        getBlockHeader: async () => confirmed,
         getPreconfirmedHeader: async () => pending,
-        getBlockWithReceipts: async (block: unknown) => (block === "pre_confirmed" ? pending : confirmed),
+        readBlock: async (block: unknown) => (block === "pre_confirmed" ? pending : confirmed),
       } as unknown as MadaraRpc,
     });
     await live.acceptSubscribedHead({ block_number: 10, timestamp: beforeMidnight });
@@ -406,4 +409,16 @@ describe("native live publication", () => {
     ]);
     expect(selection.set.some((row) => row.model === "SliceRules")).toBe(false);
   });
+});
+
+it("validates the whole rebuilt overlay before publishing any of its actions", async () => {
+  const { live, pending, tile, messages, native } = fixture();
+  pending.transactions.push(
+    { receipt: receipt([tile("1")], "0xabc"), transaction: { type: "INVOKE" } },
+    { receipt: receipt([malformedRow.raw], "0xdef"), transaction: { type: "INVOKE" } },
+  );
+  await live.acceptSubscribedHead({ block_number: 10, timestamp: 100 });
+  expect(messages.filter((message) => message.type === "diff")).toEqual([]);
+  expect(native.receiptFailures).toBe(1);
+  expect(live.snapshot("1").models.find((model) => model.model === "TileOpt")!.rows).toEqual([]);
 });

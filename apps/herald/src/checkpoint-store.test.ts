@@ -30,7 +30,7 @@ it("restores a PostgreSQL checkpoint, replays later facts and rejects retired mo
       fromBlock: 11,
       toBlock: 11,
       rpc: {
-        getBlockWithReceipts: async () => ({
+        readBlock: async () => ({
           block_number: 11,
           timestamp: 121,
           transactions: [
