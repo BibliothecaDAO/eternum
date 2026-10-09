@@ -1495,7 +1495,10 @@ export class StructureManager {
         getWorldPositionForHexCoordsInto(col, row, out);
         return placePositionOnTerrain(out, this.resolveTerrainSurface());
       },
-      getLabel: (entityId) => this.entityIdLabels.get(Number(entityId) as ID),
+      getLabel: (entityId) => {
+        const id = normalizeEntityId(entityId);
+        return id === undefined ? undefined : this.entityIdLabels.get(id);
+      },
       updateLabel: (structure, label) => this.updateStructureLabelData(structure, label),
       syncCompactLabel: (structure, position) => this.updateStructureCompactLabel(structure, position),
       resolveAttachments: (structure) => this.resolveStructureAttachmentsForRender(structure),

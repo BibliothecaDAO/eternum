@@ -27,6 +27,7 @@ import { useStructureProductionSummary } from "../structure-production-summary";
 import { MergedResourcePanel } from "@/ui/features/world/containers/left-facets/merged-resource-panel";
 import { BitcoinMiningActionPanel } from "../../actions/bitcoin-mining-action-panel";
 import { FaithDevotionActionPanel } from "../../actions/faith-devotion-action-panel";
+import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
 interface StructureBannerEntityDetailProps {
   structureEntityId: ID;
@@ -110,9 +111,7 @@ const StructureBannerEntityDetailContent = memo(
     const rawCategory = structure?.base?.category;
     const handleOpenTransferPanel = useCallback(() => {
       if (!structure?.entity_id) return;
-      const entityId = Number(structure.entity_id);
-      if (!Number.isFinite(entityId)) return;
-      setTransferPanelSourceId(entityId);
+      setTransferPanelSourceId(safeInteger(structure.entity_id));
       setLogisticsActiveTab("transfer");
       setLeftNavigationView(LeftView.ResourceArrivals);
     }, [setLeftNavigationView, setLogisticsActiveTab, setTransferPanelSourceId, structure?.entity_id]);
