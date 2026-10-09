@@ -9,6 +9,7 @@ pub const PAUSER_ROLE: felt252 = selector!("PAUSER_ROLE");
 pub const OPERATOR_ROLE: felt252 = selector!("OPERATOR_ROLE");
 const BPS: u256 = 10_000;
 const PAYOUT_WEIGHT_SCALE: u256 = 1_000_000_000_000_000_000;
+const SEASON_REVIEW_SECONDS: u64 = 3600;
 const MMR_PRECISION: u256 = 1_000_000_000_000_000_000;
 const NO_PASS: u8 = 0;
 const SEASON_PASS: u8 = 1;
@@ -42,6 +43,13 @@ pub trait IGameLedger<TState> {
     fn register_preset(ref self: TState, preset_id: u32, preset: Preset);
     fn open_season(ref self: TState, season_id: u32, preset_id: u32, start: u64, end: u64);
     fn get_season(self: @TState, season_id: u32) -> BlitzSeason;
+    fn post_season_top(ref self: TState, season_id: u32, winners: Array<ContractAddress>);
+    fn challenge_season(ref self: TState, season_id: u32, omitted: ContractAddress);
+    fn claim_season(ref self: TState, season_id: u32);
+    fn correct_season_mmr(ref self: TState, season_id: u32, updates: Array<(ContractAddress, u128)>);
+    fn get_season_mmr(self: @TState, season_id: u32, owner: ContractAddress) -> u128;
+    fn get_season_winner(self: @TState, season_id: u32, index: u32) -> (ContractAddress, u256);
+    fn season_claimed(self: @TState, season_id: u32, owner: ContractAddress) -> bool;
     fn open_game(ref self: TState, key: GameKey, season_id: u32, preset_id: u32, start: u64, end: u64);
     fn register(ref self: TState, key: GameKey, sword: bool, shield: bool);
     fn register_with_pass(ref self: TState, key: GameKey, pass_id: u256);
@@ -111,7 +119,8 @@ pub mod GameLedger {
         BPS, ICollectibleDispatcher, ICollectibleDispatcherTrait, IGameLedger, IMMRTokenDispatcher,
         IMMRTokenDispatcherTrait, IPassBurnDispatcher, IPassBurnDispatcherTrait, IPassRestoreDispatcher,
         IPassRestoreDispatcherTrait, ISeasonPassMetadataDispatcher, ISeasonPassMetadataDispatcherTrait, MMR_PRECISION,
-        NO_PASS, OPERATOR_ROLE, PAUSER_ROLE, PAYOUT_WEIGHT_SCALE, SEASON_PASS, VILLAGE_PASS, result_commitment,
+        NO_PASS, OPERATOR_ROLE, PAUSER_ROLE, PAYOUT_WEIGHT_SCALE, SEASON_PASS, SEASON_REVIEW_SECONDS, VILLAGE_PASS,
+        result_commitment,
     };
 
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
@@ -139,6 +148,12 @@ pub mod GameLedger {
         loot_chest: ContractAddress,
         cosmetics: ContractAddress,
         seasons: Map<u32, BlitzSeason>,
+        latest_season_end: u64,
+        season_participants: Map<(u32, ContractAddress), bool>,
+        season_mmrs: Map<(u32, ContractAddress), u128>,
+        season_winners: Map<(u32, u32), ContractAddress>,
+        season_allocations: Map<(u32, u32), u256>,
+        season_claims: Map<(u32, ContractAddress), bool>,
         chests: Map<u256, Chest>,
         credits: Map<ContractAddress, Credits>,
         presets: Map<u32, Preset>,
@@ -180,6 +195,10 @@ pub mod GameLedger {
         GameAborted: GameAborted,
         Refunded: Refunded,
         SeasonOpened: SeasonOpened,
+        SeasonTopPosted: SeasonTopPosted,
+        SeasonChallenged: SeasonChallenged,
+        SeasonPaid: SeasonPaid,
+        SeasonMmrCorrected: SeasonMmrCorrected,
         ResultsApplied: ResultsApplied,
         ChestMinted: ChestMinted,
         ChestOpened: ChestOpened,
@@ -307,6 +326,39 @@ pub mod GameLedger {
         #[key]
         wallet: ContractAddress,
         content: ChestContent,
+    }
+
+    #[derive(Drop, starknet::Event)]
+    struct SeasonTopPosted {
+        #[key]
+        season_id: u32,
+        winners: Span<ContractAddress>,
+        review_until: u64,
+        pool: u256,
+    }
+
+    #[derive(Drop, starknet::Event)]
+    struct SeasonChallenged {
+        #[key]
+        season_id: u32,
+        #[key]
+        omitted: ContractAddress,
+    }
+
+    #[derive(Drop, starknet::Event)]
+    struct SeasonPaid {
+        #[key]
+        season_id: u32,
+        #[key]
+        owner: ContractAddress,
+        amount: u256,
+    }
+
+    #[derive(Drop, starknet::Event)]
+    struct SeasonMmrCorrected {
+        #[key]
+        season_id: u32,
+        updates: Span<(ContractAddress, u128)>,
     }
 
     #[constructor]
@@ -459,6 +511,8 @@ pub mod GameLedger {
             assert!(!self.seasons.entry(season_id).read().exists, "Ledger: season already opened");
             assert!(self.preset_exists.entry(preset_id).read(), "Ledger: unknown preset");
             assert!(starknet::get_block_timestamp() <= start && start < end, "Ledger: invalid season window");
+            assert!(start >= self.latest_season_end.read(), "Ledger: overlapping seasons");
+            self.latest_season_end.write(end);
             self
                 .seasons
                 .entry(season_id)
@@ -470,6 +524,102 @@ pub mod GameLedger {
             let season = self.seasons.entry(season_id).read();
             assert!(season.exists, "Ledger: unknown Blitz season");
             season
+        }
+
+        fn post_season_top(ref self: ContractState, season_id: u32, winners: Array<ContractAddress>) {
+            self.accesscontrol.assert_only_role(OPERATOR_ROLE);
+            let mut season = self.get_season(season_id);
+            self.assert_season_top_open(season);
+            let preset = self.presets.entry(season.preset_id).read();
+            self.validate_season_top(season_id, season, winners.span(), preset);
+            self.write_season_allocations(season_id, season, winners.span(), preset);
+            season.posted = true;
+            season.challenged = false;
+            season.top_count = winners.len();
+            season.review_until = starknet::get_block_timestamp() + SEASON_REVIEW_SECONDS;
+            self.seasons.entry(season_id).write(season);
+            self
+                .emit(
+                    SeasonTopPosted {
+                        season_id, winners: winners.span(), review_until: season.review_until, pool: season.pool,
+                    },
+                );
+        }
+
+        fn challenge_season(ref self: ContractState, season_id: u32, omitted: ContractAddress) {
+            let mut season = self.get_season(season_id);
+            assert!(season.posted && starknet::get_block_timestamp() < season.review_until, "Ledger: review closed");
+            let mmr = self.get_season_mmr(season_id, omitted);
+            assert!(
+                self.season_position(season_id, season.top_count, omitted).is_none(), "Ledger: winner already listed",
+            );
+            let preset = self.presets.entry(season.preset_id).read();
+            let short = season
+                .top_count < SeasonWriterImpl::winner_count(season.participant_count, preset.paid_fraction_bps);
+            if !short {
+                let cutoff = self.season_winners.entry((season_id, season.top_count - 1)).read();
+                assert!(
+                    SeasonWriterImpl::outranks(omitted, mmr, cutoff, self.get_season_mmr(season_id, cutoff)),
+                    "Ledger: does not beat cutoff",
+                );
+            }
+            season.challenged = true;
+            self.seasons.entry(season_id).write(season);
+            self.emit(SeasonChallenged { season_id, omitted });
+        }
+
+        fn claim_season(ref self: ContractState, season_id: u32) {
+            self.pausable.assert_not_paused();
+            let owner = starknet::get_caller_address();
+            let mut season = self.get_season(season_id);
+            self.assert_season_claim_open(season);
+            let position = self.season_position(season_id, season.top_count, owner).expect('Ledger: not a winner');
+            if self.season_claims.entry((season_id, owner)).read() {
+                return;
+            }
+            let amount = self.season_allocations.entry((season_id, position)).read();
+            season.settlement_started = true;
+            season.paid += amount;
+            self.seasons.entry(season_id).write(season);
+            self.season_claims.entry((season_id, owner)).write(true);
+            self.send_lords(owner, amount);
+            self.emit(SeasonPaid { season_id, owner, amount });
+        }
+
+        fn correct_season_mmr(ref self: ContractState, season_id: u32, updates: Array<(ContractAddress, u128)>) {
+            self.accesscontrol.assert_only_role(DEFAULT_ADMIN_ROLE);
+            let mut season = self.get_season(season_id);
+            assert!(!season.settlement_started, "Ledger: season payout started");
+            assert!(!updates.is_empty(), "Ledger: empty MMR correction");
+            let mut token_updates = array![];
+            for (owner, mmr) in updates.span() {
+                self.get_season_mmr(season_id, *owner);
+                assert!(*mmr >= 100, "Ledger: MMR below token floor");
+                self.season_mmrs.entry((season_id, *owner)).write(*mmr);
+                token_updates.append((*owner, Into::<u128, u256>::into(*mmr) * MMR_PRECISION));
+            }
+            season.challenged = season.posted;
+            self.seasons.entry(season_id).write(season);
+            IMMRTokenDispatcher { contract_address: self.mmr_token.read() }.update_mmr_batch(token_updates);
+            self.emit(SeasonMmrCorrected { season_id, updates: updates.span() });
+        }
+
+        fn get_season_mmr(self: @ContractState, season_id: u32, owner: ContractAddress) -> u128 {
+            assert!(self.season_participants.entry((season_id, owner)).read(), "Ledger: not a season participant");
+            self.season_mmrs.entry((season_id, owner)).read()
+        }
+
+        fn get_season_winner(self: @ContractState, season_id: u32, index: u32) -> (ContractAddress, u256) {
+            let season = self.get_season(season_id);
+            assert!(season.posted && index < season.top_count, "Ledger: winner index out of bounds");
+            (
+                self.season_winners.entry((season_id, index)).read(),
+                self.season_allocations.entry((season_id, index)).read(),
+            )
+        }
+
+        fn season_claimed(self: @ContractState, season_id: u32, owner: ContractAddress) -> bool {
+            self.season_claims.entry((season_id, owner)).read()
         }
 
         fn open_game(ref self: ContractState, key: GameKey, season_id: u32, preset_id: u32, start: u64, end: u64) {
@@ -490,22 +640,7 @@ pub mod GameLedger {
             let owner = starknet::get_caller_address();
             let game = self.assert_registration_open(key, owner);
             let preset = self.presets.entry(game.preset_id).read();
-            let (sword_credit, shield_credit) = self.spend_credits(owner, sword, shield);
-            let payment = preset.entry_fee
-                + if sword && !sword_credit {
-                    preset.sword_price
-                } else {
-                    0
-                }
-                + if shield && !shield_credit {
-                    preset.shield_price
-                } else {
-                    0
-                };
-            self
-                .record_registration(
-                    key, owner, sword, shield, sword_credit, shield_credit, payment, preset.entry_fee, 0, NO_PASS,
-                );
+            let payment = self.record_paid_registration(key, owner, sword, shield, preset);
             self.pull_lords(owner, payment);
             self.emit_registration(key, owner, 0, (0, 0, 0), NO_PASS);
         }
@@ -522,7 +657,7 @@ pub mod GameLedger {
             let metadata = ISeasonPassMetadataDispatcher { contract_address: season_pass }
                 .get_encoded_metadata(pass_id.try_into().unwrap());
 
-            self.record_registration(key, owner, false, false, false, false, 0, 0, pass_id, SEASON_PASS);
+            self.record_pass_registration(key, owner, pass_id, SEASON_PASS);
             IPassBurnDispatcher { contract_address: season_pass }.burn(pass_id);
             self.emit_registration(key, owner, pass_id, metadata, SEASON_PASS);
         }
@@ -537,7 +672,7 @@ pub mod GameLedger {
             );
             assert!(village_pass_id <= 0xffff, "Ledger: village pass id exceeds u16");
 
-            self.record_registration(key, owner, false, false, false, false, 0, 0, village_pass_id, VILLAGE_PASS);
+            self.record_pass_registration(key, owner, village_pass_id, VILLAGE_PASS);
             IPassBurnDispatcher { contract_address: village_pass }.burn(village_pass_id);
             self.emit_registration(key, owner, village_pass_id, (0, 0, 0), VILLAGE_PASS);
         }
@@ -603,29 +738,15 @@ pub mod GameLedger {
 
         fn apply_results(ref self: ContractState, key: GameKey, ranked: Array<RankedPlayer>) {
             self.accesscontrol.assert_only_role(OPERATOR_ROLE);
-            let mut game = self.games.entry(key).read();
+            let game = self.games.entry(key).read();
             self.assert_results_open(game);
-            self.validate_and_record_results(key, game.registered_count, ranked.span());
-
             let preset = self.presets.entry(game.preset_id).read();
-            let mut season = self.get_season(game.season_id);
-            assert!(starknet::get_block_timestamp() < season.end, "Ledger: MMR frozen");
-            let chest_lords = self.validate_chest_budget(game, ranked.span(), preset);
-            let pool = game.pool - chest_lords;
-            season.pool += pool;
-            self.seasons.entry(game.season_id).write(season);
-            game.finalized = true;
-            game.pool = 0;
-            game.result_commitment = result_commitment(key, ranked.span());
-            self.games.entry(key).write(game);
+            self.validate_and_record_results(key, game.registered_count, ranked.span());
+            let (pool, commitment) = self.finalize_game_pool(key, game, ranked.span(), preset);
             self.apply_mmr(key, ranked.span(), preset);
+            self.record_season_players(game.season_id, key, ranked.span());
             self.mint_chests(key, ranked.span(), preset);
-            self
-                .emit(
-                    ResultsApplied {
-                        key, season_id: game.season_id, result_commitment: result_commitment(key, ranked.span()), pool,
-                    },
-                );
+            self.emit(ResultsApplied { key, season_id: game.season_id, result_commitment: commitment, pool });
         }
 
         fn open_chest(ref self: ContractState, token_id: u256) {
@@ -757,34 +878,60 @@ pub mod GameLedger {
             self.games.entry(key).write(game);
         }
 
+        fn record_paid_registration(
+            ref self: ContractState, key: GameKey, owner: ContractAddress, sword: bool, shield: bool, preset: Preset,
+        ) -> u256 {
+            let (sword_credit, shield_credit) = self.spend_credits(owner, sword, shield);
+            let payment = preset.entry_fee
+                + if sword && !sword_credit {
+                    preset.sword_price
+                } else {
+                    0
+                }
+                + if shield && !shield_credit {
+                    preset.shield_price
+                } else {
+                    0
+                };
+            let sponsored = self.registrations.entry((key, owner)).read().paid;
+            let registration = Registration {
+                registered: true,
+                sword,
+                shield,
+                sword_credit,
+                shield_credit,
+                paid: sponsored + payment,
+                ..Default::default(),
+            };
+            self.record_registration(key, owner, registration, payment, preset.entry_fee);
+            payment
+        }
+
+        fn record_pass_registration(
+            ref self: ContractState, key: GameKey, owner: ContractAddress, pass_id: u256, pass_kind: u8,
+        ) {
+            let sponsored = self.registrations.entry((key, owner)).read().paid;
+            let registration = Registration {
+                registered: true, realm_id: pass_id, pass_kind, paid: sponsored, ..Default::default(),
+            };
+            self.record_registration(key, owner, registration, 0, 0);
+        }
+
         fn record_registration(
             ref self: ContractState,
             key: GameKey,
             owner: ContractAddress,
-            sword: bool,
-            shield: bool,
-            sword_credit: bool,
-            shield_credit: bool,
+            registration: Registration,
             payment: u256,
             entry_fee: u256,
-            realm_id: u256,
-            pass_kind: u8,
         ) {
             let mut game = self.games.entry(key).read();
-            let mut registration = self.registrations.entry((key, owner)).read();
-            registration.registered = true;
-            registration.sword = sword;
-            registration.shield = shield;
-            registration.sword_credit = sword_credit;
-            registration.shield_credit = shield_credit;
-            registration.paid += payment;
-            registration.realm_id = realm_id;
-            registration.pass_kind = pass_kind;
             self.registrations.entry((key, owner)).write(registration);
             self.registered_owners.entry((key, game.registered_count)).write(owner);
             game.registered_count += 1;
             game.pool += payment;
             game.entries += entry_fee;
+            assert!(game.entries <= 0xffffffffffffffffffffffffffffffff, "Ledger: entries exceed u128");
             self.games.entry(key).write(game);
         }
 
@@ -815,6 +962,24 @@ pub mod GameLedger {
 
     #[generate_trait]
     impl ResultsValidatorImpl of ResultsValidatorTrait {
+        fn finalize_game_pool(
+            ref self: ContractState, key: GameKey, mut game: Game, ranked: Span<RankedPlayer>, preset: Preset,
+        ) -> (u256, felt252) {
+            let mut season = self.get_season(game.season_id);
+            assert!(starknet::get_block_timestamp() < season.end, "Ledger: MMR frozen");
+            let chest_lords = self.validate_chest_budget(game, ranked, preset);
+            let pool = game.pool - chest_lords;
+            let commitment = result_commitment(key, ranked);
+            season.pool += pool;
+            assert!(season.pool <= 0xffffffffffffffffffffffffffffffff, "Ledger: season pool exceeds u128");
+            self.seasons.entry(game.season_id).write(season);
+            game.finalized = true;
+            game.pool = 0;
+            game.result_commitment = commitment;
+            self.games.entry(key).write(game);
+            (pool, commitment)
+        }
+
         fn validate_and_record_results(
             ref self: ContractState, key: GameKey, registered_count: u16, ranked: Span<RankedPlayer>,
         ) {
@@ -924,13 +1089,107 @@ pub mod GameLedger {
     }
 
     #[generate_trait]
+    impl SeasonWriterImpl of SeasonWriterTrait {
+        fn record_season_players(ref self: ContractState, season_id: u32, key: GameKey, ranked: Span<RankedPlayer>) {
+            let mut season = self.get_season(season_id);
+            let token = IMMRTokenDispatcher { contract_address: self.mmr_token.read() };
+            for row in ranked {
+                let owner = *row.wallet;
+                let mmr: u128 = (token.get_player_mmr(owner) / MMR_PRECISION).try_into().unwrap();
+                if !self.season_participants.entry((season_id, owner)).read() {
+                    self.season_participants.entry((season_id, owner)).write(true);
+                    season.participant_count += 1;
+                }
+                self.season_mmrs.entry((season_id, owner)).write(mmr);
+                let mut result = self.results.entry((key, owner)).read();
+                if result.mmr_before == 0 {
+                    result.mmr_before = mmr;
+                }
+                result.mmr_after = mmr;
+                self.results.entry((key, owner)).write(result);
+            }
+            self.seasons.entry(season_id).write(season);
+        }
+
+        fn assert_season_top_open(self: @ContractState, season: BlitzSeason) {
+            let now = starknet::get_block_timestamp();
+            assert!(now >= season.end, "Ledger: season has not ended");
+            assert!(!season.settlement_started, "Ledger: season payout started");
+            assert!(!season.posted || season.challenged || now < season.review_until, "Ledger: top list final");
+            assert!(season.participant_count > 0, "Ledger: no season participants");
+        }
+
+        fn assert_season_claim_open(self: @ContractState, season: BlitzSeason) {
+            assert!(
+                season.posted && starknet::get_block_timestamp() >= season.review_until, "Ledger: season under review",
+            );
+            assert!(!season.challenged, "Ledger: season challenged");
+            let preset = self.presets.entry(season.preset_id).read();
+            assert!(
+                season.top_count == Self::winner_count(season.participant_count, preset.paid_fraction_bps),
+                "Ledger: incomplete top list",
+            );
+        }
+
+        fn validate_season_top(
+            self: @ContractState, season_id: u32, season: BlitzSeason, winners: Span<ContractAddress>, preset: Preset,
+        ) {
+            assert!(
+                winners.len() <= Self::winner_count(season.participant_count, preset.paid_fraction_bps),
+                "Ledger: too many winners",
+            );
+            for index in 0..winners.len() {
+                let owner = *winners.at(index);
+                let mmr = self.get_season_mmr(season_id, owner);
+                if index > 0 {
+                    let previous = *winners.at(index - 1);
+                    let previous_mmr = self.get_season_mmr(season_id, previous);
+                    assert!(Self::outranks(previous, previous_mmr, owner, mmr), "Ledger: unordered winners");
+                }
+            }
+        }
+
+        fn write_season_allocations(
+            ref self: ContractState,
+            season_id: u32,
+            season: BlitzSeason,
+            winners: Span<ContractAddress>,
+            preset: Preset,
+        ) {
+            let allocations = self
+                .calculate_position_allocations(
+                    season.pool, season.participant_count, preset.paid_fraction_bps, preset.decay_bps,
+                );
+            for index in 0..winners.len() {
+                self.season_winners.entry((season_id, index)).write(*winners.at(index));
+                self.season_allocations.entry((season_id, index)).write(*allocations.at(index));
+            }
+        }
+
+        fn season_position(self: @ContractState, season_id: u32, count: u32, owner: ContractAddress) -> Option<u32> {
+            for index in 0..count {
+                if self.season_winners.entry((season_id, index)).read() == owner {
+                    return Option::Some(index);
+                }
+            }
+            Option::None
+        }
+
+        fn outranks(owner: ContractAddress, mmr: u128, other: ContractAddress, other_mmr: u128) -> bool {
+            mmr > other_mmr || (mmr == other_mmr && owner < other)
+        }
+
+        fn winner_count(players: u32, fraction: u16) -> u32 {
+            ((Into::<u32, u64>::into(players) * Into::<u16, u64>::into(fraction) + 9999) / 10000).try_into().unwrap()
+        }
+    }
+
+    #[generate_trait]
     impl PayoutCalculatorImpl of PayoutCalculatorTrait {
         fn calculate_position_allocations(
-            self: @ContractState, prize_pool: u256, player_count: u16, paid_fraction_bps: u16, decay_bps: u16,
+            self: @ContractState, prize_pool: u256, player_count: u32, paid_fraction_bps: u16, decay_bps: u16,
         ) -> Array<u256> {
-            let player_count_u32: u32 = player_count.into();
-            let paid_fraction_u32: u32 = paid_fraction_bps.into();
-            let winner_count: u16 = ((player_count_u32 * paid_fraction_u32 + 9_999) / 10_000).try_into().unwrap();
+            let winner_count = SeasonWriterImpl::winner_count(player_count, paid_fraction_bps);
             let mut weights: Array<u256> = array![];
             let mut weight = PAYOUT_WEIGHT_SCALE;
             let mut total_weight = 0;
@@ -941,8 +1200,15 @@ pub mod GameLedger {
             }
 
             let mut allocations = array![];
+            let mut allocated = 0;
             for position in 0..winner_count {
-                allocations.append(prize_pool * *weights.at(position.into()) / total_weight);
+                let amount = if position + 1 == winner_count {
+                    prize_pool - allocated
+                } else {
+                    prize_pool * *weights.at(position) / total_weight
+                };
+                allocations.append(amount);
+                allocated += amount;
             }
             allocations
         }

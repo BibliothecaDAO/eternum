@@ -1316,3 +1316,221 @@ fn results_reject_ambiguous_chest_payloads() {
     result.chest.lords = 1;
     apply_results(@fixture, array![result]);
 }
+
+fn completed_season() -> Fixture {
+    let fixture = deploy_fixture(default_preset());
+    register_players(@fixture, 6);
+    apply_results(@fixture, ranked_players(6));
+    fixture
+}
+
+fn post_top_at(fixture: @Fixture, timestamp: u64, winners: Array<ContractAddress>) {
+    start_cheat_block_timestamp(*fixture.ledger_address, timestamp);
+    start_cheat_caller_address(*fixture.ledger_address, OPERATOR());
+    fixture.ledger.post_season_top(1, winners);
+}
+
+fn claim_season_at(fixture: @Fixture, timestamp: u64, owner: ContractAddress) {
+    start_cheat_block_timestamp(*fixture.ledger_address, timestamp);
+    start_cheat_caller_address(*fixture.ledger_address, owner);
+    fixture.ledger.claim_season(1);
+}
+
+#[test]
+fn season_winners_pull_after_one_hour_using_the_preset_curve() {
+    let fixture = completed_season();
+    post_top_at(@fixture, END + 100, array![player(0), player(1)]);
+    let season = fixture.ledger.get_season(1);
+    assert!(season.participant_count == 6 && season.top_count == 2);
+    assert!(season.review_until == END + 100 + 3600);
+    let (first, first_amount) = fixture.ledger.get_season_winner(1, 0);
+    let (second, second_amount) = fixture.ledger.get_season_winner(1, 1);
+    assert!(first == player(0) && second == player(1));
+    assert!(first_amount == 1530 && second_amount == 1470);
+    claim_season_at(@fixture, season.review_until, first);
+    claim_season_at(@fixture, season.review_until, first);
+    claim_season_at(@fixture, season.review_until, second);
+    assert!(fixture.lords.balance_of(first) == first_amount);
+    assert!(fixture.lords.balance_of(second) == second_amount);
+    assert!(fixture.ledger.get_season(1).paid == first_amount + second_amount);
+    assert!(fixture.ledger.season_claimed(1, first));
+}
+
+#[test]
+#[should_panic(expected: "Ledger: season under review")]
+fn season_payout_refuses_one_second_before_the_review_ends() {
+    let fixture = completed_season();
+    post_top_at(@fixture, END + 100, array![player(0), player(1)]);
+    claim_season_at(@fixture, END + 100 + 3599, player(0));
+}
+
+#[test]
+fn a_better_omitted_player_challenges_a_wrong_list() {
+    let fixture = completed_season();
+    post_top_at(@fixture, END + 100, array![player(1), player(2)]);
+    start_cheat_caller_address(fixture.ledger_address, player(5));
+    fixture.ledger.challenge_season(1, player(0));
+    assert!(fixture.ledger.get_season(1).challenged);
+}
+
+#[test]
+fn a_short_list_can_be_challenged_and_correction_restarts_the_hour() {
+    let fixture = completed_season();
+    post_top_at(@fixture, END + 100, array![player(0)]);
+    fixture.ledger.challenge_season(1, player(1));
+    assert!(fixture.ledger.get_season(1).challenged);
+    post_top_at(@fixture, END + 100 + 3599, array![player(0), player(1)]);
+    let corrected = fixture.ledger.get_season(1);
+    assert!(!corrected.challenged);
+    assert!(corrected.review_until == END + 100 + 3599 + 3600);
+    claim_season_at(@fixture, corrected.review_until, player(0));
+}
+
+#[test]
+#[should_panic(expected: "Ledger: season challenged")]
+fn challenged_list_blocks_payout_even_after_the_hour() {
+    let fixture = completed_season();
+    post_top_at(@fixture, END + 100, array![player(1), player(2)]);
+    fixture.ledger.challenge_season(1, player(0));
+    claim_season_at(@fixture, END + 100 + 3600, player(1));
+}
+
+#[test]
+#[should_panic(expected: "Ledger: incomplete top list")]
+fn short_list_cannot_pay_even_if_nobody_challenges() {
+    let fixture = completed_season();
+    post_top_at(@fixture, END + 100, array![player(0)]);
+    claim_season_at(@fixture, END + 100 + 3600, player(0));
+}
+
+#[test]
+#[should_panic(expected: "Ledger: does not beat cutoff")]
+fn worse_omitted_player_cannot_block_a_correct_list() {
+    let fixture = completed_season();
+    post_top_at(@fixture, END + 100, array![player(0), player(1)]);
+    fixture.ledger.challenge_season(1, player(5));
+}
+
+#[test]
+#[should_panic(expected: "Ledger: review closed")]
+fn challenge_refuses_at_the_exact_hour_boundary() {
+    let fixture = completed_season();
+    post_top_at(@fixture, END + 100, array![player(1), player(2)]);
+    start_cheat_block_timestamp(fixture.ledger_address, END + 100 + 3600);
+    fixture.ledger.challenge_season(1, player(0));
+}
+
+#[test]
+#[should_panic(expected: "Ledger: unordered winners")]
+fn top_list_rejects_duplicate_winners() {
+    let fixture = completed_season();
+    post_top_at(@fixture, END + 100, array![player(0), player(0)]);
+}
+
+#[test]
+#[should_panic(expected: "Ledger: unordered winners")]
+fn top_list_rejects_ratings_in_the_wrong_order() {
+    let fixture = completed_season();
+    post_top_at(@fixture, END + 100, array![player(1), player(0)]);
+}
+
+#[test]
+#[should_panic(expected: "Ledger: not a season participant")]
+fn outsider_cannot_challenge() {
+    let fixture = completed_season();
+    post_top_at(@fixture, END + 100, array![player(0)]);
+    fixture.ledger.challenge_season(1, player(99));
+}
+
+#[test]
+#[should_panic(expected: "Ledger: season has not ended")]
+fn operator_cannot_post_top_before_freeze() {
+    let fixture = completed_season();
+    post_top_at(@fixture, END + 99, array![player(0), player(1)]);
+}
+
+#[test]
+#[should_panic(expected: "Ledger: top list final")]
+fn operator_cannot_restart_a_finished_review_to_delay_claims() {
+    let fixture = completed_season();
+    post_top_at(@fixture, END + 100, array![player(0), player(1)]);
+    post_top_at(@fixture, END + 100 + 3600, array![player(0), player(1)]);
+}
+
+#[test]
+fn admin_mmr_correction_invalidates_a_posted_list_before_payout() {
+    let fixture = completed_season();
+    post_top_at(@fixture, END + 100, array![player(0), player(1)]);
+    start_cheat_caller_address(fixture.ledger_address, ADMIN());
+    fixture.ledger.correct_season_mmr(1, array![(player(5), 2000)]);
+    assert!(fixture.ledger.get_season(1).challenged);
+    assert!(fixture.ledger.get_season_mmr(1, player(5)) == 2000);
+    post_top_at(@fixture, END + 100 + 1, array![player(5), player(0)]);
+    claim_season_at(@fixture, END + 100 + 1 + 3600, player(5));
+    assert!(fixture.lords.balance_of(player(5)) > 0);
+}
+
+#[test]
+#[should_panic(expected: "Ledger: season payout started")]
+fn ratings_cannot_be_rewritten_after_a_winner_has_claimed() {
+    let fixture = completed_season();
+    post_top_at(@fixture, END + 100, array![player(0), player(1)]);
+    claim_season_at(@fixture, END + 100 + 3600, player(0));
+    start_cheat_caller_address(fixture.ledger_address, ADMIN());
+    fixture.ledger.correct_season_mmr(1, array![(player(5), 2000)]);
+}
+
+#[test]
+#[should_panic(expected: 'Pausable: paused')]
+fn monitor_pause_stops_season_payouts() {
+    let fixture = completed_season();
+    post_top_at(@fixture, END + 100, array![player(0), player(1)]);
+    grant_pauser(@fixture);
+    fixture.ledger.pause();
+    claim_season_at(@fixture, END + 100 + 3600, player(0));
+}
+
+#[test]
+fn tied_mmr_uses_wallet_order_so_a_cutoff_tie_is_challengeable() {
+    let mut preset = default_preset();
+    preset.mmr.enabled = false;
+    let fixture = deploy_fixture(preset);
+    register_players(@fixture, 6);
+    apply_results(@fixture, ranked_players(6));
+    post_top_at(@fixture, END + 100, array![player(1), player(2)]);
+    fixture.ledger.challenge_season(1, player(0));
+    assert!(fixture.ledger.get_season(1).challenged);
+}
+
+#[test]
+fn multiple_games_count_a_participant_once_and_accumulate_one_pool() {
+    let fixture = completed_season();
+    let next = GameKey { shard: 'other', game_id: 8 };
+    start_cheat_caller_address(fixture.ledger_address, OPERATOR());
+    fixture.ledger.open_game(next, 1, PRESET_ID, START, END);
+    for index in 0..6_u16 {
+        fund_and_approve_player(@fixture, player(index), 500);
+        start_cheat_caller_address(fixture.ledger_address, player(index));
+        fixture.ledger.register(next, false, false);
+    }
+    start_cheat_caller_address(fixture.ledger_address, OPERATOR());
+    start_cheat_block_timestamp(fixture.ledger_address, START);
+    fixture.ledger.apply_results(next, ranked_players(6));
+    assert!(fixture.ledger.get_season(1).participant_count == 6);
+    assert!(fixture.ledger.get_season(1).pool == 6000);
+}
+
+#[test]
+fn sponsoring_before_registration_is_preserved_in_the_refund() {
+    let fixture = deploy_fixture(default_preset());
+    let owner = player(0);
+    fund_and_approve_player(@fixture, owner, 700);
+    start_cheat_caller_address(fixture.ledger_address, owner);
+    fixture.ledger.fund(GAME_KEY, 200);
+    fixture.ledger.register(GAME_KEY, false, false);
+    start_cheat_caller_address(fixture.ledger_address, OPERATOR());
+    fixture.ledger.cancel_game(GAME_KEY);
+    start_cheat_caller_address(fixture.ledger_address, owner);
+    fixture.ledger.refund(GAME_KEY);
+    assert!(fixture.lords.balance_of(owner) == 700);
+}

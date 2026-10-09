@@ -38,7 +38,7 @@ pub struct Game {
     pub finalized: bool,
 }
 
-#[derive(Copy, Drop, Serde, starknet::Store)]
+#[derive(Copy, Default, Drop, Serde, starknet::Store)]
 pub struct Registration {
     pub registered: bool,
     pub sword: bool,
@@ -108,6 +108,13 @@ pub struct WithdrawalPayment {
 
 #[derive(Copy, Default, Drop, Serde, starknet::Store)]
 pub struct BlitzSeason {
+    pub participant_count: u32,
+    pub top_count: u32,
+    pub posted: bool,
+    pub challenged: bool,
+    pub review_until: u64,
+    pub settlement_started: bool,
+    pub paid: u256,
     pub exists: bool,
     pub preset_id: u32,
     pub start: u64,
