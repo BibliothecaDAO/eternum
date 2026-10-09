@@ -12,7 +12,7 @@ const LaunchVars = Schema.Struct({
   BASE_URL: Schema.NonEmptyString,
   /** Comma-separated Starknet addresses allowed to launch games; a wildcard is refused. */
   LAUNCHER_ALLOWLIST: Schema.NonEmptyString,
-  /** The shard launches write to: its Herald, whose /manifest names the chain, node, admission and contracts. */
+  /** The shard launches write to: its Herald, whose /manifest names the chain, node and contracts. */
   SHARD_URL: Schema.NonEmptyString,
   LEDGER_RPC_URL: Schema.NonEmptyString,
   LEDGER_ADDRESS: Schema.NonEmptyString,

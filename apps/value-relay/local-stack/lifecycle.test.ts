@@ -72,7 +72,7 @@ it("cleans its own created container and process record after an asset startup f
     const bundles = join(directory, "bundles");
     await buildBundles(resolve(import.meta.dirname, "../../.."), bundles);
     const flock = join(bin, "flock");
-    await writeFile(flock, '#!/bin/sh\nmkdir -p "$4"\ncp -R "$VALUE_STACK_BUNDLES/." "$4/"\n');
+    await writeFile(flock, '#!/bin/sh\nmkdir -p "$7"\ncp -R "$VALUE_STACK_BUNDLES/." "$7/"\n');
     await chmod(flock, 0o700);
     await mkdir(join(directory, "frontend"));
     await writeFile(join(directory, "frontend/index.html"), "<!doctype html><p>Rehearsal</p>");

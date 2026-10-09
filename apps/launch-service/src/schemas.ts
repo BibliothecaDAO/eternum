@@ -19,7 +19,9 @@ const SharedOptions = {
 
 export const CreateGameRequestSchema = Schema.Struct({
   ...SharedOptions,
-  gameName: NonEmptyString,
+  gameName: NonEmptyString.check(
+    Schema.makeFilter((name: string) => !name.startsWith("check-") || "check- names are reserved for deployment"),
+  ),
   rosterAccounts: Schema.optional(Schema.Array(Schema.String.pipe(Schema.check(Schema.isPattern(/^0x[0-9a-fA-F]+$/))))),
   gameStartTime: Schema.optional(NonEmptyString),
 }).check(

@@ -9,6 +9,7 @@ export default defineConfig({
   entry: [
     "src/index.ts",
     "src/account/device-signer.ts",
+    "src/account/realms-account.ts",
     "src/automation/index.ts",
     "src/utils/biome/biome.ts",
     "src/managers/game-entity-keys.ts",

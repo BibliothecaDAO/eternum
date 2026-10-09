@@ -9,10 +9,12 @@ import { createCalendarRoutes } from "./calendar-routes";
 import type { SlotStore } from "./slots";
 import { toFactoryRunRecord, type LaunchRun } from "./model";
 import { CreateGameRequestSchema, type LaunchJobRequest, type LaunchKind } from "./schemas";
+import { launcherOperatorRoutes, type OperatorLauncher } from "./launcher-routes";
 import type { LaunchServiceStore } from "./store";
 
 interface LaunchAppDependencies {
   config: LaunchAccess;
+  operatorLauncher: OperatorLauncher;
   /** What the version and health routes report, so a deploy can tell its own answers from its predecessor's. */
   deployment: { environment: string; version: string };
   identity: IdentityResolver;
@@ -96,6 +98,7 @@ export const createLaunchApp = (dependencies: LaunchAppDependencies) => {
   app.use("*", logger());
   app.use("/api/*", requireIdentity(dependencies.identity, dependencies.config));
   app.use("/api/factory/*", requireLauncher(dependencies.config));
+  app.route("/api/factory/operator/launcher", launcherOperatorRoutes(dependencies.operatorLauncher));
   app.route("/api/factory/calendar", createCalendarRoutes(dependencies.calendar));
   app.route("/api/slots", createSlotRoutes(dependencies.slots, dependencies.playerAccount, dependencies.config));
 

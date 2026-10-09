@@ -51,9 +51,9 @@ export class ShardOperator {
       value && typeof value === "object" && Object.keys(value).length === 1 && "" in value ? value[""] : value
     ) as A;
   }
-  async admin(entrypoint: string, args: Record<string, unknown>) {
+  async admin(entrypoint: string, args: Record<string, unknown>, onSubmitted?: (hash: string) => Promise<void>) {
     const codec = await this.codec((await this.head()).block_number);
-    return this.invoke(entrypoint, codec.compile(entrypoint, args as Parameters<CallData["compile"]>[1]));
+    return this.invoke(entrypoint, codec.compile(entrypoint, args as Parameters<CallData["compile"]>[1]), onSubmitted);
   }
   async play(gameId: number, command: readonly string[]) {
     const game = await this.view<{ preset_id: bigint }>("game", [gameId]);
@@ -66,6 +66,9 @@ export class ShardOperator {
       String(command.length),
       ...command,
     ]);
+  }
+  confirm(transactionHash: string) {
+    return confirmedShardReceipt(this.provider, transactionHash);
   }
   private cachedAbi: Promise<Abi> | undefined;
   async playCommand(gameId: number, name: string, args: readonly string[] = []) {
@@ -94,7 +97,7 @@ export class ShardOperator {
   private async codec(head: number) {
     return new CallData(await this.runtimeAbi(head));
   }
-  private async invoke(entrypoint: string, calldata: string[]) {
+  private async invoke(entrypoint: string, calldata: string[], onSubmitted?: (hash: string) => Promise<void>) {
     const bound = await this.view<bigint>("l2_gas_bound", []);
     const submitted = await this.account.execute(
       { contractAddress: this.target.gamesAddress, entrypoint, calldata },
@@ -111,7 +114,8 @@ export class ShardOperator {
         feeDataAvailabilityMode: "L1",
       },
     );
-    const receipt = await confirmedShardReceipt(this.provider, submitted.transaction_hash);
+    if (onSubmitted) await onSubmitted(submitted.transaction_hash);
+    const receipt = await this.confirm(submitted.transaction_hash);
     rejectGameplayRefusal(receipt.events, this.target.gamesAddress, submitted.transaction_hash);
     return { transactionHash: submitted.transaction_hash, events: receipt.events };
   }

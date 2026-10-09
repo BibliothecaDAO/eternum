@@ -93,7 +93,7 @@ export function buildNativeGameParams(
     if (input.devModeOn) throw new Error("Free Blitz does not use development mode");
     if (roster.length < 1 || roster.length > 24) throw new Error("Blitz requires a fixed roster of 1 to 24 players");
   } else if (roster.length) throw new Error("Open seasons do not use a fixed roster");
-  const common = buildCreateGameParams(config, { ...input, startMainAt: seasonStart(config, input) });
+  const common = buildCreateGameParams(config, { ...input, startMainAt: nativeSeasonStart(config, input) });
   return {
     name: common.name,
     preset_id: common.preset_id,
@@ -117,7 +117,10 @@ export function buildNativeGameParams(
  * A season with days starts on an armies tick, rounded up, so every day rolls over on one: the contract refuses any
  * other start.
  */
-function seasonStart(config: Config, input: CreateGamePayloadInput): number {
+export function nativeSeasonStart(
+  config: Config,
+  input: Pick<CreateGamePayloadInput, "presetId" | "startMainAt">,
+): number {
   const preset = nativePresetForId(input.presetId);
   if (preset.dayUnitSeconds === 0) return input.startMainAt;
   const tick = preset.clockScale

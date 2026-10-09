@@ -126,7 +126,7 @@ const buildWorkerOptions = (input: StackWorkers, origin: string, l2: string, boo
   };
   const common = {
     SHARD_CHAIN_ID: manifest.chainId,
-    SHARD_GAMES_ADDRESS: manifest.contracts.games!,
+    ...(manifest.contracts.games ? { SHARD_GAMES_ADDRESS: manifest.contracts.games } : {}),
     SHARD_RPC_URL: `${origin}/rpc`,
     SHARD_HERALD_URL: origin,
     LEDGER_RPC_URL: l2,
@@ -198,24 +198,28 @@ const buildWorkerOptions = (input: StackWorkers, origin: string, l2: string, boo
         SHARD_NOTIFIER_POLL_MS: "3000",
       },
     },
+    {
+      ...spec("launch", "launch-service"),
+      d1Databases: { DB: "launch" },
+      durableObjects: { REGISTRAR: { className: "Registrar", useSQLite: true } },
+      versionMetadata: "VERSION",
+      serviceBindings: {
+        IDENTITY: "identity",
+        VALUE_RELAY: boot ? () => new Response(null, { status: 503 }) : service("relay", "ValueLaunch"),
+      },
+      bindings: {
+        ...common,
+        ENVIRONMENT: "local",
+        SHARD_URL: origin,
+        LAUNCHER_ALLOWLIST: launcher.address,
+        DEPLOYER_ACCOUNT_ADDRESS: launcher.address,
+        DEPLOYER_PRIVATE_KEY: launcher.privateKey,
+        LEDGER_ADDRESS: boot ? "0x0" : assets.ledger,
+      },
+    },
     ...(boot
       ? []
       : [
-          {
-            ...spec("launch", "launch-service"),
-            d1Databases: { DB: "launch" },
-            durableObjects: { REGISTRAR: { className: "Registrar", useSQLite: true } },
-            versionMetadata: "VERSION",
-            serviceBindings: { IDENTITY: "identity", VALUE_RELAY: service("relay", "ValueLaunch") },
-            bindings: {
-              ...common,
-              ENVIRONMENT: "local",
-              SHARD_URL: origin,
-              LAUNCHER_ALLOWLIST: launcher.address,
-              DEPLOYER_ACCOUNT_ADDRESS: launcher.address,
-              DEPLOYER_PRIVATE_KEY: launcher.privateKey,
-            },
-          },
           {
             ...spec("relay", "value-relay"),
             durableObjects: { RELAY: { className: "ValueRelay", useSQLite: true } },
@@ -248,12 +252,12 @@ const buildWorkerOptions = (input: StackWorkers, origin: string, l2: string, boo
     workers[0]!.serviceBindings = {
       IDENTITY: "identity",
       GUARDIAN: "guardian",
-      LAUNCH: () => new Response(null, { status: 503 }),
+      LAUNCH: "launch",
       RELAY: () => new Response(null, { status: 503 }),
       MONITOR: () => new Response(null, { status: 503 }),
     };
     workers[0]!.bindings!.LOCAL_VALUE = "";
-    workers[2]!.serviceBindings = { GUARDIAN: "guardian", LAUNCH: () => Response.json({ chains: [] }) };
+    workers[2]!.serviceBindings = { GUARDIAN: "guardian", LAUNCH: "launch" };
   }
   return workers;
 };

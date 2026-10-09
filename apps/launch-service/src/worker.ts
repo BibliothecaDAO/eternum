@@ -54,6 +54,10 @@ const launchAppOf = (env: LaunchEnv) => {
     slots,
     calendar,
     registrar: { armFor: (dueAt) => registrarOf(env).armFor(dueAt) },
+    operatorLauncher: {
+      enrol: (input) => registrarOf(env).enrol(input),
+      check: (input) => registrarOf(env).check(input),
+    },
     playerAccount: async (realmsId) => {
       const { shard } = await readLaunchShard(env.SHARD_URL);
       return realmsAccountAddress(realmsId, shard.accountClassHash, shard.guardianPublicKey);

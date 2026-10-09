@@ -56,6 +56,9 @@
       "paths": {
         "@bibliothecadao/eternum/shard": [
           "../../packages/core/src/client/shard-reader.ts"
+        ],
+        "@bibliothecadao/eternum/realms-account": [
+          "../../packages/core/src/account/realms-account.ts"
         ]
       }
     },

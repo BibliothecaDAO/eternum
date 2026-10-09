@@ -52,6 +52,10 @@ const createApp = (
       // The registrar runs in workerd (worker.test.ts); here a queued run only needs somewhere to arm.
       registrar: { armFor: async () => {} },
       playerAccount,
+      operatorLauncher: {
+        enrol: async () => ({ chainId: "0x1", launcherAccount: "0x123" }),
+        check: async () => ({ txHash: "0xabc" }),
+      },
     }),
     store,
     slots,
@@ -412,4 +416,40 @@ test("version names the deployed code whatever state its shard work is in", asyn
   const response = await app.request("https://play.realms.party/api/factory/version");
   expect(response.status).toBe(200);
   expect(await response.json()).toEqual({ service: "launch", environment: "staging", version: "test" });
+});
+
+test("deployment launcher routes require the operator token, never an allowlisted wallet", async () => {
+  const request = (path: string, headers: Record<string, string>) =>
+    new Request(ALLOWED_ORIGIN + path, {
+      method: "POST",
+      headers: { "content-type": "application/json", ...headers },
+      body: JSON.stringify({ chainId: "0x1", heraldUrl: "https://shard.test" }),
+    });
+  const app = createApp(signedIn(ALLOWED_ADDRESS)).app;
+  const path = "/api/factory/operator/launcher/enrol";
+  expect((await app.request(request(path, { origin: ALLOWED_ORIGIN, cookie: "valid" }))).status).toBe(403);
+  expect((await app.request(request(path, { authorization: "Bearer wrong" }))).status).toBe(401);
+  const enrolled = await app.request(request(path, { authorization: "Bearer " + OPERATOR_TOKEN }));
+  expect(enrolled.status).toBe(200);
+  expect(await enrolled.json()).toEqual({ chainId: "0x1", launcherAccount: "0x123" });
+  const arbitrary = new Request(ALLOWED_ORIGIN + "/api/factory/operator/launcher/check", {
+    method: "POST",
+    headers: { authorization: "Bearer " + OPERATOR_TOKEN, "content-type": "application/json" },
+    body: JSON.stringify({
+      chainId: "0x1",
+      heraldUrl: "https://shard.test",
+      name: "check-worker-0123456789abcdef",
+      presetId: 1,
+      calldata: ["0x123"],
+    }),
+  });
+  expect((await app.request(arbitrary)).status).toBe(400);
+});
+
+test("normal launch requests cannot use the deployment's reserved check names", async () => {
+  const app = createApp(signedIn(ALLOWED_ADDRESS)).app;
+  const request = new Request(launchRequest(), {
+    body: JSON.stringify({ environment: "madara.blitz", gameName: "check-player-hidden" }),
+  });
+  expect((await app.request(request)).status).toBe(400);
 });

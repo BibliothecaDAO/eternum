@@ -3,6 +3,7 @@ import { mkdir, chmod } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { ec, logger, RpcProvider, num, shortString } from "starknet";
 import { Effect } from "effect";
+import { botRealmsId, realmsAccountAddress } from "@realms-world/identity/account";
 import { readConfig, readPrivate, privateWrite, prepareState, type StackConfig } from "./config";
 import { deployAssets, type LocalAccount } from "./assets";
 import { startIdentity, startWorkers, type Manifest, type NativeCredentials } from "./workers";
@@ -45,24 +46,33 @@ const run = async () => {
   process.once("SIGTERM", () => shutdown.abort());
   try {
     const guardian = await readPrivate<{ privateKey: string }>(config.guardianKeyFile);
-    const launcher = await readPrivate<NativeCredentials>(config.launcherKeyFile);
+    const launcherKey = `0x${Buffer.from(crypto.getRandomValues(new Uint8Array(31))).toString("hex")}`;
+    const launcherLabel = shortString.encodeShortString("ETERNUM_LAUNCHER");
     const operator = await readPrivate<NativeCredentials>(config.ledgerOperatorKeyFile);
     const bootstrap = await readPrivate<{ chainId: string; classHash: string; guardianPublicKey: string }>(
       join(resolve(config.guardianKeyFile, ".."), "native-bootstrap.json"),
     );
+    const launcher = {
+      privateKey: launcherKey,
+      address: realmsAccountAddress(botRealmsId(launcherLabel), bootstrap.classHash, bootstrap.guardianPublicKey),
+    };
     phase = "devnet";
     createDevnetContainer(config, state.container, state.directory);
     const accounts = await startDevnet(config, state.container);
     const secrets = await localSecrets();
-    await privateWrite(join(runDirectory, "credentials.json"), { accounts, ...secrets });
+    await privateWrite(join(runDirectory, "credentials.json"), { accounts, launcher, ...secrets });
     const root = resolve(import.meta.dirname, "../../..");
     phase = "local_certificate";
     await createCertificate(runDirectory);
     phase = "worker_bundles";
-    execFileSync("flock", ["/tmp/eternum-client.lock", "bun", "local-stack/bundle.ts", join(runDirectory, "bundles")], {
-      cwd: join(root, "apps/value-relay"),
-      stdio: "ignore",
-    });
+    execFileSync(
+      "flock",
+      ["/tmp/eternum-client.lock", "nice", "-n", "10", "bun", "local-stack/bundle.ts", join(runDirectory, "bundles")],
+      {
+        cwd: join(root, "apps/value-relay"),
+        stdio: "ignore",
+      },
+    );
     shutdown.signal.throwIfAborted();
     phase = "identity";
     const identity = await startIdentity({

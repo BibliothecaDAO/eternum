@@ -100,12 +100,32 @@ it("runs the actual Workers together with D1, private local email and named bind
       launcher: { address: "0xa", privateKey: key },
       operator: { address: "0xb", privateKey: key },
     };
-    workers = await startIdentity(input);
+    workers = await startIdentity({ ...input, manifest: { ...input.manifest, contracts: {} } });
     const db = await workers.mf.getD1Database("DB", "identity");
     expect((await db.prepare("SELECT COUNT(*) AS count FROM shards").first<{ count: number }>())!.count).toBe(0);
     const guardian = await workers.mf.dispatchFetch(workers.origin + "/api/guardian");
     expect(guardian.status).toBe(200);
     expect((await workers.mf.dispatchFetch(workers.origin + "/local-value.json")).status).toBe(503);
+    const enrolUrl = workers.origin + "/api/factory/operator/launcher/enrol";
+    expect(
+      (
+        await workers.mf.dispatchFetch(enrolUrl, {
+          method: "POST",
+          headers: { authorization: "Bearer wrong" },
+          body: "{}",
+        })
+      ).status,
+    ).toBe(401);
+    expect(
+      (
+        await workers.mf.dispatchFetch(enrolUrl, {
+          method: "POST",
+          headers: { authorization: "Bearer " + input.secrets.operatorToken, "content-type": "application/json" },
+          body: "{}",
+        })
+      ).status,
+    ).toBe(400);
+
     workers = await startWorkers(input, workers.mf);
     const request = (path: string, body?: unknown, token?: string) =>
       workers!.mf.dispatchFetch(workers!.origin + path, {
