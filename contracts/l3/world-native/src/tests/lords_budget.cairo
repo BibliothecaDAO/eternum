@@ -1,4 +1,5 @@
 use core::dict::{Felt252Dict, Felt252DictTrait};
+use snforge_std::{ContractClassTrait, DeclareResultTrait, declare};
 use starknet::storage::{StorageMapWriteAccess, StoragePointerReadAccess};
 use crate::logic::lords_budget::{SeasonClock, available, fits, open_day, roll, unlocked};
 use crate::relics::{ChestRules, LordsBudget, roll_tier, tier_value};
@@ -182,38 +183,93 @@ fn chest_tiers_follow_each_depths_odds_over_10k_rolls() {
     }
 }
 
+#[starknet::interface]
+trait IBudgetDay<T> {
+    fn simulate_day(
+        self: @T,
+        rules: ChestRules,
+        odds: crate::relics::ChestTiers,
+        budget: LordsBudget,
+        game: crate::game::GameRegistry,
+        day_unit_seconds: u32,
+        tick: u64,
+        day: u64,
+        ruins_per_day: u32,
+        clear: bool,
+    ) -> (LordsBudget, u128, u128);
+}
+
+// A season retains its state, not every day's VM trace. Every draw and production gate still executes.
+#[starknet::contract]
+mod BudgetDayFixture {
+    use super::{ChestRules, LordsBudget, SeasonClock, fits, unlocked};
+    #[storage]
+    struct Storage {}
+
+    #[abi(embed_v0)]
+    impl BudgetDay of super::IBudgetDay<ContractState> {
+        fn simulate_day(
+            self: @ContractState,
+            rules: ChestRules,
+            odds: crate::relics::ChestTiers,
+            mut budget: LordsBudget,
+            game: crate::game::GameRegistry,
+            day_unit_seconds: u32,
+            tick: u64,
+            day: u64,
+            ruins_per_day: u32,
+            clear: bool,
+        ) -> (LordsBudget, u128, u128) {
+            let clock = SeasonClock { game, day_unit_seconds, tick };
+            let mut paid = 0;
+            let mut refused = 0;
+            for ruin in 0_u32..ruins_per_day {
+                let sample: u64 = day * ruins_per_day.into() + ruin.into();
+                let tier = crate::relics::roll_tier(odds, 0x524f4c4c + Into::<u64, u256>::into(sample));
+                let shares: u128 = crate::relics::tier_value(rules.shares, tier).into();
+                let amount = shares * budget.price;
+                budget.rolled_shares += shares;
+                if !fits(rules, budget, clock, amount) {
+                    refused += 1;
+                    continue;
+                }
+                if clear {
+                    budget.pool_left -= amount;
+                    paid += amount;
+                } else {
+                    budget.open += amount;
+                }
+                assert!(rules.pool - budget.pool_left + budget.open <= unlocked(rules, clock, day), "unlock overshot");
+            }
+            (budget, paid, refused)
+        }
+    }
+}
+
 fn simulate(ruins_per_day: u32, quiet_days: u64, clear: bool) -> (u128, u128) {
     let rules = rules();
+    let clock = clock();
     let (_, preset) = super::preset_projection::current_definition("frontier");
     let odds = *preset.settlement.depths.at(0).chest;
-    let mut budget = open_day(rules, empty_day(rules, 0), clock());
+    let (address, _) = declare("BudgetDayFixture").unwrap().contract_class().deploy(@array![]).unwrap();
+    let runner = IBudgetDayDispatcher { contract_address: address };
+    let mut budget = open_day(rules, empty_day(rules, 0), clock);
     let mut paid = 0;
     let mut refused = 0;
     for day in 0_u64..SEASON_DAYS {
         if day != budget.day {
-            budget = roll(rules, budget, clock(), day);
+            budget = roll(rules, budget, clock, day);
         }
         if day < quiet_days {
             continue;
         }
-        for ruin in 0_u32..ruins_per_day {
-            let sample: u64 = day * ruins_per_day.into() + ruin.into();
-            let tier = roll_tier(odds, 0x524f4c4c + Into::<u64, u256>::into(sample));
-            let shares: u128 = tier_value(rules.shares, tier).into();
-            let amount = shares * budget.price;
-            budget.rolled_shares += shares;
-            if !fits(rules, budget, clock(), amount) {
-                refused += 1;
-                continue;
-            }
-            if clear {
-                budget.pool_left -= amount;
-                paid += amount;
-            } else {
-                budget.open += amount;
-            }
-            assert!(rules.pool - budget.pool_left + budget.open <= unlocked(rules, clock(), day), "unlock overshot");
-        }
+        let (next, paid_today, refused_today) = runner
+            .simulate_day(
+                rules, odds, budget, clock.game, clock.day_unit_seconds, clock.tick, day, ruins_per_day, clear,
+            );
+        budget = next;
+        paid += paid_today;
+        refused += refused_today;
     }
     assert_eq!(paid + budget.pool_left, rules.pool);
     (paid, refused)
