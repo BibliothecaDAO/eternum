@@ -1,4 +1,4 @@
-import { playerRejectionReason } from "./player-actions";
+import { playerRejectionReason } from "./action-receipt";
 import type { ID } from "@bibliothecadao/types";
 import type { TrackedTransaction } from "./driver";
 import { rejectionOf, type Rejection } from "./rejections";

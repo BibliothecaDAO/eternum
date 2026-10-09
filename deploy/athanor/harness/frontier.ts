@@ -1,3 +1,4 @@
+import { entityHomeNamespace } from "@bibliothecadao/eternum/expeditions";
 import { attachAcceptedBlocks } from "./gas-collector";
 import { setTimeout as sleep } from "node:timers/promises";
 import type { Account } from "starknet";
@@ -894,7 +895,7 @@ function planMuster(client: GameClient, player: Player): Action | undefined {
   );
   if (!canPayTroopRaise(cost)) return;
   const spacing = client.setup.store.require("SettlementRules", { game_id: client.gameId }).spacing;
-  const x = (realm.metadata.realm_id - 1) * spacing + spacing / 2;
+  const x = (entityHomeNamespace(realm.entity_id) - 1) * spacing + spacing / 2;
   const y = currentDay(player).epoch * 4 * spacing + spacing / 2;
   const spawn = getNeighborHexes(x, y).find(
     (spot) => !getTileAt(client.setup.store, false, spot.col, spot.row, client.gameId)?.occupier_id,
@@ -966,7 +967,7 @@ function planExpedition(client: GameClient, game: HarnessGame, player: Player): 
       Math.floor(coord.y / spacing) % 4 === 0 &&
       neighbors.some(
         (spot) =>
-          spot.col === (realm.metadata.realm_id - 1) * spacing + spacing / 2 &&
+          spot.col === (entityHomeNamespace(realm.entity_id) - 1) * spacing + spacing / 2 &&
           spot.row === day.epoch * 4 * spacing + spacing / 2,
       );
     if (depth > 0 && atEntrance) {

@@ -17,6 +17,7 @@ import {
   assertRegistrarAvailable,
   createRegistrarGame,
   settleBlitzRoster,
+  freezeBlitzRoster,
   blitzRosterOf,
   findRegistrarGame,
   resolveRegistrarWorldAddress,
@@ -162,10 +163,10 @@ async function assertLaunchChainTargets(launch: PreparedLaunch): Promise<void> {
 }
 
 async function buildRegistrarGameParams(launch: PreparedLaunch) {
-  const accounts = launch.request.rosterAccounts ?? [];
+  const players = launch.request.roster ?? [];
   const fixedRoster = nativePresetForId(launch.runtime.presetId).entryRule === nativeRuleConstants.ENTRY_ROSTER;
-  const roster = fixedRoster ? blitzRosterOf(accounts) : [];
-  if (!fixedRoster && accounts.length) throw new Error("Eternum does not use a fixed roster");
+  if (fixedRoster && players.length) blitzRosterOf(players);
+  if (!fixedRoster && players.length) throw new Error("Eternum does not use a fixed roster");
   const block = await launch.runtime.provider.getBlock("latest");
   return buildNativeGameParams(
     launch.config,
@@ -182,7 +183,7 @@ async function buildRegistrarGameParams(launch: PreparedLaunch) {
         launch.request.mapConfigOverrides && Object.keys(launch.request.mapConfigOverrides).length > 0,
       ),
     },
-    roster,
+    [],
   );
 }
 
@@ -292,19 +293,21 @@ async function waitForGameIndex(launch: PreparedLaunch): Promise<void> {
 }
 
 async function createAndSettleGame(launch: PreparedLaunch): Promise<void> {
-  const admissionUrl = launch.request.admissionUrl ?? process.env.ADMISSION_URL;
   const fixedRoster = nativePresetForId(launch.runtime.presetId).entryRule === nativeRuleConstants.ENTRY_ROSTER;
-  if (fixedRoster && !admissionUrl) {
-    throw new Error("ADMISSION_URL is required for automatic Blitz settlement");
-  }
   await createGame(launch);
-  if (!fixedRoster) return;
+  if (!fixedRoster || !launch.request.roster?.length) return;
+  await freezeBlitzRoster(
+    launch.runtime.provider,
+    await resolveGameId(launch),
+    launch.request.roster ?? [],
+    launchCredentials(launch),
+    launch.request.manifest,
+  );
   const settlement = await settleBlitzRoster(
     launch.runtime.provider,
     await resolveGameId(launch),
     launchCredentials(launch),
     launch.request.manifest,
-    admissionUrl!,
   );
   launch.summary.finalizeAt = settlement.finalizeAt;
   launch.summary.settlementTransactions = settlement.settlementTransactions;

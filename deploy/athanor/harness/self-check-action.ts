@@ -1,7 +1,6 @@
-import { shortString } from "starknet";
 import { setTimeout as sleep } from "node:timers/promises";
 import { HarnessProvider } from "./provider";
-import { classifyPlayReceipt, type PlayReceipt, type ActionReceipt } from "./player-actions";
+import { classifyPlayReceipt, type PlayReceipt, type ActionReceipt } from "./action-receipt";
 import type { RouteCase } from "./self-check";
 
 /** Refusal coverage requires the exact domain outcome at both boundaries, never just a failed helper promise. */
@@ -38,7 +37,7 @@ export function assertDomainRefusal(result: ActionReceipt, reason: string): void
   if (
     result.state !== "rejected" ||
     result.statusClass === undefined ||
-    BigInt(result.statusClass) !== BigInt(shortString.encodeShortString("GAMEPLAY_REJECTED")) ||
+    result.statusClass !== "GAMEPLAY_REJECTED" ||
     result.reason !== reason
   )
     throw new Error("Receipt differs from the fixture's domain refusal");

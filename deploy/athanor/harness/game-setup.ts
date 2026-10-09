@@ -14,7 +14,7 @@ import { assertProviderChain } from "../../../packages/chain/chain-guard.js";
 import type { Shard } from "@bibliothecadao/eternum/game-client";
 import { connectHarnessGameClient } from "./game-client";
 import { HarnessProvider } from "./provider";
-import { readPlayBounds } from "./player-invoke";
+import { configureGameplayAccountSubmits } from "@bibliothecadao/eternum/game-client";
 
 const required = (name: string): string => {
   const value = process.env[name];
@@ -56,7 +56,7 @@ export async function launchHarnessGame(input: {
         twoPlayerMode: nativePresetForId(input.presetId).settlementMode === "Duel",
         useMapOverride: false,
       },
-      input.gameType === "blitz" ? input.rosterAccounts.map((account) => ({ account })) : [],
+      input.gameType === "blitz" ? input.rosterAccounts.map((account) => ({ account, wallet: account })) : [],
     );
     const created = await createRegistrarGame(account, params, manifest, preset);
     if (!created.gameId) throw new Error("Registrar did not return a game id");
@@ -83,11 +83,9 @@ async function settleHarnessRoster(
     actor: address,
     gameId: gameId,
     shard: shard,
-    provider: provider,
-    playBounds: readPlayBounds(manifest),
   });
   try {
-    const launcher = createOperatorAccount(provider, address, privateKey);
+    const launcher = configureGameplayAccountSubmits(createOperatorAccount(provider, address, privateKey), shard);
     while (!connection.client.setup.store.require("GameRegistry", { game_id: gameId }).ready) {
       await connection.client.setup.network.provider.submitCommand(launcher, {
         kind: "SettleBlitzRoster",
@@ -101,7 +99,7 @@ async function settleHarnessRoster(
   return settlementTransactions;
 }
 
-/** The launcher reserves free/open homes outside gameplay; no shared allocator is invoked by a bot. */
+/** The launcher reserves free/open homes for legacy seasons only; Frontier assigns its home on the first action. */
 export async function prepareOpenHomes(gameId: number, owners: string[]): Promise<void> {
   const provider = new HarnessProvider(required("HARNESS_ADMIN_RPC_URL"));
   try {

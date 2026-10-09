@@ -22,7 +22,9 @@ export interface RouteCase {
 
 /** Deployment supplies launcher setup and route prerequisites; this port adds no guessed contract ABI. */
 export interface DeploymentCheckPort {
-  createThrowawayGame(stopped: AbortSignal): Promise<{ gameId: number; routes: RouteCase[]; dispose(): void }>;
+  createThrowawayGame(
+    stopped: AbortSignal,
+  ): Promise<{ gameId: number; supplementalGameIds?: readonly number[]; routes: RouteCase[]; dispose(): void }>;
 }
 export interface SelfCheckResult {
   passed: boolean;
@@ -47,6 +49,8 @@ export async function runSelfCheck(port: DeploymentCheckPort, timeoutMs = 120_00
   try {
     game = await bounded(port.createThrowawayGame(controller.signal), timeoutMs, route);
     if (!Number.isSafeInteger(game.gameId) || game.gameId <= 0) throw new Error("Invalid throwaway game");
+    const gameIds = new Set([game.gameId, ...(game.supplementalGameIds ?? [])]);
+    if ([...gameIds].some((id) => !Number.isSafeInteger(id) || id <= 0)) throw new Error("Invalid throwaway game");
     const planned = new Set(game.routes.map((item) => item.route));
     for (const required of expectedRoutes) {
       route = required;
@@ -54,7 +58,7 @@ export async function runSelfCheck(port: DeploymentCheckPort, timeoutMs = 120_00
     }
     for (const step of game.routes) {
       route = step.route;
-      if (!expectedRoutes.includes(route) || step.client.gameId !== game.gameId) throw new Error("Invalid route scope");
+      if (!expectedRoutes.includes(route) || !gameIds.has(step.client.gameId)) throw new Error("Invalid route scope");
       await bounded(checkRoute(step, controller.signal), timeoutMs, route);
       completed.push(route);
       (step.expectedRejection === undefined ? applied : refused).push(route);

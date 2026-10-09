@@ -1,6 +1,6 @@
 import { Account, shortString } from "starknet";
 import { DeviceSigner, deviceKeyOf } from "@bibliothecadao/eternum";
-import { openShard } from "@bibliothecadao/eternum/game-client";
+import { configureGameplayAccountSubmits, openShard } from "@bibliothecadao/eternum/game-client";
 import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
 import type { NativeWorldManifest } from "../../../config/deployer/clean/world/native/types";
 import { readShardManifest } from "../../../packages/chain/shard-manifest.js";
@@ -9,7 +9,7 @@ import { createHarnessAccounts } from "./account-factory";
 import { connectActorClients, actorKey } from "./game-client";
 import { connectHarnessGameClient } from "./game-client";
 import { createHarnessGame, EXPLORER_TROOP_COUNT } from "./harness-game";
-import { launchHarnessGame, prepareOpenHomes } from "./game-setup";
+import { launchHarnessGame } from "./game-setup";
 import { launchFrontierSeason } from "./frontier";
 import { readPlayBounds } from "./player-invoke";
 import { HarnessProvider } from "./provider";
@@ -52,12 +52,15 @@ const fixture: WaveFixturePort = {
       });
       const accounts = approved.map((player) => ({
         ...player,
-        account: new Account({
-          provider,
-          address: player.address,
-          signer: new DeviceSigner(deviceKeyOf(player.privateKey)),
-          cairoVersion: "1",
-        }),
+        account: configureGameplayAccountSubmits(
+          new Account({
+            provider,
+            address: player.address,
+            signer: new DeviceSigner(deviceKeyOf(player.privateKey)),
+            cairoVersion: "1",
+          }),
+          shard,
+        ),
       }));
       const name = `wave-${Date.now().toString(36)}`;
       const game =
@@ -72,15 +75,10 @@ const fixture: WaveFixturePort = {
               publicProvider: provider,
             })
           : await launchFrontierSeason(privateProvider, name, 10, 5);
-      if (players === 2000)
-        await prepareOpenHomes(
-          game.gameId,
-          accounts.map(({ address }) => address),
-        );
       clients = await connectActorClients(
         accounts.map(({ address }) => address),
         6,
-        (actor) => connectHarnessGameClient({ actor, gameId: game.gameId, shard, provider, playBounds: bounds }),
+        (actor) => connectHarnessGameClient({ actor, gameId: game.gameId, shard }),
       );
       await createHarnessGame(clients.get(actorKey(accounts[0]!.address))!.client).waitUntilPlaying();
       const wavePlayers: WavePlayer[] = accounts.map((player) => {

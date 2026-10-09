@@ -310,8 +310,9 @@ const captureSubmission = (
     const onSubmitted = (event: SubmittedEvent) => {
       if (!event.signerAddress || actorKey(event.signerAddress) !== signer) return;
       settle();
-      const confirmed = client.runtime.waitForTransaction(event.transactionHash).then((transaction) => {
-        if (transaction.status === "REVERTED") throw new Error(transaction.revertReason ?? "Transaction reverted");
+      const confirmed = client.waitForAction(event.transactionHash).then((transaction) => {
+        if (transaction.status !== "SUCCEEDED")
+          throw new Error(`Player action rejected: ${transaction.revertReason ?? transaction.status}`);
       });
       resolve({
         transactionHash: event.transactionHash,

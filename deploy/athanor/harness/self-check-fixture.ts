@@ -1,6 +1,6 @@
-import { Account, shortString } from "starknet";
+import { Account, CallData, shortString } from "starknet";
 import { DeviceSigner, deviceKeyOf } from "@bibliothecadao/eternum";
-import { openShard } from "@bibliothecadao/eternum/game-client";
+import { configureGameplayAccountSubmits, openShard } from "@bibliothecadao/eternum/game-client";
 import { getNeighborHexes, RESOURCE_PRECISION, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import {
   nativeTilePackingConstants,
@@ -10,6 +10,7 @@ import {
 import type { NativeCommand } from "../../../contracts/l3/world-native/schema/commands.gen";
 import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
 import { nativeCommandBits } from "../../../contracts/l3/world-native/schema/commands.gen";
+import { seasonSeconds } from "../../../packages/core/src/utils/days";
 import { SELF_CHECK_PRESET_ID } from "../../../config/source/common/native-preset-modes";
 import { buildNativePreset } from "../../../config/deployer/clean/config/native-preset";
 import {
@@ -46,7 +47,6 @@ const assert = (condition: unknown): void => {
 const fixture: DeploymentCheckPort = {
   async createThrowawayGame(stopped) {
     const manifest = readShardManifest<NativeWorldManifest>(required("NATIVE_WORLD_MANIFEST"));
-    const bounds = readPlayBounds(manifest);
     const shard = await openShard(required("HERALD_URL"), bindings.schemaIdentity);
     const rpc = new HarnessProvider(shard.rpcUrl);
     const admin = new HarnessProvider(required("HARNESS_ADMIN_RPC_URL"));
@@ -87,24 +87,57 @@ const fixture: DeploymentCheckPort = {
       stopped.throwIfAborted();
       await prepareOpenHomes(gameId, [approved.address]);
       stopped.throwIfAborted();
-      const connect = async (actor: string) => {
-        const connection = await connectHarnessGameClient({ actor, gameId, shard, provider: rpc, playBounds: bounds });
+      const connect = async (actor: string, scope = gameId) => {
+        const connection = await connectHarnessGameClient({ actor, gameId: scope, shard });
         clients.push(connection.client);
         stopped.throwIfAborted();
         return connection.client;
       };
-      const bot = new Account({
-        provider: rpc,
-        address: approved.address,
-        signer: new DeviceSigner(deviceKeyOf(approved.privateKey)),
-        cairoVersion: "1",
-      });
+      const bot = configureGameplayAccountSubmits(
+        new Account({
+          provider: rpc,
+          address: approved.address,
+          signer: new DeviceSigner(deviceKeyOf(approved.privateKey)),
+          cairoVersion: "1",
+        }),
+        shard,
+      );
       const botClient = await connect(bot.address);
-      const launcher = createOperatorAccount(rpc, privateLauncher.address, required("DEPLOYER_PRIVATE_KEY"));
+      const launcher = configureGameplayAccountSubmits(
+        createOperatorAccount(rpc, privateLauncher.address, required("DEPLOYER_PRIVATE_KEY")),
+        shard,
+      );
       const launcherClient = await connect(launcher.address);
       await createHarnessGame(botClient).waitUntilPlaying();
       stopped.throwIfAborted();
-      return { gameId, routes: buildRoutePlan(bot, botClient, launcher, launcherClient), dispose };
+      const blitzId = await createModeCheckGame(
+        "blitz",
+        2,
+        privateLauncher,
+        admin,
+        manifest,
+        approved.address,
+        stopped,
+      );
+      const frontierId = await createModeCheckGame(
+        "frontier",
+        5,
+        privateLauncher,
+        admin,
+        manifest,
+        approved.address,
+        stopped,
+      );
+      const blitzClient = await connect(launcher.address, blitzId);
+      const frontierClient = await connect(bot.address, frontierId);
+      const routes = bindModeRoutes(
+        buildRoutePlan(bot, botClient, launcher, launcherClient),
+        launcher,
+        blitzClient,
+        bot,
+        frontierClient,
+      );
+      return { gameId, supplementalGameIds: [blitzId, frontierId], routes, dispose };
     } catch (error) {
       dispose();
       throw error;
@@ -155,6 +188,82 @@ async function createCheckGame(
   stopped.throwIfAborted();
   if (!created.gameId) throw new Error("Self-check game not created");
   return created.gameId;
+}
+
+async function createModeCheckGame(
+  mode: "blitz" | "frontier",
+  presetId: number,
+  launcher: Account,
+  admin: HarnessProvider,
+  manifest: NativeWorldManifest,
+  actor: string,
+  stopped: AbortSignal,
+): Promise<number> {
+  const config = loadNativePresetConfiguration(`madara.${mode}`, presetId);
+  const definition = buildNativePreset(config, presetId);
+  await registerNativePreset(launcher, presetId, buildNativePresetRegistration(definition, presetId, manifest));
+  stopped.throwIfAborted();
+  const block = await admin.getBlock("latest");
+  const params = buildNativeGameParams(config, {
+    gameName: `check-${mode}-${Date.now().toString(36)}`,
+    presetId,
+    startMainAt: block.timestamp,
+    chainTimestamp: block.timestamp,
+    durationSeconds: mode === "frontier" ? seasonSeconds(1, definition.rules.day_unit_seconds) : 3600,
+    devModeOn: false,
+    singleRealmMode: false,
+    twoPlayerMode: false,
+    useMapOverride: false,
+  });
+  const created = await createRegistrarGame(launcher, params, manifest, definition);
+  if (!created.gameId) throw new Error("Mode self-check game not created");
+  if (mode === "blitz") {
+    // This is an unpaid throwaway seat, not a paid ledger registration or an identity lookup.
+    const sent = await launcher.execute({
+      contractAddress: manifest.world.address,
+      entrypoint: "freeze_blitz_roster",
+      calldata: CallData.compile({ game_id: created.gameId, players: [{ account: actor, wallet: actor }] }),
+    });
+    await launcher.waitForTransaction(sent.transaction_hash);
+  }
+  stopped.throwIfAborted();
+  return created.gameId;
+}
+
+/** Mode-specific preflight gates require their real game prerequisites, never a tolerated admission revert. */
+export function bindModeRoutes(
+  routes: RouteCase[],
+  launcher: Account,
+  blitz: RouteCase["client"],
+  bot: Account,
+  frontier: RouteCase["client"],
+): RouteCase[] {
+  return routes.map((step) => {
+    if (step.route === "SettleBlitzRoster")
+      return {
+        route: step.route,
+        account: launcher,
+        client: blitz,
+        command: () => commandForRoute("SettleBlitzRoster"),
+        verify: (store: RouteCase["client"]["setup"]["store"]) =>
+          assert(store.require("GameRegistry", { game_id: blitz.gameId }).ready),
+      };
+    if (step.route === "WithdrawLords") {
+      let before: string;
+      return {
+        route: step.route,
+        account: bot,
+        client: frontier,
+        expectedRejection: "missing structure",
+        command: () => {
+          before = gameFacts(frontier.setup.store, frontier.gameId);
+          return commandForRoute("WithdrawLords");
+        },
+        verify: (store: RouteCase["client"]["setup"]["store"]) => assert(gameFacts(store, frontier.gameId) === before),
+      };
+    }
+    return step;
+  });
 }
 
 async function checkConstructor(rpc: HarnessProvider, manifest: NativeWorldManifest, launcher: string): Promise<void> {

@@ -62,7 +62,6 @@ test("a ready roster submits no settlement transactions on retry", async () => {
     7,
     { accountAddress: "0x123", privateKey: "0x1234" },
     manifest,
-    "http://unused.invalid",
   );
   expect(settlement).toEqual({ finalizeAt: 305, settlementTransactions: 0 });
   expect(provider.callContract).toHaveBeenCalledTimes(1);

@@ -8,7 +8,7 @@ import type { NativeCommand } from "../../../contracts/l3/world-native/schema/co
 import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
 import { nativePresetForId } from "../../../config/source/native";
 import { SELF_CHECK_PRESET_ID } from "../../../config/source/common/native-preset-modes";
-import { buildRoutePlan, gameFacts } from "./self-check-fixture";
+import { buildRoutePlan, bindModeRoutes, gameFacts } from "./self-check-fixture";
 import { commandForRoute, routeReasons } from "./self-check-routes";
 import { assertDomainRefusal } from "./self-check-action";
 import { runSelfCheck, type RouteCase } from "./self-check";
@@ -54,7 +54,7 @@ test("an admission revert, wrong refusal reason or internal failure cannot count
     state: "rejected" as const,
     block: 2,
     reason: "missing explorer",
-    statusClass: shortString.encodeShortString("GAMEPLAY_REJECTED"),
+    statusClass: "GAMEPLAY_REJECTED",
   };
   expect(() => assertDomainRefusal(outcome, "missing explorer")).not.toThrow();
   expect(() => assertDomainRefusal({ ...outcome, statusClass: undefined }, "missing explorer")).toThrow();
@@ -131,4 +131,29 @@ test("a setup timeout cancels the fixture so later setup cannot keep mutating", 
   expect(result.passed).toBe(false);
   expect(stopped?.aborted).toBe(true);
   expect(result.firstFailedRoute).toBe("create_throwaway_game");
+});
+
+test("mode routes use a frozen Blitz and a Frontier instead of accepting preflight refusals", () => {
+  const bot = { address: "0x10" } as Account,
+    launcher = { address: "0x20" } as Account;
+  const legacy = client(bot.address),
+    blitz = { ...client(launcher.address), gameId: 8 },
+    frontier = { ...client(bot.address), gameId: 9 };
+  const routes = bindModeRoutes(
+    buildRoutePlan(bot, legacy, launcher, client(launcher.address)),
+    launcher,
+    blitz,
+    bot,
+    frontier,
+  );
+  expect(routes.find((step) => step.route === "SettleBlitzRoster")).toMatchObject({
+    client: { gameId: 8 },
+    account: launcher,
+  });
+  expect(routes.find((step) => step.route === "SettleBlitzRoster")!.expectedRejection).toBeUndefined();
+  expect(routes.find((step) => step.route === "WithdrawLords")).toMatchObject({
+    client: { gameId: 9 },
+    expectedRejection: "missing structure",
+  });
+  expect(new Set(routes.map((step) => step.route)).size).toBe(Object.keys(nativeCommandBits).length);
 });

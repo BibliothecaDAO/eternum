@@ -1,3 +1,4 @@
+import { createOperatorAccount } from "../shared/madara-account";
 import { presetRegistrationCall } from "./native-preset";
 import { confirmedTransactionReceipt } from "../shared/transaction";
 import { completeNativeAdminCommand } from "../world/native/command";
@@ -9,7 +10,7 @@ import { Account, CallData, shortString, type Call, type RawArgs, RpcProvider } 
 import { loadRepoJsonFile } from "../shared/repo";
 import type { DeploymentEnvironmentId } from "../types";
 
-type RegistrarEntrypoint = "register_preset" | "create_game";
+type RegistrarEntrypoint = "register_preset" | "create_game" | "freeze_blitz_roster";
 
 interface ManifestAbiEntry {
   type?: string;
@@ -184,18 +185,20 @@ export async function findRegistrarGame(
   return value === 0n ? null : { gameId: Number(value) };
 }
 
-/**
- * A Blitz roster is its players' gameplay accounts: the contract authenticates each command through the account, so an
- * account needs no registry binding and need not be deployed yet.
- */
-export function blitzRosterOf(accounts: readonly string[]) {
-  if (accounts.length < 1 || accounts.length > 24) throw new Error("Blitz requires 1 to 24 registered players");
-  const normalized = accounts.map((account) => {
-    if (!/^0x[0-9a-f]+$/i.test(account) || BigInt(account) === 0n) throw new Error("Invalid roster account");
-    return `0x${BigInt(account).toString(16)}`;
-  });
-  if (new Set(normalized).size !== normalized.length) throw new Error("Duplicate roster account");
-  return normalized.map((account) => ({ account }));
+/** Freeze exactly the ledger's stored wallet/account pair, without resolving identity again. */
+export function blitzRosterOf(players: readonly { wallet: string; account: string }[]) {
+  if (players.length < 1 || players.length > 24) throw new Error("Blitz requires 1 to 24 registered players");
+  const canonical = (value: string, field: string) => {
+    if (!/^0x[0-9a-f]+$/i.test(value) || BigInt(value) === 0n) throw new Error(`Invalid roster ${field}`);
+    return `0x${BigInt(value).toString(16)}`;
+  };
+  const rows = players.map(({ account, wallet }) => ({
+    account: canonical(account, "account"),
+    wallet: canonical(wallet, "wallet"),
+  }));
+  for (const field of ["account", "wallet"] as const)
+    if (new Set(rows.map((row) => row[field])).size !== rows.length) throw new Error(`Duplicate roster ${field}`);
+  return rows;
 }
 
 export function resolveRegistrarWorldAddress(target: RegistrarTarget = DEFAULT_ENVIRONMENT_ID): string {
@@ -241,12 +244,27 @@ export async function createRegistrarGame(
   return { ...result, gameId: resolveCreatedGameId(result.receipt, target) };
 }
 
+export async function freezeBlitzRoster(
+  provider: RpcProvider,
+  gameId: number,
+  players: readonly { account: string; wallet: string }[],
+  credentials: { accountAddress: string; privateKey: string },
+  target: RegistrarTarget,
+): Promise<void> {
+  const { manifest } = resolveRegistrarContext(target);
+  const account = createOperatorAccount(provider, credentials.accountAddress, credentials.privateKey);
+  const calldata = new CallData(nativeGamesAbi(manifest)).compile("freeze_blitz_roster", {
+    game_id: gameId,
+    players: blitzRosterOf(players),
+  });
+  await executeRegistrarCall(account, buildRegistrarCall("freeze_blitz_roster", calldata, target), target);
+}
+
 export async function settleBlitzRoster(
   provider: RpcProvider,
   gameId: number,
   credentials: { accountAddress: string; privateKey: string },
   target: RegistrarTarget,
-  admissionUrl: string,
 ): Promise<BlitzRosterSettlement> {
   const { manifest } = resolveRegistrarContext(target);
   const registry = manifest.world.address;
@@ -260,7 +278,6 @@ export async function settleBlitzRoster(
   const settled = await completeNativeAdminCommand({
     provider,
     manifest,
-    admissionUrl,
     gameId,
     ...credentials,
     command: { kind: "SettleBlitzRoster", value: undefined },

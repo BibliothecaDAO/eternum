@@ -82,16 +82,16 @@ export async function registerNativePreset(
 export function buildNativeGameParams(
   config: Config,
   input: CreateGamePayloadInput,
-  roster: readonly { account: string }[] = [],
+  roster: readonly { account: string; wallet: string }[] = [],
 ) {
   const preset = nativePresetForId(input.presetId);
   if (preset.entryRule === nativeRuleConstants.ENTRY_ROSTER) {
     const mode = preset.settlementMode;
     if (input.singleRealmMode || input.twoPlayerMode !== (mode === "Duel"))
       throw new Error("Settlement layout must match the mode preset");
-    if (mode === "Duel" && roster.length !== 2) throw new Error("Duel requires two players");
+    if (mode === "Duel" && roster.length !== 0 && roster.length !== 2) throw new Error("Duel requires two players");
     if (input.devModeOn) throw new Error("Free Blitz does not use development mode");
-    if (roster.length < 1 || roster.length > 24) throw new Error("Blitz requires a fixed roster of 1 to 24 players");
+    if (roster.length > 24) throw new Error("Blitz requires a fixed roster of 1 to 24 players");
   } else if (roster.length) throw new Error("Open seasons do not use a fixed roster");
   const common = buildCreateGameParams(config, { ...input, startMainAt: seasonStart(config, input) });
   return {

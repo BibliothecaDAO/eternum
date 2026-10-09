@@ -17,6 +17,7 @@ import { buildNativePreset } from "../config/native-preset";
 import {
   FRONTIER_ACCELERATED_PRESET_ID,
   FRONTIER_PRESET_ID,
+  SELF_CHECK_PRESET_ID,
   nativeGameModeOf,
 } from "../../../source/common/native-preset-modes";
 import {
@@ -411,7 +412,8 @@ describe("native presets", () => {
       "frontier",
     ]);
     expect(() => nativeGameModeOf(9)).toThrow("Unknown native preset 9");
-    expect(() => nativeGameModeOf(103)).toThrow("Unknown native preset 103");
+    expect(nativeGameModeOf(SELF_CHECK_PRESET_ID)).toBe("eternum");
+    expect(() => nativeGameModeOf(104)).toThrow("Unknown native preset 104");
   });
 
   test("native balances and mine ladders come only from the selected sheet", () => {
@@ -559,10 +561,10 @@ describe("fixed Regular Blitz rosters", () => {
     twoPlayerMode: false,
     useMapOverride: false,
   };
-  test("creation requires the frozen roster and never enables Duel or dev mode", () => {
+  test("creation can precede a frozen roster and never enables a wrong mode", () => {
     const config = configuration(2);
-    const players = [{ owner: "0xabc", account: "0xdef" }];
-    expect(() => buildNativeGameParams(config, input)).toThrow("fixed roster");
+    const players = [{ wallet: "0xabc", account: "0xdef" }];
+    expect(buildNativeGameParams(config, input).roster).toEqual([]);
     expect(() => buildNativeGameParams(config, input, Array(25).fill(players[0]))).toThrow("fixed roster");
     expect(() => buildNativeGameParams(config, { ...input, twoPlayerMode: true }, players)).toThrow(
       "Settlement layout",
@@ -571,9 +573,22 @@ describe("fixed Regular Blitz rosters", () => {
     expect(buildNativeGameParams(config, input, players).roster).toEqual(players);
   });
   test("a roster is its players' accounts in registration order, each once", () => {
-    expect(blitzRosterOf(["0x02", "0x1"])).toEqual([{ account: "0x2" }, { account: "0x1" }]);
-    expect(() => blitzRosterOf(["0x01", "0x1"])).toThrow("Duplicate");
-    expect(() => blitzRosterOf(["0x0"])).toThrow("Invalid");
+    expect(
+      blitzRosterOf([
+        { account: "0x02", wallet: "0xa" },
+        { account: "0x1", wallet: "0xb" },
+      ]),
+    ).toEqual([
+      { account: "0x2", wallet: "0xa" },
+      { account: "0x1", wallet: "0xb" },
+    ]);
+    expect(() =>
+      blitzRosterOf([
+        { account: "0x01", wallet: "0xa" },
+        { account: "0x1", wallet: "0xb" },
+      ]),
+    ).toThrow("Duplicate");
+    expect(() => blitzRosterOf([{ account: "0x0", wallet: "0xa" }])).toThrow("Invalid");
     expect(() => blitzRosterOf([])).toThrow("1 to 24");
   });
   test("creation recovery reads the registrar without waiting for Herald", async () => {

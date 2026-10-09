@@ -78,7 +78,7 @@ const routePayloads = {
   UpdateFaithfulOwnership: missing,
   ClaimWonderPoints: missing,
   ClaimPlayerFaithPoints: { player: address, wonder_id: missing },
-  RecordBlitzResults: { start: 0, players: [{ player: address, points: 0, rank: 1 }] },
+  RecordBlitzResults: { start: 0, players: [{ wallet: address, rank: 1 }] },
   CraftRelic: missing,
   CreateGuild: { owned_structure_id: missing, public: false, name: shortString.encodeShortString("route") },
   JoinGuild: { owned_structure_id: missing, guild_id: address },
