@@ -38,6 +38,7 @@ import {
 } from "@/three/characters/gym/procedural-character-gym-renderer";
 import {
   createProceduralAnimationCaptureReport,
+  isProceduralMeleeAttackCaptureSequence,
   type ProceduralAnimationCaptureOverlay,
   type ProceduralAnimationCaptureOptions,
   type ProceduralAnimationCaptureResult,
@@ -991,7 +992,7 @@ function selectDefaultCaptureFrame(
         ? "fire"
         : result.plan.sequence === "boat-broadside"
           ? "fire"
-          : result.plan.sequence === "melee-attack"
+          : isProceduralMeleeAttackCaptureSequence(result.plan.sequence)
             ? "contact"
             : "gait";
   const preferredFrames = result.frames.filter(({ runtimePhase }) => runtimePhase === preferredPhase);

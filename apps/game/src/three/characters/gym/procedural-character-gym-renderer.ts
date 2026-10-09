@@ -43,6 +43,7 @@ import { ProceduralCollisionGymStage } from "./procedural-collision-gym-stage";
 import {
   clampFrameIndex,
   createProceduralAnimationCapturePlan,
+  isProceduralMeleeAttackCaptureSequence,
   resolveAnimationCapturePhase,
   resolveAnimationFrameIssues,
   type ProceduralAnimationCaptureResult,
@@ -500,7 +501,7 @@ class ProceduralCharacterGymRuntime {
     if (sequence === "archer-shot") this.fireArrow();
     if (sequence === "boat-broadside") this.fireArrow();
     if (sequence === "dragon-fire") this.fireArrow();
-    if (sequence === "melee-attack") this.attackMelee();
+    if (isProceduralMeleeAttackCaptureSequence(sequence)) this.attackMelee();
     this.unitRuntime.update(0);
   }
 
@@ -1105,7 +1106,7 @@ function assertCaptureSequenceMatchesKind(
   if (sequence === "dragon-fire" && kind !== "dragon") {
     throw new Error(`Cannot capture dragon fire for ${kind}`);
   }
-  if (sequence === "melee-attack" && !isMeleeKind(kind)) {
+  if (isProceduralMeleeAttackCaptureSequence(sequence) && !isMeleeKind(kind)) {
     throw new Error(`Cannot capture a melee attack for ${kind}`);
   }
 }

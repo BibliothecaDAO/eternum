@@ -35,7 +35,8 @@ export type ProceduralAnimationCaptureSequence =
   | "dragon-fire"
   | "idle-hold"
   | "locomotion-cycle"
-  | "melee-attack";
+  | "melee-attack"
+  | "melee-attack-and-rest";
 export type ProceduralAnimationCaptureSampling = "all-frames" | "key-phases" | "phase-atlas";
 export type ProceduralAnimationCaptureOverlay = "clean" | "diagnostic";
 export type ProceduralAnimationCaptureViewId =
@@ -167,6 +168,16 @@ const PHASE_ATLAS_GRIP_VIEWS: readonly ProceduralAnimationCaptureView[] = [
   },
 ];
 
+/** One melee attack: settled briefly after it, or long enough that a guard held after the attack lets go. */
+export function isProceduralMeleeAttackCaptureSequence(sequence: ProceduralAnimationCaptureSequence): boolean {
+  return sequence === "melee-attack" || sequence === "melee-attack-and-rest";
+}
+
+/** The rest runs past the 4 s a bearer holds its guard after an attack made standing, so the relax to idle is seen. */
+function resolveMeleeSettleSeconds(sequence: ProceduralAnimationCaptureSequence): number {
+  return sequence === "melee-attack-and-rest" ? 4.8 : 0.2;
+}
+
 export function resolveDefaultAnimationCaptureSequence(kind: ProceduralUnitKind): ProceduralAnimationCaptureSequence {
   if (kind === "archer") return "archer-shot";
   if (kind === "boat") return "boat-broadside";
@@ -231,7 +242,7 @@ function resolveActionCapturePhases(
       "Archer",
     );
   }
-  if (sequence === "melee-attack") {
+  if (isProceduralMeleeAttackCaptureSequence(sequence)) {
     const phases = traceActionCapturePhases(
       startProceduralMeleeAttack(createIdleProceduralMeleeAttackState(), config.melee, config.humanoid.seed),
       (state) => advanceProceduralMeleeAttack(state, config.melee, config.humanoid.seed, fixedStepSeconds, false).state,
@@ -240,7 +251,12 @@ function resolveActionCapturePhases(
     const startFrame = phases[phases.length - 1].endFrame;
     return [
       ...phases,
-      { id: "idle", label: "Settled", startFrame, endFrame: startFrame + Math.ceil(0.2 / fixedStepSeconds) + 1 },
+      {
+        id: "idle",
+        label: "Settled",
+        startFrame,
+        endFrame: startFrame + Math.ceil(resolveMeleeSettleSeconds(sequence) / fixedStepSeconds) + 1,
+      },
     ];
   }
   if (sequence === "boat-broadside") {
@@ -353,7 +369,7 @@ function resolveCapturePhaseDurations(
       phase("recover", "Recover", config.archer.recoverSeconds),
     ];
   }
-  if (sequence === "melee-attack") {
+  if (isProceduralMeleeAttackCaptureSequence(sequence)) {
     return [
       phase("acquire", "Acquire", config.melee.acquireSeconds),
       phase("windup", "Windup", config.melee.windupSeconds),
@@ -361,7 +377,7 @@ function resolveCapturePhaseDurations(
       phase("contact", "Contact", config.melee.contactSeconds),
       phase("followThrough", "Follow-through", config.melee.followThroughSeconds),
       phase("recover", "Recover", config.melee.recoverSeconds),
-      phase("idle", "Settled", 0.2),
+      phase("idle", "Settled", resolveMeleeSettleSeconds(sequence)),
     ];
   }
   if (sequence === "boat-broadside") {

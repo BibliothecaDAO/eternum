@@ -44,6 +44,17 @@ describe("procedural animation capture plan", () => {
     expect(plan.views.map(({ id }) => id)).toEqual(["front-three-quarter"]);
   });
 
+  it("runs a melee attack on past the guard held after it, so the relax to idle is on the timeline", () => {
+    const config = applyProceduralUnitConfigPatch(createDefaultProceduralUnitConfig(), { kind: "knight" });
+    const attack = createProceduralAnimationCapturePlan(config, "key-phases", { sequence: "melee-attack" });
+    const rest = createProceduralAnimationCapturePlan(config, "key-phases", { sequence: "melee-attack-and-rest" });
+
+    expect(rest.phases.slice(0, -1)).toEqual(attack.phases.slice(0, -1));
+    const settled = rest.phases.at(-1);
+    expect(settled?.id).toBe("idle");
+    expect(((settled?.endFrame ?? 0) - (settled?.startFrame ?? 0)) * config.humanoid.fixedStep).toBeGreaterThan(4.8);
+  });
+
   it("adds two grip-detail views to the five-angle body atlas", () => {
     const config = applyProceduralUnitConfigPatch(createDefaultProceduralUnitConfig(), { kind: "archer" });
     const plan = createProceduralAnimationCapturePlan(config, "phase-atlas");
