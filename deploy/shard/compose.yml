@@ -107,6 +107,7 @@ services:
       PORT: "8080"
       VRF_KEY_FILE: /keys/vrf-key.json
       VRF_WORKERS: ${VRF_WORKERS:?Choose the stamping worker count}
+      PLAYER_CAPACITY: ${PLAYER_CAPACITY:-96}
     user: "${HOST_UID:?}:${HOST_GID:?}"
     volumes:
       - public-config:/config:ro

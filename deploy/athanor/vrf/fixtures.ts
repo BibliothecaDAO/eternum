@@ -1,6 +1,7 @@
 import { hash } from "starknet";
 import type { PlayIdentity, PlayInvoke } from "./transaction";
-export const identity: PlayIdentity & { guardianPublicKey: string } = {
+export const identity: PlayIdentity & { guardianPublicKey: string; playerCapacity: number } = {
+  playerCapacity: 2000,
   games: "0xabc",
   chainId: "0x534e5f54455354",
   accountClassHash: "0x123",
