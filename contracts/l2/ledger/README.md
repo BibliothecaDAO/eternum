@@ -15,6 +15,13 @@ while L2's unlocked amount is insufficient and submit once the independent L2 ga
 future timestamp or unlock future days to conceal clock lag. Operator payments are immediate, retry-safe and bounded by
 the cumulative unlock. They carry no treasury cut. Only the admin unpauses; the pauser can pause payouts.
 
+The immutable `claim_window_seconds` preset defaults to seven days. The shard accepts withdrawals only before
+`season.end + claim_window_seconds`; the ledger exposes this boundary as `frontier_claim_deadline` and refuses
+`close_frontier` until that timestamp. Closing returns unused funds to the treasury. No withdrawal created at or after
+the deadline can produce a valid shard receipt. Delivery of an older confirmed receipt can still be delayed: payments
+remain possible until closure, so the admin must drain the relay's confirmed withdrawal backlog before closing. After
+closure a previously paid claim remains a harmless retry; an unseen claim refuses with `Ledger: season closed`.
+
 Blitz settlement takes one `protocol_cut_bps` treasury cut on the whole incoming game pot: entries, paid swords/shields
 and sponsorship. The default is 2000 bps. The remaining pot splits by `chest_lords_bps` into the season's chest reserve
 and season prize pool. Refunds return the original payment before any settlement cut. Chest and season payouts have no

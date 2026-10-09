@@ -8,6 +8,7 @@ const LORDS = 10n ** 18n;
 export interface LedgerEconomicPreset {
   day_unit_seconds: number;
   season_bags: number;
+  claim_window_seconds: number;
   entry_fee: ReturnType<typeof uint256.bnToUint256>;
   protocol_cut_bps: number;
   chest_lords_bps: number;
@@ -32,7 +33,13 @@ function lords(amount: bigint) {
 
 export function buildLedgerEconomicPreset(
   gameType: DeploymentGameType,
-  options: { presetId?: number; sponsored?: boolean; chestLordsBps?: number; protocolCutBps?: number } = {},
+  options: {
+    presetId?: number;
+    sponsored?: boolean;
+    chestLordsBps?: number;
+    protocolCutBps?: number;
+    claimWindowSeconds?: number;
+  } = {},
 ): LedgerEconomicPreset {
   const native = nativePresetForId(options.presetId ?? nativePresetIdFor(gameType));
   if (native.gameType !== gameType) throw new Error("Ledger preset game type differs from shard preset");
@@ -56,6 +63,7 @@ export function buildLedgerEconomicPreset(
     },
     day_unit_seconds: native.dayUnitSeconds,
     season_bags: native.seasonBags,
+    claim_window_seconds: options.claimWindowSeconds ?? 7 * 24 * 60 * 60,
   };
 }
 
