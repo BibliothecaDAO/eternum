@@ -1009,11 +1009,12 @@ function createGymScene(stage: Group): Scene {
   rim.target.position.set(0, 1.2, 0);
   scene.add(hemisphere, key, rim, rim.target);
 
+  // The geometry is laid flat once; turning the mesh as well stood the floor on edge at z = 0, facing the rear, where
+  // it hid the front half of a figure from behind and showed as a wall in the rear capture view.
   const floorGeometry = new PlaneGeometry(13.6, 13.6, 36, 36);
   floorGeometry.rotateX(-Math.PI / 2);
   const floorMaterial = new MeshStandardMaterial({ color: 0x141b25, metalness: 0.28, roughness: 0.78 });
   const floor = new Mesh(floorGeometry, floorMaterial);
-  floor.rotation.x = -Math.PI / 2;
   floor.receiveShadow = true;
   floor.name = "character-gym-floor";
   stage.add(floor);
