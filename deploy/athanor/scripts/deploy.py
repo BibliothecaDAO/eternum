@@ -145,7 +145,7 @@ def verify_and_activate(config, directory):
         check = saved
     else:
         if launcher_handed_off(directory):
-            raise RuntimeError("launcher already handed off; finish the Worker check or retire the chain")
+            raise RuntimeError("chain facts changed after the launcher handoff; retire this chain")
         check = run_self_check(directory)
         check["checkedIdentity"] = identity
         shard.write_json(check_path, check)

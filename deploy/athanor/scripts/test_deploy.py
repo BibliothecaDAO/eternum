@@ -257,7 +257,7 @@ class WorkerLauncherTest(unittest.TestCase):
                         patch.object(deploy, "directory_status", return_value={"status": "pending"}) as status,
                         patch.object(deploy, "confirm_worker_launcher") as worker,
                     ):
-                        with self.assertRaisesRegex(RuntimeError, "launcher already handed off; finish the Worker check or retire the chain"):
+                        with self.assertRaisesRegex(RuntimeError, "^chain facts changed after the launcher handoff; retire this chain$"):
                             deploy.verify_and_activate({}, data)
                         check.assert_not_called()
                         worker.assert_not_called()
@@ -334,7 +334,7 @@ class LauncherAuthorityTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             data = Path(temporary)
             with patch.object(deploy, "gameplay_check_identity", return_value="changed"), patch.object(deploy, "launcher_handed_off", return_value=True, create=True) as state, patch.object(deploy, "directory_status", return_value={"status": "pending"}), patch.object(deploy, "run_self_check") as check, patch.object(deploy, "confirm_worker_launcher") as worker:
-                with self.assertRaisesRegex(RuntimeError, "launcher already handed off"):
+                with self.assertRaisesRegex(RuntimeError, "^chain facts changed after the launcher handoff; retire this chain$"):
                     deploy.verify_and_activate({}, data)
             state.assert_called_once_with(data)
             check.assert_not_called()
