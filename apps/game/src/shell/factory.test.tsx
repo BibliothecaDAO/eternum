@@ -16,7 +16,6 @@ vi.mock("@/ui/features/factory-v2/api/factory-worker", () => ({
 vi.mock("@/ui/features/factory-v2/components/factory-v2-content", () => ({
   FactoryV2Content: () => <p>schedule</p>,
 }));
-vi.mock("./herald", () => ({ useDirectory: () => ({ data: { failures: [] } }), DIRECTORY_QUERY_KEY: ["d"] }));
 
 import { FactoryPage } from "./factory";
 

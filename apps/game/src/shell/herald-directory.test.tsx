@@ -3,11 +3,7 @@ import { act, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, expect, it, vi } from "vitest";
 
-vi.mock("@/runtime/world/shards", () => ({
-  listPastedShards: () => [],
-  openPastedShards: async () => [],
-  requireOpenShard: async () => undefined,
-}));
+vi.mock("@/runtime/world/shards", () => ({ requireOpenShard: async () => undefined }));
 
 // Staging's guardian and account class, and a Realms id whose account they place at `PLAYER`.
 const GUARDIAN = {

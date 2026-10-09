@@ -6,10 +6,8 @@ import { useIdentitySession } from "@/hooks/context/identity-session";
 import { fetchLauncherStatus } from "@/ui/features/factory-v2/api/factory-worker";
 
 import { PageFrame } from "./frame/page-frame";
-import { useDirectory } from "./herald";
 import { Loading } from "./loading";
 import { NothingHere } from "./not-found";
-import { ShardUrlForm } from "./shard-url-form";
 import { APP_STATE_WORDS } from "./words";
 
 const FactoryV2Content = lazy(() =>
@@ -19,9 +17,9 @@ const FactoryV2Content = lazy(() =>
 );
 
 /**
- * The operators' page (spec 15): scheduling seasons, Blitz windows and Eternum games, following launches, and opening
- * another shard by its URL. Only a launcher sees it; a player, signed in or not, gets Nothing here. The launch service
- * answers who launches (the same rule that refuses every write), so the page holds no list of its own.
+ * The operators' page (spec 15): scheduling seasons, Blitz windows and Eternum games, and following launches. Only a
+ * launcher sees it; a player, signed in or not, gets Nothing here. The launch service answers who launches (the same
+ * rule that refuses every write), so the page holds no list of its own.
  */
 export const FactoryPage = () => {
   const { status, session } = useIdentitySession();
@@ -48,16 +46,8 @@ const LauncherGate = ({ session }: { session: Session }) => {
   return launcher.data?.launcher ? <FactoryBody /> : <NothingHere />;
 };
 
-const FactoryBody = () => {
-  const directory = useDirectory();
-  return (
-    <div className="flex flex-col gap-4">
-      <section className="plate p-3.5">
-        <ShardUrlForm failures={directory.data?.failures ?? []} />
-      </section>
-      <Suspense fallback={<Loading />}>
-        <FactoryV2Content />
-      </Suspense>
-    </div>
-  );
-};
+const FactoryBody = () => (
+  <Suspense fallback={<Loading />}>
+    <FactoryV2Content />
+  </Suspense>
+);
