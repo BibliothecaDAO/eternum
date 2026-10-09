@@ -4,6 +4,7 @@ import { realmsAccountAddress } from "@realms-world/identity/account";
 import type { Session } from "@realms-world/identity";
 
 import type { DirectoryGame } from "../herald";
+import type { PayoutWallet } from "../profile/payout-wallet";
 
 /**
  * The app lab's one fiction, the handoff's: Day 12 of a Frontier season, today ends with 7h 14m left, the player
@@ -122,7 +123,22 @@ export const LAB_SCREENS = {
   "no-realm": { signedIn: true, joined: false, games: [frontier(false), liveBlitz(false), eternum] },
   "blitz-seat": { signedIn: true, joined: false, games: [frontier(true), liveBlitz(true), eternum] },
   "season-over": { signedIn: true, joined: false, games: [endedFrontier, liveBlitz(false), eternum] },
+  "wallet-none": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
+  "wallet-hold": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
+  "wallet-ready": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
 } as const;
+
+const LAB_WALLET = "0x04a1c0de5eed000000000000000000000000000000000000000000000009c2e";
+
+/** The payout wallet the identity service reports on each screen's session; screens without one report none. */
+export const LAB_PAYOUT_WALLETS: Partial<Record<keyof typeof LAB_SCREENS, PayoutWallet>> = {
+  "wallet-none": { status: "no_wallet" },
+  "wallet-hold": { status: "on_hold", address: LAB_WALLET, until: (NOW + 17 * 3600 + 42 * 60) * 1000 },
+  "wallet-ready": { status: "ready", address: LAB_WALLET },
+};
+
+/** The lab's emailed code: this one is right, any other is refused as the identity service refuses it. */
+export const LAB_EMAIL_CODE = "111111";
 
 export type LabScreen = keyof typeof LAB_SCREENS;
 

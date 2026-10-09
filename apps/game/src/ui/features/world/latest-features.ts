@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-09",
+    title: "Link Ready by Email",
+    description:
+      "Added Ready's email wallet to the wallets you can link in Account, so a phone, or a browser without a wallet extension, can link one without installing anything.",
+    type: "feature",
+  },
+  {
+    date: "2026-10-09",
     title: "Your LORDS under the strip",
     description:
       "Frontier now shows the LORDS your realm holds right under the strip, so the chests you open and the refills you buy read at a glance.",

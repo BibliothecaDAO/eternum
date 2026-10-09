@@ -13,23 +13,28 @@ import { PlayerName } from "@/ui/design-system/kit/player-name";
 import { Sheet } from "@/ui/design-system/kit/sheet";
 import { failureSentence, nameRefusal } from "@/ui/modules/identity/identity-failures";
 import { shortAddress } from "@/ui/design-system/kit/address";
+import { formatDuration } from "@/ui/design-system/kit/time";
 
+import { useLayout } from "../frame/layout";
 import { Loading } from "../loading";
 import { FailureLine } from "../sign-in/failure-line";
 import { NameField, PortraitGrid } from "../sign-in/fields";
-import { PROFILE_WORDS, SIGN_IN_WORDS } from "../words";
+import { useNowSeconds } from "../use-now";
+import { PROFILE_WORDS, SIGN_IN_WORDS, WALLET_WORDS } from "../words";
 import { Confirm } from "./confirm";
+import { payoutWalletOf, type PayoutWallet } from "./payout-wallet";
+import { PayoutWalletPanel } from "./payout-wallet-panel";
 import { SettingRow, SettingRows } from "./setting-row";
 
 const WalletLink = lazy(() =>
   import("@/ui/modules/identity/wallet-actions").then((module) => ({ default: module.WalletLink })),
 );
 
-type Open = "name" | "portrait" | "wallet" | "unlink" | "sign-out" | null;
+type Open = "name" | "portrait" | "wallet" | "unlink" | "payout" | "sign-out" | null;
 
 /**
- * Account (spec 11): the name, the portrait, how the player signs in and the linked wallet, each a row that opens its
- * sheet; Sign out last, outline, asking first.
+ * Account (spec 11): the name, the portrait, how the player signs in and the payout wallet, each a row that opens its
+ * sheet; Sign out last, outline, asking first. The payout wallet opens beside the rows on desktop.
  */
 export const AccountCard = ({ session }: { session: Session }) => {
   const refresh = useIdentitySessionStore((state) => state.refresh);
@@ -41,6 +46,12 @@ export const AccountCard = ({ session }: { session: Session }) => {
     void refresh();
   };
   const wallet = session.user.address ?? null;
+  const payout = payoutWalletOf(session.user);
+  const layout = useLayout();
+  const now = useNowSeconds() * 1000;
+  const payoutPanel = payout && (
+    <PayoutWalletPanel wallet={payout} email={session.user.email} now={now} onChanged={() => void refresh()} />
+  );
   return (
     <div className="flex flex-col gap-4">
       <SettingRows>
@@ -52,13 +63,30 @@ export const AccountCard = ({ session }: { session: Session }) => {
         />
         <SettingRow icon="Ed" name={PROFILE_WORDS.portrait} onOpen={() => setOpen("portrait")} />
         <SettingRow icon="Dc" name={PROFILE_WORDS.signInMethods} value={<SignInMethods session={session} />} />
-        <SettingRow
-          icon="Wt"
-          name={PROFILE_WORDS.wallet}
-          value={wallet ? shortAddress(wallet) : PROFILE_WORDS.linkWallet}
-          onOpen={() => setOpen(wallet ? "unlink" : "wallet")}
-        />
+        {payout ? (
+          <SettingRow
+            icon="Wt"
+            name={WALLET_WORDS.payoutWallet}
+            value={payoutValue(payout, now)}
+            onOpen={() => setOpen(open === "payout" ? null : "payout")}
+          />
+        ) : (
+          <SettingRow
+            icon="Wt"
+            name={PROFILE_WORDS.wallet}
+            value={wallet ? shortAddress(wallet) : PROFILE_WORDS.linkWallet}
+            onOpen={() => setOpen(wallet ? "unlink" : "wallet")}
+          />
+        )}
       </SettingRows>
+      {open === "payout" &&
+        (layout === "phone" ? (
+          <Sheet label={WALLET_WORDS.payoutWallet} onClose={close}>
+            {payoutPanel}
+          </Sheet>
+        ) : (
+          <section className="plate p-5">{payoutPanel}</section>
+        ))}
       <Button role="outline" word={PROFILE_WORDS.signOut} icon="Xo" onClick={() => setOpen("sign-out")} />
       {open === "name" && (
         <Sheet label={PROFILE_WORDS.name} onClose={close}>
@@ -89,6 +117,13 @@ export const AccountCard = ({ session }: { session: Session }) => {
       )}
     </div>
   );
+};
+
+/** The payout wallet's row: link one, the time its hold has left, or its address. */
+const payoutValue = (payout: PayoutWallet, now: number) => {
+  if (payout.status === "no_wallet") return PROFILE_WORDS.linkWallet;
+  if (payout.status === "on_hold") return `${formatDuration((payout.until - now) / 1000)} ${WALLET_WORDS.left}`;
+  return shortAddress(payout.address);
 };
 
 /** How the player signs in: Discord, an email code, or both, as the identity service lists them. */

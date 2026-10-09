@@ -2,7 +2,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { Navigate, Route, Routes, useParams } from "react-router-dom";
 
-import { useIdentitySessionStore } from "@/hooks/context/identity-session";
+import { identityClient, useIdentitySessionStore } from "@/hooks/context/identity-session";
+import { IdentityRequestError } from "@realms-world/identity";
 import { useFrontierType } from "@/ui/features/frontier/use-frontier-type";
 import { useBootDocumentState } from "@/ui/modules/boot-loader";
 
@@ -10,7 +11,7 @@ import { BlitzListPage, BlitzLobbyPage } from "../blitz/blitz-pages";
 import { LearnPage } from "../learn/learn-page";
 import { DominionPage, EternumPage, FrontierPage } from "../play/age-pages";
 import { PlayPage } from "../play/play-page";
-import { PlayerPage, ProfilePage } from "../profile/profile-pages";
+import { PlayerPage, ProfilePage, ProfileRowPage } from "../profile/profile-pages";
 import { ResultsPage } from "../season-tab/results-page";
 import { SeasonPage } from "../season-tab/season-page";
 import {
@@ -26,6 +27,8 @@ import {
   LAB_SEAT_PROFILES,
   LAB_SESSION,
   LAB_CHAT,
+  LAB_EMAIL_CODE,
+  LAB_PAYOUT_WALLETS,
   labRatings,
   labSlots,
   type LabScreen,
@@ -62,6 +65,7 @@ const LabScreenView = ({ screen }: { screen: LabScreen }) => {
         <Route path="season" element={<SeasonPage />} />
         <Route path="results/:id" element={<ResultsPage />} />
         <Route path="profile" element={<ProfilePage />} />
+        <Route path="profile/account" element={<ProfileRowPage row="account" />} />
         <Route path="p/:address" element={<PlayerPage />} />
         <Route path="learn" element={<LearnPage />} />
       </Routes>
@@ -75,7 +79,9 @@ const LabScreenView = ({ screen }: { screen: LabScreen }) => {
  */
 const useLabSession = (screen: LabScreen) => {
   useEffect(() => {
-    useIdentitySessionStore.getState().applySession(LAB_SCREENS[screen].signedIn ? LAB_SESSION : null);
+    const payoutWallet = LAB_PAYOUT_WALLETS[screen];
+    const session = payoutWallet ? { ...LAB_SESSION, user: { ...LAB_SESSION.user, payoutWallet } } : LAB_SESSION;
+    useIdentitySessionStore.getState().applySession(LAB_SCREENS[screen].signedIn ? session : null);
   }, [screen]);
 };
 
@@ -83,6 +89,7 @@ const useLabSession = (screen: LabScreen) => {
 const createLabClient = (screen: LabScreen) => {
   answerAppReads(screen);
   answerLobbyChat();
+  answerIdentity();
   const client = new QueryClient({ defaultOptions: { queries: { staleTime: Infinity, retry: false } } });
   for (const gameId of [1, 3]) client.setQueryData(["shell", "leaderboard", LAB_CHAIN, gameId], LAB_FRONTIER_BOARD);
   client.setQueryData(["shell", "leaderboard", LAB_CHAIN, 7], LAB_BLITZ_BOARD);
@@ -115,6 +122,23 @@ const answerAppReads = (screen: LabScreen) => {
     const answer = answers[url.pathname];
     return answer ? Promise.resolve(answer(url)) : network(input, init);
   };
+};
+
+/**
+ * The identity service's answers for the account page: a code is always sent, and a wallet change spends the lab's
+ * one code and refuses any other, as the service refuses it. The client holds its own fetch, so its calls are answered
+ * on the client itself.
+ */
+const answerIdentity = () => {
+  identityClient.listSignInProviders = async () => ["discord"];
+  identityClient.sendSignInCode = async () => ({ success: true, expires_at: Date.now() + 300_000 });
+  const spend = async (code: unknown) => {
+    if (code !== LAB_EMAIL_CODE) throw new IdentityRequestError(400, "INVALID_OTP");
+  };
+  Object.assign(identityClient, {
+    unlinkWallet: spend,
+    linkWallet: async ({ code }: { code?: string }) => spend(code).then(() => LAB_PLAYER),
+  });
 };
 
 /**

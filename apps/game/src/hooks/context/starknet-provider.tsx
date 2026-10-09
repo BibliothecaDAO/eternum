@@ -3,6 +3,7 @@ import { resolveEndpoint } from "@realms-world/chain";
 import { mainnet } from "@starknet-react/chains";
 import { StarknetConfig, braavos, jsonRpcProvider, ready, voyager } from "@starknet-react/core";
 import { constants } from "starknet";
+import { WebWalletConnector } from "starknetkit/webwallet";
 import { QueryClient } from "@tanstack/react-query";
 import type React from "react";
 import { useCallback } from "react";
@@ -25,7 +26,9 @@ const controller = new ControllerConnector({
   chains: [{ rpcUrl: identityRpcUrl, chainId: constants.StarknetChainId.SN_MAIN }],
   defaultChainId: constants.StarknetChainId.SN_MAIN,
 });
-const identityConnectors = [controller, ready(), braavos()];
+// Ready's email wallet: Ready's own page holds the keys, shown over ours; a phone browser has no wallet extension.
+const readyByEmail = new WebWalletConnector({ url: "https://web.ready.co" });
+const identityConnectors = [controller, ready(), readyByEmail, braavos()];
 
 const queryClient = new QueryClient({
   defaultOptions: {
