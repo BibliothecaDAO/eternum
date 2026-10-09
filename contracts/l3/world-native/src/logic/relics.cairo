@@ -267,7 +267,9 @@ pub mod RelicState {
             let context = crate::commands::load_context(game_id, context);
             assert!(command.amount != 0, "zero LORDS withdrawal");
             let realm = ResourceKey { game_id, entity_id: command.structure_id };
-            assert!(crate::logic::structures::owner(realm) == actor, "actor does not own structure");
+            let record = crate::logic::structures::record(realm);
+            assert!(record.base.category == crate::taxonomy::REALM_CATEGORY, "withdrawal requires a realm");
+            assert!(record.owner == actor, "actor does not own structure");
             self
                 .resources(game_id)
                 .spend_resource(
@@ -277,10 +279,8 @@ pub mod RelicState {
                     context.timestamp,
                     crate::commands::resource_context(context),
                 );
-            let withdrawal = crate::relics::LordsWithdrawal {
-                player: actor, structure_id: command.structure_id, amount: command.amount,
-            };
-            self.record_lords_withdrawal(game_id, withdrawal, context.timestamp);
+            let withdrawal = crate::relics::LordsWithdrawal { account: actor, amount: command.amount };
+            self.record_lords_withdrawal(realm, withdrawal, context.timestamp);
             ()
         }
     }
@@ -509,13 +509,13 @@ pub mod RelicState {
 
         fn record_lords_withdrawal(
             ref self: ComponentState<TContractState>,
-            game_id: u32,
+            realm: ResourceKey,
             withdrawal: crate::relics::LordsWithdrawal,
             timestamp: u64,
         ) {
             let claim_id = starknet::get_tx_info().unbox().transaction_hash;
-            assert!(self.data.relics.lords_withdrawals.read((game_id, claim_id)).is_none(), "withdrawal already recorded");
-            self.data.relics.lords_withdrawals.write((game_id, claim_id), Some(withdrawal));
+            assert!(self.data.relics.lords_withdrawals.read(claim_id).is_none(), "withdrawal already recorded");
+            self.data.relics.lords_withdrawals.write(claim_id, Some(withdrawal));
             let mut values = array![];
             withdrawal.serialize(ref values);
             self
@@ -523,7 +523,7 @@ pub mod RelicState {
                     crate::events::RowSet {
                         version: 1,
                         model: 'LordsWithdrawal',
-                        keys: array![game_id.into(), claim_id].span(),
+                        keys: array![realm.game_id.into(), claim_id].span(),
                         values: values.span(),
                     },
                 );
@@ -531,9 +531,9 @@ pub mod RelicState {
                 .emit(
                     crate::ownership::StoryEvent {
                         version: 2,
-                        game_id,
-                        entity_id: Some(withdrawal.structure_id),
-                        owner: Some(withdrawal.player),
+                        game_id: realm.game_id,
+                        entity_id: Some(realm.entity_id),
+                        owner: Some(withdrawal.account),
                         timestamp,
                         tx_hash: starknet::get_tx_info().unbox().transaction_hash,
                         story: crate::ownership::Story::LordsWithdrawn(withdrawal),

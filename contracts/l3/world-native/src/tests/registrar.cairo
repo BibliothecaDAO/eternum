@@ -2547,6 +2547,10 @@ fn a_lords_withdrawal_after_season_end_spends_the_realm_once() {
     assert!(execute_in_game(d, game_id, withdraw, after_end));
     snforge_std::start_cheat_transaction_hash(d.games, 56790);
     assert!(!execute_in_game(d, game_id, withdraw, after_end + 1));
+    // A new affordable debit with the original hash must not overwrite its receipt.
+    snforge_std::start_cheat_transaction_hash(d.games, 56789);
+    let duplicate = Command::WithdrawLords(crate::relics::WithdrawLords { structure_id: home.entity_id, amount: 50 });
+    assert!(!execute_in_game(d, game_id, duplicate, after_end + 2));
     let lords = ResourceSlot { game_id, entity_id: home.entity_id, resource_type: crate::resources::LORDS };
     assert_eq!(
         IResourceOperationsDispatcher { contract_address: d.games }.resource_balance(lords), 100 * RESOURCE_PRECISION,
@@ -2561,12 +2565,12 @@ fn a_lords_withdrawal_after_season_end_spends_the_realm_once() {
                 withdrawals += 1;
                 assert_eq!(
                     withdrawal,
-                    crate::relics::LordsWithdrawal { player: d.actor, structure_id: home.entity_id, amount: 200 },
+                    crate::relics::LordsWithdrawal { account: d.actor, amount: 200 },
                 );
                 assert_eq!(story.version, 2);
                 assert_eq!(story.tx_hash, 56789);
                 let stored = snforge_std::interact_with_state(d.games, || {
-                    crate::state::read().relics.lords_withdrawals.read((game_id, story.tx_hash))
+                    crate::state::read().relics.lords_withdrawals.read(story.tx_hash)
                 });
                 assert_eq!(stored, Some(withdrawal));
             }

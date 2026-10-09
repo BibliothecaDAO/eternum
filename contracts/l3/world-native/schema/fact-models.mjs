@@ -1351,7 +1351,7 @@ export const syncScopes = {
   BitcoinContribution: byPlayer,
   PlayerFaithPoints: byPlayer,
   PointsAwarded: byPlayer,
-  LordsWithdrawal: byPlayer,
+  LordsWithdrawal: { owners: ["account"] },
   RaidEvent: { owners: ["player", "target_owner"] },
   WonderFaith: { owners: ["last_recorded_owner"] },
   TileOpt: { regions: [{ alt: "alt", x: "col", y: "row" }] },
