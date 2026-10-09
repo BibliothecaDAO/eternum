@@ -422,6 +422,12 @@ def start_runner_stack(config, directory, command):
     listing = directory_status(config, "pending")
     if listing["status"] != "pending":
         raise RuntimeError("Fresh runner shard must register PENDING")
+    expected_chain = "0x" + config["chain_id"].encode("ascii").hex()
+    if int(listing["chainId"], 16) != int(expected_chain, 16):
+        raise RuntimeError("Directory acknowledged a different shard identity")
+    write_json(directory / "directory-registration-ack.json", {
+        "url": config["public_herald_url"], "chainId": listing["chainId"], "status": "pending",
+    })
     run([*command, "up", "-d"], directory, "shard-start")
     run([*command, "wait", "init"], directory, "shard-init-wait")
     code = subprocess.check_output([*command, "ps", "--all", "--format", "{{.ExitCode}}", "init"], text=True).strip()
@@ -432,13 +438,14 @@ def start_runner_stack(config, directory, command):
 def stop_shard(directory):
     command = [*DOCKER, "compose", "-f", str(directory / "compose.json")]
     run([*command, "stop"], directory, "shard-stop")
-    # This is the immutable registration receipt, not a cached directory status. Failed preparation may never list.
-    receipt = directory / "directory-registration.json"
+    # Only an acknowledged PENDING registration belongs to this run; intent alone cannot retire a listing.
+    receipt = directory / "directory-registration-ack.json"
     if receipt.exists():
         config = json.loads((directory / "configuration.json").read_text())
         registered = json.loads(receipt.read_text())
         chain_id = "0x" + config["chain_id"].encode("ascii").hex()
-        if registered["url"] != config["public_herald_url"] or int(registered["chainId"], 16) != int(chain_id, 16):
+        if (registered["status"] != "pending" or registered["url"] != config["public_herald_url"]
+                or int(registered["chainId"], 16) != int(chain_id, 16)):
             raise RuntimeError("Directory registration differs from the runner's shard identity")
         directory_status(config, "retired")
 
