@@ -30,7 +30,7 @@ export const routeIdentityRequest = async (
 ) => {
   const { pathname } = new URL(request.url);
   const sendsCode = pathname === "/api/auth/email-otp/send-verification-otp";
-  const verifiesCode = pathname === "/api/auth/sign-in/email-otp";
+  const verifiesCode = ["/api/auth/sign-in/email-otp", "/api/auth/email-otp/check-verification-otp"].includes(pathname);
   const requestsCodeAccess = request.method === "POST" && (sendsCode || verifiesCode);
   if (requestsCodeAccess && !(await withinSignInBudget(env, request, sendsCode))) {
     return json({ error: sendsCode ? "too_many_codes" : "too_many_attempts" }, 429);

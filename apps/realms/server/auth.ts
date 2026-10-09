@@ -13,6 +13,7 @@ import type { IdentityEnv } from "./env";
 import { isNameTaken } from "./names";
 import { realmsIdOf } from "./realms-id";
 import { resendSignInCodes, type SendSignInCode } from "./sign-in-codes";
+import { resendWalletNotices } from "./wallet-notices";
 import { siws } from "./siws-plugin";
 import { verifyWalletOnMainnet, type VerifyWalletSignature } from "./wallet-signature";
 
@@ -22,6 +23,7 @@ const DAY_SECONDS = 24 * 60 * 60;
 interface IdentityServices {
   verifyWalletSignature: VerifyWalletSignature;
   sendSignInCode: SendSignInCode;
+  sendWalletNotice?: (email: string, address: string | null, id: string) => Promise<void>;
 }
 
 const identityServicesOf = (env: Pick<IdentityEnv, "IDENTITY_RPC_URL" | "RESEND_API_KEY">): IdentityServices => ({
@@ -72,8 +74,18 @@ export const createIdentityAuth = (
     | "RESEND_API_KEY"
   >,
   services: IdentityServices = identityServicesOf(env),
-) =>
-  betterAuth({
+) => {
+  const emailCodes = emailOTP({
+    otpLength: SIGN_IN_CODE_LENGTH,
+    expiresIn: SIGN_IN_CODE_SECONDS,
+    allowedAttempts: 3,
+    storeOTP: "hashed",
+    sendVerificationOTP: async ({ email, otp, type }) => {
+      if (type !== "sign-in") throw new APIError("BAD_REQUEST", { message: "SIGN_IN_CODES_ONLY" });
+      await services.sendSignInCode(email, otp);
+    },
+  });
+  return betterAuth({
     secret: env.BETTER_AUTH_SECRET,
     baseURL: env.BASE_URL,
     basePath: "/api/auth",
@@ -114,19 +126,17 @@ export const createIdentityAuth = (
       },
     },
     plugins: [
-      // A sign-in code for an email signs in its account, and creates it on the email's first sign-in.
-      emailOTP({
-        otpLength: SIGN_IN_CODE_LENGTH,
-        expiresIn: SIGN_IN_CODE_SECONDS,
-        allowedAttempts: 3,
-        storeOTP: "hashed",
-        sendVerificationOTP: async ({ email, otp, type }) => {
-          if (type !== "sign-in") throw new APIError("BAD_REQUEST", { message: "SIGN_IN_CODES_ONLY" });
-          await services.sendSignInCode(email, otp);
-        },
+      emailCodes,
+      siws({
+        origin: env.BASE_URL,
+        verifySignature: services.verifyWalletSignature,
+        db: env.DB,
+        checkCode: (context, email, otp) =>
+          emailCodes.endpoints.checkVerificationOTP({ context, body: { email, otp, type: "sign-in" } }),
+        sendNotice: services.sendWalletNotice ?? resendWalletNotices(env.RESEND_API_KEY),
       }),
-      siws({ origin: env.BASE_URL, verifySignature: services.verifyWalletSignature }),
     ],
   });
+};
 
 export type IdentityAuth = ReturnType<typeof createIdentityAuth>;

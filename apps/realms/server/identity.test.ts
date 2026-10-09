@@ -1,11 +1,13 @@
 import { readdirSync, readFileSync } from "node:fs";
-import { buildSiwsMessage, enrolOperator } from "@realms-world/identity";
+import { buildSiwsMessage, enrolOperator, payoutWalletStatement } from "@realms-world/identity";
 import { botRealmsId, deviceChangeHash, realmsAccountAddress } from "@realms-world/identity/account";
 import { createGuardian } from "@realms-world/guardian";
 import { byteArray, CallData, ec, hash, typedData, type TypedData } from "starknet";
 import { getPlatformProxy } from "wrangler";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
+import { Effect } from "effect";
+import { deliverWalletNotices } from "./wallet-changes";
 import { createIdentityAuth } from "./auth";
 import { WalletNotDeployedError, type VerifyWalletSignature } from "./wallet-signature";
 import type { IdentityEnv } from "./env";
@@ -32,6 +34,7 @@ let auth: ReturnType<typeof createIdentityAuth>;
 
 /** The email provider's inbox: the last sign-in code sent to each address. */
 const sentCodes = new Map<string, string>();
+const notices = vi.fn(async (_email: string, _address: string | null, _id: string) => {});
 /** Sign-in codes requested per address, as the rate limiter counts them. */
 const codesRequested = new Map<string, number>();
 const countSignInCode = (email: string) => {
@@ -101,6 +104,7 @@ beforeAll(async () => {
   };
   auth = createIdentityAuth(env, {
     verifyWalletSignature: verifyAsMainnet,
+    sendWalletNotice: notices,
     sendSignInCode: async (email, code) => void sentCodes.set(email, code),
   });
 }, 60_000);
@@ -149,24 +153,54 @@ const createBrowser = (parentDomainCookies: string[] = []) => {
   };
   const session = async () =>
     (await (await request("/api/auth/get-session")).json()) as {
-      user: { id: string; name: string; realmsId: string; address?: string | null; suggestedName?: string | null };
+      user: {
+        email: string;
+        id: string;
+        name: string;
+        realmsId: string;
+        address?: string | null;
+        suggestedName?: string | null;
+      };
     } | null;
   return { request, session };
 };
 
 /** Proves a wallet to the identity service, to link it or to recover the account it is linked to. */
 const proveWallet = async (browser: ReturnType<typeof createBrowser>, address: string, path: "link") => {
-  const { nonce } = (await (await browser.request("/api/auth/siws/nonce", { body: { address } })).json()) as {
+  const { nonce, realmsId } = (await (await browser.request("/api/auth/siws/nonce", { body: { address } })).json()) as {
     nonce: string;
+    realmsId: string;
   };
-  const message = buildSiwsMessage({ address, chainId: "SN_MAIN", domain: new URL(ORIGIN).host, nonce, uri: ORIGIN });
+  const message = buildSiwsMessage({
+    address,
+    chainId: "SN_MAIN",
+    domain: new URL(ORIGIN).host,
+    nonce,
+    uri: ORIGIN,
+    statement: payoutWalletStatement(realmsId),
+  });
   const { r, s } = ec.starkCurve.sign(
     typedData.getMessageHash(message as unknown as TypedData, address),
     walletKeys.get(BigInt(address).toString(16))!,
   );
   return browser.request(`/api/auth/siws/${path}`, {
-    body: { message: JSON.stringify(message), signature: [`0x${r.toString(16)}`, `0x${s.toString(16)}`], address },
+    body: {
+      message: JSON.stringify(message),
+      signature: [`0x${r.toString(16)}`, `0x${s.toString(16)}`],
+      address,
+      otp: await walletCode(browser),
+    },
   });
+};
+
+/** A fresh code for a wallet change; each helper models a new code-send window. */
+const walletCode = async (browser: ReturnType<typeof createBrowser>) => {
+  const email = (await browser.session())!.user.email;
+  codesRequested.delete(email);
+  expect(
+    (await browser.request("/api/auth/email-otp/send-verification-otp", { body: { email, type: "sign-in" } })).status,
+  ).toBe(200);
+  return sentCodes.get(email)!;
 };
 
 /** A signed-in player who linked a wallet from the account page. */
@@ -850,7 +884,7 @@ describe("identity Worker", () => {
     expect((await browser.session())!.user.address).toBeNull();
     expect(
       await env.DB.prepare("SELECT count(*) AS count FROM verification WHERE identifier = ?")
-        .bind(`siws_0x${BigInt(address).toString(16)}`)
+        .bind(`siws_${(await browser.session())!.user.realmsId}_0x${BigInt(address).toString(16)}`)
         .first<number>("count"),
     ).toBe(1);
   });
@@ -893,7 +927,9 @@ describe("identity Worker", () => {
     await signInWithCode(other, "second-holder@realms.test");
     expect((await proveWallet(other, first, "link")).status).toBe(409);
 
-    expect((await holder.request("/api/auth/siws/unlink", { body: {} })).status).toBe(200);
+    expect((await holder.request("/api/auth/siws/unlink", { body: { otp: await walletCode(holder) } })).status).toBe(
+      200,
+    );
     expect((await holder.session())?.user.address ?? null).toBeNull();
     expect((await proveWallet(other, first, "link")).status).toBe(200);
 
@@ -901,6 +937,72 @@ describe("identity Worker", () => {
     expect((await proveWallet(other, second, "link")).status).toBe(200);
     expect(BigInt((await other.session())?.user.address ?? 0)).toBe(BigInt(second));
     expect((await proveWallet(holder, first, "link")).status).toBe(200);
+  });
+
+  it("requires a fresh six-digit code from the account email for every wallet mutation", async () => {
+    const browser = createBrowser();
+    await signInWithCode(browser, "wallet-factor@realms.test");
+    const address = createWallet();
+    expect((await proveWallet(browser, address, "link")).status).toBe(200);
+    expect(notices).toHaveBeenLastCalledWith("wallet-factor@realms.test", expect.any(String), expect.any(String));
+    for (const otp of [undefined, "12345", "abcdef"]) {
+      expect((await browser.request("/api/auth/siws/unlink", { body: { otp } })).status).toBe(400);
+    }
+    const otp = await walletCode(browser);
+    const wrong = otp === "000000" ? "111111" : "000000";
+    expect((await browser.request("/api/auth/siws/unlink", { body: { otp: wrong } })).status).toBe(400);
+    expect((await browser.session())!.user.address).not.toBeNull();
+    expect((await browser.request("/api/auth/siws/unlink", { body: { otp } })).status).toBe(200);
+    expect(notices).toHaveBeenLastCalledWith("wallet-factor@realms.test", null, expect.any(String));
+    expect((await browser.request("/api/auth/siws/unlink", { body: { otp } })).status).toBe(400);
+    const expired = await walletCode(browser);
+    await env.DB.prepare("UPDATE verification SET expiresAt = ? WHERE identifier = ?")
+      .bind(new Date(Date.now() - 1000).toISOString(), "sign-in-otp-wallet-factor@realms.test")
+      .run();
+    expect((await browser.request("/api/auth/siws/unlink", { body: { otp: expired } })).status).toBe(400);
+  });
+
+  it("consumes one code once across concurrent changes and retries undelivered notices", async () => {
+    const browser = createBrowser();
+    await signInWithCode(browser, "wallet-race@realms.test");
+    const otp = await walletCode(browser);
+    notices.mockRejectedValueOnce(new Error("provider offline"));
+    const results = await Promise.all([1, 2].map(() => browser.request("/api/auth/siws/unlink", { body: { otp } })));
+    expect(results.map((r) => r.status).sort()).toEqual([200, 400]);
+    expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM wallet_change_notices").first<number>("n")).toBe(1);
+    await Effect.runPromise(deliverWalletNotices(env.DB, notices));
+    expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM wallet_change_notices").first<number>("n")).toBe(0);
+  });
+
+  it("refuses a valid wallet signature made for another Realms account", async () => {
+    const browser = createBrowser();
+    await signInWithCode(browser, "wallet-binding@realms.test");
+    const address = createWallet();
+    const { nonce } = (await (await browser.request("/api/auth/siws/nonce", { body: { address } })).json()) as {
+      nonce: string;
+    };
+    const message = buildSiwsMessage({
+      address,
+      chainId: "SN_MAIN",
+      domain: new URL(ORIGIN).host,
+      nonce,
+      uri: ORIGIN,
+      statement: payoutWalletStatement("0xdead"),
+    });
+    const { r, s } = ec.starkCurve.sign(
+      typedData.getMessageHash(message as unknown as TypedData, address),
+      walletKeys.get(BigInt(address).toString(16))!,
+    );
+    const response = await browser.request("/api/auth/siws/link", {
+      body: {
+        address,
+        message: JSON.stringify(message),
+        signature: [`0x${r.toString(16)}`, `0x${s.toString(16)}`],
+        otp: await walletCode(browser),
+      },
+    });
+    expect(response.status).toBe(401);
+    expect((await browser.session())!.user.address).toBeNull();
   });
 
   it("suggests a new player's display name from their Discord name or their email", async () => {

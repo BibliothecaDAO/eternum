@@ -2,8 +2,9 @@ import type { AuthContext, BetterAuthPlugin, Session, User } from "better-auth";
 import { APIError, createAuthEndpoint, sessionMiddleware } from "better-auth/api";
 import { z } from "zod";
 
-import { normalizeStarknetAddress, parseSiwsTypedData } from "@realms-world/identity";
+import { normalizeStarknetAddress, parseSiwsTypedData, payoutWalletStatement } from "@realms-world/identity";
 
+import { changeWallet } from "./wallet-changes";
 import { authorizeSiwsNonce, SiwsVerificationError } from "./siws-verification";
 import { WalletNotDeployedError, type VerifyWalletSignature } from "./wallet-signature";
 
@@ -11,6 +12,9 @@ interface SiwsPluginOptions {
   /** The app's origin: a signed message must name its host. */
   origin: string;
   verifySignature: VerifyWalletSignature;
+  db: D1Database;
+  checkCode(context: AuthContext, email: string, otp: string): Promise<unknown>;
+  sendNotice(email: string, address: string | null, id: string): Promise<void>;
 }
 
 const SiwsProof = z.object({
@@ -22,7 +26,14 @@ const SiwsProof = z.object({
 const NONCE_LIFETIME_MS = 15 * 60 * 1000;
 
 /** An endpoint behind the session middleware: it knows who is signed in. */
-type SignedInContext = { context: AuthContext & { session: { session: Session; user: User } } };
+type SignedInContext = { context: AuthContext & { session: { session: Session; user: User & { realmsId?: string } } } };
+
+const EmailCode = z.string().regex(/^\d{6}$/);
+const realmsIdOf = (ctx: SignedInContext) => {
+  const id = ctx.context.session.user.realmsId;
+  if (!id) throw new APIError("INTERNAL_SERVER_ERROR", { message: "account_identity_missing" });
+  return id;
+};
 
 const unauthorized = (reason: string) => new APIError("UNAUTHORIZED", { message: `Unauthorized: ${reason}` });
 
@@ -36,10 +47,12 @@ export const siws = (options: SiwsPluginOptions) => {
   const expectedHost = new URL(options.origin).host;
 
   /** The normalized wallet address a proof speaks for; the nonce is consumed only after the signature verifies. */
-  const verifyProof = async (ctx: { context: AuthContext }, proof: z.infer<typeof SiwsProof>): Promise<string> => {
+  const verifyProof = async (ctx: SignedInContext, proof: z.infer<typeof SiwsProof>): Promise<string> => {
     const owner = normalizeStarknetAddress(proof.address);
     const message = parseSiwsTypedData(proof.message);
-    const nonce = await ctx.context.internalAdapter.findVerificationValue(`siws_${owner}`);
+    if (message.message.statement !== payoutWalletStatement(realmsIdOf(ctx)))
+      throw unauthorized("Realms account mismatch");
+    const nonce = await ctx.context.internalAdapter.findVerificationValue(`siws_${realmsIdOf(ctx)}_${owner}`);
     if (!nonce || new Date() > nonce.expiresAt) throw unauthorized("Invalid or expired nonce");
     if (nonce.value !== message.message.nonce) throw unauthorized("Nonce mismatch");
     if (normalizeStarknetAddress(message.message.address) !== owner) throw unauthorized("Address mismatch");
@@ -69,16 +82,6 @@ export const siws = (options: SiwsPluginOptions) => {
   const findUserByWallet = (ctx: { context: AuthContext }, owner: string) =>
     ctx.context.adapter.findOne<{ id: string }>({ model: "user", where: [{ field: "address", value: owner }] });
 
-  /** Sets the signed-in account's wallet. */
-  const setWallet = async (ctx: SignedInContext, address: string | null) => {
-    try {
-      await ctx.context.internalAdapter.updateUser(ctx.context.session.user.id, { address });
-    } catch {
-      // A concurrent link of the same wallet lost the race on the unique address column.
-      throw new APIError("CONFLICT", { message: "WALLET_LINKED_ELSEWHERE" });
-    }
-  };
-
   return {
     id: "sign-in-with-starknet",
     schema: {
@@ -97,30 +100,34 @@ export const siws = (options: SiwsPluginOptions) => {
             .map((byte) => byte.toString(16).padStart(2, "0"))
             .join("");
           await ctx.context.internalAdapter.createVerificationValue({
-            identifier: `siws_${normalizeStarknetAddress(ctx.body.address)}`,
+            identifier: `siws_${realmsIdOf(ctx)}_${normalizeStarknetAddress(ctx.body.address)}`,
             value: nonce,
             expiresAt: new Date(Date.now() + NONCE_LIFETIME_MS),
           });
-          return { nonce };
+          return { nonce, realmsId: realmsIdOf(ctx) };
         },
       ),
       link: createAuthEndpoint(
         "/siws/link",
-        { method: "POST", body: SiwsProof, use: [sessionMiddleware] },
+        { method: "POST", body: SiwsProof.extend({ otp: EmailCode }), use: [sessionMiddleware] },
         async (ctx) => {
           const owner = await verifyProof(ctx, ctx.body);
           // Who holds the wallet is the database's answer, never the session's copy of the account.
           const holder = await findUserByWallet(ctx, owner);
-          if (holder?.id === ctx.context.session.user.id) return ctx.json({ address: owner });
-          if (holder) throw new APIError("CONFLICT", { message: "WALLET_LINKED_ELSEWHERE" });
-          await setWallet(ctx, owner);
+          if (holder && holder.id !== ctx.context.session.user.id)
+            throw new APIError("CONFLICT", { message: "WALLET_LINKED_ELSEWHERE" });
+          await changeWallet(options, ctx.context, ctx.context.session.user, owner, ctx.body.otp);
           return ctx.json({ address: owner });
         },
       ),
-      unlink: createAuthEndpoint("/siws/unlink", { method: "POST", use: [sessionMiddleware] }, async (ctx) => {
-        await setWallet(ctx, null);
-        return ctx.json({ address: null });
-      }),
+      unlink: createAuthEndpoint(
+        "/siws/unlink",
+        { method: "POST", body: z.object({ otp: EmailCode }), use: [sessionMiddleware] },
+        async (ctx) => {
+          await changeWallet(options, ctx.context, ctx.context.session.user, null, ctx.body.otp);
+          return ctx.json({ address: null });
+        },
+      ),
     },
   } satisfies BetterAuthPlugin;
 };

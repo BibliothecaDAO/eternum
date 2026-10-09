@@ -6,7 +6,7 @@ import {
   type PushConfiguration,
 } from "@bibliothecadao/notifications";
 import type { SiwsTypedData } from "./siws";
-import { buildSiwsMessage } from "./siws";
+import { buildSiwsMessage, payoutWalletStatement } from "./siws";
 import type { IdentityChainId, Session } from "./types";
 
 export type SignTypedData = (message: SiwsTypedData) => Promise<string[]>;
@@ -104,13 +104,17 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
   };
 
   /** A Sign in with Starknet proof: the server's nonce in a SNIP-12 message the wallet signs. */
-  const siwsProof = async (options: SignInOptions) => {
+  const siwsProof = async (options: SignInOptions, linking = false) => {
     const nonceResponse = await request("/auth/siws/nonce", {
       method: "POST",
       body: JSON.stringify({ address: options.address }),
     });
-    const { nonce } = await readJson<{ nonce: string }>(nonceResponse);
-    const message = buildSiwsMessage({ ...options, nonce });
+    const { nonce, realmsId } = await readJson<{ nonce: string; realmsId: string }>(nonceResponse);
+    const message = buildSiwsMessage({
+      ...options,
+      nonce,
+      ...(linking ? { statement: payoutWalletStatement(realmsId) } : {}),
+    });
     return {
       address: options.address,
       message: JSON.stringify(message),
@@ -133,16 +137,19 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
    * Links the wallet to the signed-in Realms account, replacing the wallet it had; the server refuses a wallet another
    * account holds.
    */
-  const linkWallet = async (options: SignInOptions): Promise<string> => {
+  const linkWallet = async (options: SignInOptions & { code: string }): Promise<string> => {
     const linked = await readJson<{ address: string }>(
-      await request("/auth/siws/link", { method: "POST", body: JSON.stringify(await siwsProof(options)) }),
+      await request("/auth/siws/link", {
+        method: "POST",
+        body: JSON.stringify({ ...(await siwsProof(options, true)), otp: options.code }),
+      }),
     );
     return linked.address;
   };
 
   /** Unlinks the account's wallet, freeing it for another account. */
-  const unlinkWallet = async (): Promise<void> => {
-    await readJson(await request("/auth/siws/unlink", { method: "POST", body: JSON.stringify({}) }));
+  const unlinkWallet = async (code: string): Promise<void> => {
+    await readJson(await request("/auth/siws/unlink", { method: "POST", body: JSON.stringify({ otp: code }) }));
   };
 
   /** The sign-in providers linked to the signed-in account, such as "discord". */

@@ -1,3 +1,6 @@
+import { Effect } from "effect";
+import { deliverWalletNotices } from "./wallet-changes";
+import { resendWalletNotices } from "./wallet-notices";
 import { createIdentityAuth, type IdentityAuth } from "./auth";
 import { superviseNotifiers } from "./directory";
 import { decodeIdentityEnv, type IdentityEnv } from "./env";
@@ -18,6 +21,7 @@ export default {
   },
   async scheduled(_controller: ScheduledController, rawEnv: Record<string, unknown>): Promise<void> {
     const env = decodeIdentityEnv(rawEnv);
+    await Effect.runPromise(deliverWalletNotices(env.DB, resendWalletNotices(env.RESEND_API_KEY)));
     await superviseNotifiers(env.DB, env.SHARD_NOTIFIER);
   },
 };

@@ -130,3 +130,25 @@ it("returns the service's code expiry to the device", async () => {
   const client = createIdentityClient({ apiUrl: "https://realms.test/api", fetch });
   expect(await client.sendSignInCode("lord@realms.test")).toEqual(expiry);
 });
+
+it("binds wallet links to the server's Realms id and carries the email code for link and unlink", async () => {
+  const fetch = vi
+    .fn<typeof globalThis.fetch>()
+    .mockResolvedValueOnce(Response.json({ nonce: "nonce-1", realmsId: "0xabc" }))
+    .mockResolvedValueOnce(Response.json({ address: "0x123" }))
+    .mockResolvedValueOnce(Response.json({ address: null }));
+  const signTypedData = vi.fn().mockResolvedValue(["0x1", "0x2"]);
+  const client = createIdentityClient({ apiUrl: "https://realms.test/api", fetch });
+  await client.linkWallet({
+    address: "0x123",
+    chainId: "SN_MAIN",
+    domain: "realms.test",
+    uri: "https://realms.test",
+    signTypedData,
+    code: "123456",
+  });
+  expect(signTypedData.mock.calls[0]![0].message.statement).toBe("Link this payout wallet to Realms account 0xabc");
+  expect(JSON.parse(String(fetch.mock.calls[1]![1]!.body))).toMatchObject({ otp: "123456" });
+  await client.unlinkWallet("654321");
+  expect(JSON.parse(String(fetch.mock.calls[2]![1]!.body))).toEqual({ otp: "654321" });
+});
