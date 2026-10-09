@@ -14,6 +14,8 @@ import {
   type InvocationsSignerDetails,
 } from "starknet";
 
+import { TransactionNotSentError } from "@bibliothecadao/provider";
+
 import type { Shard } from "./shard";
 
 /** What a gameplay account needs of its shard: the chain it signs for and the one gas bound the shard takes. */
@@ -35,9 +37,11 @@ interface ExecuteGameplayAccountTransactionOptions {
 }
 
 const configuredGameplaySubmits = new WeakMap<object, ConfiguredGameplaySubmit>();
-/** Per account, the last send until its transaction is in a block: the next send waits on it. */
+/** Per account, the last send until it settles (in a block, or proven not sent): the next send waits on it. */
 const sendsInFlight = new Map<string, Promise<void>>();
-const RECEIPT_POLL_MS = 250;
+const STATUS_POLL_MS = 250;
+/** Three blocks at the shard's 2 s block time: any invoke the node took shows by then, and a lost one frees the queue. */
+const NOT_SEEN_LIMIT_MS = 6_000;
 const IN_BLOCK = new Set<string>([
   TransactionFinalityStatus.PRE_CONFIRMED,
   TransactionFinalityStatus.ACCEPTED_ON_L2,
@@ -66,7 +70,9 @@ export function configureGameplayAccountSubmits<TAccount extends AccountInterfac
 
 /**
  * One transaction in flight per account: the shard takes only the account's current nonce, so each send reads it
- * fresh, and the next send starts once this one is in a block (a reverted one used its nonce too) or failed to send.
+ * fresh and resolves once its transaction is in a block (a reverted one used its nonce too), or rejects with
+ * TransactionNotSentError once the nonce proves it never will be. The next send starts when this one settles either
+ * way, so an action whose fate is unknown never holds the account's queue.
  */
 export function executeGameplayAccountTransaction({
   account,
@@ -80,9 +86,9 @@ export function executeGameplayAccountTransaction({
 
   const key = `${shard.chainId}:${BigInt(account.address)}`;
   const previous = sendsInFlight.get(key) ?? Promise.resolve();
-  const sent = previous.then(() => sendAtCurrentNonce(account, execute, calls, shard, details));
+  const sent = previous.then(() => sendUntilInBlock(account, execute, calls, shard, details));
   const settled = sent.then(
-    ({ transaction_hash }) => untilInBlock(account, transaction_hash),
+    () => undefined,
     () => undefined,
   );
   sendsInFlight.set(key, settled);
@@ -107,7 +113,8 @@ function assertConfiguredChain(address: string, configuredChain: string, request
   }
 }
 
-async function sendAtCurrentNonce(
+/** Signs and sends at the current nonce, then holds until the transaction is in a block or proven not sent. */
+async function sendUntilInBlock(
   account: GameplaySubmitAccount,
   execute: RawExecute,
   calls: AllowArray<Call>,
@@ -115,7 +122,24 @@ async function sendAtCurrentNonce(
   details: UniversalDetails | undefined,
 ): Promise<InvokeFunctionResponse> {
   const nonce = await account.getNonce(BlockTag.PRE_CONFIRMED);
-  const frame = {
+  const frame = playFrame(nonce, shard, details);
+  const expectedHash = ordinaryHash(account.address, calls, shard, frame);
+  const transactionHash = await execute(calls, frame).then(
+    (response) => response.transaction_hash,
+    (error: unknown) => {
+      if (isPolicyRefusal(error)) throw error;
+      if (isStampingRefusal(error)) throw new TransactionNotSentError(expectedHash, "refused");
+      // A lost response or opaque node error may follow acceptance: the nonce decides, never a resend.
+      return expectedHash;
+    },
+  );
+  await untilInBlock(account, BigInt(nonce), transactionHash);
+  return { transaction_hash: transactionHash };
+}
+
+/** An ordinary v3 invoke at this nonce with the shard's fixed bounds and tip 0. */
+function playFrame(nonce: string, shard: GameplayShard, details: UniversalDetails | undefined) {
+  return {
     ...details,
     nonce,
     version: "0x3" as const,
@@ -126,40 +150,79 @@ async function sendAtCurrentNonce(
     nonceDataAvailabilityMode: EDataAvailabilityMode.L1,
     feeDataAvailabilityMode: EDataAvailabilityMode.L1,
   };
-  const expectedHash = hash.calculateInvokeTransactionHash({
+}
+
+/** The hash the node gives this invoke: the stamp extends only the signature, which the hash does not cover. */
+function ordinaryHash(
+  senderAddress: string,
+  calls: AllowArray<Call>,
+  shard: GameplayShard,
+  frame: ReturnType<typeof playFrame>,
+): string {
+  return hash.calculateInvokeTransactionHash({
     ...frame,
-    senderAddress: account.address,
+    senderAddress,
     compiledCalldata: transaction.getExecuteCalldata(Array.isArray(calls) ? calls : [calls], "1"),
     chainId: shard.chainId as InvocationsSignerDetails["chainId"],
     nonceDataAvailabilityMode: EDAMode.L1,
     feeDataAvailabilityMode: EDAMode.L1,
   });
-  try {
-    return await execute(calls, frame);
-  } catch (error) {
-    if (isPolicyRefusal(error)) throw error;
-    // A lost response or opaque node/stamping error may follow inclusion. Observe the ordinary hash, never resend.
-    return { transaction_hash: expectedHash };
-  }
+}
+
+function errorCode(error: unknown): number | undefined {
+  const candidate = error as { code?: number; baseError?: { code?: number } } | null;
+  return candidate?.baseError?.code ?? candidate?.code;
 }
 
 function isPolicyRefusal(error: unknown): boolean {
-  const candidate = error as { code?: number; baseError?: { code?: number } } | null;
-  const code = candidate?.baseError?.code ?? candidate?.code;
+  const code = errorCode(error);
   return code !== undefined && [-32700, -32600, -32601, -32005].includes(code);
 }
 
 /**
- * Until the transaction is in a block (pre-confirmed or later, a revert included), where the account's nonce has moved
- * past it. A read that fails or says not found keeps the lock: elapsed time cannot prove a nonce is free.
+ * The stamping proxy's "Transaction refused": a stale nonce, another stamp of this account in flight (a second tab),
+ * or the node turning the stamped invoke away. None of them leaves the transaction with the node.
  */
-async function untilInBlock(account: GameplaySubmitAccount, transactionHash: string): Promise<void> {
+function isStampingRefusal(error: unknown): boolean {
+  return errorCode(error) === -32000;
+}
+
+/**
+ * Until the transaction is in a block (pre-confirmed or later, a revert included). While the node does not know its
+ * hash, the account's pre-confirmed nonce decides: past the frame's nonce, another transaction took it (unless the
+ * block that moved it holds this one); unmoved for NOT_SEEN_LIMIT_MS, it never reached the node or the node lost it.
+ * A hash the node holds but has not put in a block is slow, not lost, and keeps the wait open.
+ */
+async function untilInBlock(
+  account: GameplaySubmitAccount,
+  frameNonce: bigint,
+  transactionHash: string,
+): Promise<void> {
+  let lastSeenAt = Date.now();
   while (true) {
-    const status = await account.getTransactionStatus(transactionHash).then(
-      (result: { finality_status?: string }) => result.finality_status,
-      () => undefined,
-    );
-    if (status !== undefined && status !== null && IN_BLOCK.has(status)) return;
-    await new Promise((resolve) => setTimeout(resolve, RECEIPT_POLL_MS));
+    const status = await statusOf(account, transactionHash);
+    if (status !== undefined && IN_BLOCK.has(status)) return;
+    if (status !== undefined) lastSeenAt = Date.now();
+    else if (await nonceMovedPast(account, frameNonce)) {
+      const settled = await statusOf(account, transactionHash);
+      if (settled !== undefined && IN_BLOCK.has(settled)) return;
+      throw new TransactionNotSentError(transactionHash, "replaced");
+    } else if (Date.now() - lastSeenAt >= NOT_SEEN_LIMIT_MS)
+      throw new TransactionNotSentError(transactionHash, "dropped");
+    await new Promise((resolve) => setTimeout(resolve, STATUS_POLL_MS));
   }
 }
+
+/** The node's finality status for the hash; a failed read and an unknown hash both read as unseen. */
+const statusOf = (account: GameplaySubmitAccount, transactionHash: string): Promise<string | undefined> =>
+  account.getTransactionStatus(transactionHash).then(
+    (result: { finality_status?: string }) => result.finality_status ?? undefined,
+    () => undefined,
+  );
+
+/** A failed read never counts as moved: only the node's own nonce can prove the frame's nonce is spent. */
+const nonceMovedPast = (account: GameplaySubmitAccount, frameNonce: bigint): Promise<boolean> =>
+  account.getNonce(BlockTag.PRE_CONFIRMED).then(
+    (nonce) => BigInt(nonce) > frameNonce,
+    () => false,
+  );

@@ -28,6 +28,7 @@ import {
   shortString,
 } from "starknet";
 import { extractErrorMessage } from "./classify-transaction-error";
+import { TransactionNotSentError } from "./transaction-not-sent";
 import { PromiseQueue } from "./promise-queue";
 import { ExecutionOptions } from "./transaction-executor";
 import {
@@ -43,7 +44,7 @@ import {
   TransactionStreamWaiter,
   TransactionType,
 } from "./types";
-/** Sends one game command as the signer's own transaction; resolves with its hash once the shard accepted it. */
+/** Sends one game command as the signer's own transaction; resolves with its hash once it is in a block. */
 export type NativeSubmission = (signer: AccountInterface, calls: AllowArray<Call>) => Promise<SubmittedTransaction>;
 type SubmittedTransaction = { transaction_hash: string };
 
@@ -56,6 +57,7 @@ export {
 export type { BatchDelayConfig } from "./batch-config";
 export { classifyTransactionError, extractErrorMessage, formatErrorForConsole } from "./classify-transaction-error";
 export type { ClassifiedTransactionError } from "./classify-transaction-error";
+export { TransactionNotSentError } from "./transaction-not-sent";
 export { PromiseQueue } from "./promise-queue";
 export type { QueueableTransaction } from "./promise-queue";
 export type { TransactionExecutor, ExecutionOptions } from "./transaction-executor";
@@ -86,6 +88,9 @@ const classifySubmitFailure = (
   hasTxHash: boolean;
   retrySafety: TransactionRetrySafety;
 } => {
+  if (error instanceof TransactionNotSentError) {
+    return { failureKind: "not_sent", providerState: "ready", hasTxHash: false, retrySafety: "safe_after_reconnect" };
+  }
   if (matchesDestroyedConnectionError(error)) {
     return {
       failureKind: "provider_connection_destroyed",

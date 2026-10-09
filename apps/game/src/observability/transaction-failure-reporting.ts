@@ -205,7 +205,7 @@ const buildFingerprint = ({
   normalizedReason: string;
   failureKind?: TransactionSubmitFailureKind;
 }) => {
-  if (stage === "submit" && failureKind === "provider_connection_destroyed") {
+  if (stage === "submit" && (failureKind === "provider_connection_destroyed" || failureKind === "not_sent")) {
     return ["client-transaction-submission", failureKind, surface, transactionType ?? operation];
   }
 

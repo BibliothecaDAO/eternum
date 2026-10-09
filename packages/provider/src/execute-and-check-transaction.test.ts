@@ -1,7 +1,7 @@
 import type { Abi, AccountInterface, Call } from "starknet";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
-import { EternumProvider } from "./index";
+import { EternumProvider, TransactionNotSentError } from "./index";
 import type { TransactionStreamWaiter } from "./types";
 
 const makeProvider = (scope: NonNullable<ConstructorParameters<typeof EternumProvider>[3]> = {}) =>
@@ -79,6 +79,26 @@ describe("provider submission boundary", () => {
       transactionHash: "0x9",
       revertReason: "Not enough stamina to explore",
     });
+  });
+
+  it("reports an action proven not sent as not_sent, and lets the player's next action go", async () => {
+    const provider = makeProvider();
+    const submit = vi
+      .fn()
+      .mockRejectedValueOnce(new TransactionNotSentError("0x5", "replaced"))
+      .mockResolvedValue({ transaction_hash: "0x6" });
+    provider.setNativeSubmission(submit, bindings.commandAbi as Abi, () => 9);
+    provider.setTransactionStreamWaiter(async (hash) => ({ hash, block: 6, status: "PRE_CONFIRMED" }));
+    const failed = vi.fn();
+    provider.on("transactionFailed", failed);
+    const signer = { address: "0x111" } as AccountInterface;
+
+    await expect(provider.claim_wonder_points({ signer, value: 1 })).rejects.toThrow(
+      "Transaction 0x5 not sent (replaced)",
+    );
+    await provider.claim_wonder_points({ signer, value: 2 });
+    expect(failed).toHaveBeenCalledOnce();
+    expect(failed.mock.calls[0][0]).toMatchObject({ stage: "submit", failureKind: "not_sent", hasTxHash: false });
   });
 
   it("keeps a slow action pending with no timeout and signs the next only after Herald applies it", async () => {

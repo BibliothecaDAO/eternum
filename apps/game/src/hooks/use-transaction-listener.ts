@@ -6,6 +6,7 @@ import {
   TransactionType,
 } from "@bibliothecadao/provider";
 import { useGame } from "@/hooks/context/game-context";
+import { toast } from "@/ui/features/event-feed/notify";
 import {
   addClientTransactionBreadcrumb,
   reportClientTransactionFailure,
@@ -169,6 +170,9 @@ export const useTransactionListener = () => {
           retrySafety: payload.retrySafety,
         },
       });
+
+      // Proven absent from every block by the account's nonce: nothing applied and the queue moved on.
+      if (payload.failureKind === "not_sent") toast.error("Action not sent. Try again.");
 
       if (payload.transactionHash) {
         // Try to update existing transaction
