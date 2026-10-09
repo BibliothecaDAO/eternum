@@ -28,7 +28,7 @@ import type { PlayerNameResolver } from "../utils/entities";
 import { createGameViews, type GameViews } from "./views";
 import { type Shard } from "./shard";
 import { followGameRelease } from "./game-release";
-import { waitForActionOutcome } from "./transaction-outcome";
+import { waitForActionOutcome, type ActionOutcome } from "./transaction-outcome";
 
 export interface GameClientSetup {
   store: NativeFactStore;
@@ -84,6 +84,8 @@ export interface GameClient {
   visit(player: string | null): void;
   /** Reconnect through the same convergent subscribe → snapshot → replay routine used at boot. */
   recover(): Promise<void>;
+  /** Receipt outcome and Herald fact barrier; cancelled when this client stops. */
+  waitForAction(transactionHash: string): Promise<ActionOutcome>;
   /** Tears down the runtime and its transport, including a subscribe that never resolved. */
   dispose(): void;
 }
@@ -95,9 +97,9 @@ export async function createGameClient(input: CreateGameClientInput): Promise<Ga
   input.observer?.onSetupCompleted?.(setupResult);
   const runtime = (input.createRuntime ?? (() => new GameSyncRuntime()))();
   try {
-    const { projection, transport } = await startSync(runtime, setupResult, input);
+    const { projection, transport, waitForAction } = await startSync(runtime, setupResult, input);
     applyGameConfig(setupResult);
-    return buildGameClient(input, setupResult, runtime, projection, transport);
+    return buildGameClient(input, setupResult, runtime, projection, transport, waitForAction);
   } catch (error) {
     // A superseding session owns the runtime now; anything else leaves a half-started client to tear down.
     if (!(error instanceof SupersededGameSyncStartError)) disposeRuntime(runtime);
@@ -125,7 +127,11 @@ const startSync = async (
   runtime: GameSyncRuntime,
   setupResult: GameClientSetup,
   input: CreateGameClientInput,
-): Promise<{ projection: WorldSpatialProjection; transport: HeraldGameSyncTransport }> => {
+): Promise<{
+  projection: WorldSpatialProjection;
+  transport: HeraldGameSyncTransport;
+  waitForAction: GameClient["waitForAction"];
+}> => {
   const release = followGameRelease(
     setupResult.store,
     { gameId: input.gameId, shard: input.shard, schemaIdentity: input.bindings.schemaIdentity },
@@ -171,18 +177,25 @@ const startSync = async (
     if (owned === undefined) throw new Error("Action requires an owned structure in the current game");
     return owned;
   });
-  routeActionOutcomes(setupResult, runtime, outcomes.signal);
-  return { projection: installWorldSpatialProjection(runtime, setupResult), transport: session.transport };
+  const waitForAction = routeActionOutcomes(setupResult, runtime, outcomes.signal);
+  return {
+    projection: installWorldSpatialProjection(runtime, setupResult),
+    transport: session.transport,
+    waitForAction,
+  };
 };
 
 /** An action's outcome: the receipt says whether it applied, and an applied one settles once Herald has applied it. */
-const routeActionOutcomes = (setupResult: GameClientSetup, runtime: GameSyncRuntime, stopped: AbortSignal): void => {
+const routeActionOutcomes = (
+  setupResult: GameClientSetup,
+  runtime: GameSyncRuntime,
+  stopped: AbortSignal,
+): GameClient["waitForAction"] => {
   const { provider } = setupResult.network;
-  provider.setTransactionStreamWaiter(
-    (transactionHash) =>
-      waitForActionOutcome(runtime, provider.provider, provider.contracts.world, transactionHash, stopped),
-    (transactionHash) => runtime.recordSubmittedTransaction(transactionHash),
-  );
+  const wait = (transactionHash: string) =>
+    waitForActionOutcome(runtime, provider.provider, provider.contracts.world, transactionHash, stopped);
+  provider.setTransactionStreamWaiter(wait, (transactionHash) => runtime.recordSubmittedTransaction(transactionHash));
+  return wait;
 };
 
 const installWorldSpatialProjection = (
@@ -207,6 +220,7 @@ const buildGameClient = (
   runtime: GameSyncRuntime,
   projection: WorldSpatialProjection,
   transport: HeraldGameSyncTransport,
+  waitForAction: GameClient["waitForAction"],
 ): GameClient => {
   let signer: AccountInterface | null = null;
   let views: GameViews | null = null;
@@ -239,6 +253,7 @@ const buildGameClient = (
     },
     visit: (player) => transport.selectActor(signer?.address, player ?? undefined),
     recover: () => runtime.recover(),
+    waitForAction,
     dispose: () => disposeRuntime(runtime),
   };
   return client;

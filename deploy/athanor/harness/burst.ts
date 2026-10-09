@@ -14,7 +14,7 @@ import { mapWithConcurrency } from "./account-factory";
 import { burst } from "./burst-send";
 import { now, percentile, save } from "./burst-evidence";
 import { waitForLastReceipt, waitForNonemptyClose, type Trigger } from "./follow-up-release";
-import { classifyPlayReceipt, type PlayReceipt } from "./player-actions";
+import { classifyPlayReceipt, type PlayReceipt } from "./action-receipt";
 import { buildPlayCall, signPlayerInvoke, type PlayBounds } from "./player-invoke";
 import type { HeraldConfirmations } from "./game-client";
 import type { HarnessProvider } from "./provider";

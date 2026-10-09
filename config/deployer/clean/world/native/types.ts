@@ -18,7 +18,7 @@ export interface NativeWorldManifest {
 export interface RegistrarWorld {
   native: Pick<NativeRelease, "activeSchema" | "schemas">;
   world: { address: string };
-  shard: Pick<ShardRecord, "chainId">;
+  shard: Pick<ShardRecord, "chainId" | "l2GasBound">;
 }
 
 export interface NativeAuthentication {

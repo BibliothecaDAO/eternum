@@ -12,7 +12,7 @@ import { Worker, isMainThread, parentPort, workerData } from "node:worker_thread
 import path from "node:path";
 import { DeviceSigner, deviceKeyOf } from "@bibliothecadao/eternum";
 import { splitPlaytestRoster } from "../../../apps/launch-service/src/slots";
-import { openShard, type Shard } from "@bibliothecadao/eternum/game-client";
+import { configureGameplayAccountSubmits, openShard, type Shard } from "@bibliothecadao/eternum/game-client";
 import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
 import { Account, logger } from "starknet";
 import { assertChainId } from "../../../packages/chain/chain-guard.js";
@@ -22,7 +22,6 @@ import { readShardManifest } from "../../../packages/chain/shard-manifest.js";
 import { createHarnessAccounts, type HarnessAccount } from "./account-factory";
 import { connectActorClients, connectHarnessGameClient } from "./game-client";
 import { createHarnessGame } from "./harness-game";
-import { readPlayBounds } from "./player-invoke";
 import { HarnessProvider, measureHarnessRequests } from "./provider";
 import { prepareHarnessBots, runWorkload, type HarnessGameType, type TrackedTransaction } from "./driver";
 import { registerBotsThroughSlot } from "./slot-registration";

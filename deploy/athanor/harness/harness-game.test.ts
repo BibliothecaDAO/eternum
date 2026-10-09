@@ -48,6 +48,9 @@ test("a submitted hash cannot count as applied without the receipt observation p
   const provider = new EventEmitter();
   const game = createHarnessGame({
     gameId: 1,
+    waitForAction: async () => {
+      throw new Error("receipt port unavailable");
+    },
     setup: { store: {}, systemCalls: {}, network: { provider } },
   } as unknown as GameClient);
   const submission = await game.submit({ address: "0x1" } as Account, async () => {

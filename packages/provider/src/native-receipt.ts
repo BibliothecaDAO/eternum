@@ -20,6 +20,7 @@ export function gameplayRejection(
   events: readonly ReceiptEvent[],
   games: string,
   transactionHash: string,
+  scope?: { gameId: number; actor: string },
 ): GameplayRejection | undefined {
   const event = onlyOne(
     events.filter(
@@ -34,6 +35,8 @@ export function gameplayRejection(
   const [, version, gameId] = event.keys.map(BigInt);
   if (event.keys.length !== 5 || version !== 1n || gameId! <= 0n || gameId! >= 2n ** 32n)
     throw new Error("Malformed gameplay rejection");
+  if (scope && (gameId !== BigInt(scope.gameId) || BigInt(event.keys[3]!) !== BigInt(scope.actor)))
+    throw new Error("Malformed GameplayRejected identity");
   const [statusClass, ...reason] = event.data;
   if (statusClass === undefined) throw new Error("Malformed gameplay rejection");
   return {
@@ -50,6 +53,7 @@ export function batchRemaining(
   events: readonly ReceiptEvent[],
   games: string,
   transactionHash: string,
+  scope?: { gameId: number; actor: string },
 ): bigint | undefined {
   const event = onlyOne(
     events.filter(
@@ -62,6 +66,8 @@ export function batchRemaining(
   );
   if (!event) return undefined;
   if (event.keys.length !== 2 || event.data.length !== 3) throw new Error("Malformed native batch result");
+  if (scope && (BigInt(event.keys[1]!) !== BigInt(scope.gameId) || BigInt(event.data[0]!) !== BigInt(scope.actor)))
+    throw new Error("Malformed BatchProgress identity");
   const remaining = BigInt(event.data[2]!);
   if (remaining < 0n || remaining >= 2n ** 64n) throw new Error("Malformed native batch result");
   return remaining;
@@ -73,7 +79,7 @@ function onlyOne(events: readonly ReceiptEvent[], what: string): ReceiptEvent | 
 }
 
 /** A Cairo ByteArray (word count, words, pending word, its length), validated whole before it is decoded. */
-export function decodeByteArray(fields: readonly string[]): string {
+function decodeByteArray(fields: readonly string[]): string {
   const count = Number(BigInt(fields[0] ?? "-1"));
   if (!Number.isSafeInteger(count) || count < 0 || fields.length !== count + 3)
     throw new Error("Malformed native rejection reason");

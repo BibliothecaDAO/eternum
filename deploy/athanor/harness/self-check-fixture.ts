@@ -1,6 +1,6 @@
 import { Account, shortString } from "starknet";
 import { DeviceSigner, deviceKeyOf } from "@bibliothecadao/eternum";
-import { openShard } from "@bibliothecadao/eternum/game-client";
+import { configureGameplayAccountSubmits, openShard } from "@bibliothecadao/eternum/game-client";
 import { getNeighborHexes, RESOURCE_PRECISION, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import {
   nativeTilePackingConstants,
@@ -46,7 +46,6 @@ const assert = (condition: unknown): void => {
 const fixture: DeploymentCheckPort = {
   async createThrowawayGame(stopped) {
     const manifest = readShardManifest<NativeWorldManifest>(required("NATIVE_WORLD_MANIFEST"));
-    const bounds = readPlayBounds(manifest);
     const shard = await openShard(required("HERALD_URL"), bindings.schemaIdentity);
     const rpc = new HarnessProvider(shard.rpcUrl);
     const admin = new HarnessProvider(required("HARNESS_ADMIN_RPC_URL"));
@@ -88,19 +87,25 @@ const fixture: DeploymentCheckPort = {
       await prepareOpenHomes(gameId, [approved.address]);
       stopped.throwIfAborted();
       const connect = async (actor: string) => {
-        const connection = await connectHarnessGameClient({ actor, gameId, shard, provider: rpc, playBounds: bounds });
+        const connection = await connectHarnessGameClient({ actor, gameId, shard });
         clients.push(connection.client);
         stopped.throwIfAborted();
         return connection.client;
       };
-      const bot = new Account({
-        provider: rpc,
-        address: approved.address,
-        signer: new DeviceSigner(deviceKeyOf(approved.privateKey)),
-        cairoVersion: "1",
-      });
+      const bot = configureGameplayAccountSubmits(
+        new Account({
+          provider: rpc,
+          address: approved.address,
+          signer: new DeviceSigner(deviceKeyOf(approved.privateKey)),
+          cairoVersion: "1",
+        }),
+        shard,
+      );
       const botClient = await connect(bot.address);
-      const launcher = createOperatorAccount(rpc, privateLauncher.address, required("DEPLOYER_PRIVATE_KEY"));
+      const launcher = configureGameplayAccountSubmits(
+        createOperatorAccount(rpc, privateLauncher.address, required("DEPLOYER_PRIVATE_KEY")),
+        shard,
+      );
       const launcherClient = await connect(launcher.address);
       await createHarnessGame(botClient).waitUntilPlaying();
       stopped.throwIfAborted();

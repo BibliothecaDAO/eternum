@@ -5,7 +5,7 @@ import { classifyBattleOutcome, pickBattle, type BattleCandidate, type BattleOut
 import { rejectionOf } from "./rejections";
 import { setTimeout as sleep } from "node:timers/promises";
 import { type Account } from "starknet";
-import { playerRejectionReason } from "./player-actions";
+import { playerRejectionReason } from "./action-receipt";
 import type { HarnessProvider } from "./provider";
 import { type ActionPath, ActionPaths, ActionType, type GameActions } from "@bibliothecadao/eternum";
 import { ContractAddress, TroopTier, type ID, type TroopType } from "@bibliothecadao/types";

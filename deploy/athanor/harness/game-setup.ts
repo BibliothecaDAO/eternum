@@ -14,7 +14,7 @@ import { assertProviderChain } from "../../../packages/chain/chain-guard.js";
 import type { Shard } from "@bibliothecadao/eternum/game-client";
 import { connectHarnessGameClient } from "./game-client";
 import { HarnessProvider } from "./provider";
-import { readPlayBounds } from "./player-invoke";
+import { configureGameplayAccountSubmits } from "@bibliothecadao/eternum/game-client";
 
 const required = (name: string): string => {
   const value = process.env[name];
@@ -83,11 +83,9 @@ async function settleHarnessRoster(
     actor: address,
     gameId: gameId,
     shard: shard,
-    provider: provider,
-    playBounds: readPlayBounds(manifest),
   });
   try {
-    const launcher = createOperatorAccount(provider, address, privateKey);
+    const launcher = configureGameplayAccountSubmits(createOperatorAccount(provider, address, privateKey), shard);
     while (!connection.client.setup.store.require("GameRegistry", { game_id: gameId }).ready) {
       await connection.client.setup.network.provider.submitCommand(launcher, {
         kind: "SettleBlitzRoster",

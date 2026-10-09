@@ -292,11 +292,7 @@ async function waitForGameIndex(launch: PreparedLaunch): Promise<void> {
 }
 
 async function createAndSettleGame(launch: PreparedLaunch): Promise<void> {
-  const admissionUrl = launch.request.admissionUrl ?? process.env.ADMISSION_URL;
   const fixedRoster = nativePresetForId(launch.runtime.presetId).entryRule === nativeRuleConstants.ENTRY_ROSTER;
-  if (fixedRoster && !admissionUrl) {
-    throw new Error("ADMISSION_URL is required for automatic Blitz settlement");
-  }
   await createGame(launch);
   if (!fixedRoster) return;
   const settlement = await settleBlitzRoster(
@@ -304,7 +300,6 @@ async function createAndSettleGame(launch: PreparedLaunch): Promise<void> {
     await resolveGameId(launch),
     launchCredentials(launch),
     launch.request.manifest,
-    admissionUrl!,
   );
   launch.summary.finalizeAt = settlement.finalizeAt;
   launch.summary.settlementTransactions = settlement.settlementTransactions;

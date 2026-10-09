@@ -42,9 +42,7 @@ async function runAdministrativeCommand(args: CliArgs) {
     throw new Error("Administrative commands require --manifest (or NATIVE_WORLD_MANIFEST), --rpc-url and --game-id");
   const accountAddress = process.env.DEPLOYER_ACCOUNT_ADDRESS;
   const privateKey = process.env.DEPLOYER_PRIVATE_KEY;
-  const admissionUrl = process.env.ADMISSION_URL;
-  if (!accountAddress || !privateKey || !admissionUrl)
-    throw new Error("Native credentials and ADMISSION_URL are required");
+  if (!accountAddress || !privateKey) throw new Error("Native credentials are required");
   const provider = new RpcProvider({ nodeUrl: args["rpc-url"] });
   const manifest = readShardManifest<NativeWorldManifest>(args.manifest);
   await assertProviderChain(provider, manifest, "--rpc-url");
@@ -54,7 +52,6 @@ async function runAdministrativeCommand(args: CliArgs) {
     gameId: Number(args["game-id"]),
     accountAddress,
     privateKey,
-    admissionUrl,
     command: JSON.parse(readFileSync(args.command, "utf8")) as NativeCommand,
   });
   console.log(JSON.stringify({ event: "native_admin_command", ...result }));

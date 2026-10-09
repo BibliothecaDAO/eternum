@@ -54,7 +54,7 @@ test("an admission revert, wrong refusal reason or internal failure cannot count
     state: "rejected" as const,
     block: 2,
     reason: "missing explorer",
-    statusClass: shortString.encodeShortString("GAMEPLAY_REJECTED"),
+    statusClass: "GAMEPLAY_REJECTED",
   };
   expect(() => assertDomainRefusal(outcome, "missing explorer")).not.toThrow();
   expect(() => assertDomainRefusal({ ...outcome, statusClass: undefined }, "missing explorer")).toThrow();

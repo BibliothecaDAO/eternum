@@ -9,9 +9,6 @@ import { fetchHeraldGameDirectory, type GameClientObserver, type Shard } from "@
 import { createMicrotaskGameSyncScheduler, type GameSyncTransaction } from "@bibliothecadao/eternum/game-sync";
 import type { NativeWorldBindings } from "@bibliothecadao/types";
 import { now } from "./clock";
-import { playerActions } from "./player-actions";
-import type { PlayBounds } from "./player-invoke";
-import type { HarnessProvider } from "./provider";
 import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
 
 interface ConnectHarnessGameClientOptions {

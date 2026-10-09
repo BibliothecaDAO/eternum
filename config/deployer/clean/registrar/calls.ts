@@ -246,7 +246,6 @@ export async function settleBlitzRoster(
   gameId: number,
   credentials: { accountAddress: string; privateKey: string },
   target: RegistrarTarget,
-  admissionUrl: string,
 ): Promise<BlitzRosterSettlement> {
   const { manifest } = resolveRegistrarContext(target);
   const registry = manifest.world.address;
@@ -260,7 +259,6 @@ export async function settleBlitzRoster(
   const settled = await completeNativeAdminCommand({
     provider,
     manifest,
-    admissionUrl,
     gameId,
     ...credentials,
     command: { kind: "SettleBlitzRoster", value: undefined },
