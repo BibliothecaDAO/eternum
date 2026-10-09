@@ -191,7 +191,7 @@ def chain_commitment(preset, on_chain, released):
 def harness_invocation(args, environ, data=DATA, started=None):
     """The harness command against this shard: its private settings from harness.env, its reports under
     data/harness/<start time> unless the caller names a directory."""
-    environment = {**environ, **shard.read_private_environment(data / "harness.env")}
+    environment = {**environ, **shard.read_private_environment(data / "harness.env"), **shard.host_credentials(data)}
     environment["HARNESS_ADMIN_RPC_URL"] = "http://madara:9944/rpc/v0_10_2"
     environment["RPC_URL"] = "http://rpc:8080/rpc/v0_10_2"
     environment["HERALD_URL"] = "http://herald:3003"
