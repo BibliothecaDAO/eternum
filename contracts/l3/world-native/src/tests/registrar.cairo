@@ -2464,12 +2464,18 @@ fn frontier_ruin_clear_pays_its_stored_chest_into_the_realm_and_leaves_no_chest(
     assert_eq!(payouts, 1);
 }
 
-#[test]
-fn an_exhausted_day_quotes_one_but_discovers_no_ruin_and_pays_nothing() {
+#[test_case(name: "positive_expected_shares", 1_000_000_000_000)]
+#[test_case(name: "zero_expected_shares", 0)]
+fn an_exhausted_day_price_never_funds_a_ruin_or_payout(estimate: u128) {
     let rules = crate::expeditions::FrontierDiscoveryRules {
         stragglers_bps: 1, camp_bps: 0, rift_bps: 0, ruin_bps: 8000, shrine_bps: 0, well_bps: 0, empty_reveal_limit: 7,
     };
     let (d, game_id, key) = setup_frontier_chests_with_rules(Some(rules));
+    let expected_price = if estimate == 0 {
+        IRelicsDispatcher { contract_address: d.games }.chest_rules(game_id).unwrap().price_ceiling
+    } else {
+        1
+    };
     let context = crate::tests::context(d.games, game_id);
     let raw_root = discovery_root(
         game_id, context.game.unbox().seed, rules, 0, Some(any_chest()), crate::discovery::Discovery::Ruin(any_chest()),
@@ -2484,7 +2490,7 @@ fn an_exhausted_day_quotes_one_but_discovers_no_ruin_and_pays_nothing() {
             let exhausted = crate::logic::lords_budget::open_day(
                 chest_rules,
                 crate::relics::LordsBudget {
-                    pool_left: 0, open: 0, day, price: 0, estimate: 1_000_000_000_000, rolled_shares: 0,
+                    pool_left: 0, open: 0, day, price: 0, estimate, rolled_shares: 0,
                 },
                 crate::logic::lords_budget::SeasonClock {
                     game: context.game.unbox(),
@@ -2492,7 +2498,7 @@ fn an_exhausted_day_quotes_one_but_discovers_no_ruin_and_pays_nothing() {
                     tick: context.rules.unbox().tick_config.armies_tick_in_seconds,
                 },
             );
-            assert_eq!(exhausted.price, 1);
+            assert_eq!(exhausted.price, expected_price);
             crate::state::write().relics.rollover_budget.write(game_id, Some(exhausted));
         },
     );
@@ -2504,7 +2510,7 @@ fn an_exhausted_day_quotes_one_but_discovers_no_ruin_and_pays_nothing() {
     let tile = crate::geometry::tile_key(game_id, crate::geometry::neighbor(army.coord, 0));
     assert_eq!(snforge_std::interact_with_state(d.games, || crate::map::structure_occupant(tile)), None);
     let budget = IRelicsDispatcher { contract_address: d.games }.lords_budget(game_id).unwrap();
-    assert_eq!((budget.price, budget.pool_left, budget.open), (1, 0, 0));
+    assert_eq!((budget.price, budget.pool_left, budget.open), (expected_price, 0, 0));
     assert!(budget.rolled_shares > 0);
     assert_eq!(resources.resource_balance(lords), before);
     for (_, event) in spy.get_events().emitted_by(d.games).events.span() {
