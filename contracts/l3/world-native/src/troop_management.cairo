@@ -4,12 +4,12 @@ use crate::troops::{TroopTier, TroopType, Troops};
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct GuardSlot {
-    pub structure_id: u32,
+    pub structure_id: u64,
     pub slot: u8,
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub enum Army {
-    Explorer: u32,
+    Explorer: u64,
     Guard: GuardSlot,
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
@@ -21,7 +21,7 @@ pub struct RecruitGuard {
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct RecruitExplorer {
-    pub explorer_id: u32,
+    pub explorer_id: u64,
     pub amount: u128,
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
@@ -35,13 +35,13 @@ pub enum ManageTroops {
     RecruitGuard: RecruitGuard,
     RemoveGuard: GuardSlot,
     RecruitExplorer: RecruitExplorer,
-    RemoveExplorer: u32,
+    RemoveExplorer: u64,
     Transfer: TransferTroops,
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct ExplorerCreated {
-    pub explorer_id: u32,
-    pub structure_id: u32,
+    pub explorer_id: u64,
+    pub structure_id: u64,
     pub category: TroopType,
     pub tier: TroopTier,
     pub amount: u128,
@@ -49,10 +49,10 @@ pub struct ExplorerCreated {
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct ExplorerRemoved {
-    pub explorer_id: u32,
+    pub explorer_id: u64,
 }
 
-pub fn management_story(command: ManageTroops) -> (u32, crate::ownership::Story) {
+pub fn management_story(command: ManageTroops) -> (u64, crate::ownership::Story) {
     use crate::ownership::{GuardAddStory, Story};
     match command {
         ManageTroops::RecruitGuard(value) => (
@@ -88,8 +88,7 @@ pub trait ITroopManagement<T> {
         actor: starknet::ContractAddress,
         command: ManageTroops,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> ((), crate::ownership::StoryCursor);
+    );
 }
 
 pub fn assert_amount(amount: u128) {

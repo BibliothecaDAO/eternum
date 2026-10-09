@@ -3,7 +3,13 @@ import { blitzPreset } from "./blitz/native";
 import { eternumPreset } from "./eternum/native";
 import { duelPreset } from "./duel/native";
 import type { NativePreset } from "./common/native-preset";
-import { FRONTIER_ACCELERATED_PRESET_ID, nativeGameModeOf } from "./common/native-preset-modes";
+import {
+  FRONTIER_ACCELERATED_PRESET_ID,
+  SELF_CHECK_PRESET_ID,
+  FRONTIER_SELF_CHECK_PRESET_ID,
+  nativeGameModeOf,
+} from "./common/native-preset-modes";
+import { nativeCommandBits } from "../../contracts/l3/world-native/schema/commands.gen";
 import type { GameType } from "./common/types";
 
 const modes: Record<GameType, NativePreset> = {
@@ -22,8 +28,21 @@ const frontierAcceleratedPreset: NativePreset = {
   clockScale: 120,
 };
 
+// This immutable fixture changes route availability only. Real mode/domain refusals remain part of its check.
+const selfCheckPreset: NativePreset = {
+  ...eternumPreset,
+  id: SELF_CHECK_PRESET_ID,
+  commandMask: Object.values(nativeCommandBits).reduce((mask, bit) => mask | BigInt(bit), 0n),
+};
+
+const frontierSelfCheckPreset: NativePreset = {
+  ...frontierPreset,
+  id: FRONTIER_SELF_CHECK_PRESET_ID,
+  chests: { ...frontierPreset.chests!, pool: 0 },
+};
+
 export const nativePresets: Record<number, NativePreset> = Object.fromEntries(
-  [...Object.values(modes), frontierAcceleratedPreset].map((preset) => {
+  [...Object.values(modes), frontierAcceleratedPreset, selfCheckPreset, frontierSelfCheckPreset].map((preset) => {
     if (nativeGameModeOf(preset.id) !== preset.gameType)
       throw new Error(`Native preset ${preset.id} plays ${preset.gameType}, not ${nativeGameModeOf(preset.id)}`);
     return [preset.id, preset];

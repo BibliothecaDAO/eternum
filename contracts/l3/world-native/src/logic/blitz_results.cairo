@@ -1,8 +1,8 @@
 #[starknet::component]
 pub mod BlitzResultState {
-    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
+    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
     use starknet::{ContractAddress, get_tx_info};
-    use crate::blitz_results::{BlitzResult, PlayerResult, RecordBlitzResults};
+    use crate::blitz_results::{BlitzResult, RankedPlayer, RecordBlitzResults};
     use crate::events::RowSet;
     use crate::ownership::{Story, StoryEvent};
     use crate::registrar::RosterPlayer;
@@ -27,12 +27,12 @@ pub mod BlitzResultState {
         fn blitz_result(self: @ComponentState<TContractState>, game_id: u32) -> BlitzResult {
             let roster = self.roster(game_id);
             let mut players = array![];
-            for index in 0..self.data.blitz_results.count.read(game_id) {
-                players.append(self.data.blitz_results.results.read((game_id, index)));
+            for index in 0..self.data.blitz_results.ranked_count.read(game_id) {
+                players.append(self.data.blitz_results.ranked_results.read((game_id, index)));
             }
             let complete = !roster.is_empty() && players.len() == roster.len();
             let commitment = if complete {
-                crate::blitz_results::result_commitment(game_id, players.span())
+                crate::blitz_results::result_commitment(get_tx_info().unbox().chain_id, game_id, players.span())
             } else {
                 0
             };
@@ -44,18 +44,17 @@ pub mod BlitzResultState {
             actor: ContractAddress,
             command: RecordBlitzResults,
             context: crate::commands::ActionContext,
-            mut story_cursor: crate::ownership::StoryCursor,
-        ) -> (u64, crate::ownership::StoryCursor) {
+        ) -> u64 {
             let context = crate::commands::load_context(game_id, context);
             self.assert_finalizable(context);
             let roster = self.roster(game_id);
-            let count = self.data.blitz_results.count.read(game_id);
+            let count = self.data.blitz_results.ranked_count.read(game_id);
             let end = Into::<u8, u32>::into(command.start) + command.players.len();
             assert!(!command.players.is_empty() && command.players.len() <= 8, "invalid result batch size");
             assert!(end <= roster.len(), "too many result players");
             if command.start < count {
                 self.assert_recorded_batch(game_id, command, count);
-                return ((roster.len() - Into::<u8, u32>::into(count)).into(), story_cursor);
+                return ((roster.len() - Into::<u8, u32>::into(count)).into());
             }
             assert!(command.start == count, "result batch out of order");
             let mut points = array![];
@@ -66,11 +65,11 @@ pub mod BlitzResultState {
                 let index: u8 = (Into::<u8, u32>::into(count) + offset).try_into().unwrap();
                 let result = *command.players.at(offset);
                 self.validate_player(roster, points.span(), index, result);
-                self.data.blitz_results.results.write((game_id, index), result);
+                self.data.blitz_results.ranked_results.write((game_id, index), result);
             }
-            self.data.blitz_results.count.write(game_id, end.try_into().unwrap());
-            self.emit_result(game_id, context.game.unbox().creator, context.timestamp, ref story_cursor);
-            ((roster.len() - end).into(), story_cursor)
+            self.data.blitz_results.ranked_count.write(game_id, end.try_into().unwrap());
+            self.emit_result(game_id, crate::state::read().launcher.read(), context.timestamp);
+            ((roster.len() - end).into())
         }
     }
     #[generate_trait]
@@ -100,7 +99,7 @@ pub mod BlitzResultState {
             for offset in 0..command.players.len() {
                 let index: u8 = (Into::<u8, u32>::into(command.start) + offset).try_into().unwrap();
                 assert!(
-                    self.data.blitz_results.results.read((game_id, index)) == *command.players.at(offset),
+                    self.data.blitz_results.ranked_results.read((game_id, index)) == *command.players.at(offset),
                     "conflicting result retry",
                 );
             }
@@ -110,36 +109,31 @@ pub mod BlitzResultState {
             roster: Span<RosterPlayer>,
             points: Span<u128>,
             index: u8,
-            result: PlayerResult,
+            result: RankedPlayer,
         ) {
-            let mut member = false;
-            let mut expected_rank: u8 = 1;
-            let mut expected_index: u8 = 0;
+            let mut score = None;
             for position in 0..roster.len() {
-                let score = *points.at(position);
-                let account = *roster.at(position).account;
-                if score > result.points {
-                    expected_rank += 1;
-                    expected_index += 1;
-                } else if score == result.points && account < result.player {
-                    expected_index += 1;
-                }
-                if account == result.player {
-                    assert!(score == result.points, "incorrect result points");
-                    member = true;
+                if *roster.at(position).wallet == result.wallet {
+                    score = Some(*points.at(position));
                 }
             }
-            assert!(member, "result player outside roster");
+            let score = score.expect('result wallet outside roster');
+            let mut expected_rank: u16 = 1;
+            let mut expected_index: u8 = 0;
+            for position in 0..roster.len() {
+                let other_score = *points.at(position);
+                if other_score > score {
+                    expected_rank += 1;
+                    expected_index += 1;
+                } else if other_score == score && *roster.at(position).wallet < result.wallet {
+                    expected_index += 1;
+                }
+            }
             assert!(result.rank == expected_rank, "incorrect competition rank");
-            // Equal scores keep the launch service's account order, without changing competition ranks.
             assert!(index == expected_index, "incorrect result order");
         }
         fn emit_result(
-            ref self: ComponentState<TContractState>,
-            game_id: u32,
-            creator: ContractAddress,
-            timestamp: u64,
-            ref story_cursor: crate::ownership::StoryCursor,
+            ref self: ComponentState<TContractState>, game_id: u32, launcher: ContractAddress, timestamp: u64,
         ) {
             let result = crate::blitz_results::IBlitzResults::blitz_result(@self, game_id);
             let mut values = array![];
@@ -154,11 +148,9 @@ pub mod BlitzResultState {
                 self
                     .emit(
                         StoryEvent {
-                            version: 1,
+                            version: 2,
                             game_id,
-                            order: story_cursor.order,
-                            index: crate::ownership::StoryCursorTrait::next(ref story_cursor),
-                            owner: Some(creator),
+                            owner: Some(launcher),
                             entity_id: None,
                             tx_hash: get_tx_info().unbox().transaction_hash,
                             story: Story::BlitzFinalized(result.commitment),

@@ -14,7 +14,7 @@ pub enum Event {
 pub fn game(game_id: u32) -> GameRegistry {
     let state = crate::state::read();
     let game = state.games.games.read(game_id);
-    assert!(game.creator != 0.try_into().unwrap(), "game does not exist");
+    assert!(game.preset_id != 0, "game does not exist");
     game
 }
 pub fn rules(game_id: u32) -> SliceRules {
@@ -30,7 +30,7 @@ pub fn rules(game_id: u32) -> SliceRules {
 pub fn create(game_id: u32, game: GameRegistry, overrides: GameOverrides) {
     let state = crate::state::write();
     assert!(game_id != 0 && !game_exists(game_id), "game already exists or reserved");
-    assert!(game.creator != 0.try_into().unwrap() && game.preset_id != 0, "invalid game identity");
+    assert!(game.preset_id != 0, "invalid game identity");
     assert!(game.start_main_at >= game.start_settling_at && game.end_at > game.start_main_at, "invalid game times");
     state.games.overrides.write(game_id, overrides);
     state.games.next_entity.write(game_id, 1);
@@ -53,10 +53,11 @@ fn emit_game(game_id: u32, game: GameRegistry) {
         RowSet { version: 1, model: 'GameRegistry', keys: array![game_id.into()].span(), values: values.span() },
     );
 }
-pub fn allocate_entity(game_id: u32) -> u32 {
+pub fn allocate_setup_entity(game_id: u32) -> u32 {
     let state = crate::state::write();
     let id = state.games.next_entity.read(game_id);
     assert!(id != 0, "game does not exist");
+    assert!(id < 0xfffffff9, "setup entity space exhausted");
     state.games.next_entity.write(game_id, id + 1);
     id
 }
@@ -70,7 +71,7 @@ fn emit_game_fact(row: RowSet) {
 }
 
 pub fn game_exists(game_id: u32) -> bool {
-    crate::state::read().games.games.entry(game_id).creator.read() != 0.try_into().unwrap()
+    crate::state::read().games.games.entry(game_id).preset_id.read() != 0
 }
 
 pub fn start_blitz(game_id: u32, context: crate::commands::ExecutionContext) {

@@ -8,23 +8,26 @@ x-init: &init
     - ${SHARD_DATA:-./data}:/data
     - public-config:/public
     - herald-config:/herald-config
-    - gateway-config:/gateway-config
     - postgres-config:/postgres-config
+    - type: bind
+      source: /opt/athanor/operator-token
+      target: /opt/athanor/operator-token
+      read_only: true
+      bind: { create_host_path: false }
   environment:
     CHAIN_ID: ${CHAIN_ID:?Choose a unique chain id}
     GUARDIAN_URL: ${GUARDIAN_URL:?Set the identity guardian endpoint}
     PUBLIC_RPC_URL: ${PUBLIC_RPC_URL:?Set the read RPC URL}
-    PUBLIC_ADMISSION_URL: ${PUBLIC_ADMISSION_URL:?Set the admission URL}
+    PUBLIC_HERALD_URL: ${PUBLIC_HERALD_URL:?Set the official Herald URL}
+    VRF_WORKERS: ${VRF_WORKERS:?Choose the stamping worker count}
+    L2_GAS_BOUND: ${L2_GAS_BOUND:?Set the fixed play gas bound}
     PLAYER_CAPACITY: ${PLAYER_CAPACITY:-96}
     PRESETS: ${PRESETS:?Name the preset ids this shard registers}
     TRUSTED_PROXY: ${TRUSTED_PROXY:-}
     BIND_ADDRESS: ${BIND_ADDRESS:-127.0.0.1}
     HOST_UID: ${HOST_UID:?Set HOST_UID to the host user that owns data/ (id -u)}
     HOST_GID: ${HOST_GID:?Set HOST_GID to that user's group (id -g)}
-    # Our own shards' operator is approved through the identity Worker with this secret; it passes through from the
-    # shell that starts the package and is never written to a file. A community shard leaves it unset and brings
-    # data/operator-enrolment.json instead.
-    OPERATOR_TOKEN:
+    OPERATOR_TOKEN_FILE: /opt/athanor/operator-token
 
 services:
   prepare:
@@ -48,6 +51,9 @@ services:
       - --l1-sync-disabled
       - --enable-native-execution=true
       - --native-compilation-mode=async
+      - --parallel-merkle-enabled
+      - --db-max-kept-snapshots=0
+      # Upstream 802086d defaults to 15 MiB. Measure the full 2,000-action block before changing it.
       - --otel-collector-endpoint=http://metrics:4317
       - --otel-export-metrics=true
     volumes: ["chain:/data", "public-config:/config:ro"]
@@ -62,6 +68,7 @@ services:
     command: ["deploy"]
     depends_on:
       madara: { condition: service_started }
+      herald: { condition: service_started }
   postgres:
     image: postgres@sha256:18cfe3ef5e6815560c98237d6216d1e5119702fb0f3894c8785dd58b8bbe5d73
     environment:
@@ -88,24 +95,9 @@ services:
     memswap_limit: ${HERALD_MEMORY:-6g}
     restart: on-failure
     depends_on:
-      init: { condition: service_completed_successfully, restart: true }
+      prepare: { condition: service_completed_successfully }
+      madara: { condition: service_started }
       postgres: { condition: service_healthy }
-  gateway:
-    image: ${SHARD_GATEWAY_IMAGE:?Use the published gateway image digest}
-    entrypoint:
-      [
-        "/bin/sh",
-        "-ec",
-        'set -a; . /config/gateway.env; . /public/proxy.env; ulimit -Sn "$${GATEWAY_OPEN_FILES:?}"; exec
-        /usr/local/bin/realms-gateway',
-      ]
-    volumes: ["gateway:/data", "gateway-config:/config:ro", "public-config:/public:ro"]
-    ports: ["${BIND_ADDRESS:-127.0.0.1}:${ADMISSION_PORT:-8082}:9950"]
-    mem_limit: 1g
-    memswap_limit: 1g
-    restart: on-failure
-    depends_on:
-      init: { condition: service_completed_successfully, restart: true }
   rpc:
     image: ${SHARD_HERALD_IMAGE:?Use the published Herald image digest}
     entrypoint: ["/bin/sh", "-ec", "set -a; . /config/proxy.env; exec bun /app/read-rpc.js"]
@@ -113,10 +105,19 @@ services:
       NODE_RPC_URL: http://madara:9944
       NATIVE_WORLD_MANIFEST: /config/native-world.json
       PORT: "8080"
-    volumes: ["public-config:/config:ro"]
+      VRF_KEY_FILE: /keys/vrf-key.json
+      VRF_WORKERS: ${VRF_WORKERS:?Choose the stamping worker count}
+    user: "${HOST_UID:?}:${HOST_GID:?}"
+    volumes:
+      - public-config:/config:ro
+      - type: bind
+        source: ${SHARD_DATA:-./data}/vrf-key.json
+        target: /keys/vrf-key.json
+        read_only: true
+        bind: { create_host_path: false }
     ports: ["${BIND_ADDRESS:-127.0.0.1}:${RPC_PORT:-8080}:8080"]
-    mem_limit: 256m
-    memswap_limit: 256m
+    mem_limit: 2g
+    memswap_limit: 2g
     restart: on-failure
     depends_on:
       init: { condition: service_completed_successfully, restart: true }
@@ -130,7 +131,7 @@ services:
     user: "${HOST_UID:?}:${HOST_GID:?}"
     cpuset: ${HARNESS_CPUSET:-}
 
-  # The shard's own metrics: the node's OTLP export, the gateway's admission series and every container's CPU, as JSON
+  # The shard's own metrics: the node's OTLP export, every container's CPU, as JSON
   # lines under data/metrics. Each file rotates at 100 MB and keeps two older files, 600 MB at most.
   metrics:
     image: ${SHARD_METRICS_IMAGE:?Use the published metrics image digest}
@@ -149,8 +150,6 @@ services:
 volumes:
   chain:
   postgres:
-  gateway:
   public-config:
   herald-config:
-  gateway-config:
   postgres-config:

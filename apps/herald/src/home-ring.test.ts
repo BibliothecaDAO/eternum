@@ -7,7 +7,7 @@ import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { rowInGameSyncScope, isClientGameSyncModel } from "@bibliothecadao/eternum/game-sync-models";
 import { GameSyncRuntime, type GameSyncSubscriptionHandlers } from "@bibliothecadao/eternum/game-sync";
 
-import { decodeHomeRing, homeRingTileData, type HomeRingTile, type HomeRingView } from "./home-ring";
+import { HomeRing, decodeHomeRing, homeRingTileData, type HomeRingTile, type HomeRingView } from "./home-ring";
 import { LiveWorld } from "./live-world";
 import type { MadaraRpc } from "./madara-rpc";
 import {
@@ -31,6 +31,23 @@ const MID_DAY = DAY_START + 43_200;
 // day, so day 0 lasts at least 12 hours and holds MID_DAY.
 const CALENDAR = { seed: 7n, startMainAt: DAY_START + 120, dayUnitSeconds: 14_400 };
 const TODAY = dayOf(CALENDAR, MID_DAY)!;
+
+it("reads a full-width home's ring by namespace instead of its reusable trait id", async () => {
+  const { fold } = frontierWorld();
+  const scope = fold.subscriptionScope("1", "0xa", MID_DAY);
+  if (!scope.expedition) throw new Error("Expected Frontier scope");
+  scope.expedition.realms = new Set(["72057594037927937"]);
+  scope.expedition.realmTraits = new Set(["1"]);
+  const view = vi.fn(async () => RING);
+  const ring = new HomeRing({
+    view,
+    rowOf: (_game, tile) => ({ model: "TileOpt", key: String(tile.col), value: { ...tile } }),
+    onReady: vi.fn(),
+  });
+  expect(ring.rows("1", scope, MID_DAY)).toEqual([]);
+  await vi.waitFor(() => expect(ring.rows("1", scope, MID_DAY)).toHaveLength(7));
+  expect(view).toHaveBeenCalledWith("1", 16777216, MID_DAY);
+});
 
 // Realm 1's day-one site with spacing 100 is (50, 50); its ring is the site and the six tiles around it.
 const RING: HomeRingTile[] = [
@@ -178,7 +195,7 @@ describe("home ring", () => {
       live.acceptReceipt({ ...secondMove, finality_status: "PRE_CONFIRMED" });
       applyFrames();
       const assertPendingFacts = (facts = store) => {
-        const positions = [...facts.rows("TileOccupancy")].filter((row) => row.entity_id === 20);
+        const positions = [...facts.rows("TileOccupancy")].filter((row) => row.entity_id === 20n);
         expect(positions.map((row) => row.col)).toEqual([53]);
         expect(facts.require("ResourceBalance", { game_id: 1, entity_id: 1, resource_type: 23 }).balance).toBe(5n);
         expect(facts.require("ExplorerTroops", { game_id: 1, explorer_id: 20 }).troops.stamina).toEqual({
@@ -219,7 +236,7 @@ describe("home ring", () => {
     },
   );
 
-  it("includes a post-start settlement in a watched snapshot without exposing actor-only or unwatched rows", () => {
+  it("includes a post-start settlement in a watched snapshot without exposing unwatched rows", () => {
     const { live, native, fold } = frontierWorld();
     const player = "0xbb";
     native.applyReceipt(
@@ -237,7 +254,6 @@ describe("home ring", () => {
           paused: false,
           labor_paid: 0n,
         }),
-        rowEvent("ActionNonce", ["1", "30"], { next_nonce: 1n }),
       ]),
       11,
       0,
@@ -245,12 +261,12 @@ describe("home ring", () => {
 
     expect(live.confirmedBlock).toBe(9);
     const scope = fold.subscriptionScope("1", undefined, MID_DAY, player);
-    const snapshot = fold.subscriptionSnapshot("1", 11, scope, ["PlayerEntry", "Structure", "Building", "ActionNonce"]);
+    const snapshot = fold.subscriptionSnapshot("1", 11, scope, ["PlayerEntry", "Structure", "Building"]);
     const rows = (model: string) => snapshot.models.find((entry) => entry.model === model)!.rows;
     expect(rows("PlayerEntry").some(({ value }) => value.owner === "0x1e")).toBe(true);
     expect(rows("Structure").map(({ value }) => value.entity_id)).toEqual(["0x3"]);
     expect(rows("Building").some(({ value }) => value.structure_id === "0x3")).toBe(true);
-    expect(rows("ActionNonce")).toEqual([]);
+    expect(() => fold.subscriptionSnapshot("1", 11, scope, ["ActionNonce"])).toThrow("Unknown snapshot models");
     const emptyScope = fold.subscriptionScope("1", undefined, MID_DAY);
     const emptySnapshot = fold.subscriptionSnapshot("1", 11, emptyScope, ["Structure"]);
     expect(emptySnapshot.models[0]!.rows).toEqual([]);
@@ -495,7 +511,7 @@ describe("client and Herald subscription scope parity", () => {
               { bytesReceived: 0, model, modelsReceived: index + 1, rowsReceived: rows.length },
             ),
           );
-          await handlers.onSnapshotEnd();
+          await handlers.onSnapshotEnd(10);
           handlers.onSnapshotState?.({ gameId: 1, actor: "0xa", complete: true, timestamp: MID_DAY });
           handlers.onHead({ block: 10, preconfirmed: false, timestamp: MID_DAY });
           return { cancel: () => undefined };
@@ -615,9 +631,10 @@ describe("client and Herald subscription scope parity", () => {
     );
     actor = "0xb";
     snapshot();
+    expect(() => store.require("Structure", { game_id: 1, entity_id: 1n })).toThrow("not synchronized");
     // Clock invalidation cannot block an applied actor snapshot's first action.
     store.setSnapshot({ gameId: 1, actor, complete: true, timestamp: undefined });
-    expect(store.requireOrAbsent("ActionNonce", { game_id: 1, actor: 0xbn }).known?.next_nonce).toBe(0n);
+    expect(() => store.require("Structure", { game_id: 1, entity_id: 2n })).not.toThrow();
     expect(store.requireOrAbsent("PlayerPoints", { game_id: 1, address: 0xbn }).unknown).toBe("UNKNOWN_SCOPE_CLOCK");
     state(true);
 
@@ -654,9 +671,8 @@ describe("client and Herald subscription scope parity", () => {
     deliver(subscription!.project({ type: "head", block: 11, preconfirmed: true, timestamp }));
     expect(store.subscriptionScope().known).toEqual(overlay.subscriptionScope("1", actor, timestamp));
     expect(store.requireOrAbsent("PlayerPoints", { game_id: 1, address: 0xan }).known?.points).toBe(0n);
-    expect(store.requireOrAbsent("ActionNonce", { game_id: 1, actor: 0xan }).unknown).toContain(
-      "OUTSIDE_SNAPSHOT_SCOPE",
-    );
+    // The new entry links account 0xb to owner 0xa, so its home must become visible atomically.
+    expect(store.require("Structure", { game_id: 1, entity_id: 1n }).owner).toBe(10n);
 
     timestamp = TODAY.end + 60;
     deliver(subscription!.project({ type: "head", block: 12, preconfirmed: true, timestamp }));
@@ -684,8 +700,6 @@ describe("visited realm subscription", () => {
         rowEvent("ExplorerTroops", ["1", "20"], explorerValue("2", 1000n, 30n, 1n)),
         rowEvent("TileOccupancy", ["1", "0", "150", "150"], { entity_id: 20, category: 15, is_structure: false }),
         rowEvent("TileOpt", ["1", "0", "150", "150"], { data: 5n << 41n }),
-        rowEvent("ActionNonce", ["1", "10"], { next_nonce: 7 }),
-        rowEvent("ActionNonce", ["1", "11"], { next_nonce: 9 }),
       ]),
       9,
       1,
@@ -703,7 +717,7 @@ describe("visited realm subscription", () => {
     ).toEqual([1, 2]);
     expect(snapshot.filter((row) => row.model === "Building")).toHaveLength(1);
     expect(snapshot.filter((row) => row.model === "ExplorerTroops")).toHaveLength(1);
-    expect(snapshot.filter((row) => row.model === "ActionNonce").map((row) => Number(row.value.actor))).toEqual([10]);
+    expect(schema.models.some(({ name }) => name === "ActionNonce")).toBe(false);
     expect(tilesIn(messages).some((row) => Number(row.value.col) >= 100)).toBe(false);
     expect(fold.subscriptionScope("1", "0xa", MID_DAY, "0xbb").expedition?.regions).toEqual(new Set(["0:0"]));
     messages.length = 0;

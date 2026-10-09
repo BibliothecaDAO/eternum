@@ -1,3 +1,4 @@
+import { isCheckGame } from "./game-directory";
 import { expeditionDayEndsAt, readExpeditionRules, type ExpeditionRules } from "@bibliothecadao/eternum/expeditions";
 import { hasSingleTilePosition } from "@bibliothecadao/eternum/game-client";
 import {
@@ -451,7 +452,7 @@ export class WorldFold {
     );
     return this.modelRows("GameRegistry")
       .filter(({ value }) => {
-        if (value.settled !== true) return false;
+        if (isCheckGame(value) || value.settled !== true) return false;
         const gameId = BigInt(value.game_id as string).toString();
         const config = rules.get(gameId);
         if (!config) throw new Error(`Finalized game ${gameId} has no rules`);
@@ -746,18 +747,6 @@ export class WorldFold {
 
   private applyEventRows(event: Extract<DecodedWorldEvent, { kind: "event" }>): FoldChange[] {
     if (event.model.name === "PointsAwarded") return this.applyPointsAward(event);
-    if (event.model.name !== "ExecutionRecorded") return [];
-    const { order, status, status_class, reason } = event.value;
-    const result = BigInt(String(status));
-    const code = BigInt(String(status_class));
-    if (
-      BigInt(String(order)) === 0n ||
-      !(
-        (result === 1n && code === 0n && reason === "") ||
-        (result === 2n && code !== 0n && typeof reason === "string" && reason.length > 0)
-      )
-    )
-      throw new Error("Invalid native execution outcome");
     return [];
   }
 

@@ -290,15 +290,13 @@ function buildEconomy(
       chests.shares.legendary,
     ];
     if (
-      ![
-        chests.pool,
-        chests.priceCeiling,
-        chests.surgeFactor,
-        chests.surgeMinimumShares,
-        chests.estimateDays,
-        ...shares,
-      ].every((value) => Number.isSafeInteger(value) && value > 0) ||
-      [chests.surgeFactor, chests.estimateDays, ...shares].some((value) => value > 0xffff) ||
+      !Number.isSafeInteger(chests.pool) ||
+      chests.pool < 0 ||
+      ![chests.priceCeiling, chests.estimateDays, chests.claimWindowSeconds, ...shares].every(
+        (value) => Number.isSafeInteger(value) && value > 0,
+      ) ||
+      [chests.estimateDays, ...shares].some((value) => value > 0xffff) ||
+      chests.claimWindowSeconds > 0xffffffff ||
       shares.some((value, index) => value > (shares[index + 1] ?? value))
     )
       throw new Error("Invalid ruin chest rules");
@@ -311,7 +309,25 @@ function buildEconomy(
     Object.values(progression).some((value) => !Number.isSafeInteger(value) || value <= 0 || value > 0xffff_ffff)
   )
     throw new Error("Progression XP values must be positive u32 integers");
+  const labor = preset.labor;
+  if (
+    (labor !== null) !== (preset.dayUnitSeconds !== 0) ||
+    (labor !== null &&
+      (!Number.isSafeInteger(labor.amount) ||
+        labor.amount <= 0 ||
+        !Number.isSafeInteger(labor.accountDailyLimit) ||
+        labor.accountDailyLimit < 0 ||
+        labor.accountDailyLimit > 0xffff_ffff))
+  )
+    throw new Error("Invalid Realm labor rules");
   return {
+    labor:
+      preset.labor === null
+        ? new CairoOption(CairoOptionVariant.None)
+        : new CairoOption(CairoOptionVariant.Some, {
+            amount: BigInt(preset.labor.amount),
+            account_daily_limit: preset.labor.accountDailyLimit,
+          }),
     discovery: buildDiscovery(preset),
     progression:
       progression === null
@@ -331,9 +347,8 @@ function buildEconomy(
             pool: BigInt(chests.pool),
             price_ceiling: BigInt(chests.priceCeiling),
             shares: chests.shares,
-            surge_factor: chests.surgeFactor,
-            surge_minimum_shares: chests.surgeMinimumShares,
             estimate_days: chests.estimateDays,
+            claim_window_seconds: chests.claimWindowSeconds,
           }),
     trade: { max_count: config.trade.maxCount },
     banks: {

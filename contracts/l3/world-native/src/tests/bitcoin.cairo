@@ -10,13 +10,12 @@ use crate::bitcoin::{
 use crate::commands::{Command, ExecutionContext};
 use crate::game::{IGameDispatcher, IGameDispatcherTrait};
 use crate::resources::{IResourceOperationsDispatcher, IResourceOperationsDispatcherTrait, ResourceKey, ResourceSlot};
-use crate::tests::StoryResultTestTrait;
-use crate::tests::state::ResourceObservationTrait;
+use crate::tests::state::{MapObservationTrait, ResourceObservationTrait};
 use crate::troops::Coord;
-use super::resource_commands::{assert_terminal_rejection, execute, execute_recorded_at, grant};
+use super::resource_commands::{assert_terminal_rejection, execute, grant};
 
 fn setup() -> (super::Deployment, ResourceKey, ResourceKey) {
-    let mut rules = super::recorded::rules();
+    let mut rules = super::play_fixture::rules();
     rules.tick_config.bitcoin_phase_in_seconds = 10;
     rules.battle_config.regular_immunity_ticks = 0;
     rules.troop_stamina_config.stamina_initial = 120;
@@ -82,13 +81,7 @@ fn contribution_requires_the_source_owner() {
     start_cheat_caller_address(deployment.games, deployment.games);
     assert!(
         calls
-            .contribute_bitcoin_labor(
-                3,
-                0x777.try_into().unwrap(),
-                command,
-                crate::commands::action_context(context),
-                crate::tests::story_cursor(),
-            )
+            .contribute_bitcoin_labor(3, 0x777.try_into().unwrap(), command, crate::commands::action_context(context))
             .is_err(),
     );
     assert_eq!(balance(deployment, first), 1000);
@@ -115,11 +108,11 @@ fn binding_requires_a_closed_pool_and_cannot_replace_its_root() {
 }
 
 #[test]
-fn delayed_contribution_and_phase_binding_keep_recorded_context_after_game_end() {
+fn contribution_and_phase_binding_use_their_block_time() {
     let (deployment, first, _) = setup();
-    assert!(execute_recorded_at(deployment, contribute(first, 100), 30, 5000));
-    assert!(execute_recorded_at(deployment, Command::CloseBitcoinPhase(3), 39, 5001));
-    assert!(execute_recorded_at(deployment, Command::BindBitcoinPhase(3), 40, 5002));
+    assert!(execute(deployment, contribute(first, 100), 30));
+    assert!(execute(deployment, Command::CloseBitcoinPhase(3), 39));
+    assert!(execute(deployment, Command::BindBitcoinPhase(3), 40));
     let view = IBitcoinViewsDispatcher { contract_address: deployment.games };
     let phase = view.bitcoin_phase(PhaseKey { game_id: 3, phase: 3 });
     assert_eq!(phase.total_labor, 100);
@@ -157,6 +150,7 @@ fn mine(deployment: super::Deployment, x: u32) -> ResourceKey {
     let id = crate::structures::IStructureOperationsDispatcherTrait::create_discovery(
         crate::structures::IStructureOperationsDispatcher { contract_address: deployment.games },
         3,
+        1,
         crate::troops::Coord { alt: true, x, y: 2000000 },
         crate::discovery::Discovery::BitcoinMine,
         99,
@@ -166,7 +160,7 @@ fn mine(deployment: super::Deployment, x: u32) -> ResourceKey {
         ),
     );
     stop_cheat_caller_address(deployment.games);
-    ResourceKey { game_id: 3, entity_id: id }
+    ResourceKey { game_id: 3, entity_id: id.into() }
 }
 
 fn capture(deployment: super::Deployment, mine: ResourceKey, owner: starknet::ContractAddress, timestamp: u64) {
@@ -189,7 +183,7 @@ fn close_and_bind(deployment: super::Deployment, phase: u64) {
     assert!(execute(deployment, Command::CloseBitcoinPhase(phase), (phase + 1) * 10 - 1));
     assert!(execute(deployment, Command::BindBitcoinPhase(phase), (phase + 1) * 10));
 }
-fn claim(phase: u64, ids: Span<u32>) -> Command {
+fn claim(phase: u64, ids: Span<u64>) -> Command {
     Command::ClaimBitcoinPhase(crate::bitcoin::ClaimPhase { phase, mine_ids: ids })
 }
 fn sat(deployment: super::Deployment, key: ResourceKey) -> u128 {
@@ -285,7 +279,7 @@ fn bitcoin_discovery_reveals_six_biomes_without_points_or_neighbor_discoveries()
         let coord = crate::geometry::neighbor(origin, direction);
         let tile = crate::tests::state::MapObservationTrait::tile(map, crate::geometry::tile_key(3, coord)).unwrap();
         assert!(tile.data / 0x20000000000 % 256 != 0);
-        assert_eq!(tile.data % 0x20000000000, 0);
+        assert!(map.occupancy(crate::geometry::tile_key(3, coord)).is_none());
     }
     assert_eq!(
         crate::game::IPointsDispatcherTrait::player_points(
@@ -323,7 +317,7 @@ fn a_forfeited_share_survives_an_empty_phase_without_another_owner_cut() {
 }
 
 #[test]
-fn an_invalid_batch_rolls_back_all_awards_but_consumes_the_ticket() {
+fn an_invalid_batch_rolls_back_all_awards() {
     let (deployment, home, nearest) = setup();
     let mine = mine(deployment, 2000100);
     capture(deployment, mine, deployment.actor, 30);
@@ -369,7 +363,6 @@ fn each_mine_draws_from_the_complete_player_pool_regardless_of_batch_claimant_or
                 deployment.actor,
                 ContributeLabor { structure_id: first.entity_id, amount: 10 },
                 crate::commands::action_context(context),
-                crate::tests::story_cursor(),
             );
         calls
             .contribute_bitcoin_labor(
@@ -377,7 +370,6 @@ fn each_mine_draws_from_the_complete_player_pool_regardless_of_batch_claimant_or
                 other,
                 ContributeLabor { structure_id: second.entity_id, amount: 10 },
                 crate::commands::action_context(context),
-                crate::tests::story_cursor(),
             );
         calls
             .contribute_bitcoin_labor(
@@ -385,7 +377,6 @@ fn each_mine_draws_from_the_complete_player_pool_regardless_of_batch_claimant_or
                 other,
                 ContributeLabor { structure_id: second.entity_id, amount: 20 },
                 crate::commands::action_context(context),
-                crate::tests::story_cursor(),
             );
         let key = PhaseKey { game_id: 3, phase };
         assert_eq!(view.bitcoin_phase(key).contributors, 2);
@@ -393,14 +384,8 @@ fn each_mine_draws_from_the_complete_player_pool_regardless_of_batch_claimant_or
         assert_eq!(view.bitcoin_contribution(ContributionKey { game_id: 3, phase, player: other }).labor, 30);
         let context = ExecutionContext { timestamp: (phase + 1) * 10, ..context };
         start_cheat_block_timestamp_global(context.timestamp);
-        calls
-            .close_bitcoin_phase(
-                3, deployment.actor, phase, crate::commands::action_context(context), crate::tests::story_cursor(),
-            );
-        calls
-            .bind_bitcoin_phase(
-                3, other, phase, crate::commands::action_context(context), crate::tests::story_cursor(),
-            );
+        calls.close_bitcoin_phase(3, deployment.actor, phase, crate::commands::action_context(context));
+        calls.bind_bitcoin_phase(3, other, phase, crate::commands::action_context(context));
         let mut winners = array![];
         for id in array![first_mine.entity_id, second_mine.entity_id] {
             let roll: u256 = core::poseidon::poseidon_hash_span(
@@ -429,20 +414,13 @@ fn each_mine_draws_from_the_complete_player_pool_regardless_of_batch_claimant_or
                         phase, mine_ids: array![second_mine.entity_id, first_mine.entity_id].span(),
                     },
                     unrelated_context,
-                    crate::tests::story_cursor(),
-                )
-                .story_result();
+                );
         } else {
             for id in array![first_mine.entity_id, second_mine.entity_id] {
                 calls
                     .claim_bitcoin_phase(
-                        3,
-                        other,
-                        crate::bitcoin::ClaimPhase { phase, mine_ids: array![id].span() },
-                        unrelated_context,
-                        crate::tests::story_cursor(),
-                    )
-                    .story_result();
+                        3, other, crate::bitcoin::ClaimPhase { phase, mine_ids: array![id].span() }, unrelated_context,
+                    );
             }
         }
         calls
@@ -453,9 +431,7 @@ fn each_mine_draws_from_the_complete_player_pool_regardless_of_batch_claimant_or
                     phase, mine_ids: array![first_mine.entity_id, second_mine.entity_id].span(),
                 },
                 crate::commands::action_context(context),
-                crate::tests::story_cursor(),
-            )
-            .story_result();
+            );
         stop_cheat_caller_address(deployment.games);
         assert_eq!(sat(deployment, first), expected_first);
         assert_eq!(sat(deployment, second), expected_second);
@@ -502,7 +478,7 @@ fn owner_cut_uses_current_owner_and_does_not_require_owner_labor() {
     assert_eq!(view.bitcoin_contribution(ContributionKey { game_id: 3, phase: 4, player: owner }).labor, 0);
 }
 
-fn attacking_explorer(deployment: super::Deployment, home: ResourceKey, x: u32) -> u32 {
+fn attacking_explorer(deployment: super::Deployment, home: ResourceKey, x: u32) -> u64 {
     let id = 900000;
     let coord = crate::troops::Coord { alt: true, x, y: 2000000 };
     let explorer = crate::troops::ExplorerTroops {
@@ -521,7 +497,7 @@ fn attacking_explorer(deployment: super::Deployment, home: ResourceKey, x: u32) 
     start_cheat_caller_address(deployment.games, deployment.games);
     IResourceOperationsDispatcher { contract_address: deployment.games }
         .initialize_resources(
-            ResourceKey { game_id: 3, entity_id: id },
+            ResourceKey { game_id: 3, entity_id: id.into() },
             100000000000000000000,
             0,
             30,
@@ -823,19 +799,12 @@ fn weighted_draws_include_appended_players_and_later_updates_to_earlier_contribu
                     actor,
                     ContributeLabor { structure_id: source, amount },
                     crate::commands::action_context(context),
-                    crate::tests::story_cursor(),
                 );
         }
         let context = ExecutionContext { timestamp: (phase + 1) * 10, ..context };
         start_cheat_block_timestamp_global(context.timestamp);
-        calls
-            .close_bitcoin_phase(
-                3, d.actor, phase, crate::commands::action_context(context), crate::tests::story_cursor(),
-            );
-        calls
-            .bind_bitcoin_phase(
-                3, d.actor, phase, crate::commands::action_context(context), crate::tests::story_cursor(),
-            );
+        calls.close_bitcoin_phase(3, d.actor, phase, crate::commands::action_context(context));
+        calls.bind_bitcoin_phase(3, d.actor, phase, crate::commands::action_context(context));
         let roll: u256 = core::poseidon::poseidon_hash_span(
             array!['BITCOIN_DRAW', 1, 3, phase.into(), mine.entity_id.into(), phase.into(), 0].span(),
         )
@@ -855,9 +824,7 @@ fn weighted_draws_include_appended_players_and_later_updates_to_earlier_contribu
                 d.actor,
                 crate::bitcoin::ClaimPhase { phase, mine_ids: array![mine.entity_id].span() },
                 crate::commands::action_context(context),
-                crate::tests::story_cursor(),
-            )
-            .story_result();
+            );
         stop_cheat_caller_address(d.games);
         assert_eq!(sat(d, first), expected_first);
         assert_eq!(sat(d, second), expected_second);
@@ -905,7 +872,7 @@ fn claim_execution_cost_does_not_grow_with_unrelated_settlements() {
         snforge_std::interact_with_state(
             d.games,
             || crate::logic::map::MapState::relocate_fixture(
-                ResourceKey { game_id: 3, entity_id: id },
+                ResourceKey { game_id: 3, entity_id: id.into() },
                 Coord { alt: false, x: 2000300 + 10 * index, y: 2000000 },
                 home_row.base.category,
                 true,
@@ -913,7 +880,7 @@ fn claim_execution_cost_does_not_grow_with_unrelated_settlements() {
         );
         IResourceOperationsDispatcher { contract_address: d.games }
             .initialize_resources(
-                ResourceKey { game_id: 3, entity_id: id },
+                ResourceKey { game_id: 3, entity_id: id.into() },
                 1000000,
                 1,
                 50,
@@ -942,9 +909,7 @@ fn measured_claim(
     context: ExecutionContext,
 ) -> u128 {
     let before = core::testing::get_available_gas();
-    calls
-        .claim_bitcoin_phase(3, actor, command, crate::commands::action_context(context), crate::tests::story_cursor())
-        .story_result();
+    calls.claim_bitcoin_phase(3, actor, command, crate::commands::action_context(context));
     before - core::testing::get_available_gas()
 }
 

@@ -4,7 +4,8 @@ import type { ShardManifest } from "../sync/herald-http-types";
 
 /**
  * A shard is one chain with its games, reached through one URL: its Herald. Everything else a client needs — the
- * chain id, the node and admission endpoints, the contracts and the release — comes from the manifest Herald serves.
+ * chain id, the node endpoint players send their signed invokes to, the contracts and the release — comes from the
+ * manifest Herald serves.
  * A game is named by (chain id, game id) because game ids are only unique within a shard.
  */
 export interface Shard {
@@ -13,13 +14,14 @@ export interface Shard {
   chainId: string;
   releaseSchemas: Readonly<Record<string, string>>;
   rpcUrl: string;
-  admissionUrl: string;
   accountClassHash: string;
   /** The key that authorizes device keys on this shard's Realms accounts; with the class, it fixes their addresses. */
   guardianPublicKey: string;
   contracts: Record<string, string>;
   /** The contract every game command enters through. */
   worldAddress: string;
+  /** The l2 gas max_amount of every play; the shard takes no other bounds. */
+  l2GasBound: bigint;
 }
 
 export interface GameRef {
@@ -89,12 +91,19 @@ const buildShard = (url: string, manifest: ShardManifest): Shard => {
     chainId: normalizeChainId(manifest.chainId),
     releaseSchemas: manifest.releaseSchemas,
     rpcUrl: resolveEndpoint(manifest.rpcUrl, { name: `RPC URL of shard ${url}` }),
-    admissionUrl: resolveEndpoint(manifest.admissionUrl, { name: `Admission URL of shard ${url}` }),
     accountClassHash: manifest.accountClassHash,
     guardianPublicKey: manifest.guardianPublicKey,
     contracts: manifest.contracts,
     worldAddress,
+    l2GasBound: playGasBound(url, manifest.l2GasBound),
   };
+};
+
+/** The shard's play bound is required: a missing or zero bound would sign invokes the shard refuses. */
+const playGasBound = (url: string, bound: string | undefined): bigint => {
+  if (typeof bound !== "string" || !/^0x[0-9a-f]+$/i.test(bound) || BigInt(bound) === 0n || BigInt(bound) >= 2n ** 64n)
+    throw new Error(`Shard ${url} manifest has no valid l2GasBound`);
+  return BigInt(bound);
 };
 
 const registerShard = (shard: Shard): Shard => {

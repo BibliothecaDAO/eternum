@@ -42,10 +42,10 @@ fn start_unlimited_labor(deployment: super::Deployment, home: ResourceKey, times
 
 fn blitz_rules() -> crate::rules::SliceRules {
     crate::rules::SliceRules {
-        mode_rules: super::recorded::BLITZ_RULES,
+        mode_rules: super::play_fixture::BLITZ_RULES,
         entry_rule: crate::rules::ENTRY_ROSTER,
-        command_mask: super::recorded::BLITZ_COMMAND_MASK,
-        ..super::recorded::rules(),
+        command_mask: super::play_fixture::BLITZ_COMMAND_MASK,
+        ..super::play_fixture::rules(),
     }
 }
 
@@ -66,7 +66,7 @@ fn blitz_labor_stays_unlimited_through_every_settlement() {
 
 #[test]
 fn eternum_labor_stays_unlimited_through_every_settlement() {
-    labor_stays_unlimited_through_every_settlement(super::recorded::rules());
+    labor_stays_unlimited_through_every_settlement(super::play_fixture::rules());
 }
 
 #[test]
@@ -107,7 +107,7 @@ fn a_marker_already_worn_by_a_running_game_still_never_runs_out_or_wears_further
             building_count: 1,
             production_rate: 3,
             output_amount_left: WORN,
-            last_settled_tick: (40_u64 / super::recorded::rules().tick_config.armies_tick_in_seconds)
+            last_settled_tick: (40_u64 / super::play_fixture::rules().tick_config.armies_tick_in_seconds)
                 .try_into()
                 .unwrap(),
         },

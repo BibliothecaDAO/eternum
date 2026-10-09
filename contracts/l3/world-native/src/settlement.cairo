@@ -57,12 +57,8 @@ pub struct EntryEntitlement {
 #[starknet::interface]
 pub trait ISettlementCommands<T> {
     fn settle_blitz_roster(
-        ref self: T,
-        game_id: u32,
-        actor: ContractAddress,
-        context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> (u64, crate::ownership::StoryCursor);
+        ref self: T, game_id: u32, actor: ContractAddress, context: crate::commands::ActionContext,
+    ) -> u64;
 }
 
 #[starknet::interface]
@@ -115,37 +111,22 @@ pub struct RealmGrants {
 #[starknet::interface]
 pub trait IRealmCreation<T> {
     fn provision_and_upgrade_realm(
-        ref self: T,
-        game_id: u32,
-        actor: ContractAddress,
-        structure_id: u32,
-        context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> ((), crate::ownership::StoryCursor);
+        ref self: T, game_id: u32, actor: ContractAddress, structure_id: u64, context: crate::commands::ActionContext,
+    );
     fn activate_realm_economy(
-        ref self: T,
-        game_id: u32,
-        actor: ContractAddress,
-        structure_id: u32,
-        context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> ((), crate::ownership::StoryCursor);
+        ref self: T, game_id: u32, actor: ContractAddress, structure_id: u64, context: crate::commands::ActionContext,
+    );
 }
 
 #[starknet::interface]
 pub trait ISettlementDisplacement<T> {
-    fn displace_explorer(ref self: T, game_id: u32, explorer_id: u32, game_context: crate::commands::ActionContext);
+    fn displace_explorer(ref self: T, game_id: u32, explorer_id: u64, game_context: crate::commands::ActionContext);
 }
 
 #[starknet::interface]
 pub trait IBlitzHyperstructures<T> {
     fn create_reserved_hyperstructure(
-        ref self: T,
-        game_id: u32,
-        actor: ContractAddress,
-        coord: Coord,
-        context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
+        ref self: T, game_id: u32, actor: ContractAddress, coord: Coord, context: crate::commands::ActionContext,
     );
 }
 
@@ -158,7 +139,7 @@ pub struct RealmCreation {
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct VillageCreation {
-    pub connected_realm: u32,
+    pub connected_realm: u64,
     pub resource: u8,
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
@@ -175,8 +156,7 @@ pub trait ISettlementCreation<T> {
         coord: Coord,
         creation: SettlementCreation,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> (u32, crate::ownership::StoryCursor);
+    ) -> u64;
 }
 
 // Fisher-Yates selection fixes each roster position once from the first recorded batch root.
@@ -206,5 +186,5 @@ pub fn off_map_realm_reference(realm_id: u32) -> crate::troops::Coord {
 pub trait ITerrainDerivation<T> {
     fn raise_expedition_home(ref self: T, key: crate::map::TileKey, context: crate::commands::BiomeContext);
     fn biome(self: @T, key: crate::map::TileKey, context: crate::commands::BiomeContext) -> u8;
-    fn expedition_home_ring(self: @T, game_id: u32, realm_id: u16, timestamp: u64) -> Span<(Coord, u8)>;
+    fn expedition_home_ring(self: @T, game_id: u32, region_id: u32, timestamp: u64) -> Span<(Coord, u8)>;
 }

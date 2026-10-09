@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-09",
+    title: "Clearer Frontier building plots",
+    description: "Removed special plot markers so every available building plot uses the same appearance.",
+    type: "improvement",
+    gameSlug: "frontier",
+  },
+  {
+    date: "2026-10-09",
     title: "Link wallets before deployment",
     description:
       "Link supported Ready and Braavos wallets with a signed message and email code before sending a transaction.",

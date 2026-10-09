@@ -68,3 +68,22 @@ describe("stamina under one game's rules", () => {
     expect(fullAtTick(knight(10, 100), 100, { ...rules, stamina_gain_per_tick: 0 })).toBeNull();
   });
 });
+
+import { openArmySlots } from "./troop-stamina";
+import type { NativeFactStore } from "../client/native-fact-store";
+it("inherits a vacant u64 army slot without rounding the home id or treating bigint zero as occupied", () => {
+  const id = (1n << 56n) + 19n;
+  const stamina = { amount: 7n, updated_tick: 10n };
+  const keys: unknown[] = [];
+  const store = {
+    subscriptionScope: () => ({ known: { expedition: { day: 2 } } }),
+    requireOrAbsent: (_model: string, key: unknown) => {
+      keys.push(key);
+      return { known: { explorer_id: 0n, stamina } };
+    },
+  } as unknown as NativeFactStore;
+  expect(openArmySlots(store, { game_id: 1, entity_id: id, allowedSlots: 1 })).toEqual([
+    { slot: 0, inherited: stamina },
+  ]);
+  expect(keys).toEqual([{ game_id: 1, structure_id: id, epoch: 2n, slot: 0 }]);
+});

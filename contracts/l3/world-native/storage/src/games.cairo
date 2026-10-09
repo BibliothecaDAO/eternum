@@ -41,6 +41,7 @@ pub struct GamesStorage<
     TVillagePass,
 > {
     pub authority: ContractAddress,
+    pub launcher: ContractAddress,
     pub presets: Map<felt252, TPreset>,
     pub releases: Map<u32, Release>,
     pub game_releases: Map<u32, u32>,

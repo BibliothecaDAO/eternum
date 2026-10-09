@@ -55,7 +55,6 @@ fn settlement_terrain_keeps_map_biomes_and_daily_home_rings() {
     }
 }
 
-
 #[test]
 fn home_ring_materializes_once_each_day_and_all_six_deployments_work() {
     let d = super::registrar::setup();
@@ -112,7 +111,7 @@ fn home_ring_materializes_once_each_day_and_all_six_deployments_work() {
         assert_eq!(repeated.get_events().emitted_by(d.games).events.len(), 0);
         for direction in 0_u8..6 {
             let action_at = timestamp + 1 + Into::<u8, u64>::into(direction) * 2;
-            assert!(execute_in_game(d, game_id, muster_command(category, direction), action_at, action_at));
+            assert!(execute_in_game(d, game_id, muster_command(category, direction), action_at));
             let id = *structures.home_armies(home).at(0);
             let explorer = state.resolved_explorer(crate::troops::ExplorerKey { game_id, explorer_id: id }).unwrap();
             assert_eq!(explorer.coord, crate::geometry::neighbor(center, direction));
@@ -121,7 +120,6 @@ fn home_ring_materializes_once_each_day_and_all_six_deployments_work() {
                     d,
                     game_id,
                     crate::commands::Command::ManageTroops(crate::troop_management::ManageTroops::RemoveExplorer(id)),
-                    action_at + 1,
                     action_at + 1,
                 ),
             );
@@ -159,7 +157,7 @@ fn deploy_refuses_a_missing_neighbour_after_the_ring_is_materialized() {
         ),
     };
     let before = resources.resource_balance(troops);
-    assert!(!execute_in_game(d, game_id, muster_command(category, 0), 351, 351));
+    assert!(!execute_in_game(d, game_id, muster_command(category, 0), 351));
     assert_eq!(resources.resource_balance(troops), before);
     assert!(map.tile(key).is_none());
     assert_eq!(

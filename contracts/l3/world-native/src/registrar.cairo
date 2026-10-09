@@ -19,6 +19,7 @@ pub struct CreateGameParams {
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
 pub struct RosterPlayer {
     pub account: ContractAddress,
+    pub wallet: ContractAddress,
 }
 
 #[starknet::interface]
@@ -29,16 +30,13 @@ pub trait IRegistrar<T> {
     fn game_id_by_name(self: @T, name: felt252) -> u32;
     fn blitz_roster(self: @T, game_id: u32) -> Span<RosterPlayer>;
     fn create_game(ref self: T, params: CreateGameParams) -> u32;
+    fn freeze_blitz_roster(ref self: T, game_id: u32, players: Span<RosterPlayer>);
 }
 #[starknet::interface]
 pub trait IGameSettlement<T> {
     fn mark_game_settled(
-        ref self: T,
-        game_id: u32,
-        actor: ContractAddress,
-        context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> (u64, crate::ownership::StoryCursor);
+        ref self: T, game_id: u32, actor: ContractAddress, context: crate::commands::ActionContext,
+    ) -> u64;
 }
 
 #[derive(Copy, Drop)]
@@ -65,15 +63,21 @@ pub fn validate_params(params: CreateGameParams, rules: LaunchRules) {
         assert!(params.end_grace_seconds == 0, "result finalisation has no grace period");
     }
     if rules.entry_rule == crate::rules::ENTRY_ROSTER {
-        assert!(params.roster.len() > 0 && params.roster.len() <= 24, "invalid Blitz roster size");
-        if rules.settlement_mode == crate::settlement::SettlementMode::Duel {
-            assert!(params.roster.len() == 2, "Duel requires two players");
+        if !params.roster.is_empty() {
+            validate_roster_size(params.roster.len(), rules.settlement_mode);
         }
         assert!(!params.dev_mode_on, "free Blitz does not use development mode");
     } else {
         assert!(params.roster.is_empty(), "Eternum does not use a fixed roster");
     }
 }
+pub(crate) fn validate_roster_size(count: u32, mode: crate::settlement::SettlementMode) {
+    assert!(count > 0 && count <= crate::rules::MAX_BLITZ_ROSTER_PLAYERS, "invalid Blitz roster size");
+    if mode == crate::settlement::SettlementMode::Duel {
+        assert!(count == crate::rules::DUEL_ROSTER_PLAYERS, "Duel requires two players");
+    }
+}
+
 pub fn map_center_offset(game_id: u32, seed: felt252) -> u32 {
     const STEPS: u32 = (2147483646 / 2) / 10;
     let seed: u256 = seed.into();
@@ -81,13 +85,12 @@ pub fn map_center_offset(game_id: u32, seed: felt252) -> u32 {
     ((seed_step + game_id % STEPS) % STEPS) * 10
 }
 
-pub(crate) fn build_game(params: CreateGameParams, creator: ContractAddress) -> crate::game::GameRegistry {
+pub(crate) fn build_game(params: CreateGameParams, entry_rule: u8) -> crate::game::GameRegistry {
     crate::game::GameRegistry {
         name: params.name,
         preset_id: params.preset_id,
-        creator,
         settled: false,
-        ready: params.roster.is_empty(),
+        ready: entry_rule != crate::rules::ENTRY_ROSTER,
         dev_mode_on: params.dev_mode_on,
         start_settling_at: params.start_settling_at,
         start_main_at: params.start_main_at,

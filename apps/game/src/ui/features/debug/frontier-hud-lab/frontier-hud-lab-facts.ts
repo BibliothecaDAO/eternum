@@ -207,7 +207,6 @@ const gameRegistry = (clock: LabClock) => ({
   game_id: clock.gameId,
   name: "0x4c6162",
   preset_id: 5,
-  creator: "0x1",
   settled: false,
   ready: true,
   dev_mode_on: false,

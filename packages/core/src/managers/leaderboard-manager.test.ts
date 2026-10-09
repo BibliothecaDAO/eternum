@@ -55,7 +55,7 @@ describe("native leaderboard", () => {
       game_id: 23,
       preset_id: 3,
       name: 1n,
-      creator: 1n,
+
       start_settling_at: 1n,
       start_main_at: 1n,
       end_at: 200n,
@@ -116,7 +116,7 @@ describe("native leaderboard", () => {
       game_id: 23,
       preset_id: 3,
       name: 1n,
-      creator: 1n,
+
       start_settling_at: 1n,
       start_main_at: 100n,
       end_at: 1000n,

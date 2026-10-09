@@ -21,7 +21,7 @@ export function getTileAt(
 export function entityMapPosition(
   store: Pick<NativeFactStore, "entityOccupancy">,
   gameId: number,
-  entityId: number,
+  entityId: number | bigint,
 ): { x: number; y: number; alt: boolean } {
   const tile = store.entityOccupancy(gameId, entityId);
   if (!tile) throw new Error(`Missing native position for entity ${gameId}:${entityId}`);

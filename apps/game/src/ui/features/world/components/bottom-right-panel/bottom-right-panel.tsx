@@ -57,7 +57,7 @@ import { requireActiveGameClient } from "@/sync/active-game-client";
 import { BOTTOM_PANEL_HEIGHT, BOTTOM_PANEL_MARGIN, MINIMAP_SIZE } from "./constants";
 import { HexMinimap, readMinimapTiles, type MinimapTile } from "./hex-minimap";
 import { presentedMineKind } from "@bibliothecadao/eternum";
-import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import { safeInteger, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
 
 const compactResourceFormatter = new Intl.NumberFormat("en-US", {
   notation: "compact",
@@ -210,7 +210,7 @@ const LocalTilePanel = () => {
     const base = liveStructure?.base;
     if (!base) return null;
     return {
-      structureId: liveStructure.entity_id,
+      structureId: safeInteger(liveStructure.entity_id),
       category: normalizeStructureCategory(base.category),
     };
   }, [liveStructure]);
@@ -228,10 +228,10 @@ const LocalTilePanel = () => {
 
   const building = useNativeRow(
     "Building",
-    selectedBuildingHex && liveStructure && selectedBuildingHex.structureId === liveStructure.entity_id
+    selectedBuildingHex && selectedStructure && selectedBuildingHex.structureId === selectedStructure.structureId
       ? {
           game_id: configManager.getActiveGameId(),
-          structure_id: liveStructure.entity_id,
+          structure_id: selectedStructure.structureId,
           inner_col: selectedBuildingHex.innerCol,
           inner_row: selectedBuildingHex.innerRow,
         }

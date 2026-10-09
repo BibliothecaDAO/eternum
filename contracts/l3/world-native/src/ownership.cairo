@@ -2,7 +2,7 @@ use starknet::ContractAddress;
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct TransferOwnership {
-    pub entity_id: u32,
+    pub entity_id: u64,
     pub new_owner: ContractAddress,
 }
 
@@ -14,13 +14,12 @@ pub trait IStructureOwnership<T> {
         actor: ContractAddress,
         command: TransferOwnership,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> ((), crate::ownership::StoryCursor);
+    );
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct FaithPointsClaimedStory {
-    pub wonder_id: u32,
+    pub wonder_id: u64,
     pub new_points: u128,
     pub total_points: u128,
 }
@@ -47,7 +46,7 @@ pub enum Story {
     StructureCapturedStory: StructureCapturedStory,
     TradeCreated: crate::trade::TradeListing,
     TradeAccepted: crate::trade::TradeFill,
-    TradeCancelled: u32,
+    TradeCancelled: u64,
     BankSwap: crate::market::SwapStory,
     BankLiquidity: crate::market::LiquidityStory,
     HyperstructurePoints: crate::hyperstructures::SharePoints,
@@ -84,37 +83,13 @@ pub enum TransferType {
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct ResourceTransferStory {
     pub transfer_type: TransferType,
-    pub from_entity_id: u32,
+    pub from_entity_id: u64,
     pub from_entity_owner_address: ContractAddress,
-    pub to_entity_id: u32,
+    pub to_entity_id: u64,
     pub to_entity_owner_address: ContractAddress,
     pub resources: Span<crate::resources::ResourceAmount>,
     pub is_mint: bool,
     pub travel_time: u64,
-}
-
-#[derive(Copy, Drop, Serde, Debug, PartialEq)]
-pub struct StoryCursor {
-    pub order: u64,
-    pub index: u32,
-}
-
-#[generate_trait]
-pub impl StoryCursorImpl of StoryCursorTrait {
-    fn next(ref self: StoryCursor) -> u32 {
-        let index = self.index;
-        self.index += 1;
-        index
-    }
-}
-
-#[generate_trait]
-pub impl StoryResultImpl<T> of StoryResultTrait<T> {
-    fn resume_story(self: (T, StoryCursor), ref cursor: StoryCursor) -> T {
-        let (result, next) = self;
-        cursor = next;
-        result
-    }
 }
 
 #[derive(Drop, starknet::Event)]
@@ -124,13 +99,9 @@ pub struct StoryEvent {
     #[key]
     pub game_id: u32,
     #[key]
-    pub order: u64,
-    #[key]
-    pub index: u32,
-    #[key]
     pub owner: Option<ContractAddress>,
     #[key]
-    pub entity_id: Option<u32>,
+    pub entity_id: Option<u64>,
     #[key]
     pub tx_hash: felt252,
     pub story: Story,
@@ -143,7 +114,7 @@ pub struct RealmCreatedStory {
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct GuardAddStory {
-    pub structure_id: u32,
+    pub structure_id: u64,
     pub slot: u8,
     pub category: crate::troops::TroopType,
     pub tier: crate::troops::TroopTier,

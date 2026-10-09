@@ -9,7 +9,7 @@ import { Skull, TreasureChest } from "@/ui/design-system/atoms/game-icons";
 import { toast } from "@/ui/features/event-feed/notify";
 import { extractReadableErrorMessage } from "@/utils/error-message";
 import { biomeTypeOf, configManager } from "@bibliothecadao/eternum";
-import type { NativeRows } from "@bibliothecadao/eternum/game-client";
+import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import type { TileSpatialRenderable } from "@bibliothecadao/eternum/game-sync";
 import { type ReactNode, useMemo, useState } from "react";
 import { Chip, TroopChip } from "../frontier-chips";
@@ -80,8 +80,8 @@ export const TileCard = ({ selected, onClose }: { selected: SelectedSite; onClos
       playUnitCommandSound("attack");
       await setup.systemCalls.attack_explorer_vs_guard({
         signer: account.account,
-        explorer_id: attack.army.explorer_id,
-        structure_id: selected.structure.entity_id,
+        explorer_id: safeInteger(attack.army.explorer_id),
+        structure_id: safeInteger(selected.structure.entity_id),
       });
     } catch (error) {
       toast.error(extractReadableErrorMessage(error, "The attack could not be sent."));

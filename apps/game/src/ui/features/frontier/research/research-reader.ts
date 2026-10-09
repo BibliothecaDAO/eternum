@@ -11,6 +11,7 @@ import {
   rowAtTier,
 } from "@bibliothecadao/eternum";
 import {
+  safeInteger,
   nativeResearchConstants as research,
   type NativeFactStore,
   type NativeRows,
@@ -55,7 +56,7 @@ export const readResearchPlan = (
     .filter(({ row, tier }) => drawnEffect(row, tier) !== undefined)
     .toSorted((left, right) => left.row - right.row || left.tier - right.tier);
   return {
-    essence: knownBalance(getBalance(realm.entity_id, ResourcesIds.Essence, tick, store).balance),
+    essence: knownBalance(getBalance(safeInteger(realm.entity_id), ResourcesIds.Essence, tick, store).balance),
     nodes: prices.map(({ row, tier, essence }) => {
       const effect = drawnEffect(row, tier)!;
       const reached = researchTier(learned, row);
@@ -88,7 +89,7 @@ const rowOpen = (store: NativeFactStore, realm: NativeRows["Structure"], row: nu
   const category = researchRowCategory[row];
   if (category === undefined) return true;
   const castle = category === BuildingType.ResourceLabor ? 1 : 0;
-  return getBuildingQuantity(realm.entity_id, category, store) > castle;
+  return getBuildingQuantity(safeInteger(realm.entity_id), category, store) > castle;
 };
 
 /** What one building of a type gives at the tier before this one and at this one, taking the make side. */

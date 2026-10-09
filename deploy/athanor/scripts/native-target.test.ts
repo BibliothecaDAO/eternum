@@ -1,7 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { mkdtempSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { resolve } from "node:path";
 
 const root = resolve(import.meta.dir, "../../..");
 
@@ -43,37 +41,25 @@ describe("native deployment target is explicit", () => {
     expect(error).toContain("enrol-operator.ts");
   });
 
-  test("the shard package passes the operator token to initialization and the harness only from the shell that starts it", async () => {
-    // A key with no value is Compose's pass-through: the container gets the starting shell's value, or none when the
-    // shell has none. Read from the file itself, since what this proves is the package's wiring, not Compose. The
-    // harness approves its bots with the token, so it takes it the same way; no other service sees it.
+  test("the package mounts the protected operator file instead of rendering its value", async () => {
     const compose = Bun.YAML.parse(await Bun.file(resolve(root, "deploy/shard/compose.yml")).text()) as {
-      services: Record<string, { environment?: Record<string, unknown> }>;
+      services: Record<
+        string,
+        {
+          environment?: Record<string, unknown>;
+          volumes?: { target?: string; read_only?: boolean; bind?: { create_host_path?: boolean } }[];
+        }
+      >;
     };
     for (const [name, service] of Object.entries(compose.services)) {
       const environment = service.environment ?? {};
-      if (name === "prepare" || name === "init" || name === "harness") {
-        expect(Object.hasOwn(environment, "OPERATOR_TOKEN")).toBe(true);
-        expect(environment.OPERATOR_TOKEN).toBeNull();
-      } else expect(Object.hasOwn(environment, "OPERATOR_TOKEN")).toBe(false);
+      expect(Object.hasOwn(environment, "OPERATOR_TOKEN")).toBe(false);
+      if (["prepare", "init", "harness"].includes(name)) {
+        expect(environment.OPERATOR_TOKEN_FILE).toBe("/opt/athanor/operator-token");
+        const mount = service.volumes?.find((volume) => volume.target === "/opt/athanor/operator-token");
+        expect(mount?.read_only).toBe(true);
+        expect(mount?.bind?.create_host_path).toBe(false);
+      } else expect(Object.hasOwn(environment, "OPERATOR_TOKEN_FILE")).toBe(false);
     }
-  });
-
-  test("sequencing authority preparation has no default RPC or credential", async () => {
-    const error = await runWithoutTarget("deploy/athanor/harness/native/prepare-authority.ts", {});
-    expect(error).toContain("RANDOMNESS_PRIVATE_KEY, RPC_URL and NATIVE_AUTHORITY_FILE are required");
-  });
-
-  test("a rotation under the recorded sequencing key is refused before contacting the chain", async () => {
-    const data = mkdtempSync(join(tmpdir(), "authority-"));
-    writeFileSync(join(data, "authority.json"), JSON.stringify({ address: "0x9", signingKey: "0x05" }));
-    const error = await runWithoutTarget("deploy/athanor/harness/native/prepare-authority.ts", {
-      RANDOMNESS_PRIVATE_KEY: "0x5",
-      RPC_URL: "http://127.0.0.1:1",
-      NATIVE_AUTHORITY_FILE: join(data, "authority-rotated.json"),
-      DEPLOYER_ACCOUNT_ADDRESS: "0x1",
-      DEPLOYER_PRIVATE_KEY: "0x2",
-    });
-    expect(error).toContain("a rotation needs a new key");
   });
 });

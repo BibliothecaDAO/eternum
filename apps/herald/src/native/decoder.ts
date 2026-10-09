@@ -1,4 +1,3 @@
-import { storyEventKeys } from "@bibliothecadao/eternum/game-sync";
 import { type GameSyncModelDefinition } from "@bibliothecadao/eternum/game-sync-models";
 import { normalizeFelt, type ModelCodec, type ModelRegistry } from "../model-registry";
 import type { DecodedWorldEvent, RawWorldEvent, RpcEvent } from "../types";
@@ -179,19 +178,39 @@ function readFrame(data: string[], withValue: boolean): { keys: string[]; values
   return { keys, values };
 }
 
+/**
+ * An event's place on the chain as its value carries it to clients: its canonical order (block, transaction, event),
+ * by which a client orders stories, never by a counter.
+ */
+const eventPosition = (position: DecodedWorldEvent["position"]) => ({
+  block_number: position.blockNumber,
+  transaction_hash: position.transactionHash,
+  transaction_index: position.transactionIndex,
+  event_index: position.eventIndex,
+});
+
+/** A decode moved to another position (a pre-confirmed decode reused where it confirmed): its value moves with it. */
+export function atPosition(event: DecodedWorldEvent, position: DecodedWorldEvent["position"]): DecodedWorldEvent {
+  return event.kind === "event"
+    ? { ...event, position, value: { ...event.value, event_position: eventPosition(position) } }
+    : { ...event, position };
+}
+
 function decodeEvent(event: NativeRawEvent, schema: NativeSchema, layout: NativeEventLayout): DecodedWorldEvent {
   const header = event.keys.slice(layout.prefix.length);
   const keyMembers = layout.members.filter((member) => member.kind === "key");
   const versioned = keyMembers[0]?.name === "version";
-  if (versioned && BigInt(header[0] ?? -1) !== 1n) throw new Error("Unsupported native event version");
+  const projection = schema.events.find((projection) => projection.name === layout.name);
+  if (!projection) throw new Error("Unowned native event");
+  // Each event is read at the version its compiled projection names (Story, Battle and Raid moved to 2).
+  if (versioned && BigInt(header[0] ?? -1) !== BigInt(projection.version))
+    throw new Error("Unsupported native event version");
   const position = {
     blockNumber: event.block_number,
     transactionHash: normalizeFelt(event.transaction_hash),
     transactionIndex: event.transaction_index,
     eventIndex: event.event_index,
   };
-  const projection = schema.events.find((projection) => projection.name === layout.name);
-  if (!projection) throw new Error("Unowned native event");
   const key = decodeMembers(schema, versioned ? keyMembers.slice(1) : keyMembers, versioned ? header.slice(1) : header);
   if (projection.scope === "game" && BigInt(key.game_id as bigint) === 0n) throw new Error("Reserved native game id");
   const value = decodeMembers(
@@ -206,16 +225,10 @@ function decodeEvent(event: NativeRawEvent, schema: NativeSchema, layout: Native
       scope: projection.scope,
       deletion: "event-ephemeral",
     },
-    entityId: nativeEntityId(
-      ["StoryEvent", "BattleEvent", "RaidEvent"].includes(layout.name)
-        ? storyEventKeys(key)
-        : [position.transactionHash, position.eventIndex],
-    ),
+    // An event is the same event wherever its transaction lands: its hash and its index in the receipt.
+    entityId: nativeEntityId([position.transactionHash, position.eventIndex]),
     position,
     key,
-    value: {
-      ...value,
-      event_position: { transaction_hash: position.transactionHash, event_index: position.eventIndex },
-    },
+    value: { ...value, event_position: eventPosition(position) },
   };
 }

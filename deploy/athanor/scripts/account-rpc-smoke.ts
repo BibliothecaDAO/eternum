@@ -1,3 +1,4 @@
+import { readPrivateJson } from "./private-file";
 import { assertPublicRpcBoundary } from "./public-rpc-check";
 import { readFileSync, writeFileSync, mkdtempSync } from "node:fs";
 import { Account, BlockTag, ec, RpcProvider, stark } from "starknet";
@@ -17,6 +18,8 @@ const env = Object.fromEntries(
       return [line.slice(0, i), line.slice(i + 1)];
     }),
 );
+const keyPath = `${directory}/host-keys.json`;
+const { deployerPrivateKey } = readPrivateJson<{ deployerPrivateKey: string }>(keyPath);
 const manifest = JSON.parse(readFileSync(`${directory}/native-world.json`, "utf8"));
 const { operatorAccountAddress: operator } = JSON.parse(readFileSync(`${directory}/gameplay-contracts.json`, "utf8"));
 console.log(JSON.stringify(await assertPublicRpcBoundary(url, { ...manifest.shard, operator })));
@@ -49,7 +52,7 @@ if (BigInt(deployed) !== 1n) throw new Error("The bot account was not deployed w
 const owner = new Account({
   provider,
   address: operator,
-  signer: new DeviceSigner(deviceKeyOf(env.DEPLOYER_PRIVATE_KEY)),
+  signer: new DeviceSigner(deviceKeyOf(deployerPrivateKey)),
   cairoVersion: "1",
 });
 const operatorInvoke = await owner.execute(

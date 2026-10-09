@@ -21,6 +21,7 @@ import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { runWithFrameWorkOwner } from "@/three/frame-work-owner";
 import { DEV_MODE_ENABLED, VERBOSE_LOGS_ENABLED, verboseLog } from "@/utils/dev-mode";
 import { formatReadableErrorForConsole } from "@/utils/error-message";
+import { armyHomeStructureId } from "@/utils/native-id";
 import { toast } from "@/ui/features/event-feed/notify";
 
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
@@ -101,7 +102,7 @@ import {
   recordClientActionRendered,
   recordClientActionSubmitted,
 } from "@/observability/client-action-latency";
-import type { GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
+import { safeInteger, type GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
 import {
   ActionPath,
   ActionPaths,
@@ -1381,7 +1382,7 @@ export default class WorldmapScene extends WarpTravel {
     });
     const unsubscribeTerrainEcology = bindWorldmapTerrainEcologyRefresh({
       onStructureChanged: (current) => {
-        if (current?.entity_id !== undefined) this.refreshStructureMarkersForEntity(current.entity_id);
+        if (current?.entity_id !== undefined) this.refreshStructureMarkersForEntity(safeInteger(current.entity_id));
       },
       projection: this.worldSpatialProjection,
       requestRefresh: () => this.scheduleTerrainEcologyRefresh(),
@@ -1724,7 +1725,7 @@ export default class WorldmapScene extends WarpTravel {
         for (const change of changes) {
           if (change.model !== "ArmyProgress" || !change.previous || !change.current) continue;
           if (change.current.game_id !== configManager.getActiveGameId()) continue;
-          const owner = this.getEntityOwnerAddress(change.current.explorer_id);
+          const owner = this.getEntityOwnerAddress(safeInteger(change.current.explorer_id));
           if (owner === undefined || !isAddressEqualToAccount(owner)) continue;
           this.playOwnArmyProgress(change.previous, change.current);
         }
@@ -1735,7 +1736,7 @@ export default class WorldmapScene extends WarpTravel {
   private playOwnArmyProgress(before: ArmyProgressFacts, after: ArmyProgressFacts): void {
     const xp = xpGained(before, after);
     if (xp <= 0) return;
-    const hex = this.getArmyDisplayPosition(after.explorer_id);
+    const hex = this.getArmyDisplayPosition(safeInteger(after.explorer_id));
     playArmyProgress({ xp, at: hex ? projectHexToScreen(hex, this.camera) : null });
   }
 
@@ -2185,8 +2186,8 @@ export default class WorldmapScene extends WarpTravel {
       game_id: configManager.getActiveGameId(),
       explorer_id: entityId,
     });
-    if (explorer.owner === 0) return ContractAddress(0n);
-    return this.getStructureOwnerAddress(explorer.owner);
+    const home = armyHomeStructureId(explorer);
+    return home === null ? ContractAddress(0n) : this.getStructureOwnerAddress(home);
   }
 
   private getArmyOwnerStructureId(entityId: ID): ID | null {
@@ -2194,7 +2195,7 @@ export default class WorldmapScene extends WarpTravel {
       game_id: configManager.getActiveGameId(),
       explorer_id: entityId,
     });
-    return explorer?.owner && explorer.owner !== 0 ? explorer.owner : null;
+    return explorer ? armyHomeStructureId(explorer) : null;
   }
 
   private getArmyDisplayPosition(entityId: ID): HexPosition | undefined {

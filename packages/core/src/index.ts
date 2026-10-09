@@ -15,5 +15,3 @@ export * from "./client/views";
 export * from "./client/actions";
 export * from "./client/wait-for-world-state";
 export * from "./client/world-view";
-
-export { createNativeTicketSubmission, signGameplayIntent } from "./client/native-submission";

@@ -6,6 +6,7 @@ import {
   configManager,
   seasonDay,
   getBlockTimestamp,
+  entityHomeNamespace,
   expeditionRealmSite,
   isExpeditionRealm,
   Position,
@@ -15,6 +16,7 @@ import { getActiveGameSyncRuntime } from "@bibliothecadao/eternum/game-sync";
 import { useGame } from "@/hooks/context/game-context";
 import { troopsOnHand } from "@/ui/features/frontier/frontier-home";
 import { useEffect, useRef } from "react";
+import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
 /**
  * The one place a Frontier day turns over: the realm moves to its new region, the map is re-projected, and the
@@ -56,11 +58,11 @@ export const ExpeditionRollover = () => {
       if (!realm) return;
       // The rollover fires on chain time, which runs ahead of the last block's timestamp, so the announced site is
       // computed for the day that is beginning rather than read through structureMapPosition's block clock.
-      const site = expeditionRealmSite(rules, realm.metadata.realm_id, now);
+      const site = expeditionRealmSite(rules, entityHomeNamespace(realm.entity_id), now);
       if (!site) return;
       toast.info("A new expedition has begun", {
         description: describeNewExpedition(
-          troopsOnHand(setup.store, realm.entity_id, getBlockTimestamp().currentDefaultTick),
+          troopsOnHand(setup.store, safeInteger(realm.entity_id), getBlockTimestamp().currentDefaultTick),
         ),
         location: { x: site.col, y: site.row },
       });

@@ -11,7 +11,6 @@ function game(store: NativeFactStore, endAt = 100) {
         game_id: 1,
         name: 0,
         preset_id: 2,
-        creator: 1,
         settled: false,
         ready: true,
         dev_mode_on: false,
@@ -24,6 +23,7 @@ function game(store: NativeFactStore, endAt = 100) {
     },
   ]);
 }
+/** The result ranks wallets; the roster reads each back to its account, here the wallet plus 1000. */
 function result(store: NativeFactStore, gameId: number, players: { player: number; rank: number }[], complete = true) {
   store.applyFacts([
     {
@@ -31,10 +31,15 @@ function result(store: NativeFactStore, gameId: number, players: { player: numbe
       key: String(100 + gameId),
       value: {
         game_id: gameId,
-        players: players.map((player) => ({ ...player, points: 0 })),
+        players: players.map(({ player, rank }) => ({ wallet: 1000 + player, rank })),
         complete,
         commitment: complete ? 123 : 0,
       },
+    },
+    {
+      model: "BlitzRoster",
+      key: String(200 + gameId),
+      value: { game_id: gameId, players: players.map(({ player }) => ({ account: player, wallet: 1000 + player })) },
     },
   ]);
 }

@@ -14,7 +14,7 @@ import {
   structureMapPosition,
   TROOP_RAISE_SHORT_REASON,
 } from "@bibliothecadao/eternum";
-import type { NativeRows } from "@bibliothecadao/eternum/game-client";
+import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { type Direction, getNeighborHexes, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { useEffect, useMemo, useState } from "react";
 import { formatAmount } from "../frontier-format";
@@ -80,7 +80,7 @@ export const MusterSheet = ({ realm, onClose }: { realm: NativeRows["Structure"]
       ? readTroopRaiseCost(
           setup.store,
           realm.game_id,
-          realm.entity_id,
+          safeInteger(realm.entity_id),
           getTroopResourceId(stack.type, stack.tier),
           preview.count,
           defaultTick,

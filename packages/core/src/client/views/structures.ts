@@ -1,3 +1,4 @@
+import { safeInteger } from "../../utils/safe-integer";
 import {
   type Building,
   type BuildingType,
@@ -44,7 +45,7 @@ export const readStructures = (
   playerName: PlayerNameResolver,
 ): Structure[] =>
   [...store.structuresOwnedBy(configManager.getActiveGameId(), owner)]
-    .map((row) => getStructure(row.entity_id, viewer, store, playerName)!)
+    .map((row) => getStructure(safeInteger(row.entity_id), viewer, store, playerName)!)
     .toSorted((a, b) => a.category - b.category || a.entityId - b.entityId);
 
 export const readRealmInfos = (
@@ -55,7 +56,7 @@ export const readRealmInfos = (
 ): RealmInfo[] =>
   [...store.structuresOwnedBy(configManager.getActiveGameId(), owner)]
     .filter((row) => row.base.category === category)
-    .map((row) => getRealmInfo(row.entity_id, store, playerName)!);
+    .map((row) => getRealmInfo(safeInteger(row.entity_id), store, playerName)!);
 
 export const readStructureRows = (store: NativeFactStore, category: StructureType): StructureRow[] =>
   [...store.inGame("Structure", configManager.getActiveGameId())].filter((row) => row.base.category === category);
@@ -63,7 +64,7 @@ export const readStructureRows = (store: NativeFactStore, category: StructureTyp
 export const readStructureIds = (store: NativeFactStore, owner: ContractAddress, category: StructureType): ID[] =>
   [...store.structuresOwnedBy(configManager.getActiveGameId(), owner)]
     .filter((row) => row.base.category === category)
-    .map((row) => row.entity_id);
+    .map((row) => safeInteger(row.entity_id));
 
 export const readHyperstructureUpdates = (store: NativeFactStore, entityId: ID): HyperstructureRow[] => {
   const row = store.get("Hyperstructure", { game_id: configManager.getActiveGameId(), entity_id: entityId });
@@ -72,7 +73,7 @@ export const readHyperstructureUpdates = (store: NativeFactStore, entityId: ID):
 
 export const readBuildings = (store: NativeFactStore, structureId: number): Building[] =>
   [...store.inGame("Building", configManager.getActiveGameId())]
-    .filter((row) => row.structure_id === structureId)
+    .filter((row) => row.structure_id === BigInt(structureId))
     .flatMap((building) => {
       const category = building.category as BuildingType;
       const resource = getProducedResource(category);

@@ -1,6 +1,14 @@
 use cubit::f128::types::fixed::{Fixed, FixedTrait};
 use game_ledger::types::MmrParams;
 
+pub fn percentile_position(rank: u16, tie_count: u16, player_count: u16) -> (u128, u128) {
+    if player_count <= 1 {
+        (0, 1)
+    } else {
+        (2 * Into::<u16, u128>::into(rank) + tie_count.into() - 3, 2 * (player_count - 1).into())
+    }
+}
+
 const BPS: u128 = 10_000;
 const MIN_MMR: u128 = 100;
 
@@ -16,7 +24,15 @@ pub impl MmrCalculatorImpl of MmrCalculatorTrait {
         let regressed_delta = Self::apply_mean_regression(
             capped_delta, current_mmr, params.mean.into(), params.regression_bps.into(),
         );
-        Self::apply_delta(current_mmr, regressed_delta)
+        let calculated = Self::apply_delta(current_mmr, regressed_delta);
+        let maximum: u128 = params.max_delta.into();
+        if calculated > current_mmr && calculated - current_mmr > maximum {
+            current_mmr + maximum
+        } else if calculated < current_mmr && current_mmr - calculated > maximum {
+            current_mmr - maximum
+        } else {
+            calculated
+        }
     }
 
     fn apply_flag_modifier(current_mmr: u128, calculated_mmr: u128, sword: bool, shield: bool) -> u128 {
@@ -30,15 +46,8 @@ pub impl MmrCalculatorImpl of MmrCalculatorTrait {
     }
 
     fn actual_percentile(rank: u16, tie_count: u16, player_count: u16) -> Fixed {
-        if player_count <= 1 {
-            return FixedTrait::ZERO();
-        }
-
-        let first_position: u128 = rank.into() - 1;
-        let last_position: u128 = rank.into() + tie_count.into() - 2;
-        let numerator = Self::to_fixed(first_position + last_position);
-        let denominator = Self::to_fixed(2 * (player_count - 1).into());
-        numerator / denominator
+        let (position, total) = percentile_position(rank, tie_count, player_count);
+        Self::to_fixed(position) / Self::to_fixed(total)
     }
 
     fn expected_percentile(player_mmr: u128, median_mmr: u128, spread: u128) -> Fixed {
@@ -181,5 +190,14 @@ mod tests {
     fn mmr_never_falls_below_the_token_floor() {
         let loss = FixedTrait::new_unscaled(50, true);
         assert!(MmrCalculatorImpl::apply_delta(110, loss) == 100, "ledger MMR should match the token floor");
+    }
+    #[test]
+    fn mean_regression_cannot_escape_the_per_game_delta_cap() {
+        let high = MmrCalculatorImpl::calculate_player_mmr(params(), 10000, 6, 1, 6, 10000);
+        let low = MmrCalculatorImpl::calculate_player_mmr(params(), 100, 1, 1, 6, 100);
+        assert!(10000 - high <= 45);
+        assert!(low - 100 <= 45);
+        let sword = MmrCalculatorImpl::apply_flag_modifier(100, low, true, false);
+        assert!(sword - 100 <= 90);
     }
 }

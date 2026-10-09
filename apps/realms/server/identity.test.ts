@@ -1,4 +1,6 @@
-import { readdirSync, readFileSync } from "node:fs";
+import { readdirSync, readFileSync, mkdtempSync, writeFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { buildSiwsMessage, enrolOperator, payoutWalletStatement } from "@realms-world/identity";
 import { botRealmsId, deviceChangeHash, realmsAccountAddress } from "@realms-world/identity/account";
 import { createGuardian } from "@realms-world/guardian";
@@ -20,6 +22,7 @@ const ACCOUNT_CLASS_HASH = "0x68995feeefffc1647118073e1ff16179f07eb8eed6c8fb03cc
 const GUARDIAN_KEY = "0x2dccce1da22003777062ee0870e9881b460a8b7eca276870f57c601f182136c";
 const CHAIN_ID = "0x5245414c4d535f53484152445f41";
 
+const storageDirectory = mkdtempSync(join(tmpdir(), "identity-platform-"));
 let proxy: Awaited<ReturnType<typeof getPlatformProxy<{ DB: D1Database }>>>;
 const OPERATOR_TOKEN = "operator-test-token";
 
@@ -66,7 +69,16 @@ const verifyAsMainnet = vi.fn<VerifyWalletSignature>(async (message, signature, 
 });
 
 beforeAll(async () => {
-  proxy = await getPlatformProxy<{ DB: D1Database }>({ environment: "staging", persist: false });
+  const configPath = join(storageDirectory, "wrangler.json");
+  writeFileSync(
+    configPath,
+    JSON.stringify({
+      name: "identity-route-storage",
+      compatibility_date: "2026-07-30",
+      d1_databases: [{ binding: "DB", database_name: "identity", database_id: "00000000-0000-0000-0000-000000000000" }],
+    }),
+  );
+  proxy = await getPlatformProxy<{ DB: D1Database }>({ configPath, persist: false });
   const migrations = new URL("../migrations/", import.meta.url);
   const statements = readdirSync(migrations)
     .sort()
@@ -110,7 +122,10 @@ beforeAll(async () => {
   });
 }, 60_000);
 
-afterAll(() => proxy?.dispose());
+afterAll(async () => {
+  await proxy?.dispose();
+  rmSync(storageDirectory, { recursive: true, force: true });
+});
 
 /** A shard manifest under our guardian and account class, the only kind our directory lists. */
 const shardManifest = (chainId: string) => ({

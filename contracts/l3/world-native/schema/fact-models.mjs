@@ -1,6 +1,3 @@
-// ExecutionRecorded v2 separates the rejection class from the full domain reason.
-export const executionRecordedVersion = 2;
-
 // Fact-only Cairo wire types replace the removed fixture getter ABIs.
 // Production definitions, when present, must agree exactly with these fields.
 export const factWireTypes = [
@@ -9,7 +6,7 @@ export const factWireTypes = [
     name: "world_native::troops::ArmySlotKey",
     members: [
       { name: "game_id", type: "core::integer::u32" },
-      { name: "structure_id", type: "core::integer::u32" },
+      { name: "structure_id", type: "core::integer::u64" },
       { name: "epoch", type: "core::integer::u64" },
       { name: "slot", type: "core::integer::u8" },
     ],
@@ -18,7 +15,7 @@ export const factWireTypes = [
     type: "struct",
     name: "world_native::troops::ArmySlot",
     members: [
-      { name: "explorer_id", type: "core::integer::u32" },
+      { name: "explorer_id", type: "core::integer::u64" },
       { name: "stamina", type: "world_native::troops::Stamina" },
     ],
   },
@@ -70,7 +67,7 @@ export const factWireTypes = [
     type: "struct",
     name: "world_native::faith::FaithfulStructure",
     members: [
-      { name: "wonder_id", type: "core::integer::u32" },
+      { name: "wonder_id", type: "core::integer::u64" },
       { name: "faithful_since", type: "core::integer::u64" },
       { name: "fp_to_wonder_owner_per_sec", type: "core::integer::u16" },
       { name: "fp_to_struct_owner_per_sec", type: "core::integer::u16" },
@@ -97,7 +94,7 @@ export const factWireTypes = [
       },
       {
         name: "entity_id",
-        type: "core::integer::u32",
+        type: "core::integer::u64",
       },
       {
         name: "day",
@@ -123,7 +120,7 @@ export const factWireTypes = [
       },
       {
         name: "mine_id",
-        type: "core::integer::u32",
+        type: "core::integer::u64",
       },
     ],
   },
@@ -137,7 +134,7 @@ export const factWireTypes = [
       },
       {
         name: "structure_id",
-        type: "core::integer::u32",
+        type: "core::integer::u64",
       },
     ],
   },
@@ -263,7 +260,7 @@ export const factWireTypes = [
       },
       {
         name: "structure_id",
-        type: "core::integer::u32",
+        type: "core::integer::u64",
       },
       {
         name: "inner_col",
@@ -339,7 +336,7 @@ export const factWireTypes = [
       },
       {
         name: "wonder_id",
-        type: "core::integer::u32",
+        type: "core::integer::u64",
       },
     ],
   },
@@ -376,10 +373,6 @@ export const factWireTypes = [
       {
         name: "preset_id",
         type: "core::integer::u32",
-      },
-      {
-        name: "creator",
-        type: "core::starknet::contract_address::ContractAddress",
       },
       {
         name: "settled",
@@ -419,7 +412,7 @@ export const factWireTypes = [
     type: "struct",
     name: "world_native::map::TileOccupancy",
     members: [
-      { name: "entity_id", type: "core::integer::u32" },
+      { name: "entity_id", type: "core::integer::u64" },
       { name: "category", type: "core::integer::u8" },
       { name: "is_structure", type: "core::bool" },
     ],
@@ -428,7 +421,7 @@ export const factWireTypes = [
     type: "struct",
     name: "world_native::troops::ExplorerRecord",
     members: [
-      { name: "owner", type: "core::integer::u32" },
+      { name: "owner", type: "core::integer::u64" },
       { name: "troops", type: "world_native::troops::Troops" },
     ],
   },
@@ -658,7 +651,7 @@ export const factWireTypes = [
       },
       {
         name: "village_realm",
-        type: "core::integer::u32",
+        type: "core::integer::u64",
       },
       {
         name: "mine_kind",
@@ -680,7 +673,7 @@ export const factWireTypes = [
       },
       {
         name: "trade_id",
-        type: "core::integer::u32",
+        type: "core::integer::u64",
       },
     ],
   },
@@ -694,7 +687,7 @@ export const factWireTypes = [
       },
       {
         name: "village_id",
-        type: "core::integer::u32",
+        type: "core::integer::u64",
       },
     ],
   },
@@ -724,6 +717,7 @@ const presetDerivedModels = new Set([
   "HyperstructureRules",
   "RelicRules",
   "ChestRules",
+  "LaborRules",
   "ArmyProgressionRules",
   "FrontierDiscoveryRules",
   "ArtificerCost",
@@ -779,12 +773,6 @@ export function defineFactModels({ struct, model: declare }) {
       };
     if (row.name === "VillageRaid")
       row.absence = { parent: "Structure", value: "zero", meaning: "The village has not been successfully raided." };
-    if (row.name === "ActionNonce")
-      row.absence = {
-        value: "zero",
-        meaning:
-          "After a complete actor snapshot, no row means no action was consumed for this player; next_nonce is zero.",
-      };
     if (row.name === "PlayerPoints")
       row.absence = {
         value: "zero",
@@ -876,6 +864,16 @@ export function defineFactModels({ struct, model: declare }) {
       struct("expeditions::ExpeditionDiscoveryKey"),
       struct("expeditions::ExpeditionDiscovery"),
     ),
+    model("LaborRules", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("entry::LaborRules")),
+    model(
+      "LaborGrant",
+      "deployment",
+      [
+        { name: "realm_id", type: "core::integer::u32" },
+        { name: "day", type: "core::integer::u64" },
+      ],
+      struct("entry::LaborGrant"),
+    ),
     model("ChestRules", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("relics::ChestRules")),
     model("LordsBudget", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("relics::LordsBudget")),
     model("SiteChest", "game", struct("resources::ResourceKey"), struct("relics::SiteChest")),
@@ -884,8 +882,7 @@ export function defineFactModels({ struct, model: declare }) {
       "game",
       [
         { name: "game_id", type: "core::integer::u32" },
-        { name: "order", type: "core::integer::u64" },
-        { name: "index", type: "core::integer::u32" },
+        { name: "claim_id", type: "core::felt252" },
       ],
       struct("relics::LordsWithdrawal"),
     ),
@@ -992,7 +989,7 @@ export function defineFactModels({ struct, model: declare }) {
     model(
       "RealmKnowledge",
       "game",
-      [struct("resources::ResourceKey")[0], { name: "structure_id", type: "core::integer::u32" }],
+      [struct("resources::ResourceKey")[0], { name: "structure_id", type: "core::integer::u64" }],
       struct("research::RealmKnowledge"),
     ),
     model(
@@ -1100,15 +1097,6 @@ export function defineFactModels({ struct, model: declare }) {
       ),
       eventProjection: "PointsAwarded",
     },
-    model(
-      "ActionNonce",
-      "game",
-      [
-        { name: "game_id", type: "core::integer::u32" },
-        { name: "actor", type: "core::starknet::contract_address::ContractAddress" },
-      ],
-      [{ name: "next_nonce", type: "core::integer::u64" }],
-    ),
   ].map((fact) => (presetDerivedModels.has(fact.name) ? { ...fact, derivedFrom: "preset" } : fact));
 }
 
@@ -1310,8 +1298,7 @@ const byOwner = { owners: ["owner"] };
 const byPlayer = { owners: ["player"] };
 export const syncScopes = {
   GameOverrides: "internal",
-  ActionNonce: "actor",
-  ExecutionRecorded: "actor",
+  GameplayRejected: "actor",
   BatchProgress: "actor",
   ...Object.fromEntries(
     [
@@ -1325,6 +1312,7 @@ export const syncScopes = {
       "ExtractionRewards",
       "RelicRules",
       "ChestRules",
+      "LaborRules",
       "ArmyProgressionRules",
       "LordsBudget",
       "FrontierDiscoveryRules",
@@ -1375,7 +1363,8 @@ export const syncScopes = {
   BitcoinContribution: byPlayer,
   PlayerFaithPoints: byPlayer,
   PointsAwarded: byPlayer,
-  LordsWithdrawal: byPlayer,
+  LordsWithdrawal: { owners: ["account"] },
+  LaborGrant: { owners: ["account"] },
   RaidEvent: { owners: ["player", "target_owner"] },
   WonderFaith: { owners: ["last_recorded_owner"] },
   TileOpt: { regions: [{ alt: "alt", x: "col", y: "row" }] },

@@ -6,7 +6,7 @@ import { leaveRealmVisit, type RealmVisit, useRealmVisit } from "@/sync/active-g
 import { Eye } from "@/ui/design-system/atoms/game-icons";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { configManager, Position, structureMapPosition } from "@bibliothecadao/eternum";
-import type { NativeRows } from "@bibliothecadao/eternum/game-client";
+import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useEffect, useRef } from "react";
 
@@ -34,7 +34,7 @@ export const RealmVisitBanner = ({ home }: { home: NativeRows["Structure"] | nul
   const goToStructure = useGoToStructure(setup);
   const openRealm = (realm: NativeRows["Structure"], spectator: boolean) => {
     const site = structureMapPosition(setup.store, realm);
-    if (site) void goToStructure(realm.entity_id, Position.fromContract(site), false, { spectator });
+    if (site) void goToStructure(safeInteger(realm.entity_id), Position.fromContract(site), false, { spectator });
   };
 
   useEffect(() => {

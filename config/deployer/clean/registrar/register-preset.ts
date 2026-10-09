@@ -75,6 +75,7 @@ export async function registerEnvironmentPreset(options: RegisterPresetOptions):
   const registration = buildRegistration(config, options);
   const { calldata } = registration;
   const ledgerPreset = buildLedgerEconomicPreset(nativePresetForId(options.presetId).gameType, {
+    presetId: options.presetId,
     sponsored: options.sponsored,
   });
   const summary = {

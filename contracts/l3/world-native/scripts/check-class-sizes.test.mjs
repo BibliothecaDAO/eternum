@@ -26,7 +26,7 @@ const schema = { games: { contract: "Games" }, logicClasses: {} };
 test("accepts the headroom boundary and reports every compiled class", async (t) => {
   const directory = await fixture(t, [
     ["Games", 75_366],
-    ["SequencingAccount", 10],
+    ["PlayerAccount", 10],
     ["ExtraLogic", 20],
   ]);
   const report = await classSizeReport(directory, schema);
@@ -38,13 +38,13 @@ test("accepts the headroom boundary and reports every compiled class", async (t)
 test("rejects a class one felt above the headroom boundary", async (t) => {
   const directory = await fixture(t, [
     ["Games", 75_367],
-    ["SequencingAccount", 10],
+    ["PlayerAccount", 10],
   ]);
   assert.equal((await classSizeReport(directory, schema)).passed, false);
 });
 
 test("rejects a required class missing from the artifact index", async (t) => {
-  const directory = await fixture(t, [["SequencingAccount", 10]]);
+  const directory = await fixture(t, [["PlayerAccount", 10]]);
   const report = await classSizeReport(directory, schema);
   assert.equal(report.passed, false);
   assert.match(report.classes.find(({ name }) => name === "Games").error, /Missing compiled class/);
@@ -54,7 +54,7 @@ test("rejects an indexed class with no artifact file or empty bytecode", async (
   for (const size of [null, 0]) {
     const directory = await fixture(t, [
       ["Games", size],
-      ["SequencingAccount", 10],
+      ["PlayerAccount", 10],
     ]);
     assert.equal((await classSizeReport(directory, schema)).passed, false);
   }

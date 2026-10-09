@@ -38,7 +38,7 @@ class MeasuresTests(unittest.TestCase):
             split = measures.admission_split(temporary)
         self.assertEqual([split[kind]["n"] for kind in ("all", "burst", "calm")], [14, 13, 1])
         self.assertEqual(split["notCompleted"], 1)
-        self.assertEqual(split["all"]["gatewayMs"][95], 100)
+        self.assertEqual(split["all"]["submitMs"][95], 100)
         self.assertEqual(split["all"]["afterRecordedMs"][95], 250)
         self.assertEqual(split["all"]["admissionToVisibleMs"][95], 350)
 

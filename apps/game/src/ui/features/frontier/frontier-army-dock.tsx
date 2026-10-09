@@ -23,7 +23,7 @@ import {
   liveHomeArmies,
   Position,
 } from "@bibliothecadao/eternum";
-import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
+import { safeInteger, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { RESOURCE_PRECISION, type TroopTier, type TroopType } from "@bibliothecadao/types";
 import { useMemo } from "react";
 import { Sweep } from "@/ui/motion/sweep";
@@ -58,7 +58,7 @@ export const FrontierArmyDock = ({ realm }: { realm: NativeRows["Structure"] }) 
   const revision = useNativeRevision(ARMY_MODELS);
   const tick = useCurrentArmiesTick();
   const armies = useMemo(
-    () => liveHomeArmies(setup.store, realm.entity_id, configManager.getActiveGameId()),
+    () => liveHomeArmies(setup.store, safeInteger(realm.entity_id), configManager.getActiveGameId()),
     [realm.entity_id, revision, setup.store, tick],
   );
   const ordersAllowed = useUIStore(canIssueOrders);
@@ -105,10 +105,11 @@ const ArmyCard = ({
   const { setup } = useGame();
   const { isMapView } = useQuery();
   const navigateToMapView = useNavigateToMapView();
-  const selected = useUIStore((state) => state.entityActions.selectedEntityId === army.explorer_id);
+  const explorerId = safeInteger(army.explorer_id);
+  const selected = useUIStore((state) => state.entityActions.selectedEntityId === explorerId);
   const { currentArmiesTick, armiesTickTimeRemaining } = useBlockTimestamp();
   const snapshot = getExplorerStaminaSnapshot({
-    entityId: army.explorer_id,
+    entityId: explorerId,
     currentArmiesTick,
     liveTroops: resolveExplorerTroops(setup.store, army),
   });
@@ -125,7 +126,7 @@ const ArmyCard = ({
   // The world map selects the army in place; from the realm board the first tap goes out to it.
   const pick = () => {
     if (isMapView) {
-      requestArmySelection(army.explorer_id);
+      requestArmySelection(explorerId);
       return;
     }
     const coord = entityMapPosition(setup.store, configManager.getActiveGameId(), army.explorer_id);
@@ -135,12 +136,12 @@ const ArmyCard = ({
   // Progress and its rules are required facts: until both arrive the portrait shows no level and no pick waits.
   const progress = setup.store.get("ArmyProgress", { game_id: army.game_id, explorer_id: army.explorer_id });
   const rules = setup.store.get("ArmyProgressionRules", { game_id: army.game_id });
-  const name = dockArmyName(setup.store, army.explorer_id, position);
+  const name = dockArmyName(setup.store, explorerId, position);
 
   const card = (
     <>
       <span className="flex items-center gap-2">
-        <ArmyPortrait explorerId={army.explorer_id} troops={army.troops} progress={progress} rules={rules} />
+        <ArmyPortrait explorerId={explorerId} troops={army.troops} progress={progress} rules={rules} />
         <TroopChip
           small
           type={army.troops.category as TroopType}
@@ -148,7 +149,7 @@ const ArmyCard = ({
           count={Number(army.troops.count / BigInt(RESOURCE_PRECISION))}
         />
       </span>
-      <StaminaBar explorerId={army.explorer_id} stamina={stamina} />
+      <StaminaBar explorerId={explorerId} stamina={stamina} />
       <span className="flex flex-wrap items-center gap-1.5">
         {stamina && stamina.secondsUntilFull > 0 && (
           <Chip small label="Full in" icon={<Hourglass />} value={formatShortClock(stamina.secondsUntilFull)} />

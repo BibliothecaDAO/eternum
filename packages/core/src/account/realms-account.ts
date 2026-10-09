@@ -1,6 +1,6 @@
-import { utils as starknetKeyUtils } from "@scure/starknet";
 import { DeviceSigner } from "./device-signer";
 export { DeviceSigner } from "./device-signer";
+import { utils as starknetKeyUtils } from "@scure/starknet";
 import { botRealmsId, realmsAccountAddress, type DeviceChange } from "@realms-world/identity/account";
 import { Account, BlockTag, ec, hash, num, type ProviderInterface } from "starknet";
 

@@ -127,7 +127,7 @@ export const TransferTroopsContainer = ({
     actorTypes.target === ActorType.Structure ? targetStructure === undefined : targetExplorerTroops === undefined;
 
   const isStructureOwnerOfExplorer = useMemo(() => {
-    return selectedEntityId === targetExplorerTroops?.owner;
+    return targetExplorerTroops?.owner === BigInt(selectedEntityId);
   }, [selectedEntityId, targetExplorerTroops?.owner]);
 
   const structureTroopBalance = useMemo(() => {

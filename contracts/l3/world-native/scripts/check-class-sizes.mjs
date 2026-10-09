@@ -7,12 +7,7 @@ const headroomLimit = 75_366;
 
 export async function classSizeReport(directory, schema) {
   const contracts = await readArtifactIndex(directory);
-  const required = new Set([
-    schema.games.contract,
-    ...Object.values(schema.logicClasses),
-    "SequencingAccount",
-    ...contracts.keys(),
-  ]);
+  const required = new Set([schema.games.contract, ...Object.values(schema.logicClasses), ...contracts.keys()]);
   const classes = await Promise.all(
     [...required].sort().map((name) => measureClass(directory, name, contracts.get(name))),
   );

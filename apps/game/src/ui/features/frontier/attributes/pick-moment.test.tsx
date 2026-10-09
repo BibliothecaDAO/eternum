@@ -23,7 +23,7 @@ const RULES: ProgressionRulesFacts = {
 };
 const ARMY: ArmyProgressFacts = {
   game_id: 1,
-  explorer_id: 201,
+  explorer_id: 201n,
   xp: 250,
   battle: 2,
   logistics: 1,

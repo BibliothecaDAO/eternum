@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """What a run measures from the host, beside the harness's own report: the host's state before and after, the node's
 anonymous memory and kept RocksDB snapshots over time, its closed blocks and gas over the workload window, and
-admission-to-visible latency split into its gateway part and the rest, overall, in bursts and in calm. A runner trial
+admission-to-visible latency split into submission and the remainder, overall, in bursts and in calm. A runner trial
 and a running package shard are measured the same way.
 
     python3 deploy/athanor/scripts/measures.py DIRECTORY NAME [--cpuset CPUS] -- HARNESS_OPTIONS
@@ -58,7 +58,7 @@ def phases(group):
     return {
         "n": len(group),
         "admissionToVisibleMs": {p: percentile([a["admissionToVisibleMs"] for a in group], p) for p in (50, 95, 99)},
-        "gatewayMs": {p: percentile([a["submitMs"] for a in group], p) for p in (50, 95)},
+        "submitMs": {p: percentile([a["submitMs"] for a in group], p) for p in (50, 95)},
         "afterRecordedMs": {p: percentile([iso_ms(a["visibleAt"]) - iso_ms(a["submittedAt"]) for a in group], p)
                             for p in (50, 95)},
     }

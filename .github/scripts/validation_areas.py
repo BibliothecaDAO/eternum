@@ -30,9 +30,9 @@ AREAS = {
         "apps/launch-service/wrangler.jsonc",
         "packages/**",
         "config/**",
+        "contracts/l2/ledger/scripts/chest-preset.js",
         "contracts/l3/world-native/schema/**",
         "contracts/l3/world-native/tests/fixtures/**",
-        "contracts/l3/randomness-protocol/tests/fixtures/**",
         "contracts/common/addresses/**",
         "contracts/utils/**"
     ],
@@ -41,9 +41,9 @@ AREAS = {
         "apps/herald/**",
         "packages/**",
         "config/**",
+        "contracts/l2/ledger/scripts/chest-preset.js",
         "contracts/l3/world-native/schema/**",
         "contracts/l3/world-native/tests/fixtures/**",
-        "contracts/l3/randomness-protocol/tests/fixtures/**",
         "contracts/common/addresses/**",
         "contracts/utils/**"
     ],
@@ -61,15 +61,14 @@ AREAS = {
         "apps/herald/src/shard-manifest.ts",
         "packages/**",
         "config/**",
+        "contracts/l2/ledger/scripts/chest-preset.js",
         "contracts/l3/world-native/schema/**",
         "contracts/l3/world-native/tests/fixtures/**",
-        "contracts/l3/randomness-protocol/tests/fixtures/**",
         "contracts/common/addresses/**",
         "contracts/utils/**"
     ],
     "native": [
         ".github/workflows/test-native.yml",
-        "apps/gateway/**",
         "apps/herald/src/**",
         "apps/launch-service/src/**",
         "apps/launch-service/wrangler.jsonc",
@@ -78,6 +77,7 @@ AREAS = {
         "contracts/utils/**",
         "packages/**",
         "config/**",
+        "contracts/l2/ledger/scripts/chest-preset.js",
         "deploy/athanor/**",
         "deploy/release/**",
         "deploy/shard/**",
@@ -91,13 +91,13 @@ AREAS = {
         "apps/herald/src/shard-manifest.ts",
         "contracts/l3/world-native/schema/**",
         "contracts/l3/world-native/tests/fixtures/**",
-        "contracts/l3/randomness-protocol/tests/fixtures/**",
         "contracts/common/addresses/**",
         "contracts/utils/**",
         "deploy/athanor/**",
         "deploy/shard/**",
         "packages/**",
-        "config/**"
+        "config/**",
+        "contracts/l2/ledger/scripts/chest-preset.js"
     ],
     "terrain": [
         ".github/workflows/verify-terrain.yml",

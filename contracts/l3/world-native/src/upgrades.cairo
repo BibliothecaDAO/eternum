@@ -23,13 +23,8 @@ pub trait IUpgradeRules<T> {
 #[starknet::interface]
 pub trait IStructureUpgrades<T> {
     fn level_up(
-        ref self: T,
-        game_id: u32,
-        actor: ContractAddress,
-        structure_id: u32,
-        context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> ((), crate::ownership::StoryCursor);
+        ref self: T, game_id: u32, actor: ContractAddress, structure_id: u64, context: crate::commands::ActionContext,
+    );
 }
 
 pub fn troop_limits(config: crate::rules::TroopLimitConfig, level: u8) -> (u16, u8) {
