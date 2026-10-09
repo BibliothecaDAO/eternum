@@ -10,6 +10,7 @@ const rpc = vi.hoisted(() => ({
   chain: vi.fn(),
   header: vi.fn(),
   block: vi.fn(),
+  hashes: vi.fn(),
   contract: vi.fn(),
   receipt: vi.fn(),
 }));
@@ -18,6 +19,7 @@ vi.mock("./rpc", () => ({
     getChainId: rpc.chain,
     getBlock: rpc.header,
     getBlockWithReceipts: rpc.block,
+    getBlockWithTxHashes: rpc.hashes,
     getClassAt: rpc.contract,
     getTransactionReceipt: rpc.receipt,
   }),
@@ -78,10 +80,7 @@ beforeEach(() => {
   rpc.header.mockResolvedValue(header);
   rpc.contract.mockResolvedValue({ abi });
   rpc.receipt.mockResolvedValue(receipt());
-  rpc.block.mockResolvedValue({
-    ...header,
-    transactions: [{ transaction: { transaction_hash: "0xabc" }, receipt: receipt() }],
-  });
+  rpc.hashes.mockResolvedValue({ ...header, transactions: ["0xabc"] });
 });
 it("reads a confirmed debit receipt and pays exact wei to the resolved account's wallet", async () => {
   const f = fixture();
@@ -109,19 +108,14 @@ it("does not infer a season when its funding binding is unavailable", async () =
 });
 it("rejects unconfirmed blocks, wrong chain and transaction/claim mismatches", async () => {
   const f = fixture();
-  rpc.block.mockResolvedValue({ ...header, status: "PRE_CONFIRMED", transactions: [] });
+  rpc.hashes.mockResolvedValue({ ...header, status: "PRE_CONFIRMED", transactions: [] });
   await expect(Effect.runPromise(f.ports.block(10))).rejects.toThrow();
-  rpc.block.mockResolvedValue({
-    ...header,
-    transactions: [{ transaction: { transaction_hash: "0xdef" }, receipt: receipt() }],
-  });
+  rpc.hashes.mockResolvedValue({ ...header, transactions: ["0xdef"] });
   await expect(Effect.runPromise(f.ports.block(10))).rejects.toThrow();
   const forged = receipt();
   forged.events[0]!.data[2] = "0xdef";
-  rpc.block.mockResolvedValue({
-    ...header,
-    transactions: [{ transaction: { transaction_hash: "0xabc" }, receipt: forged }],
-  });
+  rpc.hashes.mockResolvedValue({ ...header, transactions: ["0xabc"] });
+  rpc.receipt.mockResolvedValue(forged);
   await expect(Effect.runPromise(f.ports.block(10))).rejects.toThrow();
   rpc.chain.mockResolvedValue("0x2");
   await expect(Effect.runPromise(f.ports.confirmedHead())).rejects.toThrow();
@@ -138,10 +132,7 @@ it("only a missing confirmed receipt is null; transport faults and pending recei
 it("refuses old receipt layouts rather than applying the new interpretation", async () => {
   const old = receipt();
   old.events[0]!.data = ["3", "7", "8", "9", "3", "0x123", "5", "17"];
-  rpc.block.mockResolvedValue({
-    ...header,
-    transactions: [{ transaction: { transaction_hash: "0xabc" }, receipt: old }],
-  });
+  rpc.receipt.mockResolvedValue(old);
   await expect(Effect.runPromise(fixture().ports.block(10))).rejects.toThrow();
 });
 
@@ -152,4 +143,13 @@ it("reads an accepted hash anchor without loading the ABI or resolving a receipt
   expect(f.bindings.frontierSeason).not.toHaveBeenCalled();
   rpc.header.mockResolvedValue({ ...header, status: "PRE_CONFIRMED" });
   await expect(Effect.runPromise(f.ports.blockHash(10))).rejects.toThrow();
+});
+
+it("reads confirmed rows when the public proxy refuses block-with-receipts", async () => {
+  rpc.block.mockRejectedValue({ code: -32601, message: "Method not public" });
+  rpc.hashes.mockResolvedValue({ ...header, transactions: ["0xabc"] });
+  const rows = await fixture().reader.block(10);
+  expect(rows.rows[0]).toMatchObject({ model: "LordsWithdrawal", transactionHash: "0xabc" });
+  expect(rpc.block).not.toHaveBeenCalled();
+  expect(rpc.hashes).toHaveBeenCalledWith(10);
 });

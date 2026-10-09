@@ -13,6 +13,8 @@ interface ShardEvent {
 }
 interface ShardReceipt {
   transaction_hash: string;
+  block_number: number;
+  block_hash: string;
   execution_status: string;
   finality_status?: string;
   events: ShardEvent[];
@@ -23,7 +25,7 @@ interface ShardBlock {
   parent_hash: string;
   timestamp: number;
   status: "ACCEPTED_ON_L2" | "ACCEPTED_ON_L1";
-  transactions: { transaction: { transaction_hash: string }; receipt: ShardReceipt }[];
+  transactions?: string[];
 }
 export interface ValueRow {
   model: string;
@@ -58,14 +60,23 @@ export class ShardReader {
   async block(number: number): Promise<{ block: ShardBlock; rows: ValueRow[] }> {
     const provider = this.provider();
     await this.assertChain(provider);
-    const block = (await provider.getBlockWithReceipts(number)) as unknown as ShardBlock;
+    const block = (await provider.getBlockWithTxHashes(number)) as unknown as ShardBlock;
     validateHeader(block, number);
     if (!Array.isArray(block.transactions)) throw new Error("invalid_confirmed_transactions");
-    const receipts = block.transactions.map(({ transaction, receipt }) => {
-      if (!receipt || !transaction || !sameFelt(transaction.transaction_hash, receipt.transaction_hash))
-        throw new Error("receipt_transaction_differs");
-      return receipt;
-    });
+    const receipts: ShardReceipt[] = [];
+    for (const transactionHash of block.transactions) {
+      felt(transactionHash);
+      const receipt = (await provider.getTransactionReceipt(transactionHash)) as unknown as ShardReceipt;
+      if (
+        !sameFelt(receipt.transaction_hash, transactionHash) ||
+        receipt.block_number !== number ||
+        !sameFelt(receipt.block_hash, block.block_hash) ||
+        !receipt.finality_status ||
+        !isConfirmed(receipt.finality_status)
+      )
+        throw new Error("receipt_block_or_transaction_differs");
+      receipts.push(receipt);
+    }
     const relevant = receipts.some((receipt) =>
       receipt.events?.some((event) => sameFelt(event.from_address, this.connection.gamesAddress)),
     );
