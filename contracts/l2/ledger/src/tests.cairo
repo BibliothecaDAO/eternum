@@ -1,5 +1,5 @@
 use game_ledger::contract::{IGameLedgerDispatcher, IGameLedgerDispatcherTrait, result_commitment};
-use game_ledger::types::{MmrParams, Preset};
+use game_ledger::types::{GameKey, MmrParams, Preset};
 use openzeppelin::access::accesscontrol::interface::{IAccessControlDispatcher, IAccessControlDispatcherTrait};
 use openzeppelin::security::interface::{IPausableDispatcher, IPausableDispatcherTrait};
 use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
@@ -85,7 +85,7 @@ mod TestSeasonPass {
             let owner = self.erc721.owner_of(token_id);
             let ledger = self.ledger.read();
             assert!(
-                IGameLedgerDispatcher { contract_address: ledger }.get_registration(super::GAME_ID, owner).registered,
+                IGameLedgerDispatcher { contract_address: ledger }.get_registration(super::GAME_KEY, owner).registered,
                 "registration should be recorded before burn",
             );
             self.erc721.update(Zero::zero(), token_id, starknet::get_caller_address());
@@ -268,7 +268,7 @@ mod TestMMR {
     }
 }
 
-const GAME_ID: u32 = 7;
+const GAME_KEY: GameKey = GameKey { shard: 'shard', game_id: 7 };
 const PRESET_ID: u32 = 3;
 const START: u64 = 100;
 const END: u64 = 200;
@@ -351,7 +351,7 @@ fn configure_game(fixture: Fixture, preset: Preset) -> Fixture {
     fixture.ledger.open_season(1, PRESET_ID, START, END + 100);
     stop_cheat_caller_address(fixture.ledger_address);
     start_cheat_caller_address(fixture.ledger_address, OPERATOR());
-    fixture.ledger.open_game(GAME_ID, 1, PRESET_ID, START, END);
+    fixture.ledger.open_game(GAME_KEY, 1, PRESET_ID, START, END);
     stop_cheat_caller_address(fixture.ledger_address);
 
     fixture
@@ -395,7 +395,7 @@ fn register_players(fixture: @Fixture, count: u16) {
         let owner = player(index);
         fund_and_approve_player(fixture, owner, 500);
         start_cheat_caller_address(*fixture.ledger_address, owner);
-        fixture.ledger.register(GAME_ID, false, false);
+        fixture.ledger.register(GAME_KEY, false, false);
         stop_cheat_caller_address(*fixture.ledger_address);
     }
 }
@@ -412,12 +412,14 @@ fn ranked_players(count: u16) -> Array<(ContractAddress, u16, u16)> {
 fn result_commitment_binds_game_order_and_chests() {
     let ranked = array![(player(0), 1, 3), (player(1), 1, 2)];
     assert!(
-        result_commitment(GAME_ID, ranked.span()) == 0x3c7fe8cc71208719a97530868d02e7dc226bb064a5a01abcc48d964be511342,
+        result_commitment(
+            GAME_KEY, ranked.span(),
+        ) == core::poseidon::poseidon_hash_span(array!['shard', 7, 2, 1000, 1, 3, 1001, 1, 2].span()),
         "result commitment should remain stable",
     );
     let reordered = array![(player(1), 1, 2), (player(0), 1, 3)];
     assert!(
-        result_commitment(GAME_ID, reordered.span()) != result_commitment(GAME_ID, ranked.span()),
+        result_commitment(GAME_KEY, reordered.span()) != result_commitment(GAME_KEY, ranked.span()),
         "result commitment should bind row order",
     );
 }
@@ -425,7 +427,7 @@ fn result_commitment_binds_game_order_and_chests() {
 fn apply_results_at(fixture: @Fixture, timestamp: u64, ranked: Array<(ContractAddress, u16, u16)>) {
     start_cheat_block_timestamp(*fixture.ledger_address, timestamp);
     start_cheat_caller_address(*fixture.ledger_address, OPERATOR());
-    fixture.ledger.apply_results(GAME_ID, ranked);
+    fixture.ledger.apply_results(GAME_KEY, ranked);
     stop_cheat_caller_address(*fixture.ledger_address);
     stop_cheat_block_timestamp(*fixture.ledger_address);
 }
@@ -440,7 +442,7 @@ fn assert_conservation(count: u16) {
     let initial_pool: u256 = count.into() * 500;
     apply_results(@fixture, ranked_players(count));
 
-    let game = fixture.ledger.get_game(GAME_ID);
+    let game = fixture.ledger.get_game(GAME_KEY);
     assert!(game.pool == 0, "game accounting should be zero");
     assert!(fixture.ledger.get_season(1).pool == initial_pool, "entries must join the season pool");
     assert!(fixture.lords.balance_of(fixture.ledger_address) == initial_pool, "season holds all entries");
@@ -512,9 +514,9 @@ fn payout_pause_keeps_registration_and_funding_open() {
     start_cheat_caller_address(fixture.ledger_address, ADMIN());
     fixture.ledger.pause();
     start_cheat_caller_address(fixture.ledger_address, player(0));
-    fixture.ledger.register(GAME_ID, false, false);
-    fixture.ledger.fund(GAME_ID, 200);
-    assert!(fixture.ledger.get_game(GAME_ID).pool == 700);
+    fixture.ledger.register(GAME_KEY, false, false);
+    fixture.ledger.fund(GAME_KEY, 200);
+    assert!(fixture.ledger.get_game(GAME_KEY).pool == 700);
 }
 
 #[test]
@@ -586,8 +588,8 @@ fn rejects_double_registration() {
     let owner = player(0);
     fund_and_approve_player(@fixture, owner, 1_000);
     start_cheat_caller_address(fixture.ledger_address, owner);
-    fixture.ledger.register(GAME_ID, false, false);
-    fixture.ledger.register(GAME_ID, false, false);
+    fixture.ledger.register(GAME_KEY, false, false);
+    fixture.ledger.register(GAME_KEY, false, false);
 }
 
 #[test]
@@ -598,7 +600,7 @@ fn rejects_registration_after_start() {
     fund_and_approve_player(@fixture, owner, 500);
     start_cheat_block_timestamp(fixture.ledger_address, START);
     start_cheat_caller_address(fixture.ledger_address, owner);
-    fixture.ledger.register(GAME_ID, false, false);
+    fixture.ledger.register(GAME_KEY, false, false);
 }
 
 #[test]
@@ -613,10 +615,10 @@ fn season_pass_registration_records_then_burns_an_approved_pass() {
     stop_cheat_caller_address(pass_address);
 
     start_cheat_caller_address(fixture.ledger_address, owner);
-    fixture.ledger.register_with_pass(GAME_ID, token_id);
+    fixture.ledger.register_with_pass(GAME_KEY, token_id);
     stop_cheat_caller_address(fixture.ledger_address);
 
-    let registration = fixture.ledger.get_registration(GAME_ID, owner);
+    let registration = fixture.ledger.get_registration(GAME_KEY, owner);
     assert!(registration.registered && registration.realm_id == token_id, "pass registration should be recorded");
     assert!(erc721.balance_of(owner) == 0, "the registered season pass should be burned");
 }
@@ -629,7 +631,7 @@ fn season_pass_registration_requires_ledger_approval() {
     pass.mint(owner, 42);
 
     start_cheat_caller_address(fixture.ledger_address, owner);
-    fixture.ledger.register_with_pass(GAME_ID, 42);
+    fixture.ledger.register_with_pass(GAME_KEY, 42);
 }
 
 #[test]
@@ -644,7 +646,7 @@ fn season_pass_id_must_fit_metadata_abi() {
     stop_cheat_caller_address(pass_address);
 
     start_cheat_caller_address(fixture.ledger_address, owner);
-    fixture.ledger.register_with_pass(GAME_ID, token_id);
+    fixture.ledger.register_with_pass(GAME_KEY, token_id);
 }
 
 #[test]
@@ -662,10 +664,10 @@ fn village_registration_burns_when_ledger_is_a_distributor() {
     stop_cheat_caller_address(pass_address);
 
     start_cheat_caller_address(fixture.ledger_address, owner);
-    fixture.ledger.register_village(GAME_ID, token_id);
+    fixture.ledger.register_village(GAME_KEY, token_id);
     stop_cheat_caller_address(fixture.ledger_address);
 
-    assert!(fixture.ledger.get_registration(GAME_ID, owner).registered, "village registration should be recorded");
+    assert!(fixture.ledger.get_registration(GAME_KEY, owner).registered, "village registration should be recorded");
     assert!(erc721.balance_of(owner) == 0, "the registered village pass should be burned");
 }
 
@@ -682,7 +684,7 @@ fn village_registration_requires_distributor_role() {
     stop_cheat_caller_address(pass_address);
 
     start_cheat_caller_address(fixture.ledger_address, owner);
-    fixture.ledger.register_village(GAME_ID, token_id);
+    fixture.ledger.register_village(GAME_KEY, token_id);
 }
 
 #[test]
@@ -691,7 +693,7 @@ fn rejects_cancellation_after_start() {
     let fixture = deploy_fixture(default_preset());
     start_cheat_block_timestamp(fixture.ledger_address, START);
     start_cheat_caller_address(fixture.ledger_address, OPERATOR());
-    fixture.ledger.cancel_game(GAME_ID);
+    fixture.ledger.cancel_game(GAME_KEY);
 }
 
 #[test]
@@ -700,18 +702,18 @@ fn cancellation_refunds_registration_and_sponsorship() {
     let owner = player(0);
     fund_and_approve_player(@fixture, owner, 700);
     start_cheat_caller_address(fixture.ledger_address, owner);
-    fixture.ledger.register(GAME_ID, false, false);
-    fixture.ledger.fund(GAME_ID, 200);
+    fixture.ledger.register(GAME_KEY, false, false);
+    fixture.ledger.fund(GAME_KEY, 200);
     stop_cheat_caller_address(fixture.ledger_address);
     start_cheat_caller_address(fixture.ledger_address, OPERATOR());
-    fixture.ledger.cancel_game(GAME_ID);
+    fixture.ledger.cancel_game(GAME_KEY);
     stop_cheat_caller_address(fixture.ledger_address);
     start_cheat_caller_address(fixture.ledger_address, owner);
-    fixture.ledger.refund(GAME_ID);
+    fixture.ledger.refund(GAME_KEY);
     stop_cheat_caller_address(fixture.ledger_address);
 
     assert!(fixture.lords.balance_of(owner) == 700, "owner should recover all payments");
-    assert!(fixture.ledger.get_game(GAME_ID).pool == 0, "cancelled pool should be empty");
+    assert!(fixture.ledger.get_game(GAME_KEY).pool == 0, "cancelled pool should be empty");
 }
 
 #[test]
@@ -720,14 +722,14 @@ fn paused_ledger_rejects_refunds() {
     let fixture = deploy_fixture(default_preset());
     register_players(@fixture, 1);
     start_cheat_caller_address(fixture.ledger_address, OPERATOR());
-    fixture.ledger.cancel_game(GAME_ID);
+    fixture.ledger.cancel_game(GAME_KEY);
     stop_cheat_caller_address(fixture.ledger_address);
     start_cheat_caller_address(fixture.ledger_address, ADMIN());
     fixture.ledger.pause();
     stop_cheat_caller_address(fixture.ledger_address);
 
     start_cheat_caller_address(fixture.ledger_address, player(0));
-    fixture.ledger.refund(GAME_ID);
+    fixture.ledger.refund(GAME_KEY);
 }
 
 #[test]
@@ -740,14 +742,14 @@ fn cancelled_game_restores_burned_season_pass() {
     IERC721Dispatcher { contract_address: pass_address }.approve(fixture.ledger_address, token_id);
     stop_cheat_caller_address(pass_address);
     start_cheat_caller_address(fixture.ledger_address, owner);
-    fixture.ledger.register_with_pass(GAME_ID, token_id);
+    fixture.ledger.register_with_pass(GAME_KEY, token_id);
     stop_cheat_caller_address(fixture.ledger_address);
     start_cheat_caller_address(fixture.ledger_address, OPERATOR());
-    fixture.ledger.cancel_game(GAME_ID);
+    fixture.ledger.cancel_game(GAME_KEY);
     stop_cheat_caller_address(fixture.ledger_address);
 
     start_cheat_caller_address(fixture.ledger_address, owner);
-    fixture.ledger.refund(GAME_ID);
+    fixture.ledger.refund(GAME_KEY);
     stop_cheat_caller_address(fixture.ledger_address);
 
     assert!(IERC721Dispatcher { contract_address: pass_address }.owner_of(token_id) == owner, "pass was not restored");
@@ -766,14 +768,14 @@ fn cancelled_game_restores_burned_village_pass() {
     IERC721Dispatcher { contract_address: pass_address }.approve(fixture.ledger_address, token_id);
     stop_cheat_caller_address(pass_address);
     start_cheat_caller_address(fixture.ledger_address, owner);
-    fixture.ledger.register_village(GAME_ID, token_id);
+    fixture.ledger.register_village(GAME_KEY, token_id);
     stop_cheat_caller_address(fixture.ledger_address);
     start_cheat_caller_address(fixture.ledger_address, OPERATOR());
-    fixture.ledger.cancel_game(GAME_ID);
+    fixture.ledger.cancel_game(GAME_KEY);
     stop_cheat_caller_address(fixture.ledger_address);
 
     start_cheat_caller_address(fixture.ledger_address, owner);
-    fixture.ledger.refund(GAME_ID);
+    fixture.ledger.refund(GAME_KEY);
     stop_cheat_caller_address(fixture.ledger_address);
 
     assert!(IERC721Dispatcher { contract_address: pass_address }.owner_of(token_id) == owner, "pass was not restored");
@@ -785,21 +787,21 @@ fn started_abandoned_game_refunds_every_entrant_after_end() {
     register_players(@fixture, 2);
     start_cheat_block_timestamp(fixture.ledger_address, END);
     start_cheat_caller_address(fixture.ledger_address, OPERATOR());
-    fixture.ledger.abort_game(GAME_ID);
+    fixture.ledger.abort_game(GAME_KEY);
     stop_cheat_caller_address(fixture.ledger_address);
 
     let mut index: u16 = 0;
     while index < 2 {
         let owner = player(index);
         start_cheat_caller_address(fixture.ledger_address, owner);
-        fixture.ledger.refund(GAME_ID);
+        fixture.ledger.refund(GAME_KEY);
         stop_cheat_caller_address(fixture.ledger_address);
         assert!(fixture.lords.balance_of(owner) == 500, "entrant should recover the registration payment");
         index += 1;
     }
     stop_cheat_block_timestamp(fixture.ledger_address);
 
-    assert!(fixture.ledger.get_game(GAME_ID).pool == 0, "aborted pool should be empty");
+    assert!(fixture.ledger.get_game(GAME_KEY).pool == 0, "aborted pool should be empty");
     assert!(fixture.lords.balance_of(fixture.ledger_address) == 0, "aborted funds should leave the ledger");
 }
 
@@ -818,7 +820,7 @@ fn non_operator_cannot_apply_results() {
     register_players(@fixture, 1);
     start_cheat_block_timestamp(fixture.ledger_address, START);
     start_cheat_caller_address(fixture.ledger_address, player(0));
-    fixture.ledger.apply_results(GAME_ID, ranked_players(1));
+    fixture.ledger.apply_results(GAME_KEY, ranked_players(1));
 }
 
 #[test]
@@ -827,7 +829,7 @@ fn operator_can_resolve_after_start_before_scheduled_end() {
     register_players(@fixture, 1);
     apply_results_at(@fixture, START, ranked_players(1));
 
-    assert!(fixture.ledger.get_game(GAME_ID).finalized, "an ended match should settle before its scheduled deadline");
+    assert!(fixture.ledger.get_game(GAME_KEY).finalized, "an ended match should settle before its scheduled deadline");
 }
 
 #[test]
@@ -887,9 +889,9 @@ fn tie_fixture_one_one_three_preserves_mmr() {
     register_players(@fixture, 3);
     apply_results(@fixture, array![(player(0), 1, 0), (player(1), 1, 0), (player(2), 3, 0)]);
 
-    let first = fixture.ledger.get_player_result(GAME_ID, player(0));
-    let second = fixture.ledger.get_player_result(GAME_ID, player(1));
-    let third = fixture.ledger.get_player_result(GAME_ID, player(2));
+    let first = fixture.ledger.get_player_result(GAME_KEY, player(0));
+    let second = fixture.ledger.get_player_result(GAME_KEY, player(1));
+    let third = fixture.ledger.get_player_result(GAME_KEY, player(2));
     assert!((first.mmr_after, second.mmr_after, third.mmr_after) == (1016, 1016, 991), "1,1,3 MMR fixture changed");
 }
 
@@ -902,10 +904,10 @@ fn tie_fixture_one_two_two_four_preserves_mmr() {
     register_players(@fixture, 4);
     apply_results(@fixture, array![(player(0), 1, 0), (player(1), 2, 0), (player(2), 2, 0), (player(3), 4, 0)]);
 
-    let first = fixture.ledger.get_player_result(GAME_ID, player(0));
-    let second = fixture.ledger.get_player_result(GAME_ID, player(1));
-    let third = fixture.ledger.get_player_result(GAME_ID, player(2));
-    let fourth = fixture.ledger.get_player_result(GAME_ID, player(3));
+    let first = fixture.ledger.get_player_result(GAME_KEY, player(0));
+    let second = fixture.ledger.get_player_result(GAME_KEY, player(1));
+    let third = fixture.ledger.get_player_result(GAME_KEY, player(2));
+    let fourth = fixture.ledger.get_player_result(GAME_KEY, player(3));
     assert!(
         (first.mmr_after, second.mmr_after, third.mmr_after, fourth.mmr_after) == (1026, 1007, 1007, 989),
         "1,2,2,4 MMR fixture changed",
@@ -918,11 +920,11 @@ fn consumes_paid_flags_when_the_roster_is_below_the_mmr_minimum() {
     let owner = player(0);
     fund_and_approve_player(@fixture, owner, 1_000);
     start_cheat_caller_address(fixture.ledger_address, owner);
-    fixture.ledger.register(GAME_ID, true, false);
+    fixture.ledger.register(GAME_KEY, true, false);
     stop_cheat_caller_address(fixture.ledger_address);
     apply_results(@fixture, array![(owner, 1, 0)]);
 
-    let registration = fixture.ledger.get_registration(GAME_ID, owner);
+    let registration = fixture.ledger.get_registration(GAME_KEY, owner);
     assert!(registration.sword, "sword purchase should be recorded");
     assert!(registration.flags_consumed, "final results should consume paid flags");
 }
@@ -1061,8 +1063,8 @@ fn sword_shield_and_sponsor_payments_feed_the_same_season() {
     let owner = player(0);
     fund_and_approve_player(@fixture, owner, 1700);
     start_cheat_caller_address(fixture.ledger_address, owner);
-    fixture.ledger.register(GAME_ID, true, true);
-    fixture.ledger.fund(GAME_ID, 200);
+    fixture.ledger.register(GAME_KEY, true, true);
+    fixture.ledger.fund(GAME_KEY, 200);
     apply_results(@fixture, ranked_players(1));
     assert!(fixture.ledger.get_season(1).pool == 1700);
     assert!(fixture.lords.balance_of(fixture.ledger_address) == 1700);
@@ -1075,8 +1077,8 @@ fn payout_pause_still_allows_results_and_mmr() {
     start_cheat_caller_address(fixture.ledger_address, ADMIN());
     fixture.ledger.pause();
     apply_results(@fixture, ranked_players(6));
-    assert!(fixture.ledger.get_game(GAME_ID).finalized);
-    assert!(fixture.ledger.get_player_result(GAME_ID, player(0)).mmr_after > 1000);
+    assert!(fixture.ledger.get_game(GAME_KEY).finalized);
+    assert!(fixture.ledger.get_player_result(GAME_KEY, player(0)).mmr_after > 1000);
 }
 
 #[test]
@@ -1085,4 +1087,32 @@ fn season_end_freezes_results() {
     let fixture = deploy_fixture(default_preset());
     register_players(@fixture, 1);
     apply_results_at(@fixture, END + 100, ranked_players(1));
+}
+
+#[test]
+fn identical_game_ids_on_different_shards_have_independent_custody() {
+    let fixture = deploy_fixture(default_preset());
+    let other = GameKey { shard: 'other', game_id: GAME_KEY.game_id };
+    start_cheat_caller_address(fixture.ledger_address, OPERATOR());
+    fixture.ledger.open_game(other, 1, PRESET_ID, START, END);
+    fund_and_approve_player(@fixture, player(0), 1000);
+    start_cheat_caller_address(fixture.ledger_address, player(0));
+    fixture.ledger.register(GAME_KEY, false, false);
+    fixture.ledger.register(other, false, false);
+    start_cheat_caller_address(fixture.ledger_address, OPERATOR());
+    fixture.ledger.cancel_game(other);
+    start_cheat_caller_address(fixture.ledger_address, player(0));
+    fixture.ledger.refund(other);
+    assert!(fixture.ledger.get_game(GAME_KEY).pool == 500);
+    assert!(fixture.ledger.get_game(other).pool == 0);
+    apply_results(@fixture, ranked_players(1));
+    assert!(fixture.ledger.get_season(1).pool == 500);
+    assert!(fixture.ledger.get_player_result(other, player(0)).rank == 0);
+}
+
+#[test]
+fn result_commitment_binds_the_shard_namespace() {
+    let ranked = ranked_players(1);
+    let other = GameKey { shard: 'other', game_id: GAME_KEY.game_id };
+    assert!(result_commitment(GAME_KEY, ranked.span()) != result_commitment(other, ranked.span()));
 }
