@@ -1,4 +1,5 @@
 import type { CharacterFootGeometry } from "./procedural-character-foot-roll";
+import { smootherStep } from "./procedural-motion-curves";
 import {
   Bone,
   BufferGeometry,
@@ -72,6 +73,8 @@ interface CharacterHandBinding {
 }
 
 interface CharacterFootBinding {
+  /** Stands flat while it bears weight (the adapter's `standsFlat`). */
+  standsFlat: boolean;
   neutralQuaternion: Quaternion;
   toeNeutralQuaternion: Quaternion;
   toeBindQuaternion: Quaternion;
@@ -154,6 +157,8 @@ const Y_AXIS = new Vector3(0, 1, 0);
 const X_AXIS = new Vector3(1, 0, 0);
 const Z_AXIS = new Vector3(0, 0, 1);
 const MAX_LIMB_BEND_PLANE_STEP = Math.PI / 8;
+/** Fraction of a swing at either end over which a foot that stands flat eases between flat and its shin's turn. */
+const FLAT_FOOT_SWING_EASE = 0.3;
 const IDENTITY_QUATERNION = new Quaternion();
 const FINGER_CURL_RADIANS = [Math.PI * 0.4, Math.PI * 0.5, Math.PI * 0.34] as const;
 const THUMB_CURL_RADIANS = [Math.PI * 0.18, Math.PI * 0.3, Math.PI * 0.2] as const;
@@ -204,6 +209,7 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
   private readonly scratchRootLateral = new Vector3();
   private readonly scratchRootUp = new Vector3();
   private readonly scratchKneeDirection = new Vector3();
+  private readonly scratchFootLevelled = new Quaternion();
   private activeModel: PreparedCharacterModel;
   private rig: ResolvedCharacterRig;
   private config: ProceduralCharacterConfig;
@@ -666,7 +672,7 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
   private applyFootPose(side: HumanoidSide): void {
     const roll = this.lastPose?.feet[side].roll;
     if (!roll) {
-      if (this.lastPose?.feet[side].yawRadians !== undefined) this.levelFoot(side);
+      this.levelFoot(side, this.resolveFootFlatness(side));
       this.alignFootProgression(side);
       return;
     }
@@ -678,13 +684,38 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
     this.applyFootBoneRotation(foot.toe, foot.toeNeutralQuaternion, roll.pitchRadians - roll.toeFlexRadians);
   }
 
-  /** A foot of a declared stance stands flat on the floor, as at rest, rather than turned with its shin. */
-  private levelFoot(side: HumanoidSide): void {
+  /**
+   * How far a foot without a walking roll stands flat, as at rest, rather than turned with its shin: a foot of a
+   * declared stance always; a foot that stands flat by its rig while it bears weight and near the ground, easing into its
+   * shin's turn in the middle of its swing; otherwise not at all.
+   */
+  private resolveFootFlatness(side: HumanoidSide): number {
+    const footPose = this.lastPose?.feet[side];
+    if (!footPose) return 0;
+    if (footPose.yawRadians !== undefined) return 1;
+    if (!this.activeModel.feet[side].standsFlat) return 0;
+    if (this.config.animationMode === "idle" || footPose.cycle.contact === "stance") return 1;
+    const fromGround = Math.min(footPose.cycle.progress, 1 - footPose.cycle.progress);
+    return 1 - smootherStep(fromGround / FLAT_FOOT_SWING_EASE);
+  }
+
+  private levelFoot(side: HumanoidSide, flatness: number): void {
+    if (flatness <= 0) return;
     const foot = this.activeModel.feet[side];
     this.group.getWorldQuaternion(this.scratchGroupQuaternion);
     this.scratchFootYaw.identity();
-    this.applyFootBoneRotation(foot.ankle, foot.neutralQuaternion, 0);
-    this.applyFootBoneRotation(foot.toe, foot.toeNeutralQuaternion, 0);
+    this.levelFootBone(foot.ankle, foot.neutralQuaternion, flatness);
+    this.levelFootBone(foot.toe, foot.toeNeutralQuaternion, flatness);
+  }
+
+  /** Turns the bone from where its parent carries it towards its rest orientation in the world, by `flatness`. */
+  private levelFootBone(bone: Bone, neutral: Quaternion, flatness: number): void {
+    if (!bone.parent) throw new Error(`Foot bone ${bone.name} has no parent`);
+    bone.getWorldQuaternion(this.scratchFootLevelled);
+    this.scratchTargetQuaternion.copy(this.scratchGroupQuaternion).multiply(neutral);
+    this.scratchFootLevelled.slerp(this.scratchTargetQuaternion, flatness);
+    bone.parent.getWorldQuaternion(this.scratchParentQuaternion);
+    bone.quaternion.copy(this.scratchParentQuaternion.invert()).multiply(this.scratchFootLevelled).normalize();
   }
 
   private applyFootBoneRotation(bone: Bone, neutral: Quaternion, pitch: number): void {
@@ -1232,6 +1263,7 @@ function createFootBinding(scene: Group, adapter: HumanoidRigAdapter, side: Huma
   const sole = new Vector3(anklePosition.x, definition.soleHeight, anklePosition.z);
   return {
     ankle,
+    standsFlat: definition.standsFlat === true,
     toe,
     toeTip: requireRigBone(scene, adapter, definition.toeTip),
     geometry,

@@ -78,8 +78,22 @@ export const T1_KNIGHT_DEFAULT_HUMANOID_RIG_ADAPTER = {
     },
   ],
   feet: {
-    left: { ankle: "foot_l", toe: "ball_l", toeTip: "ball_leaf_l", soleHeight: 0, heelLengthRatio: 0.637244 },
-    right: { ankle: "foot_r", toe: "ball_r", toeTip: "ball_leaf_r", soleHeight: 5e-5, heelLengthRatio: 0.635472 },
+    left: {
+      ankle: "foot_l",
+      toe: "ball_l",
+      toeTip: "ball_leaf_l",
+      soleHeight: 0,
+      heelLengthRatio: 0.637244,
+      standsFlat: true,
+    },
+    right: {
+      ankle: "foot_r",
+      toe: "ball_r",
+      toeTip: "ball_leaf_r",
+      soleHeight: 5e-5,
+      heelLengthRatio: 0.635472,
+      standsFlat: true,
+    },
   },
   hands: { left: LEFT_HAND, right: RIGHT_HAND },
   partBindings: {

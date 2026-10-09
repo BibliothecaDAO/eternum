@@ -55,6 +55,11 @@ export function isMinimalHandRig(hand: HumanoidHandRigDefinition): hand is Human
 }
 
 export interface HumanoidFootRigDefinition {
+  /**
+   * The foot stands flat on the floor while it bears weight, rather than turned with its shin from the bind pose: for
+   * a figure whose foot points down at rest, which would otherwise dip its toes through the floor.
+   */
+  standsFlat?: true;
   toeTip: string;
   soleHeight: number;
   heelLengthRatio: number;
