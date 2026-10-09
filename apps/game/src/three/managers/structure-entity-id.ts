@@ -6,16 +6,5 @@ export const normalizeStructureEntityId = (entityId: ID | bigint | string | unde
     return undefined;
   }
 
-  if (typeof entityId === "bigint") return safeInteger(entityId);
-
-  if (typeof entityId === "string") {
-    const parsed = Number(entityId);
-    if (Number.isNaN(parsed)) {
-      console.warn(`[StructureManager] Failed to parse entity id string "${entityId}"`);
-      return undefined;
-    }
-    return parsed as ID;
-  }
-
-  return entityId;
+  return safeInteger(entityId);
 };

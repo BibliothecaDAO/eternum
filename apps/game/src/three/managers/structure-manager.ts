@@ -401,7 +401,7 @@ export class StructureManager {
 
   private removeStructurePresentation(entityId: ID): void {
     this.pendingHyperstructureBuilds.delete(entityId);
-    const entityNumericId = Number(entityId);
+    const entityNumericId = safeInteger(entityId);
     this.attachmentManager.removeAttachments(entityNumericId);
     this.activeStructureAttachmentEntities.delete(entityNumericId);
     this.structureAttachmentSignatures.delete(entityNumericId);
@@ -558,7 +558,7 @@ export class StructureManager {
     // A structure the client cannot present is left out, loudly, and the rest of the world still draws.
     const structure = presentOrSkip(
       "Structure",
-      Number(renderable.entityId),
+      safeInteger(renderable.entityId),
       () => this.buildStructureInfo(renderable),
       () => this.unpresentableStructures.add(renderable.entityId),
     );
@@ -1495,7 +1495,7 @@ export class StructureManager {
         getWorldPositionForHexCoordsInto(col, row, out);
         return placePositionOnTerrain(out, this.resolveTerrainSurface());
       },
-      getLabel: (entityId) => this.entityIdLabels.get(Number(entityId) as ID),
+      getLabel: (entityId) => this.entityIdLabels.get(safeInteger(entityId) as ID),
       updateLabel: (structure, label) => this.updateStructureLabelData(structure, label),
       syncCompactLabel: (structure, position) => this.updateStructureCompactLabel(structure, position),
       resolveAttachments: (structure) => this.resolveStructureAttachmentsForRender(structure),
@@ -1614,7 +1614,7 @@ export class StructureManager {
       if (binding.model instanceof HyperstructureModel && this.store) {
         binding.model.setConstructionAt(
           binding.instanceIndex,
-          readHyperstructureConstruction(this.store, Number(structure.entityId)),
+          readHyperstructureConstruction(this.store, safeInteger(structure.entityId)),
           this.pendingHyperstructureBuilds.delete(structure.entityId),
         );
       }

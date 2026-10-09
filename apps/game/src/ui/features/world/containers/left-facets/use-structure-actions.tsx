@@ -8,6 +8,7 @@ import { LeftView } from "@/types";
 import { BuildingThumbs } from "@/ui/config";
 import { MarketModal } from "@/ui/features/economy/trading";
 import { ProductionModal } from "@/ui/features/settlement";
+import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
 export interface StructureActionBadge {
   count: number;
@@ -73,14 +74,18 @@ export function useStructureActions(): StructureAction[] | null {
   };
   const openLogistics = () => {
     // Anything in flight or ready lands the player on Arrivals, where the badge they clicked points.
-    setTransferPanelSourceId(Number(structureEntityId));
+    setTransferPanelSourceId(safeInteger(structureEntityId));
     setLogisticsActiveTab(arrivedArrivalsNumber > 0 || pendingArrivalsNumber > 0 ? "arrivals" : "transfer");
     toggleView(LeftView.ResourceArrivals)();
   };
   const openProduction = () => {
     setView(LeftView.None);
     if (openId === "production") closePopover();
-    else openSurface({ id: "production", content: <ProductionModal preSelectedRealmId={Number(structureEntityId)} /> });
+    else
+      openSurface({
+        id: "production",
+        content: <ProductionModal preSelectedRealmId={safeInteger(structureEntityId)} />,
+      });
   };
   const openMarket = () => {
     setView(LeftView.None);

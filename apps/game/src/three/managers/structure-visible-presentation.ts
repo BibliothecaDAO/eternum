@@ -1,5 +1,6 @@
 import { StructureType } from "@bibliothecadao/types";
 import { Euler, Object3D, Vector3 } from "three";
+import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
 /** Structures sit just above the terrain sample; the compact label floats above the roofline. */
 export const STRUCTURE_SURFACE_LIFT = 0.05;
@@ -87,7 +88,7 @@ export function applyVisibleStructurePresentation<
   input.scratchCompactLabelPosition.y += COMPACT_LABEL_LIFT;
   input.syncCompactLabel?.(input.structure, input.scratchCompactLabelPosition);
 
-  const entityNumericId = Number(input.structure.entityId);
+  const entityNumericId = safeInteger(input.structure.entityId);
   const templates = input.resolveAttachments(input.structure);
   if (templates.length > 0) {
     input.attachmentRetain?.add(entityNumericId);

@@ -30,6 +30,7 @@ import { useGame } from "@/hooks/context/game-context";
 import { BuildingType, StructureType, type ResourceArrivalInfo } from "@bibliothecadao/types";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { accountAddress } from "@/hooks/store/use-account-store";
+import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
 const getArrivalKey = (arrival: ResourceArrivalInfo) =>
   `${arrival.structureEntityId}-${arrival.day}-${arrival.slot.toString()}`;
@@ -217,7 +218,7 @@ const AutoProvisionRealms = () => {
           );
           return [
             {
-              entityId: Number(structure.entityId),
+              entityId: safeInteger(structure.entityId),
               name: getStructureName(structure.structure, getIsBlitz()).name,
               provisioned: getBuildingCount(BuildingType.ResourceLabor, packedCounts) > 0,
               location,

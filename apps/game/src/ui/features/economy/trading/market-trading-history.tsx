@@ -8,6 +8,7 @@ import { TradeHistoryEvent, TradeHistoryRowHeader, type TradeEvent } from "./tra
 import { useGame } from "@/hooks/context/game-context";
 import { ResourcesIds } from "@bibliothecadao/types";
 import { memo, useEffect, useMemo, useState } from "react";
+import { storyPayloadId } from "@/utils/native-id";
 
 const TRADES_PER_PAGE = 25;
 
@@ -34,8 +35,8 @@ export const MarketTradingHistory = memo(() => {
           id: swap.event_id,
           type: "AMM Swap",
           event: {
-            takerId: Number(value.structure_id),
-            makerId: Number(value.bank_id),
+            takerId: storyPayloadId(value.structure_id),
+            makerId: storyPayloadId(value.bank_id),
             makerAddress: "0x0",
             takerAddress: swap.owner,
             isYours: BigInt(swap.owner) === BigInt(address),
