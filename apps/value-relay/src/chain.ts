@@ -12,6 +12,85 @@ interface LedgerCredentials {
   privateKey: string;
 }
 
+export const ledgerPaymentRead =
+  (rpcUrl: string, address: string): RelayPorts["ledger"]["payment"] =>
+  (withdrawal) =>
+    relayOperation("read withdrawal report", async () => {
+      const fields = await rpcAt(rpcUrl).callContract(
+        {
+          contractAddress: address,
+          entrypoint: "get_payment",
+          calldata: [withdrawal.chainId, withdrawal.transactionHash],
+        },
+        "latest",
+      );
+      if (fields.length !== 5 || ![0n, 1n].includes(BigInt(fields[0]!))) throw new Error("invalid_payment_record");
+      const low = BigInt(fields[3]!),
+        high = BigInt(fields[4]!);
+      if (low < 0n || high < 0n || low >= 2n ** 128n || high >= 2n ** 128n) throw new Error("invalid_payment_amount");
+      const amount = low + (high << 128n);
+      if (amount === 0n && BigInt(fields[0]!) === 0n && BigInt(fields[1]!) === 0n && BigInt(fields[2]!) === 0n)
+        return null;
+      if (!amount || BigInt(fields[2]!) === 0n) throw new Error("invalid_payment_report");
+      return {
+        paid: BigInt(fields[0]!) === 1n,
+        seasonId: Number(BigInt(fields[1]!)),
+        wallet: fields[2]!,
+        amount: String(amount),
+      };
+    });
+
+/** Reporting is a separate confirmed transaction; a failed later payment cannot erase the custody guard. */
+export const ledgerReportAdapter =
+  (credentials: LedgerCredentials): RelayPorts["ledger"]["report"] =>
+  (withdrawal, wallet) =>
+    relayOperation("report Frontier withdrawal", async () => {
+      const previous = await Effect.runPromise(
+        ledgerPaymentRead(credentials.rpcUrl, credentials.contractAddress)(withdrawal),
+      );
+      if (previous?.paid) return;
+      if (previous) {
+        if (
+          previous.seasonId !== withdrawal.seasonId ||
+          BigInt(previous.wallet) !== BigInt(wallet) ||
+          BigInt(previous.amount) !== BigInt(withdrawal.amount)
+        )
+          throw new RelayFailure({ operation: "ledger_report_mismatch" });
+        return;
+      }
+      const amount = BigInt(withdrawal.amount);
+      const { provider, account } = ledgerAccountOf(credentials);
+      try {
+        const transaction = await account.execute({
+          contractAddress: credentials.contractAddress,
+          entrypoint: "report_withdrawal",
+          calldata: [
+            withdrawal.chainId,
+            String(withdrawal.seasonId),
+            withdrawal.transactionHash,
+            wallet,
+            String(amount & (2n ** 128n - 1n)),
+            String(amount >> 128n),
+          ],
+        });
+        const receipt = await provider.waitForTransaction(transaction.transaction_hash, { errorStates: [] });
+        if (receipt.isReverted()) throw paymentFailure(receipt.revert_reason);
+      } catch (error) {
+        if (error instanceof RelayFailure) throw error;
+        throw paymentFailure(error instanceof Error ? error.message : "");
+      }
+      const reported = await Effect.runPromise(
+        ledgerPaymentRead(credentials.rpcUrl, credentials.contractAddress)(withdrawal),
+      );
+      if (
+        !reported ||
+        reported.seasonId !== withdrawal.seasonId ||
+        BigInt(reported.wallet) !== BigInt(wallet) ||
+        BigInt(reported.amount) !== amount
+      )
+        throw new Error("withdrawal_report_not_recorded");
+    });
+
 /** The operator signs in the Worker; completion means the ledger transaction was confirmed. */
 export const ledgerPaymentAdapter = (credentials: LedgerCredentials): RelayPorts["ledger"]["pay"] => {
   const { provider, account } = ledgerAccountOf(credentials);

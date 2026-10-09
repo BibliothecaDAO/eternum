@@ -54,7 +54,7 @@ export const shardConservationPort =
 const balanceOf = (snapshot: ConfirmedSnapshot, gameId: number): ConservationBalance => {
   const rules = singleRow(snapshot, "ChestRules");
   const budget = singleRow(snapshot, "LordsBudget");
-  requireFields(rules, ["game_id", "pool", "price_ceiling", "shares", "estimate_days"]);
+  requireFields(rules, ["game_id", "pool", "price_ceiling", "shares", "estimate_days", "claim_window_seconds"]);
   requireFields(budget, ["game_id", "pool_left", "open", "day", "price", "estimate", "rolled_shares"]);
   const pool = rowUint(rules.pool, 128);
   const poolLeft = rowUint(budget.pool_left, 128);

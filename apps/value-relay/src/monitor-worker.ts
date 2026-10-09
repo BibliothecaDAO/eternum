@@ -7,8 +7,9 @@ import { ledgerMonitorReads } from "./ledger";
 import { ledgerPauserAdapter } from "./chain";
 import { ShardReader } from "./shard-rpc";
 import { shardConservationPort } from "./shard-conservation";
+import { frontierReceiptBindings } from "./frontier-binding";
 import { shardResultPort } from "./shard-results";
-import { shardWithdrawalPorts, pendingFrontierBindings } from "./shard-withdrawals";
+import { shardWithdrawalPorts } from "./shard-withdrawals";
 import { relayOperation } from "./ports";
 import { runMonitor, type MonitorProgress } from "./monitor";
 
@@ -123,7 +124,15 @@ const monitorPortsOf = (env: MonitorEnv) => {
     },
     shard: {
       conservation: shardConservationPort(reader.connection, env.SHARD_HERALD_URL),
-      withdrawal: shardWithdrawalPorts(reader, pendingFrontierBindings(env.IDENTITY)).withdrawal,
+      withdrawal: shardWithdrawalPorts(
+        reader,
+        frontierReceiptBindings(
+          reader,
+          { rpcUrl: env.LEDGER_RPC_URL, address: env.LEDGER_ADDRESS },
+          env.IDENTITY,
+          env.SHARD_HERALD_URL,
+        ),
+      ).withdrawal,
       result: shardResultPort(reader),
     },
     ledger: {

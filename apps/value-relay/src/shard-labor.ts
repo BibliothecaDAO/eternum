@@ -1,7 +1,7 @@
-import { Account, type Abi } from "starknet";
+import { type Abi } from "starknet";
 import { ShardReader, sameFelt, felt, uint, type ShardConnection } from "./shard-rpc";
-import { Effect } from "effect";
-import { RelayFailure, relayOperation, type LaborClaim, type LaborGrant, type RelayEffect } from "./ports";
+import { relayOperation, type LaborClaim, type LaborGrant, type RelayEffect } from "./ports";
+import { ShardOperator } from "@realms-world/value-ledger/shard";
 import { rpcAt } from "@realms-world/value-ledger";
 
 interface LaborTarget {
@@ -10,9 +10,11 @@ interface LaborTarget {
   privateKey: string;
 }
 
-/** Global eligibility supersedes seeded game days; its published clock/key ABI is still pending. */
-export const currentLaborDay = (): RelayEffect<number> =>
-  Effect.fail(new RelayFailure({ operation: "interface_unavailable:labor.global_day" }));
+/** UTC day is shared across every game on this shard; clients cannot choose or replay an eligibility clock. */
+export const currentLaborDay = (connection: ShardConnection): RelayEffect<number> =>
+  relayOperation("read shard UTC labor day", async () =>
+    Math.floor((await new ShardReader(connection).header("latest")).timestamp / 86400),
+  );
 
 /** Direct role entry: a configured server account signs one grant; limits and exact retry rules remain on the shard. */
 export const writeLaborGrant = (target: LaborTarget, claim: LaborClaim) =>
@@ -32,16 +34,16 @@ export const writeLaborGrant = (target: LaborTarget, claim: LaborClaim) =>
       throw new Error("only_ledger_operator");
     const prior = await laborGrantAt(target.connection, calldata.slice(0, 4));
     if (prior) return matchingGrant(prior, claim);
-    const admin = rpcAt(target.connection.rpcUrl);
-    if (!sameFelt(await admin.getChainId(), target.connection.chainId)) throw new Error("labor_admin_chain_differs");
-    const account = new Account({ provider: admin, address: target.operatorAddress, signer: target.privateKey });
-    const transaction = await account.execute({
-      contractAddress: target.connection.gamesAddress,
-      entrypoint: "grant_labor",
-      calldata,
+    const operator = new ShardOperator({
+      ...target.connection,
+      accountAddress: target.operatorAddress,
+      privateKey: target.privateKey,
     });
-    const receipt = await admin.waitForTransaction(transaction.transaction_hash);
-    if (receipt.isReverted()) throw new Error("labor_grant_reverted");
+    await operator.admin("grant_labor", {
+      realm: { game_id: claim.gameId, realm_id: Number(claim.realmId), home: BigInt(claim.home) },
+      day: claim.day,
+      account: claim.account,
+    });
     const grant = await laborGrantAt(target.connection, calldata.slice(0, 4));
     if (!grant) throw new Error("labor_grant_not_recorded");
     return matchingGrant(grant, claim);
@@ -49,7 +51,7 @@ export const writeLaborGrant = (target: LaborTarget, claim: LaborClaim) =>
 const laborCalldata = (claim: LaborClaim) => {
   const gameId = uint(String(claim.gameId), 32);
   const realmId = uint(claim.realmId, 32);
-  const home = uint(claim.home, 32);
+  const home = uint(claim.home, 64);
   const day = uint(String(claim.day), 64);
   if (!gameId || realmId < 1n || realmId > 8000n || home === 0n || BigInt(felt(claim.account)) === 0n)
     throw new Error("invalid_labor_claim");
@@ -61,11 +63,20 @@ const laborGrantAt = async (connection: ShardConnection, calldata: string[]): Pr
     "latest",
   );
   if (fields.length === 1 && BigInt(fields[0]!) === 1n) return null;
-  if (fields.length !== 4 || BigInt(fields[0]!) !== 0n) throw new Error("invalid_labor_grant");
-  return { account: felt(fields[1]!), home: String(uint(fields[2]!, 32)), amount: String(uint(fields[3]!, 128)) };
+  if (fields.length !== 5 || BigInt(fields[0]!) !== 0n) throw new Error("invalid_labor_grant");
+  return {
+    gameId: Number(uint(fields[1]!, 32)),
+    account: felt(fields[2]!),
+    home: String(uint(fields[3]!, 64)),
+    amount: String(uint(fields[4]!, 128)),
+  };
 };
 const matchingGrant = (grant: LaborGrant, claim: LaborClaim) => {
-  if (!sameFelt(grant.account, claim.account) || BigInt(grant.home) !== BigInt(claim.home))
+  if (
+    grant.gameId !== claim.gameId ||
+    !sameFelt(grant.account, claim.account) ||
+    BigInt(grant.home) !== BigInt(claim.home)
+  )
     throw new Error("labor_already_claimed");
   return grant;
 };
@@ -88,7 +99,7 @@ const validateLaborAbi = (raw: unknown) => {
   const realm = items.find((item) => item.type === "struct" && item.name === entry.inputs![0]!.type);
   if (
     realm?.members?.map((member) => `${member.name}:${member.type.split("::").at(-1)}`).join() !==
-    "game_id:u32,realm_id:u32,home:u32"
+    "game_id:u32,realm_id:u32,home:u64"
   )
     throw new Error("labor_realm_abi_mismatch");
 };

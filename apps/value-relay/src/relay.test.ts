@@ -58,6 +58,13 @@ const fixture = () => {
       results.delete(id);
     },
     held: async () => held,
+    restoreWithdrawal: async (withdrawal) => {
+      withdrawals.set(withdrawal.transactionHash, withdrawal);
+      const index = held.findIndex(
+        (row) => row.kind === "receipt" && row.receipt.transactionHash === withdrawal.transactionHash,
+      );
+      if (index >= 0) held.splice(index, 1);
+    },
     hold: async (row) => {
       held.push(row);
       if (row.kind === "payment") withdrawals.delete(row.withdrawal.transactionHash);
@@ -74,7 +81,7 @@ const fixture = () => {
       block: () => Effect.succeed(block),
       withdrawal: () => Effect.succeed(withdrawal),
       result: () => Effect.succeed(result),
-      grantLabor: vi.fn(() => Effect.succeed({ account: "0x3", home: "9", amount: "1000000000000" })),
+      grantLabor: vi.fn(() => Effect.succeed({ gameId: 1, account: "0x3", home: "9", amount: "1000000000000" })),
     },
     identity: {
       payoutWallet: () => Effect.succeed({ status: "ready", address: "0x123" }),
@@ -82,6 +89,8 @@ const fixture = () => {
       linkedWallet: () => Effect.succeed("0x123"),
     },
     ledger: {
+      payment: () => Effect.succeed(null),
+      report: vi.fn(() => Effect.void),
       pay: vi.fn(() => Effect.void),
       postResult: vi.fn(() => Effect.void),
       paidClaims: () => Effect.succeed({ rows: [{ ...withdrawal, wallet: "0x123" }], next: null, head: 1000 }),
@@ -340,4 +349,33 @@ it("refuses a labor claim whose recipient account is not derived from its authen
     operation: "labor_account_mismatch",
   });
   expect(f.ports.shard.grantLabor).not.toHaveBeenCalled();
+});
+
+it("reports a held wallet's receipt before payout and keeps an unlock refusal in the retry queue", async () => {
+  const f = fixture();
+  const order: string[] = [];
+  f.ports.identity.payoutWallet = () => Effect.succeed({ status: "on_hold", address: "0x123", until: 10000 });
+  f.ports.ledger.report = vi.fn(() => {
+    order.push("report");
+    return Effect.void;
+  });
+  await f.run();
+  expect(order).toEqual(["report"]);
+  expect(f.ports.ledger.pay).not.toHaveBeenCalled();
+  f.ports.identity.payoutWallet = () => Effect.succeed({ status: "ready", address: "0x123" });
+  f.ports.ledger.pay = vi.fn(() => {
+    order.push("pay");
+    return Effect.fail(new RelayFailure({ operation: "ledger_unlock_exceeded" }));
+  });
+  await f.run();
+  expect(order).toEqual(["report", "report", "pay"]);
+  expect(await f.store.withdrawals()).toHaveLength(1);
+  expect(await f.store.held()).toEqual([]);
+});
+it("never redirects an immutable report after a wallet change", async () => {
+  const f = fixture();
+  f.ports.ledger.payment = () => Effect.succeed({ paid: false, seasonId: 4, wallet: "0x999", amount: "17" });
+  await f.run();
+  expect(f.ports.ledger.pay).not.toHaveBeenCalled();
+  expect(await f.store.held()).toMatchObject([{ reason: "reported_wallet_changed" }]);
 });

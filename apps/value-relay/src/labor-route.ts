@@ -37,7 +37,7 @@ export const handleLaborRequest = (request: Request, dependencies: LaborRoute): 
         catch: () => new LaborRequestError({ status: 503, code: "account_unavailable" }),
       });
       if (!account) return yield* Effect.fail(new LaborRequestError({ status: 403, code: "account_unavailable" }));
-      if (BigInt(realm.home) === 0n || BigInt(realm.home) > 0xffffffffn)
+      if (BigInt(realm.home) === 0n || BigInt(realm.home) > 0xffffffffffffffffn)
         return yield* Effect.fail(new LaborRequestError({ status: 400, code: "unsupported_home_width" }));
       const day = yield* dependencies.currentDay(realm.gameId);
       const grant = yield* Effect.tryPromise({

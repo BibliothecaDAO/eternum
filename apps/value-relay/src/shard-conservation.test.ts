@@ -26,7 +26,19 @@ const snapshot = (poolLeft = "83", amount = "17"): ConfirmedSnapshot => ({
   models: [
     {
       model: "ChestRules",
-      rows: [{ key: "7", value: { game_id: 7, pool: "100", price_ceiling: "10", shares: {}, estimate_days: 5 } }],
+      rows: [
+        {
+          key: "7",
+          value: {
+            game_id: 7,
+            pool: "100",
+            price_ceiling: "10",
+            shares: {},
+            estimate_days: 5,
+            claim_window_seconds: 604800,
+          },
+        },
+      ],
     },
     {
       model: "LordsBudget",

@@ -12,15 +12,8 @@ import {
 
 interface ReceiptBindings {
   realmsIdForAccount(account: string): Promise<string | null>;
-  frontierSeason(gameId: number): RelayEffect<number>;
+  frontierSeason(gameId: number, confirmedAt: number): RelayEffect<number>;
 }
-
-/** A game id or a display ordinal cannot substitute for the unpublished funded-season binding. */
-export const pendingFrontierBindings = (identity: Pick<ReceiptBindings, "realmsIdForAccount">): ReceiptBindings => ({
-  realmsIdForAccount: (account) => identity.realmsIdForAccount(account),
-  frontierSeason: () =>
-    Effect.fail(new RelayFailure({ operation: "interface_unavailable:frontier.game_season_binding" })),
-});
 
 /** Receipt fields are immutable shard facts; identity and funding bindings are resolved separately. */
 export const shardWithdrawalPorts = (
@@ -96,7 +89,7 @@ const resolveWithdrawal = (reader: ShardReader, bindings: ReceiptBindings, row: 
       bindings.realmsIdForAccount(receipt.account),
     );
     if (!realmsId) return yield* Effect.fail(new RelayFailure({ operation: "withdrawal_account_unknown" }));
-    const seasonId = yield* bindings.frontierSeason(receipt.gameId);
+    const seasonId = yield* bindings.frontierSeason(receipt.gameId, confirmedAt);
     return {
       chainId: felt(reader.connection.chainId),
       seasonId,

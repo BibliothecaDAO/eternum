@@ -1,6 +1,12 @@
 import { Effect } from "effect";
 import { beforeEach, expect, it, vi } from "vitest";
-import { ledgerPaymentAdapter, ledgerPauserAdapter, realmsOwnershipAdapter } from "./chain";
+import {
+  ledgerPaymentAdapter,
+  ledgerPaymentRead,
+  ledgerReportAdapter,
+  ledgerPauserAdapter,
+  realmsOwnershipAdapter,
+} from "./chain";
 
 const rpc = vi.hoisted(() => ({ execute: vi.fn(), call: vi.fn(), wait: vi.fn(), block: vi.fn() }));
 vi.mock("starknet", () => ({
@@ -104,4 +110,34 @@ it("distinguishes a permanent close from the retryable whole-day unlock gate wit
   await expect(Effect.runPromise(pay(claim, "0x456"))).rejects.toMatchObject({ operation: "ledger_season_closed" });
   rpc.wait.mockResolvedValue({ isReverted: () => true, revert_reason: "Ledger: unlock exceeded" });
   await expect(Effect.runPromise(pay(claim, "0x456"))).rejects.toMatchObject({ operation: "ledger_unlock_exceeded" });
+});
+
+it("confirms an immutable withdrawal report separately from payment and recognizes reported-unpaid versus unseen", async () => {
+  const claim = {
+    chainId: "0x1",
+    seasonId: 7,
+    transactionHash: "0xdef",
+    realmsId: "0x3",
+    amount: "17",
+    confirmedAt: 1000,
+  };
+  rpc.call.mockResolvedValueOnce(["0", "0", "0", "0", "0"]);
+  expect(await Effect.runPromise(ledgerPaymentRead(credentials.rpcUrl, credentials.contractAddress)(claim))).toBeNull();
+  rpc.call.mockResolvedValueOnce(["0", "0", "0", "0", "0"]).mockResolvedValue(["0", "7", "0x456", "17", "0"]);
+  await Effect.runPromise(ledgerReportAdapter(credentials)(claim, "0x456"));
+  expect(rpc.execute).toHaveBeenCalledWith({
+    contractAddress: "0x10",
+    entrypoint: "report_withdrawal",
+    calldata: ["0x1", "7", "0xdef", "0x456", "17", "0"],
+  });
+  expect(await Effect.runPromise(ledgerPaymentRead(credentials.rpcUrl, credentials.contractAddress)(claim))).toEqual({
+    paid: false,
+    seasonId: 7,
+    wallet: "0x456",
+    amount: "17",
+  });
+  await expect(Effect.runPromise(ledgerReportAdapter(credentials)(claim, "0x999"))).rejects.toMatchObject({
+    operation: "ledger_report_mismatch",
+  });
+  expect(rpc.execute).toHaveBeenCalledTimes(1);
 });

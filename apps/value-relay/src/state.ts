@@ -15,6 +15,7 @@ export interface RelayStore {
   halt(reason: string): Promise<void>;
   held(): Promise<readonly HeldObligation[]>;
   hold(obligation: HeldObligation): Promise<void>;
+  restoreWithdrawal(withdrawal: Withdrawal): Promise<void>;
 }
 
 /** The relay's cursor advances with durable obligations, so a restart loses neither a receipt nor a result. */
@@ -49,6 +50,12 @@ export class DurableRelayStore implements RelayStore {
   }
   async held() {
     return listStoredValues<HeldObligation>(this.storage, "held:");
+  }
+  async restoreWithdrawal(withdrawal: Withdrawal) {
+    await this.storage.transaction(async (tx) => {
+      await tx.put(`withdrawal:${withdrawal.transactionHash}`, withdrawal);
+      await tx.delete(`held:${withdrawal.transactionHash}`);
+    });
   }
   async hold(obligation: HeldObligation) {
     await this.storage.transaction(async (tx) => {

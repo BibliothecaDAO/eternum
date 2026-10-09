@@ -12,6 +12,7 @@ export const runRelay = (chainId: string, ports: RelayPorts, store: RelayStore) 
     const head = yield* ports.shard.confirmedHead();
     if (head < progress.nextBlock - 1) return yield* haltRelay(store, "confirmed_head_regressed");
     yield* verifyObservedHead(ports, store, progress);
+    yield* restoreResolvableReceipts(ports, store);
     let parentHash = progress.lastHash;
     for (let number = progress.nextBlock; number <= Math.min(head, progress.nextBlock + 99); number++) {
       const block = yield* ports.shard.block(number);
@@ -22,6 +23,19 @@ export const runRelay = (chainId: string, ports: RelayPorts, store: RelayStore) 
     const payments = yield* payWithdrawals(ports, store);
     const results = yield* postResults(ports, store);
     return { status: "ready" as const, deferred: [...payments, ...results] };
+  });
+
+/** An interface/funding outage is temporary. Bot identities and invalid receipt layouts remain set aside. */
+const restoreResolvableReceipts = (ports: RelayPorts, store: RelayStore) =>
+  Effect.gen(function* () {
+    const held = yield* relayOperation("read held receipt recovery", () => store.held());
+    for (const row of held) {
+      if (row.kind !== "receipt" || ["withdrawal_account_unknown", "decode withdrawal receipt"].includes(row.reason))
+        continue;
+      const resolved = yield* Effect.result(ports.shard.withdrawal(row.receipt.chainId, row.receipt.transactionHash));
+      if (Result.isSuccess(resolved) && resolved.success)
+        yield* relayOperation("restore verified withdrawal", () => store.restoreWithdrawal(resolved.success!));
+    }
   });
 
 const haltRelay = (store: RelayStore, reason: string) =>
@@ -70,7 +84,14 @@ const payWithdrawals = (ports: RelayPorts, store: RelayStore) =>
       const payment = yield* Effect.result(payEligibleWithdrawal(ports, withdrawal));
       if (Result.isFailure(payment)) {
         const reason = payment.failure.operation;
-        if (["ledger_season_closed", "ledger_invalid_withdrawal"].includes(reason))
+        if (
+          [
+            "ledger_season_closed",
+            "ledger_invalid_withdrawal",
+            "ledger_report_mismatch",
+            "reported_wallet_changed",
+          ].includes(reason)
+        )
           yield* relayOperation("set aside refused payment", () => store.hold({ kind: "payment", withdrawal, reason }));
         else deferred.push({ key: withdrawal.transactionHash, reason });
         continue;
@@ -84,6 +105,17 @@ const payWithdrawals = (ports: RelayPorts, store: RelayStore) =>
 const payEligibleWithdrawal = (ports: RelayPorts, withdrawal: import("./ports").Withdrawal) =>
   Effect.gen(function* () {
     const wallet = yield* ports.identity.payoutWallet(withdrawal.realmsId);
+    const recorded = yield* ports.ledger.payment(withdrawal);
+    if (
+      recorded &&
+      (recorded.seasonId !== withdrawal.seasonId || BigInt(recorded.amount) !== BigInt(withdrawal.amount))
+    )
+      return yield* Effect.fail(new RelayFailure({ operation: "ledger_report_mismatch" }));
+    if (recorded?.paid) return true;
+    if (wallet.status === "no_wallet") return false;
+    if (recorded && BigInt(recorded.wallet) !== BigInt(wallet.address))
+      return yield* Effect.fail(new RelayFailure({ operation: "reported_wallet_changed" }));
+    yield* ports.ledger.report(withdrawal, wallet.address);
     if (wallet.status !== "ready") return false;
     yield* ports.ledger.pay(withdrawal, wallet.address);
     return true;

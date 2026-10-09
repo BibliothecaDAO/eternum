@@ -9,7 +9,7 @@ export interface BlitzValuePort {
   validateBlitz(key: LedgerGameKey, window: { start: number; end: number }): Promise<void>;
   refundBlitz(key: LedgerGameKey): Promise<number | null>;
 }
-export interface PaidBlitzShard {
+interface PaidBlitzShard {
   create(): Promise<LaunchGameSummary>;
   install(gameId: number, players: readonly { account: string; wallet: string }[]): Promise<void>;
   seat(gameId: number): Promise<number>;
