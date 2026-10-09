@@ -14,7 +14,7 @@ import type { Shard } from "./shard";
 /** What a gameplay account needs of its shard: the chain it signs for and the one gas bound the shard takes. */
 export type GameplayShard = Pick<Shard, "chainId" | "l2GasBound">;
 
-type GameplaySubmitAccount = Pick<AccountInterface, "address" | "execute" | "getNonce" | "waitForTransaction">;
+type GameplaySubmitAccount = Pick<AccountInterface, "address" | "execute" | "getNonce" | "getTransactionStatus">;
 type RawExecute = (calls: AllowArray<Call>, details?: UniversalDetails) => Promise<InvokeFunctionResponse>;
 
 interface ConfiguredGameplaySubmit {
@@ -33,6 +33,13 @@ const configuredGameplaySubmits = new WeakMap<object, ConfiguredGameplaySubmit>(
 /** Per account, the last send until its transaction is in a block: the next send waits on it. */
 const sendsInFlight = new Map<string, Promise<void>>();
 const RECEIPT_POLL_MS = 250;
+/** Answered "not found" this many polls in a row (ten seconds), a sent transaction was dropped: its nonce is free. */
+const DROPPED_AFTER_POLLS = 40;
+const IN_BLOCK = new Set<string>([
+  TransactionFinalityStatus.PRE_CONFIRMED,
+  TransactionFinalityStatus.ACCEPTED_ON_L2,
+  TransactionFinalityStatus.ACCEPTED_ON_L1,
+]);
 
 /**
  * Every send of this account, raw or through a game client, becomes an ordinary v3 invoke at the account's current
@@ -109,14 +116,24 @@ async function sendAtCurrentNonce(
 }
 
 /**
- * Until the transaction is in a pre-confirmed block, where the account's nonce has moved past it. A revert also used
- * the nonce, and a failed read lets the next send go too: it reads the nonce anew either way.
+ * Until the transaction is in a block (pre-confirmed or later, a revert included), where the account's nonce has moved
+ * past it, or until the node has answered "not found" long enough that it was dropped. A read that fails keeps the
+ * lock: releasing it behind an accepted transaction would sign the next action at the same nonce.
  */
 async function untilInBlock(account: GameplaySubmitAccount, transactionHash: string): Promise<void> {
-  await account
-    .waitForTransaction(transactionHash, {
-      retryInterval: RECEIPT_POLL_MS,
-      successStates: [TransactionFinalityStatus.PRE_CONFIRMED, TransactionFinalityStatus.ACCEPTED_ON_L2],
-    })
-    .catch(() => undefined);
+  let notFound = 0;
+  while (true) {
+    const status = await account.getTransactionStatus(transactionHash).then(
+      (result: { finality_status?: string }) => result.finality_status,
+      (error: unknown) => (isNotFound(error) ? null : undefined),
+    );
+    if (status !== undefined && status !== null && IN_BLOCK.has(status)) return;
+    notFound = status === null ? notFound + 1 : 0;
+    if (notFound >= DROPPED_AFTER_POLLS) return;
+    await new Promise((resolve) => setTimeout(resolve, RECEIPT_POLL_MS));
+  }
 }
+
+/** The node's own answer that it holds no such transaction (TXN_HASH_NOT_FOUND), not a read that failed. */
+const isNotFound = (error: unknown): boolean =>
+  /transaction hash not found|TXN_HASH_NOT_FOUND/i.test(error instanceof Error ? error.message : String(error));
