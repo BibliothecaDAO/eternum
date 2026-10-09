@@ -33,5 +33,5 @@ sort-module-level-items = true
 allow-prebuilt-plugins = ["snforge_std"]
 
 [tool.snforge]
-# Full-season conservation probes retain 105 days at up to 2,000 attempts per day; this bounds the test VM only.
-max_n_steps = 2000000000
+# The categorical discovery gate evaluates 100,000 ordinary, Scouting and floor draws.
+max_n_steps = 500000000
