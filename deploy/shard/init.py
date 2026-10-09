@@ -95,7 +95,8 @@ def prepare(config):
     if record.exists():
         refuse_changed_identity(json.loads(record.read_text()), config)
     else:
-        initialize_identity(config)
+        shard.write_json(record, identity(config))
+    initialize_identity(config)
     shard.run(["bun", "deploy/athanor/scripts/host-accounts.ts", "verify-vrf", str(DATA)], DATA, "verify-vrf")
     publish_prepared_config(config)
     shard.write_json(record, identity(config))
@@ -111,10 +112,11 @@ def refuse_changed_identity(recorded, config):
 
 
 def initialize_identity(config):
-    if (DATA / "host-keys.json").exists():
-        raise ValueError("Incomplete initialization: inspect the data directory before retrying")
     shard.run(["bun", "deploy/athanor/scripts/host-accounts.ts", "initialize", str(DATA)], DATA, "host-accounts-initialize")
-    shard.initialize_shard_identity(config, DATA, environment(config)["DEPLOYER_ACCOUNT_ADDRESS"])
+    if not (DATA / "native-world.json").exists() or not (DATA / "chain-config.yaml").exists():
+        if (DATA / "initialized.json").exists():
+            raise ValueError("Incomplete deployed shard: restore its private backup before retrying; never replace keys or chain state")
+        shard.initialize_shard_identity(config, DATA, environment(config)["DEPLOYER_ACCOUNT_ADDRESS"])
 
 
 def publish_prepared_config(config):
@@ -217,8 +219,24 @@ def probe():
     shard.write_json(DATA / "network-probes.json", {"rpcRttMs": rpc_rtt, "heraldRttMs": herald_rtt})
 
 
+def run_as_host_user():
+    """Prepare writable mounts as root, then use the same identity as the harness for every credential read."""
+    uid, gid = int(os.environ["HOST_UID"]), int(os.environ["HOST_GID"])
+    if os.geteuid() == 0:
+        for directory in (DATA, PUBLIC, HERALD_CONFIG, POSTGRES_CONFIG):
+            directory.mkdir(exist_ok=True)
+            for path in (directory, *directory.rglob("*")):
+                os.chown(path, uid, gid, follow_symlinks=False)
+        os.setgroups([])
+        os.setgid(gid)
+        os.setuid(uid)
+    elif os.geteuid() != uid:
+        raise ValueError("Initializer must run as HOST_UID or root")
+
+
 if __name__ == "__main__":
     os.umask(0o077)
+    run_as_host_user()
     action = sys.argv[1]
     if action == "probe":
         probe()
@@ -237,14 +255,9 @@ if __name__ == "__main__":
         os.execvpe(argv[0], argv, environment)
     config = configuration()
     presets = requested_presets(os.environ, json.loads(RELEASE_FACTS.read_text()))
-    try:
-        if action == "prepare":
-            prepare(config)
-        elif action == "deploy":
-            deploy(config, presets)
-        else:
-            raise ValueError("Expected prepare or deploy")
-    finally:
-        uid, gid = int(os.environ["HOST_UID"]), int(os.environ["HOST_GID"])
-        for path in [DATA, *DATA.rglob("*")]:
-            os.chown(path, uid, gid)
+    if action == "prepare":
+        prepare(config)
+    elif action == "deploy":
+        deploy(config, presets)
+    else:
+        raise ValueError("Expected prepare or deploy")

@@ -262,7 +262,7 @@ def deploy_world(config, directory, environment):
 
 def host_credentials(directory):
     path = directory / "host-keys.json"
-    if path.stat().st_mode & 0o777 != 0o600 or path.stat().st_uid != int(os.environ.get("HOST_UID", os.getuid())):
+    if path.stat().st_mode & 0o777 != 0o600 or path.stat().st_uid != os.geteuid():
         raise ValueError("host-keys.json must be owner-only mode 0600")
     keys = json.loads(path.read_text())
     return {"DEPLOYER_ACCOUNT_ADDRESS": keys["deployerAddress"],

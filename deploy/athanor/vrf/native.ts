@@ -1,6 +1,6 @@
 import { ec } from "starknet";
 import { dlopen, FFIType, ptr } from "bun:ffi";
-import { lstatSync, readFileSync } from "node:fs";
+import { readPrivateJson } from "../scripts/private-file";
 import { fileURLToPath } from "node:url";
 import { felt, STAMP_TAG, type PlayInvoke } from "./transaction";
 
@@ -13,10 +13,7 @@ function hex(bytes: Uint8Array): string {
   return "0x" + Buffer.from(bytes).toString("hex");
 }
 function privateKey(path: string): Uint8Array {
-  const stat = lstatSync(path);
-  if (!stat.isFile() || (stat.mode & 0o777) !== 0o600 || stat.uid !== process.getuid?.())
-    throw new Error("VRF key file must be owned by this process and mode 0600");
-  const data = JSON.parse(readFileSync(path, "utf8")) as { privateKey?: unknown };
+  const data = readPrivateJson<{ privateKey?: unknown }>(path);
   if (typeof data.privateKey !== "string" || !/^0x[0-9a-f]{64}$/.test(data.privateKey))
     throw new Error("Invalid VRF key file");
   const n = BigInt(data.privateKey);
