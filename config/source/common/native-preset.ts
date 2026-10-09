@@ -25,9 +25,6 @@ export interface NativePreset {
     swordPrice: number;
     shieldPrice: number;
     mmrEnabled: boolean;
-    predictionFeeBps: number;
-    liabilityCap: number;
-    seed: number;
   };
   startingTroops: readonly ("Knight" | "Paladin" | "Crossbowman")[];
   realmResources: readonly number[];
