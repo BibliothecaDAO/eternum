@@ -95,7 +95,9 @@ const fingerprintStructure = (client: GameClient, structure: Structure): string 
   return [
     base.level,
     JSON.stringify(
-      [...client.setup.store.inGame("Guard", client.gameId)].filter((row) => row.structure_id === BigInt(structure.entityId)),
+      [...client.setup.store.inGame("Guard", client.gameId)].filter(
+        (row) => row.structure_id === BigInt(structure.entityId),
+      ),
       bigintAsString,
     ),
     liveHomeArmies(client.setup.store, structure.entityId, client.gameId).length,

@@ -115,13 +115,19 @@ function resultOperations(target: ResultTarget): ResultOperations {
     },
     record: async (start, players) => {
       const roster = await view<{ account: bigint; wallet: bigint }[]>(target, "blitz_roster", [target.gameId]);
-      return executeNativeAdminCommand({ ...target, command: { kind: "RecordBlitzResults", value: { start, players: walletResults(players, roster) } } });
+      return executeNativeAdminCommand({
+        ...target,
+        command: { kind: "RecordBlitzResults", value: { start, players: walletResults(players, roster) } },
+      });
     },
   };
 }
 
 /** Keep account-based ranking; the frozen roster alone names the wallet encoded by the current result ABI. */
-export function walletResults(players: readonly PlayerResult[], roster: readonly { account: bigint; wallet: bigint }[]): WalletResult[] {
+export function walletResults(
+  players: readonly PlayerResult[],
+  roster: readonly { account: bigint; wallet: bigint }[],
+): WalletResult[] {
   return players.map(({ player, rank }) => {
     const seat = roster.find(({ account }) => account === player);
     if (!seat) throw new Error("Ranked player is missing from the frozen roster");

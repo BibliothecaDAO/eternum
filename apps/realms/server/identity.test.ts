@@ -67,7 +67,14 @@ const verifyAsMainnet = vi.fn<VerifyWalletSignature>(async (message, signature, 
 beforeAll(async () => {
   // The route fixture uses only D1 and cache. It does not bind unrelated classes to Wrangler's storage proxy.
   const configPath = join(storageDirectory, "wrangler.json");
-  writeFileSync(configPath, JSON.stringify({ name: "identity-route-storage", compatibility_date: "2026-07-30", d1_databases: [{ binding: "DB", database_name: "identity", database_id: "00000000-0000-0000-0000-000000000000" }] }));
+  writeFileSync(
+    configPath,
+    JSON.stringify({
+      name: "identity-route-storage",
+      compatibility_date: "2026-07-30",
+      d1_databases: [{ binding: "DB", database_name: "identity", database_id: "00000000-0000-0000-0000-000000000000" }],
+    }),
+  );
   proxy = await getPlatformProxy<{ DB: D1Database }>({ configPath, persist: false });
   const migrations = new URL("../migrations/", import.meta.url);
   const statements = readdirSync(migrations)
@@ -111,7 +118,10 @@ beforeAll(async () => {
   });
 }, 60_000);
 
-afterAll(async () => { await proxy?.dispose(); rmSync(storageDirectory, { recursive: true, force: true }); });
+afterAll(async () => {
+  await proxy?.dispose();
+  rmSync(storageDirectory, { recursive: true, force: true });
+});
 
 /** A shard manifest under our guardian and account class, the only kind our directory lists. */
 const shardManifest = (chainId: string) => ({
