@@ -2,8 +2,8 @@ import { expect, it } from "vitest";
 
 import { directoryGameEntryOf, gameEntryOf } from "./game-entry";
 
-const LEDGER = { address: "0xl", chest: "0xc", shard: "0x52", gameId: 7 };
-const PAID = { kind: "paid", ledger: { address: "0xl", chest: "0xc", key: { shard: "0x52", gameId: 7 } } };
+const LEDGER = { address: "0xl", feeToken: "0xf", shard: "0x52", gameId: 7 };
+const PAID = { kind: "paid", ledger: { address: "0xl", feeToken: "0xf", key: { shard: "0x52", gameId: 7 } } };
 
 it("reads a paid entry's ledger, and a payload that names no entry as free", () => {
   expect(gameEntryOf({ entry: { kind: "paid", ledger: LEDGER } })).toEqual(PAID);
@@ -13,7 +13,7 @@ it("reads a paid entry's ledger, and a payload that names no entry as free", () 
 
 it("shows a paid entry without a whole ledger reference as broken, never as the free join", () => {
   expect(gameEntryOf({ entry: { kind: "paid" } })).toEqual({ kind: "broken" });
-  expect(gameEntryOf({ entry: { kind: "paid", ledger: { ...LEDGER, chest: undefined } } })).toEqual({
+  expect(gameEntryOf({ entry: { kind: "paid", ledger: { ...LEDGER, feeToken: undefined } } })).toEqual({
     kind: "broken",
   });
   expect(gameEntryOf({ entry: { kind: "paid", ledger: { ...LEDGER, gameId: "7" } } })).toEqual({ kind: "broken" });

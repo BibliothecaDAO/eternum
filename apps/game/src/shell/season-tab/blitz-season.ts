@@ -91,7 +91,7 @@ const readSeasonPrize = async (
   const [curve, claimed, strk, share] = await Promise.all([
     read.preset(season.presetId),
     read.seasonClaimed(seasonId, wallet),
-    read.strk(wallet),
+    read.balanceOf(source.feeToken, wallet),
     season.posted ? findShare(read, seasonId, season.winners, wallet) : Promise.resolve(null),
   ]);
   return { ledger: source.address, seasonId, season, curve, share, claimed, strk };

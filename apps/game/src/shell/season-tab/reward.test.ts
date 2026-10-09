@@ -41,6 +41,7 @@ it("waits for the results, offers a held chest, waits on the draw after the requ
   const chest = { seasonId: 3, band: 0, requested: false, finished: false, requester: "0x0", requestBlock: 0 };
   const reward = (overrides: Partial<Reward>): Reward => ({
     result: { rank: 3, chestId: 41n, mmrBefore: 1744, mmrAfter: 1780 },
+    collection: "0xc4e57",
     chest,
     held: true,
     content: null,

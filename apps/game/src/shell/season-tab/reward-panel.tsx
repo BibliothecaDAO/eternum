@@ -125,7 +125,7 @@ const ChestPlate = ({
     <Suspense fallback={<Loading />}>
       <WalletSign
         owner={owner}
-        calls={openChestCalls(ledger.address, ledger.chest, reward.result.chestId)}
+        calls={openChestCalls(ledger.address, reward.collection, reward.result.chestId)}
         onSent={(hash) => {
           setSigning(false);
           // The request is the chest's last move from this wallet: read it again once it is on chain.

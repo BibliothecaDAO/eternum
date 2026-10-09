@@ -24,6 +24,8 @@ export interface EntryTerms {
   cancelled: boolean;
   credits: Credits;
   registration: Registration;
+  /** The ledger's LORDS token, which the entry approves. */
+  lordsToken: string;
   lords: bigint;
   strk: bigint;
 }
@@ -72,7 +74,14 @@ export const entryState = (terms: EntryTerms, choice: EntryChoice): EntryState =
 
 /** The wallet's calls for the chosen entry: approve what it pays in LORDS, then register. */
 export const entryCalls = (ledger: LedgerRef, terms: EntryTerms, choice: EntryChoice) =>
-  registerCalls(ledger.address, ledger.key, choice.sword, choice.shield, entryCost(terms, choice).cash);
+  registerCalls(
+    ledger.address,
+    terms.lordsToken,
+    ledger.key,
+    choice.sword,
+    choice.shield,
+    entryCost(terms, choice).cash,
+  );
 
 export const entryTermsKey = (ledger: LedgerRef, wallet: string) =>
   ["ledger", "entry", ledger.address, ledger.key.shard, ledger.key.gameId, wallet] as const;
@@ -80,7 +89,7 @@ export const entryTermsKey = (ledger: LedgerRef, wallet: string) =>
 /** The entry's terms for the payout wallet, read from the ledger and the two tokens at the latest block. */
 export const useEntryTerms = (ledger: LedgerRef | null, wallet: string | null) =>
   useQuery({
-    queryKey: entryTermsKey(ledger ?? { address: "", chest: "", key: { shard: "", gameId: 0 } }, wallet ?? ""),
+    queryKey: entryTermsKey(ledger ?? { address: "", feeToken: "", key: { shard: "", gameId: 0 } }, wallet ?? ""),
     queryFn: () => readEntryTerms(ledger as LedgerRef, wallet as string),
     enabled: ledger !== null && wallet !== null,
     refetchInterval: 15_000,
@@ -88,15 +97,15 @@ export const useEntryTerms = (ledger: LedgerRef | null, wallet: string | null) =
 
 const readEntryTerms = async (ledger: LedgerRef, wallet: string): Promise<EntryTerms> => {
   const read = ledgerReader(mainnetProvider(), ledger.address);
-  const game = await read.game(ledger.key);
+  const [game, lordsToken] = await Promise.all([read.game(ledger.key), read.lordsToken()]);
   const [preset, credits, registration, lords, strk] = await Promise.all([
     read.preset(game.presetId),
     read.credits(wallet),
     read.registration(ledger.key, wallet),
-    read.lords(wallet),
-    read.strk(wallet),
+    read.balanceOf(lordsToken, wallet),
+    read.balanceOf(ledger.feeToken, wallet),
   ]);
   const prices = { seat: preset.seat, sword: preset.sword, shield: preset.shield };
   const split = { protocolCutBps: preset.protocolCutBps, chestLordsBps: preset.chestLordsBps };
-  return { prices, split, cancelled: game.cancelled, credits, registration, lords, strk };
+  return { prices, split, cancelled: game.cancelled, credits, registration, lordsToken, lords, strk };
 };

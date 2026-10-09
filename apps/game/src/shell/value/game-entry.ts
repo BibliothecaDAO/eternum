@@ -4,8 +4,8 @@ import type { GameKey } from "./ledger";
 export interface LedgerRef {
   /** The ledger contract the payout wallet pays and is paid by. */
   address: string;
-  /** The chest collection the game's results mint into. */
-  chest: string;
+  /** The token the network fee is paid in, on the ledger's network. */
+  feeToken: string;
   key: GameKey;
 }
 
@@ -39,12 +39,12 @@ export const directoryGameEntryOf = (game: { chainId: string; game_id: number })
 
 const ledgerRefOf = (value: unknown): LedgerRef | null => {
   if (!isRecord(value)) return null;
-  const { address, chest, shard, gameId } = value;
+  const { address, feeToken, shard, gameId } = value;
   return typeof address === "string" &&
-    typeof chest === "string" &&
+    typeof feeToken === "string" &&
     typeof shard === "string" &&
     Number.isSafeInteger(gameId)
-    ? { address, chest, key: { shard, gameId: gameId as number } }
+    ? { address, feeToken, key: { shard, gameId: gameId as number } }
     : null;
 };
 

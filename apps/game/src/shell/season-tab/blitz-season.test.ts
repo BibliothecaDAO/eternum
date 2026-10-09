@@ -98,8 +98,8 @@ it("takes the season from the newest Blitz game that names a ledger", () => {
   expect(seasonSourceOf([game(1, 10)])).toBeNull();
   expect(
     seasonSourceOf([
-      game(1, 10, { address: "0xa", chest: "0xc" }),
-      game(2, 20, { address: "0xb", chest: "0xc" }),
+      game(1, 10, { address: "0xa", feeToken: "0xf" }),
+      game(2, 20, { address: "0xb", feeToken: "0xf" }),
       game(3, 30),
     ])?.address,
   ).toBe("0xb");

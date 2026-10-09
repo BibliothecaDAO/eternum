@@ -99,10 +99,6 @@ export interface Chest {
   requestBlock: number;
 }
 
-/** LORDS and STRK on Starknet mainnet: LORDS pays the entry, STRK the network fee. */
-export const LORDS_TOKEN = "0x0124aeb495b947201f5fac96fd1138e326ad86195b98df6dec9009158a533b49";
-const STRK_TOKEN = "0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d";
-
 /** LORDS in whole units, as a player counts them (18 decimals on chain). */
 export const lordsOf = (wei: bigint): number => Number(wei / 10n ** 18n);
 
@@ -112,9 +108,16 @@ const keyCalldata = (key: GameKey) => [key.shard, String(key.gameId)];
 const u256 = (value: bigint) => [String(value & ((1n << 128n) - 1n)), String(value >> 128n)];
 const flag = (value: boolean) => (value ? "1" : "0");
 
-/** register(key, sword, shield), after LORDS.approve for what the flags and seat cost in cash. */
-export const registerCalls = (ledger: string, key: GameKey, sword: boolean, shield: boolean, cash: bigint): Call[] => [
-  ...(cash > 0n ? [{ contractAddress: LORDS_TOKEN, entrypoint: "approve", calldata: [ledger, ...u256(cash)] }] : []),
+/** register(key, sword, shield), after approving the ledger's LORDS token for what the flags and seat cost in cash. */
+export const registerCalls = (
+  ledger: string,
+  lords: string,
+  key: GameKey,
+  sword: boolean,
+  shield: boolean,
+  cash: bigint,
+): Call[] => [
+  ...(cash > 0n ? [{ contractAddress: lords, entrypoint: "approve", calldata: [ledger, ...u256(cash)] }] : []),
   { contractAddress: ledger, entrypoint: "register", calldata: [...keyCalldata(key), flag(sword), flag(shield)] },
 ];
 
@@ -269,7 +272,10 @@ export const decodeCredits = (felts: readonly string[]): Credits => {
   return { swords: read.number(), shields: read.number() };
 };
 
-/** The ledger's views and the two tokens' balances, read at the latest block through our RPC. */
+/**
+ * The ledger's views and token balances, read at the latest block through our RPC. The LORDS token and the chest
+ * collection are the ledger's own (its lords and chest_collection views), never constants of one network.
+ */
 export const ledgerReader = (provider: ProviderInterface, ledger: string) => {
   const view = (entrypoint: string, calldata: string[]) =>
     provider.callContract({ contractAddress: ledger, entrypoint, calldata });
@@ -282,6 +288,9 @@ export const ledgerReader = (provider: ProviderInterface, ledger: string) => {
     return BigInt(low) + (BigInt(high) << 128n);
   };
   return {
+    lordsToken: async () => (await view("lords", []))[0],
+    chestCollection: async () => (await view("chest_collection", []))[0],
+    balanceOf,
     game: async (key: GameKey) => decodeGame(await view("get_game", keyCalldata(key))),
     preset: async (presetId: number) => decodePreset(await view("get_preset", [String(presetId)])),
     season: async (seasonId: number) => decodeSeason(await view("get_season", [String(seasonId)])),
@@ -310,7 +319,5 @@ export const ledgerReader = (provider: ProviderInterface, ledger: string) => {
     },
     chestOwner: async (chest: string, tokenId: bigint) =>
       (await provider.callContract({ contractAddress: chest, entrypoint: "owner_of", calldata: u256(tokenId) }))[0],
-    lords: (owner: string) => balanceOf(LORDS_TOKEN, owner),
-    strk: (owner: string) => balanceOf(STRK_TOKEN, owner),
   };
 };

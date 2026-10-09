@@ -13,6 +13,8 @@ import type { LedgerRef } from "../value/game-entry";
 
 export interface Reward {
   result: PlayerResult;
+  /** The ledger's chest collection, which holds the chest token. */
+  collection: string;
   chest: Chest | null;
   /** Whether the payout wallet holds the chest token (a requested chest is burnt and held by nobody). */
   held: boolean;
@@ -45,7 +47,7 @@ export const rewardKey = (ledger: LedgerRef, wallet: string) =>
 /** Read every 30 s, every 5 s while the chest's draw is under way so the reveal comes as soon as it lands. */
 export const useReward = (ledger: LedgerRef | null, wallet: string | null) =>
   useQuery({
-    queryKey: rewardKey(ledger ?? { address: "", chest: "", key: { shard: "", gameId: 0 } }, wallet ?? ""),
+    queryKey: rewardKey(ledger ?? { address: "", feeToken: "", key: { shard: "", gameId: 0 } }, wallet ?? ""),
     queryFn: () => readReward(ledger as LedgerRef, wallet as string),
     enabled: ledger !== null && wallet !== null,
     refetchInterval: (query) =>
@@ -54,12 +56,13 @@ export const useReward = (ledger: LedgerRef | null, wallet: string | null) =>
 
 const readReward = async (ledger: LedgerRef, wallet: string): Promise<Reward> => {
   const read = ledgerReader(mainnetProvider(), ledger.address);
-  const [result, registration, strk] = await Promise.all([
+  const [result, registration, strk, collection] = await Promise.all([
     read.result(ledger.key, wallet),
     read.registration(ledger.key, wallet),
-    read.strk(wallet),
+    read.balanceOf(ledger.feeToken, wallet),
+    read.chestCollection(),
   ]);
-  const none = { chest: null, held: false, content: null, seasonEnd: 0, registration, strk };
+  const none = { collection, chest: null, held: false, content: null, seasonEnd: 0, registration, strk };
   if (result.rank === 0 || result.chestId === 0n) return { result, ...none };
   const chest = await read.chest(result.chestId);
   const [season, held, content] = await Promise.all([
@@ -67,8 +70,8 @@ const readReward = async (ledger: LedgerRef, wallet: string): Promise<Reward> =>
     // A requested chest is burnt: no owner to ask.
     chest.requested
       ? false
-      : read.chestOwner(ledger.chest, result.chestId).then((owner) => BigInt(owner) === BigInt(wallet)),
+      : read.chestOwner(collection, result.chestId).then((owner) => BigInt(owner) === BigInt(wallet)),
     chest.finished ? read.chestContent(result.chestId, chest.requestBlock) : null,
   ]);
-  return { result, chest, held, content, seasonEnd: season.end, registration, strk };
+  return { result, collection, chest, held, content, seasonEnd: season.end, registration, strk };
 };

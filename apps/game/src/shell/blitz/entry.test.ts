@@ -9,6 +9,7 @@ const terms = (overrides: Partial<EntryTerms> = {}): EntryTerms => ({
   cancelled: false,
   credits: { swords: 0, shields: 0 },
   registration: { registered: false, sword: false, shield: false, swordCredit: false, shieldCredit: false, paid: 0n },
+  lordsToken: "0x10e5",
   lords: 2_140n * WEI,
   strk: 10n ** 17n,
   ...overrides,

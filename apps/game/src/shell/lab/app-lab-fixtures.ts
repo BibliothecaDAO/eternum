@@ -186,10 +186,13 @@ export const LAB_PAYOUT_WALLETS: Partial<Record<keyof typeof LAB_SCREENS, Payout
   "season-out": { status: "ready", address: LAB_WALLET },
 };
 
+/** The lab ledger network's fee token. */
+const LAB_FEE_TOKEN = "0x57e1";
+
 /** The ledger game the lab's slot fills, on a paid Blitz's screens. */
 export const LAB_SLOT_LEDGER: LedgerRef = {
   address: "0x1ed9e7",
-  chest: "0xc4e57",
+  feeToken: LAB_FEE_TOKEN,
   key: { shard: LAB_CHAIN, gameId: 7 },
 };
 
@@ -216,6 +219,7 @@ const ENTRY: EntryTerms = {
   cancelled: false,
   credits: { swords: 2, shields: 0 },
   registration: NOT_REGISTERED,
+  lordsToken: "0x10e5",
   lords: 2_140n * WEI,
   strk: 10n ** 17n,
 };
@@ -239,7 +243,7 @@ export type LabScreen = keyof typeof LAB_SCREENS;
 /** A paid game's entry as the services send it with a slot or a directory game (game-entry.ts reads it). */
 export const paidEntryPayload = (ledger: LedgerRef) => ({
   kind: "paid",
-  ledger: { address: ledger.address, chest: ledger.chest, shard: ledger.key.shard, gameId: ledger.key.gameId },
+  ledger: { address: ledger.address, feeToken: ledger.feeToken, shard: ledger.key.shard, gameId: ledger.key.gameId },
 });
 
 /** A slot filling for 16:30, two hours away, with 17 of 24 seats taken; the player's among them when joined. */
@@ -406,10 +410,10 @@ export const LAB_CHAT = [
   createdAt: new Date((NOW - 600 + index * 60) * 1000).toISOString(),
 }));
 
-/** The ledger and chest collection the lab's finished Blitz was played on, on the reward screens. */
+/** The ledger the lab's finished Blitz was played on, on the reward screens. */
 export const LAB_GAME_LEDGER: LedgerRef = {
   address: "0x1ed9e7",
-  chest: "0xc4e57",
+  feeToken: LAB_FEE_TOKEN,
   key: { shard: LAB_CHAIN, gameId: 7 },
 };
 
@@ -419,6 +423,7 @@ const CHEST = { seasonId: 3, band: 0, requested: false, finished: false, request
 const OPENED = { ...CHEST, requested: true, finished: true, requester: LAB_WALLET, requestBlock: 812_300 };
 const SEALED: Reward = {
   result: RESULT,
+  collection: "0xc4e57",
   chest: CHEST,
   held: true,
   content: null,
