@@ -131,7 +131,7 @@ fn refused_rolls_feed_the_estimate_and_clear_does_not_count_them_again() {
         let context = crate::commands::ExecutionContext { timestamp: 360, ..super::context(d.games, game_id) };
         let rules = crate::logic::preset_record::for_game(game_id).rollover_chest_rules.read().unwrap();
         let day = crate::days::day_of(context.game.unbox(), context.rules.unbox().day_unit_seconds, 360).index;
-        let chest = crate::relics::SiteChest { tier: 3, amount: 500 };
+        let chest = crate::relics::SiteChest { tier: 3, amount: 500, reservation_day: 0 };
         crate::state::write().relics.rollover_budget.write(
             game_id, Some(LordsBudget { pool_left: 0, ..empty_day(rules, day) }),
         );
@@ -242,4 +242,27 @@ fn no_receipt_can_start_at_the_ledgers_close_deadline() {
     let game = clock().game;
     let rules = rules();
     crate::relics::assert_claim_window(game, rules, game.end_at + rules.claim_window_seconds);
+}
+
+#[test]
+fn an_expired_chest_cannot_spend_another_players_reservation() {
+    let (d, game_id, _) = super::registrar::setup_frontier_chests();
+    snforge_std::interact_with_state(d.games, || {
+        let first = crate::resources::ResourceKey { game_id, entity_id: 90001 };
+        let second = crate::resources::ResourceKey { game_id, entity_id: 90002 };
+        let context = crate::commands::ExecutionContext { timestamp: 360, ..super::context(d.games, game_id) };
+        let chest = crate::relics::SiteChest { tier: 0, amount: 100, reservation_day: 0 };
+        assert!(crate::logic::lords_budget::try_reserve(game_id, chest, context));
+        crate::logic::lords_budget::store_site_chest(first, chest);
+        let next = crate::days::day_of(context.game.unbox(), context.rules.unbox().day_unit_seconds, 360).end;
+        let context = crate::commands::ExecutionContext { timestamp: next, ..context };
+        let chest = crate::relics::SiteChest { tier: 0, amount: 120, reservation_day: 1 };
+        assert!(crate::logic::lords_budget::try_reserve(game_id, chest, context));
+        crate::logic::lords_budget::store_site_chest(second, chest);
+        let before = crate::logic::lords_budget::budget(game_id).unwrap();
+        assert_eq!(crate::logic::lords_budget::pay(first, context).amount, 0);
+        assert_eq!(crate::logic::lords_budget::budget(game_id).unwrap(), before);
+        assert_eq!(crate::logic::lords_budget::pay(second, context).amount, 120 * crate::rules::RESOURCE_PRECISION);
+        assert_eq!(crate::logic::lords_budget::budget(game_id).unwrap().open, 0);
+    });
 }

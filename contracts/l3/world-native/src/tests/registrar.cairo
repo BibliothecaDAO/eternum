@@ -2324,9 +2324,9 @@ fn setup_frontier_chests_with_rules(
 
 // Any chest a draw can carry; its tier and amount never change the draw.
 fn any_chest() -> SiteChest {
-    SiteChest { tier: 0, amount: 50 }
+    SiteChest { tier: 0, amount: 50, reservation_day: 0 }
 }
-const CHEST: SiteChest = SiteChest { tier: 3, amount: 500 };
+const CHEST: SiteChest = SiteChest { tier: 3, amount: 500, reservation_day: 0 };
 
 fn strong_frontier_army(d: super::Deployment, game_id: u32, key: ExplorerKey) -> crate::troops::ExplorerTroops {
     let mut army = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();

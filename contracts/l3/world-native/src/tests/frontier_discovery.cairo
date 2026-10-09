@@ -3,7 +3,7 @@ use crate::discovery::{Discovery, frontier};
 use crate::expeditions::{ExpeditionDiscoveryKey, FrontierDiscoveryRules};
 use crate::relics::SiteChest;
 
-const CHEST: SiteChest = SiteChest { tier: 1, amount: 100 };
+const CHEST: SiteChest = SiteChest { tier: 1, amount: 100, reservation_day: 0 };
 
 fn rules() -> FrontierDiscoveryRules {
     FrontierDiscoveryRules { shrine_bps: 0, well_bps: 0, ..super::preset_projection::frontier_discovery_rules() }

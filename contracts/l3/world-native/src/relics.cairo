@@ -85,6 +85,7 @@ pub struct ChestRules {
 pub struct SiteChest {
     pub tier: u8,
     pub amount: u128,
+    pub reservation_day: u64,
 }
 
 // Open chests reserve unlocked LORDS. Rolled shares include found and refused ruins; estimate is shares per tick.

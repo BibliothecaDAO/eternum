@@ -28,13 +28,14 @@ pub fn candidate(game_id: u32, odds: ChestTiers, seed: u256, context: ExecutionC
     let rules = chest_rules(game_id);
     let today = today(game_id, rules, context);
     let tier = roll_tier(odds, seed);
-    SiteChest { tier, amount: Into::<u16, u128>::into(tier_value(rules.shares, tier)) * today.price }
+    SiteChest { tier, amount: Into::<u16, u128>::into(tier_value(rules.shares, tier)) * today.price, reservation_day: today.day }
 }
 
 /// Count a rolled chest even when refused; reserve only LORDS already unlocked and not paid or held open.
 pub fn try_reserve(game_id: u32, chest: SiteChest, context: ExecutionContext) -> bool {
     let rules = chest_rules(game_id);
     let mut today = today(game_id, rules, context);
+    assert!(chest.reservation_day == today.day, "chest reservation day mismatch");
     today.rolled_shares += tier_value(rules.shares, chest.tier).into();
     let accepted = fits(rules, today, season_clock(context), chest.amount);
     if accepted {
@@ -50,6 +51,10 @@ pub fn pay(ruin: ResourceKey, context: ExecutionContext) -> crate::resources::Re
     let chest = site_chest(ruin).expect('missing ruin chest');
     let rules = chest_rules(ruin.game_id);
     let mut today = today(ruin.game_id, rules, context);
+    // Yesterday's hold was released at rollover. Clearing that site must not consume another player's hold.
+    if chest.reservation_day != today.day {
+        return crate::resources::ResourceAmount { resource_type: crate::resources::LORDS, amount: 0 };
+    }
     assert!(chest.amount <= today.open, "ruin chest is not reserved");
     assert!(
         issued(rules, today) + chest.amount <= unlocked(rules, season_clock(context), today.day),

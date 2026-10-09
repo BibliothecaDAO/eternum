@@ -90,7 +90,7 @@ pub fn frontier(
     let stragglers = Into::<u16, u128>::into(rules.stragglers_bps) * (10000 + stragglers_bonus_bps.into()) / 10000;
     let (chest, ruin_weight): (crate::relics::SiteChest, u128) = match ruin {
         Some(chest) => (chest, rules.ruin_bps.into()),
-        None => (crate::relics::SiteChest { tier: 0, amount: 0 }, 0),
+        None => (crate::relics::SiteChest { tier: 0, amount: 0, reservation_day: 0 }, 0),
     };
     let kinds = array![
         (Discovery::Stragglers, stragglers), (Discovery::Camp, camp), (Discovery::Rift, rift),
