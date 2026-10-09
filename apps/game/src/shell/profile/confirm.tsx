@@ -1,12 +1,12 @@
 import { Button } from "@/ui/design-system/kit/button";
 import { Sheet } from "@/ui/design-system/kit/sheet";
 
-import { useLayout } from "../frame/layout";
 import { PROFILE_WORDS } from "../words";
 
 /**
  * A destructive step asks first: the question, its cost in one sentence, Keep as the primary and the destructive verb
- * last, outline. A bottom sheet on a phone; a centred dialog over the dimmed page on desktop.
+ * last, outline. A bottom sheet on a phone; on a desktop docked at the page's right and sized to its content, like
+ * every panel.
  */
 export const Confirm = ({
   question,
@@ -32,17 +32,9 @@ export const Confirm = ({
       <Button role="outline" word={verb} loading={doing} onClick={onConfirm} />
     </div>
   );
-  if (useLayout() === "phone")
-    return (
-      <Sheet label={question} onClose={onKeep} placement="page">
-        {body}
-      </Sheet>
-    );
   return (
-    <div role="presentation" className="fixed inset-0 z-50 flex items-center justify-center bg-kit-ground/70">
-      <section role="dialog" aria-label={question} className="w-[420px] plate border-kit-line2 p-5">
-        {body}
-      </section>
-    </div>
+    <Sheet label={question} onClose={onKeep} placement="page">
+      {body}
+    </Sheet>
   );
 };

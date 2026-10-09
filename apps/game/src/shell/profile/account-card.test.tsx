@@ -33,6 +33,8 @@ it("asks before signing out, with Keep as the safe choice", async () => {
     expect(container.textContent).toContain("Discord · email");
     await act(async () => button("Sign out")!.click());
     expect(document.body.textContent).toContain("Sign out?");
+    // The question opens in the kit's sheet, which docks as a panel on a desktop: never a modal of its own.
+    expect(document.querySelector('[data-kit-sheet][aria-label="Sign out?"]')).not.toBeNull();
     await act(async () => button("Keep")!.click());
     expect(document.body.textContent).not.toContain("Sign out?");
   } finally {
