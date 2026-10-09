@@ -17,8 +17,9 @@ test("public RPC forwards reads but never forwards writes, mixed batches, escape
     hostname: "127.0.0.1",
     port: 0,
     async fetch(request) {
-      received.push(await request.json());
-      return Response.json({ jsonrpc: "2.0", id: 1, result: "0x123" });
+      const call = await request.json();
+      received.push(call);
+      return Response.json({ jsonrpc: "2.0", id: call.id, result: "0x123" });
     },
   });
   const proxy = startReadRpc(node.url.origin, 0, playIdentity, noStamp, undefined, "127.0.0.1");
@@ -43,7 +44,7 @@ test("public RPC forwards reads but never forwards writes, mixed batches, escape
           body: JSON.stringify({ jsonrpc: "2.0", id: 2, method: "starknet_blockNumber", params: [] }),
         })
       ).json(),
-    ).toEqual({ jsonrpc: "2.0", id: 1, result: "0x123" });
+    ).toEqual({ jsonrpc: "2.0", id: 2, result: "0x123" });
     expect(received).toHaveLength(2);
   } finally {
     proxy.stop(true);

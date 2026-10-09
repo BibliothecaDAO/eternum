@@ -92,7 +92,10 @@ test("one current-nonce play is stamped and only its hash reaches the device", a
       "0x5",
     ]);
     f.setNonce("0x1");
-    expect((await f.call("starknet_addInvokeTransaction", [invoke()])).error.message).toBe("Transaction refused");
+    expect((await f.call("starknet_addInvokeTransaction", [invoke()])).error).toEqual({
+      code: -32010,
+      message: "Transaction refused",
+    });
     expect(f.stamped).toHaveLength(1);
   } finally {
     f.close();
@@ -104,7 +107,7 @@ test("node rejection never leaks a stamped body, proof or backend diagnostic", a
     expect(await f.call("starknet_addInvokeTransaction", [invoke()])).toEqual({
       jsonrpc: "2.0",
       id: 42,
-      error: { code: -32000, message: "Transaction refused" },
+      error: { code: -32011, message: "Transaction outcome unknown", data: { transaction_hash: "0x777" } },
     });
   } finally {
     f.close();
@@ -192,7 +195,10 @@ test("one pending dispatch per account refuses overlap while another account pro
   const pending = f.call("starknet_addInvokeTransaction", [invoke()]);
   try {
     await entered;
-    expect((await f.call("starknet_addInvokeTransaction", [invoke()])).error.message).toBe("Transaction refused");
+    expect((await f.call("starknet_addInvokeTransaction", [invoke()])).error).toEqual({
+      code: -32010,
+      message: "Transaction refused",
+    });
     expect(
       (await f.call("starknet_addInvokeTransaction", [{ ...invoke(), sender_address: "0x43" }])).result
         .transaction_hash,
@@ -252,7 +258,7 @@ test("administrative contract refusal uses the fixed error and never returns dia
     expect(await f.call("starknet_addInvokeTransaction", [tx])).toEqual({
       jsonrpc: "2.0",
       id: 42,
-      error: { code: -32000, message: "Transaction refused" },
+      error: { code: -32011, message: "Transaction outcome unknown" },
     });
     expect(f.stamped).toHaveLength(0);
   } finally {
