@@ -6,10 +6,11 @@ A shard hosts games on an unmodified Madara node, Herald and one public stamping
 ## Initialize a fresh shard
 
 Use reviewed environment inputs with `deploy/athanor/scripts/deploy.py ENVIRONMENT DIRECTORY`, or the existing local
-runner `deploy/athanor/scripts/shard.py CONFIGURATION DIRECTORY`. Neither reuses another shard's chain state. Ops provisions `/etc/athanor/<environment>/operator-token`, owned by the command's user with mode 0600. Use
-`python3 deploy/athanor/scripts/operator-command.py ENVIRONMENT deploy DIRECTORY`; the wrapper reads that file and supplies
-the child environment without echoing it or putting it in arguments. It is never written to `.env`. A
-community operator supplies its existing identity approval in `data/operator-enrolment.json`.
+runner `deploy/athanor/scripts/shard.py CONFIGURATION DIRECTORY`. Neither reuses another shard's chain state. Ops
+provisions `/etc/athanor/<environment>/operator-token`, owned by the command's user with mode 0600. Use
+`python3 deploy/athanor/scripts/operator-command.py ENVIRONMENT deploy DIRECTORY`; the wrapper reads that file and
+supplies the child environment without echoing it or putting it in arguments. It is never written to `.env`. A community
+operator supplies its existing identity approval in `data/operator-enrolment.json`.
 
 Required package inputs:
 
@@ -49,7 +50,8 @@ was ever started and no backup exists, retain the failed directory privately and
 
 ## Endpoints and readiness
 
-Forward HTTPS hostnames to loopback 8080 (RPC) and 8081 (Herald). `RPC_PORT`, `HERALD_PORT` and `BIND_ADDRESS` change
+Both official and runner bootstrap require the Herald HTTPS hostname to be reachable by the identity Worker before
+enrolment, including measurement shards. Forward HTTPS hostnames to loopback 8080 (RPC) and 8081 (Herald). `RPC_PORT`, `HERALD_PORT` and `BIND_ADDRESS` change
 bindings. The public RPC admits one signed Games.play call, the data-listed role-guarded administrative entries and
 existing Realms account-management calls. Play receives a VRF proof inside the proxy; proof bodies are never served.
 Simulations and fee estimates are never stamped. The node's write RPC is internal, not exposed through another port.
@@ -59,8 +61,8 @@ from the Compose network route; exposed bindings trust no proxy unless explicitl
 
 The identity service must carry the pending route before a shard from this code starts. Deploy the identity Worker
 containing `/api/directory/shards/pending` before running official deployment; a missing route fails with this
-prerequisite. The initializer never lists. The runner registers PENDING before enrolment and retires that registration on stop;
-it never activates by itself.
+prerequisite. The initializer never lists. The runner registers PENDING before enrolment and retires that registration
+on stop; it never activates by itself.
 
 Herald's existing listener first serves the real prepared identity at `/manifest`, with other routes unavailable.
 Official deployment registers the Herald URL as pending after starting Herald and before starting initialization or
@@ -77,14 +79,15 @@ fixture are the harness implementation, not a separate deployment test suite.
 Metrics collect OTLP and sample container CPU from a read-only cgroup mount, without a Docker socket or write access.
 The compose services restart on failure. Initializer logs and `harness.env` are private and must never be published.
 
-| Path | Registration and visibility | Operator command |
-| --- | --- | --- |
-| Official deployment | PENDING before enrolment; same self-check then ACTIVE on a pass | `operator-command.py ENVIRONMENT deploy PACKAGE_DIRECTORY` |
-| Measurement runner | PENDING before enrolment; matrix stops and retires it; never activates | `operator-command.py ENVIRONMENT runner CONFIGURATION RUNNER_DATA_DIRECTORY --matrix` |
-| Dev shard from an untagged trunk | Start PENDING; explicitly check and activate; stop retires it | `operator-command.py ENVIRONMENT runner CONFIGURATION RUNNER_DATA_DIRECTORY`, then `operator-command.py ENVIRONMENT activate RUNNER_DATA_DIRECTORY`; later `operator-command.py ENVIRONMENT stop RUNNER_DATA_DIRECTORY` |
+| Path                             | Registration and visibility                                            | Operator command                                                                                                                                                                                                        |
+| -------------------------------- | ---------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Official deployment              | PENDING before enrolment; same self-check then ACTIVE on a pass        | `operator-command.py ENVIRONMENT deploy PACKAGE_DIRECTORY`                                                                                                                                                              |
+| Measurement runner               | PENDING before enrolment; matrix stops and retires it; never activates | `operator-command.py ENVIRONMENT runner CONFIGURATION RUNNER_DATA_DIRECTORY --matrix`                                                                                                                                   |
+| Dev shard from an untagged trunk | Start PENDING; explicitly check and activate; stop retires it          | `operator-command.py ENVIRONMENT runner CONFIGURATION RUNNER_DATA_DIRECTORY`, then `operator-command.py ENVIRONMENT activate RUNNER_DATA_DIRECTORY`; later `operator-command.py ENVIRONMENT stop RUNNER_DATA_DIRECTORY` |
 
-Commands above run with `python3 deploy/athanor/scripts/` before `operator-command.py`. The wrapper reads the environment's
-protected token file; ops provisions it. Use `stop.py` for a manually started runner so its directory entry is retired.
+Run each command above as `python3 deploy/athanor/scripts/operator-command.py ...`. The wrapper reads the
+environment's protected token file; ops provisions it. Use `stop.py` for a manually started runner so its directory
+entry is retired.
 
 ## Operations: back up and restore
 

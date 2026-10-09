@@ -495,6 +495,8 @@ class ShardTest(unittest.TestCase):
                     directory.mkdir()
                     (directory / "compose.json").write_text("{}")
                     (directory / "harness.env").write_text("COMPOSE_PROJECT_NAME=athanor-smoke\n")
+                    shard.write_json(directory / "configuration.json", config)
+                    shard.write_json(directory / "directory-registration.json", {"url": config["public_herald_url"], "chainId": "0x" + config["chain_id"].encode().hex()})
 
                 def measure(_docker, run_workload, node, *_paths):
                     measured.append(node)
@@ -505,6 +507,7 @@ class ShardTest(unittest.TestCase):
                 with patch.object(shard, "start_shard", side_effect=start), \
                      patch.object(shard.measures, "measure_workload", side_effect=measure), \
                      patch.object(shard, "run") as stop, \
+                     patch.object(shard, "directory_status") as directory_status, \
                      patch.object(shard, "run_workload", side_effect=failure) as workload:
                     output = root / "matrix"
                     if failure:
@@ -516,6 +519,7 @@ class ShardTest(unittest.TestCase):
                     minutes = [call.args[0][call.args[0].index("--minutes") + 1] for call in workload.call_args_list]
                     self.assertEqual(minutes, ["1"] if failure else ["1", "30"])
                     self.assertEqual(measured, [f"athanor-{name}-madara-1" for name in started])
+                    self.assertEqual([call.args[1] for call in directory_status.call_args_list], ["retired"] * len(started))
                     for call, name in zip(stop.call_args_list, started):
                         self.assertEqual(call.args[0][-2:], [str(output / name / "compose.json"), "stop"])
                         result = json.loads((output / name / "matrix-result.json").read_text())
