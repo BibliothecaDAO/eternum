@@ -1,6 +1,7 @@
 use starknet::account::Call;
 
 pub const MAX_DEVICES: u8 = 8;
+pub const VRF_STAMP_TAG: felt252 = 'VRF1';
 pub const DEVICE_CHANGE: felt252 = 'REALMS_DEVICE_CHANGE';
 pub const ADD_DEVICE: felt252 = 'ADD';
 pub const REVOKE_DEVICE: felt252 = 'REVOKE';
@@ -87,10 +88,12 @@ pub mod RealmsAccount {
         fn __execute__(self: @ContractState, calls: Array<Call>) {
             assert!(starknet::get_caller_address().is_zero(), "invalid caller");
             assert!(is_tx_version_valid(), "invalid tx version");
+            self.assert_stamped_call_count(calls.len());
             execute_calls(calls.span());
         }
 
         fn __validate__(ref self: ContractState, calls: Array<Call>) -> felt252 {
+            self.assert_stamped_call_count(calls.len());
             self.validate_own_transaction()
         }
 
@@ -135,6 +138,13 @@ pub mod RealmsAccount {
 
     #[generate_trait]
     impl InternalImpl of InternalTrait {
+        fn assert_stamped_call_count(self: @ContractState, count: usize) {
+            let signature = get_tx_info().unbox().signature;
+            if signature.len() == 9 {
+                assert!(*signature[3] == super::VRF_STAMP_TAG, "invalid stamp tag");
+                assert!(count == 1, "one stamped call");
+            }
+        }
         /// Deployment and invoke validation share one rule: the transaction is signed by a registered device, which a
         /// five-felt signature registers first from the guardian's approval.
         fn validate_own_transaction(ref self: ContractState) -> felt252 {
@@ -142,6 +152,11 @@ pub mod RealmsAccount {
             let mut signature = tx_info.signature;
             if signature.len() == 5 {
                 self.add_device(*signature[0], *signature[3], *signature[4]);
+                signature = signature.slice(0, 3);
+            }
+            if signature.len() == 9 {
+                assert!(*signature[3] == super::VRF_STAMP_TAG, "invalid stamp tag");
+                // Games verifies the proof; the device still signs exactly the original transaction hash.
                 signature = signature.slice(0, 3);
             }
             assert!(self.is_signed_by_device(tx_info.transaction_hash, signature), "invalid signature");
