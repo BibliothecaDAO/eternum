@@ -1363,7 +1363,6 @@ const LabWithdrawSheet = ({ withdraw }: { withdraw: LabWithdraw }) => {
       paused={withdraw.paused ?? false}
       step={withdraw.step}
       amount={amount}
-      now={NOW * 1000}
       onAmount={setAmount}
       onWithdraw={noop}
       onLinkWallet={noop}

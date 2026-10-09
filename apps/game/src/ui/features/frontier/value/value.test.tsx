@@ -6,6 +6,7 @@ import type { PayoutWallet } from "@/hooks/context/payout-wallet";
 import { type HeldRealm, planRealmLabor } from "./realm-labor";
 import { RealmsSheet } from "./realms-sheet";
 import { type WithdrawStep, WithdrawSheet } from "./withdraw-sheet";
+import { formatClockTime } from "@/ui/design-system/kit/time";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -41,7 +42,6 @@ describe("Withdraw", () => {
           paused={over.paused ?? false}
           step={over.step ?? { kind: "pick" }}
           amount={over.amount ?? 500}
-          now={NOW}
           onClose={() => undefined}
           {...ways}
         />,
@@ -64,8 +64,10 @@ describe("Withdraw", () => {
     expect(button("Withdraw")).toBeUndefined();
     act(() => button("Link wallet")!.click());
     expect(ways.onLinkWallet).toHaveBeenCalledTimes(1);
-    render({ wallet: { status: "on_hold", address: ADDRESS, until: NOW + (18 * 60 + 40) * 60_000 } });
-    expect(host.textContent).toContain("18h 40m");
+    const until = NOW + (18 * 60 + 40) * 60_000;
+    render({ wallet: { status: "on_hold", address: ADDRESS, until } });
+    // The hold shows as the time the new wallet can receive, nothing more.
+    expect(host.querySelector(`[aria-label="Receives from ${formatClockTime(until / 1000)}"]`)).not.toBeNull();
     expect(button("Withdraw")!.disabled).toBe(true);
   });
 

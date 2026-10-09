@@ -134,7 +134,7 @@ export const SENDING = "Sending…";
 export const ALL = "All";
 export const LINK_WALLET = "Link wallet";
 export const NO_WALLET = "No wallet linked";
-export const NEW_WALLET = "New wallet";
+export const RECEIVES_FROM = "Receives from";
 export const TRANSACTION = "Transaction";
 export const PAYOUTS_PAUSED = "Payouts paused. Your LORDS stay here.";
 export const paidWhenResumed = (amount: string) => `Payouts paused. These ${amount} pay when they resume.`;

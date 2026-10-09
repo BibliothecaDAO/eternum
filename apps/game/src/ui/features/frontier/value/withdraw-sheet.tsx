@@ -6,13 +6,13 @@ import { Chip } from "@/ui/design-system/kit/chip";
 import { type IconCode, KitIcon } from "@/ui/design-system/kit/kit-icon";
 import { ReasonPlate } from "@/ui/design-system/kit/reason-plate";
 import { Sheet } from "@/ui/design-system/kit/sheet";
-import { formatDuration } from "@/ui/design-system/kit/time";
+import { formatClockTime } from "@/ui/design-system/kit/time";
 import {
   ALL,
   CONTINUE,
   LINK_WALLET,
   LORDS,
-  NEW_WALLET,
+  RECEIVES_FROM,
   NO_WALLET,
   PAYOUTS_PAUSED,
   SENDING,
@@ -44,7 +44,6 @@ export const WithdrawSheet = ({
   paused,
   step,
   amount,
-  now,
   onAmount,
   onWithdraw,
   onLinkWallet,
@@ -55,8 +54,6 @@ export const WithdrawSheet = ({
   paused: boolean;
   step: WithdrawStep;
   amount: number;
-  /** Unix milliseconds, for the hold's time left. */
-  now: number;
   onAmount: (amount: number) => void;
   onWithdraw: () => void;
   onLinkWallet: () => void;
@@ -73,7 +70,6 @@ export const WithdrawSheet = ({
       paused={paused}
       step={step}
       amount={amount}
-      now={now}
       onAmount={onAmount}
       onWithdraw={onWithdraw}
       onLinkWallet={onLinkWallet}
@@ -88,7 +84,6 @@ const WithdrawBody = ({
   paused,
   step,
   amount,
-  now,
   onAmount,
   onWithdraw,
   onLinkWallet,
@@ -99,8 +94,7 @@ const WithdrawBody = ({
   if (step.kind === "waiting") return <Waiting amount={step.amount} held={held} wallet={wallet} />;
   if (wallet.status === "no_wallet") return <NoWallet held={held} onLinkWallet={onLinkWallet} />;
   if (paused) return <Refused held={held} address={wallet.address} line={PAYOUTS_PAUSED} />;
-  if (wallet.status === "on_hold")
-    return <OnHold held={held} address={wallet.address} secondsLeft={(wallet.until - now) / 1000} />;
+  if (wallet.status === "on_hold") return <OnHold held={held} address={wallet.address} until={wallet.until} />;
   return <Pick held={held} address={wallet.address} amount={amount} onAmount={onAmount} onWithdraw={onWithdraw} />;
 };
 
@@ -158,16 +152,14 @@ const NoWallet = ({ held, onLinkWallet }: { held: number | undefined; onLinkWall
   </>
 );
 
-const OnHold = ({ held, address, secondsLeft }: { held: number | undefined; address: string; secondsLeft: number }) => (
+/** A newly linked wallet receives from the end of its 24-hour hold: that time, and nothing else, is what shows. */
+const OnHold = ({ held, address, until }: { held: number | undefined; address: string; until: number }) => (
   <>
     <Hero icon="Lo" value={formatExact(held)} />
-    <div className="flex justify-center">
+    <div className="flex flex-col items-center gap-1.5">
       <WalletChip address={address} />
+      <Chip icons={["Hg"]} label={RECEIVES_FROM} value={formatClockTime(until / 1000)} />
     </div>
-    <ReasonPlate
-      reason={{ kind: "failed", line: NEW_WALLET }}
-      step={<Chip icons={["Hg"]} label={NEW_WALLET} value={formatDuration(Math.max(0, secondsLeft))} />}
-    />
     <Button role="primary" word={WITHDRAW} disabled />
   </>
 );
