@@ -1,2914 +1,1660 @@
 {
- "from": {
-  "poses": "poses/knight.json",
-  "bound": "bound-r71.npz",
-  "fit": "runtime-fit.json",
-  "tool": "k4_pose_reference.py, k4_arm_poses.py"
- },
- "frame": "the game's axes (+X left, +Y up, +Z forward), metres and degrees. Arms relative to the chest (the point midway between the shoulder joints, in spine_03's frame). Body in the actor's frame: pelvis yaw left positive, pitch leaning forward positive, roll right side down positive, height a fraction of the rest pelvis height, forward and left of the midpoint between the ankles; spine against the pelvis; head against the chest. Stance: each ankle forward and left of that midpoint, toes' yaw left positive.",
- "what": "Where the Knight holds itself with shield and sword, from the pose set approved with the gear: idle variants, the guard standing and on the move, four attacks in three moments each, and the hit reaction. wrist: where the wrist goes. elbow: the point the elbow bends toward. hand_turn_xyzw: the hand's turn on the forearm. expect: what a game arm posed in the elbow's hinge frame from an unmoving shoulder then shows, with the chest in the body's frame.",
- "groups": {
-  "idle": [
-   "idle-relaxed",
-   "idle-at-ease",
-   "sword-on-shoulder"
-  ],
-  "guard": "guard",
-  "walk_guard": "walk-guard",
-  "run_guard": "run-guard",
-  "hit": "hit",
-  "attacks": {
-   "cut": [
-    "cut-windup",
-    "cut-contact",
-    "cut-follow"
-   ],
-   "backhand": [
-    "backhand-windup",
-    "backhand-contact",
-    "backhand-follow"
-   ],
-   "chop": [
-    "chop-windup",
-    "chop-contact",
-    "chop-follow"
-   ],
-   "thrust": [
-    "thrust-windup",
-    "thrust-contact",
-    "thrust-follow"
-   ]
-  }
- },
- "states": {
-  "idle-relaxed": {
-   "from_pose": "idle-relaxed",
-   "left": {
-    "wrist": [
-     0.1025,
-     -0.1199,
-     0.0959
-    ],
-    "elbow": [
-     0.1163,
-     -0.0896,
-     0.0252
-    ],
-    "hand_turn_xyzw": [
-     -0.10947,
-     0.06664,
-     -0.05428,
-     0.99027
-    ]
-   },
-   "right": {
-    "wrist": [
-     -0.0957,
-     -0.1741,
-     0.0356
-    ],
-    "elbow": [
-     -0.0858,
-     -0.1012,
-     0.0092
-    ],
-    "hand_turn_xyzw": [
-     0.04124,
-     0.0123,
-     -0.12123,
-     0.99169
-    ]
-   },
-   "body": {
-    "pelvis": {
-     "yaw": -5.0,
-     "pitch": -0.0,
-     "roll": 2.0,
-     "height": 1.0,
-     "forward": 0.0035,
-     "left": 0.0087
-    },
-    "spine": {
-     "flex": -0.0,
-     "twist": 0.0,
-     "side": -2.0
-    },
-    "head": {
-     "yaw": -0.0,
-     "pitch": -0.0
+  "from": {
+    "poses": "poses/knight.json",
+    "bound": "bound-r71.npz",
+    "fit": "runtime-fit.json",
+    "tool": "k4_pose_reference.py, k4_arm_poses.py"
+  },
+  "frame": "the game's axes (+X left, +Y up, +Z forward), metres and degrees. Arms relative to the chest (the point midway between the shoulder joints, in spine_03's frame). Body in the actor's frame: pelvis yaw left positive, pitch leaning forward positive, roll left side down positive, height a fraction of the rest pelvis height, forward and left of the midpoint between the ankles; spine against the pelvis; head against the chest. Stance: each ankle forward and left of that midpoint, toes' yaw left positive.",
+  "what": "Where the Knight holds itself with shield and sword, from the pose set approved with the gear: idle variants, the guard standing and on the move, four attacks in three moments each, and the hit reaction. wrist: where the wrist goes. elbow: the point the elbow bends toward. hand_turn_xyzw: the hand's turn on the forearm. expect: what a game arm posed in the elbow's hinge frame from an unmoving shoulder then shows, with the chest in the body's frame.",
+  "groups": {
+    "idle": ["idle-relaxed", "idle-at-ease", "sword-on-shoulder"],
+    "guard": "guard",
+    "walk_guard": "walk-guard",
+    "run_guard": "run-guard",
+    "hit": "hit",
+    "attacks": {
+      "cut": ["cut-windup", "cut-contact", "cut-follow"],
+      "backhand": ["backhand-windup", "backhand-contact", "backhand-follow"],
+      "chop": ["chop-windup", "chop-contact", "chop-follow"],
+      "thrust": ["thrust-windup", "thrust-contact", "thrust-follow"]
     }
-   },
-   "stance": {
-    "left": {
-     "forward": 0.0073,
-     "left": 0.0449,
-     "yaw": 20.0
+  },
+  "states": {
+    "idle-relaxed": {
+      "from_pose": "idle-relaxed",
+      "left": {
+        "wrist": [0.1025, -0.1199, 0.0959],
+        "elbow": [0.1163, -0.0896, 0.0252],
+        "hand_turn_xyzw": [-0.10947, 0.06664, -0.05428, 0.99027]
+      },
+      "right": {
+        "wrist": [-0.0957, -0.1741, 0.0356],
+        "elbow": [-0.0858, -0.1012, 0.0092],
+        "hand_turn_xyzw": [0.04124, 0.0123, -0.12123, 0.99169]
+      },
+      "body": {
+        "pelvis": {
+          "yaw": -5.0,
+          "pitch": -0.0,
+          "roll": 2.0,
+          "height": 1.0,
+          "forward": 0.0035,
+          "left": 0.0087
+        },
+        "spine": {
+          "flex": -0.0,
+          "twist": 0.0,
+          "side": -2.0
+        },
+        "head": {
+          "yaw": -0.0,
+          "pitch": -0.0
+        }
+      },
+      "stance": {
+        "left": {
+          "forward": 0.0073,
+          "left": 0.0449,
+          "yaw": 20.0
+        },
+        "right": {
+          "forward": -0.0073,
+          "left": -0.0449,
+          "yaw": -22.9
+        },
+        "support": ["foot_l", "foot_r"]
+      },
+      "expect": {
+        "left_elbow": [0.11589, -0.08904, 0.02533],
+        "left_wrist": [0.1025, -0.1199, 0.0959],
+        "right_elbow": [-0.08578, -0.10103, 0.00965],
+        "right_wrist": [-0.0957, -0.1741, 0.0356],
+        "shield_centre": [0.12431, -0.11065, 0.08095],
+        "shield_front": [0.98068, -0.00441, 0.19556],
+        "sword_grip": [-0.09414, -0.20888, 0.03118],
+        "sword_tip": [-0.05665, -0.24369, 0.32515],
+        "blade": [0.12564, -0.11666, 0.98519],
+        "clearance_mm": {
+          "blade_to_shield": 183.3,
+          "sword_arm_to_shield": 200.0,
+          "blade_to_head": 264.4,
+          "blade_to_trunk": 70.5,
+          "blade_to_shield_arm": 191.4,
+          "sword_arm_to_shield_arm": 146.3,
+          "shield_to_head": 103.6,
+          "tip_above_ground": 233.1
+        }
+      },
+      "against_the_approved_pose": {
+        "shield_front_deg": 0.8,
+        "shield_centre_mm": 0.5,
+        "blade_deg": 0.6,
+        "grip_mm": 0.2
+      }
     },
-    "right": {
-     "forward": -0.0073,
-     "left": -0.0449,
-     "yaw": -22.9
+    "idle-at-ease": {
+      "from_pose": "idle-at-ease",
+      "left": {
+        "wrist": [0.0952, -0.1749, 0.0229],
+        "elbow": [0.0933, -0.1002, -0.0],
+        "hand_turn_xyzw": [0.0, 0.0, 0.0, 1.0]
+      },
+      "right": {
+        "wrist": [-0.111, -0.1734, 0.0229],
+        "elbow": [-0.0877, -0.1012, 0.0039],
+        "hand_turn_xyzw": [0.31568, 0.05102, -0.1824, 0.92977]
+      },
+      "body": {
+        "pelvis": {
+          "yaw": 0.0,
+          "pitch": -0.0,
+          "roll": 5.0,
+          "height": 1.0,
+          "forward": 0.0064,
+          "left": 0.0025
+        },
+        "spine": {
+          "flex": -0.0,
+          "twist": 0.0,
+          "side": -4.0
+        },
+        "head": {
+          "yaw": 10.0,
+          "pitch": 3.0
+        }
+      },
+      "stance": {
+        "left": {
+          "forward": -0.0029,
+          "left": 0.0328,
+          "yaw": 26.1
+        },
+        "right": {
+          "forward": 0.0029,
+          "left": -0.0328,
+          "yaw": -16.5
+        },
+        "support": ["foot_r", "foot_l"]
+      },
+      "expect": {
+        "left_elbow": [0.09331, -0.10019, -2e-5],
+        "left_wrist": [0.0952, -0.1749, 0.0229],
+        "right_elbow": [-0.08791, -0.10109, 0.0042],
+        "right_wrist": [-0.111, -0.1734, 0.0229],
+        "shield_centre": [0.11332, -0.15417, 0.01779],
+        "shield_front": [0.99989, 0.0147, 0.00068],
+        "sword_grip": [-0.10788, -0.20515, 0.00829],
+        "sword_tip": [-0.12181, -0.33014, 0.27888],
+        "blade": [-0.04667, -0.41887, 0.90685],
+        "clearance_mm": {
+          "blade_to_shield": 221.9,
+          "sword_arm_to_shield": 180.4,
+          "blade_to_head": 266.1,
+          "blade_to_trunk": 81.8,
+          "blade_to_shield_arm": 192.5,
+          "sword_arm_to_shield_arm": 137.5,
+          "shield_to_head": 114.0,
+          "tip_above_ground": 146.7
+        }
+      },
+      "against_the_approved_pose": {
+        "shield_front_deg": 0.1,
+        "shield_centre_mm": 0.1,
+        "blade_deg": 0.3,
+        "grip_mm": 0.2
+      }
     },
-    "support": [
-     "foot_l",
-     "foot_r"
-    ]
-   },
-   "expect": {
-    "left_elbow": [
-     0.11589,
-     -0.08904,
-     0.02533
-    ],
-    "left_wrist": [
-     0.1025,
-     -0.1199,
-     0.0959
-    ],
-    "right_elbow": [
-     -0.08578,
-     -0.10103,
-     0.00965
-    ],
-    "right_wrist": [
-     -0.0957,
-     -0.1741,
-     0.0356
-    ],
-    "shield_centre": [
-     0.12431,
-     -0.11065,
-     0.08095
-    ],
-    "shield_front": [
-     0.98068,
-     -0.00441,
-     0.19556
-    ],
-    "sword_grip": [
-     -0.09414,
-     -0.20888,
-     0.03118
-    ],
-    "sword_tip": [
-     -0.05665,
-     -0.24369,
-     0.32515
-    ],
-    "blade": [
-     0.12564,
-     -0.11666,
-     0.98519
-    ],
-    "clearance_mm": {
-     "blade_to_shield": 183.3,
-     "sword_arm_to_shield": 200.0,
-     "blade_to_head": 264.4,
-     "blade_to_trunk": 70.5,
-     "blade_to_shield_arm": 191.4,
-     "sword_arm_to_shield_arm": 146.3,
-     "shield_to_head": 103.6,
-     "tip_above_ground": 233.1
+    "sword-on-shoulder": {
+      "from_pose": "sword-on-shoulder",
+      "left": {
+        "wrist": [0.0988, -0.1603, 0.05],
+        "elbow": [0.1068, -0.0962, 0.0059],
+        "hand_turn_xyzw": [0.0, 0.0, 0.0, 1.0]
+      },
+      "right": {
+        "wrist": [-0.1072, -0.0022, 0.0617],
+        "elbow": [-0.0913, -0.0785, 0.0687],
+        "hand_turn_xyzw": [-0.09497, -0.16802, 0.19433, 0.96176]
+      },
+      "body": {
+        "pelvis": {
+          "yaw": 0.0,
+          "pitch": -0.0,
+          "roll": -0.0,
+          "height": 1.0,
+          "forward": 0.0053,
+          "left": 0.0
+        },
+        "spine": {
+          "flex": -0.0,
+          "twist": 0.0,
+          "side": -0.0
+        },
+        "head": {
+          "yaw": 0.0,
+          "pitch": -0.0
+        }
+      },
+      "stance": {
+        "left": {
+          "forward": 0.0049,
+          "left": 0.0476,
+          "yaw": 21.7
+        },
+        "right": {
+          "forward": -0.0049,
+          "left": -0.0476,
+          "yaw": -21.9
+        },
+        "support": ["foot_l", "foot_r"]
+      },
+      "expect": {
+        "left_elbow": [0.10673, -0.09619, 0.00598],
+        "left_wrist": [0.0988, -0.1603, 0.05],
+        "right_elbow": [-0.08873, -0.07812, 0.06409],
+        "right_wrist": [-0.1072, -0.0022, 0.0617],
+        "shield_centre": [0.1191, -0.14254, 0.04245],
+        "shield_front": [0.98297, -0.00815, 0.18359],
+        "sword_grip": [-0.09527, 0.0241, 0.08163],
+        "sword_tip": [-0.08485, 0.20048, -0.15882],
+        "blade": [0.03493, 0.59109, -0.80585],
+        "clearance_mm": {
+          "blade_to_shield": 212.7,
+          "sword_arm_to_shield": 180.8,
+          "blade_to_head": 45.4,
+          "blade_to_trunk": 51.5,
+          "blade_to_shield_arm": 158.8,
+          "sword_arm_to_shield_arm": 145.7,
+          "shield_to_head": 112.0,
+          "tip_above_ground": 677.3
+        }
+      },
+      "against_the_approved_pose": {
+        "shield_front_deg": 0.5,
+        "shield_centre_mm": 0.2,
+        "blade_deg": 4.1,
+        "grip_mm": 1.1
+      }
+    },
+    "guard": {
+      "from_pose": "guard-middle",
+      "left": {
+        "wrist": [0.0522, -0.0387, 0.1122],
+        "elbow": [0.1106, -0.0699, 0.0706],
+        "hand_turn_xyzw": [-0.31985, 0.19478, -0.15874, 0.91354]
+      },
+      "right": {
+        "wrist": [-0.1209, -0.0896, 0.0845],
+        "elbow": [-0.1362, -0.0796, 0.0085],
+        "hand_turn_xyzw": [-0.15234, -0.10879, 0.16523, 0.96833]
+      },
+      "body": {
+        "pelvis": {
+          "yaw": -30.0,
+          "pitch": 8.0,
+          "roll": -0.0,
+          "height": 0.92,
+          "forward": 0.015,
+          "left": 0.015
+        },
+        "spine": {
+          "flex": 8.0,
+          "twist": -10.0,
+          "side": 0.5
+        },
+        "head": {
+          "yaw": 35.0,
+          "pitch": 4.9
+        }
+      },
+      "stance": {
+        "left": {
+          "forward": 0.1031,
+          "left": 0.0105,
+          "yaw": 5.8
+        },
+        "right": {
+          "forward": -0.1031,
+          "left": -0.0105,
+          "yaw": -66.2
+        },
+        "support": ["foot_l", "foot_r"]
+      },
+      "expect": {
+        "left_elbow": [0.10953, -0.06736, 0.06744],
+        "left_wrist": [0.0522, -0.0387, 0.1122],
+        "right_elbow": [-0.13611, -0.07949, 0.00849],
+        "right_wrist": [-0.1209, -0.0896, 0.0845],
+        "shield_centre": [0.08014, -0.04053, 0.1127],
+        "shield_front": [0.66396, 0.26359, 0.69977],
+        "sword_grip": [-0.10183, -0.11168, 0.104],
+        "sword_tip": [0.01823, 0.12049, 0.24794],
+        "blade": [0.40235, 0.77808, 0.48239],
+        "clearance_mm": {
+          "blade_to_shield": 24.2,
+          "sword_arm_to_shield": 125.8,
+          "blade_to_head": 123.8,
+          "blade_to_trunk": 93.1,
+          "blade_to_shield_arm": 98.6,
+          "sword_arm_to_shield_arm": 131.9,
+          "shield_to_head": 32.6,
+          "tip_above_ground": 597.3
+        }
+      },
+      "against_the_approved_pose": {
+        "shield_front_deg": 2.4,
+        "shield_centre_mm": 1.7,
+        "blade_deg": 0.3,
+        "grip_mm": 0.1
+      }
+    },
+    "walk-guard": {
+      "from_pose": "advance-behind-shield",
+      "left": {
+        "wrist": [0.0363, -0.009, 0.091],
+        "elbow": [0.0823, -0.0712, 0.0796],
+        "hand_turn_xyzw": [-0.10944, 0.06669, -0.05424, 0.99027]
+      },
+      "right": {
+        "wrist": [-0.0992, -0.1527, 0.0534],
+        "elbow": [-0.0721, -0.1024, -0.0],
+        "hand_turn_xyzw": [0.23184, 0.29646, -0.01753, 0.92631]
+      },
+      "body": {
+        "pelvis": {
+          "yaw": -20.0,
+          "pitch": 6.0,
+          "roll": -0.0,
+          "height": 0.93,
+          "forward": 0.0182,
+          "left": 0.0017
+        },
+        "spine": {
+          "flex": 6.0,
+          "twist": -5.0,
+          "side": 0.2
+        },
+        "head": {
+          "yaw": 20.0,
+          "pitch": 4.0
+        }
+      },
+      "stance": {
+        "left": {
+          "forward": 0.124,
+          "left": -0.0015,
+          "yaw": 6.9
+        },
+        "right": {
+          "forward": -0.124,
+          "left": 0.0015,
+          "yaw": -46.1
+        },
+        "support": ["foot_l", "toe_r"]
+      },
+      "expect": {
+        "left_elbow": [0.08332, -0.06926, 0.07459],
+        "left_wrist": [0.0363, -0.009, 0.091],
+        "right_elbow": [-0.07212, -0.10241, 3e-5],
+        "right_wrist": [-0.0992, -0.1527, 0.0534],
+        "shield_centre": [0.06008, -0.02017, 0.10071],
+        "shield_front": [0.56258, 0.23673, 0.79212],
+        "sword_grip": [-0.0938, -0.18313, 0.07003],
+        "sword_tip": [0.02644, -0.03532, 0.29966],
+        "blade": [0.40296, 0.49534, 0.76959],
+        "clearance_mm": {
+          "blade_to_shield": 28.3,
+          "sword_arm_to_shield": 135.9,
+          "blade_to_head": 205.0,
+          "blade_to_trunk": 68.5,
+          "blade_to_shield_arm": 133.3,
+          "sword_arm_to_shield_arm": 101.5,
+          "shield_to_head": 13.3,
+          "tip_above_ground": 441.5
+        }
+      },
+      "against_the_approved_pose": {
+        "shield_front_deg": 3.1,
+        "shield_centre_mm": 2.2,
+        "blade_deg": 0.3,
+        "grip_mm": 0.1
+      }
+    },
+    "run-guard": {
+      "from_pose": "run-charge",
+      "left": {
+        "wrist": [-0.0152, 0.0247, 0.0923],
+        "elbow": [0.0311, -0.0383, 0.0925],
+        "hand_turn_xyzw": [-0.36917, 0.22483, -0.18314, 0.88296]
+      },
+      "right": {
+        "wrist": [-0.1186, -0.0786, 0.0025],
+        "elbow": [-0.0721, -0.0829, -0.0602],
+        "hand_turn_xyzw": [-0.2772, -0.07976, 0.06874, 0.95502]
+      },
+      "body": {
+        "pelvis": {
+          "yaw": -10.0,
+          "pitch": 12.0,
+          "roll": -0.0,
+          "height": 1.01,
+          "forward": 0.027,
+          "left": 0.0093
+        },
+        "spine": {
+          "flex": 8.0,
+          "twist": 10.0,
+          "side": -0.5
+        },
+        "head": {
+          "yaw": -0.0,
+          "pitch": 8.0
+        }
+      },
+      "stance": {
+        "left": {
+          "forward": 0.0954,
+          "left": 0.0034,
+          "yaw": 4.5
+        },
+        "right": {
+          "forward": -0.0954,
+          "left": -0.0034,
+          "yaw": -17.7
+        },
+        "support": ["toe_r"]
+      },
+      "expect": {
+        "left_elbow": [0.03338, -0.03636, 0.08755],
+        "left_wrist": [-0.0152, 0.0247, 0.0923],
+        "right_elbow": [-0.07208, -0.08285, -0.06019],
+        "right_wrist": [-0.1186, -0.0786, 0.0025],
+        "shield_centre": [0.00565, 0.0134, 0.1072],
+        "shield_front": [0.37585, 0.24265, 0.89435],
+        "sword_grip": [-0.12566, -0.08294, 0.0366],
+        "sword_tip": [-0.18036, 0.20933, 0.06159],
+        "blade": [-0.1833, 0.97948, 0.08377],
+        "clearance_mm": {
+          "blade_to_shield": 100.6,
+          "sword_arm_to_shield": 115.9,
+          "blade_to_head": 106.6,
+          "blade_to_trunk": 87.8,
+          "blade_to_shield_arm": 117.2,
+          "sword_arm_to_shield_arm": 71.2,
+          "shield_to_head": 9.5,
+          "tip_above_ground": 686.1
+        }
+      },
+      "against_the_approved_pose": {
+        "shield_front_deg": 4.5,
+        "shield_centre_mm": 2.7,
+        "blade_deg": 0.2,
+        "grip_mm": 0.1
+      }
+    },
+    "hit": {
+      "from_pose": "hit-react",
+      "left": {
+        "wrist": [0.0098, -0.0554, 0.0696],
+        "elbow": [0.0853, -0.0749, 0.0748],
+        "hand_turn_xyzw": [-0.26895, 0.1638, -0.1334, 0.9397]
+      },
+      "right": {
+        "wrist": [-0.2232, -0.0265, -0.0099],
+        "elbow": [-0.1543, -0.0419, -0.0436],
+        "hand_turn_xyzw": [-0.39943, -0.3693, 0.37629, 0.74998]
+      },
+      "body": {
+        "pelvis": {
+          "yaw": 10.0,
+          "pitch": -8.0,
+          "roll": -0.0,
+          "height": 0.91,
+          "forward": -0.0756,
+          "left": -0.0207
+        },
+        "spine": {
+          "flex": -11.6,
+          "twist": 19.2,
+          "side": -13.5
+        },
+        "head": {
+          "yaw": -15.1,
+          "pitch": -10.0
+        }
+      },
+      "stance": {
+        "left": {
+          "forward": 0.048,
+          "left": 0.0564,
+          "yaw": 17.8
+        },
+        "right": {
+          "forward": -0.048,
+          "left": -0.0564,
+          "yaw": -40.1
+        },
+        "support": ["foot_r", "toe_l"]
+      },
+      "expect": {
+        "left_elbow": [0.08619, -0.07191, 0.07154],
+        "left_wrist": [0.0098, -0.0554, 0.0696],
+        "right_elbow": [-0.15452, -0.0421, -0.04383],
+        "right_wrist": [-0.2232, -0.0265, -0.0099],
+        "shield_centre": [0.03095, -0.05426, 0.08793],
+        "shield_front": [0.0176, 0.24394, 0.96963],
+        "sword_grip": [-0.23432, -0.03551, 0.02214],
+        "sword_tip": [-0.40576, 0.20858, 0.0303],
+        "blade": [-0.57455, 0.81801, 0.02736],
+        "clearance_mm": {
+          "blade_to_shield": 154.9,
+          "sword_arm_to_shield": 122.7,
+          "blade_to_head": 216.5,
+          "blade_to_trunk": 210.6,
+          "blade_to_shield_arm": 259.5,
+          "sword_arm_to_shield_arm": 80.9,
+          "shield_to_head": -11.3,
+          "tip_above_ground": 685.4
+        }
+      },
+      "against_the_approved_pose": {
+        "shield_front_deg": 3.2,
+        "shield_centre_mm": 2.0,
+        "blade_deg": 0.9,
+        "grip_mm": 0.3
+      }
+    },
+    "cut-windup": {
+      "from_pose": "cut-windup",
+      "left": {
+        "wrist": [0.0641, -0.0074, 0.1371],
+        "elbow": [0.1064, -0.0524, 0.0891],
+        "hand_turn_xyzw": [-0.10948, 0.0667, -0.05431, 0.99026]
+      },
+      "right": {
+        "wrist": [-0.058, 0.0464, 0.094],
+        "elbow": [-0.011, -0.0157, 0.0869],
+        "hand_turn_xyzw": [-0.26857, -0.18856, 0.11127, 0.93805]
+      },
+      "body": {
+        "pelvis": {
+          "yaw": -40.0,
+          "pitch": -0.0,
+          "roll": -0.0,
+          "height": 0.93,
+          "forward": -0.0094,
+          "left": 0.0334
+        },
+        "spine": {
+          "flex": -5.3,
+          "twist": -19.9,
+          "side": 2.4
+        },
+        "head": {
+          "yaw": 60.0,
+          "pitch": 0.0
+        }
+      },
+      "stance": {
+        "left": {
+          "forward": 0.0753,
+          "left": 0.0121,
+          "yaw": 2.5
+        },
+        "right": {
+          "forward": -0.0753,
+          "left": -0.0121,
+          "yaw": -72.7
+        },
+        "support": ["foot_l", "foot_r"]
+      },
+      "expect": {
+        "left_elbow": [0.10397, -0.04886, 0.08416],
+        "left_wrist": [0.0641, -0.0074, 0.1371],
+        "right_elbow": [-0.01307, -0.01645, 0.08205],
+        "right_wrist": [-0.058, 0.0464, 0.094],
+        "shield_centre": [0.0908, -0.01316, 0.13089],
+        "shield_front": [0.85083, 0.24262, 0.46608],
+        "sword_grip": [-0.06067, 0.08138, 0.09343],
+        "sword_tip": [-0.3373, 0.05765, -0.01589],
+        "blade": [-0.92706, -0.07955, -0.36638],
+        "clearance_mm": {
+          "blade_to_shield": 123.7,
+          "sword_arm_to_shield": 91.9,
+          "blade_to_head": 37.9,
+          "blade_to_trunk": 84.1,
+          "blade_to_shield_arm": 176.3,
+          "sword_arm_to_shield_arm": 55.2,
+          "shield_to_head": 49.8,
+          "tip_above_ground": 534.4
+        }
+      },
+      "against_the_approved_pose": {
+        "shield_front_deg": 2.9,
+        "shield_centre_mm": 2.3,
+        "blade_deg": 3.2,
+        "grip_mm": 2.7
+      }
+    },
+    "cut-contact": {
+      "from_pose": "halfway between cut-mid and cut-followthrough",
+      "left": {
+        "wrist": [0.0412, -0.02175, 0.12495],
+        "elbow": [0.1031, -0.0497, 0.08895],
+        "hand_turn_xyzw": [-0.24301, 0.14802, -0.12056, 0.95105]
+      },
+      "right": {
+        "wrist": [-0.1457, -0.0835, 0.1322],
+        "elbow": [-0.11805, -0.05695, 0.0686],
+        "hand_turn_xyzw": [0.03198, -0.12111, -0.07711, 0.98912]
+      },
+      "body": {
+        "pelvis": {
+          "yaw": -2.5,
+          "pitch": 12.5,
+          "roll": 0.0,
+          "height": 0.885,
+          "forward": 0.0261,
+          "left": 0.0026
+        },
+        "spine": {
+          "flex": 14.05,
+          "twist": 8.5,
+          "side": 0.7
+        },
+        "head": {
+          "yaw": -1.05,
+          "pitch": 7.5
+        }
+      },
+      "stance": {
+        "left": {
+          "forward": 0.1134,
+          "left": 0.0504,
+          "yaw": 16.25
+        },
+        "right": {
+          "forward": -0.1134,
+          "left": -0.0504,
+          "yaw": -52.95
+        },
+        "support": ["foot_l", "toe_r"]
+      },
+      "expect": {
+        "left_elbow": [0.10291, -0.04823, 0.08492],
+        "left_wrist": [0.0412, -0.02175, 0.12495],
+        "right_elbow": [-0.12185, -0.06672, 0.05967],
+        "right_wrist": [-0.1457, -0.0835, 0.1322],
+        "shield_centre": [0.06913, -0.01998, 0.12606],
+        "shield_front": [0.60572, 0.42855, 0.67041],
+        "sword_grip": [-0.15439, -0.11076, 0.15252],
+        "sword_tip": [-0.11715, 0.05916, 0.39496],
+        "blade": [0.12481, 0.56945, 0.8125],
+        "clearance_mm": {
+          "blade_to_shield": 124.2,
+          "sword_arm_to_shield": 137.9,
+          "blade_to_head": 229.7,
+          "blade_to_trunk": 182.6,
+          "blade_to_shield_arm": 190.1,
+          "sword_arm_to_shield_arm": 127.0,
+          "shield_to_head": 14.0,
+          "tip_above_ground": 536.0
+        }
+      },
+      "against_the_approved_pose": null
+    },
+    "cut-follow": {
+      "from_pose": "cut-followthrough",
+      "left": {
+        "wrist": [0.0308, -0.0127, 0.1324],
+        "elbow": [0.1008, -0.0309, 0.1028],
+        "hand_turn_xyzw": [-0.26896, 0.16384, -0.13337, 0.9397]
+      },
+      "right": {
+        "wrist": [-0.1323, -0.1336, 0.102],
+        "elbow": [-0.1133, -0.0849, 0.0439],
+        "hand_turn_xyzw": [-0.00987, -0.27503, 0.03012, 0.96091]
+      },
+      "body": {
+        "pelvis": {
+          "yaw": 5.0,
+          "pitch": 15.0,
+          "roll": -0.0,
+          "height": 0.86,
+          "forward": 0.0347,
+          "left": 0.0022
+        },
+        "spine": {
+          "flex": 18.1,
+          "twist": 12.0,
+          "side": 1.7
+        },
+        "head": {
+          "yaw": -12.1,
+          "pitch": 10.0
+        }
+      },
+      "stance": {
+        "left": {
+          "forward": 0.1229,
+          "left": 0.0638,
+          "yaw": 19.3
+        },
+        "right": {
+          "forward": -0.1229,
+          "left": -0.0638,
+          "yaw": -50.7
+        },
+        "support": ["foot_l", "toe_r"]
+      },
+      "expect": {
+        "left_elbow": [0.09769, -0.02824, 0.09505],
+        "left_wrist": [0.0308, -0.0127, 0.1324],
+        "right_elbow": [-0.11126, -0.08206, 0.04712],
+        "right_wrist": [-0.1323, -0.1336, 0.102],
+        "shield_centre": [0.05759, -0.00457, 0.13329],
+        "shield_front": [0.47988, 0.61605, 0.62466],
+        "sword_grip": [-0.132, -0.16868, 0.10116],
+        "sword_tip": [-0.17485, -0.17528, 0.39638],
+        "blade": [-0.14359, -0.02212, 0.98939],
+        "clearance_mm": {
+          "blade_to_shield": 184.8,
+          "sword_arm_to_shield": 162.6,
+          "blade_to_head": 249.8,
+          "blade_to_trunk": 141.5,
+          "blade_to_shield_arm": 211.2,
+          "sword_arm_to_shield_arm": 125.1,
+          "shield_to_head": -9.7,
+          "tip_above_ground": 301.5
+        }
+      },
+      "against_the_approved_pose": {
+        "shield_front_deg": 4.5,
+        "shield_centre_mm": 3.4,
+        "blade_deg": 3.3,
+        "grip_mm": 2.4
+      }
+    },
+    "backhand-windup": {
+      "from_pose": "backhand-cut-windup",
+      "left": {
+        "wrist": [0.0424, 0.1289, 0.0762],
+        "elbow": [0.0288, 0.0535, 0.0917],
+        "hand_turn_xyzw": [-0.31979, 0.1948, -0.15866, 0.91357]
+      },
+      "right": {
+        "wrist": [0.004, -0.0165, 0.1036],
+        "elbow": [-0.0725, -0.0328, 0.1062],
+        "hand_turn_xyzw": [-0.24463, -0.32419, 0.17989, 0.89593]
+      },
+      "body": {
+        "pelvis": {
+          "yaw": -15.0,
+          "pitch": 3.0,
+          "roll": -0.0,
+          "height": 0.95,
+          "forward": -0.0222,
+          "left": 0.0051
+        },
+        "spine": {
+          "flex": 4.9,
+          "twist": 25.0,
+          "side": -0.7
+        },
+        "head": {
+          "yaw": -5.0,
+          "pitch": -0.0
+        }
+      },
+      "stance": {
+        "left": {
+          "forward": 0.0495,
+          "left": 0.0365,
+          "yaw": 11.3
+        },
+        "right": {
+          "forward": -0.0495,
+          "left": -0.0365,
+          "yaw": -60.9
+        },
+        "support": ["foot_l", "foot_r"]
+      },
+      "expect": {
+        "left_elbow": [0.03451, 0.05123, 0.08031],
+        "left_wrist": [0.0424, 0.1289, 0.0762],
+        "right_elbow": [-0.07274, -0.03027, 0.09783],
+        "right_wrist": [0.004, -0.0165, 0.1036],
+        "shield_centre": [0.05068, 0.10792, 0.09281],
+        "shield_front": [0.50781, 0.00431, 0.86146],
+        "sword_grip": [0.03345, -0.03558, 0.10338],
+        "sword_tip": [0.18903, 0.20692, 0.02576],
+        "blade": [0.52139, 0.8127, -0.26014],
+        "clearance_mm": {
+          "blade_to_shield": 0.8,
+          "sword_arm_to_shield": -5.5,
+          "blade_to_head": 57.5,
+          "blade_to_trunk": 52.9,
+          "blade_to_shield_arm": 19.3,
+          "sword_arm_to_shield_arm": 37.7,
+          "shield_to_head": 81.6,
+          "tip_above_ground": 683.7
+        }
+      },
+      "against_the_approved_pose": {
+        "shield_front_deg": 6.8,
+        "shield_centre_mm": 5.0,
+        "blade_deg": 4.1,
+        "grip_mm": 4.2
+      }
+    },
+    "backhand-contact": {
+      "from_pose": "halfway between backhand-cut-mid and backhand-cut-followthrough",
+      "left": {
+        "wrist": [0.0708, 0.04105, 0.08715],
+        "elbow": [0.09475, -0.0133, 0.1071],
+        "hand_turn_xyzw": [-0.05488, 0.03345, -0.02723, 0.99756]
+      },
+      "right": {
+        "wrist": [-0.13965, -0.03145, 0.08515],
+        "elbow": [-0.1321, -0.04345, 0.0354],
+        "hand_turn_xyzw": [-0.34698, -0.32791, 0.1529, 0.86528]
+      },
+      "body": {
+        "pelvis": {
+          "yaw": -37.5,
+          "pitch": 9.0,
+          "roll": 0.0,
+          "height": 0.905,
+          "forward": 0.0348,
+          "left": 0.012
+        },
+        "spine": {
+          "flex": 8.9,
+          "twist": -5.1,
+          "side": 1.3
+        },
+        "head": {
+          "yaw": 22.5,
+          "pitch": 0.0
+        }
+      },
+      "stance": {
+        "left": {
+          "forward": 0.1178,
+          "left": -0.031,
+          "yaw": -1.25
+        },
+        "right": {
+          "forward": -0.1178,
+          "left": 0.031,
+          "yaw": -58.05
+        },
+        "support": ["foot_l", "toe_r"]
+      },
+      "expect": {
+        "left_elbow": [0.09942, -0.03142, 0.09356],
+        "left_wrist": [0.0708, 0.04105, 0.08715],
+        "right_elbow": [-0.14837, -0.06649, 0.01581],
+        "right_wrist": [-0.13965, -0.03145, 0.08515],
+        "shield_centre": [0.09454, 0.02862, 0.09532],
+        "shield_front": [0.83591, 0.37657, 0.3993],
+        "sword_grip": [-0.12416, -0.03234, 0.11663],
+        "sword_tip": [-0.16085, 0.26269, 0.14206],
+        "blade": [-0.12295, 0.98875, 0.08522],
+        "clearance_mm": {
+          "blade_to_shield": 170.2,
+          "sword_arm_to_shield": 177.3,
+          "blade_to_head": 117.8,
+          "blade_to_trunk": 123.3,
+          "blade_to_shield_arm": 185.3,
+          "sword_arm_to_shield_arm": 132.3,
+          "shield_to_head": 34.7,
+          "tip_above_ground": 739.5
+        }
+      },
+      "against_the_approved_pose": null
+    },
+    "backhand-follow": {
+      "from_pose": "backhand-cut-followthrough",
+      "left": {
+        "wrist": [0.087, 0.0585, 0.0512],
+        "elbow": [0.0927, 0.0117, 0.1135],
+        "hand_turn_xyzw": [0.0, 0.0, 0.0, 1.0]
+      },
+      "right": {
+        "wrist": [-0.2362, -0.022, 0.0387],
+        "elbow": [-0.1731, -0.0157, -0.007],
+        "hand_turn_xyzw": [-0.25444, -0.27196, -0.03381, 0.92744]
+      },
+      "body": {
+        "pelvis": {
+          "yaw": -45.0,
+          "pitch": 10.0,
+          "roll": -0.0,
+          "height": 0.89,
+          "forward": 0.0465,
+          "left": 0.0113
+        },
+        "spine": {
+          "flex": 9.8,
+          "twist": -15.2,
+          "side": 2.8
+        },
+        "head": {
+          "yaw": 30.0,
+          "pitch": -0.0
+        }
+      },
+      "stance": {
+        "left": {
+          "forward": 0.1263,
+          "left": -0.0584,
+          "yaw": -6.3
+        },
+        "right": {
+          "forward": -0.1263,
+          "left": 0.0584,
+          "yaw": -57.2
+        },
+        "support": ["foot_l", "toe_r"]
+      },
+      "expect": {
+        "left_elbow": [0.08914, -0.00175, 0.10096],
+        "left_wrist": [0.087, 0.0585, 0.0512],
+        "right_elbow": [-0.17306, -0.01569, -0.00696],
+        "right_wrist": [-0.2362, -0.022, 0.0387],
+        "shield_centre": [0.10534, 0.04642, 0.06858],
+        "shield_front": [0.93165, 0.25792, 0.25595],
+        "sword_grip": [-0.26606, -0.03699, 0.04942],
+        "sword_tip": [-0.2882, 0.16522, 0.26773],
+        "blade": [-0.07421, 0.67767, 0.73161],
+        "clearance_mm": {
+          "blade_to_shield": 340.8,
+          "sword_arm_to_shield": 274.7,
+          "blade_to_head": 241.0,
+          "blade_to_trunk": 229.9,
+          "blade_to_shield_arm": 330.4,
+          "sword_arm_to_shield_arm": 136.9,
+          "shield_to_head": 59.9,
+          "tip_above_ground": 642.0
+        }
+      },
+      "against_the_approved_pose": {
+        "shield_front_deg": 7.3,
+        "shield_centre_mm": 5.5,
+        "blade_deg": 3.3,
+        "grip_mm": 0.9
+      }
+    },
+    "chop-windup": {
+      "from_pose": "chop-overhead-raise",
+      "left": {
+        "wrist": [0.0567, -0.0243, 0.1198],
+        "elbow": [0.098, -0.0724, 0.074],
+        "hand_turn_xyzw": [-0.21675, 0.13204, -0.10752, 0.96126]
+      },
+      "right": {
+        "wrist": [-0.1422, 0.1244, 0.1054],
+        "elbow": [-0.1445, 0.0553, 0.0689],
+        "hand_turn_xyzw": [-0.3423, -0.45302, 0.32576, 0.75597]
+      },
+      "body": {
+        "pelvis": {
+          "yaw": -30.0,
+          "pitch": -0.0,
+          "roll": -0.0,
+          "height": 0.95,
+          "forward": -0.0133,
+          "left": 0.0216
+        },
+        "spine": {
+          "flex": -5.0,
+          "twist": -12.0,
+          "side": -0.3
+        },
+        "head": {
+          "yaw": 35.0,
+          "pitch": -4.9
+        }
+      },
+      "stance": {
+        "left": {
+          "forward": 0.0639,
+          "left": 0.019,
+          "yaw": 5.4
+        },
+        "right": {
+          "forward": -0.0639,
+          "left": -0.019,
+          "yaw": -65.0
+        },
+        "support": ["foot_l", "foot_r"]
+      },
+      "expect": {
+        "left_elbow": [0.09718, -0.06971, 0.0707],
+        "left_wrist": [0.0567, -0.0243, 0.1198],
+        "right_elbow": [-0.12547, 0.06149, 0.06211],
+        "right_wrist": [-0.1422, 0.1244, 0.1054],
+        "shield_centre": [0.0829, -0.03378, 0.11692],
+        "shield_front": [0.80388, 0.10044, 0.58625],
+        "sword_grip": [-0.1311, 0.13292, 0.13758],
+        "sword_tip": [-0.23177, 0.41098, 0.09774],
+        "blade": [-0.33737, 0.93186, -0.13351],
+        "clearance_mm": {
+          "blade_to_shield": 178.1,
+          "sword_arm_to_shield": 158.1,
+          "blade_to_head": 124.3,
+          "blade_to_trunk": 191.8,
+          "blade_to_shield_arm": 264.4,
+          "sword_arm_to_shield_arm": 137.6,
+          "shield_to_head": 55.4,
+          "tip_above_ground": 887.8
+        }
+      },
+      "against_the_approved_pose": {
+        "shield_front_deg": 2.2,
+        "shield_centre_mm": 1.7,
+        "blade_deg": 12.1,
+        "grip_mm": 6.0
+      }
+    },
+    "chop-contact": {
+      "from_pose": "chop-overhead-strike",
+      "left": {
+        "wrist": [0.0631, -0.0568, 0.115],
+        "elbow": [0.1278, -0.0573, 0.0711],
+        "hand_turn_xyzw": [-0.10946, 0.0667, -0.05426, 0.99027]
+      },
+      "right": {
+        "wrist": [-0.0532, -0.0522, 0.1443],
+        "elbow": [-0.0375, -0.0712, 0.0701],
+        "hand_turn_xyzw": [0.56047, 0.13675, -0.29229, 0.76272]
+      },
+      "body": {
+        "pelvis": {
+          "yaw": -20.0,
+          "pitch": 12.0,
+          "roll": -0.0,
+          "height": 0.88,
+          "forward": 0.026,
+          "left": 0.0079
+        },
+        "spine": {
+          "flex": 12.0,
+          "twist": -3.0,
+          "side": 0.2
+        },
+        "head": {
+          "yaw": 20.1,
+          "pitch": 9.9
+        }
+      },
+      "stance": {
+        "left": {
+          "forward": 0.1246,
+          "left": 0.0073,
+          "yaw": 7.3
+        },
+        "right": {
+          "forward": -0.1246,
+          "left": -0.0073,
+          "yaw": -62.3
+        },
+        "support": ["foot_l", "toe_r"]
+      },
+      "expect": {
+        "left_elbow": [0.12553, -0.05486, 0.06799],
+        "left_wrist": [0.0631, -0.0568, 0.115],
+        "right_elbow": [-0.03916, -0.06807, 0.06905],
+        "right_wrist": [-0.0532, -0.0522, 0.1443],
+        "shield_centre": [0.08946, -0.04736, 0.11568],
+        "shield_front": [0.52771, 0.42476, 0.73559],
+        "sword_grip": [-0.06319, -0.07514, 0.16891],
+        "sword_tip": [0.08951, 0.07924, 0.37358],
+        "blade": [0.51174, 0.51735, 0.68591],
+        "clearance_mm": {
+          "blade_to_shield": 28.9,
+          "sword_arm_to_shield": 37.0,
+          "blade_to_head": 174.1,
+          "blade_to_trunk": 145.3,
+          "blade_to_shield_arm": 113.7,
+          "sword_arm_to_shield_arm": 69.1,
+          "shield_to_head": 23.6,
+          "tip_above_ground": 556.0
+        }
+      },
+      "against_the_approved_pose": {
+        "shield_front_deg": 2.6,
+        "shield_centre_mm": 1.9,
+        "blade_deg": 2.3,
+        "grip_mm": 1.2
+      }
+    },
+    "chop-follow": {
+      "from_pose": "chop-overhead-strike",
+      "left": {
+        "wrist": [0.0631, -0.0568, 0.115],
+        "elbow": [0.1278, -0.0573, 0.0711],
+        "hand_turn_xyzw": [-0.10946, 0.0667, -0.05426, 0.99027]
+      },
+      "right": {
+        "wrist": [-0.0532, -0.0522, 0.1443],
+        "elbow": [-0.0375, -0.0712, 0.0701],
+        "hand_turn_xyzw": [0.56047, 0.13675, -0.29229, 0.76272]
+      },
+      "body": {
+        "pelvis": {
+          "yaw": -20.0,
+          "pitch": 12.0,
+          "roll": -0.0,
+          "height": 0.88,
+          "forward": 0.026,
+          "left": 0.0079
+        },
+        "spine": {
+          "flex": 12.0,
+          "twist": -3.0,
+          "side": 0.2
+        },
+        "head": {
+          "yaw": 20.1,
+          "pitch": 9.9
+        }
+      },
+      "stance": {
+        "left": {
+          "forward": 0.1246,
+          "left": 0.0073,
+          "yaw": 7.3
+        },
+        "right": {
+          "forward": -0.1246,
+          "left": -0.0073,
+          "yaw": -62.3
+        },
+        "support": ["foot_l", "toe_r"]
+      },
+      "expect": {
+        "left_elbow": [0.12553, -0.05486, 0.06799],
+        "left_wrist": [0.0631, -0.0568, 0.115],
+        "right_elbow": [-0.03916, -0.06807, 0.06905],
+        "right_wrist": [-0.0532, -0.0522, 0.1443],
+        "shield_centre": [0.08946, -0.04736, 0.11568],
+        "shield_front": [0.52771, 0.42476, 0.73559],
+        "sword_grip": [-0.06319, -0.07514, 0.16891],
+        "sword_tip": [0.08951, 0.07924, 0.37358],
+        "blade": [0.51174, 0.51735, 0.68591],
+        "clearance_mm": {
+          "blade_to_shield": 28.9,
+          "sword_arm_to_shield": 37.0,
+          "blade_to_head": 174.1,
+          "blade_to_trunk": 145.3,
+          "blade_to_shield_arm": 113.7,
+          "sword_arm_to_shield_arm": 69.1,
+          "shield_to_head": 23.6,
+          "tip_above_ground": 556.0
+        }
+      },
+      "against_the_approved_pose": {
+        "shield_front_deg": 2.6,
+        "shield_centre_mm": 1.9,
+        "blade_deg": 2.3,
+        "grip_mm": 1.2
+      }
+    },
+    "thrust-windup": {
+      "from_pose": "thrust-chamber",
+      "left": {
+        "wrist": [0.0596, -0.0107, 0.1049],
+        "elbow": [0.094, -0.0737, 0.074],
+        "hand_turn_xyzw": [-0.10943, 0.06674, -0.0543, 0.99026]
+      },
+      "right": {
+        "wrist": [-0.155, -0.0931, 0.0222],
+        "elbow": [-0.1356, -0.0645, -0.0479],
+        "hand_turn_xyzw": [0.12944, 0.07977, -0.16871, 0.97387]
+      },
+      "body": {
+        "pelvis": {
+          "yaw": -35.0,
+          "pitch": 5.0,
+          "roll": -0.0,
+          "height": 0.94,
+          "forward": -0.0001,
+          "left": 0.022
+        },
+        "spine": {
+          "flex": 5.0,
+          "twist": -15.0,
+          "side": 0.4
+        },
+        "head": {
+          "yaw": 50.1,
+          "pitch": 4.7
+        }
+      },
+      "stance": {
+        "left": {
+          "forward": 0.0739,
+          "left": 0.0167,
+          "yaw": 5.2
+        },
+        "right": {
+          "forward": -0.0739,
+          "left": -0.0167,
+          "yaw": -71.4
+        },
+        "support": ["foot_l", "foot_r"]
+      },
+      "expect": {
+        "left_elbow": [0.09375, -0.07167, 0.06987],
+        "left_wrist": [0.0596, -0.0107, 0.1049],
+        "right_elbow": [-0.1356, -0.06449, -0.04792],
+        "right_wrist": [-0.155, -0.0931, 0.0222],
+        "shield_centre": [0.08399, -0.02442, 0.10597],
+        "shield_front": [0.79001, 0.10902, 0.60332],
+        "sword_grip": [-0.17143, -0.11656, 0.04247],
+        "sword_tip": [0.0322, -0.0732, 0.25623],
+        "blade": [0.68243, 0.14534, 0.71636],
+        "clearance_mm": {
+          "blade_to_shield": 28.8,
+          "sword_arm_to_shield": 226.8,
+          "blade_to_head": 181.1,
+          "blade_to_trunk": 96.0,
+          "blade_to_shield_arm": 125.1,
+          "sword_arm_to_shield_arm": 128.7,
+          "shield_to_head": 49.3,
+          "tip_above_ground": 403.6
+        }
+      },
+      "against_the_approved_pose": {
+        "shield_front_deg": 2.3,
+        "shield_centre_mm": 1.7,
+        "blade_deg": 0.1,
+        "grip_mm": 0.1
+      }
+    },
+    "thrust-contact": {
+      "from_pose": "thrust-extension",
+      "left": {
+        "wrist": [0.0449, -0.0353, 0.0952],
+        "elbow": [0.1205, -0.0507, 0.0824],
+        "hand_turn_xyzw": [0.0, 0.0, 0.0, 1.0]
+      },
+      "right": {
+        "wrist": [-0.0811, -0.0786, 0.1394],
+        "elbow": [-0.081, -0.0849, 0.0615],
+        "hand_turn_xyzw": [-0.3029, -0.25302, 0.24402, 0.88583]
+      },
+      "body": {
+        "pelvis": {
+          "yaw": 25.0,
+          "pitch": 20.0,
+          "roll": -0.0,
+          "height": 0.76,
+          "forward": 0.0476,
+          "left": -0.0069
+        },
+        "spine": {
+          "flex": 9.9,
+          "twist": 15.1,
+          "side": -0.9
+        },
+        "head": {
+          "yaw": -35.0,
+          "pitch": 4.9
+        }
+      },
+      "stance": {
+        "left": {
+          "forward": -0.1477,
+          "left": -0.0425,
+          "yaw": 96.2
+        },
+        "right": {
+          "forward": 0.1477,
+          "left": 0.0425,
+          "yaw": 3.9
+        },
+        "support": ["foot_r", "foot_l"]
+      },
+      "expect": {
+        "left_elbow": [0.11982, -0.04801, 0.07685],
+        "left_wrist": [0.0449, -0.0353, 0.0952],
+        "right_elbow": [-0.08067, -0.0816, 0.06128],
+        "right_wrist": [-0.0811, -0.0786, 0.1394],
+        "shield_centre": [0.07024, -0.02826, 0.10484],
+        "shield_front": [0.27538, 0.5114, 0.81402],
+        "sword_grip": [-0.05681, -0.07752, 0.1647],
+        "sword_tip": [-0.22654, 0.11386, 0.31833],
+        "blade": [-0.56883, 0.64136, 0.51486],
+        "clearance_mm": {
+          "blade_to_shield": 25.7,
+          "sword_arm_to_shield": 5.7,
+          "blade_to_head": 172.7,
+          "blade_to_trunk": 147.3,
+          "blade_to_shield_arm": 137.9,
+          "sword_arm_to_shield_arm": 93.6,
+          "shield_to_head": -13.5,
+          "tip_above_ground": 590.7
+        }
+      },
+      "against_the_approved_pose": {
+        "shield_front_deg": 3.5,
+        "shield_centre_mm": 2.4,
+        "blade_deg": 1.7,
+        "grip_mm": 1.4
+      }
+    },
+    "thrust-follow": {
+      "from_pose": "thrust-extension",
+      "left": {
+        "wrist": [0.0449, -0.0353, 0.0952],
+        "elbow": [0.1205, -0.0507, 0.0824],
+        "hand_turn_xyzw": [0.0, 0.0, 0.0, 1.0]
+      },
+      "right": {
+        "wrist": [-0.0811, -0.0786, 0.1394],
+        "elbow": [-0.081, -0.0849, 0.0615],
+        "hand_turn_xyzw": [-0.3029, -0.25302, 0.24402, 0.88583]
+      },
+      "body": {
+        "pelvis": {
+          "yaw": 25.0,
+          "pitch": 20.0,
+          "roll": -0.0,
+          "height": 0.76,
+          "forward": 0.0476,
+          "left": -0.0069
+        },
+        "spine": {
+          "flex": 9.9,
+          "twist": 15.1,
+          "side": -0.9
+        },
+        "head": {
+          "yaw": -35.0,
+          "pitch": 4.9
+        }
+      },
+      "stance": {
+        "left": {
+          "forward": -0.1477,
+          "left": -0.0425,
+          "yaw": 96.2
+        },
+        "right": {
+          "forward": 0.1477,
+          "left": 0.0425,
+          "yaw": 3.9
+        },
+        "support": ["foot_r", "foot_l"]
+      },
+      "expect": {
+        "left_elbow": [0.11982, -0.04801, 0.07685],
+        "left_wrist": [0.0449, -0.0353, 0.0952],
+        "right_elbow": [-0.08067, -0.0816, 0.06128],
+        "right_wrist": [-0.0811, -0.0786, 0.1394],
+        "shield_centre": [0.07024, -0.02826, 0.10484],
+        "shield_front": [0.27538, 0.5114, 0.81402],
+        "sword_grip": [-0.05681, -0.07752, 0.1647],
+        "sword_tip": [-0.22654, 0.11386, 0.31833],
+        "blade": [-0.56883, 0.64136, 0.51486],
+        "clearance_mm": {
+          "blade_to_shield": 25.7,
+          "sword_arm_to_shield": 5.7,
+          "blade_to_head": 172.7,
+          "blade_to_trunk": 147.3,
+          "blade_to_shield_arm": 137.9,
+          "sword_arm_to_shield_arm": 93.6,
+          "shield_to_head": -13.5,
+          "tip_above_ground": 590.7
+        }
+      },
+      "against_the_approved_pose": {
+        "shield_front_deg": 3.5,
+        "shield_centre_mm": 2.4,
+        "blade_deg": 1.7,
+        "grip_mm": 1.4
+      }
     }
-   },
-   "against_the_approved_pose": {
-    "shield_front_deg": 0.8,
-    "shield_centre_mm": 0.5,
-    "blade_deg": 0.6,
-    "grip_mm": 0.2
-   }
   },
-  "idle-at-ease": {
-   "from_pose": "idle-at-ease",
-   "left": {
-    "wrist": [
-     0.0952,
-     -0.1749,
-     0.0229
-    ],
-    "elbow": [
-     0.0933,
-     -0.1002,
-     -0.0
-    ],
-    "hand_turn_xyzw": [
-     0.0,
-     0.0,
-     0.0,
-     1.0
-    ]
-   },
-   "right": {
-    "wrist": [
-     -0.111,
-     -0.1734,
-     0.0229
-    ],
-    "elbow": [
-     -0.0877,
-     -0.1012,
-     0.0039
-    ],
-    "hand_turn_xyzw": [
-     0.31568,
-     0.05102,
-     -0.1824,
-     0.92977
-    ]
-   },
-   "body": {
-    "pelvis": {
-     "yaw": 0.0,
-     "pitch": -0.0,
-     "roll": 5.0,
-     "height": 1.0,
-     "forward": 0.0064,
-     "left": 0.0025
+  "blend_clearance_mm": {
+    "idle-relaxed>guard": {
+      "blade_to_shield": 24.2,
+      "sword_arm_to_shield": 125.8,
+      "blade_to_head": 123.8,
+      "blade_to_trunk": 63.2,
+      "blade_to_shield_arm": 98.6,
+      "sword_arm_to_shield_arm": 131.9,
+      "shield_to_head": 32.6,
+      "tip_above_ground": 233.1
     },
-    "spine": {
-     "flex": -0.0,
-     "twist": 0.0,
-     "side": -4.0
+    "idle-at-ease>guard": {
+      "blade_to_shield": 23.0,
+      "sword_arm_to_shield": 121.4,
+      "blade_to_head": 123.8,
+      "blade_to_trunk": 68.8,
+      "blade_to_shield_arm": 98.6,
+      "sword_arm_to_shield_arm": 131.9,
+      "shield_to_head": 32.6,
+      "tip_above_ground": 146.7
     },
-    "head": {
-     "yaw": 10.0,
-     "pitch": 3.0
+    "sword-on-shoulder>guard": {
+      "blade_to_shield": 24.2,
+      "sword_arm_to_shield": 103.9,
+      "blade_to_head": 45.4,
+      "blade_to_trunk": 51.5,
+      "blade_to_shield_arm": 98.6,
+      "sword_arm_to_shield_arm": 131.9,
+      "shield_to_head": 32.6,
+      "tip_above_ground": 597.3
+    },
+    "idle-relaxed>walk-guard": {
+      "blade_to_shield": 28.3,
+      "sword_arm_to_shield": 135.9,
+      "blade_to_head": 205.0,
+      "blade_to_trunk": 68.5,
+      "blade_to_shield_arm": 133.3,
+      "sword_arm_to_shield_arm": 101.5,
+      "shield_to_head": 13.3,
+      "tip_above_ground": 233.1
+    },
+    "walk-guard>run-guard": {
+      "blade_to_shield": 12.9,
+      "sword_arm_to_shield": 114.8,
+      "blade_to_head": 105.0,
+      "blade_to_trunk": 68.5,
+      "blade_to_shield_arm": 103.0,
+      "sword_arm_to_shield_arm": 71.2,
+      "shield_to_head": 5.8,
+      "tip_above_ground": 441.5
+    },
+    "walk-guard>guard": {
+      "blade_to_shield": 0.0,
+      "sword_arm_to_shield": 125.7,
+      "blade_to_head": 123.2,
+      "blade_to_trunk": 68.5,
+      "blade_to_shield_arm": 71.3,
+      "sword_arm_to_shield_arm": 101.5,
+      "shield_to_head": 13.3,
+      "tip_above_ground": 441.5
+    },
+    "guard>cut-windup": {
+      "blade_to_shield": 24.2,
+      "sword_arm_to_shield": 91.9,
+      "blade_to_head": 37.9,
+      "blade_to_trunk": 76.7,
+      "blade_to_shield_arm": 98.6,
+      "sword_arm_to_shield_arm": 55.2,
+      "shield_to_head": 32.6,
+      "tip_above_ground": 530.2
+    },
+    "cut-windup>cut-contact": {
+      "blade_to_shield": 123.7,
+      "sword_arm_to_shield": 91.9,
+      "blade_to_head": 37.9,
+      "blade_to_trunk": 84.1,
+      "blade_to_shield_arm": 175.2,
+      "sword_arm_to_shield_arm": 55.2,
+      "shield_to_head": 14.0,
+      "tip_above_ground": 532.5
+    },
+    "cut-contact>cut-follow": {
+      "blade_to_shield": 123.8,
+      "sword_arm_to_shield": 137.9,
+      "blade_to_head": 229.7,
+      "blade_to_trunk": 141.5,
+      "blade_to_shield_arm": 189.0,
+      "sword_arm_to_shield_arm": 125.1,
+      "shield_to_head": -9.7,
+      "tip_above_ground": 301.5
+    },
+    "cut-follow>guard": {
+      "blade_to_shield": 24.2,
+      "sword_arm_to_shield": 125.8,
+      "blade_to_head": 123.8,
+      "blade_to_trunk": 93.1,
+      "blade_to_shield_arm": 98.6,
+      "sword_arm_to_shield_arm": 125.1,
+      "shield_to_head": -9.7,
+      "tip_above_ground": 301.5
+    },
+    "guard>backhand-windup": {
+      "blade_to_shield": 0.0,
+      "sword_arm_to_shield": -5.5,
+      "blade_to_head": 31.0,
+      "blade_to_trunk": 35.4,
+      "blade_to_shield_arm": -15.4,
+      "sword_arm_to_shield_arm": 35.0,
+      "shield_to_head": 14.1,
+      "tip_above_ground": 597.3
+    },
+    "backhand-windup>backhand-contact": {
+      "blade_to_shield": 0.2,
+      "sword_arm_to_shield": -5.5,
+      "blade_to_head": 13.8,
+      "blade_to_trunk": 37.8,
+      "blade_to_shield_arm": -17.0,
+      "sword_arm_to_shield_arm": 37.7,
+      "shield_to_head": 34.7,
+      "tip_above_ground": 683.7
+    },
+    "backhand-contact>backhand-follow": {
+      "blade_to_shield": 170.2,
+      "sword_arm_to_shield": 177.3,
+      "blade_to_head": 117.8,
+      "blade_to_trunk": 123.3,
+      "blade_to_shield_arm": 185.3,
+      "sword_arm_to_shield_arm": 132.3,
+      "shield_to_head": 34.7,
+      "tip_above_ground": 642.0
+    },
+    "backhand-follow>guard": {
+      "blade_to_shield": 24.2,
+      "sword_arm_to_shield": 125.8,
+      "blade_to_head": 123.8,
+      "blade_to_trunk": 93.1,
+      "blade_to_shield_arm": 98.6,
+      "sword_arm_to_shield_arm": 123.7,
+      "shield_to_head": -0.9,
+      "tip_above_ground": 597.3
+    },
+    "guard>chop-windup": {
+      "blade_to_shield": 24.2,
+      "sword_arm_to_shield": 112.5,
+      "blade_to_head": 49.5,
+      "blade_to_trunk": 85.1,
+      "blade_to_shield_arm": 98.6,
+      "sword_arm_to_shield_arm": 131.9,
+      "shield_to_head": 32.6,
+      "tip_above_ground": 597.3
+    },
+    "chop-windup>chop-contact": {
+      "blade_to_shield": 28.9,
+      "sword_arm_to_shield": 37.0,
+      "blade_to_head": 82.3,
+      "blade_to_trunk": 123.2,
+      "blade_to_shield_arm": 113.7,
+      "sword_arm_to_shield_arm": 69.1,
+      "shield_to_head": 23.6,
+      "tip_above_ground": 556.0
+    },
+    "chop-contact>chop-follow": {
+      "blade_to_shield": 28.9,
+      "sword_arm_to_shield": 37.0,
+      "blade_to_head": 174.1,
+      "blade_to_trunk": 145.3,
+      "blade_to_shield_arm": 113.7,
+      "sword_arm_to_shield_arm": 69.1,
+      "shield_to_head": 23.6,
+      "tip_above_ground": 556.0
+    },
+    "chop-follow>guard": {
+      "blade_to_shield": 1.6,
+      "sword_arm_to_shield": 37.0,
+      "blade_to_head": 112.6,
+      "blade_to_trunk": 93.1,
+      "blade_to_shield_arm": 82.2,
+      "sword_arm_to_shield_arm": 69.1,
+      "shield_to_head": 23.6,
+      "tip_above_ground": 556.0
+    },
+    "guard>thrust-windup": {
+      "blade_to_shield": 1.1,
+      "sword_arm_to_shield": 125.8,
+      "blade_to_head": 119.6,
+      "blade_to_trunk": 90.1,
+      "blade_to_shield_arm": 83.9,
+      "sword_arm_to_shield_arm": 128.7,
+      "shield_to_head": 32.6,
+      "tip_above_ground": 403.6
+    },
+    "thrust-windup>thrust-contact": {
+      "blade_to_shield": 13.0,
+      "sword_arm_to_shield": 5.7,
+      "blade_to_head": 113.2,
+      "blade_to_trunk": 95.9,
+      "blade_to_shield_arm": 99.7,
+      "sword_arm_to_shield_arm": 93.6,
+      "shield_to_head": -13.5,
+      "tip_above_ground": 403.6
+    },
+    "thrust-contact>thrust-follow": {
+      "blade_to_shield": 25.7,
+      "sword_arm_to_shield": 5.7,
+      "blade_to_head": 172.7,
+      "blade_to_trunk": 147.3,
+      "blade_to_shield_arm": 137.9,
+      "sword_arm_to_shield_arm": 93.6,
+      "shield_to_head": -13.5,
+      "tip_above_ground": 590.7
+    },
+    "thrust-follow>guard": {
+      "blade_to_shield": 24.2,
+      "sword_arm_to_shield": 5.7,
+      "blade_to_head": 123.8,
+      "blade_to_trunk": 93.1,
+      "blade_to_shield_arm": 98.6,
+      "sword_arm_to_shield_arm": 93.6,
+      "shield_to_head": -13.5,
+      "tip_above_ground": 590.7
+    },
+    "guard>hit": {
+      "blade_to_shield": 24.2,
+      "sword_arm_to_shield": 115.5,
+      "blade_to_head": 123.5,
+      "blade_to_trunk": 93.1,
+      "blade_to_shield_arm": 98.6,
+      "sword_arm_to_shield_arm": 80.9,
+      "shield_to_head": -11.3,
+      "tip_above_ground": 597.3
+    },
+    "idle-relaxed>hit": {
+      "blade_to_shield": 154.8,
+      "sword_arm_to_shield": 122.7,
+      "blade_to_head": 203.5,
+      "blade_to_trunk": 70.5,
+      "blade_to_shield_arm": 190.7,
+      "sword_arm_to_shield_arm": 80.9,
+      "shield_to_head": -11.3,
+      "tip_above_ground": 233.1
     }
-   },
-   "stance": {
-    "left": {
-     "forward": -0.0029,
-     "left": 0.0328,
-     "yaw": 26.1
+  },
+  "worst_clearance_mm": {
+    "blade_to_shield": {
+      "mm": 0.0,
+      "at": "guard>backhand-windup@0.92"
     },
-    "right": {
-     "forward": 0.0029,
-     "left": -0.0328,
-     "yaw": -16.5
+    "sword_arm_to_shield": {
+      "mm": -5.5,
+      "at": "guard>backhand-windup@1.00"
     },
-    "support": [
-     "foot_r",
-     "foot_l"
-    ]
-   },
-   "expect": {
-    "left_elbow": [
-     0.09331,
-     -0.10019,
-     -2e-05
-    ],
-    "left_wrist": [
-     0.0952,
-     -0.1749,
-     0.0229
-    ],
-    "right_elbow": [
-     -0.08791,
-     -0.10109,
-     0.0042
-    ],
-    "right_wrist": [
-     -0.111,
-     -0.1734,
-     0.0229
-    ],
-    "shield_centre": [
-     0.11332,
-     -0.15417,
-     0.01779
-    ],
-    "shield_front": [
-     0.99989,
-     0.0147,
-     0.00068
-    ],
-    "sword_grip": [
-     -0.10788,
-     -0.20515,
-     0.00829
-    ],
-    "sword_tip": [
-     -0.12181,
-     -0.33014,
-     0.27888
-    ],
-    "blade": [
-     -0.04667,
-     -0.41887,
-     0.90685
-    ],
-    "clearance_mm": {
-     "blade_to_shield": 221.9,
-     "sword_arm_to_shield": 180.4,
-     "blade_to_head": 266.1,
-     "blade_to_trunk": 81.8,
-     "blade_to_shield_arm": 192.5,
-     "sword_arm_to_shield_arm": 137.5,
-     "shield_to_head": 114.0,
-     "tip_above_ground": 146.7
+    "blade_to_head": {
+      "mm": 13.8,
+      "at": "backhand-windup>backhand-contact@0.42"
+    },
+    "blade_to_trunk": {
+      "mm": 35.4,
+      "at": "guard>backhand-windup@0.67"
+    },
+    "blade_to_shield_arm": {
+      "mm": -17.0,
+      "at": "backhand-windup>backhand-contact@0.17"
+    },
+    "sword_arm_to_shield_arm": {
+      "mm": 35.0,
+      "at": "guard>backhand-windup@0.92"
+    },
+    "shield_to_head": {
+      "mm": -13.5,
+      "at": "thrust-contact"
+    },
+    "tip_above_ground": {
+      "mm": 146.7,
+      "at": "idle-at-ease"
     }
-   },
-   "against_the_approved_pose": {
-    "shield_front_deg": 0.1,
-    "shield_centre_mm": 0.1,
-    "blade_deg": 0.3,
-    "grip_mm": 0.2
-   }
   },
-  "sword-on-shoulder": {
-   "from_pose": "sword-on-shoulder",
-   "left": {
-    "wrist": [
-     0.0988,
-     -0.1603,
-     0.05
-    ],
-    "elbow": [
-     0.1068,
-     -0.0962,
-     0.0059
-    ],
-    "hand_turn_xyzw": [
-     0.0,
-     0.0,
-     0.0,
-     1.0
-    ]
-   },
-   "right": {
-    "wrist": [
-     -0.1072,
-     -0.0022,
-     0.0617
-    ],
-    "elbow": [
-     -0.0913,
-     -0.0785,
-     0.0687
-    ],
-    "hand_turn_xyzw": [
-     -0.09497,
-     -0.16802,
-     0.19433,
-     0.96176
-    ]
-   },
-   "body": {
-    "pelvis": {
-     "yaw": 0.0,
-     "pitch": -0.0,
-     "roll": -0.0,
-     "height": 1.0,
-     "forward": 0.0053,
-     "left": 0.0
-    },
-    "spine": {
-     "flex": -0.0,
-     "twist": 0.0,
-     "side": -0.0
-    },
-    "head": {
-     "yaw": 0.0,
-     "pitch": -0.0
-    }
-   },
-   "stance": {
-    "left": {
-     "forward": 0.0049,
-     "left": 0.0476,
-     "yaw": 21.7
-    },
-    "right": {
-     "forward": -0.0049,
-     "left": -0.0476,
-     "yaw": -21.9
-    },
-    "support": [
-     "foot_l",
-     "foot_r"
-    ]
-   },
-   "expect": {
-    "left_elbow": [
-     0.10673,
-     -0.09619,
-     0.00598
-    ],
-    "left_wrist": [
-     0.0988,
-     -0.1603,
-     0.05
-    ],
-    "right_elbow": [
-     -0.08873,
-     -0.07812,
-     0.06409
-    ],
-    "right_wrist": [
-     -0.1072,
-     -0.0022,
-     0.0617
-    ],
-    "shield_centre": [
-     0.1191,
-     -0.14254,
-     0.04245
-    ],
-    "shield_front": [
-     0.98297,
-     -0.00815,
-     0.18359
-    ],
-    "sword_grip": [
-     -0.09527,
-     0.0241,
-     0.08163
-    ],
-    "sword_tip": [
-     -0.08485,
-     0.20048,
-     -0.15882
-    ],
-    "blade": [
-     0.03493,
-     0.59109,
-     -0.80585
-    ],
-    "clearance_mm": {
-     "blade_to_shield": 212.7,
-     "sword_arm_to_shield": 180.8,
-     "blade_to_head": 45.4,
-     "blade_to_trunk": 51.5,
-     "blade_to_shield_arm": 158.8,
-     "sword_arm_to_shield_arm": 145.7,
-     "shield_to_head": 112.0,
-     "tip_above_ground": 677.3
-    }
-   },
-   "against_the_approved_pose": {
-    "shield_front_deg": 0.5,
-    "shield_centre_mm": 0.2,
-    "blade_deg": 4.1,
-    "grip_mm": 1.1
-   }
-  },
-  "guard": {
-   "from_pose": "guard-middle",
-   "left": {
-    "wrist": [
-     0.0522,
-     -0.0387,
-     0.1122
-    ],
-    "elbow": [
-     0.1106,
-     -0.0699,
-     0.0706
-    ],
-    "hand_turn_xyzw": [
-     -0.31985,
-     0.19478,
-     -0.15874,
-     0.91354
-    ]
-   },
-   "right": {
-    "wrist": [
-     -0.1209,
-     -0.0896,
-     0.0845
-    ],
-    "elbow": [
-     -0.1362,
-     -0.0796,
-     0.0085
-    ],
-    "hand_turn_xyzw": [
-     -0.15234,
-     -0.10879,
-     0.16523,
-     0.96833
-    ]
-   },
-   "body": {
-    "pelvis": {
-     "yaw": -30.0,
-     "pitch": 8.0,
-     "roll": -0.0,
-     "height": 0.92,
-     "forward": 0.015,
-     "left": 0.015
-    },
-    "spine": {
-     "flex": 8.0,
-     "twist": -10.0,
-     "side": 0.5
-    },
-    "head": {
-     "yaw": 35.0,
-     "pitch": 4.9
-    }
-   },
-   "stance": {
-    "left": {
-     "forward": 0.1031,
-     "left": 0.0105,
-     "yaw": 5.8
-    },
-    "right": {
-     "forward": -0.1031,
-     "left": -0.0105,
-     "yaw": -66.2
-    },
-    "support": [
-     "foot_l",
-     "foot_r"
-    ]
-   },
-   "expect": {
-    "left_elbow": [
-     0.10953,
-     -0.06736,
-     0.06744
-    ],
-    "left_wrist": [
-     0.0522,
-     -0.0387,
-     0.1122
-    ],
-    "right_elbow": [
-     -0.13611,
-     -0.07949,
-     0.00849
-    ],
-    "right_wrist": [
-     -0.1209,
-     -0.0896,
-     0.0845
-    ],
-    "shield_centre": [
-     0.08014,
-     -0.04053,
-     0.1127
-    ],
-    "shield_front": [
-     0.66396,
-     0.26359,
-     0.69977
-    ],
-    "sword_grip": [
-     -0.10183,
-     -0.11168,
-     0.104
-    ],
-    "sword_tip": [
-     0.01823,
-     0.12049,
-     0.24794
-    ],
-    "blade": [
-     0.40235,
-     0.77808,
-     0.48239
-    ],
-    "clearance_mm": {
-     "blade_to_shield": 24.2,
-     "sword_arm_to_shield": 125.8,
-     "blade_to_head": 123.8,
-     "blade_to_trunk": 93.1,
-     "blade_to_shield_arm": 98.6,
-     "sword_arm_to_shield_arm": 131.9,
-     "shield_to_head": 32.6,
-     "tip_above_ground": 597.3
-    }
-   },
-   "against_the_approved_pose": {
-    "shield_front_deg": 2.4,
-    "shield_centre_mm": 1.7,
-    "blade_deg": 0.3,
-    "grip_mm": 0.1
-   }
-  },
-  "walk-guard": {
-   "from_pose": "advance-behind-shield",
-   "left": {
-    "wrist": [
-     0.0363,
-     -0.009,
-     0.091
-    ],
-    "elbow": [
-     0.0823,
-     -0.0712,
-     0.0796
-    ],
-    "hand_turn_xyzw": [
-     -0.10944,
-     0.06669,
-     -0.05424,
-     0.99027
-    ]
-   },
-   "right": {
-    "wrist": [
-     -0.0992,
-     -0.1527,
-     0.0534
-    ],
-    "elbow": [
-     -0.0721,
-     -0.1024,
-     -0.0
-    ],
-    "hand_turn_xyzw": [
-     0.23184,
-     0.29646,
-     -0.01753,
-     0.92631
-    ]
-   },
-   "body": {
-    "pelvis": {
-     "yaw": -20.0,
-     "pitch": 6.0,
-     "roll": -0.0,
-     "height": 0.93,
-     "forward": 0.0182,
-     "left": 0.0017
-    },
-    "spine": {
-     "flex": 6.0,
-     "twist": -5.0,
-     "side": 0.2
-    },
-    "head": {
-     "yaw": 20.0,
-     "pitch": 4.0
-    }
-   },
-   "stance": {
-    "left": {
-     "forward": 0.124,
-     "left": -0.0015,
-     "yaw": 6.9
-    },
-    "right": {
-     "forward": -0.124,
-     "left": 0.0015,
-     "yaw": -46.1
-    },
-    "support": [
-     "foot_l",
-     "toe_r"
-    ]
-   },
-   "expect": {
-    "left_elbow": [
-     0.08332,
-     -0.06926,
-     0.07459
-    ],
-    "left_wrist": [
-     0.0363,
-     -0.009,
-     0.091
-    ],
-    "right_elbow": [
-     -0.07212,
-     -0.10241,
-     3e-05
-    ],
-    "right_wrist": [
-     -0.0992,
-     -0.1527,
-     0.0534
-    ],
-    "shield_centre": [
-     0.06008,
-     -0.02017,
-     0.10071
-    ],
-    "shield_front": [
-     0.56258,
-     0.23673,
-     0.79212
-    ],
-    "sword_grip": [
-     -0.0938,
-     -0.18313,
-     0.07003
-    ],
-    "sword_tip": [
-     0.02644,
-     -0.03532,
-     0.29966
-    ],
-    "blade": [
-     0.40296,
-     0.49534,
-     0.76959
-    ],
-    "clearance_mm": {
-     "blade_to_shield": 28.3,
-     "sword_arm_to_shield": 135.9,
-     "blade_to_head": 205.0,
-     "blade_to_trunk": 68.5,
-     "blade_to_shield_arm": 133.3,
-     "sword_arm_to_shield_arm": 101.5,
-     "shield_to_head": 13.3,
-     "tip_above_ground": 441.5
-    }
-   },
-   "against_the_approved_pose": {
-    "shield_front_deg": 3.1,
-    "shield_centre_mm": 2.2,
-    "blade_deg": 0.3,
-    "grip_mm": 0.1
-   }
-  },
-  "run-guard": {
-   "from_pose": "run-charge",
-   "left": {
-    "wrist": [
-     -0.0152,
-     0.0247,
-     0.0923
-    ],
-    "elbow": [
-     0.0311,
-     -0.0383,
-     0.0925
-    ],
-    "hand_turn_xyzw": [
-     -0.36917,
-     0.22483,
-     -0.18314,
-     0.88296
-    ]
-   },
-   "right": {
-    "wrist": [
-     -0.1186,
-     -0.0786,
-     0.0025
-    ],
-    "elbow": [
-     -0.0721,
-     -0.0829,
-     -0.0602
-    ],
-    "hand_turn_xyzw": [
-     -0.2772,
-     -0.07976,
-     0.06874,
-     0.95502
-    ]
-   },
-   "body": {
-    "pelvis": {
-     "yaw": -10.0,
-     "pitch": 12.0,
-     "roll": -0.0,
-     "height": 1.01,
-     "forward": 0.027,
-     "left": 0.0093
-    },
-    "spine": {
-     "flex": 8.0,
-     "twist": 10.0,
-     "side": -0.5
-    },
-    "head": {
-     "yaw": -0.0,
-     "pitch": 8.0
-    }
-   },
-   "stance": {
-    "left": {
-     "forward": 0.0954,
-     "left": 0.0034,
-     "yaw": 4.5
-    },
-    "right": {
-     "forward": -0.0954,
-     "left": -0.0034,
-     "yaw": -17.7
-    },
-    "support": [
-     "toe_r"
-    ]
-   },
-   "expect": {
-    "left_elbow": [
-     0.03338,
-     -0.03636,
-     0.08755
-    ],
-    "left_wrist": [
-     -0.0152,
-     0.0247,
-     0.0923
-    ],
-    "right_elbow": [
-     -0.07208,
-     -0.08285,
-     -0.06019
-    ],
-    "right_wrist": [
-     -0.1186,
-     -0.0786,
-     0.0025
-    ],
-    "shield_centre": [
-     0.00565,
-     0.0134,
-     0.1072
-    ],
-    "shield_front": [
-     0.37585,
-     0.24265,
-     0.89435
-    ],
-    "sword_grip": [
-     -0.12566,
-     -0.08294,
-     0.0366
-    ],
-    "sword_tip": [
-     -0.18036,
-     0.20933,
-     0.06159
-    ],
-    "blade": [
-     -0.1833,
-     0.97948,
-     0.08377
-    ],
-    "clearance_mm": {
-     "blade_to_shield": 100.6,
-     "sword_arm_to_shield": 115.9,
-     "blade_to_head": 106.6,
-     "blade_to_trunk": 87.8,
-     "blade_to_shield_arm": 117.2,
-     "sword_arm_to_shield_arm": 71.2,
-     "shield_to_head": 9.5,
-     "tip_above_ground": 686.1
-    }
-   },
-   "against_the_approved_pose": {
-    "shield_front_deg": 4.5,
-    "shield_centre_mm": 2.7,
-    "blade_deg": 0.2,
-    "grip_mm": 0.1
-   }
-  },
-  "hit": {
-   "from_pose": "hit-react",
-   "left": {
-    "wrist": [
-     0.0098,
-     -0.0554,
-     0.0696
-    ],
-    "elbow": [
-     0.0853,
-     -0.0749,
-     0.0748
-    ],
-    "hand_turn_xyzw": [
-     -0.26895,
-     0.1638,
-     -0.1334,
-     0.9397
-    ]
-   },
-   "right": {
-    "wrist": [
-     -0.2232,
-     -0.0265,
-     -0.0099
-    ],
-    "elbow": [
-     -0.1543,
-     -0.0419,
-     -0.0436
-    ],
-    "hand_turn_xyzw": [
-     -0.39943,
-     -0.3693,
-     0.37629,
-     0.74998
-    ]
-   },
-   "body": {
-    "pelvis": {
-     "yaw": 10.0,
-     "pitch": -8.0,
-     "roll": -0.0,
-     "height": 0.91,
-     "forward": -0.0756,
-     "left": -0.0207
-    },
-    "spine": {
-     "flex": -11.6,
-     "twist": 19.2,
-     "side": -13.5
-    },
-    "head": {
-     "yaw": -15.1,
-     "pitch": -10.0
-    }
-   },
-   "stance": {
-    "left": {
-     "forward": 0.048,
-     "left": 0.0564,
-     "yaw": 17.8
-    },
-    "right": {
-     "forward": -0.048,
-     "left": -0.0564,
-     "yaw": -40.1
-    },
-    "support": [
-     "foot_r",
-     "toe_l"
-    ]
-   },
-   "expect": {
-    "left_elbow": [
-     0.08619,
-     -0.07191,
-     0.07154
-    ],
-    "left_wrist": [
-     0.0098,
-     -0.0554,
-     0.0696
-    ],
-    "right_elbow": [
-     -0.15452,
-     -0.0421,
-     -0.04383
-    ],
-    "right_wrist": [
-     -0.2232,
-     -0.0265,
-     -0.0099
-    ],
-    "shield_centre": [
-     0.03095,
-     -0.05426,
-     0.08793
-    ],
-    "shield_front": [
-     0.0176,
-     0.24394,
-     0.96963
-    ],
-    "sword_grip": [
-     -0.23432,
-     -0.03551,
-     0.02214
-    ],
-    "sword_tip": [
-     -0.40576,
-     0.20858,
-     0.0303
-    ],
-    "blade": [
-     -0.57455,
-     0.81801,
-     0.02736
-    ],
-    "clearance_mm": {
-     "blade_to_shield": 154.9,
-     "sword_arm_to_shield": 122.7,
-     "blade_to_head": 216.5,
-     "blade_to_trunk": 210.6,
-     "blade_to_shield_arm": 259.5,
-     "sword_arm_to_shield_arm": 80.9,
-     "shield_to_head": -11.3,
-     "tip_above_ground": 685.4
-    }
-   },
-   "against_the_approved_pose": {
-    "shield_front_deg": 3.2,
-    "shield_centre_mm": 2.0,
-    "blade_deg": 0.9,
-    "grip_mm": 0.3
-   }
-  },
-  "cut-windup": {
-   "from_pose": "cut-windup",
-   "left": {
-    "wrist": [
-     0.0641,
-     -0.0074,
-     0.1371
-    ],
-    "elbow": [
-     0.1064,
-     -0.0524,
-     0.0891
-    ],
-    "hand_turn_xyzw": [
-     -0.10948,
-     0.0667,
-     -0.05431,
-     0.99026
-    ]
-   },
-   "right": {
-    "wrist": [
-     -0.058,
-     0.0464,
-     0.094
-    ],
-    "elbow": [
-     -0.011,
-     -0.0157,
-     0.0869
-    ],
-    "hand_turn_xyzw": [
-     -0.26857,
-     -0.18856,
-     0.11127,
-     0.93805
-    ]
-   },
-   "body": {
-    "pelvis": {
-     "yaw": -40.0,
-     "pitch": -0.0,
-     "roll": -0.0,
-     "height": 0.93,
-     "forward": -0.0094,
-     "left": 0.0334
-    },
-    "spine": {
-     "flex": -5.3,
-     "twist": -19.9,
-     "side": 2.4
-    },
-    "head": {
-     "yaw": 60.0,
-     "pitch": 0.0
-    }
-   },
-   "stance": {
-    "left": {
-     "forward": 0.0753,
-     "left": 0.0121,
-     "yaw": 2.5
-    },
-    "right": {
-     "forward": -0.0753,
-     "left": -0.0121,
-     "yaw": -72.7
-    },
-    "support": [
-     "foot_l",
-     "foot_r"
-    ]
-   },
-   "expect": {
-    "left_elbow": [
-     0.10397,
-     -0.04886,
-     0.08416
-    ],
-    "left_wrist": [
-     0.0641,
-     -0.0074,
-     0.1371
-    ],
-    "right_elbow": [
-     -0.01307,
-     -0.01645,
-     0.08205
-    ],
-    "right_wrist": [
-     -0.058,
-     0.0464,
-     0.094
-    ],
-    "shield_centre": [
-     0.0908,
-     -0.01316,
-     0.13089
-    ],
-    "shield_front": [
-     0.85083,
-     0.24262,
-     0.46608
-    ],
-    "sword_grip": [
-     -0.06067,
-     0.08138,
-     0.09343
-    ],
-    "sword_tip": [
-     -0.3373,
-     0.05765,
-     -0.01589
-    ],
-    "blade": [
-     -0.92706,
-     -0.07955,
-     -0.36638
-    ],
-    "clearance_mm": {
-     "blade_to_shield": 123.7,
-     "sword_arm_to_shield": 91.9,
-     "blade_to_head": 37.9,
-     "blade_to_trunk": 84.1,
-     "blade_to_shield_arm": 176.3,
-     "sword_arm_to_shield_arm": 55.2,
-     "shield_to_head": 49.8,
-     "tip_above_ground": 534.4
-    }
-   },
-   "against_the_approved_pose": {
-    "shield_front_deg": 2.9,
-    "shield_centre_mm": 2.3,
-    "blade_deg": 3.2,
-    "grip_mm": 2.7
-   }
-  },
-  "cut-contact": {
-   "from_pose": "halfway between cut-mid and cut-followthrough",
-   "left": {
-    "wrist": [
-     0.0412,
-     -0.02175,
-     0.12495
-    ],
-    "elbow": [
-     0.1031,
-     -0.0497,
-     0.08895
-    ],
-    "hand_turn_xyzw": [
-     -0.24301,
-     0.14802,
-     -0.12056,
-     0.95105
-    ]
-   },
-   "right": {
-    "wrist": [
-     -0.1457,
-     -0.0835,
-     0.1322
-    ],
-    "elbow": [
-     -0.11805,
-     -0.05695,
-     0.0686
-    ],
-    "hand_turn_xyzw": [
-     0.03198,
-     -0.12111,
-     -0.07711,
-     0.98912
-    ]
-   },
-   "body": {
-    "pelvis": {
-     "yaw": -2.5,
-     "pitch": 12.5,
-     "roll": 0.0,
-     "height": 0.885,
-     "forward": 0.0261,
-     "left": 0.0026
-    },
-    "spine": {
-     "flex": 14.05,
-     "twist": 8.5,
-     "side": 0.7
-    },
-    "head": {
-     "yaw": -1.05,
-     "pitch": 7.5
-    }
-   },
-   "stance": {
-    "left": {
-     "forward": 0.1134,
-     "left": 0.0504,
-     "yaw": 16.25
-    },
-    "right": {
-     "forward": -0.1134,
-     "left": -0.0504,
-     "yaw": -52.95
-    },
-    "support": [
-     "foot_l",
-     "toe_r"
-    ]
-   },
-   "expect": {
-    "left_elbow": [
-     0.10291,
-     -0.04823,
-     0.08492
-    ],
-    "left_wrist": [
-     0.0412,
-     -0.02175,
-     0.12495
-    ],
-    "right_elbow": [
-     -0.12185,
-     -0.06672,
-     0.05967
-    ],
-    "right_wrist": [
-     -0.1457,
-     -0.0835,
-     0.1322
-    ],
-    "shield_centre": [
-     0.06913,
-     -0.01998,
-     0.12606
-    ],
-    "shield_front": [
-     0.60572,
-     0.42855,
-     0.67041
-    ],
-    "sword_grip": [
-     -0.15439,
-     -0.11076,
-     0.15252
-    ],
-    "sword_tip": [
-     -0.11715,
-     0.05916,
-     0.39496
-    ],
-    "blade": [
-     0.12481,
-     0.56945,
-     0.8125
-    ],
-    "clearance_mm": {
-     "blade_to_shield": 124.2,
-     "sword_arm_to_shield": 137.9,
-     "blade_to_head": 229.7,
-     "blade_to_trunk": 182.6,
-     "blade_to_shield_arm": 190.1,
-     "sword_arm_to_shield_arm": 127.0,
-     "shield_to_head": 14.0,
-     "tip_above_ground": 536.0
-    }
-   },
-   "against_the_approved_pose": null
-  },
-  "cut-follow": {
-   "from_pose": "cut-followthrough",
-   "left": {
-    "wrist": [
-     0.0308,
-     -0.0127,
-     0.1324
-    ],
-    "elbow": [
-     0.1008,
-     -0.0309,
-     0.1028
-    ],
-    "hand_turn_xyzw": [
-     -0.26896,
-     0.16384,
-     -0.13337,
-     0.9397
-    ]
-   },
-   "right": {
-    "wrist": [
-     -0.1323,
-     -0.1336,
-     0.102
-    ],
-    "elbow": [
-     -0.1133,
-     -0.0849,
-     0.0439
-    ],
-    "hand_turn_xyzw": [
-     -0.00987,
-     -0.27503,
-     0.03012,
-     0.96091
-    ]
-   },
-   "body": {
-    "pelvis": {
-     "yaw": 5.0,
-     "pitch": 15.0,
-     "roll": -0.0,
-     "height": 0.86,
-     "forward": 0.0347,
-     "left": 0.0022
-    },
-    "spine": {
-     "flex": 18.1,
-     "twist": 12.0,
-     "side": 1.7
-    },
-    "head": {
-     "yaw": -12.1,
-     "pitch": 10.0
-    }
-   },
-   "stance": {
-    "left": {
-     "forward": 0.1229,
-     "left": 0.0638,
-     "yaw": 19.3
-    },
-    "right": {
-     "forward": -0.1229,
-     "left": -0.0638,
-     "yaw": -50.7
-    },
-    "support": [
-     "foot_l",
-     "toe_r"
-    ]
-   },
-   "expect": {
-    "left_elbow": [
-     0.09769,
-     -0.02824,
-     0.09505
-    ],
-    "left_wrist": [
-     0.0308,
-     -0.0127,
-     0.1324
-    ],
-    "right_elbow": [
-     -0.11126,
-     -0.08206,
-     0.04712
-    ],
-    "right_wrist": [
-     -0.1323,
-     -0.1336,
-     0.102
-    ],
-    "shield_centre": [
-     0.05759,
-     -0.00457,
-     0.13329
-    ],
-    "shield_front": [
-     0.47988,
-     0.61605,
-     0.62466
-    ],
-    "sword_grip": [
-     -0.132,
-     -0.16868,
-     0.10116
-    ],
-    "sword_tip": [
-     -0.17485,
-     -0.17528,
-     0.39638
-    ],
-    "blade": [
-     -0.14359,
-     -0.02212,
-     0.98939
-    ],
-    "clearance_mm": {
-     "blade_to_shield": 184.8,
-     "sword_arm_to_shield": 162.6,
-     "blade_to_head": 249.8,
-     "blade_to_trunk": 141.5,
-     "blade_to_shield_arm": 211.2,
-     "sword_arm_to_shield_arm": 125.1,
-     "shield_to_head": -9.7,
-     "tip_above_ground": 301.5
-    }
-   },
-   "against_the_approved_pose": {
-    "shield_front_deg": 4.5,
-    "shield_centre_mm": 3.4,
-    "blade_deg": 3.3,
-    "grip_mm": 2.4
-   }
-  },
-  "backhand-windup": {
-   "from_pose": "backhand-cut-windup",
-   "left": {
-    "wrist": [
-     0.0424,
-     0.1289,
-     0.0762
-    ],
-    "elbow": [
-     0.0288,
-     0.0535,
-     0.0917
-    ],
-    "hand_turn_xyzw": [
-     -0.31979,
-     0.1948,
-     -0.15866,
-     0.91357
-    ]
-   },
-   "right": {
-    "wrist": [
-     0.004,
-     -0.0165,
-     0.1036
-    ],
-    "elbow": [
-     -0.0725,
-     -0.0328,
-     0.1062
-    ],
-    "hand_turn_xyzw": [
-     -0.24463,
-     -0.32419,
-     0.17989,
-     0.89593
-    ]
-   },
-   "body": {
-    "pelvis": {
-     "yaw": -15.0,
-     "pitch": 3.0,
-     "roll": -0.0,
-     "height": 0.95,
-     "forward": -0.0222,
-     "left": 0.0051
-    },
-    "spine": {
-     "flex": 4.9,
-     "twist": 25.0,
-     "side": -0.7
-    },
-    "head": {
-     "yaw": -5.0,
-     "pitch": -0.0
-    }
-   },
-   "stance": {
-    "left": {
-     "forward": 0.0495,
-     "left": 0.0365,
-     "yaw": 11.3
-    },
-    "right": {
-     "forward": -0.0495,
-     "left": -0.0365,
-     "yaw": -60.9
-    },
-    "support": [
-     "foot_l",
-     "foot_r"
-    ]
-   },
-   "expect": {
-    "left_elbow": [
-     0.03451,
-     0.05123,
-     0.08031
-    ],
-    "left_wrist": [
-     0.0424,
-     0.1289,
-     0.0762
-    ],
-    "right_elbow": [
-     -0.07274,
-     -0.03027,
-     0.09783
-    ],
-    "right_wrist": [
-     0.004,
-     -0.0165,
-     0.1036
-    ],
-    "shield_centre": [
-     0.05068,
-     0.10792,
-     0.09281
-    ],
-    "shield_front": [
-     0.50781,
-     0.00431,
-     0.86146
-    ],
-    "sword_grip": [
-     0.03345,
-     -0.03558,
-     0.10338
-    ],
-    "sword_tip": [
-     0.18903,
-     0.20692,
-     0.02576
-    ],
-    "blade": [
-     0.52139,
-     0.8127,
-     -0.26014
-    ],
-    "clearance_mm": {
-     "blade_to_shield": 0.8,
-     "sword_arm_to_shield": -5.5,
-     "blade_to_head": 57.5,
-     "blade_to_trunk": 52.9,
-     "blade_to_shield_arm": 19.3,
-     "sword_arm_to_shield_arm": 37.7,
-     "shield_to_head": 81.6,
-     "tip_above_ground": 683.7
-    }
-   },
-   "against_the_approved_pose": {
-    "shield_front_deg": 6.8,
-    "shield_centre_mm": 5.0,
-    "blade_deg": 4.1,
-    "grip_mm": 4.2
-   }
-  },
-  "backhand-contact": {
-   "from_pose": "halfway between backhand-cut-mid and backhand-cut-followthrough",
-   "left": {
-    "wrist": [
-     0.0708,
-     0.04105,
-     0.08715
-    ],
-    "elbow": [
-     0.09475,
-     -0.0133,
-     0.1071
-    ],
-    "hand_turn_xyzw": [
-     -0.05488,
-     0.03345,
-     -0.02723,
-     0.99756
-    ]
-   },
-   "right": {
-    "wrist": [
-     -0.13965,
-     -0.03145,
-     0.08515
-    ],
-    "elbow": [
-     -0.1321,
-     -0.04345,
-     0.0354
-    ],
-    "hand_turn_xyzw": [
-     -0.34698,
-     -0.32791,
-     0.1529,
-     0.86528
-    ]
-   },
-   "body": {
-    "pelvis": {
-     "yaw": -37.5,
-     "pitch": 9.0,
-     "roll": 0.0,
-     "height": 0.905,
-     "forward": 0.0348,
-     "left": 0.012
-    },
-    "spine": {
-     "flex": 8.9,
-     "twist": -5.1,
-     "side": 1.3
-    },
-    "head": {
-     "yaw": 22.5,
-     "pitch": 0.0
-    }
-   },
-   "stance": {
-    "left": {
-     "forward": 0.1178,
-     "left": -0.031,
-     "yaw": -1.25
-    },
-    "right": {
-     "forward": -0.1178,
-     "left": 0.031,
-     "yaw": -58.05
-    },
-    "support": [
-     "foot_l",
-     "toe_r"
-    ]
-   },
-   "expect": {
-    "left_elbow": [
-     0.09942,
-     -0.03142,
-     0.09356
-    ],
-    "left_wrist": [
-     0.0708,
-     0.04105,
-     0.08715
-    ],
-    "right_elbow": [
-     -0.14837,
-     -0.06649,
-     0.01581
-    ],
-    "right_wrist": [
-     -0.13965,
-     -0.03145,
-     0.08515
-    ],
-    "shield_centre": [
-     0.09454,
-     0.02862,
-     0.09532
-    ],
-    "shield_front": [
-     0.83591,
-     0.37657,
-     0.3993
-    ],
-    "sword_grip": [
-     -0.12416,
-     -0.03234,
-     0.11663
-    ],
-    "sword_tip": [
-     -0.16085,
-     0.26269,
-     0.14206
-    ],
-    "blade": [
-     -0.12295,
-     0.98875,
-     0.08522
-    ],
-    "clearance_mm": {
-     "blade_to_shield": 170.2,
-     "sword_arm_to_shield": 177.3,
-     "blade_to_head": 117.8,
-     "blade_to_trunk": 123.3,
-     "blade_to_shield_arm": 185.3,
-     "sword_arm_to_shield_arm": 132.3,
-     "shield_to_head": 34.7,
-     "tip_above_ground": 739.5
-    }
-   },
-   "against_the_approved_pose": null
-  },
-  "backhand-follow": {
-   "from_pose": "backhand-cut-followthrough",
-   "left": {
-    "wrist": [
-     0.087,
-     0.0585,
-     0.0512
-    ],
-    "elbow": [
-     0.0927,
-     0.0117,
-     0.1135
-    ],
-    "hand_turn_xyzw": [
-     0.0,
-     0.0,
-     0.0,
-     1.0
-    ]
-   },
-   "right": {
-    "wrist": [
-     -0.2362,
-     -0.022,
-     0.0387
-    ],
-    "elbow": [
-     -0.1731,
-     -0.0157,
-     -0.007
-    ],
-    "hand_turn_xyzw": [
-     -0.25444,
-     -0.27196,
-     -0.03381,
-     0.92744
-    ]
-   },
-   "body": {
-    "pelvis": {
-     "yaw": -45.0,
-     "pitch": 10.0,
-     "roll": -0.0,
-     "height": 0.89,
-     "forward": 0.0465,
-     "left": 0.0113
-    },
-    "spine": {
-     "flex": 9.8,
-     "twist": -15.2,
-     "side": 2.8
-    },
-    "head": {
-     "yaw": 30.0,
-     "pitch": -0.0
-    }
-   },
-   "stance": {
-    "left": {
-     "forward": 0.1263,
-     "left": -0.0584,
-     "yaw": -6.3
-    },
-    "right": {
-     "forward": -0.1263,
-     "left": 0.0584,
-     "yaw": -57.2
-    },
-    "support": [
-     "foot_l",
-     "toe_r"
-    ]
-   },
-   "expect": {
-    "left_elbow": [
-     0.08914,
-     -0.00175,
-     0.10096
-    ],
-    "left_wrist": [
-     0.087,
-     0.0585,
-     0.0512
-    ],
-    "right_elbow": [
-     -0.17306,
-     -0.01569,
-     -0.00696
-    ],
-    "right_wrist": [
-     -0.2362,
-     -0.022,
-     0.0387
-    ],
-    "shield_centre": [
-     0.10534,
-     0.04642,
-     0.06858
-    ],
-    "shield_front": [
-     0.93165,
-     0.25792,
-     0.25595
-    ],
-    "sword_grip": [
-     -0.26606,
-     -0.03699,
-     0.04942
-    ],
-    "sword_tip": [
-     -0.2882,
-     0.16522,
-     0.26773
-    ],
-    "blade": [
-     -0.07421,
-     0.67767,
-     0.73161
-    ],
-    "clearance_mm": {
-     "blade_to_shield": 340.8,
-     "sword_arm_to_shield": 274.7,
-     "blade_to_head": 241.0,
-     "blade_to_trunk": 229.9,
-     "blade_to_shield_arm": 330.4,
-     "sword_arm_to_shield_arm": 136.9,
-     "shield_to_head": 59.9,
-     "tip_above_ground": 642.0
-    }
-   },
-   "against_the_approved_pose": {
-    "shield_front_deg": 7.3,
-    "shield_centre_mm": 5.5,
-    "blade_deg": 3.3,
-    "grip_mm": 0.9
-   }
-  },
-  "chop-windup": {
-   "from_pose": "chop-overhead-raise",
-   "left": {
-    "wrist": [
-     0.0567,
-     -0.0243,
-     0.1198
-    ],
-    "elbow": [
-     0.098,
-     -0.0724,
-     0.074
-    ],
-    "hand_turn_xyzw": [
-     -0.21675,
-     0.13204,
-     -0.10752,
-     0.96126
-    ]
-   },
-   "right": {
-    "wrist": [
-     -0.1422,
-     0.1244,
-     0.1054
-    ],
-    "elbow": [
-     -0.1445,
-     0.0553,
-     0.0689
-    ],
-    "hand_turn_xyzw": [
-     -0.3423,
-     -0.45302,
-     0.32576,
-     0.75597
-    ]
-   },
-   "body": {
-    "pelvis": {
-     "yaw": -30.0,
-     "pitch": -0.0,
-     "roll": -0.0,
-     "height": 0.95,
-     "forward": -0.0133,
-     "left": 0.0216
-    },
-    "spine": {
-     "flex": -5.0,
-     "twist": -12.0,
-     "side": -0.3
-    },
-    "head": {
-     "yaw": 35.0,
-     "pitch": -4.9
-    }
-   },
-   "stance": {
-    "left": {
-     "forward": 0.0639,
-     "left": 0.019,
-     "yaw": 5.4
-    },
-    "right": {
-     "forward": -0.0639,
-     "left": -0.019,
-     "yaw": -65.0
-    },
-    "support": [
-     "foot_l",
-     "foot_r"
-    ]
-   },
-   "expect": {
-    "left_elbow": [
-     0.09718,
-     -0.06971,
-     0.0707
-    ],
-    "left_wrist": [
-     0.0567,
-     -0.0243,
-     0.1198
-    ],
-    "right_elbow": [
-     -0.12547,
-     0.06149,
-     0.06211
-    ],
-    "right_wrist": [
-     -0.1422,
-     0.1244,
-     0.1054
-    ],
-    "shield_centre": [
-     0.0829,
-     -0.03378,
-     0.11692
-    ],
-    "shield_front": [
-     0.80388,
-     0.10044,
-     0.58625
-    ],
-    "sword_grip": [
-     -0.1311,
-     0.13292,
-     0.13758
-    ],
-    "sword_tip": [
-     -0.23177,
-     0.41098,
-     0.09774
-    ],
-    "blade": [
-     -0.33737,
-     0.93186,
-     -0.13351
-    ],
-    "clearance_mm": {
-     "blade_to_shield": 178.1,
-     "sword_arm_to_shield": 158.1,
-     "blade_to_head": 124.3,
-     "blade_to_trunk": 191.8,
-     "blade_to_shield_arm": 264.4,
-     "sword_arm_to_shield_arm": 137.6,
-     "shield_to_head": 55.4,
-     "tip_above_ground": 887.8
-    }
-   },
-   "against_the_approved_pose": {
-    "shield_front_deg": 2.2,
-    "shield_centre_mm": 1.7,
-    "blade_deg": 12.1,
-    "grip_mm": 6.0
-   }
-  },
-  "chop-contact": {
-   "from_pose": "chop-overhead-strike",
-   "left": {
-    "wrist": [
-     0.0631,
-     -0.0568,
-     0.115
-    ],
-    "elbow": [
-     0.1278,
-     -0.0573,
-     0.0711
-    ],
-    "hand_turn_xyzw": [
-     -0.10946,
-     0.0667,
-     -0.05426,
-     0.99027
-    ]
-   },
-   "right": {
-    "wrist": [
-     -0.0532,
-     -0.0522,
-     0.1443
-    ],
-    "elbow": [
-     -0.0375,
-     -0.0712,
-     0.0701
-    ],
-    "hand_turn_xyzw": [
-     0.56047,
-     0.13675,
-     -0.29229,
-     0.76272
-    ]
-   },
-   "body": {
-    "pelvis": {
-     "yaw": -20.0,
-     "pitch": 12.0,
-     "roll": -0.0,
-     "height": 0.88,
-     "forward": 0.026,
-     "left": 0.0079
-    },
-    "spine": {
-     "flex": 12.0,
-     "twist": -3.0,
-     "side": 0.2
-    },
-    "head": {
-     "yaw": 20.1,
-     "pitch": 9.9
-    }
-   },
-   "stance": {
-    "left": {
-     "forward": 0.1246,
-     "left": 0.0073,
-     "yaw": 7.3
-    },
-    "right": {
-     "forward": -0.1246,
-     "left": -0.0073,
-     "yaw": -62.3
-    },
-    "support": [
-     "foot_l",
-     "toe_r"
-    ]
-   },
-   "expect": {
-    "left_elbow": [
-     0.12553,
-     -0.05486,
-     0.06799
-    ],
-    "left_wrist": [
-     0.0631,
-     -0.0568,
-     0.115
-    ],
-    "right_elbow": [
-     -0.03916,
-     -0.06807,
-     0.06905
-    ],
-    "right_wrist": [
-     -0.0532,
-     -0.0522,
-     0.1443
-    ],
-    "shield_centre": [
-     0.08946,
-     -0.04736,
-     0.11568
-    ],
-    "shield_front": [
-     0.52771,
-     0.42476,
-     0.73559
-    ],
-    "sword_grip": [
-     -0.06319,
-     -0.07514,
-     0.16891
-    ],
-    "sword_tip": [
-     0.08951,
-     0.07924,
-     0.37358
-    ],
-    "blade": [
-     0.51174,
-     0.51735,
-     0.68591
-    ],
-    "clearance_mm": {
-     "blade_to_shield": 28.9,
-     "sword_arm_to_shield": 37.0,
-     "blade_to_head": 174.1,
-     "blade_to_trunk": 145.3,
-     "blade_to_shield_arm": 113.7,
-     "sword_arm_to_shield_arm": 69.1,
-     "shield_to_head": 23.6,
-     "tip_above_ground": 556.0
-    }
-   },
-   "against_the_approved_pose": {
-    "shield_front_deg": 2.6,
-    "shield_centre_mm": 1.9,
-    "blade_deg": 2.3,
-    "grip_mm": 1.2
-   }
-  },
-  "chop-follow": {
-   "from_pose": "chop-overhead-strike",
-   "left": {
-    "wrist": [
-     0.0631,
-     -0.0568,
-     0.115
-    ],
-    "elbow": [
-     0.1278,
-     -0.0573,
-     0.0711
-    ],
-    "hand_turn_xyzw": [
-     -0.10946,
-     0.0667,
-     -0.05426,
-     0.99027
-    ]
-   },
-   "right": {
-    "wrist": [
-     -0.0532,
-     -0.0522,
-     0.1443
-    ],
-    "elbow": [
-     -0.0375,
-     -0.0712,
-     0.0701
-    ],
-    "hand_turn_xyzw": [
-     0.56047,
-     0.13675,
-     -0.29229,
-     0.76272
-    ]
-   },
-   "body": {
-    "pelvis": {
-     "yaw": -20.0,
-     "pitch": 12.0,
-     "roll": -0.0,
-     "height": 0.88,
-     "forward": 0.026,
-     "left": 0.0079
-    },
-    "spine": {
-     "flex": 12.0,
-     "twist": -3.0,
-     "side": 0.2
-    },
-    "head": {
-     "yaw": 20.1,
-     "pitch": 9.9
-    }
-   },
-   "stance": {
-    "left": {
-     "forward": 0.1246,
-     "left": 0.0073,
-     "yaw": 7.3
-    },
-    "right": {
-     "forward": -0.1246,
-     "left": -0.0073,
-     "yaw": -62.3
-    },
-    "support": [
-     "foot_l",
-     "toe_r"
-    ]
-   },
-   "expect": {
-    "left_elbow": [
-     0.12553,
-     -0.05486,
-     0.06799
-    ],
-    "left_wrist": [
-     0.0631,
-     -0.0568,
-     0.115
-    ],
-    "right_elbow": [
-     -0.03916,
-     -0.06807,
-     0.06905
-    ],
-    "right_wrist": [
-     -0.0532,
-     -0.0522,
-     0.1443
-    ],
-    "shield_centre": [
-     0.08946,
-     -0.04736,
-     0.11568
-    ],
-    "shield_front": [
-     0.52771,
-     0.42476,
-     0.73559
-    ],
-    "sword_grip": [
-     -0.06319,
-     -0.07514,
-     0.16891
-    ],
-    "sword_tip": [
-     0.08951,
-     0.07924,
-     0.37358
-    ],
-    "blade": [
-     0.51174,
-     0.51735,
-     0.68591
-    ],
-    "clearance_mm": {
-     "blade_to_shield": 28.9,
-     "sword_arm_to_shield": 37.0,
-     "blade_to_head": 174.1,
-     "blade_to_trunk": 145.3,
-     "blade_to_shield_arm": 113.7,
-     "sword_arm_to_shield_arm": 69.1,
-     "shield_to_head": 23.6,
-     "tip_above_ground": 556.0
-    }
-   },
-   "against_the_approved_pose": {
-    "shield_front_deg": 2.6,
-    "shield_centre_mm": 1.9,
-    "blade_deg": 2.3,
-    "grip_mm": 1.2
-   }
-  },
-  "thrust-windup": {
-   "from_pose": "thrust-chamber",
-   "left": {
-    "wrist": [
-     0.0596,
-     -0.0107,
-     0.1049
-    ],
-    "elbow": [
-     0.094,
-     -0.0737,
-     0.074
-    ],
-    "hand_turn_xyzw": [
-     -0.10943,
-     0.06674,
-     -0.0543,
-     0.99026
-    ]
-   },
-   "right": {
-    "wrist": [
-     -0.155,
-     -0.0931,
-     0.0222
-    ],
-    "elbow": [
-     -0.1356,
-     -0.0645,
-     -0.0479
-    ],
-    "hand_turn_xyzw": [
-     0.12944,
-     0.07977,
-     -0.16871,
-     0.97387
-    ]
-   },
-   "body": {
-    "pelvis": {
-     "yaw": -35.0,
-     "pitch": 5.0,
-     "roll": -0.0,
-     "height": 0.94,
-     "forward": -0.0001,
-     "left": 0.022
-    },
-    "spine": {
-     "flex": 5.0,
-     "twist": -15.0,
-     "side": 0.4
-    },
-    "head": {
-     "yaw": 50.1,
-     "pitch": 4.7
-    }
-   },
-   "stance": {
-    "left": {
-     "forward": 0.0739,
-     "left": 0.0167,
-     "yaw": 5.2
-    },
-    "right": {
-     "forward": -0.0739,
-     "left": -0.0167,
-     "yaw": -71.4
-    },
-    "support": [
-     "foot_l",
-     "foot_r"
-    ]
-   },
-   "expect": {
-    "left_elbow": [
-     0.09375,
-     -0.07167,
-     0.06987
-    ],
-    "left_wrist": [
-     0.0596,
-     -0.0107,
-     0.1049
-    ],
-    "right_elbow": [
-     -0.1356,
-     -0.06449,
-     -0.04792
-    ],
-    "right_wrist": [
-     -0.155,
-     -0.0931,
-     0.0222
-    ],
-    "shield_centre": [
-     0.08399,
-     -0.02442,
-     0.10597
-    ],
-    "shield_front": [
-     0.79001,
-     0.10902,
-     0.60332
-    ],
-    "sword_grip": [
-     -0.17143,
-     -0.11656,
-     0.04247
-    ],
-    "sword_tip": [
-     0.0322,
-     -0.0732,
-     0.25623
-    ],
-    "blade": [
-     0.68243,
-     0.14534,
-     0.71636
-    ],
-    "clearance_mm": {
-     "blade_to_shield": 28.8,
-     "sword_arm_to_shield": 226.8,
-     "blade_to_head": 181.1,
-     "blade_to_trunk": 96.0,
-     "blade_to_shield_arm": 125.1,
-     "sword_arm_to_shield_arm": 128.7,
-     "shield_to_head": 49.3,
-     "tip_above_ground": 403.6
-    }
-   },
-   "against_the_approved_pose": {
-    "shield_front_deg": 2.3,
-    "shield_centre_mm": 1.7,
-    "blade_deg": 0.1,
-    "grip_mm": 0.1
-   }
-  },
-  "thrust-contact": {
-   "from_pose": "thrust-extension",
-   "left": {
-    "wrist": [
-     0.0449,
-     -0.0353,
-     0.0952
-    ],
-    "elbow": [
-     0.1205,
-     -0.0507,
-     0.0824
-    ],
-    "hand_turn_xyzw": [
-     0.0,
-     0.0,
-     0.0,
-     1.0
-    ]
-   },
-   "right": {
-    "wrist": [
-     -0.0811,
-     -0.0786,
-     0.1394
-    ],
-    "elbow": [
-     -0.081,
-     -0.0849,
-     0.0615
-    ],
-    "hand_turn_xyzw": [
-     -0.3029,
-     -0.25302,
-     0.24402,
-     0.88583
-    ]
-   },
-   "body": {
-    "pelvis": {
-     "yaw": 25.0,
-     "pitch": 20.0,
-     "roll": -0.0,
-     "height": 0.76,
-     "forward": 0.0476,
-     "left": -0.0069
-    },
-    "spine": {
-     "flex": 9.9,
-     "twist": 15.1,
-     "side": -0.9
-    },
-    "head": {
-     "yaw": -35.0,
-     "pitch": 4.9
-    }
-   },
-   "stance": {
-    "left": {
-     "forward": -0.1477,
-     "left": -0.0425,
-     "yaw": 96.2
-    },
-    "right": {
-     "forward": 0.1477,
-     "left": 0.0425,
-     "yaw": 3.9
-    },
-    "support": [
-     "foot_r",
-     "foot_l"
-    ]
-   },
-   "expect": {
-    "left_elbow": [
-     0.11982,
-     -0.04801,
-     0.07685
-    ],
-    "left_wrist": [
-     0.0449,
-     -0.0353,
-     0.0952
-    ],
-    "right_elbow": [
-     -0.08067,
-     -0.0816,
-     0.06128
-    ],
-    "right_wrist": [
-     -0.0811,
-     -0.0786,
-     0.1394
-    ],
-    "shield_centre": [
-     0.07024,
-     -0.02826,
-     0.10484
-    ],
-    "shield_front": [
-     0.27538,
-     0.5114,
-     0.81402
-    ],
-    "sword_grip": [
-     -0.05681,
-     -0.07752,
-     0.1647
-    ],
-    "sword_tip": [
-     -0.22654,
-     0.11386,
-     0.31833
-    ],
-    "blade": [
-     -0.56883,
-     0.64136,
-     0.51486
-    ],
-    "clearance_mm": {
-     "blade_to_shield": 25.7,
-     "sword_arm_to_shield": 5.7,
-     "blade_to_head": 172.7,
-     "blade_to_trunk": 147.3,
-     "blade_to_shield_arm": 137.9,
-     "sword_arm_to_shield_arm": 93.6,
-     "shield_to_head": -13.5,
-     "tip_above_ground": 590.7
-    }
-   },
-   "against_the_approved_pose": {
-    "shield_front_deg": 3.5,
-    "shield_centre_mm": 2.4,
-    "blade_deg": 1.7,
-    "grip_mm": 1.4
-   }
-  },
-  "thrust-follow": {
-   "from_pose": "thrust-extension",
-   "left": {
-    "wrist": [
-     0.0449,
-     -0.0353,
-     0.0952
-    ],
-    "elbow": [
-     0.1205,
-     -0.0507,
-     0.0824
-    ],
-    "hand_turn_xyzw": [
-     0.0,
-     0.0,
-     0.0,
-     1.0
-    ]
-   },
-   "right": {
-    "wrist": [
-     -0.0811,
-     -0.0786,
-     0.1394
-    ],
-    "elbow": [
-     -0.081,
-     -0.0849,
-     0.0615
-    ],
-    "hand_turn_xyzw": [
-     -0.3029,
-     -0.25302,
-     0.24402,
-     0.88583
-    ]
-   },
-   "body": {
-    "pelvis": {
-     "yaw": 25.0,
-     "pitch": 20.0,
-     "roll": -0.0,
-     "height": 0.76,
-     "forward": 0.0476,
-     "left": -0.0069
-    },
-    "spine": {
-     "flex": 9.9,
-     "twist": 15.1,
-     "side": -0.9
-    },
-    "head": {
-     "yaw": -35.0,
-     "pitch": 4.9
-    }
-   },
-   "stance": {
-    "left": {
-     "forward": -0.1477,
-     "left": -0.0425,
-     "yaw": 96.2
-    },
-    "right": {
-     "forward": 0.1477,
-     "left": 0.0425,
-     "yaw": 3.9
-    },
-    "support": [
-     "foot_r",
-     "foot_l"
-    ]
-   },
-   "expect": {
-    "left_elbow": [
-     0.11982,
-     -0.04801,
-     0.07685
-    ],
-    "left_wrist": [
-     0.0449,
-     -0.0353,
-     0.0952
-    ],
-    "right_elbow": [
-     -0.08067,
-     -0.0816,
-     0.06128
-    ],
-    "right_wrist": [
-     -0.0811,
-     -0.0786,
-     0.1394
-    ],
-    "shield_centre": [
-     0.07024,
-     -0.02826,
-     0.10484
-    ],
-    "shield_front": [
-     0.27538,
-     0.5114,
-     0.81402
-    ],
-    "sword_grip": [
-     -0.05681,
-     -0.07752,
-     0.1647
-    ],
-    "sword_tip": [
-     -0.22654,
-     0.11386,
-     0.31833
-    ],
-    "blade": [
-     -0.56883,
-     0.64136,
-     0.51486
-    ],
-    "clearance_mm": {
-     "blade_to_shield": 25.7,
-     "sword_arm_to_shield": 5.7,
-     "blade_to_head": 172.7,
-     "blade_to_trunk": 147.3,
-     "blade_to_shield_arm": 137.9,
-     "sword_arm_to_shield_arm": 93.6,
-     "shield_to_head": -13.5,
-     "tip_above_ground": 590.7
-    }
-   },
-   "against_the_approved_pose": {
-    "shield_front_deg": 3.5,
-    "shield_centre_mm": 2.4,
-    "blade_deg": 1.7,
-    "grip_mm": 1.4
-   }
-  }
- },
- "blend_clearance_mm": {
-  "idle-relaxed>guard": {
-   "blade_to_shield": 24.2,
-   "sword_arm_to_shield": 125.8,
-   "blade_to_head": 123.8,
-   "blade_to_trunk": 63.2,
-   "blade_to_shield_arm": 98.6,
-   "sword_arm_to_shield_arm": 131.9,
-   "shield_to_head": 32.6,
-   "tip_above_ground": 233.1
-  },
-  "idle-at-ease>guard": {
-   "blade_to_shield": 23.0,
-   "sword_arm_to_shield": 121.4,
-   "blade_to_head": 123.8,
-   "blade_to_trunk": 68.8,
-   "blade_to_shield_arm": 98.6,
-   "sword_arm_to_shield_arm": 131.9,
-   "shield_to_head": 32.6,
-   "tip_above_ground": 146.7
-  },
-  "sword-on-shoulder>guard": {
-   "blade_to_shield": 24.2,
-   "sword_arm_to_shield": 103.9,
-   "blade_to_head": 45.4,
-   "blade_to_trunk": 51.5,
-   "blade_to_shield_arm": 98.6,
-   "sword_arm_to_shield_arm": 131.9,
-   "shield_to_head": 32.6,
-   "tip_above_ground": 597.3
-  },
-  "idle-relaxed>walk-guard": {
-   "blade_to_shield": 28.3,
-   "sword_arm_to_shield": 135.9,
-   "blade_to_head": 205.0,
-   "blade_to_trunk": 68.5,
-   "blade_to_shield_arm": 133.3,
-   "sword_arm_to_shield_arm": 101.5,
-   "shield_to_head": 13.3,
-   "tip_above_ground": 233.1
-  },
-  "walk-guard>run-guard": {
-   "blade_to_shield": 12.9,
-   "sword_arm_to_shield": 114.8,
-   "blade_to_head": 105.0,
-   "blade_to_trunk": 68.5,
-   "blade_to_shield_arm": 103.0,
-   "sword_arm_to_shield_arm": 71.2,
-   "shield_to_head": 5.8,
-   "tip_above_ground": 441.5
-  },
-  "walk-guard>guard": {
-   "blade_to_shield": 0.0,
-   "sword_arm_to_shield": 125.7,
-   "blade_to_head": 123.2,
-   "blade_to_trunk": 68.5,
-   "blade_to_shield_arm": 71.3,
-   "sword_arm_to_shield_arm": 101.5,
-   "shield_to_head": 13.3,
-   "tip_above_ground": 441.5
-  },
-  "guard>cut-windup": {
-   "blade_to_shield": 24.2,
-   "sword_arm_to_shield": 91.9,
-   "blade_to_head": 37.9,
-   "blade_to_trunk": 76.7,
-   "blade_to_shield_arm": 98.6,
-   "sword_arm_to_shield_arm": 55.2,
-   "shield_to_head": 32.6,
-   "tip_above_ground": 530.2
-  },
-  "cut-windup>cut-contact": {
-   "blade_to_shield": 123.7,
-   "sword_arm_to_shield": 91.9,
-   "blade_to_head": 37.9,
-   "blade_to_trunk": 84.1,
-   "blade_to_shield_arm": 175.2,
-   "sword_arm_to_shield_arm": 55.2,
-   "shield_to_head": 14.0,
-   "tip_above_ground": 532.5
-  },
-  "cut-contact>cut-follow": {
-   "blade_to_shield": 123.8,
-   "sword_arm_to_shield": 137.9,
-   "blade_to_head": 229.7,
-   "blade_to_trunk": 141.5,
-   "blade_to_shield_arm": 189.0,
-   "sword_arm_to_shield_arm": 125.1,
-   "shield_to_head": -9.7,
-   "tip_above_ground": 301.5
-  },
-  "cut-follow>guard": {
-   "blade_to_shield": 24.2,
-   "sword_arm_to_shield": 125.8,
-   "blade_to_head": 123.8,
-   "blade_to_trunk": 93.1,
-   "blade_to_shield_arm": 98.6,
-   "sword_arm_to_shield_arm": 125.1,
-   "shield_to_head": -9.7,
-   "tip_above_ground": 301.5
-  },
-  "guard>backhand-windup": {
-   "blade_to_shield": 0.0,
-   "sword_arm_to_shield": -5.5,
-   "blade_to_head": 31.0,
-   "blade_to_trunk": 35.4,
-   "blade_to_shield_arm": -15.4,
-   "sword_arm_to_shield_arm": 35.0,
-   "shield_to_head": 14.1,
-   "tip_above_ground": 597.3
-  },
-  "backhand-windup>backhand-contact": {
-   "blade_to_shield": 0.2,
-   "sword_arm_to_shield": -5.5,
-   "blade_to_head": 13.8,
-   "blade_to_trunk": 37.8,
-   "blade_to_shield_arm": -17.0,
-   "sword_arm_to_shield_arm": 37.7,
-   "shield_to_head": 34.7,
-   "tip_above_ground": 683.7
-  },
-  "backhand-contact>backhand-follow": {
-   "blade_to_shield": 170.2,
-   "sword_arm_to_shield": 177.3,
-   "blade_to_head": 117.8,
-   "blade_to_trunk": 123.3,
-   "blade_to_shield_arm": 185.3,
-   "sword_arm_to_shield_arm": 132.3,
-   "shield_to_head": 34.7,
-   "tip_above_ground": 642.0
-  },
-  "backhand-follow>guard": {
-   "blade_to_shield": 24.2,
-   "sword_arm_to_shield": 125.8,
-   "blade_to_head": 123.8,
-   "blade_to_trunk": 93.1,
-   "blade_to_shield_arm": 98.6,
-   "sword_arm_to_shield_arm": 123.7,
-   "shield_to_head": -0.9,
-   "tip_above_ground": 597.3
-  },
-  "guard>chop-windup": {
-   "blade_to_shield": 24.2,
-   "sword_arm_to_shield": 112.5,
-   "blade_to_head": 49.5,
-   "blade_to_trunk": 85.1,
-   "blade_to_shield_arm": 98.6,
-   "sword_arm_to_shield_arm": 131.9,
-   "shield_to_head": 32.6,
-   "tip_above_ground": 597.3
-  },
-  "chop-windup>chop-contact": {
-   "blade_to_shield": 28.9,
-   "sword_arm_to_shield": 37.0,
-   "blade_to_head": 82.3,
-   "blade_to_trunk": 123.2,
-   "blade_to_shield_arm": 113.7,
-   "sword_arm_to_shield_arm": 69.1,
-   "shield_to_head": 23.6,
-   "tip_above_ground": 556.0
-  },
-  "chop-contact>chop-follow": {
-   "blade_to_shield": 28.9,
-   "sword_arm_to_shield": 37.0,
-   "blade_to_head": 174.1,
-   "blade_to_trunk": 145.3,
-   "blade_to_shield_arm": 113.7,
-   "sword_arm_to_shield_arm": 69.1,
-   "shield_to_head": 23.6,
-   "tip_above_ground": 556.0
-  },
-  "chop-follow>guard": {
-   "blade_to_shield": 1.6,
-   "sword_arm_to_shield": 37.0,
-   "blade_to_head": 112.6,
-   "blade_to_trunk": 93.1,
-   "blade_to_shield_arm": 82.2,
-   "sword_arm_to_shield_arm": 69.1,
-   "shield_to_head": 23.6,
-   "tip_above_ground": 556.0
-  },
-  "guard>thrust-windup": {
-   "blade_to_shield": 1.1,
-   "sword_arm_to_shield": 125.8,
-   "blade_to_head": 119.6,
-   "blade_to_trunk": 90.1,
-   "blade_to_shield_arm": 83.9,
-   "sword_arm_to_shield_arm": 128.7,
-   "shield_to_head": 32.6,
-   "tip_above_ground": 403.6
-  },
-  "thrust-windup>thrust-contact": {
-   "blade_to_shield": 13.0,
-   "sword_arm_to_shield": 5.7,
-   "blade_to_head": 113.2,
-   "blade_to_trunk": 95.9,
-   "blade_to_shield_arm": 99.7,
-   "sword_arm_to_shield_arm": 93.6,
-   "shield_to_head": -13.5,
-   "tip_above_ground": 403.6
-  },
-  "thrust-contact>thrust-follow": {
-   "blade_to_shield": 25.7,
-   "sword_arm_to_shield": 5.7,
-   "blade_to_head": 172.7,
-   "blade_to_trunk": 147.3,
-   "blade_to_shield_arm": 137.9,
-   "sword_arm_to_shield_arm": 93.6,
-   "shield_to_head": -13.5,
-   "tip_above_ground": 590.7
-  },
-  "thrust-follow>guard": {
-   "blade_to_shield": 24.2,
-   "sword_arm_to_shield": 5.7,
-   "blade_to_head": 123.8,
-   "blade_to_trunk": 93.1,
-   "blade_to_shield_arm": 98.6,
-   "sword_arm_to_shield_arm": 93.6,
-   "shield_to_head": -13.5,
-   "tip_above_ground": 590.7
-  },
-  "guard>hit": {
-   "blade_to_shield": 24.2,
-   "sword_arm_to_shield": 115.5,
-   "blade_to_head": 123.5,
-   "blade_to_trunk": 93.1,
-   "blade_to_shield_arm": 98.6,
-   "sword_arm_to_shield_arm": 80.9,
-   "shield_to_head": -11.3,
-   "tip_above_ground": 597.3
-  },
-  "idle-relaxed>hit": {
-   "blade_to_shield": 154.8,
-   "sword_arm_to_shield": 122.7,
-   "blade_to_head": 203.5,
-   "blade_to_trunk": 70.5,
-   "blade_to_shield_arm": 190.7,
-   "sword_arm_to_shield_arm": 80.9,
-   "shield_to_head": -11.3,
-   "tip_above_ground": 233.1
-  }
- },
- "worst_clearance_mm": {
-  "blade_to_shield": {
-   "mm": 0.0,
-   "at": "guard>backhand-windup@0.92"
-  },
-  "sword_arm_to_shield": {
-   "mm": -5.5,
-   "at": "guard>backhand-windup@1.00"
-  },
-  "blade_to_head": {
-   "mm": 13.8,
-   "at": "backhand-windup>backhand-contact@0.42"
-  },
-  "blade_to_trunk": {
-   "mm": 35.4,
-   "at": "guard>backhand-windup@0.67"
-  },
-  "blade_to_shield_arm": {
-   "mm": -17.0,
-   "at": "backhand-windup>backhand-contact@0.17"
-  },
-  "sword_arm_to_shield_arm": {
-   "mm": 35.0,
-   "at": "guard>backhand-windup@0.92"
-  },
-  "shield_to_head": {
-   "mm": -13.5,
-   "at": "thrust-contact"
-  },
-  "tip_above_ground": {
-   "mm": 146.7,
-   "at": "idle-at-ease"
-  }
- },
- "clearance_note": "Arms only, in the chest's frame: shield as a disc of the catalog radius; blade from grip to tip (its first 15% left out against the trunk and the shield arm, where the hand is); sword arm as capsules of 20 mm; trunk a 50 mm capsule from pelvis to neck at rest; head a 50 mm sphere at rest. Negative means contact. The game's own test measures the whole figure through its controller."
+  "clearance_note": "Arms only, in the chest's frame: shield as a disc of the catalog radius; blade from grip to tip (its first 15% left out against the trunk and the shield arm, where the hand is); sword arm as capsules of 20 mm; trunk a 50 mm capsule from pelvis to neck at rest; head a 50 mm sphere at rest. Negative means contact. The game's own test measures the whole figure through its controller."
 }
