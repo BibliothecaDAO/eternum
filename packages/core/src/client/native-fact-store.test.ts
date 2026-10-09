@@ -47,9 +47,9 @@ const structure = (owner: string, game = 1) => ({
 });
 
 describe("native fact store", () => {
-  it("indexes full-width entity ids exactly without conflating adjacent values", () => {
+  it("indexes entity ids at the contract's cap exactly without conflating adjacent values", () => {
     const store = new NativeFactStore();
-    const home = 9007199254740993n;
+    const home = BigInt(Number.MAX_SAFE_INTEGER) - 1n;
     const army = home + 1n;
     store.applyFacts([
       set("0x1", "ExplorerTroops", { ...explorer, explorer_id: army, owner: home }),
@@ -66,7 +66,58 @@ describe("native fact store", () => {
     expect([...store.armiesAtHome(1, home)].map((row) => row.explorer_id)).toEqual([army]);
     expect([...store.armiesAtHome(1, home + 1n)]).toEqual([]);
     expect(store.entityOccupancy(1, army)?.entity_id).toBe(army);
-    expect(store.entityOccupancy(1, army + 1n)).toBeUndefined();
+    expect(store.entityOccupancy(1, army - 1n)).toBeUndefined();
+  });
+
+  it("refuses an entity id past the contract's cap at decode, so no reader ever sees one", () => {
+    const store = new NativeFactStore();
+    const past = BigInt(Number.MAX_SAFE_INTEGER) + 1n;
+    for (const value of [
+      { ...explorer, explorer_id: past },
+      { ...explorer, owner: past },
+      { ...explorer, owner: past.toString() },
+    ])
+      expect(() => store.applyFacts([set("0x1", "ExplorerTroops", value)])).toThrow("Entity id out of range");
+    expect(() => store.applyFacts([set("0x2", "Structure", { ...structure("0x1"), entity_id: past })])).toThrow(
+      "Entity id out of range",
+    );
+    expect(() =>
+      store.applyFacts([
+        set("0x3", "Structure", {
+          ...structure("0x1"),
+          metadata: { ...structure("0x1").metadata, village_realm: past },
+        }),
+      ]),
+    ).toThrow("Entity id out of range");
+    store.applyFacts([set("0x8", "ResourceBalance", balance(7, "1"))]);
+    expect(() => store.get("ResourceBalance", { game_id: 1, entity_id: past, resource_type: 1 })).toThrow(
+      "Entity id out of range",
+    );
+    expect([...store.rows("ExplorerTroops")]).toEqual([]);
+    expect([...store.rows("Structure")]).toEqual([]);
+  });
+
+  it("isolates readers: one that throws is reported and every other still sees the write", () => {
+    const store = new NativeFactStore();
+    const reported = vi.spyOn(console, "error").mockImplementation(() => {});
+    const seen: string[] = [];
+    store.subscribe(() => seen.push("before"));
+    store.subscribe(() => {
+      throw new Error("scene broke on a row");
+    });
+    store.subscribe(() => seen.push("after"));
+    store.subscribeEvents(() => {
+      throw new Error("toast broke on an event");
+    });
+    store.subscribeEvents(() => seen.push("event"));
+
+    store.applyFacts([set("0x8", "ResourceBalance", balance(7, "1"))]);
+    store.applyEvent({ model: "StoryEvent", key: "0x1", value: { value: "story" } });
+
+    expect(seen).toEqual(["before", "after", "event"]);
+    expect(store.get("ResourceBalance", { game_id: 1, entity_id: 7, resource_type: 1 })?.balance).toBe(1n);
+    expect(reported).toHaveBeenCalledTimes(2);
+    expect(String(reported.mock.calls[0])).toContain("scene broke on a row");
   });
 
   it("decodes tagged stamina and refuses ambiguous or unknown sources", () => {
