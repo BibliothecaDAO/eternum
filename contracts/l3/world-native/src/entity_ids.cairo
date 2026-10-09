@@ -3,6 +3,8 @@ use starknet::ContractAddress;
 use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess};
 
 pub type EntityId = u64;
+// Keep allocated ids exact in the client's numeric APIs while retaining the u64 wire/storage layout.
+pub const MAX_HOME_NAMESPACE: u32 = 0x1fffff;
 const LOCAL_RANGE: u64 = 0x100000000;
 const FIELD_RANGE: u64 = 0x100;
 
@@ -19,6 +21,7 @@ pub fn namespace(home: EntityId) -> u32 {
 
 pub fn allocate_home(game_id: u32, home: EntityId) -> EntityId {
     let home = namespace(home);
+    assert!(home <= MAX_HOME_NAMESPACE, "home namespace exceeds safe entity ids");
     let state = crate::state::write();
     let previous = state.games.home_entities.read((game_id, home));
     assert!(previous != 0xffffffff, "home entity space exhausted");
@@ -46,6 +49,7 @@ pub fn reserve_homes(game_id: u32, owner: ContractAddress) {
     let mut first = 0_u32;
     for index in 0..count {
         let id = crate::logic::game::allocate_setup_entity(game_id);
+        assert!(id <= MAX_HOME_NAMESPACE, "home namespace exceeds safe entity ids");
         assert!(state.games.namespace_owners.read((game_id, id)).is_zero(), "setup namespace already assigned");
         state.games.namespace_owners.write((game_id, id), owner);
         if index == 0 {
@@ -65,7 +69,7 @@ pub fn assign_open_home(game_id: u32, owner: ContractAddress) -> EntityId {
     }
     let digest: u256 = core::poseidon::poseidon_hash_span(array![game_id.into(), owner.into()].span()).into();
     let spacing = crate::logic::settlement::rules(game_id).spacing;
-    let regions = 0x7fffffff_u32 / spacing;
+    let regions = core::cmp::min(0x7fffffff_u32 / spacing, MAX_HOME_NAMESPACE);
     assert!(regions != 0, "no expedition home regions");
     let first: u32 = (digest % regions.into()).try_into().unwrap();
     for probe in 0_u32..64 {

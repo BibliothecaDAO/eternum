@@ -28,11 +28,11 @@ fn high_home_ids_preserve_their_namespace_and_never_overlap_other_homes() {
     interact_with_state(
         d.games,
         || {
-            let home = 0x12345678000000ab;
-            assert_eq!(namespace(home), 0x12345678);
-            assert_eq!(allocate_home(1, home), 0x1234567800000001);
-            assert_eq!(allocate_home(1, 0x12345678), 0x1234567800000002);
-            assert_eq!(allocate_home(1, 0x12345679000000ab), 0x1234567900000001);
+            let home = 0x123456000000ab;
+            assert_eq!(namespace(home), 0x123456);
+            assert_eq!(allocate_home(1, home), 0x12345600000001);
+            assert_eq!(allocate_home(1, 0x123456), 0x12345600000002);
+            assert_eq!(allocate_home(1, 0x123457000000ab), 0x12345700000001);
         },
     );
 }
@@ -168,4 +168,36 @@ fn colliding_open_namespace_is_probed_without_overwriting_its_owner() {
             assert_eq!(crate::state::read().games.namespace_owners.read((1, namespace(assigned))), actor);
         },
     );
+}
+
+#[test]
+fn every_allocator_returns_ids_at_or_below_the_safe_integer_boundary() {
+    let d = super::setup(true);
+    interact_with_state(
+        d.games,
+        || {
+            let maximum = crate::entity_ids::MAX_HOME_NAMESPACE;
+            crate::state::write().games.home_entities.write((1, maximum), 0xfffffffe);
+            let last = allocate_home(1, maximum.into());
+            assert_eq!(last, 0x1fffffffffffff);
+            assert!(last < 0x20000000000000);
+            crate::state::write().games.next_entity.write(1, 0xfffffff8);
+            assert_eq!(crate::logic::game::allocate_setup_entity(1), 0xfffffff8);
+            assert!(Into::<u32, u64>::into(0xfffffff8) < 0x20000000000000);
+            crate::state::write().games.next_entity.write(1, maximum);
+            reserve_homes(1, d.actor);
+            assert_eq!(claim_home(1, d.actor), maximum.into());
+            let open = crate::entity_ids::assign_open_home(1, 999.try_into().unwrap());
+            assert!(namespace(open) <= maximum && open < 0x20000000000000);
+        },
+    );
+}
+
+#[test]
+#[should_panic(expected: ("home namespace exceeds safe entity ids",))]
+fn an_unsafe_namespace_is_refused_before_an_entity_is_allocated() {
+    let d = super::setup(true);
+    interact_with_state(d.games, || {
+        allocate_home(1, 0x200000);
+    });
 }

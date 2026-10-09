@@ -130,6 +130,14 @@ const fixture: DeploymentCheckPort = {
       );
       const blitzClient = await connect(launcher.address, blitzId);
       const frontierClient = await connect(bot.address, frontierId);
+      const frontier = createHarnessGame(frontierClient);
+      await frontier.waitUntilPlaying();
+      const settled = await frontier.submit(bot, () =>
+        frontier.settle(bot, bot.address, "check-open-home", "frontier"),
+      );
+      await settled.confirmed;
+      const homes = frontier.settlementStructureIds(bot.address);
+      assert(homes?.length === 1 && homes.every((home) => Number.isSafeInteger(Number(home))));
       const routes = bindModeRoutes(
         buildRoutePlan(bot, botClient, launcher, launcherClient),
         launcher,
