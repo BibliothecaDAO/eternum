@@ -19,13 +19,15 @@ interface ReceiptBindings {
 export const shardWithdrawalPorts = (
   reader: ShardReader,
   bindings: ReceiptBindings,
-): Pick<RelayPorts["shard"], "confirmedHead" | "blockHash" | "block" | "withdrawal"> => ({
+): Pick<RelayPorts["shard"], "confirmedHead" | "blockHash" | "eventsPage" | "withdrawal"> => ({
   confirmedHead: () => relayOperation("read confirmed shard head", () => reader.head()),
   blockHash: (number) =>
     relayOperation("read confirmed shard anchor", async () => (await reader.header(number)).block_hash),
-  block: (number) =>
+  eventsPage: (from, to, cursor) =>
     Effect.gen(function* () {
-      const { block, rows } = yield* relayOperation("read confirmed shard receipts", () => reader.block(number));
+      const { block, first, rows, next } = yield* relayOperation("read confirmed shard receipts", () =>
+        reader.page(from, to, cursor),
+      );
       const results = yield* relayOperation("decode confirmed Blitz results", async () =>
         rows
           .filter((row) => row.model === "BlitzResult")
@@ -37,7 +39,7 @@ export const shardWithdrawalPorts = (
       const withdrawals: Withdrawal[] = [];
       const held: HeldObligation[] = [];
       for (const row of rows.filter((row) => row.model === "LordsWithdrawal")) {
-        const resolved = yield* Effect.result(resolveWithdrawal(reader, bindings, row, block.timestamp));
+        const resolved = yield* Effect.result(resolveWithdrawal(reader, bindings, row, row.confirmedAt));
         if (Result.isSuccess(resolved)) withdrawals.push(resolved.success);
         else
           held.push({
@@ -48,7 +50,7 @@ export const shardWithdrawalPorts = (
               transactionHash: row.transactionHash,
               keys: row.keys,
               values: row.values,
-              confirmedAt: block.timestamp,
+              confirmedAt: row.confirmedAt,
             },
           });
       }
@@ -56,7 +58,9 @@ export const shardWithdrawalPorts = (
         chainId: felt(reader.connection.chainId),
         number: block.block_number,
         hash: block.block_hash,
-        parentHash: block.parent_hash,
+        parentHash: first.parent_hash,
+        fromBlock: from,
+        next,
         status: block.status,
         withdrawals,
         results,

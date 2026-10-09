@@ -50,6 +50,8 @@ export interface ConfirmedBlock {
   withdrawals: readonly Withdrawal[];
   results: readonly BlitzResult[];
   held?: readonly HeldObligation[];
+  fromBlock?: number;
+  next?: string | null;
 }
 export type HeldObligation =
   | {
@@ -95,7 +97,7 @@ export interface RelayPorts {
   shard: {
     confirmedHead(): RelayEffect<number>;
     blockHash(number: number): RelayEffect<string>;
-    block(number: number): RelayEffect<ConfirmedBlock>;
+    eventsPage(from: number, to: number, cursor: string | null): RelayEffect<ConfirmedBlock>;
     withdrawal(chainId: string, transactionHash: string): RelayEffect<Withdrawal | null>;
     result(chainId: string, gameId: number): RelayEffect<BlitzResult | null>;
     grantLabor(claim: LaborClaim): RelayEffect<LaborGrant>;

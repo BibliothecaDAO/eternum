@@ -44,7 +44,7 @@ interface RelayEnv {
 export class ValueRelay extends DurableObject<RelayEnv> {
   private readonly signing = Semaphore.makeUnsafe(1);
   private readonly store = new DurableRelayStore(this.ctx.storage);
-  private readonly ports = relayPortsOf(this.env);
+  private readonly ports = relayPortsOf(this.env, this.ctx.storage);
   private readonly chests = new DurableChestStore(this.ctx.storage);
 
   async tick() {
@@ -135,7 +135,7 @@ export class ValueRelay extends DurableObject<RelayEnv> {
   }
 }
 
-const relayPortsOf = (env: RelayEnv): RelayPorts => {
+const relayPortsOf = (env: RelayEnv, storage: DurableObjectStorage): RelayPorts => {
   const reader = new ShardReader(shardConnectionOf(env));
   return {
     identity: identityAdapter(env.IDENTITY),
@@ -154,6 +154,7 @@ const relayPortsOf = (env: RelayEnv): RelayPorts => {
           { rpcUrl: env.LEDGER_RPC_URL, address: env.LEDGER_ADDRESS },
           env.IDENTITY,
           env.SHARD_HERALD_URL,
+          storage,
         ),
       ),
       result: shardResultPort(reader),

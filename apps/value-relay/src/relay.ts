@@ -12,23 +12,24 @@ export const runRelay = (chainId: string, ports: RelayPorts, store: RelayStore) 
     const head = yield* ports.shard.confirmedHead();
     if (head < progress.nextBlock - 1) return yield* haltRelay(store, "confirmed_head_regressed");
     yield* verifyObservedHead(ports, store, progress);
-    yield* restoreResolvableReceipts(ports, store);
-    let parentHash = progress.lastHash;
-    for (let number = progress.nextBlock; number <= Math.min(head, progress.nextBlock + 99); number++) {
-      const block = yield* ports.shard.block(number);
-      yield* validateBlock(chainId, number, block, parentHash, store);
-      yield* relayOperation("persist confirmed obligations", () => store.observe(block));
-      parentHash = block.hash;
+    const end = progress.page?.head ?? head;
+    if (progress.nextBlock <= end) {
+      const page = yield* ports.shard.eventsPage(progress.nextBlock, end, progress.page?.token ?? null);
+      if (page.number !== end || (page.fromBlock ?? progress.nextBlock) !== progress.nextBlock)
+        return yield* haltRelay(store, "invalid_shard_page_range");
+      yield* validateBlock(chainId, end, page, progress.lastHash, store);
+      yield* relayOperation("persist confirmed obligations", () => store.observe(page));
     }
     const payments = yield* payWithdrawals(ports, store);
     const results = yield* postResults(ports, store);
+    yield* restoreResolvableReceipts(ports, store);
     return { status: "ready" as const, deferred: [...payments, ...results] };
   });
 
 /** An interface/funding outage is temporary. Bot identities and invalid receipt layouts remain set aside. */
 const restoreResolvableReceipts = (ports: RelayPorts, store: RelayStore) =>
   Effect.gen(function* () {
-    const held = yield* relayOperation("read held receipt recovery", () => store.held());
+    const held = yield* relayOperation("read held receipt recovery", () => store.heldRecovery());
     for (const row of held) {
       if (row.kind !== "receipt" || ["withdrawal_account_unknown", "decode withdrawal receipt"].includes(row.reason))
         continue;
@@ -46,10 +47,10 @@ const haltRelay = (store: RelayStore, reason: string) =>
 /** A rewrite of any ancestor changes the head hash: one anchor verifies the whole observed chain. */
 const verifyObservedHead = (ports: RelayPorts, store: RelayStore, progress: RelayProgress) =>
   Effect.gen(function* () {
-    if (progress.nextBlock === 0) return;
-    const number = progress.nextBlock - 1;
+    if (progress.nextBlock === 0 && !progress.page) return;
+    const number = progress.page?.head ?? progress.nextBlock - 1;
     const hash = yield* ports.shard.blockHash(number);
-    if (BigInt(hash) !== BigInt(progress.lastHash!))
+    if (BigInt(hash) !== BigInt(progress.page?.hash ?? progress.lastHash!))
       return yield* haltRelay(store, `confirmed_block_changed:${number}`);
   });
 

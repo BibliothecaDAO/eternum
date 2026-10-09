@@ -57,31 +57,63 @@ export class ShardReader {
     validateHeader(block, number === "latest" ? undefined : number);
     return block;
   }
-  async block(number: number): Promise<{ block: ShardBlock; rows: ValueRow[] }> {
+  private prefixCache: Promise<string[][]> | undefined;
+  async page(
+    from: number,
+    to: number,
+    cursor: string | null,
+  ): Promise<{
+    block: ShardBlock;
+    first: ShardBlock;
+    rows: (ValueRow & { confirmedAt: number })[];
+    next: string | null;
+  }> {
     const provider = this.provider();
     await this.assertChain(provider);
-    const block = (await provider.getBlockWithTxHashes(number)) as unknown as ShardBlock;
-    validateHeader(block, number);
-    if (!Array.isArray(block.transactions)) throw new Error("invalid_confirmed_transactions");
-    const receipts: ShardReceipt[] = [];
-    for (const transactionHash of block.transactions) {
-      felt(transactionHash);
-      const receipt = (await provider.getTransactionReceipt(transactionHash)) as unknown as ShardReceipt;
+    const first = await this.header(from);
+    const block = from === to ? first : await this.header(to);
+    const page = await provider.getEvents({
+      address: this.connection.gamesAddress,
+      from_block: { block_number: from },
+      to_block: { block_number: to },
+      chunk_size: 100,
+      ...(cursor ? { continuation_token: cursor } : {}),
+    });
+    if (page.events.length > 100 || (page.continuation_token && page.continuation_token === cursor))
+      throw new Error("invalid_shard_event_page");
+    const headers = new Map<number, ShardBlock>([
+      [from, first],
+      [to, block],
+    ]);
+    const prefixes = page.events.length ? await this.prefixes(provider, to) : [];
+    const rows: (ValueRow & { confirmedAt: number })[] = [];
+    for (const event of page.events) {
       if (
-        !sameFelt(receipt.transaction_hash, transactionHash) ||
-        receipt.block_number !== number ||
-        !sameFelt(receipt.block_hash, block.block_hash) ||
-        !receipt.finality_status ||
-        !isConfirmed(receipt.finality_status)
+        !sameFelt(event.from_address, this.connection.gamesAddress) ||
+        typeof event.block_number !== "number" ||
+        typeof event.block_hash !== "string" ||
+        !Number.isSafeInteger(event.block_number) ||
+        event.block_number < from ||
+        event.block_number > to
       )
-        throw new Error("receipt_block_or_transaction_differs");
-      receipts.push(receipt);
+        throw new Error("invalid_confirmed_event");
+      let header = headers.get(event.block_number);
+      if (!header) {
+        header = await this.header(event.block_number);
+        headers.set(event.block_number, header);
+      }
+      if (!sameFelt(header.block_hash, event.block_hash)) throw new Error("event_block_changed");
+      const receipt: ShardReceipt = {
+        transaction_hash: event.transaction_hash,
+        block_number: event.block_number,
+        block_hash: event.block_hash,
+        execution_status: "SUCCEEDED",
+        finality_status: header.status,
+        events: [event],
+      };
+      rows.push(...this.rows(receipt, prefixes).map((row) => ({ ...row, confirmedAt: header!.timestamp })));
     }
-    const relevant = receipts.some((receipt) =>
-      receipt.events?.some((event) => sameFelt(event.from_address, this.connection.gamesAddress)),
-    );
-    const prefixes = relevant ? await this.prefixes(provider, number) : [];
-    return { block, rows: receipts.flatMap((receipt) => this.rows(receipt, prefixes)) };
+    return { block, first, rows, next: page.continuation_token || null };
   }
   async receipt(
     transactionHash: string,
@@ -116,8 +148,14 @@ export class ShardReader {
     if (!sameFelt(await provider.getChainId(), this.connection.chainId)) throw new Error("shard_chain_differs");
   }
   private async prefixes(provider: RpcProvider, number: number) {
-    const contract = await provider.getClassAt(this.connection.gamesAddress, number);
-    return rowSetPrefixes(contract.abi);
+    this.prefixCache ??= provider
+      .getClassAt(this.connection.gamesAddress, number)
+      .then((contract) => rowSetPrefixes(contract.abi))
+      .catch((error) => {
+        this.prefixCache = undefined;
+        throw error;
+      });
+    return this.prefixCache;
   }
   private rows(receipt: ShardReceipt, prefixes: string[][]): ValueRow[] {
     if (!Array.isArray(receipt.events)) throw new Error("invalid_receipt_events");

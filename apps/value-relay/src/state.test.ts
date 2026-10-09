@@ -94,7 +94,7 @@ it("persists confirmed obligations, cursor and halt across actual Worker restart
     await worker.dispose();
     worker = start();
     expect(await (await worker.dispatchFetch("https://state.test/read")).json()).toEqual({
-      progress: { nextBlock: 1, lastHash: "0xa", halted: null },
+      progress: { nextBlock: 1, lastHash: "0xa", halted: null, page: null },
       withdrawals: [withdrawal],
       results: [],
       held: block.held,

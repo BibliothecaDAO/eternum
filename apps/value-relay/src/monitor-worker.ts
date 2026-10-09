@@ -40,7 +40,7 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
       this.checking.withPermit(
         Effect.gen(function* () {
           const value = yield* Effect.result(
-            runMonitor(monitorPortsOf(monitor.env), {
+            runMonitor(monitorPortsOf(monitor.env, monitor.ctx.storage), {
               load: () => monitor.status(),
               save: (progress) => monitor.ctx.storage.put("progress", progress),
             }),
@@ -112,7 +112,7 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
     return (await this.ctx.storage.get<MonitorProgress>("progress")) ?? { halted: null };
   }
 }
-const monitorPortsOf = (env: MonitorEnv) => {
+const monitorPortsOf = (env: MonitorEnv, storage: DurableObjectStorage) => {
   const reader = new ShardReader({
     rpcUrl: env.SHARD_RPC_URL,
     gamesAddress: env.SHARD_GAMES_ADDRESS,
@@ -131,6 +131,7 @@ const monitorPortsOf = (env: MonitorEnv) => {
           { rpcUrl: env.LEDGER_RPC_URL, address: env.LEDGER_ADDRESS },
           env.IDENTITY,
           env.SHARD_HERALD_URL,
+          storage,
         ),
       ).withdrawal,
       result: shardResultPort(reader),

@@ -12,7 +12,7 @@ import {
   type Withdrawal,
   type BlitzResult,
 } from "./ports";
-import type { RelayStore } from "./state";
+import type { RelayStore, RelayProgress } from "./state";
 
 const withdrawal: Withdrawal = {
   chainId: "0x1",
@@ -38,7 +38,7 @@ const block: ConfirmedBlock = {
   results: [result],
 };
 const fixture = () => {
-  let progress = { nextBlock: 0, lastHash: null as string | null, halted: null as string | null };
+  let progress: RelayProgress = { nextBlock: 0, lastHash: null as string | null, halted: null as string | null };
   const held: import("./ports").HeldObligation[] = [];
   const withdrawals = new Map<string, Withdrawal>();
   const results = new Map<number, BlitzResult>();
@@ -47,7 +47,16 @@ const fixture = () => {
     observe: async (block) => {
       block.withdrawals.forEach((w) => withdrawals.set(w.transactionHash, w));
       block.results.forEach((r) => results.set(r.gameId, r));
-      progress = { ...progress, nextBlock: block.number + 1, lastHash: block.hash };
+      if (block.next)
+        progress = {
+          ...progress,
+          nextBlock: block.fromBlock!,
+          page: { head: block.number, hash: block.hash, token: block.next },
+        };
+      else {
+        progress = { ...progress, nextBlock: block.number + 1, lastHash: block.hash };
+        delete progress.page;
+      }
     },
     withdrawals: async () => [...withdrawals.values()],
     results: async () => [...results.values()],
@@ -58,6 +67,7 @@ const fixture = () => {
       results.delete(id);
     },
     held: async () => held,
+    heldRecovery: async () => held.slice(0, 100),
     restoreWithdrawal: async (withdrawal) => {
       withdrawals.set(withdrawal.transactionHash, withdrawal);
       const index = held.findIndex(
@@ -78,7 +88,7 @@ const fixture = () => {
       conservation: () => Effect.succeed([]),
       confirmedHead: () => Effect.succeed(0),
       blockHash: () => Effect.succeed(block.hash),
-      block: () => Effect.succeed(block),
+      eventsPage: () => Effect.succeed(block),
       withdrawal: () => Effect.succeed(withdrawal),
       result: () => Effect.succeed(result),
       grantLabor: vi.fn(() => Effect.succeed({ gameId: 1, account: "0x3", home: "9", amount: "1000000000000" })),
@@ -154,7 +164,7 @@ describe("confirmed value relay", () => {
     "refuses %s blocks even from a faulty adapter",
     async (status) => {
       const f = fixture();
-      f.ports.shard.block = () => Effect.succeed({ ...block, status } as ConfirmedBlock);
+      f.ports.shard.eventsPage = () => Effect.succeed({ ...block, status } as ConfirmedBlock);
       await expect(f.run()).rejects.toThrow();
       expect(f.ports.ledger.pay).not.toHaveBeenCalled();
       expect((await f.store.progress()).halted).toBeTruthy();
@@ -240,7 +250,7 @@ it("detects a parent mismatch before recording or paying the new block", async (
   const f = fixture();
   await f.run();
   f.ports.shard.confirmedHead = () => Effect.succeed(1);
-  f.ports.shard.block = (number) =>
+  f.ports.shard.eventsPage = (number) =>
     Effect.succeed(
       number === 0 ? block : { ...block, number: 1, hash: "0xb", parentHash: "0xc", withdrawals: [], results: [] },
     );
@@ -289,7 +299,7 @@ it("matches the ledger and shard golden commitment vector", () => {
 });
 it("halts before storing a result whose payload differs from its commitment", async () => {
   const f = fixture();
-  f.ports.shard.block = () => Effect.succeed({ ...block, results: [{ ...result, commitment: "0xbad" }] });
+  f.ports.shard.eventsPage = () => Effect.succeed({ ...block, results: [{ ...result, commitment: "0xbad" }] });
   await expect(f.run()).rejects.toThrow();
   expect(f.ports.ledger.postResult).not.toHaveBeenCalled();
 });
@@ -297,7 +307,7 @@ it("halts before storing a result whose payload differs from its commitment", as
 it("compares chain and block identities as felts rather than hex spellings", async () => {
   const f = fixture();
   await f.run();
-  f.ports.shard.block = () => Effect.succeed({ ...block, chainId: "0x01", hash: "0x0a" });
+  f.ports.shard.eventsPage = () => Effect.succeed({ ...block, chainId: "0x01", hash: "0x0a" });
   expect(await f.run()).toMatchObject({ status: "ready" });
 });
 
@@ -316,18 +326,18 @@ it("checks the observed hash without decoding receipts or resolving account/seas
   const f = fixture();
   f.ports.identity.payoutWallet = () => Effect.succeed({ status: "no_wallet" });
   await f.run();
-  f.ports.shard.block = vi.fn(() => Effect.fail(new RelayFailure({ operation: "binding_unavailable" })));
+  f.ports.shard.eventsPage = vi.fn(() => Effect.fail(new RelayFailure({ operation: "binding_unavailable" })));
   f.ports.shard.blockHash = () => Effect.succeed("0xb");
   await expect(f.run()).rejects.toThrow();
   expect(await f.store.progress()).toMatchObject({ halted: "confirmed_block_changed:0" });
-  expect(f.ports.shard.block).not.toHaveBeenCalled();
+  expect(f.ports.shard.eventsPage).not.toHaveBeenCalled();
   expect(f.ports.ledger.pay).not.toHaveBeenCalled();
 });
 
 it("sets aside a permanently refused claim and pays the next claim without retrying the refusal", async () => {
   const f = fixture();
   const later = { ...withdrawal, transactionHash: "0xdef" };
-  f.ports.shard.block = () => Effect.succeed({ ...block, withdrawals: [withdrawal, later] });
+  f.ports.shard.eventsPage = () => Effect.succeed({ ...block, withdrawals: [withdrawal, later] });
   f.ports.ledger.pay = vi.fn((claim) =>
     claim.transactionHash === withdrawal.transactionHash
       ? Effect.fail(new RelayFailure({ operation: "ledger_season_closed" }))
@@ -378,4 +388,16 @@ it("never redirects an immutable report after a wallet change", async () => {
   await f.run();
   expect(f.ports.ledger.pay).not.toHaveBeenCalled();
   expect(await f.store.held()).toMatchObject([{ reason: "reported_wallet_changed" }]);
+});
+
+it("keeps a pinned event-page cursor through retries and checks its hash before continuing", async () => {
+  const f = fixture();
+  f.ports.shard.eventsPage = vi.fn((_from, _head, cursor) =>
+    Effect.succeed({ ...block, fromBlock: 0, next: cursor ? null : "next" }),
+  );
+  await f.run();
+  expect(await f.store.progress()).toMatchObject({ nextBlock: 0, page: { head: 0, hash: "0xa", token: "next" } });
+  await f.run();
+  expect(f.ports.shard.eventsPage).toHaveBeenLastCalledWith(0, 0, "next");
+  expect(await f.store.progress()).toMatchObject({ nextBlock: 1, lastHash: "0xa" });
 });

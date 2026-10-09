@@ -23,15 +23,24 @@ vi.mock("@realms-world/value-ledger", async (original) => ({
       : { getBlockNumber: async () => 100, getEvents: rpc.events, callContract: rpc.ledgerCall },
 }));
 const reader = new ShardReader({ rpcUrl: "https://shard.test", gamesAddress: "0x77", chainId: "0x1" });
+const cached = new Map<string, unknown>();
+const storage = {
+  get: async <T>(key: string) => cached.get(key) as T | undefined,
+  put: async <T>(key: string, value: T) => {
+    cached.set(key, value);
+  },
+};
 const bind = () =>
   frontierReceiptBindings(
     reader,
     { rpcUrl: "https://ledger.test", address: "0x10" },
     { realmsIdForAccount: async () => "0x2" },
     "https://herald.test",
+    storage,
   );
 beforeEach(() => {
   vi.clearAllMocks();
+  cached.clear();
   rpc.shardCall.mockResolvedValue(["0x5", "5", "0", "1", "0", "0", "10", "110", "0", "0x99"]);
   rpc.events.mockResolvedValue({
     events: [
@@ -89,3 +98,15 @@ it("refuses ambiguous funding, changed seed, or a receipt at the exclusive deadl
 });
 
 afterEach(() => vi.unstubAllGlobals());
+
+it("reuses a durable binding after settlement and Worker recreation without reading immutable facts again", async () => {
+  expect(await Effect.runPromise(bind().frontierSeason(7, 50))).toBe(42);
+  const calls = rpc.shardCall.mock.calls.length;
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async () => new Response(null, { status: 409 })),
+  );
+  expect(await Effect.runPromise(bind().frontierSeason(7, 112))).toBe(42);
+  expect(rpc.shardCall.mock.calls.length).toBe(calls);
+  await expect(Effect.runPromise(bind().frontierSeason(7, 604910))).rejects.toThrow();
+});

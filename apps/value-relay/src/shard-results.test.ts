@@ -71,7 +71,7 @@ it("reads precisely the committed frozen wallets and competition ranks at a conf
 it("ingests only completed records while retaining withdrawals in the same confirmed block", async () => {
   const source = reader();
   const partial = { ...row(), values: ["1", "0x123", "1", "0", "0x0"] };
-  vi.spyOn(source, "block").mockResolvedValue({
+  vi.spyOn(source, "page").mockResolvedValue({
     block: {
       block_number: 10,
       block_hash: "0xa",
@@ -80,17 +80,25 @@ it("ingests only completed records while retaining withdrawals in the same confi
       status: "ACCEPTED_ON_L2",
       transactions: [],
     },
+    first: { block_number: 10, block_hash: "0xa", parent_hash: "0x9", timestamp: 1000, status: "ACCEPTED_ON_L2" },
+    next: null,
     rows: [
-      partial,
-      row(),
-      { model: "LordsWithdrawal", keys: ["8", "0xdef"], values: ["0x321", "9"], transactionHash: "0xdef" },
+      { ...partial, confirmedAt: 1000 },
+      { ...row(), confirmedAt: 1000 },
+      {
+        model: "LordsWithdrawal",
+        keys: ["8", "0xdef"],
+        values: ["0x321", "9"],
+        transactionHash: "0xdef",
+        confirmedAt: 1000,
+      },
     ],
   });
   const ports = shardWithdrawalPorts(source, {
     realmsIdForAccount: async () => "0x2",
     frontierSeason: () => Effect.succeed(4),
   });
-  const block = await Effect.runPromise(ports.block(10));
+  const block = await Effect.runPromise(ports.eventsPage(10, 10, null));
   expect(block.results).toEqual([result]);
   expect(block.withdrawals[0]).toMatchObject({ transactionHash: "0xdef", seasonId: 4, amount: "9000000000000000000" });
 });
