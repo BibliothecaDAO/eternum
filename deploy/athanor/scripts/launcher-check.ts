@@ -29,63 +29,105 @@ export function assertWorkerCreation(
     throw new Error("Worker check must be its own single Games.create_game invoke");
 }
 
+interface LauncherCheck {
+  directory: string;
+  manifest: NativeWorldManifest;
+  provider: RpcProvider;
+  bootstrap: string;
+  account: string;
+}
+
 async function main(): Promise<void> {
-  const [action, data, account, txHash, name, preset] = process.argv.slice(2);
-  if (!data || !account || !["handoff", "verify"].includes(action!)) throw new Error("Invalid launcher check inputs");
-  const manifest = readShardManifest<NativeWorldManifest>(resolve(data, "native-world.json"));
+  const [action, directory, account, txHash, name, preset] = process.argv.slice(2);
+  if (!directory || !account || !["handoff", "verify"].includes(action!))
+    throw new Error("Invalid launcher check inputs");
+  const check = loadLauncherCheck(directory, account);
+  await assertProviderChain(check.provider, check.manifest, "launcher check RPC");
+  await assertWorkerIdentity(check);
+  await confirmLauncher(check, action!);
+  if (action === "verify") {
+    if (!txHash || !name || !preset) throw new Error("Worker creation proof missing");
+    await verifyWorkerGame(check, { txHash, name, preset: Number(preset) });
+  }
+  console.log(JSON.stringify({ passed: true, launcher: account }));
+}
+
+function loadLauncherCheck(directory: string, account: string): LauncherCheck {
+  const manifest = readShardManifest<NativeWorldManifest>(resolve(directory, "native-world.json"));
   const rpcUrl = process.env.HARNESS_ADMIN_RPC_URL;
   if (!rpcUrl) throw new Error("Private launcher RPC is required");
-  const provider = new RpcProvider({ nodeUrl: rpcUrl });
-  await assertProviderChain(provider, manifest, "launcher check RPC");
-  const identity = JSON.parse(readFileSync(resolve(data, "gameplay-contracts.json"), "utf8"));
-  const read = (entrypoint: string, calldata: string[] = []) =>
-    provider.callContract({ contractAddress: manifest.world.address, entrypoint, calldata }, "latest");
+  const identity = JSON.parse(readFileSync(resolve(directory, "gameplay-contracts.json"), "utf8"));
+  return {
+    directory,
+    manifest,
+    provider: new RpcProvider({ nodeUrl: rpcUrl }),
+    bootstrap: identity.operatorAccountAddress,
+    account,
+  };
+}
+
+async function assertWorkerIdentity({ provider, manifest, account, bootstrap }: LauncherCheck): Promise<void> {
   const classHash = await provider.getClassHashAt(account, "latest");
   const guardian = await provider.getStorageAt(account, hash.starknetKeccak("guardian_public_key"), "latest");
   if (
     BigInt(classHash) !== BigInt(manifest.shard.accountClassHash) ||
     BigInt(guardian) !== BigInt(manifest.shard.guardianPublicKey) ||
     BigInt(account) === 0n ||
-    BigInt(account) === BigInt(identity.operatorAccountAddress)
+    BigInt(account) === BigInt(bootstrap)
   )
     throw new Error("Worker launcher identity differs");
-  const [installed] = await read("launcher");
+}
+
+async function confirmLauncher(check: LauncherCheck, action: string): Promise<void> {
+  const { provider, manifest, bootstrap, account } = check;
+  const read = () =>
+    provider.callContract({ contractAddress: manifest.world.address, entrypoint: "launcher", calldata: [] }, "latest");
+  const [installed] = await read();
   const needsHandoff = BigInt(installed!) !== BigInt(account);
-  if (needsHandoff && (action !== "handoff" || BigInt(installed!) !== BigInt(identity.operatorAccountAddress)))
+  if (needsHandoff && (action !== "handoff" || BigInt(installed!) !== BigInt(bootstrap)))
     throw new Error("Unexpected installed launcher");
-  if (action === "handoff") {
-    writeFileSync(
-      resolve(data, "launcher-enrolment.json"),
-      JSON.stringify({
-        chainId: manifest.shard.chainId,
-        world: manifest.world.address,
-        launcherAccount: account,
-      }),
-      { mode: 0o600 },
-    );
-  }
-  if (needsHandoff) {
-    const privateKey = process.env.DEPLOYER_PRIVATE_KEY;
-    if (!privateKey) throw new Error("Missing protected owner credential");
-    const owner = createOperatorAccount(provider, identity.operatorAccountAddress, privateKey);
-    const sent = await owner.execute(
-      { contractAddress: manifest.world.address, entrypoint: "set_launcher", calldata: [account] },
-      resolveRegistrarExecutionDetails(),
-    );
-    await waitForSuccess(provider, sent.transaction_hash);
-  }
-  const [confirmed] = await read("launcher");
+  if (action === "handoff") recordLauncherIntent(check);
+  if (needsHandoff) await sendLauncherHandoff(check);
+  const [confirmed] = await read();
   if (BigInt(confirmed!) !== BigInt(account)) throw new Error("Launcher handoff was not confirmed");
-  if (action === "verify") {
-    if (!txHash || !name || !preset) throw new Error("Worker creation proof missing");
-    const receipt = await confirmedTransactionReceipt(provider, txHash);
-    const tx = await provider.getTransactionByHash(txHash);
-    assertWorkerCreation(tx, { account, world: manifest.world.address, name, preset: Number(preset) });
-    const gameId = resolveCreatedGameId(receipt, manifest);
-    const [named] = await read("game_id_by_name", [name]);
-    if (!gameId || BigInt(named!) !== BigInt(gameId)) throw new Error("Worker game is missing from confirmed state");
-  }
-  console.log(JSON.stringify({ passed: true, launcher: account }));
+}
+
+function recordLauncherIntent({ directory, manifest, account }: LauncherCheck): void {
+  writeFileSync(
+    resolve(directory, "launcher-enrolment.json"),
+    JSON.stringify({
+      chainId: manifest.shard.chainId,
+      world: manifest.world.address,
+      launcherAccount: account,
+    }),
+    { mode: 0o600 },
+  );
+}
+
+async function sendLauncherHandoff({ provider, manifest, bootstrap, account }: LauncherCheck): Promise<void> {
+  const privateKey = process.env.DEPLOYER_PRIVATE_KEY;
+  if (!privateKey) throw new Error("Missing protected owner credential");
+  const owner = createOperatorAccount(provider, bootstrap, privateKey);
+  const sent = await owner.execute(
+    { contractAddress: manifest.world.address, entrypoint: "set_launcher", calldata: [account] },
+    resolveRegistrarExecutionDetails(),
+  );
+  await waitForSuccess(provider, sent.transaction_hash);
+}
+
+async function verifyWorkerGame(
+  { provider, manifest, account }: LauncherCheck,
+  { txHash, name, preset }: { txHash: string; name: string; preset: number },
+): Promise<void> {
+  const receipt = await confirmedTransactionReceipt(provider, txHash);
+  const tx = await provider.getTransactionByHash(txHash);
+  assertWorkerCreation(tx, { account, world: manifest.world.address, name, preset });
+  const gameId = resolveCreatedGameId(receipt, manifest);
+  const [named] = await provider.callContract(
+    { contractAddress: manifest.world.address, entrypoint: "game_id_by_name", calldata: [name] },
+    "latest",
+  );
+  if (!gameId || BigInt(named!) !== BigInt(gameId)) throw new Error("Worker game is missing from confirmed state");
 }
 
 if (import.meta.main) {

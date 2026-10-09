@@ -175,6 +175,19 @@ class ActivationTest(unittest.TestCase):
                 deploy.directory_status({"guardian_url": "https://identity.test/api/guardian", "public_herald_url": "https://herald.test"}, "pending")
 
 class WorkerLauncherTest(unittest.TestCase):
+    def test_gameplay_evidence_cannot_survive_a_package_or_image_change(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            data = root / "data"
+            data.mkdir()
+            for name in ("native-world.json", "initialized.json"):
+                (data / name).write_text("{}")
+            release = root / "release.json"
+            release.write_text(json.dumps({"commit": "a", "images": {"init": "sha256:1"}}))
+            first = deploy.gameplay_check_identity(data)
+            release.write_text(json.dumps({"commit": "b", "images": {"init": "sha256:2"}}))
+            self.assertNotEqual(first, deploy.gameplay_check_identity(data))
+
     def test_activation_waits_for_confirmed_worker_handoff_and_its_real_creation(self):
         with tempfile.TemporaryDirectory() as temporary:
             data = Path(temporary)

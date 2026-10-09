@@ -207,7 +207,8 @@ def verify_and_activate(config, directory, command=None):
 
 def gameplay_check_identity(directory):
     manifest, initialized = deployed_facts(directory)
-    encoded = json.dumps([manifest, initialized], sort_keys=True, separators=(",", ":")).encode()
+    release = json.loads((directory.parent / "release.json").read_text())
+    encoded = json.dumps([manifest, initialized, release], sort_keys=True, separators=(",", ":")).encode()
     return hashlib.sha256(encoded).hexdigest()
 
 
