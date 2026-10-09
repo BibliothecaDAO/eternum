@@ -830,6 +830,7 @@ pub mod GameLedger {
         }
 
         fn assert_valid_preset(self: @ContractState, preset: Preset) {
+            assert!(preset.protocol_cut_bps <= 10_000, "Ledger: invalid protocol cut");
             assert!(preset.chest_lords_bps <= 10_000, "Ledger: invalid chest share");
             assert!(
                 preset.chest_metadata != 0 && preset.chest_metadata != 0x101 && preset.chest_metadata != 0x201,
@@ -968,7 +969,8 @@ pub mod GameLedger {
             let mut season = self.get_season(game.season_id);
             assert!(starknet::get_block_timestamp() < season.end, "Ledger: MMR frozen");
             let chest_lords = self.validate_chest_budget(game, ranked, preset);
-            let pool = game.pool - chest_lords;
+            let treasury_cut = game.pool * preset.protocol_cut_bps.into() / BPS;
+            let pool = game.pool - treasury_cut - chest_lords;
             let commitment = result_commitment(key, ranked);
             season.pool += pool;
             assert!(season.pool <= 0xffffffffffffffffffffffffffffffff, "Ledger: season pool exceeds u128");
@@ -977,6 +979,9 @@ pub mod GameLedger {
             game.pool = 0;
             game.result_commitment = commitment;
             self.games.entry(key).write(game);
+            if treasury_cut > 0 {
+                self.send_lords(self.treasury.read(), treasury_cut);
+            }
             (pool, commitment)
         }
 

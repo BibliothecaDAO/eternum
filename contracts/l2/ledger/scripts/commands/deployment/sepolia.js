@@ -111,6 +111,7 @@ async function deployAssets(account, settings) {
 function buildPreset() {
   return {
     entry_fee: uint256.bnToUint256(500n * LORDS),
+    protocol_cut_bps: 2_000,
     chest_lords_bps: 500,
     chest_metadata: 0x301,
     paid_fraction_bps: 2000,
