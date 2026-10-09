@@ -1,3 +1,5 @@
+import { nativeRuleConstants } from "../../../contracts/l3/world-native/schema/client.gen";
+
 /**
  * A player in a slot: the gameplay account it has on the shard the slot launches on, and the Realms account that
  * registered it, or null for an account a launcher registered (a harness bot or an invited roster).
@@ -36,7 +38,7 @@ export class SlotNotFound extends Error {}
 
 /** Preserve the caller's roster order; earlier groups receive the extra player. */
 export function splitPlaytestRoster<T>(roster: readonly T[]): T[][] {
-  const gameCount = Math.ceil(roster.length / 24);
+  const gameCount = Math.ceil(roster.length / nativeRuleConstants.MAX_BLITZ_ROSTER_PLAYERS);
   if (gameCount === 0) return [];
   const size = Math.floor(roster.length / gameCount);
   const largerGames = roster.length % gameCount;
