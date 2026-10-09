@@ -181,6 +181,17 @@ fn a_realm_cannot_receive_daily_labor_in_two_games_on_one_shard() {
     let operator = ILedgerOperatorSafeDispatcher { contract_address: d.games };
     let first = operator.grant_labor(realm, 0, d.actor).unwrap();
     let other = crate::entry::LaborRealm { game_id: game_id + 1, ..realm };
+    snforge_std::interact_with_state(d.games, || {
+        use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
+        let state = crate::state::write();
+        state.games.games.write(other.game_id, crate::game::GameRegistry { name: 'other', ..state.games.games.read(game_id) });
+        state.games.overrides.write(other.game_id, state.games.overrides.read(game_id));
+        state.game_releases.write(other.game_id, state.game_releases.read(game_id));
+        let record = crate::logic::structures::record(crate::resources::ResourceKey { game_id, entity_id: home });
+        crate::logic::structures::StructureState::create(crate::resources::ResourceKey { game_id: other.game_id, entity_id: home }, record);
+        state.resources.resource_exists.write((other.game_id, home), true);
+        state.resources.weights.write((other.game_id, home), crate::resources::Weight { capacity: core::num::traits::Bounded::MAX, weight: 0 });
+    });
     assert_eq!(operator.labor_grant(other, 0).unwrap(), Some(first));
     assert!(operator.grant_labor(other, 0, d.actor).is_err());
     assert!(operator.grant_labor(other, 0, authority()).is_err());
