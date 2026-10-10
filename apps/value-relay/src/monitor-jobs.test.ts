@@ -26,7 +26,10 @@ const fixture = () => {
   const ctx = {
     storage: {
       transaction: async (run: (tx: unknown) => Promise<unknown>): Promise<unknown> => run(ctx.storage),
-      delete: async (key: string) => data.delete(key),
+      list: async ({ prefix }: { prefix: string }) => new Map([...data].filter(([key]) => key.startsWith(prefix))),
+      delete: async (keys: string | string[]) => {
+        for (const key of typeof keys === "string" ? [keys] : keys) data.delete(key);
+      },
       get: async (key: string) => data.get(key),
       put: async (key: string, value: unknown) => {
         data.set(key, value);
@@ -89,6 +92,7 @@ it("requires an operator token and a recorded reason to clear a monitor halt wit
     cursors: { paidClaims: { fromBlock: 11, page: null } },
   };
   f.data.set("progress", progress);
+  f.data.set("conservation:final:0x1:0x10:7", { receipts: "17", netIssued: "17" });
   const env = {
     OPERATOR_TOKEN: "operator-test-token",
     MONITOR: { idFromName: () => "monitor", get: () => f.monitor },
@@ -107,6 +111,7 @@ it("requires an operator token and a recorded reason to clear a monitor halt wit
     unverifiedTicks: 0,
     cursors: { paidClaims: { fromBlock: 11, page: JSON.stringify({ head: 20, token: "" }), offset: 1 } },
   });
+  expect(f.data.has("conservation:final:0x1:0x10:7")).toBe(false);
   expect(f.data.get("reset:sequence")).toBe(1);
   expect(f.data.get("reset:1")).toMatchObject({ reason: "Receipt RPC corrected; replay verified", previous: progress });
 });

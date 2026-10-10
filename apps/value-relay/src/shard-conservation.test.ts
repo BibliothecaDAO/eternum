@@ -207,7 +207,7 @@ it("refuses rounded JSON amounts and empty integer text instead of inventing a b
   ).rejects.toThrow();
 });
 
-it("rereads settled balances after the claim window instead of retaining a second truth", async () => {
+it("memoizes settled balances after the claim window", async () => {
   const state = snapshot();
   state.models[0]!.rows[0]!.value.claim_window_seconds = 10;
   const games = directory();
@@ -226,7 +226,7 @@ it("rereads settled balances after the claim window instead of retaining a secon
   expect(await Effect.runPromise(second())).toEqual([
     { gameId: 7, confirmedBlock: 10, receipts: "17", netIssued: "17" },
   ]);
-  expect(read.mock.calls.filter(([url]) => String(url).includes("/snapshot"))).toHaveLength(2);
+  expect(read.mock.calls.filter(([url]) => String(url).includes("/snapshot"))).toHaveLength(1);
 });
 
 it("bounds first-time conservation snapshots and rotates unfinished games", async () => {
@@ -263,7 +263,7 @@ it("bounds first-time conservation snapshots and rotates unfinished games", asyn
     ),
   ).toEqual([26, 27, 28, 29, 30]);
 });
-it("invalidates a final balance when its source block was replaced", async () => {
+it("rereads a final balance after the monitor reset clears its memo", async () => {
   const state = snapshot();
   state.models[0]!.rows[0]!.value.claim_window_seconds = 10;
   const games = directory();
@@ -277,6 +277,7 @@ it("invalidates a final balance when its source block was replaced", async () =>
   };
   const read = network(state, games);
   await Effect.runPromise(shardConservationPort(connection, "https://shard.test", read, cache)());
+  values.clear(); // The monitor reset clears every conservation:final row.
   rpc.block.mockImplementation(async (height) => ({
     block_number: height === "latest" ? 10 : height,
     block_hash: "0xb",
