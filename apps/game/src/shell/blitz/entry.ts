@@ -1,5 +1,6 @@
 import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 
+import { feltEquals } from "@bibliothecadao/eternum/game-client";
 import type { Credits, Registration } from "@realms-world/value-ledger/codecs";
 
 import type { PlaytestSlot } from "@/ui/features/factory-v2/api/factory-worker";
@@ -91,17 +92,25 @@ const refundOwed = (registration: Registration, cancelled: boolean): boolean =>
   (registration.paid > 0n || registration.swordCredit || registration.shieldCredit);
 
 const REFUNDS_OWED = ["ledger", "refund-owed"] as const;
+export const registeredSlotsKey = (wallet: string) => [...REFUNDS_OWED, "registered", wallet] as const;
 export const refundOwedKey = (key: SlotKey, wallet: string) =>
   [...REFUNDS_OWED, key.shard, key.slotId, wallet] as const;
 
 /**
  * The closed slots that owe the payout wallet a refund, by name: the Blitz list keeps their rows so the refund stays
- * in reach after the close. One registration read per closed slot the launch service lists, and the slot's own
- * (for its cancelled flag) only where that wallet registered and was not seated.
+ * in reach after the close. The reads are bounded by the wallet's own play, never by how many slots the launch service
+ * lists: one query for the slots the wallet registered in (its Registered events), then a registration read for each
+ * of those that is listed and closed, and the slot's own (for its cancelled flag) only where it was not seated.
  */
 export const useRefundSlots = (slots: readonly PlaytestSlot[], wallet: string | null): ReadonlySet<string> => {
   const ledger = environmentLedger();
-  const closed = ledger && wallet ? slots.filter((slot) => slot.closed) : [];
+  const registered = useQuery({
+    queryKey: registeredSlotsKey(wallet ?? ""),
+    queryFn: () => (ledger as EnvironmentLedger).registeredSlots(wallet as string),
+    enabled: ledger !== null && wallet !== null && slots.some((slot) => slot.closed),
+    staleTime: 60_000,
+  }).data;
+  const closed = slots.filter((slot) => slot.closed && registered?.some((key) => isSameSlot(key, slotKeyOf(slot))));
   const owed = useQueries({
     queries: closed.map((slot) => ({
       queryKey: refundOwedKey(slotKeyOf(slot), wallet as string),
@@ -117,6 +126,8 @@ export const useRefundsChanged = () => {
   const client = useQueryClient();
   return () => void client.invalidateQueries({ queryKey: REFUNDS_OWED });
 };
+
+const isSameSlot = (a: SlotKey, b: SlotKey): boolean => a.slotId === b.slotId && feltEquals(a.shard, b.shard);
 
 const readRefundOwed = async (ledger: EnvironmentLedger, key: SlotKey, wallet: string): Promise<boolean> => {
   const registration = await ledger.registration(key, wallet);
