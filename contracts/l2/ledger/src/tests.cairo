@@ -1536,7 +1536,17 @@ fn completed_season() -> Fixture {
 fn post_top_at(fixture: @Fixture, timestamp: u64, winners: Array<ContractAddress>) {
     start_cheat_block_timestamp(*fixture.ledger_address, timestamp);
     start_cheat_caller_address(*fixture.ledger_address, OPERATOR());
-    fixture.ledger.post_season_top(1, winners);
+    fixture.ledger.post_season_top(1, 0, winners);
+    let season = fixture.ledger.get_season(1);
+    let required: u32 = ((Into::<u32, u64>::into(season.participant_count)
+        * fixture.ledger.get_preset(season.preset_id).paid_fraction_bps.into()
+        + 9999)
+        / 10000)
+        .try_into()
+        .unwrap();
+    if season.top_count == required {
+        fixture.ledger.allocate_season(1, 0);
+    }
 }
 
 fn claim_season_at(fixture: @Fixture, timestamp: u64, owner: ContractAddress) {
@@ -2711,4 +2721,93 @@ fn occupied_pass_id_never_blocks_cash_refund_and_records_non_restoration() {
     let safe = IGameLedgerSafeDispatcher { contract_address: fixture.ledger_address };
     assert!(safe.refund(GAME_KEY).is_err());
     assert!(fixture.lords.balance_of(owner) == 100);
+}
+
+
+fn two_lobby_full_paid_season() -> Fixture {
+    let mut preset = default_preset();
+    preset.paid_fraction_bps = 10000;
+    preset.mmr.enabled = false;
+    let fixture = deploy_fixture(preset);
+    register_players(@fixture, 24);
+    apply_results(@fixture, ranked_players(24));
+    let key = GameKey { shard: 'shard', game_id: 8 };
+    start_cheat_caller_address(fixture.ledger_address, OPERATOR());
+    fixture.ledger.open_game(key, 1, PRESET_ID, START, END);
+    let mut ranked = array![];
+    for index in 24_u16..48 {
+        let owner = player(index);
+        fund_and_approve_player(@fixture, owner, 500);
+        link_account(@fixture, owner, shard_account(owner));
+        start_cheat_caller_address(fixture.ledger_address, owner);
+        fixture.ledger.register(key, false, false);
+        ranked.append(RankedPlayer { wallet: owner, rank: index - 23 });
+    }
+    start_cheat_caller_address(fixture.ledger_address, OPERATOR());
+    start_cheat_block_timestamp(fixture.ledger_address, START);
+    fixture.ledger.apply_results(key, ranked);
+    start_cheat_block_timestamp(fixture.ledger_address, END + 100);
+    fixture
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn season_posting_and_allocations_are_bounded_and_resume_without_changing_the_curve() {
+    let fixture = two_lobby_full_paid_season();
+    let safe = IGameLedgerSafeDispatcher { contract_address: fixture.ledger_address };
+    let mut first = array![];
+    let mut last = array![];
+    for i in 0_u16..48 {
+        if i < 32 {
+            first.append(player(i));
+        } else {
+            last.append(player(i));
+        }
+    }
+    let mut too_many = first.clone();
+    too_many.append(player(32));
+    assert!(safe.post_season_top(1, 0, too_many).is_err());
+    assert!(fixture.ledger.get_season(1).top_count == 0);
+    fixture.ledger.post_season_top(1, 0, first.clone());
+    fixture.ledger.post_season_top(1, 0, first);
+    assert!(fixture.ledger.get_season(1).top_count == 32);
+    assert!(safe.post_season_top(1, 33, last.clone()).is_err());
+    assert!(safe.post_season_top(1, 32, array![player(31)]).is_err());
+    assert!(safe.allocate_season(1, 0).is_err());
+    fixture.ledger.post_season_top(1, 32, last);
+    assert!(fixture.ledger.allocate_season(1, 0) == 32);
+    assert!(fixture.ledger.allocate_season(1, 0) == 32);
+    assert!(fixture.ledger.season_settlement(1).allocation_cursor == 32);
+    assert!(safe.claim_season(1).is_err());
+    assert!(safe.allocate_season(1, 33).is_err());
+    assert!(fixture.ledger.allocate_season(1, 32) == 48);
+    let review_until = fixture.ledger.get_season(1).review_until;
+    start_cheat_block_timestamp(fixture.ledger_address, END + 101);
+    assert!(fixture.ledger.allocate_season(1, 32) == 48);
+    assert!(fixture.ledger.get_season(1).review_until == review_until);
+    // Independent reference retains the old integer recurrence and exact final remainder.
+    let pool = fixture.ledger.get_season(1).pool;
+    let mut weights = array![];
+    let mut weight: u256 = 1000000000000000000;
+    let mut total = 0;
+    for _ in 0_u32..48 {
+        weights.append(weight);
+        total += weight;
+        weight = weight * default_preset().decay_bps.into() / 10000;
+    }
+    let mut allocated = 0;
+    for i in 0_u32..48 {
+        let amount = if i == 47 {
+            pool - allocated
+        } else {
+            pool * *weights.at(i) / total
+        };
+        let (owner, actual) = fixture.ledger.get_season_winner(1, i);
+        assert!(owner == player(i.try_into().unwrap()) && actual == amount);
+        allocated += actual;
+    }
+    assert!(allocated == pool && fixture.ledger.season_settlement(1).allocated == pool);
+    // A last-position claim and omitted-player membership lookup are constant-size reads.
+    claim_season_at(@fixture, review_until, player(47));
+    assert!(fixture.ledger.season_claimed(1, player(47)));
 }
