@@ -13,6 +13,7 @@ import type {
   GameSyncStore,
 } from "../sync/game-sync-types";
 import { readExpeditionRules } from "../utils/expeditions";
+import { notifyEach } from "../utils/notify-each";
 import {
   deriveGameSyncScope,
   scopeInputKeys,
@@ -100,7 +101,7 @@ export class NativeFactStore implements GameSyncStore {
       return;
     this.snapshot = { ...state };
     this.revision++;
-    notifyEach(this.listeners, []);
+    notifyEach("NativeFactStore", this.listeners, []);
   }
   private revision = 0;
   getRevision = (): number => this.revision;
@@ -249,7 +250,7 @@ export class NativeFactStore implements GameSyncStore {
     const changes = this.commit(pending);
     if (changes.length) {
       this.revision += 1;
-      notifyEach(this.listeners, changes);
+      notifyEach("NativeFactStore", this.listeners, changes);
     }
   }
 
@@ -260,7 +261,7 @@ export class NativeFactStore implements GameSyncStore {
 
   // The runtime deduplicates effects; confirmation promotions only update its history callback.
   applyEvent(event: GameSyncEvent): void {
-    notifyEach(this.eventListeners, event);
+    notifyEach("NativeFactStore", this.eventListeners, event);
   }
 
   private stageFact(
@@ -407,17 +408,6 @@ function updateIndex(index: Map<string, Set<string>>, group: string, key: string
 function requireModel(name: string): NativeModelName {
   if (!Object.hasOwn(definitions, name)) throw new Error(`Unknown native fact ${name}`);
   return name as NativeModelName;
-}
-
-/** Each reader on its own: one that throws is reported, and every other reader still sees the write. */
-function notifyEach<T>(listeners: Iterable<(value: T) => void>, value: T): void {
-  for (const listener of listeners) {
-    try {
-      listener(value);
-    } catch (error) {
-      console.error("[NativeFactStore] reader failed:", error);
-    }
-  }
 }
 
 function gameIdOf(row: Fact): number {

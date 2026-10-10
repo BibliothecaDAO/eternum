@@ -30,9 +30,12 @@ const fixture: WaveFixturePort = {
     const bounds = readPlayBounds(manifest);
     const shard = await openShard(required("HERALD_URL"), bindings.schemaIdentity);
     const provider = new HarnessProvider(shard.rpcUrl);
-    const privateProvider = createHarnessAdminProvider(shard.rpcUrl);
+    const privateProvider = createHarnessAdminProvider();
     let clients: Awaited<ReturnType<typeof connectActorClients>> | undefined;
+    // The fixture's run: disposing it ends the reconciliation of every send its players made.
+    const run = new AbortController();
     const dispose = () => {
+      run.abort();
       clients?.forEach(({ client }) => client.dispose());
       provider.dispose();
       privateProvider.dispose();
@@ -49,6 +52,7 @@ const fixture: WaveFixturePort = {
         identity: { url: required("IDENTITY_URL"), operatorToken: required("OPERATOR_TOKEN") },
         provider: privateProvider,
         shard,
+        stopped: run.signal,
       });
       const accounts = approved.map((player) => ({
         ...player,
@@ -60,6 +64,7 @@ const fixture: WaveFixturePort = {
             cairoVersion: "1",
           }),
           shard,
+          run.signal,
         ),
       }));
       const name = `wave-${Date.now().toString(36)}`;

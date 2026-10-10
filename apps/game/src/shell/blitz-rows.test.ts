@@ -22,6 +22,7 @@ const blitz = (gameId: number, over: Partial<DirectoryGame>): DirectoryGame =>
   }) as DirectoryGame;
 
 const slot = (name: string, closesAtSeconds: number, over: Partial<PlaytestSlot> = {}): PlaytestSlot => ({
+  entry: { kind: "free" },
   name,
   closesAt: new Date(closesAtSeconds * 1000).toISOString(),
   frozenAt: null,

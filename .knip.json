@@ -27,7 +27,6 @@
         "deploy/athanor/scripts/inspect-shard-roles.ts",
         "deploy/athanor/scripts/read-rpc.ts",
         "deploy/athanor/scripts/account-rpc-smoke.ts",
-        "deploy/athanor/scripts/enrol-operator.ts",
         "deploy/athanor/vrf/worker.ts",
         "deploy/athanor/vrf/benchmark.ts"
       ],
@@ -36,6 +35,15 @@
           "packages/core/src/index.ts"
         ]
       }
+    },
+    "apps/value-relay": {
+      "entry": [
+        "src/worker.ts",
+        "src/monitor-worker.ts"
+      ],
+      "ignoreDependencies": [
+        "cloudflare"
+      ]
     },
     "apps/launch-service": {
       "entry": [
@@ -47,6 +55,9 @@
       "paths": {
         "@bibliothecadao/eternum/shard": [
           "../../packages/core/src/client/shard-reader.ts"
+        ],
+        "@bibliothecadao/eternum/realms-account": [
+          "../../packages/core/src/account/realms-account.ts"
         ]
       }
     },
@@ -195,6 +206,16 @@
         "src/worker.ts",
         "../status/functions/status.json.ts"
       ]
+    },
+    "packages/value-ledger": {
+      "paths": {
+        "@bibliothecadao/provider/batch-progress": [
+          "../provider/src/batch-progress.ts"
+        ],
+        "@bibliothecadao/eternum/device-signer": [
+          "../core/src/account/device-signer.ts"
+        ]
+      }
     }
   },
   "ignoreIssues": {

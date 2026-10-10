@@ -1,6 +1,7 @@
 import { blitzRosterOf, findRegistrarGame } from "../registrar/calls";
 import { seasonSeconds } from "@bibliothecadao/eternum";
 import { frontierPreset } from "../../../source/frontier/native";
+import { nativePresets } from "../../../source/native";
 import { afterAll, describe, expect, test, mock } from "bun:test";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -17,6 +18,7 @@ import { buildNativePreset } from "../config/native-preset";
 import {
   FRONTIER_ACCELERATED_PRESET_ID,
   FRONTIER_PRESET_ID,
+  FRONTIER_SELF_CHECK_PRESET_ID,
   SELF_CHECK_PRESET_ID,
   nativeGameModeOf,
 } from "../../../source/common/native-preset-modes";
@@ -52,6 +54,29 @@ function configuration(preset: number) {
 }
 
 describe("native presets", () => {
+  test("only the Frontier deployment-check preset permits an empty LORDS pool", () => {
+    const check = buildNativePreset(
+      loadNativePresetConfiguration("madara.frontier", FRONTIER_SELF_CHECK_PRESET_ID),
+      FRONTIER_SELF_CHECK_PRESET_ID,
+    );
+    expect(check.economy.chests.unwrap()).toMatchObject({ pool: 0n });
+    for (const id of [FRONTIER_PRESET_ID, FRONTIER_ACCELERATED_PRESET_ID]) {
+      const preset = nativePresets[id]!;
+      const before = preset.chests!.pool;
+      try {
+        preset.chests!.pool = 0;
+        expect(() => buildNativePreset(loadNativePresetConfiguration("madara.frontier", id), id)).toThrow(
+          "Invalid ruin chest rules",
+        );
+      } finally {
+        preset.chests!.pool = before;
+      }
+      expect(
+        buildNativePreset(loadNativePresetConfiguration("madara.frontier", id), id).economy.chests.unwrap(),
+      ).toMatchObject({ pool: BigInt(before) });
+    }
+  });
+
   test("held-Realm labor is fixed per shard calendar day and leaves the account ceiling unruled", () => {
     for (const id of [FRONTIER_PRESET_ID, FRONTIER_ACCELERATED_PRESET_ID]) {
       const preset = buildNativePreset(loadNativePresetConfiguration("madara.frontier", id), id);
@@ -413,7 +438,8 @@ describe("native presets", () => {
     ]);
     expect(() => nativeGameModeOf(9)).toThrow("Unknown native preset 9");
     expect(nativeGameModeOf(SELF_CHECK_PRESET_ID)).toBe("eternum");
-    expect(() => nativeGameModeOf(104)).toThrow("Unknown native preset 104");
+    expect(nativeGameModeOf(104)).toBe("frontier");
+    expect(() => nativeGameModeOf(105)).toThrow("Unknown native preset 105");
   });
 
   test("native balances and mine ladders come only from the selected sheet", () => {

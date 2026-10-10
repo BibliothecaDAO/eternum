@@ -1,3 +1,5 @@
+import { buildNativePreset } from "../../../config/deployer/clean/config/native-preset";
+import { loadNativePresetConfiguration } from "../../../config/deployer/clean/registrar/native-preset";
 import { expect, test } from "bun:test";
 import { shortString, type Account } from "starknet";
 import { encodeNativeCommand } from "@bibliothecadao/provider";
@@ -7,7 +9,7 @@ import { nativeCommandBits } from "../../../contracts/l3/world-native/schema/com
 import type { NativeCommand } from "../../../contracts/l3/world-native/schema/commands.gen";
 import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
 import { nativePresetForId } from "../../../config/source/native";
-import { SELF_CHECK_PRESET_ID } from "../../../config/source/common/native-preset-modes";
+import { SELF_CHECK_PRESET_ID, FRONTIER_SELF_CHECK_PRESET_ID } from "../../../config/source/common/native-preset-modes";
 import { buildRoutePlan, bindModeRoutes, modePlayChecks, gameFacts } from "./self-check-fixture";
 import { commandForRoute, routeReasons } from "./self-check-routes";
 import { assertDomainRefusal } from "./self-check-action";
@@ -185,4 +187,15 @@ test("Frontier acceptance reads the same safe entity boundary as a player's clie
   expect(() => settle.verify(store)).not.toThrow();
   id = 9007199254740993n;
   expect(() => settle.verify(store)).toThrow("Native integer cannot be represented as a JavaScript number");
+});
+
+test("the real open-home Frontier check has no payable LORDS pool without changing normal Frontier", () => {
+  const check = nativePresetForId(FRONTIER_SELF_CHECK_PRESET_ID);
+  const production = nativePresetForId(5);
+  expect(check.entryRule).toBe(production.entryRule);
+  expect(check.commandMask).toBe(production.commandMask);
+  expect(check.chests).toEqual({ ...production.chests!, pool: 0 });
+  expect(production.chests!.pool).toBe(1000000);
+  const definition = buildNativePreset(loadNativePresetConfiguration("madara.frontier", check.id), check.id);
+  expect(definition.economy.chests.unwrap()).toMatchObject({ pool: 0n, price_ceiling: 50n });
 });

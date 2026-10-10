@@ -30,10 +30,10 @@ export async function loadNativeWorld(input: {
     for (let fromBlock = checkpoint ? checkpoint.confirmedBlock + 1 : 0; fromBlock <= targetBlock; ) {
       const toBlock = Math.min(fromBlock + REPLAY_WINDOW_BLOCKS - 1, targetBlock);
       const window = await replayWindow(input, fold, fromBlock, toBlock);
-      for (const key of Object.keys(metrics) as (keyof typeof metrics)[]) metrics[key] += window[key];
-      confirmedBlock = toBlock;
-      checkpointBlock = toBlock;
-      fromBlock = toBlock + 1;
+      for (const key of Object.keys(metrics) as (keyof typeof metrics)[]) metrics[key] += window.metrics[key];
+      confirmedBlock = window.throughBlock;
+      checkpointBlock = window.throughBlock;
+      fromBlock = window.throughBlock + 1;
     }
   } catch (error) {
     // Keep the last valid checkpoint available for inspection. Restart with a corrected release to resume.
@@ -62,8 +62,8 @@ async function replayWindow(
     toBlock,
     retainTransactions: false,
   });
-  await input.checkpointStore.save(input.chain, toBlock, fold);
-  return replay.metrics;
+  await input.checkpointStore.save(input.chain, replay.throughBlock, fold);
+  return { metrics: replay.metrics, throughBlock: replay.throughBlock };
 }
 
 /** A checkpoint the history does not reach would leave a gap in history, so both are rebuilt from genesis instead. */

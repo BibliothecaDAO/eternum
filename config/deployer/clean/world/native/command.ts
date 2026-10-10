@@ -63,7 +63,10 @@ export async function executeNativeAdminCommand(
   const scope = { gameId: input.gameId, actor: input.accountAddress };
   const rejection = gameplayRejection(receipt.events, games, accepted.transaction_hash, scope);
   if (rejection) throw new Error(`Native command rejected: ${rejection.statusClass}: ${rejection.reason}`);
-  const remaining = batchRemaining(receipt.events, games, accepted.transaction_hash, scope)?.toString();
+  const remaining = batchRemaining(receipt.events, games, accepted.transaction_hash, {
+    ...scope,
+    missing: "allow",
+  })?.toString();
   if (
     (repeatableBatches.has(input.command.kind) || input.command.kind === "RecordBlitzResults") &&
     remaining === undefined

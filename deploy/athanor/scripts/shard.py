@@ -20,22 +20,25 @@ from urllib.request import Request, urlopen
 from urllib.parse import urlparse
 
 import measures
+from directory import directory_status, wait_for_identity
 
 
 ROOT = Path(__file__).resolve().parents[3]
 # The box lock ships with the shard package, beside backup.py, which takes it too.
 sys.path.insert(0, str(ROOT / "deploy/shard"))
 from stack_lock import isolated_stack_lock
+from operator_token import read_protected_text
 
 
-# Only the public credential path and driver placement pass through sudo.
-DOCKER = ["sudo", "-n", "--preserve-env=OPERATOR_TOKEN_FILE,HARNESS_CPUSET", "docker"]
+# Only driver placement passes through sudo; containers read the fixed protected file mount.
+DOCKER = ["sudo", "-n", "--preserve-env=HARNESS_CPUSET", "docker"]
 RELEASES = "https://github.com/BibliothecaDAO/eternum/releases/download"
 # Campaign G's target, not yet a measured ceiling: a larger shard waits for a G measurement that supports it.
 MAX_PLAYER_CAPACITY = 2000
 DEFAULT_NODE_MEMORY_MIB = 24576
 SLICE = Path("/sys/fs/cgroup/athanor.slice")
 # The services that hold memory for the shard's lifetime; prepare and init exit once the shard is deployed.
+PRIVATE_NODE_RPC_URL = "http://madara:9944/rpc/v0_10_2"
 LONG_RUNNING = ("madara", "postgres", "herald", "rpc", "metrics")
 
 
@@ -255,10 +258,7 @@ def deploy_world(config, directory, environment):
 
 
 def host_credentials(directory):
-    path = directory / "host-keys.json"
-    if path.stat().st_mode & 0o777 != 0o600 or path.stat().st_uid != int(os.environ.get("HOST_UID", os.getuid())):
-        raise ValueError("host-keys.json must be owner-only mode 0600")
-    keys = json.loads(path.read_text())
+    keys = json.loads(read_protected_text(directory / "host-keys.json"))
     return {"DEPLOYER_ACCOUNT_ADDRESS": keys["deployerAddress"],
             "DEPLOYER_PRIVATE_KEY": keys["deployerPrivateKey"]}
 
@@ -266,7 +266,7 @@ def host_credentials(directory):
 def deployment_environment(config, directory):
     credentials = host_credentials(directory)
     return {
-        **os.environ, **credentials, "RPC_URL": "http://madara:9944/rpc/v0_10_2",
+        **os.environ, **credentials, "RPC_URL": PRIVATE_NODE_RPC_URL,
         "IDENTITY_URL": identity_url(config),
         "HERALD_URL": "http://herald:3003",
         "HERALD_PUBLIC_RPC_URL": config["public_rpc_url"],
@@ -278,7 +278,6 @@ def deployment_environment(config, directory):
         "SHARD_HOST_ACCOUNTS": str(directory / "host-accounts.json"),
         "NATIVE_WORLD_MANIFEST": str(directory / "native-world.json"),
         "GAMEPLAY_CONTRACTS_PATH": str(directory / "gameplay-contracts.json"),
-        "OPERATOR_ENROLMENT_PATH": str(directory / "operator-enrolment.json"),
     }
 
 
@@ -393,12 +392,15 @@ def start_shard(config, directory):
     write_json(directory / "configuration.json", config)
     write_json(directory / "compose.json", compose)
     command = [*DOCKER, "compose", "-f", str(directory / "compose.json")]
-    run([*command, "run", "--rm", "--no-deps", "prepare"], directory, "shard-prepare")
-    run([*command, "up", "-d"], directory, "shard-start")
-    run([*command, "wait", "init"], directory, "shard-init-wait")
-    code = subprocess.check_output([*command, "ps", "--all", "--format", "{{.ExitCode}}", "init"], text=True).strip()
-    if code != "0":
-        raise RuntimeError("initialization failed; read private deployment logs")
+    try:
+        start_runner_stack(config, directory, command)
+        return record_runner_readiness(config, compose, directory, command)
+    except BaseException:
+        stop_shard(directory)
+        raise
+
+
+def record_runner_readiness(config, compose, directory, command):
     manifest = json.loads((directory / "native-world.json").read_text())
     run([*command, "run", "--rm", "--no-deps", "--entrypoint", "python3", "harness",
          "/app/deploy/shard/init.py", "probe"], directory, "network-probes")
@@ -407,6 +409,45 @@ def start_shard(config, directory):
     result = deployment_manifest(config, compose, directory, manifest, rpc_rtt, herald_rtt)
     write_json(directory / "manifest.json", result)
     return result
+
+
+def start_runner_stack(config, directory, command):
+    run([*command, "run", "--rm", "--no-deps", "prepare"], directory, "shard-prepare")
+    run([*command, "up", "-d", "herald", "metrics"], directory, "shard-bootstrap")
+    wait_for_identity(config)
+    # Persist the intended identity before the request: its response can be lost after registration succeeds.
+    write_json(directory / "directory-registration.json", {
+        "url": config["public_herald_url"], "chainId": "0x" + config["chain_id"].encode("ascii").hex(),
+    })
+    listing = directory_status(config, "pending")
+    if listing["status"] != "pending":
+        raise RuntimeError("Fresh runner shard must register PENDING")
+    expected_chain = "0x" + config["chain_id"].encode("ascii").hex()
+    if int(listing["chainId"], 16) != int(expected_chain, 16):
+        raise RuntimeError("Directory acknowledged a different shard identity")
+    write_json(directory / "directory-registration-ack.json", {
+        "url": config["public_herald_url"], "chainId": listing["chainId"], "status": "pending",
+    })
+    run([*command, "up", "-d"], directory, "shard-start")
+    run([*command, "wait", "init"], directory, "shard-init-wait")
+    code = subprocess.check_output([*command, "ps", "--all", "--format", "{{.ExitCode}}", "init"], text=True).strip()
+    if code != "0":
+        raise RuntimeError("initialization failed; read private deployment logs")
+
+
+def stop_shard(directory):
+    command = [*DOCKER, "compose", "-f", str(directory / "compose.json")]
+    run([*command, "stop"], directory, "shard-stop")
+    # Only an acknowledged PENDING registration belongs to this run; intent alone cannot retire a listing.
+    receipt = directory / "directory-registration-ack.json"
+    if receipt.exists():
+        config = json.loads((directory / "configuration.json").read_text())
+        registered = json.loads(receipt.read_text())
+        chain_id = "0x" + config["chain_id"].encode("ascii").hex()
+        if (registered["status"] != "pending" or registered["url"] != config["public_herald_url"]
+                or int(registered["chainId"], 16) != int(chain_id, 16)):
+            raise RuntimeError("Directory registration differs from the runner's shard identity")
+        directory_status(config, "retired")
 
 
 # Each workload key is a harness option (underscores for dashes, true for a bare flag), so a matrix can run every shape
@@ -466,7 +507,7 @@ def run_matrix(matrix, directory):
         finally:
             if (target / "compose.json").exists():
                 write_json(target / "matrix-result.json", result)
-                run([*DOCKER, "compose", "-f", str(target / "compose.json"), "stop"], target, "shard-stop")
+                stop_shard(target)
     return {"passed": True, "directory": str(directory)}
 
 

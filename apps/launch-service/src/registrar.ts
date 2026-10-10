@@ -1,8 +1,14 @@
 import { DurableObject } from "cloudflare:workers";
-import { Effect, Layer } from "effect";
-import { decodeLaunchEnv } from "./env";
+import { Effect, Layer, Semaphore } from "effect";
+import { D1BlitzRosterStore, RosterFailure } from "./blitz-roster";
+import { ledgerBlitzRegistrations } from "./ledger-roster";
+import { decodeLaunchEnv, type LaunchEnv } from "./env";
 import { launchExecutorLayer, launchTargetOf, shardChainOf } from "./executor";
+import { LaunchShard } from "./shard-client";
+import { readLaunchShard } from "./executor";
 import { processNextLaunch } from "./process-launch";
+import { LauncherDeployment, deploymentOperation } from "./launcher-deployment";
+import type { OperatorLauncher } from "./launcher-routes";
 import { D1LaunchStore, databaseLayer } from "./store";
 
 /**
@@ -11,6 +17,17 @@ import { D1LaunchStore, databaseLayer } from "./store";
  * on the next alarm, because creation, roster settlement and result batches each check the chain before writing.
  */
 export class Registrar extends DurableObject<Record<string, unknown>> {
+  private readonly signing = Semaphore.makeUnsafe(1);
+  enrol(input: Parameters<OperatorLauncher["enrol"]>[0]) {
+    return Effect.runPromise(this.signing.withPermit(deploymentOperation(() => this.deployment().enrol(input))));
+  }
+  check(input: Parameters<OperatorLauncher["check"]>[0]) {
+    return Effect.runPromise(this.signing.withPermit(deploymentOperation(() => this.deployment().check(input))));
+  }
+  private deployment() {
+    return new LauncherDeployment(decodeLaunchEnv(this.env), this.ctx.storage);
+  }
+
   /**
    * Arms the alarm for a run due at `dueAt`. Every path that queues a run calls this, so the alarm is always the
    * earliest due run, whoever queued it: a ready run never waits behind a result sleeping until its game's end.
@@ -21,13 +38,46 @@ export class Registrar extends DurableObject<Record<string, unknown>> {
     await this.ctx.storage.setAlarm(alarm === null ? dueAt : Math.min(alarm, dueAt));
   }
 
-  override async alarm(): Promise<void> {
+  override alarm(): Promise<void> {
+    return Effect.runPromise(this.signing.withPermit(Effect.promise(() => this.processAlarm())));
+  }
+  private async processAlarm(): Promise<void> {
     console.log("registrar_alarm", { at: new Date().toISOString() });
     const env = decodeLaunchEnv(this.env);
     const store = new D1LaunchStore(env.DB, shardChainOf(env));
-    const services = Layer.mergeAll(databaseLayer(store), launchExecutorLayer(launchTargetOf(env)));
+    const chainId = await shardChainOf(env)();
+    const accountAddress = await this.deployment().account(chainId);
+    const target = { ...launchTargetOf(env), ...(accountAddress ? { accountAddress } : {}) };
+    const services = Layer.mergeAll(
+      databaseLayer(store),
+      launchExecutorLayer(target, env.VALUE_RELAY, rosterSourceOf(env), new D1BlitzRosterStore(env.DB)),
+    );
     await Effect.runPromise(processNextLaunch(Date.now()).pipe(Effect.provide(services)));
     const next = await store.nextDue();
     if (next !== null) await this.ctx.storage.setAlarm(Math.max(next, Date.now()));
   }
 }
+
+const rosterSourceOf = (env: LaunchEnv) =>
+  ledgerBlitzRegistrations({
+    rpcUrl: env.LEDGER_RPC_URL,
+    ledgerAddress: env.LEDGER_ADDRESS,
+    resolveGameKey: (chainId, gameName) =>
+      Effect.tryPromise({
+        try: async () => {
+          const { shard } = await readLaunchShard(env.SHARD_URL);
+          if (BigInt(shard.chainId) !== BigInt(chainId)) throw new Error("launch_chain_changed");
+          const native = new LaunchShard({
+            rpcUrl: shard.rpcUrl,
+            chainId,
+            gamesAddress: shard.contracts.games!,
+            accountAddress: env.DEPLOYER_ACCOUNT_ADDRESS,
+            privateKey: env.DEPLOYER_PRIVATE_KEY,
+          });
+          const gameId = await native.gameId(gameName);
+          if (!gameId) throw new Error("game_not_created");
+          return { chainId, gameId };
+        },
+        catch: () => new RosterFailure({ operation: "resolve_created_game" }),
+      }),
+  });

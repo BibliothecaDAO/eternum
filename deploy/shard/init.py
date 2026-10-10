@@ -13,7 +13,7 @@ import time
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "deploy/athanor/scripts"))
 import shard
-from operator_token import read_operator_token
+from operator_token import operator_environment
 
 DATA = Path("/data")
 # Each service's config volume. It holds only copies of files in DATA, republished on every start, so a backup of
@@ -83,16 +83,8 @@ def publish_trusted_proxy():
     target.chmod(0o644)
 
 
-def operator_environment(environ):
-    path = environ.get("OPERATOR_TOKEN_FILE")
-    if not path:
-        raise ValueError("OPERATOR_TOKEN_FILE is required")
-    owner = int(environ.get("HOST_UID", os.geteuid()))
-    return {"OPERATOR_TOKEN": read_operator_token(path, owner)}
-
-
 def environment(config):
-    return {**shard.deployment_environment(config, DATA), **operator_environment(os.environ), "RPC_URL": "http://madara:9944/rpc/v0_10_2",
+    return {**shard.deployment_environment(config, DATA), **operator_environment(), "RPC_URL": shard.PRIVATE_NODE_RPC_URL,
             "HERALD_URL": "http://herald:3003"}
 
 
@@ -104,7 +96,10 @@ def prepare(config):
     if record.exists():
         refuse_changed_identity(json.loads(record.read_text()), config)
     else:
-        initialize_identity(config)
+        if (DATA / "initialized.json").exists():
+            raise ValueError("Incomplete deployed identity: restore init-configuration.json from the same shard backup before retrying")
+        shard.write_json(record, identity(config))
+    initialize_identity(config)
     shard.run(["bun", "deploy/athanor/scripts/host-accounts.ts", "verify-vrf", str(DATA)], DATA, "verify-vrf")
     publish_prepared_config(config)
     shard.write_json(record, identity(config))
@@ -120,10 +115,11 @@ def refuse_changed_identity(recorded, config):
 
 
 def initialize_identity(config):
-    if (DATA / "host-keys.json").exists():
-        raise ValueError("Incomplete initialization: inspect the data directory before retrying")
     shard.run(["bun", "deploy/athanor/scripts/host-accounts.ts", "initialize", str(DATA)], DATA, "host-accounts-initialize")
-    shard.initialize_shard_identity(config, DATA, environment(config)["DEPLOYER_ACCOUNT_ADDRESS"])
+    if not (DATA / "native-world.json").exists() or not (DATA / "chain-config.yaml").exists():
+        if (DATA / "initialized.json").exists():
+            raise ValueError("Incomplete deployed shard: restore its private backup before retrying; never replace keys or chain state")
+        shard.initialize_shard_identity(config, DATA, environment(config)["DEPLOYER_ACCOUNT_ADDRESS"])
 
 
 def publish_prepared_config(config):
@@ -197,11 +193,11 @@ def chain_commitment(preset, on_chain, released):
 def harness_invocation(args, environ, data=DATA, started=None):
     """The harness command against this shard: its private settings from harness.env, its reports under
     data/harness/<start time> unless the caller names a directory."""
-    environment = {**environ, **operator_environment(environ),
+    environment = {**environ, **operator_environment(),
                    **shard.read_private_environment(data / "harness.env"), **shard.host_credentials(data)}
     operator = json.loads((data / "gameplay-contracts.json").read_text())["operatorAccountAddress"]
     environment["DEPLOYER_ACCOUNT_ADDRESS"] = operator
-    environment["HARNESS_ADMIN_RPC_URL"] = "http://madara:9944/rpc/v0_10_2"
+    environment["HARNESS_ADMIN_RPC_URL"] = shard.PRIVATE_NODE_RPC_URL
     environment["RPC_URL"] = "http://rpc:8080/rpc/v0_10_2"
     environment["HERALD_URL"] = "http://herald:3003"
     # The host runner may rewrite harness.env with host paths. Inside the image, DATA is the mounted copy.
@@ -216,7 +212,7 @@ def harness_invocation(args, environ, data=DATA, started=None):
 
 def probe():
     """Readiness and account probes use only the shard's private Compose network."""
-    rpc = "http://madara:9944/rpc/v0_10_2"
+    rpc = shard.PRIVATE_NODE_RPC_URL
     public = "http://rpc:8080/rpc/v0_10_2"
     rpc_rtt = shard.wait_for_endpoint(rpc, rpc=True)
     herald_rtt = shard.wait_for_endpoint("http://herald:3003/health")
@@ -227,11 +223,27 @@ def probe():
     shard.write_json(DATA / "network-probes.json", {"rpcRttMs": rpc_rtt, "heraldRttMs": herald_rtt})
 
 
+def run_as_host_user():
+    """Prepare writable mounts as root, then use the same identity as the harness for every credential read."""
+    uid, gid = int(os.environ["HOST_UID"]), int(os.environ["HOST_GID"])
+    if os.geteuid() == 0:
+        for directory in (DATA, PUBLIC, HERALD_CONFIG, POSTGRES_CONFIG):
+            directory.mkdir(exist_ok=True)
+            for path in (directory, *directory.rglob("*")):
+                os.chown(path, uid, gid, follow_symlinks=False)
+        os.setgroups([])
+        os.setgid(gid)
+        os.setuid(uid)
+    elif os.geteuid() != uid:
+        raise ValueError("Initializer must run as HOST_UID or root")
+
+
 if __name__ == "__main__":
     os.umask(0o077)
+    run_as_host_user()
     action = sys.argv[1]
     if action == "probe":
-        os.environ.update(operator_environment(os.environ))
+        os.environ.update(operator_environment())
         probe()
         raise SystemExit(0)
     if action == "launcher-check":
@@ -242,7 +254,7 @@ if __name__ == "__main__":
         identity = json.loads((DATA / "gameplay-contracts.json").read_text())
         environment["DEPLOYER_ACCOUNT_ADDRESS"] = identity["operatorAccountAddress"]
         environment["RPC_URL"] = "http://rpc:8080/rpc/v0_10_2"
-        environment["HARNESS_ADMIN_RPC_URL"] = "http://madara:9944/rpc/v0_10_2"
+        environment["HARNESS_ADMIN_RPC_URL"] = shard.PRIVATE_NODE_RPC_URL
         environment["HERALD_URL"] = "http://herald:3003"
         os.execvpe("bun", ["bun", "deploy/athanor/harness/self-check.ts"], environment)
     if action == "harness":
@@ -251,14 +263,9 @@ if __name__ == "__main__":
         os.execvpe(argv[0], argv, environment)
     config = configuration()
     presets = requested_presets(os.environ, json.loads(RELEASE_FACTS.read_text()))
-    try:
-        if action == "prepare":
-            prepare(config)
-        elif action == "deploy":
-            deploy(config, presets)
-        else:
-            raise ValueError("Expected prepare or deploy")
-    finally:
-        uid, gid = int(os.environ["HOST_UID"]), int(os.environ["HOST_GID"])
-        for path in [DATA, *DATA.rglob("*")]:
-            os.chown(path, uid, gid)
+    if action == "prepare":
+        prepare(config)
+    elif action == "deploy":
+        deploy(config, presets)
+    else:
+        raise ValueError("Expected prepare or deploy")

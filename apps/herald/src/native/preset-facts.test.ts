@@ -234,7 +234,7 @@ describe("verified preset configuration facts", () => {
     ];
     await world.native.replay({
       fold: world.fold,
-      rpc: { getBlockWithReceipts: async (number) => blocks[Number(number) - 10]! },
+      rpc: { readBlock: async (number) => blocks[Number(number) - 10]! },
       fromBlock: 10,
       toBlock: 11,
       preconfirmed: (candidate) => (candidate === pending ? { events: pending.events, decoded } : undefined),
@@ -247,7 +247,7 @@ describe("verified preset configuration facts", () => {
       fresh.native.replay({
         fold: fresh.fold,
         rpc: {
-          getBlockWithReceipts: async (number) => {
+          readBlock: async (number) => {
             if (number === 11) throw new Error("block unavailable");
             return blocks[0]!;
           },

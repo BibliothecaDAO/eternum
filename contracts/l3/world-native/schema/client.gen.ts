@@ -1,5 +1,5 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "0acb9388f08caf01d93231b774183bf87c548a6e18980cf170ac71d1920283ed";
+export const nativeFactSchemaIdentity = "6e83e0b5cc179e29fa66bd6b87e1b2e2fae51385e08f0e0fd8762458e0a79366";
 export const nativeRuleConstants = {
   "ATTRIBUTE_CAP": 5,
   "BATTLE_UNCOMMON_BPS": 1000,
@@ -18,6 +18,8 @@ export const nativeRuleConstants = {
   "HOMECOMING_RARE_BPS": 900,
   "HOMECOMING_EPIC_BPS": 1800,
   "HOMECOMING_LEGENDARY_BPS": 3000,
+  "MAX_BLITZ_ROSTER_PLAYERS": 24,
+  "DUEL_ROSTER_PLAYERS": 2,
   "ENTRY_ENTITLEMENT": 0,
   "ENTRY_OPEN": 1,
   "ENTRY_ROSTER": 2,

@@ -1,5 +1,6 @@
+import { createHash } from "node:crypto";
 import { afterEach, describe, expect, test } from "bun:test";
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, unlinkSync, writeFileSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
@@ -28,6 +29,7 @@ async function deployHostAccount(rpcUrl: string) {
   writeFileSync(
     join(data, "host-keys.json"),
     JSON.stringify({ deployerAddress: "0x789", deployerPrivateKey: "0xabc" }),
+    { mode: 0o600 },
   );
   writeFileSync(join(data, "native-world.json"), JSON.stringify({ shard: { chainId: CHAIN_ID } }));
   const child = Bun.spawn([process.execPath, "deploy/athanor/scripts/host-accounts.ts", "deploy", data], {
@@ -63,3 +65,61 @@ describe("the host-account step of a first initialization", () => {
     expect(error).toContain("holds another class");
   });
 });
+
+test("interrupted preparation reconstructs public host metadata without replacing either private key", async () => {
+  const data = mkdtempSync(join(tmpdir(), "host-prepare-"));
+  const initialize = async () => {
+    const child = Bun.spawn([process.execPath, "deploy/athanor/scripts/host-accounts.ts", "initialize", data], {
+      cwd: root,
+      stdout: "ignore",
+      stderr: "pipe",
+    });
+    expect(await child.exited).toBe(0);
+  };
+  const fingerprint = (file: string) =>
+    createHash("sha256")
+      .update(readFileSync(join(data, file)))
+      .digest("hex");
+  try {
+    await initialize();
+    const before = [fingerprint("host-keys.json"), fingerprint("vrf-key.json")];
+    unlinkSync(join(data, "host-accounts.json"));
+    await initialize();
+    expect([fingerprint("host-keys.json"), fingerprint("vrf-key.json")]).toEqual(before);
+    expect(JSON.parse(readFileSync(join(data, "host-accounts.json"), "utf8")).deployer.address).toBeTruthy();
+  } finally {
+    rmSync(data, { recursive: true });
+  }
+});
+
+for (const marker of ["native-world.json", "initialized.json"]) {
+  for (const missing of ["host-keys.json", "vrf-key.json", "both"]) {
+    test(`refuses to create ${missing} when ${marker} records a deployed shard`, async () => {
+      const data = mkdtempSync(join(tmpdir(), "host-damaged-"));
+      const initialize = () =>
+        Bun.spawn([process.execPath, "deploy/athanor/scripts/host-accounts.ts", "initialize", data], {
+          cwd: root,
+          stdout: "ignore",
+          stderr: "pipe",
+        });
+      try {
+        expect(await initialize().exited).toBe(0);
+        unlinkSync(join(data, "host-accounts.json"));
+        writeFileSync(join(data, marker), "{}");
+        const removed = missing === "both" ? ["host-keys.json", "vrf-key.json"] : [missing];
+        for (const file of removed) unlinkSync(join(data, file));
+        const retained = ["host-keys.json", "vrf-key.json"].filter((file) => !removed.includes(file));
+        const before = retained.map((file) => readFileSync(join(data, file), "utf8"));
+        const child = initialize();
+        const [status, error] = await Promise.all([child.exited, new Response(child.stderr).text()]);
+        expect(status).not.toBe(0);
+        expect(error).toContain("restore the same shard backup");
+        for (const file of removed) expect(existsSync(join(data, file))).toBe(false);
+        expect(existsSync(join(data, "host-accounts.json"))).toBe(false);
+        expect(retained.every((file, index) => readFileSync(join(data, file), "utf8") === before[index])).toBe(true);
+      } finally {
+        rmSync(data, { recursive: true });
+      }
+    });
+  }
+}

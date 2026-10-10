@@ -6,9 +6,10 @@
   "scripts": {
     "build": "tsc -p tsconfig.json --noEmit",
     "dev": "bun run --watch src/server.ts",
+    "measure:paged-blocks": "bun scripts/measure-paged-blocks.ts",
     "measure:load": "bun scripts/measure-load.ts",
     "start": "bun run src/server.ts",
-    "test": "vitest run",
+    "test": "vitest run && bun test src/deployment.bun.test.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {

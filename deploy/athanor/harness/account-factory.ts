@@ -20,6 +20,8 @@ interface CreateHarnessAccountsOptions {
   identity: OperatorIdentity;
   provider: RpcProvider;
   shard: RealmsAccountShard & GameplayShard;
+  /** The run the bots play for: their sends stop being reconciled when it ends. */
+  stopped?: AbortSignal;
 }
 
 const DEFAULT_DEPLOY_CONCURRENCY = 12;
@@ -32,6 +34,7 @@ export async function createHarnessAccounts({
   identity,
   provider,
   shard,
+  stopped,
 }: CreateHarnessAccountsOptions): Promise<HarnessAccount[]> {
   const botIds = Array.from({ length: count }, (_, botId) => botId);
   return mapWithConcurrency(botIds, concurrency, async (botId) => {
@@ -44,6 +47,7 @@ export async function createHarnessAccounts({
       const account = configureGameplayAccountSubmits(
         await joinBotAccount({ provider, shard, label: stark.randomAddress(), device, identity }),
         shard,
+        stopped,
       );
 
       return {

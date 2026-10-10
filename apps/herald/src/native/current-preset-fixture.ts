@@ -13,7 +13,7 @@ import type { DecodedWorldEvent } from "../types";
 import { seasonSeconds } from "../../../../packages/core/src/utils/days";
 
 /** Generated inputs for current contract validation, separate from immutable launch recordings. */
-export async function currentPresetFixture(presetId: 2 | 3 | 5, fixtureSchema: NativeSchema = schema) {
+export async function currentPresetFixture(presetId: number, fixtureSchema: NativeSchema = schema) {
   const gameType = nativePresetForId(presetId).gameType;
   const config = applyBiomeClimateDefaults(await buildConfig({ chain: "madara", gameType }));
   const definition = buildNativePreset(config, presetId);
@@ -35,7 +35,8 @@ function fixtureLaunchParams(presetId: number, definition: ReturnType<typeof bui
     start_settling_at: 1800,
     start_main_at: 1800,
     // A season with days lasts whole bags of them.
-    duration_seconds: presetId === 5 ? seasonSeconds(1, definition.rules.day_unit_seconds) : 86400,
+    duration_seconds:
+      nativePresetForId(presetId).gameType === "frontier" ? seasonSeconds(1, definition.rules.day_unit_seconds) : 86400,
     end_grace_seconds: 0,
     dev_mode_on: false,
     roster: presetId === 2 ? [{ account: "0x111", wallet: "0x222" }] : [],

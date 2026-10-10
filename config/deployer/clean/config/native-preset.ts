@@ -3,6 +3,7 @@ import {
   nativeRuleConstants as presetRule,
 } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { nativePresetForId } from "../../../source/native";
+import { FRONTIER_SELF_CHECK_PRESET_ID } from "../../../source/common/native-preset-modes";
 import { RESOURCE_PRECISION, ResourcesIds, type Config } from "@bibliothecadao/types";
 import { CairoCustomEnum, CairoOption, CairoOptionVariant } from "starknet";
 import {
@@ -276,6 +277,7 @@ function buildSettlement(config: Config, preset: ReturnType<typeof nativePresetF
 function buildEconomy(
   config: Config,
   preset: ReturnType<typeof nativePresetForId>,
+  presetId: number,
   tokens: Array<{ resource_type: number; token: string }>,
 ) {
   const chests = preset.chests;
@@ -290,7 +292,10 @@ function buildEconomy(
       chests.shares.legendary,
     ];
     if (
-      ![chests.pool, chests.priceCeiling, chests.estimateDays, chests.claimWindowSeconds, ...shares].every(
+      !Number.isSafeInteger(chests.pool) ||
+      chests.pool < 0 ||
+      (chests.pool === 0 && presetId !== FRONTIER_SELF_CHECK_PRESET_ID) ||
+      ![chests.priceCeiling, chests.estimateDays, chests.claimWindowSeconds, ...shares].every(
         (value) => Number.isSafeInteger(value) && value > 0,
       ) ||
       [chests.estimateDays, ...shares].some((value) => value > 0xffff) ||
@@ -406,7 +411,7 @@ export function buildNativePreset(config: Config, presetId: number) {
     resources: buildResources(config),
     structures: buildStructures(config, preset),
     settlement: buildSettlement(config, preset),
-    economy: buildEconomy(config, preset, bridgeTokens),
+    economy: buildEconomy(config, preset, presetId, bridgeTokens),
 
     exploration: preset.supplies.map((reward) => ({ ...reward })),
     season_win_points: config.victoryPoints.pointsForWin,

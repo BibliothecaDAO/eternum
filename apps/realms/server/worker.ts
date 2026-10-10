@@ -1,3 +1,6 @@
+import { Effect } from "effect";
+import { deliverWalletNotices } from "./wallet-changes";
+import { resendWalletNotices } from "./wallet-notices";
 import { createIdentityAuth, type IdentityAuth } from "./auth";
 import { superviseNotifiers } from "./directory";
 import { decodeIdentityEnv, type IdentityEnv } from "./env";
@@ -18,18 +21,21 @@ export default {
   },
   async scheduled(_controller: ScheduledController, rawEnv: Record<string, unknown>): Promise<void> {
     const env = decodeIdentityEnv(rawEnv);
+    await Effect.runPromise(deliverWalletNotices(env.DB, resendWalletNotices(env.RESEND_API_KEY)));
     await superviseNotifiers(env.DB, env.SHARD_NOTIFIER);
   },
 };
 
-/** Reads completed game ids from the launch Worker through its service binding. */
+/** Reads declared game entry terms from the launch Worker through its service binding. */
 const fetchLaunchDirectory = async (launch: IdentityEnv["LAUNCH"]) => {
   const response = await launch.fetch("https://launch/api/factory/directory-games", {
     signal: AbortSignal.timeout(5_000),
     redirect: "manual",
   });
   if (!response.ok) throw new Error(`Launch directory answered ${response.status}`);
-  return (await response.json()) as { chains: { chainId: string; gameIds: number[] }[] };
+  return (await response.json()) as {
+    chains: { chainId: string; games: { gameId: number; entry: import("@realms-world/identity").GameEntry }[] }[];
+  };
 };
 
 export { RatingReader } from "./rating-reader";
@@ -46,3 +52,5 @@ const identityAuthOf = (rawEnv: object, env: IdentityEnv): IdentityAuth => {
   authByEnv.set(rawEnv, auth);
   return auth;
 };
+
+export { ValueIdentity } from "./value-identity";

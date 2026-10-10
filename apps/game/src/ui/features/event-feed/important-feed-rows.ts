@@ -2,6 +2,7 @@ import type { Headline } from "../news-headlines/headline-types";
 import { TransactionType } from "@bibliothecadao/provider";
 import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
 import type { FeedRow, FeedRows } from "./event-feed-rows";
+import type { Transaction } from "@/hooks/store/use-transaction-store";
 import { includesStoryNotification, logicalStoryIdentity, storyRecipients } from "@bibliothecadao/notifications";
 
 export type ImportantFeedFilter = "all" | "mine" | "combat";
@@ -29,9 +30,14 @@ const routineProductionTypes = new Set<TransactionType>([
   TransactionType.BURN_LABOR_FOR_RESOURCE_PRODUCTION,
 ]);
 
+/** Even a routine action shows while its outcome is unsettled or did not go the player's way. */
+const needsThePlayersEye = new Set<Transaction["status"]>(["checking", "reverted", "not_sent"]);
+
 function isImportantPersonalRow(row: FeedRow): boolean {
   if (row.kind !== "transaction") return true;
-  return row.isStuck || row.transaction.status === "reverted" || !routineProductionTypes.has(row.transaction.type);
+  return (
+    row.isStuck || needsThePlayersEye.has(row.transaction.status) || !routineProductionTypes.has(row.transaction.type)
+  );
 }
 
 /** Battles include structure captures. Routine moves and point accrual remain in the full log. */

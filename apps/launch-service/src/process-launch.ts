@@ -1,3 +1,4 @@
+import { RegistrationOpen } from "./blitz-roster";
 import { Effect, Result } from "effect";
 import { describeFailure } from "./errors";
 import { LaunchExecutor } from "./executor";
@@ -13,9 +14,9 @@ export const processNextLaunch = (now: number) =>
     const executor = yield* LaunchExecutor;
     const run = yield* databaseOperation("start launch", () => store.startNext(now));
     if (!run) return false;
-    if (run.attempts > MAX_ATTEMPTS) {
+    if (run.kind === "game" && run.attempts > MAX_ATTEMPTS) {
       const message = `Launch interrupted after ${run.attempts - 1} attempts`;
-      yield* databaseOperation("fail interrupted launch", () => store.fail(run.id, message));
+      yield* cleanUpFailedLaunch(executor, store, run, message);
       yield* Effect.logError("launch_failed", { runId: run.id, error: message });
       return true;
     }
@@ -30,20 +31,59 @@ export const processNextLaunch = (now: number) =>
       return true;
     }
 
-    if (result.failure.cause instanceof GameNotEnded) {
-      const delayMs = result.failure.cause.secondsUntilEnd * 1_000;
-      yield* databaseOperation("defer result", () => store.defer(run.id, delayMs));
-      yield* Effect.logInfo("result_deferred", { runId: run.id, name: run.name, delayMs });
+    if (result.failure.cause instanceof GameNotEnded || result.failure.cause instanceof RegistrationOpen) {
+      const cause = result.failure.cause;
+      const delayMs = (cause instanceof GameNotEnded ? cause.secondsUntilEnd : cause.secondsUntilClose) * 1_000;
+      yield* databaseOperation("defer launch", () => store.defer(run.id, delayMs));
+      yield* Effect.logInfo("launch_deferred", { runId: run.id, kind: run.kind, name: run.name, delayMs });
       return true;
     }
 
     const message = describeFailure(result.failure.cause);
-    if (run.attempts < MAX_ATTEMPTS) {
-      yield* databaseOperation("retry launch", () => store.retry(run.id, message, RETRY_DELAY_MS));
+    if (run.kind === "result" || run.attempts < MAX_ATTEMPTS) {
+      yield* databaseOperation("retry launch", () =>
+        store.retry(
+          run.id,
+          message,
+          run.kind === "result"
+            ? Math.min(300000, RETRY_DELAY_MS * 2 ** Math.min(run.attempts - 1, 6))
+            : RETRY_DELAY_MS,
+        ),
+      );
       yield* Effect.logWarning("launch_retry_queued", { runId: run.id, attempt: run.attempts, error: message });
     } else {
-      yield* databaseOperation("fail launch", () => store.fail(run.id, message));
+      yield* cleanUpFailedLaunch(executor, store, run, message);
       yield* Effect.logError("launch_failed", { runId: run.id, attempt: run.attempts, error: message });
     }
     return true;
+  });
+
+const cleanUpFailedLaunch = (
+  executor: {
+    refund: (
+      run: import("./model").LaunchRun,
+    ) => import("effect").Effect.Effect<number | null, import("./errors").LaunchExecutionFailure>;
+  },
+  store: import("./store").LaunchServiceStore,
+  run: import("./model").LaunchRun,
+  message: string,
+) =>
+  Effect.gen(function* () {
+    const latest = yield* databaseOperation("read failed launch custody key", () =>
+      store.find(run.kind, run.environment, run.name),
+    );
+    const cleanup = yield* Effect.result(executor.refund(latest ?? run));
+    if (Result.isFailure(cleanup)) {
+      yield* databaseOperation("retry ledger refund cleanup", () =>
+        store.retry(run.id, `${message}; refund cleanup unavailable`, RETRY_DELAY_MS),
+      );
+      return;
+    }
+    if (cleanup.success !== null) {
+      yield* databaseOperation("wait for ledger abort boundary", () =>
+        store.retry(run.id, `${message}; refunds pending ledger end`, Math.max(1000, cleanup.success! * 1000)),
+      );
+      return;
+    }
+    yield* databaseOperation("fail launch after refunds enabled", () => store.fail(run.id, message));
   });

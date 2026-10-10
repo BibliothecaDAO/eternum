@@ -65,6 +65,9 @@ jobs:
       LAUNCH_SHARD_URL: ${{ vars.LAUNCH_SHARD_URL }}
       LAUNCH_DEPLOYER_ACCOUNT_ADDRESS: ${{ vars.LAUNCH_DEPLOYER_ACCOUNT_ADDRESS }}
       LAUNCHER_ALLOWLIST: ${{ vars.LAUNCHER_ALLOWLIST }}
+      REALMS_ADDRESS: ${{ vars.REALMS_ADDRESS }}
+      RATING_TOKEN_ADDRESS: ${{ vars.RATING_TOKEN_ADDRESS }}
+      RATING_HISTORY_URL: ${{ vars.RATING_HISTORY_URL }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -99,6 +102,14 @@ jobs:
             echo "The launch Worker was not deployed: the $TARGET environment has no ${missing[*]}." >> "$GITHUB_STEP_SUMMARY"
           fi
           echo "missing=${missing[*]}" >> "$GITHUB_OUTPUT"
+
+      - name: Check identity L2 configuration
+        if: matrix.worker == 'apps/realms'
+        run: |
+          set -euo pipefail
+          for name in REALMS_ADDRESS RATING_TOKEN_ADDRESS RATING_HISTORY_URL; do
+            [ -n "${!name}" ] || { echo "::error::$name is not set for the $TARGET environment"; exit 1; }
+          done
 
       # Migrations run before the code that needs them; the database is created on its environment's first deploy.
       - name: Prepare the database
@@ -153,7 +164,11 @@ jobs:
         working-directory: ${{ matrix.worker }}
         env:
           WRANGLER_OUTPUT_FILE_PATH: ${{ runner.temp }}/wrangler-output.ndjson
-        run: pnpm exec wrangler deploy --env "$TARGET"
+        run: |
+          pnpm exec wrangler deploy --env "$TARGET" \
+            --var "REALMS_ADDRESS:$REALMS_ADDRESS" \
+            --var "RATING_TOKEN_ADDRESS:$RATING_TOKEN_ADDRESS" \
+            --var "RATING_HISTORY_URL:$RATING_HISTORY_URL"
 
       # The shard a launch writes to is the environment's decision, set beside the shard, not code.
       - name: Deploy the launch Worker at its shard

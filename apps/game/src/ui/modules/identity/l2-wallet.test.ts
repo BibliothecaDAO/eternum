@@ -10,7 +10,8 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllEnvs());
 
 it("connects, signs the link proof and reads the ledger on Sepolia only, in a Sepolia build", async () => {
-  const { L2_WALLET_CHAIN, assertWalletOnL2, walletProof } = await import("./l2-wallet");
+  const { L2_WALLET_CHAIN, assertWalletOnL2 } = await import("./l2-wallet");
+  const { walletProofForAccount } = await import("./wallet-proof");
   const { failureSentence, WrongNetworkError } = await import("./identity-failures");
   const { ledgerOf } = await import("@/shell/value/game-entry");
 
@@ -23,7 +24,8 @@ it("connects, signs the link proof and reads the ledger on Sepolia only, in a Se
 
   // The link proof is signed for Sepolia.
   const account = { address: "0x4a1", signMessage: vi.fn(async () => ["0x1", "0x2"]) };
-  expect(walletProof(account as never).chainId).toBe("SN_SEPOLIA");
+  const deployed = { getClassHashAt: vi.fn(async () => "0x1") };
+  expect((await walletProofForAccount(account as never, deployed as never, "braavos")).chainId).toBe("SN_SEPOLIA");
 
   // The ledger is read only on Sepolia: one the entry places on mainnet is refused.
   const ledger = { address: "0xl", chainId: SN_SEPOLIA, feeToken: "0xf", key: { shard: "0x52", gameId: 7 } };

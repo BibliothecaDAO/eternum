@@ -49,5 +49,8 @@ jobs:
           node --test scripts/check-committed-env-rpc.test.mjs
           node scripts/check-committed-env-rpc.mjs
 
+      - name: Verify the Worker environment chain source
+        run: python3 .github/scripts/environment-chain.test.py
+
       - name: Check formatting
         run: pnpm run format:check

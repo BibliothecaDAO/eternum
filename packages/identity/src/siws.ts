@@ -160,3 +160,7 @@ function assertShortString(label: string, value: string) {
     throw new Error(`SIWS ${label} must fit a Cairo shortstring (31 characters), got ${value.length}`);
   }
 }
+
+/** The account identity is covered by the wallet signature using the canonical message statement. */
+export const payoutWalletStatement = (realmsId: string): string =>
+  `Link this payout wallet to Realms account ${realmsId}`;

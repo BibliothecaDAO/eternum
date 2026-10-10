@@ -2,6 +2,7 @@ import { batchRemaining, gameplayRejection } from "@bibliothecadao/provider";
 import type { GetTransactionReceiptResponse, RpcProvider } from "starknet";
 
 import type { GameSyncRuntime } from "../sync/game-sync-runtime";
+import type { GameSyncTransaction } from "../sync/game-sync-types";
 
 /** How an action ended: applied (its facts are in the store), refused by the game, or reverted before the roll. */
 export interface ActionOutcome {
@@ -14,28 +15,96 @@ export interface ActionOutcome {
   batchRemaining?: string;
 }
 
+type Runtime = Pick<GameSyncRuntime, "waitForTransaction" | "subscribeResynced">;
+type Rpc = Pick<RpcProvider, "getTransactionReceipt">;
+
 const RECEIPT_POLL_MS = 250;
+/** One block: when Herald reports an action applied first, how long its receipt may take to add the batch remainder. */
+const RECEIPT_GRACE_MS = 2_000;
+/** A source with nothing to say leaves the race to the others; one per wait, so nothing holds on to it. */
+const silent = (): Promise<never> => new Promise<never>(() => {});
 
 /**
- * An action's outcome from its receipt, then Herald: the receipt says whether the shard reverted it before the roll or
- * the game refused it (GameplayRejected, effects rolled back), and an applied action settles once Herald has applied
- * its facts, either from its streamed status or, after a reconnect that would never stream it, from the fresh
- * snapshot. Until then the action is pending; the wait stops when the client does. The hash arrives in a block already:
- * the gameplay submit returns it only then, and rejects an action proven not sent, so no wait starts on a lost one.
+ * An action's outcome. First its reconciliation, when its submission gives one (in a block, or rejected on proof it
+ * was never sent). Then two sources race, and the first to know settles it. The receipt says whether the shard
+ * reverted the action before the roll or the game refused it (GameplayRejected, effects rolled back), and an applied
+ * receipt waits for a snapshot that covers its block. Herald's own status says applied or applied nothing. A Herald
+ * wait that its session ends says nothing, and the receipt and snapshot watch decide alone. The wait stops when the
+ * client does.
  */
 export async function waitForActionOutcome(
-  runtime: Pick<GameSyncRuntime, "waitForTransaction" | "subscribeResynced">,
-  rpc: Pick<RpcProvider, "getTransactionReceipt">,
+  runtime: Runtime,
+  rpc: Rpc,
   games: string,
   transactionHash: string,
   stopped: AbortSignal,
+  inBlock?: Promise<void>,
 ): Promise<ActionOutcome> {
-  const receipt = await receiptOf(rpc, transactionHash, stopped);
-  const refused = refusalIn(receipt, games, transactionHash);
+  await inBlock;
+  const settled = new AbortController();
+  const until = AbortSignal.any([stopped, settled.signal]);
+  const receipt = receiptOf(rpc, transactionHash, until);
+  try {
+    return await Promise.race([
+      outcomeFromReceipt(runtime, rpc, games, transactionHash, receipt, until),
+      outcomeFromHerald(runtime, games, transactionHash, receipt, until),
+    ]);
+  } finally {
+    settled.abort();
+  }
+}
+
+/** The receipt's refusal, or, for an applied receipt, success once an applied snapshot covers its block. */
+async function outcomeFromReceipt(
+  runtime: Runtime,
+  rpc: Rpc,
+  games: string,
+  transactionHash: string,
+  receipt: Promise<GetTransactionReceiptResponse>,
+  until: AbortSignal,
+): Promise<ActionOutcome> {
+  const read = await receipt;
+  const refused = refusalIn(read, games, transactionHash);
   if (refused) return refused;
-  const remaining = "events" in receipt ? batchRemaining(receipt.events, games, transactionHash) : undefined;
-  // Herald keeps recent statuses, so one it streamed while the receipt was read is still found here.
-  const { block } = await settledByHerald(runtime, transactionHash, blockOf(receipt));
+  const block = await coveredBySnapshot(runtime, rpc, transactionHash, blockOf(read), until);
+  return succeeded(transactionHash, block, read, games);
+}
+
+/**
+ * Herald's status: applied nothing (reverted or refused, with its reason), or applied. An applied action's batch
+ * remainder is on its receipt, taken when the receipt answers within RECEIPT_GRACE_MS.
+ */
+async function outcomeFromHerald(
+  runtime: Runtime,
+  games: string,
+  transactionHash: string,
+  receipt: Promise<GetTransactionReceiptResponse>,
+  until: AbortSignal,
+): Promise<ActionOutcome> {
+  const status = await runtime.waitForTransaction(transactionHash).catch(silent);
+  if (appliedNothing(status)) {
+    return { hash: transactionHash, block: status.block, status: status.status, revertReason: status.revertReason };
+  }
+  const read = await Promise.race([receipt.catch(() => undefined), pause(RECEIPT_GRACE_MS, until)]);
+  return succeeded(transactionHash, status.block, read, games);
+}
+
+/** Reverted before the roll, or refused by the game (rolled back): either way none of it applied. */
+const appliedNothing = (
+  transaction: GameSyncTransaction,
+): transaction is GameSyncTransaction & { status: "REVERTED" | "REJECTED" } =>
+  transaction.status === "REVERTED" || transaction.status === "REJECTED";
+
+function succeeded(
+  transactionHash: string,
+  block: number | null,
+  receipt: GetTransactionReceiptResponse | undefined,
+  games: string,
+): ActionOutcome {
+  const remaining =
+    receipt && "events" in receipt
+      ? batchRemaining(receipt.events, games, transactionHash, { missing: "allow" })
+      : undefined;
   return {
     hash: transactionHash,
     block,
@@ -44,29 +113,33 @@ export async function waitForActionOutcome(
   };
 }
 
-/** The receipt of a transaction already in a block; a read that fails is retried until the client stops. */
+/** The transaction's receipt once it is in a block, pre-confirmed or later; a read that fails is retried. */
 async function receiptOf(
-  rpc: Pick<RpcProvider, "getTransactionReceipt">,
+  rpc: Rpc,
   transactionHash: string,
-  stopped: AbortSignal,
+  until: AbortSignal,
 ): Promise<GetTransactionReceiptResponse> {
   while (true) {
-    stopped.throwIfAborted();
+    until.throwIfAborted();
     const receipt = await rpc.getTransactionReceipt(transactionHash).catch(() => undefined);
     if (receipt) return receipt;
-    await new Promise<void>((resolve, reject) => {
-      const timer = setTimeout(() => {
-        stopped.removeEventListener("abort", abort);
-        resolve();
-      }, RECEIPT_POLL_MS);
-      const abort = () => {
-        clearTimeout(timer);
-        reject(stopped.reason);
-      };
-      stopped.addEventListener("abort", abort, { once: true });
-    });
+    await pause(RECEIPT_POLL_MS, until);
   }
 }
+
+/** Resolves after `ms`, or rejects with the signal's reason when it aborts first. */
+const pause = (ms: number, until: AbortSignal): Promise<undefined> =>
+  new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      until.removeEventListener("abort", abort);
+      resolve(undefined);
+    }, ms);
+    const abort = () => {
+      clearTimeout(timer);
+      reject(until.reason);
+    };
+    until.addEventListener("abort", abort, { once: true });
+  });
 
 const blockOf = (receipt: GetTransactionReceiptResponse): number | null =>
   "block_number" in receipt && typeof receipt.block_number === "number" ? receipt.block_number : null;
@@ -86,20 +159,27 @@ function refusalIn(
 }
 
 /**
- * Herald's status for the transaction, or a reconnect's fresh snapshot that reaches the receipt's block and so holds
- * its facts. A snapshot older than the receipt, or a receipt with no block yet, leaves the action pending until
- * Herald's status arrives.
+ * The block of an applied snapshot that reaches the receipt's block and so holds its facts. The runtime replays the
+ * last one when the wait starts listening, so a reconnect that finished while the receipt was being read still
+ * counts. A pre-confirmed receipt has no block yet; each snapshot re-reads it, so a confirmed one can settle it once
+ * its block is known. Until then, or once `until` aborts, it says nothing.
  */
-function settledByHerald(
-  runtime: Pick<GameSyncRuntime, "waitForTransaction" | "subscribeResynced">,
+function coveredBySnapshot(
+  runtime: Runtime,
+  rpc: Rpc,
   transactionHash: string,
   receiptBlock: number | null,
-): Promise<{ block: number | null }> {
-  let stopWatching = () => {};
-  const resynced = new Promise<{ block: number }>((resolve) => {
-    stopWatching = runtime.subscribeResynced((throughBlock) => {
-      if (receiptBlock !== null && throughBlock >= receiptBlock) resolve({ block: receiptBlock });
+  until: AbortSignal,
+): Promise<number> {
+  let block = receiptBlock;
+  const blockOnceKnown = async (): Promise<number | null> =>
+    (block ??= await rpc.getTransactionReceipt(transactionHash).then(blockOf, () => null));
+  return new Promise<number>((resolve) => {
+    const stopWatching = runtime.subscribeResynced((throughBlock) => {
+      void blockOnceKnown().then((known) => {
+        if (known !== null && throughBlock >= known) resolve(known);
+      });
     });
+    until.addEventListener("abort", stopWatching, { once: true });
   });
-  return Promise.race([runtime.waitForTransaction(transactionHash), resynced]).finally(() => stopWatching());
 }

@@ -1,7 +1,7 @@
+export { batchRemaining } from "./batch-progress";
 import { byteArray, hash, shortString } from "starknet";
 
 const GAMEPLAY_REJECTED = BigInt(hash.getSelectorFromName("GameplayRejected"));
-const BATCH_PROGRESS = BigInt(hash.getSelectorFromName("BatchProgress"));
 
 type ReceiptEvent = { from_address: string; keys: string[]; data: string[] };
 
@@ -43,34 +43,6 @@ export function gameplayRejection(
     statusClass: BigInt(statusClass) === 0n ? "" : shortString.decodeShortString(statusClass),
     reason: decodeByteArray(reason),
   };
-}
-
-/**
- * What a batched command left to do after this transaction (games-interface BatchProgress: keys selector, game_id;
- * data actor, tx_hash, remaining:u64); undefined when the command is not batched. Missing is never zero.
- */
-export function batchRemaining(
-  events: readonly ReceiptEvent[],
-  games: string,
-  transactionHash: string,
-  scope?: { gameId: number; actor: string },
-): bigint | undefined {
-  const event = onlyOne(
-    events.filter(
-      (candidate) =>
-        BigInt(candidate.from_address) === BigInt(games) &&
-        BigInt(candidate.keys[0] ?? "0") === BATCH_PROGRESS &&
-        BigInt(candidate.data[1] ?? "0") === BigInt(transactionHash),
-    ),
-    "batch result",
-  );
-  if (!event) return undefined;
-  if (event.keys.length !== 2 || event.data.length !== 3) throw new Error("Malformed native batch result");
-  if (scope && (BigInt(event.keys[1]!) !== BigInt(scope.gameId) || BigInt(event.data[0]!) !== BigInt(scope.actor)))
-    throw new Error("Malformed BatchProgress identity");
-  const remaining = BigInt(event.data[2]!);
-  if (remaining < 0n || remaining >= 2n ** 64n) throw new Error("Malformed native batch result");
-  return remaining;
 }
 
 function onlyOne(events: readonly ReceiptEvent[], what: string): ReceiptEvent | undefined {

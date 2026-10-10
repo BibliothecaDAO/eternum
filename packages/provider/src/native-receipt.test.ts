@@ -47,15 +47,19 @@ describe("an action's receipt", () => {
   });
 
   it("reads what a batched command still has to do after this transaction", () => {
-    expect(batchRemaining([progress("0xdef", 9), progress(TX, 4)], GAMES, TX)).toBe(4n);
-    expect(batchRemaining([progress("0xdef", 9)], GAMES, TX)).toBeUndefined();
+    expect(batchRemaining([progress("0xdef", 9), progress(TX, 4)], GAMES, TX, { missing: "allow" })).toBe(4n);
+    expect(batchRemaining([progress("0xdef", 9)], GAMES, TX, { missing: "allow" })).toBeUndefined();
   });
 
   it("refuses a batch result out of u64 range, malformed or given twice", () => {
-    expect(() => batchRemaining([{ ...progress(TX, 0), data: ["0x111", TX, String(2n ** 64n)] }], GAMES, TX)).toThrow(
-      "Malformed",
+    expect(() =>
+      batchRemaining([{ ...progress(TX, 0), data: ["0x111", TX, String(2n ** 64n)] }], GAMES, TX, { missing: "allow" }),
+    ).toThrow("Malformed");
+    expect(() =>
+      batchRemaining([{ ...progress(TX, 1), data: ["0x111", TX] }], GAMES, TX, { missing: "allow" }),
+    ).toThrow();
+    expect(() => batchRemaining([progress(TX, 1), progress(TX, 1)], GAMES, TX, { missing: "allow" })).toThrow(
+      "Ambiguous",
     );
-    expect(() => batchRemaining([{ ...progress(TX, 1), data: ["0x111", TX] }], GAMES, TX)).toThrow();
-    expect(() => batchRemaining([progress(TX, 1), progress(TX, 1)], GAMES, TX)).toThrow("Ambiguous");
   });
 });

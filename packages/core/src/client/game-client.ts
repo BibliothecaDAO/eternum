@@ -166,7 +166,7 @@ const startSync = async (
   // Chain time must be known before the first spatial projection reads it.
   await runtime.waitForConfirmedHead();
   const submit = nativePlay(
-    { bindings: input.bindings, release, shard: input.shard },
+    { bindings: input.bindings, release, shard: input.shard, stopped: outcomes.signal },
     setupResult.store,
     input.gameId,
     input.shard.worldAddress,
@@ -193,8 +193,8 @@ const routeActionOutcomes = (
   stopped: AbortSignal,
 ): GameClient["waitForAction"] => {
   const { provider } = setupResult.network;
-  const wait = (transactionHash: string) =>
-    waitForActionOutcome(runtime, provider.provider, provider.contracts.world, transactionHash, stopped);
+  const wait = (transactionHash: string, inBlock?: Promise<void>) =>
+    waitForActionOutcome(runtime, provider.provider, provider.contracts.world, transactionHash, stopped, inBlock);
   provider.setTransactionStreamWaiter(wait, (transactionHash) => runtime.recordSubmittedTransaction(transactionHash));
   return wait;
 };

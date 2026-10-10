@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { hash } from "starknet";
-import { assertWorkerCreation } from "./launcher-check";
+import { assertWorkerCreation, readLauncherState } from "./launcher-check";
 
 test("activation requires a single real creation signed by the enrolled Worker on this world", () => {
   const expected = { account: "0x12", world: "0x34", name: "0x56", preset: 5 };
@@ -15,4 +15,51 @@ test("activation requires a single real creation signed by the enrolled Worker o
     expect(() => assertWorkerCreation({ ...tx, calldata: invalid }, expected)).toThrow();
   }
   expect(() => assertWorkerCreation({ ...tx, calldata: [...calldata, "0x1"] }, expected)).toThrow();
+});
+
+test("launcher handoff state comes only from Games.launcher, without a Worker intent or any signing", async () => {
+  for (const [installed, handedOff] of [
+    ["0x0012", false],
+    ["0x34", true],
+  ] as const) {
+    const calls: unknown[] = [];
+    const state = await readLauncherState({
+      provider: {
+        async callContract(...args: unknown[]) {
+          calls.push(args);
+          return [installed];
+        },
+      },
+      world: "0x56",
+      bootstrap: "0x12",
+    });
+    expect(state).toEqual({ handedOff });
+    expect(calls).toEqual([[{ contractAddress: "0x56", entrypoint: "launcher", calldata: [] }, "latest"]]);
+  }
+});
+
+test("a missing or malformed launcher view fails instead of assuming bootstrap authority", async () => {
+  for (const reply of [[], ["not a felt"], ["0x12", "0x34"]])
+    await expect(
+      readLauncherState({
+        provider: {
+          async callContract() {
+            return reply;
+          },
+        },
+        world: "0x56",
+        bootstrap: "0x12",
+      }),
+    ).rejects.toThrow();
+  await expect(
+    readLauncherState({
+      provider: {
+        async callContract() {
+          throw new Error("node unavailable");
+        },
+      },
+      world: "0x56",
+      bootstrap: "0x12",
+    }),
+  ).rejects.toThrow();
 });

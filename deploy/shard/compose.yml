@@ -10,8 +10,8 @@ x-init: &init
     - herald-config:/herald-config
     - postgres-config:/postgres-config
     - type: bind
-      source: ${OPERATOR_TOKEN_FILE:-/opt/athanor/operator-token}
-      target: /run/secrets/operator-token
+      source: /opt/athanor/operator-token
+      target: /opt/athanor/operator-token
       read_only: true
       bind: { create_host_path: false }
   environment:
@@ -27,7 +27,6 @@ x-init: &init
     BIND_ADDRESS: ${BIND_ADDRESS:-127.0.0.1}
     HOST_UID: ${HOST_UID:?Set HOST_UID to the host user that owns data/ (id -u)}
     HOST_GID: ${HOST_GID:?Set HOST_GID to that user's group (id -g)}
-    OPERATOR_TOKEN_FILE: /run/secrets/operator-token
 
 services:
   prepare:
@@ -107,6 +106,7 @@ services:
       PORT: "8080"
       VRF_KEY_FILE: /keys/vrf-key.json
       VRF_WORKERS: ${VRF_WORKERS:?Choose the stamping worker count}
+      PLAYER_CAPACITY: ${PLAYER_CAPACITY:-96}
     user: "${HOST_UID:?}:${HOST_GID:?}"
     volumes:
       - public-config:/config:ro

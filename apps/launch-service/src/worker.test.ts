@@ -24,9 +24,10 @@ const SHARD_CHAIN = "0x534e5f574f524b4552";
 const SHARD_MANIFEST = {
   version: 1,
   chainId: SHARD_CHAIN,
+  l2GasBound: "0x47868c00",
+  vrfPublicKey: { x: "0x1", y: "0x2" },
   releaseSchemas: { "1": schema.identity },
   rpcUrl: `${SHARD_URL}/rpc`,
-  admissionUrl: `${SHARD_URL}/admission`,
   accountClassHash: "0x2",
   guardianPublicKey: "0x9",
   contracts: { games: "0x77" },
@@ -56,6 +57,8 @@ beforeAll(async () => {
       BASE_URL: ORIGIN,
       LAUNCHER_ALLOWLIST: LAUNCHER,
       SHARD_URL,
+      LEDGER_RPC_URL: "https://ledger.test",
+      LEDGER_ADDRESS: "0x10",
       DEPLOYER_ACCOUNT_ADDRESS: "0x456",
       DEPLOYER_PRIVATE_KEY: "0x1",
       OPERATOR_TOKEN: "operator-test-token",
@@ -94,7 +97,9 @@ it("opens a Blitz window, ticks the schedule, queues an authorized launch and re
   expect(opened.status).toBe(200);
   await (await mf.getWorker()).scheduled({ cron: "* * * * *" });
   const slots = (await (await mf.dispatchFetch(`${ORIGIN}/api/slots`)).json()) as { slots: { name: string }[] };
-  expect(slots.slots.map(({ name }) => name)).toEqual([expect.stringMatching(/^blitz-\d{8}-(11|20)00$/)]);
+  expect(slots.slots).toEqual([]);
+  const waiting = await db.prepare("SELECT name FROM playtest_slots").first<{ name: string }>();
+  expect(waiting?.name).toMatch(/^blitz-\d{8}-(11|20)00$/);
 
   expect(await (await mf.dispatchFetch(`${ORIGIN}/api/factory/health`)).json()).toMatchObject({
     service: "launch",

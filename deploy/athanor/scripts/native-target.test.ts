@@ -33,12 +33,9 @@ describe("native deployment target is explicit", () => {
   }
 
   test("gameplay deployment names the missing operator approval before contacting the chain", async () => {
-    const error = await runWithoutTarget("deploy/athanor/scripts/deploy-gameplay-contracts.ts", {
-      ...target,
-      OPERATOR_ENROLMENT_PATH: "/nonexistent/operator-enrolment.json",
-    });
-    expect(error).toContain("OPERATOR_TOKEN");
-    expect(error).toContain("enrol-operator.ts");
+    const error = await runWithoutTarget("deploy/athanor/scripts/deploy-gameplay-contracts.ts", target);
+    expect(error).toContain("protected operator credential");
+    expect(error).toContain("operator-command.py");
   });
 
   test("the package mounts the protected operator file instead of rendering its value", async () => {
@@ -55,8 +52,8 @@ describe("native deployment target is explicit", () => {
       const environment = service.environment ?? {};
       expect(Object.hasOwn(environment, "OPERATOR_TOKEN")).toBe(false);
       if (["prepare", "init", "harness"].includes(name)) {
-        expect(environment.OPERATOR_TOKEN_FILE).toBe("/run/secrets/operator-token");
-        const mount = service.volumes?.find((volume) => volume.target === "/run/secrets/operator-token");
+        expect(Object.hasOwn(environment, "OPERATOR_TOKEN_FILE")).toBe(false);
+        const mount = service.volumes?.find((volume) => volume.target === "/opt/athanor/operator-token");
         expect(mount?.read_only).toBe(true);
         expect(mount?.bind?.create_host_path).toBe(false);
       } else expect(Object.hasOwn(environment, "OPERATOR_TOKEN_FILE")).toBe(false);

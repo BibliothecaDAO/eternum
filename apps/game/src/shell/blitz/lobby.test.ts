@@ -20,6 +20,7 @@ const registration = (
 });
 
 const slot = (registrations: PlaytestSlot["registrations"]): PlaytestSlot => ({
+  entry: { kind: "free" },
   name: "blitz-1630",
   closesAt: new Date(2_000_000).toISOString(),
   frozenAt: null,

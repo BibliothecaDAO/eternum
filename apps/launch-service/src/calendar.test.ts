@@ -1,5 +1,5 @@
 import { Effect } from "effect";
-import { afterEach, beforeEach, expect, test } from "vitest";
+import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { D1CalendarStore } from "./calendar-store";
 import { runLaunchSchedule } from "./schedule";
 import { D1SlotStore } from "./slot-store";
@@ -9,9 +9,11 @@ import { blitzSlotName, day, frontierSeasonEnd } from "./test-dates";
 
 let database: Awaited<ReturnType<typeof createLaunchTestDatabase>>;
 beforeEach(async () => {
+  vi.spyOn(D1LaunchStore.prototype, "entryForSlot").mockResolvedValue({ kind: "free" });
   database = await createLaunchTestDatabase();
 });
 afterEach(async () => {
+  vi.restoreAllMocks();
   await database.close();
 });
 

@@ -27,3 +27,16 @@ export const testChain =
   (chainId = TEST_CHAIN) =>
   async () =>
     chainId;
+
+/** Older free-game fixtures declare their terms explicitly, before their completion. */
+export const completeFreeFixture = async (
+  store: import("./store").D1LaunchStore,
+  runId: string,
+  summary: import("./model").LaunchSummary,
+) => {
+  if ("startTime" in summary) {
+    await store.saveGame(summary);
+    await store.saveEntry(summary.environment, summary.gameName, { kind: "free" });
+  }
+  await store.complete(runId, summary);
+};

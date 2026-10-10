@@ -1,9 +1,17 @@
+import { Effect } from "effect";
+import { lookupPayoutWallet } from "./payout-wallet";
 import { presentsOperatorToken } from "@realms-world/identity";
 
 import type { IdentityAuth } from "./auth";
 import { routeChat } from "./chat/routes";
 import { handleBotDeviceApproval, handleDeviceChange } from "./devices";
-import { handleAdmitShard, handleDirectory, handleDirectoryHistory, handleShardStatus } from "./directory";
+import {
+  handleAdmitShard,
+  handleDirectory,
+  handleDirectoryHistory,
+  handleRegisterPendingShard,
+  handleShardStatus,
+} from "./directory";
 import type { IdentityEnv } from "./env";
 import { json } from "./http";
 import { consumeSignInBudget } from "./sign-in-budget";
@@ -18,7 +26,9 @@ import { handlePushSubscriptions } from "./push-notifications";
 interface WorkerPlatform {
   cache: Cache;
   fetchShard: typeof fetch;
-  readLaunchDirectory: () => Promise<{ chains: { chainId: string; gameIds: number[] }[] }>;
+  readLaunchDirectory: () => Promise<{
+    chains: { chainId: string; games: { gameId: number; entry: import("@realms-world/identity").GameEntry }[] }[];
+  }>;
 }
 
 /** Every /api route: identity under /api/auth, then devices, profiles, chat, notification settings and the directory. */
@@ -30,12 +40,13 @@ export const routeIdentityRequest = async (
 ) => {
   const { pathname } = new URL(request.url);
   const sendsCode = pathname === "/api/auth/email-otp/send-verification-otp";
-  const verifiesCode = pathname === "/api/auth/sign-in/email-otp";
+  const verifiesCode = ["/api/auth/sign-in/email-otp", "/api/auth/email-otp/check-verification-otp"].includes(pathname);
   const requestsCodeAccess = request.method === "POST" && (sendsCode || verifiesCode);
   if (requestsCodeAccess && !(await withinSignInBudget(env, request, sendsCode))) {
     return json({ error: sendsCode ? "too_many_codes" : "too_many_attempts" }, 429);
   }
   if (requestsCodeAccess && sendsCode) return sendCodeWithExpiry(request, auth);
+  if (pathname === "/api/auth/get-session" && request.method === "GET") return accountSession(request, auth, env);
   if (pathname.startsWith("/api/auth/")) return auth.handler(request);
   if (requiresSameOrigin(request, pathname) && request.headers.get("origin") !== new URL(env.BASE_URL).origin) {
     return json({ error: "invalid_origin" }, 403);
@@ -50,7 +61,11 @@ export const routeIdentityRequest = async (
   }
   if (pathname === "/api/devices/bots" && request.method === "POST") {
     if (!(await isOperator(env, request))) return json({ error: "unauthorized" }, 401);
-    return handleBotDeviceApproval(request, { guardian: env.GUARDIAN, accountClassHash: env.ACCOUNT_CLASS_HASH });
+    return handleBotDeviceApproval(request, {
+      db: env.DB,
+      guardian: env.GUARDIAN,
+      accountClassHash: env.ACCOUNT_CLASS_HASH,
+    });
   }
   if ((pathname === "/api/ratings" || pathname === "/api/ratings/top") && request.method === "GET") {
     if (!(await withinPublicBudget(env, "ratings", request))) return json({ error: "too_many_requests" }, 429);
@@ -81,8 +96,9 @@ export const routeIdentityRequest = async (
   }
   if (pathname.startsWith("/api/directory/shards") && request.method === "POST") {
     if (!(await isOperator(env, request))) return json({ error: "unauthorized" }, 401);
-    if (pathname === "/api/directory/shards") {
-      return handleAdmitShard(request, env.DB, platform.fetchShard, {
+    if (pathname === "/api/directory/shards" || pathname === "/api/directory/shards/pending") {
+      const admit = pathname.endsWith("/pending") ? handleRegisterPendingShard : handleAdmitShard;
+      return admit(request, env.DB, platform.fetchShard, {
         accountClassHash: env.ACCOUNT_CLASS_HASH,
         guardianPublicKey: await env.GUARDIAN.publicKey(),
       });
@@ -122,9 +138,12 @@ const isOperator = (env: IdentityEnv, request: Request) => presentsOperatorToken
 
 /** Cookie authority is accepted only from the app itself; operator endpoints authenticate a bearer token below. */
 const requiresSameOrigin = (request: Request, pathname: string): boolean => {
-  const operatorRoute = ["/api/devices/bots", "/api/directory/shards", "/api/directory/shards/status"].includes(
-    pathname,
-  );
+  const operatorRoute = [
+    "/api/devices/bots",
+    "/api/directory/shards",
+    "/api/directory/shards/status",
+    "/api/directory/shards/pending",
+  ].includes(pathname);
   if (operatorRoute) return false;
   return (
     !["GET", "HEAD", "OPTIONS"].includes(request.method) ||
@@ -151,4 +170,23 @@ const sendCodeWithExpiry = async (request: Request, auth: IdentityAuth): Promise
     { ...((await response.json()) as Record<string, unknown>), expires_at: verification.expiresAt.getTime() / 1000 },
     { status: response.status, headers },
   );
+};
+
+/** The account page and the relay receive the same eligibility decision from the database. */
+const accountSession = async (request: Request, auth: IdentityAuth, env: IdentityEnv): Promise<Response> => {
+  const response = await auth.handler(request);
+  if (!response.ok) return response;
+  const session = (await response.json()) as { user: { realmsId: string } } | null;
+  if (!session) return responseWithSession(response, null);
+  const payoutWallet = await Effect.runPromise(lookupPayoutWallet(env.DB, session.user.realmsId));
+  const ledgerLink = await Promise.resolve()
+    .then(() => env.ACCOUNT_LINKS.status(session.user.realmsId))
+    .catch(() => ({ status: "linking" as const }));
+  return responseWithSession(response, { ...session, user: { ...session.user, payoutWallet, ledgerLink } });
+};
+const responseWithSession = (response: Response, session: unknown) => {
+  const headers = new Headers(response.headers);
+  headers.delete("content-length");
+  headers.set("cache-control", "no-store");
+  return Response.json(session, { status: response.status, headers });
 };

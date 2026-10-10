@@ -117,6 +117,7 @@ const main = async (): Promise<void> => {
     shuttingDown = true;
     clearInterval(chainClock);
     subscriptions.stop();
+    rpc.close();
     server?.stop();
     try {
       await live.checkpoint();

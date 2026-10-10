@@ -8,11 +8,12 @@ import type { RunnerConfig, RunnerSigner } from "./config";
 
 const BOT_KEY_FILE = "bot-key.json";
 
-/** The account the runner plays as, connected to the client; null in spectate mode. */
+/** The account the runner plays as, connected to the client; null in spectate mode. Its sends end with the run. */
 export async function resolveRunnerSigner(
   config: RunnerConfig,
   client: GameClient,
   dataDir: string,
+  run: AbortSignal,
 ): Promise<AccountInterface | null> {
   if (config.signer.mode === "none") return null;
   const { shard } = client;
@@ -22,7 +23,7 @@ export async function resolveRunnerSigner(
       ? await connectBotAccount(config.signer, shard, provider, dataDir)
       : connectKeyAccount(config.signer, provider);
   // Every send, raw or through the client's provider, takes the gameplay nonce and fee path.
-  const signer = configureGameplayAccountSubmits(account, shard);
+  const signer = configureGameplayAccountSubmits(account, shard, run);
   client.connect(signer);
   return signer;
 }

@@ -1,11 +1,16 @@
-import { readdirSync, readFileSync } from "node:fs";
-import { buildSiwsMessage, enrolOperator } from "@realms-world/identity";
+import { readdirSync, readFileSync, mkdtempSync, writeFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { buildSiwsMessage, payoutWalletStatement } from "@realms-world/identity";
 import { botRealmsId, deviceChangeHash, realmsAccountAddress } from "@realms-world/identity/account";
 import { createGuardian } from "@realms-world/guardian";
 import { byteArray, CallData, ec, hash, typedData, type TypedData } from "starknet";
 import { getPlatformProxy } from "wrangler";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
+import { Effect } from "effect";
+import { wasReadyPayoutWallet } from "./payout-wallet";
+import { deliverWalletNotices } from "./wallet-changes";
 import { createIdentityAuth } from "./auth";
 import { WalletNotDeployedError, type VerifyWalletSignature } from "./wallet-signature";
 import type { IdentityEnv } from "./env";
@@ -17,12 +22,15 @@ const ACCOUNT_CLASS_HASH = "0x68995feeefffc1647118073e1ff16179f07eb8eed6c8fb03cc
 const GUARDIAN_KEY = "0x2dccce1da22003777062ee0870e9881b460a8b7eca276870f57c601f182136c";
 const CHAIN_ID = "0x5245414c4d535f53484152445f41";
 
+const storageDirectory = mkdtempSync(join(tmpdir(), "identity-platform-"));
 let proxy: Awaited<ReturnType<typeof getPlatformProxy<{ DB: D1Database }>>>;
 const OPERATOR_TOKEN = "operator-test-token";
 
 /** The Heralds this test's shards answer from, by URL; a missing entry answers 503. */
 const heralds = new Map<string, unknown>();
-let launchDirectory: { chains: { chainId: string; gameIds: number[] }[] } = { chains: [] };
+let launchDirectory: {
+  chains: { chainId: string; games: { gameId: number; entry: import("@realms-world/identity").GameEntry }[] }[];
+} = { chains: [] };
 const fetchShard = (async (input: RequestInfo | URL) => {
   const body = heralds.get(new URL(input instanceof Request ? input.url : input).href);
   return body === undefined ? new Response("unavailable", { status: 503 }) : Response.json(body);
@@ -32,6 +40,7 @@ let auth: ReturnType<typeof createIdentityAuth>;
 
 /** The email provider's inbox: the last sign-in code sent to each address. */
 const sentCodes = new Map<string, string>();
+const notices = vi.fn(async (_email: string, _address: string | null, _id: string) => {});
 /** Sign-in codes requested per address, as the rate limiter counts them. */
 const codesRequested = new Map<string, number>();
 const countSignInCode = (email: string) => {
@@ -39,7 +48,7 @@ const countSignInCode = (email: string) => {
   return codesRequested.get(email)!;
 };
 
-/** Mainnet wallets by address: each signs the SIWS message's SNIP-12 hash with its own Stark key. */
+/** Environment-chain wallets by address: each signs the SIWS message's SNIP-12 hash with its own Stark key. */
 const walletKeys = new Map<string, string>();
 const createWallet = (): string => {
   const privateKey = `0x${Buffer.from(crypto.getRandomValues(new Uint8Array(31))).toString("hex")}`;
@@ -49,8 +58,8 @@ const createWallet = (): string => {
   walletKeys.set(BigInt(address).toString(16), privateKey);
   return address;
 };
-// The wallet contract's own check runs on mainnet; this one checks the same signature over the same message hash.
-const verifyAsMainnet = vi.fn<VerifyWalletSignature>(async (message, signature, address) => {
+// The wallet contract's own check runs on its configured chain; this one checks the same signature over the same message hash.
+const verifyAsWallet = vi.fn<VerifyWalletSignature>(async (message, signature, address) => {
   const privateKey = walletKeys.get(BigInt(address).toString(16));
   if (!privateKey || signature.length !== 2) return false;
   const hash = typedData.getMessageHash(message as unknown as TypedData, address);
@@ -62,7 +71,16 @@ const verifyAsMainnet = vi.fn<VerifyWalletSignature>(async (message, signature, 
 });
 
 beforeAll(async () => {
-  proxy = await getPlatformProxy<{ DB: D1Database }>({ environment: "staging", persist: false });
+  const configPath = join(storageDirectory, "wrangler.json");
+  writeFileSync(
+    configPath,
+    JSON.stringify({
+      name: "identity-route-storage",
+      compatibility_date: "2026-07-30",
+      d1_databases: [{ binding: "DB", database_name: "identity", database_id: "00000000-0000-0000-0000-000000000000" }],
+    }),
+  );
+  proxy = await getPlatformProxy<{ DB: D1Database }>({ configPath, persist: false });
   const migrations = new URL("../migrations/", import.meta.url);
   const statements = readdirSync(migrations)
     .sort()
@@ -79,7 +97,11 @@ beforeAll(async () => {
     ACCOUNT_CLASS_HASH,
     BETTER_AUTH_SECRET: "identity-test-secret-identity-test-secret",
     RATING_READER: {} as IdentityEnv["RATING_READER"],
-    IDENTITY_RPC_URL: "http://127.0.0.1:1",
+    L2_CHAIN_ID: "SN_SEPOLIA",
+    REALMS_ADDRESS: "0x30",
+    RATING_TOKEN_ADDRESS: "0x31",
+    RATING_HISTORY_URL: "https://realms.world/api/ratings/population",
+    IDENTITY_RPC_URL: "https://starknet-sepolia.g.alchemy.com/v2/test",
     OPERATOR_TOKEN: OPERATOR_TOKEN,
     DISCORD_CLIENT_ID: "discord-client",
     DISCORD_CLIENT_SECRET: "discord-secret",
@@ -93,6 +115,10 @@ beforeAll(async () => {
     CHAT_INBOX: {} as IdentityEnv["CHAT_INBOX"],
     DB: proxy.env.DB,
     GUARDIAN: createGuardian(GUARDIAN_KEY),
+    ACCOUNT_LINKS: {
+      changed: vi.fn(async () => undefined),
+      status: vi.fn(async () => ({ status: "linking" as const })),
+    },
     LAUNCH: { fetch: vi.fn(async () => Response.json({ chains: [] })) },
     DIRECTORY_RATE_LIMIT: { limit: async () => ({ success: true }) },
     PUBLIC_RATE_LIMIT: { limit: async () => ({ success: true }) },
@@ -100,12 +126,16 @@ beforeAll(async () => {
     VERSION: { id: "test", tag: "", timestamp: "" },
   };
   auth = createIdentityAuth(env, {
-    verifyWalletSignature: verifyAsMainnet,
+    verifyWalletSignature: verifyAsWallet,
+    sendWalletNotice: notices,
     sendSignInCode: async (email, code) => void sentCodes.set(email, code),
   });
 }, 60_000);
 
-afterAll(() => proxy?.dispose());
+afterAll(async () => {
+  await proxy?.dispose();
+  rmSync(storageDirectory, { recursive: true, force: true });
+});
 
 /** A shard manifest under our guardian and account class, the only kind our directory lists. */
 const shardManifest = (chainId: string) => ({
@@ -149,24 +179,62 @@ const createBrowser = (parentDomainCookies: string[] = []) => {
   };
   const session = async () =>
     (await (await request("/api/auth/get-session")).json()) as {
-      user: { id: string; name: string; realmsId: string; address?: string | null; suggestedName?: string | null };
+      user: {
+        payoutWallet: import("@realms-world/identity").PayoutWallet;
+        ledgerLink: import("@realms-world/identity").LedgerLinkStatus;
+        walletLinkedAt: number | null;
+        email: string;
+        id: string;
+        name: string;
+        realmsId: string;
+        address?: string | null;
+        suggestedName?: string | null;
+      };
     } | null;
   return { request, session };
 };
 
 /** Proves a wallet to the identity service, to link it or to recover the account it is linked to. */
-const proveWallet = async (browser: ReturnType<typeof createBrowser>, address: string, path: "link") => {
-  const { nonce } = (await (await browser.request("/api/auth/siws/nonce", { body: { address } })).json()) as {
+const proveWallet = async (
+  browser: ReturnType<typeof createBrowser>,
+  address: string,
+  path: "link",
+  chainId = env.L2_CHAIN_ID,
+) => {
+  const { nonce, realmsId } = (await (await browser.request("/api/auth/siws/nonce", { body: { address } })).json()) as {
     nonce: string;
+    realmsId: string;
   };
-  const message = buildSiwsMessage({ address, chainId: "SN_MAIN", domain: new URL(ORIGIN).host, nonce, uri: ORIGIN });
+  const message = buildSiwsMessage({
+    address,
+    chainId,
+    domain: new URL(ORIGIN).host,
+    nonce,
+    uri: ORIGIN,
+    statement: payoutWalletStatement(realmsId),
+  });
   const { r, s } = ec.starkCurve.sign(
     typedData.getMessageHash(message as unknown as TypedData, address),
     walletKeys.get(BigInt(address).toString(16))!,
   );
   return browser.request(`/api/auth/siws/${path}`, {
-    body: { message: JSON.stringify(message), signature: [`0x${r.toString(16)}`, `0x${s.toString(16)}`], address },
+    body: {
+      message: JSON.stringify(message),
+      signature: [`0x${r.toString(16)}`, `0x${s.toString(16)}`],
+      address,
+      otp: await walletCode(browser),
+    },
   });
+};
+
+/** A fresh code for a wallet change; each helper models a new code-send window. */
+const walletCode = async (browser: ReturnType<typeof createBrowser>) => {
+  const email = (await browser.session())!.user.email;
+  codesRequested.delete(email);
+  expect(
+    (await browser.request("/api/auth/email-otp/send-verification-otp", { body: { email, type: "sign-in" } })).status,
+  ).toBe(200);
+  return sentCodes.get(email)!;
 };
 
 /** A signed-in player who linked a wallet from the account page. */
@@ -399,6 +467,90 @@ describe("identity Worker", () => {
     expect(await refused.json()).toEqual({ error: "account_not_secured" });
   });
 
+  it("signs player and bot changes only for listed pending, active or draining chains", async () => {
+    const browser = createBrowser();
+    await signInWithCode(browser, "chain-allow-list@realms.test");
+    const player = deviceChangeFor((await browser.session())!.user.realmsId);
+    const bot = {
+      ...player,
+      label: "0xb07",
+      account: realmsAccountAddress(botRealmsId("0xb07"), ACCOUNT_CLASS_HASH, await env.GUARDIAN.publicKey()),
+    };
+    await env.DB.prepare(`INSERT INTO shards (url, chainId, status, addedAt) VALUES (?, ?, 'active', ?)`)
+      .bind("https://devices.realms.test", CHAIN_ID, Date.now())
+      .run();
+    const signing = vi.spyOn(env.GUARDIAN, "signDeviceChange");
+    try {
+      for (const status of ["pending", "active", "draining", "retired"]) {
+        await env.DB.prepare("UPDATE shards SET status = ? WHERE chainId = ?").bind(status, CHAIN_ID).run();
+        for (const [path, change] of [
+          ["/api/devices", player],
+          ["/api/devices/bots", bot],
+        ] as const) {
+          signing.mockClear();
+          const response = await browser.request(path, {
+            body: { ...change, chainId: `0x0${CHAIN_ID.slice(2)}` },
+            token: OPERATOR_TOKEN,
+          });
+          const approved = status !== "retired" && (status !== "pending" || path === "/api/devices/bots");
+          expect(response.status).toBe(approved ? 200 : 403);
+          expect(signing).toHaveBeenCalledTimes(approved ? 1 : 0);
+        }
+      }
+      for (const chainId of ["0x123", "0x534e5f4d41494e", "0x534e5f5345504f4c4941"]) {
+        for (const [path, change] of [
+          ["/api/devices", player],
+          ["/api/devices/bots", bot],
+        ] as const) {
+          signing.mockClear();
+          const response = await browser.request(path, { body: { ...change, chainId }, token: OPERATOR_TOKEN });
+          expect(response.status).toBe(403);
+          expect(await response.json()).toEqual({ error: "chain_not_approved" });
+          expect(signing).not.toHaveBeenCalled();
+        }
+      }
+    } finally {
+      signing.mockRestore();
+      await env.DB.prepare("UPDATE shards SET status = 'active' WHERE chainId = ?").bind(CHAIN_ID).run();
+    }
+  });
+
+  it("enrolls pending shards without exposing them until the deployment activates them", async () => {
+    const operator = createBrowser();
+    const url = "https://pending-shard.test";
+    const chainId = "0x123abc";
+    heralds.set(`${url}/manifest`, shardManifest(chainId));
+    heralds.set(`${url}/games`, { chain: chainId, games: [] });
+    const admit = (path: string) => operator.request(path, { body: { url }, token: OPERATOR_TOKEN });
+    expect((await admit("/api/directory/shards")).status).toBe(409);
+    expect((await operator.request("/api/directory/shards/pending", { body: { url } })).status).toBe(401);
+    expect((await admit("/api/directory/shards/pending")).status).toBe(201);
+    const visible = async (path: string) => JSON.stringify(await (await operator.request(path)).json());
+    expect(await visible("/api/directory")).not.toContain(url);
+    expect(await visible("/api/directory/history")).not.toContain(url);
+    const bot = {
+      label: "0xbeef",
+      chainId,
+      account: realmsAccountAddress(botRealmsId("0xbeef"), ACCOUNT_CLASS_HASH, await env.GUARDIAN.publicKey()),
+      action: "ADD",
+      deviceKey: "0x123",
+      counter: 1,
+    };
+    expect((await operator.request("/api/devices/bots", { body: bot, token: OPERATOR_TOKEN })).status).toBe(200);
+    expect(
+      (
+        await operator.request("/api/directory/shards/status", {
+          body: { url, status: "active" },
+          token: OPERATOR_TOKEN,
+        })
+      ).status,
+    ).not.toBe(200);
+    expect((await admit("/api/directory/shards")).status).toBe(201);
+    expect(await visible("/api/directory")).toContain(url);
+    expect((await admit("/api/directory/shards")).status).toBe(200);
+    await env.DB.prepare("DELETE FROM shards WHERE url = ?").bind(url).run();
+  });
+
   it("approves only a verified account's own exact change, and never re-adds a revoked key", async () => {
     const browser = createBrowser();
     expect((await signInWithCode(browser, "approver@realms.test")).status).toBe(200);
@@ -516,51 +668,6 @@ describe("identity Worker", () => {
     expect((await ask({ ...request, action: "REVOKE", account: playerAccount }, OPERATOR_TOKEN)).status).toBe(403);
   });
 
-  it("enrols a community shard's operator through their own Realms account, then signs that session out", async () => {
-    const email = "community-operator@realms.test";
-    const deviceKey = "0x0be7a702";
-    const guardianPublicKey = ec.starkCurve.getStarkKey(GUARDIAN_KEY);
-    const inProcess = (url: string, init?: RequestInit) =>
-      routeIdentityRequest(new Request(url, init), env, auth, {
-        cache: proxy.caches.default as unknown as Cache,
-        fetchShard,
-        readLaunchDirectory: async () => launchDirectory,
-      });
-
-    const enrolment = await enrolOperator({
-      identityUrl: `${ORIGIN}/api`,
-      shard: { chainId: CHAIN_ID, accountClassHash: ACCOUNT_CLASS_HASH, guardianPublicKey },
-      deviceKey,
-      email,
-      readCode: async () => sentCodes.get(email)!,
-      fetch: inProcess,
-    });
-
-    const user = (await proxy.env.DB.prepare('SELECT "id", "realmsId" FROM "user" WHERE "email" = ?')
-      .bind(email)
-      .first()) as { id: string; realmsId: string };
-    expect(enrolment.realmsId).toBe(user.realmsId);
-    const [r, s] = enrolment.signature;
-    const approved = {
-      chainId: CHAIN_ID,
-      account: realmsAccountAddress(user.realmsId, ACCOUNT_CLASS_HASH, guardianPublicKey),
-      action: "ADD" as const,
-      deviceKey,
-      counter: 1,
-    };
-    expect(
-      ec.starkCurve.verify(
-        new ec.starkCurve.Signature(BigInt(r!), BigInt(s!)),
-        deviceChangeHash(approved),
-        ec.starkCurve.getPublicKey(GUARDIAN_KEY),
-      ),
-    ).toBe(true);
-    const sessions = await proxy.env.DB.prepare('SELECT count(*) AS n FROM "session" WHERE "userId" = ?')
-      .bind(user.id)
-      .first<{ n: number }>();
-    expect(sessions?.n).toBe(0);
-  });
-
   it("names an account only through our guardian's approval, never through the Realms id it claims", async () => {
     const browser = createBrowser();
     await signInWithCode(browser, "galen@realms.test");
@@ -617,9 +724,17 @@ describe("identity Worker", () => {
   });
 
   it("lists each shard's live games under that shard, settled ones in a paged history, with a player's standing when asked, names a shard it cannot read, and refuses a listed chain id or another guardian's shard", async () => {
+    await env.DB.prepare("DELETE FROM shards WHERE url = ?").bind("https://devices.realms.test").run();
     const operator = createBrowser();
-    const game = (gameId: number, name: string) => ({ game_id: gameId, name, status: "Running" });
-    launchDirectory = { chains: [{ chainId: "0xa", gameIds: [1, 3] }] };
+    const game = (gameId: number, name: string) => ({
+      game_id: gameId,
+      name,
+      status: "Running",
+      entry: { kind: "free" },
+    });
+    launchDirectory = {
+      chains: [{ chainId: "0xa", games: [1, 3].map((gameId) => ({ gameId, entry: { kind: "free" as const } })) }],
+    };
     heralds.set("https://shard-a.test/manifest", shardManifest("0xa"));
     heralds.set("https://shard-a.test/games", {
       chain: "0xa",
@@ -632,6 +747,9 @@ describe("identity Worker", () => {
       401,
     );
     for (const url of ["https://shard-a.test", "https://shard-b.test"]) {
+      expect(
+        (await operator.request("/api/directory/shards/pending", { body: { url }, token: OPERATOR_TOKEN })).status,
+      ).toBe(201);
       const admitted = await operator.request("/api/directory/shards", { body: { url }, token: OPERATOR_TOKEN });
       expect(admitted.status).toBe(201);
     }
@@ -661,7 +779,10 @@ describe("identity Worker", () => {
     ]);
 
     heralds.set("https://shard-b.test/games", { chain: "0xb", games: [game(1, "blitz-b")] });
-    launchDirectory.chains.push({ chainId: "0xb", gameIds: [1] });
+    launchDirectory.chains.push({
+      chainId: "0xb",
+      games: [1].map((gameId) => ({ gameId, entry: { kind: "free" as const } })),
+    });
     const listed = [
       {
         url: "https://shard-a.test",
@@ -700,6 +821,7 @@ describe("identity Worker", () => {
     const settled = (gameId: number, name: string, endAt: number) => ({
       ...game(gameId, name),
       status: "Settled",
+      entry: { kind: "free" },
       clock: { end_at: endAt },
     });
     const live = { ...game(1, "blitz-d"), clock: { end_at: 900 } };
@@ -711,11 +833,17 @@ describe("identity Worker", () => {
       games: [settled(1, "e-first", 100), settled(2, "e-last", 300)],
     });
     for (const url of ["https://shard-d.test", "https://shard-e.test"]) {
+      expect(
+        (await operator.request("/api/directory/shards/pending", { body: { url }, token: OPERATOR_TOKEN })).status,
+      ).toBe(201);
       expect((await operator.request("/api/directory/shards", { body: { url }, token: OPERATOR_TOKEN })).status).toBe(
         201,
       );
     }
-    launchDirectory.chains.push({ chainId: "0xd", gameIds: [1, 2] }, { chainId: "0xe", gameIds: [1, 2] });
+    launchDirectory.chains.push(
+      { chainId: "0xd", games: [1, 2].map((gameId) => ({ gameId, entry: { kind: "free" as const } })) },
+      { chainId: "0xe", games: [1, 2].map((gameId) => ({ gameId, entry: { kind: "free" as const } })) },
+    );
     expect(await list()).toEqual([
       ...listed,
       { url: "https://shard-d.test", chainId: "0xd", status: "active", games: [live] },
@@ -758,16 +886,27 @@ describe("identity Worker", () => {
     heralds.set("https://shard-e.test/games", { chain: "0xee", games: [live] });
     const admitE = () =>
       operator.request("/api/directory/shards", { body: { url: "https://shard-e.test" }, token: OPERATOR_TOKEN });
-    expect(await (await admitE()).json()).toEqual({ error: "shard_listed" });
+    expect(await (await admitE()).json()).toEqual({ error: "shard_not_pending" });
     const retired = await operator.request("/api/directory/shards/status", {
       body: { url: "https://shard-e.test", status: "retired" },
       token: OPERATOR_TOKEN,
     });
     expect(retired.status).toBe(200);
+    expect(
+      (
+        await operator.request("/api/directory/shards/pending", {
+          body: { url: "https://shard-e.test" },
+          token: OPERATOR_TOKEN,
+        })
+      ).status,
+    ).toBe(201);
     const relisted = await admitE();
     expect(relisted.status).toBe(201);
-    expect(await relisted.json()).toEqual({ url: "https://shard-e.test", chainId: "0xee" });
-    launchDirectory.chains.push({ chainId: "0xee", gameIds: [1] });
+    expect(await relisted.json()).toEqual({ url: "https://shard-e.test", chainId: "0xee", status: "active" });
+    launchDirectory.chains.push({
+      chainId: "0xee",
+      games: [1].map((gameId) => ({ gameId, entry: { kind: "free" as const } })),
+    });
     expect((await list()).at(-1)).toEqual({
       url: "https://shard-e.test",
       chainId: "0xee",
@@ -791,18 +930,31 @@ describe("identity Worker", () => {
     expect(after!.count).toBe(before!.count + 1);
   });
 
+  it("accepts the environment proof chain and rejects a mainnet proof before signature verification", async () => {
+    const browser = createBrowser();
+    await signInWithCode(browser, "sepolia-proof@realms.test");
+    const address = createWallet();
+    verifyAsWallet.mockClear();
+    const refused = await proveWallet(browser, address, "link", "SN_MAIN");
+    expect(refused.status).toBe(401);
+    expect(verifyAsWallet).not.toHaveBeenCalled();
+    expect((await browser.session())!.user.address).toBeNull();
+    expect((await proveWallet(browser, address, "link")).status).toBe(200);
+    expect(verifyAsWallet.mock.calls.at(-1)![0].domain.chainId).toBe("SN_SEPOLIA");
+  });
+
   it("names an undeployed wallet without linking it or consuming its nonce", async () => {
     const browser = createBrowser();
     await signInWithCode(browser, "undeployed-wallet@realms.test");
     const address = createWallet();
-    verifyAsMainnet.mockRejectedValueOnce(new WalletNotDeployedError("Wallet is not deployed"));
+    verifyAsWallet.mockRejectedValueOnce(new WalletNotDeployedError("Wallet is not deployed"));
     const refused = await proveWallet(browser, address, "link");
     expect(refused.status).toBe(400);
     expect(await refused.json()).toMatchObject({ code: "WALLET_NOT_DEPLOYED" });
     expect((await browser.session())!.user.address).toBeNull();
     expect(
       await env.DB.prepare("SELECT count(*) AS count FROM verification WHERE identifier = ?")
-        .bind(`siws_0x${BigInt(address).toString(16)}`)
+        .bind(`siws_${(await browser.session())!.user.realmsId}_0x${BigInt(address).toString(16)}`)
         .first<number>("count"),
     ).toBe(1);
   });
@@ -845,7 +997,9 @@ describe("identity Worker", () => {
     await signInWithCode(other, "second-holder@realms.test");
     expect((await proveWallet(other, first, "link")).status).toBe(409);
 
-    expect((await holder.request("/api/auth/siws/unlink", { body: {} })).status).toBe(200);
+    expect((await holder.request("/api/auth/siws/unlink", { body: { otp: await walletCode(holder) } })).status).toBe(
+      200,
+    );
     expect((await holder.session())?.user.address ?? null).toBeNull();
     expect((await proveWallet(other, first, "link")).status).toBe(200);
 
@@ -853,6 +1007,191 @@ describe("identity Worker", () => {
     expect((await proveWallet(other, second, "link")).status).toBe(200);
     expect(BigInt((await other.session())?.user.address ?? 0)).toBe(BigInt(second));
     expect((await proveWallet(holder, first, "link")).status).toBe(200);
+  });
+
+  it("notifies the relay immediately on every link change and exposes ledger confirmation separately from the hold", async () => {
+    const browser = createBrowser();
+    await signInWithCode(browser, "ledger-link@realms.test");
+    const address = createWallet();
+    const changed = vi.spyOn(env.ACCOUNT_LINKS, "changed");
+    const initial = changed.mock.calls.length;
+    expect((await proveWallet(browser, address, "link")).status).toBe(200);
+    const session = (await browser.session())!;
+    expect(
+      await env.DB.prepare("SELECT revision FROM dirty_account_links WHERE account=?")
+        .bind(session.user.realmsId)
+        .first(),
+    ).not.toBeNull();
+    expect(changed.mock.calls.length).toBe(initial + 1);
+    expect(changed).toHaveBeenLastCalledWith(session.user.realmsId);
+    expect(session.user.ledgerLink).toEqual({ status: "linking" });
+    expect(session.user.payoutWallet?.status).toBe("on_hold");
+    vi.spyOn(env.ACCOUNT_LINKS, "status").mockResolvedValueOnce({
+      status: "confirmed",
+      ledger: { address: "0x10", chainId: "0x1" },
+      account: "0x20",
+      wallet: address,
+    });
+    expect((await browser.session())!.user.ledgerLink?.status).toBe("confirmed");
+    expect((await proveWallet(browser, createWallet(), "link")).status).toBe(200);
+    expect((await browser.request("/api/auth/siws/unlink", { body: { otp: await walletCode(browser) } })).status).toBe(
+      200,
+    );
+    expect(changed.mock.calls.length).toBe(initial + 3);
+    const paused = createBrowser();
+    await signInWithCode(paused, "paused-ledger-link@realms.test");
+    changed.mockRejectedValueOnce(new Error("relay paused"));
+    expect((await proveWallet(paused, createWallet(), "link")).status).toBe(200);
+    expect(
+      await env.DB.prepare("SELECT revision FROM dirty_account_links WHERE account=?")
+        .bind((await paused.session())!.user.realmsId)
+        .first(),
+    ).not.toBeNull();
+    expect((await paused.session())!.user.ledgerLink?.status).toBe("linking");
+  });
+
+  it("requires a fresh six-digit code from the account email for every wallet mutation", async () => {
+    const browser = createBrowser();
+    await signInWithCode(browser, "wallet-factor@realms.test");
+    const address = createWallet();
+    expect((await proveWallet(browser, address, "link")).status).toBe(200);
+    expect(notices).toHaveBeenLastCalledWith("wallet-factor@realms.test", expect.any(String), expect.any(String));
+    for (const otp of [undefined, "12345", "abcdef"]) {
+      expect((await browser.request("/api/auth/siws/unlink", { body: { otp } })).status).toBe(400);
+    }
+    const otp = await walletCode(browser);
+    const wrong = otp === "000000" ? "111111" : "000000";
+    expect((await browser.request("/api/auth/siws/unlink", { body: { otp: wrong } })).status).toBe(400);
+    expect((await browser.session())!.user.address).not.toBeNull();
+    expect((await browser.request("/api/auth/siws/unlink", { body: { otp } })).status).toBe(200);
+    expect(notices).toHaveBeenLastCalledWith("wallet-factor@realms.test", null, expect.any(String));
+    expect((await browser.request("/api/auth/siws/unlink", { body: { otp } })).status).toBe(400);
+    const expired = await walletCode(browser);
+    await env.DB.prepare("UPDATE verification SET expiresAt = ? WHERE identifier = ?")
+      .bind(new Date(Date.now() - 1000).toISOString(), "sign-in-otp-wallet-factor@realms.test")
+      .run();
+    expect((await browser.request("/api/auth/siws/unlink", { body: { otp: expired } })).status).toBe(400);
+  });
+
+  it("consumes one code once across concurrent changes and retries undelivered notices", async () => {
+    const browser = createBrowser();
+    await signInWithCode(browser, "wallet-race@realms.test");
+    const otp = await walletCode(browser);
+    notices.mockRejectedValueOnce(new Error("provider offline"));
+    const results = await Promise.all([1, 2].map(() => browser.request("/api/auth/siws/unlink", { body: { otp } })));
+    expect(results.map((r) => r.status).sort()).toEqual([200, 400]);
+    expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM wallet_change_notices").first<number>("n")).toBe(1);
+    await Effect.runPromise(deliverWalletNotices(env.DB, notices));
+    expect(await env.DB.prepare("SELECT COUNT(*) AS n FROM wallet_change_notices").first<number>("n")).toBe(0);
+  });
+
+  it("refuses a valid wallet signature made for another Realms account", async () => {
+    const browser = createBrowser();
+    await signInWithCode(browser, "wallet-binding@realms.test");
+    const address = createWallet();
+    const { nonce } = (await (await browser.request("/api/auth/siws/nonce", { body: { address } })).json()) as {
+      nonce: string;
+    };
+    const message = buildSiwsMessage({
+      address,
+      chainId: env.L2_CHAIN_ID,
+      domain: new URL(ORIGIN).host,
+      nonce,
+      uri: ORIGIN,
+      statement: payoutWalletStatement("0xdead"),
+    });
+    const { r, s } = ec.starkCurve.sign(
+      typedData.getMessageHash(message as unknown as TypedData, address),
+      walletKeys.get(BigInt(address).toString(16))!,
+    );
+    const response = await browser.request("/api/auth/siws/link", {
+      body: {
+        address,
+        message: JSON.stringify(message),
+        signature: [`0x${r.toString(16)}`, `0x${s.toString(16)}`],
+        otp: await walletCode(browser),
+      },
+    });
+    expect(response.status).toBe(401);
+    expect((await browser.session())!.user.address).toBeNull();
+  });
+
+  it("exposes the same 24-hour hold, preserves it on repeat links, and restarts it on replacement", async () => {
+    const browser = createBrowser();
+    await signInWithCode(browser, "wallet-hold@realms.test");
+    expect((await browser.session())!.user.payoutWallet).toEqual({ status: "no_wallet" });
+    const address = createWallet();
+    expect((await proveWallet(browser, address, "link")).status).toBe(200);
+    const user = (await browser.session())!.user;
+    expect(user.payoutWallet).toEqual({
+      status: "on_hold",
+      address: user.address,
+      until: user.walletLinkedAt! + 86_400_000,
+    });
+    expect((await proveWallet(browser, address, "link")).status).toBe(200);
+    expect((await browser.session())!.user.walletLinkedAt).toBe(user.walletLinkedAt);
+    await env.DB.prepare('UPDATE "user" SET "walletLinkedAt" = ? WHERE "id" = ?')
+      .bind(Date.now() - 86_400_001, user.id)
+      .run();
+    expect((await browser.session())!.user.payoutWallet).toEqual({ status: "ready", address: user.address });
+    expect((await proveWallet(browser, createWallet(), "link")).status).toBe(200);
+    expect((await browser.session())!.user.payoutWallet.status).toBe("on_hold");
+    expect((await browser.request("/api/auth/siws/unlink", { body: { otp: await walletCode(browser) } })).status).toBe(
+      200,
+    );
+    expect((await browser.session())!.user.payoutWallet).toEqual({ status: "no_wallet" });
+    expect((await browser.session())!.user.walletLinkedAt).toBeNull();
+  });
+
+  it("keeps historical eligibility after replacement and unlink without changing the hold", async () => {
+    const browser = createBrowser();
+    await signInWithCode(browser, "wallet-history@realms.test");
+    const first = createWallet();
+    await proveWallet(browser, first, "link");
+    const user = (await browser.session())!.user;
+    const ready = user.walletLinkedAt! + 86400000;
+    const at = Math.ceil(ready / 1000);
+    expect(await wasReadyPayoutWallet(env.DB, user.realmsId, first, at - 1)).toBe(false);
+    expect(await wasReadyPayoutWallet(env.DB, user.realmsId, first, at)).toBe(true);
+    // Historical interval fixture: the payment precedes the later wallet change.
+    await env.DB.prepare(
+      "UPDATE wallet_link_history SET linked_at=?,ready_at=? WHERE account=? AND replaced_at IS NULL",
+    )
+      .bind(Date.now() - 172800000, Date.now() - 86400000, user.realmsId)
+      .run();
+    const paidAt = Math.floor(Date.now() / 1000) - 10;
+    const second = createWallet();
+    await proveWallet(browser, second, "link");
+    expect(await wasReadyPayoutWallet(env.DB, user.realmsId, first, paidAt)).toBe(true);
+    expect(await wasReadyPayoutWallet(env.DB, user.realmsId, second, paidAt)).toBe(false);
+    await browser.request("/api/auth/siws/unlink", { body: { otp: await walletCode(browser) } });
+    expect(await wasReadyPayoutWallet(env.DB, user.realmsId, first, paidAt)).toBe(true);
+    expect(
+      await env.DB.prepare("SELECT COUNT(*) AS n FROM wallet_link_history WHERE account=?")
+        .bind(user.realmsId)
+        .first<number>("n"),
+    ).toBe(2);
+  });
+
+  it("cannot bypass the wallet code or hold through the generic account update", async () => {
+    const browser = createBrowser();
+    await signInWithCode(browser, "wallet-write-path@realms.test");
+    const address = createWallet();
+    expect((await proveWallet(browser, address, "link")).status).toBe(200);
+    const before = (await browser.session())!.user;
+    const proof = verifyAsWallet.mock.calls.at(-1)!;
+    expect(
+      (
+        await browser.request("/api/auth/siws/link", {
+          body: { address, message: JSON.stringify(proof[0]), signature: proof[1] },
+        })
+      ).status,
+    ).toBe(400);
+    await browser.request("/api/auth/update-user", { body: { address: createWallet(), walletLinkedAt: 0 } });
+    const after = (await browser.session())!.user;
+    expect(after.address).toBe(before.address);
+    expect(after.walletLinkedAt).toBe(before.walletLinkedAt);
+    expect(after.payoutWallet).toEqual(before.payoutWallet);
   });
 
   it("suggests a new player's display name from their Discord name or their email", async () => {

@@ -3,6 +3,7 @@ import { defaultPresetForEnvironment } from "../../../config/deployer/clean/cons
 import { nativePresetIdFor, nativePresets } from "../../../config/source/native";
 import { Schema } from "effect";
 
+export const isPublicGameName = (name: string) => !name.startsWith("check-");
 const NonEmptyString = Schema.NonEmptyString;
 const OptionalNumberRecord = Schema.optional(Schema.Record(Schema.String, Schema.Number));
 
@@ -19,7 +20,9 @@ const SharedOptions = {
 
 export const CreateGameRequestSchema = Schema.Struct({
   ...SharedOptions,
-  gameName: NonEmptyString,
+  gameName: NonEmptyString.check(
+    Schema.makeFilter((name: string) => isPublicGameName(name) || "check- names are reserved for deployment"),
+  ),
   rosterAccounts: Schema.optional(Schema.Array(Schema.String.pipe(Schema.check(Schema.isPattern(/^0x[0-9a-fA-F]+$/))))),
   gameStartTime: Schema.optional(NonEmptyString),
 }).check(
@@ -94,6 +97,7 @@ export function applyDurableLaunchDefaults(
 ): LaunchJobRequest {
   if (kind === "result") return request;
   if (!("gameName" in request) || "gameId" in request) throw new Error("Invalid game request");
+  if (!isPublicGameName(request.gameName)) throw new Error("check- names are reserved for deployment");
   const version =
     request.version ?? (defaultPresetForEnvironment(request.environment) as NonNullable<CreateGameRequest["version"]>);
   if (!isRegisteredPresetForEnvironment(request.environment, version)) {

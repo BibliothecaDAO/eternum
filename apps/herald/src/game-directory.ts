@@ -26,3 +26,10 @@ export function resolveDirectoryStatus(
   if (devMode || timestamp >= clock.start_main_at) return "Live";
   return recorded;
 }
+
+/** Deployment owns the reserved short-string prefix; hidden games never enter public aggregates. */
+export function isCheckGame(game: Record<string, unknown>): boolean {
+  return BigInt(game.name as string | bigint | number)
+    .toString(16)
+    .startsWith("636865636b2d");
+}

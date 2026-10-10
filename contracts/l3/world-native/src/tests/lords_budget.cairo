@@ -1,5 +1,5 @@
 use core::dict::{Felt252Dict, Felt252DictTrait};
-use snforge_std::{ContractClassTrait, DeclareResultTrait, declare};
+use snforge_std::fs::{FileTrait, read_txt};
 use starknet::storage::{StorageMapWriteAccess, StoragePointerReadAccess};
 use crate::logic::lords_budget::{SeasonClock, available, fits, open_day, roll, unlocked};
 use crate::relics::{ChestRules, LordsBudget, roll_tier, tier_value};
@@ -124,9 +124,12 @@ fn price_uses_rollover_over_expected_rolled_shares_with_a_floor_of_one() {
     );
     assert_eq!(today.price, price);
     assert_eq!((today.open, today.rolled_shares, today.day), (0, 0, 1));
-    let exhausted = LordsBudget { pool_left: 0, ..empty_day(rules, 0) };
+    let exhausted = LordsBudget { pool_left: 0, estimate: 1_000_000_000_000, ..empty_day(rules, 0) };
     assert_eq!(open_day(rules, exhausted, clock).price, 1);
     assert!(!fits(rules, exhausted, clock, 1));
+    let zero_expected = LordsBudget { estimate: 0, ..exhausted };
+    assert_eq!(open_day(rules, zero_expected, clock).price, rules.price_ceiling);
+    assert!(!fits(rules, zero_expected, clock, rules.price_ceiling));
     let busy = open_day(rules, LordsBudget { estimate: 1_000_000_000_000, ..empty_day(rules, 0) }, clock);
     assert!(available(rules, busy, clock) > 0);
     assert_eq!(busy.price, 1);
@@ -183,99 +186,161 @@ fn chest_tiers_follow_each_depths_odds_over_10k_rolls() {
     }
 }
 
-#[starknet::interface]
-trait IBudgetDay<T> {
-    fn simulate_day(
-        self: @T,
-        rules: ChestRules,
-        odds: crate::relics::ChestTiers,
-        budget: LordsBudget,
-        game: crate::game::GameRegistry,
-        day_unit_seconds: u32,
-        tick: u64,
-        day: u64,
-        ruins_per_day: u32,
-        clear: bool,
-    ) -> (LordsBudget, u128, u128);
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+struct SeasonState {
+    budget: LordsBudget,
+    paid: u128,
+    refused: u128,
 }
 
-// A season retains its state, not every day's VM trace. Every draw and production gate still executes.
-#[starknet::contract]
-mod BudgetDayFixture {
-    use super::{ChestRules, LordsBudget, SeasonClock, fits, unlocked};
-    #[storage]
-    struct Storage {}
-
-    #[abi(embed_v0)]
-    impl BudgetDay of super::IBudgetDay<ContractState> {
-        fn simulate_day(
-            self: @ContractState,
-            rules: ChestRules,
-            odds: crate::relics::ChestTiers,
-            mut budget: LordsBudget,
-            game: crate::game::GameRegistry,
-            day_unit_seconds: u32,
-            tick: u64,
-            day: u64,
-            ruins_per_day: u32,
-            clear: bool,
-        ) -> (LordsBudget, u128, u128) {
-            let clock = SeasonClock { game, day_unit_seconds, tick };
-            let mut paid = 0;
-            let mut refused = 0;
-            for ruin in 0_u32..ruins_per_day {
-                let sample: u64 = day * ruins_per_day.into() + ruin.into();
-                let tier = crate::relics::roll_tier(odds, 0x524f4c4c + Into::<u64, u256>::into(sample));
-                let shares: u128 = crate::relics::tier_value(rules.shares, tier).into();
-                let amount = shares * budget.price;
-                budget.rolled_shares += shares;
-                if !fits(rules, budget, clock, amount) {
-                    refused += 1;
-                    continue;
-                }
-                if clear {
-                    budget.pool_left -= amount;
-                    paid += amount;
-                } else {
-                    budget.open += amount;
-                }
-                assert!(rules.pool - budget.pool_left + budget.open <= unlocked(rules, clock, day), "unlock overshot");
-            }
-            (budget, paid, refused)
-        }
-    }
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+struct SeasonChunk {
+    ruins_per_day: u32,
+    quiet_days: u64,
+    clear: bool,
+    first_day: u64,
+    past_day: u64,
+    before: SeasonState,
+    after: SeasonState,
 }
 
-fn simulate(ruins_per_day: u32, quiet_days: u64, clear: bool) -> (u128, u128) {
+#[derive(Copy, Drop, Serde)]
+struct ChunkInput {
+    ruins_per_day: u32,
+    quiet_days: u64,
+    clear: bool,
+    first_day: u64,
+    past_day: u64,
+    before: Option<SeasonState>,
+}
+
+const CHUNK_DAYS: u64 = 7;
+const CHUNKS: u32 = 15;
+
+fn initial_season() -> SeasonState {
+    let rules = rules();
+    SeasonState { budget: open_day(rules, empty_day(rules, 0), clock()), paid: 0, refused: 0 }
+}
+
+fn assert_conservation(state: SeasonState, rules: ChestRules, clock: SeasonClock, day: u64) {
+    assert_eq!(state.paid + state.budget.pool_left, rules.pool);
+    assert!(rules.pool - state.budget.pool_left + state.budget.open <= unlocked(rules, clock, day), "unlock overshot");
+}
+
+// Seven-day test VMs replace one season's retained traces; state and running totals cross every boundary.
+fn simulate_range(input: ChunkInput, mut state: SeasonState) -> SeasonState {
+    assert!(input.first_day < input.past_day && input.past_day <= SEASON_DAYS);
     let rules = rules();
     let clock = clock();
     let (_, preset) = super::preset_projection::current_definition("frontier");
     let odds = *preset.settlement.depths.at(0).chest;
-    let (address, _) = declare("BudgetDayFixture").unwrap().contract_class().deploy(@array![]).unwrap();
-    let runner = IBudgetDayDispatcher { contract_address: address };
-    let mut budget = open_day(rules, empty_day(rules, 0), clock);
-    let mut paid = 0;
-    let mut refused = 0;
-    for day in 0_u64..SEASON_DAYS {
-        if day != budget.day {
-            budget = roll(rules, budget, clock, day);
+    for day in input.first_day..input.past_day {
+        if day != state.budget.day {
+            state.budget = roll(rules, state.budget, clock, day);
         }
-        if day < quiet_days {
-            continue;
+        if day >= input.quiet_days {
+            for ruin in 0_u32..input.ruins_per_day {
+                let sample: u64 = day * input.ruins_per_day.into() + ruin.into();
+                let tier = roll_tier(odds, 0x524f4c4c + Into::<u64, u256>::into(sample));
+                let shares: u128 = tier_value(rules.shares, tier).into();
+                let amount = shares * state.budget.price;
+                state.budget.rolled_shares += shares;
+                if !fits(rules, state.budget, clock, amount) {
+                    state.refused += 1;
+                    continue;
+                }
+                if input.clear {
+                    state.budget.pool_left -= amount;
+                    state.paid += amount;
+                } else {
+                    state.budget.open += amount;
+                }
+                assert_conservation(state, rules, clock, day);
+            }
         }
-        let (next, paid_today, refused_today) = runner
-            .simulate_day(
-                rules, odds, budget, clock.game, clock.day_unit_seconds, clock.tick, day, ruins_per_day, clear,
-            );
-        budget = next;
-        paid += paid_today;
-        refused += refused_today;
+        assert_conservation(state, rules, clock, day);
     }
-    assert_eq!(paid + budget.pool_left, rules.pool);
-    (paid, refused)
+    state
 }
 
-// Each scenario gets its own VM; all rates, days, roots and assertions are unchanged.
+fn simulate(ruins_per_day: u32, quiet_days: u64, clear: bool) -> (u128, u128) {
+    let state = simulate_range(
+        ChunkInput { ruins_per_day, quiet_days, clear, first_day: 0, past_day: SEASON_DAYS, before: None },
+        initial_season(),
+    );
+    (state.paid, state.refused)
+}
+
+fn assert_dense_chunk(scenario: u32, chunk: u32) {
+    assert!(scenario < 3 && chunk < CHUNKS);
+    assert_eq!(Into::<u32, u64>::into(CHUNKS) * CHUNK_DAYS, SEASON_DAYS);
+    let data = read_txt(@FileTrait::new("src/tests/fixtures/lords-budget/seasons.txt"));
+    let mut data = data.span();
+    let records: Array<SeasonChunk> = Serde::deserialize(ref data).unwrap();
+    assert!(data.is_empty());
+    assert_eq!(records.len(), 3 * CHUNKS);
+    let index = scenario * CHUNKS + chunk;
+    let record = *records.at(index);
+    let (quiet_days, clear) = match scenario {
+        0 => (0, true),
+        1 => (30, true),
+        _ => (0, false),
+    };
+    assert_eq!((record.ruins_per_day, record.quiet_days, record.clear), (2000, quiet_days, clear));
+    assert_eq!(record.first_day, Into::<u32, u64>::into(chunk) * CHUNK_DAYS);
+    assert_eq!(record.past_day, record.first_day + CHUNK_DAYS);
+    if chunk == 0 {
+        assert_eq!(record.before, initial_season());
+    } else {
+        let previous = *records.at(index - 1);
+        assert_eq!(record.first_day, previous.past_day);
+        assert_eq!(record.before, previous.after);
+    }
+    let actual = simulate_range(
+        ChunkInput {
+            ruins_per_day: record.ruins_per_day,
+            quiet_days: record.quiet_days,
+            clear: record.clear,
+            first_day: record.first_day,
+            past_day: record.past_day,
+            before: Some(record.before),
+        },
+        record.before,
+    );
+    assert_eq!(actual, record.after);
+    assert_eq!(actual.budget.day, record.past_day - 1);
+}
+
+// This producer uses the same real draw/gate loop; generation releases each chunk's VM before starting the next.
+#[test]
+#[ignore]
+fn record_budget_checkpoint() {
+    let data = read_txt(@FileTrait::new("target/budget-checkpoint-input.txt"));
+    let mut data = data.span();
+    let input: ChunkInput = Serde::deserialize(ref data).unwrap();
+    assert!(data.is_empty());
+    let before = match input.before {
+        Some(state) => state,
+        None => {
+            assert_eq!(input.first_day, 0);
+            initial_season()
+        },
+    };
+    let record = SeasonChunk {
+        ruins_per_day: input.ruins_per_day,
+        quiet_days: input.quiet_days,
+        clear: input.clear,
+        first_day: input.first_day,
+        past_day: input.past_day,
+        before,
+        after: simulate_range(input, before),
+    };
+    let mut values = array![];
+    record.serialize(ref values);
+    println!("BUDGET_CHECKPOINT {:?}", values.span());
+}
+
+// All rates, days, roots and production gates stay; dense scenarios use chained seven-day VMs.
 #[test]
 fn busy_2_ruins_per_day_never_borrow_future_unlocks() {
     simulate(2, 0, true);
@@ -321,19 +386,61 @@ fn unopened_300_ruins_per_day_never_borrow_future_unlocks() {
     simulate(300, 0, false);
 }
 
-#[test]
-fn busy_2000_ruins_per_day_never_borrow_future_unlocks() {
-    simulate(2000, 0, true);
+#[test_case(name: "days_000_006", 0)]
+#[test_case(name: "days_007_013", 1)]
+#[test_case(name: "days_014_020", 2)]
+#[test_case(name: "days_021_027", 3)]
+#[test_case(name: "days_028_034", 4)]
+#[test_case(name: "days_035_041", 5)]
+#[test_case(name: "days_042_048", 6)]
+#[test_case(name: "days_049_055", 7)]
+#[test_case(name: "days_056_062", 8)]
+#[test_case(name: "days_063_069", 9)]
+#[test_case(name: "days_070_076", 10)]
+#[test_case(name: "days_077_083", 11)]
+#[test_case(name: "days_084_090", 12)]
+#[test_case(name: "days_091_097", 13)]
+#[test_case(name: "days_098_104", 14)]
+fn busy_2000_ruins_per_day_never_borrow_future_unlocks(chunk: u32) {
+    assert_dense_chunk(0, chunk);
 }
 
-#[test]
-fn quiet_then_busy_2000_ruins_per_day_never_borrow_future_unlocks() {
-    simulate(2000, 30, true);
+#[test_case(name: "days_000_006", 0)]
+#[test_case(name: "days_007_013", 1)]
+#[test_case(name: "days_014_020", 2)]
+#[test_case(name: "days_021_027", 3)]
+#[test_case(name: "days_028_034", 4)]
+#[test_case(name: "days_035_041", 5)]
+#[test_case(name: "days_042_048", 6)]
+#[test_case(name: "days_049_055", 7)]
+#[test_case(name: "days_056_062", 8)]
+#[test_case(name: "days_063_069", 9)]
+#[test_case(name: "days_070_076", 10)]
+#[test_case(name: "days_077_083", 11)]
+#[test_case(name: "days_084_090", 12)]
+#[test_case(name: "days_091_097", 13)]
+#[test_case(name: "days_098_104", 14)]
+fn quiet_then_busy_2000_ruins_per_day_never_borrow_future_unlocks(chunk: u32) {
+    assert_dense_chunk(1, chunk);
 }
 
-#[test]
-fn unopened_2000_ruins_per_day_never_borrow_future_unlocks() {
-    simulate(2000, 0, false);
+#[test_case(name: "days_000_006", 0)]
+#[test_case(name: "days_007_013", 1)]
+#[test_case(name: "days_014_020", 2)]
+#[test_case(name: "days_021_027", 3)]
+#[test_case(name: "days_028_034", 4)]
+#[test_case(name: "days_035_041", 5)]
+#[test_case(name: "days_042_048", 6)]
+#[test_case(name: "days_049_055", 7)]
+#[test_case(name: "days_056_062", 8)]
+#[test_case(name: "days_063_069", 9)]
+#[test_case(name: "days_070_076", 10)]
+#[test_case(name: "days_077_083", 11)]
+#[test_case(name: "days_084_090", 12)]
+#[test_case(name: "days_091_097", 13)]
+#[test_case(name: "days_098_104", 14)]
+fn unopened_2000_ruins_per_day_never_borrow_future_unlocks(chunk: u32) {
+    assert_dense_chunk(2, chunk);
 }
 
 #[test]

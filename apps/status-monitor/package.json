@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": { "test": "vitest run", "typecheck": "tsc --noEmit" },
+  "dependencies": { "effect": "4.0.0-rc.108" },
   "devDependencies": {
     "@cloudflare/workers-types": "5.20260922.1",
     "@types/node": "^22.19.13",

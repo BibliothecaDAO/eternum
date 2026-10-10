@@ -43,7 +43,6 @@ export const useDockArmies = (realm: NativeRows["Structure"] | null): DockArmy[]
   return armies.map((army, index) => {
     const explorerId = safeInteger(army.explorer_id);
     const snapshot = getExplorerStaminaSnapshot({
-      entityId: explorerId,
       currentArmiesTick,
       liveTroops: resolveExplorerTroops(setup.store, army),
     });

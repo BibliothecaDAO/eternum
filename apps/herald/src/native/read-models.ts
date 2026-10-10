@@ -12,7 +12,7 @@ import {
 import { nativeGameModeOf } from "@bibliothecadao/eternum";
 import { dayOf, expeditionRealmSite, entityHomeNamespace, isRealmCategory } from "@bibliothecadao/eternum/expeditions";
 import { StructureType } from "@bibliothecadao/types";
-import { resolveDirectoryStatus, type DirectoryInput } from "../game-directory";
+import { isCheckGame, resolveDirectoryStatus, type DirectoryInput } from "../game-directory";
 import type { FoldRow } from "../types";
 
 /** The game-scoped facts a finalized game's directory entry and standings read; its review snapshot keeps the rest. */
@@ -28,6 +28,9 @@ export const FINALIZED_GAME_MODELS: ReadonlySet<string> = new Set([
   "BlitzResult",
   "PlayerPoints",
   "HyperstructureShares",
+  "ChestRules",
+  "LordsBudget",
+  "LordsWithdrawal",
 ]);
 
 import { integer, number, address, record, gameRows, required, type Row } from "./values";
@@ -46,7 +49,7 @@ export function buildNativeDirectory(input: DirectoryInput): HeraldGameDirectory
   const rows = (model: string) => input.fold.modelRows(model);
   const facts = directoryRows(input);
   // Launcher-created check names are reserved for deployment; they never offer a player a joinable listing.
-  const publicGames = rows("GameRegistry").filter(({ value }) => !shortString(value.name).startsWith("check-"));
+  const publicGames = rows("GameRegistry").filter(({ value }) => !isCheckGame(value));
   const seasons = publicGames
     .filter(({ value }) => nativeGameModeOf(number(value.preset_id)) === "frontier")
     .sort((a, b) => number(a.value.game_id) - number(b.value.game_id));
@@ -62,7 +65,12 @@ export function buildNativeDirectory(input: DirectoryInput): HeraldGameDirectory
 export function directoryForPlayer(directory: HeraldGameDirectory, input: DirectoryInput): HeraldGameDirectory {
   if (!input.playerAddress) return directory;
   const facts = directoryRows(input);
-  const games = new Map(input.fold.modelRows("GameRegistry").map(({ value }) => [number(value.game_id), value]));
+  const games = new Map(
+    input.fold
+      .modelRows("GameRegistry")
+      .filter(({ value }) => !isCheckGame(value))
+      .map(({ value }) => [number(value.game_id), value]),
+  );
   return {
     ...directory,
     games: directory.games.map((entry) => ({

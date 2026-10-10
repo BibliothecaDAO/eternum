@@ -17,12 +17,12 @@ The shard package in [deploy/shard](../shard/README.md) owns Madara, PostgreSQL,
 The init image carries the compiled contracts and native verifier; the Herald image also carries the stamping bundle,
 worker and native prover. CI publishes only init, Herald and metrics images. There is no gateway image or service.
 
-For released packages use `python3 deploy/athanor/scripts/deploy-official.py ENVIRONMENT DIRECTORY`.
+For released packages use `python3 deploy/athanor/scripts/operator-command.py deploy ENVIRONMENT DIRECTORY`.
 `deploy/release/ENVIRONMENT.json` is the reviewed input source. For a fresh local build use the existing
 `python3 deploy/athanor/scripts/shard.py CONFIGURATION DIRECTORY` runner with explicit local image digests, unique chain
 identity, official RPC/Herald URLs, guardian, presets, worker count and fixed play bound. The runner writes its resolved
-Compose file and public deployment manifest alongside private initialization logs. Only official deployment registers
-pending before enrollment and runs the activation gate. The local runner never lists measurement shards.
+Compose file and public deployment manifest alongside private initialization logs. Both paths register PENDING before
+enrolment. Only official deployment runs the activation gate; measurement runners stay hidden and retire on stop.
 
 The dev node belongs to the operator running its trials. Deployment and workload commands take
 `/opt/athanor/isolated-stack.lock` themselves; do not hold it around those commands. No command should target the
@@ -72,8 +72,8 @@ Bots are Realms accounts under the shard's own guardian, like players. Each bot'
 environment's identity Worker through its operator route (`POST /api/devices/bots`), which approves only a bot account's
 first device, and only on accounts whose Realms id is a bot's. It never adds a later device or revokes one, so a leaked
 operator token cannot take over an account that already has a device, the operator included. `IDENTITY_URL` is the
-identity API of the environment whose guardian the shard's manifest names, and `OPERATOR_TOKEN` is that environment's
-operator token.
+identity API of the environment whose guardian the shard's manifest names. The package harness reads the environment's
+operator token from its protected `/opt/athanor/operator-token` mount; host commands use `operator-command.py`.
 
 The node and Herald URLs are required (`--rpc-url`/`RPC_URL`, `--herald-url`/`HERALD_URL`) and have no default; the
 `harness` service takes them from `harness.env`. Player invokes use the public stamping RPC. Setup and administrative
@@ -109,11 +109,11 @@ building's rate against preset 5's, that raising took exactly the recipe's 2 whe
 exactly its food per troop, and that no submitted action was a gameplay rejection. Latency is reported, not gated. A day
 lasts a day there, so the multi-day gates stay with the design run.
 
-The slot shape proper registers the bots the way players register: `--slot <name> --launch-url <app origin>` with
-`OPERATOR_TOKEN` in the environment creates the slot closing `--slot-closes-in-seconds` ahead (default 120), registers
-every bot's account into it, waits for the cron to freeze it and for each `<slot>-<gameNumber>` launch run to complete,
-and then drives the games the launch service split, created and settled. The harness creates nothing itself in this
-mode; a failed launch run fails the harness run with the launch service's reason.
+The slot shape proper registers the bots the way players register: `--slot <name> --launch-url <app origin>` through the
+package harness service creates the slot closing `--slot-closes-in-seconds` ahead (default 120), registers every bot's
+account into it, waits for the cron to freeze it and for each `<slot>-<gameNumber>` launch run to complete, and then
+drives the games the launch service split, created and settled. The harness creates nothing itself in this mode; a
+failed launch run fails the harness run with the launch service's reason.
 
 ### Measuring a shard
 
@@ -127,7 +127,7 @@ run's close-cost evidence: a window without a closed block fails the run.
 Measure one of our package shards from its deploy directory:
 
 ```bash
-python3 deploy/athanor/scripts/measures.py /opt/athanor/runs/staging-f soak-1 --cpuset 20-23 -- \
+python3 deploy/athanor/scripts/operator-command.py measure /opt/athanor/runs/staging-f soak-1 --cpuset 20-23 -- \
   --game-type frontier --frontier-burst booth --bots 2000 --setup-concurrency 32
 ```
 

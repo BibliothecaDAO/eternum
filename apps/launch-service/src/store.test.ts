@@ -4,7 +4,7 @@ import { frontierSeasonEnd } from "./test-dates";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { scheduleFrontierSeason } from "./schedule";
 import { D1LaunchStore } from "./store";
-import { createLaunchTestDatabase, testChain } from "./test-database";
+import { completeFreeFixture, createLaunchTestDatabase, testChain } from "./test-database";
 
 let database: Awaited<ReturnType<typeof createLaunchTestDatabase>>;
 beforeEach(async () => {
@@ -58,9 +58,11 @@ test("creation and delayed finalization are one durable write and survive a rest
     dryRun: false,
     finalizeAt: Math.floor(Date.now() / 1_000) + 3_600,
   };
-  await expect(store.complete(started.id, { ...summary, finalizeAt: undefined })).rejects.toThrow("schedule");
+  await expect(completeFreeFixture(store, started.id, { ...summary, finalizeAt: undefined })).rejects.toThrow(
+    "schedule",
+  );
   expect((await store.find("game", "madara.blitz", queued.name))?.status).toBe("running");
-  await store.complete(started.id, summary);
+  await completeFreeFixture(store, started.id, summary);
 
   const restarted = new D1LaunchStore(database.db, testChain());
   expect((await restarted.find("result", "madara.blitz", queued.name))?.request).toEqual({
@@ -75,7 +77,7 @@ test("creation and delayed finalization are one durable write and survive a rest
   await restarted.retry(result.id, "interrupted", 0);
   const recovered = (await restarted.startNext(summary.finalizeAt * 1_000))!;
   expect(recovered).toMatchObject({ id: result.id, attempts: 2 });
-  await restarted.complete(recovered.id, {
+  await completeFreeFixture(restarted, recovered.id, {
     environment: "madara.blitz",
     gameName: queued.name,
     gameId: 7,
@@ -127,7 +129,7 @@ test("one Frontier season is created once by every tick and continued like any f
   expect(continued).toMatchObject({ name: queued.name, status: "queued", attempts: 0 });
   expect(continued.errorMessage).toBeUndefined();
   const retried = (await store.startNext(Date.now()))!;
-  await store.complete(retried.id, frontierSummary(retried.name, seasonStart));
+  await completeFreeFixture(store, retried.id, frontierSummary(retried.name, seasonStart));
   expect(await scheduleFrontierSeason(store, season(seasonStart))).toMatchObject({
     id: retried.id,
     status: "complete",
@@ -144,7 +146,7 @@ test("a shard cutover preserves directory games and refuses new work until the o
   const oldChain = new D1LaunchStore(database.db, testChain("0x1"));
   const launched = await oldChain.enqueue("game", { environment: "madara.blitz", gameName: "bltz-7" });
   const started = (await oldChain.startNext(Date.now()))!;
-  await oldChain.complete(started.id, {
+  await completeFreeFixture(oldChain, started.id, {
     ...frontierSummary(launched.name, seasonStart),
     environment: "madara.blitz",
     gameType: "blitz",
@@ -155,7 +157,9 @@ test("a shard cutover preserves directory games and refuses new work until the o
 
   // SHARD_URL now points at a new chain behind the same D1.
   const newChain = new D1LaunchStore(database.db, testChain("0x2"));
-  expect(await newChain.playerDirectoryGames()).toEqual([{ chainId: "0x1", gameIds: [7] }]);
+  expect(await newChain.playerDirectoryGames()).toEqual([
+    { chainId: "0x1", games: [7].map((gameId) => ({ gameId, entry: { kind: "free" } })) },
+  ]);
   await expect(newChain.startNext(Date.now())).rejects.toThrow("Drain queued or running launches");
   await expect(scheduleFrontierSeason(newChain, season(seasonStart))).rejects.toThrow(
     "Drain queued or running launches",
@@ -165,24 +169,24 @@ test("a shard cutover preserves directory games and refuses new work until the o
   );
   expect((await newChain.pendingOtherChains()).map(({ chainId }) => chainId)).toEqual(["0x1", "0x1"]);
   const result = (await oldChain.startNext(Date.now()))!;
-  await oldChain.complete(result.id, {
+  await completeFreeFixture(oldChain, result.id, {
     environment: "madara.blitz",
     gameName: launched.name,
     gameId: 7,
     resultCommitment: "0x1",
   });
   const frontier = (await oldChain.startNext(Date.now()))!;
-  await oldChain.complete(frontier.id, frontierSummary(oldSeason.name, seasonStart));
+  await completeFreeFixture(oldChain, frontier.id, frontierSummary(oldSeason.name, seasonStart));
   expect(await newChain.pendingOtherChains()).toEqual([]);
   expect(await newChain.list("madara.blitz")).toEqual([]);
   const newSeason = await scheduleFrontierSeason(newChain, season(seasonStart));
   expect(newSeason).toMatchObject({ name: oldSeason.name, chainId: "0x2", status: "queued" });
   expect(newSeason.id).not.toBe(oldSeason.id);
   const next = (await newChain.startNext(Date.now()))!;
-  await newChain.complete(next.id, { ...frontierSummary(newSeason.name, seasonStart), gameId: 7 });
+  await completeFreeFixture(newChain, next.id, { ...frontierSummary(newSeason.name, seasonStart), gameId: 7 });
   expect(await newChain.playerDirectoryGames()).toEqual([
-    { chainId: "0x1", gameIds: [7, 9] },
-    { chainId: "0x2", gameIds: [7] },
+    { chainId: "0x1", games: [7, 9].map((gameId) => ({ gameId, entry: { kind: "free" } })) },
+    { chainId: "0x2", games: [7].map((gameId) => ({ gameId, entry: { kind: "free" } })) },
   ]);
 });
 
@@ -213,7 +217,7 @@ test("directory reads retain both chains and log invalid summaries without readi
     rows.map(({ id, chainId, summary }) =>
       database.db
         .prepare(
-          "INSERT INTO launch_runs (id, chain_id, kind, environment, name, request, status, available_at, created_at, updated_at, summary) VALUES (?, ?, 'game', 'madara.blitz', ?, '{}', 'complete', 0, 0, 0, ?)",
+          `INSERT INTO launch_runs (id, chain_id, kind, environment, name, request, status, available_at, created_at, updated_at, summary,entry) VALUES (?, ?, 'game', 'madara.blitz', ?, '{}', 'complete', 0, 0, 0, ?,'{"kind":"free"}')`,
         )
         .bind(id, chainId, id, summary),
     ),
@@ -224,8 +228,8 @@ test("directory reads retain both chains and log invalid summaries without readi
   const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
   try {
     expect(await new D1LaunchStore(database.db, chainOf).playerDirectoryGames()).toEqual([
-      { chainId: "0x1", gameIds: [7] },
-      { chainId: "0x2", gameIds: [9] },
+      { chainId: "0x1", games: [7].map((gameId) => ({ gameId, entry: { kind: "free" } })) },
+      { chainId: "0x2", games: [9].map((gameId) => ({ gameId, entry: { kind: "free" } })) },
     ]);
     expect(chainOf).not.toHaveBeenCalled();
     expect(log.mock.calls.map(([, details]) => details.runId)).toEqual(malformed.map((_, index) => `bad-${index}`));

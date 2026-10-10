@@ -3,10 +3,10 @@ import { completeBlitzResults, type ResultOperations } from "./results";
 
 function fixture(count = 13) {
   const players = Array.from({ length: count }, (_, index) => ({
-    player: BigInt(index + 1),
+    wallet: BigInt(index + 1),
     points: index < 2 ? 9_000_000n : 0n,
   }));
-  const recorded: { player: bigint; points: bigint; rank: number }[] = [];
+  const recorded: { wallet: bigint; rank: number }[] = [];
   const operations: ResultOperations = {
     secondsUntilEnd: vi.fn(async () => 0),
     settle: vi.fn(async () => undefined),
@@ -29,8 +29,9 @@ describe("native result jobs", () => {
     const { operations, recorded } = fixture();
     await expect(completeBlitzResults(operations)).resolves.toBe(123n);
     expect(operations.settle).toHaveBeenCalledOnce();
+    expect(recorded.every((row) => Object.keys(row).sort().join() === "rank,wallet")).toBe(true);
     expect(vi.mocked(operations.record).mock.calls.map((call) => call[1].length)).toEqual([8, 5]);
-    expect(recorded.map(({ player, rank }) => [player, rank])).toEqual(
+    expect(recorded.map(({ wallet, rank }) => [wallet, rank])).toEqual(
       Array.from({ length: 13 }, (_, i) => [BigInt(i + 1), i < 2 ? 1 : 3]),
     );
     expect(vi.mocked(operations.settle).mock.invocationCallOrder[0]).toBeLessThan(
@@ -48,7 +49,7 @@ describe("native result jobs", () => {
     expect(recorded).toHaveLength(8);
     await expect(completeBlitzResults(operations)).resolves.toBe(123n);
     expect(vi.mocked(operations.record).mock.calls.map(([start]) => start)).toEqual([0, 8]);
-    expect(new Set(recorded.map(({ player }) => player)).size).toBe(13);
+    expect(new Set(recorded.map(({ wallet }) => wallet)).size).toBe(13);
   });
   it("adopts a complete chain result after restart without submitting again", async () => {
     const { operations } = fixture(1);

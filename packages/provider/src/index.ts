@@ -28,7 +28,7 @@ import {
   shortString,
 } from "starknet";
 import { extractErrorMessage } from "./classify-transaction-error";
-import { TransactionNotSentError } from "./transaction-not-sent";
+import { ACTION_CHECKING_AFTER_MS, TransactionNotSentError } from "./transaction-not-sent";
 import { PromiseQueue } from "./promise-queue";
 import { ExecutionOptions } from "./transaction-executor";
 import {
@@ -44,9 +44,16 @@ import {
   TransactionStreamWaiter,
   TransactionType,
 } from "./types";
-/** Sends one game command as the signer's own transaction; resolves with its hash once it is in a block. */
+/** Sends one game command as the signer's own transaction; resolves with its hash as soon as the send returns. */
 export type NativeSubmission = (signer: AccountInterface, calls: AllowArray<Call>) => Promise<SubmittedTransaction>;
-type SubmittedTransaction = { transaction_hash: string };
+/**
+ * A sent command. A submission that reconciles its sends adds its block, which rejects only on proof the command
+ * was never sent.
+ */
+type SubmittedTransaction = {
+  transaction_hash: string;
+  inBlock?: Promise<void>;
+};
 
 export {
   CATEGORY_BATCH_LIMITS,
@@ -57,7 +64,7 @@ export {
 export type { BatchDelayConfig } from "./batch-config";
 export { classifyTransactionError, extractErrorMessage, formatErrorForConsole } from "./classify-transaction-error";
 export type { ClassifiedTransactionError } from "./classify-transaction-error";
-export { TransactionNotSentError } from "./transaction-not-sent";
+export { ACTION_CHECKING_AFTER_MS, isTransactionHashNotFound, TransactionNotSentError } from "./transaction-not-sent";
 export { PromiseQueue } from "./promise-queue";
 export type { QueueableTransaction } from "./promise-queue";
 export type { TransactionExecutor, ExecutionOptions } from "./transaction-executor";
@@ -88,9 +95,6 @@ const classifySubmitFailure = (
   hasTxHash: boolean;
   retrySafety: TransactionRetrySafety;
 } => {
-  if (error instanceof TransactionNotSentError) {
-    return { failureKind: "not_sent", providerState: "ready", hasTxHash: false, retrySafety: "safe_after_reconnect" };
-  }
   if (matchesDestroyedConnectionError(error)) {
     return {
       failureKind: "provider_connection_destroyed",
@@ -123,11 +127,17 @@ type TransactionFailureError = Error & {
  * Structured error context for a TransactionFailedPayload: the original error
  * and the raw revert reason when the error came off a reverted receipt.
  */
-const buildFailureDiagnostics = (error: unknown): Pick<TransactionFailedPayload, "error" | "revertReason"> => {
+const buildFailureDiagnostics = (
+  error: unknown,
+): Pick<TransactionFailedPayload, "error" | "revertReason" | "failureKind" | "transactionHash"> => {
   const revertReason = error instanceof Error ? (error as TransactionFailureError).rawRevertReason : undefined;
   return {
     error,
     ...(revertReason !== undefined ? { revertReason } : {}),
+    // Proof of absence carries its hash, so the action's row says not sent wherever the proof arrives.
+    ...(error instanceof TransactionNotSentError
+      ? { failureKind: "not_sent" as const, transactionHash: error.transactionHash }
+      : {}),
   };
 };
 
@@ -489,7 +499,14 @@ export class EternumProvider extends EventEmitter {
         transaction_hash: tx.transaction_hash,
       } as unknown as GetTransactionReceiptResponse;
     }
-    const streamReceipt = this.waitForTransactionWithCheckInternal(tx.transaction_hash, transactionMetaWithHash);
+    const streamReceipt = this.waitForTransactionWithCheckInternal(tx.transaction_hash, tx.inBlock);
+    // Any action still unsettled after the checking window is checking: the player's next command may go.
+    const checking = setTimeout(() => {
+      this.emit("transactionChecking", transactionMetaWithHash);
+      releaseActorExecutionLock?.();
+      releaseActorExecutionLock = undefined;
+    }, ACTION_CHECKING_AFTER_MS);
+    void streamReceipt.catch(() => undefined).finally(() => clearTimeout(checking));
     // The actor's next command is sent only after Herald applies this one, so its effects are visible first.
     const waitPromise = releaseActorExecutionLock
       ? streamReceipt.finally(() => {
@@ -516,6 +533,7 @@ export class EternumProvider extends EventEmitter {
             stage: resolveTransactionFailureStage(error, "background_confirmation"),
             ...buildFailureDiagnostics(error),
           });
+          this.followLateLanding(error, tx.transaction_hash, transactionMeta, submitStartedAt);
         });
 
       return {
@@ -534,6 +552,7 @@ export class EternumProvider extends EventEmitter {
         stage: resolveTransactionFailureStage(error, "confirmation"),
         ...buildFailureDiagnostics(error),
       });
+      this.followLateLanding(error, tx.transaction_hash, transactionMeta, submitStartedAt);
       throw error;
     }
 
@@ -546,9 +565,41 @@ export class EternumProvider extends EventEmitter {
     return receipt;
   }
 
+  /**
+   * A dropped action is watched until its nonce moves: if it lands after all, it settles as it actually ended
+   * (applied, or refused with its reason) and its row follows.
+   */
+  private followLateLanding(
+    error: unknown,
+    transactionHash: string,
+    transactionMeta: TransactionLifecycleMeta,
+    submitStartedAt: number,
+  ): void {
+    if (!(error instanceof TransactionNotSentError) || !error.landedLate) return;
+    void error.landedLate.then(async (landed) => {
+      if (!landed) return;
+      try {
+        const details = await this.waitForTransactionWithCheckInternal(transactionHash);
+        this.emit("transactionComplete", {
+          details,
+          admissionToVisibleMs: Date.now() - submitStartedAt,
+          ...transactionMeta,
+        });
+      } catch (lateError) {
+        this.emitTransactionFailure({
+          ...transactionMeta,
+          transactionHash,
+          message: extractErrorMessage(lateError),
+          stage: resolveTransactionFailureStage(lateError, "confirmation"),
+          ...buildFailureDiagnostics(lateError),
+        });
+      }
+    });
+  }
+
   private async waitForTransactionWithCheckInternal(
     transactionHash: string,
-    _transactionMeta?: TransactionLifecycleMeta,
+    inBlock?: Promise<void>,
   ): Promise<GetTransactionReceiptResponse> {
     if (!this.transactionStreamWaiter) {
       return {
@@ -557,7 +608,7 @@ export class EternumProvider extends EventEmitter {
       } as unknown as GetTransactionReceiptResponse;
     }
 
-    const transaction = await this.transactionStreamWaiter(transactionHash).catch((error) => {
+    const transaction = await this.transactionStreamWaiter(transactionHash, inBlock).catch((error) => {
       throw attachTransactionFailureStage(error, "confirmation");
     });
 

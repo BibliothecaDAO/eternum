@@ -273,5 +273,8 @@ fn eternum_exploration_does_not_create_a_camp() {
     let destination = neighbor(troops.explorer(key).unwrap().coord, 0);
     assert!(execute(d, Command::Explore(Explore { explorer_id, direction: 0 }), 140));
     let _tile = IMapLogicDispatcher { contract_address: d.games }.tile(tile_key(3, destination)).unwrap();
-    assert!(IMapLogicDispatcher { contract_address: d.games }.occupancy(tile_key(3, destination)).is_none());
+    let occupant = IMapLogicDispatcher { contract_address: d.games }.occupancy(tile_key(3, destination)).unwrap();
+    assert!(!occupant.is_structure);
+    assert_eq!(occupant.entity_id, explorer_id);
+    assert_eq!(troops.explorer(key).unwrap().coord, destination);
 }

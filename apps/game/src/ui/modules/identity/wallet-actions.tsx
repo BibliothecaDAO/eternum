@@ -4,12 +4,13 @@ import type { SignInOptions } from "@realms-world/identity";
 import { useConnect, useDisconnect, useProvider } from "@starknet-react/core";
 import type { Connector } from "@starknet-react/core";
 import { useCallback, useRef, useState } from "react";
-import type { AccountInterface, Call } from "starknet";
+import type { AccountInterface, Call, ProviderInterface } from "starknet";
 
 import { WALLET_WORDS } from "@/shell/words";
 
 import { failureSentence, WrongNetworkError } from "./identity-failures";
-import { assertWalletOnL2, walletProof } from "./l2-wallet";
+import { assertWalletOnL2 } from "./l2-wallet";
+import { walletProofForAccount } from "./wallet-proof";
 
 /**
  * The wallets a Realms account links, in the order the picker lists them, each as the player knows it. A wallet whose
@@ -34,7 +35,13 @@ export const WalletPicker = ({
   onProof: (proof: SignInOptions) => void;
 }) => (
   <StarknetProvider>
-    <WalletRows only={only} failure="link" onAccount={async (account) => onProof(walletProof(account))} />
+    <WalletRows
+      only={only}
+      failure="link"
+      onAccount={async (account, connectorId, provider) =>
+        onProof(await walletProofForAccount(account, provider, connectorId))
+      }
+    />
   </StarknetProvider>
 );
 
@@ -76,10 +83,11 @@ const WalletRows = ({
   /** The wallets offered; all of them when absent. */
   only?: readonly WalletId[];
   failure: "link" | "pay";
-  /** The chosen wallet's account, connected on the build's L2. */
-  onAccount: (account: AccountInterface) => Promise<void>;
+  /** The chosen wallet's account, connected on the build's L2, with its connector's id and the L2 provider. */
+  onAccount: (account: AccountInterface, connectorId: string, provider: ProviderInterface) => Promise<void>;
 }) => {
   const { connectors } = useConnect();
+  const { provider } = useProvider();
   const connect = useL2Account();
   const [pending, setPending] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -91,7 +99,7 @@ const WalletRows = ({
     setPending(connector.id);
     setError(null);
     try {
-      await onAccount(await connect(connector));
+      await onAccount(await connect(connector), connector.id, provider);
     } catch (cause) {
       setError(cause instanceof NotPayoutWalletError ? WALLET_WORDS.notPayoutWallet : failureLine(failure, cause));
     } finally {

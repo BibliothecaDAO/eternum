@@ -1,5 +1,4 @@
 import { beforeAll, expect, it } from "vitest";
-import { valuePlaneAddress } from "@realms-world/chain";
 import { buildWorkerBundle, migrationStatements, newStorage, ORIGIN, startWorker, vapidKeys } from "./workerd-harness";
 
 let bundle: string;
@@ -33,7 +32,7 @@ it("reads linked owners through the deployed Worker's SDK and serves new ledger 
         calls.push(rpc);
         const result = {
           starknet_specVersion: "0.9.0",
-          starknet_chainId: "0x534e5f4d41494e",
+          starknet_chainId: "0x534e5f5345504f4c4941",
           starknet_getBlockWithTxHashes: { block_number: blockNumber, block_hash: blockHash },
           starknet_call: [`0x${(points * 10n ** 18n).toString(16)}`, "0x0"],
         }[rpc.method];
@@ -59,7 +58,7 @@ it("reads linked owners through the deployed Worker's SDK and serves new ledger 
       },
     });
     expect(calls.find((call) => call.method === "starknet_call")!.params).toMatchObject({
-      request: { contract_address: valuePlaneAddress("mmrToken"), calldata: ["0xa"] },
+      request: { contract_address: "0x31", calldata: ["0xa"] },
       block_id: { block_hash: "0xabc" },
     });
     points = 1300n;

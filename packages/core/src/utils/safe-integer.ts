@@ -6,6 +6,6 @@ export function safeInteger(value: number | bigint | string): number {
   if (typeof value === "string" && value.trim() === "") throw new Error("Native integer is empty");
   const result = Number(typeof value === "string" ? BigInt(value) : value);
   if (!Number.isSafeInteger(result))
-    throw new Error(`Native integer ${String(value)} cannot be represented as a JavaScript number`);
+    throw new Error(`Native integer cannot be represented as a JavaScript number: ${String(value)}`);
   return result;
 }

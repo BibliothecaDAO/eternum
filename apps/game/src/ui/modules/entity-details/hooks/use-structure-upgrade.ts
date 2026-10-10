@@ -93,10 +93,10 @@ export const useStructureUpgrade = (structureEntityId: number | null): Structure
   // Sent resources ride the delivery tick and belong to no balance while in
   // transit; surfacing them here is what tells the player their transfer is
   // coming instead of the requirement row silently staying red.
-  const pendingArrivals = useArrivalsByStructure(structureEntityId ?? 0);
+  const pendingArrivals = useArrivalsByStructure(structureEntityId ?? undefined);
   const incomingByResource = useMemo(() => {
     const incoming = new Map<number, IncomingRequirementDelivery>();
-    for (const arrival of pendingArrivals) {
+    for (const arrival of pendingArrivals ?? []) {
       const etaSeconds = Math.max(0, Number(arrival.arrivesAt) - currentDefaultTick);
       for (const { resourceId, amount } of arrival.resources) {
         const entry = incoming.get(resourceId) ?? { amount: 0, etaSeconds };

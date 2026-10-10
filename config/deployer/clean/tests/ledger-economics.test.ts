@@ -24,6 +24,13 @@ describe("ledger economics", () => {
     expect(buildLedgerEconomicPreset("blitz").claim_window_seconds).toBe(0);
   });
 
+  it("uses the shard's generated roster bound in the immutable ledger preset", async () => {
+    const { nativeRuleConstants } = await import("../../../../contracts/l3/world-native/schema/client.gen");
+    expect(buildLedgerEconomicPreset("blitz").registration_limit).toBe(nativeRuleConstants.MAX_BLITZ_ROSTER_PLAYERS);
+    expect(buildLedgerEconomicPreset("duel").registration_limit).toBe(nativeRuleConstants.DUEL_ROSTER_PLAYERS);
+    expect(buildLedgerEconomicPreset("frontier").registration_limit).toBe(0);
+  });
+
   it("builds the approved Blitz preset", () => {
     const preset = buildLedgerEconomicPreset("blitz");
 
@@ -34,7 +41,7 @@ describe("ledger economics", () => {
       mmr: { enabled: true, mean: 1_500, spread: 450, max_delta: 45, k: 50, regression_bps: 150, min_players: 6 },
     });
     expect(BigInt(preset.entry_fee.low)).toBe(500_000_000_000_000_000_000n);
-    expect(buildRegisterLedgerPresetCalldata(1, preset).length).toBe(88);
+    expect(buildRegisterLedgerPresetCalldata(1, preset).length).toBe(89);
   });
 
   it("disables fees and MMR for Eternum without creating an invalid payout preset", () => {

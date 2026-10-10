@@ -13,19 +13,23 @@ import type { IdentityEnv } from "./env";
 import { isNameTaken } from "./names";
 import { realmsIdOf } from "./realms-id";
 import { resendSignInCodes, type SendSignInCode } from "./sign-in-codes";
+import { resendWalletNotices } from "./wallet-notices";
 import { siws } from "./siws-plugin";
-import { verifyWalletOnMainnet, type VerifyWalletSignature } from "./wallet-signature";
+import { verifyWalletOnL2, type VerifyWalletSignature } from "./wallet-signature";
 
 const DAY_SECONDS = 24 * 60 * 60;
 
-/** What the identity service reaches outside its database: mainnet for wallet signatures, and the email provider. */
+/** What the identity service reaches outside its database: the environment L2 for wallet signatures, and the email provider. */
 interface IdentityServices {
   verifyWalletSignature: VerifyWalletSignature;
   sendSignInCode: SendSignInCode;
+  sendWalletNotice?: (email: string, address: string | null, id: string) => Promise<void>;
 }
 
-const identityServicesOf = (env: Pick<IdentityEnv, "IDENTITY_RPC_URL" | "RESEND_API_KEY">): IdentityServices => ({
-  verifyWalletSignature: verifyWalletOnMainnet(env.IDENTITY_RPC_URL),
+const identityServicesOf = (
+  env: Pick<IdentityEnv, "L2_CHAIN_ID" | "IDENTITY_RPC_URL" | "RESEND_API_KEY">,
+): IdentityServices => ({
+  verifyWalletSignature: verifyWalletOnL2(env),
   sendSignInCode: resendSignInCodes(env.RESEND_API_KEY),
 });
 
@@ -63,17 +67,29 @@ export const hasVerifiedSignIn = async (db: D1Database, userId: string): Promise
 export const createIdentityAuth = (
   env: Pick<
     IdentityEnv,
+    | "ACCOUNT_LINKS"
     | "DB"
     | "BASE_URL"
     | "BETTER_AUTH_SECRET"
+    | "L2_CHAIN_ID"
     | "IDENTITY_RPC_URL"
     | "DISCORD_CLIENT_ID"
     | "DISCORD_CLIENT_SECRET"
     | "RESEND_API_KEY"
   >,
   services: IdentityServices = identityServicesOf(env),
-) =>
-  betterAuth({
+) => {
+  const emailCodes = emailOTP({
+    otpLength: SIGN_IN_CODE_LENGTH,
+    expiresIn: SIGN_IN_CODE_SECONDS,
+    allowedAttempts: 3,
+    storeOTP: "hashed",
+    sendVerificationOTP: async ({ email, otp, type }) => {
+      if (type !== "sign-in") throw new APIError("BAD_REQUEST", { message: "SIGN_IN_CODES_ONLY" });
+      await services.sendSignInCode(email, otp);
+    },
+  });
+  return betterAuth({
     secret: env.BETTER_AUTH_SECRET,
     baseURL: env.BASE_URL,
     basePath: "/api/auth",
@@ -114,19 +130,19 @@ export const createIdentityAuth = (
       },
     },
     plugins: [
-      // A sign-in code for an email signs in its account, and creates it on the email's first sign-in.
-      emailOTP({
-        otpLength: SIGN_IN_CODE_LENGTH,
-        expiresIn: SIGN_IN_CODE_SECONDS,
-        allowedAttempts: 3,
-        storeOTP: "hashed",
-        sendVerificationOTP: async ({ email, otp, type }) => {
-          if (type !== "sign-in") throw new APIError("BAD_REQUEST", { message: "SIGN_IN_CODES_ONLY" });
-          await services.sendSignInCode(email, otp);
-        },
+      emailCodes,
+      siws({
+        origin: env.BASE_URL,
+        chainId: env.L2_CHAIN_ID,
+        verifySignature: services.verifyWalletSignature,
+        db: env.DB,
+        checkCode: (context, email, otp) =>
+          emailCodes.endpoints.checkVerificationOTP({ context, body: { email, otp, type: "sign-in" } }),
+        notifyChange: (realmsId) => env.ACCOUNT_LINKS.changed(realmsId),
+        sendNotice: services.sendWalletNotice ?? resendWalletNotices(env.RESEND_API_KEY),
       }),
-      siws({ origin: env.BASE_URL, verifySignature: services.verifyWalletSignature }),
     ],
   });
+};
 
 export type IdentityAuth = ReturnType<typeof createIdentityAuth>;

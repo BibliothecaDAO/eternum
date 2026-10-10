@@ -37,11 +37,7 @@ async function permitsAccountTransaction(
   if (t.type === "DEPLOY_ACCOUNT") return permitsDeploy(t, identity, query);
   if (t.type !== "INVOKE") return false;
   if (!permitsSelfCall(t, query)) return false;
-  try {
-    return equal(await classAt(t.sender_address as string), identity.accountClassHash);
-  } catch {
-    return false;
-  }
+  return equal(await classAt(t.sender_address as string), identity.accountClassHash);
 }
 
 function permitsDeploy(tx: Transaction, identity: ShardIdentity, query: boolean): boolean {

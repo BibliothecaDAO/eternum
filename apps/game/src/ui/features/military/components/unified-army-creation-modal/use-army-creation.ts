@@ -64,7 +64,8 @@ import {
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
 interface ArmyCreationOptions {
-  structureId: number;
+  /** The structure raising the army; undefined while the player has none to raise from. */
+  structureId: ID | undefined;
   maxDefenseSlots?: number;
   isExplorer?: boolean;
   direction?: Direction;
@@ -117,10 +118,12 @@ export const useArmyCreation = ({
     }
   }, [initialGuardSlot]);
 
-  const structureComponent = useNativeRow("Structure", {
-    game_id: configManager.getActiveGameId(),
-    entity_id: activeStructureId,
-  });
+  const structureComponent = useNativeRow(
+    "Structure",
+    activeStructureId === undefined
+      ? undefined
+      : { game_id: configManager.getActiveGameId(), entity_id: activeStructureId },
+  );
   const revision = useNativeRevision([
     "ResourceBalance",
     "ResourceProduction",
@@ -128,10 +131,10 @@ export const useArmyCreation = ({
     "Guard",
     "ExplorerTroops",
   ]);
-  const provision = useBlitzRealmProvision(activeStructureId);
+  const provision = useBlitzRealmProvision(activeStructureId ?? null);
 
   const troopOptions = useMemo<TroopSelectionOption[]>(() => {
-    if (!activeStructureId) {
+    if (activeStructureId === undefined) {
       return TROOP_TYPES.map((type) => ({
         type,
         label: formatTroopTypeLabel(type),
@@ -200,7 +203,10 @@ export const useArmyCreation = ({
   );
 
   const currentExplorersCount = useMemo(
-    () => liveHomeArmies(store, activeStructureId, configManager.getActiveGameId()).length,
+    () =>
+      activeStructureId === undefined
+        ? 0
+        : liveHomeArmies(store, activeStructureId, configManager.getActiveGameId()).length,
     [store, activeStructureId, revision, currentDefaultTick],
   );
   const currentGuardsCount = guardsData?.filter(
@@ -326,8 +332,8 @@ export const useArmyCreation = ({
   const isDefenseTroopLocked = !armyType && isSelectedSlotOccupied;
 
   useEffect(() => {
-    if (previousStructureIdRef.current === activeStructureId) return;
-    previousStructureIdRef.current = activeStructureId;
+    if (previousStructureIdRef.current === (activeStructureId ?? null)) return;
+    previousStructureIdRef.current = activeStructureId ?? null;
     const isTrainable = (troop: SelectedTroopCombo) =>
       mode.rules.isBuildingTypeAllowed(
         BuildingType[getBuildingFromResource(getTroopResourceId(troop.type, troop.tier))],
@@ -416,14 +422,16 @@ export const useArmyCreation = ({
   );
   const raiseCost = useMemo(
     () =>
-      readTroopRaiseCost(
-        store,
-        configManager.getActiveGameId(),
-        activeStructureId,
-        getTroopResourceId(selectedTroopCombo.type, selectedTroopCombo.tier),
-        troopCount,
-        currentDefaultTick,
-      ),
+      activeStructureId === undefined
+        ? undefined
+        : readTroopRaiseCost(
+            store,
+            configManager.getActiveGameId(),
+            activeStructureId,
+            getTroopResourceId(selectedTroopCombo.type, selectedTroopCombo.tier),
+            troopCount,
+            currentDefaultTick,
+          ),
     [store, activeStructureId, selectedTroopCombo, troopCount, currentDefaultTick, revision],
   );
   const troopAvailabilityReason = resolveTroopAvailabilityReason({
@@ -478,7 +486,7 @@ export const useArmyCreation = ({
   const submitBlockedReason = blockedReason === troopAvailabilityReason ? null : blockedReason;
 
   const handleCreate = async () => {
-    if (!activeStructureId || isActionDisabled || submittingRef.current) return;
+    if (activeStructureId === undefined || isActionDisabled || submittingRef.current) return;
     const target = armyType
       ? selectedDirection === null
         ? null
@@ -556,9 +564,10 @@ export const useArmyCreation = ({
 };
 
 /** The selected troop's barracks output now, read the way the resource bar reads production. */
+/** What the structure trains of this troop; with no structure nothing is read and nothing trains. */
 function readTroopSupply(
   store: ReturnType<typeof useGame>["setup"]["store"],
-  structureId: ID,
+  structureId: ID | undefined,
   troop: SelectedTroopCombo,
   available: number,
   fullArmy: number | null,
@@ -566,6 +575,7 @@ function readTroopSupply(
 ): TroopSupply {
   const resourceId = getTroopResourceId(troop.type, troop.tier);
   const name = BuildingTypeToString[getBuildingFromResource(resourceId)];
+  if (structureId === undefined) return { name, perHour: 0, secondsToFullArmy: null };
   const manager = new ResourceManager(store, structureId);
   const production = manager.isActive(resourceId) ? manager.current(resourceId) : undefined;
   const perSecond = production

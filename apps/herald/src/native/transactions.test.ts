@@ -87,7 +87,7 @@ describe("native transaction receipt routing", () => {
       transactions: [{ receipt: reverted, transaction: play(1) }],
     };
     const live = liveWorld(native, decoder, fold, {
-      getBlockWithReceipts: async (number: unknown) =>
+      readBlock: async (number: unknown) =>
         number === "pre_confirmed" ? { ...block, block_number: 11, transactions: [] } : block,
     } as unknown as MadaraRpc);
     const messages = streamOf(live);
@@ -106,7 +106,7 @@ describe("native transaction receipt routing", () => {
       transactions: [{ receipt: applied, transaction: play(1) }],
     };
     const live = liveWorld(native, decoder, fold, {
-      getBlockWithReceipts: async (number: unknown) =>
+      readBlock: async (number: unknown) =>
         number === "pre_confirmed" ? { ...block, block_number: 11, transactions: [] } : block,
     } as unknown as MadaraRpc);
     const messages = streamOf(live);

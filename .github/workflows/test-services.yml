@@ -32,6 +32,10 @@ jobs:
         run: pnpm --dir apps/realms test
       - name: Test the launch Worker on D1
         run: pnpm --dir apps/launch-service test
+      - name: Test value relay and independent payout checks
+        run: pnpm --dir apps/value-relay test
+      - name: Test shared ledger readers
+        run: pnpm --dir packages/value-ledger test
       - name: Test indexed rating population
         run:
           pnpm --dir apps/indexer exec vitest run indexers/strk-mmr-updates.indexer.test.ts
@@ -44,6 +48,8 @@ jobs:
           pnpm --dir apps/guardian typecheck
           pnpm --dir apps/launch-service typecheck
           pnpm --dir apps/status-monitor typecheck
+          pnpm --dir apps/value-relay typecheck
+          pnpm --dir packages/value-ledger typecheck
 
   # The DAO pages (apps/web) are the only service still on Postgres; the Workers run on D1.
   portal:

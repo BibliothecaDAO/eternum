@@ -27,19 +27,34 @@ and sponsorship. The default is 2000 bps. The remaining pot splits by `chest_lor
 and season prize pool. Refunds return the original payment before any settlement cut. Chest and season payouts have no
 second cut. Frontier's configuration preset keeps its cut at zero.
 
-Each registration names its shard account explicitly: `register(key, account, sword, shield)`,
-`register_with_pass(key, account, pass_id)` or `register_village(key, account, village_pass_id)`. The ledger stores the
-paying wallet/account pair and rejects a zero account or a second seat for that account in the same shard/game. The
-launcher freezes the ordered pairs from `get_registered_player(key, index)`; the old wallet-only roster view is removed.
-No mutable identity link is consulted when the game starts. Results, MMR, refunds and prizes remain keyed by the paying
-wallet. Changing a payout-wallet link afterward cannot rewrite that game's paid roster.
+Economic presets cannot admit more than the shard's `MAX_BLITZ_ROSTER_PLAYERS`. The ledger and shard compile the same
+`roster_limits.cairo` source; the existing shard rule exports and generated client constants keep their names. Duel's
+two-player restriction still belongs to its native mode and preset builder. A zero paid-roster limit remains valid for a
+preset that never opens a paid game; `open_game` still refuses that preset.
 
-Registration does not prove ownership of a shard account. Naming another person's account or a nonexistent nonzero
-address buys that exact seat and gives the payer no ability to sign plays as that account. It neither grants a role nor
-transfers an account. The payer has spent their entry or burned their pass for a seat they cannot control; a holder of
-the named account may still play it, and another wallet cannot buy a duplicate seat for that account in this game. No
-cross-chain account-ownership oracle or identity lookup is introduced. The cost is one account field and one duplicate
-seat map, replacing freeze-time off-chain wallet resolution.
+The relay holds the existing `OPERATOR_ROLE` and maintains the one-to-one identity link with
+`set_account_link(wallet, account)`. A zero account clears the wallet's link; a zero wallet refuses. Replacing either
+side clears the displaced account and wallet atomically. Identical retries and clearing an unlinked wallet do nothing.
+Each change emits `AccountLinkChanged`, keyed by wallet and account, with the wallet's previous account and the
+account's previous wallet (zero when clearing). `account_of_wallet(wallet)` and `wallet_of_account(account)` return zero
+when unlinked. Views remain readable while paused. Operator clears (a zero account) still run, so the relay can retract
+stale links. Nonzero link installs and replacements refuse, including identical retries, and resume when the admin
+unpauses. Registration remains open for a wallet whose link was already stored.
+
+Registration uses the connected wallet's stored link: `register(key, sword, shield)`, `register_with_pass(key, pass_id)`
+or `register_village(key, village_pass_id)`. An unlinked wallet refuses with `Ledger: link Realms account first` before
+any payment or pass call. Players cannot supply a different account. Existing game, capacity, duplicate-wallet and
+duplicate-account checks remain. The paying wallet/account pair is frozen in the registration; subsequent replacement or
+clearing of a current link cannot change it. The launcher reads those ordered snapshots through
+`get_registered_player(key, index)`, never current links. Results, MMR, refunds and prizes remain keyed by the paying
+wallet. Moving an already-seated account's current link to another wallet cannot buy it a second seat in that game.
+
+The relay writes identity link changes and reconciles authoritative identity links on startup and periodically,
+including clearing stale ledger links. The monitor checks ledger links against identity link history. Event delivery
+alone is not a link source. The client shows linking until the connected wallet's ledger view matches its own Realms
+account, then submits registration without an account argument. This adds two scalar maps and one operator entry/change
+event; it removes player-supplied identity rather than introducing a signature, permit, role or key. Existing
+registration snapshots and roster freeze stay unchanged.
 
 Results contain only wallet and competition rank, sorted by rank then wallet on ties. The version-3 commitment hashes
 `['ETERNUM_BLITZ_RESULT', 3, shard, game_id, count, wallet, rank, ...]`. The shard must not draw chest contents. MMR and

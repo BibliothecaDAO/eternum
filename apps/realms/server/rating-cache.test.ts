@@ -58,7 +58,12 @@ const create = () => {
   });
   const reader = new RatingReader(
     ctx as unknown as DurableObjectState,
-    { IDENTITY_RPC_URL: "https://paid.test" } as never,
+    {
+      L2_CHAIN_ID: "SN_MAIN",
+      RATING_TOKEN_ADDRESS: "0x31",
+      RATING_HISTORY_URL: "https://realms.world/api/ratings/population",
+      IDENTITY_RPC_URL: "https://starknet-mainnet.g.alchemy.com/v2/test",
+    } as never,
   );
   vi.stubGlobal("fetch", network);
   return { reader, paid, network, database, ctx };
@@ -103,7 +108,12 @@ it("keeps the per-minute paid-method budget across a reader restart", async () =
   try {
     const first = await reader.ratings(["0x1"]);
     const cached = paid.length;
-    const restarted = new RatingReader(ctx as unknown as DurableObjectState, { IDENTITY_RPC_URL: "https://paid.test" });
+    const restarted = new RatingReader(ctx as unknown as DurableObjectState, {
+      L2_CHAIN_ID: "SN_MAIN",
+      RATING_TOKEN_ADDRESS: "0x31",
+      RATING_HISTORY_URL: "https://realms.world/api/ratings/population",
+      IDENTITY_RPC_URL: "https://starknet-mainnet.g.alchemy.com/v2/test",
+    });
     expect((await restarted.ratings(["0x1"], first.block_hash)).values).toEqual(first.values);
     expect(paid).toHaveLength(cached);
     await ctx.storage.put("rpc-budget", { minute: Math.floor(Date.now() / 60000), used: 10000 });
@@ -127,7 +137,7 @@ it("counts cold and warm upstream HTTP requests separately from billed RPC metho
       http: paid.length - start,
       methods: paid.slice(start).reduce((sum, batch) => sum + batch.length, 0),
     };
-    expect(cold).toEqual({ http: 2, methods: 26 });
+    expect(cold).toEqual({ http: 3, methods: 26 });
     expect(warm).toEqual({ http: 1, methods: 1 });
     await reader.ratings(history.players, "0xabc");
     expect(paid.length - start).toBe(1);
@@ -144,7 +154,7 @@ it("counts top20's1000-holder cold computation and free warm computation", async
   try {
     expect((await reader.top()).entries).toHaveLength(1000);
     expect({ http: paid.length, methods: paid.reduce((sum, batch) => sum + batch.length, 0) }).toEqual({
-      http: 11,
+      http: 12,
       methods: 1002,
     });
     const before = paid.length;

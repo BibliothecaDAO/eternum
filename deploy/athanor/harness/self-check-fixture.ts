@@ -11,7 +11,7 @@ import type { NativeCommand } from "../../../contracts/l3/world-native/schema/co
 import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
 import { nativeCommandBits } from "../../../contracts/l3/world-native/schema/commands.gen";
 import { seasonSeconds } from "../../../packages/core/src/utils/days";
-import { SELF_CHECK_PRESET_ID } from "../../../config/source/common/native-preset-modes";
+import { SELF_CHECK_PRESET_ID, FRONTIER_SELF_CHECK_PRESET_ID } from "../../../config/source/common/native-preset-modes";
 import { buildNativePreset } from "../../../config/deployer/clean/config/native-preset";
 import {
   buildNativeGameParams,
@@ -49,9 +49,12 @@ const fixture: DeploymentCheckPort = {
     const manifest = readShardManifest<NativeWorldManifest>(required("NATIVE_WORLD_MANIFEST"));
     const shard = await openShard(required("HERALD_URL"), bindings.schemaIdentity);
     const rpc = new HarnessProvider(shard.rpcUrl);
-    const admin = createHarnessAdminProvider(shard.rpcUrl);
+    const admin = createHarnessAdminProvider();
     const clients: RouteCase["client"][] = [];
+    // The check's run: disposing it ends the reconciliation of every send its accounts made.
+    const run = new AbortController();
     const dispose = () => {
+      run.abort();
       stopped.removeEventListener("abort", abortSetup);
       try {
         clients.forEach((client) => client.dispose());
@@ -81,7 +84,7 @@ const fixture: DeploymentCheckPort = {
         required("DEPLOYER_ACCOUNT_ADDRESS"),
         required("DEPLOYER_PRIVATE_KEY"),
       );
-      const approved = await approveCheckBot(admin, shard);
+      const approved = await approveCheckBot(admin, shard, run.signal);
       stopped.throwIfAborted();
       const gameId = await createCheckGame(privateLauncher, admin, manifest, stopped);
       stopped.throwIfAborted();
@@ -101,11 +104,13 @@ const fixture: DeploymentCheckPort = {
           cairoVersion: "1",
         }),
         shard,
+        run.signal,
       );
       const botClient = await connect(bot.address);
       const launcher = configureGameplayAccountSubmits(
         createOperatorAccount(rpc, privateLauncher.address, required("DEPLOYER_PRIVATE_KEY")),
         shard,
+        run.signal,
       );
       const launcherClient = await connect(launcher.address);
       await createHarnessGame(botClient).waitUntilPlaying();
@@ -121,7 +126,7 @@ const fixture: DeploymentCheckPort = {
       );
       const frontierId = await createModeCheckGame(
         "frontier",
-        5,
+        FRONTIER_SELF_CHECK_PRESET_ID,
         privateLauncher,
         admin,
         manifest,
@@ -129,7 +134,7 @@ const fixture: DeploymentCheckPort = {
         stopped,
       );
       const blitzClient = await connect(launcher.address, blitzId, 2);
-      const frontierClient = await connect(bot.address, frontierId, 5);
+      const frontierClient = await connect(bot.address, frontierId, FRONTIER_SELF_CHECK_PRESET_ID);
       const blitzPlayerClient = await connect(bot.address, blitzId, 2);
       const routes = bindModeRoutes(
         buildRoutePlan(bot, botClient, launcher, launcherClient),
@@ -147,7 +152,11 @@ const fixture: DeploymentCheckPort = {
   },
 };
 
-async function approveCheckBot(admin: HarnessProvider, shard: Awaited<ReturnType<typeof openShard>>) {
+async function approveCheckBot(
+  admin: HarnessProvider,
+  shard: Awaited<ReturnType<typeof openShard>>,
+  stopped: AbortSignal,
+) {
   const [approved] = await createHarnessAccounts({
     count: 1,
     concurrency: 1,
@@ -155,6 +164,7 @@ async function approveCheckBot(admin: HarnessProvider, shard: Awaited<ReturnType
     identity: { url: required("IDENTITY_URL"), operatorToken: required("OPERATOR_TOKEN") },
     provider: admin,
     shard,
+    stopped,
   });
   if (!approved) throw new Error("Self-check bot enrollment failed");
   return approved;

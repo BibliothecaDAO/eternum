@@ -7,7 +7,10 @@ import { routeIdentityRequest } from "./routes";
 
 const query = vi.fn();
 const env = {
-  IDENTITY_RPC_URL: "https://mainnet.test/rpc",
+  L2_CHAIN_ID: "SN_MAIN",
+  RATING_TOKEN_ADDRESS: "0x31",
+  RATING_HISTORY_URL: "https://realms.world/api/ratings/population",
+  IDENTITY_RPC_URL: "https://starknet-mainnet.g.alchemy.com/v2/test",
   PUBLIC_RATE_LIMIT: { limit: vi.fn(async () => ({ success: true })) },
   DB: { prepare: () => ({ bind: (...ids: string[]) => ({ all: () => query(ids) }) }) },
 } as unknown as IdentityEnv;
@@ -21,6 +24,7 @@ const request = (parameters: string) =>
 let cache: ReturnType<typeof testRatingReader>;
 let call: MockInstance<RpcProvider["callContract"]>;
 beforeEach(() => {
+  Object.assign(env, { L2_CHAIN_ID: "SN_MAIN" });
   cache = testRatingReader();
   env.RATING_READER = cache.binding as unknown as IdentityEnv["RATING_READER"];
   query.mockClear();
@@ -205,4 +209,20 @@ it("resolves another player's approved gameplay account to the same linked walle
   });
   expect(query).toHaveBeenCalledWith(["0x11", "0x12", "0x13"]);
   expect(call).toHaveBeenCalledTimes(1);
+});
+
+it("uses the Sepolia reader and its configured rating token instead of mainnet addresses", async () => {
+  cache.close();
+  Object.assign(env, { L2_CHAIN_ID: "SN_SEPOLIA" });
+  cache = testRatingReader({
+    L2_CHAIN_ID: "SN_SEPOLIA",
+    IDENTITY_RPC_URL: "https://starknet-sepolia.g.alchemy.com/v2/test",
+    RATING_TOKEN_ADDRESS: "0x32",
+  });
+  const idFromName = vi.fn(() => "configured-reader");
+  env.RATING_READER = { ...cache.binding, idFromName } as unknown as IdentityEnv["RATING_READER"];
+  vi.mocked(RpcProvider.prototype.getChainId).mockResolvedValue("0x534e5f5345504f4c4941");
+  expect((await request("players=0xa")).status).toBe(200);
+  expect(idFromName).toHaveBeenCalledWith("SN_SEPOLIA");
+  expect(call).toHaveBeenCalledWith(expect.objectContaining({ contractAddress: "0x32" }), "0xabc");
 });

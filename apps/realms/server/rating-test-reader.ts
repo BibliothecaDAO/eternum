@@ -11,7 +11,7 @@ vi.mock("cloudflare:workers", () => ({
 import { RatingReader } from "./rating-reader";
 
 /** API tests use the real cache and SQL behavior; only the network is replaced. */
-export function testRatingReader() {
+export function testRatingReader(configuration: Partial<ConstructorParameters<typeof RatingReader>[1]> = {}) {
   const database = new DatabaseSync(":memory:");
   const values = new Map<string, unknown>();
   const ctx = {
@@ -29,7 +29,11 @@ export function testRatingReader() {
     },
   };
   const reader = new RatingReader(ctx as unknown as DurableObjectState, {
-    IDENTITY_RPC_URL: "https://mainnet.test/rpc",
+    L2_CHAIN_ID: "SN_MAIN",
+    RATING_TOKEN_ADDRESS: "0x31",
+    RATING_HISTORY_URL: "https://realms.world/api/ratings/population",
+    IDENTITY_RPC_URL: "https://starknet-mainnet.g.alchemy.com/v2/test",
+    ...configuration,
   });
   return { binding: { idFromName: () => "mainnet", get: () => reader }, close: () => database.close() };
 }

@@ -1,6 +1,7 @@
+import { RegistrationOpen } from "./blitz-roster";
 import { Effect, Layer } from "effect";
 import { RpcError } from "starknet";
-import { afterEach, beforeEach, describe, expect, test } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { LaunchExecutionFailure } from "./errors";
 import { LaunchExecutor } from "./executor";
 import { processNextLaunch } from "./process-launch";
@@ -23,6 +24,22 @@ const request = {
   gameName: "bltz-recovery-test",
 };
 
+test("terminal launch failures retry refund cleanup at the ledger boundary without trying to launch again", async () => {
+  await store.enqueue("game", { ...request, gameName: "failed-paid-game" });
+  const execute = vi.fn(() =>
+    Effect.fail(new LaunchExecutionFailure({ runId: "failed", cause: new Error("cannot seat") })),
+  );
+  const refund = vi.fn().mockReturnValueOnce(Effect.succeed(60)).mockReturnValue(Effect.succeed(null));
+  const services = Layer.mergeAll(databaseLayer(store), Layer.succeed(LaunchExecutor, { execute, refund }));
+  for (let index = 0; index < 3; index++)
+    await Effect.runPromise(processNextLaunch(Date.now() + 1000000).pipe(Effect.provide(services)));
+  expect((await store.find("game", "madara.blitz", "failed-paid-game"))?.status).toBe("queued");
+  await Effect.runPromise(processNextLaunch(Date.now() + 1000000).pipe(Effect.provide(services)));
+  expect(execute).toHaveBeenCalledTimes(3);
+  expect(refund).toHaveBeenCalledTimes(2);
+  expect((await store.find("game", "madara.blitz", "failed-paid-game"))?.status).toBe("failed");
+});
+
 describe("the registrar's launch step", () => {
   test("persists the default start time once so retries cannot move it", async () => {
     const queued = await store.enqueue("game", request);
@@ -30,6 +47,7 @@ describe("the registrar's launch step", () => {
     const failing = Layer.mergeAll(
       databaseLayer(store),
       Layer.succeed(LaunchExecutor, {
+        refund: () => Effect.succeed(null),
         execute: (run) => Effect.fail(new LaunchExecutionFailure({ runId: run.id, cause: new Error("rpc down") })),
       }),
     );
@@ -57,6 +75,7 @@ describe("the registrar's launch step", () => {
       const failing = Layer.mergeAll(
         databaseLayer(store),
         Layer.succeed(LaunchExecutor, {
+          refund: () => Effect.succeed(null),
           execute: (run) => Effect.fail(new LaunchExecutionFailure({ runId: run.id, cause })),
         }),
       );
@@ -72,6 +91,7 @@ describe("the registrar's launch step", () => {
     const services = Layer.mergeAll(
       databaseLayer(store),
       Layer.succeed(LaunchExecutor, {
+        refund: () => Effect.succeed(null),
         execute: (run) => Effect.fail(new LaunchExecutionFailure({ runId: run.id, cause: new GameNotEnded(90) })),
       }),
     );
@@ -83,9 +103,28 @@ describe("the registrar's launch step", () => {
     expect(await store.nextDue()).toBeGreaterThanOrEqual(Date.now() + 80_000);
   });
 
+  test("defers a Blitz launch while ledger registration is open without spending an attempt", async () => {
+    await store.enqueue("game", request);
+    const services = Layer.mergeAll(
+      databaseLayer(store),
+      Layer.succeed(LaunchExecutor, {
+        refund: () => Effect.succeed(null),
+        execute: (run) =>
+          Effect.fail(
+            new LaunchExecutionFailure({ runId: run.id, cause: new RegistrationOpen({ secondsUntilClose: 90 }) }),
+          ),
+      }),
+    );
+    await Effect.runPromise(processNextLaunch(Date.now()).pipe(Effect.provide(services)));
+    expect(await store.find("game", "madara.blitz", request.gameName)).toMatchObject({ status: "queued", attempts: 0 });
+    expect(await store.startNext(Date.now())).toBeNull();
+    expect(await store.nextDue()).toBeGreaterThanOrEqual(Date.now() + 80_000);
+  });
+
   test("completes a started launch through the injected executor and store", async () => {
     await store.enqueue("game", request);
     const executor = {
+      refund: () => Effect.succeed(null),
       execute: () =>
         Effect.succeed({
           environment: "madara.blitz" as const,
@@ -124,6 +163,7 @@ test("three interrupted attempts fail before execution and release the queue", a
   const services = Layer.mergeAll(
     databaseLayer(store),
     Layer.succeed(LaunchExecutor, {
+      refund: () => Effect.succeed(null),
       execute: (run) => {
         executions++;
         return Effect.fail(new LaunchExecutionFailure({ runId: run.id, cause: new Error("should not execute") }));
@@ -134,4 +174,18 @@ test("three interrupted attempts fail before execution and release the queue", a
   expect(executions).toBe(0);
   expect(await store.failed()).toMatchObject([{ id: stuck.id, errorMessage: "Launch interrupted after 3 attempts" }]);
   expect(await store.startNext(Date.now())).toMatchObject({ id: next.id, attempts: 1 });
+});
+
+test("a played game's result retries past three failures and never calls refund cleanup", async () => {
+  await store.enqueue("result", { environment: "madara.blitz", gameName: "played-result-recovery", gameId: 4 });
+  const execute = vi.fn(() =>
+    Effect.fail(new LaunchExecutionFailure({ runId: "played", cause: new Error("result RPC unavailable") })),
+  );
+  const refund = vi.fn(() => Effect.succeed(null));
+  const services = Layer.mergeAll(databaseLayer(store), Layer.succeed(LaunchExecutor, { execute, refund }));
+  for (let attempt = 0; attempt < 4; attempt++)
+    await Effect.runPromise(processNextLaunch(Date.now() + 1000000).pipe(Effect.provide(services)));
+  expect(refund).not.toHaveBeenCalled();
+  expect(execute).toHaveBeenCalledTimes(4);
+  expect((await store.find("result", "madara.blitz", "played-result-recovery"))?.status).toBe("queued");
 });

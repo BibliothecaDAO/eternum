@@ -61,7 +61,7 @@ export const EntityResourceTableOld = React.memo(
       return [...structureRelicEffects, ...structureArmyRelicEffects];
     }, [currentArmiesTick, productionBoostBonus, guardRevision, entityId, setup.store]);
 
-    const resourceManager = useResourceManager(entityId ?? 0);
+    const resourceManager = useResourceManager(entityId);
 
     const handleToggleTierVisibility = useCallback((tierKey: string) => {
       setCollapsedTiers((prev) => {
@@ -71,7 +71,7 @@ export const EntityResourceTableOld = React.memo(
       });
     }, []);
 
-    if (!entityId) return <div>No Entity Selected</div>;
+    if (!entityId || !resourceManager) return <div>No Entity Selected</div>;
     if (!productionBoostBonus) return <div>Loading production…</div>;
 
     return (

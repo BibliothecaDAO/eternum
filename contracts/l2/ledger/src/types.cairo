@@ -24,6 +24,7 @@ pub struct Preset {
     pub day_unit_seconds: u32,
     pub season_bags: u32,
     pub claim_window_seconds: u32,
+    pub registration_limit: u16,
 }
 
 #[derive(Copy, Default, Drop, Serde, starknet::Store)]
@@ -38,6 +39,7 @@ pub struct Game {
     pub registered_count: u16,
     pub cancelled: bool,
     pub finalized: bool,
+    pub registration_limit: u16,
 }
 
 #[derive(Copy, Drop, Serde, starknet::Store)]

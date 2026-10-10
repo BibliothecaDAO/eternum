@@ -16,11 +16,12 @@ import shard
 NODE_IMAGE = "ghcr.io/madara-alliance/madara@sha256:" + "a" * 64
 
 
-def operator_fixture(data):
+def operator_fixture(data, testcase):
     path = data / "operator-token"
     path.write_text("test-token")
     path.chmod(0o600)
-    return {"OPERATOR_TOKEN_FILE": str(path)}
+    testcase.enterContext(patch("operator_token.OPERATOR_TOKEN_FILE", path))
+    return {}
 
 
 def configuration():
@@ -61,6 +62,75 @@ def load_package_script(name):
 
 
 class ShardTest(unittest.TestCase):
+    def test_runner_registers_pending_before_initialization_and_never_activates(self):
+        events = []
+        config = configuration()
+        chain = "0x" + config["chain_id"].encode().hex()
+        with tempfile.TemporaryDirectory() as temporary:
+            data = Path(temporary)
+            with patch.object(shard, "run", side_effect=lambda command, *_: events.append(command[-1])), patch.object(shard, "wait_for_identity", side_effect=lambda *_: events.append("identity")), patch.object(shard, "directory_status", side_effect=lambda _, status: (events.append(status) or {"status": "pending", "chainId": chain})), patch.object(shard.subprocess, "check_output", return_value="0"):
+                shard.start_runner_stack(config, data, ["compose"])
+            self.assertEqual(events[:5], ["prepare", "metrics", "identity", "pending", "-d"])
+            self.assertNotIn("active", events)
+            self.assertEqual(json.loads((data / "directory-registration.json").read_text())["chainId"], chain)
+            self.assertEqual(json.loads((data / "directory-registration-ack.json").read_text())["status"], "pending")
+
+    def test_registration_intent_survives_a_lost_post_response(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            data = Path(temporary)
+            config = configuration()
+            def lost_response(_, status):
+                self.assertEqual(status, "pending")
+                self.assertEqual(json.loads((data / "directory-registration.json").read_text()), {
+                    "url": config["public_herald_url"], "chainId": "0x" + config["chain_id"].encode().hex(),
+                })
+                raise OSError("response lost")
+            with patch.object(shard, "run"), patch.object(shard, "wait_for_identity"), patch.object(shard, "directory_status", side_effect=lost_response):
+                with self.assertRaisesRegex(OSError, "response lost"):
+                    shard.start_runner_stack(config, data, ["compose"])
+            events = []
+            shard.write_json(data / "configuration.json", config)
+            with patch.object(shard, "run", side_effect=lambda *_: events.append("stop")), patch.object(shard, "directory_status", side_effect=lambda _, status: events.append(status)):
+                shard.stop_shard(data)
+            self.assertEqual(events, ["stop"])
+            self.assertFalse((data / "directory-registration-ack.json").exists())
+
+    def test_failed_single_start_stops_and_retires_its_registration(self):
+        for failure in (RuntimeError("init failed"), KeyboardInterrupt()):
+            with self.subTest(failure=type(failure).__name__), tempfile.TemporaryDirectory() as temporary:
+                directory = Path(temporary) / "trial"
+                read_text = Path.read_text
+                def read(path, *args, **kwargs):
+                    if str(path) == "/sys/fs/cgroup/athanor.slice/cpuset.cpus.effective": return "8-11,20-23"
+                    return read_text(path, *args, **kwargs)
+                def fail_start(config, data, _):
+                    shard.write_json(data / "directory-registration-ack.json", {"url": config["public_herald_url"], "chainId": "0x" + config["chain_id"].encode().hex(), "status": "pending"})
+                    raise failure
+                events = []
+                with (
+                    patch.object(Path, "read_text", read), patch.object(shard, "ensure_fresh_project"),
+                    patch.object(shard, "compose_configuration", return_value={"services": {"madara": {"image": NODE_IMAGE}}}),
+                    patch.object(shard, "check_slice_memory"), patch.object(shard, "start_runner_stack", side_effect=fail_start),
+                    patch.object(shard, "run", side_effect=lambda *_: events.append("stop")),
+                    patch.object(shard, "directory_status", side_effect=lambda _, status: events.append(status)),
+                ):
+                    with self.assertRaises(type(failure)):
+                        shard.start_shard(configuration(), directory)
+                self.assertEqual(events, ["stop", "retired"])
+                self.assertTrue((directory / "compose.json").exists())
+                self.assertTrue((directory / "directory-registration-ack.json").exists())
+
+    def test_stopping_a_registered_runner_retires_after_stop_without_activation(self):
+        events = []
+        with tempfile.TemporaryDirectory() as temporary:
+            data = Path(temporary)
+            config = configuration()
+            shard.write_json(data / "configuration.json", config)
+            shard.write_json(data / "directory-registration-ack.json", {"url": config["public_herald_url"], "chainId": "0x" + config["chain_id"].encode().hex(), "status": "pending"})
+            with patch.object(shard, "run", side_effect=lambda *_: events.append("stop")), patch.object(shard, "directory_status", side_effect=lambda _, status: events.append(status)):
+                shard.stop_shard(data)
+        self.assertEqual(events, ["stop", "retired"])
+
     def test_resource_and_target_validation_precedes_deployment(self):
         config = configuration()
         allowed = set(range(8, 12)) | set(range(20, 24))
@@ -147,7 +217,7 @@ class ShardTest(unittest.TestCase):
             shard.write_json(data / "gameplay-contracts.json", {"operatorAccountAddress": "0x9"})
             shard.write_private_environment(data / "harness.env", {"RPC_URL": "http://madara:9944/rpc/v0_10_2"})
             started = time.struct_time((2026, 10, 7, 16, 2, 47, 0, 0, 0))
-            argv, environment = package.harness_invocation(["--bots", "1"], operator_fixture(data), data, started)
+            argv, environment = package.harness_invocation(["--bots", "1"], operator_fixture(data, self), data, started)
             self.assertEqual(argv, ["bun", "deploy/athanor/harness/run.ts", "--bots", "1"])
             self.assertEqual(environment["RPC_URL"], "http://rpc:8080/rpc/v0_10_2")
             self.assertEqual(environment["HARNESS_ADMIN_RPC_URL"], "http://madara:9944/rpc/v0_10_2")
@@ -155,7 +225,7 @@ class ShardTest(unittest.TestCase):
             self.assertEqual(environment["DEPLOYER_ACCOUNT_ADDRESS"], "0x9")
             self.assertEqual(environment["OPERATOR_TOKEN"], "test-token")
             self.assertEqual(environment["HARNESS_OUTPUT_DIRECTORY"], str(data / "harness" / "20261007T160247Z"))
-            chosen = {**operator_fixture(data), "HARNESS_OUTPUT_DIRECTORY": "/data/measure/soak/workload"}
+            chosen = {**operator_fixture(data, self), "HARNESS_OUTPUT_DIRECTORY": "/data/measure/soak/workload"}
             _, environment = package.harness_invocation([], chosen, data, started)
             self.assertEqual(environment["HARNESS_OUTPUT_DIRECTORY"], "/data/measure/soak/workload")
 
@@ -171,7 +241,7 @@ class ShardTest(unittest.TestCase):
                 "GAMEPLAY_CONTRACTS_PATH": "/opt/run/data/gameplay-contracts.json",
                 "SHARD_HOST_ACCOUNTS": "/opt/run/data/host-accounts.json",
             })
-            _, environment = package.harness_invocation([], operator_fixture(data), data)
+            _, environment = package.harness_invocation([], operator_fixture(data, self), data)
             for field, filename in [("NATIVE_WORLD_MANIFEST", "native-world.json"),
                                     ("GAMEPLAY_CONTRACTS_PATH", "gameplay-contracts.json"),
                                     ("SHARD_HOST_ACCOUNTS", "host-accounts.json")]:
@@ -249,7 +319,7 @@ class ShardTest(unittest.TestCase):
 
     def test_the_rendered_shard_keeps_the_operator_token_out_of_its_files(self):
         rendered = {"name": "athanor-smoke", "services": {
-            name: {"environment": {"OPERATOR_TOKEN_FILE": "/run/secrets/operator-token"}, "volumes": []}
+            name: {"environment": {}, "volumes": []}
             for name in ("prepare", "init", "harness")
         } | {name: {"command": [], "environment": {}} for name in ("madara", "postgres", "herald", "rpc")}}
         with tempfile.TemporaryDirectory() as directory, \
@@ -258,7 +328,7 @@ class ShardTest(unittest.TestCase):
         self.assertNotIn("operator-secret", json.dumps(compose))
         for name in ("prepare", "init", "harness"):
             self.assertNotIn("OPERATOR_TOKEN", compose["services"][name]["environment"])
-            self.assertEqual(compose["services"][name]["environment"]["OPERATOR_TOKEN_FILE"], "/run/secrets/operator-token")
+            self.assertNotIn("OPERATOR_TOKEN_FILE", compose["services"][name]["environment"])
 
     def test_runner_exposes_neither_the_node_nor_postgres(self):
         compose = shard.compose_configuration(configuration(), Path("/tmp/not-deployed"))
@@ -343,11 +413,10 @@ class ShardTest(unittest.TestCase):
             # The holder text is drafted beside the lock and linked into place; no draft outlives either outcome.
             self.assertEqual(list(Path(temporary).iterdir()), [])
 
-    def test_docker_keeps_exactly_the_operator_token_and_the_driver_cpus_through_sudo(self):
-        # sudo resets the environment: without this the token never reaches initialization, and a measured driver
-        # would share the shard's CPUs.
+    def test_docker_preserves_only_the_driver_cpus_through_sudo(self):
+        # Containers read their token from the fixed mount; only measured driver placement crosses sudo.
         preserved = [flag for flag in shard.DOCKER if flag.startswith("--preserve-env")]
-        self.assertEqual(preserved, ["--preserve-env=OPERATOR_TOKEN_FILE,HARNESS_CPUSET"])
+        self.assertEqual(preserved, ["--preserve-env=HARNESS_CPUSET"])
 
     def test_the_collector_has_no_retired_gateway_scrape(self):
         collector = shard.collector_configuration()
@@ -467,6 +536,8 @@ class ShardTest(unittest.TestCase):
                     directory.mkdir()
                     (directory / "compose.json").write_text("{}")
                     (directory / "harness.env").write_text("COMPOSE_PROJECT_NAME=athanor-smoke\n")
+                    shard.write_json(directory / "configuration.json", config)
+                    shard.write_json(directory / "directory-registration-ack.json", {"url": config["public_herald_url"], "chainId": "0x" + config["chain_id"].encode().hex(), "status": "pending"})
 
                 def measure(_docker, run_workload, node, *_paths):
                     measured.append(node)
@@ -477,6 +548,7 @@ class ShardTest(unittest.TestCase):
                 with patch.object(shard, "start_shard", side_effect=start), \
                      patch.object(shard.measures, "measure_workload", side_effect=measure), \
                      patch.object(shard, "run") as stop, \
+                     patch.object(shard, "directory_status") as directory_status, \
                      patch.object(shard, "run_workload", side_effect=failure) as workload:
                     output = root / "matrix"
                     if failure:
@@ -488,6 +560,7 @@ class ShardTest(unittest.TestCase):
                     minutes = [call.args[0][call.args[0].index("--minutes") + 1] for call in workload.call_args_list]
                     self.assertEqual(minutes, ["1"] if failure else ["1", "30"])
                     self.assertEqual(measured, [f"athanor-{name}-madara-1" for name in started])
+                    self.assertEqual([call.args[1] for call in directory_status.call_args_list], ["retired"] * len(started))
                     for call, name in zip(stop.call_args_list, started):
                         self.assertEqual(call.args[0][-2:], [str(output / name / "compose.json"), "stop"])
                         result = json.loads((output / name / "matrix-result.json").read_text())
@@ -509,7 +582,7 @@ class PackageStartTest(unittest.TestCase):
             volume.mkdir()
         self.write_initialized_data()
         self.environ = {
-            **operator_fixture(self.data),
+            **operator_fixture(self.data, self),
             "CHAIN_ID": "COMMUNITY", "GUARDIAN_URL": "https://identity.test/api/guardian",
             "PUBLIC_RPC_URL": "https://rpc.test/rpc/v0_10_2", "PUBLIC_HERALD_URL": "https://herald.test", "VRF_WORKERS": "8", "L2_GAS_BOUND": "0x47868c00",
             "PLAYER_CAPACITY": "16",
@@ -550,6 +623,28 @@ class PackageStartTest(unittest.TestCase):
 
     def published(self, volume, name):
         return self.volumes[volume] / name
+
+    def test_initialize_identity_ignores_host_uid_when_reading_its_own_key(self):
+        (self.data / "native-world.json").unlink()
+        (self.data / "chain-config.yaml").unlink()
+        (self.data / "initialized.json").unlink()
+        with patch.dict(shard.os.environ, {"HOST_UID": str(shard.os.geteuid() + 1)}), patch.object(shard, "initialize_shard_identity") as initialize:
+            self.package.initialize_identity(configuration())
+        self.assertEqual(initialize.call_args.args[2], "0x789")
+
+    def test_failed_first_prepare_can_resume_with_the_same_keys(self):
+        for name in ("init-configuration.json", "initialized.json", "gameplay-contracts.json", "native-world.json", "chain-config.yaml"):
+            (self.data / name).unlink()
+        shard.write_json(self.data / "host-accounts.json", {"vrfPublicKey": {"x": "0x1", "y": "0x2"}})
+        original = (self.data / "host-keys.json").read_bytes()
+        with patch.dict(shard.os.environ, self.environ), patch.object(shard, "read_guardian_identity", return_value={"guardianPublicKey": "0x1", "accountClassHash": "0x2"}):
+            config = self.package.configuration()
+            with patch.object(self.package, "publish_prepared_config", side_effect=OSError("temporary publication failure")):
+                with self.assertRaisesRegex(OSError, "publication failure"):
+                    self.package.prepare(config)
+            self.package.prepare(config)
+        self.assertEqual((self.data / "host-keys.json").read_bytes(), original)
+        self.assertTrue((self.data / "init-configuration.json").exists())
 
     def test_readiness_probes_use_only_internal_service_addresses(self):
         with patch.object(shard, "wait_for_endpoint", return_value=1) as wait:
@@ -609,3 +704,35 @@ class LocalEnrollmentTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class RegistrationAcknowledgementTest(unittest.TestCase):
+    def test_active_or_draining_response_never_acknowledges_or_retires_another_listing(self):
+        config = configuration()
+        for status in ("active", "draining"):
+            with self.subTest(status=status), tempfile.TemporaryDirectory() as temporary:
+                data = Path(temporary)
+                shard.write_json(data / "configuration.json", config)
+                with patch.object(shard, "run"), patch.object(shard, "wait_for_identity"), patch.object(shard, "directory_status", return_value={"status": status}) as directory:
+                    with self.assertRaisesRegex(RuntimeError, "must register PENDING"):
+                        shard.start_runner_stack(config, data, ["compose"])
+                    shard.stop_shard(data)
+                directory.assert_called_once_with(config, "pending")
+                self.assertTrue((data / "directory-registration.json").exists())
+                self.assertFalse((data / "directory-registration-ack.json").exists())
+
+    def test_unacknowledged_post_failure_is_preserved_after_cleanup(self):
+        config = configuration()
+        with tempfile.TemporaryDirectory() as temporary:
+            data = Path(temporary)
+            shard.write_json(data / "configuration.json", config)
+            with patch.object(shard, "run"), patch.object(shard, "wait_for_identity"), patch.object(shard, "directory_status", side_effect=RuntimeError("pending POST failed")) as directory:
+                try:
+                    shard.start_runner_stack(config, data, ["compose"])
+                except RuntimeError as error:
+                    shard.stop_shard(data)
+                    self.assertEqual(str(error), "pending POST failed")
+                else:
+                    self.fail("pending POST should fail")
+            directory.assert_called_once_with(config, "pending")
+            self.assertFalse((data / "directory-registration-ack.json").exists())

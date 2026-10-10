@@ -44,7 +44,7 @@ const allLatestFeatures: LatestFeature[] = [
     date: "2026-10-09",
     title: "No more stuck actions",
     description:
-      "An action that never reached the game now says so in the event feed within a few seconds, and your next actions go through instead of waiting behind it until a reload.",
+      "Each action in the event feed now says sending, checking, done, refused with the reason, or not sent. An action still being checked no longer holds up your next ones, and an action is only called not sent once the game has confirmed it never arrived.",
     type: "fix",
   },
   {
@@ -59,6 +59,13 @@ const allLatestFeatures: LatestFeature[] = [
     title: "Link Ready by Email",
     description:
       "Added Ready's email wallet to the wallets you can link in Account, so a phone, or a browser without a wallet extension, can link one without installing anything.",
+    type: "feature",
+  },
+  {
+    date: "2026-10-09",
+    title: "Link wallets before deployment",
+    description:
+      "Link supported Ready and Braavos wallets with a signed message and email code before sending a transaction.",
     type: "feature",
   },
   {
@@ -95,6 +102,12 @@ const allLatestFeatures: LatestFeature[] = [
     description:
       "Play opens on one card with your next step (Resume your Frontier day, Enter your Blitz, see a finished season) and the four ages of the lore beside it, each with its own painting and page.",
     type: "feature",
+  },
+  {
+    date: "2026-10-09",
+    title: "Email codes protect wallet changes",
+    description: "Link, replace or unlink your payout wallet with a six-digit code sent to your verified email.",
+    type: "fix",
   },
   {
     date: "2026-10-07",

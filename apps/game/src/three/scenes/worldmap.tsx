@@ -3401,7 +3401,6 @@ export default class WorldmapScene extends WarpTravel {
     currentArmiesTick: number;
   }): MovementStaminaResolution {
     return resolveMovementStamina({
-      entityId: input.entityId,
       actionPath: input.actionPath,
       currentArmiesTick: input.currentArmiesTick,
       liveTroops: this.resolveLiveExplorerTroopsForMovementStamina(input.entityId),

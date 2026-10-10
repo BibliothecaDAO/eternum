@@ -1,3 +1,4 @@
+import { isPublicGameName } from "./schemas";
 import { BLITZ_SLOT_NAME_PATTERN } from "@realms-world/identity";
 import { Schema } from "effect";
 import { Hono, type Context } from "hono";
@@ -14,7 +15,10 @@ const RegisterRequest = Schema.Struct({
   ),
 });
 const CreateSlotRequest = Schema.Struct({
-  name: Schema.String.pipe(Schema.check(Schema.isPattern(BLITZ_SLOT_NAME_PATTERN))),
+  name: Schema.String.pipe(
+    Schema.check(Schema.isPattern(BLITZ_SLOT_NAME_PATTERN)),
+    Schema.check(Schema.makeFilter((name: string) => isPublicGameName(name) && isPublicGameName(`${name}-1`))),
+  ),
   closesAt: Schema.String.pipe(Schema.check(Schema.makeFilter((value: string) => Number.isFinite(Date.parse(value))))),
 });
 
@@ -31,7 +35,7 @@ const readBody = async <S extends Schema.Top>(context: Context<LaunchAppEnv>, sc
 };
 
 /**
- * Free Blitz slots. A player registers as their Realms account, and the slot records the gameplay account it will
+ * Explicit free Blitz slots register as a Realms account, and the slot records the gameplay account it will
  * have on the shard. A launcher (an allowlisted wallet or the operator) also creates slots off the timetable and
  * registers accounts directly, for harness runs and invited rosters, through the same store rules.
  */
@@ -62,7 +66,8 @@ export function createSlotRoutes(
   app.post("/", async (context) => {
     if (!isLauncher(context.get("caller"), access)) return forbidden(context);
     const { name, closesAt } = await readBody(context, CreateSlotRequest);
-    return context.json(await store.create(name, closesAt));
+    await store.create(name, closesAt);
+    return context.json({ name, status: "opening" }, 202);
   });
 
   app.post("/:name/register", async (context) => {
