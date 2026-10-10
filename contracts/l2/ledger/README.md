@@ -16,15 +16,15 @@ future timestamp or unlock future days to conceal clock lag. Operator payments a
 the cumulative unlock. They carry no treasury cut. Only the admin unpauses; the pauser can pause payouts.
 
 The immutable `claim_window_seconds` preset defaults to seven days. The shard stops new withdrawals one hour before
-`season.end + claim_window_seconds`, leaving the constant 3600-second reporting grace period. The ledger accepts a
-first report strictly before that deadline. A report reserves backing: paid plus all unpaid amounts cannot exceed the
-funded pool, including while payouts are paused. There is no administrative report correction entry.
+`season.end + claim_window_seconds`, leaving the constant 3600-second reporting grace period. The ledger accepts a first
+report strictly before that deadline. A report reserves backing: paid plus all unpaid amounts cannot exceed the funded
+pool, including while payouts are paused. There is no administrative report correction entry.
 
-`close_frontier` runs at or after the deadline, voids every unpaid report without scanning individual claims, and returns
-`pool - paid` to the treasury. It clears both pending aggregates and emits the voided count and amount. The existing
-closed season plus payment record determines `withdrawal_voided`; the relay must recover that fact from the views and
-stop retrying voided claims. Paid retries remain harmless; unpaid payments after closure refuse. The ledger report
-cutoff and shared schedule are unchanged; the integrator applies the earlier shard cutoff.
+`close_frontier` runs at or after the deadline, voids every unpaid report without scanning individual claims, and
+returns `pool - paid` to the treasury. It clears both pending aggregates and emits the voided count and amount. The
+existing closed season plus payment record determines `withdrawal_voided`; the relay must recover that fact from the
+views and stop retrying voided claims. Paid retries remain harmless; unpaid payments after closure refuse. The ledger
+report cutoff and shared schedule are unchanged; the integrator applies the earlier shard cutoff.
 
 Blitz settlement takes one `protocol_cut_bps` treasury cut on the whole incoming game pot: entries, paid swords/shields
 and sponsorship. The default is 2000 bps. The remaining pot splits by `chest_lords_bps` into the season's chest reserve
@@ -112,9 +112,17 @@ allocation cursor, next weight, total weight and allocated amount. The two passe
 and exact final remainder without a population-sized array or scan. The final allocation starts the complete one-hour
 review. An incomplete or challenged proposal cannot pay; claims and challenges use a constant-size owner-position
 lookup. Corrections restart posting/allocation before payout. Winners then pull their share once. This replaces eager
-allocation and linear winner searches with one progress row and one owner index per proposal. Pause blocks
-withdrawals, refunds, chest finishes and season claims; registrations, incoming funding, result settlement, chest
-requests and challenges remain available. Settlement's input treasury transfer continues to its fixed address.
+allocation and linear winner searches with one progress row and one owner index per proposal. Pause blocks withdrawals,
+refunds, chest finishes and season claims; registrations, incoming funding, result settlement, chest requests and
+challenges remain available. Settlement's input treasury transfer continues to its fixed address.
+
+## Class size
+
+The ledger pins compiler inlining weight 64: the fixed ledger's CASM measures 77,298 felts versus 86,007 with the
+default strategy, against Starknet's 81,920 limit. The default trunk was already 80,360. This is a build choice, not a
+runtime setting or a second contract. Both profiles use the same choice and ABI. The full ledger suite checks the same
+custody and geometric allocations; the declaration artifact reader refuses oversized Sierra or CASM programs before
+sending a transaction. Compiler changes require measuring the artifact and operation gas again.
 
 ## Package checks
 
@@ -148,9 +156,9 @@ Frontier response parsing against the package's actual built ABI without loading
 Build release artifacts first, under the same lock. These commands compile each package using its pinned toolchain:
 
 ```sh
-(cd contracts/l2/ledger && flock /tmp/eternum-scarb.lock scarb build --release)
-(cd contracts/l2/mmr && flock /tmp/eternum-scarb.lock scarb build --release)
-(cd contracts/l2/collectibles && flock /tmp/eternum-scarb.lock scarb build --release)
+(cd contracts/l2/ledger && flock /tmp/eternum-scarb.lock scarb --release build)
+(cd contracts/l2/mmr && flock /tmp/eternum-scarb.lock scarb --release build)
+(cd contracts/l2/collectibles && flock /tmp/eternum-scarb.lock scarb --release build)
 ```
 
 The owner supplies `SEPOLIA_RPC_URL`, `SEPOLIA_ACCOUNT_ADDRESS`, `SEPOLIA_ACCOUNT_PRIVATE_KEY`,

@@ -2,7 +2,9 @@ import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const chainLimit = 81_920;
+import { MAX_CLASS_FELTS } from "../../../scripts-runtime/js/class-limits.js";
+
+const chainLimit = MAX_CLASS_FELTS;
 const headroomLimit = 75_366;
 
 export async function classSizeReport(directory, schema) {
