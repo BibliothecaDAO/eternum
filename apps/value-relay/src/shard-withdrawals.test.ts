@@ -1,5 +1,6 @@
+import { ledgerCall } from "../../../packages/value-ledger/test-support/ledger-abi";
+import { gamesEventAbi as abi, withdrawalEvent } from "../../../packages/value-ledger/test-support/abi";
 import { Effect } from "effect";
-import { hash, shortString } from "starknet";
 import { beforeEach, expect, it, vi } from "vitest";
 import { ShardReader } from "./shard-rpc";
 import { shardWithdrawalPorts } from "./shard-withdrawals";
@@ -28,41 +29,7 @@ vi.mock("@realms-world/value-ledger", async (original) => ({
   }),
 }));
 const address = "0x10";
-const abi = [
-  {
-    type: "event",
-    name: "world_native::games::Event",
-    kind: "enum",
-    variants: [{ name: "Relics", type: "world_native::relics::Event", kind: "nested" }],
-  },
-  {
-    type: "event",
-    name: "world_native::relics::Event",
-    kind: "enum",
-    variants: [{ name: "RowSet", type: "world_native::events::RowSet", kind: "nested" }],
-  },
-  {
-    type: "event",
-    name: "world_native::events::RowSet",
-    kind: "struct",
-    members: [
-      { name: "version", kind: "key" },
-      { name: "model", kind: "key" },
-      { name: "keys", kind: "data" },
-      { name: "values", kind: "data" },
-    ],
-  },
-];
-const event = () => ({
-  from_address: address,
-  keys: [
-    hash.getSelectorFromName("Relics"),
-    hash.getSelectorFromName("RowSet"),
-    "0x1",
-    shortString.encodeShortString("LordsWithdrawal"),
-  ],
-  data: ["2", "7", "0xabc", "2", "0x123", "17"],
-});
+const event = () => ({ from_address: address, ...withdrawalEvent(7, "0xabc", "0x123", 17) });
 const receipt = () => ({
   transaction_hash: "0xabc",
   block_number: 10,
@@ -103,9 +70,18 @@ it("reads a confirmed debit receipt and pays exact wei to the resolved account's
       confirmedAt: 1000,
     },
   ]);
-  const submit = vi.fn(async () => {});
+  const submit = vi.fn(async (_entrypoint: string, _calldata: readonly string[]) => {});
   await Effect.runPromise(frontierPayment(submit)(block.withdrawals[0]!, "0x456"));
   expect(submit).toHaveBeenCalledWith("pay", ["0x1", "3", "0xabc", "0x456", "17000000000000000000", "0"]);
+  expect(submit.mock.calls[0]![1].map(BigInt)).toEqual(
+    ledgerCall("pay", {
+      shard: 1,
+      season_id: 3,
+      claim_id: "0xabc",
+      wallet: "0x456",
+      amount: { low: "17000000000000000000", high: 0 },
+    }).map(BigInt),
+  );
   expect(rpc.contract).toHaveBeenCalledWith(address, 10);
   expect(f.bindings.realmsIdForAccount).toHaveBeenCalledWith("0x123");
 });

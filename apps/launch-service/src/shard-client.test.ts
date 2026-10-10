@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
+import { gamesAbi } from "../../../packages/value-ledger/test-support/abi";
 import { CallData } from "starknet";
 import { expect, it, vi } from "vitest";
 import { LaunchShard } from "./shard-client";
@@ -14,14 +14,10 @@ it("creates a complete roster once and recovers a lost acknowledgment from the e
   vi.spyOn(native, "gameId").mockImplementation(async () => (params ? 7 : 0));
   const create = vi.spyOn(native, "admin").mockImplementation(async (_entry, payload) => {
     params = (payload as { params: Record<string, unknown> }).params;
-    const artifact = new URL(
-      "../../../contracts/l3/world-native/target/dev/world_native_Games.contract_class.json",
-      import.meta.url,
-    );
-    if (existsSync(artifact)) {
-      const codec = new CallData(JSON.parse(readFileSync(artifact, "utf8")).abi);
-      expect(codec.compile("create_game", payload as never).length).toBeGreaterThan(0);
-    }
+    const entry = gamesAbi.find((entry) => entry.name === "create_game")!;
+    const fields = gamesAbi.find((type) => type.name === entry.inputs[0].type)!.members;
+    expect(Object.keys(params).sort()).toEqual(fields.map((field: { name: string }) => field.name).sort());
+    expect(new CallData(gamesAbi).compile("create_game", payload as never).length).toBeGreaterThan(0);
     throw new Error("lost acknowledgment");
   });
   vi.spyOn(native, "game").mockImplementation(

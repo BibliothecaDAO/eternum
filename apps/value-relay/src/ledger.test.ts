@@ -1,3 +1,4 @@
+import { ledgerCall, ledgerEvent } from "../../../packages/value-ledger/test-support/ledger-abi";
 import { Effect } from "effect";
 import { hash } from "starknet";
 import { beforeEach, expect, it, vi } from "vitest";
@@ -64,6 +65,13 @@ it("submits the published ranked result and completes an identical retry without
     entrypoint: "apply_results",
     calldata: ["0x1", "12", "7", "1", "0x123", "1"],
   });
+  expect(rpc.execute.mock.calls[0]![0].calldata.map(BigInt)).toEqual(
+    ledgerCall("apply_results", {
+      key: { shard: result.chainId, slot_id: 12 },
+      game_id: result.gameId,
+      ranked: result.rows,
+    }).map(BigInt),
+  );
   rpc.call.mockResolvedValue(game(true, result.commitment));
   await Effect.runPromise(post(result));
   expect(rpc.execute).toHaveBeenCalledTimes(1);
@@ -74,7 +82,6 @@ it("refuses a previously finalized different commitment", async () => {
   expect(rpc.execute).not.toHaveBeenCalled();
 });
 it("decodes confirmed payments and pins the event head across pagination", async () => {
-  const selector = hash.getSelectorFromName("WithdrawalPaid");
   rpc.events
     .mockResolvedValueOnce({
       events: [
@@ -83,8 +90,13 @@ it("decodes confirmed payments and pins the event head across pagination", async
           transaction_hash: "0xdef",
           block_number: 100,
           block_hash: "0xa",
-          keys: [selector, "0x1", "0xabc"],
-          data: ["7", "0x123", "5", "1"],
+          ...ledgerEvent("WithdrawalPaid", {
+            shard: 1,
+            claim_id: "0xabc",
+            season_id: 7,
+            wallet: "0x123",
+            amount: { low: 5, high: 1 },
+          }),
         },
       ],
       continuation_token: "next",
@@ -114,8 +126,13 @@ it("decodes result commitments and refuses malformed payment events", async () =
       {
         from_address: "0x10",
         transaction_hash: "0xdef",
-        keys: [hash.getSelectorFromName("ResultsApplied"), "0x1", "7"],
-        data: ["12", "1", result.commitment, "0", "0"],
+        ...ledgerEvent("ResultsApplied", {
+          key: { shard: 1, game_id: 7 },
+          slot_id: 12,
+          season_id: 1,
+          result_commitment: result.commitment,
+          pool: { low: 0, high: 0 },
+        }),
       },
     ],
   });

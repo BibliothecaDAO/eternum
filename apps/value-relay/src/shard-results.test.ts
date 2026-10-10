@@ -1,3 +1,4 @@
+import { gamesAbi as abi, response, hex } from "../../../packages/value-ledger/test-support/abi";
 import { Effect } from "effect";
 import { beforeEach, expect, it, vi } from "vitest";
 import { blitzCommitment } from "@realms-world/value-ledger/commitment";
@@ -20,36 +21,11 @@ const row = (): ValueRow => ({
   model: "BlitzResult",
   keys: ["7"],
   transactionHash: "0xabc",
-  values: ["3", "0x123", "1", "0x456", "1", "0x789", "3", "1", result.commitment],
+  values: response(abi, "blitz_result", { players: rows, complete: true, commitment: result.commitment }).map(hex),
 });
 const reader = () => new ShardReader({ chainId: "0x1", gamesAddress: "0x10", rpcUrl: "https://shard.test/rpc" });
-const ranked = {
-  type: "struct",
-  name: "world_native::blitz_results::RankedPlayer",
-  members: [
-    { name: "wallet", type: "core::starknet::contract_address::ContractAddress" },
-    { name: "rank", type: "core::integer::u16" },
-  ],
-};
-const record = {
-  type: "struct",
-  name: "world_native::blitz_results::BlitzResult",
-  members: [
-    { name: "players", type: `core::array::Span::<${ranked.name}>` },
-    { name: "complete", type: "core::bool" },
-    { name: "commitment", type: "core::felt252" },
-  ],
-};
-const abi = [
-  ranked,
-  record,
-  {
-    type: "function",
-    name: "blitz_result",
-    inputs: [{ name: "game_id", type: "core::integer::u32" }],
-    outputs: [{ type: record.name }],
-  },
-];
+const ranked = abi.find((entry) => entry.name === "world_native::blitz_results::RankedPlayer")!;
+const record = abi.find((entry) => entry.name === "world_native::blitz_results::BlitzResult")!;
 beforeEach(() => {
   vi.clearAllMocks();
   rpc.chain.mockResolvedValue("0x1");
@@ -130,7 +106,7 @@ it("refuses the previous account/points result ABI even when the raw record is e
           { name: "rank", type: "u16" },
         ],
       },
-      abi[2],
+      abi.find((entry) => entry.name === "blitz_result"),
     ],
   });
   rpc.call.mockResolvedValue(["0", "0", "0x0"]);

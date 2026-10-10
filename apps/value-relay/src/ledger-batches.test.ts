@@ -1,3 +1,4 @@
+import { ledgerCall } from "../../../packages/value-ledger/test-support/ledger-abi";
 import { Effect } from "effect";
 import { beforeEach, expect, it, vi } from "vitest";
 import { ledgerBatches } from "./ledger-batches";
@@ -69,6 +70,20 @@ it("reports a full page in one confirmed transaction and pays it in a separate m
   await Effect.runPromise(batch.payMany(claims.map((withdrawal) => ({ withdrawal, wallet: "0x123" }))));
   expect(rpc.execute).toHaveBeenCalledTimes(2);
   expect(rpc.execute.mock.calls[1]![0]).toHaveLength(100);
+  for (const [index, claim] of claims.entries()) {
+    const args = {
+      shard: claim.chainId,
+      season_id: claim.seasonId,
+      claim_id: claim.transactionHash,
+      amount: { low: claim.amount, high: 0 },
+    };
+    expect(rpc.execute.mock.calls[0]![0][index].calldata.map(BigInt)).toEqual(
+      ledgerCall("report_withdrawal", args).map(BigInt),
+    );
+    expect(rpc.execute.mock.calls[1]![0][index].calldata.map(BigInt)).toEqual(
+      ledgerCall("pay", { ...args, wallet: "0x123" }).map(BigInt),
+    );
+  }
   expect(journal).toHaveBeenCalledWith(
     expect.arrayContaining([expect.objectContaining({ claimId: "0x1", transactionHash: "0xabc", wallet: "0x123" })]),
   );

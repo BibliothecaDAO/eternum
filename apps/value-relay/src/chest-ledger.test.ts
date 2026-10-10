@@ -1,8 +1,8 @@
+import { ledgerCall, ledgerEvent } from "../../../packages/value-ledger/test-support/ledger-abi";
 import { Effect } from "effect";
 import { beforeEach, expect, it, vi } from "vitest";
 import { chestLedgerReads, finishChestOnLedger } from "./chest-ledger";
 import { ledgerChestChanges } from "./ledger";
-import { hash } from "starknet";
 const rpc = vi.hoisted(() => ({
   call: vi.fn(),
   execute: vi.fn(),
@@ -45,7 +45,7 @@ it("finishes the original token with no caller-supplied draw or recipient and ma
   expect(rpc.execute).toHaveBeenCalledWith({
     contractAddress: "0x10",
     entrypoint: "open_finish",
-    calldata: ["7", "1"],
+    calldata: ledgerCall("open_finish", { token_id: { low: 7, high: 1 } }),
   });
   expect(rpc.wait).toHaveBeenCalledWith("0xabc");
   rpc.call.mockResolvedValue(["1", "1", "2", "1", "1", "0x123", "100"]);
@@ -61,11 +61,17 @@ it("keeps reverted or malformed chest finishes unsuccessful", async () => {
 it("decodes both lifecycle events from the durable completed-block boundary", async () => {
   rpc.events.mockResolvedValue({
     events: [
-      { from_address: "0x10", keys: [hash.getSelectorFromName("ChestRequested"), "7", "0", "0x123"], data: ["100"] },
       {
         from_address: "0x10",
-        keys: [hash.getSelectorFromName("ChestOpened"), "7", "0", "0x123"],
-        data: ["1", "0", "0", "0"],
+        ...ledgerEvent("ChestRequested", { token_id: { low: 7, high: 0 }, wallet: "0x123", request_block: 100 }),
+      },
+      {
+        from_address: "0x10",
+        ...ledgerEvent("ChestOpened", {
+          token_id: { low: 7, high: 0 },
+          wallet: "0x123",
+          content: { kind: 1, cosmetic: 0, lords: { low: 0, high: 0 } },
+        }),
       },
     ],
   });
