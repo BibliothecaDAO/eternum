@@ -2240,6 +2240,11 @@ fn setup_frontier_chests_with_rules(
     discovery: Option<crate::expeditions::FrontierDiscoveryRules>,
 ) -> (super::Deployment, u32, ExplorerKey) {
     let (_, frontier) = super::preset_projection::current_definition("frontier");
+    setup_frontier_chests_with_preset(discovery, frontier)
+}
+fn setup_frontier_chests_with_preset(
+    discovery: Option<crate::expeditions::FrontierDiscoveryRules>, frontier: PresetDefinition,
+) -> (super::Deployment, u32, ExplorerKey) {
     let chests = frontier.economy.chests.unwrap();
     let ground = *frontier.settlement.depths.at(0).chest;
     let d = setup();
@@ -2354,6 +2359,71 @@ fn setup_frontier_chests_with_rules(
     let structures = IStructureOperationsDispatcher { contract_address: d.games };
     let explorer_id = *structures.home_armies(home).at(0);
     (d, game_id, ExplorerKey { game_id, explorer_id })
+}
+
+pub fn assert_zero_pool_never_funds_a_ruin_or_payout_over_a_day() {
+    let (_, mut frontier) = super::preset_projection::current_definition("frontier");
+    frontier.economy.chests = Some(crate::relics::ChestRules { pool: 0, ..frontier.economy.chests.unwrap() });
+    let rules = crate::expeditions::FrontierDiscoveryRules {
+        stragglers_bps: 1, camp_bps: 0, rift_bps: 0, ruin_bps: 8000, shrine_bps: 0, well_bps: 0, empty_reveal_limit: 7,
+    };
+    // The fixture registers preset 1: zero funding is not a behavior tied to the deployment-check id.
+    let (d, game_id, key) = setup_frontier_chests_with_preset(Some(rules), frontier);
+    let context = crate::tests::context(d.games, game_id);
+    let clock = crate::logic::lords_budget::SeasonClock {
+        game: context.game.unbox(),
+        day_unit_seconds: context.rules.unbox().day_unit_seconds,
+        tick: context.rules.unbox().tick_config.armies_tick_in_seconds,
+    };
+    let day = crate::days::day_of(clock.game, clock.day_unit_seconds, 352);
+    let resources = IResourceOperationsDispatcher { contract_address: d.games };
+    let army = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
+    let lords = ResourceSlot { game_id, entity_id: army.owner, resource_type: crate::resources::LORDS };
+    let before = resources.resource_balance(lords);
+    let relics = IRelicsDispatcher { contract_address: d.games };
+    let chests = relics.chest_rules(game_id).unwrap();
+    assert_eq!(chests.pool, 0);
+    assert_eq!(crate::logic::lords_budget::unlocked(chests, clock, day.index), 0);
+    let mut spy = snforge_std::spy_events();
+    let mut time = 352_u64;
+    let mut attempts = 0_u8;
+    let mut rolled_shares = 0;
+    loop {
+        let army = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
+        let raw_root = discovery_root(
+            game_id,
+            clock.game.seed,
+            rules,
+            attempts,
+            Some(any_chest()),
+            crate::discovery::Discovery::Ruin(any_chest()),
+        );
+        assert!(explore_with_root(d, game_id, key.explorer_id, raw_root, time));
+        let tile = crate::geometry::tile_key(game_id, crate::geometry::neighbor(army.coord, 0));
+        assert_eq!(snforge_std::interact_with_state(d.games, || crate::map::structure_occupant(tile)), None);
+        let budget = relics.lords_budget(game_id).unwrap();
+        assert_eq!((budget.day, budget.pool_left, budget.open), (day.index, 0, 0));
+        assert!(budget.price >= 1 && budget.rolled_shares > rolled_shares);
+        assert_eq!(crate::logic::lords_budget::available(chests, budget, clock), 0);
+        assert!(!crate::logic::lords_budget::fits(chests, budget, clock, 1));
+        assert_eq!(resources.resource_balance(lords), before);
+        rolled_shares = budget.rolled_shares;
+        attempts += 1;
+        if time == day.end - 1 {
+            break;
+        }
+        time = core::cmp::min(time + clock.tick, day.end - 1);
+    }
+    for (_, event) in spy.get_events().emitted_by(d.games).events.span() {
+        if *event.keys.at(0) == selector!("StoryEvent") {
+            let mut keys = event.keys.span().slice(1, event.keys.len() - 1);
+            let mut data = event.data.span();
+            let story: crate::ownership::StoryEvent = starknet::Event::deserialize(ref keys, ref data).unwrap();
+            if let crate::ownership::Story::SitePayout(_) = story.story {
+                panic!("zero-pool site paid LORDS");
+            }
+        }
+    }
 }
 
 // Any chest a draw can carry; its tier and amount never change the draw.

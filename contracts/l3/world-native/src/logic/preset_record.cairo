@@ -402,7 +402,7 @@ fn write_relics(
             game_rules.day_unit_seconds != 0 && crate::rules::rule_enabled(game_rules, crate::rules::DEPTH_CONTENTS),
             "chest tables require depth rules",
         );
-        assert!(value.pool != 0 && value.price_ceiling != 0 && value.estimate_days != 0, "empty chest rules");
+        assert!(value.price_ceiling != 0 && value.estimate_days != 0, "empty chest rules");
         let shares = value.shares;
         assert!(
             shares.common != 0
