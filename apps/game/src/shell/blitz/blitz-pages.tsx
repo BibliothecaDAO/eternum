@@ -69,8 +69,8 @@ export const BlitzListPage = () => {
 
 /** Beside the desktop's rows: the next slot taking players, as its lobby shows it, with its one step. */
 const NextLobby = ({ facts }: { facts: PlayFacts }) => {
-  const row = facts.blitz.find((candidate) => candidate.kind === "slot");
-  if (!row) return null;
+  const row = facts.blitz.find((candidate) => candidate.kind === "slot" && candidate.action === "open");
+  if (row?.kind !== "slot") return null;
   const step = lobbyStep(row);
   return (
     <section className="plate flex flex-col gap-4 p-5">
