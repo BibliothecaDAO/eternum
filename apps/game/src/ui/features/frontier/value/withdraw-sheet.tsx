@@ -21,7 +21,7 @@ import {
   paidWhenResumed,
 } from "@/ui/design-system/kit/words";
 
-import type { PayoutWallet } from "@/hooks/context/payout-wallet";
+import type { PayoutWallet } from "@realms-world/identity";
 
 /**
  * Where a withdrawal stands: choosing the amount, sent (the LORDS have left the game's count), paid on Starknet with its

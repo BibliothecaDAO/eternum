@@ -13,19 +13,12 @@ import { useLayout } from "../frame/layout";
 import { Loading } from "../loading";
 import { CodeBoxes } from "../sign-in/fields";
 import { WALLET_WORDS } from "../words";
-import { holdShare, type PayoutWallet } from "@/hooks/context/payout-wallet";
+import type { PayoutWallet } from "@realms-world/identity";
+import { holdShare } from "@/hooks/context/payout-wallet";
 
 const WalletPicker = lazy(() =>
   import("@/ui/modules/identity/wallet-actions").then((module) => ({ default: module.WalletPicker })),
 );
-
-// The identity service's wallet changes, each proven by the code it emailed, typed as the service takes them. The
-// identity client on this trunk does not take the code yet; once the services branch is in, its own signature matches
-// this one and this typed view of it goes.
-const walletChanges: {
-  linkWallet: (options: SignInOptions & { code: string }) => Promise<string>;
-  unlinkWallet: (code: string) => Promise<void>;
-} = identityClient;
 
 /** Ready's extension in this browser's store. */
 const READY_EXTENSION = navigator.userAgent.includes("Firefox")
@@ -243,8 +236,8 @@ const CodeStep = ({ change, email, onDone }: { change: Change; email: string; on
     setBusy(true);
     setError(null);
     try {
-      if (change.kind === "link") await walletChanges.linkWallet({ ...change.proof, code: entered });
-      else await walletChanges.unlinkWallet(entered);
+      if (change.kind === "link") await identityClient.linkWallet({ ...change.proof, code: entered });
+      else await identityClient.unlinkWallet(entered);
       onDone();
     } catch (cause) {
       setError(failureSentence(change.kind, cause));

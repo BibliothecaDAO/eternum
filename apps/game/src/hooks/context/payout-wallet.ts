@@ -1,18 +1,12 @@
+import type { IdentityUser, PayoutWallet } from "@realms-world/identity";
+
 /**
  * The account's payout wallet as the identity service reports it on the session (user.payoutWallet): none, linked and
- * held for 24 hours after a change, or ready to receive. Times are Unix milliseconds. One type for the account page
- * and the match. Every wallet change needs the emailed code; a session without a valid payout wallet is an identity
- * fault the account page shows, never a way back to an uncoded link.
+ * held for 24 hours after a change, or ready to receive. The one guard on it: a session without a valid payout wallet
+ * is an identity fault the account page shows, never a way back to an uncoded link.
  */
-export type PayoutWallet =
-  | { status: "no_wallet" }
-  | { status: "on_hold"; address: string; until: number }
-  | { status: "ready"; address: string };
-
-export const payoutWalletOf = (user: object): PayoutWallet | null => {
-  const wallet = (user as { payoutWallet?: unknown }).payoutWallet;
-  return isPayoutWallet(wallet) ? wallet : null;
-};
+export const payoutWalletOf = (user: IdentityUser): PayoutWallet | null =>
+  isPayoutWallet(user.payoutWallet) ? user.payoutWallet : null;
 
 const isPayoutWallet = (value: unknown): value is PayoutWallet => {
   if (typeof value !== "object" || value === null) return false;

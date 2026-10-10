@@ -4,6 +4,22 @@ import { afterEach, expect, it, vi } from "vitest";
 
 vi.hoisted(() => vi.stubGlobal("fetch", async () => new Response(null, { status: 401 })));
 
+/** The wallet chunk's picker, standing in for a connected wallet that gives its SIWS proof. */
+const PROOF = vi.hoisted(() => ({
+  address: "0x4a1",
+  chainId: "SN_MAIN" as const,
+  domain: "realms.test",
+  uri: "https://realms.test",
+  signTypedData: async () => ["0x1", "0x2"],
+}));
+vi.mock("@/ui/modules/identity/wallet-actions", () => ({
+  WalletPicker: ({ onProof }: { onProof: (proof: typeof PROOF) => void }) => (
+    <button type="button" onClick={() => onProof(PROOF)}>
+      Pick wallet
+    </button>
+  ),
+}));
+
 import { identityClient } from "@/hooks/context/identity-session";
 import { IdentityRequestError } from "@realms-world/identity";
 
@@ -82,3 +98,25 @@ it("unlinks only with the emailed code, and names a wrong code", async () => {
   expect(unlink).toHaveBeenLastCalledWith("111111");
   expect(onChanged).toHaveBeenCalledOnce();
 });
+
+it("links a wallet with its SIWS proof and the emailed code, through the services' identity client", async () => {
+  vi.spyOn(identityClient, "sendSignInCode").mockResolvedValue({ success: true, expires_at: 0 });
+  const link = vi.spyOn(identityClient, "linkWallet").mockResolvedValue("0x4a1");
+  const onChanged = vi.fn();
+  const panel = await mount({ status: "no_wallet" }, onChanged);
+
+  await act(async () =>
+    [...panel.querySelectorAll("button")].find((button) => button.textContent?.includes("I have a wallet"))!.click(),
+  );
+  await act(async () => (await vi.waitFor(() => screenButton(panel, "Pick wallet"))).click());
+  expect(panel.textContent).toContain("Code sent to you@mail.test");
+  await typeCode(panel, "123456");
+  expect(link).toHaveBeenCalledWith({ ...PROOF, code: "123456" });
+  expect(onChanged).toHaveBeenCalledOnce();
+});
+
+const screenButton = (container: HTMLElement, word: string) => {
+  const button = [...container.querySelectorAll("button")].find((candidate) => candidate.textContent === word);
+  if (!button) throw new Error(`No ${word} button yet`);
+  return button;
+};
