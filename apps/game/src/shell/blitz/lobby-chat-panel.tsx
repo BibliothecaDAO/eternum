@@ -1,6 +1,7 @@
 import { type FormEvent, useEffect, useRef, useState } from "react";
 
 import { useIdentitySession } from "@/hooks/context/identity-session";
+import type { PlaytestSlot } from "@/ui/features/factory-v2/api/factory-worker";
 import { YOU } from "@/ui/design-system/kit/words";
 import type { WorldChatMessage } from "@bibliothecadao/types";
 import { displayPlayerName } from "@bibliothecadao/eternum";
@@ -25,8 +26,14 @@ const HOLD_LINES: Partial<Record<ChatHold, string>> = {
  * the top, read by any signed-in player, and the field for one the room lets write (a player registered in the slot),
  * Enter or the keyboard's Send sending. A reader sees no field.
  */
-export const LobbyChatPanel = ({ slotName, membership }: { slotName: string; membership: string }) => {
-  const chat = useLobbyChat(slotName, membership);
+export const LobbyChatPanel = ({
+  slot,
+  membership,
+}: {
+  slot: Pick<PlaytestSlot, "chainId" | "name">;
+  membership: string;
+}) => {
+  const chat = useLobbyChat(slot, membership);
   return (
     <Panel icon="Ct" title={CHAT_WORDS.chat}>
       {chat.hold === "signed-out" ? (

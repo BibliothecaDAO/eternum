@@ -32,7 +32,7 @@ class FakeRoom extends EventTarget {
 const message = (id: string, playerId: string, content: string, minute: number) => ({
   id,
   sender: { playerId, displayName: playerId === "0x64" ? "Aldric" : undefined },
-  zoneId: "slot:blitz-1630",
+  zoneId: "slot:0x52:blitz-1630",
   content,
   createdAt: new Date(Date.UTC(2026, 9, 8, 16, minute)).toISOString(),
 });
@@ -64,7 +64,7 @@ const mount = async (membership = "0x4a1:false:0:false") => {
     act(async () =>
       root.render(
         <QueryClientProvider client={client}>
-          <LobbyChatPanel slotName="blitz-1630" membership={current} />
+          <LobbyChatPanel slot={{ chainId: "0x052", name: "blitz-1630" }} membership={current} />
         </QueryClientProvider>,
       ),
     );
@@ -81,7 +81,7 @@ const mount = async (membership = "0x4a1:false:0:false") => {
 
 it("reads the history and the room as one list, oldest first, each message once, the reader's own as You", async () => {
   const chat = await mount();
-  expect(FakeRoom.last?.url).toContain("/api/chat/rooms/slot%3Ablitz-1630");
+  expect(FakeRoom.last?.url).toContain("/api/chat/rooms/slot%3A0x52%3Ablitz-1630");
   await act(async () =>
     FakeRoom.last!.deliver({ type: "world:message", message: message("b", "0x7", "on my way", 2) }),
   );
@@ -92,9 +92,13 @@ it("reads the history and the room as one list, oldest first, each message once,
 it("shows the field only once the room says this reader may write, and sends the message to the slot's room", async () => {
   const chat = await mount();
   expect(chat.field()).toBeNull();
-  await act(async () => FakeRoom.last!.deliver({ type: "joined:zone", zoneId: "slot:blitz-1630", canWrite: false }));
+  await act(async () =>
+    FakeRoom.last!.deliver({ type: "joined:zone", zoneId: "slot:0x52:blitz-1630", canWrite: false }),
+  );
   expect(chat.field()).toBeNull();
-  await act(async () => FakeRoom.last!.deliver({ type: "joined:zone", zoneId: "slot:blitz-1630", canWrite: true }));
+  await act(async () =>
+    FakeRoom.last!.deliver({ type: "joined:zone", zoneId: "slot:0x52:blitz-1630", canWrite: true }),
+  );
   const field = chat.field()!;
   await act(async () => {
     Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(field, "hold the east");
@@ -103,8 +107,8 @@ it("shows the field only once the room says this reader may write, and sends the
   await act(async () => field.form!.requestSubmit());
   expect(JSON.parse(FakeRoom.last!.sent[0])).toMatchObject({
     type: "world:publish",
-    zoneId: "slot:blitz-1630",
-    payload: { zoneId: "slot:blitz-1630", content: "hold the east" },
+    zoneId: "slot:0x52:blitz-1630",
+    payload: { zoneId: "slot:0x52:blitz-1630", content: "hold the east" },
   });
   // The room refusing a writer whose registration is gone takes the field away; nothing is elevated here.
   await act(async () => FakeRoom.last!.deliver({ type: "error", code: "registration_required" }));
@@ -114,13 +118,17 @@ it("shows the field only once the room says this reader may write, and sends the
 it("opens the room again when the wallet's registration changes, since the room decides its writers at the open", async () => {
   FakeRoom.opened = 0;
   const chat = await mount("0x4a1:false:0:false");
-  await act(async () => FakeRoom.last!.deliver({ type: "joined:zone", zoneId: "slot:blitz-1630", canWrite: false }));
+  await act(async () =>
+    FakeRoom.last!.deliver({ type: "joined:zone", zoneId: "slot:0x52:blitz-1630", canWrite: false }),
+  );
   expect(FakeRoom.opened).toBe(1);
   await chat.rerender("0x4a1:true:500:false");
   expect(FakeRoom.opened).toBe(2);
   // The room that was replaced closing is no failure of the chat.
   expect(chat.text()).not.toContain("did not answer");
-  await act(async () => FakeRoom.last!.deliver({ type: "joined:zone", zoneId: "slot:blitz-1630", canWrite: true }));
+  await act(async () =>
+    FakeRoom.last!.deliver({ type: "joined:zone", zoneId: "slot:0x52:blitz-1630", canWrite: true }),
+  );
   expect(chat.field()).not.toBeNull();
 });
 

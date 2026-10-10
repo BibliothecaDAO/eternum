@@ -294,8 +294,7 @@ const LobbyAction = ({ row, step, desktop }: { row: BlitzRow; step: LobbyStep; d
 const SlotChat = ({ slot, wallet }: { slot: PlaytestSlot; wallet: PayoutWallet | null }) => {
   const ledger = environmentLedger();
   const address = wallet && wallet.status !== "no_wallet" ? wallet.address : null;
-  if (!ledger || !address)
-    return <LobbyChatPanel slotName={slot.name} membership={chatMembershipOf(address, undefined)} />;
+  if (!ledger || !address) return <LobbyChatPanel slot={slot} membership={chatMembershipOf(address, undefined)} />;
   return <RegistrantChat ledger={ledger} slot={slot} address={address} />;
 };
 
@@ -308,8 +307,8 @@ const RegistrantChat = ({
   slot: PlaytestSlot;
   address: string;
 }) => {
-  const registration = useEntryTerms(ledger, slotKeyOf(slot), address).data?.registration;
-  return <LobbyChatPanel slotName={slot.name} membership={chatMembershipOf(address, registration)} />;
+  const terms = useEntryTerms(ledger, slotKeyOf(slot), address).data;
+  return <LobbyChatPanel slot={slot} membership={chatMembershipOf(address, terms)} />;
 };
 
 /**

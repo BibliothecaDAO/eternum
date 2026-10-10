@@ -137,11 +137,21 @@ const readRefundOwed = async (ledger: EnvironmentLedger, key: SlotKey, wallet: s
 };
 
 /**
- * What a slot's chat room took its write decision on: the payout wallet and its registration there (unread counts as
- * none). The lobby opens the room again when it changes; the decision itself stays the server's.
+ * What a slot's chat room took its write decision on: the payout wallet, its registration in the slot and whether the
+ * slot is cancelled (unread counts as none). The lobby opens the room again when it changes; the decision itself stays
+ * the server's.
  */
-export const chatMembershipOf = (wallet: string | null, registration: Registration | undefined): string =>
-  [wallet, registration?.registered ?? false, registration?.paid ?? 0n, registration?.refundable ?? false].join(":");
+export const chatMembershipOf = (
+  wallet: string | null,
+  terms: Pick<EntryTerms, "registration" | "cancelled"> | undefined,
+): string =>
+  [
+    wallet,
+    terms?.registration.registered ?? false,
+    terms?.registration.paid ?? 0n,
+    terms?.registration.refundable ?? false,
+    terms?.cancelled ?? false,
+  ].join(":");
 
 export const slotRegisteredKey = (key: SlotKey) => ["ledger", "registered", key.shard, key.slotId] as const;
 

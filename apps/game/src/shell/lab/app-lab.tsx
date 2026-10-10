@@ -174,26 +174,31 @@ const answerIdentity = () => {
  * room would broadcast it. Any other socket opens as before.
  */
 const answerLobbyChat = (screen: LabScreen) => {
+  const LAB_ROOM = `slot:${LAB_CHAIN}:blitz-1630`;
   const Network = window.WebSocket;
   // As the chat Worker decides at the open: a wallet registered in the slot, and not refunded, writes.
   const registration = LAB_ENTRY_TERMS[screen]?.registration;
-  const canWrite = registration?.registered === true && registration.paid > 0n && !registration.refundable;
+  const canWrite =
+    LAB_ENTRY_TERMS[screen]?.cancelled !== true &&
+    registration?.registered === true &&
+    registration.paid > 0n &&
+    !registration.refundable;
   class LabRoom extends EventTarget {
     readyState = 1;
     constructor() {
       super();
-      setTimeout(() => this.#emit({ type: "joined:zone", zoneId: "slot:blitz-1630", canWrite }), 50);
+      setTimeout(() => this.#emit({ type: "joined:zone", zoneId: LAB_ROOM, canWrite }), 50);
     }
     send(data: string) {
       const sent = JSON.parse(data) as { payload: { content: string }; clientMessageId?: string };
       const message = {
         id: sent.clientMessageId ?? String(Date.now()),
         sender: { playerId: LAB_SESSION.user.realmsId, displayName: LAB_SESSION.user.name },
-        zoneId: "slot:blitz-1630",
+        zoneId: LAB_ROOM,
         content: sent.payload.content,
         createdAt: new Date().toISOString(),
       };
-      this.#emit({ type: "world:message", zoneId: "slot:blitz-1630", message });
+      this.#emit({ type: "world:message", zoneId: LAB_ROOM, message });
     }
     close() {
       this.readyState = 3;
