@@ -155,7 +155,6 @@ export interface MonitorPorts {
   ledger: {
     paidClaims(after: string | null, fromBlock?: number): RelayEffect<LedgerPage<PaidClaim>>;
     postedResults(after: string | null, fromBlock?: number): RelayEffect<LedgerPage<BlitzCommitment>>;
-    auditSeasons(): RelayEffect<string | null>;
     pause(): RelayEffect<void>;
   };
 }

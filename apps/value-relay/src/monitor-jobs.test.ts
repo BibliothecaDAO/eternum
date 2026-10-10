@@ -59,7 +59,13 @@ it("publishes chest warnings and a failed value read independently, without a gr
 it("reports a fresh completed audit as healthy, and refuses stale or paused progress", async () => {
   const f = fixture();
   const checked_at = Math.floor(Date.now() / 1000);
-  const observation = { checked_at, value: { halted: null }, value_error: null, chests: { overdue: [], pending: 0 } };
+  const observation = {
+    checked_at,
+    value: { halted: null },
+    value_error: null,
+    season_error: null,
+    chests: { overdue: [], pending: 0 },
+  };
   f.data.set("observation", observation);
   expect((await f.monitor.health()).success).toBe(true);
   f.data.set("progress", { halted: "lords_conservation:7:10" });

@@ -97,3 +97,5 @@ export interface LedgerRosterSnapshot {
 
 export { activeShards, requireActiveChain, readRegisteredShard } from "./official-shards";
 export type { ShardDirectory, RegisteredShard } from "./official-shards";
+
+export { computeSeasonTop } from "./season-top";

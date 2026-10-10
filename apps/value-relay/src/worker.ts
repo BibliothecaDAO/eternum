@@ -86,6 +86,9 @@ export class ValueRelay extends DurableObject<RelayEnv> {
                     "post",
                     {
                       ...seasonLedgerReads(ledgerCredentialsOf(relay.env)),
+                      challenge: async () => {
+                        throw new Error("relay_cannot_challenge");
+                      },
                       post: (id, wallets) =>
                         Effect.runPromise(
                           relay.ledgerPermit(
@@ -160,7 +163,7 @@ export class ValueRelay extends DurableObject<RelayEnv> {
     if (bound && BigInt(bound) !== BigInt(chainId)) throw new Error("actor_chain_differs");
     await requireActiveChain(this.env.IDENTITY, chainId);
     const shard = await readRegisteredShard(this.env.IDENTITY, chainId);
-    return relayPortsOf(this.env, this.ctx.storage, shard);
+    return relayPortsOf(this.env, shard);
   }
   reportMany(rows: readonly import("./ports").Withdrawal[]) {
     return Effect.runPromise(
@@ -355,11 +358,7 @@ const connectionOf = (shard: Awaited<ReturnType<typeof readRegisteredShard>>) =>
   gamesAddress: shard.contracts.games!,
   chainId: shard.chainId,
 });
-const relayPortsOf = (
-  env: RelayEnv,
-  storage: DurableObjectStorage,
-  shard: Awaited<ReturnType<typeof readRegisteredShard>>,
-): RelayPorts => {
+const relayPortsOf = (env: RelayEnv, shard: Awaited<ReturnType<typeof readRegisteredShard>>): RelayPorts => {
   const reader = new ShardReader(connectionOf(shard));
   return {
     identity: identityAdapter(env.IDENTITY),

@@ -1,6 +1,6 @@
 import { activeShards, readRegisteredShard, type ShardDirectory } from "@realms-world/value-ledger";
 import { processSeasonTops } from "./season-tops";
-import { seasonLedgerReads } from "./season-ledger";
+import { seasonLedgerReads, challengeSeason } from "./season-ledger";
 import { onIdentityChain } from "./ledger-chain";
 import { presentsOperatorToken } from "@realms-world/identity";
 import { chestLedgerReads } from "./chest-ledger";
@@ -53,6 +53,17 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
                         rpcUrl: monitor.env.LEDGER_RPC_URL,
                         contractAddress: monitor.env.LEDGER_ADDRESS,
                       }),
+                      challenge: (id, omitted) =>
+                        challengeSeason(
+                          {
+                            rpcUrl: monitor.env.LEDGER_RPC_URL,
+                            contractAddress: monitor.env.LEDGER_ADDRESS,
+                            accountAddress: monitor.env.PAUSER_ACCOUNT_ADDRESS,
+                            privateKey: monitor.env.PAUSER_PRIVATE_KEY,
+                          },
+                          id,
+                          omitted,
+                        ),
                       post: async () => {
                         throw new Error("monitor_cannot_post");
                       },
@@ -63,9 +74,7 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
               ),
             ),
           );
-          const ports = monitorPortsOf(monitor.env, monitor.ctx.storage, () =>
-            Result.isSuccess(seasonAudit) ? Effect.succeed(seasonAudit.success) : Effect.fail(seasonAudit.failure),
-          );
+          const ports = monitorPortsOf(monitor.env, monitor.ctx.storage);
           const value = yield* Effect.result(
             onIdentityChain(
               monitor.env.LEDGER_RPC_URL,
@@ -92,6 +101,7 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
           const observation = {
             checked_at: Math.floor(Date.now() / 1000),
             value: Result.isSuccess(value) ? value.success : null,
+            season_error: Result.isSuccess(seasonAudit) ? seasonAudit.success : seasonAudit.failure.operation,
             value_error: Result.isFailure(value) ? value.failure.operation : null,
             chests: Result.isSuccess(chests) ? chests.success : null,
             held: Result.isSuccess(held) ? held.success : null,
@@ -108,6 +118,7 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
       value: MonitorProgress | null;
       chests: { overdue: string[]; pending: number } | null;
       value_error: string | null;
+      season_error: string | null;
       held?: { kind: string; reason: string; transactionHash: string | null }[] | null;
     }>("observation");
     const progress = await this.status();
@@ -121,6 +132,7 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
         observation?.value !== null &&
         observation?.value !== undefined &&
         observation.chests !== null &&
+        observation.season_error === null &&
         !progress.halted,
     };
   }
@@ -195,11 +207,7 @@ const legacyFault = async (
   };
 };
 
-const monitorPortsOf = (
-  env: MonitorEnv,
-  storage: DurableObjectStorage,
-  auditSeasons: import("./ports").MonitorPorts["ledger"]["auditSeasons"],
-) => {
+const monitorPortsOf = (env: MonitorEnv, storage: DurableObjectStorage) => {
   const shardPorts = async (chainId: string) => {
     const shard = await readRegisteredShard(env.IDENTITY, chainId);
     const reader = new ShardReader({
@@ -247,7 +255,6 @@ const monitorPortsOf = (
     },
     ledger: {
       ...ledgerMonitorReads(env.LEDGER_RPC_URL, env.LEDGER_ADDRESS),
-      auditSeasons,
       pause: ledgerPauserAdapter({
         rpcUrl: env.LEDGER_RPC_URL,
         contractAddress: env.LEDGER_ADDRESS,

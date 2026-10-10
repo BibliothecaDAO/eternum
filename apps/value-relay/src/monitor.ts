@@ -42,12 +42,7 @@ export const runMonitor = (ports: MonitorPorts, store: MonitorStore) =>
       return progress;
     }
     yield* relayOperation("start exact row audit", () => store.save({ ...progress, fault: null }));
-    const checks = [
-      checkSeasonTops(ports, store),
-      checkConservation(ports, store),
-      checkPaidClaims(ports, store),
-      checkPostedResults(ports, store),
-    ];
+    const checks = [checkConservation(ports, store), checkPaidClaims(ports, store), checkPostedResults(ports, store)];
     let unavailable: RelayFailure | null = null;
     for (const check of checks) {
       const observation = yield* Effect.result(check);
@@ -69,13 +64,6 @@ export const runMonitor = (ports: MonitorPorts, store: MonitorStore) =>
       return verified;
     }
     return yield* relayOperation("read checked monitor progress", () => store.load());
-  });
-
-const checkSeasonTops = (ports: MonitorPorts, store: MonitorStore) =>
-  Effect.gen(function* () {
-    const fault = yield* ports.ledger.auditSeasons();
-    if (fault) yield* recordFault(store, { row: fault });
-    return fault;
   });
 
 const checkConservation = (ports: MonitorPorts, store: MonitorStore) =>

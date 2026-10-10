@@ -34,19 +34,20 @@ No signing key belongs on a shard host.
 ## Restored shard recovery
 
 `POST /api/value/operator/reset` requires the operator bearer token and `{chainId,row,reason}`. It walks down to a
-retained hash still matching the restored chain, checks that anchor again, drops queued rows and economic caches above
-the fork, records already-paid claims from discarded blocks, and replays from fork + 1. If no anchor survives, replay
-starts at genesis. A changed anchor refuses reset. The ledger's claim identity prevents a second payment.
+retained hash still matching the restored chain, checks that anchor again, drops queued rows above the fork and all
+legacy economic memos, records already-paid claims from discarded blocks, and replays from fork + 1. If no anchor
+survives, replay starts at genesis. A changed anchor refuses reset. The ledger's claim identity prevents a second
+payment.
 
 `POST /api/operator/monitor/reset` requires `{row,reason}` and the operator token. It records the exact fault and
 advances past only that row. An availability reset retries its checkpoint. Neither reset unpauses the ledger.
 
 ## Season prizes and mystery chests
 
-At season end the relay builds the top list from frozen seasonal MMR, posts 32-wallet batches and advances allocation in
-32-position steps. The monitor independently checks every participant and winner before the one-hour review ends. Event
-cursors, participant rows and a sorted index replace an unbounded population scan. The bounded settlement ABI must land
-with these services; no player challenge screen is needed.
+At season end the relay reads frozen seasonal MMR and posts the complete ordered top list in one transaction. The
+monitor independently computes the same list and challenges that season if a better participant was omitted. Seasonal
+read failures are reported in health without pausing Frontier payouts. Participant history is read in bounded event
+pages; rankings are computed from the ledger at one confirmed head and are not persisted.
 
 Blitz results carry ranks only. The ledger mints tradeable rank-band chests and owns their draws. Each keeper tick reads
 one 100-event page, persists its continuation and rotates through 25 unfinished requests. It calls `open_finish` once

@@ -30,6 +30,9 @@ const fixture = (count = 3) => {
     reviewUntil: 3700,
   };
   const ports: SeasonPorts = {
+    challenge: vi.fn(async () => {
+      season.challenged = true;
+    }),
     game: async () => ({ id: 1, terminal: true }),
     head: async () => ({ number: 100, hash: "0xa", time: 101 }),
     blockHash: async () => "0xa",
@@ -72,78 +75,56 @@ it("posts the complete frozen MMR top list after season end, with wallet-ordered
   for (let i = 0; i < 5; i++) await f.tick("post");
   expect(f.ports.post).toHaveBeenCalledOnce();
 });
-it("finds an omitted higher-ranked participant even in a full sorted posted list", async () => {
+it("challenges the season when a full sorted list omits a higher-ranked participant", async () => {
   const f = fixture();
   f.season.posted = true;
   f.ports.winner = async (_id, index) => (index === 0 ? "0x2" : "0x1");
-  const results = [];
-  for (let i = 0; i < 5; i++) results.push(await f.tick("audit"));
-  expect(results).toContain("season_top_mismatch:1");
+  expect(await f.tick("audit")).toBe("season_challenged:1");
+  expect(f.ports.challenge).toHaveBeenCalledWith(1, expect.any(String));
+  expect(BigInt(vi.mocked(f.ports.challenge).mock.calls[0]![1])).toBe(3n);
+  expect(f.ports.post).not.toHaveBeenCalled();
+  await f.tick("audit");
+  expect(f.ports.challenge).toHaveBeenCalledOnce();
 });
-it("bounds reads, survives recreation, and refuses to leave an incomplete audit past the review boundary", async () => {
-  const f = fixture(250);
-  f.season.posted = true;
-  f.season.topCount = 125;
-  f.ports.changes = async () => ({
-    rows: Array.from({ length: 100 }, (_, i) => ({ kind: "participant" as const, id: 1, wallet: `0x${i + 1}` })),
-    head: 100,
-    next: "more",
-  });
-  f.ports.head = async () => ({ number: 100, hash: "0xa", time: 3690 });
-  expect(await f.tick("audit")).toBe("season_top_unverified:1");
-  expect(f.ports.mmr).not.toHaveBeenCalled();
-  expect(f.ports.posts).toHaveBeenCalledOnce();
-});
-it("audits every participant rather than trusting the supplied winners", async () => {
+it("checks every participant independently and leaves a matching season alone", async () => {
   const f = fixture();
   f.season.posted = true;
   for (let i = 0; i < 5; i++) expect(await f.tick("audit")).toBeNull();
   expect(f.ports.mmr).toHaveBeenCalledTimes(3);
   expect(f.ports.winner).toHaveBeenCalledTimes(2);
+  expect(f.ports.challenge).not.toHaveBeenCalled();
 });
-
-it("resumes a large population after recreation with one event page and at most100 MMR or winner reads per tick", async () => {
-  const f = fixture(250);
-  f.season.posted = true;
-  f.season.topCount = 125;
-  for (let tick = 0; tick < 9; tick++) {
-    const mmr = vi.mocked(f.ports.mmr).mock.calls.length,
-      winners = vi.mocked(f.ports.winner).mock.calls.length;
-    expect(await Effect.runPromise(processSeasonTops("audit", { ...f.ports }, f.storage))).toBeNull();
-    expect(vi.mocked(f.ports.mmr).mock.calls.length - mmr).toBeLessThanOrEqual(100);
-    expect(vi.mocked(f.ports.winner).mock.calls.length - winners).toBeLessThanOrEqual(100);
-  }
-  expect(f.data.get("season:audit:job:1")).toMatchObject({ phase: "done", checked: 250, winnerIndex: 125 });
-});
-it("pauses while the posted-list stream has unread pages rather than missing a new review window", async () => {
+it("waits for the complete history before computing a list", async () => {
   const f = fixture();
   f.ports.posts = async () => ({ rows: [], head: 100, next: "later-posts" });
-  expect(await f.tick("audit")).toBe("season_posts_unverified:100");
+  expect(await f.tick("audit")).toBe("season_history_pending");
+  expect(f.ports.mmr).not.toHaveBeenCalled();
+  expect(f.ports.challenge).not.toHaveBeenCalled();
 });
-
-it("pauses on an RPC failure near a known list's deadline instead of waiting three more ticks", async () => {
+it("reports unavailable MMR without inventing a challenge", async () => {
   const f = fixture();
   f.season.posted = true;
-  await f.tick("audit");
-  f.ports.head = async () => ({ number: 100, hash: "0xa", time: 3690 });
-  f.ports.winner = async () => {
+  f.ports.mmr = async () => {
     throw new Error("rpc_unavailable");
   };
-  expect(await f.tick("audit")).toBe("season_top_unavailable:1");
+  await expect(f.tick("audit")).rejects.toMatchObject({ operation: "season_audit" });
+  expect(f.ports.challenge).not.toHaveBeenCalled();
 });
-
-it("posts the complete top from 2,000 participants in one transaction", async () => {
+it("posts the complete top from 2,000 participants in one transaction without retaining ratings", async () => {
   const f = fixture(2000);
   f.ports.post = vi.fn(async (_id, wallets) => {
     expect(wallets).toHaveLength(1000);
     f.season.topCount = wallets.length;
     f.season.posted = true;
   });
-  for (let tick = 0; tick < 60; tick++) await f.tick("post");
+  for (let tick = 0; tick < 25; tick++) await f.tick("post");
   expect(f.ports.post).toHaveBeenCalledOnce();
+  expect(f.ports.mmr).toHaveBeenCalledTimes(2000);
+  expect([...f.data.keys()].some((key) => key.startsWith("season:score:") || key.startsWith("season:top:"))).toBe(
+    false,
+  );
 });
-
-it("waits for every opened ledger game before publishing rather than omitting a delayed result", async () => {
+it("waits for every opened game rather than omitting a delayed result", async () => {
   const f = fixture();
   let finished = false;
   const changes = f.ports.changes;
@@ -154,10 +135,20 @@ it("waits for every opened ledger game before publishing rather than omitting a 
       rows: [...page.rows, { kind: "game" as const, id: 1, key: { chainId: "0x1", gameId: 7 }, terminal: false }],
     };
   };
-  Object.assign(f.ports, { game: async () => ({ id: 1, terminal: finished }) });
-  for (let index = 0; index < 8; index++) await f.tick("post");
+  f.ports.game = async () => ({ id: 1, terminal: finished });
+  for (let index = 0; index < 3; index++) await f.tick("post");
   expect(f.ports.post).not.toHaveBeenCalled();
   finished = true;
-  for (let index = 0; index < 8; index++) await f.tick("post");
+  await f.tick("post");
   expect(f.ports.post).toHaveBeenCalledOnce();
+});
+it("rejects incomplete population and a changed source head", async () => {
+  const f = fixture();
+  f.season.participantCount = 4;
+  await expect(f.tick("post")).rejects.toThrow();
+  expect(f.ports.post).not.toHaveBeenCalled();
+  f.season.participantCount = 3;
+  f.ports.blockHash = async () => "0xb";
+  await expect(f.tick("post")).rejects.toThrow();
+  expect(f.ports.post).not.toHaveBeenCalled();
 });

@@ -29,7 +29,6 @@ it("keeps checked-through block and page continuation across ticks without rerea
     identity: { matchesPayDecision: () => Effect.succeed(true) },
     shard: { conservation: () => Effect.succeed([]), withdrawal, result: () => Effect.succeed(null) },
     ledger: {
-      auditSeasons: () => Effect.succeed(null),
       paidClaims,
       postedResults: () => Effect.succeed({ rows: [], next: null, head: 10 }),
       pause: () => Effect.void,
@@ -74,7 +73,6 @@ it("an exact row reset skips only that claim and still faults on the next unchec
     identity: { matchesPayDecision: () => Effect.succeed(false) },
     shard: { conservation: () => Effect.succeed([]), withdrawal: checked, result: () => Effect.succeed(null) },
     ledger: {
-      auditSeasons: () => Effect.succeed(null),
       paidClaims: () => Effect.succeed({ rows, head: 10, next: null }),
       postedResults: () => Effect.succeed({ rows: [], head: 10, next: null }),
       pause: () => Effect.void,
@@ -92,22 +90,4 @@ it("an exact row reset skips only that claim and still faults on the next unchec
   await Effect.runPromise(runMonitor(ports, store));
   expect(progress.fault?.row).toBe("paidClaims:0x1:0xdef");
   expect(checked.mock.calls.map((call) => call[1])).toEqual(["0xabc", "0xdef"]);
-});
-
-it("pauses immediately on a bad or unaudited season top list and records its exact fault", async () => {
-  let progress: MonitorProgress = { halted: null };
-  const pause = vi.fn(() => Effect.void);
-  const ports = {
-    ledger: { auditSeasons: () => Effect.succeed("season_top_mismatch:7"), pause },
-  } as unknown as MonitorPorts;
-  await Effect.runPromise(
-    runMonitor(ports, {
-      load: async () => progress,
-      save: async (next) => {
-        progress = next;
-      },
-    }),
-  );
-  expect(pause).toHaveBeenCalledOnce();
-  expect(progress).toMatchObject({ halted: "season_top_mismatch:7", fault: { row: "season_top_mismatch:7" } });
 });

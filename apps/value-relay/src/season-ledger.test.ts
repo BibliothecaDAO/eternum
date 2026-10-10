@@ -1,6 +1,6 @@
 import { beforeEach, expect, it, vi } from "vitest";
 import { hash } from "starknet";
-import { seasonLedgerReads, postSeasonTop } from "./season-ledger";
+import { seasonLedgerReads, postSeasonTop, challengeSeason } from "./season-ledger";
 const rpc = vi.hoisted(() => ({ block: vi.fn(), events: vi.fn(), call: vi.fn(), execute: vi.fn(), wait: vi.fn() }));
 vi.mock("@realms-world/value-ledger", async (original) => ({
   ...(await original<typeof import("@realms-world/value-ledger")>()),
@@ -77,4 +77,16 @@ it("confirms the published post_season_top call and rejects a provisional source
   });
   rpc.block.mockResolvedValue({ timestamp: 101 });
   await expect(seasonLedgerReads(target).head()).rejects.toThrow("ledger_head_unconfirmed");
+});
+
+it("uses the per-season challenge entry and never the global pause", async () => {
+  rpc.call.mockResolvedValue(season.map((value, index) => (index === 5 ? "1" : value)));
+  await challengeSeason(target, 1, "0x3");
+  expect(rpc.execute).toHaveBeenCalledExactlyOnceWith({
+    contractAddress: "0x10",
+    entrypoint: "challenge_season",
+    calldata: ["1", "0x3"],
+  });
+  rpc.call.mockResolvedValue(season);
+  await expect(challengeSeason(target, 1, "0x3")).rejects.toThrow("season_challenge_not_recorded");
 });
