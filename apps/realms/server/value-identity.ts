@@ -1,17 +1,8 @@
+import { registeredShards } from "./directory";
 import { recordPayDecision, matchesPayDecision } from "./pay-decisions";
-import {
-  dirtyAccountLinks,
-  completeAccountLinkSync,
-  accountLinkDirtyRevision,
-  accountLinkTargets,
-  accountLinkTarget,
-  recordLedgerLinkWrite,
-  matchesLedgerLinkWrite,
-} from "./account-links";
-import type { AccountLinkTarget, LedgerAccountLinkWrite, LedgerPayDecision } from "@realms-world/identity";
 import { createIdentityAuth } from "./auth";
 import { WorkerEntrypoint } from "cloudflare:workers";
-import { normalizeStarknetAddress } from "@realms-world/identity";
+import { normalizeStarknetAddress, type LedgerPayDecision } from "@realms-world/identity";
 import { realmsAccountAddress } from "@realms-world/identity/account";
 import { Effect } from "effect";
 import { decodeIdentityEnv, type IdentityEnv } from "./env";
@@ -22,6 +13,9 @@ import { lookupPayoutWallet, readLinkedWallet } from "./payout-wallet";
 
 /** Only a service binding exposes these reads; they have no public HTTP route. */
 export class ValueIdentity extends WorkerEntrypoint<IdentityEnv> {
+  shards() {
+    return registeredShards(this.env.DB);
+  }
   l2ChainId() {
     return encodeChainName(identityL2Configuration(this.env).chainId);
   }
@@ -30,30 +24,6 @@ export class ValueIdentity extends WorkerEntrypoint<IdentityEnv> {
   }
   realmOwnerOf(realmId: string) {
     return realmOwnerOf(decodeIdentityEnv(this.env as unknown as Record<string, unknown>), realmId);
-  }
-  private async linkPins() {
-    return { accountClassHash: this.env.ACCOUNT_CLASS_HASH, guardianPublicKey: await this.env.GUARDIAN.publicKey() };
-  }
-  async dirtyAccountLinks(after: number | null) {
-    return dirtyAccountLinks(this.env.DB, await this.linkPins(), after);
-  }
-  completeAccountLinkSync(account: string, revision: string) {
-    return completeAccountLinkSync(this.env.DB, account, revision);
-  }
-  accountLinkDirtyRevision(account: string) {
-    return accountLinkDirtyRevision(this.env.DB, account);
-  }
-  async accountLinkTargets(after: string | null) {
-    return accountLinkTargets(this.env.DB, await this.linkPins(), after);
-  }
-  async accountLinkTarget(key: string) {
-    return accountLinkTarget(this.env.DB, await this.linkPins(), key);
-  }
-  async recordLedgerLinkWrite(target: AccountLinkTarget, write: LedgerAccountLinkWrite) {
-    return recordLedgerLinkWrite(this.env.DB, await this.linkPins(), target, write);
-  }
-  async matchesLedgerLinkWrite(write: LedgerAccountLinkWrite) {
-    return matchesLedgerLinkWrite(this.env.DB, await this.linkPins(), write);
   }
   payoutWallet(realmsId: string) {
     return Effect.runPromise(lookupPayoutWallet(this.env.DB, realmsId));
@@ -67,13 +37,6 @@ export class ValueIdentity extends WorkerEntrypoint<IdentityEnv> {
 
   async linkedWallet(realmsId: string) {
     return (await readLinkedWallet(this.env.DB, realmsId))?.address ?? null;
-  }
-  async accountForWallet(wallet: string): Promise<string | null> {
-    const user = await this.env.DB.prepare('SELECT "realmsId" FROM "user" WHERE "address" = ? AND "emailVerified" = 1')
-      .bind(normalizeStarknetAddress(wallet))
-      .first<{ realmsId: string }>();
-    if (!user) return null;
-    return realmsAccountAddress(user.realmsId, this.env.ACCOUNT_CLASS_HASH, await this.env.GUARDIAN.publicKey());
   }
   async realmsIdForAccount(account: string): Promise<string | null> {
     return (await realmsIdsOfAccounts(this.env.DB, [account])).get(normalizeStarknetAddress(account)) ?? null;

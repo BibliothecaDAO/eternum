@@ -39,10 +39,6 @@ const IdentityVars = Schema.Struct({
 
 export interface IdentityEnv extends Schema.Schema.Type<typeof IdentityVars> {
   DB: D1Database;
-  ACCOUNT_LINKS: {
-    changed(realmsId: string): Promise<unknown>;
-    status(realmsId: string): Promise<import("@realms-world/identity").LedgerLinkStatus>;
-  };
   /** The guardian Worker, reached by service binding only. */
   GUARDIAN: Guardian;
   /** The launch Worker, reached by service binding only. */
@@ -72,7 +68,6 @@ export const decodeIdentityEnv = (raw: Record<string, unknown>): IdentityEnv => 
   return {
     ...vars,
     DB: raw.DB as D1Database,
-    ACCOUNT_LINKS: raw.ACCOUNT_LINKS as IdentityEnv["ACCOUNT_LINKS"],
     GUARDIAN: raw.GUARDIAN as Guardian,
     LAUNCH: raw.LAUNCH as IdentityEnv["LAUNCH"],
     RATING_READER: raw.RATING_READER as IdentityEnv["RATING_READER"],

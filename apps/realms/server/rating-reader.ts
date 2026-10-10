@@ -1,3 +1,4 @@
+import { normalizeStarknetAddress as canonicalFelt } from "@realms-world/identity";
 import { identityL2Configuration, verifyIdentityChain, fetchIdentityRpc } from "./l2";
 import type { IdentityEnv } from "./env";
 import { DurableObject } from "cloudflare:workers";
@@ -74,7 +75,7 @@ export class RatingReader extends DurableObject<Env> {
   }
   private cached(hash: string): Snapshot | null {
     const row = this.ctx.storage.sql
-      .exec<{ data: string }>("SELECT data FROM snapshots WHERE hash = ?", `0x${BigInt(hash).toString(16)}`)
+      .exec<{ data: string }>("SELECT data FROM snapshots WHERE hash = ?", canonicalFelt(hash))
       .toArray()[0];
     return row ? (JSON.parse(row.data) as Snapshot) : null;
   }
@@ -150,7 +151,7 @@ export class RatingReader extends DurableObject<Env> {
       BigInt(hash) <= 0n
     )
       throw new Error("Rating history unavailable");
-    return { block_number: Number(number), block_hash: `0x${BigInt(hash).toString(16)}` };
+    return { block_number: Number(number), block_hash: canonicalFelt(hash) };
   }
   private async history() {
     const response = await fetch(this.env.RATING_HISTORY_URL, {
@@ -179,7 +180,7 @@ export class RatingReader extends DurableObject<Env> {
     return {
       block_number: Number(data.block_number),
       block_hash: `0x${BigInt(data.block_hash).toString(16)}`,
-      players: [...new Set(data.players.map((player) => `0x${BigInt(player).toString(16)}`))],
+      players: [...new Set(data.players.map((player) => canonicalFelt(player)))],
     };
   }
   private async paidFetch(input: RequestInfo | URL, init?: RequestInit) {

@@ -1,3 +1,13 @@
+import { ledgerInteger, ledgerBool as bool } from "./codecs";
+export {
+  ledgerInteger,
+  ledgerBool,
+  ledgerU256,
+  decodeFrontierSeason,
+  decodeLedgerPreset,
+  decodeBlitzSeason,
+  readConfirmedLedgerHead,
+} from "./codecs";
 import type { RpcProvider } from "starknet";
 export { rpcAt } from "./rpc";
 export interface LedgerGameKey {
@@ -76,12 +86,16 @@ export async function readRegisteredPlayers(
   return players;
 }
 
-export const ledgerInteger = (value: string): number => {
-  const n = Number(BigInt(value));
-  if (!Number.isSafeInteger(n) || n < 0) throw new Error("invalid_ledger_integer");
-  return n;
-};
-const bool = (value: string): boolean => {
-  if (BigInt(value) !== 0n && BigInt(value) !== 1n) throw new Error("invalid_ledger_bool");
-  return BigInt(value) === 1n;
-};
+export interface LedgerRosterSnapshot {
+  gameId: number;
+  blockNumber: number;
+  blockHash: string;
+  secondsUntilClose: number;
+  end: number;
+  registrations: readonly { wallet: string; account: string }[];
+}
+
+export { activeShards, requireActiveChain, readRegisteredShard } from "./official-shards";
+export type { ShardDirectory, RegisteredShard } from "./official-shards";
+
+export { computeSeasonTop } from "./season-top";

@@ -1,3 +1,4 @@
+import { normalizeStarknetAddress as canonicalFelt } from "@realms-world/identity";
 /**
  * The gameplay accounts the guardian approved a device for, by address. An account can act on a shard only after its
  * first device is approved, so every account a story can name is here: this is the way from a story's recipient back
@@ -25,4 +26,4 @@ export const realmsIdsOfAccounts = async (
   return new Map(results.map((row) => [row.address, row.realmsId]));
 };
 
-const normalizeAddress = (address: string) => `0x${BigInt(address).toString(16)}`;
+const normalizeAddress = canonicalFelt;

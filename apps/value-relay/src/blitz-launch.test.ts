@@ -1,7 +1,7 @@
 import { Effect } from "effect";
 import { beforeEach, expect, it, vi } from "vitest";
 import { hash } from "starknet";
-import { openBlitzOnLedger, refundBlitzOnLedger } from "./blitz-launch";
+import { blitzDeadline, openBlitzOnLedger, refundBlitzOnLedger, validateBlitzWindow } from "./blitz-launch";
 
 const rpc = vi.hoisted(() => ({
   block: vi.fn(),
@@ -50,7 +50,7 @@ const game = (cancelled = false) => [
 ];
 beforeEach(() => {
   vi.clearAllMocks();
-  rpc.block.mockResolvedValue({ status: "ACCEPTED_ON_L2", block_number: 10, timestamp: 50 });
+  rpc.block.mockResolvedValue({ status: "ACCEPTED_ON_L2", block_number: 10, block_hash: "0xa", timestamp: 50 });
   rpc.number.mockResolvedValue(11);
   rpc.execute.mockResolvedValue({ transaction_hash: "0xabc" });
   rpc.wait.mockResolvedValue({ isReverted: () => false });
@@ -76,9 +76,11 @@ it("opens the created shard key under the containing season's economic preset, t
         : [{ from_address: "0x10", keys: [hash.getSelectorFromName("SeasonOpened"), "3"], data: ["9", "60", "300"] }],
   }));
   rpc.call.mockImplementation(async (query) =>
-    query.entrypoint === "get_season"
-      ? ["0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "1", "9", "60", "300", "0", "0"]
-      : game(),
+    query.entrypoint === "blitz_settlement_interval"
+      ? ["60"]
+      : query.entrypoint === "get_season"
+        ? ["0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "1", "9", "60", "300", "0", "0"]
+        : game(),
   );
   const open = () => Effect.runPromise(openBlitzOnLedger(credentials, key, { start: 100, end: 160 }));
   await open();
@@ -106,10 +108,38 @@ it("cancels before start and automatically waits until the earliest legal abort 
   expect(rpc.execute).toHaveBeenCalledWith(expect.objectContaining({ entrypoint: "cancel_game" }));
   cancelled = false;
   rpc.execute.mockClear();
-  rpc.block.mockResolvedValue({ status: "ACCEPTED_ON_L2", block_number: 10, timestamp: 120 });
+  rpc.block.mockResolvedValue({ status: "ACCEPTED_ON_L2", block_number: 10, block_hash: "0xa", timestamp: 120 });
   expect(await Effect.runPromise(refundBlitzOnLedger(credentials, key))).toBe(40);
   expect(rpc.execute).not.toHaveBeenCalled();
-  rpc.block.mockResolvedValue({ status: "ACCEPTED_ON_L2", block_number: 10, timestamp: 160 });
+  rpc.block.mockResolvedValue({ status: "ACCEPTED_ON_L2", block_number: 10, block_hash: "0xa", timestamp: 160 });
   expect(await Effect.runPromise(refundBlitzOnLedger(credentials, key))).toBeNull();
   expect(rpc.execute).toHaveBeenCalledWith(expect.objectContaining({ entrypoint: "abort_game" }));
+});
+
+it("allows exactly the ledger settlement interval and refuses one second less, including delayed seating", async () => {
+  rpc.events.mockImplementation(async (query) => ({
+    events:
+      query.keys[0][0] === hash.getSelectorFromName("GameOpened")
+        ? []
+        : [{ from_address: "0x10", keys: [hash.getSelectorFromName("SeasonOpened"), "3"], data: ["9", "60", "300"] }],
+  }));
+  rpc.call.mockImplementation(async (query) =>
+    query.entrypoint === "blitz_settlement_interval"
+      ? ["60"]
+      : query.entrypoint === "get_season"
+        ? ["0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "1", "9", "60", "300", "0", "0"]
+        : game(),
+  );
+  await expect(Effect.runPromise(openBlitzOnLedger(credentials, key, { start: 100, end: 241 }))).rejects.toThrow();
+  expect(rpc.execute).not.toHaveBeenCalled();
+  await expect(Effect.runPromise(validateBlitzWindow(credentials, key, { start: 120, end: 241 }))).rejects.toThrow();
+  await Effect.runPromise(validateBlitzWindow(credentials, key, { start: 120, end: 240 }));
+});
+
+it("uses the ledger clock and stored end as the paid retry deadline", async () => {
+  rpc.block.mockResolvedValue({ status: "ACCEPTED_ON_L2", block_number: 10, block_hash: "0xa", timestamp: 120 });
+  rpc.call.mockResolvedValue(game());
+  expect(await Effect.runPromise(blitzDeadline(credentials, key))).toBe(40);
+  rpc.block.mockResolvedValue({ status: "ACCEPTED_ON_L2", block_number: 10, block_hash: "0xa", timestamp: 160 });
+  expect(await Effect.runPromise(blitzDeadline(credentials, key))).toBe(0);
 });

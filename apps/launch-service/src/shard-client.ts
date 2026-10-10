@@ -86,6 +86,10 @@ export class LaunchShard extends ShardOperator {
     } while (token);
     throw new Error("launcher_original_creation_missing");
   }
+  async roster(gameId: number) {
+    const rows = await this.view<{ wallet: bigint; account: bigint }[]>("blitz_roster", [gameId]);
+    return rows.map((row) => ({ wallet: `0x${row.wallet.toString(16)}`, account: `0x${row.account.toString(16)}` }));
+  }
   async installRoster(gameId: number, players: readonly { wallet: string; account: string }[]) {
     await this.admin("freeze_blitz_roster", {
       game_id: gameId,

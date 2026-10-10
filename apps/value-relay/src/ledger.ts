@@ -1,4 +1,4 @@
-import { rpcAt, readLedgerGame, ledgerInteger } from "@realms-world/value-ledger";
+import { rpcAt, readLedgerGame, ledgerInteger, readConfirmedLedgerHead } from "@realms-world/value-ledger";
 import { Account, hash, RpcProvider, type EmittedEvent } from "starknet";
 import { blitzCommitment } from "@realms-world/value-ledger/commitment";
 import {
@@ -10,7 +10,6 @@ import {
   type Page,
   type PaidClaim,
   type RelayPorts,
-  type AccountLinkChanged,
   type MonitorPorts,
 } from "./ports";
 
@@ -27,7 +26,7 @@ export const ledgerResultAdapter =
     relayOperation("post Blitz result", async () => {
       if (BigInt(blitzCommitment(result)) !== BigInt(result.commitment)) throw new Error("invalid_result_commitment");
       const provider = rpcAt(credentials.rpcUrl);
-      const head = await provider.getBlockNumber();
+      const head = (await readConfirmedLedgerHead(provider)).number;
       const game = await readLedgerGame(provider, credentials.contractAddress, result, head);
       if (game.finalized) {
         if (BigInt(game.commitment) !== BigInt(result.commitment)) throw new Error("ledger_result_differs");
@@ -45,7 +44,7 @@ export const ledgerResultAdapter =
         provider,
         credentials.contractAddress,
         result,
-        await provider.getBlockNumber(),
+        (await readConfirmedLedgerHead(provider)).number,
       );
       if (!posted.finalized || BigInt(posted.commitment) !== BigInt(result.commitment))
         throw new Error("ledger_result_not_recorded");
@@ -61,30 +60,8 @@ const resultCalldata = (result: BlitzResult): string[] => {
 export const ledgerMonitorReads = (
   rpcUrl: string,
   address: string,
-): Pick<MonitorPorts["ledger"], "paidClaims" | "postedResults" | "accountLinks"> => {
+): Pick<MonitorPorts["ledger"], "paidClaims" | "postedResults"> => {
   return {
-    accountLinks: (cursor, fromBlock = 0) =>
-      relayOperation("read ledger account links", () =>
-        ledgerEventPage(
-          rpcAt(rpcUrl),
-          address,
-          ["AccountLinkChanged"],
-          cursor,
-          fromBlock,
-          (event, index, position): AccountLinkChanged => {
-            if (event.keys.length !== 3 || event.data.length !== 2 || typeof event.block_number !== "number")
-              throw new Error("invalid_account_link_event");
-            return {
-              id: `${event.transaction_hash}:${event.block_number}:${position}:${index}`,
-              transactionHash: event.transaction_hash,
-              wallet: event.keys[1]!,
-              account: event.keys[2]!,
-              previousAccount: event.data[0]!,
-              previousWallet: event.data[1]!,
-            };
-          },
-        ),
-      ),
     paidClaims: (cursor, fromBlock = 0) =>
       relayOperation("read ledger paid claims", async () => {
         const provider = rpcAt(rpcUrl);
@@ -94,16 +71,9 @@ export const ledgerMonitorReads = (
             throw new Error("payment_block_missing");
           let time = times.get(event.block_number);
           if (time === undefined) {
-            const block = await provider.getBlock(event.block_number);
-            if (
-              !("status" in block) ||
-              !["ACCEPTED_ON_L2", "ACCEPTED_ON_L1"].includes(block.status ?? "") ||
-              !("block_hash" in block) ||
-              typeof block.block_hash !== "string" ||
-              BigInt(block.block_hash) !== BigInt(event.block_hash)
-            )
-              throw new Error("payment_block_unconfirmed");
-            time = block.timestamp;
+            const block = await readConfirmedLedgerHead(provider, event.block_number);
+            if (BigInt(block.hash) !== BigInt(event.block_hash)) throw new Error("payment_block_unconfirmed");
+            time = block.time;
             times.set(event.block_number, time);
           }
           return { ...decodePayment(event), paidAt: time };
@@ -125,7 +95,8 @@ const ledgerEventPage = async <A>(
   decode: (event: EmittedEvent, index: number, position: string) => A | Promise<A>,
 ): Promise<Page<A> & { head: number }> => {
   const selectors = names.map((name) => hash.getSelectorFromName(name));
-  const cursor = after === null ? { head: await provider.getBlockNumber(), token: undefined } : readCursor(after);
+  const cursor =
+    after === null ? { head: (await readConfirmedLedgerHead(provider)).number, token: undefined } : readCursor(after);
   if (fromBlock > cursor.head) return { rows: [], head: cursor.head, next: null };
   const page = await provider.getEvents({
     address,

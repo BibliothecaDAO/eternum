@@ -131,6 +131,18 @@ it("returns the service's code expiry to the device", async () => {
   expect(await client.sendSignInCode("lord@realms.test")).toEqual(expiry);
 });
 
+it("requests a separate authenticated wallet-change challenge", async () => {
+  const fetch = vi
+    .fn<typeof globalThis.fetch>()
+    .mockResolvedValue(Response.json({ success: true, expires_at: 1800000300 }));
+  const client = createIdentityClient({ apiUrl: "https://realms.test/api", fetch });
+  await client.sendWalletCode("lord@realms.test");
+  expect(JSON.parse(String(fetch.mock.calls[0]![1]!.body))).toEqual({
+    email: "lord@realms.test",
+    type: "email-verification",
+  });
+});
+
 it("binds wallet links to the server's Realms id and carries the email code for link and unlink", async () => {
   const fetch = vi
     .fn<typeof globalThis.fetch>()

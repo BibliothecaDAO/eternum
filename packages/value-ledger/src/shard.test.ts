@@ -48,7 +48,12 @@ const abi = [
 beforeEach(() => {
   vi.clearAllMocks();
   rpc.chain.mockResolvedValue("0x1");
-  rpc.block.mockResolvedValue({ block_number: 10, block_hash: "0xa", timestamp: 100, status: "ACCEPTED_ON_L2" });
+  rpc.block.mockResolvedValue({
+    block_number: 10,
+    block_hash: "0xa",
+    timestamp: 100,
+    status: "ACCEPTED_ON_L2",
+  });
   rpc.call.mockImplementation(async (query) => (query.entrypoint === "l2_gas_bound" ? ["1000000"] : ["2"]));
   rpc.execute.mockResolvedValue({ transaction_hash: "0xabc" });
   rpc.receipt.mockResolvedValue({

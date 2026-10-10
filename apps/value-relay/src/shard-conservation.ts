@@ -29,8 +29,8 @@ export const shardConservationPort =
         !Array.isArray(directory.games)
       )
         throw new Error("conservation_directory_differs");
-      const head = await reader.header(directory.confirmed_block);
-      const cursor = cache ? ((await cache.get<number>("conservation:cursor")) ?? 0) : 0;
+      await reader.header(directory.confirmed_block);
+      const cursor = cache ? ((await cache.get<number>(`conservation:cursor:${connection.chainId}`)) ?? 0) : 0;
       const balances: ConservationBalance[] = [];
       const games = new Set<number>();
       const ordered = [...directory.games].sort((a, b) => a.game_id - b.game_id);
@@ -49,12 +49,6 @@ export const shardConservationPort =
           !["Registration", "Live", "Ended", "Settled"].includes(game.status)
         )
           throw new Error("conservation_game_clock_missing");
-        const key = `conservation:final:${connection.chainId}:${connection.gamesAddress}:${gameId}`;
-        const final = cache ? await cache.get<ConservationBalance>(key) : undefined;
-        if (final) {
-          balances.push(final);
-          continue;
-        }
         const snapshot = await readConfirmedSnapshot(
           connection,
           heraldUrl,
@@ -66,11 +60,9 @@ export const shardConservationPort =
           throw new Error("conservation_snapshot_behind_directory");
         const balance = balanceOf(snapshot, gameId);
         balances.push(balance);
-        const window = Number(uint(String(singleRow(snapshot, "ChestRules").claim_window_seconds), 32));
-        if (cache && game.status === "Settled" && head.timestamp >= game.clock.end_at + window)
-          await cache.put(key, balance);
       }
-      if (cache) await cache.put("conservation:cursor", page.length === 25 ? page.at(-1)!.game_id : 0);
+      if (cache)
+        await cache.put(`conservation:cursor:${connection.chainId}`, page.length === 25 ? page.at(-1)!.game_id : 0);
       return balances;
     });
 

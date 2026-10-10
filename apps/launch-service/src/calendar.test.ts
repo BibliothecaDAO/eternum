@@ -119,7 +119,6 @@ test("a malformed stored Frontier season cannot stop Blitz creation or freezing"
     .run();
   await calendar.set({ phase: "blitz", startsAt: day(0).toISOString(), endsAt: day(31).toISOString() }, Date.now());
   await slots.create("due", new Date(Date.now() + 60_000).toISOString());
-  await slots.register("due", [{ realmsId: null, account: "0x123" }]);
   await database.db.prepare("UPDATE playtest_slots SET closes_at = 0").run();
   await tick(day(1));
   expect((await slots.list()).map(({ name }) => name)).toContain(blitzSlotName(day(1, 11)));
@@ -130,7 +129,6 @@ test("a conflicting timetable slot cannot stop a due roster from freezing", asyn
   const { launches, slots, calendar, tick } = stores();
   await calendar.set({ phase: "blitz", startsAt: day(0).toISOString(), endsAt: day(31).toISOString() }, Date.now());
   await slots.create("due", new Date(Date.now() + 60_000).toISOString());
-  await slots.register("due", [{ realmsId: null, account: "0x123" }]);
   await database.db.prepare("UPDATE playtest_slots SET closes_at = 0").run();
   await slots.create(blitzSlotName(day(1, 11)), day(1, 10).toISOString());
   await tick(day(1));

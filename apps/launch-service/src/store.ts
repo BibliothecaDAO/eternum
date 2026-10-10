@@ -113,8 +113,7 @@ const SELECT_RUN = "SELECT * FROM launch_runs WHERE chain_id = ? AND kind = ? AN
 const SCHEDULE_ONCE = "ON CONFLICT (chain_id, kind, environment, name) DO NOTHING";
 
 /**
- * The launch runs of one chain. The chain comes from the shard's /manifest, read once per store, so pointing SHARD_URL
- * at another shard refuses new work until earlier queues drain. Directory reads retain games from every chain.
+ * Launch runs are keyed by the selected directory chain; another shard's queue cannot block or retarget them.
  */
 export class D1LaunchStore implements LaunchServiceStore {
   private chain?: Promise<string>;
@@ -122,6 +121,7 @@ export class D1LaunchStore implements LaunchServiceStore {
   constructor(
     private readonly db: D1Database,
     private readonly chainOf: () => Promise<string>,
+    private readonly officialChains?: () => Promise<readonly string[]>,
   ) {}
 
   // A failed manifest read is not remembered: the next operation reads it again.
@@ -131,6 +131,10 @@ export class D1LaunchStore implements LaunchServiceStore {
       throw error;
     });
     return this.chain;
+  }
+
+  targetChain() {
+    return this.chainId();
   }
 
   async enqueue(kind: LaunchKind, request: LaunchJobRequest): Promise<LaunchRun> {
@@ -193,7 +197,7 @@ export class D1LaunchStore implements LaunchServiceStore {
       if (!run.summary || !("gameId" in run.summary) || !run.summary.gameId) throw new Error("slot_entry_without_game");
       return entryForGame(run.entry, run.chainId, run.summary.gameId);
     }
-    return run.entry;
+    throw new Error("blitz_slot_requires_paid_entry");
   }
 
   // Migration 0005 archives pre-chain runs under an empty id; those have no shard to drain.
@@ -204,17 +208,8 @@ export class D1LaunchStore implements LaunchServiceStore {
       )
       .bind(await this.chainId())
       .all<LaunchRunRow>();
-    return results.map(toRun);
-  }
-
-  private async requireDrainedPreviousShard(): Promise<void> {
-    const stranded = await this.pendingOtherChains();
-    if (stranded.length) {
-      const chains = [...new Set(stranded.map(({ chainId }) => chainId))].join(", ");
-      throw new Error(
-        `Drain queued or running launches on ${chains} before changing SHARD_URL; restore the previous shard to finish them`,
-      );
-    }
+    const official = await this.officialChains?.();
+    return results.map(toRun).filter((run) => !official?.some((chain) => BigInt(chain) === BigInt(run.chainId)));
   }
 
   async failed(): Promise<LaunchRun[]> {
@@ -234,7 +229,6 @@ export class D1LaunchStore implements LaunchServiceStore {
   }
 
   async startNext(now: number): Promise<LaunchRun | null> {
-    await this.requireDrainedPreviousShard();
     const chain = await this.chainId();
     const interrupted = await this.db
       .prepare(
@@ -366,12 +360,10 @@ export class D1LaunchStore implements LaunchServiceStore {
    * queues its games with the roster). This store stays the only writer of launch runs.
    */
   async scheduleStatement(kind: LaunchKind, request: LaunchJobRequest): Promise<D1PreparedStatement> {
-    await this.requireDrainedPreviousShard();
     return this.insertStatement(await this.chainId(), kind, applyDurableLaunchDefaults(kind, request), SCHEDULE_ONCE);
   }
 
   private async insertRun(kind: LaunchKind, request: LaunchJobRequest, conflict: string): Promise<LaunchRun> {
-    await this.requireDrainedPreviousShard();
     const durableRequest = applyDurableLaunchDefaults(kind, request);
     const chain = await this.chainId();
     const [, selected] = await this.db.batch<LaunchRunRow>([

@@ -1,4 +1,4 @@
-import { readGameEntry, type GameEntry } from "@realms-world/identity";
+import { normalizeStarknetAddress, readGameEntry, type GameEntry } from "@realms-world/identity";
 import { Effect } from "effect";
 import type { HeraldGameDirectory, HeraldGameDirectoryEntry, ShardManifest } from "@bibliothecadao/eternum/game-sync";
 
@@ -101,11 +101,9 @@ const playerOf = (request: Request): string | null | typeof INVALID => {
 
 /** Every listed shard's games, each shard read on its own so one that fails is named and the rest still answer. */
 const listShards = async (dependencies: DirectoryDependencies, player: string | null) => {
-  const { results } = await dependencies.db
-    .prepare(
-      `SELECT "url", "chainId", "status" FROM "shards" WHERE "status" IN ('active', 'draining') ORDER BY "addedAt"`,
-    )
-    .all<ListedShard>();
+  const results = (await registeredShards(dependencies.db)).filter(
+    (row) => row.status === "active" || row.status === "draining",
+  );
   return Promise.all(
     results.map((shard) =>
       listShard(shard, () =>
@@ -349,7 +347,7 @@ const readManifest = async (url: string, fetchShard: typeof fetch) => {
     if (!response.ok) return null;
     const manifest = (await response.json()) as Partial<ShardManifest>;
     return typeof manifest.chainId === "string" && FELT.test(manifest.chainId)
-      ? { ...manifest, chainId: `0x${BigInt(manifest.chainId).toString(16)}` }
+      ? { ...manifest, chainId: normalizeStarknetAddress(manifest.chainId) }
       : null;
   } catch {
     return null;
@@ -375,3 +373,8 @@ export const superviseNotifiers = async (db: D1Database, notifiers: IdentityEnv[
     }),
   );
 };
+
+/** Private services read every registered lifecycle row; each write applies its active/draining rule. */
+export const registeredShards = async (db: D1Database) =>
+  (await db.prepare('SELECT url,"chainId",status FROM shards ORDER BY "addedAt", "chainId"').all<ListedShard>())
+    .results;

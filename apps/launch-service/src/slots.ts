@@ -1,26 +1,11 @@
 import { nativeRuleConstants } from "../../../contracts/l3/world-native/schema/client.gen";
 
-/**
- * A player in a slot: the gameplay account it has on the shard the slot launches on, and the Realms account that
- * registered it, or null for an account a launcher registered (a harness bot or an invited roster).
- */
-export interface SlotPlayer {
-  realmsId: string | null;
-  account: string;
-}
-
-export interface SlotRegistration extends SlotPlayer {
-  position: number;
-  gameNumber: number | null;
-}
-
 export interface PlaytestSlot {
   entry: import("@realms-world/identity").GameEntry;
   name: string;
   closesAt: string;
   frozenAt: string | null;
   closed: boolean;
-  registrations: SlotRegistration[];
 }
 
 export interface SlotStore {
@@ -28,8 +13,6 @@ export interface SlotStore {
   create(name: string, closesAt: string): Promise<void>;
   get(name: string): Promise<PlaytestSlot>;
   list(): Promise<PlaytestSlot[]>;
-  /** Registers players while registration is open; a player already registered stays as they were. */
-  register(name: string, players: readonly SlotPlayer[]): Promise<PlaytestSlot>;
   freeze(name: string): Promise<PlaytestSlot>;
   freezeNextDue(): Promise<void>;
 }

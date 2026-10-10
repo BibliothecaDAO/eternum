@@ -1,3 +1,4 @@
+import { resolveGameTransactionResourceBounds } from "../account/transaction-resource-bounds";
 import {
   BlockTag,
   EDAMode,
@@ -15,7 +16,6 @@ import {
 
 import { ACTION_CHECKING_AFTER_MS, isTransactionHashNotFound, TransactionNotSentError } from "@bibliothecadao/provider";
 
-import { playResourceBounds } from "../account/transaction-resource-bounds";
 import type { Shard } from "./shard";
 
 /** What a gameplay account needs of its shard: the chain it signs for and the one gas bound the shard takes. */
@@ -191,7 +191,7 @@ function playFrame(nonce: string, shard: GameplayShard, details: UniversalDetail
     nonce,
     version: "0x3" as const,
     tip: 0,
-    resourceBounds: playResourceBounds(shard.l2GasBound),
+    resourceBounds: resolveGameTransactionResourceBounds(shard.l2GasBound),
     paymasterData: [],
     accountDeploymentData: [],
     nonceDataAvailabilityMode: EDataAvailabilityMode.L1,

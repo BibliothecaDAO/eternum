@@ -15,7 +15,6 @@ const ALLOWED_ADDRESS = "0x123";
 
 const PLAYER = "0x7";
 const OPERATOR_TOKEN = "operator-test-token";
-const PLAYER_ACCOUNT = "0xacc";
 
 /** A signed-in Realms account, with the wallet linked to it, if any. */
 const signedIn = (wallet: string | null = null): IdentityResolver => ({
@@ -36,7 +35,6 @@ afterEach(async () => {
 const createApp = (
   resolver: IdentityResolver,
   slots = new D1SlotStore(database.db, new D1LaunchStore(database.db, testChain())),
-  playerAccount = vi.fn(async (_realmsId: string) => PLAYER_ACCOUNT),
 ) => {
   const store = new D1LaunchStore(database.db, testChain());
   const calendar = new D1CalendarStore(database.db);
@@ -54,7 +52,6 @@ const createApp = (
       calendar,
       // The registrar runs in workerd (worker.test.ts); here a queued run only needs somewhere to arm.
       registrar: { armFor: async () => {} },
-      playerAccount,
       operatorLauncher: {
         enrol: async () => ({ chainId: "0x1", launcherAccount: "0x123" }),
         check: async () => ({ txHash: "0xabc" }),
@@ -63,24 +60,36 @@ const createApp = (
     store,
     slots,
     calendar,
-    playerAccount,
   };
 };
 
-describe("free slot registration", () => {
+test("the removed free registration route returns404 even for a signed-in player", async () => {
+  const { app, slots } = createApp(signedIn());
+  await slots.create("friday", new Date(Date.now() + 60000).toISOString());
+  expect(
+    (
+      await app.request(
+        new Request("https://play.realms.party/api/slots/friday/register", {
+          method: "POST",
+          headers: { origin: ALLOWED_ORIGIN, cookie: "session=valid", "content-type": "application/json" },
+          body: "{}",
+        }),
+      )
+    ).status,
+  ).toBe(404);
+});
+
+describe("paid slot discovery", () => {
   test("reads one authoritative slot anonymously without scanning other rosters, and fails loudly", async () => {
     const { app, slots } = createApp(signedOut);
     await slots.create("friday", day(0).toISOString());
     await slots.create("saturday", day(1).toISOString());
-    await slots.register("friday", [{ realmsId: PLAYER, account: PLAYER_ACCOUNT }]);
-    await slots.register("saturday", [{ realmsId: "0x8", account: "0xbcd" }]);
     vi.spyOn(slots, "list").mockRejectedValue(new Error("A scoped read must not scan the directory"));
     const response = await app.request("https://play.realms.party/api/slots/friday");
     expect(response.status).toBe(200);
     expect(response.headers.get("cache-control")).toBe("no-store");
     expect(await response.json()).toMatchObject({
       name: "friday",
-      registrations: [{ realmsId: PLAYER, account: PLAYER_ACCOUNT }],
     });
     expect((await app.request("https://play.realms.party/api/slots/missing")).status).toBe(404);
     expect((await app.request("https://play.realms.party/api/slots/Invalid")).status).toBe(400);
@@ -88,47 +97,6 @@ describe("free slot registration", () => {
     const failure = await app.request("https://play.realms.party/api/slots/friday");
     expect(failure.status).toBe(503);
     expect(failure.headers.get("cache-control")).toBe("no-store");
-  });
-  const registerRequest = () =>
-    new Request("https://play.realms.party/api/slots/friday/register", {
-      method: "POST",
-      headers: {
-        origin: ALLOWED_ORIGIN,
-        cookie: "better-auth.session_token=valid",
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({ owner: "0xdead", account: "0xbeef" }),
-    });
-
-  test("registers the signed-in Realms account and its shard account, with no wallet or launcher privileges", async () => {
-    const { app, slots, playerAccount } = createApp(signedIn());
-    await slots.create("friday", day(0).toISOString());
-    const response = await app.request(registerRequest());
-    expect(response.status).toBe(200);
-    expect((await slots.list())[0]!.registrations).toMatchObject([{ realmsId: PLAYER, account: PLAYER_ACCOUNT }]);
-    expect(playerAccount).toHaveBeenCalledWith(PLAYER);
-  });
-
-  test("does not register a player whose shard account cannot be read", async () => {
-    const slots = new D1SlotStore(database.db, new D1LaunchStore(database.db, testChain()));
-    const { app } = createApp(
-      signedIn("0x456"),
-      slots,
-      vi.fn(async () => {
-        throw new Error("Shard https://shard.test manifest failed: 503");
-      }),
-    );
-    expect((await app.request(registerRequest())).status).toBe(503);
-    expect(await slots.list()).toEqual([]);
-  });
-
-  test("does not register unauthenticated or cross-origin requests", async () => {
-    const { app, slots } = createApp(signedOut);
-    expect((await app.request(registerRequest())).status).toBe(401);
-    const request = registerRequest();
-    request.headers.set("origin", "https://untrusted.example");
-    expect((await app.request(request)).status).toBe(403);
-    expect(await slots.list()).toEqual([]);
   });
 });
 
@@ -145,31 +113,13 @@ describe("launcher rosters and off-timetable slots", () => {
     });
   const soon = () => new Date(Date.now() + 60_000).toISOString();
 
-  test("a launcher creates a slot and registers accounts beside a player, once each, until it closes", async () => {
-    const { app, slots } = createApp(signedIn(ALLOWED_ADDRESS));
+  test("a launcher creates a slot with an immutable closing time", async () => {
+    const { app } = createApp(signedIn(ALLOWED_ADDRESS));
     const closesAt = soon();
     expect((await app.request(post("/api/slots", { name: "campaign-1", closesAt }))).status).toBe(202);
     expect((await app.request(post("/api/slots", { name: "campaign-1", closesAt: soon() + "x" }))).status).toBe(400);
     const moved = new Date(Date.parse(closesAt) + 60_000).toISOString();
     expect((await app.request(post("/api/slots", { name: "campaign-1", closesAt: moved }))).status).toBe(409);
-
-    const accounts = { accounts: ["0xb07", "0xb08"] };
-    expect((await app.request(post("/api/slots/campaign-1/register", accounts))).status).toBe(200);
-    expect((await app.request(post("/api/slots/campaign-1/register", accounts))).status).toBe(200);
-    expect((await app.request(post("/api/slots/campaign-1/register", {}))).status).toBe(200);
-    expect((await slots.list())[0]!.registrations).toEqual([
-      { realmsId: null, account: "0xb07", position: 1, gameNumber: null },
-      { realmsId: null, account: "0xb08", position: 2, gameNumber: null },
-      { realmsId: PLAYER, account: PLAYER_ACCOUNT, position: 3, gameNumber: null },
-    ]);
-
-    await database.db
-      .prepare("UPDATE playtest_slots SET closes_at = ?")
-      .bind(Date.now() - 1_000)
-      .run();
-    const late = await app.request(post("/api/slots/campaign-1/register", { accounts: ["0xb09"] }));
-    expect(late.status).toBe(409);
-    expect(await late.json()).toEqual({ error: "Registration is closed" });
   });
 
   test("launchers and the operator set the season calendar, which anyone reads", async () => {
@@ -223,7 +173,6 @@ describe("launcher rosters and off-timetable slots", () => {
 
     const closeAt = new Date(now + 60_000).toISOString();
     await slots.create("directory-blitz", closeAt);
-    await slots.register("directory-blitz", [{ realmsId: null, account: "0xb07" }]);
     await database.db
       .prepare("UPDATE playtest_slots SET closes_at = ?")
       .bind(Date.now() - 1_000)
@@ -258,18 +207,15 @@ describe("launcher rosters and off-timetable slots", () => {
     expect((await operator.app.request(post("/api/slots", { name: "bots", closesAt: soon() }, token))).status).toBe(
       202,
     );
-    const bots = await operator.app.request(post("/api/slots/bots/register", { accounts: ["0xb07"] }, token));
-    expect(bots.status).toBe(200);
-    expect((await operator.app.request(post("/api/slots/bots/register", {}, token))).status).toBe(400);
+    expect((await operator.app.request(post("/api/slots/bots/register", { accounts: ["0xb07"] }, token))).status).toBe(
+      404,
+    );
     expect(
       (await operator.app.request(post("/api/slots", { name: "x", closesAt: soon() }, { token: "wrong" }))).status,
     ).toBe(401);
 
     const player = createApp(signedIn());
     expect((await player.app.request(post("/api/slots", { name: "mine", closesAt: soon() }))).status).toBe(403);
-    expect((await player.app.request(post("/api/slots/bots/register", { accounts: ["0xb08"] }))).status).toBe(403);
-    const tooMany = { accounts: Array.from({ length: 97 }, (_, index) => `0x${(index + 1).toString(16)}`) };
-    expect((await operator.app.request(post("/api/slots/bots/register", tooMany, token))).status).toBe(400);
   });
 });
 

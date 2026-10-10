@@ -1,3 +1,4 @@
+import { normalizeStarknetAddress } from "@realms-world/identity";
 import { RelayFailure } from "./ports";
 import { hash, shortString, type RpcProvider } from "starknet";
 import { rpcAt } from "@realms-world/value-ledger";
@@ -286,7 +287,7 @@ export const felt = (value: string): string => {
     BigInt(value) >= 2n ** 251n + 17n * 2n ** 192n + 1n
   )
     throw new Error("invalid_felt");
-  return `0x${BigInt(value).toString(16)}`;
+  return normalizeStarknetAddress(value);
 };
 export const sameFelt = (left: string, right: string | undefined): boolean =>
   right !== undefined && BigInt(felt(left)) === BigInt(felt(right));

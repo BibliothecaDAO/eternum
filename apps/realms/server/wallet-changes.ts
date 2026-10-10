@@ -2,16 +2,15 @@ import type { AuthContext, User } from "better-auth";
 import { APIError } from "better-auth/api";
 import { Effect } from "effect";
 
-import { consumeSignInBudget } from "./sign-in-budget";
+import { consumeChallengeAttempt } from "./challenge-attempts";
 
 interface WalletChangeServices {
   db: D1Database;
   checkCode(context: AuthContext, email: string, otp: string): Promise<unknown>;
-  notifyChange(realmsId: string): Promise<unknown>;
   sendNotice(email: string, address: string | null, id: string): Promise<void>;
 }
 
-/** Consume the existing sign-in code in the same transaction that changes the wallet and queues its notice. */
+/** Consume the wallet-change code in the same transaction that changes the wallet and queues its notice. */
 export const changeWallet = (
   services: WalletChangeServices,
   context: AuthContext,
@@ -22,11 +21,15 @@ export const changeWallet = (
   Effect.runPromise(
     Effect.gen(function* () {
       if (!user.emailVerified) return yield* Effect.fail(new APIError("FORBIDDEN", { message: "email_not_verified" }));
-      if (!(yield* Effect.promise(() => consumeSignInBudget(services.db, user.email.toLowerCase())))) {
-        return yield* Effect.fail(new APIError("TOO_MANY_REQUESTS", { message: "too_many_attempts" }));
+      if (
+        !(yield* Effect.promise(() =>
+          consumeChallengeAttempt(services.db, `email-verification-otp-${user.email.toLowerCase()}`),
+        ))
+      ) {
+        return yield* Effect.fail(new APIError("BAD_REQUEST", { message: "INVALID_OTP" }));
       }
       const verification = yield* Effect.promise(() =>
-        context.internalAdapter.findVerificationValue(`sign-in-otp-${user.email.toLowerCase()}`),
+        context.internalAdapter.findVerificationValue(`email-verification-otp-${user.email.toLowerCase()}`),
       );
       if (!verification) return yield* Effect.fail(new APIError("BAD_REQUEST", { message: "INVALID_OTP" }));
       yield* Effect.tryPromise({ try: () => services.checkCode(context, user.email, otp), catch: (error) => error });
@@ -37,14 +40,6 @@ export const changeWallet = (
       });
       if (result[0]!.meta.changes !== 1)
         return yield* Effect.fail(new APIError("BAD_REQUEST", { message: "INVALID_OTP" }));
-      const owner = yield* Effect.promise(() =>
-        services.db.prepare('SELECT "realmsId" FROM "user" WHERE id=?').bind(user.id).first<{ realmsId: string }>(),
-      );
-      if (!owner) throw new Error("wallet_identity_missing");
-      yield* Effect.tryPromise({
-        try: () => services.notifyChange(owner.realmsId),
-        catch: () => new Error("wallet_ledger_sync_failed"),
-      }).pipe(Effect.catch(() => Effect.logError("wallet_ledger_sync_failed", { noticeId: id })));
       // Delivery may retry, using the notice id as the provider's idempotency key.
       yield* deliverWalletNotices(services.db, services.sendNotice);
     }),
@@ -80,13 +75,6 @@ const writeWalletChange = (
       SELECT "realmsId",address,"walletLinkedAt","walletLinkedAt"+86400000 FROM "user" WHERE id=?1 AND address IS NOT NULL
       AND EXISTS(SELECT 1 FROM wallet_change_notices WHERE id=?2)
       AND NOT EXISTS(SELECT 1 FROM wallet_link_history WHERE account="user"."realmsId" AND replaced_at IS NULL)`,
-      )
-      .bind(user.id, id),
-    db
-      .prepare(
-        `INSERT INTO dirty_account_links(account,revision)
-      SELECT "realmsId",?2 FROM "user" WHERE id=?1 AND EXISTS(SELECT 1 FROM wallet_change_notices WHERE id=?2)
-      ON CONFLICT(account) DO UPDATE SET revision=excluded.revision`,
       )
       .bind(user.id, id),
     db.prepare("DELETE FROM verification WHERE id = ? AND value = ?").bind(verification.id, verification.value),

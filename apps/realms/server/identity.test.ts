@@ -9,11 +9,11 @@ import { getPlatformProxy } from "wrangler";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { Effect } from "effect";
-import { wasReadyPayoutWallet } from "./payout-wallet";
 import { deliverWalletNotices } from "./wallet-changes";
 import { createIdentityAuth } from "./auth";
 import { WalletNotDeployedError, type VerifyWalletSignature } from "./wallet-signature";
 import type { IdentityEnv } from "./env";
+import { consumeChallengeAttempt } from "./challenge-attempts";
 import { realmsIdOf } from "./realms-id";
 import { routeIdentityRequest } from "./routes";
 import { ORIGIN } from "./workerd-harness";
@@ -115,10 +115,6 @@ beforeAll(async () => {
     CHAT_INBOX: {} as IdentityEnv["CHAT_INBOX"],
     DB: proxy.env.DB,
     GUARDIAN: createGuardian(GUARDIAN_KEY),
-    ACCOUNT_LINKS: {
-      changed: vi.fn(async () => undefined),
-      status: vi.fn(async () => ({ status: "linking" as const })),
-    },
     LAUNCH: { fetch: vi.fn(async () => Response.json({ chains: [] })) },
     DIRECTORY_RATE_LIMIT: { limit: async () => ({ success: true }) },
     PUBLIC_RATE_LIMIT: { limit: async () => ({ success: true }) },
@@ -181,7 +177,6 @@ const createBrowser = (parentDomainCookies: string[] = []) => {
     (await (await request("/api/auth/get-session")).json()) as {
       user: {
         payoutWallet: import("@realms-world/identity").PayoutWallet;
-        ledgerLink: import("@realms-world/identity").LedgerLinkStatus;
         walletLinkedAt: number | null;
         email: string;
         id: string;
@@ -230,9 +225,13 @@ const proveWallet = async (
 /** A fresh code for a wallet change; each helper models a new code-send window. */
 const walletCode = async (browser: ReturnType<typeof createBrowser>) => {
   const email = (await browser.session())!.user.email;
-  codesRequested.delete(email);
+  codesRequested.delete(`wallet:${email}`);
   expect(
-    (await browser.request("/api/auth/email-otp/send-verification-otp", { body: { email, type: "sign-in" } })).status,
+    (
+      await browser.request("/api/auth/email-otp/send-verification-otp", {
+        body: { email, type: "email-verification" },
+      })
+    ).status,
   ).toBe(200);
   return sentCodes.get(email)!;
 };
@@ -385,26 +384,64 @@ describe("identity Worker", () => {
     expect((await ask("quiet@realms.test")).status).toBe(200);
   });
 
-  it("shares a daily budget between sends and guesses across resends and address casing", async () => {
-    const browser = createBrowser();
+  it("cannot lock out sign-in or wallet recovery with malformed guesses naming a victim", async () => {
+    const stranger = createBrowser();
     const email = "daily-budget@realms.test";
-    const send = () =>
-      browser.request("/api/auth/email-otp/send-verification-otp", { body: { email, type: "sign-in" } });
-    expect((await send()).status).toBe(200);
-    for (let attempt = 0; attempt < 28; attempt += 1) {
-      const response = await browser.request("/api/auth/sign-in/email-otp", {
-        body: { email: email.toUpperCase(), otp: "wrong" },
-      });
-      expect(response.status).not.toBe(429);
-    }
-    expect((await send()).status).toBe(200);
-    const denied = await browser.request("/api/auth/sign-in/email-otp", { body: { email, otp: sentCodes.get(email) } });
-    expect(denied.status).toBe(429);
-    expect((await send()).status).toBe(429);
-    await env.DB.prepare("UPDATE sign_in_budget SET expires_at = 0 WHERE email = ?").bind(email).run();
-    codesRequested.delete(email);
-    expect((await send()).status).toBe(200);
+    for (let attempt = 0; attempt < 30; attempt++)
+      await stranger.request("/api/auth/sign-in/email-otp", { body: { email, otp: "wrong" } });
+    const player = createBrowser();
+    expect((await signInWithCode(player, email)).status).toBe(200);
+    expect((await player.request("/api/auth/siws/unlink", { body: { otp: await walletCode(player) } })).status).toBe(
+      200,
+    );
   }, 30_000);
+  it("counts concurrent guesses atomically against a live challenge and resets only with a new challenge", async () => {
+    const identifier = "sign-in-otp-atomic@realms.test";
+    const context = await auth.$context;
+    await context.internalAdapter.createVerificationValue({
+      identifier,
+      value: "hash:0",
+      expiresAt: new Date(Date.now() + 300000),
+    });
+    const accepted = await Promise.all(Array.from({ length: 20 }, () => consumeChallengeAttempt(env.DB, identifier)));
+    expect(accepted.filter(Boolean)).toHaveLength(3);
+    await context.internalAdapter.deleteVerificationByIdentifier(identifier);
+    expect(await consumeChallengeAttempt(env.DB, identifier)).toBe(false);
+    await context.internalAdapter.createVerificationValue({
+      identifier,
+      value: "newhash:0",
+      expiresAt: new Date(Date.now() + 300000),
+    });
+    expect(await consumeChallengeAttempt(env.DB, identifier)).toBe(true);
+  });
+
+  it("keeps wallet revocation independent of exhausted sign-in guesses and refuses another email", async () => {
+    const player = createBrowser();
+    const email = "separate-wallet@realms.test";
+    expect((await signInWithCode(player, email)).status).toBe(200);
+    codesRequested.delete(email);
+    await player.request("/api/auth/email-otp/send-verification-otp", { body: { email, type: "sign-in" } });
+    const wrong = sentCodes.get(email) === "000000" ? "111111" : "000000";
+    for (let index = 0; index < 3; index++)
+      await player.request("/api/auth/sign-in/email-otp", { body: { email, otp: wrong } });
+    expect((await player.request("/api/auth/siws/unlink", { body: { otp: await walletCode(player) } })).status).toBe(
+      200,
+    );
+    expect(
+      (
+        await createBrowser().request("/api/auth/email-otp/send-verification-otp", {
+          body: { email, type: "email-verification" },
+        })
+      ).status,
+    ).toBe(401);
+    expect(
+      (
+        await player.request("/api/auth/email-otp/send-verification-otp", {
+          body: { email: "another@realms.test", type: "email-verification" },
+        })
+      ).status,
+    ).toBe(401);
+  });
 
   it("creates an account on a Discord user's first sign-in, and signs the same account in after", async () => {
     const discord = fakeDiscord();
@@ -1009,45 +1046,18 @@ describe("identity Worker", () => {
     expect((await proveWallet(holder, first, "link")).status).toBe(200);
   });
 
-  it("notifies the relay immediately on every link change and exposes ledger confirmation separately from the hold", async () => {
-    const browser = createBrowser();
-    await signInWithCode(browser, "ledger-link@realms.test");
-    const address = createWallet();
-    const changed = vi.spyOn(env.ACCOUNT_LINKS, "changed");
-    const initial = changed.mock.calls.length;
-    expect((await proveWallet(browser, address, "link")).status).toBe(200);
-    const session = (await browser.session())!;
+  it("keeps wallet linkage in identity without a ledger readiness state or account-link stores", async () => {
+    const player = createBrowser();
+    await signInWithCode(player, "identity-only-link@realms.test");
+    expect((await proveWallet(player, createWallet(), "link")).status).toBe(200);
+    expect((await player.session())!.user).not.toHaveProperty("ledgerLink");
     expect(
-      await env.DB.prepare("SELECT revision FROM dirty_account_links WHERE account=?")
-        .bind(session.user.realmsId)
-        .first(),
-    ).not.toBeNull();
-    expect(changed.mock.calls.length).toBe(initial + 1);
-    expect(changed).toHaveBeenLastCalledWith(session.user.realmsId);
-    expect(session.user.ledgerLink).toEqual({ status: "linking" });
-    expect(session.user.payoutWallet?.status).toBe("on_hold");
-    vi.spyOn(env.ACCOUNT_LINKS, "status").mockResolvedValueOnce({
-      status: "confirmed",
-      ledger: { address: "0x10", chainId: "0x1" },
-      account: "0x20",
-      wallet: address,
-    });
-    expect((await browser.session())!.user.ledgerLink?.status).toBe("confirmed");
-    expect((await proveWallet(browser, createWallet(), "link")).status).toBe(200);
-    expect((await browser.request("/api/auth/siws/unlink", { body: { otp: await walletCode(browser) } })).status).toBe(
-      200,
-    );
-    expect(changed.mock.calls.length).toBe(initial + 3);
-    const paused = createBrowser();
-    await signInWithCode(paused, "paused-ledger-link@realms.test");
-    changed.mockRejectedValueOnce(new Error("relay paused"));
-    expect((await proveWallet(paused, createWallet(), "link")).status).toBe(200);
-    expect(
-      await env.DB.prepare("SELECT revision FROM dirty_account_links WHERE account=?")
-        .bind((await paused.session())!.user.realmsId)
-        .first(),
-    ).not.toBeNull();
-    expect((await paused.session())!.user.ledgerLink?.status).toBe("linking");
+      (
+        await env.DB.prepare(
+          "SELECT name FROM sqlite_master WHERE name IN ('dirty_account_links','ledger_link_writes')",
+        ).all()
+      ).results,
+    ).toEqual([]);
   });
 
   it("requires a fresh six-digit code from the account email for every wallet mutation", async () => {
@@ -1068,7 +1078,7 @@ describe("identity Worker", () => {
     expect((await browser.request("/api/auth/siws/unlink", { body: { otp } })).status).toBe(400);
     const expired = await walletCode(browser);
     await env.DB.prepare("UPDATE verification SET expiresAt = ? WHERE identifier = ?")
-      .bind(new Date(Date.now() - 1000).toISOString(), "sign-in-otp-wallet-factor@realms.test")
+      .bind(new Date(Date.now() - 1000).toISOString(), "email-verification-otp-wallet-factor@realms.test")
       .run();
     expect((await browser.request("/api/auth/siws/unlink", { body: { otp: expired } })).status).toBe(400);
   });
@@ -1149,23 +1159,15 @@ describe("identity Worker", () => {
     const first = createWallet();
     await proveWallet(browser, first, "link");
     const user = (await browser.session())!.user;
-    const ready = user.walletLinkedAt! + 86400000;
-    const at = Math.ceil(ready / 1000);
-    expect(await wasReadyPayoutWallet(env.DB, user.realmsId, first, at - 1)).toBe(false);
-    expect(await wasReadyPayoutWallet(env.DB, user.realmsId, first, at)).toBe(true);
     // Historical interval fixture: the payment precedes the later wallet change.
     await env.DB.prepare(
       "UPDATE wallet_link_history SET linked_at=?,ready_at=? WHERE account=? AND replaced_at IS NULL",
     )
       .bind(Date.now() - 172800000, Date.now() - 86400000, user.realmsId)
       .run();
-    const paidAt = Math.floor(Date.now() / 1000) - 10;
     const second = createWallet();
     await proveWallet(browser, second, "link");
-    expect(await wasReadyPayoutWallet(env.DB, user.realmsId, first, paidAt)).toBe(true);
-    expect(await wasReadyPayoutWallet(env.DB, user.realmsId, second, paidAt)).toBe(false);
     await browser.request("/api/auth/siws/unlink", { body: { otp: await walletCode(browser) } });
-    expect(await wasReadyPayoutWallet(env.DB, user.realmsId, first, paidAt)).toBe(true);
     expect(
       await env.DB.prepare("SELECT COUNT(*) AS n FROM wallet_link_history WHERE account=?")
         .bind(user.realmsId)

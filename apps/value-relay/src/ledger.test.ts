@@ -58,7 +58,12 @@ const game = (finalized: boolean, commitment = "0x0") => [
 beforeEach(() => {
   vi.clearAllMocks();
   rpc.head.mockResolvedValue(1000);
-  rpc.block.mockResolvedValue({ status: "ACCEPTED_ON_L2", block_hash: "0xa", timestamp: 1000 });
+  rpc.block.mockImplementation(async (number) => ({
+    status: "ACCEPTED_ON_L2",
+    block_number: number === "latest" ? 1000 : number,
+    block_hash: "0xa",
+    timestamp: 1000,
+  }));
   rpc.wait.mockResolvedValue({ isReverted: () => false });
   rpc.execute.mockResolvedValue({ transaction_hash: "0xabc" });
 });
@@ -147,29 +152,4 @@ it("keeps a result queued unless the confirmed ledger state records the same com
   rpc.call.mockResolvedValueOnce(game(false)).mockResolvedValue(game(true, "0xbad"));
   await expect(Effect.runPromise(ledgerResultAdapter(credentials)(result))).rejects.toThrow();
   expect(rpc.execute).toHaveBeenCalledOnce();
-});
-
-it("pages AccountLinkChanged with both displacement fields and distinct immutable audit positions", async () => {
-  rpc.events.mockResolvedValue({
-    events: [0, 1].map(() => ({
-      from_address: "0x10",
-      transaction_hash: "0xabc",
-      block_number: 9,
-      keys: [hash.getSelectorFromName("AccountLinkChanged"), "0x11", "0x22"],
-      data: ["0x33", "0x44"],
-    })),
-  });
-  const read = ledgerMonitorReads("https://ledger.test", "0x10");
-  const page = await Effect.runPromise(read.accountLinks(null));
-  expect(page.rows[0]).toMatchObject({
-    wallet: "0x11",
-    account: "0x22",
-    previousAccount: "0x33",
-    previousWallet: "0x44",
-    transactionHash: "0xabc",
-  });
-  expect(page.rows[0]!.id).not.toBe(page.rows[1]!.id);
-  expect(rpc.events).toHaveBeenLastCalledWith(
-    expect.objectContaining({ keys: [[hash.getSelectorFromName("AccountLinkChanged")]], chunk_size: 100 }),
-  );
 });

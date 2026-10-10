@@ -21,7 +21,7 @@ interface Check extends Target {
   presetId: number;
 }
 interface Environment {
-  SHARD_URL: string;
+  VALUE_IDENTITY: import("@realms-world/value-ledger").ShardDirectory;
   BASE_URL: string;
   DEPLOYER_PRIVATE_KEY: string;
   OPERATOR_TOKEN: string;
@@ -57,7 +57,8 @@ export class LauncherDeployment {
   async account(chainId: string): Promise<string | undefined> {
     const enrolled = await this.storage.get<Enrolled>(this.accountKey(chainId));
     if (!enrolled) return undefined;
-    const shard = await this.target({ chainId, heraldUrl: this.env.SHARD_URL });
+    const { shard } = await readLaunchShard(this.env.VALUE_IDENTITY, chainId);
+    if (shard.status === "retired") throw new Error("launcher_target_differs");
     const native = new LaunchShard({
       rpcUrl: shard.rpcUrl,
       chainId: shard.chainId,
@@ -176,10 +177,12 @@ export class LauncherDeployment {
     });
   }
   private async target(input: Target) {
-    if (new URL(input.heraldUrl).href.replace(/\/$/, "") !== new URL(this.env.SHARD_URL).href.replace(/\/$/, ""))
+    const { shard } = await readLaunchShard(this.env.VALUE_IDENTITY, input.chainId);
+    if (
+      shard.status === "retired" ||
+      new URL(input.heraldUrl).href.replace(/\/$/, "") !== new URL(shard.url).href.replace(/\/$/, "")
+    )
       throw new Error("launcher_target_differs");
-    const { shard } = await readLaunchShard(this.env.SHARD_URL);
-    if (BigInt(shard.chainId) !== BigInt(input.chainId)) throw new Error("launcher_target_differs");
     return shard;
   }
   private accountKey(chainId: string) {

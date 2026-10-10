@@ -152,14 +152,13 @@ it("fails closed on unavailable finalized state or a transport fault", async () 
 const monitorFixture = () => {
   let progress: MonitorProgress = { halted: null };
   const ports: MonitorPorts = {
-    identity: { matchesLedgerLinkWrite: () => Effect.succeed(true), matchesPayDecision: () => Effect.succeed(true) },
+    identity: { matchesPayDecision: () => Effect.succeed(true) },
     shard: {
       conservation: shardConservationPort(connection, "https://shard.test", network(snapshot("84"))),
       withdrawal: () => Effect.fail(new RelayFailure({ operation: "binding_missing" })),
       result: () => Effect.succeed(null),
     },
     ledger: {
-      accountLinks: () => Effect.succeed({ rows: [], head: 1000, next: null }),
       pause: vi.fn(() => Effect.void),
       paidClaims: () => Effect.succeed({ rows: [], next: null, head: 1000 }),
       postedResults: () => Effect.succeed({ rows: [], next: null, head: 1000 }),
@@ -208,7 +207,7 @@ it("refuses rounded JSON amounts and empty integer text instead of inventing a b
   ).rejects.toThrow();
 });
 
-it("memoises a settled final balance after its claim window across monitor restarts", async () => {
+it("rereads settled balances after the claim window instead of retaining a second truth", async () => {
   const state = snapshot();
   state.models[0]!.rows[0]!.value.claim_window_seconds = 10;
   const games = directory();
@@ -227,7 +226,7 @@ it("memoises a settled final balance after its claim window across monitor resta
   expect(await Effect.runPromise(second())).toEqual([
     { gameId: 7, confirmedBlock: 10, receipts: "17", netIssued: "17" },
   ]);
-  expect(read.mock.calls.filter(([url]) => String(url).includes("/snapshot"))).toHaveLength(1);
+  expect(read.mock.calls.filter(([url]) => String(url).includes("/snapshot"))).toHaveLength(2);
 });
 
 it("bounds first-time conservation snapshots and rotates unfinished games", async () => {
@@ -263,4 +262,32 @@ it("bounds first-time conservation snapshots and rotates unfinished games", asyn
       (row) => row.gameId,
     ),
   ).toEqual([26, 27, 28, 29, 30]);
+});
+it("invalidates a final balance when its source block was replaced", async () => {
+  const state = snapshot();
+  state.models[0]!.rows[0]!.value.claim_window_seconds = 10;
+  const games = directory();
+  Object.assign(games.games[0]!, { status: "Settled", clock: { end_at: 1 } });
+  const values = new Map<string, unknown>();
+  const cache = {
+    get: async <T>(key: string) => values.get(key) as T | undefined,
+    put: async (key: string, value: unknown) => {
+      values.set(key, value);
+    },
+  };
+  const read = network(state, games);
+  await Effect.runPromise(shardConservationPort(connection, "https://shard.test", read, cache)());
+  rpc.block.mockImplementation(async (height) => ({
+    block_number: height === "latest" ? 10 : height,
+    block_hash: "0xb",
+    parent_hash: "0x9",
+    timestamp: 1000,
+    status: "ACCEPTED_ON_L2",
+  }));
+  state.models[1]!.rows[0]!.value.pool_left = "100";
+  state.models[2]!.rows = [];
+  expect(await Effect.runPromise(shardConservationPort(connection, "https://shard.test", read, cache)())).toEqual([
+    { gameId: 7, confirmedBlock: 10, receipts: "0", netIssued: "0" },
+  ]);
+  expect(read.mock.calls.filter(([url]) => String(url).includes("/snapshot"))).toHaveLength(2);
 });

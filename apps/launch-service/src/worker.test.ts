@@ -43,31 +43,40 @@ beforeAll(async () => {
     stdio: "ignore",
   });
   mf = new Miniflare({
-    modulesRoot: bundle,
-    modules: [{ type: "ESModule", path: join(bundle, "worker.js") }],
-    compatibilityDate: "2026-07-30",
-    compatibilityFlags: ["nodejs_compat"],
-    d1Databases: { DB: "launch" },
-    durableObjects: { REGISTRAR: { className: "Registrar", useSQLite: true } },
-    serviceBindings: {
-      IDENTITY: () => Response.json({ session: { id: "s1" }, user: { id: "u1", realmsId: "0x7", address: LAUNCHER } }),
-    },
-    bindings: {
-      ENVIRONMENT: "staging",
-      BASE_URL: ORIGIN,
-      LAUNCHER_ALLOWLIST: LAUNCHER,
-      SHARD_URL,
-      LEDGER_RPC_URL: "https://ledger.test",
-      LEDGER_ADDRESS: "0x10",
-      DEPLOYER_ACCOUNT_ADDRESS: "0x456",
-      DEPLOYER_PRIVATE_KEY: "0x1",
-      OPERATOR_TOKEN: "operator-test-token",
-      VERSION: { id: "workerd-test", tag: "", timestamp: "" },
-    },
-    outboundService: (request: Request) =>
-      request.url === `${SHARD_URL}/manifest`
-        ? Response.json(SHARD_MANIFEST)
-        : new Response(`${request.url} unavailable`, { status: 599 }),
+    workers: [
+      {
+        name: "launch",
+        modulesRoot: bundle,
+        modules: [{ type: "ESModule", path: join(bundle, "worker.js") }],
+        compatibilityDate: "2026-07-30",
+        compatibilityFlags: ["nodejs_compat"],
+        d1Databases: { DB: "launch" },
+        durableObjects: { REGISTRAR: { className: "Registrar", useSQLite: true } },
+        serviceBindings: {
+          VALUE_IDENTITY: { name: "directory", entrypoint: "ValueIdentity" },
+          IDENTITY: () =>
+            Response.json({ session: { id: "s1" }, user: { id: "u1", realmsId: "0x7", address: LAUNCHER } }),
+        },
+        bindings: {
+          ENVIRONMENT: "staging",
+          BASE_URL: ORIGIN,
+          LAUNCHER_ALLOWLIST: LAUNCHER,
+          DEPLOYER_ACCOUNT_ADDRESS: "0x456",
+          DEPLOYER_PRIVATE_KEY: "0x1",
+          OPERATOR_TOKEN: "operator-test-token",
+          VERSION: { id: "workerd-test", tag: "", timestamp: "" },
+        },
+        outboundService: (request: Request) =>
+          request.url === `${SHARD_URL}/manifest`
+            ? Response.json(SHARD_MANIFEST)
+            : new Response(`${request.url} unavailable`, { status: 599 }),
+      },
+      {
+        name: "directory",
+        modules: true,
+        script: `import { WorkerEntrypoint } from "cloudflare:workers"; export class ValueIdentity extends WorkerEntrypoint { shards(){return [{chainId:${JSON.stringify(SHARD_CHAIN)},url:${JSON.stringify(SHARD_URL)},status:"active"}];} } export default {fetch(){return new Response(null,{status:404});}};`,
+      },
+    ],
   });
   db = (await mf.getD1Database("DB")) as unknown as D1Database;
   const migrations = new URL("../migrations/", import.meta.url);

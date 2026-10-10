@@ -1,3 +1,4 @@
+import { normalizeStarknetAddress as canonicalFelt } from "@realms-world/identity";
 import { verifyIdentityChain } from "./l2";
 import type { IdentityEnv } from "./env";
 import { RpcProvider } from "starknet";
@@ -33,7 +34,7 @@ export async function openRatingLedger(
     signal,
     ratingToken: env.RATING_TOKEN_ADDRESS,
     block: number,
-    blockHash: `0x${BigInt(canonicalHash).toString(16)}`,
+    blockHash: canonicalFelt(canonicalHash),
   };
 }
 

@@ -31,7 +31,6 @@ const slot = (name: string, closesAtSeconds: number, over: Partial<PlaytestSlot>
   closesAt: new Date(closesAtSeconds * 1000).toISOString(),
   frozenAt: null,
   closed: false,
-  registrations: [],
   ...over,
 });
 

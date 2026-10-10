@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 import { Account, type Call, type RpcProvider } from "starknet";
-import { rpcAt } from "@realms-world/value-ledger";
+import { rpcAt, decodeFrontierSeason, ledgerU256, readConfirmedLedgerHead } from "@realms-world/value-ledger";
 import type { LedgerPayDecision } from "@realms-world/identity";
 import { RecordedSigner } from "./recorded-signer";
 import { ledgerPaymentRead, ledgerPaymentAdapter, ledgerReportAdapter, paymentFailure } from "./chain";
@@ -117,19 +117,13 @@ const verifyReportedDebt = async (credentials: Credentials, rows: readonly Payab
 };
 const payAffordable = async (context: BatchContext, rows: readonly PayableClaim[]) => {
   if (!rows.length) return [];
-  const head = await context.provider.getBlock("latest");
-  if (
-    !("block_number" in head) ||
-    !("status" in head) ||
-    !["ACCEPTED_ON_L2", "ACCEPTED_ON_L1"].includes(head.status ?? "")
-  )
-    throw new Error("batch_payment_head_unconfirmed");
+  const head = await readConfirmedLedgerHead(context.provider);
   const budgets = new Map<string, bigint | null>(),
     payable: PayableClaim[] = [],
     waiting: ClaimOutcome[] = [];
   for (const row of rows) {
     const key = `${row.withdrawal.chainId}:${row.withdrawal.seasonId}`;
-    if (!budgets.has(key)) budgets.set(key, await availableBudget(context, row.withdrawal, head.block_number));
+    if (!budgets.has(key)) budgets.set(key, await availableBudget(context, row.withdrawal, head.number));
     const available = budgets.get(key);
     if (available === undefined) throw new Error("batch_budget_missing");
     if (available === null) waiting.push(resultOf(row.withdrawal, "ledger_season_closed"));
@@ -151,27 +145,20 @@ const availableBudget = async (context: BatchContext, withdrawal: Withdrawal, bl
     context.provider.callContract({ ...query, entrypoint: "get_frontier" }, block),
     context.provider.callContract({ ...query, entrypoint: "frontier_unlocked" }, block),
   ]);
-  if (
-    season.length !== 10 ||
-    unlocked.length !== 2 ||
-    BigInt(season[0]!) !== 1n ||
-    ![0n, 1n].includes(BigInt(season[7]!))
-  )
-    throw new Error("batch_frontier_abi_differs");
-  if (BigInt(season[7]!) === 1n) return null;
-  const amount = decodeAmount(unlocked[0]!, unlocked[1]!) - decodeAmount(season[5]!, season[6]!);
+  const funded = decodeFrontierSeason(season);
+  if (!funded.configured || unlocked.length !== 2) throw new Error("batch_frontier_abi_differs");
+  if (funded.closed) return null;
+  const amount = BigInt(ledgerU256(unlocked[0]!, unlocked[1]!)) - BigInt(funded.paid);
   return amount < 0n ? 0n : amount;
 };
 const amountOf = (amount: string) => [String(BigInt(amount) & (2n ** 128n - 1n)), String(BigInt(amount) >> 128n)];
-const decodeAmount = (low: string, high: string) => {
-  const a = BigInt(low),
-    b = BigInt(high);
-  if (a < 0n || b < 0n || a >= 2n ** 128n || b >= 2n ** 128n) throw new Error("invalid_batch_amount");
-  return a + (b << 128n);
-};
 const classifyFailure = (error: unknown) =>
   error instanceof RelayFailure ? error : paymentFailure(error instanceof Error ? error.message : "");
 const isPermanentFailure = (failure: RelayFailure) =>
-  ["ledger_season_closed", "ledger_invalid_withdrawal", "ledger_report_mismatch", "ledger_claim_window_ended"].includes(
-    failure.operation,
-  );
+  [
+    "ledger_withdrawal_exceeds_backing",
+    "ledger_season_closed",
+    "ledger_invalid_withdrawal",
+    "ledger_report_mismatch",
+    "ledger_claim_window_ended",
+  ].includes(failure.operation);

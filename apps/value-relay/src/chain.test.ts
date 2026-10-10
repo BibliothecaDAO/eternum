@@ -1,6 +1,12 @@
 import { Effect } from "effect";
 import { beforeEach, expect, it, vi } from "vitest";
-import { ledgerPaymentAdapter, ledgerPaymentRead, ledgerReportAdapter, ledgerPauserAdapter } from "./chain";
+import {
+  ledgerWithdrawalVoided,
+  ledgerPaymentAdapter,
+  ledgerPaymentRead,
+  ledgerReportAdapter,
+  ledgerPauserAdapter,
+} from "./chain";
 
 const rpc = vi.hoisted(() => ({ execute: vi.fn(), call: vi.fn(), wait: vi.fn(), block: vi.fn() }));
 vi.mock("starknet", async (importOriginal) => ({
@@ -165,4 +171,27 @@ it("sets aside a first report that permanently missed the ledger claim window", 
       }),
     ),
   ).rejects.toMatchObject({ operation: "ledger_claim_window_ended" });
+});
+
+it("reads voided debt at a confirmed head and refuses a malformed flag", async () => {
+  const row = {
+    chainId: "0x1",
+    seasonId: 7,
+    transactionHash: "0xdef",
+    realmsId: "0x3",
+    amount: "17",
+    confirmedAt: 1000,
+  };
+  rpc.call.mockResolvedValue(["1"]);
+  expect(await Effect.runPromise(ledgerWithdrawalVoided(credentials.rpcUrl, credentials.contractAddress)(row))).toBe(
+    true,
+  );
+  expect(rpc.call).toHaveBeenCalledWith(
+    { contractAddress: "0x10", entrypoint: "withdrawal_voided", calldata: ["0x1", "0xdef"] },
+    10,
+  );
+  rpc.call.mockResolvedValue(["2"]);
+  await expect(
+    Effect.runPromise(ledgerWithdrawalVoided(credentials.rpcUrl, credentials.contractAddress)(row)),
+  ).rejects.toThrow();
 });
