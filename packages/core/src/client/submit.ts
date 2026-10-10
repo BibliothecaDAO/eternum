@@ -9,13 +9,13 @@ import {
   type AllowArray,
   type Call,
   type InvokeFunctionResponse,
-  type ResourceBoundsBN,
   type UniversalDetails,
   type InvocationsSignerDetails,
 } from "starknet";
 
 import { ACTION_CHECKING_AFTER_MS, isTransactionHashNotFound, TransactionNotSentError } from "@bibliothecadao/provider";
 
+import { playResourceBounds } from "../account/transaction-resource-bounds";
 import type { Shard } from "./shard";
 
 /** What a gameplay account needs of its shard: the chain it signs for and the one gas bound the shard takes. */
@@ -129,15 +129,6 @@ export function executeGameplayAccountTransaction({
     if (sendsInFlight.get(key) === answered) sendsInFlight.delete(key);
   });
   return reconciling.then(({ sent }) => sent);
-}
-
-/** The fee-free shard's bounds: l2 gas at its fixed amount, every price and the other resources zero. */
-function playResourceBounds(l2GasBound: bigint): ResourceBoundsBN {
-  return {
-    l1_gas: { max_amount: 0n, max_price_per_unit: 0n },
-    l1_data_gas: { max_amount: 0n, max_price_per_unit: 0n },
-    l2_gas: { max_amount: l2GasBound, max_price_per_unit: 0n },
-  };
 }
 
 function assertConfiguredChain(address: string, configuredChain: string, requestedChain: string): void {
