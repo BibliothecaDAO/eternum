@@ -32,7 +32,7 @@ export interface SeasonPrize {
  * season of the player's own finished paid games. A broken entry among them is shown as a fault, never skipped for an
  * older game's season.
  */
-export interface SeasonSources {
+interface SeasonSources {
   current: PaidGameLedger | null;
   played: PaidGameLedger[];
   broken: boolean;
