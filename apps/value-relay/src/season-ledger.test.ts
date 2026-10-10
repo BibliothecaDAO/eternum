@@ -18,15 +18,13 @@ beforeEach(() => {
   vi.clearAllMocks();
   rpc.block.mockResolvedValue({ block_number: 100, block_hash: "0xa", timestamp: 101, status: "ACCEPTED_ON_L2" });
   rpc.call.mockImplementation(async (request) =>
-    request.entrypoint === "season_settlement"
-      ? ["0", "0", "0", "0", "2", "0", "0"]
-      : request.entrypoint === "get_season"
-        ? season
-        : request.entrypoint === "get_preset"
-          ? [...Array(4).fill("0"), "5000", ...Array(16).fill("0")]
-          : request.entrypoint === "get_season_mmr"
-            ? ["200"]
-            : ["0x2", "0", "0"],
+    request.entrypoint === "get_season"
+      ? season
+      : request.entrypoint === "get_preset"
+        ? [...Array(4).fill("0"), "5000", ...Array(16).fill("0")]
+        : request.entrypoint === "get_season_mmr"
+          ? ["200"]
+          : ["0x2", "0", "0"],
   );
   rpc.execute.mockResolvedValue({ transaction_hash: "0xaa" });
   rpc.wait.mockResolvedValue({ isReverted: () => false });
@@ -71,11 +69,11 @@ it("reads the participant and posted streams independently at the pinned confirm
   expect(await read.posts(0, null, 100)).toMatchObject({ rows: [{ kind: "posted", id: 1, reviewUntil: 3700 }] });
 });
 it("confirms the published post_season_top call and rejects a provisional source head", async () => {
-  await postSeasonTop(target, 1, 0, ["0x2", "0x3"]);
+  await postSeasonTop(target, 1, ["0x2", "0x3"]);
   expect(rpc.execute).toHaveBeenCalledWith({
     contractAddress: "0x10",
     entrypoint: "post_season_top",
-    calldata: ["1", "0", "2", "0x2", "0x3"],
+    calldata: ["1", "2", "0x2", "0x3"],
   });
   rpc.block.mockResolvedValue({ timestamp: 101 });
   await expect(seasonLedgerReads(target).head()).rejects.toThrow("ledger_head_unconfirmed");

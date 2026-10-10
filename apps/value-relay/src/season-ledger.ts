@@ -13,11 +13,11 @@ interface Ledger {
   contractAddress: string;
 }
 /** Both Workers enumerate the cohort independently; rankings always read the ledger's frozen season snapshot. */
-export const seasonLedgerReads = (target: Ledger): Omit<SeasonPorts, "post" | "allocate"> => {
+export const seasonLedgerReads = (target: Ledger): Omit<SeasonPorts, "post"> => {
   const provider = rpcAt(target.rpcUrl);
   const eventPage = async (from: number, cursor: string | null, head: number, postsOnly: boolean) => {
     const names = postsOnly
-      ? ["SeasonTopPosted", "SeasonTopBatchPosted"]
+      ? ["SeasonTopPosted"]
       : [
           "SeasonOpened",
           "ChestMinted",
@@ -63,14 +63,7 @@ export const seasonLedgerReads = (target: Ledger): Omit<SeasonPorts, "post" | "a
       } else {
         if (!name || event.keys.length !== 2) throw new Error("invalid_season_event");
         rows.push({
-          kind:
-            name === "SeasonTopPosted"
-              ? "posted"
-              : name === "SeasonTopBatchPosted"
-                ? "proposed"
-                : name === "SeasonOpened"
-                  ? "opened"
-                  : "corrected",
+          kind: name === "SeasonTopPosted" ? "posted" : name === "SeasonOpened" ? "opened" : "corrected",
           id: ledgerInteger(event.keys[1]!),
           ...(name !== "SeasonOpened"
             ? {
@@ -104,12 +97,7 @@ export const seasonLedgerReads = (target: Ledger): Omit<SeasonPorts, "post" | "a
       );
       const { paidFraction } = decodeLedgerPreset(preset);
       if (paidFraction <= 0 || paidFraction > 10000) throw new Error("invalid_season_paid_fraction");
-      const settlement = await provider.callContract(
-        { contractAddress: target.contractAddress, entrypoint: "season_settlement", calldata: [String(id)] },
-        head,
-      );
-      if (settlement.length !== 7) throw new Error("invalid_season_settlement");
-      return { ...season, id, paidFraction, allocationCursor: ledgerInteger(settlement[4]!) };
+      return { ...season, id, paidFraction };
     },
     mmr: async (id, wallet, head) => {
       const fields = await provider.callContract(
@@ -136,7 +124,6 @@ export const seasonLedgerReads = (target: Ledger): Omit<SeasonPorts, "post" | "a
 export const postSeasonTop = async (
   target: Ledger & { accountAddress: string; privateKey: string },
   id: number,
-  start: number,
   wallets: readonly string[],
 ) => {
   const provider = rpcAt(target.rpcUrl);
@@ -144,7 +131,7 @@ export const postSeasonTop = async (
   const tx = await account.execute({
     contractAddress: target.contractAddress,
     entrypoint: "post_season_top",
-    calldata: [String(id), String(start), String(wallets.length), ...wallets],
+    calldata: [String(id), String(wallets.length), ...wallets],
   });
   const receipt = await provider.waitForTransaction(tx.transaction_hash);
   if (receipt.isReverted()) throw new Error("season_top_post_reverted");
@@ -154,28 +141,6 @@ export const postSeasonTop = async (
       "latest",
     ),
   );
-  if (!season.posted || season.challenged || season.topCount < start + wallets.length)
+  if (!season.posted || season.challenged || season.topCount !== wallets.length)
     throw new Error("season_top_not_recorded");
-};
-
-export const allocateSeason = async (
-  target: Ledger & { accountAddress: string; privateKey: string },
-  id: number,
-  start: number,
-) => {
-  const provider = rpcAt(target.rpcUrl);
-  const account = new Account({ provider, address: target.accountAddress, signer: target.privateKey });
-  const tx = await account.execute({
-    contractAddress: target.contractAddress,
-    entrypoint: "allocate_season",
-    calldata: [String(id), String(start)],
-  });
-  const receipt = await provider.waitForTransaction(tx.transaction_hash);
-  if (receipt.isReverted()) throw new Error("season_allocation_reverted");
-  const fields = await provider.callContract(
-    { contractAddress: target.contractAddress, entrypoint: "season_settlement", calldata: [String(id)] },
-    "latest",
-  );
-  if (fields.length !== 7) throw new Error("invalid_season_settlement");
-  return ledgerInteger(fields[4]!);
 };

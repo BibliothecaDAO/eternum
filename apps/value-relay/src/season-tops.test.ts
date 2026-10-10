@@ -23,7 +23,6 @@ const fixture = (count = 3) => {
     participantCount: count,
     paidFraction: 5000,
     topCount: 2,
-    allocationCursor: 2,
     posted: false,
     challenged: false,
     settlementStarted: false,
@@ -32,10 +31,6 @@ const fixture = (count = 3) => {
   };
   const ports: SeasonPorts = {
     game: async () => ({ id: 1, terminal: true }),
-    allocate: vi.fn(async (_id, _start) => {
-      season.allocationCursor = season.topCount;
-      return season.allocationCursor;
-    }),
     head: async () => ({ number: 100, hash: "0xa", time: 101 }),
     blockHash: async () => "0xa",
     changes: vi.fn(async (_from, cursor) => {
@@ -58,11 +53,10 @@ const fixture = (count = 3) => {
     season: async () => season,
     mmr: vi.fn(async (_id, wallet) => (BigInt(wallet) === 1n ? "100" : "200")),
     winner: vi.fn(async (_id, index) => players[index + 1]!),
-    post: vi.fn(async (_id, _start, winners) => {
+    post: vi.fn(async (_id, winners) => {
       expect(winners.map(BigInt)).toEqual([2n, 3n]);
       season.posted = true;
       season.topCount = winners.length;
-      season.allocationCursor = 0;
     }),
   };
   return {
@@ -90,7 +84,6 @@ it("bounds reads, survives recreation, and refuses to leave an incomplete audit 
   const f = fixture(250);
   f.season.posted = true;
   f.season.topCount = 125;
-  f.season.allocationCursor = 125;
   f.ports.changes = async () => ({
     rows: Array.from({ length: 100 }, (_, i) => ({ kind: "participant" as const, id: 1, wallet: `0x${i + 1}` })),
     head: 100,
@@ -113,7 +106,6 @@ it("resumes a large population after recreation with one event page and at most1
   const f = fixture(250);
   f.season.posted = true;
   f.season.topCount = 125;
-  f.season.allocationCursor = 125;
   for (let tick = 0; tick < 9; tick++) {
     const mmr = vi.mocked(f.ports.mmr).mock.calls.length,
       winners = vi.mocked(f.ports.winner).mock.calls.length;
@@ -140,41 +132,15 @@ it("pauses on an RPC failure near a known list's deadline instead of waiting thr
   expect(await f.tick("audit")).toBe("season_top_unavailable:1");
 });
 
-it("posts and allocates a large winner list in 32-row transactions without a population cap", async () => {
-  const f = fixture(250);
-  f.season.topCount = 0;
-  f.season.allocationCursor = 0;
-  f.ports.post = vi.fn(async (_id, start, wallets) => {
-    expect(wallets.length).toBeLessThanOrEqual(32);
-    expect(start).toBe(f.season.topCount);
-    f.season.topCount += wallets.length;
+it("posts the complete top from 2,000 participants in one transaction", async () => {
+  const f = fixture(2000);
+  f.ports.post = vi.fn(async (_id, wallets) => {
+    expect(wallets).toHaveLength(1000);
+    f.season.topCount = wallets.length;
     f.season.posted = true;
   });
-  f.ports.allocate = vi.fn(async (_id, start) => {
-    f.season.allocationCursor = Math.min(start + 32, 125);
-    return f.season.allocationCursor;
-  });
-  for (let i = 0; i < 20; i++) await f.tick("post");
-  expect(f.ports.post).toHaveBeenCalledTimes(4);
-  expect(f.ports.allocate).toHaveBeenCalledTimes(4);
-  expect(f.season.allocationCursor).toBe(125);
-});
-
-it("prepares the independent cohort before allocation and does not rescan MMR when review starts", async () => {
-  const f = fixture(250);
-  f.season.topCount = 125;
-  f.season.allocationCursor = 0;
-  f.season.reviewUntil = 0;
-  f.ports.posts = async () => ({ rows: [{ kind: "proposed", id: 1 }], head: 100, next: null });
-  for (let index = 0; index < 8; index++) await f.tick("audit");
-  const reads = vi.mocked(f.ports.mmr).mock.calls.length;
-  expect(reads).toBe(250);
-  f.season.posted = true;
-  f.season.allocationCursor = 125;
-  f.season.reviewUntil = 3700;
-  f.ports.winner = async (_id, index) => `0x${(index + 2).toString(16)}`;
-  for (let index = 0; index < 4; index++) await f.tick("audit");
-  expect(vi.mocked(f.ports.mmr).mock.calls).toHaveLength(reads);
+  for (let tick = 0; tick < 60; tick++) await f.tick("post");
+  expect(f.ports.post).toHaveBeenCalledOnce();
 });
 
 it("waits for every opened ledger game before publishing rather than omitting a delayed result", async () => {

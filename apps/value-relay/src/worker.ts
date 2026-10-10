@@ -10,7 +10,7 @@ import {
   type LedgerRosterSnapshot,
 } from "@realms-world/value-ledger";
 import { processSeasonTops } from "./season-tops";
-import { seasonLedgerReads, postSeasonTop, allocateSeason } from "./season-ledger";
+import { seasonLedgerReads, postSeasonTop } from "./season-ledger";
 import { ledgerBatches } from "./ledger-batches";
 import { onIdentityChain } from "./ledger-chain";
 import { paidGameEntry } from "./game-entry";
@@ -86,19 +86,11 @@ export class ValueRelay extends DurableObject<RelayEnv> {
                     "post",
                     {
                       ...seasonLedgerReads(ledgerCredentialsOf(relay.env)),
-                      allocate: (id, start) =>
-                        Effect.runPromise(
-                          relay.ledgerPermit(
-                            relayOperation("allocate season prizes", () =>
-                              allocateSeason(ledgerCredentialsOf(relay.env), id, start),
-                            ),
-                          ),
-                        ),
-                      post: (id, start, wallets) =>
+                      post: (id, wallets) =>
                         Effect.runPromise(
                           relay.ledgerPermit(
                             relayOperation("post season top", () =>
-                              postSeasonTop(ledgerCredentialsOf(relay.env), id, start, wallets),
+                              postSeasonTop(ledgerCredentialsOf(relay.env), id, wallets),
                             ),
                           ),
                         ),

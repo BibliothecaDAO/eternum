@@ -53,9 +53,6 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
                         rpcUrl: monitor.env.LEDGER_RPC_URL,
                         contractAddress: monitor.env.LEDGER_ADDRESS,
                       }),
-                      allocate: async () => {
-                        throw new Error("monitor_cannot_allocate");
-                      },
                       post: async () => {
                         throw new Error("monitor_cannot_post");
                       },
