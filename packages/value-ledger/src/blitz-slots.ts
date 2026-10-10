@@ -46,6 +46,7 @@ export async function readRegistrationPage(
   if (query.blockHash !== undefined && BigInt(head.hash) !== BigInt(query.blockHash))
     throw new Error("registration_head_changed");
   const slot = await readLedgerSlot(provider, address, query, head.number);
+  if (!slot.exists) throw new Error("invalid_ledger_slot");
   const from = query.from ?? 0;
   if (!Number.isSafeInteger(from) || from < 0 || from > slot.registeredCount)
     throw new Error("invalid_registration_offset");
@@ -100,28 +101,36 @@ const readRegistrationTimes = async (
   wallets: string[],
 ) => {
   const selector = hash.getSelectorFromName("Registered");
-  const page = await provider.getEvents({
-    address,
-    from_block: { block_number: 0 },
-    to_block: { block_number: head },
-    keys: [[selector], [key.chainId], [String(key.slotId)], wallets],
-    chunk_size: 100,
-  });
   const timestamps = new Map<string, number>();
   const blocks = new Map<number, Awaited<ReturnType<typeof readConfirmedLedgerHead>>>();
-  for (const event of page.events) {
-    if (!matchesRegistration(event, address, key, selector, head)) throw new Error("invalid_registration_event");
-    const wallet = BigInt(event.keys[3]!).toString();
-    if (timestamps.has(wallet)) throw new Error("duplicate_registration_event");
-    let block = blocks.get(event.block_number);
-    if (!block) {
-      block = await readConfirmedLedgerHead(provider, event.block_number);
-      blocks.set(event.block_number, block);
+  let token: string | undefined;
+  const seen = new Set<string>();
+  do {
+    const page = await provider.getEvents({
+      address,
+      from_block: { block_number: 0 },
+      to_block: { block_number: head },
+      keys: [[selector], [key.chainId], [String(key.slotId)], wallets],
+      chunk_size: 100,
+      ...(token ? { continuation_token: token } : {}),
+    });
+    for (const event of page.events) {
+      if (!matchesRegistration(event, address, key, selector, head)) throw new Error("invalid_registration_event");
+      const wallet = BigInt(event.keys[3]!).toString();
+      if (timestamps.has(wallet)) throw new Error("duplicate_registration_event");
+      let block = blocks.get(event.block_number);
+      if (!block) {
+        block = await readConfirmedLedgerHead(provider, event.block_number);
+        blocks.set(event.block_number, block);
+      }
+      if (BigInt(block.hash) !== BigInt(event.block_hash) || block.time >= close)
+        throw new Error("registration_block_differs");
+      timestamps.set(wallet, block.time);
     }
-    if (BigInt(block.hash) !== BigInt(event.block_hash) || block.time >= close)
-      throw new Error("registration_block_differs");
-    timestamps.set(wallet, block.time);
-  }
+    token = page.continuation_token;
+    if (token && seen.has(token)) throw new Error("registration_page_cycle");
+    if (token) seen.add(token);
+  } while (token);
   if (timestamps.size !== wallets.length) throw new Error("registration_history_incomplete");
   return wallets.map((wallet) => {
     const registeredAt = timestamps.get(BigInt(wallet).toString());

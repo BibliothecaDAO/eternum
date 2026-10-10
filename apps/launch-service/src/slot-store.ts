@@ -9,6 +9,7 @@ const DATABASE_NOW = "CAST(unixepoch('subsec') * 1000 AS INTEGER)";
 const SELECT_SLOTS = `SELECT *, ${DATABASE_NOW} AS observed_at FROM playtest_slots`;
 
 interface SlotRow {
+  chain_id: string;
   slot_id: number;
   name: string;
   closes_at: number;
@@ -51,7 +52,7 @@ export class D1SlotStore implements SlotStore {
     if (Date.parse(slot.closesAt) !== closes) throw new SlotConflict("Slot schedule is immutable");
     const duration = loadNativePresetConfiguration("madara.blitz", nativePresetIdFor("blitz")).season.durationSeconds;
     await this.value.openSlot(
-      { chainId: await this.launches.targetChain(), slotId: slot.slotId },
+      { chainId: slot.chainId, slotId: slot.slotId },
       { start: closes / 1000, end: closes / 1000 + duration },
     );
   }
@@ -79,11 +80,14 @@ export class D1SlotStore implements SlotStore {
     const slot = await this.rawSlot(name);
     if (slot.frozenAt) return slot;
     if (!slot.closed) throw new SlotConflict("Registration is still open");
-    const key = { chainId: await this.launches.targetChain(), slotId: slot.slotId };
+    const key = { chainId: slot.chainId, slotId: slot.slotId };
     const closed = await closedSlotGroups(key, this.value, this.identity).catch((error: unknown) => {
       if (error instanceof SlotCancelled) return null;
       throw error;
     });
+    // Mark once at close, after every historical identity has resolved. Game retries only read the cohort.
+    for (let offset = 0; closed && offset < closed.refunds.length; offset += 100)
+      await this.value.markRefundable(key, closed.refunds.slice(offset, offset + 100));
     const jobs = await Promise.all(
       (closed?.groups ?? []).map((_, groupIndex) =>
         this.launches.scheduleStatement("game", {
@@ -106,17 +110,24 @@ export class D1SlotStore implements SlotStore {
     return this.get(name);
   }
 
-  async freezeNextDue(): Promise<void> {
+  async freezeDueSlots(): Promise<void> {
     const due = await this.db
       .prepare(
-        `SELECT name FROM playtest_slots WHERE chain_id=? AND frozen_at IS NULL AND closes_at <= ${DATABASE_NOW} ORDER BY closes_at, name LIMIT 1`,
+        `SELECT name FROM playtest_slots WHERE chain_id=? AND frozen_at IS NULL AND closes_at <= ${DATABASE_NOW} ORDER BY closes_at, name`,
       )
       .bind(await this.launches.targetChain())
-      .first<{ name: string }>();
-    if (due) await this.freeze(due.name);
+      .all<{ name: string }>();
+    for (const slot of due.results) {
+      try {
+        await this.freeze(slot.name);
+      } catch {
+        console.error("slot_close_unavailable", { name: slot.name });
+      }
+    }
   }
 }
 const toSlot = (row: SlotRow): PlaytestSlot => ({
+  chainId: row.chain_id,
   slotId: row.slot_id,
   name: row.name,
   closesAt: new Date(row.closes_at).toISOString(),

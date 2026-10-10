@@ -45,14 +45,16 @@ it("keeps schedule timing immutable and refuses creation after the D1 deadline",
   await store.create("friday", close);
   await store.create("friday", close);
   await expect(store.create("friday", new Date(Date.parse(close) + 60000).toISOString())).rejects.toThrow("immutable");
-  await expect(store.create("late", new Date(Math.floor(Date.now() / 1000) * 1000 - 1000).toISOString())).rejects.toThrow("deadline");
+  await expect(
+    store.create("late", new Date(Math.floor(Date.now() / 1000) * 1000 - 1000).toISOString()),
+  ).rejects.toThrow("deadline");
   await expect(store.freeze("friday")).rejects.toThrow("still open");
 });
 it("uses D1 time when a worker clock is ahead, and never closes another chain's schedule", async () => {
   const store = slots();
   await store.create("open", soon());
   const clock = vi.spyOn(Date, "now").mockReturnValue(Date.now() + 120000);
-  await store.freezeNextDue();
+  await store.freezeDueSlots();
   expect((await store.get("open")).frozenAt).toBeNull();
   await expect(store.freeze("open")).rejects.toThrow("still open");
   clock.mockRestore();
@@ -72,7 +74,7 @@ it("preserves a closed schedule through interruption and restart", async () => {
   await expect(store.freeze("closed")).rejects.toThrow("freeze interrupted");
   expect((await store.get("closed")).frozenAt).toBeNull();
   await database.db.prepare("DROP TRIGGER interrupt_freeze").run();
-  await store.freezeNextDue();
+  await store.freezeDueSlots();
   expect((await slots().get("closed")).frozenAt).not.toBeNull();
 });
 it("creates no game before close, balances 25 payers, and closes idempotently without a roster copy", async () => {
@@ -91,4 +93,57 @@ it("creates no game before close, balances 25 payers, and closes idempotently wi
   await store.freeze("balanced");
   expect(await launches.list("madara.blitz")).toEqual(first);
   expect(first.every((run) => !JSON.stringify(run.request).includes("wallet") && run.slotId === 1)).toBe(true);
+});
+it("continues closing later paid slots when an earlier ledger opening is unavailable", async () => {
+  const store = slots();
+  await store.create("first", soon());
+  await store.create("second", soon());
+  await database.db
+    .prepare("UPDATE playtest_slots SET closes_at=?")
+    .bind(Date.now() - 1000)
+    .run();
+  const realFreeze = store.freeze.bind(store);
+  vi.spyOn(store, "freeze").mockImplementation(async (name) => {
+    if (name === "first") throw new Error("ledger slot missing");
+    return realFreeze(name);
+  });
+  const log = vi.spyOn(console, "error").mockImplementation(() => {});
+  await store.freezeDueSlots();
+  expect((await store.get("first")).frozenAt).toBeNull();
+  expect((await store.get("second")).frozenAt).not.toBeNull();
+  expect(log).toHaveBeenCalledWith("slot_close_unavailable", { name: "first" });
+});
+it("marks refunds once at close and never makes a refund decision during an identity outage", async () => {
+  const value = { ...slotValueFixture(26), markRefundable: vi.fn(async () => {}) };
+  const identity = { accountAtRegistration: vi.fn(async (wallet: string) => (wallet === "0x1" ? null : wallet)) };
+  const launches = new D1LaunchStore(database.db, testChain());
+  const store = new D1SlotStore(database.db, launches, value, identity);
+  await store.create("refunds", soon());
+  await database.db
+    .prepare("UPDATE playtest_slots SET closes_at=?")
+    .bind(Date.now() - 1000)
+    .run();
+  identity.accountAtRegistration.mockRejectedValueOnce(new Error("identity down"));
+  await expect(store.freeze("refunds")).rejects.toThrow("identity down");
+  expect(value.markRefundable).not.toHaveBeenCalled();
+  expect(await launches.list("madara.blitz")).toEqual([]);
+  await store.freeze("refunds");
+  await store.freeze("refunds");
+  expect(value.markRefundable).toHaveBeenCalledOnce();
+  expect(value.markRefundable).toHaveBeenCalledWith({ chainId: await launches.targetChain(), slotId: 1 }, ["0x1"]);
+  expect(await launches.list("madara.blitz")).toHaveLength(2);
+});
+it("publishes the same stored shard key used to open the ledger slot", async () => {
+  const value = { ...slotValueFixture(), openSlot: vi.fn(async () => {}) };
+  const store = new D1SlotStore(
+    database.db,
+    new D1LaunchStore(database.db, testChain("0xabc")),
+    value,
+    registrationIdentityFixture,
+  );
+  await store.create("keyed", soon());
+  const slot = await store.get("keyed");
+  expect(slot.chainId).toBe("0xabc");
+  expect(await store.list()).toEqual([slot]);
+  expect(value.openSlot).toHaveBeenCalledWith({ chainId: slot.chainId, slotId: slot.slotId }, expect.any(Object));
 });

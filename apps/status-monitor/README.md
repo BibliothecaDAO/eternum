@@ -14,7 +14,7 @@ incident,100 recent resolved incidents and ten updates each. They describe obser
 Play checks HTML and the same-origin main module. Accounts checks identity D1 readiness, not email/Discord delivery or a
 real sign-in. A separate guardian row probes the guardian Worker directly, so an identity outage does not hide guardian
 readiness. Chat checks the existing global ChatRoom's SQLite. Directory and slots validate their public responses.
-Worlds check manifest identity, Herald health and node headers matching both confirmed heads, and the admission HTTP
+Worlds check manifest identity, Herald health and node headers matching both confirmed heads, and the stamping RPC
 listener (a deliberately unknown RPC method must be rejected, never enqueued). This listener check does not claim
 end-to-end action sequencing. A directory outage retains known world targets. Public hostnames name worlds because the
 directory has no separate display-name fact.

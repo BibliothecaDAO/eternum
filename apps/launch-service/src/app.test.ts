@@ -8,7 +8,7 @@ import { IdentityUnavailable } from "./errors";
 import { D1CalendarStore } from "./calendar-store";
 import { D1SlotStore } from "./slot-store";
 import { D1LaunchStore } from "./store";
-import { completeFreeFixture, createLaunchTestDatabase, testChain } from "./test-database";
+import { completeFreeFixture, createLaunchTestDatabase, testChain, TEST_CHAIN } from "./test-database";
 import { day, frontierSeasonEnd } from "./test-dates";
 
 const ALLOWED_ORIGIN = "https://play.realms.party";
@@ -59,7 +59,6 @@ const createApp = (
       registrar: { armFor: async () => {} },
       operatorLauncher: {
         enrol: async () => ({ chainId: "0x1", launcherAccount: "0x123" }),
-        check: async () => ({ txHash: "0xabc" }),
       },
     }),
     store,
@@ -95,6 +94,7 @@ describe("paid slot discovery", () => {
     expect(response.headers.get("cache-control")).toBe("no-store");
     expect(await response.json()).toMatchObject({
       name: "friday",
+      chainId: TEST_CHAIN,
     });
     expect((await app.request("https://play.realms.party/api/slots/missing")).status).toBe(404);
     expect((await app.request("https://play.realms.party/api/slots/Invalid")).status).toBe(400);
@@ -422,18 +422,15 @@ test("deployment launcher routes require the operator token, never an allowliste
   const enrolled = await app.request(request(path, { authorization: "Bearer " + OPERATOR_TOKEN }));
   expect(enrolled.status).toBe(200);
   expect(await enrolled.json()).toEqual({ chainId: "0x1", launcherAccount: "0x123" });
-  const arbitrary = new Request(ALLOWED_ORIGIN + "/api/factory/operator/launcher/check", {
-    method: "POST",
-    headers: { authorization: "Bearer " + OPERATOR_TOKEN, "content-type": "application/json" },
-    body: JSON.stringify({
-      chainId: "0x1",
-      heraldUrl: "https://shard.test",
-      name: "check-worker-0123456789abcdef",
-      presetId: 1,
-      calldata: ["0x123"],
-    }),
-  });
-  expect((await app.request(arbitrary)).status).toBe(400);
+  expect(
+    (
+      await app.request(
+        request("/api/factory/operator/launcher/check", {
+          authorization: "Bearer " + OPERATOR_TOKEN,
+        }),
+      )
+    ).status,
+  ).toBe(404);
 });
 
 test("normal launch requests cannot use the deployment's reserved check names", async () => {

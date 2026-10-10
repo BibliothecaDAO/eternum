@@ -1,6 +1,7 @@
 export { splitPlaytestRoster } from "@realms-world/value-ledger";
 
 export interface PlaytestSlot {
+  chainId: string;
   slotId: number;
   name: string;
   closesAt: string;
@@ -14,7 +15,7 @@ export interface SlotStore {
   get(name: string): Promise<PlaytestSlot>;
   list(): Promise<PlaytestSlot[]>;
   freeze(name: string): Promise<PlaytestSlot>;
-  freezeNextDue(): Promise<void>;
+  freezeDueSlots(): Promise<void>;
 }
 
 export class SlotConflict extends Error {}

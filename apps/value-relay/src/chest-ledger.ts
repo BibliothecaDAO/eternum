@@ -1,7 +1,7 @@
 import { Account } from "starknet";
 import { ledgerChestChanges } from "./ledger";
 import { relayOperation, type ChestPorts } from "./ports";
-import { rpcAt, readConfirmedLedgerHead, ledgerBool } from "@realms-world/value-ledger";
+import { rpcAt, readConfirmedLedgerHead, decodeChest } from "@realms-world/value-ledger";
 
 interface Connection {
   rpcUrl: string;
@@ -39,12 +39,7 @@ const readChest = async (connection: Connection, tokenId: string) => {
     { contractAddress: connection.contractAddress, entrypoint: "get_chest", calldata: tokenLimbs(tokenId) },
     "latest",
   );
-  if (fields.length !== 7 || fields[0] === undefined || BigInt(fields[0]) !== 1n) throw new Error("invalid_chest");
-  const requested = ledgerBool(fields[3]!);
-  const finished = ledgerBool(fields[4]!);
-  const requestBlock = Number(BigInt(fields[6]!));
-  if (!Number.isSafeInteger(requestBlock) || requestBlock < 0) throw new Error("invalid_request_block");
-  return { requested, finished, requester: fields[5]!, requestBlock };
+  return decodeChest(fields);
 };
 const tokenLimbs = (value: string) => {
   const n = BigInt(value);

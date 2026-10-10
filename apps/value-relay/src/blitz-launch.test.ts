@@ -48,20 +48,9 @@ it("opens the created shard key under the containing season's economic preset, t
     opened = true;
     return { transaction_hash: "0xabc" };
   });
-  rpc.events.mockImplementation(async (query) => ({
-    events:
-      query.keys[0][0] === hash.getSelectorFromName("GameOpened")
-        ? opened
-          ? [
-              {
-                from_address: "0x10",
-                keys: [hash.getSelectorFromName("GameOpened"), "0x1", "0x7"],
-                data: ["9", "100", "160"],
-              },
-            ]
-          : []
-        : [{ from_address: "0x10", keys: [hash.getSelectorFromName("SeasonOpened"), "3"], data: ["9", "60", "300"] }],
-  }));
+  rpc.events.mockResolvedValue({
+    events: [{ from_address: "0x10", keys: [hash.getSelectorFromName("SeasonOpened"), "3"], data: ["9", "60", "300"] }],
+  });
   rpc.call.mockImplementation(async (query) =>
     query.entrypoint === "get_season"
       ? ["0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "1", "9", "60", "300", "0", "0"]
@@ -81,11 +70,6 @@ it("opens the created shard key under the containing season's economic preset, t
 });
 it("cancels before start and automatically waits until the earliest legal abort after start", async () => {
   let cancelled = false;
-  rpc.events.mockResolvedValue({
-    events: [
-      { from_address: "0x10", keys: [hash.getSelectorFromName("GameOpened"), "0x1", "0x7"], data: ["9", "100", "160"] },
-    ],
-  });
   rpc.call.mockImplementation(async () => game(cancelled));
   rpc.execute.mockImplementation(async () => {
     cancelled = true;

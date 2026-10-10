@@ -48,24 +48,13 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-it("reads a linked identity's ledger owner, distinguishing unlinked and unknown identities without defaults", async () => {
-  const response = await request("realmsIds=0x01,0x2,0x3");
-  expect(response.status).toBe(200);
-  expect(response.headers.get("cache-control")).toBe("no-store");
-  expect(await response.json()).toEqual({
-    block_number: 77,
-    block_hash: "0xabc",
-    ratings: {
-      "0x01": { status: "rated", player: "0xa", rating: "1000" },
-      "0x2": { status: "unlinked", player: null, rating: null },
-      "0x3": { status: "unknown_identity", player: null, rating: null },
-    },
+it("keeps the played wallet rating when the identity database links another wallet", async () => {
+  query.mockResolvedValue({ results: [{ realmsId: "0x1", address: "0xb" }] });
+  expect(await (await request("players=0x0a")).json()).toMatchObject({
+    ratings: { "0x0a": { player: "0xa", rating: "1000" } },
   });
-  expect(query).toHaveBeenCalledWith(["0x1", "0x2", "0x3"]);
-  expect(call).toHaveBeenCalledWith(
-    expect.objectContaining({ entrypoint: "get_player_mmr", calldata: ["0xa"] }),
-    "0xabc",
-  );
+  expect(query).not.toHaveBeenCalled();
+  expect(call).toHaveBeenCalledWith(expect.objectContaining({ calldata: ["0xa"] }), "0xabc");
 });
 
 it("serves direct L2 owners through the same read, deduplicates, and preserves decimal/u256 precision", async () => {
@@ -90,6 +79,8 @@ it.each([
   "players=0",
   "accounts=0x1&realmsIds=0x1",
   "accounts=0x0",
+  "accounts=0x11",
+  "realmsIds=0x1",
   "accounts=0x1&accounts=0x2",
   "players=0x0",
   "players=0xa,,0xb",
@@ -102,28 +93,7 @@ it.each([
   expect(call).not.toHaveBeenCalled();
 });
 
-it("does not ask the chain for identities without linked wallets", async () => {
-  const response = await request("realmsIds=0x2,0x3");
-  expect(await response.json()).toEqual({
-    block_number: null,
-    block_hash: null,
-    ratings: {
-      "0x2": { status: "unlinked", player: null, rating: null },
-      "0x3": { status: "unknown_identity", player: null, rating: null },
-    },
-  });
-  expect(RpcProvider.prototype.getChainId).not.toHaveBeenCalled();
-});
-
-it("deduplicates a shared linked owner and never returns a partial batch or a DB fallback", async () => {
-  query.mockResolvedValue({
-    results: [
-      { realmsId: "0x1", address: "0xa" },
-      { realmsId: "0x2", address: "0x0a" },
-    ],
-  });
-  expect((await request("realmsIds=0x1,0x2")).status).toBe(200);
-  expect(call).toHaveBeenCalledTimes(1);
+it("never returns a partial batch or an identity fallback", async () => {
   call.mockImplementation(async ({ calldata }) => {
     if (Array.isArray(calldata) && calldata[0] === "0xb") throw new Error("one owner read failed");
     return [`0x${(1000n * 10n ** 18n).toString(16)}`, "0x0"];
@@ -132,10 +102,10 @@ it("deduplicates a shared linked owner and never returns a partial batch or a DB
   expect(partial.status).toBe(503);
   expect(await partial.json()).toEqual({ error: "ratings_unavailable" });
   query.mockRejectedValue(new Error("DB unavailable"));
-  expect((await request("realmsIds=0x1")).status).toBe(503);
+  expect((await request("players=0xa")).status).toBe(200);
 });
 
-it("fails the whole batch on an outage, malformed result, wrong network or corrupt wallet mapping", async () => {
+it("fails the whole batch on an outage, malformed result or wrong network", async () => {
   for (const result of [[], ["0x1"], ["0x0", "0x0"], ["invalid", "0x0"], [`0x${(1n << 128n).toString(16)}`, "0x0"]]) {
     call.mockResolvedValue(result);
     expect((await request("players=0xa")).status).toBe(503);
@@ -146,8 +116,6 @@ it("fails the whole batch on an outage, malformed result, wrong network or corru
   call.mockClear();
   expect((await request("players=0xa")).status).toBe(503);
   expect(call).not.toHaveBeenCalled();
-  query.mockResolvedValue({ results: [{ realmsId: "0x1", address: "not-a-wallet" }] });
-  expect((await request("realmsIds=0x1")).status).toBe(503);
 });
 
 it("bounds simultaneous calls, keeps one confirmed block, and reads changes afresh on the next request", async () => {
@@ -186,29 +154,9 @@ it("reads the top list's named hash and rejects a response for another block", a
   vi.mocked(RpcProvider.prototype.getBlock).mockClear();
   const first = await request("players=0xa&block_hash=0xabc");
   expect(first.status).toBe(200);
-  expect(RpcProvider.prototype.getBlock).not.toHaveBeenCalled();
+  expect(RpcProvider.prototype.getBlock).toHaveBeenCalledWith("0xabc");
   expect((await request("players=0xa&block_hash=0xdef")).status).toBe(503);
   expect((await request("players=0xa&block_hash=0x0")).status).toBe(400);
-});
-
-it("resolves another player's approved gameplay account to the same linked wallet rating", async () => {
-  query.mockResolvedValue({
-    results: [
-      { account: "0x11", address: "0xa" },
-      { account: "0x12", address: null },
-    ],
-  });
-  const response = await request("accounts=0x011,0x12,0x13");
-  expect(response.status).toBe(200);
-  expect(await response.json()).toMatchObject({
-    ratings: {
-      "0x011": { status: "rated", player: "0xa", rating: "1000" },
-      "0x12": { status: "unlinked", player: null, rating: null },
-      "0x13": { status: "unknown_identity", player: null, rating: null },
-    },
-  });
-  expect(query).toHaveBeenCalledWith(["0x11", "0x12", "0x13"]);
-  expect(call).toHaveBeenCalledTimes(1);
 });
 
 it("uses the Sepolia reader and its configured rating token instead of mainnet addresses", async () => {

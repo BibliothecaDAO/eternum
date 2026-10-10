@@ -1,9 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { isSameStarknetAddress } from "@realms-world/identity";
-import type { Chest, ChestContent, PlayerResult, Registration } from "@realms-world/value-ledger/codecs";
+import type { ChestContent, PlayerResult, Registration } from "@realms-world/value-ledger/codecs";
 
 import type { EnvironmentLedger, GameKey, SlotKey } from "../value/ledger";
+
+type Chest = Awaited<ReturnType<EnvironmentLedger["chest"]>>;
 
 /*
  * A finished paid Blitz on the environment's ledger (design 5: the result mints a chest token the player holds,

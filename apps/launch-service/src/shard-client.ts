@@ -1,6 +1,7 @@
+import { readBlitzRoster } from "@realms-world/value-ledger";
 import { RegistrationOpen } from "./blitz-roster";
 import { ShardOperator, batchRemaining, type ShardTarget } from "@realms-world/value-ledger/shard";
-import { CairoOption, CairoOptionVariant, shortString, hash } from "starknet";
+import { CairoOption, CairoOptionVariant, shortString } from "starknet";
 import { applyDeploymentConfigOverrides } from "../../../config/deployer/clean/config/config-loader";
 import { loadNativePresetConfiguration } from "../../../config/deployer/clean/registrar/native-preset";
 import { buildCreateGameParams } from "../../../config/deployer/clean/registrar/preset";
@@ -78,34 +79,8 @@ export class LaunchShard extends ShardOperator {
       ...(transactionHash ? { createGameTxHash: transactionHash } : {}),
     };
   }
-  async creationTransaction(name: string, presetId: number, fromBlock: number) {
-    const head = await this.head();
-    let token: string | undefined;
-    const seen = new Set<string>();
-    do {
-      const page = await this.provider.getEvents({
-        address: this.target.gamesAddress,
-        from_block: { block_number: fromBlock },
-        to_block: { block_number: head.block_number },
-        chunk_size: 100,
-        ...(token ? { continuation_token: token } : {}),
-      });
-      const candidates = new Set(page.events.map((event) => event.transaction_hash));
-      for (const txHash of candidates) {
-        const tx = await this.provider.getTransactionByHash(txHash);
-        if (!isCheckCreation(tx, this.target, name, presetId)) continue;
-        await this.confirm(txHash);
-        return txHash;
-      }
-      token = page.continuation_token;
-      if (token && seen.has(token)) throw new Error("launcher_creation_page_cycle");
-      if (token) seen.add(token);
-    } while (token);
-    throw new Error("launcher_original_creation_missing");
-  }
   async roster(gameId: number) {
-    const rows = await this.view<{ wallet: bigint; account: bigint }[]>("blitz_roster", [gameId]);
-    return rows.map((row) => ({ wallet: `0x${row.wallet.toString(16)}`, account: `0x${row.account.toString(16)}` }));
+    return readBlitzRoster(this.provider, this.target.gamesAddress, gameId, (await this.head()).block_number);
   }
   async seat(gameId: number) {
     let transactions = 0;
@@ -174,23 +149,3 @@ export class LaunchShard extends ShardOperator {
     };
   }
 }
-
-const isCheckCreation = (
-  tx: Awaited<ReturnType<ShardOperator["provider"]["getTransactionByHash"]>>,
-  target: ShardTarget,
-  name: string,
-  presetId: number,
-) => {
-  if (!("sender_address" in tx) || BigInt(tx.sender_address) !== BigInt(target.accountAddress) || !("calldata" in tx))
-    return false;
-  const data = tx.calldata;
-  return (
-    data.length >= 6 &&
-    BigInt(data[0]!) === 1n &&
-    BigInt(data[1]!) === BigInt(target.gamesAddress) &&
-    BigInt(data[2]!) === BigInt(hash.getSelectorFromName("create_game")) &&
-    BigInt(data[3]!) === BigInt(data.length - 4) &&
-    BigInt(data[4]!) === BigInt(shortString.encodeShortString(name)) &&
-    BigInt(data[5]!) === BigInt(presetId)
-  );
-};

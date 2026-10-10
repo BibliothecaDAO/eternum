@@ -1,3 +1,5 @@
+import { isSameStarknetAddress } from "../../identity/src/address";
+
 export interface LocalNotificationPayload {
   version: 1;
   id: string;
@@ -111,7 +113,7 @@ export function logicalStoryIdentity(
 
 function sameFelt(left: unknown, right: unknown): boolean {
   if (left === undefined || left === null || right === undefined || right === null) return false;
-  return BigInt(String(left)) === BigInt(String(right));
+  return isSameStarknetAddress(String(left), String(right));
 }
 
 export function notificationMatchesGame(clientUrl: string, target: string, origin: string): boolean {

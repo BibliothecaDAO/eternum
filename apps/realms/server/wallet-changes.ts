@@ -8,7 +8,7 @@ interface WalletChangeServices {
   sendNotice(email: string, address: string | null, id: string): Promise<void>;
 }
 
-/** Consume the wallet-change code in the same transaction that changes the wallet and queues its notice. */
+/** Consume the sign-in code in the same transaction that changes the wallet and queues its notice. */
 export const changeWallet = (
   services: WalletChangeServices,
   context: AuthContext,

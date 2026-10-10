@@ -10,6 +10,7 @@ import {
   decodeLedgerSlot,
   decodePlayerResult,
   decodeRegistration,
+  decodeSeasonWinner,
 } from "@realms-world/value-ledger/codecs";
 
 import { L2_LEDGER, l2Provider } from "@/runtime/l2-rpc";
@@ -157,13 +158,16 @@ export const ledgerReader = (provider: ProviderInterface, ledger: string) => {
     lordsToken: async () => (await view("lords", []))[0],
     chestCollection: async () => (await view("chest_collection", []))[0],
     balanceOf,
-    slot: async (key: SlotKey) => decodeLedgerSlot(await view("get_slot", keyCalldata(key))),
+    /** A listed slot the ledger does not hold is a broken listing, said as one. */
+    slot: async (key: SlotKey) => {
+      const slot = decodeLedgerSlot(await view("get_slot", keyCalldata(key)));
+      if (!slot.exists) throw new Error("invalid_ledger_slot");
+      return slot;
+    },
     preset: async (presetId: number) => presetTermsOf(decodeLedgerPreset(await view("get_preset", [String(presetId)]))),
     season: async (seasonId: number) => blitzSeasonOf(decodeBlitzSeason(await view("get_season", [String(seasonId)]))),
-    seasonWinner: async (seasonId: number, index: number) => {
-      const [wallet, low, high] = await view("get_season_winner", [String(seasonId), String(index)]);
-      return { wallet, share: BigInt(low) + (BigInt(high) << 128n) };
-    },
+    seasonWinner: async (seasonId: number, index: number) =>
+      decodeSeasonWinner(await view("get_season_winner", [String(seasonId), String(index)])),
     seasonClaimed: async (seasonId: number, owner: string) =>
       BigInt((await view("season_claimed", [String(seasonId), owner]))[0]) !== 0n,
     registration: async (key: SlotKey, owner: string) =>

@@ -15,11 +15,19 @@ import { D1LaunchStore, databaseLayer } from "./store";
  */
 export class Registrar extends DurableObject<Record<string, unknown>> {
   private readonly signing = Semaphore.makeUnsafe(1);
+  constructor(ctx: DurableObjectState, env: Record<string, unknown>) {
+    super(ctx, env);
+    ctx.blockConcurrencyWhile(async () => {
+      // Remove retired deployment preparations without touching enrolled signer identities.
+      let records: Map<string, unknown>;
+      do {
+        records = await ctx.storage.list({ prefix: "launcher-check:", limit: 100 });
+        if (records.size) await ctx.storage.delete([...records.keys()]);
+      } while (records.size);
+    });
+  }
   enrol(input: Parameters<OperatorLauncher["enrol"]>[0]) {
     return Effect.runPromise(this.signing.withPermit(deploymentOperation(() => this.deployment().enrol(input))));
-  }
-  check(input: Parameters<OperatorLauncher["check"]>[0]) {
-    return Effect.runPromise(this.signing.withPermit(deploymentOperation(() => this.deployment().check(input))));
   }
   private deployment() {
     return new LauncherDeployment(decodeLaunchEnv(this.env), this.ctx.storage);

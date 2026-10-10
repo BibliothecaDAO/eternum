@@ -10,15 +10,15 @@ it.each([0, 1, 24, 25, 48, 49, 300])("balances %i registrations into games of at
   expect(sizes.every((size) => size > 0 && size <= 24)).toBe(true);
   if (count) expect(Math.max(...sizes) - Math.min(...sizes)).toBeLessThanOrEqual(1);
 });
-it("resolves all historical links before marking unlinked and duplicate payers refundable", async () => {
+it("resolves unlinked and duplicate refunds without writing on game retries", async () => {
   const value = { ...slotValueFixture(3), markRefundable: vi.fn(async () => {}) };
   const identity = { accountAtRegistration: vi.fn(async (wallet: string) => (wallet === "0x1" ? null : "0xa")) };
   const first = await closedSlotGroups(key, value, identity);
   const second = await closedSlotGroups(key, value, identity);
   expect(second).toEqual(first);
   expect(first.groups).toEqual([[{ wallet: "0x2", account: "0xa" }]]);
-  expect(value.markRefundable).toHaveBeenCalledWith(key, ["0x1", "0x3"]);
-  value.markRefundable.mockClear();
+  expect(first.refunds).toEqual(["0x1", "0x3"]);
+  expect(value.markRefundable).not.toHaveBeenCalled();
   identity.accountAtRegistration.mockRejectedValueOnce(new Error("identity down"));
   await expect(closedSlotGroups(key, value, identity)).rejects.toThrow("identity down");
   expect(value.markRefundable).not.toHaveBeenCalled();

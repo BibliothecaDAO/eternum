@@ -40,20 +40,6 @@ export type ChestContent =
   | { kind: "shield" }
   | { kind: "lords"; amount: bigint };
 
-/**
- * A mystery chest: its season and rank band (0 best .. 4) are all it carries. Its holder's open request burns it and
- * fixes a future block; the draw is finished from that block's hash about ten blocks later, by anyone.
- */
-export interface Chest {
-  seasonId: number;
-  band: number;
-  requested: boolean;
-  finished: boolean;
-  /** Who asked to open it: the delivery goes to them. */
-  requester: string;
-  requestBlock: number;
-}
-
 /** Reads one felt array at a time, in the interface's order. */
 const fields = (felts: readonly string[]) => {
   let at = 0;
@@ -94,6 +80,8 @@ export const decodeRegistration = (felts: readonly string[]): Registration => {
 
 /** A registration slot on the ledger: uncapped; its pool is the money not yet allocated to a game or refunded. */
 export interface LedgerSlot {
+  /** False until the launcher opens the slot on the ledger; every other field is then zero. */
+  exists: boolean;
   seasonId: number;
   presetId: number;
   /** Registration closes at this Unix second, exclusive. */
@@ -104,10 +92,11 @@ export interface LedgerSlot {
   cancelled: boolean;
 }
 
-/** Slot: season_id, exists, preset_id, close, end, pool (2), registered_count, cancelled; one that does not exist throws. */
+/** Slot: season_id, exists, preset_id, close, end, pool (2), registered_count, cancelled. */
 export const decodeLedgerSlot = (fields: readonly string[]): LedgerSlot => {
-  if (fields.length !== 9 || !ledgerBool(fields[1]!)) throw new Error("invalid_ledger_slot");
+  if (fields.length !== 9) throw new Error("invalid_ledger_slot");
   return {
+    exists: ledgerBool(fields[1]!),
     seasonId: ledgerInteger(fields[0]!),
     presetId: ledgerInteger(fields[2]!),
     close: ledgerInteger(fields[3]!),
@@ -127,18 +116,6 @@ export const decodePlayerResult = (felts: readonly string[]): PlayerResult => {
     mmrBefore: read.number(),
     mmrAfter: read.number(),
   };
-};
-
-/** Chest: exists, season_id, band, requested, finished, requester, request_block. */
-export const decodeChest = (felts: readonly string[]): Chest => {
-  const read = fields(felts);
-  read.skip(1);
-  const seasonId = read.number();
-  const band = read.number();
-  const requested = read.bool();
-  const finished = read.bool();
-  const requester = read.address();
-  return { seasonId, band, requested, finished, requester, requestBlock: read.number() };
 };
 
 /** ChestContent: kind, cosmetic, lords; kind 0 cosmetic, 1 sword credit, 2 shield credit, 3 LORDS (possibly zero). */
@@ -161,20 +138,55 @@ export const decodeCredits = (felts: readonly string[]): Credits => {
 };
 
 export const ledgerInteger = (value: string): number => {
-  const n = Number(BigInt(value));
+  const n = Number(unsigned(value));
   if (!Number.isSafeInteger(n) || n < 0) throw new Error("invalid_ledger_integer");
   return n;
 };
 export const ledgerBool = (value: string): boolean => {
-  if (![0n, 1n].includes(BigInt(value))) throw new Error("invalid_ledger_bool");
-  return BigInt(value) === 1n;
+  if (![0n, 1n].includes(unsigned(value))) throw new Error("invalid_ledger_bool");
+  return unsigned(value) === 1n;
 };
 export const ledgerU256 = (low: string, high: string): string => {
-  const a = BigInt(low),
-    b = BigInt(high);
+  const a = unsigned(low),
+    b = unsigned(high);
   if (a < 0n || b < 0n || a >= 2n ** 128n || b >= 2n ** 128n) throw new Error("invalid_u256_limb");
   return String(a + (b << 128n));
 };
+/** WithdrawalPayment: paid, season_id, wallet, amount (low, high); an all-zero row has no report. */
+export const decodeWithdrawalPayment = (fields: readonly string[]) => {
+  if (fields.length !== 5) throw new Error("invalid_payment_record");
+  const paid = ledgerBool(fields[0]!);
+  const seasonId = ledgerInteger(fields[1]!);
+  const wallet = unsigned(fields[2]!);
+  const amount = ledgerU256(fields[3]!, fields[4]!);
+  if (amount === "0" && !paid && seasonId === 0 && wallet === 0n) return null;
+  if (amount === "0" || (paid && wallet === 0n) || (!paid && wallet !== 0n)) throw new Error("invalid_payment_report");
+  return { paid, seasonId, wallet: fields[2]!, amount };
+};
+
+/**
+ * Chest: exists, season_id, band, requested, finished, requester, request_block. A mystery chest carries only its season
+ * and rank band (0 best .. 4); its holder's open request burns it and fixes a future block, and the draw is finished
+ * from that block's hash about ten blocks later, by anyone, delivering to the requester.
+ */
+export const decodeChest = (fields: readonly string[]) => {
+  if (fields.length !== 7 || !ledgerBool(fields[0]!)) throw new Error("invalid_chest");
+  return {
+    seasonId: ledgerInteger(fields[1]!),
+    band: ledgerInteger(fields[2]!),
+    requested: ledgerBool(fields[3]!),
+    finished: ledgerBool(fields[4]!),
+    requester: fields[5]!,
+    requestBlock: ledgerInteger(fields[6]!),
+  };
+};
+
+/** get_season_winner returns the wallet and its allocated u256 share. */
+export const decodeSeasonWinner = (fields: readonly string[]) => {
+  if (fields.length !== 3 || unsigned(fields[0]!) === 0n) throw new Error("invalid_season_winner");
+  return { wallet: fields[0]!, share: BigInt(ledgerU256(fields[1]!, fields[2]!)) };
+};
+
 export const decodeBlitzSeason = (fields: readonly string[]) => {
   if (fields.length !== 16 || !ledgerBool(fields[10]!)) throw new Error("invalid_ledger_season");
   return {
@@ -242,4 +254,9 @@ export const decodeLedgerPreset = (fields: readonly string[]) => {
     bags: ledgerInteger(fields[18]!),
     claimWindow: ledgerInteger(fields[19]!),
   };
+};
+
+const unsigned = (value: string) => {
+  if (!/^(?:0x[0-9a-f]+|[0-9]+)$/i.test(value)) throw new Error("invalid_ledger_felt");
+  return BigInt(value);
 };

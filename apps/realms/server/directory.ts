@@ -1,4 +1,4 @@
-import { normalizeStarknetAddress } from "@realms-world/identity";
+import { normalizeStarknetAddress, isSameStarknetAddress } from "@realms-world/identity";
 import { Effect } from "effect";
 import type { HeraldGameDirectory, HeraldGameDirectoryEntry, ShardManifest } from "@bibliothecadao/eternum/game-sync";
 
@@ -354,11 +354,10 @@ const readManifest = async (url: string, fetchShard: typeof fetch) => {
 };
 
 const hasAccountIdentity = (manifest: Partial<AccountIdentity>, identity: AccountIdentity) =>
-  sameFelt(manifest.accountClassHash, identity.accountClassHash) &&
-  sameFelt(manifest.guardianPublicKey, identity.guardianPublicKey);
-
-const sameFelt = (value: unknown, expected: string) =>
-  typeof value === "string" && FELT.test(value) && BigInt(value) === BigInt(expected);
+  (["accountClassHash", "guardianPublicKey"] as const).every((key) => {
+    const value = manifest[key];
+    return typeof value === "string" && FELT.test(value) && isSameStarknetAddress(value, identity[key]);
+  });
 
 /** The directory's cron: every listed shard has a running notifier, and a retired one has none. */
 export const superviseNotifiers = async (db: D1Database, notifiers: IdentityEnv["SHARD_NOTIFIER"]): Promise<void> => {
