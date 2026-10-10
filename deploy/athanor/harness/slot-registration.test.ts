@@ -44,7 +44,10 @@ function fakeLaunchService(behaviour: { failGame?: number } = {}) {
   const fetchStub = async (input: string, init: RequestInit) => {
     const url = new URL(input);
     const path = `${url.pathname}${url.search}`;
-    const headers = Object.fromEntries(new Headers(init.headers).entries());
+    const headers: Record<string, string> = {};
+    new Headers(init.headers).forEach((value, key) => {
+      headers[key] = value;
+    });
     expect(init.redirect).toBe("error");
     const body = init.body ? JSON.parse(String(init.body)) : undefined;
     requests.push({ method: init.method ?? "GET", path, headers, body });
