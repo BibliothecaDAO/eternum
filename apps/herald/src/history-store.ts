@@ -13,11 +13,10 @@ import type {
   HeraldHistoryPage,
   HeraldHistoryEvent,
   HeraldFrontierDayRanks,
-  HeraldTransactionCount,
 } from "@bibliothecadao/eternum/game-sync";
 
 import { normalizeFelt, toJsonValue } from "./model-registry";
-import type { DecodedRecord, DecodedWorldEvent, RpcReceipt } from "./types";
+import type { DecodedRecord, DecodedWorldEvent } from "./types";
 
 export interface HistoryCodec {
   storyModels: readonly string[];
@@ -105,8 +104,6 @@ export class HistoryStore {
   private readonly pool: Pool;
   private readonly points = new PointsLeaderboard();
   private readonly frozenReviews = new Set<string>();
-  private writeQueue = Promise.resolve();
-  private writeFailure?: Error;
 
   constructor(
     databaseUrl: string,
@@ -168,15 +165,7 @@ export class HistoryStore {
         PRIMARY KEY (chain, world_address, game_id, day_index)
       );
 
-      CREATE TABLE IF NOT EXISTS herald_game_transactions (
-        chain TEXT NOT NULL,
-        world_address TEXT NOT NULL,
-        game_id NUMERIC NOT NULL,
-        transaction_hash TEXT NOT NULL,
-        block_number BIGINT,
-        status TEXT NOT NULL,
-        PRIMARY KEY (chain, world_address, game_id, transaction_hash)
-      );
+      DROP TABLE IF EXISTS herald_game_transactions;
 
       CREATE TABLE IF NOT EXISTS herald_game_review_snapshots (
         chain TEXT NOT NULL,
@@ -300,30 +289,6 @@ export class HistoryStore {
       const registration = this.codec.readPoints(row.value);
       if (registration) this.points.accept(row.game_id, registration);
     }
-  }
-
-  public recordTransaction(gameId: string, receipt: RpcReceipt): void {
-    this.writeQueue = this.writeQueue
-      .then(async () => {
-        await this.pool.query(
-          `INSERT INTO herald_game_transactions (
-             chain, world_address, game_id, transaction_hash, block_number, status
-           ) VALUES ($1, $2, $3, $4, $5, $6)
-           ON CONFLICT (chain, world_address, game_id, transaction_hash) DO UPDATE
-           SET block_number = EXCLUDED.block_number, status = EXCLUDED.status`,
-          [
-            this.chain,
-            this.worldAddress,
-            gameId,
-            normalizeFelt(receipt.transaction_hash),
-            receipt.block_number ?? null,
-            receipt.execution_status === "REVERTED" ? "REVERTED" : receipt.finality_status,
-          ],
-        );
-      })
-      .catch((error) => {
-        this.writeFailure = error instanceof Error ? error : new Error(String(error));
-      });
   }
 
   public async freezeReviewSnapshot(gameId: string, createSnapshot: () => HeraldGameSnapshot): Promise<void> {
@@ -487,19 +452,7 @@ export class HistoryStore {
     };
   }
 
-  public async transactionCount(gameId: string): Promise<HeraldTransactionCount> {
-    const result = await this.pool.query<{ total: string }>(
-      `SELECT COUNT(*) AS total
-       FROM herald_game_transactions
-       WHERE chain = $1 AND world_address = $2 AND game_id = $3`,
-      [this.chain, this.worldAddress, gameId],
-    );
-    return { count: Number(result.rows[0]?.total ?? 0), game_id: gameId };
-  }
-
   public async close(): Promise<void> {
-    await this.writeQueue;
-    if (this.writeFailure) throw this.writeFailure;
     await this.pool.end();
   }
 }
