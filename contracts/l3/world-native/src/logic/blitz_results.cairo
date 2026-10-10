@@ -2,12 +2,12 @@
 pub mod BlitzResultState {
     use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
     use starknet::{ContractAddress, get_tx_info};
-    use crate::blitz_results::{BlitzResult, RankedPlayer, RecordBlitzResults};
+    use crate::blitz_results::{BlitzResult, RankedPlayer};
     use crate::events::RowSet;
     use crate::ownership::{Story, StoryEvent};
     use crate::registrar::RosterPlayer;
 
-    // One immutable result per roster position; count is the resumable batch cursor.
+    // One immutable result per frozen roster position; count records completion.
     #[storage]
     #[allow(starknet::colliding_storage_paths)]
     pub struct Storage {
@@ -42,34 +42,23 @@ pub mod BlitzResultState {
             ref self: ComponentState<TContractState>,
             game_id: u32,
             actor: ContractAddress,
-            command: RecordBlitzResults,
             context: crate::commands::ActionContext,
         ) -> u64 {
             let context = crate::commands::load_context(game_id, context);
             self.assert_finalizable(context);
             let roster = self.roster(game_id);
             let count = self.data.blitz_results.ranked_count.read(game_id);
-            let end = Into::<u8, u32>::into(command.start) + command.players.len();
-            assert!(!command.players.is_empty() && command.players.len() <= 8, "invalid result batch size");
-            assert!(end <= roster.len(), "too many result players");
-            if command.start < count {
-                self.assert_recorded_batch(game_id, command, count);
-                return ((roster.len() - Into::<u8, u32>::into(count)).into());
+            if Into::<u8, u32>::into(count) == roster.len() {
+                return 0;
             }
-            assert!(command.start == count, "result batch out of order");
             let mut points = array![];
             for player in roster {
                 points.append(self.data.season.player_points.read((game_id, *player.account)));
             }
-            for offset in 0..command.players.len() {
-                let index: u8 = (Into::<u8, u32>::into(count) + offset).try_into().unwrap();
-                let result = *command.players.at(offset);
-                self.validate_player(roster, points.span(), index, result);
-                self.data.blitz_results.ranked_results.write((game_id, index), result);
-            }
-            self.data.blitz_results.ranked_count.write(game_id, end.try_into().unwrap());
+            self.write_ranked_roster(game_id, roster, points.span());
+            self.data.blitz_results.ranked_count.write(game_id, roster.len().try_into().unwrap());
             self.emit_result(game_id, crate::state::read().launcher.read(), context.timestamp);
-            ((roster.len() - end).into())
+            0
         }
     }
     #[generate_trait]
@@ -89,48 +78,29 @@ pub mod BlitzResultState {
             assert!(game.ready && game.end_at != 0 && timestamp >= game.end_at, "game has not ended");
             assert!(game.settled, "final point settlement incomplete");
         }
-        fn assert_recorded_batch(
-            self: @ComponentState<TContractState>, game_id: u32, command: RecordBlitzResults, count: u8,
+        fn write_ranked_roster(
+            ref self: ComponentState<TContractState>, game_id: u32, roster: Span<RosterPlayer>, points: Span<u128>,
         ) {
-            assert!(
-                Into::<u8, u32>::into(command.start) + command.players.len() <= count.into(),
-                "overlapping result batch",
-            );
-            for offset in 0..command.players.len() {
-                let index: u8 = (Into::<u8, u32>::into(command.start) + offset).try_into().unwrap();
-                assert!(
-                    self.data.blitz_results.ranked_results.read((game_id, index)) == *command.players.at(offset),
-                    "conflicting result retry",
-                );
+            for position in 0..roster.len() {
+                let (index, result) = Self::ranked_player(roster, points, position);
+                self.data.blitz_results.ranked_results.write((game_id, index), result);
             }
         }
-        fn validate_player(
-            self: @ComponentState<TContractState>,
-            roster: Span<RosterPlayer>,
-            points: Span<u128>,
-            index: u8,
-            result: RankedPlayer,
-        ) {
-            let mut score = None;
-            for position in 0..roster.len() {
-                if *roster.at(position).wallet == result.wallet {
-                    score = Some(*points.at(position));
-                }
-            }
-            let score = score.expect('result wallet outside roster');
-            let mut expected_rank: u16 = 1;
-            let mut expected_index: u8 = 0;
-            for position in 0..roster.len() {
-                let other_score = *points.at(position);
+        fn ranked_player(roster: Span<RosterPlayer>, points: Span<u128>, position: u32) -> (u8, RankedPlayer) {
+            let wallet = *roster.at(position).wallet;
+            let score = *points.at(position);
+            let mut rank: u16 = 1;
+            let mut index: u8 = 0;
+            for other in 0..roster.len() {
+                let other_score = *points.at(other);
                 if other_score > score {
-                    expected_rank += 1;
-                    expected_index += 1;
-                } else if other_score == score && *roster.at(position).wallet < result.wallet {
-                    expected_index += 1;
+                    rank += 1;
+                    index += 1;
+                } else if other_score == score && *roster.at(other).wallet < wallet {
+                    index += 1;
                 }
             }
-            assert!(result.rank == expected_rank, "incorrect competition rank");
-            assert!(index == expected_index, "incorrect result order");
+            (index, RankedPlayer { wallet, rank })
         }
         fn emit_result(
             ref self: ComponentState<TContractState>, game_id: u32, launcher: ContractAddress, timestamp: u64,

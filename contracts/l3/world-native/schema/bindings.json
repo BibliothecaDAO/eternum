@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "6e83e0b5cc179e29fa66bd6b87e1b2e2fae51385e08f0e0fd8762458e0a79366",
+  "schemaIdentity": "a2699a0e6e4acc8e8c9a621cf93992bab4ff2664a4f0f33f1514f7e1316a91d3",
   "commandAbi": [
     {
       "type": "interface",
@@ -229,7 +229,7 @@
         },
         {
           "name": "RecordBlitzResults",
-          "type": "world_native::blitz_results::RecordBlitzResults"
+          "type": "()"
         },
         {
           "name": "CraftRelic",
@@ -1004,44 +1004,6 @@
         {
           "name": "wonder_id",
           "type": "core::integer::u64"
-        }
-      ]
-    },
-    {
-      "type": "struct",
-      "name": "world_native::blitz_results::RecordBlitzResults",
-      "members": [
-        {
-          "name": "start",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "players",
-          "type": "core::array::Span::<world_native::blitz_results::RankedPlayer>"
-        }
-      ]
-    },
-    {
-      "type": "struct",
-      "name": "core::array::Span::<world_native::blitz_results::RankedPlayer>",
-      "members": [
-        {
-          "name": "snapshot",
-          "type": "@core::array::Array::<world_native::blitz_results::RankedPlayer>"
-        }
-      ]
-    },
-    {
-      "type": "struct",
-      "name": "world_native::blitz_results::RankedPlayer",
-      "members": [
-        {
-          "name": "wallet",
-          "type": "core::starknet::contract_address::ContractAddress"
-        },
-        {
-          "name": "rank",
-          "type": "core::integer::u16"
         }
       ]
     },

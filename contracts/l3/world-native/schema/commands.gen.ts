@@ -126,7 +126,7 @@ export interface NativeCommandPayloads {
   UpdateFaithfulOwnership: BigNumberish;
   ClaimWonderPoints: BigNumberish;
   ClaimPlayerFaithPoints: { readonly player: BigNumberish; readonly wonder_id: BigNumberish };
-  RecordBlitzResults: { readonly start: BigNumberish; readonly players: readonly ({ readonly wallet: BigNumberish; readonly rank: BigNumberish })[] };
+  RecordBlitzResults: undefined;
   CraftRelic: BigNumberish;
   CreateGuild: { readonly owned_structure_id: BigNumberish; readonly public: boolean; readonly name: BigNumberish };
   JoinGuild: { readonly owned_structure_id: BigNumberish; readonly guild_id: BigNumberish };

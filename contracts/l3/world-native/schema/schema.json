@@ -7680,20 +7680,6 @@
         }
       ]
     },
-    "world_native::blitz_results::RecordBlitzResults": {
-      "type": "struct",
-      "name": "world_native::blitz_results::RecordBlitzResults",
-      "members": [
-        {
-          "name": "start",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "players",
-          "type": "core::array::Span::<world_native::blitz_results::RankedPlayer>"
-        }
-      ]
-    },
     "world_native::bridge::Deposit": {
       "type": "struct",
       "name": "world_native::bridge::Deposit",
@@ -8318,7 +8304,7 @@
         },
         {
           "name": "RecordBlitzResults",
-          "type": "world_native::blitz_results::RecordBlitzResults"
+          "type": "()"
         },
         {
           "name": "CraftRelic",
@@ -12813,5 +12799,5 @@
       ]
     }
   },
-  "identity": "6e83e0b5cc179e29fa66bd6b87e1b2e2fae51385e08f0e0fd8762458e0a79366"
+  "identity": "a2699a0e6e4acc8e8c9a621cf93992bab4ff2664a4f0f33f1514f7e1316a91d3"
 }

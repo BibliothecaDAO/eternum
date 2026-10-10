@@ -64,10 +64,7 @@ export async function executeNativeAdminCommand(
   const rejection = gameplayRejection(receipt.events, games, accepted.transaction_hash, scope);
   if (rejection) throw new Error(`Native command rejected: ${rejection.statusClass}: ${rejection.reason}`);
   const remaining = batchRemaining(receipt.events, games, accepted.transaction_hash, scope)?.toString();
-  if (
-    (repeatableBatches.has(input.command.kind) || input.command.kind === "RecordBlitzResults") &&
-    remaining === undefined
-  )
+  if (repeatableBatches.has(input.command.kind) && remaining === undefined)
     throw new Error("Native administrative batch has no remaining count");
   return { transactionHash: accepted.transaction_hash, ...(remaining !== undefined ? { remaining } : {}) };
 }

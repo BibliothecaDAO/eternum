@@ -2,7 +2,7 @@ use snforge_std::{EventSpyTrait, EventsFilterTrait, start_cheat_caller_address, 
 use starknet::ContractAddress;
 use crate::blitz_results::{
     IBlitzResultsDispatcher, IBlitzResultsDispatcherTrait, IBlitzResultsSafeDispatcher,
-    IBlitzResultsSafeDispatcherTrait, RankedPlayer, RecordBlitzResults,
+    IBlitzResultsSafeDispatcherTrait, RankedPlayer,
 };
 use crate::commands::{Command, ExecutionContext};
 use crate::game::{IGameDispatcher, IGameDispatcherTrait};
@@ -56,22 +56,16 @@ fn setup(scores: Span<u128>) -> super::Deployment {
     );
     d
 }
-fn submit(d: super::Deployment, start: u8, players: Span<RankedPlayer>) -> bool {
-    execute(d, Command::RecordBlitzResults(RecordBlitzResults { start, players }), 500)
+fn submit(d: super::Deployment) -> bool {
+    execute(d, Command::RecordBlitzResults, 500)
 }
 
 #[test]
-fn results_resume_with_competition_ties_and_zero_point_players_tied_last() {
+fn the_shard_derives_all_competition_ties_and_zero_point_players_in_one_call() {
     let d = setup(array![600, 600, 400, 0, 0].span());
-    let first = array![result(0, 1), result(1, 1)].span();
-    assert!(submit(d, 0, first));
-    let partial = view(d).blitz_result(3);
-    assert_eq!(partial.players, first);
-    assert!(!partial.complete && partial.commitment == 0);
-    assert!(submit(d, 0, first));
-    assert_eq!(view(d).blitz_result(3), partial);
-    assert!(submit(d, 2, array![result(2, 3), result(3, 4), result(4, 4)].span()));
+    assert!(submit(d));
     let complete = view(d).blitz_result(3);
+    assert_eq!(complete.players, array![result(0, 1), result(1, 1), result(2, 3), result(3, 4), result(4, 4)].span());
     assert!(complete.complete);
     let expected = core::poseidon::poseidon_hash_span(
         array![
@@ -81,69 +75,23 @@ fn results_resume_with_competition_ties_and_zero_point_players_tied_last() {
             .span(),
     );
     assert_eq!(complete.commitment, expected);
-    assert!(submit(d, 2, array![result(2, 3), result(3, 4), result(4, 4)].span()));
+    assert!(submit(d));
     assert_eq!(view(d).blitz_result(3), complete);
 }
 
 #[test]
-fn results_reject_wrong_ranks_order_duplicates_and_foreign_wallets_atomically() {
-    let d = setup(array![100, 80, 20].span());
-    for players in array![
-        array![result(0, 2)].span(), array![result(1, 1), result(0, 2)].span(),
-        array![result(0, 1), result(0, 1)].span(), array![result(0, 1), result(99, 2)].span(),
-    ] {
-        assert!(!submit(d, 0, players));
-        assert!(view(d).blitz_result(3).players.is_empty());
-    }
-    assert!(submit(d, 0, array![result(0, 1)].span()));
-    assert!(!submit(d, 1, array![result(0, 1)].span()));
-    assert!(!submit(d, 0, array![result(1, 1)].span()));
-    assert_eq!(view(d).blitz_result(3).players.len(), 1);
-}
-
-#[test]
-fn omitted_players_never_finalize_and_batches_cannot_skip_or_overlap_the_cursor() {
-    let d = setup(array![100, 80, 0].span());
-    assert!(!submit(d, 0, array![result(1, 2)].span()));
-    assert!(!submit(d, 1, array![result(1, 2)].span()));
-    assert!(!submit(d, 0, array![].span()));
-    assert!(submit(d, 0, array![result(0, 1)].span()));
-    assert!(!submit(d, 0, array![result(0, 1), result(1, 2)].span()));
-    assert!(submit(d, 1, array![result(1, 2)].span()));
-    assert!(!view(d).blitz_result(3).complete);
-    assert!(!submit(d, 3, array![result(2, 3)].span()));
-    assert!(submit(d, 2, array![result(2, 3)].span()));
-    assert!(view(d).blitz_result(3).complete);
-}
-
-#[test]
-fn the_full_roster_stays_bounded_to_eight_results_per_call() {
+fn a_maximum_roster_completes_atomically_without_caller_ranks_or_a_cursor() {
     let mut scores = array![];
     for _ in 0_u32..24 {
         scores.append(0);
     }
     let d = setup(scores.span());
-    let mut too_many = array![];
-    for index in 0_u32..9 {
-        too_many.append(result(index, 1));
+    assert!(submit(d));
+    let complete = view(d).blitz_result(3);
+    assert!(complete.complete && complete.players.len() == 24);
+    for index in 0_u32..24 {
+        assert_eq!(*complete.players.at(index), result(index, 1));
     }
-    assert!(!submit(d, 0, too_many.span()));
-    for batch in 0_u32..3 {
-        let mut players = array![];
-        for index in (batch * 8)..(batch * 8 + 8) {
-            players.append(result(index, 1));
-        }
-        super::season_lifecycle::execute_batch(
-            d,
-            Command::RecordBlitzResults(
-                RecordBlitzResults { start: (batch * 8).try_into().unwrap(), players: players.span() },
-            ),
-            500,
-            (16 - batch * 8).into(),
-        );
-    }
-    let recorded = view(d).blitz_result(3);
-    assert!(recorded.complete && recorded.players.len() == 24);
 }
 
 #[test]
@@ -151,13 +99,12 @@ fn the_full_roster_stays_bounded_to_eight_results_per_call() {
 fn results_require_finished_point_settlement_without_authority() {
     let d = setup(array![10].span());
     let safe = IBlitzResultsSafeDispatcher { contract_address: d.games };
-    let command = RecordBlitzResults { start: 0, players: array![result(0, 1)].span() };
     let context = ExecutionContext { timestamp: 500, raw_root: 1, ..super::context(d.games, 3) };
     start_cheat_caller_address(d.games, d.games);
     assert!(
         safe
             .record_blitz_results(
-                3, d.actor, command, crate::commands::action_context(ExecutionContext { timestamp: 199, ..context }),
+                3, d.actor, crate::commands::action_context(ExecutionContext { timestamp: 199, ..context }),
             )
             .is_err(),
     );
@@ -170,16 +117,17 @@ fn results_require_finished_point_settlement_without_authority() {
         array![3].span(),
         crate::game::GameRegistry { settled: false, ..game },
     );
-    assert!(!submit(d, 0, command.players));
+    assert!(!submit(d));
+    assert!(view(d).blitz_result(3).players.is_empty());
     assert!(execute(d, Command::MarkGameSettled, 500));
-    assert!(submit(d, 0, command.players));
+    assert!(submit(d));
 }
 
 #[test]
 #[feature("safe_dispatcher")]
 fn results_are_game_scoped_and_an_absent_roster_rejects() {
     let d = setup(array![100].span());
-    assert!(submit(d, 0, array![result(0, 1)].span()));
+    assert!(submit(d));
     let safe = IBlitzResultsSafeDispatcher { contract_address: d.games };
     assert!(safe.blitz_result(4).is_err());
     set_fixture(d.games, selector!("registrar"), selector!("roster_sizes"), array![4].span(), 1_u32);
@@ -200,9 +148,8 @@ fn results_are_game_scoped_and_an_absent_roster_rejects() {
 #[test]
 fn final_history_is_emitted_once_and_retry_does_not_rewrite_the_result() {
     let d = setup(array![0].span());
-    let players = array![result(0, 1)].span();
     let mut spy = snforge_std::spy_events();
-    assert!(submit(d, 0, players));
+    assert!(submit(d));
     let mut result_events = 0;
     for (_, event) in spy.get_events().emitted_by(d.games).events {
         if *event.keys.at(0) == selector!("BlitzEvent") {
@@ -213,7 +160,7 @@ fn final_history_is_emitted_once_and_retry_does_not_rewrite_the_result() {
     let complete = view(d).blitz_result(3);
     assert!(complete.complete);
     let mut retry = snforge_std::spy_events();
-    assert!(submit(d, 0, players));
+    assert!(submit(d));
     assert_eq!(view(d).blitz_result(3), complete);
     for (_, event) in retry.get_events().emitted_by(d.games).events {
         assert!(*event.keys.at(0) != selector!("BlitzEvent"), "retry re-emitted final result");
@@ -221,35 +168,15 @@ fn final_history_is_emitted_once_and_retry_does_not_rewrite_the_result() {
 }
 
 #[test]
-fn result_batches_have_one_canonical_boundary_and_commitment_for_any_caller() {
+fn any_caller_gets_the_same_immutable_result_from_the_frozen_roster() {
     let first = setup(array![600, 600, 400, 0].span());
     let second = setup(array![600, 600, 400, 0].span());
     let owner = super::bind_authority(second);
     assert!(first.actor != super::authority());
     assert_eq!(owner.actor, super::authority());
-    let ordered = array![result(0, 1), result(1, 1), result(2, 3), result(3, 4)].span();
-    assert!(submit(first, 0, ordered.slice(0, 1)));
-    let partial = view(first).blitz_result(3);
-    // A new batch may neither restart an equal-score group nor jump over its next wallet.
-    assert!(!submit(first, 1, ordered.slice(0, 1)));
-    assert!(!submit(first, 1, ordered.slice(2, 1)));
-    assert!(!submit(first, 0, ordered.slice(0, 2)));
-    assert_eq!(view(first).blitz_result(3), partial);
-    assert!(submit(first, 1, ordered.slice(1, 3)));
-    assert!(submit(owner, 0, ordered.slice(0, 3)));
-    assert!(submit(owner, 3, ordered.slice(3, 1)));
+    assert!(submit(first));
+    assert!(submit(owner));
     assert_eq!(view(first).blitz_result(3), view(second).blitz_result(3));
-    assert!(view(first).blitz_result(3).complete);
-}
-
-#[test]
-fn tied_result_wallets_cannot_skip_the_canonical_first_player() {
-    let d = setup(array![100, 100, 100].span());
-    assert!(!submit(d, 0, array![result(1, 1)].span()));
-    assert!(view(d).blitz_result(3).players.is_empty());
-    assert!(submit(d, 0, array![result(0, 1)].span()));
-    assert!(!submit(d, 1, array![result(2, 1)].span()));
-    assert_eq!(view(d).blitz_result(3).players, array![result(0, 1)].span());
 }
 
 #[test]
@@ -281,7 +208,8 @@ fn tied_results_sort_by_frozen_payout_wallet_instead_of_shard_account() {
         array![3, 1].span(),
         RosterPlayer { account: player(1), wallet: player(0) },
     );
-    assert!(submit(d, 0, array![result(0, 1), result(1, 1)].span()));
+    assert!(submit(d));
+    assert_eq!(view(d).blitz_result(3).players, array![result(0, 1), result(1, 1)].span());
     assert!(view(d).blitz_result(3).complete);
 }
 
@@ -302,7 +230,25 @@ fn results_resolve_scores_through_the_frozen_wallet_to_account_binding() {
         array![3, 1].span(),
         RosterPlayer { account: player(1), wallet: player(0) },
     );
-    assert!(!submit(d, 0, array![result(0, 1)].span()));
-    assert!(submit(d, 0, array![result(1, 1), result(0, 2)].span()));
+    assert!(submit(d));
+    assert_eq!(view(d).blitz_result(3).players, array![result(1, 1), result(0, 2)].span());
     assert!(view(d).blitz_result(3).complete);
+}
+
+
+#[test]
+fn result_command_has_no_payload_and_old_caller_ranks_refuse_at_decode() {
+    let command = super::play_fixture::encode(Command::RecordBlitzResults);
+    assert_eq!(command.len(), 1);
+    assert!(crate::commands::validated_command(command).is_ok());
+    let mut old = array![];
+    for field in command {
+        old.append(*field);
+    }
+    // The old start/length/wallet/rank payload can neither select ranks nor reach the roll.
+    old.append(0);
+    old.append(1);
+    old.append(100);
+    old.append(1);
+    assert!(crate::commands::validated_command(old.span()).is_err());
 }
