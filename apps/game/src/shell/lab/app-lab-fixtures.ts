@@ -144,6 +144,8 @@ export const LAB_SCREENS = {
   "entry-choose": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
   "entry-short": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
   "entry-registered": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
+  // Past the close, before a game's roster names the wallet.
+  "entry-drawing": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
   // The slot's game is live and its roster seats the player: the ledger binds no game until the result.
   "entry-seated": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
   "entry-unseated": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
@@ -173,6 +175,7 @@ export const LAB_PAYOUT_WALLETS: Partial<Record<keyof typeof LAB_SCREENS, Payout
   "entry-choose": { status: "ready", address: LAB_WALLET },
   "entry-short": { status: "ready", address: LAB_WALLET },
   "entry-registered": { status: "ready", address: LAB_WALLET },
+  "entry-drawing": { status: "ready", address: LAB_WALLET },
   "entry-seated": { status: "ready", address: LAB_WALLET },
   "entry-unseated": { status: "ready", address: LAB_WALLET },
   "entry-cancelled": { status: "ready", address: LAB_WALLET },
@@ -234,7 +237,7 @@ const CLOSED_ENTRY: EntryTerms = {
 };
 
 /** Screens whose slot has closed: its lobby is reached by its address once the list no longer shows it. */
-const CLOSED_SLOT_SCREENS: readonly LabScreen[] = ["entry-seated", "entry-unseated", "entry-refunded"];
+const CLOSED_SLOT_SCREENS: readonly LabScreen[] = ["entry-drawing", "entry-seated", "entry-unseated", "entry-refunded"];
 
 /** How many registered in the slot, as the ledger counts them. */
 export const LAB_SLOT_REGISTERED = 31;
@@ -244,6 +247,7 @@ export const LAB_ENTRY_TERMS: Partial<Record<keyof typeof LAB_SCREENS, EntryTerm
   "entry-choose": ENTRY,
   "entry-short": { ...ENTRY, credits: { swords: 0, shields: 0 }, lords: 320n * WEI },
   "entry-registered": { ...ENTRY, credits: { swords: 1, shields: 0 }, registration: SEATED, lords: 1_140n * WEI },
+  "entry-drawing": { ...CLOSED_ENTRY, registration: SEATED },
   "entry-seated": { ...CLOSED_ENTRY, registration: SEATED },
   "entry-unseated": { ...CLOSED_ENTRY, registration: { ...SEATED, refundable: true } },
   "entry-cancelled": { ...ENTRY, cancelled: true, registration: SEATED, lords: 1_140n * WEI },
