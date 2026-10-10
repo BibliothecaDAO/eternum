@@ -82,7 +82,7 @@ export const entryState = (terms: EntryTerms, choice: EntryChoice, now: number):
  * Whether a registration is owed back: no game consumed it, its slot was cancelled or the close left it unseated, and
  * it still holds the LORDS it paid or a credit it spent. The ledger's own refund rule.
  */
-export const refundOwed = (registration: Registration, cancelled: boolean): boolean =>
+const refundOwed = (registration: Registration, cancelled: boolean): boolean =>
   registration.registered &&
   registration.gameId === 0 &&
   (cancelled || registration.refundable) &&
