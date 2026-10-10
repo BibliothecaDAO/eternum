@@ -1,28 +1,21 @@
-import { identityL2Configuration, verifyIdentityChain, fetchIdentityRpc } from "./l2";
+import { normalizeStarknetAddress as canonicalFelt } from "@realms-world/identity";
+import { identityL2Configuration, fetchIdentityRpc } from "./l2";
 import type { IdentityEnv } from "./env";
 import { DurableObject } from "cloudflare:workers";
 import { RpcProvider } from "starknet";
 import { openRatingLedger, readLedgerRatings, ratingPoints } from "./rating-ledger";
 
-interface Snapshot {
-  block_number: number;
-  block_hash: string;
-  values: Record<string, string>;
-  entries: { player: string; rating: string; rank: number }[] | null;
-}
-type Env = Pick<IdentityEnv, "L2_CHAIN_ID" | "IDENTITY_RPC_URL" | "RATING_TOKEN_ADDRESS" | "RATING_HISTORY_URL">;
+type Env = Pick<IdentityEnv, "ENVIRONMENT" | "IDENTITY_RPC_URL" | "RATING_TOKEN_ADDRESS" | "RATING_HISTORY_URL">;
 const RPC_METHODS_PER_MINUTE = 10000;
 
-/** One cache and budget across callers and isolates. Every cached value belongs to a verified immutable block hash. */
+/** One RPC budget across callers; every read names a verified chain block and retains no rating state. */
 export class RatingReader extends DurableObject<Env> {
   private tail: Promise<unknown> = Promise.resolve();
   private provider: RpcProvider;
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
     identityL2Configuration(env);
-    ctx.storage.sql.exec(
-      "CREATE TABLE IF NOT EXISTS snapshots (hash TEXT PRIMARY KEY, data TEXT NOT NULL, used INTEGER NOT NULL)",
-    );
+    ctx.storage.sql.exec("DROP TABLE IF EXISTS snapshots");
     this.provider = new RpcProvider({
       nodeUrl: env.IDENTITY_RPC_URL,
       specVersion: "0.9.0",
@@ -33,37 +26,23 @@ export class RatingReader extends DurableObject<Env> {
 
   ratings(owners: string[], blockHash?: string) {
     return this.serial(async () => {
-      const snapshot = blockHash ? this.cached(blockHash) : await this.latest();
-      if (!snapshot) throw new Error("Rating snapshot unavailable");
-      await this.completeValues(snapshot, owners);
+      const ledger = await openRatingLedger(this.provider, this.env, blockHash);
+      const values = await readLedgerRatings(ledger, owners);
       return {
-        block_number: snapshot.block_number,
-        block_hash: snapshot.block_hash,
-        values: owners.map((owner) => [owner, this.requiredValue(snapshot, owner)] as [string, string]),
+        block_number: ledger.block,
+        block_hash: ledger.blockHash,
+        values: [...values].map(([owner, value]) => [owner, value.toString()] as [string, string]),
       };
     });
   }
 
   top() {
     return this.serial(async () => {
-      const head = await this.historyHead();
-      const ready = this.cached(head.block_hash);
-      if (ready && ready.block_number !== head.block_number) throw new Error("Rating history watermark inconsistent");
-      if (ready?.entries)
-        return { block_number: ready.block_number, block_hash: ready.block_hash, entries: ready.entries };
       const history = await this.history();
-      let snapshot = this.cached(history.block_hash);
-      if (!snapshot) {
-        const ledger = await openRatingLedger(this.provider, this.env, history.block_hash);
-        if (ledger.block !== history.block_number) throw new Error("History checkpoint does not match chain");
-        snapshot = this.newSnapshot(ledger.block, ledger.blockHash);
-      }
-      if (!snapshot.entries) {
-        await this.completeValues(snapshot, history.players);
-        snapshot.entries = this.rank(snapshot, history.players);
-        this.save(snapshot);
-      }
-      return { block_number: snapshot.block_number, block_hash: snapshot.block_hash, entries: snapshot.entries };
+      const ledger = await openRatingLedger(this.provider, this.env, history.block_hash);
+      if (ledger.block !== history.block_number) throw new Error("History checkpoint does not match chain");
+      const values = await readLedgerRatings(ledger, history.players);
+      return { block_number: ledger.block, block_hash: ledger.blockHash, entries: this.rank(values) };
     });
   }
 
@@ -72,85 +51,15 @@ export class RatingReader extends DurableObject<Env> {
     this.tail = result.catch(() => undefined);
     return result;
   }
-  private cached(hash: string): Snapshot | null {
-    const row = this.ctx.storage.sql
-      .exec<{ data: string }>("SELECT data FROM snapshots WHERE hash = ?", `0x${BigInt(hash).toString(16)}`)
-      .toArray()[0];
-    return row ? (JSON.parse(row.data) as Snapshot) : null;
-  }
-  private async latest() {
-    const ledger = await openRatingLedger(this.provider, this.env);
-    return this.cached(ledger.blockHash) ?? this.newSnapshot(ledger.block, ledger.blockHash);
-  }
-  private newSnapshot(block: number, hash: string): Snapshot {
-    return { block_number: block, block_hash: hash, values: {}, entries: null };
-  }
-  private save(snapshot: Snapshot) {
-    this.ctx.storage.sql.exec(
-      "INSERT INTO snapshots (hash,data,used) VALUES (?,?,?) ON CONFLICT(hash) DO UPDATE SET data=excluded.data, used=excluded.used",
-      snapshot.block_hash,
-      JSON.stringify(snapshot),
-      Date.now(),
+  private rank(values: Map<string, bigint>) {
+    const ordered = [...values].sort(([leftOwner, left], [rightOwner, right]) =>
+      left !== right ? (left > right ? -1 : 1) : BigInt(leftOwner) < BigInt(rightOwner) ? -1 : 1,
     );
-    // Keep 32 recent named snapshots, not an unbounded per-height cache.
-    this.ctx.storage.sql.exec(
-      "DELETE FROM snapshots WHERE hash NOT IN (SELECT hash FROM snapshots ORDER BY used DESC LIMIT 32)",
-    );
-  }
-  private async completeValues(snapshot: Snapshot, owners: string[]) {
-    const missing = [...new Set(owners)].filter((owner) => snapshot.values[owner] === undefined);
-    if (!missing.length) return;
-    await verifyIdentityChain(this.provider, this.env);
-    const ledger = {
-      ratingToken: this.env.RATING_TOKEN_ADDRESS,
-      provider: this.provider,
-      signal: AbortSignal.timeout(10000),
-      block: snapshot.block_number,
-      blockHash: snapshot.block_hash,
-    };
-    const values = await readLedgerRatings(ledger, missing);
-    for (const [owner, value] of values) snapshot.values[owner] = value.toString();
-    this.save(snapshot);
-  }
-  private requiredValue(snapshot: Snapshot, owner: string) {
-    const value = snapshot.values[owner];
-    if (value === undefined) throw new Error("Rating snapshot value missing");
-    return value;
-  }
-  private rank(snapshot: Snapshot, owners: string[]) {
-    const ordered = [...new Set(owners)].sort((a, b) => {
-      const left = BigInt(this.requiredValue(snapshot, a)),
-        right = BigInt(this.requiredValue(snapshot, b));
-      if (left !== right) return left > right ? -1 : 1;
-      return BigInt(a) < BigInt(b) ? -1 : BigInt(a) > BigInt(b) ? 1 : 0;
-    });
     let rank = 0;
-    return ordered.map((player, index) => {
-      const value = BigInt(this.requiredValue(snapshot, player));
-      if (!index || value !== BigInt(this.requiredValue(snapshot, ordered[index - 1]!))) rank = index + 1;
+    return ordered.map(([player, value], index) => {
+      if (!index || value !== ordered[index - 1]![1]) rank = index + 1;
       return { player, rank, rating: ratingPoints(value) };
     });
-  }
-  private async historyHead() {
-    const response = await fetch(this.env.RATING_HISTORY_URL, {
-      method: "HEAD",
-      signal: AbortSignal.timeout(5000),
-      redirect: "manual",
-    });
-    const hash = response.headers.get("x-rating-hash");
-    const number = response.headers.get("x-rating-block");
-    if (
-      !response.ok ||
-      number === null ||
-      !/^(0|[1-9][0-9]*)$/.test(number) ||
-      !Number.isSafeInteger(Number(number)) ||
-      Number(number) < 0 ||
-      !hash ||
-      !/^0x[0-9a-fA-F]{1,64}$/.test(hash) ||
-      BigInt(hash) <= 0n
-    )
-      throw new Error("Rating history unavailable");
-    return { block_number: Number(number), block_hash: `0x${BigInt(hash).toString(16)}` };
   }
   private async history() {
     const response = await fetch(this.env.RATING_HISTORY_URL, {
@@ -179,7 +88,7 @@ export class RatingReader extends DurableObject<Env> {
     return {
       block_number: Number(data.block_number),
       block_hash: `0x${BigInt(data.block_hash).toString(16)}`,
-      players: [...new Set(data.players.map((player) => `0x${BigInt(player).toString(16)}`))],
+      players: [...new Set(data.players.map((player) => canonicalFelt(player)))],
     };
   }
   private async paidFetch(input: RequestInfo | URL, init?: RequestInit) {

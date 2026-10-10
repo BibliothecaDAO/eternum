@@ -65,9 +65,38 @@ jobs:
         run: bun test deploy/athanor/scripts/native-target.test.ts
       - name: Resume an interrupted first initialization
         run: bun test deploy/athanor/scripts/host-accounts.test.ts
+      - name: Verify current owner and service role handoffs
+        run:
+          bun test deploy/athanor/scripts/service-role-check.test.ts deploy/athanor/scripts/inspect-shard-roles.test.ts
       - name: Test fail-closed deployment paths
         run: |
           python3 -m unittest discover -s deploy/athanor/scripts -p "test_*.py" -v
+
+  native-stamping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+      - uses: oven-sh/setup-bun@v2
+      - name: Install dependencies and build shared packages
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm run build:packages
+      - name: Install the prover image's Rust toolchain
+        run: rustup toolchain install 1.89.0 --profile minimal
+      - name: Build the shipped prover and test owned cryptography
+        run: |
+          cargo +1.89.0 build --release --locked --manifest-path deploy/athanor/vrf/prover/Cargo.toml
+          cargo +1.89.0 test --release --locked --manifest-path deploy/athanor/vrf/prover/Cargo.toml
+          cargo +1.89.0 test --release --locked --manifest-path deploy/athanor/vrf/prover/Cargo.toml -p realms-stark-vrf-math
+      - name: Test compiled stamping, key custody and public submission outcomes
+        run: |
+          bun test ./deploy/athanor/vrf deploy/athanor/scripts/read-rpc.test.ts deploy/athanor/scripts/read-rpc-outcomes.test.ts
 
   native-provider:
     runs-on: ubuntu-latest

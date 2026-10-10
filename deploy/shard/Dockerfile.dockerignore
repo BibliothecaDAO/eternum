@@ -4,12 +4,20 @@
 **/target
 **/.lab
 **/.context
-**/.env*
 **/*.log
 **/__pycache__
 **/.venv
-**/host-keys.json
-**/authority.json
-**/harness.env
+# Runtime data stays out of every image; public code tables are source, not deployment state.
+**/data
+!**/src/data
+!**/src/data/**
+!**/public/**/data
+!**/public/**/data/**
+**/.env*
+**/host-keys.json*
+**/authority.json*
+**/harness.env*
+**/*.env.*
+**/device.json*
 
-**/vrf-key.json
+**/vrf-key.json*

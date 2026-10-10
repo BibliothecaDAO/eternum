@@ -1,4 +1,8 @@
 import { beforeAll, expect, it } from "vitest";
+import { encodeChainName } from "@realms-world/chain";
+import { hash } from "starknet";
+import { response as abiResponse } from "../../../../packages/value-ledger/test-support/abi";
+import { ledgerAbi, ledgerCall } from "../../../../packages/value-ledger/test-support/ledger-abi";
 
 import {
   buildWorkerBundle,
@@ -24,7 +28,7 @@ const ROOM = `game:${CHAIN_ID}:1`;
 
 let bundle: string;
 beforeAll(() => {
-  bundle = buildWorkerBundle();
+  bundle = buildWorkerBundle({ "@realms-world/chain": new URL("./fixtures/chain.ts", import.meta.url).pathname });
 }, 180_000);
 
 type Worker = Awaited<ReturnType<typeof startWorker>>;
@@ -49,30 +53,66 @@ const connect = async (worker: Worker, cookie: string, path: string, extraHeader
 const ofType = (received: Record<string, unknown>[], type: string) =>
   received.filter((message) => message.type === type);
 
-it("opens a slot to readers, admits only its seats to writing, and checks the live roster on every message", async () => {
-  const registrations: { realmsId: string | null }[] = [];
+it("checks current-wallet registration when opening a slot room, never per message or on hibernation", async () => {
+  const registrations = new Set<string>();
+  let ledgerReads = 0;
+  let directoryReads = 0;
   let unavailable = false;
   const worker = await startWorker({
     bundle,
     storage: newStorage(),
     vapid: await vapidKeys(),
-    outbound: () => new Response(null, { status: 599 }),
+    outbound: async (request) => {
+      const rpc = (await request.json()) as {
+        id: number;
+        method: string;
+        params: {
+          request: { contract_address: string; entry_point_selector: string; calldata: string[] };
+          block_id: string;
+        };
+      };
+      if (rpc.method === "starknet_chainId")
+        return Response.json({ jsonrpc: "2.0", id: rpc.id, result: encodeChainName("SN_SEPOLIA") });
+      expect(rpc.method).toBe("starknet_call");
+      expect(rpc.params.block_id).toBe("latest");
+      expect(BigInt(rpc.params.request.contract_address)).toBe(0x123n);
+      expect(BigInt(rpc.params.request.entry_point_selector)).toBe(
+        BigInt(hash.getSelectorFromName("get_registration")),
+      );
+      ledgerReads += 1;
+      if (unavailable) return new Response("ledger unavailable", { status: 503 });
+      const wallet = rpc.params.request.calldata[2]!;
+      expect(rpc.params.request.calldata.map(BigInt)).toEqual(
+        ledgerCall("get_registration", { key: { shard: 10, slot_id: 7 }, owner: wallet }).map(BigInt),
+      );
+      const registered = registrations.has(BigInt(wallet).toString());
+      return Response.json({
+        jsonrpc: "2.0",
+        id: rpc.id,
+        result: abiResponse(ledgerAbi, "get_registration", {
+          registered,
+          sword: false,
+          shield: false,
+          sword_credit: false,
+          shield_credit: false,
+          paid: { low: registered ? 500 : 0, high: 0 },
+          refundable: false,
+          game_id: 0,
+        }),
+      });
+    },
     launchDirectory: (request) => {
+      directoryReads += 1;
       const path = new URL(request.url).pathname;
       expect(path.startsWith("/api/slots/")).toBe(true);
       if (path === "/api/slots/missing") return new Response(null, { status: 404 });
-      return unavailable
-        ? new Response(null, { status: 503 })
-        : Response.json(
-            path === "/api/slots/blitz-noon"
-              ? { name: "blitz-noon", registrations }
-              : { name: "another", registrations: [] },
-          );
+      return Response.json({ name: "blitz-noon", chainId: "0xa", slotId: 7 });
     },
   });
   try {
     await worker.db.batch(migrationStatements().map((statement) => worker.db.prepare(statement)));
     const [player, observer] = [await signIn(worker), await signIn(worker)];
+    await worker.db.prepare('UPDATE "user" SET "address" = ? WHERE "realmsId" = ?').bind("0xa1", player.realmsId).run();
     const room = "slot:blitz-noon";
     const path = `/api/chat/rooms/${encodeURIComponent(room)}`;
     expect((await connect(worker, "", path)).status).toBe(401);
@@ -85,52 +125,66 @@ it("opens a slot to readers, admits only its seats to writing, and checks the li
     });
     await waitUntil(() => ofType(reader.received, "joined:zone").length > 0, 5_000);
     expect(ofType(reader.received, "joined:zone")[0]).toEqual({ type: "joined:zone", zoneId: room, canWrite: false });
+    expect(ledgerReads).toBe(0);
+    const unregistered = await connect(worker, player.cookie, path);
+    await waitUntil(() => ofType(unregistered.received, "joined:zone").length > 0, 5_000);
+    expect(ofType(unregistered.received, "joined:zone")[0]).toMatchObject({ canWrite: false });
+    expect(ledgerReads).toBe(1);
+    registrations.add(String(0xa1));
     const writer = await connect(worker, player.cookie, path);
-    const send = (socket: { send(data: string): void }, content: string, zoneId = room) =>
-      socket.send(JSON.stringify({ type: "world:publish", zoneId, payload: { zoneId, content } }));
-    send(writer.socket!, "no seat yet");
-    await waitUntil(() => ofType(writer.received, "error").length > 0, 5_000);
-    expect(ofType(writer.received, "error")[0]).toMatchObject({ code: "seat_required" });
-
-    // A seat obtained after the observer socket opened takes effect without a second membership store or reconnect.
-    registrations.push({ realmsId: player.realmsId });
-    send(reader.socket!, "forged seat");
-    await waitUntil(() => ofType(reader.received, "error").length > 0, 5_000);
-    expect(ofType(reader.received, "error")[0]).toMatchObject({ code: "seat_required" });
-    send(writer.socket!, "hold this seat");
+    await waitUntil(() => ofType(writer.received, "joined:zone").length > 0, 5_000);
+    expect(ofType(writer.received, "joined:zone")[0]).toMatchObject({ canWrite: true });
+    expect(ledgerReads).toBe(2);
+    const openedDirectoryReads = directoryReads;
+    const send = (socket: { send(data: string): void }, content: string) =>
+      socket.send(JSON.stringify({ type: "world:publish", zoneId: room, payload: { zoneId: room, content } }));
+    send(reader.socket!, "forged permission");
+    send(unregistered.socket!, "registration needs reconnect");
+    await waitUntil(
+      () => ofType(reader.received, "error").length > 0 && ofType(unregistered.received, "error").length > 0,
+      5_000,
+    );
+    expect(ofType(reader.received, "error")[0]).toMatchObject({ code: "registration_required" });
+    expect(ofType(unregistered.received, "error")[0]).toMatchObject({ code: "registration_required" });
+    send(writer.socket!, "registered before close");
     await waitUntil(() => ofType(reader.received, "world:message").length > 0, 5_000);
     expect(ofType(reader.received, "world:message")[0]!.message).toMatchObject({
-      content: "hold this seat",
+      content: "registered before close",
       sender: { playerId: player.realmsId },
       zoneId: room,
     });
-    const seated = await connect(worker, player.cookie, path);
-    await waitUntil(() => ofType(seated.received, "joined:zone").length > 0, 5_000);
-    expect(ofType(seated.received, "joined:zone")[0]).toMatchObject({ canWrite: true });
-    const otherRoom = await connect(worker, player.cookie, "/api/chat/rooms/slot%3Aanother");
-    send(otherRoom.socket!, "wrong seat", "slot:another");
-    await waitUntil(() => ofType(otherRoom.received, "error").length > 0, 5_000);
-    expect(ofType(otherRoom.received, "error")[0]).toMatchObject({ code: "seat_required" });
-
-    unavailable = true;
-    send(writer.socket!, "permission service failed");
-    await waitUntil(() => ofType(writer.received, "error").length === 2, 5_000);
-    expect(ofType(writer.received, "error")[1]).toMatchObject({ code: "chat_membership_unavailable" });
-    expect((await connect(worker, player.cookie, path)).status).toBe(503);
-    unavailable = false;
-    registrations.length = 0;
     await worker.mf.unsafeEvictDurableObject(WORKER_NAME, "ChatRoom", { name: room, webSockets: "hibernate" });
-    send(seated.socket!, "stale permission after hibernation");
-    await waitUntil(() => ofType(seated.received, "error").length > 0, 5_000);
-    expect(ofType(seated.received, "error")[0]).toMatchObject({ code: "seat_required" });
+    send(writer.socket!, "still admitted after hibernation");
+    await waitUntil(() => ofType(reader.received, "world:message").length === 2, 5_000);
+    expect(ofType(reader.received, "world:message")).toHaveLength(2);
+    expect(ledgerReads).toBe(2);
+    expect(directoryReads).toBe(openedDirectoryReads);
+    await worker.db.prepare('UPDATE "user" SET "address" = ? WHERE "realmsId" = ?').bind("0xb2", player.realmsId).run();
+    const changedWallet = await connect(worker, player.cookie, path);
+    await waitUntil(() => ofType(changedWallet.received, "joined:zone").length > 0, 5_000);
+    expect(ofType(changedWallet.received, "joined:zone")[0]).toMatchObject({ canWrite: false });
+    unavailable = true;
+    const failure = await worker.mf.dispatchFetch(`${ORIGIN}${path}`, {
+      headers: { upgrade: "websocket", cookie: player.cookie, origin: ORIGIN },
+    });
+    expect(failure.status).toBe(503);
+    expect(await failure.json()).toEqual({ error: "chat_membership_unavailable" });
+    const readsBeforeHistory = ledgerReads;
     const history = await worker.mf.dispatchFetch(`${ORIGIN}/api/chat/world?zoneId=${encodeURIComponent(room)}`, {
-      headers: { cookie: observer.cookie },
+      headers: { cookie: player.cookie },
     });
     expect(history.status).toBe(200);
     expect(
       ((await history.json()) as { messages: { content: string }[] }).messages.map(({ content }) => content),
-    ).toEqual(["hold this seat"]);
-    expect(ofType(reader.received, "world:message")).toHaveLength(1);
+    ).toEqual(["still admitted after hibernation", "registered before close"]);
+    const olderHistory = await worker.mf.dispatchFetch(
+      `${ORIGIN}/api/chat/world?zoneId=${encodeURIComponent(room)}&cursor=${encodeURIComponent(new Date(0).toISOString())}`,
+      {
+        headers: { cookie: player.cookie },
+      },
+    );
+    expect(olderHistory.status).toBe(200);
+    expect(ledgerReads).toBe(readsBeforeHistory);
   } finally {
     await worker.dispose();
   }
@@ -155,7 +209,11 @@ it("lets two players chat in their Blitz room, keeps its history, survives evict
             name: "blitz-a",
             mode: "blitz",
             status: "Live",
-            player_state: { registered: registered.has(player), settled: false, roster_member: registered.has(player) },
+            player_state: {
+              registered: registered.has(player),
+              settled: false,
+              roster_wallet: registered.has(player) ? "0x123" : null,
+            },
           },
         ],
       });

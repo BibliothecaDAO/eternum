@@ -187,3 +187,12 @@ describe("player-signed administrative gameplay", () => {
     expect(calls).toHaveLength(0);
   });
 });
+
+it("records shard-derived results once without requiring a caller batch or progress event", async () => {
+  const { input, invokes, events } = setup();
+  events(() => []);
+  const command = { kind: "RecordBlitzResults", value: undefined } as const;
+  expect(await completeNativeAdminCommand({ ...input, command })).toEqual({ transactionHash: "0x55", transactions: 1 });
+  expect(invokes).toHaveLength(1);
+  expect(invokes[0].calldata.slice(-2).map(BigInt)).toEqual([1n, 51n]);
+});

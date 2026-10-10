@@ -1,3 +1,4 @@
+import { normalizeStarknetAddress as canonical } from "@realms-world/identity";
 import { IDENTITY_PROFILES_BATCH_LIMIT, profileOfIdentityUser, type IdentityProfile } from "@realms-world/identity";
 
 import { json } from "./http";
@@ -7,7 +8,7 @@ const HEX_FELT = /^0x[0-9a-fA-F]{1,64}$/;
 /** GET /api/profiles/:realms_id — the public name and portrait of one Realms account, as chosen by its player. */
 export const handleProfile = async (db: D1Database, realmsId: string): Promise<Response> => {
   if (!HEX_FELT.test(realmsId)) return json({ error: "invalid_realms_id" }, 400);
-  const normalized = `0x${BigInt(realmsId).toString(16)}`;
+  const normalized = canonical(realmsId);
   const user = await db
     .prepare('SELECT id, name, image FROM "user" WHERE "realmsId" = ?')
     .bind(normalized)
@@ -60,8 +61,6 @@ const approvedProfiles = async (db: D1Database, addresses: string[]): Promise<Ma
   );
   return new Map(results.flatMap(({ results: rows }) => rows.map((row) => [row.address, profileOfIdentityUser(row)])));
 };
-
-const canonical = (address: string) => `0x${BigInt(address).toString(16)}`;
 
 /** Verified L2 wallet links use the same public profile source as gameplay accounts, never the rating cache. */
 export async function profilesOfRatingOwners(db: D1Database, owners: string[]) {

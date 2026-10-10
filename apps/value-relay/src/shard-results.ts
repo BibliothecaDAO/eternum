@@ -1,4 +1,4 @@
-import { relayOperation, type BlitzResult, type RelayPorts } from "./ports";
+import { relayOperation, type BlitzResult, type MonitorPorts } from "./ports";
 import { ShardReader, felt, sameFelt, uint, type ValueRow } from "./shard-rpc";
 import { blitzCommitment } from "@realms-world/value-ledger/commitment";
 
@@ -12,7 +12,6 @@ export const decodeBlitzResult = (chainId: string, row: ValueRow): BlitzResult |
     wallet: felt(row.values[1 + 2 * index]!),
     rank: Number(uint(row.values[2 + 2 * index]!, 16)),
   }));
-  validateRanks(rows);
   const complete = uint(row.values[1 + 2 * count]!, 1) === 1n;
   const commitment = felt(row.values[2 + 2 * count]!);
   if (!complete) {
@@ -25,7 +24,7 @@ export const decodeBlitzResult = (chainId: string, row: ValueRow): BlitzResult |
 };
 
 export const shardResultPort =
-  (reader: ShardReader): RelayPorts["shard"]["result"] =>
+  (reader: ShardReader): MonitorPorts["shard"]["result"] =>
   (chainId, gameId) =>
     relayOperation("read confirmed Blitz result", async () => {
       if (!sameFelt(chainId, reader.connection.chainId) || !uint(String(gameId), 32))
@@ -45,21 +44,6 @@ export const shardResultPort =
         transactionHash: "0x0",
       });
     });
-
-const validateRanks = (rows: BlitzResult["rows"]) => {
-  const wallets = new Set<string>();
-  for (const [index, row] of rows.entries()) {
-    const prior = rows[index - 1];
-    const sameRank = prior?.rank === row.rank;
-    if (
-      BigInt(row.wallet) === 0n ||
-      wallets.has(row.wallet) ||
-      (sameRank ? BigInt(row.wallet) <= BigInt(prior!.wallet) : row.rank !== index + 1)
-    )
-      throw new Error("noncanonical_result_rank");
-    wallets.add(row.wallet);
-  }
-};
 
 const validateResultAbi = (raw: unknown) => {
   const abi = typeof raw === "string" ? JSON.parse(raw) : raw;

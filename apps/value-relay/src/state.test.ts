@@ -100,7 +100,7 @@ it("persists confirmed obligations, cursor and halt across actual Worker restart
       withdrawals: [withdrawal],
       results: [],
       held: block.held,
-      chestCursor: { fromBlock: 111 },
+      chestCursor: { fromBlock: 111, page: null },
       chests: [chest],
     });
     await worker.dispatchFetch("https://state.test/halt");

@@ -22,38 +22,21 @@ export interface ResultOperations {
   secondsUntilEnd(): Promise<number>;
   settle(): Promise<unknown>;
   progress(): Promise<ResultProgress>;
-  players(): Promise<readonly { wallet: bigint; points: bigint }[]>;
-  record(start: number, players: readonly RankedPlayer[]): Promise<unknown>;
+  record(): Promise<unknown>;
 }
 
-/** Scores resolve through the immutable account/wallet roster; only frozen wallets and competition ranks are written. */
+/** Final points and the immutable ranked result are both computed by the shard. */
 export async function completeBlitzResults(operations: ResultOperations): Promise<bigint> {
   const secondsUntilEnd = await operations.secondsUntilEnd();
   if (secondsUntilEnd > 0) throw new GameNotEnded(secondsUntilEnd);
   await operations.settle();
-  let progress = await operations.progress();
+  const progress = await operations.progress();
   if (progress.complete) return progress.commitment;
-  const players = rankPlayers(await operations.players());
-  while (!progress.complete) {
-    const start = progress.players.length;
-    if (start >= players.length) throw new Error("Incomplete result has no remaining roster");
-    await operations.record(start, players.slice(start, start + 8));
-    const next = await operations.progress();
-    if (next.players.length <= start) throw new Error("Result batch made no progress");
-    progress = next;
-  }
-  return progress.commitment;
+  await operations.record();
+  const result = await operations.progress();
+  if (!result.complete) throw new Error("result_not_complete");
+  return result.commitment;
 }
-const rankPlayers = (players: readonly { wallet: bigint; points: bigint }[]): RankedPlayer[] => {
-  const ordered = players.toSorted((a, b) =>
-    a.points === b.points ? (a.wallet < b.wallet ? -1 : 1) : a.points > b.points ? -1 : 1,
-  );
-  let rank = 0;
-  return ordered.map(({ wallet, points }, index) => {
-    if (!index || ordered[index - 1]!.points !== points) rank = index + 1;
-    return { wallet, rank };
-  });
-};
 
 export const finalizeGame = async (request: FinalizeGameRequest, shard: LaunchShard): Promise<FinalizedGameSummary> => {
   const gameId = request.gameId;
@@ -70,21 +53,7 @@ export const finalizeGame = async (request: FinalizeGameRequest, shard: LaunchSh
       }
     },
     progress: () => shard.view<ResultProgress>("blitz_result", [gameId]),
-    players: async () => {
-      const roster = await shard.view<{ account: bigint; wallet: bigint }[]>("blitz_roster", [gameId]);
-      return Promise.all(
-        roster.map(async ({ account, wallet }) => ({
-          wallet,
-          points: await shard.view<bigint>("player_points", [gameId, account]),
-        })),
-      );
-    },
-    record: (start, players) =>
-      shard.playCommand(gameId, "RecordBlitzResults", [
-        String(start),
-        String(players.length),
-        ...players.flatMap(({ wallet, rank }) => [String(wallet), String(rank)]),
-      ]),
+    record: () => shard.playCommand(gameId, "RecordBlitzResults"),
   });
   const result = await shard.view<ResultProgress>("blitz_result", [gameId]);
   if (

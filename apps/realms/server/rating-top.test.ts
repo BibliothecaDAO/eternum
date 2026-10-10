@@ -12,7 +12,7 @@ const profileBatch = vi.fn(async () => [{ results: profiles }]);
 let cache: ReturnType<typeof testRatingReader>;
 let population = { ...block, players: ["0xa", "0xb", "0xc", "0xd"] };
 const env = {
-  L2_CHAIN_ID: "SN_MAIN",
+  ENVIRONMENT: "production",
   RATING_TOKEN_ADDRESS: "0x31",
   RATING_HISTORY_URL: "https://realms.world/api/ratings/population",
   IDENTITY_RPC_URL: "https://starknet-mainnet.g.alchemy.com/v2/test",
@@ -58,7 +58,7 @@ afterEach(() => {
 });
 
 it("serves tied top positions and the reader below the top from one block and value map", async () => {
-  const response = await request("limit=2&realmsId=0x1");
+  const response = await request("limit=2&player=0xd");
   expect(response.status).toBe(200);
   expect(response.headers.get("cache-control")).toBe("no-store");
   expect(await response.json()).toEqual({
@@ -75,7 +75,7 @@ it("serves tied top positions and the reader below the top from one block and va
   for (const args of vi.mocked(RpcProvider.prototype.callContract).mock.calls) expect(args[1]).toBe("0xabc");
   expect(fetch).toHaveBeenCalledWith(
     "https://realms.world/api/ratings/population",
-    expect.objectContaining({ method: "HEAD" }),
+    expect.objectContaining({ headers: { "cache-control": "no-cache" } }),
   );
 });
 
@@ -117,17 +117,6 @@ it("refuses a SQL watermark inconsistent with the chain instead of returning a t
   expect((await request()).status).toBe(503);
 });
 
-it("preserves explicit unlinked and unknown identities in the own-rank slot", async () => {
-  population = { ...block, players: [] };
-  identityRows = [{ realmsId: "0x1", address: null }];
-  expect(await (await request("realmsId=0x1")).json()).toMatchObject({
-    self: { status: "unlinked", player: null, rating: null, rank: null },
-  });
-  expect(await (await request("realmsId=0x2")).json()).toMatchObject({
-    self: { status: "unknown_identity", player: null, rating: null, rank: null },
-  });
-});
-
 it("does not publish a partial list after the shared read deadline expires", async () => {
   const controller = new AbortController();
   vi.spyOn(AbortSignal, "timeout").mockReturnValue(controller.signal);
@@ -139,7 +128,7 @@ it("does not publish a partial list after the shared read deadline expires", asy
   expect(RpcProvider.prototype.callContract).not.toHaveBeenCalled();
 });
 
-it("reads trusted names fresh outside the immutable rating cache and leaves unlinked owners as addresses", async () => {
+it("reads trusted names alongside fresh wallet ratings and leaves unlinked owners as addresses", async () => {
   profiles = [
     { address: "0xa", realmsId: "0x1", id: "a", name: "Aster", image: "portrait-1" },
     { address: "0xd", realmsId: "0x2", id: "default", name: "default", image: null },
@@ -160,7 +149,7 @@ it("reads trusted names fresh outside the immutable rating cache and leaves unli
     entries: [{ profile: null }, { profile: null }],
     self: { profile: null },
   });
-  expect(RpcProvider.prototype.callContract).toHaveBeenCalledTimes(4);
+  expect(RpcProvider.prototype.callContract).toHaveBeenCalledTimes(12);
   expect(profileBatch).toHaveBeenCalledTimes(3);
 });
 

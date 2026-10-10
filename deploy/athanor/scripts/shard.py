@@ -28,6 +28,7 @@ ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / "deploy/shard"))
 from stack_lock import isolated_stack_lock
 from operator_token import read_protected_text
+from service_requests import identity_service_base, service_json
 
 
 # Only driver placement passes through sudo; containers read the fixed protected file mount.
@@ -109,8 +110,7 @@ def validate_shard_identity(config):
         url = urlparse(config[key])
         if url.scheme not in ("http", "https") or not url.netloc or url.username or url.password:
             raise ValueError(f"{key} must be an explicit HTTP endpoint without credentials")
-    if not urlparse(config["guardian_url"]).path.endswith("/guardian"):
-        raise ValueError("guardian_url must be an identity API's /guardian route")
+    identity_service_base(config["guardian_url"])
     if not isinstance(config["player_capacity"], int) or not 1 <= config["player_capacity"] <= MAX_PLAYER_CAPACITY:
         raise ValueError(f"player_capacity must be 1 to {MAX_PLAYER_CAPACITY}, campaign G's target; raising it takes "
                          "a G measurement")
@@ -144,7 +144,7 @@ def write_private_environment(path, values):
 
 def identity_url(config):
     """The identity API whose guardian the shard names; the operator enrols its bots through it."""
-    return config["guardian_url"].removesuffix("/guardian")
+    return identity_service_base(config["guardian_url"])
 
 
 def compose_configuration(config, directory):
@@ -330,9 +330,8 @@ def deployment_manifest(config, compose, directory, manifest, rpc_rtt, herald_rt
 
 
 def read_guardian_identity(url):
-    request = Request(url, headers={"Accept": "application/json", "User-Agent": "realms-shard-init"})
-    with urlopen(request, timeout=15) as response:
-        guardian = json.load(response)
+    identity_service_base(url)
+    guardian = service_json(url, timeout=15)
     identity = {"guardianPublicKey": guardian["publicKey"], "accountClassHash": guardian["accountClassHash"]}
     for key in ("guardianPublicKey", "accountClassHash"):
         value = identity[key]
@@ -451,7 +450,7 @@ def stop_shard(directory):
 
 
 # Each workload key is a harness option (underscores for dashes, true for a bare flag), so a matrix can run every shape
-# the harness runs: Blitz games, a launch slot, a Frontier burst, a chosen preset. The harness refuses the rest.
+# the harness runs: a Frontier burst, an Eternum game, a chosen preset. The harness refuses the rest.
 def workload_command(workload):
     if not workload:
         raise ValueError("workload must name the harness run")

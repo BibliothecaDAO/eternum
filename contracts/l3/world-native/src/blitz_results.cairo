@@ -13,22 +13,10 @@ pub struct BlitzResult {
     pub commitment: felt252,
 }
 
-#[derive(Copy, Drop, Serde, Debug, PartialEq)]
-pub struct RecordBlitzResults {
-    pub start: u8,
-    pub players: Span<RankedPlayer>,
-}
-
 #[starknet::interface]
 pub trait IBlitzResults<T> {
     fn blitz_result(self: @T, game_id: u32) -> BlitzResult;
-    fn record_blitz_results(
-        ref self: T,
-        game_id: u32,
-        actor: ContractAddress,
-        command: RecordBlitzResults,
-        context: crate::commands::ActionContext,
-    ) -> u64;
+    fn record_blitz_results(ref self: T, game_id: u32, actor: ContractAddress, context: crate::commands::ActionContext);
 }
 
 // The ledger's version-3 preimage uses frozen L2 wallets and has no nested hashes.

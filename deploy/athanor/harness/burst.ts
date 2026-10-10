@@ -99,7 +99,7 @@ async function runWave(port: WaveFixturePort, options: WaveOptions) {
       return observeWaveAction(fixture, player, row, first, options.timeoutMs);
     });
     await fixture.verify();
-    const evidence = waveEvidence(rows, actions, first, spreadMs, trigger, options.players);
+    const evidence = waveEvidence(actions, first, spreadMs, trigger, options.players);
     if (options.receiptCheckpoint)
       save(options.receiptCheckpoint, { completed: evidence.completed, lastReceiptNs: evidence.lastReceiptNs });
     result = { ...result, ...evidence };
@@ -136,7 +136,6 @@ function waveHeader(game: WaveGame) {
 }
 
 function waveEvidence(
-  rows: Awaited<ReturnType<typeof burst>>,
   actions: Awaited<ReturnType<typeof observeWaveAction>>[],
   first: bigint,
   spreadMs: number,
@@ -154,24 +153,6 @@ function waveEvidence(
           actions.reduce((at, action) => (BigInt(action.receiptNs ?? 0) > at ? BigInt(action.receiptNs!) : at), 0n),
         )
       : null;
-  const roundTrips = rows.flatMap((row) =>
-    row.acknowledgedNs ? [Number(BigInt(row.acknowledgedNs) - BigInt(row.sentNs)) / 1e6] : [],
-  );
-  const quiet =
-    players === 24
-      ? {
-          mode: "24 simultaneous genuine CreateExplorer Y actions;independent game and actors",
-          actualOffsetMs: trigger ? Number(first - BigInt(trigger.observedNs)) / 1e6 : null,
-          targetLatenessMs: trigger ? Number(first - BigInt(trigger.targetNs)) / 1e6 : null,
-          spreadMs,
-          lastReceiptNs,
-          acknowledgementRoundTrip: {
-            sampleCount: roundTrips.length,
-            p50Ms: percentile(roundTrips, 0.5),
-            p95Ms: percentile(roundTrips, 0.95),
-          },
-        }
-      : {};
   const complete = completed === players && actions.every((action) => !action.error);
   const releaseValid = spreadMs < 100;
   return {
@@ -190,7 +171,6 @@ function waveEvidence(
     trigger,
     actions,
     domain,
-    ...quiet,
   };
 }
 
@@ -210,8 +190,8 @@ async function prepareWavePayloads(game: WaveGame) {
 }
 
 export function validateWave(game: WaveGame, options: WaveOptions): void {
-  if (![24, 2000].includes(options.players) || game.players.length !== options.players)
-    throw new Error("Wave requires exactly 24 or 2000 players");
+  if (options.players !== 2000 || game.players.length !== options.players)
+    throw new Error("Wave requires exactly 2000 players");
   if (new Set(game.players.map((player) => BigInt(player.account.address).toString())).size !== options.players)
     throw new Error("Wave accounts must be distinct");
   if (
@@ -225,10 +205,6 @@ export function validateWave(game: WaveGame, options: WaveOptions): void {
   )
     throw new Error("Wave player manifest scope differs");
   if (options.closeLog && options.checkpoint) throw new Error("Choose one quiet-window trigger");
-  if (options.players === 24 && game.kind !== "CreateExplorer")
-    throw new Error("Quiet fixture requires genuine CreateExplorer actions");
-  if (options.players === 24 && !options.closeLog && !options.checkpoint)
-    throw new Error("Quiet window requires a primary receipt checkpoint or nonempty close log");
 }
 
 async function observeWaveAction(
@@ -334,7 +310,7 @@ if (import.meta.main) {
       workers = Number(values.workers),
       timeoutMs = Number(values["timeout-ms"]);
     if (
-      ![24, 2000].includes(players) ||
+      players !== 2000 ||
       !Number.isSafeInteger(workers) ||
       workers < 1 ||
       workers > 64 ||

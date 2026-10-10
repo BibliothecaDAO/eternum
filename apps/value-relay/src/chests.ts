@@ -1,9 +1,9 @@
-import { listStoredValues } from "./state";
 import { Effect, Result } from "effect";
 import { RelayFailure, relayOperation, type ChestPage, type ChestPorts, type ChestRequest } from "./ports";
 
 interface ChestCursor {
   fromBlock: number;
+  page?: string | null;
 }
 interface ChestStore {
   cursor(): Promise<ChestCursor>;
@@ -25,11 +25,20 @@ export class DurableChestStore implements ChestStore {
       }
       await tx.put("chests:cursor", {
         fromBlock: page.next === null ? page.head + 1 : cursor.fromBlock,
+        page: page.next,
       });
     });
   }
   async pending() {
-    return listStoredValues<ChestRequest>(this.storage, "chests:request:");
+    const after = await this.storage.get<string>("chests:queue-cursor");
+    let page = await this.storage.list<ChestRequest>({
+      prefix: "chests:request:",
+      limit: 25,
+      ...(after ? { startAfter: after } : {}),
+    });
+    if (!page.size && after) page = await this.storage.list<ChestRequest>({ prefix: "chests:request:", limit: 25 });
+    await this.storage.put("chests:queue-cursor", page.size === 25 ? [...page.keys()].at(-1)! : "");
+    return [...page.values()];
   }
   async complete(tokenId: string) {
     await this.storage.delete(`chests:request:${tokenId}`);
@@ -39,19 +48,11 @@ export class DurableChestStore implements ChestStore {
 /** The queue and event cursor commit together; requested tokens never disappear on a restart or failed finish. */
 const observeRequests = (ports: Omit<ChestPorts, "finish">, store: ChestStore) =>
   Effect.gen(function* () {
-    const seen = new Set<string>();
     const cursor = yield* relayOperation("read chest cursor", () => store.cursor());
-    let continuation: string | null = null;
-    do {
-      const page: ChestPage = yield* ports.changes(cursor.fromBlock, continuation);
-      if (page.head < cursor.fromBlock - 1)
-        return yield* Effect.fail(new RelayFailure({ operation: "chest_head_regressed" }));
-      if (page.next !== null && seen.has(page.next))
-        return yield* Effect.fail(new RelayFailure({ operation: "chest_page_cycle" }));
-      if (page.next !== null) seen.add(page.next);
-      yield* relayOperation("persist chest requests", () => store.observe(page));
-      continuation = page.next;
-    } while (continuation !== null);
+    const page = yield* ports.changes(cursor.fromBlock, cursor.page ?? null);
+    if (page.head < cursor.fromBlock - 1 || page.rows.length > 100 || (page.next !== null && page.next === cursor.page))
+      return yield* Effect.fail(new RelayFailure({ operation: "invalid_chest_event_page" }));
+    yield* relayOperation("persist chest requests", () => store.observe(page));
   });
 
 /** No new draw or expiry: finish the immutable request as soon as its fixed future block is readable. */
@@ -62,11 +63,15 @@ export const finishRequestedChests = (ports: ChestPorts, store: ChestStore) =>
     const pending = yield* relayOperation("read pending chests", () => store.pending());
     let finished = 0;
     let failed = 0;
+    let outstanding = 0;
     for (const request of pending) {
       const attempt = yield* Effect.result(finishReadyChest(ports, store, request, head));
-      if (Result.isSuccess(attempt)) finished += attempt.success;
-      else {
+      if (Result.isSuccess(attempt)) {
+        finished += attempt.success.finished;
+        outstanding += attempt.success.pending;
+      } else {
         failed++;
+        outstanding++;
         yield* Effect.logError("chest_finish_failed", {
           tokenId: request.tokenId,
           operation: attempt.failure.operation,
@@ -76,7 +81,8 @@ export const finishRequestedChests = (ports: ChestPorts, store: ChestStore) =>
     return {
       finished,
       failed,
-      pending: (yield* relayOperation("read remaining chests", () => store.pending())).length,
+      pending: outstanding,
+      checked: pending.length,
     };
   });
 const finishReadyChest = (ports: ChestPorts, store: ChestStore, request: ChestRequest, head: number) =>
@@ -88,32 +94,8 @@ const finishReadyChest = (ports: ChestPorts, store: ChestStore, request: ChestRe
       BigInt(chest.requester) !== BigInt(request.requester)
     )
       return yield* Effect.fail(new RelayFailure({ operation: "chest_request_differs" }));
-    if (!chest.finished && head < request.requestBlock + 11) return 0;
+    if (!chest.finished && head < request.requestBlock + 11) return { finished: 0, pending: 1 };
     if (!chest.finished) yield* ports.finish(request.tokenId);
     yield* relayOperation("complete chest request", () => store.complete(request.tokenId));
-    return chest.finished ? 0 : 1;
-  });
-
-/** Warn after five minutes of eligibility; immature requests do not create an overdue alarm. */
-export const overdueChestRequests = (
-  ports: Omit<ChestPorts, "finish">,
-  store: ChestStore,
-  now = Math.floor(Date.now() / 1000),
-) =>
-  Effect.gen(function* () {
-    yield* observeRequests(ports, store);
-    const head = yield* ports.head();
-    const pending = yield* relayOperation("read pending chests", () => store.pending());
-    const overdue: string[] = [];
-    for (const request of pending) {
-      const chest = yield* ports.chest(request.tokenId);
-      if (chest.finished) {
-        yield* relayOperation("complete observed chest", () => store.complete(request.tokenId));
-        continue;
-      }
-      if (head < request.requestBlock + 11) continue;
-      const eligibleAt = yield* ports.blockTime(request.requestBlock + 11);
-      if (now - eligibleAt > 300) overdue.push(request.tokenId);
-    }
-    return { overdue, pending: (yield* relayOperation("read remaining chests", () => store.pending())).length };
+    return { finished: chest.finished ? 0 : 1, pending: 0 };
   });

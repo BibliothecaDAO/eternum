@@ -444,33 +444,52 @@ fn unopened_2000_ruins_per_day_never_borrow_future_unlocks(chunk: u32) {
 }
 
 #[test]
-fn skipped_day_decay_is_exact_beyond_sixty_four_days() {
+fn a_wholly_missed_day_resets_the_estimate_and_uses_the_price_ceiling() {
     let rules = ChestRules { estimate_days: 100, ..rules() };
-    let previous = LordsBudget { estimate: 1_000_000_000, ..empty_day(rules, 0) };
-    let mut expected = previous.estimate;
-    for _ in 0_u64..100 {
-        expected = expected * 99 / 100;
+    let previous = LordsBudget { estimate: 1_000_000_000, rolled_shares: 1000, ..empty_day(rules, 0) };
+    for day in array![2_u64, 100] {
+        let next = roll(rules, previous, clock(), day);
+        assert_eq!(next.estimate, 0);
+        assert_eq!(next.price, rules.price_ceiling);
+        assert_eq!(next.rolled_shares, 0);
+        assert_eq!(next.pool_left, previous.pool_left);
     }
-    assert!(expected != 0);
-    assert_eq!(roll(rules, previous, clock(), 100).estimate, expected);
 }
 
 #[test]
-fn withdrawals_remain_open_through_the_last_second_of_the_preset_claim_window() {
+fn a_recorded_zero_share_day_keeps_the_consecutive_day_formula() {
+    let rules = ChestRules { estimate_days: 10, ..rules() };
+    let previous = LordsBudget { estimate: 1_000_000_000_000_000_000, ..empty_day(rules, 0) };
+    let next = roll(rules, previous, clock(), 1);
+    assert_eq!(next.estimate, previous.estimate * 9 / 10);
+    assert_eq!(next.price, 1);
+    assert!(next.price < rules.price_ceiling);
+}
+
+#[test]
+fn withdrawals_stop_one_hour_before_the_report_deadline() {
     let game = clock().game;
     let rules = rules();
     crate::relics::assert_claim_window(game, rules, game.end_at);
     crate::relics::assert_claim_window(
-        game, rules, game.end_at + Into::<u32, u64>::into(rules.claim_window_seconds) - 1,
+        game,
+        rules,
+        game.end_at
+            + Into::<u32, u64>::into(rules.claim_window_seconds - crate::days::FRONTIER_REPORT_GRACE_SECONDS)
+            - 1,
     );
 }
 
 #[test]
 #[should_panic(expected: "LORDS claim window closed")]
-fn no_receipt_can_start_at_the_ledgers_close_deadline() {
+fn no_receipt_can_start_in_the_reporting_grace_hour() {
     let game = clock().game;
     let rules = rules();
-    crate::relics::assert_claim_window(game, rules, game.end_at + Into::<u32, u64>::into(rules.claim_window_seconds));
+    crate::relics::assert_claim_window(
+        game,
+        rules,
+        game.end_at + Into::<u32, u64>::into(rules.claim_window_seconds - crate::days::FRONTIER_REPORT_GRACE_SECONDS),
+    );
 }
 
 #[test]
@@ -497,4 +516,16 @@ fn an_expired_chest_cannot_spend_another_players_reservation() {
             assert_eq!(crate::logic::lords_budget::budget(game_id).unwrap().open, 0);
         },
     );
+}
+
+#[test]
+#[should_panic(expected: "LORDS claim window needs reporting grace")]
+fn a_frontier_preset_requires_more_than_the_reporting_hour() {
+    let (_, mut preset) = super::preset_projection::current_definition("frontier");
+    let chests = preset.economy.chests.unwrap();
+    preset
+        .economy
+        .chests =
+            Option::Some(ChestRules { claim_window_seconds: crate::days::FRONTIER_REPORT_GRACE_SECONDS, ..chests });
+    crate::presets::validate(preset);
 }

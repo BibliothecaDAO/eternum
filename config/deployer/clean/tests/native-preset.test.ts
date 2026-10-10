@@ -508,7 +508,17 @@ describe("native presets", () => {
     const account = {
       getBlockNumber: async () => 10,
       getClassHashAt: async () => "0x456",
-      callContract: async () => [commitment],
+      address: "0x123",
+      signer: { getPubKey: async () => "0x456" },
+      callContract: async ({ entrypoint }: { entrypoint: string }) => [
+        entrypoint === "owner"
+          ? "0x123"
+          : entrypoint === "is_device"
+            ? "0x1"
+            : entrypoint === "l2_gas_bound"
+              ? "9000000"
+              : commitment,
+      ],
       execute: async () => {
         throw new Error("registration submitted");
       },
@@ -577,7 +587,7 @@ describe("fixed Regular Blitz rosters", () => {
     },
   };
   const input = {
-    gameName: "free-slot-1",
+    gameName: "slot-1",
     presetId: 2,
     startMainAt: 2000000000,
     chainTimestamp: 1999999990,
@@ -587,11 +597,10 @@ describe("fixed Regular Blitz rosters", () => {
     twoPlayerMode: false,
     useMapOverride: false,
   };
-  test("creation can precede a frozen roster and never enables a wrong mode", () => {
+  test("creation requires its frozen roster and never enables a wrong mode", () => {
     const config = configuration(2);
     const players = [{ wallet: "0xabc", account: "0xdef" }];
-    expect(buildNativeGameParams(config, input).roster).toEqual([]);
-    expect(() => buildNativeGameParams(config, input, Array(25).fill(players[0]))).toThrow("fixed roster");
+    expect(() => buildNativeGameParams(config, input)).toThrow("roster at creation");
     expect(() => buildNativeGameParams(config, { ...input, twoPlayerMode: true }, players)).toThrow(
       "Settlement layout",
     );

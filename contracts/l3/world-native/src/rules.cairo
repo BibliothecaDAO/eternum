@@ -582,3 +582,5 @@ pub struct SpeedConfig {
 
 pub const WELL_STAMINA: u8 = 60;
 pub const TIER_STAMINA_REFILL: u8 = 30;
+
+pub const FRONTIER_REPORT_GRACE_SECONDS: u32 = crate::days::FRONTIER_REPORT_GRACE_SECONDS;

@@ -47,6 +47,32 @@ const structure = (owner: string, game = 1) => ({
 });
 
 describe("native fact store", () => {
+  it("normalizes tuple wire keys through writes, retention and deletion", () => {
+    const store = new NativeFactStore();
+    store.applyFacts([
+      set("0x01:7:0x01", "ResourceBalance", balance(7, "12")),
+      set("1:8:1", "ResourceBalance", balance(8, "20")),
+      set("1:7:1", "ResourceWeight", { game_id: 1, entity_id: 7, capacity: "0", weight: "0" }),
+    ]);
+    store.applyFacts(
+      [set("1:0x07:1", "ResourceBalance", balance(7, "30"))],
+      new Map([["ResourceBalance", new Set(["0x1:0x7:0x1"])]]),
+    );
+    expect([...store.rows("ResourceBalance")].map((row) => row.balance)).toEqual([30n]);
+    store.applyFacts([remove("0x1:7:1", "ResourceBalance")]);
+    expect([...store.rows("ResourceBalance")]).toEqual([]);
+    expect([...store.rows("ResourceWeight")]).toHaveLength(1);
+  });
+
+  it("refuses malformed tuple wire keys without applying partial facts", () => {
+    const store = new NativeFactStore();
+    for (const key of ["", ":1", "1:", "1::2", "1:-1", `1:${1n << 252n}`, "1:nope"])
+      expect(() =>
+        store.applyFacts([set("1:7:1", "ResourceBalance", balance(7, "12")), remove(key, "ResourceBalance")]),
+      ).toThrow();
+    expect([...store.rows("ResourceBalance")]).toEqual([]);
+  });
+
   it("indexes entity ids at the contract's cap exactly without conflating adjacent values", () => {
     const store = new NativeFactStore();
     const home = BigInt(Number.MAX_SAFE_INTEGER) - 1n;

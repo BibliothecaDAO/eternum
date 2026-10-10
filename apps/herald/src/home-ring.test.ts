@@ -148,6 +148,67 @@ const tilesIn = (messages: HeraldStreamMessage[]) =>
 
 const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
 
+it("delivers game labor rules and shard-wide account grants through snapshots and confirmed diffs", async () => {
+  const { live, fold, native, decoder, confirmed } = frontierWorld(async () => []);
+  const day = Math.floor(MID_DAY / 86_400);
+  native.applyReceipt(
+    fold,
+    receipt(
+      seedDerivedRows(fold, decoder, [
+        rowEvent("LaborRules", ["1"], { amount: 7n, account_daily_limit: 2 }),
+        rowEvent("LaborRules", ["2"], { amount: 99n, account_daily_limit: 5 }),
+        rowEvent("LaborGrant", ["100", String(day)], { game_id: 2, account: 10n, home: 700n, amount: 99n }),
+        rowEvent("LaborGrant", ["101", String(day - 1)], { game_id: 1, account: 10n, home: 1n, amount: 33n }),
+        rowEvent("LaborGrant", ["102", String(day)], { game_id: 1, account: 11n, home: 2n, amount: 44n }),
+      ]),
+    ),
+    9,
+    1,
+  );
+  await live.acceptSubscribedHead({ block_number: 10, timestamp: MID_DAY });
+  const messages = connect(live, "0xa");
+  const peer = connect(live, "0xb");
+  const store = new NativeFactStore();
+  applyMessages(store, messages);
+
+  expect([...store.rows("LaborRules")]).toEqual([{ game_id: 1, amount: 7n, account_daily_limit: 2 }]);
+  expect([...store.rows("LaborGrant")]).toEqual([
+    { realm_id: 100, day: BigInt(day), game_id: 2, account: 10n, home: 700n, amount: 99n },
+    { realm_id: 101, day: BigInt(day - 1), game_id: 1, account: 10n, home: 1n, amount: 33n },
+  ]);
+  expect(
+    peer.flatMap((message) =>
+      message.type === "snapshot" && message.model === "LaborGrant"
+        ? message.rows.map((row) => row.value.realm_id)
+        : [],
+    ),
+  ).toEqual(["0x66"]);
+  messages.length = 0;
+  peer.length = 0;
+  confirmed.block_number = 11;
+  confirmed.transactions = [
+    {
+      transaction: { type: "INVOKE" },
+      receipt: receipt([
+        rowEvent("LaborGrant", ["103", String(day)], { game_id: 3, account: 10n, home: 800n, amount: 55n }),
+      ]),
+    },
+  ];
+  await live.acceptSubscribedHead({ block_number: 11, timestamp: MID_DAY });
+  applyMessages(store, messages);
+  expect(store.require("LaborGrant", { realm_id: 103, day: BigInt(day) })).toEqual({
+    realm_id: 103,
+    day: BigInt(day),
+    game_id: 3,
+    account: 10n,
+    home: 800n,
+    amount: 55n,
+  });
+  expect(
+    peer.flatMap((message) => (message.type === "diff" ? message.set.filter((row) => row.model === "LaborGrant") : [])),
+  ).toEqual([]);
+});
+
 const applyMessages = (store: NativeFactStore, messages: HeraldStreamMessage[]) => {
   for (const message of messages) {
     if (message.type === "snapshot") store.applyFacts(message.rows.map((row) => ({ ...row, model: message.model })));

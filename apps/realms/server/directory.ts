@@ -1,4 +1,4 @@
-import { readGameEntry, type GameEntry } from "@realms-world/identity";
+import { normalizeStarknetAddress, isSameStarknetAddress } from "@realms-world/identity";
 import { Effect } from "effect";
 import type { HeraldGameDirectory, HeraldGameDirectoryEntry, ShardManifest } from "@bibliothecadao/eternum/game-sync";
 
@@ -30,7 +30,7 @@ interface DirectoryDependencies {
 }
 
 interface LaunchDirectory {
-  chains: { chainId: string; games: { gameId: number; entry: GameEntry }[] }[];
+  chains: { chainId: string; games: { gameId: number; slotId: number | null }[] }[];
 }
 
 /**
@@ -101,11 +101,9 @@ const playerOf = (request: Request): string | null | typeof INVALID => {
 
 /** Every listed shard's games, each shard read on its own so one that fails is named and the rest still answer. */
 const listShards = async (dependencies: DirectoryDependencies, player: string | null) => {
-  const { results } = await dependencies.db
-    .prepare(
-      `SELECT "url", "chainId", "status" FROM "shards" WHERE "status" IN ('active', 'draining') ORDER BY "addedAt"`,
-    )
-    .all<ListedShard>();
+  const results = (await registeredShards(dependencies.db)).filter(
+    (row) => row.status === "active" || row.status === "draining",
+  );
   return Promise.all(
     results.map((shard) =>
       listShard(shard, () =>
@@ -119,13 +117,13 @@ const listShards = async (dependencies: DirectoryDependencies, player: string | 
 
 const isSettled = (game: HeraldGameDirectoryEntry) => game.status === "Settled";
 
-/** Only declared entry terms can make a game visible; missing launch evidence never becomes free. */
+/** Only completed launches make a game visible; paid games carry their slot number. */
 const playerGames = (listing: ShardListing, directory: LaunchDirectory | null) => {
   if (directory === null) return [];
   const records = directory.chains.find((row) => BigInt(row.chainId) === BigInt(listing.chainId))?.games ?? [];
   return (listing.games ?? []).flatMap((game) => {
     const declared = records.find((row) => row.gameId === game.game_id);
-    return declared ? [{ ...game, entry: readGameEntry(declared.entry) }] : [];
+    return declared ? [{ ...game, slotId: declared.slotId }] : [];
   });
 };
 
@@ -140,7 +138,10 @@ const readLaunchDirectoryRecords = async ({ readLaunchDirectory }: DirectoryDepe
           !isFelt(chainId) ||
           !Array.isArray(games) ||
           games.some(
-            ({ gameId, entry }) => !Number.isSafeInteger(gameId) || gameId <= 0 || !validEntry(entry, chainId, gameId),
+            ({ gameId, slotId }) =>
+              !Number.isSafeInteger(gameId) ||
+              gameId <= 0 ||
+              (slotId !== null && (!Number.isSafeInteger(slotId) || slotId <= 0)),
           ),
       )
     ) {
@@ -153,10 +154,6 @@ const readLaunchDirectoryRecords = async ({ readLaunchDirectory }: DirectoryDepe
   }
 };
 
-const validEntry = (value: unknown, chainId: string, gameId: number) => {
-  const entry = readGameEntry(value);
-  return entry.kind === "free" || (BigInt(entry.ledger.shard) === BigInt(chainId) && entry.ledger.gameId === gameId);
-};
 const isFelt = (value: string) => {
   try {
     return BigInt(value) >= 0n;
@@ -349,7 +346,7 @@ const readManifest = async (url: string, fetchShard: typeof fetch) => {
     if (!response.ok) return null;
     const manifest = (await response.json()) as Partial<ShardManifest>;
     return typeof manifest.chainId === "string" && FELT.test(manifest.chainId)
-      ? { ...manifest, chainId: `0x${BigInt(manifest.chainId).toString(16)}` }
+      ? { ...manifest, chainId: normalizeStarknetAddress(manifest.chainId) }
       : null;
   } catch {
     return null;
@@ -357,11 +354,10 @@ const readManifest = async (url: string, fetchShard: typeof fetch) => {
 };
 
 const hasAccountIdentity = (manifest: Partial<AccountIdentity>, identity: AccountIdentity) =>
-  sameFelt(manifest.accountClassHash, identity.accountClassHash) &&
-  sameFelt(manifest.guardianPublicKey, identity.guardianPublicKey);
-
-const sameFelt = (value: unknown, expected: string) =>
-  typeof value === "string" && FELT.test(value) && BigInt(value) === BigInt(expected);
+  (["accountClassHash", "guardianPublicKey"] as const).every((key) => {
+    const value = manifest[key];
+    return typeof value === "string" && FELT.test(value) && isSameStarknetAddress(value, identity[key]);
+  });
 
 /** The directory's cron: every listed shard has a running notifier, and a retired one has none. */
 export const superviseNotifiers = async (db: D1Database, notifiers: IdentityEnv["SHARD_NOTIFIER"]): Promise<void> => {
@@ -375,3 +371,8 @@ export const superviseNotifiers = async (db: D1Database, notifiers: IdentityEnv[
     }),
   );
 };
+
+/** Private services read every registered lifecycle row; each write applies its active/draining rule. */
+export const registeredShards = async (db: D1Database) =>
+  (await db.prepare('SELECT url,"chainId",status FROM shards ORDER BY "addedAt", "chainId"').all<ListedShard>())
+    .results;

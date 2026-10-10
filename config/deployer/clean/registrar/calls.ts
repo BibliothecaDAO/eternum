@@ -1,6 +1,6 @@
+import { normalizeStarknetAddress } from "@realms-world/identity";
 import { resolveRegistrarExecutionDetails } from "./transaction-details";
 export { resolveRegistrarExecutionDetails } from "./transaction-details";
-import { createOperatorAccount } from "../shared/madara-account";
 import { presetRegistrationCall } from "./native-preset";
 import { confirmedTransactionReceipt } from "../shared/transaction";
 import { completeNativeAdminCommand } from "../world/native/command";
@@ -12,7 +12,7 @@ import { Account, CallData, shortString, type Call, type RawArgs, RpcProvider } 
 import { loadRepoJsonFile } from "../shared/repo";
 import type { DeploymentEnvironmentId } from "../types";
 
-type RegistrarEntrypoint = "register_preset" | "create_game" | "freeze_blitz_roster";
+type RegistrarEntrypoint = "register_preset" | "create_game";
 
 interface ManifestAbiEntry {
   type?: string;
@@ -113,7 +113,10 @@ async function executeRegistrarCall(
   call: Call,
   target: RegistrarTarget,
 ): Promise<RegistrarTransactionResult> {
-  const transaction = await account.execute(call, resolveRegistrarExecutionDetails());
+  const transaction = await account.execute(
+    call,
+    await resolveRegistrarExecutionDetails(account, call.contractAddress),
+  );
   const receipt = await confirmedTransactionReceipt(account, transaction.transaction_hash);
   return { transactionHash: transaction.transaction_hash, receipt };
 }
@@ -179,12 +182,12 @@ export async function findRegistrarGame(
   return value === 0n ? null : { gameId: Number(value) };
 }
 
-/** Freeze exactly the ledger's stored wallet/account pair, without resolving identity again. */
+/** Preserve the resolved wallet/account pairs in registration order. */
 export function blitzRosterOf(players: readonly { wallet: string; account: string }[]) {
   if (players.length < 1 || players.length > 24) throw new Error("Blitz requires 1 to 24 registered players");
   const canonical = (value: string, field: string) => {
     if (!/^0x[0-9a-f]+$/i.test(value) || BigInt(value) === 0n) throw new Error(`Invalid roster ${field}`);
-    return `0x${BigInt(value).toString(16)}`;
+    return normalizeStarknetAddress(value);
   };
   const rows = players.map(({ account, wallet }) => ({
     account: canonical(account, "account"),
@@ -236,22 +239,6 @@ export async function createRegistrarGame(
   });
   const result = await executeRegistrarCall(account, buildRegistrarCall("create_game", calldata, target), target);
   return { ...result, gameId: resolveCreatedGameId(result.receipt, target) };
-}
-
-export async function freezeBlitzRoster(
-  provider: RpcProvider,
-  gameId: number,
-  players: readonly { account: string; wallet: string }[],
-  credentials: { accountAddress: string; privateKey: string },
-  target: RegistrarTarget,
-): Promise<void> {
-  const { manifest } = resolveRegistrarContext(target);
-  const account = createOperatorAccount(provider, credentials.accountAddress, credentials.privateKey);
-  const calldata = new CallData(nativeGamesAbi(manifest)).compile("freeze_blitz_roster", {
-    game_id: gameId,
-    players: blitzRosterOf(players),
-  });
-  await executeRegistrarCall(account, buildRegistrarCall("freeze_blitz_roster", calldata, target), target);
 }
 
 export async function settleBlitzRoster(

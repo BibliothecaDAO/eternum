@@ -1,3 +1,4 @@
+import { normalizeStarknetAddress as canonicalFelt } from "@realms-world/identity";
 import { profileOfIdentityUser } from "@realms-world/identity";
 import { GLOBAL_CHAT_CHANNEL_ID } from "@bibliothecadao/types";
 
@@ -6,7 +7,7 @@ import type { IdentityEnv } from "../env";
 import { json } from "../http";
 import { chatMemberHeaders } from "./chat-sockets";
 import { gameRoomsOf, parseChatRoom } from "./rooms";
-import { ChatAccessError, readRoomAccess } from "./room-access";
+import { ChatAccessError, readRoomAccess, requireRoomReadAccess } from "./room-access";
 
 const HISTORY_LIMIT = 50;
 const HISTORY_MAX = 100;
@@ -58,7 +59,7 @@ const routeAuthenticatedChat = async (request: Request, env: IdentityEnv, auth: 
   if (pathname === "/api/chat/world" && request.method === "GET") {
     const room = parseChatRoom(url.searchParams.get("zoneId"));
     if (!room) return json({ error: "invalid_channel" }, 400);
-    await readRoomAccess(env, member.realmsId, room);
+    await requireRoomReadAccess(env, member.realmsId, room);
     return json(
       await env.CHAT_ROOM.get(env.CHAT_ROOM.idFromName(room)).history(
         url.searchParams.get("cursor") ?? undefined,
@@ -106,7 +107,7 @@ const routeBlocks = async (request: Request, env: IdentityEnv, owner: string, ta
   return json({ error: "not_found" }, 404);
 };
 
-const canonical = (realmsId: string) => `0x${BigInt(realmsId).toString(16)}`;
+const canonical = canonicalFelt;
 
 const chatMemberFrom = async (request: Request, auth: IdentityAuth) => {
   const session = await auth.api.getSession({ headers: request.headers });

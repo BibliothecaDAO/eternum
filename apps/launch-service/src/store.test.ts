@@ -155,18 +155,12 @@ test("a shard cutover preserves directory games and refuses new work until the o
   });
   const oldSeason = await scheduleFrontierSeason(oldChain, season(seasonStart));
 
-  // SHARD_URL now points at a new chain behind the same D1.
+  // Another official chain shares the D1; its work remains isolated.
   const newChain = new D1LaunchStore(database.db, testChain("0x2"));
   expect(await newChain.playerDirectoryGames()).toEqual([
-    { chainId: "0x1", games: [7].map((gameId) => ({ gameId, entry: { kind: "free" } })) },
+    { chainId: "0x1", games: [7].map((gameId) => ({ gameId, slotId: null })) },
   ]);
-  await expect(newChain.startNext(Date.now())).rejects.toThrow("Drain queued or running launches");
-  await expect(scheduleFrontierSeason(newChain, season(seasonStart))).rejects.toThrow(
-    "Drain queued or running launches",
-  );
-  await expect(newChain.scheduleStatement("game", oldSeason.request)).rejects.toThrow(
-    "Drain queued or running launches",
-  );
+  expect(await newChain.startNext(Date.now())).toBeNull();
   expect((await newChain.pendingOtherChains()).map(({ chainId }) => chainId)).toEqual(["0x1", "0x1"]);
   const result = (await oldChain.startNext(Date.now()))!;
   await completeFreeFixture(oldChain, result.id, {
@@ -185,8 +179,8 @@ test("a shard cutover preserves directory games and refuses new work until the o
   const next = (await newChain.startNext(Date.now()))!;
   await completeFreeFixture(newChain, next.id, { ...frontierSummary(newSeason.name, seasonStart), gameId: 7 });
   expect(await newChain.playerDirectoryGames()).toEqual([
-    { chainId: "0x1", games: [7, 9].map((gameId) => ({ gameId, entry: { kind: "free" } })) },
-    { chainId: "0x2", games: [7].map((gameId) => ({ gameId, entry: { kind: "free" } })) },
+    { chainId: "0x1", games: [7, 9].map((gameId) => ({ gameId, slotId: null })) },
+    { chainId: "0x2", games: [7].map((gameId) => ({ gameId, slotId: null })) },
   ]);
 });
 
@@ -217,7 +211,7 @@ test("directory reads retain both chains and log invalid summaries without readi
     rows.map(({ id, chainId, summary }) =>
       database.db
         .prepare(
-          `INSERT INTO launch_runs (id, chain_id, kind, environment, name, request, status, available_at, created_at, updated_at, summary,entry) VALUES (?, ?, 'game', 'madara.blitz', ?, '{}', 'complete', 0, 0, 0, ?,'{"kind":"free"}')`,
+          `INSERT INTO launch_runs (id, chain_id, kind, environment, name, request, status, available_at, created_at, updated_at, summary) VALUES (?, ?, 'game', 'madara.blitz', ?, '{}', 'complete', 0, 0, 0, ?)`,
         )
         .bind(id, chainId, id, summary),
     ),
@@ -228,8 +222,8 @@ test("directory reads retain both chains and log invalid summaries without readi
   const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
   try {
     expect(await new D1LaunchStore(database.db, chainOf).playerDirectoryGames()).toEqual([
-      { chainId: "0x1", games: [7].map((gameId) => ({ gameId, entry: { kind: "free" } })) },
-      { chainId: "0x2", games: [9].map((gameId) => ({ gameId, entry: { kind: "free" } })) },
+      { chainId: "0x1", games: [7].map((gameId) => ({ gameId, slotId: null })) },
+      { chainId: "0x2", games: [9].map((gameId) => ({ gameId, slotId: null })) },
     ]);
     expect(chainOf).not.toHaveBeenCalled();
     expect(log.mock.calls.map(([, details]) => details.runId)).toEqual(malformed.map((_, index) => `bad-${index}`));

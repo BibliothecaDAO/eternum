@@ -1,6 +1,11 @@
 import { RecordedSigner } from "./recorded-signer";
 import type { LedgerPayDecision } from "@realms-world/identity";
-import { rpcAt } from "@realms-world/value-ledger";
+import {
+  rpcAt,
+  readConfirmedLedgerHead,
+  decodeFrontierSeason,
+  decodeWithdrawalPayment,
+} from "@realms-world/value-ledger";
 import { Account } from "starknet";
 import type { RelayPorts, Withdrawal, RelayEffect } from "./ports";
 import { frontierPayment } from "./adapters";
@@ -15,7 +20,7 @@ interface LedgerCredentials {
 }
 
 export const ledgerPaymentRead =
-  (rpcUrl: string, address: string): RelayPorts["ledger"]["payment"] =>
+  (rpcUrl: string, address: string, head: number | "latest" = "latest"): RelayPorts["ledger"]["payment"] =>
   (withdrawal) =>
     relayOperation("read withdrawal report", async () => {
       const fields = await rpcAt(rpcUrl).callContract(
@@ -24,27 +29,30 @@ export const ledgerPaymentRead =
           entrypoint: "get_payment",
           calldata: [withdrawal.chainId, withdrawal.transactionHash],
         },
-        "latest",
+        head,
       );
-      if (fields.length !== 5 || ![0n, 1n].includes(BigInt(fields[0]!))) throw new Error("invalid_payment_record");
-      const low = BigInt(fields[3]!),
-        high = BigInt(fields[4]!);
-      if (low < 0n || high < 0n || low >= 2n ** 128n || high >= 2n ** 128n) throw new Error("invalid_payment_amount");
-      const amount = low + (high << 128n);
-      if (amount === 0n && BigInt(fields[0]!) === 0n && BigInt(fields[1]!) === 0n && BigInt(fields[2]!) === 0n)
-        return null;
-      if (
-        !amount ||
-        (BigInt(fields[0]!) === 1n && BigInt(fields[2]!) === 0n) ||
-        (BigInt(fields[0]!) === 0n && BigInt(fields[2]!) !== 0n)
-      )
-        throw new Error("invalid_payment_report");
-      return {
-        paid: BigInt(fields[0]!) === 1n,
-        seasonId: Number(BigInt(fields[1]!)),
-        wallet: fields[2]!,
-        amount: String(amount),
-      };
+      return decodeWithdrawalPayment(fields);
+    });
+
+/** Closing voids unpaid debt even when identity has no wallet; recover from the confirmed view, not event delivery. */
+export const ledgerWithdrawalVoided =
+  (rpcUrl: string, address: string): RelayPorts["ledger"]["voided"] =>
+  (withdrawal) =>
+    relayOperation("read withdrawal void", async () => {
+      const provider = rpcAt(rpcUrl);
+      const head = await readConfirmedLedgerHead(provider);
+      const payment = await Effect.runPromise(ledgerPaymentRead(rpcUrl, address, head.number)(withdrawal));
+      if (payment?.paid) return false;
+      if (payment && payment.seasonId !== withdrawal.seasonId) throw new Error("ledger_report_mismatch");
+      const fields = await provider.callContract(
+        {
+          contractAddress: address,
+          entrypoint: "get_frontier",
+          calldata: [withdrawal.chainId, String(withdrawal.seasonId)],
+        },
+        head.number,
+      );
+      return decodeFrontierSeason(fields).closed;
     });
 
 /** Reporting is a separate confirmed transaction; a failed later payment cannot erase the custody guard. */

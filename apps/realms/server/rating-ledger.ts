@@ -1,3 +1,5 @@
+import { ledgerU256 } from "@realms-world/value-ledger";
+import { normalizeStarknetAddress as canonicalFelt } from "@realms-world/identity";
 import { verifyIdentityChain } from "./l2";
 import type { IdentityEnv } from "./env";
 import { RpcProvider } from "starknet";
@@ -9,7 +11,7 @@ const FIELD_PRIME = (1n << 251n) + 17n * (1n << 192n) + 1n;
 /** A response names immutable chain state, rather than several reads of a height that might be reorganized. */
 export async function openRatingLedger(
   provider: RpcProvider,
-  env: Pick<IdentityEnv, "L2_CHAIN_ID" | "IDENTITY_RPC_URL" | "RATING_TOKEN_ADDRESS">,
+  env: Pick<IdentityEnv, "ENVIRONMENT" | "IDENTITY_RPC_URL" | "RATING_TOKEN_ADDRESS">,
   blockHash?: string,
 ) {
   const signal = AbortSignal.timeout(10_000);
@@ -33,7 +35,7 @@ export async function openRatingLedger(
     signal,
     ratingToken: env.RATING_TOKEN_ADDRESS,
     block: number,
-    blockHash: `0x${BigInt(canonicalHash).toString(16)}`,
+    blockHash: canonicalFelt(canonicalHash),
   };
 }
 
@@ -62,9 +64,8 @@ export async function readLedgerRatings(ledger: RatingLedger, owners: string[]):
 }
 
 function decodeRating(result: string[]) {
-  if (result.length !== 2 || !result.every((limb) => /^0x[0-9a-fA-F]{1,32}$/.test(limb)))
-    throw new Error("Invalid MMR u256");
-  const raw = BigInt(result[0]!) + (BigInt(result[1]!) << 128n);
+  if (result.length !== 2) throw new Error("Invalid MMR u256");
+  const raw = BigInt(ledgerU256(result[0]!, result[1]!));
   if (raw === 0n) throw new Error("Effective MMR must be nonzero");
   return raw;
 }

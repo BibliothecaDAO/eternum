@@ -1,7 +1,11 @@
 import { DeviceSigner } from "@bibliothecadao/eternum/device-signer";
 export { batchRemaining } from "@bibliothecadao/provider/batch-progress";
-import { Account, CallData, ec, hash, byteArray, type Abi, type RpcProvider } from "starknet";
+import { Account, CallData, ec, type Abi, type RpcProvider } from "starknet";
+import { encodeNativeCommand, gameplayRejection } from "@bibliothecadao/provider";
+import { resolveGameTransactionResourceBounds } from "@bibliothecadao/eternum/shard-fees";
+import { readConfirmedLedgerHead } from "./codecs";
 import { rpcAt } from "./rpc";
+import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
 
 export interface ShardTarget {
   rpcUrl: string;
@@ -30,15 +34,10 @@ export class ShardOperator {
   async head() {
     if (BigInt(await this.provider.getChainId()) !== BigInt(this.target.chainId))
       throw new Error("shard_chain_differs");
-    const block = await this.provider.getBlock("latest");
-    if (
-      !("block_number" in block) ||
-      !("status" in block) ||
-      !["ACCEPTED_ON_L2", "ACCEPTED_ON_L1"].includes(block.status ?? "")
-    )
-      throw new Error("shard_head_unconfirmed");
-    return block;
+    const block = await readConfirmedLedgerHead(this.provider);
+    return { block_number: block.number, block_hash: block.hash, timestamp: block.time };
   }
+
   async view<A>(entrypoint: string, calldata: readonly (string | number | bigint)[], at?: number): Promise<A> {
     const head = at ?? (await this.head()).block_number;
     const codec = await this.codec(head);
@@ -71,14 +70,8 @@ export class ShardOperator {
     return confirmedShardReceipt(this.provider, transactionHash);
   }
   private cachedAbi: Promise<Abi> | undefined;
-  async playCommand(gameId: number, name: string, args: readonly string[] = []) {
-    const abi = await this.runtimeAbi((await this.head()).block_number);
-    const command = abi.find((type) => type.type === "enum" && type.name.endsWith("::Command")) as
-      | { variants: { name: string }[] }
-      | undefined;
-    const id = command?.variants.findIndex((variant) => variant.name === name) ?? -1;
-    if (id < 0) throw new Error("native_command_not_published");
-    return this.play(gameId, [String(id), ...args]);
+  async playCommand(gameId: number, name: "SettleBlitzRoster" | "MarkGameSettled" | "RecordBlitzResults") {
+    return this.play(gameId, encodeNativeCommand(bindings.commandAbi, { kind: name, value: undefined }));
   }
   private async runtimeAbi(head: number): Promise<Abi> {
     this.cachedAbi ??= this.provider
@@ -103,11 +96,7 @@ export class ShardOperator {
       { contractAddress: this.target.gamesAddress, entrypoint, calldata },
       {
         tip: 0,
-        resourceBounds: {
-          l1_gas: { max_amount: 0n, max_price_per_unit: 0n },
-          l1_data_gas: { max_amount: 0n, max_price_per_unit: 0n },
-          l2_gas: { max_amount: bound, max_price_per_unit: 0n },
-        },
+        resourceBounds: resolveGameTransactionResourceBounds(bound),
         paymasterData: [],
         accountDeploymentData: [],
         nonceDataAvailabilityMode: "L1",
@@ -116,7 +105,8 @@ export class ShardOperator {
     );
     if (onSubmitted) await onSubmitted(submitted.transaction_hash);
     const receipt = await this.confirm(submitted.transaction_hash);
-    rejectGameplayRefusal(receipt.events, this.target.gamesAddress, submitted.transaction_hash);
+    const refusal = gameplayRejection(receipt.events, this.target.gamesAddress, submitted.transaction_hash);
+    if (refusal) throw new Error(`gameplay_refused:${refusal.reason}`);
     return { transactionHash: submitted.transaction_hash, events: receipt.events };
   }
 }
@@ -141,34 +131,4 @@ const confirmedShardReceipt = async (provider: RpcProvider, transactionHash: str
     await new Promise((resolve) => setTimeout(resolve, 250));
   }
   throw new Error("shard_receipt_unavailable");
-};
-
-const rejectGameplayRefusal = (
-  events: readonly { from_address: string; keys: string[]; data: string[] }[],
-  address: string,
-  transactionHash: string,
-) => {
-  const rejected = events.filter(
-    (event) =>
-      BigInt(event.from_address) === BigInt(address) &&
-      BigInt(event.keys[0] ?? "0") === BigInt(hash.getSelectorFromName("GameplayRejected")),
-  );
-  if (!rejected.length) return;
-  const event = rejected[0]!;
-  if (
-    rejected.length !== 1 ||
-    event.keys.length !== 5 ||
-    BigInt(event.keys[1]!) !== 1n ||
-    BigInt(event.keys[4]!) !== BigInt(transactionHash)
-  )
-    throw new Error("invalid_gameplay_rejection");
-  const words = Number(BigInt(event.data[1]!));
-  if (!Number.isInteger(words) || words < 0 || event.data.length !== words + 4)
-    throw new Error("invalid_rejection_reason");
-  const reason = byteArray.stringFromByteArray({
-    data: event.data.slice(2, 2 + words),
-    pending_word: event.data[2 + words]!,
-    pending_word_len: Number(BigInt(event.data[3 + words]!)),
-  });
-  throw new Error(`gameplay_refused:${reason}`);
 };

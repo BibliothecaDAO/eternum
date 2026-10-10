@@ -1,3 +1,4 @@
+vi.mock("./environment", () => ({ ledgerAddress: () => "0x10" }));
 import { Effect } from "effect";
 import { expect, it, vi } from "vitest";
 import { ValueRelay } from "./worker";
@@ -12,11 +13,17 @@ vi.mock("cloudflare:workers", () => ({
 }));
 vi.mock("@realms-world/value-ledger", async (original) => ({
   ...(await original<typeof import("@realms-world/value-ledger")>()),
+  readRegisteredShard: async () => ({
+    chainId: "0x1",
+    rpcUrl: "https://proxy.test/rpc/v0_10_2",
+    contracts: { games: "0x77" },
+    url: "https://shard.test",
+    status: "active",
+  }),
   rpcAt: () => ({ getChainId: async () => "0x1" }),
 }));
-vi.mock("./game-entry", () => ({ paidGameEntry: () => Effect.succeed({ kind: "free" }) }));
 const blocked = vi.hoisted(() => ({ run: vi.fn() }));
-vi.mock("./blitz-launch", () => ({ openBlitzOnLedger: blocked.run }));
+vi.mock("./blitz-launch", () => ({ openSlotOnLedger: blocked.run }));
 vi.mock("./shard-labor", () => ({ currentLaborDay: () => Effect.succeed(1) }));
 vi.mock("./relay", () => ({ grantDailyLabor: () => Effect.succeed({ amount: "1" }) }));
 it("lets the shard signer grant labor while the ledger signer awaits confirmation", async () => {
@@ -36,9 +43,14 @@ it("lets the shard signer grant labor while the ledger signer awaits confirmatio
   const storage = { setAlarm: async () => {}, get: async () => undefined };
   const relay = new ValueRelay(
     { storage, blockConcurrencyWhile: async (run: () => Promise<unknown>) => run() } as unknown as DurableObjectState,
-    { SHARD_CHAIN_ID: "0x1", IDENTITY: { l2ChainId: async () => "0x1" } } as never,
+    {
+      IDENTITY: {
+        l2ChainId: async () => "0x1",
+        shards: async () => [{ chainId: "0x1", url: "https://shard.test", status: "active" }],
+      },
+    } as never,
   );
-  const opening = relay.openBlitz({ chainId: "0x1", gameId: 1 }, { start: 1, end: 2 });
+  const opening = relay.openSlot({ chainId: "0x1", slotId: 1 }, { start: 1, end: 2 });
   await entered;
   const labor = relay.labor({
     chainId: "0x1",

@@ -90,8 +90,8 @@ const fixture = () => {
   };
   const ports: RelayPorts & {
     identity: MonitorPorts["identity"] & RelayPorts["identity"];
-    ledger: RelayPorts["ledger"] & Pick<MonitorPorts["ledger"], "accountLinks">;
-    shard: RelayPorts["shard"] & Pick<MonitorPorts["shard"], "conservation">;
+    ledger: RelayPorts["ledger"] & Pick<MonitorPorts["ledger"], "paidClaims" | "postedResults">;
+    shard: RelayPorts["shard"] & Pick<MonitorPorts["shard"], "conservation" | "result">;
   } = {
     shard: {
       conservation: () => Effect.succeed([]),
@@ -103,14 +103,13 @@ const fixture = () => {
       grantLabor: vi.fn(() => Effect.succeed({ gameId: 1, account: "0x3", home: "9", amount: "1000000000000" })),
     },
     identity: {
-      matchesLedgerLinkWrite: () => Effect.succeed(true),
       matchesPayDecision: (decision) => Effect.succeed(BigInt(decision.wallet) === 0x123n),
       payoutWallet: () => Effect.succeed({ status: "ready", address: "0x123" }),
       accountForRealmsId: () => Effect.succeed("0x3"),
       linkedWallet: () => Effect.succeed("0x123"),
     },
     ledger: {
-      accountLinks: () => Effect.succeed({ rows: [], head: 1000, next: null }),
+      voided: () => Effect.succeed(false),
       payment: () => Effect.succeed(null),
       reportMany: vi.fn((rows: readonly Withdrawal[]) =>
         Effect.forEach(rows, (row) =>
@@ -472,9 +471,7 @@ it("holds only a corrupt result while recording and paying the rest of its page"
 
 it("audits the signed pay decision even when replacement and block clocks disagree", async () => {
   const f = fixture();
-  const historicalClock = vi.fn(() => Effect.succeed(false));
   Object.assign(f.ports.identity, {
-    wasReadyPayoutWallet: historicalClock,
     matchesPayDecision: () => Effect.succeed(true),
   });
   const pause = vi.fn(() => Effect.void);
@@ -491,7 +488,6 @@ it("audits the signed pay decision even when replacement and block clocks disagr
     ),
   );
   expect(pause).not.toHaveBeenCalled();
-  expect(historicalClock).not.toHaveBeenCalled();
 });
 it("pauses on a payment with no authorized signed decision even when its wallet was once ready", async () => {
   const f = fixture();
@@ -510,4 +506,35 @@ it("pauses on a payment with no authorized signed decision even when its wallet 
     ),
   );
   expect(pause).toHaveBeenCalledOnce();
+});
+it("persists a halt when the head falls below an unfinished page's observed anchor", async () => {
+  const f = fixture();
+  f.ports.shard.confirmedHead = () => Effect.succeed(10);
+  f.ports.shard.eventsPage = () =>
+    Effect.succeed({
+      ...block,
+      number: 10,
+      fromBlock: 0,
+      next: "more",
+      anchors: Array.from({ length: 11 }, (_, number) => ({ number, hash: "0xa" })),
+    });
+  await f.run();
+  f.ports.shard.confirmedHead = () => Effect.succeed(8);
+  f.ports.shard.blockHash = vi.fn(() => Effect.fail(new RelayFailure({ operation: "header_not_found" })));
+  await expect(f.run()).rejects.toThrow();
+  expect(await f.store.progress()).toMatchObject({ halted: "confirmed_head_regressed:10" });
+  expect(f.ports.shard.blockHash).not.toHaveBeenCalled();
+});
+
+it("voids closed unpaid reports even when the account has no payout wallet and never retries them", async () => {
+  const f = fixture();
+  f.ports.identity.payoutWallet = vi.fn(() => Effect.succeed({ status: "no_wallet" as const }));
+  f.ports.ledger.payment = () => Effect.succeed({ paid: false, seasonId: 4, wallet: "0x0", amount: "17" });
+  Object.assign(f.ports.ledger, { voided: () => Effect.succeed(true) });
+  await Effect.runPromise(runRelay("0x1", f.ports, f.store));
+  expect(await f.store.withdrawals()).toHaveLength(0);
+  expect(await f.store.held()).toEqual([expect.objectContaining({ kind: "payment", reason: "ledger_report_voided" })]);
+  expect(f.ports.identity.payoutWallet).not.toHaveBeenCalled();
+  await Effect.runPromise(runRelay("0x1", f.ports, f.store));
+  expect(f.single.pay).not.toHaveBeenCalled();
 });

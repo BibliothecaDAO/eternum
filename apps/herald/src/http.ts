@@ -45,13 +45,7 @@ interface HeraldHttpState {
   metrics: ReplayMetrics;
   history?: Pick<
     HistoryStore,
-    | "queryStoryCursor"
-    | "queryEvents"
-    | "reviewSnapshot"
-    | "transactionCount"
-    | "activity"
-    | "frontierHistory"
-    | "frontierDayRanks"
+    "queryStoryCursor" | "queryEvents" | "reviewSnapshot" | "activity" | "frontierHistory" | "frontierDayRanks"
   >;
   undecodableEventCount: () => number;
 }
@@ -125,7 +119,6 @@ export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: R
   const reviewSnapshotPath = /^\/games\/([0-9]+)\/review\/snapshot$/;
   const dayRanksPath = /^\/games\/([0-9]+)\/days\/([0-9]+)\/ranks$/;
   const leaderboardPath = /^\/games\/([0-9]+)\/leaderboard$/;
-  const transactionCountPath = /^\/games\/([0-9]+)\/transactions\/count$/;
 
   return async (request) => {
     const url = new URL(request.url);
@@ -224,12 +217,6 @@ export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: R
         const message = error instanceof Error ? error.message : String(error);
         return jsonResponse({ error: message }, 400);
       }
-    }
-
-    const transactionCountMatch = request.method === "GET" ? transactionCountPath.exec(url.pathname) : null;
-    if (transactionCountMatch) {
-      if (!state.history) return jsonResponse({ error: "history_unavailable" }, 503);
-      return jsonResponse(await state.history.transactionCount(transactionCountMatch[1]));
     }
 
     const reviewSnapshotMatch = request.method === "GET" ? reviewSnapshotPath.exec(url.pathname) : null;

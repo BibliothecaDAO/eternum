@@ -1,3 +1,4 @@
+import { resolveGameTransactionResourceBounds } from "../account/transaction-resource-bounds";
 import {
   BlockTag,
   EDAMode,
@@ -9,7 +10,6 @@ import {
   type AllowArray,
   type Call,
   type InvokeFunctionResponse,
-  type ResourceBoundsBN,
   type UniversalDetails,
   type InvocationsSignerDetails,
 } from "starknet";
@@ -131,15 +131,6 @@ export function executeGameplayAccountTransaction({
   return reconciling.then(({ sent }) => sent);
 }
 
-/** The fee-free shard's bounds: l2 gas at its fixed amount, every price and the other resources zero. */
-function playResourceBounds(l2GasBound: bigint): ResourceBoundsBN {
-  return {
-    l1_gas: { max_amount: 0n, max_price_per_unit: 0n },
-    l1_data_gas: { max_amount: 0n, max_price_per_unit: 0n },
-    l2_gas: { max_amount: l2GasBound, max_price_per_unit: 0n },
-  };
-}
-
 function assertConfiguredChain(address: string, configuredChain: string, requestedChain: string): void {
   if (configuredChain !== requestedChain) {
     throw new Error(`Gameplay account ${address} is configured for ${configuredChain}, not ${requestedChain}`);
@@ -200,7 +191,7 @@ function playFrame(nonce: string, shard: GameplayShard, details: UniversalDetail
     nonce,
     version: "0x3" as const,
     tip: 0,
-    resourceBounds: playResourceBounds(shard.l2GasBound),
+    resourceBounds: resolveGameTransactionResourceBounds(shard.l2GasBound),
     paymasterData: [],
     accountDeploymentData: [],
     nonceDataAvailabilityMode: EDataAvailabilityMode.L1,

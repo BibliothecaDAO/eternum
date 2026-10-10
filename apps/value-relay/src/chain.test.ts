@@ -1,6 +1,13 @@
+import { ledgerCall } from "../../../packages/value-ledger/test-support/ledger-abi";
 import { Effect } from "effect";
 import { beforeEach, expect, it, vi } from "vitest";
-import { ledgerPaymentAdapter, ledgerPaymentRead, ledgerReportAdapter, ledgerPauserAdapter } from "./chain";
+import {
+  ledgerWithdrawalVoided,
+  ledgerPaymentAdapter,
+  ledgerPaymentRead,
+  ledgerReportAdapter,
+  ledgerPauserAdapter,
+} from "./chain";
 
 const rpc = vi.hoisted(() => ({ execute: vi.fn(), call: vi.fn(), wait: vi.fn(), block: vi.fn() }));
 vi.mock("starknet", async (importOriginal) => ({
@@ -41,6 +48,11 @@ it("waits for the Frontier payment to confirm before completing", async () => {
     entrypoint: "pay",
     calldata: ["0x1", "7", "0xdef", "0x456", "17", "0"],
   });
+  expect(rpc.execute.mock.calls[0]![0].calldata.map(BigInt)).toEqual(
+    ledgerCall("pay", { shard: 1, season_id: 7, claim_id: "0xdef", wallet: "0x456", amount: { low: 17, high: 0 } }).map(
+      BigInt,
+    ),
+  );
   expect(rpc.wait).toHaveBeenCalledWith("0xabc", { errorStates: [] });
 });
 it("does not mark a reverted payment successful or expose a transport's error", async () => {
@@ -65,6 +77,7 @@ it("makes a monitor pause retry harmless once the pause already landed", async (
   rpc.call.mockResolvedValue(["0x0"]);
   await Effect.runPromise(ledgerPauserAdapter(credentials)());
   expect(rpc.execute).toHaveBeenCalledWith({ contractAddress: "0x10", entrypoint: "pause", calldata: [] });
+  expect(rpc.execute.mock.calls[0]![0].calldata).toEqual(ledgerCall("pause", {}));
   expect(rpc.wait).toHaveBeenCalledWith("0xabc");
 });
 
@@ -102,6 +115,11 @@ it("confirms an immutable withdrawal report separately from payment and recogniz
     entrypoint: "report_withdrawal",
     calldata: ["0x1", "7", "0xdef", "17", "0"],
   });
+  expect(rpc.execute.mock.calls[0]![0].calldata.map(BigInt)).toEqual(
+    ledgerCall("report_withdrawal", { shard: 1, season_id: 7, claim_id: "0xdef", amount: { low: 17, high: 0 } }).map(
+      BigInt,
+    ),
+  );
   expect(await Effect.runPromise(ledgerPaymentRead(credentials.rpcUrl, credentials.contractAddress)(claim))).toEqual({
     paid: false,
     seasonId: 7,
@@ -165,4 +183,34 @@ it("sets aside a first report that permanently missed the ledger claim window", 
       }),
     ),
   ).rejects.toMatchObject({ operation: "ledger_claim_window_ended" });
+});
+
+it("derives voided debt from an unpaid report and its confirmed closed pool", async () => {
+  const row = {
+    chainId: "0x1",
+    seasonId: 7,
+    transactionHash: "0xdef",
+    realmsId: "0x3",
+    amount: "17",
+    confirmedAt: 1000,
+  };
+  let paid = false;
+  let closed = true;
+  rpc.call.mockImplementation(async (call) =>
+    call.entrypoint === "get_payment"
+      ? [paid ? "1" : "0", "7", paid ? "0x123" : "0", "17", "0"]
+      : ["1", "10", "20", "100", "0", "0", "0", closed ? "1" : "0", "5", "9"],
+  );
+  const read = () => Effect.runPromise(ledgerWithdrawalVoided(credentials.rpcUrl, credentials.contractAddress)(row));
+  expect(await read()).toBe(true);
+  expect(rpc.call).toHaveBeenCalledWith(
+    { contractAddress: "0x10", entrypoint: "get_frontier", calldata: ["0x1", "7"] },
+    10,
+  );
+  expect(rpc.call.mock.calls.every((call) => call[1] === 10)).toBe(true);
+  closed = false;
+  expect(await read()).toBe(false);
+  paid = true;
+  closed = true;
+  expect(await read()).toBe(false);
 });

@@ -1,19 +1,21 @@
 import { BLITZ_SLOT_NAME_PATTERN } from "@realms-world/identity";
+import { environmentL2 } from "@realms-world/chain";
+import { readLedgerRegistration } from "@realms-world/value-ledger";
+import { identityProvider, verifyIdentityChain } from "../l2";
+import { readLinkedWallet } from "../payout-wallet";
 import { z } from "zod";
 import type { IdentityEnv } from "../env";
 import { isRoomMember, type ChatRoomId } from "./rooms";
 
-const SlotRoster = z.object({
+const SlotKey = z.object({
   name: z.string().regex(BLITZ_SLOT_NAME_PATTERN),
-  registrations: z.array(
-    z.object({
-      realmsId: z
-        .string()
-        .regex(/^0x[0-9a-fA-F]{1,64}$/)
-        .nullable(),
-    }),
-  ),
+  chainId: z
+    .string()
+    .regex(/^0x[0-9a-fA-F]{1,64}$/)
+    .refine((value) => BigInt(value) > 0n),
+  slotId: z.number().int().nonnegative().max(0xffffffff),
 });
+type RoomAccessEnv = Pick<IdentityEnv, "DB" | "LAUNCH" | "ENVIRONMENT" | "IDENTITY_RPC_URL">;
 
 export class ChatAccessError extends Error {
   constructor(
@@ -24,33 +26,63 @@ export class ChatAccessError extends Error {
   }
 }
 
-/** A slot's readers need a session; its writers need a seat in the launch Worker's authoritative roster. */
+/** Slot writers use their current linked wallet's ledger registration; game rooms use the shard roster. */
 export async function readRoomAccess(
-  env: Pick<IdentityEnv, "DB" | "LAUNCH">,
+  env: RoomAccessEnv,
   realmsId: string,
   room: ChatRoomId,
 ): Promise<{ canWrite: boolean }> {
-  if (room.startsWith("slot:")) return readSlotAccess(env.LAUNCH, realmsId, room.slice(5));
-  if (!(await isRoomMember(env.DB, realmsId, room))) throw new ChatAccessError("channel_access_denied", 403);
+  if (room.startsWith("slot:")) return readSlotAccess(env, realmsId, room.slice(5));
+  await requireRoomReadAccess(env, realmsId, room);
   return { canWrite: true };
 }
 
-async function readSlotAccess(launch: IdentityEnv["LAUNCH"], realmsId: string, name: string) {
-  let slot: z.infer<typeof SlotRoster>;
+/** Slot history needs only a valid room and the session already checked by the route. */
+export async function requireRoomReadAccess(
+  env: Pick<IdentityEnv, "DB" | "LAUNCH">,
+  realmsId: string,
+  room: ChatRoomId,
+): Promise<void> {
+  if (room.startsWith("slot:")) {
+    try {
+      await readSlotKey(env.LAUNCH, room.slice(5));
+    } catch (error) {
+      if (error instanceof ChatAccessError) throw error;
+      throw new ChatAccessError("chat_membership_unavailable", 503);
+    }
+    return;
+  }
+  if (!(await isRoomMember(env.DB, realmsId, room))) throw new ChatAccessError("channel_access_denied", 403);
+}
+
+async function readSlotAccess(env: RoomAccessEnv, realmsId: string, name: string) {
   try {
-    const response = await launch.fetch(`https://launch/api/slots/${name}`, {
-      signal: AbortSignal.timeout(5_000),
-      redirect: "manual",
-    });
-    if (response.status === 404) throw new ChatAccessError("channel_not_found", 404);
-    if (!response.ok) throw new Error(`Slot directory answered ${response.status}`);
-    slot = SlotRoster.parse(await response.json());
-    if (slot.name !== name) throw new Error("Slot roster answered for another room");
+    const slot = await readSlotKey(env.LAUNCH, name);
+    const wallet = (await readLinkedWallet(env.DB, realmsId))?.address;
+    if (!wallet) return { canWrite: false };
+    const { ledger } = environmentL2(env.ENVIRONMENT);
+    if (!ledger) throw new Error("Slot ledger is not deployed");
+    const provider = identityProvider(env);
+    await verifyIdentityChain(provider, env);
+    const registration = await readLedgerRegistration(provider, ledger, slot, wallet);
+    return {
+      canWrite:
+        registration.registered && (registration.paid > 0n || registration.swordCredit || registration.shieldCredit),
+    };
   } catch (error) {
     if (error instanceof ChatAccessError) throw error;
     throw new ChatAccessError("chat_membership_unavailable", 503);
   }
-  return {
-    canWrite: slot.registrations.some((seat) => seat.realmsId !== null && BigInt(seat.realmsId) === BigInt(realmsId)),
-  };
+}
+
+async function readSlotKey(launch: IdentityEnv["LAUNCH"], name: string) {
+  const response = await launch.fetch(`https://launch/api/slots/${name}`, {
+    signal: AbortSignal.timeout(5_000),
+    redirect: "manual",
+  });
+  if (response.status === 404) throw new ChatAccessError("channel_not_found", 404);
+  if (!response.ok) throw new Error(`Slot directory answered ${response.status}`);
+  const slot = SlotKey.parse(await response.json());
+  if (slot.name !== name) throw new Error("Slot directory answered for another room");
+  return slot;
 }

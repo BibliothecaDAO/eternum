@@ -1,3 +1,4 @@
+import { normalizeStarknetAddress as canonicalFelt } from "@realms-world/identity";
 import { Data, Effect, Schema } from "effect";
 import { botRealmsId, realmsAccountAddress, type DeviceChange } from "@realms-world/identity/account";
 import type { Guardian } from "@realms-world/guardian";
@@ -194,5 +195,3 @@ const removeDevice = (db: D1Database, realmsId: string, deviceKey: string) =>
         .bind(realmsId, canonicalFelt(deviceKey)),
     ]),
   );
-
-const canonicalFelt = (value: string) => `0x${BigInt(value).toString(16)}`;

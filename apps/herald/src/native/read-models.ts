@@ -102,11 +102,12 @@ function directoryPlayerState(
   const player = address(input.playerAddress);
   const structures = gameRows(facts.structures, game.game_id).filter((row) => address(row.owner) === player);
   const roster = (gameRows(facts.rosters, game.game_id)[0]?.players as Row[] | undefined) ?? [];
+  const seat = roster.find((row) => address(row.account) === player);
   const settlement = required(facts.settlementRules, game.game_id, "SettlementRules");
   return {
     registered: gameRows(facts.entries, game.game_id).some((row) => address(row.player) === player),
     settled: structures.some((row) => isRealmCategory(number(record(row.base).category))),
-    roster_member: roster.some((row) => address(row.account) === player),
+    roster_wallet: seat ? address(seat.wallet) : null,
     structures: structures.map((row) => playerStructure(row, game, settlement, facts, input.timestamp)),
   };
 }
@@ -195,7 +196,11 @@ function directoryEntry(game: Row, facts: DirectoryRows, input: DirectoryInput):
     roster: roster.map((row) => {
       const account = address(row.account);
       const entered = gameRows(facts.entries, game.game_id).some((entry) => address(entry.player) === account);
-      return { account, prepared: entered && realms.some((realm) => address(realm.owner) === account) };
+      return {
+        account,
+        wallet: address(row.wallet),
+        prepared: entered && realms.some((realm) => address(realm.owner) === account),
+      };
     }),
     registration: {
       count:

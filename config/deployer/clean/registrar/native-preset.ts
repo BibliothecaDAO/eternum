@@ -1,4 +1,5 @@
 import { resolveRegistrarExecutionDetails } from "./transaction-details";
+import { assertNativeOwnerSigner } from "../shared/native-owner";
 import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { resolveDeploymentEnvironment } from "../environment";
 import { nativePresetForId } from "../../../source/native";
@@ -71,13 +72,14 @@ export async function registerNativePreset(
     throw new Error(
       `Preset ${presetId} is registered with commitment ${existing}; this definition commits to ${registration.commitment}`,
     );
+  await assertNativeOwnerSigner(account, registration.address, block);
   const receipt = await account.execute(
     {
       contractAddress: registration.address,
       entrypoint: "register_preset",
       calldata: registration.calldata,
     },
-    resolveRegistrarExecutionDetails(),
+    await resolveRegistrarExecutionDetails(account, registration.address),
   );
   await waitForSuccess(account, receipt.transaction_hash);
   return receipt.transaction_hash;
@@ -93,9 +95,9 @@ export function buildNativeGameParams(
     const mode = preset.settlementMode;
     if (input.singleRealmMode || input.twoPlayerMode !== (mode === "Duel"))
       throw new Error("Settlement layout must match the mode preset");
-    if (mode === "Duel" && roster.length !== 0 && roster.length !== 2) throw new Error("Duel requires two players");
-    if (input.devModeOn) throw new Error("Free Blitz does not use development mode");
-    if (roster.length > 24) throw new Error("Blitz requires a fixed roster of 1 to 24 players");
+    if (mode === "Duel" && roster.length !== 2) throw new Error("Duel requires two players");
+    if (input.devModeOn) throw new Error("Blitz does not use development mode");
+    if (roster.length === 0) throw new Error("Blitz requires its roster at creation");
   } else if (roster.length) throw new Error("Open seasons do not use a fixed roster");
   const common = buildCreateGameParams(config, { ...input, startMainAt: nativeSeasonStart(config, input) });
   return {
@@ -113,6 +115,7 @@ export function buildNativeGameParams(
       input.useMapOverride ? CairoOptionVariant.Some : CairoOptionVariant.None,
       common.map_override,
     ),
+    // Calendar and map layout metadata; gameplay draws use the stamped transaction root.
     seed: common.seed,
   };
 }
@@ -121,10 +124,7 @@ export function buildNativeGameParams(
  * A season with days starts on an armies tick, rounded up, so every day rolls over on one: the contract refuses any
  * other start.
  */
-export function nativeSeasonStart(
-  config: Config,
-  input: Pick<CreateGamePayloadInput, "presetId" | "startMainAt">,
-): number {
+function nativeSeasonStart(config: Config, input: Pick<CreateGamePayloadInput, "presetId" | "startMainAt">): number {
   const preset = nativePresetForId(input.presetId);
   if (preset.dayUnitSeconds === 0) return input.startMainAt;
   const tick = preset.clockScale

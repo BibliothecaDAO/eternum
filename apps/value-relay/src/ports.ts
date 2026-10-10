@@ -1,5 +1,5 @@
 import { Data, Effect } from "effect";
-import type { LedgerAccountLinkWrite, LedgerPayDecision, PayoutWallet } from "@realms-world/identity";
+import type { LedgerPayDecision, PayoutWallet } from "@realms-world/identity";
 
 export class RelayFailure extends Data.TaggedError("RelayFailure")<{ operation: string }> {}
 export type RelayEffect<A> = Effect.Effect<A, RelayFailure>;
@@ -36,7 +36,6 @@ export interface ChestPorts {
   chest(
     tokenId: string,
   ): RelayEffect<{ requested: boolean; finished: boolean; requester: string; requestBlock: number }>;
-  blockTime(number: number): RelayEffect<number>;
   finish(tokenId: string): RelayEffect<void>;
 }
 export interface BlitzResult extends BlitzCommitment {
@@ -126,7 +125,6 @@ export interface RelayPorts {
     blockHash(number: number): RelayEffect<string>;
     eventsPage(from: number, to: number, cursor: string | null): RelayEffect<ConfirmedBlock>;
     withdrawal(chainId: string, transactionHash: string): RelayEffect<Withdrawal | null>;
-    result(chainId: string, gameId: number): RelayEffect<BlitzResult | null>;
     grantLabor(claim: LaborClaim): RelayEffect<LaborGrant>;
   };
   identity: {
@@ -138,32 +136,30 @@ export interface RelayPorts {
     payment(
       withdrawal: Withdrawal,
     ): RelayEffect<{ paid: boolean; seasonId: number; wallet: string; amount: string } | null>;
+    voided(withdrawal: Withdrawal): RelayEffect<boolean>;
     reportMany(withdrawals: readonly Withdrawal[]): RelayEffect<ClaimOutcome[]>;
     payMany(rows: readonly PayableClaim[]): RelayEffect<ClaimOutcome[]>;
     postResult(result: BlitzResult): RelayEffect<void>;
-    paidClaims(after: string | null, fromBlock?: number): RelayEffect<LedgerPage<PaidClaim>>;
-    postedResults(after: string | null, fromBlock?: number): RelayEffect<LedgerPage<BlitzCommitment>>;
   };
   realms: { ownerOf(realmId: string): RelayEffect<string> };
-}
-export interface AccountLinkChanged extends LedgerAccountLinkWrite {
-  id: string;
 }
 export interface MonitorPorts {
   identity: {
     matchesPayDecision(decision: LedgerPayDecision): RelayEffect<boolean>;
-    matchesLedgerLinkWrite(write: LedgerAccountLinkWrite): RelayEffect<boolean>;
   };
-  shard: Pick<RelayPorts["shard"], "withdrawal" | "result"> & {
+  shard: Pick<RelayPorts["shard"], "withdrawal"> & {
+    result(chainId: string, gameId: number): RelayEffect<BlitzResult | null>;
     conservation(): RelayEffect<readonly ConservationBalance[]>;
   };
-  ledger: Pick<RelayPorts["ledger"], "paidClaims" | "postedResults"> & {
+  ledger: {
+    paidClaims(after: string | null, fromBlock?: number): RelayEffect<LedgerPage<PaidClaim>>;
+    postedResults(after: string | null, fromBlock?: number): RelayEffect<LedgerPage<BlitzCommitment>>;
     pause(): RelayEffect<void>;
-    accountLinks(after: string | null, fromBlock?: number): RelayEffect<LedgerPage<AccountLinkChanged>>;
   };
 }
 
 export interface ConservationBalance {
+  chainId?: string;
   gameId: number;
   confirmedBlock: number;
   receipts: string;

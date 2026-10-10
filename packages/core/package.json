@@ -53,6 +53,10 @@
     "./realms-account": {
       "types": "./dist/account/realms-account.d.ts",
       "import": "./dist/account/realms-account.js"
+    },
+    "./shard-fees": {
+      "types": "./dist/account/transaction-resource-bounds.d.ts",
+      "import": "./dist/account/transaction-resource-bounds.js"
     }
   },
   "main": "./dist/index.js",

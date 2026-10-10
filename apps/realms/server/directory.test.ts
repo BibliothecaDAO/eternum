@@ -14,7 +14,7 @@ const games = [game(1, "Live"), game(2, "Registration"), game(3, "Settled", 100)
 
 const dependencies = (
   readLaunchDirectory: () => Promise<{
-    chains: { chainId: string; games: { gameId: number; entry: import("@realms-world/identity").GameEntry }[] }[];
+    chains: { chainId: string; games: { gameId: number; slotId: number | null }[] }[];
   }>,
 ) => ({
   db: { prepare: () => ({ all: async () => ({ results: shards }) }) } as unknown as D1Database,
@@ -68,20 +68,20 @@ test("a failed entry read refuses history terms and reports the affected shards"
 test("healthy launch records filter games independently on both chains", async () => {
   const deps = dependencies(async () => ({
     chains: [
-      { chainId: "0x1", games: [{ gameId: 1, entry: { kind: "free" as const } }] },
-      { chainId: "0x2", games: [2, 4].map((gameId) => ({ gameId, entry: { kind: "free" as const } })) },
+      { chainId: "0x1", games: [{ gameId: 1, slotId: null }] },
+      { chainId: "0x2", games: [2, 4].map((gameId) => ({ gameId, slotId: null })) },
     ],
   }));
   const response = await handleDirectory(new Request("https://app.test/api/directory"), deps);
   expect(await response.json()).toEqual({
     shards: [
-      { ...shards[0], games: [{ ...games[0], entry: { kind: "free" } }] },
-      { ...shards[1], games: [{ ...games[1], entry: { kind: "free" } }] },
+      { ...shards[0], games: [{ ...games[0], slotId: null }] },
+      { ...shards[1], games: [{ ...games[1], slotId: null }] },
     ],
   });
   const history = await handleDirectoryHistory(new Request("https://app.test/api/directory/history"), deps);
   expect(await history.json()).toEqual({
-    games: [{ ...games[3], entry: { kind: "free" }, chainId: "0x2", shardUrl: "https://second.test" }],
+    games: [{ ...games[3], slotId: null, chainId: "0x2", shardUrl: "https://second.test" }],
     next: null,
     failures: [],
   });
@@ -110,30 +110,18 @@ test("pending and retired shards have no player notification watcher", async () 
   expect(watch).toHaveBeenCalledWith({ url: "https://active.test", chainId: "0x3" });
 });
 
-test("uses the launch record's paid terms, including L2 chain, even when Herald claims free", async () => {
-  const paid = {
-    kind: "paid" as const,
-    ledger: { address: "0x10", chainId: "0x534e5f5345504f4c4941", shard: "0x1", gameId: 1 },
-  };
-  const deps = dependencies(async () => ({
-    chains: [
-      { chainId: "0x1", games: [{ gameId: 1, entry: { ...paid, ledger: { ...paid.ledger, legacy: "ignored" } } }] },
-    ],
-  }));
-  deps.fetchShard.mockResolvedValue(Response.json({ chain: "0x1", games: [{ ...games[0], entry: { kind: "free" } }] }));
-  const result = await handleDirectory(new Request("https://app.test/api/directory"), deps);
-  expect(((await result.json()) as { shards: { games: { entry: unknown }[] }[] }).shards[0]!.games[0]!.entry).toEqual(
-    paid,
-  );
+test("publishes the launch slot number and no ledger address payload", async () => {
+  const deps = dependencies(async () => ({ chains: [{ chainId: "0x1", games: [{ gameId: 1, slotId: 12 }] }] }));
+  deps.fetchShard.mockResolvedValue(Response.json({ chain: "0x1", games: [games[0]] }));
+  const response = await handleDirectory(new Request("https://app.test/api/directory"), deps);
+  const game = ((await response.json()) as { shards: { games: { slotId: number }[] }[] }).shards[0]!.games[0]!;
+  expect(game.slotId).toBe(12);
+  expect(game).not.toHaveProperty("entry");
 });
-
-test("an invalid or missing entry faults the shard instead of becoming a free game", async () => {
+test("invalid slot metadata faults the shard", async () => {
   vi.spyOn(console, "error").mockImplementation(() => undefined);
-  for (const entry of [
-    undefined,
-    { kind: "paid", ledger: { address: "0x10", chainId: "0x1", shard: "0x9", gameId: 1 } },
-  ]) {
-    const deps = dependencies(async () => ({ chains: [{ chainId: "0x1", games: [{ gameId: 1, entry }] }] }) as never);
+  for (const slotId of [undefined, -1, 1.5]) {
+    const deps = dependencies(async () => ({ chains: [{ chainId: "0x1", games: [{ gameId: 1, slotId }] }] }) as never);
     const response = await handleDirectory(new Request("https://app.test/api/directory"), deps);
     expect(((await response.json()) as { shards: { games: unknown; error?: string }[] }).shards[0]).toMatchObject({
       games: null,

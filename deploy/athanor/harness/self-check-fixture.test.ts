@@ -1,3 +1,4 @@
+import { localSelfCheckRoutes } from "./self-check-routes";
 import { buildNativePreset } from "../../../config/deployer/clean/config/native-preset";
 import { loadNativePresetConfiguration } from "../../../config/deployer/clean/registrar/native-preset";
 import { expect, test } from "bun:test";
@@ -18,17 +19,15 @@ import { runSelfCheck, type RouteCase } from "./self-check";
 const client = (actor: string) =>
   ({ gameId: 7, setup: { store: { inGame: () => [] } }, actor }) as unknown as RouteCase["client"];
 
-test("the default fixture covers every generated dispatch route, with real launcher accounts only for launcher calls", () => {
+test("the local fixture covers every route admitted without a frozen roster", () => {
   const bot = { address: "0x10" } as Account;
   const launcher = { address: "0x20" } as Account;
   const plan = buildRoutePlan(bot, client(bot.address), launcher, client(launcher.address));
-  expect(plan).toHaveLength(Object.keys(nativeCommandBits).length);
-  expect(new Set<string>(plan.map(({ route }) => route))).toEqual(new Set(Object.keys(nativeCommandBits)));
+  expect(plan).toHaveLength(localSelfCheckRoutes.length);
+  expect(new Set<string>(plan.map(({ route }) => route))).toEqual(new Set(localSelfCheckRoutes));
   for (const step of plan) {
     expect(step.client.gameId).toBe(7);
-    expect(step.account.address).toBe(
-      ["CreateBanks", "SettleBlitzRoster"].includes(step.route) ? launcher.address : bot.address,
-    );
+    expect(step.account.address).toBe(step.route === "CreateBanks" ? launcher.address : bot.address);
   }
   expect(plan.filter(({ expectedRejection }) => expectedRejection === undefined)).toHaveLength(14);
 });
@@ -135,40 +134,27 @@ test("a setup timeout cancels the fixture so later setup cannot keep mutating", 
   expect(result.firstFailedRoute).toBe("create_throwaway_game");
 });
 
-test("mode routes use a frozen Blitz and a Frontier instead of accepting preflight refusals", () => {
+test("Frontier withdrawal uses its real mode while the local check never creates Blitz", () => {
   const bot = { address: "0x10" } as Account,
     launcher = { address: "0x20" } as Account;
   const legacy = client(bot.address),
-    blitz = { ...client(launcher.address), gameId: 8 },
     frontier = { ...client(bot.address), gameId: 9 };
-  const routes = bindModeRoutes(
-    buildRoutePlan(bot, legacy, launcher, client(launcher.address)),
-    launcher,
-    blitz,
-    bot,
-    frontier,
-  );
-  expect(routes.find((step) => step.route === "SettleBlitzRoster")).toMatchObject({
-    client: { gameId: 8 },
-    account: launcher,
-  });
-  expect(routes.find((step) => step.route === "SettleBlitzRoster")!.expectedRejection).toBeUndefined();
+  const routes = bindModeRoutes(buildRoutePlan(bot, legacy, launcher, client(launcher.address)), bot, frontier);
+  expect(routes.some((step) => step.route === "SettleBlitzRoster")).toBe(false);
   expect(routes.find((step) => step.route === "WithdrawLords")).toMatchObject({
     client: { gameId: 9 },
     expectedRejection: "missing structure",
   });
-  expect(new Set(routes.map((step) => step.route)).size).toBe(Object.keys(nativeCommandBits).length);
+  expect(new Set(routes.map((step) => step.route)).size).toBe(localSelfCheckRoutes.length);
 });
 
-test("mode coverage applies open-home Frontier settlement and a real action in both shipped modes", async () => {
+test("local mode coverage applies open-home Frontier settlement and a real action", async () => {
   const bot = { address: "0x10" } as Account;
   const frontier = { ...client(bot.address), gameId: 9 };
-  const blitz = { ...client(bot.address), gameId: 8 };
-  const checks = modePlayChecks(bot, frontier, blitz);
+  const checks = modePlayChecks(bot, frontier);
   expect(checks.map(({ route, client }) => [route, client.gameId])).toEqual([
     ["SettleSeason", 9],
     ["SetEntityName", 9],
-    ["SetEntityName", 8],
   ]);
   expect(checks.every(({ expectedRejection }) => expectedRejection === undefined)).toBe(true);
   expect(checks[0]!.route).toBe("SettleSeason");
@@ -183,7 +169,7 @@ test("Frontier acceptance reads the same safe entity boundary as a player's clie
     structuresOwnedBy: () => [{ entity_id: id, base: { category: StructureType.Realm } }],
   } as unknown as RouteCase["client"]["setup"]["store"];
   const frontier = { ...client(bot.address), gameId: 9, setup: { store } } as RouteCase["client"];
-  const settle = modePlayChecks(bot, frontier, client(bot.address))[0]!;
+  const settle = modePlayChecks(bot, frontier)[0]!;
   expect(() => settle.verify(store)).not.toThrow();
   id = 9007199254740993n;
   expect(() => settle.verify(store)).toThrow("Native integer cannot be represented as a JavaScript number");

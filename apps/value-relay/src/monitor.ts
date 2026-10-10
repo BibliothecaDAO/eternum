@@ -17,7 +17,7 @@ interface AuditCursor {
 }
 interface FaultRow {
   row: string;
-  stream?: "paidClaims" | "postedResults" | "accountLinks";
+  stream?: "paidClaims" | "postedResults";
   cursor?: AuditCursor;
   offset?: number;
 }
@@ -26,7 +26,7 @@ export interface MonitorProgress {
   skippedConservation?: string;
   halted: string | null;
   unverifiedTicks?: number;
-  cursors?: Partial<Record<"paidClaims" | "postedResults" | "accountLinks", AuditCursor>>;
+  cursors?: Partial<Record<"paidClaims" | "postedResults", AuditCursor>>;
 }
 interface MonitorStore {
   load(): Promise<MonitorProgress>;
@@ -42,12 +42,7 @@ export const runMonitor = (ports: MonitorPorts, store: MonitorStore) =>
       return progress;
     }
     yield* relayOperation("start exact row audit", () => store.save({ ...progress, fault: null }));
-    const checks = [
-      checkAccountLinks(ports, store),
-      checkConservation(ports, store),
-      checkPaidClaims(ports, store),
-      checkPostedResults(ports, store),
-    ];
+    const checks = [checkConservation(ports, store), checkPaidClaims(ports, store), checkPostedResults(ports, store)];
     let unavailable: RelayFailure | null = null;
     for (const check of checks) {
       const observation = yield* Effect.result(check);
@@ -71,24 +66,12 @@ export const runMonitor = (ports: MonitorPorts, store: MonitorStore) =>
     return yield* relayOperation("read checked monitor progress", () => store.load());
   });
 
-const checkAccountLinks = (ports: MonitorPorts, store: MonitorStore) =>
-  checkLedgerPage(
-    "accountLinks",
-    ports.ledger.accountLinks,
-    (row) => `accountLinks:${row.id}`,
-    (row) =>
-      ports.identity
-        .matchesLedgerLinkWrite(row)
-        .pipe(Effect.map((matches) => (matches ? null : `account_link_mismatch:${row.id}`))),
-    store,
-  );
-
 const checkConservation = (ports: MonitorPorts, store: MonitorStore) =>
   Effect.gen(function* () {
     const balances = yield* ports.shard.conservation();
     const progress = yield* relayOperation("read conservation checkpoint", () => store.load());
     for (const balance of balances) {
-      const row = `conservation:${balance.gameId}:${balance.confirmedBlock}:${balance.receipts}:${balance.netIssued}`;
+      const row = `conservation:${balance.chainId ? `${balance.chainId}:` : ""}${balance.gameId}:${balance.confirmedBlock}:${balance.receipts}:${balance.netIssued}`;
       if (BigInt(balance.receipts) > BigInt(balance.netIssued) && progress.skippedConservation !== row) {
         yield* recordFault(store, { row });
         return `lords_conservation:${balance.gameId}:${balance.confirmedBlock}`;
@@ -141,7 +124,7 @@ const checkPostedResults = (ports: MonitorPorts, store: MonitorStore) =>
 
 /** A tick checks at most one 100-event page per stream; only verified pages advance the durable cursor. */
 const checkLedgerPage = <A>(
-  stream: "paidClaims" | "postedResults" | "accountLinks",
+  stream: "paidClaims" | "postedResults",
   read: (cursor: string | null, fromBlock?: number) => RelayEffect<LedgerPage<A>>,
   key: (row: A) => string,
   check: (row: A) => RelayEffect<string | null>,

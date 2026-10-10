@@ -15,8 +15,6 @@ const IdentityVars = Schema.Struct({
   /** The RealmsAccount class every shard deploys player accounts from. */
   ACCOUNT_CLASS_HASH: Schema.NonEmptyString,
   BETTER_AUTH_SECRET: Schema.NonEmptyString,
-  /** The environment's one L2 chain, shared by proofs, Realm ownership and ratings. */
-  L2_CHAIN_ID: Schema.Literals(["SN_MAIN", "SN_SEPOLIA"]),
   REALMS_ADDRESS: Schema.NonEmptyString,
   RATING_TOKEN_ADDRESS: Schema.NonEmptyString,
   RATING_HISTORY_URL: Schema.NonEmptyString,
@@ -39,10 +37,6 @@ const IdentityVars = Schema.Struct({
 
 export interface IdentityEnv extends Schema.Schema.Type<typeof IdentityVars> {
   DB: D1Database;
-  ACCOUNT_LINKS: {
-    changed(realmsId: string): Promise<unknown>;
-    status(realmsId: string): Promise<import("@realms-world/identity").LedgerLinkStatus>;
-  };
   /** The guardian Worker, reached by service binding only. */
   GUARDIAN: Guardian;
   /** The launch Worker, reached by service binding only. */
@@ -72,7 +66,6 @@ export const decodeIdentityEnv = (raw: Record<string, unknown>): IdentityEnv => 
   return {
     ...vars,
     DB: raw.DB as D1Database,
-    ACCOUNT_LINKS: raw.ACCOUNT_LINKS as IdentityEnv["ACCOUNT_LINKS"],
     GUARDIAN: raw.GUARDIAN as Guardian,
     LAUNCH: raw.LAUNCH as IdentityEnv["LAUNCH"],
     RATING_READER: raw.RATING_READER as IdentityEnv["RATING_READER"],

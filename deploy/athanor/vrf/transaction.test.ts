@@ -42,8 +42,6 @@ test("only the single data-listed Games entries admit administrative invokes", (
   expect(GAME_ENTRYPOINTS.map((entry) => entry.name)).toEqual([
     "play",
     "create_game",
-    "freeze_blitz_roster",
-    "prepare_homes",
     "apply_release",
     "register_release",
     "register_preset",
@@ -78,4 +76,16 @@ test("only the single data-listed Games entries admit administrative invokes", (
     const tx = { ...invoke(), calldata: ["0x1", identity.games, hash.getSelectorFromName(name), "0x1", "0x1"] };
     expect(gameInvoke(tx, identity)).toBeUndefined();
   }
+});
+
+test("unknown fields at every play-frame boundary refuse before stamping", () => {
+  for (const tx of [
+    { ...invoke(), unused: [1e30] },
+    { ...invoke(), resource_bounds: { ...invoke().resource_bounds, unused: [] } },
+    {
+      ...invoke(),
+      resource_bounds: { ...invoke().resource_bounds, l2_gas: { ...invoke().resource_bounds.l2_gas, unused: [] } },
+    },
+  ])
+    expect(gameInvoke(tx, identity)).toBeUndefined();
 });

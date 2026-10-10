@@ -1,3 +1,4 @@
+import { ledgerCall, ledgerEvent } from "../../../packages/value-ledger/test-support/ledger-abi";
 import { Effect } from "effect";
 import { hash } from "starknet";
 import { beforeEach, expect, it, vi } from "vitest";
@@ -41,48 +42,46 @@ const result = {
   commitment: "",
 };
 result.commitment = blitzCommitment(result);
-const game = (finalized: boolean, commitment = "0x0") => [
-  "1",
-  "1",
-  "1",
-  "100",
-  "200",
-  "0",
-  "0",
-  commitment,
-  "1",
-  "0",
-  finalized ? "1" : "0",
-  "24",
-];
+const game = (finalized: boolean, commitment = "0x0") => [finalized ? commitment : "0x0"];
 beforeEach(() => {
   vi.clearAllMocks();
   rpc.head.mockResolvedValue(1000);
-  rpc.block.mockResolvedValue({ status: "ACCEPTED_ON_L2", block_hash: "0xa", timestamp: 1000 });
+  rpc.block.mockImplementation(async (number) => ({
+    status: "ACCEPTED_ON_L2",
+    block_number: number === "latest" ? 1000 : number,
+    block_hash: "0xa",
+    timestamp: 1000,
+  }));
   rpc.wait.mockResolvedValue({ isReverted: () => false });
   rpc.execute.mockResolvedValue({ transaction_hash: "0xabc" });
 });
 
 it("submits the published ranked result and completes an identical retry without a second write", async () => {
-  const post = ledgerResultAdapter(credentials);
+  const post = ledgerResultAdapter(credentials, 12);
   rpc.call.mockResolvedValueOnce(game(false)).mockResolvedValue(game(true, result.commitment));
   await Effect.runPromise(post(result));
   expect(rpc.execute).toHaveBeenCalledWith({
     contractAddress: "0x10",
     entrypoint: "apply_results",
-    calldata: ["0x1", "7", "1", "0x123", "1"],
+    calldata: ["0x1", "12", "7", "1", "0x123", "1"],
   });
+  expect(rpc.execute.mock.calls[0]![0].calldata.map(BigInt)).toEqual(
+    ledgerCall("apply_results", {
+      key: { shard: result.chainId, slot_id: 12 },
+      game_id: result.gameId,
+      ranked: result.rows,
+    }).map(BigInt),
+  );
   rpc.call.mockResolvedValue(game(true, result.commitment));
   await Effect.runPromise(post(result));
   expect(rpc.execute).toHaveBeenCalledTimes(1);
 });
 it("refuses a previously finalized different commitment", async () => {
   rpc.call.mockResolvedValue(game(true, "0xbad"));
-  await expect(Effect.runPromise(ledgerResultAdapter(credentials)(result))).rejects.toThrow();
+  await expect(Effect.runPromise(ledgerResultAdapter(credentials, 12)(result))).rejects.toThrow();
   expect(rpc.execute).not.toHaveBeenCalled();
 });
 it("decodes confirmed payments and pins the event head across pagination", async () => {
-  const selector = hash.getSelectorFromName("WithdrawalPaid");
   rpc.events
     .mockResolvedValueOnce({
       events: [
@@ -91,8 +90,13 @@ it("decodes confirmed payments and pins the event head across pagination", async
           transaction_hash: "0xdef",
           block_number: 100,
           block_hash: "0xa",
-          keys: [selector, "0x1", "0xabc"],
-          data: ["7", "0x123", "5", "1"],
+          ...ledgerEvent("WithdrawalPaid", {
+            shard: 1,
+            claim_id: "0xabc",
+            season_id: 7,
+            wallet: "0x123",
+            amount: { low: 5, high: 1 },
+          }),
         },
       ],
       continuation_token: "next",
@@ -122,8 +126,13 @@ it("decodes result commitments and refuses malformed payment events", async () =
       {
         from_address: "0x10",
         transaction_hash: "0xdef",
-        keys: [hash.getSelectorFromName("ResultsApplied"), "0x1", "7"],
-        data: ["1", result.commitment, "0", "0"],
+        ...ledgerEvent("ResultsApplied", {
+          key: { shard: 1, game_id: 7 },
+          slot_id: 12,
+          season_id: 1,
+          result_commitment: result.commitment,
+          pool: { low: 0, high: 0 },
+        }),
       },
     ],
   });
@@ -145,31 +154,6 @@ it("decodes result commitments and refuses malformed payment events", async () =
 
 it("keeps a result queued unless the confirmed ledger state records the same commitment", async () => {
   rpc.call.mockResolvedValueOnce(game(false)).mockResolvedValue(game(true, "0xbad"));
-  await expect(Effect.runPromise(ledgerResultAdapter(credentials)(result))).rejects.toThrow();
+  await expect(Effect.runPromise(ledgerResultAdapter(credentials, 12)(result))).rejects.toThrow();
   expect(rpc.execute).toHaveBeenCalledOnce();
-});
-
-it("pages AccountLinkChanged with both displacement fields and distinct immutable audit positions", async () => {
-  rpc.events.mockResolvedValue({
-    events: [0, 1].map(() => ({
-      from_address: "0x10",
-      transaction_hash: "0xabc",
-      block_number: 9,
-      keys: [hash.getSelectorFromName("AccountLinkChanged"), "0x11", "0x22"],
-      data: ["0x33", "0x44"],
-    })),
-  });
-  const read = ledgerMonitorReads("https://ledger.test", "0x10");
-  const page = await Effect.runPromise(read.accountLinks(null));
-  expect(page.rows[0]).toMatchObject({
-    wallet: "0x11",
-    account: "0x22",
-    previousAccount: "0x33",
-    previousWallet: "0x44",
-    transactionHash: "0xabc",
-  });
-  expect(page.rows[0]!.id).not.toBe(page.rows[1]!.id);
-  expect(rpc.events).toHaveBeenLastCalledWith(
-    expect.objectContaining({ keys: [[hash.getSelectorFromName("AccountLinkChanged")]], chunk_size: 100 }),
-  );
 });

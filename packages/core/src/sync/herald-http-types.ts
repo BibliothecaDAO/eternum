@@ -44,7 +44,8 @@ export interface HeraldPlayerStructure {
 export interface HeraldPlayerGameState {
   registered: boolean;
   settled: boolean;
-  roster_member: boolean;
+  /** The wallet frozen for this account at slot close, or null outside its roster. */
+  roster_wallet: string | null;
   structures: HeraldPlayerStructure[];
 }
 
@@ -67,8 +68,8 @@ export interface HeraldGameDirectoryEntry {
   player_state: HeraldPlayerGameState | null;
   /** Players on a Blitz game's fixed roster; 0 for open-entry games. */
   roster_count: number;
-  /** Fixed onchain roster; prepared means that account has an entry and its own settled realm. */
-  roster?: { account: string; prepared: boolean }[];
+  /** Frozen seat account and wallet; prepared means the account has an entry and its own settled realm. */
+  roster?: { account: string; wallet: string; prepared: boolean }[];
   preset_id: number;
   registration: HeraldGameRegistration | null;
   settled_realms_count: number;

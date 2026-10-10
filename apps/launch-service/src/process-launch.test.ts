@@ -189,3 +189,34 @@ test("a played game's result retries past three failures and never calls refund 
   expect(execute).toHaveBeenCalledTimes(4);
   expect((await store.find("result", "madara.blitz", "played-result-recovery"))?.status).toBe("queued");
 });
+
+test("paid runs keep retrying transient failures beyond the ordinary attempt limit", async () => {
+  await store.enqueue("game", { ...request, gameName: "paid-transient", slotId: 7, groupIndex: 0 });
+  await store.saveGame({
+    environment: "madara.blitz",
+    chain: "madara",
+    gameType: "blitz",
+    gameName: "paid-transient",
+    gameId: 7,
+    startTime: 1,
+    startTimeIso: "1970-01-01T00:00:01.000Z",
+    rpcUrl: "https://shard.test",
+    configMode: "batched",
+    configSteps: [],
+    dryRun: false,
+  });
+  const execute = vi.fn(() =>
+    Effect.fail(new LaunchExecutionFailure({ runId: "paid", cause: new Error("Herald temporarily down") })),
+  );
+  const refund = vi.fn(() => Effect.succeed(null));
+  const services = Layer.mergeAll(databaseLayer(store), Layer.succeed(LaunchExecutor, { execute, refund }));
+  for (let index = 0; index < 4; index++)
+    await Effect.runPromise(processNextLaunch(Date.now() + 1000000).pipe(Effect.provide(services)));
+  expect(execute).toHaveBeenCalledTimes(4);
+  expect(refund).not.toHaveBeenCalled();
+  for (let index = 0; index < 6; index++)
+    await Effect.runPromise(processNextLaunch(Date.now() + 1000000).pipe(Effect.provide(services)));
+  expect(execute).toHaveBeenCalledTimes(10);
+  expect(refund).not.toHaveBeenCalled();
+  expect((await store.find("game", "madara.blitz", "paid-transient"))?.status).toBe("queued");
+});

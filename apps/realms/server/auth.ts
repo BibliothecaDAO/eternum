@@ -1,3 +1,4 @@
+import { environmentL2 } from "@realms-world/chain";
 import { betterAuth } from "better-auth";
 import { APIError } from "better-auth/api";
 import { emailOTP } from "better-auth/plugins";
@@ -27,7 +28,7 @@ interface IdentityServices {
 }
 
 const identityServicesOf = (
-  env: Pick<IdentityEnv, "L2_CHAIN_ID" | "IDENTITY_RPC_URL" | "RESEND_API_KEY">,
+  env: Pick<IdentityEnv, "ENVIRONMENT" | "IDENTITY_RPC_URL" | "RESEND_API_KEY">,
 ): IdentityServices => ({
   verifyWalletSignature: verifyWalletOnL2(env),
   sendSignInCode: resendSignInCodes(env.RESEND_API_KEY),
@@ -67,11 +68,10 @@ export const hasVerifiedSignIn = async (db: D1Database, userId: string): Promise
 export const createIdentityAuth = (
   env: Pick<
     IdentityEnv,
-    | "ACCOUNT_LINKS"
     | "DB"
     | "BASE_URL"
     | "BETTER_AUTH_SECRET"
-    | "L2_CHAIN_ID"
+    | "ENVIRONMENT"
     | "IDENTITY_RPC_URL"
     | "DISCORD_CLIENT_ID"
     | "DISCORD_CLIENT_SECRET"
@@ -133,12 +133,11 @@ export const createIdentityAuth = (
       emailCodes,
       siws({
         origin: env.BASE_URL,
-        chainId: env.L2_CHAIN_ID,
+        chainId: environmentL2(env.ENVIRONMENT).chain,
         verifySignature: services.verifyWalletSignature,
         db: env.DB,
         checkCode: (context, email, otp) =>
           emailCodes.endpoints.checkVerificationOTP({ context, body: { email, otp, type: "sign-in" } }),
-        notifyChange: (realmsId) => env.ACCOUNT_LINKS.changed(realmsId),
         sendNotice: services.sendWalletNotice ?? resendWalletNotices(env.RESEND_API_KEY),
       }),
     ],

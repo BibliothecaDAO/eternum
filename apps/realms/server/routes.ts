@@ -14,7 +14,6 @@ import {
 } from "./directory";
 import type { IdentityEnv } from "./env";
 import { json } from "./http";
-import { consumeSignInBudget } from "./sign-in-budget";
 import { handleNotificationPreferences } from "./notification-preferences";
 import { handleProfile, handleProfiles } from "./profiles";
 import { handleRatings } from "./ratings";
@@ -27,7 +26,7 @@ interface WorkerPlatform {
   cache: Cache;
   fetchShard: typeof fetch;
   readLaunchDirectory: () => Promise<{
-    chains: { chainId: string; games: { gameId: number; entry: import("@realms-world/identity").GameEntry }[] }[];
+    chains: { chainId: string; games: { gameId: number; slotId: number | null }[] }[];
   }>;
 }
 
@@ -42,10 +41,11 @@ export const routeIdentityRequest = async (
   const sendsCode = pathname === "/api/auth/email-otp/send-verification-otp";
   const verifiesCode = ["/api/auth/sign-in/email-otp", "/api/auth/email-otp/check-verification-otp"].includes(pathname);
   const requestsCodeAccess = request.method === "POST" && (sendsCode || verifiesCode);
-  if (requestsCodeAccess && !(await withinSignInBudget(env, request, sendsCode))) {
-    return json({ error: sendsCode ? "too_many_codes" : "too_many_attempts" }, 429);
+  if (requestsCodeAccess) {
+    const refusal = await codeAccess(env, request, sendsCode);
+    if (refusal) return refusal;
+    if (sendsCode) return sendCodeWithExpiry(request, auth);
   }
-  if (requestsCodeAccess && sendsCode) return sendCodeWithExpiry(request, auth);
   if (pathname === "/api/auth/get-session" && request.method === "GET") return accountSession(request, auth, env);
   if (pathname.startsWith("/api/auth/")) return auth.handler(request);
   if (requiresSameOrigin(request, pathname) && request.headers.get("origin") !== new URL(env.BASE_URL).origin) {
@@ -121,17 +121,18 @@ const withinPublicBudget = async (env: IdentityEnv, route: string, request: Requ
   return (await budget.limit({ key: `${route}:${client}` })).success;
 };
 
-/** A sign-in code costs an email: each client and each address gets a few a minute. */
-const withinSignInBudget = async (env: IdentityEnv, request: Request, sendsCode: boolean) => {
-  if (!(await withinPublicBudget(env, "sign-in-code", request))) return false;
+/** Each client and address may request only a few codes per minute. */
+const codeAccess = async (env: IdentityEnv, request: Request, sendsCode: boolean) => {
+  if (!(await withinPublicBudget(env, "sign-in-code", request))) return json({ error: "too_many_attempts" }, 429);
+  if (!sendsCode) return null;
   const { email } = (await request
     .clone()
     .json()
     .catch(() => ({}))) as { email?: unknown };
   const address = typeof email === "string" ? email.trim().toLowerCase() : "";
-  if (!address) return true; // The auth handler rejects malformed requests without sending or verifying a code.
-  if (sendsCode && !(await env.SIGN_IN_CODE_RATE_LIMIT.limit({ key: address })).success) return false;
-  return consumeSignInBudget(env.DB, address);
+  if (address && !(await env.SIGN_IN_CODE_RATE_LIMIT.limit({ key: address })).success)
+    return json({ error: "too_many_codes" }, 429);
+  return null;
 };
 
 const isOperator = (env: IdentityEnv, request: Request) => presentsOperatorToken(request, env.OPERATOR_TOKEN);
@@ -179,10 +180,7 @@ const accountSession = async (request: Request, auth: IdentityAuth, env: Identit
   const session = (await response.json()) as { user: { realmsId: string } } | null;
   if (!session) return responseWithSession(response, null);
   const payoutWallet = await Effect.runPromise(lookupPayoutWallet(env.DB, session.user.realmsId));
-  const ledgerLink = await Promise.resolve()
-    .then(() => env.ACCOUNT_LINKS.status(session.user.realmsId))
-    .catch(() => ({ status: "linking" as const }));
-  return responseWithSession(response, { ...session, user: { ...session.user, payoutWallet, ledgerLink } });
+  return responseWithSession(response, { ...session, user: { ...session.user, payoutWallet } });
 };
 const responseWithSession = (response: Response, session: unknown) => {
   const headers = new Headers(response.headers);

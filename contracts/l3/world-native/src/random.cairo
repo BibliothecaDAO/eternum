@@ -1,8 +1,8 @@
 use core::poseidon::poseidon_hash_span;
 
-pub fn game_root(ref raw_root: u256, game_id: u32, game_seed: felt252) -> u256 {
+pub fn game_root(ref raw_root: u256, game_id: u32) -> u256 {
     raw_root += 1432;
-    poseidon_hash_span(array![raw_root.low.into(), raw_root.high.into(), game_id.into(), game_seed].span()).into()
+    poseidon_hash_span(array![raw_root.low.into(), raw_root.high.into(), game_id.into()].span()).into()
 }
 
 pub fn range(seed: u256, salt: u128, upper_bound: u128) -> u128 {

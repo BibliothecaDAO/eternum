@@ -124,6 +124,9 @@ importers:
       '@bibliothecadao/types':
         specifier: workspace:*
         version: link:packages/types
+      '@realms-world/identity':
+        specifier: workspace:*
+        version: link:packages/identity
       colors:
         specifier: ^1.4.0
         version: 1.4.0
@@ -773,6 +776,9 @@ importers:
 
   apps/launch-service:
     dependencies:
+      '@realms-world/chain':
+        specifier: workspace:*
+        version: link:../../packages/chain
       '@bibliothecadao/eternum':
         specifier: workspace:*
         version: link:../../packages/core
@@ -810,6 +816,9 @@ importers:
 
   apps/realms:
     dependencies:
+      '@realms-world/value-ledger':
+        specifier: workspace:*
+        version: link:../../packages/value-ledger
       '@bibliothecadao/eternum':
         specifier: workspace:*
         version: link:../../packages/core
@@ -871,6 +880,9 @@ importers:
 
   apps/status-monitor:
     dependencies:
+      '@realms-world/chain':
+        specifier: workspace:*
+        version: link:../../packages/chain
       effect:
         specifier: 4.0.0-rc.108
         version: 4.0.0-rc.108
@@ -896,6 +908,12 @@ importers:
 
   apps/value-relay:
     dependencies:
+      '@realms-world/chain':
+        specifier: workspace:*
+        version: link:../../packages/chain
+      '@bibliothecadao/eternum':
+        specifier: workspace:*
+        version: link:../../packages/core
       '@realms-world/identity':
         specifier: workspace:*
         version: link:../../packages/identity
@@ -1245,6 +1263,9 @@ importers:
       '@realms-world/chain':
         specifier: workspace:*
         version: link:../packages/chain
+      '@realms-world/identity':
+        specifier: workspace:*
+        version: link:../packages/identity
       chalk:
         specifier: ^5.4.1
         version: 5.6.2

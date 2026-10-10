@@ -30,8 +30,6 @@ interface LaunchAppDependencies {
   calendar: CalendarStore;
   /** The registrar that executes runs: every run queued here arms it for the run's due time. */
   registrar: { armFor(dueAt: number): Promise<void> };
-  /** The gameplay account a Realms account has on the shard slots launch on. */
-  playerAccount: (realmsId: string) => Promise<string>;
 }
 
 const decodeBody = async <A>(context: Context, schema: Schema.ConstraintDecoder<A, never>): Promise<A> => {
@@ -107,7 +105,7 @@ export const createLaunchApp = (dependencies: LaunchAppDependencies) => {
   app.use("/api/factory/*", requireLauncher(dependencies.config));
   app.route("/api/factory/operator/launcher", launcherOperatorRoutes(dependencies.operatorLauncher));
   app.route("/api/factory/calendar", createCalendarRoutes(dependencies.calendar));
-  app.route("/api/slots", createSlotRoutes(dependencies.slots, dependencies.playerAccount, dependencies.config));
+  app.route("/api/slots", createSlotRoutes(dependencies.slots, dependencies.config));
 
   // The deploy verifies this route: it names the running code and reads nothing else, so the shard's state, which health
   // reports, cannot fail a deploy.
@@ -171,6 +169,8 @@ export const createLaunchApp = (dependencies: LaunchAppDependencies) => {
   app.post("/api/factory/runs", async (context) => {
     try {
       const request = await decodeBody(context, CreateGameRequestSchema);
+      if (request.environment === "madara.blitz")
+        return context.json({ error: "Blitz launches use paid slots at /api/slots" }, 400);
       return respondWithRun(context, dependencies, "game", request);
     } catch (error) {
       return context.json({ error: String(error) }, 400);

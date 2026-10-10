@@ -1,6 +1,5 @@
 export * from "./account/realms-account";
 export * from "./account/transaction-resource-bounds";
-export * from "./data";
 export * from "./managers";
 export * from "./systems";
 export * from "./utils";
