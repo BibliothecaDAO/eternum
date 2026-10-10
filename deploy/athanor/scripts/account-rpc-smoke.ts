@@ -1,6 +1,6 @@
 import { readPrivateJson } from "./private-file";
 import { assertPublicRpcBoundary } from "./public-rpc-check";
-import { readFileSync, writeFileSync, mkdtempSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { Account, BlockTag, ec, RpcProvider, stark } from "starknet";
 import { DeviceSigner, deviceKeyOf, joinBotAccount } from "../../../packages/core/src/account/realms-account";
 
@@ -33,8 +33,6 @@ if (!operatorToken) {
 }
 const provider = new RpcProvider({ nodeUrl: url, blockIdentifier: BlockTag.PRE_CONFIRMED });
 const device = deviceKeyOf(`0x${Buffer.from(ec.starkCurve.utils.randomPrivateKey()).toString("hex")}`);
-const smoke = mkdtempSync(`${directory}/rpc-smoke-`);
-writeFileSync(`${smoke}/device.json`, JSON.stringify(device), { mode: 0o600, flag: "wx" });
 
 const bot = await joinBotAccount({
   provider,
