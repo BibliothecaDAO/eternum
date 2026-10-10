@@ -1,5 +1,11 @@
 import { expect, it, vi } from "vitest";
 
+// The build's ledger (contracts/common/addresses for its L2): a paid entry is honoured only on it.
+vi.mock("@/runtime/l2-rpc", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/runtime/l2-rpc")>()),
+  L2_LEDGER: "0xa",
+}));
+
 import type { DirectoryGame } from "../herald";
 import { claimSeasonCall, decodeSeason } from "../value/ledger";
 import { placeShares, type SeasonPrize, seasonSourceOf, seasonState } from "./blitz-season";
@@ -102,10 +108,10 @@ it("takes the season from the newest Blitz game that names a ledger", () => {
   expect(
     seasonSourceOf([
       game(1, 10, { address: "0xa", chainId: "0x534e5f4d41494e" }),
-      game(2, 20, { address: "0xb", chainId: "0x534e5f4d41494e" }),
+      game(2, 20, { address: "0xa", chainId: "0x534e5f4d41494e" }),
       game(3, 30),
     ]),
-  ).toEqual({ kind: "paid", ledger: expect.objectContaining({ address: "0xb" }) });
+  ).toEqual({ kind: "paid", ledger: expect.objectContaining({ gameId: 2 }) });
 });
 
 it("refuses the season when the newest Blitz game's entry is broken, instead of skipping to an older one", () => {

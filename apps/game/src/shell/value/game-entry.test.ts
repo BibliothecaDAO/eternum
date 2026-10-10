@@ -2,8 +2,13 @@ import { expect, it, vi } from "vitest";
 
 const SN_MAIN = "0x534e5f4d41494e";
 const calls = vi.hoisted(() => [] as { contractAddress: string; entrypoint: string }[]);
+// The build's ledger, as contracts/common/addresses records it for the build's L2; null before it is deployed there.
+const build = vi.hoisted(() => ({ ledger: "0x1ed9e7" as string | null }));
 vi.mock("@/runtime/l2-rpc", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/runtime/l2-rpc")>()),
+  get L2_LEDGER() {
+    return build.ledger;
+  },
   l2Provider: () => ({
     callContract: async (call: { contractAddress: string; entrypoint: string }) => {
       calls.push(call);
@@ -49,12 +54,29 @@ it("refuses a directory game whose ledger key names another game", () => {
   expect(directoryGameEntryOf(game({ ...LEDGER, shard: "0x53" }))).toEqual({ kind: "broken" });
 });
 
-it("reads a ledger on this build's chain, and refuses, loudly, one the entry places on another", async () => {
-  const onThisChain = { address: "0x1ed9e7", chainId: SN_MAIN, shard: "0x52", gameId: 7 };
-  await expect(ledgerOf(onThisChain).lordsToken()).resolves.toBe("0x10e5");
-  expect(() => ledgerOf({ ...onThisChain, chainId: "0x534e5f5345504f4c4941" })).toThrow(
-    "Ledger 0x1ed9e7 is on chain 0x534e5f5345504f4c4941; this build reads SN_MAIN",
-  );
+it("honours a paid entry only on the build's own ledger, and logs why any other is broken", () => {
+  const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+  const paid = (ledger: object) => ({ entry: { kind: "paid", ledger: { ...LEDGER, ...ledger } } });
+  expect(gameEntryOf(paid({ address: "0x01ED9E7" }), "slot-1")).toMatchObject({ kind: "paid" });
+  // A service row naming a contract that answers like the ledger would have every payer approve LORDS to it.
+  expect(gameEntryOf(paid({ address: "0xbad" }), "slot-2")).toEqual({ kind: "broken" });
+  expect(logged).toHaveBeenLastCalledWith("game_entry_unreadable", {
+    id: "slot-2",
+    reason: "ledger 0xbad is not this build's 0x1ed9e7",
+  });
+  expect(gameEntryOf(paid({ chainId: "0x534e5f5345504f4c4941" }), "slot-3")).toEqual({ kind: "broken" });
+  expect(logged).toHaveBeenLastCalledWith("game_entry_unreadable", {
+    id: "slot-3",
+    reason: "ledger is on chain 0x534e5f5345504f4c4941; this build reads SN_MAIN",
+  });
+  build.ledger = null;
+  expect(gameEntryOf(paid({}), "slot-4")).toEqual({ kind: "broken" });
+  expect(logged).toHaveBeenLastCalledWith("game_entry_unreadable", {
+    id: "slot-4",
+    reason: "this build's L2 (SN_MAIN) has no ledger deployed",
+  });
+  build.ledger = "0x1ed9e7";
+  logged.mockRestore();
 });
 
 it("logs why an entry is broken, once, with the slot or game it belongs to", () => {

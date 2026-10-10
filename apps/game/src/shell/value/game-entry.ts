@@ -1,6 +1,6 @@
 import { type GameEntry as ServicesGameEntry, type PaidGameLedger, readGameEntry } from "@realms-world/identity";
 
-import { isL2Chain, L2_CHAIN, l2Provider } from "@/runtime/l2-rpc";
+import { isL2Chain, L2_CHAIN, L2_LEDGER, l2Provider } from "@/runtime/l2-rpc";
 
 import { ledgerReader } from "./ledger";
 
@@ -25,13 +25,26 @@ const broken = (id: string, reason: string): GameEntry => {
   return BROKEN;
 };
 
-/** A slot's or game's entry; `id` names it in the log when the entry is broken. */
+/**
+ * A slot's or game's entry; `id` names it in the log when the entry is broken. A paid entry is honoured only on this
+ * build's own ledger: the address a wallet approves its LORDS and chests to never comes from a service payload.
+ */
 export const gameEntryOf = (payload: { entry?: unknown }, id: string): GameEntry => {
+  let entry: ServicesGameEntry;
   try {
-    return readGameEntry(payload.entry);
+    entry = readGameEntry(payload.entry);
   } catch (error) {
     return broken(id, error instanceof Error ? error.message : String(error));
   }
+  const foreign = entry.kind === "paid" ? foreignLedger(entry.ledger) : null;
+  return foreign ? broken(id, foreign) : entry;
+};
+
+/** Why a paid entry's ledger is not this build's, or null when it is. */
+const foreignLedger = ({ address, chainId }: PaidGameLedger): string | null => {
+  if (!isL2Chain(chainId)) return `ledger is on chain ${chainId}; this build reads ${L2_CHAIN.name}`;
+  if (L2_LEDGER === null) return `this build's L2 (${L2_CHAIN.name}) has no ledger deployed`;
+  return BigInt(address) === BigInt(L2_LEDGER) ? null : `ledger ${address} is not this build's ${L2_LEDGER}`;
 };
 
 /** A directory game's entry, whose ledger must name that game on its own shard. */
@@ -46,12 +59,10 @@ export const directoryGameEntryOf = (game: { chainId: string; game_id: number; e
 };
 
 /**
- * The ledger's reads on this build's L2; a ledger the entry places on another chain is refused, loudly. The wallet's
+ * The ledger's reads on this build's L2, for an entry gameEntryOf has already held to the build's ledger. The wallet's
  * network fee balance is read on the build's own fee token: the entry names no token.
  */
 export const ledgerOf = (ledger: PaidGameLedger) => {
-  if (!isL2Chain(ledger.chainId))
-    throw new Error(`Ledger ${ledger.address} is on chain ${ledger.chainId}; this build reads ${L2_CHAIN.name}`);
   const read = ledgerReader(l2Provider(), ledger.address);
   return { ...read, feeBalance: (owner: string) => read.balanceOf(L2_CHAIN.gasToken, owner) };
 };

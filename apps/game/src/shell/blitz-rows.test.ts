@@ -1,4 +1,10 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+// The build's ledger (contracts/common/addresses for its L2): a paid entry is honoured only on it.
+vi.mock("@/runtime/l2-rpc", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/runtime/l2-rpc")>()),
+  L2_LEDGER: "0x1ed9e7",
+}));
 
 import type { PlaytestSlot } from "@/ui/features/factory-v2/api/factory-worker";
 

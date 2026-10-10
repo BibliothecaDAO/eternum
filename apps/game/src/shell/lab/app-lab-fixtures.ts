@@ -3,6 +3,8 @@ import { StructureType } from "@bibliothecadao/types";
 import { realmsAccountAddress } from "@realms-world/identity/account";
 import type { Session } from "@realms-world/identity";
 
+import { L2_CHAIN, L2_LEDGER } from "@/runtime/l2-rpc";
+
 import type { DirectoryGame } from "../herald";
 import type { PayoutWallet } from "@realms-world/identity";
 
@@ -186,13 +188,15 @@ export const LAB_PAYOUT_WALLETS: Partial<Record<keyof typeof LAB_SCREENS, Payout
   "season-out": { status: "ready", address: LAB_WALLET },
 };
 
-/** The lab ledger's network. */
-const LAB_L2_CHAIN = "0x534e5f4d41494e";
+/**
+ * The lab's ledger is the build's own, as the app reads it: until the ledger is deployed on the build's L2, the paid
+ * screens show the fault a player would see.
+ */
+const LAB_LEDGER = { address: L2_LEDGER ?? "0x0", chainId: L2_CHAIN.id };
 
 /** The ledger game the lab's slot fills, on a paid Blitz's screens. */
 export const LAB_SLOT_LEDGER: PaidGameLedger = {
-  address: "0x1ed9e7",
-  chainId: LAB_L2_CHAIN,
+  ...LAB_LEDGER,
   shard: LAB_CHAIN,
   gameId: 7,
 };
@@ -411,8 +415,7 @@ export const LAB_CHAT = [
 
 /** The ledger the lab's finished Blitz was played on, on the reward screens. */
 export const LAB_GAME_LEDGER: PaidGameLedger = {
-  address: "0x1ed9e7",
-  chainId: LAB_L2_CHAIN,
+  ...LAB_LEDGER,
   shard: LAB_CHAIN,
   gameId: 7,
 };
