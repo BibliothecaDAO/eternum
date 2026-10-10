@@ -133,3 +133,17 @@ it("marks refunds once at close and never makes a refund decision during an iden
   expect(value.markRefundable).toHaveBeenCalledWith({ chainId: await launches.targetChain(), slotId: 1 }, ["0x1"]);
   expect(await launches.list("madara.blitz")).toHaveLength(2);
 });
+it("publishes the same stored shard key used to open the ledger slot", async () => {
+  const value = { ...slotValueFixture(), openSlot: vi.fn(async () => {}) };
+  const store = new D1SlotStore(
+    database.db,
+    new D1LaunchStore(database.db, testChain("0xabc")),
+    value,
+    registrationIdentityFixture,
+  );
+  await store.create("keyed", soon());
+  const slot = await store.get("keyed");
+  expect(slot.chainId).toBe("0xabc");
+  expect(await store.list()).toEqual([slot]);
+  expect(value.openSlot).toHaveBeenCalledWith({ chainId: slot.chainId, slotId: slot.slotId }, expect.any(Object));
+});

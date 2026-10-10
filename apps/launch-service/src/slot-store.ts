@@ -9,6 +9,7 @@ const DATABASE_NOW = "CAST(unixepoch('subsec') * 1000 AS INTEGER)";
 const SELECT_SLOTS = `SELECT *, ${DATABASE_NOW} AS observed_at FROM playtest_slots`;
 
 interface SlotRow {
+  chain_id: string;
   slot_id: number;
   name: string;
   closes_at: number;
@@ -51,7 +52,7 @@ export class D1SlotStore implements SlotStore {
     if (Date.parse(slot.closesAt) !== closes) throw new SlotConflict("Slot schedule is immutable");
     const duration = loadNativePresetConfiguration("madara.blitz", nativePresetIdFor("blitz")).season.durationSeconds;
     await this.value.openSlot(
-      { chainId: await this.launches.targetChain(), slotId: slot.slotId },
+      { chainId: slot.chainId, slotId: slot.slotId },
       { start: closes / 1000, end: closes / 1000 + duration },
     );
   }
@@ -79,7 +80,7 @@ export class D1SlotStore implements SlotStore {
     const slot = await this.rawSlot(name);
     if (slot.frozenAt) return slot;
     if (!slot.closed) throw new SlotConflict("Registration is still open");
-    const key = { chainId: await this.launches.targetChain(), slotId: slot.slotId };
+    const key = { chainId: slot.chainId, slotId: slot.slotId };
     const closed = await closedSlotGroups(key, this.value, this.identity).catch((error: unknown) => {
       if (error instanceof SlotCancelled) return null;
       throw error;
@@ -126,6 +127,7 @@ export class D1SlotStore implements SlotStore {
   }
 }
 const toSlot = (row: SlotRow): PlaytestSlot => ({
+  chainId: row.chain_id,
   slotId: row.slot_id,
   name: row.name,
   closesAt: new Date(row.closes_at).toISOString(),

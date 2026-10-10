@@ -1,6 +1,7 @@
 export { splitPlaytestRoster } from "@realms-world/value-ledger";
 
 export interface PlaytestSlot {
+  chainId: string;
   slotId: number;
   name: string;
   closesAt: string;

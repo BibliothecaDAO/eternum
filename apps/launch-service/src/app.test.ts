@@ -7,7 +7,7 @@ import type { IdentityResolver } from "./auth";
 import { D1CalendarStore } from "./calendar-store";
 import { D1SlotStore } from "./slot-store";
 import { D1LaunchStore } from "./store";
-import { completeFreeFixture, createLaunchTestDatabase, testChain } from "./test-database";
+import { completeFreeFixture, createLaunchTestDatabase, testChain, TEST_CHAIN } from "./test-database";
 import { day, frontierSeasonEnd } from "./test-dates";
 
 const ALLOWED_ORIGIN = "https://play.realms.party";
@@ -93,6 +93,7 @@ describe("paid slot discovery", () => {
     expect(response.headers.get("cache-control")).toBe("no-store");
     expect(await response.json()).toMatchObject({
       name: "friday",
+      chainId: TEST_CHAIN,
     });
     expect((await app.request("https://play.realms.party/api/slots/missing")).status).toBe(404);
     expect((await app.request("https://play.realms.party/api/slots/Invalid")).status).toBe(400);
