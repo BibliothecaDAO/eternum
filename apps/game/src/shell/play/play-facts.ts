@@ -8,11 +8,11 @@ import { nextStep } from "./next-step";
 import { readSeenResults } from "./seen-results";
 
 /**
- * Everything the Play tab draws, read once: the directory's games, Blitz's rows, the session and the clock, and the
+ * Everything the Play tab draws, read once: the directory's games, Blitz's rows, the sign-in status and the clock, and the
  * next step the table chose. Unknown until the directory and the session answer.
  */
 export const usePlayFacts = () => {
-  const { status, session } = useIdentitySession();
+  const { status } = useIdentitySession();
   const directory = useDirectory();
   const slots = usePlaytestSlots();
   const now = useNowSeconds();
