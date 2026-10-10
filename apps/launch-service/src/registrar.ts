@@ -46,7 +46,14 @@ export class Registrar extends DurableObject<Record<string, unknown>> {
     const env = decodeLaunchEnv(this.env);
     const store = new D1LaunchStore(env.DB, shardChainOf(env));
     const chainId = await shardChainOf(env)();
-    const accountAddress = await this.deployment().account(chainId);
+    let accountAddress: string | undefined;
+    try {
+      accountAddress = await this.deployment().account(chainId);
+    } catch (error) {
+      if (!(error instanceof Error) || error.message !== "launcher_role_not_granted") throw error;
+      await this.ctx.storage.setAlarm(Date.now() + 30_000);
+      return;
+    }
     const target = { ...launchTargetOf(env), ...(accountAddress ? { accountAddress } : {}) };
     const services = Layer.mergeAll(
       databaseLayer(store),
