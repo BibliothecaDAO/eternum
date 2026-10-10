@@ -159,6 +159,7 @@ const monitorFixture = () => {
       result: () => Effect.succeed(null),
     },
     ledger: {
+      auditSeasons: () => Effect.succeed(null),
       accountLinks: () => Effect.succeed({ rows: [], head: 1000, next: null }),
       pause: vi.fn(() => Effect.void),
       paidClaims: () => Effect.succeed({ rows: [], next: null, head: 1000 }),

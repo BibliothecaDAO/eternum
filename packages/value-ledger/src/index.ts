@@ -1,3 +1,5 @@
+import { ledgerInteger, ledgerBool as bool } from "./codecs";
+export { ledgerInteger, ledgerBool, ledgerU256, decodeBlitzSeason, readConfirmedLedgerHead } from "./codecs";
 import type { RpcProvider } from "starknet";
 export { rpcAt } from "./rpc";
 export interface LedgerGameKey {
@@ -75,13 +77,3 @@ export async function readRegisteredPlayers(
   }
   return players;
 }
-
-export const ledgerInteger = (value: string): number => {
-  const n = Number(BigInt(value));
-  if (!Number.isSafeInteger(n) || n < 0) throw new Error("invalid_ledger_integer");
-  return n;
-};
-const bool = (value: string): boolean => {
-  if (BigInt(value) !== 0n && BigInt(value) !== 1n) throw new Error("invalid_ledger_bool");
-  return BigInt(value) === 1n;
-};

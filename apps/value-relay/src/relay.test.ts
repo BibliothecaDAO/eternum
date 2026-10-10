@@ -90,7 +90,7 @@ const fixture = () => {
   };
   const ports: RelayPorts & {
     identity: MonitorPorts["identity"] & RelayPorts["identity"];
-    ledger: RelayPorts["ledger"] & Pick<MonitorPorts["ledger"], "accountLinks">;
+    ledger: RelayPorts["ledger"] & Pick<MonitorPorts["ledger"], "accountLinks" | "auditSeasons">;
     shard: RelayPorts["shard"] & Pick<MonitorPorts["shard"], "conservation">;
   } = {
     shard: {
@@ -110,6 +110,7 @@ const fixture = () => {
       linkedWallet: () => Effect.succeed("0x123"),
     },
     ledger: {
+      auditSeasons: () => Effect.succeed(null),
       accountLinks: () => Effect.succeed({ rows: [], head: 1000, next: null }),
       payment: () => Effect.succeed(null),
       reportMany: vi.fn((rows: readonly Withdrawal[]) =>

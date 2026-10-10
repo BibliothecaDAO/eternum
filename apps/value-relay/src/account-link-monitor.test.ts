@@ -20,6 +20,7 @@ const fixture = (allowed = true) => {
     },
     shard: { conservation: () => Effect.succeed([]) },
     ledger: {
+      auditSeasons: () => Effect.succeed(null),
       pause,
       paidClaims: () => Effect.succeed({ rows: [], head: 1, next: null }),
       postedResults: () => Effect.succeed({ rows: [], head: 1, next: null }),

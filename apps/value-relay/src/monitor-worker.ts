@@ -1,3 +1,6 @@
+import { processSeasonTops } from "./season-tops";
+import { seasonLedgerReads } from "./season-ledger";
+import { onIdentityChain } from "./ledger-chain";
 import { presentsOperatorToken } from "@realms-world/identity";
 import { chestLedgerReads } from "./chest-ledger";
 import { DurableChestStore, overdueChestRequests } from "./chests";
@@ -20,6 +23,7 @@ interface MonitorEnv {
   SHARD_GAMES_ADDRESS: string;
   SHARD_CHAIN_ID: string;
   IDENTITY: {
+    l2ChainId(): Promise<string>;
     matchesLedgerLinkWrite(write: import("@realms-world/identity").LedgerAccountLinkWrite): Promise<boolean>;
     realmsIdForAccount(account: string): Promise<string | null>;
     matchesPayDecision(decision: import("@realms-world/identity").LedgerPayDecision): Promise<boolean>;
@@ -40,8 +44,37 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
     return Effect.runPromise(
       this.checking.withPermit(
         Effect.gen(function* () {
+          const seasonAudit = yield* Effect.result(
+            onIdentityChain(
+              monitor.env.LEDGER_RPC_URL,
+              monitor.env.IDENTITY,
+              relayOperation("audit season leaderboard", () =>
+                Effect.runPromise(
+                  processSeasonTops(
+                    "audit",
+                    {
+                      ...seasonLedgerReads({
+                        rpcUrl: monitor.env.LEDGER_RPC_URL,
+                        contractAddress: monitor.env.LEDGER_ADDRESS,
+                      }),
+                      allocate: async () => {
+                        throw new Error("monitor_cannot_allocate");
+                      },
+                      post: async () => {
+                        throw new Error("monitor_cannot_post");
+                      },
+                    },
+                    monitor.ctx.storage,
+                  ),
+                ),
+              ),
+            ),
+          );
+          const ports = monitorPortsOf(monitor.env, monitor.ctx.storage, () =>
+            Result.isSuccess(seasonAudit) ? Effect.succeed(seasonAudit.success) : Effect.fail(seasonAudit.failure),
+          );
           const value = yield* Effect.result(
-            runMonitor(monitorPortsOf(monitor.env, monitor.ctx.storage), {
+            runMonitor(ports, {
               load: () => monitor.status(),
               save: (progress) => monitor.ctx.storage.put("progress", progress),
             }),
@@ -157,7 +190,11 @@ const legacyFault = async (
   };
 };
 
-const monitorPortsOf = (env: MonitorEnv, storage: DurableObjectStorage) => {
+const monitorPortsOf = (
+  env: MonitorEnv,
+  storage: DurableObjectStorage,
+  auditSeasons: import("./ports").MonitorPorts["ledger"]["auditSeasons"],
+) => {
   const reader = new ShardReader({
     rpcUrl: env.SHARD_RPC_URL,
     gamesAddress: env.SHARD_GAMES_ADDRESS,
@@ -186,6 +223,7 @@ const monitorPortsOf = (env: MonitorEnv, storage: DurableObjectStorage) => {
     },
     ledger: {
       ...ledgerMonitorReads(env.LEDGER_RPC_URL, env.LEDGER_ADDRESS),
+      auditSeasons,
       pause: ledgerPauserAdapter({
         rpcUrl: env.LEDGER_RPC_URL,
         contractAddress: env.LEDGER_ADDRESS,

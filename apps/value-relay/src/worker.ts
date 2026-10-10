@@ -1,3 +1,5 @@
+import { processSeasonTops } from "./season-tops";
+import { seasonLedgerReads, postSeasonTop, allocateSeason } from "./season-ledger";
 import { ledgerBatches } from "./ledger-batches";
 import { onIdentityChain } from "./ledger-chain";
 import { paidGameEntry } from "./game-entry";
@@ -122,6 +124,39 @@ export class ValueRelay extends DurableObject<RelayEnv> {
               relay.ledgerPermit(synchronizeAccountLink(target, linkPortsOf(relay.env))),
             ),
           );
+          const seasons = yield* Effect.result(
+            onIdentityChain(
+              relay.env.LEDGER_RPC_URL,
+              relay.env.IDENTITY,
+              relayOperation("post season leaderboard", () =>
+                Effect.runPromise(
+                  processSeasonTops(
+                    "post",
+                    {
+                      ...seasonLedgerReads(ledgerCredentialsOf(relay.env)),
+                      allocate: (id, start) =>
+                        Effect.runPromise(
+                          relay.ledgerPermit(
+                            relayOperation("allocate season prizes", () =>
+                              allocateSeason(ledgerCredentialsOf(relay.env), id, start),
+                            ),
+                          ),
+                        ),
+                      post: (id, start, wallets) =>
+                        Effect.runPromise(
+                          relay.ledgerPermit(
+                            relayOperation("post season top", () =>
+                              postSeasonTop(ledgerCredentialsOf(relay.env), id, start, wallets),
+                            ),
+                          ),
+                        ),
+                    },
+                    relay.ctx.storage,
+                  ),
+                ),
+              ),
+            ),
+          );
           const value = yield* Effect.result(runRelay(relay.env.SHARD_CHAIN_ID, relay.ports, relay.store));
           const chests = yield* Effect.result(
             finishRequestedChests(
@@ -131,6 +166,7 @@ export class ValueRelay extends DurableObject<RelayEnv> {
           );
           const observation = {
             links: Result.isSuccess(links) ? links.success : { error: links.failure.operation },
+            seasons: Result.isSuccess(seasons) ? seasons.success : { error: seasons.failure.operation },
             checked_at: Math.floor(Date.now() / 1000),
             value: Result.isSuccess(value) ? value.success : { status: "unavailable", reason: value.failure.operation },
             chests: Result.isSuccess(chests) ? chests.success : null,
@@ -167,6 +203,7 @@ export class ValueRelay extends DurableObject<RelayEnv> {
       value: { status: string };
       chests: { failed: number } | null;
       links?: { pending?: string[]; error?: string };
+      seasons?: string | null | { error: string };
     }>("lastTick");
     const progress = await this.store.progress();
     const success =
@@ -175,6 +212,7 @@ export class ValueRelay extends DurableObject<RelayEnv> {
       observation.chests !== null &&
       observation.chests.failed === 0 &&
       !progress.halted &&
+      observation.seasons === null &&
       observation.links?.error === undefined &&
       (observation.links?.pending?.length ?? 0) === 0;
     return {

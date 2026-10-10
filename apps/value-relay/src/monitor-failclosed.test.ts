@@ -21,6 +21,7 @@ const fixture = () => {
       result: () => Effect.succeed(null),
     },
     ledger: {
+      auditSeasons: () => Effect.succeed(null),
       accountLinks: () => Effect.succeed({ rows: [], head: 1000, next: null }),
       paidClaims: () =>
         Effect.succeed({

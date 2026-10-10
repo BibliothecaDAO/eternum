@@ -73,3 +73,15 @@ Reset also checks discarded pending claims on the ledger, so a lost payment ackn
 withdrawal. An unavailable ledger refuses reset and leaves the evidence queued. The reset header contains the first 100
 paid claims, their total count and the prefix for additional 100-claim audit pages; all are committed atomically. This
 replaces an unbounded single-record audit, which would prevent a large restore from being reset.
+
+## Season settlement
+
+The relay builds the season top list from the ledger's frozen seasonal MMR, posts contiguous 32-wallet batches, then
+advances the ledger's allocation cursor in 32-position steps. The independent monitor enumerates the cohort separately,
+checks every participant and winner at a pinned confirmed head, and pauses on a mismatch or an audit that cannot finish
+before the one-hour review ends. A newer season's live token rating never replaces that frozen leaderboard.
+
+This adds the previously missing publisher and audit. Durable event cursors, participant rows and a sorted MMR index
+keep each tick to one event page per stream and at most 100 rating/winner reads. They survive interruption without an
+unbounded population scan. No additional Worker, signing role, eligibility cap, timer or player challenge screen is
+introduced. Posting/allocation use the ledger's published bounded ABI; it must be deployed with these services.

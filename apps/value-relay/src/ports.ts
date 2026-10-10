@@ -158,6 +158,7 @@ export interface MonitorPorts {
     conservation(): RelayEffect<readonly ConservationBalance[]>;
   };
   ledger: Pick<RelayPorts["ledger"], "paidClaims" | "postedResults"> & {
+    auditSeasons(): RelayEffect<string | null>;
     pause(): RelayEffect<void>;
     accountLinks(after: string | null, fromBlock?: number): RelayEffect<LedgerPage<AccountLinkChanged>>;
   };
