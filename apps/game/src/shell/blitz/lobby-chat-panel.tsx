@@ -21,8 +21,9 @@ const HOLD_LINES: Partial<Record<ChatHold, string>> = {
 };
 
 /**
- * The lobby's chat (desktop): its messages, oldest at the top, read by any signed-in player, and the field for one the
- * room lets write (a player registered in the slot), Enter sending. A reader sees no field.
+ * The lobby's chat, under the countdown on a desktop and under the registered count on a phone: its messages, oldest at
+ * the top, read by any signed-in player, and the field for one the room lets write (a player registered in the slot),
+ * Enter or the keyboard's Send sending. A reader sees no field.
  */
 export const LobbyChatPanel = ({ slotName, membership }: { slotName: string; membership: string }) => {
   const chat = useLobbyChat(slotName, membership);
@@ -86,12 +87,13 @@ const Composer = ({ send }: { send: (content: string) => void }) => {
       <input
         aria-label={CHAT_WORDS.message}
         placeholder={CHAT_WORDS.message}
+        enterKeyHint="send"
         maxLength={MESSAGE_LIMIT}
         value={draft}
         onChange={(event) => setDraft(event.target.value)}
         className="h-12 w-full rounded-xl border-2 border-kit-line2 bg-kit-ground px-3 pr-16 text-[15px] text-kit-cream placeholder:text-kit-muted focus:border-kit-peach focus:outline-none"
       />
-      <Kbd keyName="Enter" className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2" />
+      <Kbd keyName="Enter" className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 max-lg:hidden" />
     </form>
   );
 };
