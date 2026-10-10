@@ -14,6 +14,7 @@
 !**/public/**/data
 !**/public/**/data/**
 **/.env*
+**/*.env
 **/host-keys.json*
 **/authority.json*
 **/harness.env*

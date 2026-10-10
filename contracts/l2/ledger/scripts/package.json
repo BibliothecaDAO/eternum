@@ -10,7 +10,7 @@
   "scripts": {
     "check-live-assets:mainnet": "node ./commands/upgrades/live-assets.js",
     "deploy:mainnet": "node ./commands/deployment/deploy.js mainnet",
-    "test": "node --test ./commands/**/*.test.js",
+    "test": "node --test ./commands/**/*.test.js && bun test ./commands/deployment/sepolia.test.ts",
     "upgrade-live-assets:mainnet": "node ./commands/upgrades/live-assets.js --execute",
     "deploy:sepolia": "bun ./commands/deployment/sepolia.js"
   }

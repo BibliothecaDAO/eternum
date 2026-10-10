@@ -219,22 +219,19 @@ describe("native deployment planning", () => {
     await expect(deployNativeWorld(local, rpc as unknown as Account, () => {})).rejects.toThrow("mismatch");
   });
 
-  test("owner changes launcher and ledger roles, while authentication, key and bounds remain fixed", async () => {
+  test("bootstrap initializes only an unset ledger role and preserves the constructor launcher", async () => {
     const { local, rpc, state } = fixture();
+    state.ledger = "0x0";
     local.launcher = "0x55";
-    local.ledgerOperator = "0x66";
     const plan = await inspectNativeWorld(local, rpc as unknown as RpcProvider);
     expect(plan.blockers).toEqual([]);
-    expect(plan.roleChanges).toEqual([
-      { entrypoint: "set_launcher", address: "0x55" },
-      { entrypoint: "set_ledger_operator", address: "0x66" },
-    ]);
+    expect(plan.roleChanges).toEqual([{ entrypoint: "set_ledger_operator", address: local.ledgerOperator }]);
     const actions: string[] = [];
     const report = await deployNativeWorld(local, rpc as unknown as Account, ({ action }) => actions.push(action));
-    expect(actions).toEqual(["set_launcher", "set_ledger_operator"]);
+    expect(actions).toEqual(["set_ledger_operator"]);
     expect(report.after.synced).toBe(true);
-    expect(BigInt(state.launcher)).toBe(0x55n);
-    expect(BigInt(state.ledger)).toBe(0x66n);
+    expect(state.launcher).toBe("0x99");
+    expect(state.ledger).toBe(local.ledgerOperator);
     for (const fixed of [{ account_class: "0x66" }, { guardian_public_key: "0x66" }]) {
       local.authentication = { ...authentication, ...fixed };
       await expect(
@@ -251,6 +248,21 @@ describe("native deployment planning", () => {
     await expect(deployNativeWorld(local, rpc as unknown as Account, () => {})).rejects.toThrow(
       "gas bound is immutable",
     );
+  });
+
+  test("a redeploy without local history never takes service roles back to bootstrap", async () => {
+    const { local, rpc, state } = fixture();
+    delete local.previous;
+    state.launcher = "0x55";
+    state.ledger = "0x66";
+    const report = await deployNativeWorld(local, rpc as unknown as Account, () => {
+      throw new Error("unexpected transaction");
+    });
+    expect(report.before.roleChanges).toEqual([]);
+    expect(report.after.synced).toBe(true);
+    expect(state.launcher).toBe("0x55");
+    expect(state.ledger).toBe("0x66");
+    expect(state.operations).toEqual([]);
   });
 
   test("a different Games class cannot replace the immutable deployment", async () => {

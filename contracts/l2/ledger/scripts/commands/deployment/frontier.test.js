@@ -9,7 +9,7 @@ const { abi } = JSON.parse(
 );
 
 test("rehearsal funds the exact six-argument Frontier ABI, including a full u256 amount", () => {
-  const settings = { shard: 17n, start: 100n, seed: 24301n, pool: (1n << 128n) + 9n };
+  const settings = { shard: 17n, frontierSeasonId: 7n, start: 100n, seed: 24301n, pool: (1n << 128n) + 9n };
   const call = buildFrontierFundingCall("0x123", settings);
   assert.equal(call.contractAddress, "0x123");
   assert.equal(call.entrypoint, "fund_frontier");
@@ -17,14 +17,14 @@ test("rehearsal funds the exact six-argument Frontier ABI, including a full u256
     call.calldata,
     new CallData(abi).compile("fund_frontier", {
       shard: settings.shard,
-      season_id: 1,
+      season_id: settings.frontierSeasonId,
       preset_id: 2,
       start: settings.start,
       seed: settings.seed,
       amount: uint256.bnToUint256(settings.pool),
     }),
   );
-  assert.deepEqual(call.calldata, ["17", "1", "2", "100", "24301", "9", "1"]);
+  assert.deepEqual(call.calldata, ["17", "7", "2", "100", "24301", "9", "1"]);
 });
 
 test("rehearsal reads all eight FrontierSeason fields in ABI order instead of using the Blitz end", () => {

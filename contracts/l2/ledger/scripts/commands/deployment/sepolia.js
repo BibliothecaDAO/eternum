@@ -1,10 +1,10 @@
 #!/usr/bin/env bun
 
-import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { CallData, byteArray, hash, shortString, uint256 } from "starknet";
 import { getContractArtifactPaths, readContractArtifacts } from "../../../../../scripts-runtime/js/artifacts.js";
+import { mergeJsonFile, writeJsonFile } from "../../../../../scripts-runtime/js/files.js";
 import { getAccount } from "../../../../../scripts-runtime/js/starknet.js";
 import { buildLedgerEconomicPreset } from "../../../../../../config/deployer/clean/ledger/economics.ts";
 import { buildMysteryChestPreset } from "../../chest-preset.js";
@@ -20,8 +20,12 @@ function required(name) {
   return value;
 }
 
-function loadSettings() {
+export function loadSettings() {
+  const frontierSeasonId = BigInt(required("SEPOLIA_FRONTIER_SEASON_ID"));
+  if (frontierSeasonId <= 0n || frontierSeasonId > 0xffffffffn)
+    throw new Error("SEPOLIA_FRONTIER_SEASON_ID must be a non-zero u32 shard game id");
   const settings = {
+    frontierSeasonId,
     address: required("SEPOLIA_ACCOUNT_ADDRESS"),
     privateKey: required("SEPOLIA_ACCOUNT_PRIVATE_KEY"),
     operator: required("SEPOLIA_OPERATOR_ADDRESS"),
@@ -107,7 +111,7 @@ async function deployAssets(account, settings) {
   return { ledger, lords, mmr, chests, cosmetics };
 }
 
-function buildSetupCalls(assets, settings) {
+export function buildSetupCalls(assets, settings) {
   const call = (contractAddress, entrypoint, args) => ({
     contractAddress,
     entrypoint,
@@ -149,7 +153,7 @@ function buildSetupCalls(assets, settings) {
   ];
 }
 
-async function readFundedFrontier(account, assets, settings) {
+export async function readFundedFrontier(account, assets, settings) {
   const artifactPaths = getContractArtifactPaths(
     path.join(packageRoot, "target", "release"),
     "game_ledger",
@@ -159,7 +163,7 @@ async function readFundedFrontier(account, assets, settings) {
   const response = await account.callContract({
     contractAddress: assets.ledger,
     entrypoint: "get_frontier",
-    calldata: CallData.compile([settings.shard, 1]),
+    calldata: CallData.compile([settings.shard, settings.frontierSeasonId]),
   });
   return frontierSeasonManifest(contract.abi, response);
 }
@@ -182,6 +186,7 @@ async function main() {
     ...assets,
     shard: settings.shard,
     seasonId: 1,
+    frontierSeasonId: settings.frontierSeasonId.toString(),
     presetId: 1,
     start: settings.start.toString(),
     end: settings.end.toString(),
@@ -189,13 +194,20 @@ async function main() {
     frontier,
     setupTransaction: setup.transaction_hash,
   };
-  await mkdir(path.dirname(manifestPath), { recursive: true });
-  await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+  await writeSepoliaDeployment(manifest, path.resolve(packageRoot, "../../.."));
   console.log(JSON.stringify({ step: "ready", manifest: manifestPath, ...manifest }));
 }
 
-main().catch(() => {
-  // SDK error objects may include signer configuration; only public status is printed.
-  console.error("Sepolia deployment failed; check required settings, artifacts and transaction receipts.");
-  process.exitCode = 1;
-});
+export async function writeSepoliaDeployment(manifest, repoRoot) {
+  await writeJsonFile(path.join(repoRoot, "contracts/l2/ledger/target/sepolia-deployment.json"), manifest);
+  await mergeJsonFile(path.join(repoRoot, "contracts/common/addresses/sepolia.json"), { ledger: manifest.ledger });
+}
+
+if (import.meta.main)
+  main().catch(() => {
+    // SDK error objects may include signer configuration; only public status is printed.
+    console.error(
+      "Sepolia deployment failed; check required settings (including SEPOLIA_FRONTIER_SEASON_ID), artifacts and transaction receipts.",
+    );
+    process.exitCode = 1;
+  });
