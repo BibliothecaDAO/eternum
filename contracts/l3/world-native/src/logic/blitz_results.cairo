@@ -7,7 +7,7 @@ pub mod BlitzResultState {
     use crate::ownership::{Story, StoryEvent};
     use crate::registrar::RosterPlayer;
 
-    // One immutable result per frozen roster position; count records completion.
+    // Results are written together; the first nonzero rank proves completion.
     #[storage]
     #[allow(starknet::colliding_storage_paths)]
     pub struct Storage {
@@ -27,10 +27,12 @@ pub mod BlitzResultState {
         fn blitz_result(self: @ComponentState<TContractState>, game_id: u32) -> BlitzResult {
             let roster = self.roster(game_id);
             let mut players = array![];
-            for index in 0..self.data.blitz_results.ranked_count.read(game_id) {
-                players.append(self.data.blitz_results.ranked_results.read((game_id, index)));
+            let complete = !roster.is_empty() && self.data.blitz_results.ranked_results.read((game_id, 0)).rank != 0;
+            if complete {
+                for index in 0..roster.len() {
+                    players.append(self.data.blitz_results.ranked_results.read((game_id, index.try_into().unwrap())));
+                }
             }
-            let complete = !roster.is_empty() && players.len() == roster.len();
             let commitment = if complete {
                 crate::blitz_results::result_commitment(get_tx_info().unbox().chain_id, game_id, players.span())
             } else {
@@ -43,22 +45,19 @@ pub mod BlitzResultState {
             game_id: u32,
             actor: ContractAddress,
             context: crate::commands::ActionContext,
-        ) -> u64 {
+        ) {
             let context = crate::commands::load_context(game_id, context);
             self.assert_finalizable(context);
             let roster = self.roster(game_id);
-            let count = self.data.blitz_results.ranked_count.read(game_id);
-            if Into::<u8, u32>::into(count) == roster.len() {
-                return 0;
+            if self.data.blitz_results.ranked_results.read((game_id, 0)).rank != 0 {
+                return;
             }
             let mut points = array![];
             for player in roster {
                 points.append(self.data.season.player_points.read((game_id, *player.account)));
             }
             self.write_ranked_roster(game_id, roster, points.span());
-            self.data.blitz_results.ranked_count.write(game_id, roster.len().try_into().unwrap());
             self.emit_result(game_id, crate::state::read().launcher.read(), context.timestamp);
-            0
         }
     }
     #[generate_trait]
