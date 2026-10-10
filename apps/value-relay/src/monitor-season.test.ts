@@ -22,11 +22,6 @@ vi.mock("./ledger", () => ({
     postedResults: () => Effect.succeed({ rows: [], head: 1, next: null }),
   }),
 }));
-vi.mock("./chests", () => ({
-  DurableChestStore: class {},
-  overdueChestRequests: () => Effect.succeed({ pending: 0, overdue: [] }),
-}));
-
 beforeEach(() => {
   vi.clearAllMocks();
   calls.pause.mockReturnValue(Effect.void);

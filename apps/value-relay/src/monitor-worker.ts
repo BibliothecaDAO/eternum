@@ -3,8 +3,6 @@ import { processSeasonTops } from "./season-tops";
 import { seasonLedgerReads, challengeSeason } from "./season-ledger";
 import { onIdentityChain } from "./ledger-chain";
 import { presentsOperatorToken } from "@realms-world/identity";
-import { chestLedgerReads } from "./chest-ledger";
-import { DurableChestStore, overdueChestRequests } from "./chests";
 import { DurableObject } from "cloudflare:workers";
 import { Effect, Result, Semaphore } from "effect";
 import { ledgerMonitorReads } from "./ledger";
@@ -34,7 +32,6 @@ interface MonitorEnv {
 
 export class ValueMonitor extends DurableObject<MonitorEnv> {
   private readonly checking = Semaphore.makeUnsafe(1);
-  private readonly chests = new DurableChestStore(this.ctx.storage);
   async tick() {
     const monitor = this;
     return Effect.runPromise(
@@ -85,16 +82,6 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
               }),
             ),
           );
-          const chests = yield* Effect.result(
-            onIdentityChain(
-              monitor.env.LEDGER_RPC_URL,
-              monitor.env.IDENTITY,
-              overdueChestRequests(
-                chestLedgerReads({ rpcUrl: monitor.env.LEDGER_RPC_URL, contractAddress: monitor.env.LEDGER_ADDRESS }),
-                monitor.chests,
-              ),
-            ),
-          );
           const held = yield* Effect.result(
             relayOperation("read relay held obligations", () => monitor.env.RELAY_REPORT.held()),
           );
@@ -103,10 +90,9 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
             value: Result.isSuccess(value) ? value.success : null,
             season_error: Result.isSuccess(seasonAudit) ? seasonAudit.success : seasonAudit.failure.operation,
             value_error: Result.isFailure(value) ? value.failure.operation : null,
-            chests: Result.isSuccess(chests) ? chests.success : null,
             held: Result.isSuccess(held) ? held.success : null,
           };
-          yield* relayOperation("publish chest monitor", () => monitor.ctx.storage.put("observation", observation));
+          yield* relayOperation("publish value monitor", () => monitor.ctx.storage.put("observation", observation));
           return observation;
         }),
       ),
@@ -116,7 +102,6 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
     const observation = await this.ctx.storage.get<{
       checked_at: number;
       value: MonitorProgress | null;
-      chests: { overdue: string[]; pending: number } | null;
       value_error: string | null;
       season_error: string | null;
       held?: { kind: string; reason: string; transactionHash: string | null }[] | null;
@@ -131,7 +116,6 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
         age <= 300 &&
         observation?.value !== null &&
         observation?.value !== undefined &&
-        observation.chests !== null &&
         observation.season_error === null &&
         !progress.halted,
     };
