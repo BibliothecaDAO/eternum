@@ -6,17 +6,15 @@ import {
   readRegisteredShard,
   type ShardDirectory,
   rpcAt,
-  readLedgerGame,
-  readRegisteredPlayers,
-  readConfirmedLedgerHead,
-  type LedgerRosterSnapshot,
+  readRegistrationPage,
+  type LedgerSlotKey,
+  type RegistrationQuery,
 } from "@realms-world/value-ledger";
 import { processSeasonTops } from "./season-tops";
 import { seasonLedgerReads, postSeasonTop } from "./season-ledger";
 import { ledgerBatches } from "./ledger-batches";
 import { onIdentityChain } from "./ledger-chain";
-import { paidGameEntry } from "./game-entry";
-import { openBlitzOnLedger, refundBlitzOnLedger, validateBlitzWindow } from "./blitz-launch";
+import { openSlotOnLedger, refundSlotOnLedger, markSlotRefundable } from "./blitz-launch";
 import type { LedgerGameKey } from "@realms-world/value-ledger";
 import { currentLaborDay, writeLaborGrant } from "./shard-labor";
 import { handleLaborRequest } from "./labor-route";
@@ -268,71 +266,39 @@ export class ValueRelay extends DurableObject<RelayEnv> {
       ),
     );
   }
-  async openBlitz(key: LedgerGameKey, window: { start: number; end: number }) {
-    await this.requireLaunchChain(key);
-    const relay = this;
+  async openSlot(key: LedgerSlotKey, window: { start: number; end: number }) {
+    await this.requireLaunchSlot(key);
+    const shard = (await this.env.IDENTITY.shards()).find((row) => BigInt(row.chainId) === BigInt(key.chainId));
+    if (shard?.status !== "active") throw new Error("new_slot_requires_active_shard");
     return Effect.runPromise(
-      this.ledgerPermit(
-        Effect.gen(function* () {
-          const entry = yield* paidGameEntry(relay.env.LEDGER_RPC_URL, ledgerAddress(relay.env.ENVIRONMENT), key);
-          yield* openBlitzOnLedger(ledgerCredentialsOf(relay.env), key, window);
-          return entry;
-        }),
-        [key.chainId],
-      ),
+      this.ledgerPermit(openSlotOnLedger(ledgerCredentialsOf(this.env), key, window), [key.chainId]),
     );
   }
-  async blitzRoster(key: LedgerGameKey): Promise<LedgerRosterSnapshot> {
-    await this.requireLaunchChain(key);
+  async registrations(query: RegistrationQuery) {
+    await this.requireLaunchSlot(query);
     return Effect.runPromise(
       onIdentityChain(
         this.env.LEDGER_RPC_URL,
         this.env.IDENTITY,
-        relayOperation("read closed ledger roster", async () => {
-          const provider = rpcAt(this.env.LEDGER_RPC_URL);
-          const head = await readConfirmedLedgerHead(provider);
-          const game = await readLedgerGame(provider, ledgerAddress(this.env.ENVIRONMENT), key, head.number);
-          if (game.cancelled || game.finalized) throw new Error("ledger_game_not_seatable");
-          const secondsUntilClose = Math.max(0, game.start - head.time);
-          const registrations = secondsUntilClose
-            ? []
-            : await readRegisteredPlayers(
-                provider,
-                ledgerAddress(this.env.ENVIRONMENT),
-                key,
-                head.number,
-                game.registeredCount,
-                game.registrationLimit,
-              );
-          return {
-            gameId: key.gameId,
-            blockNumber: head.number,
-            blockHash: head.hash,
-            secondsUntilClose,
-            end: game.end,
-            registrations,
-          };
-        }),
+        relayOperation("read closed slot registrations", () =>
+          readRegistrationPage(rpcAt(this.env.LEDGER_RPC_URL), ledgerAddress(this.env.ENVIRONMENT), query),
+        ),
       ),
     );
   }
-  async validateBlitz(key: LedgerGameKey, window: { start: number; end: number }) {
-    await this.requireLaunchChain(key);
+  async markRefundable(key: LedgerSlotKey, wallets: readonly string[]) {
+    await this.requireLaunchSlot(key);
     return Effect.runPromise(
-      onIdentityChain(
-        this.env.LEDGER_RPC_URL,
-        this.env.IDENTITY,
-        validateBlitzWindow(ledgerCredentialsOf(this.env), key, window),
-      ),
+      this.ledgerPermit(markSlotRefundable(ledgerCredentialsOf(this.env), key, wallets), [key.chainId]),
     );
   }
-  async refundBlitz(key: LedgerGameKey) {
-    await this.requireLaunchChain(key);
-    return Effect.runPromise(this.ledgerPermit(refundBlitzOnLedger(ledgerCredentialsOf(this.env), key), [key.chainId]));
+  async refundSlot(key: LedgerSlotKey) {
+    await this.requireLaunchSlot(key);
+    return Effect.runPromise(this.ledgerPermit(refundSlotOnLedger(ledgerCredentialsOf(this.env), key), [key.chainId]));
   }
-  private async requireLaunchChain(key: LedgerGameKey) {
-    if (!Number.isInteger(key.gameId) || key.gameId <= 0 || key.gameId > 0xffffffff)
-      throw new Error("wrong_launch_chain_or_game");
+  private async requireLaunchSlot(key: LedgerSlotKey) {
+    if (!Number.isInteger(key.slotId) || key.slotId <= 0 || key.slotId > 0xffffffff)
+      throw new Error("wrong_launch_chain_or_slot");
     await requireActiveChain(this.env.IDENTITY, key.chainId);
   }
   async shardHeld() {
@@ -440,17 +406,17 @@ export class ValueLaunch extends WorkerEntrypoint<RelayEnv> {
   override fetch() {
     return new Response(null, { status: 404 });
   }
-  blitzRoster(key: LedgerGameKey) {
-    return ledgerOf(this.env).blitzRoster(key);
+  registrations(query: RegistrationQuery) {
+    return ledgerOf(this.env).registrations(query);
   }
-  openBlitz(key: LedgerGameKey, window: { start: number; end: number }) {
-    return ledgerOf(this.env).openBlitz(key, window);
+  openSlot(key: LedgerSlotKey, window: { start: number; end: number }) {
+    return ledgerOf(this.env).openSlot(key, window);
   }
-  validateBlitz(key: LedgerGameKey, window: { start: number; end: number }) {
-    return ledgerOf(this.env).validateBlitz(key, window);
+  markRefundable(key: LedgerSlotKey, wallets: readonly string[]) {
+    return ledgerOf(this.env).markRefundable(key, wallets);
   }
-  refundBlitz(key: LedgerGameKey) {
-    return ledgerOf(this.env).refundBlitz(key);
+  refundSlot(key: LedgerSlotKey) {
+    return ledgerOf(this.env).refundSlot(key);
   }
 }
 export default {
