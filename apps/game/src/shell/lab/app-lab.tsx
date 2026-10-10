@@ -106,11 +106,7 @@ const createLabClient = (screen: LabScreen) => {
   client.setQueryData(["shell", "leaderboard", LAB_CHAIN, 7], LAB_BLITZ_BOARD);
   const wallet = LAB_PAYOUT_WALLETS[screen];
   const terms = LAB_ENTRY_TERMS[screen];
-  // The lab's seat, chest and season share were paid from the lab wallet; an entry not yet paid has no paying wallet.
-  const paid = terms?.registration.registered ? LAB_WALLET : null;
-  client.setQueryData(payingWalletKey(LAB_SLOT_LEDGER, LAB_PLAYER), paid);
-  if (terms && (paid ?? wallet?.status === "ready"))
-    client.setQueryData(entryTermsKey(LAB_SLOT_LEDGER, paid ?? LAB_WALLET), terms);
+  if (terms && wallet?.status === "ready") client.setQueryData(entryTermsKey(LAB_SLOT_LEDGER, wallet.address), terms);
   const reward = LAB_REWARDS[screen];
   const prize = LAB_SEASON_PRIZES[screen];
   if (reward || prize) client.setQueryData(payingWalletKey(LAB_GAME_LEDGER, LAB_PLAYER), LAB_WALLET);
