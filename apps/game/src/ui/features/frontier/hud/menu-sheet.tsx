@@ -1,19 +1,21 @@
 import { Button } from "@/ui/design-system/kit/button";
 import { type IconCode, KitIcon } from "@/ui/design-system/kit/kit-icon";
 import { Sheet } from "@/ui/design-system/kit/sheet";
-import { EXIT, GUIDE, MENU, PRODUCTION, RESUME, SEASON, SETTINGS, TODAY } from "@/ui/design-system/kit/words";
+import { EXIT, GUIDE, MENU, PRODUCTION, REALMS, RESUME, SEASON, SETTINGS, TODAY } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
 
 /**
  * The Menu: the ways that are not places (Today, Season with the player's rank, Production, the guide, Settings), then
  * Exit to the app and Resume, which closes the menu. Guide turns the guide off, or on again from its first line; a
- * player with no realm of their own has no guide and no Production.
+ * player with no realm of their own has no guide and no Production. Realms, with a dot while their labor waits, opens
+ * the Realm holder's labor where its facts are served.
  */
 export const MenuSheet = ({
   rank,
   onToday,
   onSeason,
   onProduction,
+  realms,
   guide,
   onSettings,
   onExit,
@@ -23,6 +25,7 @@ export const MenuSheet = ({
   onToday: () => void;
   onSeason: () => void;
   onProduction: (() => void) | null;
+  realms?: { waiting: boolean; onOpen: () => void };
   guide: { on: boolean; onToggle: () => void } | null;
   onSettings: () => void;
   onExit: () => void;
@@ -39,6 +42,14 @@ export const MenuSheet = ({
         onClick={onSeason}
       />
       {onProduction && <MenuRow icon="Wh" word={PRODUCTION} onClick={onProduction} />}
+      {realms && (
+        <MenuRow
+          icon="Cs"
+          word={REALMS}
+          badge={realms.waiting && <i aria-hidden className="size-2 rounded-full bg-kit-gold2" />}
+          onClick={realms.onOpen}
+        />
+      )}
       {guide && (
         <MenuRow
           icon="Gd"
