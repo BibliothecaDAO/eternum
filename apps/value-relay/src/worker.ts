@@ -17,7 +17,7 @@ import { DurableChestStore, finishRequestedChests } from "./chests";
 import { DurableObject, WorkerEntrypoint } from "cloudflare:workers";
 import { Effect, Result, Semaphore } from "effect";
 import { ledgerResultAdapter, ledgerMonitorReads } from "./ledger";
-import { ledgerPaymentAdapter, ledgerPaymentRead, ledgerReportAdapter } from "./chain";
+import { ledgerPaymentRead } from "./chain";
 import { presentsOperatorToken } from "@realms-world/identity";
 import { identityAdapter } from "./adapters";
 import { runRelay, grantDailyLabor } from "./relay";
@@ -47,7 +47,6 @@ interface RelayEnv {
     accountLinkTarget(key: string): Promise<AccountLinkTarget>;
     recordLedgerLinkWrite(target: AccountLinkTarget, write: LedgerAccountLinkWrite): Promise<void>;
     recordPayDecisions(decisions: import("@realms-world/identity").LedgerPayDecision[]): Promise<void>;
-    recordPayDecision(decision: import("@realms-world/identity").LedgerPayDecision): Promise<void>;
     payoutWallet(id: string): Promise<import("@realms-world/identity").PayoutWallet>;
     linkedWallet(id: string): Promise<string | null>;
     authenticate(cookie: string): Promise<{ realmsId: string } | null>;
@@ -312,14 +311,6 @@ const ledgerPortsOf = (env: RelayEnv, permit: LedgerPermit): RelayPorts["ledger"
       ledgerBatches(ledgerCredentialsOf(env), (decisions) => env.IDENTITY.recordPayDecisions(decisions)).payMany(rows),
     ),
   payment: (withdrawal) => ledgerPaymentRead(env.LEDGER_RPC_URL, env.LEDGER_ADDRESS)(withdrawal),
-  report: (withdrawal) => permit(ledgerReportAdapter(ledgerCredentialsOf(env))(withdrawal)),
-  pay: (withdrawal, wallet) =>
-    permit(
-      ledgerPaymentAdapter(ledgerCredentialsOf(env), (decision) => env.IDENTITY.recordPayDecision(decision))(
-        withdrawal,
-        wallet,
-      ),
-    ),
   postResult: (result) => permit(ledgerResultAdapter(ledgerCredentialsOf(env))(result)),
   paidClaims: (cursor, fromBlock) =>
     relayOperation("read ledger paid claims", () =>

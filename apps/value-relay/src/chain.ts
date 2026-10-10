@@ -2,7 +2,7 @@ import { RecordedSigner } from "./recorded-signer";
 import type { LedgerPayDecision } from "@realms-world/identity";
 import { rpcAt } from "@realms-world/value-ledger";
 import { Account } from "starknet";
-import type { RelayPorts } from "./ports";
+import type { RelayPorts, Withdrawal, RelayEffect } from "./ports";
 import { frontierPayment } from "./adapters";
 import { Effect } from "effect";
 import { RelayFailure, relayOperation } from "./ports";
@@ -49,7 +49,7 @@ export const ledgerPaymentRead =
 
 /** Reporting is a separate confirmed transaction; a failed later payment cannot erase the custody guard. */
 export const ledgerReportAdapter =
-  (credentials: LedgerCredentials): RelayPorts["ledger"]["report"] =>
+  (credentials: LedgerCredentials): ((withdrawal: Withdrawal) => RelayEffect<void>) =>
   (withdrawal) =>
     relayOperation("report Frontier withdrawal", async () => {
       const previous = await Effect.runPromise(
@@ -93,7 +93,7 @@ export const ledgerPaymentAdapter =
   (
     credentials: LedgerCredentials,
     record: (decision: LedgerPayDecision) => Promise<void>,
-  ): RelayPorts["ledger"]["pay"] =>
+  ): ((withdrawal: Withdrawal, wallet: string) => RelayEffect<void>) =>
   (withdrawal, wallet) =>
     frontierPayment(async (entrypoint, calldata) => {
       const provider = rpcAt(credentials.rpcUrl);

@@ -61,9 +61,6 @@ export class ValueIdentity extends WorkerEntrypoint<IdentityEnv> {
   async recordPayDecisions(decisions: LedgerPayDecision[]) {
     for (const decision of decisions) await recordPayDecision(this.env.DB, decision);
   }
-  recordPayDecision(decision: LedgerPayDecision) {
-    return recordPayDecision(this.env.DB, decision);
-  }
   matchesPayDecision(decision: LedgerPayDecision) {
     return matchesPayDecision(this.env.DB, decision);
   }

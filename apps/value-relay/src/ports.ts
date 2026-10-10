@@ -140,8 +140,6 @@ export interface RelayPorts {
     ): RelayEffect<{ paid: boolean; seasonId: number; wallet: string; amount: string } | null>;
     reportMany(withdrawals: readonly Withdrawal[]): RelayEffect<ClaimOutcome[]>;
     payMany(rows: readonly PayableClaim[]): RelayEffect<ClaimOutcome[]>;
-    report(withdrawal: Withdrawal): RelayEffect<void>;
-    pay(withdrawal: Withdrawal, wallet: string): RelayEffect<void>;
     postResult(result: BlitzResult): RelayEffect<void>;
     paidClaims(after: string | null, fromBlock?: number): RelayEffect<LedgerPage<PaidClaim>>;
     postedResults(after: string | null, fromBlock?: number): RelayEffect<LedgerPage<BlitzCommitment>>;
