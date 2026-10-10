@@ -169,6 +169,8 @@ export const createLaunchApp = (dependencies: LaunchAppDependencies) => {
   app.post("/api/factory/runs", async (context) => {
     try {
       const request = await decodeBody(context, CreateGameRequestSchema);
+      if (request.environment === "madara.blitz")
+        return context.json({ error: "Blitz launches use paid slots at /api/slots" }, 400);
       return respondWithRun(context, dependencies, "game", request);
     } catch (error) {
       return context.json({ error: String(error) }, 400);

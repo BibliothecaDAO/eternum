@@ -1,3 +1,4 @@
+import { slotValueFixture, registrationIdentityFixture } from "./test-database";
 import { Effect } from "effect";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { D1CalendarStore } from "./calendar-store";
@@ -9,7 +10,6 @@ import { blitzSlotName, day, frontierSeasonEnd } from "./test-dates";
 
 let database: Awaited<ReturnType<typeof createLaunchTestDatabase>>;
 beforeEach(async () => {
-  vi.spyOn(D1LaunchStore.prototype, "entryForSlot").mockResolvedValue({ kind: "free" });
   database = await createLaunchTestDatabase();
 });
 afterEach(async () => {
@@ -19,7 +19,7 @@ afterEach(async () => {
 
 const stores = () => {
   const launches = new D1LaunchStore(database.db, testChain());
-  const slots = new D1SlotStore(database.db, launches);
+  const slots = new D1SlotStore(database.db, launches, slotValueFixture(1), registrationIdentityFixture);
   const calendar = new D1CalendarStore(database.db);
   const tick = (now: Date) => Effect.runPromise(runLaunchSchedule(launches, slots, calendar, now));
   return { launches, slots, calendar, tick };
@@ -118,7 +118,7 @@ test("a malformed stored Frontier season cannot stop Blitz creation or freezing"
     .bind(day(0).getTime() + 500, day(31).getTime(), Date.now())
     .run();
   await calendar.set({ phase: "blitz", startsAt: day(0).toISOString(), endsAt: day(31).toISOString() }, Date.now());
-  await slots.create("due", new Date(Date.now() + 60_000).toISOString());
+  await slots.create("due", new Date(Math.floor(Date.now() / 1000) * 1000 + 60_000).toISOString());
   await database.db.prepare("UPDATE playtest_slots SET closes_at = 0").run();
   await tick(day(1));
   expect((await slots.list()).map(({ name }) => name)).toContain(blitzSlotName(day(1, 11)));
@@ -128,7 +128,7 @@ test("a malformed stored Frontier season cannot stop Blitz creation or freezing"
 test("a conflicting timetable slot cannot stop a due roster from freezing", async () => {
   const { launches, slots, calendar, tick } = stores();
   await calendar.set({ phase: "blitz", startsAt: day(0).toISOString(), endsAt: day(31).toISOString() }, Date.now());
-  await slots.create("due", new Date(Date.now() + 60_000).toISOString());
+  await slots.create("due", new Date(Math.floor(Date.now() / 1000) * 1000 + 60_000).toISOString());
   await database.db.prepare("UPDATE playtest_slots SET closes_at = 0").run();
   await slots.create(blitzSlotName(day(1, 11)), day(1, 10).toISOString());
   await tick(day(1));

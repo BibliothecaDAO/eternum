@@ -1,3 +1,4 @@
+import { WorkerEntrypoint } from "cloudflare:workers";
 import { activeShards } from "@realms-world/value-ledger";
 import { Effect } from "effect";
 import { createLaunchApp } from "./app";
@@ -36,7 +37,11 @@ const launchStoresOf = (env: LaunchEnv, chainId?: string | null) => {
   const launches = new D1LaunchStore(env.DB, shardChainOf(env, chainId), () =>
     activeShards(env.VALUE_IDENTITY).then((rows) => rows.map((row) => row.chainId)),
   );
-  return { launches, slots: new D1SlotStore(env.DB, launches), calendar: new D1CalendarStore(env.DB) };
+  return {
+    launches,
+    slots: new D1SlotStore(env.DB, launches, env.VALUE_RELAY, env.VALUE_IDENTITY),
+    calendar: new D1CalendarStore(env.DB),
+  };
 };
 
 const registrarOf = (env: LaunchEnv) => env.REGISTRAR.get(env.REGISTRAR.idFromName("registrar"));
@@ -63,3 +68,13 @@ const launchAppOf = (env: LaunchEnv, chainId?: string | null) => {
     },
   });
 };
+
+/** Private immutable game-to-slot metadata; player ownership is read from the ledger and shard. */
+export class ValueLaunchDirectory extends WorkerEntrypoint<Record<string, unknown>> {
+  override fetch() {
+    return new Response(null, { status: 404 });
+  }
+  rosterCohorts() {
+    return launchStoresOf(decodeLaunchEnv(this.env)).launches.rosterCohorts();
+  }
+}

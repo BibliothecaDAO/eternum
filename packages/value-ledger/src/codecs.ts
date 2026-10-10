@@ -234,7 +234,7 @@ export const decodeFrontierSeason = (fields: readonly string[]) => {
  * shield_price (2), mmr (7), day_unit, bags, claim_window, registration_limit.
  */
 export const decodeLedgerPreset = (fields: readonly string[]) => {
-  if (fields.length !== 21) throw new Error("invalid_ledger_preset");
+  if (fields.length !== 20) throw new Error("invalid_ledger_preset");
   return {
     entryFee: ledgerU256(fields[0]!, fields[1]!),
     protocolCut: ledgerInteger(fields[2]!),
@@ -246,6 +246,5 @@ export const decodeLedgerPreset = (fields: readonly string[]) => {
     dayUnit: ledgerInteger(fields[17]!),
     bags: ledgerInteger(fields[18]!),
     claimWindow: ledgerInteger(fields[19]!),
-    registrationLimit: ledgerInteger(fields[20]!),
   };
 };

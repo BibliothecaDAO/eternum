@@ -189,7 +189,6 @@ const setAsideOrDefer = (
 ) =>
   [
     "ledger_report_voided",
-    "ledger_withdrawal_exceeds_backing",
     "ledger_season_closed",
     "ledger_invalid_withdrawal",
     "ledger_report_mismatch",

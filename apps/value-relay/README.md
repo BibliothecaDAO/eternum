@@ -13,7 +13,7 @@ suppress these jobs.
 
 Frontier receipts are reported as debt before wallet lookup. Payments use identity's ready payout wallet at signing time
 and record that decision before broadcast. A new wallet waits 24 hours. Missing or held wallets remain queued; permanent
-refusals are recorded separately. Confirmed `withdrawal_voided` removes closed unpaid reports from retries, including
+refusals are recorded separately. A confirmed closed season with the claim unpaid removes it from retries, including
 accounts without wallets. A claim is keyed by its shard and withdrawal transaction hash.
 
 `POST /api/value/labor?chainId=<official shard>` accepts only a Realm in its body. Identity supplies the signed-in
@@ -25,19 +25,20 @@ payment authority, result commitments and shard conservation, and pauses on disa
 verification. Later wallet changes cannot rewrite an earlier payment decision. It never uses the relay's queue as proof
 and never unpauses the ledger.
 
-The ledger runtime settings are `LEDGER_RPC_URL`, `LEDGER_ADDRESS`, `LEDGER_OPERATOR_ADDRESS` and the
-`LEDGER_OPERATOR_PRIVATE_KEY` secret. Labor uses the Worker's `SHARD_LEDGER_OPERATOR_ADDRESS` and
-`SHARD_LEDGER_OPERATOR_PRIVATE_KEY` secret. These are signing identities, not a shard membership list. The monitor has
-its own `PAUSER_ACCOUNT_ADDRESS` and `PAUSER_PRIVATE_KEY`. All ledger jobs verify the identity environment's L2 chain.
-No signing key belongs on a shard host.
+The ledger address and chain come from `contracts/common/addresses/<network>.json` through the shared environment
+reader. The ledger runtime settings are the secret `LEDGER_RPC_URL`, `LEDGER_OPERATOR_ADDRESS` and the
+`LEDGER_OPERATOR_PRIVATE_KEY` secret. Labor uses the fixed relay bot account enrolled through
+`POST /api/value/operator/shard/enrol` and the `SHARD_LEDGER_OPERATOR_PRIVATE_KEY` secret. The operator route accepts
+only `{chainId,heraldUrl}` for an official shard, returns `{chainId,ledgerOperatorAccount}`, and shares the shard
+signing lock with labor grants. The monitor has its own `PAUSER_ACCOUNT_ADDRESS` and `PAUSER_PRIVATE_KEY`. All ledger
+jobs verify the identity environment's L2 chain. No signing key belongs on a shard host.
 
 ## Restored shard recovery
 
 `POST /api/value/operator/reset` requires the operator bearer token and `{chainId,row,reason}`. It walks down to a
-retained hash still matching the restored chain, checks that anchor again, drops queued rows above the fork and all
-legacy economic memos, records already-paid claims from discarded blocks, and replays from fork + 1. If no anchor
-survives, replay starts at genesis. A changed anchor refuses reset. The ledger's claim identity prevents a second
-payment.
+retained hash still matching the restored chain, checks that anchor again, drops queued rows above the fork, records
+already-paid claims from discarded blocks, and replays from fork + 1. If no anchor survives, replay starts at genesis. A
+changed anchor refuses reset. The ledger's claim identity prevents a second payment.
 
 `POST /api/operator/monitor/reset` requires `{row,reason}` and the operator token. It records the exact fault and
 advances past only that row. An availability reset retries its checkpoint. Neither reset unpauses the ledger.
@@ -51,6 +52,7 @@ pages; rankings are computed from the ledger at one confirmed head and are not p
 
 Blitz results carry ranks only. The ledger mints tradeable rank-band chests and owns their draws. Each keeper tick reads
 one 100-event page, persists its continuation and rotates through 25 unfinished requests. It calls `open_finish` once
-the later block is readable and recognizes an already-finished retry. The monitor reports requests overdue by five
-minutes after eligibility. Pending/overdue counts describe the checked page, with `checked` identifying its size; these
-warnings do not pause payouts.
+the later block is readable and recognizes an already-finished retry.
+
+A Frontier pool is funded with `season_id = shard game id`; the relay verifies that binding against the game start and
+seed.

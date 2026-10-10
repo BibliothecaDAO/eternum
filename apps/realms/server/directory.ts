@@ -1,4 +1,4 @@
-import { normalizeStarknetAddress, readGameEntry, type GameEntry } from "@realms-world/identity";
+import { normalizeStarknetAddress } from "@realms-world/identity";
 import { Effect } from "effect";
 import type { HeraldGameDirectory, HeraldGameDirectoryEntry, ShardManifest } from "@bibliothecadao/eternum/game-sync";
 
@@ -30,7 +30,7 @@ interface DirectoryDependencies {
 }
 
 interface LaunchDirectory {
-  chains: { chainId: string; games: { gameId: number; entry: GameEntry }[] }[];
+  chains: { chainId: string; games: { gameId: number; slotId: number | null }[] }[];
 }
 
 /**
@@ -117,13 +117,13 @@ const listShards = async (dependencies: DirectoryDependencies, player: string | 
 
 const isSettled = (game: HeraldGameDirectoryEntry) => game.status === "Settled";
 
-/** Only declared entry terms can make a game visible; missing launch evidence never becomes free. */
+/** Only completed launches make a game visible; paid games carry their slot number. */
 const playerGames = (listing: ShardListing, directory: LaunchDirectory | null) => {
   if (directory === null) return [];
   const records = directory.chains.find((row) => BigInt(row.chainId) === BigInt(listing.chainId))?.games ?? [];
   return (listing.games ?? []).flatMap((game) => {
     const declared = records.find((row) => row.gameId === game.game_id);
-    return declared ? [{ ...game, entry: readGameEntry(declared.entry) }] : [];
+    return declared ? [{ ...game, slotId: declared.slotId }] : [];
   });
 };
 
@@ -138,7 +138,10 @@ const readLaunchDirectoryRecords = async ({ readLaunchDirectory }: DirectoryDepe
           !isFelt(chainId) ||
           !Array.isArray(games) ||
           games.some(
-            ({ gameId, entry }) => !Number.isSafeInteger(gameId) || gameId <= 0 || !validEntry(entry, chainId, gameId),
+            ({ gameId, slotId }) =>
+              !Number.isSafeInteger(gameId) ||
+              gameId <= 0 ||
+              (slotId !== null && (!Number.isSafeInteger(slotId) || slotId <= 0)),
           ),
       )
     ) {
@@ -151,10 +154,6 @@ const readLaunchDirectoryRecords = async ({ readLaunchDirectory }: DirectoryDepe
   }
 };
 
-const validEntry = (value: unknown, chainId: string, gameId: number) => {
-  const entry = readGameEntry(value);
-  return entry.kind === "free" || (BigInt(entry.ledger.shard) === BigInt(chainId) && entry.ledger.gameId === gameId);
-};
 const isFelt = (value: string) => {
   try {
     return BigInt(value) >= 0n;

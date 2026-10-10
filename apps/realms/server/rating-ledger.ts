@@ -10,7 +10,7 @@ const FIELD_PRIME = (1n << 251n) + 17n * (1n << 192n) + 1n;
 /** A response names immutable chain state, rather than several reads of a height that might be reorganized. */
 export async function openRatingLedger(
   provider: RpcProvider,
-  env: Pick<IdentityEnv, "L2_CHAIN_ID" | "IDENTITY_RPC_URL" | "RATING_TOKEN_ADDRESS">,
+  env: Pick<IdentityEnv, "ENVIRONMENT" | "IDENTITY_RPC_URL" | "RATING_TOKEN_ADDRESS">,
   blockHash?: string,
 ) {
   const signal = AbortSignal.timeout(10_000);

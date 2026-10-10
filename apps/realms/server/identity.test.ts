@@ -1,3 +1,4 @@
+import { environmentL2 } from "@realms-world/chain";
 import { readdirSync, readFileSync, mkdtempSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -13,7 +14,6 @@ import { deliverWalletNotices } from "./wallet-changes";
 import { createIdentityAuth } from "./auth";
 import { WalletNotDeployedError, type VerifyWalletSignature } from "./wallet-signature";
 import type { IdentityEnv } from "./env";
-import { consumeChallengeAttempt } from "./challenge-attempts";
 import { realmsIdOf } from "./realms-id";
 import { routeIdentityRequest } from "./routes";
 import { ORIGIN } from "./workerd-harness";
@@ -29,7 +29,7 @@ const OPERATOR_TOKEN = "operator-test-token";
 /** The Heralds this test's shards answer from, by URL; a missing entry answers 503. */
 const heralds = new Map<string, unknown>();
 let launchDirectory: {
-  chains: { chainId: string; games: { gameId: number; entry: import("@realms-world/identity").GameEntry }[] }[];
+  chains: { chainId: string; games: { gameId: number; slotId: number | null }[] }[];
 } = { chains: [] };
 const fetchShard = (async (input: RequestInfo | URL) => {
   const body = heralds.get(new URL(input instanceof Request ? input.url : input).href);
@@ -97,7 +97,6 @@ beforeAll(async () => {
     ACCOUNT_CLASS_HASH,
     BETTER_AUTH_SECRET: "identity-test-secret-identity-test-secret",
     RATING_READER: {} as IdentityEnv["RATING_READER"],
-    L2_CHAIN_ID: "SN_SEPOLIA",
     REALMS_ADDRESS: "0x30",
     RATING_TOKEN_ADDRESS: "0x31",
     RATING_HISTORY_URL: "https://realms.world/api/ratings/population",
@@ -194,7 +193,7 @@ const proveWallet = async (
   browser: ReturnType<typeof createBrowser>,
   address: string,
   path: "link",
-  chainId = env.L2_CHAIN_ID,
+  chainId = environmentL2(env.ENVIRONMENT).chain,
 ) => {
   const { nonce, realmsId } = (await (await browser.request("/api/auth/siws/nonce", { body: { address } })).json()) as {
     nonce: string;
@@ -225,11 +224,11 @@ const proveWallet = async (
 /** A fresh code for a wallet change; each helper models a new code-send window. */
 const walletCode = async (browser: ReturnType<typeof createBrowser>) => {
   const email = (await browser.session())!.user.email;
-  codesRequested.delete(`wallet:${email}`);
+  codesRequested.delete(email);
   expect(
     (
       await browser.request("/api/auth/email-otp/send-verification-otp", {
-        body: { email, type: "email-verification" },
+        body: { email, type: "sign-in" },
       })
     ).status,
   ).toBe(200);
@@ -387,7 +386,7 @@ describe("identity Worker", () => {
   it("cannot lock out sign-in or wallet recovery with malformed guesses naming a victim", async () => {
     const stranger = createBrowser();
     const email = "daily-budget@realms.test";
-    for (let attempt = 0; attempt < 30; attempt++)
+    for (let attempt = 0; attempt < 31; attempt++)
       await stranger.request("/api/auth/sign-in/email-otp", { body: { email, otp: "wrong" } });
     const player = createBrowser();
     expect((await signInWithCode(player, email)).status).toBe(200);
@@ -395,54 +394,6 @@ describe("identity Worker", () => {
       200,
     );
   }, 30_000);
-  it("counts concurrent guesses atomically against a live challenge and resets only with a new challenge", async () => {
-    const identifier = "sign-in-otp-atomic@realms.test";
-    const context = await auth.$context;
-    await context.internalAdapter.createVerificationValue({
-      identifier,
-      value: "hash:0",
-      expiresAt: new Date(Date.now() + 300000),
-    });
-    const accepted = await Promise.all(Array.from({ length: 20 }, () => consumeChallengeAttempt(env.DB, identifier)));
-    expect(accepted.filter(Boolean)).toHaveLength(3);
-    await context.internalAdapter.deleteVerificationByIdentifier(identifier);
-    expect(await consumeChallengeAttempt(env.DB, identifier)).toBe(false);
-    await context.internalAdapter.createVerificationValue({
-      identifier,
-      value: "newhash:0",
-      expiresAt: new Date(Date.now() + 300000),
-    });
-    expect(await consumeChallengeAttempt(env.DB, identifier)).toBe(true);
-  });
-
-  it("keeps wallet revocation independent of exhausted sign-in guesses and refuses another email", async () => {
-    const player = createBrowser();
-    const email = "separate-wallet@realms.test";
-    expect((await signInWithCode(player, email)).status).toBe(200);
-    codesRequested.delete(email);
-    await player.request("/api/auth/email-otp/send-verification-otp", { body: { email, type: "sign-in" } });
-    const wrong = sentCodes.get(email) === "000000" ? "111111" : "000000";
-    for (let index = 0; index < 3; index++)
-      await player.request("/api/auth/sign-in/email-otp", { body: { email, otp: wrong } });
-    expect((await player.request("/api/auth/siws/unlink", { body: { otp: await walletCode(player) } })).status).toBe(
-      200,
-    );
-    expect(
-      (
-        await createBrowser().request("/api/auth/email-otp/send-verification-otp", {
-          body: { email, type: "email-verification" },
-        })
-      ).status,
-    ).toBe(401);
-    expect(
-      (
-        await player.request("/api/auth/email-otp/send-verification-otp", {
-          body: { email: "another@realms.test", type: "email-verification" },
-        })
-      ).status,
-    ).toBe(401);
-  });
-
   it("creates an account on a Discord user's first sign-in, and signs the same account in after", async () => {
     const discord = fakeDiscord();
     try {
@@ -767,10 +718,10 @@ describe("identity Worker", () => {
       game_id: gameId,
       name,
       status: "Running",
-      entry: { kind: "free" },
+      slotId: null,
     });
     launchDirectory = {
-      chains: [{ chainId: "0xa", games: [1, 3].map((gameId) => ({ gameId, entry: { kind: "free" as const } })) }],
+      chains: [{ chainId: "0xa", games: [1, 3].map((gameId) => ({ gameId, slotId: null })) }],
     };
     heralds.set("https://shard-a.test/manifest", shardManifest("0xa"));
     heralds.set("https://shard-a.test/games", {
@@ -818,7 +769,7 @@ describe("identity Worker", () => {
     heralds.set("https://shard-b.test/games", { chain: "0xb", games: [game(1, "blitz-b")] });
     launchDirectory.chains.push({
       chainId: "0xb",
-      games: [1].map((gameId) => ({ gameId, entry: { kind: "free" as const } })),
+      games: [1].map((gameId) => ({ gameId, slotId: null })),
     });
     const listed = [
       {
@@ -858,7 +809,7 @@ describe("identity Worker", () => {
     const settled = (gameId: number, name: string, endAt: number) => ({
       ...game(gameId, name),
       status: "Settled",
-      entry: { kind: "free" },
+      slotId: null,
       clock: { end_at: endAt },
     });
     const live = { ...game(1, "blitz-d"), clock: { end_at: 900 } };
@@ -878,8 +829,8 @@ describe("identity Worker", () => {
       );
     }
     launchDirectory.chains.push(
-      { chainId: "0xd", games: [1, 2].map((gameId) => ({ gameId, entry: { kind: "free" as const } })) },
-      { chainId: "0xe", games: [1, 2].map((gameId) => ({ gameId, entry: { kind: "free" as const } })) },
+      { chainId: "0xd", games: [1, 2].map((gameId) => ({ gameId, slotId: null })) },
+      { chainId: "0xe", games: [1, 2].map((gameId) => ({ gameId, slotId: null })) },
     );
     expect(await list()).toEqual([
       ...listed,
@@ -942,7 +893,7 @@ describe("identity Worker", () => {
     expect(await relisted.json()).toEqual({ url: "https://shard-e.test", chainId: "0xee", status: "active" });
     launchDirectory.chains.push({
       chainId: "0xee",
-      games: [1].map((gameId) => ({ gameId, entry: { kind: "free" as const } })),
+      games: [1].map((gameId) => ({ gameId, slotId: null })),
     });
     expect((await list()).at(-1)).toEqual({
       url: "https://shard-e.test",
@@ -1078,7 +1029,7 @@ describe("identity Worker", () => {
     expect((await browser.request("/api/auth/siws/unlink", { body: { otp } })).status).toBe(400);
     const expired = await walletCode(browser);
     await env.DB.prepare("UPDATE verification SET expiresAt = ? WHERE identifier = ?")
-      .bind(new Date(Date.now() - 1000).toISOString(), "email-verification-otp-wallet-factor@realms.test")
+      .bind(new Date(Date.now() - 1000).toISOString(), "sign-in-otp-wallet-factor@realms.test")
       .run();
     expect((await browser.request("/api/auth/siws/unlink", { body: { otp: expired } })).status).toBe(400);
   });
@@ -1104,7 +1055,7 @@ describe("identity Worker", () => {
     };
     const message = buildSiwsMessage({
       address,
-      chainId: env.L2_CHAIN_ID,
+      chainId: environmentL2(env.ENVIRONMENT).chain,
       domain: new URL(ORIGIN).host,
       nonce,
       uri: ORIGIN,

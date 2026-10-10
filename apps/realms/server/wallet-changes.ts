@@ -2,8 +2,6 @@ import type { AuthContext, User } from "better-auth";
 import { APIError } from "better-auth/api";
 import { Effect } from "effect";
 
-import { consumeChallengeAttempt } from "./challenge-attempts";
-
 interface WalletChangeServices {
   db: D1Database;
   checkCode(context: AuthContext, email: string, otp: string): Promise<unknown>;
@@ -21,15 +19,8 @@ export const changeWallet = (
   Effect.runPromise(
     Effect.gen(function* () {
       if (!user.emailVerified) return yield* Effect.fail(new APIError("FORBIDDEN", { message: "email_not_verified" }));
-      if (
-        !(yield* Effect.promise(() =>
-          consumeChallengeAttempt(services.db, `email-verification-otp-${user.email.toLowerCase()}`),
-        ))
-      ) {
-        return yield* Effect.fail(new APIError("BAD_REQUEST", { message: "INVALID_OTP" }));
-      }
       const verification = yield* Effect.promise(() =>
-        context.internalAdapter.findVerificationValue(`email-verification-otp-${user.email.toLowerCase()}`),
+        context.internalAdapter.findVerificationValue(`sign-in-otp-${user.email.toLowerCase()}`),
       );
       if (!verification) return yield* Effect.fail(new APIError("BAD_REQUEST", { message: "INVALID_OTP" }));
       yield* Effect.tryPromise({ try: () => services.checkCode(context, user.email, otp), catch: (error) => error });

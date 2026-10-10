@@ -1,3 +1,4 @@
+import { registrationRealmsId } from "./registration-identity";
 import { registeredShards } from "./directory";
 import { recordPayDecision, matchesPayDecision } from "./pay-decisions";
 import { createIdentityAuth } from "./auth";
@@ -35,6 +36,12 @@ export class ValueIdentity extends WorkerEntrypoint<IdentityEnv> {
     return matchesPayDecision(this.env.DB, decision);
   }
 
+  async accountAtRegistration(wallet: string, registeredAt: number) {
+    const realmsId = await registrationRealmsId(this.env.DB, wallet, registeredAt);
+    return realmsId
+      ? realmsAccountAddress(realmsId, this.env.ACCOUNT_CLASS_HASH, await this.env.GUARDIAN.publicKey())
+      : null;
+  }
   async linkedWallet(realmsId: string) {
     return (await readLinkedWallet(this.env.DB, realmsId))?.address ?? null;
   }

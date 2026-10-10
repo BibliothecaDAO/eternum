@@ -1,9 +1,11 @@
+vi.mock("./environment", () => ({ ledgerAddress: () => "0x10" }));
 import { Effect } from "effect";
 import { beforeEach, expect, it, vi } from "vitest";
 import { ValueMonitor } from "./monitor-worker";
 
 const calls = vi.hoisted(() => ({ pause: vi.fn(), season: vi.fn() }));
 vi.mock("cloudflare:workers", () => ({
+  WorkerEntrypoint: class {},
   DurableObject: class {
     constructor(
       public ctx: unknown,
@@ -22,11 +24,6 @@ vi.mock("./ledger", () => ({
     postedResults: () => Effect.succeed({ rows: [], head: 1, next: null }),
   }),
 }));
-vi.mock("./chests", () => ({
-  DurableChestStore: class {},
-  overdueChestRequests: () => Effect.succeed({ pending: 0, overdue: [] }),
-}));
-
 beforeEach(() => {
   vi.clearAllMocks();
   calls.pause.mockReturnValue(Effect.void);
@@ -44,7 +41,8 @@ const monitor = () => {
     } as unknown as DurableObjectState,
     {
       LEDGER_RPC_URL: "https://ledger.test",
-      LEDGER_ADDRESS: "0x10",
+      ENVIRONMENT: "staging",
+      LAUNCH: { rosterCohorts: async () => [] },
       IDENTITY: { shards: async () => [] },
       RELAY_REPORT: { held: async () => [] },
     } as never,

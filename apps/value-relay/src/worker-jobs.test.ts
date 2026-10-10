@@ -1,3 +1,4 @@
+vi.mock("./environment", () => ({ ledgerAddress: () => "0x10" }));
 import { Effect } from "effect";
 import { expect, it, vi } from "vitest";
 import { ValueRelay } from "./worker";

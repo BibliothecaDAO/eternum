@@ -7,7 +7,7 @@ import { LaunchExecutor } from "./executor";
 import { processNextLaunch } from "./process-launch";
 import { GameNotEnded } from "./results";
 import { D1LaunchStore, databaseLayer } from "./store";
-import { createLaunchTestDatabase, TEST_CHAIN, testChain } from "./test-database";
+import { createLaunchTestDatabase, testChain } from "./test-database";
 
 let database: Awaited<ReturnType<typeof createLaunchTestDatabase>>;
 let store: D1LaunchStore;
@@ -30,10 +30,7 @@ test("terminal launch failures retry refund cleanup at the ledger boundary witho
     Effect.fail(new LaunchExecutionFailure({ runId: "failed", cause: new Error("cannot seat") })),
   );
   const refund = vi.fn().mockReturnValueOnce(Effect.succeed(60)).mockReturnValue(Effect.succeed(null));
-  const services = Layer.mergeAll(
-    databaseLayer(store),
-    Layer.succeed(LaunchExecutor, { execute, refund, deadline: () => Effect.succeed(0) }),
-  );
+  const services = Layer.mergeAll(databaseLayer(store), Layer.succeed(LaunchExecutor, { execute, refund }));
   for (let index = 0; index < 3; index++)
     await Effect.runPromise(processNextLaunch(Date.now() + 1000000).pipe(Effect.provide(services)));
   expect((await store.find("game", "madara.blitz", "failed-paid-game"))?.status).toBe("queued");
@@ -50,7 +47,6 @@ describe("the registrar's launch step", () => {
     const failing = Layer.mergeAll(
       databaseLayer(store),
       Layer.succeed(LaunchExecutor, {
-        deadline: () => Effect.succeed(0),
         refund: () => Effect.succeed(null),
         execute: (run) => Effect.fail(new LaunchExecutionFailure({ runId: run.id, cause: new Error("rpc down") })),
       }),
@@ -79,7 +75,6 @@ describe("the registrar's launch step", () => {
       const failing = Layer.mergeAll(
         databaseLayer(store),
         Layer.succeed(LaunchExecutor, {
-          deadline: () => Effect.succeed(0),
           refund: () => Effect.succeed(null),
           execute: (run) => Effect.fail(new LaunchExecutionFailure({ runId: run.id, cause })),
         }),
@@ -96,7 +91,6 @@ describe("the registrar's launch step", () => {
     const services = Layer.mergeAll(
       databaseLayer(store),
       Layer.succeed(LaunchExecutor, {
-        deadline: () => Effect.succeed(0),
         refund: () => Effect.succeed(null),
         execute: (run) => Effect.fail(new LaunchExecutionFailure({ runId: run.id, cause: new GameNotEnded(90) })),
       }),
@@ -114,7 +108,6 @@ describe("the registrar's launch step", () => {
     const services = Layer.mergeAll(
       databaseLayer(store),
       Layer.succeed(LaunchExecutor, {
-        deadline: () => Effect.succeed(0),
         refund: () => Effect.succeed(null),
         execute: (run) =>
           Effect.fail(
@@ -131,7 +124,6 @@ describe("the registrar's launch step", () => {
   test("completes a started launch through the injected executor and store", async () => {
     await store.enqueue("game", request);
     const executor = {
-      deadline: () => Effect.succeed(0),
       refund: () => Effect.succeed(null),
       execute: () =>
         Effect.succeed({
@@ -171,7 +163,6 @@ test("three interrupted attempts fail before execution and release the queue", a
   const services = Layer.mergeAll(
     databaseLayer(store),
     Layer.succeed(LaunchExecutor, {
-      deadline: () => Effect.succeed(0),
       refund: () => Effect.succeed(null),
       execute: (run) => {
         executions++;
@@ -191,10 +182,7 @@ test("a played game's result retries past three failures and never calls refund 
     Effect.fail(new LaunchExecutionFailure({ runId: "played", cause: new Error("result RPC unavailable") })),
   );
   const refund = vi.fn(() => Effect.succeed(null));
-  const services = Layer.mergeAll(
-    databaseLayer(store),
-    Layer.succeed(LaunchExecutor, { execute, refund, deadline: () => Effect.succeed(0) }),
-  );
+  const services = Layer.mergeAll(databaseLayer(store), Layer.succeed(LaunchExecutor, { execute, refund }));
   for (let attempt = 0; attempt < 4; attempt++)
     await Effect.runPromise(processNextLaunch(Date.now() + 1000000).pipe(Effect.provide(services)));
   expect(refund).not.toHaveBeenCalled();
@@ -202,8 +190,8 @@ test("a played game's result retries past three failures and never calls refund 
   expect((await store.find("result", "madara.blitz", "played-result-recovery"))?.status).toBe("queued");
 });
 
-test("paid runs survive four transient failures and deadline outages, then refund at the ledger end", async () => {
-  await store.enqueue("game", { ...request, gameName: "paid-transient" });
+test("paid runs keep retrying transient failures beyond the ordinary attempt limit", async () => {
+  await store.enqueue("game", { ...request, gameName: "paid-transient", slotId: 7, groupIndex: 0 });
   await store.saveGame({
     environment: "madara.blitz",
     chain: "madara",
@@ -217,27 +205,18 @@ test("paid runs survive four transient failures and deadline outages, then refun
     configSteps: [],
     dryRun: false,
   });
-  await store.saveEntry("madara.blitz", "paid-transient", {
-    kind: "paid",
-    ledger: { address: "0x10", chainId: "0x2", shard: TEST_CHAIN, gameId: 7 },
-  });
   const execute = vi.fn(() =>
     Effect.fail(new LaunchExecutionFailure({ runId: "paid", cause: new Error("Herald temporarily down") })),
   );
   const refund = vi.fn(() => Effect.succeed(null));
-  const deadline = vi.fn(() => Effect.succeed(60));
-  const services = Layer.mergeAll(databaseLayer(store), Layer.succeed(LaunchExecutor, { execute, refund, deadline }));
+  const services = Layer.mergeAll(databaseLayer(store), Layer.succeed(LaunchExecutor, { execute, refund }));
   for (let index = 0; index < 4; index++)
     await Effect.runPromise(processNextLaunch(Date.now() + 1000000).pipe(Effect.provide(services)));
   expect(execute).toHaveBeenCalledTimes(4);
   expect(refund).not.toHaveBeenCalled();
-  deadline.mockReturnValueOnce(
-    Effect.fail(new LaunchExecutionFailure({ runId: "paid", cause: new Error("RPC down") })) as never,
-  );
-  await Effect.runPromise(processNextLaunch(Date.now() + 1000000).pipe(Effect.provide(services)));
+  for (let index = 0; index < 6; index++)
+    await Effect.runPromise(processNextLaunch(Date.now() + 1000000).pipe(Effect.provide(services)));
+  expect(execute).toHaveBeenCalledTimes(10);
   expect(refund).not.toHaveBeenCalled();
-  deadline.mockReturnValue(Effect.succeed(0));
-  await Effect.runPromise(processNextLaunch(Date.now() + 1000000).pipe(Effect.provide(services)));
-  expect(refund).toHaveBeenCalledOnce();
-  expect((await store.find("game", "madara.blitz", "paid-transient"))?.status).toBe("failed");
+  expect((await store.find("game", "madara.blitz", "paid-transient"))?.status).toBe("queued");
 });

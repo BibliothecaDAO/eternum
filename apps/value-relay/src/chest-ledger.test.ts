@@ -79,10 +79,3 @@ it("decodes both lifecycle events from the durable completed-block boundary", as
     to_block: { block_number: 111 },
   });
 });
-
-it("reads the eligibility time from exactly the requested confirmed block", async () => {
-  rpc.block.mockResolvedValue({ block_number: 111, block_hash: "0xa", status: "ACCEPTED_ON_L2", timestamp: 699 });
-  expect(await Effect.runPromise(chestLedgerReads(connection).blockTime(111))).toBe(699);
-  rpc.block.mockResolvedValue({ block_number: 112, timestamp: 699 });
-  await expect(Effect.runPromise(chestLedgerReads(connection).blockTime(111))).rejects.toThrow();
-});

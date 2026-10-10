@@ -33,7 +33,6 @@ const fixture = (count = 3) => {
     challenge: vi.fn(async () => {
       season.challenged = true;
     }),
-    game: async () => ({ id: 1, terminal: true }),
     head: async () => ({ number: 100, hash: "0xa", time: 101 }),
     blockHash: async () => "0xa",
     changes: vi.fn(async (_from, cursor) => {
@@ -123,24 +122,6 @@ it("posts the complete top from 2,000 participants in one transaction without re
   expect([...f.data.keys()].some((key) => key.startsWith("season:score:") || key.startsWith("season:top:"))).toBe(
     false,
   );
-});
-it("waits for every opened game rather than omitting a delayed result", async () => {
-  const f = fixture();
-  let finished = false;
-  const changes = f.ports.changes;
-  f.ports.changes = async (from, cursor, head) => {
-    const page = await changes(from, cursor, head);
-    return {
-      ...page,
-      rows: [...page.rows, { kind: "game" as const, id: 1, key: { chainId: "0x1", gameId: 7 }, terminal: false }],
-    };
-  };
-  f.ports.game = async () => ({ id: 1, terminal: finished });
-  for (let index = 0; index < 3; index++) await f.tick("post");
-  expect(f.ports.post).not.toHaveBeenCalled();
-  finished = true;
-  await f.tick("post");
-  expect(f.ports.post).toHaveBeenCalledOnce();
 });
 it("rejects incomplete population and a changed source head", async () => {
   const f = fixture();

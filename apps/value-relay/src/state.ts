@@ -173,8 +173,6 @@ export class DurableRelayStore implements RelayStore {
           (value) => obligationBlock(value) === undefined || obligationBlock(value)! >= start,
         );
       }
-      for (const prefix of ["funding:", "discover:", "conservation:final:"])
-        await deleteStoredRows(tx, prefix, () => true);
       await deleteStoredRows(tx, "queue-block:", (value) => Number(value) >= start);
       await deleteStoredRows(tx, "block:", (_value, key) => Number(key.slice(6)) >= start);
       const sequence = ((await tx.get<number>("reset:sequence")) ?? 0) + 1;

@@ -124,6 +124,7 @@ export class LauncherDeployment {
   }
   private async prepareCheck(native: LaunchShard, input: Check): Promise<Creation> {
     const preset = nativePresetForId(input.presetId);
+    if (preset.gameType === "blitz") throw new Error("launcher_check_requires_open_entry_preset");
     const head = await native.head();
     return buildCheckCreation(input, preset, head);
   }
@@ -207,7 +208,6 @@ const buildCheckCreation = (
       gameName: input.name,
       version: String(input.presetId),
       gameStartTime: new Date(start * 1000).toISOString(),
-      rosterAccounts: [],
       devModeOn: false,
     },
   };

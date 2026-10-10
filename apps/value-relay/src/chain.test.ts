@@ -173,7 +173,7 @@ it("sets aside a first report that permanently missed the ledger claim window", 
   ).rejects.toMatchObject({ operation: "ledger_claim_window_ended" });
 });
 
-it("reads voided debt at a confirmed head and refuses a malformed flag", async () => {
+it("derives voided debt from an unpaid report and its confirmed closed pool", async () => {
   const row = {
     chainId: "0x1",
     seasonId: 7,
@@ -182,16 +182,23 @@ it("reads voided debt at a confirmed head and refuses a malformed flag", async (
     amount: "17",
     confirmedAt: 1000,
   };
-  rpc.call.mockResolvedValue(["1"]);
-  expect(await Effect.runPromise(ledgerWithdrawalVoided(credentials.rpcUrl, credentials.contractAddress)(row))).toBe(
-    true,
+  let paid = false;
+  let closed = true;
+  rpc.call.mockImplementation(async (call) =>
+    call.entrypoint === "get_payment"
+      ? [paid ? "1" : "0", "7", paid ? "0x123" : "0", "17", "0"]
+      : ["1", "10", "20", "100", "0", "0", "0", closed ? "1" : "0", "5", "9"],
   );
+  const read = () => Effect.runPromise(ledgerWithdrawalVoided(credentials.rpcUrl, credentials.contractAddress)(row));
+  expect(await read()).toBe(true);
   expect(rpc.call).toHaveBeenCalledWith(
-    { contractAddress: "0x10", entrypoint: "withdrawal_voided", calldata: ["0x1", "0xdef"] },
+    { contractAddress: "0x10", entrypoint: "get_frontier", calldata: ["0x1", "7"] },
     10,
   );
-  rpc.call.mockResolvedValue(["2"]);
-  await expect(
-    Effect.runPromise(ledgerWithdrawalVoided(credentials.rpcUrl, credentials.contractAddress)(row)),
-  ).rejects.toThrow();
+  expect(rpc.call.mock.calls.every((call) => call[1] === 10)).toBe(true);
+  closed = false;
+  expect(await read()).toBe(false);
+  paid = true;
+  closed = true;
+  expect(await read()).toBe(false);
 });

@@ -99,29 +99,3 @@ const finishReadyChest = (ports: ChestPorts, store: ChestStore, request: ChestRe
     yield* relayOperation("complete chest request", () => store.complete(request.tokenId));
     return { finished: chest.finished ? 0 : 1, pending: 0 };
   });
-
-/** Warn after five minutes of eligibility; immature requests do not create an overdue alarm. */
-export const overdueChestRequests = (
-  ports: Omit<ChestPorts, "finish">,
-  store: ChestStore,
-  now = Math.floor(Date.now() / 1000),
-) =>
-  Effect.gen(function* () {
-    yield* observeRequests(ports, store);
-    const head = yield* ports.head();
-    const pending = yield* relayOperation("read pending chests", () => store.pending());
-    const overdue: string[] = [];
-    let outstanding = pending.length;
-    for (const request of pending) {
-      const chest = yield* ports.chest(request.tokenId);
-      if (chest.finished) {
-        yield* relayOperation("complete observed chest", () => store.complete(request.tokenId));
-        outstanding--;
-        continue;
-      }
-      if (head < request.requestBlock + 11) continue;
-      const eligibleAt = yield* ports.blockTime(request.requestBlock + 11);
-      if (now - eligibleAt > 300) overdue.push(request.tokenId);
-    }
-    return { overdue, pending: outstanding, checked: pending.length };
-  });

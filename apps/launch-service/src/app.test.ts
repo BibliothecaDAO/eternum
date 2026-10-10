@@ -1,3 +1,4 @@
+import { slotValueFixture, registrationIdentityFixture } from "./test-database";
 import { Effect } from "effect";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { createLaunchApp } from "./app";
@@ -24,7 +25,6 @@ const signedOut: IdentityResolver = { resolve: () => Effect.succeed(null) };
 
 let database: Awaited<ReturnType<typeof createLaunchTestDatabase>>;
 beforeEach(async () => {
-  vi.spyOn(D1LaunchStore.prototype, "entryForSlot").mockResolvedValue({ kind: "free" });
   database = await createLaunchTestDatabase();
 });
 afterEach(async () => {
@@ -34,7 +34,12 @@ afterEach(async () => {
 
 const createApp = (
   resolver: IdentityResolver,
-  slots = new D1SlotStore(database.db, new D1LaunchStore(database.db, testChain())),
+  slots = new D1SlotStore(
+    database.db,
+    new D1LaunchStore(database.db, testChain()),
+    slotValueFixture(1),
+    registrationIdentityFixture,
+  ),
 ) => {
   const store = new D1LaunchStore(database.db, testChain());
   const calendar = new D1CalendarStore(database.db);
@@ -65,7 +70,7 @@ const createApp = (
 
 test("the removed free registration route returns404 even for a signed-in player", async () => {
   const { app, slots } = createApp(signedIn());
-  await slots.create("friday", new Date(Date.now() + 60000).toISOString());
+  await slots.create("friday", new Date(Math.floor(Date.now() / 1000) * 1000 + 60000).toISOString());
   expect(
     (
       await app.request(
@@ -111,7 +116,7 @@ describe("launcher rosters and off-timetable slots", () => {
       },
       body: JSON.stringify(body),
     });
-  const soon = () => new Date(Date.now() + 60_000).toISOString();
+  const soon = () => new Date(Math.floor(Date.now() / 1000) * 1000 + 60_000).toISOString();
 
   test("a launcher creates a slot with an immutable closing time", async () => {
     const { app } = createApp(signedIn(ALLOWED_ADDRESS));
@@ -171,7 +176,7 @@ describe("launcher rosters and off-timetable slots", () => {
       dryRun: false,
     });
 
-    const closeAt = new Date(now + 60_000).toISOString();
+    const closeAt = new Date(Math.floor(now / 1000) * 1000 + 60_000).toISOString();
     await slots.create("directory-blitz", closeAt);
     await database.db
       .prepare("UPDATE playtest_slots SET closes_at = ?")
@@ -197,7 +202,15 @@ describe("launcher rosters and off-timetable slots", () => {
     const directory = await app.request("https://play.realms.party/api/factory/directory-games");
     expect(directory.status).toBe(200);
     expect(await directory.json()).toEqual({
-      chains: [{ chainId: frontier.chainId, games: [11, 12].map((gameId) => ({ gameId, entry: { kind: "free" } })) }],
+      chains: [
+        {
+          chainId: frontier.chainId,
+          games: [
+            { gameId: 11, slotId: null },
+            { gameId: 12, slotId: (await slots.get("directory-blitz")).slotId },
+          ],
+        },
+      ],
     });
   });
 
@@ -227,7 +240,7 @@ const launchRequest = () =>
       cookie: "better-auth.session_token=valid",
       origin: ALLOWED_ORIGIN,
     },
-    body: JSON.stringify({ environment: "madara.blitz", gameName: "bltz-effect-test" }),
+    body: JSON.stringify({ environment: "madara.frontier", gameName: "bltz-effect-test" }),
   });
 
 describe("launch service authorization", () => {
@@ -304,7 +317,7 @@ describe("launch service authorization", () => {
     const created = await app.request(launchRequest());
     expect(created.status).toBe(202);
     expect(await created.json()).toMatchObject({
-      environment: "madara.blitz",
+      environment: "madara.frontier",
       gameName: "bltz-effect-test",
       // A queued run reads as queued, with when it is due, never as running.
       status: "queued",
@@ -313,7 +326,7 @@ describe("launch service authorization", () => {
       workflow: { workflowName: "box-native" },
     });
 
-    const listed = await app.request("https://play.realms.party/api/factory/runs?environment=madara.blitz");
+    const listed = await app.request("https://play.realms.party/api/factory/runs?environment=madara.frontier");
     expect(listed.status).toBe(200);
     expect(await listed.json()).toMatchObject({ runs: [{ gameName: "bltz-effect-test" }] });
   });
@@ -343,14 +356,14 @@ describe("launch service authorization", () => {
     request.headers.set("content-type", "application/json");
     const realGame = new Request(request, {
       body: JSON.stringify({
-        environment: "madara.blitz",
+        environment: "madara.frontier",
         gameName: "bltz-real-game",
         devModeOn: false,
       }),
     });
 
     expect((await app.request(realGame)).status).toBe(202);
-    const run = await store.find("game", "madara.blitz", "bltz-real-game");
+    const run = await store.find("game", "madara.frontier", "bltz-real-game");
     expect(run && "devModeOn" in run.request ? run.request.devModeOn : undefined).toBe(false);
   });
 
@@ -437,7 +450,10 @@ test("a public slot cannot queue a game under the deployment check prefix", asyn
     new Request(ALLOWED_ORIGIN + "/api/slots", {
       method: "POST",
       headers: { authorization: "Bearer " + OPERATOR_TOKEN, "content-type": "application/json" },
-      body: JSON.stringify({ name: "check-hidden", closesAt: new Date(Date.now() + 60000).toISOString() }),
+      body: JSON.stringify({
+        name: "check-hidden",
+        closesAt: new Date(Math.floor(Date.now() / 1000) * 1000 + 60000).toISOString(),
+      }),
     }),
   );
   expect(response.status).toBe(400);
@@ -450,9 +466,21 @@ test("refuses a slot whose derived run name is reserved before inserting any row
     new Request(ALLOWED_ORIGIN + "/api/slots", {
       method: "POST",
       headers: { authorization: "Bearer " + OPERATOR_TOKEN, "content-type": "application/json" },
-      body: JSON.stringify({ name: "check", closesAt: new Date(Date.now() + 60000).toISOString() }),
+      body: JSON.stringify({
+        name: "check",
+        closesAt: new Date(Math.floor(Date.now() / 1000) * 1000 + 60000).toISOString(),
+      }),
     }),
   );
   expect(response.status).toBe(400);
   expect((await database.db.prepare("SELECT COUNT(*) AS n FROM playtest_slots").first<{ n: number }>())!.n).toBe(0);
+});
+
+test("direct Blitz creation points launchers to ordinary paid slots", async () => {
+  const { app, store } = createApp(signedIn(ALLOWED_ADDRESS));
+  const response = await app.request(
+    new Request(launchRequest(), { body: JSON.stringify({ environment: "madara.blitz", gameName: "paid-only" }) }),
+  );
+  expect(response.status).toBe(400);
+  expect(await store.list("madara.blitz")).toEqual([]);
 });

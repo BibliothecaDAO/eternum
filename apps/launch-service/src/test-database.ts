@@ -28,7 +28,7 @@ export const testChain =
   async () =>
     chainId;
 
-/** Older free-game fixtures declare their terms explicitly, before their completion. */
+/** Save and complete a game fixture through the same durable summary path. */
 export const completeFreeFixture = async (
   store: import("./store").D1LaunchStore,
   runId: string,
@@ -36,7 +36,23 @@ export const completeFreeFixture = async (
 ) => {
   if ("startTime" in summary) {
     await store.saveGame(summary);
-    await store.saveEntry(summary.environment, summary.gameName, { kind: "free" });
   }
   await store.complete(runId, summary);
+};
+
+export const slotValueFixture = (count = 0) => ({
+  openSlot: async () => {},
+  refundSlot: async () => null,
+  markRefundable: async () => {},
+  registrations: async () => ({
+    slot: { seasonId: 1, presetId: 1, close: 100, end: 160, pool: "0", registeredCount: count, cancelled: false },
+    blockNumber: 10,
+    blockHash: "0xabc",
+    secondsUntilClose: 0,
+    next: null,
+    registrations: Array.from({ length: count }, (_, i) => ({ wallet: `0x${(i + 1).toString(16)}`, registeredAt: 90 })),
+  }),
+});
+export const registrationIdentityFixture = {
+  accountAtRegistration: async (wallet: string) => `0x${(BigInt(wallet) + 100n).toString(16)}`,
 };

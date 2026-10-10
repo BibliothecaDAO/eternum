@@ -1,6 +1,6 @@
 import { RecordedSigner } from "./recorded-signer";
 import type { LedgerPayDecision } from "@realms-world/identity";
-import { rpcAt, readConfirmedLedgerHead, ledgerBool } from "@realms-world/value-ledger";
+import { rpcAt, readConfirmedLedgerHead, decodeFrontierSeason } from "@realms-world/value-ledger";
 import { Account } from "starknet";
 import type { RelayPorts, Withdrawal, RelayEffect } from "./ports";
 import { frontierPayment } from "./adapters";
@@ -15,7 +15,7 @@ interface LedgerCredentials {
 }
 
 export const ledgerPaymentRead =
-  (rpcUrl: string, address: string): RelayPorts["ledger"]["payment"] =>
+  (rpcUrl: string, address: string, head: number | "latest" = "latest"): RelayPorts["ledger"]["payment"] =>
   (withdrawal) =>
     relayOperation("read withdrawal report", async () => {
       const fields = await rpcAt(rpcUrl).callContract(
@@ -24,7 +24,7 @@ export const ledgerPaymentRead =
           entrypoint: "get_payment",
           calldata: [withdrawal.chainId, withdrawal.transactionHash],
         },
-        "latest",
+        head,
       );
       if (fields.length !== 5 || ![0n, 1n].includes(BigInt(fields[0]!))) throw new Error("invalid_payment_record");
       const low = BigInt(fields[3]!),
@@ -54,16 +54,18 @@ export const ledgerWithdrawalVoided =
     relayOperation("read withdrawal void", async () => {
       const provider = rpcAt(rpcUrl);
       const head = await readConfirmedLedgerHead(provider);
+      const payment = await Effect.runPromise(ledgerPaymentRead(rpcUrl, address, head.number)(withdrawal));
+      if (payment?.paid) return false;
+      if (payment && payment.seasonId !== withdrawal.seasonId) throw new Error("ledger_report_mismatch");
       const fields = await provider.callContract(
         {
           contractAddress: address,
-          entrypoint: "withdrawal_voided",
-          calldata: [withdrawal.chainId, withdrawal.transactionHash],
+          entrypoint: "get_frontier",
+          calldata: [withdrawal.chainId, String(withdrawal.seasonId)],
         },
         head.number,
       );
-      if (fields.length !== 1) throw new Error("invalid_withdrawal_void");
-      return ledgerBool(fields[0]!);
+      return decodeFrontierSeason(fields).closed;
     });
 
 /** Reporting is a separate confirmed transaction; a failed later payment cannot erase the custody guard. */
@@ -172,18 +174,16 @@ const ledgerAccountOf = (credentials: LedgerCredentials) => {
 
 /** Only ruled terminal failures leave the retry queue; a day-boundary unlock refusal stays retryable. */
 export const paymentFailure = (reason = "") => {
-  const operation = reason.includes("Ledger: withdrawal exceeds backing")
-    ? "ledger_withdrawal_exceeds_backing"
-    : reason.includes("Ledger: claim window ended")
-      ? "ledger_claim_window_ended"
-      : reason.includes("Ledger: season closed")
-        ? "ledger_season_closed"
-        : reason.includes("Ledger: conflicting withdrawal report")
-          ? "ledger_report_mismatch"
-          : reason.includes("Ledger: invalid withdrawal")
-            ? "ledger_invalid_withdrawal"
-            : reason.includes("Ledger: unlock exceeded")
-              ? "ledger_unlock_exceeded"
-              : "pay Frontier claim";
+  const operation = reason.includes("Ledger: claim window ended")
+    ? "ledger_claim_window_ended"
+    : reason.includes("Ledger: season closed")
+      ? "ledger_season_closed"
+      : reason.includes("Ledger: conflicting withdrawal report")
+        ? "ledger_report_mismatch"
+        : reason.includes("Ledger: invalid withdrawal")
+          ? "ledger_invalid_withdrawal"
+          : reason.includes("Ledger: unlock exceeded")
+            ? "ledger_unlock_exceeded"
+            : "pay Frontier claim";
   return new RelayFailure({ operation });
 };

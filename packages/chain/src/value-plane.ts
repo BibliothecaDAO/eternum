@@ -64,6 +64,7 @@ export const valuePlaneAddress = (
  */
 export const environmentL2 = (environment: ValueEnvironment) => {
   const network = ENVIRONMENT_NETWORKS[environment];
+  if (!network) throw new Error("ENVIRONMENT must be staging or production");
   const chain = addressBooks[network].l2Chain;
   if (chain !== "SN_MAIN" && chain !== "SN_SEPOLIA")
     throw new Error(

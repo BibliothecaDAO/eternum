@@ -29,7 +29,7 @@ export function testRatingReader(configuration: Partial<ConstructorParameters<ty
     },
   };
   const reader = new RatingReader(ctx as unknown as DurableObjectState, {
-    L2_CHAIN_ID: "SN_MAIN",
+    ENVIRONMENT: "production",
     RATING_TOKEN_ADDRESS: "0x31",
     RATING_HISTORY_URL: "https://realms.world/api/ratings/population",
     IDENTITY_RPC_URL: "https://starknet-mainnet.g.alchemy.com/v2/test",

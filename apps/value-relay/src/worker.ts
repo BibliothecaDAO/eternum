@@ -1,20 +1,20 @@
+import { enrolShardOperator, shardOperatorAddress } from "./shard-enrolment";
+import { ledgerAddress } from "./environment";
 import {
   activeShards,
   requireActiveChain,
   readRegisteredShard,
   type ShardDirectory,
   rpcAt,
-  readLedgerGame,
-  readRegisteredPlayers,
-  readConfirmedLedgerHead,
-  type LedgerRosterSnapshot,
+  readRegistrationPage,
+  type LedgerSlotKey,
+  type RegistrationQuery,
 } from "@realms-world/value-ledger";
 import { processSeasonTops } from "./season-tops";
 import { seasonLedgerReads, postSeasonTop } from "./season-ledger";
 import { ledgerBatches } from "./ledger-batches";
 import { onIdentityChain } from "./ledger-chain";
-import { paidGameEntry } from "./game-entry";
-import { blitzDeadline, openBlitzOnLedger, refundBlitzOnLedger, validateBlitzWindow } from "./blitz-launch";
+import { openSlotOnLedger, refundSlotOnLedger, markSlotRefundable } from "./blitz-launch";
 import type { LedgerGameKey } from "@realms-world/value-ledger";
 import { currentLaborDay, writeLaborGrant } from "./shard-labor";
 import { handleLaborRequest } from "./labor-route";
@@ -37,12 +37,13 @@ import { RelayFailure, relayOperation, type RelayPorts, type LaborClaim } from "
 interface RelayEnv {
   OPERATOR_TOKEN: string;
   BASE_URL: string;
-  SHARD_LEDGER_OPERATOR_ADDRESS: string;
+  IDENTITY_HTTP: Fetcher;
   SHARD_LEDGER_OPERATOR_PRIVATE_KEY: string;
   LEDGER_RPC_URL: string;
-  LEDGER_ADDRESS: string;
+  ENVIRONMENT: import("@realms-world/chain").ValueEnvironment;
   LEDGER_OPERATOR_ADDRESS: string;
   LEDGER_OPERATOR_PRIVATE_KEY: string;
+  ROSTER_MONITOR: { verifyRoster(chainId: string, gameId: number): Promise<number> };
   IDENTITY: ShardDirectory & {
     l2ChainId(): Promise<string>;
     realmOwnerOf(realmId: string): Promise<string>;
@@ -64,6 +65,13 @@ export class ValueRelay extends DurableObject<RelayEnv> {
   private readonly store = new DurableRelayStore(this.ctx.storage);
   private readonly chests = new DurableChestStore(this.ctx.storage);
 
+  enrol(input: { chainId: string; heraldUrl: string }) {
+    return Effect.runPromise(
+      this.shardSigning.withPermit(
+        relayOperation("enrol relay shard account", () => enrolShardOperator(this.env, input)),
+      ),
+    );
+  }
   private ledgerPermit<A, E>(operation: Effect.Effect<A, E>, chains: readonly string[] = []) {
     return this.ledgerSigning.withPermit(
       relayOperation("verify official value chain", async () => {
@@ -187,7 +195,13 @@ export class ValueRelay extends DurableObject<RelayEnv> {
   }
   postResult(result: import("./ports").BlitzResult) {
     return Effect.runPromise(
-      this.ledgerPermit(ledgerResultAdapter(ledgerCredentialsOf(this.env))(result), [result.chainId]),
+      this.ledgerPermit(
+        relayOperation("verify and post paid game results", async () => {
+          const slotId = await this.env.ROSTER_MONITOR.verifyRoster(result.chainId, result.gameId);
+          await Effect.runPromise(ledgerResultAdapter(ledgerCredentialsOf(this.env), slotId)(result));
+        }),
+        [result.chainId],
+      ),
     );
   }
   async shardHealth() {
@@ -259,77 +273,39 @@ export class ValueRelay extends DurableObject<RelayEnv> {
       ),
     );
   }
-  async openBlitz(key: LedgerGameKey, window: { start: number; end: number }) {
-    await this.requireLaunchChain(key);
-    const relay = this;
+  async openSlot(key: LedgerSlotKey, window: { start: number; end: number }) {
+    await this.requireLaunchSlot(key);
+    const shard = (await this.env.IDENTITY.shards()).find((row) => BigInt(row.chainId) === BigInt(key.chainId));
+    if (shard?.status !== "active") throw new Error("new_slot_requires_active_shard");
     return Effect.runPromise(
-      this.ledgerPermit(
-        Effect.gen(function* () {
-          const entry = yield* paidGameEntry(relay.env.LEDGER_RPC_URL, relay.env.LEDGER_ADDRESS, key);
-          yield* openBlitzOnLedger(ledgerCredentialsOf(relay.env), key, window);
-          return entry;
-        }),
-        [key.chainId],
-      ),
+      this.ledgerPermit(openSlotOnLedger(ledgerCredentialsOf(this.env), key, window), [key.chainId]),
     );
   }
-  async blitzDeadline(key: LedgerGameKey) {
-    await this.requireLaunchChain(key);
-    return Effect.runPromise(
-      onIdentityChain(this.env.LEDGER_RPC_URL, this.env.IDENTITY, blitzDeadline(ledgerCredentialsOf(this.env), key)),
-    );
-  }
-  async blitzRoster(key: LedgerGameKey): Promise<LedgerRosterSnapshot> {
-    await this.requireLaunchChain(key);
+  async registrations(query: RegistrationQuery) {
+    await this.requireLaunchSlot(query);
     return Effect.runPromise(
       onIdentityChain(
         this.env.LEDGER_RPC_URL,
         this.env.IDENTITY,
-        relayOperation("read closed ledger roster", async () => {
-          const provider = rpcAt(this.env.LEDGER_RPC_URL);
-          const head = await readConfirmedLedgerHead(provider);
-          const game = await readLedgerGame(provider, this.env.LEDGER_ADDRESS, key, head.number);
-          if (game.cancelled || game.finalized) throw new Error("ledger_game_not_seatable");
-          const secondsUntilClose = Math.max(0, game.start - head.time);
-          const registrations = secondsUntilClose
-            ? []
-            : await readRegisteredPlayers(
-                provider,
-                this.env.LEDGER_ADDRESS,
-                key,
-                head.number,
-                game.registeredCount,
-                game.registrationLimit,
-              );
-          return {
-            gameId: key.gameId,
-            blockNumber: head.number,
-            blockHash: head.hash,
-            secondsUntilClose,
-            end: game.end,
-            registrations,
-          };
-        }),
+        relayOperation("read closed slot registrations", () =>
+          readRegistrationPage(rpcAt(this.env.LEDGER_RPC_URL), ledgerAddress(this.env.ENVIRONMENT), query),
+        ),
       ),
     );
   }
-  async validateBlitz(key: LedgerGameKey, window: { start: number; end: number }) {
-    await this.requireLaunchChain(key);
+  async markRefundable(key: LedgerSlotKey, wallets: readonly string[]) {
+    await this.requireLaunchSlot(key);
     return Effect.runPromise(
-      onIdentityChain(
-        this.env.LEDGER_RPC_URL,
-        this.env.IDENTITY,
-        validateBlitzWindow(ledgerCredentialsOf(this.env), key, window),
-      ),
+      this.ledgerPermit(markSlotRefundable(ledgerCredentialsOf(this.env), key, wallets), [key.chainId]),
     );
   }
-  async refundBlitz(key: LedgerGameKey) {
-    await this.requireLaunchChain(key);
-    return Effect.runPromise(this.ledgerPermit(refundBlitzOnLedger(ledgerCredentialsOf(this.env), key), [key.chainId]));
+  async refundSlot(key: LedgerSlotKey) {
+    await this.requireLaunchSlot(key);
+    return Effect.runPromise(this.ledgerPermit(refundSlotOnLedger(ledgerCredentialsOf(this.env), key), [key.chainId]));
   }
-  private async requireLaunchChain(key: LedgerGameKey) {
-    if (!Number.isInteger(key.gameId) || key.gameId <= 0 || key.gameId > 0xffffffff)
-      throw new Error("wrong_launch_chain_or_game");
+  private async requireLaunchSlot(key: LedgerSlotKey) {
+    if (!Number.isInteger(key.slotId) || key.slotId <= 0 || key.slotId > 0xffffffff)
+      throw new Error("wrong_launch_chain_or_slot");
     await requireActiveChain(this.env.IDENTITY, key.chainId);
   }
   async shardHeld() {
@@ -364,8 +340,8 @@ const relayPortsOf = (env: RelayEnv, shard: Awaited<ReturnType<typeof readRegist
     identity: identityAdapter(env.IDENTITY),
     realms: { ownerOf: (realmId) => relayOperation("read Realm owner", () => env.IDENTITY.realmOwnerOf(realmId)) },
     ledger: {
-      payment: (row) => ledgerPaymentRead(env.LEDGER_RPC_URL, env.LEDGER_ADDRESS)(row),
-      voided: (row) => ledgerWithdrawalVoided(env.LEDGER_RPC_URL, env.LEDGER_ADDRESS)(row),
+      payment: (row) => ledgerPaymentRead(env.LEDGER_RPC_URL, ledgerAddress(env.ENVIRONMENT))(row),
+      voided: (row) => ledgerWithdrawalVoided(env.LEDGER_RPC_URL, ledgerAddress(env.ENVIRONMENT))(row),
       reportMany: (rows) => relayOperation("report withdrawal page", () => ledgerOf(env).reportMany(rows)),
       payMany: (rows) => relayOperation("pay withdrawal page", () => ledgerOf(env).payMany(rows)),
       postResult: (row) => relayOperation("post shard result", () => ledgerOf(env).postResult(row)),
@@ -373,7 +349,11 @@ const relayPortsOf = (env: RelayEnv, shard: Awaited<ReturnType<typeof readRegist
     shard: {
       ...shardWithdrawalPorts(
         reader,
-        frontierReceiptBindings(reader, { rpcUrl: env.LEDGER_RPC_URL, address: env.LEDGER_ADDRESS }, env.IDENTITY),
+        frontierReceiptBindings(
+          reader,
+          { rpcUrl: env.LEDGER_RPC_URL, address: ledgerAddress(env.ENVIRONMENT) },
+          env.IDENTITY,
+        ),
       ),
       result: shardResultPort(reader),
       grantLabor: (claim) =>
@@ -383,7 +363,7 @@ const relayPortsOf = (env: RelayEnv, shard: Awaited<ReturnType<typeof readRegist
             writeLaborGrant(
               {
                 connection: connectionOf(shard),
-                operatorAddress: env.SHARD_LEDGER_OPERATOR_ADDRESS,
+                operatorAddress: shardOperatorAddress(shard),
                 privateKey: env.SHARD_LEDGER_OPERATOR_PRIVATE_KEY,
               },
               claim,
@@ -395,13 +375,13 @@ const relayPortsOf = (env: RelayEnv, shard: Awaited<ReturnType<typeof readRegist
 };
 const ledgerCredentialsOf = (env: RelayEnv) => ({
   rpcUrl: env.LEDGER_RPC_URL,
-  contractAddress: env.LEDGER_ADDRESS,
+  contractAddress: ledgerAddress(env.ENVIRONMENT),
   accountAddress: env.LEDGER_OPERATOR_ADDRESS,
   privateKey: env.LEDGER_OPERATOR_PRIVATE_KEY,
 });
 
 const chestPortsOf = (env: RelayEnv, permit: LedgerPermit) => ({
-  ...chestLedgerReads({ rpcUrl: env.LEDGER_RPC_URL, contractAddress: env.LEDGER_ADDRESS }),
+  ...chestLedgerReads({ rpcUrl: env.LEDGER_RPC_URL, contractAddress: ledgerAddress(env.ENVIRONMENT) }),
   finish: (tokenId: string) => permit(finishChestOnLedger(ledgerCredentialsOf(env), tokenId)),
 });
 
@@ -433,24 +413,41 @@ export class ValueLaunch extends WorkerEntrypoint<RelayEnv> {
   override fetch() {
     return new Response(null, { status: 404 });
   }
-  blitzDeadline(key: LedgerGameKey) {
-    return ledgerOf(this.env).blitzDeadline(key);
+  registrations(query: RegistrationQuery) {
+    return ledgerOf(this.env).registrations(query);
   }
-  blitzRoster(key: LedgerGameKey) {
-    return ledgerOf(this.env).blitzRoster(key);
+  openSlot(key: LedgerSlotKey, window: { start: number; end: number }) {
+    return ledgerOf(this.env).openSlot(key, window);
   }
-  openBlitz(key: LedgerGameKey, window: { start: number; end: number }) {
-    return ledgerOf(this.env).openBlitz(key, window);
+  markRefundable(key: LedgerSlotKey, wallets: readonly string[]) {
+    return ledgerOf(this.env).markRefundable(key, wallets);
   }
-  validateBlitz(key: LedgerGameKey, window: { start: number; end: number }) {
-    return ledgerOf(this.env).validateBlitz(key, window);
-  }
-  refundBlitz(key: LedgerGameKey) {
-    return ledgerOf(this.env).refundBlitz(key);
+  refundSlot(key: LedgerSlotKey) {
+    return ledgerOf(this.env).refundSlot(key);
   }
 }
 export default {
   async fetch(request: Request, env: RelayEnv): Promise<Response> {
+    if (new URL(request.url).pathname === "/api/value/operator/shard/enrol" && request.method === "POST") {
+      if (!(await presentsOperatorToken(request, env.OPERATOR_TOKEN)))
+        return Response.json({ error: "unauthorized" }, { status: 401 });
+      const body = (await request.json().catch(() => null)) as { chainId?: unknown; heraldUrl?: unknown } | null;
+      if (
+        !body ||
+        Object.keys(body).sort().join() !== "chainId,heraldUrl" ||
+        typeof body.chainId !== "string" ||
+        !/^0x[0-9a-f]+$/i.test(body.chainId) ||
+        typeof body.heraldUrl !== "string"
+      )
+        return Response.json({ error: "invalid_enrolment_target" }, { status: 400 });
+      try {
+        return Response.json(
+          await relayOf(env, body.chainId).enrol({ chainId: body.chainId, heraldUrl: body.heraldUrl }),
+        );
+      } catch {
+        return Response.json({ error: "relay_enrolment_unavailable" }, { status: 409 });
+      }
+    }
     if (new URL(request.url).pathname === "/api/value/operator/reset" && request.method === "POST") {
       if (!(await presentsOperatorToken(request, env.OPERATOR_TOKEN)))
         return Response.json({ error: "unauthorized" }, { status: 401 });

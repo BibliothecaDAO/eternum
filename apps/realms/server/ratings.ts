@@ -1,3 +1,4 @@
+import { environmentL2 } from "@realms-world/chain";
 import { normalizeStarknetAddress as canonical } from "@realms-world/identity";
 import type { IdentityEnv } from "./env";
 import { json } from "./http";
@@ -22,7 +23,7 @@ interface LedgerRatings {
 
 /** One current rating read for lobby, season, profile and results; immutable MMR events are never a fallback. */
 export async function handleRatings(
-  env: Pick<IdentityEnv, "DB" | "RATING_READER" | "L2_CHAIN_ID">,
+  env: Pick<IdentityEnv, "DB" | "RATING_READER" | "ENVIRONMENT">,
   url: URL,
 ): Promise<Response> {
   const query = parseRatingQuery(url);
@@ -31,7 +32,10 @@ export async function handleRatings(
     const players = await resolveRatingIdentities(env.DB, query);
     const owners = [...new Set([...players.values()].flatMap(({ player }) => (player === null ? [] : [player])))];
     const result = owners.length
-      ? await env.RATING_READER.get(env.RATING_READER.idFromName(env.L2_CHAIN_ID)).ratings(owners, query.blockHash)
+      ? await env.RATING_READER.get(env.RATING_READER.idFromName(environmentL2(env.ENVIRONMENT).chain)).ratings(
+          owners,
+          query.blockHash,
+        )
       : null;
     return json({
       block_number: result?.block_number ?? null,

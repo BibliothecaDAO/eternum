@@ -1,11 +1,12 @@
 import { Account, hash, type RpcProvider } from "starknet";
 import {
   rpcAt,
-  readLedgerGame,
+  readLedgerSlot,
   ledgerInteger,
+  ledgerBool,
   decodeBlitzSeason,
   readConfirmedLedgerHead,
-  type LedgerGameKey,
+  type LedgerSlotKey,
 } from "@realms-world/value-ledger";
 import { relayOperation } from "./ports";
 
@@ -20,95 +21,69 @@ interface Window {
   end: number;
 }
 
-/** Only this Worker's operator stream signs economic mutations; the launcher supplies a real created shard key. */
-export const openBlitzOnLedger = (credentials: Credentials, key: LedgerGameKey, window: Window) =>
+/** Only this Worker's operator stream signs economic mutations; the launcher supplies the scheduled slot key. */
+export const openSlotOnLedger = (credentials: Credentials, key: LedgerSlotKey, window: Window) =>
   relayOperation("open ledger Blitz registration", async () => {
     const provider = rpcAt(credentials.rpcUrl);
     const head = await readConfirmedLedgerHead(provider);
-    if (await gameOpened(provider, credentials.contractAddress, key, head.number)) {
-      const game = await readLedgerGame(provider, credentials.contractAddress, key, head.number);
-      if (game.start !== window.start || game.end !== window.end || game.cancelled || game.finalized)
-        throw new Error("ledger_game_window_differs");
+    if (await slotOpened(provider, credentials.contractAddress, key, head.number)) {
+      const slot = await readLedgerSlot(provider, credentials.contractAddress, key, head.number);
+      if (slot.close !== window.start || slot.end !== window.end || slot.cancelled)
+        throw new Error("ledger_slot_window_differs");
       return;
     }
     if (window.start <= head.time || window.end <= window.start)
       throw new Error("paid_registration_must_open_before_start");
     const season = await containingSeason(provider, credentials.contractAddress, window, head.number);
-    await submit(credentials, "open_game", [
+    await submit(credentials, "open_slot", [
       key.chainId,
-      String(key.gameId),
+      String(key.slotId),
       String(season.id),
       String(season.presetId),
       String(window.start),
       String(window.end),
     ]);
-    const recorded = await readLedgerGame(provider, credentials.contractAddress, key, await provider.getBlockNumber());
-    if (recorded.start !== window.start || recorded.end !== window.end || recorded.seasonId !== season.id)
-      throw new Error("ledger_game_not_recorded");
-  });
-
-export const validateBlitzWindow = (credentials: Credentials, key: LedgerGameKey, window: Window) =>
-  relayOperation("validate actual Blitz season window", async () => {
-    const provider = rpcAt(credentials.rpcUrl);
-    const head = await readConfirmedLedgerHead(provider);
-    const game = await readLedgerGame(provider, credentials.contractAddress, key, head.number);
-    const season = await seasonAt(provider, credentials.contractAddress, game.seasonId, head.number);
-    const interval = await settlementInterval(provider, credentials.contractAddress, head.number);
-    if (
-      game.cancelled ||
-      game.finalized ||
-      window.start < game.start ||
-      window.end <= window.start ||
-      window.end + interval > season.end ||
-      window.start < season.start
-    )
-      throw new Error("actual_blitz_window_outside_season");
-  });
-
-export const blitzDeadline = (credentials: Credentials, key: LedgerGameKey) =>
-  relayOperation("read paid Blitz deadline", async () => {
-    const provider = rpcAt(credentials.rpcUrl);
-    const head = await readConfirmedLedgerHead(provider);
-    const game = await readLedgerGame(provider, credentials.contractAddress, key, head.number);
-    return game.cancelled || game.finalized ? 0 : Math.max(0, game.end - head.time);
+    const recorded = await readLedgerSlot(provider, credentials.contractAddress, key, await provider.getBlockNumber());
+    if (recorded.close !== window.start || recorded.end !== window.end || recorded.seasonId !== season.id)
+      throw new Error("ledger_slot_not_recorded");
   });
 
 /** The current contract cannot abort between start and end. Persisted cleanup retries at that boundary automatically. */
-export const refundBlitzOnLedger = (credentials: Credentials, key: LedgerGameKey) =>
+export const refundSlotOnLedger = (credentials: Credentials, key: LedgerSlotKey) =>
   relayOperation("unlock failed Blitz refunds", async (): Promise<number | null> => {
     const provider = rpcAt(credentials.rpcUrl);
     const head = await readConfirmedLedgerHead(provider);
-    if (!(await gameOpened(provider, credentials.contractAddress, key, head.number))) return null;
-    const game = await readLedgerGame(provider, credentials.contractAddress, key, head.number);
-    if (game.cancelled || game.finalized) return null;
-    if (head.time >= game.start && head.time < game.end) return game.end - head.time;
-    await submit(credentials, head.time < game.start ? "cancel_game" : "abort_game", [key.chainId, String(key.gameId)]);
-    const refunded = await readLedgerGame(provider, credentials.contractAddress, key, await provider.getBlockNumber());
+    if (!(await slotOpened(provider, credentials.contractAddress, key, head.number))) return null;
+    const slot = await readLedgerSlot(provider, credentials.contractAddress, key, head.number);
+    if (slot.cancelled) return null;
+    if (head.time >= slot.close && head.time < slot.end) return slot.end - head.time;
+    await submit(credentials, head.time < slot.close ? "cancel_slot" : "abort_slot", [key.chainId, String(key.slotId)]);
+    const refunded = await readLedgerSlot(provider, credentials.contractAddress, key, await provider.getBlockNumber());
     if (!refunded.cancelled) throw new Error("ledger_refunds_not_enabled");
     return null;
   });
 
-const gameOpened = async (provider: RpcProvider, address: string, key: LedgerGameKey, head: number) => {
-  const page = await provider.getEvents({
-    address,
-    from_block: { block_number: 0 },
-    to_block: { block_number: head },
-    keys: [[hash.getSelectorFromName("GameOpened")], [key.chainId], [`0x${key.gameId.toString(16)}`]],
-    chunk_size: 2,
-  });
-  if (page.continuation_token || page.events.length > 1) throw new Error("ambiguous_ledger_game");
-  for (const row of page.events)
-    if (
-      BigInt(row.from_address) !== BigInt(address) ||
-      row.keys.length !== 3 ||
-      BigInt(row.keys[1]!) !== BigInt(key.chainId) ||
-      Number(BigInt(row.keys[2]!)) !== key.gameId
-    )
-      throw new Error("wrong_ledger_game_event");
-  return page.events.length === 1;
+const slotOpened = async (provider: RpcProvider, address: string, key: LedgerSlotKey, head: number) => {
+  const fields = await provider.callContract(
+    { contractAddress: address, entrypoint: "get_slot", calldata: [key.chainId, String(key.slotId)] },
+    head,
+  );
+  if (fields.length !== 9) throw new Error("invalid_ledger_slot");
+  return ledgerBool(fields[1]!);
 };
+
+export const markSlotRefundable = (credentials: Credentials, key: LedgerSlotKey, wallets: readonly string[]) =>
+  relayOperation("mark unseated registrations refundable", async () => {
+    if (wallets.length)
+      await submit(credentials, "mark_refundable", [
+        key.chainId,
+        String(key.slotId),
+        String(wallets.length),
+        ...wallets,
+      ]);
+  });
+
 const containingSeason = async (provider: RpcProvider, address: string, window: Window, head: number) => {
-  const interval = await settlementInterval(provider, address, head);
   const matches: { id: number; presetId: number }[] = [];
   let token: string | undefined;
   const seen = new Set<string>();
@@ -126,8 +101,7 @@ const containingSeason = async (provider: RpcProvider, address: string, window: 
         throw new Error("invalid_season_event");
       const id = ledgerInteger(row.keys[1]!);
       const season = await seasonAt(provider, address, id, head);
-      if (window.start >= season.start && window.end + interval <= season.end)
-        matches.push({ id, presetId: season.presetId });
+      if (window.start >= season.start && window.end < season.end) matches.push({ id, presetId: season.presetId });
     }
     token = page.continuation_token;
     if (token && seen.has(token)) throw new Error("season_page_cycle");
@@ -143,17 +117,6 @@ const seasonAt = async (provider: RpcProvider, address: string, id: number, head
   );
   return decodeBlitzSeason(fields);
 };
-const settlementInterval = async (provider: RpcProvider, address: string, head: number) => {
-  const fields = await provider.callContract(
-    { contractAddress: address, entrypoint: "blitz_settlement_interval", calldata: [] },
-    head,
-  );
-  if (fields.length !== 1) throw new Error("invalid_settlement_interval");
-  const interval = ledgerInteger(fields[0]!);
-  if (interval <= 0) throw new Error("invalid_settlement_interval");
-  return interval;
-};
-
 const submit = async (credentials: Credentials, entrypoint: string, calldata: string[]) => {
   const provider = rpcAt(credentials.rpcUrl);
   const account = new Account({ provider, address: credentials.accountAddress, signer: credentials.privateKey });

@@ -36,7 +36,6 @@ export interface ChestPorts {
   chest(
     tokenId: string,
   ): RelayEffect<{ requested: boolean; finished: boolean; requester: string; requestBlock: number }>;
-  blockTime(number: number): RelayEffect<number>;
   finish(tokenId: string): RelayEffect<void>;
 }
 export interface BlitzResult extends BlitzCommitment {

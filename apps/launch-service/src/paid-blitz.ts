@@ -1,54 +1,43 @@
-import type { LedgerGameKey, LedgerRosterSnapshot } from "@realms-world/value-ledger";
+import {
+  resolveBlitzRoster,
+  type LedgerSlotKey,
+  type RegistrationQuery,
+  type RegistrationPage,
+  type RegistrationIdentity,
+} from "@realms-world/value-ledger";
 import { RegistrationOpen } from "./blitz-roster";
-import type { LaunchEntryStore } from "./entry";
-import type { GameEntry } from "@realms-world/identity";
-import type { LaunchGameSummary } from "../../../config/deployer/clean/types";
+import { splitPlaytestRoster } from "./slots";
 
 export interface BlitzValuePort {
-  blitzDeadline(key: LedgerGameKey): Promise<number>;
-  blitzRoster(key: LedgerGameKey): Promise<LedgerRosterSnapshot>;
-  openBlitz(key: LedgerGameKey, window: { start: number; end: number }): Promise<GameEntry>;
-  validateBlitz(key: LedgerGameKey, window: { start: number; end: number }): Promise<void>;
-  refundBlitz(key: LedgerGameKey): Promise<number | null>;
+  registrations(query: RegistrationQuery): Promise<RegistrationPage>;
+  openSlot(key: LedgerSlotKey, window: { start: number; end: number }): Promise<void>;
+  markRefundable(key: LedgerSlotKey, wallets: readonly string[]): Promise<void>;
+  refundSlot(key: LedgerSlotKey): Promise<number | null>;
 }
-interface PaidBlitzShard {
-  create(): Promise<LaunchGameSummary>;
-  roster(gameId: number): Promise<readonly { wallet: string; account: string }[]>;
-  install(gameId: number, players: readonly { account: string; wallet: string }[]): Promise<void>;
-  seat(gameId: number): Promise<number>;
-  window(gameId: number): Promise<{ start: number; end: number }>;
-}
+export class SlotCancelled extends Error {}
 
-/** A real empty game precedes registration. The frozen ledger pair survives retries and wallet-link changes. */
-export const launchPaidBlitz = async (
-  chainId: string,
-  shard: PaidBlitzShard,
-  value: BlitzValuePort,
-  store: LaunchEntryStore,
-  plannedStart: number,
-): Promise<LaunchGameSummary> => {
-  const created = await shard.create();
-  if (!created.gameId) throw new Error("created_blitz_has_no_id");
-  await store.saveGame(created);
-  const key = { chainId, gameId: created.gameId };
-  const entry = await value.openBlitz(key, { start: plannedStart, end: plannedStart + created.durationSeconds! });
-  await store.saveEntry(created.environment, created.gameName, entry);
-  const frozen = await shard.roster(key.gameId);
-  if (!frozen.length) {
-    const roster = await value.blitzRoster(key);
-    if (roster.secondsUntilClose > 0) throw new RegistrationOpen({ secondsUntilClose: roster.secondsUntilClose });
-    if (roster.gameId !== key.gameId || !roster.registrations.length) throw new Error("invalid_closed_ledger_roster");
-    await shard.install(key.gameId, roster.registrations);
+/** Retries derive the same groups from immutable registration order and historical links, without a roster copy. */
+export const closedSlotGroups = async (key: LedgerSlotKey, value: BlitzValuePort, identity: RegistrationIdentity) => {
+  let page = await value.registrations(key);
+  if (page.secondsUntilClose > 0) throw new RegistrationOpen({ secondsUntilClose: page.secondsUntilClose });
+  if (page.slot.cancelled) throw new SlotCancelled("Blitz slot cancelled");
+  const registrations = [...page.registrations];
+  const { blockNumber, blockHash, slot } = page;
+  while (page.next !== null) {
+    const from = page.next;
+    page = await value.registrations({ ...key, from, blockNumber, blockHash });
+    if (
+      page.blockNumber !== blockNumber ||
+      BigInt(page.blockHash) !== BigInt(blockHash) ||
+      (page.next !== null && page.next <= from)
+    )
+      throw new Error("registration_page_changed");
+    registrations.push(...page.registrations);
   }
-  const settlementTransactions = await shard.seat(key.gameId);
-  const actual = await shard.window(key.gameId);
-  await value.validateBlitz(key, actual);
-  return store.saveGame({
-    ...created,
-    startTime: actual.start,
-    startTimeIso: new Date(actual.start * 1000).toISOString(),
-    durationSeconds: actual.end - actual.start,
-    finalizeAt: actual.end,
-    settlementTransactions,
-  });
+  if (registrations.length !== slot.registeredCount) throw new Error("registration_history_incomplete");
+  const { players, refunds } = await resolveBlitzRoster(registrations, identity);
+  // Resolve the whole cohort before any mutation; an identity outage must never choose refunds.
+  for (let offset = 0; offset < refunds.length; offset += 100)
+    await value.markRefundable(key, refunds.slice(offset, offset + 100));
+  return { groups: splitPlaytestRoster(players), slot };
 };

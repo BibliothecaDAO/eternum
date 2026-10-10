@@ -11,7 +11,7 @@ interface Snapshot {
   values: Record<string, string>;
   entries: { player: string; rating: string; rank: number }[] | null;
 }
-type Env = Pick<IdentityEnv, "L2_CHAIN_ID" | "IDENTITY_RPC_URL" | "RATING_TOKEN_ADDRESS" | "RATING_HISTORY_URL">;
+type Env = Pick<IdentityEnv, "ENVIRONMENT" | "IDENTITY_RPC_URL" | "RATING_TOKEN_ADDRESS" | "RATING_HISTORY_URL">;
 const RPC_METHODS_PER_MINUTE = 10000;
 
 /** One cache and budget across callers and isolates. Every cached value belongs to a verified immutable block hash. */

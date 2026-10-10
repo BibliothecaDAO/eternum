@@ -1,6 +1,5 @@
 import { Account, hash } from "starknet";
 import {
-  readLedgerGame,
   rpcAt,
   ledgerInteger,
   decodeBlitzSeason,
@@ -16,10 +15,6 @@ interface Ledger {
 export const seasonLedgerReads = (target: Ledger): Omit<SeasonPorts, "post" | "challenge"> => {
   const provider = rpcAt(target.rpcUrl);
   return {
-    game: async (key, head) => {
-      const game = await readLedgerGame(provider, target.contractAddress, key, head);
-      return { id: game.seasonId, terminal: game.cancelled || game.finalized };
-    },
     head: () => readConfirmedLedgerHead(provider),
     blockHash: async (number) => (await readConfirmedLedgerHead(provider, number)).hash,
     changes: (from, cursor, head) => readSeasonEventPage(target, from, cursor, head, false),
@@ -115,17 +110,7 @@ const readSeasonEventPage = async (
   postsOnly: boolean,
 ) => {
   const provider = rpcAt(target.rpcUrl);
-  const names = postsOnly
-    ? ["SeasonTopPosted"]
-    : [
-        "SeasonOpened",
-        "ChestMinted",
-        "SeasonMmrCorrected",
-        "GameOpened",
-        "ResultsApplied",
-        "GameCancelled",
-        "GameAborted",
-      ];
+  const names = postsOnly ? ["SeasonTopPosted"] : ["SeasonOpened", "ChestMinted", "SeasonMmrCorrected"];
   if (from > head) return { rows: [], head, next: null };
   const page = await provider.getEvents({
     address: target.contractAddress,
@@ -145,18 +130,7 @@ const readSeasonEventPage = async (
     )
       throw new Error("invalid_season_event");
     const name = names.find((name) => BigInt(hash.getSelectorFromName(name)) === BigInt(event.keys[0] ?? "0"));
-    if (["GameOpened", "ResultsApplied", "GameCancelled", "GameAborted"].includes(name ?? "")) {
-      if (event.keys.length !== 3) throw new Error("invalid_season_game_event");
-      const key = { chainId: event.keys[1]!, gameId: ledgerInteger(event.keys[2]!) };
-      const game = await readLedgerGame(provider, target.contractAddress, key, head);
-      rows.push({
-        kind: "game",
-        id: game.seasonId,
-        key,
-        terminal: game.cancelled || game.finalized,
-        ...(name === "ResultsApplied" ? { revision: `${event.transaction_hash}:${event.block_number}` } : {}),
-      });
-    } else if (name === "ChestMinted") {
+    if (name === "ChestMinted") {
       if (event.keys.length !== 4 || event.data.length !== 4) throw new Error("invalid_season_participant_event");
       rows.push({ kind: "participant", id: ledgerInteger(event.data[2]!), wallet: event.keys[3]! });
     } else {

@@ -776,6 +776,9 @@ importers:
 
   apps/launch-service:
     dependencies:
+      '@realms-world/chain':
+        specifier: workspace:*
+        version: link:../../packages/chain
       '@bibliothecadao/eternum':
         specifier: workspace:*
         version: link:../../packages/core
@@ -874,6 +877,9 @@ importers:
 
   apps/status-monitor:
     dependencies:
+      '@realms-world/chain':
+        specifier: workspace:*
+        version: link:../../packages/chain
       effect:
         specifier: 4.0.0-rc.108
         version: 4.0.0-rc.108
@@ -899,6 +905,12 @@ importers:
 
   apps/value-relay:
     dependencies:
+      '@realms-world/chain':
+        specifier: workspace:*
+        version: link:../../packages/chain
+      '@bibliothecadao/eternum':
+        specifier: workspace:*
+        version: link:../../packages/core
       '@realms-world/identity':
         specifier: workspace:*
         version: link:../../packages/identity

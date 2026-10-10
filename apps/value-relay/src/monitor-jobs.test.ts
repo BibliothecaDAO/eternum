@@ -1,8 +1,9 @@
-import { Effect } from "effect";
+vi.mock("./environment", () => ({ ledgerAddress: () => "0x10" }));
 import { beforeEach, expect, it, vi } from "vitest";
 import worker, { ValueMonitor } from "./monitor-worker";
 
 vi.mock("cloudflare:workers", () => ({
+  WorkerEntrypoint: class {},
   DurableObject: class {
     constructor(
       public ctx: unknown,
@@ -19,14 +20,15 @@ vi.mock("@realms-world/value-ledger", async (original) => ({
     },
   }),
 }));
-const overdue = vi.hoisted(() => vi.fn());
-vi.mock("./chests", () => ({ DurableChestStore: class {}, overdueChestRequests: overdue }));
 const fixture = () => {
   const data = new Map<string, unknown>();
   const ctx = {
     storage: {
       transaction: async (run: (tx: unknown) => Promise<unknown>): Promise<unknown> => run(ctx.storage),
-      delete: async (key: string) => data.delete(key),
+      list: async ({ prefix }: { prefix: string }) => new Map([...data].filter(([key]) => key.startsWith(prefix))),
+      delete: async (keys: string | string[]) => {
+        for (const key of typeof keys === "string" ? [keys] : keys) data.delete(key);
+      },
       get: async (key: string) => data.get(key),
       put: async (key: string, value: unknown) => {
         data.set(key, value);
@@ -37,6 +39,7 @@ const fixture = () => {
     ctx as unknown as DurableObjectState,
     {
       LEDGER_RPC_URL: "https://ledger.test",
+      LAUNCH: { rosterCohorts: async () => [] },
       IDENTITY: { l2ChainId: async () => "0x1", shards: async () => [] },
     } as never,
   );
@@ -44,16 +47,13 @@ const fixture = () => {
 };
 beforeEach(() => {
   vi.clearAllMocks();
-  overdue.mockReturnValue(Effect.succeed({ overdue: ["7"], pending: 1 }));
 });
-it("publishes chest warnings and a failed value read independently, without a green health result", async () => {
+it("reports a failed value read without a green health result", async () => {
   const f = fixture();
   expect((await f.monitor.health()).success).toBe(false);
   const observation = await f.monitor.tick();
   expect(observation.value).toBeNull();
   expect(observation.value_error).toBeTruthy();
-  expect(observation.chests).toEqual({ overdue: ["7"], pending: 1 });
-  expect(overdue).toHaveBeenCalledOnce();
   expect((await f.monitor.health()).success).toBe(false);
 });
 it("reports a fresh completed audit as healthy, and refuses stale or paused progress", async () => {
@@ -64,7 +64,6 @@ it("reports a fresh completed audit as healthy, and refuses stale or paused prog
     value: { halted: null },
     value_error: null,
     season_error: null,
-    chests: { overdue: [], pending: 0 },
   };
   f.data.set("observation", observation);
   expect((await f.monitor.health()).success).toBe(true);

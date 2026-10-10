@@ -1,3 +1,4 @@
+import { environmentL2 } from "@realms-world/chain";
 import { Schema } from "effect";
 import { normalizeAddress } from "./address";
 
@@ -25,7 +26,8 @@ export interface LaunchEnv extends Omit<LaunchVars, "LAUNCHER_ALLOWLIST"> {
   DB: D1Database;
   /** The identity Worker, which owns sessions; reached by service binding only. */
   IDENTITY: Fetcher;
-  VALUE_IDENTITY: import("@realms-world/value-ledger").ShardDirectory;
+  VALUE_IDENTITY: import("@realms-world/value-ledger").ShardDirectory &
+    import("@realms-world/value-ledger").RegistrationIdentity;
   VALUE_RELAY: import("./paid-blitz").BlitzValuePort;
   /** The one registrar that executes launches, one at a time. */
   REGISTRAR: DurableObjectNamespace<import("./registrar").Registrar>;
@@ -37,6 +39,7 @@ const decodeLaunchVars = Schema.decodeUnknownSync(LaunchVars, { onExcessProperty
 
 export const decodeLaunchEnv = (raw: Record<string, unknown>): LaunchEnv => {
   const { LAUNCHER_ALLOWLIST, ...vars } = decodeLaunchVars(raw);
+  environmentL2(vars.ENVIRONMENT);
   return {
     ...vars,
     launchers: launchersOf(LAUNCHER_ALLOWLIST),

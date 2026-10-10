@@ -12,7 +12,7 @@ const message = buildSiwsMessage({
   uri: "https://play.realms.party",
 });
 const verify = () =>
-  verifyWalletOnL2({ L2_CHAIN_ID: "SN_MAIN", IDENTITY_RPC_URL: "https://starknet-mainnet.g.alchemy.com/v2/test" })(
+  verifyWalletOnL2({ ENVIRONMENT: "production", IDENTITY_RPC_URL: "https://starknet-mainnet.g.alchemy.com/v2/test" })(
     message,
     ["0x1", "0x2"],
     "0x123",

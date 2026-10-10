@@ -35,7 +35,7 @@ vi.mock("./shard-client", () => ({
     };
   }),
 }));
-const presetId = nativePresetIdFor("blitz");
+const presetId = nativePresetIdFor("eternum");
 const chainId = "0x1",
   heraldUrl = "https://shard.test";
 const own = realmsAccountAddress(botRealmsId(shortString.encodeShortString("ETERNUM_LAUNCHER")), "0x2", "0x9");
@@ -101,7 +101,6 @@ it("requires enrollment and launcher authority before the fixed empty-roster cre
   expect(mock.create.mock.calls[0][0]).toMatchObject({
     gameName: check.name,
     version: String(presetId),
-    rosterAccounts: [],
     devModeOn: false,
   });
   mock.gameId.mockResolvedValue(7);

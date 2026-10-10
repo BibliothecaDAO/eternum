@@ -41,20 +41,7 @@ const result = {
   commitment: "",
 };
 result.commitment = blitzCommitment(result);
-const game = (finalized: boolean, commitment = "0x0") => [
-  "1",
-  "1",
-  "1",
-  "100",
-  "200",
-  "0",
-  "0",
-  commitment,
-  "1",
-  "0",
-  finalized ? "1" : "0",
-  "24",
-];
+const game = (finalized: boolean, commitment = "0x0") => [finalized ? commitment : "0x0"];
 beforeEach(() => {
   vi.clearAllMocks();
   rpc.head.mockResolvedValue(1000);
@@ -69,13 +56,13 @@ beforeEach(() => {
 });
 
 it("submits the published ranked result and completes an identical retry without a second write", async () => {
-  const post = ledgerResultAdapter(credentials);
+  const post = ledgerResultAdapter(credentials, 12);
   rpc.call.mockResolvedValueOnce(game(false)).mockResolvedValue(game(true, result.commitment));
   await Effect.runPromise(post(result));
   expect(rpc.execute).toHaveBeenCalledWith({
     contractAddress: "0x10",
     entrypoint: "apply_results",
-    calldata: ["0x1", "7", "1", "0x123", "1"],
+    calldata: ["0x1", "12", "7", "1", "0x123", "1"],
   });
   rpc.call.mockResolvedValue(game(true, result.commitment));
   await Effect.runPromise(post(result));
@@ -83,7 +70,7 @@ it("submits the published ranked result and completes an identical retry without
 });
 it("refuses a previously finalized different commitment", async () => {
   rpc.call.mockResolvedValue(game(true, "0xbad"));
-  await expect(Effect.runPromise(ledgerResultAdapter(credentials)(result))).rejects.toThrow();
+  await expect(Effect.runPromise(ledgerResultAdapter(credentials, 12)(result))).rejects.toThrow();
   expect(rpc.execute).not.toHaveBeenCalled();
 });
 it("decodes confirmed payments and pins the event head across pagination", async () => {
@@ -128,7 +115,7 @@ it("decodes result commitments and refuses malformed payment events", async () =
         from_address: "0x10",
         transaction_hash: "0xdef",
         keys: [hash.getSelectorFromName("ResultsApplied"), "0x1", "7"],
-        data: ["1", result.commitment, "0", "0"],
+        data: ["12", "1", result.commitment, "0", "0"],
       },
     ],
   });
@@ -150,6 +137,6 @@ it("decodes result commitments and refuses malformed payment events", async () =
 
 it("keeps a result queued unless the confirmed ledger state records the same commitment", async () => {
   rpc.call.mockResolvedValueOnce(game(false)).mockResolvedValue(game(true, "0xbad"));
-  await expect(Effect.runPromise(ledgerResultAdapter(credentials)(result))).rejects.toThrow();
+  await expect(Effect.runPromise(ledgerResultAdapter(credentials, 12)(result))).rejects.toThrow();
   expect(rpc.execute).toHaveBeenCalledOnce();
 });

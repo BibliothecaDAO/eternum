@@ -14,7 +14,6 @@ import {
 } from "./directory";
 import type { IdentityEnv } from "./env";
 import { json } from "./http";
-import { consumeChallengeAttempt } from "./challenge-attempts";
 import { handleNotificationPreferences } from "./notification-preferences";
 import { handleProfile, handleProfiles } from "./profiles";
 import { handleRatings } from "./ratings";
@@ -27,7 +26,7 @@ interface WorkerPlatform {
   cache: Cache;
   fetchShard: typeof fetch;
   readLaunchDirectory: () => Promise<{
-    chains: { chainId: string; games: { gameId: number; entry: import("@realms-world/identity").GameEntry }[] }[];
+    chains: { chainId: string; games: { gameId: number; slotId: number | null }[] }[];
   }>;
 }
 
@@ -40,14 +39,10 @@ export const routeIdentityRequest = async (
 ) => {
   const { pathname } = new URL(request.url);
   const sendsCode = pathname === "/api/auth/email-otp/send-verification-otp";
-  const verifiesCode = [
-    "/api/auth/sign-in/email-otp",
-    "/api/auth/email-otp/check-verification-otp",
-    "/api/auth/email-otp/verify-email",
-  ].includes(pathname);
+  const verifiesCode = ["/api/auth/sign-in/email-otp", "/api/auth/email-otp/check-verification-otp"].includes(pathname);
   const requestsCodeAccess = request.method === "POST" && (sendsCode || verifiesCode);
   if (requestsCodeAccess) {
-    const refusal = await codeAccess(env, request, auth, sendsCode, pathname);
+    const refusal = await codeAccess(env, request, sendsCode);
     if (refusal) return refusal;
     if (sendsCode) return sendCodeWithExpiry(request, auth);
   }
@@ -126,42 +121,17 @@ const withinPublicBudget = async (env: IdentityEnv, route: string, request: Requ
   return (await budget.limit({ key: `${route}:${client}` })).success;
 };
 
-/** Sending stays rate limited; guessing consumes only the live challenge's atomic allowance. */
-const codeAccess = async (
-  env: IdentityEnv,
-  request: Request,
-  auth: IdentityAuth,
-  sendsCode: boolean,
-  pathname: string,
-) => {
-  const body = (await request
+/** Each client and address may request only a few codes per minute. */
+const codeAccess = async (env: IdentityEnv, request: Request, sendsCode: boolean) => {
+  if (!(await withinPublicBudget(env, "sign-in-code", request))) return json({ error: "too_many_attempts" }, 429);
+  if (!sendsCode) return null;
+  const { email } = (await request
     .clone()
     .json()
-    .catch(() => null)) as { email?: unknown; otp?: unknown; type?: unknown } | null;
-  if (!body || typeof body.email !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.email))
-    return json({ error: "invalid_code_request" }, 400);
-  const email = body.email.toLowerCase();
-  const purpose =
-    pathname === "/api/auth/sign-in/email-otp"
-      ? "sign-in"
-      : pathname === "/api/auth/email-otp/verify-email"
-        ? "email-verification"
-        : body.type;
-  if (purpose !== "sign-in" && purpose !== "email-verification") return json({ error: "invalid_code_purpose" }, 400);
-  if (purpose === "email-verification") {
-    const session = await auth.api.getSession({ headers: request.headers });
-    if (!session?.user.emailVerified || session.user.email.toLowerCase() !== email)
-      return json({ error: "unauthorized" }, 401);
-  }
-  if (!sendsCode && (typeof body.otp !== "string" || !/^\d{6}$/.test(body.otp)))
-    return json({ error: "INVALID_OTP" }, 400);
-  const route = purpose === "sign-in" ? "sign-in-code" : "wallet-code";
-  if (!(await withinPublicBudget(env, route, request))) return json({ error: "too_many_attempts" }, 429);
-  if (sendsCode)
-    return (await env.SIGN_IN_CODE_RATE_LIMIT.limit({ key: purpose === "sign-in" ? email : `wallet:${email}` })).success
-      ? null
-      : json({ error: "too_many_codes" }, 429);
-  if (!(await consumeChallengeAttempt(env.DB, `${purpose}-otp-${email}`))) return json({ error: "INVALID_OTP" }, 400);
+    .catch(() => ({}))) as { email?: unknown };
+  const address = typeof email === "string" ? email.trim().toLowerCase() : "";
+  if (address && !(await env.SIGN_IN_CODE_RATE_LIMIT.limit({ key: address })).success)
+    return json({ error: "too_many_codes" }, 429);
   return null;
 };
 
@@ -190,12 +160,9 @@ const sendCodeWithExpiry = async (request: Request, auth: IdentityAuth): Promise
     .catch(() => ({}))) as { email?: unknown; type?: unknown };
   const response = await auth.handler(request);
   if (!response.ok) return response;
-  if (typeof body.email !== "string" || !["sign-in", "email-verification"].includes(String(body.type)))
-    return json({ error: "code_expiry_unavailable" }, 503);
+  if (typeof body.email !== "string" || body.type !== "sign-in") return json({ error: "code_expiry_unavailable" }, 503);
   const context = await auth.$context;
-  const verification = await context.internalAdapter.findVerificationValue(
-    `${body.type}-otp-${body.email.toLowerCase()}`,
-  );
+  const verification = await context.internalAdapter.findVerificationValue(`sign-in-otp-${body.email.toLowerCase()}`);
   if (!verification) return json({ error: "code_expiry_unavailable" }, 503);
   const headers = new Headers(response.headers);
   headers.set("cache-control", "no-store");

@@ -10,19 +10,27 @@
   "env": {
     "staging": {
       "name": "realms-value-relay-staging",
-      "vars": { "BASE_URL": "https://play.dev-realms.party" },
+      "vars": { "ENVIRONMENT": "staging", "BASE_URL": "https://play.dev-realms.party" },
       "routes": [{ "pattern": "play.dev-realms.party/api/value/*", "zone_name": "dev-realms.party" }],
       "workers_dev": false,
-      "services": [{ "binding": "IDENTITY", "service": "realms-identity-staging", "entrypoint": "ValueIdentity" }],
+      "services": [
+        { "binding": "ROSTER_MONITOR", "service": "realms-value-monitor-staging", "entrypoint": "RosterMonitor" },
+        { "binding": "IDENTITY", "service": "realms-identity-staging", "entrypoint": "ValueIdentity" },
+        { "binding": "IDENTITY_HTTP", "service": "realms-identity-staging" },
+      ],
       "durable_objects": { "bindings": [{ "name": "RELAY", "class_name": "ValueRelay" }] },
       "triggers": { "crons": ["* * * * *"] },
     },
     "production": {
       "name": "realms-value-relay",
-      "vars": { "BASE_URL": "https://play.realms.party" },
+      "vars": { "ENVIRONMENT": "production", "BASE_URL": "https://play.realms.party" },
       "routes": [{ "pattern": "play.realms.party/api/value/*", "zone_name": "realms.party" }],
       "workers_dev": false,
-      "services": [{ "binding": "IDENTITY", "service": "realms-identity", "entrypoint": "ValueIdentity" }],
+      "services": [
+        { "binding": "ROSTER_MONITOR", "service": "realms-value-monitor", "entrypoint": "RosterMonitor" },
+        { "binding": "IDENTITY", "service": "realms-identity", "entrypoint": "ValueIdentity" },
+        { "binding": "IDENTITY_HTTP", "service": "realms-identity" },
+      ],
       "durable_objects": { "bindings": [{ "name": "RELAY", "class_name": "ValueRelay" }] },
       "triggers": { "crons": ["* * * * *"] },
     },

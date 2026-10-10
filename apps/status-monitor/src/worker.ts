@@ -1,3 +1,4 @@
+import { environmentL2, valuePlaneAddress, type ValueEnvironment } from "@realms-world/chain";
 import { Effect } from "effect";
 import { isStatusDocument, STATE_KEY, type MonitorState } from "./model";
 import { probeServices, type PublicValueTargets } from "./probes";
@@ -8,7 +9,7 @@ interface Env {
   RELAY_HEALTH_URL: string;
   GUARDIAN_HEALTH_URL: string;
   LEDGER_RPC_URL: string;
-  LEDGER_ADDRESS: string;
+  ENVIRONMENT: ValueEnvironment;
 }
 
 /** The monitor publishes one conditional object: counters and public document cannot diverge after a crash. */
@@ -50,13 +51,13 @@ export default {
 };
 
 const valueTargetsOf = (env: Env): PublicValueTargets => {
-  const values = [env.RELAY_HEALTH_URL, env.GUARDIAN_HEALTH_URL, env.LEDGER_RPC_URL, env.LEDGER_ADDRESS];
+  const values = [env.RELAY_HEALTH_URL, env.GUARDIAN_HEALTH_URL, env.LEDGER_RPC_URL];
   if (values.some((value) => typeof value !== "string" || !value))
     throw new Error("Status target configuration missing");
   return {
     relayHealthUrl: env.RELAY_HEALTH_URL,
     guardianHealthUrl: env.GUARDIAN_HEALTH_URL,
     ledgerRpcUrl: env.LEDGER_RPC_URL,
-    ledgerAddress: env.LEDGER_ADDRESS,
+    ledgerAddress: valuePlaneAddress("ledger", environmentL2(env.ENVIRONMENT).network),
   };
 };

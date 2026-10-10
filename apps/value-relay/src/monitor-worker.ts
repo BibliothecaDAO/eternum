@@ -1,11 +1,11 @@
+import { checkSlotRoster, slotRosterReads } from "./roster-monitor";
+import { ledgerAddress } from "./environment";
 import { activeShards, readRegisteredShard, type ShardDirectory } from "@realms-world/value-ledger";
 import { processSeasonTops } from "./season-tops";
 import { seasonLedgerReads, challengeSeason } from "./season-ledger";
 import { onIdentityChain } from "./ledger-chain";
 import { presentsOperatorToken } from "@realms-world/identity";
-import { chestLedgerReads } from "./chest-ledger";
-import { DurableChestStore, overdueChestRequests } from "./chests";
-import { DurableObject } from "cloudflare:workers";
+import { DurableObject, WorkerEntrypoint } from "cloudflare:workers";
 import { Effect, Result, Semaphore } from "effect";
 import { ledgerMonitorReads } from "./ledger";
 import { ledgerPauserAdapter } from "./chain";
@@ -19,22 +19,23 @@ import { runMonitor, resetMonitorRow, type MonitorProgress } from "./monitor";
 
 interface MonitorEnv {
   OPERATOR_TOKEN: string;
-  IDENTITY: ShardDirectory & {
-    l2ChainId(): Promise<string>;
-    realmsIdForAccount(account: string): Promise<string | null>;
-    matchesPayDecision(decision: import("@realms-world/identity").LedgerPayDecision): Promise<boolean>;
-  };
+  LAUNCH: import("@realms-world/value-ledger").LaunchCohorts;
+  IDENTITY: ShardDirectory &
+    import("@realms-world/value-ledger").RegistrationIdentity & {
+      l2ChainId(): Promise<string>;
+      realmsIdForAccount(account: string): Promise<string | null>;
+      matchesPayDecision(decision: import("@realms-world/identity").LedgerPayDecision): Promise<boolean>;
+    };
   RELAY_REPORT: { held(): Promise<{ kind: string; reason: string; transactionHash: string | null }[]> };
   MONITOR: DurableObjectNamespace<ValueMonitor>;
   LEDGER_RPC_URL: string;
-  LEDGER_ADDRESS: string;
+  ENVIRONMENT: import("@realms-world/chain").ValueEnvironment;
   PAUSER_ACCOUNT_ADDRESS: string;
   PAUSER_PRIVATE_KEY: string;
 }
 
 export class ValueMonitor extends DurableObject<MonitorEnv> {
   private readonly checking = Semaphore.makeUnsafe(1);
-  private readonly chests = new DurableChestStore(this.ctx.storage);
   async tick() {
     const monitor = this;
     return Effect.runPromise(
@@ -51,13 +52,13 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
                     {
                       ...seasonLedgerReads({
                         rpcUrl: monitor.env.LEDGER_RPC_URL,
-                        contractAddress: monitor.env.LEDGER_ADDRESS,
+                        contractAddress: ledgerAddress(monitor.env.ENVIRONMENT),
                       }),
                       challenge: (id, omitted) =>
                         challengeSeason(
                           {
                             rpcUrl: monitor.env.LEDGER_RPC_URL,
-                            contractAddress: monitor.env.LEDGER_ADDRESS,
+                            contractAddress: ledgerAddress(monitor.env.ENVIRONMENT),
                             accountAddress: monitor.env.PAUSER_ACCOUNT_ADDRESS,
                             privateKey: monitor.env.PAUSER_PRIVATE_KEY,
                           },
@@ -74,6 +75,16 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
               ),
             ),
           );
+          const rosterAudit = yield* Effect.result(
+            onIdentityChain(
+              monitor.env.LEDGER_RPC_URL,
+              monitor.env.IDENTITY,
+              relayOperation("check frozen paid rosters", async () => {
+                for (const cohort of await monitor.env.LAUNCH.rosterCohorts())
+                  if (cohort.complete) await monitor.checkRoster(cohort);
+              }),
+            ),
+          );
           const ports = monitorPortsOf(monitor.env, monitor.ctx.storage);
           const value = yield* Effect.result(
             onIdentityChain(
@@ -85,16 +96,6 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
               }),
             ),
           );
-          const chests = yield* Effect.result(
-            onIdentityChain(
-              monitor.env.LEDGER_RPC_URL,
-              monitor.env.IDENTITY,
-              overdueChestRequests(
-                chestLedgerReads({ rpcUrl: monitor.env.LEDGER_RPC_URL, contractAddress: monitor.env.LEDGER_ADDRESS }),
-                monitor.chests,
-              ),
-            ),
-          );
           const held = yield* Effect.result(
             relayOperation("read relay held obligations", () => monitor.env.RELAY_REPORT.held()),
           );
@@ -102,21 +103,53 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
             checked_at: Math.floor(Date.now() / 1000),
             value: Result.isSuccess(value) ? value.success : null,
             season_error: Result.isSuccess(seasonAudit) ? seasonAudit.success : seasonAudit.failure.operation,
-            value_error: Result.isFailure(value) ? value.failure.operation : null,
-            chests: Result.isSuccess(chests) ? chests.success : null,
+            value_error: Result.isFailure(value)
+              ? value.failure.operation
+              : Result.isFailure(rosterAudit)
+                ? rosterAudit.failure.operation
+                : null,
             held: Result.isSuccess(held) ? held.success : null,
           };
-          yield* relayOperation("publish chest monitor", () => monitor.ctx.storage.put("observation", observation));
+          yield* relayOperation("publish value monitor", () => monitor.ctx.storage.put("observation", observation));
           return observation;
         }),
       ),
     );
   }
+  async verifyRoster(chainId: string, gameId: number) {
+    return Effect.runPromise(
+      this.checking.withPermit(
+        onIdentityChain(
+          this.env.LEDGER_RPC_URL,
+          this.env.IDENTITY,
+          relayOperation("verify paid roster before results", async () => {
+            if ((await this.status()).halted) throw new Error("monitor_halted");
+            const cohorts = await this.env.LAUNCH.rosterCohorts();
+            const cohort = cohorts.find(
+              (row) => BigInt(row.chainId) === BigInt(chainId) && row.games.some((game) => game.gameId === gameId),
+            );
+            if (!cohort) throw new Error("paid_game_slot_missing");
+            await this.checkRoster(cohort);
+            return cohort.slotId;
+          }),
+        ),
+      ),
+    );
+  }
+  private async checkRoster(cohort: import("@realms-world/value-ledger").SlotCohort) {
+    await checkSlotRoster(cohort, {
+      ...slotRosterReads(cohort, this.env.LEDGER_RPC_URL, ledgerAddress(this.env.ENVIRONMENT), this.env.IDENTITY),
+      pause: async () => {
+        const row = `roster:${cohort.chainId}:${cohort.slotId}`;
+        await this.ctx.storage.put("progress", { ...(await this.status()), halted: row, fault: { row } });
+        await Effect.runPromise(monitorPortsOf(this.env, this.ctx.storage).ledger.pause());
+      },
+    });
+  }
   async health() {
     const observation = await this.ctx.storage.get<{
       checked_at: number;
       value: MonitorProgress | null;
-      chests: { overdue: string[]; pending: number } | null;
       value_error: string | null;
       season_error: string | null;
       held?: { kind: string; reason: string; transactionHash: string | null }[] | null;
@@ -131,8 +164,8 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
         age <= 300 &&
         observation?.value !== null &&
         observation?.value !== undefined &&
-        observation.chests !== null &&
         observation.season_error === null &&
+        observation.value_error === null &&
         !progress.halted,
     };
   }
@@ -179,7 +212,7 @@ const legacyFault = async (
     throw new Error("fault_row_unavailable");
   }
   const cursor = previous.cursors?.[stream] ?? { fromBlock: 0, page: null };
-  const reads = ledgerMonitorReads(env.LEDGER_RPC_URL, env.LEDGER_ADDRESS);
+  const reads = ledgerMonitorReads(env.LEDGER_RPC_URL, ledgerAddress(env.ENVIRONMENT));
   const page =
     stream === "paidClaims"
       ? await Effect.runPromise(
@@ -231,7 +264,7 @@ const monitorPortsOf = (env: MonitorEnv, storage: DurableObjectStorage) => {
               reader,
               frontierReceiptBindings(
                 reader,
-                { rpcUrl: env.LEDGER_RPC_URL, address: env.LEDGER_ADDRESS },
+                { rpcUrl: env.LEDGER_RPC_URL, address: ledgerAddress(env.ENVIRONMENT) },
                 env.IDENTITY,
               ),
             ).withdrawal(chainId, hash),
@@ -254,10 +287,10 @@ const monitorPortsOf = (env: MonitorEnv, storage: DurableObjectStorage) => {
         }),
     },
     ledger: {
-      ...ledgerMonitorReads(env.LEDGER_RPC_URL, env.LEDGER_ADDRESS),
+      ...ledgerMonitorReads(env.LEDGER_RPC_URL, ledgerAddress(env.ENVIRONMENT)),
       pause: ledgerPauserAdapter({
         rpcUrl: env.LEDGER_RPC_URL,
-        contractAddress: env.LEDGER_ADDRESS,
+        contractAddress: ledgerAddress(env.ENVIRONMENT),
         accountAddress: env.PAUSER_ACCOUNT_ADDRESS,
         privateKey: env.PAUSER_PRIVATE_KEY,
       }),
@@ -301,3 +334,12 @@ export default {
     await monitorOf(env).tick();
   },
 };
+
+export class RosterMonitor extends WorkerEntrypoint<MonitorEnv> {
+  override fetch() {
+    return new Response(null, { status: 404 });
+  }
+  verifyRoster(chainId: string, gameId: number) {
+    return monitorOf(this.env).verifyRoster(chainId, gameId);
+  }
+}

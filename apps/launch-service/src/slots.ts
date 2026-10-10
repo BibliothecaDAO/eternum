@@ -1,7 +1,7 @@
-import { nativeRuleConstants } from "../../../contracts/l3/world-native/schema/client.gen";
+export { splitPlaytestRoster } from "@realms-world/value-ledger";
 
 export interface PlaytestSlot {
-  entry: import("@realms-world/identity").GameEntry;
+  slotId: number;
   name: string;
   closesAt: string;
   frozenAt: string | null;
@@ -19,18 +19,3 @@ export interface SlotStore {
 
 export class SlotConflict extends Error {}
 export class SlotNotFound extends Error {}
-
-/** Preserve the caller's roster order; earlier groups receive the extra player. */
-export function splitPlaytestRoster<T>(roster: readonly T[]): T[][] {
-  const gameCount = Math.ceil(roster.length / nativeRuleConstants.MAX_BLITZ_ROSTER_PLAYERS);
-  if (gameCount === 0) return [];
-  const size = Math.floor(roster.length / gameCount);
-  const largerGames = roster.length % gameCount;
-  let offset = 0;
-  return Array.from({ length: gameCount }, (_, index) => {
-    const next = offset + size + Number(index < largerGames);
-    const group = roster.slice(offset, next);
-    offset = next;
-    return group;
-  });
-}

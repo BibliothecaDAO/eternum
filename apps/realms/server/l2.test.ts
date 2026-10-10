@@ -5,13 +5,13 @@ import { decodeIdentityEnv } from "./env";
 import { verifyWalletOnL2 } from "./wallet-signature";
 
 const env = {
-  L2_CHAIN_ID: "SN_SEPOLIA" as const,
+  ENVIRONMENT: "staging" as const,
   IDENTITY_RPC_URL: "https://starknet-sepolia.g.alchemy.com/v2/test",
   REALMS_ADDRESS: "0x30",
 };
 afterEach(() => vi.restoreAllMocks());
-it("requires an explicit chain and only its HTTPS Alchemy endpoint without exposing credentials", () => {
-  expect(() => identityL2Configuration({ ...env, L2_CHAIN_ID: undefined } as never)).toThrow("L2_CHAIN_ID");
+it("requires a known environment and only its HTTPS Alchemy endpoint without exposing credentials", () => {
+  expect(() => identityL2Configuration({ ...env, ENVIRONMENT: undefined } as never)).toThrow("ENVIRONMENT");
   for (const url of [
     "https://other.test/v2/private",
     "http://starknet-sepolia.g.alchemy.com/v2/private",
@@ -73,8 +73,8 @@ it("accepts Sepolia SIWS and refuses another proof chain without a signature or 
   expect(calls).not.toHaveBeenCalled();
 });
 
-it("fails Worker environment decoding before serving any route when its chain is absent", () => {
-  expect(() => decodeIdentityEnv({ IDENTITY_RPC_URL: env.IDENTITY_RPC_URL })).toThrow("L2_CHAIN_ID");
+it("fails Worker environment decoding before serving any route when its environment is absent", () => {
+  expect(() => decodeIdentityEnv({ IDENTITY_RPC_URL: env.IDENTITY_RPC_URL })).toThrow("ENVIRONMENT");
   try {
     decodeIdentityEnv({ ...env, IDENTITY_RPC_URL: "https://other.test/v2/private" });
     throw new Error("configuration was accepted");

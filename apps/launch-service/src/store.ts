@@ -1,5 +1,3 @@
-import { readGameEntry, type GameEntry } from "@realms-world/identity";
-import { entryForGame } from "./entry";
 import type { GameEnvironmentId } from "../../../config/shared/game-environments";
 import { Context, Effect, Layer } from "effect";
 import type { LaunchRunStore } from "../../../config/deployer/clean/launch/run-store";
@@ -10,7 +8,7 @@ import { applyDurableLaunchDefaults, type LaunchJobRequest, type LaunchKind } fr
 
 interface LaunchRunRow {
   id: string;
-  entry: string | null;
+  slot_id: number | null;
   chain_id: string;
   kind: LaunchKind;
   environment: GameEnvironmentId;
@@ -28,14 +26,12 @@ interface LaunchRunRow {
 
 export interface LaunchServiceStore extends LaunchRunStore {
   /** Queues a run; a running or complete run of the same name is handed back as it is. */
-  saveEntry(environment: GameEnvironmentId, gameName: string, entry: GameEntry): Promise<void>;
-  entryForSlot(name: string): Promise<GameEntry>;
   enqueue(kind: LaunchKind, request: LaunchJobRequest): Promise<LaunchRun>;
   /** Creates a run once; whatever run already has that name is handed back untouched. */
   schedule(kind: LaunchKind, request: LaunchJobRequest): Promise<LaunchRun>;
   list(environment: GameEnvironmentId, kind?: LaunchKind): Promise<LaunchRun[]>;
   /** Declared entry terms for created games, including registration before start and draining shards. */
-  playerDirectoryGames(): Promise<{ chainId: string; games: { gameId: number; entry: GameEntry }[] }[]>;
+  playerDirectoryGames(): Promise<{ chainId: string; games: { gameId: number; slotId: number | null }[] }[]>;
   /** Unfinished work stranded by a change to the configured shard. */
   pendingOtherChains(): Promise<LaunchRun[]>;
   /** Every run that failed and waits for a launcher to continue it, in any environment. */
@@ -59,7 +55,7 @@ const iso = (time: number) => new Date(time).toISOString();
 
 const toRun = (row: LaunchRunRow): LaunchRun => ({
   id: row.id,
-  entry: row.entry === null ? null : readGameEntry(JSON.parse(row.entry)),
+  slotId: row.slot_id,
   chainId: row.chain_id,
   kind: row.kind,
   environment: row.environment,
@@ -80,7 +76,7 @@ const storedSummary = <S extends LaunchSummary>(runId: string, summary: S): S =>
   outputPath: `${launchRunPath(runId)}/summary`,
 });
 
-type DeclaredGameRow = Pick<LaunchRunRow, "id" | "chain_id" | "summary" | "entry">;
+type DeclaredGameRow = Pick<LaunchRunRow, "id" | "chain_id" | "summary" | "slot_id">;
 
 const declaredGameId = ({ id, summary }: DeclaredGameRow): number | null => {
   try {
@@ -97,13 +93,12 @@ const declaredGameId = ({ id, summary }: DeclaredGameRow): number | null => {
 };
 
 const groupDeclaredGames = (rows: DeclaredGameRow[]) => {
-  const chains = new Map<string, { gameId: number; entry: GameEntry }[]>();
+  const chains = new Map<string, { gameId: number; slotId: number | null }[]>();
   for (const row of rows) {
     const gameId = declaredGameId(row);
-    if (gameId === null || row.entry === null) continue;
-    const entry = entryForGame(JSON.parse(row.entry), row.chain_id, gameId);
+    if (gameId === null) continue;
     const games = chains.get(row.chain_id) ?? [];
-    games.push({ gameId, entry });
+    games.push({ gameId, slotId: row.slot_id });
     chains.set(row.chain_id, games);
   }
   return [...chains].map(([chainId, games]) => ({ chainId, games: games.sort((a, b) => a.gameId - b.gameId) }));
@@ -168,36 +163,32 @@ export class D1LaunchStore implements LaunchServiceStore {
     return (await statement.all<LaunchRunRow>()).results.map(toRun);
   }
 
-  async playerDirectoryGames(): Promise<{ chainId: string; games: { gameId: number; entry: GameEntry }[] }[]> {
+  async rosterCohorts(): Promise<import("@realms-world/value-ledger").SlotCohort[]> {
     const { results } = await this.db
       .prepare(
-        "SELECT id, chain_id, summary, entry FROM launch_runs WHERE chain_id <> '' AND kind = 'game' AND entry IS NOT NULL AND (status = 'complete' OR json_extract(entry,'$.kind')='paid') ORDER BY chain_id",
+        "SELECT * FROM launch_runs WHERE kind='game' AND slot_id IS NOT NULL ORDER BY chain_id,slot_id,json_extract(request,'$.groupIndex')",
+      )
+      .all<LaunchRunRow>();
+    const cohorts = new Map<string, import("@realms-world/value-ledger").SlotCohort>();
+    for (const row of results) {
+      const key = `${row.chain_id}:${row.slot_id}`;
+      const cohort = cohorts.get(key) ?? { chainId: row.chain_id, slotId: row.slot_id!, complete: true, games: [] };
+      const gameId = row.summary ? declaredGameId(row) : null;
+      const request = JSON.parse(row.request) as { groupIndex: number };
+      if (row.status !== "complete" || gameId === null) cohort.complete = false;
+      if (gameId !== null) cohort.games.push({ gameId, groupIndex: request.groupIndex });
+      cohorts.set(key, cohort);
+    }
+    return [...cohorts.values()];
+  }
+
+  async playerDirectoryGames(): Promise<{ chainId: string; games: { gameId: number; slotId: number | null }[] }[]> {
+    const { results } = await this.db
+      .prepare(
+        "SELECT id, chain_id, summary, slot_id FROM launch_runs WHERE chain_id <> '' AND kind = 'game' AND status = 'complete' ORDER BY chain_id",
       )
       .all<DeclaredGameRow>();
     return groupDeclaredGames(results);
-  }
-
-  async saveEntry(environment: GameEnvironmentId, gameName: string, value: GameEntry) {
-    const run = await this.find("game", environment, gameName);
-    if (!run || !run.summary || !("gameId" in run.summary) || !run.summary.gameId)
-      throw new Error("game_entry_before_creation");
-    const entry = entryForGame(value, run.chainId, run.summary.gameId);
-    const encoded = JSON.stringify(entry);
-    await this.db
-      .prepare("UPDATE launch_runs SET entry=? WHERE id=? AND (entry IS NULL OR entry=?)")
-      .bind(encoded, run.id, encoded)
-      .run();
-    const stored = await this.find("game", environment, gameName);
-    if (JSON.stringify(stored?.entry) !== encoded) throw new Error("game_entry_changed");
-  }
-  async entryForSlot(name: string) {
-    const run = await this.find("game", "madara.blitz", `${name}-1`);
-    if (!run?.entry) throw new Error("slot_entry_opening");
-    if (run.entry.kind === "paid") {
-      if (!run.summary || !("gameId" in run.summary) || !run.summary.gameId) throw new Error("slot_entry_without_game");
-      return entryForGame(run.entry, run.chainId, run.summary.gameId);
-    }
-    throw new Error("blitz_slot_requires_paid_entry");
   }
 
   // Migration 0005 archives pre-chain runs under an empty id; those have no shard to drain.
@@ -378,7 +369,7 @@ export class D1LaunchStore implements LaunchServiceStore {
     return this.db
       .prepare(
         `INSERT INTO launch_runs
-           (id, chain_id, kind, environment, name, request, status, available_at, created_at, updated_at, entry)
+           (id, chain_id, kind, environment, name, request, status, available_at, created_at, updated_at, slot_id)
          VALUES (?, ?, ?, ?, ?, ?, 'queued', ?, ?, ?, ?) ${conflict}`,
       )
       .bind(
@@ -391,7 +382,7 @@ export class D1LaunchStore implements LaunchServiceStore {
         now,
         now,
         now,
-        kind === "game" && request.environment !== "madara.blitz" ? JSON.stringify({ kind: "free" }) : null,
+        "slotId" in request ? (request.slotId ?? null) : null,
       );
   }
 }

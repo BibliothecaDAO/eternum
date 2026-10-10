@@ -7,7 +7,7 @@ import { routeIdentityRequest } from "./routes";
 
 const query = vi.fn();
 const env = {
-  L2_CHAIN_ID: "SN_MAIN",
+  ENVIRONMENT: "production",
   RATING_TOKEN_ADDRESS: "0x31",
   RATING_HISTORY_URL: "https://realms.world/api/ratings/population",
   IDENTITY_RPC_URL: "https://starknet-mainnet.g.alchemy.com/v2/test",
@@ -24,7 +24,7 @@ const request = (parameters: string) =>
 let cache: ReturnType<typeof testRatingReader>;
 let call: MockInstance<RpcProvider["callContract"]>;
 beforeEach(() => {
-  Object.assign(env, { L2_CHAIN_ID: "SN_MAIN" });
+  Object.assign(env, { ENVIRONMENT: "production" });
   cache = testRatingReader();
   env.RATING_READER = cache.binding as unknown as IdentityEnv["RATING_READER"];
   query.mockClear();
@@ -213,9 +213,9 @@ it("resolves another player's approved gameplay account to the same linked walle
 
 it("uses the Sepolia reader and its configured rating token instead of mainnet addresses", async () => {
   cache.close();
-  Object.assign(env, { L2_CHAIN_ID: "SN_SEPOLIA" });
+  Object.assign(env, { ENVIRONMENT: "staging" });
   cache = testRatingReader({
-    L2_CHAIN_ID: "SN_SEPOLIA",
+    ENVIRONMENT: "staging",
     IDENTITY_RPC_URL: "https://starknet-sepolia.g.alchemy.com/v2/test",
     RATING_TOKEN_ADDRESS: "0x32",
   });

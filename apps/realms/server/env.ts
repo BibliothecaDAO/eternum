@@ -15,8 +15,6 @@ const IdentityVars = Schema.Struct({
   /** The RealmsAccount class every shard deploys player accounts from. */
   ACCOUNT_CLASS_HASH: Schema.NonEmptyString,
   BETTER_AUTH_SECRET: Schema.NonEmptyString,
-  /** The environment's one L2 chain, shared by proofs, Realm ownership and ratings. */
-  L2_CHAIN_ID: Schema.Literals(["SN_MAIN", "SN_SEPOLIA"]),
   REALMS_ADDRESS: Schema.NonEmptyString,
   RATING_TOKEN_ADDRESS: Schema.NonEmptyString,
   RATING_HISTORY_URL: Schema.NonEmptyString,

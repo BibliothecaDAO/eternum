@@ -39,15 +39,16 @@ to the game client's or identity Worker's automatic release. Local checks: `pnpm
 `pnpm --dir apps/status-monitor typecheck`. Repository service validation runs both. Tests use mocked public HTTP and
 local R2; they do not probe live hosts.
 
-Required public target variables: `RELAY_HEALTH_URL`, `GUARDIAN_HEALTH_URL`, `LEDGER_RPC_URL`, `LEDGER_ADDRESS`. No
-target may contain credentials, a query key, plain HTTP or a private host. The relay row checks its public health and
-last completed tick; a heartbeat older than five minutes is down even if HTTP still answers. The ledger row uses raw
-JSON-RPC to read the confirmed node head and is_paused at that same block, independently of the relay's parser. Its
-`paused` fact is true, false, or null on failed decoding. A paused ledger is degraded; a failed or stale L2 head is
-down. The existing static page can show the paused state in the row label; the JSON also carries `paused`. The monitor
-imports no guardian, relay or ledger service code and has no watched-service binding, database or key.
+Required target variables: `RELAY_HEALTH_URL`, `GUARDIAN_HEALTH_URL`, and the secret `LEDGER_RPC_URL`. `ENVIRONMENT`
+selects the ledger address from the shared `contracts/common/addresses/<network>.json` book. No target may contain
+credentials, a query key, plain HTTP or a private host. The relay row checks its public health and last completed tick;
+a heartbeat older than five minutes is down even if HTTP still answers. The ledger row uses raw JSON-RPC to read the
+confirmed node head and is_paused at that same block, independently of the relay's parser. Its `paused` fact is true,
+false, or null on failed decoding. A paused ledger is degraded; a failed or stale L2 head is down. The existing static
+page can show the paused state in the row label; the JSON also carries `paused`. The monitor imports no guardian, relay
+or ledger service code and has no watched-service binding, database or key.
 
-Owner hosting still needed: attach readonly public health domains to the guardian and relay Workers, set the four public
+Owner hosting still needed: attach readonly public health domains to the guardian and relay Workers, set the target
 variables above, create/bind the independent R2/Pages resources already listed, and publish the standalone frontend
 page. Guardian HTTP exposes only GET /health; device signing stays private service-binding RPC. This change adds three
 component observations and the direct readiness route, replacing the coupled accounts/guardian probe. It adds no second
