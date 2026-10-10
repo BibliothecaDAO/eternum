@@ -176,15 +176,6 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
     );
   };
 
-  /** A signed-in account's wallet changes use a separate email challenge from sign-in. */
-  const sendWalletCode = async (email: string): Promise<{ success: true; expires_at: number }> =>
-    readJson(
-      await request("/auth/email-otp/send-verification-otp", {
-        method: "POST",
-        body: JSON.stringify({ email, type: "email-verification" }),
-      }),
-    );
-
   /** Signs in with an emailed code; an email's first sign-in creates its Realms account. */
   const signInWithCode = async (email: string, code: string): Promise<Session> => {
     await readJson(
@@ -250,7 +241,6 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
     unlinkWallet,
     listSignInProviders,
     sendSignInCode,
-    sendWalletCode,
     signInWithCode,
     discordSignInUrl,
     approveDeviceChange,

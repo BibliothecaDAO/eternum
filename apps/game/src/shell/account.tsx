@@ -102,7 +102,7 @@ const WalletRow = ({ session, refresh }: { session: Session; refresh: () => void
     setSendingCode(true);
     setError(null);
     try {
-      await identityClient.sendWalletCode(session.user.email);
+      await identityClient.sendSignInCode(session.user.email);
       setCode("");
       setCodeSent(true);
     } catch (cause) {
