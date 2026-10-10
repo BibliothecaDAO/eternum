@@ -23,7 +23,6 @@ export const CreateGameRequestSchema = Schema.Struct({
   gameName: NonEmptyString.check(
     Schema.makeFilter((name: string) => isPublicGameName(name) || "check- names are reserved for deployment"),
   ),
-  rosterAccounts: Schema.optional(Schema.Array(Schema.String.pipe(Schema.check(Schema.isPattern(/^0x[0-9a-fA-F]+$/))))),
   gameStartTime: Schema.optional(NonEmptyString),
 }).check(
   Schema.makeFilter((request) =>
@@ -45,7 +44,8 @@ interface SharedLaunchOptions {
 }
 
 export interface CreateGameRequest extends SharedLaunchOptions {
-  rosterAccounts?: readonly string[];
+  slotId?: number;
+  groupIndex?: number;
   gameName: string;
   gameStartTime?: string;
 }

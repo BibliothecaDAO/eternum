@@ -26,7 +26,7 @@ interface WorkerPlatform {
   cache: Cache;
   fetchShard: typeof fetch;
   readLaunchDirectory: () => Promise<{
-    chains: { chainId: string; games: { gameId: number; entry: import("@realms-world/identity").GameEntry }[] }[];
+    chains: { chainId: string; games: { gameId: number; slotId: number | null }[] }[];
   }>;
 }
 

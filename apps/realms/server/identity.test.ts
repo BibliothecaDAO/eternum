@@ -29,7 +29,7 @@ const OPERATOR_TOKEN = "operator-test-token";
 /** The Heralds this test's shards answer from, by URL; a missing entry answers 503. */
 const heralds = new Map<string, unknown>();
 let launchDirectory: {
-  chains: { chainId: string; games: { gameId: number; entry: import("@realms-world/identity").GameEntry }[] }[];
+  chains: { chainId: string; games: { gameId: number; slotId: number | null }[] }[];
 } = { chains: [] };
 const fetchShard = (async (input: RequestInfo | URL) => {
   const body = heralds.get(new URL(input instanceof Request ? input.url : input).href);
@@ -718,10 +718,10 @@ describe("identity Worker", () => {
       game_id: gameId,
       name,
       status: "Running",
-      entry: { kind: "free" },
+      slotId: null,
     });
     launchDirectory = {
-      chains: [{ chainId: "0xa", games: [1, 3].map((gameId) => ({ gameId, entry: { kind: "free" as const } })) }],
+      chains: [{ chainId: "0xa", games: [1, 3].map((gameId) => ({ gameId, slotId: null })) }],
     };
     heralds.set("https://shard-a.test/manifest", shardManifest("0xa"));
     heralds.set("https://shard-a.test/games", {
@@ -769,7 +769,7 @@ describe("identity Worker", () => {
     heralds.set("https://shard-b.test/games", { chain: "0xb", games: [game(1, "blitz-b")] });
     launchDirectory.chains.push({
       chainId: "0xb",
-      games: [1].map((gameId) => ({ gameId, entry: { kind: "free" as const } })),
+      games: [1].map((gameId) => ({ gameId, slotId: null })),
     });
     const listed = [
       {
@@ -809,7 +809,7 @@ describe("identity Worker", () => {
     const settled = (gameId: number, name: string, endAt: number) => ({
       ...game(gameId, name),
       status: "Settled",
-      entry: { kind: "free" },
+      slotId: null,
       clock: { end_at: endAt },
     });
     const live = { ...game(1, "blitz-d"), clock: { end_at: 900 } };
@@ -829,8 +829,8 @@ describe("identity Worker", () => {
       );
     }
     launchDirectory.chains.push(
-      { chainId: "0xd", games: [1, 2].map((gameId) => ({ gameId, entry: { kind: "free" as const } })) },
-      { chainId: "0xe", games: [1, 2].map((gameId) => ({ gameId, entry: { kind: "free" as const } })) },
+      { chainId: "0xd", games: [1, 2].map((gameId) => ({ gameId, slotId: null })) },
+      { chainId: "0xe", games: [1, 2].map((gameId) => ({ gameId, slotId: null })) },
     );
     expect(await list()).toEqual([
       ...listed,
@@ -893,7 +893,7 @@ describe("identity Worker", () => {
     expect(await relisted.json()).toEqual({ url: "https://shard-e.test", chainId: "0xee", status: "active" });
     launchDirectory.chains.push({
       chainId: "0xee",
-      games: [1].map((gameId) => ({ gameId, entry: { kind: "free" as const } })),
+      games: [1].map((gameId) => ({ gameId, slotId: null })),
     });
     expect((await list()).at(-1)).toEqual({
       url: "https://shard-e.test",

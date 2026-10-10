@@ -35,14 +35,6 @@ export interface Session {
 
 export type IdentityChainId = "SN_MAIN" | "SN_SEPOLIA";
 
-export interface PaidGameLedger {
-  address: string;
-  chainId: string;
-  shard: string;
-  gameId: number;
-}
-export type GameEntry = { kind: "free" } | { kind: "paid"; ledger: PaidGameLedger };
-
 export interface LedgerPayDecision {
   chainId: string;
   claimId: string;
