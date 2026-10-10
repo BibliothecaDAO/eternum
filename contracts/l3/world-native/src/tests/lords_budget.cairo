@@ -444,15 +444,26 @@ fn unopened_2000_ruins_per_day_never_borrow_future_unlocks(chunk: u32) {
 }
 
 #[test]
-fn skipped_day_decay_is_exact_beyond_sixty_four_days() {
+fn a_wholly_missed_day_resets_the_estimate_and_uses_the_price_ceiling() {
     let rules = ChestRules { estimate_days: 100, ..rules() };
-    let previous = LordsBudget { estimate: 1_000_000_000, ..empty_day(rules, 0) };
-    let mut expected = previous.estimate;
-    for _ in 0_u64..100 {
-        expected = expected * 99 / 100;
+    let previous = LordsBudget { estimate: 1_000_000_000, rolled_shares: 1000, ..empty_day(rules, 0) };
+    for day in array![2_u64, 100] {
+        let next = roll(rules, previous, clock(), day);
+        assert_eq!(next.estimate, 0);
+        assert_eq!(next.price, rules.price_ceiling);
+        assert_eq!(next.rolled_shares, 0);
+        assert_eq!(next.pool_left, previous.pool_left);
     }
-    assert!(expected != 0);
-    assert_eq!(roll(rules, previous, clock(), 100).estimate, expected);
+}
+
+#[test]
+fn a_recorded_zero_share_day_keeps_the_consecutive_day_formula() {
+    let rules = ChestRules { estimate_days: 10, ..rules() };
+    let previous = LordsBudget { estimate: 1_000_000_000_000_000_000, ..empty_day(rules, 0) };
+    let next = roll(rules, previous, clock(), 1);
+    assert_eq!(next.estimate, previous.estimate * 9 / 10);
+    assert_eq!(next.price, 1);
+    assert!(next.price < rules.price_ceiling);
 }
 
 #[test]
