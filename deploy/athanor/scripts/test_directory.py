@@ -15,7 +15,7 @@ class RetirementTest(unittest.TestCase):
             with self.subTest(code=code):
                 body = io.BytesIO(json.dumps({"error": reason}).encode())
                 error = HTTPError("https://identity.test", code, "Conflict", {}, body)
-                with patch.dict(directory.os.environ, {"OPERATOR_TOKEN": "test-token"}), patch.object(directory, "service_json", side_effect=error):
+                with patch.object(directory, "service_json", side_effect=error):
                     self.assertEqual(directory.directory_status(self.CONFIG, "retired"), {"url": self.CONFIG["public_herald_url"], "status": "retired"})
                 self.assertTrue(body.closed)
 
@@ -23,6 +23,6 @@ class RetirementTest(unittest.TestCase):
         for status, code, body in [("pending", 409, {"error": "shard_status_change_refused"}), ("retired", 403, {"error": "shard_status_change_refused"}), ("retired", 409, {"error": "other_conflict"}), ("retired", 500, {"error": "unavailable"}), ("retired", 404, {"error": "route_missing"})]:
             with self.subTest(status=status, code=code):
                 error = HTTPError("https://identity.test", code, "Failure", {}, io.BytesIO(json.dumps(body).encode()))
-                with patch.dict(directory.os.environ, {"OPERATOR_TOKEN": "test-token"}), patch.object(directory, "service_json", side_effect=error), self.assertRaises(HTTPError):
+                with patch.object(directory, "service_json", side_effect=error), self.assertRaises(HTTPError):
                     directory.directory_status(self.CONFIG, status)
                 error.close()

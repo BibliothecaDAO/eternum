@@ -1,5 +1,6 @@
 import io
 import json
+import os
 from email.message import Message
 import unittest
 from urllib.error import HTTPError
@@ -39,7 +40,7 @@ class ServiceTransportTest(unittest.TestCase):
                         response.msg = "Fixture response"
                         return response
 
-                    with patch.dict(directory.os.environ, {"OPERATOR_TOKEN": "test-token"}), \
+                    with patch.dict(os.environ, {"OPERATOR_TOKEN": "test-token"}), \
                             patch.object(HTTPSHandler, "https_open", side_effect=transport), \
                             patch.object(HTTPHandler, "http_open", side_effect=transport):
                         with self.assertRaises((HTTPError, RuntimeError)):

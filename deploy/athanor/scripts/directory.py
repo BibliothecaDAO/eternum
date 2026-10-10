@@ -1,6 +1,5 @@
 """The identity service owns shard visibility; deployment and the runner use the same lifecycle requests."""
 import json
-import os
 import time
 from urllib.error import HTTPError
 from urllib.request import urlopen
@@ -29,9 +28,6 @@ def wait_for_identity(config):
 def directory_status(config, status):
     if status not in ("pending", "active", "retired"):
         raise ValueError("Deployment can only register pending, activate or retire a shard")
-    token = os.environ.get("OPERATOR_TOKEN")
-    if not token:
-        raise ValueError("OPERATOR_TOKEN required for official directory activation")
     base = identity_service_base(config["guardian_url"])
     suffix = {
         "pending": "/directory/shards/pending",
