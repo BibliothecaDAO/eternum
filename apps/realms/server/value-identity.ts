@@ -58,6 +58,9 @@ export class ValueIdentity extends WorkerEntrypoint<IdentityEnv> {
   payoutWallet(realmsId: string) {
     return Effect.runPromise(lookupPayoutWallet(this.env.DB, realmsId));
   }
+  async recordPayDecisions(decisions: LedgerPayDecision[]) {
+    for (const decision of decisions) await recordPayDecision(this.env.DB, decision);
+  }
   recordPayDecision(decision: LedgerPayDecision) {
     return recordPayDecision(this.env.DB, decision);
   }

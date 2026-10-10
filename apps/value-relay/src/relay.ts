@@ -1,6 +1,6 @@
 import { blitzCommitment } from "@realms-world/value-ledger/commitment";
 import { Effect, Result } from "effect";
-import type { ConfirmedBlock, LaborClaim, RelayPorts } from "./ports";
+import type { ConfirmedBlock, LaborClaim, RelayPorts, Withdrawal, PayableClaim, ClaimOutcome } from "./ports";
 import { RelayFailure, relayOperation } from "./ports";
 import type { RelayProgress, RelayStore } from "./state";
 
@@ -106,44 +106,89 @@ const separateInvalidRows = (chainId: string, page: ConfirmedBlock): ConfirmedBl
 const payWithdrawals = (ports: RelayPorts, store: RelayStore) =>
   Effect.gen(function* () {
     const deferred: { key: string; reason: string }[] = [];
-    const withdrawals = yield* relayOperation("read pending withdrawals", () => store.withdrawals());
-    for (const withdrawal of withdrawals) {
-      const payment = yield* Effect.result(payEligibleWithdrawal(ports, withdrawal));
-      if (Result.isFailure(payment)) {
-        const reason = payment.failure.operation;
-        if (
-          [
-            "ledger_season_closed",
-            "ledger_invalid_withdrawal",
-            "ledger_report_mismatch",
-            "ledger_claim_window_ended",
-          ].includes(reason)
-        )
-          yield* relayOperation("set aside refused payment", () => store.hold({ kind: "payment", withdrawal, reason }));
-        else deferred.push({ key: withdrawal.transactionHash, reason });
+    const rows = yield* relayOperation("read pending withdrawals", () => store.withdrawals());
+    const reads = yield* Effect.forEach(rows, (row) => Effect.result(ports.ledger.payment(row)), { concurrency: 25 });
+    const reported: Withdrawal[] = [],
+      fresh: Withdrawal[] = [];
+    for (let index = 0; index < rows.length; index++) {
+      const withdrawal = rows[index]!,
+        result = reads[index]!;
+      if (Result.isFailure(result)) {
+        deferred.push({ key: withdrawal.transactionHash, reason: result.failure.operation });
         continue;
       }
-      if (!payment.success) continue;
-      yield* relayOperation("complete withdrawal", () => store.completeWithdrawal(withdrawal.transactionHash));
+      const saved = result.success;
+      if (saved && (saved.seasonId !== withdrawal.seasonId || BigInt(saved.amount) !== BigInt(withdrawal.amount))) {
+        yield* setAsideOrDefer(store, withdrawal, "ledger_report_mismatch", deferred);
+        continue;
+      }
+      if (saved?.paid)
+        yield* relayOperation("complete paid withdrawal", () => store.completeWithdrawal(withdrawal.transactionHash));
+      else if (saved) reported.push(withdrawal);
+      else fresh.push(withdrawal);
+    }
+    if (fresh.length) {
+      const report = yield* Effect.result(ports.ledger.reportMany(fresh));
+      const outcomes = Result.isSuccess(report)
+        ? validateOutcomes(fresh, report.success)
+        : new Map(fresh.map((row) => [row.transactionHash, report.failure.operation]));
+      for (const withdrawal of fresh) {
+        const error = outcomes.get(withdrawal.transactionHash);
+        if (error === null) reported.push(withdrawal);
+        else yield* setAsideOrDefer(store, withdrawal, error!, deferred);
+      }
+    }
+    const ready: PayableClaim[] = [];
+    const wallets = yield* Effect.forEach(reported, (row) => Effect.result(ports.identity.payoutWallet(row.realmsId)), {
+      concurrency: 25,
+    });
+    for (let index = 0; index < reported.length; index++) {
+      const wallet = wallets[index]!,
+        withdrawal = reported[index]!;
+      if (Result.isFailure(wallet))
+        deferred.push({ key: withdrawal.transactionHash, reason: wallet.failure.operation });
+      else if (wallet.success.status === "ready") ready.push({ withdrawal, wallet: wallet.success.address });
+    }
+    if (ready.length) {
+      const pay = yield* Effect.result(ports.ledger.payMany(ready));
+      const outcomes = Result.isSuccess(pay)
+        ? validateOutcomes(
+            ready.map((row) => row.withdrawal),
+            pay.success,
+          )
+        : new Map(ready.map((row) => [row.withdrawal.transactionHash, pay.failure.operation]));
+      for (const { withdrawal } of ready) {
+        const error = outcomes.get(withdrawal.transactionHash);
+        if (error === null)
+          yield* relayOperation("complete withdrawal", () => store.completeWithdrawal(withdrawal.transactionHash));
+        else yield* setAsideOrDefer(store, withdrawal, error!, deferred);
+      }
     }
     return deferred;
   });
-
-const payEligibleWithdrawal = (ports: RelayPorts, withdrawal: import("./ports").Withdrawal) =>
-  Effect.gen(function* () {
-    const recorded = yield* ports.ledger.payment(withdrawal);
-    if (
-      recorded &&
-      (recorded.seasonId !== withdrawal.seasonId || BigInt(recorded.amount) !== BigInt(withdrawal.amount))
-    )
-      return yield* Effect.fail(new RelayFailure({ operation: "ledger_report_mismatch" }));
-    if (recorded?.paid) return true;
-    yield* ports.ledger.report(withdrawal);
-    const wallet = yield* ports.identity.payoutWallet(withdrawal.realmsId);
-    if (wallet.status !== "ready") return false;
-    yield* ports.ledger.pay(withdrawal, wallet.address);
-    return true;
-  });
+const validateOutcomes = (rows: readonly Withdrawal[], outcomes: readonly ClaimOutcome[]) => {
+  const results = new Map(outcomes.map((row) => [row.claimId, row.error]));
+  if (
+    results.size !== rows.length ||
+    outcomes.length !== rows.length ||
+    rows.some((row) => !results.has(row.transactionHash))
+  )
+    throw new RelayFailure({ operation: "invalid_payment_batch_outcomes" });
+  return results;
+};
+const setAsideOrDefer = (
+  store: RelayStore,
+  withdrawal: Withdrawal,
+  reason: string,
+  deferred: { key: string; reason: string }[],
+) =>
+  ["ledger_season_closed", "ledger_invalid_withdrawal", "ledger_report_mismatch", "ledger_claim_window_ended"].includes(
+    reason,
+  )
+    ? relayOperation("set aside refused payment", () => store.hold({ kind: "payment", withdrawal, reason }))
+    : Effect.sync(() => {
+        deferred.push({ key: withdrawal.transactionHash, reason });
+      });
 
 const postResults = (ports: RelayPorts, store: RelayStore) =>
   Effect.gen(function* () {

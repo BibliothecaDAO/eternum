@@ -1,3 +1,4 @@
+import { ledgerBatches } from "./ledger-batches";
 import { onIdentityChain } from "./ledger-chain";
 import { paidGameEntry } from "./game-entry";
 import { accountLinkLedger } from "./account-link-ledger";
@@ -45,6 +46,7 @@ interface RelayEnv {
     accountLinkTargets(after: string | null): Promise<{ rows: AccountLinkTarget[]; next: string | null }>;
     accountLinkTarget(key: string): Promise<AccountLinkTarget>;
     recordLedgerLinkWrite(target: AccountLinkTarget, write: LedgerAccountLinkWrite): Promise<void>;
+    recordPayDecisions(decisions: import("@realms-world/identity").LedgerPayDecision[]): Promise<void>;
     recordPayDecision(decision: import("@realms-world/identity").LedgerPayDecision): Promise<void>;
     payoutWallet(id: string): Promise<import("@realms-world/identity").PayoutWallet>;
     linkedWallet(id: string): Promise<string | null>;
@@ -57,9 +59,11 @@ interface RelayEnv {
 
 /** A single transaction stream per official chain, isolated from the shard host. */
 export class ValueRelay extends DurableObject<RelayEnv> {
-  private readonly signing = Semaphore.makeUnsafe(1);
+  private readonly ledgerSigning = Semaphore.makeUnsafe(1);
+  private readonly shardSigning = Semaphore.makeUnsafe(1);
+  private readonly ingesting = Semaphore.makeUnsafe(1);
   private readonly store = new DurableRelayStore(this.ctx.storage);
-  private readonly ports = relayPortsOf(this.env, this.ctx.storage);
+  private readonly ports = relayPortsOf(this.env, this.ctx.storage, (effect) => this.ledgerPermit(effect));
   private readonly chests = new DurableChestStore(this.ctx.storage);
 
   constructor(ctx: DurableObjectState, env: RelayEnv) {
@@ -67,7 +71,7 @@ export class ValueRelay extends DurableObject<RelayEnv> {
     ctx.blockConcurrencyWhile(() => ctx.storage.setAlarm(Date.now()));
   }
   private ledgerPermit<A, E>(operation: Effect.Effect<A, E>) {
-    return this.signing.withPermit(onIdentityChain(this.env.LEDGER_RPC_URL, this.env.IDENTITY, operation));
+    return this.ledgerSigning.withPermit(onIdentityChain(this.env.LEDGER_RPC_URL, this.env.IDENTITY, operation));
   }
   override alarm() {
     return this.tick().then(() => undefined);
@@ -110,11 +114,20 @@ export class ValueRelay extends DurableObject<RelayEnv> {
   async tick() {
     const relay = this;
     return Effect.runPromise(
-      this.ledgerPermit(
+      this.ingesting.withPermit(
         Effect.gen(function* () {
-          const links = yield* Effect.result(reconcileAccountLinks(linkPortsOf(relay.env), relay.ctx.storage));
+          const links = yield* Effect.result(
+            reconcileAccountLinks(linkPortsOf(relay.env), relay.ctx.storage, (target) =>
+              relay.ledgerPermit(synchronizeAccountLink(target, linkPortsOf(relay.env))),
+            ),
+          );
           const value = yield* Effect.result(runRelay(relay.env.SHARD_CHAIN_ID, relay.ports, relay.store));
-          const chests = yield* Effect.result(finishRequestedChests(chestPortsOf(relay.env), relay.chests));
+          const chests = yield* Effect.result(
+            finishRequestedChests(
+              chestPortsOf(relay.env, (effect) => relay.ledgerPermit(effect)),
+              relay.chests,
+            ),
+          );
           const observation = {
             links: Result.isSuccess(links) ? links.success : { error: links.failure.operation },
             checked_at: Math.floor(Date.now() / 1000),
@@ -129,7 +142,7 @@ export class ValueRelay extends DurableObject<RelayEnv> {
   }
   async reset(row: string, reason: string) {
     return Effect.runPromise(
-      this.signing.withPermit(
+      this.ingesting.withPermit(
         relayOperation("reset relay row", async () => {
           const progress = await this.store.progress();
           if (progress.halted !== row) throw new Error("fault_row_mismatch");
@@ -168,7 +181,7 @@ export class ValueRelay extends DurableObject<RelayEnv> {
   async labor(claim: LaborClaim) {
     const relay = this;
     return Effect.runPromise(
-      this.signing.withPermit(
+      this.shardSigning.withPermit(
         Effect.gen(function* () {
           const progress = yield* relayOperation("read relay progress", () => relay.store.progress());
           if (BigInt(claim.chainId) !== BigInt(relay.env.SHARD_CHAIN_ID) || progress.halted)
@@ -248,11 +261,12 @@ const linkPortsOf = (env: RelayEnv) => ({
   },
   ledger: accountLinkLedger(ledgerCredentialsOf(env)),
 });
-const relayPortsOf = (env: RelayEnv, storage: DurableObjectStorage): RelayPorts => {
+type LedgerPermit = <A>(effect: import("./ports").RelayEffect<A>) => import("./ports").RelayEffect<A>;
+const relayPortsOf = (env: RelayEnv, storage: DurableObjectStorage, permit: LedgerPermit): RelayPorts => {
   const reader = new ShardReader(shardConnectionOf(env));
   return {
     identity: identityAdapter(env.IDENTITY),
-    ledger: ledgerPortsOf(env),
+    ledger: ledgerPortsOf(env, permit),
     realms: {
       ownerOf: (realmId) => relayOperation("read Realm owner", () => env.IDENTITY.realmOwnerOf(realmId)),
     },
@@ -285,20 +299,27 @@ const shardConnectionOf = (env: RelayEnv) => ({
   gamesAddress: env.SHARD_GAMES_ADDRESS,
   chainId: env.SHARD_CHAIN_ID,
 });
-const ledgerPortsOf = (env: RelayEnv): RelayPorts["ledger"] => ({
-  payment: (withdrawal) => ledgerPaymentRead(env.LEDGER_RPC_URL, env.LEDGER_ADDRESS)(withdrawal),
-  report: (withdrawal) => ledgerReportAdapter(ledgerCredentialsOf(env))(withdrawal),
-  pay: (withdrawal, wallet) =>
-    relayOperation("pay Frontier claim", () =>
-      Effect.runPromise(
-        ledgerPaymentAdapter(ledgerCredentialsOf(env), (decision) => env.IDENTITY.recordPayDecision(decision))(
-          withdrawal,
-          wallet,
-        ),
+const ledgerPortsOf = (env: RelayEnv, permit: LedgerPermit): RelayPorts["ledger"] => ({
+  reportMany: (rows) =>
+    permit(
+      ledgerBatches(ledgerCredentialsOf(env), (decisions) => env.IDENTITY.recordPayDecisions(decisions)).reportMany(
+        rows,
       ),
     ),
-  postResult: (result) =>
-    relayOperation("post Blitz result", () => Effect.runPromise(ledgerResultAdapter(ledgerCredentialsOf(env))(result))),
+  payMany: (rows) =>
+    permit(
+      ledgerBatches(ledgerCredentialsOf(env), (decisions) => env.IDENTITY.recordPayDecisions(decisions)).payMany(rows),
+    ),
+  payment: (withdrawal) => ledgerPaymentRead(env.LEDGER_RPC_URL, env.LEDGER_ADDRESS)(withdrawal),
+  report: (withdrawal) => permit(ledgerReportAdapter(ledgerCredentialsOf(env))(withdrawal)),
+  pay: (withdrawal, wallet) =>
+    permit(
+      ledgerPaymentAdapter(ledgerCredentialsOf(env), (decision) => env.IDENTITY.recordPayDecision(decision))(
+        withdrawal,
+        wallet,
+      ),
+    ),
+  postResult: (result) => permit(ledgerResultAdapter(ledgerCredentialsOf(env))(result)),
   paidClaims: (cursor, fromBlock) =>
     relayOperation("read ledger paid claims", () =>
       Effect.runPromise(ledgerMonitorReads(env.LEDGER_RPC_URL, env.LEDGER_ADDRESS).paidClaims(cursor, fromBlock)),
@@ -315,9 +336,9 @@ const ledgerCredentialsOf = (env: RelayEnv) => ({
   privateKey: env.LEDGER_OPERATOR_PRIVATE_KEY,
 });
 
-const chestPortsOf = (env: RelayEnv) => ({
+const chestPortsOf = (env: RelayEnv, permit: LedgerPermit) => ({
   ...chestLedgerReads({ rpcUrl: env.LEDGER_RPC_URL, contractAddress: env.LEDGER_ADDRESS }),
-  finish: (tokenId: string) => finishChestOnLedger(ledgerCredentialsOf(env), tokenId),
+  finish: (tokenId: string) => permit(finishChestOnLedger(ledgerCredentialsOf(env), tokenId)),
 });
 
 const relayOf = (env: RelayEnv) => env.RELAY.get(env.RELAY.idFromName(env.SHARD_CHAIN_ID));

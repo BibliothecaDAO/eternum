@@ -108,6 +108,26 @@ const fixture = () => {
     ledger: {
       accountLinks: () => Effect.succeed({ rows: [], head: 1000, next: null }),
       payment: () => Effect.succeed(null),
+      reportMany: vi.fn((rows: readonly Withdrawal[]) =>
+        Effect.forEach(rows, (row) =>
+          Effect.result(ports.ledger.report(row)).pipe(
+            Effect.map((result) => ({
+              claimId: row.transactionHash,
+              error: result._tag === "Success" ? null : result.failure.operation,
+            })),
+          ),
+        ),
+      ),
+      payMany: vi.fn((rows: readonly import("./ports").PayableClaim[]) =>
+        Effect.forEach(rows, ({ withdrawal, wallet }) =>
+          Effect.result(ports.ledger.pay(withdrawal, wallet)).pipe(
+            Effect.map((result) => ({
+              claimId: withdrawal.transactionHash,
+              error: result._tag === "Success" ? null : result.failure.operation,
+            })),
+          ),
+        ),
+      ),
       report: vi.fn(() => Effect.void),
       pay: vi.fn(() => Effect.void),
       postResult: vi.fn(() => Effect.void),

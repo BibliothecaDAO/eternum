@@ -65,13 +65,17 @@ export const synchronizeAccountLink = (target: AccountLinkTarget, ports: LinkPor
   });
 
 /** Current accounts and historical wallets share one bounded, restarting cursor. No notification is sole truth. */
-export const reconcileAccountLinks = (ports: LinkPorts, store: Store) =>
+export const reconcileAccountLinks = (
+  ports: LinkPorts,
+  store: Store,
+  sync = (target: AccountLinkTarget) => synchronizeAccountLink(target, ports),
+) =>
   Effect.gen(function* () {
     const dirty = yield* relayOperation("read dirty identity links", () => ports.identity.dirty());
     if (dirty.length > 25) return yield* Effect.fail(new RelayFailure({ operation: "invalid_dirty_link_page" }));
     const dirtyPending: string[] = [];
     for (const row of dirty) {
-      const result = yield* Effect.result(synchronizeAccountLink(row.target, ports));
+      const result = yield* Effect.result(sync(row.target));
       if (Result.isSuccess(result) && result.success === "confirmed")
         yield* relayOperation("acknowledge identity link", () =>
           ports.identity.complete(row.target.realmsId, row.revision),
@@ -84,7 +88,7 @@ export const reconcileAccountLinks = (ports: LinkPorts, store: Store) =>
       return yield* Effect.fail(new RelayFailure({ operation: "invalid_identity_link_page" }));
     const failed: string[] = [];
     for (const target of page.rows) {
-      const result = yield* Effect.result(synchronizeAccountLink(target, ports));
+      const result = yield* Effect.result(sync(target));
       if (Result.isFailure(result) || result.success === "linking") failed.push(target.key);
     }
     yield* relayOperation("advance identity link cursor", () => store.put("link-cursor", page.next));

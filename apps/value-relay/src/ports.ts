@@ -110,6 +110,14 @@ export interface Page<A> {
 }
 
 /** Domain ports; receipt decoding and contract calls belong to the published contract adapters. */
+export interface ClaimOutcome {
+  claimId: string;
+  error: string | null;
+}
+export interface PayableClaim {
+  withdrawal: Withdrawal;
+  wallet: string;
+}
 export interface RelayPorts {
   shard: {
     confirmedHead(): RelayEffect<number>;
@@ -128,6 +136,8 @@ export interface RelayPorts {
     payment(
       withdrawal: Withdrawal,
     ): RelayEffect<{ paid: boolean; seasonId: number; wallet: string; amount: string } | null>;
+    reportMany(withdrawals: readonly Withdrawal[]): RelayEffect<ClaimOutcome[]>;
+    payMany(rows: readonly PayableClaim[]): RelayEffect<ClaimOutcome[]>;
     report(withdrawal: Withdrawal): RelayEffect<void>;
     pay(withdrawal: Withdrawal, wallet: string): RelayEffect<void>;
     postResult(result: BlitzResult): RelayEffect<void>;
