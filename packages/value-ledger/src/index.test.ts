@@ -61,3 +61,27 @@ it("does not substitute a default RPC for invalid configuration", () => {
   expect(() => rpcAt("")).toThrow();
   expect(() => rpcAt("file:///tmp/rpc")).toThrow();
 });
+it("follows partial event pages without changing the registration head or wallet order", async () => {
+  const f = fixture(2);
+  const events = (await f.events({ keys: [[], [], [], ["0x1", "0x2"]] })).events;
+  f.events.mockReset();
+  f.events.mockResolvedValueOnce({ events: [events[1]!], continuation_token: "next" } as never);
+  f.events.mockResolvedValueOnce({ events: [events[0]!] });
+  expect((await readRegistrationPage(f.provider, "0x10", key)).registrations).toEqual([
+    { wallet: "0x1", registeredAt: 90 },
+    { wallet: "0x2", registeredAt: 90 },
+  ]);
+  expect(f.events).toHaveBeenLastCalledWith(
+    expect.objectContaining({
+      continuation_token: "next",
+      to_block: { block_number: 99 },
+      keys: expect.arrayContaining([["0x1", "0x2"]]),
+    }),
+  );
+});
+it("rejects a repeated event continuation token instead of looping forever", async () => {
+  const f = fixture(1);
+  f.events.mockResolvedValue({ events: [], continuation_token: "cycle" } as never);
+  await expect(readRegistrationPage(f.provider, "0x10", key)).rejects.toThrow("registration_page_cycle");
+  expect(f.events).toHaveBeenCalledTimes(2);
+});
