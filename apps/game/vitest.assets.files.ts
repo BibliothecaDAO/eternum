@@ -5,6 +5,7 @@
 export const ASSET_CHECK_FILES = [
   "src/three/terrain/terrain-prop-pool-capacity.test.ts",
   "src/three/characters/ships/ship-design.test.ts",
+  "src/three/characters/t1-knight-default-exports.test.ts",
   "src/three/renderer-vite-config.test.ts",
   "scripts/**/*.test.mjs",
 ];
