@@ -53,5 +53,5 @@ export const ledgerOf = (ledger: PaidGameLedger) => {
   if (!isL2Chain(ledger.chainId))
     throw new Error(`Ledger ${ledger.address} is on chain ${ledger.chainId}; this build reads ${L2_CHAIN.name}`);
   const read = ledgerReader(l2Provider(), ledger.address);
-  return { ...read, feeBalance: (owner: string) => read.balanceOf(L2_CHAIN.feeToken, owner) };
+  return { ...read, feeBalance: (owner: string) => read.balanceOf(L2_CHAIN.gasToken, owner) };
 };

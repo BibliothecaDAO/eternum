@@ -37,7 +37,6 @@ const WEI = 10n ** 18n;
 const LEDGER: PaidGameLedger = {
   address: "0x1ed9e7",
   chainId: "0x534e5f4d41494e",
-  feeToken: "0x57e1",
   shard: "0x52",
   gameId: 7,
 };

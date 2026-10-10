@@ -186,15 +186,13 @@ export const LAB_PAYOUT_WALLETS: Partial<Record<keyof typeof LAB_SCREENS, Payout
   "season-out": { status: "ready", address: LAB_WALLET },
 };
 
-/** The lab ledger network and its fee token. */
+/** The lab ledger's network. */
 const LAB_L2_CHAIN = "0x534e5f4d41494e";
-const LAB_FEE_TOKEN = "0x57e1";
 
 /** The ledger game the lab's slot fills, on a paid Blitz's screens. */
 export const LAB_SLOT_LEDGER: PaidGameLedger = {
   address: "0x1ed9e7",
   chainId: LAB_L2_CHAIN,
-  feeToken: LAB_FEE_TOKEN,
   shard: LAB_CHAIN,
   gameId: 7,
 };
@@ -415,7 +413,6 @@ export const LAB_CHAT = [
 export const LAB_GAME_LEDGER: PaidGameLedger = {
   address: "0x1ed9e7",
   chainId: LAB_L2_CHAIN,
-  feeToken: LAB_FEE_TOKEN,
   shard: LAB_CHAIN,
   gameId: 7,
 };

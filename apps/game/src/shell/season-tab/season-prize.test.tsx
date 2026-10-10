@@ -39,7 +39,7 @@ vi.mock("../herald", () => ({
           clock: { start_main_at: 1 },
           entry: {
             kind: "paid",
-            ledger: { address: "0x1ed9e7", chainId: "0x534e5f4d41494e", feeToken: "0x57e1", shard: "0x52", gameId: 7 },
+            ledger: { address: "0x1ed9e7", chainId: "0x534e5f4d41494e", shard: "0x52", gameId: 7 },
           },
         },
       ],

@@ -25,7 +25,7 @@ export const shardWithdrawalPorts = (
     relayOperation("read confirmed shard anchor", async () => (await reader.header(number)).block_hash),
   eventsPage: (from, to, cursor) =>
     Effect.gen(function* () {
-      const { block, first, rows, next } = yield* relayOperation("read confirmed shard receipts", () =>
+      const { block, first, anchors, rows, next } = yield* relayOperation("read confirmed shard receipts", () =>
         reader.page(from, to, cursor),
       );
       const results: import("./ports").BlitzResult[] = [];
@@ -57,6 +57,7 @@ export const shardWithdrawalPorts = (
             kind: "receipt",
             reason: resolved.failure.operation,
             receipt: {
+              blockNumber: row.blockNumber ?? block.block_number,
               chainId: felt(reader.connection.chainId),
               transactionHash: row.transactionHash,
               keys: row.keys,
@@ -71,6 +72,7 @@ export const shardWithdrawalPorts = (
         hash: block.block_hash,
         parentHash: first.parent_hash,
         fromBlock: from,
+        anchors,
         next,
         status: block.status,
         withdrawals,

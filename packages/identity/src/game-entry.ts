@@ -11,7 +11,6 @@ export const readGameEntry = (value: unknown): GameEntry => {
   if (
     !address(ledger.address) ||
     !address(ledger.chainId) ||
-    !address(ledger.feeToken) ||
     !address(ledger.shard) ||
     !Number.isSafeInteger(ledger.gameId) ||
     Number(ledger.gameId) <= 0 ||
@@ -23,7 +22,6 @@ export const readGameEntry = (value: unknown): GameEntry => {
     ledger: {
       address: ledger.address,
       chainId: ledger.chainId,
-      feeToken: ledger.feeToken,
       shard: ledger.shard,
       gameId: ledger.gameId!,
     },

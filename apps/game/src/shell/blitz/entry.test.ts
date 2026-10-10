@@ -60,7 +60,7 @@ it("closes the entry once the game has started, for anyone not already seated", 
   expect(entryState(terms({ registration: seated, cancelled: true }), both, 2_000, "confirmed")).toBe("refund");
 });
 
-const LEDGER = { address: "0x1ed9e7", chainId: "0x534e5f4d41494e", feeToken: "0x57e1", shard: "0x52", gameId: 7 };
+const LEDGER = { address: "0x1ed9e7", chainId: "0x534e5f4d41494e", shard: "0x52", gameId: 7 };
 const CONFIRMED = {
   status: "confirmed" as const,
   ledger: { address: "0x1ed9e7", chainId: "0x534e5f4d41494e" },

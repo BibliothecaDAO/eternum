@@ -44,6 +44,7 @@ export interface BlitzResult extends BlitzCommitment {
   rows: readonly BlitzResultRow[];
 }
 export interface ConfirmedBlock {
+  anchors?: readonly { number: number; hash: string }[];
   chainId: string;
   number: number;
   hash: string;
@@ -73,6 +74,7 @@ export type HeldObligation =
       kind: "receipt";
       reason: string;
       receipt: {
+        blockNumber?: number;
         chainId: string;
         transactionHash: string;
         keys: readonly string[];
@@ -138,8 +140,6 @@ export interface RelayPorts {
     ): RelayEffect<{ paid: boolean; seasonId: number; wallet: string; amount: string } | null>;
     reportMany(withdrawals: readonly Withdrawal[]): RelayEffect<ClaimOutcome[]>;
     payMany(rows: readonly PayableClaim[]): RelayEffect<ClaimOutcome[]>;
-    report(withdrawal: Withdrawal): RelayEffect<void>;
-    pay(withdrawal: Withdrawal, wallet: string): RelayEffect<void>;
     postResult(result: BlitzResult): RelayEffect<void>;
     paidClaims(after: string | null, fromBlock?: number): RelayEffect<LedgerPage<PaidClaim>>;
     postedResults(after: string | null, fromBlock?: number): RelayEffect<LedgerPage<BlitzCommitment>>;

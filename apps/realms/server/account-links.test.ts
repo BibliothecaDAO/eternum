@@ -129,14 +129,14 @@ it("matches authorized set and clear intents when earlier pending writes change 
 
 it("keeps a newer dirty revision when an older confirmed sync acknowledges", async () => {
   await db.prepare("INSERT INTO dirty_account_links VALUES('0x1','change-1')").run();
-  const first = await dirtyAccountLinks(db, pins);
-  expect(first).toHaveLength(1);
-  expect(first[0]!.target.realmsId).toBe("0x1");
+  const first = await dirtyAccountLinks(db, pins, null);
+  expect(first.rows).toHaveLength(1);
+  expect(first.rows[0]!.target.realmsId).toBe("0x1");
   await db.prepare("UPDATE dirty_account_links SET revision='change-2'").run();
   await completeAccountLinkSync(db, "0x1", "change-1");
-  expect((await dirtyAccountLinks(db, pins))[0]!.revision).toBe("change-2");
+  expect((await dirtyAccountLinks(db, pins, null)).rows[0]!.revision).toBe("change-2");
   await completeAccountLinkSync(db, "0x1", "change-2");
-  expect(await dirtyAccountLinks(db, pins)).toEqual([]);
+  expect((await dirtyAccountLinks(db, pins, null)).rows).toEqual([]);
 });
 
 it("authorizes retracting a stale ledger mapping for a wallet its current owner proved", async () => {
@@ -144,4 +144,31 @@ it("authorizes retracting a stale ledger mapping for a wallet its current owner 
   const clear = { wallet, account: "0x0", transactionHash: "0xfee", previousAccount: "0x999", previousWallet: "0x0" };
   await recordLedgerLinkWrite(db, pins, target, clear);
   expect(await matchesLedgerLinkWrite(db, pins, clear)).toBe(true);
+});
+
+it("rotates dirty installs during a pause while keeping unlinks ahead of them", async () => {
+  await db.prepare("INSERT INTO dirty_account_links VALUES('0x1','first')").run();
+  await db.batch(
+    Array.from({ length: 30 }, (_, i) =>
+      db
+        .prepare('INSERT INTO "user" VALUES(?,?,?,1)')
+        .bind(`many-${i}`, `0x${i + 20}`, normalizeStarknetAddress(`0x${i + 200}`)),
+    ),
+  );
+  await db.batch(
+    Array.from({ length: 30 }, (_, i) =>
+      db.prepare("INSERT INTO dirty_account_links VALUES(?,?)").bind(`0x${i + 20}`, `revision-${i}`),
+    ),
+  );
+  await db.prepare("INSERT INTO \"user\" VALUES('unlink','0xff',NULL,1)").run();
+  await db.prepare("INSERT INTO dirty_account_links VALUES('0xff','clear')").run();
+  const first = await dirtyAccountLinks(db, pins, null);
+  expect(first.rows).toHaveLength(25);
+  expect(first.rows[0]!.target.wallet).toBeNull();
+  const second = await dirtyAccountLinks(db, pins, first.next);
+  expect(second.rows.some((row) => row.target.realmsId === "0x49")).toBe(true);
+  expect(second.rows[0]!.target.wallet).toBeNull();
+  expect(second.next).toBeNull();
+  const wrapped = await dirtyAccountLinks(db, pins, second.next);
+  expect(wrapped.rows[1]!.revision).toBe("first");
 });

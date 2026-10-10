@@ -63,7 +63,11 @@ it("reconciles identity links on its startup alarm independently of unavailable 
     ctx as unknown as DurableObjectState,
     {
       SHARD_CHAIN_ID: "0x1",
-      IDENTITY: { l2ChainId: async () => "0x1", dirtyAccountLinks: async () => [], accountLinkTargets: targets },
+      IDENTITY: {
+        l2ChainId: async () => "0x1",
+        dirtyAccountLinks: async () => ({ rows: [], next: null }),
+        accountLinkTargets: targets,
+      },
     } as never,
   );
   expect(alarm).toHaveBeenCalledWith(expect.any(Number));

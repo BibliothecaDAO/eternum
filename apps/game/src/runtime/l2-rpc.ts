@@ -8,10 +8,10 @@ import { env } from "../../env";
 /** STRK, the token every Starknet network fee is paid in, at its address on both networks. */
 const STRK = "0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d";
 
-/** Each L2 a build can name: its chain id, its name for players, and its network fee token. */
+/** Each L2 a build can name: its chain id, its name for players, and its network fee (gas) token. */
 const L2_CHAINS = {
-  SN_MAIN: { id: constants.StarknetChainId.SN_MAIN, label: "Starknet mainnet", feeToken: STRK },
-  SN_SEPOLIA: { id: constants.StarknetChainId.SN_SEPOLIA, label: "Starknet Sepolia", feeToken: STRK },
+  SN_MAIN: { id: constants.StarknetChainId.SN_MAIN, label: "Starknet mainnet", gasToken: STRK },
+  SN_SEPOLIA: { id: constants.StarknetChainId.SN_SEPOLIA, label: "Starknet Sepolia", gasToken: STRK },
 } as const;
 
 /**

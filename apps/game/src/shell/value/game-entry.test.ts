@@ -14,10 +14,10 @@ vi.mock("@/runtime/l2-rpc", async (importOriginal) => ({
 
 import { directoryGameEntryOf, gameEntryOf, ledgerOf } from "./game-entry";
 
-const LEDGER = { address: "0x1ed9e7", chainId: "0x534e5f4d41494e", feeToken: "0x57e1", shard: "0x52", gameId: 7 };
+const LEDGER = { address: "0x1ed9e7", chainId: "0x534e5f4d41494e", shard: "0x52", gameId: 7 };
 const PAID = {
   kind: "paid",
-  ledger: { address: "0x1ed9e7", chainId: "0x534e5f4d41494e", feeToken: "0x57e1", shard: "0x52", gameId: 7 },
+  ledger: { address: "0x1ed9e7", chainId: "0x534e5f4d41494e", shard: "0x52", gameId: 7 },
 };
 
 it("reads a paid entry's ledger and a free entry, and a payload with no entry as broken, never free", () => {
@@ -29,7 +29,7 @@ it("reads a paid entry's ledger and a free entry, and a payload with no entry as
 
 it("shows a paid entry without a whole ledger reference as broken, never as the free join", () => {
   expect(gameEntryOf({ entry: { kind: "paid" } }, "slot-1")).toEqual({ kind: "broken" });
-  expect(gameEntryOf({ entry: { kind: "paid", ledger: { ...LEDGER, feeToken: undefined } } }, "slot-1")).toEqual({
+  expect(gameEntryOf({ entry: { kind: "paid", ledger: { ...LEDGER, address: undefined } } }, "slot-1")).toEqual({
     kind: "broken",
   });
   expect(gameEntryOf({ entry: { kind: "paid", ledger: { ...LEDGER, gameId: "7" } } }, "slot-1")).toEqual({
@@ -50,7 +50,7 @@ it("refuses a directory game whose ledger key names another game", () => {
 });
 
 it("reads a ledger on this build's chain, and refuses, loudly, one the entry places on another", async () => {
-  const onThisChain = { address: "0x1ed9e7", chainId: SN_MAIN, feeToken: "0x57e1", shard: "0x52", gameId: 7 };
+  const onThisChain = { address: "0x1ed9e7", chainId: SN_MAIN, shard: "0x52", gameId: 7 };
   await expect(ledgerOf(onThisChain).lordsToken()).resolves.toBe("0x10e5");
   expect(() => ledgerOf({ ...onThisChain, chainId: "0x534e5f5345504f4c4941" })).toThrow(
     "Ledger 0x1ed9e7 is on chain 0x534e5f5345504f4c4941; this build reads SN_MAIN",
@@ -73,7 +73,7 @@ it("logs why an entry is broken, once, with the slot or game it belongs to", () 
 
 it("reads the network fee balance on the build's L2 fee token, never on a token the entry names", async () => {
   const STRK = "0x4718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d";
-  const read = ledgerOf({ address: "0x1ed9e7", chainId: SN_MAIN, feeToken: "0x57e1", shard: "0x52", gameId: 7 });
+  const read = ledgerOf({ address: "0x1ed9e7", chainId: SN_MAIN, shard: "0x52", gameId: 7 });
   calls.length = 0;
   await expect(read.feeBalance("0x4a1")).resolves.toBe(0x10e5n);
   expect(calls.map(({ contractAddress, entrypoint }) => [BigInt(contractAddress), entrypoint])).toEqual([

@@ -28,7 +28,7 @@ it("connects, signs the link proof and reads the ledger on Sepolia only, in a Se
   expect((await walletProofForAccount(account as never, deployed as never, "braavos")).chainId).toBe("SN_SEPOLIA");
 
   // The ledger is read only on Sepolia: one the entry places on mainnet is refused.
-  const ledger = { address: "0xl", chainId: SN_SEPOLIA, feeToken: "0xf", shard: "0x52", gameId: 7 };
+  const ledger = { address: "0xl", chainId: SN_SEPOLIA, shard: "0x52", gameId: 7 };
   expect(() => ledgerOf(ledger)).not.toThrow();
   expect(() => ledgerOf({ ...ledger, chainId: SN_MAIN })).toThrow("this build reads SN_SEPOLIA");
 });

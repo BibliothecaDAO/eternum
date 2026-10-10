@@ -92,7 +92,7 @@ describe("a Blitz lobby", () => {
         ...slot([registration(0, ME)]),
         entry: {
           kind: "paid",
-          ledger: { address: "0x1ed9e7", chainId: "0x534e5f4d41494e", feeToken: "0x57e1", shard: "0xa", gameId: 1 },
+          ledger: { address: "0x1ed9e7", chainId: "0x534e5f4d41494e", shard: "0xa", gameId: 1 },
         },
       },
       "open",

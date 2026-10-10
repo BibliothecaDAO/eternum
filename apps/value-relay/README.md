@@ -58,3 +58,18 @@ through `POST /api/operator/monitor/reset`; if the manual clear is itself audite
 hash and reset that exact corrective row too. These resets retain the audit trail and never unpause the ledger. The
 ledger admin unpauses only after the offending key and mapping have been corrected. No arbitrary signing endpoint is
 involved.
+
+## Restored shard recovery
+
+The relay keeps a hash for every confirmed block in its queued-obligation range, including empty blocks, and scans at
+most 100 blocks and one event page per tick. This replaces accepting a new parent hash on reset. An operator reset walks
+down to a stored hash that still matches the shard, verifies that anchor again, removes queued withdrawals, results and
+held rows above the fork, then replays from the next block. Without retained evidence it replays from genesis. Each
+reset records the fork, reason and already-paid claims from discarded blocks; it never unpauses the ledger. Completed
+claim metadata is immutable recovery evidence; block hashes below the queued range are pruned. The cost is one stored
+hash per retained block, one immutable completed-claim row and bounded public header reads.
+
+Reset also checks discarded pending claims on the ledger, so a lost payment acknowledgment cannot hide an already-paid
+withdrawal. An unavailable ledger refuses reset and leaves the evidence queued. The reset header contains the first 100
+paid claims, their total count and the prefix for additional 100-claim audit pages; all are committed atomically. This
+replaces an unbounded single-record audit, which would prevent a large restore from being reset.

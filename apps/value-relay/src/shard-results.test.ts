@@ -81,6 +81,7 @@ it("ingests only completed records while retaining withdrawals in the same confi
       transactions: [],
     },
     first: { block_number: 10, block_hash: "0xa", parent_hash: "0x9", timestamp: 1000, status: "ACCEPTED_ON_L2" },
+    anchors: [{ number: 10, hash: "0xa" }],
     next: null,
     rows: [
       { ...partial, confirmedAt: 1000 },

@@ -17,7 +17,7 @@ import { DurableChestStore, finishRequestedChests } from "./chests";
 import { DurableObject, WorkerEntrypoint } from "cloudflare:workers";
 import { Effect, Result, Semaphore } from "effect";
 import { ledgerResultAdapter, ledgerMonitorReads } from "./ledger";
-import { ledgerPaymentAdapter, ledgerPaymentRead, ledgerReportAdapter } from "./chain";
+import { ledgerPaymentRead } from "./chain";
 import { presentsOperatorToken } from "@realms-world/identity";
 import { identityAdapter } from "./adapters";
 import { runRelay, grantDailyLabor } from "./relay";
@@ -39,7 +39,9 @@ interface RelayEnv {
   LEDGER_OPERATOR_PRIVATE_KEY: string;
   IDENTITY: {
     l2ChainId(): Promise<string>;
-    dirtyAccountLinks(): Promise<{ target: AccountLinkTarget; revision: string }[]>;
+    dirtyAccountLinks(
+      after: number | null,
+    ): Promise<{ rows: { target: AccountLinkTarget; revision: string }[]; next: number | null }>;
     completeAccountLinkSync(account: string, revision: string): Promise<void>;
     accountLinkDirtyRevision(account: string): Promise<string | null>;
     realmOwnerOf(realmId: string): Promise<string>;
@@ -47,7 +49,6 @@ interface RelayEnv {
     accountLinkTarget(key: string): Promise<AccountLinkTarget>;
     recordLedgerLinkWrite(target: AccountLinkTarget, write: LedgerAccountLinkWrite): Promise<void>;
     recordPayDecisions(decisions: import("@realms-world/identity").LedgerPayDecision[]): Promise<void>;
-    recordPayDecision(decision: import("@realms-world/identity").LedgerPayDecision): Promise<void>;
     payoutWallet(id: string): Promise<import("@realms-world/identity").PayoutWallet>;
     linkedWallet(id: string): Promise<string | null>;
     authenticate(cookie: string): Promise<{ realmsId: string } | null>;
@@ -146,9 +147,16 @@ export class ValueRelay extends DurableObject<RelayEnv> {
         relayOperation("reset relay row", async () => {
           const progress = await this.store.progress();
           if (progress.halted !== row) throw new Error("fault_row_mismatch");
-          const start = await this.store.resetStart(row);
-          const hash = start === 0 ? null : await Effect.runPromise(this.ports.shard.blockHash(start - 1));
-          return this.store.reset(row, reason, hash);
+          return this.store.resetFromChain(row, reason, {
+            head: () => Effect.runPromise(this.ports.shard.confirmedHead()),
+            hash: (number) => Effect.runPromise(this.ports.shard.blockHash(number)),
+            paid: async (withdrawal) =>
+              (
+                await Effect.runPromise(
+                  onIdentityChain(this.env.LEDGER_RPC_URL, this.env.IDENTITY, this.ports.ledger.payment(withdrawal)),
+                )
+              )?.paid ?? false,
+          });
         }),
       ),
     );
@@ -252,7 +260,7 @@ export class ValueRelay extends DurableObject<RelayEnv> {
 const linkPortsOf = (env: RelayEnv) => ({
   identity: {
     target: (key: string) => env.IDENTITY.accountLinkTarget(key),
-    dirty: () => env.IDENTITY.dirtyAccountLinks(),
+    dirty: (after: number | null) => env.IDENTITY.dirtyAccountLinks(after),
     complete: (account: string, revision: string) => env.IDENTITY.completeAccountLinkSync(account, revision),
     targets: (after: string | null) => env.IDENTITY.accountLinkTargets(after),
     refresh: (target: AccountLinkTarget) => env.IDENTITY.accountLinkTarget(target.key),
@@ -311,14 +319,6 @@ const ledgerPortsOf = (env: RelayEnv, permit: LedgerPermit): RelayPorts["ledger"
       ledgerBatches(ledgerCredentialsOf(env), (decisions) => env.IDENTITY.recordPayDecisions(decisions)).payMany(rows),
     ),
   payment: (withdrawal) => ledgerPaymentRead(env.LEDGER_RPC_URL, env.LEDGER_ADDRESS)(withdrawal),
-  report: (withdrawal) => permit(ledgerReportAdapter(ledgerCredentialsOf(env))(withdrawal)),
-  pay: (withdrawal, wallet) =>
-    permit(
-      ledgerPaymentAdapter(ledgerCredentialsOf(env), (decision) => env.IDENTITY.recordPayDecision(decision))(
-        withdrawal,
-        wallet,
-      ),
-    ),
   postResult: (result) => permit(ledgerResultAdapter(ledgerCredentialsOf(env))(result)),
   paidClaims: (cursor, fromBlock) =>
     relayOperation("read ledger paid claims", () =>

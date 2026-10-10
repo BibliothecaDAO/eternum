@@ -67,6 +67,7 @@ export class ShardReader {
   ): Promise<{
     block: ShardBlock;
     first: ShardBlock;
+    anchors: { number: number; hash: string }[];
     rows: (ValueRow & { confirmedAt: number })[];
     next: string | null;
   }> {
@@ -87,6 +88,13 @@ export class ShardReader {
       [from, first],
       [to, block],
     ]);
+    if (to - from >= 100) throw new Error("shard_block_range_too_large");
+    for (let number = from + 1; number <= to; number++) {
+      const header = headers.get(number) ?? (await this.header(number));
+      if (!sameFelt(header.parent_hash, headers.get(number - 1)!.block_hash))
+        throw new RelayFailure({ operation: `confirmed_block_changed:${number - 1}` });
+      headers.set(number, header);
+    }
     const prefixes = page.events.length ? await this.prefixes(provider, to) : [];
     const rows: (ValueRow & { confirmedAt: number })[] = [];
     for (const event of page.events) {
@@ -127,7 +135,15 @@ export class ShardReader {
         });
       }
     }
-    return { block, first, rows, next: page.continuation_token || null };
+    return {
+      block,
+      first,
+      anchors: [...headers.values()]
+        .sort((a, b) => a.block_number - b.block_number)
+        .map((header) => ({ number: header.block_number, hash: header.block_hash })),
+      rows,
+      next: page.continuation_token || null,
+    };
   }
   async receipt(
     transactionHash: string,

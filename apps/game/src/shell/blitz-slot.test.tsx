@@ -43,7 +43,7 @@ it("joins a free slot, and never calls the free join for a paid or broken one", 
       </MemoryRouter>,
     ),
   );
-  const ledger = { address: "0x1ed9e7", chainId: "0x534e5f4d41494e", feeToken: "0x57e1", shard: "0xa", gameId: 1 };
+  const ledger = { address: "0x1ed9e7", chainId: "0x534e5f4d41494e", shard: "0xa", gameId: 1 };
   await act(async () => join!.join(slot("paid", { kind: "paid", ledger })));
   await act(async () => join!.join(slot("broken", { kind: "paid" })));
   expect(register).not.toHaveBeenCalled();

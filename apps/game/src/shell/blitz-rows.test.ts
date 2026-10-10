@@ -119,7 +119,7 @@ it("keeps ended Blitz games available to watch until their settled result lists"
 });
 
 describe("a Blitz row's entry", () => {
-  const LEDGER = { address: "0x1ed9e7", chainId: "0x534e5f4d41494e", feeToken: "0x57e1", shard: "0xa", gameId: 1 };
+  const LEDGER = { address: "0x1ed9e7", chainId: "0x534e5f4d41494e", shard: "0xa", gameId: 1 };
 
   it("reads a directory game's declared entry, as a slot's, and never defaults it to free", () => {
     const [game] = blitzRows([{ ...blitz(1, {}), entry: { kind: "paid", ledger: LEDGER } } as DirectoryGame], [], ME);
@@ -132,7 +132,7 @@ describe("a Blitz row's entry", () => {
 });
 
 describe("a paid Blitz slot's row", () => {
-  const LEDGER = { address: "0x1ed9e7", chainId: "0x534e5f4d41494e", feeToken: "0x57e1", shard: "0xa", gameId: 1 };
+  const LEDGER = { address: "0x1ed9e7", chainId: "0x534e5f4d41494e", shard: "0xa", gameId: 1 };
 
   it("opens its lobby instead of offering the free Join, and leaves its seats to the ledger", () => {
     const [paid, broken, free] = blitzRows(
