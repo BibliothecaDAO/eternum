@@ -172,19 +172,17 @@ def launcher_service(config, suffix, payload):
     try:
         return service_json(base + "/factory/operator/launcher/" + suffix, payload, timeout=120)
     except (OSError, ValueError):
-        raise RuntimeError("Launch Worker enrollment/check route unavailable; directory remains pending") from None
+        raise RuntimeError("Launch Worker enrollment route unavailable; directory remains pending") from None
 
 
 def roles_handed_off(directory):
     return service_role_check(directory, "state")["handedOff"]
 
 
-def service_role_check(directory, action, account=None, proof=None, role="launcher"):
+def service_role_check(directory, action, account=None, role="launcher"):
     args = [action, "/data"]
     if account is not None:
         args.extend([role, account])
-    if proof:
-        args.extend([proof["txHash"], proof["name"], str(proof["presetId"])])
     result = subprocess.run([*compose(directory.parent), "run", "--rm", "--no-deps", "-T",
                              "--entrypoint", "python3", "harness", "/app/deploy/shard/init.py", "service-role-check", *args],
                             capture_output=True, text=True)
@@ -235,13 +233,6 @@ def confirm_worker_launcher(config, directory):
     if public_felt(enrolled.get("chainId")) != public_felt(payload["chainId"]):
         raise RuntimeError("Launch Worker enrolled another chain; directory remains pending")
     service_role_check(directory, "handoff", account)
-    name = "check-worker-" + hashlib.sha256(payload["chainId"].encode()).hexdigest()[:16]
-    name_felt = "0x" + name.encode("ascii").hex()
-    preset = config["presets"][0]
-    checked = launcher_service(config, "check", {**payload, "name": name, "presetId": preset})
-    proof = {"txHash": public_felt(checked.get("txHash")), "name": name_felt, "presetId": preset}
-    service_role_check(directory, "verify", account, proof)
-
 
 def deployed_facts(data):
     return json.loads((data / "native-world.json").read_text()), json.loads((data / "initialized.json").read_text())

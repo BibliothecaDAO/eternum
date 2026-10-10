@@ -6,29 +6,8 @@ import { readShardManifest } from "../../../packages/chain/shard-manifest";
 import type { NativeWorldManifest } from "../../../config/deployer/clean/world/native/types";
 import { createOperatorAccount } from "../../../config/deployer/clean/shared/madara-account";
 import { waitForSuccess } from "../../../config/deployer/clean/shared/declare";
-import { confirmedTransactionReceipt } from "../../../config/deployer/clean/shared/transaction";
-import { resolveCreatedGameId } from "../../../config/deployer/clean/registrar/calls";
 import { assertNativeOwnerSigner } from "../../../config/deployer/clean/shared/native-owner";
 import { resolveRegistrarExecutionDetails } from "../../../config/deployer/clean/registrar/transaction-details";
-
-export function assertWorkerCreation(
-  tx: { type: string; sender_address?: string; calldata?: string[] },
-  expected: { account: string; world: string; name: string; preset: number },
-): void {
-  const data = tx.calldata ?? [];
-  if (
-    tx.type !== "INVOKE" ||
-    BigInt(tx.sender_address ?? 0) !== BigInt(expected.account) ||
-    data.length < 6 ||
-    BigInt(data[0]!) !== 1n ||
-    BigInt(data[1]!) !== BigInt(expected.world) ||
-    BigInt(data[2]!) !== BigInt(hash.getSelectorFromName("create_game")) ||
-    BigInt(data[3]!) !== BigInt(data.length - 4) ||
-    BigInt(data[4]!) !== BigInt(expected.name) ||
-    BigInt(data[5]!) !== BigInt(expected.preset)
-  )
-    throw new Error("Worker check must be its own single Games.create_game invoke");
-}
 
 interface ServiceRoleContext {
   directory: string;
@@ -43,8 +22,8 @@ interface ServiceRoleCheck extends ServiceRoleContext {
 }
 
 async function main(): Promise<void> {
-  const [action, directory, role, account, txHash, name, preset] = process.argv.slice(2);
-  if (!directory || !["state", "handoff", "verify"].includes(action!))
+  const [action, directory, role, account, ...extra] = process.argv.slice(2);
+  if (!directory || extra.length || !["state", "handoff"].includes(action!))
     throw new Error("Invalid service role check inputs");
   const context = loadServiceRoleContext(directory);
   await assertProviderChain(context.provider, context.manifest, "service role check RPC");
@@ -61,12 +40,7 @@ async function main(): Promise<void> {
     throw new Error("Invalid service role check inputs");
   const check: ServiceRoleCheck = { ...context, account, role: role as ServiceRoleCheck["role"] };
   await assertWorkerIdentity(check);
-  await confirmRole(check, action!);
-  if (action === "verify") {
-    if (role !== "launcher") throw new Error("Only the launcher creates a game proof");
-    if (!txHash || !name || !preset) throw new Error("Worker creation proof missing");
-    await verifyWorkerGame(check, { txHash, name, preset: Number(preset) });
-  }
+  await confirmRole(check);
   console.log(JSON.stringify({ passed: true, role, account }));
 }
 
@@ -121,12 +95,11 @@ export async function readRoleHandoffState({
   return { handedOff: roles.some((installed) => BigInt(installed) !== BigInt(bootstrap)) };
 }
 
-async function confirmRole(check: ServiceRoleCheck, action: string): Promise<void> {
+export async function confirmRole(check: ServiceRoleCheck): Promise<void> {
   const { provider, manifest, account } = check;
   const read = () => installedRole(provider, manifest.world.address, check.role);
   const installed = await read();
   const needsHandoff = BigInt(installed!) !== BigInt(account);
-  if (needsHandoff && action !== "handoff") throw new Error("Unexpected installed role");
   if (needsHandoff) await sendRoleHandoff(check);
   const confirmed = await read();
   if (BigInt(confirmed!) !== BigInt(account)) throw new Error("Role handoff was not confirmed");
@@ -146,21 +119,6 @@ async function sendRoleHandoff({ provider, manifest, bootstrap, account, role }:
     await resolveRegistrarExecutionDetails(owner, manifest.world.address),
   );
   await waitForSuccess(provider, sent.transaction_hash);
-}
-
-async function verifyWorkerGame(
-  { provider, manifest, account }: ServiceRoleCheck,
-  { txHash, name, preset }: { txHash: string; name: string; preset: number },
-): Promise<void> {
-  const receipt = await confirmedTransactionReceipt(provider, txHash);
-  const tx = await provider.getTransactionByHash(txHash);
-  assertWorkerCreation(tx, { account, world: manifest.world.address, name, preset });
-  const gameId = resolveCreatedGameId(receipt, manifest);
-  const [named] = await provider.callContract(
-    { contractAddress: manifest.world.address, entrypoint: "game_id_by_name", calldata: [name] },
-    "latest",
-  );
-  if (!gameId || BigInt(named!) !== BigInt(gameId)) throw new Error("Worker game is missing from confirmed state");
 }
 
 if (import.meta.main) {

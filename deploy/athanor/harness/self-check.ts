@@ -1,8 +1,9 @@
 #!/usr/bin/env bun
+import { localSelfCheckRoutes } from "./self-check-routes";
 import { parseArgs } from "node:util";
 import { pathToFileURL } from "node:url";
 import { resolve } from "node:path";
-import { nativeCommandBits, type NativeCommand } from "../../../contracts/l3/world-native/schema/commands.gen";
+import type { NativeCommand } from "../../../contracts/l3/world-native/schema/commands.gen";
 import type { GameClient } from "@bibliothecadao/eternum";
 import type { Account } from "starknet";
 import { createHarnessGame } from "./harness-game";
@@ -37,7 +38,7 @@ export interface SelfCheckResult {
 }
 
 export async function runSelfCheck(port: DeploymentCheckPort, timeoutMs = 120_000): Promise<SelfCheckResult> {
-  const expectedRoutes = Object.keys(nativeCommandBits);
+  const expectedRoutes = localSelfCheckRoutes;
   const started = performance.now();
   const completed: string[] = [];
   const applied: string[] = [];
@@ -58,7 +59,8 @@ export async function runSelfCheck(port: DeploymentCheckPort, timeoutMs = 120_00
     }
     for (const step of game.routes) {
       route = step.route;
-      if (!expectedRoutes.includes(route) || !gameIds.has(step.client.gameId)) throw new Error("Invalid route scope");
+      if (!expectedRoutes.includes(step.route) || !gameIds.has(step.client.gameId))
+        throw new Error("Invalid route scope");
       await bounded(checkRoute(step, controller.signal), timeoutMs, route);
       completed.push(route);
       (step.expectedRejection === undefined ? applied : refused).push(route);

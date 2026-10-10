@@ -301,19 +301,21 @@ class WorkerLauncherTest(unittest.TestCase):
                     deploy.verify_and_activate({}, data)
                 check.assert_called_once()
 
-    def test_launcher_enrollment_is_checked_on_chain_before_requesting_the_signed_game(self):
+    def test_launcher_enrollment_is_confirmed_on_chain_without_creating_a_game(self):
         events = []
         manifest = {"shard": {"chainId": "0x123"}}
         def service(_, action, payload):
             events.append(action)
-            return {"chainId": "0x123", "launcherAccount": "0x42", "txHash": "0x456"}
+            return {"chainId": "0x123", "launcherAccount": "0x42"}
         with (
             patch.object(deploy, "deployed_facts", return_value=(manifest, {})),
             patch.object(deploy, "launcher_service", side_effect=service),
             patch.object(deploy, "service_role_check", side_effect=lambda *args: events.append(args[1])),
+            patch.object(deploy, "gameplay_check_identity", return_value="pins"),
+            patch.object(deploy.shard, "write_json"),
         ):
             deploy.confirm_worker_launcher({"public_herald_url": "https://herald.test", "presets": [5]}, Path("/unused"))
-        self.assertEqual(events, ["enrol", "handoff", "check", "verify"])
+        self.assertEqual(events, ["enrol", "handoff"])
 
 
 if __name__ == "__main__":
@@ -366,7 +368,7 @@ class LauncherStateTransportTest(unittest.TestCase):
 
 
 class WorkerLedgerOperatorTest(unittest.TestCase):
-    def test_activation_confirms_the_relay_role_before_the_launcher_proof_and_active(self):
+    def test_activation_confirms_the_relay_role_before_the_launcher_handoff_and_active(self):
         with tempfile.TemporaryDirectory() as temporary:
             events = []
             with patch.object(deploy, "gameplay_check_identity", return_value="pins"), \

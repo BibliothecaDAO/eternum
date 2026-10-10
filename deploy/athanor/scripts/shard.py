@@ -450,7 +450,7 @@ def stop_shard(directory):
 
 
 # Each workload key is a harness option (underscores for dashes, true for a bare flag), so a matrix can run every shape
-# the harness runs: Blitz games, a launch slot, a Frontier burst, a chosen preset. The harness refuses the rest.
+# the harness runs: a Frontier burst, an Eternum game, a chosen preset. The harness refuses the rest.
 def workload_command(workload):
     if not workload:
         raise ValueError("workload must name the harness run")

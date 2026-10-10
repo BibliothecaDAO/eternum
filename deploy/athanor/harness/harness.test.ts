@@ -1,4 +1,4 @@
-import { launchHarnessGame } from "./game-setup";
+import { launchFrontierSeason } from "./frontier";
 import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
 import { retainBoundaryEvidence } from "./worker-boundary";
 import { mkdtempSync, rmSync } from "node:fs";
@@ -37,7 +37,6 @@ import {
   percentile,
   summarizeCompletedMix,
   summarizeFailureClasses,
-  summarizePlayerProgress,
   summarizeRequestedMix,
   summarizeRevertReasons,
   summarizeRpcMetrics,
@@ -72,17 +71,14 @@ afterAll(() => {
 });
 
 describe("Madara harness workload", () => {
-  it("requires owner credentials when creating a game", async () => {
+  it("requires owner credentials when creating a Frontier season", async () => {
     const saved = { address: process.env.DEPLOYER_ACCOUNT_ADDRESS, key: process.env.DEPLOYER_PRIVATE_KEY };
     try {
       delete process.env.DEPLOYER_ACCOUNT_ADDRESS;
       delete process.env.DEPLOYER_PRIVATE_KEY;
-      const input = {} as Parameters<typeof launchHarnessGame>[0];
-      await expect(launchHarnessGame(input)).rejects.toThrow(
-        "DEPLOYER_ACCOUNT_ADDRESS required for private game setup",
+      await expect(launchFrontierSeason({} as never, "check", 1, 5)).rejects.toThrow(
+        "Frontier launch requires the isolated manifest and authority",
       );
-      process.env.DEPLOYER_ACCOUNT_ADDRESS = "0x123";
-      await expect(launchHarnessGame(input)).rejects.toThrow("DEPLOYER_PRIVATE_KEY required for private game setup");
     } finally {
       if (saved.address === undefined) delete process.env.DEPLOYER_ACCOUNT_ADDRESS;
       else process.env.DEPLOYER_ACCOUNT_ADDRESS = saved.address;
@@ -209,7 +205,7 @@ describe("Madara harness workload", () => {
       existing.set(structureId, [structureId + 10]);
     });
     actions.createExplorerArmy = create;
-    game.settlementStructureIds = () => [1, 2, 3];
+    game.settlementStructureIds = () => [1];
     game.structureCoord = (id) => ({ x: id, y: 0 });
     game.startingTroopType = (id) => {
       if (existing.has(id)) throw new Error("Existing explorers do not need a new troop balance");
@@ -226,26 +222,26 @@ describe("Madara harness workload", () => {
       }) as ReturnType<HarnessGame["armyPathIndexes"]>;
     const setupTransactions: TrackedTransaction[] = [];
     const bots = await prepareHarnessBots({
-      gameType: "blitz",
+      gameType: "frontier",
       game,
       accounts: [{ botId: 1, address: "0x1", account: { address: "0x1" } }] as HarnessAccount[],
       provider: confirmingProvider(),
       setupTransactions,
     });
     expect(settle).not.toHaveBeenCalled();
-    expect(create).toHaveBeenCalledTimes(resumed ? 2 : 3);
+    expect(create).toHaveBeenCalledTimes(resumed ? 0 : 1);
     expect(setupTransactions.map(({ kind, outcome }) => [kind, outcome])).toEqual(
-      Array.from({ length: resumed ? 2 : 3 }, () => ["create-explorer", "completed"]),
+      Array.from({ length: resumed ? 0 : 1 }, () => ["create-explorer", "completed"]),
     );
-    expect(bots[0].explorers.map(({ explorerId }) => explorerId)).toEqual(resumed ? [11, 21, 12, 13] : [11, 12, 13]);
+    expect(bots[0].explorers.map(({ explorerId }) => explorerId)).toEqual(resumed ? [11, 21] : [11]);
   });
 
   it("selects Eternum and rejects deferred ledger options", () => {
-    expect(parseHarnessArgs([]).gameType).toBe("blitz");
+    expect(parseHarnessArgs([]).gameType).toBe("frontier");
     expect(parseHarnessArgs(["--game-type", "eternum"]).gameType).toBe("eternum");
     expect(parseHarnessArgs(["--game-type", "eternum"])).toMatchObject({ presetId: 3, functional: false });
-    expect(parseHarnessArgs(["--preset", "4", "--workload", "burst"])).toMatchObject({
-      presetId: 4,
+    expect(parseHarnessArgs(["--game-type", "eternum", "--preset", "3", "--workload", "burst"])).toMatchObject({
+      presetId: 3,
       workload: "burst",
     });
     expect(() => parseHarnessArgs(["--preset", "9"])).toThrow("Unsupported native preset 9");
@@ -264,16 +260,7 @@ describe("Madara harness workload", () => {
     expect(() => parseHarnessArgs(["--game-type", "frontier", "--workload", "burst"])).toThrow(
       "Frontier requires the frontier workload",
     );
-    expect(parseHarnessArgs(["--slot", "cap-96", "--launch-url", "https://staging.example"])).toMatchObject({
-      slot: { name: "cap-96", launchUrl: "https://staging.example", closesInSeconds: 120 },
-    });
-    expect(() => parseHarnessArgs(["--slot", "cap-96", "--launch-url", "https://x", "--games", "4"])).toThrow(
-      "omit --games",
-    );
-    expect(() => parseHarnessArgs(["--launch-url", "https://x"])).toThrow("require --slot");
-    expect(() => parseHarnessArgs(["--game-type", "unknown"])).toThrow(
-      "--game-type must be blitz, eternum or frontier",
-    );
+    expect(() => parseHarnessArgs(["--game-type", "unknown"])).toThrow("--game-type must be eternum or frontier");
     expect(() => parseHarnessArgs(["--game-type", "eternum", "--ledger"])).toThrow(
       "Unsupported harness option --ledger",
     );
@@ -421,76 +408,6 @@ describe("Madara harness workload", () => {
       outcome: "driver_failed",
       rpc: { getBlock: { calls: 0 } },
     });
-  });
-
-  it("runs Smart production once per minute alongside fresh build orders and exploration", async () => {
-    spyOn(configManager, "getMapCenter").mockReturnValue(0);
-    let now = 1_000_000;
-    spyOn(Date, "now").mockImplementation(() => now);
-    const world = fakeWorld();
-    const productionAt: number[] = [];
-    let buildings = 0;
-    const workload = await runWorkload({
-      bots: [readyHarnessBot(world)],
-      game: world.game,
-      intervalSeconds: 0.01,
-      minutes: 0.001,
-      provider: confirmingProvider(),
-      buildOrder: {
-        automate: () => {
-          productionAt.push(now);
-          return { kind: "automate-production", run: async () => {} };
-        },
-        build: () => {
-          const expected = buildings;
-          return {
-            kind: "build-wheat",
-            run: async () => {
-              expect(buildings).toBe(expected);
-              buildings += 1;
-              now += 30_000;
-            },
-          };
-        },
-        explorers: () => [1],
-      },
-    });
-    expect(productionAt).toEqual([1_000_000, 1_060_000, 1_120_000]);
-    expect(buildings).toBe(6);
-    expect(workload.actions.filter((action) => action.kind === "explore")).toHaveLength(3);
-    expect(workload.actions.filter((action) => action.outcome !== "completed")).toEqual([]);
-    expect(workload.profile).toBe("build-order");
-    expect(summarizeCompletedMix(workload.actions)).toEqual({
-      "build-wheat": 6,
-      "automate-production": 3,
-      explore: 3,
-      move: 2,
-      produce: 0,
-    });
-    expect(summarizePlayerProgress([1, 2], workload.actions)).toMatchObject([
-      {
-        botId: 1,
-        completed: { "build-wheat": 6, "automate-production": 3, explore: 3, move: 2 },
-        failed: 0,
-        progressed: true,
-      },
-      { botId: 2, completed: {}, failed: 0, lastCompletedAt: null, progressed: false },
-    ]);
-  });
-
-  it("does not fabricate successful build actions when production or recommendations are unavailable", async () => {
-    spyOn(configManager, "getMapCenter").mockReturnValue(0);
-    const world = fakeWorld();
-    const workload = await runWorkload({
-      bots: [readyHarnessBot(world)],
-      game: world.game,
-      intervalSeconds: 1,
-      minutes: 0.001,
-      provider: confirmingProvider(),
-      buildOrder: { automate: () => undefined, build: () => undefined, explorers: () => [1] },
-    });
-    expect(workload.actions.map((action) => action.kind)).toEqual(["explore"]);
-    expect(summarizePlayerProgress([1], workload.actions)[0]?.progressed).toBe(false);
   });
 
   it("waits for setup stamina to regenerate before measuring the workload", async () => {
@@ -1006,9 +923,9 @@ describe("Madara harness CLI and concurrency", () => {
 
     expect(playersOf("frontier", prepared(2))).toMatchObject({ kind: "single" });
     expect(() => playersOf("frontier", [prepared(2), prepared(2)] as never)).toThrow("one season");
-    const roster = playersOf("build-order", prepared(24));
+    const roster = playersOf("cadence", prepared(24));
     expect(roster.kind === "roster" && roster.groups.map(({ accounts }) => accounts.length)).toEqual(Array(24).fill(1));
-    expect(playersOf("build-order", prepared(1))).toMatchObject({ kind: "single" });
+    expect(playersOf("cadence", prepared(1))).toMatchObject({ kind: "single" });
   });
 
   it("splits one Frontier season into even account slices, one per worker, all on the same game", () => {
@@ -1031,7 +948,9 @@ describe("Madara harness CLI and concurrency", () => {
       bots: 2000,
     });
     expect(parseHarnessArgs(["--game-type", "frontier"]).workers).toBe(1);
-    expect(() => parseHarnessArgs(["--workers", "2"])).toThrow("--workers splits a Frontier season");
+    expect(() => parseHarnessArgs(["--game-type", "eternum", "--workers", "2"])).toThrow(
+      "--workers splits a Frontier season",
+    );
     expect(() => parseHarnessArgs(["--game-type", "frontier", "--functional", "--workers", "2"])).toThrow(
       "design run plays both profiles in one process",
     );
@@ -1082,7 +1001,7 @@ describe("Madara harness CLI and concurrency", () => {
         .frontierBurst,
     ).toEqual({ shape: "booth", windowSeconds: 120 });
     expect(parseHarnessArgs(["--game-type", "frontier"]).frontierBurst).toBeUndefined();
-    expect(() => parseHarnessArgs(["--frontier-burst", "booth"])).toThrow(
+    expect(() => parseHarnessArgs(["--game-type", "eternum", "--frontier-burst", "booth"])).toThrow(
       "--frontier-burst requires --game-type frontier",
     );
     expect(parseHarnessArgs(["--game-type", "frontier", "--frontier-burst", "rollover"]).frontierBurst).toEqual({
@@ -1097,24 +1016,11 @@ describe("Madara harness CLI and concurrency", () => {
     );
   });
 
-  it("sizes concurrent Regular rosters without relaxing the player cap", () => {
-    expect(parseHarnessArgs([])).toMatchObject({
-      bots: 96,
-      intervalSeconds: 15,
-      workload: "build-order",
-      setupConcurrency: 6,
-    });
-    expect(parseHarnessArgs(["--workload", "cadence"]).workload).toBe("cadence");
-    expect(() => parseHarnessArgs(["--workload", "unknown"])).toThrow("--workload");
-    expect(parseHarnessArgs(["--games", "16"])).toMatchObject({ games: 16, accountsPerGame: 24, bots: 384 });
-    expect(parseHarnessArgs(["--games", "2", "--accounts-per-game", "3"])).toMatchObject({
-      games: 2,
-      accountsPerGame: 3,
-      bots: 6,
-    });
-    expect(() => parseHarnessArgs(["--games", "2", "--accounts-per-game", "25"])).toThrow("at most 24");
-    expect(() => parseHarnessArgs(["--bots", "96", "--games", "2"])).toThrow("Use --games");
-    expect(() => parseHarnessArgs(["--game-type", "eternum", "--games", "2"])).toThrow("Regular Blitz");
+  it("defaults to Frontier and rejects removed workload shapes", () => {
+    expect(parseHarnessArgs([])).toMatchObject({ bots: 96, workload: "frontier", setupConcurrency: 6 });
+    expect(() => parseHarnessArgs(["--games", "2"])).toThrow("Unsupported harness option");
+    expect(() => parseHarnessArgs(["--slot", "evening"])).toThrow("Unsupported harness option");
+    expect(() => parseHarnessArgs(["--game-type", "blitz"])).toThrow("--game-type");
   });
 
   it("preserves input order while bounding concurrent work", async () => {

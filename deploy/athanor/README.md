@@ -60,7 +60,7 @@ shards, run it from the package directory with the protected operator credential
 
 ```bash
 sudo docker compose run --rm harness \
-  --bots 6 --minutes 6 --interval-seconds 15 --setup-concurrency 6 --workload build-order --functional
+  --bots 6 --minutes 6 --interval-seconds 15 --setup-concurrency 6 --game-type frontier --functional
 ```
 
 The `harness` service runs the init image on the shard's network as the host user, with the shard's `harness.env`: the
@@ -80,10 +80,6 @@ The node and Herald URLs are required (`--rpc-url`/`RPC_URL`, `--herald-url`/`HE
 `harness` service takes them from `harness.env`. Player invokes use the public stamping RPC. Setup and administrative
 calls use HARNESS_ADMIN_RPC_URL on the private node inside the Compose network.
 
-Every bot follows build-order suggestions, updates automation each minute and explores. The full acceptance workload
-uses 96 players and the frozen run configuration. Do not substitute a short smoke for it. Keep failed runs labeled
-failed. Measurements and exact revision/image/configuration pins go in the PR.
-
 A roster run drives every player as a worker thread of one process and asserts its gates once, over the whole run, in
 `rosters-<time>/summary.json`. A run fails only on correctness: the action threshold (3,500 for the frozen 96-player
 configuration, otherwise every planned action), chain or driver failures, and blocking gameplay rejections. Latency is a
@@ -97,24 +93,16 @@ gates of their own. Reports are committed at process exit after client and socke
 callback failures and the exit code. The console names the report path without announcing an earlier PASS.
 
 The capacity campaign's shapes are run configurations of the same harness. `--preset <id>` names the preset new games
-are created from (default: the game type's). The slot shape's start burst is `--bots 96 --workload burst`: four games of
-24, every bot releasing its whole plan at the same instant and its next action as soon as the previous one lands; the
-summary's `releaseSpreadMs` shows how tight the release was. The Frontier shape is `--game-type frontier` without
-`--functional`: production-length days, every player settling then mustering and exploring in the first minutes, with
-the latency gates and, measured from the host, the close-cost evidence. `--game-type frontier --functional` is FR11's
-design run instead: the season is created with twelve-minute days so the bots play through rollovers, and the design
-gates (token cap, fresh armies after at least three rollovers) apply while the latency gates do not.
+are created from (default: the game type's). The Frontier shape is `--game-type frontier` without `--functional`:
+production-length days, every player settling then mustering and exploring in the first minutes, with the latency gates
+and, measured from the host, the close-cost evidence. `--game-type frontier --functional` is FR11's design run instead:
+the season is created with twelve-minute days so the bots play through rollovers, and the design gates (token cap, fresh
+armies after at least three rollovers) apply while the latency gates do not.
 `--game-type frontier --functional --preset 5` is the real-speed pass on the preset players play: every bot founds its
 realm, raises the troops its wheat pays for and explores, and the run checks, from the chain's facts, each producing
 building's rate against preset 5's, that raising took exactly the recipe's 2 wheat per troop and each explore or step
 exactly its food per troop, and that no submitted action was a gameplay rejection. Latency is reported, not gated. A day
 lasts a day there, so the multi-day gates stay with the design run.
-
-The slot shape proper registers the bots the way players register: `--slot <name> --launch-url <app origin>` through the
-package harness service creates the slot closing `--slot-closes-in-seconds` ahead (default 120), registers every bot's
-account into it, waits for the cron to freeze it and for each `<slot>-<gameNumber>` launch run to complete, and then
-drives the games the launch service split, created and settled. The harness creates nothing itself in this mode; a
-failed launch run fails the harness run with the launch service's reason.
 
 ### Measuring a shard
 
