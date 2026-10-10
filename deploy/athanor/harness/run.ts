@@ -313,7 +313,7 @@ async function resolveHarnessGame(
   shard: Shard,
   publicProvider: HarnessProvider,
 ): Promise<LaunchedGame> {
-  if (options.gameId !== undefined) {
+  if (options.gameId !== undefined && options.gameType !== "eternum") {
     return { gameId: options.gameId, gameName: options.gameName!, settlementTransactions: null };
   }
 
@@ -327,6 +327,7 @@ async function resolveHarnessGame(
     }
   }
   return launchHarnessGame({
+    gameId: options.gameId,
     gameName,
     gameType: options.gameType,
     minutes: options.minutes,

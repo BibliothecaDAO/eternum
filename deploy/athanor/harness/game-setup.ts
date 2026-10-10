@@ -1,3 +1,6 @@
+import { CallData } from "starknet";
+import { confirmedTransactionReceipt } from "../../../config/deployer/clean/shared/transaction";
+import { resolveRegistrarExecutionDetails } from "../../../config/deployer/clean/registrar/transaction-details";
 import { createOperatorAccount } from "../../../config/deployer/clean/shared/madara-account";
 import { createRegistrarGame } from "../../../config/deployer/clean/registrar/calls";
 import {
@@ -23,6 +26,7 @@ const required = (name: string): string => {
 /** Existing registrar payloads create the game privately; launcher gameplay follows the same signed public path. */
 export async function launchHarnessGame(input: {
   gameName: string;
+  gameId?: number;
   gameType: "blitz" | "eternum";
   minutes: number;
   presetId: number;
@@ -30,10 +34,10 @@ export async function launchHarnessGame(input: {
   shard: Shard;
   publicProvider: HarnessProvider;
 }) {
-  const privateProvider = createHarnessAdminProvider();
-  const manifest = readShardManifest<NativeWorldManifest>(required("NATIVE_WORLD_MANIFEST"));
   const address = required("DEPLOYER_ACCOUNT_ADDRESS"),
     privateKey = required("DEPLOYER_PRIVATE_KEY");
+  const manifest = readShardManifest<NativeWorldManifest>(required("NATIVE_WORLD_MANIFEST"));
+  const privateProvider = createHarnessAdminProvider();
   try {
     await assertProviderChain(privateProvider, manifest, "HARNESS_ADMIN_RPC_URL");
     const account = createOperatorAccount(privateProvider, address, privateKey);
@@ -56,13 +60,35 @@ export async function launchHarnessGame(input: {
       },
       input.gameType === "blitz" ? input.rosterAccounts.map((account) => ({ account, wallet: account })) : [],
     );
-    const created = await createRegistrarGame(account, params, manifest, preset);
-    if (!created.gameId) throw new Error("Registrar did not return a game id");
+    const gameId = input.gameId ?? (await createRegistrarGame(account, params, manifest, preset)).gameId;
+    if (!gameId) throw new Error("Registrar did not return a game id");
+    if (input.gameType === "eternum") {
+      for (const [index, owner] of input.rosterAccounts.entries()) {
+        const entry = await account.execute(
+          {
+            contractAddress: manifest.world.address,
+            entrypoint: "register_entitlement",
+            calldata: CallData.compile({
+              key: { game_id: gameId, owner },
+              entitlement: {
+                realm_id: { low: index + 1, high: 0 },
+                metadata_1: "0x0103070402020302010009",
+                metadata_2: 0,
+                metadata_3: 0,
+                pass_kind: 1,
+              },
+            }),
+          },
+          await resolveRegistrarExecutionDetails(account, manifest.world.address),
+        );
+        await confirmedTransactionReceipt(privateProvider, entry.transaction_hash);
+      }
+    }
     const settlementTransactions =
       input.gameType === "blitz"
-        ? await settleHarnessRoster(created.gameId, input.shard, input.publicProvider, manifest, address, privateKey)
+        ? await settleHarnessRoster(gameId, input.shard, input.publicProvider, manifest, address, privateKey)
         : 0;
-    return { gameId: created.gameId, gameName: input.gameName, startAt, settlementTransactions };
+    return { gameId, gameName: input.gameName, startAt, settlementTransactions };
   } finally {
     privateProvider.dispose();
   }
