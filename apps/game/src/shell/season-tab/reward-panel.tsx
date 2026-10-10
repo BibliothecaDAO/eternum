@@ -1,6 +1,6 @@
 import { lazy, type ReactNode, Suspense, useState } from "react";
 
-import type { PayoutWallet } from "@/hooks/context/payout-wallet";
+import type { PayoutWallet } from "@realms-world/identity";
 import { formatExact } from "@/ui/design-system/kit/amount";
 import { formatDate } from "@/ui/design-system/kit/time";
 import { Button } from "@/ui/design-system/kit/button";
@@ -16,7 +16,7 @@ import { useNowSeconds } from "../use-now";
 import { type ChestContent, lordsOf, openChestCalls } from "../value/ledger";
 import { NoStrkLine } from "../value/no-strk-line";
 import { REWARD_WORDS } from "../words";
-import type { LedgerRef } from "../value/game-entry";
+import type { PaidGameLedger } from "@realms-world/identity";
 import { type Reward, rewardState, useReward } from "./reward";
 
 const WalletSign = lazy(() =>
@@ -33,7 +33,7 @@ const chestArt = (band: number, opened: boolean) =>
  * payout wallet; the draw then lands by itself about ten blocks later, and the reveal plays inside this panel. Keep
  * leaves it in the collection to trade.
  */
-export const RewardPanel = ({ ledger, wallet }: { ledger: LedgerRef; wallet: PayoutWallet }) => {
+export const RewardPanel = ({ ledger, wallet }: { ledger: PaidGameLedger; wallet: PayoutWallet }) => {
   const reward = useReward(ledger, wallet.status === "no_wallet" ? null : wallet.address);
   if (reward.isError)
     return <ServiceFailure service="ledger" error={reward.error} retry={() => void reward.refetch()} />;
@@ -84,7 +84,7 @@ const ChestPlate = ({
   reward,
   onRequested,
 }: {
-  ledger: LedgerRef;
+  ledger: PaidGameLedger;
   owner: string;
   reward: Reward;
   onRequested: () => void;

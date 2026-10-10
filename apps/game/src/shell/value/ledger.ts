@@ -290,8 +290,6 @@ export const ledgerReader = (provider: ProviderInterface, ledger: string) => {
   return {
     lordsToken: async () => (await view("lords", []))[0],
     chestCollection: async () => (await view("chest_collection", []))[0],
-    /** The Realms account the ledger links to a wallet; 0 while it links none. The ledger registers that account. */
-    accountOfWallet: async (wallet: string) => (await view("account_of_wallet", [wallet]))[0],
     balanceOf,
     game: async (key: GameKey) => decodeGame(await view("get_game", keyCalldata(key))),
     preset: async (presetId: number) => decodePreset(await view("get_preset", [String(presetId)])),

@@ -106,15 +106,3 @@ it("reads the LORDS token and the chest collection from the ledger itself, and b
     ["0x57e1", "balance_of"],
   ]);
 });
-
-it("reads the Realms account the ledger links to a wallet", async () => {
-  const calls: { contractAddress: string; entrypoint: string; calldata?: unknown }[] = [];
-  const provider = {
-    callContract: async (call: { contractAddress: string; entrypoint: string; calldata?: unknown }) => {
-      calls.push(call);
-      return ["0x7a"];
-    },
-  } as unknown as ProviderInterface;
-  await expect(ledgerReader(provider, "0xledger").accountOfWallet("0x4a1")).resolves.toBe("0x7a");
-  expect(calls).toEqual([{ contractAddress: "0xledger", entrypoint: "account_of_wallet", calldata: ["0x4a1"] }]);
-});

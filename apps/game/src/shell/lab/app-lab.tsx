@@ -109,7 +109,7 @@ const createLabClient = (screen: LabScreen) => {
   if (reward && wallet?.status === "ready") client.setQueryData(rewardKey(LAB_GAME_LEDGER, wallet.address), reward);
   const prize = LAB_SEASON_PRIZES[screen];
   if (prize && wallet?.status === "ready") {
-    const source = `${LAB_GAME_LEDGER.key.shard}:${LAB_GAME_LEDGER.key.gameId}`;
+    const source = `${LAB_GAME_LEDGER.shard}:${LAB_GAME_LEDGER.gameId}`;
     client.setQueryData(seasonPrizeKey(LAB_GAME_LEDGER.address, source, wallet.address), prize);
   }
   return client;
@@ -118,7 +118,7 @@ const createLabClient = (screen: LabScreen) => {
 /** A screen's listed games; on a reward screen the Blitz names the ledger it was played on. */
 const labGames = (screen: LabScreen) =>
   LAB_SCREENS[screen].games.map((game) =>
-    (LAB_REWARDS[screen] || LAB_SEASON_PRIZES[screen]) && game.game_id === LAB_GAME_LEDGER.key.gameId
+    (LAB_REWARDS[screen] || LAB_SEASON_PRIZES[screen]) && game.game_id === LAB_GAME_LEDGER.gameId
       ? { ...game, entry: paidEntryPayload(LAB_GAME_LEDGER) }
       : game,
   );

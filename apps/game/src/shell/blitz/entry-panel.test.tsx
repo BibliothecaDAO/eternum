@@ -6,6 +6,10 @@ import type { Call } from "starknet";
 import { afterEach, expect, it, vi } from "vitest";
 
 const signed = vi.hoisted(() => ({ calls: [] as Call[][] }));
+const session = vi.hoisted(() => ({ refresh: vi.fn(async () => undefined) }));
+vi.mock("@/hooks/context/identity-session", () => ({
+  useIdentitySessionStore: (select: (state: typeof session) => unknown) => select(session),
+}));
 vi.mock("@/ui/modules/identity/wallet-actions", () => ({
   WalletSign: ({ calls, onSent }: { calls: Call[]; onSent: (hash: string) => void }) => (
     <button
@@ -20,18 +24,17 @@ vi.mock("@/ui/modules/identity/wallet-actions", () => ({
   ),
 }));
 
-import type { PayoutWallet } from "@/hooks/context/payout-wallet";
-
-import type { LedgerRef } from "../value/game-entry";
+import type { LedgerLinkStatus, PaidGameLedger, PayoutWallet } from "@realms-world/identity";
 import { type EntryTerms, entryTermsKey } from "./entry";
 import { PaidEntry } from "./entry-panel";
 
 const WEI = 10n ** 18n;
-const LEDGER: LedgerRef = {
+const LEDGER: PaidGameLedger = {
   address: "0x1ed9e7",
   chainId: "0x534e5f4d41494e",
   feeToken: "0x57e1",
-  key: { shard: "0x52", gameId: 7 },
+  shard: "0x52",
+  gameId: 7,
 };
 const WALLET: PayoutWallet = { status: "ready", address: "0x4a1" };
 const TERMS: EntryTerms = {
@@ -42,13 +45,19 @@ const TERMS: EntryTerms = {
   credits: { swords: 2, shields: 0 },
   registration: { registered: false, sword: false, shield: false, swordCredit: false, shieldCredit: false, paid: 0n },
   lordsToken: "0x10e5",
-  linkedAccount: "0x7a",
   lords: 2_140n * WEI,
   strk: 10n ** 17n,
 };
 const unmounts: (() => Promise<void>)[] = [];
 
-const mount = async (terms: EntryTerms, wallet: PayoutWallet = WALLET) => {
+const CONFIRMED: LedgerLinkStatus = {
+  status: "confirmed",
+  ledger: { address: "0x1ed9e7", chainId: "0x534e5f4d41494e" },
+  wallet: "0x4a1",
+  account: "0x7a",
+};
+
+const mount = async (terms: EntryTerms, wallet: PayoutWallet = WALLET, link: LedgerLinkStatus = CONFIRMED) => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const client = new QueryClient({ defaultOptions: { queries: { staleTime: Infinity, retry: false } } });
   client.setQueryData(entryTermsKey(LEDGER, "0x4a1"), terms);
@@ -59,7 +68,7 @@ const mount = async (terms: EntryTerms, wallet: PayoutWallet = WALLET) => {
     root.render(
       <QueryClientProvider client={client}>
         <MemoryRouter>
-          <PaidEntry ledger={LEDGER} wallet={wallet} account="0x7a" />
+          <PaidEntry ledger={LEDGER} wallet={wallet} link={link} account="0x7a" />
         </MemoryRouter>
       </QueryClientProvider>,
     ),
@@ -129,12 +138,19 @@ it("names what is short, the missing STRK, the seat, and the refund", async () =
   expect((await mount(TERMS, { status: "no_wallet" })).textContent).toContain("Entry is paid from your payout wallet");
 });
 
-it("shows linking until the ledger links the payout wallet to this account, and a wallet linked elsewhere as a fault", async () => {
-  const linking = await mount({ ...TERMS, linkedAccount: "0x0" });
-  expect(linking.textContent).toContain("Linking your wallet");
-  expect([...linking.querySelectorAll("button")].map((button) => button.textContent)).not.toContain("Pay & join");
+it("shows linking until the services confirm the link, reading the session again, and a link for another account as a fault", async () => {
+  vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });
+  try {
+    const linking = await mount(TERMS, WALLET, { status: "linking" });
+    expect(linking.textContent).toContain("Linking your wallet");
+    expect([...linking.querySelectorAll("button")].map((button) => button.textContent)).not.toContain("Pay & join");
+    await act(async () => vi.advanceTimersByTime(5_000));
+    expect(session.refresh).toHaveBeenCalled();
+  } finally {
+    vi.useRealTimers();
+  }
 
-  const elsewhere = await mount({ ...TERMS, linkedAccount: "0x99" });
+  const elsewhere = await mount(TERMS, WALLET, { ...CONFIRMED, account: "0x99" });
   expect(elsewhere.textContent).toContain("This payout wallet is linked to another Realms account.");
   expect(elsewhere.textContent).not.toContain("Pay & join");
 

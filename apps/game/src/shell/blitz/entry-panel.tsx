@@ -1,7 +1,9 @@
-import { lazy, type ReactNode, Suspense, useState } from "react";
+import { lazy, type ReactNode, Suspense, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import type { PayoutWallet } from "@/hooks/context/payout-wallet";
+import type { LedgerLinkStatus, PayoutWallet } from "@realms-world/identity";
+
+import { useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { shortAddress } from "@/ui/design-system/kit/address";
 import { formatExact } from "@/ui/design-system/kit/amount";
 import { Button } from "@/ui/design-system/kit/button";
@@ -23,34 +25,49 @@ import {
   entryState,
   type EntryTerms,
   useEntryTerms,
+  entryLinkOf,
 } from "./entry";
-import type { LedgerRef } from "../value/game-entry";
+import type { PaidGameLedger } from "@realms-world/identity";
 
 const WalletSign = lazy(() =>
   import("@/ui/modules/identity/wallet-actions").then((module) => ({ default: module.WalletSign })),
 );
 
+/** While the relay links the wallet, the session is read again this often: the entry opens once the link is confirmed. */
+const LINK_POLL_MS = 5_000;
+
 /**
  * The lobby's step for a paid Blitz: its entry read from the ledger for the payout wallet, read again once the
- * wallet has sent its call. `account` is the player's own Realms account, null until it is known.
+ * wallet has sent its call, and the services' ledger link for it. `account` is the player's own Realms account, null
+ * until it is known.
  */
 export const PaidEntry = ({
   ledger,
   wallet,
+  link,
   account,
 }: {
-  ledger: LedgerRef;
+  ledger: PaidGameLedger;
   wallet: PayoutWallet;
+  link: LedgerLinkStatus;
   account: string | null;
 }) => {
   const terms = useEntryTerms(ledger, wallet.status === "no_wallet" ? null : wallet.address);
+  const entryLink =
+    wallet.status === "no_wallet" || account === null ? null : entryLinkOf(link, ledger, wallet.address, account);
+  const refreshSession = useIdentitySessionStore((state) => state.refresh);
+  useEffect(() => {
+    if (entryLink !== "linking") return;
+    const timer = window.setInterval(() => void refreshSession(), LINK_POLL_MS);
+    return () => window.clearInterval(timer);
+  }, [entryLink, refreshSession]);
   if (terms.isError) return <ServiceFailure service="ledger" error={terms.error} retry={() => void terms.refetch()} />;
   return (
     <EntryPanel
       ledger={ledger}
       terms={terms.data}
       wallet={wallet}
-      account={account}
+      link={entryLink}
       onSent={() => void terms.refetch()}
     />
   );
@@ -65,13 +82,13 @@ const EntryPanel = ({
   ledger,
   terms,
   wallet,
-  account,
+  link,
   onSent,
 }: {
-  ledger: LedgerRef;
+  ledger: PaidGameLedger;
   terms: EntryTerms | undefined;
   wallet: PayoutWallet;
-  account: string | null;
+  link: ReturnType<typeof entryLinkOf> | null;
   onSent: () => void;
 }) => {
   const [choice, setChoice] = useState<EntryChoice>({ sword: false, shield: false });
@@ -79,8 +96,8 @@ const EntryPanel = ({
   const [sent, setSent] = useState(false);
   const now = useNowSeconds();
   if (wallet.status === "no_wallet") return <NoWallet />;
-  if (!terms || account === null) return <Loading />;
-  const state = entryState(terms, choice, now, account);
+  if (!terms || link === null) return <Loading />;
+  const state = entryState(terms, choice, now, link);
   const cost = entryCost(terms, choice);
   const done = () => {
     setSigning(false);
@@ -97,7 +114,7 @@ const EntryPanel = ({
     <Suspense fallback={<Loading />}>
       <WalletSign
         owner={wallet.address}
-        calls={state === "refund" ? [refundCall(ledger.address, ledger.key)] : entryCalls(ledger, terms, choice)}
+        calls={state === "refund" ? [refundCall(ledger.address, ledger)] : entryCalls(ledger, terms, choice)}
         onSent={done}
       />
     </Suspense>

@@ -1,7 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { type Chest, type ChestContent, type PlayerResult, type Registration } from "../value/ledger";
-import { ledgerOf, type LedgerRef } from "../value/game-entry";
+import type { PaidGameLedger } from "@realms-world/identity";
+
+import { ledgerOf } from "../value/game-entry";
 
 /*
  * A finished paid Blitz on the ledger (design 5h, owner 9 Oct: the result mints a chest token the player holds,
@@ -39,27 +41,24 @@ export const rewardState = (reward: Reward, wallet: string): RewardState => {
   return reward.strk === 0n ? "no-strk" : "sealed";
 };
 
-export const rewardKey = (ledger: LedgerRef, wallet: string) =>
-  ["ledger", "reward", ledger.address, ledger.key.shard, ledger.key.gameId, wallet] as const;
+export const rewardKey = (ledger: PaidGameLedger, wallet: string) =>
+  ["ledger", "reward", ledger.address, ledger.shard, ledger.gameId, wallet] as const;
 
 /** Read every 30 s, every 5 s while the chest's draw is under way so the reveal comes as soon as it lands. */
-export const useReward = (ledger: LedgerRef | null, wallet: string | null) =>
+export const useReward = (ledger: PaidGameLedger | null, wallet: string | null) =>
   useQuery({
-    queryKey: rewardKey(
-      ledger ?? { address: "", chainId: "", feeToken: "", key: { shard: "", gameId: 0 } },
-      wallet ?? "",
-    ),
-    queryFn: () => readReward(ledger as LedgerRef, wallet as string),
+    queryKey: rewardKey(ledger ?? { address: "", chainId: "", feeToken: "", shard: "", gameId: 0 }, wallet ?? ""),
+    queryFn: () => readReward(ledger as PaidGameLedger, wallet as string),
     enabled: ledger !== null && wallet !== null,
     refetchInterval: (query) =>
       query.state.data?.chest?.requested && !query.state.data.chest.finished ? 5_000 : 30_000,
   });
 
-const readReward = async (ledger: LedgerRef, wallet: string): Promise<Reward> => {
+const readReward = async (ledger: PaidGameLedger, wallet: string): Promise<Reward> => {
   const read = ledgerOf(ledger);
   const [result, registration, strk, collection] = await Promise.all([
-    read.result(ledger.key, wallet),
-    read.registration(ledger.key, wallet),
+    read.result(ledger, wallet),
+    read.registration(ledger, wallet),
     read.balanceOf(ledger.feeToken, wallet),
     read.chestCollection(),
   ]);

@@ -8,16 +8,17 @@ vi.mock("@/runtime/l2-rpc", async (importOriginal) => ({
 
 import { directoryGameEntryOf, gameEntryOf, ledgerOf } from "./game-entry";
 
-const LEDGER = { address: "0xl", chainId: "0x534e5f4d41494e", feeToken: "0xf", shard: "0x52", gameId: 7 };
+const LEDGER = { address: "0x1ed9e7", chainId: "0x534e5f4d41494e", feeToken: "0x57e1", shard: "0x52", gameId: 7 };
 const PAID = {
   kind: "paid",
-  ledger: { address: "0xl", chainId: "0x534e5f4d41494e", feeToken: "0xf", key: { shard: "0x52", gameId: 7 } },
+  ledger: { address: "0x1ed9e7", chainId: "0x534e5f4d41494e", feeToken: "0x57e1", shard: "0x52", gameId: 7 },
 };
 
-it("reads a paid entry's ledger, and a payload that names no entry as free", () => {
+it("reads a paid entry's ledger and a free entry, and a payload with no entry as broken, never free", () => {
   expect(gameEntryOf({ entry: { kind: "paid", ledger: LEDGER } })).toEqual(PAID);
   expect(gameEntryOf({ entry: { kind: "free" } })).toEqual({ kind: "free" });
-  expect(gameEntryOf({ name: "blitz-1630" })).toEqual({ kind: "free" });
+  // The services make entry required: a payload without one is a fault.
+  expect(gameEntryOf({})).toEqual({ kind: "broken" });
 });
 
 it("shows a paid entry without a whole ledger reference as broken, never as the free join", () => {
@@ -41,9 +42,9 @@ it("refuses a directory game whose ledger key names another game", () => {
 });
 
 it("reads a ledger on this build's chain, and refuses, loudly, one the entry places on another", async () => {
-  const onThisChain = { address: "0xl", chainId: SN_MAIN, feeToken: "0xf", key: { shard: "0x52", gameId: 7 } };
+  const onThisChain = { address: "0x1ed9e7", chainId: SN_MAIN, feeToken: "0x57e1", shard: "0x52", gameId: 7 };
   await expect(ledgerOf(onThisChain).lordsToken()).resolves.toBe("0x10e5");
   expect(() => ledgerOf({ ...onThisChain, chainId: "0x534e5f5345504f4c4941" })).toThrow(
-    "Ledger 0xl is on chain 0x534e5f5345504f4c4941; this build reads SN_MAIN",
+    "Ledger 0x1ed9e7 is on chain 0x534e5f5345504f4c4941; this build reads SN_MAIN",
   );
 });

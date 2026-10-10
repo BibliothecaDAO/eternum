@@ -39,7 +39,7 @@ vi.mock("../herald", () => ({
           clock: { start_main_at: 1 },
           entry: {
             kind: "paid",
-            ledger: { address: "0xl", chainId: "0x534e5f4d41494e", feeToken: "0xf", shard: "0x52", gameId: 7 },
+            ledger: { address: "0x1ed9e7", chainId: "0x534e5f4d41494e", feeToken: "0x57e1", shard: "0x52", gameId: 7 },
           },
         },
       ],
@@ -58,7 +58,7 @@ const unmounts: (() => Promise<void>)[] = [];
 const mount = async (prize: SeasonPrize) => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const client = new QueryClient({ defaultOptions: { queries: { staleTime: Infinity, retry: false } } });
-  client.setQueryData(seasonPrizeKey("0xl", "0x52:7", "0x4a1"), prize);
+  client.setQueryData(seasonPrizeKey("0x1ed9e7", "0x52:7", "0x4a1"), prize);
   const container = document.createElement("div");
   document.body.append(container);
   const root = createRoot(container);
@@ -77,7 +77,7 @@ const mount = async (prize: SeasonPrize) => {
 };
 
 const prize = (season: Partial<SeasonPrize["season"]>, rest: Partial<SeasonPrize> = {}): SeasonPrize => ({
-  ledger: "0xl",
+  ledger: "0x1ed9e7",
   seasonId: 3,
   season: {
     participants: 25,
@@ -121,7 +121,7 @@ it("waits out the review hour, then claims a winner's share from the payout wall
     [...claim.querySelectorAll("button")].find((button) => button.textContent === "Claim")!.click(),
   );
   await act(async () => [...claim.querySelectorAll("button")].find((button) => button.textContent === "Sign")!.click());
-  expect(signed.calls).toEqual([[{ contractAddress: "0xl", entrypoint: "claim_season", calldata: ["3"] }]]);
+  expect(signed.calls).toEqual([[{ contractAddress: "0x1ed9e7", entrypoint: "claim_season", calldata: ["3"] }]]);
   expect(
     (await mount(prize({ ...posted, reviewUntil: NOW - 60 }, { share: 4_000n * WEI, strk: 0n }))).textContent,
   ).toContain("No STRK for the fee");

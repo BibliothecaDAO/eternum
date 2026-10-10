@@ -2,7 +2,9 @@ import { useQuery } from "@tanstack/react-query";
 
 import type { DirectoryGame } from "../herald";
 import { type BlitzSeason, ledgerReader, type PayoutCurve } from "../value/ledger";
-import { directoryGameEntryOf, ledgerOf, type LedgerRef } from "../value/game-entry";
+import type { PaidGameLedger } from "@realms-world/identity";
+
+import { directoryGameEntryOf, ledgerOf } from "../value/game-entry";
 
 /**
  * The Blitz season's prize (design 5h step 8): the pool held by GameLedger, growing as games settle; at its end the
@@ -25,7 +27,7 @@ export const seasonSourceOf = (games: readonly DirectoryGame[]) => {
     .filter((game) => game.mode === "blitz")
     .toSorted((a, b) => b.clock.start_main_at - a.clock.start_main_at)
     .map(directoryGameEntryOf)
-    .find((entry): entry is { kind: "paid"; ledger: LedgerRef } => entry.kind === "paid");
+    .find((entry): entry is { kind: "paid"; ledger: PaidGameLedger } => entry.kind === "paid");
   return newest?.ledger ?? null;
 };
 
@@ -73,11 +75,7 @@ export const seasonPrizeKey = (ledger: string, seasonSource: string, wallet: str
 export const useSeasonPrize = (games: readonly DirectoryGame[], wallet: string | null) => {
   const source = seasonSourceOf(games);
   return useQuery({
-    queryKey: seasonPrizeKey(
-      source?.address ?? "",
-      source ? `${source.key.shard}:${source.key.gameId}` : "",
-      wallet ?? "",
-    ),
+    queryKey: seasonPrizeKey(source?.address ?? "", source ? `${source.shard}:${source.gameId}` : "", wallet ?? ""),
     queryFn: () => readSeasonPrize(source as NonNullable<typeof source>, wallet as string),
     enabled: source !== null && wallet !== null,
     refetchInterval: 60_000,
@@ -89,7 +87,7 @@ const readSeasonPrize = async (
   wallet: string,
 ): Promise<SeasonPrize> => {
   const read = ledgerOf(source);
-  const { seasonId } = await read.game(source.key);
+  const { seasonId } = await read.game(source);
   const season = await read.season(seasonId);
   const [curve, claimed, strk, share] = await Promise.all([
     read.preset(season.presetId),
