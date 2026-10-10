@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 
 import { type BlitzRow, blitzRows, leadBlitzRow } from "./blitz-rows";
-import { usePlaytestSlots } from "./blitz-slot";
+import { useJoinSlot, usePlaytestSlots } from "./blitz-slot";
 import { entryHref } from "./game-links";
 import type { DirectoryGame } from "./herald";
 import { ErrorPanel } from "./kit";
@@ -96,16 +96,17 @@ export const FrontierCard = ({ season, to, className }: { season: DirectoryGame;
 /** The Blitz rows a card draws: the directory's games and the launch service's slots, as one list. */
 const useBlitzRows = (games: DirectoryGame[], now: number) => {
   const slots = usePlaytestSlots();
-  const rows = blitzRows(games, slots.data?.slots ?? [], now);
-  return { rows, slots };
+  const join = useJoinSlot();
+  const rows = blitzRows(games, slots.data?.slots ?? [], join.realmsId, now);
+  return { rows, slots, join };
 };
 
 /**
  * Blitz on home (design o1, o2, o10): one row, the player's own game to enter, else the next slot's time to close,
- * its paid-entry schedule. The card opens the lobby, which lists every Blitz.
+ * its seats and Join, or a check once registered. The card opens the lobby, which lists every Blitz.
  */
 export const BlitzCard = ({ games, now, className }: { games: DirectoryGame[]; now: number; className?: string }) => {
-  const { rows, slots } = useBlitzRows(games, now);
+  const { rows, slots, join } = useBlitzRows(games, now);
   const lead = leadBlitzRow(rows);
   return (
     <ModeCard
@@ -115,7 +116,7 @@ export const BlitzCard = ({ games, now, className }: { games: DirectoryGame[]; n
       className={className}
       // Unknown while the slots load; with nothing to play or join there is nothing to show.
       state={lead ? <BlitzRowState row={lead} /> : !slots.data && <TimeLeftChip seconds={undefined} />}
-      action={lead && <BlitzRowAction row={lead} />}
+      action={lead && <BlitzRowAction row={lead} join={join} />}
     />
   );
 };
@@ -133,7 +134,7 @@ export const BlitzLobbyCard = ({
   now: number;
   className?: string;
 }) => {
-  const { rows, slots } = useBlitzRows(games, now);
+  const { rows, slots, join } = useBlitzRows(games, now);
   // With no game to play or watch and no slot filling, Blitz is closed for now, greyed like Eternum before it opens.
   if (rows.length === 0 && slots.isSuccess) {
     return <ModeCard art={MODE_ART.blitz} name="Blitz" locked state={null} className={cn("h-32 lg:h-40", className)} />;
@@ -151,12 +152,19 @@ export const BlitzLobbyCard = ({
           retry={() => void slots.refetch()}
         />
       )}
+      {join.register.isError && (
+        <ErrorPanel
+          message="Registration did not go through. Try again."
+          error={join.register.error}
+          retry={() => join.register.reset()}
+        />
+      )}
       <ul className="divide-y divide-[#2a2013]">
         {rows.map((row) => (
           <li key={row.key} className="flex items-center gap-3 px-3 py-2.5 lg:px-4">
             <BlitzRowState row={row} />
             <span className="ml-auto">
-              <BlitzRowAction row={row} />
+              <BlitzRowAction row={row} join={join} />
             </span>
           </li>
         ))}
@@ -180,16 +188,12 @@ const BlitzRowState = ({ row }: { row: BlitzRow }) => (
     ) : (
       <TimeLeftChip seconds={row.secondsLeft} />
     )}
-    {row.seats ? (
-      <SeatBar filled={row.seats.filled} total={row.seats.total} />
-    ) : (
-      <span className="frontier-chip">Paid entry</span>
-    )}
+    <SeatBar filled={row.seats.filled} total={row.seats.total} />
   </span>
 );
 
-/** A row's one action: Enter the player's game, watch one (the eye), or the check of a seat taken. */
-const BlitzRowAction = ({ row }: { row: BlitzRow }) => {
+/** A row's one action: Enter the player's game, watch one (the eye), Join a slot, or the check of a seat taken. */
+const BlitzRowAction = ({ row, join }: { row: BlitzRow; join: ReturnType<typeof useJoinSlot> }) => {
   switch (row.action) {
     case "enter":
       return (
@@ -209,6 +213,19 @@ const BlitzRowAction = ({ row }: { row: BlitzRow }) => {
           >
             <Eye className="!size-6" />
           </Link>
+        )
+      );
+    case "join":
+      return (
+        row.kind === "slot" && (
+          <button
+            type="button"
+            disabled={join.register.isPending}
+            onClick={() => join.join(row.slot)}
+            className="frontier-primary !h-11 !rounded-xl px-5 !text-[17px]"
+          >
+            Join
+          </button>
         )
       );
     case "registered":

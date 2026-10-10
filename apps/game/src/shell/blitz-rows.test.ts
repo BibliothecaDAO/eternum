@@ -6,6 +6,7 @@ import { blitzRows, leadBlitzRow } from "./blitz-rows";
 import type { DirectoryGame } from "./herald";
 
 const NOW = 1_000;
+const ME = "0x7";
 
 const blitz = (gameId: number, over: Partial<DirectoryGame>): DirectoryGame =>
   ({
@@ -22,13 +23,16 @@ const blitz = (gameId: number, over: Partial<DirectoryGame>): DirectoryGame =>
   }) as DirectoryGame;
 
 const slot = (name: string, closesAtSeconds: number, over: Partial<PlaytestSlot> = {}): PlaytestSlot => ({
-  entry: { kind: "paid", ledger: { address: "0x10", chainId: "0x2", shard: "0xa", gameId: 7 } },
+  entry: { kind: "free" },
   name,
   closesAt: new Date(closesAtSeconds * 1000).toISOString(),
   frozenAt: null,
   closed: false,
+  registrations: [],
   ...over,
 });
+
+const mine = { realmsId: ME, position: 0, gameNumber: null } as PlaytestSlot["registrations"][number];
 
 describe("the lobby's Blitz rows", () => {
   it("lists live games, then games about to start, then filling slots, each with its one action", () => {
@@ -46,27 +50,52 @@ describe("the lobby's Blitz rows", () => {
         blitz(4, { status: "Settled" }),
         { ...blitz(5, {}), mode: "frontier" },
       ],
-      [slot("late", 5_000), slot("soon", 1_042), slot("frozen", 900, { frozenAt: "x", closed: true })],
+      [
+        slot("late", 5_000),
+        slot("soon", 1_042, { registrations: [mine] }),
+        slot("frozen", 900, { frozenAt: "x", closed: true }),
+      ],
+      ME,
       NOW,
     );
     expect(rows.map((row) => [row.key, row.secondsLeft, row.action])).toEqual([
       ["game:0xa:1", null, "spectate"],
       ["game:0xa:2", null, "enter"],
       ["game:0xa:3", 600, "registered"],
-      ["slot:soon", 42, null],
-      ["slot:late", 4_000, null],
+      ["slot:soon", 42, "registered"],
+      ["slot:late", 4_000, "join"],
     ]);
   });
 
-  it("does not invent a roster or free join action from scheduling metadata", () => {
-    const [row] = blitzRows([], [slot("paid", 2000)], NOW);
-    expect(row.seats).toBeNull();
-    expect(row.action).toBeNull();
-    expect(blitzRows([], [slot("closed", 900, { closed: true })], NOW)).toEqual([]);
+  it("counts a filling slot's seats in the game it is filling now", () => {
+    const registrations = Array.from({ length: 26 }, (_, position) => ({
+      ...mine,
+      realmsId: `0x${position + 100}`,
+      position,
+    }));
+    const [row] = blitzRows([], [slot("big", 2_000, { registrations })], ME, NOW);
+    expect(row.seats).toEqual({ filled: 2, total: 24 });
+  });
+
+  it("keeps a closed slot's check until the player's game lists, then only the game shows", () => {
+    const closed = slot("closed", 900, { closed: true, registrations: [mine] });
+    expect(blitzRows([], [closed], ME, NOW).map((row) => [row.key, row.secondsLeft, row.action])).toEqual([
+      ["slot:closed", 0, "registered"],
+    ]);
+    const assigned = { ...closed, frozenAt: "x", registrations: [{ ...mine, gameNumber: 1 }] };
+    expect(blitzRows([], [assigned], ME, NOW).map((row) => row.key)).toEqual(["slot:closed"]);
+    const anotherGame = blitz(2, { name: "closed-2" });
+    expect(blitzRows([anotherGame], [assigned], ME, NOW).map((row) => row.key)).toContain("slot:closed");
+    const ownGame = blitz(1, { name: "closed-1" });
+    expect(blitzRows([anotherGame, ownGame], [assigned], ME, NOW).map((row) => row.key)).toEqual([
+      "game:0xa:2",
+      "game:0xa:1",
+    ]);
+    expect(blitzRows([], [assigned], "0x999", NOW)).toEqual([]);
   });
 
   it("leads a one-row card with the player's own game to enter, else the next slot", () => {
-    const rows = blitzRows([blitz(1, {})], [slot("soon", 1_042)], NOW);
+    const rows = blitzRows([blitz(1, {})], [slot("soon", 1_042)], ME, NOW);
     expect(leadBlitzRow(rows)?.key).toBe("slot:soon");
     const playing = blitzRows(
       [
@@ -74,6 +103,7 @@ describe("the lobby's Blitz rows", () => {
         blitz(2, { player_state: { registered: false, settled: false, roster_member: true, structures: [] } }),
       ],
       [slot("soon", 1_042)],
+      ME,
       NOW,
     );
     expect(leadBlitzRow(playing)?.key).toBe("game:0xa:2");
@@ -85,8 +115,8 @@ it("keeps ended Blitz games available to watch until their settled result lists"
     status: "Ended",
     player_state: { registered: true, settled: true, roster_member: true, structures: [] },
   });
-  const rows = blitzRows([ended], [], NOW);
+  const rows = blitzRows([ended], [], ME, NOW);
   expect(rows).toMatchObject([{ key: "game:0xa:7", action: "spectate", secondsLeft: null }]);
   expect(leadBlitzRow(rows)?.key).toBe("game:0xa:7");
-  expect(blitzRows([{ ...ended, status: "Settled" }], [], NOW)).toEqual([]);
+  expect(blitzRows([{ ...ended, status: "Settled" }], [], ME, NOW)).toEqual([]);
 });

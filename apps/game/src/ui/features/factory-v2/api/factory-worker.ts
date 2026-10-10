@@ -17,7 +17,8 @@ async function request<T>(path: string, body?: unknown, method = body === undefi
 }
 
 export const fetchPlaytestSlots = () => request<{ slots: PlaytestSlot[] }>("/api/slots");
-
+export const registerPlaytestSlot = (name: string) =>
+  request<PlaytestSlot>(`/api/slots/${encodeURIComponent(name)}/register`, {});
 export const fetchFactoryRuns = (environment: "madara.blitz" | "madara.eternum" | "madara.frontier") =>
   request<{ runs: FactoryRun[] }>(`/api/factory/runs?environment=${environment}`);
 export const createEternumGame = (gameName: string, gameStartTime: string) =>
