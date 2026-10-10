@@ -5,6 +5,7 @@ import type { PayoutWallet } from "@realms-world/identity";
 
 import { payoutWalletOf } from "@/hooks/context/payout-wallet";
 import { useIdentitySession } from "@/hooks/context/identity-session";
+import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Button } from "@/ui/design-system/kit/button";
 
 import type { PlaytestSlot } from "@/ui/features/factory-v2/api/factory-worker";
@@ -86,7 +87,7 @@ const NextLobby = ({ facts }: { facts: PlayFacts }) => {
         </span>
       </Link>
       <LobbyClock row={row} step={step} now={facts.now} />
-      <RegisteredCount slot={row.slot} large={false} />
+      <RegisteredCount slot={row.slot} large={false} closed={false} />
       <LobbyAction row={row} step={step} desktop />
     </section>
   );
@@ -169,9 +170,9 @@ export const BlitzLobbyPage = () => {
     >
       {desktop ? (
         <div className="grid grid-cols-[minmax(0,1fr)_26rem] items-start gap-6">
-          <section className="plate p-6">
+          <section className={cn("plate p-6", row.kind === "slot" && "justify-self-start")}>
             {row.kind === "slot" ? (
-              <RegisteredCount slot={row.slot} large />
+              <RegisteredCount slot={row.slot} large closed={isClosedSlot(row, facts.now)} />
             ) : (
               <RosterGrid
                 seats={seatsOf(row.game, player)}
@@ -182,7 +183,7 @@ export const BlitzLobbyPage = () => {
           </section>
           <div className="flex flex-col gap-5">
             <section className="plate flex flex-col gap-4 p-5">
-              <Countdown row={row} now={facts.now} />
+              {!isClosedSlot(row, facts.now) && <Countdown row={row} now={facts.now} />}
               {clock}
               {action}
             </section>
@@ -193,7 +194,7 @@ export const BlitzLobbyPage = () => {
         <div className="flex flex-col gap-4">
           {clock}
           {row.kind === "slot" ? (
-            <RegisteredCount slot={row.slot} large={false} />
+            <RegisteredCount slot={row.slot} large={false} closed={isClosedSlot(row, facts.now)} />
           ) : (
             <SeatGrid seats={seatsOf(row.game, player)} total={row.seats.total} preparing={step.kind === "preparing"} />
           )}
@@ -226,6 +227,10 @@ const countdown = (seconds: number) => {
   return `${Math.floor(left / 3600)}:${pad(Math.floor(left / 60) % 60)}:${pad(left % 60)}`;
 };
 
+/** A slot past its close: its lobby is kept for its entry's outcome, with no start left to count down to. */
+const isClosedSlot = (row: BlitzRow, now: number): boolean =>
+  row.kind === "slot" && row.startsAt !== null && now >= row.startsAt;
+
 const LobbyClock = ({ row, step, now }: { row: BlitzRow; step: LobbyStep; now: number }) => (
   <div className="flex flex-wrap items-center gap-2">
     {row.startsAt === null ? (
@@ -233,10 +238,14 @@ const LobbyClock = ({ row, step, now }: { row: BlitzRow; step: LobbyStep; now: n
         <LiveChip />
         {row.kind === "game" && <ClockChip prefix="ends" at={row.game.clock.end_at} now={now} />}
       </>
+    ) : isClosedSlot(row, now) ? (
+      <StateChip icon="Lk" text={ENTRY_WORDS.closed} />
     ) : (
       <ClockChip prefix="starts" at={row.startsAt} now={now} />
     )}
-    {step.kind === "preparing" ? <StateChip icon="Ok" text={WORDS.joined} /> : <SeatsChip row={row} />}
+    {step.kind === "preparing" && <StateChip icon="Ok" text={WORDS.joined} />}
+    {/* A slot's lobby draws its one number large (RegisteredCount); a game's seats ride here as a chip. */}
+    {step.kind !== "preparing" && row.kind === "game" && <SeatsChip row={row} />}
   </div>
 );
 
