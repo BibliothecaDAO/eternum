@@ -4,7 +4,6 @@ import type {
   HeraldGameLeaderboard,
   HeraldGameSnapshot,
   HeraldHistoryPage,
-  HeraldTransactionCount,
 } from "../sync/herald-http-types";
 
 import type { Shard } from "./shard";
@@ -91,16 +90,6 @@ export const fetchHeraldGameHistory = async (
   if (input.offset !== undefined) url.searchParams.set("offset", String(input.offset));
   if (input.owner) url.searchParams.set("owner", input.owner);
   return fetchHeraldJson(url.toString(), `Herald history for ${shard.url} game ${gameId}`);
-};
-
-export const fetchHeraldTransactionCount = async (shard: Shard, gameId: number): Promise<HeraldTransactionCount> => {
-  if (!Number.isSafeInteger(gameId) || gameId <= 0) {
-    throw new Error(`Herald transaction count requires a positive game id; received ${gameId}`);
-  }
-  return fetchHeraldJson(
-    buildHeraldUrl(shard, `/games/${gameId}/transactions/count`),
-    `Herald transaction count for ${shard.url} game ${gameId}`,
-  );
 };
 
 export const snapshotModelRows = (snapshot: HeraldGameSnapshot, model: string): Array<Record<string, unknown>> => {
