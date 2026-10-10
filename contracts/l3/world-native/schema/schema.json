@@ -2097,22 +2097,6 @@
       },
       {
         "type": "function",
-        "name": "prepare_homes",
-        "inputs": [
-          {
-            "name": "game_id",
-            "type": "core::integer::u32"
-          },
-          {
-            "name": "owners",
-            "type": "core::array::Span::<core::starknet::contract_address::ContractAddress>"
-          }
-        ],
-        "outputs": [],
-        "state_mutability": "external"
-      },
-      {
-        "type": "function",
         "name": "play",
         "inputs": [
           {
@@ -2224,22 +2208,6 @@
             "type": "core::integer::u32"
           }
         ],
-        "state_mutability": "external"
-      },
-      {
-        "type": "function",
-        "name": "freeze_blitz_roster",
-        "inputs": [
-          {
-            "name": "game_id",
-            "type": "core::integer::u32"
-          },
-          {
-            "name": "players",
-            "type": "core::array::Span::<world_native::registrar::RosterPlayer>"
-          }
-        ],
-        "outputs": [],
         "state_mutability": "external"
       },
       {
@@ -6658,16 +6626,6 @@
         {
           "name": "snapshot",
           "type": "@core::array::Array::<core::integer::u8>"
-        }
-      ]
-    },
-    "core::array::Span::<core::starknet::contract_address::ContractAddress>": {
-      "type": "struct",
-      "name": "core::array::Span::<core::starknet::contract_address::ContractAddress>",
-      "members": [
-        {
-          "name": "snapshot",
-          "type": "@core::array::Array::<core::starknet::contract_address::ContractAddress>"
         }
       ]
     },
@@ -12800,5 +12758,5 @@
       ]
     }
   },
-  "identity": "3d76793f98fe8ef8c4d39e808efe2ede51edc00c3a768eb9feebda3167e3f242"
+  "identity": "7f98941735255e76df55064d59888a20c44d273bf7ae080d5436962ca44604b8"
 }
