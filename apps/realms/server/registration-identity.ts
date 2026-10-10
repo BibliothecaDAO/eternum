@@ -10,10 +10,9 @@ export async function registrationRealmsId(
     throw new Error("invalid_registration_time");
   const { results } = await db
     .prepare(
-      "SELECT account FROM wallet_link_history WHERE wallet=?1 AND linked_at<=?2 AND (replaced_at IS NULL OR ?2<replaced_at)",
+      "SELECT account FROM wallet_link_history WHERE wallet=?1 AND linked_at<=?2 AND (replaced_at IS NULL OR ?2<replaced_at) ORDER BY linked_at DESC, rowid DESC LIMIT 1",
     )
     .bind(normalizeStarknetAddress(wallet), registeredAt * 1000)
     .all<{ account: string }>();
-  if (results.length > 1) throw new Error("ambiguous_registration_identity");
   return results[0]?.account ?? null;
 }

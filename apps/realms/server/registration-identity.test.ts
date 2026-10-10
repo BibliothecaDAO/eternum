@@ -21,6 +21,8 @@ it("resolves the link at registration, including relinks and exact replacement b
     expect(await registrationRealmsId(db, "0x1", 10)).toBe("new-id");
     expect(await registrationRealmsId(db, "0x1", 0)).toBeNull();
     expect(await registrationRealmsId(db, "0x2", 20)).toBeNull();
+    await db.prepare("UPDATE wallet_link_history SET replaced_at=11000 WHERE account='old-id'").run();
+    expect(await registrationRealmsId(db, "0x1", 10)).toBe("new-id");
   } finally {
     await mf.dispose();
   }
