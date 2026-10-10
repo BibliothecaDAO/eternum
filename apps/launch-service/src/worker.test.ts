@@ -54,6 +54,7 @@ beforeAll(async () => {
         durableObjects: { REGISTRAR: { className: "Registrar", useSQLite: true } },
         serviceBindings: {
           VALUE_IDENTITY: { name: "directory", entrypoint: "ValueIdentity" },
+          VALUE_RELAY: { name: "directory", entrypoint: "ValueRelay" },
           IDENTITY: () =>
             Response.json({ session: { id: "s1" }, user: { id: "u1", realmsId: "0x7", address: LAUNCHER } }),
         },
@@ -74,7 +75,7 @@ beforeAll(async () => {
       {
         name: "directory",
         modules: true,
-        script: `import { WorkerEntrypoint } from "cloudflare:workers"; export class ValueIdentity extends WorkerEntrypoint { shards(){return [{chainId:${JSON.stringify(SHARD_CHAIN)},url:${JSON.stringify(SHARD_URL)},status:"active"}];} } export default {fetch(){return new Response(null,{status:404});}};`,
+        script: `import { WorkerEntrypoint } from "cloudflare:workers"; export class ValueRelay extends WorkerEntrypoint { openSlot(){} } export class ValueIdentity extends WorkerEntrypoint { shards(){return [{chainId:${JSON.stringify(SHARD_CHAIN)},url:${JSON.stringify(SHARD_URL)},status:"active"}];} } export default {fetch(){return new Response(null,{status:404});}};`,
       },
     ],
   });

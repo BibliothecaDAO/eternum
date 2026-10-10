@@ -39,7 +39,7 @@ export class D1SlotStore implements SlotStore {
     const closes = Date.parse(closesAt);
     if (!Number.isSafeInteger(closes) || closes % 1000 !== 0)
       throw new SlotConflict("Slot close must be a whole second");
-    await this.db
+    const inserted = await this.db
       .prepare(
         `INSERT INTO playtest_slots (name, closes_at,chain_id) SELECT ?1, ?2,?3 WHERE ?2 > ${DATABASE_NOW} ON CONFLICT (chain_id,name) DO NOTHING`,
       )
@@ -51,10 +51,20 @@ export class D1SlotStore implements SlotStore {
     });
     if (Date.parse(slot.closesAt) !== closes) throw new SlotConflict("Slot schedule is immutable");
     const duration = loadNativePresetConfiguration("madara.blitz", nativePresetIdFor("blitz")).season.durationSeconds;
-    await this.value.openSlot(
-      { chainId: slot.chainId, slotId: slot.slotId },
-      { start: closes / 1000, end: closes / 1000 + duration },
-    );
+    try {
+      await this.value.openSlot(
+        { chainId: slot.chainId, slotId: slot.slotId },
+        { start: closes / 1000, end: closes / 1000 + duration },
+      );
+    } catch (error) {
+      // A failed retry must not erase an existing slot that may already hold registrations.
+      if (inserted.meta.changes === 1)
+        await this.db
+          .prepare("DELETE FROM playtest_slots WHERE chain_id=? AND slot_id=?")
+          .bind(slot.chainId, slot.slotId)
+          .run();
+      throw error;
+    }
   }
 
   private async rawSlot(name: string) {

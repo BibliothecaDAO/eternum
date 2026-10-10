@@ -147,3 +147,23 @@ it("publishes the same stored shard key used to open the ledger slot", async () 
   expect(await store.list()).toEqual([slot]);
   expect(value.openSlot).toHaveBeenCalledWith({ chainId: slot.chainId, slotId: slot.slotId }, expect.any(Object));
 });
+
+it("removes a new schedule when the ledger open fails, without deleting an existing paid slot on retry", async () => {
+  const value = slotValueFixture();
+  const open = vi.spyOn(value, "openSlot").mockRejectedValueOnce(new Error("ledger unavailable"));
+  const store = new D1SlotStore(
+    database.db,
+    new D1LaunchStore(database.db, testChain()),
+    value,
+    registrationIdentityFixture,
+  );
+  const close = soon();
+  await expect(store.create("failed", close)).rejects.toThrow("ledger unavailable");
+  expect(await store.list()).toEqual([]);
+  await expect(store.get("failed")).rejects.toThrow("Slot not found");
+  await store.create("failed", close);
+  const slot = await store.get("failed");
+  open.mockRejectedValueOnce(new Error("retry unavailable"));
+  await expect(store.create("failed", close)).rejects.toThrow("retry unavailable");
+  expect(await store.get("failed")).toEqual(slot);
+});
