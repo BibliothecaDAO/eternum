@@ -40,8 +40,9 @@ account, per-game order, epoch service or second submission endpoint. Private cr
 
 Create a separate PostgreSQL database and configure `HERALD_RPC_URL`, `HERALD_PUBLIC_RPC_URL`, `DATABASE_URL` and
 `NATIVE_WORLD_MANIFEST`. Start Herald with `pnpm --dir apps/herald start`, or build the shard package's Herald image,
-the one Herald build: `docker build --target herald -f deploy/shard/Dockerfile .`. The candidate service must use that
-same manifest and chain.
+the one Herald build: `git archive HEAD | docker build --target herald -f deploy/shard/Dockerfile -`. Export the
+committed revision for every local image build so private runtime files anywhere in the checkout stay out of the
+context. The candidate service must use that same manifest and chain.
 
 Wait for `/health` and the confirmed snapshot before connecting the client. Run `pnpm --dir apps/game dev`; the app
 reads our official directory (`/api/directory`, proxied to staging in development) and lists its active shards. Use the
