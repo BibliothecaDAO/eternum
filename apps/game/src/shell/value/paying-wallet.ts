@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 
-import type { PaidGameLedger } from "@realms-world/identity";
+import { isSameStarknetAddress, type PaidGameLedger } from "@realms-world/identity";
 
 import { ledgerOf } from "./game-entry";
 
@@ -10,8 +10,6 @@ import { ledgerOf } from "./game-entry";
  * player has replaced it, so every paid read and send goes through the wallet the game's registrations name.
  */
 
-const sameAddress = (one: string, other: string) => BigInt(one) === BigInt(other);
-
 /** The wallet that paid this account's seat in a game, from the game's registrations; null if it holds none. */
 export const payingWalletOf = async (ledger: PaidGameLedger, account: string): Promise<string | null> => {
   const read = ledgerOf(ledger);
@@ -19,7 +17,7 @@ export const payingWalletOf = async (ledger: PaidGameLedger, account: string): P
   const players = await Promise.all(
     Array.from({ length: registeredCount }, (_, index) => read.registeredPlayer(ledger, index)),
   );
-  return players.find((player) => sameAddress(player.account, account))?.wallet ?? null;
+  return players.find((player) => isSameStarknetAddress(player.account, account))?.wallet ?? null;
 };
 
 export const payingWalletKey = (ledger: PaidGameLedger, account: string) =>

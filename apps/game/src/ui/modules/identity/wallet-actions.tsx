@@ -1,7 +1,7 @@
 import { StarknetProvider } from "@/hooks/context/starknet-provider";
 import { shortAddress } from "@/ui/design-system/kit/address";
 import { KitIcon } from "@/ui/design-system/kit/kit-icon";
-import type { SignInOptions } from "@realms-world/identity";
+import { isSameStarknetAddress, type SignInOptions } from "@realms-world/identity";
 import { useConnect, useDisconnect, useProvider } from "@starknet-react/core";
 import type { Connector } from "@starknet-react/core";
 import { useCallback, useRef, useState } from "react";
@@ -63,7 +63,7 @@ export const WalletSign = ({
     <WalletRows
       failure="pay"
       onAccount={async (account) => {
-        if (!sameAddress(account.address, owner)) throw new WrongWalletError(owner);
+        if (!isSameStarknetAddress(account.address, owner)) throw new WrongWalletError(owner);
         onSent((await account.execute(calls)).transaction_hash);
       }}
     />
@@ -76,8 +76,6 @@ class WrongWalletError extends Error {
     super("wrong_wallet");
   }
 }
-
-const sameAddress = (one: string, other: string) => BigInt(one) === BigInt(other);
 
 type WalletId = (typeof WALLET_CHOICES)[number]["id"];
 

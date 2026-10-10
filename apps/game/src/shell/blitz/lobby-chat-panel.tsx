@@ -5,7 +5,7 @@ import { YOU } from "@/ui/design-system/kit/words";
 import type { WorldChatMessage } from "@bibliothecadao/types";
 import { displayPlayerName } from "@bibliothecadao/eternum";
 
-import { sameAddress } from "../format";
+import { isSameStarknetAddress } from "@realms-world/identity";
 import { Kbd } from "../frame/kbd";
 import { Panel } from "../panel";
 import { ServiceFailure } from "../service-failure";
@@ -69,7 +69,7 @@ const Messages = ({ messages }: { messages: readonly WorldChatMessage[] }) => {
 };
 
 const isOwn = (message: WorldChatMessage, realmsId: string | undefined) =>
-  realmsId !== undefined && sameAddress(message.sender.playerId, realmsId);
+  realmsId !== undefined && isSameStarknetAddress(message.sender.playerId, realmsId);
 
 /** The field: open to a seated player, Enter sending the message; closed with its reason to anyone else. */
 const Composer = ({ seated, send }: { seated: boolean; send: (content: string) => void }) => {

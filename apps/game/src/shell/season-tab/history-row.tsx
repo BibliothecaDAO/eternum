@@ -6,7 +6,8 @@ import { formatClockTime } from "@/ui/design-system/kit/time";
 import { findOwnEntry, wholeLords } from "@/ui/features/frontier/board/standings";
 
 import { clockLine } from "../clock-chip";
-import { ordinal, sameAddress } from "../format";
+import { ordinal } from "../format";
+import { isSameStarknetAddress } from "@realms-world/identity";
 import { type DirectoryGame, useLeaderboard } from "../herald";
 import { paintingSources } from "../paintings";
 import { ageOf, type AgeMode } from "../play/ages";
@@ -25,7 +26,7 @@ const usePlace = (game: DirectoryGame, player: string) => {
     const own = findOwnEntry(board.data.entries, player);
     return { rank: own?.rank, lords: own && wholeLords(own.rewards.lords) };
   }
-  const entry = board.data?.entries.find((candidate) => sameAddress(candidate.address, player));
+  const entry = board.data?.entries.find((candidate) => isSameStarknetAddress(candidate.address, player));
   return { rank: entry?.rank, lords: undefined };
 };
 
