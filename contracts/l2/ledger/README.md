@@ -22,8 +22,8 @@ bounded by the pool's unlocked amount. There is no administrative report correct
 
 `close_frontier` runs at or after the deadline, voids every unpaid report without scanning individual claims, and
 returns `pool - paid` to the treasury. The existing closed season plus payment record determines `withdrawal_voided`;
-the relay must recover that fact from the views and stop retrying voided claims. Paid retries remain harmless;
-unpaid payments after closure refuse.
+the relay must recover that fact from the views and stop retrying voided claims. Paid retries remain harmless; unpaid
+payments after closure refuse.
 
 Blitz settlement takes one `protocol_cut_bps` treasury cut on the whole incoming game pot: entries, paid swords/shields
 and sponsorship. The default is 2000 bps. The remaining pot splits by `chest_lords_bps` into the season's chest reserve
@@ -105,19 +105,18 @@ per-chest LORDS liabilities. The cost is band/inventory preset storage, request 
 there is no new token collection, oracle, cancellation path, expiry timer or per-movement fee rule.
 
 Season ratings freeze at the end. The operator posts the top list; anyone may challenge a missing better participant for
-one hour. Posting writes the complete list and its allocations in one transaction. A short or challenged list cannot pay.
-Winners call `claim_season(season_id, position)` with their zero-based list position; the ledger checks the caller at
-that position and pays its geometric preset share once. Pause blocks
-withdrawals, chest finishes and season claims; refunds and expired Frontier returns remain available; registrations, incoming funding, result settlement, chest
+one hour. Posting writes the complete list and its allocations in one transaction. A short or challenged list cannot
+pay. Winners call `claim_season(season_id, position)` with their zero-based list position; the ledger checks the caller
+at that position and pays its geometric preset share once. Pause blocks withdrawals, chest finishes and season claims;
+refunds and expired Frontier returns remain available; registrations, incoming funding, result settlement, chest
 requests and challenges remain available. Settlement's input treasury transfer continues to its fixed address.
 
 ## Class size
 
-The ledger pins compiler inlining weight 64: the fixed ledger's CASM measures 77,298 felts versus 86,007 with the
-default strategy, against Starknet's 81,920 limit. The default trunk was already 80,360. This is a build choice, not a
-runtime setting or a second contract. Both profiles use the same choice and ABI. The full ledger suite checks the same
-custody and geometric allocations; the declaration artifact reader refuses oversized Sierra or CASM programs before
-sending a transaction. Compiler changes require measuring the artifact and operation gas again.
+The ledger pins compiler inlining weight 64. Its CASM measures 71,588 felts against Starknet's 81,920 limit. Both
+profiles use the same compiler choice and ABI. The full ledger suite checks the same custody and geometric allocations;
+the declaration artifact reader refuses oversized Sierra or CASM programs before sending a transaction. Compiler changes
+require measuring the artifact and operation gas again.
 
 ## Package checks
 
