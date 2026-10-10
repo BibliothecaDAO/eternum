@@ -337,23 +337,13 @@ pub mod StructuresLogic {
                 game_id,
                 coord,
             );
-            let coord_seed = (if coord.alt {
-                1_felt252
-            } else {
-                0
-            }) * 0x10000000000000000
-                + coord.x.into() * 0x100000000
-                + coord.y.into();
-            let seed = core::poseidon::poseidon_hash_span(
-                array![game_id.into(), coord_seed, context.timestamp.into()].span(),
-            );
             self
                 .place_discovery(
                     game_id,
                     crate::entity_ids::home_for_actor(game_id, actor),
                     coord,
                     Discovery::Hyperstructure,
-                    seed.into(),
+                    0,
                     context.timestamp,
                     true,
                     context,
