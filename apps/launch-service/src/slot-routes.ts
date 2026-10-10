@@ -17,7 +17,7 @@ const RegisterRequest = Schema.Struct({
 const CreateSlotRequest = Schema.Struct({
   name: Schema.String.pipe(
     Schema.check(Schema.isPattern(BLITZ_SLOT_NAME_PATTERN)),
-    Schema.check(Schema.makeFilter(isPublicGameName)),
+    Schema.check(Schema.makeFilter((name: string) => isPublicGameName(name) && isPublicGameName(`${name}-1`))),
   ),
   closesAt: Schema.String.pipe(Schema.check(Schema.makeFilter((value: string) => Number.isFinite(Date.parse(value))))),
 });
