@@ -12,7 +12,7 @@ const shard = {
 };
 
 test("deployment consumes Herald's pending and completed public manifests", async () => {
-  const chainId = "0x" + Buffer.from("AUDIT_TEST").toString("hex");
+  const chainId = "0x" + Buffer.from("TEST_SHARD").toString("hex");
   const document = { ...manifest, shard: { ...shard, chainId, contracts: {} } };
   const replies = [
     deploymentIdentity(JSON.stringify(document), "https://rpc.test"),
@@ -43,7 +43,7 @@ with patch('directory.time.monotonic',side_effect=[0,0,121]),patch('directory.ti
           ],
           { stdout: "pipe", stderr: "pipe" },
         );
-      const same = check("AUDIT_TEST");
+      const same = check("TEST_SHARD");
       expect(await same.exited).toBe(0);
       const wrong = check("OTHER_CHAIN");
       expect(await wrong.exited).not.toBe(0);
