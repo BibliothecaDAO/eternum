@@ -73,11 +73,12 @@ const Prize = ({ prize, onClaimed }: { prize: SeasonPrize; onClaimed: () => void
         <Share prize={prize} state={state} now={now} />
       )}
       {state === "claim" &&
+        prize.position !== null &&
         (signing ? (
           <Suspense fallback={<Loading />}>
             <WalletSign
               owner={prize.wallet}
-              calls={[claimSeasonCall(prize.ledger, prize.seasonId)]}
+              calls={[claimSeasonCall(prize.ledger, prize.seasonId, prize.position)]}
               onLanded={() => {
                 setSigning(false);
                 onClaimed();

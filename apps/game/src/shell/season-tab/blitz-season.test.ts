@@ -6,11 +6,11 @@ import { placeShares, type SeasonPrize, seasonSourceOf, seasonState } from "./bl
 
 const WEI = 10n ** 18n;
 
-it("claims a season's share with one call", () => {
-  expect(claimSeasonCall("0xledger", 3)).toEqual({
+it("claims a season's share with one call naming its place on the posted list", () => {
+  expect(claimSeasonCall("0xledger", 3, 11)).toEqual({
     contractAddress: "0xledger",
     entrypoint: "claim_season",
-    calldata: ["3"],
+    calldata: ["3", "11"],
   });
 });
 
@@ -41,6 +41,7 @@ it("runs, closes, reviews, holds, then claims, waits on the fee, is claimed, or 
     curve: { paidFractionBps: 1000, decayBps: 9600 },
     wallet: "0x4a1",
     share: 5n * WEI,
+    position: 4,
     claimed: false,
     ...rest,
   });
@@ -53,7 +54,7 @@ it("runs, closes, reviews, holds, then claims, waits on the fee, is claimed, or 
   expect(seasonState(prize({ winners: 49 }), 150)).toBe("held");
   expect(seasonState(prize({}), 250)).toBe("claim");
   expect(seasonState(prize({}, { claimed: true }), 250)).toBe("claimed");
-  expect(seasonState(prize({}, { share: null }), 250)).toBe("out");
+  expect(seasonState(prize({}, { share: null, position: null }), 250)).toBe("out");
 });
 
 /** A Blitz game in the player's history, filled from a slot (or none), the player on its roster with a wallet (or not). */
