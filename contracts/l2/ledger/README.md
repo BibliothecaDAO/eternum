@@ -174,3 +174,5 @@ implementation remains unchanged. The chest collection needs an authorized, stor
 `mint_with_id`, plus metadata for all five new band kinds. Use the existing mainnet deployment path only after these
 gates; its constructor is
 `(admin, operator, treasury, lords, mmr_token, season_pass, village_pass, loot_chest, cosmetics)`.
+
+Frontier funding uses `season_id = shard game id` in `fund_frontier(shard, season_id, ...)`.

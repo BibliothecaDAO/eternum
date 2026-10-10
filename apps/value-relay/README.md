@@ -36,10 +36,9 @@ jobs verify the identity environment's L2 chain. No signing key belongs on a sha
 ## Restored shard recovery
 
 `POST /api/value/operator/reset` requires the operator bearer token and `{chainId,row,reason}`. It walks down to a
-retained hash still matching the restored chain, checks that anchor again, drops queued rows above the fork and all
-legacy economic memos, records already-paid claims from discarded blocks, and replays from fork + 1. If no anchor
-survives, replay starts at genesis. A changed anchor refuses reset. The ledger's claim identity prevents a second
-payment.
+retained hash still matching the restored chain, checks that anchor again, drops queued rows above the fork, records
+already-paid claims from discarded blocks, and replays from fork + 1. If no anchor survives, replay starts at genesis. A
+changed anchor refuses reset. The ledger's claim identity prevents a second payment.
 
 `POST /api/operator/monitor/reset` requires `{row,reason}` and the operator token. It records the exact fault and
 advances past only that row. An availability reset retries its checkpoint. Neither reset unpauses the ledger.
@@ -56,3 +55,6 @@ one 100-event page, persists its continuation and rotates through 25 unfinished 
 the later block is readable and recognizes an already-finished retry. The monitor reports requests overdue by five
 minutes after eligibility. Pending/overdue counts describe the checked page, with `checked` identifying its size; these
 warnings do not pause payouts.
+
+A Frontier pool is funded with `season_id = shard game id`; the relay verifies that binding against the game start and
+seed.
