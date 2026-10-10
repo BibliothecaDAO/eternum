@@ -7,7 +7,7 @@ const NETWORKS = { SN_MAIN: "mainnet", SN_SEPOLIA: "sepolia" } as const;
  */
 export const l2EnvironmentProblem = (chain: string | undefined, rpcUrl: string | undefined): string | null => {
   if (chain !== "SN_MAIN" && chain !== "SN_SEPOLIA")
-    return "VITE_PUBLIC_L2_CHAIN is required: SN_SEPOLIA for dev, SN_MAIN for production, from .env.local or the CLIENT_L2_CHAIN variable";
+    return "VITE_PUBLIC_L2_CHAIN is required: SN_SEPOLIA for dev, SN_MAIN for production, from .env.local (a deploy reads the identity Worker's L2_CHAIN_ID)";
   if (!rpcUrl?.trim())
     return "VITE_PUBLIC_IDENTITY_RPC_URL is required: the team's Alchemy URL for the build's L2, from .env.local or the CLIENT_IDENTITY_RPC_URL secret";
   return isAlchemyFor(rpcUrl, NETWORKS[chain])

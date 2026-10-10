@@ -47,9 +47,8 @@ jobs:
 
       - name: Test the client deploy's checks
         run: >-
-          node --test apps/game/scripts/check-l2-chain-matches-identity.test.mjs
-          apps/game/scripts/ensure-pwa-cache-rule.test.mjs apps/game/scripts/verify-client-deployment.test.mjs
-          apps/game/scripts/verify-pwa-build.test.mjs
+          node --test apps/game/scripts/identity-l2-chain.test.mjs apps/game/scripts/ensure-pwa-cache-rule.test.mjs
+          apps/game/scripts/verify-client-deployment.test.mjs apps/game/scripts/verify-pwa-build.test.mjs
 
       - name: Test native store, commands and sync recovery
         run: pnpm --dir packages/core exec vitest run
