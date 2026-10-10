@@ -508,7 +508,11 @@ describe("native presets", () => {
     const account = {
       getBlockNumber: async () => 10,
       getClassHashAt: async () => "0x456",
-      callContract: async () => [commitment],
+      address: "0x123",
+      signer: { getPubKey: async () => "0x456" },
+      callContract: async ({ entrypoint }: { entrypoint: string }) => [
+        entrypoint === "owner" ? "0x123" : entrypoint === "is_device" ? "0x1" : commitment,
+      ],
       execute: async () => {
         throw new Error("registration submitted");
       },

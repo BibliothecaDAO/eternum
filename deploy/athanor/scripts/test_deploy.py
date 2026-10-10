@@ -129,7 +129,8 @@ class EnrolmentTest(unittest.TestCase):
 
 class ActivationTest(unittest.TestCase):
     def setUp(self):
-        self.enterContext(patch.object(deploy, "launcher_handed_off", return_value=False, create=True))
+        self.enterContext(patch.object(deploy, "confirm_worker_ledger_operator"))
+        self.enterContext(patch.object(deploy, "roles_handed_off", return_value=False, create=True))
 
     def test_real_data_directory_records_a_failed_check_without_promoting(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -192,7 +193,8 @@ class ActivationTest(unittest.TestCase):
 
 class WorkerLauncherTest(unittest.TestCase):
     def setUp(self):
-        self.launcher_state = self.enterContext(patch.object(deploy, "launcher_handed_off", return_value=False, create=True))
+        self.enterContext(patch.object(deploy, "confirm_worker_ledger_operator"))
+        self.launcher_state = self.enterContext(patch.object(deploy, "roles_handed_off", return_value=False, create=True))
 
     def test_gameplay_evidence_survives_a_package_change(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -252,12 +254,12 @@ class WorkerLauncherTest(unittest.TestCase):
                     before = (data / changed_file).read_text()
                     (data / changed_file).write_text("{}" if changed_file == "self-check.json" else '{"changed":true}')
                     with (
-                        patch.object(deploy, "launcher_handed_off", return_value=True),
+                        patch.object(deploy, "roles_handed_off", return_value=True),
                         patch.object(deploy, "run_self_check") as check,
                         patch.object(deploy, "directory_status", return_value={"status": "pending"}) as status,
                         patch.object(deploy, "confirm_worker_launcher") as worker,
                     ):
-                        with self.assertRaisesRegex(RuntimeError, "^chain facts changed after the launcher handoff; retire this chain$"):
+                        with self.assertRaisesRegex(RuntimeError, "^chain facts changed after the role handoff; retire this chain$"):
                             deploy.verify_and_activate({}, data)
                         check.assert_not_called()
                         worker.assert_not_called()
@@ -309,7 +311,7 @@ class WorkerLauncherTest(unittest.TestCase):
         with (
             patch.object(deploy, "deployed_facts", return_value=(manifest, {})),
             patch.object(deploy, "launcher_service", side_effect=service),
-            patch.object(deploy, "launcher_chain_check", side_effect=lambda *args: events.append(args[1])),
+            patch.object(deploy, "service_role_check", side_effect=lambda *args: events.append(args[1])),
         ):
             deploy.confirm_worker_launcher({"public_herald_url": "https://herald.test", "presets": [5]}, Path("/unused"))
         self.assertEqual(events, ["enrol", "handoff", "check", "verify"])
@@ -320,12 +322,15 @@ if __name__ == "__main__":
 
 
 class LauncherAuthorityTest(unittest.TestCase):
+    def setUp(self):
+        self.enterContext(patch.object(deploy, "confirm_worker_ledger_operator"))
+
     def test_failed_handoff_intent_does_not_stop_a_fresh_self_check(self):
         with tempfile.TemporaryDirectory() as temporary:
             data = Path(temporary)
             (data / "launcher-enrolment.json").write_text('{"launcherAccount":"0x42"}')
             (data / "self-check.json").write_text('{"passed":true,"checkedIdentity":"old"}')
-            with patch.object(deploy, "gameplay_check_identity", return_value="changed"), patch.object(deploy, "launcher_handed_off", return_value=False, create=True) as state, patch.object(deploy, "directory_status", side_effect=lambda _, status: {"status": status}), patch.object(deploy, "run_self_check", return_value={"passed": True}) as check, patch.object(deploy, "confirm_worker_launcher"):
+            with patch.object(deploy, "gameplay_check_identity", return_value="changed"), patch.object(deploy, "roles_handed_off", return_value=False, create=True) as state, patch.object(deploy, "directory_status", side_effect=lambda _, status: {"status": status}), patch.object(deploy, "run_self_check", return_value={"passed": True}) as check, patch.object(deploy, "confirm_worker_launcher"):
                 deploy.verify_and_activate({}, data)
             state.assert_called_once_with(data)
             check.assert_called_once_with(data)
@@ -333,8 +338,8 @@ class LauncherAuthorityTest(unittest.TestCase):
     def test_installed_worker_blocks_self_check_even_without_an_intent_file(self):
         with tempfile.TemporaryDirectory() as temporary:
             data = Path(temporary)
-            with patch.object(deploy, "gameplay_check_identity", return_value="changed"), patch.object(deploy, "launcher_handed_off", return_value=True, create=True) as state, patch.object(deploy, "directory_status", return_value={"status": "pending"}), patch.object(deploy, "run_self_check") as check, patch.object(deploy, "confirm_worker_launcher") as worker:
-                with self.assertRaisesRegex(RuntimeError, "^chain facts changed after the launcher handoff; retire this chain$"):
+            with patch.object(deploy, "gameplay_check_identity", return_value="changed"), patch.object(deploy, "roles_handed_off", return_value=True, create=True) as state, patch.object(deploy, "directory_status", return_value={"status": "pending"}), patch.object(deploy, "run_self_check") as check, patch.object(deploy, "confirm_worker_launcher") as worker:
+                with self.assertRaisesRegex(RuntimeError, "^chain facts changed after the role handoff; retire this chain$"):
                     deploy.verify_and_activate({}, data)
             state.assert_called_once_with(data)
             check.assert_not_called()
@@ -346,17 +351,60 @@ class LauncherStateTransportTest(unittest.TestCase):
         with patch.object(deploy.subprocess, "run") as run:
             run.return_value.returncode = 0
             run.return_value.stdout = '{"passed":true,"handedOff":false}\n'
-            self.assertFalse(deploy.launcher_handed_off(Path("/unused/data")))
-        self.assertEqual(run.call_args.args[0][-3:], ["launcher-check", "state", "/data"])
+            self.assertFalse(deploy.roles_handed_off(Path("/unused/data")))
+        self.assertEqual(run.call_args.args[0][-3:], ["service-role-check", "state", "/data"])
 
     def test_unknown_state_and_failed_reads_never_assume_bootstrap_authority(self):
         for output in ("", "null", '{"passed":false,"handedOff":false}', '{"passed":true,"handedOff":"false"}'):
             with self.subTest(output=output), patch.object(deploy.subprocess, "run") as run:
                 run.return_value.returncode = 0
                 run.return_value.stdout = output
-                with self.assertRaisesRegex(RuntimeError, "Launcher state read failed"):
-                    deploy.launcher_handed_off(Path("/unused/data"))
+                with self.assertRaisesRegex(RuntimeError, "Role state read failed"):
+                    deploy.roles_handed_off(Path("/unused/data"))
         with patch.object(deploy.subprocess, "run") as run:
             run.return_value.returncode = 1
-            with self.assertRaisesRegex(RuntimeError, "Confirmed launcher check failed"):
-                deploy.launcher_handed_off(Path("/unused/data"))
+            with self.assertRaisesRegex(RuntimeError, "Confirmed service role check failed"):
+                deploy.roles_handed_off(Path("/unused/data"))
+
+
+class WorkerLedgerOperatorTest(unittest.TestCase):
+    def test_activation_confirms_the_relay_role_before_the_launcher_proof_and_active(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            events = []
+            with patch.object(deploy, "gameplay_check_identity", return_value="pins"), \
+                    patch.object(deploy, "run_self_check", return_value={"passed": True}), \
+                    patch.object(deploy, "roles_handed_off", return_value=False), \
+                    patch.object(deploy, "directory_status", side_effect=lambda _, status: (events.append(status) or {"status": status})), \
+                    patch.object(deploy, "confirm_worker_ledger_operator", side_effect=lambda *_: events.append("relay_confirmed")), \
+                    patch.object(deploy, "confirm_worker_launcher", side_effect=lambda *_: events.append("launcher_confirmed")):
+                deploy.verify_and_activate({}, Path(temporary))
+            self.assertEqual(events, ["pending", "relay_confirmed", "launcher_confirmed", "active"])
+
+    def test_missing_or_failed_relay_handoff_never_activates(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            with patch.object(deploy, "gameplay_check_identity", return_value="pins"), \
+                    patch.object(deploy, "run_self_check", return_value={"passed": True}), \
+                    patch.object(deploy, "roles_handed_off", return_value=False), \
+                    patch.object(deploy, "directory_status", return_value={"status": "pending"}) as status, \
+                    patch.object(deploy, "confirm_worker_ledger_operator", side_effect=RuntimeError("Relay unavailable")), \
+                    patch.object(deploy, "confirm_worker_launcher") as launcher:
+                with self.assertRaisesRegex(RuntimeError, "Relay unavailable"):
+                    deploy.verify_and_activate({}, Path(temporary))
+            self.assertEqual([call.args[1] for call in status.call_args_list], ["pending"])
+            launcher.assert_not_called()
+
+    def test_relay_enrollment_pins_chain_and_uses_the_ledger_role_setter(self):
+        manifest = {"shard": {"chainId": "0x123"}}
+        config = {"guardian_url": "https://id.test/api/guardian", "public_herald_url": "https://herald.test"}
+        for chain, valid in [("0x123", True), ("0x999", False)]:
+            with patch.object(deploy, "deployed_facts", return_value=(manifest, {})), \
+                    patch.object(deploy, "service_json", return_value={"chainId": chain, "ledgerOperatorAccount": "0x42"}) as request, \
+                    patch.object(deploy, "service_role_check") as role:
+                if valid:
+                    deploy.confirm_worker_ledger_operator(config, Path("/unused"))
+                    role.assert_called_once_with(Path("/unused"), "handoff", "0x42", role="ledger_operator")
+                else:
+                    with self.assertRaisesRegex(RuntimeError, "another chain"):
+                        deploy.confirm_worker_ledger_operator(config, Path("/unused"))
+                    role.assert_not_called()
+                request.assert_called_once_with("https://id.test/api/value/operator/shard/enrol", {"chainId": "0x123", "heraldUrl": "https://herald.test"}, timeout=120)
