@@ -86,7 +86,7 @@ class DeployTest(unittest.TestCase):
 
 
 class InputsTest(unittest.TestCase):
-    INPUTS = {key: 1 for key in deploy.INPUTS}
+    INPUTS = {**{key: 1 for key in deploy.INPUTS}, "guardian_url": "https://identity.test/api/guardian"}
 
     def test_only_committed_unchanged_inputs_deploy(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -185,7 +185,7 @@ class ActivationTest(unittest.TestCase):
         from urllib.error import HTTPError
         with (
             patch.dict(deploy.os.environ, {"OPERATOR_TOKEN": "test-token"}),
-            patch("directory.urlopen", side_effect=HTTPError("https://identity.test", 404, "Not found", {}, None)),
+            patch("directory.service_json", side_effect=HTTPError("https://identity.test", 404, "Not found", {}, None)),
         ):
             with self.assertRaisesRegex(RuntimeError, "identity service must carry the pending route before a shard from this code starts"):
                 deploy.directory_status({"guardian_url": "https://identity.test/api/guardian", "public_herald_url": "https://herald.test"}, "pending")
