@@ -734,7 +734,7 @@ pub mod GameLedger {
             let slot = self.slots.entry(key).read();
             assert!(slot.exists, "Ledger: unknown slot");
             assert!(!slot.cancelled, "Ledger: slot closed");
-            assert!(starknet::get_block_timestamp() >= slot.end, "Ledger: game has not ended");
+            assert!(starknet::get_block_timestamp() >= slot.end, "Ledger: slot has not ended");
 
             self.open_refunds(key, slot);
             self.emit(SlotAborted { key });
@@ -960,8 +960,8 @@ pub mod GameLedger {
 
         fn assert_results_open(self: @ContractState, slot: Slot) {
             assert!(slot.exists, "Ledger: unknown slot");
-            assert!(!slot.cancelled, "Ledger: game cancelled");
-            assert!(starknet::get_block_timestamp() >= slot.close, "Ledger: game not started");
+            assert!(!slot.cancelled, "Ledger: slot cancelled");
+            assert!(starknet::get_block_timestamp() >= slot.close, "Ledger: slot still open");
             assert!(slot.registered_count > 0, "Ledger: empty roster");
         }
     }
@@ -1007,7 +1007,7 @@ pub mod GameLedger {
 
         fn add_to_pool(ref self: ContractState, key: SlotKey, mut slot: Slot, amount: u256) {
             slot.pool += amount;
-            assert!(slot.pool <= 0xffffffffffffffffffffffffffffffff, "Ledger: game pool exceeds u128");
+            assert!(slot.pool <= 0xffffffffffffffffffffffffffffffff, "Ledger: slot pool exceeds u128");
             self.slots.entry(key).write(slot);
         }
     }

@@ -42,6 +42,58 @@ subtracted from the slot's remaining custody. Each registration records its cons
 cannot spend it again. The result commitment remains keyed by `{ shard, game_id }`. Slot opening leaves one settlement
 tick between the scheduled game end and the season cutoff.
 
+Results contain only wallet and competition rank, sorted by rank then wallet on ties. The version-3 commitment hashes
+`['ETERNUM_BLITZ_RESULT', 3, shard, game_id, count, wallet, rank, ...]`. The shard must not draw chest contents. MMR and
+chest bands share the tie-average percentile. Five bands cover 0–20%, 20–40%, 40–60%, 60–80% and 80–100%; the 100%
+endpoint stays in the fifth band. A singleton belongs to the first band. Each season uses one immutable preset,
+including its games, so a chest needs only its band and season to identify its odds and nominal LORDS amount.
+
+Chests are ordinary transferable NFTs. The holder approves the ledger, then calls `open_request(token_id)`. This burns
+the token permanently and records the requester and block B; burning removes custody and cancellation machinery. No
+request can be cancelled or repeated. Anyone calls `open_finish(token_id)` once the tip reaches B+11: it reads exactly
+block B+1 through `get_block_hash_syscall`, hashes that block hash with the chest ID and season, selects the band's
+outcome, and delivers to the requester. A separate hash selects uniformly among that cosmetic rarity's items. No caller,
+timestamp, finish block or Cartridge VRF enters the draw. The request never expires, and anyone can finish it later. A
+failed delivery can be attempted again, but its fixed entropy cannot change the outcome.
+
+A LORDS outcome pays `min(band.lords_amount, season.chest_reserve)`. It cannot touch Frontier, other seasons,
+unallocated slots or season-prize custody. The first valid season top-list post after season end sweeps the reserve into
+the prize pool before allocating shares. Later openings still deliver cosmetics or credits; LORDS then pays zero against
+the empty reserve. Outstanding chest requests are not a debt for their nominal amount.
+
+Rehearsal presets propose LORDS amounts 700 / 200 / 100 / 50 / 20 by best-to-worst band, with LORDS probabilities 10% /
+10% / 5% / 4% / 0%. For 24 untied players, the bands contain 5 / 5 / 4 / 5 / 5 players. At 500 LORDS per entry, 20%
+treasury and 5% chest share: `24*500*0.8*0.05 = 480`. Nominal expected chest rewards are
+`5*0.10*700 + 5*0.10*200 + 4*0.05*100 + 5*0.04*50 = 480`. Actual expected chest payments can be lower because of reserve
+caps, late openings, ties and other lobby sizes; every remainder joins season prizes. Paid flags increase funding
+without multiplying chests. Changing the treasury to 10% yields 540 per reference game: the owner can retune the reward
+presets, or let the extra reserve join season prizes. The full odds table and test inventory live in
+`scripts/chest-preset.js` and are registered as immutable admin presets. They are not approved production values.
+
+The Starknet sequencer can choose/order transactions and influence the target block's contents, timestamp and hash,
+foresee the resulting outcomes, or censor requests/finishes. This is a future-block draw, not an unbiased VRF. Ordinary
+holders cannot know their draw before consuming the token or select another block afterward. The accepted tradeoff is
+for cosmetic rewards and small reserve-capped LORDS amounts; it does not secure Frontier or season prizes.
+
+The existing collectible allows five new metadata kinds, 0x301–0x305 in the test preset. Each needs its own nonempty
+IPFS image CID and rank-band art; the metadata updater should name packed trait position 0 as Rank band (values 1–5) and
+position 1 value 3 as the new seasonal chest family. Season identity lives in `get_chest`, not the packed image kind.
+Every cosmetic item also needs its image mapping and rarity metadata. A default image alone does not satisfy minting.
+The chest collection needs the existing storage-compatible `mint_with_id` upgrade and MINTER_ROLE for the ledger.
+Cosmetics use the existing `mint` API. Neither collectible storage nor the old opening contracts change; legacy kinds
+0x101 and 0x201 retain their current claim path and randomness.
+
+The new request/odds maps replace fixed contents and shard reward draws. One shared reserve per season replaces
+per-chest LORDS liabilities. The cost is band/inventory preset storage, request state and two opening transactions;
+there is no new token collection, oracle, cancellation path, expiry timer or per-movement fee rule.
+
+Season ratings freeze at the end. The operator posts the top list; anyone may challenge a missing better participant for
+one hour. Posting writes the complete list and its allocations in one transaction. A short or challenged list cannot
+pay. Winners call `claim_season(season_id, position)` with their zero-based list position; the ledger checks the caller
+at that position and pays its geometric preset share once. Pause blocks withdrawals, chest finishes and season claims;
+refunds and expired Frontier returns remain available; registrations, Frontier funding, result settlement, chest
+requests and challenges remain available. Settlement's input treasury transfer continues to its fixed address.
+
 ## Package checks
 
 Run only these package checks for this ledger work; do not run the world suite:

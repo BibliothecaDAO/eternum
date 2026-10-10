@@ -20,7 +20,6 @@ interface RegisterPresetOptions {
   rpcUrl?: string;
   ledgerAddress?: string;
   ledgerRpcUrl?: string;
-  sponsored: boolean;
   dryRun: boolean;
   nativeManifest: string;
   record?: string;
@@ -35,7 +34,7 @@ function parseOptions(): RegisterPresetOptions {
   const presetId = Number(readArgument("--preset-id"));
   if (!Number.isInteger(presetId) || presetId <= 0) {
     throw new Error(
-      "Usage: bun config/deployer/clean/registrar/register-preset.ts --preset-id <n> [--ledger <address> --ledger-rpc-url <mainnet RPC>] [--environment madara.<mode>] [--native-manifest path] [--record path] [--sponsored] [--dry-run]",
+      "Usage: bun config/deployer/clean/registrar/register-preset.ts --preset-id <n> [--ledger <address> --ledger-rpc-url <mainnet RPC>] [--environment madara.<mode>] [--native-manifest path] [--record path] [--dry-run]",
     );
   }
   // The preset's own mode names its configuration unless an environment is given.
@@ -49,7 +48,6 @@ function parseOptions(): RegisterPresetOptions {
     rpcUrl: readArgument("--rpc-url") || process.env.RPC_URL,
     ledgerAddress: readArgument("--ledger") || process.env.LEDGER_ADDRESS,
     ledgerRpcUrl: readArgument("--ledger-rpc-url") || process.env.LEDGER_RPC_URL,
-    sponsored: process.argv.includes("--sponsored"),
     dryRun: process.argv.includes("--dry-run"),
     nativeManifest: requiredManifest(),
     record: readArgument("--record"),
@@ -76,13 +74,11 @@ export async function registerEnvironmentPreset(options: RegisterPresetOptions):
   const { calldata } = registration;
   const ledgerPreset = buildLedgerEconomicPreset(nativePresetForId(options.presetId).gameType, {
     presetId: options.presetId,
-    sponsored: options.sponsored,
   });
   const summary = {
     presetId: options.presetId,
     calldataLength: calldata.length,
     ...registration.summary,
-    sponsored: options.sponsored,
     calldata,
     ledgerCalldata: buildRegisterLedgerPresetCalldata(options.presetId, ledgerPreset),
   };
