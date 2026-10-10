@@ -12,7 +12,8 @@ import { CONTINUE, SEASON_ENDINGS, SEASON_OVER, YOU_PLACED } from "@/ui/design-s
 import { boardRows, findOwnEntry, wholeLords } from "@/ui/features/frontier/board/standings";
 
 import { clockLine } from "../clock-chip";
-import { formatPoints, ordinal, sameAddress } from "../format";
+import { formatPoints, ordinal } from "../format";
+import { isSameStarknetAddress } from "@realms-world/identity";
 import { useLayout } from "../frame/layout";
 import { PageFrame } from "../frame/page-frame";
 import { type DirectoryGame, useDirectory, useLeaderboard, useRealmsPlayer, useRecentResults } from "../herald";
@@ -196,7 +197,7 @@ const BlitzResult = ({
   const [sharing, setSharing] = useState(false);
   const layout = useLayout();
   const desktop = layout === "desktop";
-  const own = player ? entries.find((entry) => sameAddress(entry.address, player)) : undefined;
+  const own = player ? entries.find((entry) => isSameStarknetAddress(entry.address, player)) : undefined;
   const top = entries.slice(0, ROWS[layout]);
   const rows = own && !top.includes(own) ? [...top, own] : top;
   // A game played on the ledger shows the paying wallet's rating change and chest under the board.

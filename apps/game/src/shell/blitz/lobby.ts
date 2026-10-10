@@ -3,7 +3,7 @@ import type { PlaytestSlot } from "@/ui/features/factory-v2/api/factory-worker";
 
 import type { BlitzRow } from "../blitz-rows";
 import { BLITZ_SEATS, registrationFor } from "../blitz-slot";
-import { sameAddress } from "../format";
+import { isSameStarknetAddress } from "@realms-world/identity";
 import { ageOf } from "../play/ages";
 import { gameEntryOf } from "../value/game-entry";
 
@@ -62,7 +62,7 @@ export const seatsOf = (
   if (!row.game.roster) return Array.from({ length: filled ?? 0 }, () => UNNAMED_SEAT);
   return row.game.roster.map(({ account, prepared }) => ({
     account,
-    own: player !== null && sameAddress(account, player),
+    own: player !== null && isSameStarknetAddress(account, player),
     prepared,
   }));
 };

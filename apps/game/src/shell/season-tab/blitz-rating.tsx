@@ -7,7 +7,7 @@ import { playerPortraitUrl } from "@/services/identity/player-portrait";
 import { shortAddress } from "@/ui/design-system/kit/address";
 import { PlayerName } from "@/ui/design-system/kit/player-name";
 
-import { sameAddress } from "../format";
+import { isSameStarknetAddress } from "@realms-world/identity";
 import { Loading } from "../loading";
 import { Panel } from "../panel";
 import { ageOf } from "../play/ages";
@@ -77,11 +77,15 @@ const OwnRating = ({ self }: { self: Self }) => {
 /** The top rows, the reader's own lit in place, or pinned under them (its rank a dash before its first rated game). */
 const TopRows = ({ top }: { top: RatingTop }) => {
   const self = top.self?.status === "rated" ? top.self : null;
-  const ownInTop = self !== null && top.entries.some((entry) => sameAddress(entry.player, self.player));
+  const ownInTop = self !== null && top.entries.some((entry) => isSameStarknetAddress(entry.player, self.player));
   return (
     <ol className="flex flex-col">
       {top.entries.map((entry) => (
-        <RatingRow key={entry.player} {...entry} own={self !== null && sameAddress(entry.player, self.player)} />
+        <RatingRow
+          key={entry.player}
+          {...entry}
+          own={self !== null && isSameStarknetAddress(entry.player, self.player)}
+        />
       ))}
       {self && !ownInTop && <RatingRow {...self} own />}
     </ol>

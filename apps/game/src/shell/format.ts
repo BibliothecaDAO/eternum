@@ -9,11 +9,3 @@ export const ordinal = (rank: number): string => {
 
 /** Victory points are recorded with six decimals. */
 export const formatPoints = (points: number): string => formatExact(Math.round(points));
-
-export const sameAddress = (left: string, right: string): boolean => {
-  try {
-    return BigInt(left) === BigInt(right);
-  } catch {
-    return false;
-  }
-};
