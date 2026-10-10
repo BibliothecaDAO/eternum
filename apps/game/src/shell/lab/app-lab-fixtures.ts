@@ -463,7 +463,6 @@ export const LAB_REWARDS: Partial<Record<keyof typeof LAB_SCREENS, Reward>> = {
 const RUNNING: SeasonPrize = {
   ledger: LAB_GAME_LEDGER.address,
   seasonId: 3,
-  current: true,
   season: {
     participants: 500,
     winners: 50,

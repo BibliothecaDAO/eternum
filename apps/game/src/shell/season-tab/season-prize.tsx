@@ -6,7 +6,7 @@ import { type IconCode, KitIcon } from "@/ui/design-system/kit/kit-icon";
 import { formatDate, formatDuration } from "@/ui/design-system/kit/time";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
-import { type DirectoryGame, useDirectory, useRealmsPlayer, useRecentResults } from "../herald";
+import { useRealmsPlayer, useRecentResults } from "../herald";
 import { Loading } from "../loading";
 import { ServiceFailure } from "../service-failure";
 import { useNowSeconds } from "../use-now";
@@ -15,7 +15,7 @@ import { useL2Send } from "../value/l2-send";
 import { NoStrkLine } from "../value/no-strk-line";
 import { FailureLine } from "../sign-in/failure-line";
 import { SEASON_PRIZE_WORDS, VALUE_WORDS } from "../words";
-import { placeShares, type SeasonPrize, seasonSourcesOf, seasonState, useSeasonPrizes } from "./blitz-season";
+import { placeShares, type SeasonPrize, seasonSourceOf, seasonState, useSeasonPrize } from "./blitz-season";
 
 const WalletSign = lazy(() =>
   import("@/ui/modules/identity/wallet-actions").then((module) => ({ default: module.WalletSign })),
@@ -24,33 +24,20 @@ const WalletSign = lazy(() =>
 /** How many paid places the panel lists before the last one. */
 const PLACES_SHOWN = 3;
 
-/** Seasons past the running one stay on Season only while the player still waits on them or has a share to claim. */
-const OPEN_STATES = new Set<ReturnType<typeof seasonState>>(["closing", "review", "held", "claim", "no-strk"]);
-
 /**
- * The Blitz seasons' prizes on Season, newest first: the running season's pool and time left, what the first paid
- * places and the last would take of it today; at the end the review hour, then the winner's claim from the wallet
- * that paid in that season. An earlier season the player paid into stays listed until its share is claimed, so a new
- * season opening never hides one still to claim.
+ * The Blitz season's prize on Season, read from the player's own newest paid game: the pool now and the time left,
+ * what the first paid places and the last would take of it today; at the end the review hour, then the winner's claim
+ * from the wallet that paid in that game.
  */
 export const SeasonPrizePanel = () => {
   const { data: player } = useRealmsPlayer();
-  const directory = useDirectory();
   const history = useRecentResults(20, player);
-  const now = useNowSeconds();
-  const sources = seasonSourcesOf(directory.data?.games ?? [], history.data?.games ?? []);
-  const prizes = useSeasonPrizes(sources, player ?? null);
-  if (prizes.isError)
-    return <ServiceFailure service="ledger" error={prizes.error} retry={() => void prizes.refetch()} />;
-  const shown = (prizes.data ?? []).filter((prize) => prize.current || OPEN_STATES.has(seasonState(prize, now)));
-  return (
-    <>
-      {sources.broken && <FailureLine line={SEASON_PRIZE_WORDS.unreadable} />}
-      {shown.map((prize) => (
-        <Prize key={prize.seasonId} prize={prize} onClaimed={() => void prizes.refetch()} />
-      ))}
-    </>
-  );
+  const source = seasonSourceOf(history.data?.games ?? []);
+  const prize = useSeasonPrize(source, player ?? null);
+  if (source?.kind === "broken") return <FailureLine line={SEASON_PRIZE_WORDS.unreadable} />;
+  if (prize.isError) return <ServiceFailure service="ledger" error={prize.error} retry={() => void prize.refetch()} />;
+  if (!prize.data) return null;
+  return <Prize prize={prize.data} onClaimed={() => void prize.refetch()} />;
 };
 
 const Prize = ({ prize, onClaimed }: { prize: SeasonPrize; onClaimed: () => void }) => {
