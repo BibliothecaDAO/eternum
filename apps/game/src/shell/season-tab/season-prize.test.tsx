@@ -20,20 +20,26 @@ vi.mock("@/ui/modules/identity/wallet-actions", () => ({
   ),
 }));
 // The ledger's views by entrypoint; with none given the ledger answers nothing, so a refetch never reaches a network.
-const ledger = vi.hoisted(() => ({ views: null as Record<string, (calldata: string[]) => string[]> | null }));
+const ledger = vi.hoisted(() => ({
+  views: null as Record<string, (calldata: string[]) => string[]> | null,
+  asked: [] as string[],
+}));
 vi.mock("@/runtime/l2-rpc", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/runtime/l2-rpc")>()),
   L2_LEDGER: "0x1ed9e7",
   l2Provider: () => ({
-    callContract: ({ entrypoint, calldata }: { entrypoint: string; calldata: string[] }) =>
-      ledger.views ? Promise.resolve(ledger.views[entrypoint](calldata)) : new Promise(() => {}),
+    callContract: async ({ entrypoint, calldata }: { entrypoint: string; calldata: string[] }) => {
+      if (!ledger.views) return new Promise<string[]>(() => {});
+      ledger.asked.push(entrypoint);
+      return ledger.views[entrypoint](calldata);
+    },
   }),
 }));
 const listed = vi.hoisted(() => ({ directory: [] as object[], history: [] as object[] }));
 vi.mock("../herald", () => ({
   useRealmsPlayer: () => ({ data: "0x7e" }),
   useDirectory: () => ({ data: { games: listed.directory } }),
-  useRecentResults: () => ({ data: { games: listed.history } }),
+  usePlayerHistory: () => ({ data: listed.history }),
 }));
 
 import { type SeasonPrize, seasonPrizeKey } from "./blitz-season";
@@ -111,6 +117,7 @@ afterEach(async () => {
   signed.calls = [];
   signed.owners = [];
   ledger.views = null;
+  ledger.asked = [];
 });
 
 it("shows the pool and what the paid places would take if the season ended now", async () => {
@@ -196,4 +203,67 @@ it("shows the newest season played once every share is claimed", async () => {
   // Season 4's running pool, not season 3's claimed share.
   expect(panel.textContent).toContain("9,000");
   expect(panel.textContent).not.toContain("Claim");
+});
+
+/** Seasons 3 (over, posted, W1 second on its list) and 4 (running), as the ledger answers them. */
+const twoSeasons = (over: Record<string, (calldata: string[]) => string[]> = {}) => ({
+  get_slot: ([, slotId]: string[]) => [slotId === "5" ? "3" : "4", "1", "4", "0", "0", "0", "0", "2", "0"],
+  get_season: ([id]: string[]) => [
+    ...["0", "0", "25", "3", id === "3" ? "1" : "0", "0", String(NOW - 60), "0", "0", "0", "1", "4", "0"],
+    ...[String(id === "3" ? NOW - 7200 : NOW + 30 * 86400), String((id === "3" ? 7_000n : 9_000n) * WEI), "0"],
+  ],
+  get_preset: () => ["0", "0", "0", "0", "1000", "5000", ...Array.from({ length: 14 }, () => "0")],
+  get_season_winner: ([, index]: string[]) =>
+    index === "1" ? ["0xa11", String(2_000n * WEI), "0"] : ["0xb0b", "1", "0"],
+  season_claimed: () => ["0"],
+  is_paused: () => ["0"],
+  ...over,
+});
+
+const settle = () => act(async () => new Promise((resolve) => setTimeout(resolve, 0)));
+const buttons = (panel: HTMLElement) => [...panel.querySelectorAll("button")].map((button) => button.textContent);
+
+it("shows the prize of the games it can read when one game's slot cannot be read", async () => {
+  ledger.views = twoSeasons({
+    get_slot: ([, slotId]) => {
+      if (slotId === "8") throw new Error("invalid_ledger_slot");
+      return ["3", "1", "4", "0", "0", "0", "0", "2", "0"];
+    },
+  });
+  listed.history = [blitz(8, NOW - 3600, 8, "0xb22"), blitz(5, NOW - 86400, 5, "0xa11")];
+  const panel = await mount();
+  await settle();
+  // Game 8's slot is unreadable; season 3's share, found through game 5, is still shown with its Claim.
+  expect(panel.textContent).toContain("2,000");
+  expect(buttons(panel)).toContain("Claim");
+});
+
+it("offers no Claim while the ledger's payouts are paused, and says they are", async () => {
+  ledger.views = twoSeasons({ is_paused: () => ["1"] });
+  listed.history = [blitz(5, NOW - 86400, 5, "0xa11")];
+  const panel = await mount();
+  await settle();
+  await settle();
+  expect(panel.textContent).toContain("2,000");
+  expect(panel.textContent).toContain("Payouts are paused.");
+  expect(buttons(panel)).not.toContain("Claim");
+});
+
+it("walks a posted list once: reading the prize again asks for no winner a second time", async () => {
+  ledger.views = twoSeasons();
+  // A wallet outside season 3's three paid places: the whole list is walked to learn it.
+  listed.history = [blitz(5, NOW - 86400, 5, "0xc0ffee")];
+  let client: QueryClient | undefined;
+  const panel = await mount((created) => {
+    client = created;
+  });
+  await settle();
+  expect(panel.textContent).toContain("Outside the paid places");
+  const winnersAsked = () => ledger.asked.filter((entrypoint) => entrypoint === "get_season_winner").length;
+  expect(winnersAsked()).toBe(3);
+  await act(async () => client!.refetchQueries({ queryKey: ["ledger", "season"], exact: false }));
+  await settle();
+  expect(winnersAsked()).toBe(3);
+  // The slot's season is asked once too.
+  expect(ledger.asked.filter((entrypoint) => entrypoint === "get_slot").length).toBe(1);
 });

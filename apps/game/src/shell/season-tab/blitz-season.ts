@@ -1,5 +1,5 @@
 import { isSameStarknetAddress } from "@realms-world/identity";
-import { useQuery } from "@tanstack/react-query";
+import { type QueryClient, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { rosterWalletOf } from "@/runtime/world/directory";
 
@@ -89,41 +89,76 @@ export const seasonPrizeKey = (sources: readonly SeasonSource[]) =>
 
 /**
  * The one season prize the Season tab shows, on the environment's ledger: the newest season of the player's own games
- * in which a share is still unclaimed, or else the newest season they played. Nothing is read without a game.
+ * in which a share is still unclaimed, or else the newest season they played. Nothing is read without a game. It is
+ * read again each minute only while it can still change: a season that is out of the paid places or claimed is final.
  */
-export const useSeasonPrize = (ledger: EnvironmentLedger | null, sources: readonly SeasonSource[]) =>
-  useQuery({
+export const useSeasonPrize = (ledger: EnvironmentLedger | null, sources: readonly SeasonSource[]) => {
+  const client = useQueryClient();
+  return useQuery({
     queryKey: seasonPrizeKey(sources),
-    queryFn: () => readSeasonPrize(ledger as EnvironmentLedger, sources),
+    queryFn: () => readSeasonPrize(seasonReadsOf(client, ledger as EnvironmentLedger), sources),
     enabled: ledger !== null && sources.length > 0,
-    refetchInterval: 60_000,
+    refetchInterval: ({ state }) => (state.data && isFinal(state.data, Date.now() / 1000) ? false : 60_000),
   });
+};
 
-const readSeasonPrize = async (read: EnvironmentLedger, sources: readonly SeasonSource[]): Promise<SeasonPrize> => {
+const isFinal = (prize: SeasonPrize, now: number): boolean => ["out", "claimed"].includes(seasonState(prize, now));
+
+/** The ledger's season reads, with the two that never change kept for the session. */
+type SeasonReads = EnvironmentLedger & {
+  seasonOfSlot: (slot: SlotKey) => Promise<number>;
+  placeOf: (seasonId: number, season: BlitzSeason, wallet: string) => Promise<Place | null>;
+};
+
+type Place = { position: number; share: bigint };
+
+/**
+ * A slot belongs to one season for good, and a posted list stands until it is posted again (which opens a new review
+ * hour), so neither is asked twice: a tab left open does not walk the whole list every minute.
+ */
+const seasonReadsOf = (client: QueryClient, read: EnvironmentLedger): SeasonReads => ({
+  ...read,
+  seasonOfSlot: (slot) =>
+    client.fetchQuery({
+      queryKey: ["ledger", "slot-season", slot.shard, slot.slotId],
+      queryFn: async () => (await read.slot(slot)).seasonId,
+      staleTime: Infinity,
+    }),
+  placeOf: (seasonId, season, wallet) =>
+    client.fetchQuery({
+      queryKey: ["ledger", "season-place", seasonId, season.winners, season.reviewUntil, wallet],
+      queryFn: () => findPlace(read, seasonId, season.winners, wallet),
+      staleTime: Infinity,
+    }),
+});
+
+const readSeasonPrize = async (read: SeasonReads, sources: readonly SeasonSource[]): Promise<SeasonPrize> => {
   const seen = new Set<string>();
   let newest: SeasonPrize | null = null;
   for (const { slot, wallet } of sources) {
-    const { seasonId } = await read.slot(slot);
-    if (seen.has(`${seasonId}:${wallet}`)) continue;
+    // One game whose slot cannot be read never hides the prize of the others.
+    const seasonId = await read.seasonOfSlot(slot).catch(() => null);
+    if (seasonId === null || seen.has(`${seasonId}:${wallet}`)) continue;
     seen.add(`${seasonId}:${wallet}`);
     const prize = await prizeOf(read, seasonId, wallet);
     newest ??= prize;
     if (prize.share !== null && !prize.claimed) return prize;
   }
-  return newest as SeasonPrize;
+  if (newest === null) throw new Error("No season of the player's games could be read");
+  return newest;
 };
 
-const prizeOf = async (read: EnvironmentLedger, seasonId: number, wallet: string): Promise<SeasonPrize> => {
+const prizeOf = async (read: SeasonReads, seasonId: number, wallet: string): Promise<SeasonPrize> => {
   const season = await read.season(seasonId);
   const [curve, holding] = await Promise.all([read.preset(season.presetId), holdingOf(read, seasonId, season, wallet)]);
   return { ledger: read.address, seasonId, season, curve, wallet, ...holding };
 };
 
 /** What a wallet holds in a season: its share and place once the list is posted, and whether it is claimed. */
-const holdingOf = async (read: EnvironmentLedger, seasonId: number, season: BlitzSeason, wallet: string) => {
+const holdingOf = async (read: SeasonReads, seasonId: number, season: BlitzSeason, wallet: string) => {
   const [claimed, place] = await Promise.all([
     read.seasonClaimed(seasonId, wallet),
-    season.posted ? findPlace(read, seasonId, season.winners, wallet) : Promise.resolve(null),
+    season.posted ? read.placeOf(seasonId, season, wallet) : Promise.resolve(null),
   ]);
   return { share: place?.share ?? null, position: place?.position ?? null, claimed };
 };
@@ -134,7 +169,7 @@ const findPlace = async (
   seasonId: number,
   winners: number,
   wallet: string,
-): Promise<{ position: number; share: bigint } | null> => {
+): Promise<Place | null> => {
   const BATCH = 25;
   for (let from = 0; from < winners; from += BATCH) {
     const batch = await Promise.all(

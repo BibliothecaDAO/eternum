@@ -76,7 +76,8 @@ export const entryState = (terms: EntryTerms, choice: EntryChoice, now: number, 
   if (registration.registered && registration.gameId === 0 && (terms.cancelled || registration.refundable))
     return "refunded";
   if (registration.registered) return onRoster || registration.gameId !== 0 ? "seated" : "registered";
-  if (now >= terms.close) return "closed";
+  // A cancelled slot takes no entry, though its close may still be ahead: the ledger would refuse the call.
+  if (terms.cancelled || now >= terms.close) return "closed";
   if (terms.lords < entryCost(terms, choice).cash) return "short";
   return "choose";
 };

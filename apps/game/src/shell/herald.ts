@@ -92,6 +92,32 @@ export const useRecentResults = (limit: number, player: string | null = null) =>
   });
 
 /**
+ * Every settled game a player took part in, newest first: their own history followed to its last page, so nothing of
+ * theirs falls off the end of a recent page. Asked only for a player (without one it would be every game ever).
+ */
+export const usePlayerHistory = (player: string | null) =>
+  useQuery({
+    queryKey: ["shell", "history", "player", player],
+    queryFn: () => readPlayerHistory(player as string),
+    enabled: player !== null,
+    staleTime: 30_000,
+    retry: 1,
+  });
+
+const HISTORY_PAGE = 100;
+
+const readPlayerHistory = async (player: string) => {
+  const games: Awaited<ReturnType<typeof fetchDirectoryHistory>>["games"] = [];
+  let cursor: string | null = null;
+  do {
+    const page = await fetchDirectoryHistory({ limit: HISTORY_PAGE, cursor, player });
+    games.push(...page.games);
+    cursor = page.next;
+  } while (cursor !== null);
+  return games;
+};
+
+/**
  * A game's standings in its mode's shape: Frontier's season board, or live points while a game runs and the recorded
  * final standings once its result is complete.
  */
