@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-10",
+    title: "Chat in a Blitz slot's lobby",
+    description:
+      "Once your payout wallet is registered in a slot, you can write in its lobby chat. Everyone signed in can read it.",
+    type: "feature",
+  },
+  {
+    date: "2026-10-10",
     title: "Withdraw LORDS and claim Realm labor",
     description:
       "In Frontier, tap your LORDS to withdraw them to your payout wallet and follow the payment to its transaction. Realms in that wallet give labor once a day: claim it from the Realms chip or the Menu.",
