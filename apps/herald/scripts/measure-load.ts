@@ -285,7 +285,6 @@ function reviews() {
   const frozen = new Set<string>();
   return {
     appendEvents: async () => {},
-    recordTransaction: () => {},
     freezeReviewSnapshot: async (gameId: string, snapshot: () => unknown) => {
       if (frozen.has(gameId)) return;
       snapshot();
