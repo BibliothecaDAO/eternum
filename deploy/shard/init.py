@@ -246,9 +246,9 @@ if __name__ == "__main__":
         os.environ.update(operator_environment())
         probe()
         raise SystemExit(0)
-    if action == "launcher-check":
+    if action == "service-role-check":
         _, environment = harness_invocation([], os.environ)
-        os.execvpe("bun", ["bun", "deploy/athanor/scripts/launcher-check.ts", *sys.argv[2:]], environment)
+        os.execvpe("bun", ["bun", "deploy/athanor/scripts/service-role-check.ts", *sys.argv[2:]], environment)
     if action == "self-check":
         argv, environment = harness_invocation([], os.environ)
         identity = json.loads((DATA / "gameplay-contracts.json").read_text())

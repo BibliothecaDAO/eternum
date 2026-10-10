@@ -387,8 +387,6 @@ class ShardTest(unittest.TestCase):
                                            "preset": 101, "minutes": 30})
         self.assertEqual(frontier[2:], ["--game-type", "frontier", "--bots", "2000", "--frontier-burst", "booth",
                                         "--preset", "101", "--minutes", "30"])
-        slot = shard.workload_command({"game_type": "blitz", "slot": "evening", "functional": True})
-        self.assertEqual(slot[2:], ["--game-type", "blitz", "--slot", "evening", "--functional"])
         with self.assertRaisesRegex(ValueError, "must name the harness run"):
             shard.workload_command({})
 
@@ -526,8 +524,8 @@ class ShardTest(unittest.TestCase):
                 matrix = {
                     "configurations": [configuration(), {**configuration(), "shard": "second",
                                                           "workload": {"minutes": 30}}],
-                    "workload": {"games": 2, "accounts_per_game": 3, "minutes": 1,
-                                 "interval_seconds": 16, "setup_concurrency": 3, "workload": "build-order"},
+                    "workload": {"game_type": "eternum", "bots": 6, "minutes": 1,
+                                 "interval_seconds": 16, "setup_concurrency": 3, "workload": "cadence"},
                 }
                 started = []
 
@@ -583,7 +581,7 @@ class PackageStartTest(unittest.TestCase):
         self.write_initialized_data()
         self.environ = {
             **operator_fixture(self.data, self),
-            "CHAIN_ID": "COMMUNITY", "GUARDIAN_URL": "https://identity.test/api/guardian",
+            "CHAIN_ID": "RESTORED_SHARD", "GUARDIAN_URL": "https://identity.test/api/guardian",
             "PUBLIC_RPC_URL": "https://rpc.test/rpc/v0_10_2", "PUBLIC_HERALD_URL": "https://herald.test", "VRF_WORKERS": "8", "L2_GAS_BOUND": "0x47868c00",
             "PLAYER_CAPACITY": "16",
             "TRUSTED_PROXY": "172.18.0.1",
@@ -603,14 +601,14 @@ class PackageStartTest(unittest.TestCase):
             "authority.json": {"address": "0x3", "signingKey": "0xdef"},
             "initialized.json": {"chainId": "0x1", "world": "0x4"},
             # A record written before init kept only identity: operational settings beside it are ignored.
-            "init-configuration.json": {"shard": "community", "chain_id": "COMMUNITY", "port_base": 0,
+            "init-configuration.json": {"shard": "restored-shard", "chain_id": "RESTORED_SHARD", "port_base": 0,
                                         "guardian_url": "https://identity.test/api/guardian", "l2_gas_bound": "0x47868c00", "player_capacity": 16,
                                         "madara_image": NODE_IMAGE, "public_rpc_url": "https://rpc.test/rpc/v0_10_2"},
         }
         for name, value in files.items():
             (self.data / name).write_text(json.dumps(value))
         (self.data / "host-keys.json").chmod(0o600)
-        (self.data / "chain-config.yaml").write_text('chain_id: "COMMUNITY"\n')
+        (self.data / "chain-config.yaml").write_text('chain_id: "RESTORED_SHARD"\n')
         shard.write_private_environment(self.data / "postgres.env", {
             "POSTGRES_USER": "herald", "POSTGRES_DB": "herald", "POSTGRES_PASSWORD": "restored-password",
         })
@@ -736,3 +734,25 @@ class RegistrationAcknowledgementTest(unittest.TestCase):
                     self.fail("pending POST should fail")
             directory.assert_called_once_with(config, "pending")
             self.assertFalse((data / "directory-registration-ack.json").exists())
+
+
+class OfficialBackupLockTest(unittest.TestCase):
+    def test_a_missing_official_lock_directory_refuses_instead_of_running_unlocked(self):
+        from contextlib import redirect_stdout
+        import backup
+        with tempfile.TemporaryDirectory() as temporary:
+            lock = Path(temporary) / "missing/isolated-stack.lock"
+            with patch.object(backup, "LOCK", lock), patch.object(backup.os, "geteuid", return_value=0), \
+                    patch.object(backup, "capture", return_value={}) as capture, redirect_stdout(io.StringIO()):
+                with self.assertRaises((FileNotFoundError, RuntimeError)):
+                    backup.main(["capture", "fixture", temporary, temporary])
+                capture.assert_not_called()
+
+
+class ResolvedProxyCapacityTest(unittest.TestCase):
+    def test_the_resolved_proxy_and_initialization_use_the_same_shard_capacity(self):
+        for capacity in (24, 2000):
+            config = {**configuration(), "player_capacity": capacity}
+            compose = shard.compose_configuration(config, Path("/tmp/not-deployed"))
+            values = [compose["services"][name]["environment"]["PLAYER_CAPACITY"] for name in ("prepare", "rpc")]
+            self.assertEqual([int(value) for value in values], [capacity, capacity])

@@ -44,7 +44,8 @@ export interface HeraldPlayerStructure {
 export interface HeraldPlayerGameState {
   registered: boolean;
   settled: boolean;
-  roster_member: boolean;
+  /** The wallet frozen for this account at slot close, or null outside its roster. */
+  roster_wallet: string | null;
   structures: HeraldPlayerStructure[];
 }
 

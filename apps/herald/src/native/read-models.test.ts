@@ -101,6 +101,27 @@ it("never lists deployment check games or counts them as Frontier seasons", () =
 });
 
 describe("native directory and leaderboard", () => {
+  it("keeps each player's frozen payout wallet after the game ends and has none for a nonmember", () => {
+    const { fold, native } = world();
+    native.applyReceipt(fold, receipt([gameEvent("1", "1")]), 12, 0);
+    for (const [playerAddress, wallet] of [
+      ["0x111", "0x3e8"],
+      ["0x222", "0x3e9"],
+      ["0x333", null],
+    ]) {
+      const directory = buildNativeDirectory({
+        chain: "madara",
+        confirmedBlock: 12,
+        timestamp: 201,
+        fold,
+        playerAddress: playerAddress!,
+      });
+      const game = directory.games.find(({ game_id }) => game_id === 1)!;
+      expect(game.player_state?.roster_wallet).toBe(wallet);
+      expect(game.status).toBe("Settled");
+    }
+  });
+
   it("reads native entries, structures and the clock without mirrored configuration rows", () => {
     const { fold, native } = world();
     native.applyReceipt(
@@ -131,7 +152,7 @@ describe("native directory and leaderboard", () => {
       player_state: {
         registered: true,
         settled: true,
-        roster_member: true,
+        roster_wallet: "0x3e8",
         structures: [
           { entity_id: 7, category: 1, level: 0, realm_id: 0, coord_x: 7, coord_y: 0, resources_packed: "0" },
           { entity_id: 8, category: 5, level: 0, realm_id: 0, coord_x: 8, coord_y: 0, resources_packed: "0" },

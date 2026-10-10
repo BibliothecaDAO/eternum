@@ -17,17 +17,17 @@ checkout's command bindings rather than another checkout's built packages. Run c
 
 ## Deployment listing gate
 
-`pnpm lab:self-check` creates one throwaway development game and approves one bot device. Its immutable fixture preset
-103 copies Eternum's balance and mode rules, exposing all generated commands so each reaches its real domain guard.
-Normal presets are unchanged. Setup uses the deployment's owner/launcher account on `HARNESS_ADMIN_RPC_URL`; each play
-uses that account or the bot's account on the public stamping RPC. It checks the constructor's launcher, owner, VRF
-point and gas bound against the deployment document before sending. The freshly generated schema must already be
-deployed and served by Herald; this command never generates or deploys contracts.
+`pnpm lab:self-check` creates a Frontier game and an Eternum route fixture and approves one bot device. The immutable
+route fixture preset 103 copies Eternum's balance and mode rules, exposing all generated commands so each reaches its
+real domain guard. Normal presets are unchanged. Setup uses the deployment's owner/launcher account on
+`HARNESS_ADMIN_RPC_URL`; each play uses that account or the bot's account on the public stamping RPC. It checks the
+constructor's launcher, owner, VRF point and gas bound against the deployment document before sending. The freshly
+generated schema must already be deployed and served by Herald; this command never generates or deploys contracts.
 
 The fixture requires 14 applied routes: settlement, naming, explorer creation/exploration/movement/removal, guild
 creation/whitelist/removal/join/leave, six regional banks, and the two legitimate no-op lifecycle/faith routes. It tests
-the other 58 routes with typed missing-state or mode-specific domain refusals taken from the contract guards. Every
-refusal needs its exact `GAMEPLAY_REJECTED` receipt and matching Herald `REJECTED` reason, followed by unchanged
+the other admitted routes with typed missing-state or mode-specific domain refusals taken from the contract guards.
+Every refusal needs its exact `GAMEPLAY_REJECTED` receipt and matching Herald `REJECTED` reason, followed by unchanged
 serialized game facts. A disabled mask, malformed command, admission revert or internal library failure cannot pass.
 These refusal tests establish route dispatch and rollback; they do not establish successful bridge token transfers,
 Blitz finalisation or every domain's funded happy path.
@@ -35,8 +35,8 @@ Blitz finalisation or every domain's funded happy path.
 Missing cases, wrong scope, unexpected outcomes, timeouts, fact failures and teardown failure refuse the listing gate.
 It prints public JSON with `passed`, `firstFailedRoute`, `completed`, `applied`, `refused`, `gameId` and `elapsedMs`;
 exit 0 means this complete route smoke passed. Setup and receipt polling stop when the check ends. A deployment needing
-different domain prerequisites can supply `--fixture <module.ts>` implementing `DeploymentCheckPort`; the complete
-generated route catalogue remains mandatory. Entity identifiers always come from Herald facts.
+different domain prerequisites can supply `--fixture <module.ts>` implementing `DeploymentCheckPort`; all routes
+admitted without a frozen roster remain mandatory. Entity identifiers always come from Herald facts.
 
 ## Ops timing commands
 
@@ -48,19 +48,12 @@ Setup requires the normal harness identity/launcher environment plus `SHARD_NODE
 evidence. `--fixture <module.ts>` supplies another typed `WaveFixturePort` for a different registered preset or action
 route.
 
-`pnpm lab:harness:quiet --out <quiet.json> --checkpoint <checkpoint.json> --offset-ms 250` uses 24 distinct accounts in
-an independent CreateExplorer game. Offsets are 0, 250 or 1,000 ms after the primary checkpoint. Alternatively use
-`--close-log <node.log>` to release on an executed nonempty close-worker start. `--ready-file <ready.json>` marks that
-the sender workers are warmed. These commands preserve public send timestamps, percentiles, completion counts, trigger
-offsets and round trips. Visibility is measured at Herald's first transaction notice rather than a private node
-WebSocket; the file declares that observer. Every pass also requires confirmed Herald facts and real domain assertions.
-Request bodies and signing material stay in worker memory.
-
 ## 96 bots
 
-`pnpm lab:harness:96 --rpc-url <public-rpc> --herald-url <herald>` plays four legal 24-player Blitz rosters for 10
-minutes at 15-second cadence, retaining the existing 3,500-action acceptance gate. The contract caps a Blitz roster at
-24; the driver does not relax it. `pnpm lab:harness:96:frontier` plays all 96 bots in one Frontier season with six
-workers. Each prepared account is checked once, assigned to its own worker group and reads its own Herald store.
-Duplicate accounts, duplicate bot IDs, missing participants and mismatched game assignments fail before workers start.
-Prepared credential files remain private; public result files contain neither device keys nor signed bodies.
+`pnpm lab:harness:96:frontier` plays all 96 bots in one Frontier season with six workers. Each prepared account is
+checked once, assigned to its own worker group and reads its own Herald store. Duplicate accounts, duplicate bot IDs,
+missing participants and mismatched game assignments fail before workers start. Prepared credential files remain
+private; public result files contain neither device keys nor signed bodies.
+
+The launcher handoff is proven by reading its installed Games role before activation. Deployment creates no Blitz check
+game.

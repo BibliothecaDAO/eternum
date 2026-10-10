@@ -1,3 +1,4 @@
+import { resolveGameTransactionResourceBounds } from "@bibliothecadao/eternum/shard-fees";
 import {
   Account,
   BlockTag,
@@ -35,11 +36,7 @@ export function readPlayBounds(manifest: unknown): PlayBounds {
 
 /** Ordinary v3 signing and hash calculation lifted from the measured node-first driver. The proxy stamps it. */
 export async function signPlayerInvoke(account: Account, call: Call, bounds: PlayBounds) {
-  const resourceBounds = {
-    l1_gas: { max_amount: 0n, max_price_per_unit: 0n },
-    l2_gas: { max_amount: BigInt(bounds.l2GasBound), max_price_per_unit: 0n },
-    l1_data_gas: { max_amount: 0n, max_price_per_unit: 0n },
-  };
+  const resourceBounds = resolveGameTransactionResourceBounds(BigInt(bounds.l2GasBound));
   const details: InvocationsSignerDetails = {
     walletAddress: account.address,
     nonce: await account.getNonce(BlockTag.PRE_CONFIRMED),

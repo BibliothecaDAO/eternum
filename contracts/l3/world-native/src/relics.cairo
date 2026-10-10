@@ -80,6 +80,9 @@ pub struct ChestRules {
     pub claim_window_seconds: u32,
 }
 
+// The source stops one hour before the ledger's first-report deadline, leaving time for confirmed delivery.
+pub const LORDS_REPORTING_BUFFER_SECONDS: u64 = 3600;
+
 // A ruin's chest, fixed when the ruin is found: its tier and the whole LORDS its clear pays.
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
 pub struct SiteChest {
@@ -314,7 +317,9 @@ pub trait IFrontierSites<T> {
     );
 }
 
-// The ledger closes at this same exclusive deadline; no new receipt may be created at or beyond it.
+// The ledger still accepts first reports until end + window; this earlier cutoff only gates source receipts.
 pub fn assert_claim_window(game: crate::game::GameRegistry, rules: ChestRules, timestamp: u64) {
-    assert!(timestamp < game.end_at + Into::<u32, u64>::into(rules.claim_window_seconds), "LORDS claim window closed");
+    let reported_by = Into::<u64, u128>::into(timestamp) + LORDS_REPORTING_BUFFER_SECONDS.into();
+    let deadline = Into::<u64, u128>::into(game.end_at) + Into::<u32, u128>::into(rules.claim_window_seconds);
+    assert!(reported_by < deadline, "LORDS claim window closed");
 }

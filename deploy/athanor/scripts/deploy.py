@@ -20,10 +20,11 @@ from pathlib import Path
 import subprocess
 import sys
 import tarfile
-from urllib.request import Request, urlopen
+from urllib.request import urlopen
 
 import shard
 from directory import directory_status, wait_for_identity
+from service_requests import identity_service_base, service_json
 
 RELEASES = "https://github.com/BibliothecaDAO/eternum/releases/download"
 ENVIRONMENTS = shard.ROOT / "deploy/release"
@@ -58,6 +59,7 @@ def load_inputs(environment):
     missing = [key for key in INPUTS if key not in inputs]
     if missing:
         raise ValueError(f"{environment}.json lacks {', '.join(missing)}")
+    identity_service_base(inputs["guardian_url"])
     return inputs
 
 
@@ -144,14 +146,15 @@ def verify_and_activate(config, directory):
     if saved.get("passed") and saved.get("checkedIdentity") == identity:
         check = saved
     else:
-        if launcher_handed_off(directory):
-            raise RuntimeError("chain facts changed after the launcher handoff; retire this chain")
+        if roles_handed_off(directory):
+            raise RuntimeError("chain facts changed after the role handoff; retire this chain")
         check = run_self_check(directory)
         check["checkedIdentity"] = identity
         shard.write_json(check_path, check)
     if not check.get("passed"):
         route = check.get("firstFailedRoute", "unknown_route")
         raise RuntimeError(f"self-check failed at {route}; directory status unchanged")
+    confirm_worker_ledger_operator(config, directory)
     confirm_worker_launcher(config, directory)
     directory_status(config, "active")
     print(json.dumps({"event": "shard_self_check_passed", "routes": len(check.get("completed", [])), "status": "active"}))
@@ -165,55 +168,60 @@ def gameplay_check_identity(directory):
 
 
 def launcher_service(config, suffix, payload):
-    token = os.environ.get("OPERATOR_TOKEN")
-    if not token:
-        raise RuntimeError("Protected operator credential is required for launcher enrollment")
-    base = config["guardian_url"].removesuffix("/guardian")
-    request = Request(base + "/factory/operator/launcher/" + suffix,
-                      data=json.dumps(payload).encode(), method="POST",
-                      headers={"Content-Type": "application/json", "Authorization": "Bearer " + token})
+    base = identity_service_base(config["guardian_url"])
     try:
-        with urlopen(request, timeout=120) as response:
-            return json.load(response)
+        return service_json(base + "/factory/operator/launcher/" + suffix, payload, timeout=120)
     except (OSError, ValueError):
-        raise RuntimeError("Launch Worker enrollment/check route unavailable; directory remains pending") from None
+        raise RuntimeError("Launch Worker enrollment route unavailable; directory remains pending") from None
 
 
-def launcher_handed_off(directory):
-    return launcher_chain_check(directory, "state")["handedOff"]
+def roles_handed_off(directory):
+    return service_role_check(directory, "state")["handedOff"]
 
 
-def launcher_chain_check(directory, action, account=None, proof=None):
+def service_role_check(directory, action, account=None, role="launcher"):
     args = [action, "/data"]
     if account is not None:
-        args.append(account)
-    if proof:
-        args.extend([proof["txHash"], proof["name"], str(proof["presetId"])])
+        args.extend([role, account])
     result = subprocess.run([*compose(directory.parent), "run", "--rm", "--no-deps", "-T",
-                             "--entrypoint", "python3", "harness", "/app/deploy/shard/init.py", "launcher-check", *args],
+                             "--entrypoint", "python3", "harness", "/app/deploy/shard/init.py", "service-role-check", *args],
                             capture_output=True, text=True)
     if result.returncode != 0:
-        raise RuntimeError("Confirmed launcher check failed; directory remains pending")
+        raise RuntimeError("Confirmed service role check failed; directory remains pending")
     if action == "state":
         try:
             rows = [line for line in result.stdout.splitlines() if line.startswith("{")]
             state = json.loads(rows[-1])
         except (ValueError, IndexError, AttributeError):
-            raise RuntimeError("Launcher state read failed; directory remains pending") from None
+            raise RuntimeError("Role state read failed; directory remains pending") from None
         if not isinstance(state, dict) or state.get("passed") is not True or type(state.get("handedOff")) is not bool:
-            raise RuntimeError("Launcher state read failed; directory remains pending")
+            raise RuntimeError("Role state read failed; directory remains pending")
         return state
+
+
+def confirm_worker_ledger_operator(config, directory):
+    manifest, _ = deployed_facts(directory)
+    payload = {"chainId": manifest["shard"]["chainId"], "heraldUrl": config["public_herald_url"]}
+    base = identity_service_base(config["guardian_url"])
+    try:
+        enrolled = service_json(base + "/value/operator/shard/enrol", payload, timeout=120)
+    except (OSError, ValueError):
+        raise RuntimeError("Relay enrollment route unavailable; directory remains pending") from None
+    account = public_felt(enrolled.get("ledgerOperatorAccount"))
+    if public_felt(enrolled.get("chainId")) != public_felt(payload["chainId"]):
+        raise RuntimeError("Relay enrolled another chain; directory remains pending")
+    service_role_check(directory, "handoff", account, role="ledger_operator")
 
 
 def public_felt(value):
     if not isinstance(value, str) or not value.startswith("0x"):
-        raise RuntimeError("Launch Worker returned an invalid public identity")
+        raise RuntimeError("Worker returned an invalid public identity")
     try:
         number = int(value, 16)
     except ValueError:
-        raise RuntimeError("Launch Worker returned an invalid public identity") from None
+        raise RuntimeError("Worker returned an invalid public identity") from None
     if not 0 < number < 2**251 + 17 * 2**192 + 1:
-        raise RuntimeError("Launch Worker returned an invalid public identity")
+        raise RuntimeError("Worker returned an invalid public identity")
     return hex(number)
 
 
@@ -224,14 +232,7 @@ def confirm_worker_launcher(config, directory):
     account = public_felt(enrolled.get("launcherAccount"))
     if public_felt(enrolled.get("chainId")) != public_felt(payload["chainId"]):
         raise RuntimeError("Launch Worker enrolled another chain; directory remains pending")
-    launcher_chain_check(directory, "handoff", account)
-    name = "check-worker-" + hashlib.sha256(payload["chainId"].encode()).hexdigest()[:16]
-    name_felt = "0x" + name.encode("ascii").hex()
-    preset = config["presets"][0]
-    checked = launcher_service(config, "check", {**payload, "name": name, "presetId": preset})
-    proof = {"txHash": public_felt(checked.get("txHash")), "name": name_felt, "presetId": preset}
-    launcher_chain_check(directory, "verify", account, proof)
-
+    service_role_check(directory, "handoff", account)
 
 def deployed_facts(data):
     return json.loads((data / "native-world.json").read_text()), json.loads((data / "initialized.json").read_text())

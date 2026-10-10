@@ -1,6 +1,4 @@
 import type { FrontierEvidence } from "./frontier";
-import { PROCESS_INTERVAL_MS } from "@bibliothecadao/eternum/automation";
-import type { BuildOrderWorkload } from "./build-order";
 import { classifyBattleOutcome, pickBattle, type BattleCandidate, type BattleOutcome } from "./combat";
 import { rejectionOf } from "./rejections";
 import { setTimeout as sleep } from "node:timers/promises";
@@ -115,7 +113,7 @@ export interface HarnessBot {
 }
 
 export interface WorkloadResult {
-  profile?: "build-order" | "burst" | "cadence" | "frontier";
+  profile?: "burst" | "cadence" | "frontier";
   frontier?: FrontierEvidence;
   actions: TrackedTransaction[];
   endedAt: string;
@@ -154,7 +152,6 @@ interface PrepareHarnessBotsOptions {
 }
 
 interface RunWorkloadOptions {
-  buildOrder?: BuildOrderWorkload;
   /** Every bot submits its whole plan at once, each next action as soon as the previous one lands. */
   burst?: boolean;
   bots: HarnessBot[];
@@ -196,13 +193,8 @@ interface TrackTransactionOptions {
   tick?: number;
 }
 
-export type HarnessGameType = "blitz" | "eternum" | "frontier";
+export type HarnessGameType = "eternum" | "frontier";
 
-const BLITZ_STRUCTURES_PER_BOT = 3;
-const ETERNUM_STRUCTURES_PER_BOT = 1;
-
-const settlementStructureCount = (gameType: HarnessGameType) =>
-  gameType === "blitz" ? BLITZ_STRUCTURES_PER_BOT : ETERNUM_STRUCTURES_PER_BOT;
 const TRANSACTION_TIMEOUT_MS = 30_000;
 const SETUP_TRANSACTION_TIMEOUT_MS = 120_000;
 const MODEL_UPDATE_TIMEOUT_MS = 30_000;
@@ -318,7 +310,7 @@ const STEADY_ACTION_PATTERN: readonly WorkloadActionKind[] = [
 ];
 
 export async function prepareHarnessBots({
-  gameType = "blitz",
+  gameType = "eternum",
   accounts,
   game,
   provider,
@@ -335,7 +327,7 @@ export async function prepareHarnessBots({
   }
 
   const bots = await mapWithConcurrency(accounts, setupConcurrency, async (harnessAccount) => {
-    const structureIds = await waitForSettlement(game, harnessAccount.address, gameType);
+    const structureIds = await waitForSettlement(game, harnessAccount.address);
     const structures = await waitForStructures(game, structureIds);
 
     const unprepared = structures.filter((structure) => game.explorersOf(structure.structureId).length === 0);
@@ -433,7 +425,6 @@ export async function runWorkload({
   onTick,
   onReady,
   provider,
-  buildOrder,
   burst = false,
 }: RunWorkloadOptions): Promise<WorkloadResult> {
   const ticks = resolveWorkloadTicks(minutes, intervalSeconds);
@@ -444,7 +435,6 @@ export async function runWorkload({
   const workloadStartedAtMs = Date.now();
   const actions: TrackedTransaction[] = [];
   const botQueues = new Map(bots.map((bot) => [bot.botId, Promise.resolve()]));
-  const nextAutomation = new Map(bots.map((bot) => [bot.botId, workloadStartedAtMs]));
   const pathReservations = new PathReservations(bots, game);
 
   for (let tick = 0; tick < ticks; tick += 1) {
@@ -456,20 +446,6 @@ export async function runWorkload({
       botQueues.set(
         bot.botId,
         previous.then(async () => {
-          if (buildOrder) {
-            const due = Date.now() >= nextAutomation.get(bot.botId)!;
-            if (due) nextAutomation.set(bot.botId, Date.now() + PROCESS_INTERVAL_MS);
-            const steps = await runBuildOrderTurn({ bot, game, provider, buildOrder, due, scheduledAtMs, tick });
-            actions.push(...steps);
-            for (const structure of bot.structures) {
-              for (const explorerId of buildOrder.explorers(structure.structureId)) {
-                if (!bot.explorers.some((explorer) => explorer.explorerId === explorerId)) {
-                  bot.explorers.push(buildExplorerState(structure, explorerId));
-                }
-              }
-            }
-          }
-          if (buildOrder && resolveActionKind(tick) === "produce") return;
           const rpc = createRpcMetrics();
           const action = await runBotAction({
             actionIndex,
@@ -494,7 +470,7 @@ export async function runWorkload({
   actions.sort((left, right) => left.submitStartedAt.localeCompare(right.submitStartedAt));
 
   return {
-    profile: buildOrder ? "build-order" : burst ? "burst" : "cadence",
+    profile: burst ? "burst" : "cadence",
     actions,
     endedAt: new Date().toISOString(),
     overheadRpc,
@@ -503,63 +479,6 @@ export async function runWorkload({
     startedAt: new Date(workloadStartedAtMs).toISOString(),
     ticks,
   };
-}
-
-async function runBuildOrderTurn({
-  bot,
-  game,
-  provider,
-  buildOrder,
-  due,
-  scheduledAtMs,
-  tick,
-}: {
-  bot: HarnessBot;
-  game: HarnessGame;
-  provider: HarnessProvider;
-  buildOrder: BuildOrderWorkload;
-  due: boolean;
-  scheduledAtMs: number;
-  tick: number;
-}): Promise<TrackedTransaction[]> {
-  const transactions: TrackedTransaction[] = [];
-  for (const structure of bot.structures) {
-    for (const step of (due ? ["automate", "build"] : ["build"]) as Array<"automate" | "build">) {
-      let planned;
-      try {
-        planned = buildOrder[step](bot.account, structure.structureId);
-      } catch (error) {
-        transactions.push(
-          driverFailure({
-            actionIndex: tick,
-            botId: bot.botId,
-            gameId: bot.gameId,
-            kind: "produce",
-            error,
-            rpc: createRpcMetrics(),
-            scheduledAtMs,
-            tick,
-          }),
-        );
-        return transactions;
-      }
-      if (!planned) continue;
-      const transaction = await trackTransaction({
-        botId: bot.botId,
-        gameId: bot.gameId,
-        kind: planned.kind,
-        provider,
-        scheduledAtMs,
-        tick,
-        stage: "workload",
-        send: () => game.submit(bot.account, planned.run),
-      });
-      classifyTransactionFailure(transaction);
-      transactions.push(transaction);
-      if (transaction.outcome !== "completed") return transactions;
-    }
-  }
-  return transactions;
 }
 
 export function resolveActionKind(tick: number): WorkloadActionKind {
@@ -1247,13 +1166,13 @@ async function waitForReceiptLifecycle(
   });
 }
 
-async function waitForSettlement(game: HarnessGame, address: string, gameType: HarnessGameType): Promise<ID[]> {
+async function waitForSettlement(game: HarnessGame, address: string): Promise<ID[]> {
   const structureIds = await game.waitFor(
     () => game.settlementStructureIds(address),
     MODEL_UPDATE_TIMEOUT_MS,
     () => `Settlement for ${address} in game ${game.gameId}`,
   );
-  const expected = settlementStructureCount(gameType);
+  const expected = 1;
   if (structureIds.length !== expected) {
     throw new Error(`Expected ${expected} structures for ${address}, found ${structureIds.length}`);
   }

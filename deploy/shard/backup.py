@@ -11,7 +11,6 @@ how long. Restore-test brings the copy up in scratch containers without a networ
 block at the captured head with the running node's, restores both Postgres copies, and writes
 `restore-test/result.json`; it exits non-zero unless everything matches.
 """
-from contextlib import nullcontext
 import hashlib
 import json
 import os
@@ -286,22 +285,16 @@ def utc_now():
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
 
-# Capture stops the node and restore-test starts scratch ones, so on our box both hold the isolated-stack lock like
-# every other command that stops, starts or loads shard services. A community host has no /opt/athanor and no lock.
-def stack_lock(holder):
-    return isolated_stack_lock(holder, LOCK) if LOCK.parent.is_dir() else nullcontext()
-
-
 def main(argv):
     if os.geteuid() != 0:
         raise SystemExit("Run as root: capture reads Docker volumes directly")
     os.umask(0o077)
     if argv[:1] == ["capture"] and len(argv) == 4:
-        with stack_lock(f"backup capture {argv[1]}"):
+        with isolated_stack_lock(f"backup capture {argv[1]}", LOCK):
             record = capture(argv[1], Path(argv[2]).resolve(), Path(argv[3]).resolve())
         print(json.dumps(record, indent=2))
     elif argv[:1] == ["restore-test"] and len(argv) == 3:
-        with stack_lock(f"backup restore-test {argv[1]}"):
+        with isolated_stack_lock(f"backup restore-test {argv[1]}", LOCK):
             result = restore_test(argv[1], Path(argv[2]).resolve())
         print(json.dumps(result, indent=2))
         sys.exit(0 if result["passed"] else 1)

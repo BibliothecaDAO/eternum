@@ -124,6 +124,9 @@ importers:
       '@bibliothecadao/types':
         specifier: workspace:*
         version: link:packages/types
+      '@realms-world/identity':
+        specifier: workspace:*
+        version: link:packages/identity
       colors:
         specifier: ^1.4.0
         version: 1.4.0
@@ -1260,6 +1263,9 @@ importers:
       '@realms-world/chain':
         specifier: workspace:*
         version: link:../packages/chain
+      '@realms-world/identity':
+        specifier: workspace:*
+        version: link:../packages/identity
       chalk:
         specifier: ^5.4.1
         version: 5.6.2
