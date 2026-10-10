@@ -562,7 +562,6 @@ pub mod GameLedger {
 
         fn close_frontier(ref self: ContractState, shard: felt252, season_id: u32) {
             self.accesscontrol.assert_only_role(DEFAULT_ADMIN_ROLE);
-            self.pausable.assert_not_paused();
             let mut season = self.get_frontier(shard, season_id);
             assert!(!season.closed, "Ledger: season closed");
             assert!(
@@ -891,7 +890,6 @@ pub mod GameLedger {
         }
 
         fn refund(ref self: ContractState, key: GameKey) {
-            self.pausable.assert_not_paused();
             let owner = starknet::get_caller_address();
             let mut game = self.games.entry(key).read();
             assert!(game.exists && game.cancelled, "Ledger: game not cancelled");
