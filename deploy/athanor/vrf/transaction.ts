@@ -3,6 +3,7 @@ import { GAME_ENTRYPOINTS } from "./entrypoints";
 
 const FIELD = (1n << 251n) + 17n * (1n << 192n) + 1n;
 const ENTRIES = new Map(GAME_ENTRYPOINTS.map((entry) => [BigInt(hash.getSelectorFromName(entry.name)), entry]));
+export const MAX_TRANSACTION_BYTES = 1024 * 1024;
 export const STAMP_TAG = "0x56524631";
 export interface Bound {
   max_amount: string;
@@ -38,6 +39,33 @@ export function felt(value: unknown): bigint | undefined {
 const zero = (value: unknown) => felt(value) === 0n;
 const canonical = (values: unknown): values is string[] =>
   Array.isArray(values) && values.every((value) => felt(value) !== undefined);
+const TRANSACTION_FIELDS = new Set([
+  "type",
+  "version",
+  "sender_address",
+  "calldata",
+  "signature",
+  "nonce",
+  "tip",
+  "resource_bounds",
+  "proof_facts",
+  "paymaster_data",
+  "account_deployment_data",
+  "nonce_data_availability_mode",
+  "fee_data_availability_mode",
+]);
+function onlyFields(value: unknown, fields: ReadonlySet<string>): boolean {
+  return (
+    !!value && typeof value === "object" && !Array.isArray(value) && Object.keys(value).every((key) => fields.has(key))
+  );
+}
+function definedFrame(tx: PlayInvoke): boolean {
+  return (
+    onlyFields(tx, TRANSACTION_FIELDS) &&
+    onlyFields(tx.resource_bounds, new Set(["l1_gas", "l2_gas", "l1_data_gas"])) &&
+    Object.values(tx.resource_bounds).every((bound) => onlyFields(bound, new Set(["max_amount", "max_price_per_unit"])))
+  );
+}
 function fixedBounds(bounds: PlayInvoke["resource_bounds"], required: string) {
   const limit = felt(required);
   if (limit === undefined || limit === 0n || limit > (1n << 64n) - 1n) return false;
@@ -116,7 +144,7 @@ export function gameInvoke(value: unknown, identity: PlayIdentity): GameInvocati
   try {
     if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
     const tx = value as PlayInvoke;
-    if (!signedV3(tx)) return undefined;
+    if (!definedFrame(tx) || !signedV3(tx)) return undefined;
     const entrypoint = oneGameCall(tx.calldata, identity.games);
     if (!entrypoint || !validBounds(tx.resource_bounds) || !validAuxiliaryData(tx)) return undefined;
     if (entrypoint.stamp && (tx.signature.length !== 3 || !feeFree(tx, identity.l2GasBound))) return undefined;

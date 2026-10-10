@@ -79,3 +79,15 @@ test("only the single data-listed Games entries admit administrative invokes", (
     expect(gameInvoke(tx, identity)).toBeUndefined();
   }
 });
+
+test("unknown fields at every play-frame boundary refuse before stamping", () => {
+  for (const tx of [
+    { ...invoke(), unused: [1e30] },
+    { ...invoke(), resource_bounds: { ...invoke().resource_bounds, unused: [] } },
+    {
+      ...invoke(),
+      resource_bounds: { ...invoke().resource_bounds, l2_gas: { ...invoke().resource_bounds.l2_gas, unused: [] } },
+    },
+  ])
+    expect(gameInvoke(tx, identity)).toBeUndefined();
+});

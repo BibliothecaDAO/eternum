@@ -14,6 +14,6 @@ self.onmessage = (event: MessageEvent) => {
       self.postMessage({ kind: "stamp", id: data.id, stamp });
     } else throw new Error("Invalid worker request");
   } catch {
-    self.postMessage({ kind: "failed", id: data.id });
+    self.postMessage({ kind: data.kind === "stamp" && prover ? "refused" : "failed", id: data.id });
   }
 };
