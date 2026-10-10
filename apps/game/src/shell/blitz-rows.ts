@@ -37,12 +37,8 @@ export const blitzRows = (games: readonly DirectoryGame[], slots: readonly Playt
   ];
 };
 
-/**
- * A slot's key on the environment's ledger: the shard the launch service fills it on, and its number. Null while the
- * slot does not name its shard: its entry then cannot be read, never guessed onto another shard.
- */
-export const slotKeyOf = (slot: PlaytestSlot): SlotKey | null =>
-  slot.chainId ? { shard: slot.chainId, slotId: slot.slotId } : null;
+/** A slot's key on the environment's ledger: the shard the launch service opened it on, and its number there. */
+export const slotKeyOf = (slot: PlaytestSlot): SlotKey => ({ shard: slot.chainId, slotId: slot.slotId });
 
 /** A launched game's own key on the ledger, for its result and chest. */
 export const gameKeyOf = (game: DirectoryGame): GameKey => ({ shard: game.chainId, gameId: game.game_id });

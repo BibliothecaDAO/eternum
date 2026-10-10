@@ -284,14 +284,12 @@ const LobbyAction = ({ row, step, desktop }: { row: BlitzRow; step: LobbyStep; d
 };
 
 /**
- * A slot's paid entry, on the environment's ledger under the slot's own key, from the payout wallet. Neither the
- * ledger nor the key is guessed: a ledger not deployed on this environment, or a slot that does not name its shard,
- * shows that the entry cannot be read.
+ * A slot's paid entry, on the environment's ledger under the slot's own key, from the payout wallet. A ledger not
+ * deployed on this environment shows that the entry cannot be read.
  */
 const SlotEntry = ({ slot, wallet }: { slot: PlaytestSlot; wallet: PayoutWallet | null }) => {
   const ledger = environmentLedger();
-  const key = slotKeyOf(slot);
-  if (!ledger || !key) return <FailureLine line={ENTRY_WORDS.unreadable} />;
+  if (!ledger) return <FailureLine line={ENTRY_WORDS.unreadable} />;
   if (!wallet) return <FailureLine line={WALLET_WORDS.unavailableLine} />;
-  return <PaidEntry ledger={ledger} slot={key} wallet={wallet} />;
+  return <PaidEntry ledger={ledger} slot={slotKeyOf(slot)} wallet={wallet} />;
 };

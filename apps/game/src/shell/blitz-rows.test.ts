@@ -89,8 +89,7 @@ describe("a Blitz's keys on the ledger", () => {
     expect(gameSlotKeyOf(game)).toEqual({ shard: "0xa", slotId: 3 });
   });
 
-  it("names no key it would have to guess: a slot without its shard, a game outside any slot", () => {
-    expect(slotKeyOf({ ...slot("soon", 1_042), chainId: undefined })).toBeNull();
+  it("names no slot key for a game outside any slot", () => {
     expect(gameSlotKeyOf(blitz(7, { slotId: null }))).toBeNull();
     expect(gameSlotKeyOf(blitz(7, {}))).toBeNull();
   });
