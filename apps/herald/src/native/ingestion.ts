@@ -5,7 +5,7 @@ import {
   type VerifiedPreset,
 } from "./preset-preimages";
 import { derivePresetFacts } from "./preset-facts";
-import { nativeEntityId } from "./entity-id";
+import { nativeRowKey } from "./row-key";
 import { gameplayRejection } from "@bibliothecadao/provider";
 import { transactionScopes } from "./transactions";
 import type { MadaraRpc, ReadBlockOptions } from "../madara-rpc";
@@ -247,11 +247,11 @@ export class NativeIngestion {
   private gameConfiguration(fold: WorldFold, launch: DecodedWorldEvent): DecodedWorldEvent[] {
     if (launch.kind !== "set") throw new Error("GameOverrides must be an immutable launch fact");
     const gameId = String(launch.key.game_id);
-    const key = nativeEntityId([gameId]);
+    const key = nativeRowKey([gameId]);
     const game = fold.currentRow("GameRegistry", key)?.value;
     const release = fold.currentRow("GameRelease", key)?.value;
     if (!game || !release) throw new Error("GameOverrides requires GameRegistry and GameRelease");
-    const preset = fold.currentRow("Preset", nativeEntityId([String(game.preset_id)]))?.value;
+    const preset = fold.currentRow("Preset", nativeRowKey([String(game.preset_id)]))?.value;
     if (!preset || BigInt(preset.commitment as string) !== BigInt(release.preset_commitment as string))
       throw new Error("GameRelease preset commitment differs from registered preset");
     const schema = this.decoder.manifest.native.schemas[this.decoder.manifest.native.activeSchema]!;

@@ -85,7 +85,7 @@ export interface DecodedRecord {
 
 interface DecodedWorldEventBase {
   model: GameSyncModelDefinition;
-  entityId: Felt;
+  entityId: string;
   /** Every native event carries its keys, so a row's game is known even when the fold no longer holds the row. */
   key: DecodedRecord;
   position: EventPosition;
@@ -99,12 +99,12 @@ export type DecodedWorldEvent =
   | (DecodedWorldEventBase & { kind: "event"; value: DecodedRecord });
 
 export interface FoldRow {
-  key: Felt;
+  key: string;
   value: DecodedRecord;
 }
 
 export interface FoldCheckpointRow {
-  entity_id: Felt;
+  entity_id: string;
   key: DecodedRecord;
   value: DecodedRecord;
 }
@@ -116,7 +116,7 @@ export interface FoldCheckpointModel {
 
 export interface FoldCheckpoint {
   native_schema_identity?: string;
-  version: 1;
+  version: 2;
   world_address: Felt;
   models: FoldCheckpointModel[];
   preset_preimages?: { commitment: string; felts: readonly string[] }[];
@@ -124,13 +124,13 @@ export interface FoldCheckpoint {
 
 export interface FoldSet {
   model: string;
-  key: Felt;
+  key: string;
   value: DecodedRecord;
 }
 
 export interface FoldDelete {
   model: string;
-  key: Felt;
+  key: string;
 }
 
 export interface FoldChange {
