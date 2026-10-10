@@ -42,10 +42,7 @@ test("Eternum setup confirms each entry entitlement before returning players to 
       gameName: "entries",
       presetId: 103,
       minutes: 1,
-      rosterAccounts: ["0x10", "0x20"],
-      gameType: "eternum",
-      shard: {} as never,
-      publicProvider: {} as never,
+      owners: ["0x10", "0x20"],
     });
     expect(calls.map((call) => [call.entrypoint, call.calldata])).toEqual([
       ["register_entitlement", ["7", "16", "1", "0", String(BigInt("0x0103070402020302010009")), "0", "0", "1"]],

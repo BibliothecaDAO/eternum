@@ -387,8 +387,6 @@ class ShardTest(unittest.TestCase):
                                            "preset": 101, "minutes": 30})
         self.assertEqual(frontier[2:], ["--game-type", "frontier", "--bots", "2000", "--frontier-burst", "booth",
                                         "--preset", "101", "--minutes", "30"])
-        slot = shard.workload_command({"game_type": "blitz", "slot": "evening", "functional": True})
-        self.assertEqual(slot[2:], ["--game-type", "blitz", "--slot", "evening", "--functional"])
         with self.assertRaisesRegex(ValueError, "must name the harness run"):
             shard.workload_command({})
 
@@ -526,8 +524,8 @@ class ShardTest(unittest.TestCase):
                 matrix = {
                     "configurations": [configuration(), {**configuration(), "shard": "second",
                                                           "workload": {"minutes": 30}}],
-                    "workload": {"games": 2, "accounts_per_game": 3, "minutes": 1,
-                                 "interval_seconds": 16, "setup_concurrency": 3, "workload": "build-order"},
+                    "workload": {"game_type": "eternum", "bots": 6, "minutes": 1,
+                                 "interval_seconds": 16, "setup_concurrency": 3, "workload": "cadence"},
                 }
                 started = []
 

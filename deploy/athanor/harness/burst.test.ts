@@ -43,20 +43,20 @@ test("warm worker barrier sends one POST invoke per signed account without synth
 test("empty or invalid worker waves never release", async () => {
   await expect(burst("http://127.0.0.1:1", [], 4, () => {})).rejects.toThrow("Nonempty burst");
 });
-test("a 24-player quiet window refuses shared accounts or an absent primary trigger", () => {
+test("a Frontier wave refuses shared accounts", () => {
   const player = {
     account: { address: "0x1" },
     client: { gameId: 7, shard: { chainId: "0x1", worldAddress: "0x2", rpcUrl: "http://127.0.0.1:1" } },
   };
   const game = {
-    kind: "CreateExplorer",
-    players: Array(24).fill(player),
+    kind: "SettleSeason",
+    players: Array(2000).fill(player),
     gameId: 7,
     bounds: { chainId: "0x1" },
     games: "0x2",
     rpcUrl: "http://127.0.0.1:1",
   };
-  expect(() => validateWave(game as never, { players: 24 } as never)).toThrow("distinct");
-  game.players = Array.from({ length: 24 }, (_, index) => ({ ...player, account: { address: String(index + 1) } }));
-  expect(() => validateWave(game as never, { players: 24 } as never)).toThrow("primary receipt checkpoint");
+  expect(() => validateWave(game as never, { players: 2000 } as never)).toThrow("distinct");
+  game.players = Array.from({ length: 2000 }, (_, index) => ({ ...player, account: { address: String(index + 1) } }));
+  expect(() => validateWave(game as never, { players: 2000 } as never)).not.toThrow();
 });

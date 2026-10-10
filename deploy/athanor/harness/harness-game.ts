@@ -94,7 +94,7 @@ export interface HarnessGame {
   factHeadBlock(): number | null;
   /** A surface hex as the bot's facts show it. */
   tileView(coord: Coord): TileView;
-  settle(signer: Account, owner: string, name: string, gameType: "blitz" | "eternum" | "frontier"): Promise<unknown>;
+  settle(signer: Account, owner: string, name: string, gameType: "eternum" | "frontier"): Promise<unknown>;
   produceWood(signer: Account, structureId: ID): Promise<unknown>;
   /** Runs a client action and resolves with its hash as soon as the chain accepted it; one at a time per signer. */
   submit(signer: Account, act: () => Promise<unknown>): Promise<HarnessSubmission>;

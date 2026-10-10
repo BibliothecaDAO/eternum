@@ -69,3 +69,38 @@ test("a signer with its own client acts through it, where its submissions are an
   expect(createHarnessGame(shared).clientFor(signer)).toBe(shared);
   expect(() => game.clientFor({ address: "0xdef" } as unknown as Account)).toThrow("has no client of its own");
 });
+
+test("a prepared Frontier player reaches confirmed play with no owner credential", async () => {
+  const saved = { address: process.env.DEPLOYER_ACCOUNT_ADDRESS, key: process.env.DEPLOYER_PRIVATE_KEY };
+  delete process.env.DEPLOYER_ACCOUNT_ADDRESS;
+  delete process.env.DEPLOYER_PRIVATE_KEY;
+  const signer = { address: "0x42" } as Account;
+  const provider = new EventEmitter();
+  const calls: unknown[] = [];
+  const client = {
+    gameId: 7,
+    waitForAction: async () => ({ status: "SUCCEEDED" }),
+    setup: {
+      store: {},
+      network: { provider },
+      systemCalls: {
+        settle_season: async (call: unknown) => {
+          calls.push(call);
+          provider.emit("transactionSubmitted", { signerAddress: signer.address, transactionHash: "0x123" });
+        },
+      },
+    },
+  } as unknown as GameClient;
+  try {
+    const game = createHarnessGame(client);
+    const sent = await game.submit(signer, () => game.settle(signer, signer.address, "Frontier1", "frontier"));
+    await sent.confirmed;
+    expect(calls).toEqual([{ signer, name: "0x46726f6e7469657231" }]);
+    expect(sent.transactionHash).toBe("0x123");
+  } finally {
+    if (saved.address === undefined) delete process.env.DEPLOYER_ACCOUNT_ADDRESS;
+    else process.env.DEPLOYER_ACCOUNT_ADDRESS = saved.address;
+    if (saved.key === undefined) delete process.env.DEPLOYER_PRIVATE_KEY;
+    else process.env.DEPLOYER_PRIVATE_KEY = saved.key;
+  }
+});
