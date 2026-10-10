@@ -72,3 +72,16 @@ it("does not enumerate past slot rosters during periodic value checks", async ()
   expect((await worker.health()).success).toBe(true);
   expect(calls.pause).not.toHaveBeenCalled();
 });
+
+it("reports pending season checks as red health without pausing value", async () => {
+  const worker = monitor();
+  for (const status of ["season_history_pending", "season_review_pending:2"]) {
+    calls.season.mockReturnValue(Effect.succeed(status));
+    await worker.tick();
+    expect(await worker.health()).toMatchObject({ success: false, season_error: status });
+  }
+  calls.season.mockReturnValue(Effect.succeed(null));
+  await worker.tick();
+  expect((await worker.health()).success).toBe(true);
+  expect(calls.pause).not.toHaveBeenCalled();
+});

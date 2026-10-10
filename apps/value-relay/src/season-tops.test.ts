@@ -133,3 +133,30 @@ it("rejects incomplete population and a changed source head", async () => {
   await expect(f.tick("post")).rejects.toThrow();
   expect(f.ports.post).not.toHaveBeenCalled();
 });
+
+it("keeps health pending while a second posted season has not been checked", async () => {
+  const f = fixture();
+  f.season.posted = true;
+  f.ports.posts = vi.fn(async () => ({
+    rows: [
+      { kind: "posted" as const, id: 1, reviewUntil: 3700 },
+      { kind: "posted" as const, id: 2, reviewUntil: 3700 },
+    ],
+    head: 100,
+    next: null,
+  }));
+  f.ports.season = async (id) => ({ ...f.season, id });
+  for (const wallet of ["0x1", "0x2", "0x3"]) f.data.set(`season:participant:2:${wallet}`, wallet);
+  expect(await f.tick("audit")).toBe("season_review_pending:2");
+  expect(await f.tick("audit")).toBeNull();
+  expect(f.ports.winner).toHaveBeenCalledTimes(4);
+});
+it("an unreadable posted season stays pending across checks of other seasons", async () => {
+  const f = fixture();
+  f.season.posted = true;
+  f.ports.mmr = async () => {
+    throw new Error("ledger down");
+  };
+  await expect(f.tick("audit")).rejects.toThrow();
+  expect(f.data.get("season:review:1")).toBe(1);
+});
