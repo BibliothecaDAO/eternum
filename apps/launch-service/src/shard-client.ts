@@ -109,7 +109,10 @@ export class LaunchShard extends ShardOperator {
       const now = (await this.head()).timestamp;
       if (now < start) throw new RegistrationOpen({ secondsUntilClose: start - now });
       const result = await this.playCommand(gameId, "SettleBlitzRoster");
-      const remaining = batchRemaining(result.events, this.target.gamesAddress, gameId, result.transactionHash);
+      const remaining = batchRemaining(result.events, this.target.gamesAddress, result.transactionHash, {
+        gameId,
+        missing: "reject",
+      });
       transactions++;
       if (previousRemaining !== undefined && remaining >= previousRemaining)
         throw new Error("roster_seating_did_not_progress");

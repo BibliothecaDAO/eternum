@@ -62,7 +62,10 @@ export const finalizeGame = async (request: FinalizeGameRequest, shard: LaunchSh
     settle: async () => {
       while (!(await shard.game(gameId)).settled) {
         const result = await shard.playCommand(gameId, "MarkGameSettled");
-        const remaining = batchRemaining(result.events, shard.target.gamesAddress, gameId, result.transactionHash);
+        const remaining = batchRemaining(result.events, shard.target.gamesAddress, result.transactionHash, {
+          gameId,
+          missing: "reject",
+        });
         if (!remaining && !(await shard.game(gameId)).settled) throw new Error("point_settlement_not_complete");
       }
     },

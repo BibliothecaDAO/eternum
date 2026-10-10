@@ -87,14 +87,14 @@ it("uses the fixed ordinary v3 play frame and a native three-felt device signatu
   expect(signed[0]).toBe(ec.starkCurve.getStarkKey(device));
 });
 it("requires the exact transaction-correlated BatchProgress; an absent record is not remaining zero", () => {
-  expect(() => batchRemaining([], "0x10", 7, "0xabc")).toThrow();
+  expect(() => batchRemaining([], "0x10", "0xabc", { gameId: 7, missing: "reject" })).toThrow();
   const event = {
     from_address: "0x10",
     keys: [hash.getSelectorFromName("BatchProgress"), "0x7"],
     data: ["0x20", "0xabc", "0"],
   };
-  expect(batchRemaining([event], "0x10", 7, "0xabc")).toBe(0n);
-  expect(() => batchRemaining([event], "0x10", 7, "0xdef")).toThrow();
+  expect(batchRemaining([event], "0x10", "0xabc", { gameId: 7, missing: "reject" })).toBe(0n);
+  expect(() => batchRemaining([event], "0x10", "0xdef", { gameId: 7, missing: "reject" })).toThrow();
 });
 
 it("resolves result and settlement command ordinals from the deployed ABI and refuses unknown commands", async () => {

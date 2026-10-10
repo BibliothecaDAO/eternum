@@ -32,7 +32,8 @@ export async function waitForActionOutcome(
   const receipt = await receiptOf(rpc, transactionHash, stopped);
   const refused = refusalIn(receipt, games, transactionHash);
   if (refused) return refused;
-  const remaining = "events" in receipt ? batchRemaining(receipt.events, games, transactionHash) : undefined;
+  const remaining =
+    "events" in receipt ? batchRemaining(receipt.events, games, transactionHash, { missing: "allow" }) : undefined;
   // Herald keeps recent statuses, so one it streamed while the receipt was read is still found here.
   const { block } = await settledByHerald(runtime, transactionHash, blockOf(receipt));
   return {

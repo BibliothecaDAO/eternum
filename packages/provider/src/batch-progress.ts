@@ -1,21 +1,51 @@
 import { hash } from "starknet";
-export const batchRemaining = (
-  events: readonly { from_address: string; keys: string[]; data: string[] }[],
+type ReceiptEvent = { from_address: string; keys: string[]; data: string[] };
+interface Scope {
+  gameId?: number;
+  actor?: string;
+}
+export function batchRemaining(
+  events: readonly ReceiptEvent[],
   address: string,
-  gameId: number,
   transactionHash: string,
-): bigint => {
+  options: Scope & { missing: "reject" },
+): bigint;
+export function batchRemaining(
+  events: readonly ReceiptEvent[],
+  address: string,
+  transactionHash: string,
+  options: Scope & { missing: "allow" },
+): bigint | undefined;
+export function batchRemaining(
+  events: readonly ReceiptEvent[],
+  address: string,
+  transactionHash: string,
+  options: Scope & { missing: "allow" | "reject" },
+): bigint | undefined {
   const rows = events.filter(
     (event) =>
       BigInt(event.from_address) === BigInt(address) &&
-      BigInt(event.keys[0] ?? "0") === BigInt(hash.getSelectorFromName("BatchProgress")),
+      BigInt(event.keys[0] ?? "0") === BigInt(hash.getSelectorFromName("BatchProgress")) &&
+      BigInt(event.data[1] ?? "0") === BigInt(transactionHash),
   );
-  if (rows.length !== 1) throw new Error("batch_progress_missing_or_invalid");
-  const progress = decodeBatchProgress(rows[0]!);
-  if (progress.gameId !== BigInt(gameId) || progress.transactionHash !== BigInt(transactionHash))
+  if (!rows.length) {
+    if (options.missing === "allow") return undefined;
     throw new Error("batch_progress_missing_or_invalid");
+  }
+  if (rows.length !== 1) throw new Error("Ambiguous batch result");
+  let progress;
+  try {
+    progress = decodeBatchProgress(rows[0]!);
+  } catch {
+    throw new Error("Malformed native batch result");
+  }
+  if (
+    (options.gameId !== undefined && progress.gameId !== BigInt(options.gameId)) ||
+    (options.actor !== undefined && progress.actor !== BigInt(options.actor))
+  )
+    throw new Error("Malformed BatchProgress identity");
   return progress.remaining;
-};
+}
 
 export const decodeBatchProgress = (event: { keys: string[]; data: string[] }) => {
   if (event.keys.length !== 2 || event.data.length !== 3) throw new Error("Malformed native batch result");
