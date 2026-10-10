@@ -20,7 +20,7 @@ vi.mock("@/ui/modules/identity/wallet-actions", () => ({
 }));
 vi.mock("@/runtime/l2-rpc", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/runtime/l2-rpc")>()),
-  l2Provider: () => ({ waitForTransaction: async () => ({}) }),
+  l2Provider: () => ({ waitForTransaction: async () => ({ isReverted: () => false }) }),
 }));
 
 import type { PaidGameLedger } from "@realms-world/identity";

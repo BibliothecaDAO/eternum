@@ -11,9 +11,10 @@ import { Loading } from "../loading";
 import { ServiceFailure } from "../service-failure";
 import { useNowSeconds } from "../use-now";
 import { claimSeasonCall, lordsOf } from "../value/ledger";
+import { useL2Send } from "../value/l2-send";
 import { NoStrkLine } from "../value/no-strk-line";
 import { FailureLine } from "../sign-in/failure-line";
-import { SEASON_PRIZE_WORDS } from "../words";
+import { SEASON_PRIZE_WORDS, VALUE_WORDS } from "../words";
 import { placeShares, type SeasonPrize, seasonSourcesOf, seasonState, useSeasonPrizes } from "./blitz-season";
 
 const WalletSign = lazy(() =>
@@ -55,6 +56,7 @@ export const SeasonPrizePanel = () => {
 const Prize = ({ prize, onClaimed }: { prize: SeasonPrize; onClaimed: () => void }) => {
   const now = useNowSeconds();
   const [signing, setSigning] = useState(false);
+  const { send, sent } = useL2Send(onClaimed);
   const state = seasonState(prize, now);
   const { season } = prize;
   const shares = placeShares(season.pool, season.participants, prize.curve);
@@ -86,6 +88,7 @@ const Prize = ({ prize, onClaimed }: { prize: SeasonPrize; onClaimed: () => void
         <Share prize={prize} state={state} now={now} />
       )}
       {state === "no-strk" && <NoStrkLine />}
+      {send.status === "refused" && <FailureLine line={send.reason} />}
       {state === "claim" &&
         prize.wallet &&
         (signing ? (
@@ -93,14 +96,20 @@ const Prize = ({ prize, onClaimed }: { prize: SeasonPrize; onClaimed: () => void
             <WalletSign
               owner={prize.wallet}
               calls={[claimSeasonCall(prize.ledger, prize.seasonId)]}
-              onSent={() => {
+              onSent={(hash) => {
                 setSigning(false);
-                onClaimed();
+                sent(hash);
               }}
             />
           </Suspense>
         ) : (
-          <Button role="primary" word={SEASON_PRIZE_WORDS.claim} icon="Tp" onClick={() => setSigning(true)} />
+          <Button
+            role="primary"
+            word={SEASON_PRIZE_WORDS.claim}
+            icon="Tp"
+            loading={send.status === "confirming" ? VALUE_WORDS.confirming : undefined}
+            onClick={() => setSigning(true)}
+          />
         ))}
     </section>
   );

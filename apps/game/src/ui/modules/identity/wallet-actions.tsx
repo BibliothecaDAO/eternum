@@ -1,4 +1,5 @@
 import { StarknetProvider } from "@/hooks/context/starknet-provider";
+import { shortAddress } from "@/ui/design-system/kit/address";
 import { KitIcon } from "@/ui/design-system/kit/kit-icon";
 import type { SignInOptions } from "@realms-world/identity";
 import { useConnect, useDisconnect, useProvider } from "@starknet-react/core";
@@ -46,8 +47,8 @@ export const WalletPicker = ({
 );
 
 /**
- * The payout wallet signs the ledger's calls: the player opens it from the same rows, and a wallet that is not the
- * one linked in Account is refused before anything is sent.
+ * `owner` signs the ledger's calls: the payout wallet for a new entry, the wallet that paid for anything it holds.
+ * The player opens it from the same rows, and any other wallet is refused, naming `owner`, before anything is sent.
  */
 export const WalletSign = ({
   owner,
@@ -62,14 +63,19 @@ export const WalletSign = ({
     <WalletRows
       failure="pay"
       onAccount={async (account) => {
-        if (!sameAddress(account.address, owner)) throw new NotPayoutWalletError();
+        if (!sameAddress(account.address, owner)) throw new WrongWalletError(owner);
         onSent((await account.execute(calls)).transaction_hash);
       }}
     />
   </StarknetProvider>
 );
 
-class NotPayoutWalletError extends Error {}
+/** The connected wallet is not the one the call must come from: the payout wallet, or the wallet that paid. */
+class WrongWalletError extends Error {
+  constructor(readonly owner: string) {
+    super("wrong_wallet");
+  }
+}
 
 const sameAddress = (one: string, other: string) => BigInt(one) === BigInt(other);
 
@@ -101,7 +107,11 @@ const WalletRows = ({
     try {
       await onAccount(await connect(connector), connector.id, provider);
     } catch (cause) {
-      setError(cause instanceof NotPayoutWalletError ? WALLET_WORDS.notPayoutWallet : failureLine(failure, cause));
+      setError(
+        cause instanceof WrongWalletError
+          ? WALLET_WORDS.wrongWallet(shortAddress(cause.owner))
+          : failureLine(failure, cause),
+      );
     } finally {
       running.current = false;
       setPending(null);

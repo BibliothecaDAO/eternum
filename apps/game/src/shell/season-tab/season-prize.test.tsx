@@ -27,6 +27,7 @@ vi.mock("@/runtime/l2-rpc", async (importOriginal) => ({
   l2Provider: () => ({
     callContract: ({ entrypoint, calldata }: { entrypoint: string; calldata: string[] }) =>
       ledger.views ? Promise.resolve(ledger.views[entrypoint](calldata)) : new Promise(() => {}),
+    waitForTransaction: async () => ({ isReverted: () => false }),
   }),
 }));
 const listed = vi.hoisted(() => ({ directory: [] as object[], history: [] as object[] }));
