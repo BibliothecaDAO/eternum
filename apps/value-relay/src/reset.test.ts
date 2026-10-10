@@ -141,3 +141,12 @@ it("refuses an incomplete multi-block hash catalogue", async () => {
   ).rejects.toThrow("incomplete_block_anchors");
   expect(await f.store.withdrawals()).toEqual([]);
 });
+it("replays an unfinished event range even when its pinned head still matches", async () => {
+  const f = setup();
+  for (let number = 0; number < 5; number++) await f.store.observe(block(number));
+  await f.store.observe({ ...block(10), fromBlock: 5, next: 'remaining-events', anchors: [5, 6, 7, 8, 9, 10].map(number => ({ number, hash: block(number).hash })) });
+  await f.store.halt('invalid_confirmed_block:10');
+  await f.store.resetFromChain('invalid_confirmed_block:10', 'Retry the unfinished confirmed event page', { head: async () => 10, hash: async number => block(number).hash });
+  expect(await f.store.progress()).toMatchObject({ nextBlock: 5, lastHash: block(4).hash, page: null });
+  expect((await f.store.withdrawals()).some(row => row.blockNumber === 10)).toBe(false);
+});

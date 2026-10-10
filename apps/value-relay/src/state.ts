@@ -119,7 +119,7 @@ export class DurableRelayStore implements RelayStore {
     const hasLegacyRows = queued.some((value) => obligationBlock(value) === undefined);
     const head = await chain.head();
     let fork: BlockAnchor | null = null;
-    const top = Math.min(named, head, previous.page?.head ?? previous.nextBlock - 1);
+    const top = Math.min(named, head, previous.nextBlock - 1);
     let end = blockKey(top + 1);
     while (!hasLegacyRows && !fork && top >= 0) {
       const anchors = await this.storage.list<string>({ prefix: "block:", end, reverse: true, limit: 1000 });
