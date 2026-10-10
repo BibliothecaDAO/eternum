@@ -25,7 +25,7 @@ import { LiveChip, StateChip } from "../play/state-chip";
 import { ServiceFailure } from "../service-failure";
 import { FailureLine } from "../sign-in/failure-line";
 import { BLITZ_WORDS, ENTRY_WORDS, WALLET_WORDS, WORDS } from "../words";
-import { useLedgerSeats } from "./entry";
+import { useRowSeats } from "./entry";
 import { PaidEntry } from "./entry-panel";
 import { GameRow, SeatsChip } from "./game-row";
 import { type LobbyStep, lobbyId, lobbyStep, lobbyTitle, seatsOf } from "./lobby";
@@ -88,6 +88,7 @@ export const BlitzListPage = () => {
 const NextLobby = ({ facts, join }: { facts: PlayFacts; join: ReturnType<typeof useJoinSlot> }) => {
   const { data: player } = useRealmsPlayer();
   const row = facts.blitz.find((candidate) => candidate.kind === "slot");
+  const { filled, total } = useRowSeats(row);
   if (!row) return null;
   const step = lobbyStep(row, facts.blitz, join.realmsId);
   return (
@@ -106,7 +107,7 @@ const NextLobby = ({ facts, join }: { facts: PlayFacts; join: ReturnType<typeof 
         </span>
       </Link>
       <LobbyClock row={row} step={step} now={facts.now} />
-      <SeatGrid seats={seatsOf(row, join.realmsId, player)} preparing={false} />
+      <SeatGrid seats={seatsOf(row, join.realmsId, player, filled)} total={total ?? 0} preparing={false} />
       <LobbyAction row={row} step={step} join={join} desktop />
     </section>
   );
@@ -170,8 +171,8 @@ export const BlitzLobbyPage = () => {
   const { session } = useIdentitySession();
   const row = facts.blitz.find((candidate) => lobbyId(candidate) === id);
   const entry = row ? rowEntryOf(row) : null;
-  // A paid slot's seats are the ledger's count, read before any early return so the hooks keep their order.
-  const ledgerSeats = useLedgerSeats(row?.kind === "slot" && entry?.kind === "paid" ? entry.ledger : null);
+  // A paid slot's seats are the ledger's count and cap, read before any early return so the hooks keep their order.
+  const { filled, total } = useRowSeats(row);
   if (!row || !entry) {
     return (
       <PageFrame back="/blitz" title={BLITZ.name} tabs={false}>
@@ -180,7 +181,7 @@ export const BlitzLobbyPage = () => {
     );
   }
   const step = lobbyStep(row, facts.blitz, join.realmsId);
-  const seats = seatsOf(row, join.realmsId, player, ledgerSeats);
+  const seats = seatsOf(row, join.realmsId, player, filled);
   const clock = <LobbyClock row={row} step={step} now={facts.now} />;
   const desktop = layout === "desktop";
   // A row's entry is free or paid on the ledger the services name; a paid game is never the free join.
@@ -208,7 +209,7 @@ export const BlitzLobbyPage = () => {
       {desktop ? (
         <div className="grid grid-cols-[minmax(0,1fr)_26rem] items-start gap-6">
           <section className="plate p-6">
-            <RosterGrid seats={seats} preparing={step.kind === "preparing"} />
+            <RosterGrid seats={seats} total={total ?? 0} preparing={step.kind === "preparing"} />
           </section>
           <div className="flex flex-col gap-5">
             <section className="plate flex flex-col gap-4 p-5">
@@ -222,7 +223,7 @@ export const BlitzLobbyPage = () => {
       ) : (
         <div className="flex flex-col gap-4">
           {clock}
-          <SeatGrid seats={seats} preparing={step.kind === "preparing"} />
+          <SeatGrid seats={seats} total={total ?? 0} preparing={step.kind === "preparing"} />
         </div>
       )}
     </PageFrame>

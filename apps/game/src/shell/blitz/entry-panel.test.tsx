@@ -48,6 +48,7 @@ const TERMS: EntryTerms = {
   split: { protocolCutBps: 2000, chestLordsBps: 500 },
   cancelled: false,
   start: Math.floor(Date.now() / 1000) + 3600,
+  seats: { taken: 17, total: 24 },
   credits: { swords: 2, shields: 0 },
   registration: { registered: false, sword: false, shield: false, swordCredit: false, shieldCredit: false, paid: 0n },
   lordsToken: "0x10e5",
@@ -150,6 +151,9 @@ it("names what is short, the missing STRK, the seat, and the refund", async () =
   expect(signed.calls).toEqual([[expect.objectContaining({ entrypoint: "refund", calldata: ["0x52", "7"] })]]);
 
   expect((await mount(TERMS, { status: "no_wallet" })).textContent).toContain("Entry is paid from your payout wallet");
+  expect((await mount({ ...TERMS, seats: { taken: 24, total: 24 } })).textContent).toContain(
+    "Every seat in this game is taken.",
+  );
 });
 
 it("shows linking until the services confirm the link, reading the session again, and a link for another account as a fault", async () => {

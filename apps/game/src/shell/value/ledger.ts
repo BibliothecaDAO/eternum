@@ -20,6 +20,8 @@ interface LedgerGame {
   registeredCount: number;
   cancelled: boolean;
   finalized: boolean;
+  /** The seat cap the ledger snapshotted from the preset: it registers nobody once the count reaches it. */
+  registrationLimit: number;
 }
 
 export interface LedgerPrices {
@@ -163,7 +165,10 @@ const fields = (felts: readonly string[]) => {
   };
 };
 
-/** Game: season_id, exists, preset_id, start, end, pool, result_commitment, registered_count, cancelled, finalized. */
+/**
+ * Game: season_id, exists, preset_id, start, end, pool, result_commitment, registered_count, cancelled, finalized,
+ * registration_limit.
+ */
 export const decodeGame = (felts: readonly string[]): LedgerGame => {
   const read = fields(felts);
   const seasonId = read.number();
@@ -180,6 +185,7 @@ export const decodeGame = (felts: readonly string[]): LedgerGame => {
     registeredCount: read.number(),
     cancelled: read.bool(),
     finalized: read.bool(),
+    registrationLimit: read.number(),
   };
 };
 

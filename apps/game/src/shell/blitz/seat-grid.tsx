@@ -4,20 +4,27 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { KitIcon } from "@/ui/design-system/kit/kit-icon";
 import { PlayerName } from "@/ui/design-system/kit/player-name";
 
-import { BLITZ_SEATS } from "../blitz-slot";
 import { RatingFigure } from "../rating-mark";
 import { useRatings } from "../ratings";
 import { BLITZ_WORDS } from "../words";
 import type { Seat } from "./lobby";
 
 /**
- * The lobby's 24 sockets (spec 06): a taken seat shows its player's portrait, the player's own on the peach ring,
- * an open one stays empty. While the roster's realms are prepared, each socket ticks once its player's realm is ready,
- * and shows a dash while that is unknown. Six by four.
+ * The lobby's sockets (spec 06), one per seat of the game's roster (24 for a Blitz, six a row): a taken seat shows its
+ * player's portrait, the player's own on the peach ring, an open one stays empty. While the roster's realms are
+ * prepared, each socket ticks once its player's realm is ready, and shows a dash while that is unknown.
  */
-export const SeatGrid = ({ seats, preparing }: { seats: readonly Seat[]; preparing: boolean }) => (
-  <ul aria-label={`${BLITZ_WORDS.seats} ${seats.length}/${BLITZ_SEATS}`} className="grid grid-cols-6 gap-2.5">
-    {Array.from({ length: BLITZ_SEATS }, (_, index) => (
+export const SeatGrid = ({
+  seats,
+  total,
+  preparing,
+}: {
+  seats: readonly Seat[];
+  total: number;
+  preparing: boolean;
+}) => (
+  <ul aria-label={`${BLITZ_WORDS.seats} ${seats.length}/${total}`} className="grid grid-cols-6 gap-2.5">
+    {Array.from({ length: total }, (_, index) => (
       <li key={index} className="relative aspect-square">
         {seats[index] ? (
           <TakenSocket seat={seats[index]} preparing={preparing} />
@@ -75,11 +82,19 @@ const PreparedMark = ({ prepared }: { prepared: boolean | undefined }) => {
  * portrait, read by the seat's gameplay account (a dash where none answers: a bot, a player with no linked wallet, an
  * unnamed seat).
  */
-export const RosterGrid = ({ seats, preparing }: { seats: readonly Seat[]; preparing: boolean }) => {
+export const RosterGrid = ({
+  seats,
+  total,
+  preparing,
+}: {
+  seats: readonly Seat[];
+  total: number;
+  preparing: boolean;
+}) => {
   const ratings = useRatings(seats.flatMap((seat) => (seat.account ? [seat.account] : [])));
   return (
-    <ul aria-label={`${BLITZ_WORDS.seats} ${seats.length}/${BLITZ_SEATS}`} className="grid grid-cols-6 gap-x-6 gap-y-5">
-      {Array.from({ length: BLITZ_SEATS }, (_, index) => {
+    <ul aria-label={`${BLITZ_WORDS.seats} ${seats.length}/${total}`} className="grid grid-cols-6 gap-x-6 gap-y-5">
+      {Array.from({ length: total }, (_, index) => {
         const seat = seats[index];
         const answer = seat?.account ? ratings.data?.ratings[seat.account] : undefined;
         return (
