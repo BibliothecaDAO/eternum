@@ -144,7 +144,8 @@ export const LAB_SCREENS = {
   "entry-choose": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
   "entry-short": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
   "entry-registered": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
-  "entry-seated": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
+  // The slot's game is live and its roster seats the player: the ledger binds no game until the result.
+  "entry-seated": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
   "entry-unseated": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
   "entry-cancelled": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
   "entry-refunded": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
@@ -243,7 +244,7 @@ export const LAB_ENTRY_TERMS: Partial<Record<keyof typeof LAB_SCREENS, EntryTerm
   "entry-choose": ENTRY,
   "entry-short": { ...ENTRY, credits: { swords: 0, shields: 0 }, lords: 320n * WEI },
   "entry-registered": { ...ENTRY, credits: { swords: 1, shields: 0 }, registration: SEATED, lords: 1_140n * WEI },
-  "entry-seated": { ...CLOSED_ENTRY, registration: { ...SEATED, gameId: 7 } },
+  "entry-seated": { ...CLOSED_ENTRY, registration: SEATED },
   "entry-unseated": { ...CLOSED_ENTRY, registration: { ...SEATED, refundable: true } },
   "entry-cancelled": { ...ENTRY, cancelled: true, registration: SEATED, lords: 1_140n * WEI },
   "entry-refunded": { ...CLOSED_ENTRY, registration: { ...SEATED, refundable: true, swordCredit: false, paid: 0n } },

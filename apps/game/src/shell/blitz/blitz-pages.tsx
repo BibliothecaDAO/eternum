@@ -10,10 +10,10 @@ import { Button } from "@/ui/design-system/kit/button";
 
 import type { PlaytestSlot } from "@/ui/features/factory-v2/api/factory-worker";
 
-import { type BlitzRow, slotKeyOf } from "../blitz-rows";
+import { type BlitzRow, seatedGameOf, slotKeyOf } from "../blitz-rows";
 import { ClockChip } from "../clock-chip";
 import { useLayout } from "../frame/layout";
-import { useRealmsPlayer } from "../herald";
+import { type DirectoryGame, useRealmsPlayer } from "../herald";
 import { PageFrame } from "../frame/page-frame";
 import { StepVerb } from "../frame/step-verb";
 import { entryHref } from "../game-links";
@@ -158,7 +158,7 @@ export const BlitzLobbyPage = () => {
     row.kind === "game" ? (
       <LobbyAction row={row} step={step} desktop={desktop} />
     ) : (
-      <SlotEntry slot={row.slot} wallet={wallet} />
+      <SlotEntry slot={row.slot} wallet={wallet} games={facts.games} />
     );
   return (
     <PageFrame
@@ -313,9 +313,19 @@ const RegistrantChat = ({
  * A slot's paid entry, on the environment's ledger under the slot's own key, from the payout wallet. A ledger not
  * deployed on this environment shows that the entry cannot be read.
  */
-const SlotEntry = ({ slot, wallet }: { slot: PlaytestSlot; wallet: PayoutWallet | null }) => {
+const SlotEntry = ({
+  slot,
+  wallet,
+  games,
+}: {
+  slot: PlaytestSlot;
+  wallet: PayoutWallet | null;
+  games: readonly DirectoryGame[];
+}) => {
   const ledger = environmentLedger();
   if (!ledger) return <FailureLine line={ENTRY_WORDS.unreadable} />;
   if (!wallet) return <FailureLine line={WALLET_WORDS.unavailableLine} />;
-  return <PaidEntry ledger={ledger} slot={slotKeyOf(slot)} wallet={wallet} />;
+  const key = slotKeyOf(slot);
+  const game = wallet.status === "no_wallet" ? undefined : seatedGameOf(games, key, wallet.address);
+  return <PaidEntry ledger={ledger} slot={key} wallet={wallet} game={game} />;
 };

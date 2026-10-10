@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { PlaytestSlot } from "@/ui/features/factory-v2/api/factory-worker";
 
-import { blitzRows, gameKeyOf, gameSlotKeyOf, leadBlitzRow, slotKeyOf } from "./blitz-rows";
+import { blitzRows, gameKeyOf, gameSlotKeyOf, leadBlitzRow, seatedGameOf, slotKeyOf } from "./blitz-rows";
 import type { DirectoryGame } from "./herald";
 
 const blitz = (gameId: number, over: Partial<DirectoryGame>): DirectoryGame =>
@@ -92,6 +92,29 @@ describe("a Blitz's keys on the ledger", () => {
   it("names no slot key for a game outside any slot", () => {
     expect(gameSlotKeyOf(blitz(7, { slotId: null }))).toBeNull();
     expect(gameSlotKeyOf(blitz(7, {}))).toBeNull();
+  });
+});
+
+describe("the game that seats a wallet", () => {
+  const seat = (wallet: string | null) => ({ registered: true, settled: false, roster_wallet: wallet, structures: [] });
+  const games = [
+    blitz(7, { slotId: 3, player_state: seat("0x04a1") }),
+    blitz(8, { slotId: 3, player_state: seat(null) }),
+    blitz(9, { slotId: 4, player_state: seat("0x4a1") }),
+  ];
+
+  it("is the slot's launched game whose roster froze that wallet for the reader's seat", () => {
+    expect(seatedGameOf(games, { shard: "0xa", slotId: 3 }, "0x4a1")?.game_id).toBe(7);
+    expect(seatedGameOf(games, { shard: "0x0a", slotId: 4 }, "0x4a1")?.game_id).toBe(9);
+  });
+
+  it("is none for another wallet, another slot, another shard, or a game outside any slot", () => {
+    expect(seatedGameOf(games, { shard: "0xa", slotId: 3 }, "0xb0b")).toBeUndefined();
+    expect(seatedGameOf(games, { shard: "0xa", slotId: 5 }, "0x4a1")).toBeUndefined();
+    expect(seatedGameOf(games, { shard: "0xb", slotId: 3 }, "0x4a1")).toBeUndefined();
+    expect(
+      seatedGameOf([blitz(7, { player_state: seat("0x4a1") })], { shard: "0xa", slotId: 3 }, "0x4a1"),
+    ).toBeUndefined();
   });
 });
 

@@ -252,6 +252,8 @@ export const ENTRY_WORDS = {
   paidFromWallet: "Entry is paid from your payout wallet",
   registered: "Registered",
   registeredLine: "Your seat is drawn when entry closes.",
+  /** Past the close, until a game's roster names the wallet. */
+  drawingLine: "Entry has closed. Your seat is being drawn.",
   seated: "Seated",
   yourGame: "Your game",
   notSeated: "Not seated",

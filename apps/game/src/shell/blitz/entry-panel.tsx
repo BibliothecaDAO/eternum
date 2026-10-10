@@ -9,6 +9,7 @@ import { Button } from "@/ui/design-system/kit/button";
 import { type IconCode, KitIcon } from "@/ui/design-system/kit/kit-icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
+import type { DirectoryGame } from "../herald";
 import { Loading } from "../loading";
 import { ServiceFailure } from "../service-failure";
 import { useNowSeconds } from "../use-now";
@@ -40,10 +41,13 @@ export const PaidEntry = ({
   ledger,
   slot,
   wallet,
+  game,
 }: {
   ledger: EnvironmentLedger;
   slot: SlotKey;
   wallet: PayoutWallet;
+  /** The launched game of this slot whose roster seats the wallet, while the directory lists it. */
+  game: DirectoryGame | undefined;
 }) => {
   const owner = wallet.status === "no_wallet" ? null : wallet.address;
   const terms = useEntryTerms(ledger, slot, owner);
@@ -56,6 +60,7 @@ export const PaidEntry = ({
       slot={slot}
       terms={terms.data}
       owner={owner}
+      game={game}
       onSent={() => {
         void terms.refetch();
         refundsChanged();
@@ -75,6 +80,7 @@ const EntryPanel = ({
   slot,
   terms,
   owner,
+  game,
   onSent,
 }: {
   /** The environment's ledger address, which the calls go to. */
@@ -83,17 +89,18 @@ const EntryPanel = ({
   terms: EntryTerms | undefined;
   /** The payout wallet: it pays, registers and takes any refund. */
   owner: string;
+  game: DirectoryGame | undefined;
   onSent: () => void;
 }) => {
   const [choice, setChoice] = useState<EntryChoice>({ sword: false, shield: false });
   const [signing, setSigning] = useState(false);
   const now = useNowSeconds();
   if (!terms) return <Loading />;
-  const state = entryState(terms, choice, now);
+  const state = entryState(terms, choice, now, game !== undefined);
   const cost = entryCost(terms, choice);
 
-  if (state === "registered") return <Registered terms={terms} />;
-  if (state === "seated") return <Seated terms={terms} slot={slot} />;
+  if (state === "registered") return <Registered terms={terms} closed={now >= terms.close} />;
+  if (state === "seated") return <Seated terms={terms} game={game} />;
   if (state === "refunded") return <Refunded terms={terms} />;
   if (state === "closed") return <Closed />;
   const sign = signing && (
@@ -212,22 +219,33 @@ const NoWallet = () => {
   );
 };
 
-/** Paid, waiting for the close to draw the games. */
-const Registered = ({ terms }: { terms: EntryTerms }) => (
+/** Paid, waiting for the close to draw the games, or past the close while they are being drawn. */
+const Registered = ({ terms, closed }: { terms: EntryTerms; closed: boolean }) => (
   <Plate icon="Ok" title={ENTRY_WORDS.registered}>
     <PaidReceipt terms={terms} />
-    <p className="font-body text-[15px] text-kit-muted">{ENTRY_WORDS.registeredLine}</p>
+    <p className="font-body text-[15px] text-kit-muted">
+      {closed ? ENTRY_WORDS.drawingLine : ENTRY_WORDS.registeredLine}
+    </p>
   </Plate>
 );
 
-/** Drawn into a game at close: what was paid, and the way to that game's lobby. */
-const Seated = ({ terms, slot }: { terms: EntryTerms; slot: SlotKey }) => {
+/**
+ * Drawn into a game at close: what was paid, and the way to that game's lobby while the directory lists the game (a
+ * settled game has left it, and its results are on the Season tab).
+ */
+const Seated = ({ terms, game }: { terms: EntryTerms; game: DirectoryGame | undefined }) => {
   const navigate = useNavigate();
-  const lobby = lobbyId({ key: gameRowKey(slot.shard, terms.registration.gameId) });
   return (
     <Plate icon="Ok" title={ENTRY_WORDS.seated}>
       <PaidReceipt terms={terms} />
-      <Button role="primary" word={ENTRY_WORDS.yourGame} icon="Pl" onClick={() => navigate(`/blitz/${lobby}`)} />
+      {game && (
+        <Button
+          role="primary"
+          word={ENTRY_WORDS.yourGame}
+          icon="Pl"
+          onClick={() => navigate(`/blitz/${lobbyId({ key: gameRowKey(game.chainId, game.game_id) })}`)}
+        />
+      )}
     </Plate>
   );
 };
