@@ -14,7 +14,6 @@ import {
 import { getActiveGameSyncRuntime } from "@bibliothecadao/eternum/game-sync";
 import { useGame } from "@/hooks/context/game-context";
 import { useEffect, useRef } from "react";
-import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
 /**
  * The one place a Frontier day turns over: the realm moves to its new region, the map is re-projected, and the
