@@ -31,8 +31,9 @@ jobs:
 
       - name: Start auth-free terrain host
         env:
-          # A placeholder the dev server requires to start; the terrain lab never signs in, so nothing calls it.
-          VITE_PUBLIC_IDENTITY_RPC_URL: http://127.0.0.1:1
+          # Placeholders the dev server requires to start, shaped as the guard demands (Alchemy for the chain); the
+          # terrain lab never signs in or reads the L2, so nothing calls the RPC and no key is needed.
+          VITE_PUBLIC_IDENTITY_RPC_URL: https://starknet-sepolia.g.alchemy.com/starknet/version/rpc/v0_9/terrain-check
           VITE_PUBLIC_L2_CHAIN: SN_SEPOLIA
         run: |
           pnpm --dir apps/game dev --host 127.0.0.1 --port 4173 > terrain-vite.log 2>&1 &
