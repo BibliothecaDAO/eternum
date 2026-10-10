@@ -10,7 +10,7 @@ export const runRelay = (chainId: string, ports: RelayPorts, store: RelayStore) 
     const progress = yield* relayOperation("read relay progress", () => store.progress());
     if (progress.halted) return { status: "halted" as const, reason: progress.halted };
     const head = yield* ports.shard.confirmedHead();
-    if (head < progress.nextBlock - 1)
+    if (head < (progress.page?.head ?? progress.nextBlock - 1))
       return yield* haltRelay(store, `confirmed_head_regressed:${progress.page?.head ?? progress.nextBlock - 1}`);
     yield* verifyObservedHead(ports, store, progress);
     const end = progress.page?.head ?? Math.min(head, progress.nextBlock + 99);

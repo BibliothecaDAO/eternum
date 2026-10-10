@@ -512,3 +512,21 @@ it("pauses on a payment with no authorized signed decision even when its wallet 
   );
   expect(pause).toHaveBeenCalledOnce();
 });
+it("persists a halt when the head falls below an unfinished page's observed anchor", async () => {
+  const f = fixture();
+  f.ports.shard.confirmedHead = () => Effect.succeed(10);
+  f.ports.shard.eventsPage = () =>
+    Effect.succeed({
+      ...block,
+      number: 10,
+      fromBlock: 0,
+      next: "more",
+      anchors: Array.from({ length: 11 }, (_, number) => ({ number, hash: "0xa" })),
+    });
+  await f.run();
+  f.ports.shard.confirmedHead = () => Effect.succeed(8);
+  f.ports.shard.blockHash = vi.fn(() => Effect.fail(new RelayFailure({ operation: "header_not_found" })));
+  await expect(f.run()).rejects.toThrow();
+  expect(await f.store.progress()).toMatchObject({ halted: "confirmed_head_regressed:10" });
+  expect(f.ports.shard.blockHash).not.toHaveBeenCalled();
+});
