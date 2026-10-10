@@ -20,7 +20,7 @@ export function workerCount(value: unknown): number {
     throw new Error("VRF_WORKERS must be an explicit integer from 1 to 64");
   return Number(value);
 }
-function startLane(keyFile: string, identity: PlayIdentity, finish: () => void, stop: () => void) {
+function startLane(keyFile: string, identity: PlayIdentity, finish: () => void, stop: (wasReady: boolean) => void) {
   const worker = new Worker(new URL("./worker.ts", import.meta.url).href);
   let failedOnce = false,
     cancelStartup = () => {};
@@ -40,9 +40,10 @@ function startLane(keyFile: string, identity: PlayIdentity, finish: () => void, 
     function failed() {
       if (failedOnce) return;
       failedOnce = true;
+      const wasReady = lane.ready;
       lane.ready = false;
       cancelStartup();
-      stop();
+      stop(wasReady);
     }
     worker.onerror = (event) => {
       event.preventDefault();
@@ -87,8 +88,7 @@ export async function startStampPool(
   const lanes: Lane[] = [],
     queue: Job[] = [];
   let nextId = 0,
-    closed = false,
-    initializing = true;
+    closed = false;
   function close() {
     if (closed) return;
     closed = true;
@@ -110,10 +110,10 @@ export async function startStampPool(
       lane.worker.postMessage({ kind: "stamp", id: job.id, raw: job.raw }, [job.raw]);
     }
   }
-  function workerFailed() {
+  function workerFailed(wasReady: boolean) {
     close();
     // The supervisor owns recovery; a live process must never serve a dead pool.
-    if (!initializing) process.exit(1);
+    if (wasReady) process.exit(1);
   }
   const workers = Array.from({ length: count }, () => startLane(keyFile, identity, dispatch, workerFailed));
   lanes.push(...workers.map((worker) => worker.lane));
@@ -123,7 +123,6 @@ export async function startStampPool(
     close();
     throw new Error("VRF worker initialization failed");
   }
-  initializing = false;
   return {
     stamp(transaction: PlayInvoke) {
       if (closed || queue.length + lanes.filter((lane) => lane.job).length >= LIMIT) return Promise.reject(refused());

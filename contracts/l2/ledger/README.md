@@ -21,7 +21,7 @@ report strictly before that deadline. Reports move no money and have no aggregat
 bounded by the pool's unlocked amount. There is no administrative report correction entry.
 
 `close_frontier` runs at or after the deadline, voids every unpaid report without scanning individual claims, and
-returns `pool - paid` to the treasury. The existing closed season plus payment record determines `withdrawal_voided`;
+returns `pool - paid` to the treasury. The existing closed season plus payment record determines whether the report is void;
 the relay must recover that fact from the views and stop retrying voided claims. Paid retries remain harmless; unpaid
 payments after closure refuse.
 
