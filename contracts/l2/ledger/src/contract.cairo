@@ -1054,7 +1054,7 @@ pub mod GameLedger {
                 * Into::<u64, u128>::into(crate::days::UNITS_PER_BAG)
                 * preset.season_bags.into();
             assert!(duration <= 0xffffffffffffffff, "Ledger: season duration exceeds u64");
-            assert!(preset.day_unit_seconds == 0 || preset.claim_window_seconds != 0, "Ledger: claim window is zero");
+            assert!(preset.day_unit_seconds == 0 || preset.claim_window_seconds > crate::days::FRONTIER_REPORT_GRACE_SECONDS, "Ledger: claim window needs reporting grace");
             assert!(preset.protocol_cut_bps <= 10_000, "Ledger: invalid protocol cut");
             assert!(preset.chest_lords_bps <= 10_000, "Ledger: invalid chest share");
             assert!(
