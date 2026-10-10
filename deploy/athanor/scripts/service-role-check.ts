@@ -97,6 +97,10 @@ export async function readRoleHandoffState({
 
 export async function confirmRole(check: ServiceRoleCheck): Promise<void> {
   const { provider, manifest, account } = check;
+  const otherRole = check.role === "launcher" ? "ledger_operator" : "launcher";
+  const otherAccount = await installedRole(provider, manifest.world.address, otherRole);
+  if (BigInt(otherAccount) === BigInt(account))
+    throw new Error("Launcher and ledger operator must be different accounts");
   const read = () => installedRole(provider, manifest.world.address, check.role);
   const installed = await read();
   const needsHandoff = BigInt(installed!) !== BigInt(account);

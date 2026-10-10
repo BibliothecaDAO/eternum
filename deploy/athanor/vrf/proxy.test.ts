@@ -465,3 +465,24 @@ test("oversized invoke batches refuse before account admission or stamping", asy
     f.close();
   }
 });
+
+test("play commands admit 256 felts and refuse 257 before stamping", async () => {
+  const f = await fixture();
+  const command = (length: number) => {
+    const tx = invoke();
+    tx.calldata = [...tx.calldata.slice(0, 8), ...Array.from({ length }, () => "0x0")];
+    tx.calldata[3] = `0x${(length + 4).toString(16)}`;
+    tx.calldata[7] = `0x${length.toString(16)}`;
+    return tx;
+  };
+  try {
+    expect((await f.call("starknet_addInvokeTransaction", [command(257)])).error.code).toBe(-32601);
+    expect(f.inspected).toEqual([]);
+    expect(f.stamped).toEqual([]);
+    expect(f.forwarded).toEqual([]);
+    expect((await f.call("starknet_addInvokeTransaction", [command(256)])).result.transaction_hash).toBe("0x777");
+    expect(f.stamped).toHaveLength(1);
+  } finally {
+    f.close();
+  }
+});
