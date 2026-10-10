@@ -23,8 +23,8 @@ export type SeasonTotals = {
 
 /**
  * Season over (wireframe 12), told one of two ways: the mist lifted, or it grew too strong. The place is the hero, of
- * the field; then the podium, the player's season in totals, and Exit with Season beside it. A player without a place
- * (a spectator) sees the ending and the podium.
+ * the field; then the podium, the player's season in totals, the LORDS still to withdraw from the realm, and Exit with
+ * Season beside it. A player without a place (a spectator) sees the ending and the podium.
  */
 export const SeasonOverCard = ({
   ending,
@@ -32,6 +32,7 @@ export const SeasonOverCard = ({
   field,
   podium,
   totals,
+  withdraw,
   guide,
   onSeason,
   onExit,
@@ -41,6 +42,8 @@ export const SeasonOverCard = ({
   field: number | undefined;
   podium: readonly PodiumPlace[];
   totals: SeasonTotals | undefined;
+  /** The realm's LORDS still to withdraw: this card covers the HUD, so the way out for them is here. */
+  withdraw?: ReactNode;
   /** The guide's line on the season's end. */
   guide?: ReactNode;
   onSeason: () => void;
@@ -78,6 +81,7 @@ export const SeasonOverCard = ({
       </div>
     )}
     <div className="min-h-2 flex-1" />
+    <div className="w-full max-w-[360px]">{withdraw}</div>
     <div className="w-full max-w-[360px]">{guide}</div>
     <div className="flex w-full max-w-[360px] gap-2">
       <Button role="secondary" icon="Tp" word={SEASON} onClick={onSeason} className="w-[130px]" />

@@ -140,6 +140,8 @@ export const PAYOUTS_PAUSED = "Payouts paused. Your LORDS stay here.";
 export const paidWhenResumed = (amount: string) => `Payouts paused. These ${amount} pay when they resume.`;
 /** The season's last hour of withdrawals is kept for paying the ones already made. */
 export const WITHDRAWALS_CLOSED = "Withdrawals have closed for this season.";
+/** After the season, on its last card: the moment its withdrawals close. */
+export const withdrawUntil = (moment: string) => `Withdraw until ${moment}`;
 export const PAYOUTS_UNREADABLE = "Payouts cannot be read right now. Your LORDS stay here.";
 
 /** The labor a player's Realms give once a game day. */

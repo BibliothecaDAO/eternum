@@ -31,6 +31,7 @@ import { HudBands } from "./hud/hud-bands";
 import { MenuSheet } from "./hud/menu-sheet";
 import { FrontierRealms } from "./value/frontier-realms";
 import { FrontierWithdraw } from "./value/frontier-withdraw";
+import { SeasonWithdraw } from "./value/season-withdraw";
 import { LordsPurse, PurseRow, RealmsChip } from "./value/lords-purse";
 import { useRealmLabor } from "./value/use-realm-labor";
 import { useRealmLords } from "./value/use-realm-lords";
@@ -161,7 +162,13 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
           </Sheet>
         )}
         {surface === "today" && <FrontierToday rules={rules} realm={realm} onOpenArmy={openArmy} onClose={close} />}
-        {surface !== "season" && <SeasonOver onSeason={() => setSurface("season")} />}
+        {/* The card covers the HUD: the season's board and Withdraw each open in its place. */}
+        {surface !== "season" && surface !== "withdraw" && (
+          <SeasonOver
+            withdraw={realm && !visit && <SeasonWithdraw realm={realm} onOpen={() => setSurface("withdraw")} />}
+            onSeason={() => setSurface("season")}
+          />
+        )}
         {realm && !visit && <DayDone rules={rules} realm={realm} />}
       </HudBands>
     </GuideProvider>

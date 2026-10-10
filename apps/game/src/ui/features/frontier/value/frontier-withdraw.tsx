@@ -81,7 +81,7 @@ export const FrontierWithdraw = ({ realm, onClose }: { realm: NativeRows["Struct
 const CLOSE_MODELS = ["GameRegistry", "ChestRules"] as const;
 
 /** When this season's withdrawals close, from the game's end and its claim window; undefined until both are known. */
-const useWithdrawalsCloseAt = (): number | undefined => {
+export const useWithdrawalsCloseAt = (): number | undefined => {
   const { setup } = useGame();
   useNativeRevision(CLOSE_MODELS);
   const gameId = configManager.getActiveGameId();

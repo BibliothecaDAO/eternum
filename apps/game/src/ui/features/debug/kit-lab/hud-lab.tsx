@@ -44,6 +44,7 @@ import { TodaySheet } from "@/ui/features/frontier/log/today-sheet";
 import { SeasonList, type SeasonListRow } from "@/ui/features/frontier/board/season-list";
 import { SeasonDetailSheet } from "@/ui/features/frontier/board/season-detail";
 import { SeasonOverCard } from "@/ui/features/frontier/board/season-over-card";
+import { SeasonWithdrawRow } from "@/ui/features/frontier/value/season-withdraw";
 import { VisitFoot } from "@/ui/features/frontier/board/visit-foot";
 import { SeasonPeekView } from "@/ui/features/frontier/board/season-peek";
 import { useLayout } from "@/shell/frame/layout";
@@ -669,6 +670,8 @@ const STATES = {
   "today-failed": { clock: CLOCK, stores: STORES, armies: ARMIES, results: "today-failed" },
   "season-over": { clock: CLOCK, stores: STORES, armies: ARMIES, results: "over" },
   "season-over-strong": { clock: CLOCK, stores: STORES, armies: ARMIES, results: "over-strong" },
+  "season-over-withdraw": { clock: CLOCK, stores: STORES, armies: ARMIES, results: "over", seasonLords: "open" },
+  "season-over-closed": { clock: CLOCK, stores: STORES, armies: ARMIES, results: "over", seasonLords: "closed" },
   season: { clock: CLOCK, stores: STORES, armies: ARMIES, season: "list" },
   "season-detail": { clock: CLOCK, stores: STORES, armies: ARMIES, season: "detail" },
   "season-loading": { clock: CLOCK, stores: STORES, armies: ARMIES, season: "loading" },
@@ -832,6 +835,8 @@ type LabState = {
   refill?: boolean;
   guide?: keyof typeof GUIDE_LINES;
   results?: "today" | "today-earlier" | "today-failed" | "over" | "over-strong";
+  /** The realm's LORDS on the season-over card: still to withdraw, or past the season's close. */
+  seasonLords?: "open" | "closed";
   season?: "list" | "detail" | "loading" | "failed";
   visiting?: boolean;
   training?: "battle" | "hearth" | "scouts" | "short";
@@ -993,7 +998,9 @@ export const HudLab = () => {
         peek={<SeasonPeekView rows={[...SEASON_ROWS.slice(0, 5), OWN_ROW]} onOpen={noop} />}
       >
         {lab.deploy && <LabDeploySheet deploy={lab.deploy} />}
-        {lab.results && <LabResults results={lab.results} guided={lab.guide === "season"} />}
+        {lab.results && (
+          <LabResults results={lab.results} guided={lab.guide === "season"} seasonLords={lab.seasonLords} />
+        )}
         {lab.dayDone && <DayDoneCard {...lab.dayDone} />}
         {lab.army && <LabArmy army={lab.army} />}
         {lab.training && <LabTraining training={lab.training} />}
@@ -1330,7 +1337,15 @@ const LabDock = ({ lab }: { lab: LabState }) => {
   );
 };
 
-const LabResults = ({ results, guided }: { results: NonNullable<LabState["results"]>; guided: boolean }) =>
+const LabResults = ({
+  results,
+  guided,
+  seasonLords,
+}: {
+  results: NonNullable<LabState["results"]>;
+  guided: boolean;
+  seasonLords: LabState["seasonLords"];
+}) =>
   results === "over" || results === "over-strong" ? (
     <SeasonOverCard
       ending={results === "over" ? "lifted" : "strong"}
@@ -1342,6 +1357,16 @@ const LabResults = ({ results, guided }: { results: NonNullable<LabState["result
         { key: "3", rank: 3, name: "Corwin", sitesCleared: 397 },
       ]}
       totals={{ sitesCleared: 288, chests: 61, lords: 2_003, reach: 2, essence: 2_100_000, labor: 1_400_000 }}
+      withdraw={
+        seasonLords && (
+          <SeasonWithdrawRow
+            lords={1_240}
+            closesAt={NOW + (seasonLords === "open" ? 6 * 24 * HOUR + 23 * HOUR : -HOUR)}
+            now={NOW}
+            onOpen={noop}
+          />
+        )
+      }
       guide={guided ? <LabGuide stepId={GUIDE_LINES.season} /> : undefined}
       onSeason={noop}
       onExit={noop}

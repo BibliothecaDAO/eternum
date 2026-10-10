@@ -11,7 +11,7 @@ import { configManager, dayOf, type ExpeditionRules } from "@bibliothecadao/eter
 import { fetchHeraldLeaderboard, requireShard, safeInteger } from "@bibliothecadao/eternum/game-client";
 import type { HeraldFrontierLeaderboardEntry } from "@bibliothecadao/eternum/game-sync";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { GuideSlot } from "../guide/frontier-guide";
@@ -163,7 +163,7 @@ const seasonDetail = (entry: Entry): SeasonDetail => ({
  * The season-over card once the game has ended. The ending is not yet a recorded fact: the mist lifted stands until
  * Herald names it, as on the app's Results.
  */
-export const SeasonOver = ({ onSeason }: { onSeason: () => void }) => {
+export const SeasonOver = ({ withdraw, onSeason }: { withdraw?: ReactNode; onSeason: () => void }) => {
   useNowSeconds();
   const navigate = useNavigate();
   const board = useSeasonBoard();
@@ -178,6 +178,7 @@ export const SeasonOver = ({ onSeason }: { onSeason: () => void }) => {
       field={entries?.length}
       podium={(entries ?? []).slice(0, 3).map((entry) => podiumPlace(entry, entry === own))}
       totals={own && seasonTotals(own)}
+      withdraw={withdraw}
       guide={<GuideSlot host="season-over" facts={{ seasonOver: true }} />}
       onSeason={onSeason}
       onExit={() => navigate("/")}
