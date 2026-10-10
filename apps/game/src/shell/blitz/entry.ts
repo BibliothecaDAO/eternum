@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 
+import { type BlitzRow, rowEntryOf } from "../blitz-rows";
 import { type Credits, type EntrySplit, type LedgerPrices, type Registration, registerCalls } from "../value/ledger";
 import type { LedgerLinkStatus, PaidGameLedger } from "@realms-world/identity";
 
@@ -17,6 +18,8 @@ export interface EntryTerms {
   cancelled: boolean;
   /** The game's start (Unix seconds): the ledger takes no registration from then on. */
   start: number;
+  /** Seats registered of the ledger's cap: it takes no registration once they are equal. */
+  seats: LedgerSeats;
   credits: Credits;
   registration: Registration;
   /** The ledger's LORDS token, which the entry approves. */
@@ -59,6 +62,7 @@ type EntryState =
   | "refund"
   | "refunded"
   | "closed"
+  | "full"
   | "linking"
   | "linked-elsewhere"
   | "linked-other-ledger";
@@ -102,6 +106,7 @@ export const entryState = (terms: EntryTerms, choice: EntryChoice, now: number, 
     return registration.paid > 0n || registration.swordCredit || registration.shieldCredit ? "refund" : "refunded";
   if (registration.registered) return "seated";
   if (now >= terms.start) return "closed";
+  if (terms.seats.taken >= terms.seats.total) return "full";
   if (link === null || link === "linking") return "linking";
   if (link === "elsewhere") return "linked-elsewhere";
   if (link === "other-ledger") return "linked-other-ledger";
@@ -110,14 +115,35 @@ export const entryState = (terms: EntryTerms, choice: EntryChoice, now: number, 
   return "choose";
 };
 
-/** A paid game's seats as the ledger counts its registrations; undefined until it answers, or without a ledger. */
-export const useLedgerSeats = (ledger: PaidGameLedger | null): number | undefined =>
-  useQuery({
+/** A paid game's seats on the ledger: registered, and its cap. */
+interface LedgerSeats {
+  taken: number;
+  total: number;
+}
+
+const ledgerSeatsOf = (game: { registeredCount: number; registrationLimit: number }): LedgerSeats => ({
+  taken: game.registeredCount,
+  total: game.registrationLimit,
+});
+
+/**
+ * A Blitz row's seats, taken of total: a paid slot's as the ledger counts them against its own cap (undefined until
+ * it answers), any other row's as the launch service or Herald gives them. The one source for every seat count.
+ */
+export const useRowSeats = (row: BlitzRow | undefined): { filled?: number; total?: number } => {
+  const entry = row ? rowEntryOf(row) : null;
+  const ledger = row?.kind === "slot" && entry?.kind === "paid" ? entry.ledger : null;
+  const seats = useQuery({
     queryKey: ledger ? ["ledger", "seats", ledger.address, ledger.shard, ledger.gameId] : ["ledger", "seats", "none"],
-    queryFn: async () => (await ledgerOf(ledger as PaidGameLedger).game(ledger as PaidGameLedger)).registeredCount,
+    queryFn: async () => ledgerSeatsOf(await ledgerOf(ledger as PaidGameLedger).game(ledger as PaidGameLedger)),
     enabled: ledger !== null,
     refetchInterval: 15_000,
   }).data;
+  if (!row) return {};
+  return ledger
+    ? { filled: seats?.taken, total: seats?.total }
+    : { filled: row.seats.filled ?? undefined, total: row.seats.total ?? undefined };
+};
 
 /** The wallet's calls for the chosen entry: approve what it pays in LORDS, then register. */
 export const entryCalls = (ledger: PaidGameLedger, terms: EntryTerms, choice: EntryChoice) =>
@@ -152,6 +178,7 @@ const readEntryTerms = async (ledger: PaidGameLedger, wallet: string): Promise<E
     split,
     cancelled: game.cancelled,
     start: game.start,
+    seats: ledgerSeatsOf(game),
     credits,
     registration,
     lordsToken,

@@ -4,30 +4,23 @@ import { Button } from "@/ui/design-system/kit/button";
 import { Chip } from "@/ui/design-system/kit/chip";
 import { formatAmount } from "@/ui/design-system/kit/amount";
 
-import { type BlitzRow, rowEntryOf } from "../blitz-rows";
+import type { BlitzRow } from "../blitz-rows";
 import type { useJoinSlot } from "../blitz-slot";
 import { ClockChip } from "../clock-chip";
 import { entryHref } from "../game-links";
 import { LiveChip, StateChip } from "../play/state-chip";
 import { BLITZ_WORDS, WORDS } from "../words";
-import { useLedgerSeats } from "./entry";
+import { useRowSeats } from "./entry";
 import { lobbyId, lobbyTitle } from "./lobby";
 
 /**
- * A Blitz game's seats as a chip: taken of the roster ("17/24"); the word lives only in its label. A paid slot's taken
- * seats are the ledger's count, a dash until it answers.
+ * A Blitz game's seats as a chip: taken of the roster ("17/24"); the word lives only in its label. A paid slot's
+ * seats are the ledger's count and cap, a dash until it answers.
  */
 export const SeatsChip = ({ row }: { row: BlitzRow }) => {
-  const entry = rowEntryOf(row);
-  const ledgerSeats = useLedgerSeats(row.kind === "slot" && entry.kind === "paid" ? entry.ledger : null);
-  const filled = row.seats.filled ?? ledgerSeats;
-  return (
-    <Chip
-      icons={["Pp"]}
-      value={`${filled === undefined ? "—" : formatAmount(filled)}/${formatAmount(row.seats.total)}`}
-      label={BLITZ_WORDS.seats}
-    />
-  );
+  const { filled, total } = useRowSeats(row);
+  const count = (value: number | undefined) => (value === undefined ? "—" : formatAmount(value));
+  return <Chip icons={["Pp"]} value={`${count(filled)}/${count(total)}`} label={BLITZ_WORDS.seats} />;
 };
 
 /**

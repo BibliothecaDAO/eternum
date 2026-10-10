@@ -223,6 +223,7 @@ const ENTRY: EntryTerms = {
   split: { protocolCutBps: 2000, chestLordsBps: 500 },
   cancelled: false,
   start: NOW + 2 * 3600 + 4 * 60,
+  seats: { taken: 17, total: 24 },
   credits: { swords: 2, shields: 0 },
   registration: NOT_REGISTERED,
   lordsToken: "0x10e5",

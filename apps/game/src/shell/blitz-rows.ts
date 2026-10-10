@@ -20,8 +20,8 @@ export type BlitzRow = {
   key: string;
   /** When it starts (a game) or its slot closes (a slot); null once it is live or over. */
   startsAt: number | null;
-  /** Seats taken; null for a paid slot, whose seats only the ledger counts (useLedgerSeats). */
-  seats: { filled: number | null; total: number };
+  /** Seats taken of the roster; both null for a paid slot, whose seats only the ledger counts (useRowSeats). */
+  seats: { filled: number | null; total: number | null };
   action: BlitzAction | null;
 } & ({ kind: "game"; game: DirectoryGame } | { kind: "slot"; slot: PlaytestSlot });
 
@@ -77,7 +77,7 @@ const slotRow = (slot: PlaytestSlot, realmsId: string | undefined): BlitzRow => 
     key: `slot:${slot.name}`,
     slot,
     startsAt: Math.floor(Date.parse(slot.closesAt) / 1000),
-    seats: { filled: free ? seatsFilling(slot) : null, total: BLITZ_SEATS },
+    seats: free ? { filled: seatsFilling(slot), total: BLITZ_SEATS } : { filled: null, total: null },
     action: !free ? "open" : registrationFor(slot, realmsId) ? "registered" : "join",
   };
 };

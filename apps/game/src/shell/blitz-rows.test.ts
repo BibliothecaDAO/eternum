@@ -152,7 +152,7 @@ describe("a paid Blitz slot's row", () => {
     );
     expect([paid.action, broken.action, free.action]).toEqual(["open", "open", "join"]);
     // The launch service's registrations are not a paid slot's seats: the ledger counts them.
-    expect(paid.seats).toEqual({ filled: null, total: 24 });
+    expect(paid.seats).toEqual({ filled: null, total: null });
     expect(free.seats).toEqual({ filled: 0, total: 24 });
   });
 });

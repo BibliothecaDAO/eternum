@@ -117,6 +117,7 @@ const EntryPanel = ({
   if (state === "seated") return <Seated terms={terms} />;
   if (state === "refunded") return <Refunded terms={terms} />;
   if (state === "closed") return <Closed />;
+  if (state === "full") return <Full />;
   if (state === "linking") return <Linking />;
   if (state === "linked-elsewhere") return <LinkedElsewhere />;
   if (state === "linked-other-ledger") return <LinkedOtherLedger />;
@@ -305,6 +306,13 @@ const LinkedOtherLedger = () => (
 const Closed = () => (
   <Plate icon="Lk" title={ENTRY_WORDS.closed}>
     <p className="font-body text-[16px] text-kit-cream">{ENTRY_WORDS.closedLine}</p>
+  </Plate>
+);
+
+/** The ledger has registered as many as its cap: paying would revert, so nothing is offered. */
+const Full = () => (
+  <Plate icon="Pp" title={ENTRY_WORDS.full}>
+    <p className="font-body text-[16px] text-kit-cream">{ENTRY_WORDS.fullLine}</p>
   </Plate>
 );
 

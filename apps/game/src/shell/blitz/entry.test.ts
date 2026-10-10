@@ -8,6 +8,7 @@ const terms = (overrides: Partial<EntryTerms> = {}): EntryTerms => ({
   split: { protocolCutBps: 2000, chestLordsBps: 500 },
   cancelled: false,
   start: 1_000,
+  seats: { taken: 17, total: 24 },
   credits: { swords: 0, shields: 0 },
   registration: { registered: false, sword: false, shield: false, swordCredit: false, shieldCredit: false, paid: 0n },
   lordsToken: "0x10e5",
@@ -58,6 +59,17 @@ it("closes the entry once the game has started, for anyone not already seated", 
   const seated = { registered: true, sword: false, shield: false, swordCredit: false, shieldCredit: false, paid: 1n };
   expect(entryState(terms({ registration: seated }), both, 2_000, "confirmed")).toBe("seated");
   expect(entryState(terms({ registration: seated, cancelled: true }), both, 2_000, "confirmed")).toBe("refund");
+});
+
+it("offers no payment once the ledger has registered its cap, a Duel's two as a Blitz's twenty-four", () => {
+  const both = { sword: false, shield: false };
+  expect(entryState(terms({ seats: { taken: 23, total: 24 } }), both, 900, "confirmed")).toBe("choose");
+  expect(entryState(terms({ seats: { taken: 24, total: 24 } }), both, 900, "confirmed")).toBe("full");
+  expect(entryState(terms({ seats: { taken: 2, total: 2 } }), both, 900, "confirmed")).toBe("full");
+  const seated = { registered: true, sword: false, shield: false, swordCredit: false, shieldCredit: false, paid: 1n };
+  expect(entryState(terms({ seats: { taken: 2, total: 2 }, registration: seated }), both, 900, "confirmed")).toBe(
+    "seated",
+  );
 });
 
 const LEDGER = { address: "0x1ed9e7", chainId: "0x534e5f4d41494e", shard: "0x52", gameId: 7 };

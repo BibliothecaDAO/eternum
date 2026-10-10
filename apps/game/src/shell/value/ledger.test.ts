@@ -33,8 +33,8 @@ it("approves what the entry costs on the ledger's LORDS token, then registers wi
 });
 
 it("reads the ledger's answers in the interface's field order", () => {
-  // Game: season, exists, preset, start, end, pool (2), commitment, registered, cancelled, finalized.
-  expect(decodeGame(["3", "1", "9", "100", "200", "0", "0", "0xabc", "17", "1", "0"])).toEqual({
+  // Game: season, exists, preset, start, end, pool (2), commitment, registered, cancelled, finalized, limit.
+  expect(decodeGame(["3", "1", "9", "100", "200", "0", "0", "0xabc", "17", "1", "0", "2"])).toEqual({
     seasonId: 3,
     presetId: 9,
     start: 100,
@@ -42,6 +42,7 @@ it("reads the ledger's answers in the interface's field order", () => {
     registeredCount: 17,
     cancelled: true,
     finalized: false,
+    registrationLimit: 2,
   });
   // Preset: entry fee (2), protocol cut, chest share, paid fraction, decay, sword (2), shield (2), mmr (7).
   const prices = decodePreset([

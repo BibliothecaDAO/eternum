@@ -46,12 +46,12 @@ export const seatsOf = (
   row: BlitzRow,
   realmsId: string | undefined,
   player: string | null,
-  /** A paid slot's seats as the ledger counts them; undefined until it answers. */
-  ledgerSeats?: number,
+  /** The row's taken seats (useRowSeats): for a paid slot the ledger's count, undefined until it answers. */
+  filled: number | undefined,
 ): Seat[] => {
   // A paid slot's seats are the ledger's registrations, unnamed: the launch service's list never fills.
   if (row.kind === "slot" && gameEntryOf(row.slot, row.slot.name).kind !== "free")
-    return Array.from({ length: ledgerSeats ?? 0 }, () => UNNAMED_SEAT);
+    return Array.from({ length: filled ?? 0 }, () => UNNAMED_SEAT);
   if (row.kind === "slot")
     return fillingNow(row.slot).map((registration) => ({
       account: registration.account,
@@ -59,7 +59,7 @@ export const seatsOf = (
         realmsId !== undefined && registration.realmsId !== null && BigInt(registration.realmsId) === BigInt(realmsId),
       prepared: undefined,
     }));
-  if (!row.game.roster) return Array.from({ length: row.seats.filled ?? 0 }, () => UNNAMED_SEAT);
+  if (!row.game.roster) return Array.from({ length: filled ?? 0 }, () => UNNAMED_SEAT);
   return row.game.roster.map(({ account, prepared }) => ({
     account,
     own: player !== null && sameAddress(account, player),
