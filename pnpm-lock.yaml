@@ -896,6 +896,9 @@ importers:
       '@realms-world/chain':
         specifier: workspace:*
         version: link:../../packages/chain
+      '@bibliothecadao/eternum':
+        specifier: workspace:*
+        version: link:../../packages/core
       '@realms-world/identity':
         specifier: workspace:*
         version: link:../../packages/identity

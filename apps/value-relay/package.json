@@ -11,7 +11,8 @@
     "effect": "4.0.0-rc.108",
     "starknet": "catalog:web",
     "@realms-world/value-ledger": "workspace:*",
-    "@realms-world/chain": "workspace:*"
+    "@realms-world/chain": "workspace:*",
+    "@bibliothecadao/eternum": "workspace:*"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "5.20260922.1",
