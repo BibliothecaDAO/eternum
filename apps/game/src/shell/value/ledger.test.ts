@@ -1,16 +1,7 @@
 import type { ProviderInterface } from "starknet";
 import { expect, it } from "vitest";
 
-import {
-  decodeCredits,
-  decodeGame,
-  decodePreset,
-  decodeRegistration,
-  ledgerReader,
-  lordsOf,
-  refundCall,
-  registerCalls,
-} from "./ledger";
+import { ledgerReader, lordsOf, refundCall, registerCalls } from "./ledger";
 
 const WEI = 10n ** 18n;
 const KEY = { shard: "0x5245414c4d53", gameId: 7 };
@@ -32,58 +23,7 @@ it("approves what the entry costs on the ledger's LORDS token, then registers wi
   });
 });
 
-it("reads the ledger's answers in the interface's field order", () => {
-  // Game: season, exists, preset, start, end, pool (2), commitment, registered, cancelled, finalized, limit.
-  expect(decodeGame(["3", "1", "9", "100", "200", "0", "0", "0xabc", "17", "1", "0", "2"])).toEqual({
-    seasonId: 3,
-    presetId: 9,
-    start: 100,
-    end: 200,
-    registeredCount: 17,
-    cancelled: true,
-    finalized: false,
-    registrationLimit: 2,
-  });
-  // Preset: entry fee (2), protocol cut, chest share, paid fraction, decay, sword (2), shield (2), mmr (7).
-  const prices = decodePreset([
-    String(500n * WEI),
-    "0",
-    "2000",
-    "500",
-    "1000",
-    "9600",
-    String(500n * WEI),
-    "0",
-    String(450n * WEI),
-    "0",
-    "1",
-    "1000",
-    "200",
-    "45",
-    "32",
-    "150",
-    "6",
-  ]);
-  expect(prices).toEqual({
-    seat: 500n * WEI,
-    sword: 500n * WEI,
-    shield: 450n * WEI,
-    paidFractionBps: 1000,
-    decayBps: 9600,
-    protocolCutBps: 2000,
-    chestLordsBps: 500,
-  });
-  // Registration: registered, sword, shield, consumed, sword credit, shield credit, paid (2), realm (2), pass kind.
-  expect(decodeRegistration(["1", "1", "0", "0", "1", "0", String(500n * WEI), "0", "0", "0", "0"])).toEqual({
-    registered: true,
-    sword: true,
-    shield: false,
-    swordCredit: true,
-    shieldCredit: false,
-    paid: 500n * WEI,
-  });
-  expect(decodeCredits(["2", "0"])).toEqual({ swords: 2, shields: 0 });
-  expect(() => decodeCredits(["2"])).toThrow("shorter than its type");
+it("counts held LORDS in whole units, rounded down", () => {
   expect(lordsOf(1_234n * WEI + 999n)).toBe(1234);
 });
 

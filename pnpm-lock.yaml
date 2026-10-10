@@ -337,6 +337,9 @@ importers:
       '@realms-world/identity':
         specifier: workspace:*
         version: link:../../packages/identity
+      '@realms-world/value-ledger':
+        specifier: workspace:*
+        version: link:../../packages/value-ledger
       '@sentry/react':
         specifier: ^10.36.0
         version: 10.39.0(react@18.3.1)

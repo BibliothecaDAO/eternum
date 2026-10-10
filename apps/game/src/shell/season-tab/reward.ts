@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 
-import { type Chest, type ChestContent, type PlayerResult, type Registration } from "../value/ledger";
+import type { Chest, ChestContent, PlayerResult, Registration } from "@realms-world/value-ledger/codecs";
 import type { PaidGameLedger } from "@realms-world/identity";
 
 import { ledgerOf } from "../value/game-entry";

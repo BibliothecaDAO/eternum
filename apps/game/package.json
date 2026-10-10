@@ -81,6 +81,7 @@
     "@bibliothecadao/types": "workspace:*",
     "@realms-world/chain": "workspace:*",
     "@realms-world/identity": "workspace:*",
+    "@realms-world/value-ledger": "workspace:*",
     "@cartridge/connector": "catalog:game",
     "@cartridge/controller": "catalog:game",
     "@headlessui/react": "^2.2.0",
