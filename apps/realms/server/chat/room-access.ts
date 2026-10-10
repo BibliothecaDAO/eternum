@@ -33,8 +33,26 @@ export async function readRoomAccess(
   room: ChatRoomId,
 ): Promise<{ canWrite: boolean }> {
   if (room.startsWith("slot:")) return readSlotAccess(env, realmsId, room.slice(5));
-  if (!(await isRoomMember(env.DB, realmsId, room))) throw new ChatAccessError("channel_access_denied", 403);
+  await requireRoomReadAccess(env, realmsId, room);
   return { canWrite: true };
+}
+
+/** Slot history needs only a valid room and the session already checked by the route. */
+export async function requireRoomReadAccess(
+  env: Pick<IdentityEnv, "DB" | "LAUNCH">,
+  realmsId: string,
+  room: ChatRoomId,
+): Promise<void> {
+  if (room.startsWith("slot:")) {
+    try {
+      await readSlotKey(env.LAUNCH, room.slice(5));
+    } catch (error) {
+      if (error instanceof ChatAccessError) throw error;
+      throw new ChatAccessError("chat_membership_unavailable", 503);
+    }
+    return;
+  }
+  if (!(await isRoomMember(env.DB, realmsId, room))) throw new ChatAccessError("channel_access_denied", 403);
 }
 
 async function readSlotAccess(env: RoomAccessEnv, realmsId: string, name: string) {
