@@ -62,6 +62,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # The identity Worker verifies proofs and links on its checked-in L2; a client on another chain fails closed.
+      - name: Check the client's L2 against the identity Worker's
+        run:
+          node apps/game/scripts/check-l2-chain-matches-identity.mjs "${{ inputs.environment }}" "$VITE_PUBLIC_L2_CHAIN"
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -79,6 +84,7 @@ jobs:
       - name: Test deployment verification and chunk recovery
         run: |
           node --test apps/game/scripts/verify-client-deployment.test.mjs
+          node --test apps/game/scripts/check-l2-chain-matches-identity.test.mjs
           node --test apps/game/scripts/ensure-pwa-cache-rule.test.mjs
           node --test apps/game/scripts/verify-pwa-build.test.mjs
           pnpm --dir apps/game test src/utils/chunk-load-recovery.test.ts src/pwa
