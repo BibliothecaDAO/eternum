@@ -213,7 +213,7 @@ it("records every discarded paid claim without exceeding the storage record limi
     .flatMap(([, rows]) => rows as Withdrawal[]);
   expect(new Set([...first, ...rest].map((row) => row.transactionHash)).size).toBe(3000);
 });
-it("drops funding, discovery and final conservation caches derived above the fork atomically", async () => {
+it("drops every obsolete economic memo on reset, including values below the fork", async () => {
   const f = await seed();
   await f.store.halt("confirmed_block_changed:5");
   for (const prefix of ["funding:", "discover:", "conservation:final:"]) {
@@ -227,7 +227,7 @@ it("drops funding, discovery and final conservation caches derived above the for
     paid: async () => false,
   });
   for (const prefix of ["funding:", "discover:", "conservation:final:"]) {
-    expect(f.data.has(prefix + "old")).toBe(true);
+    expect(f.data.has(prefix + "old")).toBe(false);
     expect(f.data.has(prefix + "forked")).toBe(false);
     expect(f.data.has(prefix + "legacy")).toBe(false);
   }

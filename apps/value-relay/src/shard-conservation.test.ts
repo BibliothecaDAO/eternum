@@ -208,7 +208,7 @@ it("refuses rounded JSON amounts and empty integer text instead of inventing a b
   ).rejects.toThrow();
 });
 
-it("memoises a settled final balance after its claim window across monitor restarts", async () => {
+it("rereads settled balances after the claim window instead of retaining a second truth", async () => {
   const state = snapshot();
   state.models[0]!.rows[0]!.value.claim_window_seconds = 10;
   const games = directory();
@@ -227,7 +227,7 @@ it("memoises a settled final balance after its claim window across monitor resta
   expect(await Effect.runPromise(second())).toEqual([
     { gameId: 7, confirmedBlock: 10, receipts: "17", netIssued: "17" },
   ]);
-  expect(read.mock.calls.filter(([url]) => String(url).includes("/snapshot"))).toHaveLength(1);
+  expect(read.mock.calls.filter(([url]) => String(url).includes("/snapshot"))).toHaveLength(2);
 });
 
 it("bounds first-time conservation snapshots and rotates unfinished games", async () => {

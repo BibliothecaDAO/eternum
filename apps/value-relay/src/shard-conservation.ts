@@ -1,4 +1,3 @@
-import { cacheAnchorMatches, type CacheAnchor } from "./cache-anchor";
 import { nativeGameModeOf } from "../../../config/source/common/native-preset-modes";
 import { relayOperation, type MonitorPorts, type ConservationBalance } from "./ports";
 import { ShardReader, sameFelt, felt, uint, type ShardConnection } from "./shard-rpc";
@@ -30,7 +29,7 @@ export const shardConservationPort =
         !Array.isArray(directory.games)
       )
         throw new Error("conservation_directory_differs");
-      const head = await reader.header(directory.confirmed_block);
+      await reader.header(directory.confirmed_block);
       const cursor = cache ? ((await cache.get<number>(`conservation:cursor:${connection.chainId}`)) ?? 0) : 0;
       const balances: ConservationBalance[] = [];
       const games = new Set<number>();
@@ -50,14 +49,6 @@ export const shardConservationPort =
           !["Registration", "Live", "Ended", "Settled"].includes(game.status)
         )
           throw new Error("conservation_game_clock_missing");
-        const key = `conservation:final:${connection.chainId}:${connection.gamesAddress}:${gameId}`;
-        const final = cache
-          ? await cache.get<{ balance: ConservationBalance; shardAnchor: CacheAnchor }>(key)
-          : undefined;
-        if (final && (await cacheAnchorMatches(final.shardAnchor, async (n) => (await reader.header(n)).block_hash))) {
-          balances.push(final.balance);
-          continue;
-        }
         const snapshot = await readConfirmedSnapshot(
           connection,
           heraldUrl,
@@ -69,15 +60,6 @@ export const shardConservationPort =
           throw new Error("conservation_snapshot_behind_directory");
         const balance = balanceOf(snapshot, gameId);
         balances.push(balance);
-        const window = Number(uint(String(singleRow(snapshot, "ChestRules").claim_window_seconds), 32));
-        if (cache && game.status === "Settled" && head.timestamp >= game.clock.end_at + window)
-          await cache.put(key, {
-            balance,
-            shardAnchor: {
-              number: snapshot.confirmed_block,
-              hash: (await reader.header(snapshot.confirmed_block)).block_hash,
-            },
-          });
       }
       if (cache)
         await cache.put(`conservation:cursor:${connection.chainId}`, page.length === 25 ? page.at(-1)!.game_id : 0);

@@ -174,20 +174,7 @@ export class DurableRelayStore implements RelayStore {
         );
       }
       for (const prefix of ["funding:", "discover:", "conservation:final:"])
-        await deleteStoredRows(tx, prefix, (value) => {
-          const row = value as {
-            shardAnchor?: { number: number; hash: string };
-            game?: { shardAnchor?: { number: number; hash: string } };
-          };
-          const anchor = row.shardAnchor ?? row.game?.shardAnchor;
-          return (
-            !anchor ||
-            !Number.isSafeInteger(anchor.number) ||
-            anchor.number < 0 ||
-            typeof anchor.hash !== "string" ||
-            anchor.number >= start
-          );
-        });
+        await deleteStoredRows(tx, prefix, () => true);
       await deleteStoredRows(tx, "queue-block:", (value) => Number(value) >= start);
       await deleteStoredRows(tx, "block:", (_value, key) => Number(key.slice(6)) >= start);
       const sequence = ((await tx.get<number>("reset:sequence")) ?? 0) + 1;
