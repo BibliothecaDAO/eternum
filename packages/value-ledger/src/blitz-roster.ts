@@ -2,14 +2,18 @@ import { nativeRuleConstants } from "../../../contracts/l3/world-native/schema/c
 import type { SlotRegistration } from "./blitz-slots";
 
 export interface RegistrationIdentity {
-  accountAtRegistration(wallet: string, registeredAt: number): Promise<string | null>;
+  accountsAtRegistration(registrations: readonly SlotRegistration[]): Promise<(string | null)[]>;
 }
 
 /** Resolve every payer before deciding: an identity outage yields neither seats nor refunds. */
 export async function resolveBlitzRoster(registrations: readonly SlotRegistration[], identity: RegistrationIdentity) {
-  const accounts = await Promise.all(
-    registrations.map(({ wallet, registeredAt }) => identity.accountAtRegistration(wallet, registeredAt)),
-  );
+  const accounts: (string | null)[] = [];
+  for (let offset = 0; offset < registrations.length; offset += 100) {
+    const page = registrations.slice(offset, offset + 100);
+    const resolved = await identity.accountsAtRegistration(page);
+    if (resolved.length !== page.length) throw new Error("registration_identity_page_incomplete");
+    accounts.push(...resolved);
+  }
   const seated = new Set<string>();
   const players: { wallet: string; account: string }[] = [];
   const refunds: string[] = [];

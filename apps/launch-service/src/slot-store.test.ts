@@ -115,7 +115,11 @@ it("continues closing later paid slots when an earlier ledger opening is unavail
 });
 it("marks refunds once at close and never makes a refund decision during an identity outage", async () => {
   const value = { ...slotValueFixture(26), markRefundable: vi.fn(async () => {}) };
-  const identity = { accountAtRegistration: vi.fn(async (wallet: string) => (wallet === "0x1" ? null : wallet)) };
+  const identity = {
+    accountsAtRegistration: vi.fn(async (page: readonly { wallet: string }[]) =>
+      page.map(({ wallet }) => (wallet === "0x1" ? null : wallet)),
+    ),
+  };
   const launches = new D1LaunchStore(database.db, testChain());
   const store = new D1SlotStore(database.db, launches, value, identity);
   await store.create("refunds", soon());
@@ -123,7 +127,7 @@ it("marks refunds once at close and never makes a refund decision during an iden
     .prepare("UPDATE playtest_slots SET closes_at=?")
     .bind(Date.now() - 1000)
     .run();
-  identity.accountAtRegistration.mockRejectedValueOnce(new Error("identity down"));
+  identity.accountsAtRegistration.mockRejectedValueOnce(new Error("identity down"));
   await expect(store.freeze("refunds")).rejects.toThrow("identity down");
   expect(value.markRefundable).not.toHaveBeenCalled();
   expect(await launches.list("madara.blitz")).toEqual([]);
