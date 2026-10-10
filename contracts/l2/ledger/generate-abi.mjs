@@ -1,6 +1,6 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 
-const ledger = new URL("../../../l2/ledger/", import.meta.url);
+const ledger = new URL("./", import.meta.url);
 const artifact = JSON.parse(await readFile(new URL("target/dev/game_ledger_GameLedger.contract_class.json", ledger)));
 if (!Array.isArray(artifact.abi)) throw new Error("Missing compiled GameLedger ABI");
 

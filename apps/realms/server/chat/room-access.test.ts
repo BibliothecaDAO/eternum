@@ -3,7 +3,7 @@ import { encodeChainName } from "@realms-world/chain";
 import { response } from "../../../../packages/value-ledger/test-support/abi";
 import { ledgerAbi, ledgerCall } from "../../../../packages/value-ledger/test-support/ledger-abi";
 import type { IdentityEnv } from "../env";
-import { readRoomAccess } from "./room-access";
+import { readRoomAccess, requireRoomReadAccess } from "./room-access";
 import { parseChatRoom } from "./rooms";
 
 const rpc = vi.hoisted(() => ({ callContract: vi.fn(), getChainId: vi.fn() }));
@@ -119,6 +119,25 @@ it("rejects missing or malformed slot keys and unavailable launch metadata", asy
   fetch.mockRejectedValue(new Error("timed out"));
   await expect(readRoomAccess(env, "0x1", "slot:noon")).rejects.toMatchObject({ status: 503 });
   expect(rpc.callContract).not.toHaveBeenCalled();
+});
+it("reads slot history without consulting identity linkage or the ledger", async () => {
+  const { env, first, fetch } = fixture();
+  first.mockRejectedValue(new Error("wallet link unavailable"));
+  rpc.callContract.mockRejectedValue(new Error("ledger unavailable"));
+  await expect(requireRoomReadAccess(env, "0x1", "slot:noon")).resolves.toBeUndefined();
+  expect(first).not.toHaveBeenCalled();
+  expect(rpc.callContract).not.toHaveBeenCalled();
+  expect(rpc.getChainId).not.toHaveBeenCalled();
+  fetch.mockResolvedValue(new Response(null, { status: 404 }));
+  await expect(requireRoomReadAccess(env, "0x1", "slot:noon")).rejects.toMatchObject({
+    code: "channel_not_found",
+    status: 404,
+  });
+  fetch.mockRejectedValue(new Error("launch unavailable"));
+  await expect(requireRoomReadAccess(env, "0x1", "slot:noon")).rejects.toMatchObject({
+    code: "chat_membership_unavailable",
+    status: 503,
+  });
 });
 it("accepts exactly the existing slot-name grammar", () => {
   expect(parseChatRoom("slot:a")).toBe("slot:a");

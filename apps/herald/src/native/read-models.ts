@@ -196,7 +196,11 @@ function directoryEntry(game: Row, facts: DirectoryRows, input: DirectoryInput):
     roster: roster.map((row) => {
       const account = address(row.account);
       const entered = gameRows(facts.entries, game.game_id).some((entry) => address(entry.player) === account);
-      return { account, prepared: entered && realms.some((realm) => address(realm.owner) === account) };
+      return {
+        account,
+        wallet: address(row.wallet),
+        prepared: entered && realms.some((realm) => address(realm.owner) === account),
+      };
     }),
     registration: {
       count:

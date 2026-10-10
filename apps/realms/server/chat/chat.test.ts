@@ -169,13 +169,22 @@ it("checks current-wallet registration when opening a slot room, never per messa
     });
     expect(failure.status).toBe(503);
     expect(await failure.json()).toEqual({ error: "chat_membership_unavailable" });
+    const readsBeforeHistory = ledgerReads;
     const history = await worker.mf.dispatchFetch(`${ORIGIN}/api/chat/world?zoneId=${encodeURIComponent(room)}`, {
-      headers: { cookie: observer.cookie },
+      headers: { cookie: player.cookie },
     });
     expect(history.status).toBe(200);
     expect(
       ((await history.json()) as { messages: { content: string }[] }).messages.map(({ content }) => content),
     ).toEqual(["still admitted after hibernation", "registered before close"]);
+    const olderHistory = await worker.mf.dispatchFetch(
+      `${ORIGIN}/api/chat/world?zoneId=${encodeURIComponent(room)}&cursor=${encodeURIComponent(new Date(0).toISOString())}`,
+      {
+        headers: { cookie: player.cookie },
+      },
+    );
+    expect(olderHistory.status).toBe(200);
+    expect(ledgerReads).toBe(readsBeforeHistory);
   } finally {
     await worker.dispose();
   }
