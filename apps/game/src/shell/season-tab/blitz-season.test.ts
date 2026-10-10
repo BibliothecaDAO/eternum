@@ -2,7 +2,7 @@ import { expect, it } from "vitest";
 
 import type { DirectoryGame } from "../herald";
 import { claimSeasonCall } from "../value/ledger";
-import { placeShares, type SeasonPrize, seasonSourceOf, seasonState } from "./blitz-season";
+import { placeShares, type SeasonPrize, seasonSourcesOf, seasonState } from "./blitz-season";
 
 const WEI = 10n ** 18n;
 
@@ -68,15 +68,14 @@ const game = (id: number, start: number, slotId: number | null, wallet: string |
     player_state: { registered: true, settled: true, roster_wallet: wallet, structures: [] },
   }) as unknown as DirectoryGame;
 
-it("takes the season from the player's own newest paid Blitz game, for the wallet the roster froze for their seat", () => {
-  expect(seasonSourceOf([game(1, 10, null, "0xa11")])).toBeNull();
-  expect(seasonSourceOf([game(1, 10, 1, "0xa11"), game(2, 20, 2, "0xb22"), game(3, 30, null, "0xc33")])).toEqual({
-    slot: { shard: "0x52", slotId: 2 },
-    wallet: "0xb22",
-  });
+it("lists the player's own paid Blitz games newest first, each with the wallet the roster froze for their seat", () => {
+  expect(seasonSourcesOf([game(1, 10, null, "0xa11")])).toEqual([]);
+  expect(seasonSourcesOf([game(1, 10, 1, "0xa11"), game(2, 20, 2, "0xb22"), game(3, 30, null, "0xc33")])).toEqual([
+    { slot: { shard: "0x52", slotId: 2 }, wallet: "0xb22" },
+    { slot: { shard: "0x52", slotId: 1 }, wallet: "0xa11" },
+  ]);
   // A game the player held no seat in has no share of theirs.
-  expect(seasonSourceOf([game(1, 10, 1, "0xa11"), game(2, 20, 2, null)])).toEqual({
-    slot: { shard: "0x52", slotId: 1 },
-    wallet: "0xa11",
-  });
+  expect(seasonSourcesOf([game(1, 10, 1, "0xa11"), game(2, 20, 2, null)])).toEqual([
+    { slot: { shard: "0x52", slotId: 1 }, wallet: "0xa11" },
+  ]);
 });

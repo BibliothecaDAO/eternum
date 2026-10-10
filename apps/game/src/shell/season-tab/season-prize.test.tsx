@@ -79,7 +79,7 @@ const mountPrize = (prize: SeasonPrize) => {
   listed.directory = [];
   listed.history = [blitz(7, 1)];
   return mount((client) =>
-    client.setQueryData(seasonPrizeKey({ slot: { shard: "0x52", slotId: 7 }, wallet: "0x4a1" }), prize),
+    client.setQueryData(seasonPrizeKey([{ slot: { shard: "0x52", slotId: 7 }, wallet: "0x4a1" }]), prize),
   );
 };
 
@@ -141,9 +141,10 @@ it("waits out the review hour, then claims a winner's share from the wallet that
   );
 });
 
-it("keeps a won season's claim when the next season's first game is listed, signed by the seat's wallet", async () => {
+it("shows the newest season with a share still to claim, signed by the seat's wallet, else the newest one played", async () => {
   const W1 = "0xa11";
-  // Season 3: game 5 from slot 5, the player seated with W1, over and posted with W1 on the list. Season 4: game 9.
+  // Season 3: game 5 from slot 5, the player seated with W1, over and posted with W1 on the list. Season 4: the
+  // player has already played game 8 in it, and game 9 is listed.
   const seasons: Record<string, { end: number; posted: boolean }> = {
     "3": { end: NOW - 7200, posted: true },
     "4": { end: NOW + 30 * 86400, posted: false },
@@ -163,10 +164,10 @@ it("keeps a won season's claim when the next season's first game is listed, sign
     balance_of: () => [String(WEI), "0"],
   };
   listed.directory = [blitz(9, NOW + 3600)];
-  listed.history = [blitz(5, NOW - 86400, 5, W1)];
+  listed.history = [blitz(8, NOW - 3600, 8, "0xb22"), blitz(5, NOW - 86400, 5, W1)];
   const panel = await mount();
   await act(async () => new Promise((resolve) => setTimeout(resolve, 0)));
-  // The player's own season 3, its share still to claim; the next season's game listed in the directory changes nothing.
+  // Season 3, its share still to claim, over the newer season 4 the player has also played: one season, no list.
   expect(panel.querySelectorAll("section")).toHaveLength(1);
   expect(panel.textContent).toContain("2,000");
   await act(async () =>
@@ -176,4 +177,23 @@ it("keeps a won season's claim when the next season's first game is listed, sign
   expect(signed.owners).toEqual([W1]);
   // The claim names W1's place on the posted list (second), which the ledger checks.
   expect(signed.calls).toEqual([[{ contractAddress: "0x1ed9e7", entrypoint: "claim_season", calldata: ["3", "1"] }]]);
+});
+
+it("shows the newest season played once every share is claimed", async () => {
+  ledger.views = {
+    get_slot: ([, slotId]) => [slotId === "5" ? "3" : "4", "1", "4", "0", "0", "0", "0", "2", "0"],
+    get_season: ([id]) => [
+      ...["0", "0", "25", "3", id === "3" ? "1" : "0", "0", String(NOW - 60), "0", "0", "0", "1", "4", "0"],
+      ...[String(id === "3" ? NOW - 7200 : NOW + 30 * 86400), String((id === "3" ? 7_000n : 9_000n) * WEI), "0"],
+    ],
+    get_preset: () => ["0", "0", "0", "0", "1000", "5000", ...Array.from({ length: 14 }, () => "0")],
+    get_season_winner: () => ["0xa11", String(2_000n * WEI), "0"],
+    season_claimed: () => ["1"],
+  };
+  listed.history = [blitz(8, NOW - 3600, 8, "0xb22"), blitz(5, NOW - 86400, 5, "0xa11")];
+  const panel = await mount();
+  await act(async () => new Promise((resolve) => setTimeout(resolve, 0)));
+  // Season 4's running pool, not season 3's claimed share.
+  expect(panel.textContent).toContain("9,000");
+  expect(panel.textContent).not.toContain("Claim");
 });
