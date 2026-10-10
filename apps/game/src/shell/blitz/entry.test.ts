@@ -13,7 +13,6 @@ const terms = (overrides: Partial<EntryTerms> = {}): EntryTerms => ({
   registration: { registered: false, sword: false, shield: false, swordCredit: false, shieldCredit: false, paid: 0n },
   lordsToken: "0x10e5",
   lords: 2_140n * WEI,
-  strk: 10n ** 17n,
   ...overrides,
 });
 
@@ -32,11 +31,10 @@ it("splits what an entry pays as the ledger settles it: the treasury's cut, then
   });
 });
 
-it("tells choosing, short of LORDS, no STRK for the fee, seated, refund and refunded apart", () => {
+it("tells choosing, short of LORDS, seated, refund and refunded apart", () => {
   const both = { sword: true, shield: true };
   expect(entryState(terms(), both, 900)).toBe("choose");
   expect(entryState(terms({ lords: 320n * WEI }), both, 900)).toBe("short");
-  expect(entryState(terms({ strk: 0n }), both, 900)).toBe("no-strk");
   const seated = {
     registered: true,
     sword: true,

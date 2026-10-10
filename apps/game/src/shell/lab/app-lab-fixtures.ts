@@ -135,14 +135,12 @@ export const LAB_SCREENS = {
   "wallet-ready": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
   "entry-choose": { signedIn: true, joined: false, games: [frontier(true), liveBlitz(false), eternum] },
   "entry-short": { signedIn: true, joined: false, games: [frontier(true), liveBlitz(false), eternum] },
-  "entry-no-strk": { signedIn: true, joined: false, games: [frontier(true), liveBlitz(false), eternum] },
   "entry-seated": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
   "entry-cancelled": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
   "entry-refunded": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
   "entry-no-wallet": { signedIn: true, joined: false, games: [frontier(true), liveBlitz(false), eternum] },
   "reward-pending": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
   "reward-sealed": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
-  "reward-no-strk": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
   "reward-after-season": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
   "reward-opening": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
   "reward-epic": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
@@ -151,7 +149,6 @@ export const LAB_SCREENS = {
   "season-running": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
   "season-review": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
   "season-claim": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
-  "season-no-strk": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
   "season-held": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
   "season-claimed": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
   "season-out": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
@@ -166,14 +163,12 @@ export const LAB_PAYOUT_WALLETS: Partial<Record<keyof typeof LAB_SCREENS, Payout
   "wallet-ready": { status: "ready", address: LAB_WALLET },
   "entry-choose": { status: "ready", address: LAB_WALLET },
   "entry-short": { status: "ready", address: LAB_WALLET },
-  "entry-no-strk": { status: "ready", address: LAB_WALLET },
   "entry-seated": { status: "ready", address: LAB_WALLET },
   "entry-cancelled": { status: "ready", address: LAB_WALLET },
   "entry-refunded": { status: "ready", address: LAB_WALLET },
   "entry-no-wallet": { status: "no_wallet" },
   "reward-pending": { status: "ready", address: LAB_WALLET },
   "reward-sealed": { status: "ready", address: LAB_WALLET },
-  "reward-no-strk": { status: "ready", address: LAB_WALLET },
   "reward-after-season": { status: "ready", address: LAB_WALLET },
   "reward-opening": { status: "ready", address: LAB_WALLET },
   "reward-epic": { status: "ready", address: LAB_WALLET },
@@ -182,7 +177,6 @@ export const LAB_PAYOUT_WALLETS: Partial<Record<keyof typeof LAB_SCREENS, Payout
   "season-running": { status: "ready", address: LAB_WALLET },
   "season-review": { status: "ready", address: LAB_WALLET },
   "season-claim": { status: "ready", address: LAB_WALLET },
-  "season-no-strk": { status: "ready", address: LAB_WALLET },
   "season-held": { status: "ready", address: LAB_WALLET },
   "season-claimed": { status: "ready", address: LAB_WALLET },
   "season-out": { status: "ready", address: LAB_WALLET },
@@ -228,14 +222,12 @@ const ENTRY: EntryTerms = {
   registration: NOT_REGISTERED,
   lordsToken: "0x10e5",
   lords: 2_140n * WEI,
-  strk: 10n ** 17n,
 };
 
 /** A paid Blitz's terms for the payout wallet on each entry screen: what the ledger and the tokens would answer. */
 export const LAB_ENTRY_TERMS: Partial<Record<keyof typeof LAB_SCREENS, EntryTerms>> = {
   "entry-choose": ENTRY,
   "entry-short": { ...ENTRY, credits: { swords: 0, shields: 0 }, lords: 320n * WEI },
-  "entry-no-strk": { ...ENTRY, strk: 0n },
   "entry-seated": { ...ENTRY, credits: { swords: 1, shields: 0 }, registration: SEATED, lords: 1_140n * WEI },
   "entry-cancelled": { ...ENTRY, cancelled: true, registration: SEATED, lords: 1_140n * WEI },
   "entry-refunded": { ...ENTRY, cancelled: true, registration: { ...SEATED, swordCredit: false, paid: 0n } },
@@ -433,7 +425,6 @@ const SEALED: Reward = {
   content: null,
   seasonEnd: NOW + 52 * DAY,
   registration: SWORD,
-  strk: 10n ** 17n,
 };
 
 /** The payout wallet's result and chest on each reward screen: what the ledger would answer. */
@@ -441,7 +432,6 @@ export const LAB_REWARDS: Partial<Record<keyof typeof LAB_SCREENS, Reward>> = {
   "reward-pending": { ...SEALED, result: { ...RESULT, rank: 0, chestId: 0n }, chest: null },
   // The middle band, the chest the owner picked.
   "reward-sealed": { ...SEALED, chest: { ...CHEST, band: 2 } },
-  "reward-no-strk": { ...SEALED, strk: 0n },
   "reward-after-season": { ...SEALED, chest: { ...CHEST, band: 3 }, seasonEnd: NOW - DAY },
   "reward-opening": { ...SEALED, chest: { ...OPENED, band: 2, finished: false }, held: false },
   "reward-epic": { ...SEALED, chest: OPENED, held: false, content: { kind: "cosmetic", attributes: "0x4040d01" } },
@@ -478,7 +468,6 @@ const RUNNING: SeasonPrize = {
   wallet: LAB_WALLET,
   share: null,
   claimed: false,
-  strk: 10n ** 17n,
 };
 const OVER = { ...RUNNING.season, posted: true, start: NOW - 70 * DAY, end: NOW - 2 * 3600, pool: 2_933_300n * WEI };
 const SHARE = 46_569n * WEI;
@@ -487,7 +476,6 @@ export const LAB_SEASON_PRIZES: Partial<Record<keyof typeof LAB_SCREENS, SeasonP
   "season-running": RUNNING,
   "season-review": { ...RUNNING, season: { ...OVER, reviewUntil: NOW + 42 * 60 }, share: SHARE },
   "season-claim": { ...RUNNING, season: { ...OVER, reviewUntil: NOW - 60 }, share: SHARE },
-  "season-no-strk": { ...RUNNING, season: { ...OVER, reviewUntil: NOW - 60 }, share: SHARE, strk: 0n },
   "season-held": { ...RUNNING, season: { ...OVER, challenged: true, reviewUntil: NOW + 600 }, share: SHARE },
   "season-claimed": { ...RUNNING, season: { ...OVER, reviewUntil: NOW - 60 }, share: SHARE, claimed: true },
   "season-out": { ...RUNNING, season: { ...OVER, reviewUntil: NOW - 60 } },

@@ -1,17 +1,19 @@
 import { StarknetProvider } from "@/hooks/context/starknet-provider";
 import { shortAddress } from "@/ui/design-system/kit/address";
 import { KitIcon } from "@/ui/design-system/kit/kit-icon";
-import { isSameStarknetAddress, type SignInOptions } from "@realms-world/identity";
+import type { SignInOptions } from "@realms-world/identity";
 import { useConnect, useDisconnect, useProvider } from "@starknet-react/core";
 import type { Connector } from "@starknet-react/core";
 import { useCallback, useRef, useState } from "react";
 import type { AccountInterface, Call, ProviderInterface } from "starknet";
 
-import { WALLET_WORDS } from "@/shell/words";
+import { NoStrkLine } from "@/shell/value/no-strk-line";
+import { VALUE_WORDS, WALLET_WORDS } from "@/shell/words";
 
 import { failureSentence, WrongNetworkError } from "./identity-failures";
 import { assertWalletOnL2 } from "./l2-wallet";
 import { walletProofForAccount } from "./wallet-proof";
+import { sendFromWallet, type WalletSendOutcome, WrongWalletError } from "./wallet-send";
 
 /**
  * The wallets a Realms account links, in the order the picker lists them, each as the player knows it. A wallet whose
@@ -47,35 +49,34 @@ export const WalletPicker = ({
 );
 
 /**
- * `owner` signs the ledger's calls: the payout wallet for a new entry, the wallet that paid for anything it holds.
- * The player opens it from the same rows, and any other wallet is refused, naming `owner`, before anything is sent.
+ * Where every send of the value screens passes: `owner` signs the ledger's calls (the payout wallet for a new entry,
+ * the wallet that paid for anything it holds), from the same rows; any other wallet is refused, naming `owner`. A
+ * wallet with no STRK for the fee is offered the swap instead; a sent call shows Confirming until its receipt lands,
+ * then `onLanded` (the panel reads the ledger again), or the ledger's reason when it reverted.
  */
-export const WalletSign = ({
-  owner,
-  calls,
-  onSent,
-}: {
-  owner: string;
-  calls: Call[];
-  onSent: (transactionHash: string) => void;
-}) => (
-  <StarknetProvider>
-    <WalletRows
-      failure="pay"
-      onAccount={async (account) => {
-        if (!isSameStarknetAddress(account.address, owner)) throw new WrongWalletError(owner);
-        onSent((await account.execute(calls)).transaction_hash);
-      }}
-    />
-  </StarknetProvider>
-);
-
-/** The connected wallet is not the one the call must come from: the payout wallet, or the wallet that paid. */
-class WrongWalletError extends Error {
-  constructor(readonly owner: string) {
-    super("wrong_wallet");
-  }
-}
+export const WalletSign = ({ owner, calls, onLanded }: { owner: string; calls: Call[]; onLanded: () => void }) => {
+  const [outcome, setOutcome] = useState<Exclude<WalletSendOutcome, { kind: "landed" }> | { kind: "confirming" }>();
+  if (outcome?.kind === "confirming")
+    return <span className="font-body text-[15px] text-kit-muted">{VALUE_WORDS.confirming}</span>;
+  return (
+    <StarknetProvider>
+      <div className="flex w-full flex-col gap-2.5">
+        {outcome?.kind === "no-strk" && <NoStrkLine />}
+        {outcome?.kind === "refused" && <span className="font-body text-[14px] text-kit-red">{outcome.reason}</span>}
+        <WalletRows
+          failure="pay"
+          onAccount={async (account, _connectorId, provider) => {
+            const sent = await sendFromWallet(account, owner, calls, provider, () =>
+              setOutcome({ kind: "confirming" }),
+            );
+            if (sent.kind === "landed") onLanded();
+            else setOutcome(sent);
+          }}
+        />
+      </div>
+    </StarknetProvider>
+  );
+};
 
 type WalletId = (typeof WALLET_CHOICES)[number]["id"];
 

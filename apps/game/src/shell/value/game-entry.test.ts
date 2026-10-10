@@ -92,13 +92,3 @@ it("logs why an entry is broken, once, with the slot or game it belongs to", () 
   });
   logged.mockRestore();
 });
-
-it("reads the network fee balance on the build's L2 fee token, never on a token the entry names", async () => {
-  const STRK = "0x4718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d";
-  const read = ledgerOf({ address: "0x1ed9e7", chainId: SN_MAIN, shard: "0x52", gameId: 7 });
-  calls.length = 0;
-  await expect(read.feeBalance("0x4a1")).resolves.toBe(0x10e5n);
-  expect(calls.map(({ contractAddress, entrypoint }) => [BigInt(contractAddress), entrypoint])).toEqual([
-    [BigInt(STRK), "balance_of"],
-  ]);
-});

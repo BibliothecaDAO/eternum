@@ -58,11 +58,5 @@ export const directoryGameEntryOf = (game: { chainId: string; game_id: number; e
     : broken(id, `ledger names game ${ledger.shard}:${ledger.gameId}`);
 };
 
-/**
- * The ledger's reads on this build's L2, for an entry gameEntryOf has already held to the build's ledger. The wallet's
- * network fee balance is read on the build's own fee token: the entry names no token.
- */
-export const ledgerOf = (ledger: PaidGameLedger) => {
-  const read = ledgerReader(l2Provider(), ledger.address);
-  return { ...read, feeBalance: (owner: string) => read.balanceOf(L2_CHAIN.gasToken, owner) };
-};
+/** The ledger's reads on this build's L2, for an entry gameEntryOf has already held to the build's ledger. */
+export const ledgerOf = (ledger: PaidGameLedger) => ledgerReader(l2Provider(), ledger.address);
