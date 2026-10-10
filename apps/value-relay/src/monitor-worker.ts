@@ -228,8 +228,6 @@ const monitorPortsOf = (
                 reader,
                 { rpcUrl: env.LEDGER_RPC_URL, address: env.LEDGER_ADDRESS },
                 env.IDENTITY,
-                shard.url,
-                storage,
               ),
             ).withdrawal(chainId, hash),
           );

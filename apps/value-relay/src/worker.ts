@@ -382,13 +382,7 @@ const relayPortsOf = (
     shard: {
       ...shardWithdrawalPorts(
         reader,
-        frontierReceiptBindings(
-          reader,
-          { rpcUrl: env.LEDGER_RPC_URL, address: env.LEDGER_ADDRESS },
-          env.IDENTITY,
-          shard.url,
-          storage,
-        ),
+        frontierReceiptBindings(reader, { rpcUrl: env.LEDGER_RPC_URL, address: env.LEDGER_ADDRESS }, env.IDENTITY),
       ),
       result: shardResultPort(reader),
       grantLabor: (claim) =>
