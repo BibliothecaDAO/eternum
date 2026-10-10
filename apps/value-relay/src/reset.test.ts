@@ -25,6 +25,7 @@ const setup = () => {
       ),
     get: async (key: string) => data.get(key),
     put: async (key: string, value: unknown) => {
+      if (new TextEncoder().encode(JSON.stringify(value)).length > 128 * 1024) throw new Error("record_size_limit");
       data.set(key, value);
     },
     delete: async (key: string) => data.delete(key),
@@ -64,6 +65,7 @@ it("walks below two rewritten ancestors, drops their queued and held rows, recor
   expect(
     await f.store.resetFromChain("confirmed_block_changed:5", "Restored node rewrote blocks 3 through 5", {
       head: async () => 5,
+      paid: async () => false,
       hash: read,
     }),
   ).toMatchObject({ nextBlock: 3, lastHash: block(2).hash, halted: null, page: null });
@@ -89,6 +91,7 @@ it("starts before a changed parent instead of keeping its old obligation", async
   const f = await seed();
   await f.store.halt("parent_hash_changed:6");
   await f.store.resetFromChain("parent_hash_changed:6", "Parent rewrite reviewed", {
+    paid: async () => false,
     head: async () => 6,
     hash: async (n) => (n >= 4 ? "0xff" : block(n).hash),
   });
@@ -100,7 +103,11 @@ it("refuses a reset whose proven anchor changes while the fork walk is in flight
   await f.store.halt("confirmed_block_changed:5");
   const read = vi.fn().mockResolvedValueOnce("0xff").mockResolvedValueOnce(block(4).hash).mockResolvedValueOnce("0xee");
   await expect(
-    f.store.resetFromChain("confirmed_block_changed:5", "Provider stabilized", { head: async () => 5, hash: read }),
+    f.store.resetFromChain("confirmed_block_changed:5", "Provider stabilized", {
+      head: async () => 5,
+      hash: read,
+      paid: async () => false,
+    }),
   ).rejects.toThrow("reset_anchor_changed");
   expect((await f.store.progress()).halted).toBe("confirmed_block_changed:5");
   expect(await f.store.withdrawals()).toHaveLength(6);
@@ -112,6 +119,7 @@ it("handles a regressed head and safely replays legacy state with no proven hash
   const f = await seed();
   await f.store.halt("confirmed_head_regressed:5");
   await f.store.resetFromChain("confirmed_head_regressed:5", "Restore rolled back the head", {
+    paid: async () => false,
     head: async () => 2,
     hash: async (n) => block(n).hash,
   });
@@ -120,6 +128,7 @@ it("handles a regressed head and safely replays legacy state with no proven hash
   legacy.data.set("progress", { nextBlock: 20, lastHash: "0xff", halted: "confirmed_block_changed:19" });
   legacy.data.set("withdrawal:old", { transactionHash: "old" });
   await legacy.store.resetFromChain("confirmed_block_changed:19", "Legacy cursor has no fork evidence", {
+    paid: async () => false,
     head: async () => 19,
     hash: async () => "0xff",
   });
@@ -152,9 +161,55 @@ it("replays an unfinished event range even when its pinned head still matches", 
   });
   await f.store.halt("invalid_confirmed_block:10");
   await f.store.resetFromChain("invalid_confirmed_block:10", "Retry the unfinished confirmed event page", {
+    paid: async () => false,
     head: async () => 10,
     hash: async (number) => block(number).hash,
   });
   expect(await f.store.progress()).toMatchObject({ nextBlock: 5, lastHash: block(4).hash, page: null });
   expect((await f.store.withdrawals()).some((row) => row.blockNumber === 10)).toBe(false);
+});
+
+it("records ledger-confirmed payments whose acknowledgment was lost before reset", async () => {
+  const f = await seed();
+  await f.store.halt("confirmed_block_changed:5");
+  const paid = vi.fn(async (row: Withdrawal) => row.transactionHash === withdrawal(4).transactionHash);
+  await f.store.resetFromChain("confirmed_block_changed:5", "Restore after a lost payment response", {
+    head: async () => 5,
+    hash: async (n) => (n >= 3 ? "0xff" : block(n).hash),
+    paid,
+  });
+  expect(f.data.get("reset:1")).toMatchObject({ discardedPaidClaims: [withdrawal(4)] });
+  expect(paid.mock.calls.map(([row]) => row.blockNumber)).toEqual([3, 4, 5]);
+});
+it("refuses to discard pending evidence when ledger payment verification is unavailable", async () => {
+  const f = await seed();
+  await f.store.halt("confirmed_block_changed:5");
+  await expect(
+    f.store.resetFromChain("confirmed_block_changed:5", "Restore under investigation", {
+      head: async () => 5,
+      hash: async (n) => (n >= 3 ? "0xff" : block(n).hash),
+      paid: async () => {
+        throw new Error("ledger_unavailable");
+      },
+    }),
+  ).rejects.toThrow("ledger_unavailable");
+  expect((await f.store.progress()).halted).toBe("confirmed_block_changed:5");
+  expect(await f.store.withdrawals()).toHaveLength(6);
+});
+it("records every discarded paid claim without exceeding the storage record limit", async () => {
+  const f = await seed();
+  for (let i = 0; i < 3000; i++)
+    f.data.set(`paid:${i}`, { ...withdrawal(4), transactionHash: "0x" + i.toString(16).padStart(64, "0") });
+  await f.store.halt("confirmed_block_changed:5");
+  await f.store.resetFromChain("confirmed_block_changed:5", "Restore rewrote a large paid range", {
+    head: async () => 5,
+    hash: async (n) => (n >= 3 ? "0xff" : block(n).hash),
+    paid: async () => false,
+  });
+  expect(f.data.get("reset:1")).toMatchObject({ discardedPaidClaimCount: 3000, discardedPaidClaimPages: 30 });
+  const first = (f.data.get("reset:1") as { discardedPaidClaims: Withdrawal[] }).discardedPaidClaims;
+  const rest = [...f.data]
+    .filter(([key]) => key.startsWith("reset:1:paid:"))
+    .flatMap(([, rows]) => rows as Withdrawal[]);
+  expect(new Set([...first, ...rest].map((row) => row.transactionHash)).size).toBe(3000);
 });

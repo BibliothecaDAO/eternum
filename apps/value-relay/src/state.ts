@@ -102,7 +102,11 @@ export class DurableRelayStore implements RelayStore {
   async resetFromChain(
     row: string,
     reason: string,
-    chain: { head(): Promise<number>; hash(number: number): Promise<string> },
+    chain: {
+      head(): Promise<number>;
+      hash(number: number): Promise<string>;
+      paid(withdrawal: Withdrawal): Promise<boolean>;
+    },
   ) {
     const previous = await this.progress();
     if (previous.halted !== row) throw new Error("fault_row_mismatch");
@@ -111,11 +115,9 @@ export class DurableRelayStore implements RelayStore {
         ? (previous.page?.head ?? previous.nextBlock - 1)
         : Number(row.split(":").at(-1));
     if (!Number.isSafeInteger(named) || named < 0) throw new Error("fault_row_checkpoint_differs");
-    const queued = [
-      ...(await listStoredValues(this.storage, "withdrawal:")),
-      ...(await listStoredValues(this.storage, "result:")),
-      ...(await listStoredValues(this.storage, "held:")),
-    ];
+    const withdrawals = await listStoredValues<Withdrawal>(this.storage, "withdrawal:");
+    const held = await listStoredValues<HeldObligation>(this.storage, "held:");
+    const queued = [...withdrawals, ...(await listStoredValues(this.storage, "result:")), ...held];
     const hasLegacyRows = queued.some((value) => obligationBlock(value) === undefined);
     const head = await chain.head();
     let fork: BlockAnchor | null = null;
@@ -133,10 +135,16 @@ export class DurableRelayStore implements RelayStore {
       if (anchors.size < 1000) break;
       end = [...anchors.keys()].at(-1)!;
     }
+    const start = fork ? fork.number + 1 : 0;
+    const candidates = [
+      ...withdrawals,
+      ...held.flatMap((row) => (row.kind === "payment" ? [row.withdrawal] : [])),
+    ].filter((row) => row.blockNumber === undefined || row.blockNumber >= start);
+    const paid = await discoverPaidClaims(candidates, chain.paid);
     if (fork && BigInt(await chain.hash(fork.number)) !== BigInt(fork.hash)) throw new Error("reset_anchor_changed");
-    return this.reset(row, reason, fork);
+    return this.reset(row, reason, fork, paid);
   }
-  async reset(row: string, reason: string, fork: BlockAnchor | null) {
+  async reset(row: string, reason: string, fork: BlockAnchor | null, paid: readonly Withdrawal[] = []) {
     if (!reason.trim() || reason.length > 500) throw new Error("reset_reason_required");
     return this.storage.transaction(async (tx) => {
       const previous = await tx.get<RelayProgress>("progress");
@@ -153,6 +161,7 @@ export class DurableRelayStore implements RelayStore {
         page: null,
         halted: null,
       };
+      for (const withdrawal of paid) await tx.put(`paid:${withdrawal.transactionHash}`, withdrawal);
       const discardedPaidClaims = (await listStoredValues<Withdrawal>(tx, "paid:")).filter(
         (row) => row.blockNumber === undefined || row.blockNumber >= start,
       );
@@ -167,6 +176,7 @@ export class DurableRelayStore implements RelayStore {
       await deleteStoredRows(tx, "queue-block:", (value) => Number(value) >= start);
       await deleteStoredRows(tx, "block:", (_value, key) => Number(key.slice(6)) >= start);
       const sequence = ((await tx.get<number>("reset:sequence")) ?? 0) + 1;
+      const paidAudit = await writePaidClaimAudit(tx, sequence, discardedPaidClaims);
       await tx.put(`reset:${sequence}`, {
         row,
         reason: reason.trim(),
@@ -174,7 +184,7 @@ export class DurableRelayStore implements RelayStore {
         previous,
         progress,
         fork,
-        discardedPaidClaims,
+        ...paidAudit,
       });
       await tx.put("reset:sequence", sequence);
       await tx.put("progress", progress);
@@ -285,3 +295,25 @@ const indexObligation = (storage: DurableObjectTransaction, key: string, number:
   storage.put(obligationIndexKey(key, number), number);
 
 const blockKey = (number: number) => `block:${String(number).padStart(16, "0")}`;
+
+async function discoverPaidClaims(rows: readonly Withdrawal[], paid: (withdrawal: Withdrawal) => Promise<boolean>) {
+  const unique = [...new Map(rows.map((row) => [row.transactionHash, row])).values()];
+  const confirmed: Withdrawal[] = [];
+  for (let offset = 0; offset < unique.length; offset += 25) {
+    const page = unique.slice(offset, offset + 25);
+    const states = await Promise.all(page.map((row) => paid(row)));
+    confirmed.push(...page.filter((_row, index) => states[index]));
+  }
+  return confirmed;
+}
+async function writePaidClaimAudit(storage: DurableObjectTransaction, sequence: number, claims: readonly Withdrawal[]) {
+  const prefix = `reset:${sequence}:paid:`;
+  for (let offset = 100; offset < claims.length; offset += 100)
+    await storage.put(`${prefix}${offset / 100}`, claims.slice(offset, offset + 100));
+  return {
+    discardedPaidClaims: claims.slice(0, 100),
+    discardedPaidClaimCount: claims.length,
+    discardedPaidClaimPages: Math.ceil(claims.length / 100),
+    discardedPaidClaimPrefix: prefix,
+  };
+}

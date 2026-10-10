@@ -150,6 +150,12 @@ export class ValueRelay extends DurableObject<RelayEnv> {
           return this.store.resetFromChain(row, reason, {
             head: () => Effect.runPromise(this.ports.shard.confirmedHead()),
             hash: (number) => Effect.runPromise(this.ports.shard.blockHash(number)),
+            paid: async (withdrawal) =>
+              (
+                await Effect.runPromise(
+                  onIdentityChain(this.env.LEDGER_RPC_URL, this.env.IDENTITY, this.ports.ledger.payment(withdrawal)),
+                )
+              )?.paid ?? false,
           });
         }),
       ),

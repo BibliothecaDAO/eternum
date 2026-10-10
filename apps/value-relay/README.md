@@ -68,3 +68,8 @@ held rows above the fork, then replays from the next block. Without retained evi
 reset records the fork, reason and already-paid claims from discarded blocks; it never unpauses the ledger. Completed
 claim metadata is immutable recovery evidence; block hashes below the queued range are pruned. The cost is one stored
 hash per retained block, one immutable completed-claim row and bounded public header reads.
+
+Reset also checks discarded pending claims on the ledger, so a lost payment acknowledgment cannot hide an already-paid
+withdrawal. An unavailable ledger refuses reset and leaves the evidence queued. The reset header contains the first 100
+paid claims, their total count and the prefix for additional 100-claim audit pages; all are committed atomically. This
+replaces an unbounded single-record audit, which would prevent a large restore from being reset.
