@@ -44,7 +44,8 @@ function fakeLaunchService(behaviour: { failGame?: number } = {}) {
   const fetchStub = async (input: string, init: RequestInit) => {
     const url = new URL(input);
     const path = `${url.pathname}${url.search}`;
-    const headers = Object.fromEntries(Object.entries(init.headers ?? {})) as Record<string, string>;
+    const headers = Object.fromEntries(new Headers(init.headers).entries());
+    expect(init.redirect).toBe("error");
     const body = init.body ? JSON.parse(String(init.body)) : undefined;
     requests.push({ method: init.method ?? "GET", path, headers, body });
     if (headers.authorization !== "Bearer secret") return json({ error: "no" }, 401);
@@ -59,6 +60,17 @@ function fakeLaunchService(behaviour: { failGame?: number } = {}) {
 }
 
 describe("slot registration", () => {
+  it("refuses HTTP before sending the operator credential", async () => {
+    const service = fakeLaunchService();
+    await expect(
+      registerBotsThroughSlot(
+        { origin: "http://staging.example", token: "secret", fetch: service.fetch },
+        { slotName: "cap-96", accounts, closesInSeconds: 90 },
+      ),
+    ).rejects.toThrow("HTTPS");
+    expect(service.requests).toHaveLength(0);
+  });
+
   it("registers every bot, waits for the freeze and reads each game from its game run, not its result run", async () => {
     const service = fakeLaunchService();
     const games = await registerBotsThroughSlot(

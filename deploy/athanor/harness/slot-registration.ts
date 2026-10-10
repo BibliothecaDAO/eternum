@@ -1,4 +1,5 @@
 import { setTimeout as sleep } from "node:timers/promises";
+import { operatorRequest } from "../../../packages/core/src/account/operator-request";
 
 /**
  * The slot shape: bots register into a free Blitz slot the way players do, and the launch service creates and settles
@@ -156,15 +157,19 @@ async function launchRequest(
   path: string,
   body?: unknown,
 ): Promise<unknown> {
-  const response = await (api.fetch ?? fetch)(`${api.origin}${path}`, {
-    method,
-    headers: {
-      authorization: `Bearer ${api.token}`,
-      origin: api.origin,
-      ...(body === undefined ? {} : { "content-type": "application/json" }),
+  const response = await operatorRequest(
+    `${api.origin}${path}`,
+    api.token,
+    {
+      method,
+      headers: {
+        origin: api.origin,
+        ...(body === undefined ? {} : { "content-type": "application/json" }),
+      },
+      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     },
-    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
-  });
+    api.fetch,
+  );
   if (!response.ok) {
     const detail = await response.text().catch(() => "");
     throw new Error(`${method} ${path} failed (${response.status}): ${detail.slice(0, 200)}`);
