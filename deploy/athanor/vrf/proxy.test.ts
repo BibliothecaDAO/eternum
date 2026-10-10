@@ -1,7 +1,6 @@
 import { GAME_ENTRYPOINTS } from "./entrypoints";
 import { hash } from "starknet";
 import { expect, test } from "bun:test";
-import { readFileSync } from "node:fs";
 import { startReadRpc } from "../scripts/read-rpc";
 import { identity, invoke } from "./fixtures";
 import { STAMP_TAG, type PlayInvoke } from "./transaction";
@@ -383,14 +382,6 @@ test("the class cache requires an explicit positive shard player capacity", () =
       proxy?.stop(true);
     }
   }
-});
-
-test("the shipped proxy receives the same player capacity as shard initialization", () => {
-  const compose = readFileSync(new URL("../../shard/compose.yml", import.meta.url), "utf8");
-  const init = compose.split("services:")[0];
-  const rpc = compose.split("  rpc:\n")[1].split("  harness:\n")[0];
-  expect(init).toContain("PLAYER_CAPACITY: ${PLAYER_CAPACITY:-96}");
-  expect(rpc).toContain("PLAYER_CAPACITY: ${PLAYER_CAPACITY:-96}");
 });
 
 test("concurrent successful lookups of one sender do not evict another cached account", async () => {

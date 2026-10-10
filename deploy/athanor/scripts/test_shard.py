@@ -749,3 +749,12 @@ class OfficialBackupLockTest(unittest.TestCase):
                 with self.assertRaises((FileNotFoundError, RuntimeError)):
                     backup.main(["capture", "fixture", temporary, temporary])
                 capture.assert_not_called()
+
+
+class ResolvedProxyCapacityTest(unittest.TestCase):
+    def test_the_resolved_proxy_and_initialization_use_the_same_shard_capacity(self):
+        for capacity in (24, 2000):
+            config = {**configuration(), "player_capacity": capacity}
+            compose = shard.compose_configuration(config, Path("/tmp/not-deployed"))
+            values = [compose["services"][name]["environment"]["PLAYER_CAPACITY"] for name in ("prepare", "rpc")]
+            self.assertEqual([int(value) for value in values], [capacity, capacity])
