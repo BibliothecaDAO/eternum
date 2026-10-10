@@ -3,8 +3,6 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 
 import type { GameRef } from "@bibliothecadao/eternum/shard";
 import type { HeraldFrontierLeaderboardEntry } from "@bibliothecadao/eternum/game-sync";
-import { useIdentitySession } from "@/hooks/context/identity-session";
-import { payoutWalletOf } from "@/hooks/context/payout-wallet";
 import { formatAmount } from "@/ui/design-system/kit/amount";
 import { Button } from "@/ui/design-system/kit/button";
 import { Chip } from "@/ui/design-system/kit/chip";
@@ -29,7 +27,7 @@ import { FailureCard } from "../play/state-card";
 import { useNowSeconds } from "../use-now";
 import { FailureLine } from "../sign-in/failure-line";
 import { directoryGameEntryOf } from "../value/game-entry";
-import { REWARD_WORDS, SEASON_WORDS, WALLET_WORDS, WORDS } from "../words";
+import { REWARD_WORDS, SEASON_WORDS, WORDS } from "../words";
 import { gameTitle } from "./history-row";
 import { gameOfResults, isFromList } from "./results-link";
 import { RewardPanel } from "./reward-panel";
@@ -201,10 +199,8 @@ const BlitzResult = ({
   const own = player ? entries.find((entry) => sameAddress(entry.address, player)) : undefined;
   const top = entries.slice(0, ROWS[layout]);
   const rows = own && !top.includes(own) ? [...top, own] : top;
-  // A game played on the ledger shows the payout wallet's rating change and chest under the board.
-  const { session } = useIdentitySession();
+  // A game played on the ledger shows the paying wallet's rating change and chest under the board.
   const entry = game ? directoryGameEntryOf(game) : null;
-  const wallet = session ? payoutWalletOf(session.user) : null;
   return (
     <ResultLayout
       painting={ageOf("blitz").painting}
@@ -239,10 +235,8 @@ const BlitzResult = ({
               );
             })}
           </ol>
-          {entry?.kind === "paid" && wallet && <RewardPanel ledger={entry.ledger} wallet={wallet} />}
-          {(entry?.kind === "broken" || (entry?.kind === "paid" && !wallet)) && (
-            <FailureLine line={entry.kind === "broken" ? REWARD_WORDS.unreadable : WALLET_WORDS.unavailableLine} />
-          )}
+          {entry?.kind === "paid" && player && <RewardPanel ledger={entry.ledger} account={player} />}
+          {entry?.kind === "broken" && <FailureLine line={REWARD_WORDS.unreadable} />}
         </div>
       }
       buttons={

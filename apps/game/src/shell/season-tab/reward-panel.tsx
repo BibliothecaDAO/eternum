@@ -1,6 +1,5 @@
 import { lazy, type ReactNode, Suspense, useState } from "react";
 
-import type { PayoutWallet } from "@realms-world/identity";
 import { formatExact } from "@/ui/design-system/kit/amount";
 import { formatDate } from "@/ui/design-system/kit/time";
 import { Button } from "@/ui/design-system/kit/button";
@@ -15,6 +14,7 @@ import { ServiceFailure } from "../service-failure";
 import { useNowSeconds } from "../use-now";
 import { type ChestContent, lordsOf, openChestCalls } from "../value/ledger";
 import { NoStrkLine } from "../value/no-strk-line";
+import { usePayingWallet } from "../value/paying-wallet";
 import { REWARD_WORDS } from "../words";
 import type { PaidGameLedger } from "@realms-world/identity";
 import { type Reward, rewardState, useReward } from "./reward";
@@ -29,24 +29,22 @@ const chestArt = (band: number, opened: boolean) =>
 
 /**
  * After a paid Blitz: the rated game's MMR change with the sword or shield applied, and the mystery chest the result
- * minted for the player's rank band. A sealed chest shows its band and nothing else. Open is one signature from the
- * payout wallet; the draw then lands by itself about ten blocks later, and the reveal plays inside this panel. Keep
- * leaves it in the collection to trade.
+ * minted for the player's rank band. Both belong to the wallet that paid the seat, whatever the payout wallet is now.
+ * A sealed chest shows its band and nothing else. Open is one signature from that wallet; the draw then lands by
+ * itself about ten blocks later, and the reveal plays inside this panel. Keep leaves it in the collection to trade.
+ * Nothing is drawn for an account that held no seat in the game.
  */
-export const RewardPanel = ({ ledger, wallet }: { ledger: PaidGameLedger; wallet: PayoutWallet }) => {
-  const reward = useReward(ledger, wallet.status === "no_wallet" ? null : wallet.address);
-  if (reward.isError)
-    return <ServiceFailure service="ledger" error={reward.error} retry={() => void reward.refetch()} />;
-  if (wallet.status === "no_wallet" || !reward.data) return null;
+export const RewardPanel = ({ ledger, account }: { ledger: PaidGameLedger; account: string }) => {
+  const payer = usePayingWallet(ledger, account);
+  const owner = payer.data ?? null;
+  const reward = useReward(ledger, owner);
+  const failed = payer.isError ? payer : reward.isError ? reward : null;
+  if (failed) return <ServiceFailure service="ledger" error={failed.error} retry={() => void failed.refetch()} />;
+  if (owner === null || !reward.data) return null;
   return (
     <div className="flex flex-col gap-4">
       {reward.data.result.rank > 0 && <RatingChange reward={reward.data} />}
-      <ChestPlate
-        ledger={ledger}
-        owner={wallet.address}
-        reward={reward.data}
-        onRequested={() => void reward.refetch()}
-      />
+      <ChestPlate ledger={ledger} owner={owner} reward={reward.data} onRequested={() => void reward.refetch()} />
     </div>
   );
 };

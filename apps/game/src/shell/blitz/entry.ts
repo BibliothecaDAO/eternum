@@ -93,16 +93,16 @@ export const entryLinkOf = (
 /**
  * The panel's state: seated once registered; on a cancelled game, a refund until the paid LORDS and spent credits are
  * back; closed to anyone else once the game has started; before paying, linking until the services confirm the link
- * and a fault while it names another account. Then choosing, short of LORDS, or holding LORDS with no STRK for the
- * network fee.
+ * and a fault while it names another account; a link not known yet (no payout wallet to link) is linking too, and only
+ * paying ever waits on it. Then choosing, short of LORDS, or holding LORDS with no STRK for the network fee.
  */
-export const entryState = (terms: EntryTerms, choice: EntryChoice, now: number, link: EntryLink): EntryState => {
+export const entryState = (terms: EntryTerms, choice: EntryChoice, now: number, link: EntryLink | null): EntryState => {
   const { registration } = terms;
   if (registration.registered && terms.cancelled)
     return registration.paid > 0n || registration.swordCredit || registration.shieldCredit ? "refund" : "refunded";
   if (registration.registered) return "seated";
   if (now >= terms.start) return "closed";
-  if (link === "linking") return "linking";
+  if (link === null || link === "linking") return "linking";
   if (link === "elsewhere") return "linked-elsewhere";
   if (link === "other-ledger") return "linked-other-ledger";
   if (terms.lords < entryCost(terms, choice).cash) return "short";

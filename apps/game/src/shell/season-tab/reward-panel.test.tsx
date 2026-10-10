@@ -18,9 +18,13 @@ vi.mock("@/ui/modules/identity/wallet-actions", () => ({
     </button>
   ),
 }));
-vi.mock("@/runtime/l2-rpc", () => ({ l2Provider: () => ({ waitForTransaction: async () => ({}) }) }));
+vi.mock("@/runtime/l2-rpc", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/runtime/l2-rpc")>()),
+  l2Provider: () => ({ waitForTransaction: async () => ({}) }),
+}));
 
 import type { PaidGameLedger } from "@realms-world/identity";
+import { payingWalletKey } from "../value/paying-wallet";
 import { type Reward, rewardKey } from "./reward";
 import { RewardPanel } from "./reward-panel";
 
@@ -45,9 +49,11 @@ const SEALED: Reward = {
 };
 const unmounts: (() => Promise<void>)[] = [];
 
-const mount = async (reward: Reward) => {
+/** The game's registrations name 0x4a1 as the wallet that paid the player's seat, unless `payer` says otherwise. */
+const mount = async (reward: Reward, payer: string | null = "0x4a1") => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const client = new QueryClient({ defaultOptions: { queries: { staleTime: Infinity, retry: false } } });
+  client.setQueryData(payingWalletKey(LEDGER, "0xplayer"), payer);
   client.setQueryData(rewardKey(LEDGER, "0x4a1"), reward);
   const container = document.createElement("div");
   document.body.append(container);
@@ -55,7 +61,7 @@ const mount = async (reward: Reward) => {
   await act(async () =>
     root.render(
       <QueryClientProvider client={client}>
-        <RewardPanel ledger={LEDGER} wallet={{ status: "ready", address: "0x4a1" }} />
+        <RewardPanel ledger={LEDGER} account="0xplayer" />
       </QueryClientProvider>,
     ),
   );
@@ -116,4 +122,8 @@ it("keeps a chest to trade, waits on the draw, and shows what an opened one deli
   expect(lords.textContent).toContain("700");
   const pending = await mount({ ...SEALED, result: { ...SEALED.result, rank: 0, chestId: 0n }, chest: null });
   expect(pending.textContent).toContain("Arrives with the results");
+});
+
+it("draws nothing for an account that held no seat in the game", async () => {
+  expect((await mount(SEALED, null)).textContent).toBe("");
 });
