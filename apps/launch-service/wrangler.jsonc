@@ -1,6 +1,6 @@
 // The launch Worker. It serves /api/factory/* and /api/slots/* on the app's origin, beside identity, which owns the
 // session it checks. Official shards come from the identity directory. Its registrar account
-// (DEPLOYER_ACCOUNT_ADDRESS) and its launchers (LAUNCHER_ALLOWLIST) are the environment's GitHub variables, and
+// is enrolled per shard; its launchers (LAUNCHER_ALLOWLIST) are environment GitHub variables, and
 // DEPLOYER_PRIVATE_KEY and OPERATOR_TOKEN its secrets; the deploy workflow sets them. When Frontier and Blitz run is the
 // season calendar in D1, which launchers edit. Production deploys only at the cutover, when the box's launch service stops: two schedulers
 // would each freeze the same slots.

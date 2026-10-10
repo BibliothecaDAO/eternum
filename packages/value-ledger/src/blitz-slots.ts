@@ -1,4 +1,4 @@
-import { hash, type RpcProvider, type EmittedEvent } from "starknet";
+import { hash, num, type RpcProvider, type EmittedEvent } from "starknet";
 import { decodeLedgerSlot, decodeRegistration, type LedgerSlot, readConfirmedLedgerHead } from "./codecs";
 
 export interface LedgerSlotKey {
@@ -27,7 +27,7 @@ export async function readLedgerSlot(
   provider: RpcProvider,
   address: string,
   key: LedgerSlotKey,
-  head: number,
+  head: number | "latest",
 ): Promise<LedgerSlot> {
   const fields = await provider.callContract(
     { contractAddress: address, entrypoint: "get_slot", calldata: [key.chainId, String(key.slotId)] },
@@ -125,7 +125,7 @@ const readRegistrationTimes = async (
       address,
       from_block: { block_number: 0 },
       to_block: { block_number: head },
-      keys: [[selector], [key.chainId], [String(key.slotId)], wallets],
+      keys: [[selector], [key.chainId], [String(key.slotId)], wallets].map((keys) => keys.map(num.toHex)),
       chunk_size: 100,
       ...(token ? { continuation_token: token } : {}),
     });

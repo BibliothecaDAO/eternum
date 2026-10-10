@@ -1118,7 +1118,24 @@ describe("identity Worker", () => {
       .run();
     const second = createWallet();
     await proveWallet(browser, second, "link");
+    const stamps = () =>
+      env.DB.prepare(
+        `SELECT "walletLinkedAt" AS linked, CAST(unixepoch("updatedAt",'subsec')*1000 AS INTEGER) AS updated FROM "user" WHERE id=?`,
+      )
+        .bind(user.id)
+        .first<{ linked: number | null; updated: number }>();
+    const linked = await stamps();
+    expect(linked!.linked).toBe(linked!.updated);
     await browser.request("/api/auth/siws/unlink", { body: { otp: await walletCode(browser) } });
+    const unlinked = await stamps();
+    expect(unlinked!.linked).toBeNull();
+    expect(
+      await env.DB.prepare(
+        "SELECT replaced_at FROM wallet_link_history WHERE account=? ORDER BY linked_at DESC LIMIT 1",
+      )
+        .bind(user.realmsId)
+        .first<number>("replaced_at"),
+    ).toBe(unlinked!.updated);
     expect(
       await env.DB.prepare("SELECT COUNT(*) AS n FROM wallet_link_history WHERE account=?")
         .bind(user.realmsId)

@@ -55,7 +55,7 @@ afterEach(async () => {
 });
 const target = {
   directory: {
-    accountAtRegistration: async () => "0x456",
+    accountsAtRegistration: async (page: readonly { wallet: string }[]) => page.map(() => "0x456"),
     shards: async () => [{ url: "https://shard.test", chainId: TEST_CHAIN, status: "active" as const }],
   },
   accountAddress: "0x1",

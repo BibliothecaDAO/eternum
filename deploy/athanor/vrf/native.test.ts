@@ -102,7 +102,10 @@ test("a native job refusal and an oversized serialized job leave the pool stampi
     prover = openProver(key.file, identity.chainId);
   const pool = await startStampPool(key.file, { ...identity, vrfPublicKey: prover.publicKey }, 2);
   try {
-    await expect(pool.stamp({ ...invoke(), version: "0x2" })).rejects.toThrow("Transaction refused");
+    // Await worker delivery before entering the error matcher.
+    const refusal = await pool.stamp({ ...invoke(), version: "0x2" }).catch((error: unknown) => error);
+    expect(refusal).toBeInstanceOf(Error);
+    expect(refusal).toMatchObject({ message: "Transaction refused" });
     await expect(pool.stamp({ ...invoke(), calldata: Array(200000).fill("0x1") })).rejects.toThrow(
       "Transaction refused",
     );

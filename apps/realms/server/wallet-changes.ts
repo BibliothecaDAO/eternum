@@ -46,10 +46,10 @@ const writeWalletChange = (
   db.batch([
     db
       .prepare(
-        `UPDATE "user" SET "walletLinkedAt" = CASE WHEN ?1 IS NULL THEN NULL WHEN "address" = ?1 THEN "walletLinkedAt" ELSE CAST(unixepoch('subsec') * 1000 AS INTEGER) END, "address" = ?1, "updatedAt" = ?2 WHERE "id" = ?3 AND EXISTS (
-      SELECT 1 FROM verification WHERE id = ?4 AND value = ?5 AND julianday(expiresAt) > julianday('now'))`,
+        `UPDATE "user" SET "walletLinkedAt" = CASE WHEN ?1 IS NULL THEN NULL WHEN "address" = ?1 THEN "walletLinkedAt" ELSE CAST(unixepoch('subsec') * 1000 AS INTEGER) END, "address" = ?1, "updatedAt" = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE "id" = ?2 AND EXISTS (
+      SELECT 1 FROM verification WHERE id = ?3 AND value = ?4 AND julianday(expiresAt) > julianday('now'))`,
       )
-      .bind(address, new Date().toISOString(), user.id, verification.id, verification.value),
+      .bind(address, user.id, verification.id, verification.value),
     db
       .prepare(`INSERT INTO wallet_change_notices (id, email, address) SELECT ?, ?, ? WHERE changes() = 1`)
       .bind(id, user.email, address),

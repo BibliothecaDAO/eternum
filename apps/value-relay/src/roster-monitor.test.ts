@@ -6,7 +6,11 @@ const fixture = () => ({
     { wallet: "0x1", registeredAt: 90 },
     { wallet: "0x2", registeredAt: 95 },
   ],
-  identity: { accountAtRegistration: vi.fn(async (wallet: string) => (wallet === "0x1" ? "0xa" : "0xb")) },
+  identity: {
+    accountsAtRegistration: vi.fn(async (page: readonly { wallet: string }[]) =>
+      page.map(({ wallet }) => (wallet === "0x1" ? "0xa" : "0xb")),
+    ),
+  },
   roster: vi.fn(async () => [
     { wallet: "0x1", account: "0xa" },
     { wallet: "0x2", account: "0xb" },
@@ -17,7 +21,10 @@ it("accepts the exact historical cohort without pausing", async () => {
   const f = fixture();
   await checkSlotRoster(cohort, f);
   expect(f.pause).not.toHaveBeenCalled();
-  expect(f.identity.accountAtRegistration).toHaveBeenCalledWith("0x1", 90);
+  expect(f.identity.accountsAtRegistration).toHaveBeenCalledWith([
+    { wallet: "0x1", registeredAt: 90 },
+    { wallet: "0x2", registeredAt: 95 },
+  ]);
 });
 it.each(["wrong account", "omitted payer", "extra game"])(
   "pauses before permitting a result for %s",
@@ -38,7 +45,7 @@ it.each(["wrong account", "omitted payer", "extra game"])(
 it("never verifies a partial cohort or an unavailable identity history", async () => {
   const f = fixture();
   await expect(checkSlotRoster({ ...cohort, complete: false }, f)).rejects.toThrow("unverified");
-  f.identity.accountAtRegistration.mockRejectedValue(new Error("history unavailable"));
+  f.identity.accountsAtRegistration.mockRejectedValue(new Error("history unavailable"));
   await expect(checkSlotRoster(cohort, f)).rejects.toThrow("history unavailable");
   expect(f.pause).not.toHaveBeenCalled();
 });

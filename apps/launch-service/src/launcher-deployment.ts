@@ -36,9 +36,9 @@ export class LauncherDeployment {
     private readonly env: Environment,
     private readonly storage: Storage,
   ) {}
-  async account(chainId: string): Promise<string | undefined> {
+  async account(chainId: string): Promise<string> {
     const enrolled = await this.storage.get<Enrolled>(this.accountKey(chainId));
-    if (!enrolled) return undefined;
+    if (!enrolled) throw new Error("launcher_role_not_granted");
     const { shard } = await readLaunchShard(this.env.VALUE_IDENTITY, chainId);
     if (shard.status === "retired") throw new Error("launcher_target_differs");
     const native = new LaunchShard({

@@ -53,5 +53,15 @@ export function createSlotRoutes(store: SlotStore, access: Pick<LaunchAccess, "l
     return context.json({ name, status: "opening" }, 202);
   });
 
+  app.post("/:name/refund", async (context) => {
+    if (context.get("caller")?.kind !== "operator") return context.json({ error: "Operator token required." }, 403);
+    const name = context.req.param("name");
+    if (!BLITZ_SLOT_NAME_PATTERN.test(name)) return context.json({ error: "Invalid slot name" }, 400);
+    const retryAfterSeconds = await store.refund(name);
+    return context.json(
+      { refundsEnabled: retryAfterSeconds === null, retryAfterSeconds },
+      retryAfterSeconds === null ? 200 : 409,
+    );
+  });
   return app;
 }

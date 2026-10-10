@@ -12,14 +12,18 @@ it.each([0, 1, 24, 25, 48, 49, 300])("balances %i registrations into games of at
 });
 it("resolves unlinked and duplicate refunds without writing on game retries", async () => {
   const value = { ...slotValueFixture(3), markRefundable: vi.fn(async () => {}) };
-  const identity = { accountAtRegistration: vi.fn(async (wallet: string) => (wallet === "0x1" ? null : "0xa")) };
+  const identity = {
+    accountsAtRegistration: vi.fn(async (page: readonly { wallet: string }[]) =>
+      page.map(({ wallet }) => (wallet === "0x1" ? null : "0xa")),
+    ),
+  };
   const first = await closedSlotGroups(key, value, identity);
   const second = await closedSlotGroups(key, value, identity);
   expect(second).toEqual(first);
   expect(first.groups).toEqual([[{ wallet: "0x2", account: "0xa" }]]);
   expect(first.refunds).toEqual(["0x1", "0x3"]);
   expect(value.markRefundable).not.toHaveBeenCalled();
-  identity.accountAtRegistration.mockRejectedValueOnce(new Error("identity down"));
+  identity.accountsAtRegistration.mockRejectedValueOnce(new Error("identity down"));
   await expect(closedSlotGroups(key, value, identity)).rejects.toThrow("identity down");
   expect(value.markRefundable).not.toHaveBeenCalled();
 });

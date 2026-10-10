@@ -87,7 +87,7 @@ test("handoff refuses a successful setter receipt while either role still names 
       "set_launcher",
       "set_ledger_operator",
     ]);
-    read.mockResolvedValue(["0x34"]);
+    read.mockImplementation(async (call) => [call.entrypoint === "launcher" ? "0x34" : "0x56"]);
     await confirmRole({
       directory: "/unused",
       manifest: { world: { address: "0x56" } } as never,
@@ -101,5 +101,35 @@ test("handoff refuses a successful setter receipt while either role still names 
     for (const mock of [send, ownerRead, read, status, receipt]) mock.mockRestore();
     if (saved === undefined) delete process.env.DEPLOYER_PRIVATE_KEY;
     else process.env.DEPLOYER_PRIVATE_KEY = saved;
+  }
+});
+
+test("either service role refuses the other role's account before any signing, including an existing shared role", async () => {
+  const send = spyOn(Account.prototype, "execute").mockRejectedValue(new Error("unexpected signing"));
+  try {
+    for (const role of ["launcher", "ledger_operator"] as const) {
+      for (const current of ["0x12", "0x34"]) {
+        const reads: string[] = [];
+        await expect(
+          confirmRole({
+            directory: "/unused",
+            manifest: { world: { address: "0x56" } } as never,
+            provider: {
+              async callContract(call: { entrypoint: string }) {
+                reads.push(call.entrypoint);
+                return [call.entrypoint === role ? current : "0x0034"];
+              },
+            } as never,
+            bootstrap: "0x12",
+            account: "0x34",
+            role,
+          }),
+        ).rejects.toThrow("Launcher and ledger operator must be different accounts");
+        expect(reads).toEqual([role === "launcher" ? "ledger_operator" : "launcher"]);
+      }
+    }
+    expect(send).not.toHaveBeenCalled();
+  } finally {
+    send.mockRestore();
   }
 });

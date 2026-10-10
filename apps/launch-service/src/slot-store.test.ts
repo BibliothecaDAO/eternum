@@ -115,7 +115,11 @@ it("continues closing later paid slots when an earlier ledger opening is unavail
 });
 it("marks refunds once at close and never makes a refund decision during an identity outage", async () => {
   const value = { ...slotValueFixture(26), markRefundable: vi.fn(async () => {}) };
-  const identity = { accountAtRegistration: vi.fn(async (wallet: string) => (wallet === "0x1" ? null : wallet)) };
+  const identity = {
+    accountsAtRegistration: vi.fn(async (page: readonly { wallet: string }[]) =>
+      page.map(({ wallet }) => (wallet === "0x1" ? null : wallet)),
+    ),
+  };
   const launches = new D1LaunchStore(database.db, testChain());
   const store = new D1SlotStore(database.db, launches, value, identity);
   await store.create("refunds", soon());
@@ -123,7 +127,7 @@ it("marks refunds once at close and never makes a refund decision during an iden
     .prepare("UPDATE playtest_slots SET closes_at=?")
     .bind(Date.now() - 1000)
     .run();
-  identity.accountAtRegistration.mockRejectedValueOnce(new Error("identity down"));
+  identity.accountsAtRegistration.mockRejectedValueOnce(new Error("identity down"));
   await expect(store.freeze("refunds")).rejects.toThrow("identity down");
   expect(value.markRefundable).not.toHaveBeenCalled();
   expect(await launches.list("madara.blitz")).toEqual([]);
@@ -146,4 +150,24 @@ it("publishes the same stored shard key used to open the ledger slot", async () 
   expect(slot.chainId).toBe("0xabc");
   expect(await store.list()).toEqual([slot]);
   expect(value.openSlot).toHaveBeenCalledWith({ chainId: slot.chainId, slotId: slot.slotId }, expect.any(Object));
+});
+
+it("removes a new schedule when the ledger open fails, without deleting an existing paid slot on retry", async () => {
+  const value = slotValueFixture();
+  const open = vi.spyOn(value, "openSlot").mockRejectedValueOnce(new Error("ledger unavailable"));
+  const store = new D1SlotStore(
+    database.db,
+    new D1LaunchStore(database.db, testChain()),
+    value,
+    registrationIdentityFixture,
+  );
+  const close = soon();
+  await expect(store.create("failed", close)).rejects.toThrow("ledger unavailable");
+  expect(await store.list()).toEqual([]);
+  await expect(store.get("failed")).rejects.toThrow("Slot not found");
+  await store.create("failed", close);
+  const slot = await store.get("failed");
+  open.mockRejectedValueOnce(new Error("retry unavailable"));
+  await expect(store.create("failed", close)).rejects.toThrow("retry unavailable");
+  expect(await store.get("failed")).toEqual(slot);
 });

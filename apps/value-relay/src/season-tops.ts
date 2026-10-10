@@ -56,31 +56,45 @@ export const processSeasonTops = (mode: "post" | "audit", ports: SeasonPorts, st
 /** Both processes derive the list independently from the same frozen seasonal MMR. */
 async function runSeasonTops(mode: "post" | "audit", ports: SeasonPorts, store: Store): Promise<string | null> {
   const head = await ports.head();
-  const postsComplete = await ingestSeasonEvents("posts", ports.posts, head, ports, store);
-  const complete = await ingestSeasonEvents("changes", ports.changes, head, ports, store);
+  const postsComplete = await ingestSeasonEvents("posts", ports.posts, head, ports, store, mode);
+  const complete = await ingestSeasonEvents("changes", ports.changes, head, ports, store, mode);
   if (!complete || !postsComplete) return "season_history_pending";
   const id = await nextSeason(mode, store);
   if (id === undefined) return null;
   const season = await ports.season(id, head.number);
-  if (head.time < season.end || !season.participantCount) return null;
+  if (head.time < season.end || (mode === "post" && !season.participantCount))
+    return mode === "audit" ? pendingReview(store) : null;
   if (mode === "post" && season.posted && !season.challenged) return null;
-  if (mode === "audit" && (!season.posted || season.challenged)) return null;
+  if (mode === "audit" && (!season.posted || season.challenged)) {
+    await store.delete(`season:review:${id}`);
+    return pendingReview(store);
+  }
   const revision = `${season.reviewUntil}:${(await store.get<string>(`season:proposal:${season.id}`)) ?? ""}:${(await store.get<string>(`season:correction:${season.id}`)) ?? ""}`;
   const checkedKey = `season:checked:${season.id}`;
-  if (mode === "audit" && (await store.get<string>(checkedKey)) === revision) return null;
+  if (mode === "audit" && (await store.get<string>(checkedKey)) === revision) {
+    await store.delete(`season:review:${id}`);
+    return pendingReview(store);
+  }
   const ratings = await readSeasonRatings(season, head, ports, store);
   const expected = computeSeasonTop(ratings, season.paidFraction);
   if (mode === "post") {
     await ports.post(season.id, expected);
     return null;
   }
-  return reviewSeasonTop(season, head, expected, revision, ports, store);
+  const issue = await reviewSeasonTop(season, head, expected, revision, ports, store);
+  await store.delete(`season:review:${id}`);
+  return issue ?? pendingReview(store);
+}
+
+async function pendingReview(store: Store) {
+  const pending = await store.list<number>({ prefix: "season:review:", limit: 1 });
+  return pending.size ? `season_review_pending:${[...pending.values()][0]}` : null;
 }
 
 async function nextSeason(mode: "post" | "audit", store: Store) {
   const key = `season:${mode}:cursor`;
   const cursor = await store.get<string>(key);
-  const prefix = "season:known:";
+  const prefix = mode === "audit" ? "season:review:" : "season:known:";
   let pending = await store.list<number>({ prefix, limit: 1, ...(cursor ? { startAfter: cursor } : {}) });
   if (!pending.size && cursor) pending = await store.list<number>({ prefix, limit: 1 });
   const entry = [...pending][0];
@@ -143,8 +157,10 @@ async function ingestSeasonEvents(
   head: Head,
   ports: SeasonPorts,
   store: Store,
+  mode: "post" | "audit",
 ) {
-  const key = `season:events:${stream}`;
+  // Replay posts once for this review queue, including posts ingested before it existed.
+  const key = `season:events:${mode === "audit" && stream === "posts" ? "reviews" : stream}`;
   const saved = await store.get<Cursor>(key);
   if (saved && (head.number < saved.head || BigInt(await ports.blockHash(saved.head)) !== BigInt(saved.hash)))
     throw new Error("season_event_anchor_changed");
@@ -158,6 +174,8 @@ async function ingestSeasonEvents(
     throw new Error("invalid_season_event_page");
   for (const row of page.rows) {
     await store.put(`season:known:${row.id}`, row.id);
+    if (mode === "audit" && (row.kind === "posted" || row.kind === "corrected"))
+      await store.put(`season:review:${row.id}`, row.id);
     if (row.kind === "corrected") {
       if (!row.revision) throw new Error("season_correction_revision_missing");
       await store.put(`season:correction:${row.id}`, row.revision);

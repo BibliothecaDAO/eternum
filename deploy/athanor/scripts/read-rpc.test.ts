@@ -348,3 +348,35 @@ test("the public audit requires the fixed mixed-batch gate, not any invalid-requ
     node.stop(true);
   }
 });
+
+test("read batches stop at 32 calls before any private node request", async () => {
+  const received: unknown[] = [];
+  const node = Bun.serve({
+    hostname: "127.0.0.1",
+    port: 0,
+    async fetch(request) {
+      const call = await request.json();
+      received.push(call);
+      return Response.json({ jsonrpc: "2.0", id: call.id, result: "0x123" });
+    },
+  });
+  const proxy = startReadRpc(node.url.origin, 0, playIdentity, noStamp, undefined, "127.0.0.1");
+  const send = async (count: number) =>
+    (
+      await fetch(proxy.url, {
+        method: "POST",
+        body: JSON.stringify(
+          Array.from({ length: count }, (_, id) => ({ jsonrpc: "2.0", id, method: "starknet_chainId", params: [] })),
+        ),
+      })
+    ).json();
+  try {
+    expect((await send(33)).error.code).toBe(-32600);
+    expect(received).toHaveLength(0);
+    expect(await send(32)).toHaveLength(32);
+    expect(received).toHaveLength(32);
+  } finally {
+    proxy.stop(true);
+    node.stop(true);
+  }
+});

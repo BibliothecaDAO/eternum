@@ -1,7 +1,7 @@
 import { ledgerAbi, ledgerEvent, ledgerCall } from "../test-support/ledger-abi";
 import { response } from "../test-support/abi";
 import { expect, it, vi } from "vitest";
-import { type RpcProvider } from "starknet";
+import { hash, type RpcProvider } from "starknet";
 import { readLedgerSlot, readRegistrationPage, rpcAt } from "./index";
 const key = { chainId: "0x1", slotId: 7 };
 const fixture = (count = 125) => {
@@ -105,4 +105,42 @@ it("reads absent slots for opening but never serves their registrations", async 
   f.call.mockResolvedValue(Array(9).fill("0"));
   expect(await readLedgerSlot(f.provider, "0x10", key, 99)).toMatchObject({ exists: false });
   await expect(readRegistrationPage(f.provider, "0x10", key)).rejects.toThrow("invalid_ledger_slot");
+});
+
+it("serializes every registration event filter key as RPC hex, including double-digit slots", async () => {
+  const f = fixture(1);
+  f.call.mockImplementation(async (request) =>
+    request.entrypoint === "get_slot"
+      ? response(ledgerAbi, "get_slot", {
+          season_id: 1,
+          exists: true,
+          preset_id: 2,
+          close: 100,
+          end: 200,
+          pool: { low: 0, high: 0 },
+          registered_count: 1,
+          cancelled: false,
+        })
+      : ["17"],
+  );
+  f.events.mockResolvedValue({
+    events: [
+      {
+        from_address: "0x10",
+        ...ledgerEvent("Registered", { key: { shard: 18, slot_id: 12 }, owner: 17 }),
+        block_number: 50,
+        block_hash: "0x50",
+      },
+    ],
+  });
+  expect((await readRegistrationPage(f.provider, "0x10", { chainId: "18", slotId: 12 })).registrations).toEqual([
+    { wallet: "17", registeredAt: 90 },
+  ]);
+  expect(f.events).toHaveBeenCalledExactlyOnceWith({
+    address: "0x10",
+    from_block: { block_number: 0 },
+    to_block: { block_number: 99 },
+    chunk_size: 100,
+    keys: [[hash.getSelectorFromName("Registered")], ["0x12"], ["0xc"], ["0x11"]],
+  });
 });
