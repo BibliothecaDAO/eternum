@@ -188,13 +188,7 @@ fn typed_commands() -> Array<Command> {
         Command::ClaimPlayerFaithPoints(
             crate::faith::ClaimPlayer { player: 999.try_into().unwrap(), wonder_id: 999999 },
         ),
-        Command::RecordBlitzResults(
-            crate::blitz_results::RecordBlitzResults {
-                start: 0,
-                players: array![crate::blitz_results::RankedPlayer { wallet: 999.try_into().unwrap(), rank: 1 }].span(),
-            },
-        ),
-        Command::CraftRelic(999999),
+        Command::RecordBlitzResults, Command::CraftRelic(999999),
         Command::CreateGuild(crate::guilds::CreateGuild { owned_structure_id: 999999, public: false, name: 'route' }),
         Command::JoinGuild(crate::guilds::JoinGuild { owned_structure_id: 999999, guild_id: 999.try_into().unwrap() }),
         Command::LeaveGuild,
