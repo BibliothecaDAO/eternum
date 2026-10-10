@@ -281,16 +281,16 @@ fn admin_cannot_rescue_managed_lords() {
 }
 
 #[test]
-fn payout_pause_keeps_registration_and_funding_open() {
+fn payout_pause_keeps_registration_open() {
     let fixture = deploy_fixture(default_preset());
-    fund_and_approve_player(@fixture, player(0), 700);
+    fund_and_approve_player(@fixture, player(0), 500);
 
     start_cheat_caller_address(fixture.ledger_address, ADMIN());
     fixture.ledger.pause();
     start_cheat_caller_address(fixture.ledger_address, player(0));
     fixture.ledger.register(SLOT_KEY, false, false);
-    fixture.ledger.fund(SLOT_KEY, 200);
-    assert!(fixture.ledger.get_slot(SLOT_KEY).pool == 700);
+
+    assert!(fixture.ledger.get_slot(SLOT_KEY).pool == 500);
 }
 
 #[test]
@@ -389,14 +389,14 @@ fn rejects_cancellation_after_start() {
 }
 
 #[test]
-fn cancellation_refunds_registration_and_sponsorship() {
+fn cancellation_refunds_exact_registration_payment() {
     let fixture = deploy_fixture(default_preset());
     let owner = player(0);
-    fund_and_approve_player(@fixture, owner, 700);
+    fund_and_approve_player(@fixture, owner, 500);
 
     start_cheat_caller_address(fixture.ledger_address, owner);
     fixture.ledger.register(SLOT_KEY, false, false);
-    fixture.ledger.fund(SLOT_KEY, 200);
+
     stop_cheat_caller_address(fixture.ledger_address);
     start_cheat_caller_address(fixture.ledger_address, OPERATOR());
     fixture.ledger.cancel_slot(SLOT_KEY);
@@ -405,7 +405,7 @@ fn cancellation_refunds_registration_and_sponsorship() {
     fixture.ledger.refund(SLOT_KEY);
     stop_cheat_caller_address(fixture.ledger_address);
 
-    assert!(fixture.lords.balance_of(owner) == 700, "owner should recover all payments");
+    assert!(fixture.lords.balance_of(owner) == 500, "owner should recover all payments");
     assert!(fixture.ledger.get_slot(SLOT_KEY).pool == 0, "cancelled pool should be empty");
 }
 
@@ -794,17 +794,17 @@ fn frontier_claim_namespace_binds_shard_and_survives_season_close() {
 }
 
 #[test]
-fn sword_shield_and_sponsor_payments_feed_the_same_season() {
+fn sword_and_shield_payments_feed_the_same_season() {
     let fixture = deploy_fixture(default_preset());
     let owner = player(0);
-    fund_and_approve_player(@fixture, owner, 1700);
+    fund_and_approve_player(@fixture, owner, 1500);
 
     start_cheat_caller_address(fixture.ledger_address, owner);
     fixture.ledger.register(SLOT_KEY, true, true);
-    fixture.ledger.fund(SLOT_KEY, 200);
+
     apply_results(@fixture, ranked_players(1));
-    assert!(fixture.ledger.get_season(1).pool == 1700);
-    assert!(fixture.lords.balance_of(fixture.ledger_address) == 1700);
+    assert!(fixture.ledger.get_season(1).pool == 1500);
+    assert!(fixture.lords.balance_of(fixture.ledger_address) == 1500);
 }
 
 #[test]
@@ -1131,20 +1131,20 @@ fn chest_request_cannot_be_repeated() {
 }
 
 #[test]
-fn paid_flags_and_sponsorship_feed_the_chest_reserve_after_the_treasury_cut() {
+fn paid_flags_feed_the_chest_reserve_after_the_treasury_cut() {
     let mut preset = default_preset();
     preset.protocol_cut_bps = 2000;
     preset.chest_lords_bps = 2000;
     let fixture = deploy_fixture(preset);
-    fund_and_approve_player(@fixture, player(0), 2000);
+    fund_and_approve_player(@fixture, player(0), 1500);
 
     start_cheat_caller_address(fixture.ledger_address, player(0));
     fixture.ledger.register(SLOT_KEY, true, true);
-    fixture.ledger.fund(SLOT_KEY, 500);
+
     apply_results(@fixture, ranked_players(1));
-    assert!(fixture.lords.balance_of(TREASURY()) == 400);
-    assert!(fixture.ledger.get_season(1).chest_reserve == 320);
-    assert!(fixture.ledger.get_season(1).pool == 1280);
+    assert!(fixture.lords.balance_of(TREASURY()) == 300);
+    assert!(fixture.ledger.get_season(1).chest_reserve == 240);
+    assert!(fixture.ledger.get_season(1).pool == 960);
 }
 
 #[test]
@@ -1400,21 +1400,7 @@ fn multiple_games_count_a_participant_once_and_accumulate_one_pool() {
     assert!(fixture.ledger.get_season(1).pool == 6000);
 }
 
-#[test]
-fn sponsoring_before_registration_is_preserved_in_the_refund() {
-    let fixture = deploy_fixture(default_preset());
-    let owner = player(0);
-    fund_and_approve_player(@fixture, owner, 700);
 
-    start_cheat_caller_address(fixture.ledger_address, owner);
-    fixture.ledger.fund(SLOT_KEY, 200);
-    fixture.ledger.register(SLOT_KEY, false, false);
-    start_cheat_caller_address(fixture.ledger_address, OPERATOR());
-    fixture.ledger.cancel_slot(SLOT_KEY);
-    start_cheat_caller_address(fixture.ledger_address, owner);
-    fixture.ledger.refund(SLOT_KEY);
-    assert!(fixture.lords.balance_of(owner) == 700);
-}
 
 #[test]
 #[should_panic(expected: "Ledger: slot outside season")]
@@ -1469,7 +1455,7 @@ fn a_chest_open_requires_the_owners_burn_approval() {
 }
 
 #[test]
-fn treasury_cut_is_taken_once_from_entries_flags_and_sponsors() {
+fn treasury_cut_is_taken_once_from_entries_and_flags() {
     let mut preset = default_preset();
     preset.protocol_cut_bps = 2000;
     let fixture = deploy_fixture(preset);
@@ -1478,12 +1464,12 @@ fn treasury_cut_is_taken_once_from_entries_flags_and_sponsors() {
 
     start_cheat_caller_address(fixture.ledger_address, owner);
     fixture.ledger.register(SLOT_KEY, true, true);
-    fixture.ledger.fund(SLOT_KEY, 1000);
+
     stop_cheat_caller_address(fixture.ledger_address);
     apply_results(@fixture, ranked_players(1));
-    assert!(fixture.lords.balance_of(TREASURY()) == 500);
-    assert!(fixture.ledger.get_season(1).pool == 2000);
-    assert!(fixture.lords.balance_of(fixture.ledger_address) == 2000);
+    assert!(fixture.lords.balance_of(TREASURY()) == 300);
+    assert!(fixture.ledger.get_season(1).pool == 1200);
+    assert!(fixture.lords.balance_of(fixture.ledger_address) == 1200);
 }
 
 #[test]
@@ -1605,15 +1591,7 @@ fn a_season_cannot_mix_chest_presets() {
     fixture.ledger.open_slot(SlotKey { shard: 'shard', slot_id: 8 }, 1, 2, START, END);
 }
 
-#[test]
-#[should_panic(expected: "Ledger: game pool exceeds u128")]
-fn all_sponsor_value_has_the_same_safe_arithmetic_bound_as_entries() {
-    let fixture = deploy_fixture(default_preset());
-    let amount = 0x100000000000000000000000000000000;
-    fund_and_approve_player(@fixture, player(0), amount);
-    start_cheat_caller_address(fixture.ledger_address, player(0));
-    fixture.ledger.fund(SLOT_KEY, amount);
-}
+
 
 #[test]
 #[should_panic(expected: "Ledger: invalid chest odds")]
