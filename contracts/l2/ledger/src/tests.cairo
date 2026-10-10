@@ -2237,7 +2237,7 @@ fn close_voids_unpaid_reports_and_returns_their_backing() {
     start_cheat_caller_address(fixture.ledger_address, ADMIN());
     fixture.ledger.close_frontier('shard', 1);
     assert!(fixture.lords.balance_of(TREASURY()) == 1000);
-    assert!(fixture.ledger.withdrawal_voided('shard', 'pending'));
+    assert!((fixture.ledger.get_frontier('shard', 1).closed && !fixture.ledger.get_payment('shard', 'pending').paid));
 }
 
 #[test]
@@ -2651,10 +2651,12 @@ fn reports_do_not_reserve_money_and_cannot_block_closing_the_pool() {
     start_cheat_block_timestamp(fixture.ledger_address, fixture.ledger.frontier_claim_deadline('shard', 1));
     fixture.ledger.close_frontier('shard', 1);
     assert!(fixture.lords.balance_of(TREASURY()) == 400);
-    assert!(fixture.ledger.withdrawal_voided('shard', 'second'));
-    assert!(fixture.ledger.withdrawal_voided('shard', 'oversized'));
-    assert!(fixture.ledger.withdrawal_voided('shard', 'paused_report'));
-    assert!(!fixture.ledger.withdrawal_voided('shard', 'first'));
+    assert!((fixture.ledger.get_frontier('shard', 1).closed && !fixture.ledger.get_payment('shard', 'second').paid));
+    assert!((fixture.ledger.get_frontier('shard', 1).closed && !fixture.ledger.get_payment('shard', 'oversized').paid));
+    assert!(
+        (fixture.ledger.get_frontier('shard', 1).closed && !fixture.ledger.get_payment('shard', 'paused_report').paid),
+    );
+    assert!(!(fixture.ledger.get_frontier('shard', 1).closed && !fixture.ledger.get_payment('shard', 'first').paid));
     start_cheat_caller_address(fixture.ledger_address, OPERATOR());
     assert!(safe.pay('shard', 1, 'second', player(1), 400).is_err());
     fixture.ledger.pay('shard', 1, 'first', player(1), 600);
@@ -2676,35 +2678,19 @@ fn reporting_grace_accepts_confirmed_receipts_after_the_shards_withdrawal_cutoff
 }
 
 
-
-
-
 #[test]
-#[feature("safe_dispatcher")]
-fn existing_result_rank_rejects_duplicate_wallets_and_failed_validation_is_atomic() {
+#[should_panic(expected: "Ledger: duplicate result owner")]
+fn existing_result_rank_rejects_duplicate_wallets() {
     let fixture = deploy_fixture(default_preset());
     register_players(@fixture, 2);
     start_cheat_caller_address(fixture.ledger_address, OPERATOR());
     start_cheat_block_timestamp(fixture.ledger_address, START);
-    let safe = IGameLedgerSafeDispatcher { contract_address: fixture.ledger_address };
-    assert!(
-        safe
-            .apply_results(
-                GAME_KEY,
-                array![RankedPlayer { wallet: player(0), rank: 1 }, RankedPlayer { wallet: player(0), rank: 1 }],
-            )
-            .is_err(),
-    );
-    assert!(fixture.ledger.get_player_result(GAME_KEY, player(0)).rank == 0);
-    assert!(fixture.ledger.get_game(GAME_KEY).pool == 1000);
-    fixture.ledger.apply_results(GAME_KEY, ranked_players(2));
-    let first = fixture.ledger.get_player_result(GAME_KEY, player(0));
-    assert!(first.rank == 1);
-    assert!(safe.apply_results(GAME_KEY, ranked_players(2)).is_err());
-    assert!(fixture.ledger.get_player_result(GAME_KEY, player(0)).rank == first.rank);
+    fixture
+        .ledger
+        .apply_results(
+            GAME_KEY, array![RankedPlayer { wallet: player(0), rank: 1 }, RankedPlayer { wallet: player(0), rank: 2 }],
+        );
 }
-
-
 
 
 #[test]

@@ -35,7 +35,6 @@ pub trait IGameLedger<TState> {
     );
     fn pay(ref self: TState, shard: felt252, season_id: u32, claim_id: felt252, wallet: ContractAddress, amount: u256);
     fn report_withdrawal(ref self: TState, shard: felt252, season_id: u32, claim_id: felt252, amount: u256);
-    fn withdrawal_voided(self: @TState, shard: felt252, claim_id: felt252) -> bool;
     fn close_frontier(ref self: TState, shard: felt252, season_id: u32);
     fn get_frontier(self: @TState, shard: felt252, season_id: u32) -> FrontierSeason;
     fn frontier_unlocked(self: @TState, shard: felt252, season_id: u32) -> u256;
@@ -127,11 +126,11 @@ pub mod GameLedger {
     use starknet::storage::{Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess};
     use starknet::{ClassHash, ContractAddress, SyscallResultTrait};
     use super::{
-        BPS, ICollectibleDispatcher, ICollectibleDispatcherTrait, IGameLedger,
-        IMMRTokenDispatcher, IMMRTokenDispatcherTrait, IPassBurnDispatcher, IPassBurnDispatcherTrait,
-        IPassRestoreDispatcher, IPassRestoreDispatcherTrait, ISeasonPassMetadataDispatcher,
-        ISeasonPassMetadataDispatcherTrait, MMR_PRECISION, NO_PASS, OPERATOR_ROLE, PAUSER_ROLE, PAYOUT_WEIGHT_SCALE,
-        SEASON_PASS, SEASON_REVIEW_SECONDS, VILLAGE_PASS, result_commitment,
+        BPS, ICollectibleDispatcher, ICollectibleDispatcherTrait, IGameLedger, IMMRTokenDispatcher,
+        IMMRTokenDispatcherTrait, IPassBurnDispatcher, IPassBurnDispatcherTrait, IPassRestoreDispatcher,
+        IPassRestoreDispatcherTrait, ISeasonPassMetadataDispatcher, ISeasonPassMetadataDispatcherTrait, MMR_PRECISION,
+        NO_PASS, OPERATOR_ROLE, PAUSER_ROLE, PAYOUT_WEIGHT_SCALE, SEASON_PASS, SEASON_REVIEW_SECONDS, VILLAGE_PASS,
+        result_commitment,
     };
 
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
@@ -518,11 +517,6 @@ pub mod GameLedger {
                 .payments
                 .entry((shard, claim_id))
                 .write(WithdrawalPayment { paid: false, season_id, wallet: 0.try_into().unwrap(), amount });
-        }
-
-        fn withdrawal_voided(self: @ContractState, shard: felt252, claim_id: felt252) -> bool {
-            let payment = self.get_payment(shard, claim_id);
-            payment.amount != 0 && !payment.paid && self.get_frontier(shard, payment.season_id).closed
         }
 
         fn pay(
@@ -1223,7 +1217,6 @@ pub mod GameLedger {
             ref self: ContractState, key: GameKey, registered_count: u16, ranked: Span<RankedPlayer>,
         ) {
             assert!(ranked.len() == registered_count.into(), "Ledger: roster size mismatch");
-            let mut seen: Felt252Dict<bool> = Default::default();
             for index in 0..ranked.len() {
                 let row = *ranked.at(index);
                 let expected_rank = if index == 0 {
@@ -1242,11 +1235,7 @@ pub mod GameLedger {
                     self.registrations.entry((key, row.wallet)).read().registered, "Ledger: unregistered result owner",
                 );
                 assert!(self.results.entry((key, row.wallet)).read().rank == 0, "Ledger: duplicate result owner");
-                assert!(!seen.get(row.wallet.into()), "Ledger: duplicate result owner");
-                seen.insert(row.wallet.into(), true);
-            }
-            for row in ranked {
-                self.results.entry((key, *row.wallet)).write(PlayerResult { rank: *row.rank, ..Default::default() });
+                self.results.entry((key, row.wallet)).write(PlayerResult { rank: row.rank, ..Default::default() });
             }
         }
     }
