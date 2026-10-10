@@ -485,3 +485,17 @@ test("only the operator can enable refunds for a named slot, with an explicit re
   value.refundSlot.mockRejectedValue(new Error("ledger unavailable"));
   expect((await app.request(url, { method: "POST", headers })).status).toBe(503);
 });
+
+test("refuses deleting a paid-slot run even with operator credentials", async () => {
+  const { app, store } = createApp(signedIn(ALLOWED_ADDRESS));
+  await store.enqueue("game", { environment: "madara.blitz", gameName: "paid-delete", slotId: 12, groupIndex: 0 });
+  const response = await app.request(
+    "https://play.realms.party/api/factory/runs/madara.blitz/paid-delete/actions/delete",
+    { method: "POST", headers: { authorization: `Bearer ${OPERATOR_TOKEN}` } },
+  );
+  expect(response.status).toBe(409);
+  expect(await store.find("game", "madara.blitz", "paid-delete")).not.toBeNull();
+  expect(await store.delete("game", "madara.blitz", "paid-delete")).toBe(false);
+  await store.enqueue("game", { environment: "madara.eternum", gameName: "ordinary-delete" });
+  expect(await store.delete("game", "madara.eternum", "ordinary-delete")).toBe(true);
+});
