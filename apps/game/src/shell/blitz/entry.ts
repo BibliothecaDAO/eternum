@@ -2,7 +2,9 @@ import { useQuery } from "@tanstack/react-query";
 
 import type { Credits, Registration } from "@realms-world/value-ledger/codecs";
 
-import { type BlitzRow, slotKeyOf } from "../blitz-rows";
+import type { PlaytestSlot } from "@/ui/features/factory-v2/api/factory-worker";
+
+import { slotKeyOf } from "../blitz-rows";
 import {
   type EntrySplit,
   type EnvironmentLedger,
@@ -57,39 +59,36 @@ export const entryCost = (terms: Pick<EntryTerms, "prices" | "credits">, choice:
   return { cash, swordCredit, shieldCredit };
 };
 
-type EntryState = "choose" | "short" | "seated" | "refund" | "refunded" | "closed";
+type EntryState = "choose" | "short" | "registered" | "seated" | "refund" | "refunded" | "closed";
 
 /**
- * The panel's state: seated once registered; on a cancelled slot, or a registration the slot's close left unseated
- * (refundable), a refund until the paid LORDS and spent credits are back; closed to anyone else once the slot has
- * closed. Then choosing, or short of LORDS: a linked wallet pays at once, the wallet sheet checking its STRK for the fee.
+ * The panel's state. A registration is "registered" until the slot's close draws its games, then "seated" once the
+ * ledger names its game; on a cancelled slot, or a registration the close left unseated (refundable), a refund until
+ * the paid LORDS and spent credits are back. Anyone else: closed once the slot has closed, else choosing or short of
+ * LORDS (a linked wallet pays at once, the wallet sheet checking its STRK for the fee).
  */
 export const entryState = (terms: EntryTerms, choice: EntryChoice, now: number): EntryState => {
   const { registration } = terms;
   if (registration.registered && (terms.cancelled || registration.refundable))
     return registration.paid > 0n || registration.swordCredit || registration.shieldCredit ? "refund" : "refunded";
-  if (registration.registered) return "seated";
+  if (registration.registered) return registration.gameId === 0 ? "registered" : "seated";
   if (now >= terms.close) return "closed";
   if (terms.lords < entryCost(terms, choice).cash) return "short";
   return "choose";
 };
 
-/**
- * A Blitz row's seats: a slot's registrations as the ledger counts them (uncapped, so no total; undefined until it
- * answers), a launched game's taken of its roster as Herald gives them. The one source for every seat count.
- */
-export const useRowSeats = (row: BlitzRow | undefined): { filled?: number; total?: number } => {
+export const slotRegisteredKey = (key: SlotKey) => ["ledger", "registered", key.shard, key.slotId] as const;
+
+/** A slot's registrations as the ledger counts them (uncapped: no total); undefined until it answers. */
+export const useSlotRegistered = (slot: PlaytestSlot): number | undefined => {
   const ledger = environmentLedger();
-  const key = row?.kind === "slot" ? slotKeyOf(row.slot) : null;
-  const registered = useQuery({
-    queryKey: key ? ["ledger", "seats", key.shard, key.slotId] : ["ledger", "seats", "none"],
-    queryFn: async () => (await (ledger as EnvironmentLedger).slot(key as SlotKey)).registeredCount,
-    enabled: ledger !== null && key !== null,
+  const key = slotKeyOf(slot);
+  return useQuery({
+    queryKey: slotRegisteredKey(key),
+    queryFn: async () => (await (ledger as EnvironmentLedger).slot(key)).registeredCount,
+    enabled: ledger !== null,
     refetchInterval: 15_000,
   }).data;
-  if (!row) return {};
-  if (row.kind === "slot") return { filled: registered };
-  return { filled: row.seats.filled ?? undefined, total: row.seats.total ?? undefined };
 };
 
 /** The wallet's calls for the chosen entry: approve what it pays in LORDS, then register in the slot. */

@@ -143,7 +143,9 @@ export const LAB_SCREENS = {
   "wallet-ready": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
   "entry-choose": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
   "entry-short": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
+  "entry-registered": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
   "entry-seated": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
+  "entry-unseated": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
   "entry-cancelled": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
   "entry-refunded": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
   "entry-no-wallet": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
@@ -169,7 +171,9 @@ export const LAB_PAYOUT_WALLETS: Partial<Record<keyof typeof LAB_SCREENS, Payout
   "wallet-ready": { status: "ready", address: LAB_WALLET },
   "entry-choose": { status: "ready", address: LAB_WALLET },
   "entry-short": { status: "ready", address: LAB_WALLET },
+  "entry-registered": { status: "ready", address: LAB_WALLET },
   "entry-seated": { status: "ready", address: LAB_WALLET },
+  "entry-unseated": { status: "ready", address: LAB_WALLET },
   "entry-cancelled": { status: "ready", address: LAB_WALLET },
   "entry-refunded": { status: "ready", address: LAB_WALLET },
   "entry-no-wallet": { status: "no_wallet" },
@@ -220,13 +224,29 @@ const ENTRY: EntryTerms = {
   lords: 2_140n * WEI,
 };
 
+/** The same slot past its close, its games drawn. */
+const CLOSED_ENTRY: EntryTerms = {
+  ...ENTRY,
+  close: NOW - 20 * 60,
+  credits: { swords: 1, shields: 0 },
+  lords: 1_140n * WEI,
+};
+
+/** Screens whose slot has closed: its lobby is reached by its address once the list no longer shows it. */
+const CLOSED_SLOT_SCREENS: readonly LabScreen[] = ["entry-seated", "entry-unseated", "entry-refunded"];
+
+/** How many registered in the slot, as the ledger counts them. */
+export const LAB_SLOT_REGISTERED = 31;
+
 /** A paid Blitz's terms for the payout wallet on each entry screen: what the ledger and the tokens would answer. */
 export const LAB_ENTRY_TERMS: Partial<Record<keyof typeof LAB_SCREENS, EntryTerms>> = {
   "entry-choose": ENTRY,
   "entry-short": { ...ENTRY, credits: { swords: 0, shields: 0 }, lords: 320n * WEI },
-  "entry-seated": { ...ENTRY, credits: { swords: 1, shields: 0 }, registration: SEATED, lords: 1_140n * WEI },
+  "entry-registered": { ...ENTRY, credits: { swords: 1, shields: 0 }, registration: SEATED, lords: 1_140n * WEI },
+  "entry-seated": { ...CLOSED_ENTRY, registration: { ...SEATED, gameId: 7 } },
+  "entry-unseated": { ...CLOSED_ENTRY, registration: { ...SEATED, refundable: true } },
   "entry-cancelled": { ...ENTRY, cancelled: true, registration: SEATED, lords: 1_140n * WEI },
-  "entry-refunded": { ...ENTRY, cancelled: true, registration: { ...SEATED, swordCredit: false, paid: 0n } },
+  "entry-refunded": { ...CLOSED_ENTRY, registration: { ...SEATED, refundable: true, swordCredit: false, paid: 0n } },
   "entry-no-wallet": ENTRY,
 };
 
@@ -235,19 +255,23 @@ export const LAB_EMAIL_CODE = "111111";
 
 export type LabScreen = keyof typeof LAB_SCREENS;
 
-/** The slot closing at 16:30, two hours away, on the lab's shard. */
-export const labSlots = () => ({
-  slots: [
-    {
-      slotId: LAB_SLOT_KEY.slotId,
-      chainId: LAB_CHAIN,
-      name: "blitz-1630",
-      closesAt: new Date((NOW + 2 * 3600 + 4 * 60) * 1000).toISOString(),
-      frozenAt: null,
-      closed: false,
-    },
-  ],
-});
+/** The slot closing at 16:30, two hours away, on the lab's shard; on the after-close screens, closed and split. */
+export const labSlots = (screen: LabScreen) => {
+  const closed = CLOSED_SLOT_SCREENS.includes(screen);
+  const closesAt = closed ? CLOSED_ENTRY.close : ENTRY.close;
+  return {
+    slots: [
+      {
+        slotId: LAB_SLOT_KEY.slotId,
+        chainId: LAB_CHAIN,
+        name: "blitz-1630",
+        closesAt: new Date(closesAt * 1000).toISOString(),
+        frozenAt: closed ? new Date((closesAt + 60) * 1000).toISOString() : null,
+        closed,
+      },
+    ],
+  };
+};
 
 const NAMES = [
   "Ysabeau",

@@ -96,9 +96,9 @@ describe("a Blitz's keys on the ledger", () => {
 });
 
 describe("a Blitz slot's row", () => {
-  it("opens its lobby, where its entry is paid, and leaves its seats to the ledger", () => {
+  it("opens its lobby, where its entry is paid, and draws no seats: the ledger counts its registrations", () => {
     const [row] = blitzRows([], [slot("paid", 1_000)]);
     expect(row.action).toBe("open");
-    expect(row.seats).toEqual({ filled: null, total: null });
+    expect(row).not.toHaveProperty("seats");
   });
 });

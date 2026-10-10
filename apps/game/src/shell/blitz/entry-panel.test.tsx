@@ -117,7 +117,7 @@ it("pays the seat and the chosen flags from the payout wallet, a credit paying f
   ]);
 });
 
-it("names what is short, the seat, and the refund", async () => {
+it("names what is short, the registration, the seat, and the refund", async () => {
   expect((await mount({ ...TERMS, lords: 320n * WEI })).textContent).toContain("Need 180 more LORDS");
   // 0.1 LORDS short of the 500 seat is one more to find, never "Need 0 more".
   expect((await mount({ ...TERMS, lords: 500n * WEI - WEI / 10n })).textContent).toContain("Need 1 more LORDS");
@@ -132,7 +132,13 @@ it("names what is short, the seat, and the refund", async () => {
     refundable: false,
     gameId: 0,
   };
-  expect((await mount({ ...TERMS, registration: seat })).textContent).toContain("Seated");
+  const registered = (await mount({ ...TERMS, registration: seat })).textContent;
+  expect(registered).toContain("Registered");
+  expect(registered).not.toContain("Seated");
+  const seated = await mount({ ...TERMS, registration: { ...seat, gameId: 9 } });
+  expect(seated.textContent).toContain("Seated");
+  expect(seated.textContent).toContain("Your game");
+  expect((await mount({ ...TERMS, registration: { ...seat, refundable: true } })).textContent).toContain("Not seated");
   const refund = await mount({ ...TERMS, registration: seat, cancelled: true });
   expect(refund.textContent).toContain("Sword credit");
   await press(refund, "Take refund");

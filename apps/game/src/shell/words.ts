@@ -90,9 +90,12 @@ export const BLITZ_WORDS = {
   preparing: "Preparing…",
   /** Shown only to assistive technology; the seats are drawn. */
   seats: "Seats",
+  registered: "Registered",
+  registeredUnit: "registered",
+  /** Under a slot's registered count: why it has no seats yet. */
+  drawnAtClose: (seats: number) => `No cap. Games of up to ${seats} are drawn when entry closes.`,
   /** A slot's row: its lobby holds the paid entry. */
   open: "Open",
-  full: (nextStart: string) => `Full. The ${nextStart} game has seats.`,
   /** Above the lobby's countdown. */
   startsIn: "Starts in",
   endsIn: "Ends in",
@@ -244,7 +247,11 @@ export const ENTRY_WORDS = {
   payAndJoin: "Pay & join",
   needMore: (amount: string) => `Need ${amount} more LORDS`,
   paidFromWallet: "Entry is paid from your payout wallet",
+  registered: "Registered",
+  registeredLine: "Your seat is drawn when entry closes.",
   seated: "Seated",
+  yourGame: "Your game",
+  notSeated: "Not seated",
   paid: "Paid",
   credit: "Credit",
   credits: (count: number) => `Credit ×${count}`,
@@ -256,7 +263,7 @@ export const ENTRY_WORDS = {
   back: "Back",
   refunded: "Refunded",
   closed: "Entry closed",
-  closedLine: "This game has started; it takes no more entries.",
+  closedLine: "Entry has closed; this slot takes no more players.",
   refundedLine: "Your LORDS and credits are back in your wallet.",
   unreadable: "This game's paid entry could not be read, so it cannot be joined yet.",
   whereItGoes: "Where this entry goes: the season pool, the season's chests, the treasury",

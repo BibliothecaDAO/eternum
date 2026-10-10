@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-10",
+    title: "Blitz slots show who registered",
+    description:
+      "A Blitz slot shows how many players registered instead of a row of seats. Your entry reads Registered until the slot closes, then Seated with the way to your game, or Not seated with your refund to take.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-10",
     title: "Your Blitz winnings follow your seat",
     description:
       "Results, chests and season prizes are read and claimed with the wallet your seat was played with, even after you change your payout wallet, and the Season tab follows your own games, so a new season's first game never hides a prize still to claim.",

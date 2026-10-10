@@ -13,6 +13,7 @@ import { Loading } from "../loading";
 import { ServiceFailure } from "../service-failure";
 import { useNowSeconds } from "../use-now";
 import { type EnvironmentLedger, lordsOf, lordsShortOf, refundCall, type SlotKey } from "../value/ledger";
+import { gameRowKey } from "../blitz-rows";
 import { ENTRY_WORDS, WALLET_WORDS } from "../words";
 import {
   entryCalls,
@@ -23,6 +24,7 @@ import {
   type EntryTerms,
   useEntryTerms,
 } from "./entry";
+import { lobbyId } from "./lobby";
 
 const WalletSign = lazy(() =>
   import("@/ui/modules/identity/wallet-actions").then((module) => ({ default: module.WalletSign })),
@@ -59,8 +61,9 @@ export const PaidEntry = ({
 
 /**
  * A paid Blitz's entry (design 5h): the seat, and the sword (doubles a won game's MMR) and the shield (halves a lost
- * one's), each 500 LORDS today or a credit from a chest, paid from the payout wallet. A cancelled game refunds what
- * was paid and the credits spent, by the player's own call.
+ * one's), each 500 LORDS today or a credit from a chest, paid from the payout wallet. Registered until the slot's
+ * close, then seated in a game; a cancelled slot, or a registration the close left unseated, refunds what was paid
+ * and the credits spent, by the player's own call.
  */
 const EntryPanel = ({
   ledger,
@@ -84,7 +87,8 @@ const EntryPanel = ({
   const state = entryState(terms, choice, now);
   const cost = entryCost(terms, choice);
 
-  if (state === "seated") return <Seated terms={terms} />;
+  if (state === "registered") return <Registered terms={terms} />;
+  if (state === "seated") return <Seated terms={terms} slot={slot} />;
   if (state === "refunded") return <Refunded terms={terms} />;
   if (state === "closed") return <Closed />;
   const sign = signing && (
@@ -101,7 +105,7 @@ const EntryPanel = ({
   );
   if (state === "refund")
     return (
-      <Plate icon="Sk" title={ENTRY_WORDS.cancelled}>
+      <Plate icon="Sk" title={terms.cancelled ? ENTRY_WORDS.cancelled : ENTRY_WORDS.notSeated}>
         <Receipt rows={refundRows(terms)} />
         {sign || <Button role="primary" word={ENTRY_WORDS.takeRefund} icon="Sp" onClick={() => setSigning(true)} />}
       </Plate>
@@ -203,35 +207,54 @@ const NoWallet = () => {
   );
 };
 
-const Seated = ({ terms }: { terms: EntryTerms }) => {
-  const { registration } = terms;
+/** Paid, waiting for the close to draw the games. */
+const Registered = ({ terms }: { terms: EntryTerms }) => (
+  <Plate icon="Ok" title={ENTRY_WORDS.registered}>
+    <PaidReceipt terms={terms} />
+    <p className="font-body text-[15px] text-kit-muted">{ENTRY_WORDS.registeredLine}</p>
+  </Plate>
+);
+
+/** Drawn into a game at close: what was paid, and the way to that game's lobby. */
+const Seated = ({ terms, slot }: { terms: EntryTerms; slot: SlotKey }) => {
+  const navigate = useNavigate();
+  const lobby = lobbyId({ key: gameRowKey(slot.shard, terms.registration.gameId) });
   return (
     <Plate icon="Ok" title={ENTRY_WORDS.seated}>
-      <Receipt
-        rows={[
-          { icon: "Fl", word: ENTRY_WORDS.seat, value: <Lords amount={terms.prices.seat} size={18} /> },
-          ...(registration.sword
-            ? [
-                {
-                  icon: "At" as const,
-                  word: ENTRY_WORDS.sword,
-                  value: flagValue(registration.swordCredit, terms.prices.sword),
-                },
-              ]
-            : []),
-          ...(registration.shield
-            ? [
-                {
-                  icon: "Sd" as const,
-                  word: ENTRY_WORDS.shield,
-                  value: flagValue(registration.shieldCredit, terms.prices.shield),
-                },
-              ]
-            : []),
-        ]}
-        total={registration.paid}
-      />
+      <PaidReceipt terms={terms} />
+      <Button role="primary" word={ENTRY_WORDS.yourGame} icon="Pl" onClick={() => navigate(`/blitz/${lobby}`)} />
     </Plate>
+  );
+};
+
+/** The seat and any flags, each with its price or the credit that paid it, and the LORDS paid in all. */
+const PaidReceipt = ({ terms }: { terms: EntryTerms }) => {
+  const { registration } = terms;
+  return (
+    <Receipt
+      rows={[
+        { icon: "Fl", word: ENTRY_WORDS.seat, value: <Lords amount={terms.prices.seat} size={18} /> },
+        ...(registration.sword
+          ? [
+              {
+                icon: "At" as const,
+                word: ENTRY_WORDS.sword,
+                value: flagValue(registration.swordCredit, terms.prices.sword),
+              },
+            ]
+          : []),
+        ...(registration.shield
+          ? [
+              {
+                icon: "Sd" as const,
+                word: ENTRY_WORDS.shield,
+                value: flagValue(registration.shieldCredit, terms.prices.shield),
+              },
+            ]
+          : []),
+      ]}
+      total={registration.paid}
+    />
   );
 };
 
