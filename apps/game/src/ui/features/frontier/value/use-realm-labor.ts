@@ -18,7 +18,7 @@ import { type HeldRealm, planRealmLabor, type RealmLaborPlan } from "./realm-lab
 const DAY_SECONDS = 86_400;
 
 /** The player's Realm labor today: their wallet, each held Realm's state, and what a claim gives the realm's store. */
-export interface RealmLabor {
+interface RealmLabor {
   wallet: PayoutWallet;
   plan: RealmLaborPlan;
   perRealm: number;
