@@ -1,5 +1,6 @@
 import { Account, hash } from "starknet";
 import {
+  readLedgerGame,
   rpcAt,
   ledgerInteger,
   decodeBlitzSeason,
@@ -17,7 +18,15 @@ export const seasonLedgerReads = (target: Ledger): Omit<SeasonPorts, "post" | "a
   const eventPage = async (from: number, cursor: string | null, head: number, postsOnly: boolean) => {
     const names = postsOnly
       ? ["SeasonTopPosted", "SeasonTopBatchPosted"]
-      : ["SeasonOpened", "ChestMinted", "SeasonMmrCorrected"];
+      : [
+          "SeasonOpened",
+          "ChestMinted",
+          "SeasonMmrCorrected",
+          "GameOpened",
+          "ResultsApplied",
+          "GameCancelled",
+          "GameAborted",
+        ];
     if (from > head) return { rows: [], head, next: null };
     const page = await provider.getEvents({
       address: target.contractAddress,
@@ -37,7 +46,18 @@ export const seasonLedgerReads = (target: Ledger): Omit<SeasonPorts, "post" | "a
       )
         throw new Error("invalid_season_event");
       const name = names.find((name) => BigInt(hash.getSelectorFromName(name)) === BigInt(event.keys[0] ?? "0"));
-      if (name === "ChestMinted") {
+      if (["GameOpened", "ResultsApplied", "GameCancelled", "GameAborted"].includes(name ?? "")) {
+        if (event.keys.length !== 3) throw new Error("invalid_season_game_event");
+        const key = { chainId: event.keys[1]!, gameId: ledgerInteger(event.keys[2]!) };
+        const game = await readLedgerGame(provider, target.contractAddress, key, head);
+        rows.push({
+          kind: "game",
+          id: game.seasonId,
+          key,
+          terminal: game.cancelled || game.finalized,
+          ...(name === "ResultsApplied" ? { revision: `${event.transaction_hash}:${event.block_number}` } : {}),
+        });
+      } else if (name === "ChestMinted") {
         if (event.keys.length !== 4 || event.data.length !== 4) throw new Error("invalid_season_participant_event");
         rows.push({ kind: "participant", id: ledgerInteger(event.data[2]!), wallet: event.keys[3]! });
       } else {
@@ -52,7 +72,11 @@ export const seasonLedgerReads = (target: Ledger): Omit<SeasonPorts, "post" | "a
                   ? "opened"
                   : "corrected",
           id: ledgerInteger(event.keys[1]!),
-          ...(name === "SeasonMmrCorrected" ? { revision: `${event.transaction_hash}:${event.block_number}` } : {}),
+          ...(name !== "SeasonOpened"
+            ? {
+                revision: `${event.transaction_hash}:${event.block_number}:${event.keys.join(":")}:${event.data.join(":")}`,
+              }
+            : {}),
           ...(name === "SeasonTopPosted" ? { reviewUntil: ledgerInteger(event.data[1]!) } : {}),
         });
       }
@@ -60,6 +84,10 @@ export const seasonLedgerReads = (target: Ledger): Omit<SeasonPorts, "post" | "a
     return { rows, head, next: page.continuation_token || null };
   };
   return {
+    game: async (key, head) => {
+      const game = await readLedgerGame(provider, target.contractAddress, key, head);
+      return { id: game.seasonId, terminal: game.cancelled || game.finalized };
+    },
     head: () => readConfirmedLedgerHead(provider),
     blockHash: async (number) => (await readConfirmedLedgerHead(provider, number)).hash,
     changes: (from, cursor, head) => eventPage(from, cursor, head, false),

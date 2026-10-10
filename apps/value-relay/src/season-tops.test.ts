@@ -31,6 +31,7 @@ const fixture = (count = 3) => {
     reviewUntil: 3700,
   };
   const ports: SeasonPorts = {
+    game: async () => ({ id: 1, terminal: true }),
     allocate: vi.fn(async (_id, _start) => {
       season.allocationCursor = season.topCount;
       return season.allocationCursor;
@@ -157,4 +158,40 @@ it("posts and allocates a large winner list in 32-row transactions without a pop
   expect(f.ports.post).toHaveBeenCalledTimes(4);
   expect(f.ports.allocate).toHaveBeenCalledTimes(4);
   expect(f.season.allocationCursor).toBe(125);
+});
+
+it("prepares the independent cohort before allocation and does not rescan MMR when review starts", async () => {
+  const f = fixture(250);
+  f.season.topCount = 125;
+  f.season.allocationCursor = 0;
+  f.season.reviewUntil = 0;
+  f.ports.posts = async () => ({ rows: [{ kind: "proposed", id: 1 }], head: 100, next: null });
+  for (let index = 0; index < 8; index++) await f.tick("audit");
+  const reads = vi.mocked(f.ports.mmr).mock.calls.length;
+  expect(reads).toBe(250);
+  f.season.posted = true;
+  f.season.allocationCursor = 125;
+  f.season.reviewUntil = 3700;
+  f.ports.winner = async (_id, index) => `0x${(index + 2).toString(16)}`;
+  for (let index = 0; index < 4; index++) await f.tick("audit");
+  expect(vi.mocked(f.ports.mmr).mock.calls).toHaveLength(reads);
+});
+
+it("waits for every opened ledger game before publishing rather than omitting a delayed result", async () => {
+  const f = fixture();
+  let finished = false;
+  const changes = f.ports.changes;
+  f.ports.changes = async (from, cursor, head) => {
+    const page = await changes(from, cursor, head);
+    return {
+      ...page,
+      rows: [...page.rows, { kind: "game" as const, id: 1, key: { chainId: "0x1", gameId: 7 }, terminal: false }],
+    };
+  };
+  Object.assign(f.ports, { game: async () => ({ id: 1, terminal: finished }) });
+  for (let index = 0; index < 8; index++) await f.tick("post");
+  expect(f.ports.post).not.toHaveBeenCalled();
+  finished = true;
+  for (let index = 0; index < 8; index++) await f.tick("post");
+  expect(f.ports.post).toHaveBeenCalledOnce();
 });

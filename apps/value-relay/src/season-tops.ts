@@ -1,3 +1,4 @@
+import type { LedgerGameKey } from "@realms-world/value-ledger";
 import { relayOperation } from "./ports";
 import { normalizeStarknetAddress } from "@realms-world/identity";
 
@@ -20,6 +21,7 @@ interface Season {
 }
 type Change =
   | { kind: "opened" | "posted" | "proposed" | "corrected"; id: number; reviewUntil?: number; revision?: string }
+  | { kind: "game"; id: number; key: LedgerGameKey; terminal: boolean; revision?: string }
   | { kind: "participant"; id: number; wallet: string };
 interface Page {
   rows: readonly Change[];
@@ -32,6 +34,7 @@ export interface SeasonPorts {
   changes(from: number, cursor: string | null, head: number): Promise<Page>;
   posts(from: number, cursor: string | null, head: number): Promise<Page>;
   season(id: number, head: number): Promise<Season>;
+  game(key: LedgerGameKey, head: number): Promise<{ id: number; terminal: boolean }>;
   mmr(id: number, wallet: string, head: number): Promise<string>;
   winner(id: number, index: number, head: number): Promise<string>;
   post(id: number, start: number, wallets: readonly string[]): Promise<void>;
@@ -56,6 +59,8 @@ interface Audit {
   after: string | null;
   checked: number;
   winnerIndex: number;
+  proposal?: Head;
+  proposalRevision?: string;
 }
 const SIZE = 100;
 
@@ -86,13 +91,14 @@ async function runSeasonTops(mode: "post" | "audit", ports: SeasonPorts, store: 
   const complete = await ingestSeasonEvents(mode, "changes", ports.changes, head, ports, store);
   if (mode === "audit" && !postsComplete) return `season_posts_unverified:${head.number}`;
   const cursor = await store.get<string>(`season:${mode}:cursor`);
-  const prefix = mode === "audit" ? "season:posted:" : "season:known:";
+  const prefix = "season:known:";
   let pending = await store.list<number>({ prefix, limit: 1, ...(cursor ? { startAfter: cursor } : {}) });
   if (!pending.size && cursor) pending = await store.list<number>({ prefix, limit: 1 });
   const entry = [...pending][0];
   if (!entry) return null;
   await store.put(`season:${mode}:cursor`, entry[0]);
   const season = await ports.season(entry[1], head.number);
+  if (mode === "audit" && season.challenged) await clearSeasonAuditMarkers(store, season.id);
   if (
     head.time < season.end ||
     !season.participantCount ||
@@ -104,8 +110,23 @@ async function runSeasonTops(mode: "post" | "audit", ports: SeasonPorts, store: 
     (mode === "audit" && season.challenged)
   )
     return null;
+  if (!(await gamesFinished(season.id, head, ports, store))) return pendingFault(mode, season, head);
   const fault = await advanceSeason(mode, season, head, complete, ports, store);
   return fault;
+}
+async function gamesFinished(id: number, head: Head, ports: SeasonPorts, store: Store) {
+  const prefix = `season:game:${id}:`;
+  const cursorKey = `season:games-cursor:${id}`;
+  const after = await store.get<string>(cursorKey);
+  let rows = await store.list<LedgerGameKey>({ prefix, limit: 25, ...(after ? { startAfter: after } : {}) });
+  if (!rows.size && after) rows = await store.list<LedgerGameKey>({ prefix, limit: 25 });
+  for (const [key, game] of rows) {
+    const status = await ports.game(game, head.number);
+    if (status.id !== id) throw new Error("season_game_binding_differs");
+    if (status.terminal) await store.delete(key);
+  }
+  await store.put(cursorKey, rows.size === 25 ? [...rows.keys()].at(-1)! : "");
+  return !(await store.list({ prefix, limit: 1 })).size;
 }
 async function ingestSeasonEvents(
   mode: "post" | "audit",
@@ -129,12 +150,17 @@ async function ingestSeasonEvents(
     throw new Error("invalid_season_event_page");
   for (const row of page.rows) {
     await store.put(`season:known:${row.id}`, row.id);
-    if (row.kind === "corrected") {
+    if (row.kind === "game") {
+      const key = `season:game:${row.id}:${row.key.chainId}:${row.key.gameId}`;
+      if (row.terminal) await store.delete(key);
+      else await store.put(key, row.key);
+    }
+    if (row.kind === "corrected" || (row.kind === "game" && row.revision)) {
       if (!row.revision) throw new Error("season_correction_revision_missing");
       await store.put(`season:correction:${row.id}`, row.revision);
     }
     if (row.kind === "posted" || row.kind === "proposed") {
-      await store.put(`season:posted:${row.id}`, row.id);
+      if (row.revision) await store.put(`season:proposal:${row.id}`, row.revision);
       if (mode === "audit" && row.kind === "posted")
         await store.put(`season:unverified:${String(row.reviewUntil ?? 0).padStart(16, "0")}:${row.id}`, {
           id: row.id,
@@ -164,11 +190,31 @@ async function advanceSeason(
 ) {
   const key = `season:${mode}:job:${season.id}`;
   const correction = (await store.get<string>(`season:correction:${season.id}`)) ?? "";
-  const revision = `${season.participantCount}:${season.paidFraction}:${correction}:${mode === "audit" ? season.reviewUntil : ""}`;
+  const revision = `${season.participantCount}:${season.paidFraction}:${correction}`;
   let job = await store.get<Audit>(key);
   if (!job || job.revision !== revision)
     job = { head, revision, phase: "mmr", after: null, checked: 0, winnerIndex: 0 };
   if (mode === "post" && season.challenged && job.phase === "done") job.phase = "post";
+  if (
+    mode === "audit" &&
+    job.phase !== "mmr" &&
+    season.posted &&
+    !season.challenged &&
+    season.allocationCursor === winnerCount(season) &&
+    season.topCount === winnerCount(season)
+  ) {
+    const proposalRevision = `${season.reviewUntil}:${(await store.get<string>(`season:proposal:${season.id}`)) ?? ""}`;
+    if (job.proposalRevision !== proposalRevision) {
+      job.proposal = head;
+      job.proposalRevision = proposalRevision;
+      job.phase = "winners";
+      job.winnerIndex = 0;
+      job.after = null;
+    }
+  }
+
+  if (job.proposal && BigInt(await ports.blockHash(job.proposal.number)) !== BigInt(job.proposal.hash))
+    throw new Error("season_proposal_anchor_changed");
   if (job.phase === "done") {
     await clearSeasonAuditMarkers(store, season.id);
     return null;
@@ -202,7 +248,8 @@ async function advanceSeason(
     }
   } else if (job.phase === "winners") {
     const count = winnerCount(season);
-    if (mode === "audit" && season.allocationCursor !== count) return pendingFault(mode, season, head);
+    if (mode === "audit" && (!season.posted || season.allocationCursor !== count || !job.proposal))
+      return pendingFault(mode, season, head);
     if (mode === "audit" && season.topCount !== count) return `season_top_mismatch:${season.id}`;
     const rows = [
       ...(await store.list<string>({
@@ -214,7 +261,9 @@ async function advanceSeason(
     if (!rows.length && job.winnerIndex < count) throw new Error("season_top_population_missing");
     const actual =
       mode === "audit"
-        ? await Promise.all(rows.map((_, index) => ports.winner(season.id, job.winnerIndex + index, job.head.number)))
+        ? await Promise.all(
+            rows.map((_, index) => ports.winner(season.id, job.winnerIndex + index, job.proposal!.number)),
+          )
         : [];
     for (let index = 0; index < rows.length; index++) {
       const wallet = rows[index]![1];
