@@ -230,7 +230,6 @@ class WorkerLauncherTest(unittest.TestCase):
             stack = data / "compose.json"
             stack.write_text(json.dumps({"image": "sha256:before"}))
             def interrupted_handoff(*_):
-                (data / "launcher-enrolment.json").write_text(json.dumps({"launcherAccount": "0x42"}))
                 raise RuntimeError("Worker check unavailable")
             with (
                 patch.object(deploy, "run_self_check", return_value={"passed": True}) as check,
@@ -325,10 +324,9 @@ class LauncherAuthorityTest(unittest.TestCase):
     def setUp(self):
         self.enterContext(patch.object(deploy, "confirm_worker_ledger_operator"))
 
-    def test_failed_handoff_intent_does_not_stop_a_fresh_self_check(self):
+    def test_unchanged_bootstrap_roles_allow_a_fresh_self_check(self):
         with tempfile.TemporaryDirectory() as temporary:
             data = Path(temporary)
-            (data / "launcher-enrolment.json").write_text('{"launcherAccount":"0x42"}')
             (data / "self-check.json").write_text('{"passed":true,"checkedIdentity":"old"}')
             with patch.object(deploy, "gameplay_check_identity", return_value="changed"), patch.object(deploy, "roles_handed_off", return_value=False, create=True) as state, patch.object(deploy, "directory_status", side_effect=lambda _, status: {"status": status}), patch.object(deploy, "run_self_check", return_value={"passed": True}) as check, patch.object(deploy, "confirm_worker_launcher"):
                 deploy.verify_and_activate({}, data)

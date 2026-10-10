@@ -90,11 +90,12 @@ The compose services restart on failure. Initializer logs and `harness.env` are 
 Run each command above as `python3 deploy/athanor/scripts/operator-command.py ...`. The wrapper reads the box's
 protected token file; ops provisions it. Use `stop.py` for a manually started runner so its directory entry is retired.
 
-Official deployment requires confirmed Worker enrolment, `set_launcher` and Worker-signed creation checks. It binds
-cached gameplay evidence to `native-world.json` and `initialized.json`, the chain identity and initialized contracts the
-check proves. Packaging changes do not invalidate that evidence. Once `launcher-enrolment.json` exists, a missing or
-invalid pass refuses a re-check: "launcher already handed off; finish the Worker check or retire the chain". Missing
-Worker routes leave the shard PENDING.
+Official deployment enrols the relay and launcher accounts, confirms `set_ledger_operator` and `set_launcher` on chain,
+and verifies the Worker-signed creation. It binds cached gameplay evidence to `native-world.json` and
+`initialized.json`, the chain identity and initialized contracts the check proves. Packaging changes do not invalidate
+that evidence. Resume reads owner, launcher and ledger operator from Games. Once any role has left the bootstrap
+account, missing or invalid gameplay evidence requires retiring the chain. Missing Worker routes leave the shard
+PENDING.
 
 ## Operations: back up and restore
 
