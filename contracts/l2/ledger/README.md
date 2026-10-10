@@ -30,16 +30,16 @@ and sponsorship. The default is 2000 bps. The remaining pot splits by `chest_lor
 and season prize pool. Refunds return the original payment before any settlement cut. Chest and season payouts have no
 second cut. Frontier's configuration preset keeps its cut at zero.
 
-Registration custody is keyed by `{ shard, slot_id }`. Slots have no player cap. Each wallet registers once and pays
-its entry and optional flags. The launcher resolves identity at slot close and creates groups of at most 24 on the shard.
+Registration custody is keyed by `{ shard, slot_id }`. Slots have no player cap. Each wallet registers once and pays its
+entry and optional flags. The launcher resolves identity at slot close and creates groups of at most 24 on the shard.
 The ledger stores only paying wallets, in registration order. The operator marks unseated wallets refundable; refunds
 return their exact payment and credits, even while paused. Cancelling or aborting a slot opens refunds for all remaining
 unconsumed entries.
 
-`apply_results(slot, game_id, ranked)` settles one actual game. Its pot includes only those players' payments, which
-are subtracted from the slot's remaining custody. Each registration records its consuming game, so another result or
-refund cannot spend it again. The result commitment remains keyed by `{ shard, game_id }`. Slot opening leaves one
-settlement tick between the scheduled game end and the season cutoff.
+`apply_results(slot, game_id, ranked)` settles one actual game. Its pot includes only those players' payments, which are
+subtracted from the slot's remaining custody. Each registration records its consuming game, so another result or refund
+cannot spend it again. The result commitment remains keyed by `{ shard, game_id }`. Slot opening leaves one settlement
+tick between the scheduled game end and the season cutoff.
 
 ## Package checks
 
@@ -81,9 +81,7 @@ Build release artifacts first, under the same lock. These commands compile each 
 The owner supplies `SEPOLIA_RPC_URL`, `SEPOLIA_ACCOUNT_ADDRESS`, `SEPOLIA_ACCOUNT_PRIVATE_KEY`,
 `SEPOLIA_OPERATOR_ADDRESS`, `SEPOLIA_PAUSER_ADDRESS`, `SEPOLIA_SHARD_CHAIN_ID` (a non-zero felt), `SEPOLIA_GAME_SEED`
 (the funded shard game seed), `SEPOLIA_SEASON_START`, `SEPOLIA_SEASON_END` (Unix seconds), `SEPOLIA_FRONTIER_POOL_WEI`,
-`SEPOLIA_CHEST_BAND_1_CID` through `SEPOLIA_CHEST_BAND_5_CID`, `SEPOLIA_COSMETIC_CID`, `SEPOLIA_SEASON_PASS_ADDRESS` and
-`SEPOLIA_VILLAGE_PASS_ADDRESS`. Pass addresses are required constructor dependencies; the paid-entry rehearsal does not
-invoke them. Choose a start far enough ahead to complete declarations and setup.
+`SEPOLIA_CHEST_BAND_1_CID` through `SEPOLIA_CHEST_BAND_5_CID`, `SEPOLIA_COSMETIC_CID`. Choose a start far enough ahead to complete declarations and setup.
 
 Run only when the owner authorizes deployment:
 
@@ -108,4 +106,4 @@ credentials, grant the ledger `UPDATER_ROLE` on the existing MMR token, and gran
 implementation remains unchanged. The chest collection needs an authorized, storage-compatible upgrade exposing
 `mint_with_id`, plus metadata for all five new band kinds. Use the existing mainnet deployment path only after these
 gates; its constructor is
-`(admin, operator, treasury, lords, mmr_token, season_pass, village_pass, loot_chest, cosmetics)`.
+`(admin, operator, treasury, lords, mmr_token, loot_chest, cosmetics)`.

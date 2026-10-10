@@ -5,8 +5,6 @@ import { buildLiveAssetPlan } from "./live-assets-plan.js";
 const addresses = {
   ledger: "0x1",
   mmrToken: "0x2",
-  seasonPass: "0x3",
-  villagePass: "0x4",
 };
 
 const environment = {
@@ -14,36 +12,24 @@ const environment = {
   MMR_ADMIN_PRIVATE_KEY: "0x101",
   MMR_UPGRADER_ADDRESS: "0x11",
   MMR_UPGRADER_PRIVATE_KEY: "0x111",
-  SEASON_PASS_OWNER_ADDRESS: "0x12",
-  SEASON_PASS_OWNER_PRIVATE_KEY: "0x121",
   STARKNET_ACCOUNT_ADDRESS: "0x13",
   STARKNET_ACCOUNT_PRIVATE_KEY: "0x131",
-  VILLAGE_PASS_ADMIN_ADDRESS: "0x14",
-  VILLAGE_PASS_ADMIN_PRIVATE_KEY: "0x141",
-  VILLAGE_PASS_UPGRADER_ADDRESS: "0x15",
-  VILLAGE_PASS_UPGRADER_PRIVATE_KEY: "0x151",
 };
 
-test("orders upgrades before the two ledger role grants", () => {
+test("orders the MMR upgrade before its ledger role grant", () => {
   const plan = buildLiveAssetPlan(addresses, environment, true);
 
   assert.deepEqual(
     plan.assets.map(({ id }) => id),
-    ["mmr", "season-pass", "village-pass"],
+    ["mmr"],
   );
   assert.deepEqual(
     plan.roleGrants.map(({ assetId, roleName }) => [assetId, roleName]),
     [
       ["mmr", "UPDATER_ROLE"],
-      ["village-pass", "DISTRIBUTOR_ROLE"],
     ],
   );
   assert.equal(plan.roleGrants[0].grantee, "0x1");
-  assert.deepEqual(plan.seasonPassRestorer, {
-    contractAddress: "0x3",
-    restorer: "0x1",
-    signer: { address: "0x12", privateKey: "0x121" },
-  });
   assert.equal(plan.assets[0].upgradeSigner.privateKey, "0x111");
 });
 

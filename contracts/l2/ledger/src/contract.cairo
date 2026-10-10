@@ -13,9 +13,6 @@ const PAYOUT_WEIGHT_SCALE: u256 = 1_000_000_000_000_000_000;
 const BLITZ_SETTLEMENT_MARGIN_SECONDS: u64 = 60;
 const SEASON_REVIEW_SECONDS: u64 = 3600;
 const MMR_PRECISION: u256 = 1_000_000_000_000_000_000;
-const NO_PASS: u8 = 0;
-const SEASON_PASS: u8 = 1;
-const VILLAGE_PASS: u8 = 2;
 
 pub fn result_commitment(key: GameKey, ranked: Span<RankedPlayer>) -> felt252 {
     let mut payload = array!['ETERNUM_BLITZ_RESULT', 3, key.shard, key.game_id.into(), ranked.len().into()];
@@ -57,8 +54,6 @@ pub trait IGameLedger<TState> {
     fn season_claimed(self: @TState, season_id: u32, owner: ContractAddress) -> bool;
     fn open_slot(ref self: TState, key: SlotKey, season_id: u32, preset_id: u32, close: u64, end: u64);
     fn register(ref self: TState, key: SlotKey, sword: bool, shield: bool);
-    fn register_with_pass(ref self: TState, key: SlotKey, pass_id: u256);
-    fn register_village(ref self: TState, key: SlotKey, village_pass_id: u256);
     fn fund(ref self: TState, key: SlotKey, amount: u256);
     fn cancel_slot(ref self: TState, key: SlotKey);
     fn abort_slot(ref self: TState, key: SlotKey);
@@ -83,21 +78,6 @@ pub trait IGameLedger<TState> {
 pub trait IMMRToken<TState> {
     fn get_player_mmr(self: @TState, player: ContractAddress) -> u256;
     fn update_mmr_batch(ref self: TState, updates: Array<(ContractAddress, u256)>);
-}
-
-#[starknet::interface]
-pub trait IPassBurn<TState> {
-    fn burn(ref self: TState, token_id: u256);
-}
-
-#[starknet::interface]
-pub trait IPassRestore<TState> {
-    fn restore(ref self: TState, recipient: ContractAddress, token_id: u256);
-}
-
-#[starknet::interface]
-pub trait ISeasonPassMetadata<TState> {
-    fn get_encoded_metadata(self: @TState, token_id: u16) -> (felt252, felt252, felt252);
 }
 
 #[starknet::interface]
@@ -128,10 +108,8 @@ pub mod GameLedger {
     use starknet::{ClassHash, ContractAddress, SyscallResultTrait};
     use super::{
         BLITZ_SETTLEMENT_MARGIN_SECONDS, BPS, ICollectibleDispatcher, ICollectibleDispatcherTrait, IGameLedger,
-        IMMRTokenDispatcher, IMMRTokenDispatcherTrait, IPassBurnDispatcher, IPassBurnDispatcherTrait,
-        IPassRestoreDispatcher, IPassRestoreDispatcherTrait, ISeasonPassMetadataDispatcher,
-        ISeasonPassMetadataDispatcherTrait, MMR_PRECISION, NO_PASS, OPERATOR_ROLE, PAUSER_ROLE, PAYOUT_WEIGHT_SCALE,
-        SEASON_PASS, SEASON_REVIEW_SECONDS, VILLAGE_PASS, result_commitment,
+        IMMRTokenDispatcher, IMMRTokenDispatcherTrait, MMR_PRECISION, OPERATOR_ROLE, PAUSER_ROLE, PAYOUT_WEIGHT_SCALE,
+        SEASON_REVIEW_SECONDS, result_commitment,
     };
 
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
@@ -154,8 +132,8 @@ pub mod GameLedger {
         treasury: ContractAddress,
         lords: ContractAddress,
         mmr_token: ContractAddress,
-        season_pass: ContractAddress,
-        village_pass: ContractAddress,
+
+
         loot_chest: ContractAddress,
         cosmetics: ContractAddress,
         seasons: Map<u32, BlitzSeason>,
@@ -274,9 +252,7 @@ pub mod GameLedger {
         key: SlotKey,
         #[key]
         owner: ContractAddress,
-        realm_id: u256,
-        metadata: (felt252, felt252, felt252),
-        pass_kind: u8,
+
     }
 
     #[derive(Drop, starknet::Event)]
@@ -406,14 +382,14 @@ pub mod GameLedger {
         treasury: ContractAddress,
         lords: ContractAddress,
         mmr_token: ContractAddress,
-        season_pass: ContractAddress,
-        village_pass: ContractAddress,
+
+
         loot_chest: ContractAddress,
         cosmetics: ContractAddress,
     ) {
         self
             .assert_constructor_addresses(
-                admin, operator, treasury, lords, mmr_token, season_pass, village_pass, loot_chest, cosmetics,
+                admin, operator, treasury, lords, mmr_token, loot_chest, cosmetics,
             );
         self.accesscontrol.initializer();
         self.accesscontrol._grant_role(DEFAULT_ADMIN_ROLE, admin);
@@ -421,8 +397,8 @@ pub mod GameLedger {
         self.treasury.write(treasury);
         self.lords.write(lords);
         self.mmr_token.write(mmr_token);
-        self.season_pass.write(season_pass);
-        self.village_pass.write(village_pass);
+
+
         self.loot_chest.write(loot_chest);
         self.cosmetics.write(cosmetics);
     }
@@ -761,39 +737,7 @@ pub mod GameLedger {
             let preset = self.presets.entry(game.preset_id).read();
             let payment = self.record_paid_registration(key, owner, sword, shield, preset);
             self.pull_lords(owner, payment);
-            self.emit_registration(key, owner, 0, (0, 0, 0), NO_PASS);
-        }
-
-        fn register_with_pass(ref self: ContractState, key: SlotKey, pass_id: u256) {
-            let owner = starknet::get_caller_address();
-            self.assert_registration_open(key, owner);
-            let season_pass = self.season_pass.read();
-            assert!(
-                IERC721Dispatcher { contract_address: season_pass }.owner_of(pass_id) == owner,
-                "Ledger: not pass owner",
-            );
-            assert!(pass_id <= 0xffff, "Ledger: pass id exceeds u16");
-            let metadata = ISeasonPassMetadataDispatcher { contract_address: season_pass }
-                .get_encoded_metadata(pass_id.try_into().unwrap());
-
-            self.record_pass_registration(key, owner, pass_id, SEASON_PASS);
-            IPassBurnDispatcher { contract_address: season_pass }.burn(pass_id);
-            self.emit_registration(key, owner, pass_id, metadata, SEASON_PASS);
-        }
-
-        fn register_village(ref self: ContractState, key: SlotKey, village_pass_id: u256) {
-            let owner = starknet::get_caller_address();
-            self.assert_registration_open(key, owner);
-            let village_pass = self.village_pass.read();
-            assert!(
-                IERC721Dispatcher { contract_address: village_pass }.owner_of(village_pass_id) == owner,
-                "Ledger: not village pass owner",
-            );
-            assert!(village_pass_id <= 0xffff, "Ledger: village pass id exceeds u16");
-
-            self.record_pass_registration(key, owner, village_pass_id, VILLAGE_PASS);
-            IPassBurnDispatcher { contract_address: village_pass }.burn(village_pass_id);
-            self.emit_registration(key, owner, village_pass_id, (0, 0, 0), VILLAGE_PASS);
+            self.emit(Registered { key, owner });
         }
 
         fn fund(ref self: ContractState, key: SlotKey, amount: u256) {
@@ -834,24 +778,20 @@ pub mod GameLedger {
             assert!(game.exists && (game.cancelled || registration.refundable), "Ledger: registration not refundable");
             assert!(registration.game_id == 0, "Ledger: registration already settled");
             let amount = registration.paid;
-            let pass_kind = registration.pass_kind;
-            let pass_id = registration.realm_id;
             assert!(
-                amount > 0 || pass_kind != NO_PASS || registration.sword_credit || registration.shield_credit,
+                amount > 0 || registration.sword_credit || registration.shield_credit,
                 "Ledger: nothing to refund",
             );
             self.restore_credits(owner, registration);
             registration.sword_credit = false;
             registration.shield_credit = false;
             registration.paid = 0;
-            registration.pass_kind = NO_PASS;
             game.pool -= amount;
             self.registrations.entry((key, owner)).write(registration);
             self.slots.entry(key).write(game);
             if amount > 0 {
                 self.send_lords(owner, amount);
             }
-            self.restore_pass(owner, pass_id, pass_kind);
             self.emit(Refunded { key, owner, amount });
         }
 
@@ -996,8 +936,8 @@ pub mod GameLedger {
             treasury: ContractAddress,
             lords: ContractAddress,
             mmr_token: ContractAddress,
-            season_pass: ContractAddress,
-            village_pass: ContractAddress,
+
+
             loot_chest: ContractAddress,
             cosmetics: ContractAddress,
         ) {
@@ -1007,8 +947,8 @@ pub mod GameLedger {
                     && treasury.is_non_zero()
                     && lords.is_non_zero()
                     && mmr_token.is_non_zero()
-                    && season_pass.is_non_zero()
-                    && village_pass.is_non_zero()
+
+
                     && loot_chest.is_non_zero()
                     && cosmetics.is_non_zero(),
                 "Ledger: zero constructor address",
@@ -1100,16 +1040,6 @@ pub mod GameLedger {
             payment
         }
 
-        fn record_pass_registration(
-            ref self: ContractState, key: SlotKey, owner: ContractAddress, pass_id: u256, pass_kind: u8,
-        ) {
-            let sponsored = self.registrations.entry((key, owner)).read().paid;
-            let registration = Registration {
-                registered: true, realm_id: pass_id, pass_kind, paid: sponsored, ..Default::default(),
-            };
-            self.record_registration(key, owner, registration, 0);
-        }
-
         fn record_registration(
             ref self: ContractState, key: SlotKey, owner: ContractAddress, registration: Registration, payment: u256,
         ) {
@@ -1126,24 +1056,6 @@ pub mod GameLedger {
             self.slots.entry(key).write(game);
         }
 
-        fn emit_registration(
-            ref self: ContractState,
-            key: SlotKey,
-            owner: ContractAddress,
-            realm_id: u256,
-            metadata: (felt252, felt252, felt252),
-            pass_kind: u8,
-        ) {
-            self.emit(Registered { key, owner, realm_id, metadata, pass_kind });
-        }
-
-        fn restore_pass(ref self: ContractState, owner: ContractAddress, pass_id: u256, pass_kind: u8) {
-            if pass_kind == SEASON_PASS {
-                IPassRestoreDispatcher { contract_address: self.season_pass.read() }.restore(owner, pass_id);
-            } else if pass_kind == VILLAGE_PASS {
-                IPassRestoreDispatcher { contract_address: self.village_pass.read() }.restore(owner, pass_id);
-            }
-        }
     }
 
     #[generate_trait]
