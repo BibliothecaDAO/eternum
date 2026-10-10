@@ -14,7 +14,6 @@ interface LaunchTarget {
   privateKey: string;
 }
 interface LaunchExecutorService {
-  deadline(run: LaunchRun): Effect.Effect<number, LaunchExecutionFailure>;
   execute(run: LaunchRun, store: LaunchEntryStore): Effect.Effect<LaunchSummary, LaunchExecutionFailure>;
   refund(run: LaunchRun): Effect.Effect<number | null, LaunchExecutionFailure>;
 }
@@ -39,14 +38,6 @@ export const shardChainOf = (env: LaunchEnv, requested?: string | null) => async
 
 export const launchExecutorLayer = (target: LaunchTarget, value: BlitzValuePort) =>
   Layer.succeed(LaunchExecutor, {
-    deadline: (run) =>
-      Effect.tryPromise({
-        try: () => {
-          if (run.entry?.kind !== "paid") throw new Error("paid_launch_entry_missing");
-          return value.blitzDeadline({ chainId: run.entry.ledger.shard, gameId: run.entry.ledger.gameId });
-        },
-        catch: (cause) => new LaunchExecutionFailure({ runId: run.id, cause }),
-      }),
     execute: (run, store) =>
       Effect.tryPromise({
         try: () => executeRun(run, store, target, value),

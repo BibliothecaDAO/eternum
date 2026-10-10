@@ -65,14 +65,6 @@ export const validateBlitzWindow = (credentials: Credentials, key: LedgerGameKey
       throw new Error("actual_blitz_window_outside_season");
   });
 
-export const blitzDeadline = (credentials: Credentials, key: LedgerGameKey) =>
-  relayOperation("read paid Blitz deadline", async () => {
-    const provider = rpcAt(credentials.rpcUrl);
-    const head = await readConfirmedLedgerHead(provider);
-    const game = await readLedgerGame(provider, credentials.contractAddress, key, head.number);
-    return game.cancelled || game.finalized ? 0 : Math.max(0, game.end - head.time);
-  });
-
 /** The current contract cannot abort between start and end. Persisted cleanup retries at that boundary automatically. */
 export const refundBlitzOnLedger = (credentials: Credentials, key: LedgerGameKey) =>
   relayOperation("unlock failed Blitz refunds", async (): Promise<number | null> => {

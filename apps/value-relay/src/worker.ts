@@ -14,7 +14,7 @@ import { seasonLedgerReads, postSeasonTop } from "./season-ledger";
 import { ledgerBatches } from "./ledger-batches";
 import { onIdentityChain } from "./ledger-chain";
 import { paidGameEntry } from "./game-entry";
-import { blitzDeadline, openBlitzOnLedger, refundBlitzOnLedger, validateBlitzWindow } from "./blitz-launch";
+import { openBlitzOnLedger, refundBlitzOnLedger, validateBlitzWindow } from "./blitz-launch";
 import type { LedgerGameKey } from "@realms-world/value-ledger";
 import { currentLaborDay, writeLaborGrant } from "./shard-labor";
 import { handleLaborRequest } from "./labor-route";
@@ -273,12 +273,6 @@ export class ValueRelay extends DurableObject<RelayEnv> {
       ),
     );
   }
-  async blitzDeadline(key: LedgerGameKey) {
-    await this.requireLaunchChain(key);
-    return Effect.runPromise(
-      onIdentityChain(this.env.LEDGER_RPC_URL, this.env.IDENTITY, blitzDeadline(ledgerCredentialsOf(this.env), key)),
-    );
-  }
   async blitzRoster(key: LedgerGameKey): Promise<LedgerRosterSnapshot> {
     await this.requireLaunchChain(key);
     return Effect.runPromise(
@@ -432,9 +426,6 @@ export class RelayDiagnostics extends WorkerEntrypoint<RelayEnv> {
 export class ValueLaunch extends WorkerEntrypoint<RelayEnv> {
   override fetch() {
     return new Response(null, { status: 404 });
-  }
-  blitzDeadline(key: LedgerGameKey) {
-    return ledgerOf(this.env).blitzDeadline(key);
   }
   blitzRoster(key: LedgerGameKey) {
     return ledgerOf(this.env).blitzRoster(key);

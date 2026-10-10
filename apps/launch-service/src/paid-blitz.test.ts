@@ -34,7 +34,6 @@ const fixture = () => {
     window: async () => ({ start: 105, end: 165 }),
   };
   const value = {
-    blitzDeadline: vi.fn(async () => 60),
     blitzRoster: vi.fn(async () => ({ ...frozen, secondsUntilClose: 0, end: 160 })),
     openBlitz: vi.fn(async () => {
       order.push("open");
