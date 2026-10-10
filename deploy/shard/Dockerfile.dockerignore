@@ -8,6 +8,12 @@
 **/*.log
 **/__pycache__
 **/.venv
+# Runtime data stays out of every image; public code tables are source, not deployment state.
+**/data
+!**/src/data
+!**/src/data/**
+!**/public/**/data
+!**/public/**/data/**
 **/host-keys.json*
 **/authority.json*
 **/harness.env*
