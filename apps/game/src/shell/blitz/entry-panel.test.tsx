@@ -35,7 +35,6 @@ vi.mock("@/ui/modules/identity/wallet-actions", () => ({
 }));
 
 import type { PaidGameLedger, PayoutWallet } from "@realms-world/identity";
-import { payingWalletKey } from "../value/paying-wallet";
 import { type EntryTerms, entryTermsKey } from "./entry";
 import { PaidEntry } from "./entry-panel";
 
@@ -61,12 +60,11 @@ const TERMS: EntryTerms = {
 };
 const unmounts: (() => Promise<void>)[] = [];
 
-/** `payer` is the wallet the game's registrations name for the account: null before it pays. */
-const mount = async (terms: EntryTerms, wallet: PayoutWallet = WALLET, payer: string | null = null) => {
+/** The ledger's terms for the payout wallet 0x4a1. */
+const mount = async (terms: EntryTerms, wallet: PayoutWallet = WALLET) => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const client = new QueryClient({ defaultOptions: { queries: { staleTime: Infinity, retry: false } } });
-  client.setQueryData(payingWalletKey(LEDGER, "0x7a"), payer);
-  client.setQueryData(entryTermsKey(LEDGER, payer ?? "0x4a1"), terms);
+  client.setQueryData(entryTermsKey(LEDGER, "0x4a1"), terms);
   const container = document.createElement("div");
   document.body.append(container);
   const root = createRoot(container);
@@ -74,7 +72,7 @@ const mount = async (terms: EntryTerms, wallet: PayoutWallet = WALLET, payer: st
     root.render(
       <QueryClientProvider client={client}>
         <MemoryRouter>
-          <PaidEntry ledger={LEDGER} wallet={wallet} account="0x7a" />
+          <PaidEntry ledger={LEDGER} wallet={wallet} />
         </MemoryRouter>
       </QueryClientProvider>,
     ),
@@ -137,8 +135,8 @@ it("names what is short, the missing STRK, the seat, and the refund", async () =
     shieldCredit: false,
     paid: 500n * WEI,
   };
-  expect((await mount({ ...TERMS, registration: seat }, WALLET, "0x4a1")).textContent).toContain("Seated");
-  const refund = await mount({ ...TERMS, registration: seat, cancelled: true }, WALLET, "0x4a1");
+  expect((await mount({ ...TERMS, registration: seat })).textContent).toContain("Seated");
+  const refund = await mount({ ...TERMS, registration: seat, cancelled: true });
   expect(refund.textContent).toContain("Sword credit");
   await press(refund, "Take refund");
   await press(refund, "Sign");
@@ -156,7 +154,7 @@ it("lets a linked payout wallet pay at once: nothing waits on a link", async () 
   expect(panel.textContent).not.toContain("Linking");
 });
 
-it("reads and refunds a seat through the wallet that paid it, after the payout wallet was replaced", async () => {
+it("reads a slot's entry and refund with the payout wallet that pays, signed by it", async () => {
   const seat = {
     registered: true,
     sword: false,
@@ -165,18 +163,10 @@ it("reads and refunds a seat through the wallet that paid it, after the payout w
     shieldCredit: false,
     paid: 500n * WEI,
   };
-  // Paid from 0xa11; the payout wallet is now 0x4a1, whose own registration would read as no seat at all.
-  const seated = await mount({ ...TERMS, registration: seat }, WALLET, "0xa11");
-  expect(seated.textContent).toContain("Seated");
-  expect(seated.textContent).not.toContain("Pay & join");
-  const refund = await mount({ ...TERMS, registration: seat, cancelled: true }, WALLET, "0xa11");
+  const refund = await mount({ ...TERMS, registration: seat, cancelled: true });
   await press(refund, "Take refund");
   await press(refund, "Sign");
-  expect(signed.owners).toEqual(["0xa11"]);
-  // A wallet that paid still holds its seat once the account has no payout wallet at all.
-  expect((await mount({ ...TERMS, registration: seat }, { status: "no_wallet" }, "0xa11")).textContent).toContain(
-    "Seated",
-  );
+  expect(signed.owners).toEqual(["0x4a1"]);
 });
 
 it("confirms a sent entry until its receipt lands, and shows the ledger's reason when it reverts", async () => {

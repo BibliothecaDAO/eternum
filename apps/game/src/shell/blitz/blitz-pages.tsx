@@ -162,7 +162,7 @@ export const BlitzLobbyPage = () => {
     ) : entry.kind === "broken" ? (
       <FailureLine line={ENTRY_WORDS.unreadable} />
     ) : wallet ? (
-      <PaidEntry ledger={entry.ledger} wallet={wallet} account={player} />
+      <PaidEntry ledger={entry.ledger} wallet={wallet} />
     ) : (
       <FailureLine line={WALLET_WORDS.unavailableLine} />
     );

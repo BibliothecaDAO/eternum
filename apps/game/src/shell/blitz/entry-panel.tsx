@@ -15,7 +15,6 @@ import { useNowSeconds } from "../use-now";
 import { NoStrkLine } from "../value/no-strk-line";
 import { lordsOf, lordsShortOf, refundCall } from "../value/ledger";
 import { useL2Send } from "../value/l2-send";
-import { usePayingWallet } from "../value/paying-wallet";
 import { FailureLine } from "../sign-in/failure-line";
 import { ENTRY_WORDS, VALUE_WORDS, WALLET_WORDS } from "../words";
 import {
@@ -34,37 +33,16 @@ const WalletSign = lazy(() =>
 );
 
 /**
- * The lobby's step for a paid Blitz: its entry read from the ledger, and read again once the wallet has sent its
- * call. A seat the account already holds is read, and refunded, through the wallet that
- * paid it, which may no longer be the payout wallet; otherwise the payout wallet is the one that would pay. `account`
- * is the player's own Realms account, null until it is known.
+ * The lobby's step for a paid Blitz slot: its entry read from the ledger for the current payout wallet, the one that
+ * pays and registers, and read again once the wallet has sent its call. A registration made from a wallet replaced
+ * before the slot closes shows on the game's roster once it closes, not here.
  */
-export const PaidEntry = ({
-  ledger,
-  wallet,
-  account,
-}: {
-  ledger: PaidGameLedger;
-  wallet: PayoutWallet;
-  account: string | null;
-}) => {
-  const payer = usePayingWallet(ledger, account);
-  const owner = payer.data ?? (wallet.status === "no_wallet" ? null : wallet.address);
-  const terms = useEntryTerms(ledger, payer.isSuccess ? owner : null);
-  const failed = payer.isError ? payer : terms.isError ? terms : null;
-  if (failed) return <ServiceFailure service="ledger" error={failed.error} retry={() => void failed.refetch()} />;
-  if (payer.isSuccess && owner === null) return <NoWallet />;
-  return (
-    <EntryPanel
-      ledger={ledger}
-      terms={terms.data}
-      owner={owner}
-      onSent={() => {
-        void payer.refetch();
-        void terms.refetch();
-      }}
-    />
-  );
+export const PaidEntry = ({ ledger, wallet }: { ledger: PaidGameLedger; wallet: PayoutWallet }) => {
+  const owner = wallet.status === "no_wallet" ? null : wallet.address;
+  const terms = useEntryTerms(ledger, owner);
+  if (owner === null) return <NoWallet />;
+  if (terms.isError) return <ServiceFailure service="ledger" error={terms.error} retry={() => void terms.refetch()} />;
+  return <EntryPanel ledger={ledger} terms={terms.data} owner={owner} onSent={() => void terms.refetch()} />;
 };
 
 /**
@@ -80,15 +58,15 @@ const EntryPanel = ({
 }: {
   ledger: PaidGameLedger;
   terms: EntryTerms | undefined;
-  /** The wallet whose seat this is: the one that paid it, or the payout wallet that would. */
-  owner: string | null;
+  /** The payout wallet: it pays, registers and takes any refund. */
+  owner: string;
   onSent: () => void;
 }) => {
   const [choice, setChoice] = useState<EntryChoice>({ sword: false, shield: false });
   const [signing, setSigning] = useState(false);
   const { send, sent } = useL2Send(onSent);
   const now = useNowSeconds();
-  if (!terms || owner === null) return <Loading />;
+  if (!terms) return <Loading />;
   const state = entryState(terms, choice, now);
   const cost = entryCost(terms, choice);
   const confirming = send.status === "confirming" ? VALUE_WORDS.confirming : undefined;
