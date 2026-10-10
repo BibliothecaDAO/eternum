@@ -16,7 +16,7 @@ import { OpenedFromPanel } from "./opened-from-panel";
 import { Sheet } from "./sheet";
 import { StoreBar } from "./store-bar";
 import { TierChip } from "./tier-chip";
-import { formatClockTime, formatDuration } from "./time";
+import { formatClockTime, formatDuration, formatMoment } from "./time";
 import { ViewSwitch } from "./view-switch";
 
 const text = (markup: string) => new DOMParser().parseFromString(markup, "text/html").body.textContent ?? "";
@@ -64,6 +64,12 @@ describe("time", () => {
     const at = new Date(2026, 9, 7, 21, 40).getTime() / 1000;
     expect(formatClockTime(at)).toBe("21:40");
     expect(formatClockTime(undefined)).toBe("—");
+  });
+
+  it("writes a moment a day away with its day, so a clock time already gone today never reads as past", () => {
+    const now = new Date(2026, 9, 10, 15, 0).getTime() / 1000;
+    expect(formatMoment(new Date(2026, 9, 11, 14, 32).getTime() / 1000, now)).toBe("11 Oct 14:32");
+    expect(formatMoment(undefined, now)).toBe("—");
   });
 });
 

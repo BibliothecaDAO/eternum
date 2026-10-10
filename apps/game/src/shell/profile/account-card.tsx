@@ -13,7 +13,7 @@ import { PlayerName } from "@/ui/design-system/kit/player-name";
 import { Sheet } from "@/ui/design-system/kit/sheet";
 import { failureSentence, nameRefusal } from "@/ui/modules/identity/identity-failures";
 import { shortAddress } from "@/ui/design-system/kit/address";
-import { formatClockTime } from "@/ui/design-system/kit/time";
+import { formatMoment } from "@/ui/design-system/kit/time";
 
 import { useLayout } from "../frame/layout";
 import { FailureLine } from "../sign-in/failure-line";
@@ -118,7 +118,7 @@ const Opened = ({ label, onClose, children }: { label: string; onClose: () => vo
 /** The payout wallet's row: link one, the time a held wallet receives from, or its address. */
 const payoutValue = (payout: PayoutWallet) => {
   if (payout.status === "no_wallet") return PROFILE_WORDS.linkWallet;
-  if (payout.status === "on_hold") return `${WALLET_WORDS.receivesFrom} ${formatClockTime(payout.until / 1000)}`;
+  if (payout.status === "on_hold") return `${WALLET_WORDS.receivesFrom} ${formatMoment(payout.until / 1000)}`;
   return shortAddress(payout.address);
 };
 
