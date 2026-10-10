@@ -26,7 +26,8 @@ export interface LaunchEnv extends Omit<LaunchVars, "LAUNCHER_ALLOWLIST"> {
   DB: D1Database;
   /** The identity Worker, which owns sessions; reached by service binding only. */
   IDENTITY: Fetcher;
-  VALUE_IDENTITY: import("@realms-world/value-ledger").ShardDirectory;
+  VALUE_IDENTITY: import("@realms-world/value-ledger").ShardDirectory &
+    import("@realms-world/value-ledger").RegistrationIdentity;
   VALUE_RELAY: import("./paid-blitz").BlitzValuePort;
   /** The one registrar that executes launches, one at a time. */
   REGISTRAR: DurableObjectNamespace<import("./registrar").Registrar>;

@@ -14,6 +14,8 @@ export interface LedgerGameKey {
 }
 export { readLedgerSlot, readRegistrationPage } from "./blitz-slots";
 export type { LedgerSlotKey, LedgerSlot, SlotRegistration, RegistrationPage, RegistrationQuery } from "./blitz-slots";
+export { resolveBlitzRoster, splitPlaytestRoster } from "./blitz-roster";
+export type { RegistrationIdentity } from "./blitz-roster";
 
 export { activeShards, requireActiveChain, readRegisteredShard } from "./official-shards";
 export type { ShardDirectory, RegisteredShard } from "./official-shards";
