@@ -4,7 +4,7 @@ import { hash } from "starknet";
 import { ShardReader } from "./shard-rpc";
 import { frontierReceiptBindings } from "./frontier-binding";
 
-const rpc = vi.hoisted(() => ({ shardCall: vi.fn(), events: vi.fn(), ledgerCall: vi.fn() }));
+const rpc = vi.hoisted(() => ({ blockHash: "0xa", shardCall: vi.fn(), events: vi.fn(), ledgerCall: vi.fn() }));
 vi.mock("@realms-world/value-ledger", async (original) => ({
   ...(await original<typeof import("@realms-world/value-ledger")>()),
   rpcAt: (url: string) =>
@@ -14,18 +14,29 @@ vi.mock("@realms-world/value-ledger", async (original) => ({
           getBlock: async () => ({
             status: "ACCEPTED_ON_L2",
             block_number: 10,
-            block_hash: "0xa",
+            block_hash: rpc.blockHash,
             parent_hash: "0x9",
             timestamp: 50,
           }),
           callContract: rpc.shardCall,
         }
-      : { getBlockNumber: async () => 100, getEvents: rpc.events, callContract: rpc.ledgerCall },
+      : {
+          getBlockNumber: async () => 100,
+          getBlock: async (n: number | string) => ({
+            block_number: n === "latest" ? 100 : n,
+            block_hash: "0xaa",
+            status: "ACCEPTED_ON_L2",
+            timestamp: 50,
+          }),
+          getEvents: rpc.events,
+          callContract: rpc.ledgerCall,
+        },
 }));
 const reader = new ShardReader({ rpcUrl: "https://shard.test", gamesAddress: "0x77", chainId: "0x1" });
 const cached = new Map<string, unknown>();
 const storage = {
   get: async <T>(key: string) => cached.get(key) as T | undefined,
+  delete: async (key: string) => cached.delete(key),
   put: async <T>(key: string, value: T) => {
     cached.set(key, value);
   },
@@ -41,6 +52,7 @@ const bind = () =>
 beforeEach(() => {
   vi.clearAllMocks();
   cached.clear();
+  rpc.blockHash = "0xa";
   rpc.shardCall.mockResolvedValue(["0x5", "5", "0", "1", "0", "0", "10", "110", "0", "0x99"]);
   rpc.events.mockResolvedValue({
     events: [
@@ -126,4 +138,26 @@ it("discovers funding one pinned page at a time and resumes after recreation wit
     expect.objectContaining({ to_block: { block_number: 100 }, continuation_token: "second" }),
   );
   expect(rpc.shardCall.mock.calls.length).toBe(reads);
+});
+
+it("rediscovers a restored and recreated game instead of charging its old season", async () => {
+  expect(await Effect.runPromise(bind().frontierSeason(7, 50))).toBe(42);
+  rpc.blockHash = "0xb";
+  rpc.shardCall.mockResolvedValue(["0x5", "5", "0", "1", "0", "0", "10", "110", "0", "0x98"]);
+  rpc.events.mockResolvedValue({
+    events: [
+      {
+        from_address: "0x10",
+        keys: [hash.getSelectorFromName("FrontierFunded"), "0x1", "0x2b"],
+        data: ["10", "110", "100000000000000000000", "0"],
+      },
+    ],
+  });
+  const previous = rpc.ledgerCall.getMockImplementation()!;
+  rpc.ledgerCall.mockImplementation(async (query) =>
+    query.entrypoint === "get_frontier"
+      ? ["1", "10", "110", "100000000000000000000", "0", "0", "0", "0", "2", "0x98"]
+      : previous(query),
+  );
+  expect(await Effect.runPromise(bind().frontierSeason(7, 50))).toBe(43);
 });

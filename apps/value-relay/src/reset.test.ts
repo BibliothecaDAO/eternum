@@ -213,3 +213,22 @@ it("records every discarded paid claim without exceeding the storage record limi
     .flatMap(([, rows]) => rows as Withdrawal[]);
   expect(new Set([...first, ...rest].map((row) => row.transactionHash)).size).toBe(3000);
 });
+it("drops funding, discovery and final conservation caches derived above the fork atomically", async () => {
+  const f = await seed();
+  await f.store.halt("confirmed_block_changed:5");
+  for (const prefix of ["funding:", "discover:", "conservation:final:"]) {
+    f.data.set(prefix + "old", { shardAnchor: { number: 2, hash: block(2).hash } });
+    f.data.set(prefix + "forked", { shardAnchor: { number: 4, hash: block(4).hash } });
+    f.data.set(prefix + "legacy", {});
+  }
+  await f.store.resetFromChain("confirmed_block_changed:5", "Recreated games require fresh facts", {
+    head: async () => 5,
+    hash: async (n) => (n >= 3 ? "0xff" : block(n).hash),
+    paid: async () => false,
+  });
+  for (const prefix of ["funding:", "discover:", "conservation:final:"]) {
+    expect(f.data.has(prefix + "old")).toBe(true);
+    expect(f.data.has(prefix + "forked")).toBe(false);
+    expect(f.data.has(prefix + "legacy")).toBe(false);
+  }
+});

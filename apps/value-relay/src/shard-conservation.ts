@@ -1,3 +1,4 @@
+import { cacheAnchorMatches, type CacheAnchor } from "./cache-anchor";
 import { nativeGameModeOf } from "../../../config/source/common/native-preset-modes";
 import { relayOperation, type MonitorPorts, type ConservationBalance } from "./ports";
 import { ShardReader, sameFelt, felt, uint, type ShardConnection } from "./shard-rpc";
@@ -50,9 +51,11 @@ export const shardConservationPort =
         )
           throw new Error("conservation_game_clock_missing");
         const key = `conservation:final:${connection.chainId}:${connection.gamesAddress}:${gameId}`;
-        const final = cache ? await cache.get<ConservationBalance>(key) : undefined;
-        if (final) {
-          balances.push(final);
+        const final = cache
+          ? await cache.get<{ balance: ConservationBalance; shardAnchor: CacheAnchor }>(key)
+          : undefined;
+        if (final && (await cacheAnchorMatches(final.shardAnchor, async (n) => (await reader.header(n)).block_hash))) {
+          balances.push(final.balance);
           continue;
         }
         const snapshot = await readConfirmedSnapshot(
@@ -68,7 +71,13 @@ export const shardConservationPort =
         balances.push(balance);
         const window = Number(uint(String(singleRow(snapshot, "ChestRules").claim_window_seconds), 32));
         if (cache && game.status === "Settled" && head.timestamp >= game.clock.end_at + window)
-          await cache.put(key, balance);
+          await cache.put(key, {
+            balance,
+            shardAnchor: {
+              number: snapshot.confirmed_block,
+              hash: (await reader.header(snapshot.confirmed_block)).block_hash,
+            },
+          });
       }
       if (cache) await cache.put("conservation:cursor", page.length === 25 ? page.at(-1)!.game_id : 0);
       return balances;

@@ -1,10 +1,13 @@
+import { cacheAnchorMatches, type CacheAnchor } from "./cache-anchor";
 import { hash } from "starknet";
-import { rpcAt, ledgerInteger } from "@realms-world/value-ledger";
+import { rpcAt, ledgerInteger, readConfirmedLedgerHead } from "@realms-world/value-ledger";
 import { ShardReader, sameFelt, uint } from "./shard-rpc";
 import { readConfirmedSnapshot, singleRow } from "./shard-snapshot";
 import { relayOperation } from "./ports";
 
 interface GameFunding {
+  shardAnchor: CacheAnchor;
+  ledgerAnchor: CacheAnchor;
   chainId: string;
   gameId: number;
   seasonId: number;
@@ -20,9 +23,11 @@ interface GameFunding {
 interface FundingStore {
   get<T>(key: string): Promise<T | undefined>;
   put<T>(key: string, value: T): Promise<unknown>;
+  delete(key: string): Promise<unknown>;
 }
 interface Discovery {
-  game: Omit<GameFunding, "seasonId">;
+  game: Omit<GameFunding, "seasonId" | "ledgerAnchor">;
+  ledgerAnchor: CacheAnchor;
   head: number;
   token?: string | undefined;
   seen: string[];
@@ -43,19 +48,41 @@ export const frontierReceiptBindings = (
     relayOperation("resolve_frontier_funding", async () => {
       const key = `funding:${BigInt(reader.connection.chainId).toString(16)}:${gameId}`;
       const cached = await storage.get<GameFunding>(key);
+      const shardValid = (anchor: CacheAnchor | undefined) =>
+        cacheAnchorMatches(anchor, async (number) => (await reader.header(number)).block_hash);
+      const ledgerValid = (anchor: CacheAnchor | undefined) =>
+        cacheAnchorMatches(
+          anchor,
+          async (number) => (await readConfirmedLedgerHead(rpcAt(ledger.rpcUrl), number)).hash,
+        );
       if (cached) {
         if (cached.gameId !== gameId || BigInt(cached.chainId) !== BigInt(reader.connection.chainId))
           throw new Error("funding_binding_key_differs");
-        requireTimelyReceipt(confirmedAt, cached.deadline);
-        return cached.seasonId;
+        if ((await shardValid(cached.shardAnchor)) && (await ledgerValid(cached.ledgerAnchor))) {
+          requireTimelyReceipt(confirmedAt, cached.deadline);
+          return cached.seasonId;
+        }
+        await storage.delete(key);
       }
       const scanKey = `discover:${key}`;
-      const discovery = (await storage.get<Discovery>(scanKey)) ?? {
-        game: await readGameFunding(reader, heraldUrl, gameId),
-        head: await rpcAt(ledger.rpcUrl).getBlockNumber(),
-        seen: [],
-        matches: [],
-      };
+      let discovery = await storage.get<Discovery>(scanKey);
+      if (
+        discovery &&
+        (!(await shardValid(discovery.game.shardAnchor)) || !(await ledgerValid(discovery.ledgerAnchor)))
+      ) {
+        await storage.delete(scanKey);
+        discovery = undefined;
+      }
+      if (!discovery) {
+        const head = await readConfirmedLedgerHead(rpcAt(ledger.rpcUrl));
+        discovery = {
+          game: await readGameFunding(reader, heraldUrl, gameId),
+          head: head.number,
+          ledgerAnchor: { number: head.number, hash: head.hash },
+          seen: [],
+          matches: [],
+        };
+      }
       requireTimelyReceipt(confirmedAt, discovery.game.deadline);
       const page = await readFundingPage(reader, ledger, discovery);
       if (page.token) {
@@ -63,17 +90,20 @@ export const frontierReceiptBindings = (
         throw new Error("frontier_funding_discovery_pending");
       }
       if (page.matches.length !== 1) {
-        // A season not yet funded can appear at a later head. Preserve the game's facts, restart only ledger discovery.
+        // Keep the shard facts, but scan again through the new confirmed funding head.
+        const nextHead = await readConfirmedLedgerHead(rpcAt(ledger.rpcUrl));
         await storage.put(scanKey, {
           ...page,
-          head: await rpcAt(ledger.rpcUrl).getBlockNumber(),
+          head: nextHead.number,
+          ledgerAnchor: { number: nextHead.number, hash: nextHead.hash },
           seen: [],
           matches: [],
         });
         throw new Error("frontier_funding_missing_or_ambiguous");
       }
-      const binding = { ...page.game, seasonId: page.matches[0]! };
+      const binding = { ...page.game, ledgerAnchor: page.ledgerAnchor, seasonId: page.matches[0]! };
       await storage.put(key, binding);
+      await storage.delete(scanKey);
       return binding.seasonId;
     }),
 });
@@ -82,8 +112,10 @@ const readGameFunding = async (
   reader: ShardReader,
   heraldUrl: string,
   gameId: number,
-): Promise<Omit<GameFunding, "seasonId">> => {
-  const shardHead = await reader.head();
+): Promise<Omit<GameFunding, "seasonId" | "ledgerAnchor">> => {
+  const snapshot = await readConfirmedSnapshot(reader.connection, heraldUrl, gameId, ["SliceRules", "ChestRules"]);
+  const source = await reader.header(snapshot.confirmed_block);
+  const shardHead = source.block_number;
   const game = await reader
     .provider()
     .callContract(
@@ -94,7 +126,6 @@ const readGameFunding = async (
   const start = uint(game[6]!, 64),
     end = uint(game[7]!, 64),
     seed = uint(game[9]!, 252);
-  const snapshot = await readConfirmedSnapshot(reader.connection, heraldUrl, gameId, ["SliceRules", "ChestRules"]);
   const rules = singleRow(snapshot, "SliceRules"),
     chests = singleRow(snapshot, "ChestRules");
   const unit = uint(String(rules.day_unit_seconds), 32),
@@ -103,6 +134,7 @@ const readGameFunding = async (
   if (!unit || !window || end <= start || (end - start) % (20n * unit) !== 0n)
     throw new Error("invalid_shard_frontier_calendar");
   return {
+    shardAnchor: { number: source.block_number, hash: source.block_hash },
     chainId: reader.connection.chainId,
     gameId,
     start: String(start),
@@ -150,7 +182,7 @@ const readFundingPage = async (reader: ShardReader, ledger: Ledger, scan: Discov
 const matchesGameFunding = async (
   provider: ReturnType<typeof rpcAt>,
   ledger: Ledger,
-  game: Omit<GameFunding, "seasonId">,
+  game: Omit<GameFunding, "seasonId" | "ledgerAnchor">,
   seasonId: number,
   head: number,
 ) => {
