@@ -421,7 +421,10 @@ test("a public slot cannot queue a game under the deployment check prefix", asyn
     new Request(ALLOWED_ORIGIN + "/api/slots", {
       method: "POST",
       headers: { authorization: "Bearer " + OPERATOR_TOKEN, "content-type": "application/json" },
-      body: JSON.stringify({ name: "check-hidden", closesAt: new Date(Math.floor(Date.now() / 1000) * 1000 + 60000).toISOString() }),
+      body: JSON.stringify({
+        name: "check-hidden",
+        closesAt: new Date(Math.floor(Date.now() / 1000) * 1000 + 60000).toISOString(),
+      }),
     }),
   );
   expect(response.status).toBe(400);
@@ -434,7 +437,10 @@ test("refuses a slot whose derived run name is reserved before inserting any row
     new Request(ALLOWED_ORIGIN + "/api/slots", {
       method: "POST",
       headers: { authorization: "Bearer " + OPERATOR_TOKEN, "content-type": "application/json" },
-      body: JSON.stringify({ name: "check", closesAt: new Date(Math.floor(Date.now() / 1000) * 1000 + 60000).toISOString() }),
+      body: JSON.stringify({
+        name: "check",
+        closesAt: new Date(Math.floor(Date.now() / 1000) * 1000 + 60000).toISOString(),
+      }),
     }),
   );
   expect(response.status).toBe(400);

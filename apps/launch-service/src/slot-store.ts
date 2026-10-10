@@ -36,7 +36,8 @@ export class D1SlotStore implements SlotStore {
       throw new SlotConflict("Slot name was already used for a launch");
     }
     const closes = Date.parse(closesAt);
-    if (!Number.isSafeInteger(closes) || closes % 1000 !== 0) throw new SlotConflict("Slot close must be a whole second");
+    if (!Number.isSafeInteger(closes) || closes % 1000 !== 0)
+      throw new SlotConflict("Slot close must be a whole second");
     await this.db
       .prepare(
         `INSERT INTO playtest_slots (name, closes_at,chain_id) SELECT ?1, ?2,?3 WHERE ?2 > ${DATABASE_NOW} ON CONFLICT (chain_id,name) DO NOTHING`,
