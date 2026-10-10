@@ -5,7 +5,7 @@ import { identityClient } from "@/hooks/context/identity-session";
 import { shortAddress } from "@/ui/design-system/kit/address";
 import { Button } from "@/ui/design-system/kit/button";
 import { type IconCode, KitIcon } from "@/ui/design-system/kit/kit-icon";
-import { formatClockTime } from "@/ui/design-system/kit/time";
+import { formatMoment } from "@/ui/design-system/kit/time";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { failureSentence } from "@/ui/modules/identity/identity-failures";
 
@@ -302,7 +302,7 @@ const Linked = ({
     {wallet.status === "on_hold" ? (
       <div className="flex flex-col gap-3">
         <Line icon="Lo">
-          {WALLET_WORDS.receivesFrom} <b>{formatClockTime(wallet.until / 1000)}</b>
+          {WALLET_WORDS.receivesFrom} <b>{formatMoment(wallet.until / 1000)}</b>
         </Line>
         <Line icon="Em">
           {WALLET_WORDS.noticeSentTo} <b>{email}</b>

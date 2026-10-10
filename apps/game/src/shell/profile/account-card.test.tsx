@@ -7,7 +7,7 @@ import { expect, it, vi } from "vitest";
 vi.hoisted(() => vi.stubGlobal("fetch", async () => new Response(null, { status: 401 })));
 
 import { identityClient } from "@/hooks/context/identity-session";
-import { formatClockTime } from "@/ui/design-system/kit/time";
+import { formatMoment } from "@/ui/design-system/kit/time";
 
 import { AccountCard } from "./account-card";
 
@@ -98,7 +98,7 @@ it("shows a held payout wallet as the time it receives from, nothing more", asyn
     ),
   );
   try {
-    expect(container.textContent).toContain(`Receives from ${formatClockTime(until / 1000)}`);
+    expect(container.textContent).toContain(`Receives from ${formatMoment(until / 1000)}`);
     expect(container.textContent).not.toContain("left");
   } finally {
     await act(async () => root.unmount());

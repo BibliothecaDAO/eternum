@@ -23,7 +23,7 @@ vi.mock("@/ui/modules/identity/wallet-actions", () => ({
 import { identityClient } from "@/hooks/context/identity-session";
 import { IdentityRequestError } from "@realms-world/identity";
 
-import { formatClockTime } from "@/ui/design-system/kit/time";
+import { formatMoment } from "@/ui/design-system/kit/time";
 
 import { PayoutWalletPanel } from "./payout-wallet-panel";
 
@@ -68,7 +68,7 @@ it("shows a held wallet's time left, and a player with none the two ways to one"
   });
   expect(held.textContent).toContain("On hold");
   // The hold is the time the new wallet receives from, and nothing more: no countdown, no ring.
-  expect(held.textContent).toContain(`Receives from ${formatClockTime((NOW + 17 * HOUR + 42 * 60_000) / 1000)}`);
+  expect(held.textContent).toContain(`Receives from ${formatMoment((NOW + 17 * HOUR + 42 * 60_000) / 1000)}`);
   expect(held.textContent).not.toContain("17h 42m");
   expect(held.textContent).toContain("you@mail.test");
 

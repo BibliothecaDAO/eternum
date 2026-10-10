@@ -31,3 +31,10 @@ export const formatDate = (unixSeconds: number | undefined, nowSeconds = Date.no
   const sameYear = date.getFullYear() === new Date(nowSeconds * 1000).getFullYear();
   return (sameYear ? DAY_MONTH : DAY_MONTH_YEAR).format(date);
 };
+
+/**
+ * A moment a day or more away (unix seconds) as its local day and clock time, "11 Oct 14:32": a clock time alone
+ * would read as already past once that time has gone by today.
+ */
+export const formatMoment = (unixSeconds: number | undefined, nowSeconds = Date.now() / 1000): string =>
+  unixSeconds === undefined ? DASH : `${formatDate(unixSeconds, nowSeconds)} ${formatClockTime(unixSeconds)}`;
