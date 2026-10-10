@@ -35,9 +35,7 @@ const needsThePlayersEye = new Set<Transaction["status"]>(["checking", "reverted
 
 function isImportantPersonalRow(row: FeedRow): boolean {
   if (row.kind !== "transaction") return true;
-  return (
-    row.isStuck || needsThePlayersEye.has(row.transaction.status) || !routineProductionTypes.has(row.transaction.type)
-  );
+  return needsThePlayersEye.has(row.transaction.status) || !routineProductionTypes.has(row.transaction.type);
 }
 
 /** Battles include structure captures. Routine moves and point accrual remain in the full log. */

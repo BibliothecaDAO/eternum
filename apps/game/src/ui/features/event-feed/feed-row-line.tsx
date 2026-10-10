@@ -117,12 +117,12 @@ function summarizeFeedRow(row: ImportantFeedRow): { icon: ReactNode; text: React
     };
   }
   if (row.kind === "transaction") {
-    const { transaction, isStuck } = row;
+    const { transaction } = row;
     const failed = transaction.status === "reverted" || transaction.status === "not_sent";
-    const Icon = isStuck || failed ? TriangleAlert : transaction.status === "success" ? Check : Hourglass;
+    const Icon = failed ? TriangleAlert : transaction.status === "success" ? Check : Hourglass;
     return {
-      icon: <Icon className={cn("h-4 w-4 shrink-0", (isStuck || failed) && "text-danger")} />,
-      text: `${transferRowLabel(row) ?? transaction.description} · ${transactionStatusLine(transaction, isStuck)}`,
+      icon: <Icon className={cn("h-4 w-4 shrink-0", failed && "text-danger")} />,
+      text: `${transferRowLabel(row) ?? transaction.description} · ${transactionStatusLine(transaction)}`,
     };
   }
   const Icon =

@@ -11,7 +11,6 @@ import { useEventFeedStore } from "./event-feed-store";
 /** The feed rows from their three sources; the block timestamp is the clock the caravan countdowns follow. */
 export const useFeedRows = (): FeedRows => {
   const transactions = useTransactionStore((state) => state.transactions);
-  const stuckThresholdMs = useTransactionStore((state) => state.stuckThresholdMs);
   const arrivals = useFactView(resourceArrivalsView);
   const structures = useFactView(gameStructuresView);
   const address = useAccountStore((state) => state.account?.address);
@@ -32,10 +31,8 @@ export const useFeedRows = (): FeedRows => {
         ownedStructureIds,
         arrivals,
         notices,
-        nowMs: Date.now(),
         nowSeconds,
-        stuckThresholdMs,
       }),
-    [ownedStructureIds, arrivals, notices, nowSeconds, stuckThresholdMs, transactions],
+    [ownedStructureIds, arrivals, notices, nowSeconds, transactions],
   );
 };
