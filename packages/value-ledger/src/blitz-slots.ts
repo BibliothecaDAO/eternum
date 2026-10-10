@@ -1,4 +1,4 @@
-import { hash, type RpcProvider, type EmittedEvent } from "starknet";
+import { hash, num, type RpcProvider, type EmittedEvent } from "starknet";
 import { decodeRegistration, ledgerBool, ledgerInteger, ledgerU256, readConfirmedLedgerHead } from "./codecs";
 
 export interface LedgerSlotKey {
@@ -145,7 +145,7 @@ const readRegistrationTimes = async (
       address,
       from_block: { block_number: 0 },
       to_block: { block_number: head },
-      keys: [[selector], [key.chainId], [String(key.slotId)], wallets],
+      keys: [[selector], [key.chainId], [String(key.slotId)], wallets].map((keys) => keys.map(num.toHex)),
       chunk_size: 100,
       ...(token ? { continuation_token: token } : {}),
     });
