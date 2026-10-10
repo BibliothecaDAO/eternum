@@ -55,7 +55,19 @@ export class LauncherDeployment {
     private readonly storage: Storage,
   ) {}
   async account(chainId: string): Promise<string | undefined> {
-    return (await this.storage.get<Enrolled>(this.accountKey(chainId)))?.launcherAccount;
+    const enrolled = await this.storage.get<Enrolled>(this.accountKey(chainId));
+    if (!enrolled) return undefined;
+    const shard = await this.target({ chainId, heraldUrl: this.env.SHARD_URL });
+    const native = new LaunchShard({
+      rpcUrl: shard.rpcUrl,
+      chainId: shard.chainId,
+      gamesAddress: shard.contracts.games!,
+      accountAddress: enrolled.launcherAccount,
+      privateKey: this.env.DEPLOYER_PRIVATE_KEY,
+    });
+    if (BigInt(await native.view<bigint>("launcher", [])) !== BigInt(enrolled.launcherAccount))
+      throw new Error("launcher_role_not_granted");
+    return enrolled.launcherAccount;
   }
   async enrol(input: Target) {
     const shard = await this.target(input);

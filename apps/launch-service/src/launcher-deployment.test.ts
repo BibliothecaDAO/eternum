@@ -154,3 +154,12 @@ it("aligns a Frontier check game to the same native calendar rule as ordinary la
   expect((Date.parse(request.gameStartTime) / 1000) % 120).toBe(0);
   expect(request.environment).toBe("madara.frontier");
 });
+
+it("never exposes an enrolled signer to due launches until the shard grants launcher", async () => {
+  await deploy().enrol({ chainId, heraldUrl });
+  mock.launcher.mockResolvedValue(0x99n);
+  await expect(deploy().account(chainId)).rejects.toThrow("launcher_role_not_granted");
+  expect(mock.create).not.toHaveBeenCalled();
+  mock.launcher.mockResolvedValue(BigInt(own));
+  expect(await deploy().account(chainId)).toBe(own);
+});
