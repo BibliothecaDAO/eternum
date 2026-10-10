@@ -240,7 +240,7 @@ export const decodeFrontierSeason = (fields: readonly string[]) => {
 };
 /**
  * Preset: entry_fee (2), protocol_cut_bps, chest_lords_bps, paid_fraction_bps, decay_bps, sword_price (2),
- * shield_price (2), mmr (7), day_unit, bags, claim_window, registration_limit.
+ * shield_price (2), mmr (7), day_unit, bags, claim_window.
  */
 export const decodeLedgerPreset = (fields: readonly string[]) => {
   if (fields.length !== 20) throw new Error("invalid_ledger_preset");

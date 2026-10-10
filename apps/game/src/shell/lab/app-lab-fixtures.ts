@@ -14,7 +14,7 @@ import type { Reward } from "../season-tab/reward";
 
 /**
  * The app lab's one fiction, the handoff's: Day 12 of a Frontier season, today ends with 7h 14m left, the player
- * (Maelis) ranks 12th of 1,240 with a realm; a Blitz fills for 16:30 with 17 of 24 seats, another is live; Eternum
+ * (Maelis) ranks 12th of 1,240 with a realm; a Blitz slot takes entries until 16:30 with 31 registered, another Blitz is live; Eternum
  * opens in a week; Dominion waits. Nothing here reaches a shard.
  */
 const NOW = Math.floor(Date.now() / 1000);

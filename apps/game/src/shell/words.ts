@@ -203,13 +203,11 @@ export const WALLET_WORDS = {
   addExtension: "Add Ready's extension",
   byEmailTitle: "By email",
   noInstallShort: "No install",
-  openReady: "Open Ready",
   keysStay: "Ready's own page; your keys stay with Ready",
   emailStep: "Email and password, on Ready's page",
   approveStep: "Approve Realms",
   codeStep: "Signature, then our code",
   backFromReady: "Added Ready? Reload this page, then link it.",
-  linkReady: "Link Ready",
   anotherWallet: "Another wallet",
   codeSentTo: "Code sent to",
   sending: "Sending…",
@@ -346,7 +344,6 @@ export const LEARN_WORDS = {
   scroll: "The Scroll",
   thoughtPiece: "Thought piece",
   update: "Update",
-  change: "Change",
   /** Below the Scroll's newest posts: everything else in News, on Learn. */
   allNews: "All news",
   /** The four ages as the lore site tells them, on Learn. */
