@@ -1,4 +1,5 @@
 export {
+  decodeRegistration,
   ledgerInteger,
   ledgerBool,
   ledgerU256,
@@ -15,7 +16,7 @@ export interface LedgerGameKey {
   chainId: string;
   gameId: number;
 }
-export { readLedgerSlot, readRegistrationPage } from "./blitz-slots";
+export { readLedgerSlot, readLedgerRegistration, readRegistrationPage } from "./blitz-slots";
 export type { LedgerSlotKey, SlotRegistration, RegistrationPage, RegistrationQuery } from "./blitz-slots";
 export type { LedgerSlot } from "./codecs";
 export { resolveBlitzRoster, splitPlaytestRoster } from "./blitz-roster";

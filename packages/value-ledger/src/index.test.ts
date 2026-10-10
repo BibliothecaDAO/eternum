@@ -1,11 +1,22 @@
+import { ledgerAbi, ledgerEvent, ledgerCall } from "../test-support/ledger-abi";
+import { response } from "../test-support/abi";
 import { expect, it, vi } from "vitest";
-import { hash, type RpcProvider } from "starknet";
+import { type RpcProvider } from "starknet";
 import { readLedgerSlot, readRegistrationPage, rpcAt } from "./index";
 const key = { chainId: "0x1", slotId: 7 };
 const fixture = (count = 125) => {
   const call = vi.fn(async (request: { entrypoint: string; calldata: string[] }, _head: number) =>
     request.entrypoint === "get_slot"
-      ? ["1", "1", "2", "100", "200", "0", "0", String(count), "0"]
+      ? response(ledgerAbi, "get_slot", {
+          season_id: 1,
+          exists: true,
+          preset_id: 2,
+          close: 100,
+          end: 200,
+          pool: { low: 0, high: 0 },
+          registered_count: count,
+          cancelled: false,
+        })
       : [`0x${(Number(request.calldata[2]) + 1).toString(16)}`],
   );
   const block = vi.fn(async (number: number | "latest") => ({
@@ -17,8 +28,7 @@ const fixture = (count = 125) => {
   const events = vi.fn(async (query: { keys: string[][] }) => ({
     events: query.keys[3]!.map((wallet) => ({
       from_address: "0x10",
-      keys: [hash.getSelectorFromName("Registered"), "0x1", "7", wallet],
-      data: [],
+      ...ledgerEvent("Registered", { key: { shard: 1, slot_id: 7 }, owner: wallet }),
       block_number: 50,
       block_hash: "0x50",
     })),
@@ -46,6 +56,10 @@ it("reads an uncapped slot through bounded wallet pages at the same confirmed he
   expect(second.registrations[0]).toEqual({ wallet: "0x65", registeredAt: 90 });
   expect(second.next).toBeNull();
   expect(f.call.mock.calls.every((args) => args[1] === 99)).toBe(true);
+  const request = f.call.mock.calls.find(([request]) => request.entrypoint === "get_registered_player")![0];
+  expect(request.calldata.map(BigInt)).toEqual(
+    ledgerCall("get_registered_player", { key: { shard: 1, slot_id: 7 }, index: 0 }).map(BigInt),
+  );
 });
 it("refuses changed heads, missing registration events and absent slots", async () => {
   const f = fixture(1);

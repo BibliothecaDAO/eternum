@@ -1,3 +1,5 @@
+import { gamesAbi, response, hex } from "../../../packages/value-ledger/test-support/abi";
+import { CallData, CairoOption, CairoOptionVariant } from "starknet";
 import { Effect } from "effect";
 import { beforeEach, expect, it, vi } from "vitest";
 import { currentLaborDay, writeLaborGrant } from "./shard-labor";
@@ -38,13 +40,7 @@ vi.mock("@realms-world/value-ledger/shard", () => ({
       await rpc.execute({
         contractAddress: "0x10",
         entrypoint,
-        calldata: [
-          String(args.realm.game_id),
-          String(args.realm.realm_id),
-          String(args.realm.home),
-          String(args.day),
-          args.account,
-        ],
+        calldata: new CallData(gamesAbi).compile(entrypoint, args).map(hex),
       });
       if ((await rpc.wait()).isReverted()) throw new Error("labor_grant_reverted");
     }
@@ -65,24 +61,8 @@ const claim: LaborClaim = {
   realmsId: "0x2",
   account: "0x123",
 };
-const realmType = {
-  type: "struct",
-  name: "world_native::entry::LaborRealm",
-  members: [
-    { name: "game_id", type: "core::integer::u32" },
-    { name: "realm_id", type: "core::integer::u32" },
-    { name: "home", type: "core::integer::u64" },
-  ],
-};
-const grantAbi = {
-  type: "function",
-  name: "grant_labor",
-  inputs: [
-    { name: "realm", type: realmType.name },
-    { name: "day", type: "core::integer::u64" },
-    { name: "account", type: "core::starknet::contract_address::ContractAddress" },
-  ],
-};
+const realmType = gamesAbi.find((entry) => entry.name === "world_native::entry::LaborRealm")!;
+const grantAbi = gamesAbi.find((entry) => entry.name === "grant_labor")!;
 beforeEach(() => {
   vi.clearAllMocks();
   rpc.chain.mockResolvedValue("0x1");
@@ -93,14 +73,22 @@ beforeEach(() => {
     parent_hash: "0x9",
     timestamp: 1000,
   });
-  rpc.contract.mockResolvedValue({ abi: [realmType, grantAbi] });
+  rpc.contract.mockResolvedValue({ abi: gamesAbi });
   rpc.execute.mockResolvedValue({ transaction_hash: "0xabc" });
   rpc.wait.mockResolvedValue({ isReverted: () => false });
 });
 it("writes the published direct grant and returns a zero grant without treating it as a missing result", async () => {
   let reads = 0;
   rpc.call.mockImplementation(async (request) =>
-    request.entrypoint === "ledger_operator" ? ["0x20"] : reads++ === 0 ? ["1"] : ["0", "7", "0x123", "9", "0"],
+    request.entrypoint === "ledger_operator"
+      ? ["0x20"]
+      : reads++ === 0
+        ? response(gamesAbi, "labor_grant", new CairoOption(CairoOptionVariant.None))
+        : response(
+            gamesAbi,
+            "labor_grant",
+            new CairoOption(CairoOptionVariant.Some, { game_id: 7, account: "0x123", home: 9, amount: 0 }),
+          ).map(hex),
   );
   expect(await Effect.runPromise(writeLaborGrant(target, claim))).toEqual({
     gameId: 7,
@@ -111,7 +99,9 @@ it("writes the published direct grant and returns a zero grant without treating 
   expect(rpc.execute).toHaveBeenCalledWith({
     contractAddress: "0x10",
     entrypoint: "grant_labor",
-    calldata: ["7", "8", "9", "0", "0x123"],
+    calldata: new CallData(gamesAbi)
+      .compile("grant_labor", { realm: { game_id: 7, realm_id: 8, home: 9 }, day: 0, account: "0x123" })
+      .map(hex),
   });
 });
 it("uses the immutable exact retry and refuses a conflicting home or disabled operator", async () => {
@@ -131,7 +121,7 @@ it("fails closed on the retired narrow home ABI or on reverted grants", async ()
       grantAbi,
       {
         ...realmType,
-        members: realmType.members.map((member) =>
+        members: realmType.members.map((member: { name: string; type: string }) =>
           member.name === "home" ? { ...member, type: "core::integer::u32" } : member,
         ),
       },
@@ -139,7 +129,7 @@ it("fails closed on the retired narrow home ABI or on reverted grants", async ()
   });
   await expect(Effect.runPromise(writeLaborGrant(target, claim))).rejects.toThrow();
   expect(rpc.execute).not.toHaveBeenCalled();
-  rpc.contract.mockResolvedValue({ abi: [realmType, grantAbi] });
+  rpc.contract.mockResolvedValue({ abi: gamesAbi });
   rpc.call.mockImplementation(async (request) => (request.entrypoint === "ledger_operator" ? ["0x20"] : ["1"]));
   rpc.wait.mockResolvedValue({ isReverted: () => true });
   await expect(Effect.runPromise(writeLaborGrant(target, claim))).rejects.toThrow();

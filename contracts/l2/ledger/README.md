@@ -160,5 +160,3 @@ credentials, grant the ledger `UPDATER_ROLE` on the existing MMR token, and gran
 implementation remains unchanged. The chest collection needs an authorized, storage-compatible upgrade exposing
 `mint_with_id`, plus metadata for all five new band kinds. Use the existing mainnet deployment path only after these
 gates; its constructor is `(admin, operator, treasury, lords, mmr_token, loot_chest, cosmetics)`.
-
-Frontier funding uses `season_id = shard game id` in `fund_frontier(shard, season_id, ...)`.

@@ -7,9 +7,9 @@ import {
 } from "@bibliothecadao/types";
 
 import { chatMemberOf, consumeChatBudget, readChatFrame, sendChat, type ChatMember } from "./chat-sockets";
-import type { IdentityEnv } from "../env";
-import { ChatAccessError, readRoomAccess } from "./room-access";
-import { parseChatRoom } from "./rooms";
+interface RoomMember extends ChatMember {
+  canWrite: boolean;
+}
 
 /** A room keeps thirty days of messages, and never more than its last five hundred. */
 const RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
@@ -29,8 +29,8 @@ interface MessageRow extends Record<string, SqlStorageValue> {
  * One chat room: its members' sockets and its history. Sockets use the hibernation API only, with no timer or
  * interval, so a room with no traffic is evicted from memory and costs nothing until the next message wakes it.
  */
-export class ChatRoom extends DurableObject<Pick<IdentityEnv, "DB" | "LAUNCH">> {
-  constructor(ctx: DurableObjectState, env: Pick<IdentityEnv, "DB" | "LAUNCH">) {
+export class ChatRoom extends DurableObject<unknown> {
+  constructor(ctx: DurableObjectState, env: unknown) {
     super(ctx, env);
     ctx.storage.sql.exec(
       `CREATE TABLE IF NOT EXISTS messages (id TEXT PRIMARY KEY, senderId TEXT NOT NULL, senderName TEXT, content TEXT NOT NULL,
@@ -47,11 +47,12 @@ export class ChatRoom extends DurableObject<Pick<IdentityEnv, "DB" | "LAUNCH">> 
     await this.ctx.storage.put("room", room);
     const [client, server] = Object.values(new WebSocketPair()) as [WebSocket, WebSocket];
     this.ctx.acceptWebSocket(server, [member.realmsId]);
-    server.serializeAttachment(member);
+    const canWrite = request.headers.get("x-chat-can-write") === "true";
+    server.serializeAttachment({ ...member, canWrite } satisfies RoomMember);
     sendChat(server, {
       type: "joined:zone",
       zoneId: room,
-      canWrite: request.headers.get("x-chat-can-write") === "true",
+      canWrite,
     });
     sendChat(server, { type: "presence:sync", players: this.presence() });
     this.broadcast({ type: "presence:update", player: presenceOf(member) }, server);
@@ -59,7 +60,7 @@ export class ChatRoom extends DurableObject<Pick<IdentityEnv, "DB" | "LAUNCH">> 
   }
 
   override async webSocketMessage(socket: WebSocket, data: string | ArrayBuffer): Promise<void> {
-    const member = socket.deserializeAttachment() as ChatMember;
+    const member = socket.deserializeAttachment() as RoomMember;
     const frame = readChatFrame(socket, data);
     if (!frame || !consumeChatBudget(socket)) return;
     if (frame.type !== "world:publish") {
@@ -97,14 +98,17 @@ export class ChatRoom extends DurableObject<Pick<IdentityEnv, "DB" | "LAUNCH">> 
     return { messages, nextCursor: rows.length === limit ? (messages.at(-1)?.createdAt as string) : null };
   }
 
-  private async publish(socket: WebSocket, member: ChatMember, message: WorldPublishMessage) {
+  private async publish(socket: WebSocket, member: RoomMember, message: WorldPublishMessage) {
     const room = await this.ctx.storage.get<string>("room");
     const parsed = worldChatPublishSchema.safeParse(message.payload);
     if (!parsed.success || message.zoneId !== room || parsed.data.zoneId !== room) {
       sendChat(socket, { type: "error", code: "invalid_world_payload", message: "Invalid message for this room." });
       return;
     }
-    if (!(await this.canPublish(socket, member, room))) return;
+    if (member.canWrite !== true) {
+      sendChat(socket, { type: "error", code: "registration_required", message: "Register for this slot to write." });
+      return;
+    }
     const row: MessageRow = {
       id: crypto.randomUUID(),
       senderId: member.realmsId,
@@ -129,21 +133,6 @@ export class ChatRoom extends DurableObject<Pick<IdentityEnv, "DB" | "LAUNCH">> 
       clientMessageId: message.clientMessageId,
       message: toWorldChatMessage(room, row),
     });
-  }
-
-  private async canPublish(socket: WebSocket, member: ChatMember, room: string) {
-    // Slot membership can change while an observer's socket is open. Never persist a seat on its attachment.
-    if (!room.startsWith("slot:")) return true;
-    try {
-      const parsedRoom = parseChatRoom(room);
-      if (!parsedRoom) throw new ChatAccessError("channel_not_found", 404);
-      if ((await readRoomAccess(this.env, member.realmsId, parsedRoom)).canWrite) return true;
-      sendChat(socket, { type: "error", code: "seat_required", message: "Take a seat in this slot to write." });
-    } catch (error) {
-      if (!(error instanceof ChatAccessError)) throw error;
-      sendChat(socket, { type: "error", code: error.code, message: "Slot chat permission is unavailable." });
-    }
-    return false;
   }
 
   private leave(socket: WebSocket) {

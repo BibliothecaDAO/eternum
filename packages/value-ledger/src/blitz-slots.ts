@@ -1,5 +1,5 @@
 import { hash, type RpcProvider, type EmittedEvent } from "starknet";
-import { decodeLedgerSlot, type LedgerSlot, readConfirmedLedgerHead } from "./codecs";
+import { decodeLedgerSlot, decodeRegistration, type LedgerSlot, readConfirmedLedgerHead } from "./codecs";
 
 export interface LedgerSlotKey {
   chainId: string;
@@ -34,6 +34,21 @@ export async function readLedgerSlot(
     head,
   );
   return decodeLedgerSlot(fields);
+}
+
+/** One wallet's current registration, without enumerating an uncapped slot. */
+export async function readLedgerRegistration(
+  provider: RpcProvider,
+  address: string,
+  key: LedgerSlotKey,
+  wallet: string,
+) {
+  return decodeRegistration(
+    await provider.callContract(
+      { contractAddress: address, entrypoint: "get_registration", calldata: [key.chainId, String(key.slotId), wallet] },
+      "latest",
+    ),
+  );
 }
 
 /** One bounded page, ordered by the ledger index, with link cutoffs from confirmed registration blocks. */

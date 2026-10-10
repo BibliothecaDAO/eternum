@@ -1,3 +1,4 @@
+import { ledgerCall } from "../../../packages/value-ledger/test-support/ledger-abi";
 import { Effect } from "effect";
 import { beforeEach, expect, it, vi } from "vitest";
 import {
@@ -47,6 +48,11 @@ it("waits for the Frontier payment to confirm before completing", async () => {
     entrypoint: "pay",
     calldata: ["0x1", "7", "0xdef", "0x456", "17", "0"],
   });
+  expect(rpc.execute.mock.calls[0]![0].calldata.map(BigInt)).toEqual(
+    ledgerCall("pay", { shard: 1, season_id: 7, claim_id: "0xdef", wallet: "0x456", amount: { low: 17, high: 0 } }).map(
+      BigInt,
+    ),
+  );
   expect(rpc.wait).toHaveBeenCalledWith("0xabc", { errorStates: [] });
 });
 it("does not mark a reverted payment successful or expose a transport's error", async () => {
@@ -71,6 +77,7 @@ it("makes a monitor pause retry harmless once the pause already landed", async (
   rpc.call.mockResolvedValue(["0x0"]);
   await Effect.runPromise(ledgerPauserAdapter(credentials)());
   expect(rpc.execute).toHaveBeenCalledWith({ contractAddress: "0x10", entrypoint: "pause", calldata: [] });
+  expect(rpc.execute.mock.calls[0]![0].calldata).toEqual(ledgerCall("pause", {}));
   expect(rpc.wait).toHaveBeenCalledWith("0xabc");
 });
 
@@ -108,6 +115,11 @@ it("confirms an immutable withdrawal report separately from payment and recogniz
     entrypoint: "report_withdrawal",
     calldata: ["0x1", "7", "0xdef", "17", "0"],
   });
+  expect(rpc.execute.mock.calls[0]![0].calldata.map(BigInt)).toEqual(
+    ledgerCall("report_withdrawal", { shard: 1, season_id: 7, claim_id: "0xdef", amount: { low: 17, high: 0 } }).map(
+      BigInt,
+    ),
+  );
   expect(await Effect.runPromise(ledgerPaymentRead(credentials.rpcUrl, credentials.contractAddress)(claim))).toEqual({
     paid: false,
     seasonId: 7,

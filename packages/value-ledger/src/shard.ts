@@ -1,10 +1,11 @@
 import { DeviceSigner } from "@bibliothecadao/eternum/device-signer";
 export { batchRemaining } from "@bibliothecadao/provider/batch-progress";
 import { Account, CallData, ec, type Abi, type RpcProvider } from "starknet";
-import { gameplayRejection } from "@bibliothecadao/provider";
+import { encodeNativeCommand, gameplayRejection } from "@bibliothecadao/provider";
 import { resolveGameTransactionResourceBounds } from "@bibliothecadao/eternum/shard-fees";
 import { readConfirmedLedgerHead } from "./codecs";
 import { rpcAt } from "./rpc";
+import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
 
 export interface ShardTarget {
   rpcUrl: string;
@@ -69,14 +70,8 @@ export class ShardOperator {
     return confirmedShardReceipt(this.provider, transactionHash);
   }
   private cachedAbi: Promise<Abi> | undefined;
-  async playCommand(gameId: number, name: string, args: readonly string[] = []) {
-    const abi = await this.runtimeAbi((await this.head()).block_number);
-    const command = abi.find((type) => type.type === "enum" && type.name.endsWith("::Command")) as
-      | { variants: { name: string }[] }
-      | undefined;
-    const id = command?.variants.findIndex((variant) => variant.name === name) ?? -1;
-    if (id < 0) throw new Error("native_command_not_published");
-    return this.play(gameId, [String(id), ...args]);
+  async playCommand(gameId: number, name: "SettleBlitzRoster" | "MarkGameSettled" | "RecordBlitzResults") {
+    return this.play(gameId, encodeNativeCommand(bindings.commandAbi, { kind: name, value: undefined }));
   }
   private async runtimeAbi(head: number): Promise<Abi> {
     this.cachedAbi ??= this.provider

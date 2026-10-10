@@ -1,5 +1,5 @@
+import { ledgerCall, ledgerEvent } from "../../../packages/value-ledger/test-support/ledger-abi";
 import { beforeEach, expect, it, vi } from "vitest";
-import { hash } from "starknet";
 import { seasonLedgerReads, postSeasonTop, challengeSeason } from "./season-ledger";
 const rpc = vi.hoisted(() => ({ block: vi.fn(), events: vi.fn(), call: vi.fn(), execute: vi.fn(), wait: vi.fn() }));
 vi.mock("@realms-world/value-ledger", async (original) => ({
@@ -34,8 +34,13 @@ it("reads the participant and posted streams independently at the pinned confirm
     events: [
       {
         from_address: "0x10",
-        keys: [hash.getSelectorFromName("ChestMinted"), "0x1", "7", "0x2"],
-        data: ["8", "0", "1", "0"],
+        ...ledgerEvent("ChestMinted", {
+          key: { shard: 1, game_id: 7 },
+          wallet: 2,
+          token_id: { low: 8, high: 0 },
+          season_id: 1,
+          band: 0,
+        }),
         block_number: 90,
       },
     ],
@@ -60,8 +65,12 @@ it("reads the participant and posted streams independently at the pinned confirm
     events: [
       {
         from_address: "0x10",
-        keys: [hash.getSelectorFromName("SeasonTopPosted"), "1"],
-        data: ["2", "3700", "0", "0"],
+        ...ledgerEvent("SeasonTopPosted", {
+          season_id: 1,
+          top_count: 2,
+          review_until: 3700,
+          pool: { low: 0, high: 0 },
+        }),
         block_number: 100,
       },
     ],
@@ -75,6 +84,9 @@ it("confirms the published post_season_top call and rejects a provisional source
     entrypoint: "post_season_top",
     calldata: ["1", "2", "0x2", "0x3"],
   });
+  expect(rpc.execute.mock.calls[0]![0].calldata.map(BigInt)).toEqual(
+    ledgerCall("post_season_top", { season_id: 1, winners: ["0x2", "0x3"] }).map(BigInt),
+  );
   rpc.block.mockResolvedValue({ timestamp: 101 });
   await expect(seasonLedgerReads(target).head()).rejects.toThrow("ledger_head_unconfirmed");
 });
@@ -87,6 +99,27 @@ it("uses the per-season challenge entry and never the global pause", async () =>
     entrypoint: "challenge_season",
     calldata: ["1", "0x3"],
   });
+  expect(rpc.execute.mock.calls[0]![0].calldata.map(BigInt)).toEqual(
+    ledgerCall("challenge_season", { season_id: 1, omitted: "0x3" }).map(BigInt),
+  );
   rpc.call.mockResolvedValue(season);
   await expect(challengeSeason(target, 1, "0x3")).rejects.toThrow("season_challenge_not_recorded");
+});
+
+it("enumerates generated season openings and MMR corrections with their revision bytes", async () => {
+  const corrected = ledgerEvent("SeasonMmrCorrected", { season_id: 1, updates: [{ 0: "0x2", 1: 210 }] });
+  rpc.events.mockResolvedValue({
+    events: [
+      {
+        from_address: "0x10",
+        block_number: 99,
+        ...ledgerEvent("SeasonOpened", { season_id: 1, preset_id: 9, start: 10, end: 90 }),
+      },
+      { from_address: "0x10", block_number: 100, transaction_hash: "0xaa", ...corrected },
+    ],
+  });
+  expect((await seasonLedgerReads(target).changes(0, null, 100)).rows).toEqual([
+    { kind: "opened", id: 1 },
+    { kind: "corrected", id: 1, revision: `0xaa:100:${corrected.keys.join(":")}:${corrected.data.join(":")}` },
+  ]);
 });

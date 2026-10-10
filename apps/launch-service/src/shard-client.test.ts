@@ -1,3 +1,5 @@
+import { gamesAbi } from "../../../packages/value-ledger/test-support/abi";
+import { CallData } from "starknet";
 import { expect, it, vi } from "vitest";
 import { LaunchShard } from "./shard-client";
 it("creates a complete roster once and recovers a lost acknowledgment from the existing game", async () => {
@@ -12,6 +14,10 @@ it("creates a complete roster once and recovers a lost acknowledgment from the e
   vi.spyOn(native, "gameId").mockImplementation(async () => (params ? 7 : 0));
   const create = vi.spyOn(native, "admin").mockImplementation(async (_entry, payload) => {
     params = (payload as { params: Record<string, unknown> }).params;
+    const entry = gamesAbi.find((entry) => entry.name === "create_game")!;
+    const fields = gamesAbi.find((type) => type.name === entry.inputs[0].type)!.members;
+    expect(Object.keys(params).sort()).toEqual(fields.map((field: { name: string }) => field.name).sort());
+    expect(new CallData(gamesAbi).compile("create_game", payload as never).length).toBeGreaterThan(0);
     throw new Error("lost acknowledgment");
   });
   vi.spyOn(native, "game").mockImplementation(
