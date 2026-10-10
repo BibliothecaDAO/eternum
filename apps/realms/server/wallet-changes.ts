@@ -2,7 +2,7 @@ import type { AuthContext, User } from "better-auth";
 import { APIError } from "better-auth/api";
 import { Effect } from "effect";
 
-import { consumeSignInBudget } from "./sign-in-budget";
+import { consumeChallengeAttempt } from "./sign-in-budget";
 
 interface WalletChangeServices {
   db: D1Database;
@@ -11,7 +11,7 @@ interface WalletChangeServices {
   sendNotice(email: string, address: string | null, id: string): Promise<void>;
 }
 
-/** Consume the existing sign-in code in the same transaction that changes the wallet and queues its notice. */
+/** Consume the wallet-change code in the same transaction that changes the wallet and queues its notice. */
 export const changeWallet = (
   services: WalletChangeServices,
   context: AuthContext,
@@ -22,11 +22,15 @@ export const changeWallet = (
   Effect.runPromise(
     Effect.gen(function* () {
       if (!user.emailVerified) return yield* Effect.fail(new APIError("FORBIDDEN", { message: "email_not_verified" }));
-      if (!(yield* Effect.promise(() => consumeSignInBudget(services.db, user.email.toLowerCase())))) {
-        return yield* Effect.fail(new APIError("TOO_MANY_REQUESTS", { message: "too_many_attempts" }));
+      if (
+        !(yield* Effect.promise(() =>
+          consumeChallengeAttempt(services.db, `email-verification-otp-${user.email.toLowerCase()}`),
+        ))
+      ) {
+        return yield* Effect.fail(new APIError("BAD_REQUEST", { message: "INVALID_OTP" }));
       }
       const verification = yield* Effect.promise(() =>
-        context.internalAdapter.findVerificationValue(`sign-in-otp-${user.email.toLowerCase()}`),
+        context.internalAdapter.findVerificationValue(`email-verification-otp-${user.email.toLowerCase()}`),
       );
       if (!verification) return yield* Effect.fail(new APIError("BAD_REQUEST", { message: "INVALID_OTP" }));
       yield* Effect.tryPromise({ try: () => services.checkCode(context, user.email, otp), catch: (error) => error });

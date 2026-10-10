@@ -85,7 +85,8 @@ export const createIdentityAuth = (
     allowedAttempts: 3,
     storeOTP: "hashed",
     sendVerificationOTP: async ({ email, otp, type }) => {
-      if (type !== "sign-in") throw new APIError("BAD_REQUEST", { message: "SIGN_IN_CODES_ONLY" });
+      if (type !== "sign-in" && type !== "email-verification")
+        throw new APIError("BAD_REQUEST", { message: "SECURITY_CODES_ONLY" });
       await services.sendSignInCode(email, otp);
     },
   });
@@ -137,7 +138,7 @@ export const createIdentityAuth = (
         verifySignature: services.verifyWalletSignature,
         db: env.DB,
         checkCode: (context, email, otp) =>
-          emailCodes.endpoints.checkVerificationOTP({ context, body: { email, otp, type: "sign-in" } }),
+          emailCodes.endpoints.checkVerificationOTP({ context, body: { email, otp, type: "email-verification" } }),
         notifyChange: (realmsId) => env.ACCOUNT_LINKS.changed(realmsId),
         sendNotice: services.sendWalletNotice ?? resendWalletNotices(env.RESEND_API_KEY),
       }),
