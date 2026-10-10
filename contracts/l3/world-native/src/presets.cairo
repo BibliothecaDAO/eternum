@@ -62,7 +62,10 @@ pub fn validate(preset: PresetDefinition) {
         let _ = labor.amount * crate::rules::RESOURCE_PRECISION;
     }
     if let Some(chests) = preset.economy.chests {
-        assert!(chests.claim_window_seconds > crate::days::FRONTIER_REPORT_GRACE_SECONDS, "LORDS claim window needs reporting grace");
+        assert!(
+            chests.claim_window_seconds > crate::days::FRONTIER_REPORT_GRACE_SECONDS,
+            "LORDS claim window needs reporting grace",
+        );
     }
     assert!(preset.economy.chests.is_some() == (rules.day_unit_seconds != 0), "chest rules require expedition");
     assert!(preset.economy.discovery.is_some() == (rules.day_unit_seconds != 0), "discovery requires expedition");

@@ -30,8 +30,18 @@ test("a missing shared rule refuses schema generation instead of becoming a sile
     await mkdir(join(directory, "src"));
     await writeFile(join(directory, "src/rules.cairo"), "pub const MAX: u32 = crate::roster_limits::MISSING;\n");
     await writeFile(join(directory, "src/roster_limits.cairo"), "pub const MAX_BLITZ_ROSTER_PLAYERS: u32 = 24;\n");
-    await assert.rejects(readRuleConstants(pathToFileURL(directory + sep)), /Unknown shared roster constant MISSING/);
+    await writeFile(join(directory, "src/days.cairo"), "pub const FRONTIER_REPORT_GRACE_SECONDS: u32 = 3600;\n");
+    await assert.rejects(readRuleConstants(pathToFileURL(directory + sep)), /Unknown shared rule constant MISSING/);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
+});
+
+test("the withdrawal reporting grace is shared with the ledger and exported to clients", async () => {
+  const rules = await readRuleConstants(root);
+  assert.equal(rules.FRONTIER_REPORT_GRACE_SECONDS, 3600);
+  assert.equal(
+    await realpath(new URL("src/days.cairo", root)),
+    await realpath(new URL("../../l2/ledger/src/days.cairo", root)),
+  );
 });
