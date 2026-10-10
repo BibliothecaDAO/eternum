@@ -684,6 +684,7 @@ export class LiveWorld {
         },
         scopes.filter((scope) => scope.gameId === gameId).map((scope) => scope.actor),
       );
+      if (receipt.finality_status !== "PRE_CONFIRMED") this.input.historyStore?.recordTransaction(gameId, receipt);
     }
     if (
       receipt.finality_status !== "PRE_CONFIRMED" &&

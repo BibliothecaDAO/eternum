@@ -134,7 +134,7 @@ describe("native transaction receipt routing", () => {
     "streams a refused action at %s as REJECTED with the game's class and reason",
     (finality_status) => {
       const { native, decoder, fold } = setup();
-      const historyStore = { appendEvents: vi.fn() };
+      const historyStore = { recordTransaction: vi.fn() };
       const live = liveWorld(native, decoder, fold, {} as MadaraRpc, historyStore);
       const messages = streamOf(live);
       live.acceptTransaction({ finality_status: "PRE_CONFIRMED", transaction_hash: "0x124", ...play(1) });
@@ -145,8 +145,12 @@ describe("native transaction receipt routing", () => {
         status_class: "GAMEPLAY_REJECTED",
         revert_reason: "explorer is dead",
       });
-      // Receipt streaming is not a durability boundary; counts commit only with confirmed block history.
-      expect(historyStore.appendEvents).not.toHaveBeenCalled();
+      if (finality_status === "ACCEPTED_ON_L2")
+        expect(historyStore.recordTransaction).toHaveBeenCalledWith(
+          "1",
+          expect.objectContaining({ rejection: expect.anything() }),
+        );
+      else expect(historyStore.recordTransaction).not.toHaveBeenCalled();
     },
   );
 });

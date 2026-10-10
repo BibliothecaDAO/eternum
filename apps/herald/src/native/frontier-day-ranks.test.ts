@@ -138,7 +138,7 @@ it("replays a checkpoint before closure, excluding changes at the boundary and r
   const replay = await replayWithFrontierDays(native, history, input);
   expect(replay.frontierDays[0]!.entries).toEqual([{ address: "0x1", structure_id: "1", rank: 1 }]);
   expect(history.frontierHistory).toHaveBeenCalledWith("1", 10);
-  expect(history.appendEvents).toHaveBeenCalledWith([], 11, replay.frontierDays, []);
+  expect(history.appendEvents).toHaveBeenCalledWith([], 11, replay.frontierDays);
   const uncommitted = WorldFold.restore(decoder.registry, fold.checkpoint());
   const beforeHistoryFailure = uncommitted.checkpoint();
   history.appendEvents.mockRejectedValueOnce(new Error("history unavailable"));

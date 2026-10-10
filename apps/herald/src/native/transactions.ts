@@ -1,5 +1,4 @@
 import { hash } from "starknet";
-import type { GameTransactionHistory, RpcBlockTransaction } from "../types";
 import type { NativeManifest } from "./schema";
 
 const PLAY = BigInt(hash.getSelectorFromName("play"));
@@ -45,22 +44,4 @@ function boundedLength(value: string, limit: number): number {
   const length = Number(BigInt(value));
   if (!Number.isSafeInteger(length) || length < 0 || length > limit) throw new Error("Malformed account calldata");
   return length;
-}
-
-/** Confirmed routing is counted even for eventless pre-roll refusals, once per game and transaction. */
-export function confirmedGameTransactions(
-  manifest: Pick<NativeManifest, "world">,
-  transactions: readonly RpcBlockTransaction[],
-): GameTransactionHistory[] {
-  return transactions.flatMap(({ transaction, receipt }) => {
-    if (receipt.block_number == null || receipt.finality_status === "PRE_CONFIRMED")
-      throw new Error("Transaction history requires a confirmed block");
-    const games = new Set(transactionScopes(manifest, transaction).map(({ gameId }) => gameId));
-    return [...games].map((gameId) => ({
-      gameId,
-      transactionHash: receipt.transaction_hash,
-      blockNumber: receipt.block_number!,
-      status: receipt.execution_status === "REVERTED" ? "REVERTED" : receipt.finality_status,
-    }));
-  });
 }
