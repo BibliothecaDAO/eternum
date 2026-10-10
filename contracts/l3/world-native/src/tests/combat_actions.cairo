@@ -414,7 +414,7 @@ fn blitz_ethereal_battle_uses_both_root_d20_rolls_in_damage_and_history() {
     assert!(!crate::rules::rule_enabled(rules, crate::rules::COMBAT_DICE));
     assert!(crate::rules::rule_enabled(rules, crate::rules::COMBAT_DICE_ETHEREAL));
     let mut root = super::context(d.games, 3).raw_root;
-    let seed = crate::random::game_root(ref root, 3, crate::game::IGameDispatcherTrait::game(game, 3).seed);
+    let seed = crate::random::game_root(ref root, 3);
     let attacker_roll: u8 = 1 + crate::random::range(seed, 1, 20).try_into().unwrap();
     let defender_roll: u8 = 1 + crate::random::range(seed, 2, 20).try_into().unwrap();
     assert!(attacker_roll >= 1 && attacker_roll <= 20 && defender_roll >= 1 && defender_roll <= 20);
@@ -531,7 +531,7 @@ fn a_dice_game_rolls_both_root_d20s_on_the_surface_too() {
     let game = crate::game::IGameDispatcher { contract_address: d.games };
     let rules = crate::game::IGameDispatcherTrait::rules(game, 3);
     let mut root = super::context(d.games, 3).raw_root;
-    let seed = crate::random::game_root(ref root, 3, crate::game::IGameDispatcherTrait::game(game, 3).seed);
+    let seed = crate::random::game_root(ref root, 3);
     let attacker_roll: u8 = 1 + crate::random::range(seed, 1, 20).try_into().unwrap();
     let defender_roll: u8 = 1 + crate::random::range(seed, 2, 20).try_into().unwrap();
     assert!(attacker_roll >= 1 && attacker_roll <= 20 && defender_roll >= 1 && defender_roll <= 20);

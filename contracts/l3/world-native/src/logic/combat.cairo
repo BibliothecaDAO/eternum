@@ -322,7 +322,7 @@ pub fn resolve_raid(
 
 pub fn raid_success(game_id: u32, result: crate::raid::RaidResolution, context: ExecutionContext) -> bool {
     let mut raw_root = context.raw_root;
-    let seed = crate::random::game_root(ref raw_root, game_id, context.game.unbox().seed);
+    let seed = crate::random::game_root(ref raw_root, game_id);
     crate::raid::success(result, seed)
 }
 
@@ -556,7 +556,7 @@ pub fn combat_context(
     let ethereal_dice = defender.coord.alt && mode_rules & crate::rules::COMBAT_DICE_ETHEREAL != 0;
     let (attacker_roll, defender_roll) = if ethereal_dice || mode_rules & crate::rules::COMBAT_DICE != 0 {
         let mut raw_root = context.raw_root;
-        let seed = crate::random::game_root(ref raw_root, game_id, context.game.unbox().seed);
+        let seed = crate::random::game_root(ref raw_root, game_id);
         (
             1_u8 + crate::random::range(seed, 1, 20).try_into().unwrap(),
             1_u8 + crate::random::range(seed, 2, 20).try_into().unwrap(),
