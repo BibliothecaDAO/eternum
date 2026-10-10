@@ -77,6 +77,7 @@ export const lordsShortOf = (wei: bigint): number => Number((wei + LORDS_UNIT - 
 
 const CHEST_OPENED = hash.getSelectorFromName("ChestOpened");
 const WITHDRAWAL_PAID = hash.getSelectorFromName("WithdrawalPaid");
+const REGISTERED = hash.getSelectorFromName("Registered");
 
 const keyCalldata = (key: SlotKey | GameKey) => [key.shard, String("slotId" in key ? key.slotId : key.gameId)];
 const u256 = (value: bigint) => [String(value & ((1n << 128n) - 1n)), String(value >> 128n)];
@@ -174,6 +175,27 @@ export const ledgerReader = (provider: ProviderInterface, ledger: string) => {
       BigInt((await view("season_claimed", [String(seasonId), owner]))[0]) !== 0n,
     registration: async (key: SlotKey, owner: string) =>
       decodeRegistration(await view("get_registration", [...keyCalldata(key), owner])),
+    /**
+     * Every slot a wallet ever registered in: its own Registered events (keyed by slot and owner), one filtered query
+     * followed to its last page.
+     */
+    registeredSlots: async (owner: string): Promise<SlotKey[]> => {
+      const slots: SlotKey[] = [];
+      let token: string | undefined;
+      do {
+        const page = await provider.getEvents({
+          address: ledger,
+          from_block: { block_number: 0 },
+          to_block: "latest",
+          keys: [[REGISTERED], [], [], [num.toHex(owner)]],
+          chunk_size: 100,
+          ...(token ? { continuation_token: token } : {}),
+        });
+        for (const event of page.events) slots.push({ shard: event.keys[1], slotId: Number(BigInt(event.keys[2])) });
+        token = page.continuation_token;
+      } while (token);
+      return slots;
+    },
     credits: async (owner: string) => decodeCredits(await view("get_credits", [owner])),
     result: async (key: GameKey, owner: string) =>
       decodePlayerResult(await view("get_player_result", [...keyCalldata(key), owner])),
