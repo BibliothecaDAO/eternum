@@ -1,14 +1,12 @@
-import { lazy, type ReactNode, Suspense, useEffect, useState } from "react";
+import { lazy, type ReactNode, Suspense, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import type { LedgerLinkStatus, PayoutWallet } from "@realms-world/identity";
+import type { PayoutWallet } from "@realms-world/identity";
 
-import { useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { shortAddress } from "@/ui/design-system/kit/address";
 import { formatExact } from "@/ui/design-system/kit/amount";
 import { Button } from "@/ui/design-system/kit/button";
 import { type IconCode, KitIcon } from "@/ui/design-system/kit/kit-icon";
-import { ReasonPlate } from "@/ui/design-system/kit/reason-plate";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
 import { Loading } from "../loading";
@@ -28,7 +26,6 @@ import {
   entryState,
   type EntryTerms,
   useEntryTerms,
-  entryLinkOf,
 } from "./entry";
 import type { PaidGameLedger } from "@realms-world/identity";
 
@@ -36,37 +33,24 @@ const WalletSign = lazy(() =>
   import("@/ui/modules/identity/wallet-actions").then((module) => ({ default: module.WalletSign })),
 );
 
-/** While the relay links the wallet, the session is read again this often: the entry opens once the link is confirmed. */
-const LINK_POLL_MS = 5_000;
-
 /**
- * The lobby's step for a paid Blitz: its entry read from the ledger, read again once the wallet has sent its call, and
- * the services' ledger link for it. A seat the account already holds is read, and refunded, through the wallet that
+ * The lobby's step for a paid Blitz: its entry read from the ledger, and read again once the wallet has sent its
+ * call. A seat the account already holds is read, and refunded, through the wallet that
  * paid it, which may no longer be the payout wallet; otherwise the payout wallet is the one that would pay. `account`
  * is the player's own Realms account, null until it is known.
  */
 export const PaidEntry = ({
   ledger,
   wallet,
-  link,
   account,
 }: {
   ledger: PaidGameLedger;
   wallet: PayoutWallet;
-  link: LedgerLinkStatus;
   account: string | null;
 }) => {
   const payer = usePayingWallet(ledger, account);
   const owner = payer.data ?? (wallet.status === "no_wallet" ? null : wallet.address);
   const terms = useEntryTerms(ledger, payer.isSuccess ? owner : null);
-  const entryLink =
-    wallet.status === "no_wallet" || account === null ? null : entryLinkOf(link, ledger, wallet.address, account);
-  const refreshSession = useIdentitySessionStore((state) => state.refresh);
-  useEffect(() => {
-    if (entryLink !== "linking") return;
-    const timer = window.setInterval(() => void refreshSession(), LINK_POLL_MS);
-    return () => window.clearInterval(timer);
-  }, [entryLink, refreshSession]);
   const failed = payer.isError ? payer : terms.isError ? terms : null;
   if (failed) return <ServiceFailure service="ledger" error={failed.error} retry={() => void failed.refetch()} />;
   if (payer.isSuccess && owner === null) return <NoWallet />;
@@ -75,7 +59,6 @@ export const PaidEntry = ({
       ledger={ledger}
       terms={terms.data}
       owner={owner}
-      link={entryLink}
       onSent={() => {
         void payer.refetch();
         void terms.refetch();
@@ -93,14 +76,12 @@ const EntryPanel = ({
   ledger,
   terms,
   owner,
-  link,
   onSent,
 }: {
   ledger: PaidGameLedger;
   terms: EntryTerms | undefined;
   /** The wallet whose seat this is: the one that paid it, or the payout wallet that would. */
   owner: string | null;
-  link: ReturnType<typeof entryLinkOf> | null;
   onSent: () => void;
 }) => {
   const [choice, setChoice] = useState<EntryChoice>({ sword: false, shield: false });
@@ -108,7 +89,7 @@ const EntryPanel = ({
   const { send, sent } = useL2Send(onSent);
   const now = useNowSeconds();
   if (!terms || owner === null) return <Loading />;
-  const state = entryState(terms, choice, now, link);
+  const state = entryState(terms, choice, now);
   const cost = entryCost(terms, choice);
   const confirming = send.status === "confirming" ? VALUE_WORDS.confirming : undefined;
   const refused = send.status === "refused" && <FailureLine line={send.reason} />;
@@ -117,9 +98,6 @@ const EntryPanel = ({
   if (state === "refunded") return <Refunded terms={terms} />;
   if (state === "closed") return <Closed />;
   if (state === "full") return <Full />;
-  if (state === "linking") return <Linking />;
-  if (state === "linked-elsewhere") return <LinkedElsewhere />;
-  if (state === "linked-other-ledger") return <LinkedOtherLedger />;
   const sign = signing && (
     <Suspense fallback={<Loading />}>
       <WalletSign
@@ -285,31 +263,6 @@ const Seated = ({ terms }: { terms: EntryTerms }) => {
     </Plate>
   );
 };
-
-/** The relay is linking the payout wallet to the player's account on the ledger; the entry opens once it has. */
-const Linking = () => (
-  <Plate icon="Hg" title={ENTRY_WORDS.linking}>
-    <p className="font-body text-[16px] text-kit-cream">{ENTRY_WORDS.linkingLine}</p>
-  </Plate>
-);
-
-/** The ledger links the payout wallet to another Realms account: paying would seat that account, so nothing is offered. */
-const LinkedElsewhere = () => {
-  const navigate = useNavigate();
-  return (
-    <Plate icon="Wt" title={ENTRY_WORDS.entry}>
-      <ReasonPlate reason={{ kind: "failed", line: ENTRY_WORDS.linkedElsewhere }} />
-      <Button role="outline" word={WALLET_WORDS.payoutWallet} icon="Wt" onClick={() => navigate("/profile/account")} />
-    </Plate>
-  );
-};
-
-/** The services confirm the wallet's link on another ledger or chain than this game's: nothing here can pay. */
-const LinkedOtherLedger = () => (
-  <Plate icon="Wt" title={ENTRY_WORDS.entry}>
-    <ReasonPlate reason={{ kind: "failed", line: ENTRY_WORDS.linkedOtherLedger }} />
-  </Plate>
-);
 
 const Closed = () => (
   <Plate icon="Lk" title={ENTRY_WORDS.closed}>

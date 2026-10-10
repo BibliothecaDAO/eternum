@@ -1,6 +1,6 @@
 import { expect, it } from "vitest";
 
-import { entryCost, entryLinkOf, entryShares, entryState, type EntryTerms } from "./entry";
+import { entryCost, entryShares, entryState, type EntryTerms } from "./entry";
 
 const WEI = 10n ** 18n;
 const terms = (overrides: Partial<EntryTerms> = {}): EntryTerms => ({
@@ -34,9 +34,9 @@ it("splits what an entry pays as the ledger settles it: the treasury's cut, then
 
 it("tells choosing, short of LORDS, no STRK for the fee, seated, refund and refunded apart", () => {
   const both = { sword: true, shield: true };
-  expect(entryState(terms(), both, 900, "confirmed")).toBe("choose");
-  expect(entryState(terms({ lords: 320n * WEI }), both, 900, "confirmed")).toBe("short");
-  expect(entryState(terms({ strk: 0n }), both, 900, "confirmed")).toBe("no-strk");
+  expect(entryState(terms(), both, 900)).toBe("choose");
+  expect(entryState(terms({ lords: 320n * WEI }), both, 900)).toBe("short");
+  expect(entryState(terms({ strk: 0n }), both, 900)).toBe("no-strk");
   const seated = {
     registered: true,
     sword: true,
@@ -45,67 +45,27 @@ it("tells choosing, short of LORDS, no STRK for the fee, seated, refund and refu
     shieldCredit: false,
     paid: 1_000n * WEI,
   };
-  expect(entryState(terms({ registration: seated }), both, 900, "confirmed")).toBe("seated");
-  expect(entryState(terms({ registration: seated, cancelled: true }), both, 900, "confirmed")).toBe("refund");
+  expect(entryState(terms({ registration: seated }), both, 900)).toBe("seated");
+  expect(entryState(terms({ registration: seated, cancelled: true }), both, 900)).toBe("refund");
   const back = { ...seated, swordCredit: false, paid: 0n };
-  expect(entryState(terms({ registration: back, cancelled: true }), both, 900, "confirmed")).toBe("refunded");
+  expect(entryState(terms({ registration: back, cancelled: true }), both, 900)).toBe("refunded");
 });
 
 it("closes the entry once the game has started, for anyone not already seated", () => {
   const both = { sword: true, shield: true };
-  expect(entryState(terms(), both, 999, "confirmed")).toBe("choose");
-  expect(entryState(terms(), both, 1_000, "confirmed")).toBe("closed");
-  expect(entryState(terms({ lords: 0n }), both, 2_000, "confirmed")).toBe("closed");
+  expect(entryState(terms(), both, 999)).toBe("choose");
+  expect(entryState(terms(), both, 1_000)).toBe("closed");
+  expect(entryState(terms({ lords: 0n }), both, 2_000)).toBe("closed");
   const seated = { registered: true, sword: false, shield: false, swordCredit: false, shieldCredit: false, paid: 1n };
-  expect(entryState(terms({ registration: seated }), both, 2_000, "confirmed")).toBe("seated");
-  expect(entryState(terms({ registration: seated, cancelled: true }), both, 2_000, "confirmed")).toBe("refund");
+  expect(entryState(terms({ registration: seated }), both, 2_000)).toBe("seated");
+  expect(entryState(terms({ registration: seated, cancelled: true }), both, 2_000)).toBe("refund");
 });
 
 it("offers no payment once the ledger has registered its cap, a Duel's two as a Blitz's twenty-four", () => {
   const both = { sword: false, shield: false };
-  expect(entryState(terms({ seats: { taken: 23, total: 24 } }), both, 900, "confirmed")).toBe("choose");
-  expect(entryState(terms({ seats: { taken: 24, total: 24 } }), both, 900, "confirmed")).toBe("full");
-  expect(entryState(terms({ seats: { taken: 2, total: 2 } }), both, 900, "confirmed")).toBe("full");
+  expect(entryState(terms({ seats: { taken: 23, total: 24 } }), both, 900)).toBe("choose");
+  expect(entryState(terms({ seats: { taken: 24, total: 24 } }), both, 900)).toBe("full");
+  expect(entryState(terms({ seats: { taken: 2, total: 2 } }), both, 900)).toBe("full");
   const seated = { registered: true, sword: false, shield: false, swordCredit: false, shieldCredit: false, paid: 1n };
-  expect(entryState(terms({ seats: { taken: 2, total: 2 }, registration: seated }), both, 900, "confirmed")).toBe(
-    "seated",
-  );
-});
-
-const LEDGER = { address: "0x1ed9e7", chainId: "0x534e5f4d41494e", shard: "0x52", gameId: 7 };
-const CONFIRMED = {
-  status: "confirmed" as const,
-  ledger: { address: "0x1ed9e7", chainId: "0x534e5f4d41494e" },
-  wallet: "0x4a1",
-  account: "0x7a",
-};
-
-it("opens the entry only once the services confirm this wallet's link to this account on this ledger", () => {
-  expect(entryLinkOf(CONFIRMED, LEDGER, "0x4a1", "0x7a")).toBe("confirmed");
-  // The same felts written another way are the same link.
-  expect(entryLinkOf({ ...CONFIRMED, wallet: "0x04a1" }, LEDGER, "0x4a1", "0x007a")).toBe("confirmed");
-  expect(entryLinkOf({ status: "linking" }, LEDGER, "0x4a1", "0x7a")).toBe("linking");
-  // Confirmed for a wallet the player has since replaced: the replacement is still syncing.
-  expect(entryLinkOf({ ...CONFIRMED, wallet: "0x999" }, LEDGER, "0x4a1", "0x7a")).toBe("linking");
-  expect(entryLinkOf({ ...CONFIRMED, wallet: null }, LEDGER, "0x4a1", "0x7a")).toBe("linking");
-  // Confirmed on another ledger or chain: a mismatch that never resolves, so a fault, never "linking".
-  expect(entryLinkOf({ ...CONFIRMED, ledger: { ...CONFIRMED.ledger, address: "0x2" } }, LEDGER, "0x4a1", "0x7a")).toBe(
-    "other-ledger",
-  );
-  expect(entryLinkOf(CONFIRMED, { ...LEDGER, chainId: "0x534e5f5345504f4c4941" }, "0x4a1", "0x7a")).toBe(
-    "other-ledger",
-  );
-  // Confirmed for another account: a fault, never a payment.
-  expect(entryLinkOf(CONFIRMED, LEDGER, "0x4a1", "0x99")).toBe("elsewhere");
-});
-
-it("waits while linking, refuses a link for another account, and keeps closed and seated first", () => {
-  const both = { sword: true, shield: true };
-  expect(entryState(terms(), both, 900, "linking")).toBe("linking");
-  expect(entryState(terms(), both, 900, "elsewhere")).toBe("linked-elsewhere");
-  expect(entryState(terms(), both, 900, "other-ledger")).toBe("linked-other-ledger");
-  expect(entryState(terms(), both, 900, "confirmed")).toBe("choose");
-  expect(entryState(terms(), both, 1_000, "linking")).toBe("closed");
-  const seated = { registered: true, sword: false, shield: false, swordCredit: false, shieldCredit: false, paid: 1n };
-  expect(entryState(terms({ registration: seated }), both, 900, "elsewhere")).toBe("seated");
+  expect(entryState(terms({ seats: { taken: 2, total: 2 }, registration: seated }), both, 900)).toBe("seated");
 });

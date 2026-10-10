@@ -19,10 +19,6 @@ vi.mock("@/runtime/l2-rpc", async (importOriginal) => ({
       }),
   }),
 }));
-const session = vi.hoisted(() => ({ refresh: vi.fn(async () => undefined) }));
-vi.mock("@/hooks/context/identity-session", () => ({
-  useIdentitySessionStore: (select: (state: typeof session) => unknown) => select(session),
-}));
 vi.mock("@/ui/modules/identity/wallet-actions", () => ({
   WalletSign: ({ owner, calls, onSent }: { owner: string; calls: Call[]; onSent: (hash: string) => void }) => (
     <button
@@ -38,7 +34,7 @@ vi.mock("@/ui/modules/identity/wallet-actions", () => ({
   ),
 }));
 
-import type { LedgerLinkStatus, PaidGameLedger, PayoutWallet } from "@realms-world/identity";
+import type { PaidGameLedger, PayoutWallet } from "@realms-world/identity";
 import { payingWalletKey } from "../value/paying-wallet";
 import { type EntryTerms, entryTermsKey } from "./entry";
 import { PaidEntry } from "./entry-panel";
@@ -65,20 +61,8 @@ const TERMS: EntryTerms = {
 };
 const unmounts: (() => Promise<void>)[] = [];
 
-const CONFIRMED: LedgerLinkStatus = {
-  status: "confirmed",
-  ledger: { address: "0x1ed9e7", chainId: "0x534e5f4d41494e" },
-  wallet: "0x4a1",
-  account: "0x7a",
-};
-
 /** `payer` is the wallet the game's registrations name for the account: null before it pays. */
-const mount = async (
-  terms: EntryTerms,
-  wallet: PayoutWallet = WALLET,
-  link: LedgerLinkStatus = CONFIRMED,
-  payer: string | null = null,
-) => {
+const mount = async (terms: EntryTerms, wallet: PayoutWallet = WALLET, payer: string | null = null) => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const client = new QueryClient({ defaultOptions: { queries: { staleTime: Infinity, retry: false } } });
   client.setQueryData(payingWalletKey(LEDGER, "0x7a"), payer);
@@ -90,7 +74,7 @@ const mount = async (
     root.render(
       <QueryClientProvider client={client}>
         <MemoryRouter>
-          <PaidEntry ledger={LEDGER} wallet={wallet} link={link} account="0x7a" />
+          <PaidEntry ledger={LEDGER} wallet={wallet} account="0x7a" />
         </MemoryRouter>
       </QueryClientProvider>,
     ),
@@ -153,8 +137,8 @@ it("names what is short, the missing STRK, the seat, and the refund", async () =
     shieldCredit: false,
     paid: 500n * WEI,
   };
-  expect((await mount({ ...TERMS, registration: seat }, WALLET, CONFIRMED, "0x4a1")).textContent).toContain("Seated");
-  const refund = await mount({ ...TERMS, registration: seat, cancelled: true }, WALLET, CONFIRMED, "0x4a1");
+  expect((await mount({ ...TERMS, registration: seat }, WALLET, "0x4a1")).textContent).toContain("Seated");
+  const refund = await mount({ ...TERMS, registration: seat, cancelled: true }, WALLET, "0x4a1");
   expect(refund.textContent).toContain("Sword credit");
   await press(refund, "Take refund");
   await press(refund, "Sign");
@@ -166,28 +150,10 @@ it("names what is short, the missing STRK, the seat, and the refund", async () =
   );
 });
 
-it("shows linking until the services confirm the link, reading the session again, and a link for another account as a fault", async () => {
-  vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });
-  try {
-    const linking = await mount(TERMS, WALLET, { status: "linking" });
-    expect(linking.textContent).toContain("Linking your wallet");
-    expect([...linking.querySelectorAll("button")].map((button) => button.textContent)).not.toContain("Pay & join");
-    await act(async () => vi.advanceTimersByTime(5_000));
-    expect(session.refresh).toHaveBeenCalled();
-  } finally {
-    vi.useRealTimers();
-  }
-
-  const elsewhere = await mount(TERMS, WALLET, { ...CONFIRMED, account: "0x99" });
-  expect(elsewhere.textContent).toContain("This payout wallet is linked to another Realms account.");
-  expect(elsewhere.textContent).not.toContain("Pay & join");
-
-  const otherLedger = await mount(TERMS, WALLET, { ...CONFIRMED, ledger: { ...CONFIRMED.ledger, address: "0x2" } });
-  expect(otherLedger.textContent).toContain("Your wallet is linked on another ledger than this game's.");
-  expect(otherLedger.textContent).not.toContain("Linking your wallet");
-
-  const linked = await mount(TERMS);
-  expect(linked.textContent).toContain("Pay & join");
+it("lets a linked payout wallet pay at once: nothing waits on a link", async () => {
+  const panel = await mount(TERMS);
+  expect(panel.textContent).toContain("Pay & join");
+  expect(panel.textContent).not.toContain("Linking");
 });
 
 it("reads and refunds a seat through the wallet that paid it, after the payout wallet was replaced", async () => {
@@ -200,17 +166,17 @@ it("reads and refunds a seat through the wallet that paid it, after the payout w
     paid: 500n * WEI,
   };
   // Paid from 0xa11; the payout wallet is now 0x4a1, whose own registration would read as no seat at all.
-  const seated = await mount({ ...TERMS, registration: seat }, WALLET, CONFIRMED, "0xa11");
+  const seated = await mount({ ...TERMS, registration: seat }, WALLET, "0xa11");
   expect(seated.textContent).toContain("Seated");
   expect(seated.textContent).not.toContain("Pay & join");
-  const refund = await mount({ ...TERMS, registration: seat, cancelled: true }, WALLET, CONFIRMED, "0xa11");
+  const refund = await mount({ ...TERMS, registration: seat, cancelled: true }, WALLET, "0xa11");
   await press(refund, "Take refund");
   await press(refund, "Sign");
   expect(signed.owners).toEqual(["0xa11"]);
   // A wallet that paid still holds its seat once the account has no payout wallet at all.
-  expect(
-    (await mount({ ...TERMS, registration: seat }, { status: "no_wallet" }, CONFIRMED, "0xa11")).textContent,
-  ).toContain("Seated");
+  expect((await mount({ ...TERMS, registration: seat }, { status: "no_wallet" }, "0xa11")).textContent).toContain(
+    "Seated",
+  );
 });
 
 it("confirms a sent entry until its receipt lands, and shows the ledger's reason when it reverts", async () => {
