@@ -185,7 +185,7 @@ export const BlitzLobbyPage = () => {
               {clock}
               {action}
             </section>
-            {row.kind === "slot" && <LobbyChatPanel slotName={row.slot.name} seated={false} />}
+            {row.kind === "slot" && <LobbyChatPanel slotName={row.slot.name} />}
           </div>
         </div>
       ) : (

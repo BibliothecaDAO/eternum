@@ -1,18 +1,18 @@
 import type { WorldChatMessage } from "@bibliothecadao/types";
 import { useQuery } from "@tanstack/react-query";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { useIdentitySession } from "@/hooks/context/identity-session";
 import { fetchApi } from "@/runtime/app-api";
 
 /**
- * A Blitz lobby's chat (lobby-chat-mmr.txt): the room `slot:<name>` on the identity Worker's chat, opened by the lobby
- * itself. Any signed-in player reads it; only a seated player writes, and the Worker checks the seat on every message.
+ * A Blitz lobby's chat: the room `slot:<name>` on the identity Worker's chat, opened by the lobby itself. Any signed-in
+ * player reads it. Nobody writes from a slot's lobby until it is ruled who may (a paid registrant is not seated yet).
  */
 const HISTORY = 50;
 
-/** Why the lobby's chat cannot be read or written now; the panel says it in its own words. */
-export type ChatHold = "signed-out" | "unanswered" | "seat-required" | "rate-limited" | "refused";
+/** Why the lobby's chat cannot be read now; the panel says it in its own words. */
+type ChatHold = "signed-out" | "unanswered";
 
 const roomOf = (slotName: string) => `slot:${slotName}`;
 
@@ -38,7 +38,7 @@ const merged = (history: readonly WorldChatMessage[], live: readonly WorldChatMe
   return [...byId.values()].toSorted((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 };
 
-type RoomMessage = { type: string; message?: WorldChatMessage; code?: string };
+type RoomMessage = { type: string; message?: WorldChatMessage };
 
 /** A frame that is not JSON is no message; the room says nothing by it. */
 const parsed = (data: unknown): RoomMessage | null => {
@@ -48,9 +48,6 @@ const parsed = (data: unknown): RoomMessage | null => {
     return null;
   }
 };
-
-const holdOfCode = (code: unknown): ChatHold =>
-  code === "seat_required" ? "seat-required" : code === "rate_limited" ? "rate-limited" : "refused";
 
 export const useLobbyChat = (slotName: string) => {
   const { session } = useIdentitySession();
@@ -65,12 +62,10 @@ export const useLobbyChat = (slotName: string) => {
   });
   const [live, setLive] = useState<WorldChatMessage[]>([]);
   const [hold, setHold] = useState<ChatHold | null>(null);
-  const socket = useRef<WebSocket | null>(null);
 
   useEffect(() => {
     if (!signedIn) return;
     const room = new WebSocket(roomUrl(zoneId));
-    socket.current = room;
     room.addEventListener("message", (event) => {
       const message = parsed(event.data);
       if (!message) return;
@@ -79,31 +74,13 @@ export const useLobbyChat = (slotName: string) => {
         setLive((current) => [...current, arrived]);
         setHold(null);
       }
-      if (message.type === "error") setHold(holdOfCode(message.code));
     });
     room.addEventListener("close", () => setHold((current) => current ?? "unanswered"));
-    return () => {
-      socket.current = null;
-      room.close();
-    };
+    return () => room.close();
   }, [signedIn, zoneId]);
-
-  const send = useCallback(
-    (content: string) =>
-      socket.current?.send(
-        JSON.stringify({
-          type: "world:publish",
-          zoneId,
-          payload: { zoneId, content },
-          clientMessageId: crypto.randomUUID(),
-        }),
-      ),
-    [zoneId],
-  );
 
   return {
     messages: merged(history.data ?? [], live),
     hold: !signedIn ? ("signed-out" as const) : history.isError ? ("unanswered" as const) : hold,
-    send,
   };
 };
