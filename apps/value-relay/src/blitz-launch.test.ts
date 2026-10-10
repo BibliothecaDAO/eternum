@@ -135,4 +135,3 @@ it("allows exactly the ledger settlement interval and refuses one second less, i
   await expect(Effect.runPromise(validateBlitzWindow(credentials, key, { start: 120, end: 241 }))).rejects.toThrow();
   await Effect.runPromise(validateBlitzWindow(credentials, key, { start: 120, end: 240 }));
 });
-

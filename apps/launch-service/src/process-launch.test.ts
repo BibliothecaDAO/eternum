@@ -30,10 +30,7 @@ test("terminal launch failures retry refund cleanup at the ledger boundary witho
     Effect.fail(new LaunchExecutionFailure({ runId: "failed", cause: new Error("cannot seat") })),
   );
   const refund = vi.fn().mockReturnValueOnce(Effect.succeed(60)).mockReturnValue(Effect.succeed(null));
-  const services = Layer.mergeAll(
-    databaseLayer(store),
-    Layer.succeed(LaunchExecutor, { execute, refund }),
-  );
+  const services = Layer.mergeAll(databaseLayer(store), Layer.succeed(LaunchExecutor, { execute, refund }));
   for (let index = 0; index < 3; index++)
     await Effect.runPromise(processNextLaunch(Date.now() + 1000000).pipe(Effect.provide(services)));
   expect((await store.find("game", "madara.blitz", "failed-paid-game"))?.status).toBe("queued");
@@ -185,10 +182,7 @@ test("a played game's result retries past three failures and never calls refund 
     Effect.fail(new LaunchExecutionFailure({ runId: "played", cause: new Error("result RPC unavailable") })),
   );
   const refund = vi.fn(() => Effect.succeed(null));
-  const services = Layer.mergeAll(
-    databaseLayer(store),
-    Layer.succeed(LaunchExecutor, { execute, refund }),
-  );
+  const services = Layer.mergeAll(databaseLayer(store), Layer.succeed(LaunchExecutor, { execute, refund }));
   for (let attempt = 0; attempt < 4; attempt++)
     await Effect.runPromise(processNextLaunch(Date.now() + 1000000).pipe(Effect.provide(services)));
   expect(refund).not.toHaveBeenCalled();
