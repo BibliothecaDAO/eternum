@@ -105,8 +105,14 @@ The new request/odds maps replace fixed contents and shard reward draws. One sha
 per-chest LORDS liabilities. The cost is band/inventory preset storage, request state and two opening transactions;
 there is no new token collection, oracle, cancellation path, expiry timer or per-movement fee rule.
 
-Season ratings freeze at the end. The operator posts the top list; anyone may challenge a missing better participant for
-one hour. A short or challenged list cannot pay. Winners then pull their geometric preset share once. Pause blocks
+Season ratings freeze at the end. The operator appends the top list in fixed batches of at most 32 owners with an
+explicit starting position. Each batch checks order against its predecessor. Exact retries cannot change the proposal.
+Permissionless `allocate_season(season_id, start)` then advances at most 32 positions; `season_settlement` exposes the
+allocation cursor, next weight, total weight and allocated amount. The two passes preserve the integer geometric curve
+and exact final remainder without a population-sized array or scan. The final allocation starts the complete one-hour
+review. An incomplete or challenged proposal cannot pay; claims and challenges use a constant-size owner-position
+lookup. Corrections restart posting/allocation before payout. Winners then pull their share once. This replaces eager
+allocation and linear winner searches with one progress row and one owner index per proposal. Pause blocks
 withdrawals, refunds, chest finishes and season claims; registrations, incoming funding, result settlement, chest
 requests and challenges remain available. Settlement's input treasury transfer continues to its fixed address.
 
