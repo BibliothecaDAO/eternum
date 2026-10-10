@@ -6,10 +6,18 @@ import type { Call } from "starknet";
 import { afterEach, expect, it, vi } from "vitest";
 
 const signed = vi.hoisted(() => ({ calls: [] as Call[][], owners: [] as string[] }));
+// A sent transaction's receipt, landed by the test; until then the send is confirming.
+const chain = vi.hoisted(() => ({ land: (_receipt: object) => {} }));
 // The ledger answers nothing here: a refetch after a send stays pending, never reaching a network.
 vi.mock("@/runtime/l2-rpc", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/runtime/l2-rpc")>()),
-  l2Provider: () => ({ callContract: () => new Promise(() => {}) }),
+  l2Provider: () => ({
+    callContract: () => new Promise(() => {}),
+    waitForTransaction: () =>
+      new Promise((resolve) => {
+        chain.land = resolve;
+      }),
+  }),
 }));
 const session = vi.hoisted(() => ({ refresh: vi.fn(async () => undefined) }));
 vi.mock("@/hooks/context/identity-session", () => ({
@@ -201,4 +209,23 @@ it("reads and refunds a seat through the wallet that paid it, after the payout w
   expect(
     (await mount({ ...TERMS, registration: seat }, { status: "no_wallet" }, CONFIRMED, "0xa11")).textContent,
   ).toContain("Seated");
+});
+
+it("confirms a sent entry until its receipt lands, and shows the ledger's reason when it reverts", async () => {
+  const panel = await mount(TERMS);
+  await press(panel, "Pay & join");
+  await press(panel, "Sign");
+  const pay = () => [...panel.querySelectorAll("button")].find((button) => button.textContent?.includes("Confirming"));
+  // Between the signature and the block nothing can be tapped again.
+  expect(pay()?.disabled).toBe(true);
+  await act(async () =>
+    chain.land({
+      isReverted: () => true,
+      revert_reason:
+        "Error in the called contract (0x1ed9e7):\nExecution failed. Failure reason: 'Ledger: roster full'.",
+    }),
+  );
+  expect(panel.textContent).toContain("Ledger: roster full");
+  expect(pay()).toBeUndefined();
+  expect(panel.textContent).toContain("Pay & join");
 });

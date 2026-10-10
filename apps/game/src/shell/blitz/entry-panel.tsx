@@ -16,8 +16,10 @@ import { ServiceFailure } from "../service-failure";
 import { useNowSeconds } from "../use-now";
 import { NoStrkLine } from "../value/no-strk-line";
 import { lordsOf, refundCall } from "../value/ledger";
+import { useL2Send } from "../value/l2-send";
 import { usePayingWallet } from "../value/paying-wallet";
-import { ENTRY_WORDS, WALLET_WORDS } from "../words";
+import { FailureLine } from "../sign-in/failure-line";
+import { ENTRY_WORDS, VALUE_WORDS, WALLET_WORDS } from "../words";
 import {
   entryCalls,
   entryCost,
@@ -103,16 +105,13 @@ const EntryPanel = ({
 }) => {
   const [choice, setChoice] = useState<EntryChoice>({ sword: false, shield: false });
   const [signing, setSigning] = useState(false);
-  const [sent, setSent] = useState(false);
+  const { send, sent } = useL2Send(onSent);
   const now = useNowSeconds();
   if (!terms || owner === null) return <Loading />;
   const state = entryState(terms, choice, now, link);
   const cost = entryCost(terms, choice);
-  const done = () => {
-    setSigning(false);
-    setSent(true);
-    onSent();
-  };
+  const confirming = send.status === "confirming" ? VALUE_WORDS.confirming : undefined;
+  const refused = send.status === "refused" && <FailureLine line={send.reason} />;
 
   if (state === "seated") return <Seated terms={terms} />;
   if (state === "refunded") return <Refunded terms={terms} />;
@@ -126,7 +125,10 @@ const EntryPanel = ({
       <WalletSign
         owner={owner}
         calls={state === "refund" ? [refundCall(ledger.address, ledger)] : entryCalls(ledger, terms, choice)}
-        onSent={done}
+        onSent={(hash) => {
+          setSigning(false);
+          sent(hash);
+        }}
       />
     </Suspense>
   );
@@ -134,12 +136,13 @@ const EntryPanel = ({
     return (
       <Plate icon="Sk" title={ENTRY_WORDS.cancelled}>
         <Receipt rows={refundRows(terms)} />
+        {refused}
         {sign || (
           <Button
             role="primary"
             word={ENTRY_WORDS.takeRefund}
             icon="Sp"
-            loading={sent ? ENTRY_WORDS.confirming : undefined}
+            loading={confirming}
             onClick={() => setSigning(true)}
           />
         )}
@@ -187,6 +190,7 @@ const EntryPanel = ({
       </div>
       {cost.cash > 0n && <SplitBar shares={entryShares(cost.cash, terms.split)} />}
       {state === "no-strk" && <NoStrkLine />}
+      {refused}
       {sign ||
         (state === "short" ? (
           <Button role="primary" word={ENTRY_WORDS.needMore(formatExact(lordsOf(cost.cash - terms.lords)))} disabled />
@@ -196,7 +200,7 @@ const EntryPanel = ({
             word={ENTRY_WORDS.payAndJoin}
             icon="Pl"
             disabled={state === "no-strk"}
-            loading={sent ? ENTRY_WORDS.confirming : undefined}
+            loading={confirming}
             onClick={() => setSigning(true)}
           />
         ))}

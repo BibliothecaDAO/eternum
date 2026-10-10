@@ -227,12 +227,15 @@ export const WALLET_WORDS = {
   noneHere: "No wallet this browser can open. Ready by email needs none.",
   unavailable: "Unavailable",
   unavailableLine: "Your account did not say which wallet pays you. Reload, or try again later.",
-  notPayoutWallet: "This is not your payout wallet. Open the one linked in Account.",
-  paymentFailed: "The wallet did not send it. Try again in a moment.",
+  wrongWallet: (owner: string) => `Open ${owner}: only that wallet can sign this.`,
+  paymentFailed: "The wallet did not confirm it. Check it, then try again.",
 } as const;
 
 /** What every value screen shares: a fee the payout wallet cannot pay yet. */
 export const VALUE_WORDS = {
+  confirming: "Confirming…",
+  unconfirmed: "The network did not confirm it. Check again in a moment.",
+  refused: "The ledger refused it.",
   noStrk: "No STRK for the fee",
   swapOnAvnu: "Swap on AVNU",
 } as const;
@@ -248,7 +251,6 @@ export const ENTRY_WORDS = {
   shieldEffect: "Loss ½",
   total: "Total",
   payAndJoin: "Pay & join",
-  confirming: "Confirming…",
   needMore: (amount: string) => `Need ${amount} more LORDS`,
   paidFromWallet: "Entry is paid from your payout wallet",
   seated: "Seated",
