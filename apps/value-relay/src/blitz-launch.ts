@@ -1,5 +1,11 @@
 import { Account, hash, type RpcProvider } from "starknet";
-import { rpcAt, readLedgerGame, ledgerInteger, type LedgerGameKey } from "@realms-world/value-ledger";
+import {
+  rpcAt,
+  readLedgerGame,
+  ledgerInteger,
+  decodeBlitzSeason,
+  type LedgerGameKey,
+} from "@realms-world/value-ledger";
 import { relayOperation } from "./ports";
 
 interface Credentials {
@@ -46,12 +52,13 @@ export const validateBlitzWindow = (credentials: Credentials, key: LedgerGameKey
     const head = await confirmedHead(provider);
     const game = await readLedgerGame(provider, credentials.contractAddress, key, head.block_number);
     const season = await seasonAt(provider, credentials.contractAddress, game.seasonId, head.block_number);
+    const interval = await settlementInterval(provider, credentials.contractAddress, head.block_number);
     if (
       game.cancelled ||
       game.finalized ||
       window.start < game.start ||
       window.end <= window.start ||
-      window.end >= season.end ||
+      window.end + interval > season.end ||
       window.start < season.start
     )
       throw new Error("actual_blitz_window_outside_season");
@@ -105,6 +112,7 @@ const gameOpened = async (provider: RpcProvider, address: string, key: LedgerGam
   return page.events.length === 1;
 };
 const containingSeason = async (provider: RpcProvider, address: string, window: Window, head: number) => {
+  const interval = await settlementInterval(provider, address, head);
   const matches: { id: number; presetId: number }[] = [];
   let token: string | undefined;
   const seen = new Set<string>();
@@ -122,7 +130,8 @@ const containingSeason = async (provider: RpcProvider, address: string, window: 
         throw new Error("invalid_season_event");
       const id = ledgerInteger(row.keys[1]!);
       const season = await seasonAt(provider, address, id, head);
-      if (window.start >= season.start && window.end < season.end) matches.push({ id, presetId: season.presetId });
+      if (window.start >= season.start && window.end + interval <= season.end)
+        matches.push({ id, presetId: season.presetId });
     }
     token = page.continuation_token;
     if (token && seen.has(token)) throw new Error("season_page_cycle");
@@ -136,9 +145,19 @@ const seasonAt = async (provider: RpcProvider, address: string, id: number, head
     { contractAddress: address, entrypoint: "get_season", calldata: [String(id)] },
     head,
   );
-  if (fields.length !== 16 || BigInt(fields[10]!) !== 1n) throw new Error("invalid_ledger_season");
-  return { presetId: ledgerInteger(fields[11]!), start: ledgerInteger(fields[12]!), end: ledgerInteger(fields[13]!) };
+  return decodeBlitzSeason(fields);
 };
+const settlementInterval = async (provider: RpcProvider, address: string, head: number) => {
+  const fields = await provider.callContract(
+    { contractAddress: address, entrypoint: "blitz_settlement_interval", calldata: [] },
+    head,
+  );
+  if (fields.length !== 1) throw new Error("invalid_settlement_interval");
+  const interval = ledgerInteger(fields[0]!);
+  if (interval <= 0) throw new Error("invalid_settlement_interval");
+  return interval;
+};
+
 const submit = async (credentials: Credentials, entrypoint: string, calldata: string[]) => {
   const provider = rpcAt(credentials.rpcUrl);
   const account = new Account({ provider, address: credentials.accountAddress, signer: credentials.privateKey });
