@@ -868,6 +868,9 @@ importers:
 
   apps/status-monitor:
     dependencies:
+      '@realms-world/chain':
+        specifier: workspace:*
+        version: link:../../packages/chain
       effect:
         specifier: 4.0.0-rc.108
         version: 4.0.0-rc.108
