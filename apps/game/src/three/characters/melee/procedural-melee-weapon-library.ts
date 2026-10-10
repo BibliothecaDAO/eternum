@@ -1,7 +1,8 @@
 import { getCosmeticAsset, loadCosmeticAsset } from "@/three/cosmetics/asset-cache";
 import { findCosmeticById } from "@/three/cosmetics/registry";
 import { Box3, Group, Mesh, SkinnedMesh, Vector3 } from "three";
-import { GLTFLoader, type GLTF } from "three/addons/loaders/GLTFLoader.js";
+import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
+import { gltfLoader } from "@/three/utils/gltf-loader";
 
 import { disposeSkinnedSceneTemplates } from "../skinned-asset-resources";
 
@@ -140,7 +141,7 @@ export class ProceduralMeleeWeaponLibrary {
 }
 
 async function loadFittedGear(url: string, id: FittedGearId): Promise<GLTF> {
-  const gltf = await new GLTFLoader().loadAsync(url);
+  const gltf = await gltfLoader.loadAsync(url);
   try {
     validateFittedGear(gltf, id);
     return gltf;

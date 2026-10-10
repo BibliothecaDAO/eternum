@@ -28,7 +28,7 @@ import { createSailPrint } from "../../characters/ships/ship-sail-print";
 import { fitShipToHex } from "../../characters/ships/ship-hex-footprint";
 import { findNearestTerrainHex, terrainHexCorners, terrainHexToWorld } from "../../terrain/terrain-coordinates";
 import type { RendererSurfaceLike } from "../../renderer-backend";
-import { gltfLoader, configureGltfTextureSupport } from "../../utils/utils";
+import { gltfLoader } from "../../utils/utils";
 import { disposeSkinnedSceneTemplates } from "../../characters/skinned-asset-resources";
 import { MODEL_LAB_SEQUENCE_SECONDS, sampleModelLabMotion } from "./model-lab-motion";
 import { ModelLabEnvironment } from "./model-lab-environment";
@@ -133,7 +133,6 @@ class ModelReviewScene implements ModelLabRenderer {
     this.settings = input.settings;
     this.runtime = initialized.unitRuntime;
     this.renderer = initialized.rendererRuntime.renderer as LoopRenderer;
-    configureGltfTextureSupport(this.renderer as Parameters<typeof configureGltfTextureSupport>[0]);
     configureRendererColorOutput(this.renderer);
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = PCFSoftShadowMap;

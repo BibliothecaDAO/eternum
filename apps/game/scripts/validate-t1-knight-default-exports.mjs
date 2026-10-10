@@ -1,10 +1,8 @@
-// Checks the four T1 Knight Default GLBs (structure, the 31 joints by name and order, weights, embedded maps) and
+// Checks the four T1 Knight Default GLBs (structure, the 31 joints by name and order, weights, embedded KTX2 maps) and
 // prints one line per file. Any failed check exits non-zero.
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-
-import sharp from "sharp";
 
 // Order of runtime-fit.json body.joint_order: the 25 core joints, then the six driven helper joints.
 const skinJoints = [
@@ -190,7 +188,10 @@ function inspectGeometry(document, binary, name, skinned) {
   return { vertices: positions.count, triangles: indices.count / 3, topY: bounds.max[1] };
 }
 
-async function inspectTextures(document, binary, name) {
+// The KTX2 file identifier, then pixelWidth and pixelHeight at bytes 20 and 24 of the header.
+const ktx2Identifier = Buffer.from([0xab, 0x4b, 0x54, 0x58, 0x20, 0x32, 0x30, 0xbb, 0x0d, 0x0a, 0x1a, 0x0a]);
+
+function inspectTextures(document, binary, name) {
   assert(document.materials?.length === 1, name + ": expected one PBR material");
   const material = document.materials[0];
   const roles = {
@@ -203,33 +204,26 @@ async function inspectTextures(document, binary, name) {
     name + ": missing PBR map role",
   );
   assert(new Set(Object.values(roles)).size === 3, name + ": PBR map roles are not distinct");
+  // The ORM image carries occlusion in its red channel, so occlusion must read it.
+  assert(material.occlusionTexture?.index === roles.orm, name + ": occlusionTexture does not read the ORM map");
   const textures = [];
   for (const [role, index] of Object.entries(roles)) {
-    const imageIndex = document.textures[index]?.source;
+    const imageIndex = document.textures[index]?.extensions?.KHR_texture_basisu?.source;
     const image = document.images?.[imageIndex];
-    assert(image?.mimeType === "image/png" && image.bufferView !== undefined, name + ": missing embedded PNG");
+    assert(image?.mimeType === "image/ktx2" && image.bufferView !== undefined, name + ": missing embedded KTX2 map");
     const bufferView = document.bufferViews[image.bufferView];
     const start = bufferView.byteOffset ?? 0;
     const bytes = binary.subarray(start, start + bufferView.byteLength);
-    const decoded = await sharp(bytes).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
-    const { width, height, channels } = decoded.info;
-    assert(width > 0 && height > 0 && channels === 4, name + ": invalid decoded texture");
-    assert(decoded.data.length === width * height * 4, name + ": decoded texture byte mismatch");
-    if (role === "orm" && !Number.isInteger(material.occlusionTexture?.index)) {
-      // The ORM image carries occlusion in its red channel; unbound, it must be plain white.
-      for (let offset = 0; offset < decoded.data.length; offset += 4) {
-        assert(
-          decoded.data[offset] === 255,
-          name + ": ORM red channel holds occlusion, but occlusionTexture is not bound",
-        );
-      }
-    }
+    assert(bytes.length > 28 && bytes.subarray(0, 12).equals(ktx2Identifier), name + ": invalid KTX2 map");
+    const width = bytes.readUInt32LE(20);
+    const height = bytes.readUInt32LE(24);
+    assert(width > 0 && height > 0, name + ": invalid KTX2 map size");
     textures.push({ role, width, height });
   }
   return textures;
 }
 
-async function inspectFile(relativePath) {
+function inspectFile(relativePath) {
   const bytes = readFileSync(resolve(assetRoot, relativePath));
   const name = relativePath;
   const { document, binary } = parseGlb(bytes, name);
@@ -237,7 +231,7 @@ async function inspectFile(relativePath) {
   assert(!document.animations || document.animations.length === 0, name + ": authored clips present");
   inspectScene(document, name);
   const geometry = inspectGeometry(document, binary, name, skinned);
-  const textures = await inspectTextures(document, binary, name);
+  const textures = inspectTextures(document, binary, name);
   return {
     file: relativePath,
     sha256: createHash("sha256").update(bytes).digest("hex"),
@@ -251,7 +245,7 @@ async function inspectFile(relativePath) {
 }
 
 const assets = [];
-for (const file of files) assets.push(await inspectFile(file));
+for (const file of files) assets.push(inspectFile(file));
 for (const asset of assets) {
   process.stdout.write(
     `${asset.file}: ok, ${asset.triangles} triangles, ${asset.vertices} vertices, ${asset.skinJoints} joints, ` +

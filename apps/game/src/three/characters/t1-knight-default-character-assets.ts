@@ -1,5 +1,6 @@
 import { Bone, SkinnedMesh } from "three";
-import { GLTFLoader, type GLTF } from "three/addons/loaders/GLTFLoader.js";
+import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
+import { gltfLoader } from "@/three/utils/gltf-loader";
 
 import { resolveHumanoidRigRequiredBoneNames } from "./humanoid-rig-adapter";
 import { T1_KNIGHT_DEFAULT_HUMANOID_RIG_ADAPTER } from "./t1-knight-default-humanoid-rig-adapter";
@@ -27,7 +28,7 @@ export async function loadT1KnightDefaultCharacterAssetTemplates(): Promise<Load
   const loaded: LoadedProceduralCharacterAssetTemplate[] = [];
   try {
     for (const asset of [T1_KNIGHT_DEFAULT_NEAR, T1_KNIGHT_DEFAULT_MID]) {
-      const gltf = await new GLTFLoader().loadAsync(asset.url);
+      const gltf = await gltfLoader.loadAsync(asset.url);
       loaded.push({ ...asset, gltf });
       validateT1KnightDefaultCharacterAsset(gltf, asset.id);
     }

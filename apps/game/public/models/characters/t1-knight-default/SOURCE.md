@@ -16,8 +16,9 @@ serve both levels.
 ## What the files hold
 
 Every file is a plain GLB: one mesh, one primitive, one single-sided PBR material with base colour, normal and one ORM
-image (occlusion, roughness, metallic) as embedded PNGs. No animation clips. Axes are the game's: +Y up, +Z forward, +X
-the character's left, in metres, feet on y = 0. The figure stands about 0.61 to the top of the helmet.
+image (occlusion, roughness, metallic) as embedded KTX2 images (colour ETC1S, normal and ORM UASTC, from
+`pnpm compress:models`). No animation clips. Axes are the game's: +Y up, +Z forward, +X the character's left, in metres,
+feet on y = 0. The figure stands about 0.61 to the top of the helmet.
 
 The skins carry 31 joints: the 25 core joints in the family order, then `elbow_half_l/r`, `knee_half_l/r` and
 `upperarm_twist_l/r`. Every joint is a node with a translation and no rotation, so a joint's local rotation is its turn
@@ -64,10 +65,12 @@ far sword, shield and body stay apart.
 cd apps/game
 pnpm verify:t1-knight-default
 pnpm test src/three/characters
+pnpm verify:assets
 ```
 
-`validate-t1-knight-default-exports.mjs` checks structure, the 31 joints by name and order, weights and embedded maps.
-`t1-knight-default-exports.test.ts` pins each file's SHA-256, so a replaced file has to be re-pinned on purpose.
+`validate-t1-knight-default-exports.mjs` checks structure, the 31 joints by name and order, weights and embedded KTX2
+maps. `t1-knight-default-exports.test.ts` (in `pnpm verify:assets`) pins each file's SHA-256, so a replaced file has to
+be re-pinned on purpose.
 
 ## Where the model comes from
 
@@ -83,8 +86,9 @@ rather than polished.
 
 The editable sources (the raw generation, the labelled and bound full-detail model, the Blender file of the sword and
 shield) and the Python tools that bind, reduce, bake and export are not in this repository. They are kept by the author.
-Replacing a file here means re-exporting all four and `runtime-fit.json` together, then updating the adapter and the
-hash pins from them.
+Replacing a file here means re-exporting all four and `runtime-fit.json` together, compressing each with
+`pnpm compress:models --only characters/t1-knight-default/<file>`, then updating the adapter and the hash pins from
+them.
 
 ## Known limits
 

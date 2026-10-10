@@ -13,7 +13,6 @@ import type { RendererSurfaceLike } from "@/three/renderer-backend";
 import { getRendererDiagnosticActiveMode } from "@/three/renderer-diagnostics";
 import { ArrowProjectileSystem } from "@/three/projectiles/arrow-projectile-system";
 import { MeleeImpactSystem } from "@/three/combat/melee-impact-system";
-import { configureGltfTextureSupport } from "@/three/utils/utils";
 import {
   Color,
   CylinderGeometry,
@@ -274,7 +273,6 @@ class ProceduralCharacterBenchmarkRuntime {
     let worldGymEnvironment: ProceduralWorldGymEnvironment | undefined;
     try {
       if (input.environment === "procedural-biomes") {
-        configureGltfTextureSupport(rendererRuntime.renderer as Parameters<typeof configureGltfTextureSupport>[0]);
         worldGymEnvironment = await ProceduralWorldGymEnvironment.create();
       }
       benchmark = new ProceduralCharacterBenchmarkRuntime(input, rendererRuntime, unitRuntime, worldGymEnvironment);
