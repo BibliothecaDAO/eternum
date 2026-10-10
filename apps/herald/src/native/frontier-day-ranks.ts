@@ -1,3 +1,4 @@
+import { confirmedGameTransactions } from "./transactions";
 import type { MadaraRpc } from "../madara-rpc";
 import { isCheckGame } from "../game-directory";
 import { dayOf } from "@bibliothecadao/eternum/expeditions";
@@ -119,11 +120,12 @@ export async function replayWithFrontierDays(
       }
       previousTimestamp = block.timestamp;
     },
-    beforeCommit: (events, throughBlock) =>
+    beforeCommit: (events, throughBlock, transactions) =>
       history.appendEvents(
         events.filter((event) => event.kind === "event"),
         throughBlock,
         frontierDays,
+        confirmedGameTransactions(native.decoder.manifest, transactions),
       ),
   });
   return { ...replay, frontierDays };

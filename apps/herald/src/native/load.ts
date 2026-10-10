@@ -1,3 +1,4 @@
+import { confirmedGameTransactions } from "./transactions";
 import type { CheckpointStore } from "../checkpoint-store";
 import type { HistoryStore } from "../history-store";
 import type { MadaraRpc } from "../madara-rpc";
@@ -12,7 +13,7 @@ const REPLAY_WINDOW_BLOCKS = 64;
 export async function loadNativeWorld(input: {
   chain: string;
   checkpointStore: Pick<CheckpointStore, "initialize" | "load" | "save">;
-  history: Pick<HistoryStore, "appendEvents" | "historyProgress" | "frontierHistory">;
+  history: Pick<HistoryStore, "appendEvents" | "historyProgress" | "frontierHistory" | "transactionHistoryProgress">;
   rpc: MadaraRpc;
   native: NativeIngestion;
 }) {
@@ -23,6 +24,7 @@ export async function loadNativeWorld(input: {
   const targetBlock = await input.rpc.blockNumber();
   let confirmedBlock = checkpoint?.confirmedBlock ?? 0;
   if (checkpoint && checkpoint.confirmedBlock > targetBlock) throw new Error("Native checkpoint is ahead of chain");
+  if (checkpoint) await repairTransactionHistory(input, checkpoint.confirmedBlock);
   const fold = checkpoint?.fold ?? new WorldFold(registry);
   const metrics = { decoded_events: 0, event_messages: 0, store_events: 0, pages: 0 };
   let checkpointBlock = checkpoint?.confirmedBlock;
@@ -60,10 +62,35 @@ async function replayWindow(
     rpc: input.rpc,
     fromBlock,
     toBlock,
-    retainTransactions: false,
+    retainTransactions: true,
   });
   await input.checkpointStore.save(input.chain, replay.throughBlock, fold);
   return { metrics: replay.metrics, throughBlock: replay.throughBlock };
+}
+
+/** Legacy counts can be incomplete while the entity checkpoint is sound; repair only routing history. */
+async function repairTransactionHistory(input: Parameters<typeof loadNativeWorld>[0], through: number): Promise<void> {
+  const covered = await input.history.transactionHistoryProgress();
+  for (
+    let number = Math.max((covered ?? -1) + 1, input.native.decoder.manifest.native.deploymentBlock);
+    number <= through;
+    number++
+  ) {
+    const block = await input.rpc.readBlock(number, input.native.decoder.manifest.world.address, {
+      retainTransactions: true,
+    });
+    if (block.block_number !== number) throw new Error("Transaction history block number mismatch");
+    const transactions = block.transactions.map(({ transaction, receipt }) => ({
+      transaction,
+      receipt: { ...receipt, block_number: number },
+    }));
+    await input.history.appendEvents(
+      [],
+      number,
+      undefined,
+      confirmedGameTransactions(input.native.decoder.manifest, transactions),
+    );
+  }
 }
 
 /** A checkpoint the history does not reach would leave a gap in history, so both are rebuilt from genesis instead. */

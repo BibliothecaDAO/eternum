@@ -161,3 +161,10 @@ export interface ReplayMetrics {
   event_messages: number;
   pages: number;
 }
+
+export interface GameTransactionHistory {
+  gameId: string;
+  transactionHash: string;
+  blockNumber: number;
+  status: string;
+}

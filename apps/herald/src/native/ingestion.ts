@@ -51,7 +51,7 @@ const sameEvents = (left: readonly RpcEvent[], right: readonly RpcEvent[]) =>
       (event.event_index ?? index) === (right[index]!.event_index ?? index),
   );
 
-const REPLAY_EVENT_BUDGET = 16_384;
+const REPLAY_RECORD_BUDGET = 16_384;
 
 export class NativeIngestion {
   receiptFailures = 0;
@@ -142,7 +142,11 @@ export class NativeIngestion {
     /** The overlay's decode of a receipt it holds, reused when the confirmed receipt repeats its events. */
     preconfirmed?: (receipt: RpcReceipt) => PreconfirmedDecode | undefined;
     beforeBlock?: (fold: WorldFold, block: RpcBlockWithReceipts, events: readonly DecodedWorldEvent[]) => Promise<void>;
-    beforeCommit?: (events: readonly DecodedWorldEvent[], throughBlock: number) => Promise<void>;
+    beforeCommit?: (
+      events: readonly DecodedWorldEvent[],
+      throughBlock: number,
+      transactions: readonly RpcBlockTransaction[],
+    ) => Promise<void>;
   }) {
     if (this.halted) throw this.halted;
     const preview = input.fold.overlay();
@@ -188,9 +192,9 @@ export class NativeIngestion {
       });
       throughBlock = number;
       timestamp = block.timestamp;
-      if (events.length >= REPLAY_EVENT_BUDGET) break;
+      if (events.length + transactions.length >= REPLAY_RECORD_BUDGET) break;
     }
-    await input.beforeCommit?.(events, throughBlock);
+    await input.beforeCommit?.(events, throughBlock, transactions);
     presets.forEach((preset) => input.fold.rememberPreset(preset));
     const changes = this.commit(input.fold, events);
     const byBlock = new Map<number, FoldChange[]>();

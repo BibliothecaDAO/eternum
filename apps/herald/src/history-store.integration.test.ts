@@ -25,7 +25,7 @@ describe("existing history progress", () => {
     try {
       await store.initialize();
       await admin.query(
-        `INSERT INTO ${schema}.herald_history_progress (chain, world_address, complete_through_block, frontier_ranks_through_block) VALUES ('madara', '0x123', 500001, 500001)`,
+        `INSERT INTO ${schema}.herald_history_progress (chain, world_address, complete_through_block, frontier_ranks_through_block, transactions_through_block) VALUES ('madara', '0x123', 500001, 500001, 500001)`,
       );
       await store.close();
       store = new HistoryStore(url.toString(), "madara", "0x123", createNativeHistoryCodec(nativeSchema));
@@ -323,6 +323,107 @@ it("commits day ranks with history, deduplicates replay and recovers them after 
   } finally {
     await store.close();
     await admin.query(`DROP SCHEMA ${schema} CASCADE`);
+    await admin.end();
+  }
+});
+
+it("commits transaction counts with block history and rolls both back on a count failure", async () => {
+  const admin = new Pool({ connectionString: databaseUrl });
+  const namespace = `transaction_history_${randomUUID().replaceAll("-", "")}`;
+  await admin.query(`CREATE SCHEMA ${namespace}`);
+  const url = new URL(databaseUrl!);
+  url.searchParams.set("options", `-c search_path=${namespace}`);
+  const store = new HistoryStore(
+    url.toString(),
+    "madara",
+    manifest.world.address,
+    createNativeHistoryCodec(nativeSchema),
+  );
+  try {
+    await store.initialize();
+    await store.appendEvents([], 9);
+    await admin.query(
+      `CREATE FUNCTION ${namespace}.reject_transaction() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'count write failed'; END $$; CREATE TRIGGER reject_transaction BEFORE INSERT ON ${namespace}.herald_game_transactions FOR EACH ROW EXECUTE FUNCTION ${namespace}.reject_transaction();`,
+    );
+    const transactions = [{ gameId: "1", transactionHash: "0xabc", blockNumber: 10, status: "ACCEPTED_ON_L2" }];
+    await expect(store.appendEvents([], 10, [], transactions)).rejects.toThrow("count write failed");
+    expect(await store.historyProgress()).toBe(9);
+    await admin.query(`DROP TRIGGER reject_transaction ON ${namespace}.herald_game_transactions`);
+    await store.appendEvents([], 10, [], transactions);
+    await store.appendEvents([], 10, [], transactions);
+    expect(await store.transactionCount("1")).toEqual({ game_id: "1", count: 1 });
+    expect(await store.historyProgress()).toBe(10);
+  } finally {
+    await store.close();
+    await admin.query(`DROP SCHEMA ${namespace} CASCADE`);
+    await admin.end();
+  }
+});
+
+it("repairs legacy transaction counts while preserving the valid entity checkpoint", async () => {
+  const { hash } = await import("starknet");
+  const { native, fold } = setup();
+  const admin = new Pool({ connectionString: databaseUrl });
+  const namespace = `count_recovery_${randomUUID().replaceAll("-", "")}`;
+  await admin.query(`CREATE SCHEMA ${namespace}`);
+  const url = new URL(databaseUrl!);
+  url.searchParams.set("options", `-c search_path=${namespace}`);
+  const store = new HistoryStore(
+    url.toString(),
+    "madara",
+    manifest.world.address,
+    createNativeHistoryCodec(nativeSchema),
+  );
+  const through = manifest.native.deploymentBlock + 3;
+  try {
+    await store.initialize();
+    await store.appendEvents([], through, []);
+    await expect(store.transactionCount("1")).rejects.toThrow("incomplete");
+    const readBlock = vi.fn(async (number: number) => ({
+      block_number: number,
+      timestamp: number,
+      transactions: [
+        {
+          transaction: {
+            type: "INVOKE",
+            sender_address: "0x111",
+            calldata: ["1", manifest.world.address, hash.getSelectorFromName("play"), "5", "1", "1", "1", "1", "0"],
+          },
+          receipt: { ...receipt([], `0x${number.toString(16)}`), execution_status: "REVERTED" },
+        },
+      ],
+    }));
+    const checkpointStore = {
+      initialize: vi.fn(),
+      load: vi.fn(async () => ({ fold, confirmedBlock: through })),
+      save: vi.fn(),
+    };
+    const loaded = await loadNativeWorld({
+      chain: "madara",
+      checkpointStore,
+      history: store,
+      native,
+      rpc: { blockNumber: async () => through, readBlock } as unknown as MadaraRpc,
+    });
+    expect(loaded.fold).toBe(fold);
+    expect(checkpointStore.save).not.toHaveBeenCalled();
+    expect(readBlock.mock.calls.map(([number]) => number)).toEqual(
+      Array.from({ length: 4 }, (_, i) => manifest.native.deploymentBlock + i),
+    );
+    expect(await store.transactionCount("1")).toEqual({ game_id: "1", count: 4 });
+    expect(await store.transactionHistoryProgress()).toBe(through);
+    expect(await store.historyProgress(true)).toBe(through);
+    await loadNativeWorld({
+      chain: "madara",
+      checkpointStore,
+      history: store,
+      native,
+      rpc: { blockNumber: async () => through, readBlock } as unknown as MadaraRpc,
+    });
+    expect(readBlock).toHaveBeenCalledTimes(4);
+  } finally {
+    await store.close();
+    await admin.query(`DROP SCHEMA ${namespace} CASCADE`);
     await admin.end();
   }
 });
