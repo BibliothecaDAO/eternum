@@ -25,9 +25,7 @@ test("orders the MMR upgrade before its ledger role grant", () => {
   );
   assert.deepEqual(
     plan.roleGrants.map(({ assetId, roleName }) => [assetId, roleName]),
-    [
-      ["mmr", "UPDATER_ROLE"],
-    ],
+    [["mmr", "UPDATER_ROLE"]],
   );
   assert.equal(plan.roleGrants[0].grantee, "0x1");
   assert.equal(plan.assets[0].upgradeSigner.privateKey, "0x111");

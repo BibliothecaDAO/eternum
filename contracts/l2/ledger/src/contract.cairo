@@ -131,8 +131,6 @@ pub mod GameLedger {
         treasury: ContractAddress,
         lords: ContractAddress,
         mmr_token: ContractAddress,
-
-
         loot_chest: ContractAddress,
         cosmetics: ContractAddress,
         seasons: Map<u32, BlitzSeason>,
@@ -250,7 +248,6 @@ pub mod GameLedger {
         key: SlotKey,
         #[key]
         owner: ContractAddress,
-
     }
 
 
@@ -372,22 +369,16 @@ pub mod GameLedger {
         treasury: ContractAddress,
         lords: ContractAddress,
         mmr_token: ContractAddress,
-
-
         loot_chest: ContractAddress,
         cosmetics: ContractAddress,
     ) {
-        self
-            .assert_constructor_addresses(
-                admin, operator, treasury, lords, mmr_token, loot_chest, cosmetics,
-            );
+        self.assert_constructor_addresses(admin, operator, treasury, lords, mmr_token, loot_chest, cosmetics);
         self.accesscontrol.initializer();
         self.accesscontrol._grant_role(DEFAULT_ADMIN_ROLE, admin);
         self.accesscontrol._grant_role(OPERATOR_ROLE, operator);
         self.treasury.write(treasury);
         self.lords.write(lords);
         self.mmr_token.write(mmr_token);
-
 
         self.loot_chest.write(loot_chest);
         self.cosmetics.write(cosmetics);
@@ -723,8 +714,8 @@ pub mod GameLedger {
 
         fn register(ref self: ContractState, key: SlotKey, sword: bool, shield: bool) {
             let owner = starknet::get_caller_address();
-            let game = self.assert_registration_open(key, owner);
-            let preset = self.presets.entry(game.preset_id).read();
+            let slot = self.assert_registration_open(key, owner);
+            let preset = self.presets.entry(slot.preset_id).read();
             let payment = self.record_paid_registration(key, owner, sword, shield, preset);
             self.pull_lords(owner, payment);
             self.emit(Registered { key, owner });
@@ -733,40 +724,37 @@ pub mod GameLedger {
 
         fn cancel_slot(ref self: ContractState, key: SlotKey) {
             self.accesscontrol.assert_only_role(OPERATOR_ROLE);
-            let game = self.assert_slot_open_before_close(key);
-            self.open_refunds(key, game);
+            let slot = self.assert_slot_open_before_close(key);
+            self.open_refunds(key, slot);
             self.emit(SlotCancelled { key });
         }
 
         fn abort_slot(ref self: ContractState, key: SlotKey) {
             self.accesscontrol.assert_only_role(OPERATOR_ROLE);
-            let game = self.slots.entry(key).read();
-            assert!(game.exists, "Ledger: unknown slot");
-            assert!(!game.cancelled, "Ledger: slot closed");
-            assert!(starknet::get_block_timestamp() >= game.end, "Ledger: game has not ended");
+            let slot = self.slots.entry(key).read();
+            assert!(slot.exists, "Ledger: unknown slot");
+            assert!(!slot.cancelled, "Ledger: slot closed");
+            assert!(starknet::get_block_timestamp() >= slot.end, "Ledger: game has not ended");
 
-            self.open_refunds(key, game);
+            self.open_refunds(key, slot);
             self.emit(SlotAborted { key });
         }
 
         fn refund(ref self: ContractState, key: SlotKey) {
             let owner = starknet::get_caller_address();
-            let mut game = self.slots.entry(key).read();
+            let mut slot = self.slots.entry(key).read();
             let mut registration = self.registrations.entry((key, owner)).read();
-            assert!(game.exists && (game.cancelled || registration.refundable), "Ledger: registration not refundable");
+            assert!(slot.exists && (slot.cancelled || registration.refundable), "Ledger: registration not refundable");
             assert!(registration.game_id == 0, "Ledger: registration already settled");
             let amount = registration.paid;
-            assert!(
-                amount > 0 || registration.sword_credit || registration.shield_credit,
-                "Ledger: nothing to refund",
-            );
+            assert!(amount > 0 || registration.sword_credit || registration.shield_credit, "Ledger: nothing to refund");
             self.restore_credits(owner, registration);
             registration.sword_credit = false;
             registration.shield_credit = false;
             registration.paid = 0;
-            game.pool -= amount;
+            slot.pool -= amount;
             self.registrations.entry((key, owner)).write(registration);
-            self.slots.entry(key).write(game);
+            self.slots.entry(key).write(slot);
             if amount > 0 {
                 self.send_lords(owner, amount);
             }
@@ -884,9 +872,9 @@ pub mod GameLedger {
         }
 
         fn get_slot(self: @ContractState, key: SlotKey) -> Slot {
-            let game = self.slots.entry(key).read();
-            assert!(game.exists, "Ledger: unknown slot");
-            game
+            let slot = self.slots.entry(key).read();
+            assert!(slot.exists, "Ledger: unknown slot");
+            slot
         }
 
         fn get_registration(self: @ContractState, key: SlotKey, owner: ContractAddress) -> Registration {
@@ -894,8 +882,8 @@ pub mod GameLedger {
         }
 
         fn get_registered_player(self: @ContractState, key: SlotKey, index: u64) -> ContractAddress {
-            let game = self.slots.entry(key).read();
-            assert!(game.exists && index < game.registered_count, "Ledger: registration index out of bounds");
+            let slot = self.slots.entry(key).read();
+            assert!(slot.exists && index < slot.registered_count, "Ledger: registration index out of bounds");
             let wallet = self.registered_owners.entry((key, index)).read();
             wallet
         }
@@ -914,8 +902,6 @@ pub mod GameLedger {
             treasury: ContractAddress,
             lords: ContractAddress,
             mmr_token: ContractAddress,
-
-
             loot_chest: ContractAddress,
             cosmetics: ContractAddress,
         ) {
@@ -925,8 +911,6 @@ pub mod GameLedger {
                     && treasury.is_non_zero()
                     && lords.is_non_zero()
                     && mmr_token.is_non_zero()
-
-
                     && loot_chest.is_non_zero()
                     && cosmetics.is_non_zero(),
                 "Ledger: zero constructor address",
@@ -960,33 +944,33 @@ pub mod GameLedger {
         }
 
         fn assert_slot_open_before_close(self: @ContractState, key: SlotKey) -> Slot {
-            let game = self.slots.entry(key).read();
-            assert!(game.exists, "Ledger: unknown slot");
-            assert!(!game.cancelled, "Ledger: slot closed");
-            assert!(starknet::get_block_timestamp() < game.close, "Ledger: slot already closed");
-            game
+            let slot = self.slots.entry(key).read();
+            assert!(slot.exists, "Ledger: unknown slot");
+            assert!(!slot.cancelled, "Ledger: slot closed");
+            assert!(starknet::get_block_timestamp() < slot.close, "Ledger: slot already closed");
+            slot
         }
 
 
         fn assert_registration_open(self: @ContractState, key: SlotKey, owner: ContractAddress) -> Slot {
-            let game = self.assert_slot_open_before_close(key);
+            let slot = self.assert_slot_open_before_close(key);
             assert!(!self.registrations.entry((key, owner)).read().registered, "Ledger: already registered");
-            game
+            slot
         }
 
-        fn assert_results_open(self: @ContractState, game: Slot) {
-            assert!(game.exists, "Ledger: unknown slot");
-            assert!(!game.cancelled, "Ledger: game cancelled");
-            assert!(starknet::get_block_timestamp() >= game.close, "Ledger: game not started");
-            assert!(game.registered_count > 0, "Ledger: empty roster");
+        fn assert_results_open(self: @ContractState, slot: Slot) {
+            assert!(slot.exists, "Ledger: unknown slot");
+            assert!(!slot.cancelled, "Ledger: game cancelled");
+            assert!(starknet::get_block_timestamp() >= slot.close, "Ledger: game not started");
+            assert!(slot.registered_count > 0, "Ledger: empty roster");
         }
     }
 
     #[generate_trait]
     impl RegistrationWriterImpl of RegistrationWriterTrait {
-        fn open_refunds(ref self: ContractState, key: SlotKey, mut game: Slot) {
-            game.cancelled = true;
-            self.slots.entry(key).write(game);
+        fn open_refunds(ref self: ContractState, key: SlotKey, mut slot: Slot) {
+            slot.cancelled = true;
+            self.slots.entry(key).write(slot);
         }
 
         fn record_paid_registration(
@@ -1005,13 +989,7 @@ pub mod GameLedger {
                     0
                 };
             let registration = Registration {
-                registered: true,
-                sword,
-                shield,
-                sword_credit,
-                shield_credit,
-                paid: payment,
-                ..Default::default(),
+                registered: true, sword, shield, sword_credit, shield_credit, paid: payment, ..Default::default(),
             };
             self.record_registration(key, owner, registration, payment);
             payment
@@ -1020,19 +998,18 @@ pub mod GameLedger {
         fn record_registration(
             ref self: ContractState, key: SlotKey, owner: ContractAddress, registration: Registration, payment: u256,
         ) {
-            let mut game = self.slots.entry(key).read();
+            let mut slot = self.slots.entry(key).read();
             self.registrations.entry((key, owner)).write(registration);
-            self.registered_owners.entry((key, game.registered_count)).write(owner);
-            game.registered_count += 1;
-            self.add_to_pool(key, game, payment);
+            self.registered_owners.entry((key, slot.registered_count)).write(owner);
+            slot.registered_count += 1;
+            self.add_to_pool(key, slot, payment);
         }
 
-        fn add_to_pool(ref self: ContractState, key: SlotKey, mut game: Slot, amount: u256) {
-            game.pool += amount;
-            assert!(game.pool <= 0xffffffffffffffffffffffffffffffff, "Ledger: game pool exceeds u128");
-            self.slots.entry(key).write(game);
+        fn add_to_pool(ref self: ContractState, key: SlotKey, mut slot: Slot, amount: u256) {
+            slot.pool += amount;
+            assert!(slot.pool <= 0xffffffffffffffffffffffffffffffff, "Ledger: game pool exceeds u128");
+            self.slots.entry(key).write(slot);
         }
-
     }
 
     #[generate_trait]
@@ -1130,15 +1107,15 @@ pub mod GameLedger {
             self.cosmetic_counts.entry((preset_id, rarity)).write(items.len());
         }
 
-        fn mint_chests(ref self: ContractState, key: GameKey, game: Slot, ranked: Span<RankedPlayer>) {
+        fn mint_chests(ref self: ContractState, key: GameKey, slot: Slot, ranked: Span<RankedPlayer>) {
             let chest_token = ICollectibleDispatcher { contract_address: self.loot_chest.read() };
             for index in 0..ranked.len() {
                 let row = *ranked.at(index);
                 let ties = MmrWriterImpl::tie_count(ranked, index, row.rank);
                 let band = rank_band(row.rank, ties, ranked.len().try_into().unwrap());
-                let metadata = self.chest_bands.entry((game.preset_id, band)).read().metadata;
+                let metadata = self.chest_bands.entry((slot.preset_id, band)).read().metadata;
                 let token_id = chest_token.mint_with_id(row.wallet, metadata);
-                self.record_minted_chest(key, game.season_id, row.wallet, token_id, band);
+                self.record_minted_chest(key, slot.season_id, row.wallet, token_id, band);
             }
         }
 
