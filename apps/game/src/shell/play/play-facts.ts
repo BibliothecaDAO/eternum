@@ -1,5 +1,7 @@
 import { useIdentitySession } from "@/hooks/context/identity-session";
+import { payoutAddressOf } from "@/hooks/context/payout-wallet";
 
+import { useRefundSlots } from "../blitz/entry";
 import { blitzRows } from "../blitz-rows";
 import { usePlaytestSlots } from "../blitz-slot";
 import { useDirectory } from "../herald";
@@ -12,12 +14,13 @@ import { readSeenResults } from "./seen-results";
  * next step the table chose. Unknown until the directory and the session answer.
  */
 export const usePlayFacts = () => {
-  const { status } = useIdentitySession();
+  const { status, session } = useIdentitySession();
   const directory = useDirectory();
   const slots = usePlaytestSlots();
   const now = useNowSeconds();
   const games = directory.data?.games ?? [];
-  const blitz = blitzRows(games, slots.data?.slots ?? []);
+  const listed = slots.data?.slots ?? [];
+  const blitz = blitzRows(games, listed, useRefundSlots(listed, session ? payoutAddressOf(session.user) : null));
   const signedIn = status === "signed-in";
   const known = directory.isSuccess && status !== "loading";
   const step = known ? nextStep({ signedIn, games, blitz, seenResults: readSeenResults() }) : undefined;

@@ -93,6 +93,10 @@ it("refunds a registration the slot's close left unseated, as a cancelled slot's
   };
   expect(entryState(terms({ registration: unseated }), both, 2_000)).toBe("refund");
   expect(entryState(terms({ registration: { ...unseated, paid: 0n } }), both, 2_000)).toBe("refunded");
+  // A registration a game consumed is never owed back, whatever became of its slot: the ledger refuses it.
+  expect(
+    entryState(terms({ registration: { ...unseated, refundable: false, gameId: 7 }, cancelled: true }), both, 2_000),
+  ).toBe("seated");
   // A registration is uncapped: no count of others ever turns a payer away before close.
   expect(entryState(terms(), both, 900)).toBe("choose");
 });

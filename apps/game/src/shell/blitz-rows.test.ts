@@ -95,6 +95,25 @@ describe("a Blitz's keys on the ledger", () => {
   });
 });
 
+describe("a closed slot that owes the player a refund", () => {
+  const closed = slot("closed", 900, { frozenAt: "x", closed: true });
+
+  it("keeps its row, last, with the refund as its one action, until the refund is taken", () => {
+    const rows = blitzRows([], [closed, slot("open", 1_042)], new Set(["closed"]));
+    expect(rows.map((row) => [row.key, row.action])).toEqual([
+      ["slot:open", "open"],
+      ["slot:closed", "refund"],
+    ]);
+    expect(blitzRows([], [closed, slot("open", 1_042)]).map((row) => row.key)).toEqual(["slot:open"]);
+  });
+
+  it("never leads the Blitz card ahead of a slot to open", () => {
+    const rows = blitzRows([], [closed, slot("open", 1_042)], new Set(["closed"]));
+    expect(leadBlitzRow(rows)?.key).toBe("slot:open");
+    expect(leadBlitzRow(blitzRows([], [closed], new Set(["closed"])))?.action).toBe("refund");
+  });
+});
+
 describe("a Blitz slot's row", () => {
   it("opens its lobby, where its entry is paid, and draws no seats: the ledger counts its registrations", () => {
     const [row] = blitzRows([], [slot("paid", 1_000)]);

@@ -8,7 +8,7 @@ import { useFrontierType } from "@/ui/features/frontier/use-frontier-type";
 import { useBootDocumentState } from "@/ui/modules/boot-loader";
 
 import { BlitzListPage, BlitzLobbyPage } from "../blitz/blitz-pages";
-import { entryTermsKey, slotRegisteredKey } from "../blitz/entry";
+import { entryTermsKey, refundOwedKey, slotRegisteredKey } from "../blitz/entry";
 import { seasonPrizeKey } from "../season-tab/blitz-season";
 import { rewardKey } from "../season-tab/reward";
 import { LearnPage } from "../learn/learn-page";
@@ -107,6 +107,9 @@ const createLabClient = (screen: LabScreen) => {
   const terms = LAB_ENTRY_TERMS[screen];
   if (terms && wallet?.status === "ready") client.setQueryData(entryTermsKey(LAB_SLOT_KEY, wallet.address), terms);
   client.setQueryData(slotRegisteredKey(LAB_SLOT_KEY), LAB_SLOT_REGISTERED);
+  // The list's refund row: the closed slot owes the wallet on the screen that left it unseated.
+  if (wallet?.status === "ready")
+    client.setQueryData(refundOwedKey(LAB_SLOT_KEY, wallet.address), screen === "entry-unseated");
   const reward = LAB_REWARDS[screen];
   const prize = LAB_SEASON_PRIZES[screen];
   if (reward) client.setQueryData(rewardKey(LAB_GAME_KEYS, LAB_WALLET), reward);

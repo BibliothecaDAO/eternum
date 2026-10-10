@@ -10,7 +10,7 @@ import type { BlitzRow } from "../blitz-rows";
 import { ClockChip } from "../clock-chip";
 import { entryHref } from "../game-links";
 import { LiveChip, StateChip } from "../play/state-chip";
-import { BLITZ_WORDS, WORDS } from "../words";
+import { BLITZ_WORDS, ENTRY_WORDS, WORDS } from "../words";
 import { useSlotRegistered } from "./entry";
 import { lobbyId, lobbyTitle } from "./lobby";
 
@@ -57,6 +57,8 @@ export const GameRow = ({ row, now }: { row: BlitzRow; now: number }) => {
             <LiveChip />
             {row.kind === "game" && <ClockChip prefix="ends" at={row.game.clock.end_at} now={now} />}
           </>
+        ) : row.action === "refund" ? (
+          <StateChip icon="Lk" text={ENTRY_WORDS.closed} />
         ) : (
           <ClockChip prefix="starts" at={row.startsAt} now={now} />
         )}
@@ -92,6 +94,15 @@ const RowAction = ({ row }: { row: BlitzRow }) => {
     case "open":
       return (
         <Button role="primary" word={BLITZ_WORDS.open} icon="Pl" onClick={() => navigate(`/blitz/${lobbyId(row)}`)} />
+      );
+    case "refund":
+      return (
+        <Button
+          role="primary"
+          word={ENTRY_WORDS.takeRefund}
+          icon="Sp"
+          onClick={() => navigate(`/blitz/${lobbyId(row)}`)}
+        />
       );
     case "registered":
       return <StateChip icon="Ok" text={WORDS.joined} />;
