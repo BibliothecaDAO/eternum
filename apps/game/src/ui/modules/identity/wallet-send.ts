@@ -49,7 +49,7 @@ const feeBalanceOf = async (provider: ProviderInterface, owner: string): Promise
   return BigInt(low) + (BigInt(high) << 128n);
 };
 
-/** The ledger's assertion inside a revert trace ("Ledger: roster full"), or the trace's first line. */
+/** The ledger's assertion inside a revert trace ("Ledger: already registered"), or the trace's first line. */
 const refusalOf = (receipt: object): string => {
   const trace = "revert_reason" in receipt && typeof receipt.revert_reason === "string" ? receipt.revert_reason : "";
   return trace.match(/Ledger: [^'"\\\n]+/)?.[0] ?? (trace.split("\n")[0] || VALUE_WORDS.refused);
