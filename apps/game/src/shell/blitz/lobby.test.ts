@@ -61,8 +61,8 @@ describe("a Blitz lobby", () => {
 
   it("seats a launched game from Herald's roster, each with its frozen wallet, ticked once its player's realm is ready", () => {
     const roster = [
-      { account: "0xa1", prepared: true },
-      { account: "0xb7", prepared: false },
+      { account: "0xa1", wallet: "0xe1", prepared: true },
+      { account: "0xb7", wallet: "0xe7", prepared: false },
     ];
     expect(seatsOf(game(roster, 2), PLAYER)).toEqual([
       { account: "0xa1", wallet: "0xe1", own: false, prepared: true },
