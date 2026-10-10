@@ -132,6 +132,62 @@ describe("the Realm holder's labor", () => {
     expect(planRealmLabor({ realms, perRealm: 1_000, cap: 0, labor: { held: 0, limit: 18_000 } }).total).toBe(3_000);
   });
 
+  it("leaves room to add a Realm until the day's cap of Realms has given its labor", () => {
+    const plan = (claimed: number, cap: number) =>
+      planRealmLabor({
+        realms: Array.from({ length: claimed }, (_, index) => realm(index + 1, true)),
+        perRealm: 1_000,
+        cap,
+        labor: { held: 0, limit: 18_000 },
+      });
+    expect(plan(0, 5).canAdd).toBe(true);
+    expect(plan(4, 5).canAdd).toBe(true);
+    expect(plan(5, 5).canAdd).toBe(false);
+    // No cap: a Realm can always be added.
+    expect(plan(9, 0).canAdd).toBe(true);
+  });
+
+  it("adds a Realm by its number, its first claim, and offers nothing to add once the day's cap is spent", () => {
+    const onAdd = vi.fn();
+    const show = (realms: HeldRealm[], cap: number) =>
+      act(() =>
+        root.render(
+          <RealmsSheet
+            wallet={READY}
+            plan={planRealmLabor({ realms, perRealm: 1_000, cap, labor: { held: 0, limit: 18_000 } })}
+            perRealm={1_000}
+            cap={cap}
+            labor={0}
+            secondsLeft={3_600}
+            sending={false}
+            adding={false}
+            onClaim={() => undefined}
+            onAdd={onAdd}
+            onRealm={() => undefined}
+            onLinkWallet={() => undefined}
+            onClose={() => undefined}
+          />,
+        ),
+      );
+    // An account that never claimed: no Realm listed, the wallet rule said, and the number field.
+    show([], 5);
+    expect(host.textContent).toContain("Only Realms in this Starknet wallet count.");
+    const field = host.querySelector<HTMLInputElement>('input[aria-label="Realm number"]')!;
+    const type = (value: string) =>
+      act(() => {
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(field, value);
+        field.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+    type("9001");
+    act(() => field.form!.requestSubmit());
+    expect(onAdd).not.toHaveBeenCalled();
+    type("4512");
+    act(() => field.form!.requestSubmit());
+    expect(onAdd).toHaveBeenCalledWith(4_512);
+    show([realm(1, true), realm(2, true)], 2);
+    expect(host.querySelector('input[aria-label="Realm number"]')).toBeNull();
+  });
+
   it("claims all in one tap, and with labor full leads to the realm and claims only what fits", () => {
     const onClaim = vi.fn();
     const onRealm = vi.fn();
@@ -151,7 +207,9 @@ describe("the Realm holder's labor", () => {
             labor={held}
             secondsLeft={3_600}
             sending={false}
+            adding={false}
             onClaim={onClaim}
+            onAdd={() => undefined}
             onRealm={onRealm}
             onLinkWallet={() => undefined}
             onClose={() => undefined}

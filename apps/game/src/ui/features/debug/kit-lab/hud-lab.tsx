@@ -1395,7 +1395,9 @@ const LabRealmsSheet = ({ realms }: { realms: LabRealms }) => (
     labor={realms.labor}
     secondsLeft={CLOCK.secondsLeft}
     sending={false}
+    adding={false}
     onClaim={noop}
+    onAdd={noop}
     onRealm={noop}
     onLinkWallet={noop}
     onClose={noop}

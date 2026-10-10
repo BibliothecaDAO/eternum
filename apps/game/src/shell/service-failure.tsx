@@ -16,8 +16,7 @@ type Service =
   | "identity"
   | "ratings"
   | "chat"
-  | "ledger"
-  | "realms";
+  | "ledger";
 
 /** One line per service, in the glossary's shape ("Season did not answer."). */
 const FAILURE_LINES: Record<Service, string> = {
@@ -34,8 +33,6 @@ const FAILURE_LINES: Record<Service, string> = {
   chat: "Chat did not answer.",
   /** The value ledger, or a ledger on another chain than this build's (the console names which). */
   ledger: "The ledger did not answer.",
-  /** The Realms a payout wallet holds, read by the value relay. */
-  realms: "Realms did not answer.",
 };
 
 /** A service's one line, for a surface that draws the failure in its own place (the doorway's plate). */

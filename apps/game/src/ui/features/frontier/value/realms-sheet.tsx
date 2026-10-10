@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { type FormEvent, type ReactNode, useState } from "react";
 
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { shortAddress } from "@/ui/design-system/kit/address";
@@ -11,6 +11,7 @@ import { ReasonPlate } from "@/ui/design-system/kit/reason-plate";
 import { Sheet } from "@/ui/design-system/kit/sheet";
 import { formatDuration } from "@/ui/design-system/kit/time";
 import {
+  ADD_REALM,
   CLAIM,
   CLAIM_ALL,
   CLAIMED_TODAY,
@@ -19,6 +20,7 @@ import {
   LINK_WALLET,
   NO_WALLET,
   REALM,
+  REALM_NUMBER,
   REALMS,
   REALMS_ELSEWHERE,
   fitOf,
@@ -28,10 +30,14 @@ import {
 import type { PayoutWallet } from "@realms-world/identity";
 import type { RealmLaborPlan, RealmLaborState } from "./realm-labor";
 
+/** The Realms collection's size: a Realm's number runs from 1 to this. */
+const REALM_COUNT = 8000;
+
 /**
- * Realms (value screens, b): the Realms in the linked wallet, which gave their labor today and which are ready, and one
- * Claim all. A full labor store shows what fits and leads with the Realm board, where labor is spent; once all are
- * claimed the wait runs to the day's end.
+ * Realms (value screens, b): the Realms the account has claimed labor with, which gave theirs today and which are
+ * ready, one Claim all, and Add a Realm by its number (the relay checks it sits in the linked wallet). A full labor
+ * store shows what fits and leads with the Realm board, where labor is spent; once all are claimed the wait runs to the
+ * day's end.
  */
 export const RealmsSheet = ({
   wallet,
@@ -41,7 +47,9 @@ export const RealmsSheet = ({
   labor,
   secondsLeft,
   sending,
+  adding,
   onClaim,
+  onAdd,
   onRealm,
   onLinkWallet,
   onClose,
@@ -54,7 +62,10 @@ export const RealmsSheet = ({
   /** Until the game day ends, when every Realm is ready again. */
   secondsLeft: number | undefined;
   sending: boolean;
+  /** A Realm being added: its first claim is on its way. */
+  adding: boolean;
   onClaim: () => void;
+  onAdd: (realmId: number) => void;
   onRealm: () => void;
   onLinkWallet: () => void;
   onClose: () => void;
@@ -70,8 +81,6 @@ export const RealmsSheet = ({
         <ReasonPlate reason={{ kind: "failed", line: NO_WALLET }} />
         <Button role="primary" icon="Xs" word={LINK_WALLET} onClick={onLinkWallet} />
       </>
-    ) : plan.rows.length === 0 ? (
-      <NoRealm />
     ) : (
       <>
         {plan.rows.map(({ realm, state }) => (
@@ -82,14 +91,18 @@ export const RealmsSheet = ({
         {plan.rows.some((row) => row.state === "locked") && (
           <ReasonPlate reason={{ kind: "failed", line: realmsADay(cap) }} />
         )}
-        <ClaimStep
-          plan={plan}
-          labor={labor}
-          secondsLeft={secondsLeft}
-          sending={sending}
-          onClaim={onClaim}
-          onRealm={onRealm}
-        />
+        {plan.canAdd && <AddRealm adding={adding} onAdd={onAdd} />}
+        {plan.rows.length === 0 && <p className="text-center text-[15px] text-kit-cream">{REALMS_ELSEWHERE}</p>}
+        {plan.rows.length > 0 && (
+          <ClaimStep
+            plan={plan}
+            labor={labor}
+            secondsLeft={secondsLeft}
+            sending={sending}
+            onClaim={onClaim}
+            onRealm={onRealm}
+          />
+        )}
       </>
     )}
   </Sheet>
@@ -189,11 +202,41 @@ const LaborChip = ({ amount }: { amount: number }) => (
   </span>
 );
 
-const NoRealm = () => (
-  <>
-    <div className="frontier-card flex h-16 items-center justify-center !rounded-xl border-dashed opacity-80">
-      <KitIcon code="Cs" size={40} className="opacity-50" />
-    </div>
-    <p className="text-center text-[15px] text-kit-cream">{REALMS_ELSEWHERE}</p>
-  </>
-);
+/**
+ * Add a Realm: its number, then Claim. A Realm joins the list once it has given its labor here, so adding one is its
+ * first claim; the relay refuses a Realm that is not in the linked wallet.
+ */
+const AddRealm = ({ adding, onAdd }: { adding: boolean; onAdd: (realmId: number) => void }) => {
+  const [number, setNumber] = useState("");
+  const realmId = Number(number);
+  const valid = Number.isInteger(realmId) && realmId >= 1 && realmId <= REALM_COUNT;
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    if (valid) onAdd(realmId);
+  };
+  return (
+    <form
+      onSubmit={submit}
+      aria-label={ADD_REALM}
+      className="frontier-card flex min-h-14 items-center gap-2.5 !rounded-xl border-dashed px-3 py-2"
+    >
+      <KitIcon code="Cs" size={28} className="opacity-60" />
+      <input
+        aria-label={REALM_NUMBER}
+        inputMode="numeric"
+        placeholder={`${ADD_REALM} · ${REALM_NUMBER}`}
+        value={number}
+        onChange={(event) => setNumber(event.target.value.replace(/\D/g, ""))}
+        className="min-w-0 flex-1 bg-transparent text-[16px] tabular-nums text-kit-cream placeholder:text-kit-muted focus:outline-none"
+      />
+      <Button
+        type="submit"
+        role="secondary"
+        word={CLAIM}
+        loading={adding ? CLAIM : undefined}
+        disabled={!valid}
+        className="!h-10"
+      />
+    </form>
+  );
+};
