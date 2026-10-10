@@ -28,7 +28,7 @@ export function classifyPlayReceipt(receipt: PlayReceipt, scope: ReceiptScope): 
   if (receipt.execution_status !== "SUCCEEDED") return { state: "pending" };
   const rejection = gameplayRejection(receipt.events ?? [], scope.games, scope.hash, scope);
   if (rejection) return { state: "rejected", block: receipt.block_number, ...rejection };
-  const remaining = batchRemaining(receipt.events ?? [], scope.games, scope.hash, scope);
+  const remaining = batchRemaining(receipt.events ?? [], scope.games, scope.hash, { ...scope, missing: "allow" });
   return { state: "applied", block: receipt.block_number, batchRemaining: remaining?.toString() };
 }
 
