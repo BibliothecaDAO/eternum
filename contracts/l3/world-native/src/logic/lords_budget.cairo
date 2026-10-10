@@ -179,9 +179,7 @@ pub fn roll(rules: ChestRules, previous: LordsBudget, clock: SeasonClock, day: u
     let estimate: u128 = if day > previous.day + 1 {
         0
     } else {
-        ((Into::<u128, u256>::into(previous.estimate) * (window - 1) + sample.into()) / window)
-            .try_into()
-            .unwrap()
+        ((Into::<u128, u256>::into(previous.estimate) * (window - 1) + sample.into()) / window).try_into().unwrap()
     };
     open_day(rules, LordsBudget { open: 0, day, estimate, rolled_shares: 0, price: 0, ..previous }, clock)
 }

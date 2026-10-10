@@ -1,8 +1,9 @@
 # Game ledger
 
-The Starknet ledger holds separate liabilities for Frontier withdrawals, unfinished Blitz games, each season's chest
-reserve and season prizes. Games use `{ shard: felt252, game_id: u32 }`; withdrawals use the shard chain ID and
-confirmed transaction hash. The ledger has no deployed state to migrate. The live MMR token remains unchanged.
+The Starknet ledger holds separate liabilities for Frontier withdrawals, unallocated Blitz slots, each season's chest
+reserve and season prizes. Slots use `{ shard: felt252, slot_id: u32 }`; results use `{ shard, game_id }`. Withdrawals
+use the shard chain ID and confirmed transaction hash. The ledger has no deployed state to migrate. The live MMR token
+remains unchanged.
 
 Frontier is funded once and unlocks through the end of the current seeded game day, from that day's first second.
 `fund_frontier(shard, season_id, preset_id, start, seed, amount)` reads the same native preset's `day_unit_seconds` and
@@ -25,7 +26,8 @@ returns `pool - paid` to the treasury. The existing closed season plus payment r
 void; the relay must recover that fact from the views and stop retrying voided claims. Paid retries remain harmless;
 unpaid payments after closure refuse.
 
-Blitz settlement takes one `protocol_cut_bps` treasury cut on the whole incoming game pot: entries and paid swords/shields. The default is 2000 bps. The remaining pot splits by `chest_lords_bps` into the season's chest reserve
+Blitz settlement takes one `protocol_cut_bps` treasury cut on the whole incoming game pot: entries and paid
+swords/shields. The default is 2000 bps. The remaining pot splits by `chest_lords_bps` into the season's chest reserve
 and season prize pool. Refunds return the original payment before any settlement cut. Chest and season payouts have no
 second cut. Frontier's configuration preset keeps its cut at zero.
 
@@ -80,7 +82,8 @@ Build release artifacts first, under the same lock. These commands compile each 
 The owner supplies `SEPOLIA_RPC_URL`, `SEPOLIA_ACCOUNT_ADDRESS`, `SEPOLIA_ACCOUNT_PRIVATE_KEY`,
 `SEPOLIA_OPERATOR_ADDRESS`, `SEPOLIA_PAUSER_ADDRESS`, `SEPOLIA_SHARD_CHAIN_ID` (a non-zero felt), `SEPOLIA_GAME_SEED`
 (the funded shard game seed), `SEPOLIA_SEASON_START`, `SEPOLIA_SEASON_END` (Unix seconds), `SEPOLIA_FRONTIER_POOL_WEI`,
-`SEPOLIA_CHEST_BAND_1_CID` through `SEPOLIA_CHEST_BAND_5_CID`, `SEPOLIA_COSMETIC_CID`. Choose a start far enough ahead to complete declarations and setup.
+`SEPOLIA_CHEST_BAND_1_CID` through `SEPOLIA_CHEST_BAND_5_CID`, `SEPOLIA_COSMETIC_CID`. Choose a start far enough ahead
+to complete declarations and setup.
 
 Run only when the owner authorizes deployment:
 
@@ -104,5 +107,4 @@ complete the design's contract audit and Sepolia withdrawal/result rehearsal, su
 credentials, grant the ledger `UPDATER_ROLE` on the existing MMR token, and grant collection mint roles. The live MMR
 implementation remains unchanged. The chest collection needs an authorized, storage-compatible upgrade exposing
 `mint_with_id`, plus metadata for all five new band kinds. Use the existing mainnet deployment path only after these
-gates; its constructor is
-`(admin, operator, treasury, lords, mmr_token, loot_chest, cosmetics)`.
+gates; its constructor is `(admin, operator, treasury, lords, mmr_token, loot_chest, cosmetics)`.

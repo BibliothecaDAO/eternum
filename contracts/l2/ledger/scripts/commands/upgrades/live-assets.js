@@ -104,7 +104,6 @@ async function grantLedgerRoles(plan) {
   }
 }
 
-
 async function verifyAppliedPlan(plan, classHashes) {
   const provider = await getProvider();
   for (const asset of plan.assets) {
@@ -118,8 +117,6 @@ async function verifyAppliedPlan(plan, classHashes) {
     await assertRole(provider, grant.contractAddress, grant.roleName, grant.grantee);
   }
 }
-
-
 
 async function assertUpgradeAuthority(provider, asset) {
   await assertRole(provider, asset.address, asset.upgradeRoleName, asset.upgradeSigner.address);

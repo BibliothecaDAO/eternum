@@ -1401,7 +1401,6 @@ fn multiple_games_count_a_participant_once_and_accumulate_one_pool() {
 }
 
 
-
 #[test]
 #[should_panic(expected: "Ledger: slot outside season")]
 fn a_game_cannot_end_at_the_instant_its_result_ratings_freeze() {
@@ -1590,7 +1589,6 @@ fn a_season_cannot_mix_chest_presets() {
     start_cheat_caller_address(fixture.ledger_address, OPERATOR());
     fixture.ledger.open_slot(SlotKey { shard: 'shard', slot_id: 8 }, 1, 2, START, END);
 }
-
 
 
 #[test]
@@ -2067,4 +2065,40 @@ fn slot_open_reserves_one_settlement_tick_before_season_end() {
     assert!(safe.open_slot(key, 1, PRESET_ID, START, END + 40).is_err());
     fixture.ledger.open_slot(key, 1, PRESET_ID, START, END + 39);
     assert!(fixture.ledger.get_slot(key).end == END + 39);
+}
+
+#[test]
+#[should_panic(expected: "Ledger: results already applied")]
+fn different_slots_cannot_settle_the_same_shard_game() {
+    let fixture = deploy_fixture(default_preset());
+    register_players(@fixture, 1);
+    let other = SlotKey { shard: 'shard', slot_id: 99 };
+    start_cheat_caller_address(fixture.ledger_address, OPERATOR());
+    fixture.ledger.open_slot(other, 1, PRESET_ID, START, END);
+    fund_and_approve_player(@fixture, player(1), 500);
+    start_cheat_caller_address(fixture.ledger_address, player(1));
+    fixture.ledger.register(other, false, false);
+    apply_results(@fixture, ranked_players(1));
+    start_cheat_caller_address(fixture.ledger_address, OPERATOR());
+    start_cheat_block_timestamp(fixture.ledger_address, START);
+    fixture.ledger.apply_results(other, GAME_KEY.game_id, array![row(player(1), 1)]);
+}
+
+#[test]
+#[should_panic(expected: "Ledger: slot still open")]
+fn individual_refunds_cannot_be_marked_before_the_slot_closes() {
+    let fixture = deploy_fixture(default_preset());
+    register_players(@fixture, 1);
+    start_cheat_caller_address(fixture.ledger_address, OPERATOR());
+    fixture.ledger.mark_refundable(SLOT_KEY, array![player(0)]);
+}
+
+#[test]
+#[should_panic]
+fn only_the_operator_can_mark_individual_refunds() {
+    let fixture = deploy_fixture(default_preset());
+    register_players(@fixture, 1);
+    start_cheat_caller_address(fixture.ledger_address, player(0));
+    start_cheat_block_timestamp(fixture.ledger_address, START);
+    fixture.ledger.mark_refundable(SLOT_KEY, array![player(0)]);
 }
