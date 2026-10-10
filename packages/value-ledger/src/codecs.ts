@@ -64,12 +64,11 @@ export const decodeFrontierSeason = (fields: readonly string[]) => {
   };
 };
 export const decodeLedgerPreset = (fields: readonly string[]) => {
-  if (fields.length !== 21) throw new Error("invalid_ledger_preset");
+  if (fields.length !== 20) throw new Error("invalid_ledger_preset");
   return {
     paidFraction: ledgerInteger(fields[4]!),
     dayUnit: ledgerInteger(fields[17]!),
     bags: ledgerInteger(fields[18]!),
     claimWindow: ledgerInteger(fields[19]!),
-    registrationLimit: ledgerInteger(fields[20]!),
   };
 };

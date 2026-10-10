@@ -14,7 +14,7 @@ it("decodes the Frontier backing and preset calendar once with exact widths and 
     seed: "0xabc",
   });
   expect(() => decodeFrontierSeason([...funded.slice(0, 7), "2", ...funded.slice(8)])).toThrow();
-  const preset = Array.from({ length: 21 }, () => "0");
+  const preset = Array.from({ length: 20 }, () => "0");
   preset[4] = "2000";
   preset[17] = "60";
   preset[18] = "10";
