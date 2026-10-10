@@ -9,6 +9,8 @@ pub const PAUSER_ROLE: felt252 = selector!("PAUSER_ROLE");
 pub const OPERATOR_ROLE: felt252 = selector!("OPERATOR_ROLE");
 const BPS: u256 = 10_000;
 const PAYOUT_WEIGHT_SCALE: u256 = 1_000_000_000_000_000_000;
+// One settlement tick must fit after the last scheduled game.
+const BLITZ_SETTLEMENT_MARGIN_SECONDS: u64 = 60;
 const SEASON_REVIEW_SECONDS: u64 = 3600;
 const MMR_PRECISION: u256 = 1_000_000_000_000_000_000;
 const NO_PASS: u8 = 0;
@@ -125,7 +127,7 @@ pub mod GameLedger {
     use starknet::storage::{Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess};
     use starknet::{ClassHash, ContractAddress, SyscallResultTrait};
     use super::{
-        BPS, ICollectibleDispatcher, ICollectibleDispatcherTrait, IGameLedger,
+        BLITZ_SETTLEMENT_MARGIN_SECONDS, BPS, ICollectibleDispatcher, ICollectibleDispatcherTrait, IGameLedger,
         IMMRTokenDispatcher, IMMRTokenDispatcherTrait, IPassBurnDispatcher, IPassBurnDispatcherTrait,
         IPassRestoreDispatcher, IPassRestoreDispatcherTrait, ISeasonPassMetadataDispatcher,
         ISeasonPassMetadataDispatcherTrait, MMR_PRECISION, NO_PASS, OPERATOR_ROLE, PAUSER_ROLE, PAYOUT_WEIGHT_SCALE,
@@ -745,7 +747,7 @@ pub mod GameLedger {
             let season = self.get_season(season_id);
             assert!(preset_id == season.preset_id, "Ledger: slot preset differs from season");
             assert!(
-                close >= season.start && end < season.end,
+                close >= season.start && end + BLITZ_SETTLEMENT_MARGIN_SECONDS < season.end,
                 "Ledger: slot outside season",
             );
             self.slots.entry(key).write(Slot { exists: true, season_id, preset_id, close, end, ..Default::default() });
