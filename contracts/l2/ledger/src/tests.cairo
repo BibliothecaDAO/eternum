@@ -1557,7 +1557,8 @@ fn claim_season_at(fixture: @Fixture, timestamp: u64, owner: ContractAddress) {
     start_cheat_caller_address(*fixture.ledger_address, owner);
     let mut position = 0;
     while position < fixture.ledger.get_season(1).top_count {
-        if fixture.ledger.get_season_winner(1, position).0 == owner {
+        let (winner, _) = fixture.ledger.get_season_winner(1, position);
+        if winner == owner {
             break;
         }
         position += 1;
@@ -2795,17 +2796,20 @@ fn season_post_at_two_thousand_participants_allocates_in_one_call() {
     let mut serialized = array![];
     season.serialize(ref serialized);
     snforge_std::store(
-        fixture.ledger_address, snforge_std::map_entry_address(selector!("seasons"), array![1].span()),
+        fixture.ledger_address,
+        snforge_std::map_entry_address(selector!("seasons"), array![1].span()),
         serialized.span(),
     );
     for index in 0_u16..2000 {
         let keys = array![1, player(index).into()];
         snforge_std::store(
-            fixture.ledger_address, snforge_std::map_entry_address(selector!("season_participants"), keys.span()),
+            fixture.ledger_address,
+            snforge_std::map_entry_address(selector!("season_participants"), keys.span()),
             array![1].span(),
         );
         snforge_std::store(
-            fixture.ledger_address, snforge_std::map_entry_address(selector!("season_mmrs"), keys.span()),
+            fixture.ledger_address,
+            snforge_std::map_entry_address(selector!("season_mmrs"), keys.span()),
             array![1500].span(),
         );
     }
