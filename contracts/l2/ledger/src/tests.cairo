@@ -2811,3 +2811,29 @@ fn season_posting_and_allocations_are_bounded_and_resume_without_changing_the_cu
     claim_season_at(@fixture, review_until, player(47));
     assert!(fixture.ledger.season_claimed(1, player(47)));
 }
+
+
+#[test]
+#[feature("safe_dispatcher")]
+fn existing_result_rank_rejects_duplicate_wallets_and_failed_validation_is_atomic() {
+    let fixture = deploy_fixture(default_preset());
+    register_players(@fixture, 2);
+    start_cheat_caller_address(fixture.ledger_address, OPERATOR());
+    start_cheat_block_timestamp(fixture.ledger_address, START);
+    let safe = IGameLedgerSafeDispatcher { contract_address: fixture.ledger_address };
+    assert!(
+        safe
+            .apply_results(
+                GAME_KEY,
+                array![RankedPlayer { wallet: player(0), rank: 1 }, RankedPlayer { wallet: player(0), rank: 1 }],
+            )
+            .is_err(),
+    );
+    assert!(fixture.ledger.get_player_result(GAME_KEY, player(0)).rank == 0);
+    assert!(fixture.ledger.get_game(GAME_KEY).pool == 1000);
+    fixture.ledger.apply_results(GAME_KEY, ranked_players(2));
+    let first = fixture.ledger.get_player_result(GAME_KEY, player(0));
+    assert!(first.rank == 1);
+    assert!(safe.apply_results(GAME_KEY, ranked_players(2)).is_err());
+    assert!(fixture.ledger.get_player_result(GAME_KEY, player(0)).rank == first.rank);
+}

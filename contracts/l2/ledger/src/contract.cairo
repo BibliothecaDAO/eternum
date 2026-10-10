@@ -188,7 +188,6 @@ pub mod GameLedger {
         wallet_accounts: Map<ContractAddress, ContractAddress>,
         account_wallets: Map<ContractAddress, ContractAddress>,
         results: Map<(GameKey, ContractAddress), PlayerResult>,
-        result_seen: Map<(GameKey, ContractAddress), bool>,
         #[substorage(v0)]
         src5: SRC5Component::Storage,
         #[substorage(v0)]
@@ -1327,6 +1326,7 @@ pub mod GameLedger {
             ref self: ContractState, key: GameKey, registered_count: u16, ranked: Span<RankedPlayer>,
         ) {
             assert!(ranked.len() == registered_count.into(), "Ledger: roster size mismatch");
+            let mut seen: Felt252Dict<bool> = Default::default();
             for index in 0..ranked.len() {
                 let row = *ranked.at(index);
                 let expected_rank = if index == 0 {
@@ -1344,9 +1344,12 @@ pub mod GameLedger {
                 assert!(
                     self.registrations.entry((key, row.wallet)).read().registered, "Ledger: unregistered result owner",
                 );
-                assert!(!self.result_seen.entry((key, row.wallet)).read(), "Ledger: duplicate result owner");
-                self.result_seen.entry((key, row.wallet)).write(true);
-                self.results.entry((key, row.wallet)).write(PlayerResult { rank: row.rank, ..Default::default() });
+                assert!(self.results.entry((key, row.wallet)).read().rank == 0, "Ledger: duplicate result owner");
+                assert!(!seen.get(row.wallet.into()), "Ledger: duplicate result owner");
+                seen.insert(row.wallet.into(), true);
+            }
+            for row in ranked {
+                self.results.entry((key, *row.wallet)).write(PlayerResult { rank: *row.rank, ..Default::default() });
             }
         }
     }
