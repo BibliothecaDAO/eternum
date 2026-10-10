@@ -1,4 +1,4 @@
-import { CallData } from "starknet";
+import { CallData, type Account } from "starknet";
 import { confirmedTransactionReceipt } from "../../../config/deployer/clean/shared/transaction";
 import { resolveRegistrarExecutionDetails } from "../../../config/deployer/clean/registrar/transaction-details";
 import { createOperatorAccount } from "../../../config/deployer/clean/shared/madara-account";
@@ -62,28 +62,9 @@ export async function launchHarnessGame(input: {
     );
     const gameId = input.gameId ?? (await createRegistrarGame(account, params, manifest, preset)).gameId;
     if (!gameId) throw new Error("Registrar did not return a game id");
-    if (input.gameType === "eternum") {
-      for (const [index, owner] of input.rosterAccounts.entries()) {
-        const entry = await account.execute(
-          {
-            contractAddress: manifest.world.address,
-            entrypoint: "register_entitlement",
-            calldata: CallData.compile({
-              key: { game_id: gameId, owner },
-              entitlement: {
-                realm_id: { low: index + 1, high: 0 },
-                metadata_1: "0x0103070402020302010009",
-                metadata_2: 0,
-                metadata_3: 0,
-                pass_kind: 1,
-              },
-            }),
-          },
-          await resolveRegistrarExecutionDetails(account, manifest.world.address),
-        );
-        await confirmedTransactionReceipt(privateProvider, entry.transaction_hash);
-      }
-    }
+    if (input.gameType === "eternum")
+      for (const [index, owner] of input.rosterAccounts.entries())
+        await registerHarnessEntitlement(account, manifest.world.address, gameId, owner, index + 1);
     const settlementTransactions =
       input.gameType === "blitz"
         ? await settleHarnessRoster(gameId, input.shard, input.publicProvider, manifest, address, privateKey)
@@ -121,6 +102,34 @@ async function settleHarnessRoster(
     connection.client.dispose();
   }
   return settlementTransactions;
+}
+
+/** The pinned metadata encodes geography 1/2/3/2, resources 2/4/7, Order 3 and wonder 1. */
+export async function registerHarnessEntitlement(
+  account: Account,
+  games: string,
+  gameId: number,
+  owner: string,
+  realmId: number,
+): Promise<void> {
+  const entry = await account.execute(
+    {
+      contractAddress: games,
+      entrypoint: "register_entitlement",
+      calldata: CallData.compile({
+        key: { game_id: gameId, owner },
+        entitlement: {
+          realm_id: { low: realmId, high: 0 },
+          metadata_1: "0x0103070402020302010009",
+          metadata_2: 0,
+          metadata_3: 0,
+          pass_kind: 1,
+        },
+      }),
+    },
+    await resolveRegistrarExecutionDetails(account, games),
+  );
+  await confirmedTransactionReceipt(account, entry.transaction_hash);
 }
 
 /** Administration must bypass the public endpoint's play-only fee and tip policy. */
