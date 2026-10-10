@@ -11,6 +11,8 @@ import { normalizeProceduralImpact, type ProceduralUnitImpact } from "./collisio
 import { applyProceduralCharacterConfigPatch, type ProceduralCharacterConfig } from "./procedural-character-config";
 import { loadProceduralCharacterLibrary, ProceduralCharacterLibrary } from "./procedural-character-assets";
 import type { ProceduralCharacterUpperBodyAction } from "./procedural-character-action";
+import { applyProceduralMeleeHitReaction } from "./melee/procedural-melee-pose";
+import { doesProceduralCharacterRenderDetailChangeAsset } from "./procedural-character-appearance";
 import {
   advanceProceduralCharacterGaitPhase,
   resolveInitialProceduralCharacterPhase,
@@ -42,6 +44,7 @@ import { wrapUnitPhase } from "./procedural-motion-curves";
 export type ProceduralCharacterMode = "animated" | "ragdoll";
 
 export interface ProceduralCharacterRuntimeOptions {
+  includeT1KnightDefault?: boolean;
   physicsWorld?: JoltRagdollWorld;
   preloadPhysics?: boolean;
 }
@@ -90,7 +93,7 @@ export class ProceduralCharacterRuntime {
   ) {}
 
   public static async create(options: ProceduralCharacterRuntimeOptions = {}): Promise<ProceduralCharacterRuntime> {
-    const library = await loadProceduralCharacterLibrary();
+    const library = await loadProceduralCharacterLibrary({ includeT1KnightDefault: options.includeT1KnightDefault });
     try {
       if (options.preloadPhysics) await preloadProceduralCharacterPhysics();
       return new ProceduralCharacterRuntime(library, options.physicsWorld);
@@ -159,7 +162,7 @@ class RuntimeProceduralCharacterActor implements ProceduralCharacterActor {
     this.rig = resolveCharacterRig(this.config);
     this.gaitPhase = resolveInitialProceduralCharacterPhase(this.config.seed);
     this.avatar = new ProceduralCharacterAvatar(
-      library.instantiate(this.config.appearanceId, this.config.tier),
+      library.instantiate(this.config.appearanceId, this.config.tier, this.config.renderDetail),
       this.rig,
       this.config,
     );
@@ -208,7 +211,20 @@ class RuntimeProceduralCharacterActor implements ProceduralCharacterActor {
     if (this.disposed) return;
     const normalized = applyProceduralCharacterConfigPatch(this.config, config);
     const requiresModelSwap =
-      normalized.appearanceId !== this.config.appearanceId || normalized.tier !== this.config.tier;
+      normalized.appearanceId !== this.config.appearanceId ||
+      normalized.tier !== this.config.tier ||
+      (normalized.renderDetail !== this.config.renderDetail &&
+        doesProceduralCharacterRenderDetailChangeAsset(
+          normalized.appearanceId,
+          normalized.tier,
+          this.config.renderDetail,
+          normalized.renderDetail,
+        ));
+    const replacement = requiresModelSwap
+      ? this.library.instantiate(normalized.appearanceId, normalized.tier, normalized.renderDetail)
+      : undefined;
+    // A render-detail change that swaps the model rebuilds the rig like any model swap: ragdoll, plant controller,
+    // pose filter and gait phase restart. That is deliberate; detail is fixed per actor today, so nothing swaps live.
     const requiresRigRebuild = normalized.seed !== this.config.seed || requiresModelSwap;
     const requiresPlantReset = requiresRigRebuild || normalized.animationMode !== this.config.animationMode;
     this.config = normalized;
@@ -221,9 +237,6 @@ class RuntimeProceduralCharacterActor implements ProceduralCharacterActor {
     if (requiresRigRebuild) {
       this.resetRagdoll();
       this.rig = resolveCharacterRig(normalized);
-      const replacement = requiresModelSwap
-        ? this.library.instantiate(normalized.appearanceId, normalized.tier)
-        : undefined;
       this.avatar.rebuild(this.rig, normalized, replacement);
       this.calibrateRigToActiveAvatar();
       this.applyAnimatedPose();
@@ -420,6 +433,8 @@ class RuntimeProceduralCharacterActor implements ProceduralCharacterActor {
 
   private applyAnimatedPose(beginPlantFrame = true, deltaSeconds = this.config.fixedStep): void {
     if (beginPlantFrame) this.plantController.beginFrame(this.object, deltaSeconds);
+    const action = applyDeclaredHitReaction(this.upperBodyAction, this.reactionPose);
+    this.avatar.setUpperBodyAction(action);
     this.pose = this.poseFilter.apply(
       resolveProceduralCharacterPose(
         this.rig,
@@ -427,8 +442,9 @@ class RuntimeProceduralCharacterActor implements ProceduralCharacterActor {
         this.elapsedSeconds,
         this.plantController.resolveTarget,
         this.gaitPhase,
-        this.upperBodyAction,
+        action,
         this.reactionPose,
+        this.pose.parts.chest.quaternion,
       ),
       deltaSeconds,
       this.config.secondaryMotion,
@@ -462,6 +478,7 @@ class RuntimeProceduralCharacterActor implements ProceduralCharacterActor {
         this.scratchRagdollQuaternion.w,
       );
     });
+    this.avatar.applyDrivenJoints();
   }
 }
 
@@ -494,4 +511,13 @@ async function createProceduralCharacterRagdoll(
 
 function resolveImpactPartId(partId: string | undefined): CharacterPartId {
   return partId && (CHARACTER_PART_IDS as readonly string[]).includes(partId) ? (partId as CharacterPartId) : "chest";
+}
+
+/** Gear that declares a hit state takes it by the contact reaction's weight, the arms and hands as well as the body. */
+function applyDeclaredHitReaction(
+  action: ProceduralCharacterUpperBodyAction | undefined,
+  reaction: ProceduralContactReactionPose | undefined,
+): ProceduralCharacterUpperBodyAction | undefined {
+  if (action?.kind !== "melee" || !reaction) return action;
+  return applyProceduralMeleeHitReaction(action, reaction.weight);
 }

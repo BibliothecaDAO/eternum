@@ -13,7 +13,10 @@ import {
 import { useCallback, useEffect, useRef, useState, type MutableRefObject, type ReactNode, type RefObject } from "react";
 import { Link } from "react-router-dom";
 
-import { PROCEDURAL_CHARACTER_APPEARANCES } from "@/three/characters";
+import {
+  listOfferedProceduralCharacterAppearances,
+  resolveActiveProceduralCharacterReviewCapability,
+} from "@/three/characters/procedural-character-review-capability";
 
 import {
   applyProceduralCharacterBenchmarkConfigPatch,
@@ -104,6 +107,13 @@ declare global {
 }
 
 type BenchmarkExperienceMode = "characters" | "world";
+
+// The humanoid kinds the benchmark mixes: an appearance is offered only if all of them can use it.
+const BENCHMARK_HUMANOID_KINDS = ["knight", "archer", "crossbowman", "paladin"] as const;
+const offeredAppearances = listOfferedProceduralCharacterAppearances(
+  resolveActiveProceduralCharacterReviewCapability(),
+  BENCHMARK_HUMANOID_KINDS,
+);
 
 export const ProceduralCharacterBenchmarkView = () => <ProceduralCharacterBenchmarkExperience mode="characters" />;
 
@@ -449,7 +459,7 @@ const BenchmarkControls = ({
           label="Appearance"
           columns={2}
           value={config.appearanceId}
-          options={PROCEDURAL_CHARACTER_APPEARANCES.map(({ id, label }) => ({ value: id, label }))}
+          options={offeredAppearances.map(({ id, label }) => ({ value: id, label }))}
           onChange={(appearanceId) =>
             onPatchConfig({
               appearanceId: appearanceId as ProceduralCharacterBenchmarkConfig["appearanceId"],

@@ -10,7 +10,9 @@ import type {
 } from "./procedural-character-assets";
 import { disposeSkinnedSceneTemplates } from "./skinned-asset-resources";
 
-const QUATERNIUS_CHARACTER_ASSETS: Readonly<Record<ProceduralCharacterAssetId, ProceduralCharacterAssetDefinition>> = {
+type QuaterniusCharacterAssetId = Extract<ProceduralCharacterAssetId, "base" | "peasant" | "ranger">;
+
+const QUATERNIUS_CHARACTER_ASSETS: Readonly<Record<QuaterniusCharacterAssetId, ProceduralCharacterAssetDefinition>> = {
   base: {
     adapterId: "quaternius-universal",
     id: "base",

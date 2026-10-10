@@ -23,11 +23,14 @@ import {
   type ModelLabStats,
 } from "@/three/debug/model-lab/model-lab-renderer";
 import {
+  isSourceOffered,
+  listModelLabActions,
+  listModelLabBiomeIds,
+  MODEL_LAB_BIOMES,
   readModelLabSettings,
   writeModelLabSettings,
   type ModelLabSettings,
 } from "@/three/debug/model-lab/model-lab-settings";
-import { MODEL_LAB_BIOMES } from "@/three/debug/model-lab/model-lab-environment";
 import { useBootDocumentState } from "@/ui/modules/boot-loader";
 import "./model-lab.css";
 
@@ -122,7 +125,10 @@ export function ModelLabView() {
     const next = readModelLabSettings(writeModelLabSettings({ ...settingsRef.current, ...patch }));
     settingsRef.current = next;
     setCopied(false);
-    setParams(writeModelLabSettings(next), { replace: true });
+    // Params the lab does not own (a review flag, capture=1) stay in the address.
+    const search = new URLSearchParams(params);
+    writeModelLabSettings(next).forEach((value, key) => search.set(key, value));
+    setParams(search, { replace: true });
   };
   const share = async () => {
     try {
@@ -230,6 +236,9 @@ export function ModelLabView() {
             <option value="current">Current character runtime</option>
             <option value="default">Default game GLBs</option>
             <option value="legacy">Older alternatives</option>
+            {isSourceOffered("t1-knight-default", settings.family) && (
+              <option value="t1-knight-default">T1 Knight Default</option>
+            )}
           </select>
         </label>
         {isStudy && (
@@ -299,9 +308,9 @@ export function ModelLabView() {
             value={settings.biome}
             onChange={(event) => change({ biome: event.target.value as ModelLabSettings["biome"] })}
           >
-            {Object.entries(MODEL_LAB_BIOMES).map(([id, biome]) => (
+            {listModelLabBiomeIds().map((id) => (
               <option key={id} value={id}>
-                {biome.label}
+                {MODEL_LAB_BIOMES[id].label}
               </option>
             ))}
           </select>
@@ -397,7 +406,7 @@ export function ModelLabView() {
         </div>
         <div className="ml-playback">
           <div className="ml-action-tabs" aria-label="Animation sequence">
-            {(["idle", "move"] as const).map((action) => (
+            {listModelLabActions(settings.family).map((action) => (
               <button
                 key={action}
                 aria-pressed={settings.action === action}
@@ -407,7 +416,7 @@ export function ModelLabView() {
                 }}
               >
                 {action === "idle" ? <Anchor size={13} /> : <Waves size={13} />}
-                {action === "move" ? (settings.family === "ships" ? "Sail" : "Move") : "Idle"}
+                {resolveActionLabel(action, settings.family)}
               </button>
             ))}
           </div>
@@ -534,4 +543,10 @@ export function ModelLabView() {
 
 function compact(value: number): string {
   return new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 }).format(value);
+}
+
+function resolveActionLabel(action: ModelLabSettings["action"], family: ModelLabSettings["family"]): string {
+  if (action === "idle") return "Idle";
+  if (action === "run") return "Run";
+  return family === "ships" ? "Sail" : "Move";
 }

@@ -13,15 +13,21 @@ import {
 } from "three";
 
 import type { ProceduralCharacterConfig } from "../procedural-character-config";
-import type { ProceduralCharacterSocketReader } from "../procedural-character-sockets";
+import {
+  isOptionalCharacterSocketId,
+  type CharacterSocketId,
+  type ProceduralCharacterSocketReader,
+} from "../procedural-character-sockets";
 import type { ProceduralUnitKind } from "../procedural-unit-config";
 import type { ProceduralMeleeConfig } from "./procedural-melee-config";
 import type { ProceduralMeleeUpperBodyPose } from "./procedural-melee-pose";
 import { mergeStaticEquipmentGeometry } from "../merge-static-equipment-geometry";
 import {
   resolveProceduralMeleeOffhand,
+  resolveProceduralMeleeOffhandCarry,
   resolveProceduralMeleeWeapon,
   type ProceduralMeleeOffhandId,
+  type ProceduralMeleeOffhandSocket,
   type ProceduralMeleeWeaponId,
 } from "./procedural-melee-weapon-catalog";
 import { ProceduralMeleeWeaponLibrary, type ProceduralMeleeEquipmentSource } from "./procedural-melee-weapon-library";
@@ -29,6 +35,7 @@ import { ProceduralMeleeWeaponLibrary, type ProceduralMeleeEquipmentSource } fro
 export interface ProceduralMeleeEquipmentStats {
   offhandId: ProceduralMeleeOffhandId;
   offhandSource: ProceduralMeleeEquipmentSource | "none";
+  offhandSocket: ProceduralMeleeOffhandSocket;
   weaponId: ProceduralMeleeWeaponId;
   weaponSource: ProceduralMeleeEquipmentSource;
 }
@@ -74,6 +81,7 @@ export class ProceduralMeleeEquipment {
   private offhandId: ProceduralMeleeOffhandId = "round-shield";
   private weaponSource: ProceduralMeleeEquipmentSource = "procedural";
   private offhandSource: ProceduralMeleeEquipmentSource | "none" = "procedural";
+  private offhandSocket: ProceduralMeleeOffhandSocket = "gripLeft";
   private detailedEquipment = true;
 
   public constructor(
@@ -116,10 +124,10 @@ export class ProceduralMeleeEquipment {
     this.actorRoot.updateWorldMatrix(true, true);
     this.actorRoot.getWorldQuaternion(this.scratchInverseRootQuaternion).invert();
     this.placeAtSocket(this.weapon, "gripRight");
-    this.placeAtSocket(this.offhand, "gripLeft");
+    this.placeAtSocket(this.offhand, this.offhandSocket);
     this.orientLoadout(pose);
     this.placeAtSocket(this.rightSocketHelper, "gripRight");
-    this.placeAtSocket(this.leftSocketHelper, "gripLeft");
+    this.placeAtSocket(this.leftSocketHelper, this.offhandSocket);
   }
 
   public writeWeaponTipWorldPosition(outPosition: Vector3): boolean {
@@ -139,6 +147,7 @@ export class ProceduralMeleeEquipment {
     return {
       offhandId: this.offhandId,
       offhandSource: this.offhandSource,
+      offhandSocket: this.offhandSocket,
       weaponId: this.weaponId,
       weaponSource: this.weaponSource,
     };
@@ -180,6 +189,7 @@ export class ProceduralMeleeEquipment {
     this.offhand.removeFromParent();
     const weaponAsset = this.detailedEquipment ? this.library.instantiateWeapon(this.weaponId) : undefined;
     const offhandDefinition = resolveProceduralMeleeOffhand(this.offhandId);
+    this.offhandSocket = offhandDefinition.attachmentSocket ?? "gripLeft";
     const offhandAsset = this.detailedEquipment ? this.library.instantiateOffhand(this.offhandId) : undefined;
     this.weapon =
       weaponAsset?.object ??
@@ -196,6 +206,7 @@ export class ProceduralMeleeEquipment {
             this.metalMaterial,
             offhandAsset?.object ?? createProceduralShield(this.resources, this.accentMaterial),
             offhandDefinition.gripToCenter,
+            resolveProceduralMeleeOffhandCarry(offhandDefinition) === "gripped",
           );
     this.weaponSource = weaponAsset?.source ?? "procedural";
     this.offhandSource = this.offhandId === "none" ? "none" : (offhandAsset?.source ?? "procedural");
@@ -219,35 +230,51 @@ export class ProceduralMeleeEquipment {
   }
 
   private orientLoadout(pose?: ProceduralMeleeUpperBodyPose): void {
-    const windup = pose?.attackStyle === "slash" ? SLASH_WINDUP_DIRECTION : OVERHEAD_WINDUP_DIRECTION;
-    const contact =
-      pose?.attackStyle === "slash"
-        ? SLASH_CONTACT_DIRECTION
-        : pose?.mounted
-          ? MOUNTED_CONTACT_DIRECTION
-          : GROUND_CONTACT_DIRECTION;
-    const follow = pose?.attackStyle === "slash" ? SLASH_FOLLOW_DIRECTION : HEAVY_FOLLOW_DIRECTION;
-    this.scratchWeaponDirection.copy(CARRY_DIRECTION);
-    if (pose) {
-      this.scratchWeaponDirection.lerp(windup, pose.windupProgress);
-      this.scratchWeaponDirection.lerp(contact, pose.strikeProgress);
-      this.scratchWeaponDirection.lerp(follow, pose.followThrough);
-      this.scratchWeaponDirection.applyAxisAngle(LOCAL_Y_AXIS, pose.aimYawRadians);
+    resolveProceduralMeleeWeaponDirection(pose, this.scratchWeaponDirection);
+    // Gear fitted to a rig is oriented by its socket alone.
+    if (!resolveProceduralMeleeWeapon(this.weaponId).fittedRigAdapterId) {
+      this.weapon.quaternion.setFromUnitVectors(LOCAL_Y_AXIS, this.scratchWeaponDirection);
     }
-    this.scratchWeaponDirection.normalize();
-    this.weapon.quaternion.setFromUnitVectors(LOCAL_Y_AXIS, this.scratchWeaponDirection);
     this.scratchOffhandEuler.set(-0.08, pose?.aimYawRadians ?? 0, 0.06);
-    this.offhand.quaternion.setFromEuler(this.scratchOffhandEuler);
+    if (!resolveProceduralMeleeOffhand(this.offhandId).fittedRigAdapterId) {
+      this.offhand.quaternion.setFromEuler(this.scratchOffhandEuler);
+    }
   }
 
-  private placeAtSocket(target: Group | AxesHelper, socketId: "gripLeft" | "gripRight"): void {
+  private placeAtSocket(target: Group | AxesHelper, socketId: CharacterSocketId): void {
     if (!this.sockets.writeSocketWorldTransform(socketId, this.scratchWorldPosition, this.scratchWorldQuaternion)) {
+      // Only an optional socket can be missing on a rig; fitted gear that needs it must not drift loose without a word.
+      if (isOptionalCharacterSocketId(socketId))
+        throw new Error(`The equipped gear needs a ${socketId} socket this rig does not have`);
       return;
     }
     this.actorRoot.worldToLocal(this.scratchWorldPosition);
     target.position.copy(this.scratchWorldPosition);
     target.quaternion.copy(this.scratchWorldQuaternion).premultiply(this.scratchInverseRootQuaternion).normalize();
   }
+}
+
+/** The direction, in the actor's frame, the controller intends the blade to point in the given pose. */
+export function resolveProceduralMeleeWeaponDirection(
+  pose: ProceduralMeleeUpperBodyPose | undefined,
+  out: Vector3,
+): Vector3 {
+  const windup = pose?.attackStyle === "slash" ? SLASH_WINDUP_DIRECTION : OVERHEAD_WINDUP_DIRECTION;
+  const contact =
+    pose?.attackStyle === "slash"
+      ? SLASH_CONTACT_DIRECTION
+      : pose?.mounted
+        ? MOUNTED_CONTACT_DIRECTION
+        : GROUND_CONTACT_DIRECTION;
+  const follow = pose?.attackStyle === "slash" ? SLASH_FOLLOW_DIRECTION : HEAVY_FOLLOW_DIRECTION;
+  out.copy(CARRY_DIRECTION);
+  if (pose) {
+    out.lerp(windup, pose.windupProgress);
+    out.lerp(contact, pose.strikeProgress);
+    out.lerp(follow, pose.followThrough);
+    out.applyAxisAngle(LOCAL_Y_AXIS, pose.aimYawRadians);
+  }
+  return out.normalize();
 }
 
 interface MeleeEquipmentResources {
@@ -342,12 +369,17 @@ function createShieldGripRoot(
   material: MeshStandardMaterial,
   shieldVisual: Group,
   gripToCenter: readonly [number, number, number],
+  heldByHand: boolean,
 ): Group {
   const gripRoot = new Group();
-  const handle = new Mesh(resources.shieldHandle, material);
-  handle.castShadow = true;
   shieldVisual.position.fromArray(gripToCenter);
-  gripRoot.add(shieldVisual, handle);
+  gripRoot.add(shieldVisual);
+  // A shield strapped to the forearm has no hand grip to draw.
+  if (heldByHand) {
+    const handle = new Mesh(resources.shieldHandle, material);
+    handle.castShadow = true;
+    gripRoot.add(handle);
+  }
   return gripRoot;
 }
 

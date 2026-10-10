@@ -16,7 +16,6 @@ import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 
 import {
-  PROCEDURAL_CHARACTER_APPEARANCES,
   PROCEDURAL_CHARACTER_PRESETS,
   PROCEDURAL_HORSE_APPEARANCES,
   PROCEDURAL_MELEE_OFFHANDS,
@@ -48,6 +47,14 @@ import {
   type ProceduralCollisionGymConfig,
   type ProceduralCollisionGymScenario,
 } from "@/three/characters/gym/procedural-collision-gym-config";
+import { resolveProceduralMeleeAttackVariants } from "@/three/characters/melee/procedural-melee-config";
+import { isProceduralMeleeGearFittedToRig } from "@/three/characters/melee/procedural-melee-weapon-catalog";
+import { resolveProceduralCharacterAppearance } from "@/three/characters/procedural-character-appearance";
+import {
+  filterProceduralCharacterReviewOptions,
+  listOfferedProceduralCharacterAppearances,
+  resolveActiveProceduralCharacterReviewCapability,
+} from "@/three/characters/procedural-character-review-capability";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
 type NumericConfigKey = {
@@ -133,6 +140,10 @@ interface MeleeNumericField {
   max: number;
   step: number;
 }
+
+const reviewCapability = resolveActiveProceduralCharacterReviewCapability();
+const availableMeleeWeapons = filterProceduralCharacterReviewOptions(PROCEDURAL_MELEE_WEAPONS, reviewCapability);
+const availableMeleeOffhands = filterProceduralCharacterReviewOptions(PROCEDURAL_MELEE_OFFHANDS, reviewCapability);
 
 const APPEARANCE_FIELDS: readonly NumericField[] = [
   { key: "metalness", label: "Metalness", min: 0, max: 1, step: 0.01 },
@@ -442,53 +453,59 @@ const CollisionGymControls = ({ collisionConfig, onPatchCollisionConfig }: Chara
   </ControlSection>
 );
 
-const MeleeControls = ({ config, onPatchConfig }: CharacterGymControlsProps) => (
-  <>
-    <ControlSection title="Melee loadout" icon={<Swords />} defaultOpen>
-      <SelectControl
-        label="Weapon cosmetic"
-        value={config.melee.weaponId}
-        options={PROCEDURAL_MELEE_WEAPONS.map(({ id, label }) => ({ value: id, label }))}
-        onChange={(weaponId) => onPatchConfig({ melee: { weaponId: weaponId as ProceduralMeleeWeaponId } })}
-      />
-      <SelectControl
-        label="Offhand cosmetic"
-        value={config.melee.offhandId}
-        options={PROCEDURAL_MELEE_OFFHANDS.map(({ id, label }) => ({ value: id, label }))}
-        onChange={(offhandId) => onPatchConfig({ melee: { offhandId: offhandId as ProceduralMeleeOffhandId } })}
-      />
-      <ToggleControl
-        label="Load cosmetic GLBs"
-        checked={config.melee.detailedEquipment}
-        onChange={(detailedEquipment) => onPatchConfig({ melee: { detailedEquipment } })}
-      />
-    </ControlSection>
-    <ControlSection title="Melee attack cycle" icon={<Crosshair />} defaultOpen>
-      <ToggleControl
-        label="Auto attack"
-        checked={config.melee.autoAttack}
-        onChange={(autoAttack) => onPatchConfig({ melee: { autoAttack } })}
-      />
-      <MeleeRangeFieldList fields={MELEE_TIMING_FIELDS} config={config.melee} onPatchConfig={onPatchConfig} />
-    </ControlSection>
-    <ControlSection title="Weapon pose" icon={<Activity />} defaultOpen>
-      <MeleeRangeFieldList fields={MELEE_POSE_FIELDS} config={config.melee} onPatchConfig={onPatchConfig} />
-      <ToggleControl
-        label="Contact arc"
-        checked={config.melee.showArc}
-        onChange={(showArc) => onPatchConfig({ melee: { showArc } })}
-      />
-      <ToggleControl
-        label="Socket diagnostics"
-        checked={config.melee.showSockets}
-        onChange={(showSockets) => onPatchConfig({ melee: { showSockets } })}
-      />
-    </ControlSection>
-    <ControlSection title="Melee target lane" icon={<Target />} defaultOpen>
-      <MeleeRangeFieldList fields={MELEE_TARGET_FIELDS} config={config.melee} onPatchConfig={onPatchConfig} />
-    </ControlSection>
-  </>
-);
+const MeleeControls = ({ config, onPatchConfig }: CharacterGymControlsProps) => {
+  const { rigAdapterId } = resolveProceduralCharacterAppearance(config.humanoid.appearanceId);
+  const fitsAppearance = (gear: { fittedRigAdapterId?: typeof rigAdapterId }) =>
+    isProceduralMeleeGearFittedToRig(gear, rigAdapterId);
+  return (
+    <>
+      <ControlSection title="Melee loadout" icon={<Swords />} defaultOpen>
+        <SelectControl
+          label="Weapon cosmetic"
+          value={config.melee.weaponId}
+          options={availableMeleeWeapons.filter(fitsAppearance).map(({ id, label }) => ({ value: id, label }))}
+          onChange={(weaponId) => onPatchConfig({ melee: { weaponId: weaponId as ProceduralMeleeWeaponId } })}
+        />
+        <SelectControl
+          label="Offhand cosmetic"
+          value={config.melee.offhandId}
+          options={availableMeleeOffhands.filter(fitsAppearance).map(({ id, label }) => ({ value: id, label }))}
+          onChange={(offhandId) => onPatchConfig({ melee: { offhandId: offhandId as ProceduralMeleeOffhandId } })}
+        />
+        <ToggleControl
+          label="Load cosmetic GLBs"
+          checked={config.melee.detailedEquipment}
+          onChange={(detailedEquipment) => onPatchConfig({ melee: { detailedEquipment } })}
+        />
+      </ControlSection>
+      <ControlSection title="Melee attack cycle" icon={<Crosshair />} defaultOpen>
+        <MeleeAttackVariantControl config={config} onPatchConfig={onPatchConfig} />
+        <ToggleControl
+          label="Auto attack"
+          checked={config.melee.autoAttack}
+          onChange={(autoAttack) => onPatchConfig({ melee: { autoAttack } })}
+        />
+        <MeleeRangeFieldList fields={MELEE_TIMING_FIELDS} config={config.melee} onPatchConfig={onPatchConfig} />
+      </ControlSection>
+      <ControlSection title="Weapon pose" icon={<Activity />} defaultOpen>
+        <MeleeRangeFieldList fields={MELEE_POSE_FIELDS} config={config.melee} onPatchConfig={onPatchConfig} />
+        <ToggleControl
+          label="Contact arc"
+          checked={config.melee.showArc}
+          onChange={(showArc) => onPatchConfig({ melee: { showArc } })}
+        />
+        <ToggleControl
+          label="Socket diagnostics"
+          checked={config.melee.showSockets}
+          onChange={(showSockets) => onPatchConfig({ melee: { showSockets } })}
+        />
+      </ControlSection>
+      <ControlSection title="Melee target lane" icon={<Target />} defaultOpen>
+        <MeleeRangeFieldList fields={MELEE_TARGET_FIELDS} config={config.melee} onPatchConfig={onPatchConfig} />
+      </ControlSection>
+    </>
+  );
+};
 
 const ArcherControls = ({ config, onPatchConfig }: CharacterGymControlsProps) => (
   <>
@@ -619,7 +636,10 @@ const CharacterControls = ({ config, selectedPreset, onApplyPreset, onPatchConfi
       <SelectControl
         label={config.kind === "paladin" ? "Rider appearance" : "Appearance"}
         value={config.humanoid.appearanceId}
-        options={PROCEDURAL_CHARACTER_APPEARANCES.map(({ id, label }) => ({ value: id, label }))}
+        options={listOfferedProceduralCharacterAppearances(reviewCapability, [config.kind]).map(({ id, label }) => ({
+          value: id,
+          label,
+        }))}
         onChange={(appearanceId) =>
           onPatchConfig({ humanoid: { appearanceId: appearanceId as ProceduralCharacterAppearanceId } })
         }
@@ -994,6 +1014,25 @@ const ArcherRangeFieldList = ({
     ))}
   </>
 );
+
+/** Offered only for a weapon that makes more than one attack: "auto" makes them in turn. */
+const MeleeAttackVariantControl = ({
+  config,
+  onPatchConfig,
+}: Pick<CharacterGymControlsProps, "config" | "onPatchConfig">) => {
+  const variants = resolveProceduralMeleeAttackVariants(config.melee.weaponId);
+  if (variants.length < 2) return null;
+  return (
+    <SelectControl
+      label="Attack"
+      value={config.melee.attackVariant}
+      options={["auto", ...variants].map((variant) => ({ value: variant, label: variant }))}
+      onChange={(attackVariant) =>
+        onPatchConfig({ melee: { attackVariant: attackVariant as ProceduralMeleeConfig["attackVariant"] } })
+      }
+    />
+  );
+};
 
 const MeleeRangeFieldList = ({
   fields,

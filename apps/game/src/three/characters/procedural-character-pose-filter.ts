@@ -13,6 +13,12 @@ const FILTERED_PARTS: ReadonlyArray<{ id: CharacterPartId; response: number }> =
   { id: "forearmRight", response: 5.5 },
 ];
 
+/**
+ * About how long the filtered chest trails a turn of the controller's, in seconds: its response with the default
+ * secondary motion is about 8 per second. Poses that must be seen at a moment lead by this much.
+ */
+export const PROCEDURAL_POSE_FILTER_LAG_SECONDS = 0.12;
+
 /** Filters non-contact body layers without softening leg IK targets. */
 export class ProceduralCharacterPoseFilter {
   private readonly rotations = new Map<CharacterPartId, Quaternion>();

@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { resolveHumanoidRigRequiredBoneNames, validateHumanoidRigAdapter } from "./humanoid-rig-adapter";
+import {
+  resolveHumanoidRigRequiredBoneNames,
+  validateHumanoidRigAdapter,
+  type HumanoidPartBindingDefinition,
+} from "./humanoid-rig-adapter";
+import type { CharacterPartId } from "./procedural-character-rig";
 import { QUATERNIUS_HUMANOID_RIG_ADAPTER } from "./quaternius-humanoid-rig-adapter";
+import { T1_KNIGHT_DEFAULT_HUMANOID_RIG_ADAPTER } from "./t1-knight-default-humanoid-rig-adapter";
 
 describe("humanoid rig adapter", () => {
   it("maps every canonical pose, diagnostic, hand, foot, and socket role", () => {
@@ -40,5 +46,21 @@ describe("humanoid rig adapter", () => {
         },
       }),
     ).toContain("missing-stable-child:thighLeft");
+  });
+
+  it("asks for hinge arms on both parts of a side, and only on arms", () => {
+    const withBindings = (bindings: Partial<Record<CharacterPartId, HumanoidPartBindingDefinition>>) =>
+      validateHumanoidRigAdapter({
+        ...QUATERNIUS_HUMANOID_RIG_ADAPTER,
+        partBindings: { ...QUATERNIUS_HUMANOID_RIG_ADAPTER.partBindings, ...bindings },
+      });
+
+    expect(validateHumanoidRigAdapter(T1_KNIGHT_DEFAULT_HUMANOID_RIG_ADAPTER)).toEqual([]);
+    expect(withBindings({ upperArmLeft: { bone: "upperarm_l", childBone: "lowerarm_l", hinge: true } })).toContain(
+      "hinge-arm-mismatch:left",
+    );
+    expect(withBindings({ thighLeft: { bone: "thigh_l", childBone: "calf_l", hinge: true } })).toContain(
+      "hinge-on-a-non-arm:thighLeft",
+    );
   });
 });

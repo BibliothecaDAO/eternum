@@ -143,7 +143,9 @@ function resolveMeleeAlignment(
   const offhandRadius = resolveProceduralMeleeOffhand(melee.offhandId).visualDiameter * 0.5;
   return {
     ...melee,
-    offhandGripHandDistance: distanceBetween(melee.offhandGripWorld, humanoid?.socketGrips.left),
+    // A shield strapped to the forearm is not held, so it has no grip to keep in the hand.
+    offhandGripHandDistance:
+      melee.offhandSocket === "gripLeft" ? distanceBetween(melee.offhandGripWorld, humanoid?.socketGrips.left) : null,
     weaponGripHandDistance: distanceBetween(melee.weaponGripWorld, humanoid?.socketGrips.right),
     weaponHeadClearance: head && humanoid ? round(distancePointToSegment(head, grip, tip) - humanoid.headRadius) : null,
     weaponLength: round(grip.distanceTo(tip)),

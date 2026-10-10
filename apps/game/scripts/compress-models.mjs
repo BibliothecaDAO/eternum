@@ -32,6 +32,10 @@ const precompressedTextureSizeLimits = new Map([
   ["cosmetics/low-res/0x1011401.glb", 1_024],
   ["cosmetics/low-res/0x305011501.glb", 1_024],
   ["cosmetics/low-res/0x4040d01.glb", 1_024],
+  ["characters/t1-knight-default/near/skin.glb", 1_024],
+  ["characters/t1-knight-default/mid/skin.glb", 512],
+  ["characters/t1-knight-default/near/sword.glb", 512],
+  ["characters/t1-knight-default/near/shield.glb", 512],
 ]);
 const technicalTextureSlots = "{normalTexture,occlusionTexture,metallicRoughnessTexture}";
 const colorTextureSlots = "{baseColorTexture,emissiveTexture}";

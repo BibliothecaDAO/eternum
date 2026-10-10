@@ -22,6 +22,7 @@ describe("procedural character action pose", () => {
 function createMeleeContactPose(): ProceduralMeleeUpperBodyPose {
   return {
     actionWeight: 1,
+    arms: {},
     aimPitchRadians: 0,
     aimYawRadians: 0,
     attackArcRadians: (118 * Math.PI) / 180,
@@ -30,7 +31,7 @@ function createMeleeContactPose(): ProceduralMeleeUpperBodyPose {
     followThrough: 0,
     kind: "melee",
     mounted: false,
-    offhandId: "round-shield",
+    offhandCarry: "gripped",
     reach: 1.45,
     stepThrough: 0.22,
     strikeProgress: 1,

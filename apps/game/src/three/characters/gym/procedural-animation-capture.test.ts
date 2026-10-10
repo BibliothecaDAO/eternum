@@ -4,8 +4,10 @@ import { applyProceduralUnitConfigPatch, createDefaultProceduralUnitConfig } fro
 
 import {
   createProceduralAnimationCapturePlan,
+  type ProceduralAnimationCaptureViewId,
   resolveAnimationCapturePhase,
   resolveDefaultAnimationCaptureSequence,
+  resolveProceduralAnimationCaptureView,
 } from "./procedural-animation-capture";
 
 describe("procedural animation capture plan", () => {
@@ -42,6 +44,25 @@ describe("procedural animation capture plan", () => {
     expect(plan.sampleFrames.length).toBe(plan.totalFrames);
     expect(plan.truncated).toBe(false);
     expect(plan.views.map(({ id }) => id)).toEqual(["front-three-quarter"]);
+  });
+
+  it("runs a melee attack on past the guard held after it, so the relax to idle is on the timeline", () => {
+    const config = applyProceduralUnitConfigPatch(createDefaultProceduralUnitConfig(), { kind: "knight" });
+    const attack = createProceduralAnimationCapturePlan(config, "key-phases", { sequence: "melee-attack" });
+    const rest = createProceduralAnimationCapturePlan(config, "key-phases", { sequence: "melee-attack-and-rest" });
+
+    expect(rest.phases.slice(0, -1)).toEqual(attack.phases.slice(0, -1));
+    const settled = rest.phases.at(-1);
+    expect(settled?.id).toBe("idle");
+    expect(((settled?.endFrame ?? 0) - (settled?.startFrame ?? 0)) * config.humanoid.fixedStep).toBeGreaterThan(4.8);
+  });
+
+  it("finds a capture view by its id for a scrub that names its angle", () => {
+    expect(resolveProceduralAnimationCaptureView("rear")).toMatchObject({ azimuthDegrees: 180, elevationDegrees: 7 });
+    expect(resolveProceduralAnimationCaptureView("front-three-quarter")).toMatchObject({ azimuthDegrees: 35 });
+    expect(() => resolveProceduralAnimationCaptureView("sideways" as ProceduralAnimationCaptureViewId)).toThrow(
+      /Unknown animation capture view/,
+    );
   });
 
   it("adds two grip-detail views to the five-angle body atlas", () => {

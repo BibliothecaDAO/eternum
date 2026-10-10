@@ -1,4 +1,5 @@
 import type { CharacterFootGeometry } from "./procedural-character-foot-roll";
+import { smootherStep } from "./procedural-motion-curves";
 import {
   Bone,
   BufferGeometry,
@@ -18,7 +19,14 @@ import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import type { ProceduralCharacterConfig } from "./procedural-character-config";
 import type { ProceduralHumanoidJointId, ProceduralFootFacingDiagnostics } from "./procedural-character-diagnostics";
 import type { ProceduralCharacterUpperBodyAction } from "./procedural-character-action";
-import type { HumanoidRigAdapter, HumanoidSide } from "./humanoid-rig-adapter";
+import {
+  isMinimalHandRig,
+  type HumanoidArticulatedHandRigDefinition,
+  type HumanoidDrivenJointDefinition,
+  type HumanoidRigAdapter,
+  type HumanoidSide,
+} from "./humanoid-rig-adapter";
+import { assertDrivenJointsShareParent, resolveDrivenJointLocalRotation } from "./procedural-character-driven-joints";
 import {
   PROCEDURAL_HAND_DIGIT_IDS,
   resolveProceduralCharacterHandPose,
@@ -28,13 +36,24 @@ import {
 } from "./procedural-character-hand-pose";
 import type { ProceduralCharacterPose, QuaternionTuple, Vector3Tuple } from "./procedural-character-pose";
 import type { LoadedProceduralCharacterAsset } from "./procedural-character-assets";
-import { CHARACTER_PART_IDS, type CharacterPartId, type ResolvedCharacterRig } from "./procedural-character-rig";
-import { type CharacterSocketId, type ProceduralCharacterSocketReader } from "./procedural-character-sockets";
+import {
+  CHARACTER_PART_IDS,
+  type CharacterPartId,
+  type CharacterSourceBodyMeasurements,
+  type ResolvedCharacterRig,
+} from "./procedural-character-rig";
+import {
+  type CharacterSocketId,
+  type CharacterSocketRecord,
+  type ProceduralCharacterSocketReader,
+} from "./procedural-character-sockets";
 import {
   applySegmentBoneRotation,
   createSegmentBoneBinding,
+  createRestHingeAxis,
   createStableSegmentBoneBinding,
   requireSkinnedBone,
+  resolveLimbHingeAxis,
   resolveStableSegmentQuaternion,
   type SegmentBoneBinding,
 } from "./skinned-pose-binding";
@@ -47,13 +66,15 @@ interface CharacterPartTransform {
 interface CharacterHandBinding {
   bindQuaternion: Quaternion;
   bone: Bone;
-  digits: Readonly<Record<ProceduralHandDigitId, readonly CharacterFingerBoneBinding[]>>;
-  fingerCurlAxis: Vector3;
-  palm: { index: Bone; middle: Bone; normalSign: -1 | 1; pinky: Bone };
+  digits?: Readonly<Record<ProceduralHandDigitId, readonly CharacterFingerBoneBinding[]>>;
+  fingerCurlAxis?: Vector3;
+  palm: { index: Bone | Vector3; middle: Bone | Vector3; normalSign: -1 | 1; pinky: Bone | Vector3 };
   rollCorrection: Quaternion;
 }
 
 interface CharacterFootBinding {
+  /** Stands flat while it bears weight (the adapter's `standsFlat`). */
+  standsFlat: boolean;
   neutralQuaternion: Quaternion;
   toeNeutralQuaternion: Quaternion;
   toeBindQuaternion: Quaternion;
@@ -65,6 +86,14 @@ interface CharacterFootBinding {
   bindQuaternion: Quaternion;
 }
 
+interface CharacterDrivenJointBinding {
+  bone: Bone;
+  definition: HumanoidDrivenJointDefinition;
+  follows: Bone;
+  followsRestInverse: Quaternion;
+  restQuaternion: Quaternion;
+}
+
 interface CharacterFingerBoneBinding {
   bindQuaternion: Quaternion;
   bone: Bone;
@@ -73,6 +102,7 @@ interface CharacterFingerBoneBinding {
 interface CharacterSocketBinding {
   bone: Bone;
   offset: Vector3;
+  rotationOffset?: Quaternion;
 }
 
 interface StyledCharacterMaterial {
@@ -81,7 +111,7 @@ interface StyledCharacterMaterial {
   baseNormalMap: MeshStandardMaterial["normalMap"];
   baseRoughness: number;
   material: MeshStandardMaterial;
-  role: "body" | "outfit" | "other";
+  role: "body" | "outfit" | "other" | "authoredSource";
 }
 
 interface PreparedCharacterModel {
@@ -91,13 +121,17 @@ interface PreparedCharacterModel {
   bindings: Readonly<Record<CharacterPartId, SegmentBoneBinding>>;
   crowdHiddenMeshes: ReadonlyArray<{ heroVisible: boolean; mesh: Mesh }>;
   diagnosticBones: Readonly<Record<ProceduralHumanoidJointId, Bone>>;
+  drivenJoints: readonly CharacterDrivenJointBinding[];
   feet: Readonly<Record<HumanoidSide, CharacterFootBinding>>;
   hands: Readonly<Record<HumanoidSide, CharacterHandBinding>>;
+  sourceBodyMeasurements?: CharacterSourceBodyMeasurements;
+  /** Head radius at the asset's own scale, measured once when the asset is prepared. */
+  sourceHeadRadius?: number;
   helper: SkeletonHelper;
   materials: Set<Material>;
   ownedGeometries: Set<BufferGeometry>;
   scene: Group;
-  sockets: Readonly<Record<CharacterSocketId, CharacterSocketBinding>>;
+  sockets: Readonly<CharacterSocketRecord<CharacterSocketBinding>>;
   restRotations: ReadonlyArray<{ bone: Bone; quaternion: Quaternion }>;
   skeletons: Set<Skeleton>;
   skinnedMeshCount: number;
@@ -123,6 +157,8 @@ const Y_AXIS = new Vector3(0, 1, 0);
 const X_AXIS = new Vector3(1, 0, 0);
 const Z_AXIS = new Vector3(0, 0, 1);
 const MAX_LIMB_BEND_PLANE_STEP = Math.PI / 8;
+/** Fraction of a swing at either end over which a foot that stands flat eases between flat and its shin's turn. */
+const FLAT_FOOT_SWING_EASE = 0.3;
 const IDENTITY_QUATERNION = new Quaternion();
 const FINGER_CURL_RADIANS = [Math.PI * 0.4, Math.PI * 0.5, Math.PI * 0.34] as const;
 const THUMB_CURL_RADIANS = [Math.PI * 0.18, Math.PI * 0.3, Math.PI * 0.2] as const;
@@ -154,6 +190,8 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
   private readonly scratchIkPole = new Vector3();
   private readonly scratchIkOffset = new Vector3();
   private readonly scratchIkDirection = new Vector3();
+  private readonly scratchIkHingeAxis = new Vector3();
+  private readonly scratchIkShoulderPose = new Vector3();
   private readonly scratchIkPoleDirection = new Vector3();
   private readonly scratchIkCurrentPoleDirection = new Vector3();
   private readonly scratchIkSolvedJoint = new Vector3();
@@ -170,11 +208,14 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
   private readonly scratchRootForward = new Vector3();
   private readonly scratchRootLateral = new Vector3();
   private readonly scratchRootUp = new Vector3();
+  private readonly scratchKneeDirection = new Vector3();
+  private readonly scratchFootLevelled = new Quaternion();
   private activeModel: PreparedCharacterModel;
   private rig: ResolvedCharacterRig;
   private config: ProceduralCharacterConfig;
   private lastPose?: ProceduralCharacterPose;
   private upperBodyAction?: ProceduralCharacterUpperBodyAction;
+  private readonly scratchHandTurn = new Quaternion();
   private readonly scratchHandCorrection = new Quaternion();
   private readonly scratchFingerCurl = new Quaternion();
 
@@ -233,6 +274,7 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
     transform.position.fromArray(position);
     transform.quaternion.fromArray(quaternion);
     this.applyPartTransform(partId);
+    this.applyDrivenJoints();
   }
 
   public setPartTransformValues(
@@ -281,6 +323,7 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
     binding.bone.updateWorldMatrix(true, false);
     outPosition.copy(binding.offset).applyMatrix4(binding.bone.matrixWorld);
     binding.bone.matrixWorld.decompose(this.scratchWorldPosition, outQuaternion, this.scratchWorldScale);
+    if (binding.rotationOffset) outQuaternion.multiply(binding.rotationOffset);
     return hasFiniteVector(outPosition) && hasFiniteQuaternion(outQuaternion);
   }
 
@@ -344,6 +387,7 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
     shinLength: number;
     thighLength: number;
     upperArmLength: number;
+    body?: CharacterSourceBodyMeasurements;
   } {
     this.activeModel.scene.updateWorldMatrix(true, true);
     const left = this.measureArmLengths("left");
@@ -352,6 +396,7 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
     const rightLeg = this.measureLegLengths("right");
     return {
       foot: this.measureActiveFootGeometry(),
+      body: this.activeModel.sourceBodyMeasurements,
       forearmLength: (left.forearmLength + right.forearmLength) * 0.5,
       shinLength: (leftLeg.shinLength + rightLeg.shinLength) * 0.5,
       thighLength: (leftLeg.thighLength + rightLeg.thighLength) * 0.5,
@@ -424,9 +469,15 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
       this.applyFootPose("right");
     }
     this.applyHandRollCorrections();
+    this.applyDrivenJoints();
     this.activeModel.scene.updateWorldMatrix(true, true);
   }
 
+  /**
+   * Part transforms written one by one come from the ragdoll, whose bodies turn about the shortest-arc frame. An arm
+   * bound as a hinge differs from that frame by a constant roll about its own length: it still points where its body
+   * does, and rolls by that constant (the Knight's ragdoll is not tuned for it).
+   */
   private applyPartTransform(partId: CharacterPartId): void {
     if (partId === "pelvis") {
       positionCharacterModelAtPelvis(
@@ -440,6 +491,22 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
     this.applyBoneRotation(partId);
     if (partId === "forearmLeft") this.applyHandRoll("left");
     if (partId === "forearmRight") this.applyHandRoll("right");
+  }
+
+  /**
+   * Driven joints are never keyed: they follow the posed core joints just before skinning. Whoever writes several
+   * parts with `setPartTransformValues` calls this once afterwards.
+   */
+  public applyDrivenJoints(): void {
+    for (const { bone, definition, follows, followsRestInverse, restQuaternion } of this.activeModel.drivenJoints) {
+      resolveDrivenJointLocalRotation(
+        definition,
+        follows.quaternion,
+        followsRestInverse,
+        restQuaternion,
+        bone.quaternion,
+      );
+    }
   }
 
   private applyBoneRotation(partId: CharacterPartId): void {
@@ -473,10 +540,52 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
       .fromArray(forearmPose.position)
       .multiplyScalar(2)
       .sub(this.scratchIkPole.fromArray(forearmPose.jointAnchor));
-    this.solveTwoBoneTarget(upperLength, forearmLength);
+    if (this.declaresArmPose(side)) this.moveTargetsWithSkeletonShoulder(pose.parts[upperPartId].jointAnchor);
+    const isHingeArm = Boolean(this.activeModel.adapter.partBindings[upperPartId].hinge);
+    // A hinge arm bends towards its pole and nowhere else. Keeping the last frame's bend plane can leave its elbow on
+    // the far side for good, and everything fixed to the arm then faces the wrong way round.
+    this.solveTwoBoneTarget(upperLength, forearmLength, !isHingeArm);
 
+    if (isHingeArm) {
+      this.resolveSolvedArmHingeAxis();
+      this.applyHingeLimbSegment(upperBinding, this.scratchIkRoot, this.scratchIkSolvedJoint);
+      this.applyHingeLimbSegment(forearmBinding, this.scratchIkSolvedJoint, this.scratchIkSolvedEnd);
+      return;
+    }
     this.applySolvedLimbSegment(upperBinding, this.scratchIkRoot, this.scratchIkSolvedJoint);
     this.applySolvedLimbSegment(forearmBinding, this.scratchIkSolvedJoint, this.scratchIkSolvedEnd);
+  }
+
+  private declaresArmPose(side: HumanoidSide): boolean {
+    return this.upperBodyAction?.kind === "melee" && this.upperBodyAction.arms[side] !== undefined;
+  }
+
+  /**
+   * A declared arm pose is measured from the skeleton's own shoulder, which stands a little off the controller's: both
+   * the wrist and the elbow's pole move by that much, so both arms keep their approved place against that shoulder and
+   * each other. The frame is the visible chest, which the runtime hands the controller.
+   */
+  private moveTargetsWithSkeletonShoulder(poseShoulder: Vector3Tuple): void {
+    this.scratchIkOffset.copy(this.scratchIkRoot).sub(this.scratchIkShoulderPose.fromArray(poseShoulder));
+    this.scratchIkTarget.add(this.scratchIkOffset);
+    this.scratchIkPole.add(this.scratchIkOffset);
+  }
+
+  /**
+   * The hinge axis of the solved arm. A nearly straight arm has no plane of its own (see STRAIGHT_LIMB_SINE), so the
+   * axis comes from the plane the solver's pole set instead: target direction x pole direction, which is the sign the
+   * solved arm's own plane has when the elbow bends towards the pole.
+   */
+  private resolveSolvedArmHingeAxis(): void {
+    const hasPlane = resolveLimbHingeAxis(
+      this.scratchIkRoot,
+      this.scratchIkSolvedJoint,
+      this.scratchIkSolvedEnd,
+      this.scratchIkHingeAxis,
+    );
+    if (!hasPlane) {
+      this.scratchIkHingeAxis.crossVectors(this.scratchIkDirection, this.scratchIkPoleDirection).normalize();
+    }
   }
 
   private applyLegIk(side: HumanoidSide): void {
@@ -500,7 +609,7 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
       .multiplyScalar(2)
       .sub(this.scratchIkPole.fromArray(shinPose.jointAnchor));
     const grounded = this.config.animationMode !== "mounted";
-    if (grounded) this.scratchIkPole.copy(this.scratchIkRoot).add(Z_AXIS);
+    if (grounded) this.scratchIkPole.copy(this.scratchIkRoot).add(this.resolveKneeDirection(side));
     // Grounded legs use the skinned rig's true hip as the forward pole origin. Reusing
     // an absolute solver-rig knee introduces lateral bias when the two hip sockets differ.
     this.solveTwoBoneTarget(thighLength, shinLength, !grounded, grounded ? 0.999 : 0.985);
@@ -509,9 +618,34 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
     this.applySolvedLegSegment(shinBinding, this.scratchIkSolvedJoint, this.scratchIkSolvedEnd);
   }
 
+  /** A grounded knee bends forward, or towards where a declared stance turns the toes. */
+  private resolveKneeDirection(side: HumanoidSide): Vector3 {
+    const yaw = this.lastPose?.feet[side].yawRadians;
+    if (yaw === undefined) return Z_AXIS;
+    return this.scratchKneeDirection.set(Math.sin(yaw), 0, Math.cos(yaw));
+  }
+
   private applySolvedLimbSegment(binding: SegmentBoneBinding, start: Vector3, end: Vector3): void {
     this.scratchIkDirection.copy(end).sub(start).normalize();
     this.scratchIkSegmentQuaternion.setFromUnitVectors(Y_AXIS, this.scratchIkDirection);
+    applySegmentBoneRotation(
+      binding,
+      this.group,
+      this.scratchIkSegmentQuaternion,
+      this.scratchGroupQuaternion,
+      this.scratchParentQuaternion,
+      this.scratchTargetQuaternion,
+    );
+  }
+
+  private applyHingeLimbSegment(binding: SegmentBoneBinding, start: Vector3, end: Vector3): void {
+    this.scratchIkDirection.copy(end).sub(start).normalize();
+    resolveStableSegmentQuaternion(
+      this.scratchIkDirection,
+      this.scratchIkHingeAxis,
+      this.scratchIkHingeAxis,
+      this.scratchIkSegmentQuaternion,
+    );
     applySegmentBoneRotation(
       binding,
       this.group,
@@ -538,6 +672,7 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
   private applyFootPose(side: HumanoidSide): void {
     const roll = this.lastPose?.feet[side].roll;
     if (!roll) {
+      this.levelFoot(side, this.resolveFootFlatness(side));
       this.alignFootProgression(side);
       return;
     }
@@ -547,6 +682,40 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
     this.scratchFootYaw.setFromAxisAngle(Y_AXIS, yaw);
     this.applyFootBoneRotation(foot.ankle, foot.neutralQuaternion, roll.pitchRadians);
     this.applyFootBoneRotation(foot.toe, foot.toeNeutralQuaternion, roll.pitchRadians - roll.toeFlexRadians);
+  }
+
+  /**
+   * How far a foot without a walking roll stands flat, as at rest, rather than turned with its shin: a foot of a
+   * declared stance always; a foot that stands flat by its rig while it bears weight and near the ground, easing into its
+   * shin's turn in the middle of its swing; otherwise not at all.
+   */
+  private resolveFootFlatness(side: HumanoidSide): number {
+    const footPose = this.lastPose?.feet[side];
+    if (!footPose) return 0;
+    if (footPose.yawRadians !== undefined) return 1;
+    if (!this.activeModel.feet[side].standsFlat) return 0;
+    if (this.config.animationMode === "idle" || footPose.cycle.contact === "stance") return 1;
+    const fromGround = Math.min(footPose.cycle.progress, 1 - footPose.cycle.progress);
+    return 1 - smootherStep(fromGround / FLAT_FOOT_SWING_EASE);
+  }
+
+  private levelFoot(side: HumanoidSide, flatness: number): void {
+    if (flatness <= 0) return;
+    const foot = this.activeModel.feet[side];
+    this.group.getWorldQuaternion(this.scratchGroupQuaternion);
+    this.scratchFootYaw.identity();
+    this.levelFootBone(foot.ankle, foot.neutralQuaternion, flatness);
+    this.levelFootBone(foot.toe, foot.toeNeutralQuaternion, flatness);
+  }
+
+  /** Turns the bone from where its parent carries it towards its rest orientation in the world, by `flatness`. */
+  private levelFootBone(bone: Bone, neutral: Quaternion, flatness: number): void {
+    if (!bone.parent) throw new Error(`Foot bone ${bone.name} has no parent`);
+    bone.getWorldQuaternion(this.scratchFootLevelled);
+    this.scratchTargetQuaternion.copy(this.scratchGroupQuaternion).multiply(neutral);
+    this.scratchFootLevelled.slerp(this.scratchTargetQuaternion, flatness);
+    bone.parent.getWorldQuaternion(this.scratchParentQuaternion);
+    bone.quaternion.copy(this.scratchParentQuaternion.invert()).multiply(this.scratchFootLevelled).normalize();
   }
 
   private applyFootBoneRotation(bone: Bone, neutral: Quaternion, pitch: number): void {
@@ -577,12 +746,11 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
     if (this.scratchFootDirection.lengthSq() < 1e-8) return;
     this.scratchFootDirection.normalize();
 
-    const progressionRadians = (this.config.footProgressionDegrees * Math.PI) / 180;
-    const sideSign = side === "left" ? 1 : -1;
+    const yawRadians = this.lastPose?.feet[side].yawRadians ?? this.resolveToeOutRadians(side);
     this.scratchFootDesiredDirection
       .copy(this.scratchRootForward)
-      .multiplyScalar(Math.cos(progressionRadians))
-      .addScaledVector(this.scratchRootLateral, sideSign * Math.sin(progressionRadians))
+      .multiplyScalar(Math.cos(yawRadians))
+      .addScaledVector(this.scratchRootLateral, Math.sin(yawRadians))
       .normalize();
     const correctionRadians = Math.atan2(
       this.scratchFootCross
@@ -594,6 +762,11 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
     this.scratchTargetQuaternion.premultiply(this.scratchFootCorrection).normalize();
     foot.parent.getWorldQuaternion(this.scratchParentQuaternion);
     foot.quaternion.copy(this.scratchParentQuaternion.invert()).multiply(this.scratchTargetQuaternion).normalize();
+  }
+
+  /** The configured toe-out, left positive: each foot turned away from the midline. */
+  private resolveToeOutRadians(side: HumanoidSide): number {
+    return ((side === "left" ? 1 : -1) * this.config.footProgressionDegrees * Math.PI) / 180;
   }
 
   private solveTwoBoneTarget(
@@ -701,6 +874,13 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
         .slerp(IDENTITY_QUATERNION, Math.min(1, Math.max(0, archerWeight)));
       binding.bone.quaternion.multiply(this.scratchHandCorrection);
     }
+    this.applyDeclaredHandTurn(side);
+  }
+
+  /** Gear fitted to a rig declares how the hand turns on the forearm: the wrist's own movement, after the bind and roll correction. */
+  private applyDeclaredHandTurn(side: HumanoidSide): void {
+    const turn = this.upperBodyAction?.kind === "melee" ? this.upperBodyAction.arms[side]?.handTurn : undefined;
+    if (turn) this.activeModel.hands[side].bone.quaternion.multiply(this.scratchHandTurn.fromArray(turn));
   }
 
   private applyFingerCurls(): void {
@@ -711,15 +891,15 @@ export class ProceduralCharacterAvatar implements ProceduralCharacterSocketReade
 
   private applyFingerCurl(side: HumanoidSide, pose: ProceduralHandPose): void {
     const binding = this.activeModel.hands[side];
+    const { digits, fingerCurlAxis } = binding;
+    if (!digits || !fingerCurlAxis) return;
     PROCEDURAL_HAND_DIGIT_IDS.forEach((digitId) => {
-      const bones = binding.digits[digitId];
+      const bones = digits[digitId];
       const curlAngles = digitId === "thumb" ? THUMB_CURL_RADIANS : FINGER_CURL_RADIANS;
       bones.forEach((finger, index) => {
         finger.bone.quaternion
           .copy(finger.bindQuaternion)
-          .multiply(
-            this.scratchFingerCurl.setFromAxisAngle(binding.fingerCurlAxis, curlAngles[index] * pose.curls[digitId]),
-          );
+          .multiply(this.scratchFingerCurl.setFromAxisAngle(fingerCurlAxis, curlAngles[index] * pose.curls[digitId]));
       });
     });
   }
@@ -762,7 +942,7 @@ function prepareCharacterModel(asset: LoadedProceduralCharacterAsset): PreparedC
     object.castShadow = true;
     object.receiveShadow = false;
     object.frustumCulled = false;
-    if (asset.materials.crowdHiddenMesh.test(object.name)) {
+    if (isCrowdHiddenMesh(asset.materials, object.name)) {
       crowdHiddenMeshes.push({ heroVisible: object.visible, mesh: object });
     }
     const meshMaterials = Array.isArray(object.material) ? object.material : [object.material];
@@ -780,6 +960,7 @@ function prepareCharacterModel(asset: LoadedProceduralCharacterAsset): PreparedC
   scene.updateWorldMatrix(true, true);
   const bindings = createCharacterBoneBindings(scene, asset.adapter);
   const diagnosticBones = createDiagnosticBoneBindings(scene, asset.adapter);
+  const drivenJoints = createDrivenJointBindings(scene, asset.adapter);
   const feet = createFootBoneBindings(scene, asset.adapter);
 
   const helper = new SkeletonHelper(scene);
@@ -791,13 +972,14 @@ function prepareCharacterModel(asset: LoadedProceduralCharacterAsset): PreparedC
     material.opacity = 0.72;
   });
 
-  return {
+  const model: PreparedCharacterModel = {
     adapter: asset.adapter,
     asset,
     authoredPelvisToAnkle: resolveAuthoredPelvisToAnkle(bindings.pelvis.bone, feet.left.ankle, asset.adapter),
     bindings,
     crowdHiddenMeshes,
     diagnosticBones,
+    drivenJoints,
     feet,
     hands: createCharacterHandBindings(scene, asset.adapter),
     helper,
@@ -813,6 +995,8 @@ function prepareCharacterModel(asset: LoadedProceduralCharacterAsset): PreparedC
     skinnedMeshCount,
     styledMaterials,
   };
+  if (asset.adapter.sourceBody) model.sourceHeadRadius = measureSourceHeadRadius(model);
+  return model;
 }
 
 function mergeCompatibleOutfitMeshes(
@@ -823,9 +1007,7 @@ function mergeCompatibleOutfitMeshes(
   const candidates = new Map<string, SkinnedMesh[]>();
   scene.traverse((object) => {
     if (!(object instanceof SkinnedMesh) || Array.isArray(object.material) || !object.parent) return;
-    if (!materials.mergeableOutfit.test(object.material.name) || materials.crowdHiddenMesh.test(object.name)) {
-      return;
-    }
+    if (!isMergeableOutfit(materials, object.material.name) || isCrowdHiddenMesh(materials, object.name)) return;
     if (!hasIdentityLocalTransform(object)) return;
     const key = `${object.parent.uuid}:${object.material.name}`;
     const group = candidates.get(key) ?? [];
@@ -890,10 +1072,7 @@ function hasIdentityLocalTransform(mesh: SkinnedMesh): boolean {
   );
 }
 
-function createCharacterSocketBindings(
-  scene: Group,
-  adapter: HumanoidRigAdapter,
-): Record<CharacterSocketId, CharacterSocketBinding> {
+function createCharacterSocketBindings(scene: Group, adapter: HumanoidRigAdapter): PreparedCharacterModel["sockets"] {
   return Object.fromEntries(
     Object.entries(adapter.sockets).map(([socketId, definition]) => {
       const bone = requireRigBone(scene, adapter, definition.bone);
@@ -901,9 +1080,12 @@ function createCharacterSocketBindings(
         definition.offset.kind === "fixed"
           ? new Vector3().fromArray(definition.offset.value)
           : resolveKnuckleCenterOffset(scene, adapter, bone, definition.offset.bones, definition.offset.scale);
-      return [socketId, { bone, offset }];
+      const rotationOffset = definition.rotationOffset
+        ? new Quaternion().fromArray(definition.rotationOffset).normalize()
+        : undefined;
+      return [socketId, { bone, offset, rotationOffset }];
     }),
-  ) as Record<CharacterSocketId, CharacterSocketBinding>;
+  ) as PreparedCharacterModel["sockets"];
 }
 
 function createCharacterHandBindings(
@@ -923,17 +1105,27 @@ function createCharacterHandBinding(
 ): CharacterHandBinding {
   const definition = adapter.hands[side];
   const bone = requireRigBone(scene, adapter, definition.hand);
+  const palm = isMinimalHandRig(definition)
+    ? {
+        index: new Vector3().fromArray(definition.palm.index),
+        middle: new Vector3().fromArray(definition.palm.middle),
+        normalSign: definition.palm.normalSign,
+        pinky: new Vector3().fromArray(definition.palm.pinky),
+      }
+    : {
+        index: requireRigBone(scene, adapter, definition.palm.index),
+        middle: requireRigBone(scene, adapter, definition.palm.middle),
+        normalSign: definition.palm.normalSign,
+        pinky: requireRigBone(scene, adapter, definition.palm.pinky),
+      };
   return {
     bindQuaternion: bone.quaternion.clone(),
     bone,
-    digits: createCharacterFingerBindings(scene, adapter, side),
-    fingerCurlAxis: new Vector3().fromArray(definition.fingerCurlAxis).normalize(),
-    palm: {
-      index: requireRigBone(scene, adapter, definition.palm.index),
-      middle: requireRigBone(scene, adapter, definition.palm.middle),
-      normalSign: definition.palm.normalSign,
-      pinky: requireRigBone(scene, adapter, definition.palm.pinky),
-    },
+    digits: isMinimalHandRig(definition) ? undefined : createCharacterFingerBindings(scene, adapter, definition),
+    fingerCurlAxis: isMinimalHandRig(definition)
+      ? undefined
+      : new Vector3().fromArray(definition.fingerCurlAxis).normalize(),
+    palm,
     rollCorrection: new Quaternion().fromArray(definition.rollCorrection).normalize(),
   };
 }
@@ -941,10 +1133,10 @@ function createCharacterHandBinding(
 function createCharacterFingerBindings(
   scene: Group,
   adapter: HumanoidRigAdapter,
-  side: HumanoidSide,
+  definition: HumanoidArticulatedHandRigDefinition,
 ): Record<ProceduralHandDigitId, CharacterFingerBoneBinding[]> {
   return Object.fromEntries(
-    Object.entries(adapter.hands[side].digits).map(([digitId, names]) => [
+    Object.entries(definition.digits).map(([digitId, names]) => [
       digitId,
       names.map((name) => {
         const bone = requireRigBone(scene, adapter, name);
@@ -984,6 +1176,7 @@ function createCharacterBoneBinding(
   partId: CharacterPartId,
 ): SegmentBoneBinding {
   const definition = adapter.partBindings[partId];
+  if (definition.hinge) return createHingeArmBoneBinding(scene, adapter, partId);
   if (definition.childBone && definition.stable) {
     return createStableSegmentBoneBinding(
       scene,
@@ -994,6 +1187,24 @@ function createCharacterBoneBinding(
     );
   }
   return createSegmentBoneBinding(scene, definition.bone, definition.childBone);
+}
+
+/** An arm part bound in the frame of its arm's hinge, taken from the arm's rest joints. */
+function createHingeArmBoneBinding(
+  scene: Group,
+  adapter: HumanoidRigAdapter,
+  partId: CharacterPartId,
+): SegmentBoneBinding {
+  const side = partId.endsWith("Left") ? "Left" : "Right";
+  const upperArm = adapter.partBindings[`upperArm${side}`];
+  const forearm = adapter.partBindings[`forearm${side}`];
+  const part = adapter.partBindings[partId];
+  if (!upperArm.childBone || !forearm.childBone || !part.childBone) {
+    throw new Error(`${adapter.label} hinge arm ${partId} needs a child bone`);
+  }
+  const hingeAxis = createRestHingeAxis(scene, upperArm.bone, forearm.bone, forearm.childBone);
+  // The axis is the reference, and it is perpendicular to the segment, so the fallback is never used.
+  return createStableSegmentBoneBinding(scene, part.bone, part.childBone, hingeAxis, hingeAxis);
 }
 
 function requireRigBone(scene: Group, adapter: HumanoidRigAdapter, name: string): Bone {
@@ -1014,6 +1225,21 @@ function createDiagnosticBoneBindings(
       requireRigBone(scene, adapter, boneName),
     ]),
   ) as Record<ProceduralHumanoidJointId, Bone>;
+}
+
+function createDrivenJointBindings(scene: Group, adapter: HumanoidRigAdapter): CharacterDrivenJointBinding[] {
+  return (adapter.drivenJoints ?? []).map((definition) => {
+    const bone = requireRigBone(scene, adapter, definition.bone);
+    const follows = requireRigBone(scene, adapter, definition.follows);
+    assertDrivenJointsShareParent(definition, bone, follows);
+    return {
+      bone,
+      definition,
+      follows,
+      followsRestInverse: follows.quaternion.clone().invert(),
+      restQuaternion: bone.quaternion.clone(),
+    };
+  });
 }
 
 function createFootBoneBindings(scene: Group, adapter: HumanoidRigAdapter): Record<HumanoidSide, CharacterFootBinding> {
@@ -1037,6 +1263,7 @@ function createFootBinding(scene: Group, adapter: HumanoidRigAdapter, side: Huma
   const sole = new Vector3(anklePosition.x, definition.soleHeight, anklePosition.z);
   return {
     ankle,
+    standsFlat: definition.standsFlat === true,
     toe,
     toeTip: requireRigBone(scene, adapter, definition.toeTip),
     geometry,
@@ -1063,22 +1290,107 @@ function resetCharacterModelPose(model: PreparedCharacterModel, rig: ResolvedCha
   model.restRotations.forEach(({ bone, quaternion }) => quaternion.copy(bone.quaternion));
   model.scene.position.set(0, 0, 0);
   const targetPelvisToAnkle = rig.morphology.thighLength + rig.morphology.shinLength;
-  model.scene.scale.setScalar(targetPelvisToAnkle / model.authoredPelvisToAnkle);
+  model.scene.scale.setScalar(model.adapter.authoredUniformScale ?? targetPelvisToAnkle / model.authoredPelvisToAnkle);
   model.scene.updateWorldMatrix(true, true);
+  const { sourceBody } = model.adapter;
+  model.sourceBodyMeasurements =
+    sourceBody && model.sourceHeadRadius !== undefined
+      ? measureSourceBody(model, sourceBody.chestBetween, model.sourceHeadRadius)
+      : undefined;
+}
+
+function measureSourceBody(
+  model: PreparedCharacterModel,
+  chestBetween: readonly [string, string],
+  headRadius: number,
+): CharacterSourceBodyMeasurements {
+  const bones = model.diagnosticBones;
+  const chest = resolveSourceBodyChestPosition(model, chestBetween);
+  const distance = (left: Bone, right: Bone) =>
+    left.getWorldPosition(new Vector3()).distanceTo(right.getWorldPosition(new Vector3()));
+  return {
+    shoulderWidth: distance(bones.shoulderLeft, bones.shoulderRight),
+    hipWidth: distance(bones.hipLeft, bones.hipRight),
+    pelvisToChest: bones.pelvis.getWorldPosition(new Vector3()).distanceTo(chest),
+    pelvisHeight: resolveRestPelvisHeight(model),
+    chestToNeck: model.bindings.head.bone.getWorldPosition(new Vector3()).distanceTo(chest),
+    headRadius: headRadius * model.scene.scale.x,
+  };
+}
+
+/** The pelvis above the soles: the ankles stand their foot's ankle height above the floor. */
+function resolveRestPelvisHeight(model: PreparedCharacterModel): number {
+  const { left } = model.feet;
+  const pelvisY = model.diagnosticBones.pelvis.getWorldPosition(new Vector3()).y;
+  const soleY = left.ankle.getWorldPosition(new Vector3()).y - left.geometry.ankleHeight * model.scene.scale.x;
+  return pelvisY - soleY;
+}
+
+function resolveSourceBodyChestPosition(model: PreparedCharacterModel, between: readonly [string, string]): Vector3 {
+  const [first, second] = between.map((name) =>
+    requireRigBone(model.scene, model.adapter, name).getWorldPosition(new Vector3()),
+  );
+  return first.add(second).multiplyScalar(0.5);
+}
+
+function measureSourceHeadRadius(model: PreparedCharacterModel): number {
+  model.scene.updateMatrixWorld(true);
+  model.skeletons.forEach((skeleton) => skeleton.update());
+  const headBone = model.diagnosticBones.head;
+  const center = headBone.getWorldPosition(new Vector3());
+  let radius = 0;
+  let selected = 0;
+  model.scene.traverse((object) => {
+    if (!(object instanceof SkinnedMesh)) return;
+    forEachHeadWeightedVertex(object, headBone, (point) => {
+      radius = Math.max(radius, point.distanceTo(center));
+      selected += 1;
+    });
+  });
+  if (selected === 0 || !Number.isFinite(radius) || radius <= 0) {
+    throw new Error(`${model.adapter.label} has no measurable Head-weighted surface`);
+  }
+  return radius;
+}
+
+/** Visits, in world space, every vertex of the mesh that the head joint holds at least half of. */
+function forEachHeadWeightedVertex(mesh: SkinnedMesh, headBone: Bone, visit: (worldPoint: Vector3) => void): void {
+  const headIndex = mesh.skeleton.bones.indexOf(headBone);
+  const positions = mesh.geometry.getAttribute("position");
+  const indices = mesh.geometry.getAttribute("skinIndex");
+  const weights = mesh.geometry.getAttribute("skinWeight");
+  if (headIndex < 0 || !positions || !indices || !weights) return;
+  const point = new Vector3();
+  for (let vertex = 0; vertex < positions.count; vertex += 1) {
+    let headWeight = 0;
+    for (let component = 0; component < 4; component += 1) {
+      if (indices.getComponent(vertex, component) === headIndex) headWeight += weights.getComponent(vertex, component);
+    }
+    if (headWeight < 0.5) continue;
+    point.fromBufferAttribute(positions, vertex);
+    mesh.applyBoneTransform(vertex, point);
+    mesh.localToWorld(point);
+    visit(point);
+  }
 }
 
 function resolveAuthoredPelvisToAnkle(pelvisBone: Bone, ankleBone: Bone, adapter: HumanoidRigAdapter): number {
   const distance = pelvisBone.getWorldPosition(new Vector3()).distanceTo(ankleBone.getWorldPosition(new Vector3()));
-  if (distance <= 0) throw new Error(`${adapter.label} has an invalid authored leg length`);
+  if (!Number.isFinite(distance) || distance <= 0)
+    throw new Error(`${adapter.label} has an invalid authored leg length`);
   return distance;
+}
+
+function resolvePalmPoint(hand: Bone, point: Bone | Vector3): Vector3 {
+  return point instanceof Bone ? point.getWorldPosition(new Vector3()) : hand.localToWorld(point.clone());
 }
 
 function resolvePalmInwardDot(model: PreparedCharacterModel, side: HumanoidSide): number {
   const binding = model.hands[side];
   const hand = binding.bone.getWorldPosition(new Vector3());
-  const index = binding.palm.index.getWorldPosition(new Vector3());
-  const middle = binding.palm.middle.getWorldPosition(new Vector3());
-  const pinky = binding.palm.pinky.getWorldPosition(new Vector3());
+  const index = resolvePalmPoint(binding.bone, binding.palm.index);
+  const middle = resolvePalmPoint(binding.bone, binding.palm.middle);
+  const pinky = resolvePalmPoint(binding.bone, binding.palm.pinky);
   const pelvis = model.bindings.pelvis.bone.getWorldPosition(new Vector3());
   const forward = middle.sub(hand).normalize();
   const across = side === "left" ? index.sub(pinky).normalize() : pinky.sub(index).normalize();
@@ -1116,10 +1428,19 @@ function createStyledMaterial(
   };
 }
 
+function isCrowdHiddenMesh(materials: LoadedProceduralCharacterAsset["materials"], meshName: string): boolean {
+  return !("authoredSource" in materials) && materials.crowdHiddenMesh.test(meshName);
+}
+
+function isMergeableOutfit(materials: LoadedProceduralCharacterAsset["materials"], materialName: string): boolean {
+  return !("authoredSource" in materials) && materials.mergeableOutfit.test(materialName);
+}
+
 function resolveMaterialRole(
   materials: LoadedProceduralCharacterAsset["materials"],
   materialName: string,
 ): StyledCharacterMaterial["role"] {
+  if ("authoredSource" in materials) return "authoredSource";
   if (materials.outfit.test(materialName)) return "outfit";
   if (materials.body.test(materialName)) return "body";
   return "other";
@@ -1133,6 +1454,11 @@ function updateCharacterModelStyle(model: PreparedCharacterModel, config: Proced
   });
   model.styledMaterials.forEach(({ baseColor, baseMetalness, baseNormalMap, baseRoughness, material, role }) => {
     material.color.copy(baseColor);
+    if (role === "authoredSource") {
+      material.wireframe = config.wireframe;
+      material.needsUpdate = true;
+      return;
+    }
     material.normalMap = crowdDetail ? null : baseNormalMap;
     if (role === "outfit") {
       material.color.lerp(heraldry, 0.3 + config.tier * 0.04);

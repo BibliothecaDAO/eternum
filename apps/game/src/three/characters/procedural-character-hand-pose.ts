@@ -42,7 +42,7 @@ export function resolveProceduralCharacterHandPose(
       : HAND_POSE_PAIRS.archerRest;
   }
   if (action.kind === "crossbow") return HAND_POSE_PAIRS.crossbow;
-  return action.offhandId === "none" ? HAND_POSE_PAIRS.meleeEmpty : HAND_POSE_PAIRS.meleeShield;
+  return action.offhandCarry === "none" ? HAND_POSE_PAIRS.meleeEmpty : HAND_POSE_PAIRS.meleeShield;
 }
 
 function createHandPose(

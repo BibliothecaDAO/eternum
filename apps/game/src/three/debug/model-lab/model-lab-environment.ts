@@ -6,15 +6,7 @@ import { configureWorldSunShadows } from "../../effects/world-sun-shadows";
 import { ProceduralTerrain } from "../../terrain/procedural-terrain";
 import { terrainHexToWorld } from "../../terrain/terrain-coordinates";
 import type { TerrainCellInput, TerrainPageRequest } from "../../terrain/terrain-types";
-import type { ModelLabSettings } from "./model-lab-settings";
-
-export const MODEL_LAB_BIOMES = {
-  grassland: { label: "Grassland coast", biome: BiomeType.Grassland },
-  forest: { label: "Temperate forest", biome: BiomeType.TemperateDeciduousForest },
-  desert: { label: "Desert coast", biome: BiomeType.SubtropicalDesert },
-  snow: { label: "Snow coast", biome: BiomeType.Snow },
-  tropical: { label: "Tropical forest", biome: BiomeType.TropicalRainForest },
-} as const;
+import { MODEL_LAB_BIOMES, type ModelLabSettings } from "./model-lab-settings";
 
 export function createModelLabTerrainRequest(settings: Pick<ModelLabSettings, "biome" | "family">): TerrainPageRequest {
   const cells: TerrainCellInput[] = [];

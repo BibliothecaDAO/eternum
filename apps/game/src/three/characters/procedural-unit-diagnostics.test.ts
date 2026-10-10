@@ -24,6 +24,29 @@ describe("procedural unit pose diagnostics", () => {
     expect(diagnostics.bow?.bowGripHandDistance).toBe(0);
   });
 
+  it("does not ask a forearm-strapped shield to stay in the hand", () => {
+    const humanoid = createHumanoidDiagnostics();
+    humanoid.socketGrips = { left: [0.6, 1, 0], right: [0, 1, 0] };
+    const diagnostics = resolveProceduralUnitPoseDiagnostics({
+      humanoid,
+      kind: "knight",
+      melee: {
+        offhandGripWorld: [0.7, 1, 0],
+        offhandId: "t1-knight-default-shield",
+        offhandSocket: "forearmLeft",
+        offhandSource: "asset",
+        offhandWorld: [0.7, 1, 0],
+        weaponGripWorld: [0, 1, 0],
+        weaponId: "t1-knight-default-sword",
+        weaponSource: "asset",
+        weaponTipWorld: [0, 1, 0.3],
+      },
+    });
+
+    expect(diagnostics.melee?.offhandGripHandDistance).toBeNull();
+    expect(diagnostics.issues).not.toContain("offhand-grip-detached");
+  });
+
   it("rejects a weapon arc that crosses its own shield while preserving both grips", () => {
     const humanoid = createHumanoidDiagnostics();
     humanoid.socketGrips = { left: [0.6, 1, 0], right: [0, 1, 0] };
@@ -33,6 +56,7 @@ describe("procedural unit pose diagnostics", () => {
       melee: {
         offhandGripWorld: [0.6, 1, 0],
         offhandId: "round-shield",
+        offhandSocket: "gripLeft",
         offhandSource: "procedural",
         offhandWorld: [0, 1, 0.5],
         weaponGripWorld: [0, 1, 0],

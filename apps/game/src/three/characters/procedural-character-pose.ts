@@ -4,6 +4,8 @@ import { Euler, Quaternion, Vector3 } from "three";
 import type { ProceduralArcherUpperBodyPose } from "./archer/procedural-archer-pose";
 import type { ProceduralCrossbowUpperBodyPose } from "./crossbow/procedural-crossbow-pose";
 import type { ProceduralMeleeUpperBodyPose } from "./melee/procedural-melee-pose";
+import type { ProceduralMeleeHeldBody } from "./melee/procedural-melee-state-blend";
+import type { ProceduralMeleeArmPose } from "./melee/procedural-melee-weapon-catalog";
 import type { ProceduralCharacterUpperBodyAction } from "./procedural-character-action";
 import type { ProceduralContactReactionPose } from "./collision/procedural-contact-reaction";
 import type { ProceduralCharacterConfig } from "./procedural-character-config";
@@ -37,6 +39,8 @@ export interface CharacterFootPose {
   cycle: ProceduralContactCycle;
   target: Vector3Tuple;
   roll?: CharacterFootRoll;
+  /** The toes' yaw, left positive, of a declared stance; without one the foot keeps the configured toe-out. */
+  yawRadians?: number;
 }
 
 export interface ProceduralCharacterPose {
@@ -48,6 +52,7 @@ export interface ProceduralCharacterPose {
 
 interface CharacterLegJoints {
   roll?: CharacterFootRoll;
+  yawRadians?: number;
   ankle: Vector3;
   cycle: ProceduralContactCycle;
   hip: Vector3;
@@ -74,7 +79,11 @@ interface CharacterTorsoJoints {
 const Y_AXIS = new Vector3(0, 1, 0);
 const X_AXIS = new Vector3(1, 0, 0);
 const Z_AXIS = new Vector3(0, 0, 1);
-const CHARACTER_GROUND_Y = 0.12;
+/** A declared pelvis stands at most this fraction of its rest height, so the knees keep a bend for the leg solver. */
+const MAX_DECLARED_PELVIS_HEIGHT = 0.975;
+
+/** A melee action whose gear declares where the body is held, on the bearer's own legs. */
+type DeclaredBodyAction = ProceduralMeleeUpperBodyPose & { body: ProceduralMeleeHeldBody };
 
 export function resolveProceduralCharacterPose(
   rig: ResolvedCharacterRig,
@@ -84,22 +93,45 @@ export function resolveProceduralCharacterPose(
   phaseOverride?: number,
   upperBodyAction?: ProceduralCharacterUpperBodyAction,
   reaction?: ProceduralContactReactionPose,
+  /**
+   * The chest's turn as the figure shows it, last frame's after the pose filter. Declared arm poses are placed in it, so
+   * they keep their place against the chest the viewer sees rather than the controller's, which the filter trails.
+   */
+  visibleChestRotation?: QuaternionTuple,
 ): ProceduralCharacterPose {
   if (config.animationMode === "mounted")
     return resolveMountedCharacterPose(rig, config, elapsedSeconds, phaseOverride, upperBodyAction, reaction);
 
   const gait = resolveProceduralCharacterGaitSignals(config, elapsedSeconds, phaseOverride);
+  const declared = isDeclaredBodyAction(upperBodyAction) ? upperBodyAction : undefined;
+  // A declared body takes its hit state instead (see applyProceduralMeleeHitReaction).
+  const trunkReaction = declared ? undefined : reaction;
   const basePelvis = resolveGroundedPelvis(rig, config, gait, elapsedSeconds);
   const basePelvisRotation = resolvePelvisRotation(config, gait);
-  const actionPelvis = resolveActionPelvis(rig, basePelvis, basePelvisRotation, upperBodyAction);
-  const { pelvis, pelvisRotation } = applyCharacterReactionPelvis(rig, actionPelvis, reaction);
-  const leftLeg = resolveGroundedLeg(rig, config, gait, pelvis, "left", resolvePlantTarget, basePelvis);
-  const rightLeg = resolveGroundedLeg(rig, config, gait, pelvis, "right", resolvePlantTarget, basePelvis);
+  const actionPelvis = declared
+    ? resolveDeclaredPelvis(rig, config, basePelvis, basePelvisRotation, declared)
+    : resolveActionPelvis(rig, basePelvis, basePelvisRotation, upperBodyAction);
+  const { pelvis, pelvisRotation } = applyCharacterReactionPelvis(rig, actionPelvis, trunkReaction);
+  // Standing, a declared body places the feet; moving, the gait does.
+  const stance = declared && config.animationMode === "idle" ? declared.body : undefined;
+  const resolveLeg = (side: CharacterFootId) =>
+    stance
+      ? resolveDeclaredStanceLeg(rig, config, gait, pelvis, side, stance, resolvePlantTarget)
+      : resolveGroundedLeg(rig, config, gait, pelvis, side, resolvePlantTarget, basePelvis);
+  const leftLeg = resolveLeg("left");
+  const rightLeg = resolveLeg("right");
   const baseTorso = resolveGroundedTorso(rig, config, gait, pelvis, pelvisRotation, elapsedSeconds);
-  const torso = resolveActionTorso(rig, applyCharacterReactionTorso(rig, baseTorso, reaction), upperBodyAction);
+  const torso = resolveActionTorso(rig, applyCharacterReactionTorso(rig, baseTorso, trunkReaction), upperBodyAction);
   const baseLeftArm = resolveGroundedArm(rig, config, gait, torso.leftShoulder, "left", elapsedSeconds);
   const baseRightArm = resolveGroundedArm(rig, config, gait, torso.rightShoulder, "right", elapsedSeconds);
-  const { leftArm, rightArm } = resolveActionArms(rig, torso, baseLeftArm, baseRightArm, upperBodyAction);
+  const { leftArm, rightArm } = resolveActionArms(
+    rig,
+    torso,
+    baseLeftArm,
+    baseRightArm,
+    upperBodyAction,
+    visibleChestRotation,
+  );
 
   return assembleCharacterPose({
     gait,
@@ -177,8 +209,13 @@ function resolveActionTorso(
 ): CharacterTorsoJoints {
   if (action?.kind === "archer") return resolveArcherTorso(rig, torso, action);
   if (action?.kind === "crossbow") return resolveCrossbowTorso(rig, torso, action);
+  if (isDeclaredBodyAction(action)) return resolveDeclaredMeleeTorso(rig, torso, action);
   if (action?.kind === "melee") return resolveMeleeTorso(rig, torso, action);
   return torso;
+}
+
+function isDeclaredBodyAction(action?: ProceduralCharacterUpperBodyAction): action is DeclaredBodyAction {
+  return action?.kind === "melee" && !action.mounted && action.body !== undefined;
 }
 
 function resolveActionArms(
@@ -187,10 +224,13 @@ function resolveActionArms(
   baseLeftArm: CharacterArmJoints,
   baseRightArm: CharacterArmJoints,
   action?: ProceduralCharacterUpperBodyAction,
+  visibleChestRotation?: QuaternionTuple,
 ): { leftArm: CharacterArmJoints; rightArm: CharacterArmJoints } {
   if (action?.kind === "archer") return resolveArcherArms(rig, torso, baseLeftArm, baseRightArm, action);
   if (action?.kind === "crossbow") return resolveCrossbowArms(rig, torso, baseLeftArm, baseRightArm, action);
-  if (action?.kind === "melee") return resolveMeleeArms(rig, torso, baseLeftArm, baseRightArm, action);
+  if (action?.kind === "melee") {
+    return resolveMeleeArms(rig, torso, baseLeftArm, baseRightArm, action, visibleChestRotation);
+  }
   return { leftArm: baseLeftArm, rightArm: baseRightArm };
 }
 
@@ -221,6 +261,59 @@ function resolveActionPelvis(
     ),
   );
   return { pelvis: shiftedPelvis, pelvisRotation: pelvisRotation.clone().multiply(actionRotation) };
+}
+
+/**
+ * The pelvis of a declared body: the gait's turn, then the declared one, which already holds the attack's. Standing,
+ * it stands over the declared stance at the declared height; moving, the gait places it. The controller's own attack
+ * drive is not added: the declared contact and follow-through already carry the weight forward, and with even half of
+ * the drive on top the trailing foot can no longer reach the floor where its stance puts it.
+ */
+function resolveDeclaredPelvis(
+  rig: ResolvedCharacterRig,
+  config: ProceduralCharacterConfig,
+  basePelvis: Vector3,
+  basePelvisRotation: Quaternion,
+  action: DeclaredBodyAction,
+): { pelvis: Vector3; pelvisRotation: Quaternion } {
+  const { pelvis: declared } = action.body;
+  return {
+    pelvis: config.animationMode === "idle" ? resolveDeclaredStandingPelvis(rig, action.body) : basePelvis.clone(),
+    pelvisRotation: basePelvisRotation
+      .clone()
+      .multiply(resolveDeclaredTurn(declared.yaw, declared.pitch, declared.roll)),
+  };
+}
+
+function resolveDeclaredStandingPelvis(rig: ResolvedCharacterRig, body: ProceduralMeleeHeldBody): Vector3 {
+  const restHeight = rig.morphology.restPelvisHeight;
+  if (restHeight === undefined) throw new Error("A declared body needs the rest pelvis height of a measured figure");
+  const origin = resolveStanceOrigin(rig);
+  return new Vector3(
+    origin.x + body.pelvis.left,
+    Math.min(body.pelvis.height, MAX_DECLARED_PELVIS_HEIGHT) * restHeight,
+    origin.z + body.pelvis.forward,
+  );
+}
+
+/** Where the game's own idle feet meet: the stance a declared one is laid off from, on the floor. */
+function resolveStanceOrigin(rig: ResolvedCharacterRig): Vector3 {
+  return new Vector3(0, 0, -rig.morphology.scale * 0.055);
+}
+
+/**
+ * A turn declared as yaw (about up, left positive), then pitch (about the turned left axis, leaning forward positive),
+ * then roll about the turned forward axis. Roll is measured as how far the left axis drops, so it is solved for the
+ * pitch the axis already has.
+ */
+function resolveDeclaredTurn(yawDegrees: number, pitchDegrees: number, rollDegrees: number): Quaternion {
+  const pitch = degreesToRadians(pitchDegrees);
+  const twist = -Math.asin(clamp(Math.sin(degreesToRadians(rollDegrees)) / Math.cos(pitch), -1, 1));
+  return new Quaternion().setFromEuler(new Euler(pitch, degreesToRadians(yawDegrees), twist, "YXZ"));
+}
+
+function degreesToRadians(degrees: number): number {
+  return (degrees * Math.PI) / 180;
 }
 
 function resolveCrossbowTorso(
@@ -406,22 +499,63 @@ function resolveMeleeTorso(
     .slerp(torso.chestRotation.clone().multiply(actionRotation), poseWeight);
   const stepDrive = action.stepThrough * impactWeight * (action.mounted ? 0.035 : 0.1) * rig.morphology.scale;
   const chest = torso.chest.clone().add(new Vector3(0, -downwardDrive * 0.05, stepDrive));
-  const chestHalfHeight = rig.parts.chest.halfExtents?.[1] ?? rig.morphology.torsoLength * 0.46;
-  const neckAnchor = chest.clone().add(new Vector3(0, chestHalfHeight, 0).applyQuaternion(chestRotation));
-  const head = neckAnchor.clone().add(new Vector3(0, rig.morphology.headRadius * 0.95, 0));
   const headAim = new Quaternion().setFromEuler(
     new Euler(action.aimPitchRadians * 0.46 - downwardDrive * 0.12, action.aimYawRadians * 0.56, -twist * 0.12),
   );
   const headRotation = torso.headRotation
     .clone()
     .slerp(torso.headRotation.clone().multiply(headAim), action.actionWeight);
+  return placeTorsoOnChest(rig, torso, chest, chestRotation, headRotation);
+}
+
+/**
+ * The trunk of a declared body: the chest is the gait's turned by the declared pelvis and spine, the head the gait's
+ * turned by those and the declared head; both still turn towards an off-axis target as the controller's own do.
+ */
+function resolveDeclaredMeleeTorso(
+  rig: ResolvedCharacterRig,
+  torso: CharacterTorsoJoints,
+  action: DeclaredBodyAction,
+): CharacterTorsoJoints {
+  const { head, pelvis, spine } = action.body;
+  const trunkTurn = resolveDeclaredTurn(pelvis.yaw, pelvis.pitch, pelvis.roll).multiply(
+    resolveDeclaredTurn(spine.twist, spine.flex, spine.side),
+  );
+  const declaredChest = torso.chestRotation.clone().multiply(trunkTurn);
+  const chestAim = new Quaternion().setFromEuler(
+    new Euler(action.aimPitchRadians * 0.16, action.aimYawRadians * 0.48, 0),
+  );
+  const chestRotation = declaredChest
+    .clone()
+    .slerp(declaredChest.clone().multiply(chestAim), action.actionWeight * action.torsoWeight);
+  const declaredHead = torso.headRotation
+    .clone()
+    .multiply(trunkTurn)
+    .multiply(resolveDeclaredTurn(head.yaw, head.pitch, 0));
+  const headAim = new Quaternion().setFromEuler(
+    new Euler(action.aimPitchRadians * 0.46, action.aimYawRadians * 0.56, 0),
+  );
+  const headRotation = declaredHead.clone().slerp(declaredHead.clone().multiply(headAim), action.actionWeight);
+  return placeTorsoOnChest(rig, torso, torso.chest, chestRotation, headRotation);
+}
+
+/** Neck, head and shoulders stand on the chest as it is turned. */
+function placeTorsoOnChest(
+  rig: ResolvedCharacterRig,
+  torso: CharacterTorsoJoints,
+  chest: Vector3,
+  chestRotation: Quaternion,
+  headRotation: Quaternion,
+): CharacterTorsoJoints {
+  const chestHalfHeight = rig.parts.chest.halfExtents?.[1] ?? rig.morphology.torsoLength * 0.46;
+  const neckAnchor = chest.clone().add(new Vector3(0, chestHalfHeight, 0).applyQuaternion(chestRotation));
+  const head = neckAnchor.clone().add(new Vector3(0, rig.morphology.headRadius * 0.95, 0));
   const shoulderOffset = rig.morphology.shoulderWidth * 0.48;
   const shoulderHeight = chestHalfHeight * 0.58;
   const leftShoulder = chest.clone().add(new Vector3(shoulderOffset, shoulderHeight, 0).applyQuaternion(chestRotation));
   const rightShoulder = chest
     .clone()
     .add(new Vector3(-shoulderOffset, shoulderHeight, 0).applyQuaternion(chestRotation));
-
   return { ...torso, chest, chestRotation, head, headRotation, leftShoulder, neckAnchor, rightShoulder };
 }
 
@@ -431,6 +565,7 @@ function resolveMeleeArms(
   baseLeftArm: CharacterArmJoints,
   baseRightArm: CharacterArmJoints,
   action: ProceduralMeleeUpperBodyPose,
+  visibleChestRotation?: QuaternionTuple,
 ): { leftArm: CharacterArmJoints; rightArm: CharacterArmJoints } {
   const scale = rig.morphology.scale;
   const forward = new Vector3(
@@ -442,13 +577,110 @@ function resolveMeleeArms(
   if (lateralLeft.lengthSq() < 1e-8) lateralLeft.set(1, 0, 0);
   else lateralLeft.normalize();
   const up = new Vector3().crossVectors(forward, lateralLeft).normalize();
+  const frame = { forward, lateralLeft, up };
+  const chestFrame = resolveChestFrame(
+    visibleChestRotation ? new Quaternion(...visibleChestRotation) : torso.chestRotation,
+  );
+  const halfShoulderWidth = rig.morphology.shoulderWidth / 2;
+  const weapon = action.arms.right
+    ? placeDeclaredArm(action.arms.right, torso.rightShoulder, -halfShoulderWidth, chestFrame)
+    : resolveMeleeWeaponArm(torso, baseRightArm, frame, scale, action);
+  const offhand = action.arms.left
+    ? placeDeclaredArm(action.arms.left, torso.leftShoulder, halfShoulderWidth, chestFrame)
+    : resolveMeleeOffhandGuard(torso, baseLeftArm, frame, scale, action);
+
+  return {
+    leftArm: solveTwoBoneArm(
+      torso.leftShoulder,
+      offhand.target,
+      offhand.pole,
+      rig.morphology.upperArmLength,
+      rig.morphology.forearmLength,
+    ),
+    rightArm: solveTwoBoneArm(
+      torso.rightShoulder,
+      weapon.target,
+      weapon.pole,
+      rig.morphology.upperArmLength,
+      rig.morphology.forearmLength,
+    ),
+  };
+}
+
+interface MeleeFrame {
+  forward: Vector3;
+  lateralLeft: Vector3;
+  up: Vector3;
+}
+
+/** Where a wrist goes and where its elbow bends towards. */
+interface MeleeArmGuide {
+  pole: Vector3;
+  target: Vector3;
+}
+
+/** The chest's own frame: the axes the chest is turned to, so the arms keep their place against the body whatever the torso does. */
+function resolveChestFrame(chestRotation: Quaternion): MeleeFrame {
+  return {
+    forward: new Vector3(0, 0, 1).applyQuaternion(chestRotation),
+    lateralLeft: new Vector3(1, 0, 0).applyQuaternion(chestRotation),
+    up: new Vector3(0, 1, 0).applyQuaternion(chestRotation),
+  };
+}
+
+/**
+ * Places a declared arm pose in the chest's own frame. The pose is measured from the midpoint of the skeleton's shoulder
+ * joints, each `shoulderLeft` (negative on the right) along the shoulder line from it, so it is laid off from the arm's
+ * own shoulder. The avatar then moves wrist and pole onto the skeleton's shoulder, which the controller's stands near.
+ */
+function placeDeclaredArm(
+  pose: ProceduralMeleeArmPose,
+  shoulder: Vector3,
+  shoulderLeft: number,
+  frame: MeleeFrame,
+): MeleeArmGuide {
+  const place = ([left, up, forward]: readonly [number, number, number]) =>
+    shoulder
+      .clone()
+      .addScaledVector(frame.lateralLeft, left - shoulderLeft)
+      .addScaledVector(frame.up, up)
+      .addScaledVector(frame.forward, forward);
+  return { pole: place(pose.elbow), target: place(pose.wrist) };
+}
+
+/** The sword arm the controller places by its own targets, for a weapon it orients in actor space. */
+function resolveMeleeWeaponArm(
+  torso: CharacterTorsoJoints,
+  baseRightArm: CharacterArmJoints,
+  frame: MeleeFrame,
+  scale: number,
+  action: ProceduralMeleeUpperBodyPose,
+): MeleeArmGuide {
+  const { forward, lateralLeft, up } = frame;
   const weaponTargets = resolveMeleeWeaponTargets(torso, forward, lateralLeft, up, scale, action);
-  const weaponTarget = baseRightArm.wrist
+  const target = baseRightArm.wrist
     .clone()
     .lerp(weaponTargets.guard, action.actionWeight)
     .lerp(weaponTargets.windup, action.windupProgress * action.actionWeight)
     .lerp(weaponTargets.contact, action.strikeProgress * action.actionWeight)
     .lerp(weaponTargets.follow, action.followThrough * action.actionWeight);
+  const pole = torso.rightShoulder
+    .clone()
+    .addScaledVector(lateralLeft, -0.52 * scale)
+    .addScaledVector(up, 0.12 * scale)
+    .addScaledVector(forward, -0.24 * scale);
+  return { pole, target };
+}
+
+/** Where the left wrist goes, and which way the left elbow points, for a shield held in the fist or an empty hand. */
+function resolveMeleeOffhandGuard(
+  torso: CharacterTorsoJoints,
+  baseLeftArm: CharacterArmJoints,
+  frame: MeleeFrame,
+  scale: number,
+  action: ProceduralMeleeUpperBodyPose,
+): MeleeArmGuide {
+  const { forward, lateralLeft, up } = frame;
   const shieldEngagement = Math.max(action.strikeProgress, action.contactProgress, action.followThrough * 0.72);
   const shieldLateral = (action.mounted ? 0.64 : 0.52) + shieldEngagement * (action.mounted ? 0.14 : 0.16);
   const shieldGuard = torso.chest
@@ -461,36 +693,15 @@ function resolveMeleeArms(
     .addScaledVector(forward, 0.18 * scale)
     .addScaledVector(up, -0.18 * scale)
     .addScaledVector(lateralLeft, 0.26 * scale);
-  const offhandTarget = action.offhandId === "none" ? emptyHandGuard : shieldGuard;
-  const offhandWeight = action.offhandId === "none" ? action.actionWeight * 0.92 : Math.max(0.88, action.actionWeight);
-  const leftTarget = baseLeftArm.wrist.clone().lerp(offhandTarget, offhandWeight);
-  const rightPole = torso.rightShoulder
-    .clone()
-    .addScaledVector(lateralLeft, -0.52 * scale)
-    .addScaledVector(up, 0.12 * scale)
-    .addScaledVector(forward, -0.24 * scale);
-  const leftPole = torso.leftShoulder
+  const offhandTarget = action.offhandCarry === "none" ? emptyHandGuard : shieldGuard;
+  const offhandWeight =
+    action.offhandCarry === "none" ? action.actionWeight * 0.92 : Math.max(0.88, action.actionWeight);
+  const pole = torso.leftShoulder
     .clone()
     .addScaledVector(lateralLeft, 0.48 * scale)
     .addScaledVector(up, -0.16 * scale)
     .addScaledVector(forward, 0.08 * scale);
-
-  return {
-    leftArm: solveTwoBoneArm(
-      torso.leftShoulder,
-      leftTarget,
-      leftPole,
-      rig.morphology.upperArmLength,
-      rig.morphology.forearmLength,
-    ),
-    rightArm: solveTwoBoneArm(
-      torso.rightShoulder,
-      weaponTarget,
-      rightPole,
-      rig.morphology.upperArmLength,
-      rig.morphology.forearmLength,
-    ),
-  };
+  return { pole, target: baseLeftArm.wrist.clone().lerp(offhandTarget, offhandWeight) };
 }
 
 function resolveMeleeWeaponTargets(
@@ -599,8 +810,8 @@ function resolveGroundedPelvis(
     Math.sin(elapsedSeconds * 0.72 + resolveSeededMotionValue(config.seed, 47) * Math.PI) *
     config.motionVariation *
     0.008;
-  const ankleHeight = config.animationMode === "walk" ? morphology.foot.ankleHeight : CHARACTER_GROUND_Y;
-  const baseHeight = ankleHeight + morphology.thighLength + morphology.shinLength - morphology.scale * 0.055;
+  const baseHeight =
+    morphology.foot.ankleHeight + morphology.thighLength + morphology.shinLength - morphology.scale * 0.055;
   return new Vector3(
     balancedWeightShift * config.hipSway * lateralScale * locomotionWeight + lateralVariation,
     baseHeight + verticalStep,
@@ -640,8 +851,7 @@ function resolveGroundedLeg(
 ): CharacterLegJoints {
   const morphology = rig.morphology;
   const sideSign = side === "left" ? 1 : -1;
-  const signedHipWidth = morphology.hipWidth * sideSign;
-  const hip = pelvis.clone().add(new Vector3(signedHipWidth * 0.5, -0.08, 0));
+  const hip = resolveHip(rig, pelvis, side);
   const locomotionWeight = config.animationMode === "idle" ? 0 : 1;
   const gaitProfile = resolveProceduralCharacterGaitProfile(config);
   const strideVariation =
@@ -662,7 +872,7 @@ function resolveGroundedLeg(
   const roll = config.animationMode === "walk" ? resolveWalkingFootRoll(gait.feet[side], morphology.foot) : undefined;
   const ankleTarget = new Vector3(
     sideSign * stepWidth * 0.5,
-    (roll ? 0 : CHARACTER_GROUND_Y) + trajectory.lift,
+    (roll ? 0 : morphology.foot.ankleHeight) + trajectory.lift,
     targetPelvis.z + trajectory.forward - (1 - locomotionWeight) * morphology.scale * 0.055,
   );
   if (resolvePlantTarget) {
@@ -676,11 +886,52 @@ function resolveGroundedLeg(
   return { ...solved, cycle: gait.feet[side], hip, roll };
 }
 
+function resolveHip(rig: ResolvedCharacterRig, pelvis: Vector3, side: CharacterFootId): Vector3 {
+  const signedHipWidth = rig.morphology.hipWidth * (side === "left" ? 1 : -1);
+  return pelvis.clone().add(new Vector3(signedHipWidth * 0.5, -0.08 * rig.morphology.scale, 0));
+}
+
+/**
+ * A standing leg of a declared body: the ankle where the stance puts it, lifted while the foot steps between two
+ * stances as high as a walking foot clears the ground, and the knee bending towards where the toes point.
+ */
+function resolveDeclaredStanceLeg(
+  rig: ResolvedCharacterRig,
+  config: ProceduralCharacterConfig,
+  gait: ProceduralCharacterGaitSignals,
+  pelvis: Vector3,
+  side: CharacterFootId,
+  body: ProceduralMeleeHeldBody,
+  resolvePlantTarget?: ProceduralPlantTargetResolver<CharacterFootId>,
+): CharacterLegJoints {
+  const morphology = rig.morphology;
+  const placement = body.stance[side];
+  const origin = resolveStanceOrigin(rig);
+  const steppingClearance =
+    config.stepHeight *
+    morphology.scale *
+    resolveProceduralCharacterGaitProfile({ animationMode: "walk" }).clearanceScale;
+  const ankleTarget = new Vector3(
+    origin.x + placement.left,
+    morphology.foot.ankleHeight + steppingClearance * body.footLift[side],
+    origin.z + placement.forward,
+  );
+  if (resolvePlantTarget) {
+    ankleTarget.fromArray(resolvePlantTarget(side, gait.feet[side], toVectorTuple(ankleTarget), config.footPlant));
+  }
+  const yawRadians = degreesToRadians(placement.yaw);
+  const hip = resolveHip(rig, pelvis, side);
+  const toes = new Vector3(Math.sin(yawRadians), 0, Math.cos(yawRadians));
+  const solved = solveTwoBoneLeg(hip, ankleTarget, morphology.thighLength, morphology.shinLength, toes);
+  return { ...solved, cycle: gait.feet[side], hip, yawRadians };
+}
+
 function solveTwoBoneLeg(
   hip: Vector3,
   target: Vector3,
   thighLength: number,
   shinLength: number,
+  kneeDirection: Vector3 = Z_AXIS,
 ): Pick<CharacterLegJoints, "ankle" | "knee"> {
   const offset = target.clone().sub(hip);
   const rawDistance = Math.max(offset.length(), 1e-5);
@@ -689,7 +940,7 @@ function solveTwoBoneLeg(
   const ankle = hip.clone().addScaledVector(direction, distance);
   const along = (thighLength * thighLength - shinLength * shinLength + distance * distance) / (2 * distance);
   const bendDistance = Math.sqrt(Math.max(0, thighLength * thighLength - along * along));
-  const bendDirection = Z_AXIS.clone().addScaledVector(direction, -Z_AXIS.dot(direction));
+  const bendDirection = kneeDirection.clone().addScaledVector(direction, -kneeDirection.dot(direction));
   if (bendDirection.lengthSq() < 1e-8) bendDirection.set(0, 1, 0);
   bendDirection.normalize();
   const knee = hip.clone().addScaledVector(direction, along).addScaledVector(bendDirection, bendDistance);
@@ -963,11 +1214,13 @@ function assembleCharacterPose(input: {
         cycle: input.leftLeg.cycle,
         target: toVectorTuple(input.leftLeg.ankle),
         ...(input.leftLeg.roll && { roll: input.leftLeg.roll }),
+        ...(input.leftLeg.yawRadians !== undefined && { yawRadians: input.leftLeg.yawRadians }),
       },
       right: {
         cycle: input.rightLeg.cycle,
         target: toVectorTuple(input.rightLeg.ankle),
         ...(input.rightLeg.roll && { roll: input.rightLeg.roll }),
+        ...(input.rightLeg.yawRadians !== undefined && { yawRadians: input.rightLeg.yawRadians }),
       },
     },
     phase: input.gait.phase,
