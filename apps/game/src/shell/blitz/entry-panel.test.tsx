@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, useLocation } from "react-router-dom";
 import type { Call } from "starknet";
 import { afterEach, expect, it, vi } from "vitest";
 
@@ -28,6 +28,7 @@ vi.mock("@/ui/modules/identity/wallet-actions", () => ({
 }));
 
 import type { PayoutWallet } from "@realms-world/identity";
+import type { DirectoryGame } from "../herald";
 import { type EnvironmentLedger, environmentLedger, type SlotKey } from "../value/ledger";
 import { type EntryTerms, entryTermsKey } from "./entry";
 import { PaidEntry } from "./entry-panel";
@@ -58,8 +59,12 @@ const TERMS: EntryTerms = {
 };
 const unmounts: (() => Promise<void>)[] = [];
 
+/** Where the panel's buttons lead. */
+const Where = () => <output data-where>{useLocation().pathname}</output>;
+const whereOf = (container: HTMLElement) => container.querySelector("[data-where]")!.textContent;
+
 /** The ledger's terms for the payout wallet 0x4a1. */
-const mount = async (terms: EntryTerms, wallet: PayoutWallet = WALLET) => {
+const mount = async (terms: EntryTerms, wallet: PayoutWallet = WALLET, game?: DirectoryGame) => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const client = new QueryClient({ defaultOptions: { queries: { staleTime: Infinity, retry: false } } });
   client.setQueryData(entryTermsKey(SLOT, "0x4a1"), terms);
@@ -70,7 +75,8 @@ const mount = async (terms: EntryTerms, wallet: PayoutWallet = WALLET) => {
     root.render(
       <QueryClientProvider client={client}>
         <MemoryRouter>
-          <PaidEntry ledger={LEDGER} slot={SLOT} wallet={wallet} />
+          <PaidEntry ledger={LEDGER} slot={SLOT} wallet={wallet} game={game} />
+          <Where />
         </MemoryRouter>
       </QueryClientProvider>,
     ),
@@ -117,7 +123,7 @@ it("pays the seat and the chosen flags from the payout wallet, a credit paying f
   ]);
 });
 
-it("names what is short, the registration, the seat, and the refund", async () => {
+it("names what is short, the registration, and the refund", async () => {
   expect((await mount({ ...TERMS, lords: 320n * WEI })).textContent).toContain("Need 180 more LORDS");
   // 0.1 LORDS short of the 500 seat is one more to find, never "Need 0 more".
   expect((await mount({ ...TERMS, lords: 500n * WEI - WEI / 10n })).textContent).toContain("Need 1 more LORDS");
@@ -134,10 +140,8 @@ it("names what is short, the registration, the seat, and the refund", async () =
   };
   const registered = (await mount({ ...TERMS, registration: seat })).textContent;
   expect(registered).toContain("Registered");
+  expect(registered).toContain("Your seat is drawn when entry closes.");
   expect(registered).not.toContain("Seated");
-  const seated = await mount({ ...TERMS, registration: { ...seat, gameId: 9 } });
-  expect(seated.textContent).toContain("Seated");
-  expect(seated.textContent).toContain("Your game");
   expect((await mount({ ...TERMS, registration: { ...seat, refundable: true } })).textContent).toContain("Not seated");
   const refund = await mount({ ...TERMS, registration: seat, cancelled: true });
   expect(refund.textContent).toContain("Sword credit");
@@ -146,6 +150,29 @@ it("names what is short, the registration, the seat, and the refund", async () =
   expect(signed.calls).toEqual([[expect.objectContaining({ entrypoint: "refund", calldata: ["0x52", "7"] })]]);
 
   expect((await mount(TERMS, { status: "no_wallet" })).textContent).toContain("Entry is paid from your payout wallet");
+});
+
+it("reads Seated for the whole game, from the roster the shard froze, with the way to that game", async () => {
+  // As the ledger holds it while the game runs: registered, no game bound yet (that comes with the game's result).
+  const during = { ...TERMS.registration, registered: true, paid: 500n * WEI, gameId: 0 };
+  const closed = { ...TERMS, close: Math.floor(Date.now() / 1000) - 600, registration: during };
+  const game = { chainId: "0x52", game_id: 9, slotId: 7, status: "Live" } as DirectoryGame;
+
+  const seated = await mount(closed, WALLET, game);
+  expect(seated.textContent).toContain("Seated");
+  expect(seated.textContent).not.toContain("Your seat is");
+  await press(seated, "Your game");
+  expect(whereOf(seated)).toBe("/blitz/game-0x52-9");
+
+  // Between the close and the roster: registered, and no longer promising a draw "when entry closes".
+  const drawing = (await mount(closed)).textContent;
+  expect(drawing).toContain("Registered");
+  expect(drawing).toContain("Entry has closed. Your seat is being drawn.");
+
+  // Settled: the ledger names the game, which has left the directory, so there is no lobby to lead to.
+  const settled = await mount({ ...closed, registration: { ...during, gameId: 9 } });
+  expect(settled.textContent).toContain("Seated");
+  expect([...settled.querySelectorAll("button")].map((button) => button.textContent)).toEqual([]);
 });
 
 it("lets a linked payout wallet pay at once: nothing waits on a link", async () => {

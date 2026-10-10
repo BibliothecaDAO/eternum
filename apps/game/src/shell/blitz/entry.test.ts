@@ -41,8 +41,8 @@ it("splits what an entry pays as the ledger settles it: the treasury's cut, then
 
 it("tells choosing, short of LORDS, registered, refund and refunded apart", () => {
   const both = { sword: true, shield: true };
-  expect(entryState(terms(), both, 900)).toBe("choose");
-  expect(entryState(terms({ lords: 320n * WEI }), both, 900)).toBe("short");
+  expect(entryState(terms(), both, 900, false)).toBe("choose");
+  expect(entryState(terms({ lords: 320n * WEI }), both, 900, false)).toBe("short");
   const seated = {
     registered: true,
     sword: true,
@@ -53,17 +53,17 @@ it("tells choosing, short of LORDS, registered, refund and refunded apart", () =
     refundable: false,
     gameId: 0,
   };
-  expect(entryState(terms({ registration: seated }), both, 900)).toBe("registered");
-  expect(entryState(terms({ registration: seated, cancelled: true }), both, 900)).toBe("refund");
+  expect(entryState(terms({ registration: seated }), both, 900, false)).toBe("registered");
+  expect(entryState(terms({ registration: seated, cancelled: true }), both, 900, false)).toBe("refund");
   const back = { ...seated, swordCredit: false, paid: 0n };
-  expect(entryState(terms({ registration: back, cancelled: true }), both, 900)).toBe("refunded");
+  expect(entryState(terms({ registration: back, cancelled: true }), both, 900, false)).toBe("refunded");
 });
 
-it("closes the entry once the slot has closed; a registration stays registered until the ledger names its game", () => {
+it("closes the entry once the slot has closed; a registration is seated once a game's roster names its wallet", () => {
   const both = { sword: true, shield: true };
-  expect(entryState(terms(), both, 999)).toBe("choose");
-  expect(entryState(terms(), both, 1_000)).toBe("closed");
-  expect(entryState(terms({ lords: 0n }), both, 2_000)).toBe("closed");
+  expect(entryState(terms(), both, 999, false)).toBe("choose");
+  expect(entryState(terms(), both, 1_000, false)).toBe("closed");
+  expect(entryState(terms({ lords: 0n }), both, 2_000, false)).toBe("closed");
   const seated = {
     registered: true,
     sword: false,
@@ -74,9 +74,15 @@ it("closes the entry once the slot has closed; a registration stays registered u
     refundable: false,
     gameId: 0,
   };
-  expect(entryState(terms({ registration: seated }), both, 2_000)).toBe("registered");
-  expect(entryState(terms({ registration: { ...seated, gameId: 7 } }), both, 2_000)).toBe("seated");
-  expect(entryState(terms({ registration: seated, cancelled: true }), both, 2_000)).toBe("refund");
+  // Past the close a registration is still only registered until a game's roster names the wallet.
+  expect(entryState(terms({ registration: seated }), both, 2_000, false)).toBe("registered");
+  // Seated for the whole game: the roster froze the wallet, though the ledger binds the game only at its result.
+  expect(entryState(terms({ registration: seated }), both, 2_000, true)).toBe("seated");
+  // Settled: the ledger names the game, and the game has left the directory.
+  expect(entryState(terms({ registration: { ...seated, gameId: 7 } }), both, 2_000, false)).toBe("seated");
+  // A roster seat never hides a refund the ledger owes.
+  expect(entryState(terms({ registration: { ...seated, refundable: true } }), both, 2_000, true)).toBe("refund");
+  expect(entryState(terms({ registration: seated, cancelled: true }), both, 2_000, false)).toBe("refund");
 });
 
 it("refunds a registration the slot's close left unseated, as a cancelled slot's, never one a game consumed", () => {
@@ -91,12 +97,17 @@ it("refunds a registration the slot's close left unseated, as a cancelled slot's
     refundable: true,
     gameId: 0,
   };
-  expect(entryState(terms({ registration: unseated }), both, 2_000)).toBe("refund");
-  expect(entryState(terms({ registration: { ...unseated, paid: 0n } }), both, 2_000)).toBe("refunded");
+  expect(entryState(terms({ registration: unseated }), both, 2_000, false)).toBe("refund");
+  expect(entryState(terms({ registration: { ...unseated, paid: 0n } }), both, 2_000, false)).toBe("refunded");
   // A registration a game consumed is never owed back, whatever became of its slot: the ledger refuses it.
   expect(
-    entryState(terms({ registration: { ...unseated, refundable: false, gameId: 7 }, cancelled: true }), both, 2_000),
+    entryState(
+      terms({ registration: { ...unseated, refundable: false, gameId: 7 }, cancelled: true }),
+      both,
+      2_000,
+      false,
+    ),
   ).toBe("seated");
   // A registration is uncapped: no count of others ever turns a payer away before close.
-  expect(entryState(terms(), both, 900)).toBe("choose");
+  expect(entryState(terms(), both, 900, false)).toBe("choose");
 });

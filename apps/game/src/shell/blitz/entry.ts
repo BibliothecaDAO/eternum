@@ -62,17 +62,19 @@ export const entryCost = (terms: Pick<EntryTerms, "prices" | "credits">, choice:
 type EntryState = "choose" | "short" | "registered" | "seated" | "refund" | "refunded" | "closed";
 
 /**
- * The panel's state. A registration is "registered" until the slot's close draws its games, then "seated" once the
- * ledger names its game; on a cancelled slot, or a registration the close left unseated (refundable), a refund until
+ * The panel's state. A registration is "registered" until the slot's close draws its games, then "seated" once a game
+ * of the slot froze the wallet on its roster (`onRoster`, which the shard decides and Herald serves). The ledger binds
+ * a registration to its game only when that game's result is applied, so its game id says "settled", which is seated
+ * too, and nothing sooner. On a cancelled slot, or a registration the close left unseated (refundable), a refund until
  * the paid LORDS and spent credits are back. Anyone else: closed once the slot has closed, else choosing or short of
  * LORDS (a linked wallet pays at once, the wallet sheet checking its STRK for the fee).
  */
-export const entryState = (terms: EntryTerms, choice: EntryChoice, now: number): EntryState => {
+export const entryState = (terms: EntryTerms, choice: EntryChoice, now: number, onRoster: boolean): EntryState => {
   const { registration } = terms;
   if (refundOwed(registration, terms.cancelled)) return "refund";
   if (registration.registered && registration.gameId === 0 && (terms.cancelled || registration.refundable))
     return "refunded";
-  if (registration.registered) return registration.gameId === 0 ? "registered" : "seated";
+  if (registration.registered) return onRoster || registration.gameId !== 0 ? "seated" : "registered";
   if (now >= terms.close) return "closed";
   if (terms.lords < entryCost(terms, choice).cash) return "short";
   return "choose";

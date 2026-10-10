@@ -1,5 +1,7 @@
 import type { PlaytestSlot } from "@/ui/features/factory-v2/api/factory-worker";
-import { canEnterGame, isGameOver, isMember } from "@/runtime/world/directory";
+import { canEnterGame, isGameOver, isMember, rosterWalletOf } from "@/runtime/world/directory";
+import { feltEquals } from "@bibliothecadao/eternum/game-client";
+import { isSameStarknetAddress } from "@realms-world/identity";
 
 import { BLITZ_SEATS } from "./blitz-slot";
 import type { DirectoryGame } from "./herald";
@@ -64,6 +66,28 @@ export const gameRowKey = (shard: string, gameId: number) => `game:${shard}:${ga
 /** The slot a launched paid Blitz was filled from; null for any game outside a slot. */
 export const gameSlotKeyOf = (game: DirectoryGame): SlotKey | null =>
   game.slotId == null ? null : { shard: game.chainId, slotId: game.slotId };
+
+/**
+ * The launched game of a slot that seats a wallet: the shard froze its roster at the slot's close, and Herald names the
+ * wallet frozen for the reader's own seat. Undefined before the close, for a wallet the close left unseated, and once
+ * the game has left the directory.
+ */
+export const seatedGameOf = (
+  games: readonly DirectoryGame[],
+  slot: SlotKey,
+  wallet: string,
+): DirectoryGame | undefined =>
+  games.find((game) => {
+    const key = gameSlotKeyOf(game);
+    const seat = rosterWalletOf(game);
+    return (
+      key !== null &&
+      key.slotId === slot.slotId &&
+      feltEquals(key.shard, slot.shard) &&
+      seat !== null &&
+      isSameStarknetAddress(seat, wallet)
+    );
+  });
 
 /** The row a card with room for one shows: the player's own game to enter, else the next slot to open. */
 export const leadBlitzRow = (rows: readonly BlitzRow[]): BlitzRow | undefined =>
