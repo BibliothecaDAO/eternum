@@ -105,7 +105,7 @@ export const FactoryV2Content = () => {
         .filter((slot) => !slot.frozenAt)
         .map((slot) => (
           <p key={slot.name} className="border-t border-gold/20 pt-3">
-            {slot.name} · {slot.registrations.length} players · closes {new Date(slot.closesAt).toLocaleString()}
+            {slot.name} · closes {new Date(slot.closesAt).toLocaleString()}
           </p>
         ))}
       {needsAttention.length > 0 && (

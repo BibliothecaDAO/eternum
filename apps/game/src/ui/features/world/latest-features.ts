@@ -69,6 +69,12 @@ const allLatestFeatures: LatestFeature[] = [
     type: "fix",
   },
   {
+    date: "2026-10-10",
+    title: "Free Blitz signup removed",
+    description: "Blitz no longer offers free signup from the lobby. Entry is paid through a linked Starknet wallet.",
+    type: "fix",
+  },
+  {
     date: "2026-10-09",
     title: "Clearer Blitz results",
     description:
