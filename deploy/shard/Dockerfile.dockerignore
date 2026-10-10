@@ -8,8 +8,10 @@
 **/*.log
 **/__pycache__
 **/.venv
-**/host-keys.json
-**/authority.json
-**/harness.env
+**/host-keys.json*
+**/authority.json*
+**/harness.env*
+**/*.env.*
+**/device.json*
 
-**/vrf-key.json
+**/vrf-key.json*
