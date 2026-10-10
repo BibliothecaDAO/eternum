@@ -2416,4 +2416,14 @@ fn two_games_cannot_consume_the_same_registration() {
     fixture.ledger.apply_results(SLOT_KEY, 8, ranked_players(1));
 }
 
-
+#[test]
+#[feature("safe_dispatcher")]
+fn slot_open_reserves_one_settlement_tick_before_season_end() {
+    let fixture = deploy_fixture(default_preset());
+    start_cheat_caller_address(fixture.ledger_address, OPERATOR());
+    let safe = IGameLedgerSafeDispatcher { contract_address: fixture.ledger_address };
+    let key = SlotKey { shard: 'shard', slot_id: 99 };
+    assert!(safe.open_slot(key, 1, PRESET_ID, START, END + 40).is_err());
+    fixture.ledger.open_slot(key, 1, PRESET_ID, START, END + 39);
+    assert!(fixture.ledger.get_slot(key).end == END + 39);
+}
