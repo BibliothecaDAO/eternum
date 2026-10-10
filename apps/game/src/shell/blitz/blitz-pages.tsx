@@ -7,7 +7,7 @@ import { Button } from "@/ui/design-system/kit/button";
 import { ReasonPlate } from "@/ui/design-system/kit/reason-plate";
 import { formatClockTime } from "@/ui/design-system/kit/time";
 
-import type { BlitzRow } from "../blitz-rows";
+import { type BlitzRow, rowEntryOf } from "../blitz-rows";
 import { useJoinOnReturn, useJoinSlot } from "../blitz-slot";
 import { ClockChip } from "../clock-chip";
 import { useLayout } from "../frame/layout";
@@ -24,7 +24,6 @@ import { type PlayFacts, usePlayFacts } from "../play/play-facts";
 import { LiveChip, StateChip } from "../play/state-chip";
 import { ServiceFailure } from "../service-failure";
 import { FailureLine } from "../sign-in/failure-line";
-import { gameEntryOf } from "../value/game-entry";
 import { BLITZ_WORDS, ENTRY_WORDS, WALLET_WORDS, WORDS } from "../words";
 import { PaidEntry } from "./entry-panel";
 import { GameRow, SeatsChip } from "./game-row";
@@ -180,8 +179,8 @@ export const BlitzLobbyPage = () => {
   const seats = seatsOf(row, join.realmsId, player);
   const clock = <LobbyClock row={row} step={step} now={facts.now} />;
   const desktop = layout === "desktop";
-  // A slot's entry is free or paid on the ledger the launch service names; a paid slot is never the free join.
-  const entry = row.kind === "slot" ? gameEntryOf(row.slot) : ({ kind: "free" } as const);
+  // A row's entry is free or paid on the ledger the services name; a paid game is never the free join.
+  const entry = rowEntryOf(row);
   const wallet = session ? payoutWalletOf(session.user) : null;
   const action =
     entry.kind === "free" ? (

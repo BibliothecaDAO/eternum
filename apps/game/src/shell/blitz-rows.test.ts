@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { PlaytestSlot } from "@/ui/features/factory-v2/api/factory-worker";
 
-import { blitzRows, leadBlitzRow } from "./blitz-rows";
+import { blitzRows, leadBlitzRow, rowEntryOf } from "./blitz-rows";
 import type { DirectoryGame } from "./herald";
 
 const ME = "0x7";
@@ -116,4 +116,17 @@ it("keeps ended Blitz games available to watch until their settled result lists"
   expect(rows).toMatchObject([{ key: "game:0xa:7", action: "spectate", startsAt: null }]);
   expect(leadBlitzRow(rows)?.key).toBe("game:0xa:7");
   expect(blitzRows([{ ...ended, status: "Settled" }], [], ME)).toEqual([]);
+});
+
+describe("a Blitz row's entry", () => {
+  const LEDGER = { address: "0x1ed9e7", chainId: "0x534e5f4d41494e", feeToken: "0x57e1", shard: "0xa", gameId: 1 };
+
+  it("reads a directory game's declared entry, as a slot's, and never defaults it to free", () => {
+    const [game] = blitzRows([{ ...blitz(1, {}), entry: { kind: "paid", ledger: LEDGER } } as DirectoryGame], [], ME);
+    expect(rowEntryOf(game)).toEqual({ kind: "paid", ledger: LEDGER });
+    const [undeclared] = blitzRows([blitz(1, {})], [], ME);
+    expect(rowEntryOf(undeclared)).toEqual({ kind: "broken" });
+    const [filling] = blitzRows([], [slot("soon", 1_042)], ME);
+    expect(rowEntryOf(filling)).toEqual({ kind: "free" });
+  });
 });

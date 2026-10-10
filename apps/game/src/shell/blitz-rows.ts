@@ -3,6 +3,7 @@ import { canEnterGame, isGameOver, isMember } from "@/runtime/world/directory";
 
 import { BLITZ_SEATS, registrationFor, seatsFilling } from "./blitz-slot";
 import type { DirectoryGame } from "./herald";
+import { directoryGameEntryOf, gameEntryOf } from "./value/game-entry";
 
 /** A row's one action: play the game, watch it, join its slot, or a check for a seat already taken. */
 export type BlitzAction = "enter" | "spectate" | "join" | "registered";
@@ -40,6 +41,10 @@ export const blitzRows = (
     ...filling.map((slot) => slotRow(slot, realmsId)),
   ];
 };
+
+/** A row's entry terms as the services declare them: a slot's own, or its directory game's; never a default. */
+export const rowEntryOf = (row: BlitzRow) =>
+  row.kind === "slot" ? gameEntryOf(row.slot) : directoryGameEntryOf(row.game);
 
 /** The row a card with room for one shows: the player's own game to enter, else the next slot to join. */
 export const leadBlitzRow = (rows: readonly BlitzRow[]): BlitzRow | undefined =>
