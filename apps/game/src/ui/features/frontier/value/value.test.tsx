@@ -7,7 +7,7 @@ import { type HeldRealm, planRealmLabor } from "./realm-labor";
 import { RealmsSheet } from "./realms-sheet";
 import { type WithdrawStep, WithdrawSheet } from "./withdraw-sheet";
 import { formatMoment } from "@/ui/design-system/kit/time";
-import { withdrawalRefusal, withdrawStepOf } from "./withdrawal";
+import { withdrawalRefusal, withdrawalsCloseAt, withdrawStepOf } from "./withdrawal";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -82,14 +82,22 @@ describe("Withdraw", () => {
 });
 
 describe("a withdrawal's rules", () => {
-  const open = { ledgerReadable: true, paused: false };
+  // A season ending at 10,000 with a 7-day claim window: the shard stops withdrawals one hour before it ends.
+  const closesAt = withdrawalsCloseAt(10_000, 7 * 86_400);
+  const open = { closesAt, now: closesAt - 1, ledgerReadable: true, paused: false };
 
-  it("refuses while the ledger cannot be read or its payouts are paused", () => {
+  it("closes withdrawals in the claim window's last hour, as the shard does", () => {
+    expect(closesAt).toBe(10_000 + 7 * 86_400 - 3_600);
     expect(withdrawalRefusal(open)).toBeNull();
+    expect(withdrawalRefusal({ ...open, now: closesAt })).toBe("Withdrawals have closed for this season.");
+  });
+
+  it("refuses while the ledger cannot be read or its payouts are paused, the season's close first", () => {
     expect(withdrawalRefusal({ ...open, ledgerReadable: false })).toContain("cannot be read");
     expect(withdrawalRefusal({ ...open, paused: true })).toBe("Payouts paused. Your LORDS stay here.");
-    // A pause not read yet refuses nothing.
-    expect(withdrawalRefusal({ ...open, paused: undefined })).toBeNull();
+    expect(withdrawalRefusal({ ...open, now: closesAt, paused: true })).toContain("closed");
+    // Facts not read yet refuse nothing.
+    expect(withdrawalRefusal({ ...open, closesAt: undefined, paused: undefined })).toBeNull();
   });
 
   it("follows a withdrawal from the shard to its payment on Starknet", () => {

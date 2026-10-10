@@ -5,16 +5,19 @@ import { useNavigate } from "react-router-dom";
 import { useGame } from "@/hooks/context/game-context";
 import { useIdentitySession } from "@/hooks/context/identity-session";
 import { payoutWalletOf } from "@/hooks/context/payout-wallet";
+import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
+import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { l2TransactionUrl } from "@/runtime/l2-rpc";
 import { requireActiveGame } from "@/runtime/world/store";
 import { type EnvironmentLedger, environmentLedger } from "@/shell/value/ledger";
 import { toast } from "@/ui/features/event-feed/notify";
 import { extractReadableErrorMessage } from "@/utils/error-message";
+import { configManager } from "@bibliothecadao/eternum";
 import { type NativeRows, safeInteger } from "@bibliothecadao/eternum/game-client";
 
 import { useRealmLords } from "./use-realm-lords";
 import { WithdrawSheet } from "./withdraw-sheet";
-import { type SentWithdrawal, withdrawalRefusal, withdrawStepOf } from "./withdrawal";
+import { type SentWithdrawal, withdrawalRefusal, withdrawalsCloseAt, withdrawStepOf } from "./withdrawal";
 
 /**
  * Withdraw over the game's facts: the realm's LORDS, the account's payout wallet, and one withdrawal at a time. The
@@ -31,7 +34,12 @@ export const FrontierWithdraw = ({ realm, onClose }: { realm: NativeRows["Struct
   const [sent, setSent] = useState<SentWithdrawal | null>(null);
   const paused = useLedgerPaused(ledger);
   const paidIn = usePaymentTransaction(ledger, sent);
-  const refusal = withdrawalRefusal({ ledgerReadable: ledger !== null, paused });
+  const refusal = withdrawalRefusal({
+    closesAt: useWithdrawalsCloseAt(),
+    now: useNowSeconds(),
+    ledgerReadable: ledger !== null,
+    paused,
+  });
   const held = useRealmLords(realm);
   const wallet = session && payoutWalletOf(session.user);
   if (!wallet) return null;
@@ -68,6 +76,18 @@ export const FrontierWithdraw = ({ realm, onClose }: { realm: NativeRows["Struct
       onClose={onClose}
     />
   );
+};
+
+const CLOSE_MODELS = ["GameRegistry", "ChestRules"] as const;
+
+/** When this season's withdrawals close, from the game's end and its claim window; undefined until both are known. */
+const useWithdrawalsCloseAt = (): number | undefined => {
+  const { setup } = useGame();
+  useNativeRevision(CLOSE_MODELS);
+  const gameId = configManager.getActiveGameId();
+  const game = setup.store.get("GameRegistry", { game_id: gameId });
+  const chests = setup.store.get("ChestRules", { game_id: gameId });
+  return game && chests ? withdrawalsCloseAt(Number(game.end_at), chests.claim_window_seconds) : undefined;
 };
 
 /** Whether the ledger's payouts are paused; undefined until it answers, or where there is no ledger to ask. */
