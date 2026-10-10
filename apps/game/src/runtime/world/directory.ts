@@ -32,7 +32,7 @@ export const fetchDirectory = async (player: string | null = null): Promise<Dire
 
 /** Blitz membership is the roster fact; open-entry modes count anyone registered. Needs the entry read for a player. */
 export const isMember = (game: HeraldGameDirectoryEntry): boolean =>
-  game.mode === "blitz" ? game.player_state?.roster_member === true : game.player_state?.registered === true;
+  game.mode === "blitz" ? game.player_state?.roster_wallet != null : game.player_state?.registered === true;
 
 /** Over at Herald's chain clock: ended, or settled with its recorded result. */
 export const isGameOver = (game: HeraldGameDirectoryEntry): boolean =>
