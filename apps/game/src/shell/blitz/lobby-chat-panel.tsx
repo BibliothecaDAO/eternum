@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
 
 import { useIdentitySession } from "@/hooks/context/identity-session";
 import { YOU } from "@/ui/design-system/kit/words";
@@ -6,17 +6,26 @@ import type { WorldChatMessage } from "@bibliothecadao/types";
 import { displayPlayerName } from "@bibliothecadao/eternum";
 
 import { isSameStarknetAddress } from "@realms-world/identity";
+import { Kbd } from "../frame/kbd";
 import { Panel } from "../panel";
 import { ServiceFailure } from "../service-failure";
 import { CHAT_WORDS } from "../words";
-import { useLobbyChat } from "./lobby-chat";
+import { type ChatHold, useLobbyChat } from "./lobby-chat";
+
+/** The longest message the chat takes (packages/types chat/shared.ts). */
+const MESSAGE_LIMIT = 2000;
+
+const HOLD_LINES: Partial<Record<ChatHold, string>> = {
+  "rate-limited": CHAT_WORDS.rateLimited,
+  refused: CHAT_WORDS.refused,
+};
 
 /**
- * The lobby's chat (desktop): its messages, oldest at the top, read by any signed-in player. It has no field: who may
- * write in a slot's lobby is not ruled yet.
+ * The lobby's chat (desktop): its messages, oldest at the top, read by any signed-in player, and the field for one the
+ * room lets write (a player registered in the slot), Enter sending. A reader sees no field.
  */
-export const LobbyChatPanel = ({ slotName }: { slotName: string }) => {
-  const chat = useLobbyChat(slotName);
+export const LobbyChatPanel = ({ slotName, membership }: { slotName: string; membership: string }) => {
+  const chat = useLobbyChat(slotName, membership);
   return (
     <Panel icon="Ct" title={CHAT_WORDS.chat}>
       {chat.hold === "signed-out" ? (
@@ -24,7 +33,13 @@ export const LobbyChatPanel = ({ slotName }: { slotName: string }) => {
       ) : chat.hold === "unanswered" ? (
         <ServiceFailure service="chat" error={new Error("lobby chat closed")} />
       ) : (
-        <Messages messages={chat.messages} />
+        <>
+          <Messages messages={chat.messages} />
+          {chat.hold && HOLD_LINES[chat.hold] && (
+            <p className="px-1 text-[13px] text-kit-amber">{HOLD_LINES[chat.hold]}</p>
+          )}
+          {chat.canWrite && <Composer send={chat.send} />}
+        </>
       )}
     </Panel>
   );
@@ -55,3 +70,28 @@ const Messages = ({ messages }: { messages: readonly WorldChatMessage[] }) => {
 
 const isOwn = (message: WorldChatMessage, realmsId: string | undefined) =>
   realmsId !== undefined && isSameStarknetAddress(message.sender.playerId, realmsId);
+
+/** The field of a player the room lets write: Enter sends the message. */
+const Composer = ({ send }: { send: (content: string) => void }) => {
+  const [draft, setDraft] = useState("");
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    const content = draft.trim();
+    if (!content) return;
+    send(content);
+    setDraft("");
+  };
+  return (
+    <form onSubmit={submit} className="relative">
+      <input
+        aria-label={CHAT_WORDS.message}
+        placeholder={CHAT_WORDS.message}
+        maxLength={MESSAGE_LIMIT}
+        value={draft}
+        onChange={(event) => setDraft(event.target.value)}
+        className="h-12 w-full rounded-xl border-2 border-kit-line2 bg-kit-ground px-3 pr-16 text-[15px] text-kit-cream placeholder:text-kit-muted focus:border-kit-peach focus:outline-none"
+      />
+      <Kbd keyName="Enter" className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2" />
+    </form>
+  );
+};

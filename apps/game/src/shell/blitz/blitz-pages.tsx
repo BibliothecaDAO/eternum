@@ -26,8 +26,9 @@ import { type PlayFacts, usePlayFacts } from "../play/play-facts";
 import { LiveChip, StateChip } from "../play/state-chip";
 import { ServiceFailure } from "../service-failure";
 import { FailureLine } from "../sign-in/failure-line";
-import { environmentLedger } from "../value/ledger";
+import { type EnvironmentLedger, environmentLedger } from "../value/ledger";
 import { BLITZ_WORDS, ENTRY_WORDS, WALLET_WORDS, WORDS } from "../words";
+import { chatMembershipOf, useEntryTerms } from "./entry";
 import { PaidEntry } from "./entry-panel";
 import { GameRow, SeatsChip } from "./game-row";
 import { type LobbyStep, lobbyId, lobbyRowOf, lobbyStep, lobbyTitle, seatsOf } from "./lobby";
@@ -187,7 +188,7 @@ export const BlitzLobbyPage = () => {
               {clock}
               {action}
             </section>
-            {row.kind === "slot" && <LobbyChatPanel slotName={row.slot.name} />}
+            {row.kind === "slot" && <SlotChat slot={row.slot} wallet={wallet} />}
           </div>
         </div>
       ) : (
@@ -281,6 +282,31 @@ const LobbyAction = ({ row, step, desktop }: { row: BlitzRow; step: LobbyStep; d
         )
       );
   }
+};
+
+/**
+ * A slot's chat. Who writes is the server's decision, taken when the room opens on the payout wallet's registration in
+ * the slot, so the room is opened again whenever that wallet or its registration changes.
+ */
+const SlotChat = ({ slot, wallet }: { slot: PlaytestSlot; wallet: PayoutWallet | null }) => {
+  const ledger = environmentLedger();
+  const address = wallet && wallet.status !== "no_wallet" ? wallet.address : null;
+  if (!ledger || !address)
+    return <LobbyChatPanel slotName={slot.name} membership={chatMembershipOf(address, undefined)} />;
+  return <RegistrantChat ledger={ledger} slot={slot} address={address} />;
+};
+
+const RegistrantChat = ({
+  ledger,
+  slot,
+  address,
+}: {
+  ledger: EnvironmentLedger;
+  slot: PlaytestSlot;
+  address: string;
+}) => {
+  const registration = useEntryTerms(ledger, slotKeyOf(slot), address).data?.registration;
+  return <LobbyChatPanel slotName={slot.name} membership={chatMembershipOf(address, registration)} />;
 };
 
 /**

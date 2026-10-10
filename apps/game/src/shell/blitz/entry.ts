@@ -77,6 +77,13 @@ export const entryState = (terms: EntryTerms, choice: EntryChoice, now: number):
   return "choose";
 };
 
+/**
+ * What a slot's chat room took its write decision on: the payout wallet and its registration there (unread counts as
+ * none). The lobby opens the room again when it changes; the decision itself stays the server's.
+ */
+export const chatMembershipOf = (wallet: string | null, registration: Registration | undefined): string =>
+  [wallet, registration?.registered ?? false, registration?.paid ?? 0n, registration?.refundable ?? false].join(":");
+
 export const slotRegisteredKey = (key: SlotKey) => ["ledger", "registered", key.shard, key.slotId] as const;
 
 /** A slot's registrations as the ledger counts them (uncapped: no total); undefined until it answers. */
