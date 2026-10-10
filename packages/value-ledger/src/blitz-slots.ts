@@ -37,7 +37,7 @@ export async function readLedgerSlot(
   provider: RpcProvider,
   address: string,
   key: LedgerSlotKey,
-  head: number,
+  head: number | "latest",
 ): Promise<LedgerSlot> {
   const fields = await provider.callContract(
     { contractAddress: address, entrypoint: "get_slot", calldata: [key.chainId, String(key.slotId)] },
