@@ -15,7 +15,6 @@ interface LaunchTarget {
 }
 interface LaunchExecutorService {
   execute(run: LaunchRun, store: LaunchRunStore): Effect.Effect<LaunchSummary, LaunchExecutionFailure>;
-  refund(run: LaunchRun): Effect.Effect<number | null, LaunchExecutionFailure>;
 }
 export class LaunchExecutor extends Context.Service<LaunchExecutor, LaunchExecutorService>()("launch/LaunchExecutor") {}
 export const launchTargetOf = (env: LaunchEnv): LaunchTarget => ({
@@ -41,12 +40,6 @@ export const launchExecutorLayer = (target: LaunchTarget, value: BlitzValuePort)
     execute: (run, store) =>
       Effect.tryPromise({
         try: () => executeRun(run, store, target, value),
-        catch: (cause) => new LaunchExecutionFailure({ runId: run.id, cause }),
-      }),
-    refund: (run) =>
-      Effect.tryPromise({
-        try: () =>
-          run.slotId !== null ? value.refundSlot({ chainId: run.chainId, slotId: run.slotId }) : Promise.resolve(null),
         catch: (cause) => new LaunchExecutionFailure({ runId: run.id, cause }),
       }),
   });

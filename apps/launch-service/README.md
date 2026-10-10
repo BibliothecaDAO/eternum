@@ -29,3 +29,8 @@ role back on chain before activation. Pending shards stay invisible to players.
 Runtime settings include `BASE_URL`, `ENVIRONMENT`, `LAUNCHER_ALLOWLIST`, `DEPLOYER_ACCOUNT_ADDRESS`, and the
 `DEPLOYER_PRIVATE_KEY` and `OPERATOR_TOKEN` secrets. `wrangler.jsonc` declares the identity, relay, D1 and registrar
 bindings. No hosting, secret provisioning or live deployment is performed by this change.
+
+To recover a named paid slot, POST `/api/slots/:name/refund?chainId=0x...` with the operator Bearer token. This enables
+ledger refunds by cancelling before close or aborting after end; players then claim their own refund. Between close and
+end it returns 409 with `retryAfterSeconds`; retry after that delay. A 200 with `refundsEnabled: true` confirms refunds
+are enabled (repeating is safe). A linked launcher wallet alone cannot use this recovery route.

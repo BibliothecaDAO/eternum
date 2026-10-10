@@ -452,3 +452,36 @@ test("direct Blitz creation points launchers to ordinary paid slots", async () =
   expect(response.status).toBe(400);
   expect(await store.list("madara.blitz")).toEqual([]);
 });
+
+test("only the operator can enable refunds for a named slot, with an explicit retry boundary", async () => {
+  const value = { ...slotValueFixture(), refundSlot: vi.fn().mockResolvedValue(60) };
+  const slots = new D1SlotStore(
+    database.db,
+    new D1LaunchStore(database.db, testChain()),
+    value,
+    registrationIdentityFixture,
+  );
+  const { app } = createApp(signedIn(ALLOWED_ADDRESS), slots);
+  await slots.create("recovery", day(0).toISOString());
+  const url = "https://play.realms.party/api/slots/recovery/refund";
+  expect(
+    (await app.request(url, { method: "POST", headers: { origin: ALLOWED_ORIGIN, cookie: "session=valid" } })).status,
+  ).toBe(403);
+  expect((await app.request(url, { method: "POST", headers: { authorization: "Bearer wrong" } })).status).toBe(401);
+  expect(value.refundSlot).not.toHaveBeenCalled();
+  const headers = { authorization: `Bearer ${OPERATOR_TOKEN}` };
+  const waiting = await app.request(url, { method: "POST", headers });
+  expect(waiting.status).toBe(409);
+  expect(await waiting.json()).toEqual({ refundsEnabled: false, retryAfterSeconds: 60 });
+  expect(value.refundSlot).toHaveBeenCalledWith({ chainId: TEST_CHAIN, slotId: (await slots.get("recovery")).slotId });
+  value.refundSlot.mockResolvedValue(null);
+  expect(await (await app.request(url, { method: "POST", headers })).json()).toEqual({
+    refundsEnabled: true,
+    retryAfterSeconds: null,
+  });
+  expect(
+    (await app.request("https://play.realms.party/api/slots/missing/refund", { method: "POST", headers })).status,
+  ).toBe(404);
+  value.refundSlot.mockRejectedValue(new Error("ledger unavailable"));
+  expect((await app.request(url, { method: "POST", headers })).status).toBe(503);
+});

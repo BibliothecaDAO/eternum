@@ -69,6 +69,11 @@ export class D1SlotStore implements SlotStore {
     return this.rawSlot(name);
   }
 
+  async refund(name: string): Promise<number | null> {
+    const slot = await this.rawSlot(name);
+    return this.value.refundSlot({ chainId: slot.chainId, slotId: slot.slotId });
+  }
+
   async list(): Promise<PlaytestSlot[]> {
     const { results } = await this.db
       .prepare(`${SELECT_SLOTS} WHERE chain_id=? ORDER BY closes_at,name`)

@@ -52,7 +52,7 @@ export const openSlotOnLedger = (credentials: Credentials, key: LedgerSlotKey, w
       throw new Error("ledger_slot_not_recorded");
   });
 
-/** The current contract cannot abort between start and end. Persisted cleanup retries at that boundary automatically. */
+/** Recovery may cancel before close or abort after end; return the remaining wait between those boundaries. */
 export const refundSlotOnLedger = (credentials: Credentials, key: LedgerSlotKey) =>
   relayOperation("unlock failed Blitz refunds", async (): Promise<number | null> => {
     const provider = rpcAt(credentials.rpcUrl);
