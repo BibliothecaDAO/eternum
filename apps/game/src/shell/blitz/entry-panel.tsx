@@ -15,7 +15,7 @@ import { Loading } from "../loading";
 import { ServiceFailure } from "../service-failure";
 import { useNowSeconds } from "../use-now";
 import { NoStrkLine } from "../value/no-strk-line";
-import { lordsOf, refundCall } from "../value/ledger";
+import { lordsOf, lordsShortOf, refundCall } from "../value/ledger";
 import { useL2Send } from "../value/l2-send";
 import { usePayingWallet } from "../value/paying-wallet";
 import { FailureLine } from "../sign-in/failure-line";
@@ -193,7 +193,11 @@ const EntryPanel = ({
       {refused}
       {sign ||
         (state === "short" ? (
-          <Button role="primary" word={ENTRY_WORDS.needMore(formatExact(lordsOf(cost.cash - terms.lords)))} disabled />
+          <Button
+            role="primary"
+            word={ENTRY_WORDS.needMore(formatExact(lordsShortOf(cost.cash - terms.lords)))}
+            disabled
+          />
         ) : (
           <Button
             role="primary"

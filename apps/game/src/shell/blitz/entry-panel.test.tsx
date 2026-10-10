@@ -139,6 +139,8 @@ it("pays the seat and the chosen flags from the payout wallet, a credit paying f
 
 it("names what is short, the missing STRK, the seat, and the refund", async () => {
   expect((await mount({ ...TERMS, lords: 320n * WEI })).textContent).toContain("Need 180 more LORDS");
+  // 0.1 LORDS short of the 500 seat is one more to find, never "Need 0 more".
+  expect((await mount({ ...TERMS, lords: 500n * WEI - WEI / 10n })).textContent).toContain("Need 1 more LORDS");
   const noStrk = await mount({ ...TERMS, strk: 0n });
   expect(noStrk.textContent).toContain("No STRK for the fee");
   expect(noStrk.querySelector("a")?.getAttribute("href")).toBe("https://app.avnu.fi/en");
