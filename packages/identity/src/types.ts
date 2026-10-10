@@ -58,7 +58,6 @@ export type LedgerLinkStatus =
 export interface PaidGameLedger {
   address: string;
   chainId: string;
-  feeToken: string;
   shard: string;
   gameId: number;
 }

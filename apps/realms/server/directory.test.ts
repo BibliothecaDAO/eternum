@@ -113,9 +113,13 @@ test("pending and retired shards have no player notification watcher", async () 
 test("uses the launch record's paid terms, including L2 chain, even when Herald claims free", async () => {
   const paid = {
     kind: "paid" as const,
-    ledger: { address: "0x10", chainId: "0x534e5f5345504f4c4941", feeToken: "0x30", shard: "0x1", gameId: 1 },
+    ledger: { address: "0x10", chainId: "0x534e5f5345504f4c4941", shard: "0x1", gameId: 1 },
   };
-  const deps = dependencies(async () => ({ chains: [{ chainId: "0x1", games: [{ gameId: 1, entry: paid }] }] }));
+  const deps = dependencies(async () => ({
+    chains: [
+      { chainId: "0x1", games: [{ gameId: 1, entry: { ...paid, ledger: { ...paid.ledger, legacy: "ignored" } } }] },
+    ],
+  }));
   deps.fetchShard.mockResolvedValue(Response.json({ chain: "0x1", games: [{ ...games[0], entry: { kind: "free" } }] }));
   const result = await handleDirectory(new Request("https://app.test/api/directory"), deps);
   expect(((await result.json()) as { shards: { games: { entry: unknown }[] }[] }).shards[0]!.games[0]!.entry).toEqual(
@@ -127,7 +131,7 @@ test("an invalid or missing entry faults the shard instead of becoming a free ga
   vi.spyOn(console, "error").mockImplementation(() => undefined);
   for (const entry of [
     undefined,
-    { kind: "paid", ledger: { address: "0x10", chainId: "0x1", feeToken: "0x2", shard: "0x9", gameId: 1 } },
+    { kind: "paid", ledger: { address: "0x10", chainId: "0x1", shard: "0x9", gameId: 1 } },
   ]) {
     const deps = dependencies(async () => ({ chains: [{ chainId: "0x1", games: [{ gameId: 1, entry }] }] }) as never);
     const response = await handleDirectory(new Request("https://app.test/api/directory"), deps);

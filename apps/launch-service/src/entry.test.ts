@@ -9,7 +9,7 @@ beforeEach(async () => {
 afterEach(() => database.close());
 const paid = {
   kind: "paid" as const,
-  ledger: { address: "0x10", chainId: "0x534e5f5345504f4c4941", feeToken: "0x30", shard: TEST_CHAIN, gameId: 7 },
+  ledger: { address: "0x10", chainId: "0x534e5f5345504f4c4941", shard: TEST_CHAIN, gameId: 7 },
 };
 const summary = {
   environment: "madara.blitz" as const,

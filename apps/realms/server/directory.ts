@@ -125,7 +125,7 @@ const playerGames = (listing: ShardListing, directory: LaunchDirectory | null) =
   const records = directory.chains.find((row) => BigInt(row.chainId) === BigInt(listing.chainId))?.games ?? [];
   return (listing.games ?? []).flatMap((game) => {
     const declared = records.find((row) => row.gameId === game.game_id);
-    return declared ? [{ ...game, entry: declared.entry }] : [];
+    return declared ? [{ ...game, entry: readGameEntry(declared.entry) }] : [];
   });
 };
 

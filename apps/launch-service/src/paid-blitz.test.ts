@@ -39,7 +39,7 @@ const fixture = () => {
       order.push("open");
       return {
         kind: "paid" as const,
-        ledger: { address: "0x10", chainId: "0x2", feeToken: "0x30", shard: "0x1", gameId: 7 },
+        ledger: { address: "0x10", chainId: "0x2", shard: "0x1", gameId: 7 },
       };
     }),
     validateBlitz: vi.fn(async () => {}),
