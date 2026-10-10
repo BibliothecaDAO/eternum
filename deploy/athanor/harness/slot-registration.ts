@@ -1,3 +1,4 @@
+import { normalizeStarknetAddress } from "@realms-world/identity";
 import { setTimeout as sleep } from "node:timers/promises";
 import { operatorRequest } from "../../../packages/core/src/account/operator-request";
 
@@ -124,10 +125,10 @@ async function readCompletedRun(api: SlotLaunchApi, gameName: string): Promise<F
 }
 
 function rostersByGame(slot: SlotRecord, registered: readonly string[]): Map<number, string[]> {
-  const ours = new Set(registered.map(normalizeAddress));
+  const ours = new Set(registered.map(normalizeStarknetAddress));
   const rosters = new Map<number, string[]>();
   for (const registration of [...slot.registrations].sort((left, right) => left.position - right.position)) {
-    if (!ours.has(normalizeAddress(registration.account))) continue;
+    if (!ours.has(normalizeStarknetAddress(registration.account))) continue;
     const roster = rosters.get(registration.gameNumber!) ?? [];
     roster.push(registration.account);
     rosters.set(registration.gameNumber!, roster);
@@ -182,5 +183,3 @@ function batches<T>(items: readonly T[], size: number): T[][] {
     items.slice(index * size, (index + 1) * size),
   );
 }
-
-const normalizeAddress = (address: string) => `0x${BigInt(address).toString(16)}`;
