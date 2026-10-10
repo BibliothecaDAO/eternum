@@ -437,18 +437,18 @@ it.each(["Blitz", "check-blitz-abc"])(
   },
 );
 
-it("exposes each roster member's preparation from their own entry and realm, not aggregate progress", () => {
+it("preserves frozen roster wallets through preparation and checkpoint recovery", () => {
   const { native, fold, decoder } = world();
   const input = { chain: "madara", confirmedBlock: 10, timestamp: 15, fold };
   expect(buildNativeDirectory(input).games.find((game) => game.game_id === 1)!.roster).toEqual([
-    { account: "0x111", prepared: false },
-    { account: "0x222", prepared: false },
+    { account: "0x111", wallet: "0x3e8", prepared: false },
+    { account: "0x222", wallet: "0x3e9", prepared: false },
   ]);
   native.applyReceipt(fold, receipt([structure("7", "1", "0x111")]), 11, 0);
   const prepared = buildNativeDirectory(input).games.find((game) => game.game_id === 1)!.roster;
   expect(prepared).toEqual([
-    { account: "0x111", prepared: true },
-    { account: "0x222", prepared: false },
+    { account: "0x111", wallet: "0x3e8", prepared: true },
+    { account: "0x222", wallet: "0x3e9", prepared: false },
   ]);
   const restored = WorldFold.restore(decoder.registry, fold.checkpoint());
   expect(buildNativeDirectory({ ...input, fold: restored }).games.find((game) => game.game_id === 1)!.roster).toEqual(
