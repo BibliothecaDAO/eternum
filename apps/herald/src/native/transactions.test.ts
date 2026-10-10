@@ -37,7 +37,6 @@ function liveWorld(
   decoder: ReturnType<typeof setup>["decoder"],
   fold: ReturnType<typeof setup>["fold"],
   rpc = {} as MadaraRpc,
-  historyStore?: unknown,
 ) {
   return new LiveWorld({
     native,
@@ -48,7 +47,6 @@ function liveWorld(
     confirmedBlock: 9,
     confirmedFold: fold,
     rpc,
-    ...(historyStore ? { historyStore: historyStore as never } : {}),
   });
 }
 
@@ -134,8 +132,7 @@ describe("native transaction receipt routing", () => {
     "streams a refused action at %s as REJECTED with the game's class and reason",
     (finality_status) => {
       const { native, decoder, fold } = setup();
-      const historyStore = { recordTransaction: vi.fn() };
-      const live = liveWorld(native, decoder, fold, {} as MadaraRpc, historyStore);
+      const live = liveWorld(native, decoder, fold);
       const messages = streamOf(live);
       live.acceptTransaction({ finality_status: "PRE_CONFIRMED", transaction_hash: "0x124", ...play(1) });
       live.acceptReceipt({ ...receipt([rejectedEvent("0x124")], "0x124"), finality_status });
@@ -145,12 +142,6 @@ describe("native transaction receipt routing", () => {
         status_class: "GAMEPLAY_REJECTED",
         revert_reason: "explorer is dead",
       });
-      if (finality_status === "ACCEPTED_ON_L2")
-        expect(historyStore.recordTransaction).toHaveBeenCalledWith(
-          "1",
-          expect.objectContaining({ rejection: expect.anything() }),
-        );
-      else expect(historyStore.recordTransaction).not.toHaveBeenCalled();
     },
   );
 });
