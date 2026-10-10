@@ -1,22 +1,19 @@
 import { StaminaManager } from "@bibliothecadao/eternum";
-import { ID, Troops, TroopTier, TroopType } from "@bibliothecadao/types";
+import { Troops, TroopTier, TroopType } from "@bibliothecadao/types";
 
 import { ArmyStaminaSourceSnapshot } from "./types";
 
 interface ExplorerStaminaSnapshotInput {
-  entityId?: ID;
   currentArmiesTick: number;
   liveTroops?: Troops | null;
 }
 
 export const selectFreshestArmyStaminaSource = (input: {
-  entityId?: ID;
   liveTroops?: Troops | null;
 }): ArmyStaminaSourceSnapshot | null => {
   if (!input.liveTroops) return null;
   return {
     source: "live",
-    entityId: (input.entityId ?? 0) as ID,
     amount: input.liveTroops.stamina?.amount ?? 0n,
     updatedTick: Number(input.liveTroops.stamina?.updated_tick ?? 0n),
     troopCount: Number(input.liveTroops.count ?? 0n),
@@ -24,7 +21,7 @@ export const selectFreshestArmyStaminaSource = (input: {
   };
 };
 
-const selectFreshestTroopsSnapshot = (input: { entityId?: ID; liveTroops?: Troops | null }): Troops | null =>
+const selectFreshestTroopsSnapshot = (input: { liveTroops?: Troops | null }): Troops | null =>
   selectFreshestArmyStaminaSource(input)?.troops ?? null;
 
 export const getExplorerStaminaSnapshot = (

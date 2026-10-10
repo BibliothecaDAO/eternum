@@ -20,8 +20,8 @@ describe("stored biome", () => {
   });
 });
 
-it("resolves an occupied u64 entity without converting its identity to a floating-point number", () => {
-  const entity = (1n << 56n) + 19n;
+it("resolves an occupied entity at the id cap exactly, keeping its bigint identity", () => {
+  const entity = BigInt(Number.MAX_SAFE_INTEGER);
   const store = new NativeFactStore();
   store.applyFacts([
     {

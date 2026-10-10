@@ -37,7 +37,7 @@ export const openStructureContextMenu = ({ event, structure, hexCoords, store }:
     // Prime the merged Military modal instead of the legacy popup so both
     // entry points (left HUD button + map right-click) land in one shell.
     uiStore.setPendingMilitaryAction({
-      structureId: Number(structure.id),
+      structureId: structure.id,
       isExplorer,
     });
     uiStore.setLeftNavigationView(LeftView.MilitaryView);

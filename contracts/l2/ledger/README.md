@@ -37,8 +37,9 @@ The relay holds the existing `OPERATOR_ROLE` and maintains the one-to-one identi
 side clears the displaced account and wallet atomically. Identical retries and clearing an unlinked wallet do nothing.
 Each change emits `AccountLinkChanged`, keyed by wallet and account, with the wallet's previous account and the
 account's previous wallet (zero when clearing). `account_of_wallet(wallet)` and `wallet_of_account(account)` return zero
-when unlinked. Views remain readable while paused; link mutations refuse, including identical retries. Reconciliation
-resumes when the admin unpauses. Registration remains open for a wallet whose link was already stored.
+when unlinked. Views remain readable while paused. Operator clears (a zero account) still run, so the relay can retract
+stale links. Nonzero link installs and replacements refuse, including identical retries, and resume when the admin
+unpauses. Registration remains open for a wallet whose link was already stored.
 
 Registration uses the connected wallet's stored link: `register(key, sword, shield)`, `register_with_pass(key, pass_id)`
 or `register_village(key, village_pass_id)`. An unlinked wallet refuses with `Ledger: link Realms account first` before

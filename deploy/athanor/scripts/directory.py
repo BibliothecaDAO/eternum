@@ -49,6 +49,15 @@ def directory_status(config, status):
         if status == "pending" and error.code == 404:
             error.close()
             raise RuntimeError(PENDING_ROUTE_PREREQUISITE) from None
+        if status == "retired" and error.code in (404, 409):
+            try:
+                refusal = json.load(error).get("error")
+            except (ValueError, AttributeError, TypeError):
+                refusal = None
+            finally:
+                error.close()
+            if (error.code, refusal) in ((404, "shard_not_listed"), (409, "shard_status_change_refused")):
+                return {"url": config["public_herald_url"], "status": "retired"}
         raise
     allowed = {"pending": ("pending", "active", "draining"), "active": ("active", "draining"), "retired": ("retired",)}[status]
     if result.get("status") not in allowed:

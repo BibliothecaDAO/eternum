@@ -10,7 +10,7 @@ import {
   addClientTransactionBreadcrumb,
   reportClientTransactionFailure,
 } from "@/observability/transaction-failure-reporting";
-import { useTransactionStore } from "@/hooks/store/use-transaction-store";
+import { statusAfterFailure, useTransactionStore } from "@/hooks/store/use-transaction-store";
 import { recordAdmissionToVisible } from "@/observability/client-action-latency";
 import { getTxMessage } from "@/ui/components/transaction-center/types";
 import { extractReadableErrorMessage } from "@/utils/error-message";
@@ -170,13 +170,14 @@ export const useTransactionListener = () => {
         },
       });
 
+      const status = statusAfterFailure(payload);
       if (payload.transactionHash) {
         // Try to update existing transaction
         const existingTx = useTransactionStore.getState().transactions.find((t) => t.hash === payload.transactionHash);
 
         if (existingTx) {
           updateTransaction(payload.transactionHash, {
-            status: "reverted",
+            status,
             confirmedAt: Date.now(),
             errorMessage: message,
           });
@@ -185,7 +186,7 @@ export const useTransactionListener = () => {
           addTransaction({
             hash: payload.transactionHash,
             type: payload.type,
-            status: "reverted",
+            status,
             description: getTxMessage(payload.type),
             transactionCount: payload.transactionCount,
             batchDetails: payload.batchDetails,
@@ -196,13 +197,19 @@ export const useTransactionListener = () => {
       }
     };
 
+    // Neither in a block nor proven absent in time: the row says checking while the node is reconciled.
+    const handleTransactionChecking = (payload: TransactionPendingPayload) =>
+      updateTransaction(payload.transactionHash, { status: "checking" });
+
     provider.on("transactionSubmitted", handleTransactionSubmitted);
+    provider.on("transactionChecking", handleTransactionChecking);
     provider.on("transactionPending", handleTransactionPending);
     provider.on("transactionComplete", handleTransactionComplete);
     provider.on("transactionFailed", handleTransactionFailed);
 
     return () => {
       provider.off("transactionSubmitted", handleTransactionSubmitted);
+      provider.off("transactionChecking", handleTransactionChecking);
       provider.off("transactionPending", handleTransactionPending);
       provider.off("transactionComplete", handleTransactionComplete);
       provider.off("transactionFailed", handleTransactionFailed);

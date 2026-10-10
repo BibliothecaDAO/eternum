@@ -185,7 +185,7 @@ const useDeployRing = (realm: NativeRows["Structure"]) => {
   const tiles = useWorldSpatialTiles(neighbors);
   return spawnRing(setup.store, realm, (hex) => {
     const tile = tiles.find(({ hexCoords }) => hexCoords.col === hex.col && hexCoords.row === hex.row);
-    return tile ? Number(tile.occupierId) : undefined;
+    return tile ? safeInteger(tile.occupierId) : undefined;
   });
 };
 

@@ -2504,7 +2504,7 @@ fn account_link_views_remain_available_while_paused() {
 
 #[test]
 #[feature("safe_dispatcher")]
-fn paused_account_links_refuse_every_mutation_and_resume_on_unpause() {
+fn paused_account_links_refuse_install_and_replace_and_resume_on_unpause() {
     let fixture = deploy_ledger();
     link_account(@fixture, player(0), shard_account(player(0)));
     link_account(@fixture, player(1), shard_account(player(1)));
@@ -2514,7 +2514,6 @@ fn paused_account_links_refuse_every_mutation_and_resume_on_unpause() {
     let safe = IGameLedgerSafeDispatcher { contract_address: fixture.ledger_address };
     let mut events = spy_events();
     assert!(safe.set_account_link(player(0), shard_account(player(1))).is_err());
-    assert!(safe.set_account_link(player(0), Zero::zero()).is_err());
     assert!(safe.set_account_link(player(0), shard_account(player(0))).is_err());
     assert!(safe.set_account_link(player(2), shard_account(player(2))).is_err());
     assert!(events.get_events().events.len() == 0);
@@ -2555,4 +2554,61 @@ fn a_preset_cannot_accept_one_more_than_the_shard_roster_maximum() {
 #[should_panic(expected: "Ledger: roster limit exceeds shard")]
 fn a_preset_cannot_accept_the_full_u16_roster_range() {
     deploy_fixture(Preset { registration_limit: 0xffff, ..default_preset() });
+}
+
+
+#[test]
+fn paused_account_links_clear_both_views_and_emit_one_change() {
+    let fixture = deploy_ledger();
+    link_account(@fixture, player(0), shard_account(player(0)));
+    link_account(@fixture, player(1), shard_account(player(1)));
+    start_cheat_caller_address(fixture.ledger_address, ADMIN());
+    fixture.ledger.pause();
+    let mut events = spy_events();
+    link_account(@fixture, player(0), Zero::zero());
+    assert!(fixture.ledger.account_of_wallet(player(0)).is_zero());
+    assert!(fixture.ledger.wallet_of_account(shard_account(player(0))).is_zero());
+    assert!(fixture.ledger.account_of_wallet(player(1)) == shard_account(player(1)));
+    assert!(fixture.ledger.wallet_of_account(shard_account(player(1))) == player(1));
+    assert_account_links_are_bijective(@fixture);
+    let emitted = events.get_events();
+    assert!(emitted.events.len() == 1);
+    let (from, clear) = emitted.events.at(0);
+    assert!(*from == fixture.ledger_address);
+    assert!(clear.keys.span() == array![selector!("AccountLinkChanged"), player(0).into(), 0].span());
+    assert!(clear.data.span() == array![shard_account(player(0)).into(), 0].span());
+    link_account(@fixture, player(0), Zero::zero());
+    link_account(@fixture, player(2), Zero::zero());
+    assert!(events.get_events().events.len() == 1);
+    assert_account_links_are_bijective(@fixture);
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn a_pause_does_not_grant_anyone_permission_to_clear_a_link() {
+    let fixture = deploy_ledger();
+    link_account(@fixture, player(0), shard_account(player(0)));
+    start_cheat_caller_address(fixture.ledger_address, ADMIN());
+    fixture.ledger.pause();
+    let safe = IGameLedgerSafeDispatcher { contract_address: fixture.ledger_address };
+    for caller in array![ADMIN(), player(0)] {
+        start_cheat_caller_address(fixture.ledger_address, caller);
+        assert!(safe.set_account_link(player(0), Zero::zero()).is_err());
+    }
+    assert!(fixture.ledger.account_of_wallet(player(0)) == shard_account(player(0)));
+    assert_account_links_are_bijective(@fixture);
+}
+
+#[test]
+fn linked_registration_stays_available_while_paused() {
+    let fixture = deploy_fixture(default_preset());
+    link_account(@fixture, player(0), shard_account(player(0)));
+    fund_and_approve_player(@fixture, player(0), 500);
+    start_cheat_caller_address(fixture.ledger_address, ADMIN());
+    fixture.ledger.pause();
+    start_cheat_caller_address(fixture.ledger_address, player(0));
+    fixture.ledger.register(GAME_KEY, false, false);
+    assert!(fixture.ledger.get_game(GAME_KEY).registered_count == 1);
+    assert!(fixture.ledger.get_registered_player(GAME_KEY, 0) == (player(0), shard_account(player(0))));
+    assert_account_links_are_bijective(@fixture);
 }

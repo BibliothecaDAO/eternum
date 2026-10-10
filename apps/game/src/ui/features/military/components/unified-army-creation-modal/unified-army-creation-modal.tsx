@@ -101,7 +101,7 @@ export const UnifiedArmyCreationBody = ({
       return resolvedSelectedStructureId;
     }
 
-    return sortedPlayerStructures[0]?.entityId ?? 0;
+    return sortedPlayerStructures[0]?.entityId;
   }, [shouldFollowSelection, resolvedSelectedStructureId, resolvedStructureIdProp, sortedPlayerStructures]);
 
   const form = useArmyCreation({

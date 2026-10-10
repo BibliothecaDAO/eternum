@@ -5,7 +5,7 @@ import { ContractAddress } from "@bibliothecadao/types";
 import { useMemo } from "react";
 import { getPlayerDisplayName, usePlayerNamesRevision } from "@/hooks/use-player-profile";
 import {
-  readFinalBlitzStandings,
+  readFinalBlitzResult,
   REGISTERED_POINTS_PRECISION,
 } from "@/ui/features/social/player/finalized-blitz-leaderboard";
 
@@ -26,14 +26,17 @@ export const WinnersTable = () => {
   const leaderboardRevision = useNativeRevision(RESULT_FACTS);
   usePlayerNamesRevision();
 
-  const rows = useMemo(() => {
+  const result = useMemo(() => {
     void leaderboardRevision;
-    return readFinalBlitzStandings(store, configManager.getActiveGameId()) ?? [];
+    return readFinalBlitzResult(store, configManager.getActiveGameId());
   }, [store, leaderboardRevision]);
 
   const playerName = (address: bigint): string => getPlayerDisplayName(address);
 
-  if (rows.length === 0) return <div className="text-gray-400 text-sm">No ranked players yet.</div>;
+  if (result.status === "waiting") return <div className="text-gray-400 text-sm">Waiting for the final result…</div>;
+  if (result.status === "unavailable") return <div className="text-gray-400 text-sm">Result unavailable.</div>;
+  const rows = result.standings;
+  if (rows.length === 0) return <div className="text-gray-400 text-sm">No ranked players.</div>;
 
   return (
     <div className="w-full overflow-x-auto">

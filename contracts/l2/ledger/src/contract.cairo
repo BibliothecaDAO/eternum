@@ -775,7 +775,9 @@ pub mod GameLedger {
 
         fn set_account_link(ref self: ContractState, wallet: ContractAddress, account: ContractAddress) {
             self.accesscontrol.assert_only_role(OPERATOR_ROLE);
-            self.pausable.assert_not_paused();
+            if account.is_non_zero() {
+                self.pausable.assert_not_paused();
+            }
             assert!(wallet.is_non_zero(), "Ledger: wallet is zero");
             let previous_account = self.wallet_accounts.entry(wallet).read();
             if previous_account == account {

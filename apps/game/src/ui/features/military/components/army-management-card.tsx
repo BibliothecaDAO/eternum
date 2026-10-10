@@ -37,6 +37,7 @@ import {
 import clsx from "clsx";
 import { useEffect, useMemo, useState } from "react";
 import { requireActiveGameClient } from "@/sync/active-game-client";
+import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
 type ArmyManagementCardProps = {
   owner_entity: ID;
@@ -145,7 +146,7 @@ const ArmyCreate = ({ owner_entity, army, isExplorer, guardSlot, onCancel, onSuc
             const tile = neighborTiles.find(
               (candidate) => candidate.hexCoords.col === hex.col && candidate.hexCoords.row === hex.row,
             );
-            return tile ? Number(tile.occupierId) : undefined;
+            return tile ? safeInteger(tile.occupierId) : undefined;
           })
         : [],
     [neighborTiles, store, structure],

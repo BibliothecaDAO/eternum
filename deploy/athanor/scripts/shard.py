@@ -30,8 +30,8 @@ from stack_lock import isolated_stack_lock
 from operator_token import read_protected_text
 
 
-# Only the public credential path and driver placement pass through sudo.
-DOCKER = ["sudo", "-n", "--preserve-env=OPERATOR_TOKEN_FILE,HARNESS_CPUSET", "docker"]
+# Only driver placement passes through sudo; containers read the fixed protected file mount.
+DOCKER = ["sudo", "-n", "--preserve-env=HARNESS_CPUSET", "docker"]
 RELEASES = "https://github.com/BibliothecaDAO/eternum/releases/download"
 # Campaign G's target, not yet a measured ceiling: a larger shard waits for a G measurement that supports it.
 MAX_PLAYER_CAPACITY = 2000
@@ -278,7 +278,6 @@ def deployment_environment(config, directory):
         "SHARD_HOST_ACCOUNTS": str(directory / "host-accounts.json"),
         "NATIVE_WORLD_MANIFEST": str(directory / "native-world.json"),
         "GAMEPLAY_CONTRACTS_PATH": str(directory / "gameplay-contracts.json"),
-        "OPERATOR_ENROLMENT_PATH": str(directory / "operator-enrolment.json"),
     }
 
 
@@ -393,7 +392,15 @@ def start_shard(config, directory):
     write_json(directory / "configuration.json", config)
     write_json(directory / "compose.json", compose)
     command = [*DOCKER, "compose", "-f", str(directory / "compose.json")]
-    start_runner_stack(config, directory, command)
+    try:
+        start_runner_stack(config, directory, command)
+        return record_runner_readiness(config, compose, directory, command)
+    except BaseException:
+        stop_shard(directory)
+        raise
+
+
+def record_runner_readiness(config, compose, directory, command):
     manifest = json.loads((directory / "native-world.json").read_text())
     run([*command, "run", "--rm", "--no-deps", "--entrypoint", "python3", "harness",
          "/app/deploy/shard/init.py", "probe"], directory, "network-probes")
@@ -408,10 +415,19 @@ def start_runner_stack(config, directory, command):
     run([*command, "run", "--rm", "--no-deps", "prepare"], directory, "shard-prepare")
     run([*command, "up", "-d", "herald", "metrics"], directory, "shard-bootstrap")
     wait_for_identity(config)
+    # Persist the intended identity before the request: its response can be lost after registration succeeds.
+    write_json(directory / "directory-registration.json", {
+        "url": config["public_herald_url"], "chainId": "0x" + config["chain_id"].encode("ascii").hex(),
+    })
     listing = directory_status(config, "pending")
     if listing["status"] != "pending":
         raise RuntimeError("Fresh runner shard must register PENDING")
-    write_json(directory / "directory-registration.json", {"url": config["public_herald_url"], "chainId": listing["chainId"]})
+    expected_chain = "0x" + config["chain_id"].encode("ascii").hex()
+    if int(listing["chainId"], 16) != int(expected_chain, 16):
+        raise RuntimeError("Directory acknowledged a different shard identity")
+    write_json(directory / "directory-registration-ack.json", {
+        "url": config["public_herald_url"], "chainId": listing["chainId"], "status": "pending",
+    })
     run([*command, "up", "-d"], directory, "shard-start")
     run([*command, "wait", "init"], directory, "shard-init-wait")
     code = subprocess.check_output([*command, "ps", "--all", "--format", "{{.ExitCode}}", "init"], text=True).strip()
@@ -422,13 +438,14 @@ def start_runner_stack(config, directory, command):
 def stop_shard(directory):
     command = [*DOCKER, "compose", "-f", str(directory / "compose.json")]
     run([*command, "stop"], directory, "shard-stop")
-    # This is the immutable registration receipt, not a cached directory status. Failed preparation may never list.
-    receipt = directory / "directory-registration.json"
+    # Only an acknowledged PENDING registration belongs to this run; intent alone cannot retire a listing.
+    receipt = directory / "directory-registration-ack.json"
     if receipt.exists():
         config = json.loads((directory / "configuration.json").read_text())
         registered = json.loads(receipt.read_text())
         chain_id = "0x" + config["chain_id"].encode("ascii").hex()
-        if registered["url"] != config["public_herald_url"] or int(registered["chainId"], 16) != int(chain_id, 16):
+        if (registered["status"] != "pending" or registered["url"] != config["public_herald_url"]
+                or int(registered["chainId"], 16) != int(chain_id, 16)):
             raise RuntimeError("Directory registration differs from the runner's shard identity")
         directory_status(config, "retired")
 

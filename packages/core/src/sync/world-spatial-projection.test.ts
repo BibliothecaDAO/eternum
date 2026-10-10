@@ -780,6 +780,60 @@ describe("WorldSpatialProjection", () => {
     expect(armyListener.mock.invocationCallOrder[0]).toBeLessThan(listener.mock.invocationCallOrder[0]);
   });
 
+  it("a throwing first tile reader is reported; later readers hear the slice, and the next write reaches everyone", () => {
+    const { projection, writeArmy, writeTile } = createHarness();
+    projection.start();
+    const reported = vi.spyOn(console, "error").mockImplementation(() => {});
+    const tileListener = vi.fn().mockImplementationOnce(() => {
+      throw new Error("tile scene broke");
+    });
+    const armyListener = vi.fn();
+    const listener = vi.fn();
+    projection.subscribeTiles(tileListener);
+    projection.subscribeArmies(armyListener);
+    projection.subscribe(listener);
+
+    writeTile("tile-a", { col: 10, row: 11, occupierId: 0, occupierType: TileOccupier.None });
+    writeArmy("army-a", { explorerId: 7, col: 20, row: 21 });
+    expect(() => projection.flush()).not.toThrow();
+    expect(armyListener).toHaveBeenCalledOnce();
+    expect(listener).toHaveBeenCalledOnce();
+    expect(String(reported.mock.calls[0])).toContain("tile scene broke");
+
+    writeTile("tile-b", { col: 12, row: 13, occupierId: 0, occupierType: TileOccupier.None });
+    writeArmy("army-a", { explorerId: 7, col: 22, row: 23 });
+    projection.flush();
+    expect(tileListener).toHaveBeenCalledTimes(2);
+    expect(armyListener).toHaveBeenCalledTimes(2);
+    expect(projection.getArmy(7)?.hexCoords).toEqual({ alt: false, col: 22, row: 23 });
+    reported.mockRestore();
+  });
+
+  it("rebuilds every index from the store when an update fails halfway, never leaving a partial view", () => {
+    const { projection, source, writeArmy } = createHarness();
+    writeArmy("army", { explorerId: 7, col: 10, row: 11 });
+    projection.start();
+    const reported = vi.spyOn(console, "error").mockImplementation(() => {});
+    // The army's tile moves first, then reading its troops fails once: the tile index has already changed.
+    const read = source.get;
+    let failNext = true;
+    source.get = ((model: string, keys: object) => {
+      if (model === "ExplorerTroops" && failNext) {
+        failNext = false;
+        throw new Error("troops read failed");
+      }
+      return (read as (model: string, keys: object) => unknown)(model, keys);
+    }) as never;
+
+    writeArmy("army", { explorerId: 7, col: 20, row: 21 });
+    projection.flush();
+
+    expect(String(reported.mock.calls[0])).toContain("troops read failed");
+    expect(projection.getArmy(7)?.hexCoords).toEqual({ alt: false, col: 20, row: 21 });
+    expect(projection.getArmiesAtHex({ alt: false, col: 10, row: 11 })).toEqual([]);
+    reported.mockRestore();
+  });
+
   it("publishes nothing for rows that end the slice where they started", () => {
     const { projection, removeArmy, removeTile, source, writeArmy, writeTile } = createHarness();
     writeArmy("returning-army", { explorerId: 9, col: 30, row: 31 });

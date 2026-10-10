@@ -29,6 +29,7 @@ import { Castle, Crown, Pickaxe, Hyperstructure, Star, Tent } from "@/ui/design-
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
 import { accountAddress } from "@/hooks/store/use-account-store";
+import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
 const VILLAGE_ICON_BY_KEY: Record<VillageIconKey, typeof Castle> = {
   castle: Castle,
@@ -189,7 +190,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
     if (!store) return totals;
     const sourcesToUse =
       selectedSourceId !== null
-        ? ownedSources.filter((ps) => Number(ps.entityId) === Number(selectedSourceId))
+        ? ownedSources.filter((ps) => safeInteger(ps.entityId) === selectedSourceId)
         : ownedSources;
 
     for (const ps of sourcesToUse) {
@@ -231,9 +232,9 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
   useEffect(() => {
     if (!draft) return;
 
-    const sourceId = Number(draft.sourceEntityId);
+    const sourceId = safeInteger(draft.sourceEntityId);
     setSelectedSourceId(sourceId);
-    const draftDestinationId = Number(draft.destinationEntityId);
+    const draftDestinationId = safeInteger(draft.destinationEntityId);
     setDestinationIds(Number.isFinite(draftDestinationId) ? [draftDestinationId] : []);
     setSelectedResources(draft.resourceIds || []);
     setRepeat(true);
@@ -288,19 +289,19 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
       }
       if (hasAllResources) {
         eligible.push(ps);
-        balanceSums.set(Number(ps.entityId), sum);
+        balanceSums.set(safeInteger(ps.entityId), sum);
       }
     }
 
     const sortedEligible = eligible.toSorted(
-      (a, b) => (balanceSums.get(Number(b.entityId)) ?? 0) - (balanceSums.get(Number(a.entityId)) ?? 0),
+      (a, b) => (balanceSums.get(safeInteger(b.entityId)) ?? 0) - (balanceSums.get(safeInteger(a.entityId)) ?? 0),
     );
     return sortedEligible;
   }, [store, revision, filteredOwnedSources, selectedResources, currentDefaultTick]);
 
   const selectedSource = useMemo(() => {
     if (!selectedSourceId) return null;
-    return ownedSources.find((ps) => Number(ps.entityId) === Number(selectedSourceId)) ?? null;
+    return ownedSources.find((ps) => safeInteger(ps.entityId) === selectedSourceId) ?? null;
   }, [ownedSources, selectedSourceId]);
 
   // Destinations: owned realms + villages (toggle does not affect source list)
@@ -325,18 +326,18 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
   const destinationLookup = useMemo(() => {
     const map = new Map<number, Structure>();
     ownedDestinations.forEach((ps) => {
-      map.set(Number(ps.entityId), ps);
+      map.set(safeInteger(ps.entityId), ps);
     });
     return map;
   }, [ownedDestinations]);
 
   const destinations = useMemo(() => {
     const filtered = filteredOwnedDestinations
-      .filter((ps) => Number(ps.entityId) !== Number(selectedSourceId))
+      .filter((ps) => safeInteger(ps.entityId) !== selectedSourceId)
       .filter((ps) => destCategoryFilter.size === 0 || destCategoryFilter.has(ps.category as StructureType));
     return filtered.toSorted((a, b) => {
-      const aFav = favoriteDestinationIds.has(Number(a.entityId));
-      const bFav = favoriteDestinationIds.has(Number(b.entityId));
+      const aFav = favoriteDestinationIds.has(safeInteger(a.entityId));
+      const bFav = favoriteDestinationIds.has(safeInteger(b.entityId));
       if (aFav && !bFav) return -1;
       if (!aFav && bFav) return 1;
       return 0;
@@ -354,7 +355,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
   const destinationCategories = useMemo(() => {
     const present = new Set<StructureType>();
     filteredOwnedDestinations
-      .filter((ps) => Number(ps.entityId) !== Number(selectedSourceId))
+      .filter((ps) => safeInteger(ps.entityId) !== selectedSourceId)
       .forEach((ps) => present.add(ps.category as StructureType));
     return Array.from(present);
   }, [filteredOwnedDestinations, selectedSourceId]);
@@ -397,14 +398,14 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
 
   useEffect(() => {
     if (!hasMilitarySelection) return;
-    const allowedIds = new Set(filteredOwnedDestinations.map((ps) => Number(ps.entityId)));
+    const allowedIds = new Set(filteredOwnedDestinations.map((ps) => safeInteger(ps.entityId)));
     setDestinationIds((prev) => prev.filter((id) => allowedIds.has(id)));
   }, [hasMilitarySelection, filteredOwnedDestinations]);
 
   useEffect(() => {
     if (!hasMilitarySelection) return;
     if (!selectedSourceId) return;
-    const stillAllowed = filteredOwnedSources.some((ps) => Number(ps.entityId) === Number(selectedSourceId));
+    const stillAllowed = filteredOwnedSources.some((ps) => safeInteger(ps.entityId) === selectedSourceId);
     if (!stillAllowed) {
       setSelectedSourceId(null);
     }
@@ -600,7 +601,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
     const hasMilitary = selectedResources.some((rid) => isMilitaryResource(rid));
 
     if (hasMilitary) {
-      const src = ownedSources.find((structure) => Number(structure.entityId) === Number(selectedSourceId));
+      const src = ownedSources.find((structure) => safeInteger(structure.entityId) === selectedSourceId);
       const invalid =
         !src ||
         resolvedDestinations.some(
@@ -674,7 +675,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
       return;
     }
 
-    const src = ownedSources.find((structure) => Number(structure.entityId) === Number(selectedSourceId));
+    const src = ownedSources.find((structure) => safeInteger(structure.entityId) === selectedSourceId);
 
     let immediateRunTimestamp: number | undefined;
     try {
@@ -775,7 +776,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
             .filter((ps) => sourceCategoryFilter.size === 0 || sourceCategoryFilter.has(ps.category as StructureType))
             .map((ps) => {
               const name = mode.structure.getName(ps.structure).name;
-              const entityId = Number(ps.entityId);
+              const entityId = safeInteger(ps.entityId);
               const isSel = selectedSourceId === entityId;
               const Icon = getStructureIcon(ps.category, mode.ui.villageIconKey);
               return (
@@ -873,7 +874,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
           <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,160px),1fr))] gap-2">
             {destinations.map((ps) => {
               const name = mode.structure.getName(ps.structure).name;
-              const entityId = Number(ps.entityId);
+              const entityId = safeInteger(ps.entityId);
               const isSel = destinationIds.includes(entityId);
               const Icon = getStructureIcon(ps.category, mode.ui.villageIconKey);
               const isFavorite = favoriteDestinationIds.has(entityId);

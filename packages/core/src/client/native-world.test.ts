@@ -25,10 +25,14 @@ const storeWithRelease = (releaseId: number) => {
   return { store, writeRelease };
 };
 
+const SHARD = { chainId: "0x1", l2GasBound: 0x47868c00n };
+const running = new AbortController().signal;
 const accountSending = (transactionHash: string) =>
   ({
     address: "0x111",
     execute: vi.fn(async () => ({ transaction_hash: transactionHash })),
+    getNonce: async () => "0x0",
+    getTransactionStatus: async () => ({ finality_status: "PRE_CONFIRMED" }),
   }) as unknown as AccountInterface & { execute: ReturnType<typeof vi.fn> };
 
 describe("a game command as the player's own invoke", () => {
@@ -37,12 +41,17 @@ describe("a game command as the player's own invoke", () => {
     let openGate!: () => void;
     const ready = vi.fn(() => new Promise<void>((resolve) => (openGate = resolve)));
     const account = accountSending("0x99");
-    const sent = nativePlay({ bindings, release: { ready } }, store, 1, GAMES)(account, exploreCall);
+    const sent = nativePlay(
+      { bindings, release: { ready }, shard: SHARD, stopped: running },
+      store,
+      1,
+      GAMES,
+    )(account, exploreCall);
 
     // The pins are read once the release gate opens, so a release that changed meanwhile is the one sent.
     writeRelease(2);
     openGate();
-    await expect(sent).resolves.toEqual({ transaction_hash: "0x99" });
+    await expect(sent).resolves.toMatchObject({ transaction_hash: "0x99" });
     expect(account.execute).toHaveBeenCalledOnce();
     expect(account.execute.mock.calls[0]![0]).toEqual({
       contractAddress: GAMES,
@@ -54,7 +63,12 @@ describe("a game command as the player's own invoke", () => {
   it("refuses a command for another game, contract or variant before the account sends anything", async () => {
     const { store } = storeWithRelease(1);
     const account = accountSending("0x99");
-    const send = nativePlay({ bindings, release: { ready: async () => {} } }, store, 1, GAMES);
+    const send = nativePlay(
+      { bindings, release: { ready: async () => {} }, shard: SHARD, stopped: running },
+      store,
+      1,
+      GAMES,
+    );
 
     await expect(send(account, { ...exploreCall, entrypoint: "Move" })).rejects.toThrow("discriminant mismatch");
     await expect(send(account, { ...exploreCall, calldata: ["2", ...EXPLORE] })).rejects.toThrow("game mismatch");

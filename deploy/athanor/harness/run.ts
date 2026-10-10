@@ -142,7 +142,8 @@ export function parseHarnessArgs(args: string[]): HarnessCliOptions {
   };
 }
 
-async function main(): Promise<void> {
+/** One harness run; `run` ends with it, so no action it sent keeps being reconciled after the process is done. */
+async function main(run: AbortSignal): Promise<void> {
   const options = parseHarnessArgs(process.argv.slice(2));
   requiredEnvironmentValue("DEPLOYER_ACCOUNT_ADDRESS", "native harness");
   requiredEnvironmentValue("DEPLOYER_PRIVATE_KEY", "native harness");
@@ -159,7 +160,7 @@ async function main(): Promise<void> {
     throw new Error("Harness RPC differs from the Herald manifest");
   const prepared = options.preparedGamePath
     ? await readJson<PreparedGame>(path.resolve(options.preparedGamePath))
-    : await prepareGames(options, shard, provider);
+    : await prepareGames(options, shard, provider, run);
   validatePreparedRoster(prepared, options.bots);
   const players = playersOf(options.workload, prepared, options.workers);
   if (players.kind === "roster") {
@@ -175,6 +176,7 @@ async function main(): Promise<void> {
     account: configureGameplayAccountSubmits(
       new Account({ provider, address: account.address, signer: new DeviceSigner(deviceKeyOf(account.privateKey)) }),
       shard,
+      run,
     ),
   }));
   const connect = (actor: string) => connectHarnessGameClient({ actor, shard, gameId: game.gameId });
@@ -452,6 +454,7 @@ async function prepareGames(
   options: HarnessCliOptions,
   shard: Shard,
   provider: HarnessProvider,
+  run: AbortSignal,
 ): Promise<PreparedGame | PreparedGame[]> {
   const accounts = await createHarnessAccounts({
     concurrency: options.setupConcurrency,
@@ -463,6 +466,7 @@ async function prepareGames(
     },
     provider,
     shard,
+    stopped: run,
   });
   if (options.slot) return prepareSlotGames(options.slot, accounts);
   const groups =
@@ -863,10 +867,13 @@ if (import.meta.main && !process.send) {
   }
 } else if (import.meta.main || (!isMainThread && workerData?.harness)) {
   catchUncaughtFailures();
-  await main().catch(async (error: unknown) => {
-    const failure = await recordFailure(error);
-    parentPort?.postMessage({ type: "failure", ...failure });
-    console.error(failure.stack ?? failure.error);
-    process.exit(1);
-  });
+  const run = new AbortController();
+  await main(run.signal)
+    .catch(async (error: unknown) => {
+      const failure = await recordFailure(error);
+      parentPort?.postMessage({ type: "failure", ...failure });
+      console.error(failure.stack ?? failure.error);
+      process.exit(1);
+    })
+    .finally(() => run.abort());
 }

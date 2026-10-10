@@ -27,6 +27,21 @@ it("never labels a completed Blitz opening free without its ledger provenance", 
     expect(await db.prepare("SELECT entry FROM launch_runs WHERE environment='madara.frontier'").first("entry")).toBe(
       '{"kind":"free"}',
     );
+    await db.prepare("UPDATE launch_runs SET entry=? WHERE environment='madara.blitz'").bind('{"kind":"free"}').run();
+    const repair = readFileSync(
+      new URL("../migrations/0008_unproven_blitz_entries.sql", import.meta.url),
+      "utf8",
+    ).replace(/^--.*$/gm, "");
+    await db.batch(
+      repair
+        .split(";")
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .map((s) => db.prepare(s)),
+    );
+    expect(
+      await db.prepare("SELECT entry FROM launch_runs WHERE environment='madara.blitz'").first("entry"),
+    ).toBeNull();
   } finally {
     await mf.dispose();
   }

@@ -22,6 +22,7 @@ class OperatorCredentialTest(unittest.TestCase):
             token.chmod(0o600)
             with patch.object(operator_token, "OPERATOR_TOKEN_FILE", token), patch.object(operator.os, "execve") as execute:
                 operator.run("deploy", ["staging", "/srv/shard"])
+                self.assertNotIn("OPERATOR_TOKEN_FILE", operator_token.operator_environment())
             _, arguments, environment = execute.call_args.args
             self.assertNotIn("fixture-credential", " ".join(arguments))
             self.assertEqual(arguments[-2:], ["staging", "/srv/shard"])
@@ -45,3 +46,9 @@ class OperatorCredentialTest(unittest.TestCase):
     def test_a_command_cannot_escape_the_allowed_script_list(self):
         with self.assertRaises(ValueError):
             operator.run("../other", ["/srv/shard"])
+
+    def test_measurement_runners_have_no_activation_command(self):
+        with patch.object(operator.os, "execve") as execute:
+            with self.assertRaisesRegex(ValueError, "listed shard command"):
+                operator.run("activate", ["/srv/shard"])
+            execute.assert_not_called()

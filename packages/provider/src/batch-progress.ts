@@ -47,7 +47,7 @@ export function batchRemaining(
   return progress.remaining;
 }
 
-export const decodeBatchProgress = (event: { keys: string[]; data: string[] }) => {
+const decodeBatchProgress = (event: { keys: string[]; data: string[] }) => {
   if (event.keys.length !== 2 || event.data.length !== 3) throw new Error("Malformed native batch result");
   const [gameId, actor, transactionHash, remaining] = [event.keys[1], ...event.data].map((value) => BigInt(value!));
   const field = 2n ** 251n + 17n * 2n ** 192n + 1n;

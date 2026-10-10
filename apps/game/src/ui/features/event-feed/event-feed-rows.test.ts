@@ -2,7 +2,7 @@ import type { Transaction } from "@/hooks/store/use-transaction-store";
 import { TransactionType } from "@bibliothecadao/provider";
 import { type ResourceArrivalInfo, ResourcesIds } from "@bibliothecadao/types";
 import { describe, expect, it } from "vitest";
-import { deriveFeedRows, selectTickerRows, transferRowLabel } from "./event-feed-rows";
+import { deriveFeedRows, selectTickerRows, transactionStatusLine, transferRowLabel } from "./event-feed-rows";
 
 const NOW_MS = 1_700_000_000_000;
 const NOW_SECONDS = NOW_MS / 1000;
@@ -91,4 +91,24 @@ it("names sent and arrived caravans in Events", () => {
   expect(transferRowLabel(derive({ arrivals: [caravan(0)] }).arrived[0])).toBe("Caravan arrived");
   expect(transferRowLabel(derive({ transactions: [transfer({ status: "success" })] }).recent[0])).toBe("Caravan sent");
   expect(transferRowLabel(derive({ transactions: [transfer({ status: "reverted" })] }).recent[0])).toBeNull();
+});
+
+describe("an action's one status line", () => {
+  it("says sending, checking, done, refused with the reason, or not sent, and never asks to try again", () => {
+    expect(transactionStatusLine(transfer(), false)).toBe("Sending");
+    expect(transactionStatusLine(transfer(), true)).toBe("Stuck");
+    expect(transactionStatusLine(transfer({ status: "checking" }), false)).toBe("Checking");
+    expect(transactionStatusLine(transfer({ status: "success" }), false)).toBe("Done");
+    expect(transactionStatusLine(transfer({ status: "reverted", errorMessage: "Not enough donkeys" }), false)).toBe(
+      "Refused: Not enough donkeys",
+    );
+    expect(transactionStatusLine(transfer({ status: "not_sent" }), false)).toBe("Not sent");
+  });
+
+  it("keeps a checking action in flight, and never stuck: its outcome is still being reconciled", () => {
+    const checking = transfer({ status: "checking", submittedAt: NOW_MS - 60_000 });
+    expect(derive({ transactions: [checking] }).inFlight).toEqual([
+      { kind: "transaction", id: "0xsend", at: checking.submittedAt, transaction: checking, isStuck: false },
+    ]);
+  });
 });

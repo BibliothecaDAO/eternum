@@ -22,6 +22,7 @@ import { type BuildingType, type ID, type ResourcesIds } from "@bibliothecadao/t
 import { useCallback, useRef, useState } from "react";
 import type { EmpireSuggestion } from "./use-empire-suggestions";
 import { getPlayerName } from "@/services/identity/player-profiles";
+import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
 /** Build orders submit against their realm without changing the current selection. */
 export const useSuggestionActions = () => {
@@ -65,7 +66,7 @@ export const useSuggestionActions = () => {
         return;
       }
 
-      const entityId = Number(suggestion.realmId);
+      const entityId = safeInteger(suggestion.realmId);
       if (!Number.isFinite(entityId)) return;
 
       const realm = getRealmInfo(entityId, setup.store, getPlayerName);
@@ -93,7 +94,7 @@ export const useSuggestionActions = () => {
           await focusRealm(suggestion.realmId, true);
           if (!canIssueOrders()) return;
           usePopoverStore.getState().close();
-          useUIStore.getState().setSuggestedArmyDeploymentStructureId(Number(suggestion.realmId));
+          useUIStore.getState().setSuggestedArmyDeploymentStructureId(safeInteger(suggestion.realmId));
           return;
         case "garrison":
           await focusRealm(suggestion.realmId);
@@ -118,7 +119,7 @@ export const useSuggestionActions = () => {
         default:
           openSurface({
             id: "production",
-            content: <ProductionModal preSelectedRealmId={Number(suggestion.realmId)} />,
+            content: <ProductionModal preSelectedRealmId={safeInteger(suggestion.realmId)} />,
           });
       }
     },

@@ -13,6 +13,7 @@ import type {
   GameSyncStore,
 } from "../sync/game-sync-types";
 import { readExpeditionRules } from "../utils/expeditions";
+import { notifyEach } from "../utils/notify-each";
 import {
   deriveGameSyncScope,
   scopeInputKeys,
@@ -63,6 +64,17 @@ const definitions = nativeFactModels as Record<
     absence?: DeclaredAbsence;
   }
 >;
+/**
+ * The contract allocates every entity id at or under 2^53 - 1, so a JavaScript number holds each one exactly. The
+ * schema keeps ids as plain u64, so they are known by name: every u64 *_id, and the three fields naming an entity
+ * without the suffix (a labor grant's home, an army's owning structure, a village's realm).
+ */
+const MAX_ENTITY_ID = BigInt(Number.MAX_SAFE_INTEGER);
+const isEntityIdField = (path: string): boolean => {
+  const field = path.slice(path.lastIndexOf(".") + 1);
+  return field.endsWith("_id") || field === "home" || field === "owner" || field === "village_realm";
+};
+
 const decoders = new Map<NativeModelName, Decoder>(
   Object.entries(definitions).map(([name, definition]) => [
     name as NativeModelName,
@@ -89,7 +101,7 @@ export class NativeFactStore implements GameSyncStore {
       return;
     this.snapshot = { ...state };
     this.revision++;
-    for (const listener of this.listeners) listener([]);
+    notifyEach("NativeFactStore", this.listeners, []);
   }
   private revision = 0;
   getRevision = (): number => this.revision;
@@ -238,7 +250,7 @@ export class NativeFactStore implements GameSyncStore {
     const changes = this.commit(pending);
     if (changes.length) {
       this.revision += 1;
-      for (const listener of this.listeners) listener(changes);
+      notifyEach("NativeFactStore", this.listeners, changes);
     }
   }
 
@@ -249,7 +261,7 @@ export class NativeFactStore implements GameSyncStore {
 
   // The runtime deduplicates effects; confirmation promotions only update its history callback.
   applyEvent(event: GameSyncEvent): void {
-    for (const listener of this.eventListeners) listener(event);
+    notifyEach("NativeFactStore", this.eventListeners, event);
   }
 
   private stageFact(
@@ -459,6 +471,12 @@ function compileDecoder(type: WireType, path: string): Decoder {
     };
   if (typeof type === "string") {
     const bits = Number(type.slice(1));
+    if (type === "u64" && isEntityIdField(path))
+      return (value) => {
+        const result = integer(value, 1n << 64n, path);
+        if (result > MAX_ENTITY_ID) throw new Error(`Entity id out of range in ${path}`);
+        return result;
+      };
     const limit = type === "felt" ? (1n << 251n) + 17n * (1n << 192n) + 1n : 1n << BigInt(bits);
     return (value) => {
       const result = integer(value, limit, path);

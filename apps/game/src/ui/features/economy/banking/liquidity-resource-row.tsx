@@ -17,6 +17,7 @@ import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision, useNativeRow } from "@/hooks/helpers/use-native-facts";
 import { ContractAddress, ID, ResourcesIds, StructureType, resources } from "@bibliothecadao/types";
 import React, { useCallback, useMemo, useState } from "react";
+import { storyPayloadId } from "@/utils/native-id";
 
 type LiquidityResourceRowProps = {
   playerStructureIds: ID[];
@@ -290,7 +291,7 @@ const MyLiquidity = ({
     (event) =>
       event.storyPayload.add === true &&
       Number(event.storyPayload.resource_type) === resourceId &&
-      playerStructureIds.includes(Number(event.storyPayload.structure_id)),
+      playerStructureIds.includes(storyPayloadId(event.storyPayload.structure_id)),
   )?.storyPayload;
 
   const [lordsDifferencePercentage, resourceDifferencePercentage] = useMemo(() => {

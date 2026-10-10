@@ -31,15 +31,15 @@ describe("existing history progress", () => {
       store = new HistoryStore(url.toString(), "madara", "0x123", createNativeHistoryCodec(nativeSchema));
       await store.initialize();
       const { native, decoder } = setup();
-      const getBlockWithReceipts = vi.fn();
+      const readBlock = vi.fn();
       const checkpointStore = {
         initialize: vi.fn(),
         load: vi.fn(async () => ({ fold: new WorldFold(decoder.registry), confirmedBlock: 500001 })),
         save: vi.fn(),
       };
-      const rpc = { blockNumber: async () => 500001, getBlockWithReceipts } as unknown as MadaraRpc;
+      const rpc = { blockNumber: async () => 500001, readBlock } as unknown as MadaraRpc;
       await loadNativeWorld({ chain: "madara", checkpointStore, history: store, native, rpc });
-      expect(getBlockWithReceipts).not.toHaveBeenCalled();
+      expect(readBlock).not.toHaveBeenCalled();
       expect(checkpointStore.save).not.toHaveBeenCalled();
       expect(await store.historyProgress()).toBe(500001);
       expect(store.activity("7")).not.toBeNull();

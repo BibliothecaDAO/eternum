@@ -1,7 +1,9 @@
+import io
 import json
 from pathlib import Path
 import subprocess
 import tempfile
+import tarfile
 import unittest
 from unittest.mock import patch
 
@@ -22,6 +24,22 @@ def deployed():
 
 
 class DeployTest(unittest.TestCase):
+    def test_prerelease_package_tag_survives_the_download_and_release_facts(self):
+        tag = "shard-v0.7.0-rc.1"
+        facts = {**release(), "tag": tag}
+        body = json.dumps(facts).encode()
+        download = io.BytesIO()
+        with tarfile.open(fileobj=download, mode="w:gz") as archive:
+            member = tarfile.TarInfo("shard/release.json")
+            member.size = len(body)
+            archive.addfile(member, io.BytesIO(body))
+        download.seek(0)
+        with tempfile.TemporaryDirectory() as temporary, patch.object(deploy, "urlopen", return_value=download) as fetch:
+            directory = Path(temporary)
+            self.assertEqual(deploy.fetch_package(tag, directory), facts)
+            self.assertEqual(json.loads((directory / "release.json").read_text())["tag"], tag)
+            fetch.assert_called_once_with(f"{deploy.RELEASES}/{tag}/shard.tar.gz", timeout=60)
+
     def test_prepare_materializes_the_key_before_the_rpc_file_bind_is_created(self):
         with (
             patch.object(deploy.subprocess, "run") as run,
@@ -96,25 +114,23 @@ class InputsTest(unittest.TestCase):
 
 
 class EnrolmentTest(unittest.TestCase):
-    def test_initialization_requires_the_file_wrapper_instead_of_an_inherited_token(self):
-        with tempfile.TemporaryDirectory() as temporary:
-            directory = Path(temporary)
-            with patch.dict(deploy.os.environ, {}, clear=True):
-                with self.assertRaisesRegex(ValueError, "protected operator"):
-                    deploy.check_operator_approval(directory, {"OPERATOR_TOKEN_FILE": "/opt/athanor/operator-token"})
-            with patch.dict(deploy.os.environ, {"OPERATOR_TOKEN": "test-token"}):
-                deploy.check_operator_approval(directory, {"OPERATOR_TOKEN_FILE": "/opt/athanor/operator-token"})
-                with self.assertRaisesRegex(ValueError, "protected operator"):
-                    deploy.check_operator_approval(directory, {"OPERATOR_TOKEN": "test-token"})
+    def test_initialization_requires_the_wrapper_supplied_credential(self):
+        with patch.dict(deploy.os.environ, {}, clear=True):
+            with self.assertRaisesRegex(ValueError, "protected operator"):
+                deploy.check_operator_approval()
+        with patch.dict(deploy.os.environ, {"OPERATOR_TOKEN": "test-token"}):
+            deploy.check_operator_approval()
 
-    def test_sudo_preserves_only_the_credential_path(self):
+    def test_sudo_preserves_only_driver_placement(self):
         preserved = next(flag for flag in deploy.compose(Path("/srv/shard")) if flag.startswith("--preserve-env="))
-        self.assertNotIn("OPERATOR_TOKEN", preserved.removeprefix("--preserve-env=").split(","))
-        self.assertIn("OPERATOR_TOKEN_FILE", preserved.removeprefix("--preserve-env=").split(","))
+        self.assertEqual(preserved, "--preserve-env=HARNESS_CPUSET")
 
 
 
 class ActivationTest(unittest.TestCase):
+    def setUp(self):
+        self.enterContext(patch.object(deploy, "launcher_handed_off", return_value=False, create=True))
+
     def test_real_data_directory_records_a_failed_check_without_promoting(self):
         with tempfile.TemporaryDirectory() as temporary:
             data = Path(temporary)
@@ -175,7 +191,10 @@ class ActivationTest(unittest.TestCase):
                 deploy.directory_status({"guardian_url": "https://identity.test/api/guardian", "public_herald_url": "https://herald.test"}, "pending")
 
 class WorkerLauncherTest(unittest.TestCase):
-    def test_gameplay_evidence_cannot_survive_a_package_or_image_change(self):
+    def setUp(self):
+        self.launcher_state = self.enterContext(patch.object(deploy, "launcher_handed_off", return_value=False, create=True))
+
+    def test_gameplay_evidence_survives_a_package_change(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             data = root / "data"
@@ -186,9 +205,9 @@ class WorkerLauncherTest(unittest.TestCase):
             release.write_text(json.dumps({"commit": "a", "images": {"init": "sha256:1"}}))
             first = deploy.gameplay_check_identity(data)
             release.write_text(json.dumps({"commit": "b", "images": {"init": "sha256:2"}}))
-            self.assertNotEqual(first, deploy.gameplay_check_identity(data))
+            self.assertEqual(first, deploy.gameplay_check_identity(data))
 
-    def test_runner_gameplay_evidence_binds_local_images_without_a_downloaded_package(self):
+    def test_runner_gameplay_evidence_survives_an_image_change(self):
         with tempfile.TemporaryDirectory() as temporary:
             data = Path(temporary)
             for name in ("native-world.json", "initialized.json"):
@@ -198,7 +217,52 @@ class WorkerLauncherTest(unittest.TestCase):
             stack.write_text(json.dumps({"services": {"init": {"image": "sha256:1"}}}))
             first = deploy.gameplay_check_identity(data)
             stack.write_text(json.dumps({"services": {"init": {"image": "sha256:2"}}}))
-            self.assertNotEqual(first, deploy.gameplay_check_identity(data))
+            self.assertEqual(first, deploy.gameplay_check_identity(data))
+
+    def test_handoff_then_packaging_change_resumes_worker_check_without_rechecking(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            data = Path(temporary)
+            for name in ("native-world.json", "initialized.json"):
+                (data / name).write_text("{}")
+            (data / "configuration.json").write_text("{}")
+            stack = data / "compose.json"
+            stack.write_text(json.dumps({"image": "sha256:before"}))
+            def interrupted_handoff(*_):
+                (data / "launcher-enrolment.json").write_text(json.dumps({"launcherAccount": "0x42"}))
+                raise RuntimeError("Worker check unavailable")
+            with (
+                patch.object(deploy, "run_self_check", return_value={"passed": True}) as check,
+                patch.object(deploy, "directory_status", return_value={"status": "pending"}),
+                patch.object(deploy, "confirm_worker_launcher", side_effect=interrupted_handoff),
+            ):
+                with self.assertRaisesRegex(RuntimeError, "Worker check unavailable"):
+                    deploy.verify_and_activate({}, data)
+                self.assertEqual(check.call_count, 1)
+            stack.write_text(json.dumps({"image": "sha256:after"}))
+            with (
+                patch.object(deploy, "run_self_check") as check,
+                patch.object(deploy, "directory_status", side_effect=lambda _, status: {"status": status}),
+                patch.object(deploy, "confirm_worker_launcher") as worker,
+            ):
+                deploy.verify_and_activate({}, data)
+                check.assert_not_called()
+                worker.assert_called_once()
+            for changed_file in ("native-world.json", "initialized.json", "self-check.json"):
+                with self.subTest(changed_file=changed_file):
+                    before = (data / changed_file).read_text()
+                    (data / changed_file).write_text("{}" if changed_file == "self-check.json" else '{"changed":true}')
+                    with (
+                        patch.object(deploy, "launcher_handed_off", return_value=True),
+                        patch.object(deploy, "run_self_check") as check,
+                        patch.object(deploy, "directory_status", return_value={"status": "pending"}) as status,
+                        patch.object(deploy, "confirm_worker_launcher") as worker,
+                    ):
+                        with self.assertRaisesRegex(RuntimeError, "^chain facts changed after the launcher handoff; retire this chain$"):
+                            deploy.verify_and_activate({}, data)
+                        check.assert_not_called()
+                        worker.assert_not_called()
+                        status.assert_called_once_with({}, "pending")
+                    (data / changed_file).write_text(before)
 
     def test_activation_waits_for_confirmed_worker_handoff_and_its_real_creation(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -245,7 +309,7 @@ class WorkerLauncherTest(unittest.TestCase):
         with (
             patch.object(deploy, "deployed_facts", return_value=(manifest, {})),
             patch.object(deploy, "launcher_service", side_effect=service),
-            patch.object(deploy, "launcher_chain_check", side_effect=lambda *args: events.append(args[2])),
+            patch.object(deploy, "launcher_chain_check", side_effect=lambda *args: events.append(args[1])),
         ):
             deploy.confirm_worker_launcher({"public_herald_url": "https://herald.test", "presets": [5]}, Path("/unused"))
         self.assertEqual(events, ["enrol", "handoff", "check", "verify"])
@@ -253,3 +317,46 @@ class WorkerLauncherTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class LauncherAuthorityTest(unittest.TestCase):
+    def test_failed_handoff_intent_does_not_stop_a_fresh_self_check(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            data = Path(temporary)
+            (data / "launcher-enrolment.json").write_text('{"launcherAccount":"0x42"}')
+            (data / "self-check.json").write_text('{"passed":true,"checkedIdentity":"old"}')
+            with patch.object(deploy, "gameplay_check_identity", return_value="changed"), patch.object(deploy, "launcher_handed_off", return_value=False, create=True) as state, patch.object(deploy, "directory_status", side_effect=lambda _, status: {"status": status}), patch.object(deploy, "run_self_check", return_value={"passed": True}) as check, patch.object(deploy, "confirm_worker_launcher"):
+                deploy.verify_and_activate({}, data)
+            state.assert_called_once_with(data)
+            check.assert_called_once_with(data)
+
+    def test_installed_worker_blocks_self_check_even_without_an_intent_file(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            data = Path(temporary)
+            with patch.object(deploy, "gameplay_check_identity", return_value="changed"), patch.object(deploy, "launcher_handed_off", return_value=True, create=True) as state, patch.object(deploy, "directory_status", return_value={"status": "pending"}), patch.object(deploy, "run_self_check") as check, patch.object(deploy, "confirm_worker_launcher") as worker:
+                with self.assertRaisesRegex(RuntimeError, "^chain facts changed after the launcher handoff; retire this chain$"):
+                    deploy.verify_and_activate({}, data)
+            state.assert_called_once_with(data)
+            check.assert_not_called()
+            worker.assert_not_called()
+
+
+class LauncherStateTransportTest(unittest.TestCase):
+    def test_state_command_reads_the_private_node_without_a_worker_account_argument(self):
+        with patch.object(deploy.subprocess, "run") as run:
+            run.return_value.returncode = 0
+            run.return_value.stdout = '{"passed":true,"handedOff":false}\n'
+            self.assertFalse(deploy.launcher_handed_off(Path("/unused/data")))
+        self.assertEqual(run.call_args.args[0][-3:], ["launcher-check", "state", "/data"])
+
+    def test_unknown_state_and_failed_reads_never_assume_bootstrap_authority(self):
+        for output in ("", "null", '{"passed":false,"handedOff":false}', '{"passed":true,"handedOff":"false"}'):
+            with self.subTest(output=output), patch.object(deploy.subprocess, "run") as run:
+                run.return_value.returncode = 0
+                run.return_value.stdout = output
+                with self.assertRaisesRegex(RuntimeError, "Launcher state read failed"):
+                    deploy.launcher_handed_off(Path("/unused/data"))
+        with patch.object(deploy.subprocess, "run") as run:
+            run.return_value.returncode = 1
+            with self.assertRaisesRegex(RuntimeError, "Confirmed launcher check failed"):
+                deploy.launcher_handed_off(Path("/unused/data"))

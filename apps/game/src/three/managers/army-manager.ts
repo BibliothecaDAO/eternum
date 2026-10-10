@@ -2786,8 +2786,8 @@ export class ArmyManager {
     return (this.store ? storedBiomeAt(this.store, false, col, row) : undefined) ?? BiomeType.None;
   }
 
-  private toNumericId(entityId: ID | string | null | undefined): number {
-    return typeof entityId === "number" ? entityId : Number(entityId ?? 0);
+  private toNumericId(entityId: ID | bigint | string): number {
+    return safeInteger(entityId);
   }
 
   /**
@@ -3122,7 +3122,6 @@ ${
     }
 
     const staminaSnapshot = getExplorerStaminaSnapshot({
-      entityId,
       currentArmiesTick,
       liveTroops: this.resolveLiveExplorerTroops(entityId),
     });

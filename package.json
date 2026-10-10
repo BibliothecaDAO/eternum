@@ -98,7 +98,8 @@
     "images:analyze": "node scripts/analyze-images.js",
     "images:compress": "node scripts/compress-images-with-sharp.js",
     "images:compress:dry-run": "node scripts/compress-images-with-sharp.js --dry-run",
-    "images:compress:webp": "node scripts/compress-images-with-sharp.js --webp"
+    "images:compress:webp": "node scripts/compress-images-with-sharp.js --webp",
+    "fixtures:native-lords-budget": "python3 contracts/l3/world-native/scripts/generate-lords-budget-fixtures.py"
   },
   "dependencies": {
     "@bibliothecadao/provider": "workspace:*",

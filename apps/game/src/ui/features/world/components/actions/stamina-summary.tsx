@@ -18,8 +18,8 @@ interface StaminaSummaryProps {
 
 export const StaminaSummary = ({ selectedEntityId, isExplored, path }: StaminaSummaryProps) => {
   const currentArmiesTick = useCurrentArmiesTick();
-  const staminaManager = useStaminaManager(selectedEntityId || 0);
-  const stamina = useMemo(() => staminaManager.getStamina(currentArmiesTick), [currentArmiesTick, staminaManager]);
+  const staminaManager = useStaminaManager(selectedEntityId);
+  const stamina = useMemo(() => staminaManager?.getStamina(currentArmiesTick), [currentArmiesTick, staminaManager]);
 
   const totalCost = useMemo(() => getPathStaminaCost(path), [path]);
 

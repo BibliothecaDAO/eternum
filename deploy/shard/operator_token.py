@@ -31,4 +31,4 @@ def operator_environment():
     token = read_protected_text(OPERATOR_TOKEN_FILE).rstrip("\n")
     if not token or any(character.isspace() for character in token):
         raise ValueError("Operator credential has invalid length or whitespace")
-    return {"OPERATOR_TOKEN": token, "OPERATOR_TOKEN_FILE": str(OPERATOR_TOKEN_FILE)}
+    return {"OPERATOR_TOKEN": token}

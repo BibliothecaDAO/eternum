@@ -1,3 +1,4 @@
+import type { MadaraRpc } from "../madara-rpc";
 import { isCheckGame } from "../game-directory";
 import { dayOf } from "@bibliothecadao/eternum/expeditions";
 import type { HeraldFrontierDayRanks, HeraldHistoryEvent } from "@bibliothecadao/eternum/game-sync";
@@ -60,7 +61,9 @@ function closedDayBounds(
 export async function replayWithFrontierDays(
   native: NativeIngestion,
   history: Pick<HistoryStore, "frontierHistory" | "appendEvents">,
-  input: Parameters<NativeIngestion["replay"]>[0],
+  input: Omit<Parameters<NativeIngestion["replay"]>[0], "rpc"> & {
+    rpc: Pick<MadaraRpc, "readBlock" | "getBlockHeader">;
+  },
   confirmedTimestamp?: number,
 ) {
   const frontierDays: HeraldFrontierDayRanks[] = [];
@@ -77,7 +80,7 @@ export async function replayWithFrontierDays(
   let previousTimestamp =
     confirmedTimestamp ??
     (hasCalendar && input.fromBlock > native.decoder.manifest.native.deploymentBlock
-      ? (await input.rpc.getBlockWithReceipts(input.fromBlock - 1)).timestamp
+      ? (await input.rpc.getBlockHeader(input.fromBlock - 1)).timestamp
       : 0);
   const replay = await native.replay({
     ...input,
@@ -116,10 +119,10 @@ export async function replayWithFrontierDays(
       }
       previousTimestamp = block.timestamp;
     },
-    beforeCommit: (events) =>
+    beforeCommit: (events, throughBlock) =>
       history.appendEvents(
         events.filter((event) => event.kind === "event"),
-        input.toBlock,
+        throughBlock,
         frontierDays,
       ),
   });
