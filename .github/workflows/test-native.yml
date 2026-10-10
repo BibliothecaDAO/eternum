@@ -96,7 +96,7 @@ jobs:
           cargo +1.89.0 test --release --locked --manifest-path deploy/athanor/vrf/prover/Cargo.toml -p realms-stark-vrf-math
       - name: Test compiled stamping, key custody and public submission outcomes
         run: |
-          bun test deploy/athanor/vrf/native.test.ts deploy/athanor/vrf/transaction.test.ts deploy/athanor/vrf/key-file.test.ts deploy/athanor/vrf/proxy.test.ts deploy/athanor/scripts/read-rpc.test.ts deploy/athanor/scripts/read-rpc-outcomes.test.ts
+          bun test ./deploy/athanor/vrf deploy/athanor/scripts/read-rpc.test.ts deploy/athanor/scripts/read-rpc-outcomes.test.ts
 
   native-provider:
     runs-on: ubuntu-latest
