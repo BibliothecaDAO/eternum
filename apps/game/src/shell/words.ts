@@ -177,7 +177,10 @@ export const PROFILE_WORDS = {
   install: "Install",
 } as const;
 
-/** The payout wallet: where prizes are paid, the wallets an account links, and Ready for a player with none. */
+/**
+ * The payout wallet: where withdrawals are paid and what pays a Blitz entry; a Blitz prize goes to the wallet a seat was
+ * drawn with. Also the wallets an account links, and Ready for a player with none.
+ */
 export const WALLET_WORDS = {
   payoutWallet: "Payout wallet",
   prizesGoHere: "Prizes go here",
@@ -285,7 +288,7 @@ export const REWARD_WORDS = {
   traded: "In another collection",
   cosmetic: "Cosmetic",
   lords: "LORDS",
-  lordsSent: "Sent to your payout wallet",
+  lordsSent: "Sent to the wallet that opened it",
   swordCredit: "Sword credit",
   shieldCredit: "Shield credit",
   nextEntry: "Used at your next entry",
@@ -310,7 +313,9 @@ export const SEASON_PRIZE_WORDS = {
   yourShare: "Your share",
   review: "Claims open in",
   held: "The list is being checked",
-  claimed: "Claimed to your payout wallet",
+  claimed: "Claimed to your seat's wallet",
+  /** The ledger takes no claim while its payouts are paused. */
+  paused: "Payouts are paused. Your share can be claimed when they resume.",
   notPaid: "Outside the paid places this season",
   claim: "Claim",
 } as const;

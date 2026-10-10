@@ -108,6 +108,8 @@ it("refunds a registration the slot's close left unseated, as a cancelled slot's
       false,
     ),
   ).toBe("seated");
+  // A cancelled slot takes no new entry, even before its close: the ledger would refuse it and keep the fee.
+  expect(entryState(terms({ cancelled: true }), both, 900, false)).toBe("closed");
   // A registration is uncapped: no count of others ever turns a payer away before close.
   expect(entryState(terms(), both, 900, false)).toBe("choose");
 });

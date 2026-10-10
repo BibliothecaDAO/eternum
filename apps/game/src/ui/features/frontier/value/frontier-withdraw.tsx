@@ -10,6 +10,7 @@ import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { l2TransactionUrl } from "@/runtime/l2-rpc";
 import { requireActiveGame } from "@/runtime/world/store";
 import { type EnvironmentLedger, environmentLedger } from "@/shell/value/ledger";
+import { useLedgerPaused } from "@/shell/value/use-ledger-paused";
 import { toast } from "@/ui/features/event-feed/notify";
 import { extractReadableErrorMessage } from "@/utils/error-message";
 import { configManager } from "@bibliothecadao/eternum";
@@ -89,15 +90,6 @@ export const useWithdrawalsCloseAt = (): number | undefined => {
   const chests = setup.store.get("ChestRules", { game_id: gameId });
   return game && chests ? withdrawalsCloseAt(Number(game.end_at), chests.claim_window_seconds) : undefined;
 };
-
-/** Whether the ledger's payouts are paused; undefined until it answers, or where there is no ledger to ask. */
-const useLedgerPaused = (ledger: EnvironmentLedger | null): boolean | undefined =>
-  useQuery({
-    queryKey: ["ledger", "paused"],
-    queryFn: () => (ledger as EnvironmentLedger).paused(),
-    enabled: ledger !== null,
-    refetchInterval: 15_000,
-  }).data;
 
 /** The explorer's address of the Starknet transaction that paid a sent withdrawal, asked until the ledger has paid it. */
 const usePaymentTransaction = (ledger: EnvironmentLedger | null, sent: SentWithdrawal | null): string | undefined =>

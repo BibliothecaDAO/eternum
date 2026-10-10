@@ -6,11 +6,12 @@ import { type IconCode, KitIcon } from "@/ui/design-system/kit/kit-icon";
 import { formatDate, formatDuration } from "@/ui/design-system/kit/time";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
-import { useRealmsPlayer, useRecentResults } from "../herald";
+import { usePlayerHistory, useRealmsPlayer } from "../herald";
 import { Loading } from "../loading";
 import { ServiceFailure } from "../service-failure";
 import { useNowSeconds } from "../use-now";
 import { claimSeasonCall, environmentLedger, lordsOf } from "../value/ledger";
+import { useLedgerPaused } from "../value/use-ledger-paused";
 import { FailureLine } from "../sign-in/failure-line";
 import { SEASON_PRIZE_WORDS } from "../words";
 import { placeShares, type SeasonPrize, seasonSourcesOf, seasonState, useSeasonPrize } from "./blitz-season";
@@ -30,17 +31,18 @@ const PLACES_SHOWN = 3;
  */
 export const SeasonPrizePanel = () => {
   const { data: player } = useRealmsPlayer();
-  const history = useRecentResults(20, player);
-  const sources = seasonSourcesOf(history.data?.games ?? []);
+  const history = usePlayerHistory(player);
+  const sources = seasonSourcesOf(history.data ?? []);
   const ledger = environmentLedger();
   const prize = useSeasonPrize(ledger, sources);
+  const paused = useLedgerPaused(ledger);
   if (sources.length > 0 && !ledger) return <FailureLine line={SEASON_PRIZE_WORDS.unreadable} />;
   if (prize.isError) return <ServiceFailure service="ledger" error={prize.error} retry={() => void prize.refetch()} />;
   if (!prize.data) return null;
-  return <Prize prize={prize.data} onClaimed={() => void prize.refetch()} />;
+  return <Prize prize={prize.data} paused={paused === true} onClaimed={() => void prize.refetch()} />;
 };
 
-const Prize = ({ prize, onClaimed }: { prize: SeasonPrize; onClaimed: () => void }) => {
+const Prize = ({ prize, paused, onClaimed }: { prize: SeasonPrize; paused: boolean; onClaimed: () => void }) => {
   const now = useNowSeconds();
   const [signing, setSigning] = useState(false);
   const state = seasonState(prize, now);
@@ -73,7 +75,9 @@ const Prize = ({ prize, onClaimed }: { prize: SeasonPrize; onClaimed: () => void
       ) : (
         <Share prize={prize} state={state} now={now} />
       )}
+      {state === "claim" && paused && <Line icon="Lk">{SEASON_PRIZE_WORDS.paused}</Line>}
       {state === "claim" &&
+        !paused &&
         prize.position !== null &&
         (signing ? (
           <Suspense fallback={<Loading />}>
