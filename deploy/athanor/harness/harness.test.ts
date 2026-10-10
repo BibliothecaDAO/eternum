@@ -1,3 +1,5 @@
+import { launchHarnessGame } from "./game-setup";
+import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
 import { retainBoundaryEvidence } from "./worker-boundary";
 import { mkdtempSync, rmSync } from "node:fs";
 import { summarizeBattles } from "./combat";
@@ -70,36 +72,76 @@ afterAll(() => {
 });
 
 describe("Madara harness workload", () => {
-  it("refuses missing host credentials before contacting a shard, and records why in its output", async () => {
-    for (const missing of ["DEPLOYER_ACCOUNT_ADDRESS", "DEPLOYER_PRIVATE_KEY"]) {
-      const output = await mkdtemp(join(tmpdir(), "harness-failure-"));
-      const environment: NodeJS.ProcessEnv = {
-        ...process.env,
-        DEPLOYER_ACCOUNT_ADDRESS: "0x123",
-        DEPLOYER_PRIVATE_KEY: "0x456",
-        HARNESS_OUTPUT_DIRECTORY: output,
-      };
-      delete environment[missing];
+  it("requires owner credentials when creating a game", async () => {
+    const saved = { address: process.env.DEPLOYER_ACCOUNT_ADDRESS, key: process.env.DEPLOYER_PRIVATE_KEY };
+    try {
+      delete process.env.DEPLOYER_ACCOUNT_ADDRESS;
+      delete process.env.DEPLOYER_PRIVATE_KEY;
+      const input = {} as Parameters<typeof launchHarnessGame>[0];
+      await expect(launchHarnessGame(input)).rejects.toThrow(
+        "DEPLOYER_ACCOUNT_ADDRESS required for private game setup",
+      );
+      process.env.DEPLOYER_ACCOUNT_ADDRESS = "0x123";
+      await expect(launchHarnessGame(input)).rejects.toThrow("DEPLOYER_PRIVATE_KEY required for private game setup");
+    } finally {
+      if (saved.address === undefined) delete process.env.DEPLOYER_ACCOUNT_ADDRESS;
+      else process.env.DEPLOYER_ACCOUNT_ADDRESS = saved.address;
+      if (saved.key === undefined) delete process.env.DEPLOYER_PRIVATE_KEY;
+      else process.env.DEPLOYER_PRIVATE_KEY = saved.key;
+    }
+  });
+
+  it("loads a prepared roster without owner credentials", async () => {
+    const output = await mkdtemp(join(tmpdir(), "harness-prepared-"));
+    const environment: NodeJS.ProcessEnv = { ...process.env, HARNESS_OUTPUT_DIRECTORY: output };
+    delete environment.DEPLOYER_ACCOUNT_ADDRESS;
+    delete environment.DEPLOYER_PRIVATE_KEY;
+    const server = Bun.serve({
+      port: 0,
+      async fetch(request) {
+        if (new URL(request.url).pathname === "/manifest")
+          return Response.json({
+            version: 1,
+            chainId: "0x1",
+            contracts: { games: "0x123" },
+            accountClassHash: "0x2",
+            guardianPublicKey: "0x3",
+            l2GasBound: "0x1234",
+            releaseSchemas: { "1": bindings.schemaIdentity },
+            rpcUrl: new URL("/rpc", request.url).href,
+          });
+        const call = (await request.json()) as { id: number };
+        return Response.json({ jsonrpc: "2.0", id: call.id, result: "0x1" });
+      },
+    });
+    try {
+      const prepared = join(output, "prepared.json");
+      await writeFile(prepared, JSON.stringify({ game: { gameId: 1 }, accounts: [] }));
       const child = Bun.spawn(
         [
           process.execPath,
           "--tsconfig-override",
           new URL("./tsconfig.json", import.meta.url).pathname,
           new URL("./run.ts", import.meta.url).pathname,
+          "--prepared-game",
+          prepared,
+          "--bots",
+          "1",
+          "--rpc-url",
+          new URL("/rpc", server.url).href,
+          "--herald-url",
+          server.url.origin,
         ],
-        {
-          env: environment,
-          stdout: "pipe",
-          stderr: "pipe",
-        },
+        { env: environment, stdout: "pipe", stderr: "pipe" },
       );
       const stderr = await new Response(child.stderr).text();
       expect(await child.exited).toBe(1);
-      expect(stderr).toContain(missing);
-      expect(stderr).toContain("native harness");
+      expect(stderr).toContain("Prepared roster size differs");
+      expect(stderr).not.toContain("DEPLOYER_");
       const failure = JSON.parse(await readFile(join(output, "failure.json"), "utf8"));
-      expect(failure.error).toContain(missing);
-      expect(failure.stack).toContain("run.ts");
+      expect(failure.error).toContain("Prepared roster size differs");
+    } finally {
+      server.stop(true);
       await rm(output, { recursive: true, force: true });
     }
   });
