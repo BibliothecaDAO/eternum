@@ -150,9 +150,9 @@ Frontier response parsing against the package's actual built ABI without loading
 Build release artifacts first, under the same lock. These commands compile each package using its pinned toolchain:
 
 ```sh
-(cd contracts/l2/ledger && flock /tmp/eternum-scarb.lock scarb --release build)
-(cd contracts/l2/mmr && flock /tmp/eternum-scarb.lock scarb --release build)
-(cd contracts/l2/collectibles && flock /tmp/eternum-scarb.lock scarb --release build)
+(cd contracts/l2/ledger && flock /tmp/eternum-scarb.lock scarb build --release)
+(cd contracts/l2/mmr && flock /tmp/eternum-scarb.lock scarb build --release)
+(cd contracts/l2/collectibles && flock /tmp/eternum-scarb.lock scarb build --release)
 ```
 
 The owner supplies `SEPOLIA_RPC_URL`, `SEPOLIA_ACCOUNT_ADDRESS`, `SEPOLIA_ACCOUNT_PRIVATE_KEY`,
