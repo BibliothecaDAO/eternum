@@ -447,7 +447,7 @@ pub mod MapLogic {
             let tile = crate::logic::map::tile(key).expect('unrevealed extraction tile');
             assert!(tile.data / BIOME_SCALE % BYTE_RANGE != 0, "tile must be revealed");
             let mut root = context.raw_root;
-            let seed = crate::random::game_root(ref root, game_id, game.seed);
+            let seed = crate::random::game_root(ref root, game_id);
             if tile.data / crate::map::REWARD_EXTRACTED_FLAG % 2 == 1 {
                 return ();
             }

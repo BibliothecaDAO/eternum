@@ -1583,7 +1583,6 @@ fn sites_pay_the_same_initial_guard_in_a_days_last_minute_as_in_its_first() {
 // Search roll inputs, never the gameplay clock. Every chosen input is passed to the action unchanged.
 fn discovery_root(
     game_id: u32,
-    game_seed: felt252,
     rules: crate::expeditions::FrontierDiscoveryRules,
     empty_reveals: u8,
     chest: Option<SiteChest>,
@@ -1592,7 +1591,7 @@ fn discovery_root(
     for sample in 0_u64..10000 {
         let raw_root: u256 = sample.into();
         let mut root = raw_root;
-        let seed = crate::random::game_root(ref root, game_id, game_seed);
+        let seed = crate::random::game_root(ref root, game_id);
         if crate::discovery::frontier(rules, 0, 0, 0, empty_reveals, chest, seed) == expected {
             return raw_root;
         }
@@ -1802,7 +1801,7 @@ fn assert_capture_at(depth: u8, count: u128, tier: crate::troops::TroopTier, rev
     let context = crate::tests::context(d.games, game_id);
     let discovery_rules = preset.economy.discovery.unwrap();
     let root = discovery_root(
-        game_id, context.game.unbox().seed, discovery_rules, 0, None, crate::discovery::Discovery::Camp,
+        game_id, discovery_rules, 0, None, crate::discovery::Discovery::Camp,
     );
     let reveal_at = opening + 2;
     assert!(reveal_at < capture_at, "camp draw must precede the fixture capture");
@@ -2392,7 +2391,6 @@ pub fn assert_zero_pool_never_funds_a_ruin_or_payout_over_a_day() {
         let army = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
         let raw_root = discovery_root(
             game_id,
-            clock.game.seed,
             rules,
             attempts,
             Some(any_chest()),
@@ -2548,7 +2546,7 @@ fn an_exhausted_day_price_never_funds_a_ruin_or_payout(estimate: u128) {
     };
     let context = crate::tests::context(d.games, game_id);
     let raw_root = discovery_root(
-        game_id, context.game.unbox().seed, rules, 0, Some(any_chest()), crate::discovery::Discovery::Ruin(any_chest()),
+        game_id, rules, 0, Some(any_chest()), crate::discovery::Discovery::Ruin(any_chest()),
     );
     let army = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
     let time = 360_u64;
@@ -2603,7 +2601,6 @@ fn frontier_finds_at_most_one_ruin_a_day_and_holds_its_chest_against_the_budget(
     let context = crate::tests::context(d.games, game_id);
     let raw_root = discovery_root(
         game_id,
-        context.game.unbox().seed,
         ruins_only,
         0,
         Some(any_chest()),
@@ -2644,7 +2641,7 @@ fn frontier_finds_at_most_one_ruin_a_day_and_holds_its_chest_against_the_budget(
         let timestamp = time + sample;
         let raw_root: u256 = sample.into();
         let mut root = raw_root;
-        let seed = crate::random::game_root(ref root, game_id, context.game.unbox().seed);
+        let seed = crate::random::game_root(ref root, game_id);
         let drawn = snforge_std::interact_with_state(
             d.games,
             || crate::expeditions::IFrontierDiscoveryDispatcherTrait::discover_frontier_tile(
@@ -3073,7 +3070,7 @@ fn frontier_floor_counts_seven_player_reveals_across_armies_and_depths_then_rese
         } else {
             crate::discovery::Discovery::Camp
         };
-        let root = discovery_root(game_id, context.game.unbox().seed, discovery, index, Some(any_chest()), expected);
+        let root = discovery_root(game_id, discovery, index, Some(any_chest()), expected);
         assert!(time < tomorrow);
         assert!(explore_with_root(d, game_id, key.explorer_id, root, time));
         let count = snforge_std::interact_with_state(
@@ -3120,7 +3117,7 @@ fn frontier_floor_counts_seven_player_reveals_across_armies_and_depths_then_rese
     let third = *IStructureOperationsDispatcher { contract_address: d.games }.home_armies(home).at(0);
     let time = tomorrow + 1;
     let root = discovery_root(
-        game_id, context.game.unbox().seed, discovery, 0, Some(any_chest()), crate::discovery::Discovery::None,
+        game_id, discovery, 0, Some(any_chest()), crate::discovery::Discovery::None,
     );
     assert!(explore_with_root(d, game_id, third, root, time));
     assert_eq!(

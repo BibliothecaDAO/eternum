@@ -384,7 +384,7 @@ fn opening_a_chest_draws_with_replacement_once_and_replay_cannot_reopen_it() {
     let command = Command::OpenRelicChest(OpenChest { explorer_id: explorer.entity_id, coord });
     let mut root = super::context(deployment.games, 3).raw_root;
     let games = crate::game::IGameDispatcher { contract_address: deployment.games };
-    let seed = crate::random::game_root(ref root, 3, crate::game::IGameDispatcherTrait::game(games, 3).seed);
+    let seed = crate::random::game_root(ref root, 3);
     let expected = crate::relics::draw_relics(rules(), seed, 3);
     let points = crate::game::IPointsDispatcherTrait::player_points(
         crate::game::IPointsDispatcher { contract_address: deployment.games }, 3, deployment.actor,

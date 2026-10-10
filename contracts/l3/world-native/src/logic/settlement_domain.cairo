@@ -152,7 +152,7 @@ pub mod SettlementLogic {
                 self.settlements.reserve_entry(key, actor, requires_entitlement);
             }
             let mut root = context.raw_root;
-            let seed = crate::random::game_root(ref root, game_id, game.seed);
+            let seed = crate::random::game_root(ref root, game_id);
             let mut progress = self.settlements.data.settlements.progress.read(game_id);
             let (realm_id, traits) = self
                 .resolve_season_realm(key, command.selected_realm, progress.realm_count, seed, context);
@@ -220,7 +220,7 @@ pub mod SettlementLogic {
                 self.villages.require_pass(pass, owner);
             }
             let mut raw_root = context.raw_root;
-            let seed = crate::random::game_root(ref raw_root, game_id, game.seed);
+            let seed = crate::random::game_root(ref raw_root, game_id);
             let village_rules = self.villages.rules(game_id);
             let resource = crate::village::select_resource(village_rules.resource_pool, seed);
             let progress = self.settlements.data.settlements.progress.read(game_id);
@@ -305,7 +305,7 @@ pub mod SettlementLogic {
             }
             if progress.registered == 0 {
                 let mut root = context.raw_root;
-                let seed = crate::random::game_root(ref root, game_id, game.seed);
+                let seed = crate::random::game_root(ref root, game_id);
                 self.settlements.initialize_blitz_order(game_id, roster.len(), seed);
             }
             let order = crate::logic::settlement::blitz_order(game_id);
