@@ -14,6 +14,21 @@ export const ledgerU256 = (low: string, high: string): string => {
   if (a < 0n || b < 0n || a >= 2n ** 128n || b >= 2n ** 128n) throw new Error("invalid_u256_limb");
   return String(a + (b << 128n));
 };
+/** Registration keeps registered=true after refund; refund clears paid and the spent credits. */
+export const decodeRegistration = (fields: readonly string[]) => {
+  if (fields.length !== 9) throw new Error("invalid_ledger_registration");
+  return {
+    registered: ledgerBool(fields[0]!),
+    sword: ledgerBool(fields[1]!),
+    shield: ledgerBool(fields[2]!),
+    swordCredit: ledgerBool(fields[3]!),
+    shieldCredit: ledgerBool(fields[4]!),
+    paid: BigInt(ledgerU256(fields[5]!, fields[6]!)),
+    refundable: ledgerBool(fields[7]!),
+    gameId: ledgerInteger(fields[8]!),
+  };
+};
+
 /** WithdrawalPayment: paid, season_id, wallet, amount (low, high); an all-zero row has no report. */
 export const decodeWithdrawalPayment = (fields: readonly string[]) => {
   if (fields.length !== 5) throw new Error("invalid_payment_record");

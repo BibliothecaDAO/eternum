@@ -2,7 +2,7 @@ import { gamesAbi, response } from "../test-support/abi";
 import { ledgerAbi } from "../test-support/ledger-abi";
 import { describe, expect, it, vi } from "vitest";
 import { CallData, type RpcProvider } from "starknet";
-import { readLedgerSlot } from "./blitz-slots";
+import { readLedgerSlot, readLedgerRegistration } from "./blitz-slots";
 import {
   decodeBlitzSeason,
   decodeChest,
@@ -40,6 +40,44 @@ describe("committed contract readbacks", () => {
     expect(callContract.mock.calls[0][0].calldata.map(BigInt)).toEqual(
       new CallData(ledgerAbi).compile("get_slot", { key: { shard: 17, slot_id: 7 } }).map(BigInt),
     );
+  });
+  it("reads one registration with the committed input and output layouts", async () => {
+    const fields = response(ledgerAbi, "get_registration", {
+      registered: true,
+      sword: false,
+      shield: true,
+      sword_credit: false,
+      shield_credit: true,
+      paid: { low: 7, high: 2 },
+      refundable: true,
+      game_id: 19,
+    });
+    const callContract = vi.fn().mockResolvedValue(fields);
+    const provider = { callContract } as unknown as RpcProvider;
+    expect(await readLedgerRegistration(provider, "0x10", { chainId: "0x11", slotId: 7 }, "0x12")).toEqual({
+      registered: true,
+      sword: false,
+      shield: true,
+      swordCredit: false,
+      shieldCredit: true,
+      paid: 7n + (2n << 128n),
+      refundable: true,
+      gameId: 19,
+    });
+    expect(callContract).toHaveBeenCalledTimes(1);
+    expect(callContract.mock.calls[0][1]).toBe("latest");
+    expect(callContract.mock.calls[0][0].calldata.map(BigInt)).toEqual(
+      new CallData(ledgerAbi).compile("get_registration", { key: { shard: 17, slot_id: 7 }, owner: 18 }).map(BigInt),
+    );
+    for (const malformed of [
+      fields.slice(1),
+      [...fields, "0"],
+      fields.map((field, index) => (index === 0 ? "2" : field)),
+      fields.map((field, index) => (index === 6 ? String(2n ** 128n) : field)),
+    ]) {
+      callContract.mockResolvedValue(malformed);
+      await expect(readLedgerRegistration(provider, "0x10", { chainId: "0x11", slotId: 7 }, "0x12")).rejects.toThrow();
+    }
   });
   it("decodes economic records serialized by the compiled ledger types", () => {
     expect(

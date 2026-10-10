@@ -19,12 +19,26 @@ const STAGING_CONFIG = unstable_readConfig({
 export const ORIGIN = new URL(String(STAGING_CONFIG.vars.BASE_URL)).origin;
 const EMAIL_PROVIDER = "https://api.resend.com/emails";
 
-export const buildWorkerBundle = (): string => {
+export const buildWorkerBundle = (aliases: Record<string, string> = {}): string => {
   const bundle = join(mkdtempSync(join(tmpdir(), "identity-bundle-")), "bundle");
-  execFileSync("pnpm", ["exec", "wrangler", "deploy", "--dry-run", "--env", "staging", "--outdir", bundle], {
-    cwd: new URL("..", import.meta.url).pathname,
-    stdio: "ignore",
-  });
+  execFileSync(
+    "pnpm",
+    [
+      "exec",
+      "wrangler",
+      "deploy",
+      "--dry-run",
+      "--env",
+      "staging",
+      "--outdir",
+      bundle,
+      ...Object.entries(aliases).flatMap(([name, path]) => ["--alias", `${name}:${path}`]),
+    ],
+    {
+      cwd: new URL("..", import.meta.url).pathname,
+      stdio: "ignore",
+    },
+  );
   return bundle;
 };
 
