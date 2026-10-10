@@ -1,7 +1,7 @@
 use core::poseidon::poseidon_hash_span;
 use game_ledger::types::{
-    BlitzSeason, Chest, ChestBandPreset, Credits, FrontierSeason, Game, GameKey, PlayerResult, Preset, RankedPlayer,
-    Registration, WithdrawalPayment,
+    BlitzSeason, Chest, ChestBandPreset, Credits, FrontierSeason, GameKey, PlayerResult, Preset, RankedPlayer,
+    Registration, Slot, SlotKey, WithdrawalPayment,
 };
 use starknet::ContractAddress;
 
@@ -53,18 +53,17 @@ pub trait IGameLedger<TState> {
     fn get_season_mmr(self: @TState, season_id: u32, owner: ContractAddress) -> u128;
     fn get_season_winner(self: @TState, season_id: u32, index: u32) -> (ContractAddress, u256);
     fn season_claimed(self: @TState, season_id: u32, owner: ContractAddress) -> bool;
-    fn open_game(ref self: TState, key: GameKey, season_id: u32, preset_id: u32, start: u64, end: u64);
-    fn set_account_link(ref self: TState, wallet: ContractAddress, account: ContractAddress);
-    fn account_of_wallet(self: @TState, wallet: ContractAddress) -> ContractAddress;
-    fn wallet_of_account(self: @TState, account: ContractAddress) -> ContractAddress;
-    fn register(ref self: TState, key: GameKey, sword: bool, shield: bool);
-    fn register_with_pass(ref self: TState, key: GameKey, pass_id: u256);
-    fn register_village(ref self: TState, key: GameKey, village_pass_id: u256);
-    fn fund(ref self: TState, key: GameKey, amount: u256);
-    fn cancel_game(ref self: TState, key: GameKey);
-    fn abort_game(ref self: TState, key: GameKey);
-    fn refund(ref self: TState, key: GameKey);
-    fn apply_results(ref self: TState, key: GameKey, ranked: Array<RankedPlayer>);
+    fn open_slot(ref self: TState, key: SlotKey, season_id: u32, preset_id: u32, close: u64, end: u64);
+    fn register(ref self: TState, key: SlotKey, sword: bool, shield: bool);
+    fn register_with_pass(ref self: TState, key: SlotKey, pass_id: u256);
+    fn register_village(ref self: TState, key: SlotKey, village_pass_id: u256);
+    fn fund(ref self: TState, key: SlotKey, amount: u256);
+    fn cancel_slot(ref self: TState, key: SlotKey);
+    fn abort_slot(ref self: TState, key: SlotKey);
+    fn refund(ref self: TState, key: SlotKey);
+    fn mark_refundable(ref self: TState, key: SlotKey, wallets: Array<ContractAddress>);
+    fn get_result_commitment(self: @TState, key: GameKey) -> felt252;
+    fn apply_results(ref self: TState, key: SlotKey, game_id: u32, ranked: Array<RankedPlayer>);
     fn open_request(ref self: TState, token_id: u256);
     fn open_finish(ref self: TState, token_id: u256);
     fn get_chest_band(self: @TState, preset_id: u32, band: u8) -> ChestBandPreset;
@@ -72,9 +71,9 @@ pub trait IGameLedger<TState> {
     fn get_chest(self: @TState, token_id: u256) -> Chest;
     fn get_credits(self: @TState, owner: ContractAddress) -> Credits;
     fn get_preset(self: @TState, preset_id: u32) -> Preset;
-    fn get_game(self: @TState, key: GameKey) -> Game;
-    fn get_registration(self: @TState, key: GameKey, owner: ContractAddress) -> Registration;
-    fn get_registered_player(self: @TState, key: GameKey, index: u16) -> (ContractAddress, ContractAddress);
+    fn get_slot(self: @TState, key: SlotKey) -> Slot;
+    fn get_registration(self: @TState, key: SlotKey, owner: ContractAddress) -> Registration;
+    fn get_registered_player(self: @TState, key: SlotKey, index: u64) -> ContractAddress;
     fn get_player_result(self: @TState, key: GameKey, owner: ContractAddress) -> PlayerResult;
 }
 
@@ -113,8 +112,8 @@ pub mod GameLedger {
     use game_ledger::chests::{draw_item_index, draw_outcome, outcome_weights, rank_band};
     use game_ledger::mmr::MmrCalculatorImpl;
     use game_ledger::types::{
-        BlitzSeason, Chest, ChestBandPreset, ChestContent, Credits, FrontierSeason, Game, GameKey, PlayerResult, Preset,
-        RankedPlayer, Registration, WithdrawalPayment,
+        BlitzSeason, Chest, ChestBandPreset, ChestContent, Credits, FrontierSeason, GameKey, PlayerResult, Preset,
+        RankedPlayer, Registration, Slot, SlotKey, WithdrawalPayment,
     };
     use openzeppelin::access::accesscontrol::{AccessControlComponent, DEFAULT_ADMIN_ROLE};
     use openzeppelin::introspection::src5::SRC5Component;
@@ -126,11 +125,11 @@ pub mod GameLedger {
     use starknet::storage::{Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess};
     use starknet::{ClassHash, ContractAddress, SyscallResultTrait};
     use super::{
-        BPS, ICollectibleDispatcher, ICollectibleDispatcherTrait, IGameLedger, IMMRTokenDispatcher,
-        IMMRTokenDispatcherTrait, IPassBurnDispatcher, IPassBurnDispatcherTrait, IPassRestoreDispatcher,
-        IPassRestoreDispatcherTrait, ISeasonPassMetadataDispatcher, ISeasonPassMetadataDispatcherTrait, MMR_PRECISION,
-        NO_PASS, OPERATOR_ROLE, PAUSER_ROLE, PAYOUT_WEIGHT_SCALE, SEASON_PASS, SEASON_REVIEW_SECONDS, VILLAGE_PASS,
-        result_commitment,
+        BPS, ICollectibleDispatcher, ICollectibleDispatcherTrait, IGameLedger,
+        IMMRTokenDispatcher, IMMRTokenDispatcherTrait, IPassBurnDispatcher, IPassBurnDispatcherTrait,
+        IPassRestoreDispatcher, IPassRestoreDispatcherTrait, ISeasonPassMetadataDispatcher,
+        ISeasonPassMetadataDispatcherTrait, MMR_PRECISION, NO_PASS, OPERATOR_ROLE, PAUSER_ROLE, PAYOUT_WEIGHT_SCALE,
+        SEASON_PASS, SEASON_REVIEW_SECONDS, VILLAGE_PASS, result_commitment,
     };
 
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
@@ -171,12 +170,10 @@ pub mod GameLedger {
         credits: Map<ContractAddress, Credits>,
         presets: Map<u32, Preset>,
         preset_exists: Map<u32, bool>,
-        games: Map<GameKey, Game>,
-        registrations: Map<(GameKey, ContractAddress), Registration>,
-        registered_owners: Map<(GameKey, u16), ContractAddress>,
-        seated_accounts: Map<(GameKey, ContractAddress), bool>,
-        wallet_accounts: Map<ContractAddress, ContractAddress>,
-        account_wallets: Map<ContractAddress, ContractAddress>,
+        slots: Map<SlotKey, Slot>,
+        registrations: Map<(SlotKey, ContractAddress), Registration>,
+        registered_owners: Map<(SlotKey, u64), ContractAddress>,
+        result_commitments: Map<GameKey, felt252>,
         results: Map<(GameKey, ContractAddress), PlayerResult>,
         #[substorage(v0)]
         src5: SRC5Component::Storage,
@@ -203,13 +200,13 @@ pub mod GameLedger {
         WithdrawalPaid: WithdrawalPaid,
         FrontierClosed: FrontierClosed,
         PresetRegistered: PresetRegistered,
-        GameOpened: GameOpened,
+        SlotOpened: SlotOpened,
         Registered: Registered,
-        AccountLinkChanged: AccountLinkChanged,
         Funded: Funded,
-        GameCancelled: GameCancelled,
-        GameAborted: GameAborted,
+        SlotCancelled: SlotCancelled,
+        SlotAborted: SlotAborted,
         Refunded: Refunded,
+        RegistrationRefundable: RegistrationRefundable,
         SeasonOpened: SeasonOpened,
         SeasonTopPosted: SeasonTopPosted,
         SeasonChallenged: SeasonChallenged,
@@ -259,32 +256,22 @@ pub mod GameLedger {
     }
 
     #[derive(Drop, starknet::Event)]
-    struct GameOpened {
+    struct SlotOpened {
         #[key]
-        key: GameKey,
+        key: SlotKey,
+        season_id: u32,
         preset_id: u32,
-        start: u64,
+        close: u64,
         end: u64,
-        registration_limit: u16,
     }
 
-    #[derive(Drop, starknet::Event)]
-    struct AccountLinkChanged {
-        #[key]
-        wallet: ContractAddress,
-        #[key]
-        account: ContractAddress,
-        previous_account: ContractAddress,
-        previous_wallet: ContractAddress,
-    }
 
     #[derive(Drop, starknet::Event)]
     struct Registered {
         #[key]
-        key: GameKey,
+        key: SlotKey,
         #[key]
         owner: ContractAddress,
-        account: ContractAddress,
         realm_id: u256,
         metadata: (felt252, felt252, felt252),
         pass_kind: u8,
@@ -293,31 +280,39 @@ pub mod GameLedger {
     #[derive(Drop, starknet::Event)]
     struct Funded {
         #[key]
-        key: GameKey,
+        key: SlotKey,
         #[key]
         funder: ContractAddress,
         amount: u256,
     }
 
     #[derive(Drop, starknet::Event)]
-    struct GameCancelled {
+    struct SlotCancelled {
         #[key]
-        key: GameKey,
+        key: SlotKey,
     }
 
     #[derive(Drop, starknet::Event)]
-    struct GameAborted {
+    struct SlotAborted {
         #[key]
-        key: GameKey,
+        key: SlotKey,
     }
 
     #[derive(Drop, starknet::Event)]
     struct Refunded {
         #[key]
-        key: GameKey,
+        key: SlotKey,
         #[key]
         owner: ContractAddress,
         amount: u256,
+    }
+
+    #[derive(Drop, starknet::Event)]
+    struct RegistrationRefundable {
+        #[key]
+        key: SlotKey,
+        #[key]
+        owner: ContractAddress,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -333,6 +328,7 @@ pub mod GameLedger {
     struct ResultsApplied {
         #[key]
         key: GameKey,
+        slot_id: u32,
         season_id: u32,
         result_commitment: felt252,
         pool: u256,
@@ -739,78 +735,36 @@ pub mod GameLedger {
             self.season_claims.entry((season_id, owner)).read()
         }
 
-        fn open_game(ref self: ContractState, key: GameKey, season_id: u32, preset_id: u32, start: u64, end: u64) {
+        fn open_slot(ref self: ContractState, key: SlotKey, season_id: u32, preset_id: u32, close: u64, end: u64) {
             self.accesscontrol.assert_only_role(OPERATOR_ROLE);
             assert!(key.shard != 0, "Ledger: zero shard");
-            assert!(!self.games.entry(key).read().exists, "Ledger: game already opened");
+            assert!(!self.slots.entry(key).read().exists, "Ledger: slot already opened");
             assert!(self.preset_exists.entry(preset_id).read(), "Ledger: unknown preset");
-            assert!(starknet::get_block_timestamp() < start, "Ledger: start must be in the future");
-            assert!(start < end, "Ledger: invalid game window");
-
+            assert!(starknet::get_block_timestamp() < close, "Ledger: close must be in the future");
+            assert!(close < end, "Ledger: invalid slot window");
             let season = self.get_season(season_id);
-            assert!(preset_id == season.preset_id, "Ledger: game preset differs from season");
-            assert!(start >= season.start && end < season.end, "Ledger: game outside season");
-            let registration_limit = self.get_preset(preset_id).registration_limit;
-            assert!(registration_limit != 0, "Ledger: preset has no roster");
-            self
-                .games
-                .entry(key)
-                .write(
-                    Game { exists: true, season_id, preset_id, start, end, registration_limit, ..Default::default() },
-                );
-            self.emit(GameOpened { key, preset_id, start, end, registration_limit });
+            assert!(preset_id == season.preset_id, "Ledger: slot preset differs from season");
+            assert!(
+                close >= season.start && end < season.end,
+                "Ledger: slot outside season",
+            );
+            self.slots.entry(key).write(Slot { exists: true, season_id, preset_id, close, end, ..Default::default() });
+            self.emit(SlotOpened { key, season_id, preset_id, close, end });
         }
 
-        fn set_account_link(ref self: ContractState, wallet: ContractAddress, account: ContractAddress) {
-            self.accesscontrol.assert_only_role(OPERATOR_ROLE);
-            if account.is_non_zero() {
-                self.pausable.assert_not_paused();
-            }
-            assert!(wallet.is_non_zero(), "Ledger: wallet is zero");
-            let previous_account = self.wallet_accounts.entry(wallet).read();
-            if previous_account == account {
-                return;
-            }
-            let previous_wallet = if account.is_non_zero() {
-                self.account_wallets.entry(account).read()
-            } else {
-                Zero::zero()
-            };
-            if previous_account.is_non_zero() {
-                self.account_wallets.entry(previous_account).write(Zero::zero());
-            }
-            if previous_wallet.is_non_zero() {
-                self.wallet_accounts.entry(previous_wallet).write(Zero::zero());
-            }
-            self.wallet_accounts.entry(wallet).write(account);
-            if account.is_non_zero() {
-                self.account_wallets.entry(account).write(wallet);
-            }
-            self.emit(AccountLinkChanged { wallet, account, previous_account, previous_wallet });
-        }
 
-        fn account_of_wallet(self: @ContractState, wallet: ContractAddress) -> ContractAddress {
-            self.wallet_accounts.entry(wallet).read()
-        }
-
-        fn wallet_of_account(self: @ContractState, account: ContractAddress) -> ContractAddress {
-            self.account_wallets.entry(account).read()
-        }
-
-        fn register(ref self: ContractState, key: GameKey, sword: bool, shield: bool) {
+        fn register(ref self: ContractState, key: SlotKey, sword: bool, shield: bool) {
             let owner = starknet::get_caller_address();
-            let account = self.require_linked_account(owner);
-            let game = self.assert_registration_open(key, owner, account);
+            let game = self.assert_registration_open(key, owner);
             let preset = self.presets.entry(game.preset_id).read();
-            let payment = self.record_paid_registration(key, owner, account, sword, shield, preset);
+            let payment = self.record_paid_registration(key, owner, sword, shield, preset);
             self.pull_lords(owner, payment);
-            self.emit_registration(key, owner, account, 0, (0, 0, 0), NO_PASS);
+            self.emit_registration(key, owner, 0, (0, 0, 0), NO_PASS);
         }
 
-        fn register_with_pass(ref self: ContractState, key: GameKey, pass_id: u256) {
+        fn register_with_pass(ref self: ContractState, key: SlotKey, pass_id: u256) {
             let owner = starknet::get_caller_address();
-            let account = self.require_linked_account(owner);
-            self.assert_registration_open(key, owner, account);
+            self.assert_registration_open(key, owner);
             let season_pass = self.season_pass.read();
             assert!(
                 IERC721Dispatcher { contract_address: season_pass }.owner_of(pass_id) == owner,
@@ -820,15 +774,14 @@ pub mod GameLedger {
             let metadata = ISeasonPassMetadataDispatcher { contract_address: season_pass }
                 .get_encoded_metadata(pass_id.try_into().unwrap());
 
-            self.record_pass_registration(key, owner, account, pass_id, SEASON_PASS);
+            self.record_pass_registration(key, owner, pass_id, SEASON_PASS);
             IPassBurnDispatcher { contract_address: season_pass }.burn(pass_id);
-            self.emit_registration(key, owner, account, pass_id, metadata, SEASON_PASS);
+            self.emit_registration(key, owner, pass_id, metadata, SEASON_PASS);
         }
 
-        fn register_village(ref self: ContractState, key: GameKey, village_pass_id: u256) {
+        fn register_village(ref self: ContractState, key: SlotKey, village_pass_id: u256) {
             let owner = starknet::get_caller_address();
-            let account = self.require_linked_account(owner);
-            self.assert_registration_open(key, owner, account);
+            self.assert_registration_open(key, owner);
             let village_pass = self.village_pass.read();
             assert!(
                 IERC721Dispatcher { contract_address: village_pass }.owner_of(village_pass_id) == owner,
@@ -836,14 +789,14 @@ pub mod GameLedger {
             );
             assert!(village_pass_id <= 0xffff, "Ledger: village pass id exceeds u16");
 
-            self.record_pass_registration(key, owner, account, village_pass_id, VILLAGE_PASS);
+            self.record_pass_registration(key, owner, village_pass_id, VILLAGE_PASS);
             IPassBurnDispatcher { contract_address: village_pass }.burn(village_pass_id);
-            self.emit_registration(key, owner, account, village_pass_id, (0, 0, 0), VILLAGE_PASS);
+            self.emit_registration(key, owner, village_pass_id, (0, 0, 0), VILLAGE_PASS);
         }
 
-        fn fund(ref self: ContractState, key: GameKey, amount: u256) {
+        fn fund(ref self: ContractState, key: SlotKey, amount: u256) {
             let funder = starknet::get_caller_address();
-            let game = self.assert_game_open_before_start(key);
+            let game = self.assert_slot_open_before_close(key);
             assert!(amount > 0, "Ledger: zero funding");
 
             let mut registration = self.registrations.entry((key, funder)).read();
@@ -854,29 +807,30 @@ pub mod GameLedger {
             self.emit(Funded { key, funder, amount });
         }
 
-        fn cancel_game(ref self: ContractState, key: GameKey) {
+        fn cancel_slot(ref self: ContractState, key: SlotKey) {
             self.accesscontrol.assert_only_role(OPERATOR_ROLE);
-            let game = self.assert_game_open_before_start(key);
+            let game = self.assert_slot_open_before_close(key);
             self.open_refunds(key, game);
-            self.emit(GameCancelled { key });
+            self.emit(SlotCancelled { key });
         }
 
-        fn abort_game(ref self: ContractState, key: GameKey) {
+        fn abort_slot(ref self: ContractState, key: SlotKey) {
             self.accesscontrol.assert_only_role(OPERATOR_ROLE);
-            let game = self.games.entry(key).read();
-            assert!(game.exists, "Ledger: unknown game");
-            assert!(!game.cancelled && !game.finalized, "Ledger: game closed");
+            let game = self.slots.entry(key).read();
+            assert!(game.exists, "Ledger: unknown slot");
+            assert!(!game.cancelled, "Ledger: slot closed");
             assert!(starknet::get_block_timestamp() >= game.end, "Ledger: game has not ended");
 
             self.open_refunds(key, game);
-            self.emit(GameAborted { key });
+            self.emit(SlotAborted { key });
         }
 
-        fn refund(ref self: ContractState, key: GameKey) {
+        fn refund(ref self: ContractState, key: SlotKey) {
             let owner = starknet::get_caller_address();
-            let mut game = self.games.entry(key).read();
-            assert!(game.exists && game.cancelled, "Ledger: game not cancelled");
+            let mut game = self.slots.entry(key).read();
             let mut registration = self.registrations.entry((key, owner)).read();
+            assert!(game.exists && (game.cancelled || registration.refundable), "Ledger: registration not refundable");
+            assert!(registration.game_id == 0, "Ledger: registration already settled");
             let amount = registration.paid;
             let pass_kind = registration.pass_kind;
             let pass_id = registration.realm_id;
@@ -891,7 +845,7 @@ pub mod GameLedger {
             registration.pass_kind = NO_PASS;
             game.pool -= amount;
             self.registrations.entry((key, owner)).write(registration);
-            self.games.entry(key).write(game);
+            self.slots.entry(key).write(game);
             if amount > 0 {
                 self.send_lords(owner, amount);
             }
@@ -899,17 +853,51 @@ pub mod GameLedger {
             self.emit(Refunded { key, owner, amount });
         }
 
-        fn apply_results(ref self: ContractState, key: GameKey, ranked: Array<RankedPlayer>) {
+        fn apply_results(ref self: ContractState, key: SlotKey, game_id: u32, ranked: Array<RankedPlayer>) {
             self.accesscontrol.assert_only_role(OPERATOR_ROLE);
-            let game = self.games.entry(key).read();
-            self.assert_results_open(game);
-            let preset = self.presets.entry(game.preset_id).read();
-            self.validate_and_record_results(key, game.registered_count, ranked.span());
-            let (pool, commitment) = self.finalize_game_pool(key, game, ranked.span(), preset);
-            self.apply_mmr(key, ranked.span(), preset);
-            self.record_season_players(game.season_id, key, ranked.span());
-            self.mint_chests(key, game, ranked.span());
-            self.emit(ResultsApplied { key, season_id: game.season_id, result_commitment: commitment, pool });
+            let slot = self.get_slot(key);
+            self.assert_results_open(slot);
+            assert!(game_id != 0, "Ledger: zero game id");
+            let game_key = GameKey { shard: key.shard, game_id };
+            assert!(self.result_commitments.entry(game_key).read() == 0, "Ledger: results already applied");
+            let preset = self.presets.entry(slot.preset_id).read();
+            let pool = self.validate_and_record_results(key, game_key, ranked.span());
+            let commitment = result_commitment(game_key, ranked.span());
+            self.allocate_game_pool(key, slot, pool, preset);
+            self.result_commitments.entry(game_key).write(commitment);
+            self.apply_mmr(key, game_key, ranked.span(), preset);
+            self.record_season_players(slot.season_id, game_key, ranked.span());
+            self.mint_chests(game_key, slot, ranked.span());
+            self
+                .emit(
+                    ResultsApplied {
+                        key: game_key,
+                        slot_id: key.slot_id,
+                        season_id: slot.season_id,
+                        result_commitment: commitment,
+                        pool,
+                    },
+                );
+        }
+
+        fn get_result_commitment(self: @ContractState, key: GameKey) -> felt252 {
+            self.result_commitments.entry(key).read()
+        }
+
+        fn mark_refundable(ref self: ContractState, key: SlotKey, wallets: Array<ContractAddress>) {
+            self.accesscontrol.assert_only_role(OPERATOR_ROLE);
+            let slot = self.get_slot(key);
+            assert!(starknet::get_block_timestamp() >= slot.close, "Ledger: slot still open");
+            for owner in wallets {
+                let mut registration = self.registrations.entry((key, owner)).read();
+                assert!(registration.registered, "Ledger: not registered");
+                assert!(registration.game_id == 0, "Ledger: registration already settled");
+                if !registration.refundable {
+                    registration.refundable = true;
+                    self.registrations.entry((key, owner)).write(registration);
+                    self.emit(RegistrationRefundable { key, owner });
+                }
+            }
         }
 
         fn open_request(ref self: ContractState, token_id: u256) {
@@ -975,21 +963,21 @@ pub mod GameLedger {
             self.presets.entry(preset_id).read()
         }
 
-        fn get_game(self: @ContractState, key: GameKey) -> Game {
-            let game = self.games.entry(key).read();
-            assert!(game.exists, "Ledger: unknown game");
+        fn get_slot(self: @ContractState, key: SlotKey) -> Slot {
+            let game = self.slots.entry(key).read();
+            assert!(game.exists, "Ledger: unknown slot");
             game
         }
 
-        fn get_registration(self: @ContractState, key: GameKey, owner: ContractAddress) -> Registration {
+        fn get_registration(self: @ContractState, key: SlotKey, owner: ContractAddress) -> Registration {
             self.registrations.entry((key, owner)).read()
         }
 
-        fn get_registered_player(self: @ContractState, key: GameKey, index: u16) -> (ContractAddress, ContractAddress) {
-            let game = self.games.entry(key).read();
+        fn get_registered_player(self: @ContractState, key: SlotKey, index: u64) -> ContractAddress {
+            let game = self.slots.entry(key).read();
             assert!(game.exists && index < game.registered_count, "Ledger: registration index out of bounds");
             let wallet = self.registered_owners.entry((key, index)).read();
-            (wallet, self.registrations.entry((key, wallet)).read().account)
+            wallet
         }
 
         fn get_player_result(self: @ContractState, key: GameKey, owner: ContractAddress) -> PlayerResult {
@@ -1026,10 +1014,6 @@ pub mod GameLedger {
         }
 
         fn assert_valid_preset(self: @ContractState, preset: Preset) {
-            assert!(
-                Into::<u16, u32>::into(preset.registration_limit) <= crate::roster_limits::MAX_BLITZ_ROSTER_PLAYERS,
-                "Ledger: roster limit exceeds shard",
-            );
             assert!((preset.day_unit_seconds == 0) == (preset.season_bags == 0), "Ledger: incomplete calendar");
             let duration = Into::<u32, u128>::into(preset.day_unit_seconds)
                 * Into::<u64, u128>::into(crate::days::UNITS_PER_BAG)
@@ -1055,54 +1039,38 @@ pub mod GameLedger {
             }
         }
 
-        fn assert_game_open_before_start(self: @ContractState, key: GameKey) -> Game {
-            let game = self.games.entry(key).read();
-            assert!(game.exists, "Ledger: unknown game");
-            assert!(!game.cancelled && !game.finalized, "Ledger: game closed");
-            assert!(starknet::get_block_timestamp() < game.start, "Ledger: game already started");
+        fn assert_slot_open_before_close(self: @ContractState, key: SlotKey) -> Slot {
+            let game = self.slots.entry(key).read();
+            assert!(game.exists, "Ledger: unknown slot");
+            assert!(!game.cancelled, "Ledger: slot closed");
+            assert!(starknet::get_block_timestamp() < game.close, "Ledger: slot already closed");
             game
         }
 
-        fn require_linked_account(self: @ContractState, wallet: ContractAddress) -> ContractAddress {
-            let account = self.wallet_accounts.entry(wallet).read();
-            assert!(account.is_non_zero(), "Ledger: link Realms account first");
-            account
-        }
 
-        fn assert_registration_open(
-            self: @ContractState, key: GameKey, owner: ContractAddress, account: ContractAddress,
-        ) -> Game {
-            let game = self.assert_game_open_before_start(key);
-            assert!(game.registered_count < game.registration_limit, "Ledger: roster full");
+        fn assert_registration_open(self: @ContractState, key: SlotKey, owner: ContractAddress) -> Slot {
+            let game = self.assert_slot_open_before_close(key);
             assert!(!self.registrations.entry((key, owner)).read().registered, "Ledger: already registered");
-            assert!(!self.seated_accounts.entry((key, account)).read(), "Ledger: account already seated");
             game
         }
 
-        fn assert_results_open(self: @ContractState, game: Game) {
-            assert!(game.exists, "Ledger: unknown game");
+        fn assert_results_open(self: @ContractState, game: Slot) {
+            assert!(game.exists, "Ledger: unknown slot");
             assert!(!game.cancelled, "Ledger: game cancelled");
-            assert!(!game.finalized, "Ledger: results already applied");
-            assert!(starknet::get_block_timestamp() >= game.start, "Ledger: game not started");
+            assert!(starknet::get_block_timestamp() >= game.close, "Ledger: game not started");
             assert!(game.registered_count > 0, "Ledger: empty roster");
         }
     }
 
     #[generate_trait]
     impl RegistrationWriterImpl of RegistrationWriterTrait {
-        fn open_refunds(ref self: ContractState, key: GameKey, mut game: Game) {
+        fn open_refunds(ref self: ContractState, key: SlotKey, mut game: Slot) {
             game.cancelled = true;
-            self.games.entry(key).write(game);
+            self.slots.entry(key).write(game);
         }
 
         fn record_paid_registration(
-            ref self: ContractState,
-            key: GameKey,
-            owner: ContractAddress,
-            account: ContractAddress,
-            sword: bool,
-            shield: bool,
-            preset: Preset,
+            ref self: ContractState, key: SlotKey, owner: ContractAddress, sword: bool, shield: bool, preset: Preset,
         ) -> u256 {
             let (sword_credit, shield_credit) = self.spend_credits(owner, sword, shield);
             let payment = preset.entry_fee
@@ -1119,7 +1087,6 @@ pub mod GameLedger {
             let sponsored = self.registrations.entry((key, owner)).read().paid;
             let registration = Registration {
                 registered: true,
-                account,
                 sword,
                 shield,
                 sword_credit,
@@ -1132,47 +1099,40 @@ pub mod GameLedger {
         }
 
         fn record_pass_registration(
-            ref self: ContractState,
-            key: GameKey,
-            owner: ContractAddress,
-            account: ContractAddress,
-            pass_id: u256,
-            pass_kind: u8,
+            ref self: ContractState, key: SlotKey, owner: ContractAddress, pass_id: u256, pass_kind: u8,
         ) {
             let sponsored = self.registrations.entry((key, owner)).read().paid;
             let registration = Registration {
-                registered: true, account, realm_id: pass_id, pass_kind, paid: sponsored, ..Default::default(),
+                registered: true, realm_id: pass_id, pass_kind, paid: sponsored, ..Default::default(),
             };
             self.record_registration(key, owner, registration, 0);
         }
 
         fn record_registration(
-            ref self: ContractState, key: GameKey, owner: ContractAddress, registration: Registration, payment: u256,
+            ref self: ContractState, key: SlotKey, owner: ContractAddress, registration: Registration, payment: u256,
         ) {
-            let mut game = self.games.entry(key).read();
+            let mut game = self.slots.entry(key).read();
             self.registrations.entry((key, owner)).write(registration);
-            self.seated_accounts.entry((key, registration.account)).write(true);
             self.registered_owners.entry((key, game.registered_count)).write(owner);
             game.registered_count += 1;
             self.add_to_pool(key, game, payment);
         }
 
-        fn add_to_pool(ref self: ContractState, key: GameKey, mut game: Game, amount: u256) {
+        fn add_to_pool(ref self: ContractState, key: SlotKey, mut game: Slot, amount: u256) {
             game.pool += amount;
             assert!(game.pool <= 0xffffffffffffffffffffffffffffffff, "Ledger: game pool exceeds u128");
-            self.games.entry(key).write(game);
+            self.slots.entry(key).write(game);
         }
 
         fn emit_registration(
             ref self: ContractState,
-            key: GameKey,
+            key: SlotKey,
             owner: ContractAddress,
-            account: ContractAddress,
             realm_id: u256,
             metadata: (felt252, felt252, felt252),
             pass_kind: u8,
         ) {
-            self.emit(Registered { key, owner, account, realm_id, metadata, pass_kind });
+            self.emit(Registered { key, owner, realm_id, metadata, pass_kind });
         }
 
         fn restore_pass(ref self: ContractState, owner: ContractAddress, pass_id: u256, pass_kind: u8) {
@@ -1186,37 +1146,29 @@ pub mod GameLedger {
 
     #[generate_trait]
     impl ResultsValidatorImpl of ResultsValidatorTrait {
-        fn finalize_game_pool(
-            ref self: ContractState, key: GameKey, mut game: Game, ranked: Span<RankedPlayer>, preset: Preset,
-        ) -> (u256, felt252) {
-            let mut season = self.get_season(game.season_id);
+        fn allocate_game_pool(ref self: ContractState, key: SlotKey, mut slot: Slot, pool: u256, preset: Preset) {
+            let mut season = self.get_season(slot.season_id);
             assert!(starknet::get_block_timestamp() < season.end, "Ledger: MMR frozen");
-            let treasury_cut = game.pool * preset.protocol_cut_bps.into() / BPS;
-            let net_pool = game.pool - treasury_cut;
+            let treasury_cut = pool * preset.protocol_cut_bps.into() / BPS;
+            let net_pool = pool - treasury_cut;
             let chest_lords = net_pool * preset.chest_lords_bps.into() / BPS;
             season.chest_reserve += chest_lords;
-            let pool = net_pool - chest_lords;
-            let commitment = result_commitment(key, ranked);
-            season.pool += pool;
+            season.pool += net_pool - chest_lords;
             assert!(
                 season.pool + season.chest_reserve <= 0xffffffffffffffffffffffffffffffff,
                 "Ledger: season pool exceeds u128",
             );
-            self.seasons.entry(game.season_id).write(season);
-            game.finalized = true;
-            game.pool = 0;
-            game.result_commitment = commitment;
-            self.games.entry(key).write(game);
-            if treasury_cut > 0 {
-                self.send_lords(self.treasury.read(), treasury_cut);
-            }
-            (pool, commitment)
+            self.seasons.entry(slot.season_id).write(season);
+            slot.pool -= pool;
+            self.slots.entry(key).write(slot);
+            self.send_lords(self.treasury.read(), treasury_cut);
         }
 
         fn validate_and_record_results(
-            ref self: ContractState, key: GameKey, registered_count: u16, ranked: Span<RankedPlayer>,
-        ) {
-            assert!(ranked.len() == registered_count.into(), "Ledger: roster size mismatch");
+            ref self: ContractState, slot_key: SlotKey, key: GameKey, ranked: Span<RankedPlayer>,
+        ) -> u256 {
+            assert!(!ranked.is_empty(), "Ledger: empty result");
+            let mut pool = 0;
             for index in 0..ranked.len() {
                 let row = *ranked.at(index);
                 let expected_rank = if index == 0 {
@@ -1231,12 +1183,17 @@ pub mod GameLedger {
                     }
                 };
                 assert!(row.rank == expected_rank, "Ledger: invalid competition rank");
-                assert!(
-                    self.registrations.entry((key, row.wallet)).read().registered, "Ledger: unregistered result owner",
-                );
                 assert!(self.results.entry((key, row.wallet)).read().rank == 0, "Ledger: duplicate result owner");
+                let mut registration = self.registrations.entry((slot_key, row.wallet)).read();
+                assert!(registration.registered, "Ledger: unregistered result owner");
+                assert!(!registration.refundable, "Ledger: registration refundable");
+                assert!(registration.game_id == 0, "Ledger: registration already settled");
+                pool += registration.paid;
+                registration.game_id = key.game_id;
+                self.registrations.entry((slot_key, row.wallet)).write(registration);
                 self.results.entry((key, row.wallet)).write(PlayerResult { rank: row.rank, ..Default::default() });
             }
+            pool
         }
     }
 
@@ -1282,7 +1239,7 @@ pub mod GameLedger {
             self.cosmetic_counts.entry((preset_id, rarity)).write(items.len());
         }
 
-        fn mint_chests(ref self: ContractState, key: GameKey, game: Game, ranked: Span<RankedPlayer>) {
+        fn mint_chests(ref self: ContractState, key: GameKey, game: Slot, ranked: Span<RankedPlayer>) {
             let chest_token = ICollectibleDispatcher { contract_address: self.loot_chest.read() };
             for index in 0..ranked.len() {
                 let row = *ranked.at(index);
@@ -1515,7 +1472,9 @@ pub mod GameLedger {
 
     #[generate_trait]
     impl MmrWriterImpl of MmrWriterTrait {
-        fn apply_mmr(ref self: ContractState, key: GameKey, ranked: Span<RankedPlayer>, preset: Preset) {
+        fn apply_mmr(
+            ref self: ContractState, slot_key: SlotKey, key: GameKey, ranked: Span<RankedPlayer>, preset: Preset,
+        ) {
             if !preset.mmr.enabled || ranked.len() < preset.mmr.min_players.into() {
                 return;
             }
@@ -1543,7 +1502,7 @@ pub mod GameLedger {
                 let calculated_mmr = MmrCalculatorImpl::calculate_player_mmr(
                     preset.mmr, current_mmr, rank, group_size, ranked.len().try_into().unwrap(), median,
                 );
-                let registration = self.registrations.entry((key, owner)).read();
+                let registration = self.registrations.entry((slot_key, owner)).read();
                 let new_mmr = MmrCalculatorImpl::apply_flag_modifier(
                     current_mmr, calculated_mmr, registration.sword, registration.shield,
                 );
