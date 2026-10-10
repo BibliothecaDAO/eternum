@@ -63,7 +63,7 @@ pub fn validate_params(params: CreateGameParams, rules: LaunchRules) {
     }
     if rules.entry_rule == crate::rules::ENTRY_ROSTER {
         validate_roster_size(params.roster.len(), rules.settlement_mode);
-        assert!(!params.dev_mode_on, "free Blitz does not use development mode");
+        assert!(!params.dev_mode_on, "Blitz does not use development mode");
     } else {
         assert!(params.roster.is_empty(), "Eternum does not use a fixed roster");
     }
