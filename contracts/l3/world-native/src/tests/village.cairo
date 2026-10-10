@@ -63,7 +63,7 @@ fn seed_world(dev: bool, preset: crate::presets::PresetDefinition) -> Deployment
 
 fn season_world(dev: bool, preset: crate::presets::PresetDefinition) -> Deployment {
     let deployment = seed_world(dev, preset);
-    play_fixture::prepare_homes(deployment.games, 3, deployment.actor);
+    play_fixture::reserve_fixture_homes(deployment.games, 3, deployment.actor);
     deployment
 }
 

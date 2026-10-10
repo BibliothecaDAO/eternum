@@ -232,7 +232,7 @@ pub fn gameplay_snapshot(games: ContractAddress) -> Array<felt252> {
     )
 }
 
-pub fn prepare_homes(games: ContractAddress, game_id: u32, owner: ContractAddress) {
+pub fn reserve_fixture_homes(games: ContractAddress, game_id: u32, owner: ContractAddress) {
     snforge_std::interact_with_state(games, || prepare_fixture_home(game_id, owner));
 }
 

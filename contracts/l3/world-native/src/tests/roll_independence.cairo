@@ -1006,7 +1006,7 @@ fn season_case() -> (Deployment, TestAction, u64) {
     let game_id = crate::registrar::IRegistrarDispatcherTrait::create_game(
         registrar, crate::registrar::CreateGameParams { dev_mode_on: true, ..super::registrar::params(false) },
     );
-    play_fixture::prepare_homes(d.games, game_id, d.actor);
+    play_fixture::reserve_fixture_homes(d.games, game_id, d.actor);
     super::resource_commands::set_fixture(
         d.games, selector!("realms"), selector!("catalogue_count"), array![].span(), 8000_u32,
     );
