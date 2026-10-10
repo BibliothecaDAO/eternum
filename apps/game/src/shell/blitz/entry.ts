@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { type BlitzRow, rowEntryOf } from "../blitz-rows";
-import type { Credits, EntrySplit, LedgerPrices, Registration } from "@realms-world/value-ledger/codecs";
-import { registerCalls } from "../value/ledger";
+import type { Credits, Registration } from "@realms-world/value-ledger/codecs";
+import { type EntrySplit, type LedgerPrices, registerCalls } from "../value/ledger";
 import type { PaidGameLedger } from "@realms-world/identity";
 
 import { ledgerOf } from "../value/game-entry";

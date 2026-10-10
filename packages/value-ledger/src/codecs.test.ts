@@ -7,10 +7,9 @@ import {
   decodeFrontierSeason,
   decodeGame,
   decodeLedgerPreset,
+  decodeBlitzSeason,
   decodePlayerResult,
-  decodePreset,
   decodeRegistration,
-  decodeSeason,
 } from "./codecs";
 
 const WEI = 10n ** 18n;
@@ -30,35 +29,6 @@ it("reads the ledger's answers in the interface's field order", () => {
     finalized: false,
     registrationLimit: 2,
   });
-  // Preset: entry fee (2), protocol cut, chest share, paid fraction, decay, sword (2), shield (2), mmr (7).
-  const prices = decodePreset([
-    String(500n * WEI),
-    "0",
-    "2000",
-    "500",
-    "1000",
-    "9600",
-    String(500n * WEI),
-    "0",
-    String(450n * WEI),
-    "0",
-    "1",
-    "1000",
-    "200",
-    "45",
-    "32",
-    "150",
-    "6",
-  ]);
-  expect(prices).toEqual({
-    seat: 500n * WEI,
-    sword: 500n * WEI,
-    shield: 450n * WEI,
-    paidFractionBps: 1000,
-    decayBps: 9600,
-    protocolCutBps: 2000,
-    chestLordsBps: 500,
-  });
   // Registration: registered, sword, shield, consumed, sword credit, shield credit, paid (2), realm (2), pass kind.
   expect(decodeRegistration(["1", "1", "0", "0", "1", "0", String(500n * WEI), "0", "0", "0", "0"])).toEqual({
     registered: true,
@@ -72,38 +42,34 @@ it("reads the ledger's answers in the interface's field order", () => {
   expect(() => decodeCredits(["2"])).toThrow("shorter than its type");
 });
 
-it("reads a season in the interface's order", () => {
+it("reads a season and a preset in the interface's order, prices and pools exact", () => {
   // chest reserve (2), participants, top count, posted, challenged, review until, settlement started, paid (2),
   // exists, preset, start, end, pool (2).
-  expect(
-    decodeSeason([
-      "0",
-      "0",
-      "500",
-      "50",
-      "1",
-      "0",
-      "7200",
-      "0",
-      "0",
-      "0",
-      "1",
-      "4",
-      "100",
-      "3600",
-      String(9n * WEI),
-      "0",
-    ]),
-  ).toEqual({
-    participants: 500,
-    winners: 50,
+  const season = ["0", "0", "500", "50", "1", "0", "7200", "0", "0", "0", "1", "4", "100", "3600"];
+  expect(decodeBlitzSeason([...season, String(9n * WEI), "0"])).toEqual({
+    participantCount: 500,
+    topCount: 50,
     posted: true,
     challenged: false,
     reviewUntil: 7200,
+    settlementStarted: false,
     presetId: 4,
     start: 100,
     end: 3600,
-    pool: 9n * WEI,
+    pool: String(9n * WEI),
+  });
+  // entry fee (2), protocol cut, chest share, paid fraction, decay, sword (2), shield (2), mmr (7), day unit, bags,
+  // claim window, registration limit.
+  const preset = [String(500n * WEI), "0", "2000", "500", "1000", "9600", String(500n * WEI), "0", String(450n * WEI)];
+  const tail = ["0", "1", "1000", "200", "45", "32", "150", "6", "60", "10", "3600", "24"];
+  expect(decodeLedgerPreset([...preset, ...tail])).toMatchObject({
+    entryFee: String(500n * WEI),
+    protocolCut: 2000,
+    chestLords: 500,
+    paidFraction: 1000,
+    decay: 9600,
+    swordPrice: String(500n * WEI),
+    shieldPrice: String(450n * WEI),
   });
 });
 

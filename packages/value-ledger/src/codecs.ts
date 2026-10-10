@@ -21,40 +21,6 @@ export interface LedgerGame {
   registrationLimit: number;
 }
 
-export interface LedgerPrices {
-  seat: bigint;
-  sword: bigint;
-  shield: bigint;
-}
-
-/** The preset's season payout: the share of participants paid and how each place's weight decays from the one above. */
-export interface PayoutCurve {
-  paidFractionBps: number;
-  decayBps: number;
-}
-
-/** A Blitz season on the ledger: its window, its pool, and its top list once posted. Times are Unix seconds. */
-export interface BlitzSeason {
-  participants: number;
-  winners: number;
-  posted: boolean;
-  challenged: boolean;
-  reviewUntil: number;
-  presetId: number;
-  start: number;
-  end: number;
-  pool: bigint;
-}
-
-/**
- * Where a game's pot goes at settle: the treasury's cut first, then the chests' share of what is left to the season's
- * chest reserve, the rest to the season pool.
- */
-export interface EntrySplit {
-  protocolCutBps: number;
-  chestLordsBps: number;
-}
-
 export interface Credits {
   swords: number;
   shields: number;
@@ -103,7 +69,7 @@ const fields = (felts: readonly string[]) => {
   let at = 0;
   const next = () => {
     if (at >= felts.length) throw new Error("Ledger answer is shorter than its type");
-    return BigInt(felts[at++]);
+    return BigInt(felts[at++]!);
   };
   return {
     number: () => Number(next()),
@@ -144,43 +110,6 @@ export const decodeGame = (felts: readonly string[]): LedgerGame => {
     cancelled: read.bool(),
     finalized: read.bool(),
     registrationLimit: read.number(),
-  };
-};
-
-/** Preset: entry_fee, protocol_cut_bps, chest_lords_bps, paid_fraction_bps, decay_bps, sword_price, shield_price, mmr. */
-export const decodePreset = (felts: readonly string[]): LedgerPrices & PayoutCurve & EntrySplit => {
-  const read = fields(felts);
-  const seat = read.u256();
-  const protocolCutBps = read.number();
-  const chestLordsBps = read.number();
-  const paidFractionBps = read.number();
-  const decayBps = read.number();
-  return { seat, sword: read.u256(), shield: read.u256(), paidFractionBps, decayBps, protocolCutBps, chestLordsBps };
-};
-
-/**
- * BlitzSeason: chest_reserve, participant_count, top_count, posted, challenged, review_until, settlement_started, paid, exists,
- * preset_id, start, end, pool.
- */
-export const decodeSeason = (felts: readonly string[]): BlitzSeason => {
-  const read = fields(felts);
-  read.skip(2);
-  const participants = read.number();
-  const winners = read.number();
-  const posted = read.bool();
-  const challenged = read.bool();
-  const reviewUntil = read.number();
-  read.skip(4);
-  return {
-    participants,
-    winners,
-    posted,
-    challenged,
-    reviewUntil,
-    presetId: read.number(),
-    start: read.number(),
-    end: read.number(),
-    pool: read.u256(),
   };
 };
 
@@ -300,10 +229,20 @@ export const decodeFrontierSeason = (fields: readonly string[]) => {
     seed: fields[9]!,
   };
 };
+/**
+ * Preset: entry_fee (2), protocol_cut_bps, chest_lords_bps, paid_fraction_bps, decay_bps, sword_price (2),
+ * shield_price (2), mmr (7), day_unit, bags, claim_window, registration_limit.
+ */
 export const decodeLedgerPreset = (fields: readonly string[]) => {
   if (fields.length !== 21) throw new Error("invalid_ledger_preset");
   return {
+    entryFee: ledgerU256(fields[0]!, fields[1]!),
+    protocolCut: ledgerInteger(fields[2]!),
+    chestLords: ledgerInteger(fields[3]!),
     paidFraction: ledgerInteger(fields[4]!),
+    decay: ledgerInteger(fields[5]!),
+    swordPrice: ledgerU256(fields[6]!, fields[7]!),
+    shieldPrice: ledgerU256(fields[8]!, fields[9]!),
     dayUnit: ledgerInteger(fields[17]!),
     bags: ledgerInteger(fields[18]!),
     claimWindow: ledgerInteger(fields[19]!),

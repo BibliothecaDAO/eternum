@@ -161,7 +161,7 @@ it("keeps a won season's claim after the next season opens, signed by the wallet
       ...["0", "0", "25", "3", seasons[id].posted ? "1" : "0", "0", String(NOW - 60), "0", "0", "0", "1", "4", "0"],
       ...[String(seasons[id].end), String(7_000n * WEI), "0"],
     ],
-    get_preset: () => ["0", "0", "0", "0", "1000", "5000", "0", "0", "0", "0"],
+    get_preset: () => ["0", "0", "0", "0", "1000", "5000", ...Array.from({ length: 15 }, () => "0")],
     get_season_winner: ([, index]) => (index === "1" ? [W1, String(2_000n * WEI), "0"] : ["0xb0b", "1", "0"]),
     season_claimed: () => ["0"],
     balance_of: () => [String(WEI), "0"],
