@@ -76,11 +76,9 @@ it("opens the created shard key under the containing season's economic preset, t
         : [{ from_address: "0x10", keys: [hash.getSelectorFromName("SeasonOpened"), "3"], data: ["9", "60", "300"] }],
   }));
   rpc.call.mockImplementation(async (query) =>
-    query.entrypoint === "blitz_settlement_interval"
-      ? ["60"]
-      : query.entrypoint === "get_season"
-        ? ["0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "1", "9", "60", "300", "0", "0"]
-        : game(),
+    query.entrypoint === "get_season"
+      ? ["0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "1", "9", "60", "300", "0", "0"]
+      : game(),
   );
   const open = () => Effect.runPromise(openBlitzOnLedger(credentials, key, { start: 100, end: 160 }));
   await open();
@@ -116,7 +114,7 @@ it("cancels before start and automatically waits until the earliest legal abort 
   expect(rpc.execute).toHaveBeenCalledWith(expect.objectContaining({ entrypoint: "abort_game" }));
 });
 
-it("allows exactly the ledger settlement interval and refuses one second less, including delayed seating", async () => {
+it("refuses delayed games that would reach the frozen season end", async () => {
   rpc.events.mockImplementation(async (query) => ({
     events:
       query.keys[0][0] === hash.getSelectorFromName("GameOpened")
@@ -124,14 +122,12 @@ it("allows exactly the ledger settlement interval and refuses one second less, i
         : [{ from_address: "0x10", keys: [hash.getSelectorFromName("SeasonOpened"), "3"], data: ["9", "60", "300"] }],
   }));
   rpc.call.mockImplementation(async (query) =>
-    query.entrypoint === "blitz_settlement_interval"
-      ? ["60"]
-      : query.entrypoint === "get_season"
-        ? ["0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "1", "9", "60", "300", "0", "0"]
-        : game(),
+    query.entrypoint === "get_season"
+      ? ["0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "1", "9", "60", "300", "0", "0"]
+      : game(),
   );
-  await expect(Effect.runPromise(openBlitzOnLedger(credentials, key, { start: 100, end: 241 }))).rejects.toThrow();
+  await expect(Effect.runPromise(openBlitzOnLedger(credentials, key, { start: 100, end: 300 }))).rejects.toThrow();
   expect(rpc.execute).not.toHaveBeenCalled();
-  await expect(Effect.runPromise(validateBlitzWindow(credentials, key, { start: 120, end: 241 }))).rejects.toThrow();
-  await Effect.runPromise(validateBlitzWindow(credentials, key, { start: 120, end: 240 }));
+  await expect(Effect.runPromise(validateBlitzWindow(credentials, key, { start: 120, end: 300 }))).rejects.toThrow();
+  await Effect.runPromise(validateBlitzWindow(credentials, key, { start: 120, end: 299 }));
 });
