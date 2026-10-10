@@ -5,8 +5,6 @@ edition = "2024_07"
 
 [cairo]
 sierra-replace-ids = true
-# Measured 77298 CASM felts versus 86007 with default inlining; keep declaration within 81920.
-inlining-strategy = 64
 
 [dependencies]
 starknet = "2.13.1"
