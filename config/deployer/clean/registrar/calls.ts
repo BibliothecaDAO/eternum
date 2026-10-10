@@ -1,3 +1,4 @@
+import { normalizeStarknetAddress } from "@realms-world/identity";
 import { resolveRegistrarExecutionDetails } from "./transaction-details";
 export { resolveRegistrarExecutionDetails } from "./transaction-details";
 import { presetRegistrationCall } from "./native-preset";
@@ -112,7 +113,10 @@ async function executeRegistrarCall(
   call: Call,
   target: RegistrarTarget,
 ): Promise<RegistrarTransactionResult> {
-  const transaction = await account.execute(call, resolveRegistrarExecutionDetails());
+  const transaction = await account.execute(
+    call,
+    await resolveRegistrarExecutionDetails(account, call.contractAddress),
+  );
   const receipt = await confirmedTransactionReceipt(account, transaction.transaction_hash);
   return { transactionHash: transaction.transaction_hash, receipt };
 }
@@ -183,7 +187,7 @@ export function blitzRosterOf(players: readonly { wallet: string; account: strin
   if (players.length < 1 || players.length > 24) throw new Error("Blitz requires 1 to 24 registered players");
   const canonical = (value: string, field: string) => {
     if (!/^0x[0-9a-f]+$/i.test(value) || BigInt(value) === 0n) throw new Error(`Invalid roster ${field}`);
-    return `0x${BigInt(value).toString(16)}`;
+    return normalizeStarknetAddress(value);
   };
   const rows = players.map(({ account, wallet }) => ({
     account: canonical(account, "account"),

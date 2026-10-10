@@ -79,7 +79,7 @@ export async function registerNativePreset(
       entrypoint: "register_preset",
       calldata: registration.calldata,
     },
-    resolveRegistrarExecutionDetails(),
+    await resolveRegistrarExecutionDetails(account, registration.address),
   );
   await waitForSuccess(account, receipt.transaction_hash);
   return receipt.transaction_hash;

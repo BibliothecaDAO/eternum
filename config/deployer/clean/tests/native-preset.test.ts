@@ -511,7 +511,13 @@ describe("native presets", () => {
       address: "0x123",
       signer: { getPubKey: async () => "0x456" },
       callContract: async ({ entrypoint }: { entrypoint: string }) => [
-        entrypoint === "owner" ? "0x123" : entrypoint === "is_device" ? "0x1" : commitment,
+        entrypoint === "owner"
+          ? "0x123"
+          : entrypoint === "is_device"
+            ? "0x1"
+            : entrypoint === "l2_gas_bound"
+              ? "9000000"
+              : commitment,
       ],
       execute: async () => {
         throw new Error("registration submitted");

@@ -104,6 +104,7 @@
   "dependencies": {
     "@bibliothecadao/provider": "workspace:*",
     "@bibliothecadao/types": "workspace:*",
+    "@realms-world/identity": "workspace:*",
     "colors": "^1.4.0",
     "dotenv": "^16.4.7",
     "eventemitter3": "^5.0.1",

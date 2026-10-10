@@ -143,7 +143,7 @@ async function sendRoleHandoff({ provider, manifest, bootstrap, account, role }:
       entrypoint: role === "launcher" ? "set_launcher" : "set_ledger_operator",
       calldata: [account],
     },
-    resolveRegistrarExecutionDetails(),
+    await resolveRegistrarExecutionDetails(owner, manifest.world.address),
   );
   await waitForSuccess(provider, sent.transaction_hash);
 }

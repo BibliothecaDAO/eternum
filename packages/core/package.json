@@ -45,6 +45,10 @@
     "./automation": {
       "types": "./dist/automation/index.d.ts",
       "import": "./dist/automation/index.js"
+    },
+    "./shard-fees": {
+      "types": "./dist/account/transaction-resource-bounds.d.ts",
+      "import": "./dist/account/transaction-resource-bounds.js"
     }
   },
   "main": "./dist/index.js",
