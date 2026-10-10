@@ -38,7 +38,7 @@ pub struct Slot {
     pub cancelled: bool,
 }
 
-#[derive(Copy, Drop, Serde, starknet::Store)]
+#[derive(Copy, Default, Drop, Serde, starknet::Store)]
 pub struct Registration {
     pub registered: bool,
     pub sword: bool,
@@ -46,28 +46,10 @@ pub struct Registration {
     pub sword_credit: bool,
     pub shield_credit: bool,
     pub paid: u256,
-    pub realm_id: u256,
-    pub pass_kind: u8,
     pub refundable: bool,
     pub game_id: u32,
 }
 
-pub impl RegistrationDefault of Default<Registration> {
-    fn default() -> Registration {
-        Registration {
-            registered: false,
-            sword: false,
-            shield: false,
-            sword_credit: false,
-            shield_credit: false,
-            paid: 0,
-            realm_id: 0,
-            pass_kind: 0,
-            refundable: false,
-            game_id: 0,
-        }
-    }
-}
 
 #[derive(Copy, Default, Drop, Serde, starknet::Store)]
 pub struct PlayerResult {
