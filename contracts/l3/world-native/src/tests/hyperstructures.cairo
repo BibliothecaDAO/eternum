@@ -13,6 +13,7 @@ use crate::hyperstructures::{
 use crate::registrar::IRegistrarSafeDispatcherTrait;
 use crate::resources::{IResourceOperationsDispatcher, ResourceAmount, ResourceKey, ResourceSlot};
 use crate::rules::RESOURCE_PRECISION;
+use crate::settlement::{IBlitzHyperstructuresDispatcherTrait, IBlitzHyperstructuresLibraryDispatcher};
 use crate::structures::{IStructureOperationsDispatcher, IStructureOperationsDispatcherTrait, StructureRecord};
 use crate::tests::state::{ResourceObservationTrait, StructureObservationTrait};
 use super::resource_commands::{assert_terminal_rejection, execute, grant, set_fixture};
@@ -567,7 +568,6 @@ pub fn checkpoint(deployment: super::Deployment, timestamp: u64) {
 
 #[test]
 fn reserved_complete_hyperstructures_have_no_seed_and_discoveries_keep_their_seed() {
-    use crate::settlement::{IBlitzHyperstructuresDispatcherTrait, IBlitzHyperstructuresLibraryDispatcher};
     let (deployment, unfinished, _, _) = setup_mode(true);
     let original = view(deployment).hyperstructure(unfinished).unwrap();
     assert_eq!(original.stage, Stage::Foundation);
