@@ -118,9 +118,9 @@ export const RosterGrid = ({
 
 /**
  * Where a slot's lobby would draw seats: the one number the ledger keeps for it, its registrations, large on the
- * desktop, and why there are no seats yet. A dash until the ledger answers.
+ * desktop, and until its close why there are no seats yet. A dash until the ledger answers.
  */
-export const RegisteredCount = ({ slot, large }: { slot: PlaytestSlot; large: boolean }) => {
+export const RegisteredCount = ({ slot, large, closed }: { slot: PlaytestSlot; large: boolean; closed: boolean }) => {
   const registered = useSlotRegistered(slot);
   return (
     <div className="flex items-center gap-4">
@@ -132,7 +132,7 @@ export const RegisteredCount = ({ slot, large }: { slot: PlaytestSlot; large: bo
           </b>
           <span className="font-ui text-[17px] text-kit-muted">{BLITZ_WORDS.registeredUnit}</span>
         </span>
-        <span className="text-[14px] text-kit-muted">{BLITZ_WORDS.drawnAtClose(BLITZ_SEATS)}</span>
+        {!closed && <span className="text-[14px] text-kit-muted">{BLITZ_WORDS.drawnAtClose(BLITZ_SEATS)}</span>}
       </span>
     </div>
   );
