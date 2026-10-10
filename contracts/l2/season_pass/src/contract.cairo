@@ -19,7 +19,7 @@ pub trait ISeasonPass<TState> {
     fn mint(ref self: TState, recipient: ContractAddress, token_id: u256);
     fn burn(ref self: TState, token_id: u256);
     fn set_restorer(ref self: TState, restorer: ContractAddress);
-    fn restore(ref self: TState, recipient: ContractAddress, token_id: u256);
+    fn restore(ref self: TState, recipient: ContractAddress, token_id: u256) -> bool;
     fn get_restorer(self: @TState) -> ContractAddress;
     // fn attach_lords(ref self: TState, token_id: u256, amount: u256);
 // fn detach_lords(ref self: TState, token_id: u256, amount: u256);
@@ -210,9 +210,14 @@ mod EternumSeasonPass {
             self.restorer.write(restorer);
         }
 
-        fn restore(ref self: ContractState, recipient: ContractAddress, token_id: u256) {
+        fn restore(ref self: ContractState, recipient: ContractAddress, token_id: u256) -> bool {
             assert!(starknet::get_caller_address() == self.restorer.read(), "ESP: caller is not restorer");
+            // A reminted pass belongs to its current holder; restitution must not block cash.
+            if self.erc721._owner_of(token_id).is_non_zero() {
+                return false;
+            }
             self.erc721.mint(recipient, token_id);
+            true
         }
 
         fn get_restorer(self: @ContractState) -> ContractAddress {

@@ -94,7 +94,7 @@ pub trait IPassBurn<TState> {
 
 #[starknet::interface]
 pub trait IPassRestore<TState> {
-    fn restore(ref self: TState, recipient: ContractAddress, token_id: u256);
+    fn restore(ref self: TState, recipient: ContractAddress, token_id: u256) -> bool;
 }
 
 #[starknet::interface]
@@ -326,6 +326,9 @@ pub mod GameLedger {
         #[key]
         owner: ContractAddress,
         amount: u256,
+        pass_id: u256,
+        pass_kind: u8,
+        pass_restored: bool,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -932,8 +935,8 @@ pub mod GameLedger {
             if amount > 0 {
                 self.send_lords(owner, amount);
             }
-            self.restore_pass(owner, pass_id, pass_kind);
-            self.emit(Refunded { key, owner, amount });
+            let pass_restored = self.restore_pass(owner, pass_id, pass_kind);
+            self.emit(Refunded { key, owner, amount, pass_id, pass_kind, pass_restored });
         }
 
         fn apply_results(ref self: ContractState, key: GameKey, ranked: Array<RankedPlayer>) {
@@ -1208,11 +1211,13 @@ pub mod GameLedger {
             self.emit(Registered { key, owner, account, realm_id, metadata, pass_kind });
         }
 
-        fn restore_pass(ref self: ContractState, owner: ContractAddress, pass_id: u256, pass_kind: u8) {
+        fn restore_pass(ref self: ContractState, owner: ContractAddress, pass_id: u256, pass_kind: u8) -> bool {
             if pass_kind == SEASON_PASS {
-                IPassRestoreDispatcher { contract_address: self.season_pass.read() }.restore(owner, pass_id);
+                IPassRestoreDispatcher { contract_address: self.season_pass.read() }.restore(owner, pass_id)
             } else if pass_kind == VILLAGE_PASS {
-                IPassRestoreDispatcher { contract_address: self.village_pass.read() }.restore(owner, pass_id);
+                IPassRestoreDispatcher { contract_address: self.village_pass.read() }.restore(owner, pass_id)
+            } else {
+                true
             }
         }
     }
