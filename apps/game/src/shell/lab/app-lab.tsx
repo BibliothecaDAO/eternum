@@ -98,7 +98,7 @@ const useLabSession = (screen: LabScreen) => {
 /** The lab's own query client: the app's /api answered from the fixtures, the shard boards seeded by game. */
 const createLabClient = (screen: LabScreen) => {
   answerAppReads(screen);
-  answerLobbyChat();
+  answerLobbyChat(screen);
   answerIdentity();
   const client = new QueryClient({ defaultOptions: { queries: { staleTime: Infinity, retry: false } } });
   for (const gameId of [1, 3]) client.setQueryData(["shell", "leaderboard", LAB_CHAIN, gameId], LAB_FRONTIER_BOARD);
@@ -171,13 +171,16 @@ const answerIdentity = () => {
  * The lobby chat's room socket, answered in the tab: it admits the reader and echoes what a seated player sends as the
  * room would broadcast it. Any other socket opens as before.
  */
-const answerLobbyChat = () => {
+const answerLobbyChat = (screen: LabScreen) => {
   const Network = window.WebSocket;
+  // As the chat Worker decides at the open: a wallet registered in the slot, and not refunded, writes.
+  const registration = LAB_ENTRY_TERMS[screen]?.registration;
+  const canWrite = registration?.registered === true && registration.paid > 0n && !registration.refundable;
   class LabRoom extends EventTarget {
     readyState = 1;
     constructor() {
       super();
-      setTimeout(() => this.#emit({ type: "joined:zone", zoneId: "slot:blitz-1630", canWrite: true }), 50);
+      setTimeout(() => this.#emit({ type: "joined:zone", zoneId: "slot:blitz-1630", canWrite }), 50);
     }
     send(data: string) {
       const sent = JSON.parse(data) as { payload: { content: string }; clientMessageId?: string };
