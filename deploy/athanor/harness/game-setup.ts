@@ -1,13 +1,11 @@
-import { CallData } from "starknet";
 import { createOperatorAccount } from "../../../config/deployer/clean/shared/madara-account";
-import { createRegistrarGame, resolveRegistrarExecutionDetails } from "../../../config/deployer/clean/registrar/calls";
+import { createRegistrarGame } from "../../../config/deployer/clean/registrar/calls";
 import {
   buildNativeGameParams,
   loadNativePresetConfiguration,
 } from "../../../config/deployer/clean/registrar/native-preset";
 import { buildNativePreset } from "../../../config/deployer/clean/config/native-preset";
 import { nativePresetForId } from "../../../config/source/native";
-import { confirmedTransactionReceipt } from "../../../config/deployer/clean/shared/transaction";
 import { readShardManifest } from "../../../packages/chain/shard-manifest.js";
 import type { NativeWorldManifest } from "../../../config/deployer/clean/world/native/types";
 import { assertProviderChain } from "../../../packages/chain/chain-guard.js";
@@ -97,44 +95,6 @@ async function settleHarnessRoster(
     connection.client.dispose();
   }
   return settlementTransactions;
-}
-
-/** The launcher reserves free/open homes for legacy seasons only; Frontier assigns its home on the first action. */
-export async function prepareOpenHomes(gameId: number, owners: string[]): Promise<void> {
-  const provider = createHarnessAdminProvider();
-  try {
-    const manifest = readShardManifest<NativeWorldManifest>(required("NATIVE_WORLD_MANIFEST"));
-    await assertProviderChain(provider, manifest, "HARNESS_ADMIN_RPC_URL");
-    const launcher = createOperatorAccount(
-      provider,
-      required("DEPLOYER_ACCOUNT_ADDRESS"),
-      required("DEPLOYER_PRIVATE_KEY"),
-    );
-    for (const call of prepareHomeCalls(manifest.world.address, gameId, owners)) {
-      const sent = await launcher.execute(call, resolveRegistrarExecutionDetails());
-      await confirmedTransactionReceipt(provider, sent.transaction_hash);
-    }
-  } finally {
-    provider.dispose();
-  }
-}
-
-export function prepareHomeCalls(games: string, gameId: number, owners: readonly string[]) {
-  if (
-    !Number.isSafeInteger(gameId) ||
-    gameId <= 0 ||
-    owners.length === 0 ||
-    new Set(owners.map((owner) => BigInt(owner).toString())).size !== owners.length
-  )
-    throw new Error("Home preparation requires one game and distinct approved owners");
-  const calls = [];
-  for (let offset = 0; offset < owners.length; offset += 64)
-    calls.push({
-      contractAddress: games,
-      entrypoint: "prepare_homes",
-      calldata: CallData.compile({ game_id: gameId, owners: owners.slice(offset, offset + 64) }),
-    });
-  return calls;
 }
 
 /** Administration must bypass the public endpoint's play-only fee and tip policy. */

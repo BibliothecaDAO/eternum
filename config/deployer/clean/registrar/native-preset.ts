@@ -95,9 +95,9 @@ export function buildNativeGameParams(
     const mode = preset.settlementMode;
     if (input.singleRealmMode || input.twoPlayerMode !== (mode === "Duel"))
       throw new Error("Settlement layout must match the mode preset");
-    if (mode === "Duel" && roster.length !== 0 && roster.length !== 2) throw new Error("Duel requires two players");
-    if (input.devModeOn) throw new Error("Free Blitz does not use development mode");
-    if (roster.length > 24) throw new Error("Blitz requires a fixed roster of 1 to 24 players");
+    if (mode === "Duel" && roster.length !== 2) throw new Error("Duel requires two players");
+    if (input.devModeOn) throw new Error("Blitz does not use development mode");
+    if (roster.length === 0) throw new Error("Blitz requires its roster at creation");
   } else if (roster.length) throw new Error("Open seasons do not use a fixed roster");
   const common = buildCreateGameParams(config, { ...input, startMainAt: seasonStart(config, input) });
   return {

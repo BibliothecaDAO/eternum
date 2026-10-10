@@ -1,4 +1,4 @@
-import { Account, CallData, shortString } from "starknet";
+import { Account, shortString } from "starknet";
 import { DeviceSigner, deviceKeyOf } from "@bibliothecadao/eternum";
 import { configureGameplayAccountSubmits, openShard } from "@bibliothecadao/eternum/game-client";
 import { getNeighborHexes, RESOURCE_PRECISION, ResourcesIds, StructureType } from "@bibliothecadao/types";
@@ -19,14 +19,14 @@ import {
   loadNativePresetConfiguration,
   registerNativePreset,
 } from "../../../config/deployer/clean/registrar/native-preset";
-import { createRegistrarGame, resolveRegistrarExecutionDetails } from "../../../config/deployer/clean/registrar/calls";
+import { createRegistrarGame } from "../../../config/deployer/clean/registrar/calls";
 import { createOperatorAccount } from "../../../config/deployer/clean/shared/madara-account";
 import type { NativeWorldManifest } from "../../../config/deployer/clean/world/native/types";
 import { readShardManifest } from "../../../packages/chain/shard-manifest.js";
 import { assertProviderChain } from "../../../packages/chain/chain-guard.js";
 import { createHarnessAccounts } from "./account-factory";
 import { connectHarnessGameClient } from "./game-client";
-import { prepareOpenHomes, createHarnessAdminProvider } from "./game-setup";
+import { createHarnessAdminProvider } from "./game-setup";
 import { createHarnessGame, EXPLORER_TROOP_COUNT } from "./harness-game";
 import { HarnessProvider } from "./provider";
 import { readPlayBounds } from "./player-invoke";
@@ -87,8 +87,6 @@ const fixture: DeploymentCheckPort = {
       const approved = await approveCheckBot(admin, shard, run.signal);
       stopped.throwIfAborted();
       const gameId = await createCheckGame(privateLauncher, admin, manifest, stopped);
-      stopped.throwIfAborted();
-      await prepareOpenHomes(gameId, [approved.address]);
       stopped.throwIfAborted();
       const connect = async (actor: string, scope = gameId, presetId = SELF_CHECK_PRESET_ID) => {
         const connection = await connectHarnessGameClient({ actor, gameId: scope, presetId, shard });
@@ -216,31 +214,23 @@ async function createModeCheckGame(
   await registerNativePreset(launcher, presetId, buildNativePresetRegistration(definition, presetId, manifest));
   stopped.throwIfAborted();
   const block = await admin.getBlock("latest");
-  const params = buildNativeGameParams(config, {
-    gameName: `check-${mode}-${Date.now().toString(36)}`,
-    presetId,
-    startMainAt: block.timestamp,
-    chainTimestamp: block.timestamp,
-    durationSeconds: mode === "frontier" ? seasonSeconds(1, definition.rules.day_unit_seconds) : 3600,
-    devModeOn: false,
-    singleRealmMode: false,
-    twoPlayerMode: false,
-    useMapOverride: false,
-  });
+  const params = buildNativeGameParams(
+    config,
+    {
+      gameName: `check-${mode}-${Date.now().toString(36)}`,
+      presetId,
+      startMainAt: block.timestamp,
+      chainTimestamp: block.timestamp,
+      durationSeconds: mode === "frontier" ? seasonSeconds(1, definition.rules.day_unit_seconds) : 3600,
+      devModeOn: false,
+      singleRealmMode: false,
+      twoPlayerMode: false,
+      useMapOverride: false,
+    },
+    mode === "blitz" ? [{ account: actor, wallet: actor }] : [],
+  );
   const created = await createRegistrarGame(launcher, params, manifest, definition);
   if (!created.gameId) throw new Error("Mode self-check game not created");
-  if (mode === "blitz") {
-    // This is an unpaid throwaway seat, not a paid ledger registration or an identity lookup.
-    const sent = await launcher.execute(
-      {
-        contractAddress: manifest.world.address,
-        entrypoint: "freeze_blitz_roster",
-        calldata: CallData.compile({ game_id: created.gameId, players: [{ account: actor, wallet: actor }] }),
-      },
-      resolveRegistrarExecutionDetails(),
-    );
-    await launcher.waitForTransaction(sent.transaction_hash);
-  }
   stopped.throwIfAborted();
   return created.gameId;
 }
