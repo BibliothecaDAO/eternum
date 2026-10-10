@@ -7,44 +7,12 @@ vi.mock("@/runtime/l2-rpc", async (importOriginal) => ({
 }));
 
 import type { DirectoryGame } from "../herald";
-import { claimSeasonCall, decodeSeason } from "../value/ledger";
+import { claimSeasonCall } from "../value/ledger";
 import { placeShares, type SeasonPrize, seasonSourcesOf, seasonState } from "./blitz-season";
 
 const WEI = 10n ** 18n;
 
-it("reads a season in the interface's order, and claims with one call", () => {
-  // chest reserve (2), participants, top count, posted, challenged, review until, settlement started, paid (2),
-  // exists, preset, start, end, pool (2).
-  expect(
-    decodeSeason([
-      "0",
-      "0",
-      "500",
-      "50",
-      "1",
-      "0",
-      "7200",
-      "0",
-      "0",
-      "0",
-      "1",
-      "4",
-      "100",
-      "3600",
-      String(9n * WEI),
-      "0",
-    ]),
-  ).toEqual({
-    participants: 500,
-    winners: 50,
-    posted: true,
-    challenged: false,
-    reviewUntil: 7200,
-    presetId: 4,
-    start: 100,
-    end: 3600,
-    pool: 9n * WEI,
-  });
+it("claims a season's share with one call", () => {
   expect(claimSeasonCall("0xledger", 3)).toEqual({
     contractAddress: "0xledger",
     entrypoint: "claim_season",

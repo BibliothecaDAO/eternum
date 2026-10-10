@@ -10,7 +10,8 @@ import { getChestAssetFromAttributesRaw } from "@/ui/features/cosmetics/chest-op
 import { Loading } from "../loading";
 import { ServiceFailure } from "../service-failure";
 import { useNowSeconds } from "../use-now";
-import { type ChestContent, lordsOf, openChestCalls } from "../value/ledger";
+import type { ChestContent } from "@realms-world/value-ledger/codecs";
+import { lordsOf, openChestCalls } from "../value/ledger";
 import { useL2Send } from "../value/l2-send";
 import { NoStrkLine } from "../value/no-strk-line";
 import { FailureLine } from "../sign-in/failure-line";

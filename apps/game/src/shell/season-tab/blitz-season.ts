@@ -1,7 +1,7 @@
 import { type QueryClient, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import type { DirectoryGame } from "../herald";
-import type { BlitzSeason, PayoutCurve } from "../value/ledger";
+import type { BlitzSeason, PayoutCurve } from "@realms-world/value-ledger/codecs";
 import type { PaidGameLedger } from "@realms-world/identity";
 
 import { directoryGameEntryOf, ledgerOf } from "../value/game-entry";
