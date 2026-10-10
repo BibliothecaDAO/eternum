@@ -911,7 +911,7 @@ fn tie_fixture_one_two_two_four_preserves_mmr() {
 }
 
 #[test]
-fn consumes_paid_flags_when_the_roster_is_below_the_mmr_minimum() {
+fn paid_flags_below_the_mmr_minimum_keep_the_purchase_and_finalize_once() {
     let fixture = deploy_fixture(default_preset());
     let owner = player(0);
     fund_and_approve_player(@fixture, owner, 1_000);
@@ -923,7 +923,18 @@ fn consumes_paid_flags_when_the_roster_is_below_the_mmr_minimum() {
 
     let registration = fixture.ledger.get_registration(GAME_KEY, owner);
     assert!(registration.sword, "sword purchase should be recorded");
-    assert!(registration.flags_consumed, "final results should consume paid flags");
+    assert!(registration.paid == 1000, "the purchase amount must stay in the registration snapshot");
+    assert!(fixture.ledger.get_game(GAME_KEY).finalized, "the game must settle even below the rating threshold");
+    assert!(fixture.ledger.get_player_result(GAME_KEY, owner).rank == 1);
+    assert!(
+        fixture
+            .ledger
+            .get_player_result(GAME_KEY, owner)
+            .mmr_before == fixture
+            .ledger
+            .get_player_result(GAME_KEY, owner)
+            .mmr_after,
+    );
 }
 
 fn funded_frontier() -> Fixture {

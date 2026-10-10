@@ -1648,7 +1648,6 @@ pub mod GameLedger {
     impl MmrWriterImpl of MmrWriterTrait {
         fn apply_mmr(ref self: ContractState, key: GameKey, ranked: Span<RankedPlayer>, preset: Preset) {
             if !preset.mmr.enabled || ranked.len() < preset.mmr.min_players.into() {
-                self.consume_registration_flags(key, ranked);
                 return;
             }
 
@@ -1675,12 +1674,10 @@ pub mod GameLedger {
                 let calculated_mmr = MmrCalculatorImpl::calculate_player_mmr(
                     preset.mmr, current_mmr, rank, group_size, ranked.len().try_into().unwrap(), median,
                 );
-                let mut registration = self.registrations.entry((key, owner)).read();
+                let registration = self.registrations.entry((key, owner)).read();
                 let new_mmr = MmrCalculatorImpl::apply_flag_modifier(
                     current_mmr, calculated_mmr, registration.sword, registration.shield,
                 );
-                registration.flags_consumed = true;
-                self.registrations.entry((key, owner)).write(registration);
                 let mut result = self.results.entry((key, owner)).read();
                 result.mmr_before = current_mmr;
                 result.mmr_after = new_mmr;
@@ -1689,15 +1686,6 @@ pub mod GameLedger {
                 index += 1;
             }
             mmr_token.update_mmr_batch(updates);
-        }
-
-        fn consume_registration_flags(ref self: ContractState, key: GameKey, ranked: Span<RankedPlayer>) {
-            for entry in ranked {
-                let owner = *entry.wallet;
-                let mut registration = self.registrations.entry((key, owner)).read();
-                registration.flags_consumed = true;
-                self.registrations.entry((key, owner)).write(registration);
-            }
         }
 
         fn insert_sorted(ref values: Felt252Dict<u128>, length: u32, value: u128) {
