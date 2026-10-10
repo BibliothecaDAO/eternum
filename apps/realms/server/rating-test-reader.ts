@@ -10,7 +10,7 @@ vi.mock("cloudflare:workers", () => ({
 }));
 import { RatingReader } from "./rating-reader";
 
-/** API tests use the real cache and SQL behavior; only the network is replaced. */
+/** API tests use the real reader and budget storage; only the network is replaced. */
 export function testRatingReader(configuration: Partial<ConstructorParameters<typeof RatingReader>[1]> = {}) {
   const database = new DatabaseSync(":memory:");
   const values = new Map<string, unknown>();
