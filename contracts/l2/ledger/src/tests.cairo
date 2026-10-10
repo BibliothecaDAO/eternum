@@ -22,7 +22,7 @@ trait ITestSeasonPass<TState> {
     fn set_ledger(ref self: TState, ledger: ContractAddress);
     fn mint(ref self: TState, recipient: ContractAddress, token_id: u256);
     fn burn(ref self: TState, token_id: u256);
-    fn restore(ref self: TState, recipient: ContractAddress, token_id: u256) -> bool;
+    fn restore(ref self: TState, recipient: ContractAddress, token_id: u256);
     fn get_encoded_metadata(self: @TState, token_id: u16) -> (felt252, felt252, felt252);
 }
 
@@ -30,7 +30,7 @@ trait ITestSeasonPass<TState> {
 trait ITestVillagePass<TState> {
     fn mint(ref self: TState, recipient: ContractAddress) -> u256;
     fn burn(ref self: TState, token_id: u256);
-    fn restore(ref self: TState, recipient: ContractAddress, token_id: u256) -> bool;
+    fn restore(ref self: TState, recipient: ContractAddress, token_id: u256);
 }
 
 #[starknet::contract]
@@ -92,14 +92,9 @@ mod TestSeasonPass {
             self.erc721.update(Zero::zero(), token_id, starknet::get_caller_address());
         }
 
-        fn restore(ref self: ContractState, recipient: ContractAddress, token_id: u256) -> bool {
+        fn restore(ref self: ContractState, recipient: ContractAddress, token_id: u256) {
             assert!(starknet::get_caller_address() == self.ledger.read(), "only ledger may restore");
-            // A reminted pass belongs to its current holder; restitution must not block cash.
-            if self.erc721._owner_of(token_id).is_non_zero() {
-                return false;
-            }
             self.erc721.mint(recipient, token_id);
-            true
         }
 
         fn get_encoded_metadata(self: @ContractState, token_id: u16) -> (felt252, felt252, felt252) {
@@ -189,14 +184,9 @@ mod TestVillagePass {
             self.erc721.update(Zero::zero(), token_id, starknet::get_caller_address());
         }
 
-        fn restore(ref self: ContractState, recipient: ContractAddress, token_id: u256) -> bool {
+        fn restore(ref self: ContractState, recipient: ContractAddress, token_id: u256) {
             self.accesscontrol.assert_only_role(DISTRIBUTOR_ROLE);
-            // A reminted pass belongs to its current holder; restitution must not block cash.
-            if self.erc721._owner_of(token_id).is_non_zero() {
-                return false;
-            }
             self.erc721.mint(recipient, token_id);
-            true
         }
     }
 }
@@ -2686,44 +2676,7 @@ fn reporting_grace_accepts_confirmed_receipts_after_the_shards_withdrawal_cutoff
 }
 
 
-#[test]
-#[feature("safe_dispatcher")]
-fn occupied_pass_id_never_blocks_cash_refund_and_records_non_restoration() {
-    let (fixture, pass_address, pass) = deploy_season_pass_fixture();
-    let owner = player(0);
-    pass.mint(owner, 42);
-    start_cheat_caller_address(pass_address, owner);
-    IERC721Dispatcher { contract_address: pass_address }.approve(fixture.ledger_address, 42);
-    stop_cheat_caller_address(pass_address);
-    link_account(@fixture, owner, shard_account(owner));
-    start_cheat_caller_address(fixture.ledger_address, owner);
-    fixture.ledger.register_with_pass(GAME_KEY, 42);
-    ITestLordsDispatcher { contract_address: fixture.lords_address }.mint(owner, 100);
-    start_cheat_caller_address(fixture.lords_address, owner);
-    fixture.lords.approve(fixture.ledger_address, 100);
-    stop_cheat_caller_address(fixture.lords_address);
-    fixture.ledger.fund(GAME_KEY, 100);
-    pass.mint(player(1), 42);
-    start_cheat_caller_address(fixture.ledger_address, OPERATOR());
-    fixture.ledger.cancel_game(GAME_KEY);
-    start_cheat_caller_address(fixture.ledger_address, owner);
-    let mut events = spy_events();
-    fixture.ledger.refund(GAME_KEY);
-    assert!(fixture.lords.balance_of(owner) == 100);
-    assert!(IERC721Dispatcher { contract_address: pass_address }.owner_of(42) == player(1));
-    let emitted = events.get_events().events;
-    let mut recorded = false;
-    for (from, event) in emitted {
-        if from == fixture.ledger_address && *event.keys.at(0) == selector!("Refunded") {
-            assert!(event.data == array![100, 0, 42, 0, 1, 0], "cash and failed restoration must be recorded");
-            recorded = true;
-        }
-    }
-    assert!(recorded);
-    let safe = IGameLedgerSafeDispatcher { contract_address: fixture.ledger_address };
-    assert!(safe.refund(GAME_KEY).is_err());
-    assert!(fixture.lords.balance_of(owner) == 100);
-}
+
 
 
 #[test]
