@@ -14,6 +14,31 @@ export const ledgerU256 = (low: string, high: string): string => {
   if (a < 0n || b < 0n || a >= 2n ** 128n || b >= 2n ** 128n) throw new Error("invalid_u256_limb");
   return String(a + (b << 128n));
 };
+/** WithdrawalPayment: paid, season_id, wallet, amount (low, high); an all-zero row has no report. */
+export const decodeWithdrawalPayment = (fields: readonly string[]) => {
+  if (fields.length !== 5) throw new Error("invalid_payment_record");
+  const paid = ledgerBool(fields[0]!);
+  const seasonId = ledgerInteger(fields[1]!);
+  const wallet = unsigned(fields[2]!);
+  const amount = ledgerU256(fields[3]!, fields[4]!);
+  if (amount === "0" && !paid && seasonId === 0 && wallet === 0n) return null;
+  if (amount === "0" || (paid && wallet === 0n) || (!paid && wallet !== 0n)) throw new Error("invalid_payment_report");
+  return { paid, seasonId, wallet: fields[2]!, amount };
+};
+
+/** Chest: exists, season_id, band, requested, finished, requester, request_block. */
+export const decodeChest = (fields: readonly string[]) => {
+  if (fields.length !== 7 || !ledgerBool(fields[0]!)) throw new Error("invalid_chest");
+  return {
+    seasonId: ledgerInteger(fields[1]!),
+    band: ledgerInteger(fields[2]!),
+    requested: ledgerBool(fields[3]!),
+    finished: ledgerBool(fields[4]!),
+    requester: fields[5]!,
+    requestBlock: ledgerInteger(fields[6]!),
+  };
+};
+
 export const decodeBlitzSeason = (fields: readonly string[]) => {
   if (fields.length !== 16 || !ledgerBool(fields[10]!)) throw new Error("invalid_ledger_season");
   return {

@@ -1,5 +1,13 @@
 import { it, expect } from "vitest";
-import { decodeFrontierSeason, decodeLedgerPreset, ledgerBool, ledgerInteger, ledgerU256 } from "./codecs";
+import {
+  decodeChest,
+  decodeWithdrawalPayment,
+  decodeFrontierSeason,
+  decodeLedgerPreset,
+  ledgerBool,
+  ledgerInteger,
+  ledgerU256,
+} from "./codecs";
 
 it("decodes the Frontier backing and preset calendar once with exact widths and strict bools", () => {
   const funded = ["1", "100", "200", "17", "0", "3", "0", "1", "9", "0xabc"];
@@ -35,4 +43,48 @@ it("bounds each u256 limb and safe integer before conversion", () => {
   expect(ledgerU256("1", "1")).toBe(String((1n << 128n) + 1n));
   expect(() => ledgerU256(String(1n << 128n), "0")).toThrow();
   expect(() => ledgerInteger(String(1n << 60n))).toThrow();
+});
+
+it("decodes absent, reported and paid withdrawals without losing the high amount limb", () => {
+  expect(decodeWithdrawalPayment(["0", "0", "0", "0", "0"])).toBeNull();
+  expect(decodeWithdrawalPayment(["0", "7", "0", "1", "1"])).toEqual({
+    paid: false,
+    seasonId: 7,
+    wallet: "0",
+    amount: String((1n << 128n) + 1n),
+  });
+  expect(decodeWithdrawalPayment(["1", "7", "0xabc", "5", "0"])).toEqual({
+    paid: true,
+    seasonId: 7,
+    wallet: "0xabc",
+    amount: "5",
+  });
+  for (const fields of [
+    ["0", "7", "0", "0"],
+    ["2", "7", "0", "5", "0"],
+    ["1", "7", "0", "5", "0"],
+    ["0", "7", "0xabc", "5", "0"],
+    ["0", "7", "0", "0", "0"],
+    ["0", "7", "0", "0", String(1n << 128n)],
+  ])
+    expect(() => decodeWithdrawalPayment(fields)).toThrow();
+});
+
+it("decodes the complete chest shape and rejects absent or malformed records", () => {
+  const chest = ["1", "7", "2", "1", "0", "0xabc", "100"];
+  expect(decodeChest(chest)).toEqual({
+    seasonId: 7,
+    band: 2,
+    requested: true,
+    finished: false,
+    requester: "0xabc",
+    requestBlock: 100,
+  });
+  for (const fields of [
+    chest.slice(1),
+    ["0", ...chest.slice(1)],
+    [...chest.slice(0, 3), "2", ...chest.slice(4)],
+    [...chest.slice(0, 6), String(1n << 60n)],
+  ])
+    expect(() => decodeChest(fields)).toThrow();
 });

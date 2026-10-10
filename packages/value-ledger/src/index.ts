@@ -3,6 +3,8 @@ export {
   ledgerBool,
   ledgerU256,
   decodeFrontierSeason,
+  decodeWithdrawalPayment,
+  decodeChest,
   decodeLedgerPreset,
   decodeBlitzSeason,
   readConfirmedLedgerHead,

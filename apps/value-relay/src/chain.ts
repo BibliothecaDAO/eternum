@@ -4,9 +4,7 @@ import {
   rpcAt,
   readConfirmedLedgerHead,
   decodeFrontierSeason,
-  ledgerU256,
-  ledgerInteger,
-  ledgerBool,
+  decodeWithdrawalPayment,
 } from "@realms-world/value-ledger";
 import { Account } from "starknet";
 import type { RelayPorts, Withdrawal, RelayEffect } from "./ports";
@@ -33,18 +31,7 @@ export const ledgerPaymentRead =
         },
         head,
       );
-      if (fields.length !== 5) throw new Error("invalid_payment_record");
-      const paid = ledgerBool(fields[0]!);
-      const amount = BigInt(ledgerU256(fields[3]!, fields[4]!));
-      if (amount === 0n && !paid && BigInt(fields[1]!) === 0n && BigInt(fields[2]!) === 0n) return null;
-      if (!amount || (paid && BigInt(fields[2]!) === 0n) || (!paid && BigInt(fields[2]!) !== 0n))
-        throw new Error("invalid_payment_report");
-      return {
-        paid,
-        seasonId: ledgerInteger(fields[1]!),
-        wallet: fields[2]!,
-        amount: String(amount),
-      };
+      return decodeWithdrawalPayment(fields);
     });
 
 /** Closing voids unpaid debt even when identity has no wallet; recover from the confirmed view, not event delivery. */
