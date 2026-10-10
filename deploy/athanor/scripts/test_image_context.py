@@ -27,6 +27,7 @@ class ImageContextTest(unittest.TestCase):
                 public_data = root / "packages/core/src/data"
                 public_data.mkdir(parents=True)
                 (public_data / "realms.json").write_text("public source fixture")
+                (public_data / ".env").write_text("private canary fixture")
                 data = root / "trial/data"
                 data.mkdir(parents=True)
                 for filename in ("host-keys.json", "host-keys.json.123.fixture.tmp", "vrf-key.json.123.fixture.tmp", "authority.json.123.fixture.tmp", "harness.env.123.fixture.tmp", "device.json", "unusual-private-draft.tmp"):
