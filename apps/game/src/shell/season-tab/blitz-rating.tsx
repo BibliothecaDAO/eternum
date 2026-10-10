@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+import { payoutAddressOf } from "@/hooks/context/payout-wallet";
 import { useIdentitySession } from "@/hooks/context/identity-session";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { formatExact } from "@/ui/design-system/kit/amount";
@@ -28,7 +29,7 @@ type Self = RatingTop["self"];
  */
 export const BlitzPanel = ({ games }: { games: ReactNode }) => {
   const { session } = useIdentitySession();
-  const top = useRatingTop(TOP_ROWS, session?.user.realmsId ?? null);
+  const top = useRatingTop(TOP_ROWS, session ? payoutAddressOf(session.user) : null);
   return (
     <Panel icon="Pl" title={ageOf("blitz").name}>
       {top.isError ? (
@@ -37,7 +38,7 @@ export const BlitzPanel = ({ games }: { games: ReactNode }) => {
         <Loading />
       ) : (
         <>
-          <OwnRating self={top.data.self} />
+          <OwnRating self={top.data.self} signedIn={session !== null} />
           <SubHead word={RATING_WORDS.rating} />
           <TopRows top={top.data} />
         </>
@@ -56,10 +57,10 @@ const SubHead = ({ word }: { word: string }) => (
   <h3 className="mt-3 px-1 font-ui text-[13px] tracking-[.06em] text-kit-muted">{word}</h3>
 );
 
-/** The reader's tier and rating, large; a reader with no linked wallet is told how to carry one. Signed out, nothing. */
-const OwnRating = ({ self }: { self: Self }) => {
-  if (self === null) return null;
-  if (self.status !== "rated") return <p className="px-1 py-2 text-[15px] text-kit-muted">{RATING_WORDS.unlinked}</p>;
+/** The reader's tier and rating, large; a reader with no wallet is told how to carry one. Signed out, nothing. */
+const OwnRating = ({ self, signedIn }: { self: Self; signedIn: boolean }) => {
+  if (self === null)
+    return signedIn ? <p className="px-1 py-2 text-[15px] text-kit-muted">{RATING_WORDS.unlinked}</p> : null;
   return (
     <div className="flex items-center gap-3 px-1 py-2">
       <TierMark rating={self.rating} size={40} />
@@ -76,7 +77,7 @@ const OwnRating = ({ self }: { self: Self }) => {
 
 /** The top rows, the reader's own lit in place, or pinned under them (its rank a dash before its first rated game). */
 const TopRows = ({ top }: { top: RatingTop }) => {
-  const self = top.self?.status === "rated" ? top.self : null;
+  const self = top.self;
   const ownInTop = self !== null && top.entries.some((entry) => isSameStarknetAddress(entry.player, self.player));
   return (
     <ol className="flex flex-col">

@@ -5,7 +5,7 @@ import { afterEach, expect, it, vi } from "vitest";
 
 import { RatingLine } from "./rating-line";
 
-/** /api/ratings?accounts= as lobby-chat-mmr.txt documents it, keyed by each account as sent. */
+/** /api/ratings?players= as the identity service answers it, keyed by each wallet as sent. */
 const answering = (ratings: Record<string, unknown>) =>
   vi.fn<(input: string | URL) => Promise<Response>>(async () =>
     Response.json({ block_number: 7, block_hash: "0x7", ratings }),
@@ -13,14 +13,14 @@ const answering = (ratings: Record<string, unknown>) =>
 
 afterEach(() => vi.unstubAllGlobals());
 
-const lineFor = async (account: string, own: boolean) => {
+const lineFor = async (wallet: string | null) => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const container = document.createElement("div");
   const root = createRoot(container);
   await act(async () =>
     root.render(
       <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
-        <RatingLine account={account} own={own} />
+        <RatingLine wallet={wallet} />
       </QueryClientProvider>,
     ),
   );
@@ -30,20 +30,18 @@ const lineFor = async (account: string, own: boolean) => {
   return text;
 };
 
-it("reads a player's rating by their gameplay account and shows it with its tier, never a change", async () => {
-  const fetch = answering({ "0xa1": { status: "rated", player: "0xe1", rating: "2410.9" } });
+it("reads a rating by the wallet that played and shows it with its tier, never a change", async () => {
+  const fetch = answering({ "0xe1": { status: "rated", player: "0xe1", rating: "2410.9" } });
   vi.stubGlobal("fetch", fetch);
-  expect(await lineFor("0xa1", false)).toBe("2,410Storm Lord· Blitz rating");
-  expect(String(fetch.mock.calls[0][0])).toBe("/api/ratings?accounts=0xa1");
+  expect(await lineFor("0xe1")).toBe("2,410Storm Lord· Blitz rating");
+  expect(String(fetch.mock.calls[0][0])).toBe("/api/ratings?players=0xe1");
 });
 
-it("tells the reader with no linked wallet how to carry a rating, and shows a dash for anyone else without one", async () => {
-  vi.stubGlobal("fetch", answering({ "0xa1": { status: "unlinked", player: null, rating: null } }));
-  expect(await lineFor("0xa1", true)).toBe("Link a wallet in Account to carry a rating.");
-  expect(await lineFor("0xa1", false)).toBe("—· Blitz rating");
-});
-
-it("shows a dash for an account no Realms identity owns", async () => {
-  vi.stubGlobal("fetch", answering({ "0xb0": { status: "unknown_identity", player: null, rating: null } }));
-  expect(await lineFor("0xb0", false)).toBe("—· Blitz rating");
+it("tells a reader with no wallet how to carry a rating, and shows a dash for an unanswered read", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async () => new Response(null, { status: 503 })),
+  );
+  expect(await lineFor(null)).toBe("Link a wallet in Account to carry a rating.");
+  expect(await lineFor("0xe1")).toBe("—· Blitz rating");
 });

@@ -201,6 +201,7 @@ const BlitzResult = ({
   const layout = useLayout();
   const desktop = layout === "desktop";
   const own = player ? entries.find((entry) => isSameStarknetAddress(entry.address, player)) : undefined;
+  const wallet = game ? rosterWalletOf(game) : null;
   const top = entries.slice(0, ROWS[layout]);
   const rows = own && !top.includes(own) ? [...top, own] : top;
   return (
@@ -213,7 +214,7 @@ const BlitzResult = ({
           <p className="text-[15px] text-kit-muted">
             {game ? `${gameTitle(game)} · ${clockLine(null, game.clock.end_at, now)}` : "—"}
           </p>
-          {desktop && player && <RatingLine account={player} own />}
+          {desktop && wallet && <RatingLine wallet={wallet} />}
         </>
       }
       rows={

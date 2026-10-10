@@ -4,8 +4,6 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { KitIcon } from "@/ui/design-system/kit/kit-icon";
 import { PlayerName } from "@/ui/design-system/kit/player-name";
 
-import { RatingFigure } from "../rating-mark";
-import { useRatings } from "../ratings";
 import { BLITZ_WORDS } from "../words";
 import type { Seat } from "./lobby";
 
@@ -78,9 +76,8 @@ const PreparedMark = ({ prepared }: { prepared: boolean | undefined }) => {
 };
 
 /**
- * The desktop lobby's roster: the same 24 seats, large, each with its player's name and Blitz rating under the
- * portrait, read by the seat's gameplay account (a dash where none answers: a bot, a player with no linked wallet, an
- * unnamed seat).
+ * The desktop lobby's roster: the same 24 seats, large, each with its player's name under the portrait. A rating
+ * belongs to the wallet that played, which Herald's roster does not name yet, so the seats carry none.
  */
 export const RosterGrid = ({
   seats,
@@ -90,37 +87,26 @@ export const RosterGrid = ({
   seats: readonly Seat[];
   total: number;
   preparing: boolean;
-}) => {
-  const ratings = useRatings(seats.flatMap((seat) => (seat.account ? [seat.account] : [])));
-  return (
-    <ul aria-label={`${BLITZ_WORDS.seats} ${seats.length}/${total}`} className="grid grid-cols-6 gap-x-6 gap-y-5">
-      {Array.from({ length: total }, (_, index) => {
-        const seat = seats[index];
-        const answer = seat?.account ? ratings.data?.ratings[seat.account] : undefined;
-        return (
-          <li key={index} className="flex flex-col items-center gap-1.5">
-            <span className="relative block aspect-square w-full max-w-24">
-              {seat ? (
-                <TakenSocket seat={seat} preparing={preparing} />
-              ) : (
-                <span className="block size-full rounded-full border-2 border-dashed border-kit-line" />
-              )}
-            </span>
-            {seat && (
-              <>
-                <span className="max-w-full font-ui text-[13px] text-kit-cream">
-                  {seat.account ? <PlayerName account={seat.account} you={seat.own} /> : "—"}
-                </span>
-                {answer?.status === "rated" ? (
-                  <RatingFigure rating={answer.rating} />
-                ) : (
-                  <span className="text-[13px] text-kit-muted">—</span>
-                )}
-              </>
+}) => (
+  <ul aria-label={`${BLITZ_WORDS.seats} ${seats.length}/${total}`} className="grid grid-cols-6 gap-x-6 gap-y-5">
+    {Array.from({ length: total }, (_, index) => {
+      const seat = seats[index];
+      return (
+        <li key={index} className="flex flex-col items-center gap-1.5">
+          <span className="relative block aspect-square w-full max-w-24">
+            {seat ? (
+              <TakenSocket seat={seat} preparing={preparing} />
+            ) : (
+              <span className="block size-full rounded-full border-2 border-dashed border-kit-line" />
             )}
-          </li>
-        );
-      })}
-    </ul>
-  );
-};
+          </span>
+          {seat && (
+            <span className="max-w-full font-ui text-[13px] text-kit-cream">
+              {seat.account ? <PlayerName account={seat.account} you={seat.own} /> : "—"}
+            </span>
+          )}
+        </li>
+      );
+    })}
+  </ul>
+);
