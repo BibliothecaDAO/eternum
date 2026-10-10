@@ -48,11 +48,7 @@ const asJsonRecord = (value: DecodedRecord): DecodedRecord => {
   return jsonValue as DecodedRecord;
 };
 
-const compareEntityKeys = (left: FoldRow, right: FoldRow): number => {
-  const leftKey = left.key;
-  const rightKey = right.key;
-  return leftKey < rightKey ? -1 : leftKey > rightKey ? 1 : 0;
-};
+const compareRowKeys = (left: string, right: string): number => (left < right ? -1 : left > right ? 1 : 0);
 
 const belongsToGame = (row: StoredModelRow, gameId: bigint): boolean => {
   const value = row.key.game_id;
@@ -301,11 +297,9 @@ export class WorldFold {
     return {
       models: persistentModelNames(this.registry).map((model) => ({
         model,
-        rows: [...this.materializedRows(model).entries()].map(checkpointRow).sort((left, right) => {
-          const leftKey = left.entity_id;
-          const rightKey = right.entity_id;
-          return leftKey < rightKey ? -1 : leftKey > rightKey ? 1 : 0;
-        }),
+        rows: [...this.materializedRows(model).entries()]
+          .map(checkpointRow)
+          .sort((left, right) => compareRowKeys(left.entity_id, right.entity_id)),
       })),
       preset_preimages: [...this.allPresetPreimages()].map(([commitment, felts]) => ({ commitment, felts })),
       version: 2,
@@ -350,7 +344,7 @@ export class WorldFold {
   public modelRows(model: string): FoldRow[] {
     return [...this.materializedRows(model).entries()]
       .map(([key, row]) => ({ key, value: asJsonRecord({ ...row.key, ...row.value }) }))
-      .sort(compareEntityKeys);
+      .sort((left, right) => compareRowKeys(left.key, right.key));
   }
 
   public snapshot(
@@ -495,7 +489,7 @@ export class WorldFold {
     const models = definitions.map((definition) => {
       const gameRows = this.snapshotModelRows(definition, gameId, scope, scopeKeys)
         .map(([key, row]): FoldRow => ({ key, value: asJsonRecord({ ...row.key, ...row.value }) }))
-        .sort(compareEntityKeys);
+        .sort((left, right) => compareRowKeys(left.key, right.key));
       return { model: definition.name, rows: gameRows };
     });
 
