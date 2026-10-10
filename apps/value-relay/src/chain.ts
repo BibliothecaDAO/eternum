@@ -172,9 +172,7 @@ const ledgerAccountOf = (credentials: LedgerCredentials) => {
 
 /** Only ruled terminal failures leave the retry queue; a day-boundary unlock refusal stays retryable. */
 export const paymentFailure = (reason = "") => {
-  const operation = reason.includes("Ledger: withdrawal exceeds backing")
-    ? "ledger_withdrawal_exceeds_backing"
-    : reason.includes("Ledger: claim window ended")
+  const operation = reason.includes("Ledger: claim window ended")
       ? "ledger_claim_window_ended"
       : reason.includes("Ledger: season closed")
         ? "ledger_season_closed"

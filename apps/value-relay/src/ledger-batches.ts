@@ -156,7 +156,6 @@ const classifyFailure = (error: unknown) =>
   error instanceof RelayFailure ? error : paymentFailure(error instanceof Error ? error.message : "");
 const isPermanentFailure = (failure: RelayFailure) =>
   [
-    "ledger_withdrawal_exceeds_backing",
     "ledger_season_closed",
     "ledger_invalid_withdrawal",
     "ledger_report_mismatch",
