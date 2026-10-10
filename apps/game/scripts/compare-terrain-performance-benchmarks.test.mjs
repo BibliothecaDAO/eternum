@@ -1,4 +1,3 @@
-// @vitest-environment node
 import { describe, expect, it } from "vitest";
 
 import { compareTerrainPerformanceSummaries } from "./terrain-verification/compare-terrain-performance-benchmarks.mjs";

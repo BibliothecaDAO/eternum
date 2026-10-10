@@ -30,6 +30,7 @@ AREAS = {
         "apps/launch-service/migrations/0007_game_entry.sql",
         "apps/launch-service/migrations/0008_unproven_blitz_entries.sql",
         "apps/launch-service/wrangler.jsonc",
+        "apps/realms/wrangler.jsonc",
         "packages/**",
         "config/**",
         "contracts/l2/ledger/scripts/chest-preset.js",

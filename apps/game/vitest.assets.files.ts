@@ -8,3 +8,11 @@ export const ASSET_CHECK_FILES = [
   "src/three/renderer-vite-config.test.ts",
   "scripts/**/*.test.mjs",
 ];
+
+/** The client deploy's own checks: plain node:test, run by the client and deploy workflows, not the asset run. */
+export const CLIENT_DEPLOY_CHECK_FILES = [
+  "scripts/check-l2-chain-matches-identity.test.mjs",
+  "scripts/ensure-pwa-cache-rule.test.mjs",
+  "scripts/verify-client-deployment.test.mjs",
+  "scripts/verify-pwa-build.test.mjs",
+];

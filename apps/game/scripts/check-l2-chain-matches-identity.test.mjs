@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-const { test } = process.env.VITEST ? await import("vitest") : await import("node:test");
+import { test } from "node:test";
 
 import { identityChainOf, l2ChainMismatch } from "./check-l2-chain-matches-identity.mjs";
 
