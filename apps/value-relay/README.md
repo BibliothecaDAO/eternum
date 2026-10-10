@@ -13,7 +13,7 @@ suppress these jobs.
 
 Frontier receipts are reported as debt before wallet lookup. Payments use identity's ready payout wallet at signing time
 and record that decision before broadcast. A new wallet waits 24 hours. Missing or held wallets remain queued; permanent
-refusals are recorded separately. Confirmed `withdrawal_voided` removes closed unpaid reports from retries, including
+refusals are recorded separately. A confirmed closed season with the claim unpaid removes it from retries, including
 accounts without wallets. A claim is keyed by its shard and withdrawal transaction hash.
 
 `POST /api/value/labor?chainId=<official shard>` accepts only a Realm in its body. Identity supplies the signed-in
