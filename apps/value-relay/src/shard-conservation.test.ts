@@ -16,7 +16,7 @@ const directory = () => ({
   world_address: "0x10",
   confirmed_block: 10,
   games: [
-    { game_id: 7, preset_id: 5, mode: "frontier" },
+    { game_id: 7, preset_id: 5, mode: "frontier", status: "Live", clock: { end_at: 9000 } },
     { game_id: 8, preset_id: 2, mode: "blitz" },
   ],
 });
@@ -206,4 +206,61 @@ it("refuses rounded JSON amounts and empty integer text instead of inventing a b
   await expect(
     Effect.runPromise(shardConservationPort(connection, "https://shard.test", network(state))()),
   ).rejects.toThrow();
+});
+
+it("memoises a settled final balance after its claim window across monitor restarts", async () => {
+  const state = snapshot();
+  state.models[0]!.rows[0]!.value.claim_window_seconds = 10;
+  const games = directory();
+  Object.assign(games.games[0]!, { status: "Settled", clock: { end_at: 1 } });
+  const read = network(state, games),
+    values = new Map<string, unknown>();
+  const cache = {
+    get: async <T>(key: string) => values.get(key) as T | undefined,
+    put: async (key: string, value: unknown) => {
+      values.set(key, value);
+    },
+  };
+  const first = shardConservationPort(connection, "https://shard.test", read, cache);
+  await Effect.runPromise(first());
+  const second = shardConservationPort(connection, "https://shard.test", read, cache);
+  expect(await Effect.runPromise(second())).toEqual([
+    { gameId: 7, confirmedBlock: 10, receipts: "17", netIssued: "17" },
+  ]);
+  expect(read.mock.calls.filter(([url]) => String(url).includes("/snapshot"))).toHaveLength(1);
+});
+
+it("bounds first-time conservation snapshots and rotates unfinished games", async () => {
+  const games = directory();
+  games.games = Array.from({ length: 30 }, (_, index) => ({
+    game_id: index + 1,
+    preset_id: 5,
+    mode: "frontier",
+    status: "Live",
+    clock: { end_at: 9000 },
+  }));
+  const values = new Map<string, unknown>();
+  const cache = {
+    get: async <T>(key: string) => values.get(key) as T | undefined,
+    put: async (key: string, value: unknown) => {
+      values.set(key, value);
+    },
+  };
+  const read = vi.fn(async (url: URL | RequestInfo) => {
+    const path = new URL(String(url)).pathname;
+    if (path === "/games") return Response.json(games);
+    const id = Number(path.split("/")[2]),
+      body = snapshot();
+    body.game_id = String(id);
+    for (const model of body.models) for (const row of model.rows) row.value.game_id = id;
+    return Response.json(body);
+  });
+  expect((await Effect.runPromise(shardConservationPort(connection, "https://shard.test", read, cache)())).length).toBe(
+    25,
+  );
+  expect(
+    (await Effect.runPromise(shardConservationPort(connection, "https://shard.test", read, cache)())).map(
+      (row) => row.gameId,
+    ),
+  ).toEqual([26, 27, 28, 29, 30]);
 });

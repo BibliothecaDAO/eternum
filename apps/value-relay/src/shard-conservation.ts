@@ -7,7 +7,7 @@ interface Directory {
   chain: string;
   world_address: string;
   confirmed_block: number;
-  games: { game_id: number; preset_id: number; mode: string }[];
+  games: { game_id: number; preset_id: number; mode: string; status: string; clock: { end_at: number } }[];
 }
 
 /** One confirmed snapshot per Frontier game supplies both immutable receipts and the current net issue budget. */
@@ -16,6 +16,7 @@ export const shardConservationPort =
     connection: ShardConnection,
     heraldUrl: string,
     network: typeof fetch = fetch,
+    cache?: { get<T>(key: string): Promise<T | undefined>; put(key: string, value: unknown): Promise<unknown> },
   ): MonitorPorts["shard"]["conservation"] =>
   () =>
     relayOperation("audit shard LORDS conservation", async () => {
@@ -28,15 +29,32 @@ export const shardConservationPort =
         !Array.isArray(directory.games)
       )
         throw new Error("conservation_directory_differs");
-      await reader.header(directory.confirmed_block);
+      const head = await reader.header(directory.confirmed_block);
+      const cursor = cache ? ((await cache.get<number>("conservation:cursor")) ?? 0) : 0;
       const balances: ConservationBalance[] = [];
       const games = new Set<number>();
-      for (const game of directory.games) {
+      const ordered = [...directory.games].sort((a, b) => a.game_id - b.game_id);
+      const frontier = ordered.filter((game) => game.mode === "frontier");
+      const remaining = frontier.filter((game) => game.game_id > cursor);
+      const page = (remaining.length ? remaining : frontier).slice(0, 25);
+      for (const game of ordered) {
         const gameId = Number(uint(String(game.game_id), 32));
         if (!gameId || games.has(gameId) || nativeGameModeOf(Number(uint(String(game.preset_id), 32))) !== game.mode)
           throw new Error("invalid_conservation_game");
         games.add(gameId);
-        if (game.mode !== "frontier") continue;
+        if (game.mode !== "frontier" || !page.includes(game)) continue;
+        if (
+          !Number.isSafeInteger(game.clock?.end_at) ||
+          game.clock.end_at < 0 ||
+          !["Registration", "Live", "Ended", "Settled"].includes(game.status)
+        )
+          throw new Error("conservation_game_clock_missing");
+        const key = `conservation:final:${connection.chainId}:${connection.gamesAddress}:${gameId}`;
+        const final = cache ? await cache.get<ConservationBalance>(key) : undefined;
+        if (final) {
+          balances.push(final);
+          continue;
+        }
         const snapshot = await readConfirmedSnapshot(
           connection,
           heraldUrl,
@@ -46,8 +64,13 @@ export const shardConservationPort =
         );
         if (snapshot.confirmed_block < directory.confirmed_block)
           throw new Error("conservation_snapshot_behind_directory");
-        balances.push(balanceOf(snapshot, gameId));
+        const balance = balanceOf(snapshot, gameId);
+        balances.push(balance);
+        const window = Number(uint(String(singleRow(snapshot, "ChestRules").claim_window_seconds), 32));
+        if (cache && game.status === "Settled" && head.timestamp >= game.clock.end_at + window)
+          await cache.put(key, balance);
       }
+      if (cache) await cache.put("conservation:cursor", page.length === 25 ? page.at(-1)!.game_id : 0);
       return balances;
     });
 

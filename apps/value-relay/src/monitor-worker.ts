@@ -171,7 +171,7 @@ const monitorPortsOf = (env: MonitorEnv, storage: DurableObjectStorage) => {
         relayOperation("verify signed pay decision", () => env.IDENTITY.matchesPayDecision(decision)),
     },
     shard: {
-      conservation: shardConservationPort(reader.connection, env.SHARD_HERALD_URL),
+      conservation: shardConservationPort(reader.connection, env.SHARD_HERALD_URL, fetch, storage),
       withdrawal: shardWithdrawalPorts(
         reader,
         frontierReceiptBindings(
