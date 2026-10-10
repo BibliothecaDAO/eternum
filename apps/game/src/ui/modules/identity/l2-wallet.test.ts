@@ -5,7 +5,7 @@ const { SN_MAIN, SN_SEPOLIA } = constants.StarknetChainId;
 
 beforeEach(() => {
   vi.resetModules();
-  vi.stubEnv("VITE_PUBLIC_L2_CHAIN", "SN_SEPOLIA");
+  vi.stubEnv("VITE_PUBLIC_ENVIRONMENT", "staging");
 });
 afterEach(() => vi.unstubAllEnvs());
 

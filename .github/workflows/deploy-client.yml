@@ -5,8 +5,9 @@ name: Deploy Client
 # environment names its Pages project (vars.CLOUDFLARE_PAGES_PROJECT), the origin the client is served from
 # (vars.CLIENT_ORIGIN, whose /api belongs to that environment's identity Worker) and its zone (vars.CLIENT_ZONE), and
 # holds the Alchemy RPC secret for the environment's L2; the custom domain is attached in the Pages dashboard once. The
-# L2 itself is the identity Worker's checked-in L2_CHAIN_ID for the environment, never named here a second time. The
-# build reads .env.production plus the identity RPC secret and stamps the version from the ref.
+# L2 itself and its ledger come from the environment's address book (contracts/common/addresses), which the build reads
+# by VITE_PUBLIC_ENVIRONMENT. The build reads .env.production plus the identity RPC secret and stamps the version from
+# the ref.
 on:
   workflow_dispatch:
     inputs:
@@ -71,12 +72,6 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --ignore-scripts
-
-      # The identity Worker verifies proofs and links on its checked-in L2; the client builds for that same chain.
-      - name: Build for the identity Worker's L2
-        run: |
-          chain=$(node apps/game/scripts/identity-l2-chain.mjs "${{ inputs.environment }}")
-          echo "VITE_PUBLIC_L2_CHAIN=$chain" >> "$GITHUB_ENV"
 
       - name: Build packages
         run: pnpm run build:packages
