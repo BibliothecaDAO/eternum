@@ -8,6 +8,12 @@ import type { IdentityUser, PayoutWallet } from "@realms-world/identity";
 export const payoutWalletOf = (user: IdentityUser): PayoutWallet | null =>
   isPayoutWallet(user.payoutWallet) ? user.payoutWallet : null;
 
+/** The payout wallet's address, linked or held; null when the account has none. */
+export const payoutAddressOf = (user: IdentityUser): string | null => {
+  const wallet = payoutWalletOf(user);
+  return wallet && wallet.status !== "no_wallet" ? wallet.address : null;
+};
+
 const isPayoutWallet = (value: unknown): value is PayoutWallet => {
   if (typeof value !== "object" || value === null) return false;
   const wallet = value as Record<string, unknown>;

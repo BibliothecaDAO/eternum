@@ -135,7 +135,7 @@ const answerAppReads = (screen: LabScreen) => {
     "/api/slots": () => json(labSlots()),
     "/api/profiles": (url) => json({ profiles: profilesOf(url.searchParams.get("accounts")?.split(",") ?? []) }),
     "/api/ratings/top": () => json(LAB_RATING_TOP),
-    "/api/ratings": (url) => json(labRatings(url.searchParams.get("accounts")?.split(",") ?? [])),
+    "/api/ratings": (url) => json(labRatings(url.searchParams.get("players")?.split(",") ?? [])),
     "/api/chat/world": () => json({ messages: LAB_CHAT, nextCursor: null }),
   };
   window.fetch = (input, init) => {

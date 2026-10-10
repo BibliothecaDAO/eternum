@@ -4,12 +4,11 @@ import type { IconCode } from "@/ui/design-system/kit/kit-icon";
 import { fetchApi } from "@/runtime/app-api";
 
 /**
- * The Blitz rating (MMR), read from the identity service's /api/ratings (lobby-chat-mmr.txt): the token's current
- * rating, pinned to one mainnet block per answer. The app keeps no rating of its own; every read asks again.
+ * The Blitz rating (MMR), read from the identity service's /api/ratings: a wallet's current rating on the ledger, pinned
+ * to one confirmed L2 block per answer. A rating belongs to the wallet that played, never to an account's current
+ * link. The app keeps no rating of its own; every read asks again.
  */
-type RatingAnswer =
-  | { status: "rated"; player: string; rating: string }
-  | { status: "unlinked" | "unknown_identity"; player: null; rating: null };
+type RatingAnswer = { status: "rated"; player: string; rating: string };
 
 interface RatingsResponse {
   block_number: number | null;
@@ -18,8 +17,8 @@ interface RatingsResponse {
 }
 
 /**
- * Who stands behind a rated wallet, read fresh by the service: the owner's Realms identity, or null when the wallet is
- * linked to none. A null name (no name chosen) and a null profile both draw the owner as an address.
+ * Who stands behind a rated wallet, presentation only: the owner's Realms identity, or null when none is known. A null
+ * name (no name chosen) and a null profile both draw the owner as an address.
  */
 export type RatingProfile = { realmsId: string; name: string | null; portrait: string | null } | null;
 
@@ -28,10 +27,7 @@ interface RatingTopResponse {
   block_hash: string;
   total: number;
   entries: { rank: number; player: string; rating: string; profile: RatingProfile }[];
-  self:
-    | null
-    | { status: "rated"; player: string; rating: string; rank: number | null; profile: RatingProfile }
-    | { status: "unlinked" | "unknown_identity"; player: null; rating: null; rank: null };
+  self: null | { status: "rated"; player: string; rating: string; rank: number | null; profile: RatingProfile };
 }
 
 const readJson = async <T>(path: string): Promise<T> => {
@@ -40,27 +36,21 @@ const readJson = async <T>(path: string): Promise<T> => {
   return (await response.json()) as T;
 };
 
-/** The rating's top rows, and the reader's own rating and rank when a Realms id is given. */
-export const useRatingTop = (limit: number, realmsId: string | null) =>
+/** The rating's top rows, and the reader's own rating and rank when their wallet is given. */
+export const useRatingTop = (limit: number, wallet: string | null) =>
   useQuery({
-    queryKey: ["shell", "ratings", "top", limit, realmsId],
-    queryFn: () =>
-      readJson<RatingTopResponse>(
-        `/api/ratings/top?limit=${limit}${realmsId ? `&realmsId=${encodeURIComponent(realmsId)}` : ""}`,
-      ),
+    queryKey: ["shell", "ratings", "top", limit, wallet],
+    queryFn: () => readJson<RatingTopResponse>(`/api/ratings/top?limit=${limit}${wallet ? `&player=${wallet}` : ""}`),
     staleTime: 0,
     retry: 1,
   });
 
-/**
- * Each player's rating by their gameplay account, keyed by the account as sent: a player with no linked wallet answers
- * unlinked, an account no Realms identity owns answers unknown_identity (a bot).
- */
-export const useRatings = (accounts: readonly string[]) =>
+/** Each wallet's rating, keyed by the wallet as sent. */
+export const useRatings = (wallets: readonly string[]) =>
   useQuery({
-    queryKey: ["shell", "ratings", "accounts", ...accounts],
-    queryFn: () => readJson<RatingsResponse>(`/api/ratings?accounts=${accounts.join(",")}`),
-    enabled: accounts.length > 0,
+    queryKey: ["shell", "ratings", "players", ...wallets],
+    queryFn: () => readJson<RatingsResponse>(`/api/ratings?players=${wallets.join(",")}`),
+    enabled: wallets.length > 0,
     staleTime: 0,
     retry: 1,
   });
