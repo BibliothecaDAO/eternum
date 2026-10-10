@@ -195,7 +195,10 @@ export const BlitzLobbyPage = () => {
         <div className="flex flex-col gap-4">
           {clock}
           {row.kind === "slot" ? (
-            <RegisteredCount slot={row.slot} large={false} closed={isClosedSlot(row, facts.now)} />
+            <>
+              <RegisteredCount slot={row.slot} large={false} closed={isClosedSlot(row, facts.now)} />
+              <SlotChat slot={row.slot} wallet={wallet} />
+            </>
           ) : (
             <SeatGrid seats={seatsOf(row.game, player)} total={row.seats.total} preparing={step.kind === "preparing"} />
           )}
