@@ -2848,3 +2848,20 @@ fn existing_result_rank_rejects_duplicate_wallets_and_failed_validation_is_atomi
     assert!(safe.apply_results(GAME_KEY, ranked_players(2)).is_err());
     assert!(fixture.ledger.get_player_result(GAME_KEY, player(0)).rank == first.rank);
 }
+
+
+#[test]
+#[feature("safe_dispatcher")]
+fn game_window_leaves_one_settlement_interval_before_the_season_freezes() {
+    let fixture = deploy_fixture(default_preset());
+    start_cheat_caller_address(fixture.ledger_address, OPERATOR());
+    let safe = IGameLedgerSafeDispatcher { contract_address: fixture.ledger_address };
+    let season_end = fixture.ledger.get_season(1).end;
+    let interval = fixture.ledger.blitz_settlement_interval();
+    assert!(interval == 60);
+    let key = GameKey { shard: 'shard', game_id: 999 };
+    assert!(safe.open_game(key, 1, PRESET_ID, START, season_end - interval + 1).is_err());
+    assert!(safe.get_game(key).is_err());
+    fixture.ledger.open_game(key, 1, PRESET_ID, START, season_end - interval);
+    assert!(fixture.ledger.get_game(key).end == season_end - interval);
+}

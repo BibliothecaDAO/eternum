@@ -9,6 +9,8 @@ pub const PAUSER_ROLE: felt252 = selector!("PAUSER_ROLE");
 pub const OPERATOR_ROLE: felt252 = selector!("OPERATOR_ROLE");
 const BPS: u256 = 10_000;
 const PAYOUT_WEIGHT_SCALE: u256 = 1_000_000_000_000_000_000;
+// One minute is the relay settlement cron interval. Launch and custody share this gate.
+pub const BLITZ_SETTLEMENT_INTERVAL_SECONDS: u64 = 60;
 pub const SEASON_BATCH_SIZE: u32 = 32;
 const SEASON_REVIEW_SECONDS: u64 = 3600;
 const MMR_PRECISION: u256 = 1_000_000_000_000_000_000;
@@ -59,6 +61,7 @@ pub trait IGameLedger<TState> {
     fn get_season_mmr(self: @TState, season_id: u32, owner: ContractAddress) -> u128;
     fn get_season_winner(self: @TState, season_id: u32, index: u32) -> (ContractAddress, u256);
     fn season_claimed(self: @TState, season_id: u32, owner: ContractAddress) -> bool;
+    fn blitz_settlement_interval(self: @TState) -> u64;
     fn open_game(ref self: TState, key: GameKey, season_id: u32, preset_id: u32, start: u64, end: u64);
     fn set_account_link(ref self: TState, wallet: ContractAddress, account: ContractAddress);
     fn account_of_wallet(self: @TState, wallet: ContractAddress) -> ContractAddress;
@@ -132,11 +135,11 @@ pub mod GameLedger {
     use starknet::storage::{Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess};
     use starknet::{ClassHash, ContractAddress, SyscallResultTrait};
     use super::{
-        BPS, ICollectibleDispatcher, ICollectibleDispatcherTrait, IGameLedger, IMMRTokenDispatcher,
-        IMMRTokenDispatcherTrait, IPassBurnDispatcher, IPassBurnDispatcherTrait, IPassRestoreDispatcher,
-        IPassRestoreDispatcherTrait, ISeasonPassMetadataDispatcher, ISeasonPassMetadataDispatcherTrait, MMR_PRECISION,
-        NO_PASS, OPERATOR_ROLE, PAUSER_ROLE, PAYOUT_WEIGHT_SCALE, SEASON_BATCH_SIZE, SEASON_PASS, SEASON_REVIEW_SECONDS,
-        VILLAGE_PASS, result_commitment,
+        BLITZ_SETTLEMENT_INTERVAL_SECONDS, BPS, ICollectibleDispatcher, ICollectibleDispatcherTrait, IGameLedger,
+        IMMRTokenDispatcher, IMMRTokenDispatcherTrait, IPassBurnDispatcher, IPassBurnDispatcherTrait,
+        IPassRestoreDispatcher, IPassRestoreDispatcherTrait, ISeasonPassMetadataDispatcher,
+        ISeasonPassMetadataDispatcherTrait, MMR_PRECISION, NO_PASS, OPERATOR_ROLE, PAUSER_ROLE, PAYOUT_WEIGHT_SCALE,
+        SEASON_BATCH_SIZE, SEASON_PASS, SEASON_REVIEW_SECONDS, VILLAGE_PASS, result_commitment,
     };
 
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
@@ -849,6 +852,10 @@ pub mod GameLedger {
             self.season_claims.entry((season_id, owner)).read()
         }
 
+        fn blitz_settlement_interval(self: @ContractState) -> u64 {
+            BLITZ_SETTLEMENT_INTERVAL_SECONDS
+        }
+
         fn open_game(ref self: ContractState, key: GameKey, season_id: u32, preset_id: u32, start: u64, end: u64) {
             self.accesscontrol.assert_only_role(OPERATOR_ROLE);
             assert!(key.shard != 0, "Ledger: zero shard");
@@ -860,6 +867,7 @@ pub mod GameLedger {
             let season = self.get_season(season_id);
             assert!(preset_id == season.preset_id, "Ledger: game preset differs from season");
             assert!(start >= season.start && end < season.end, "Ledger: game outside season");
+            assert!(season.end - end >= BLITZ_SETTLEMENT_INTERVAL_SECONDS, "Ledger: insufficient settlement interval");
             let registration_limit = self.get_preset(preset_id).registration_limit;
             assert!(registration_limit != 0, "Ledger: preset has no roster");
             self
