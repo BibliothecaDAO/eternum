@@ -39,10 +39,7 @@ export const routeIdentityRequest = async (
 ) => {
   const { pathname } = new URL(request.url);
   const sendsCode = pathname === "/api/auth/email-otp/send-verification-otp";
-  const verifiesCode = [
-    "/api/auth/sign-in/email-otp",
-    "/api/auth/email-otp/check-verification-otp",
-  ].includes(pathname);
+  const verifiesCode = ["/api/auth/sign-in/email-otp", "/api/auth/email-otp/check-verification-otp"].includes(pathname);
   const requestsCodeAccess = request.method === "POST" && (sendsCode || verifiesCode);
   if (requestsCodeAccess) {
     const refusal = await codeAccess(env, request, sendsCode);
@@ -128,7 +125,10 @@ const withinPublicBudget = async (env: IdentityEnv, route: string, request: Requ
 const codeAccess = async (env: IdentityEnv, request: Request, sendsCode: boolean) => {
   if (!(await withinPublicBudget(env, "sign-in-code", request))) return json({ error: "too_many_attempts" }, 429);
   if (!sendsCode) return null;
-  const { email } = (await request.clone().json().catch(() => ({}))) as { email?: unknown };
+  const { email } = (await request
+    .clone()
+    .json()
+    .catch(() => ({}))) as { email?: unknown };
   const address = typeof email === "string" ? email.trim().toLowerCase() : "";
   if (address && !(await env.SIGN_IN_CODE_RATE_LIMIT.limit({ key: address })).success)
     return json({ error: "too_many_codes" }, 429);
@@ -160,12 +160,9 @@ const sendCodeWithExpiry = async (request: Request, auth: IdentityAuth): Promise
     .catch(() => ({}))) as { email?: unknown; type?: unknown };
   const response = await auth.handler(request);
   if (!response.ok) return response;
-  if (typeof body.email !== "string" || body.type !== "sign-in")
-    return json({ error: "code_expiry_unavailable" }, 503);
+  if (typeof body.email !== "string" || body.type !== "sign-in") return json({ error: "code_expiry_unavailable" }, 503);
   const context = await auth.$context;
-  const verification = await context.internalAdapter.findVerificationValue(
-    `sign-in-otp-${body.email.toLowerCase()}`,
-  );
+  const verification = await context.internalAdapter.findVerificationValue(`sign-in-otp-${body.email.toLowerCase()}`);
   if (!verification) return json({ error: "code_expiry_unavailable" }, 503);
   const headers = new Headers(response.headers);
   headers.set("cache-control", "no-store");

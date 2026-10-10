@@ -2,7 +2,6 @@ import type { AuthContext, User } from "better-auth";
 import { APIError } from "better-auth/api";
 import { Effect } from "effect";
 
-
 interface WalletChangeServices {
   db: D1Database;
   checkCode(context: AuthContext, email: string, otp: string): Promise<unknown>;
