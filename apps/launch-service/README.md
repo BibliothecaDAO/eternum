@@ -5,27 +5,27 @@ membership. `VALUE_IDENTITY` supplies the directory; `VALUE_RELAY` supplies conf
 economic writes. A request can select `?chainId=<official shard>`; with one live shard the selection is unique. Multiple
 live shards require a chain. No Worker shard URL or separate ledger URL/address is configured.
 
-Launch mutations require an allowlisted linked wallet or the operator token. Public reads expose declared entry terms
-from the launch record. Frontier entries are free. Paid game entries are
-`{kind:"paid",ledger:{address,chainId,shard,gameId}}`. They carry no token. LORDS comes from `lords()` and the network
-fee token from the client's chain table. A missing opening record is unavailable and cannot become free.
+Launch mutations require an allowlisted linked wallet or the operator token. The timetable exposes `slotId`; completed
+game directory rows carry that same field (null outside Blitz). The environment address book supplies the ledger and L2
+chain. No directory row carries economic addresses or a free/paid entry payload.
 
-The old HTTP free registration path and its D1 player table are deleted. D1 slot rows contain scheduling metadata,
-scoped by chain. Player registration belongs on the ledger. The owner's uncapped-slot revision still needs its published
-slot opening, registration paging, refund and per-game allocation ABI; the preceding per-game reader must be replaced
-with that revision before enabling the new slot flow. Historical wallet resolution uses identity history at registration
-time, without the payout hold. Balanced groups retain registration order and have at most 24 players.
+Blitz registration belongs to an uncapped ledger slot. At close, the relay reads confirmed registrations in pages
+of 100. Identity history resolves each payer at its registration block time, without the payout hold. The earliest
+registration for each account gets a seat; unlinked and duplicate payers become refundable. Balanced groups retain
+registration order and contain at most 24 players. An empty slot creates no game. D1 keeps schedule and job metadata,
+never a roster copy. Launcher one-offs use the same paid `/api/slots` route; direct Blitz factory runs are refused.
 
-The registrar serializes its device's shard writes. It reads the runtime class ABI, creates games through the native
-registry and adopts an already-seated shard roster on retry. Paid runs retry transient failures with backoff until the
-ledger's stored end; unavailable deadline reads never trigger an early refund. Result jobs keep retrying and never
-cancel a played game. Final points and ranks come from the shard's unit `RecordBlitzResults` command. The relay alone
-posts the committed ranks and finishes mystery chest requests.
+The registrar serializes its device's shard writes. Each game is created with its complete roster, then the existing
+automatic realm seating completes. A retry re-resolves the historical cohort and verifies an existing game's roster
+before resuming. Paid launches retry transient failures with backoff until success or slot cancellation. Result jobs
+keep retrying and never cancel a played game. The shard's unit `RecordBlitzResults` command computes final ranks. The
+independent monitor re-resolves the complete slot cohort and checks every frozen pair before the relay posts a game's
+results; mismatches pause payouts, unavailable evidence cannot pass. Each result allocates only its own registrations.
 
 Normal game names cannot start with `check-`. Operator-only `/api/factory/operator/launcher/enrol` and `/check` prove
-the Worker's own enrollment and a fixed check-game creation. The deployment registers the shard as pending in identity
-first, enrolls the Worker, hands it the launcher role and confirms the check before activation. Pending shards stay
-invisible to players.
+the Worker's own enrollment and a fixed open-entry check-game creation (Frontier or Eternum). The deployment registers
+the shard as pending in identity first, enrolls the Worker, hands it the launcher role and confirms the check before
+activation. Pending shards stay invisible to players.
 
 Runtime settings include `BASE_URL`, `ENVIRONMENT`, `LAUNCHER_ALLOWLIST`, `DEPLOYER_ACCOUNT_ADDRESS`, and the
 `DEPLOYER_PRIVATE_KEY` and `OPERATOR_TOKEN` secrets. `wrangler.jsonc` declares the identity, relay, D1 and registrar

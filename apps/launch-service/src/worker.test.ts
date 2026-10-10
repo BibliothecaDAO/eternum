@@ -106,7 +106,7 @@ it("opens a Blitz window, ticks the schedule, queues an authorized launch and re
   expect(opened.status).toBe(200);
   await (await mf.getWorker()).scheduled({ cron: "* * * * *" });
   const slots = (await (await mf.dispatchFetch(`${ORIGIN}/api/slots`)).json()) as { slots: { name: string }[] };
-  expect(slots.slots).toEqual([]);
+  expect(slots.slots).toHaveLength(1);
   const waiting = await db.prepare("SELECT name FROM playtest_slots").first<{ name: string }>();
   expect(waiting?.name).toMatch(/^blitz-\d{8}-(11|20)00$/);
 
@@ -124,7 +124,7 @@ it("opens a Blitz window, ticks the schedule, queues an authorized launch and re
   const launched = await mf.dispatchFetch(`${ORIGIN}/api/factory/runs`, {
     method: "POST",
     headers: { origin: ORIGIN, cookie: "better-auth.session_token=s1", "content-type": "application/json" },
-    body: JSON.stringify({ environment: "madara.blitz", gameName: "bltz-workerd" }),
+    body: JSON.stringify({ environment: "madara.frontier", gameName: "bltz-workerd" }),
   });
   expect(launched.status).toBe(202);
 
@@ -169,7 +169,7 @@ it("launches a game that is ready now while a result waits an hour for its game'
   const launched = await mf.dispatchFetch(`${ORIGIN}/api/factory/runs`, {
     method: "POST",
     headers: { origin: ORIGIN, cookie: "better-auth.session_token=s1", "content-type": "application/json" },
-    body: JSON.stringify({ environment: "madara.blitz", gameName: "bltz-ready" }),
+    body: JSON.stringify({ environment: "madara.frontier", gameName: "bltz-ready" }),
   });
   expect(launched.status).toBe(202);
   await tick();
