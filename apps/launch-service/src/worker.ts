@@ -1,11 +1,10 @@
 import { activeShards } from "@realms-world/value-ledger";
 import { Effect } from "effect";
-import { realmsAccountAddress } from "@realms-world/identity/account";
 import { createLaunchApp } from "./app";
 import { createIdentityResolver } from "./auth";
 import { D1CalendarStore } from "./calendar-store";
 import { decodeLaunchEnv, type LaunchEnv } from "./env";
-import { readLaunchShard, shardChainOf } from "./executor";
+import { shardChainOf } from "./executor";
 import { runLaunchSchedule } from "./schedule";
 import { D1SlotStore } from "./slot-store";
 import { D1LaunchStore } from "./store";
@@ -61,10 +60,6 @@ const launchAppOf = (env: LaunchEnv, chainId?: string | null) => {
     operatorLauncher: {
       enrol: (input) => registrarOf(env).enrol(input),
       check: (input) => registrarOf(env).check(input),
-    },
-    playerAccount: async (realmsId) => {
-      const { shard } = await readLaunchShard(env.VALUE_IDENTITY, await shardChainOf(env, chainId)());
-      return realmsAccountAddress(realmsId, shard.accountClassHash, shard.guardianPublicKey);
     },
   });
 };

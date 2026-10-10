@@ -51,19 +51,24 @@ it("refuses mismatched game keys and keeps free terms explicit", async () => {
   expect(free.entry).toEqual({ kind: "free" });
 });
 
-it("refuses the legacy free-registration route for a paid slot", async () => {
-  const launches = new D1LaunchStore(database.db, testChain());
-  const slots = new D1SlotStore(database.db, launches);
-  await slots.create("friday", new Date(Date.now() + 60000).toISOString());
-  await launches.saveGame(summary);
-  await launches.saveEntry("madara.blitz", "friday-1", paid);
-  await expect(slots.register("friday", [{ realmsId: "0x1", account: "0x2" }])).rejects.toThrow("ledger");
-  expect((await slots.get("friday")).registrations).toEqual([]);
+it("deletes the local free roster table", async () => {
+  expect(
+    (await database.db.prepare("SELECT name FROM sqlite_master WHERE name='playtest_registrations'").all()).results,
+  ).toEqual([]);
 });
+
 it("has no persistent second copy of the ledger roster after migration", async () => {
   expect(
     await database.db
       .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='blitz_ledger_rosters'")
       .first(),
   ).toBeNull();
+});
+
+it("never serves a legacy free launch as a paid Blitz slot", async () => {
+  const launches = new D1LaunchStore(database.db, testChain());
+  await launches.enqueue("game", { environment: "madara.blitz", gameName: "friday-1" });
+  await launches.saveGame(summary);
+  await launches.saveEntry("madara.blitz", "friday-1", { kind: "free" });
+  await expect(launches.entryForSlot("friday")).rejects.toThrow("requires_paid_entry");
 });

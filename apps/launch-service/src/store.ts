@@ -133,6 +133,10 @@ export class D1LaunchStore implements LaunchServiceStore {
     return this.chain;
   }
 
+  targetChain() {
+    return this.chainId();
+  }
+
   async enqueue(kind: LaunchKind, request: LaunchJobRequest): Promise<LaunchRun> {
     // One rule for every environment: a running or complete run is handed back as it is (create_game is idempotent by
     // name, so nothing is lost); anything else is queued again with the new request.
@@ -193,7 +197,7 @@ export class D1LaunchStore implements LaunchServiceStore {
       if (!run.summary || !("gameId" in run.summary) || !run.summary.gameId) throw new Error("slot_entry_without_game");
       return entryForGame(run.entry, run.chainId, run.summary.gameId);
     }
-    return run.entry;
+    throw new Error("blitz_slot_requires_paid_entry");
   }
 
   // Migration 0005 archives pre-chain runs under an empty id; those have no shard to drain.
