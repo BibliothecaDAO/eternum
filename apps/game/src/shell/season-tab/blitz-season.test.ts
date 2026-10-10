@@ -8,7 +8,7 @@ vi.mock("@/runtime/l2-rpc", async (importOriginal) => ({
 
 import type { DirectoryGame } from "../herald";
 import { claimSeasonCall } from "../value/ledger";
-import { placeShares, type SeasonPrize, seasonSourcesOf, seasonState } from "./blitz-season";
+import { placeShares, type SeasonPrize, seasonSourceOf, seasonState } from "./blitz-season";
 
 const WEI = 10n ** 18n;
 
@@ -32,7 +32,6 @@ it("runs, closes, reviews, holds, then claims, waits on the fee, is claimed, or 
   const prize = (overrides: Partial<SeasonPrize["season"]>, rest: Partial<SeasonPrize> = {}): SeasonPrize => ({
     ledger: "0xl",
     seasonId: 3,
-    current: true,
     season: {
       participants: 500,
       winners: 50,
@@ -72,22 +71,15 @@ const paid = (id: number) => ({
   ledger: { address: "0xa", chainId: "0x534e5f4d41494e", shard: "0x52", gameId: id },
 });
 
-it("takes the running season from the newest paid Blitz listed anywhere, and the seasons paid into from history", () => {
-  expect(seasonSourcesOf([game(1, 10)], [])).toEqual({ current: null, played: [], broken: false });
-  const sources = seasonSourcesOf([game(3, 30, paid(3)), game(4, 40)], [game(1, 10, paid(1)), game(2, 20)]);
-  expect(sources.current).toEqual(expect.objectContaining({ gameId: 3 }));
-  // Only the player's own finished paid games are seasons they paid into; a listed game is not theirs.
-  expect(sources.played).toEqual([expect.objectContaining({ gameId: 1 })]);
-  expect(sources.broken).toBe(false);
+it("takes the season from the player's own newest paid Blitz game, never from games still to come", () => {
+  expect(seasonSourceOf([game(1, 10)])).toBeNull();
+  expect(seasonSourceOf([game(1, 10, paid(1)), game(2, 20, paid(2)), game(3, 30)])).toEqual({
+    kind: "paid",
+    ledger: expect.objectContaining({ gameId: 2 }),
+  });
 });
 
-it("shows a broken entry among the sources as a fault, instead of skipping to an older season", () => {
+it("refuses the season when the player's newest paid entry is broken, instead of skipping to an older one", () => {
   vi.spyOn(console, "error").mockImplementation(() => {});
-  const broken = game(2, 20, { kind: "paid" });
-  expect(seasonSourcesOf([broken], [game(1, 10, paid(1))])).toEqual({
-    current: null,
-    played: [expect.objectContaining({ gameId: 1 })],
-    broken: true,
-  });
-  expect(seasonSourcesOf([], [game(1, 10, paid(1)), broken]).broken).toBe(true);
+  expect(seasonSourceOf([game(1, 10, paid(1)), game(2, 20, { kind: "paid" })])).toEqual({ kind: "broken" });
 });

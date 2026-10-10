@@ -9,7 +9,7 @@ import { useBootDocumentState } from "@/ui/modules/boot-loader";
 
 import { BlitzListPage, BlitzLobbyPage } from "../blitz/blitz-pages";
 import { entryTermsKey } from "../blitz/entry";
-import { seasonPrizesKey } from "../season-tab/blitz-season";
+import { seasonPrizeKey } from "../season-tab/blitz-season";
 import { rewardKey } from "../season-tab/reward";
 import { payingWalletKey } from "../value/paying-wallet";
 import { LearnPage } from "../learn/learn-page";
@@ -111,11 +111,7 @@ const createLabClient = (screen: LabScreen) => {
   const prize = LAB_SEASON_PRIZES[screen];
   if (reward || prize) client.setQueryData(payingWalletKey(LAB_GAME_LEDGER, LAB_PLAYER), LAB_WALLET);
   if (reward) client.setQueryData(rewardKey(LAB_GAME_LEDGER, LAB_WALLET), reward);
-  if (prize)
-    client.setQueryData(
-      seasonPrizesKey({ current: LAB_GAME_LEDGER, played: [LAB_GAME_LEDGER], broken: false }, LAB_PLAYER),
-      [prize],
-    );
+  if (prize) client.setQueryData(seasonPrizeKey(LAB_GAME_LEDGER, LAB_PLAYER), prize);
   return client;
 };
 

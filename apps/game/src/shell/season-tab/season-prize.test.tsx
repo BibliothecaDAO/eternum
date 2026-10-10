@@ -37,7 +37,7 @@ vi.mock("../herald", () => ({
   useRecentResults: () => ({ data: { games: listed.history } }),
 }));
 
-import { type SeasonPrize, seasonPrizesKey } from "./blitz-season";
+import { type SeasonPrize, seasonPrizeKey } from "./blitz-season";
 import { SeasonPrizePanel } from "./season-prize";
 
 const WEI = 10n ** 18n;
@@ -74,18 +74,16 @@ const mount = async (seed?: (client: QueryClient) => void) => {
   return container;
 };
 
-/** The running season from game 7, seeded as read: the panel's states without a ledger. */
+/** The season of the player's game 7, seeded as read: the panel's states without a ledger. */
 const mountPrize = (prize: SeasonPrize) => {
-  listed.directory = [blitz(7, 1)];
-  listed.history = [];
-  const sources = { current: { ...LEDGER, gameId: 7 }, played: [], broken: false };
-  return mount((client) => client.setQueryData(seasonPrizesKey(sources, "0x7e"), [prize]));
+  listed.directory = [];
+  listed.history = [blitz(7, 1)];
+  return mount((client) => client.setQueryData(seasonPrizeKey({ ...LEDGER, gameId: 7 }, "0x7e"), prize));
 };
 
 const prize = (season: Partial<SeasonPrize["season"]>, rest: Partial<SeasonPrize> = {}): SeasonPrize => ({
   ledger: "0x1ed9e7",
   seasonId: 3,
-  current: true,
   season: {
     participants: 25,
     winners: 3,
@@ -144,7 +142,7 @@ it("waits out the review hour, then claims a winner's share from the wallet that
   );
 });
 
-it("keeps a won season's claim after the next season opens, signed by the wallet that paid, not today's", async () => {
+it("keeps a won season's claim when the next season's first game is listed, signed by the wallet that paid", async () => {
   const W1 = "0xa11";
   // Season 3: game 5, paid by W1, over and posted with W1 on the list. Season 4: game 9, just created.
   const seasons: Record<string, { end: number; posted: boolean }> = {
@@ -170,8 +168,8 @@ it("keeps a won season's claim after the next season opens, signed by the wallet
   listed.history = [blitz(5, NOW - 86400)];
   const panel = await mount();
   await act(async () => new Promise((resolve) => setTimeout(resolve, 0)));
-  // The new season's running pool, and season 3's share still to claim under it.
-  expect(panel.querySelectorAll("section")).toHaveLength(2);
+  // The player's own season 3, its share still to claim; the next season's game listed in the directory changes nothing.
+  expect(panel.querySelectorAll("section")).toHaveLength(1);
   expect(panel.textContent).toContain("2,000");
   await act(async () =>
     [...panel.querySelectorAll("button")].find((button) => button.textContent === "Claim")!.click(),
