@@ -1,10 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { Sheet } from "@/ui/design-system/kit/sheet";
-import { REALMS } from "@/ui/design-system/kit/words";
+import { REALM_NOT_CLAIMED } from "@/ui/design-system/kit/words";
 import { toast } from "@/ui/features/event-feed/notify";
-import { ServiceFailure } from "@/shell/service-failure";
 import { extractReadableErrorMessage } from "@/utils/error-message";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 
@@ -12,13 +10,12 @@ import { RealmsSheet } from "./realms-sheet";
 import { claimRealmLabor, type useRealmLabor } from "./use-realm-labor";
 
 /**
- * Realms over the game's facts: the held Realms' labor today and one Claim all, each ready Realm claimed in turn
- * through the relay. A failed read of the wallet's Realms is said as the service it is; nothing shows before the
- * facts are known.
+ * Realms over the game's facts: the known Realms' labor today, one Claim all (each ready Realm claimed in turn through
+ * the relay), and Add a Realm, which is that Realm's first claim. Nothing shows before the facts are known.
  */
 export const FrontierRealms = ({
   realm,
-  labor: { labor, realms },
+  labor,
   onRealm,
   onClose,
 }: {
@@ -30,12 +27,7 @@ export const FrontierRealms = ({
 }) => {
   const navigate = useNavigate();
   const [sending, setSending] = useState(false);
-  if (realms.isError)
-    return (
-      <Sheet label={REALMS} onClose={onClose}>
-        <ServiceFailure service="realms" error={realms.error} retry={() => void realms.refetch()} />
-      </Sheet>
-    );
+  const [adding, setAdding] = useState(false);
   if (!labor) return null;
 
   const claimAll = async () => {
@@ -49,6 +41,17 @@ export const FrontierRealms = ({
     }
   };
 
+  const add = async (realmId: number) => {
+    setAdding(true);
+    try {
+      await claimRealmLabor(realmId, realm);
+    } catch {
+      toast.error(REALM_NOT_CLAIMED);
+    } finally {
+      setAdding(false);
+    }
+  };
+
   return (
     <RealmsSheet
       wallet={labor.wallet}
@@ -58,7 +61,9 @@ export const FrontierRealms = ({
       labor={labor.held}
       secondsLeft={labor.secondsLeft}
       sending={sending}
+      adding={adding}
       onClaim={() => void claimAll()}
+      onAdd={(realmId) => void add(realmId)}
       onRealm={onRealm}
       onLinkWallet={() => navigate("/profile/account")}
       onClose={onClose}

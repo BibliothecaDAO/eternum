@@ -97,7 +97,7 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
             {realm && !visit && (
               <RealmPurse
                 realm={realm}
-                laborWaiting={realmLabor.labor?.plan.total ?? 0}
+                laborWaiting={realmLabor?.plan.total ?? 0}
                 onWithdraw={() => setSurface("withdraw")}
                 onRealms={() => setSurface("realms")}
               />
@@ -147,12 +147,7 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
         <FrontierSurfaces realm={realm} />
         <FrontierSelectionSheet rules={rules} realm={realm} />
         {surface === "menu" && (
-          <HudMenu
-            realm={realm}
-            laborWaiting={(realmLabor.labor?.plan.total ?? 0) > 0}
-            onOpen={setSurface}
-            onClose={close}
-          />
+          <HudMenu realm={realm} laborWaiting={(realmLabor?.plan.total ?? 0) > 0} onOpen={setSurface} onClose={close} />
         )}
         {surface === "withdraw" && realm && !visit && <FrontierWithdraw realm={realm} onClose={close} />}
         {surface === "realms" && realm && !visit && (

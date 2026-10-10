@@ -1,4 +1,4 @@
-/** A Realm in the account's linked Starknet wallet, and whether it gave its labor this game day. */
+/** A Realm the account has claimed labor with, and whether it gave its labor this UTC day. */
 export type HeldRealm = { realmId: number; name: string; order: number; claimedToday: boolean };
 
 export type RealmLaborState = "claimed" | "ready" | "locked";
@@ -10,6 +10,8 @@ export type RealmLaborPlan = {
   total: number;
   /** What of it the realm's labor store takes now: a claim pays what fits. */
   fits: number;
+  /** Whether another Realm can still give its labor today: the day's cap of Realms is not spent. */
+  canAdd: boolean;
 };
 
 /**
@@ -27,7 +29,8 @@ export const planRealmLabor = ({
   cap: number;
   labor: { held: number; limit: number | undefined };
 }): RealmLaborPlan => {
-  let left = (cap > 0 ? cap : realms.length) - realms.filter((realm) => realm.claimedToday).length;
+  const claimed = realms.filter((realm) => realm.claimedToday).length;
+  let left = (cap > 0 ? cap : realms.length) - claimed;
   const rows = realms.map((realm) => {
     if (realm.claimedToday) return { realm, state: "claimed" as const };
     if (left <= 0) return { realm, state: "locked" as const };
@@ -36,5 +39,5 @@ export const planRealmLabor = ({
   });
   const total = rows.filter((row) => row.state === "ready").length * perRealm;
   const room = labor.limit === undefined ? total : Math.max(0, Math.floor(labor.limit - labor.held));
-  return { rows, total, fits: Math.min(total, room) };
+  return { rows, total, fits: Math.min(total, room), canAdd: cap === 0 || claimed < cap };
 };

@@ -149,4 +149,8 @@ export const CLAIM_ALL = "Claim all";
 export const CLAIMED_TODAY = "Claimed today";
 export const fitOf = (fits: string, of: string) => `${fits} of ${of} fit`;
 export const REALMS_ELSEWHERE = "Only Realms in this Starknet wallet count. Not on Ethereum, not in another wallet.";
+/** A Realm joins the list by its number, the first time it gives its labor. */
+export const ADD_REALM = "Add a Realm";
+export const REALM_NUMBER = "Realm number";
+export const REALM_NOT_CLAIMED = "That Realm is not in your wallet, or it gave its labor today.";
 export const realmsADay = (cap: number) => `${cap} a day`;

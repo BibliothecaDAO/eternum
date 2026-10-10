@@ -44,7 +44,7 @@ const allLatestFeatures: LatestFeature[] = [
     date: "2026-10-10",
     title: "Withdraw LORDS and claim Realm labor",
     description:
-      "In Frontier, tap your LORDS to withdraw them to your payout wallet and follow the payment to its transaction. Realms in that wallet give labor once a day: claim it from the Realms chip or the Menu.",
+      "In Frontier, tap your LORDS to withdraw them to your payout wallet and follow the payment to its transaction. Realms in that wallet give labor once a day: add a Realm by its number in the Menu's Realms, then claim them all from there or from the Realms chip.",
     type: "feature",
   },
   {
