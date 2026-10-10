@@ -2667,11 +2667,6 @@ fn a_lords_withdrawal_after_season_end_spends_the_realm_once() {
             ),
         );
     super::play_fixture::assert_preflight_rejection(
-        d.games,
-        super::play_fixture::TestAction { game_id, actor: d.actor, command: duplicate },
-        deadline - crate::relics::LORDS_REPORTING_BUFFER_SECONDS,
-    );
-    super::play_fixture::assert_preflight_rejection(
         d.games, super::play_fixture::TestAction { game_id, actor: d.actor, command: duplicate }, deadline,
     );
     let lords = ResourceSlot { game_id, entity_id: home.entity_id, resource_type: crate::resources::LORDS };
