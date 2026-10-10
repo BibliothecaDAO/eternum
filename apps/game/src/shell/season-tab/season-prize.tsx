@@ -13,7 +13,7 @@ import { useNowSeconds } from "../use-now";
 import { claimSeasonCall, environmentLedger, lordsOf } from "../value/ledger";
 import { FailureLine } from "../sign-in/failure-line";
 import { SEASON_PRIZE_WORDS } from "../words";
-import { placeShares, type SeasonPrize, seasonSourceOf, seasonState, useSeasonPrize } from "./blitz-season";
+import { placeShares, type SeasonPrize, seasonSourcesOf, seasonState, useSeasonPrize } from "./blitz-season";
 
 const WalletSign = lazy(() =>
   import("@/ui/modules/identity/wallet-actions").then((module) => ({ default: module.WalletSign })),
@@ -23,17 +23,18 @@ const WalletSign = lazy(() =>
 const PLACES_SHOWN = 3;
 
 /**
- * The Blitz season's prize on Season, read from the player's own newest paid game: the pool now and the time left,
+ * The Blitz season's prize on Season, from the player's own games: the newest season with a share still to claim, else
+ * the newest season they played: the pool now and the time left,
  * what the first paid places and the last would take of it today; at the end the review hour, then the winner's claim
  * from the seat's wallet in that game. A ledger not deployed on this environment is said so.
  */
 export const SeasonPrizePanel = () => {
   const { data: player } = useRealmsPlayer();
   const history = useRecentResults(20, player);
-  const source = seasonSourceOf(history.data?.games ?? []);
+  const sources = seasonSourcesOf(history.data?.games ?? []);
   const ledger = environmentLedger();
-  const prize = useSeasonPrize(ledger, source);
-  if (source && !ledger) return <FailureLine line={SEASON_PRIZE_WORDS.unreadable} />;
+  const prize = useSeasonPrize(ledger, sources);
+  if (sources.length > 0 && !ledger) return <FailureLine line={SEASON_PRIZE_WORDS.unreadable} />;
   if (prize.isError) return <ServiceFailure service="ledger" error={prize.error} retry={() => void prize.refetch()} />;
   if (!prize.data) return null;
   return <Prize prize={prize.data} onClaimed={() => void prize.refetch()} />;

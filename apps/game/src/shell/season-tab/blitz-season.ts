@@ -26,18 +26,17 @@ export interface SeasonPrize {
   claimed: boolean;
 }
 
-/** Where the Season tab reads its prize: the slot of the player's newest paid game, and their seat's wallet there. */
+/** One of the player's paid games: the slot it was filled from, and their seat's wallet there. */
 interface SeasonSource {
   slot: SlotKey;
   wallet: string;
 }
 
 /**
- * The season a player's Blitz prize is read from: their own newest paid Blitz game in their history, where they held a
- * seat. The directory's upcoming games say nothing about the player, so a game created for the next season never hides
- * this one's claim. Null when the player has none.
+ * The player's own paid Blitz games in their history where they held a seat, newest first: the seasons the Season
+ * tab can show. The directory's upcoming games say nothing about the player, so they are never among them.
  */
-export const seasonSourceOf = (history: readonly DirectoryGame[]): SeasonSource | null =>
+export const seasonSourcesOf = (history: readonly DirectoryGame[]): SeasonSource[] =>
   history
     .filter((game) => game.mode === "blitz")
     .toSorted((a, b) => b.clock.start_main_at - a.clock.start_main_at)
@@ -45,7 +44,7 @@ export const seasonSourceOf = (history: readonly DirectoryGame[]): SeasonSource 
       const slot = gameSlotKeyOf(game);
       const wallet = rosterWalletOf(game);
       return slot && wallet ? [{ slot, wallet }] : [];
-    })[0] ?? null;
+    });
 
 /**
  * What each paid place would take of a pool now, by the ledger's own rule: ceil(participants × paid fraction) places;
@@ -85,20 +84,36 @@ export const seasonState = (prize: SeasonPrize, now: number): SeasonState => {
   return "claim";
 };
 
-export const seasonPrizeKey = (source: SeasonSource) =>
-  ["ledger", "season", source.slot.shard, source.slot.slotId, source.wallet] as const;
+export const seasonPrizeKey = (sources: readonly SeasonSource[]) =>
+  ["ledger", "season", ...sources.map(({ slot, wallet }) => `${slot.shard}:${slot.slotId}:${wallet}`)] as const;
 
-/** The season prize of the player's newest paid game, on the environment's ledger; nothing is read without a source. */
-export const useSeasonPrize = (ledger: EnvironmentLedger | null, source: SeasonSource | null) =>
+/**
+ * The one season prize the Season tab shows, on the environment's ledger: the newest season of the player's own games
+ * in which a share is still unclaimed, or else the newest season they played. Nothing is read without a game.
+ */
+export const useSeasonPrize = (ledger: EnvironmentLedger | null, sources: readonly SeasonSource[]) =>
   useQuery({
-    queryKey: source ? seasonPrizeKey(source) : (["ledger", "season", "none"] as const),
-    queryFn: () => readSeasonPrize(ledger as EnvironmentLedger, source as SeasonSource),
-    enabled: ledger !== null && source !== null,
+    queryKey: seasonPrizeKey(sources),
+    queryFn: () => readSeasonPrize(ledger as EnvironmentLedger, sources),
+    enabled: ledger !== null && sources.length > 0,
     refetchInterval: 60_000,
   });
 
-const readSeasonPrize = async (read: EnvironmentLedger, { slot, wallet }: SeasonSource): Promise<SeasonPrize> => {
-  const { seasonId } = await read.slot(slot);
+const readSeasonPrize = async (read: EnvironmentLedger, sources: readonly SeasonSource[]): Promise<SeasonPrize> => {
+  const seen = new Set<string>();
+  let newest: SeasonPrize | null = null;
+  for (const { slot, wallet } of sources) {
+    const { seasonId } = await read.slot(slot);
+    if (seen.has(`${seasonId}:${wallet}`)) continue;
+    seen.add(`${seasonId}:${wallet}`);
+    const prize = await prizeOf(read, seasonId, wallet);
+    newest ??= prize;
+    if (prize.share !== null && !prize.claimed) return prize;
+  }
+  return newest as SeasonPrize;
+};
+
+const prizeOf = async (read: EnvironmentLedger, seasonId: number, wallet: string): Promise<SeasonPrize> => {
   const season = await read.season(seasonId);
   const [curve, holding] = await Promise.all([read.preset(season.presetId), holdingOf(read, seasonId, season, wallet)]);
   return { ledger: read.address, seasonId, season, curve, wallet, ...holding };

@@ -108,7 +108,7 @@ const createLabClient = (screen: LabScreen) => {
   const reward = LAB_REWARDS[screen];
   const prize = LAB_SEASON_PRIZES[screen];
   if (reward) client.setQueryData(rewardKey(LAB_GAME_KEYS, LAB_WALLET), reward);
-  if (prize) client.setQueryData(seasonPrizeKey({ slot: LAB_SLOT_KEY, wallet: LAB_WALLET }), prize);
+  if (prize) client.setQueryData(seasonPrizeKey([{ slot: LAB_SLOT_KEY, wallet: LAB_WALLET }]), prize);
   return client;
 };
 
