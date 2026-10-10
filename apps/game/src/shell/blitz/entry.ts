@@ -120,7 +120,7 @@ export const entryTermsKey = (ledger: PaidGameLedger, wallet: string) =>
 /** The entry's terms for the payout wallet, read from the ledger and the two tokens at the latest block. */
 export const useEntryTerms = (ledger: PaidGameLedger | null, wallet: string | null) =>
   useQuery({
-    queryKey: entryTermsKey(ledger ?? { address: "", chainId: "", feeToken: "", shard: "", gameId: 0 }, wallet ?? ""),
+    queryKey: ledger ? entryTermsKey(ledger, wallet ?? "") : (["ledger", "entry", "none"] as const),
     queryFn: () => readEntryTerms(ledger as PaidGameLedger, wallet as string),
     enabled: ledger !== null && wallet !== null,
     refetchInterval: 15_000,
@@ -134,7 +134,7 @@ const readEntryTerms = async (ledger: PaidGameLedger, wallet: string): Promise<E
     read.credits(wallet),
     read.registration(ledger, wallet),
     read.balanceOf(lordsToken, wallet),
-    read.balanceOf(ledger.feeToken, wallet),
+    read.feeBalance(wallet),
   ]);
   const prices = { seat: preset.seat, sword: preset.sword, shield: preset.shield };
   const split = { protocolCutBps: preset.protocolCutBps, chestLordsBps: preset.chestLordsBps };

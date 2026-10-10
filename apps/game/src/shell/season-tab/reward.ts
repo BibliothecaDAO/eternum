@@ -47,7 +47,7 @@ export const rewardKey = (ledger: PaidGameLedger, wallet: string) =>
 /** Read every 30 s, every 5 s while the chest's draw is under way so the reveal comes as soon as it lands. */
 export const useReward = (ledger: PaidGameLedger | null, wallet: string | null) =>
   useQuery({
-    queryKey: rewardKey(ledger ?? { address: "", chainId: "", feeToken: "", shard: "", gameId: 0 }, wallet ?? ""),
+    queryKey: ledger ? rewardKey(ledger, wallet ?? "") : (["ledger", "reward", "none"] as const),
     queryFn: () => readReward(ledger as PaidGameLedger, wallet as string),
     enabled: ledger !== null && wallet !== null,
     refetchInterval: (query) =>
@@ -59,7 +59,7 @@ const readReward = async (ledger: PaidGameLedger, wallet: string): Promise<Rewar
   const [result, registration, strk, collection] = await Promise.all([
     read.result(ledger, wallet),
     read.registration(ledger, wallet),
-    read.balanceOf(ledger.feeToken, wallet),
+    read.feeBalance(wallet),
     read.chestCollection(),
   ]);
   const none = { collection, chest: null, held: false, content: null, seasonEnd: 0, registration, strk };

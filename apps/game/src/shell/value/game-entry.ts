@@ -45,9 +45,13 @@ export const directoryGameEntryOf = (game: { chainId: string; game_id: number; e
     : broken(id, `ledger names game ${ledger.shard}:${ledger.gameId}`);
 };
 
-/** The ledger's reads on this build's L2; a ledger the entry places on another chain is refused, loudly. */
+/**
+ * The ledger's reads on this build's L2; a ledger the entry places on another chain is refused, loudly. The wallet's
+ * network fee balance is read on the build's own fee token: the entry names no token.
+ */
 export const ledgerOf = (ledger: PaidGameLedger) => {
   if (!isL2Chain(ledger.chainId))
     throw new Error(`Ledger ${ledger.address} is on chain ${ledger.chainId}; this build reads ${L2_CHAIN.name}`);
-  return ledgerReader(l2Provider(), ledger.address);
+  const read = ledgerReader(l2Provider(), ledger.address);
+  return { ...read, feeBalance: (owner: string) => read.balanceOf(L2_CHAIN.feeToken, owner) };
 };
