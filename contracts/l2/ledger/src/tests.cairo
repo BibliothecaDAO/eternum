@@ -716,8 +716,7 @@ fn cancellation_refunds_registration_and_sponsorship() {
 }
 
 #[test]
-#[should_panic(expected: 'Pausable: paused')]
-fn paused_ledger_rejects_refunds() {
+fn paused_ledger_allows_refunds() {
     let fixture = deploy_fixture(default_preset());
     register_players(@fixture, 1);
     start_cheat_caller_address(fixture.ledger_address, OPERATOR());
@@ -729,6 +728,8 @@ fn paused_ledger_rejects_refunds() {
 
     start_cheat_caller_address(fixture.ledger_address, player(0));
     fixture.ledger.refund(GAME_KEY);
+    assert!(fixture.lords.balance_of(player(0)) == 500);
+    assert!(fixture.ledger.get_game(GAME_KEY).pool == 0);
 }
 
 #[test]
@@ -1106,13 +1107,14 @@ fn pauser_cannot_pay() {
 }
 
 #[test]
-fn frontier_close_returns_only_unspent_custody() {
+fn frontier_close_returns_only_unspent_custody_even_when_paused() {
     let fixture = funded_frontier();
     start_cheat_block_timestamp(fixture.ledger_address, 150);
     fixture.ledger.report_withdrawal('shard', 1, 'first', 300);
     fixture.ledger.pay('shard', 1, 'first', player(0), 300);
     start_cheat_block_timestamp(fixture.ledger_address, END + default_preset().claim_window_seconds.into());
     start_cheat_caller_address(fixture.ledger_address, ADMIN());
+    fixture.ledger.pause();
     fixture.ledger.close_frontier('shard', 1);
     assert!(fixture.lords.balance_of(TREASURY()) == 700);
     assert!(fixture.ledger.get_frontier('shard', 1).closed);

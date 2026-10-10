@@ -108,7 +108,7 @@ Season ratings freeze at the end. The operator posts the top list; anyone may ch
 one hour. Posting writes the complete list and its allocations in one transaction. A short or challenged list cannot pay.
 Winners call `claim_season(season_id, position)` with their zero-based list position; the ledger checks the caller at
 that position and pays its geometric preset share once. Pause blocks
-withdrawals, refunds, chest finishes and season claims; registrations, incoming funding, result settlement, chest
+withdrawals, chest finishes and season claims; refunds and expired Frontier returns remain available; registrations, incoming funding, result settlement, chest
 requests and challenges remain available. Settlement's input treasury transfer continues to its fixed address.
 
 ## Class size
