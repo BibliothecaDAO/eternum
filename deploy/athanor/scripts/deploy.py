@@ -20,10 +20,11 @@ from pathlib import Path
 import subprocess
 import sys
 import tarfile
-from urllib.request import Request, urlopen
+from urllib.request import urlopen
 
 import shard
 from directory import directory_status, wait_for_identity
+from service_requests import identity_service_base, service_json
 
 RELEASES = "https://github.com/BibliothecaDAO/eternum/releases/download"
 ENVIRONMENTS = shard.ROOT / "deploy/release"
@@ -58,6 +59,7 @@ def load_inputs(environment):
     missing = [key for key in INPUTS if key not in inputs]
     if missing:
         raise ValueError(f"{environment}.json lacks {', '.join(missing)}")
+    identity_service_base(inputs["guardian_url"])
     return inputs
 
 
@@ -168,13 +170,9 @@ def launcher_service(config, suffix, payload):
     token = os.environ.get("OPERATOR_TOKEN")
     if not token:
         raise RuntimeError("Protected operator credential is required for launcher enrollment")
-    base = config["guardian_url"].removesuffix("/guardian")
-    request = Request(base + "/factory/operator/launcher/" + suffix,
-                      data=json.dumps(payload).encode(), method="POST",
-                      headers={"Content-Type": "application/json", "Authorization": "Bearer " + token})
+    base = identity_service_base(config["guardian_url"])
     try:
-        with urlopen(request, timeout=120) as response:
-            return json.load(response)
+        return service_json(base + "/factory/operator/launcher/" + suffix, payload, timeout=120)
     except (OSError, ValueError):
         raise RuntimeError("Launch Worker enrollment/check route unavailable; directory remains pending") from None
 

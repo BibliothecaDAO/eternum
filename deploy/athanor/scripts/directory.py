@@ -3,7 +3,8 @@ import json
 import os
 import time
 from urllib.error import HTTPError
-from urllib.request import Request, urlopen
+from urllib.request import urlopen
+from service_requests import identity_service_base, service_json
 
 PENDING_ROUTE_PREREQUISITE = "The identity service must carry the pending route before a shard from this code starts"
 
@@ -31,7 +32,7 @@ def directory_status(config, status):
     token = os.environ.get("OPERATOR_TOKEN")
     if not token:
         raise ValueError("OPERATOR_TOKEN required for official directory activation")
-    base = config["guardian_url"].removesuffix("/guardian")
+    base = identity_service_base(config["guardian_url"])
     suffix = {
         "pending": "/directory/shards/pending",
         "active": "/directory/shards",
@@ -40,13 +41,8 @@ def directory_status(config, status):
     body = {"url": config["public_herald_url"]}
     if status == "retired":
         body["status"] = "retired"
-    request = Request(
-        base + suffix, data=json.dumps(body).encode(),
-        headers={"Content-Type": "application/json", "Authorization": "Bearer " + token}, method="POST",
-    )
     try:
-        with urlopen(request, timeout=30) as response:
-            result = json.load(response)
+        result = service_json(base + suffix, body)
     except HTTPError as error:
         if status == "pending" and error.code == 404:
             error.close()
