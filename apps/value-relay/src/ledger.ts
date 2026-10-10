@@ -1,4 +1,4 @@
-import { rpcAt, readLedgerGame, ledgerInteger, readConfirmedLedgerHead } from "@realms-world/value-ledger";
+import { rpcAt, ledgerInteger, readConfirmedLedgerHead } from "@realms-world/value-ledger";
 import { Account, hash, RpcProvider, type EmittedEvent } from "starknet";
 import { blitzCommitment } from "@realms-world/value-ledger/commitment";
 import {
@@ -21,39 +21,51 @@ interface LedgerCredentials {
 }
 /** Replay-safe result delivery: an already finalized matching result is complete, a different one is refused. */
 export const ledgerResultAdapter =
-  (credentials: LedgerCredentials): RelayPorts["ledger"]["postResult"] =>
+  (credentials: LedgerCredentials, slotId: number): RelayPorts["ledger"]["postResult"] =>
   (result) =>
     relayOperation("post Blitz result", async () => {
       if (BigInt(blitzCommitment(result)) !== BigInt(result.commitment)) throw new Error("invalid_result_commitment");
       const provider = rpcAt(credentials.rpcUrl);
       const head = (await readConfirmedLedgerHead(provider)).number;
-      const game = await readLedgerGame(provider, credentials.contractAddress, result, head);
-      if (game.finalized) {
-        if (BigInt(game.commitment) !== BigInt(result.commitment)) throw new Error("ledger_result_differs");
+      const existing = await resultCommitment(provider, credentials.contractAddress, result, head);
+      if (BigInt(existing) !== 0n) {
+        if (BigInt(existing) !== BigInt(result.commitment)) throw new Error("ledger_result_differs");
         return;
       }
       const account = new Account({ provider, address: credentials.accountAddress, signer: credentials.privateKey });
       const transaction = await account.execute({
         contractAddress: credentials.contractAddress,
         entrypoint: "apply_results",
-        calldata: resultCalldata(result),
+        calldata: resultCalldata(result, slotId),
       });
       const receipt = await provider.waitForTransaction(transaction.transaction_hash);
       if (receipt.isReverted()) throw new Error("ledger_result_reverted");
-      const posted = await readLedgerGame(
+      const posted = await resultCommitment(
         provider,
         credentials.contractAddress,
         result,
         (await readConfirmedLedgerHead(provider)).number,
       );
-      if (!posted.finalized || BigInt(posted.commitment) !== BigInt(result.commitment))
-        throw new Error("ledger_result_not_recorded");
+      if (BigInt(posted) !== BigInt(result.commitment)) throw new Error("ledger_result_not_recorded");
     });
 
-const resultCalldata = (result: BlitzResult): string[] => {
-  const calldata = [result.chainId, String(result.gameId), String(result.rows.length)];
+const resultCalldata = (result: BlitzResult, slotId: number): string[] => {
+  const calldata = [result.chainId, String(slotId), String(result.gameId), String(result.rows.length)];
   for (const row of result.rows) calldata.push(row.wallet, String(row.rank));
   return calldata;
+};
+
+const resultCommitment = async (provider: RpcProvider, address: string, result: BlitzCommitment, head: number) => {
+  const fields = await provider.callContract(
+    {
+      contractAddress: address,
+      entrypoint: "get_result_commitment",
+      calldata: [result.chainId, String(result.gameId)],
+    },
+    head,
+  );
+  if (fields.length !== 1) throw new Error("invalid_result_commitment");
+  return fields[0]!;
 };
 
 /** Confirmed ledger events are the monitor's enumeration; each cursor pins the head across all pages. */
@@ -147,8 +159,8 @@ const decodePayment = (event: EmittedEvent): Omit<PaidClaim, "paidAt"> => {
   };
 };
 const decodeResult = (event: EmittedEvent): BlitzCommitment => {
-  if (event.keys.length !== 3 || event.data.length !== 4) throw new Error("invalid_result_event");
-  return { chainId: event.keys[1]!, gameId: ledgerInteger(event.keys[2]!), commitment: event.data[1]! };
+  if (event.keys.length !== 3 || event.data.length !== 5) throw new Error("invalid_result_event");
+  return { chainId: event.keys[1]!, gameId: ledgerInteger(event.keys[2]!), commitment: event.data[2]! };
 };
 const u256 = (low: string, high: string): string => {
   const limbs = [BigInt(low), BigInt(high)];
