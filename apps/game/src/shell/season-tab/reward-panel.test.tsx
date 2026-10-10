@@ -100,10 +100,9 @@ it("shows the sword's doubled gain and a sealed chest's band only, opened by the
   ]);
 });
 
-it("keeps a chest to trade, waits on the draw, and shows what an opened one delivered", async () => {
-  const kept = await mount(SEALED);
-  await press(kept, "Keep");
-  expect(kept.textContent).toContain("Tradeable");
+it("offers Open alone on a sealed chest, waits on the draw, and shows what an opened one delivered", async () => {
+  const sealed = await mount(SEALED);
+  expect([...sealed.querySelectorAll("button")].map((button) => button.textContent)).toEqual(["Open"]);
 
   expect((await mount({ ...SEALED, seasonEnd: 1 })).textContent).toContain("No LORDS now");
   expect((await mount({ ...SEALED, chest: { ...OPENED, finished: false }, held: false })).textContent).toContain(
