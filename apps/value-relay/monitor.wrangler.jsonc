@@ -13,6 +13,7 @@
       "vars": { "ENVIRONMENT": "staging" },
       "routes": [{ "pattern": "play.dev-realms.party/api/operator/monitor/*", "zone_name": "dev-realms.party" }],
       "services": [
+        { "binding": "LAUNCH", "service": "realms-launch-staging", "entrypoint": "ValueLaunchDirectory" },
         { "binding": "IDENTITY", "service": "realms-identity-staging", "entrypoint": "ValueIdentity" },
         { "binding": "RELAY_REPORT", "service": "realms-value-relay-staging", "entrypoint": "RelayDiagnostics" },
       ],
@@ -25,6 +26,7 @@
       "vars": { "ENVIRONMENT": "production" },
       "routes": [{ "pattern": "play.realms.party/api/operator/monitor/*", "zone_name": "realms.party" }],
       "services": [
+        { "binding": "LAUNCH", "service": "realms-launch", "entrypoint": "ValueLaunchDirectory" },
         { "binding": "IDENTITY", "service": "realms-identity", "entrypoint": "ValueIdentity" },
         { "binding": "RELAY_REPORT", "service": "realms-value-relay", "entrypoint": "RelayDiagnostics" },
       ],

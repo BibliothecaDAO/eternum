@@ -5,6 +5,7 @@ import { ValueMonitor } from "./monitor-worker";
 
 const calls = vi.hoisted(() => ({ pause: vi.fn(), season: vi.fn() }));
 vi.mock("cloudflare:workers", () => ({
+  WorkerEntrypoint: class {},
   DurableObject: class {
     constructor(
       public ctx: unknown,
@@ -41,6 +42,7 @@ const monitor = () => {
     {
       LEDGER_RPC_URL: "https://ledger.test",
       ENVIRONMENT: "staging",
+      LAUNCH: { rosterCohorts: async () => [] },
       IDENTITY: { shards: async () => [] },
       RELAY_REPORT: { held: async () => [] },
     } as never,

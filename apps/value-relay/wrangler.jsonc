@@ -14,6 +14,7 @@
       "routes": [{ "pattern": "play.dev-realms.party/api/value/*", "zone_name": "dev-realms.party" }],
       "workers_dev": false,
       "services": [
+        { "binding": "ROSTER_MONITOR", "service": "realms-value-monitor-staging", "entrypoint": "RosterMonitor" },
         { "binding": "IDENTITY", "service": "realms-identity-staging", "entrypoint": "ValueIdentity" },
         { "binding": "IDENTITY_HTTP", "service": "realms-identity-staging" },
       ],
@@ -26,6 +27,7 @@
       "routes": [{ "pattern": "play.realms.party/api/value/*", "zone_name": "realms.party" }],
       "workers_dev": false,
       "services": [
+        { "binding": "ROSTER_MONITOR", "service": "realms-value-monitor", "entrypoint": "RosterMonitor" },
         { "binding": "IDENTITY", "service": "realms-identity", "entrypoint": "ValueIdentity" },
         { "binding": "IDENTITY_HTTP", "service": "realms-identity" },
       ],

@@ -43,6 +43,7 @@ interface RelayEnv {
   ENVIRONMENT: import("@realms-world/chain").ValueEnvironment;
   LEDGER_OPERATOR_ADDRESS: string;
   LEDGER_OPERATOR_PRIVATE_KEY: string;
+  ROSTER_MONITOR: { verifyRoster(chainId: string, gameId: number): Promise<number> };
   IDENTITY: ShardDirectory & {
     l2ChainId(): Promise<string>;
     realmOwnerOf(realmId: string): Promise<string>;
@@ -194,7 +195,13 @@ export class ValueRelay extends DurableObject<RelayEnv> {
   }
   postResult(result: import("./ports").BlitzResult) {
     return Effect.runPromise(
-      this.ledgerPermit(ledgerResultAdapter(ledgerCredentialsOf(this.env))(result), [result.chainId]),
+      this.ledgerPermit(
+        relayOperation("verify and post paid game results", async () => {
+          const slotId = await this.env.ROSTER_MONITOR.verifyRoster(result.chainId, result.gameId);
+          await Effect.runPromise(ledgerResultAdapter(ledgerCredentialsOf(this.env), slotId)(result));
+        }),
+        [result.chainId],
+      ),
     );
   }
   async shardHealth() {

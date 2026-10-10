@@ -3,6 +3,7 @@ import { beforeEach, expect, it, vi } from "vitest";
 import worker, { ValueMonitor } from "./monitor-worker";
 
 vi.mock("cloudflare:workers", () => ({
+  WorkerEntrypoint: class {},
   DurableObject: class {
     constructor(
       public ctx: unknown,
@@ -38,6 +39,7 @@ const fixture = () => {
     ctx as unknown as DurableObjectState,
     {
       LEDGER_RPC_URL: "https://ledger.test",
+      LAUNCH: { rosterCohorts: async () => [] },
       IDENTITY: { l2ChainId: async () => "0x1", shards: async () => [] },
     } as never,
   );

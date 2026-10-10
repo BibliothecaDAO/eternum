@@ -163,6 +163,25 @@ export class D1LaunchStore implements LaunchServiceStore {
     return (await statement.all<LaunchRunRow>()).results.map(toRun);
   }
 
+  async rosterCohorts(): Promise<import("@realms-world/value-ledger").SlotCohort[]> {
+    const { results } = await this.db
+      .prepare(
+        "SELECT * FROM launch_runs WHERE kind='game' AND slot_id IS NOT NULL ORDER BY chain_id,slot_id,json_extract(request,'$.groupIndex')",
+      )
+      .all<LaunchRunRow>();
+    const cohorts = new Map<string, import("@realms-world/value-ledger").SlotCohort>();
+    for (const row of results) {
+      const key = `${row.chain_id}:${row.slot_id}`;
+      const cohort = cohorts.get(key) ?? { chainId: row.chain_id, slotId: row.slot_id!, complete: true, games: [] };
+      const gameId = row.summary ? declaredGameId(row) : null;
+      const request = JSON.parse(row.request) as { groupIndex: number };
+      if (row.status !== "complete" || gameId === null) cohort.complete = false;
+      if (gameId !== null) cohort.games.push({ gameId, groupIndex: request.groupIndex });
+      cohorts.set(key, cohort);
+    }
+    return [...cohorts.values()];
+  }
+
   async playerDirectoryGames(): Promise<{ chainId: string; games: { gameId: number; slotId: number | null }[] }[]> {
     const { results } = await this.db
       .prepare(
