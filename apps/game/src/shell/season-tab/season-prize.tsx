@@ -10,7 +10,7 @@ import { useRealmsPlayer, useRecentResults } from "../herald";
 import { Loading } from "../loading";
 import { ServiceFailure } from "../service-failure";
 import { useNowSeconds } from "../use-now";
-import { claimSeasonCall, lordsOf } from "../value/ledger";
+import { claimSeasonCall, environmentLedger, lordsOf } from "../value/ledger";
 import { FailureLine } from "../sign-in/failure-line";
 import { SEASON_PRIZE_WORDS } from "../words";
 import { placeShares, type SeasonPrize, seasonSourceOf, seasonState, useSeasonPrize } from "./blitz-season";
@@ -25,14 +25,15 @@ const PLACES_SHOWN = 3;
 /**
  * The Blitz season's prize on Season, read from the player's own newest paid game: the pool now and the time left,
  * what the first paid places and the last would take of it today; at the end the review hour, then the winner's claim
- * from the wallet that paid in that game.
+ * from the seat's wallet in that game. A ledger not deployed on this environment is said so.
  */
 export const SeasonPrizePanel = () => {
   const { data: player } = useRealmsPlayer();
   const history = useRecentResults(20, player);
   const source = seasonSourceOf(history.data?.games ?? []);
-  const prize = useSeasonPrize(source, player ?? null);
-  if (source?.kind === "broken") return <FailureLine line={SEASON_PRIZE_WORDS.unreadable} />;
+  const ledger = environmentLedger();
+  const prize = useSeasonPrize(ledger, source);
+  if (source && !ledger) return <FailureLine line={SEASON_PRIZE_WORDS.unreadable} />;
   if (prize.isError) return <ServiceFailure service="ledger" error={prize.error} retry={() => void prize.refetch()} />;
   if (!prize.data) return null;
   return <Prize prize={prize.data} onClaimed={() => void prize.refetch()} />;
@@ -72,7 +73,6 @@ const Prize = ({ prize, onClaimed }: { prize: SeasonPrize; onClaimed: () => void
         <Share prize={prize} state={state} now={now} />
       )}
       {state === "claim" &&
-        prize.wallet &&
         (signing ? (
           <Suspense fallback={<Loading />}>
             <WalletSign

@@ -7,10 +7,18 @@ const terms = (overrides: Partial<EntryTerms> = {}): EntryTerms => ({
   prices: { seat: 500n * WEI, sword: 500n * WEI, shield: 500n * WEI },
   split: { protocolCutBps: 2000, chestLordsBps: 500 },
   cancelled: false,
-  start: 1_000,
-  seats: { taken: 17, total: 24 },
+  close: 1_000,
   credits: { swords: 0, shields: 0 },
-  registration: { registered: false, sword: false, shield: false, swordCredit: false, shieldCredit: false, paid: 0n },
+  registration: {
+    registered: false,
+    sword: false,
+    shield: false,
+    swordCredit: false,
+    shieldCredit: false,
+    paid: 0n,
+    refundable: false,
+    gameId: 0,
+  },
   lordsToken: "0x10e5",
   lords: 2_140n * WEI,
   ...overrides,
@@ -42,6 +50,8 @@ it("tells choosing, short of LORDS, seated, refund and refunded apart", () => {
     swordCredit: true,
     shieldCredit: false,
     paid: 1_000n * WEI,
+    refundable: false,
+    gameId: 0,
   };
   expect(entryState(terms({ registration: seated }), both, 900)).toBe("seated");
   expect(entryState(terms({ registration: seated, cancelled: true }), both, 900)).toBe("refund");
@@ -49,21 +59,39 @@ it("tells choosing, short of LORDS, seated, refund and refunded apart", () => {
   expect(entryState(terms({ registration: back, cancelled: true }), both, 900)).toBe("refunded");
 });
 
-it("closes the entry once the game has started, for anyone not already seated", () => {
+it("closes the entry once the slot has closed, for anyone not already registered", () => {
   const both = { sword: true, shield: true };
   expect(entryState(terms(), both, 999)).toBe("choose");
   expect(entryState(terms(), both, 1_000)).toBe("closed");
   expect(entryState(terms({ lords: 0n }), both, 2_000)).toBe("closed");
-  const seated = { registered: true, sword: false, shield: false, swordCredit: false, shieldCredit: false, paid: 1n };
+  const seated = {
+    registered: true,
+    sword: false,
+    shield: false,
+    swordCredit: false,
+    shieldCredit: false,
+    paid: 1n,
+    refundable: false,
+    gameId: 0,
+  };
   expect(entryState(terms({ registration: seated }), both, 2_000)).toBe("seated");
   expect(entryState(terms({ registration: seated, cancelled: true }), both, 2_000)).toBe("refund");
 });
 
-it("offers no payment once the ledger has registered its cap, a Duel's two as a Blitz's twenty-four", () => {
+it("refunds a registration the slot's close left unseated, as a cancelled slot's, never one a game consumed", () => {
   const both = { sword: false, shield: false };
-  expect(entryState(terms({ seats: { taken: 23, total: 24 } }), both, 900)).toBe("choose");
-  expect(entryState(terms({ seats: { taken: 24, total: 24 } }), both, 900)).toBe("full");
-  expect(entryState(terms({ seats: { taken: 2, total: 2 } }), both, 900)).toBe("full");
-  const seated = { registered: true, sword: false, shield: false, swordCredit: false, shieldCredit: false, paid: 1n };
-  expect(entryState(terms({ seats: { taken: 2, total: 2 }, registration: seated }), both, 900)).toBe("seated");
+  const unseated = {
+    registered: true,
+    sword: false,
+    shield: false,
+    swordCredit: false,
+    shieldCredit: false,
+    paid: 500n * WEI,
+    refundable: true,
+    gameId: 0,
+  };
+  expect(entryState(terms({ registration: unseated }), both, 2_000)).toBe("refund");
+  expect(entryState(terms({ registration: { ...unseated, paid: 0n } }), both, 2_000)).toBe("refunded");
+  // A registration is uncapped: no count of others ever turns a payer away before close.
+  expect(entryState(terms(), both, 900)).toBe("choose");
 });

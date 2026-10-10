@@ -41,15 +41,16 @@ import { SeasonPrizePanel } from "./season-prize";
 
 const WEI = 10n ** 18n;
 const NOW = Math.floor(Date.now() / 1000);
-const LEDGER = { address: "0x1ed9e7", chainId: "0x534e5f4d41494e", shard: "0x52" };
 const unmounts: (() => Promise<void>)[] = [];
 
-const blitz = (gameId: number, start: number) => ({
+/** A Blitz game filled from slot `slotId`, the player seated with `wallet` on its roster. */
+const blitz = (gameId: number, start: number, slotId = gameId, wallet = "0x4a1") => ({
   chainId: "0x52",
   game_id: gameId,
   mode: "blitz",
   clock: { start_main_at: start },
-  entry: { kind: "paid", ledger: { ...LEDGER, gameId } },
+  slotId,
+  player_state: { registered: true, settled: true, roster_wallet: wallet, structures: [] },
 });
 
 const mount = async (seed?: (client: QueryClient) => void) => {
@@ -77,7 +78,9 @@ const mount = async (seed?: (client: QueryClient) => void) => {
 const mountPrize = (prize: SeasonPrize) => {
   listed.directory = [];
   listed.history = [blitz(7, 1)];
-  return mount((client) => client.setQueryData(seasonPrizeKey({ ...LEDGER, gameId: 7 }, "0x7e"), prize));
+  return mount((client) =>
+    client.setQueryData(seasonPrizeKey({ slot: { shard: "0x52", slotId: 7 }, wallet: "0x4a1" }), prize),
+  );
 };
 
 const prize = (season: Partial<SeasonPrize["season"]>, rest: Partial<SeasonPrize> = {}): SeasonPrize => ({
@@ -137,17 +140,16 @@ it("waits out the review hour, then claims a winner's share from the wallet that
   );
 });
 
-it("keeps a won season's claim when the next season's first game is listed, signed by the wallet that paid", async () => {
+it("keeps a won season's claim when the next season's first game is listed, signed by the seat's wallet", async () => {
   const W1 = "0xa11";
-  // Season 3: game 5, paid by W1, over and posted with W1 on the list. Season 4: game 9, just created.
+  // Season 3: game 5 from slot 5, the player seated with W1, over and posted with W1 on the list. Season 4: game 9.
   const seasons: Record<string, { end: number; posted: boolean }> = {
     "3": { end: NOW - 7200, posted: true },
     "4": { end: NOW + 30 * 86400, posted: false },
   };
   ledger.views = {
-    // season_id, exists, preset, start, end, pool (2), commitment, registered_count, cancelled, finalized, limit
-    get_game: ([, gameId]) => [gameId === "5" ? "3" : "4", "1", "4", "0", "0", "0", "0", "0", "2", "0", "0", "24"],
-    get_registered_player: ([, , index]) => (index === "0" ? ["0xb0b", "0x07"] : [W1, "0x7e"]),
+    // Slot: season_id, exists, preset, close, end, pool (2), registered_count, cancelled
+    get_slot: ([, slotId]) => [slotId === "5" ? "3" : "4", "1", "4", "0", "0", "0", "0", "2", "0"],
     // chest reserve (2), participants, top count, posted, challenged, review until, started, paid (2), exists, preset,
     // start, end, pool (2)
     get_season: ([id]) => [
@@ -160,7 +162,7 @@ it("keeps a won season's claim when the next season's first game is listed, sign
     balance_of: () => [String(WEI), "0"],
   };
   listed.directory = [blitz(9, NOW + 3600)];
-  listed.history = [blitz(5, NOW - 86400)];
+  listed.history = [blitz(5, NOW - 86400, 5, W1)];
   const panel = await mount();
   await act(async () => new Promise((resolve) => setTimeout(resolve, 0)));
   // The player's own season 3, its share still to claim; the next season's game listed in the directory changes nothing.

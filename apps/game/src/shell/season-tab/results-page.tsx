@@ -11,6 +11,9 @@ import { SeasonRow } from "@/ui/design-system/kit/season-row";
 import { CONTINUE, SEASON_ENDINGS, SEASON_OVER, YOU_PLACED } from "@/ui/design-system/kit/words";
 import { boardRows, findOwnEntry, wholeLords } from "@/ui/features/frontier/board/standings";
 
+import { rosterWalletOf } from "@/runtime/world/directory";
+
+import { gameKeyOf, gameSlotKeyOf } from "../blitz-rows";
 import { clockLine } from "../clock-chip";
 import { formatPoints, ordinal } from "../format";
 import { isSameStarknetAddress } from "@realms-world/identity";
@@ -26,8 +29,8 @@ import { gameKey } from "../play/next-step";
 import { markResultsSeen } from "../play/seen-results";
 import { FailureCard } from "../play/state-card";
 import { useNowSeconds } from "../use-now";
+import { environmentLedger } from "../value/ledger";
 import { FailureLine } from "../sign-in/failure-line";
-import { directoryGameEntryOf } from "../value/game-entry";
 import { REWARD_WORDS, SEASON_WORDS, WORDS } from "../words";
 import { gameTitle } from "./history-row";
 import { gameOfResults, isFromList } from "./results-link";
@@ -200,8 +203,6 @@ const BlitzResult = ({
   const own = player ? entries.find((entry) => isSameStarknetAddress(entry.address, player)) : undefined;
   const top = entries.slice(0, ROWS[layout]);
   const rows = own && !top.includes(own) ? [...top, own] : top;
-  // A game played on the ledger shows the paying wallet's rating change and chest under the board.
-  const entry = game ? directoryGameEntryOf(game) : null;
   return (
     <ResultLayout
       painting={ageOf("blitz").painting}
@@ -236,8 +237,7 @@ const BlitzResult = ({
               );
             })}
           </ol>
-          {entry?.kind === "paid" && player && <RewardPanel ledger={entry.ledger} account={player} />}
-          {entry?.kind === "broken" && <FailureLine line={REWARD_WORDS.unreadable} />}
+          {game && <GameReward game={game} />}
         </div>
       }
       buttons={
@@ -326,4 +326,18 @@ const FrontierResult = ({
       }
     />
   );
+};
+
+/**
+ * Under a paid Blitz's board: the rating change and chest of the player's seat, read on the environment's ledger by
+ * the game's key, for the wallet the shard's roster froze for the player. Nothing for a game outside a slot or a
+ * player off its roster; a ledger not deployed on this environment is said so.
+ */
+const GameReward = ({ game }: { game: DirectoryGame }) => {
+  const slot = gameSlotKeyOf(game);
+  const owner = rosterWalletOf(game);
+  if (!slot || !owner) return null;
+  const ledger = environmentLedger();
+  if (!ledger) return <FailureLine line={REWARD_WORDS.unreadable} />;
+  return <RewardPanel ledger={ledger} keys={{ game: gameKeyOf(game), slot }} owner={owner} />;
 };

@@ -6,15 +6,17 @@ import {
   decodeChestContent,
   decodeCredits,
   decodeBlitzSeason,
-  decodeGame,
   decodeLedgerPreset,
+  decodeLedgerSlot,
   decodePlayerResult,
   decodeRegistration,
 } from "@realms-world/value-ledger/codecs";
 
+import { L2_LEDGER, l2Provider } from "@/runtime/l2-rpc";
+
 /**
- * The client's side of GameLedger on Starknet (infra-pr/ledger-interface.txt): the reads the value screens show and
- * the calls a player's own wallet signs, decoded by the ledger's one codec module.
+ * The client's side of GameLedger on Starknet: the reads the value screens show and the calls a player's own wallet
+ * signs, on the environment's one ledger, decoded by the ledger's one codec module.
  */
 
 export interface LedgerPrices {
@@ -51,8 +53,14 @@ export interface EntrySplit {
   chestLordsBps: number;
 }
 
-/** A game on the ledger: its shard's chain id and its game id there. */
-interface GameKey {
+/** A registration slot on the ledger: the shard its games are created on, and its slot number there. */
+export interface SlotKey {
+  shard: string;
+  slotId: number;
+}
+
+/** A played game on the ledger, for its result and chests: its shard's chain id and its game id there. */
+export interface GameKey {
   shard: string;
   gameId: number;
 }
@@ -67,15 +75,15 @@ export const lordsShortOf = (wei: bigint): number => Number((wei + LORDS_UNIT - 
 
 const CHEST_OPENED = hash.getSelectorFromName("ChestOpened");
 
-const keyCalldata = (key: GameKey) => [key.shard, String(key.gameId)];
+const keyCalldata = (key: SlotKey | GameKey) => [key.shard, String("slotId" in key ? key.slotId : key.gameId)];
 const u256 = (value: bigint) => [String(value & ((1n << 128n) - 1n)), String(value >> 128n)];
 const flag = (value: boolean) => (value ? "1" : "0");
 
-/** register(key, sword, shield), after approving the ledger's LORDS token for what the flags and seat cost in cash. */
+/** register(slot, sword, shield), after approving the ledger's LORDS token for what the flags and seat cost in cash. */
 export const registerCalls = (
   ledger: string,
   lords: string,
-  key: GameKey,
+  key: SlotKey,
   sword: boolean,
   shield: boolean,
   cash: bigint,
@@ -97,8 +105,8 @@ export const claimSeasonCall = (ledger: string, seasonId: number): Call => ({
   calldata: [String(seasonId)],
 });
 
-/** refund(key): a cancelled game's paid LORDS and spent credits come back to the payer. */
-export const refundCall = (ledger: string, key: GameKey): Call => ({
+/** refund(slot): a cancelled slot's, or an unseated registration's, paid LORDS and spent credits come back to the payer. */
+export const refundCall = (ledger: string, key: SlotKey): Call => ({
   contractAddress: ledger,
   entrypoint: "refund",
   calldata: keyCalldata(key),
@@ -146,7 +154,7 @@ export const ledgerReader = (provider: ProviderInterface, ledger: string) => {
     lordsToken: async () => (await view("lords", []))[0],
     chestCollection: async () => (await view("chest_collection", []))[0],
     balanceOf,
-    game: async (key: GameKey) => decodeGame(await view("get_game", keyCalldata(key))),
+    slot: async (key: SlotKey) => decodeLedgerSlot(await view("get_slot", keyCalldata(key))),
     preset: async (presetId: number) => presetTermsOf(decodeLedgerPreset(await view("get_preset", [String(presetId)]))),
     season: async (seasonId: number) => blitzSeasonOf(decodeBlitzSeason(await view("get_season", [String(seasonId)]))),
     seasonWinner: async (seasonId: number, index: number) => {
@@ -155,13 +163,8 @@ export const ledgerReader = (provider: ProviderInterface, ledger: string) => {
     },
     seasonClaimed: async (seasonId: number, owner: string) =>
       BigInt((await view("season_claimed", [String(seasonId), owner]))[0]) !== 0n,
-    registration: async (key: GameKey, owner: string) =>
+    registration: async (key: SlotKey, owner: string) =>
       decodeRegistration(await view("get_registration", [...keyCalldata(key), owner])),
-    /** The game's registration at an index, in the order they were made: the wallet that paid and its account. */
-    registeredPlayer: async (key: GameKey, index: number) => {
-      const [wallet, account] = await view("get_registered_player", [...keyCalldata(key), String(index)]);
-      return { wallet, account };
-    },
     credits: async (owner: string) => decodeCredits(await view("get_credits", [owner])),
     result: async (key: GameKey, owner: string) =>
       decodePlayerResult(await view("get_player_result", [...keyCalldata(key), owner])),
@@ -181,3 +184,12 @@ export const ledgerReader = (provider: ProviderInterface, ledger: string) => {
       (await provider.callContract({ contractAddress: chest, entrypoint: "owner_of", calldata: u256(tokenId) }))[0],
   };
 };
+
+/**
+ * The environment's one ledger and its reads (the address from its address book, never from a service's reply); null
+ * until the ledger is deployed on the environment's L2, when every paid surface shows that it cannot be read.
+ */
+export const environmentLedger = () =>
+  L2_LEDGER === null ? null : { address: L2_LEDGER, ...ledgerReader(l2Provider(), L2_LEDGER) };
+
+export type EnvironmentLedger = NonNullable<ReturnType<typeof environmentLedger>>;
