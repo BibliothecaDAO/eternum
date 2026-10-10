@@ -1,11 +1,8 @@
 import { formatClockTime } from "@/ui/design-system/kit/time";
-import type { PlaytestSlot } from "@/ui/features/factory-v2/api/factory-worker";
 
 import type { BlitzRow } from "../blitz-rows";
-import { BLITZ_SEATS, registrationFor } from "../blitz-slot";
 import { isSameStarknetAddress } from "@realms-world/identity";
 import { ageOf } from "../play/ages";
-import { gameEntryOf } from "../value/game-entry";
 
 /** A lobby's title is its game's start time: "Blitz 16:30". */
 export const lobbyTitle = (row: BlitzRow) =>
@@ -24,42 +21,23 @@ export type Seat = { account: string | null; own: boolean; prepared: boolean | u
 /** What a lobby offers: the one action, or the fact that stands where it would. */
 export type LobbyStep =
   | { kind: "open" }
-  | { kind: "join" }
-  | { kind: "joined" }
   | { kind: "preparing" }
   | { kind: "enter" }
   | { kind: "watch" }
   | { kind: "full"; next: BlitzRow | undefined };
 
-/** The game a slot is filling now: registrations past a full roster start the next game's seats. */
-const fillingNow = (slot: PlaytestSlot) => {
-  const start = Math.floor(Math.max(0, slot.registrations.length - 1) / BLITZ_SEATS) * BLITZ_SEATS;
-  return slot.registrations.slice(start);
-};
-
 /**
- * The seats a lobby draws. A slot's are the launch service's registrations for the game it is filling now; a launched
- * game's are Herald's fixed roster, each ticked once its player's realm is ready. A Herald that does not serve the
- * roster leaves the taken seats unnamed: as many as the game counts, each drawn as a dash.
+ * The seats a lobby draws. A slot's are its registrations on the ledger, unnamed; a launched game's are Herald's fixed
+ * roster, each ticked once its player's realm is ready. A Herald that does not serve the roster leaves the taken seats
+ * unnamed: as many as the game counts, each drawn as a dash.
  */
 export const seatsOf = (
   row: BlitzRow,
-  realmsId: string | undefined,
   player: string | null,
-  /** The row's taken seats (useRowSeats): for a paid slot the ledger's count, undefined until it answers. */
+  /** The row's taken seats (useRowSeats): for a slot the ledger's count, undefined until it answers. */
   filled: number | undefined,
 ): Seat[] => {
-  // A paid slot's seats are the ledger's registrations, unnamed: the launch service's list never fills.
-  if (row.kind === "slot" && gameEntryOf(row.slot, row.slot.name).kind !== "free")
-    return Array.from({ length: filled ?? 0 }, () => UNNAMED_SEAT);
-  if (row.kind === "slot")
-    return fillingNow(row.slot).map((registration) => ({
-      account: registration.account,
-      own:
-        realmsId !== undefined && registration.realmsId !== null && BigInt(registration.realmsId) === BigInt(realmsId),
-      prepared: undefined,
-    }));
-  if (!row.game.roster) return Array.from({ length: filled ?? 0 }, () => UNNAMED_SEAT);
+  if (row.kind === "slot" || !row.game.roster) return Array.from({ length: filled ?? 0 }, () => UNNAMED_SEAT);
   return row.game.roster.map(({ account, prepared }) => ({
     account,
     own: player !== null && isSameStarknetAddress(account, player),
@@ -70,15 +48,14 @@ export const seatsOf = (
 const UNNAMED_SEAT: Seat = { account: null, own: false, prepared: undefined };
 
 /**
- * The lobby's one step (spec 06): Join while the player has no seat, then nothing while they wait (a seat cannot be
- * given up), Preparing while the roster's realms are set up, Enter once theirs is open; Watch a live game they are not
- * on; and for a game whose seats are all taken, Full with the next game that still has seats.
+ * The lobby's one step (spec 06): Open a slot's lobby, where its entry is paid; Preparing while the roster's realms are
+ * set up, Enter once the player's is open; Watch a live game they are not on; and for a game whose seats are all taken,
+ * Full with the next slot.
  */
-export const lobbyStep = (row: BlitzRow, rows: readonly BlitzRow[], realmsId: string | undefined): LobbyStep => {
-  if (row.action === "open") return { kind: "open" };
-  if (row.kind === "slot") return registrationFor(row.slot, realmsId) ? { kind: "joined" } : { kind: "join" };
+export const lobbyStep = (row: BlitzRow, rows: readonly BlitzRow[]): LobbyStep => {
+  if (row.kind === "slot" || row.action === "open") return { kind: "open" };
   if (row.action === "enter") return { kind: "enter" };
   if (row.action === "registered") return { kind: "preparing" };
   if (row.startsAt === null) return { kind: "watch" };
-  return { kind: "full", next: rows.find((other) => other.kind === "slot" && other.action === "join") };
+  return { kind: "full", next: rows.find((other) => other.kind === "slot") };
 };

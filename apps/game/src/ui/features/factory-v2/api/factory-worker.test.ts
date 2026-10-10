@@ -1,14 +1,13 @@
 import { afterEach, expect, it, vi } from "vitest";
-import { createEternumGame, fetchFactoryRuns, registerPlaytestSlot, retryFactoryRun } from "./factory-worker";
+import { createEternumGame, fetchFactoryRuns, retryFactoryRun } from "./factory-worker";
 afterEach(() => vi.unstubAllGlobals());
-it("sends free-slot and Eternum requests through the authenticated service", async () => {
+it("sends Eternum requests through the authenticated service", async () => {
   const fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) });
   vi.stubGlobal("fetch", fetch);
-  await registerPlaytestSlot("evening");
   await createEternumGame("long-game", "2099-01-02T12:00:00Z");
-  expect(fetch.mock.calls.map(([url]) => url)).toEqual(["/api/slots/evening/register", "/api/factory/runs"]);
+  expect(fetch.mock.calls.map(([url]) => url)).toEqual(["/api/factory/runs"]);
   expect(fetch.mock.calls.every(([, init]) => init.credentials === "include" && init.method === "POST")).toBe(true);
-  expect(JSON.parse(fetch.mock.calls[1][1].body)).toEqual({
+  expect(JSON.parse(fetch.mock.calls[0][1].body)).toEqual({
     environment: "madara.eternum",
     gameName: "long-game",
     gameStartTime: "2099-01-02T12:00:00Z",

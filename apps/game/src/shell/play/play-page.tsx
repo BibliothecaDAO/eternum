@@ -3,7 +3,7 @@ import { Navigate } from "react-router-dom";
 import { useLayout } from "../frame/layout";
 import { PageFrame } from "../frame/page-frame";
 import { chooseSeason } from "../season";
-import { BlitzRows, useBlitzJoin } from "../blitz/blitz-pages";
+import { BlitzRows } from "../blitz/blitz-pages";
 import { OPEN_ON_NEWS } from "../learn/learn-page";
 import { NewsRows, newsItems } from "../learn/news";
 import { Panel } from "../panel";
@@ -27,19 +27,12 @@ import { FailureCard } from "./state-card";
  */
 export const PlayPage = () => {
   const facts = usePlayFacts();
-  const { join, refused } = useBlitzJoin(facts.slots.data?.slots);
   const layout = useLayout();
   const firstVisit = isFirstVisit(facts.step);
   const painting = firstVisit ? "dark-plains" : ageOf(ageOfStep(facts.step)).painting;
   return (
-    <PageFrame
-      painting={painting}
-      stage={firstVisit}
-      title={firstVisit ? undefined : WORDS.play}
-      notice={refused || undefined}
-      footer
-    >
-      {layout === "phone" ? <PhonePlay facts={facts} /> : <DesktopPlay facts={facts} join={join} />}
+    <PageFrame painting={painting} stage={firstVisit} title={firstVisit ? undefined : WORDS.play} footer>
+      {layout === "phone" ? <PhonePlay facts={facts} /> : <DesktopPlay facts={facts} />}
     </PageFrame>
   );
 };
@@ -88,11 +81,9 @@ const PhoneHero = () => (
   </section>
 );
 
-type Join = ReturnType<typeof useBlitzJoin>["join"];
-
-const DesktopPlay = ({ facts, join }: { facts: PlayFacts; join: Join }) => (
+const DesktopPlay = ({ facts }: { facts: PlayFacts }) => (
   <div className="flex flex-col gap-16 pb-12">
-    {isFirstVisit(facts.step) ? <Stage facts={facts} join={join} /> : <Table facts={facts} join={join} />}
+    {isFirstVisit(facts.step) ? <Stage facts={facts} /> : <Table facts={facts} />}
     <AgesBand />
     <ScrollBand />
     <CommunityBand />
@@ -100,7 +91,7 @@ const DesktopPlay = ({ facts, join }: { facts: PlayFacts; join: Join }) => (
 );
 
 /** B: the step's card, the season beside it, the other three ages under the card, then Blitz's games and the news. */
-const Table = ({ facts, join }: { facts: PlayFacts; join: Join }) => {
+const Table = ({ facts }: { facts: PlayFacts }) => {
   const season = chooseSeason(facts.games, facts.signedIn);
   return (
     <div className="grid grid-cols-12 items-start gap-5">
@@ -114,7 +105,7 @@ const Table = ({ facts, join }: { facts: PlayFacts; join: Join }) => {
         ))}
       </div>
       <div className="col-span-8 min-[1800px]:col-span-5">
-        <BlitzPanel title={PLAY_WORDS.blitzGames} facts={facts} join={join} limit={3} />
+        <BlitzPanel title={PLAY_WORDS.blitzGames} facts={facts} limit={3} />
       </div>
       {season && (
         <div className="hidden min-[1800px]:col-span-3 min-[1800px]:block">
@@ -126,7 +117,7 @@ const Table = ({ facts, join }: { facts: PlayFacts; join: Join }) => {
 };
 
 /** A first visit: the painting fills the screen, the lore line and Play free at its foot, the season and the next Blitz games beside them, the four ages along the bottom. */
-const Stage = ({ facts, join }: { facts: PlayFacts; join: Join }) => {
+const Stage = ({ facts }: { facts: PlayFacts }) => {
   const season = chooseSeason(facts.games, facts.signedIn);
   return (
     <div className="grid min-h-[calc(100vh-3rem)] grid-cols-12 grid-rows-[1fr_auto] gap-6">
@@ -138,7 +129,7 @@ const Stage = ({ facts, join }: { facts: PlayFacts; join: Join }) => {
       </div>
       <div className="col-span-4 col-start-9 flex flex-col gap-5">
         {season && <SeasonTop season={season} length={6} />}
-        <BlitzPanel title={PLAY_WORDS.nextBlitz} facts={facts} join={join} limit={2} />
+        <BlitzPanel title={PLAY_WORDS.nextBlitz} facts={facts} limit={2} />
       </div>
       <div className="col-span-12 grid grid-cols-4 gap-5">
         {AGES.map((age) => (
@@ -150,10 +141,10 @@ const Stage = ({ facts, join }: { facts: PlayFacts; join: Join }) => {
 };
 
 /** Blitz's next games; with the lists read and no game in them, no panel (an empty plate reads as broken). */
-const BlitzPanel = ({ title, facts, join, limit }: { title: string; facts: PlayFacts; join: Join; limit: number }) =>
+const BlitzPanel = ({ title, facts, limit }: { title: string; facts: PlayFacts; limit: number }) =>
   facts.slots.isSuccess && facts.directory.isSuccess && facts.blitz.length === 0 ? null : (
     <Panel icon="Pl" title={title}>
-      <BlitzRows facts={facts} join={join} limit={limit} />
+      <BlitzRows facts={facts} limit={limit} />
     </Panel>
   );
 

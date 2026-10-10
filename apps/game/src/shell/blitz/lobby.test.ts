@@ -6,35 +6,13 @@ import type { BlitzRow } from "../blitz-rows";
 import type { DirectoryGame } from "../herald";
 import { lobbyId, lobbyStep, seatsOf } from "./lobby";
 
-const ME = "0x7";
-
-const registration = (
-  index: number,
-  realmsId: string | null = `0x${100 + index}`,
-  gameNumber: number | null = null,
-) => ({
-  realmsId,
-  account: `0x${(1000 + index).toString(16)}`,
-  position: index,
-  gameNumber,
-});
-
-const slot = (registrations: PlaytestSlot["registrations"]): PlaytestSlot => ({
-  entry: { kind: "free" },
-  name: "blitz-1630",
-  closesAt: new Date(2_000_000).toISOString(),
-  frozenAt: null,
-  closed: false,
-  registrations,
-});
-
-const slotRow = (value: PlaytestSlot, action: BlitzRow["action"]): BlitzRow => ({
+const slotRow = (): BlitzRow => ({
   kind: "slot",
-  key: `slot:${value.name}`,
-  slot: value,
+  key: "slot:blitz-1630",
+  slot: { name: "blitz-1630", closesAt: new Date(2_000_000).toISOString() } as PlaytestSlot,
   startsAt: 2_000,
-  seats: { filled: value.registrations.length, total: 24 },
-  action,
+  seats: { filled: null, total: null },
+  action: "open",
 });
 
 const PLAYER = "0x00b7";
@@ -58,50 +36,22 @@ describe("a Blitz lobby", () => {
     expect(lobbyId({ key: "game:0xa:7" })).toBe("game-0xa-7");
   });
 
-  it("offers Join without a seat, then nothing while the joined player waits: a seat cannot be given up", () => {
-    const open = slot([registration(1)]);
-    expect(lobbyStep(slotRow(open, "join"), [], ME)).toEqual({ kind: "join" });
-    const joined = slot([registration(1), registration(2, ME)]);
-    expect(lobbyStep(slotRow(joined, "registered"), [], ME)).toEqual({ kind: "joined" });
-  });
-
   it("prepares until the roster's realms are ready, then Enter; Watch a live game the player is not on", () => {
-    expect(lobbyStep(gameRow("registered", 1_000), [], ME)).toEqual({ kind: "preparing" });
-    expect(lobbyStep(gameRow("enter", 1_000), [], ME)).toEqual({ kind: "enter" });
-    expect(lobbyStep(gameRow("spectate", null), [], ME)).toEqual({ kind: "watch" });
+    expect(lobbyStep(gameRow("registered", 1_000), [])).toEqual({ kind: "preparing" });
+    expect(lobbyStep(gameRow("enter", 1_000), [])).toEqual({ kind: "enter" });
+    expect(lobbyStep(gameRow("spectate", null), [])).toEqual({ kind: "watch" });
   });
 
-  it("calls a game full before the player joined, and names the next game with seats", () => {
-    const next = slotRow(slot([]), "join");
-    expect(lobbyStep(gameRow("spectate", 1_000), [next], ME)).toEqual({ kind: "full", next });
+  it("calls a game full before the player joined, and names the next slot", () => {
+    const next = slotRow();
+    expect(lobbyStep(gameRow("spectate", 1_000), [next])).toEqual({ kind: "full", next });
   });
 
-  it("seats the game a slot is filling now, the player's own ringed, with no preparation to tell yet", () => {
-    const filling = slot(
-      Array.from({ length: 26 }, (_, index) => registration(index, index === 25 ? ME : `0x${100 + index}`)),
-    );
-    expect(seatsOf(slotRow(filling, "registered"), ME, PLAYER, 26)).toEqual([
-      { account: registration(24).account, own: false, prepared: undefined },
-      { account: registration(25).account, own: true, prepared: undefined },
-    ]);
-  });
-
-  it("seats a paid slot from the ledger's registered count, unnamed, and none before the ledger answers", () => {
-    const paid = slotRow(
-      {
-        ...slot([registration(0, ME)]),
-        entry: {
-          kind: "paid",
-          ledger: { address: "0x1ed9e7", chainId: "0x534e5f4d41494e", shard: "0xa", gameId: 1 },
-        },
-      },
-      "open",
-    );
+  it("seats a slot from the ledger's registered count, unnamed, none before the ledger answers, and opens it", () => {
     const unnamed = { account: null, own: false, prepared: undefined };
-    expect(seatsOf(paid, ME, PLAYER, 3)).toEqual([unnamed, unnamed, unnamed]);
-    expect(seatsOf(paid, ME, PLAYER, undefined)).toEqual([]);
-    // Its step outside its own lobby is to open that lobby, never the free Join.
-    expect(lobbyStep(paid, [paid], ME)).toEqual({ kind: "open" });
+    expect(seatsOf(slotRow(), PLAYER, 3)).toEqual([unnamed, unnamed, unnamed]);
+    expect(seatsOf(slotRow(), PLAYER, undefined)).toEqual([]);
+    expect(lobbyStep(slotRow(), [])).toEqual({ kind: "open" });
   });
 
   it("seats a launched game from Herald's roster, each ticked once its player's realm is ready", () => {
@@ -109,14 +59,14 @@ describe("a Blitz lobby", () => {
       { account: "0xa1", prepared: true },
       { account: "0xb7", prepared: false },
     ];
-    expect(seatsOf(gameRow("registered", 1_000, roster, 2), ME, PLAYER, 2)).toEqual([
+    expect(seatsOf(gameRow("registered", 1_000, roster, 2), PLAYER, 2)).toEqual([
       { account: "0xa1", own: false, prepared: true },
       { account: "0xb7", own: true, prepared: false },
     ]);
   });
 
   it("leaves a launched game's taken seats unnamed and their preparation unknown when Herald serves no roster", () => {
-    const seats = seatsOf(gameRow("registered", 1_000, undefined, 3), ME, PLAYER, 3);
+    const seats = seatsOf(gameRow("registered", 1_000, undefined, 3), PLAYER, 3);
     expect(seats).toEqual(Array.from({ length: 3 }, () => ({ account: null, own: false, prepared: undefined })));
   });
 });

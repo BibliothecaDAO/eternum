@@ -8,8 +8,9 @@ import { DAY } from "@/ui/design-system/kit/words";
 import { type BlitzRow, leadBlitzRow } from "../blitz-rows";
 import { ClockChip, clockLine } from "../clock-chip";
 import { entryHref } from "../game-links";
+import { lobbyId } from "../blitz/lobby";
 import { chooseSeason, directoryDay, seasonRealm } from "../season";
-import { WORDS } from "../words";
+import { BLITZ_WORDS, WORDS } from "../words";
 import type { AgeMode } from "./ages";
 import type { PlayFacts } from "./play-facts";
 import { LiveChip, StateChip } from "./state-chip";
@@ -23,8 +24,7 @@ type AgeState = { chip: ReactNode; action: AgeAction | null };
 const NOTHING: AgeState = { chip: null, action: null };
 
 const blitzAction = (row: BlitzRow): AgeAction | null => {
-  if (row.kind === "slot")
-    return row.action === "join" ? { word: WORDS.join, icon: "Pl", to: "/blitz", role: "primary" } : null;
+  if (row.kind === "slot") return { word: BLITZ_WORDS.open, icon: "Pl", to: `/blitz/${lobbyId(row)}`, role: "primary" };
   if (row.action === "enter")
     return { word: WORDS.enter, icon: "Pl", to: entryHref(row.game, "play"), role: "primary" };
   if (row.action === "spectate")
