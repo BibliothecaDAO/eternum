@@ -2,7 +2,6 @@
 import { observeHarnessWorker, sendPreparedReport, superviseHarnessProcess } from "./terminal-report";
 import { launchFrontierSeason, runFrontierWorkload, type FrontierBurst } from "./frontier";
 import { FRONTIER_ACCELERATED_PRESET_ID } from "../../../config/source/common/native-preset-modes";
-import { createBuildOrderWorkload } from "./build-order";
 import { catchUncaughtFailures, recordWorkerFailure } from "./worker-boundary";
 import { runLayerRoundTrip } from "./layer-round-trip";
 import { closeHarnessSeason } from "./season-lifecycle";
@@ -11,18 +10,16 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { Worker, isMainThread, parentPort, workerData } from "node:worker_threads";
 import path from "node:path";
 import { DeviceSigner, deviceKeyOf } from "@bibliothecadao/eternum";
-import { splitPlaytestRoster } from "../../../apps/launch-service/src/slots";
 import { configureGameplayAccountSubmits, openShard, type Shard } from "@bibliothecadao/eternum/game-client";
 import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
 import { Account, logger } from "starknet";
 import { assertChainId } from "../../../packages/chain/chain-guard.js";
-import { createHarnessAdminProvider, launchHarnessGame, prepareOpenHomes } from "./game-setup";
+import { createHarnessAdminProvider, launchHarnessGame } from "./game-setup";
 import { createHarnessAccounts, type HarnessAccount } from "./account-factory";
 import { connectActorClients, connectHarnessGameClient } from "./game-client";
 import { createHarnessGame } from "./harness-game";
 import { HarnessProvider, measureHarnessRequests } from "./provider";
 import { prepareHarnessBots, runWorkload, type HarnessGameType, type TrackedTransaction } from "./driver";
-import { registerBotsThroughSlot } from "./slot-registration";
 import {
   HARNESS_OUTPUT_DIRECTORY,
   assessRosterRun,
@@ -34,7 +31,7 @@ import {
 } from "./report";
 
 interface HarnessCliOptions {
-  workload: "build-order" | "burst" | "cadence" | "frontier";
+  workload: "burst" | "cadence" | "frontier";
   functional: boolean;
   gameType: HarnessGameType;
   /** The preset new games are created from; the campaign names one per configuration. */
@@ -44,13 +41,9 @@ interface HarnessCliOptions {
   /** Worker threads that share one Frontier season, each playing its own slice of the accounts. */
   workers: number;
   bots: number;
-  games?: number;
-  accountsPerGame?: number;
   gameId?: number;
   preparedGamePath?: string;
   gameName?: string;
-  /** The slot shape: bots register into this free Blitz slot and the launch service creates the games. */
-  slot?: { name: string; launchUrl: string; closesInSeconds: number };
   intervalSeconds: number;
   minutes: number;
   rpcUrl: string;
@@ -71,31 +64,16 @@ export function parseHarnessArgs(args: string[]): HarnessCliOptions {
     process.exit(0);
   }
 
-  const games = values.games === undefined ? undefined : positiveInteger(values.games, "games");
-  const accountsPerGame =
-    games === undefined ? undefined : positiveInteger(values["accounts-per-game"] ?? "24", "accounts-per-game");
-  if (games !== undefined && values.bots !== undefined)
-    throw new Error("Use --games with --accounts-per-game, or --bots");
-  if (games === undefined && values["accounts-per-game"] !== undefined)
-    throw new Error("--accounts-per-game requires --games");
-  if (accountsPerGame !== undefined && accountsPerGame > 24)
-    throw new Error("Regular Blitz has at most 24 players per game");
-  const bots =
-    games === undefined
-      ? positiveInteger(values.bots ?? "96", "bots")
-      : positiveInteger(String(games * accountsPerGame!), "total accounts");
+  const bots = positiveInteger(values.bots ?? "96", "bots");
   const minutes = positiveNumber(values.minutes ?? "10", "minutes");
   const intervalSeconds = positiveNumber(values["interval-seconds"] ?? "15", "interval-seconds");
   const setupConcurrency = positiveInteger(values["setup-concurrency"] ?? "6", "setup-concurrency");
   const gameId = values["game-id"] === undefined ? undefined : positiveInteger(values["game-id"], "game-id");
-  const gameType = values["game-type"] ?? "blitz";
-  if (gameType !== "blitz" && gameType !== "eternum" && gameType !== "frontier")
-    throw new Error("--game-type must be blitz, eternum or frontier");
-  const workload =
-    values.workload ??
-    { frontier: "frontier", eternum: "cadence", blitz: "build-order" }[values["game-type"] ?? "blitz"];
-  if (workload !== "build-order" && workload !== "burst" && workload !== "cadence" && workload !== "frontier")
-    throw new Error("--workload must be build-order, burst, cadence or frontier");
+  const gameType = values["game-type"] ?? "frontier";
+  if (gameType !== "eternum" && gameType !== "frontier") throw new Error("--game-type must be eternum or frontier");
+  const workload = values.workload ?? (gameType === "frontier" ? "frontier" : "cadence");
+  if (workload !== "burst" && workload !== "cadence" && workload !== "frontier")
+    throw new Error("--workload must be burst, cadence or frontier");
   if ((gameType === "frontier") !== (workload === "frontier"))
     throw new Error("Frontier requires the frontier workload");
   const functional = values.functional === "true";
@@ -104,15 +82,9 @@ export function parseHarnessArgs(args: string[]): HarnessCliOptions {
   nativePresetForId(presetId);
   if (gameType === "frontier" && functional && bots < 2)
     throw new Error("Frontier design run requires both player profiles");
-  if (gameType === "eternum" && workload === "build-order") throw new Error("Build-order workload requires Blitz");
-  if (gameType !== "blitz" && games !== undefined) throw new Error("--games requires Regular Blitz");
-  if (gameType === "blitz" && gameId !== undefined)
-    throw new Error("Blitz harness creates its fixed roster before launching; omit --game-id");
-  if (bots > 24 && gameId !== undefined) throw new Error("An existing game cannot be split across games");
   if (gameId !== undefined && !values["game-name"]) {
     values["game-name"] = `game-${gameId}`;
   }
-  const slot = resolveSlotOptions(values, gameType, games);
   const frontierBurst = resolveFrontierBurst(values, gameType);
   const workers = positiveInteger(values.workers ?? "1", "workers");
   if (workers > 1 && gameType !== "frontier")
@@ -128,12 +100,9 @@ export function parseHarnessArgs(args: string[]): HarnessCliOptions {
     frontierBurst,
     workers,
     bots,
-    games,
-    accountsPerGame,
     gameId,
     preparedGamePath: values["prepared-game"],
     gameName: values["game-name"],
-    slot,
     intervalSeconds,
     minutes,
     rpcUrl: requiredEndpoint(values["rpc-url"], "rpc-url", "RPC_URL"),
@@ -145,8 +114,6 @@ export function parseHarnessArgs(args: string[]): HarnessCliOptions {
 /** One harness run; `run` ends with it, so no action it sent keeps being reconciled after the process is done. */
 async function main(run: AbortSignal): Promise<void> {
   const options = parseHarnessArgs(process.argv.slice(2));
-  requiredEnvironmentValue("DEPLOYER_ACCOUNT_ADDRESS", "native harness");
-  requiredEnvironmentValue("DEPLOYER_PRIVATE_KEY", "native harness");
   process.env.HERALD_URL = options.heraldUrl;
 
   const requests = options.functional ? undefined : measureHarnessRequests(options.rpcUrl);
@@ -224,7 +191,6 @@ async function main(run: AbortSignal): Promise<void> {
           })
         : await runWorkload({
             bots,
-            buildOrder: options.workload === "build-order" ? createBuildOrderWorkload(harnessGame) : undefined,
             burst: options.workload === "burst",
             game: harnessGame,
             intervalSeconds: options.intervalSeconds,
@@ -307,13 +273,8 @@ async function main(run: AbortSignal): Promise<void> {
 
 export const createHarnessProvider = (rpcUrl: string): HarnessProvider => new HarnessProvider(rpcUrl);
 
-async function resolveHarnessGame(
-  options: HarnessCliOptions,
-  rosterAccounts: string[],
-  shard: Shard,
-  publicProvider: HarnessProvider,
-): Promise<LaunchedGame> {
-  if (options.gameId !== undefined) {
+async function resolveHarnessGame(options: HarnessCliOptions, owners: string[]): Promise<LaunchedGame> {
+  if (options.gameId !== undefined && options.gameType !== "eternum") {
     return { gameId: options.gameId, gameName: options.gameName!, settlementTransactions: null };
   }
 
@@ -327,13 +288,11 @@ async function resolveHarnessGame(
     }
   }
   return launchHarnessGame({
+    gameId: options.gameId,
     gameName,
-    gameType: options.gameType,
     minutes: options.minutes,
     presetId: options.presetId,
-    rosterAccounts,
-    shard,
-    publicProvider,
+    owners,
   });
 }
 
@@ -351,29 +310,6 @@ function resolveFrontierBurst(values: Record<string, string>, gameType: HarnessG
   if (shape !== "booth" && shape !== "rollover") throw new Error("--frontier-burst must be booth or rollover");
   const window = values["burst-window-seconds"] ?? String(FRONTIER_BURST_WINDOW_SECONDS[shape]);
   return { shape, windowSeconds: positiveNumber(window, "burst-window-seconds") };
-}
-
-function resolveSlotOptions(
-  values: Record<string, string>,
-  gameType: HarnessGameType,
-  games: number | undefined,
-): HarnessCliOptions["slot"] {
-  if (values.slot === undefined) {
-    if (values["launch-url"] !== undefined || values["slot-closes-in-seconds"] !== undefined)
-      throw new Error("--launch-url and --slot-closes-in-seconds require --slot");
-    return undefined;
-  }
-  if (gameType !== "blitz") throw new Error("--slot registers into a free Blitz slot; use --game-type blitz");
-  if (games !== undefined || values["game-name"] !== undefined)
-    throw new Error("--slot lets the launch service split and name the games; omit --games and --game-name");
-  const launchUrl = values["launch-url"] ?? process.env.LAUNCH_URL;
-  if (!launchUrl)
-    throw new Error("--slot requires --launch-url or LAUNCH_URL (the app origin the launch API is served under)");
-  return {
-    name: values.slot,
-    launchUrl,
-    closesInSeconds: positiveInteger(values["slot-closes-in-seconds"] ?? "120", "slot-closes-in-seconds"),
-  };
 }
 
 function resolveMinimumThresholdActions(options: HarnessCliOptions, plannedActions: number): number {
@@ -402,12 +338,7 @@ function parseFlags(args: string[]): Record<string, string> {
         "game-type",
         "rpc-url",
         "herald-url",
-        "games",
-        "accounts-per-game",
         "preset",
-        "slot",
-        "launch-url",
-        "slot-closes-in-seconds",
         "frontier-burst",
         "burst-window-seconds",
         "workers",
@@ -468,55 +399,11 @@ async function prepareGames(
     shard,
     stopped: run,
   });
-  if (options.slot) return prepareSlotGames(options.slot, accounts);
-  const groups =
-    options.games !== undefined
-      ? Array.from({ length: options.games }, (_, index) =>
-          accounts.slice(index * options.accountsPerGame!, (index + 1) * options.accountsPerGame!),
-        )
-      : options.gameType === "blitz"
-        ? splitPlaytestRoster(accounts)
-        : [accounts];
-  const prefix = options.gameName ?? `lab-${Date.now().toString(36)}`;
-  const prepared: PreparedGame[] = [];
-  // Setup shares an authority account. Finish it before concurrent player workloads start.
-  for (const [index, group] of groups.entries()) {
-    const game = await resolveHarnessGame(
-      { ...options, gameName: groups.length > 1 ? `${prefix}-${index + 1}` : prefix },
-      group.map(({ address }) => address),
-      shard,
-      provider,
-    );
-    if (options.gameType !== "blitz" && nativePresetForId(options.presetId).dayUnitSeconds === 0)
-      await prepareOpenHomes(
-        game.gameId,
-        group.map(({ address }) => address),
-      );
-    prepared.push({
-      game,
-      accounts: group.map(({ account: _account, ...entry }) => ({ ...entry, gameId: game.gameId })),
-    });
-  }
-  return prepared.length === 1 ? prepared[0] : prepared;
-}
-
-/** The slot shape: the launch service splits, names, creates and settles the games; the harness drives what it made. */
-async function prepareSlotGames(
-  slot: NonNullable<HarnessCliOptions["slot"]>,
-  accounts: HarnessAccount[],
-): Promise<PreparedGame[]> {
-  const games = await registerBotsThroughSlot(
-    { origin: slot.launchUrl, token: requiredEnvironmentValue("OPERATOR_TOKEN", "harness slot registration") },
-    { slotName: slot.name, accounts: accounts.map(({ address }) => address), closesInSeconds: slot.closesInSeconds },
+  const game = await resolveHarnessGame(
+    options,
+    accounts.map(({ address }) => address),
   );
-  const byAddress = new Map(accounts.map((account) => [BigInt(account.address), account]));
-  return games.map(({ gameId, gameName, settlementTransactions, accounts: roster }) => ({
-    game: { gameId, gameName, settlementTransactions },
-    accounts: roster.map((address) => {
-      const { account: _account, ...entry } = byAddress.get(BigInt(address))!;
-      return { ...entry, gameId };
-    }),
-  }));
+  return { game, accounts: accounts.map(({ account: _account, ...entry }) => ({ ...entry, gameId: game.gameId })) };
 }
 
 interface GameWorkerReport {
@@ -804,19 +691,13 @@ function printUsage(): void {
   console.log(`
 Usage: bun deploy/athanor/harness/run.ts [options]
 
-  --bots <count>                 default: 96; Blitz splits into balanced games of up to 24
-  --games <count>                explicit concurrent games in one process, one client worker per player
-  --accounts-per-game <count>    with --games; default: 24, maximum: 24
-  --game-type <blitz|eternum|frontier>     default: blitz
+  --bots <count>                 default: 96
+  --game-type <eternum|frontier>   default: frontier
   --minutes <minutes>            default: 10
   --interval-seconds <seconds>   default: 15
   --setup-concurrency <count>    default: 6
-  --workload <build-order|burst|cadence|frontier> default: the game type’s workload; burst submits every plan at once
+  --workload <burst|cadence|frontier> default: the game type’s workload; burst submits every plan at once
   --preset <id>                  preset new games are created from; default: the game type’s preset
-  --slot <name>                  register the bots into this free Blitz slot through the launch API instead of
-                                 creating games; needs OPERATOR_TOKEN and --launch-url or LAUNCH_URL
-  --launch-url <origin>          the app origin the launch API is served under, e.g. https://play.dev-realms.party
-  --slot-closes-in-seconds <s>   with --slot; default: 120; the cron freezes the slot within a minute of closing
   --frontier-burst <booth|rollover>  Frontier campaign burst, measured as the workload: booth founds every bot's
                                  realm inside the window; rollover waits for the next day and has every bot muster
                                  and move inside the window (use the 720 s day of --preset 101 on perf shards)

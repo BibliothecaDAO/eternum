@@ -1,5 +1,8 @@
 import { expect, test } from "bun:test";
 import { deploymentIdentity } from "./deployment";
+import { buildShardManifest } from "./shard-manifest";
+import { manifest } from "./native/fixtures";
+import { fileURLToPath } from "node:url";
 const shard = {
   chainId: "0x1",
   accountClassHash: "0x2",
@@ -7,6 +10,49 @@ const shard = {
   l2GasBound: "0x47868c00",
   vrfPublicKey: { x: "0x4", y: "0x5" },
 };
+
+test("deployment consumes Herald's pending and completed public manifests", async () => {
+  const chainId = "0x" + Buffer.from("TEST_SHARD").toString("hex");
+  const document = { ...manifest, shard: { ...shard, chainId, contracts: {} } };
+  const replies = [
+    deploymentIdentity(JSON.stringify(document), "https://rpc.test"),
+    buildShardManifest(document, { rpcUrl: "https://rpc.test" }),
+  ];
+  for (const reply of replies) {
+    const server = Bun.serve({ port: 0, fetch: () => Response.json(reply) });
+    try {
+      const scripts = fileURLToPath(new URL("../../../deploy/athanor/scripts", import.meta.url));
+      const code = `import json,sys
+from unittest.mock import patch
+sys.path.insert(0,sys.argv[1])
+import directory
+with patch('directory.time.monotonic',side_effect=[0,0,121]),patch('directory.time.sleep'):
+    directory.wait_for_identity(json.loads(sys.argv[2]))
+`;
+      const check = (chain: string) =>
+        Bun.spawn(
+          [
+            "python3",
+            "-c",
+            code,
+            scripts,
+            JSON.stringify({
+              chain_id: chain,
+              public_herald_url: `http://127.0.0.1:${server.port}`,
+            }),
+          ],
+          { stdout: "pipe", stderr: "pipe" },
+        );
+      const same = check("TEST_SHARD");
+      expect(await same.exited).toBe(0);
+      const wrong = check("OTHER_CHAIN");
+      expect(await wrong.exited).not.toBe(0);
+      expect(await new Response(wrong.stderr).text()).toContain("Herald serves a different shard identity");
+    } finally {
+      server.stop(true);
+    }
+  }
+});
 test("pending manifest serves only the real initialized identity, never a placeholder world", () => {
   const manifest = deploymentIdentity(JSON.stringify({ shard }), "https://rpc.test");
   expect(manifest.contracts).toEqual({});

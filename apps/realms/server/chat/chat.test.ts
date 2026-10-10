@@ -155,7 +155,11 @@ it("lets two players chat in their Blitz room, keeps its history, survives evict
             name: "blitz-a",
             mode: "blitz",
             status: "Live",
-            player_state: { registered: registered.has(player), settled: false, roster_member: registered.has(player) },
+            player_state: {
+              registered: registered.has(player),
+              settled: false,
+              roster_wallet: registered.has(player) ? "0x123" : null,
+            },
           },
         ],
       });

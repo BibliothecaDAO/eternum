@@ -67,10 +67,7 @@ export async function executeNativeAdminCommand(
     ...scope,
     missing: "allow",
   })?.toString();
-  if (
-    (repeatableBatches.has(input.command.kind) || input.command.kind === "RecordBlitzResults") &&
-    remaining === undefined
-  )
+  if (repeatableBatches.has(input.command.kind) && remaining === undefined)
     throw new Error("Native administrative batch has no remaining count");
   return { transactionHash: accepted.transaction_hash, ...(remaining !== undefined ? { remaining } : {}) };
 }

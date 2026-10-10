@@ -383,8 +383,7 @@ fn opening_a_chest_draws_with_replacement_once_and_replay_cannot_reopen_it() {
     move_fixture(deployment, explorer, crate::geometry::neighbor(coord, 0));
     let command = Command::OpenRelicChest(OpenChest { explorer_id: explorer.entity_id, coord });
     let mut root = super::context(deployment.games, 3).raw_root;
-    let games = crate::game::IGameDispatcher { contract_address: deployment.games };
-    let seed = crate::random::game_root(ref root, 3, crate::game::IGameDispatcherTrait::game(games, 3).seed);
+    let seed = crate::random::game_root(ref root, 3);
     let expected = crate::relics::draw_relics(rules(), seed, 3);
     let points = crate::game::IPointsDispatcherTrait::player_points(
         crate::game::IPointsDispatcher { contract_address: deployment.games }, 3, deployment.actor,
@@ -669,4 +668,28 @@ fn chest_search_skips_the_explorers_vacated_start_tile() {
     assert_eq!(
         map.occupancy(crate::geometry::tile_key(3, crate::geometry::neighbor(vacated, 0))).unwrap().category, 34,
     );
+}
+
+fn opened_contents_with_launch_seed(seed: felt252) -> Array<u128> {
+    let (deployment, _, explorer) = setup(true);
+    snforge_std::interact_with_state(
+        deployment.games,
+        || {
+            let game = crate::logic::game::game(3);
+            crate::logic::game::write_game(3, crate::game::GameRegistry { seed, ..game });
+        },
+    );
+    let coord = chest(deployment, Coord { alt: false, x: 2000200, y: 2000200 }, 321, 40);
+    move_fixture(deployment, explorer, crate::geometry::neighbor(coord, 0));
+    assert!(execute(deployment, Command::OpenRelicChest(OpenChest { explorer_id: explorer.entity_id, coord }), 50));
+    let mut contents = array![];
+    for id in 39_u8..57 {
+        contents.append(balance(deployment, explorer, id));
+    }
+    contents
+}
+
+#[test]
+fn different_launch_seeds_cannot_change_the_same_stamped_chest_draw() {
+    assert_eq!(opened_contents_with_launch_seed(1), opened_contents_with_launch_seed(999));
 }

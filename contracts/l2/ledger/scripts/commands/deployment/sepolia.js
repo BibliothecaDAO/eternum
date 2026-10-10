@@ -33,11 +33,8 @@ function loadSettings() {
     pool: BigInt(required("SEPOLIA_FRONTIER_POOL_WEI")),
     chestCids: [1, 2, 3, 4, 5].map((band) => required(`SEPOLIA_CHEST_BAND_${band}_CID`)),
     cosmeticCid: required("SEPOLIA_COSMETIC_CID"),
-    // Paid-entry demonstrations do not invoke the pass contracts.
-    seasonPass: required("SEPOLIA_SEASON_PASS_ADDRESS"),
-    villagePass: required("SEPOLIA_VILLAGE_PASS_ADDRESS"),
   };
-  for (const name of ["address", "operator", "pauser", "seasonPass", "villagePass", "shard"]) {
+  for (const name of ["address", "operator", "pauser", "shard"]) {
     if (BigInt(settings[name]) <= 0n) throw new Error(`Invalid ${name}`);
   }
   if (settings.start >= settings.end || settings.pool <= 0n || settings.pool >= 1n << 128n) {
@@ -104,8 +101,6 @@ async function deployAssets(account, settings) {
     settings.address,
     lords,
     mmr,
-    settings.seasonPass,
-    settings.villagePass,
     chests,
     cosmetics,
   ]);

@@ -457,7 +457,7 @@ fn fixed_blitz_rosters_require_unique_accounts_and_wallets_and_regular_mode() {
     registry(d).register_preset(1, preset);
     let player = *roster(1).at(0);
     for players in array![
-        array![player, player].span(),
+        array![].span(), roster(25), array![player, player].span(),
         array![RosterPlayer { account: 0.try_into().unwrap(), wallet: 1.try_into().unwrap() }].span(),
         array![RosterPlayer { wallet: 0.try_into().unwrap(), ..player }].span(),
         array![player, RosterPlayer { account: 0x999.try_into().unwrap(), ..player }].span(),
@@ -494,84 +494,6 @@ fn launch_retries_return_the_same_game_and_conflicting_rosters_reject() {
     assert_eq!(registry(d).next_game_id(), first + 1);
 }
 
-#[test]
-#[feature("safe_dispatcher")]
-fn empty_blitz_launches_keep_the_game_id_until_an_immutable_roster_is_frozen() {
-    let d = setup();
-    registry(d).register_preset(1, definition(true));
-    let request = CreateGameParams { roster: array![].span(), ..params(true) };
-    let game_id = registry(d).create_game(request);
-    assert_eq!(registry(d).create_game(request), game_id);
-    assert_eq!(registry(d).game_id_by_name(request.name), game_id);
-    assert!(!IGameDispatcher { contract_address: d.games }.game(game_id).ready);
-    let views = ISettlementViewsDispatcher { contract_address: d.games };
-    assert_eq!(views.settlement_rules(game_id).registration_limit, 0);
-    let launcher = super::bind_authority(d);
-    let (release, commitment) = super::play_fixture::pins(d.games, game_id);
-    super::play_fixture::caller(d.games, launcher.actor, 205);
-    super::assert_entry_refusal(
-        launcher,
-        game_id,
-        release,
-        commitment,
-        super::play_fixture::encode(Command::SettleBlitzRoster),
-        "roster not frozen",
-    );
-    assert!(safe(d, d.actor).freeze_blitz_roster(game_id, roster(2)).is_err());
-    for players in array![
-        array![].span(), roster(25), array![*roster(1).at(0), *roster(1).at(0)].span(),
-        array![RosterPlayer { account: 0.try_into().unwrap(), wallet: 1.try_into().unwrap() }].span(),
-    ] {
-        assert!(safe(d, super::authority()).freeze_blitz_roster(game_id, players).is_err());
-        assert_eq!(views.settlement_rules(game_id).registration_limit, 0);
-    }
-    registry(d).freeze_blitz_roster(game_id, roster(2));
-    assert_eq!(registry(d).blitz_roster(game_id), roster(2));
-    assert_eq!(views.settlement_rules(game_id).registration_limit, 2);
-    let prepared = next_setup_entity(d, game_id);
-    registry(d).freeze_blitz_roster(game_id, roster(2));
-    assert_eq!(next_setup_entity(d, game_id), prepared);
-    assert!(safe(d, super::authority()).freeze_blitz_roster(game_id, roster(1)).is_err());
-    let swapped = array![*roster(2).at(1), *roster(2).at(0)].span();
-    assert!(safe(d, super::authority()).freeze_blitz_roster(game_id, swapped).is_err());
-    assert_eq!(registry(d).create_game(request), game_id);
-    assert_eq!(registry(d).next_game_id(), game_id + 1);
-    let launcher = super::bind_authority(d);
-    let command = crate::commands::Command::SettleBlitzRoster;
-    super::season_lifecycle::execute_batch_in_game(launcher, game_id, command, 205, 1);
-    assert!(!IGameDispatcher { contract_address: d.games }.game(game_id).ready);
-    super::season_lifecycle::execute_batch_in_game(launcher, game_id, command, 207, 0);
-    assert!(IGameDispatcher { contract_address: d.games }.game(game_id).ready);
-    registry(d).freeze_blitz_roster(game_id, roster(2));
-    assert!(safe(d, super::authority()).freeze_blitz_roster(game_id, roster(1)).is_err());
-}
-
-#[test]
-#[feature("safe_dispatcher")]
-fn roster_freeze_checks_the_game_mode_and_current_launcher() {
-    let d = setup();
-    let mut duel = definition(true);
-    duel.settlement.mode = SettlementMode::Duel;
-    duel.rules.mode_rules = super::play_fixture::BLITZ_RULES - crate::rules::RESERVED_HYPERSTRUCTURES;
-    registry(d).register_preset(1, duel);
-    let request = CreateGameParams { roster: array![].span(), ..params(true) };
-    let game_id = registry(d).create_game(request);
-    assert!(safe(d, super::authority()).freeze_blitz_roster(game_id, roster(1)).is_err());
-    super::set_launcher(d, d.actor);
-    assert!(safe(d, super::authority()).freeze_blitz_roster(game_id, roster(2)).is_err());
-    assert!(safe(d, d.actor).freeze_blitz_roster(game_id, roster(2)).is_ok());
-    assert_eq!(registry(d).blitz_roster(game_id), roster(2));
-    registry(d).register_preset(2, definition(false));
-    let season = safe(d, d.actor)
-        .create_game(CreateGameParams { name: 'season', preset_id: 2, ..params(false) })
-        .unwrap();
-    assert!(safe(d, d.actor).freeze_blitz_roster(season, roster(2)).is_err());
-    assert!(safe(d, d.actor).freeze_blitz_roster(999, roster(2)).is_err());
-    let late = safe(d, d.actor).create_game(CreateGameParams { name: 'late', ..request }).unwrap();
-    start_cheat_block_timestamp_global(400);
-    assert!(safe(d, d.actor).freeze_blitz_roster(late, roster(2)).is_err());
-    assert_eq!(ISettlementViewsDispatcher { contract_address: d.games }.settlement_rules(late).registration_limit, 0);
-}
 
 #[test]
 fn fixed_blitz_rosters_have_exact_spots_and_deterministic_unique_permutations() {
@@ -953,7 +875,7 @@ pub fn expedition_home(d: super::Deployment) -> (u32, PresetDefinition, u8) {
                 dev_mode_on: true, end_grace_seconds: 0, duration_seconds: 2 * BAG_SECONDS, ..params(false),
             },
         );
-    super::play_fixture::prepare_homes(d.games, game_id, d.actor);
+    super::play_fixture::reserve_fixture_homes(d.games, game_id, d.actor);
     // The catalogue is already loaded by deployment; this fixture pins its first realm.
     super::resource_commands::set_fixture(
         d.games, selector!("realms"), selector!("catalogue_count"), array![].span(), 8000_u32,
@@ -1456,7 +1378,7 @@ fn expedition_army_limits_follow_castle_level_without_guards_or_returning_troops
     super::resource_commands::set_fixture(
         d.games, selector!("realms"), selector!("traits"), array![1].span(), 0x4000001_u32,
     );
-    super::play_fixture::prepare_homes(d.games, game_id, d.actor);
+    super::play_fixture::reserve_fixture_homes(d.games, game_id, d.actor);
     assert!(
         execute_in_game(
             d,
@@ -1583,7 +1505,6 @@ fn sites_pay_the_same_initial_guard_in_a_days_last_minute_as_in_its_first() {
 // Search roll inputs, never the gameplay clock. Every chosen input is passed to the action unchanged.
 fn discovery_root(
     game_id: u32,
-    game_seed: felt252,
     rules: crate::expeditions::FrontierDiscoveryRules,
     empty_reveals: u8,
     chest: Option<SiteChest>,
@@ -1592,7 +1513,7 @@ fn discovery_root(
     for sample in 0_u64..10000 {
         let raw_root: u256 = sample.into();
         let mut root = raw_root;
-        let seed = crate::random::game_root(ref root, game_id, game_seed);
+        let seed = crate::random::game_root(ref root, game_id);
         if crate::discovery::frontier(rules, 0, 0, 0, empty_reveals, chest, seed) == expected {
             return raw_root;
         }
@@ -1725,7 +1646,7 @@ fn assert_capture_at(depth: u8, count: u128, tier: crate::troops::TroopTier, rev
     super::resource_commands::set_fixture(
         d.games, selector!("realms"), selector!("traits"), array![1].span(), 0x4000001_u32,
     );
-    super::play_fixture::prepare_homes(d.games, game_id, d.actor);
+    super::play_fixture::reserve_fixture_homes(d.games, game_id, d.actor);
     assert!(
         execute_in_game(
             d,
@@ -1799,11 +1720,8 @@ fn assert_capture_at(depth: u8, count: u128, tier: crate::troops::TroopTier, rev
     let labor_supply = ResourceSlot { game_id, entity_id: 1, resource_type: 23 };
     let essence_supply = ResourceSlot { game_id, entity_id: 1, resource_type: 38 };
     let before_supplies = resources.resource_balance(labor_supply) + resources.resource_balance(essence_supply);
-    let context = crate::tests::context(d.games, game_id);
     let discovery_rules = preset.economy.discovery.unwrap();
-    let root = discovery_root(
-        game_id, context.game.unbox().seed, discovery_rules, 0, None, crate::discovery::Discovery::Camp,
-    );
+    let root = discovery_root(game_id, discovery_rules, 0, None, crate::discovery::Discovery::Camp);
     let reveal_at = opening + 2;
     assert!(reveal_at < capture_at, "camp draw must precede the fixture capture");
     assert!(explore_with_root(d, game_id, explorer_id, root, reveal_at));
@@ -2042,7 +1960,7 @@ fn depth_entry_requires_research_and_spends_only_the_selected_depth_stamina() {
     super::resource_commands::set_fixture(
         d.games, selector!("realms"), selector!("traits"), array![1].span(), 0x4000001_u32,
     );
-    super::play_fixture::prepare_homes(d.games, game_id, d.actor);
+    super::play_fixture::reserve_fixture_homes(d.games, game_id, d.actor);
     assert!(
         execute_in_game(
             d,
@@ -2329,7 +2247,7 @@ fn setup_frontier_chests_with_preset(
     super::resource_commands::set_fixture(
         d.games, selector!("realms"), selector!("traits"), array![1].span(), 0x4000001_u32,
     );
-    super::play_fixture::prepare_homes(d.games, game_id, d.actor);
+    super::play_fixture::reserve_fixture_homes(d.games, game_id, d.actor);
     assert!(
         execute_in_game(
             d,
@@ -2391,12 +2309,7 @@ pub fn assert_zero_pool_never_funds_a_ruin_or_payout_over_a_day() {
     loop {
         let army = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
         let raw_root = discovery_root(
-            game_id,
-            clock.game.seed,
-            rules,
-            attempts,
-            Some(any_chest()),
-            crate::discovery::Discovery::Ruin(any_chest()),
+            game_id, rules, attempts, Some(any_chest()), crate::discovery::Discovery::Ruin(any_chest()),
         );
         assert!(explore_with_root(d, game_id, key.explorer_id, raw_root, time));
         let tile = crate::geometry::tile_key(game_id, crate::geometry::neighbor(army.coord, 0));
@@ -2547,9 +2460,7 @@ fn an_exhausted_day_price_never_funds_a_ruin_or_payout(estimate: u128) {
         1
     };
     let context = crate::tests::context(d.games, game_id);
-    let raw_root = discovery_root(
-        game_id, context.game.unbox().seed, rules, 0, Some(any_chest()), crate::discovery::Discovery::Ruin(any_chest()),
-    );
+    let raw_root = discovery_root(game_id, rules, 0, Some(any_chest()), crate::discovery::Discovery::Ruin(any_chest()));
     let army = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
     let time = 360_u64;
     snforge_std::interact_with_state(
@@ -2602,12 +2513,7 @@ fn frontier_finds_at_most_one_ruin_a_day_and_holds_its_chest_against_the_budget(
     let (d, game_id, key) = setup_frontier_chests_with_rules(Some(ruins_only));
     let context = crate::tests::context(d.games, game_id);
     let raw_root = discovery_root(
-        game_id,
-        context.game.unbox().seed,
-        ruins_only,
-        0,
-        Some(any_chest()),
-        crate::discovery::Discovery::Ruin(any_chest()),
+        game_id, ruins_only, 0, Some(any_chest()), crate::discovery::Discovery::Ruin(any_chest()),
     );
     let time = 360_u64;
     let army = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
@@ -2644,7 +2550,7 @@ fn frontier_finds_at_most_one_ruin_a_day_and_holds_its_chest_against_the_budget(
         let timestamp = time + sample;
         let raw_root: u256 = sample.into();
         let mut root = raw_root;
-        let seed = crate::random::game_root(ref root, game_id, context.game.unbox().seed);
+        let seed = crate::random::game_root(ref root, game_id);
         let drawn = snforge_std::interact_with_state(
             d.games,
             || crate::expeditions::IFrontierDiscoveryDispatcherTrait::discover_frontier_tile(
@@ -3046,7 +2952,6 @@ fn frontier_floor_counts_seven_player_reveals_across_armies_and_depths_then_rese
     };
     let counter = crate::expeditions::ExpeditionDiscoveryKey { game_id, structure_id: 1, epoch: 0 };
     assert!(snforge_std::interact_with_state(d.games, || crate::logic::expeditions::discovery(counter)).is_none());
-    let context = crate::tests::context(d.games, game_id);
     let tomorrow = day_start(d, game_id, 1);
     let mut time = 353_u64;
     for index in 0_u8..8 {
@@ -3073,7 +2978,7 @@ fn frontier_floor_counts_seven_player_reveals_across_armies_and_depths_then_rese
         } else {
             crate::discovery::Discovery::Camp
         };
-        let root = discovery_root(game_id, context.game.unbox().seed, discovery, index, Some(any_chest()), expected);
+        let root = discovery_root(game_id, discovery, index, Some(any_chest()), expected);
         assert!(time < tomorrow);
         assert!(explore_with_root(d, game_id, key.explorer_id, root, time));
         let count = snforge_std::interact_with_state(
@@ -3119,9 +3024,7 @@ fn frontier_floor_counts_seven_player_reveals_across_armies_and_depths_then_rese
     );
     let third = *IStructureOperationsDispatcher { contract_address: d.games }.home_armies(home).at(0);
     let time = tomorrow + 1;
-    let root = discovery_root(
-        game_id, context.game.unbox().seed, discovery, 0, Some(any_chest()), crate::discovery::Discovery::None,
-    );
+    let root = discovery_root(game_id, discovery, 0, Some(any_chest()), crate::discovery::Discovery::None);
     assert!(explore_with_root(d, game_id, third, root, time));
     assert_eq!(
         snforge_std::interact_with_state(

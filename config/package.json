@@ -10,6 +10,7 @@
     "@bibliothecadao/provider": "workspace:*",
     "@bibliothecadao/types": "workspace:*",
     "@realms-world/chain": "workspace:*",
+    "@realms-world/identity": "workspace:*",
     "chalk": "^5.4.1",
     "viem": "catalog:game",
     "yaml": "^2.8.2",

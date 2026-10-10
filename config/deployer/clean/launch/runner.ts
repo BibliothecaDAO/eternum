@@ -17,7 +17,6 @@ import {
   assertRegistrarAvailable,
   createRegistrarGame,
   settleBlitzRoster,
-  freezeBlitzRoster,
   blitzRosterOf,
   findRegistrarGame,
   resolveRegistrarWorldAddress,
@@ -165,7 +164,7 @@ async function assertLaunchChainTargets(launch: PreparedLaunch): Promise<void> {
 async function buildRegistrarGameParams(launch: PreparedLaunch) {
   const players = launch.request.roster ?? [];
   const fixedRoster = nativePresetForId(launch.runtime.presetId).entryRule === nativeRuleConstants.ENTRY_ROSTER;
-  if (fixedRoster && players.length) blitzRosterOf(players);
+  const roster = fixedRoster ? blitzRosterOf(players) : [];
   if (!fixedRoster && players.length) throw new Error("Eternum does not use a fixed roster");
   const block = await launch.runtime.provider.getBlock("latest");
   return buildNativeGameParams(
@@ -183,7 +182,7 @@ async function buildRegistrarGameParams(launch: PreparedLaunch) {
         launch.request.mapConfigOverrides && Object.keys(launch.request.mapConfigOverrides).length > 0,
       ),
     },
-    [],
+    roster,
   );
 }
 
@@ -296,13 +295,6 @@ async function createAndSettleGame(launch: PreparedLaunch): Promise<void> {
   const fixedRoster = nativePresetForId(launch.runtime.presetId).entryRule === nativeRuleConstants.ENTRY_ROSTER;
   await createGame(launch);
   if (!fixedRoster || !launch.request.roster?.length) return;
-  await freezeBlitzRoster(
-    launch.runtime.provider,
-    await resolveGameId(launch),
-    launch.request.roster ?? [],
-    launchCredentials(launch),
-    launch.request.manifest,
-  );
   const settlement = await settleBlitzRoster(
     launch.runtime.provider,
     await resolveGameId(launch),

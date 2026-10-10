@@ -46,3 +46,15 @@ fn supplied_roots_preserve_game_derivation_vectors() {
         assert_eq!(range(root, salt, bound), expected);
     }
 }
+
+#[test]
+fn stamped_root_has_only_game_id_domain_separation() {
+    let mut root = 1;
+    assert_eq!(
+        crate::random::game_root(ref root, 7), 0x6aa2fd0d01118aaf26e67066a230314092b6ac61cf79aaa58d228e2d2f61fec,
+    );
+    let mut root = 1;
+    assert_eq!(
+        crate::random::game_root(ref root, 8), 0x6a8d12995f5d6f9780f280ee0ede6c9b48b1c7a5c452ad1b2e1d2ed3af4c48f,
+    );
+}

@@ -1,7 +1,6 @@
 import { GAME_ENTRYPOINTS } from "./entrypoints";
 import { hash } from "starknet";
 import { expect, test } from "bun:test";
-import { readFileSync } from "node:fs";
 import { startReadRpc } from "../scripts/read-rpc";
 import { identity, invoke } from "./fixtures";
 import { STAMP_TAG, type PlayInvoke } from "./transaction";
@@ -67,6 +66,14 @@ async function fixture(
     async call(method: string, params: unknown) {
       return (
         await fetch(proxy.url, { method: "POST", body: JSON.stringify({ jsonrpc: "2.0", id: 42, method, params }) })
+      ).json();
+    },
+    async rawTransaction(transaction: string) {
+      return (
+        await fetch(proxy.url, {
+          method: "POST",
+          body: '{"jsonrpc":"2.0","id":42,"method":"starknet_addInvokeTransaction","params":[' + transaction + "]}",
+        })
       ).json();
     },
     async batch(transactions: PlayInvoke[]) {
@@ -385,14 +392,6 @@ test("the class cache requires an explicit positive shard player capacity", () =
   }
 });
 
-test("the shipped proxy receives the same player capacity as shard initialization", () => {
-  const compose = readFileSync(new URL("../../shard/compose.yml", import.meta.url), "utf8");
-  const init = compose.split("services:")[0];
-  const rpc = compose.split("  rpc:\n")[1].split("  harness:\n")[0];
-  expect(init).toContain("PLAYER_CAPACITY: ${PLAYER_CAPACITY:-96}");
-  expect(rpc).toContain("PLAYER_CAPACITY: ${PLAYER_CAPACITY:-96}");
-});
-
 test("concurrent successful lookups of one sender do not evict another cached account", async () => {
   let release!: () => void,
     entered!: () => void,
@@ -428,6 +427,24 @@ test("concurrent successful lookups of one sender do not evict another cached ac
     expect(f.classSenders).toEqual(["0x43", "0x42", "0x42"]);
   } finally {
     release();
+    f.close();
+  }
+});
+
+test("expanding unknown fields refuse only that request and the next play still stamps", async () => {
+  const f = await fixture();
+  try {
+    // 1e30 uses five bytes on the wire and six after JSON reserialization.
+    const attack = JSON.stringify({ ...invoke(), unused: [] }).replace(
+      '"unused":[]',
+      '"unused":[' + Array(192000).fill("1e30").join(",") + "]",
+    );
+    expect(Buffer.byteLength(attack)).toBeLessThan(1024 * 1024);
+    expect((await f.rawTransaction(attack)).error.code).toBe(-32601);
+    expect(f.stamped).toHaveLength(0);
+    expect((await f.call("starknet_addInvokeTransaction", [invoke()])).result.transaction_hash).toBe("0x777");
+    expect(f.stamped).toHaveLength(1);
+  } finally {
     f.close();
   }
 });

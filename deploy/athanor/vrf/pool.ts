@@ -1,5 +1,5 @@
 import type { Stamp, StampProvider } from "./native";
-import { felt, type PlayIdentity, type PlayInvoke } from "./transaction";
+import { felt, MAX_TRANSACTION_BYTES, type PlayIdentity, type PlayInvoke } from "./transaction";
 
 interface Job {
   id: number;
@@ -9,6 +9,7 @@ interface Job {
 }
 interface Lane {
   worker: Worker;
+  ready: boolean;
   job?: Job;
   cancelStartup(): void;
 }
@@ -19,12 +20,13 @@ export function workerCount(value: unknown): number {
     throw new Error("VRF_WORKERS must be an explicit integer from 1 to 64");
   return Number(value);
 }
-function startLane(keyFile: string, identity: PlayIdentity, finish: () => void, stop: () => void) {
+function startLane(keyFile: string, identity: PlayIdentity, finish: () => void, stop: (wasReady: boolean) => void) {
   const worker = new Worker(new URL("./worker.ts", import.meta.url).href);
-  let ready = false,
+  let failedOnce = false,
     cancelStartup = () => {};
   const lane: Lane = {
     worker,
+    ready: false,
     cancelStartup() {
       cancelStartup();
     },
@@ -36,8 +38,12 @@ function startLane(keyFile: string, identity: PlayIdentity, finish: () => void, 
       reject(refused());
     };
     function failed() {
+      if (failedOnce) return;
+      failedOnce = true;
+      const wasReady = lane.ready;
+      lane.ready = false;
       cancelStartup();
-      stop();
+      stop(wasReady);
     }
     worker.onerror = (event) => {
       event.preventDefault();
@@ -45,7 +51,7 @@ function startLane(keyFile: string, identity: PlayIdentity, finish: () => void, 
     };
     worker.onmessage = (event) => {
       const message = event.data;
-      if (!ready) {
+      if (!lane.ready) {
         if (
           message.kind !== "ready" ||
           felt(message.publicKey?.x) !== felt(identity.vrfPublicKey.x) ||
@@ -54,18 +60,19 @@ function startLane(keyFile: string, identity: PlayIdentity, finish: () => void, 
           failed();
           return;
         }
-        ready = true;
+        lane.ready = true;
         clearTimeout(timer);
         resolve();
         return;
       }
       const job = lane.job;
-      if (!job || message.id !== job.id || message.kind !== "stamp") {
+      if (!job || message.id !== job.id || (message.kind !== "stamp" && message.kind !== "refused")) {
         failed();
         return;
       }
       lane.job = undefined;
-      job.resolve(message.stamp);
+      if (message.kind === "refused") job.reject(refused());
+      else job.resolve(message.stamp);
       finish();
     };
     worker.postMessage({ kind: "start", keyFile, chainId: identity.chainId });
@@ -96,14 +103,19 @@ export async function startStampPool(
   function dispatch() {
     if (closed) return;
     for (const lane of lanes) {
-      if (lane.job) continue;
+      if (!lane.ready || lane.job) continue;
       const job = queue.shift();
       if (!job) return;
       lane.job = job;
       lane.worker.postMessage({ kind: "stamp", id: job.id, raw: job.raw }, [job.raw]);
     }
   }
-  const workers = Array.from({ length: count }, () => startLane(keyFile, identity, dispatch, close));
+  function workerFailed(wasReady: boolean) {
+    close();
+    // The supervisor owns recovery; a live process must never serve a dead pool.
+    if (wasReady) process.exit(1);
+  }
+  const workers = Array.from({ length: count }, () => startLane(keyFile, identity, dispatch, workerFailed));
   lanes.push(...workers.map((worker) => worker.lane));
   try {
     await Promise.all(workers.map((worker) => worker.started));
@@ -115,6 +127,7 @@ export async function startStampPool(
     stamp(transaction: PlayInvoke) {
       if (closed || queue.length + lanes.filter((lane) => lane.job).length >= LIMIT) return Promise.reject(refused());
       const raw = new TextEncoder().encode(JSON.stringify(transaction)).buffer;
+      if (raw.byteLength > MAX_TRANSACTION_BYTES) return Promise.reject(refused());
       return new Promise<Stamp>((resolve, reject) => {
         queue.push({ id: ++nextId, raw, resolve, reject });
         dispatch();

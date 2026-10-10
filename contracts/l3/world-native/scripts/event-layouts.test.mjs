@@ -34,9 +34,8 @@ test("Games exposes the published player frame, roles and frozen roster ABI", as
     "register_preset",
   ])
     method(name);
-  assert.deepEqual(method("freeze_blitz_roster").inputs, [
-    { name: "game_id", type: "core::integer::u32" },
-    { name: "players", type: "core::array::Span::<world_native::registrar::RosterPlayer>" },
+  assert.deepEqual(method("create_game").inputs, [
+    { name: "params", type: "world_native::registrar::CreateGameParams" },
   ]);
   assert.deepEqual(abi.find(({ name }) => name === "world_native::registrar::RosterPlayer").members, [
     { name: "account", type: "core::starknet::contract_address::ContractAddress" },

@@ -1,11 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { hash } from "starknet";
 import setFixture from "../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
 import memberFixture from "../../../../contracts/l3/world-native/schema/fixtures/row-member-set.json";
 import deleteFixture from "../../../../contracts/l3/world-native/schema/fixtures/row-deleted.json";
 import foreignFixture from "../../../../contracts/l3/world-native/schema/fixtures/foreign-emitter.json";
 import malformedFixture from "../../../../contracts/l3/world-native/schema/fixtures/malformed-row.json";
-import { WorldFold } from "../world-fold";
+import { checkpointModelMismatch, WorldFold } from "../world-fold";
 import { NativeDecoder, NativeReleaseSchemaUnavailable } from "./decoder";
 import { NativeIngestion } from "./ingestion";
 
@@ -74,7 +73,7 @@ describe("native row decoder", () => {
       native.applyReceipt(fold, receipt([fixture.raw]), 10, 0);
       const row = fold.modelRows("ExplorerTroops")[0];
       expect(row.value).toEqual({ ...fixture.expected.key, ...fixture.expected.value });
-      expect(BigInt(row.key)).toBe(BigInt(hash.computePoseidonHashOnElements([1, 7])));
+      expect(row.key).toBe("0x1:0x7");
     }
     native.applyReceipt(fold, receipt([deleteFixture.raw]), 10, 1);
     expect(fold.modelRows("ExplorerTroops")).toEqual([]);
@@ -178,6 +177,21 @@ describe("native row decoder", () => {
     expect(() => WorldFold.restore(decoder.registry, { ...checkpoint, world_address: "0x999" })).toThrow(
       "does not match",
     );
+  });
+  it("discards checkpoints with hashed row ids before resuming tuple-keyed diffs", () => {
+    const { native, fold, decoder } = setup();
+    native.applyReceipt(fold, receipt([setFixture.raw]), 10, 0);
+    const oldCheckpoint = JSON.parse(JSON.stringify(fold.checkpoint()));
+    oldCheckpoint.version = 1;
+    expect(checkpointModelMismatch(decoder.registry, oldCheckpoint)).toBe("row identity version differs");
+    expect(() => WorldFold.restore(decoder.registry, oldCheckpoint)).toThrow("row identity version differs");
+
+    const restored = WorldFold.restore(decoder.registry, fold.checkpoint());
+    native.applyReceipt(restored, receipt([memberFixture.raw]), 11, 0);
+    expect(restored.modelRows("ExplorerTroops")).toHaveLength(1);
+    expect(restored.modelRows("ExplorerTroops")[0].key).toBe("0x1:0x7");
+    native.applyReceipt(restored, receipt([deleteFixture.raw]), 12, 0);
+    expect(restored.modelRows("ExplorerTroops")).toEqual([]);
   });
   it("folds facts from different logic classes at the Games address", () => {
     const { native, fold } = setup();

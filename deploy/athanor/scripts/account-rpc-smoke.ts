@@ -1,6 +1,6 @@
 import { readPrivateJson } from "./private-file";
 import { assertPublicRpcBoundary } from "./public-rpc-check";
-import { readFileSync, writeFileSync, mkdtempSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { Account, BlockTag, ec, RpcProvider, stark } from "starknet";
 import { DeviceSigner, deviceKeyOf, joinBotAccount } from "../../../packages/core/src/account/realms-account";
 
@@ -26,15 +26,10 @@ console.log(JSON.stringify(await assertPublicRpcBoundary(url, { ...manifest.shar
 
 const operatorToken = process.env.OPERATOR_TOKEN;
 if (!operatorToken) {
-  throw new Error(
-    "The smoke deploys a bot account whose first device the operator route approves: it needs OPERATOR_TOKEN. " +
-      "A community shard checks its boundary with inspect-shard-roles --public-rpc.",
-  );
+  throw new Error("The smoke needs the protected operator credential to approve its bot account first device.");
 }
 const provider = new RpcProvider({ nodeUrl: url, blockIdentifier: BlockTag.PRE_CONFIRMED });
 const device = deviceKeyOf(`0x${Buffer.from(ec.starkCurve.utils.randomPrivateKey()).toString("hex")}`);
-const smoke = mkdtempSync(`${directory}/rpc-smoke-`);
-writeFileSync(`${smoke}/device.json`, JSON.stringify(device), { mode: 0o600, flag: "wx" });
 
 const bot = await joinBotAccount({
   provider,

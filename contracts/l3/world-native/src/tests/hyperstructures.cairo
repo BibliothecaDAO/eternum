@@ -13,6 +13,7 @@ use crate::hyperstructures::{
 use crate::registrar::IRegistrarSafeDispatcherTrait;
 use crate::resources::{IResourceOperationsDispatcher, ResourceAmount, ResourceKey, ResourceSlot};
 use crate::rules::RESOURCE_PRECISION;
+use crate::settlement::{IBlitzHyperstructuresDispatcherTrait, IBlitzHyperstructuresLibraryDispatcher};
 use crate::structures::{IStructureOperationsDispatcher, IStructureOperationsDispatcherTrait, StructureRecord};
 use crate::tests::state::{ResourceObservationTrait, StructureObservationTrait};
 use super::resource_commands::{assert_terminal_rejection, execute, grant, set_fixture};
@@ -464,7 +465,7 @@ fn blitz_multiplier_counts_realms_in_the_configured_geometry_and_preserves_old_r
     )
         .unwrap();
     let (new_owner, _) = super::deploy_player(3, super::GUARDIAN);
-    super::play_fixture::prepare_homes(deployment.games, 3, new_owner);
+    super::play_fixture::reserve_fixture_homes(deployment.games, 3, new_owner);
     start_cheat_caller_address(deployment.games, deployment.games);
     crate::settlement::ISettlementCreationDispatcherTrait::create_settlement(
         crate::settlement::ISettlementCreationDispatcher { contract_address: deployment.games },
@@ -563,4 +564,40 @@ pub fn checkpoint(deployment: super::Deployment, timestamp: u64) {
         0,
     );
     stop_cheat_caller_address(deployment.games);
+}
+
+#[test]
+fn reserved_complete_hyperstructures_have_no_seed_and_discoveries_keep_their_seed() {
+    let (deployment, unfinished, _, _) = setup_mode(true);
+    let original = view(deployment).hyperstructure(unfinished).unwrap();
+    assert_eq!(original.stage, Stage::Foundation);
+    assert_eq!(original.seed, 101);
+    let coord = crate::troops::Coord { alt: false, x: 2000200, y: 2000000 };
+    let tile = crate::geometry::tile_key(3, coord);
+    snforge_std::interact_with_state(
+        deployment.games,
+        || {
+            crate::logic::map::MapState::reveal(tile, 1);
+            crate::logic::map::MapState::reserve_hyperstructure(tile);
+        },
+    );
+    let library = IBlitzHyperstructuresLibraryDispatcher { class_hash: super::declare_logic("StructuresLogic") };
+    start_cheat_caller_address(deployment.games, deployment.games);
+    snforge_std::interact_with_state(
+        deployment.games,
+        || {
+            library
+                .create_reserved_hyperstructure(
+                    3, deployment.actor, coord, crate::commands::ActionContext { raw_root: 42, timestamp: 31 },
+                );
+        },
+    );
+    stop_cheat_caller_address(deployment.games);
+    let id = snforge_std::interact_with_state(
+        deployment.games, || crate::logic::map::occupancy(tile).unwrap().entity_id,
+    );
+    let reserved = view(deployment).hyperstructure(ResourceKey { game_id: 3, entity_id: id }).unwrap();
+    assert_eq!(reserved.stage, Stage::Complete);
+    assert_eq!(reserved.seed, 0);
+    assert_eq!(view(deployment).hyperstructure(unfinished).unwrap(), original);
 }

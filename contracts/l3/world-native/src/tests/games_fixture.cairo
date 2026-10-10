@@ -2178,15 +2178,13 @@ pub mod GamesFixture {
             ref self: TContractState,
             game_id: u32,
             actor: starknet::ContractAddress,
-            command: crate::blitz_results::RecordBlitzResults,
             context: crate::commands::ActionContext,
-        ) -> u64 {
+        ) {
             let classes = fixture_classes(game_id);
             crate::blitz_results::IBlitzResultsDispatcherTrait::record_blitz_results(
                 crate::blitz_results::IBlitzResultsLibraryDispatcher { class_hash: classes.prizes.read() },
                 game_id,
                 actor,
-                command,
                 context,
             )
         }

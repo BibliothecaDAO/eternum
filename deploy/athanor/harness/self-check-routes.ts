@@ -1,7 +1,16 @@
 import { shortString } from "starknet";
-import type { NativeCommandPayloads, NativeCommand } from "../../../contracts/l3/world-native/schema/commands.gen";
+import {
+  nativeCommandBits,
+  type NativeCommandPayloads,
+  type NativeCommand,
+} from "../../../contracts/l3/world-native/schema/commands.gen";
 
-// Typed missing-state probes follow the integrator's roll_independence.cairo vectors. These exercise domain rollback,
+// Roster seating requires a frozen roster at admission, so the non-roster fixture cannot dispatch it.
+export const localSelfCheckRoutes: readonly NativeCommand["kind"][] = (
+  Object.keys(nativeCommandBits) as NativeCommand["kind"][]
+).filter((route) => route !== "SettleBlitzRoster");
+
+// Typed missing-state probes follow the roll_independence.cairo vectors. These exercise domain rollback,
 // not disabled masks or invalid calldata. Happy paths in the fixture replace these for state that can be prepared.
 export const MISSING_ENTITY = 999999n;
 const missing = MISSING_ENTITY;
@@ -78,7 +87,7 @@ const routePayloads = {
   UpdateFaithfulOwnership: missing,
   ClaimWonderPoints: missing,
   ClaimPlayerFaithPoints: { player: address, wonder_id: missing },
-  RecordBlitzResults: { start: 0, players: [{ wallet: address, rank: 1 }] },
+  RecordBlitzResults: undefined,
   CraftRelic: missing,
   CreateGuild: { owned_structure_id: missing, public: false, name: shortString.encodeShortString("route") },
   JoinGuild: { owned_structure_id: missing, guild_id: address },

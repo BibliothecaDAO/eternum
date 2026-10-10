@@ -188,13 +188,7 @@ fn typed_commands() -> Array<Command> {
         Command::ClaimPlayerFaithPoints(
             crate::faith::ClaimPlayer { player: 999.try_into().unwrap(), wonder_id: 999999 },
         ),
-        Command::RecordBlitzResults(
-            crate::blitz_results::RecordBlitzResults {
-                start: 0,
-                players: array![crate::blitz_results::RankedPlayer { wallet: 999.try_into().unwrap(), rank: 1 }].span(),
-            },
-        ),
-        Command::CraftRelic(999999),
+        Command::RecordBlitzResults, Command::CraftRelic(999999),
         Command::CreateGuild(crate::guilds::CreateGuild { owned_structure_id: 999999, public: false, name: 'route' }),
         Command::JoinGuild(crate::guilds::JoinGuild { owned_structure_id: 999999, guild_id: 999.try_into().unwrap() }),
         Command::LeaveGuild,
@@ -1012,7 +1006,7 @@ fn season_case() -> (Deployment, TestAction, u64) {
     let game_id = crate::registrar::IRegistrarDispatcherTrait::create_game(
         registrar, crate::registrar::CreateGameParams { dev_mode_on: true, ..super::registrar::params(false) },
     );
-    play_fixture::prepare_homes(d.games, game_id, d.actor);
+    play_fixture::reserve_fixture_homes(d.games, game_id, d.actor);
     super::resource_commands::set_fixture(
         d.games, selector!("realms"), selector!("catalogue_count"), array![].span(), 8000_u32,
     );

@@ -72,12 +72,12 @@ changes use the contract's existing owner-authorized setters.
 
 Deployment's last step runs `deploy/athanor/harness/self-check.ts` in the harness container against the same public
 stamping RPC. Activation also requires the launch Worker to enroll its own account on this pending shard. The owner
-confirms `Games.set_launcher(worker account)`; the Worker signs an idempotent `check-worker-*` game creation, and the
-deployment verifies its sender, call, confirmed receipt and game row. Missing Worker routes leave the shard PENDING.
-Only these checks together promote the directory entry to active. A failure writes `data/self-check.json`, exits nonzero
-naming the first failed route and leaves directory status unchanged. Re-run deployment after correcting the fault; it
-repeats the check only while PENDING. An ACTIVE or DRAINING rerun creates no check games. The runner and fixture are the
-harness implementation, not a separate deployment test suite.
+confirms `Games.set_launcher(worker account)` and reads `Games.launcher()` back. The relay's enrolled account receives
+`ledger_operator` through the same set-and-confirm sequence. Both reads must name the enrolled accounts before the
+directory entry becomes active. Missing Worker routes leave the shard PENDING. A failed gameplay check writes
+`data/self-check.json`, exits nonzero naming the first failed route and leaves directory status unchanged. Re-run
+deployment after correcting the fault; it repeats the check only while PENDING. An ACTIVE or DRAINING rerun creates no
+check games. The runner and fixture are the harness implementation, not a separate deployment test suite.
 
 Metrics collect OTLP and sample container CPU from a read-only cgroup mount, without a Docker socket or write access.
 The compose services restart on failure. Initializer logs and `harness.env` are private and must never be published.
@@ -90,11 +90,12 @@ The compose services restart on failure. Initializer logs and `harness.env` are 
 Run each command above as `python3 deploy/athanor/scripts/operator-command.py ...`. The wrapper reads the box's
 protected token file; ops provisions it. Use `stop.py` for a manually started runner so its directory entry is retired.
 
-Official deployment requires confirmed Worker enrolment, `set_launcher` and Worker-signed creation checks. It binds
-cached gameplay evidence to `native-world.json` and `initialized.json`, the chain identity and initialized contracts the
-check proves. Packaging changes do not invalidate that evidence. Once `launcher-enrolment.json` exists, a missing or
-invalid pass refuses a re-check: "launcher already handed off; finish the Worker check or retire the chain". Missing
-Worker routes leave the shard PENDING.
+Official deployment enrols the relay and launcher accounts, confirms `set_ledger_operator` and `set_launcher` on chain,
+and verifies the Worker-signed creation. It binds cached gameplay evidence to `native-world.json` and
+`initialized.json`, the chain identity and initialized contracts the check proves. Packaging changes do not invalidate
+that evidence. Resume reads owner, launcher and ledger operator from Games. Once any role has left the bootstrap
+account, missing or invalid gameplay evidence requires retiring the chain. Missing Worker routes leave the shard
+PENDING.
 
 ## Operations: back up and restore
 

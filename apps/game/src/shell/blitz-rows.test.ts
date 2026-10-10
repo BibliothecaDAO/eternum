@@ -18,7 +18,7 @@ const blitz = (gameId: number, over: Partial<DirectoryGame>): DirectoryGame =>
     player_count: 24,
     roster_count: 24,
     clock: { start_settling_at: 0, start_main_at: 0, end_at: 9_000, end_grace_seconds: 0 },
-    player_state: { registered: false, settled: false, roster_member: false, structures: [] },
+    player_state: { registered: false, settled: false, roster_wallet: null, structures: [] },
     ...over,
   }) as DirectoryGame;
 
@@ -43,10 +43,10 @@ describe("the lobby's Blitz rows", () => {
           ready: false,
           status: "Registration",
           clock: { start_settling_at: 0, start_main_at: 1_600, end_at: 9_000, end_grace_seconds: 0 },
-          player_state: { registered: false, settled: false, roster_member: true, structures: [] },
+          player_state: { registered: false, settled: false, roster_wallet: "0x123", structures: [] },
         }),
         blitz(1, {}),
-        blitz(2, { player_state: { registered: false, settled: false, roster_member: true, structures: [] } }),
+        blitz(2, { player_state: { registered: false, settled: false, roster_wallet: "0x123", structures: [] } }),
         blitz(4, { status: "Settled" }),
         { ...blitz(5, {}), mode: "frontier" },
       ],
@@ -100,7 +100,7 @@ describe("the lobby's Blitz rows", () => {
     const playing = blitzRows(
       [
         blitz(1, {}),
-        blitz(2, { player_state: { registered: false, settled: false, roster_member: true, structures: [] } }),
+        blitz(2, { player_state: { registered: false, settled: false, roster_wallet: "0x123", structures: [] } }),
       ],
       [slot("soon", 1_042)],
       ME,
@@ -113,7 +113,7 @@ describe("the lobby's Blitz rows", () => {
 it("keeps ended Blitz games available to watch until their settled result lists", () => {
   const ended = blitz(7, {
     status: "Ended",
-    player_state: { registered: true, settled: true, roster_member: true, structures: [] },
+    player_state: { registered: true, settled: true, roster_wallet: "0x123", structures: [] },
   });
   const rows = blitzRows([ended], [], ME, NOW);
   expect(rows).toMatchObject([{ key: "game:0xa:7", action: "spectate", secondsLeft: null }]);
