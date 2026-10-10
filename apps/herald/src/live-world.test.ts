@@ -92,7 +92,7 @@ describe("native live publication", () => {
     const appendEvents = vi.fn(async () => {});
     const { live } = fixture({ appendEvents, freezeReviewSnapshot: vi.fn() } as unknown as HistoryStore);
     await live.acceptSubscribedHead({ block_number: 10, timestamp: 100 });
-    expect(appendEvents).toHaveBeenCalledWith([], 10, []);
+    expect(appendEvents).toHaveBeenCalledWith([], 10, [], []);
   });
 
   it("does not republish repeated heads or a clock that has not advanced", async () => {

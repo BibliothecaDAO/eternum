@@ -194,7 +194,12 @@ it("rebuilds state and history from genesis in one replay when history lags the 
     load: vi.fn(async () => ({ fold: stale, confirmedBlock: 12 })),
     save: vi.fn(),
   };
-  const history = { frontierHistory: async () => [], appendEvents: vi.fn(), historyProgress: vi.fn(async () => 11) };
+  const history = {
+    frontierHistory: async () => [],
+    appendEvents: vi.fn(),
+    transactionHistoryProgress: async () => 11,
+    historyProgress: vi.fn(async () => 11),
+  };
   const loaded = await loadNativeWorld({ chain: "madara", checkpointStore, history, native, rpc });
   expect(rpc.readBlock).toHaveBeenCalledTimes(4);
   expect(loaded.fold).not.toBe(stale);
@@ -262,7 +267,12 @@ it("halts a confirmed rejection at the last checkpoint without killing receipt s
     load: vi.fn(async () => ({ fold, confirmedBlock: 9 })),
     save: vi.fn(),
   };
-  const history = { frontierHistory: async () => [], appendEvents: vi.fn(), historyProgress: vi.fn(async () => 9) };
+  const history = {
+    frontierHistory: async () => [],
+    appendEvents: vi.fn(),
+    transactionHistoryProgress: async () => 9,
+    historyProgress: vi.fn(async () => 9),
+  };
   const loaded = await loadNativeWorld({ chain: "madara", checkpointStore, history, native, rpc });
   expect(loaded.confirmedBlock).toBe(9);
   expect(loaded.fold.checkpoint()).toEqual(before);
@@ -362,7 +372,7 @@ it("keeps two story identities from overlay through confirmation, each its trans
   expect(fold.modelRows("PlayerPoints")).toHaveLength(1);
 });
 
-it("retains only one 64-block cold-replay window and no receipts, checkpointing before fetching the next", async () => {
+it("retains routing only within each 64-block cold window, checkpointing before fetching the next", async () => {
   const { native } = setup();
   let saved = -1;
   let historyThrough = -1;
@@ -400,6 +410,7 @@ it("retains only one 64-block cold-replay window and no receipts, checkpointing 
   };
   const history = {
     frontierHistory: async () => [],
+    transactionHistoryProgress: async () => null,
     historyProgress: async () => null,
     appendEvents: async (events: readonly unknown[], head?: number) => {
       expect(events.length).toBeLessThanOrEqual(64);
@@ -410,9 +421,9 @@ it("retains only one 64-block cold-replay window and no receipts, checkpointing 
   const loaded = await loadNativeWorld({ chain: "madara", native, rpc, checkpointStore, history });
   expect(retained).toHaveLength(6);
   expect(retained.slice(1)).toEqual(
-    Array.from({ length: 5 }, () => ({ events: 128, changes: 128, receipts: 0, rows: 1 })),
+    Array.from({ length: 5 }, () => ({ events: 128, changes: 128, receipts: 64, rows: 1 })),
   );
-  expect(outcomes).not.toHaveBeenCalled();
+  expect(outcomes).toHaveBeenCalledTimes(374);
   expect(loaded.confirmedBlock).toBe(383);
   expect(loaded.checkpointBlock).toBe(383);
   expect(loaded.metrics.pages).toBe(374);
@@ -439,6 +450,7 @@ it("keeps a completed startup window when the next window rejects a receipt and 
   };
   const history = {
     frontierHistory: async () => [],
+    transactionHistoryProgress: async () => historyThrough,
     historyProgress: async () => historyThrough,
     appendEvents: async (_events: readonly unknown[], head?: number) => {
       expect(head).toBeDefined();
@@ -536,6 +548,7 @@ it("checkpoints budgeted cold replay before fetching the following block", async
     },
     history: {
       frontierHistory: async () => [],
+      transactionHistoryProgress: async () => null,
       historyProgress: async () => null,
       appendEvents: async (_events, through) => {
         historyThrough = through!;
