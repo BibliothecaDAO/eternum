@@ -2212,13 +2212,16 @@ fn reported_withdrawals_block_custody_until_paid_and_exact_retries_do_not_count_
 }
 
 #[test]
-#[should_panic(expected: "Ledger: reported withdrawals unpaid")]
-fn close_cannot_strand_a_receipt_reported_by_the_relay() {
+fn close_voids_unpaid_reports_and_returns_their_backing() {
     let fixture = funded_frontier();
     fixture.ledger.report_withdrawal('shard', 1, 'pending', 400);
     start_cheat_block_timestamp(fixture.ledger_address, END + default_preset().claim_window_seconds.into());
     start_cheat_caller_address(fixture.ledger_address, ADMIN());
     fixture.ledger.close_frontier('shard', 1);
+    assert!(fixture.lords.balance_of(TREASURY()) == 1000);
+    assert!(fixture.ledger.frontier_unpaid_count('shard', 1) == 0);
+    assert!(fixture.ledger.frontier_unpaid_amount('shard', 1) == 0);
+    assert!(fixture.ledger.withdrawal_voided('shard', 'pending'));
 }
 
 #[test]
@@ -2611,4 +2614,38 @@ fn linked_registration_stays_available_while_paused() {
     assert!(fixture.ledger.get_game(GAME_KEY).registered_count == 1);
     assert!(fixture.ledger.get_registered_player(GAME_KEY, 0) == (player(0), shard_account(player(0))));
     assert_account_links_are_bijective(@fixture);
+}
+
+
+#[test]
+#[feature("safe_dispatcher")]
+fn reports_reserve_backing_for_all_unpaid_debts_including_while_paused() {
+    let fixture = funded_frontier();
+    let safe = IGameLedgerSafeDispatcher { contract_address: fixture.ledger_address };
+    assert!(safe.report_withdrawal('shard', 1, 'oversized', 1001).is_err());
+    fixture.ledger.report_withdrawal('shard', 1, 'first', 600);
+    assert!(safe.report_withdrawal('shard', 1, 'excess', 401).is_err());
+    fixture.ledger.report_withdrawal('shard', 1, 'second', 400);
+    fixture.ledger.report_withdrawal('shard', 1, 'second', 400);
+    assert!(fixture.ledger.frontier_unpaid_amount('shard', 1) == 1000);
+    start_cheat_block_timestamp(fixture.ledger_address, END);
+    fixture.ledger.pay('shard', 1, 'first', player(0), 600);
+    assert!(fixture.ledger.frontier_unpaid_amount('shard', 1) == 400);
+    assert!(safe.report_withdrawal('shard', 1, 'after_paid', 1).is_err());
+    start_cheat_caller_address(fixture.ledger_address, ADMIN());
+    fixture.ledger.pause();
+    start_cheat_caller_address(fixture.ledger_address, OPERATOR());
+    assert!(safe.report_withdrawal('shard', 1, 'paused_excess', 1).is_err());
+    start_cheat_caller_address(fixture.ledger_address, ADMIN());
+    fixture.ledger.unpause();
+    start_cheat_block_timestamp(fixture.ledger_address, fixture.ledger.frontier_claim_deadline('shard', 1));
+    fixture.ledger.close_frontier('shard', 1);
+    assert!(fixture.lords.balance_of(TREASURY()) == 400);
+    assert!(fixture.ledger.withdrawal_voided('shard', 'second'));
+    assert!(!fixture.ledger.withdrawal_voided('shard', 'first'));
+    start_cheat_caller_address(fixture.ledger_address, OPERATOR());
+    assert!(safe.pay('shard', 1, 'second', player(1), 400).is_err());
+    fixture.ledger.pay('shard', 1, 'first', player(1), 600);
+    assert!(fixture.lords.balance_of(player(0)) == 600);
+    assert!(fixture.lords.balance_of(player(1)) == 0);
 }
