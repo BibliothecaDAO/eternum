@@ -8,7 +8,7 @@ const { abi } = JSON.parse(
 );
 const codec = new CallData(abi);
 const entries = abi.flatMap((entry) => (entry.type === "interface" ? entry.items : [entry]));
-const key = { shard: 17n, game_id: 7 };
+const key = { shard: 17n, slot_id: 7 };
 
 for (const { name, fields, arguments: args, felts } of [
   { name: "register", fields: ["key", "sword", "shield"], arguments: [key, false, true], felts: ["17", "7", "0", "1"] },
@@ -38,33 +38,3 @@ for (const { name, fields, arguments: args, felts } of [
     );
   });
 }
-
-test("link mutation and views use the same scalar addresses as the relay interface", () => {
-  assert.deepEqual(codec.compile("set_account_link", { wallet: "0x123", account: "0x456" }), ["291", "1110"]);
-  assert.deepEqual(codec.compile("set_account_link", { wallet: "0x123", account: "0x0" }), ["291", "0"]);
-  for (const [name, input] of [
-    ["account_of_wallet", "wallet"],
-    ["wallet_of_account", "account"],
-  ]) {
-    const entry = entries.find((entry) => entry.name === name);
-    assert.deepEqual(
-      entry.inputs.map(({ name }) => name),
-      [input],
-    );
-    assert.equal(entry.outputs.length, 1);
-    assert.equal(entry.outputs[0].type, "core::starknet::contract_address::ContractAddress");
-  }
-});
-
-test("the link event records both displaced sides with the published key/data layout", () => {
-  const event = abi.find((entry) => entry.type === "event" && entry.name.endsWith("::AccountLinkChanged"));
-  assert.deepEqual(
-    event.members.map(({ name, kind }) => ({ name, kind })),
-    [
-      { name: "wallet", kind: "key" },
-      { name: "account", kind: "key" },
-      { name: "previous_account", kind: "data" },
-      { name: "previous_wallet", kind: "data" },
-    ],
-  );
-});
