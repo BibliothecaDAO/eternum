@@ -1,4 +1,4 @@
-import { computeSeasonTop, type LedgerGameKey } from "@realms-world/value-ledger";
+import { computeSeasonTop } from "@realms-world/value-ledger";
 import { relayOperation } from "./ports";
 import { normalizeStarknetAddress } from "@realms-world/identity";
 
@@ -14,13 +14,11 @@ interface Season {
   topCount: number;
   posted: boolean;
   challenged: boolean;
-  settlementStarted: boolean;
   end: number;
   reviewUntil: number;
 }
 type Change =
   | { kind: "opened" | "posted" | "corrected"; id: number; reviewUntil?: number; revision?: string }
-  | { kind: "game"; id: number; key: LedgerGameKey; terminal: boolean; revision?: string }
   | { kind: "participant"; id: number; wallet: string };
 interface Page {
   rows: readonly Change[];
@@ -33,7 +31,6 @@ export interface SeasonPorts {
   changes(from: number, cursor: string | null, head: number): Promise<Page>;
   posts(from: number, cursor: string | null, head: number): Promise<Page>;
   season(id: number, head: number): Promise<Season>;
-  game(key: LedgerGameKey, head: number): Promise<{ id: number; terminal: boolean }>;
   mmr(id: number, wallet: string, head: number): Promise<string>;
   winner(id: number, index: number, head: number): Promise<string>;
   post(id: number, wallets: readonly string[]): Promise<void>;
@@ -68,7 +65,6 @@ async function runSeasonTops(mode: "post" | "audit", ports: SeasonPorts, store: 
   if (head.time < season.end || !season.participantCount) return null;
   if (mode === "post" && season.posted && !season.challenged) return null;
   if (mode === "audit" && (!season.posted || season.challenged)) return null;
-  if (!(await gamesFinished(season.id, head, ports, store))) return `season_games_pending:${season.id}`;
   const revision = `${season.reviewUntil}:${(await store.get<string>(`season:proposal:${season.id}`)) ?? ""}:${(await store.get<string>(`season:correction:${season.id}`)) ?? ""}`;
   const checkedKey = `season:checked:${season.id}`;
   if (mode === "audit" && (await store.get<string>(checkedKey)) === revision) return null;
@@ -141,20 +137,6 @@ async function readSeasonRatings(season: Season, head: Head, ports: SeasonPorts,
   return ratings;
 }
 
-async function gamesFinished(id: number, head: Head, ports: SeasonPorts, store: Store) {
-  const prefix = `season:game:${id}:`;
-  const cursorKey = `season:games-cursor:${id}`;
-  const after = await store.get<string>(cursorKey);
-  let rows = await store.list<LedgerGameKey>({ prefix, limit: 25, ...(after ? { startAfter: after } : {}) });
-  if (!rows.size && after) rows = await store.list<LedgerGameKey>({ prefix, limit: 25 });
-  for (const [key, game] of rows) {
-    const status = await ports.game(game, head.number);
-    if (status.id !== id) throw new Error("season_game_binding_differs");
-    if (status.terminal) await store.delete(key);
-  }
-  await store.put(cursorKey, rows.size === 25 ? [...rows.keys()].at(-1)! : "");
-  return !(await store.list({ prefix, limit: 1 })).size;
-}
 async function ingestSeasonEvents(
   stream: "changes" | "posts",
   read: SeasonPorts["changes"],
@@ -176,12 +158,7 @@ async function ingestSeasonEvents(
     throw new Error("invalid_season_event_page");
   for (const row of page.rows) {
     await store.put(`season:known:${row.id}`, row.id);
-    if (row.kind === "game") {
-      const key = `season:game:${row.id}:${row.key.chainId}:${row.key.gameId}`;
-      if (row.terminal) await store.delete(key);
-      else await store.put(key, row.key);
-    }
-    if (row.kind === "corrected" || (row.kind === "game" && row.revision)) {
+    if (row.kind === "corrected") {
       if (!row.revision) throw new Error("season_correction_revision_missing");
       await store.put(`season:correction:${row.id}`, row.revision);
     }
