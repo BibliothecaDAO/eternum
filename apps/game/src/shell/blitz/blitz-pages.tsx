@@ -25,6 +25,7 @@ import { LiveChip, StateChip } from "../play/state-chip";
 import { ServiceFailure } from "../service-failure";
 import { FailureLine } from "../sign-in/failure-line";
 import { BLITZ_WORDS, ENTRY_WORDS, WALLET_WORDS, WORDS } from "../words";
+import { useLedgerSeats } from "./entry";
 import { PaidEntry } from "./entry-panel";
 import { GameRow, SeatsChip } from "./game-row";
 import { type LobbyStep, lobbyId, lobbyStep, lobbyTitle, seatsOf } from "./lobby";
@@ -168,7 +169,10 @@ export const BlitzLobbyPage = () => {
   const { data: player } = useRealmsPlayer();
   const { session } = useIdentitySession();
   const row = facts.blitz.find((candidate) => lobbyId(candidate) === id);
-  if (!row) {
+  const entry = row ? rowEntryOf(row) : null;
+  // A paid slot's seats are the ledger's count, read before any early return so the hooks keep their order.
+  const ledgerSeats = useLedgerSeats(row?.kind === "slot" && entry?.kind === "paid" ? entry.ledger : null);
+  if (!row || !entry) {
     return (
       <PageFrame back="/blitz" title={BLITZ.name} tabs={false}>
         {facts.slots.isSuccess && facts.directory.isSuccess ? <NothingHere /> : <Loading />}
@@ -176,11 +180,10 @@ export const BlitzLobbyPage = () => {
     );
   }
   const step = lobbyStep(row, facts.blitz, join.realmsId);
-  const seats = seatsOf(row, join.realmsId, player);
+  const seats = seatsOf(row, join.realmsId, player, ledgerSeats);
   const clock = <LobbyClock row={row} step={step} now={facts.now} />;
   const desktop = layout === "desktop";
   // A row's entry is free or paid on the ledger the services name; a paid game is never the free join.
-  const entry = rowEntryOf(row);
   const wallet = session ? payoutWalletOf(session.user) : null;
   const action =
     entry.kind === "free" ? (
@@ -262,7 +265,7 @@ const LobbyClock = ({ row, step, now }: { row: BlitzRow; step: LobbyStep; now: n
     {step.kind === "joined" || step.kind === "preparing" ? (
       <StateChip icon="Ok" text={WORDS.joined} />
     ) : (
-      <SeatsChip seats={row.seats} />
+      <SeatsChip row={row} />
     )}
   </div>
 );
@@ -283,6 +286,10 @@ const LobbyAction = ({
   // On the desktop the step answers Enter.
   const verb = (button: ReactNode) => (desktop ? <StepVerb>{button}</StepVerb> : button);
   switch (step.kind) {
+    case "open":
+      return verb(
+        <Button role="primary" word={BLITZ_WORDS.open} icon="Pl" onClick={() => navigate(`/blitz/${lobbyId(row)}`)} />,
+      );
     case "join":
       return (
         row.kind === "slot" && (

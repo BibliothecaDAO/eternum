@@ -110,6 +110,15 @@ export const entryState = (terms: EntryTerms, choice: EntryChoice, now: number, 
   return "choose";
 };
 
+/** A paid game's seats as the ledger counts its registrations; undefined until it answers, or without a ledger. */
+export const useLedgerSeats = (ledger: PaidGameLedger | null): number | undefined =>
+  useQuery({
+    queryKey: ledger ? ["ledger", "seats", ledger.address, ledger.shard, ledger.gameId] : ["ledger", "seats", "none"],
+    queryFn: async () => (await ledgerOf(ledger as PaidGameLedger).game(ledger as PaidGameLedger)).registeredCount,
+    enabled: ledger !== null,
+    refetchInterval: 15_000,
+  }).data;
+
 /** The wallet's calls for the chosen entry: approve what it pays in LORDS, then register. */
 export const entryCalls = (ledger: PaidGameLedger, terms: EntryTerms, choice: EntryChoice) =>
   registerCalls(ledger.address, terms.lordsToken, ledger, choice.sword, choice.shield, entryCost(terms, choice).cash);

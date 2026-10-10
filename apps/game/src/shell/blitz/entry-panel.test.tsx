@@ -6,6 +6,11 @@ import type { Call } from "starknet";
 import { afterEach, expect, it, vi } from "vitest";
 
 const signed = vi.hoisted(() => ({ calls: [] as Call[][] }));
+// The ledger answers nothing here: a refetch after a send stays pending, never reaching a network.
+vi.mock("@/runtime/l2-rpc", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/runtime/l2-rpc")>()),
+  l2Provider: () => ({ callContract: () => new Promise(() => {}) }),
+}));
 const session = vi.hoisted(() => ({ refresh: vi.fn(async () => undefined) }));
 vi.mock("@/hooks/context/identity-session", () => ({
   useIdentitySessionStore: (select: (state: typeof session) => unknown) => select(session),

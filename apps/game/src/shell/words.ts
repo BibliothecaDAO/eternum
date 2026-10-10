@@ -94,6 +94,8 @@ export const BLITZ_WORDS = {
   seatKept: "A seat cannot be given up.",
   /** Shown only to assistive technology; the seats are drawn. */
   seats: "Seats",
+  /** A paid slot's row: its lobby holds the paid entry. */
+  open: "Open",
   full: (nextStart: string) => `Full. The ${nextStart} game has seats.`,
   /** Above the lobby's countdown. */
   startsIn: "Starts in",

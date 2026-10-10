@@ -4,18 +4,31 @@ import { Button } from "@/ui/design-system/kit/button";
 import { Chip } from "@/ui/design-system/kit/chip";
 import { formatAmount } from "@/ui/design-system/kit/amount";
 
-import type { BlitzRow } from "../blitz-rows";
+import { type BlitzRow, rowEntryOf } from "../blitz-rows";
 import type { useJoinSlot } from "../blitz-slot";
 import { ClockChip } from "../clock-chip";
 import { entryHref } from "../game-links";
 import { LiveChip, StateChip } from "../play/state-chip";
 import { BLITZ_WORDS, WORDS } from "../words";
+import { useLedgerSeats } from "./entry";
 import { lobbyId, lobbyTitle } from "./lobby";
 
-/** A Blitz game's seats as a chip: taken of the roster ("17/24"); the word lives only in its label. */
-export const SeatsChip = ({ seats }: { seats: BlitzRow["seats"] }) => (
-  <Chip icons={["Pp"]} value={`${formatAmount(seats.filled)}/${formatAmount(seats.total)}`} label={BLITZ_WORDS.seats} />
-);
+/**
+ * A Blitz game's seats as a chip: taken of the roster ("17/24"); the word lives only in its label. A paid slot's taken
+ * seats are the ledger's count, a dash until it answers.
+ */
+export const SeatsChip = ({ row }: { row: BlitzRow }) => {
+  const entry = rowEntryOf(row);
+  const ledgerSeats = useLedgerSeats(row.kind === "slot" && entry.kind === "paid" ? entry.ledger : null);
+  const filled = row.seats.filled ?? ledgerSeats;
+  return (
+    <Chip
+      icons={["Pp"]}
+      value={`${filled === undefined ? "—" : formatAmount(filled)}/${formatAmount(row.seats.total)}`}
+      label={BLITZ_WORDS.seats}
+    />
+  );
+};
 
 /**
  * One Blitz in the list (spec 05): live with its end, or its start; its seats; one action: Watch a game the player is
@@ -41,7 +54,7 @@ export const GameRow = ({ row, now, join }: { row: BlitzRow; now: number; join: 
         ) : (
           <ClockChip prefix="starts" at={row.startsAt} now={now} />
         )}
-        <SeatsChip seats={row.seats} />
+        <SeatsChip row={row} />
       </span>
       <span className="relative ml-auto">
         <RowAction row={row} join={join} />
@@ -69,6 +82,10 @@ const RowAction = ({ row, join }: { row: BlitzRow; join: ReturnType<typeof useJo
             onClick={() => navigate(entryHref(row.game, "spectate"))}
           />
         )
+      );
+    case "open":
+      return (
+        <Button role="primary" word={BLITZ_WORDS.open} icon="Pl" onClick={() => navigate(`/blitz/${lobbyId(row)}`)} />
       );
     case "join":
       return (

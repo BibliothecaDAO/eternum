@@ -5,6 +5,7 @@ import type { BlitzRow } from "../blitz-rows";
 import { BLITZ_SEATS, registrationFor } from "../blitz-slot";
 import { sameAddress } from "../format";
 import { ageOf } from "../play/ages";
+import { gameEntryOf } from "../value/game-entry";
 
 /** A lobby's title is its game's start time: "Blitz 16:30". */
 export const lobbyTitle = (row: BlitzRow) =>
@@ -22,6 +23,7 @@ export type Seat = { account: string | null; own: boolean; prepared: boolean | u
 
 /** What a lobby offers: the one action, or the fact that stands where it would. */
 export type LobbyStep =
+  | { kind: "open" }
   | { kind: "join" }
   | { kind: "joined" }
   | { kind: "preparing" }
@@ -40,7 +42,16 @@ const fillingNow = (slot: PlaytestSlot) => {
  * game's are Herald's fixed roster, each ticked once its player's realm is ready. A Herald that does not serve the
  * roster leaves the taken seats unnamed: as many as the game counts, each drawn as a dash.
  */
-export const seatsOf = (row: BlitzRow, realmsId: string | undefined, player: string | null): Seat[] => {
+export const seatsOf = (
+  row: BlitzRow,
+  realmsId: string | undefined,
+  player: string | null,
+  /** A paid slot's seats as the ledger counts them; undefined until it answers. */
+  ledgerSeats?: number,
+): Seat[] => {
+  // A paid slot's seats are the ledger's registrations, unnamed: the launch service's list never fills.
+  if (row.kind === "slot" && gameEntryOf(row.slot, row.slot.name).kind !== "free")
+    return Array.from({ length: ledgerSeats ?? 0 }, () => UNNAMED_SEAT);
   if (row.kind === "slot")
     return fillingNow(row.slot).map((registration) => ({
       account: registration.account,
@@ -48,7 +59,7 @@ export const seatsOf = (row: BlitzRow, realmsId: string | undefined, player: str
         realmsId !== undefined && registration.realmsId !== null && BigInt(registration.realmsId) === BigInt(realmsId),
       prepared: undefined,
     }));
-  if (!row.game.roster) return Array.from({ length: row.seats.filled }, () => UNNAMED_SEAT);
+  if (!row.game.roster) return Array.from({ length: row.seats.filled ?? 0 }, () => UNNAMED_SEAT);
   return row.game.roster.map(({ account, prepared }) => ({
     account,
     own: player !== null && sameAddress(account, player),
@@ -64,6 +75,7 @@ const UNNAMED_SEAT: Seat = { account: null, own: false, prepared: undefined };
  * on; and for a game whose seats are all taken, Full with the next game that still has seats.
  */
 export const lobbyStep = (row: BlitzRow, rows: readonly BlitzRow[], realmsId: string | undefined): LobbyStep => {
+  if (row.action === "open") return { kind: "open" };
   if (row.kind === "slot") return registrationFor(row.slot, realmsId) ? { kind: "joined" } : { kind: "join" };
   if (row.action === "enter") return { kind: "enter" };
   if (row.action === "registered") return { kind: "preparing" };

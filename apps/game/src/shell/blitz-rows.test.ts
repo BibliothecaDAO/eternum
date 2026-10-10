@@ -130,3 +130,23 @@ describe("a Blitz row's entry", () => {
     expect(rowEntryOf(filling)).toEqual({ kind: "free" });
   });
 });
+
+describe("a paid Blitz slot's row", () => {
+  const LEDGER = { address: "0x1ed9e7", chainId: "0x534e5f4d41494e", feeToken: "0x57e1", shard: "0xa", gameId: 1 };
+
+  it("opens its lobby instead of offering the free Join, and leaves its seats to the ledger", () => {
+    const [paid, broken, free] = blitzRows(
+      [],
+      [
+        slot("paid", 1_000, { entry: { kind: "paid", ledger: LEDGER }, registrations: [mine] }),
+        slot("broken", 1_001, { entry: { kind: "paid" } as unknown as PlaytestSlot["entry"] }),
+        slot("free", 1_002),
+      ],
+      ME,
+    );
+    expect([paid.action, broken.action, free.action]).toEqual(["open", "open", "join"]);
+    // The launch service's registrations are not a paid slot's seats: the ledger counts them.
+    expect(paid.seats).toEqual({ filled: null, total: 24 });
+    expect(free.seats).toEqual({ filled: 0, total: 24 });
+  });
+});

@@ -5,8 +5,11 @@ import { BLITZ_SEATS, registrationFor, seatsFilling } from "./blitz-slot";
 import type { DirectoryGame } from "./herald";
 import { directoryGameEntryOf, gameEntryOf } from "./value/game-entry";
 
-/** A row's one action: play the game, watch it, join its slot, or a check for a seat already taken. */
-export type BlitzAction = "enter" | "spectate" | "join" | "registered";
+/**
+ * A row's one action: play the game, watch it, join its free slot, a check for a seat already taken, or open the
+ * lobby of a paid (or unreadable) slot, which is never the free join.
+ */
+export type BlitzAction = "enter" | "spectate" | "join" | "registered" | "open";
 
 /**
  * One Blitz on the lobby's Blitz card (design o4): live, or the moment it starts or its slot closes, its seats, and
@@ -17,7 +20,8 @@ export type BlitzRow = {
   key: string;
   /** When it starts (a game) or its slot closes (a slot); null once it is live or over. */
   startsAt: number | null;
-  seats: { filled: number; total: number };
+  /** Seats taken; null for a paid slot, whose seats only the ledger counts (useLedgerSeats). */
+  seats: { filled: number | null; total: number };
   action: BlitzAction | null;
 } & ({ kind: "game"; game: DirectoryGame } | { kind: "slot"; slot: PlaytestSlot });
 
@@ -66,14 +70,17 @@ const gameAction = (game: DirectoryGame): BlitzAction | null => {
   return isMember(game) ? "registered" : "spectate";
 };
 
-const slotRow = (slot: PlaytestSlot, realmsId: string | undefined): BlitzRow => ({
-  kind: "slot",
-  key: `slot:${slot.name}`,
-  slot,
-  startsAt: Math.floor(Date.parse(slot.closesAt) / 1000),
-  seats: { filled: seatsFilling(slot), total: BLITZ_SEATS },
-  action: registrationFor(slot, realmsId) ? "registered" : "join",
-});
+const slotRow = (slot: PlaytestSlot, realmsId: string | undefined): BlitzRow => {
+  const free = gameEntryOf(slot, slot.name).kind === "free";
+  return {
+    kind: "slot",
+    key: `slot:${slot.name}`,
+    slot,
+    startsAt: Math.floor(Date.parse(slot.closesAt) / 1000),
+    seats: { filled: free ? seatsFilling(slot) : null, total: BLITZ_SEATS },
+    action: !free ? "open" : registrationFor(slot, realmsId) ? "registered" : "join",
+  };
+};
 
 const isFilling = (slot: PlaytestSlot): boolean => !slot.closed && !slot.frozenAt;
 

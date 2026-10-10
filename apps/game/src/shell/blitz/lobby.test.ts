@@ -86,6 +86,24 @@ describe("a Blitz lobby", () => {
     ]);
   });
 
+  it("seats a paid slot from the ledger's registered count, unnamed, and none before the ledger answers", () => {
+    const paid = slotRow(
+      {
+        ...slot([registration(0, ME)]),
+        entry: {
+          kind: "paid",
+          ledger: { address: "0x1ed9e7", chainId: "0x534e5f4d41494e", feeToken: "0x57e1", shard: "0xa", gameId: 1 },
+        },
+      },
+      "open",
+    );
+    const unnamed = { account: null, own: false, prepared: undefined };
+    expect(seatsOf(paid, ME, PLAYER, 3)).toEqual([unnamed, unnamed, unnamed]);
+    expect(seatsOf(paid, ME, PLAYER, undefined)).toEqual([]);
+    // Its step outside its own lobby is to open that lobby, never the free Join.
+    expect(lobbyStep(paid, [paid], ME)).toEqual({ kind: "open" });
+  });
+
   it("seats a launched game from Herald's roster, each ticked once its player's realm is ready", () => {
     const roster = [
       { account: "0xa1", prepared: true },

@@ -9,6 +9,7 @@ import { useEffect } from "react";
 import { useLocation, useSearchParams } from "react-router-dom";
 
 import { useRequestSignIn } from "./sign-in/sign-in-route";
+import { gameEntryOf } from "./value/game-entry";
 
 /** A Blitz game's roster: registrations past it fill the slot's next game. */
 export const BLITZ_SEATS = 24;
@@ -53,10 +54,12 @@ export const useJoinSlot = () => {
     register,
     /** The slot whose Join is under way, so only its button says Joining…. */
     joining: register.isPending ? register.variables : undefined,
-    join: (slot: PlaytestSlot) =>
-      status === "signed-in"
-        ? register.mutate(slot.name)
-        : requestSignIn(`${pathname}?${JOIN_PARAM}=${encodeURIComponent(slot.name)}`),
+    join: (slot: PlaytestSlot) => {
+      // A paid or unreadable slot is entered on the ledger from its lobby, never through the free join.
+      if (gameEntryOf(slot, slot.name).kind !== "free") return;
+      if (status === "signed-in") register.mutate(slot.name);
+      else requestSignIn(`${pathname}?${JOIN_PARAM}=${encodeURIComponent(slot.name)}`);
+    },
   };
 };
 
