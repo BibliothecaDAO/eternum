@@ -176,16 +176,13 @@ pub fn roll(rules: ChestRules, previous: LordsBudget, clock: SeasonClock, day: u
     let sample: u128 = (Into::<u128, u256>::into(previous.rolled_shares) * LORDS_ESTIMATE_SCALE.into() / ticks.into())
         .try_into()
         .unwrap();
-    let mut estimate: u128 = ((Into::<u128, u256>::into(previous.estimate) * (window - 1) + sample.into()) / window)
-        .try_into()
-        .unwrap();
-    let mut skipped = day - previous.day - 1;
-    // For a nonzero estimate and window >= 1, floor(estimate * (window - 1) / window) is strictly smaller.
-    // The loop takes at most the skipped days or the initial estimate, and stops as soon as zero stays zero.
-    while skipped != 0 && estimate != 0 {
-        estimate = (Into::<u128, u256>::into(estimate) * (window - 1) / window).try_into().unwrap();
-        skipped -= 1;
-    }
+    let estimate: u128 = if day > previous.day + 1 {
+        0
+    } else {
+        ((Into::<u128, u256>::into(previous.estimate) * (window - 1) + sample.into()) / window)
+            .try_into()
+            .unwrap()
+    };
     open_day(rules, LordsBudget { open: 0, day, estimate, rolled_shares: 0, price: 0, ..previous }, clock)
 }
 
