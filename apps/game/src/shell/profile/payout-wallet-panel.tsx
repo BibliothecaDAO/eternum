@@ -36,9 +36,10 @@ type Step =
   | { kind: "code"; change: Change };
 
 /**
- * The payout wallet (design 5g): link, replace or unlink, each with the wallet's signature and a 6-digit code sent to
- * the account's email; a newly linked wallet receives nothing for 24 hours. A player with no wallet is sent to Ready,
- * whose email wallet needs no install. We create no wallet and hold no key.
+ * The payout wallet (design 3): linking or replacing takes the new wallet's signature and a 6-digit code sent to the
+ * account's email; unlinking takes the code alone, so a player who lost the wallet can still unlink it. A newly linked
+ * wallet receives nothing for 24 hours. A player with no wallet is sent to Ready, whose email wallet needs no install.
+ * We create no wallet and hold no key.
  */
 export const PayoutWalletPanel = ({
   wallet,
