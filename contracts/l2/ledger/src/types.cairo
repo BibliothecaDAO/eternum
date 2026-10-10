@@ -177,12 +177,3 @@ pub struct FrontierClock {
     pub start_main_at: u64,
     pub seed: felt252,
 }
-
-
-#[derive(Copy, Default, Drop, Serde, starknet::Store)]
-pub struct SeasonSettlement {
-    pub total_weight: u256,
-    pub next_weight: u256,
-    pub allocation_cursor: u32,
-    pub allocated: u256,
-}
