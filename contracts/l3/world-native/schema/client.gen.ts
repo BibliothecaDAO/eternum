@@ -1,5 +1,5 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "a2699a0e6e4acc8e8c9a621cf93992bab4ff2664a4f0f33f1514f7e1316a91d3";
+export const nativeFactSchemaIdentity = "3d76793f98fe8ef8c4d39e808efe2ede51edc00c3a768eb9feebda3167e3f242";
 export const nativeRuleConstants = {
   "ATTRIBUTE_CAP": 5,
   "BATTLE_UNCOMMON_BPS": 1000,
@@ -42,7 +42,8 @@ export const nativeRuleConstants = {
   "HYPERSTRUCTURE_MULTIPLIERS": 32768,
   "PRODUCTION_START": 131072,
   "WELL_STAMINA": 60,
-  "TIER_STAMINA_REFILL": 30
+  "TIER_STAMINA_REFILL": 30,
+  "FRONTIER_REPORT_GRACE_SECONDS": 3600
 } as const;
 export const nativeResearchConstants = {
   "ROW_FARM": 0,
