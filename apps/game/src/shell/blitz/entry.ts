@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { type BlitzRow, rowEntryOf } from "../blitz-rows";
 import type { Credits, EntrySplit, LedgerPrices, Registration } from "@realms-world/value-ledger/codecs";
 import { registerCalls } from "../value/ledger";
-import type { LedgerLinkStatus, PaidGameLedger } from "@realms-world/identity";
+import type { PaidGameLedger } from "@realms-world/identity";
 
 import { ledgerOf } from "../value/game-entry";
 
@@ -55,62 +55,20 @@ export const entryCost = (terms: Pick<EntryTerms, "prices" | "credits">, choice:
   return { cash, swordCredit, shieldCredit };
 };
 
-type EntryState =
-  | "choose"
-  | "short"
-  | "no-strk"
-  | "seated"
-  | "refund"
-  | "refunded"
-  | "closed"
-  | "full"
-  | "linking"
-  | "linked-elsewhere"
-  | "linked-other-ledger";
-
-/**
- * Where the services' ledger link stands for this entry: confirmed for it, still linking, confirmed for another
- * account, or confirmed on another ledger or chain.
- */
-type EntryLink = "confirmed" | "linking" | "elsewhere" | "other-ledger";
-
-const sameFelt = (one: string, other: string) => BigInt(one) === BigInt(other);
-
-/**
- * The ledger registers the account the relay links to the paying wallet, and the services say when that link is
- * confirmed on the ledger (session user.ledgerLink). A link not yet confirmed, or confirmed for a wallet other than
- * the payout wallet (a replacement still syncing), is linking. A link confirmed on another ledger or chain, or for
- * another account than the player's, never resolves by waiting: a fault. Readiness is never inferred.
- */
-export const entryLinkOf = (
-  link: LedgerLinkStatus,
-  ledger: PaidGameLedger,
-  wallet: string,
-  account: string,
-): EntryLink => {
-  if (link.status !== "confirmed") return "linking";
-  if (!sameFelt(link.ledger.address, ledger.address) || !sameFelt(link.ledger.chainId, ledger.chainId))
-    return "other-ledger";
-  if (link.wallet === null || !sameFelt(link.wallet, wallet)) return "linking";
-  return sameFelt(link.account, account) ? "confirmed" : "elsewhere";
-};
+type EntryState = "choose" | "short" | "no-strk" | "seated" | "refund" | "refunded" | "closed" | "full";
 
 /**
  * The panel's state: seated once registered; on a cancelled game, a refund until the paid LORDS and spent credits are
- * back; closed to anyone else once the game has started; before paying, linking until the services confirm the link
- * and a fault while it names another account; a link not known yet (no payout wallet to link) is linking too, and only
- * paying ever waits on it. Then choosing, short of LORDS, or holding LORDS with no STRK for the network fee.
+ * back; closed to anyone else once the game has started. Then choosing, short of LORDS, or holding LORDS with no STRK
+ * for the network fee: a linked wallet pays at once.
  */
-export const entryState = (terms: EntryTerms, choice: EntryChoice, now: number, link: EntryLink | null): EntryState => {
+export const entryState = (terms: EntryTerms, choice: EntryChoice, now: number): EntryState => {
   const { registration } = terms;
   if (registration.registered && terms.cancelled)
     return registration.paid > 0n || registration.swordCredit || registration.shieldCredit ? "refund" : "refunded";
   if (registration.registered) return "seated";
   if (now >= terms.start) return "closed";
   if (terms.seats.taken >= terms.seats.total) return "full";
-  if (link === null || link === "linking") return "linking";
-  if (link === "elsewhere") return "linked-elsewhere";
-  if (link === "other-ledger") return "linked-other-ledger";
   if (terms.lords < entryCost(terms, choice).cash) return "short";
   if (terms.strk === 0n) return "no-strk";
   return "choose";

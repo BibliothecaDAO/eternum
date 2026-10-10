@@ -191,8 +191,8 @@ export const BlitzLobbyPage = () => {
       <LobbyAction row={row} step={step} join={join} desktop={desktop} />
     ) : entry.kind === "broken" ? (
       <FailureLine line={ENTRY_WORDS.unreadable} />
-    ) : wallet && session?.user.ledgerLink ? (
-      <PaidEntry ledger={entry.ledger} wallet={wallet} link={session.user.ledgerLink} account={player} />
+    ) : wallet ? (
+      <PaidEntry ledger={entry.ledger} wallet={wallet} account={player} />
     ) : (
       <FailureLine line={WALLET_WORDS.unavailableLine} />
     );
