@@ -2093,19 +2093,19 @@ fn a_reported_receipt_can_be_paid_after_the_window_until_admin_closes() {
 }
 
 #[test]
-#[should_panic(expected: "Ledger: claim window is zero")]
-fn a_frontier_calendar_requires_a_claim_window() {
-    deploy_fixture(Preset { claim_window_seconds: 0, ..default_preset() });
+#[should_panic(expected: "Ledger: claim window needs reporting grace")]
+fn a_frontier_calendar_requires_more_than_the_reporting_hour() {
+    deploy_fixture(Preset { claim_window_seconds: crate::days::FRONTIER_REPORT_GRACE_SECONDS, ..default_preset() });
 }
 
 #[test]
 fn claim_window_is_an_immutable_preset_not_a_constant() {
-    let fixture = deploy_fixture(Preset { claim_window_seconds: 17, ..default_preset() });
+    let fixture = deploy_fixture(Preset { claim_window_seconds: 3617, ..default_preset() });
     fund_and_approve_player(@fixture, ADMIN(), 1000);
     start_cheat_caller_address(fixture.ledger_address, ADMIN());
     fixture.ledger.fund_frontier('shard', 1, PRESET_ID, START, 0x5eed, 1000);
-    assert!(fixture.ledger.frontier_claim_deadline('shard', 1) == END + 17);
-    start_cheat_block_timestamp(fixture.ledger_address, END + 17);
+    assert!(fixture.ledger.frontier_claim_deadline('shard', 1) == END + 3617);
+    start_cheat_block_timestamp(fixture.ledger_address, END + 3617);
     fixture.ledger.close_frontier('shard', 1);
 }
 

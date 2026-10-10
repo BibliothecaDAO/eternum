@@ -1,3 +1,6 @@
+// Leave time for confirmed withdrawals to reach the ledger before reports close.
+pub const FRONTIER_REPORT_GRACE_SECONDS: u32 = 3600;
+
 //! The season's days (Frontier rules §9). A day lasts 2 to 6 units of the preset's day unit. Days come in bags of five
 //! holding each length once, so every bag lasts 20 units, and bags follow one another from the season's start. Bag b's
 //! order is drawn from the game's seed, so every player shares one schedule, and any timestamp finds its day again

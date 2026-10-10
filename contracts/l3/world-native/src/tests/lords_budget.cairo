@@ -456,21 +456,21 @@ fn skipped_day_decay_is_exact_beyond_sixty_four_days() {
 }
 
 #[test]
-fn withdrawals_remain_open_through_the_last_second_of_the_preset_claim_window() {
+fn withdrawals_stop_one_hour_before_the_report_deadline() {
     let game = clock().game;
     let rules = rules();
     crate::relics::assert_claim_window(game, rules, game.end_at);
     crate::relics::assert_claim_window(
-        game, rules, game.end_at + Into::<u32, u64>::into(rules.claim_window_seconds) - 1,
+        game, rules, game.end_at + Into::<u32, u64>::into(rules.claim_window_seconds - crate::days::FRONTIER_REPORT_GRACE_SECONDS) - 1,
     );
 }
 
 #[test]
 #[should_panic(expected: "LORDS claim window closed")]
-fn no_receipt_can_start_at_the_ledgers_close_deadline() {
+fn no_receipt_can_start_in_the_reporting_grace_hour() {
     let game = clock().game;
     let rules = rules();
-    crate::relics::assert_claim_window(game, rules, game.end_at + Into::<u32, u64>::into(rules.claim_window_seconds));
+    crate::relics::assert_claim_window(game, rules, game.end_at + Into::<u32, u64>::into(rules.claim_window_seconds - crate::days::FRONTIER_REPORT_GRACE_SECONDS));
 }
 
 #[test]
@@ -497,4 +497,15 @@ fn an_expired_chest_cannot_spend_another_players_reservation() {
             assert_eq!(crate::logic::lords_budget::budget(game_id).unwrap().open, 0);
         },
     );
+}
+
+#[test]
+#[should_panic(expected: "LORDS claim window needs reporting grace")]
+fn a_frontier_preset_requires_more_than_the_reporting_hour() {
+    let (_, mut preset) = super::preset_projection::current_definition("frontier");
+    let chests = preset.economy.chests.unwrap();
+    preset.economy.chests = Option::Some(ChestRules {
+        claim_window_seconds: crate::days::FRONTIER_REPORT_GRACE_SECONDS, ..chests
+    });
+    crate::presets::validate(preset);
 }

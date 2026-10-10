@@ -314,7 +314,7 @@ pub trait IFrontierSites<T> {
     );
 }
 
-// The ledger closes at this same exclusive deadline; no new receipt may be created at or beyond it.
+// Stop debits before the ledger report deadline so confirmed receipts have time to arrive.
 pub fn assert_claim_window(game: crate::game::GameRegistry, rules: ChestRules, timestamp: u64) {
-    assert!(timestamp < game.end_at + Into::<u32, u64>::into(rules.claim_window_seconds), "LORDS claim window closed");
+    assert!(timestamp < game.end_at + Into::<u32, u64>::into(rules.claim_window_seconds - crate::days::FRONTIER_REPORT_GRACE_SECONDS), "LORDS claim window closed");
 }
