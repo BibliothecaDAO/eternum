@@ -583,7 +583,7 @@ class PackageStartTest(unittest.TestCase):
         self.write_initialized_data()
         self.environ = {
             **operator_fixture(self.data, self),
-            "CHAIN_ID": "COMMUNITY", "GUARDIAN_URL": "https://identity.test/api/guardian",
+            "CHAIN_ID": "RESTORED_SHARD", "GUARDIAN_URL": "https://identity.test/api/guardian",
             "PUBLIC_RPC_URL": "https://rpc.test/rpc/v0_10_2", "PUBLIC_HERALD_URL": "https://herald.test", "VRF_WORKERS": "8", "L2_GAS_BOUND": "0x47868c00",
             "PLAYER_CAPACITY": "16",
             "TRUSTED_PROXY": "172.18.0.1",
@@ -603,14 +603,14 @@ class PackageStartTest(unittest.TestCase):
             "authority.json": {"address": "0x3", "signingKey": "0xdef"},
             "initialized.json": {"chainId": "0x1", "world": "0x4"},
             # A record written before init kept only identity: operational settings beside it are ignored.
-            "init-configuration.json": {"shard": "community", "chain_id": "COMMUNITY", "port_base": 0,
+            "init-configuration.json": {"shard": "restored-shard", "chain_id": "RESTORED_SHARD", "port_base": 0,
                                         "guardian_url": "https://identity.test/api/guardian", "l2_gas_bound": "0x47868c00", "player_capacity": 16,
                                         "madara_image": NODE_IMAGE, "public_rpc_url": "https://rpc.test/rpc/v0_10_2"},
         }
         for name, value in files.items():
             (self.data / name).write_text(json.dumps(value))
         (self.data / "host-keys.json").chmod(0o600)
-        (self.data / "chain-config.yaml").write_text('chain_id: "COMMUNITY"\n')
+        (self.data / "chain-config.yaml").write_text('chain_id: "RESTORED_SHARD"\n')
         shard.write_private_environment(self.data / "postgres.env", {
             "POSTGRES_USER": "herald", "POSTGRES_DB": "herald", "POSTGRES_PASSWORD": "restored-password",
         })
