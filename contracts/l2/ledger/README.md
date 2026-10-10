@@ -17,13 +17,14 @@ the cumulative unlock. They carry no treasury cut. Only the admin unpauses; the 
 
 The immutable `claim_window_seconds` preset defaults to seven days. The shard accepts withdrawals only before
 `season.end + claim_window_seconds - 3600`, leaving a fixed one-hour reporting buffer. The constant
-`LORDS_REPORTING_BUFFER_SECONDS` lives beside the shard chest rules; preset ids do not select it. The ledger still accepts
-first reports until `season.end + claim_window_seconds` and exposes this boundary as `frontier_claim_deadline` and refuses
-`close_frontier` until that timestamp. Closing returns unused funds to the treasury. No withdrawal created at or after
-the earlier shard cutoff can produce a valid receipt. This buffer bounds routine relay delivery; it is not a guarantee
-against a longer outage or unbounded cross-chain clock skew. Delivery of an older confirmed receipt can still be delayed: payments
-remain possible until closure, so the admin must drain the relay's confirmed withdrawal backlog before closing. After
-closure a previously paid claim remains a harmless retry; an unseen claim refuses with `Ledger: season closed`.
+`LORDS_REPORTING_BUFFER_SECONDS` lives beside the shard chest rules; preset ids do not select it. The ledger still
+accepts first reports until `season.end + claim_window_seconds` and exposes this boundary as `frontier_claim_deadline`
+and refuses `close_frontier` until that timestamp. Closing returns unused funds to the treasury. No withdrawal created
+at or after the earlier shard cutoff can produce a valid receipt. This buffer bounds routine relay delivery; it is not a
+guarantee against a longer outage or unbounded cross-chain clock skew. Delivery of an older confirmed receipt can still
+be delayed: payments remain possible until closure, so the admin must drain the relay's confirmed withdrawal backlog
+before closing. After closure a previously paid claim remains a harmless retry; an unseen claim refuses with
+`Ledger: season closed`.
 
 Blitz settlement takes one `protocol_cut_bps` treasury cut on the whole incoming game pot: entries, paid swords/shields
 and sponsorship. The default is 2000 bps. The remaining pot splits by `chest_lords_bps` into the season's chest reserve
