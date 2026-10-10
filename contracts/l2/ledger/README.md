@@ -25,8 +25,7 @@ returns `pool - paid` to the treasury. The existing closed season plus payment r
 void; the relay must recover that fact from the views and stop retrying voided claims. Paid retries remain harmless;
 unpaid payments after closure refuse.
 
-Blitz settlement takes one `protocol_cut_bps` treasury cut on the whole incoming game pot: entries, paid swords/shields
-and sponsorship. The default is 2000 bps. The remaining pot splits by `chest_lords_bps` into the season's chest reserve
+Blitz settlement takes one `protocol_cut_bps` treasury cut on the whole incoming game pot: entries and paid swords/shields. The default is 2000 bps. The remaining pot splits by `chest_lords_bps` into the season's chest reserve
 and season prize pool. Refunds return the original payment before any settlement cut. Chest and season payouts have no
 second cut. Frontier's configuration preset keeps its cut at zero.
 

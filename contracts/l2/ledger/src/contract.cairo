@@ -54,7 +54,6 @@ pub trait IGameLedger<TState> {
     fn season_claimed(self: @TState, season_id: u32, owner: ContractAddress) -> bool;
     fn open_slot(ref self: TState, key: SlotKey, season_id: u32, preset_id: u32, close: u64, end: u64);
     fn register(ref self: TState, key: SlotKey, sword: bool, shield: bool);
-    fn fund(ref self: TState, key: SlotKey, amount: u256);
     fn cancel_slot(ref self: TState, key: SlotKey);
     fn abort_slot(ref self: TState, key: SlotKey);
     fn refund(ref self: TState, key: SlotKey);
@@ -182,7 +181,6 @@ pub mod GameLedger {
         PresetRegistered: PresetRegistered,
         SlotOpened: SlotOpened,
         Registered: Registered,
-        Funded: Funded,
         SlotCancelled: SlotCancelled,
         SlotAborted: SlotAborted,
         Refunded: Refunded,
@@ -255,14 +253,6 @@ pub mod GameLedger {
 
     }
 
-    #[derive(Drop, starknet::Event)]
-    struct Funded {
-        #[key]
-        key: SlotKey,
-        #[key]
-        funder: ContractAddress,
-        amount: u256,
-    }
 
     #[derive(Drop, starknet::Event)]
     struct SlotCancelled {
@@ -740,18 +730,6 @@ pub mod GameLedger {
             self.emit(Registered { key, owner });
         }
 
-        fn fund(ref self: ContractState, key: SlotKey, amount: u256) {
-            let funder = starknet::get_caller_address();
-            let game = self.assert_slot_open_before_close(key);
-            assert!(amount > 0, "Ledger: zero funding");
-
-            let mut registration = self.registrations.entry((key, funder)).read();
-            registration.paid += amount;
-            self.registrations.entry((key, funder)).write(registration);
-            self.add_to_pool(key, game, amount);
-            self.pull_lords(funder, amount);
-            self.emit(Funded { key, funder, amount });
-        }
 
         fn cancel_slot(ref self: ContractState, key: SlotKey) {
             self.accesscontrol.assert_only_role(OPERATOR_ROLE);
@@ -1026,14 +1004,13 @@ pub mod GameLedger {
                 } else {
                     0
                 };
-            let sponsored = self.registrations.entry((key, owner)).read().paid;
             let registration = Registration {
                 registered: true,
                 sword,
                 shield,
                 sword_credit,
                 shield_credit,
-                paid: sponsored + payment,
+                paid: payment,
                 ..Default::default(),
             };
             self.record_registration(key, owner, registration, payment);
