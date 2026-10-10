@@ -6,17 +6,11 @@ const Target = Schema.Struct({
   chainId: Schema.String.check(Schema.isPattern(/^0x[0-9a-f]+$/i)),
   heraldUrl: Schema.NonEmptyString,
 });
-const Check = Schema.Struct({
-  ...Target.fields,
-  name: Schema.String.check(Schema.isPattern(/^check-worker-[0-9a-f]{16}$/)),
-  presetId: Schema.Int.check(Schema.isBetween({ minimum: 1, maximum: 0xffffffff })),
-});
 export interface OperatorLauncher {
   enrol(input: Schema.Schema.Type<typeof Target>): Promise<{ chainId: string; launcherAccount: string }>;
-  check(input: Schema.Schema.Type<typeof Check>): Promise<{ txHash: string }>;
 }
 
-/** This surface only enrolls its own signer and creates a reserved proof game. */
+/** This surface only enrolls its own signer. */
 export const launcherOperatorRoutes = (launcher: OperatorLauncher) => {
   const app = new Hono<LaunchAppEnv>();
   app.use("*", async (context, next) => {
@@ -43,10 +37,6 @@ export const launcherOperatorRoutes = (launcher: OperatorLauncher) => {
   app.post(
     "/enrol",
     handle(Target, (input) => launcher.enrol(input)),
-  );
-  app.post(
-    "/check",
-    handle(Check, (input) => launcher.check(input)),
   );
   return app;
 };

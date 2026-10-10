@@ -64,7 +64,6 @@ const launchAppOf = (env: LaunchEnv, chainId?: string | null) => {
     registrar: { armFor: (dueAt) => registrarOf(env).armFor(dueAt) },
     operatorLauncher: {
       enrol: (input) => registrarOf(env).enrol(input),
-      check: (input) => registrarOf(env).check(input),
     },
   });
 };

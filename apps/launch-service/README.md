@@ -22,10 +22,9 @@ keep retrying and never cancel a played game. The shard's unit `RecordBlitzResul
 independent monitor re-resolves the complete slot cohort and checks every frozen pair before the relay posts a game's
 results; mismatches pause payouts, unavailable evidence cannot pass. Each result allocates only its own registrations.
 
-Normal game names cannot start with `check-`. Operator-only `/api/factory/operator/launcher/enrol` and `/check` prove
-the Worker's own enrollment and a fixed open-entry check-game creation (Frontier or Eternum). The deployment registers
-the shard as pending in identity first, enrolls the Worker, hands it the launcher role and confirms the check before
-activation. Pending shards stay invisible to players.
+Normal game names cannot start with `check-`. Operator-only `/api/factory/operator/launcher/enrol` enrolls the Worker's
+own signer. Deployment registers the shard as pending, enrolls the Worker, hands it the launcher role, and reads that
+role back on chain before activation. Pending shards stay invisible to players.
 
 Runtime settings include `BASE_URL`, `ENVIRONMENT`, `LAUNCHER_ALLOWLIST`, `DEPLOYER_ACCOUNT_ADDRESS`, and the
 `DEPLOYER_PRIVATE_KEY` and `OPERATOR_TOKEN` secrets. `wrangler.jsonc` declares the identity, relay, D1 and registrar

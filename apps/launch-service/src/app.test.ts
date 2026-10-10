@@ -58,7 +58,6 @@ const createApp = (
       registrar: { armFor: async () => {} },
       operatorLauncher: {
         enrol: async () => ({ chainId: "0x1", launcherAccount: "0x123" }),
-        check: async () => ({ txHash: "0xabc" }),
       },
     }),
     store,
@@ -393,18 +392,15 @@ test("deployment launcher routes require the operator token, never an allowliste
   const enrolled = await app.request(request(path, { authorization: "Bearer " + OPERATOR_TOKEN }));
   expect(enrolled.status).toBe(200);
   expect(await enrolled.json()).toEqual({ chainId: "0x1", launcherAccount: "0x123" });
-  const arbitrary = new Request(ALLOWED_ORIGIN + "/api/factory/operator/launcher/check", {
-    method: "POST",
-    headers: { authorization: "Bearer " + OPERATOR_TOKEN, "content-type": "application/json" },
-    body: JSON.stringify({
-      chainId: "0x1",
-      heraldUrl: "https://shard.test",
-      name: "check-worker-0123456789abcdef",
-      presetId: 1,
-      calldata: ["0x123"],
-    }),
-  });
-  expect((await app.request(arbitrary)).status).toBe(400);
+  expect(
+    (
+      await app.request(
+        request("/api/factory/operator/launcher/check", {
+          authorization: "Bearer " + OPERATOR_TOKEN,
+        }),
+      )
+    ).status,
+  ).toBe(404);
 });
 
 test("normal launch requests cannot use the deployment's reserved check names", async () => {
