@@ -101,6 +101,7 @@ const prize = (season: Partial<SeasonPrize["season"]>, rest: Partial<SeasonPrize
   curve: { paidFractionBps: 1000, decayBps: 5000 },
   wallet: "0x4a1",
   share: null,
+  position: null,
   claimed: false,
   ...rest,
 });
@@ -123,18 +124,18 @@ it("shows the pool and what the paid places would take if the season ended now",
 it("waits out the review hour, then claims a winner's share from the wallet that paid", async () => {
   const posted = { posted: true, end: NOW - 7200 };
   expect(
-    (await mountPrize(prize({ ...posted, reviewUntil: NOW + 1800 }, { share: 4_000n * WEI }))).textContent,
+    (await mountPrize(prize({ ...posted, reviewUntil: NOW + 1800 }, { share: 4_000n * WEI, position: 0 }))).textContent,
   ).toContain("Claims open in");
-  const claim = await mountPrize(prize({ ...posted, reviewUntil: NOW - 60 }, { share: 4_000n * WEI }));
+  const claim = await mountPrize(prize({ ...posted, reviewUntil: NOW - 60 }, { share: 4_000n * WEI, position: 0 }));
   await act(async () =>
     [...claim.querySelectorAll("button")].find((button) => button.textContent === "Claim")!.click(),
   );
   await act(async () => [...claim.querySelectorAll("button")].find((button) => button.textContent === "Sign")!.click());
-  expect(signed.calls).toEqual([[{ contractAddress: "0x1ed9e7", entrypoint: "claim_season", calldata: ["3"] }]]);
+  expect(signed.calls).toEqual([[{ contractAddress: "0x1ed9e7", entrypoint: "claim_season", calldata: ["3", "0"] }]]);
   expect(signed.owners).toEqual(["0x4a1"]);
-  expect((await mountPrize(prize({ ...posted, challenged: true }, { share: 4_000n * WEI }))).textContent).toContain(
-    "being checked",
-  );
+  expect(
+    (await mountPrize(prize({ ...posted, challenged: true }, { share: 4_000n * WEI, position: 0 }))).textContent,
+  ).toContain("being checked");
   expect((await mountPrize(prize({ ...posted, reviewUntil: NOW - 60 }))).textContent).toContain(
     "Outside the paid places",
   );
@@ -173,5 +174,6 @@ it("keeps a won season's claim when the next season's first game is listed, sign
   );
   await act(async () => [...panel.querySelectorAll("button")].find((button) => button.textContent === "Sign")!.click());
   expect(signed.owners).toEqual([W1]);
-  expect(signed.calls).toEqual([[{ contractAddress: "0x1ed9e7", entrypoint: "claim_season", calldata: ["3"] }]]);
+  // The claim names W1's place on the posted list (second), which the ledger checks.
+  expect(signed.calls).toEqual([[{ contractAddress: "0x1ed9e7", entrypoint: "claim_season", calldata: ["3", "1"] }]]);
 });

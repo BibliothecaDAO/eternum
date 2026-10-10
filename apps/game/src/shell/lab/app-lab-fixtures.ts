@@ -457,6 +457,7 @@ const RUNNING: SeasonPrize = {
   curve: { paidFractionBps: 1000, decayBps: 9600 },
   wallet: LAB_WALLET,
   share: null,
+  position: null,
   claimed: false,
 };
 const OVER = { ...RUNNING.season, posted: true, start: NOW - 70 * DAY, end: NOW - 2 * 3600, pool: 2_933_300n * WEI };
@@ -464,9 +465,20 @@ const SHARE = 46_569n * WEI;
 
 export const LAB_SEASON_PRIZES: Partial<Record<keyof typeof LAB_SCREENS, SeasonPrize>> = {
   "season-running": RUNNING,
-  "season-review": { ...RUNNING, season: { ...OVER, reviewUntil: NOW + 42 * 60 }, share: SHARE },
-  "season-claim": { ...RUNNING, season: { ...OVER, reviewUntil: NOW - 60 }, share: SHARE },
-  "season-held": { ...RUNNING, season: { ...OVER, challenged: true, reviewUntil: NOW + 600 }, share: SHARE },
-  "season-claimed": { ...RUNNING, season: { ...OVER, reviewUntil: NOW - 60 }, share: SHARE, claimed: true },
+  "season-review": { ...RUNNING, season: { ...OVER, reviewUntil: NOW + 42 * 60 }, share: SHARE, position: 11 },
+  "season-claim": { ...RUNNING, season: { ...OVER, reviewUntil: NOW - 60 }, share: SHARE, position: 11 },
+  "season-held": {
+    ...RUNNING,
+    season: { ...OVER, challenged: true, reviewUntil: NOW + 600 },
+    share: SHARE,
+    position: 11,
+  },
+  "season-claimed": {
+    ...RUNNING,
+    season: { ...OVER, reviewUntil: NOW - 60 },
+    share: SHARE,
+    position: 11,
+    claimed: true,
+  },
   "season-out": { ...RUNNING, season: { ...OVER, reviewUntil: NOW - 60 } },
 };

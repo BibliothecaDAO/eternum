@@ -20,6 +20,8 @@ export interface SeasonPrize {
   wallet: string;
   /** That wallet's share once the top list is posted; null before it, or for a wallet not on it. */
   share: bigint | null;
+  /** The wallet's zero-based place on the posted list, which its claim names; null where `share` is. */
+  position: number | null;
   claimed: boolean;
 }
 
@@ -101,29 +103,29 @@ const readSeasonPrize = async (read: EnvironmentLedger, { slot, wallet }: Season
   return { ledger: read.address, seasonId, season, curve, wallet, ...holding };
 };
 
-/** What a wallet holds in a season: its share once the list is posted, and whether it is claimed. */
+/** What a wallet holds in a season: its share and place once the list is posted, and whether it is claimed. */
 const holdingOf = async (read: EnvironmentLedger, seasonId: number, season: BlitzSeason, wallet: string) => {
-  const [claimed, share] = await Promise.all([
+  const [claimed, place] = await Promise.all([
     read.seasonClaimed(seasonId, wallet),
-    season.posted ? findShare(read, seasonId, season.winners, wallet) : Promise.resolve(null),
+    season.posted ? findPlace(read, seasonId, season.winners, wallet) : Promise.resolve(null),
   ]);
-  return { share, claimed };
+  return { share: place?.share ?? null, position: place?.position ?? null, claimed };
 };
 
-/** The wallet's share on the posted top list, read in batches until it is found. */
-const findShare = async (
+/** The wallet's place and share on the posted top list, read in batches until it is found. */
+const findPlace = async (
   read: EnvironmentLedger,
   seasonId: number,
   winners: number,
   wallet: string,
-): Promise<bigint | null> => {
+): Promise<{ position: number; share: bigint } | null> => {
   const BATCH = 25;
   for (let from = 0; from < winners; from += BATCH) {
     const batch = await Promise.all(
       Array.from({ length: Math.min(BATCH, winners - from) }, (_, index) => read.seasonWinner(seasonId, from + index)),
     );
-    const own = batch.find((winner) => BigInt(winner.wallet) === BigInt(wallet));
-    if (own) return own.share;
+    const index = batch.findIndex((winner) => BigInt(winner.wallet) === BigInt(wallet));
+    if (index >= 0) return { position: from + index, share: batch[index].share };
   }
   return null;
 };

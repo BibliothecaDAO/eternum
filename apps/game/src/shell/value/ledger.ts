@@ -98,11 +98,14 @@ export const openChestCalls = (ledger: string, chest: string, tokenId: bigint): 
   { contractAddress: ledger, entrypoint: "open_request", calldata: u256(tokenId) },
 ];
 
-/** claim_season(season): a winner pulls their share once the review hour has passed. */
-export const claimSeasonCall = (ledger: string, seasonId: number): Call => ({
+/**
+ * claim_season(season, position): a winner pulls their share once the review hour has passed, naming its zero-based
+ * place on the posted list, which the ledger checks names the caller.
+ */
+export const claimSeasonCall = (ledger: string, seasonId: number, position: number): Call => ({
   contractAddress: ledger,
   entrypoint: "claim_season",
-  calldata: [String(seasonId)],
+  calldata: [String(seasonId), String(position)],
 });
 
 /** refund(slot): a cancelled slot's, or an unseated registration's, paid LORDS and spent credits come back to the payer. */
