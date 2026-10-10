@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 
+import { isSameStarknetAddress } from "@realms-world/identity";
 import type { Chest, ChestContent, PlayerResult, Registration } from "@realms-world/value-ledger/codecs";
 
 import type { EnvironmentLedger, GameKey, SlotKey } from "../value/ledger";
@@ -40,7 +41,7 @@ type RewardState = "pending" | "sealed" | "opening" | "opened" | "traded";
 export const rewardState = (reward: Reward, wallet: string): RewardState => {
   const { chest } = reward;
   if (reward.result.rank === 0 || !chest) return "pending";
-  if (chest.requested && BigInt(chest.requester) === BigInt(wallet)) return chest.finished ? "opened" : "opening";
+  if (chest.requested && isSameStarknetAddress(chest.requester, wallet)) return chest.finished ? "opened" : "opening";
   if (!reward.held) return "traded";
   return "sealed";
 };
@@ -71,7 +72,7 @@ const readReward = async (read: EnvironmentLedger, keys: PlayedGameKeys, wallet:
     // A requested chest is burnt: no owner to ask.
     chest.requested
       ? false
-      : read.chestOwner(collection, result.chestId).then((owner) => BigInt(owner) === BigInt(wallet)),
+      : read.chestOwner(collection, result.chestId).then((owner) => isSameStarknetAddress(owner, wallet)),
     chest.finished ? read.chestContent(result.chestId, chest.requestBlock) : null,
   ]);
   return { result, collection, chest, held, content, seasonEnd: season.end, registration };
