@@ -508,7 +508,9 @@ describe("native presets", () => {
     const account = {
       getBlockNumber: async () => 10,
       getClassHashAt: async () => "0x456",
-      callContract: async () => [commitment],
+      callContract: async (call: { entrypoint: string }) => [
+        call.entrypoint === "l2_gas_bound" ? "9000000" : commitment,
+      ],
       execute: async () => {
         throw new Error("registration submitted");
       },

@@ -58,7 +58,12 @@ const game = (finalized: boolean, commitment = "0x0") => [
 beforeEach(() => {
   vi.clearAllMocks();
   rpc.head.mockResolvedValue(1000);
-  rpc.block.mockResolvedValue({ status: "ACCEPTED_ON_L2", block_hash: "0xa", timestamp: 1000 });
+  rpc.block.mockImplementation(async (number) => ({
+    status: "ACCEPTED_ON_L2",
+    block_number: number === "latest" ? 1000 : number,
+    block_hash: "0xa",
+    timestamp: 1000,
+  }));
   rpc.wait.mockResolvedValue({ isReverted: () => false });
   rpc.execute.mockResolvedValue({ transaction_hash: "0xabc" });
 });

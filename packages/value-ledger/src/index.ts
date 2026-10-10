@@ -1,5 +1,13 @@
 import { ledgerInteger, ledgerBool as bool } from "./codecs";
-export { ledgerInteger, ledgerBool, ledgerU256, decodeBlitzSeason, readConfirmedLedgerHead } from "./codecs";
+export {
+  ledgerInteger,
+  ledgerBool,
+  ledgerU256,
+  decodeFrontierSeason,
+  decodeLedgerPreset,
+  decodeBlitzSeason,
+  readConfirmedLedgerHead,
+} from "./codecs";
 import type { RpcProvider } from "starknet";
 export { rpcAt } from "./rpc";
 export interface LedgerGameKey {

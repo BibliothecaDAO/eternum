@@ -113,7 +113,10 @@ async function executeRegistrarCall(
   call: Call,
   target: RegistrarTarget,
 ): Promise<RegistrarTransactionResult> {
-  const transaction = await account.execute(call, resolveRegistrarExecutionDetails());
+  const transaction = await account.execute(
+    call,
+    await resolveRegistrarExecutionDetails(account, call.contractAddress),
+  );
   const receipt = await confirmedTransactionReceipt(account, transaction.transaction_hash);
   return { transactionHash: transaction.transaction_hash, receipt };
 }

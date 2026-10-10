@@ -4,6 +4,7 @@ import {
   readLedgerGame,
   ledgerInteger,
   decodeBlitzSeason,
+  readConfirmedLedgerHead,
   type LedgerGameKey,
 } from "@realms-world/value-ledger";
 import { relayOperation } from "./ports";
@@ -23,16 +24,16 @@ interface Window {
 export const openBlitzOnLedger = (credentials: Credentials, key: LedgerGameKey, window: Window) =>
   relayOperation("open ledger Blitz registration", async () => {
     const provider = rpcAt(credentials.rpcUrl);
-    const head = await confirmedHead(provider);
-    if (await gameOpened(provider, credentials.contractAddress, key, head.block_number)) {
-      const game = await readLedgerGame(provider, credentials.contractAddress, key, head.block_number);
+    const head = await readConfirmedLedgerHead(provider);
+    if (await gameOpened(provider, credentials.contractAddress, key, head.number)) {
+      const game = await readLedgerGame(provider, credentials.contractAddress, key, head.number);
       if (game.start !== window.start || game.end !== window.end || game.cancelled || game.finalized)
         throw new Error("ledger_game_window_differs");
       return;
     }
-    if (window.start <= head.timestamp || window.end <= window.start)
+    if (window.start <= head.time || window.end <= window.start)
       throw new Error("paid_registration_must_open_before_start");
-    const season = await containingSeason(provider, credentials.contractAddress, window, head.block_number);
+    const season = await containingSeason(provider, credentials.contractAddress, window, head.number);
     await submit(credentials, "open_game", [
       key.chainId,
       String(key.gameId),
@@ -49,10 +50,10 @@ export const openBlitzOnLedger = (credentials: Credentials, key: LedgerGameKey, 
 export const validateBlitzWindow = (credentials: Credentials, key: LedgerGameKey, window: Window) =>
   relayOperation("validate actual Blitz season window", async () => {
     const provider = rpcAt(credentials.rpcUrl);
-    const head = await confirmedHead(provider);
-    const game = await readLedgerGame(provider, credentials.contractAddress, key, head.block_number);
-    const season = await seasonAt(provider, credentials.contractAddress, game.seasonId, head.block_number);
-    const interval = await settlementInterval(provider, credentials.contractAddress, head.block_number);
+    const head = await readConfirmedLedgerHead(provider);
+    const game = await readLedgerGame(provider, credentials.contractAddress, key, head.number);
+    const season = await seasonAt(provider, credentials.contractAddress, game.seasonId, head.number);
+    const interval = await settlementInterval(provider, credentials.contractAddress, head.number);
     if (
       game.cancelled ||
       game.finalized ||
@@ -67,39 +68,26 @@ export const validateBlitzWindow = (credentials: Credentials, key: LedgerGameKey
 export const blitzDeadline = (credentials: Credentials, key: LedgerGameKey) =>
   relayOperation("read paid Blitz deadline", async () => {
     const provider = rpcAt(credentials.rpcUrl);
-    const head = await confirmedHead(provider);
-    const game = await readLedgerGame(provider, credentials.contractAddress, key, head.block_number);
-    return game.cancelled || game.finalized ? 0 : Math.max(0, game.end - head.timestamp);
+    const head = await readConfirmedLedgerHead(provider);
+    const game = await readLedgerGame(provider, credentials.contractAddress, key, head.number);
+    return game.cancelled || game.finalized ? 0 : Math.max(0, game.end - head.time);
   });
 
 /** The current contract cannot abort between start and end. Persisted cleanup retries at that boundary automatically. */
 export const refundBlitzOnLedger = (credentials: Credentials, key: LedgerGameKey) =>
   relayOperation("unlock failed Blitz refunds", async (): Promise<number | null> => {
     const provider = rpcAt(credentials.rpcUrl);
-    const head = await confirmedHead(provider);
-    if (!(await gameOpened(provider, credentials.contractAddress, key, head.block_number))) return null;
-    const game = await readLedgerGame(provider, credentials.contractAddress, key, head.block_number);
+    const head = await readConfirmedLedgerHead(provider);
+    if (!(await gameOpened(provider, credentials.contractAddress, key, head.number))) return null;
+    const game = await readLedgerGame(provider, credentials.contractAddress, key, head.number);
     if (game.cancelled || game.finalized) return null;
-    if (head.timestamp >= game.start && head.timestamp < game.end) return game.end - head.timestamp;
-    await submit(credentials, head.timestamp < game.start ? "cancel_game" : "abort_game", [
-      key.chainId,
-      String(key.gameId),
-    ]);
+    if (head.time >= game.start && head.time < game.end) return game.end - head.time;
+    await submit(credentials, head.time < game.start ? "cancel_game" : "abort_game", [key.chainId, String(key.gameId)]);
     const refunded = await readLedgerGame(provider, credentials.contractAddress, key, await provider.getBlockNumber());
     if (!refunded.cancelled) throw new Error("ledger_refunds_not_enabled");
     return null;
   });
 
-const confirmedHead = async (provider: RpcProvider) => {
-  const head = await provider.getBlock("latest");
-  if (
-    !("block_number" in head) ||
-    !("status" in head) ||
-    !["ACCEPTED_ON_L2", "ACCEPTED_ON_L1"].includes(head.status ?? "")
-  )
-    throw new Error("ledger_head_unconfirmed");
-  return head;
-};
 const gameOpened = async (provider: RpcProvider, address: string, key: LedgerGameKey, head: number) => {
   const page = await provider.getEvents({
     address,

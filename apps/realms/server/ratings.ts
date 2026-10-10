@@ -1,3 +1,4 @@
+import { normalizeStarknetAddress as canonical } from "@realms-world/identity";
 import type { IdentityEnv } from "./env";
 import { json } from "./http";
 import { ratingFailure } from "./rating-failure";
@@ -114,7 +115,6 @@ export async function resolveRatingIdentities(
 
 const validIdentifier = (value: string, bound: bigint) =>
   /^0x[0-9a-fA-F]{1,64}$/.test(value) && BigInt(value) > 0n && BigInt(value) < bound;
-const canonical = (value: string) => `0x${BigInt(value).toString(16)}`;
 
 export const ratingIdentifier = (value: string, kind: RatingQuery["kind"]): string | null =>
   validIdentifier(value, kind === "realmsIds" ? FIELD_PRIME : ADDRESS_BOUND) ? canonical(value) : null;

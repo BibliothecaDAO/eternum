@@ -1,5 +1,11 @@
 import { Account, hash } from "starknet";
-import { rpcAt, ledgerInteger, decodeBlitzSeason, readConfirmedLedgerHead } from "@realms-world/value-ledger";
+import {
+  rpcAt,
+  ledgerInteger,
+  decodeBlitzSeason,
+  decodeLedgerPreset,
+  readConfirmedLedgerHead,
+} from "@realms-world/value-ledger";
 import type { SeasonPorts } from "./season-tops";
 interface Ledger {
   rpcUrl: string;
@@ -68,8 +74,7 @@ export const seasonLedgerReads = (target: Ledger): Omit<SeasonPorts, "post" | "a
         { contractAddress: target.contractAddress, entrypoint: "get_preset", calldata: [String(season.presetId)] },
         head,
       );
-      if (preset.length !== 21) throw new Error("invalid_season_preset");
-      const paidFraction = ledgerInteger(preset[4]!);
+      const { paidFraction } = decodeLedgerPreset(preset);
       if (paidFraction <= 0 || paidFraction > 10000) throw new Error("invalid_season_paid_fraction");
       const settlement = await provider.callContract(
         { contractAddress: target.contractAddress, entrypoint: "season_settlement", calldata: [String(id)] },

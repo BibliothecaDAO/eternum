@@ -1,6 +1,12 @@
 import { cacheAnchorMatches, type CacheAnchor } from "./cache-anchor";
 import { hash } from "starknet";
-import { rpcAt, ledgerInteger, readConfirmedLedgerHead } from "@realms-world/value-ledger";
+import {
+  rpcAt,
+  ledgerInteger,
+  readConfirmedLedgerHead,
+  decodeFrontierSeason,
+  decodeLedgerPreset,
+} from "@realms-world/value-ledger";
 import { ShardReader, sameFelt, uint } from "./shard-rpc";
 import { readConfirmedSnapshot, singleRow } from "./shard-snapshot";
 import { relayOperation } from "./ports";
@@ -190,23 +196,24 @@ const matchesGameFunding = async (
     { contractAddress: ledger.address, entrypoint: "get_frontier", calldata: [game.chainId, String(seasonId)] },
     head,
   );
-  if (funded.length !== 10 || uint(funded[0]!, 1) !== 1n) throw new Error("frontier_season_abi_differs");
+  const season = decodeFrontierSeason(funded);
+  if (!season.configured) throw new Error("frontier_season_abi_differs");
   if (
-    uint(funded[1]!, 64) !== BigInt(game.start) ||
-    uint(funded[2]!, 64) !== BigInt(game.end) ||
-    uint(funded[9]!, 252) !== BigInt(game.seed)
+    BigInt(season.start) !== BigInt(game.start) ||
+    BigInt(season.end) !== BigInt(game.end) ||
+    BigInt(season.seed) !== BigInt(game.seed)
   )
     return false;
   const preset = await provider.callContract(
-    { contractAddress: ledger.address, entrypoint: "get_preset", calldata: [funded[8]!] },
+    { contractAddress: ledger.address, entrypoint: "get_preset", calldata: [String(season.presetId)] },
     head,
   );
+  const rules = decodeLedgerPreset(preset);
   if (
-    preset.length !== 21 ||
-    uint(preset[17]!, 32) !== BigInt(game.unit) ||
-    uint(preset[18]!, 32) !== BigInt(game.bags) ||
-    uint(preset[19]!, 32) !== BigInt(game.window) ||
-    uint(funded[3]!, 128) + (uint(funded[4]!, 128) << 128n) !== BigInt(game.pool)
+    BigInt(rules.dayUnit) !== BigInt(game.unit) ||
+    BigInt(rules.bags) !== BigInt(game.bags) ||
+    BigInt(rules.claimWindow) !== BigInt(game.window) ||
+    BigInt(season.pool) !== BigInt(game.pool)
   )
     throw new Error("funded_frontier_preset_differs_from_shard");
   const deadline = await provider.callContract(

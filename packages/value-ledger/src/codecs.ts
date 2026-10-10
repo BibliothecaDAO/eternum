@@ -48,3 +48,28 @@ export const readConfirmedLedgerHead = async (provider: RpcProvider, number: num
     throw new Error("ledger_head_unconfirmed");
   return { number: block.block_number, hash: block.block_hash, time: block.timestamp };
 };
+
+/** Published FrontierSeason backing and clock, shared by discovery and batched payments. */
+export const decodeFrontierSeason = (fields: readonly string[]) => {
+  if (fields.length !== 10) throw new Error("invalid_frontier_season");
+  return {
+    configured: ledgerBool(fields[0]!),
+    start: ledgerInteger(fields[1]!),
+    end: ledgerInteger(fields[2]!),
+    pool: ledgerU256(fields[3]!, fields[4]!),
+    paid: ledgerU256(fields[5]!, fields[6]!),
+    closed: ledgerBool(fields[7]!),
+    presetId: ledgerInteger(fields[8]!),
+    seed: fields[9]!,
+  };
+};
+export const decodeLedgerPreset = (fields: readonly string[]) => {
+  if (fields.length !== 21) throw new Error("invalid_ledger_preset");
+  return {
+    paidFraction: ledgerInteger(fields[4]!),
+    dayUnit: ledgerInteger(fields[17]!),
+    bags: ledgerInteger(fields[18]!),
+    claimWindow: ledgerInteger(fields[19]!),
+    registrationLimit: ledgerInteger(fields[20]!),
+  };
+};

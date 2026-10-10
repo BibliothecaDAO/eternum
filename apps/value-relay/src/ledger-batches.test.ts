@@ -7,9 +7,10 @@ const rpc = vi.hoisted(() => ({
   wait: vi.fn(),
   records: new Map<string, string[]>(),
 }));
-vi.mock("@realms-world/value-ledger", () => ({
+vi.mock("@realms-world/value-ledger", async (original) => ({
+  ...(await original<typeof import("@realms-world/value-ledger")>()),
   rpcAt: () => ({
-    getBlock: async () => ({ status: "ACCEPTED_ON_L2", block_number: 10 }),
+    getBlock: async () => ({ status: "ACCEPTED_ON_L2", block_number: 10, block_hash: "0xa", timestamp: 1000 }),
     callContract: rpc.call,
     waitForTransaction: rpc.wait,
   }),

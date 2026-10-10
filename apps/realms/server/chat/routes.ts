@@ -1,3 +1,4 @@
+import { normalizeStarknetAddress as canonicalFelt } from "@realms-world/identity";
 import { profileOfIdentityUser } from "@realms-world/identity";
 import { GLOBAL_CHAT_CHANNEL_ID } from "@bibliothecadao/types";
 
@@ -106,7 +107,7 @@ const routeBlocks = async (request: Request, env: IdentityEnv, owner: string, ta
   return json({ error: "not_found" }, 404);
 };
 
-const canonical = (realmsId: string) => `0x${BigInt(realmsId).toString(16)}`;
+const canonical = canonicalFelt;
 
 const chatMemberFrom = async (request: Request, auth: IdentityAuth) => {
   const session = await auth.api.getSession({ headers: request.headers });

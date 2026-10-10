@@ -1,4 +1,4 @@
-import { readGameEntry, type GameEntry } from "@realms-world/identity";
+import { normalizeStarknetAddress, readGameEntry, type GameEntry } from "@realms-world/identity";
 import { Effect } from "effect";
 import type { HeraldGameDirectory, HeraldGameDirectoryEntry, ShardManifest } from "@bibliothecadao/eternum/game-sync";
 
@@ -349,7 +349,7 @@ const readManifest = async (url: string, fetchShard: typeof fetch) => {
     if (!response.ok) return null;
     const manifest = (await response.json()) as Partial<ShardManifest>;
     return typeof manifest.chainId === "string" && FELT.test(manifest.chainId)
-      ? { ...manifest, chainId: `0x${BigInt(manifest.chainId).toString(16)}` }
+      ? { ...manifest, chainId: normalizeStarknetAddress(manifest.chainId) }
       : null;
   } catch {
     return null;

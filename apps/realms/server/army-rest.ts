@@ -1,3 +1,4 @@
+import { normalizeStarknetAddress as canonicalFelt } from "@realms-world/identity";
 import { safeInteger } from "../../../packages/core/src/utils/safe-integer";
 import {
   fetchHeraldGameDirectory,
@@ -74,7 +75,7 @@ export const actorsWhoActed = (page: HeraldStoryHistoryPage): { gameId: number; 
   const add = (gameId: number, player: unknown) => {
     if (typeof player !== "string" && typeof player !== "bigint" && typeof player !== "number") return;
     if (BigInt(player) === 0n) return;
-    const actor = `0x${BigInt(player).toString(16)}`;
+    const actor = canonicalFelt(player);
     acted.set(`${gameId}:${actor}`, { gameId, actor });
   };
   for (const { model, value } of page.items) {
