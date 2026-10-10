@@ -31,7 +31,7 @@ const game = (mode: DirectoryGame["mode"]) =>
     clock: { start_main_at: 0, end_at: 100 },
     player_count: 1,
     roster_count: 12,
-    player_state: { registered: true, roster_member: true, structures: [{ category: 1, realm_id: 3098, level: 1 }] },
+    player_state: { registered: true, roster_wallet: "0x123", structures: [{ category: 1, realm_id: 3098, level: 1 }] },
   }) as DirectoryGame;
 
 it.each(["frontier", "blitz", "eternum", "realm"])(
