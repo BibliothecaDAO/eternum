@@ -42,36 +42,3 @@ it("runs and publishes the chest job even while shard ingestion remains unavaila
   expect((await relay.health()).success).toBe(false);
   expect(data.has("lastTick")).toBe(true);
 });
-
-it("reconciles identity links on its startup alarm independently of unavailable shard reads", async () => {
-  const data = new Map<string, unknown>();
-  const targets = vi.fn(async () => ({ rows: [], next: null }));
-  const alarm = vi.fn(async () => {});
-  const ctx = {
-    blockConcurrencyWhile: async (run: () => Promise<unknown>) => run(),
-    storage: {
-      setAlarm: alarm,
-      get: async (key: string) => data.get(key),
-      list: async () => new Map(),
-      put: async (key: string, value: unknown) => {
-        data.set(key, value);
-      },
-    },
-  };
-  finish.mockReturnValue(Effect.succeed({ finished: 0, failed: 0, pending: 0 }));
-  const relay = new ValueRelay(
-    ctx as unknown as DurableObjectState,
-    {
-      SHARD_CHAIN_ID: "0x1",
-      IDENTITY: {
-        l2ChainId: async () => "0x1",
-        dirtyAccountLinks: async () => ({ rows: [], next: null }),
-        accountLinkTargets: targets,
-      },
-    } as never,
-  );
-  expect(alarm).toHaveBeenCalledWith(expect.any(Number));
-  await relay.alarm();
-  expect(targets).toHaveBeenCalledWith(null);
-  expect((data.get("lastTick") as { links: unknown }).links).toEqual({ checked: 0, pending: [] });
-});

@@ -10,9 +10,6 @@ import { seasonLedgerReads, postSeasonTop, allocateSeason } from "./season-ledge
 import { ledgerBatches } from "./ledger-batches";
 import { onIdentityChain } from "./ledger-chain";
 import { paidGameEntry } from "./game-entry";
-import { accountLinkLedger } from "./account-link-ledger";
-import { synchronizeAccountLink, reconcileAccountLinks, hasMatchingAccountLink } from "./account-links";
-import type { AccountLinkTarget, LedgerAccountLinkWrite, LedgerLinkStatus } from "@realms-world/identity";
 import { blitzDeadline, openBlitzOnLedger, refundBlitzOnLedger, validateBlitzWindow } from "./blitz-launch";
 import type { LedgerGameKey } from "@realms-world/value-ledger";
 import { currentLaborDay, writeLaborGrant } from "./shard-labor";
@@ -25,7 +22,7 @@ import { chestLedgerReads, finishChestOnLedger } from "./chest-ledger";
 import { DurableChestStore, finishRequestedChests } from "./chests";
 import { DurableObject, WorkerEntrypoint } from "cloudflare:workers";
 import { Effect, Result, Semaphore } from "effect";
-import { ledgerResultAdapter, ledgerMonitorReads } from "./ledger";
+import { ledgerResultAdapter } from "./ledger";
 import { ledgerPaymentRead, ledgerWithdrawalVoided } from "./chain";
 import { presentsOperatorToken } from "@realms-world/identity";
 import { identityAdapter } from "./adapters";
@@ -48,15 +45,7 @@ interface RelayEnv {
   LEDGER_OPERATOR_PRIVATE_KEY: string;
   IDENTITY: {
     l2ChainId(): Promise<string>;
-    dirtyAccountLinks(
-      after: number | null,
-    ): Promise<{ rows: { target: AccountLinkTarget; revision: string }[]; next: number | null }>;
-    completeAccountLinkSync(account: string, revision: string): Promise<void>;
-    accountLinkDirtyRevision(account: string): Promise<string | null>;
     realmOwnerOf(realmId: string): Promise<string>;
-    accountLinkTargets(after: string | null): Promise<{ rows: AccountLinkTarget[]; next: string | null }>;
-    accountLinkTarget(key: string): Promise<AccountLinkTarget>;
-    recordLedgerLinkWrite(target: AccountLinkTarget, write: LedgerAccountLinkWrite): Promise<void>;
     recordPayDecisions(decisions: import("@realms-world/identity").LedgerPayDecision[]): Promise<void>;
     payoutWallet(id: string): Promise<import("@realms-world/identity").PayoutWallet>;
     linkedWallet(id: string): Promise<string | null>;
@@ -86,51 +75,11 @@ export class ValueRelay extends DurableObject<RelayEnv> {
   override alarm() {
     return this.tick().then(() => undefined);
   }
-  async accountChanged(realmsId: string) {
-    return Effect.runPromise(
-      this.ledgerPermit(
-        Effect.gen(
-          function* (this: ValueRelay) {
-            const revision = yield* relayOperation("read changed identity revision", () =>
-              this.env.IDENTITY.accountLinkDirtyRevision(realmsId),
-            );
-            const target = yield* relayOperation("load changed identity link", () =>
-              this.env.IDENTITY.accountLinkTarget(`account:${realmsId}`),
-            );
-            const result = yield* synchronizeAccountLink(target, linkPortsOf(this.env));
-            if (result === "confirmed" && revision)
-              yield* relayOperation("acknowledge changed identity link", () =>
-                this.env.IDENTITY.completeAccountLinkSync(realmsId, revision),
-              );
-            return result;
-          }.bind(this),
-        ),
-      ),
-    );
-  }
-  async accountLinkStatus(realmsId: string): Promise<LedgerLinkStatus> {
-    await Effect.runPromise(onIdentityChain(this.env.LEDGER_RPC_URL, this.env.IDENTITY, Effect.void));
-    const target = await this.env.IDENTITY.accountLinkTarget(`account:${realmsId}`);
-    const ledger = accountLinkLedger(ledgerCredentialsOf(this.env));
-    const views = await ledger.read(target.wallet, target.account);
-    if (!hasMatchingAccountLink(target, views)) return { status: "linking" };
-    return {
-      status: "confirmed",
-      ledger: { address: this.env.LEDGER_ADDRESS, chainId: await ledger.chainId() },
-      account: target.account!,
-      wallet: target.wallet,
-    };
-  }
   async tick() {
     const relay = this;
     return Effect.runPromise(
       this.ingesting.withPermit(
         Effect.gen(function* () {
-          const links = yield* Effect.result(
-            reconcileAccountLinks(linkPortsOf(relay.env), relay.ctx.storage, (target) =>
-              relay.ledgerPermit(synchronizeAccountLink(target, linkPortsOf(relay.env))),
-            ),
-          );
           const seasons = yield* Effect.result(
             onIdentityChain(
               relay.env.LEDGER_RPC_URL,
@@ -172,7 +121,6 @@ export class ValueRelay extends DurableObject<RelayEnv> {
             ),
           );
           const observation = {
-            links: Result.isSuccess(links) ? links.success : { error: links.failure.operation },
             seasons: Result.isSuccess(seasons) ? seasons.success : { error: seasons.failure.operation },
             checked_at: Math.floor(Date.now() / 1000),
             value: Result.isSuccess(value) ? value.success : { status: "unavailable", reason: value.failure.operation },
@@ -209,7 +157,6 @@ export class ValueRelay extends DurableObject<RelayEnv> {
       checked_at: number;
       value: { status: string };
       chests: { failed: number } | null;
-      links?: { pending?: string[]; error?: string };
       seasons?: string | null | { error: string };
     }>("lastTick");
     const progress = await this.store.progress();
@@ -219,9 +166,7 @@ export class ValueRelay extends DurableObject<RelayEnv> {
       observation.chests !== null &&
       observation.chests.failed === 0 &&
       !progress.halted &&
-      observation.seasons === null &&
-      observation.links?.error === undefined &&
-      (observation.links?.pending?.length ?? 0) === 0;
+      observation.seasons === null;
     return {
       service: "value-relay",
       success,
@@ -342,18 +287,6 @@ export class ValueRelay extends DurableObject<RelayEnv> {
   }
 }
 
-const linkPortsOf = (env: RelayEnv) => ({
-  identity: {
-    target: (key: string) => env.IDENTITY.accountLinkTarget(key),
-    dirty: (after: number | null) => env.IDENTITY.dirtyAccountLinks(after),
-    complete: (account: string, revision: string) => env.IDENTITY.completeAccountLinkSync(account, revision),
-    targets: (after: string | null) => env.IDENTITY.accountLinkTargets(after),
-    refresh: (target: AccountLinkTarget) => env.IDENTITY.accountLinkTarget(target.key),
-    record: (target: AccountLinkTarget, write: LedgerAccountLinkWrite) =>
-      env.IDENTITY.recordLedgerLinkWrite(target, write),
-  },
-  ledger: accountLinkLedger(ledgerCredentialsOf(env)),
-});
 type LedgerPermit = <A>(effect: import("./ports").RelayEffect<A>) => import("./ports").RelayEffect<A>;
 const relayPortsOf = (env: RelayEnv, storage: DurableObjectStorage, permit: LedgerPermit): RelayPorts => {
   const reader = new ShardReader(shardConnectionOf(env));
@@ -406,14 +339,6 @@ const ledgerPortsOf = (env: RelayEnv, permit: LedgerPermit): RelayPorts["ledger"
   voided: (withdrawal) => ledgerWithdrawalVoided(env.LEDGER_RPC_URL, env.LEDGER_ADDRESS)(withdrawal),
   payment: (withdrawal) => ledgerPaymentRead(env.LEDGER_RPC_URL, env.LEDGER_ADDRESS)(withdrawal),
   postResult: (result) => permit(ledgerResultAdapter(ledgerCredentialsOf(env))(result)),
-  paidClaims: (cursor, fromBlock) =>
-    relayOperation("read ledger paid claims", () =>
-      Effect.runPromise(ledgerMonitorReads(env.LEDGER_RPC_URL, env.LEDGER_ADDRESS).paidClaims(cursor, fromBlock)),
-    ),
-  postedResults: (cursor, fromBlock) =>
-    relayOperation("read ledger posted results", () =>
-      Effect.runPromise(ledgerMonitorReads(env.LEDGER_RPC_URL, env.LEDGER_ADDRESS).postedResults(cursor, fromBlock)),
-    ),
 });
 const ledgerCredentialsOf = (env: RelayEnv) => ({
   rpcUrl: env.LEDGER_RPC_URL,
@@ -435,18 +360,6 @@ export class RelayDiagnostics extends WorkerEntrypoint<RelayEnv> {
   }
   held() {
     return relayOf(this.env).held();
-  }
-}
-/** Only identity's service binding can notify or read ledger linkage; callers never supply a wallet or account. */
-export class ValueAccountLinks extends WorkerEntrypoint<RelayEnv> {
-  override fetch() {
-    return new Response(null, { status: 404 });
-  }
-  changed(realmsId: string) {
-    return relayOf(this.env).accountChanged(realmsId);
-  }
-  status(realmsId: string) {
-    return relayOf(this.env).accountLinkStatus(realmsId);
   }
 }
 export class ValueLaunch extends WorkerEntrypoint<RelayEnv> {

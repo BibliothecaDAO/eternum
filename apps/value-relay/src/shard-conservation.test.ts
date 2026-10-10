@@ -152,7 +152,7 @@ it("fails closed on unavailable finalized state or a transport fault", async () 
 const monitorFixture = () => {
   let progress: MonitorProgress = { halted: null };
   const ports: MonitorPorts = {
-    identity: { matchesLedgerLinkWrite: () => Effect.succeed(true), matchesPayDecision: () => Effect.succeed(true) },
+    identity: { matchesPayDecision: () => Effect.succeed(true) },
     shard: {
       conservation: shardConservationPort(connection, "https://shard.test", network(snapshot("84"))),
       withdrawal: () => Effect.fail(new RelayFailure({ operation: "binding_missing" })),
@@ -160,7 +160,6 @@ const monitorFixture = () => {
     },
     ledger: {
       auditSeasons: () => Effect.succeed(null),
-      accountLinks: () => Effect.succeed({ rows: [], head: 1000, next: null }),
       pause: vi.fn(() => Effect.void),
       paidClaims: () => Effect.succeed({ rows: [], next: null, head: 1000 }),
       postedResults: () => Effect.succeed({ rows: [], next: null, head: 1000 }),

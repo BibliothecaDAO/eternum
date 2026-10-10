@@ -7,7 +7,6 @@ import { consumeChallengeAttempt } from "./sign-in-budget";
 interface WalletChangeServices {
   db: D1Database;
   checkCode(context: AuthContext, email: string, otp: string): Promise<unknown>;
-  notifyChange(realmsId: string): Promise<unknown>;
   sendNotice(email: string, address: string | null, id: string): Promise<void>;
 }
 
@@ -41,14 +40,6 @@ export const changeWallet = (
       });
       if (result[0]!.meta.changes !== 1)
         return yield* Effect.fail(new APIError("BAD_REQUEST", { message: "INVALID_OTP" }));
-      const owner = yield* Effect.promise(() =>
-        services.db.prepare('SELECT "realmsId" FROM "user" WHERE id=?').bind(user.id).first<{ realmsId: string }>(),
-      );
-      if (!owner) throw new Error("wallet_identity_missing");
-      yield* Effect.tryPromise({
-        try: () => services.notifyChange(owner.realmsId),
-        catch: () => new Error("wallet_ledger_sync_failed"),
-      }).pipe(Effect.catch(() => Effect.logError("wallet_ledger_sync_failed", { noticeId: id })));
       // Delivery may retry, using the notice id as the provider's idempotency key.
       yield* deliverWalletNotices(services.db, services.sendNotice);
     }),
@@ -84,13 +75,6 @@ const writeWalletChange = (
       SELECT "realmsId",address,"walletLinkedAt","walletLinkedAt"+86400000 FROM "user" WHERE id=?1 AND address IS NOT NULL
       AND EXISTS(SELECT 1 FROM wallet_change_notices WHERE id=?2)
       AND NOT EXISTS(SELECT 1 FROM wallet_link_history WHERE account="user"."realmsId" AND replaced_at IS NULL)`,
-      )
-      .bind(user.id, id),
-    db
-      .prepare(
-        `INSERT INTO dirty_account_links(account,revision)
-      SELECT "realmsId",?2 FROM "user" WHERE id=?1 AND EXISTS(SELECT 1 FROM wallet_change_notices WHERE id=?2)
-      ON CONFLICT(account) DO UPDATE SET revision=excluded.revision`,
       )
       .bind(user.id, id),
     db.prepare("DELETE FROM verification WHERE id = ? AND value = ?").bind(verification.id, verification.value),

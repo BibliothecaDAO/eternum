@@ -67,7 +67,6 @@ export const hasVerifiedSignIn = async (db: D1Database, userId: string): Promise
 export const createIdentityAuth = (
   env: Pick<
     IdentityEnv,
-    | "ACCOUNT_LINKS"
     | "DB"
     | "BASE_URL"
     | "BETTER_AUTH_SECRET"
@@ -139,7 +138,6 @@ export const createIdentityAuth = (
         db: env.DB,
         checkCode: (context, email, otp) =>
           emailCodes.endpoints.checkVerificationOTP({ context, body: { email, otp, type: "email-verification" } }),
-        notifyChange: (realmsId) => env.ACCOUNT_LINKS.changed(realmsId),
         sendNotice: services.sendWalletNotice ?? resendWalletNotices(env.RESEND_API_KEY),
       }),
     ],

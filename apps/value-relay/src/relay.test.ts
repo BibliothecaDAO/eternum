@@ -90,7 +90,7 @@ const fixture = () => {
   };
   const ports: RelayPorts & {
     identity: MonitorPorts["identity"] & RelayPorts["identity"];
-    ledger: RelayPorts["ledger"] & Pick<MonitorPorts["ledger"], "accountLinks" | "auditSeasons">;
+    ledger: RelayPorts["ledger"] & Pick<MonitorPorts["ledger"], "paidClaims" | "postedResults" | "auditSeasons">;
     shard: RelayPorts["shard"] & Pick<MonitorPorts["shard"], "conservation">;
   } = {
     shard: {
@@ -103,7 +103,6 @@ const fixture = () => {
       grantLabor: vi.fn(() => Effect.succeed({ gameId: 1, account: "0x3", home: "9", amount: "1000000000000" })),
     },
     identity: {
-      matchesLedgerLinkWrite: () => Effect.succeed(true),
       matchesPayDecision: (decision) => Effect.succeed(BigInt(decision.wallet) === 0x123n),
       payoutWallet: () => Effect.succeed({ status: "ready", address: "0x123" }),
       accountForRealmsId: () => Effect.succeed("0x3"),
@@ -111,7 +110,6 @@ const fixture = () => {
     },
     ledger: {
       auditSeasons: () => Effect.succeed(null),
-      accountLinks: () => Effect.succeed({ rows: [], head: 1000, next: null }),
       voided: () => Effect.succeed(false),
       payment: () => Effect.succeed(null),
       reportMany: vi.fn((rows: readonly Withdrawal[]) =>

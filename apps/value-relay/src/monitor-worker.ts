@@ -24,7 +24,6 @@ interface MonitorEnv {
   SHARD_CHAIN_ID: string;
   IDENTITY: {
     l2ChainId(): Promise<string>;
-    matchesLedgerLinkWrite(write: import("@realms-world/identity").LedgerAccountLinkWrite): Promise<boolean>;
     realmsIdForAccount(account: string): Promise<string | null>;
     matchesPayDecision(decision: import("@realms-world/identity").LedgerPayDecision): Promise<boolean>;
   };
@@ -202,8 +201,6 @@ const monitorPortsOf = (
   });
   return {
     identity: {
-      matchesLedgerLinkWrite: (write: import("@realms-world/identity").LedgerAccountLinkWrite) =>
-        relayOperation("verify identity ledger link history", () => env.IDENTITY.matchesLedgerLinkWrite(write)),
       matchesPayDecision: (decision: import("@realms-world/identity").LedgerPayDecision) =>
         relayOperation("verify signed pay decision", () => env.IDENTITY.matchesPayDecision(decision)),
     },

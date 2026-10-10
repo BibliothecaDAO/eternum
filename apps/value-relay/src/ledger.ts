@@ -10,7 +10,6 @@ import {
   type Page,
   type PaidClaim,
   type RelayPorts,
-  type AccountLinkChanged,
   type MonitorPorts,
 } from "./ports";
 
@@ -61,30 +60,8 @@ const resultCalldata = (result: BlitzResult): string[] => {
 export const ledgerMonitorReads = (
   rpcUrl: string,
   address: string,
-): Pick<MonitorPorts["ledger"], "paidClaims" | "postedResults" | "accountLinks"> => {
+): Pick<MonitorPorts["ledger"], "paidClaims" | "postedResults"> => {
   return {
-    accountLinks: (cursor, fromBlock = 0) =>
-      relayOperation("read ledger account links", () =>
-        ledgerEventPage(
-          rpcAt(rpcUrl),
-          address,
-          ["AccountLinkChanged"],
-          cursor,
-          fromBlock,
-          (event, index, position): AccountLinkChanged => {
-            if (event.keys.length !== 3 || event.data.length !== 2 || typeof event.block_number !== "number")
-              throw new Error("invalid_account_link_event");
-            return {
-              id: `${event.transaction_hash}:${event.block_number}:${position}:${index}`,
-              transactionHash: event.transaction_hash,
-              wallet: event.keys[1]!,
-              account: event.keys[2]!,
-              previousAccount: event.data[0]!,
-              previousWallet: event.data[1]!,
-            };
-          },
-        ),
-      ),
     paidClaims: (cursor, fromBlock = 0) =>
       relayOperation("read ledger paid claims", async () => {
         const provider = rpcAt(rpcUrl);

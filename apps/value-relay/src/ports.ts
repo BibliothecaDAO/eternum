@@ -1,5 +1,5 @@
 import { Data, Effect } from "effect";
-import type { LedgerAccountLinkWrite, LedgerPayDecision, PayoutWallet } from "@realms-world/identity";
+import type { LedgerPayDecision, PayoutWallet } from "@realms-world/identity";
 
 export class RelayFailure extends Data.TaggedError("RelayFailure")<{ operation: string }> {}
 export type RelayEffect<A> = Effect.Effect<A, RelayFailure>;
@@ -142,26 +142,21 @@ export interface RelayPorts {
     reportMany(withdrawals: readonly Withdrawal[]): RelayEffect<ClaimOutcome[]>;
     payMany(rows: readonly PayableClaim[]): RelayEffect<ClaimOutcome[]>;
     postResult(result: BlitzResult): RelayEffect<void>;
-    paidClaims(after: string | null, fromBlock?: number): RelayEffect<LedgerPage<PaidClaim>>;
-    postedResults(after: string | null, fromBlock?: number): RelayEffect<LedgerPage<BlitzCommitment>>;
   };
   realms: { ownerOf(realmId: string): RelayEffect<string> };
-}
-export interface AccountLinkChanged extends LedgerAccountLinkWrite {
-  id: string;
 }
 export interface MonitorPorts {
   identity: {
     matchesPayDecision(decision: LedgerPayDecision): RelayEffect<boolean>;
-    matchesLedgerLinkWrite(write: LedgerAccountLinkWrite): RelayEffect<boolean>;
   };
   shard: Pick<RelayPorts["shard"], "withdrawal" | "result"> & {
     conservation(): RelayEffect<readonly ConservationBalance[]>;
   };
-  ledger: Pick<RelayPorts["ledger"], "paidClaims" | "postedResults"> & {
+  ledger: {
+    paidClaims(after: string | null, fromBlock?: number): RelayEffect<LedgerPage<PaidClaim>>;
+    postedResults(after: string | null, fromBlock?: number): RelayEffect<LedgerPage<BlitzCommitment>>;
     auditSeasons(): RelayEffect<string | null>;
     pause(): RelayEffect<void>;
-    accountLinks(after: string | null, fromBlock?: number): RelayEffect<LedgerPage<AccountLinkChanged>>;
   };
 }
 

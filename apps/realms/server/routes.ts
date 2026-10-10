@@ -213,10 +213,7 @@ const accountSession = async (request: Request, auth: IdentityAuth, env: Identit
   const session = (await response.json()) as { user: { realmsId: string } } | null;
   if (!session) return responseWithSession(response, null);
   const payoutWallet = await Effect.runPromise(lookupPayoutWallet(env.DB, session.user.realmsId));
-  const ledgerLink = await Promise.resolve()
-    .then(() => env.ACCOUNT_LINKS.status(session.user.realmsId))
-    .catch(() => ({ status: "linking" as const }));
-  return responseWithSession(response, { ...session, user: { ...session.user, payoutWallet, ledgerLink } });
+  return responseWithSession(response, { ...session, user: { ...session.user, payoutWallet } });
 };
 const responseWithSession = (response: Response, session: unknown) => {
   const headers = new Headers(response.headers);
