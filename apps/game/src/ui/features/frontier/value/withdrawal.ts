@@ -1,18 +1,32 @@
-import { PAYOUTS_PAUSED, PAYOUTS_UNREADABLE } from "@/ui/design-system/kit/words";
+import { PAYOUTS_PAUSED, PAYOUTS_UNREADABLE, WITHDRAWALS_CLOSED } from "@/ui/design-system/kit/words";
+import { nativeRuleConstants } from "@bibliothecadao/eternum/game-client";
 
 import type { WithdrawStep } from "./withdraw-sheet";
 
 /**
- * Why no LORDS can leave now: the ledger cannot be read (so a payment could not be followed), or its payouts are
- * paused. Null when a withdrawal can be made; a pause not read yet refuses nothing.
+ * The second a season's withdrawals close: the shard stops debits one report grace before the claim window ends, so
+ * every withdrawal already made reaches the ledger while it still takes reports (relics.cairo, assert_claim_window).
+ */
+export const withdrawalsCloseAt = (seasonEnd: number, claimWindowSeconds: number): number =>
+  seasonEnd + claimWindowSeconds - nativeRuleConstants.FRONTIER_REPORT_GRACE_SECONDS;
+
+/**
+ * Why no LORDS can leave now, the most final reason first: the season's withdrawals have closed, the ledger cannot be
+ * read (so a payment could not be followed), or its payouts are paused. Null when a withdrawal can be made; undefined
+ * facts refuse nothing yet.
  */
 export const withdrawalRefusal = ({
+  closesAt,
+  now,
   ledgerReadable,
   paused,
 }: {
+  closesAt: number | undefined;
+  now: number;
   ledgerReadable: boolean;
   paused: boolean | undefined;
 }): string | null => {
+  if (closesAt !== undefined && now >= closesAt) return WITHDRAWALS_CLOSED;
   if (!ledgerReadable) return PAYOUTS_UNREADABLE;
   return paused ? PAYOUTS_PAUSED : null;
 };

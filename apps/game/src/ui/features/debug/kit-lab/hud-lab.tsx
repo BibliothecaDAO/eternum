@@ -9,6 +9,7 @@ import {
   PAYOUTS_PAUSED,
   TRAINING_BUILDINGS,
   TRY_AGAIN,
+  WITHDRAWALS_CLOSED,
   WORKSHOP,
   YOU,
 } from "@/ui/design-system/kit/words";
@@ -741,6 +742,13 @@ const STATES = {
     armies: ARMIES,
     purse: { lords: 1_240 },
     withdraw: { ...WITHDRAW_500, refusal: PAYOUTS_PAUSED },
+  },
+  "withdraw-closed": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    purse: { lords: 1_240 },
+    withdraw: { ...WITHDRAW_500, refusal: WITHDRAWALS_CLOSED },
   },
   "withdraw-waiting": {
     clock: CLOCK,
