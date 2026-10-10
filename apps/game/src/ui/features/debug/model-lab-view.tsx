@@ -24,6 +24,8 @@ import {
 } from "@/three/debug/model-lab/model-lab-renderer";
 import {
   isSourceOffered,
+  listModelLabActions,
+  listModelLabBiomeIds,
   MODEL_LAB_BIOMES,
   readModelLabSettings,
   writeModelLabSettings,
@@ -306,9 +308,9 @@ export function ModelLabView() {
             value={settings.biome}
             onChange={(event) => change({ biome: event.target.value as ModelLabSettings["biome"] })}
           >
-            {Object.entries(MODEL_LAB_BIOMES).map(([id, biome]) => (
+            {listModelLabBiomeIds().map((id) => (
               <option key={id} value={id}>
-                {biome.label}
+                {MODEL_LAB_BIOMES[id].label}
               </option>
             ))}
           </select>
@@ -404,27 +406,19 @@ export function ModelLabView() {
         </div>
         <div className="ml-playback">
           <div className="ml-action-tabs" aria-label="Animation sequence">
-            {(settings.family === "ships" ? (["idle", "move"] as const) : (["idle", "move", "run"] as const)).map(
-              (action) => (
-                <button
-                  key={action}
-                  aria-pressed={settings.action === action}
-                  onClick={() => {
-                    change({ action });
-                    setPaused(false);
-                  }}
-                >
-                  {action === "idle" ? <Anchor size={13} /> : <Waves size={13} />}
-                  {action === "idle"
-                    ? "Idle"
-                    : action === "run"
-                      ? "Run"
-                      : settings.family === "ships"
-                        ? "Sail"
-                        : "Move"}
-                </button>
-              ),
-            )}
+            {listModelLabActions(settings.family).map((action) => (
+              <button
+                key={action}
+                aria-pressed={settings.action === action}
+                onClick={() => {
+                  change({ action });
+                  setPaused(false);
+                }}
+              >
+                {action === "idle" ? <Anchor size={13} /> : <Waves size={13} />}
+                {resolveActionLabel(action, settings.family)}
+              </button>
+            ))}
           </div>
           <div className="ml-transport">
             <button
@@ -549,4 +543,10 @@ export function ModelLabView() {
 
 function compact(value: number): string {
   return new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 }).format(value);
+}
+
+function resolveActionLabel(action: ModelLabSettings["action"], family: ModelLabSettings["family"]): string {
+  if (action === "idle") return "Idle";
+  if (action === "run") return "Run";
+  return family === "ships" ? "Sail" : "Move";
 }
