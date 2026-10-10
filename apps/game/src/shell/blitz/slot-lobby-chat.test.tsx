@@ -26,7 +26,7 @@ vi.mock("@/ui/features/factory-v2/api/factory-worker", () => ({
 }));
 // The chat itself has its own tests; here only where the lobby puts it.
 vi.mock("./lobby-chat-panel", () => ({
-  LobbyChatPanel: ({ slotName }: { slotName: string }) => <section aria-label="Chat">{slotName}</section>,
+  LobbyChatPanel: ({ slot }: { slot: { name: string } }) => <section aria-label="Chat">{slot.name}</section>,
 }));
 
 import { setViewportWidth } from "../frame/test-viewport";

@@ -3,10 +3,12 @@ import { useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useIdentitySession } from "@/hooks/context/identity-session";
+import type { PlaytestSlot } from "@/ui/features/factory-v2/api/factory-worker";
+import { normalizeStarknetAddress } from "@realms-world/identity";
 import { fetchApi } from "@/runtime/app-api";
 
 /**
- * A Blitz lobby's chat: the room `slot:<name>` on the identity Worker's chat, opened by the lobby itself. Any signed-in
+ * A Blitz lobby's chat: the room `slot:<shard>:<name>` on the identity Worker's chat, opened by the lobby itself. Any signed-in
  * player reads it; a player whose payout wallet is registered in the slot writes, which the Worker decides when the
  * room opens and says in its join answer.
  */
@@ -15,7 +17,10 @@ const HISTORY = 50;
 /** Why the lobby's chat cannot be read, or a message was not taken; the panel says it in its own words. */
 export type ChatHold = "signed-out" | "unanswered" | "rate-limited" | "refused";
 
-const roomOf = (slotName: string) => `slot:${slotName}`;
+/** The slot a lobby's room belongs to: its shard and its name there (two shards may each open a slot of one name). */
+type LobbySlot = Pick<PlaytestSlot, "chainId" | "name">;
+
+const roomOf = (slot: LobbySlot) => `slot:${normalizeStarknetAddress(slot.chainId)}:${slot.name}`;
 
 /** The room's socket address: the app's own origin, its chat rooms path (apps/realms/server/chat/routes.ts). */
 const roomUrl = (zoneId: string) => {
@@ -54,9 +59,9 @@ const parsed = (data: unknown): RoomMessage | null => {
  * The lobby's chat. `membership` names what the room's write decision was taken on (the payout wallet and its
  * registration in the slot): the room is opened again when it changes, because the server decides once, at the open.
  */
-export const useLobbyChat = (slotName: string, membership: string) => {
+export const useLobbyChat = (slot: LobbySlot, membership: string) => {
   const { session } = useIdentitySession();
-  const zoneId = roomOf(slotName);
+  const zoneId = roomOf(slot);
   const signedIn = session !== null;
   const history = useQuery({
     queryKey: ["shell", "lobby-chat", zoneId],
