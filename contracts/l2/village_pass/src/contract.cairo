@@ -8,7 +8,7 @@ use starknet::ContractAddress;
 pub trait IVillagePass<TState> {
     fn mint(ref self: TState, recipient: ContractAddress) -> u256;
     fn burn(ref self: TState, token_id: u256);
-    fn restore(ref self: TState, recipient: ContractAddress, token_id: u256) -> bool;
+    fn restore(ref self: TState, recipient: ContractAddress, token_id: u256);
     fn batch_transfer_from(ref self: TState, from: ContractAddress, to: ContractAddress, amount: u16) -> Span<u256>;
 }
 
@@ -190,14 +190,9 @@ mod EternumVillagePass {
             token_id.into()
         }
 
-        fn restore(ref self: ContractState, recipient: ContractAddress, token_id: u256) -> bool {
+        fn restore(ref self: ContractState, recipient: ContractAddress, token_id: u256) {
             self.accesscontrol.assert_only_role(DISTRIBUTOR_ROLE);
-            // A reminted pass belongs to its current holder; restitution must not block cash.
-            if self.erc721._owner_of(token_id).is_non_zero() {
-                return false;
-            }
             self.erc721.mint(recipient, token_id);
-            true
         }
 
         // todo: ensure only authorized callers

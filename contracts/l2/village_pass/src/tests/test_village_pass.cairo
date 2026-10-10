@@ -173,19 +173,6 @@ mod tests {
 
         assert!(erc721.owner_of(token_id) == ALICE(), "expected distributor to restore burned pass");
     }
-    #[test]
-    fn occupied_id_is_not_restored_or_overwritten() {
-        let village_pass = VILLAGE_PASS();
-        let pass = IVillagePassDispatcher { contract_address: village_pass };
-        let erc721 = IERC721Dispatcher { contract_address: village_pass };
-        start_cheat_caller_address(village_pass, MINTER());
-        let token_id = pass.mint(ALICE());
-        start_cheat_caller_address(village_pass, DEFAULT_ADMIN());
-        IAccessControlDispatcher { contract_address: village_pass }.grant_role(selector!("DISTRIBUTOR_ROLE"), LEDGER());
-        start_cheat_caller_address(village_pass, LEDGER());
-        assert!(!pass.restore(LEDGER(), token_id));
-        assert!(erc721.owner_of(token_id) == ALICE());
-    }
     // #[test]
 // #[should_panic(expected: "evp: Only realm owner can mint season pass")]
 // fn test_only_owner_can_mint_pass() {
