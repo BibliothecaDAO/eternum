@@ -141,7 +141,6 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
             await tx.put("reset:sequence", sequence);
             await tx.put("progress", progress);
             await tx.delete("observation");
-            await tx.delete([...(await tx.list({ prefix: "conservation:final:" })).keys()]);
             return progress;
           });
         }),

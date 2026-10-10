@@ -1,4 +1,3 @@
-import { ValueMonitor } from "./monitor-worker";
 import { Effect } from "effect";
 import { beforeEach, expect, it, vi } from "vitest";
 import { shardConservationPort } from "./shard-conservation";
@@ -6,9 +5,6 @@ import { runMonitor, type MonitorProgress } from "./monitor";
 import type { ConfirmedSnapshot } from "./shard-snapshot";
 import { RelayFailure, type MonitorPorts } from "./ports";
 
-vi.mock("cloudflare:workers", () => ({ DurableObject: class {
-  constructor(public ctx: unknown, public env: unknown) {}
-} }));
 const rpc = vi.hoisted(() => ({ chain: vi.fn(), block: vi.fn() }));
 vi.mock("@realms-world/value-ledger", async (original) => ({
   ...(await original<typeof import("@realms-world/value-ledger")>()),
@@ -211,7 +207,7 @@ it("refuses rounded JSON amounts and empty integer text instead of inventing a b
   ).rejects.toThrow();
 });
 
-it("memoizes settled balances after the claim window", async () => {
+it("rereads settled balances after the claim window instead of retaining a second truth", async () => {
   const state = snapshot();
   state.models[0]!.rows[0]!.value.claim_window_seconds = 10;
   const games = directory();
@@ -230,7 +226,7 @@ it("memoizes settled balances after the claim window", async () => {
   expect(await Effect.runPromise(second())).toEqual([
     { gameId: 7, confirmedBlock: 10, receipts: "17", netIssued: "17" },
   ]);
-  expect(read.mock.calls.filter(([url]) => String(url).includes("/snapshot"))).toHaveLength(1);
+  expect(read.mock.calls.filter(([url]) => String(url).includes("/snapshot"))).toHaveLength(2);
 });
 
 it("bounds first-time conservation snapshots and rotates unfinished games", async () => {
@@ -267,7 +263,7 @@ it("bounds first-time conservation snapshots and rotates unfinished games", asyn
     ),
   ).toEqual([26, 27, 28, 29, 30]);
 });
-it("rereads a final balance after the monitor reset clears its memo", async () => {
+it("invalidates a final balance when its source block was replaced", async () => {
   const state = snapshot();
   state.models[0]!.rows[0]!.value.claim_window_seconds = 10;
   const games = directory();
@@ -281,18 +277,6 @@ it("rereads a final balance after the monitor reset clears its memo", async () =
   };
   const read = network(state, games);
   await Effect.runPromise(shardConservationPort(connection, "https://shard.test", read, cache)());
-  const storage = {
-    ...cache,
-    delete: async (keys: string | string[]) => {
-      for (const key of typeof keys === "string" ? [keys] : keys) values.delete(key);
-    },
-    list: async ({ prefix }: { prefix: string }) => new Map([...values].filter(([key]) => key.startsWith(prefix))),
-    transaction: async (run: (tx: unknown) => Promise<unknown>): Promise<unknown> => run(storage),
-  };
-  values.set("progress", { halted: "lords_conservation:7:10", fault: { row: "conservation:7:10" } });
-  const monitor = new ValueMonitor({ storage } as unknown as DurableObjectState, {} as never);
-  await monitor.reset("conservation:7:10", "Restored chain verified");
-  expect([...values.keys()].some((key) => key.startsWith("conservation:final:"))).toBe(false);
   rpc.block.mockImplementation(async (height) => ({
     block_number: height === "latest" ? 10 : height,
     block_hash: "0xb",
