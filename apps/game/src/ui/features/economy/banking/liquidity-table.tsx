@@ -37,7 +37,7 @@ export const LiquidityTable = ({ entity_id }: LiquidityTableProps) => {
 
   const playerStructures = useFactView(playerStructuresView);
 
-  const playerStructureIds = playerStructures.map((structure) => structure.structure.entity_id);
+  const playerStructureIds = playerStructures.map((structure) => structure.entityId);
 
   return (
     <div className="amm-liquidity-selector h-full overflow-x-auto relative">

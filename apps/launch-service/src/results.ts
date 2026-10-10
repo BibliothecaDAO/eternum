@@ -10,16 +10,16 @@ import type { NativeCommand } from "../../../packages/provider/src/native-comman
 import type { FinalizedGameSummary } from "./model";
 import type { FinalizeGameRequest } from "./schemas";
 
-type PlayerResult = Extract<NativeCommand, { kind: "RecordBlitzResults" }>["value"]["players"][number];
+type PlayerResult = { player: bigint; points: bigint; rank: number };
+type WalletResult = Extract<NativeCommand, { kind: "RecordBlitzResults" }>["value"]["players"][number];
 interface ResultProgress {
-  players: readonly PlayerResult[];
+  players: readonly { rank: number | bigint }[];
   complete: boolean;
   commitment: bigint;
 }
 interface ResultTarget {
   provider: RpcProvider;
   manifest: RegistrarWorld;
-  admissionUrl: string;
   accountAddress: string;
   privateKey: string;
   gameId: number;
@@ -83,12 +83,11 @@ function view<T>(target: ResultTarget, name: string, calldata: (number | string 
 
 export async function finalizeGame(
   request: FinalizeGameRequest,
-  rpc: { url: string; admissionUrl: string },
+  rpc: { url: string },
   credentials: { manifest: RegistrarWorld; accountAddress: string; privateKey: string },
 ): Promise<FinalizedGameSummary> {
   const target: ResultTarget = {
     ...credentials,
-    admissionUrl: rpc.admissionUrl,
     gameId: request.gameId,
     provider: new RpcProvider({ nodeUrl: rpc.url }),
   };
@@ -114,7 +113,24 @@ function resultOperations(target: ResultTarget): ResultOperations {
         })),
       );
     },
-    record: (start, players) =>
-      executeNativeAdminCommand({ ...target, command: { kind: "RecordBlitzResults", value: { start, players } } }),
+    record: async (start, players) => {
+      const roster = await view<{ account: bigint; wallet: bigint }[]>(target, "blitz_roster", [target.gameId]);
+      return executeNativeAdminCommand({
+        ...target,
+        command: { kind: "RecordBlitzResults", value: { start, players: walletResults(players, roster) } },
+      });
+    },
   };
+}
+
+/** Keep account-based ranking; the frozen roster alone names the wallet encoded by the current result ABI. */
+export function walletResults(
+  players: readonly PlayerResult[],
+  roster: readonly { account: bigint; wallet: bigint }[],
+): WalletResult[] {
+  return players.map(({ player, rank }) => {
+    const seat = roster.find(({ account }) => account === player);
+    if (!seat) throw new Error("Ranked player is missing from the frozen roster");
+    return { wallet: seat.wallet, rank };
+  });
 }

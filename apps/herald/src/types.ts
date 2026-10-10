@@ -1,4 +1,4 @@
-import type { NativeExecutionOutcome } from "@bibliothecadao/provider";
+import type { GameplayRejection } from "@bibliothecadao/provider";
 import type { GameSyncModelDefinition } from "@bibliothecadao/eternum/game-sync-models";
 
 export type Felt = string;
@@ -25,6 +25,8 @@ export interface RawWorldEvent {
 }
 
 export interface RpcEvent {
+  /** Original receipt offset returned by RPC 0.10 getEvents, even when other emitters are filtered out. */
+  event_index?: number;
   from_address: Felt;
   keys: Felt[];
   data: Felt[];
@@ -36,7 +38,8 @@ export interface RpcReceipt {
   finality_status: string;
   execution_status?: string;
   revert_reason?: string;
-  executions?: NativeExecutionOutcome[];
+  /** The game's refusal recorded in this receipt (GameplayRejected), once Herald has read it. */
+  rejection?: GameplayRejection;
   events: RpcEvent[];
 }
 
@@ -82,7 +85,7 @@ export interface DecodedRecord {
 
 interface DecodedWorldEventBase {
   model: GameSyncModelDefinition;
-  entityId: Felt;
+  entityId: string;
   /** Every native event carries its keys, so a row's game is known even when the fold no longer holds the row. */
   key: DecodedRecord;
   position: EventPosition;
@@ -96,12 +99,12 @@ export type DecodedWorldEvent =
   | (DecodedWorldEventBase & { kind: "event"; value: DecodedRecord });
 
 export interface FoldRow {
-  key: Felt;
+  key: string;
   value: DecodedRecord;
 }
 
 export interface FoldCheckpointRow {
-  entity_id: Felt;
+  entity_id: string;
   key: DecodedRecord;
   value: DecodedRecord;
 }
@@ -113,7 +116,7 @@ export interface FoldCheckpointModel {
 
 export interface FoldCheckpoint {
   native_schema_identity?: string;
-  version: 1;
+  version: 2;
   world_address: Felt;
   models: FoldCheckpointModel[];
   preset_preimages?: { commitment: string; felts: readonly string[] }[];
@@ -121,13 +124,13 @@ export interface FoldCheckpoint {
 
 export interface FoldSet {
   model: string;
-  key: Felt;
+  key: string;
   value: DecodedRecord;
 }
 
 export interface FoldDelete {
   model: string;
-  key: Felt;
+  key: string;
 }
 
 export interface FoldChange {

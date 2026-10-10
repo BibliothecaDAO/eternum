@@ -104,7 +104,9 @@ export class GameSyncRuntime {
   private snapshotAppliedOperations = 0;
   private snapshotExpectedOperations = 0;
   private snapshotStreaming = false;
-  private readonly resyncListeners = new Set<() => void>();
+  private readonly resyncListeners = new Set<(throughBlock: number) => void>();
+  /** The confirmed block the last applied snapshot describes: the store holds every fact through it. */
+  private snapshotThroughBlock: number | null = null;
   private transactionWaiters = new Map<
     string,
     Array<{ reject: (error: Error) => void; resolve: (transaction: GameSyncTransaction) => void }>
@@ -126,13 +128,17 @@ export class GameSyncRuntime {
     return this.session?.transport.transactionStatusChannel === true;
   }
 
+  /**
+   * Herald's status for the transaction, whatever it says: applied, or applied nothing (REVERTED or REJECTED, with the
+   * reason). Rejects only when the wait itself ends: no status channel, or the session was replaced or stopped.
+   */
   public waitForTransaction(transactionHash: string): Promise<GameSyncTransaction> {
     if (!this.hasTransactionStatusChannel()) {
       return Promise.reject(new Error("The active game sync session has no transaction status channel"));
     }
     const identity = normalizeTransactionHash(transactionHash);
     const known = this.recentTransactions.get(identity);
-    if (known) return settleTransaction(known);
+    if (known) return Promise.resolve(known);
 
     return new Promise<GameSyncTransaction>((resolve, reject) => {
       const waiters = this.transactionWaiters.get(identity) ?? [];
@@ -161,6 +167,7 @@ export class GameSyncRuntime {
     this.rejectTransactionWaiters("Game sync session was replaced");
     this.recentTransactions.clear();
     this.localTransactions.clear();
+    this.snapshotThroughBlock = null;
     this.liveUpdateSamples = [];
     this.snapshotAppliedOperations = 0;
     this.snapshotExpectedOperations = 0;
@@ -210,12 +217,14 @@ export class GameSyncRuntime {
   }
 
   /**
-   * Fires once a reconnect's fresh snapshot has replaced the store. Herald streams a transaction's status only once, so
-   * a status it sent before the reconnect, or a transaction it recorded while it was down, will never arrive; waits for
-   * one must settle from the store after this.
+   * Fires once a reconnect's fresh snapshot has replaced the store, with the confirmed block it describes, and at once
+   * with the last applied snapshot's block when there is one. Herald streams a transaction's status only once, so a
+   * status it sent before a reconnect will never arrive; a wait for one settles from the store when a snapshot
+   * reaches the transaction's block, including a snapshot applied before the wait began listening.
    */
-  public subscribeResynced(listener: () => void): () => void {
+  public subscribeResynced(listener: (throughBlock: number) => void): () => void {
     this.resyncListeners.add(listener);
+    if (this.snapshotThroughBlock !== null) listener(this.snapshotThroughBlock);
     return () => this.resyncListeners.delete(listener);
   }
 
@@ -313,15 +322,16 @@ export class GameSyncRuntime {
         for (let start = 0; start < facts.length; start += SNAPSHOT_PIECE_FACTS)
           void this.ingestQueue?.enqueueFacts(facts.slice(start, start + SNAPSHOT_PIECE_FACTS));
       },
-      onSnapshotEnd: () => {
+      onSnapshotEnd: (throughBlock) => {
         if (!current() || !snapshot) return false;
         const { held, retained } = snapshot;
         snapshot = null;
         const replaced = this.enqueueReplacement(generation, held ?? [], retained);
-        if (held)
-          void replaced.then((applied) => {
-            if (applied && current()) this.resyncListeners.forEach((listener) => listener());
-          });
+        void replaced.then((applied) => {
+          if (!applied || !current()) return;
+          this.snapshotThroughBlock = throughBlock;
+          if (held) this.resyncListeners.forEach((listener) => listener(throughBlock));
+        });
         firstSnapshot.resolve();
         return replaced.then((applied) => applied && current());
       },
@@ -509,10 +519,7 @@ export class GameSyncRuntime {
     const waiters = this.transactionWaiters.get(identity);
     if (!waiters) return;
     this.transactionWaiters.delete(identity);
-    waiters.forEach(({ reject, resolve }) => {
-      if (transaction.status === "REVERTED") reject(transactionError(transaction));
-      else resolve(transaction);
-    });
+    waiters.forEach(({ resolve }) => resolve(transaction));
   }
 
   private rejectTransactionWaiters(message: string): void {
@@ -614,16 +621,6 @@ function normalizeTransactionHash(transactionHash: string): string {
   } catch {
     return transactionHash.toLowerCase();
   }
-}
-
-function transactionError(transaction: GameSyncTransaction): Error {
-  return new Error(transaction.revertReason ?? `Transaction ${transaction.hash} reverted`);
-}
-
-function settleTransaction(transaction: GameSyncTransaction): Promise<GameSyncTransaction> {
-  return transaction.status === "REVERTED"
-    ? Promise.reject(transactionError(transaction))
-    : Promise.resolve(transaction);
 }
 
 interface Deferred {

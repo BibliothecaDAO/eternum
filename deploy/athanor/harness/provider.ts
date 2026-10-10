@@ -1,29 +1,44 @@
-import { BlockTag, config, RpcProvider, WebSocketChannel } from "starknet";
-import { frameCheckingSocket } from "./worker-boundary";
+import { BlockTag, config, RpcProvider } from "starknet";
 
-/** One socket per run; the SDK restores subscriptions and the node sends their current canonical status. */
+/** The public proxy serves POST RPC; transaction observations poll without opening a node socket. */
 export class HarnessProvider extends RpcProvider {
-  private observations?: { channel: WebSocketChannel; ready: Promise<unknown> };
-
-  constructor(private readonly rpcUrl: string) {
+  private readonly subscriptions = new Set<() => void>();
+  constructor(rpcUrl: string) {
     super({ blockIdentifier: BlockTag.PRE_CONFIRMED, nodeUrl: rpcUrl });
   }
-
   async subscribeTransactionStatus(transactionHash: string) {
-    if (!this.observations) {
-      const channel = new WebSocketChannel({
-        nodeUrl: this.rpcUrl.replace(/^http/, "ws"),
-        autoReconnect: true,
-        websocket: frameCheckingSocket(config.get("websocket") ?? globalThis.WebSocket),
-      });
-      this.observations = { channel, ready: channel.waitForConnection() };
-    }
-    await this.observations.ready;
-    return this.observations.channel.subscribeTransactionStatus({ transactionHash });
+    type Status = Awaited<ReturnType<RpcProvider["getTransactionStatus"]>>;
+    const listeners = new Set<(event: { status: Status }) => void>();
+    let stopped = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const stop = () => {
+      stopped = true;
+      clearTimeout(timer);
+      this.subscriptions.delete(stop);
+    };
+    const poll = async () => {
+      try {
+        const status = await this.getTransactionStatus(transactionHash);
+        if (!stopped) listeners.forEach((listener) => listener({ status }));
+      } catch {
+        /* A hash may not yet be visible, or the proxy may be briefly unavailable. */
+      }
+      if (!stopped) timer = setTimeout(poll, 250);
+    };
+    this.subscriptions.add(stop);
+    return {
+      on: (listener: (event: { status: Status }) => void) => {
+        listeners.add(listener);
+        if (listeners.size === 1) void poll();
+      },
+      unsubscribe: async () => {
+        stop();
+        listeners.clear();
+      },
+    };
   }
-
   dispose(): void {
-    this.observations?.channel.disconnect();
+    this.subscriptions.forEach((stop) => stop());
   }
 }
 

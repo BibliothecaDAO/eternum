@@ -22,7 +22,7 @@ pub struct RecipeConfig {
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct RefillProduction {
-    pub structure_id: u32,
+    pub structure_id: u64,
     pub resource_types: Span<u8>,
     pub amounts: Span<u128>,
 }
@@ -98,16 +98,14 @@ pub trait IProductionCommands<T> {
         actor: starknet::ContractAddress,
         command: RefillProduction,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> ((), crate::ownership::StoryCursor);
+    );
     fn burn_resource_for_resource_production(
         ref self: T,
         game_id: u32,
         actor: starknet::ContractAddress,
         command: RefillProduction,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> ((), crate::ownership::StoryCursor);
+    );
 }
 
 #[derive(Copy, Drop, Default, starknet::Store)]

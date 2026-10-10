@@ -57,7 +57,7 @@ import { requireActiveGameClient } from "@/sync/active-game-client";
 import { BOTTOM_PANEL_HEIGHT, BOTTOM_PANEL_MARGIN, MINIMAP_SIZE } from "./constants";
 import { HexMinimap, readMinimapTiles, type MinimapTile } from "./hex-minimap";
 import { presentedMineKind } from "@bibliothecadao/eternum";
-import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import { safeInteger, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
 
 const compactResourceFormatter = new Intl.NumberFormat("en-US", {
   notation: "compact",
@@ -210,7 +210,7 @@ const LocalTilePanel = () => {
     const base = liveStructure?.base;
     if (!base) return null;
     return {
-      structureId: liveStructure.entity_id,
+      structureId: safeInteger(liveStructure.entity_id),
       category: normalizeStructureCategory(base.category),
     };
   }, [liveStructure]);
@@ -228,10 +228,10 @@ const LocalTilePanel = () => {
 
   const building = useNativeRow(
     "Building",
-    selectedBuildingHex && liveStructure && selectedBuildingHex.structureId === liveStructure.entity_id
+    selectedBuildingHex && selectedStructure && selectedBuildingHex.structureId === selectedStructure.structureId
       ? {
           game_id: configManager.getActiveGameId(),
-          structure_id: liveStructure.entity_id,
+          structure_id: selectedStructure.structureId,
           inner_col: selectedBuildingHex.innerCol,
           inner_row: selectedBuildingHex.innerRow,
         }
@@ -473,7 +473,7 @@ const LocalTilePanel = () => {
     if (buildCost.length === 0) return false;
     if (!hasAvailableTile) return false;
     return buildCost.every((entry) => {
-      const { balance } = getBalance(structureEntityId ?? 0, entry.resource, currentDefaultTick, setup.store);
+      const { balance } = getBalance(structureEntityId, entry.resource, currentDefaultTick, setup.store);
       return balance !== undefined && divideByPrecision(balance) >= entry.amount;
     });
   })();
@@ -605,12 +605,7 @@ const LocalTilePanel = () => {
               <SectionRow label="Build cost">
                 {buildCost.map((entry, index) => {
                   const name = findResourceById(Number(entry.resource))?.trait ?? `Resource ${entry.resource}`;
-                  const balanceInfo = getBalance(
-                    structureEntityId ?? 0,
-                    entry.resource,
-                    currentDefaultTick,
-                    setup.store,
-                  );
+                  const balanceInfo = getBalance(structureEntityId, entry.resource, currentDefaultTick, setup.store);
                   const balance = knownBalance(balanceInfo.balance);
                   const hasEnough = balance !== undefined && balance >= entry.amount;
                   return (
@@ -832,6 +827,9 @@ BottomRightPanel.displayName = "BottomRightPanel";
 /** The mine kind a minimap tile's occupier is drawn as, when it is a mine. */
 const mineKindOnTile = (store: NativeFactStore, occupierId: number | string | bigint | null | undefined) => {
   if (!occupierId) return undefined;
-  const structure = store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: Number(occupierId) });
+  const structure = store.get("Structure", {
+    game_id: configManager.getActiveGameId(),
+    entity_id: safeInteger(occupierId),
+  });
   return structure ? presentedMineKind(structure) : undefined;
 };

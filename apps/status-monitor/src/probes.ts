@@ -84,7 +84,6 @@ function probeWorld(target: Target, network: typeof fetch, now: number) {
       throw new Error("Chain mismatch");
     requireReady(health);
     if (health.undecodable_events !== 0 || !height(health.confirmed_block)) throw new Error("Herald incomplete");
-    await gatewayListening(read, publicUrl(manifest.admissionUrl).href);
     const rpc = publicUrl(manifest.rpcUrl);
     const latest = await nodeHeader(read, rpc.href, "latest");
     const heraldHeight = health.confirmed_block as number;
@@ -189,15 +188,4 @@ async function nodeHeader(read: Reader, url: string, block: "latest" | { block_n
     throw new Error("Node head unavailable");
   if (block !== "latest" && payload.result.block_number !== block.block_number) throw new Error("Wrong Herald head");
   return { block_number: payload.result.block_number, timestamp: payload.result.timestamp };
-}
-
-async function gatewayListening(read: Reader, url: string) {
-  // An unknown method cannot enqueue an action. This checks the public listener, not successful sequencing.
-  const response = await read(url, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "realms_status_probe", params: [] }),
-  });
-  const payload = (await response.json()) as { id?: unknown; error?: { code?: unknown } };
-  if (payload.id !== 1 || payload.error?.code !== -32601) throw new Error("Admission listener unavailable");
 }

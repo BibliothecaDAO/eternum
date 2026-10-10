@@ -5,6 +5,14 @@ import { NativeFactStore } from "../client/native-fact-store";
 import type { GameClientSetup } from "../client/game-client";
 import { configManager } from "../managers/config-manager";
 
+/** A refusal inside a store reader is reported by the store, which keeps delivering to every other reader. */
+function expectReported(deliver: () => void, message: string) {
+  const reported = vi.spyOn(console, "error").mockImplementation(() => {});
+  deliver();
+  expect(String(reported.mock.calls.at(-1))).toContain(message);
+  reported.mockRestore();
+}
+
 function fixture() {
   configManager.setActiveGame(1, 1);
   const store = new NativeFactStore();
@@ -36,7 +44,8 @@ describe("native scene updates", () => {
       { explorerId: 7, attribute: "Scouting", tier: 3, price: 200 },
       { explorerId: 7, attribute: "Battle", tier: 3, price: 200 },
     ]);
-    expect(() => story("Luck")).toThrow("Malformed tier purchase");
+    expectReported(() => story("Luck"), "Malformed tier purchase");
+    expect(chosen).toHaveBeenCalledTimes(2);
   });
 
   it("carries a cleared site's payout with the tile and losses of the exchange that won it", () => {
@@ -89,11 +98,12 @@ describe("native scene updates", () => {
       expect.objectContaining({ siteId: 10, kind: "Stragglers", reward: null }),
     ]);
     // A payout whose winning battle is not the one just before it is a contract bug, never a guess.
-    expect(() => story("7", 11, StructureType.Rift, { resource_type: 29, amount: "1" })).toThrow(
+    expectReported(
+      () => story("7", 11, StructureType.Rift, { resource_type: 29, amount: "1" }),
       "without its winning battle",
     );
     battle("7", 11);
-    expect(() => story("7", 11, StructureType.Rift, null)).toThrow("A cleared Rift pays nothing");
+    expectReported(() => story("7", 11, StructureType.Rift, null), "A cleared Rift pays nothing");
     stop();
     battle("8", 12);
     story("8", 12, StructureType.Camp, { resource_type: 23, amount: "1" });

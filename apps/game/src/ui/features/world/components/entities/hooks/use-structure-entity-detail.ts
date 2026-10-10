@@ -24,6 +24,7 @@ import { ContractAddress, ID, BANDITS_NAME, RelicEffectWithEndTick, StructureTyp
 import { useCallback, useMemo } from "react";
 import { useAccountAddress } from "@/hooks/store/use-account-store";
 import { presentedMineKind } from "@bibliothecadao/eternum";
+import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
 interface UseStructureEntityDetailOptions {
   structureEntityId: ID;
@@ -44,10 +45,9 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
   const goToStructure = useGoToStructure(setup);
 
   const userAddress = useAccountAddress();
-  const structureEntityIdNumber = Number(structureEntityId ?? 0);
-  const keys = { game_id: configManager.getActiveGameId(), entity_id: structureEntityIdNumber };
+  const keys = { game_id: configManager.getActiveGameId(), entity_id: structureEntityId };
   const structure = useNativeRow("Structure", keys);
-  const resources = useResourceManager(structureEntityIdNumber);
+  const resources = useResourceManager(structureEntityId);
   const productionBoostBonus = useNativeRowOrAbsent("ProductionBonus", structure ? keys : undefined);
   const shares = useNativeRow("HyperstructureShares", keys);
   const revision = useNativeRevision([
@@ -176,7 +176,9 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
   }, [structure, isMine, isAlly]);
 
   const progress = useMemo(() => {
-    return isHyperstructure ? getHyperstructureProgress(structure?.entity_id, store) : undefined;
+    return isHyperstructure && structure
+      ? getHyperstructureProgress(safeInteger(structure.entity_id), store)
+      : undefined;
   }, [isHyperstructure, structure?.entity_id, store, revision]);
 
   const structureName = useMemo(() => {
@@ -191,7 +193,6 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
 
   return {
     structureEntityId,
-    structureEntityIdNumber,
     structureDetails,
     structure,
     resources,

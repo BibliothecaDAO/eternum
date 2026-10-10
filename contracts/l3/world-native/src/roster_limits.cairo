@@ -1,0 +1,2 @@
+pub const MAX_BLITZ_ROSTER_PLAYERS: u32 = 24;
+pub const DUEL_ROSTER_PLAYERS: u32 = 2;

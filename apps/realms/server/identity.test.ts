@@ -1,5 +1,7 @@
-import { readdirSync, readFileSync } from "node:fs";
-import { buildSiwsMessage, enrolOperator } from "@realms-world/identity";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { readdirSync, readFileSync, mkdtempSync, writeFileSync, rmSync } from "node:fs";
+import { buildSiwsMessage } from "@realms-world/identity";
 import { botRealmsId, deviceChangeHash, realmsAccountAddress } from "@realms-world/identity/account";
 import { createGuardian } from "@realms-world/guardian";
 import { byteArray, CallData, ec, hash, typedData, type TypedData } from "starknet";
@@ -17,6 +19,7 @@ const ACCOUNT_CLASS_HASH = "0x68995feeefffc1647118073e1ff16179f07eb8eed6c8fb03cc
 const GUARDIAN_KEY = "0x2dccce1da22003777062ee0870e9881b460a8b7eca276870f57c601f182136c";
 const CHAIN_ID = "0x5245414c4d535f53484152445f41";
 
+const storageDirectory = mkdtempSync(join(tmpdir(), "identity-platform-"));
 let proxy: Awaited<ReturnType<typeof getPlatformProxy<{ DB: D1Database }>>>;
 const OPERATOR_TOKEN = "operator-test-token";
 
@@ -62,7 +65,17 @@ const verifyAsMainnet = vi.fn<VerifyWalletSignature>(async (message, signature, 
 });
 
 beforeAll(async () => {
-  proxy = await getPlatformProxy<{ DB: D1Database }>({ environment: "staging", persist: false });
+  // The route fixture uses only D1 and cache. It does not bind unrelated classes to Wrangler's storage proxy.
+  const configPath = join(storageDirectory, "wrangler.json");
+  writeFileSync(
+    configPath,
+    JSON.stringify({
+      name: "identity-route-storage",
+      compatibility_date: "2026-07-30",
+      d1_databases: [{ binding: "DB", database_name: "identity", database_id: "00000000-0000-0000-0000-000000000000" }],
+    }),
+  );
+  proxy = await getPlatformProxy<{ DB: D1Database }>({ configPath, persist: false });
   const migrations = new URL("../migrations/", import.meta.url);
   const statements = readdirSync(migrations)
     .sort()
@@ -105,7 +118,10 @@ beforeAll(async () => {
   });
 }, 60_000);
 
-afterAll(() => proxy?.dispose());
+afterAll(async () => {
+  await proxy?.dispose();
+  rmSync(storageDirectory, { recursive: true, force: true });
+});
 
 /** A shard manifest under our guardian and account class, the only kind our directory lists. */
 const shardManifest = (chainId: string) => ({
@@ -516,51 +532,6 @@ describe("identity Worker", () => {
     expect((await ask({ ...request, action: "REVOKE", account: playerAccount }, OPERATOR_TOKEN)).status).toBe(403);
   });
 
-  it("enrols a community shard's operator through their own Realms account, then signs that session out", async () => {
-    const email = "community-operator@realms.test";
-    const deviceKey = "0x0be7a702";
-    const guardianPublicKey = ec.starkCurve.getStarkKey(GUARDIAN_KEY);
-    const inProcess = (url: string, init?: RequestInit) =>
-      routeIdentityRequest(new Request(url, init), env, auth, {
-        cache: proxy.caches.default as unknown as Cache,
-        fetchShard,
-        readLaunchDirectory: async () => launchDirectory,
-      });
-
-    const enrolment = await enrolOperator({
-      identityUrl: `${ORIGIN}/api`,
-      shard: { chainId: CHAIN_ID, accountClassHash: ACCOUNT_CLASS_HASH, guardianPublicKey },
-      deviceKey,
-      email,
-      readCode: async () => sentCodes.get(email)!,
-      fetch: inProcess,
-    });
-
-    const user = (await proxy.env.DB.prepare('SELECT "id", "realmsId" FROM "user" WHERE "email" = ?')
-      .bind(email)
-      .first()) as { id: string; realmsId: string };
-    expect(enrolment.realmsId).toBe(user.realmsId);
-    const [r, s] = enrolment.signature;
-    const approved = {
-      chainId: CHAIN_ID,
-      account: realmsAccountAddress(user.realmsId, ACCOUNT_CLASS_HASH, guardianPublicKey),
-      action: "ADD" as const,
-      deviceKey,
-      counter: 1,
-    };
-    expect(
-      ec.starkCurve.verify(
-        new ec.starkCurve.Signature(BigInt(r!), BigInt(s!)),
-        deviceChangeHash(approved),
-        ec.starkCurve.getPublicKey(GUARDIAN_KEY),
-      ),
-    ).toBe(true);
-    const sessions = await proxy.env.DB.prepare('SELECT count(*) AS n FROM "session" WHERE "userId" = ?')
-      .bind(user.id)
-      .first<{ n: number }>();
-    expect(sessions?.n).toBe(0);
-  });
-
   it("names an account only through our guardian's approval, never through the Realms id it claims", async () => {
     const browser = createBrowser();
     await signInWithCode(browser, "galen@realms.test");
@@ -674,7 +645,7 @@ describe("identity Worker", () => {
     expect(await list()).toEqual(listed);
 
     // A player's standing comes from each shard as it answers that player; shard B cannot answer, and says so.
-    const standing = { registered: true, settled: false, roster_member: false, structures: [] };
+    const standing = { registered: true, settled: false, roster_wallet: null, structures: [] };
     heralds.set("https://shard-a.test/games?player=0xabc", {
       chain: "0xa",
       games: [

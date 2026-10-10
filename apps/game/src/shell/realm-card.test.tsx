@@ -26,7 +26,7 @@ const season = (level: number) =>
     player_state: {
       registered: true,
       settled: true,
-      roster_member: false,
+      roster_wallet: null,
       structures: [{ entity_id: 1, category: 1, realm_id: 3098, level, coord_x: 0, coord_y: 0, resources_packed: "0" }],
     },
   }) as unknown as DirectoryGame;

@@ -83,7 +83,10 @@ function boundedText(value: unknown, max: number): value is string {
   return typeof value === "string" && value.length > 0 && value.length <= max && !/[\u0000-\u001f\u007f]/.test(value);
 }
 
-/** The Cairo emitters allocate adjacent UUIDs, attacker first and defender second, with no intervening UUID call. */
+/**
+ * A delayed transfer emits its two perspectives back to back (sender first, receiver second), so they are consecutive
+ * events of one transaction: the story identity's last part is the event's index in the receipt.
+ */
 export function logicalStoryIdentity(
   sourceId: string,
   story: string,

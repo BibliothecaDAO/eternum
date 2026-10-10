@@ -23,10 +23,11 @@ const OFFLINE_DIRECTION = "Scout outward with every explorer and report what you
 
 async function main(): Promise<number> {
   const config = loadConfig();
+  const run = runLifetime();
   const game = await connectRunnerGame(config);
   try {
     const dataDir = resolveDataDir(config, game.client.gameId);
-    const signer = await resolveRunnerSigner(config, game.client, dataDir);
+    const signer = await resolveRunnerSigner(config, game.client, dataDir, run.signal);
     const empire = signer ? await ensureSettled(game, signer) : { structures: [], explorers: [] };
     const tools = createRunnerTools(game, dataDir);
     const model = resolveModel(config.modelProfile);
@@ -56,11 +57,12 @@ async function main(): Promise<number> {
       directions: resolveDirectionSource(config, dataDir),
       settings: resolveLoopSettings(config, game.listing),
       dataDir,
-      signal: interruptSignal(),
+      signal: run.signal,
     });
     printManifest(manifest);
     return exitCodeFor(stopReason);
   } finally {
+    run.abort();
     game.client.dispose();
   }
 }
@@ -107,11 +109,12 @@ function resolveDirectionSource(config: RunnerConfig, dataDir: string): Directio
     : createFileDirectionSource(path.join(dataDir, DIRECTIONS_DIR));
 }
 
-function interruptSignal(): AbortSignal {
+/** The run's lifetime: an interrupt ends it, and so does the run finishing, so nothing it sent keeps polling after. */
+function runLifetime(): AbortController {
   const controller = new AbortController();
   process.once("SIGINT", () => controller.abort());
   process.once("SIGTERM", () => controller.abort());
-  return controller.signal;
+  return controller;
 }
 
 function printReady(game: RunnerGame, empire: SettledEmpire, tools: AgentTool[]): void {

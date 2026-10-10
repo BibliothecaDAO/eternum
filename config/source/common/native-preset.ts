@@ -25,9 +25,6 @@ export interface NativePreset {
     swordPrice: number;
     shieldPrice: number;
     mmrEnabled: boolean;
-    predictionFeeBps: number;
-    liabilityCap: number;
-    seed: number;
   };
   startingTroops: readonly ("Knight" | "Paladin" | "Crossbowman")[];
   realmResources: readonly number[];
@@ -79,13 +76,13 @@ export interface NativePreset {
     epicXp: number;
     legendaryXp: number;
   };
+  labor: null | { amount: number; accountDailyLimit: number };
   chests: null | {
     pool: number;
     priceCeiling: number;
     shares: ChestTiers;
-    surgeFactor: number;
-    surgeMinimumShares: number;
     estimateDays: number;
+    claimWindowSeconds: number;
   };
   depths: Array<{
     revealPercent: number;

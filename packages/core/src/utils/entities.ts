@@ -1,3 +1,4 @@
+import { safeInteger } from "./safe-integer";
 import { entityMapPosition } from "./tile";
 import { structureMapPosition } from "./expeditions";
 import { CapacityConfig, ContractAddress, ID, StructureType } from "@bibliothecadao/types";
@@ -26,7 +27,7 @@ export const getEntityInfo = (
 
   let name = undefined;
   if (explorer) {
-    const armyName = getArmyName(explorer.explorer_id, store);
+    const armyName = getArmyName(safeInteger(explorer.explorer_id), store);
     name = {
       name: armyName,
       originalName: armyName,
@@ -86,7 +87,7 @@ const getRealmName = (structure: NativeRows["Structure"]) => {
 };
 
 export const getStructureName = (structure: NativeRows["Structure"], isBlitz: boolean) => {
-  const cachedName = getEntityNameFromLocalStorage(structure.entity_id);
+  const cachedName = getEntityNameFromLocalStorage(safeInteger(structure.entity_id));
   let originalName = undefined;
 
   if (structure.base.category === StructureType.Realm) {

@@ -18,7 +18,7 @@ import {
 import { nativeRuleConstants } from "../../../contracts/l3/world-native/schema/client.gen";
 import { toJsonValue, type ModelRegistry } from "./model-registry";
 import { directoryFact, FINALIZED_GAME_MODELS } from "./native/read-models";
-import { nativeEntityId } from "./native/entity-id";
+import { nativeRowKey } from "./native/row-key";
 import { rowStreamKeys } from "./subscription-keys";
 import type {
   DecodedRecord,
@@ -48,11 +48,7 @@ const asJsonRecord = (value: DecodedRecord): DecodedRecord => {
   return jsonValue as DecodedRecord;
 };
 
-const compareEntityKeys = (left: FoldRow, right: FoldRow): number => {
-  const leftKey = BigInt(left.key);
-  const rightKey = BigInt(right.key);
-  return leftKey < rightKey ? -1 : leftKey > rightKey ? 1 : 0;
-};
+const compareRowKeys = (left: string, right: string): number => (left < right ? -1 : left > right ? 1 : 0);
 
 const belongsToGame = (row: StoredModelRow, gameId: bigint): boolean => {
   const value = row.key.game_id;
@@ -82,6 +78,7 @@ const checkpointRow = ([entityId, row]: [string, StoredModelRow]): FoldCheckpoin
  * Returns the human-readable difference, or undefined when the sets match.
  */
 export const checkpointModelMismatch = (registry: ModelRegistry, checkpoint: FoldCheckpoint): string | undefined => {
+  if (checkpoint.version !== 2) return "row identity version differs";
   if (registry.nativeSchemaIdentity !== checkpoint.native_schema_identity) return "native schema identity differs";
   const expectedModels = new Set(persistentModelNames(registry));
   const restoredModels = new Set(checkpoint.models.map(({ model }) => model));
@@ -216,7 +213,6 @@ export class WorldFold {
   }
 
   public static restore(registry: ModelRegistry, checkpoint: FoldCheckpoint): WorldFold {
-    if (checkpoint.version !== 1) throw new Error(`Unsupported fold checkpoint version ${checkpoint.version}`);
     if (BigInt(checkpoint.world_address) !== BigInt(registry.worldAddress)) {
       throw new Error(`Checkpoint world ${checkpoint.world_address} does not match ${registry.worldAddress}`);
     }
@@ -301,14 +297,12 @@ export class WorldFold {
     return {
       models: persistentModelNames(this.registry).map((model) => ({
         model,
-        rows: [...this.materializedRows(model).entries()].map(checkpointRow).sort((left, right) => {
-          const leftKey = BigInt(left.entity_id);
-          const rightKey = BigInt(right.entity_id);
-          return leftKey < rightKey ? -1 : leftKey > rightKey ? 1 : 0;
-        }),
+        rows: [...this.materializedRows(model).entries()]
+          .map(checkpointRow)
+          .sort((left, right) => compareRowKeys(left.entity_id, right.entity_id)),
       })),
       preset_preimages: [...this.allPresetPreimages()].map(([commitment, felts]) => ({ commitment, felts })),
-      version: 1,
+      version: 2,
       native_schema_identity: this.registry.nativeSchemaIdentity,
       world_address: this.registry.worldAddress,
     };
@@ -350,7 +344,7 @@ export class WorldFold {
   public modelRows(model: string): FoldRow[] {
     return [...this.materializedRows(model).entries()]
       .map(([key, row]) => ({ key, value: asJsonRecord({ ...row.key, ...row.value }) }))
-      .sort(compareEntityKeys);
+      .sort((left, right) => compareRowKeys(left.key, right.key));
   }
 
   public snapshot(
@@ -495,7 +489,7 @@ export class WorldFold {
     const models = definitions.map((definition) => {
       const gameRows = this.snapshotModelRows(definition, gameId, scope, scopeKeys)
         .map(([key, row]): FoldRow => ({ key, value: asJsonRecord({ ...row.key, ...row.value }) }))
-        .sort(compareEntityKeys);
+        .sort((left, right) => compareRowKeys(left.key, right.key));
       return { model: definition.name, rows: gameRows };
     });
 
@@ -746,18 +740,6 @@ export class WorldFold {
 
   private applyEventRows(event: Extract<DecodedWorldEvent, { kind: "event" }>): FoldChange[] {
     if (event.model.name === "PointsAwarded") return this.applyPointsAward(event);
-    if (event.model.name !== "ExecutionRecorded") return [];
-    const { order, status, status_class, reason } = event.value;
-    const result = BigInt(String(status));
-    const code = BigInt(String(status_class));
-    if (
-      BigInt(String(order)) === 0n ||
-      !(
-        (result === 1n && code === 0n && reason === "") ||
-        (result === 2n && code !== 0n && typeof reason === "string" && reason.length > 0)
-      )
-    )
-      throw new Error("Invalid native execution outcome");
     return [];
   }
 
@@ -778,7 +760,7 @@ export class WorldFold {
       const change = this.apply({
         kind: "set",
         model: codec.definition,
-        entityId: nativeEntityId(keys.map(String)),
+        entityId: nativeRowKey(keys.map(String)),
         position: event.position,
         key,
         value,

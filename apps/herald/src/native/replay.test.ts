@@ -1,6 +1,4 @@
 import { presetRegistration, presetLaunch } from "./preset-fixtures";
-import { storyEventIdentity } from "@bibliothecadao/eternum/game-sync";
-import { toJsonValue } from "../model-registry";
 import { createNativeWorldIngestion } from "./world-ingestion";
 import { loadNativeWorld } from "./load";
 import { describe, expect, it, vi } from "vitest";
@@ -35,7 +33,7 @@ describe("native confirmed replay and transaction delivery", () => {
   it("rebuilds native event fixtures through deletes and a checkpoint reconnect", async () => {
     const { native, decoder, fold } = setup();
     const history = wireHistory();
-    const rpc = { getBlockWithReceipts: vi.fn(async (number: number) => history[number - 10]) };
+    const rpc = { readBlock: vi.fn(async (number: number) => history[number - 10]) };
     await native.replay({ fold, rpc, fromBlock: 10, toBlock: 11 });
     const restored = WorldFold.restore(decoder.registry, fold.checkpoint());
     await native.replay({ fold: restored, rpc, fromBlock: 12, toBlock: 13 });
@@ -77,7 +75,7 @@ describe("native confirmed replay and transaction delivery", () => {
     const { native, fold } = setup();
     const before = fold.checkpoint();
     const rpc = {
-      getBlockWithReceipts: vi.fn(async (number: number) => {
+      readBlock: vi.fn(async (number: number) => {
         if (number === 11) throw new Error("disconnected");
         return block(10, [setFixture.raw]);
       }),
@@ -150,7 +148,7 @@ describe("native confirmed replay and transaction delivery", () => {
 it("confirms a receipt from its pre-confirmed decode at the confirmed position, and decodes afresh when its events differ", async () => {
   const { native, decoder, fold } = setup();
   const [genesis] = wireHistory();
-  await native.replay({ fold, rpc: { getBlockWithReceipts: async () => genesis! }, fromBlock: 10, toBlock: 10 });
+  await native.replay({ fold, rpc: { readBlock: async () => genesis! }, fromBlock: 10, toBlock: 10 });
   const pending = receipt([setFixture.raw, pointsAward("1", "0x111", "200", "200", "200")], "0xb1");
   const earlier = { events: pending.events, decoded: native.applyReceipt(fold.overlay(), pending, null, 0).events };
   const confirmed: RpcBlockWithReceipts = {
@@ -163,7 +161,7 @@ it("confirms a receipt from its pre-confirmed decode at the confirmed position, 
   };
   const confirm = (preconfirmed?: () => typeof earlier) => {
     const copy = WorldFold.restore(decoder.registry, fold.checkpoint());
-    const rpc = { getBlockWithReceipts: async () => confirmed };
+    const rpc = { readBlock: async () => confirmed };
     return native
       .replay({ fold: copy, rpc, fromBlock: 11, toBlock: 11, preconfirmed })
       .then((result) => ({ copy, result }));
@@ -188,7 +186,7 @@ it("rebuilds state and history from genesis in one replay when history lags the 
   const blocks = wireHistory();
   const rpc = {
     blockNumber: vi.fn(async () => 13),
-    getBlockWithReceipts: vi.fn(async (number: number) => blocks[number - 10]),
+    readBlock: vi.fn(async (number: number) => blocks[number - 10]),
   } as unknown as MadaraRpc;
   const stale = new WorldFold(decoder.registry);
   const checkpointStore = {
@@ -198,7 +196,7 @@ it("rebuilds state and history from genesis in one replay when history lags the 
   };
   const history = { frontierHistory: async () => [], appendEvents: vi.fn(), historyProgress: vi.fn(async () => 11) };
   const loaded = await loadNativeWorld({ chain: "madara", checkpointStore, history, native, rpc });
-  expect(rpc.getBlockWithReceipts).toHaveBeenCalledTimes(4);
+  expect(rpc.readBlock).toHaveBeenCalledTimes(4);
   expect(loaded.fold).not.toBe(stale);
   expect(history.appendEvents).toHaveBeenCalledOnce();
   expect(history.appendEvents.mock.calls[0]![1]).toBe(13);
@@ -226,7 +224,7 @@ it("reports a member write to a row it does not hold once, skips it, and keeps f
     checkpointEveryBlocks: 1,
     diffLatency,
     rpc: {
-      getBlockWithReceipts: vi.fn(async () => block(10, [unheldTile, setFixture.raw])),
+      readBlock: vi.fn(async () => block(10, [unheldTile, setFixture.raw])),
     } as unknown as MadaraRpc,
   });
 
@@ -257,7 +255,7 @@ it("halts a confirmed rejection at the last checkpoint without killing receipt s
   const before = fold.checkpoint();
   const rpc = {
     blockNumber: vi.fn(async () => 10),
-    getBlockWithReceipts: vi.fn(async () => block(10, [setFixture.raw, malformed.raw])),
+    readBlock: vi.fn(async () => block(10, [setFixture.raw, malformed.raw])),
   } as unknown as MadaraRpc;
   const checkpointStore = {
     initialize: vi.fn(),
@@ -284,14 +282,14 @@ it("halts a confirmed rejection at the last checkpoint without killing receipt s
   live.acceptReceipt({ ...receipt([setFixture.raw]), finality_status: "PRE_CONFIRMED" });
   expect(live.confirmedBlock).toBe(9);
   expect(checkpointStore.save).not.toHaveBeenCalled();
-  expect(rpc.getBlockWithReceipts).toHaveBeenCalledTimes(1);
+  expect(rpc.readBlock).toHaveBeenCalledTimes(1);
 });
 
 it("halts a live confirmed fold atomically while leaving the process available", async () => {
   const { native, decoder, fold } = setup();
   const before = fold.checkpoint();
   const rpc = {
-    getBlockWithReceipts: vi.fn(async () => block(10, [setFixture.raw, malformed.raw])),
+    readBlock: vi.fn(async () => block(10, [setFixture.raw, malformed.raw])),
   } as unknown as MadaraRpc;
   const live = new LiveWorld({
     native,
@@ -333,23 +331,22 @@ it("halts a live confirmed fold atomically while leaving the process available",
   expect(await response.json()).toMatchObject({ success: false, confirmed_block: 9, undecodable_events: 1 });
 });
 
-it("preserves the two story identities from overlay through confirmation despite intervening facts", async () => {
+it("keeps two story identities from overlay through confirmation, each its transaction and event index", async () => {
   const { native, fold, decoder } = setup();
-  const scope = { chainId: "madara", worldAddress: decoder.registry.worldAddress, gameId: 1 };
   const layout = schema.games.events.find((event) => event.name === "StoryEvent")!;
   const story = (index: number): RpcEvent => ({
     from_address: decoder.registry.worldAddress,
-    keys: [...layout.prefix, "1", "1", "42", String(index), "0", "0x111", "0", "3", "0x55"],
+    keys: [...layout.prefix, "2", "1", "0", "0x111", "0", "3", "0x55"],
     data: ["1", String(index + 1), "2160"],
   });
   const points = pointsAward("1", "0x111", "100", "100", "100");
   const pending = receipt([story(0), points, story(1)]);
   const overlay = native.applyReceipt(fold.overlay(), pending, null, 0);
-  const confirmed = block(10, [points, story(0), story(1)]);
+  const confirmed = block(10, [story(0), points, story(1)]);
   confirmed.transactions[0]!.receipt.transaction_hash = pending.transaction_hash;
   const replay = await native.replay({
     fold,
-    rpc: { getBlockWithReceipts: async () => confirmed },
+    rpc: { readBlock: async () => confirmed },
     fromBlock: 10,
     toBlock: 10,
     preconfirmed: () => ({ events: pending.events, decoded: overlay.events }),
@@ -358,14 +355,10 @@ it("preserves the two story identities from overlay through confirmation despite
     events.filter((event) => event.kind === "event" && event.model.name === "StoryEvent");
   const before = stories(overlay.events);
   const after = stories(replay.events);
-  expect(before.map((event) => event.key.index)).toEqual([0n, 1n]);
   expect(new Set(before.map((event) => event.entityId)).size).toBe(2);
   expect(after.map((event) => event.entityId)).toEqual(before.map((event) => event.entityId));
-  expect(before.map((event) => event.position.eventIndex)).toEqual([0, 2]);
-  expect(after.map((event) => event.position.eventIndex)).toEqual([1, 2]);
-  const identities = (events: typeof before) =>
-    events.map((event) => storyEventIdentity(scope, toJsonValue(event.key) as Record<string, unknown>));
-  expect(identities(after)).toEqual(identities(before));
+  expect(after.map((event) => event.position.eventIndex)).toEqual([0, 2]);
+  expect(after.map((event) => event.position.blockNumber)).toEqual([10, 10]);
   expect(fold.modelRows("PlayerPoints")).toHaveLength(1);
 });
 
@@ -388,12 +381,12 @@ it("retains only one 64-block cold-replay window and no receipts, checkpointing 
     });
     return result;
   };
-  const outcomes = vi.spyOn(native, "executionReceipt");
+  const outcomes = vi.spyOn(native, "outcomeReceipt");
   const rpc = {
     blockNumber: async () => 383,
-    getBlockWithReceipts: async (number: number) => {
+    readBlock: async (number: number) => {
       expect(number - saved).toBeLessThanOrEqual(64);
-      return block(number, [setFixture.raw, battleEvent("7", "8", "1920", String(number))]);
+      return block(number, [setFixture.raw, battleEvent("7", "8", "1920")]);
     },
   } as unknown as MadaraRpc;
   const checkpointStore = {
@@ -434,8 +427,7 @@ it("keeps a completed startup window when the next window rejects a receipt and 
   let broken = true;
   const rpc = {
     blockNumber: async () => 130,
-    getBlockWithReceipts: async (number: number) =>
-      block(number, [broken && number === 70 ? malformed.raw : setFixture.raw]),
+    readBlock: async (number: number) => block(number, [broken && number === 70 ? malformed.raw : setFixture.raw]),
   } as unknown as MadaraRpc;
   const checkpointStore = {
     initialize: async () => {},
@@ -463,4 +455,93 @@ it("keeps a completed startup window when the next window rejects a receipt and 
   const loaded = await loadNativeWorld({ chain: "madara", native: restarted, rpc, checkpointStore, history });
   expect(loaded.confirmedBlock).toBe(130);
   expect(loaded.metrics.pages).toBe(67);
+});
+
+it("commits replay at a decoded-event budget without splitting a block", async () => {
+  const { native, fold } = setup();
+  const events = Array.from({ length: 9000 }, () => setFixture.raw);
+  const rpc = { readBlock: async (number: number) => block(number, events) };
+  const committed: number[] = [];
+  const first = await native.replay({
+    fold,
+    rpc,
+    fromBlock: 10,
+    toBlock: 12,
+    retainTransactions: false,
+    beforeCommit: async (_events, through) => {
+      committed.push(through);
+    },
+  });
+  expect(first.throughBlock).toBe(11);
+  expect(first.metrics.pages).toBe(2);
+  expect(committed).toEqual([11]);
+  const last = await native.replay({
+    fold,
+    rpc,
+    fromBlock: first.throughBlock + 1,
+    toBlock: 12,
+    retainTransactions: false,
+  });
+  expect(last.throughBlock).toBe(12);
+});
+
+it("reuses owned-event decode across foreign fee events with original offsets", async () => {
+  const { native, fold, decoder } = setup();
+  const foreign = { from_address: "0xf00", keys: [], data: [] };
+  const pending = receipt([foreign, setFixture.raw], "0xabc");
+  const earlier = native.applyReceipt(fold.overlay(), pending, null, 0);
+  const decode = vi.spyOn(decoder, "decode");
+  const confirmed = block(10, [{ ...setFixture.raw, event_index: 1 }]);
+  confirmed.transactions[0].receipt.transaction_hash = "0xabc";
+  await native.replay({
+    fold,
+    rpc: { readBlock: async () => confirmed },
+    fromBlock: 10,
+    toBlock: 10,
+    preconfirmed: () => ({ events: pending.events, decoded: earlier.decoded }),
+  });
+  expect(decode).not.toHaveBeenCalled();
+});
+
+it("checkpoints budgeted cold replay before fetching the following block", async () => {
+  const { native } = setup();
+  let saved = 0,
+    historyThrough = 0;
+  const blocks = Array.from({ length: 3 }, (_, index) =>
+    block(
+      10 + index,
+      Array.from({ length: 9000 }, () => setFixture.raw),
+    ),
+  );
+  const rpc = {
+    blockNumber: async () => 12,
+    readBlock: async (number: number) => {
+      if (number === 12) expect(saved).toBe(11);
+      return blocks[number - 10];
+    },
+  } as unknown as MadaraRpc;
+  const saves: number[] = [];
+  const loaded = await loadNativeWorld({
+    chain: "madara",
+    native,
+    rpc,
+    checkpointStore: {
+      initialize: async () => {},
+      load: async () => undefined,
+      save: async (_chain, through) => {
+        expect(historyThrough).toBe(through);
+        saves.push(through);
+        saved = through;
+      },
+    },
+    history: {
+      frontierHistory: async () => [],
+      historyProgress: async () => null,
+      appendEvents: async (_events, through) => {
+        historyThrough = through!;
+      },
+    },
+  });
+  expect(saves).toEqual([11, 12]);
+  expect(loaded.confirmedBlock).toBe(12);
 });

@@ -16,7 +16,12 @@ import {
   ResourceManager,
   summarizeIncomingTroopArrivals,
 } from "@bibliothecadao/eternum";
-import type { NativeFactStore, NativeModelName, NativeRows } from "@bibliothecadao/eternum/game-client";
+import {
+  safeInteger,
+  type NativeFactStore,
+  type NativeModelName,
+  type NativeRows,
+} from "@bibliothecadao/eternum/game-client";
 import { ContractAddress, EntityType, type Player, ResourcesIds, type Structure } from "@bibliothecadao/types";
 
 /**
@@ -172,7 +177,7 @@ export const buildingTilesView: FactView<Array<{ innerCol: number; innerRow: num
     inActiveGame("Building")(store).map((building) => ({
       innerCol: building.inner_col,
       innerRow: building.inner_row,
-      structureId: building.structure_id,
+      structureId: safeInteger(building.structure_id),
     })),
 };
 

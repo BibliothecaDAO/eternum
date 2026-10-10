@@ -28,9 +28,6 @@ export const frontierPreset: NativePreset = {
     swordPrice: 0,
     shieldPrice: 0,
     mmrEnabled: false,
-    predictionFeeBps: 0,
-    liabilityCap: 0,
-    seed: 0,
   },
   bitcoinEnabled: false,
   startingTroops: Array.from({ length: 17 }, () => "Knight" as const),
@@ -107,14 +104,14 @@ export const frontierPreset: NativePreset = {
     emptyRevealLimit: 7,
   },
   progression: { revealXp: 2, fixedXp: 200, uncommonXp: 100, rareXp: 200, epicXp: 400, legendaryXp: 800 },
+  labor: { amount: 1000, accountDailyLimit: 0 },
   // The ruin's chest: the season pool paid through a day price of at most 50 LORDS a share.
   chests: {
     pool: 1000000,
     priceCeiling: 50,
     shares: { common: 1, uncommon: 2, rare: 4, epic: 10, legendary: 20 },
-    surgeFactor: 3,
-    surgeMinimumShares: 60,
     estimateDays: 5,
+    claimWindowSeconds: 7 * 86400,
   },
   depths: [
     {

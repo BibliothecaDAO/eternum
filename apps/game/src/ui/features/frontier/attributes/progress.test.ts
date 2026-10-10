@@ -21,7 +21,7 @@ const RULES = {
 };
 const ARMY = {
   game_id: 1,
-  explorer_id: 7,
+  explorer_id: 7n,
   xp: 0,
   battle: 1,
   logistics: 1,

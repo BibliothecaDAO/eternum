@@ -32,6 +32,7 @@ pub struct WithdrawalPreset {
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct EconomyPreset {
+    pub labor: Option<crate::entry::LaborRules>,
     pub trade: crate::trade::TradeRules,
     pub banks: crate::market::BankRules,
     pub hyperstructures: crate::hyperstructures::HyperstructureRules,
@@ -55,6 +56,17 @@ pub struct PresetDefinition {
 
 pub fn validate(preset: PresetDefinition) {
     let rules = preset.rules;
+    assert!(preset.economy.labor.is_some() == (rules.day_unit_seconds != 0), "labor rules require expeditions");
+    if let Some(labor) = preset.economy.labor {
+        assert!(labor.amount != 0, "zero daily labor grant");
+        let _ = labor.amount * crate::rules::RESOURCE_PRECISION;
+    }
+    if let Some(chests) = preset.economy.chests {
+        assert!(
+            chests.claim_window_seconds > crate::days::FRONTIER_REPORT_GRACE_SECONDS,
+            "LORDS claim window needs reporting grace",
+        );
+    }
     assert!(preset.economy.chests.is_some() == (rules.day_unit_seconds != 0), "chest rules require expedition");
     assert!(preset.economy.discovery.is_some() == (rules.day_unit_seconds != 0), "discovery requires expedition");
     if let Some(discovery) = preset.economy.discovery {
@@ -121,4 +133,48 @@ pub fn commitment(preset: PresetDefinition) -> felt252 {
     let mut values = array!['NATIVE_PRESET', 1];
     preset.serialize(ref values);
     core::poseidon::poseidon_hash_span(values.span())
+}
+
+// Registration shares the season domain's code budget; Games and Registry keep their existing public ABI.
+#[starknet::interface]
+pub trait IPresetRegistration<T> {
+    fn register_preset(ref self: T, preset_id: u32, definition: PresetDefinition);
+}
+
+#[starknet::interface]
+pub trait IPresetResources<T> {
+    fn store_resource_preset(
+        ref self: T,
+        commitment: felt252,
+        resources: ResourcePreset,
+        exploration: Span<crate::exploration_rewards::ExplorationReward>,
+        mode_rules: u32,
+    );
+}
+
+#[starknet::interface]
+pub trait IPresetValidation<T> {
+    fn validated_preset_commitment(self: @T, definition: PresetDefinition) -> felt252;
+}
+
+#[starknet::interface]
+pub trait IPresetStructures<T> {
+    fn store_structure_preset(ref self: T, commitment: felt252, structures: StructurePreset);
+}
+
+#[starknet::interface]
+pub trait IPresetWithdrawals<T> {
+    fn store_withdrawal_preset(ref self: T, commitment: felt252, withdrawals: WithdrawalPreset);
+}
+
+#[starknet::interface]
+pub trait IPresetSettlement<T> {
+    fn store_settlement_preset(
+        ref self: T,
+        commitment: felt252,
+        settlement: SettlementPreset,
+        entry_rule: u8,
+        mode_rules: u32,
+        day_unit_seconds: u32,
+    );
 }

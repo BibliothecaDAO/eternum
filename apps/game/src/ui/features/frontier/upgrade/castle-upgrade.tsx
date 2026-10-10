@@ -3,7 +3,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useStructureUpgrade } from "@/ui/modules/entity-details/hooks/use-structure-upgrade";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { buildableRadius } from "@bibliothecadao/eternum";
-import type { NativeRows } from "@bibliothecadao/eternum/game-client";
+import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { BUILDINGS_CENTER } from "@bibliothecadao/types";
 import type { UpgradePlan, UpgradeStep } from "./upgrade-plan";
 import { UpgradeSheet } from "./upgrade-sheet";
@@ -22,7 +22,7 @@ export const useKeepSelected = (realm: NativeRows["Structure"] | null): boolean 
     !isMapView &&
     ordersAllowed &&
     realm !== null &&
-    selected?.structureId === realm.entity_id &&
+    selected?.structureId === safeInteger(realm.entity_id) &&
     selected.innerCol === BUILDINGS_CENTER[0] &&
     selected.innerRow === BUILDINGS_CENTER[1]
   );
@@ -41,7 +41,7 @@ export const CastleUpgrade = ({ realm, onClose }: { realm: NativeRows["Structure
 const useCastleUpgradePlan = (
   realm: NativeRows["Structure"],
 ): { plan: UpgradePlan; upgrade: () => Promise<void> } | null => {
-  const upgrade = useStructureUpgrade(realm.entity_id);
+  const upgrade = useStructureUpgrade(safeInteger(realm.entity_id));
   if (!upgrade) return null;
   return {
     plan: {

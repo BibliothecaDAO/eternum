@@ -20,7 +20,6 @@ export const realmBoard = () => {
       game_id: 1,
       preset_id: 3,
       name: "1",
-      creator: "1",
       start_settling_at: "1",
       start_main_at: "100",
       end_at: "1000",

@@ -9,7 +9,7 @@ import {
   directoryForPlayer,
   directoryStatus,
 } from "./native/read-models";
-import { type DirectoryInput, type GameDirectorySource } from "./game-directory";
+import { isCheckGame, type DirectoryInput, type GameDirectorySource } from "./game-directory";
 import { dayOf } from "@bibliothecadao/eternum/expeditions";
 import type { GameSnapshot, ReplayMetrics } from "./types";
 import type { HistoryQuery, HistoryStore } from "./history-store";
@@ -45,13 +45,7 @@ interface HeraldHttpState {
   metrics: ReplayMetrics;
   history?: Pick<
     HistoryStore,
-    | "queryStoryCursor"
-    | "queryEvents"
-    | "reviewSnapshot"
-    | "transactionCount"
-    | "activity"
-    | "frontierHistory"
-    | "frontierDayRanks"
+    "queryStoryCursor" | "queryEvents" | "reviewSnapshot" | "activity" | "frontierHistory" | "frontierDayRanks"
   >;
   undecodableEventCount: () => number;
 }
@@ -125,7 +119,6 @@ export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: R
   const reviewSnapshotPath = /^\/games\/([0-9]+)\/review\/snapshot$/;
   const dayRanksPath = /^\/games\/([0-9]+)\/days\/([0-9]+)\/ranks$/;
   const leaderboardPath = /^\/games\/([0-9]+)\/leaderboard$/;
-  const transactionCountPath = /^\/games\/([0-9]+)\/transactions\/count$/;
 
   return async (request) => {
     const url = new URL(request.url);
@@ -224,12 +217,6 @@ export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: R
         const message = error instanceof Error ? error.message : String(error);
         return jsonResponse({ error: message }, 400);
       }
-    }
-
-    const transactionCountMatch = request.method === "GET" ? transactionCountPath.exec(url.pathname) : null;
-    if (transactionCountMatch) {
-      if (!state.history) return jsonResponse({ error: "history_unavailable" }, 503);
-      return jsonResponse(await state.history.transactionCount(transactionCountMatch[1]));
     }
 
     const reviewSnapshotMatch = request.method === "GET" ? reviewSnapshotPath.exec(url.pathname) : null;
@@ -355,13 +342,16 @@ function directoryClock(state: Pick<HeraldHttpState, "chainTimestamp"> & { fold:
     state.fold.modelRows("SliceRules").map(({ value }) => [BigInt(value.game_id as string).toString(), value]),
   );
   return JSON.stringify(
-    state.fold.modelRows("GameRegistry").map(({ value: game }) => {
-      const config = rules.get(BigInt(game.game_id as string).toString());
-      if (!config) throw new Error(`Missing native SliceRules for game ${game.game_id}`);
-      const dayUnitSeconds = Number(config.day_unit_seconds);
-      const now = state.chainTimestamp();
-      return [directoryStatus(game, now), dayUnitSeconds === 0 ? null : seasonDayOf(game, dayUnitSeconds, now)];
-    }),
+    state.fold
+      .modelRows("GameRegistry")
+      .filter(({ value }) => !isCheckGame(value))
+      .map(({ value: game }) => {
+        const config = rules.get(BigInt(game.game_id as string).toString());
+        if (!config) throw new Error(`Missing native SliceRules for game ${game.game_id}`);
+        const dayUnitSeconds = Number(config.day_unit_seconds);
+        const now = state.chainTimestamp();
+        return [directoryStatus(game, now), dayUnitSeconds === 0 ? null : seasonDayOf(game, dayUnitSeconds, now)];
+      }),
   );
 }
 

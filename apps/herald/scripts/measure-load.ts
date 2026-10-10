@@ -285,7 +285,6 @@ function reviews() {
   const frozen = new Set<string>();
   return {
     appendEvents: async () => {},
-    recordTransaction: () => {},
     freezeReviewSnapshot: async (gameId: string, snapshot: () => unknown) => {
       if (frozen.has(gameId)) return;
       snapshot();
@@ -316,8 +315,9 @@ const live = new LiveWorld({
     return [site, ...getNeighborHexes(site.col, site.row)].map(({ col, row }) => ({ col, row, biome: 5 }));
   },
   rpc: {
-    getBlockWithReceipts: async (number: number | "pre_confirmed") =>
+    readBlock: async (number: number | "pre_confirmed") =>
       number === "pre_confirmed" ? pendingBlock() : blocks.get(number)!,
+    getBlockHeader: async (number: number) => blocks.get(number)!,
     getPreconfirmedHeader: async () => ({ block_number: block + 1, timestamp: Math.floor(now / 1000) }),
   } as never,
 });

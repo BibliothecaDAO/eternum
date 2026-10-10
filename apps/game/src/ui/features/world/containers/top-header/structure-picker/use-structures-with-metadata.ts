@@ -22,6 +22,7 @@ import type { StructureWithMetadata } from "./chip";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useCoarseCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
+import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
 const readPackedCount = (value: bigint | number | string | undefined): bigint => {
   if (value === undefined || value === null) return 0n;
@@ -61,7 +62,7 @@ export const useStructuresWithMetadata = ({
     () =>
       structures
         .filter((structure) => resolveStructureUiCapabilities(structure.structure).hasPopulationDetails)
-        .map((structure) => Number(structure.entityId))
+        .map((structure) => safeInteger(structure.entityId))
         .filter((entityId) => Number.isFinite(entityId))
         .toSorted((left, right) => left - right),
     [structures],
@@ -132,7 +133,7 @@ export const useStructuresWithMetadata = ({
         realmLevelLabel,
         population,
         guardCount: getGuardsByStructure(structure.structure, store)?.filter((guard) => guard.troops.count > 0n).length,
-        explorerCount: liveHomeArmies(store, Number(structure.entityId), configManager.getActiveGameId()).length,
+        explorerCount: liveHomeArmies(store, structure.entityId, configManager.getActiveGameId()).length,
         populationCapacity,
         buildingTilesOccupied: buildingTileSummary?.occupied ?? null,
         buildingTilesTotal: buildingTileSummary?.total ?? null,

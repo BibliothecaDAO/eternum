@@ -4,6 +4,7 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { isDeepStrictEqual } from "node:util";
 import { hash, num } from "starknet";
+import { MadaraRpc } from "../src/madara-rpc";
 import { NativeDecoder } from "../src/native/decoder";
 import { NativeIngestion } from "../src/native/ingestion";
 import { manifest as localManifest } from "../src/native/fixtures";
@@ -174,7 +175,7 @@ async function run(options: Options): Promise<void> {
   const decoder = new NativeDecoder(decoderManifest(worldAddress, schema, Number(releaseId)));
   const ingestion = new NativeIngestion(decoder);
   const fold = new WorldFold(decoder.registry);
-  const allBlocks = await readBlocks(options.rpcUrl, options.fromBlock, toBlock);
+  const allBlocks = await readBlocks(options.rpcUrl, worldAddress, options.fromBlock, toBlock);
   const records: RecordingRecord[] = [];
   const actionCheckpoints: ActionCheckpoint[] = [];
   let finalTimestamp: number | undefined;
@@ -191,7 +192,7 @@ async function run(options: Options): Promise<void> {
             block_number: block.block_number,
             transaction_hash: receipt.transaction_hash,
             transaction_index: transactionIndex,
-            event_index: eventIndex,
+            event_index: event.event_index ?? eventIndex,
           }),
         ];
       });
@@ -263,24 +264,20 @@ async function contractReadCheck(
   return { kind, transactionHash, nonce, playerPoints };
 }
 
-async function readBlocks(rpcUrl: string, fromBlock: number, toBlock: number): Promise<RpcBlockWithReceipts[]> {
+async function readBlocks(
+  rpcUrl: string,
+  emitter: string,
+  fromBlock: number,
+  toBlock: number,
+): Promise<RpcBlockWithReceipts[]> {
+  const rpc = new MadaraRpc(rpcUrl);
   const blocks: RpcBlockWithReceipts[] = [];
-  const concurrency = 12;
-  for (let first = fromBlock; first <= toBlock; first += concurrency) {
-    const numbers = Array.from({ length: Math.min(concurrency, toBlock - first + 1) }, (_, index) => first + index);
-    const batch = await Promise.all(
-      numbers.map((block) =>
-        rpcRequest<RpcBlockWithReceipts>(rpcUrl, "starknet_getBlockWithReceipts", [{ block_number: block }]),
-      ),
-    );
-    batch.forEach((block, index) => {
-      const expected = numbers[index]!;
-      if (block.block_number !== expected)
-        throw new Error(`RPC block mismatch: requested ${expected}, received ${block.block_number}`);
-    });
-    blocks.push(...batch);
+  try {
+    for (let number = fromBlock; number <= toBlock; number++) blocks.push(await rpc.readBlock(number, emitter));
+    return blocks;
+  } finally {
+    rpc.close();
   }
-  return blocks;
 }
 
 function decoderManifest(worldAddress: string, schema: NativeSchema, releaseId: number): NativeManifest {

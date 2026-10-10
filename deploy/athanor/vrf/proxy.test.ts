@@ -1,0 +1,488 @@
+import { GAME_ENTRYPOINTS } from "./entrypoints";
+import { hash } from "starknet";
+import { expect, test } from "bun:test";
+import { startReadRpc } from "../scripts/read-rpc";
+import { identity, invoke } from "./fixtures";
+import { STAMP_TAG, type PlayInvoke } from "./transaction";
+
+async function fixture(
+  result: unknown = { transaction_hash: "0x777" },
+  hold?: (tx: PlayInvoke) => Promise<void>,
+  playerCapacity = identity.playerCapacity,
+  holdClass?: () => Promise<void>,
+) {
+  const forwarded: any[] = [],
+    stamped: PlayInvoke[] = [];
+  const inspected: string[] = [];
+  let nonce = "0x0";
+  let classReply: unknown = { result: identity.accountClassHash };
+  let classStatus = 200;
+  const classSenders: string[] = [];
+  const node = Bun.serve({
+    hostname: "127.0.0.1",
+    port: 0,
+    async fetch(request) {
+      const call = await request.json();
+      if (call.method === "starknet_getNonce") {
+        inspected.push(call.method);
+        return Response.json({ result: nonce });
+      }
+      if (call.method === "starknet_getClassHashAt") {
+        inspected.push(call.method);
+        classSenders.push(call.params[1]);
+        await holdClass?.();
+        return Response.json(classReply, { status: classStatus });
+      }
+      forwarded.push(call);
+      return Response.json({
+        jsonrpc: "2.0",
+        id: call.id,
+        ...(result instanceof Error
+          ? { error: { code: 99, message: result.message, data: { signature: call.params[0].signature } } }
+          : { result }),
+      });
+    },
+  });
+  const stamper = {
+    async stamp(tx: PlayInvoke) {
+      stamped.push(tx);
+      await hold?.(tx);
+      return { transactionHash: "0x777", suffix: [STAMP_TAG, "0x1", "0x2", "0x3", "0x4", "0x5"] };
+    },
+  };
+  const proxy = startReadRpc(node.url.origin, 0, { ...identity, playerCapacity }, stamper, undefined, "127.0.0.1");
+  return {
+    forwarded,
+    stamped,
+    inspected,
+    classSenders,
+    setClassReply(reply: unknown, status = 200) {
+      classReply = reply;
+      classStatus = status;
+    },
+    setNonce(value: string) {
+      nonce = value;
+    },
+    async call(method: string, params: unknown) {
+      return (
+        await fetch(proxy.url, { method: "POST", body: JSON.stringify({ jsonrpc: "2.0", id: 42, method, params }) })
+      ).json();
+    },
+    async rawTransaction(transaction: string) {
+      return (
+        await fetch(proxy.url, {
+          method: "POST",
+          body: '{"jsonrpc":"2.0","id":42,"method":"starknet_addInvokeTransaction","params":[' + transaction + "]}",
+        })
+      ).json();
+    },
+    async batch(transactions: PlayInvoke[]) {
+      return (
+        await fetch(proxy.url, {
+          method: "POST",
+          body: JSON.stringify(
+            transactions.map((transaction, id) => ({
+              jsonrpc: "2.0",
+              id,
+              method: "starknet_addInvokeTransaction",
+              params: [transaction],
+            })),
+          ),
+        })
+      ).json();
+    },
+    close() {
+      proxy.stop(true);
+      node.stop(true);
+    },
+  };
+}
+test("one current-nonce play is stamped and only its hash reaches the device", async () => {
+  const f = await fixture();
+  try {
+    expect(await f.call("starknet_addInvokeTransaction", [invoke()])).toEqual({
+      jsonrpc: "2.0",
+      id: 42,
+      result: { transaction_hash: "0x777" },
+    });
+    expect(f.forwarded[0].params[0].signature).toEqual([
+      ...invoke().signature,
+      STAMP_TAG,
+      "0x1",
+      "0x2",
+      "0x3",
+      "0x4",
+      "0x5",
+    ]);
+    f.setNonce("0x1");
+    expect((await f.call("starknet_addInvokeTransaction", [invoke()])).error).toEqual({
+      code: -32010,
+      message: "Transaction refused",
+    });
+    expect(f.stamped).toHaveLength(1);
+  } finally {
+    f.close();
+  }
+});
+test("node rejection never leaks a stamped body, proof or backend diagnostic", async () => {
+  const f = await fixture(new Error("private transaction diagnostic"));
+  try {
+    expect(await f.call("starknet_addInvokeTransaction", [invoke()])).toEqual({
+      jsonrpc: "2.0",
+      id: 42,
+      error: { code: -32011, message: "Transaction outcome unknown", data: { transaction_hash: "0x777" } },
+    });
+  } finally {
+    f.close();
+  }
+});
+test("estimates, simulation, future nonces, altered bounds, body and trace reads never get a proof", async () => {
+  const f = await fixture();
+  try {
+    for (const method of ["starknet_estimateFee", "starknet_simulateTransactions"])
+      expect((await f.call(method, [[invoke()], [], "pre_confirmed"])).error).toBeDefined();
+    for (const method of [
+      "starknet_getTransactionByHash",
+      "starknet_getBlockWithTxs",
+      "starknet_getBlockWithReceipts",
+      "starknet_traceTransaction",
+      "starknet_traceBlockTransactions",
+      "starknet_getTransactionByBlockIdAndIndex",
+    ])
+      expect((await f.call(method, ["0x777"])).error).toBeDefined();
+    for (const tx of [
+      { ...invoke(), nonce: "0x1" },
+      { ...invoke(), tip: "0x1" },
+      { ...invoke(), calldata: ["0x2", ...invoke().calldata.slice(1)] },
+    ])
+      expect((await f.call("starknet_addInvokeTransaction", [tx])).error).toBeDefined();
+    expect(f.stamped).toHaveLength(0);
+    expect(f.forwarded).toHaveLength(0);
+  } finally {
+    f.close();
+  }
+});
+
+test("2000 distinct accounts on one IP bypass enrollment limits, which still cap enrollment", async () => {
+  const f = await fixture();
+  try {
+    // Each request stays below the batch cap; the whole burst still drives 2000 accounts.
+    const burst = () =>
+      Promise.all(
+        Array.from({ length: 80 }, (_, batch) =>
+          f.batch(
+            Array.from({ length: 25 }, (_, index) => ({
+              ...invoke(),
+              sender_address: `0x${(0x1000 + batch * 25 + index).toString(16)}`,
+            })),
+          ),
+        ),
+      );
+    const answers = (await burst()).flat();
+    expect(answers).toHaveLength(2000);
+    expect(f.forwarded).toHaveLength(2000);
+    expect(answers.every((answer) => answer.result?.transaction_hash === "0x777")).toBe(true);
+    expect(f.stamped).toHaveLength(2000);
+    const deploy = {
+      type: "DEPLOY_ACCOUNT",
+      version: "0x3",
+      tip: "0x0",
+      class_hash: identity.accountClassHash,
+      constructor_calldata: ["0x42", identity.guardianPublicKey],
+      contract_address_salt: "0x42",
+      signature: ["0x1", "0x2", "0x3", "0x4", "0x5"],
+    };
+    for (let index = 0; index < 30; index++)
+      expect((await f.call("starknet_addDeployAccountTransaction", [deploy])).result.transaction_hash).toBe("0x777");
+    expect((await f.call("starknet_addDeployAccountTransaction", [deploy])).error.code).toBe(-32005);
+    expect(f.stamped).toHaveLength(2000);
+    expect(f.classSenders).toHaveLength(2000);
+    expect((await burst()).flat().every((answer) => answer.result?.transaction_hash === "0x777")).toBe(true);
+    expect(f.forwarded.filter((call) => call.method === "starknet_addInvokeTransaction")).toHaveLength(4000);
+    expect(f.stamped).toHaveLength(4000);
+    expect(f.classSenders).toHaveLength(2000);
+    expect(f.inspected.filter((method) => method === "starknet_getNonce")).toHaveLength(4000);
+  } finally {
+    f.close();
+  }
+}, 30000);
+
+test("one pending dispatch per account refuses overlap while another account proceeds", async () => {
+  let release!: () => void, started!: () => void;
+  const blocked = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const entered = new Promise<void>((resolve) => {
+    started = resolve;
+  });
+  const f = await fixture(undefined, async (tx) => {
+    if (tx.sender_address === "0x42") {
+      started();
+      await blocked;
+    }
+  });
+  const timeout = setTimeout(release, 1000);
+  const pending = f.call("starknet_addInvokeTransaction", [invoke()]);
+  try {
+    await entered;
+    expect((await f.call("starknet_addInvokeTransaction", [invoke()])).error).toEqual({
+      code: -32010,
+      message: "Transaction refused",
+    });
+    expect(
+      (await f.call("starknet_addInvokeTransaction", [{ ...invoke(), sender_address: "0x43" }])).result
+        .transaction_hash,
+    ).toBe("0x777");
+    release();
+    expect((await pending).result.transaction_hash).toBe("0x777");
+    expect(f.stamped).toHaveLength(2);
+    expect((await f.call("starknet_addInvokeTransaction", [invoke()])).result.transaction_hash).toBe("0x777");
+  } finally {
+    clearTimeout(timeout);
+    release();
+    await pending;
+    f.close();
+  }
+});
+
+test("the same endpoint forwards role-guarded administration without a second role or account list", async () => {
+  const f = await fixture();
+  try {
+    for (const entry of GAME_ENTRYPOINTS.filter((entry) => !entry.stamp)) {
+      const tx = {
+        ...invoke(),
+        sender_address: "0x999",
+        signature: ["0x2", "0x3"],
+        calldata: ["0x1", identity.games, hash.getSelectorFromName(entry.name), "0x1", "0x1"],
+      };
+      expect(await f.call("starknet_addInvokeTransaction", { invoke_transaction: tx })).toEqual({
+        jsonrpc: "2.0",
+        id: 42,
+        result: { transaction_hash: "0x777" },
+      });
+      expect(f.forwarded.at(-1).params[0].signature).toEqual(tx.signature);
+    }
+    expect(f.stamped).toHaveLength(0);
+    expect(f.inspected).toHaveLength(0);
+    // Seating is command7 through play: its roster permutation must use the authenticated root.
+    const settle = invoke();
+    settle.calldata[8] = "0x7";
+    expect((await f.call("starknet_addInvokeTransaction", [settle])).result.transaction_hash).toBe("0x777");
+    expect(f.stamped).toHaveLength(1);
+    expect(f.forwarded.at(-1).params[0].signature).toHaveLength(9);
+    for (const name of ["create_explorer", "settle_blitz_roster", "set_vrf_public_key", "execute"]) {
+      const tx = { ...invoke(), calldata: ["0x1", identity.games, hash.getSelectorFromName(name), "0x1", "0x1"] };
+      expect((await f.call("starknet_addInvokeTransaction", [tx])).error).toBeDefined();
+    }
+  } finally {
+    f.close();
+  }
+});
+test("administrative contract refusal uses the fixed error and never returns diagnostics", async () => {
+  const f = await fixture(new Error("not launcher diagnostic"));
+  try {
+    const tx = {
+      ...invoke(),
+      calldata: ["0x1", identity.games, hash.getSelectorFromName("create_game"), "0x1", "0x1"],
+    };
+    expect(await f.call("starknet_addInvokeTransaction", [tx])).toEqual({
+      jsonrpc: "2.0",
+      id: 42,
+      error: { code: -32011, message: "Transaction outcome unknown" },
+    });
+    expect(f.stamped).toHaveLength(0);
+  } finally {
+    f.close();
+  }
+});
+
+test("warm plays cache a successful class by canonical sender but always read the current nonce", async () => {
+  const f = await fixture();
+  try {
+    expect((await f.call("starknet_addInvokeTransaction", [invoke()])).result.transaction_hash).toBe("0x777");
+    f.setClassReply({ error: { code: 99 } });
+    f.setNonce("0x1");
+    expect(
+      (await f.call("starknet_addInvokeTransaction", [{ ...invoke(), sender_address: "0x000042", nonce: "0x1" }]))
+        .result.transaction_hash,
+    ).toBe("0x777");
+    expect((await f.call("starknet_addInvokeTransaction", [invoke()])).error.code).toBe(-32010);
+    expect(f.classSenders).toEqual(["0x42"]);
+    expect(f.inspected.filter((method) => method === "starknet_getNonce")).toHaveLength(3);
+    expect(f.stamped).toHaveLength(2);
+  } finally {
+    f.close();
+  }
+});
+
+test("failed, absent, malformed and foreign class answers never poison the successful class cache", async () => {
+  for (const [reply, status] of [
+    [{ error: { code: 20 } }, 200],
+    [{ result: "0x0" }, 200],
+    [{ result: "0x999" }, 200],
+    [{ result: "not a felt" }, 200],
+    [{ result: null }, 200],
+    [{ result: identity.accountClassHash }, 503],
+    [{ result: identity.accountClassHash, error: { code: 99 } }, 200],
+  ] as const) {
+    const f = await fixture();
+    try {
+      f.setClassReply(reply, status);
+      expect((await f.call("starknet_addInvokeTransaction", [invoke()])).error.code).toBe(-32010);
+      expect(f.forwarded).toHaveLength(0);
+      f.setClassReply({ result: identity.accountClassHash });
+      expect((await f.call("starknet_addInvokeTransaction", [invoke()])).result.transaction_hash).toBe("0x777");
+      expect((await f.call("starknet_addInvokeTransaction", [invoke()])).result.transaction_hash).toBe("0x777");
+      expect(f.classSenders).toHaveLength(2);
+    } finally {
+      f.close();
+    }
+  }
+});
+
+test("class cache evicts the least recently used sender at the shard player capacity", async () => {
+  const f = await fixture(undefined, undefined, 2);
+  try {
+    for (const sender of ["0x42", "0x43", "0x42", "0x44", "0x42", "0x43"])
+      expect(
+        (await f.call("starknet_addInvokeTransaction", [{ ...invoke(), sender_address: sender }])).result
+          .transaction_hash,
+      ).toBe("0x777");
+    expect(f.classSenders).toEqual(["0x42", "0x43", "0x44", "0x43"]);
+    expect(f.inspected.filter((method) => method === "starknet_getNonce")).toHaveLength(6);
+  } finally {
+    f.close();
+  }
+});
+
+test("account management and play share the successful immutable class lookup", async () => {
+  const f = await fixture();
+  try {
+    const revoke = {
+      ...invoke(),
+      calldata: ["0x1", invoke().sender_address, hash.getSelectorFromName("revoke_device"), "0x3", "0x1", "0x2", "0x3"],
+    };
+    expect((await f.call("starknet_addInvokeTransaction", [revoke])).result.transaction_hash).toBe("0x777");
+    expect((await f.call("starknet_addInvokeTransaction", [invoke()])).result.transaction_hash).toBe("0x777");
+    expect(f.classSenders).toEqual(["0x42"]);
+  } finally {
+    f.close();
+  }
+});
+
+test("the class cache requires an explicit positive shard player capacity", () => {
+  for (const playerCapacity of [undefined, 0, -1, 1.5, Infinity, Number.MAX_SAFE_INTEGER + 1]) {
+    let proxy: ReturnType<typeof startReadRpc> | undefined;
+    try {
+      expect(() => {
+        proxy = startReadRpc(
+          "http://127.0.0.1:9",
+          0,
+          { ...identity, playerCapacity: playerCapacity as number },
+          {
+            async stamp() {
+              throw new Error("Unexpected stamp");
+            },
+          },
+        );
+      }).toThrow("PLAYER_CAPACITY must be a positive safe integer");
+    } finally {
+      proxy?.stop(true);
+    }
+  }
+});
+
+test("concurrent successful lookups of one sender do not evict another cached account", async () => {
+  let release!: () => void,
+    entered!: () => void,
+    lookups = 0;
+  const waiting = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const both = new Promise<void>((resolve) => {
+    entered = resolve;
+  });
+  const f = await fixture(undefined, undefined, 2, async () => {
+    if (++lookups === 1) return;
+    if (lookups === 3) entered();
+    await waiting;
+  });
+  try {
+    await f.call("starknet_addInvokeTransaction", [{ ...invoke(), sender_address: "0x43" }]);
+    const revoke = {
+      ...invoke(),
+      calldata: ["0x1", invoke().sender_address, hash.getSelectorFromName("revoke_device"), "0x3", "0x1", "0x2", "0x3"],
+    };
+    const sends = Promise.all([
+      f.call("starknet_addInvokeTransaction", [revoke]),
+      f.call("starknet_addInvokeTransaction", [invoke()]),
+    ]);
+    await both;
+    release();
+    expect((await sends).every((answer) => answer.result?.transaction_hash === "0x777")).toBe(true);
+    expect(
+      (await f.call("starknet_addInvokeTransaction", [{ ...invoke(), sender_address: "0x43" }])).result
+        .transaction_hash,
+    ).toBe("0x777");
+    expect(f.classSenders).toEqual(["0x43", "0x42", "0x42"]);
+  } finally {
+    release();
+    f.close();
+  }
+});
+
+test("expanding unknown fields refuse only that request and the next play still stamps", async () => {
+  const f = await fixture();
+  try {
+    // 1e30 uses five bytes on the wire and six after JSON reserialization.
+    const attack = JSON.stringify({ ...invoke(), unused: [] }).replace(
+      '"unused":[]',
+      '"unused":[' + Array(192000).fill("1e30").join(",") + "]",
+    );
+    expect(Buffer.byteLength(attack)).toBeLessThan(1024 * 1024);
+    expect((await f.rawTransaction(attack)).error.code).toBe(-32601);
+    expect(f.stamped).toHaveLength(0);
+    expect((await f.call("starknet_addInvokeTransaction", [invoke()])).result.transaction_hash).toBe("0x777");
+    expect(f.stamped).toHaveLength(1);
+  } finally {
+    f.close();
+  }
+});
+
+test("oversized invoke batches refuse before account admission or stamping", async () => {
+  const f = await fixture();
+  try {
+    const transactions = Array.from({ length: 33 }, (_, i) => ({
+      ...invoke(),
+      sender_address: `0x${(i + 1).toString(16)}`,
+    }));
+    expect((await f.batch(transactions)).error.code).toBe(-32600);
+    expect(f.inspected).toEqual([]);
+    expect(f.stamped).toEqual([]);
+    expect(f.forwarded).toEqual([]);
+    expect((await f.call("starknet_addInvokeTransaction", [invoke()])).result.transaction_hash).toBe("0x777");
+  } finally {
+    f.close();
+  }
+});
+
+test("play commands admit 256 felts and refuse 257 before stamping", async () => {
+  const f = await fixture();
+  const command = (length: number) => {
+    const tx = invoke();
+    tx.calldata = [...tx.calldata.slice(0, 8), ...Array.from({ length }, () => "0x0")];
+    tx.calldata[3] = `0x${(length + 4).toString(16)}`;
+    tx.calldata[7] = `0x${length.toString(16)}`;
+    return tx;
+  };
+  try {
+    expect((await f.call("starknet_addInvokeTransaction", [command(257)])).error.code).toBe(-32601);
+    expect(f.inspected).toEqual([]);
+    expect(f.stamped).toEqual([]);
+    expect(f.forwarded).toEqual([]);
+    expect((await f.call("starknet_addInvokeTransaction", [command(256)])).result.transaction_hash).toBe("0x777");
+    expect(f.stamped).toHaveLength(1);
+  } finally {
+    f.close();
+  }
+});

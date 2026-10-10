@@ -9,22 +9,25 @@ export async function inspectNativeWorld(local: NativeWorld, provider: RpcProvid
   const blockNumber = await provider.getBlockNumber();
   const blockers: string[] = [];
   const classes = await Promise.all(
-    [...local.logic, ...(local.migration ? [local.migration] : []), { name: "games", ...local.games }].map(
-      async ({ name, classHash }) => ({
-        name,
-        classHash,
-        declared: await isClassDeclared(provider, classHash, blockNumber),
-      }),
-    ),
+    [
+      local.verifier,
+      ...local.logic,
+      ...(local.migration ? [local.migration] : []),
+      { name: "games", ...local.games },
+    ].map(async ({ name, classHash }) => ({
+      name,
+      classHash,
+      declared: await isClassDeclared(provider, classHash, blockNumber),
+    })),
   );
   const deployedClassHash = await deployedClass(provider, local.games.address, blockNumber);
   if (deployedClassHash && BigInt(deployedClassHash) !== BigInt(local.games.classHash))
     blockers.push("Games is immutable; the deployed class differs from this release");
   let realmCatalogue: NativePlan["realmCatalogue"];
   let releaseRegistered = false;
-  let submitterRotation: NativePlan["submitterRotation"];
+  let roleChanges: NativePlan["roleChanges"] = [];
   if (deployedClassHash && blockers.length === 0) {
-    submitterRotation = await inspectGamesConfiguration(local, provider, blockNumber, blockers);
+    roleChanges = await inspectGamesConfiguration(local, provider, blockNumber, blockers);
     releaseRegistered = await inspectRelease(local, provider, blockNumber, blockers);
     realmCatalogue = await inspectRealmCatalogue(local, provider, blockNumber, blockers);
   }
@@ -35,11 +38,11 @@ export async function inspectNativeWorld(local: NativeWorld, provider: RpcProvid
     deployedClassHash,
     realmCatalogue,
     releaseRegistered,
-    submitterRotation,
+    roleChanges,
     blockers,
     synced:
       blockers.length === 0 &&
-      submitterRotation === undefined &&
+      roleChanges.length === 0 &&
       classes.every(({ declared }) => declared) &&
       deployedClassHash !== null &&
       releaseRegistered &&
@@ -48,33 +51,33 @@ export async function inspectNativeWorld(local: NativeWorld, provider: RpcProvid
 }
 
 async function inspectGamesConfiguration(local: NativeWorld, provider: RpcProvider, block: number, blockers: string[]) {
-  const codec = new CallData(local.games.sierra.abi);
-  const read = async (entrypoint: string) =>
-    codec.parse(
-      entrypoint,
-      await provider.callContract(
-        {
-          contractAddress: local.games.address,
-          entrypoint,
-          calldata: [],
-        },
-        block,
-      ),
+  const raw = async (entrypoint: string) =>
+    (await provider.callContract({ contractAddress: local.games.address, entrypoint, calldata: [] }, block)).map(
+      BigInt,
     );
-  // The account class and guardian fix every player address, so the contract refuses changing them. The submitter
-  // is the one rotatable part: a different one is a rotation for the authority to apply, not a blocker.
-  const authentication = (await read("authentication")) as Record<keyof NativeWorld["authentication"], bigint>;
+  const [authentication, owner, launcher, ledger, key, bound] = await Promise.all([
+    raw("authentication"),
+    raw("owner"),
+    raw("launcher"),
+    raw("ledger_operator"),
+    raw("vrf_public_key"),
+    raw("l2_gas_bound"),
+  ]);
   if (
-    authentication.account_class !== BigInt(local.authentication.account_class) ||
-    authentication.guardian_public_key !== BigInt(local.authentication.guardian_public_key)
+    authentication.length !== 2 ||
+    authentication[0] !== BigInt(local.authentication.account_class) ||
+    authentication[1] !== BigInt(local.authentication.guardian_public_key)
   )
     blockers.push("Games authentication mismatch: the account class and guardian are fixed");
-  const configuration = (await read("deployment_configuration")) as {
-    authority: bigint;
-  };
-  if (configuration.authority !== BigInt(local.authority)) blockers.push("Games authority mismatch");
-  if (authentication.submitter === BigInt(local.authentication.submitter)) return undefined;
-  return { from: `0x${authentication.submitter.toString(16)}`, to: local.authentication.submitter };
+  if (owner.length !== 1 || owner[0] !== BigInt(local.authority)) blockers.push("Games authority mismatch");
+  if (key.length !== 2 || key[0] !== BigInt(local.vrfPublicKey.x) || key[1] !== BigInt(local.vrfPublicKey.y))
+    blockers.push("Games VRF key is immutable; retire this shard");
+  if (bound.length !== 1 || bound[0] !== BigInt(local.l2GasBound)) blockers.push("Games play gas bound is immutable");
+  const changes: NonNullable<NativePlan["roleChanges"]> = [];
+  if (launcher.length !== 1 || ledger.length !== 1) throw new Error("Invalid Games role read");
+  // The constructor installs launcher; redeployment must preserve handed-off service roles.
+  if (ledger[0] === 0n) changes.push({ entrypoint: "set_ledger_operator", address: local.ledgerOperator });
+  return changes;
 }
 
 async function inspectRelease(

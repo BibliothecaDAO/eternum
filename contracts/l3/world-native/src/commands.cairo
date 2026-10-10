@@ -1,10 +1,8 @@
-#[cfg(test)]
-use core::poseidon::poseidon_hash_span;
 use starknet::ContractAddress;
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct CreateExplorer {
-    pub structure_id: u32,
+    pub structure_id: u64,
     pub category: u8,
     pub tier: u8,
     pub amount: u128,
@@ -13,30 +11,30 @@ pub struct CreateExplorer {
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct Explore {
-    pub explorer_id: u32,
+    pub explorer_id: u64,
     pub direction: u8,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct Battle {
-    pub attacker_id: u32,
-    pub defender_id: u32,
+    pub attacker_id: u64,
+    pub defender_id: u64,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct Move {
-    pub explorer_id: u32,
+    pub explorer_id: u64,
     pub directions: Span<u8>,
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct ToggleAlternate {
-    pub explorer_id: u32,
+    pub explorer_id: u64,
     pub spire_direction: u8,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct EnterDepth {
-    pub explorer_id: u32,
+    pub explorer_id: u64,
     pub depth: u8,
 }
 
@@ -45,10 +43,9 @@ pub struct BatchProgress {
     #[key]
     pub game_id: u32,
     pub actor: ContractAddress,
-    pub nonce: u64,
+    pub tx_hash: felt252,
     pub remaining: u64,
 }
-#[cfg(test)]
 pub use crate::command_routes::Command;
 
 #[derive(Copy, Drop, Debug)]
@@ -135,14 +132,6 @@ pub fn biome_context(context: ExecutionContext) -> BiomeContext {
     }
 }
 
-// Cairo Serde encodes the variant index followed by its typed fields.
-#[cfg(test)]
-pub fn command_commitment(command: Command) -> felt252 {
-    let mut fields = array!['ETERNUM_COMMAND', 1];
-    command.serialize(ref fields);
-    poseidon_hash_span(fields.span())
-}
-
 pub const MAX_COMMAND_ITEMS: u32 = 64;
 
 pub fn route_command(
@@ -164,7 +153,7 @@ pub fn route_command(
 }
 
 #[inline(never)]
-pub fn assert_unique_entity_ids(ids: Span<u32>) {
+pub fn assert_unique_entity_ids(ids: Span<u64>) {
     let mut seen: core::dict::Felt252Dict<u128> = Default::default();
     for id in ids {
         let key = (*id).into();
@@ -181,20 +170,14 @@ pub trait ICreateExplorer<T> {
         actor: ContractAddress,
         command: CreateExplorer,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> ((), crate::ownership::StoryCursor);
+    );
 }
 
 #[starknet::interface]
 pub trait IExplore<T> {
     fn explore(
-        ref self: T,
-        game_id: u32,
-        actor: ContractAddress,
-        command: Explore,
-        context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> ((), crate::ownership::StoryCursor);
+        ref self: T, game_id: u32, actor: ContractAddress, command: Explore, context: crate::commands::ActionContext,
+    );
 }
 
 #[starknet::interface]
@@ -205,67 +188,51 @@ pub trait IResourceCommands<T> {
         actor: ContractAddress,
         command: crate::resources::ResourceTransfer,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> ((), crate::ownership::StoryCursor);
+    );
     fn transfer_explorer_resources_to_structure(
         ref self: T,
         game_id: u32,
         actor: ContractAddress,
         command: crate::resources::ResourceTransfer,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> ((), crate::ownership::StoryCursor);
+    );
     fn offload_arrival(
         ref self: T,
         game_id: u32,
         actor: ContractAddress,
         command: crate::arrivals::OffloadArrival,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> ((), crate::ownership::StoryCursor);
+    );
     fn burn_structure_resources(
         ref self: T,
         game_id: u32,
         actor: ContractAddress,
         command: crate::resources::ResourceBurn,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> ((), crate::ownership::StoryCursor);
+    );
     fn transfer_explorer_resources(
         ref self: T,
         game_id: u32,
         actor: ContractAddress,
         command: crate::resources::ResourceTransfer,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> ((), crate::ownership::StoryCursor);
+    );
     fn transfer_structure_resources_to_explorer(
         ref self: T,
         game_id: u32,
         actor: ContractAddress,
         command: crate::resources::ResourceTransfer,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> ((), crate::ownership::StoryCursor);
+    );
 }
 
 #[starknet::interface]
 pub trait ITravelCommands<T> {
     fn enter_depth(
-        ref self: T,
-        game_id: u32,
-        actor: ContractAddress,
-        command: EnterDepth,
-        context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
+        ref self: T, game_id: u32, actor: ContractAddress, command: EnterDepth, context: crate::commands::ActionContext,
     );
     fn move_explorer(
-        ref self: T,
-        game_id: u32,
-        actor: ContractAddress,
-        command: Move,
-        context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
+        ref self: T, game_id: u32, actor: ContractAddress, command: Move, context: crate::commands::ActionContext,
     );
     fn toggle_alternate(
         ref self: T,
@@ -273,6 +240,73 @@ pub trait ITravelCommands<T> {
         actor: ContractAddress,
         command: ToggleAlternate,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
     );
+}
+
+#[derive(Drop, Serde)]
+pub struct Rejection {
+    pub status_class: felt252,
+    pub reason: ByteArray,
+}
+
+pub fn rejection(code: felt252) -> Rejection {
+    Rejection { status_class: code, reason: short_reason(code) }
+}
+
+pub fn short_reason(word: felt252) -> ByteArray {
+    let mut remaining: u256 = word.into();
+    let mut len = 0;
+    while remaining != 0 {
+        remaining /= 256;
+        len += 1;
+    }
+    let mut reason = "";
+    reason.append_word(word, len);
+    reason
+}
+
+// A failing library call rolls back its own storage and events; its caller records the rejection without reverting.
+pub fn domain_rejection(error: Array<felt252>) -> Rejection {
+    let mut fields = error.span();
+    let reason = match fields.pop_front() {
+        Some(word) => if *word == core::byte_array::BYTE_ARRAY_MAGIC {
+            Serde::<ByteArray>::deserialize(ref fields).unwrap_or("malformed domain reason")
+        } else {
+            short_reason(*word)
+        },
+        None => "empty domain panic",
+    };
+    Rejection { status_class: 'GAMEPLAY_REJECTED', reason }
+}
+
+#[derive(Drop, starknet::Event)]
+pub struct GameplayRejected {
+    #[key]
+    pub version: u8,
+    #[key]
+    pub game_id: u32,
+    #[key]
+    pub actor: ContractAddress,
+    #[key]
+    pub tx_hash: felt252,
+    pub status_class: felt252,
+    pub reason: ByteArray,
+}
+
+pub fn validated_command(
+    arguments: Span<felt252>,
+) -> Result<(u32, crate::command_routes::CommandRoute, Span<felt252>), felt252> {
+    let route = route_command(arguments)?;
+    let mut fields = arguments;
+    let _command: Command = Serde::deserialize(ref fields).ok_or('INVALID_COMMAND')?;
+    if !fields.is_empty() {
+        return Err('INVALID_COMMAND');
+    }
+    Ok(route)
+}
+
+#[starknet::interface]
+pub trait ICommandIngress<T> {
+    fn validate_command(self: @T, command: Span<felt252>) -> u32;
+    fn assign_open_home(ref self: T, game_id: u32, actor: ContractAddress);
 }

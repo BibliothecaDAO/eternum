@@ -16,7 +16,7 @@ import {
   StaminaManager,
   structureMapPosition,
 } from "@bibliothecadao/eternum";
-import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
+import { safeInteger, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import {
   BuildingType,
   RESOURCE_PRECISION,
@@ -71,7 +71,7 @@ const readGuideFacts = (
   clock: { now: number; tick: number; armiesTick: number; onMap: boolean },
 ): GuideFacts => {
   if (!realm) return { ...NO_REALM, onMap: clock.onMap };
-  const armies = liveHomeArmies(store, realm.entity_id, realm.game_id);
+  const armies = liveHomeArmies(store, safeInteger(realm.entity_id), realm.game_id);
   const stamina = armies.flatMap((army) => {
     const troops = resolveExplorerTroops(store, army);
     return troops
@@ -90,8 +90,8 @@ const readGuideFacts = (
   const exploreCost = configManager.getExploreStaminaCost();
   return {
     realm: true,
-    barracks: getBuildingQuantity(realm.entity_id, BuildingType.ResourceKnightT1, store) > 0,
-    troopsAtHome: troopsOnHand(store, realm.entity_id, clock.tick),
+    barracks: getBuildingQuantity(safeInteger(realm.entity_id), BuildingType.ResourceKnightT1, store) > 0,
+    troopsAtHome: troopsOnHand(store, safeInteger(realm.entity_id), clock.tick),
     armies: armies.length,
     armyActed: stamina.some((bar) => bar.current < bar.max),
     camp: guardedCampToday(store, rules, realm, clock.now),
@@ -118,7 +118,7 @@ const canAffordFirstResearch = (store: NativeFactStore, realm: NativeRows["Struc
   const prices = [...store.inGame("ResearchPrice", realm.game_id)]
     .filter(({ tier }) => tier === 1)
     .map(({ essence }) => Number(essence) / RESOURCE_PRECISION);
-  const essence = knownBalance(getBalance(realm.entity_id, ResourcesIds.Essence, tick, store).balance);
+  const essence = knownBalance(getBalance(safeInteger(realm.entity_id), ResourcesIds.Essence, tick, store).balance);
   return prices.length > 0 && essence !== undefined && essence >= Math.min(...prices);
 };
 
@@ -181,7 +181,7 @@ const canAffordNextCastleLevel = (store: NativeFactStore, realm: NativeRows["Str
   if (!costs?.length) return false;
   return costs.every((cost) => {
     // Recipe costs are in display units, as the castle panel shows them.
-    const balance = knownBalance(getBalance(realm.entity_id, cost.resource, tick, store).balance);
+    const balance = knownBalance(getBalance(safeInteger(realm.entity_id), cost.resource, tick, store).balance);
     return balance !== undefined && balance >= cost.amount;
   });
 };

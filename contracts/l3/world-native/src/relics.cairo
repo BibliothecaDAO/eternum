@@ -20,18 +20,18 @@ pub enum Recipient {
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct ApplyRelic {
-    pub entity_id: u32,
+    pub entity_id: u64,
     pub relic_id: u8,
     pub recipient: Recipient,
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct OpenChest {
-    pub explorer_id: u32,
+    pub explorer_id: u64,
     pub coord: Coord,
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct ChestOpened {
-    pub explorer_id: u32,
+    pub explorer_id: u64,
     pub coord: Coord,
     pub relics: Span<u8>,
     pub points: u128,
@@ -58,8 +58,8 @@ pub fn tier_value(tiers: ChestTiers, tier: u8) -> u16 {
     }
 }
 
-pub fn roll_tier(odds: ChestTiers, seed: u256, timestamp: u64) -> u8 {
-    let mut draw = crate::random::range(seed, Into::<u64, u128>::into(timestamp) + 37, 10000);
+pub fn roll_tier(odds: ChestTiers, seed: u256) -> u8 {
+    let mut draw = crate::random::range(seed, 37, 10000);
     for tier in 0_u8..4 {
         let weight: u128 = tier_value(odds, tier).into();
         if draw < weight {
@@ -70,17 +70,14 @@ pub fn roll_tier(odds: ChestTiers, seed: u256, timestamp: u64) -> u8 {
     4
 }
 
-// The season's LORDS: a pool paid out through the day price, which never exceeds `price_ceiling` per share. A day's
-// expected shares are a moving average over `estimate_days` days; a day's surge ceiling is `surge_factor` times its
-// expected shares, never below `surge_minimum_shares`.
+// A common chest's price is capped by the preset and priced from unlocked rollover over expected rolled shares.
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
 pub struct ChestRules {
     pub pool: u128,
     pub price_ceiling: u128,
     pub shares: ChestTiers,
-    pub surge_factor: u16,
-    pub surge_minimum_shares: u32,
     pub estimate_days: u16,
+    pub claim_window_seconds: u32,
 }
 
 // A ruin's chest, fixed when the ruin is found: its tier and the whole LORDS its clear pays.
@@ -88,40 +85,37 @@ pub struct ChestRules {
 pub struct SiteChest {
     pub tier: u8,
     pub amount: u128,
+    pub reservation_day: u64,
 }
 
-// The season pool as it stands. `open` is LORDS in today's chests not yet paid, `spent` all LORDS chests found today
-// hold, `paid_shares` the shares cleared today; `estimate` is shares per tick scaled by LORDS_ESTIMATE_SCALE.
+// Open chests reserve unlocked LORDS. Rolled shares include found and refused ruins; estimate is shares per tick.
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
 pub struct LordsBudget {
     pub pool_left: u128,
     pub open: u128,
-    pub spent: u128,
     pub day: u64,
     pub price: u128,
-    pub ceiling: u128,
     pub estimate: u128,
-    pub paid_shares: u128,
+    pub rolled_shares: u128,
 }
 
 pub const LORDS_ESTIMATE_SCALE: u128 = 1000000;
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct RefillStamina {
-    pub explorer_id: u32,
+    pub explorer_id: u64,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct WithdrawLords {
-    pub structure_id: u32,
+    pub structure_id: u64,
     pub amount: u128,
 }
 
 // A realm's withdrawal of whole LORDS, recorded for fulfilment on L2.
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
 pub struct LordsWithdrawal {
-    pub player: ContractAddress,
-    pub structure_id: u32,
+    pub account: ContractAddress,
     pub amount: u128,
 }
 
@@ -133,27 +127,19 @@ pub trait ILords<T> {
         actor: ContractAddress,
         command: RefillStamina,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> ((), crate::ownership::StoryCursor);
+    );
     fn withdraw_lords(
         ref self: T,
         game_id: u32,
         actor: ContractAddress,
         command: WithdrawLords,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> ((), crate::ownership::StoryCursor);
+    );
 }
 
 #[starknet::interface]
 pub trait ICaptureRewards<T> {
-    fn grant_capture_rewards(
-        ref self: T,
-        site: ResourceKey,
-        explorer_id: u32,
-        context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> ((), crate::ownership::StoryCursor);
+    fn grant_capture_rewards(ref self: T, site: ResourceKey, explorer_id: u64, context: crate::commands::ActionContext);
 }
 
 #[starknet::interface]
@@ -163,20 +149,10 @@ pub trait IRelics<T> {
     fn site_chest(self: @T, key: ResourceKey) -> Option<SiteChest>;
     fn relic_rules(self: @T, game_id: u32) -> Span<RelicRule>;
     fn open_relic_chest(
-        ref self: T,
-        game_id: u32,
-        actor: ContractAddress,
-        command: OpenChest,
-        context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> ((), crate::ownership::StoryCursor);
+        ref self: T, game_id: u32, actor: ContractAddress, command: OpenChest, context: crate::commands::ActionContext,
+    );
     fn apply_relic(
-        ref self: T,
-        game_id: u32,
-        actor: ContractAddress,
-        command: ApplyRelic,
-        context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
+        ref self: T, game_id: u32, actor: ContractAddress, command: ApplyRelic, context: crate::commands::ActionContext,
     );
 }
 #[starknet::interface]
@@ -186,6 +162,7 @@ pub trait IRelicMap<T> {
     fn discover_relic_chest(
         ref self: T,
         game_id: u32,
+        home_id: u64,
         coord: Coord,
         excluded: Coord,
         seed: u256,
@@ -221,13 +198,13 @@ pub trait IRelicProduction<T> {
     );
 }
 
-pub fn chest_destination(origin: Coord, seed: u256, timestamp: u64, distance: u8) -> Coord {
+pub fn chest_destination(origin: Coord, seed: u256, distance: u8) -> Coord {
     let seed = if seed > 12 {
         seed - 12
     } else {
         seed + 12
     };
-    let mut salt: u128 = timestamp.into();
+    let mut salt: u128 = 0;
     let mut chosen = 0_u8;
     let mut step = 1_u32;
     let mut coord = origin;
@@ -251,14 +228,14 @@ pub fn chest_destination(origin: Coord, seed: u256, timestamp: u64, distance: u8
     }
     coord
 }
-pub fn draw_relics(rules: Span<RelicRule>, seed: u256, timestamp: u64, count: u8) -> Span<u8> {
+pub fn draw_relics(rules: Span<RelicRule>, seed: u256, count: u8) -> Span<u8> {
     let mut total: u128 = 0;
     for rule in rules {
         total += *rule.draw_weight;
     }
     assert!(total != 0, "empty relic discovery pool");
     let mut chosen = array![];
-    let mut salt: u128 = timestamp.into();
+    let mut salt: u128 = 0;
     for _ in 0..count {
         salt += 18;
         let roll = crate::random::range(seed, salt, total);
@@ -322,7 +299,7 @@ pub fn boost_production(ref bonus: crate::production::ProductionBonus, id: u8, r
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct InteractSite {
-    pub explorer_id: u32,
+    pub explorer_id: u64,
     pub coord: crate::troops::Coord,
 }
 
@@ -334,6 +311,14 @@ pub trait IFrontierSites<T> {
         actor: starknet::ContractAddress,
         command: InteractSite,
         context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> ((), crate::ownership::StoryCursor);
+    );
+}
+
+// Stop debits before the ledger report deadline so confirmed receipts have time to arrive.
+pub fn assert_claim_window(game: crate::game::GameRegistry, rules: ChestRules, timestamp: u64) {
+    assert!(
+        timestamp < game.end_at
+            + Into::<u32, u64>::into(rules.claim_window_seconds - crate::days::FRONTIER_REPORT_GRACE_SECONDS),
+        "LORDS claim window closed",
+    );
 }

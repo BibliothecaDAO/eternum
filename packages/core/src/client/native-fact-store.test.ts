@@ -47,6 +47,105 @@ const structure = (owner: string, game = 1) => ({
 });
 
 describe("native fact store", () => {
+  it("normalizes tuple wire keys through writes, retention and deletion", () => {
+    const store = new NativeFactStore();
+    store.applyFacts([
+      set("0x01:7:0x01", "ResourceBalance", balance(7, "12")),
+      set("1:8:1", "ResourceBalance", balance(8, "20")),
+      set("1:7:1", "ResourceWeight", { game_id: 1, entity_id: 7, capacity: "0", weight: "0" }),
+    ]);
+    store.applyFacts(
+      [set("1:0x07:1", "ResourceBalance", balance(7, "30"))],
+      new Map([["ResourceBalance", new Set(["0x1:0x7:0x1"])]]),
+    );
+    expect([...store.rows("ResourceBalance")].map((row) => row.balance)).toEqual([30n]);
+    store.applyFacts([remove("0x1:7:1", "ResourceBalance")]);
+    expect([...store.rows("ResourceBalance")]).toEqual([]);
+    expect([...store.rows("ResourceWeight")]).toHaveLength(1);
+  });
+
+  it("refuses malformed tuple wire keys without applying partial facts", () => {
+    const store = new NativeFactStore();
+    for (const key of ["", ":1", "1:", "1::2", "1:-1", `1:${1n << 252n}`, "1:nope"])
+      expect(() =>
+        store.applyFacts([set("1:7:1", "ResourceBalance", balance(7, "12")), remove(key, "ResourceBalance")]),
+      ).toThrow();
+    expect([...store.rows("ResourceBalance")]).toEqual([]);
+  });
+
+  it("indexes entity ids at the contract's cap exactly without conflating adjacent values", () => {
+    const store = new NativeFactStore();
+    const home = BigInt(Number.MAX_SAFE_INTEGER) - 1n;
+    const army = home + 1n;
+    store.applyFacts([
+      set("0x1", "ExplorerTroops", { ...explorer, explorer_id: army, owner: home }),
+      set("0x2", "TileOccupancy", {
+        game_id: 1,
+        alt: false,
+        col: 12,
+        row: 13,
+        category: 15,
+        is_structure: false,
+        entity_id: army,
+      }),
+    ]);
+    expect([...store.armiesAtHome(1, home)].map((row) => row.explorer_id)).toEqual([army]);
+    expect([...store.armiesAtHome(1, home + 1n)]).toEqual([]);
+    expect(store.entityOccupancy(1, army)?.entity_id).toBe(army);
+    expect(store.entityOccupancy(1, army - 1n)).toBeUndefined();
+  });
+
+  it("refuses an entity id past the contract's cap at decode, so no reader ever sees one", () => {
+    const store = new NativeFactStore();
+    const past = BigInt(Number.MAX_SAFE_INTEGER) + 1n;
+    for (const value of [
+      { ...explorer, explorer_id: past },
+      { ...explorer, owner: past },
+      { ...explorer, owner: past.toString() },
+    ])
+      expect(() => store.applyFacts([set("0x1", "ExplorerTroops", value)])).toThrow("Entity id out of range");
+    expect(() => store.applyFacts([set("0x2", "Structure", { ...structure("0x1"), entity_id: past })])).toThrow(
+      "Entity id out of range",
+    );
+    expect(() =>
+      store.applyFacts([
+        set("0x3", "Structure", {
+          ...structure("0x1"),
+          metadata: { ...structure("0x1").metadata, village_realm: past },
+        }),
+      ]),
+    ).toThrow("Entity id out of range");
+    store.applyFacts([set("0x8", "ResourceBalance", balance(7, "1"))]);
+    expect(() => store.get("ResourceBalance", { game_id: 1, entity_id: past, resource_type: 1 })).toThrow(
+      "Entity id out of range",
+    );
+    expect([...store.rows("ExplorerTroops")]).toEqual([]);
+    expect([...store.rows("Structure")]).toEqual([]);
+  });
+
+  it("isolates readers: one that throws is reported and every other still sees the write", () => {
+    const store = new NativeFactStore();
+    const reported = vi.spyOn(console, "error").mockImplementation(() => {});
+    const seen: string[] = [];
+    store.subscribe(() => seen.push("before"));
+    store.subscribe(() => {
+      throw new Error("scene broke on a row");
+    });
+    store.subscribe(() => seen.push("after"));
+    store.subscribeEvents(() => {
+      throw new Error("toast broke on an event");
+    });
+    store.subscribeEvents(() => seen.push("event"));
+
+    store.applyFacts([set("0x8", "ResourceBalance", balance(7, "1"))]);
+    store.applyEvent({ model: "StoryEvent", key: "0x1", value: { value: "story" } });
+
+    expect(seen).toEqual(["before", "after", "event"]);
+    expect(store.get("ResourceBalance", { game_id: 1, entity_id: 7, resource_type: 1 })?.balance).toBe(1n);
+    expect(reported).toHaveBeenCalledTimes(2);
+    expect(String(reported.mock.calls[0])).toContain("scene broke on a row");
+  });
+
   it("decodes tagged stamina and refuses ambiguous or unknown sources", () => {
     const store = new NativeFactStore();
     for (const stamina of [{ Slot: 0 }, { Inline: { amount: "12", updated_tick: "4" } }]) {
@@ -102,7 +201,7 @@ describe("native fact store", () => {
       set("0x12", "TileOccupancy", { ...tile, alt: false, col: 13, entity_id: 0, category: 39 }),
     ]);
     for (const alt of [false, true])
-      expect(store.require("TileOccupancy", { game_id: 1, alt, col: 12, row: 34 }).entity_id).toBe(8);
+      expect(store.require("TileOccupancy", { game_id: 1, alt, col: 12, row: 34 }).entity_id).toBe(8n);
     expect(store.entityOccupancy(1, 8)).toBeUndefined();
     expect(store.entityOccupancy(1, 0)).toBeUndefined();
     store.applyFacts([set("0x12", "TileOccupancy", { ...tile, alt: false, col: 13, entity_id: 9, category: 9 })]);
@@ -326,35 +425,21 @@ describe("native fact store", () => {
 });
 
 describe("declared fact absence", () => {
-  it("requires the current actor snapshot for nonce and points zeroes, without storing synthetic rows", () => {
+  it("requires the current snapshot for points zeroes and never stores synthetic or retired nonce rows", () => {
     const store = new NativeFactStore();
     store.applyFacts([set("0x100", "SliceRules", { ...preset.rules, game_id: 1, day_unit_seconds: 0 })]);
-    let complete = false;
-    let actor: string | undefined = undefined;
-    const update = () => store.setSnapshot({ gameId: 1, complete, actor, timestamp: 350 });
-    update();
-    const nonce = { game_id: 1, actor: 0x111n };
     const points = { game_id: 1, address: 0x111n };
-    expect(store.requireOrAbsent("ActionNonce", nonce).unknown).toContain("INCOMPLETE_SNAPSHOT");
-    complete = true;
-    update();
-    expect(store.requireOrAbsent("ActionNonce", nonce).unknown).toContain("INCOMPLETE_ACTOR_SNAPSHOT");
-    actor = "0x111";
-    update();
-    expect(store.requireOrAbsent("ActionNonce", nonce).known?.next_nonce).toBe(0n);
+    store.setSnapshot({ gameId: 1, complete: false, actor: "0x111", timestamp: 350 });
+    expect(store.requireOrAbsent("PlayerPoints", points).unknown).toContain("INCOMPLETE_SNAPSHOT");
+    store.setSnapshot({ gameId: 1, complete: true, timestamp: 350 });
+    expect(store.requireOrAbsent("PlayerPoints", points).unknown).toContain("INCOMPLETE_ACTOR_SNAPSHOT");
+    store.setSnapshot({ gameId: 1, complete: true, actor: "0x111", timestamp: 350 });
     expect(store.requireOrAbsent("PlayerPoints", points).known?.points).toBe(0n);
-    expect([...store.rows("ActionNonce")]).toEqual([]);
     expect([...store.rows("PlayerPoints")]).toEqual([]);
     expect(store.requireOrAbsent("PlayerPoints", { ...points, address: 0x222n }).known?.points).toBe(0n);
-    expect(store.requireOrAbsent("ActionNonce", { ...nonce, actor: 0x222n }).unknown).toContain(
-      "OUTSIDE_SNAPSHOT_SCOPE",
-    );
-    expect(store.requireOrAbsent("ActionNonce", { ...nonce, game_id: 2 }).unknown).toContain("INCOMPLETE_SNAPSHOT");
-    actor = undefined;
-    update();
-    expect(store.requireOrAbsent("ActionNonce", nonce).unknown).toContain("INCOMPLETE_ACTOR_SNAPSHOT");
-    store.applyFacts([set("0x1", "ActionNonce", { ...nonce, next_nonce: "9" })]);
-    expect(store.requireOrAbsent("ActionNonce", nonce).known?.next_nonce).toBe(9n);
+    expect(store.requireOrAbsent("PlayerPoints", { ...points, game_id: 2 }).unknown).toContain("INCOMPLETE_SNAPSHOT");
+    store.applyFacts([set("0x1", "PlayerPoints", { ...points, points: 9n })]);
+    expect(store.requireOrAbsent("PlayerPoints", points).known?.points).toBe(9n);
     expect(store.requireOrAbsent("GameRegistry", { game_id: 1 }).unknown).toContain("UNDECLARED_ABSENCE");
   });
 
@@ -434,7 +519,7 @@ describe("declared fact absence", () => {
         game_id: 1,
         preset_id: 3,
         name: "1",
-        creator: "1",
+
         start_settling_at: "1",
         start_main_at: "100",
         end_at: "1000",
@@ -452,12 +537,12 @@ describe("declared fact absence", () => {
     const army = {
       ...explorer,
       game_id: 1,
-      explorer_id: 7,
-      owner: 7,
+      explorer_id: 7n,
+      owner: 7n,
       troops: { ...explorer.troops, stamina: { Slot: 0 } },
     } as unknown as NativeRows["ExplorerTroops"];
     expect(resolveExplorerTroops(new NativeFactStore(), army)).toBeUndefined();
-    expect(resolveExplorerTroops(store, { ...army, owner: 8 })).toBeUndefined();
+    expect(resolveExplorerTroops(store, { ...army, owner: 8n })).toBeUndefined();
     expect(() => resolveExplorerTroops(store, army)).toThrow("unused");
     const occupied = { ...slot, explorer_id: army.explorer_id, stamina: { amount: "7", updated_tick: "17" } };
     store.applyFacts([
@@ -479,7 +564,7 @@ describe("declared fact absence", () => {
     );
     // Rare Battle deals 30% more, in the basis points Combat and the forecast read; rare Logistics adds 50.
     expect(resolveExplorerTroops(store, army)?.boosts.incr_damage_dealt_percent_num).toBe(3_000);
-    store.applyFacts([set("0x70", "ArmySlot", { ...occupied, explorer_id: army.explorer_id + 1 })]);
+    store.applyFacts([set("0x70", "ArmySlot", { ...occupied, explorer_id: army.explorer_id + 1n })]);
     expect(() => resolveExplorerTroops(store, army)).toThrow("occupant mismatch");
     store.applyFacts([remove("0x70", "ArmySlot")]);
     store.applyFacts([
@@ -527,7 +612,7 @@ describe("declared fact absence", () => {
         game_id: 1,
         preset_id: 3,
         name: "1",
-        creator: "1",
+
         start_settling_at: "1",
         start_main_at: "100",
         end_at: "1000",
@@ -595,7 +680,7 @@ describe("declared fact absence", () => {
         game_id: 1,
         preset_id: 3,
         name: "1",
-        creator: "1",
+
         start_settling_at: "1",
         start_main_at: "100",
         end_at: "1000",
@@ -648,7 +733,7 @@ describe("declared fact absence", () => {
         game_id: 1,
         preset_id: 3,
         name: "1",
-        creator: "1",
+
         start_settling_at: "1",
         start_main_at: "100",
         end_at: "1000",
@@ -682,25 +767,21 @@ describe("declared fact absence", () => {
     expect(store.subscriptionScope().known).toEqual({ actor: "0x111" });
   });
 
-  it("notifies sparse readers when gates open, while actor nonces ignore expedition clock", () => {
+  it("notifies sparse readers when gates open without inventing Frontier points before its clock is known", () => {
     const store = new NativeFactStore();
     store.applyFacts([set("0x100", "SliceRules", { ...preset.rules, game_id: 1, day_unit_seconds: 100 })]);
     const state = { gameId: 1, complete: false, actor: "0x111", timestamp: undefined };
     const values: unknown[] = [];
-    store.subscribe(() => values.push(store.requireOrAbsent("ActionNonce", { game_id: 1, actor: 0x111n })));
+    store.subscribe(() => values.push(store.requireOrAbsent("PlayerPoints", { game_id: 1, address: 0x111n })));
     store.setSnapshot(state);
     const revision = store.getRevision();
     store.setSnapshot({ ...state, complete: true });
     expect(store.getRevision()).toBe(revision + 1);
-    expect(values.at(-1)).toEqual({ known: { game_id: 1, actor: 0x111n, next_nonce: 0n } });
-    expect(store.requireOrAbsent("PlayerPoints", { game_id: 1, address: 0x111n }).unknown).toContain(
-      "INCOMPLETE_SCOPE",
-    );
+    expect(values.at(-1)).toMatchObject({ unknown: expect.stringContaining("INCOMPLETE_SCOPE") });
     expect(store.subscriptionScope()).toBe(store.subscriptionScope());
     store.setSnapshot({ ...state, complete: true, actor: "0x222" });
-    expect(store.requireOrAbsent("ActionNonce", { game_id: 1, actor: 0x222n }).known?.next_nonce).toBe(0n);
-    expect(store.requireOrAbsent("ActionNonce", { game_id: 1, actor: 0x111n }).unknown).toContain(
-      "OUTSIDE_SNAPSHOT_SCOPE",
+    expect(store.requireOrAbsent("PlayerPoints", { game_id: 1, address: 0x222n }).unknown).toContain(
+      "INCOMPLETE_SCOPE",
     );
   });
 });

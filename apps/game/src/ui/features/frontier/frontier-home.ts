@@ -12,7 +12,7 @@ import {
   readExpeditionRules,
   structureMapPosition,
 } from "@bibliothecadao/eternum";
-import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
+import { safeInteger, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { type ID, TroopTier, TroopType } from "@bibliothecadao/types";
 import { useMemo } from "react";
 
@@ -46,7 +46,7 @@ export const useGoToFrontierPlace = (realm: NativeRows["Structure"]) => {
     const site = structureMapPosition(setup.store, realm);
     if (!site) return;
     const position = Position.fromContract(site);
-    void goToStructure(realm.entity_id, position, expedition);
+    void goToStructure(safeInteger(realm.entity_id), position, expedition);
   };
 };
 

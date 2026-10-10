@@ -11,7 +11,7 @@ interface StructureTerrainEcologyFacts {
     readonly category: StructureType;
     readonly level: number;
   };
-  readonly entity_id?: number;
+  readonly entity_id?: bigint;
   readonly owner: bigint;
 }
 

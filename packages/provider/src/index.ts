@@ -1,18 +1,9 @@
-import { requireNativeExecutionOutcome } from "./native-batch";
-import type { NativeTicketIdentity } from "@bibliothecadao/types";
-export { completeNativeBatches, nativeExecutionOutcomes, requireNativeExecutionOutcome } from "./native-batch";
-export type { BatchTransactionReceipt, NativeExecutionOutcome } from "@bibliothecadao/types";
+export { completeNativeBatches } from "./native-batch";
+export { batchRemaining, gameplayRejection } from "./native-receipt";
+export type { GameplayRejection } from "./native-receipt";
+export type { BatchTransactionReceipt } from "@bibliothecadao/types";
 import { requireBatchReceipt } from "./native-batch";
-export {
-  ActionOutcomeUnknownError,
-  createNativeTicketSubmission,
-  signGameplayIntent,
-  StaleActionNonceError,
-  StaleGameReleaseError,
-} from "./native-ticket";
-import { ActionOutcomeUnknownError } from "./native-ticket";
-export type { SignedNativeIntent } from "./native-ticket";
-export { encodeNativeCommand, frameNativeIntent } from "./native-command";
+export { encodeNativeCommand } from "./native-command";
 export type { NativeCommand, NativeCommandPayloads } from "./native-command";
 /**
  * Provider class for interacting with the Eternum game contracts
@@ -37,6 +28,7 @@ import {
   shortString,
 } from "starknet";
 import { extractErrorMessage } from "./classify-transaction-error";
+import { ACTION_CHECKING_AFTER_MS, TransactionNotSentError } from "./transaction-not-sent";
 import { PromiseQueue } from "./promise-queue";
 import { ExecutionOptions } from "./transaction-executor";
 import {
@@ -52,11 +44,16 @@ import {
   TransactionStreamWaiter,
   TransactionType,
 } from "./types";
-export type NativeSubmission = (
-  signer: AccountInterface,
-  calls: AllowArray<Call>,
-) => Promise<{ transaction_hash: string; ticket: NativeTicketIdentity }>;
-type SubmittedTransaction = { transaction_hash: string; ticket?: NativeTicketIdentity };
+/** Sends one game command as the signer's own transaction; resolves with its hash as soon as the send returns. */
+export type NativeSubmission = (signer: AccountInterface, calls: AllowArray<Call>) => Promise<SubmittedTransaction>;
+/**
+ * A sent command. A submission that reconciles its sends adds its block, which rejects only on proof the command
+ * was never sent.
+ */
+type SubmittedTransaction = {
+  transaction_hash: string;
+  inBlock?: Promise<void>;
+};
 
 export {
   CATEGORY_BATCH_LIMITS,
@@ -67,6 +64,7 @@ export {
 export type { BatchDelayConfig } from "./batch-config";
 export { classifyTransactionError, extractErrorMessage, formatErrorForConsole } from "./classify-transaction-error";
 export type { ClassifiedTransactionError } from "./classify-transaction-error";
+export { ACTION_CHECKING_AFTER_MS, isTransactionHashNotFound, TransactionNotSentError } from "./transaction-not-sent";
 export { PromiseQueue } from "./promise-queue";
 export type { QueueableTransaction } from "./promise-queue";
 export type { TransactionExecutor, ExecutionOptions } from "./transaction-executor";
@@ -97,15 +95,6 @@ const classifySubmitFailure = (
   hasTxHash: boolean;
   retrySafety: TransactionRetrySafety;
 } => {
-  if (error instanceof ActionOutcomeUnknownError) {
-    return {
-      failureKind: "action_outcome_unknown",
-      providerState: "unknown",
-      hasTxHash: false,
-      retrySafety: "unsafe_until_wallet_checked",
-    };
-  }
-
   if (matchesDestroyedConnectionError(error)) {
     return {
       failureKind: "provider_connection_destroyed",
@@ -138,11 +127,17 @@ type TransactionFailureError = Error & {
  * Structured error context for a TransactionFailedPayload: the original error
  * and the raw revert reason when the error came off a reverted receipt.
  */
-const buildFailureDiagnostics = (error: unknown): Pick<TransactionFailedPayload, "error" | "revertReason"> => {
+const buildFailureDiagnostics = (
+  error: unknown,
+): Pick<TransactionFailedPayload, "error" | "revertReason" | "failureKind" | "transactionHash"> => {
   const revertReason = error instanceof Error ? (error as TransactionFailureError).rawRevertReason : undefined;
   return {
     error,
     ...(revertReason !== undefined ? { revertReason } : {}),
+    // Proof of absence carries its hash, so the action's row says not sent wherever the proof arrives.
+    ...(error instanceof TransactionNotSentError
+      ? { failureKind: "not_sent" as const, transactionHash: error.transactionHash }
+      : {}),
   };
 };
 
@@ -319,7 +314,7 @@ export class EternumProvider extends EventEmitter {
     }
   }
 
-  /** Every command is a signed intent through the shard's admission; there is no other way to submit. */
+  /** Every command is the player's own signed invoke of the shard's play entry; there is no other way to submit. */
   private async submitTransaction(
     signer: Account | AccountInterface,
     transactionDetails: AllowArray<Call>,
@@ -385,16 +380,11 @@ export class EternumProvider extends EventEmitter {
     this.emit("transactionFailed", payload);
   }
 
-  private emitTransactionSubmitted(
-    transactionHash: string,
-    transactionMeta: TransactionLifecycleMeta,
-    ticket?: NativeTicketIdentity,
-  ): void {
+  private emitTransactionSubmitted(transactionHash: string, transactionMeta: TransactionLifecycleMeta): void {
     this.transactionStreamSubmitObserver?.(transactionHash);
     this.emit("transactionSubmitted", {
       transactionHash,
       ...transactionMeta,
-      ...(ticket ? { ticket } : {}),
     });
   }
 
@@ -450,7 +440,7 @@ export class EternumProvider extends EventEmitter {
       });
     }
 
-    // Native actions share the player's recorded nonce; the next command signs only after Herald applies it.
+    // One action of a player at a time: the next command is sent only after Herald applies this one.
     let releaseActorExecutionLock: (() => void) | undefined = await this.acquireActorExecutionLock(
       this.getTransactionSerializationKey(signer),
     );
@@ -464,7 +454,7 @@ export class EternumProvider extends EventEmitter {
     }
 
     let tx: SubmittedTransaction;
-    // Admission to visible: from sending the ticket to the stream reporting its outcome with its facts applied.
+    // Admission to visible: from sending the invoke to the stream reporting its outcome with its facts applied.
     let submitStartedAt = 0;
     try {
       if (txType === TransactionType.EXPLORE) {
@@ -493,7 +483,7 @@ export class EternumProvider extends EventEmitter {
     }
 
     // Emit immediately so UI can show pending state
-    this.emitTransactionSubmitted(tx.transaction_hash, transactionMeta, tx.ticket);
+    this.emitTransactionSubmitted(tx.transaction_hash, transactionMeta);
 
     const waitForConfirmation = options?.waitForConfirmation ?? true;
     const transactionMetaWithHash = {
@@ -509,12 +499,15 @@ export class EternumProvider extends EventEmitter {
         transaction_hash: tx.transaction_hash,
       } as unknown as GetTransactionReceiptResponse;
     }
-    const streamReceipt = this.waitForTransactionWithCheckInternal(
-      tx.transaction_hash,
-      transactionMetaWithHash,
-      tx.ticket,
-    );
-    // The actor's next command signs only after Herald applies this one, so it never carries a stale nonce.
+    const streamReceipt = this.waitForTransactionWithCheckInternal(tx.transaction_hash, tx.inBlock);
+    // Any action still unsettled after the checking window is checking: the player's next command may go.
+    const checking = setTimeout(() => {
+      this.emit("transactionChecking", transactionMetaWithHash);
+      releaseActorExecutionLock?.();
+      releaseActorExecutionLock = undefined;
+    }, ACTION_CHECKING_AFTER_MS);
+    void streamReceipt.catch(() => undefined).finally(() => clearTimeout(checking));
+    // The actor's next command is sent only after Herald applies this one, so its effects are visible first.
     const waitPromise = releaseActorExecutionLock
       ? streamReceipt.finally(() => {
           releaseActorExecutionLock?.();
@@ -540,6 +533,7 @@ export class EternumProvider extends EventEmitter {
             stage: resolveTransactionFailureStage(error, "background_confirmation"),
             ...buildFailureDiagnostics(error),
           });
+          this.followLateLanding(error, tx.transaction_hash, transactionMeta, submitStartedAt);
         });
 
       return {
@@ -558,6 +552,7 @@ export class EternumProvider extends EventEmitter {
         stage: resolveTransactionFailureStage(error, "confirmation"),
         ...buildFailureDiagnostics(error),
       });
+      this.followLateLanding(error, tx.transaction_hash, transactionMeta, submitStartedAt);
       throw error;
     }
 
@@ -570,10 +565,41 @@ export class EternumProvider extends EventEmitter {
     return receipt;
   }
 
+  /**
+   * A dropped action is watched until its nonce moves: if it lands after all, it settles as it actually ended
+   * (applied, or refused with its reason) and its row follows.
+   */
+  private followLateLanding(
+    error: unknown,
+    transactionHash: string,
+    transactionMeta: TransactionLifecycleMeta,
+    submitStartedAt: number,
+  ): void {
+    if (!(error instanceof TransactionNotSentError) || !error.landedLate) return;
+    void error.landedLate.then(async (landed) => {
+      if (!landed) return;
+      try {
+        const details = await this.waitForTransactionWithCheckInternal(transactionHash);
+        this.emit("transactionComplete", {
+          details,
+          admissionToVisibleMs: Date.now() - submitStartedAt,
+          ...transactionMeta,
+        });
+      } catch (lateError) {
+        this.emitTransactionFailure({
+          ...transactionMeta,
+          transactionHash,
+          message: extractErrorMessage(lateError),
+          stage: resolveTransactionFailureStage(lateError, "confirmation"),
+          ...buildFailureDiagnostics(lateError),
+        });
+      }
+    });
+  }
+
   private async waitForTransactionWithCheckInternal(
     transactionHash: string,
-    _transactionMeta?: TransactionLifecycleMeta,
-    ticket?: NativeTicketIdentity,
+    inBlock?: Promise<void>,
   ): Promise<GetTransactionReceiptResponse> {
     if (!this.transactionStreamWaiter) {
       return {
@@ -582,24 +608,13 @@ export class EternumProvider extends EventEmitter {
       } as unknown as GetTransactionReceiptResponse;
     }
 
-    let transaction = await this.transactionStreamWaiter(transactionHash, ticket).catch((error) => {
+    const transaction = await this.transactionStreamWaiter(transactionHash, inBlock).catch((error) => {
       throw attachTransactionFailureStage(error, "confirmation");
     });
 
-    if (ticket && transaction.status !== "REVERTED") {
-      const outcome = requireNativeExecutionOutcome(transaction.executions, ticket);
-      transaction = {
-        ...transaction,
-        status: outcome.status === "REVERTED" ? "REVERTED" : transaction.status,
-        revertReason:
-          outcome.status === "REVERTED"
-            ? `Native action rejected: ${outcome.statusClass}: ${outcome.reason}`
-            : undefined,
-        batchRemaining: outcome.batchRemaining,
-      };
-    }
-
-    if (transaction.status === "REVERTED") {
+    // Reverted before the roll (the shard's checks) or refused by the game (rolled back, reason recorded): either way
+    // nothing applied, and the player reads the reason.
+    if (transaction.status === "REVERTED" || transaction.status === "REJECTED") {
       const rawRevertReason = transaction.revertReason;
       const revertReason = extractErrorMessage(rawRevertReason, "Unknown revert reason");
       const message = `Transaction failed with reason: ${revertReason}`;
@@ -708,6 +723,15 @@ export class EternumProvider extends EventEmitter {
         },
       },
       TransactionType.BUY_TIER,
+    );
+  }
+
+  /** Fills an army's stamina to its maximum for one LORDS a missing point, from its realm's LORDS. */
+  public async refill_stamina(props: SystemProps.SystemSigner & { explorerId: number }) {
+    return this.submitCommand(
+      props.signer,
+      { kind: "RefillStamina", value: { explorer_id: props.explorerId } },
+      TransactionType.REFILL_STAMINA,
     );
   }
 

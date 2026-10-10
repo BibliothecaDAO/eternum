@@ -1,4 +1,3 @@
-import type { NativeExecutionOutcome, NativeTicketIdentity } from "@bibliothecadao/types";
 /**
  * Details about a single transaction type within a batch.
  * Used to display breakdown of batched transactions in the UI.
@@ -10,7 +9,8 @@ export interface BatchedTransactionDetail {
 
 export type TransactionFailureStage = "submit" | "confirmation" | "revert" | "background_confirmation";
 
-export type TransactionSubmitFailureKind = "provider_connection_destroyed" | "action_outcome_unknown" | "submit_failed";
+/** not_sent: the action is proven absent from every block, so nothing of it applied and sending again is safe. */
+export type TransactionSubmitFailureKind = "provider_connection_destroyed" | "submit_failed" | "not_sent";
 
 export type TransactionProviderState = "ready" | "destroyed" | "unavailable" | "unknown";
 
@@ -48,7 +48,6 @@ export interface TransactionSubmitGuardContext extends TransactionLifecycleMeta 
 export type TransactionSubmitGuard = (context: TransactionSubmitGuardContext) => Promise<void> | void;
 
 interface TransactionStreamStatus {
-  executions?: NativeExecutionOutcome[];
   block: number | null;
   hash: string;
   batchRemaining?: string;
@@ -56,10 +55,13 @@ interface TransactionStreamStatus {
   status: string;
 }
 
-/** Waits for a transaction's status on the stream; a native action passes its ticket so the wait can settle from the store. */
+/**
+ * Waits for a transaction's outcome, settled once Herald has applied it; `inBlock`, when the submission reconciles
+ * its sends, settles first and rejects only on proof the transaction was never sent.
+ */
 export type TransactionStreamWaiter = (
   transactionHash: string,
-  ticket?: NativeTicketIdentity,
+  inBlock?: Promise<void>,
 ) => Promise<TransactionStreamStatus>;
 
 export enum TransactionType {
@@ -72,6 +74,7 @@ export enum TransactionType {
   ENTER_DEPTH = "enter_depth",
   RESEARCH = "research",
   BUY_TIER = "buy_tier",
+  REFILL_STAMINA = "refill_stamina",
   EXPLORER_CREATE = "explorer_create",
   EXPLORER_ADD = "explorer_add",
   EXPLORER_DELETE = "explorer_delete",

@@ -77,7 +77,6 @@ import { LeftView } from "@/types";
 import {
   buildableRadius,
   BuildingSystemUpdate,
-  isRealmMarkedPlot,
   NEUTRAL_BIOME_CLIMATE,
   StructureProgress,
   getBlockTimestamp,
@@ -95,7 +94,7 @@ import { ProductionModal } from "@/ui/features/settlement";
 import { resolveConstructionBuildability } from "@bibliothecadao/eternum/automation";
 import { requireActiveGameClient } from "@/sync/active-game-client";
 import { playerStructuresView, readFactView, watchFactView } from "@/sync/fact-views";
-import type { GameClientSetup as SetupResult, NativeRows } from "@bibliothecadao/eternum/game-client";
+import { safeInteger, type GameClientSetup as SetupResult, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import {
   ActionType,
   type BuildingTiles,
@@ -209,8 +208,6 @@ export default class HexceptionScene extends HexagonScene {
   private buildings: HexceptionBuilding[] = [];
   centerColRow: number[] = [0, 0];
   private highlights: { col: number; row: number }[] = [];
-  /** This realm's marked plots, one per ring on a realm board: always highlighted, and set on a greener ground. */
-  private markedPlots: { col: number; row: number }[] = [];
   private buildingPreview: BuildingPreview | null = null;
   /** The plot a build sheet chose: its ghost stands there instead of following the pointer, and a tap selects. */
   private pinnedPlot: HexPosition | null = null;
@@ -282,7 +279,7 @@ export default class HexceptionScene extends HexagonScene {
           changes.some(
             (change) =>
               (change.model === "Hyperstructure" || change.model === "HyperstructureProgress") &&
-              (change.current ?? change.previous)?.entity_id === this.state.structureEntityId &&
+              (change.current ?? change.previous)?.entity_id === BigInt(this.state.structureEntityId) &&
               (change.current ?? change.previous)?.game_id === configManager.getActiveGameId(),
           )
         )
@@ -536,35 +533,14 @@ export default class HexceptionScene extends HexagonScene {
     this.state.setPreviewBuilding(null);
   }
 
-  /** The realm this local view shows, for the board rules that mark its plots; none for other structures. */
-  private boardRealm() {
-    const structure = this.game.store.get("Structure", {
-      game_id: configManager.getActiveGameId(),
-      entity_id: this.state.structureEntityId,
-    });
-    return structure?.base.category === StructureType.Realm ? structure : undefined;
-  }
-
-  private markedPlotHighlights() {
-    return this.markedPlots.map((hex) => ({
-      hex,
-      actionType: ActionType.Build,
-      kind: "destination" as const,
-      isEndpoint: true,
-      isSharedRoute: false,
-      pathDepth: 1,
-    }));
-  }
-
-  /** Outside building placement only the marked plots stay lit. */
   /** The resting highlights, or first, for a castle just raised, its new ring's open plots for a moment. */
   private renderRestingOrNewRing(): void {
     const radius = this.newRingRadius;
     this.newRingRadius = null;
     if (radius === null) return this.renderRestingHighlights();
     const center = { col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1] };
-    this.highlightHexManager.highlightHexes([
-      ...this.highlights
+    this.highlightHexManager.highlightHexes(
+      this.highlights
         .filter((hex) => getHexDistance(center, hex) === radius)
         .map((hex) => ({
           hex: { col: hex.col, row: hex.row },
@@ -574,8 +550,7 @@ export default class HexceptionScene extends HexagonScene {
           isSharedRoute: false,
           pathDepth: 1,
         })),
-      ...this.markedPlotHighlights(),
-    ]);
+    );
     window.clearTimeout(this.newRingTimer);
     this.newRingTimer = window.setTimeout(() => {
       if (!this.buildingPreview?.getPreviewBuilding()) this.renderRestingHighlights();
@@ -583,7 +558,7 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   private renderRestingHighlights(): void {
-    this.highlightHexManager.highlightHexes(this.markedPlotHighlights());
+    this.highlightHexManager.highlightHexes([]);
   }
 
   private loadBuildingModels() {
@@ -728,7 +703,7 @@ export default class HexceptionScene extends HexagonScene {
 
       // subscribe to building updates (create and destroy)
       this.buildingUpdateUnsubscribe = this.worldUpdateListener.Buildings.onBuildingUpdate(
-        structure.entity_id,
+        safeInteger(structure.entity_id),
         (update: BuildingSystemUpdate) => this.handleBuildingUpdate(update, realmGeneration),
       );
 
@@ -1185,7 +1160,7 @@ export default class HexceptionScene extends HexagonScene {
     if (!structure) throw new Error(`No structure is available at local route ${position.col},${position.row}`);
     const site = structureMapPosition(this.game.store, structure);
     if (!site) throw new Error("The expedition has not started");
-    useUIStore.getState().setStructureEntityId(structure.entity_id, {
+    useUIStore.getState().setStructureEntityId(safeInteger(structure.entity_id), {
       worldMapPosition: Position.fromContract({ x: site.x, y: site.y }),
     });
     return { structure, position: { col: site.x, row: site.y } };
@@ -1338,23 +1313,18 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   private renderBuildingPlacementHighlights(): void {
-    const isMarked = (hex: { col: number; row: number }) =>
-      this.markedPlots.some((plot) => plot.col === hex.col && plot.row === hex.row);
     // A pinned ghost marks its one plot; a free one shows every plot it may stand on.
     const plots = this.pinnedPlot ? [this.pinnedPlot] : this.highlights;
-    this.highlightHexManager.highlightHexes([
-      ...plots
-        .filter((hex) => !isMarked(hex))
-        .map((hex) => ({
-          hex: { col: hex.col, row: hex.row },
-          actionType: ActionType.Build,
-          kind: "destination" as const,
-          isEndpoint: true,
-          isSharedRoute: false,
-          pathDepth: 1,
-        })),
-      ...this.markedPlotHighlights(),
-    ]);
+    this.highlightHexManager.highlightHexes(
+      plots.map((hex) => ({
+        hex: { col: hex.col, row: hex.row },
+        actionType: ActionType.Build,
+        kind: "destination" as const,
+        isEndpoint: true,
+        isSharedRoute: false,
+        pathDepth: 1,
+      })),
+    );
   }
 
   updateHexceptionGrid(radius: number) {
@@ -1395,7 +1365,6 @@ export default class HexceptionScene extends HexagonScene {
         runWithFrameWorkOwner("scene:hexception:grid", () => {
           const regions = getLocalTerrainRegions(this.tileManager.getHexCoords(), radius);
           this.highlights = [];
-          this.markedPlots = [];
           // The buildable set belongs to this realm and its level; a previous realm's must not linger.
           this.interactiveHexManager.clearHexes();
 
@@ -1675,7 +1644,7 @@ export default class HexceptionScene extends HexagonScene {
     if (!this.hyperstructureModel || this.tileManager.structureType() !== StructureType.Hyperstructure) return;
     this.hyperstructureModel.setConstructionAt(
       0,
-      readHyperstructureConstruction(this.game.store, Number(this.state.structureEntityId)),
+      readHyperstructureConstruction(this.game.store, safeInteger(this.state.structureEntityId)),
     );
   }
 
@@ -1827,7 +1796,6 @@ export default class HexceptionScene extends HexagonScene {
     const biome = this.localBiome(targetHex.col, targetHex.row);
     const biomeVariant = biome;
     const buildableAreaBiome = "Empty";
-    const realm = isMainHex ? this.boardRealm() : undefined;
     const isFlat = biome === "Ocean" || biome === "DeepOcean" || isMainHex;
 
     // reset buildings
@@ -1870,12 +1838,9 @@ export default class HexceptionScene extends HexagonScene {
           this.highlights.push(LOCAL_HEX_SPACE.hexForPosition(dummy.position));
         }
 
-        const marked = realm !== undefined && isRealmMarkedPlot(this.game.store, realm, position);
-        if (marked) this.markedPlots.push({ col: position.col, row: position.row });
-
         const tempMatrix = MatrixPool.getInstance().getMatrix();
         tempMatrix.copy(dummy.matrix);
-        terrainMatricesByBiome[marked ? markedPlotBiome(biome) : buildableAreaBiome].push(tempMatrix);
+        terrainMatricesByBiome[buildableAreaBiome].push(tempMatrix);
       });
     }
 
@@ -2067,10 +2032,6 @@ export default class HexceptionScene extends HexagonScene {
     return this.hoverLabelManager.hasActiveLabel();
   }
 }
-
-/** A marked plot sits on slightly greener ground than the realm's own, so it reads before anything is built. */
-const markedPlotBiome = (realmBiome: BiomeType): BiomeType =>
-  realmBiome === BiomeType.Grassland ? BiomeType.TemperateDeciduousForest : BiomeType.Grassland;
 
 function resolveHexceptionBiome(biomeKey: string, fallback: BiomeType): BiomeType {
   if (biomeKey === "Empty" || biomeKey === BiomeType.None) return fallback;

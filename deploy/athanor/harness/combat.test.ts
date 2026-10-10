@@ -13,7 +13,7 @@ const candidate = (overrides: Partial<BattleCandidate>): BattleCandidate => ({
 const rejected = (reason: string) => ({
   kind: "attack",
   outcome: "rejected" as const,
-  error: `Error: Native action rejected: GAMEPLAY_REJECTED: ${reason}`,
+  error: `Error: Player action rejected: ${reason}`,
 });
 
 describe("battle target pick", () => {

@@ -1,3 +1,5 @@
+import { presetRegistration } from "./native/preset-fixtures";
+import malformedRow from "../../../contracts/l3/world-native/schema/fixtures/malformed-row.json";
 import { CairoCustomEnum } from "starknet";
 import { dayOf } from "@bibliothecadao/eternum/expeditions";
 import { describe, expect, it, vi } from "vitest";
@@ -24,8 +26,9 @@ function fixture(historyStore?: HistoryStore) {
   const pending: RpcBlockWithReceipts = { block_number: 11, timestamp: 101, transactions: [] };
   const rpc = {
     blockNumber: async () => confirmed.block_number,
+    getBlockHeader: async () => confirmed,
     getPreconfirmedHeader: async () => pending,
-    getBlockWithReceipts: async (block: unknown) => (block === "pre_confirmed" ? pending : confirmed),
+    readBlock: async (block: unknown) => (block === "pre_confirmed" ? pending : confirmed),
   } as unknown as MadaraRpc;
   const live = new LiveWorld({
     native,
@@ -120,89 +123,6 @@ describe("native live publication", () => {
     await live.publishChainClock();
 
     expect(hello()).toMatchObject({ type: "hello", confirmed_block: 10, confirmed_timestamp: 100 });
-  });
-
-  it("warns for a LORDS ceiling only after its receipt is confirmed, once per day", async () => {
-    const { live, native, fold, confirmed, pending, decoder } = fixture();
-    native.applyReceipt(
-      fold,
-      receipt(
-        seedDerivedRows(fold, decoder, [
-          rowEvent("GameRegistry", ["1"], {
-            name: "0x46",
-            preset_id: 4,
-            creator: "0x111",
-            settled: false,
-            ready: true,
-            dev_mode_on: false,
-            start_settling_at: 0,
-            start_main_at: 100,
-            // Fourteen bags of four-hour units: 70 days.
-            end_at: 100 + 14 * 288_000,
-            end_grace_seconds: 0,
-            seed: 42,
-          }),
-          rulesEvent("1"),
-          rowEvent("SettlementRules", ["1"], {
-            registration_start: 0,
-            registration_limit: 0,
-            mode: new CairoCustomEnum({ Single: {} }),
-            spacing: 100,
-          }),
-          rowEvent("ChestRules", ["1"], {
-            pool: 1000000,
-            price_ceiling: 50,
-            shares: { common: 1, uncommon: 2, rare: 4, epic: 10, legendary: 20 },
-            surge_factor: 3,
-            surge_minimum_shares: 60,
-            estimate_days: 5,
-          }),
-        ]),
-      ),
-      9,
-      0,
-    );
-    seedDerivedRows(fold, decoder, [
-      rowEvent("SliceRules", ["1"], { ...fold.modelRows("SliceRules")[0].value, day_unit_seconds: 14_400 }),
-    ]);
-    await live.acceptSubscribedHead({ block_number: 10, timestamp: 100 });
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    try {
-      const reward = receipt(
-        [
-          rowEvent("LordsBudget", ["1"], {
-            pool_left: 1000000,
-            open: 2400,
-            spent: 2400,
-            day: 0,
-            price: 50,
-            ceiling: 3000,
-            estimate: 0,
-            paid_shares: 0,
-          }),
-        ],
-        "0x991",
-      );
-      live.acceptReceipt({ ...reward, finality_status: "PRE_CONFIRMED" });
-      pending.timestamp = 86401;
-      await live.publishChainClock();
-      expect(warn).not.toHaveBeenCalled();
-      confirmed.block_number = 11;
-      confirmed.timestamp = 200;
-      confirmed.transactions.push({ receipt: reward, transaction: { type: "INVOKE" } });
-      await live.acceptSubscribedHead({ block_number: 11, timestamp: 200 });
-      expect(warn).toHaveBeenCalledTimes(1);
-      expect(JSON.parse(warn.mock.calls[0][0])).toMatchObject({
-        event: "frontier_lords_ceiling_80_percent",
-        day: "0",
-        spent: "2400",
-        ceiling: "3000",
-      });
-      await live.acceptSubscribedHead({ block_number: 11, timestamp: 201 });
-      expect(warn).toHaveBeenCalledTimes(1);
-    } finally {
-      warn.mockRestore();
-    }
   });
 
   it("invalidates directory readers only after confirmed changes", async () => {
@@ -329,8 +249,9 @@ describe("native live publication", () => {
       confirmedBlock: 9,
       confirmedFold: fold,
       rpc: {
+        getBlockHeader: async () => confirmed,
         getPreconfirmedHeader: async () => pending,
-        getBlockWithReceipts: async (block: unknown) => (block === "pre_confirmed" ? pending : confirmed),
+        readBlock: async (block: unknown) => (block === "pre_confirmed" ? pending : confirmed),
       } as unknown as MadaraRpc,
     });
     await live.acceptSubscribedHead({ block_number: 10, timestamp: beforeMidnight });
@@ -489,4 +410,36 @@ describe("native live publication", () => {
     ]);
     expect(selection.set.some((row) => row.model === "SliceRules")).toBe(false);
   });
+});
+
+it("validates the whole rebuilt overlay before publishing any of its actions", async () => {
+  const { live, pending, tile, messages, native } = fixture();
+  pending.transactions.push(
+    { receipt: receipt([tile("1")], "0xabc"), transaction: { type: "INVOKE" } },
+    { receipt: receipt([malformedRow.raw], "0xdef"), transaction: { type: "INVOKE" } },
+  );
+  await live.acceptSubscribedHead({ block_number: 10, timestamp: 100 });
+  expect(messages.filter((message) => message.type === "diff")).toEqual([]);
+  expect(native.receiptFailures).toBe(1);
+  expect(live.snapshot("1").models.find((model) => model.model === "TileOpt")!.rows).toEqual([]);
+});
+
+it("publishes an early preset from its validated block calldata after the sender LRU evicts it", async () => {
+  const { live, pending, native } = fixture();
+  const preset = presetRegistration(2);
+  pending.transactions.push({
+    transaction: { type: "INVOKE", calldata: preset.calldata },
+    receipt: receipt([preset.event], "0x100"),
+  });
+  for (let index = 0; index < 2050; index++)
+    pending.transactions.push({
+      transaction: { type: "INVOKE", calldata: ["0x0"] },
+      receipt: receipt([], `0x${(index + 1000).toString(16)}`),
+    });
+  await live.acceptSubscribedHead({ block_number: 10, timestamp: 100 });
+  expect(native.receiptFailures).toBe(0);
+  const visible = live.attach("1", { send() {} });
+  // The rebuild applied the preset, so a later launch can verify its stored preimage without another transaction fetch.
+  expect(() => (live as any).overlayFold.presetPreimage(preset.commitment)).not.toThrow();
+  live.detach(visible);
 });

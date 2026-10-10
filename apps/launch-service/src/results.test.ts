@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { completeBlitzResults, type ResultOperations } from "./results";
+import { completeBlitzResults, walletResults, type ResultOperations } from "./results";
 
 function fixture(count = 13) {
   const players = Array.from({ length: count }, (_, index) => ({
@@ -78,4 +78,10 @@ describe("native result jobs", () => {
     operations.record = vi.fn(async () => undefined);
     await expect(completeBlitzResults(operations)).rejects.toThrow("no progress");
   });
+});
+
+it("encodes existing ranks with their frozen wallets, never assuming a wallet equals an account", () => {
+  const ranks = [{ player: 1n, points: 9n, rank: 1 }];
+  expect(walletResults(ranks, [{ account: 1n, wallet: 2n }])).toEqual([{ wallet: 2n, rank: 1 }]);
+  expect(() => walletResults(ranks, [])).toThrow("frozen roster");
 });

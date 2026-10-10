@@ -39,7 +39,7 @@ import {
 import { FLAT_TERRAIN_SURFACE, placePositionOnTerrain, type TerrainSurface } from "@/three/terrain/terrain-surface";
 import { gltfLoader, isAddressEqualToAccount } from "@/three/utils/utils";
 import { FELT_CENTER } from "@/ui/config";
-import type { GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
+import { safeInteger, type GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
 import {
   divideByPrecision,
   getIsBlitz,
@@ -401,7 +401,7 @@ export class StructureManager {
 
   private removeStructurePresentation(entityId: ID): void {
     this.pendingHyperstructureBuilds.delete(entityId);
-    const entityNumericId = Number(entityId);
+    const entityNumericId = safeInteger(entityId);
     this.attachmentManager.removeAttachments(entityNumericId);
     this.activeStructureAttachmentEntities.delete(entityNumericId);
     this.structureAttachmentSignatures.delete(entityNumericId);
@@ -484,12 +484,13 @@ export class StructureManager {
           if (change.model === "Guard") {
             const guard = change.current ?? change.previous;
             if (!guard || guard.game_id !== configManager.getActiveGameId()) continue;
+            const structureId = safeInteger(guard.structure_id);
             this.playStructureGuardDifferenceFx(
-              guard.structure_id,
+              structureId,
               this.resolveGuardArmies(change.previous ? [change.previous] : []),
               this.resolveGuardArmies(change.current ? [change.current] : []),
             );
-            touched.add(guard.structure_id);
+            touched.add(structureId);
           } else if (
             change.model === "Structure" ||
             change.model === "ExpeditionSite" ||
@@ -499,7 +500,7 @@ export class StructureManager {
             change.model === "HyperstructureShares"
           ) {
             const row = change.current ?? change.previous;
-            if (row?.game_id === configManager.getActiveGameId()) touched.add(row.entity_id);
+            if (row?.game_id === configManager.getActiveGameId()) touched.add(safeInteger(row.entity_id));
           }
         }
         if (refreshAll) {
@@ -557,7 +558,7 @@ export class StructureManager {
     // A structure the client cannot present is left out, loudly, and the rest of the world still draws.
     const structure = presentOrSkip(
       "Structure",
-      Number(renderable.entityId),
+      safeInteger(renderable.entityId),
       () => this.buildStructureInfo(renderable),
       () => this.unpresentableStructures.add(renderable.entityId),
     );
@@ -1494,7 +1495,7 @@ export class StructureManager {
         getWorldPositionForHexCoordsInto(col, row, out);
         return placePositionOnTerrain(out, this.resolveTerrainSurface());
       },
-      getLabel: (entityId) => this.entityIdLabels.get(Number(entityId) as ID),
+      getLabel: (entityId) => this.entityIdLabels.get(safeInteger(entityId) as ID),
       updateLabel: (structure, label) => this.updateStructureLabelData(structure, label),
       syncCompactLabel: (structure, position) => this.updateStructureCompactLabel(structure, position),
       resolveAttachments: (structure) => this.resolveStructureAttachmentsForRender(structure),
@@ -1613,7 +1614,7 @@ export class StructureManager {
       if (binding.model instanceof HyperstructureModel && this.store) {
         binding.model.setConstructionAt(
           binding.instanceIndex,
-          readHyperstructureConstruction(this.store, Number(structure.entityId)),
+          readHyperstructureConstruction(this.store, safeInteger(structure.entityId)),
           this.pendingHyperstructureBuilds.delete(structure.entityId),
         );
       }

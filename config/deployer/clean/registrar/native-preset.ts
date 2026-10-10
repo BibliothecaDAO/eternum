@@ -1,3 +1,5 @@
+import { resolveRegistrarExecutionDetails } from "./transaction-details";
+import { assertNativeOwnerSigner } from "../shared/native-owner";
 import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { resolveDeploymentEnvironment } from "../environment";
 import { nativePresetForId } from "../../../source/native";
@@ -70,11 +72,15 @@ export async function registerNativePreset(
     throw new Error(
       `Preset ${presetId} is registered with commitment ${existing}; this definition commits to ${registration.commitment}`,
     );
-  const receipt = await account.execute({
-    contractAddress: registration.address,
-    entrypoint: "register_preset",
-    calldata: registration.calldata,
-  });
+  await assertNativeOwnerSigner(account, registration.address, block);
+  const receipt = await account.execute(
+    {
+      contractAddress: registration.address,
+      entrypoint: "register_preset",
+      calldata: registration.calldata,
+    },
+    await resolveRegistrarExecutionDetails(account, registration.address),
+  );
   await waitForSuccess(account, receipt.transaction_hash);
   return receipt.transaction_hash;
 }
@@ -82,7 +88,7 @@ export async function registerNativePreset(
 export function buildNativeGameParams(
   config: Config,
   input: CreateGamePayloadInput,
-  roster: readonly { account: string }[] = [],
+  roster: readonly { account: string; wallet: string }[] = [],
 ) {
   const preset = nativePresetForId(input.presetId);
   if (preset.entryRule === nativeRuleConstants.ENTRY_ROSTER) {
@@ -90,8 +96,8 @@ export function buildNativeGameParams(
     if (input.singleRealmMode || input.twoPlayerMode !== (mode === "Duel"))
       throw new Error("Settlement layout must match the mode preset");
     if (mode === "Duel" && roster.length !== 2) throw new Error("Duel requires two players");
-    if (input.devModeOn) throw new Error("Free Blitz does not use development mode");
-    if (roster.length < 1 || roster.length > 24) throw new Error("Blitz requires a fixed roster of 1 to 24 players");
+    if (input.devModeOn) throw new Error("Blitz does not use development mode");
+    if (roster.length === 0) throw new Error("Blitz requires its roster at creation");
   } else if (roster.length) throw new Error("Open seasons do not use a fixed roster");
   const common = buildCreateGameParams(config, { ...input, startMainAt: seasonStart(config, input) });
   return {
@@ -109,6 +115,7 @@ export function buildNativeGameParams(
       input.useMapOverride ? CairoOptionVariant.Some : CairoOptionVariant.None,
       common.map_override,
     ),
+    // Calendar and map layout metadata; gameplay draws use the stamped transaction root.
     seed: common.seed,
   };
 }

@@ -12,6 +12,7 @@ import { onTierBought } from "@/ui/features/frontier/attributes/pick-moment";
 import { PickPanel } from "@/ui/features/frontier/attributes/pick-panel";
 import { playArmyProgress } from "@/ui/features/frontier/attributes/progress-moment";
 import { type ReactNode, useEffect, useRef, useState } from "react";
+import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
 /** ArmyProgressionRules and ArmyProgress exactly as the native store carries them. */
 const RULES: ProgressionRulesFacts = {
@@ -25,7 +26,7 @@ const RULES: ProgressionRulesFacts = {
 };
 const ARMY: ArmyProgressFacts = {
   game_id: 1,
-  explorer_id: 201,
+  explorer_id: 201n,
   xp: 140,
   battle: 2,
   logistics: 1,
@@ -61,7 +62,7 @@ export const PickLab = () => {
         const tier = attributeLevel(progress, attribute);
         const price = nextTierPrice(RULES, tier);
         if (price === null || progress.xp < price) return reject(new Error("Not enough XP."));
-        onTierBought({ explorerId: progress.explorer_id, attribute, tier: tier + 1, price });
+        onTierBought({ explorerId: safeInteger(progress.explorer_id), attribute, tier: tier + 1, price });
         // The story starts the flight; the fact changes as it lands.
         window.setTimeout(
           () => setProgress((now) => ({ ...now, xp: now.xp - price, [COLUMN[attribute]]: tier + 1 })),
@@ -79,7 +80,7 @@ export const PickLab = () => {
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           <span className="text-sm font-semibold">Army 1</span>
           <ArmyPortrait
-            explorerId={progress.explorer_id}
+            explorerId={safeInteger(progress.explorer_id)}
             troops={{ category: "Knight", tier: "T1" }}
             progress={progress}
             rules={RULES}

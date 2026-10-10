@@ -6,6 +6,7 @@ import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import Button from "@/ui/design-system/atoms/button";
 import { toast } from "@/ui/features/event-feed/notify";
+import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
 const accessOptions = ["Public", "Private", "GuildOnly"] as const;
 const precision = BigInt(RESOURCE_PRECISION);
@@ -41,7 +42,7 @@ export const HyperstructureConstruction = ({ entityId }: { entityId: number }) =
     "HyperstructureProgress",
     "GuildMember",
   ]);
-  const [sourceId, setSourceId] = useState<number>();
+  const [sourceId, setSourceId] = useState<bigint>();
   const [amounts, setAmounts] = useState<Record<number, string>>({});
   const [pending, setPending] = useState(false);
 
@@ -50,7 +51,7 @@ export const HyperstructureConstruction = ({ entityId }: { entityId: number }) =
   const owned = actor !== undefined && actor !== 0n && structure.owner === actor;
   const sources = actor !== undefined && actor !== 0n ? [...store.structuresOwnedBy(game_id, actor)] : [];
   const source = sourceId === undefined ? sources[0] : sources.find((row) => row.entity_id === sourceId);
-  const resources = source ? new ResourceManager(store, source.entity_id) : undefined;
+  const resources = source ? new ResourceManager(store, safeInteger(source.entity_id)) : undefined;
   const ownerGuild = store.get("GuildMember", { game_id, actor: structure.owner })?.guild_id;
   const actorGuild = actor !== undefined ? store.get("GuildMember", { game_id, actor })?.guild_id : undefined;
   const canContribute =
@@ -177,10 +178,10 @@ export const HyperstructureConstruction = ({ entityId }: { entityId: number }) =
               Supply from
               <select
                 aria-label="Construction source"
-                value={source?.entity_id ?? ""}
+                value={source?.entity_id.toString() ?? ""}
                 disabled={pending}
                 onChange={(event) => {
-                  setSourceId(Number(event.target.value));
+                  setSourceId(BigInt(event.target.value));
                   setAmounts({});
                 }}
               >
@@ -190,8 +191,8 @@ export const HyperstructureConstruction = ({ entityId }: { entityId: number }) =
                   </option>
                 )}
                 {sources.map((row) => (
-                  <option key={row.entity_id} value={row.entity_id}>
-                    Structure #{row.entity_id}
+                  <option key={row.entity_id} value={row.entity_id.toString()}>
+                    Structure #{row.entity_id.toString()}
                   </option>
                 ))}
               </select>

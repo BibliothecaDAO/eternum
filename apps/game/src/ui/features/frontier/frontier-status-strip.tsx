@@ -8,7 +8,7 @@ import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { knownBalance } from "@/ui/utils/utils";
 import { getBalance } from "@bibliothecadao/eternum";
-import type { NativeRows } from "@bibliothecadao/eternum/game-client";
+import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { ResourcesIds } from "@bibliothecadao/types";
 import type { ReactNode } from "react";
 import { useLandedValue, useLandingDelta } from "@/ui/motion/landing-hold";
@@ -62,7 +62,7 @@ const RealmHoldings = ({ realm }: { realm: NativeRows["Structure"] }) => {
   const tick = useCurrentDefaultTick();
   useNativeRevision(BALANCE_MODELS);
   const balance = (resourceId: ResourcesIds) =>
-    knownBalance(getBalance(realm.entity_id, resourceId, tick, setup.store).balance);
+    knownBalance(getBalance(safeInteger(realm.entity_id), resourceId, tick, setup.store).balance);
 
   return (
     <dl
@@ -82,7 +82,7 @@ const RealmHoldings = ({ realm }: { realm: NativeRows["Structure"] }) => {
             withTooltip={false}
           />
         }
-        value={formatAmount(troopsOnHand(setup.store, realm.entity_id, tick))}
+        value={formatAmount(troopsOnHand(setup.store, safeInteger(realm.entity_id), tick))}
       />
     </dl>
   );

@@ -33,7 +33,7 @@ export function resolveSpireTraversalAction(input: {
 
   if (
     destinationTile &&
-    Number(destinationTile.occupier_id) !== 0 &&
+    destinationTile.occupier_id !== 0 &&
     !destinationTile.occupier_is_structure &&
     isExplorerTileOccupier(destinationTile.occupier_type)
   ) {

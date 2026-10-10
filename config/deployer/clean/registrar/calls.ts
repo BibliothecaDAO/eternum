@@ -1,10 +1,13 @@
+import { normalizeStarknetAddress } from "@realms-world/identity";
+import { resolveRegistrarExecutionDetails } from "./transaction-details";
+export { resolveRegistrarExecutionDetails } from "./transaction-details";
 import { presetRegistrationCall } from "./native-preset";
 import { confirmedTransactionReceipt } from "../shared/transaction";
 import { completeNativeAdminCommand } from "../world/native/command";
 import { nativeGamesAbi, nativeWorldSchema } from "../world/native/manifest";
 import type { RegistrarWorld } from "../world/native/types";
 import type { buildNativePreset } from "../config/native-preset";
-import { resolveGameTransactionResourceBounds, worldView } from "@bibliothecadao/eternum";
+import { worldView } from "@bibliothecadao/eternum";
 import { Account, CallData, shortString, type Call, type RawArgs, RpcProvider } from "starknet";
 import { loadRepoJsonFile } from "../shared/repo";
 import type { DeploymentEnvironmentId } from "../types";
@@ -105,20 +108,15 @@ function buildRegistrarCall(
   };
 }
 
-export function resolveRegistrarExecutionDetails() {
-  return {
-    version: 3 as const,
-    tip: 0,
-    resourceBounds: resolveGameTransactionResourceBounds(),
-  };
-}
-
 async function executeRegistrarCall(
   account: Account,
   call: Call,
   target: RegistrarTarget,
 ): Promise<RegistrarTransactionResult> {
-  const transaction = await account.execute(call, resolveRegistrarExecutionDetails());
+  const transaction = await account.execute(
+    call,
+    await resolveRegistrarExecutionDetails(account, call.contractAddress),
+  );
   const receipt = await confirmedTransactionReceipt(account, transaction.transaction_hash);
   return { transactionHash: transaction.transaction_hash, receipt };
 }
@@ -184,18 +182,20 @@ export async function findRegistrarGame(
   return value === 0n ? null : { gameId: Number(value) };
 }
 
-/**
- * A Blitz roster is its players' gameplay accounts: the contract authenticates each command through the account, so an
- * account needs no registry binding and need not be deployed yet.
- */
-export function blitzRosterOf(accounts: readonly string[]) {
-  if (accounts.length < 1 || accounts.length > 24) throw new Error("Blitz requires 1 to 24 registered players");
-  const normalized = accounts.map((account) => {
-    if (!/^0x[0-9a-f]+$/i.test(account) || BigInt(account) === 0n) throw new Error("Invalid roster account");
-    return `0x${BigInt(account).toString(16)}`;
-  });
-  if (new Set(normalized).size !== normalized.length) throw new Error("Duplicate roster account");
-  return normalized.map((account) => ({ account }));
+/** Preserve the resolved wallet/account pairs in registration order. */
+export function blitzRosterOf(players: readonly { wallet: string; account: string }[]) {
+  if (players.length < 1 || players.length > 24) throw new Error("Blitz requires 1 to 24 registered players");
+  const canonical = (value: string, field: string) => {
+    if (!/^0x[0-9a-f]+$/i.test(value) || BigInt(value) === 0n) throw new Error(`Invalid roster ${field}`);
+    return normalizeStarknetAddress(value);
+  };
+  const rows = players.map(({ account, wallet }) => ({
+    account: canonical(account, "account"),
+    wallet: canonical(wallet, "wallet"),
+  }));
+  for (const field of ["account", "wallet"] as const)
+    if (new Set(rows.map((row) => row[field])).size !== rows.length) throw new Error(`Duplicate roster ${field}`);
+  return rows;
 }
 
 export function resolveRegistrarWorldAddress(target: RegistrarTarget = DEFAULT_ENVIRONMENT_ID): string {
@@ -246,7 +246,6 @@ export async function settleBlitzRoster(
   gameId: number,
   credentials: { accountAddress: string; privateKey: string },
   target: RegistrarTarget,
-  admissionUrl: string,
 ): Promise<BlitzRosterSettlement> {
   const { manifest } = resolveRegistrarContext(target);
   const registry = manifest.world.address;
@@ -260,7 +259,6 @@ export async function settleBlitzRoster(
   const settled = await completeNativeAdminCommand({
     provider,
     manifest,
-    admissionUrl,
     gameId,
     ...credentials,
     command: { kind: "SettleBlitzRoster", value: undefined },

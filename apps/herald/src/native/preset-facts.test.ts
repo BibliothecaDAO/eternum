@@ -45,12 +45,15 @@ function launch(preset: ReturnType<typeof registration>, gameId = 1, rosterSize 
   const roster = Array.from({ length: rosterSize }, (_, index) => [String(0x100 + index)]);
   return [
     ...(rosterSize
-      ? [rowEvent("BlitzRoster", [String(gameId)], { players: roster.map(([account]) => ({ account })) })]
+      ? [
+          rowEvent("BlitzRoster", [String(gameId)], {
+            players: roster.map(([account]) => ({ account, wallet: account })),
+          }),
+        ]
       : []),
     rowEvent("GameRegistry", [String(gameId)], {
       name: "0x123",
       preset_id: String(preset.presetId),
-      creator: "0x111",
       settled: false,
       ready: true,
       dev_mode_on: false,
@@ -76,9 +79,7 @@ describe("verified preset configuration facts", () => {
     applyRegistration(world, preset);
     world.native.applyReceipt(world.fold, receipt(launch(preset)), 11, 0);
     const rules = world.fold.gameRows("ChestRules", "1")[0]!.value;
-    expect([rules.pool, rules.price_ceiling, rules.surge_factor, rules.surge_minimum_shares].map(Number)).toEqual([
-      1_000_000, 50, 3, 60,
-    ]);
+    expect([rules.pool, rules.price_ceiling, rules.estimate_days].map(Number)).toEqual([1_000_000, 50, 5]);
     const tiers = ["common", "uncommon", "rare", "epic", "legendary"];
     const shares = rules.shares as Record<string, unknown>;
     expect(tiers.map((tier) => Number(shares[tier]))).toEqual([1, 2, 4, 10, 20]);
@@ -233,7 +234,7 @@ describe("verified preset configuration facts", () => {
     ];
     await world.native.replay({
       fold: world.fold,
-      rpc: { getBlockWithReceipts: async (number) => blocks[Number(number) - 10]! },
+      rpc: { readBlock: async (number) => blocks[Number(number) - 10]! },
       fromBlock: 10,
       toBlock: 11,
       preconfirmed: (candidate) => (candidate === pending ? { events: pending.events, decoded } : undefined),
@@ -246,7 +247,7 @@ describe("verified preset configuration facts", () => {
       fresh.native.replay({
         fold: fresh.fold,
         rpc: {
-          getBlockWithReceipts: async (number) => {
+          readBlock: async (number) => {
             if (number === 11) throw new Error("block unavailable");
             return blocks[0]!;
           },

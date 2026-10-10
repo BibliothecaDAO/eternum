@@ -13,7 +13,6 @@ pub enum GameStatus {
 pub struct GameRegistry {
     pub name: felt252,
     pub preset_id: u32,
-    pub creator: ContractAddress,
     pub settled: bool,
     pub ready: bool,
     pub dev_mode_on: bool,
@@ -82,13 +81,7 @@ pub trait IPoints<T> {
 #[starknet::interface]
 pub trait ISeasonLifecycle<T> {
     fn season_win_threshold(self: @T, game_id: u32) -> u128;
-    fn close_season(
-        ref self: T,
-        game_id: u32,
-        actor: ContractAddress,
-        context: crate::commands::ActionContext,
-        story_cursor: crate::ownership::StoryCursor,
-    ) -> (u64, crate::ownership::StoryCursor);
+    fn close_season(ref self: T, game_id: u32, actor: ContractAddress, context: crate::commands::ActionContext) -> u64;
 }
 
 pub fn status_at(game: GameRegistry, timestamp: u64) -> GameStatus {

@@ -1,3 +1,4 @@
+import { buildMysteryChestPreset } from "../../../../contracts/l2/ledger/scripts/chest-preset.js";
 import { nativePresetForId, nativePresetIdFor } from "../../../source/native";
 import { CallData, uint256 } from "starknet";
 import type { DeploymentGameType } from "../types";
@@ -5,8 +6,12 @@ import type { DeploymentGameType } from "../types";
 const LORDS = 10n ** 18n;
 
 export interface LedgerEconomicPreset {
+  day_unit_seconds: number;
+  season_bags: number;
+  claim_window_seconds: number;
   entry_fee: ReturnType<typeof uint256.bnToUint256>;
   protocol_cut_bps: number;
+  chest_lords_bps: number;
   paid_fraction_bps: number;
   decay_bps: number;
   sword_price: ReturnType<typeof uint256.bnToUint256>;
@@ -20,12 +25,6 @@ export interface LedgerEconomicPreset {
     regression_bps: number;
     min_players: number;
   };
-  pm: {
-    fee_bps: number;
-    liability_cap: ReturnType<typeof uint256.bnToUint256>;
-    seed: ReturnType<typeof uint256.bnToUint256>;
-    claim_window_seconds: number;
-  };
 }
 
 function lords(amount: bigint) {
@@ -34,12 +33,19 @@ function lords(amount: bigint) {
 
 export function buildLedgerEconomicPreset(
   gameType: DeploymentGameType,
-  options: { sponsored?: boolean } = {},
+  options: {
+    presetId?: number;
+    chestLordsBps?: number;
+    protocolCutBps?: number;
+  } = {},
 ): LedgerEconomicPreset {
-  const balance = nativePresetForId(nativePresetIdFor(gameType)).ledger;
+  const native = nativePresetForId(options.presetId ?? nativePresetIdFor(gameType));
+  if (native.gameType !== gameType) throw new Error("Ledger preset game type differs from shard preset");
+  const balance = native.ledger;
   return {
-    entry_fee: lords(options.sponsored ? 0n : BigInt(balance.entryFee)),
-    protocol_cut_bps: balance.protocolCutBps,
+    entry_fee: lords(BigInt(balance.entryFee)),
+    protocol_cut_bps: gameType === "frontier" ? 0 : (options.protocolCutBps ?? balance.protocolCutBps),
+    chest_lords_bps: options.chestLordsBps ?? 500,
     paid_fraction_bps: 2_000,
     decay_bps: 9_600,
     sword_price: lords(BigInt(balance.swordPrice)),
@@ -53,15 +59,16 @@ export function buildLedgerEconomicPreset(
       regression_bps: 150,
       min_players: 6,
     },
-    pm: {
-      fee_bps: balance.predictionFeeBps,
-      liability_cap: lords(BigInt(balance.liabilityCap)),
-      seed: lords(BigInt(balance.seed)),
-      claim_window_seconds: 604_800,
-    },
+    day_unit_seconds: native.dayUnitSeconds,
+    season_bags: native.seasonBags,
+    claim_window_seconds: native.chests?.claimWindowSeconds ?? 0,
   };
 }
 
-export function buildRegisterLedgerPresetCalldata(presetId: number, preset: LedgerEconomicPreset): string[] {
-  return CallData.compile([presetId, preset] as never);
+export function buildRegisterLedgerPresetCalldata(
+  presetId: number,
+  preset: LedgerEconomicPreset,
+  chestPreset = buildMysteryChestPreset(),
+): string[] {
+  return CallData.compile([presetId, preset, chestPreset.bands, chestPreset.items] as never);
 }

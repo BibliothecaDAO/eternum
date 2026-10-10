@@ -249,6 +249,8 @@ pub struct SliceRules {
     pub speed_config: SpeedConfig,
 }
 
+pub const MAX_BLITZ_ROSTER_PLAYERS: u32 = crate::roster_limits::MAX_BLITZ_ROSTER_PLAYERS;
+pub const DUEL_ROSTER_PLAYERS: u32 = crate::roster_limits::DUEL_ROSTER_PLAYERS;
 pub const ENTRY_ENTITLEMENT: u8 = 0;
 pub const ENTRY_OPEN: u8 = 1;
 pub const ENTRY_ROSTER: u8 = 2;
@@ -580,3 +582,5 @@ pub struct SpeedConfig {
 
 pub const WELL_STAMINA: u8 = 60;
 pub const TIER_STAMINA_REFILL: u8 = 30;
+
+pub const FRONTIER_REPORT_GRACE_SECONDS: u32 = crate::days::FRONTIER_REPORT_GRACE_SECONDS;

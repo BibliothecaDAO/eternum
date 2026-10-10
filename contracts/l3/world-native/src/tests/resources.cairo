@@ -268,7 +268,7 @@ fn production_spends_its_cap_before_capacity_truncation_and_food_is_uncapped() {
 }
 
 #[test]
-fn inactive_resources_have_no_clock_and_activation_starts_at_the_recorded_time() {
+fn inactive_resources_have_no_clock_and_activation_starts_at_block_time() {
     let resources = fixture();
     let key = ResourceKey { game_id: 1, entity_id: 7 };
     resources.initialize(key, 100);

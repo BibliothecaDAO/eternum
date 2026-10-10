@@ -30,10 +30,13 @@ export async function runNativeDeployment(args: CliArgs, root: string): Promise<
     schemaPath: args.schema ?? resolve(root, "contracts/l3/world-native/schema/schema.json"),
     seed,
     authority,
+    launcher: required(args, "launcher"),
+    ledgerOperator: required(args, "ledger-operator"),
+    vrfPublicKey: manifest.shard.vrfPublicKey,
+    l2GasBound: manifest.shard.l2GasBound,
     previous,
     release: JSON.parse(readFileSync(args["release-facts"] ?? "/release/release-facts.json", "utf8")),
     authentication: {
-      submitter: required(args, "submitter"),
       account_class: manifest.shard.accountClassHash,
       guardian_public_key: manifest.shard.guardianPublicKey,
     },
@@ -76,6 +79,8 @@ export async function runNativeDeployment(args: CliArgs, root: string): Promise<
     accountClassHash: manifest.shard.accountClassHash,
     contracts: {},
     guardianPublicKey: manifest.shard.guardianPublicKey,
+    vrfPublicKey: manifest.shard.vrfPublicKey,
+    l2GasBound: manifest.shard.l2GasBound,
   };
   writeWorldOutputs(
     buildNativeManifest(local, report.before, shard),
@@ -88,6 +93,7 @@ export async function runNativeDeployment(args: CliArgs, root: string): Promise<
         event: "native_world_deployment",
         ...report,
         classSizes: [
+          local.verifier,
           ...local.logic,
           ...(local.migration ? [local.migration] : []),
           { name: "games", ...local.games },

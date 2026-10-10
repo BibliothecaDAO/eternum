@@ -5,5 +5,5 @@ use starknet::storage::Map;
 pub struct MarketStateStorage<TMarket> {
     pub markets: Map<(u32, u8), TMarket>,
     pub liquidity: Map<(u32, ContractAddress, u8), u128>,
-    pub bank_names: Map<(u32, u32), felt252>,
+    pub bank_names: Map<(u32, u64), felt252>,
 }

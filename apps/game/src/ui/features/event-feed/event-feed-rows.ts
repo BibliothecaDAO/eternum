@@ -1,5 +1,5 @@
 import { TransactionType } from "@bibliothecadao/provider";
-import type { Transaction } from "@/hooks/store/use-transaction-store";
+import { isTransactionInFlight, type Transaction } from "@/hooks/store/use-transaction-store";
 import type { Resource, ResourceArrivalInfo } from "@bibliothecadao/types";
 import type { FeedNotice } from "./event-feed-store";
 
@@ -71,8 +71,8 @@ export const deriveFeedRows = ({
   const recent: FeedRow[] = [];
 
   for (const transaction of transactions) {
-    if (transaction.status === "pending") {
-      const isStuck = nowMs - transaction.submittedAt >= stuckThresholdMs;
+    if (isTransactionInFlight(transaction)) {
+      const isStuck = transaction.status === "pending" && nowMs - transaction.submittedAt >= stuckThresholdMs;
       inFlight.push({ kind: "transaction", id: transaction.hash, at: transaction.submittedAt, transaction, isStuck });
     } else {
       recent.push({
@@ -127,3 +127,22 @@ export function transferRowLabel(row: FeedRow): string | null {
     return "Caravan sent";
   return null;
 }
+
+/**
+ * The one short line an action's row says: sending, checking (the node has not settled it; never "try again"),
+ * done, refused with the game's reason, or not sent (only on proof). A send with no answer for long is stuck.
+ */
+export const transactionStatusLine = (transaction: Transaction, isStuck: boolean): string => {
+  switch (transaction.status) {
+    case "pending":
+      return isStuck ? "Stuck" : "Sending";
+    case "checking":
+      return "Checking";
+    case "success":
+      return "Done";
+    case "reverted":
+      return transaction.errorMessage ? `Refused: ${transaction.errorMessage}` : "Refused";
+    case "not_sent":
+      return "Not sent";
+  }
+};

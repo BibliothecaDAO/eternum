@@ -21,6 +21,7 @@ import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { runWithFrameWorkOwner } from "@/three/frame-work-owner";
 import { DEV_MODE_ENABLED, VERBOSE_LOGS_ENABLED, verboseLog } from "@/utils/dev-mode";
 import { formatReadableErrorForConsole } from "@/utils/error-message";
+import { armyHomeStructureId } from "@/utils/native-id";
 import { toast } from "@/ui/features/event-feed/notify";
 
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
@@ -101,7 +102,7 @@ import {
   recordClientActionRendered,
   recordClientActionSubmitted,
 } from "@/observability/client-action-latency";
-import type { GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
+import { safeInteger, type GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
 import {
   ActionPath,
   ActionPaths,
@@ -1139,8 +1140,9 @@ export default class WorldmapScene extends WarpTravel {
     this.handleTransactionProgress = (payload: { stage?: string; type?: string; explorerId?: number | string }) => {
       if (payload?.type !== "explore") return;
 
-      const explorerId = Number(payload.explorerId);
-      if (!Number.isFinite(explorerId) || explorerId <= 0) return;
+      if (payload.explorerId === undefined) return;
+      const explorerId = safeInteger(payload.explorerId);
+      if (explorerId <= 0) return;
 
       const phase = resolveExploreClientLatencyPhase(payload.stage);
       const pendingAction = this.pendingExploreLatencyActions.get(explorerId);
@@ -1381,7 +1383,7 @@ export default class WorldmapScene extends WarpTravel {
     });
     const unsubscribeTerrainEcology = bindWorldmapTerrainEcologyRefresh({
       onStructureChanged: (current) => {
-        if (current?.entity_id !== undefined) this.refreshStructureMarkersForEntity(current.entity_id);
+        if (current?.entity_id !== undefined) this.refreshStructureMarkersForEntity(safeInteger(current.entity_id));
       },
       projection: this.worldSpatialProjection,
       requestRefresh: () => this.scheduleTerrainEcologyRefresh(),
@@ -1684,7 +1686,8 @@ export default class WorldmapScene extends WarpTravel {
     return {
       isSpectator: isExplicitSpectateSession(),
       topOwnerAddresses: this.resolveTopOwnerAddresses(),
-      selectedEntityId: selectedEntityId === undefined || selectedEntityId === null ? null : Number(selectedEntityId),
+      selectedEntityId:
+        selectedEntityId === undefined || selectedEntityId === null ? null : safeInteger(selectedEntityId),
       hoveredEntityId: hovered?.army?.id ?? hovered?.structure?.id ?? null,
     };
   }
@@ -1724,7 +1727,7 @@ export default class WorldmapScene extends WarpTravel {
         for (const change of changes) {
           if (change.model !== "ArmyProgress" || !change.previous || !change.current) continue;
           if (change.current.game_id !== configManager.getActiveGameId()) continue;
-          const owner = this.getEntityOwnerAddress(change.current.explorer_id);
+          const owner = this.getEntityOwnerAddress(safeInteger(change.current.explorer_id));
           if (owner === undefined || !isAddressEqualToAccount(owner)) continue;
           this.playOwnArmyProgress(change.previous, change.current);
         }
@@ -1735,7 +1738,7 @@ export default class WorldmapScene extends WarpTravel {
   private playOwnArmyProgress(before: ArmyProgressFacts, after: ArmyProgressFacts): void {
     const xp = xpGained(before, after);
     if (xp <= 0) return;
-    const hex = this.getArmyDisplayPosition(after.explorer_id);
+    const hex = this.getArmyDisplayPosition(safeInteger(after.explorer_id));
     playArmyProgress({ xp, at: hex ? projectHexToScreen(hex, this.camera) : null });
   }
 
@@ -2185,8 +2188,8 @@ export default class WorldmapScene extends WarpTravel {
       game_id: configManager.getActiveGameId(),
       explorer_id: entityId,
     });
-    if (explorer.owner === 0) return ContractAddress(0n);
-    return this.getStructureOwnerAddress(explorer.owner);
+    const home = armyHomeStructureId(explorer);
+    return home === null ? ContractAddress(0n) : this.getStructureOwnerAddress(home);
   }
 
   private getArmyOwnerStructureId(entityId: ID): ID | null {
@@ -2194,7 +2197,7 @@ export default class WorldmapScene extends WarpTravel {
       game_id: configManager.getActiveGameId(),
       explorer_id: entityId,
     });
-    return explorer?.owner && explorer.owner !== 0 ? explorer.owner : null;
+    return explorer ? armyHomeStructureId(explorer) : null;
   }
 
   private getArmyDisplayPosition(entityId: ID): HexPosition | undefined {
@@ -3031,7 +3034,7 @@ export default class WorldmapScene extends WarpTravel {
   private isStandingExpeditionSite(entityId: ID): boolean {
     const site = this.game.store.get("ExpeditionSite", {
       game_id: configManager.getActiveGameId(),
-      entity_id: Number(entityId),
+      entity_id: safeInteger(entityId),
     });
     return site !== undefined && !site.cleared;
   }
@@ -3260,7 +3263,7 @@ export default class WorldmapScene extends WarpTravel {
     for (const [key, path] of actionPaths.getPaths()) {
       const destination = path[path.length - 1].hex;
       const tile = this.worldSpatialProjection.getTileAtHex({ ...destination, alt: activeMapLayer() });
-      const occupierId = tile ? Number(tile.occupierId) : undefined;
+      const occupierId = tile ? safeInteger(tile.occupierId) : undefined;
       if (ActionPaths.getActionType(path) === ActionType.CreateArmy && !isOpenSpawnHex(occupierId)) {
         actionPaths.getPaths().delete(key);
       }
@@ -3376,7 +3379,6 @@ export default class WorldmapScene extends WarpTravel {
     currentArmiesTick: number;
   }): MovementStaminaResolution {
     return resolveMovementStamina({
-      entityId: input.entityId,
       actionPath: input.actionPath,
       currentArmiesTick: input.currentArmiesTick,
       liveTroops: this.resolveLiveExplorerTroopsForMovementStamina(input.entityId),

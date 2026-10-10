@@ -13,6 +13,7 @@ import type {
   GameSyncStore,
 } from "../sync/game-sync-types";
 import { readExpeditionRules } from "../utils/expeditions";
+import { notifyEach } from "../utils/notify-each";
 import {
   deriveGameSyncScope,
   scopeInputKeys,
@@ -20,6 +21,11 @@ import {
   isExpeditionScopedModel,
   type GameSyncScope,
 } from "../sync/model-manifest";
+
+// Key readers accept safe numeric ids; decoding still validates width and preserves bigint rows.
+export type ReadKeys<M extends NativeModelName> = {
+  [Field in keyof NativeKeys[M]]: NativeKeys[M][Field] extends bigint ? number | bigint : NativeKeys[M][Field];
+};
 
 export type NativeFactResult<Row> = { known: Row; unknown?: never } | { known?: never; unknown: string };
 
@@ -58,6 +64,17 @@ const definitions = nativeFactModels as Record<
     absence?: DeclaredAbsence;
   }
 >;
+/**
+ * The contract allocates every entity id at or under 2^53 - 1, so a JavaScript number holds each one exactly. The
+ * schema keeps ids as plain u64, so they are known by name: every u64 *_id, and the three fields naming an entity
+ * without the suffix (a labor grant's home, an army's owning structure, a village's realm).
+ */
+const MAX_ENTITY_ID = BigInt(Number.MAX_SAFE_INTEGER);
+const isEntityIdField = (path: string): boolean => {
+  const field = path.slice(path.lastIndexOf(".") + 1);
+  return field.endsWith("_id") || field === "home" || field === "owner" || field === "village_realm";
+};
+
 const decoders = new Map<NativeModelName, Decoder>(
   Object.entries(definitions).map(([name, definition]) => [
     name as NativeModelName,
@@ -84,7 +101,7 @@ export class NativeFactStore implements GameSyncStore {
       return;
     this.snapshot = { ...state };
     this.revision++;
-    for (const listener of this.listeners) listener([]);
+    notifyEach("NativeFactStore", this.listeners, []);
   }
   private revision = 0;
   getRevision = (): number => this.revision;
@@ -98,20 +115,20 @@ export class NativeFactStore implements GameSyncStore {
   private readonly eventListeners = new Set<(event: GameSyncEvent) => void>();
   private readonly listeners = new Set<(changes: readonly NativeFactChange[]) => void>();
 
-  get<M extends NativeModelName>(model: M, keys: NativeKeys[M]): NativeRows[M] | undefined {
+  get<M extends NativeModelName>(model: M, keys: ReadKeys<M>): NativeRows[M] | undefined {
     return this.models.get(model)?.get(factKey(model, keys))?.row as NativeRows[M] | undefined;
   }
 
-  require<M extends NativeModelName>(model: M, keys: NativeKeys[M]): NativeRows[M] {
+  require<M extends NativeModelName>(model: M, keys: ReadKeys<M>): NativeRows[M] {
     const row = this.get(model, keys);
     if (!row) throw new Error(`Native ${model} is not synchronized`);
     return row;
   }
 
-  requireOrAbsent<M extends NativeModelName>(model: M, keys: NativeKeys[M]): AbsenceResult<M>;
+  requireOrAbsent<M extends NativeModelName>(model: M, keys: ReadKeys<M>): AbsenceResult<M>;
   requireOrAbsent<M extends NativeModelName>(
     model: M,
-    keys: NativeKeys[M],
+    keys: ReadKeys<M>,
   ): NativeFactResult<NativeRows[M]> | UnusedArmySlot {
     const present = this.get(model, keys);
     if (present) return { known: present };
@@ -202,12 +219,12 @@ export class NativeFactStore implements GameSyncStore {
       yield this.models.get("Structure")!.get(key)!.row as NativeRows["Structure"];
   }
 
-  *armiesAtHome(gameId: number, home: number): IterableIterator<NativeRows["ExplorerTroops"]> {
+  *armiesAtHome(gameId: number, home: number | bigint): IterableIterator<NativeRows["ExplorerTroops"]> {
     for (const key of this.armyHomeKeys.get(`${gameId}:${home}`) ?? [])
       yield this.models.get("ExplorerTroops")!.get(key)!.row as NativeRows["ExplorerTroops"];
   }
 
-  entityOccupancy(gameId: number, entityId: number): NativeRows["TileOccupancy"] | undefined {
+  entityOccupancy(gameId: number, entityId: number | bigint): NativeRows["TileOccupancy"] | undefined {
     const keys = this.spatialKeys.get(`${gameId}:${entityId}`);
     if (!keys?.size) return undefined;
     if (keys.size !== 1) throw new Error(`Multiple native positions for entity ${gameId}:${entityId}`);
@@ -233,7 +250,7 @@ export class NativeFactStore implements GameSyncStore {
     const changes = this.commit(pending);
     if (changes.length) {
       this.revision += 1;
-      for (const listener of this.listeners) listener(changes);
+      notifyEach("NativeFactStore", this.listeners, changes);
     }
   }
 
@@ -244,7 +261,7 @@ export class NativeFactStore implements GameSyncStore {
 
   // The runtime deduplicates effects; confirmation promotions only update its history callback.
   applyEvent(event: GameSyncEvent): void {
-    for (const listener of this.eventListeners) listener(event);
+    notifyEach("NativeFactStore", this.eventListeners, event);
   }
 
   private stageFact(
@@ -430,7 +447,10 @@ function keyParts(value: unknown, type: WireType, path: string): string[] {
 }
 
 function wireId(value: string): string {
-  return `0x${integer(value, (1n << 251n) + 17n * (1n << 192n) + 1n, "entity id").toString(16)}`;
+  return value
+    .split(":")
+    .map((felt) => `0x${integer(felt, (1n << 251n) + 17n * (1n << 192n) + 1n, "row key").toString(16)}`)
+    .join(":");
 }
 
 function integer(value: unknown, limit: bigint, path: string): bigint {
@@ -454,6 +474,12 @@ function compileDecoder(type: WireType, path: string): Decoder {
     };
   if (typeof type === "string") {
     const bits = Number(type.slice(1));
+    if (type === "u64" && isEntityIdField(path))
+      return (value) => {
+        const result = integer(value, 1n << 64n, path);
+        if (result > MAX_ENTITY_ID) throw new Error(`Entity id out of range in ${path}`);
+        return result;
+      };
     const limit = type === "felt" ? (1n << 251n) + 17n * (1n << 192n) + 1n : 1n << BigInt(bits);
     return (value) => {
       const result = integer(value, limit, path);

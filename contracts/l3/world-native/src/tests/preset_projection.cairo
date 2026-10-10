@@ -79,6 +79,38 @@ fn current_frontier_launch_readers_match_herald_projection() {
 }
 
 #[test]
+#[feature("safe_dispatcher")]
+fn current_frontier_check_launch_has_no_payable_pool_and_matches_herald_projection() {
+    let (preset_id, definition) = current_definition("frontier-check");
+    assert_eq!(preset_id, 104);
+    assert_eq!(definition.economy.chests.unwrap().pool, 0);
+    compare_current_launch("frontier-check");
+    super::registrar::assert_zero_pool_never_funds_a_ruin_or_payout_over_a_day();
+    assert_all_zero_chest_rules_refuse_registration();
+}
+
+#[feature("safe_dispatcher")]
+fn assert_all_zero_chest_rules_refuse_registration() {
+    let d = super::registrar::setup();
+    start_cheat_caller_address(d.games, super::authority());
+    let (preset_id, mut definition) = current_definition("frontier");
+    definition
+        .economy
+        .chests =
+            Some(
+                crate::relics::ChestRules {
+                    pool: 0,
+                    price_ceiling: 0,
+                    estimate_days: 0,
+                    claim_window_seconds: 0,
+                    shares: crate::relics::ChestTiers { common: 0, uncommon: 0, rare: 0, epic: 0, legendary: 0 },
+                },
+            );
+    assert!(IRegistrarSafeDispatcher { contract_address: d.games }.register_preset(preset_id, definition).is_err());
+    assert_eq!(IRegistrarDispatcher { contract_address: d.games }.preset_commitment(preset_id), 0);
+}
+
+#[test]
 fn current_eternum_optional_sections_and_map_match_herald_projection() {
     compare_current_launch("eternum");
 }
@@ -297,6 +329,10 @@ fn observe_economy(ref rows: Array<ObservedRow>, address: ContractAddress, game_
     row(ref rows, 'BankRules', key, bank.bank_rules(game_id));
     row(ref rows, 'HyperstructureRules', key, hyperstructures.hyperstructure_rules(game_id));
     row(ref rows, 'RelicRules', key, relics.relic_rules(game_id));
+    if let Some(labor) =
+        interact_with_state(address, || crate::logic::preset_record::for_game(game_id).labor_rules.read()) {
+        row(ref rows, 'LaborRules', key, labor);
+    }
     if let Some(chests) = relics.chest_rules(game_id) {
         row(ref rows, 'ChestRules', key, chests);
     }

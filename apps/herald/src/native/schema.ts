@@ -54,6 +54,7 @@ export interface NativeRelease {
   activeSchema: string;
   schemas: Record<string, NativeSchema>;
   gamesClassHash: string;
+  verifierClassHash?: string;
   migrationClassHash: string;
   releaseId: number;
   releaseSchemas: Record<string, string>;

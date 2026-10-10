@@ -25,6 +25,18 @@ pub mod ProductionLogic {
     impl ArrivalInternal = ArrivalState::InternalImpl<ContractState>;
     impl ProductionInternal = ProductionState::InternalImpl<ContractState>;
 
+    #[abi(embed_v0)]
+    impl PresetResources of crate::presets::IPresetResources<ContractState> {
+        fn store_resource_preset(
+            ref self: ContractState,
+            commitment: felt252,
+            resources: crate::presets::ResourcePreset,
+            exploration: Span<crate::exploration_rewards::ExplorationReward>,
+            mode_rules: u32,
+        ) {
+            crate::logic::preset_record::store_resources(commitment, resources, exploration, mode_rules);
+        }
+    }
     #[storage]
     #[allow(starknet::colliding_storage_paths)]
     struct Storage {
@@ -120,13 +132,12 @@ pub mod ProductionLogic {
             actor: ContractAddress,
             command: RefillProduction,
             context: crate::commands::ActionContext,
-            mut story_cursor: crate::ownership::StoryCursor,
-        ) -> ((), crate::ownership::StoryCursor) {
+        ) -> () {
             let context = crate::commands::load_context(game_id, context);
 
             let key = self.assert_production_command(game_id, actor, command, context.timestamp, context);
-            self.refill_from_recipes(key, command, false, context.timestamp, context, ref story_cursor);
-            ((), story_cursor)
+            self.refill_from_recipes(key, command, false, context.timestamp, context);
+            ()
         }
         fn burn_resource_for_resource_production(
             ref self: ContractState,
@@ -134,13 +145,12 @@ pub mod ProductionLogic {
             actor: ContractAddress,
             command: RefillProduction,
             context: crate::commands::ActionContext,
-            mut story_cursor: crate::ownership::StoryCursor,
-        ) -> ((), crate::ownership::StoryCursor) {
+        ) -> () {
             let context = crate::commands::load_context(game_id, context);
 
             let key = self.assert_production_command(game_id, actor, command, context.timestamp, context);
-            self.refill_from_recipes(key, command, true, context.timestamp, context, ref story_cursor);
-            ((), story_cursor)
+            self.refill_from_recipes(key, command, true, context.timestamp, context);
+            ()
         }
     }
 
@@ -174,7 +184,6 @@ pub mod ProductionLogic {
             complex: bool,
             timestamp: u64,
             game_context: crate::commands::ExecutionContext,
-            ref story_cursor: crate::ownership::StoryCursor,
         ) {
             for index in 0..command.resource_types.len() {
                 let resource_type = *command.resource_types.at(index);
@@ -204,7 +213,7 @@ pub mod ProductionLogic {
                 }
                 let output = Into::<u64, u128>::into(per_cycle) * cycles;
                 assert!(output != 0, "zero production output");
-                self.refill_output(key, resource_type, output, costs.span(), timestamp, game_context, ref story_cursor);
+                self.refill_output(key, resource_type, output, costs.span(), timestamp, game_context);
             }
         }
         fn refill_output(
@@ -215,7 +224,6 @@ pub mod ProductionLogic {
             costs: Span<crate::resources::ResourceAmount>,
             timestamp: u64,
             game_context: crate::commands::ExecutionContext,
-            ref story_cursor: crate::ownership::StoryCursor,
         ) {
             let tick: u32 = (timestamp / game_context.rules.unbox().tick_config.armies_tick_in_seconds)
                 .try_into()
@@ -240,7 +248,6 @@ pub mod ProductionLogic {
                     },
                 ),
                 timestamp,
-                ref story_cursor,
             );
         }
     }

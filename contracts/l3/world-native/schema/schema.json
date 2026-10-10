@@ -17,6 +17,8 @@
     "HOMECOMING_RARE_BPS": 900,
     "HOMECOMING_EPIC_BPS": 1800,
     "HOMECOMING_LEGENDARY_BPS": 3000,
+    "MAX_BLITZ_ROSTER_PLAYERS": 24,
+    "DUEL_ROSTER_PLAYERS": 2,
     "ENTRY_ENTITLEMENT": 0,
     "ENTRY_OPEN": 1,
     "ENTRY_ROSTER": 2,
@@ -39,7 +41,8 @@
     "HYPERSTRUCTURE_MULTIPLIERS": 32768,
     "PRODUCTION_START": 131072,
     "WELL_STAMINA": 60,
-    "TIER_STAMINA_REFILL": 30
+    "TIER_STAMINA_REFILL": 30,
+    "FRONTIER_REPORT_GRACE_SECONDS": 3600
   },
   "researchConstants": {
     "ROW_FARM": 0,
@@ -109,6 +112,144 @@
     "contract": "Games",
     "events": [
       {
+        "name": "RowSet",
+        "prefix": [
+          "0x36f16904f7734350d822ada38a59fed0c639e5205b723a7c3491c7973938c0b",
+          "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
+        ],
+        "members": [
+          {
+            "name": "version",
+            "type": "core::integer::u8",
+            "kind": "key"
+          },
+          {
+            "name": "model",
+            "type": "core::felt252",
+            "kind": "key"
+          },
+          {
+            "name": "keys",
+            "type": "core::array::Span::<core::felt252>",
+            "kind": "data"
+          },
+          {
+            "name": "values",
+            "type": "core::array::Span::<core::felt252>",
+            "kind": "data"
+          }
+        ]
+      },
+      {
+        "name": "GameplayRejected",
+        "prefix": [
+          "0x3e4a8e51ebad106b77c533e2f8f0f5d1c21a791ef1de85d7d1337d9b93251c1"
+        ],
+        "members": [
+          {
+            "name": "version",
+            "type": "core::integer::u8",
+            "kind": "key"
+          },
+          {
+            "name": "game_id",
+            "type": "core::integer::u32",
+            "kind": "key"
+          },
+          {
+            "name": "actor",
+            "type": "core::starknet::contract_address::ContractAddress",
+            "kind": "key"
+          },
+          {
+            "name": "tx_hash",
+            "type": "core::felt252",
+            "kind": "key"
+          },
+          {
+            "name": "status_class",
+            "type": "core::felt252",
+            "kind": "data"
+          },
+          {
+            "name": "reason",
+            "type": "core::byte_array::ByteArray",
+            "kind": "data"
+          }
+        ]
+      },
+      {
+        "name": "BatchProgress",
+        "prefix": [
+          "0x34d8e97ef8a63ca5ca08ce1b22a214f440154b5890f88cde8406cd9d20fff7e"
+        ],
+        "members": [
+          {
+            "name": "game_id",
+            "type": "core::integer::u32",
+            "kind": "key"
+          },
+          {
+            "name": "actor",
+            "type": "core::starknet::contract_address::ContractAddress",
+            "kind": "data"
+          },
+          {
+            "name": "tx_hash",
+            "type": "core::felt252",
+            "kind": "data"
+          },
+          {
+            "name": "remaining",
+            "type": "core::integer::u64",
+            "kind": "data"
+          }
+        ]
+      },
+      {
+        "name": "StoryEvent",
+        "prefix": [
+          "0x33b7d96bc1ff34b0a89214516b6ef5d2b8bdd9c301222eda2a1e96f78b84b96"
+        ],
+        "members": [
+          {
+            "name": "version",
+            "type": "core::integer::u8",
+            "kind": "key"
+          },
+          {
+            "name": "game_id",
+            "type": "core::integer::u32",
+            "kind": "key"
+          },
+          {
+            "name": "owner",
+            "type": "core::option::Option::<core::starknet::contract_address::ContractAddress>",
+            "kind": "key"
+          },
+          {
+            "name": "entity_id",
+            "type": "core::option::Option::<core::integer::u64>",
+            "kind": "key"
+          },
+          {
+            "name": "tx_hash",
+            "type": "core::felt252",
+            "kind": "key"
+          },
+          {
+            "name": "story",
+            "type": "world_native::ownership::Story",
+            "kind": "data"
+          },
+          {
+            "name": "timestamp",
+            "type": "core::integer::u64",
+            "kind": "data"
+          }
+        ]
+      },
+      {
         "name": "PointsAwarded",
         "prefix": [
           "0x3c13ec798226b99ece5ff7cda6fda330a04d9f80b95a25689a4e0e66a6b4ca8"
@@ -152,59 +293,6 @@
         ]
       },
       {
-        "name": "StoryEvent",
-        "prefix": [
-          "0x33b7d96bc1ff34b0a89214516b6ef5d2b8bdd9c301222eda2a1e96f78b84b96"
-        ],
-        "members": [
-          {
-            "name": "version",
-            "type": "core::integer::u8",
-            "kind": "key"
-          },
-          {
-            "name": "game_id",
-            "type": "core::integer::u32",
-            "kind": "key"
-          },
-          {
-            "name": "order",
-            "type": "core::integer::u64",
-            "kind": "key"
-          },
-          {
-            "name": "index",
-            "type": "core::integer::u32",
-            "kind": "key"
-          },
-          {
-            "name": "owner",
-            "type": "core::option::Option::<core::starknet::contract_address::ContractAddress>",
-            "kind": "key"
-          },
-          {
-            "name": "entity_id",
-            "type": "core::option::Option::<core::integer::u32>",
-            "kind": "key"
-          },
-          {
-            "name": "tx_hash",
-            "type": "core::felt252",
-            "kind": "key"
-          },
-          {
-            "name": "story",
-            "type": "world_native::ownership::Story",
-            "kind": "data"
-          },
-          {
-            "name": "timestamp",
-            "type": "core::integer::u64",
-            "kind": "data"
-          }
-        ]
-      },
-      {
         "name": "RowSet",
         "prefix": [
           "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
@@ -228,83 +316,6 @@
           {
             "name": "values",
             "type": "core::array::Span::<core::felt252>",
-            "kind": "data"
-          }
-        ]
-      },
-      {
-        "name": "BatchProgress",
-        "prefix": [
-          "0x34d8e97ef8a63ca5ca08ce1b22a214f440154b5890f88cde8406cd9d20fff7e"
-        ],
-        "members": [
-          {
-            "name": "game_id",
-            "type": "core::integer::u32",
-            "kind": "key"
-          },
-          {
-            "name": "actor",
-            "type": "core::starknet::contract_address::ContractAddress",
-            "kind": "data"
-          },
-          {
-            "name": "nonce",
-            "type": "core::integer::u64",
-            "kind": "data"
-          },
-          {
-            "name": "remaining",
-            "type": "core::integer::u64",
-            "kind": "data"
-          }
-        ]
-      },
-      {
-        "name": "ExecutionRecorded",
-        "prefix": [
-          "0x69f02dc1b775d01454e609e3b1a05502065f4b1d549991c82c4052131893f2",
-          "0x31046a1629667e4e8157bcaec0ee46928b0644e5b078ee76a3ca5a94700a0d9"
-        ],
-        "members": [
-          {
-            "name": "game_id",
-            "type": "core::felt252",
-            "kind": "data"
-          },
-          {
-            "name": "actor",
-            "type": "core::felt252",
-            "kind": "data"
-          },
-          {
-            "name": "nonce",
-            "type": "core::integer::u64",
-            "kind": "data"
-          },
-          {
-            "name": "nonce_consumed",
-            "type": "core::bool",
-            "kind": "data"
-          },
-          {
-            "name": "order",
-            "type": "core::integer::u64",
-            "kind": "data"
-          },
-          {
-            "name": "status",
-            "type": "core::integer::u8",
-            "kind": "data"
-          },
-          {
-            "name": "status_class",
-            "type": "core::felt252",
-            "kind": "data"
-          },
-          {
-            "name": "reason",
-            "type": "core::byte_array::ByteArray",
             "kind": "data"
           }
         ]
@@ -918,6 +929,35 @@
       {
         "name": "RowSet",
         "prefix": [
+          "0x3b3d5129d8af6b2490084948d4ef23b7f6b9aff257cdb1445f733cf69878558",
+          "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
+        ],
+        "members": [
+          {
+            "name": "version",
+            "type": "core::integer::u8",
+            "kind": "key"
+          },
+          {
+            "name": "model",
+            "type": "core::felt252",
+            "kind": "key"
+          },
+          {
+            "name": "keys",
+            "type": "core::array::Span::<core::felt252>",
+            "kind": "data"
+          },
+          {
+            "name": "values",
+            "type": "core::array::Span::<core::felt252>",
+            "kind": "data"
+          }
+        ]
+      },
+      {
+        "name": "RowSet",
+        "prefix": [
           "0x2a67f55ebbc91ddd8772d60674830a4521ec8a56824b1763b19349ccbe4cf93",
           "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
         ],
@@ -1083,23 +1123,13 @@
             "kind": "key"
           },
           {
-            "name": "order",
-            "type": "core::integer::u64",
-            "kind": "key"
-          },
-          {
-            "name": "index",
-            "type": "core::integer::u32",
-            "kind": "key"
-          },
-          {
             "name": "owner",
             "type": "core::option::Option::<core::starknet::contract_address::ContractAddress>",
             "kind": "key"
           },
           {
             "name": "entity_id",
-            "type": "core::option::Option::<core::integer::u32>",
+            "type": "core::option::Option::<core::integer::u64>",
             "kind": "key"
           },
           {
@@ -1306,23 +1336,13 @@
             "kind": "key"
           },
           {
-            "name": "order",
-            "type": "core::integer::u64",
-            "kind": "key"
-          },
-          {
-            "name": "index",
-            "type": "core::integer::u32",
-            "kind": "key"
-          },
-          {
             "name": "owner",
             "type": "core::option::Option::<core::starknet::contract_address::ContractAddress>",
             "kind": "key"
           },
           {
             "name": "entity_id",
-            "type": "core::option::Option::<core::integer::u32>",
+            "type": "core::option::Option::<core::integer::u64>",
             "kind": "key"
           },
           {
@@ -1413,23 +1433,13 @@
             "kind": "key"
           },
           {
-            "name": "order",
-            "type": "core::integer::u64",
-            "kind": "key"
-          },
-          {
-            "name": "index",
-            "type": "core::integer::u32",
-            "kind": "key"
-          },
-          {
             "name": "owner",
             "type": "core::option::Option::<core::starknet::contract_address::ContractAddress>",
             "kind": "key"
           },
           {
             "name": "entity_id",
-            "type": "core::option::Option::<core::integer::u32>",
+            "type": "core::option::Option::<core::integer::u64>",
             "kind": "key"
           },
           {
@@ -1553,38 +1563,28 @@
             "kind": "key"
           },
           {
-            "name": "order",
+            "name": "attacker_id",
             "type": "core::integer::u64",
             "kind": "key"
           },
           {
-            "name": "index",
-            "type": "core::integer::u32",
-            "kind": "key"
-          },
-          {
-            "name": "attacker_id",
-            "type": "core::integer::u32",
-            "kind": "key"
-          },
-          {
             "name": "defender_id",
-            "type": "core::integer::u32",
+            "type": "core::integer::u64",
             "kind": "key"
           },
           {
             "name": "attacker_owner",
-            "type": "core::integer::u32",
+            "type": "core::integer::u64",
             "kind": "key"
           },
           {
             "name": "defender_owner",
-            "type": "core::integer::u32",
+            "type": "core::integer::u64",
             "kind": "key"
           },
           {
             "name": "winner_id",
-            "type": "core::integer::u32",
+            "type": "core::integer::u64",
             "kind": "data"
           },
           {
@@ -1631,23 +1631,13 @@
             "kind": "key"
           },
           {
-            "name": "order",
+            "name": "explorer_id",
             "type": "core::integer::u64",
             "kind": "key"
           },
           {
-            "name": "index",
-            "type": "core::integer::u32",
-            "kind": "key"
-          },
-          {
-            "name": "explorer_id",
-            "type": "core::integer::u32",
-            "kind": "key"
-          },
-          {
             "name": "structure_id",
-            "type": "core::integer::u32",
+            "type": "core::integer::u64",
             "kind": "key"
           },
           {
@@ -1763,23 +1753,13 @@
             "kind": "key"
           },
           {
-            "name": "order",
-            "type": "core::integer::u64",
-            "kind": "key"
-          },
-          {
-            "name": "index",
-            "type": "core::integer::u32",
-            "kind": "key"
-          },
-          {
             "name": "owner",
             "type": "core::option::Option::<core::starknet::contract_address::ContractAddress>",
             "kind": "key"
           },
           {
             "name": "entity_id",
-            "type": "core::option::Option::<core::integer::u32>",
+            "type": "core::option::Option::<core::integer::u64>",
             "kind": "key"
           },
           {
@@ -1846,23 +1826,13 @@
             "kind": "key"
           },
           {
-            "name": "order",
-            "type": "core::integer::u64",
-            "kind": "key"
-          },
-          {
-            "name": "index",
-            "type": "core::integer::u32",
-            "kind": "key"
-          },
-          {
             "name": "owner",
             "type": "core::option::Option::<core::starknet::contract_address::ContractAddress>",
             "kind": "key"
           },
           {
             "name": "entity_id",
-            "type": "core::option::Option::<core::integer::u32>",
+            "type": "core::option::Option::<core::integer::u64>",
             "kind": "key"
           },
           {
@@ -1884,6 +1854,73 @@
       }
     ],
     "entrypoints": [
+      {
+        "type": "function",
+        "name": "ledger_operator",
+        "inputs": [],
+        "outputs": [
+          {
+            "type": "core::starknet::contract_address::ContractAddress"
+          }
+        ],
+        "state_mutability": "view"
+      },
+      {
+        "type": "function",
+        "name": "set_ledger_operator",
+        "inputs": [
+          {
+            "name": "operator",
+            "type": "core::starknet::contract_address::ContractAddress"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "external"
+      },
+      {
+        "type": "function",
+        "name": "grant_labor",
+        "inputs": [
+          {
+            "name": "realm",
+            "type": "world_native::entry::LaborRealm"
+          },
+          {
+            "name": "day",
+            "type": "core::integer::u64"
+          },
+          {
+            "name": "account",
+            "type": "core::starknet::contract_address::ContractAddress"
+          }
+        ],
+        "outputs": [
+          {
+            "type": "world_native::entry::LaborGrant"
+          }
+        ],
+        "state_mutability": "external"
+      },
+      {
+        "type": "function",
+        "name": "labor_grant",
+        "inputs": [
+          {
+            "name": "realm",
+            "type": "world_native::entry::LaborRealm"
+          },
+          {
+            "name": "day",
+            "type": "core::integer::u64"
+          }
+        ],
+        "outputs": [
+          {
+            "type": "core::option::Option::<world_native::entry::LaborGrant>"
+          }
+        ],
+        "state_mutability": "view"
+      },
       {
         "type": "function",
         "name": "register_entitlement",
@@ -1915,29 +1952,6 @@
           }
         ],
         "state_mutability": "view"
-      },
-      {
-        "type": "function",
-        "name": "ledger_operator",
-        "inputs": [],
-        "outputs": [
-          {
-            "type": "core::starknet::contract_address::ContractAddress"
-          }
-        ],
-        "state_mutability": "view"
-      },
-      {
-        "type": "function",
-        "name": "set_ledger_operator",
-        "inputs": [
-          {
-            "name": "operator",
-            "type": "core::starknet::contract_address::ContractAddress"
-          }
-        ],
-        "outputs": [],
-        "state_mutability": "external"
       },
       {
         "type": "function",
@@ -2016,22 +2030,6 @@
       },
       {
         "type": "function",
-        "name": "set_authentication",
-        "inputs": [
-          {
-            "name": "submitter",
-            "type": "core::starknet::contract_address::ContractAddress"
-          },
-          {
-            "name": "approved_account_class",
-            "type": "core::starknet::class_hash::ClassHash"
-          }
-        ],
-        "outputs": [],
-        "state_mutability": "external"
-      },
-      {
-        "type": "function",
         "name": "authentication",
         "inputs": [],
         "outputs": [
@@ -2043,17 +2041,19 @@
       },
       {
         "type": "function",
-        "name": "next_nonce",
-        "inputs": [
+        "name": "vrf_public_key",
+        "inputs": [],
+        "outputs": [
           {
-            "name": "game_id",
-            "type": "core::integer::u32"
-          },
-          {
-            "name": "actor",
-            "type": "core::starknet::contract_address::ContractAddress"
+            "type": "realms_vrf_verifier::vendor::ecvrf::Point"
           }
         ],
+        "state_mutability": "view"
+      },
+      {
+        "type": "function",
+        "name": "l2_gas_bound",
+        "inputs": [],
         "outputs": [
           {
             "type": "core::integer::u64"
@@ -2063,91 +2063,61 @@
       },
       {
         "type": "function",
-        "name": "execute",
-        "inputs": [
-          {
-            "name": "intent",
-            "type": "eternum_randomness_protocol::Intent"
-          },
-          {
-            "name": "context",
-            "type": "eternum_randomness_protocol::entrypoint::ExecutionContext"
-          },
-          {
-            "name": "signature",
-            "type": "core::array::Span::<core::felt252>"
-          }
-        ],
-        "outputs": [],
-        "state_mutability": "external"
-      },
-      {
-        "type": "function",
-        "name": "execute_batch",
-        "inputs": [
-          {
-            "name": "actions",
-            "type": "core::array::Array::<eternum_randomness_protocol::entrypoint::RecordedAction>"
-          }
-        ],
-        "outputs": [],
-        "state_mutability": "external"
-      },
-      {
-        "type": "function",
-        "name": "reject_execution",
-        "inputs": [
-          {
-            "name": "intent",
-            "type": "eternum_randomness_protocol::Intent"
-          },
-          {
-            "name": "context",
-            "type": "eternum_randomness_protocol::entrypoint::ExecutionContext"
-          },
-          {
-            "name": "signature",
-            "type": "core::array::Span::<core::felt252>"
-          }
-        ],
-        "outputs": [],
-        "state_mutability": "external"
-      },
-      {
-        "type": "function",
-        "name": "get_admission",
-        "inputs": [
-          {
-            "name": "game",
-            "type": "core::felt252"
-          },
-          {
-            "name": "actor",
-            "type": "core::felt252"
-          }
-        ],
+        "name": "owner",
+        "inputs": [],
         "outputs": [
           {
-            "type": "eternum_randomness_protocol::entrypoint::Admission"
+            "type": "core::starknet::contract_address::ContractAddress"
           }
         ],
         "state_mutability": "view"
       },
       {
         "type": "function",
-        "name": "get_head",
-        "inputs": [
-          {
-            "name": "game",
-            "type": "core::felt252"
-          }
-        ],
+        "name": "launcher",
+        "inputs": [],
         "outputs": [
           {
-            "type": "eternum_randomness_protocol::recording::ExecutionHead"
+            "type": "core::starknet::contract_address::ContractAddress"
           }
         ],
         "state_mutability": "view"
+      },
+      {
+        "type": "function",
+        "name": "set_launcher",
+        "inputs": [
+          {
+            "name": "launcher",
+            "type": "core::starknet::contract_address::ContractAddress"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "external"
+      },
+      {
+        "type": "function",
+        "name": "play",
+        "inputs": [
+          {
+            "name": "game_id",
+            "type": "core::integer::u32"
+          },
+          {
+            "name": "release_id",
+            "type": "core::integer::u32"
+          },
+          {
+            "name": "preset_commitment",
+            "type": "core::felt252"
+          },
+          {
+            "name": "command",
+            "type": "core::array::Span::<core::felt252>"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "external"
       },
       {
         "type": "function",
@@ -2339,8 +2309,8 @@
             "type": "core::integer::u32"
           },
           {
-            "name": "realm_id",
-            "type": "core::integer::u16"
+            "name": "region_id",
+            "type": "core::integer::u32"
           },
           {
             "name": "timestamp",
@@ -2594,7 +2564,7 @@
       "members": [
         {
           "name": "players",
-          "type": "core::array::Span::<world_native::blitz_results::PlayerResult>",
+          "type": "core::array::Span::<world_native::blitz_results::RankedPlayer>",
           "id": "0x706c6179657273",
           "feltLength": null
         },
@@ -2848,7 +2818,7 @@
         },
         {
           "name": "structure_id",
-          "type": "core::integer::u32",
+          "type": "core::integer::u64",
           "feltLength": 1
         },
         {
@@ -2884,6 +2854,80 @@
       }
     },
     {
+      "name": "LaborRules",
+      "identity": "0x4c61626f7252756c6573",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "amount",
+          "type": "core::integer::u128",
+          "id": "0x616d6f756e74",
+          "feltLength": 1
+        },
+        {
+          "name": "account_daily_limit",
+          "type": "core::integer::u32",
+          "id": "0x6163636f756e745f6461696c795f6c696d6974",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 1,
+      "valueLength": 2,
+      "derivedFrom": "preset"
+    },
+    {
+      "name": "LaborGrant",
+      "identity": "0x4c61626f724772616e74",
+      "scope": "deployment",
+      "keys": [
+        {
+          "name": "realm_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "day",
+          "type": "core::integer::u64",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "id": "0x67616d655f6964",
+          "feltLength": 1
+        },
+        {
+          "name": "account",
+          "type": "core::starknet::contract_address::ContractAddress",
+          "id": "0x6163636f756e74",
+          "feltLength": 1
+        },
+        {
+          "name": "home",
+          "type": "core::integer::u64",
+          "id": "0x686f6d65",
+          "feltLength": 1
+        },
+        {
+          "name": "amount",
+          "type": "core::integer::u128",
+          "id": "0x616d6f756e74",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": 4
+    },
+    {
       "name": "ChestRules",
       "identity": "0x436865737452756c6573",
       "scope": "game",
@@ -2914,26 +2958,20 @@
           "feltLength": 5
         },
         {
-          "name": "surge_factor",
-          "type": "core::integer::u16",
-          "id": "0x73757267655f666163746f72",
-          "feltLength": 1
-        },
-        {
-          "name": "surge_minimum_shares",
-          "type": "core::integer::u32",
-          "id": "0x73757267655f6d696e696d756d5f736861726573",
-          "feltLength": 1
-        },
-        {
           "name": "estimate_days",
           "type": "core::integer::u16",
           "id": "0x657374696d6174655f64617973",
           "feltLength": 1
+        },
+        {
+          "name": "claim_window_seconds",
+          "type": "core::integer::u32",
+          "id": "0x636c61696d5f77696e646f775f7365636f6e6473",
+          "feltLength": 1
         }
       ],
       "keyLength": 1,
-      "valueLength": 10,
+      "valueLength": 9,
       "derivedFrom": "preset"
     },
     {
@@ -2961,12 +2999,6 @@
           "feltLength": 1
         },
         {
-          "name": "spent",
-          "type": "core::integer::u128",
-          "id": "0x7370656e74",
-          "feltLength": 1
-        },
-        {
           "name": "day",
           "type": "core::integer::u64",
           "id": "0x646179",
@@ -2979,26 +3011,20 @@
           "feltLength": 1
         },
         {
-          "name": "ceiling",
-          "type": "core::integer::u128",
-          "id": "0x6365696c696e67",
-          "feltLength": 1
-        },
-        {
           "name": "estimate",
           "type": "core::integer::u128",
           "id": "0x657374696d617465",
           "feltLength": 1
         },
         {
-          "name": "paid_shares",
+          "name": "rolled_shares",
           "type": "core::integer::u128",
-          "id": "0x706169645f736861726573",
+          "id": "0x726f6c6c65645f736861726573",
           "feltLength": 1
         }
       ],
       "keyLength": 1,
-      "valueLength": 8
+      "valueLength": 6
     },
     {
       "name": "SiteChest",
@@ -3012,7 +3038,7 @@
         },
         {
           "name": "entity_id",
-          "type": "core::integer::u32",
+          "type": "core::integer::u64",
           "feltLength": 1
         }
       ],
@@ -3028,10 +3054,16 @@
           "type": "core::integer::u128",
           "id": "0x616d6f756e74",
           "feltLength": 1
+        },
+        {
+          "name": "reservation_day",
+          "type": "core::integer::u64",
+          "id": "0x7265736572766174696f6e5f646179",
+          "feltLength": 1
         }
       ],
       "keyLength": 2,
-      "valueLength": 2
+      "valueLength": 3
     },
     {
       "name": "LordsWithdrawal",
@@ -3044,27 +3076,16 @@
           "feltLength": 1
         },
         {
-          "name": "order",
-          "type": "core::integer::u64",
-          "feltLength": 1
-        },
-        {
-          "name": "index",
-          "type": "core::integer::u32",
+          "name": "claim_id",
+          "type": "core::felt252",
           "feltLength": 1
         }
       ],
       "members": [
         {
-          "name": "player",
+          "name": "account",
           "type": "core::starknet::contract_address::ContractAddress",
-          "id": "0x706c61796572",
-          "feltLength": 1
-        },
-        {
-          "name": "structure_id",
-          "type": "core::integer::u32",
-          "id": "0x7374727563747572655f6964",
+          "id": "0x6163636f756e74",
           "feltLength": 1
         },
         {
@@ -3074,8 +3095,8 @@
           "feltLength": 1
         }
       ],
-      "keyLength": 3,
-      "valueLength": 3
+      "keyLength": 2,
+      "valueLength": 2
     },
     {
       "name": "RelicDiscovery",
@@ -3292,7 +3313,7 @@
         },
         {
           "name": "entity_id",
-          "type": "core::integer::u32",
+          "type": "core::integer::u64",
           "feltLength": 1
         }
       ],
@@ -3390,20 +3411,20 @@
         },
         {
           "name": "trade_id",
-          "type": "core::integer::u32",
+          "type": "core::integer::u64",
           "feltLength": 1
         }
       ],
       "members": [
         {
           "name": "maker_id",
-          "type": "core::integer::u32",
+          "type": "core::integer::u64",
           "id": "0x6d616b65725f6964",
           "feltLength": 1
         },
         {
           "name": "taker_id",
-          "type": "core::integer::u32",
+          "type": "core::integer::u64",
           "id": "0x74616b65725f6964",
           "feltLength": 1
         },
@@ -3482,7 +3503,7 @@
         },
         {
           "name": "structure_id",
-          "type": "core::integer::u32",
+          "type": "core::integer::u64",
           "feltLength": 1
         },
         {
@@ -3536,7 +3557,7 @@
         },
         {
           "name": "entity_id",
-          "type": "core::integer::u32",
+          "type": "core::integer::u64",
           "feltLength": 1
         }
       ],
@@ -3578,7 +3599,7 @@
         },
         {
           "name": "entity_id",
-          "type": "core::integer::u32",
+          "type": "core::integer::u64",
           "feltLength": 1
         }
       ],
@@ -3637,7 +3658,7 @@
         },
         {
           "name": "mine_id",
-          "type": "core::integer::u32",
+          "type": "core::integer::u64",
           "feltLength": 1
         }
       ],
@@ -3742,7 +3763,7 @@
         },
         {
           "name": "structure_id",
-          "type": "core::integer::u32",
+          "type": "core::integer::u64",
           "id": "0x7374727563747572655f6964",
           "feltLength": 1
         }
@@ -4212,7 +4233,7 @@
         },
         {
           "name": "village_id",
-          "type": "core::integer::u32",
+          "type": "core::integer::u64",
           "id": "0x76696c6c6167655f6964",
           "feltLength": 1
         }
@@ -4427,7 +4448,7 @@
       "members": [
         {
           "name": "entity_id",
-          "type": "core::integer::u32",
+          "type": "core::integer::u64",
           "id": "0x656e746974795f6964",
           "feltLength": 1
         },
@@ -4467,7 +4488,7 @@
         },
         {
           "name": "explorer_id",
-          "type": "core::integer::u32",
+          "type": "core::integer::u64",
           "feltLength": 1
         }
       ],
@@ -4524,7 +4545,7 @@
         },
         {
           "name": "structure_id",
-          "type": "core::integer::u32",
+          "type": "core::integer::u64",
           "feltLength": 1
         },
         {
@@ -4541,7 +4562,7 @@
       "members": [
         {
           "name": "explorer_id",
-          "type": "core::integer::u32",
+          "type": "core::integer::u64",
           "id": "0x6578706c6f7265725f6964",
           "feltLength": 1
         },
@@ -4576,14 +4597,14 @@
         },
         {
           "name": "explorer_id",
-          "type": "core::integer::u32",
+          "type": "core::integer::u64",
           "feltLength": 1
         }
       ],
       "members": [
         {
           "name": "owner",
-          "type": "core::integer::u32",
+          "type": "core::integer::u64",
           "id": "0x6f776e6572",
           "feltLength": 1
         },
@@ -4616,7 +4637,7 @@
         },
         {
           "name": "entity_id",
-          "type": "core::integer::u32",
+          "type": "core::integer::u64",
           "feltLength": 1
         }
       ],
@@ -4649,7 +4670,7 @@
         },
         {
           "name": "entity_id",
-          "type": "core::integer::u32",
+          "type": "core::integer::u64",
           "feltLength": 1
         }
       ],
@@ -4712,7 +4733,7 @@
         },
         {
           "name": "entity_id",
-          "type": "core::integer::u32",
+          "type": "core::integer::u64",
           "feltLength": 1
         },
         {
@@ -4759,7 +4780,7 @@
         },
         {
           "name": "entity_id",
-          "type": "core::integer::u32",
+          "type": "core::integer::u64",
           "feltLength": 1
         },
         {
@@ -4829,7 +4850,7 @@
         },
         {
           "name": "entity_id",
-          "type": "core::integer::u32",
+          "type": "core::integer::u64",
           "feltLength": 1
         }
       ],
@@ -4961,7 +4982,7 @@
         },
         {
           "name": "entity_id",
-          "type": "core::integer::u32",
+          "type": "core::integer::u64",
           "feltLength": 1
         }
       ],
@@ -5001,7 +5022,7 @@
         },
         {
           "name": "entity_id",
-          "type": "core::integer::u32",
+          "type": "core::integer::u64",
           "feltLength": 1
         },
         {
@@ -5044,7 +5065,7 @@
         },
         {
           "name": "structure_id",
-          "type": "core::integer::u32",
+          "type": "core::integer::u64",
           "feltLength": 1
         }
       ],
@@ -5221,7 +5242,7 @@
         },
         {
           "name": "structure_id",
-          "type": "core::integer::u32",
+          "type": "core::integer::u64",
           "feltLength": 1
         },
         {
@@ -5278,7 +5299,7 @@
         },
         {
           "name": "entity_id",
-          "type": "core::integer::u32",
+          "type": "core::integer::u64",
           "feltLength": 1
         }
       ],
@@ -5332,7 +5353,7 @@
         },
         {
           "name": "entity_id",
-          "type": "core::integer::u32",
+          "type": "core::integer::u64",
           "feltLength": 1
         }
       ],
@@ -5379,7 +5400,7 @@
         },
         {
           "name": "entity_id",
-          "type": "core::integer::u32",
+          "type": "core::integer::u64",
           "feltLength": 1
         },
         {
@@ -5420,7 +5441,7 @@
         },
         {
           "name": "entity_id",
-          "type": "core::integer::u32",
+          "type": "core::integer::u64",
           "feltLength": 1
         }
       ],
@@ -5488,7 +5509,7 @@
         },
         {
           "name": "entity_id",
-          "type": "core::integer::u32",
+          "type": "core::integer::u64",
           "feltLength": 1
         }
       ],
@@ -5589,7 +5610,7 @@
       "members": [
         {
           "name": "wonder_id",
-          "type": "core::integer::u32",
+          "type": "core::integer::u64",
           "id": "0x776f6e6465725f6964",
           "feltLength": 1
         },
@@ -5647,7 +5668,7 @@
         },
         {
           "name": "wonder_id",
-          "type": "core::integer::u32",
+          "type": "core::integer::u64",
           "feltLength": 1
         }
       ],
@@ -5942,12 +5963,6 @@
           "feltLength": 1
         },
         {
-          "name": "creator",
-          "type": "core::starknet::contract_address::ContractAddress",
-          "id": "0x63726561746f72",
-          "feltLength": 1
-        },
-        {
           "name": "settled",
           "type": "core::bool",
           "id": "0x736574746c6564",
@@ -5997,7 +6012,7 @@
         }
       ],
       "keyLength": 1,
-      "valueLength": 11
+      "valueLength": 10
     },
     {
       "name": "GameOverrides",
@@ -6242,37 +6257,6 @@
         }
       },
       "eventProjection": "PointsAwarded"
-    },
-    {
-      "name": "ActionNonce",
-      "identity": "0x416374696f6e4e6f6e6365",
-      "scope": "game",
-      "keys": [
-        {
-          "name": "game_id",
-          "type": "core::integer::u32",
-          "feltLength": 1
-        },
-        {
-          "name": "actor",
-          "type": "core::starknet::contract_address::ContractAddress",
-          "feltLength": 1
-        }
-      ],
-      "members": [
-        {
-          "name": "next_nonce",
-          "type": "core::integer::u64",
-          "id": "0x6e6578745f6e6f6e6365",
-          "feltLength": 1
-        }
-      ],
-      "keyLength": 2,
-      "valueLength": 1,
-      "absence": {
-        "value": "zero",
-        "meaning": "After a complete actor snapshot, no row means no action was consumed for this player; next_nonce is zero."
-      }
     }
   ],
   "events": [
@@ -6296,8 +6280,8 @@
             "kind": "data"
           },
           {
-            "name": "nonce",
-            "type": "core::integer::u64",
+            "name": "tx_hash",
+            "type": "core::felt252",
             "kind": "data"
           },
           {
@@ -6309,43 +6293,33 @@
       }
     },
     {
-      "name": "ExecutionRecorded",
+      "name": "GameplayRejected",
       "scope": "deployment",
-      "version": 2,
+      "version": 1,
       "event": {
         "type": "event",
-        "name": "eternum_randomness_protocol::recording::ExecutionRecorded",
+        "name": "world_native::commands::GameplayRejected",
         "kind": "struct",
         "members": [
           {
+            "name": "version",
+            "type": "core::integer::u8",
+            "kind": "key"
+          },
+          {
             "name": "game_id",
-            "type": "core::felt252",
-            "kind": "data"
+            "type": "core::integer::u32",
+            "kind": "key"
           },
           {
             "name": "actor",
+            "type": "core::starknet::contract_address::ContractAddress",
+            "kind": "key"
+          },
+          {
+            "name": "tx_hash",
             "type": "core::felt252",
-            "kind": "data"
-          },
-          {
-            "name": "nonce",
-            "type": "core::integer::u64",
-            "kind": "data"
-          },
-          {
-            "name": "nonce_consumed",
-            "type": "core::bool",
-            "kind": "data"
-          },
-          {
-            "name": "order",
-            "type": "core::integer::u64",
-            "kind": "data"
-          },
-          {
-            "name": "status",
-            "type": "core::integer::u8",
-            "kind": "data"
+            "kind": "key"
           },
           {
             "name": "status_class",
@@ -6410,7 +6384,7 @@
     {
       "name": "StoryEvent",
       "scope": "game",
-      "version": 1,
+      "version": 2,
       "event": {
         "type": "event",
         "name": "world_native::ownership::StoryEvent",
@@ -6427,23 +6401,13 @@
             "kind": "key"
           },
           {
-            "name": "order",
-            "type": "core::integer::u64",
-            "kind": "key"
-          },
-          {
-            "name": "index",
-            "type": "core::integer::u32",
-            "kind": "key"
-          },
-          {
             "name": "owner",
             "type": "core::option::Option::<core::starknet::contract_address::ContractAddress>",
             "kind": "key"
           },
           {
             "name": "entity_id",
-            "type": "core::option::Option::<core::integer::u32>",
+            "type": "core::option::Option::<core::integer::u64>",
             "kind": "key"
           },
           {
@@ -6467,7 +6431,7 @@
     {
       "name": "BattleEvent",
       "scope": "game",
-      "version": 1,
+      "version": 2,
       "event": {
         "type": "event",
         "name": "world_native::troops::BattleEvent",
@@ -6484,38 +6448,28 @@
             "kind": "key"
           },
           {
-            "name": "order",
+            "name": "attacker_id",
             "type": "core::integer::u64",
             "kind": "key"
           },
           {
-            "name": "index",
-            "type": "core::integer::u32",
-            "kind": "key"
-          },
-          {
-            "name": "attacker_id",
-            "type": "core::integer::u32",
-            "kind": "key"
-          },
-          {
             "name": "defender_id",
-            "type": "core::integer::u32",
+            "type": "core::integer::u64",
             "kind": "key"
           },
           {
             "name": "attacker_owner",
-            "type": "core::integer::u32",
+            "type": "core::integer::u64",
             "kind": "key"
           },
           {
             "name": "defender_owner",
-            "type": "core::integer::u32",
+            "type": "core::integer::u64",
             "kind": "key"
           },
           {
             "name": "winner_id",
-            "type": "core::integer::u32",
+            "type": "core::integer::u64",
             "kind": "data"
           },
           {
@@ -6549,7 +6503,7 @@
     {
       "name": "RaidEvent",
       "scope": "game",
-      "version": 1,
+      "version": 2,
       "event": {
         "type": "event",
         "name": "world_native::combat_actions::RaidEvent",
@@ -6566,23 +6520,13 @@
             "kind": "key"
           },
           {
-            "name": "order",
+            "name": "explorer_id",
             "type": "core::integer::u64",
             "kind": "key"
           },
           {
-            "name": "index",
-            "type": "core::integer::u32",
-            "kind": "key"
-          },
-          {
-            "name": "explorer_id",
-            "type": "core::integer::u32",
-            "kind": "key"
-          },
-          {
             "name": "structure_id",
-            "type": "core::integer::u32",
+            "type": "core::integer::u64",
             "kind": "key"
           },
           {
@@ -6665,6 +6609,16 @@
         }
       ]
     },
+    "core::array::Span::<core::integer::u64>": {
+      "type": "struct",
+      "name": "core::array::Span::<core::integer::u64>",
+      "members": [
+        {
+          "name": "snapshot",
+          "type": "@core::array::Array::<core::integer::u64>"
+        }
+      ]
+    },
     "core::array::Span::<core::integer::u8>": {
       "type": "struct",
       "name": "core::array::Span::<core::integer::u8>",
@@ -6675,13 +6629,13 @@
         }
       ]
     },
-    "core::array::Span::<world_native::blitz_results::PlayerResult>": {
+    "core::array::Span::<world_native::blitz_results::RankedPlayer>": {
       "type": "struct",
-      "name": "core::array::Span::<world_native::blitz_results::PlayerResult>",
+      "name": "core::array::Span::<world_native::blitz_results::RankedPlayer>",
       "members": [
         {
           "name": "snapshot",
-          "type": "@core::array::Array::<world_native::blitz_results::PlayerResult>"
+          "type": "@core::array::Array::<world_native::blitz_results::RankedPlayer>"
         }
       ]
     },
@@ -6997,6 +6951,34 @@
         }
       ]
     },
+    "core::option::Option::<world_native::entry::LaborGrant>": {
+      "type": "enum",
+      "name": "core::option::Option::<world_native::entry::LaborGrant>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "world_native::entry::LaborGrant"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
+    "core::option::Option::<world_native::entry::LaborRules>": {
+      "type": "enum",
+      "name": "core::option::Option::<world_native::entry::LaborRules>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "world_native::entry::LaborRules"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
     "core::option::Option::<world_native::expeditions::ExpeditionDiscovery>": {
       "type": "enum",
       "name": "core::option::Option::<world_native::expeditions::ExpeditionDiscovery>",
@@ -7263,9 +7245,9 @@
         }
       ]
     },
-    "core::result::Result::<core::array::Span::<core::felt252>, eternum_randomness_protocol::recording::Rejection>": {
+    "core::result::Result::<core::array::Span::<core::felt252>, world_native::commands::Rejection>": {
       "type": "enum",
-      "name": "core::result::Result::<core::array::Span::<core::felt252>, eternum_randomness_protocol::recording::Rejection>",
+      "name": "core::result::Result::<core::array::Span::<core::felt252>, world_native::commands::Rejection>",
       "variants": [
         {
           "name": "Ok",
@@ -7273,147 +7255,7 @@
         },
         {
           "name": "Err",
-          "type": "eternum_randomness_protocol::recording::Rejection"
-        }
-      ]
-    },
-    "eternum_randomness_protocol::entrypoint::Admission": {
-      "type": "struct",
-      "name": "eternum_randomness_protocol::entrypoint::Admission",
-      "members": [
-        {
-          "name": "release_id",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "preset_commitment",
-          "type": "core::felt252"
-        },
-        {
-          "name": "nonce",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "order",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "timestamp",
-          "type": "core::integer::u64"
-        }
-      ]
-    },
-    "eternum_randomness_protocol::entrypoint::ExecutionContext": {
-      "type": "struct",
-      "name": "eternum_randomness_protocol::entrypoint::ExecutionContext",
-      "members": [
-        {
-          "name": "envelope",
-          "type": "core::array::Array::<core::felt252>"
-        }
-      ]
-    },
-    "eternum_randomness_protocol::entrypoint::RecordedAction": {
-      "type": "struct",
-      "name": "eternum_randomness_protocol::entrypoint::RecordedAction",
-      "members": [
-        {
-          "name": "intent",
-          "type": "eternum_randomness_protocol::Intent"
-        },
-        {
-          "name": "context",
-          "type": "eternum_randomness_protocol::entrypoint::ExecutionContext"
-        },
-        {
-          "name": "signature",
-          "type": "core::array::Span::<core::felt252>"
-        }
-      ]
-    },
-    "eternum_randomness_protocol::Intent": {
-      "type": "struct",
-      "name": "eternum_randomness_protocol::Intent",
-      "members": [
-        {
-          "name": "chain",
-          "type": "core::felt252"
-        },
-        {
-          "name": "deployment",
-          "type": "core::felt252"
-        },
-        {
-          "name": "game_id",
-          "type": "core::felt252"
-        },
-        {
-          "name": "actor",
-          "type": "core::felt252"
-        },
-        {
-          "name": "nonce",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "command",
-          "type": "core::felt252"
-        },
-        {
-          "name": "release_id",
-          "type": "core::integer::u32"
-        },
-        {
-          "name": "preset_commitment",
-          "type": "core::felt252"
-        },
-        {
-          "name": "valid_from",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "valid_until",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "last_order",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "arguments",
-          "type": "core::array::Array::<core::felt252>"
-        }
-      ]
-    },
-    "eternum_randomness_protocol::recording::ExecutionHead": {
-      "type": "struct",
-      "name": "eternum_randomness_protocol::recording::ExecutionHead",
-      "members": [
-        {
-          "name": "order",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "timestamp",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "state",
-          "type": "core::felt252"
-        }
-      ]
-    },
-    "eternum_randomness_protocol::recording::Rejection": {
-      "type": "struct",
-      "name": "eternum_randomness_protocol::recording::Rejection",
-      "members": [
-        {
-          "name": "status_class",
-          "type": "core::felt252"
-        },
-        {
-          "name": "reason",
-          "type": "core::byte_array::ByteArray"
+          "type": "world_native::commands::Rejection"
         }
       ]
     },
@@ -7505,6 +7347,20 @@
         }
       ]
     },
+    "realms_vrf_verifier::vendor::ecvrf::Point": {
+      "type": "struct",
+      "name": "realms_vrf_verifier::vendor::ecvrf::Point",
+      "members": [
+        {
+          "name": "x",
+          "type": "core::felt252"
+        },
+        {
+          "name": "y",
+          "type": "core::felt252"
+        }
+      ]
+    },
     "world_native::arrivals::Arrival": {
       "type": "struct",
       "name": "world_native::arrivals::Arrival",
@@ -7525,7 +7381,7 @@
         },
         {
           "name": "entity_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "day",
@@ -7543,7 +7399,7 @@
       "members": [
         {
           "name": "entity_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "day",
@@ -7569,7 +7425,7 @@
         },
         {
           "name": "mine_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "winner",
@@ -7581,11 +7437,11 @@
         },
         {
           "name": "winner_destination",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "owner_destination",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "winner_paid",
@@ -7611,7 +7467,7 @@
         },
         {
           "name": "mine_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         }
       ]
     },
@@ -7625,7 +7481,7 @@
         },
         {
           "name": "mine_ids",
-          "type": "core::array::Span::<core::integer::u32>"
+          "type": "core::array::Span::<core::integer::u64>"
         }
       ]
     },
@@ -7635,7 +7491,7 @@
       "members": [
         {
           "name": "structure_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "amount",
@@ -7653,7 +7509,7 @@
         },
         {
           "name": "structure_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         }
       ]
     },
@@ -7757,7 +7613,7 @@
       "members": [
         {
           "name": "players",
-          "type": "core::array::Span::<world_native::blitz_results::PlayerResult>"
+          "type": "core::array::Span::<world_native::blitz_results::RankedPlayer>"
         },
         {
           "name": "complete",
@@ -7769,35 +7625,17 @@
         }
       ]
     },
-    "world_native::blitz_results::PlayerResult": {
+    "world_native::blitz_results::RankedPlayer": {
       "type": "struct",
-      "name": "world_native::blitz_results::PlayerResult",
+      "name": "world_native::blitz_results::RankedPlayer",
       "members": [
         {
-          "name": "player",
+          "name": "wallet",
           "type": "core::starknet::contract_address::ContractAddress"
         },
         {
-          "name": "points",
-          "type": "core::integer::u128"
-        },
-        {
           "name": "rank",
-          "type": "core::integer::u8"
-        }
-      ]
-    },
-    "world_native::blitz_results::RecordBlitzResults": {
-      "type": "struct",
-      "name": "world_native::blitz_results::RecordBlitzResults",
-      "members": [
-        {
-          "name": "start",
-          "type": "core::integer::u8"
-        },
-        {
-          "name": "players",
-          "type": "core::array::Span::<world_native::blitz_results::PlayerResult>"
+          "type": "core::integer::u16"
         }
       ]
     },
@@ -7807,7 +7645,7 @@
       "members": [
         {
           "name": "structure_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "resource_type",
@@ -7855,7 +7693,7 @@
       "members": [
         {
           "name": "structure_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "recipient",
@@ -7941,7 +7779,7 @@
         },
         {
           "name": "structure_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "inner_col",
@@ -8009,7 +7847,7 @@
       "members": [
         {
           "name": "structure_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "coord",
@@ -8023,7 +7861,7 @@
       "members": [
         {
           "name": "structure_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "directions",
@@ -8095,11 +7933,11 @@
       "members": [
         {
           "name": "attacker_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "defender_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "steal_resources",
@@ -8147,7 +7985,7 @@
         },
         {
           "name": "explorer_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         }
       ]
     },
@@ -8157,11 +7995,11 @@
       "members": [
         {
           "name": "explorer_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "structure_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "steal_resources",
@@ -8189,11 +8027,11 @@
       "members": [
         {
           "name": "attacker_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "defender_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         }
       ]
     },
@@ -8245,7 +8083,7 @@
         },
         {
           "name": "LevelUp",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "SettleBlitzRoster",
@@ -8253,7 +8091,7 @@
         },
         {
           "name": "ProvisionRealm",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "CreateReservedHyperstructure",
@@ -8269,7 +8107,7 @@
         },
         {
           "name": "ReceiveVillageArmy",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "BurnStructureResources",
@@ -8349,7 +8187,7 @@
         },
         {
           "name": "CancelTradeOrder",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "CreateBanks",
@@ -8373,7 +8211,7 @@
         },
         {
           "name": "InitializeHyperstructure",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "ContributeHyperstructure",
@@ -8405,19 +8243,19 @@
         },
         {
           "name": "RemoveFaith",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "UpdateWonderOwnership",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "UpdateFaithfulOwnership",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "ClaimWonderPoints",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "ClaimPlayerFaithPoints",
@@ -8425,11 +8263,11 @@
         },
         {
           "name": "RecordBlitzResults",
-          "type": "world_native::blitz_results::RecordBlitzResults"
+          "type": "()"
         },
         {
           "name": "CraftRelic",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "CreateGuild",
@@ -8477,7 +8315,7 @@
         },
         {
           "name": "ProvisionAndUpgradeRealm",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "SetEntityName",
@@ -8515,7 +8353,7 @@
       "members": [
         {
           "name": "structure_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "category",
@@ -8541,7 +8379,7 @@
       "members": [
         {
           "name": "explorer_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "depth",
@@ -8555,7 +8393,7 @@
       "members": [
         {
           "name": "explorer_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "direction",
@@ -8569,11 +8407,25 @@
       "members": [
         {
           "name": "explorer_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "directions",
           "type": "core::array::Span::<core::integer::u8>"
+        }
+      ]
+    },
+    "world_native::commands::Rejection": {
+      "type": "struct",
+      "name": "world_native::commands::Rejection",
+      "members": [
+        {
+          "name": "status_class",
+          "type": "core::felt252"
+        },
+        {
+          "name": "reason",
+          "type": "core::byte_array::ByteArray"
         }
       ]
     },
@@ -8605,7 +8457,7 @@
       "members": [
         {
           "name": "explorer_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "spire_direction",
@@ -8656,6 +8508,60 @@
         {
           "name": "Well",
           "type": "()"
+        }
+      ]
+    },
+    "world_native::entry::LaborGrant": {
+      "type": "struct",
+      "name": "world_native::entry::LaborGrant",
+      "members": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "account",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "home",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "amount",
+          "type": "core::integer::u128"
+        }
+      ]
+    },
+    "world_native::entry::LaborRealm": {
+      "type": "struct",
+      "name": "world_native::entry::LaborRealm",
+      "members": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "realm_id",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "home",
+          "type": "core::integer::u64"
+        }
+      ]
+    },
+    "world_native::entry::LaborRules": {
+      "type": "struct",
+      "name": "world_native::entry::LaborRules",
+      "members": [
+        {
+          "name": "amount",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "account_daily_limit",
+          "type": "core::integer::u32"
         }
       ]
     },
@@ -8725,7 +8631,7 @@
         },
         {
           "name": "structure_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "epoch",
@@ -8787,15 +8693,15 @@
       "members": [
         {
           "name": "structure_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "explorer_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "site_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "category",
@@ -8835,11 +8741,11 @@
       "members": [
         {
           "name": "explorer_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "receiver",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "coord",
@@ -8865,7 +8771,7 @@
         },
         {
           "name": "wonder_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         }
       ]
     },
@@ -8875,7 +8781,7 @@
       "members": [
         {
           "name": "wonder_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "faithful_since",
@@ -8931,7 +8837,7 @@
         },
         {
           "name": "wonder_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         }
       ]
     },
@@ -8963,11 +8869,11 @@
       "members": [
         {
           "name": "structure_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "wonder_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         }
       ]
     },
@@ -8977,11 +8883,11 @@
       "members": [
         {
           "name": "structure_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "wonder_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "owner_rate",
@@ -9058,10 +8964,6 @@
           "type": "core::integer::u32"
         },
         {
-          "name": "creator",
-          "type": "core::starknet::contract_address::ContractAddress"
-        },
-        {
           "name": "settled",
           "type": "core::bool"
         },
@@ -9126,10 +9028,6 @@
       "name": "world_native::games::Authentication",
       "members": [
         {
-          "name": "submitter",
-          "type": "core::starknet::contract_address::ContractAddress"
-        },
-        {
           "name": "account_class",
           "type": "core::starknet::class_hash::ClassHash"
         },
@@ -9144,7 +9042,11 @@
       "name": "world_native::games::DeploymentConfiguration",
       "members": [
         {
-          "name": "authority",
+          "name": "owner",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "launcher",
           "type": "core::starknet::contract_address::ContractAddress"
         }
       ]
@@ -9203,7 +9105,7 @@
         },
         {
           "name": "structure_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "slot",
@@ -9217,7 +9119,7 @@
       "members": [
         {
           "name": "owned_structure_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "public",
@@ -9249,7 +9151,7 @@
       "members": [
         {
           "name": "owned_structure_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "guild_id",
@@ -9267,7 +9169,7 @@
         },
         {
           "name": "owned_structure_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "allowed",
@@ -9299,7 +9201,7 @@
       "members": [
         {
           "name": "hyperstructure_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "shareholders",
@@ -9353,11 +9255,11 @@
       "members": [
         {
           "name": "hyperstructure_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "from_structure_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "resources",
@@ -9403,7 +9305,7 @@
       "members": [
         {
           "name": "hyperstructure_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "access",
@@ -9503,7 +9405,7 @@
       "members": [
         {
           "name": "entity_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "category",
@@ -9531,11 +9433,11 @@
       "members": [
         {
           "name": "bank_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "structure_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "resource_type",
@@ -9611,11 +9513,11 @@
       "members": [
         {
           "name": "bank_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "structure_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "resource_type",
@@ -9681,11 +9583,11 @@
       "members": [
         {
           "name": "bank_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "structure_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "resource_type",
@@ -9703,11 +9605,11 @@
       "members": [
         {
           "name": "bank_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "structure_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "resource_type",
@@ -9725,11 +9627,11 @@
       "members": [
         {
           "name": "bank_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "structure_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "resource_type",
@@ -9855,7 +9757,7 @@
       "members": [
         {
           "name": "entity_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "name",
@@ -9927,7 +9829,7 @@
       "members": [
         {
           "name": "wonder_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "new_points",
@@ -9945,7 +9847,7 @@
       "members": [
         {
           "name": "structure_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "slot",
@@ -10013,7 +9915,7 @@
         },
         {
           "name": "from_entity_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "from_entity_owner_address",
@@ -10021,7 +9923,7 @@
         },
         {
           "name": "to_entity_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "to_entity_owner_address",
@@ -10103,7 +10005,7 @@
         },
         {
           "name": "TradeCancelled",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "BankSwap",
@@ -10179,20 +10081,6 @@
         }
       ]
     },
-    "world_native::ownership::StoryCursor": {
-      "type": "struct",
-      "name": "world_native::ownership::StoryCursor",
-      "members": [
-        {
-          "name": "order",
-          "type": "core::integer::u64"
-        },
-        {
-          "name": "index",
-          "type": "core::integer::u32"
-        }
-      ]
-    },
     "world_native::ownership::StructureCapturedStory": {
       "type": "struct",
       "name": "world_native::ownership::StructureCapturedStory",
@@ -10227,7 +10115,7 @@
       "members": [
         {
           "name": "entity_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "new_owner",
@@ -10261,6 +10149,10 @@
       "type": "struct",
       "name": "world_native::presets::EconomyPreset",
       "members": [
+        {
+          "name": "labor",
+          "type": "core::option::Option::<world_native::entry::LaborRules>"
+        },
         {
           "name": "trade",
           "type": "world_native::trade::TradeRules"
@@ -10523,7 +10415,7 @@
       "members": [
         {
           "name": "structure_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "resource_types",
@@ -10623,7 +10515,7 @@
       "members": [
         {
           "name": "explorer_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "attribute",
@@ -10659,7 +10551,7 @@
       "members": [
         {
           "name": "explorer_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "attribute",
@@ -10800,6 +10692,10 @@
         {
           "name": "account",
           "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "wallet",
+          "type": "core::starknet::contract_address::ContractAddress"
         }
       ]
     },
@@ -10809,7 +10705,7 @@
       "members": [
         {
           "name": "entity_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "relic_id",
@@ -10827,7 +10723,7 @@
       "members": [
         {
           "name": "explorer_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "coord",
@@ -10860,16 +10756,12 @@
           "type": "world_native::relics::ChestTiers"
         },
         {
-          "name": "surge_factor",
-          "type": "core::integer::u16"
-        },
-        {
-          "name": "surge_minimum_shares",
-          "type": "core::integer::u32"
-        },
-        {
           "name": "estimate_days",
           "type": "core::integer::u16"
+        },
+        {
+          "name": "claim_window_seconds",
+          "type": "core::integer::u32"
         }
       ]
     },
@@ -10905,7 +10797,7 @@
       "members": [
         {
           "name": "explorer_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "coord",
@@ -10926,10 +10818,6 @@
           "type": "core::integer::u128"
         },
         {
-          "name": "spent",
-          "type": "core::integer::u128"
-        },
-        {
           "name": "day",
           "type": "core::integer::u64"
         },
@@ -10938,15 +10826,11 @@
           "type": "core::integer::u128"
         },
         {
-          "name": "ceiling",
-          "type": "core::integer::u128"
-        },
-        {
           "name": "estimate",
           "type": "core::integer::u128"
         },
         {
-          "name": "paid_shares",
+          "name": "rolled_shares",
           "type": "core::integer::u128"
         }
       ]
@@ -10956,12 +10840,8 @@
       "name": "world_native::relics::LordsWithdrawal",
       "members": [
         {
-          "name": "player",
+          "name": "account",
           "type": "core::starknet::contract_address::ContractAddress"
-        },
-        {
-          "name": "structure_id",
-          "type": "core::integer::u32"
         },
         {
           "name": "amount",
@@ -10975,7 +10855,7 @@
       "members": [
         {
           "name": "explorer_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "coord",
@@ -11007,7 +10887,7 @@
       "members": [
         {
           "name": "explorer_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         }
       ]
     },
@@ -11048,6 +10928,10 @@
         {
           "name": "amount",
           "type": "core::integer::u128"
+        },
+        {
+          "name": "reservation_day",
+          "type": "core::integer::u64"
         }
       ]
     },
@@ -11057,7 +10941,7 @@
       "members": [
         {
           "name": "structure_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "amount",
@@ -11081,7 +10965,7 @@
       "members": [
         {
           "name": "structure_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "row",
@@ -11167,7 +11051,7 @@
       "members": [
         {
           "name": "entity_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "resources",
@@ -11185,7 +11069,7 @@
         },
         {
           "name": "entity_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         }
       ]
     },
@@ -11221,7 +11105,7 @@
         },
         {
           "name": "entity_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "resource_type",
@@ -11235,11 +11119,11 @@
       "members": [
         {
           "name": "from_entity_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "to_entity_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "resources",
@@ -11989,7 +11873,7 @@
       "members": [
         {
           "name": "connected_realm",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "resource",
@@ -12089,7 +11973,7 @@
         },
         {
           "name": "village_realm",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "mine_kind",
@@ -12107,11 +11991,11 @@
       "members": [
         {
           "name": "trade_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "taker_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "lots",
@@ -12125,11 +12009,11 @@
       "members": [
         {
           "name": "maker_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "taker_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "offered_resource",
@@ -12163,15 +12047,15 @@
       "members": [
         {
           "name": "trade_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "maker_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "taker_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "offered_resource",
@@ -12201,7 +12085,7 @@
         },
         {
           "name": "trade_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         }
       ]
     },
@@ -12211,7 +12095,7 @@
       "members": [
         {
           "name": "trade_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "order",
@@ -12225,11 +12109,11 @@
       "members": [
         {
           "name": "maker_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "taker_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "offered_resource",
@@ -12273,7 +12157,7 @@
       "variants": [
         {
           "name": "Explorer",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "Guard",
@@ -12287,11 +12171,11 @@
       "members": [
         {
           "name": "explorer_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "structure_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "category",
@@ -12317,7 +12201,7 @@
       "members": [
         {
           "name": "explorer_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         }
       ]
     },
@@ -12327,7 +12211,7 @@
       "members": [
         {
           "name": "structure_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "slot",
@@ -12353,7 +12237,7 @@
         },
         {
           "name": "RemoveExplorer",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "Transfer",
@@ -12367,7 +12251,7 @@
       "members": [
         {
           "name": "explorer_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "amount",
@@ -12421,7 +12305,7 @@
       "members": [
         {
           "name": "explorer_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "stamina",
@@ -12457,7 +12341,7 @@
       "members": [
         {
           "name": "home",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "epoch",
@@ -12487,7 +12371,7 @@
         },
         {
           "name": "structure_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "epoch",
@@ -12527,7 +12411,7 @@
         },
         {
           "name": "explorer_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         }
       ]
     },
@@ -12537,7 +12421,7 @@
       "members": [
         {
           "name": "owner",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "troops",
@@ -12551,7 +12435,7 @@
       "members": [
         {
           "name": "owner",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         },
         {
           "name": "troops",
@@ -12743,7 +12627,7 @@
         },
         {
           "name": "connected_realm_entity_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         }
       ]
     },
@@ -12757,7 +12641,7 @@
         },
         {
           "name": "village_id",
-          "type": "core::integer::u32"
+          "type": "core::integer::u64"
         }
       ]
     },
@@ -12874,5 +12758,5 @@
       ]
     }
   },
-  "identity": "e8e5e3846fdfed48d8e23433f22b66b7d9b521cd29774c8b795e4c175ef9ec27"
+  "identity": "7f98941735255e76df55064d59888a20c44d273bf7ae080d5436962ca44604b8"
 }

@@ -1,5 +1,5 @@
 export interface TelemetryTransaction {
-  status: "pending" | "success" | "reverted";
+  status: "pending" | "checking" | "success" | "reverted" | "not_sent";
   submittedAt: number;
 }
 

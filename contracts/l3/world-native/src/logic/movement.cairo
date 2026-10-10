@@ -8,7 +8,6 @@ pub mod MovementLogic {
     use crate::logic::release::ReleaseState;
     use crate::logic::troops::TroopState;
     use crate::map::IMapLogicDispatcherTrait;
-    use crate::ownership::StoryResultTrait;
     use crate::resources::{IResourceOperationsDispatcherTrait, ResourceKey};
     use crate::stamina::StaminaSourceTrait;
     use crate::structures::IStructureOperationsDispatcherTrait;
@@ -42,8 +41,7 @@ pub mod MovementLogic {
             actor: ContractAddress,
             command: Explore,
             context: crate::commands::ActionContext,
-            mut story_cursor: crate::ownership::StoryCursor,
-        ) -> ((), crate::ownership::StoryCursor) {
+        ) -> () {
             let context = crate::commands::load_context(game_id, context);
 
             let rules = self.authorize(game_id, context);
@@ -61,15 +59,15 @@ pub mod MovementLogic {
                 .reveal_destination_tile(tile, crate::commands::biome_context(context))
                 .map(|tile| tile.data)
                 .unwrap_or(0);
-            assert!(data % 0x20000000000 == 0, "destination occupied");
+            assert!(crate::logic::map::occupancy(tile).is_none(), "destination occupied");
             let biome: crate::biome::Biome = self
                 .map_dispatcher(game_id)
                 .biome(tile, crate::commands::biome_context(context))
                 .into();
             let exploring = (data / 0x20000000000) % 0x100 == 0;
+            self.pay_movement(game_id, ref explorer, rules, biome, exploring, context.timestamp, context);
             let mut raw_root = context.raw_root;
-            let game = context.game.unbox();
-            let seed = crate::random::game_root(ref raw_root, game_id, game.seed);
+            let seed = crate::random::game_root(ref raw_root, game_id);
             let mut discovery = crate::discovery::Discovery::None;
             if exploring {
                 crate::logic::map::MapState::reveal(tile, biome.into());
@@ -93,6 +91,7 @@ pub mod MovementLogic {
                                     class_hash: self.release.classes(game_id).map.read(),
                                 },
                                 game_id,
+                                explorer.owner,
                                 destination,
                                 explorer.coord,
                                 seed,
@@ -121,6 +120,7 @@ pub mod MovementLogic {
                         .structures_dispatcher(game_id)
                         .create_discovery(
                             game_id,
+                            explorer.owner,
                             destination,
                             discovery,
                             seed,
@@ -138,7 +138,6 @@ pub mod MovementLogic {
                 crate::troops::explorer_occupier(explorer),
                 false,
             );
-            self.pay_movement(game_id, ref explorer, rules, biome, exploring, context.timestamp, context);
             crate::logic::troops::TroopState::save(key, crate::troops::ExplorerRecordTrait::into_record(explorer));
 
             if !explorer.coord.alt {
@@ -155,17 +154,15 @@ pub mod MovementLogic {
                         None
                     },
                     crate::commands::action_context(ExecutionContext { raw_root, ..context }),
-                    story_cursor,
-                )
-                    .resume_story(ref story_cursor);
+                );
             }
-            ((), story_cursor)
+            ()
         }
     }
     #[abi(embed_v0)]
     impl SettlementDisplacement of crate::settlement::ISettlementDisplacement<ContractState> {
         fn displace_explorer(
-            ref self: ContractState, game_id: u32, explorer_id: u32, game_context: crate::commands::ActionContext,
+            ref self: ContractState, game_id: u32, explorer_id: u64, game_context: crate::commands::ActionContext,
         ) {
             let game_context = crate::commands::load_context(game_id, game_context);
 
@@ -177,7 +174,7 @@ pub mod MovementLogic {
                 let destination = neighbor(explorer.coord, direction);
                 let tile = tile_key(game_id, destination);
                 let data = crate::logic::map::tile(tile).map(|tile| tile.data).unwrap_or(0);
-                if (data / 2) % 256 != 0 {
+                if crate::logic::map::occupancy(tile).is_some() {
                     continue;
                 }
                 if (data / 0x20000000000) % 256 == 0 {
@@ -201,7 +198,6 @@ pub mod MovementLogic {
             actor: ContractAddress,
             command: crate::commands::EnterDepth,
             context: crate::commands::ActionContext,
-            mut story_cursor: crate::ownership::StoryCursor,
         ) {
             let context = crate::commands::load_context(game_id, context);
 
@@ -210,7 +206,7 @@ pub mod MovementLogic {
             let key = ExplorerKey { game_id, explorer_id: command.explorer_id };
             let mut explorer = crate::logic::troops::authorized_explorer(key, actor, context.timestamp, context);
             assert!(explorer.troops.count != 0, "explorer is dead");
-            let home = crate::logic::troops::owned_structure(game_id, explorer.owner, actor);
+            let _home = crate::logic::troops::owned_structure(game_id, explorer.owner, actor);
             let home_key = crate::resources::ResourceKey { game_id, entity_id: explorer.owner };
             assert!(command.depth > 0 && command.depth < 4, "invalid expedition depth");
             assert!(
@@ -222,7 +218,7 @@ pub mod MovementLogic {
             );
             let spacing = self.expedition_spacing(game_id);
             let today = crate::days::day_of(context.game.unbox(), rules.day_unit_seconds, context.timestamp).index;
-            let spire = crate::expeditions::spire(spacing, home.metadata.realm_id, today);
+            let spire = crate::expeditions::spire(spacing, crate::entity_ids::namespace(explorer.owner), today);
             assert!(
                 explorer.coord == spire || crate::geometry::adjacent(explorer.coord, spire),
                 "army must be at its realm's spire",
@@ -259,7 +255,6 @@ pub mod MovementLogic {
             actor: ContractAddress,
             command: crate::commands::Move,
             context: crate::commands::ActionContext,
-            mut story_cursor: crate::ownership::StoryCursor,
         ) {
             let context = crate::commands::load_context(game_id, context);
 
@@ -282,7 +277,7 @@ pub mod MovementLogic {
                     .reveal_destination_tile(tile, crate::commands::biome_context(context))
                     .expect('undiscovered movement tile')
                     .data;
-                assert!(data % 0x20000000000 == 0, "movement tile occupied");
+                assert!(crate::logic::map::occupancy(tile).is_none(), "movement tile occupied");
                 assert!((data / 0x20000000000) % 256 != 0, "undiscovered movement tile");
                 let biome = self.map_dispatcher(game_id).biome(tile, crate::commands::biome_context(context)).into();
                 self.pay_movement(game_id, ref explorer, rules, biome, false, context.timestamp, context);
@@ -302,7 +297,6 @@ pub mod MovementLogic {
             actor: ContractAddress,
             command: crate::commands::ToggleAlternate,
             context: crate::commands::ActionContext,
-            mut story_cursor: crate::ownership::StoryCursor,
         ) {
             let context = crate::commands::load_context(game_id, context);
 
@@ -310,15 +304,15 @@ pub mod MovementLogic {
             let key = ExplorerKey { game_id, explorer_id: command.explorer_id };
             let mut explorer = crate::logic::troops::authorized_explorer(key, actor, context.timestamp, context);
             assert!(explorer.troops.count != 0, "explorer is dead");
-            let spire = crate::logic::map::tile(
+            let spire = crate::logic::map::occupancy(
                 tile_key(game_id, spire_neighbor(explorer.coord, command.spire_direction)),
             )
                 .expect('missing spire');
-            assert!((spire.data / 2) % 256 == 35, "explorer must be adjacent to spire");
+            assert!(spire.category == crate::taxonomy::SPIRE_OCCUPIER, "explorer must be adjacent to spire");
             let destination = Coord { alt: !explorer.coord.alt, ..explorer.coord };
             let destination_key = tile_key(game_id, destination);
             let data = crate::logic::map::tile(destination_key).map(|tile| tile.data).unwrap_or(0);
-            assert!(data % 0x20000000000 == 0, "portal landing occupied");
+            assert!(crate::logic::map::occupancy(destination_key).is_none(), "portal landing occupied");
             self
                 .resources_dispatcher(game_id)
                 .spend_spire_fee(
