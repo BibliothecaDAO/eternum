@@ -125,7 +125,6 @@ export interface RelayPorts {
     blockHash(number: number): RelayEffect<string>;
     eventsPage(from: number, to: number, cursor: string | null): RelayEffect<ConfirmedBlock>;
     withdrawal(chainId: string, transactionHash: string): RelayEffect<Withdrawal | null>;
-    result(chainId: string, gameId: number): RelayEffect<BlitzResult | null>;
     grantLabor(claim: LaborClaim): RelayEffect<LaborGrant>;
   };
   identity: {
@@ -148,7 +147,8 @@ export interface MonitorPorts {
   identity: {
     matchesPayDecision(decision: LedgerPayDecision): RelayEffect<boolean>;
   };
-  shard: Pick<RelayPorts["shard"], "withdrawal" | "result"> & {
+  shard: Pick<RelayPorts["shard"], "withdrawal"> & {
+    result(chainId: string, gameId: number): RelayEffect<BlitzResult | null>;
     conservation(): RelayEffect<readonly ConservationBalance[]>;
   };
   ledger: {

@@ -263,7 +263,7 @@ it("bounds first-time conservation snapshots and rotates unfinished games", asyn
     ),
   ).toEqual([26, 27, 28, 29, 30]);
 });
-it("invalidates a final balance when its source block was replaced", async () => {
+it("rereads a final balance when its source block was replaced", async () => {
   const state = snapshot();
   state.models[0]!.rows[0]!.value.claim_window_seconds = 10;
   const games = directory();

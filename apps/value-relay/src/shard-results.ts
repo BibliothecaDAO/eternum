@@ -1,4 +1,4 @@
-import { relayOperation, type BlitzResult, type RelayPorts } from "./ports";
+import { relayOperation, type BlitzResult, type MonitorPorts } from "./ports";
 import { ShardReader, felt, sameFelt, uint, type ValueRow } from "./shard-rpc";
 import { blitzCommitment } from "@realms-world/value-ledger/commitment";
 
@@ -24,7 +24,7 @@ export const decodeBlitzResult = (chainId: string, row: ValueRow): BlitzResult |
 };
 
 export const shardResultPort =
-  (reader: ShardReader): RelayPorts["shard"]["result"] =>
+  (reader: ShardReader): MonitorPorts["shard"]["result"] =>
   (chainId, gameId) =>
     relayOperation("read confirmed Blitz result", async () => {
       if (!sameFelt(chainId, reader.connection.chainId) || !uint(String(gameId), 32))

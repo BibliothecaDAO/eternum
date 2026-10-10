@@ -91,7 +91,7 @@ const fixture = () => {
   const ports: RelayPorts & {
     identity: MonitorPorts["identity"] & RelayPorts["identity"];
     ledger: RelayPorts["ledger"] & Pick<MonitorPorts["ledger"], "paidClaims" | "postedResults">;
-    shard: RelayPorts["shard"] & Pick<MonitorPorts["shard"], "conservation">;
+    shard: RelayPorts["shard"] & Pick<MonitorPorts["shard"], "conservation" | "result">;
   } = {
     shard: {
       conservation: () => Effect.succeed([]),
@@ -471,9 +471,7 @@ it("holds only a corrupt result while recording and paying the rest of its page"
 
 it("audits the signed pay decision even when replacement and block clocks disagree", async () => {
   const f = fixture();
-  const historicalClock = vi.fn(() => Effect.succeed(false));
   Object.assign(f.ports.identity, {
-    wasReadyPayoutWallet: historicalClock,
     matchesPayDecision: () => Effect.succeed(true),
   });
   const pause = vi.fn(() => Effect.void);
@@ -490,7 +488,6 @@ it("audits the signed pay decision even when replacement and block clocks disagr
     ),
   );
   expect(pause).not.toHaveBeenCalled();
-  expect(historicalClock).not.toHaveBeenCalled();
 });
 it("pauses on a payment with no authorized signed decision even when its wallet was once ready", async () => {
   const f = fixture();

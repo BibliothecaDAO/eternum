@@ -20,7 +20,6 @@ import { currentLaborDay, writeLaborGrant } from "./shard-labor";
 import { handleLaborRequest } from "./labor-route";
 import { ShardReader } from "./shard-rpc";
 import { frontierReceiptBindings } from "./frontier-binding";
-import { shardResultPort } from "./shard-results";
 import { shardWithdrawalPorts } from "./shard-withdrawals";
 import { chestLedgerReads, finishChestOnLedger } from "./chest-ledger";
 import { DurableChestStore, finishRequestedChests } from "./chests";
@@ -355,7 +354,6 @@ const relayPortsOf = (env: RelayEnv, shard: Awaited<ReturnType<typeof readRegist
           env.IDENTITY,
         ),
       ),
-      result: shardResultPort(reader),
       grantLabor: (claim) =>
         relayOperation("grant on official shard", async () => {
           await requireActiveChain(env.IDENTITY, claim.chainId);
