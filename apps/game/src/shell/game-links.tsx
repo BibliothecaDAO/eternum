@@ -33,5 +33,5 @@ export const gamePainting = (game: Pick<DirectoryGame, "mode">): Painting | unde
   }
 };
 
-export const entryHref = (game: DirectoryGame, intent: "play" | "spectate"): string =>
+export const entryHref = (game: Pick<DirectoryGame, "chainId" | "game_id">, intent: "play" | "spectate"): string =>
   buildEntryHref({ chainId: game.chainId, gameId: game.game_id, intent, autoSettle: false });

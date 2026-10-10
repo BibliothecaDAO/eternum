@@ -8,13 +8,14 @@ import { Button } from "@/ui/design-system/kit/button";
 import { Chip } from "@/ui/design-system/kit/chip";
 import { PlayerName } from "@/ui/design-system/kit/player-name";
 import { SeasonRow } from "@/ui/design-system/kit/season-row";
-import { CONTINUE, SEASON_ENDINGS, SEASON_OVER, YOU_PLACED } from "@/ui/design-system/kit/words";
+import { CONTINUE, SEASON_ENDINGS, SEASON_OVER, WITHDRAW, YOU_PLACED } from "@/ui/design-system/kit/words";
 import { boardRows, findOwnEntry, wholeLords } from "@/ui/features/frontier/board/standings";
 
 import { rosterWalletOf } from "@/runtime/world/directory";
 
 import { gameKeyOf, gameSlotKeyOf } from "../blitz-rows";
 import { clockLine } from "../clock-chip";
+import { entryHref } from "../game-links";
 import { formatPoints, ordinal } from "../format";
 import { isSameStarknetAddress } from "@realms-world/identity";
 import { useLayout } from "../frame/layout";
@@ -109,7 +110,7 @@ const Result = ({ gameRef, fromList }: { gameRef: GameRef; fromList: boolean }) 
       </ResultsFrame>
     );
   return board.data.mode === "frontier" ? (
-    <FrontierResult entries={board.data.entries} player={player} fromList={fromList} />
+    <FrontierResult gameRef={gameRef} entries={board.data.entries} player={player} fromList={fromList} />
   ) : (
     <BlitzResult gameRef={gameRef} game={game} entries={board.data.entries} player={player} fromList={fromList} />
   );
@@ -267,10 +268,12 @@ const BlitzResult = ({
 };
 
 const FrontierResult = ({
+  gameRef,
   entries,
   player,
   fromList,
 }: {
+  gameRef: GameRef;
   entries: HeraldFrontierLeaderboardEntry[];
   player: string | null;
   fromList: boolean;
@@ -323,6 +326,16 @@ const FrontierResult = ({
             className="flex-1"
             onClick={() => navigate("/season")}
           />
+          {/* The player's own ended season stays in reach: its last card holds the realm's LORDS still to withdraw. */}
+          {own && (
+            <Button
+              role="secondary"
+              word={WITHDRAW}
+              icon="Lo"
+              className="flex-1"
+              onClick={() => navigate(entryHref({ chainId: gameRef.chainId, game_id: gameRef.gameId }, "play"))}
+            />
+          )}
         </Buttons>
       }
     />

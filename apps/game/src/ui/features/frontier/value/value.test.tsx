@@ -7,6 +7,7 @@ import { type HeldRealm, planRealmLabor } from "./realm-labor";
 import { RealmsSheet } from "./realms-sheet";
 import { type WithdrawStep, WithdrawSheet } from "./withdraw-sheet";
 import { formatMoment } from "@/ui/design-system/kit/time";
+import { SeasonWithdrawRow } from "./season-withdraw";
 import { withdrawalRefusal, withdrawalsCloseAt, withdrawStepOf } from "./withdrawal";
 
 let host: HTMLDivElement;
@@ -112,6 +113,35 @@ describe("a withdrawal's rules", () => {
       amount: 500,
       transactionUrl: "https://x/tx/0x1",
     });
+  });
+});
+
+describe("the realm's LORDS on the season-over card", () => {
+  // The season's withdrawals close at 10,000.
+  const show = (lords: number | undefined, now: number, onOpen = vi.fn()) => {
+    act(() => root.render(<SeasonWithdrawRow lords={lords} closesAt={10_000} now={now} onOpen={onOpen} />));
+    return onOpen;
+  };
+
+  it("offers Withdraw, with the moment withdrawals close, while the season's claim window is open", () => {
+    const onOpen = show(1_240, 9_999);
+    expect(host.textContent).toContain("1,240");
+    expect(host.textContent).toContain(`Withdraw until ${formatMoment(10_000, 9_999)}`);
+    act(() => button("Withdraw")!.click());
+    expect(onOpen).toHaveBeenCalledTimes(1);
+  });
+
+  it("says withdrawals have closed from that moment, and offers nothing to press", () => {
+    show(1_240, 10_000);
+    expect(host.textContent).toContain("Withdrawals have closed for this season.");
+    expect(host.querySelector("button")).toBeNull();
+  });
+
+  it("shows nothing for a realm that holds no LORDS, or whose count is not known yet", () => {
+    show(0, 9_999);
+    expect(host.textContent).toBe("");
+    show(undefined, 9_999);
+    expect(host.textContent).toBe("");
   });
 });
 
