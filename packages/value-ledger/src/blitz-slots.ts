@@ -10,6 +10,7 @@ export interface SlotRegistration {
   registeredAt: number;
 }
 export interface LedgerSlot {
+  exists: boolean;
   seasonId: number;
   presetId: number;
   close: number;
@@ -42,8 +43,9 @@ export async function readLedgerSlot(
     { contractAddress: address, entrypoint: "get_slot", calldata: [key.chainId, String(key.slotId)] },
     head,
   );
-  if (fields.length !== 9 || !ledgerBool(fields[1]!)) throw new Error("invalid_ledger_slot");
+  if (fields.length !== 9) throw new Error("invalid_ledger_slot");
   return {
+    exists: ledgerBool(fields[1]!),
     seasonId: ledgerInteger(fields[0]!),
     presetId: ledgerInteger(fields[2]!),
     close: ledgerInteger(fields[3]!),
@@ -64,6 +66,7 @@ export async function readRegistrationPage(
   if (query.blockHash !== undefined && BigInt(head.hash) !== BigInt(query.blockHash))
     throw new Error("registration_head_changed");
   const slot = await readLedgerSlot(provider, address, query, head.number);
+  if (!slot.exists) throw new Error("invalid_ledger_slot");
   const from = query.from ?? 0;
   if (!Number.isSafeInteger(from) || from < 0 || from > slot.registeredCount)
     throw new Error("invalid_registration_offset");

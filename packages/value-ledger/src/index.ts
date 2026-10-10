@@ -5,6 +5,7 @@ export {
   decodeFrontierSeason,
   decodeWithdrawalPayment,
   decodeChest,
+  decodeSeasonWinner,
   decodeLedgerPreset,
   decodeBlitzSeason,
   readConfirmedLedgerHead,
@@ -23,3 +24,5 @@ export { activeShards, requireActiveChain, readRegisteredShard } from "./officia
 export type { ShardDirectory, RegisteredShard } from "./official-shards";
 
 export { computeSeasonTop } from "./season-top";
+
+export { readBlitzRoster } from "./shard-roster";

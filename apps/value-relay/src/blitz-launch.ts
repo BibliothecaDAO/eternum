@@ -3,7 +3,6 @@ import {
   rpcAt,
   readLedgerSlot,
   ledgerInteger,
-  ledgerBool,
   decodeBlitzSeason,
   readConfirmedLedgerHead,
   type LedgerSlotKey,
@@ -26,8 +25,8 @@ export const openSlotOnLedger = (credentials: Credentials, key: LedgerSlotKey, w
   relayOperation("open ledger Blitz registration", async () => {
     const provider = rpcAt(credentials.rpcUrl);
     const head = await readConfirmedLedgerHead(provider);
-    if (await slotOpened(provider, credentials.contractAddress, key, head.number)) {
-      const slot = await readLedgerSlot(provider, credentials.contractAddress, key, head.number);
+    const slot = await readLedgerSlot(provider, credentials.contractAddress, key, head.number);
+    if (slot.exists) {
       if (slot.close !== window.start || slot.end !== window.end || slot.cancelled)
         throw new Error("ledger_slot_window_differs");
       return;
@@ -44,7 +43,12 @@ export const openSlotOnLedger = (credentials: Credentials, key: LedgerSlotKey, w
       String(window.end),
     ]);
     const recorded = await readLedgerSlot(provider, credentials.contractAddress, key, await provider.getBlockNumber());
-    if (recorded.close !== window.start || recorded.end !== window.end || recorded.seasonId !== season.id)
+    if (
+      !recorded.exists ||
+      recorded.close !== window.start ||
+      recorded.end !== window.end ||
+      recorded.seasonId !== season.id
+    )
       throw new Error("ledger_slot_not_recorded");
   });
 
@@ -53,24 +57,14 @@ export const refundSlotOnLedger = (credentials: Credentials, key: LedgerSlotKey)
   relayOperation("unlock failed Blitz refunds", async (): Promise<number | null> => {
     const provider = rpcAt(credentials.rpcUrl);
     const head = await readConfirmedLedgerHead(provider);
-    if (!(await slotOpened(provider, credentials.contractAddress, key, head.number))) return null;
     const slot = await readLedgerSlot(provider, credentials.contractAddress, key, head.number);
-    if (slot.cancelled) return null;
+    if (!slot.exists || slot.cancelled) return null;
     if (head.time >= slot.close && head.time < slot.end) return slot.end - head.time;
     await submit(credentials, head.time < slot.close ? "cancel_slot" : "abort_slot", [key.chainId, String(key.slotId)]);
     const refunded = await readLedgerSlot(provider, credentials.contractAddress, key, await provider.getBlockNumber());
-    if (!refunded.cancelled) throw new Error("ledger_refunds_not_enabled");
+    if (!refunded.exists || !refunded.cancelled) throw new Error("ledger_refunds_not_enabled");
     return null;
   });
-
-const slotOpened = async (provider: RpcProvider, address: string, key: LedgerSlotKey, head: number) => {
-  const fields = await provider.callContract(
-    { contractAddress: address, entrypoint: "get_slot", calldata: [key.chainId, String(key.slotId)] },
-    head,
-  );
-  if (fields.length !== 9) throw new Error("invalid_ledger_slot");
-  return ledgerBool(fields[1]!);
-};
 
 export const markSlotRefundable = (credentials: Credentials, key: LedgerSlotKey, wallets: readonly string[]) =>
   relayOperation("mark unseated registrations refundable", async () => {

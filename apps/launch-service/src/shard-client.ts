@@ -1,3 +1,4 @@
+import { readBlitzRoster } from "@realms-world/value-ledger";
 import { RegistrationOpen } from "./blitz-roster";
 import { ShardOperator, batchRemaining, type ShardTarget } from "@realms-world/value-ledger/shard";
 import { CairoOption, CairoOptionVariant, shortString } from "starknet";
@@ -79,8 +80,7 @@ export class LaunchShard extends ShardOperator {
     };
   }
   async roster(gameId: number) {
-    const rows = await this.view<{ wallet: bigint; account: bigint }[]>("blitz_roster", [gameId]);
-    return rows.map((row) => ({ wallet: `0x${row.wallet.toString(16)}`, account: `0x${row.account.toString(16)}` }));
+    return readBlitzRoster(this.provider, this.target.gamesAddress, gameId, (await this.head()).block_number);
   }
   async seat(gameId: number) {
     let transactions = 0;

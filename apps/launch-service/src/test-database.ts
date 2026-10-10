@@ -45,7 +45,16 @@ export const slotValueFixture = (count = 0) => ({
   refundSlot: async () => null,
   markRefundable: async () => {},
   registrations: async () => ({
-    slot: { seasonId: 1, presetId: 1, close: 100, end: 160, pool: "0", registeredCount: count, cancelled: false },
+    slot: {
+      exists: true,
+      seasonId: 1,
+      presetId: 1,
+      close: 100,
+      end: 160,
+      pool: "0",
+      registeredCount: count,
+      cancelled: false,
+    },
     blockNumber: 10,
     blockHash: "0xabc",
     secondsUntilClose: 0,

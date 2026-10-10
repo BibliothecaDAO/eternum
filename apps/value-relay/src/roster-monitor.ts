@@ -4,7 +4,7 @@ import {
   readRegistrationPage,
   rpcAt,
   readRegisteredShard,
-  ledgerInteger,
+  readBlitzRoster,
   type RegistrationIdentity,
   type ShardDirectory,
   type SlotCohort,
@@ -73,14 +73,6 @@ export const slotRosterReads = (
       gamesAddress: shard.contracts.games!,
     });
     const head = await reader.head();
-    const fields = await reader
-      .provider()
-      .callContract(
-        { contractAddress: shard.contracts.games!, entrypoint: "blitz_roster", calldata: [String(gameId)] },
-        head,
-      );
-    const count = ledgerInteger(fields[0]!);
-    if (fields.length !== 1 + count * 2) throw new Error("invalid_frozen_roster");
-    return Array.from({ length: count }, (_, i) => ({ account: fields[1 + i * 2]!, wallet: fields[2 + i * 2]! }));
+    return readBlitzRoster(reader.provider(), shard.contracts.games!, gameId, head);
   },
 });

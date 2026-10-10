@@ -1,4 +1,4 @@
-import { normalizeStarknetAddress } from "@realms-world/identity";
+import { normalizeStarknetAddress, isSameStarknetAddress } from "@realms-world/identity";
 import { RelayFailure } from "./ports";
 import { hash, shortString, type RpcProvider } from "starknet";
 import { rpcAt } from "@realms-world/value-ledger";
@@ -290,7 +290,7 @@ export const felt = (value: string): string => {
   return normalizeStarknetAddress(value);
 };
 export const sameFelt = (left: string, right: string | undefined): boolean =>
-  right !== undefined && BigInt(felt(left)) === BigInt(felt(right));
+  right !== undefined && isSameStarknetAddress(felt(left), felt(right));
 export const uint = (value: string, bits: number): bigint => {
   if (typeof value !== "string" || !/^(?:0x[0-9a-fA-F]+|[0-9]+)$/.test(value)) throw new Error("invalid_integer_text");
   const n = BigInt(value);

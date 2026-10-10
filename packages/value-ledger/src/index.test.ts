@@ -85,3 +85,10 @@ it("rejects a repeated event continuation token instead of looping forever", asy
   await expect(readRegistrationPage(f.provider, "0x10", key)).rejects.toThrow("registration_page_cycle");
   expect(f.events).toHaveBeenCalledTimes(2);
 });
+
+it("reads absent slots for opening but never serves their registrations", async () => {
+  const f = fixture(0);
+  f.call.mockResolvedValue(Array(9).fill("0"));
+  expect(await readLedgerSlot(f.provider, "0x10", key, 99)).toMatchObject({ exists: false });
+  await expect(readRegistrationPage(f.provider, "0x10", key)).rejects.toThrow("invalid_ledger_slot");
+});

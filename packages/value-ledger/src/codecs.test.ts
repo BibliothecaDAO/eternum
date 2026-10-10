@@ -1,6 +1,7 @@
 import { it, expect } from "vitest";
 import {
   decodeChest,
+  decodeSeasonWinner,
   decodeWithdrawalPayment,
   decodeFrontierSeason,
   decodeLedgerPreset,
@@ -87,4 +88,14 @@ it("decodes the complete chest shape and rejects absent or malformed records", (
     [...chest.slice(0, 6), String(1n << 60n)],
   ])
     expect(() => decodeChest(fields)).toThrow();
+});
+
+it("decodes one winner and its full allocated share and rejects incomplete or absent winners", () => {
+  expect(decodeSeasonWinner(["0xabc", "7", "1"])).toEqual({ wallet: "0xabc", share: (1n << 128n) + 7n });
+  for (const fields of [
+    ["0xabc", "7"],
+    ["0", "7", "0"],
+    ["0xabc", "0", String(1n << 128n)],
+  ])
+    expect(() => decodeSeasonWinner(fields)).toThrow();
 });

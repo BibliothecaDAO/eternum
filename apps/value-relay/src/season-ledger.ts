@@ -3,6 +3,7 @@ import {
   rpcAt,
   ledgerInteger,
   decodeBlitzSeason,
+  decodeSeasonWinner,
   decodeLedgerPreset,
   readConfirmedLedgerHead,
 } from "@realms-world/value-ledger";
@@ -50,8 +51,7 @@ export const seasonLedgerReads = (target: Ledger): Omit<SeasonPorts, "post" | "c
         },
         head,
       );
-      if (fields.length !== 3 || BigInt(fields[0]!) === 0n) throw new Error("invalid_season_winner");
-      return fields[0]!;
+      return decodeSeasonWinner(fields).wallet;
     },
   };
 };
