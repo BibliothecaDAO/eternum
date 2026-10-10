@@ -80,7 +80,7 @@ const GameFinishedStep = ({ data }: { data: GameReviewData }) => {
       </div>
       <p className="text-xs uppercase tracking-wider text-gold/60">World: {data.worldName}</p>
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2">
         <div className="rounded-xl border border-gold/20 bg-dark/80 p-3">
           <p className="text-[11px] uppercase tracking-wider text-gold/60">Winner</p>
           <p className="mt-1 text-sm text-white">{winnerLabel}</p>
@@ -88,10 +88,6 @@ const GameFinishedStep = ({ data }: { data: GameReviewData }) => {
         <div className="rounded-xl border border-gold/20 bg-dark/80 p-3">
           <p className="text-[11px] uppercase tracking-wider text-gold/60">Registered Players</p>
           <p className="mt-1 text-sm text-white">{formatValue(data.stats.numberOfPlayers)}</p>
-        </div>
-        <div className="rounded-xl border border-gold/20 bg-dark/80 p-3">
-          <p className="text-[11px] uppercase tracking-wider text-gold/60">Total Transactions</p>
-          <p className="mt-1 text-sm text-white">{formatValue(data.stats.totalTransactions)}</p>
         </div>
       </div>
     </div>
