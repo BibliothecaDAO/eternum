@@ -26,7 +26,13 @@ export const lobbyRowOf = (rows: readonly BlitzRow[], slots: readonly PlaytestSl
  * player), whether it is the player's own, and whether that player's realm is ready (undefined while Herald does not
  * serve the roster).
  */
-export type Seat = { account: string | null; own: boolean; prepared: boolean | undefined };
+export type Seat = {
+  account: string | null;
+  /** The wallet the roster froze for the seat, whose rating it shows; null for a seat Herald does not name. */
+  wallet: string | null;
+  own: boolean;
+  prepared: boolean | undefined;
+};
 
 /** What a lobby offers: the one action, or the fact that stands where it would. */
 export type LobbyStep = { kind: "open" } | { kind: "preparing" } | { kind: "enter" } | { kind: "watch" };
@@ -38,14 +44,15 @@ export type LobbyStep = { kind: "open" } | { kind: "preparing" } | { kind: "ente
  */
 export const seatsOf = (game: DirectoryGame, player: string | null): Seat[] => {
   if (!game.roster) return Array.from({ length: game.player_count }, () => UNNAMED_SEAT);
-  return game.roster.map(({ account, prepared }) => ({
+  return game.roster.map(({ account, wallet, prepared }) => ({
     account,
+    wallet,
     own: player !== null && isSameStarknetAddress(account, player),
     prepared,
   }));
 };
 
-const UNNAMED_SEAT: Seat = { account: null, own: false, prepared: undefined };
+const UNNAMED_SEAT: Seat = { account: null, wallet: null, own: false, prepared: undefined };
 
 /**
  * The lobby's one step (spec 06): Open a slot's lobby, where its entry is paid; Preparing while the roster's realms are

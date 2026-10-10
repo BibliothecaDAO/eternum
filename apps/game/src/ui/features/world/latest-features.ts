@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-10",
+    title: "Ratings on the Blitz roster",
+    description:
+      "A Blitz game's lobby shows each seated player's rating again, read for the wallet their seat was drawn with.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-10",
     title: "Chat in a Blitz slot's lobby",
     description:
       "Once your payout wallet is registered in a slot, you can write in its lobby chat. Everyone signed in can read it.",

@@ -7,6 +7,8 @@ import { PlayerName } from "@/ui/design-system/kit/player-name";
 
 import type { PlaytestSlot } from "@/ui/features/factory-v2/api/factory-worker";
 
+import { RatingFigure } from "../rating-mark";
+import { useRatings } from "../ratings";
 import { BLITZ_SEATS } from "../blitz-slot";
 import { BLITZ_WORDS } from "../words";
 import { useSlotRegistered } from "./entry";
@@ -81,8 +83,9 @@ const PreparedMark = ({ prepared }: { prepared: boolean | undefined }) => {
 };
 
 /**
- * The desktop lobby's roster: the same 24 seats, large, each with its player's name under the portrait. A rating
- * belongs to the wallet that played, which Herald's roster does not name yet, so the seats carry none.
+ * The desktop lobby's roster: the same 24 seats, large, each with its player's name and Blitz rating under the
+ * portrait. A rating belongs to the wallet that plays: the one the roster froze for the seat (a dash where none
+ * answers, or for a seat Herald does not name).
  */
 export const RosterGrid = ({
   seats,
@@ -92,29 +95,40 @@ export const RosterGrid = ({
   seats: readonly Seat[];
   total: number;
   preparing: boolean;
-}) => (
-  <ul aria-label={`${BLITZ_WORDS.seats} ${seats.length}/${total}`} className="grid grid-cols-6 gap-x-6 gap-y-5">
-    {Array.from({ length: total }, (_, index) => {
-      const seat = seats[index];
-      return (
-        <li key={index} className="flex flex-col items-center gap-1.5">
-          <span className="relative block aspect-square w-full max-w-24">
-            {seat ? (
-              <TakenSocket seat={seat} preparing={preparing} />
-            ) : (
-              <span className="block size-full rounded-full border-2 border-dashed border-kit-line" />
-            )}
-          </span>
-          {seat && (
-            <span className="max-w-full font-ui text-[13px] text-kit-cream">
-              {seat.account ? <PlayerName account={seat.account} you={seat.own} /> : "—"}
+}) => {
+  const ratings = useRatings(seats.flatMap((seat) => (seat.wallet ? [seat.wallet] : [])));
+  return (
+    <ul aria-label={`${BLITZ_WORDS.seats} ${seats.length}/${total}`} className="grid grid-cols-6 gap-x-6 gap-y-5">
+      {Array.from({ length: total }, (_, index) => {
+        const seat = seats[index];
+        const answer = seat?.wallet ? ratings.data?.ratings[seat.wallet] : undefined;
+        return (
+          <li key={index} className="flex flex-col items-center gap-1.5">
+            <span className="relative block aspect-square w-full max-w-24">
+              {seat ? (
+                <TakenSocket seat={seat} preparing={preparing} />
+              ) : (
+                <span className="block size-full rounded-full border-2 border-dashed border-kit-line" />
+              )}
             </span>
-          )}
-        </li>
-      );
-    })}
-  </ul>
-);
+            {seat && (
+              <>
+                <span className="max-w-full font-ui text-[13px] text-kit-cream">
+                  {seat.account ? <PlayerName account={seat.account} you={seat.own} /> : "—"}
+                </span>
+                {answer ? (
+                  <RatingFigure rating={answer.rating} />
+                ) : (
+                  <span className="text-[13px] text-kit-muted">—</span>
+                )}
+              </>
+            )}
+          </li>
+        );
+      })}
+    </ul>
+  );
+};
 
 /**
  * Where a slot's lobby would draw seats: the one number the ledger keeps for it, its registrations, large on the
