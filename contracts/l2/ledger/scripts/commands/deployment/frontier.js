@@ -6,7 +6,7 @@ export function buildFrontierFundingCall(ledger, settings) {
     entrypoint: "fund_frontier",
     calldata: CallData.compile([
       settings.shard,
-      1,
+      settings.frontierSeasonId,
       2,
       settings.start,
       settings.seed,
