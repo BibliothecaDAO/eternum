@@ -138,6 +138,7 @@ export const RECEIVES_FROM = "Receives from";
 export const TRANSACTION = "Transaction";
 export const PAYOUTS_PAUSED = "Payouts paused. Your LORDS stay here.";
 export const paidWhenResumed = (amount: string) => `Payouts paused. These ${amount} pay when they resume.`;
+export const PAYOUTS_UNREADABLE = "Payouts cannot be read right now. Your LORDS stay here.";
 
 /** The labor a player's Realms give once a game day. */
 export const REALMS = "Realms";

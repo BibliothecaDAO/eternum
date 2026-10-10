@@ -735,6 +735,18 @@ export class EternumProvider extends EventEmitter {
     );
   }
 
+  /**
+   * Takes whole LORDS out of a realm for the owner's payout wallet on Starknet: the shard debits the realm and records
+   * the withdrawal, which the relay pays; the receipt's transaction hash is the claim the ledger keys the payment by.
+   */
+  public async withdraw_lords(props: SystemProps.SystemSigner & { structureId: number; amount: number }) {
+    return this.submitCommand(
+      props.signer,
+      { kind: "WithdrawLords", value: { structure_id: props.structureId, amount: props.amount } },
+      TransactionType.WITHDRAW_LORDS,
+    );
+  }
+
   public async settle_season(props: SystemProps.SystemSigner & { name: string; selectedRealm?: number }) {
     return this.submitCommand(
       props.signer,

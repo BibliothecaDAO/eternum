@@ -10,6 +10,8 @@ import {
   decodeLedgerSlot,
   decodePlayerResult,
   decodeRegistration,
+  decodeSeasonWinner,
+  decodeWithdrawalPayment,
 } from "@realms-world/value-ledger/codecs";
 
 import { L2_LEDGER, l2Provider } from "@/runtime/l2-rpc";
@@ -74,6 +76,7 @@ export const lordsOf = (wei: bigint): number => Number(wei / LORDS_UNIT);
 export const lordsShortOf = (wei: bigint): number => Number((wei + LORDS_UNIT - 1n) / LORDS_UNIT);
 
 const CHEST_OPENED = hash.getSelectorFromName("ChestOpened");
+const WITHDRAWAL_PAID = hash.getSelectorFromName("WithdrawalPaid");
 
 const keyCalldata = (key: SlotKey | GameKey) => [key.shard, String("slotId" in key ? key.slotId : key.gameId)];
 const u256 = (value: bigint) => [String(value & ((1n << 128n) - 1n)), String(value >> 128n)];
@@ -157,13 +160,16 @@ export const ledgerReader = (provider: ProviderInterface, ledger: string) => {
     lordsToken: async () => (await view("lords", []))[0],
     chestCollection: async () => (await view("chest_collection", []))[0],
     balanceOf,
-    slot: async (key: SlotKey) => decodeLedgerSlot(await view("get_slot", keyCalldata(key))),
+    /** A listed slot the ledger does not hold is a broken listing, said as one. */
+    slot: async (key: SlotKey) => {
+      const slot = decodeLedgerSlot(await view("get_slot", keyCalldata(key)));
+      if (!slot.exists) throw new Error("invalid_ledger_slot");
+      return slot;
+    },
     preset: async (presetId: number) => presetTermsOf(decodeLedgerPreset(await view("get_preset", [String(presetId)]))),
     season: async (seasonId: number) => blitzSeasonOf(decodeBlitzSeason(await view("get_season", [String(seasonId)]))),
-    seasonWinner: async (seasonId: number, index: number) => {
-      const [wallet, low, high] = await view("get_season_winner", [String(seasonId), String(index)]);
-      return { wallet, share: BigInt(low) + (BigInt(high) << 128n) };
-    },
+    seasonWinner: async (seasonId: number, index: number) =>
+      decodeSeasonWinner(await view("get_season_winner", [String(seasonId), String(index)])),
     seasonClaimed: async (seasonId: number, owner: string) =>
       BigInt((await view("season_claimed", [String(seasonId), owner]))[0]) !== 0n,
     registration: async (key: SlotKey, owner: string) =>
@@ -183,6 +189,23 @@ export const ledgerReader = (provider: ProviderInterface, ledger: string) => {
       });
       return events[0] ? decodeChestContent(events[0].data) : null;
     },
+    /** Whether payouts are paused: the ledger then pays no withdrawal until it resumes. */
+    paused: async () => BigInt((await view("is_paused", []))[0]) !== 0n,
+    /** A Frontier withdrawal on the ledger, by its shard and claim (the withdrawal's transaction there); null until reported. */
+    payment: async (shard: string, claimId: string) =>
+      decodeWithdrawalPayment(await view("get_payment", [shard, claimId])),
+    /** The Starknet transaction that paid a claim: its WithdrawalPaid event, searched from the block the claim was made at. */
+    paymentTransaction: async (shard: string, claimId: string, fromBlock: number): Promise<string | null> => {
+      const { events } = await provider.getEvents({
+        address: ledger,
+        from_block: { block_number: fromBlock },
+        to_block: "latest",
+        keys: [[WITHDRAWAL_PAID], [num.toHex(shard)], [num.toHex(claimId)]],
+        chunk_size: 10,
+      });
+      return events[0]?.transaction_hash ?? null;
+    },
+    latestBlock: () => provider.getBlockNumber(),
     chestOwner: async (chest: string, tokenId: bigint) =>
       (await provider.callContract({ contractAddress: chest, entrypoint: "owner_of", calldata: u256(tokenId) }))[0],
   };

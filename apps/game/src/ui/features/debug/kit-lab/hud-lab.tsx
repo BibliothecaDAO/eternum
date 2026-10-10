@@ -6,6 +6,7 @@ import {
   HUT,
   MAP,
   OFFLINE,
+  PAYOUTS_PAUSED,
   TRAINING_BUILDINGS,
   TRY_AGAIN,
   WORKSHOP,
@@ -207,7 +208,7 @@ const SEVEN_REALMS: readonly HeldRealm[] = [
   { realmId: 5_990, name: "Orrin", order: 12, claimedToday: false },
   { realmId: 7_421, name: "Tamsel", order: 14, claimedToday: false },
 ];
-type LabWithdraw = { held: number; wallet: PayoutWallet; paused?: boolean; step: WithdrawStep; amount: number };
+type LabWithdraw = { held: number; wallet: PayoutWallet; refusal?: string; step: WithdrawStep; amount: number };
 type LabRealms = { wallet: PayoutWallet; realms: readonly HeldRealm[]; labor: number; limit: number };
 const WITHDRAW_500: LabWithdraw = { held: 1_240, wallet: READY, step: { kind: "pick" }, amount: 500 };
 /** Days 8 to 12 of the pot: about 14,300 unlocked a day; days 10 and 11 were quiet and roll 18,600 into day 12. */
@@ -739,14 +740,14 @@ const STATES = {
     stores: STORES,
     armies: ARMIES,
     purse: { lords: 1_240 },
-    withdraw: { ...WITHDRAW_500, paused: true },
+    withdraw: { ...WITHDRAW_500, refusal: PAYOUTS_PAUSED },
   },
   "withdraw-waiting": {
     clock: CLOCK,
     stores: STORES,
     armies: ARMIES,
     purse: { lords: 740 },
-    withdraw: { ...WITHDRAW_500, held: 740, paused: true, step: { kind: "waiting", amount: 500 } },
+    withdraw: { ...WITHDRAW_500, held: 740, step: { kind: "waiting", amount: 500 } },
   },
   realms: {
     clock: CLOCK,
@@ -1360,7 +1361,7 @@ const LabWithdrawSheet = ({ withdraw }: { withdraw: LabWithdraw }) => {
     <WithdrawSheet
       held={withdraw.held}
       wallet={withdraw.wallet}
-      paused={withdraw.paused ?? false}
+      refusal={withdraw.refusal ?? null}
       step={withdraw.step}
       amount={amount}
       onAmount={setAmount}

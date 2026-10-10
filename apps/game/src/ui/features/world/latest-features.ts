@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-10",
+    title: "Withdraw LORDS and claim Realm labor",
+    description:
+      "In Frontier, tap your LORDS to withdraw them to your payout wallet and follow the payment to its transaction. Realms in that wallet give labor once a day: claim it from the Realms chip or the Menu.",
+    type: "feature",
+  },
+  {
+    date: "2026-10-10",
     title: "Blitz slots show who registered",
     description:
       "A Blitz slot shows how many players registered instead of a row of seats. Your entry reads Registered until the slot closes, then Seated with the way to your game, or Not seated with your refund to take.",

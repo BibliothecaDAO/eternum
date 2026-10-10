@@ -6,7 +6,7 @@ import { Chip } from "@/ui/design-system/kit/chip";
 import { type IconCode, KitIcon } from "@/ui/design-system/kit/kit-icon";
 import { ReasonPlate } from "@/ui/design-system/kit/reason-plate";
 import { Sheet } from "@/ui/design-system/kit/sheet";
-import { formatClockTime } from "@/ui/design-system/kit/time";
+import { formatMoment } from "@/ui/design-system/kit/time";
 import {
   ALL,
   CONTINUE,
@@ -14,7 +14,6 @@ import {
   LORDS,
   RECEIVES_FROM,
   NO_WALLET,
-  PAYOUTS_PAUSED,
   SENDING,
   TRANSACTION,
   WITHDRAW,
@@ -36,12 +35,12 @@ export type WithdrawStep =
 /**
  * Withdraw (value screens, a): the realm's LORDS leave the game for the wallet linked to the account, shown and never
  * typed, at once and with no cap. No wallet sends the player to link one in the app; a new wallet waits out its hold;
- * paused payouts refuse before anything leaves.
+ * paused payouts, and the season's closed withdrawals, refuse before anything leaves.
  */
 export const WithdrawSheet = ({
   held,
   wallet,
-  paused,
+  refusal,
   step,
   amount,
   onAmount,
@@ -51,7 +50,8 @@ export const WithdrawSheet = ({
 }: {
   held: number | undefined;
   wallet: PayoutWallet;
-  paused: boolean;
+  /** Why nothing can leave now, whatever the wallet: said in place of the amount's choice. */
+  refusal: string | null;
   step: WithdrawStep;
   amount: number;
   onAmount: (amount: number) => void;
@@ -67,7 +67,7 @@ export const WithdrawSheet = ({
     <WithdrawBody
       held={held}
       wallet={wallet}
-      paused={paused}
+      refusal={refusal}
       step={step}
       amount={amount}
       onAmount={onAmount}
@@ -81,7 +81,7 @@ export const WithdrawSheet = ({
 const WithdrawBody = ({
   held,
   wallet,
-  paused,
+  refusal,
   step,
   amount,
   onAmount,
@@ -93,7 +93,7 @@ const WithdrawBody = ({
   if (step.kind === "paid") return <Paid step={step} wallet={wallet} onClose={onClose} />;
   if (step.kind === "waiting") return <Waiting amount={step.amount} held={held} wallet={wallet} />;
   if (wallet.status === "no_wallet") return <NoWallet held={held} onLinkWallet={onLinkWallet} />;
-  if (paused) return <Refused held={held} address={wallet.address} line={PAYOUTS_PAUSED} />;
+  if (refusal) return <Refused held={held} address={wallet.address} line={refusal} />;
   if (wallet.status === "on_hold") return <OnHold held={held} address={wallet.address} until={wallet.until} />;
   return <Pick held={held} address={wallet.address} amount={amount} onAmount={onAmount} onWithdraw={onWithdraw} />;
 };
@@ -158,7 +158,7 @@ const OnHold = ({ held, address, until }: { held: number | undefined; address: s
     <Hero icon="Lo" value={formatExact(held)} />
     <div className="flex flex-col items-center gap-1.5">
       <WalletChip address={address} />
-      <Chip icons={["Hg"]} label={RECEIVES_FROM} value={formatClockTime(until / 1000)} />
+      <Chip icons={["Hg"]} label={RECEIVES_FROM} value={formatMoment(until / 1000)} />
     </div>
     <Button role="primary" word={WITHDRAW} disabled />
   </>
