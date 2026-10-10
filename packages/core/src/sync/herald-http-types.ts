@@ -134,11 +134,6 @@ export interface HeraldHistoryPage {
   total: number;
 }
 
-export interface HeraldTransactionCount {
-  count: number;
-  game_id: string;
-}
-
 /** A ranked player by address; their name is their identity profile, which the client resolves. */
 export type HeraldLeaderboardEntry = PlayerLeaderboardActivityEntry;
 
