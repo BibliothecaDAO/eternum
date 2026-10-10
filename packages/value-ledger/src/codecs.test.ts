@@ -91,7 +91,7 @@ it("decodes the complete chest shape and rejects absent or malformed records", (
 });
 
 it("decodes one winner and its full allocated share and rejects incomplete or absent winners", () => {
-  expect(decodeSeasonWinner(["0xabc", "7", "1"])).toEqual({ wallet: "0xabc", share: (1n << 128n) + 7n });
+  expect(decodeSeasonWinner(["0xabc", "7", "1"])).toEqual({ wallet: "0xabc" });
   for (const fields of [
     ["0xabc", "7"],
     ["0", "7", "0"],

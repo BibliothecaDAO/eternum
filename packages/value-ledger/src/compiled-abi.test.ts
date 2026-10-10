@@ -112,7 +112,6 @@ describe("committed contract readbacks", () => {
     });
     expect(decodeSeasonWinner(response(ledgerAbi, "get_season_winner", { 0: 17, 1: { low: 7, high: 2 } }))).toEqual({
       wallet: "17",
-      share: 7n + (2n << 128n),
     });
     expect(
       decodeWithdrawalPayment(

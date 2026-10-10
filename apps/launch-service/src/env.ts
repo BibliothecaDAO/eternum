@@ -13,7 +13,6 @@ const LaunchVars = Schema.Struct({
   BASE_URL: Schema.NonEmptyString,
   /** Comma-separated Starknet addresses allowed to launch games; a wildcard is refused. */
   LAUNCHER_ALLOWLIST: Schema.NonEmptyString,
-  DEPLOYER_ACCOUNT_ADDRESS: Schema.NonEmptyString,
   DEPLOYER_PRIVATE_KEY: Schema.NonEmptyString,
   /** The environment's one operator token, which operator automation presents as a launcher. */
   OPERATOR_TOKEN: Schema.NonEmptyString,

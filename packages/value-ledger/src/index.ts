@@ -12,10 +12,6 @@ export {
   readConfirmedLedgerHead,
 } from "./codecs";
 export { rpcAt } from "./rpc";
-export interface LedgerGameKey {
-  chainId: string;
-  gameId: number;
-}
 export { readLedgerSlot, readLedgerRegistration, readRegistrationPage } from "./blitz-slots";
 export type { LedgerSlotKey, LedgerSlot, SlotRegistration, RegistrationPage, RegistrationQuery } from "./blitz-slots";
 export { resolveBlitzRoster, splitPlaytestRoster } from "./blitz-roster";

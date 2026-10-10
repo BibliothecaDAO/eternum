@@ -17,9 +17,9 @@ interface LaunchExecutorService {
   execute(run: LaunchRun, store: LaunchRunStore): Effect.Effect<LaunchSummary, LaunchExecutionFailure>;
 }
 export class LaunchExecutor extends Context.Service<LaunchExecutor, LaunchExecutorService>()("launch/LaunchExecutor") {}
-export const launchTargetOf = (env: LaunchEnv): LaunchTarget => ({
+export const launchTargetOf = (env: LaunchEnv, accountAddress: string): LaunchTarget => ({
   directory: env.VALUE_IDENTITY,
-  accountAddress: env.DEPLOYER_ACCOUNT_ADDRESS,
+  accountAddress,
   privateKey: env.DEPLOYER_PRIVATE_KEY,
 });
 

@@ -1,10 +1,12 @@
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, readdirSync, readFileSync } from "node:fs";
+import { mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Miniflare } from "miniflare";
 import { afterAll, beforeAll, expect, it } from "vitest";
 import { unstable_readConfig } from "wrangler";
+import { hash } from "starknet";
+import { gamesAbi, response } from "../../../packages/value-ledger/test-support/abi";
 import schema from "../../../contracts/l3/world-native/schema/schema.json";
 
 /**
@@ -42,16 +44,36 @@ beforeAll(async () => {
     cwd: new URL("..", import.meta.url).pathname,
     stdio: "ignore",
   });
+  writeFileSync(
+    join(bundle, "fixture.js"),
+    `
+    import {Registrar} from "./worker.js";
+    export {default} from "./worker.js";
+    export * from "./worker.js";
+    export class EnrolledRegistrar extends Registrar {
+      constructor(ctx, env) {
+        super(ctx, env);
+        ctx.blockConcurrencyWhile(() => ctx.storage.put(
+          ${JSON.stringify(`launcher-account:${BigInt(SHARD_CHAIN).toString(16)}`)},
+          {launcherAccount: ${JSON.stringify(LAUNCHER)}}
+        ));
+      }
+    }
+  `,
+  );
   mf = new Miniflare({
     workers: [
       {
         name: "launch",
         modulesRoot: bundle,
-        modules: [{ type: "ESModule", path: join(bundle, "worker.js") }],
+        modules: [
+          { type: "ESModule", path: join(bundle, "fixture.js") },
+          { type: "ESModule", path: join(bundle, "worker.js") },
+        ],
         compatibilityDate: "2026-07-30",
         compatibilityFlags: ["nodejs_compat"],
         d1Databases: { DB: "launch" },
-        durableObjects: { REGISTRAR: { className: "Registrar", useSQLite: true } },
+        durableObjects: { REGISTRAR: { className: "EnrolledRegistrar", useSQLite: true } },
         serviceBindings: {
           VALUE_IDENTITY: { name: "directory", entrypoint: "ValueIdentity" },
           VALUE_RELAY: { name: "directory", entrypoint: "ValueRelay" },
@@ -62,15 +84,39 @@ beforeAll(async () => {
           ENVIRONMENT: "staging",
           BASE_URL: ORIGIN,
           LAUNCHER_ALLOWLIST: LAUNCHER,
-          DEPLOYER_ACCOUNT_ADDRESS: "0x456",
           DEPLOYER_PRIVATE_KEY: "0x1",
           OPERATOR_TOKEN: "operator-test-token",
           VERSION: { id: "workerd-test", tag: "", timestamp: "" },
         },
-        outboundService: (request: Request) =>
-          request.url === `${SHARD_URL}/manifest`
-            ? Response.json(SHARD_MANIFEST)
-            : new Response(`${request.url} unavailable`, { status: 599 }),
+        outboundService: async (request: Request) => {
+          if (request.url === `${SHARD_URL}/manifest`) return Response.json(SHARD_MANIFEST);
+          if (request.url === `${SHARD_URL}/rpc`) {
+            const { id, method, params } = (await request.json()) as {
+              id: number;
+              method: string;
+              params: { request?: { entry_point_selector?: string } };
+            };
+            const result =
+              method === "starknet_chainId"
+                ? SHARD_CHAIN
+                : method === "starknet_getBlockWithTxHashes"
+                  ? {
+                      status: "ACCEPTED_ON_L2",
+                      block_number: 1,
+                      block_hash: "0x1",
+                      timestamp: Math.floor(Date.now() / 1000),
+                      transactions: [],
+                    }
+                  : method === "starknet_getClassAt"
+                    ? { abi: gamesAbi }
+                    : method === "starknet_call" &&
+                        params.request?.entry_point_selector === hash.getSelectorFromName("launcher")
+                      ? response(gamesAbi, "launcher", LAUNCHER)
+                      : undefined;
+            if (result !== undefined) return Response.json({ jsonrpc: "2.0", id, result });
+          }
+          return new Response(`${request.url} unavailable`, { status: 599 });
+        },
       },
       {
         name: "directory",

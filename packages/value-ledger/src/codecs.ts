@@ -57,7 +57,8 @@ export const decodeChest = (fields: readonly string[]) => {
 /** get_season_winner returns the wallet and its allocated u256 share. */
 export const decodeSeasonWinner = (fields: readonly string[]) => {
   if (fields.length !== 3 || unsigned(fields[0]!) === 0n) throw new Error("invalid_season_winner");
-  return { wallet: fields[0]!, share: BigInt(ledgerU256(fields[1]!, fields[2]!)) };
+  ledgerU256(fields[1]!, fields[2]!);
+  return { wallet: fields[0]! };
 };
 
 export const decodeBlitzSeason = (fields: readonly string[]) => {

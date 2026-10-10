@@ -81,6 +81,7 @@ it("refuses a proxy on another chain or an identity with different pins before e
 });
 
 it("never exposes an enrolled signer to due launches until the shard grants launcher", async () => {
+  await expect(deploy().account(chainId)).rejects.toThrow("launcher_role_not_granted");
   await deploy().enrol({ chainId, heraldUrl });
   mock.launcher.mockResolvedValue(0x99n);
   await expect(deploy().account(chainId)).rejects.toThrow("launcher_role_not_granted");
