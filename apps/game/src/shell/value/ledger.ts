@@ -101,8 +101,13 @@ export interface Chest {
   requestBlock: number;
 }
 
-/** LORDS in whole units, as a player counts them (18 decimals on chain). */
-export const lordsOf = (wei: bigint): number => Number(wei / 10n ** 18n);
+const LORDS_UNIT = 10n ** 18n;
+
+/** LORDS in whole units, as a player counts them (18 decimals on chain): what is held, rounded down. */
+export const lordsOf = (wei: bigint): number => Number(wei / LORDS_UNIT);
+
+/** LORDS still to find, in whole units rounded up: 0.4 short is 1 more, never 0. */
+export const lordsShortOf = (wei: bigint): number => Number((wei + LORDS_UNIT - 1n) / LORDS_UNIT);
 
 const CHEST_OPENED = hash.getSelectorFromName("ChestOpened");
 
