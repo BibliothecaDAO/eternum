@@ -1,3 +1,4 @@
+import { SlotCancelled } from "./paid-blitz";
 import { RegistrationOpen } from "./blitz-roster";
 import { Effect, Result } from "effect";
 import { describeFailure } from "./errors";
@@ -14,7 +15,7 @@ export const processNextLaunch = (now: number) =>
     const executor = yield* LaunchExecutor;
     const run = yield* databaseOperation("start launch", () => store.startNext(now));
     if (!run) return false;
-    if (run.kind === "game" && run.entry?.kind !== "paid" && run.attempts > MAX_ATTEMPTS) {
+    if (run.kind === "game" && run.slotId === null && run.attempts > MAX_ATTEMPTS) {
       const message = `Launch interrupted after ${run.attempts - 1} attempts`;
       yield* cleanUpFailedLaunch(executor, store, run, message);
       yield* Effect.logError("launch_failed", { runId: run.id, error: message });
@@ -40,7 +41,11 @@ export const processNextLaunch = (now: number) =>
     }
 
     const message = describeFailure(result.failure.cause);
-    const paid = run.kind === "game" && run.entry?.kind === "paid";
+    if (result.failure.cause instanceof SlotCancelled) {
+      yield* databaseOperation("cancel slot launch", () => store.fail(run.id, message));
+      return true;
+    }
+    const paid = run.kind === "game" && run.slotId !== null;
     if (run.kind === "result" || paid || run.attempts < MAX_ATTEMPTS) {
       const backoff = Math.min(300000, RETRY_DELAY_MS * 2 ** Math.min(run.attempts - 1, 6));
       yield* databaseOperation("retry launch", () =>

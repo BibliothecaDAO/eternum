@@ -7,7 +7,7 @@ import { LaunchExecutor } from "./executor";
 import { processNextLaunch } from "./process-launch";
 import { GameNotEnded } from "./results";
 import { D1LaunchStore, databaseLayer } from "./store";
-import { createLaunchTestDatabase, TEST_CHAIN, testChain } from "./test-database";
+import { createLaunchTestDatabase, testChain } from "./test-database";
 
 let database: Awaited<ReturnType<typeof createLaunchTestDatabase>>;
 let store: D1LaunchStore;
@@ -191,7 +191,7 @@ test("a played game's result retries past three failures and never calls refund 
 });
 
 test("paid runs keep retrying transient failures beyond the ordinary attempt limit", async () => {
-  await store.enqueue("game", { ...request, gameName: "paid-transient" });
+  await store.enqueue("game", { ...request, gameName: "paid-transient", slotId: 7, groupIndex: 0 });
   await store.saveGame({
     environment: "madara.blitz",
     chain: "madara",
@@ -204,10 +204,6 @@ test("paid runs keep retrying transient failures beyond the ordinary attempt lim
     configMode: "batched",
     configSteps: [],
     dryRun: false,
-  });
-  await store.saveEntry("madara.blitz", "paid-transient", {
-    kind: "paid",
-    ledger: { address: "0x10", chainId: "0x2", shard: TEST_CHAIN, gameId: 7 },
   });
   const execute = vi.fn(() =>
     Effect.fail(new LaunchExecutionFailure({ runId: "paid", cause: new Error("Herald temporarily down") })),
