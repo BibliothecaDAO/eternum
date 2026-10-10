@@ -4,7 +4,7 @@ import type { Resource, ResourceArrivalInfo } from "@bibliothecadao/types";
 import type { FeedNotice } from "./event-feed-store";
 
 export type FeedRow =
-  | { kind: "transaction"; id: string; at: number; transaction: Transaction; isStuck: boolean }
+  | { kind: "transaction"; id: string; at: number; transaction: Transaction }
   | {
       kind: "arrival";
       id: string;
@@ -17,7 +17,7 @@ export type FeedRow =
   | { kind: "notice"; id: string; at: number; notice: FeedNotice };
 
 export interface FeedRows {
-  /** Pending and stuck transactions, and caravans still on the road — newest first, stuck first. */
+  /** Transactions still sending or checking, and caravans still on the road — newest first. */
   inFlight: FeedRow[];
   /** Caravans that have reached their structure and wait to be claimed. */
   arrived: FeedRow[];
@@ -30,9 +30,7 @@ interface DeriveFeedRowsInput {
   ownedStructureIds: readonly number[];
   arrivals: readonly ResourceArrivalInfo[];
   notices: readonly FeedNotice[];
-  nowMs: number;
   nowSeconds: number;
-  stuckThresholdMs: number;
   maxRecent?: number;
 }
 
@@ -61,9 +59,7 @@ export const deriveFeedRows = ({
   ownedStructureIds,
   arrivals,
   notices,
-  nowMs,
   nowSeconds,
-  stuckThresholdMs,
   maxRecent = 15,
 }: DeriveFeedRowsInput): FeedRows => {
   const inFlight: FeedRow[] = [];
@@ -72,15 +68,13 @@ export const deriveFeedRows = ({
 
   for (const transaction of transactions) {
     if (isTransactionInFlight(transaction)) {
-      const isStuck = transaction.status === "pending" && nowMs - transaction.submittedAt >= stuckThresholdMs;
-      inFlight.push({ kind: "transaction", id: transaction.hash, at: transaction.submittedAt, transaction, isStuck });
+      inFlight.push({ kind: "transaction", id: transaction.hash, at: transaction.submittedAt, transaction });
     } else {
       recent.push({
         kind: "transaction",
         id: transaction.hash,
         at: transaction.confirmedAt ?? transaction.submittedAt,
         transaction,
-        isStuck: false,
       });
     }
   }
@@ -96,11 +90,7 @@ export const deriveFeedRows = ({
     recent.push({ kind: "notice", id: notice.id, at: notice.at, notice });
   }
 
-  inFlight.sort((left, right) => {
-    const leftStuck = left.kind === "transaction" && left.isStuck ? 1 : 0;
-    const rightStuck = right.kind === "transaction" && right.isStuck ? 1 : 0;
-    return rightStuck - leftStuck || byNewest(left, right);
-  });
+  inFlight.sort(byNewest);
   arrived.sort(byNewest);
   recent.sort(byNewest);
 
@@ -130,12 +120,12 @@ export function transferRowLabel(row: FeedRow): string | null {
 
 /**
  * The one short line an action's row says: sending, checking (the node has not settled it; never "try again"),
- * done, refused with the game's reason, or not sent (only on proof). A send with no answer for long is stuck.
+ * done, refused with the game's reason, or not sent (only on proof). A send unsettled for long moves to checking.
  */
-export const transactionStatusLine = (transaction: Transaction, isStuck: boolean): string => {
+export const transactionStatusLine = (transaction: Transaction): string => {
   switch (transaction.status) {
     case "pending":
-      return isStuck ? "Stuck" : "Sending";
+      return "Sending";
     case "checking":
       return "Checking";
     case "success":

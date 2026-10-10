@@ -30,16 +30,14 @@ const derive = (input: Partial<Parameters<typeof deriveFeedRows>[0]> = {}) =>
     transactions: [],
     arrivals: [],
     notices: [],
-    nowMs: NOW_MS,
     nowSeconds: NOW_SECONDS,
-    stuckThresholdMs: 30_000,
     ...input,
   });
 
 describe("deriveFeedRows", () => {
   it("a started transfer is an in-flight row from its pending transaction", () => {
     const rows = derive({ transactions: [transfer()] });
-    expect(rows.inFlight).toMatchObject([{ kind: "transaction", id: "0xsend", isStuck: false }]);
+    expect(rows.inFlight).toMatchObject([{ kind: "transaction", id: "0xsend" }]);
     expect(rows.recent).toEqual([]);
   });
 
@@ -53,15 +51,15 @@ describe("deriveFeedRows", () => {
     expect(landed.arrived).toMatchObject([{ kind: "arrival", structureEntityId: 42, remainingSeconds: 0 }]);
   });
 
-  it("a confirmed transaction moves to recent at its confirmation time, stuck ones lead the in-flight list", () => {
+  it("a confirmed transaction moves to recent at its confirmation time, the in-flight list runs newest first", () => {
     const rows = derive({
       transactions: [
         transfer({ hash: "0xdone", status: "success", submittedAt: NOW_MS - 9_000, confirmedAt: NOW_MS - 1_000 }),
+        transfer({ hash: "0xchecking", status: "checking", submittedAt: NOW_MS - 60_000 }),
         transfer({ hash: "0xfresh", submittedAt: NOW_MS - 100 }),
-        transfer({ hash: "0xstuck", submittedAt: NOW_MS - 60_000 }),
       ],
     });
-    expect(rows.inFlight.map((row) => row.id)).toEqual(["0xstuck", "0xfresh"]);
+    expect(rows.inFlight.map((row) => row.id)).toEqual(["0xfresh", "0xchecking"]);
     expect(rows.recent).toMatchObject([{ id: "0xdone", at: NOW_MS - 1_000 }]);
   });
 
@@ -95,20 +93,19 @@ it("names sent and arrived caravans in Events", () => {
 
 describe("an action's one status line", () => {
   it("says sending, checking, done, refused with the reason, or not sent, and never asks to try again", () => {
-    expect(transactionStatusLine(transfer(), false)).toBe("Sending");
-    expect(transactionStatusLine(transfer(), true)).toBe("Stuck");
-    expect(transactionStatusLine(transfer({ status: "checking" }), false)).toBe("Checking");
-    expect(transactionStatusLine(transfer({ status: "success" }), false)).toBe("Done");
-    expect(transactionStatusLine(transfer({ status: "reverted", errorMessage: "Not enough donkeys" }), false)).toBe(
+    expect(transactionStatusLine(transfer())).toBe("Sending");
+    expect(transactionStatusLine(transfer({ status: "checking" }))).toBe("Checking");
+    expect(transactionStatusLine(transfer({ status: "success" }))).toBe("Done");
+    expect(transactionStatusLine(transfer({ status: "reverted", errorMessage: "Not enough donkeys" }))).toBe(
       "Refused: Not enough donkeys",
     );
-    expect(transactionStatusLine(transfer({ status: "not_sent" }), false)).toBe("Not sent");
+    expect(transactionStatusLine(transfer({ status: "not_sent" }))).toBe("Not sent");
   });
 
-  it("keeps a checking action in flight, and never stuck: its outcome is still being reconciled", () => {
+  it("keeps a checking action in flight: its outcome is still being reconciled", () => {
     const checking = transfer({ status: "checking", submittedAt: NOW_MS - 60_000 });
     expect(derive({ transactions: [checking] }).inFlight).toEqual([
-      { kind: "transaction", id: "0xsend", at: checking.submittedAt, transaction: checking, isStuck: false },
+      { kind: "transaction", id: "0xsend", at: checking.submittedAt, transaction: checking },
     ]);
   });
 });
