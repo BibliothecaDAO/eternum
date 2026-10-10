@@ -1,3 +1,4 @@
+import { normalizeStarknetAddress } from "@realms-world/identity";
 import { setTimeout as sleep } from "node:timers/promises";
 import {
   createGameClient,
@@ -58,7 +59,7 @@ export async function connectHarnessGameClient(options: ConnectHarnessGameClient
 }
 
 /** One spelling per account address, so a bot's own client is found whichever form its address arrives in. */
-export const actorKey = (address: string): string => `0x${BigInt(address).toString(16)}`;
+export const actorKey = normalizeStarknetAddress;
 
 /**
  * Every bot's own client, connected a few at a time before the workload: its Herald subscription carries its own
