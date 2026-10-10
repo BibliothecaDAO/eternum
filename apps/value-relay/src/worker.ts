@@ -13,7 +13,7 @@ import { paidGameEntry } from "./game-entry";
 import { accountLinkLedger } from "./account-link-ledger";
 import { synchronizeAccountLink, reconcileAccountLinks, hasMatchingAccountLink } from "./account-links";
 import type { AccountLinkTarget, LedgerAccountLinkWrite, LedgerLinkStatus } from "@realms-world/identity";
-import { openBlitzOnLedger, refundBlitzOnLedger, validateBlitzWindow } from "./blitz-launch";
+import { blitzDeadline, openBlitzOnLedger, refundBlitzOnLedger, validateBlitzWindow } from "./blitz-launch";
 import type { LedgerGameKey } from "@realms-world/value-ledger";
 import { currentLaborDay, writeLaborGrant } from "./shard-labor";
 import { handleLaborRequest } from "./labor-route";
@@ -259,6 +259,12 @@ export class ValueRelay extends DurableObject<RelayEnv> {
       ),
     );
   }
+  async blitzDeadline(key: LedgerGameKey) {
+    this.requireLaunchChain(key);
+    return Effect.runPromise(
+      onIdentityChain(this.env.LEDGER_RPC_URL, this.env.IDENTITY, blitzDeadline(ledgerCredentialsOf(this.env), key)),
+    );
+  }
   async blitzRoster(key: LedgerGameKey): Promise<LedgerRosterSnapshot> {
     this.requireLaunchChain(key);
     return Effect.runPromise(
@@ -397,7 +403,7 @@ const ledgerPortsOf = (env: RelayEnv, permit: LedgerPermit): RelayPorts["ledger"
     permit(
       ledgerBatches(ledgerCredentialsOf(env), (decisions) => env.IDENTITY.recordPayDecisions(decisions)).payMany(rows),
     ),
-  voided: (withdrawal) => ledgerWithdrawalVoided(env.LEDGER_RPC_URL,env.LEDGER_ADDRESS)(withdrawal),
+  voided: (withdrawal) => ledgerWithdrawalVoided(env.LEDGER_RPC_URL, env.LEDGER_ADDRESS)(withdrawal),
   payment: (withdrawal) => ledgerPaymentRead(env.LEDGER_RPC_URL, env.LEDGER_ADDRESS)(withdrawal),
   postResult: (result) => permit(ledgerResultAdapter(ledgerCredentialsOf(env))(result)),
   paidClaims: (cursor, fromBlock) =>
@@ -446,6 +452,9 @@ export class ValueAccountLinks extends WorkerEntrypoint<RelayEnv> {
 export class ValueLaunch extends WorkerEntrypoint<RelayEnv> {
   override fetch() {
     return new Response(null, { status: 404 });
+  }
+  blitzDeadline(key: LedgerGameKey) {
+    return relayOf(this.env).blitzDeadline(key);
   }
   blitzRoster(key: LedgerGameKey) {
     return relayOf(this.env).blitzRoster(key);

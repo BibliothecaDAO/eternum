@@ -71,6 +71,7 @@ it("replaces the launcher's supplied Blitz roster with the guarded ledger roster
     registrations: [{ wallet: "0x123", account: "0x456" }],
   }));
   const layer = launchExecutorLayer(target, {
+    blitzDeadline: vi.fn(async () => 60),
     blitzRoster: roster,
     openBlitz: async (key) => ({
       kind: "paid",

@@ -1,7 +1,7 @@
 import { Effect } from "effect";
 import { beforeEach, expect, it, vi } from "vitest";
 import { hash } from "starknet";
-import { openBlitzOnLedger, refundBlitzOnLedger, validateBlitzWindow } from "./blitz-launch";
+import { blitzDeadline, openBlitzOnLedger, refundBlitzOnLedger, validateBlitzWindow } from "./blitz-launch";
 
 const rpc = vi.hoisted(() => ({
   block: vi.fn(),
@@ -134,4 +134,12 @@ it("allows exactly the ledger settlement interval and refuses one second less, i
   expect(rpc.execute).not.toHaveBeenCalled();
   await expect(Effect.runPromise(validateBlitzWindow(credentials, key, { start: 120, end: 241 }))).rejects.toThrow();
   await Effect.runPromise(validateBlitzWindow(credentials, key, { start: 120, end: 240 }));
+});
+
+it("uses the ledger clock and stored end as the paid retry deadline", async () => {
+  rpc.block.mockResolvedValue({ status: "ACCEPTED_ON_L2", block_number: 10, timestamp: 120 });
+  rpc.call.mockResolvedValue(game());
+  expect(await Effect.runPromise(blitzDeadline(credentials, key))).toBe(40);
+  rpc.block.mockResolvedValue({ status: "ACCEPTED_ON_L2", block_number: 10, timestamp: 160 });
+  expect(await Effect.runPromise(blitzDeadline(credentials, key))).toBe(0);
 });

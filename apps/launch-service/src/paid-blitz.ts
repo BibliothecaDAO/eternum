@@ -5,6 +5,7 @@ import type { GameEntry } from "@realms-world/identity";
 import type { LaunchGameSummary } from "../../../config/deployer/clean/types";
 
 export interface BlitzValuePort {
+  blitzDeadline(key: LedgerGameKey): Promise<number>;
   blitzRoster(key: LedgerGameKey): Promise<LedgerRosterSnapshot>;
   openBlitz(key: LedgerGameKey, window: { start: number; end: number }): Promise<GameEntry>;
   validateBlitz(key: LedgerGameKey, window: { start: number; end: number }): Promise<void>;
