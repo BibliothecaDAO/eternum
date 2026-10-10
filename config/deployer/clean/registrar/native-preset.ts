@@ -115,6 +115,7 @@ export function buildNativeGameParams(
       input.useMapOverride ? CairoOptionVariant.Some : CairoOptionVariant.None,
       common.map_override,
     ),
+    // Calendar and map layout metadata; gameplay draws use the stamped transaction root.
     seed: common.seed,
   };
 }
