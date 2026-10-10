@@ -172,6 +172,10 @@ const decodeAmount = (low: string, high: string) => {
 const classifyFailure = (error: unknown) =>
   error instanceof RelayFailure ? error : paymentFailure(error instanceof Error ? error.message : "");
 const isPermanentFailure = (failure: RelayFailure) =>
-  ["ledger_season_closed", "ledger_invalid_withdrawal", "ledger_report_mismatch", "ledger_claim_window_ended"].includes(
-    failure.operation,
-  );
+  [
+    "ledger_withdrawal_exceeds_backing",
+    "ledger_season_closed",
+    "ledger_invalid_withdrawal",
+    "ledger_report_mismatch",
+    "ledger_claim_window_ended",
+  ].includes(failure.operation);

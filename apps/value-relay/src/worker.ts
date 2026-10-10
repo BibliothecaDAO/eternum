@@ -26,7 +26,7 @@ import { DurableChestStore, finishRequestedChests } from "./chests";
 import { DurableObject, WorkerEntrypoint } from "cloudflare:workers";
 import { Effect, Result, Semaphore } from "effect";
 import { ledgerResultAdapter, ledgerMonitorReads } from "./ledger";
-import { ledgerPaymentRead } from "./chain";
+import { ledgerPaymentRead, ledgerWithdrawalVoided } from "./chain";
 import { presentsOperatorToken } from "@realms-world/identity";
 import { identityAdapter } from "./adapters";
 import { runRelay, grantDailyLabor } from "./relay";
@@ -397,6 +397,7 @@ const ledgerPortsOf = (env: RelayEnv, permit: LedgerPermit): RelayPorts["ledger"
     permit(
       ledgerBatches(ledgerCredentialsOf(env), (decisions) => env.IDENTITY.recordPayDecisions(decisions)).payMany(rows),
     ),
+  voided: (withdrawal) => ledgerWithdrawalVoided(env.LEDGER_RPC_URL,env.LEDGER_ADDRESS)(withdrawal),
   payment: (withdrawal) => ledgerPaymentRead(env.LEDGER_RPC_URL, env.LEDGER_ADDRESS)(withdrawal),
   postResult: (result) => permit(ledgerResultAdapter(ledgerCredentialsOf(env))(result)),
   paidClaims: (cursor, fromBlock) =>

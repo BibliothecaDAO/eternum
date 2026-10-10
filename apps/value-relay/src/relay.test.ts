@@ -112,6 +112,7 @@ const fixture = () => {
     ledger: {
       auditSeasons: () => Effect.succeed(null),
       accountLinks: () => Effect.succeed({ rows: [], head: 1000, next: null }),
+      voided: () => Effect.succeed(false),
       payment: () => Effect.succeed(null),
       reportMany: vi.fn((rows: readonly Withdrawal[]) =>
         Effect.forEach(rows, (row) =>
@@ -529,4 +530,17 @@ it("persists a halt when the head falls below an unfinished page's observed anch
   await expect(f.run()).rejects.toThrow();
   expect(await f.store.progress()).toMatchObject({ halted: "confirmed_head_regressed:10" });
   expect(f.ports.shard.blockHash).not.toHaveBeenCalled();
+});
+
+it("voids closed unpaid reports even when the account has no payout wallet and never retries them", async () => {
+  const f = fixture();
+  f.ports.identity.payoutWallet = vi.fn(() => Effect.succeed({ status: "no_wallet" as const }));
+  f.ports.ledger.payment = () => Effect.succeed({ paid: false, seasonId: 4, wallet: "0x0", amount: "17" });
+  Object.assign(f.ports.ledger, { voided: () => Effect.succeed(true) });
+  await Effect.runPromise(runRelay("0x1", f.ports, f.store));
+  expect(await f.store.withdrawals()).toHaveLength(0);
+  expect(await f.store.held()).toEqual([expect.objectContaining({ kind: "payment", reason: "ledger_report_voided" })]);
+  expect(f.ports.identity.payoutWallet).not.toHaveBeenCalled();
+  await Effect.runPromise(runRelay("0x1", f.ports, f.store));
+  expect(f.single.pay).not.toHaveBeenCalled();
 });

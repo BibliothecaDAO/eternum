@@ -139,12 +139,17 @@ const payWithdrawals = (ports: RelayPorts, store: RelayStore) =>
       }
     }
     const ready: PayableClaim[] = [];
-    const wallets = yield* Effect.forEach(reported, (row) => Effect.result(ports.identity.payoutWallet(row.realmsId)), {
-      concurrency: 25,
-    });
-    for (let index = 0; index < reported.length; index++) {
-      const wallet = wallets[index]!,
-        withdrawal = reported[index]!;
+    for (const withdrawal of reported) {
+      const voided = yield* Effect.result(ports.ledger.voided(withdrawal));
+      if (Result.isFailure(voided)) {
+        deferred.push({ key: withdrawal.transactionHash, reason: voided.failure.operation });
+        continue;
+      }
+      if (voided.success) {
+        yield* setAsideOrDefer(store, withdrawal, "ledger_report_voided", deferred);
+        continue;
+      }
+      const wallet = yield* Effect.result(ports.identity.payoutWallet(withdrawal.realmsId));
       if (Result.isFailure(wallet))
         deferred.push({ key: withdrawal.transactionHash, reason: wallet.failure.operation });
       else if (wallet.success.status === "ready") ready.push({ withdrawal, wallet: wallet.success.address });
@@ -182,9 +187,14 @@ const setAsideOrDefer = (
   reason: string,
   deferred: { key: string; reason: string }[],
 ) =>
-  ["ledger_season_closed", "ledger_invalid_withdrawal", "ledger_report_mismatch", "ledger_claim_window_ended"].includes(
-    reason,
-  )
+  [
+    "ledger_report_voided",
+    "ledger_withdrawal_exceeds_backing",
+    "ledger_season_closed",
+    "ledger_invalid_withdrawal",
+    "ledger_report_mismatch",
+    "ledger_claim_window_ended",
+  ].includes(reason)
     ? relayOperation("set aside refused payment", () => store.hold({ kind: "payment", withdrawal, reason }))
     : Effect.sync(() => {
         deferred.push({ key: withdrawal.transactionHash, reason });
