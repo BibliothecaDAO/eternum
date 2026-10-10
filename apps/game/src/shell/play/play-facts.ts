@@ -17,7 +17,7 @@ export const usePlayFacts = () => {
   const slots = usePlaytestSlots();
   const now = useNowSeconds();
   const games = directory.data?.games ?? [];
-  const blitz = blitzRows(games, slots.data?.slots ?? [], session?.user.realmsId);
+  const blitz = blitzRows(games, slots.data?.slots ?? []);
   const signedIn = status === "signed-in";
   const known = directory.isSuccess && status !== "loading";
   const step = known ? nextStep({ signedIn, games, blitz, seenResults: readSeenResults() }) : undefined;

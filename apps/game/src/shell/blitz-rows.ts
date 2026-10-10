@@ -1,15 +1,12 @@
 import type { PlaytestSlot } from "@/ui/features/factory-v2/api/factory-worker";
 import { canEnterGame, isGameOver, isMember } from "@/runtime/world/directory";
 
-import { BLITZ_SEATS, registrationFor, seatsFilling } from "./blitz-slot";
+import { BLITZ_SEATS } from "./blitz-slot";
 import type { DirectoryGame } from "./herald";
 import { directoryGameEntryOf, gameEntryOf } from "./value/game-entry";
 
-/**
- * A row's one action: play the game, watch it, join its free slot, a check for a seat already taken, or open the
- * lobby of a paid (or unreadable) slot, which is never the free join.
- */
-export type BlitzAction = "enter" | "spectate" | "join" | "registered" | "open";
+/** A row's one action: play the game, watch it, a check for a seat already taken, or open a slot's lobby to pay. */
+export type BlitzAction = "enter" | "spectate" | "registered" | "open";
 
 /**
  * One Blitz on the lobby's Blitz card (design o4): live, or the moment it starts or its slot closes, its seats, and
@@ -26,23 +23,17 @@ export type BlitzRow = {
 } & ({ kind: "game"; game: DirectoryGame } | { kind: "slot"; slot: PlaytestSlot });
 
 /** Live games first, then games about to start, then the slots still filling, each soonest first. */
-export const blitzRows = (
-  games: readonly DirectoryGame[],
-  slots: readonly PlaytestSlot[],
-  realmsId: string | undefined,
-): BlitzRow[] => {
+export const blitzRows = (games: readonly DirectoryGame[], slots: readonly PlaytestSlot[]): BlitzRow[] => {
   const running = games.filter((game) => game.mode === "blitz" && game.status !== "Settled");
   const live = running.filter((game) => game.status === "Live");
   const starting = running
     .filter((game) => game.status !== "Live")
     .toSorted((a, b) => a.clock.start_main_at - b.clock.start_main_at);
-  const filling = slots
-    .filter((slot) => isFilling(slot) || awaitsItsGame(slot, realmsId, games))
-    .toSorted((a, b) => Date.parse(a.closesAt) - Date.parse(b.closesAt));
+  const filling = slots.filter(isFilling).toSorted((a, b) => Date.parse(a.closesAt) - Date.parse(b.closesAt));
   return [
     ...live.map((game) => gameRow(game, null)),
     ...starting.map((game) => gameRow(game, isGameOver(game) ? null : game.clock.start_main_at)),
-    ...filling.map((slot) => slotRow(slot, realmsId)),
+    ...filling.map(slotRow),
   ];
 };
 
@@ -50,7 +41,7 @@ export const blitzRows = (
 export const rowEntryOf = (row: BlitzRow) =>
   row.kind === "slot" ? gameEntryOf(row.slot, row.slot.name) : directoryGameEntryOf(row.game);
 
-/** The row a card with room for one shows: the player's own game to enter, else the next slot to join. */
+/** The row a card with room for one shows: the player's own game to enter, else the next slot to open. */
 export const leadBlitzRow = (rows: readonly BlitzRow[]): BlitzRow | undefined =>
   rows.find((row) => row.action === "enter") ?? rows.find((row) => row.kind === "slot") ?? rows[0];
 
@@ -70,25 +61,14 @@ const gameAction = (game: DirectoryGame): BlitzAction | null => {
   return isMember(game) ? "registered" : "spectate";
 };
 
-const slotRow = (slot: PlaytestSlot, realmsId: string | undefined): BlitzRow => {
-  const free = gameEntryOf(slot, slot.name).kind === "free";
-  return {
-    kind: "slot",
-    key: `slot:${slot.name}`,
-    slot,
-    startsAt: Math.floor(Date.parse(slot.closesAt) / 1000),
-    seats: free ? { filled: seatsFilling(slot), total: BLITZ_SEATS } : { filled: null, total: null },
-    action: !free ? "open" : registrationFor(slot, realmsId) ? "registered" : "join",
-  };
-};
+/** A slot is paid: its lobby holds the entry, and only the ledger counts its seats. */
+const slotRow = (slot: PlaytestSlot): BlitzRow => ({
+  kind: "slot",
+  key: `slot:${slot.name}`,
+  slot,
+  startsAt: Math.floor(Date.parse(slot.closesAt) / 1000),
+  seats: { filled: null, total: null },
+  action: "open",
+});
 
 const isFilling = (slot: PlaytestSlot): boolean => !slot.closed && !slot.frozenAt;
-
-/** Keep a registered player's slot until their assigned game actually reaches the directory. */
-const awaitsItsGame = (slot: PlaytestSlot, realmsId: string | undefined, games: readonly DirectoryGame[]): boolean => {
-  const registration = registrationFor(slot, realmsId);
-  if (!registration) return false;
-  return (
-    registration.gameNumber === null || !games.some((game) => game.name === `${slot.name}-${registration.gameNumber}`)
-  );
-};

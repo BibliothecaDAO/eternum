@@ -8,7 +8,6 @@ import { TRY_AGAIN } from "@/ui/design-system/kit/words";
 type Service =
   | "directory"
   | "slots"
-  | "join"
   | "season"
   | "results"
   | "world"
@@ -23,8 +22,6 @@ type Service =
 const FAILURE_LINES: Record<Service, string> = {
   directory: "Games did not answer.",
   slots: "Blitz did not answer.",
-  /** A Join the launch service did not take: the seat was not taken either. */
-  join: "Blitz did not answer. Your seat was not taken.",
   season: "Season did not answer.",
   results: "Results did not answer.",
   /** Entering a match: the shard, its world or its scene did not open. */

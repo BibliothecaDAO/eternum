@@ -19,7 +19,6 @@ export const WORDS = {
   /** Look at a Blitz game the player is not on. */
   watch: "Watch",
   /** Take a Blitz seat. */
-  join: "Join",
   joined: "Joined",
   results: "Results",
   /** A game under way. */
@@ -88,13 +87,10 @@ export const SIGN_IN_WORDS = {
 
 /** Blitz's list and lobby: the steps on Join, the seat's cost, and what stands where an action cannot. */
 export const BLITZ_WORDS = {
-  joining: "Joining…",
   preparing: "Preparing…",
-  /** The one line above Join (ruled: a seat is kept). */
-  seatKept: "A seat cannot be given up.",
   /** Shown only to assistive technology; the seats are drawn. */
   seats: "Seats",
-  /** A paid slot's row: its lobby holds the paid entry. */
+  /** A slot's row: its lobby holds the paid entry. */
   open: "Open",
   full: (nextStart: string) => `Full. The ${nextStart} game has seats.`,
   /** Above the lobby's countdown. */

@@ -8,7 +8,6 @@ import { ReasonPlate } from "@/ui/design-system/kit/reason-plate";
 import { formatClockTime } from "@/ui/design-system/kit/time";
 
 import { type BlitzRow, rowEntryOf } from "../blitz-rows";
-import { useJoinOnReturn, useJoinSlot } from "../blitz-slot";
 import { ClockChip } from "../clock-chip";
 import { useLayout } from "../frame/layout";
 import { useRealmsPlayer } from "../herald";
@@ -34,45 +33,25 @@ import { RosterGrid, SeatGrid } from "./seat-grid";
 
 const BLITZ = ageOf("blitz");
 
-/** Blitz's Join where its rows are drawn: a Join that waited on sign-in completes here by itself. */
-export const useBlitzJoin = (slots: Parameters<typeof useJoinOnReturn>[1]) => {
-  const join = useJoinSlot();
-  useJoinOnReturn(join, slots);
-  // A refused Join names the service in the page's notice, with Try again joining the same slot.
-  const refused = join.register.isError && (
-    <ServiceFailure
-      service="join"
-      error={join.register.error}
-      retry={() => join.register.variables && join.register.mutate(join.register.variables)}
-    />
-  );
-  return { join, refused };
-};
-
-const useBlitz = () => {
-  const facts = usePlayFacts();
-  return { facts, ...useBlitzJoin(facts.slots.data?.slots) };
-};
-
 /**
  * Blitz's games (spec 05): live first, then by start, each with when, its seats and one action; a row opens its
  * lobby. The age's painting heads the list on a phone; the desktop stands the list on it, the next filling game's
  * lobby beside it.
  */
 export const BlitzListPage = () => {
-  const { facts, join, refused } = useBlitz();
+  const facts = usePlayFacts();
   const desktop = useLayout() === "desktop";
   const rows = (
     <section className="plate px-3">
-      <BlitzRows facts={facts} join={join} />
+      <BlitzRows facts={facts} />
     </section>
   );
   return (
-    <PageFrame back="/" title={BLITZ.name} notice={refused || undefined} painting={BLITZ.painting} stage>
+    <PageFrame back="/" title={BLITZ.name} painting={BLITZ.painting} stage>
       {desktop ? (
         <div className="grid grid-cols-[minmax(0,1fr)_34rem] items-start gap-6">
           {rows}
-          <NextLobby facts={facts} join={join} />
+          <NextLobby facts={facts} />
         </div>
       ) : (
         <div className="flex flex-col gap-3">
@@ -85,12 +64,12 @@ export const BlitzListPage = () => {
 };
 
 /** Beside the desktop's rows: the next game filling its seats, as its lobby shows it, with its one step. */
-const NextLobby = ({ facts, join }: { facts: PlayFacts; join: ReturnType<typeof useJoinSlot> }) => {
+const NextLobby = ({ facts }: { facts: PlayFacts }) => {
   const { data: player } = useRealmsPlayer();
   const row = facts.blitz.find((candidate) => candidate.kind === "slot");
   const { filled, total } = useRowSeats(row);
   if (!row) return null;
-  const step = lobbyStep(row, facts.blitz, join.realmsId);
+  const step = lobbyStep(row, facts.blitz);
   return (
     <section className="plate flex flex-col gap-4 p-5">
       <Link to={`/blitz/${lobbyId(row)}`} className="painted flex h-36 items-end rounded-xl p-4">
@@ -107,8 +86,8 @@ const NextLobby = ({ facts, join }: { facts: PlayFacts; join: ReturnType<typeof 
         </span>
       </Link>
       <LobbyClock row={row} step={step} now={facts.now} />
-      <SeatGrid seats={seatsOf(row, join.realmsId, player, filled)} total={total ?? 0} preparing={false} />
-      <LobbyAction row={row} step={step} join={join} desktop />
+      <SeatGrid seats={seatsOf(row, player, filled)} total={total ?? 0} preparing={false} />
+      <LobbyAction row={row} step={step} desktop />
     </section>
   );
 };
@@ -133,15 +112,7 @@ const AgeHeader = () => (
 );
 
 /** The games as rows, live first; a panel shows the first few. */
-export const BlitzRows = ({
-  facts,
-  join,
-  limit,
-}: {
-  facts: PlayFacts;
-  join: ReturnType<typeof useJoinSlot>;
-  limit?: number;
-}) => {
+export const BlitzRows = ({ facts, limit }: { facts: PlayFacts; limit?: number }) => {
   if (facts.slots.isError)
     return <ServiceFailure service="slots" error={facts.slots.error} retry={() => void facts.slots.refetch()} />;
   if (facts.directory.isError)
@@ -152,20 +123,19 @@ export const BlitzRows = ({
   return (
     <ul>
       {facts.blitz.slice(0, limit).map((row) => (
-        <GameRow key={row.key} row={row} now={facts.now} join={join} />
+        <GameRow key={row.key} row={row} now={facts.now} />
       ))}
     </ul>
   );
 };
 
 /**
- * One Blitz before it starts (spec 06): its clock, its 24 sockets with the player's own ringed, and one step: Join
- * (with its cost above it), nothing while a joined player waits, Preparing until the roster's realms are ready, then
- * Enter. There is no way out of a seat (ruled).
+ * One Blitz before it starts (spec 06): its clock, its seats with the player's own ringed, and one step: a slot's paid
+ * entry, Preparing until the roster's realms are ready, then Enter. There is no way out of a seat (ruled).
  */
 export const BlitzLobbyPage = () => {
   const { id } = useParams();
-  const { facts, join, refused } = useBlitz();
+  const facts = usePlayFacts();
   const layout = useLayout();
   const { data: player } = useRealmsPlayer();
   const { session } = useIdentitySession();
@@ -180,15 +150,15 @@ export const BlitzLobbyPage = () => {
       </PageFrame>
     );
   }
-  const step = lobbyStep(row, facts.blitz, join.realmsId);
-  const seats = seatsOf(row, join.realmsId, player, filled);
+  const step = lobbyStep(row, facts.blitz);
+  const seats = seatsOf(row, player, filled);
   const clock = <LobbyClock row={row} step={step} now={facts.now} />;
   const desktop = layout === "desktop";
   // A row's entry is free or paid on the ledger the services name; a paid game is never the free join.
   const wallet = session ? payoutWalletOf(session.user) : null;
   const action =
     entry.kind === "free" ? (
-      <LobbyAction row={row} step={step} join={join} desktop={desktop} />
+      <LobbyAction row={row} step={step} desktop={desktop} />
     ) : entry.kind === "broken" ? (
       <FailureLine line={ENTRY_WORDS.unreadable} />
     ) : wallet ? (
@@ -201,7 +171,6 @@ export const BlitzLobbyPage = () => {
       back="/blitz"
       title={lobbyTitle(row)}
       tabs={false}
-      notice={refused || undefined}
       foot={desktop ? undefined : action}
       painting={BLITZ.painting}
       stage
@@ -217,7 +186,7 @@ export const BlitzLobbyPage = () => {
               {clock}
               {action}
             </section>
-            {row.kind === "slot" && <LobbyChatPanel slotName={row.slot.name} seated={step.kind === "joined"} />}
+            {row.kind === "slot" && <LobbyChatPanel slotName={row.slot.name} seated={false} />}
           </div>
         </div>
       ) : (
@@ -263,26 +232,12 @@ const LobbyClock = ({ row, step, now }: { row: BlitzRow; step: LobbyStep; now: n
     ) : (
       <ClockChip prefix="starts" at={row.startsAt} now={now} />
     )}
-    {step.kind === "joined" || step.kind === "preparing" ? (
-      <StateChip icon="Ok" text={WORDS.joined} />
-    ) : (
-      <SeatsChip row={row} />
-    )}
+    {step.kind === "preparing" ? <StateChip icon="Ok" text={WORDS.joined} /> : <SeatsChip row={row} />}
   </div>
 );
 
 /** The lobby's one step, or the fact standing where it would. */
-const LobbyAction = ({
-  row,
-  step,
-  join,
-  desktop,
-}: {
-  row: BlitzRow;
-  step: LobbyStep;
-  join: ReturnType<typeof useJoinSlot>;
-  desktop: boolean;
-}) => {
+const LobbyAction = ({ row, step, desktop }: { row: BlitzRow; step: LobbyStep; desktop: boolean }) => {
   const navigate = useNavigate();
   // On the desktop the step answers Enter.
   const verb = (button: ReactNode) => (desktop ? <StepVerb>{button}</StepVerb> : button);
@@ -291,25 +246,6 @@ const LobbyAction = ({
       return verb(
         <Button role="primary" word={BLITZ_WORDS.open} icon="Pl" onClick={() => navigate(`/blitz/${lobbyId(row)}`)} />,
       );
-    case "join":
-      return (
-        row.kind === "slot" && (
-          <Stack>
-            <p className="text-center text-[15px] text-kit-muted">{BLITZ_WORDS.seatKept}</p>
-            {verb(
-              <Button
-                role="primary"
-                word={WORDS.join}
-                icon="Pl"
-                loading={join.joining === row.slot.name ? BLITZ_WORDS.joining : undefined}
-                onClick={() => join.join(row.slot)}
-              />,
-            )}
-          </Stack>
-        )
-      );
-    case "joined":
-      return null;
     case "preparing":
       return <Button role="primary" word={WORDS.enter} loading={BLITZ_WORDS.preparing} />;
     case "enter":
@@ -347,5 +283,3 @@ const LobbyAction = ({
     }
   }
 };
-
-const Stack = ({ children }: { children: ReactNode }) => <div className="flex flex-col gap-2">{children}</div>;
