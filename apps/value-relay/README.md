@@ -52,9 +52,7 @@ pages; rankings are computed from the ledger at one confirmed head and are not p
 
 Blitz results carry ranks only. The ledger mints tradeable rank-band chests and owns their draws. Each keeper tick reads
 one 100-event page, persists its continuation and rotates through 25 unfinished requests. It calls `open_finish` once
-the later block is readable and recognizes an already-finished retry. The monitor reports requests overdue by five
-minutes after eligibility. Pending/overdue counts describe the checked page, with `checked` identifying its size; these
-warnings do not pause payouts.
+the later block is readable and recognizes an already-finished retry.
 
 A Frontier pool is funded with `season_id = shard game id`; the relay verifies that binding against the game start and
 seed.
