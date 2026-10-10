@@ -24,6 +24,7 @@ const session = vi.hoisted(() => ({
 // The ledger answers nothing here: a refetch after the claim stays pending, never reaching a network.
 vi.mock("@/runtime/l2-rpc", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/runtime/l2-rpc")>()),
+  L2_LEDGER: "0x1ed9e7",
   l2Provider: () => ({ callContract: () => new Promise(() => {}) }),
 }));
 vi.mock("@/hooks/context/identity-session", () => ({ useIdentitySession: () => ({ status: "signed-in", session }) }));
