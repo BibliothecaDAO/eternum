@@ -29,7 +29,8 @@ const chestArt = (band: number, opened: boolean) =>
  * After a paid Blitz: the rated game's MMR change with the sword or shield applied, and the mystery chest the result
  * minted for the player's rank band. Both belong to the wallet that paid the seat, whatever the payout wallet is now.
  * A sealed chest shows its band and nothing else. Open is one signature from that wallet; the draw then lands by
- * itself about ten blocks later, and the reveal plays inside this panel. Keep leaves it in the collection to trade.
+ * itself about ten blocks later, and the reveal plays inside this panel. A chest not opened stays in the collection,
+ * tradeable.
  * Nothing is drawn for an account that held no seat in the game.
  */
 export const RewardPanel = ({ ledger, account }: { ledger: PaidGameLedger; account: string }) => {
@@ -86,7 +87,6 @@ const ChestPlate = ({
   onRequested: () => void;
 }) => {
   const now = useNowSeconds();
-  const [kept, setKept] = useState(false);
   const [signing, setSigning] = useState(false);
   const state = rewardState(reward, owner);
   const band = reward.chest?.band ?? 0;
@@ -135,22 +135,11 @@ const ChestPlate = ({
   ) : null;
   return (
     <Plate icon="Ch" title={REWARD_WORDS.chest}>
-      <ChestArt band={band} glow={state === "sealed" && !kept} />
+      <ChestArt band={band} glow={state === "sealed"} />
       <p className="flex flex-wrap gap-2">
         <LordsUntil seasonEnd={reward.seasonEnd} now={now} />
-        {kept && <Chip icon="Pc" word={REWARD_WORDS.tradeable} tone="text-kit-muted" />}
       </p>
-      {open ?? (
-        <div className={cn("grid gap-3", kept ? "grid-cols-1" : "grid-cols-2")}>
-          <Button
-            role={kept ? "outline" : "primary"}
-            word={REWARD_WORDS.open}
-            icon="Ch"
-            onClick={() => setSigning(true)}
-          />
-          {!kept && <Button role="outline" word={REWARD_WORDS.keep} icon="Wt" onClick={() => setKept(true)} />}
-        </div>
-      )}
+      {open ?? <Button role="primary" word={REWARD_WORDS.open} icon="Ch" onClick={() => setSigning(true)} />}
     </Plate>
   );
 };
