@@ -121,10 +121,7 @@ export function buildNativeGameParams(
  * A season with days starts on an armies tick, rounded up, so every day rolls over on one: the contract refuses any
  * other start.
  */
-function nativeSeasonStart(
-  config: Config,
-  input: Pick<CreateGamePayloadInput, "presetId" | "startMainAt">,
-): number {
+function nativeSeasonStart(config: Config, input: Pick<CreateGamePayloadInput, "presetId" | "startMainAt">): number {
   const preset = nativePresetForId(input.presetId);
   if (preset.dayUnitSeconds === 0) return input.startMainAt;
   const tick = preset.clockScale
