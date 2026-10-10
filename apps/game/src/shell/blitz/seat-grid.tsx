@@ -2,9 +2,14 @@ import { usePlayerProfile } from "@/hooks/use-player-profile";
 import { playerPortraitUrl } from "@/services/identity/player-portrait";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { KitIcon } from "@/ui/design-system/kit/kit-icon";
+import { formatAmount } from "@/ui/design-system/kit/amount";
 import { PlayerName } from "@/ui/design-system/kit/player-name";
 
+import type { PlaytestSlot } from "@/ui/features/factory-v2/api/factory-worker";
+
+import { BLITZ_SEATS } from "../blitz-slot";
 import { BLITZ_WORDS } from "../words";
+import { useSlotRegistered } from "./entry";
 import type { Seat } from "./lobby";
 
 /**
@@ -110,3 +115,25 @@ export const RosterGrid = ({
     })}
   </ul>
 );
+
+/**
+ * Where a slot's lobby would draw seats: the one number the ledger keeps for it, its registrations, large on the
+ * desktop, and why there are no seats yet. A dash until the ledger answers.
+ */
+export const RegisteredCount = ({ slot, large }: { slot: PlaytestSlot; large: boolean }) => {
+  const registered = useSlotRegistered(slot);
+  return (
+    <div className="flex items-center gap-4">
+      <KitIcon code="Pp" size={large ? 56 : 40} />
+      <span className="flex flex-col gap-1">
+        <span className="flex items-baseline gap-2">
+          <b className={cn("font-display leading-none text-kit-cream", large ? "text-[64px]" : "text-[40px]")}>
+            {registered === undefined ? "—" : formatAmount(registered)}
+          </b>
+          <span className="font-ui text-[17px] text-kit-muted">{BLITZ_WORDS.registeredUnit}</span>
+        </span>
+        <span className="text-[14px] text-kit-muted">{BLITZ_WORDS.drawnAtClose(BLITZ_SEATS)}</span>
+      </span>
+    </div>
+  );
+};

@@ -6,8 +6,6 @@ import type { PayoutWallet } from "@realms-world/identity";
 import { payoutWalletOf } from "@/hooks/context/payout-wallet";
 import { useIdentitySession } from "@/hooks/context/identity-session";
 import { Button } from "@/ui/design-system/kit/button";
-import { ReasonPlate } from "@/ui/design-system/kit/reason-plate";
-import { formatClockTime } from "@/ui/design-system/kit/time";
 
 import type { PlaytestSlot } from "@/ui/features/factory-v2/api/factory-worker";
 
@@ -29,12 +27,11 @@ import { ServiceFailure } from "../service-failure";
 import { FailureLine } from "../sign-in/failure-line";
 import { environmentLedger } from "../value/ledger";
 import { BLITZ_WORDS, ENTRY_WORDS, WALLET_WORDS, WORDS } from "../words";
-import { useRowSeats } from "./entry";
 import { PaidEntry } from "./entry-panel";
 import { GameRow, SeatsChip } from "./game-row";
-import { type LobbyStep, lobbyId, lobbyStep, lobbyTitle, seatsOf } from "./lobby";
+import { type LobbyStep, lobbyId, lobbyRowOf, lobbyStep, lobbyTitle, seatsOf } from "./lobby";
 import { LobbyChatPanel } from "./lobby-chat-panel";
-import { RosterGrid, SeatGrid } from "./seat-grid";
+import { RegisteredCount, RosterGrid, SeatGrid } from "./seat-grid";
 
 const BLITZ = ageOf("blitz");
 
@@ -68,13 +65,11 @@ export const BlitzListPage = () => {
   );
 };
 
-/** Beside the desktop's rows: the next game filling its seats, as its lobby shows it, with its one step. */
+/** Beside the desktop's rows: the next slot taking players, as its lobby shows it, with its one step. */
 const NextLobby = ({ facts }: { facts: PlayFacts }) => {
-  const { data: player } = useRealmsPlayer();
   const row = facts.blitz.find((candidate) => candidate.kind === "slot");
-  const { filled, total } = useRowSeats(row);
   if (!row) return null;
-  const step = lobbyStep(row, facts.blitz);
+  const step = lobbyStep(row);
   return (
     <section className="plate flex flex-col gap-4 p-5">
       <Link to={`/blitz/${lobbyId(row)}`} className="painted flex h-36 items-end rounded-xl p-4">
@@ -91,7 +86,7 @@ const NextLobby = ({ facts }: { facts: PlayFacts }) => {
         </span>
       </Link>
       <LobbyClock row={row} step={step} now={facts.now} />
-      <SeatGrid seats={seatsOf(row, player, filled)} total={total ?? filled ?? 0} preparing={false} />
+      <RegisteredCount slot={row.slot} large={false} />
       <LobbyAction row={row} step={step} desktop />
     </section>
   );
@@ -135,8 +130,9 @@ export const BlitzRows = ({ facts, limit }: { facts: PlayFacts; limit?: number }
 };
 
 /**
- * One Blitz before it starts (spec 06): its clock, its seats with the player's own ringed, and one step: a slot's paid
- * entry, Preparing until the roster's realms are ready, then Enter. There is no way out of a seat (ruled).
+ * One Blitz before it starts (spec 06): its clock and one step. A slot shows its registered count and its paid entry; a
+ * launched game its seats with the player's own ringed, Preparing until the roster's realms are ready, then Enter.
+ * There is no way out of a seat (ruled).
  */
 export const BlitzLobbyPage = () => {
   const { id } = useParams();
@@ -144,9 +140,7 @@ export const BlitzLobbyPage = () => {
   const layout = useLayout();
   const { data: player } = useRealmsPlayer();
   const { session } = useIdentitySession();
-  const row = facts.blitz.find((candidate) => lobbyId(candidate) === id);
-  // A slot's seats are the ledger's registrations, read before any early return so the hooks keep their order.
-  const { filled, total } = useRowSeats(row);
+  const row = lobbyRowOf(facts.blitz, facts.slots.data?.slots ?? [], id);
   if (!row) {
     return (
       <PageFrame back="/blitz" title={BLITZ.name} tabs={false}>
@@ -154,8 +148,7 @@ export const BlitzLobbyPage = () => {
       </PageFrame>
     );
   }
-  const step = lobbyStep(row, facts.blitz);
-  const seats = seatsOf(row, player, filled);
+  const step = lobbyStep(row);
   const clock = <LobbyClock row={row} step={step} now={facts.now} />;
   const desktop = layout === "desktop";
   const wallet = session ? payoutWalletOf(session.user) : null;
@@ -177,7 +170,15 @@ export const BlitzLobbyPage = () => {
       {desktop ? (
         <div className="grid grid-cols-[minmax(0,1fr)_26rem] items-start gap-6">
           <section className="plate p-6">
-            <RosterGrid seats={seats} total={total ?? seats.length} preparing={step.kind === "preparing"} />
+            {row.kind === "slot" ? (
+              <RegisteredCount slot={row.slot} large />
+            ) : (
+              <RosterGrid
+                seats={seatsOf(row.game, player)}
+                total={row.seats.total}
+                preparing={step.kind === "preparing"}
+              />
+            )}
           </section>
           <div className="flex flex-col gap-5">
             <section className="plate flex flex-col gap-4 p-5">
@@ -191,7 +192,11 @@ export const BlitzLobbyPage = () => {
       ) : (
         <div className="flex flex-col gap-4">
           {clock}
-          <SeatGrid seats={seats} total={total ?? seats.length} preparing={step.kind === "preparing"} />
+          {row.kind === "slot" ? (
+            <RegisteredCount slot={row.slot} large={false} />
+          ) : (
+            <SeatGrid seats={seatsOf(row.game, player)} total={row.seats.total} preparing={step.kind === "preparing"} />
+          )}
         </div>
       )}
     </PageFrame>
@@ -266,20 +271,6 @@ const LobbyAction = ({ row, step, desktop }: { row: BlitzRow; step: LobbyStep; d
           />,
         )
       );
-    case "full": {
-      const next = step.next;
-      const nextStart = formatClockTime(next?.startsAt ?? undefined);
-      return (
-        <ReasonPlate
-          reason={{ kind: "failed", line: BLITZ_WORDS.full(nextStart) }}
-          step={
-            next && (
-              <Button role="outline" word={nextStart} icon="Hg" onClick={() => navigate(`/blitz/${lobbyId(next)}`)} />
-            )
-          }
-        />
-      );
-    }
   }
 };
 

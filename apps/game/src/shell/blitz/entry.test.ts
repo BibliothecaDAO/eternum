@@ -39,7 +39,7 @@ it("splits what an entry pays as the ledger settles it: the treasury's cut, then
   });
 });
 
-it("tells choosing, short of LORDS, seated, refund and refunded apart", () => {
+it("tells choosing, short of LORDS, registered, refund and refunded apart", () => {
   const both = { sword: true, shield: true };
   expect(entryState(terms(), both, 900)).toBe("choose");
   expect(entryState(terms({ lords: 320n * WEI }), both, 900)).toBe("short");
@@ -53,13 +53,13 @@ it("tells choosing, short of LORDS, seated, refund and refunded apart", () => {
     refundable: false,
     gameId: 0,
   };
-  expect(entryState(terms({ registration: seated }), both, 900)).toBe("seated");
+  expect(entryState(terms({ registration: seated }), both, 900)).toBe("registered");
   expect(entryState(terms({ registration: seated, cancelled: true }), both, 900)).toBe("refund");
   const back = { ...seated, swordCredit: false, paid: 0n };
   expect(entryState(terms({ registration: back, cancelled: true }), both, 900)).toBe("refunded");
 });
 
-it("closes the entry once the slot has closed, for anyone not already registered", () => {
+it("closes the entry once the slot has closed; a registration stays registered until the ledger names its game", () => {
   const both = { sword: true, shield: true };
   expect(entryState(terms(), both, 999)).toBe("choose");
   expect(entryState(terms(), both, 1_000)).toBe("closed");
@@ -74,7 +74,8 @@ it("closes the entry once the slot has closed, for anyone not already registered
     refundable: false,
     gameId: 0,
   };
-  expect(entryState(terms({ registration: seated }), both, 2_000)).toBe("seated");
+  expect(entryState(terms({ registration: seated }), both, 2_000)).toBe("registered");
+  expect(entryState(terms({ registration: { ...seated, gameId: 7 } }), both, 2_000)).toBe("seated");
   expect(entryState(terms({ registration: seated, cancelled: true }), both, 2_000)).toBe("refund");
 });
 

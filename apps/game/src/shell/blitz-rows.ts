@@ -9,18 +9,20 @@ import type { GameKey, SlotKey } from "./value/ledger";
 export type BlitzAction = "enter" | "spectate" | "registered" | "open";
 
 /**
- * One Blitz on the lobby's Blitz card (design o4): live, or the moment it starts or its slot closes, its seats, and
- * one action. A game comes from the directory; a slot still taking players comes from the launch service, and
- * its game joins the directory only once the slot closes, so the two never show the same game.
+ * One Blitz on the lobby's Blitz card (design o4): live, or the moment it starts or its slot closes, and one action;
+ * a game has its roster's seats, a slot only the count the ledger registered (it is uncapped and splits into games at
+ * close). A game comes from the directory; a slot still taking players comes from the launch service, and its games
+ * join the directory only once the slot closes, so the two never show the same game.
  */
 export type BlitzRow = {
   key: string;
   /** When it starts (a game) or its slot closes (a slot); null once it is live or over. */
   startsAt: number | null;
-  /** Seats taken of the roster; both null for a paid slot, whose seats only the ledger counts (useRowSeats). */
-  seats: { filled: number | null; total: number | null };
   action: BlitzAction | null;
-} & ({ kind: "game"; game: DirectoryGame } | { kind: "slot"; slot: PlaytestSlot });
+} & (
+  | { kind: "game"; game: DirectoryGame; seats: { filled: number; total: number } }
+  | { kind: "slot"; slot: PlaytestSlot }
+);
 
 /** Live games first, then games about to start, then the slots still filling, each soonest first. */
 export const blitzRows = (games: readonly DirectoryGame[], slots: readonly PlaytestSlot[]): BlitzRow[] => {
@@ -43,6 +45,9 @@ export const slotKeyOf = (slot: PlaytestSlot): SlotKey => ({ shard: slot.chainId
 /** A launched game's own key on the ledger, for its result and chest. */
 export const gameKeyOf = (game: DirectoryGame): GameKey => ({ shard: game.chainId, gameId: game.game_id });
 
+/** A launched game's row key, which its lobby's address is made from. */
+export const gameRowKey = (shard: string, gameId: number) => `game:${shard}:${gameId}`;
+
 /** The slot a launched paid Blitz was filled from; null for any game outside a slot. */
 export const gameSlotKeyOf = (game: DirectoryGame): SlotKey | null =>
   game.slotId == null ? null : { shard: game.chainId, slotId: game.slotId };
@@ -53,7 +58,7 @@ export const leadBlitzRow = (rows: readonly BlitzRow[]): BlitzRow | undefined =>
 
 const gameRow = (game: DirectoryGame, startsAt: number | null): BlitzRow => ({
   kind: "game",
-  key: `game:${game.chainId}:${game.game_id}`,
+  key: gameRowKey(game.chainId, game.game_id),
   game,
   startsAt,
   seats: { filled: game.player_count, total: game.roster_count || BLITZ_SEATS },
@@ -67,13 +72,12 @@ const gameAction = (game: DirectoryGame): BlitzAction | null => {
   return isMember(game) ? "registered" : "spectate";
 };
 
-/** A slot is paid: its lobby holds the entry, and only the ledger counts its seats. */
-const slotRow = (slot: PlaytestSlot): BlitzRow => ({
+/** A slot is paid: its lobby holds the entry, and only the ledger counts its registrations. */
+export const slotRow = (slot: PlaytestSlot): BlitzRow => ({
   kind: "slot",
   key: `slot:${slot.name}`,
   slot,
   startsAt: Math.floor(Date.parse(slot.closesAt) / 1000),
-  seats: { filled: null, total: null },
   action: "open",
 });
 

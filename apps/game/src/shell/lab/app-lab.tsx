@@ -8,7 +8,7 @@ import { useFrontierType } from "@/ui/features/frontier/use-frontier-type";
 import { useBootDocumentState } from "@/ui/modules/boot-loader";
 
 import { BlitzListPage, BlitzLobbyPage } from "../blitz/blitz-pages";
-import { entryTermsKey } from "../blitz/entry";
+import { entryTermsKey, slotRegisteredKey } from "../blitz/entry";
 import { seasonPrizeKey } from "../season-tab/blitz-season";
 import { rewardKey } from "../season-tab/reward";
 import { LearnPage } from "../learn/learn-page";
@@ -37,6 +37,7 @@ import {
   LAB_SEASON_PRIZES,
   LAB_PAYOUT_WALLETS,
   LAB_SLOT_KEY,
+  LAB_SLOT_REGISTERED,
   LAB_WALLET,
   labRatings,
   labSlots,
@@ -105,6 +106,7 @@ const createLabClient = (screen: LabScreen) => {
   const wallet = LAB_PAYOUT_WALLETS[screen];
   const terms = LAB_ENTRY_TERMS[screen];
   if (terms && wallet?.status === "ready") client.setQueryData(entryTermsKey(LAB_SLOT_KEY, wallet.address), terms);
+  client.setQueryData(slotRegisteredKey(LAB_SLOT_KEY), LAB_SLOT_REGISTERED);
   const reward = LAB_REWARDS[screen];
   const prize = LAB_SEASON_PRIZES[screen];
   if (reward) client.setQueryData(rewardKey(LAB_GAME_KEYS, LAB_WALLET), reward);
@@ -132,7 +134,7 @@ const answerAppReads = (screen: LabScreen) => {
         failures: [],
       }),
     "/api/guardian": () => json(LAB_GUARDIAN),
-    "/api/slots": () => json(labSlots()),
+    "/api/slots": () => json(labSlots(screen)),
     "/api/profiles": (url) => json({ profiles: profilesOf(url.searchParams.get("accounts")?.split(",") ?? []) }),
     "/api/ratings/top": () => json(LAB_RATING_TOP),
     "/api/ratings": (url) => json(labRatings(url.searchParams.get("players")?.split(",") ?? [])),
