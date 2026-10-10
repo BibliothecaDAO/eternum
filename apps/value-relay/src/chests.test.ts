@@ -69,7 +69,9 @@ it("finishes two pages across a restart without losing queued requests or reread
   const data = new Map<string, unknown>();
   const storage = {
     get: async (key: string) => data.get(key),
-    put: async (key: string, value: unknown) => { data.set(key, value); },
+    put: async (key: string, value: unknown) => {
+      data.set(key, value);
+    },
     delete: async (key: string) => data.delete(key),
     list: async ({ prefix, limit }: { prefix: string; limit: number }) =>
       new Map([...data].filter(([key]) => key.startsWith(prefix)).slice(0, limit)),
@@ -77,18 +79,24 @@ it("finishes two pages across a restart without losing queued requests or reread
   };
   const f = fixture();
   f.ports.head = () => Effect.succeed(111);
-  f.ports.changes = vi.fn((_from, token) => Effect.succeed({
-    rows: Array.from({ length: 20 }, (_, index) => ({
-      kind: "requested" as const,
-      request: { ...f.request, tokenId: String(index + (token ? 20 : 0)) },
-    })),
-    head: 111,
-    next: token ? null : "next-page",
-  }));
-  await Effect.runPromise(finishRequestedChests(f.ports, new DurableChestStore(storage as unknown as DurableObjectStorage)));
+  f.ports.changes = vi.fn((_from, token) =>
+    Effect.succeed({
+      rows: Array.from({ length: 20 }, (_, index) => ({
+        kind: "requested" as const,
+        request: { ...f.request, tokenId: String(index + (token ? 20 : 0)) },
+      })),
+      head: 111,
+      next: token ? null : "next-page",
+    }),
+  );
+  await Effect.runPromise(
+    finishRequestedChests(f.ports, new DurableChestStore(storage as unknown as DurableObjectStorage)),
+  );
   expect(f.ports.changes).toHaveBeenCalledOnce();
   expect(f.ports.finish).toHaveBeenCalledTimes(20);
-  await Effect.runPromise(finishRequestedChests(f.ports, new DurableChestStore(storage as unknown as DurableObjectStorage)));
+  await Effect.runPromise(
+    finishRequestedChests(f.ports, new DurableChestStore(storage as unknown as DurableObjectStorage)),
+  );
   expect(f.ports.changes).toHaveBeenLastCalledWith(0, "next-page");
   expect(f.ports.finish).toHaveBeenCalledTimes(40);
   expect(new Set(vi.mocked(f.ports.finish).mock.calls.map(([id]) => id)).size).toBe(40);

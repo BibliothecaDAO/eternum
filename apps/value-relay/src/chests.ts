@@ -99,4 +99,3 @@ const finishReadyChest = (ports: ChestPorts, store: ChestStore, request: ChestRe
     yield* relayOperation("complete chest request", () => store.complete(request.tokenId));
     return { finished: chest.finished ? 0 : 1, pending: 0 };
   });
-

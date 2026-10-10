@@ -19,7 +19,6 @@ export const chestLedgerReads = (connection: Connection): Omit<ChestPorts, "fini
       return (await readConfirmedLedgerHead(rpcAt(connection.rpcUrl))).number;
     }),
   chest: (tokenId) => relayOperation("read requested chest", () => readChest(connection, tokenId)),
-
 });
 export const finishChestOnLedger = (signer: Signer, tokenId: string) =>
   relayOperation("finish requested chest", async () => {

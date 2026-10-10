@@ -79,4 +79,3 @@ it("decodes both lifecycle events from the durable completed-block boundary", as
     to_block: { block_number: 111 },
   });
 });
-
