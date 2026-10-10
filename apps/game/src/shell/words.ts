@@ -104,7 +104,10 @@ export const BLITZ_WORDS = {
 /** A Blitz lobby's chat: its panel, its field and the lines that stand where a message cannot go. */
 export const CHAT_WORDS = {
   chat: "Chat",
+  message: "Message",
   signInToRead: "Sign in to read the lobby's chat.",
+  rateLimited: "A few messages a second at most. Wait a moment.",
+  refused: "That message was not sent.",
 } as const;
 
 /** The doorway into a match: its four steps and what holds it until the player acts. */
