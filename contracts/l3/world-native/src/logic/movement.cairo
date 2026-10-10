@@ -67,7 +67,6 @@ pub mod MovementLogic {
             let exploring = (data / 0x20000000000) % 0x100 == 0;
             self.pay_movement(game_id, ref explorer, rules, biome, exploring, context.timestamp, context);
             let mut raw_root = context.raw_root;
-            let game = context.game.unbox();
             let seed = crate::random::game_root(ref raw_root, game_id);
             let mut discovery = crate::discovery::Discovery::None;
             if exploring {

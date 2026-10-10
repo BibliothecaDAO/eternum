@@ -1798,11 +1798,8 @@ fn assert_capture_at(depth: u8, count: u128, tier: crate::troops::TroopTier, rev
     let labor_supply = ResourceSlot { game_id, entity_id: 1, resource_type: 23 };
     let essence_supply = ResourceSlot { game_id, entity_id: 1, resource_type: 38 };
     let before_supplies = resources.resource_balance(labor_supply) + resources.resource_balance(essence_supply);
-    let context = crate::tests::context(d.games, game_id);
     let discovery_rules = preset.economy.discovery.unwrap();
-    let root = discovery_root(
-        game_id, discovery_rules, 0, None, crate::discovery::Discovery::Camp,
-    );
+    let root = discovery_root(game_id, discovery_rules, 0, None, crate::discovery::Discovery::Camp);
     let reveal_at = opening + 2;
     assert!(reveal_at < capture_at, "camp draw must precede the fixture capture");
     assert!(explore_with_root(d, game_id, explorer_id, root, reveal_at));
@@ -2390,11 +2387,7 @@ pub fn assert_zero_pool_never_funds_a_ruin_or_payout_over_a_day() {
     loop {
         let army = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
         let raw_root = discovery_root(
-            game_id,
-            rules,
-            attempts,
-            Some(any_chest()),
-            crate::discovery::Discovery::Ruin(any_chest()),
+            game_id, rules, attempts, Some(any_chest()), crate::discovery::Discovery::Ruin(any_chest()),
         );
         assert!(explore_with_root(d, game_id, key.explorer_id, raw_root, time));
         let tile = crate::geometry::tile_key(game_id, crate::geometry::neighbor(army.coord, 0));
@@ -2545,9 +2538,7 @@ fn an_exhausted_day_price_never_funds_a_ruin_or_payout(estimate: u128) {
         1
     };
     let context = crate::tests::context(d.games, game_id);
-    let raw_root = discovery_root(
-        game_id, rules, 0, Some(any_chest()), crate::discovery::Discovery::Ruin(any_chest()),
-    );
+    let raw_root = discovery_root(game_id, rules, 0, Some(any_chest()), crate::discovery::Discovery::Ruin(any_chest()));
     let army = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
     let time = 360_u64;
     snforge_std::interact_with_state(
@@ -2600,11 +2591,7 @@ fn frontier_finds_at_most_one_ruin_a_day_and_holds_its_chest_against_the_budget(
     let (d, game_id, key) = setup_frontier_chests_with_rules(Some(ruins_only));
     let context = crate::tests::context(d.games, game_id);
     let raw_root = discovery_root(
-        game_id,
-        ruins_only,
-        0,
-        Some(any_chest()),
-        crate::discovery::Discovery::Ruin(any_chest()),
+        game_id, ruins_only, 0, Some(any_chest()), crate::discovery::Discovery::Ruin(any_chest()),
     );
     let time = 360_u64;
     let army = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
@@ -3043,7 +3030,6 @@ fn frontier_floor_counts_seven_player_reveals_across_armies_and_depths_then_rese
     };
     let counter = crate::expeditions::ExpeditionDiscoveryKey { game_id, structure_id: 1, epoch: 0 };
     assert!(snforge_std::interact_with_state(d.games, || crate::logic::expeditions::discovery(counter)).is_none());
-    let context = crate::tests::context(d.games, game_id);
     let tomorrow = day_start(d, game_id, 1);
     let mut time = 353_u64;
     for index in 0_u8..8 {
@@ -3116,9 +3102,7 @@ fn frontier_floor_counts_seven_player_reveals_across_armies_and_depths_then_rese
     );
     let third = *IStructureOperationsDispatcher { contract_address: d.games }.home_armies(home).at(0);
     let time = tomorrow + 1;
-    let root = discovery_root(
-        game_id, discovery, 0, Some(any_chest()), crate::discovery::Discovery::None,
-    );
+    let root = discovery_root(game_id, discovery, 0, Some(any_chest()), crate::discovery::Discovery::None);
     assert!(explore_with_root(d, game_id, third, root, time));
     assert_eq!(
         snforge_std::interact_with_state(
