@@ -29,11 +29,6 @@ const MotionLabView = lazy(() =>
 const KitLabView = lazy(() =>
   import("./ui/features/debug/kit-lab/kit-lab-view").then((module) => ({ default: module.KitLabView })),
 );
-const FrontierHudLabView = lazy(() =>
-  import("./ui/features/debug/frontier-hud-lab/frontier-hud-lab-view").then((module) => ({
-    default: module.FrontierHudLabView,
-  })),
-);
 const DebugThreeChunkView = lazy(() =>
   import("./ui/features/debug/three-chunk-debug-view").then((module) => ({ default: module.ThreeChunkDebugView })),
 );
@@ -152,14 +147,6 @@ export const appRoutes = (
           element={
             <LazyRoute>
               <KitLabView />
-            </LazyRoute>
-          }
-        />
-        <Route
-          path="/lab/frontier-hud/*"
-          element={
-            <LazyRoute>
-              <FrontierHudLabView />
             </LazyRoute>
           }
         />
