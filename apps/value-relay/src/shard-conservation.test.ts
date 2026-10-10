@@ -1,3 +1,4 @@
+import { ValueMonitor } from "./monitor-worker";
 import { Effect } from "effect";
 import { beforeEach, expect, it, vi } from "vitest";
 import { shardConservationPort } from "./shard-conservation";
@@ -5,6 +6,9 @@ import { runMonitor, type MonitorProgress } from "./monitor";
 import type { ConfirmedSnapshot } from "./shard-snapshot";
 import { RelayFailure, type MonitorPorts } from "./ports";
 
+vi.mock("cloudflare:workers", () => ({ DurableObject: class {
+  constructor(public ctx: unknown, public env: unknown) {}
+} }));
 const rpc = vi.hoisted(() => ({ chain: vi.fn(), block: vi.fn() }));
 vi.mock("@realms-world/value-ledger", async (original) => ({
   ...(await original<typeof import("@realms-world/value-ledger")>()),
@@ -277,7 +281,18 @@ it("rereads a final balance after the monitor reset clears its memo", async () =
   };
   const read = network(state, games);
   await Effect.runPromise(shardConservationPort(connection, "https://shard.test", read, cache)());
-  values.clear(); // The monitor reset clears every conservation:final row.
+  const storage = {
+    ...cache,
+    delete: async (keys: string | string[]) => {
+      for (const key of typeof keys === "string" ? [keys] : keys) values.delete(key);
+    },
+    list: async ({ prefix }: { prefix: string }) => new Map([...values].filter(([key]) => key.startsWith(prefix))),
+    transaction: async (run: (tx: unknown) => Promise<unknown>): Promise<unknown> => run(storage),
+  };
+  values.set("progress", { halted: "lords_conservation:7:10", fault: { row: "conservation:7:10" } });
+  const monitor = new ValueMonitor({ storage } as unknown as DurableObjectState, {} as never);
+  await monitor.reset("conservation:7:10", "Restored chain verified");
+  expect([...values.keys()].some((key) => key.startsWith("conservation:final:"))).toBe(false);
   rpc.block.mockImplementation(async (height) => ({
     block_number: height === "latest" ? 10 : height,
     block_hash: "0xb",
