@@ -34,6 +34,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-10-10",
+    title: "Your Blitz winnings follow your wallet",
+    description:
+      "Seats, results, chests, refunds and season prizes are read and claimed with the wallet that paid for them, even after you change your payout wallet, and a season you still have a prize in stays on Season after the next one starts.",
+    type: "fix",
+  },
+  {
     date: "2026-10-09",
     title: "Clearer Blitz results",
     description:

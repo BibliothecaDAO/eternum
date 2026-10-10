@@ -5,7 +5,7 @@ import { MemoryRouter } from "react-router-dom";
 import type { Call } from "starknet";
 import { afterEach, expect, it, vi } from "vitest";
 
-const signed = vi.hoisted(() => ({ calls: [] as Call[][] }));
+const signed = vi.hoisted(() => ({ calls: [] as Call[][], owners: [] as string[] }));
 // The ledger answers nothing here: a refetch after a send stays pending, never reaching a network.
 vi.mock("@/runtime/l2-rpc", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/runtime/l2-rpc")>()),
@@ -16,11 +16,12 @@ vi.mock("@/hooks/context/identity-session", () => ({
   useIdentitySessionStore: (select: (state: typeof session) => unknown) => select(session),
 }));
 vi.mock("@/ui/modules/identity/wallet-actions", () => ({
-  WalletSign: ({ calls, onSent }: { calls: Call[]; onSent: (hash: string) => void }) => (
+  WalletSign: ({ owner, calls, onSent }: { owner: string; calls: Call[]; onSent: (hash: string) => void }) => (
     <button
       type="button"
       onClick={() => {
         signed.calls.push(calls);
+        signed.owners.push(owner);
         onSent("0xtx");
       }}
     >
@@ -30,6 +31,7 @@ vi.mock("@/ui/modules/identity/wallet-actions", () => ({
 }));
 
 import type { LedgerLinkStatus, PaidGameLedger, PayoutWallet } from "@realms-world/identity";
+import { payingWalletKey } from "../value/paying-wallet";
 import { type EntryTerms, entryTermsKey } from "./entry";
 import { PaidEntry } from "./entry-panel";
 
@@ -61,10 +63,17 @@ const CONFIRMED: LedgerLinkStatus = {
   account: "0x7a",
 };
 
-const mount = async (terms: EntryTerms, wallet: PayoutWallet = WALLET, link: LedgerLinkStatus = CONFIRMED) => {
+/** `payer` is the wallet the game's registrations name for the account: null before it pays. */
+const mount = async (
+  terms: EntryTerms,
+  wallet: PayoutWallet = WALLET,
+  link: LedgerLinkStatus = CONFIRMED,
+  payer: string | null = null,
+) => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const client = new QueryClient({ defaultOptions: { queries: { staleTime: Infinity, retry: false } } });
-  client.setQueryData(entryTermsKey(LEDGER, "0x4a1"), terms);
+  client.setQueryData(payingWalletKey(LEDGER, "0x7a"), payer);
+  client.setQueryData(entryTermsKey(LEDGER, payer ?? "0x4a1"), terms);
   const container = document.createElement("div");
   document.body.append(container);
   const root = createRoot(container);
@@ -92,6 +101,7 @@ const press = (container: HTMLElement, text: string) =>
 afterEach(async () => {
   for (const unmount of unmounts.splice(0)) await unmount();
   signed.calls = [];
+  signed.owners = [];
 });
 
 it("pays the seat and the chosen flags from the payout wallet, a credit paying for the sword", async () => {
@@ -132,8 +142,8 @@ it("names what is short, the missing STRK, the seat, and the refund", async () =
     shieldCredit: false,
     paid: 500n * WEI,
   };
-  expect((await mount({ ...TERMS, registration: seat })).textContent).toContain("Seated");
-  const refund = await mount({ ...TERMS, registration: seat, cancelled: true });
+  expect((await mount({ ...TERMS, registration: seat }, WALLET, CONFIRMED, "0x4a1")).textContent).toContain("Seated");
+  const refund = await mount({ ...TERMS, registration: seat, cancelled: true }, WALLET, CONFIRMED, "0x4a1");
   expect(refund.textContent).toContain("Sword credit");
   await press(refund, "Take refund");
   await press(refund, "Sign");
@@ -164,4 +174,27 @@ it("shows linking until the services confirm the link, reading the session again
 
   const linked = await mount(TERMS);
   expect(linked.textContent).toContain("Pay & join");
+});
+
+it("reads and refunds a seat through the wallet that paid it, after the payout wallet was replaced", async () => {
+  const seat = {
+    registered: true,
+    sword: false,
+    shield: false,
+    swordCredit: false,
+    shieldCredit: false,
+    paid: 500n * WEI,
+  };
+  // Paid from 0xa11; the payout wallet is now 0x4a1, whose own registration would read as no seat at all.
+  const seated = await mount({ ...TERMS, registration: seat }, WALLET, CONFIRMED, "0xa11");
+  expect(seated.textContent).toContain("Seated");
+  expect(seated.textContent).not.toContain("Pay & join");
+  const refund = await mount({ ...TERMS, registration: seat, cancelled: true }, WALLET, CONFIRMED, "0xa11");
+  await press(refund, "Take refund");
+  await press(refund, "Sign");
+  expect(signed.owners).toEqual(["0xa11"]);
+  // A wallet that paid still holds its seat once the account has no payout wallet at all.
+  expect(
+    (await mount({ ...TERMS, registration: seat }, { status: "no_wallet" }, CONFIRMED, "0xa11")).textContent,
+  ).toContain("Seated");
 });

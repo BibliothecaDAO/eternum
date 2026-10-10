@@ -16,6 +16,7 @@ import { ServiceFailure } from "../service-failure";
 import { useNowSeconds } from "../use-now";
 import { NoStrkLine } from "../value/no-strk-line";
 import { lordsOf, refundCall } from "../value/ledger";
+import { usePayingWallet } from "../value/paying-wallet";
 import { ENTRY_WORDS, WALLET_WORDS } from "../words";
 import {
   entryCalls,
@@ -37,9 +38,10 @@ const WalletSign = lazy(() =>
 const LINK_POLL_MS = 5_000;
 
 /**
- * The lobby's step for a paid Blitz: its entry read from the ledger for the payout wallet, read again once the
- * wallet has sent its call, and the services' ledger link for it. `account` is the player's own Realms account, null
- * until it is known.
+ * The lobby's step for a paid Blitz: its entry read from the ledger, read again once the wallet has sent its call, and
+ * the services' ledger link for it. A seat the account already holds is read, and refunded, through the wallet that
+ * paid it, which may no longer be the payout wallet; otherwise the payout wallet is the one that would pay. `account`
+ * is the player's own Realms account, null until it is known.
  */
 export const PaidEntry = ({
   ledger,
@@ -52,7 +54,9 @@ export const PaidEntry = ({
   link: LedgerLinkStatus;
   account: string | null;
 }) => {
-  const terms = useEntryTerms(ledger, wallet.status === "no_wallet" ? null : wallet.address);
+  const payer = usePayingWallet(ledger, account);
+  const owner = payer.data ?? (wallet.status === "no_wallet" ? null : wallet.address);
+  const terms = useEntryTerms(ledger, payer.isSuccess ? owner : null);
   const entryLink =
     wallet.status === "no_wallet" || account === null ? null : entryLinkOf(link, ledger, wallet.address, account);
   const refreshSession = useIdentitySessionStore((state) => state.refresh);
@@ -61,14 +65,19 @@ export const PaidEntry = ({
     const timer = window.setInterval(() => void refreshSession(), LINK_POLL_MS);
     return () => window.clearInterval(timer);
   }, [entryLink, refreshSession]);
-  if (terms.isError) return <ServiceFailure service="ledger" error={terms.error} retry={() => void terms.refetch()} />;
+  const failed = payer.isError ? payer : terms.isError ? terms : null;
+  if (failed) return <ServiceFailure service="ledger" error={failed.error} retry={() => void failed.refetch()} />;
+  if (payer.isSuccess && owner === null) return <NoWallet />;
   return (
     <EntryPanel
       ledger={ledger}
       terms={terms.data}
-      wallet={wallet}
+      owner={owner}
       link={entryLink}
-      onSent={() => void terms.refetch()}
+      onSent={() => {
+        void payer.refetch();
+        void terms.refetch();
+      }}
     />
   );
 };
@@ -81,13 +90,14 @@ export const PaidEntry = ({
 const EntryPanel = ({
   ledger,
   terms,
-  wallet,
+  owner,
   link,
   onSent,
 }: {
   ledger: PaidGameLedger;
   terms: EntryTerms | undefined;
-  wallet: PayoutWallet;
+  /** The wallet whose seat this is: the one that paid it, or the payout wallet that would. */
+  owner: string | null;
   link: ReturnType<typeof entryLinkOf> | null;
   onSent: () => void;
 }) => {
@@ -95,8 +105,7 @@ const EntryPanel = ({
   const [signing, setSigning] = useState(false);
   const [sent, setSent] = useState(false);
   const now = useNowSeconds();
-  if (wallet.status === "no_wallet") return <NoWallet />;
-  if (!terms || link === null) return <Loading />;
+  if (!terms || owner === null) return <Loading />;
   const state = entryState(terms, choice, now, link);
   const cost = entryCost(terms, choice);
   const done = () => {
@@ -114,7 +123,7 @@ const EntryPanel = ({
   const sign = signing && (
     <Suspense fallback={<Loading />}>
       <WalletSign
-        owner={wallet.address}
+        owner={owner}
         calls={state === "refund" ? [refundCall(ledger.address, ledger)] : entryCalls(ledger, terms, choice)}
         onSent={done}
       />
@@ -136,7 +145,7 @@ const EntryPanel = ({
       </Plate>
     );
   return (
-    <Plate icon="Lo" title={ENTRY_WORDS.entry} right={<WalletChip address={wallet.address} />}>
+    <Plate icon="Lo" title={ENTRY_WORDS.entry} right={<WalletChip address={owner} />}>
       <div className="grid grid-cols-3 gap-2.5">
         <Tile
           icon="Fl"

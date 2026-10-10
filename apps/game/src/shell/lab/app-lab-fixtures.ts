@@ -157,7 +157,7 @@ export const LAB_SCREENS = {
   "season-out": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
 } as const;
 
-const LAB_WALLET = "0x04a1c0de5eed000000000000000000000000000000000000000000000009c2e";
+export const LAB_WALLET = "0x04a1c0de5eed000000000000000000000000000000000000000000000009c2e";
 
 /** The payout wallet the identity service reports on each screen's session; screens without one report none. */
 export const LAB_PAYOUT_WALLETS: Partial<Record<keyof typeof LAB_SCREENS, PayoutWallet>> = {
@@ -462,6 +462,7 @@ export const LAB_REWARDS: Partial<Record<keyof typeof LAB_SCREENS, Reward>> = {
 const RUNNING: SeasonPrize = {
   ledger: LAB_GAME_LEDGER.address,
   seasonId: 3,
+  current: true,
   season: {
     participants: 500,
     winners: 50,
@@ -474,6 +475,7 @@ const RUNNING: SeasonPrize = {
     pool: 765_900n * WEI,
   },
   curve: { paidFractionBps: 1000, decayBps: 9600 },
+  wallet: LAB_WALLET,
   share: null,
   claimed: false,
   strk: 10n ** 17n,

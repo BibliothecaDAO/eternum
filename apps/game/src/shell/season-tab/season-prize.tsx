@@ -1,7 +1,5 @@
 import { lazy, type ReactNode, Suspense, useState } from "react";
 
-import { useIdentitySession } from "@/hooks/context/identity-session";
-import { payoutWalletOf } from "@/hooks/context/payout-wallet";
 import { formatExact } from "@/ui/design-system/kit/amount";
 import { Button } from "@/ui/design-system/kit/button";
 import { type IconCode, KitIcon } from "@/ui/design-system/kit/kit-icon";
@@ -16,7 +14,7 @@ import { claimSeasonCall, lordsOf } from "../value/ledger";
 import { NoStrkLine } from "../value/no-strk-line";
 import { FailureLine } from "../sign-in/failure-line";
 import { SEASON_PRIZE_WORDS } from "../words";
-import { placeShares, type SeasonPrize, seasonSourceOf, seasonState, useSeasonPrize } from "./blitz-season";
+import { placeShares, type SeasonPrize, seasonSourcesOf, seasonState, useSeasonPrizes } from "./blitz-season";
 
 const WalletSign = lazy(() =>
   import("@/ui/modules/identity/wallet-actions").then((module) => ({ default: module.WalletSign })),
@@ -25,27 +23,36 @@ const WalletSign = lazy(() =>
 /** How many paid places the panel lists before the last one. */
 const PLACES_SHOWN = 3;
 
+/** Seasons past the running one stay on Season only while the player still waits on them or has a share to claim. */
+const OPEN_STATES = new Set<ReturnType<typeof seasonState>>(["closing", "review", "held", "claim", "no-strk"]);
+
 /**
- * The Blitz season's prize on Season: the pool now and the time left, what the first paid places and the last would
- * take of it today; at the end the review hour, then the winner's claim from the payout wallet. Drawn only when the
- * player's Blitz games name a ledger and the session reports a payout wallet.
+ * The Blitz seasons' prizes on Season, newest first: the running season's pool and time left, what the first paid
+ * places and the last would take of it today; at the end the review hour, then the winner's claim from the wallet
+ * that paid in that season. An earlier season the player paid into stays listed until its share is claimed, so a new
+ * season opening never hides one still to claim.
  */
 export const SeasonPrizePanel = () => {
-  const { session } = useIdentitySession();
   const { data: player } = useRealmsPlayer();
   const directory = useDirectory();
   const history = useRecentResults(20, player);
-  const wallet = session ? payoutWalletOf(session.user) : null;
-  const games: DirectoryGame[] = [...(directory.data?.games ?? []), ...(history.data?.games ?? [])];
-  const source = seasonSourceOf(games);
-  const prize = useSeasonPrize(source, wallet && wallet.status !== "no_wallet" ? wallet.address : null);
-  if (source?.kind === "broken") return <FailureLine line={SEASON_PRIZE_WORDS.unreadable} />;
-  if (prize.isError) return <ServiceFailure service="ledger" error={prize.error} retry={() => void prize.refetch()} />;
-  if (!prize.data || !wallet || wallet.status === "no_wallet") return null;
-  return <Prize prize={prize.data} owner={wallet.address} onClaimed={() => void prize.refetch()} />;
+  const now = useNowSeconds();
+  const sources = seasonSourcesOf(directory.data?.games ?? [], history.data?.games ?? []);
+  const prizes = useSeasonPrizes(sources, player ?? null);
+  if (prizes.isError)
+    return <ServiceFailure service="ledger" error={prizes.error} retry={() => void prizes.refetch()} />;
+  const shown = (prizes.data ?? []).filter((prize) => prize.current || OPEN_STATES.has(seasonState(prize, now)));
+  return (
+    <>
+      {sources.broken && <FailureLine line={SEASON_PRIZE_WORDS.unreadable} />}
+      {shown.map((prize) => (
+        <Prize key={prize.seasonId} prize={prize} onClaimed={() => void prizes.refetch()} />
+      ))}
+    </>
+  );
 };
 
-const Prize = ({ prize, owner, onClaimed }: { prize: SeasonPrize; owner: string; onClaimed: () => void }) => {
+const Prize = ({ prize, onClaimed }: { prize: SeasonPrize; onClaimed: () => void }) => {
   const now = useNowSeconds();
   const [signing, setSigning] = useState(false);
   const state = seasonState(prize, now);
@@ -80,10 +87,11 @@ const Prize = ({ prize, owner, onClaimed }: { prize: SeasonPrize; owner: string;
       )}
       {state === "no-strk" && <NoStrkLine />}
       {state === "claim" &&
+        prize.wallet &&
         (signing ? (
           <Suspense fallback={<Loading />}>
             <WalletSign
-              owner={owner}
+              owner={prize.wallet}
               calls={[claimSeasonCall(prize.ledger, prize.seasonId)]}
               onSent={() => {
                 setSigning(false);

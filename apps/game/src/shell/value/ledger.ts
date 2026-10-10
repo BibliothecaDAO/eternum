@@ -302,6 +302,11 @@ export const ledgerReader = (provider: ProviderInterface, ledger: string) => {
       BigInt((await view("season_claimed", [String(seasonId), owner]))[0]) !== 0n,
     registration: async (key: GameKey, owner: string) =>
       decodeRegistration(await view("get_registration", [...keyCalldata(key), owner])),
+    /** The game's registration at an index, in the order they were made: the wallet that paid and its account. */
+    registeredPlayer: async (key: GameKey, index: number) => {
+      const [wallet, account] = await view("get_registered_player", [...keyCalldata(key), String(index)]);
+      return { wallet, account };
+    },
     credits: async (owner: string) => decodeCredits(await view("get_credits", [owner])),
     result: async (key: GameKey, owner: string) =>
       decodePlayerResult(await view("get_player_result", [...keyCalldata(key), owner])),

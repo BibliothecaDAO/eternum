@@ -8,7 +8,7 @@ vi.mock("@/runtime/l2-rpc", async (importOriginal) => ({
 
 import type { DirectoryGame } from "../herald";
 import { claimSeasonCall, decodeSeason } from "../value/ledger";
-import { placeShares, type SeasonPrize, seasonSourceOf, seasonState } from "./blitz-season";
+import { placeShares, type SeasonPrize, seasonSourcesOf, seasonState } from "./blitz-season";
 
 const WEI = 10n ** 18n;
 
@@ -64,6 +64,7 @@ it("runs, closes, reviews, holds, then claims, waits on the fee, is claimed, or 
   const prize = (overrides: Partial<SeasonPrize["season"]>, rest: Partial<SeasonPrize> = {}): SeasonPrize => ({
     ledger: "0xl",
     seasonId: 3,
+    current: true,
     season: {
       participants: 500,
       winners: 50,
@@ -77,6 +78,7 @@ it("runs, closes, reviews, holds, then claims, waits on the fee, is claimed, or 
       ...overrides,
     },
     curve: { paidFractionBps: 1000, decayBps: 9600 },
+    wallet: "0x4a1",
     share: 5n * WEI,
     claimed: false,
     strk: WEI,
@@ -95,37 +97,29 @@ it("runs, closes, reviews, holds, then claims, waits on the fee, is claimed, or 
   expect(seasonState(prize({}, { share: null }), 250)).toBe("out");
 });
 
-it("takes the season from the newest Blitz game that names a ledger", () => {
-  const game = (id: number, start: number, ledger?: object) =>
-    ({
-      chainId: "0x52",
-      game_id: id,
-      mode: "blitz",
-      clock: { start_main_at: start },
-      entry: ledger ? { kind: "paid", ledger: { ...ledger, shard: "0x52", gameId: id } } : { kind: "free" },
-    }) as unknown as DirectoryGame;
-  expect(seasonSourceOf([game(1, 10)])).toBeNull();
-  expect(
-    seasonSourceOf([
-      game(1, 10, { address: "0xa", chainId: "0x534e5f4d41494e" }),
-      game(2, 20, { address: "0xa", chainId: "0x534e5f4d41494e" }),
-      game(3, 30),
-    ]),
-  ).toEqual({ kind: "paid", ledger: expect.objectContaining({ gameId: 2 }) });
+const game = (id: number, start: number, entry: object = { kind: "free" }) =>
+  ({ chainId: "0x52", game_id: id, mode: "blitz", clock: { start_main_at: start }, entry }) as unknown as DirectoryGame;
+const paid = (id: number) => ({
+  kind: "paid",
+  ledger: { address: "0xa", chainId: "0x534e5f4d41494e", shard: "0x52", gameId: id },
 });
 
-it("refuses the season when the newest Blitz game's entry is broken, instead of skipping to an older one", () => {
+it("takes the running season from the newest paid Blitz listed anywhere, and the seasons paid into from history", () => {
+  expect(seasonSourcesOf([game(1, 10)], [])).toEqual({ current: null, played: [], broken: false });
+  const sources = seasonSourcesOf([game(3, 30, paid(3)), game(4, 40)], [game(1, 10, paid(1)), game(2, 20)]);
+  expect(sources.current).toEqual(expect.objectContaining({ gameId: 3 }));
+  // Only the player's own finished paid games are seasons they paid into; a listed game is not theirs.
+  expect(sources.played).toEqual([expect.objectContaining({ gameId: 1 })]);
+  expect(sources.broken).toBe(false);
+});
+
+it("shows a broken entry among the sources as a fault, instead of skipping to an older season", () => {
   vi.spyOn(console, "error").mockImplementation(() => {});
-  const paid = {
-    chainId: "0x52",
-    game_id: 1,
-    mode: "blitz",
-    clock: { start_main_at: 10 },
-    entry: {
-      kind: "paid",
-      ledger: { address: "0xa", chainId: "0x534e5f4d41494e", shard: "0x52", gameId: 1 },
-    },
-  } as unknown as DirectoryGame;
-  const broken = { chainId: "0x52", game_id: 2, mode: "blitz", clock: { start_main_at: 20 }, entry: { kind: "paid" } };
-  expect(seasonSourceOf([paid, broken as unknown as DirectoryGame])).toEqual({ kind: "broken" });
+  const broken = game(2, 20, { kind: "paid" });
+  expect(seasonSourcesOf([broken], [game(1, 10, paid(1))])).toEqual({
+    current: null,
+    played: [expect.objectContaining({ gameId: 1 })],
+    broken: true,
+  });
+  expect(seasonSourcesOf([], [game(1, 10, paid(1)), broken]).broken).toBe(true);
 });

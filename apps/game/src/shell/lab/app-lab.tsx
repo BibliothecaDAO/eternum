@@ -9,8 +9,9 @@ import { useBootDocumentState } from "@/ui/modules/boot-loader";
 
 import { BlitzListPage, BlitzLobbyPage } from "../blitz/blitz-pages";
 import { entryTermsKey } from "../blitz/entry";
-import { seasonPrizeKey } from "../season-tab/blitz-season";
+import { seasonPrizesKey } from "../season-tab/blitz-season";
 import { rewardKey } from "../season-tab/reward";
+import { payingWalletKey } from "../value/paying-wallet";
 import { LearnPage } from "../learn/learn-page";
 import { DominionPage, EternumPage, FrontierPage } from "../play/age-pages";
 import { PlayPage } from "../play/play-page";
@@ -38,6 +39,7 @@ import {
   LAB_SEASON_PRIZES,
   LAB_PAYOUT_WALLETS,
   LAB_SLOT_LEDGER,
+  LAB_WALLET,
   labRatings,
   labSlots,
   type LabScreen,
@@ -104,14 +106,20 @@ const createLabClient = (screen: LabScreen) => {
   client.setQueryData(["shell", "leaderboard", LAB_CHAIN, 7], LAB_BLITZ_BOARD);
   const wallet = LAB_PAYOUT_WALLETS[screen];
   const terms = LAB_ENTRY_TERMS[screen];
-  if (terms && wallet?.status === "ready") client.setQueryData(entryTermsKey(LAB_SLOT_LEDGER, wallet.address), terms);
+  // The lab's seat, chest and season share were paid from the lab wallet; an entry not yet paid has no paying wallet.
+  const paid = terms?.registration.registered ? LAB_WALLET : null;
+  client.setQueryData(payingWalletKey(LAB_SLOT_LEDGER, LAB_PLAYER), paid);
+  if (terms && (paid ?? wallet?.status === "ready"))
+    client.setQueryData(entryTermsKey(LAB_SLOT_LEDGER, paid ?? LAB_WALLET), terms);
   const reward = LAB_REWARDS[screen];
-  if (reward && wallet?.status === "ready") client.setQueryData(rewardKey(LAB_GAME_LEDGER, wallet.address), reward);
   const prize = LAB_SEASON_PRIZES[screen];
-  if (prize && wallet?.status === "ready") {
-    const source = `${LAB_GAME_LEDGER.shard}:${LAB_GAME_LEDGER.gameId}`;
-    client.setQueryData(seasonPrizeKey(LAB_GAME_LEDGER.address, source, wallet.address), prize);
-  }
+  if (reward || prize) client.setQueryData(payingWalletKey(LAB_GAME_LEDGER, LAB_PLAYER), LAB_WALLET);
+  if (reward) client.setQueryData(rewardKey(LAB_GAME_LEDGER, LAB_WALLET), reward);
+  if (prize)
+    client.setQueryData(
+      seasonPrizesKey({ current: LAB_GAME_LEDGER, played: [LAB_GAME_LEDGER], broken: false }, LAB_PLAYER),
+      [prize],
+    );
   return client;
 };
 
@@ -137,7 +145,7 @@ const answerAppReads = (screen: LabScreen) => {
     "/api/directory/history": () =>
       json({
         games: [
-          LAB_REWARDS[screen]
+          LAB_REWARDS[screen] || LAB_SEASON_PRIZES[screen]
             ? { ...LAB_FINISHED_BLITZ, entry: paidEntryPayload(LAB_GAME_LEDGER) }
             : LAB_FINISHED_BLITZ,
         ],
