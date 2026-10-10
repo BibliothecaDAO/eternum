@@ -42,8 +42,6 @@ test("only the single data-listed Games entries admit administrative invokes", (
   expect(GAME_ENTRYPOINTS.map((entry) => entry.name)).toEqual([
     "play",
     "create_game",
-    "freeze_blitz_roster",
-    "prepare_homes",
     "apply_release",
     "register_release",
     "register_preset",

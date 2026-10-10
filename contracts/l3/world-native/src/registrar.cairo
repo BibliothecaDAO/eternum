@@ -30,7 +30,6 @@ pub trait IRegistrar<T> {
     fn game_id_by_name(self: @T, name: felt252) -> u32;
     fn blitz_roster(self: @T, game_id: u32) -> Span<RosterPlayer>;
     fn create_game(ref self: T, params: CreateGameParams) -> u32;
-    fn freeze_blitz_roster(ref self: T, game_id: u32, players: Span<RosterPlayer>);
 }
 #[starknet::interface]
 pub trait IGameSettlement<T> {
@@ -63,9 +62,7 @@ pub fn validate_params(params: CreateGameParams, rules: LaunchRules) {
         assert!(params.end_grace_seconds == 0, "result finalisation has no grace period");
     }
     if rules.entry_rule == crate::rules::ENTRY_ROSTER {
-        if !params.roster.is_empty() {
-            validate_roster_size(params.roster.len(), rules.settlement_mode);
-        }
+        validate_roster_size(params.roster.len(), rules.settlement_mode);
         assert!(!params.dev_mode_on, "free Blitz does not use development mode");
     } else {
         assert!(params.roster.is_empty(), "Eternum does not use a fixed roster");

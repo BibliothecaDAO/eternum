@@ -19,19 +19,7 @@ pub mod PlacementLogic {
     impl AdministrationInternal = EntryAdministration::InternalImpl<ContractState>;
 
     #[abi(embed_v0)]
-    impl CommandPreparation of crate::commands::ICommandPreparation<ContractState> {
-        fn prepare_homes(ref self: ContractState, game_id: u32, owners: Span<starknet::ContractAddress>) {
-            crate::logic::release::assert_launcher();
-            let rules = crate::logic::game::rules(game_id);
-            assert!(
-                rules.entry_rule != crate::rules::ENTRY_OPEN || rules.day_unit_seconds == 0,
-                "open homes are assigned automatically",
-            );
-            assert!(owners.len() <= crate::commands::MAX_COMMAND_ITEMS, "home preparation batch too large");
-            for owner in owners {
-                crate::entity_ids::reserve_homes(game_id, *owner);
-            }
-        }
+    impl CommandIngress of crate::commands::ICommandIngress<ContractState> {
         fn validate_command(self: @ContractState, command: Span<felt252>) -> u32 {
             let (index, _, _) = crate::commands::validated_command(command).expect('INVALID_COMMAND');
             index

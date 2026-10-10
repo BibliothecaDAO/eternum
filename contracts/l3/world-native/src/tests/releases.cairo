@@ -141,7 +141,7 @@ fn launcher_hotfix_migrates_a_populated_frontier_day_once_and_play_continues() {
         game_id,
         entity_id: interact_with_state(d.games, || crate::state::read().games.next_entity.read(game_id)).into(),
     };
-    super::play_fixture::prepare_homes(d.games, game_id, other.actor);
+    super::play_fixture::reserve_fixture_homes(d.games, game_id, other.actor);
     assert!(
         super::resource_commands::execute_in_game(
             other,

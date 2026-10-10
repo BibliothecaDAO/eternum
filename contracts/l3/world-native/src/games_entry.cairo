@@ -69,16 +69,6 @@ pub mod GamesEntry {
             assert!(launcher.is_non_zero(), "zero launcher");
             self.data.launcher.write(launcher);
         }
-        fn prepare_homes(ref self: ComponentState<TContractState>, game_id: u32, owners: Span<ContractAddress>) {
-            crate::logic::release::assert_launcher();
-            crate::commands::ICommandPreparationDispatcherTrait::prepare_homes(
-                crate::commands::ICommandPreparationLibraryDispatcher {
-                    class_hash: self.data.releases.read(self.data.current_release.read()).classes.placement,
-                },
-                game_id,
-                owners,
-            );
-        }
     }
 
     #[embeddable_as(PlayImpl)]
@@ -156,8 +146,8 @@ pub mod GamesEntry {
             let game = crate::logic::game::game(game_id);
             assert!(release_id == self.data.game_releases.read(game_id), "stale release");
             assert!(preset_commitment == crate::logic::game::preset_commitment(game), "invalid preset");
-            crate::commands::ICommandPreparationDispatcherTrait::validate_command(
-                crate::commands::ICommandPreparationLibraryDispatcher {
+            crate::commands::ICommandIngressDispatcherTrait::validate_command(
+                crate::commands::ICommandIngressLibraryDispatcher {
                     class_hash: get_dep_component!(self, Release).classes(game_id).placement.read(),
                 },
                 command,
@@ -188,8 +178,8 @@ pub mod GamesEntry {
             if route.selector == selector!("settle_season")
                 && rules.entry_rule == crate::rules::ENTRY_OPEN
                 && rules.day_unit_seconds != 0 {
-                crate::commands::ICommandPreparationDispatcherTrait::assign_open_home(
-                    crate::commands::ICommandPreparationLibraryDispatcher {
+                crate::commands::ICommandIngressDispatcherTrait::assign_open_home(
+                    crate::commands::ICommandIngressLibraryDispatcher {
                         class_hash: get_dep_component!(self, Release).classes(game_id).placement.read(),
                     },
                     game_id,
@@ -285,10 +275,7 @@ pub mod GamesEntry {
             crate::logic::release::assert_launcher();
             self.registrar().create_game(params)
         }
-        fn freeze_blitz_roster(ref self: ComponentState<TContractState>, game_id: u32, players: Span<RosterPlayer>) {
-            crate::logic::release::assert_launcher();
-            self.registrar().freeze_blitz_roster(game_id, players);
-        }
+
         fn preset_commitment(self: @ComponentState<TContractState>, preset_id: u32) -> felt252 {
             self.data.registrar.presets.read(preset_id)
         }
