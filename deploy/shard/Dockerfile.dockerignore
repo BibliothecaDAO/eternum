@@ -4,7 +4,6 @@
 **/target
 **/.lab
 **/.context
-**/.env*
 **/*.log
 **/__pycache__
 **/.venv
@@ -14,6 +13,7 @@
 !**/src/data/**
 !**/public/**/data
 !**/public/**/data/**
+**/.env*
 **/host-keys.json*
 **/authority.json*
 **/harness.env*
