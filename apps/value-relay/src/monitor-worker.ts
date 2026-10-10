@@ -1,3 +1,4 @@
+import { ledgerAddress } from "./environment";
 import { activeShards, readRegisteredShard, type ShardDirectory } from "@realms-world/value-ledger";
 import { processSeasonTops } from "./season-tops";
 import { seasonLedgerReads, challengeSeason } from "./season-ledger";
@@ -25,7 +26,7 @@ interface MonitorEnv {
   RELAY_REPORT: { held(): Promise<{ kind: string; reason: string; transactionHash: string | null }[]> };
   MONITOR: DurableObjectNamespace<ValueMonitor>;
   LEDGER_RPC_URL: string;
-  LEDGER_ADDRESS: string;
+  ENVIRONMENT: import("@realms-world/chain").ValueEnvironment;
   PAUSER_ACCOUNT_ADDRESS: string;
   PAUSER_PRIVATE_KEY: string;
 }
@@ -48,13 +49,13 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
                     {
                       ...seasonLedgerReads({
                         rpcUrl: monitor.env.LEDGER_RPC_URL,
-                        contractAddress: monitor.env.LEDGER_ADDRESS,
+                        contractAddress: ledgerAddress(monitor.env.ENVIRONMENT),
                       }),
                       challenge: (id, omitted) =>
                         challengeSeason(
                           {
                             rpcUrl: monitor.env.LEDGER_RPC_URL,
-                            contractAddress: monitor.env.LEDGER_ADDRESS,
+                            contractAddress: ledgerAddress(monitor.env.ENVIRONMENT),
                             accountAddress: monitor.env.PAUSER_ACCOUNT_ADDRESS,
                             privateKey: monitor.env.PAUSER_PRIVATE_KEY,
                           },
@@ -140,7 +141,7 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
             await tx.put("reset:sequence", sequence);
             await tx.put("progress", progress);
             await tx.delete("observation");
-            await tx.delete([...((await tx.list({ prefix: "conservation:final:" })).keys())]);
+            await tx.delete([...(await tx.list({ prefix: "conservation:final:" })).keys()]);
             return progress;
           });
         }),
@@ -164,7 +165,7 @@ const legacyFault = async (
     throw new Error("fault_row_unavailable");
   }
   const cursor = previous.cursors?.[stream] ?? { fromBlock: 0, page: null };
-  const reads = ledgerMonitorReads(env.LEDGER_RPC_URL, env.LEDGER_ADDRESS);
+  const reads = ledgerMonitorReads(env.LEDGER_RPC_URL, ledgerAddress(env.ENVIRONMENT));
   const page =
     stream === "paidClaims"
       ? await Effect.runPromise(
@@ -216,7 +217,7 @@ const monitorPortsOf = (env: MonitorEnv, storage: DurableObjectStorage) => {
               reader,
               frontierReceiptBindings(
                 reader,
-                { rpcUrl: env.LEDGER_RPC_URL, address: env.LEDGER_ADDRESS },
+                { rpcUrl: env.LEDGER_RPC_URL, address: ledgerAddress(env.ENVIRONMENT) },
                 env.IDENTITY,
               ),
             ).withdrawal(chainId, hash),
@@ -239,10 +240,10 @@ const monitorPortsOf = (env: MonitorEnv, storage: DurableObjectStorage) => {
         }),
     },
     ledger: {
-      ...ledgerMonitorReads(env.LEDGER_RPC_URL, env.LEDGER_ADDRESS),
+      ...ledgerMonitorReads(env.LEDGER_RPC_URL, ledgerAddress(env.ENVIRONMENT)),
       pause: ledgerPauserAdapter({
         rpcUrl: env.LEDGER_RPC_URL,
-        contractAddress: env.LEDGER_ADDRESS,
+        contractAddress: ledgerAddress(env.ENVIRONMENT),
         accountAddress: env.PAUSER_ACCOUNT_ADDRESS,
         privateKey: env.PAUSER_PRIVATE_KEY,
       }),

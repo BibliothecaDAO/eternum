@@ -1,3 +1,4 @@
+vi.mock("./environment", () => ({ ledgerAddress: () => "0x10" }));
 import { beforeEach, expect, it, vi } from "vitest";
 import worker, { ValueMonitor } from "./monitor-worker";
 

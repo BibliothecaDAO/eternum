@@ -75,18 +75,19 @@ commits and game deltas remain deferred; these endpoints are read-only.
 
 ## Environment L2
 
-`L2_CHAIN_ID` is required for the environment. Wallet proofs, Realm ownership and rating reads use that chain and
-`IDENTITY_RPC_URL`, which must be its HTTPS Alchemy endpoint; redirects are refused. The Worker checks the provider's
-chain before reading contracts. A missing or invalid setting fails environment initialization, and a proof naming
-another chain is refused before signature verification or nonce consumption. Deployed accounts retain contract
-verification; offchain verification still requires confirmed absence and allow-listed deployment data.
+The environment address book (`contracts/common/addresses/<network>.json`) supplies the L2 chain. Wallet proofs, Realm
+ownership and rating reads use that chain and `IDENTITY_RPC_URL`, which must be its HTTPS Alchemy endpoint; redirects
+are refused. The Worker checks the provider's chain before reading contracts. A missing or invalid setting fails
+environment initialization, and a proof naming another chain is refused before signature verification or nonce
+consumption. Deployed accounts retain contract verification; offchain verification still requires confirmed absence and
+allow-listed deployment data.
 
 `REALMS_ADDRESS`, `RATING_TOKEN_ADDRESS` and `RATING_HISTORY_URL` name this environment's collections and indexed
 population. No mainnet address or population source is inferred for staging. Labor ownership runs through the private
 `ValueIdentity.realmOwnerOf` service binding; the relay's second Realms RPC is removed. Rating readers are named by the
 configured chain, so staging cannot reuse a mainnet reader cache.
 
-The checked-in Wrangler environment config is the only source for `L2_CHAIN_ID`. The deployment workflow does not
-override it. The existing `CLIENT_IDENTITY_RPC_URL` secret maps to `IDENTITY_RPC_URL`. It checks the public
+The client and Workers share the address book through `environmentL2`. The deployment workflow does not override its
+chain or ledger. The existing `CLIENT_IDENTITY_RPC_URL` secret maps to `IDENTITY_RPC_URL`. It checks the public
 contract/history settings before migrations or secret writes. This is repository wiring only; operators configure and
 deploy the environment.

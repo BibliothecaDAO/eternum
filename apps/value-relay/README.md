@@ -25,7 +25,8 @@ payment authority, result commitments and shard conservation, and pauses on disa
 verification. Later wallet changes cannot rewrite an earlier payment decision. It never uses the relay's queue as proof
 and never unpauses the ledger.
 
-The ledger runtime settings are `LEDGER_RPC_URL`, `LEDGER_ADDRESS`, `LEDGER_OPERATOR_ADDRESS` and the
+The ledger address and chain come from `contracts/common/addresses/<network>.json` through the shared environment
+reader. The ledger runtime settings are the secret `LEDGER_RPC_URL`, `LEDGER_OPERATOR_ADDRESS` and the
 `LEDGER_OPERATOR_PRIVATE_KEY` secret. Labor uses the Worker's `SHARD_LEDGER_OPERATOR_ADDRESS` and
 `SHARD_LEDGER_OPERATOR_PRIVATE_KEY` secret. These are signing identities, not a shard membership list. The monitor has
 its own `PAUSER_ACCOUNT_ADDRESS` and `PAUSER_PRIVATE_KEY`. All ledger jobs verify the identity environment's L2 chain.

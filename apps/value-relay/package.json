@@ -10,7 +10,8 @@
     "@realms-world/identity": "workspace:*",
     "effect": "4.0.0-rc.108",
     "starknet": "catalog:web",
-    "@realms-world/value-ledger": "workspace:*"
+    "@realms-world/value-ledger": "workspace:*",
+    "@realms-world/chain": "workspace:*"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "5.20260922.1",

@@ -62,7 +62,6 @@ export const startWorker = async (options: {
       BASE_URL: ORIGIN,
       ACCOUNT_CLASS_HASH: "0x1",
       BETTER_AUTH_SECRET: "workerd-test-secret-workerd-test-secret",
-      L2_CHAIN_ID: "SN_SEPOLIA",
       REALMS_ADDRESS: "0x30",
       RATING_TOKEN_ADDRESS: "0x31",
       RATING_HISTORY_URL: "https://realms.world/api/ratings/population",

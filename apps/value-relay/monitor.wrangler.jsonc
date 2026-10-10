@@ -10,6 +10,7 @@
   "env": {
     "staging": {
       "name": "realms-value-monitor-staging",
+      "vars": { "ENVIRONMENT": "staging" },
       "routes": [{ "pattern": "play.dev-realms.party/api/operator/monitor/*", "zone_name": "dev-realms.party" }],
       "services": [
         { "binding": "IDENTITY", "service": "realms-identity-staging", "entrypoint": "ValueIdentity" },
@@ -21,6 +22,7 @@
     },
     "production": {
       "name": "realms-value-monitor",
+      "vars": { "ENVIRONMENT": "production" },
       "routes": [{ "pattern": "play.realms.party/api/operator/monitor/*", "zone_name": "realms.party" }],
       "services": [
         { "binding": "IDENTITY", "service": "realms-identity", "entrypoint": "ValueIdentity" },

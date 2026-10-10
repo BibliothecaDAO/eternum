@@ -2,7 +2,6 @@ import type { SiwsTypedData, WalletDeployment } from "@realms-world/identity";
 import { verifyUndeployedProof } from "./undeployed-proof";
 import { RpcError, RpcProvider, verifyMessageInStarknet } from "starknet";
 import { identityL2Configuration, identityProvider, verifyIdentityChain } from "./l2";
-import type { IdentityChainId } from "@realms-world/identity";
 
 /** Deployed wallets use their confirmed environment-chain contract; absent wallets require bound deployment data. */
 export type VerifyWalletSignature = (
@@ -16,7 +15,10 @@ export class WalletNotDeployedError extends Error {}
 
 /** Offchain verification is allowed only after the environment chain explicitly reports that the account is absent. */
 export const verifyWalletOnL2 =
-  (env: { L2_CHAIN_ID: IdentityChainId; IDENTITY_RPC_URL: string }): VerifyWalletSignature =>
+  (env: {
+    ENVIRONMENT: import("@realms-world/chain").ValueEnvironment;
+    IDENTITY_RPC_URL: string;
+  }): VerifyWalletSignature =>
   async (message, signature, address, deployment) => {
     const { chainId } = identityL2Configuration(env);
     if (message.domain.chainId !== chainId) throw new Error("identity_proof_chain_mismatch");

@@ -1,3 +1,4 @@
+vi.mock("./environment", () => ({ ledgerAddress: () => "0x10" }));
 import { beforeEach, expect, it, vi } from "vitest";
 import { ValueRelay } from "./worker";
 const rpc = vi.hoisted(() => ({ chain: vi.fn(), block: vi.fn(), call: vi.fn() }));
@@ -24,7 +25,7 @@ const relay = () =>
     } as unknown as DurableObjectState,
     {
       LEDGER_RPC_URL: "https://ledger.test",
-      LEDGER_ADDRESS: "0x10",
+      ENVIRONMENT: "staging",
       IDENTITY: {
         l2ChainId: async () => "0x2",
         shards: async () => [{ chainId: "0x1", url: "https://shard.test", status: "active" }],

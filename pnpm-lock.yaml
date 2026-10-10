@@ -767,6 +767,9 @@ importers:
 
   apps/launch-service:
     dependencies:
+      '@realms-world/chain':
+        specifier: workspace:*
+        version: link:../../packages/chain
       '@bibliothecadao/eternum':
         specifier: workspace:*
         version: link:../../packages/core
@@ -890,6 +893,9 @@ importers:
 
   apps/value-relay:
     dependencies:
+      '@realms-world/chain':
+        specifier: workspace:*
+        version: link:../../packages/chain
       '@realms-world/identity':
         specifier: workspace:*
         version: link:../../packages/identity

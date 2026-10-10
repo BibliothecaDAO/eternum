@@ -1,3 +1,4 @@
+import { ledgerAddress } from "./environment";
 import {
   activeShards,
   requireActiveChain,
@@ -40,7 +41,7 @@ interface RelayEnv {
   SHARD_LEDGER_OPERATOR_ADDRESS: string;
   SHARD_LEDGER_OPERATOR_PRIVATE_KEY: string;
   LEDGER_RPC_URL: string;
-  LEDGER_ADDRESS: string;
+  ENVIRONMENT: import("@realms-world/chain").ValueEnvironment;
   LEDGER_OPERATOR_ADDRESS: string;
   LEDGER_OPERATOR_PRIVATE_KEY: string;
   IDENTITY: ShardDirectory & {
@@ -265,7 +266,7 @@ export class ValueRelay extends DurableObject<RelayEnv> {
     return Effect.runPromise(
       this.ledgerPermit(
         Effect.gen(function* () {
-          const entry = yield* paidGameEntry(relay.env.LEDGER_RPC_URL, relay.env.LEDGER_ADDRESS, key);
+          const entry = yield* paidGameEntry(relay.env.LEDGER_RPC_URL, ledgerAddress(relay.env.ENVIRONMENT), key);
           yield* openBlitzOnLedger(ledgerCredentialsOf(relay.env), key, window);
           return entry;
         }),
@@ -282,14 +283,14 @@ export class ValueRelay extends DurableObject<RelayEnv> {
         relayOperation("read closed ledger roster", async () => {
           const provider = rpcAt(this.env.LEDGER_RPC_URL);
           const head = await readConfirmedLedgerHead(provider);
-          const game = await readLedgerGame(provider, this.env.LEDGER_ADDRESS, key, head.number);
+          const game = await readLedgerGame(provider, ledgerAddress(this.env.ENVIRONMENT), key, head.number);
           if (game.cancelled || game.finalized) throw new Error("ledger_game_not_seatable");
           const secondsUntilClose = Math.max(0, game.start - head.time);
           const registrations = secondsUntilClose
             ? []
             : await readRegisteredPlayers(
                 provider,
-                this.env.LEDGER_ADDRESS,
+                ledgerAddress(this.env.ENVIRONMENT),
                 key,
                 head.number,
                 game.registeredCount,
@@ -358,8 +359,8 @@ const relayPortsOf = (env: RelayEnv, shard: Awaited<ReturnType<typeof readRegist
     identity: identityAdapter(env.IDENTITY),
     realms: { ownerOf: (realmId) => relayOperation("read Realm owner", () => env.IDENTITY.realmOwnerOf(realmId)) },
     ledger: {
-      payment: (row) => ledgerPaymentRead(env.LEDGER_RPC_URL, env.LEDGER_ADDRESS)(row),
-      voided: (row) => ledgerWithdrawalVoided(env.LEDGER_RPC_URL, env.LEDGER_ADDRESS)(row),
+      payment: (row) => ledgerPaymentRead(env.LEDGER_RPC_URL, ledgerAddress(env.ENVIRONMENT))(row),
+      voided: (row) => ledgerWithdrawalVoided(env.LEDGER_RPC_URL, ledgerAddress(env.ENVIRONMENT))(row),
       reportMany: (rows) => relayOperation("report withdrawal page", () => ledgerOf(env).reportMany(rows)),
       payMany: (rows) => relayOperation("pay withdrawal page", () => ledgerOf(env).payMany(rows)),
       postResult: (row) => relayOperation("post shard result", () => ledgerOf(env).postResult(row)),
@@ -367,7 +368,11 @@ const relayPortsOf = (env: RelayEnv, shard: Awaited<ReturnType<typeof readRegist
     shard: {
       ...shardWithdrawalPorts(
         reader,
-        frontierReceiptBindings(reader, { rpcUrl: env.LEDGER_RPC_URL, address: env.LEDGER_ADDRESS }, env.IDENTITY),
+        frontierReceiptBindings(
+          reader,
+          { rpcUrl: env.LEDGER_RPC_URL, address: ledgerAddress(env.ENVIRONMENT) },
+          env.IDENTITY,
+        ),
       ),
       result: shardResultPort(reader),
       grantLabor: (claim) =>
@@ -389,13 +394,13 @@ const relayPortsOf = (env: RelayEnv, shard: Awaited<ReturnType<typeof readRegist
 };
 const ledgerCredentialsOf = (env: RelayEnv) => ({
   rpcUrl: env.LEDGER_RPC_URL,
-  contractAddress: env.LEDGER_ADDRESS,
+  contractAddress: ledgerAddress(env.ENVIRONMENT),
   accountAddress: env.LEDGER_OPERATOR_ADDRESS,
   privateKey: env.LEDGER_OPERATOR_PRIVATE_KEY,
 });
 
 const chestPortsOf = (env: RelayEnv, permit: LedgerPermit) => ({
-  ...chestLedgerReads({ rpcUrl: env.LEDGER_RPC_URL, contractAddress: env.LEDGER_ADDRESS }),
+  ...chestLedgerReads({ rpcUrl: env.LEDGER_RPC_URL, contractAddress: ledgerAddress(env.ENVIRONMENT) }),
   finish: (tokenId: string) => permit(finishChestOnLedger(ledgerCredentialsOf(env), tokenId)),
 });
 

@@ -59,7 +59,7 @@ const create = () => {
   const reader = new RatingReader(
     ctx as unknown as DurableObjectState,
     {
-      L2_CHAIN_ID: "SN_MAIN",
+      ENVIRONMENT: "production",
       RATING_TOKEN_ADDRESS: "0x31",
       RATING_HISTORY_URL: "https://realms.world/api/ratings/population",
       IDENTITY_RPC_URL: "https://starknet-mainnet.g.alchemy.com/v2/test",
@@ -109,7 +109,7 @@ it("keeps the per-minute paid-method budget across a reader restart", async () =
     const first = await reader.ratings(["0x1"]);
     const cached = paid.length;
     const restarted = new RatingReader(ctx as unknown as DurableObjectState, {
-      L2_CHAIN_ID: "SN_MAIN",
+      ENVIRONMENT: "production",
       RATING_TOKEN_ADDRESS: "0x31",
       RATING_HISTORY_URL: "https://realms.world/api/ratings/population",
       IDENTITY_RPC_URL: "https://starknet-mainnet.g.alchemy.com/v2/test",

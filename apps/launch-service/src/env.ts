@@ -1,3 +1,4 @@
+import { environmentL2 } from "@realms-world/chain";
 import { Schema } from "effect";
 import { normalizeAddress } from "./address";
 
@@ -37,6 +38,7 @@ const decodeLaunchVars = Schema.decodeUnknownSync(LaunchVars, { onExcessProperty
 
 export const decodeLaunchEnv = (raw: Record<string, unknown>): LaunchEnv => {
   const { LAUNCHER_ALLOWLIST, ...vars } = decodeLaunchVars(raw);
+  environmentL2(vars.ENVIRONMENT);
   return {
     ...vars,
     launchers: launchersOf(LAUNCHER_ALLOWLIST),

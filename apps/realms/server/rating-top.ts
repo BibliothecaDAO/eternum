@@ -1,3 +1,4 @@
+import { environmentL2 } from "@realms-world/chain";
 import type { IdentityEnv } from "./env";
 import { json } from "./http";
 import { profilesOfRatingOwners } from "./profiles";
@@ -11,12 +12,12 @@ interface TopQuery {
 }
 
 /** The list and the reader's own position are one snapshot, including readers outside the visible top. */
-export async function handleRatingTop(env: Pick<IdentityEnv, "DB" | "RATING_READER" | "L2_CHAIN_ID">, url: URL) {
+export async function handleRatingTop(env: Pick<IdentityEnv, "DB" | "RATING_READER" | "ENVIRONMENT">, url: URL) {
   const query = topQuery(url);
   if (!query) return json({ error: "invalid_rating_query" }, 400);
   try {
     const identity = await readerIdentity(env.DB, query.reader);
-    const reader = env.RATING_READER.get(env.RATING_READER.idFromName(env.L2_CHAIN_ID));
+    const reader = env.RATING_READER.get(env.RATING_READER.idFromName(environmentL2(env.ENVIRONMENT).chain));
     const snapshot = await reader.top();
     const self = await readerPosition(reader, snapshot, identity);
     const entries = snapshot.entries.slice(0, query.limit);

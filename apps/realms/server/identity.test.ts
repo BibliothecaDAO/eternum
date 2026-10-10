@@ -1,3 +1,4 @@
+import { environmentL2 } from "@realms-world/chain";
 import { readdirSync, readFileSync, mkdtempSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -96,7 +97,6 @@ beforeAll(async () => {
     ACCOUNT_CLASS_HASH,
     BETTER_AUTH_SECRET: "identity-test-secret-identity-test-secret",
     RATING_READER: {} as IdentityEnv["RATING_READER"],
-    L2_CHAIN_ID: "SN_SEPOLIA",
     REALMS_ADDRESS: "0x30",
     RATING_TOKEN_ADDRESS: "0x31",
     RATING_HISTORY_URL: "https://realms.world/api/ratings/population",
@@ -193,7 +193,7 @@ const proveWallet = async (
   browser: ReturnType<typeof createBrowser>,
   address: string,
   path: "link",
-  chainId = env.L2_CHAIN_ID,
+  chainId = environmentL2(env.ENVIRONMENT).chain,
 ) => {
   const { nonce, realmsId } = (await (await browser.request("/api/auth/siws/nonce", { body: { address } })).json()) as {
     nonce: string;
@@ -1055,7 +1055,7 @@ describe("identity Worker", () => {
     };
     const message = buildSiwsMessage({
       address,
-      chainId: env.L2_CHAIN_ID,
+      chainId: environmentL2(env.ENVIRONMENT).chain,
       domain: new URL(ORIGIN).host,
       nonce,
       uri: ORIGIN,
