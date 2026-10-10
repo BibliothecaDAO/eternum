@@ -3,7 +3,7 @@ import { isIP } from "node:net";
 import { hash } from "starknet";
 import type { StampProvider } from "../vrf/native";
 import { startStampPool, workerCount } from "../vrf/pool";
-import { felt, gameInvoke, type PlayIdentity } from "../vrf/transaction";
+import { felt, gameInvoke, MAX_TRANSACTION_BYTES, type PlayIdentity } from "../vrf/transaction";
 import { permitsAccountRequest, type ShardIdentity } from "./account-rpc-policy";
 import { accountRequestLimiter, rpcClientAddress } from "./rpc-client-limit";
 
@@ -121,7 +121,7 @@ export function startReadRpc(
   return Bun.serve({
     hostname,
     port,
-    maxRequestBodySize: 1024 * 1024,
+    maxRequestBodySize: MAX_TRANSACTION_BYTES,
     fetch(request, server) {
       const peer = server.requestIP(request)?.address;
       const client = peer ? rpcClientAddress(peer, trustedProxy, request.headers) : undefined;
@@ -191,7 +191,9 @@ async function handlePublicRequest(
   if (request.method !== "POST") return refuse(-32600, "POST required", 405);
   let payload: unknown;
   try {
-    payload = await untilAborted(request.json(), preparation.signal);
+    const raw = await untilAborted(request.arrayBuffer(), preparation.signal);
+    if (raw.byteLength > MAX_TRANSACTION_BYTES) return refuse(-32010, "Transaction refused", 413);
+    payload = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(raw));
   } catch {
     return refuse(-32700, "Invalid JSON", 400);
   }

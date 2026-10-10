@@ -4,6 +4,7 @@ import { chmodSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { hash } from "starknet";
+import { startReadRpc } from "../scripts/read-rpc";
 import { openProver } from "./native";
 import { startStampPool, workerCount } from "./pool";
 import { identity, invoke } from "./fixtures";
@@ -92,6 +93,79 @@ test("workers independently load the protected key, agree on its point and recov
   } finally {
     prover.close();
     expect(() => prover.stamp(new Uint8Array([1]))).toThrow("Transaction refused");
+    key.close();
+  }
+});
+
+test("a native job refusal and an oversized serialized job leave the pool stamping", async () => {
+  const key = keyFile(),
+    prover = openProver(key.file, identity.chainId);
+  const pool = await startStampPool(key.file, { ...identity, vrfPublicKey: prover.publicKey }, 2);
+  try {
+    await expect(pool.stamp({ ...invoke(), version: "0x2" })).rejects.toThrow("Transaction refused");
+    await expect(pool.stamp({ ...invoke(), calldata: Array(200000).fill("0x1") })).rejects.toThrow(
+      "Transaction refused",
+    );
+    const expected = prover.stamp(new TextEncoder().encode(JSON.stringify(invoke())));
+    expect(await Promise.all(Array.from({ length: 24 }, () => pool.stamp(invoke())))).toEqual(Array(24).fill(expected));
+  } finally {
+    pool.close();
+    prover.close();
+    key.close();
+  }
+});
+
+test("the exact expanding-body attack cannot disable the real stamping endpoint", async () => {
+  const key = keyFile(),
+    prover = openProver(key.file, identity.chainId);
+  const pool = await startStampPool(key.file, { ...identity, vrfPublicKey: prover.publicKey }, 2);
+  let forwards = 0;
+  const node = Bun.serve({
+    hostname: "127.0.0.1",
+    port: 0,
+    async fetch(request) {
+      const call = await request.json();
+      const result =
+        call.method === "starknet_getNonce"
+          ? "0x0"
+          : call.method === "starknet_getClassHashAt"
+            ? identity.accountClassHash
+            : { transaction_hash: prover.stamp(new TextEncoder().encode(JSON.stringify(invoke()))).transactionHash };
+      if (call.method === "starknet_addInvokeTransaction") forwards++;
+      return Response.json({ jsonrpc: "2.0", id: call.id, result });
+    },
+  });
+  const proxy = startReadRpc(
+    node.url.origin,
+    0,
+    { ...identity, vrfPublicKey: prover.publicKey },
+    pool,
+    undefined,
+    "127.0.0.1",
+  );
+  const call = async (tx: string) =>
+    (
+      await fetch(proxy.url, {
+        method: "POST",
+        body: '{"jsonrpc":"2.0","id":1,"method":"starknet_addInvokeTransaction","params":[' + tx + "]}",
+      })
+    ).json();
+  try {
+    const attack = JSON.stringify(invoke()).slice(0, -1) + ',"unused":[' + Array(192000).fill("1e30").join(",") + "]}";
+    expect(Buffer.byteLength(attack)).toBeLessThan(1024 * 1024);
+    expect(Buffer.byteLength(JSON.stringify(JSON.parse(attack)))).toBeGreaterThan(1024 * 1024);
+    expect((await call(attack)).error.code).toBe(-32601);
+    expect(forwards).toBe(0);
+    expect((await call(JSON.stringify(invoke()))).result.transaction_hash).toBeDefined();
+    expect(forwards).toBe(1);
+    const oversized = await fetch(proxy.url, { method: "POST", body: " ".repeat(1024 * 1024 + 1) });
+    expect(oversized.status).toBe(413);
+    expect((await call(JSON.stringify(invoke()))).result.transaction_hash).toBeDefined();
+  } finally {
+    proxy.stop(true);
+    node.stop(true);
+    pool.close();
+    prover.close();
     key.close();
   }
 });
