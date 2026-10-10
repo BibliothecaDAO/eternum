@@ -8,16 +8,12 @@ vi.mock("@/hooks/context/identity-session", () => ({ useIdentitySession: () => (
 
 import { LobbyChatPanel } from "./lobby-chat-panel";
 
-/** The room socket, as the test drives it: what the lobby sent, and a way to deliver what the room broadcasts. */
+/** The room socket, as the test drives it: a way to deliver what the room broadcasts. */
 class FakeRoom extends EventTarget {
   static last: FakeRoom | null = null;
-  sent: string[] = [];
   constructor(readonly url: string) {
     super();
     FakeRoom.last = this;
-  }
-  send(data: string) {
-    this.sent.push(data);
   }
   close() {}
   deliver(body: unknown) {
@@ -51,7 +47,7 @@ afterEach(async () => {
   session.current = { user: { realmsId: "0x7" } };
 });
 
-const mount = async (seated: boolean) => {
+const mount = async () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const container = document.createElement("div");
   const root = createRoot(container);
@@ -59,7 +55,7 @@ const mount = async (seated: boolean) => {
   await act(async () =>
     root.render(
       <QueryClientProvider client={client}>
-        <LobbyChatPanel slotName="blitz-1630" seated={seated} />
+        <LobbyChatPanel slotName="blitz-1630" />
       </QueryClientProvider>,
     ),
   );
@@ -67,13 +63,13 @@ const mount = async (seated: boolean) => {
   unmount = () => act(async () => root.unmount());
   return {
     lines: () => [...container.querySelectorAll("li")].map((line) => line.textContent),
-    field: () => container.querySelector("input")!,
+    field: () => container.querySelector("input"),
     text: () => container.textContent,
   };
 };
 
 it("reads the history and the room as one list, oldest first, each message once, the reader's own as You", async () => {
-  const chat = await mount(false);
+  const chat = await mount();
   expect(FakeRoom.last?.url).toContain("/api/chat/rooms/slot%3Ablitz-1630");
   await act(async () =>
     FakeRoom.last!.deliver({ type: "world:message", message: message("b", "0x7", "on my way", 2) }),
@@ -82,30 +78,15 @@ it("reads the history and the room as one list, oldest first, each message once,
   expect(chat.lines()).toEqual(["Aldricgl hf", "Youon my way", "Lord 0065ready"]);
 });
 
-it("closes the field to a reader without a seat, and sends a seated player's message to the slot's room", async () => {
-  const unseated = await mount(false);
-  expect(unseated.field().disabled).toBe(true);
-  expect(unseated.field().placeholder).toBe("Take a seat to write");
-  await unmount!();
-
-  const seated = await mount(true);
-  const field = seated.field();
-  await act(async () => {
-    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(field, "hold the east");
-    field.dispatchEvent(new Event("input", { bubbles: true }));
-  });
-  await act(async () => field.form!.requestSubmit());
-  expect(JSON.parse(FakeRoom.last!.sent[0])).toMatchObject({
-    type: "world:publish",
-    zoneId: "slot:blitz-1630",
-    payload: { zoneId: "slot:blitz-1630", content: "hold the east" },
-  });
+it("offers no field to write in", async () => {
+  const chat = await mount();
+  expect(chat.field()).toBeNull();
 });
 
 it("asks a signed-out reader to sign in, and opens no room", async () => {
   session.current = null;
   FakeRoom.last = null;
-  const chat = await mount(false);
+  const chat = await mount();
   expect(chat.text()).toContain("Sign in to read the lobby's chat.");
   expect(FakeRoom.last).toBeNull();
 });
