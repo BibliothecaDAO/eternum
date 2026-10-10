@@ -3,6 +3,7 @@ import { TransactionType } from "@bibliothecadao/provider";
 import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
 import type { FeedRow, FeedRows } from "./event-feed-rows";
 import type { Transaction } from "@/hooks/store/use-transaction-store";
+import { feltEquals } from "@bibliothecadao/eternum/game-client";
 import { includesStoryNotification, logicalStoryIdentity, storyRecipients } from "@bibliothecadao/notifications";
 
 export type ImportantFeedFilter = "all" | "mine" | "combat";
@@ -11,16 +12,8 @@ export type ImportantFeedRow =
   | FeedRow
   | { kind: "story"; id: string; at: number; event: ProcessedStoryEvent };
 
-const sameOwner = (left: unknown, right: string | null): boolean => {
-  if (left == null || right === null) return false;
-  try {
-    return BigInt(String(left)) === BigInt(right);
-  } catch {
-    return false;
-  }
-};
 export const involvesPlayer = (event: ProcessedStoryEvent, address: string | null): boolean =>
-  storyRecipients(event.story, event.owner, event.storyPayload).some((owner) => sameOwner(owner, address));
+  storyRecipients(event.story, event.owner, event.storyPayload).some((owner) => feltEquals(owner, address));
 
 export const battleIdentity = (event: ProcessedStoryEvent): string =>
   logicalStoryIdentity(event.event_id, event.story, event, event.storyPayload);

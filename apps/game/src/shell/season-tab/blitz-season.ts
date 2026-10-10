@@ -1,3 +1,4 @@
+import { isSameStarknetAddress } from "@realms-world/identity";
 import { useQuery } from "@tanstack/react-query";
 
 import { rosterWalletOf } from "@/runtime/world/directory";
@@ -124,7 +125,7 @@ const findPlace = async (
     const batch = await Promise.all(
       Array.from({ length: Math.min(BATCH, winners - from) }, (_, index) => read.seasonWinner(seasonId, from + index)),
     );
-    const index = batch.findIndex((winner) => BigInt(winner.wallet) === BigInt(wallet));
+    const index = batch.findIndex((winner) => isSameStarknetAddress(winner.wallet, wallet));
     if (index >= 0) return { position: from + index, share: batch[index].share };
   }
   return null;
