@@ -154,6 +154,10 @@ it("shows linking until the services confirm the link, reading the session again
   expect(elsewhere.textContent).toContain("This payout wallet is linked to another Realms account.");
   expect(elsewhere.textContent).not.toContain("Pay & join");
 
+  const otherLedger = await mount(TERMS, WALLET, { ...CONFIRMED, ledger: { ...CONFIRMED.ledger, address: "0x2" } });
+  expect(otherLedger.textContent).toContain("Your wallet is linked on another ledger than this game's.");
+  expect(otherLedger.textContent).not.toContain("Linking your wallet");
+
   const linked = await mount(TERMS);
   expect(linked.textContent).toContain("Pay & join");
 });

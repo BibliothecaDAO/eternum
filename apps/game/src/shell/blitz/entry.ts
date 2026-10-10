@@ -60,18 +60,22 @@ type EntryState =
   | "refunded"
   | "closed"
   | "linking"
-  | "linked-elsewhere";
+  | "linked-elsewhere"
+  | "linked-other-ledger";
 
-/** Where the services' ledger link stands for this entry: confirmed for it, still linking, or for another account. */
-type EntryLink = "confirmed" | "linking" | "elsewhere";
+/**
+ * Where the services' ledger link stands for this entry: confirmed for it, still linking, confirmed for another
+ * account, or confirmed on another ledger or chain.
+ */
+type EntryLink = "confirmed" | "linking" | "elsewhere" | "other-ledger";
 
 const sameFelt = (one: string, other: string) => BigInt(one) === BigInt(other);
 
 /**
  * The ledger registers the account the relay links to the paying wallet, and the services say when that link is
- * confirmed on the ledger (session user.ledgerLink). A link not yet confirmed, confirmed on another ledger, or for a
- * wallet other than the payout wallet is still linking; a confirmed link for another account than the player's is a
- * fault. Readiness is never inferred.
+ * confirmed on the ledger (session user.ledgerLink). A link not yet confirmed, or confirmed for a wallet other than
+ * the payout wallet (a replacement still syncing), is linking. A link confirmed on another ledger or chain, or for
+ * another account than the player's, never resolves by waiting: a fault. Readiness is never inferred.
  */
 export const entryLinkOf = (
   link: LedgerLinkStatus,
@@ -81,7 +85,7 @@ export const entryLinkOf = (
 ): EntryLink => {
   if (link.status !== "confirmed") return "linking";
   if (!sameFelt(link.ledger.address, ledger.address) || !sameFelt(link.ledger.chainId, ledger.chainId))
-    return "linking";
+    return "other-ledger";
   if (link.wallet === null || !sameFelt(link.wallet, wallet)) return "linking";
   return sameFelt(link.account, account) ? "confirmed" : "elsewhere";
 };
@@ -100,6 +104,7 @@ export const entryState = (terms: EntryTerms, choice: EntryChoice, now: number, 
   if (now >= terms.start) return "closed";
   if (link === "linking") return "linking";
   if (link === "elsewhere") return "linked-elsewhere";
+  if (link === "other-ledger") return "linked-other-ledger";
   if (terms.lords < entryCost(terms, choice).cash) return "short";
   if (terms.strk === 0n) return "no-strk";
   return "choose";

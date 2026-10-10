@@ -73,13 +73,16 @@ it("opens the entry only once the services confirm this wallet's link to this ac
   // The same felts written another way are the same link.
   expect(entryLinkOf({ ...CONFIRMED, wallet: "0x04a1" }, LEDGER, "0x4a1", "0x007a")).toBe("confirmed");
   expect(entryLinkOf({ status: "linking" }, LEDGER, "0x4a1", "0x7a")).toBe("linking");
-  // Confirmed for a wallet the player has since replaced, or on another ledger: not this entry's link yet.
+  // Confirmed for a wallet the player has since replaced: the replacement is still syncing.
   expect(entryLinkOf({ ...CONFIRMED, wallet: "0x999" }, LEDGER, "0x4a1", "0x7a")).toBe("linking");
   expect(entryLinkOf({ ...CONFIRMED, wallet: null }, LEDGER, "0x4a1", "0x7a")).toBe("linking");
+  // Confirmed on another ledger or chain: a mismatch that never resolves, so a fault, never "linking".
   expect(entryLinkOf({ ...CONFIRMED, ledger: { ...CONFIRMED.ledger, address: "0x2" } }, LEDGER, "0x4a1", "0x7a")).toBe(
-    "linking",
+    "other-ledger",
   );
-  expect(entryLinkOf(CONFIRMED, { ...LEDGER, chainId: "0x534e5f5345504f4c4941" }, "0x4a1", "0x7a")).toBe("linking");
+  expect(entryLinkOf(CONFIRMED, { ...LEDGER, chainId: "0x534e5f5345504f4c4941" }, "0x4a1", "0x7a")).toBe(
+    "other-ledger",
+  );
   // Confirmed for another account: a fault, never a payment.
   expect(entryLinkOf(CONFIRMED, LEDGER, "0x4a1", "0x99")).toBe("elsewhere");
 });
@@ -88,6 +91,7 @@ it("waits while linking, refuses a link for another account, and keeps closed an
   const both = { sword: true, shield: true };
   expect(entryState(terms(), both, 900, "linking")).toBe("linking");
   expect(entryState(terms(), both, 900, "elsewhere")).toBe("linked-elsewhere");
+  expect(entryState(terms(), both, 900, "other-ledger")).toBe("linked-other-ledger");
   expect(entryState(terms(), both, 900, "confirmed")).toBe("choose");
   expect(entryState(terms(), both, 1_000, "linking")).toBe("closed");
   const seated = { registered: true, sword: false, shield: false, swordCredit: false, shieldCredit: false, paid: 1n };

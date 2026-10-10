@@ -110,6 +110,7 @@ const EntryPanel = ({
   if (state === "closed") return <Closed />;
   if (state === "linking") return <Linking />;
   if (state === "linked-elsewhere") return <LinkedElsewhere />;
+  if (state === "linked-other-ledger") return <LinkedOtherLedger />;
   const sign = signing && (
     <Suspense fallback={<Loading />}>
       <WalletSign
@@ -284,6 +285,13 @@ const LinkedElsewhere = () => {
     </Plate>
   );
 };
+
+/** The services confirm the wallet's link on another ledger or chain than this game's: nothing here can pay. */
+const LinkedOtherLedger = () => (
+  <Plate icon="Wt" title={ENTRY_WORDS.entry}>
+    <ReasonPlate reason={{ kind: "failed", line: ENTRY_WORDS.linkedOtherLedger }} />
+  </Plate>
+);
 
 const Closed = () => (
   <Plate icon="Lk" title={ENTRY_WORDS.closed}>

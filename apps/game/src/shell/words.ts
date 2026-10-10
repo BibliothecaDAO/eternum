@@ -264,6 +264,7 @@ export const ENTRY_WORDS = {
   linking: "Linking your wallet",
   linkingLine: "Your payout wallet is being linked to your Realms account on the ledger. The entry opens once it is.",
   linkedElsewhere: "This payout wallet is linked to another Realms account. Link your own in Account.",
+  linkedOtherLedger: "Your wallet is linked on another ledger than this game's.",
   closed: "Entry closed",
   closedLine: "This game has started; it takes no more entries.",
   refundedLine: "Your LORDS and credits are back in your wallet.",
