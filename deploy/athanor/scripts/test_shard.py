@@ -736,3 +736,16 @@ class RegistrationAcknowledgementTest(unittest.TestCase):
                     self.fail("pending POST should fail")
             directory.assert_called_once_with(config, "pending")
             self.assertFalse((data / "directory-registration-ack.json").exists())
+
+
+class OfficialBackupLockTest(unittest.TestCase):
+    def test_a_missing_official_lock_directory_refuses_instead_of_running_unlocked(self):
+        from contextlib import redirect_stdout
+        import backup
+        with tempfile.TemporaryDirectory() as temporary:
+            lock = Path(temporary) / "missing/isolated-stack.lock"
+            with patch.object(backup, "LOCK", lock), patch.object(backup.os, "geteuid", return_value=0), \
+                    patch.object(backup, "capture", return_value={}) as capture, redirect_stdout(io.StringIO()):
+                with self.assertRaises((FileNotFoundError, RuntimeError)):
+                    backup.main(["capture", "fixture", temporary, temporary])
+                capture.assert_not_called()

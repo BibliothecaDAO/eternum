@@ -28,7 +28,8 @@ upstream subscriptions before serving.
 
 A shard is addressed by its Herald's URL; Herald serves one chain, so routes carry no chain segment.
 
-- `GET /manifest`: chain id, release, schema hash, public node and admission URLs, account class hash and contracts
+- `GET /manifest`: chain id, release schemas, one public stamping RPC URL, account/guardian pins, play gas bound and
+  contracts
 - `GET /health`
 - `GET /games`
 - `GET /games/<game_id>/snapshot`

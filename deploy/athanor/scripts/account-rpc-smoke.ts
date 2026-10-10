@@ -26,10 +26,7 @@ console.log(JSON.stringify(await assertPublicRpcBoundary(url, { ...manifest.shar
 
 const operatorToken = process.env.OPERATOR_TOKEN;
 if (!operatorToken) {
-  throw new Error(
-    "The smoke deploys a bot account whose first device the operator route approves: it needs OPERATOR_TOKEN. " +
-      "A community shard checks its boundary with inspect-shard-roles --public-rpc.",
-  );
+  throw new Error("The smoke needs the protected operator credential to approve its bot account first device.");
 }
 const provider = new RpcProvider({ nodeUrl: url, blockIdentifier: BlockTag.PRE_CONFIRMED });
 const device = deviceKeyOf(`0x${Buffer.from(ec.starkCurve.utils.randomPrivateKey()).toString("hex")}`);

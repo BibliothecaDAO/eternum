@@ -44,9 +44,9 @@ the one Herald build: `docker build --target herald -f deploy/shard/Dockerfile .
 same manifest and chain.
 
 Wait for `/health` and the confirmed snapshot before connecting the client. Run `pnpm --dir apps/game dev`; the app
-reads our directory (`/api/directory`, proxied to staging in development) and lists every shard on it, and a shard the
-directory does not list is opened by pasting its Herald URL into the games list. Use the client HTTPS configuration when
-signing through a browser wallet. Current facts come through Herald, never a second direct state fetch.
+reads our official directory (`/api/directory`, proxied to staging in development) and lists its active shards. Use the
+client HTTPS configuration when signing through a browser wallet. Current facts come through Herald, never a second
+direct state fetch.
 
 The shard manifest is served at `/manifest` and the directory at `/games`. Compatible class upgrades do not require a
 Herald restart. Incompatible schemas are explicit ingestion faults and require a planned release. Historical replay must
