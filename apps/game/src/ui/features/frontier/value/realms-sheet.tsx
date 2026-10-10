@@ -224,7 +224,7 @@ const AddRealm = ({ adding, onAdd }: { adding: boolean; onAdd: (realmId: number)
       <input
         aria-label={REALM_NUMBER}
         inputMode="numeric"
-        placeholder={`${ADD_REALM} · ${REALM_NUMBER}`}
+        placeholder={`${ADD_REALM} #`}
         value={number}
         onChange={(event) => setNumber(event.target.value.replace(/\D/g, ""))}
         className="min-w-0 flex-1 bg-transparent text-[16px] tabular-nums text-kit-cream placeholder:text-kit-muted focus:outline-none"
