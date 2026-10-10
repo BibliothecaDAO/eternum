@@ -9,7 +9,6 @@ vi.mock("@/ui/features/factory-v2/api/factory-worker", () => ({
   fetchPlaytestSlots: async () => {
     throw new Error("not_found");
   },
-  registerPlaytestSlot: async () => undefined,
 }));
 
 import { BlitzLobbyCard } from "./mode-cards";

@@ -5,10 +5,7 @@ import { expect, it, vi } from "vitest";
 
 vi.mock("./blitz-slot", () => ({
   BLITZ_SEATS: 12,
-  registrationFor: () => undefined,
-  seatsFilling: () => 0,
   usePlaytestSlots: () => ({ data: { slots: [] }, isSuccess: true }),
-  useJoinSlot: () => ({ register: {} }),
 }));
 vi.mock("./herald", () => ({
   useLeaderboard: () => ({ data: undefined }),
