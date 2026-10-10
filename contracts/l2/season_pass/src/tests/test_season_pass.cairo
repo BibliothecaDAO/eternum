@@ -192,6 +192,27 @@ mod tests {
     }
 
     #[test]
+    fn reminted_pass_refund_reports_false_without_overwriting_the_holder() {
+        let (season_pass, realms, _) = SEASON_PASS();
+        let realms_nft = IERC721MinterDispatcher { contract_address: realms };
+        let pass = ISeasonPassDispatcher { contract_address: season_pass };
+        let erc721 = IERC721Dispatcher { contract_address: season_pass };
+        start_cheat_caller_address(realms, ALICE());
+        realms_nft.mint(ALICE_REALMS_ID());
+        start_cheat_caller_address(season_pass, ALICE());
+        pass.mint(BOB(), ALICE_REALMS_ID());
+        start_cheat_caller_address(season_pass, BOB());
+        pass.burn(ALICE_REALMS_ID());
+        start_cheat_caller_address(season_pass, ALICE());
+        pass.mint(ALICE(), ALICE_REALMS_ID());
+        start_cheat_caller_address(season_pass, ADMIN());
+        pass.set_restorer(LEDGER());
+        start_cheat_caller_address(season_pass, LEDGER());
+        assert!(!pass.restore(BOB(), ALICE_REALMS_ID()));
+        assert!(erc721.owner_of(ALICE_REALMS_ID()) == ALICE());
+    }
+
+    #[test]
     #[should_panic(expected: "ESP: caller is not restorer")]
     fn test_unconfigured_account_cannot_restore_burned_pass() {
         let (season_pass, _, _) = SEASON_PASS();
