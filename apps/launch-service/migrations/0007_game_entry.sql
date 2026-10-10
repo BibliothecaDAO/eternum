@@ -1,4 +1,4 @@
 ALTER TABLE launch_runs ADD COLUMN entry TEXT;
--- Earlier completed launches were free; incomplete paid launches remain unavailable until their ledger opening.
+-- Frontier/Eternum were free. A legacy Blitz row has no trustworthy entry provenance, even when complete.
 UPDATE launch_runs SET entry='{"kind":"free"}'
- WHERE kind='game' AND (status='complete' OR environment<>'madara.blitz');
+ WHERE kind='game' AND environment<>'madara.blitz';
