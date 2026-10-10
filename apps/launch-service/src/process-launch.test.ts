@@ -218,9 +218,9 @@ test("paid runs keep retrying transient failures beyond the ordinary attempt lim
     await Effect.runPromise(processNextLaunch(Date.now() + 1000000).pipe(Effect.provide(services)));
   expect(execute).toHaveBeenCalledTimes(4);
   expect(refund).not.toHaveBeenCalled();
-  for (let index = 0; index < 5; index++)
+  for (let index = 0; index < 6; index++)
     await Effect.runPromise(processNextLaunch(Date.now() + 1000000).pipe(Effect.provide(services)));
-  expect(execute).toHaveBeenCalledTimes(9);
+  expect(execute).toHaveBeenCalledTimes(10);
   expect(refund).not.toHaveBeenCalled();
   expect((await store.find("game", "madara.blitz", "paid-transient"))?.status).toBe("queued");
 });
