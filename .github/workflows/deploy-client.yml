@@ -3,9 +3,10 @@ name: Deploy Client
 # Ships the game client as a Cloudflare Pages project per GitHub environment, by dispatch only: production is the
 # live client, and it moves to the native client only as the cutover's switch step, never on a push to next. Each
 # environment names its Pages project (vars.CLOUDFLARE_PAGES_PROJECT), the origin the client is served from
-# (vars.CLIENT_ORIGIN, whose /api belongs to that environment's identity Worker), its zone (vars.CLIENT_ZONE) and its
-# one L2 (vars.CLIENT_L2_CHAIN: SN_SEPOLIA or SN_MAIN), and holds the Alchemy RPC secret for that L2; the custom domain is attached in the Pages dashboard once. The build reads
-# .env.production plus the identity RPC secret and stamps the version from the ref.
+# (vars.CLIENT_ORIGIN, whose /api belongs to that environment's identity Worker) and its zone (vars.CLIENT_ZONE), and
+# holds the Alchemy RPC secret for the environment's L2; the custom domain is attached in the Pages dashboard once. The
+# L2 itself is the identity Worker's checked-in L2_CHAIN_ID for the environment, never named here a second time. The
+# build reads .env.production plus the identity RPC secret and stamps the version from the ref.
 on:
   workflow_dispatch:
     inputs:
@@ -42,8 +43,6 @@ jobs:
     environment: ${{ inputs.environment }}
     env:
       VITE_PUBLIC_IDENTITY_RPC_URL: ${{ secrets.CLIENT_IDENTITY_RPC_URL }}
-      # The environment's one L2: SN_SEPOLIA on staging, SN_MAIN on production.
-      VITE_PUBLIC_L2_CHAIN: ${{ vars.CLIENT_L2_CHAIN }}
       CLIENT_ORIGIN: ${{ vars.CLIENT_ORIGIN }}
       CLIENT_ZONE: ${{ vars.CLIENT_ZONE }}
       PAGES_PROJECT: ${{ vars.CLOUDFLARE_PAGES_PROJECT }}
@@ -51,21 +50,16 @@ jobs:
       - name: Validate the environment's configuration
         run: |
           missing=()
-          for name in VITE_PUBLIC_IDENTITY_RPC_URL VITE_PUBLIC_L2_CHAIN CLIENT_ORIGIN CLIENT_ZONE PAGES_PROJECT; do
+          for name in VITE_PUBLIC_IDENTITY_RPC_URL CLIENT_ORIGIN CLIENT_ZONE PAGES_PROJECT; do
             [ -n "${!name}" ] || missing+=("$name")
           done
           if [ ${#missing[@]} -gt 0 ]; then
-            echo "::error::this environment has no ${missing[*]} (CLIENT_IDENTITY_RPC_URL secret; CLIENT_L2_CHAIN, CLIENT_ORIGIN, CLIENT_ZONE, CLOUDFLARE_PAGES_PROJECT vars)"
+            echo "::error::this environment has no ${missing[*]} (CLIENT_IDENTITY_RPC_URL secret; CLIENT_ORIGIN, CLIENT_ZONE, CLOUDFLARE_PAGES_PROJECT vars)"
             exit 1
           fi
 
       - name: Checkout
         uses: actions/checkout@v4
-
-      # The identity Worker verifies proofs and links on its checked-in L2; a client on another chain fails closed.
-      - name: Check the client's L2 against the identity Worker's
-        run:
-          node apps/game/scripts/check-l2-chain-matches-identity.mjs "${{ inputs.environment }}" "$VITE_PUBLIC_L2_CHAIN"
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -78,15 +72,18 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --ignore-scripts
 
+      # The identity Worker verifies proofs and links on its checked-in L2; the client builds for that same chain.
+      - name: Build for the identity Worker's L2
+        run: |
+          chain=$(node apps/game/scripts/identity-l2-chain.mjs "${{ inputs.environment }}")
+          echo "VITE_PUBLIC_L2_CHAIN=$chain" >> "$GITHUB_ENV"
+
       - name: Build packages
         run: pnpm run build:packages
 
-      - name: Test deployment verification and chunk recovery
+      # The client deploy's own script tests run in the client job (test-client.yml) on every change to them.
+      - name: Test chunk recovery, the offline cache and the shipped assets
         run: |
-          node --test apps/game/scripts/verify-client-deployment.test.mjs
-          node --test apps/game/scripts/check-l2-chain-matches-identity.test.mjs
-          node --test apps/game/scripts/ensure-pwa-cache-rule.test.mjs
-          node --test apps/game/scripts/verify-pwa-build.test.mjs
           pnpm --dir apps/game test src/utils/chunk-load-recovery.test.ts src/pwa
           pnpm --dir apps/game verify:assets
 
