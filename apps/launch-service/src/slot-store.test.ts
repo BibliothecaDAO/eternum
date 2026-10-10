@@ -45,7 +45,9 @@ it("keeps schedule timing immutable and refuses creation after the D1 deadline",
   await store.create("friday", close);
   await store.create("friday", close);
   await expect(store.create("friday", new Date(Date.parse(close) + 60000).toISOString())).rejects.toThrow("immutable");
-  await expect(store.create("late", new Date(Math.floor(Date.now() / 1000) * 1000 - 1000).toISOString())).rejects.toThrow("deadline");
+  await expect(
+    store.create("late", new Date(Math.floor(Date.now() / 1000) * 1000 - 1000).toISOString()),
+  ).rejects.toThrow("deadline");
   await expect(store.freeze("friday")).rejects.toThrow("still open");
 });
 it("uses D1 time when a worker clock is ahead, and never closes another chain's schedule", async () => {
@@ -91,4 +93,24 @@ it("creates no game before close, balances 25 payers, and closes idempotently wi
   await store.freeze("balanced");
   expect(await launches.list("madara.blitz")).toEqual(first);
   expect(first.every((run) => !JSON.stringify(run.request).includes("wallet") && run.slotId === 1)).toBe(true);
+});
+it("marks refunds once at close and never makes a refund decision during an identity outage", async () => {
+  const value = { ...slotValueFixture(26), markRefundable: vi.fn(async () => {}) };
+  const identity = { accountAtRegistration: vi.fn(async (wallet: string) => (wallet === "0x1" ? null : wallet)) };
+  const launches = new D1LaunchStore(database.db, testChain());
+  const store = new D1SlotStore(database.db, launches, value, identity);
+  await store.create("refunds", soon());
+  await database.db
+    .prepare("UPDATE playtest_slots SET closes_at=?")
+    .bind(Date.now() - 1000)
+    .run();
+  identity.accountAtRegistration.mockRejectedValueOnce(new Error("identity down"));
+  await expect(store.freeze("refunds")).rejects.toThrow("identity down");
+  expect(value.markRefundable).not.toHaveBeenCalled();
+  expect(await launches.list("madara.blitz")).toEqual([]);
+  await store.freeze("refunds");
+  await store.freeze("refunds");
+  expect(value.markRefundable).toHaveBeenCalledOnce();
+  expect(value.markRefundable).toHaveBeenCalledWith({ chainId: await launches.targetChain(), slotId: 1 }, ["0x1"]);
+  expect(await launches.list("madara.blitz")).toHaveLength(2);
 });

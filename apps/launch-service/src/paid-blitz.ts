@@ -36,8 +36,5 @@ export const closedSlotGroups = async (key: LedgerSlotKey, value: BlitzValuePort
   }
   if (registrations.length !== slot.registeredCount) throw new Error("registration_history_incomplete");
   const { players, refunds } = await resolveBlitzRoster(registrations, identity);
-  // Resolve the whole cohort before any mutation; an identity outage must never choose refunds.
-  for (let offset = 0; offset < refunds.length; offset += 100)
-    await value.markRefundable(key, refunds.slice(offset, offset + 100));
-  return { groups: splitPlaytestRoster(players), slot };
+  return { groups: splitPlaytestRoster(players), refunds, slot };
 };

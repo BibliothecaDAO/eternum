@@ -84,6 +84,9 @@ export class D1SlotStore implements SlotStore {
       if (error instanceof SlotCancelled) return null;
       throw error;
     });
+    // Mark once at close, after every historical identity has resolved. Game retries only read the cohort.
+    for (let offset = 0; closed && offset < closed.refunds.length; offset += 100)
+      await this.value.markRefundable(key, closed.refunds.slice(offset, offset + 100));
     const jobs = await Promise.all(
       (closed?.groups ?? []).map((_, groupIndex) =>
         this.launches.scheduleStatement("game", {
