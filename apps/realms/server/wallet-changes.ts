@@ -2,7 +2,7 @@ import type { AuthContext, User } from "better-auth";
 import { APIError } from "better-auth/api";
 import { Effect } from "effect";
 
-import { consumeChallengeAttempt } from "./sign-in-budget";
+import { consumeChallengeAttempt } from "./challenge-attempts";
 
 interface WalletChangeServices {
   db: D1Database;

@@ -13,7 +13,7 @@ import { deliverWalletNotices } from "./wallet-changes";
 import { createIdentityAuth } from "./auth";
 import { WalletNotDeployedError, type VerifyWalletSignature } from "./wallet-signature";
 import type { IdentityEnv } from "./env";
-import { consumeChallengeAttempt } from "./sign-in-budget";
+import { consumeChallengeAttempt } from "./challenge-attempts";
 import { realmsIdOf } from "./realms-id";
 import { routeIdentityRequest } from "./routes";
 import { ORIGIN } from "./workerd-harness";

@@ -14,7 +14,7 @@ import {
 } from "./directory";
 import type { IdentityEnv } from "./env";
 import { json } from "./http";
-import { consumeChallengeAttempt } from "./sign-in-budget";
+import { consumeChallengeAttempt } from "./challenge-attempts";
 import { handleNotificationPreferences } from "./notification-preferences";
 import { handleProfile, handleProfiles } from "./profiles";
 import { handleRatings } from "./ratings";
