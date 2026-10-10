@@ -47,3 +47,14 @@ both job results. The independent value monitor keeps its own chest cursor/queue
 five minutes after eligibility, using that eligibility block's timestamp and wall time. This warning does not pause
 payouts. Its existing receipt/result violations still do. The extra queue replaces repeated historical chest polling; no
 new signing key, reveal salt, expiry, retry setting or draw lives in the service.
+
+## Rogue account links
+
+A ledger link with no identity history can be created only by a rogue ledger operator key. The independent
+`AccountLinkChanged` audit pauses the ledger for that event; reconciliation does not manufacture identity history for
+it. After investigating the exact fault row, the operator clears the mapping with `set_account_link(wallet, 0)` and
+records the clear's transaction hash and reason. Clears remain legal during pause. Reset only the named rogue-link row
+through `POST /api/operator/monitor/reset`; if the manual clear is itself audited as unmatched, record its transaction
+hash and reset that exact corrective row too. These resets retain the audit trail and never unpause the ledger. The
+ledger admin unpauses only after the offending key and mapping have been corrected. No arbitrary signing endpoint is
+involved.
