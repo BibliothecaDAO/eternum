@@ -33,7 +33,14 @@ const set = vi.fn(
 );
 const identity = {
   target: vi.fn(async (_key: string) => target),
-  dirty: vi.fn(async (): Promise<{ target: AccountLinkTarget; revision: string }[]> => []),
+  dirty: vi.fn(
+    async (
+      _after: number | null,
+    ): Promise<{ rows: { target: AccountLinkTarget; revision: string }[]; next: number | null }> => ({
+      rows: [],
+      next: null,
+    }),
+  ),
   complete: vi.fn(async (_account: string, _revision: string) => {}),
   targets: vi.fn(
     async (_after: string | null): Promise<{ rows: AccountLinkTarget[]; next: string | null }> => ({
@@ -68,7 +75,8 @@ const store = {
 };
 beforeEach(() => {
   vi.clearAllMocks();
-  identity.dirty = vi.fn(async () => []);
+  identity.target = vi.fn(async () => target);
+  identity.dirty = vi.fn(async () => ({ rows: [], next: null }));
   identity.complete = vi.fn(async () => {});
   forward.clear();
   reverse.clear();
@@ -158,7 +166,7 @@ it("keeps an authorized link auditable if the submit response is lost after broa
 });
 
 it("repairs durable dirty accounts before the rotating sweep and acknowledges only confirmed rows", async () => {
-  const dirty = vi.fn(async () => [{ target, revision: "change-1" }]);
+  const dirty = vi.fn(async () => ({ rows: [{ target, revision: "change-1" }], next: null }));
   const complete = vi.fn(async () => {});
   Object.assign(identity, { dirty, complete });
   identity.targets.mockResolvedValue({ rows: [], next: null });
@@ -169,7 +177,7 @@ it("repairs durable dirty accounts before the rotating sweep and acknowledges on
 });
 it("leaves an unconfirmed dirty row for the next tick", async () => {
   const complete = vi.fn(async () => {});
-  Object.assign(identity, { dirty: async () => [{ target, revision: "change-2" }], complete });
+  Object.assign(identity, { dirty: async () => ({ rows: [{ target, revision: "change-2" }], next: null }), complete });
   ledger.paused.mockResolvedValue(true);
   identity.targets.mockResolvedValue({ rows: [], next: null });
   await Effect.runPromise(reconcileAccountLinks({ identity, ledger }, store));
@@ -192,4 +200,26 @@ it("retracts the previous wallet during a paused replacement and keeps the insta
   expect(await Effect.runPromise(synchronizeAccountLink(target, { identity, ledger }))).toBe("linking");
   expect(forward.has("0x11")).toBe(false);
   expect(forward.has(target.wallet!)).toBe(false);
+});
+
+it("advances the dirty cursor past paused installs so a later replacement can retract its former wallet", async () => {
+  ledger.paused.mockResolvedValue(true);
+  identity.targets.mockResolvedValue({ rows: [], next: null });
+  const first = Array.from({ length: 25 }, (_, i) => ({
+    target: { ...target, key: `account:${i}`, realmsId: `${i}`, account: `0x${i + 100}` },
+    revision: `change-${i}`,
+  }));
+  const replacement = { ...target, key: "account:later", realmsId: "later", account: "0x300" };
+  forward.set("0x99", replacement.account);
+  reverse.set(replacement.account, "0x99");
+  identity.target.mockResolvedValue({ ...replacement, key: "wallet:0x99", wallet: "0x99", account: null });
+  identity.dirty.mockImplementation(async (after) =>
+    after === 25 ? { rows: [{ target: replacement, revision: "later" }], next: null } : { rows: first, next: 25 },
+  );
+  await Effect.runPromise(reconcileAccountLinks({ identity, ledger }, store));
+  expect(forward.has("0x99")).toBe(true);
+  await Effect.runPromise(reconcileAccountLinks({ identity, ledger }, store));
+  expect(identity.dirty).toHaveBeenLastCalledWith(25);
+  expect(forward.has("0x99")).toBe(false);
+  expect(identity.complete).not.toHaveBeenCalled();
 });

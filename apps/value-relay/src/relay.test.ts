@@ -421,7 +421,7 @@ it("reports without a wallet and pays reported debt to the ready wallet at payme
   await f.run();
   expect(f.single.report).toHaveBeenCalledWith(withdrawal);
   expect(f.single.pay).not.toHaveBeenCalled();
-  f.single.payment = () => Effect.succeed({ paid: false, seasonId: 4, wallet: "0", amount: "17" });
+  f.ports.ledger.payment = () => Effect.succeed({ paid: false, seasonId: 4, wallet: "0", amount: "17" });
   f.ports.identity.payoutWallet = () => Effect.succeed({ status: "ready", address: "0x999" });
   await f.run();
   expect(f.single.pay).toHaveBeenCalledWith(withdrawal, "0x999");

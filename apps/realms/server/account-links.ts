@@ -150,13 +150,25 @@ const requireHistoryAuthority = async (
 };
 
 /** Dirty work is committed with identity changes and acknowledged only at its exact revision. */
-export const dirtyAccountLinks = async (db: D1Database, pins: Pins) => {
-  const { results } = await db
-    .prepare(
-      `SELECT target.*,d.revision FROM dirty_account_links d JOIN (${ACCOUNT_TARGET}) target ON target.realmsId=d.account ORDER BY (target.wallet IS NULL) DESC,d.rowid LIMIT 25`,
-    )
-    .all<Candidate & { revision: string }>();
-  return results.map((row) => ({ target: toTarget(row, pins), revision: row.revision }));
+export const dirtyAccountLinks = async (db: D1Database, pins: Pins, after: number | null) => {
+  if (after !== null && (!Number.isSafeInteger(after) || after < 0)) throw new Error("invalid_dirty_link_cursor");
+  const query = `SELECT target.*,d.revision,d.rowid AS scanId FROM dirty_account_links d JOIN (${ACCOUNT_TARGET}) target ON target.realmsId=d.account`;
+  type Dirty = Candidate & { revision: string; scanId: number };
+  const clears = (await db.prepare(query + " WHERE target.wallet IS NULL ORDER BY d.rowid LIMIT 25").all<Dirty>())
+    .results;
+  const capacity = 25 - clears.length;
+  const installs = capacity
+    ? (
+        await db
+          .prepare(query + " WHERE target.wallet IS NOT NULL AND d.rowid>? ORDER BY d.rowid LIMIT ?")
+          .bind(after ?? 0, capacity)
+          .all<Dirty>()
+      ).results
+    : [];
+  return {
+    rows: [...clears, ...installs].map((row) => ({ target: toTarget(row, pins), revision: row.revision })),
+    next: capacity === 0 ? after : installs.length === capacity ? installs.at(-1)!.scanId : null,
+  };
 };
 export const completeAccountLinkSync = async (db: D1Database, account: string, revision: string) => {
   await db.prepare("DELETE FROM dirty_account_links WHERE account=? AND revision=?").bind(account, revision).run();

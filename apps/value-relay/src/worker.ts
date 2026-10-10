@@ -39,7 +39,9 @@ interface RelayEnv {
   LEDGER_OPERATOR_PRIVATE_KEY: string;
   IDENTITY: {
     l2ChainId(): Promise<string>;
-    dirtyAccountLinks(): Promise<{ target: AccountLinkTarget; revision: string }[]>;
+    dirtyAccountLinks(
+      after: number | null,
+    ): Promise<{ rows: { target: AccountLinkTarget; revision: string }[]; next: number | null }>;
     completeAccountLinkSync(account: string, revision: string): Promise<void>;
     accountLinkDirtyRevision(account: string): Promise<string | null>;
     realmOwnerOf(realmId: string): Promise<string>;
@@ -252,7 +254,7 @@ export class ValueRelay extends DurableObject<RelayEnv> {
 const linkPortsOf = (env: RelayEnv) => ({
   identity: {
     target: (key: string) => env.IDENTITY.accountLinkTarget(key),
-    dirty: () => env.IDENTITY.dirtyAccountLinks(),
+    dirty: (after: number | null) => env.IDENTITY.dirtyAccountLinks(after),
     complete: (account: string, revision: string) => env.IDENTITY.completeAccountLinkSync(account, revision),
     targets: (after: string | null) => env.IDENTITY.accountLinkTargets(after),
     refresh: (target: AccountLinkTarget) => env.IDENTITY.accountLinkTarget(target.key),

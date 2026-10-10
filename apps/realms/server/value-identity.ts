@@ -34,8 +34,8 @@ export class ValueIdentity extends WorkerEntrypoint<IdentityEnv> {
   private async linkPins() {
     return { accountClassHash: this.env.ACCOUNT_CLASS_HASH, guardianPublicKey: await this.env.GUARDIAN.publicKey() };
   }
-  async dirtyAccountLinks() {
-    return dirtyAccountLinks(this.env.DB, await this.linkPins());
+  async dirtyAccountLinks(after: number | null) {
+    return dirtyAccountLinks(this.env.DB, await this.linkPins(), after);
   }
   completeAccountLinkSync(account: string, revision: string) {
     return completeAccountLinkSync(this.env.DB, account, revision);

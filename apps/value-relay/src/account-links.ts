@@ -4,7 +4,9 @@ import { RelayFailure, relayOperation } from "./ports";
 interface LinkPorts {
   identity: {
     target(key: string): Promise<AccountLinkTarget>;
-    dirty(): Promise<{ target: AccountLinkTarget; revision: string }[]>;
+    dirty(
+      after: number | null,
+    ): Promise<{ rows: { target: AccountLinkTarget; revision: string }[]; next: number | null }>;
     complete(account: string, revision: string): Promise<void>;
     targets(after: string | null): Promise<{ rows: AccountLinkTarget[]; next: string | null }>;
     refresh(target: AccountLinkTarget): Promise<AccountLinkTarget>;
@@ -71,8 +73,15 @@ export const reconcileAccountLinks = (
   sync = (target: AccountLinkTarget) => synchronizeAccountLink(target, ports),
 ) =>
   Effect.gen(function* () {
-    const dirty = yield* relayOperation("read dirty identity links", () => ports.identity.dirty());
-    if (dirty.length > 25) return yield* Effect.fail(new RelayFailure({ operation: "invalid_dirty_link_page" }));
+    const dirtyCursor =
+      (yield* relayOperation("read dirty link cursor", () => store.get<number | null>("dirty-link-cursor"))) ?? null;
+    const dirtyPage = yield* relayOperation("read dirty identity links", () => ports.identity.dirty(dirtyCursor));
+    const dirty = dirtyPage.rows;
+    if (
+      dirty.length > 25 ||
+      (dirtyPage.next !== null && dirtyPage.next === dirtyCursor && dirty.some((row) => row.target.wallet !== null))
+    )
+      return yield* Effect.fail(new RelayFailure({ operation: "invalid_dirty_link_page" }));
     const dirtyPending: string[] = [];
     for (const row of dirty) {
       const result = yield* Effect.result(sync(row.target));
@@ -82,6 +91,7 @@ export const reconcileAccountLinks = (
         );
       else dirtyPending.push(row.target.key);
     }
+    yield* relayOperation("advance dirty link cursor", () => store.put("dirty-link-cursor", dirtyPage.next));
     const cursor = (yield* relayOperation("read link cursor", () => store.get<string | null>("link-cursor"))) ?? null;
     const page = yield* relayOperation("read identity link page", () => ports.identity.targets(cursor));
     if (page.rows.length > 25 || (page.next !== null && page.next === cursor))
