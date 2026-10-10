@@ -1,3 +1,4 @@
+import { ledgerU256 } from "@realms-world/value-ledger";
 import { normalizeStarknetAddress as canonicalFelt } from "@realms-world/identity";
 import { verifyIdentityChain } from "./l2";
 import type { IdentityEnv } from "./env";
@@ -63,9 +64,8 @@ export async function readLedgerRatings(ledger: RatingLedger, owners: string[]):
 }
 
 function decodeRating(result: string[]) {
-  if (result.length !== 2 || !result.every((limb) => /^0x[0-9a-fA-F]{1,32}$/.test(limb)))
-    throw new Error("Invalid MMR u256");
-  const raw = BigInt(result[0]!) + (BigInt(result[1]!) << 128n);
+  if (result.length !== 2) throw new Error("Invalid MMR u256");
+  const raw = BigInt(ledgerU256(result[0]!, result[1]!));
   if (raw === 0n) throw new Error("Effective MMR must be nonzero");
   return raw;
 }

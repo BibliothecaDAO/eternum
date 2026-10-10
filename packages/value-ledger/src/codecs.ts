@@ -1,16 +1,16 @@
 import type { RpcProvider } from "starknet";
 export const ledgerInteger = (value: string): number => {
-  const n = Number(BigInt(value));
+  const n = Number(unsigned(value));
   if (!Number.isSafeInteger(n) || n < 0) throw new Error("invalid_ledger_integer");
   return n;
 };
 export const ledgerBool = (value: string): boolean => {
-  if (![0n, 1n].includes(BigInt(value))) throw new Error("invalid_ledger_bool");
-  return BigInt(value) === 1n;
+  if (![0n, 1n].includes(unsigned(value))) throw new Error("invalid_ledger_bool");
+  return unsigned(value) === 1n;
 };
 export const ledgerU256 = (low: string, high: string): string => {
-  const a = BigInt(low),
-    b = BigInt(high);
+  const a = unsigned(low),
+    b = unsigned(high);
   if (a < 0n || b < 0n || a >= 2n ** 128n || b >= 2n ** 128n) throw new Error("invalid_u256_limb");
   return String(a + (b << 128n));
 };
@@ -71,4 +71,9 @@ export const decodeLedgerPreset = (fields: readonly string[]) => {
     bags: ledgerInteger(fields[18]!),
     claimWindow: ledgerInteger(fields[19]!),
   };
+};
+
+const unsigned = (value: string) => {
+  if (!/^(?:0x[0-9a-f]+|[0-9]+)$/i.test(value)) throw new Error("invalid_ledger_felt");
+  return BigInt(value);
 };

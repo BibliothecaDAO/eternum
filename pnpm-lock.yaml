@@ -807,6 +807,9 @@ importers:
 
   apps/realms:
     dependencies:
+      '@realms-world/value-ledger':
+        specifier: workspace:*
+        version: link:../../packages/value-ledger
       '@bibliothecadao/eternum':
         specifier: workspace:*
         version: link:../../packages/core

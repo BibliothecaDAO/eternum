@@ -1,4 +1,4 @@
-import { rpcAt, ledgerInteger, readConfirmedLedgerHead } from "@realms-world/value-ledger";
+import { rpcAt, ledgerInteger, ledgerU256, readConfirmedLedgerHead } from "@realms-world/value-ledger";
 import { Account, hash, RpcProvider, type EmittedEvent } from "starknet";
 import { blitzCommitment } from "@realms-world/value-ledger/commitment";
 import {
@@ -155,17 +155,12 @@ const decodePayment = (event: EmittedEvent): Omit<PaidClaim, "paidAt"> => {
     transactionHash: event.keys[2]!,
     seasonId: ledgerInteger(event.data[0]!),
     wallet: event.data[1]!,
-    amount: u256(event.data[2]!, event.data[3]!),
+    amount: ledgerU256(event.data[2]!, event.data[3]!),
   };
 };
 const decodeResult = (event: EmittedEvent): BlitzCommitment => {
   if (event.keys.length !== 3 || event.data.length !== 5) throw new Error("invalid_result_event");
   return { chainId: event.keys[1]!, gameId: ledgerInteger(event.keys[2]!), commitment: event.data[2]! };
-};
-const u256 = (low: string, high: string): string => {
-  const limbs = [BigInt(low), BigInt(high)];
-  if (limbs.some((limb) => limb < 0n || limb >= 2n ** 128n)) throw new Error("invalid_u256_limb");
-  return String(limbs[0]! + (limbs[1]! << 128n));
 };
 /** Requested and opened events share one ordered cursor, so historical completed chests leave no polling debt. */
 export const ledgerChestChanges = (rpcUrl: string, address: string, fromBlock: number, cursor: string | null) =>
@@ -177,7 +172,7 @@ export const ledgerChestChanges = (rpcUrl: string, address: string, fromBlock: n
 
 const decodeChestChange = (event: EmittedEvent): ChestChange => {
   if (event.keys.length !== 4) throw new Error("invalid_chest_event");
-  const tokenId = u256(event.keys[1]!, event.keys[2]!);
+  const tokenId = ledgerU256(event.keys[1]!, event.keys[2]!);
   if (BigInt(event.keys[0]!) === BigInt(hash.getSelectorFromName("ChestOpened"))) {
     if (event.data.length !== 4) throw new Error("invalid_chest_opened_event");
     return { kind: "finished", tokenId };

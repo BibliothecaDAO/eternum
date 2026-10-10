@@ -1,6 +1,13 @@
 import { RecordedSigner } from "./recorded-signer";
 import type { LedgerPayDecision } from "@realms-world/identity";
-import { rpcAt, readConfirmedLedgerHead, decodeFrontierSeason } from "@realms-world/value-ledger";
+import {
+  rpcAt,
+  readConfirmedLedgerHead,
+  decodeFrontierSeason,
+  ledgerU256,
+  ledgerInteger,
+  ledgerBool,
+} from "@realms-world/value-ledger";
 import { Account } from "starknet";
 import type { RelayPorts, Withdrawal, RelayEffect } from "./ports";
 import { frontierPayment } from "./adapters";
@@ -26,22 +33,15 @@ export const ledgerPaymentRead =
         },
         head,
       );
-      if (fields.length !== 5 || ![0n, 1n].includes(BigInt(fields[0]!))) throw new Error("invalid_payment_record");
-      const low = BigInt(fields[3]!),
-        high = BigInt(fields[4]!);
-      if (low < 0n || high < 0n || low >= 2n ** 128n || high >= 2n ** 128n) throw new Error("invalid_payment_amount");
-      const amount = low + (high << 128n);
-      if (amount === 0n && BigInt(fields[0]!) === 0n && BigInt(fields[1]!) === 0n && BigInt(fields[2]!) === 0n)
-        return null;
-      if (
-        !amount ||
-        (BigInt(fields[0]!) === 1n && BigInt(fields[2]!) === 0n) ||
-        (BigInt(fields[0]!) === 0n && BigInt(fields[2]!) !== 0n)
-      )
+      if (fields.length !== 5) throw new Error("invalid_payment_record");
+      const paid = ledgerBool(fields[0]!);
+      const amount = BigInt(ledgerU256(fields[3]!, fields[4]!));
+      if (amount === 0n && !paid && BigInt(fields[1]!) === 0n && BigInt(fields[2]!) === 0n) return null;
+      if (!amount || (paid && BigInt(fields[2]!) === 0n) || (!paid && BigInt(fields[2]!) !== 0n))
         throw new Error("invalid_payment_report");
       return {
-        paid: BigInt(fields[0]!) === 1n,
-        seasonId: Number(BigInt(fields[1]!)),
+        paid,
+        seasonId: ledgerInteger(fields[1]!),
         wallet: fields[2]!,
         amount: String(amount),
       };
