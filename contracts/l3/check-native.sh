@@ -8,6 +8,9 @@ cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.."
 world=contracts/l3/world-native
 verifier=contracts/l3/vrf-verifier
 
+# Override LEDGER_SCARB / LEDGER_SNFORGE when PATH is pinned to the world toolchain.
+bash contracts/l2/ledger/check.sh
+
 # Pin the owned verification algorithm before compiling the world that dispatches to it.
 (cd "$verifier" && scarb build)
 bun "$verifier/scripts/pin-class.ts" --check
