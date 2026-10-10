@@ -2649,3 +2649,16 @@ fn reports_reserve_backing_for_all_unpaid_debts_including_while_paused() {
     assert!(fixture.lords.balance_of(player(0)) == 600);
     assert!(fixture.lords.balance_of(player(1)) == 0);
 }
+
+
+#[test]
+fn reporting_grace_accepts_confirmed_receipts_after_the_shards_withdrawal_cutoff() {
+    let fixture = funded_frontier();
+    let deadline = fixture.ledger.frontier_claim_deadline('shard', 1);
+    // The shard stops new withdrawals 3600 seconds earlier; delayed receipts can still report here.
+    start_cheat_block_timestamp(fixture.ledger_address, deadline - 3600);
+    fixture.ledger.report_withdrawal('shard', 1, 'grace_start', 100);
+    start_cheat_block_timestamp(fixture.ledger_address, deadline - 1);
+    fixture.ledger.report_withdrawal('shard', 1, 'grace_last', 100);
+    assert!(fixture.ledger.frontier_unpaid_amount('shard', 1) == 200);
+}
