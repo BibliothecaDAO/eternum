@@ -30,6 +30,7 @@ const READ_METHODS = new Set([
   "starknet_getCompiledCasm",
 ]);
 // CPU-only 2,000-stamp waves took 381–395 ms; bound queued work and private reads too.
+const MAX_BATCH_CALLS = 32;
 const PREPARATION_TIMEOUT_MS = 2000;
 const FORWARD_TIMEOUT_MS = 5000;
 type Preparation = { signal: AbortSignal; deadline: number };
@@ -198,6 +199,7 @@ async function handlePublicRequest(
     return refuse(-32700, "Invalid JSON", 400);
   }
   const calls = Array.isArray(payload) ? payload : [payload];
+  if (calls.length > MAX_BATCH_CALLS) return refuse(-32600, "RPC batch exceeds 32 calls");
   if (!calls.length) return refuse(-32601, "RPC method is not public");
   if (calls.some(isWrite) && calls.some((call) => !isWrite(call))) {
     return refuse(-32600, "Mixed read and write batch refused");

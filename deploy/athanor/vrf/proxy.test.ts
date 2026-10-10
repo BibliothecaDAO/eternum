@@ -166,14 +166,14 @@ test("estimates, simulation, future nonces, altered bounds, body and trace reads
 test("2000 distinct accounts on one IP bypass enrollment limits, which still cap enrollment", async () => {
   const f = await fixture();
   try {
-    // Twenty requests avoid the local HTTP client's connection cap; all 2000 invokes release together.
+    // Each request stays below the batch cap; the whole burst still drives 2000 accounts.
     const burst = () =>
       Promise.all(
-        Array.from({ length: 20 }, (_, batch) =>
+        Array.from({ length: 80 }, (_, batch) =>
           f.batch(
-            Array.from({ length: 100 }, (_, index) => ({
+            Array.from({ length: 25 }, (_, index) => ({
               ...invoke(),
-              sender_address: `0x${(0x1000 + batch * 100 + index).toString(16)}`,
+              sender_address: `0x${(0x1000 + batch * 25 + index).toString(16)}`,
             })),
           ),
         ),
@@ -444,6 +444,23 @@ test("expanding unknown fields refuse only that request and the next play still 
     expect(f.stamped).toHaveLength(0);
     expect((await f.call("starknet_addInvokeTransaction", [invoke()])).result.transaction_hash).toBe("0x777");
     expect(f.stamped).toHaveLength(1);
+  } finally {
+    f.close();
+  }
+});
+
+test("oversized invoke batches refuse before account admission or stamping", async () => {
+  const f = await fixture();
+  try {
+    const transactions = Array.from({ length: 33 }, (_, i) => ({
+      ...invoke(),
+      sender_address: `0x${(i + 1).toString(16)}`,
+    }));
+    expect((await f.batch(transactions)).error.code).toBe(-32600);
+    expect(f.inspected).toEqual([]);
+    expect(f.stamped).toEqual([]);
+    expect(f.forwarded).toEqual([]);
+    expect((await f.call("starknet_addInvokeTransaction", [invoke()])).result.transaction_hash).toBe("0x777");
   } finally {
     f.close();
   }
