@@ -1,4 +1,5 @@
 import { resolveRegistrarExecutionDetails } from "./transaction-details";
+import { assertNativeOwnerSigner } from "../shared/native-owner";
 import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { resolveDeploymentEnvironment } from "../environment";
 import { nativePresetForId } from "../../../source/native";
@@ -71,6 +72,7 @@ export async function registerNativePreset(
     throw new Error(
       `Preset ${presetId} is registered with commitment ${existing}; this definition commits to ${registration.commitment}`,
     );
+  await assertNativeOwnerSigner(account, registration.address, block);
   const receipt = await account.execute(
     {
       contractAddress: registration.address,
