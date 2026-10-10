@@ -1,4 +1,4 @@
-import { Account, CallData, shortString } from "starknet";
+import { Account, shortString } from "starknet";
 import { DeviceSigner, deviceKeyOf } from "@bibliothecadao/eternum";
 import { configureGameplayAccountSubmits, openShard } from "@bibliothecadao/eternum/game-client";
 import { getNeighborHexes, RESOURCE_PRECISION, ResourcesIds, StructureType } from "@bibliothecadao/types";
@@ -19,8 +19,6 @@ import {
   loadNativePresetConfiguration,
   registerNativePreset,
 } from "../../../config/deployer/clean/registrar/native-preset";
-import { confirmedTransactionReceipt } from "../../../config/deployer/clean/shared/transaction";
-import { resolveRegistrarExecutionDetails } from "../../../config/deployer/clean/registrar/transaction-details";
 import { createRegistrarGame } from "../../../config/deployer/clean/registrar/calls";
 import { createOperatorAccount } from "../../../config/deployer/clean/shared/madara-account";
 import type { NativeWorldManifest } from "../../../config/deployer/clean/world/native/types";
@@ -28,7 +26,7 @@ import { readShardManifest } from "../../../packages/chain/shard-manifest.js";
 import { assertProviderChain } from "../../../packages/chain/chain-guard.js";
 import { createHarnessAccounts } from "./account-factory";
 import { connectHarnessGameClient } from "./game-client";
-import { createHarnessAdminProvider } from "./game-setup";
+import { createHarnessAdminProvider, registerHarnessEntitlement } from "./game-setup";
 import { createHarnessGame, EXPLORER_TROOP_COUNT } from "./harness-game";
 import { HarnessProvider } from "./provider";
 import { readPlayBounds } from "./player-invoke";
@@ -200,24 +198,7 @@ async function createCheckGame(
   const created = await createRegistrarGame(launcher, params, manifest, definition);
   stopped.throwIfAborted();
   if (!created.gameId) throw new Error("Self-check game not created");
-  const entry = await launcher.execute(
-    {
-      contractAddress: manifest.world.address,
-      entrypoint: "register_entitlement",
-      calldata: CallData.compile({
-        key: { game_id: created.gameId, owner: actor },
-        entitlement: {
-          realm_id: { low: 1, high: 0 },
-          metadata_1: "0x0103070402020302010009",
-          metadata_2: 0,
-          metadata_3: 0,
-          pass_kind: 1,
-        },
-      }),
-    },
-    await resolveRegistrarExecutionDetails(launcher, manifest.world.address),
-  );
-  await confirmedTransactionReceipt(admin, entry.transaction_hash);
+  await registerHarnessEntitlement(launcher, manifest.world.address, created.gameId, actor, 1);
   stopped.throwIfAborted();
   return created.gameId;
 }
