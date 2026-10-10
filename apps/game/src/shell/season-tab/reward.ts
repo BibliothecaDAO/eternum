@@ -23,13 +23,12 @@ export interface Reward {
   /** The chest's season end: after it, the season's chest LORDS are swept into the prize pool. */
   seasonEnd: number;
   registration: Registration;
-  strk: bigint;
 }
 
-type RewardState = "pending" | "sealed" | "no-strk" | "opening" | "opened" | "traded";
+type RewardState = "pending" | "sealed" | "opening" | "opened" | "traded";
 
 /**
- * Pending until the results are on the ledger; then a sealed chest the wallet holds (or no STRK for the open's fee);
+ * Pending until the results are on the ledger; then a sealed chest the wallet holds;
  * opening from the wallet's request until the draw is finished about ten blocks later; then what it delivered. A chest
  * that left the wallet unopened, or that someone else opened, is gone from this player.
  */
@@ -38,7 +37,7 @@ export const rewardState = (reward: Reward, wallet: string): RewardState => {
   if (reward.result.rank === 0 || !chest) return "pending";
   if (chest.requested && BigInt(chest.requester) === BigInt(wallet)) return chest.finished ? "opened" : "opening";
   if (!reward.held) return "traded";
-  return reward.strk === 0n ? "no-strk" : "sealed";
+  return "sealed";
 };
 
 export const rewardKey = (ledger: PaidGameLedger, wallet: string) =>
@@ -56,13 +55,12 @@ export const useReward = (ledger: PaidGameLedger | null, wallet: string | null) 
 
 const readReward = async (ledger: PaidGameLedger, wallet: string): Promise<Reward> => {
   const read = ledgerOf(ledger);
-  const [result, registration, strk, collection] = await Promise.all([
+  const [result, registration, collection] = await Promise.all([
     read.result(ledger, wallet),
     read.registration(ledger, wallet),
-    read.feeBalance(wallet),
     read.chestCollection(),
   ]);
-  const none = { collection, chest: null, held: false, content: null, seasonEnd: 0, registration, strk };
+  const none = { collection, chest: null, held: false, content: null, seasonEnd: 0, registration };
   if (result.rank === 0 || result.chestId === 0n) return { result, ...none };
   const chest = await read.chest(result.chestId);
   const [season, held, content] = await Promise.all([
@@ -73,5 +71,5 @@ const readReward = async (ledger: PaidGameLedger, wallet: string): Promise<Rewar
       : read.chestOwner(collection, result.chestId).then((owner) => BigInt(owner) === BigInt(wallet)),
     chest.finished ? read.chestContent(result.chestId, chest.requestBlock) : null,
   ]);
-  return { result, collection, chest, held, content, seasonEnd: season.end, registration, strk };
+  return { result, collection, chest, held, content, seasonEnd: season.end, registration };
 };

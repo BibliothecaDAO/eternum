@@ -26,7 +26,6 @@ export interface EntryTerms {
   /** The ledger's LORDS token, which the entry approves. */
   lordsToken: string;
   lords: bigint;
-  strk: bigint;
 }
 
 export interface EntryChoice {
@@ -55,12 +54,12 @@ export const entryCost = (terms: Pick<EntryTerms, "prices" | "credits">, choice:
   return { cash, swordCredit, shieldCredit };
 };
 
-type EntryState = "choose" | "short" | "no-strk" | "seated" | "refund" | "refunded" | "closed" | "full";
+type EntryState = "choose" | "short" | "seated" | "refund" | "refunded" | "closed" | "full";
 
 /**
  * The panel's state: seated once registered; on a cancelled game, a refund until the paid LORDS and spent credits are
- * back; closed to anyone else once the game has started. Then choosing, short of LORDS, or holding LORDS with no STRK
- * for the network fee: a linked wallet pays at once.
+ * back; closed to anyone else once the game has started. Then choosing, or short of LORDS: a linked wallet pays at
+ * once, the wallet sheet checking its STRK for the fee.
  */
 export const entryState = (terms: EntryTerms, choice: EntryChoice, now: number): EntryState => {
   const { registration } = terms;
@@ -70,7 +69,6 @@ export const entryState = (terms: EntryTerms, choice: EntryChoice, now: number):
   if (now >= terms.start) return "closed";
   if (terms.seats.taken >= terms.seats.total) return "full";
   if (terms.lords < entryCost(terms, choice).cash) return "short";
-  if (terms.strk === 0n) return "no-strk";
   return "choose";
 };
 
@@ -123,12 +121,11 @@ export const useEntryTerms = (ledger: PaidGameLedger | null, wallet: string | nu
 const readEntryTerms = async (ledger: PaidGameLedger, wallet: string): Promise<EntryTerms> => {
   const read = ledgerOf(ledger);
   const [game, lordsToken] = await Promise.all([read.game(ledger), read.lordsToken()]);
-  const [preset, credits, registration, lords, strk] = await Promise.all([
+  const [preset, credits, registration, lords] = await Promise.all([
     read.preset(game.presetId),
     read.credits(wallet),
     read.registration(ledger, wallet),
     read.balanceOf(lordsToken, wallet),
-    read.feeBalance(wallet),
   ]);
   const prices = { seat: preset.seat, sword: preset.sword, shield: preset.shield };
   const split = { protocolCutBps: preset.protocolCutBps, chestLordsBps: preset.chestLordsBps };
@@ -142,6 +139,5 @@ const readEntryTerms = async (ledger: PaidGameLedger, wallet: string): Promise<E
     registration,
     lordsToken,
     lords,
-    strk,
   };
 };

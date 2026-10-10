@@ -6,27 +6,19 @@ import type { Call } from "starknet";
 import { afterEach, expect, it, vi } from "vitest";
 
 const signed = vi.hoisted(() => ({ calls: [] as Call[][], owners: [] as string[] }));
-// A sent transaction's receipt, landed by the test; until then the send is confirming.
-const chain = vi.hoisted(() => ({ land: (_receipt: object) => {} }));
 // The ledger answers nothing here: a refetch after a send stays pending, never reaching a network.
 vi.mock("@/runtime/l2-rpc", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/runtime/l2-rpc")>()),
-  l2Provider: () => ({
-    callContract: () => new Promise(() => {}),
-    waitForTransaction: () =>
-      new Promise((resolve) => {
-        chain.land = resolve;
-      }),
-  }),
+  l2Provider: () => ({ callContract: () => new Promise(() => {}) }),
 }));
 vi.mock("@/ui/modules/identity/wallet-actions", () => ({
-  WalletSign: ({ owner, calls, onSent }: { owner: string; calls: Call[]; onSent: (hash: string) => void }) => (
+  WalletSign: ({ owner, calls, onLanded }: { owner: string; calls: Call[]; onLanded: () => void }) => (
     <button
       type="button"
       onClick={() => {
         signed.calls.push(calls);
         signed.owners.push(owner);
-        onSent("0xtx");
+        onLanded();
       }}
     >
       Sign
@@ -56,7 +48,6 @@ const TERMS: EntryTerms = {
   registration: { registered: false, sword: false, shield: false, swordCredit: false, shieldCredit: false, paid: 0n },
   lordsToken: "0x10e5",
   lords: 2_140n * WEI,
-  strk: 10n ** 17n,
 };
 const unmounts: (() => Promise<void>)[] = [];
 
@@ -119,13 +110,10 @@ it("pays the seat and the chosen flags from the payout wallet, a credit paying f
   ]);
 });
 
-it("names what is short, the missing STRK, the seat, and the refund", async () => {
+it("names what is short, the seat, and the refund", async () => {
   expect((await mount({ ...TERMS, lords: 320n * WEI })).textContent).toContain("Need 180 more LORDS");
   // 0.1 LORDS short of the 500 seat is one more to find, never "Need 0 more".
   expect((await mount({ ...TERMS, lords: 500n * WEI - WEI / 10n })).textContent).toContain("Need 1 more LORDS");
-  const noStrk = await mount({ ...TERMS, strk: 0n });
-  expect(noStrk.textContent).toContain("No STRK for the fee");
-  expect(noStrk.querySelector("a")?.getAttribute("href")).toBe("https://app.avnu.fi/en");
 
   const seat = {
     registered: true,
@@ -167,23 +155,4 @@ it("reads a slot's entry and refund with the payout wallet that pays, signed by 
   await press(refund, "Take refund");
   await press(refund, "Sign");
   expect(signed.owners).toEqual(["0x4a1"]);
-});
-
-it("confirms a sent entry until its receipt lands, and shows the ledger's reason when it reverts", async () => {
-  const panel = await mount(TERMS);
-  await press(panel, "Pay & join");
-  await press(panel, "Sign");
-  const pay = () => [...panel.querySelectorAll("button")].find((button) => button.textContent?.includes("Confirming"));
-  // Between the signature and the block nothing can be tapped again.
-  expect(pay()?.disabled).toBe(true);
-  await act(async () =>
-    chain.land({
-      isReverted: () => true,
-      revert_reason:
-        "Error in the called contract (0x1ed9e7):\nExecution failed. Failure reason: 'Ledger: roster full'.",
-    }),
-  );
-  expect(panel.textContent).toContain("Ledger: roster full");
-  expect(pay()).toBeUndefined();
-  expect(panel.textContent).toContain("Pay & join");
 });

@@ -6,13 +6,13 @@ import { afterEach, expect, it, vi } from "vitest";
 
 const signed = vi.hoisted(() => ({ calls: [] as Call[][], owners: [] as string[] }));
 vi.mock("@/ui/modules/identity/wallet-actions", () => ({
-  WalletSign: ({ owner, calls, onSent }: { owner: string; calls: Call[]; onSent: (hash: string) => void }) => (
+  WalletSign: ({ owner, calls, onLanded }: { owner: string; calls: Call[]; onLanded: () => void }) => (
     <button
       type="button"
       onClick={() => {
         signed.calls.push(calls);
         signed.owners.push(owner);
-        onSent("0xtx");
+        onLanded();
       }}
     >
       Sign
@@ -27,7 +27,6 @@ vi.mock("@/runtime/l2-rpc", async (importOriginal) => ({
   l2Provider: () => ({
     callContract: ({ entrypoint, calldata }: { entrypoint: string; calldata: string[] }) =>
       ledger.views ? Promise.resolve(ledger.views[entrypoint](calldata)) : new Promise(() => {}),
-    waitForTransaction: async () => ({ isReverted: () => false }),
   }),
 }));
 const listed = vi.hoisted(() => ({ directory: [] as object[], history: [] as object[] }));
@@ -100,7 +99,6 @@ const prize = (season: Partial<SeasonPrize["season"]>, rest: Partial<SeasonPrize
   wallet: "0x4a1",
   share: null,
   claimed: false,
-  strk: WEI,
   ...rest,
 });
 
@@ -131,9 +129,6 @@ it("waits out the review hour, then claims a winner's share from the wallet that
   await act(async () => [...claim.querySelectorAll("button")].find((button) => button.textContent === "Sign")!.click());
   expect(signed.calls).toEqual([[{ contractAddress: "0x1ed9e7", entrypoint: "claim_season", calldata: ["3"] }]]);
   expect(signed.owners).toEqual(["0x4a1"]);
-  expect(
-    (await mountPrize(prize({ ...posted, reviewUntil: NOW - 60 }, { share: 4_000n * WEI, strk: 0n }))).textContent,
-  ).toContain("No STRK for the fee");
   expect((await mountPrize(prize({ ...posted, challenged: true }, { share: 4_000n * WEI }))).textContent).toContain(
     "being checked",
   );

@@ -23,7 +23,6 @@ it("waits for the results, offers a held chest, waits on the draw after the requ
     content: null,
     seasonEnd: 0,
     registration: { registered: true, sword: true, shield: false, swordCredit: false, shieldCredit: false, paid: 0n },
-    strk: 10n ** 17n,
     ...overrides,
   });
   const requested = { ...chest, requested: true, requester: WALLET, requestBlock: 812300 };
@@ -31,7 +30,6 @@ it("waits for the results, offers a held chest, waits on the draw after the requ
     rewardState(reward({ result: { rank: 0, chestId: 0n, mmrBefore: 0, mmrAfter: 0 }, chest: null }), WALLET),
   ).toBe("pending");
   expect(rewardState(reward({}), WALLET)).toBe("sealed");
-  expect(rewardState(reward({ strk: 0n }), WALLET)).toBe("no-strk");
   // The waiting state is read from the chain, so it is the same after leaving and coming back.
   expect(rewardState(reward({ chest: requested, held: false }), WALLET)).toBe("opening");
   expect(rewardState(reward({ chest: { ...requested, finished: true }, held: false }), WALLET)).toBe("opened");

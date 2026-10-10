@@ -12,11 +12,8 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Loading } from "../loading";
 import { ServiceFailure } from "../service-failure";
 import { useNowSeconds } from "../use-now";
-import { NoStrkLine } from "../value/no-strk-line";
 import { lordsOf, lordsShortOf, refundCall } from "../value/ledger";
-import { useL2Send } from "../value/l2-send";
-import { FailureLine } from "../sign-in/failure-line";
-import { ENTRY_WORDS, VALUE_WORDS, WALLET_WORDS } from "../words";
+import { ENTRY_WORDS, WALLET_WORDS } from "../words";
 import {
   entryCalls,
   entryCost,
@@ -64,13 +61,10 @@ const EntryPanel = ({
 }) => {
   const [choice, setChoice] = useState<EntryChoice>({ sword: false, shield: false });
   const [signing, setSigning] = useState(false);
-  const { send, sent } = useL2Send(onSent);
   const now = useNowSeconds();
   if (!terms) return <Loading />;
   const state = entryState(terms, choice, now);
   const cost = entryCost(terms, choice);
-  const confirming = send.status === "confirming" ? VALUE_WORDS.confirming : undefined;
-  const refused = send.status === "refused" && <FailureLine line={send.reason} />;
 
   if (state === "seated") return <Seated terms={terms} />;
   if (state === "refunded") return <Refunded terms={terms} />;
@@ -81,9 +75,9 @@ const EntryPanel = ({
       <WalletSign
         owner={owner}
         calls={state === "refund" ? [refundCall(ledger.address, ledger)] : entryCalls(ledger, terms, choice)}
-        onSent={(hash) => {
+        onLanded={() => {
           setSigning(false);
-          sent(hash);
+          onSent();
         }}
       />
     </Suspense>
@@ -92,16 +86,7 @@ const EntryPanel = ({
     return (
       <Plate icon="Sk" title={ENTRY_WORDS.cancelled}>
         <Receipt rows={refundRows(terms)} />
-        {refused}
-        {sign || (
-          <Button
-            role="primary"
-            word={ENTRY_WORDS.takeRefund}
-            icon="Sp"
-            loading={confirming}
-            onClick={() => setSigning(true)}
-          />
-        )}
+        {sign || <Button role="primary" word={ENTRY_WORDS.takeRefund} icon="Sp" onClick={() => setSigning(true)} />}
       </Plate>
     );
   return (
@@ -145,8 +130,6 @@ const EntryPanel = ({
         </span>
       </div>
       {cost.cash > 0n && <SplitBar shares={entryShares(cost.cash, terms.split)} />}
-      {state === "no-strk" && <NoStrkLine />}
-      {refused}
       {sign ||
         (state === "short" ? (
           <Button
@@ -155,14 +138,7 @@ const EntryPanel = ({
             disabled
           />
         ) : (
-          <Button
-            role="primary"
-            word={ENTRY_WORDS.payAndJoin}
-            icon="Pl"
-            disabled={state === "no-strk"}
-            loading={confirming}
-            onClick={() => setSigning(true)}
-          />
+          <Button role="primary" word={ENTRY_WORDS.payAndJoin} icon="Pl" onClick={() => setSigning(true)} />
         ))}
     </Plate>
   );

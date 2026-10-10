@@ -48,7 +48,6 @@ it("runs, closes, reviews, holds, then claims, waits on the fee, is claimed, or 
     wallet: "0x4a1",
     share: 5n * WEI,
     claimed: false,
-    strk: WEI,
     ...rest,
   });
   expect(seasonState(prize({ posted: false }), 50)).toBe("running");
@@ -59,7 +58,6 @@ it("runs, closes, reviews, holds, then claims, waits on the fee, is claimed, or 
   expect(seasonState(prize({ winners: 49 }), 250)).toBe("held");
   expect(seasonState(prize({ winners: 49 }), 150)).toBe("held");
   expect(seasonState(prize({}), 250)).toBe("claim");
-  expect(seasonState(prize({}, { strk: 0n }), 250)).toBe("no-strk");
   expect(seasonState(prize({}, { claimed: true }), 250)).toBe("claimed");
   expect(seasonState(prize({}, { share: null }), 250)).toBe("out");
 });

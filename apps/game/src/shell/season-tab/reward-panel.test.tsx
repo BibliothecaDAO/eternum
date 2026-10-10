@@ -6,12 +6,12 @@ import { afterEach, expect, it, vi } from "vitest";
 
 const signed = vi.hoisted(() => ({ calls: [] as Call[][] }));
 vi.mock("@/ui/modules/identity/wallet-actions", () => ({
-  WalletSign: ({ calls, onSent }: { calls: Call[]; onSent: (hash: string) => void }) => (
+  WalletSign: ({ calls, onLanded }: { calls: Call[]; onLanded: () => void }) => (
     <button
       type="button"
       onClick={() => {
         signed.calls.push(calls);
-        onSent("0xtx");
+        onLanded();
       }}
     >
       Sign
@@ -20,7 +20,7 @@ vi.mock("@/ui/modules/identity/wallet-actions", () => ({
 }));
 vi.mock("@/runtime/l2-rpc", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/runtime/l2-rpc")>()),
-  l2Provider: () => ({ waitForTransaction: async () => ({ isReverted: () => false }) }),
+  l2Provider: () => ({ callContract: () => new Promise(() => {}) }),
 }));
 
 import type { PaidGameLedger } from "@realms-world/identity";
@@ -45,7 +45,6 @@ const SEALED: Reward = {
   content: null,
   seasonEnd: Math.floor(Date.now() / 1000) + 86_400,
   registration: { registered: true, sword: true, shield: false, swordCredit: false, shieldCredit: false, paid: 0n },
-  strk: 10n ** 17n,
 };
 const unmounts: (() => Promise<void>)[] = [];
 
@@ -106,7 +105,6 @@ it("keeps a chest to trade, waits on the draw, and shows what an opened one deli
   await press(kept, "Keep");
   expect(kept.textContent).toContain("Tradeable");
 
-  expect((await mount({ ...SEALED, strk: 0n })).textContent).toContain("No STRK for the fee");
   expect((await mount({ ...SEALED, seasonEnd: 1 })).textContent).toContain("No LORDS now");
   expect((await mount({ ...SEALED, chest: { ...OPENED, finished: false }, held: false })).textContent).toContain(
     "Opening",

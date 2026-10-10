@@ -12,11 +12,8 @@ import { ServiceFailure } from "../service-failure";
 import { useNowSeconds } from "../use-now";
 import type { ChestContent } from "@realms-world/value-ledger/codecs";
 import { lordsOf, openChestCalls } from "../value/ledger";
-import { useL2Send } from "../value/l2-send";
-import { NoStrkLine } from "../value/no-strk-line";
-import { FailureLine } from "../sign-in/failure-line";
 import { usePayingWallet } from "../value/paying-wallet";
-import { REWARD_WORDS, VALUE_WORDS } from "../words";
+import { REWARD_WORDS } from "../words";
 import type { PaidGameLedger } from "@realms-world/identity";
 import { type Reward, rewardState, useReward } from "./reward";
 
@@ -91,8 +88,6 @@ const ChestPlate = ({
   const now = useNowSeconds();
   const [kept, setKept] = useState(false);
   const [signing, setSigning] = useState(false);
-  // The request is the chest's last move from this wallet: it is read again once the request is on chain.
-  const { send, sent } = useL2Send(onRequested);
   const state = rewardState(reward, owner);
   const band = reward.chest?.band ?? 0;
 
@@ -130,9 +125,10 @@ const ChestPlate = ({
       <WalletSign
         owner={owner}
         calls={openChestCalls(ledger.address, reward.collection, reward.result.chestId)}
-        onSent={(hash) => {
+        // The request is the chest's last move from this wallet: it is read again once the request is on chain.
+        onLanded={() => {
           setSigning(false);
-          sent(hash);
+          onRequested();
         }}
       />
     </Suspense>
@@ -144,16 +140,12 @@ const ChestPlate = ({
         <LordsUntil seasonEnd={reward.seasonEnd} now={now} />
         {kept && <Chip icon="Pc" word={REWARD_WORDS.tradeable} tone="text-kit-muted" />}
       </p>
-      {state === "no-strk" && <NoStrkLine />}
-      {send.status === "refused" && <FailureLine line={send.reason} />}
       {open ?? (
         <div className={cn("grid gap-3", kept ? "grid-cols-1" : "grid-cols-2")}>
           <Button
             role={kept ? "outline" : "primary"}
             word={REWARD_WORDS.open}
             icon="Ch"
-            disabled={state === "no-strk"}
-            loading={send.status === "confirming" ? VALUE_WORDS.confirming : undefined}
             onClick={() => setSigning(true)}
           />
           {!kept && <Button role="outline" word={REWARD_WORDS.keep} icon="Wt" onClick={() => setKept(true)} />}

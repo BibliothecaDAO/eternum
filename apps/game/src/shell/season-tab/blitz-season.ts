@@ -22,7 +22,6 @@ export interface SeasonPrize {
   /** That wallet's share once the top list is posted; null before it, or for a wallet not on it. */
   share: bigint | null;
   claimed: boolean;
-  strk: bigint;
 }
 
 /** Where the Season tab reads its prize: the player's newest paid Blitz game, or a broken entry it will not skip. */
@@ -63,12 +62,12 @@ export const placeShares = (pool: bigint, participants: number, curve: PayoutCur
 const paidPlaces = (participants: number, curve: PayoutCurve) =>
   Math.ceil((participants * curve.paidFractionBps) / 10_000);
 
-type SeasonState = "running" | "closing" | "review" | "held" | "claim" | "no-strk" | "claimed" | "out";
+type SeasonState = "running" | "closing" | "review" | "held" | "claim" | "claimed" | "out";
 
 /**
  * Running until its end; closing until the top list is posted; the review hour; held while a challenge stands or the
  * posted list is shorter than the places the ledger pays (it refuses every claim until the list is whole); then a
- * winner's claim (waiting on STRK for the fee when the wallet has none), claimed, or out of the paid places.
+ * winner's claim, claimed, or out of the paid places.
  */
 export const seasonState = (prize: SeasonPrize, now: number): SeasonState => {
   const { season } = prize;
@@ -78,7 +77,7 @@ export const seasonState = (prize: SeasonPrize, now: number): SeasonState => {
   if (now < season.reviewUntil) return "review";
   if (prize.share === null) return "out";
   if (prize.claimed) return "claimed";
-  return prize.strk === 0n ? "no-strk" : "claim";
+  return "claim";
 };
 
 type LedgerReads = ReturnType<typeof ledgerOf>;
@@ -103,19 +102,18 @@ const readSeasonPrize = async (game: PaidGameLedger, account: string): Promise<S
   const season = await read.season(seasonId);
   const [curve, holding] = await Promise.all([
     read.preset(season.presetId),
-    wallet ? holdingOf(read, seasonId, season, wallet) : { share: null, claimed: false, strk: 0n },
+    wallet ? holdingOf(read, seasonId, season, wallet) : { share: null, claimed: false },
   ]);
   return { ledger: game.address, seasonId, season, curve, wallet, ...holding };
 };
 
-/** What a wallet holds in a season: its share once the list is posted, whether it is claimed, and its fee balance. */
+/** What a wallet holds in a season: its share once the list is posted, and whether it is claimed. */
 const holdingOf = async (read: LedgerReads, seasonId: number, season: BlitzSeason, wallet: string) => {
-  const [claimed, strk, share] = await Promise.all([
+  const [claimed, share] = await Promise.all([
     read.seasonClaimed(seasonId, wallet),
-    read.feeBalance(wallet),
     season.posted ? findShare(read, seasonId, season.winners, wallet) : Promise.resolve(null),
   ]);
-  return { share, claimed, strk };
+  return { share, claimed };
 };
 
 /** The wallet's share on the posted top list, read in batches until it is found. */
