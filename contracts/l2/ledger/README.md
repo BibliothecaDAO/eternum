@@ -1,8 +1,9 @@
 # Game ledger
 
-The Starknet ledger holds separate liabilities for Frontier withdrawals, unfinished Blitz games, each season's chest
-reserve and season prizes. Games use `{ shard: felt252, game_id: u32 }`; withdrawals use the shard chain ID and
-confirmed transaction hash. The ledger has no deployed state to migrate. The live MMR token remains unchanged.
+The Starknet ledger holds separate liabilities for Frontier withdrawals, unallocated Blitz slots, each season's chest
+reserve and season prizes. Slots use `{ shard: felt252, slot_id: u32 }`; results use `{ shard, game_id }`. Withdrawals
+use the shard chain ID and confirmed transaction hash. The ledger has no deployed state to migrate. The live MMR token
+remains unchanged.
 
 Frontier is funded once and unlocks through the end of the current seeded game day, from that day's first second.
 `fund_frontier(shard, season_id, preset_id, start, seed, amount)` reads the same native preset's `day_unit_seconds` and
@@ -15,50 +16,31 @@ while L2's unlocked amount is insufficient and submit once the independent L2 ga
 future timestamp or unlock future days to conceal clock lag. Operator payments are immediate, retry-safe and bounded by
 the cumulative unlock. They carry no treasury cut. Only the admin unpauses; the pauser can pause payouts.
 
-The immutable `claim_window_seconds` preset defaults to seven days. The shard accepts withdrawals only before
-`season.end + claim_window_seconds - 3600`, leaving a fixed one-hour reporting buffer. The constant
-`LORDS_REPORTING_BUFFER_SECONDS` lives beside the shard chest rules; preset ids do not select it. The ledger still
-accepts first reports until `season.end + claim_window_seconds` and exposes this boundary as `frontier_claim_deadline`
-and refuses `close_frontier` until that timestamp. Closing returns unused funds to the treasury. No withdrawal created
-at or after the earlier shard cutoff can produce a valid receipt. This buffer bounds routine relay delivery; it is not a
-guarantee against a longer outage or unbounded cross-chain clock skew. Delivery of an older confirmed receipt can still
-be delayed: payments remain possible until closure, so the admin must drain the relay's confirmed withdrawal backlog
-before closing. After closure a previously paid claim remains a harmless retry; an unseen claim refuses with
-`Ledger: season closed`.
+The immutable `claim_window_seconds` preset defaults to seven days. The shard stops new withdrawals one hour before
+`season.end + claim_window_seconds`, leaving the constant 3600-second reporting grace period. The ledger accepts a first
+report strictly before that deadline. Reports move no money and have no aggregate cap or counter; payment remains
+bounded by the pool's unlocked amount. There is no administrative report correction entry.
 
-Blitz settlement takes one `protocol_cut_bps` treasury cut on the whole incoming game pot: entries, paid swords/shields
-and sponsorship. The default is 2000 bps. The remaining pot splits by `chest_lords_bps` into the season's chest reserve
+`close_frontier` runs at or after the deadline, voids every unpaid report without scanning individual claims, and
+returns `pool - paid` to the treasury. The existing closed season plus payment record determines whether the report is
+void; the relay must recover that fact from the views and stop retrying voided claims. Paid retries remain harmless;
+unpaid payments after closure refuse.
+
+Blitz settlement takes one `protocol_cut_bps` treasury cut on the whole incoming game pot: entries and paid
+swords/shields. The default is 2000 bps. The remaining pot splits by `chest_lords_bps` into the season's chest reserve
 and season prize pool. Refunds return the original payment before any settlement cut. Chest and season payouts have no
 second cut. Frontier's configuration preset keeps its cut at zero.
 
-Economic presets cannot admit more than the shard's `MAX_BLITZ_ROSTER_PLAYERS`. The ledger and shard compile the same
-`roster_limits.cairo` source; the existing shard rule exports and generated client constants keep their names. Duel's
-two-player restriction still belongs to its native mode and preset builder. A zero paid-roster limit remains valid for a
-preset that never opens a paid game; `open_game` still refuses that preset.
+Registration custody is keyed by `{ shard, slot_id }`. Slots have no player cap. Each wallet registers once and pays its
+entry and optional flags. The launcher resolves identity at slot close and creates groups of at most 24 on the shard.
+The ledger stores only paying wallets, in registration order. The operator marks unseated wallets refundable; refunds
+return their exact payment and credits, even while paused. Cancelling or aborting a slot opens refunds for all remaining
+unconsumed entries.
 
-The relay holds the existing `OPERATOR_ROLE` and maintains the one-to-one identity link with
-`set_account_link(wallet, account)`. A zero account clears the wallet's link; a zero wallet refuses. Replacing either
-side clears the displaced account and wallet atomically. Identical retries and clearing an unlinked wallet do nothing.
-Each change emits `AccountLinkChanged`, keyed by wallet and account, with the wallet's previous account and the
-account's previous wallet (zero when clearing). `account_of_wallet(wallet)` and `wallet_of_account(account)` return zero
-when unlinked. Views remain readable while paused. Operator clears (a zero account) still run, so the relay can retract
-stale links. Nonzero link installs and replacements refuse, including identical retries, and resume when the admin
-unpauses. Registration remains open for a wallet whose link was already stored.
-
-Registration uses the connected wallet's stored link: `register(key, sword, shield)`, `register_with_pass(key, pass_id)`
-or `register_village(key, village_pass_id)`. An unlinked wallet refuses with `Ledger: link Realms account first` before
-any payment or pass call. Players cannot supply a different account. Existing game, capacity, duplicate-wallet and
-duplicate-account checks remain. The paying wallet/account pair is frozen in the registration; subsequent replacement or
-clearing of a current link cannot change it. The launcher reads those ordered snapshots through
-`get_registered_player(key, index)`, never current links. Results, MMR, refunds and prizes remain keyed by the paying
-wallet. Moving an already-seated account's current link to another wallet cannot buy it a second seat in that game.
-
-The relay writes identity link changes and reconciles authoritative identity links on startup and periodically,
-including clearing stale ledger links. The monitor checks ledger links against identity link history. Event delivery
-alone is not a link source. The client shows linking until the connected wallet's ledger view matches its own Realms
-account, then submits registration without an account argument. This adds two scalar maps and one operator entry/change
-event; it removes player-supplied identity rather than introducing a signature, permit, role or key. Existing
-registration snapshots and roster freeze stay unchanged.
+`apply_results(slot, game_id, ranked)` settles one actual game. Its pot includes only those players' payments, which are
+subtracted from the slot's remaining custody. Each registration records its consuming game, so another result or refund
+cannot spend it again. The result commitment remains keyed by `{ shard, game_id }`. Slot opening leaves one settlement
+tick between the scheduled game end and the season cutoff.
 
 Results contain only wallet and competition rank, sorted by rank then wallet on ties. The version-3 commitment hashes
 `['ETERNUM_BLITZ_RESULT', 3, shard, game_id, count, wallet, rank, ...]`. The shard must not draw chest contents. MMR and
@@ -74,18 +56,18 @@ outcome, and delivers to the requester. A separate hash selects uniformly among 
 timestamp, finish block or Cartridge VRF enters the draw. The request never expires, and anyone can finish it later. A
 failed delivery can be attempted again, but its fixed entropy cannot change the outcome.
 
-A LORDS outcome pays `min(band.lords_amount, season.chest_reserve)`. It cannot touch Frontier, other seasons, unfinished
-games or season-prize custody. The first valid season top-list post after season end sweeps the reserve into the prize
-pool before allocating shares. Later openings still deliver cosmetics or credits; LORDS then pays zero against the empty
-reserve. Outstanding chest requests are not a debt for their nominal amount.
+A LORDS outcome pays `min(band.lords_amount, season.chest_reserve)`. It cannot touch Frontier, other seasons,
+unallocated slots or season-prize custody. The first valid season top-list post after season end sweeps the reserve into
+the prize pool before allocating shares. Later openings still deliver cosmetics or credits; LORDS then pays zero against
+the empty reserve. Outstanding chest requests are not a debt for their nominal amount.
 
 Rehearsal presets propose LORDS amounts 700 / 200 / 100 / 50 / 20 by best-to-worst band, with LORDS probabilities 10% /
 10% / 5% / 4% / 0%. For 24 untied players, the bands contain 5 / 5 / 4 / 5 / 5 players. At 500 LORDS per entry, 20%
 treasury and 5% chest share: `24*500*0.8*0.05 = 480`. Nominal expected chest rewards are
 `5*0.10*700 + 5*0.10*200 + 4*0.05*100 + 5*0.04*50 = 480`. Actual expected chest payments can be lower because of reserve
-caps, late openings, ties and other lobby sizes; every remainder joins season prizes. Paid flags and sponsors increase
-funding without multiplying chests. Changing the treasury to 10% yields 540 per reference game: the owner can retune the
-reward presets, or let the extra reserve join season prizes. The full odds table and test inventory live in
+caps, late openings, ties and other lobby sizes; every remainder joins season prizes. Paid flags increase funding
+without multiplying chests. Changing the treasury to 10% yields 540 per reference game: the owner can retune the reward
+presets, or let the extra reserve join season prizes. The full odds table and test inventory live in
 `scripts/chest-preset.js` and are registered as immutable admin presets. They are not approved production values.
 
 The Starknet sequencer can choose/order transactions and influence the target block's contents, timestamp and hash,
@@ -106,8 +88,10 @@ per-chest LORDS liabilities. The cost is band/inventory preset storage, request 
 there is no new token collection, oracle, cancellation path, expiry timer or per-movement fee rule.
 
 Season ratings freeze at the end. The operator posts the top list; anyone may challenge a missing better participant for
-one hour. A short or challenged list cannot pay. Winners then pull their geometric preset share once. Pause blocks
-withdrawals, refunds, chest finishes and season claims; registrations, incoming funding, result settlement, chest
+one hour. Posting writes the complete list and its allocations in one transaction. A short or challenged list cannot
+pay. Winners call `claim_season(season_id, position)` with their zero-based list position; the ledger checks the caller
+at that position and pays its geometric preset share once. Pause blocks withdrawals, chest finishes and season claims;
+refunds and expired Frontier returns remain available; registrations, Frontier funding, result settlement, chest
 requests and challenges remain available. Settlement's input treasury transfer continues to its fixed address.
 
 ## Package checks
@@ -150,9 +134,8 @@ Build release artifacts first, under the same lock. These commands compile each 
 The owner supplies `SEPOLIA_RPC_URL`, `SEPOLIA_ACCOUNT_ADDRESS`, `SEPOLIA_ACCOUNT_PRIVATE_KEY`,
 `SEPOLIA_OPERATOR_ADDRESS`, `SEPOLIA_PAUSER_ADDRESS`, `SEPOLIA_SHARD_CHAIN_ID` (a non-zero felt), `SEPOLIA_GAME_SEED`
 (the funded shard game seed), `SEPOLIA_SEASON_START`, `SEPOLIA_SEASON_END` (Unix seconds), `SEPOLIA_FRONTIER_POOL_WEI`,
-`SEPOLIA_CHEST_BAND_1_CID` through `SEPOLIA_CHEST_BAND_5_CID`, `SEPOLIA_COSMETIC_CID`, `SEPOLIA_SEASON_PASS_ADDRESS` and
-`SEPOLIA_VILLAGE_PASS_ADDRESS`. Pass addresses are required constructor dependencies; the paid-entry rehearsal does not
-invoke them. Choose a start far enough ahead to complete declarations and setup.
+`SEPOLIA_CHEST_BAND_1_CID` through `SEPOLIA_CHEST_BAND_5_CID`, `SEPOLIA_COSMETIC_CID`. Choose a start far enough ahead
+to complete declarations and setup.
 
 Run only when the owner authorizes deployment:
 
@@ -163,7 +146,7 @@ pnpm --dir contracts/l2/ledger/scripts deploy:sepolia
 Use the resulting `target/sepolia-deployment.json` to configure the relay and launcher. Match the shard's Frontier
 season window and pool to the deployed ledger. Mint test LORDS to test wallets, approve the ledger, and register on L2;
 feed that roster into the shard. Play a withdrawal and a Blitz match, then relay the actual confirmed withdrawal hash
-and the actual wallet/rank rows. Verify `get_payment`, wallet balances, `get_game.result_commitment`, minted chest IDs,
+and the actual wallet/rank rows. Verify `get_payment`, wallet balances, `get_result_commitment`, minted chest IDs,
 `get_chest` and the growing season pool. Trade a chest, approve its burn, call `open_request`, then call `open_finish`
 at least eleven blocks later from another wallet. Verify delivery to the requester and reserve conservation. Setup
 registers all five band CIDs and one test cosmetic attribute per rarity. The test chest share and curve numbers are
@@ -176,7 +159,6 @@ complete the design's contract audit and Sepolia withdrawal/result rehearsal, su
 credentials, grant the ledger `UPDATER_ROLE` on the existing MMR token, and grant collection mint roles. The live MMR
 implementation remains unchanged. The chest collection needs an authorized, storage-compatible upgrade exposing
 `mint_with_id`, plus metadata for all five new band kinds. Use the existing mainnet deployment path only after these
-gates; its constructor is
-`(admin, operator, treasury, lords, mmr_token, season_pass, village_pass, loot_chest, cosmetics)`.
+gates; its constructor is `(admin, operator, treasury, lords, mmr_token, loot_chest, cosmetics)`.
 
 Frontier funding uses `season_id = shard game id` in `fund_frontier(shard, season_id, ...)`.

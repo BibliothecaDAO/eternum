@@ -3,7 +3,6 @@ pub mod contract;
 
 mod days;
 pub mod mmr;
-mod roster_limits;
 
 pub mod test_lords;
 

@@ -33,8 +33,6 @@ const constructorAddresses = {
   treasury: requireEnvironmentAddress("LEDGER_TREASURY_ADDRESS"),
   lords: requireContractAddress("lords"),
   mmrToken: requireContractAddress("mmrToken"),
-  seasonPass: requireContractAddress("seasonPass"),
-  villagePass: requireContractAddress("villagePass"),
   lootChests: requireContractAddress("lootChests"),
   cosmetics: requireContractAddress("cosmetics"),
 };
@@ -47,8 +45,6 @@ function buildConstructorCalldata() {
     constructorAddresses.treasury,
     constructorAddresses.lords,
     constructorAddresses.mmrToken,
-    constructorAddresses.seasonPass,
-    constructorAddresses.villagePass,
     constructorAddresses.lootChests,
     constructorAddresses.cosmetics,
   ];
@@ -61,8 +57,6 @@ async function exportLedgerAddresses(deployedAddress) {
     LEDGER_RPC_URL: ledgerRpcUrl,
     LORDS_ADDRESS: constructorAddresses.lords,
     MMR_TOKEN_ADDRESS: constructorAddresses.mmrToken,
-    SEASON_PASS_ADDRESS: constructorAddresses.seasonPass,
-    VILLAGE_PASS_ADDRESS: constructorAddresses.villagePass,
     LOOT_CHESTS_ADDRESS: constructorAddresses.lootChests,
     COSMETICS_ADDRESS: constructorAddresses.cosmetics,
     VAULT_ADDRESS: addresses.vault ?? "",

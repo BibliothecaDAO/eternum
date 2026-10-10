@@ -24,54 +24,32 @@ pub struct Preset {
     pub day_unit_seconds: u32,
     pub season_bags: u32,
     pub claim_window_seconds: u32,
-    pub registration_limit: u16,
 }
 
 #[derive(Copy, Default, Drop, Serde, starknet::Store)]
-pub struct Game {
+pub struct Slot {
     pub season_id: u32,
     pub exists: bool,
     pub preset_id: u32,
-    pub start: u64,
+    pub close: u64,
     pub end: u64,
     pub pool: u256,
-    pub result_commitment: felt252,
-    pub registered_count: u16,
+    pub registered_count: u64,
     pub cancelled: bool,
-    pub finalized: bool,
-    pub registration_limit: u16,
 }
 
-#[derive(Copy, Drop, Serde, starknet::Store)]
+#[derive(Copy, Default, Drop, Serde, starknet::Store)]
 pub struct Registration {
     pub registered: bool,
     pub sword: bool,
     pub shield: bool,
-    pub flags_consumed: bool,
     pub sword_credit: bool,
     pub shield_credit: bool,
     pub paid: u256,
-    pub realm_id: u256,
-    pub pass_kind: u8,
-    pub account: ContractAddress,
+    pub refundable: bool,
+    pub game_id: u32,
 }
 
-pub impl RegistrationDefault of Default<Registration> {
-    fn default() -> Registration {
-        Registration {
-            registered: false,
-            sword: false,
-            shield: false,
-            flags_consumed: false,
-            sword_credit: false,
-            shield_credit: false,
-            paid: 0,
-            realm_id: 0,
-            pass_kind: 0,
-            account: 0.try_into().unwrap(),
-        }
-    }
-}
 
 #[derive(Copy, Default, Drop, Serde, starknet::Store)]
 pub struct PlayerResult {
@@ -178,4 +156,10 @@ pub struct GameKey {
 pub struct FrontierClock {
     pub start_main_at: u64,
     pub seed: felt252,
+}
+
+#[derive(Copy, Drop, Serde, Hash, PartialEq, starknet::Store)]
+pub struct SlotKey {
+    pub shard: felt252,
+    pub slot_id: u32,
 }
