@@ -14,6 +14,7 @@ export interface SlotStore {
   create(name: string, closesAt: string): Promise<void>;
   get(name: string): Promise<PlaytestSlot>;
   list(): Promise<PlaytestSlot[]>;
+  refund(name: string): Promise<number | null>;
   freeze(name: string): Promise<PlaytestSlot>;
   freezeDueSlots(): Promise<void>;
 }

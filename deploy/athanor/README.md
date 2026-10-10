@@ -53,6 +53,17 @@ The shard manifest is served at `/manifest` and the directory at `/games`. Compa
 Herald restart. Incompatible schemas are explicit ingestion faults and require a planned release. Historical replay must
 use the matching codec.
 
+## Season settlement runbook
+
+Close a Frontier pool only after `frontier_claim_deadline(shard, season_id)` plus the 24-hour wallet hold, and only with
+an empty relay queue for that pool. Payments can still complete after the claim deadline; `close_frontier` voids all
+unpaid reports, including withdrawals waiting for a newly linked wallet's hold.
+
+If a short Blitz season top list was not challenged within its one-hour window, only the cold admin can reopen it with
+`correct_season_mmr`. Claims refuse an incomplete list and a direct repost is refused as final. The admin must supply a
+nonempty correction for an existing participant using verified MMR values; the operator can then post the complete list
+and wait through the new challenge window before claims.
+
 ## Gameplay validation
 
 The harness uses the shared client, native fact store, direct signed invokes and public receipt polling. On one of our

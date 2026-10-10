@@ -52,7 +52,7 @@ export const openSlotOnLedger = (credentials: Credentials, key: LedgerSlotKey, w
       throw new Error("ledger_slot_not_recorded");
   });
 
-/** The current contract cannot abort between start and end. Persisted cleanup retries at that boundary automatically. */
+/** Recovery may cancel before close or abort after end; return the remaining wait between those boundaries. */
 export const refundSlotOnLedger = (credentials: Credentials, key: LedgerSlotKey) =>
   relayOperation("unlock failed Blitz refunds", async (): Promise<number | null> => {
     const provider = rpcAt(credentials.rpcUrl);
@@ -77,6 +77,9 @@ export const markSlotRefundable = (credentials: Credentials, key: LedgerSlotKey,
       ]);
   });
 
+// Allow both one-minute crons, retries and L2 inclusion before seasonal MMR freezes.
+const SLOT_SETTLEMENT_MARGIN_SECONDS = 10 * 60;
+
 const containingSeason = async (provider: RpcProvider, address: string, window: Window, head: number) => {
   const matches: { id: number; presetId: number }[] = [];
   let token: string | undefined;
@@ -95,7 +98,8 @@ const containingSeason = async (provider: RpcProvider, address: string, window: 
         throw new Error("invalid_season_event");
       const id = ledgerInteger(row.keys[1]!);
       const season = await seasonAt(provider, address, id, head);
-      if (window.start >= season.start && window.end < season.end) matches.push({ id, presetId: season.presetId });
+      if (window.start >= season.start && window.end + SLOT_SETTLEMENT_MARGIN_SECONDS < season.end)
+        matches.push({ id, presetId: season.presetId });
     }
     token = page.continuation_token;
     if (token && seen.has(token)) throw new Error("season_page_cycle");

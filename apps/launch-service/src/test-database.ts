@@ -63,5 +63,6 @@ export const slotValueFixture = (count = 0) => ({
   }),
 });
 export const registrationIdentityFixture = {
-  accountAtRegistration: async (wallet: string) => `0x${(BigInt(wallet) + 100n).toString(16)}`,
+  accountsAtRegistration: async (page: readonly { wallet: string }[]) =>
+    page.map(({ wallet }) => `0x${(BigInt(wallet) + 100n).toString(16)}`),
 };

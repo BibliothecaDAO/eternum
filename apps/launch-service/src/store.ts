@@ -323,7 +323,7 @@ export class D1LaunchStore implements LaunchServiceStore {
   async delete(kind: LaunchKind, environment: GameEnvironmentId, name: string): Promise<boolean> {
     const result = await this.db
       .prepare(
-        "DELETE FROM launch_runs WHERE chain_id = ? AND kind = ? AND environment = ? AND name = ? AND status <> 'running'",
+        "DELETE FROM launch_runs WHERE chain_id = ? AND kind = ? AND environment = ? AND name = ? AND status <> 'running' AND slot_id IS NULL",
       )
       .bind(await this.chainId(), kind, environment, name)
       .run();

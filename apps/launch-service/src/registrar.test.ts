@@ -1,7 +1,7 @@
 import { Effect, Layer } from "effect";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { Registrar } from "./registrar";
-const mock = vi.hoisted(() => ({ account: vi.fn(), process: vi.fn(), nextDue: vi.fn() }));
+const mock = vi.hoisted(() => ({ account: vi.fn(), process: vi.fn(), nextDue: vi.fn(), target: vi.fn() }));
 vi.mock("cloudflare:workers", () => ({
   DurableObject: class {
     constructor(
@@ -25,7 +25,7 @@ vi.mock("./store", () => ({
 }));
 vi.mock("./executor", () => ({
   shardChainOf: () => async () => "0x1",
-  launchTargetOf: () => ({}),
+  launchTargetOf: mock.target,
   launchExecutorLayer: () => Layer.empty,
   readLaunchShard: vi.fn(),
 }));
@@ -38,27 +38,14 @@ beforeEach(() => {
   mock.nextDue.mockResolvedValue(2000);
 });
 afterEach(() => vi.restoreAllMocks());
-const setup = (records = new Map<string, unknown>()) => {
+const setup = () => {
   const setAlarm = vi.fn(async (_at: number) => {});
-  let ready = Promise.resolve();
-  const context = {
-    blockConcurrencyWhile: (operation: () => Promise<void>) => {
-      ready = operation();
-    },
-    storage: {
-      setAlarm,
-      list: async ({ prefix, limit }: { prefix: string; limit: number }) =>
-        new Map([...records].filter(([key]) => key.startsWith(prefix)).slice(0, limit)),
-      delete: async (keys: string[]) => {
-        for (const key of keys) records.delete(key);
-      },
-    },
-  };
+  const context = { storage: { setAlarm } };
   const registrar = new Registrar(context as unknown as DurableObjectState, {
     DB: {},
     VALUE_IDENTITY: { shards: async () => [{ chainId: "0x1", url: "https://shard.test", status: "active" }] },
   });
-  return { registrar, setAlarm, ready };
+  return { registrar, setAlarm };
 };
 it("keeps polling an ungranted launcher beyond platform retries without consuming due runs, then resumes", async () => {
   const f = setup();
@@ -70,6 +57,7 @@ it("keeps polling an ungranted launcher beyond platform retries without consumin
   mock.account.mockResolvedValue("0x2");
   await f.registrar.alarm();
   expect(mock.process).toHaveBeenCalledOnce();
+  expect(mock.target).toHaveBeenCalledWith(expect.anything(), "0x2");
   expect(f.setAlarm).toHaveBeenLastCalledWith(2000);
 });
 it("does not hide unrelated deployment failures", async () => {
@@ -78,11 +66,4 @@ it("does not hide unrelated deployment failures", async () => {
   await expect(f.registrar.alarm()).rejects.toThrow("launcher_chain_differs");
   expect(f.setAlarm).not.toHaveBeenCalled();
   expect(mock.process).not.toHaveBeenCalled();
-});
-
-it("removes every retired preparation while preserving enrolled signer identities", async () => {
-  const records = new Map<string, unknown>([["launcher-account:1", { launcherAccount: "0x2" }]]);
-  for (let index = 0; index < 125; index++) records.set(`launcher-check:1:${index}`, { txHash: "0x3" });
-  await setup(records).ready;
-  expect([...records]).toEqual([["launcher-account:1", { launcherAccount: "0x2" }]]);
 });

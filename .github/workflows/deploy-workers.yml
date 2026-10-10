@@ -6,7 +6,7 @@ name: Deploy Workers
 # Production deploys only by dispatch, at the cutover. Each environment has its own D1 databases
 # and secrets. The guardian Worker is deployed by the owner alone and is not listed here. The launch Worker targets the
 # official shards in identity's directory, with
-# LAUNCH_DEPLOYER_ACCOUNT_ADDRESS and LAUNCHER_ALLOWLIST, and signs with its
+# enrolled launcher accounts and LAUNCHER_ALLOWLIST, and signs with its
 # LAUNCH_DEPLOYER_PRIVATE_KEY secret. Both Workers accept the environment's one OPERATOR_TOKEN secret from operator
 # automation. Until an environment names its launch variables, its launch job deploys nothing and says which are
 # missing, so identity can reach production before the shard it needs exists. Production is dispatched with
@@ -62,7 +62,6 @@ jobs:
       TARGET: ${{ inputs.environment || 'staging' }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-      LAUNCH_DEPLOYER_ACCOUNT_ADDRESS: ${{ vars.LAUNCH_DEPLOYER_ACCOUNT_ADDRESS }}
       LAUNCHER_ALLOWLIST: ${{ vars.LAUNCHER_ALLOWLIST }}
       REALMS_ADDRESS: ${{ vars.REALMS_ADDRESS }}
       RATING_TOKEN_ADDRESS: ${{ vars.RATING_TOKEN_ADDRESS }}
@@ -93,7 +92,7 @@ jobs:
         run: |
           set -euo pipefail
           missing=()
-          for name in LAUNCH_DEPLOYER_ACCOUNT_ADDRESS LAUNCHER_ALLOWLIST; do
+          for name in LAUNCHER_ALLOWLIST; do
             [ -n "${!name}" ] || missing+=("$name")
           done
           if [ ${#missing[@]} -gt 0 ]; then
@@ -177,7 +176,6 @@ jobs:
           WRANGLER_OUTPUT_FILE_PATH: ${{ runner.temp }}/wrangler-output.ndjson
         run: |
           pnpm exec wrangler deploy --env "$TARGET" \
-            --var "DEPLOYER_ACCOUNT_ADDRESS:$LAUNCH_DEPLOYER_ACCOUNT_ADDRESS" \
             --var "LAUNCHER_ALLOWLIST:$LAUNCHER_ALLOWLIST"
 
       # The deploy record names the Worker's route pattern and the version it deployed; the route must answer its

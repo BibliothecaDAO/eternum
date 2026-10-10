@@ -11,10 +11,23 @@ from unittest.mock import patch
 import deploy
 import directory
 import shard
+from service_requests import service_json
 from test_shard import configuration
 
 
 class ServiceTransportTest(unittest.TestCase):
+    def test_guardian_reads_and_authenticated_writes_carry_the_service_user_agent(self):
+        for payload in (None, {"status": "pending"}):
+            with self.subTest(payload=payload):
+                response = io.BytesIO(b'{"ok": true}')
+                with patch.dict(os.environ, {"OPERATOR_TOKEN": "test-token"}), \
+                        patch("service_requests.build_opener") as opener:
+                    opener.return_value.open.return_value.__enter__.return_value = response
+                    self.assertEqual(service_json("https://identity.test/api/guardian", payload), {"ok": True})
+                    request = opener.return_value.open.call_args.args[0]
+                    self.assertEqual(request.get_header("User-agent"), "realms-shard-init")
+                    self.assertEqual(request.get_header("Authorization"), None if payload is None else "Bearer test-token")
+
     def test_config_refuses_http_guardian_before_any_authenticated_request(self):
         config = {**configuration(), "guardian_url": "http://identity.test/api/guardian"}
         with self.assertRaisesRegex(ValueError, "HTTPS"):

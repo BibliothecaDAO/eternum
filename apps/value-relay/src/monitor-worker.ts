@@ -75,16 +75,6 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
               ),
             ),
           );
-          const rosterAudit = yield* Effect.result(
-            onIdentityChain(
-              monitor.env.LEDGER_RPC_URL,
-              monitor.env.IDENTITY,
-              relayOperation("check frozen paid rosters", async () => {
-                for (const cohort of await monitor.env.LAUNCH.rosterCohorts())
-                  if (cohort.complete) await monitor.checkRoster(cohort);
-              }),
-            ),
-          );
           const ports = monitorPortsOf(monitor.env, monitor.ctx.storage);
           const value = yield* Effect.result(
             onIdentityChain(
@@ -103,11 +93,7 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
             checked_at: Math.floor(Date.now() / 1000),
             value: Result.isSuccess(value) ? value.success : null,
             season_error: Result.isSuccess(seasonAudit) ? seasonAudit.success : seasonAudit.failure.operation,
-            value_error: Result.isFailure(value)
-              ? value.failure.operation
-              : Result.isFailure(rosterAudit)
-                ? rosterAudit.failure.operation
-                : null,
+            value_error: Result.isFailure(value) ? value.failure.operation : null,
             held: Result.isSuccess(held) ? held.success : null,
           };
           yield* relayOperation("publish value monitor", () => monitor.ctx.storage.put("observation", observation));

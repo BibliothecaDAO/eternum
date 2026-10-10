@@ -76,6 +76,22 @@ it("checks current-wallet registration when opening a slot room, never per messa
       expect(rpc.method).toBe("starknet_call");
       expect(rpc.params.block_id).toBe("latest");
       expect(BigInt(rpc.params.request.contract_address)).toBe(0x123n);
+      if (BigInt(rpc.params.request.entry_point_selector) === BigInt(hash.getSelectorFromName("get_slot"))) {
+        return Response.json({
+          jsonrpc: "2.0",
+          id: rpc.id,
+          result: abiResponse(ledgerAbi, "get_slot", {
+            season_id: 1,
+            exists: true,
+            preset_id: 2,
+            close: 100,
+            end: 200,
+            pool: { low: 500, high: 0 },
+            registered_count: 1,
+            cancelled: false,
+          }),
+        });
+      }
       expect(BigInt(rpc.params.request.entry_point_selector)).toBe(
         BigInt(hash.getSelectorFromName("get_registration")),
       );
@@ -103,6 +119,7 @@ it("checks current-wallet registration when opening a slot room, never per messa
     },
     launchDirectory: (request) => {
       directoryReads += 1;
+      expect(new URL(request.url).searchParams.get("chainId")).toBe("0xa");
       const path = new URL(request.url).pathname;
       expect(path.startsWith("/api/slots/")).toBe(true);
       if (path === "/api/slots/missing") return new Response(null, { status: 404 });
@@ -113,11 +130,11 @@ it("checks current-wallet registration when opening a slot room, never per messa
     await worker.db.batch(migrationStatements().map((statement) => worker.db.prepare(statement)));
     const [player, observer] = [await signIn(worker), await signIn(worker)];
     await worker.db.prepare('UPDATE "user" SET "address" = ? WHERE "realmsId" = ?').bind("0xa1", player.realmsId).run();
-    const room = "slot:blitz-noon";
+    const room = "slot:0xa:blitz-noon";
     const path = `/api/chat/rooms/${encodeURIComponent(room)}`;
     expect((await connect(worker, "", path)).status).toBe(401);
-    expect((await connect(worker, player.cookie, "/api/chat/rooms/slot%3Amissing")).status).toBe(404);
-    expect((await connect(worker, player.cookie, "/api/chat/rooms/slot%3AInvalid")).status).toBe(400);
+    expect((await connect(worker, player.cookie, "/api/chat/rooms/slot%3A0xa%3Amissing")).status).toBe(404);
+    expect((await connect(worker, player.cookie, "/api/chat/rooms/slot%3A0xa%3AInvalid")).status).toBe(400);
     expect((await connect(worker, player.cookie, "/api/chat/rooms/%FF")).status).toBe(400);
     const reader = await connect(worker, observer.cookie, path, {
       "x-realms-id": player.realmsId,

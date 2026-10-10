@@ -75,9 +75,8 @@ async function inspectGamesConfiguration(local: NativeWorld, provider: RpcProvid
   if (bound.length !== 1 || bound[0] !== BigInt(local.l2GasBound)) blockers.push("Games play gas bound is immutable");
   const changes: NonNullable<NativePlan["roleChanges"]> = [];
   if (launcher.length !== 1 || ledger.length !== 1) throw new Error("Invalid Games role read");
-  if (launcher[0] !== BigInt(local.launcher)) changes.push({ entrypoint: "set_launcher", address: local.launcher });
-  if (ledger[0] !== BigInt(local.ledgerOperator))
-    changes.push({ entrypoint: "set_ledger_operator", address: local.ledgerOperator });
+  // The constructor installs launcher; redeployment must preserve handed-off service roles.
+  if (ledger[0] === 0n) changes.push({ entrypoint: "set_ledger_operator", address: local.ledgerOperator });
   return changes;
 }
 

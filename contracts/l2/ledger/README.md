@@ -117,11 +117,13 @@ a fresh MMR contract and two fresh collectible collections, then deploys the led
 MMR updater and collection minter roles, configures test metadata, registers separate Blitz (ID 1) and zero-cut Frontier
 (ID 2) test presets, opens a Blitz season and funds Frontier once using all six ABI arguments. The public manifest reads
 all eight `FrontierSeason` fields from the ledger; its derived Frontier end is independent of `SEPOLIA_SEASON_END`,
-which schedules Blitz. It writes only public addresses, season data and transaction hashes under the ignored `target/`
-directory.
+which schedules Blitz. It writes public addresses, season data and transaction hashes to
+`contracts/l2/ledger/target/sepolia-deployment.json` and merges the deployed `ledger` into
+`contracts/common/addresses/sepolia.json`, preserving every other address. Review and commit that address-book change
+before deploying the services and client that read it.
 
-After the package build, `node --test scripts/commands/deployment/frontier.test.js` checks rehearsal calldata and
-Frontier response parsing against the package's actual built ABI without loading a signer or deploying.
+With existing `target/dev` ledger artifacts, `pnpm --dir contracts/l2/ledger/scripts test` checks rehearsal calldata,
+Frontier response parsing, the required game id and address-book publication without loading a signer or deploying.
 
 Build release artifacts first, under the same lock. These commands compile each package using its pinned toolchain:
 
@@ -132,10 +134,14 @@ Build release artifacts first, under the same lock. These commands compile each 
 ```
 
 The owner supplies `SEPOLIA_RPC_URL`, `SEPOLIA_ACCOUNT_ADDRESS`, `SEPOLIA_ACCOUNT_PRIVATE_KEY`,
-`SEPOLIA_OPERATOR_ADDRESS`, `SEPOLIA_PAUSER_ADDRESS`, `SEPOLIA_SHARD_CHAIN_ID` (a non-zero felt), `SEPOLIA_GAME_SEED`
-(the funded shard game seed), `SEPOLIA_SEASON_START`, `SEPOLIA_SEASON_END` (Unix seconds), `SEPOLIA_FRONTIER_POOL_WEI`,
-`SEPOLIA_CHEST_BAND_1_CID` through `SEPOLIA_CHEST_BAND_5_CID`, `SEPOLIA_COSMETIC_CID`. Choose a start far enough ahead
-to complete declarations and setup.
+`SEPOLIA_OPERATOR_ADDRESS`, `SEPOLIA_PAUSER_ADDRESS`, `SEPOLIA_SHARD_CHAIN_ID` (a non-zero felt),
+`SEPOLIA_FRONTIER_SEASON_ID` (required, no default: the actual Frontier game id on that shard, a non-zero u32),
+`SEPOLIA_GAME_SEED` (the funded shard game seed), `SEPOLIA_SEASON_START`, `SEPOLIA_SEASON_END` (Unix seconds),
+`SEPOLIA_FRONTIER_POOL_WEI`, `SEPOLIA_CHEST_BAND_1_CID` through `SEPOLIA_CHEST_BAND_5_CID`, `SEPOLIA_COSMETIC_CID`.
+Choose a start far enough ahead to complete declarations and setup. Read the Frontier game id from its launch result or
+Herald directory; the deployment check may already have consumed earlier ids. Funding and the `get_frontier`
+verification both use this exact id. `seasonId: 1` in the manifest identifies the separate Blitz season;
+`frontierSeasonId` records the funded shard game id.
 
 Run only when the owner authorizes deployment:
 
@@ -143,14 +149,14 @@ Run only when the owner authorizes deployment:
 pnpm --dir contracts/l2/ledger/scripts deploy:sepolia
 ```
 
-Use the resulting `target/sepolia-deployment.json` to configure the relay and launcher. Match the shard's Frontier
-season window and pool to the deployed ledger. Mint test LORDS to test wallets, approve the ledger, and register on L2;
-feed that roster into the shard. Play a withdrawal and a Blitz match, then relay the actual confirmed withdrawal hash
-and the actual wallet/rank rows. Verify `get_payment`, wallet balances, `get_result_commitment`, minted chest IDs,
-`get_chest` and the growing season pool. Trade a chest, approve its burn, call `open_request`, then call `open_finish`
-at least eleven blocks later from another wallet. Verify delivery to the requester and reserve conservation. Setup
-registers all five band CIDs and one test cosmetic attribute per rarity. The test chest share and curve numbers are
-presets for rehearsal, not approved production balance values.
+Use the resulting public manifest to verify the deployment and the checked-in address book to configure service and
+client builds. Match the shard's Frontier season window and pool to the deployed ledger. Mint test LORDS to test
+wallets, approve the ledger, and register on L2; feed that roster into the shard. Play a withdrawal and a Blitz match,
+then relay the actual confirmed withdrawal hash and the actual wallet/rank rows. Verify `get_payment`, wallet balances,
+`get_result_commitment`, minted chest IDs, `get_chest` and the growing season pool. Trade a chest, approve its burn,
+call `open_request`, then call `open_finish` at least eleven blocks later from another wallet. Verify delivery to the
+requester and reserve conservation. Setup registers all five band CIDs and one test cosmetic attribute per rarity. The
+test chest share and curve numbers are presets for rehearsal, not approved production balance values.
 
 ## Mainnet prerequisites
 

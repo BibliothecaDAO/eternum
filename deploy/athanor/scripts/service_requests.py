@@ -27,7 +27,7 @@ def identity_service_base(guardian_url):
 
 def service_json(url, payload=None, timeout=30):
     require_service_url(url)
-    headers = {"Content-Type": "application/json"}
+    headers = {"Content-Type": "application/json", "User-Agent": "realms-shard-init"}
     if payload is not None:
         token = os.environ.get("OPERATOR_TOKEN")
         if not token:

@@ -79,7 +79,9 @@ const continueRun = async (
 const deleteRun = async (context: Context, store: LaunchServiceStore, kind: LaunchKind, name: string) => {
   const environment = readEnvironment(context.req.param("environment"));
   const deleted = await store.delete(kind, environment, name);
-  return deleted ? context.json({ deleted: true }) : context.json({ error: "Run is missing or active." }, 409);
+  return deleted
+    ? context.json({ deleted: true })
+    : context.json({ error: "Run is missing, active, or belongs to a paid slot." }, 409);
 };
 
 const failedRunReport = (run: LaunchRun) => ({
