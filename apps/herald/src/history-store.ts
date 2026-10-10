@@ -17,7 +17,7 @@ import type {
 } from "@bibliothecadao/eternum/game-sync";
 
 import { normalizeFelt, toJsonValue } from "./model-registry";
-import type { DecodedRecord, DecodedWorldEvent, GameTransactionHistory } from "./types";
+import type { DecodedRecord, DecodedWorldEvent, RpcReceipt } from "./types";
 
 export interface HistoryCodec {
   storyModels: readonly string[];
@@ -105,6 +105,8 @@ export class HistoryStore {
   private readonly pool: Pool;
   private readonly points = new PointsLeaderboard();
   private readonly frozenReviews = new Set<string>();
+  private writeQueue = Promise.resolve();
+  private writeFailure?: Error;
 
   constructor(
     databaseUrl: string,
@@ -156,7 +158,6 @@ export class HistoryStore {
       );
 
       ALTER TABLE herald_history_progress ADD COLUMN IF NOT EXISTS frontier_ranks_through_block BIGINT;
-      ALTER TABLE herald_history_progress ADD COLUMN IF NOT EXISTS transactions_through_block BIGINT;
       CREATE TABLE IF NOT EXISTS herald_frontier_day_ranks (
         chain TEXT NOT NULL,
         world_address TEXT NOT NULL,
@@ -190,12 +191,6 @@ export class HistoryStore {
     await this.pool.query(
       `ALTER TABLE herald_game_review_snapshots ADD COLUMN IF NOT EXISTS finalized BOOLEAN NOT NULL DEFAULT false`,
     );
-    // Old receipt queues could lag a valid entity checkpoint. Null coverage marks counts for cold repair.
-    await this.pool.query(
-      `DELETE FROM herald_game_transactions WHERE chain=$1 AND world_address=$2
-      AND NOT EXISTS (SELECT 1 FROM herald_history_progress WHERE chain=$1 AND world_address=$2 AND transactions_through_block IS NOT NULL)`,
-      [this.chain, this.worldAddress],
-    );
     const frozen = await this.pool.query<{ game_id: string }>(
       `SELECT game_id::text FROM herald_game_review_snapshots WHERE chain = $1 AND world_address = $2 AND finalized`,
       [this.chain, this.worldAddress],
@@ -208,34 +203,22 @@ export class HistoryStore {
     events: readonly DecodedWorldEvent[],
     completeThroughBlock?: number,
     frontierDays?: readonly HeraldFrontierDayRanks[],
-    transactions?: readonly GameTransactionHistory[],
   ): Promise<void> {
     const rows = events.flatMap((event) => {
       const stored = storedHistoryEvent(event, this.codec);
       return stored ? [stored] : [];
     });
-    if (rows.length === 0 && completeThroughBlock === undefined && !frontierDays?.length && !transactions?.length)
-      return;
+    if (rows.length === 0 && completeThroughBlock === undefined && !frontierDays?.length) return;
 
-    if (transactions !== undefined && completeThroughBlock === undefined)
-      throw new Error("Transaction history needs block progress");
-    if (transactions?.some((record) => record.blockNumber > completeThroughBlock!))
-      throw new Error("Transaction history exceeds block progress");
     const client = await this.pool.connect();
     let registrations: Array<{ gameId: string; points: PointsRegistration }> = [];
     try {
       await client.query("BEGIN");
       registrations = await this.insertNewHistory(client, rows);
       await this.insertFrontierDays(client, frontierDays ?? []);
-      await this.insertTransactions(client, transactions ?? []);
       if (completeThroughBlock !== undefined) {
         await this.advanceHistoryProgress(client, completeThroughBlock);
         if (frontierDays !== undefined) await this.advanceFrontierRanksProgress(client, completeThroughBlock);
-        if (transactions !== undefined)
-          await client.query(
-            `UPDATE herald_history_progress SET transactions_through_block = GREATEST(transactions_through_block, $3) WHERE chain = $1 AND world_address = $2`,
-            [this.chain, this.worldAddress, completeThroughBlock],
-          );
       }
       await client.query("COMMIT");
       for (const registration of registrations) this.points.accept(registration.gameId, registration.points);
@@ -319,29 +302,28 @@ export class HistoryStore {
     }
   }
 
-  private async insertTransactions(client: PoolClient, transactions: readonly GameTransactionHistory[]): Promise<void> {
-    if (!transactions.length) return;
-    await client.query(
-      `INSERT INTO herald_game_transactions (chain, world_address, game_id, transaction_hash, block_number, status)
-       SELECT $1, $2, item."gameId"::numeric, item."transactionHash", item."blockNumber", item.status
-       FROM jsonb_to_recordset($3::jsonb) AS item("gameId" text, "transactionHash" text, "blockNumber" bigint, status text)
-       ON CONFLICT (chain, world_address, game_id, transaction_hash) DO UPDATE SET block_number=EXCLUDED.block_number, status=EXCLUDED.status`,
-      [
-        this.chain,
-        this.worldAddress,
-        JSON.stringify(
-          transactions.map((record) => ({ ...record, transactionHash: normalizeFelt(record.transactionHash) })),
-        ),
-      ],
-    );
-  }
-
-  public async transactionHistoryProgress(): Promise<number | null> {
-    const result = await this.pool.query<{ block: string | null }>(
-      `SELECT transactions_through_block AS block FROM herald_history_progress WHERE chain=$1 AND world_address=$2`,
-      [this.chain, this.worldAddress],
-    );
-    return result.rows[0]?.block == null ? null : Number(result.rows[0].block);
+  public recordTransaction(gameId: string, receipt: RpcReceipt): void {
+    this.writeQueue = this.writeQueue
+      .then(async () => {
+        await this.pool.query(
+          `INSERT INTO herald_game_transactions (
+             chain, world_address, game_id, transaction_hash, block_number, status
+           ) VALUES ($1, $2, $3, $4, $5, $6)
+           ON CONFLICT (chain, world_address, game_id, transaction_hash) DO UPDATE
+           SET block_number = EXCLUDED.block_number, status = EXCLUDED.status`,
+          [
+            this.chain,
+            this.worldAddress,
+            gameId,
+            normalizeFelt(receipt.transaction_hash),
+            receipt.block_number ?? null,
+            receipt.execution_status === "REVERTED" ? "REVERTED" : receipt.finality_status,
+          ],
+        );
+      })
+      .catch((error) => {
+        this.writeFailure = error instanceof Error ? error : new Error(String(error));
+      });
   }
 
   public async freezeReviewSnapshot(gameId: string, createSnapshot: () => HeraldGameSnapshot): Promise<void> {
@@ -506,12 +488,6 @@ export class HistoryStore {
   }
 
   public async transactionCount(gameId: string): Promise<HeraldTransactionCount> {
-    const [countsThrough, historyThrough] = await Promise.all([
-      this.transactionHistoryProgress(),
-      this.historyProgress(),
-    ]);
-    if (countsThrough == null || historyThrough == null || countsThrough < historyThrough)
-      throw new Error("Transaction history is incomplete");
     const result = await this.pool.query<{ total: string }>(
       `SELECT COUNT(*) AS total
        FROM herald_game_transactions
@@ -522,6 +498,8 @@ export class HistoryStore {
   }
 
   public async close(): Promise<void> {
+    await this.writeQueue;
+    if (this.writeFailure) throw this.writeFailure;
     await this.pool.end();
   }
 }
