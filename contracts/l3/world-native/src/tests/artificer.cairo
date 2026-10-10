@@ -65,9 +65,9 @@ fn crafting_spends_precise_research_and_grants_the_seeded_relic_in_both_modes() 
         let (d, home) = setup(blitz);
         assert!(execute(d, Command::CraftRelic(home.entity_id), 30));
         assert_eq!(balance(d, home, RESEARCH), 10 * RESOURCE_PRECISION);
-        assert_eq!(balance(d, home, 46), RESOURCE_PRECISION);
+        assert_eq!(balance(d, home, 43), RESOURCE_PRECISION);
         for id in 39_u8..57 {
-            if id != 46 {
+            if id != 43 {
                 assert_eq!(balance(d, home, id), 0);
             }
         }
@@ -78,14 +78,14 @@ fn villages_craft_with_the_same_cost_and_have_no_connected_realm_requirement() {
     let (d, home) = setup(false);
     structure(d, home, d.actor, 5);
     assert!(execute(d, Command::CraftRelic(home.entity_id), 30));
-    assert_eq!(balance(d, home, 46), RESOURCE_PRECISION);
+    assert_eq!(balance(d, home, 43), RESOURCE_PRECISION);
     assert_eq!(balance(d, home, RESEARCH), 10 * RESOURCE_PRECISION);
 }
 #[test]
 fn crafting_uses_the_supplied_root_without_the_gameplay_clock() {
     let (d, home) = setup(true);
     assert!(execute(d, Command::CraftRelic(home.entity_id), 30));
-    assert_eq!(balance(d, home, 46), RESOURCE_PRECISION);
+    assert_eq!(balance(d, home, 43), RESOURCE_PRECISION);
     assert_eq!(balance(d, home, RESEARCH), 10 * RESOURCE_PRECISION);
 }
 #[test]
@@ -103,7 +103,7 @@ fn rejected_crafting_preserves_balances() {
     assert!(execute(d, command, 30));
     assert_terminal_rejection(d, command, 30);
     assert_eq!(balance(d, home, RESEARCH), 0);
-    assert_eq!(balance(d, home, 46), 2 * RESOURCE_PRECISION);
+    assert_eq!(balance(d, home, 43), 2 * RESOURCE_PRECISION);
     assert_terminal_rejection(d, command, 200);
 }
 #[test]

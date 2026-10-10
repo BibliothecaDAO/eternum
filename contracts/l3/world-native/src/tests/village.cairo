@@ -302,14 +302,14 @@ fn created_realm(ref spy: snforge_std::EventSpy, deployment: Deployment) -> u64 
 }
 
 // Settles one season realm. Catalogue loading is covered separately; this draw uses the pinned salt 71419 after
-// scoping raw root 987654321 to game 3 with seed 1: realm 2239.
+// scoping raw root 987654321 to game 3: realm 3492.
 fn settle_season_realm(deployment: Deployment) -> u64 {
     super::entry::set_operator(deployment, 0.try_into().unwrap());
     super::resource_commands::set_fixture(
         deployment.games, selector!("realms"), selector!("catalogue_count"), array![].span(), 8000_u32,
     );
     super::resource_commands::set_fixture(
-        deployment.games, selector!("realms"), selector!("traits"), array![2239].span(), 0x9000002_u32,
+        deployment.games, selector!("realms"), selector!("traits"), array![3492].span(), 0x9000002_u32,
     );
     let mut spy = spy_events();
     assert!(
@@ -353,7 +353,7 @@ fn season_settlement_random_draw_reserves_realm_and_provisions_its_economy() {
     let id = settle_season_realm(deployment);
     let key = ResourceKey { game_id: 3, entity_id: id };
     let row = IStructureOperationsDispatcher { contract_address: deployment.games }.structure(key).unwrap();
-    assert_eq!(row.metadata.realm_id, 2239);
+    assert_eq!(row.metadata.realm_id, 3492);
     assert_eq!(row.metadata.order, 5);
     assert!(row.metadata.has_wonder);
     assert_eq!(row.owner, deployment.actor);
@@ -366,7 +366,7 @@ fn season_settlement_random_draw_reserves_realm_and_provisions_its_economy() {
     );
     assert_eq!(
         crate::realms::ISeasonRealmsDispatcherTrait::available_realm(
-            crate::realms::ISeasonRealmsDispatcher { contract_address: deployment.games }, 3, 2238,
+            crate::realms::ISeasonRealmsDispatcher { contract_address: deployment.games }, 3, 3491,
         ),
         8000,
     );
@@ -430,7 +430,7 @@ fn assert_season_entitlement_mode(dev: bool, has_operator: bool, has_entitlement
         d.games, selector!("realms"), selector!("catalogue_count"), array![].span(), 8000_u32,
     );
     super::resource_commands::set_fixture(
-        d.games, selector!("realms"), selector!("traits"), array![2239].span(), 0x9000002_u32,
+        d.games, selector!("realms"), selector!("traits"), array![3492].span(), 0x9000002_u32,
     );
     let mut spy = spy_events();
     assert_eq!(
@@ -451,7 +451,7 @@ fn assert_season_entitlement_mode(dev: bool, has_operator: bool, has_entitlement
             let mut values: Span<felt252> = Serde::deserialize(ref data).unwrap();
             let record: crate::structures::Structure = Serde::deserialize(ref values).unwrap();
             assert_eq!(record.metadata.realm_id, if dev {
-                2239
+                3492
             } else {
                 7
             });
