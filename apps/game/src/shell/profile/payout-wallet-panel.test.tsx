@@ -23,6 +23,8 @@ vi.mock("@/ui/modules/identity/wallet-actions", () => ({
 import { identityClient } from "@/hooks/context/identity-session";
 import { IdentityRequestError } from "@realms-world/identity";
 
+import { formatClockTime } from "@/ui/design-system/kit/time";
+
 import { PayoutWalletPanel } from "./payout-wallet-panel";
 
 const HOUR = 3_600_000;
@@ -34,9 +36,7 @@ const mount = async (wallet: Parameters<typeof PayoutWalletPanel>[0]["wallet"], 
   const container = document.createElement("div");
   document.body.append(container);
   const root = createRoot(container);
-  await act(async () =>
-    root.render(<PayoutWalletPanel wallet={wallet} email="you@mail.test" now={NOW} onChanged={onChanged} />),
-  );
+  await act(async () => root.render(<PayoutWalletPanel wallet={wallet} email="you@mail.test" onChanged={onChanged} />));
   mounted.push(async () => {
     await act(async () => root.unmount());
     container.remove();
@@ -67,7 +67,9 @@ it("shows a held wallet's time left, and a player with none the two ways to one"
     until: NOW + 17 * HOUR + 42 * 60_000,
   });
   expect(held.textContent).toContain("On hold");
-  expect(held.textContent).toContain("17h 42m");
+  // The hold is the time the new wallet receives from, and nothing more: no countdown, no ring.
+  expect(held.textContent).toContain(`Receives from ${formatClockTime((NOW + 17 * HOUR + 42 * 60_000) / 1000)}`);
+  expect(held.textContent).not.toContain("17h 42m");
   expect(held.textContent).toContain("you@mail.test");
 
   const none = await mount({ status: "no_wallet" });

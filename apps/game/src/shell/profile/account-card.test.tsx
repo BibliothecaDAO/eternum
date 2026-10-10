@@ -7,6 +7,8 @@ import { expect, it, vi } from "vitest";
 vi.hoisted(() => vi.stubGlobal("fetch", async () => new Response(null, { status: 401 })));
 
 import { identityClient } from "@/hooks/context/identity-session";
+import { formatClockTime } from "@/ui/design-system/kit/time";
+
 import { AccountCard } from "./account-card";
 
 const session = {
@@ -74,5 +76,32 @@ it("shows a session without a payout wallet as a fault, with no uncoded link or 
     await act(async () => root.unmount());
     container.remove();
     logged.mockRestore();
+  }
+});
+
+it("shows a held payout wallet as the time it receives from, nothing more", async () => {
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  vi.spyOn(identityClient, "listSignInProviders").mockResolvedValue([]);
+  const until = Date.now() + 5 * 3_600_000;
+  const held = {
+    ...session,
+    user: { ...session.user, payoutWallet: { status: "on_hold", address: "0x4a1", until } },
+  } as unknown as Session;
+  const container = document.createElement("div");
+  document.body.append(container);
+  const root = createRoot(container);
+  await act(async () =>
+    root.render(
+      <MemoryRouter>
+        <AccountCard session={held} />
+      </MemoryRouter>,
+    ),
+  );
+  try {
+    expect(container.textContent).toContain(`Receives from ${formatClockTime(until / 1000)}`);
+    expect(container.textContent).not.toContain("left");
+  } finally {
+    await act(async () => root.unmount());
+    container.remove();
   }
 });

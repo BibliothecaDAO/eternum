@@ -215,7 +215,6 @@ export const WALLET_WORDS = {
   confirmInWallet: "Confirm in your wallet",
   onHold: "On hold",
   canReceive: "Ready",
-  left: "left",
   receivesFrom: "Receives from",
   noticeSentTo: "Notice sent to",
   replace: "Replace",

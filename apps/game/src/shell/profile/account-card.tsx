@@ -13,12 +13,11 @@ import { PlayerName } from "@/ui/design-system/kit/player-name";
 import { Sheet } from "@/ui/design-system/kit/sheet";
 import { failureSentence, nameRefusal } from "@/ui/modules/identity/identity-failures";
 import { shortAddress } from "@/ui/design-system/kit/address";
-import { formatDuration } from "@/ui/design-system/kit/time";
+import { formatClockTime } from "@/ui/design-system/kit/time";
 
 import { useLayout } from "../frame/layout";
 import { FailureLine } from "../sign-in/failure-line";
 import { NameField, PortraitGrid } from "../sign-in/fields";
-import { useNowSeconds } from "../use-now";
 import { PROFILE_WORDS, SIGN_IN_WORDS, WALLET_WORDS } from "../words";
 import { Confirm } from "./confirm";
 import type { PayoutWallet } from "@realms-world/identity";
@@ -44,7 +43,6 @@ export const AccountCard = ({ session }: { session: Session }) => {
     void refresh();
   };
   const payout = payoutWalletOf(session.user);
-  const now = useNowSeconds() * 1000;
   // Every wallet change needs the emailed code the payout panel asks for; a session that cannot say which wallet
   // pays is an identity fault, shown as one, never an older uncoded path.
   const payoutMissing = payout === null;
@@ -65,14 +63,14 @@ export const AccountCard = ({ session }: { session: Session }) => {
         <SettingRow
           icon="Wt"
           name={WALLET_WORDS.payoutWallet}
-          value={payout ? payoutValue(payout, now) : WALLET_WORDS.unavailable}
+          value={payout ? payoutValue(payout) : WALLET_WORDS.unavailable}
           onOpen={() => toggle("payout")}
         />
       </SettingRows>
       {open === "payout" && (
         <Opened label={WALLET_WORDS.payoutWallet} onClose={close}>
           {payout ? (
-            <PayoutWalletPanel wallet={payout} email={session.user.email} now={now} onChanged={() => void refresh()} />
+            <PayoutWalletPanel wallet={payout} email={session.user.email} onChanged={() => void refresh()} />
           ) : (
             <FailureLine line={WALLET_WORDS.unavailableLine} />
           )}
@@ -117,10 +115,10 @@ const Opened = ({ label, onClose, children }: { label: string; onClose: () => vo
     </section>
   );
 
-/** The payout wallet's row: link one, the time its hold has left, or its address. */
-const payoutValue = (payout: PayoutWallet, now: number) => {
+/** The payout wallet's row: link one, the time a held wallet receives from, or its address. */
+const payoutValue = (payout: PayoutWallet) => {
   if (payout.status === "no_wallet") return PROFILE_WORDS.linkWallet;
-  if (payout.status === "on_hold") return `${formatDuration((payout.until - now) / 1000)} ${WALLET_WORDS.left}`;
+  if (payout.status === "on_hold") return `${WALLET_WORDS.receivesFrom} ${formatClockTime(payout.until / 1000)}`;
   return shortAddress(payout.address);
 };
 

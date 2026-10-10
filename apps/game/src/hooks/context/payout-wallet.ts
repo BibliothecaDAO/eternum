@@ -15,8 +15,3 @@ const isPayoutWallet = (value: unknown): value is PayoutWallet => {
   if (typeof wallet.address !== "string") return false;
   return wallet.status === "ready" || (wallet.status === "on_hold" && typeof wallet.until === "number");
 };
-
-const HOLD_MS = 24 * 60 * 60 * 1000;
-
-/** How much of the hold has passed, for its ring: 0 when it starts, 1 when the wallet can receive. */
-export const holdShare = (until: number, now: number): number => Math.min(1, Math.max(0, 1 - (until - now) / HOLD_MS));

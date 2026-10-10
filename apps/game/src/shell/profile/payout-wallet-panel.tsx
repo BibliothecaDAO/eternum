@@ -5,7 +5,7 @@ import { identityClient } from "@/hooks/context/identity-session";
 import { shortAddress } from "@/ui/design-system/kit/address";
 import { Button } from "@/ui/design-system/kit/button";
 import { type IconCode, KitIcon } from "@/ui/design-system/kit/kit-icon";
-import { formatClockTime, formatDuration } from "@/ui/design-system/kit/time";
+import { formatClockTime } from "@/ui/design-system/kit/time";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { failureSentence } from "@/ui/modules/identity/identity-failures";
 
@@ -14,7 +14,6 @@ import { Loading } from "../loading";
 import { CodeBoxes } from "../sign-in/fields";
 import { WALLET_WORDS } from "../words";
 import type { PayoutWallet } from "@realms-world/identity";
-import { holdShare } from "@/hooks/context/payout-wallet";
 
 const WalletPicker = lazy(() =>
   import("@/ui/modules/identity/wallet-actions").then((module) => ({ default: module.WalletPicker })),
@@ -44,12 +43,10 @@ type Step =
 export const PayoutWalletPanel = ({
   wallet,
   email,
-  now,
   onChanged,
 }: {
   wallet: PayoutWallet;
   email: string;
-  now: number;
   onChanged: () => void;
 }) => {
   const [step, setStep] = useState<Step>(wallet.status === "no_wallet" ? { kind: "choose" } : { kind: "linked" });
@@ -66,7 +63,6 @@ export const PayoutWalletPanel = ({
         <Linked
           wallet={wallet}
           email={email}
-          now={now}
           onReplace={() => setStep({ kind: "choose" })}
           onUnlink={() => setStep({ kind: "code", change: { kind: "unlink" } })}
         />
@@ -281,17 +277,15 @@ const CodeStep = ({ change, email, onDone }: { change: Change; email: string; on
   );
 };
 
-/** A linked wallet: on its hold with the time left, or ready; Replace and Unlink each take a new code. */
+/** A linked wallet: on its hold with the time it receives from, or ready; Replace and Unlink each take a new code. */
 const Linked = ({
   wallet,
   email,
-  now,
   onReplace,
   onUnlink,
 }: {
   wallet: Exclude<PayoutWallet, { status: "no_wallet" }>;
   email: string;
-  now: number;
   onReplace: () => void;
   onUnlink: () => void;
 }) => (
@@ -306,16 +300,13 @@ const Linked = ({
       }
     />
     {wallet.status === "on_hold" ? (
-      <div className="flex items-center gap-5">
-        <HoldRing share={holdShare(wallet.until, now)} left={formatDuration((wallet.until - now) / 1000)} />
-        <div className="flex flex-col gap-3">
-          <Line icon="Lo">
-            {WALLET_WORDS.receivesFrom} <b>{formatClockTime(wallet.until / 1000)}</b>
-          </Line>
-          <Line icon="Em">
-            {WALLET_WORDS.noticeSentTo} <b>{email}</b>
-          </Line>
-        </div>
+      <div className="flex flex-col gap-3">
+        <Line icon="Lo">
+          {WALLET_WORDS.receivesFrom} <b>{formatClockTime(wallet.until / 1000)}</b>
+        </Line>
+        <Line icon="Em">
+          {WALLET_WORDS.noticeSentTo} <b>{email}</b>
+        </Line>
       </div>
     ) : (
       <PrizesGoHere />
@@ -375,31 +366,6 @@ const Track = ({ at }: { at: number }) => (
     ))}
   </ol>
 );
-
-const HoldRing = ({ share, left }: { share: number; left: string }) => {
-  const length = 2 * Math.PI * 56;
-  return (
-    <span className="relative flex size-[120px] shrink-0 items-center justify-center">
-      <svg viewBox="0 0 128 128" className="absolute inset-0 -rotate-90" aria-hidden>
-        <circle cx="64" cy="64" r="56" className="fill-kit-ink stroke-kit-line" strokeWidth="9" />
-        <circle
-          cx="64"
-          cy="64"
-          r="56"
-          className="fill-none stroke-kit-gold"
-          strokeWidth="9"
-          strokeLinecap="round"
-          strokeDasharray={length}
-          strokeDashoffset={length * (1 - share)}
-        />
-      </svg>
-      <span className="relative flex flex-col items-center leading-tight">
-        <b className="font-body text-[20px] font-extrabold text-kit-cream">{left}</b>
-        <span className="font-ui text-[13px] text-kit-muted">{WALLET_WORDS.left}</span>
-      </span>
-    </span>
-  );
-};
 
 const WalletCard = ({
   address,
