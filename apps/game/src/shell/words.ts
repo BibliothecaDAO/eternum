@@ -262,8 +262,6 @@ export const ENTRY_WORDS = {
   refunded: "Refunded",
   closed: "Entry closed",
   closedLine: "This game has started; it takes no more entries.",
-  full: "Game full",
-  fullLine: "Every seat in this game is taken.",
   refundedLine: "Your LORDS and credits are back in your wallet.",
   unreadable: "This game's paid entry could not be read, so it cannot be joined yet.",
   whereItGoes: "Where this entry goes: the season pool, the season's chests, the treasury",

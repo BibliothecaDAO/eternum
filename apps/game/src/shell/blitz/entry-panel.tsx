@@ -12,7 +12,7 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Loading } from "../loading";
 import { ServiceFailure } from "../service-failure";
 import { useNowSeconds } from "../use-now";
-import { lordsOf, lordsShortOf, refundCall } from "../value/ledger";
+import { type EnvironmentLedger, lordsOf, lordsShortOf, refundCall, type SlotKey } from "../value/ledger";
 import { ENTRY_WORDS, WALLET_WORDS } from "../words";
 import {
   entryCalls,
@@ -23,7 +23,6 @@ import {
   type EntryTerms,
   useEntryTerms,
 } from "./entry";
-import type { PaidGameLedger } from "@realms-world/identity";
 
 const WalletSign = lazy(() =>
   import("@/ui/modules/identity/wallet-actions").then((module) => ({ default: module.WalletSign })),
@@ -34,12 +33,28 @@ const WalletSign = lazy(() =>
  * pays and registers, and read again once the wallet has sent its call. A registration made from a wallet replaced
  * before the slot closes shows on the game's roster once it closes, not here.
  */
-export const PaidEntry = ({ ledger, wallet }: { ledger: PaidGameLedger; wallet: PayoutWallet }) => {
+export const PaidEntry = ({
+  ledger,
+  slot,
+  wallet,
+}: {
+  ledger: EnvironmentLedger;
+  slot: SlotKey;
+  wallet: PayoutWallet;
+}) => {
   const owner = wallet.status === "no_wallet" ? null : wallet.address;
-  const terms = useEntryTerms(ledger, owner);
+  const terms = useEntryTerms(ledger, slot, owner);
   if (owner === null) return <NoWallet />;
   if (terms.isError) return <ServiceFailure service="ledger" error={terms.error} retry={() => void terms.refetch()} />;
-  return <EntryPanel ledger={ledger} terms={terms.data} owner={owner} onSent={() => void terms.refetch()} />;
+  return (
+    <EntryPanel
+      ledger={ledger.address}
+      slot={slot}
+      terms={terms.data}
+      owner={owner}
+      onSent={() => void terms.refetch()}
+    />
+  );
 };
 
 /**
@@ -49,11 +64,14 @@ export const PaidEntry = ({ ledger, wallet }: { ledger: PaidGameLedger; wallet: 
  */
 const EntryPanel = ({
   ledger,
+  slot,
   terms,
   owner,
   onSent,
 }: {
-  ledger: PaidGameLedger;
+  /** The environment's ledger address, which the calls go to. */
+  ledger: string;
+  slot: SlotKey;
   terms: EntryTerms | undefined;
   /** The payout wallet: it pays, registers and takes any refund. */
   owner: string;
@@ -69,12 +87,11 @@ const EntryPanel = ({
   if (state === "seated") return <Seated terms={terms} />;
   if (state === "refunded") return <Refunded terms={terms} />;
   if (state === "closed") return <Closed />;
-  if (state === "full") return <Full />;
   const sign = signing && (
     <Suspense fallback={<Loading />}>
       <WalletSign
         owner={owner}
-        calls={state === "refund" ? [refundCall(ledger.address, ledger)] : entryCalls(ledger, terms, choice)}
+        calls={state === "refund" ? [refundCall(ledger, slot)] : entryCalls(ledger, slot, terms, choice)}
         onLanded={() => {
           setSigning(false);
           onSent();
@@ -221,13 +238,6 @@ const Seated = ({ terms }: { terms: EntryTerms }) => {
 const Closed = () => (
   <Plate icon="Lk" title={ENTRY_WORDS.closed}>
     <p className="font-body text-[16px] text-kit-cream">{ENTRY_WORDS.closedLine}</p>
-  </Plate>
-);
-
-/** The ledger has registered as many as its cap: paying would revert, so nothing is offered. */
-const Full = () => (
-  <Plate icon="Pp" title={ENTRY_WORDS.full}>
-    <p className="font-body text-[16px] text-kit-cream">{ENTRY_WORDS.fullLine}</p>
   </Plate>
 );
 

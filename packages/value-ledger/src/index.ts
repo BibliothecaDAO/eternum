@@ -13,7 +13,8 @@ export interface LedgerGameKey {
   gameId: number;
 }
 export { readLedgerSlot, readRegistrationPage } from "./blitz-slots";
-export type { LedgerSlotKey, LedgerSlot, SlotRegistration, RegistrationPage, RegistrationQuery } from "./blitz-slots";
+export type { LedgerSlotKey, SlotRegistration, RegistrationPage, RegistrationQuery } from "./blitz-slots";
+export type { LedgerSlot } from "./codecs";
 export { resolveBlitzRoster, splitPlaytestRoster } from "./blitz-roster";
 export type { RegistrationIdentity, SlotCohort, LaunchCohorts } from "./blitz-roster";
 

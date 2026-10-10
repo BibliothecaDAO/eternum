@@ -11,11 +11,9 @@ import { Loading } from "../loading";
 import { ServiceFailure } from "../service-failure";
 import { useNowSeconds } from "../use-now";
 import type { ChestContent } from "@realms-world/value-ledger/codecs";
-import { lordsOf, openChestCalls } from "../value/ledger";
-import { usePayingWallet } from "../value/paying-wallet";
+import { type EnvironmentLedger, lordsOf, openChestCalls } from "../value/ledger";
 import { REWARD_WORDS } from "../words";
-import type { PaidGameLedger } from "@realms-world/identity";
-import { type Reward, rewardState, useReward } from "./reward";
+import { type PlayedGameKeys, type Reward, rewardState, useReward } from "./reward";
 
 const WalletSign = lazy(() =>
   import("@/ui/modules/identity/wallet-actions").then((module) => ({ default: module.WalletSign })),
@@ -27,23 +25,36 @@ const chestArt = (band: number, opened: boolean) =>
 
 /**
  * After a paid Blitz: the rated game's MMR change with the sword or shield applied, and the mystery chest the result
- * minted for the player's rank band. Both belong to the wallet that paid the seat, whatever the payout wallet is now.
+ * minted for the player's rank band. Both belong to the seat's wallet, the one the shard's roster froze at slot close,
+ * whatever the payout wallet is now.
  * A sealed chest shows its band and nothing else. Open is one signature from that wallet; the draw then lands by
  * itself about ten blocks later, and the reveal plays inside this panel. A chest not opened stays in the collection,
  * tradeable.
  * Nothing is drawn for an account that held no seat in the game.
  */
-export const RewardPanel = ({ ledger, account }: { ledger: PaidGameLedger; account: string }) => {
-  const payer = usePayingWallet(ledger, account);
-  const owner = payer.data ?? null;
-  const reward = useReward(ledger, owner);
-  const failed = payer.isError ? payer : reward.isError ? reward : null;
-  if (failed) return <ServiceFailure service="ledger" error={failed.error} retry={() => void failed.refetch()} />;
-  if (owner === null || !reward.data) return null;
+export const RewardPanel = ({
+  ledger,
+  keys,
+  owner,
+}: {
+  ledger: EnvironmentLedger;
+  keys: PlayedGameKeys;
+  /** The seat's wallet from the shard's roster. */
+  owner: string;
+}) => {
+  const reward = useReward(ledger, keys, owner);
+  if (reward.isError)
+    return <ServiceFailure service="ledger" error={reward.error} retry={() => void reward.refetch()} />;
+  if (!reward.data) return null;
   return (
     <div className="flex flex-col gap-4">
       {reward.data.result.rank > 0 && <RatingChange reward={reward.data} />}
-      <ChestPlate ledger={ledger} owner={owner} reward={reward.data} onRequested={() => void reward.refetch()} />
+      <ChestPlate
+        ledger={ledger.address}
+        owner={owner}
+        reward={reward.data}
+        onRequested={() => void reward.refetch()}
+      />
     </div>
   );
 };
@@ -81,7 +92,8 @@ const ChestPlate = ({
   reward,
   onRequested,
 }: {
-  ledger: PaidGameLedger;
+  /** The environment's ledger address. */
+  ledger: string;
   owner: string;
   reward: Reward;
   onRequested: () => void;
@@ -124,7 +136,7 @@ const ChestPlate = ({
     <Suspense fallback={<Loading />}>
       <WalletSign
         owner={owner}
-        calls={openChestCalls(ledger.address, reward.collection, reward.result.chestId)}
+        calls={openChestCalls(ledger, reward.collection, reward.result.chestId)}
         // The request is the chest's last move from this wallet: it is read again once the request is on chain.
         onLanded={() => {
           setSigning(false);

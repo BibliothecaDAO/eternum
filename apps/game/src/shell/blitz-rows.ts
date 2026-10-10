@@ -3,7 +3,7 @@ import { canEnterGame, isGameOver, isMember } from "@/runtime/world/directory";
 
 import { BLITZ_SEATS } from "./blitz-slot";
 import type { DirectoryGame } from "./herald";
-import { directoryGameEntryOf, gameEntryOf } from "./value/game-entry";
+import type { GameKey, SlotKey } from "./value/ledger";
 
 /** A row's one action: play the game, watch it, a check for a seat already taken, or open a slot's lobby to pay. */
 export type BlitzAction = "enter" | "spectate" | "registered" | "open";
@@ -37,9 +37,19 @@ export const blitzRows = (games: readonly DirectoryGame[], slots: readonly Playt
   ];
 };
 
-/** A row's entry terms as the services declare them: a slot's own, or its directory game's; never a default. */
-export const rowEntryOf = (row: BlitzRow) =>
-  row.kind === "slot" ? gameEntryOf(row.slot, row.slot.name) : directoryGameEntryOf(row.game);
+/**
+ * A slot's key on the environment's ledger: the shard the launch service fills it on, and its number. Null while the
+ * slot does not name its shard: its entry then cannot be read, never guessed onto another shard.
+ */
+export const slotKeyOf = (slot: PlaytestSlot): SlotKey | null =>
+  slot.chainId ? { shard: slot.chainId, slotId: slot.slotId } : null;
+
+/** A launched game's own key on the ledger, for its result and chest. */
+export const gameKeyOf = (game: DirectoryGame): GameKey => ({ shard: game.chainId, gameId: game.game_id });
+
+/** The slot a launched paid Blitz was filled from; null for any game outside a slot. */
+export const gameSlotKeyOf = (game: DirectoryGame): SlotKey | null =>
+  game.slotId == null ? null : { shard: game.chainId, slotId: game.slotId };
 
 /** The row a card with room for one shows: the player's own game to enter, else the next slot to open. */
 export const leadBlitzRow = (rows: readonly BlitzRow[]): BlitzRow | undefined =>

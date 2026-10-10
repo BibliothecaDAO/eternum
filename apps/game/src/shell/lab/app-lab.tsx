@@ -11,7 +11,6 @@ import { BlitzListPage, BlitzLobbyPage } from "../blitz/blitz-pages";
 import { entryTermsKey } from "../blitz/entry";
 import { seasonPrizeKey } from "../season-tab/blitz-season";
 import { rewardKey } from "../season-tab/reward";
-import { payingWalletKey } from "../value/paying-wallet";
 import { LearnPage } from "../learn/learn-page";
 import { DominionPage, EternumPage, FrontierPage } from "../play/age-pages";
 import { PlayPage } from "../play/play-page";
@@ -33,12 +32,11 @@ import {
   LAB_CHAT,
   LAB_EMAIL_CODE,
   LAB_ENTRY_TERMS,
-  LAB_GAME_LEDGER,
-  paidEntryPayload,
+  LAB_GAME_KEYS,
   LAB_REWARDS,
   LAB_SEASON_PRIZES,
   LAB_PAYOUT_WALLETS,
-  LAB_SLOT_LEDGER,
+  LAB_SLOT_KEY,
   LAB_WALLET,
   labRatings,
   labSlots,
@@ -106,22 +104,13 @@ const createLabClient = (screen: LabScreen) => {
   client.setQueryData(["shell", "leaderboard", LAB_CHAIN, 7], LAB_BLITZ_BOARD);
   const wallet = LAB_PAYOUT_WALLETS[screen];
   const terms = LAB_ENTRY_TERMS[screen];
-  if (terms && wallet?.status === "ready") client.setQueryData(entryTermsKey(LAB_SLOT_LEDGER, wallet.address), terms);
+  if (terms && wallet?.status === "ready") client.setQueryData(entryTermsKey(LAB_SLOT_KEY, wallet.address), terms);
   const reward = LAB_REWARDS[screen];
   const prize = LAB_SEASON_PRIZES[screen];
-  if (reward || prize) client.setQueryData(payingWalletKey(LAB_GAME_LEDGER, LAB_PLAYER), LAB_WALLET);
-  if (reward) client.setQueryData(rewardKey(LAB_GAME_LEDGER, LAB_WALLET), reward);
-  if (prize) client.setQueryData(seasonPrizeKey(LAB_GAME_LEDGER, LAB_PLAYER), prize);
+  if (reward) client.setQueryData(rewardKey(LAB_GAME_KEYS, LAB_WALLET), reward);
+  if (prize) client.setQueryData(seasonPrizeKey({ slot: LAB_SLOT_KEY, wallet: LAB_WALLET }), prize);
   return client;
 };
-
-/** A screen's listed games; on a reward screen the Blitz names the ledger it was played on. */
-const labGames = (screen: LabScreen) =>
-  LAB_SCREENS[screen].games.map((game) =>
-    (LAB_REWARDS[screen] || LAB_SEASON_PRIZES[screen]) && game.game_id === LAB_GAME_LEDGER.gameId
-      ? { ...game, entry: paidEntryPayload(LAB_GAME_LEDGER) }
-      : game,
-  );
 
 const json = (body: unknown) =>
   new Response(JSON.stringify(body), { status: 200, headers: { "content-type": "application/json" } });
@@ -132,20 +121,18 @@ const answerAppReads = (screen: LabScreen) => {
   const answers: Record<string, (url: URL) => Response> = {
     "/api/directory": () =>
       json({
-        shards: [{ url: "https://lab.invalid", chainId: LAB_CHAIN, status: "active", games: labGames(screen) }],
+        shards: [
+          { url: "https://lab.invalid", chainId: LAB_CHAIN, status: "active", games: LAB_SCREENS[screen].games },
+        ],
       }),
     "/api/directory/history": () =>
       json({
-        games: [
-          LAB_REWARDS[screen] || LAB_SEASON_PRIZES[screen]
-            ? { ...LAB_FINISHED_BLITZ, entry: paidEntryPayload(LAB_GAME_LEDGER) }
-            : LAB_FINISHED_BLITZ,
-        ],
+        games: [LAB_FINISHED_BLITZ],
         next: null,
         failures: [],
       }),
     "/api/guardian": () => json(LAB_GUARDIAN),
-    "/api/slots": () => json(labSlots(LAB_SCREENS[screen].joined, LAB_ENTRY_TERMS[screen] && LAB_SLOT_LEDGER)),
+    "/api/slots": () => json(labSlots()),
     "/api/profiles": (url) => json({ profiles: profilesOf(url.searchParams.get("accounts")?.split(",") ?? []) }),
     "/api/ratings/top": () => json(LAB_RATING_TOP),
     "/api/ratings": (url) => json(labRatings(url.searchParams.get("accounts")?.split(",") ?? [])),

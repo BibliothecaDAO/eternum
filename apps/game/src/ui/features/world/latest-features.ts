@@ -35,9 +35,9 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-10",
-    title: "Your Blitz winnings follow your wallet",
+    title: "Your Blitz winnings follow your seat",
     description:
-      "Seats, results, chests, refunds and season prizes are read and claimed with the wallet that paid for them, even after you change your payout wallet, and a season you still have a prize in stays on Season after the next one starts.",
+      "Results, chests and season prizes are read and claimed with the wallet your seat was played with, even after you change your payout wallet, and the Season tab follows your own games, so a new season's first game never hides a prize still to claim.",
     type: "fix",
   },
   {

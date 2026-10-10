@@ -5,8 +5,8 @@ import {
   decodeChestContent,
   decodeCredits,
   decodeFrontierSeason,
-  decodeGame,
   decodeLedgerPreset,
+  decodeLedgerSlot,
   decodeBlitzSeason,
   decodePlayerResult,
   decodeRegistration,
@@ -15,29 +15,30 @@ import {
 const WEI = 10n ** 18n;
 const WALLET = "0x4a1";
 
-it("reads the ledger's answers in the interface's field order", () => {
-  // Game: season, exists, preset, start, end, pool (2), commitment, registered, cancelled, finalized, limit.
-  expect(decodeGame(["3", "1", "9", "100", "200", "0", "0", "0xabc", "17", "1", "0", "2"])).toEqual({
+it("reads a slot and a registration in the interface's field order", () => {
+  // Slot: season, exists, preset, close, end, pool (2), registered count, cancelled.
+  expect(decodeLedgerSlot(["3", "1", "9", "100", "200", String(9n * WEI), "0", "31", "0"])).toEqual({
     seasonId: 3,
     presetId: 9,
-    start: 100,
+    close: 100,
     end: 200,
-    exists: true,
-    commitment: "0xabc",
-    registeredCount: 17,
-    cancelled: true,
-    finalized: false,
-    registrationLimit: 2,
+    pool: String(9n * WEI),
+    registeredCount: 31,
+    cancelled: false,
   });
-  // Registration: registered, sword, shield, consumed, sword credit, shield credit, paid (2), realm (2), pass kind.
-  expect(decodeRegistration(["1", "1", "0", "0", "1", "0", String(500n * WEI), "0", "0", "0", "0"])).toEqual({
+  expect(() => decodeLedgerSlot(["3", "0", "9", "100", "200", "0", "0", "0", "0"])).toThrow("invalid_ledger_slot");
+  // Registration: registered, sword, shield, sword credit, shield credit, paid (2), refundable, game id.
+  expect(decodeRegistration(["1", "1", "0", "1", "0", String(500n * WEI), "0", "1", "7"])).toEqual({
     registered: true,
     sword: true,
     shield: false,
     swordCredit: true,
     shieldCredit: false,
     paid: 500n * WEI,
+    refundable: true,
+    gameId: 7,
   });
+  expect(() => decodeRegistration(["1", "1", "0"])).toThrow("invalid_ledger_registration");
   expect(decodeCredits(["2", "0"])).toEqual({ swords: 2, shields: 0 });
   expect(() => decodeCredits(["2"])).toThrow("shorter than its type");
 });

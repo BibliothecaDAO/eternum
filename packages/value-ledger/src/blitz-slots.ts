@@ -1,5 +1,5 @@
 import { hash, type RpcProvider, type EmittedEvent } from "starknet";
-import { ledgerBool, ledgerInteger, ledgerU256, readConfirmedLedgerHead } from "./codecs";
+import { decodeLedgerSlot, type LedgerSlot, readConfirmedLedgerHead } from "./codecs";
 
 export interface LedgerSlotKey {
   chainId: string;
@@ -8,15 +8,6 @@ export interface LedgerSlotKey {
 export interface SlotRegistration {
   wallet: string;
   registeredAt: number;
-}
-export interface LedgerSlot {
-  seasonId: number;
-  presetId: number;
-  close: number;
-  end: number;
-  pool: string;
-  registeredCount: number;
-  cancelled: boolean;
 }
 export interface RegistrationPage {
   slot: LedgerSlot;
@@ -42,16 +33,7 @@ export async function readLedgerSlot(
     { contractAddress: address, entrypoint: "get_slot", calldata: [key.chainId, String(key.slotId)] },
     head,
   );
-  if (fields.length !== 9 || !ledgerBool(fields[1]!)) throw new Error("invalid_ledger_slot");
-  return {
-    seasonId: ledgerInteger(fields[0]!),
-    presetId: ledgerInteger(fields[2]!),
-    close: ledgerInteger(fields[3]!),
-    end: ledgerInteger(fields[4]!),
-    pool: ledgerU256(fields[5]!, fields[6]!),
-    registeredCount: ledgerInteger(fields[7]!),
-    cancelled: ledgerBool(fields[8]!),
-  };
+  return decodeLedgerSlot(fields);
 }
 
 /** One bounded page, ordered by the ledger index, with link cutoffs from confirmed registration blocks. */

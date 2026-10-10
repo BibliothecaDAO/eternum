@@ -3,13 +3,12 @@ import { StructureType } from "@bibliothecadao/types";
 import { realmsAccountAddress } from "@realms-world/identity/account";
 import type { Session } from "@realms-world/identity";
 
-import { L2_CHAIN, L2_LEDGER } from "@/runtime/l2-rpc";
-
 import type { DirectoryGame } from "../herald";
 import type { PayoutWallet } from "@realms-world/identity";
 
 import type { EntryTerms } from "../blitz/entry";
-import type { PaidGameLedger } from "@realms-world/identity";
+import type { SlotKey } from "../value/ledger";
+import type { PlayedGameKeys } from "../season-tab/reward";
 import type { SeasonPrize } from "../season-tab/blitz-season";
 import type { Reward } from "../season-tab/reward";
 
@@ -23,6 +22,14 @@ const DAY = 86_400;
 const LEFT_TODAY = 7 * 3600 + 14 * 60;
 
 export const LAB_CHAIN = "0x5245414c4d53";
+
+/** The lab's payout wallet, which also holds its Blitz seat. */
+export const LAB_WALLET = "0x04a1c0de5eed000000000000000000000000000000000000000000000009c2e";
+
+/** The slot the lab's Blitz is registered in, and the game it filled, on the environment's ledger. */
+export const LAB_SLOT_KEY: SlotKey = { shard: LAB_CHAIN, slotId: 3 };
+export const LAB_GAME_KEYS: PlayedGameKeys = { game: { shard: LAB_CHAIN, gameId: 7 }, slot: LAB_SLOT_KEY };
+
 export const LAB_GUARDIAN = { publicKey: "0x1a2b", accountClassHash: "0x3c4d" };
 const REALMS_ID = "0x7";
 export const LAB_PLAYER = realmsAccountAddress(REALMS_ID, LAB_GUARDIAN.accountClassHash, LAB_GUARDIAN.publicKey);
@@ -60,7 +67,7 @@ const game = (over: Partial<DirectoryGame>): DirectoryGame => ({
   expedition: null,
   clock: { start_settling_at: NOW - DAY, start_main_at: NOW - DAY, end_at: NOW + 7 * DAY, end_grace_seconds: 0 },
   player_count: 0,
-  player_state: { registered: false, settled: false, roster_member: false, structures: [] },
+  player_state: { registered: false, settled: false, roster_wallet: null, structures: [] },
   roster_count: 0,
   preset_id: 0,
   registration: null,
@@ -70,7 +77,7 @@ const game = (over: Partial<DirectoryGame>): DirectoryGame => ({
   ...over,
 });
 
-const owned = { registered: true, settled: true, roster_member: true, structures: [REALM] };
+const owned = { registered: true, settled: true, roster_wallet: LAB_WALLET, structures: [REALM] };
 
 /** Frontier's season on Day 12, the player's realm in it or not. */
 const frontier = (withRealm: boolean) =>
@@ -108,6 +115,7 @@ const liveBlitz = (member: boolean) =>
     player_count: 24,
     roster_count: 24,
     player_state: member ? owned : null,
+    slotId: LAB_SLOT_KEY.slotId,
   });
 const eternum = game({
   game_id: 9,
@@ -125,36 +133,34 @@ const eternum = game({
 
 /** One state per screen the painted pass draws. */
 export const LAB_SCREENS = {
-  "first-visit": { signedIn: false, joined: false, games: [frontier(false), liveBlitz(false), eternum] },
-  home: { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
-  "no-realm": { signedIn: true, joined: false, games: [frontier(false), liveBlitz(false), eternum] },
-  "blitz-seat": { signedIn: true, joined: false, games: [frontier(true), liveBlitz(true), eternum] },
-  "season-over": { signedIn: true, joined: false, games: [endedFrontier, liveBlitz(false), eternum] },
-  "wallet-none": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
-  "wallet-hold": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
-  "wallet-ready": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
-  "entry-choose": { signedIn: true, joined: false, games: [frontier(true), liveBlitz(false), eternum] },
-  "entry-short": { signedIn: true, joined: false, games: [frontier(true), liveBlitz(false), eternum] },
-  "entry-seated": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
-  "entry-cancelled": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
-  "entry-refunded": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
-  "entry-no-wallet": { signedIn: true, joined: false, games: [frontier(true), liveBlitz(false), eternum] },
-  "reward-pending": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
-  "reward-sealed": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
-  "reward-after-season": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
-  "reward-opening": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
-  "reward-epic": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
-  "reward-lords": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
-  "reward-credit": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
-  "season-running": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
-  "season-review": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
-  "season-claim": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
-  "season-held": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
-  "season-claimed": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
-  "season-out": { signedIn: true, joined: true, games: [frontier(true), liveBlitz(false), eternum] },
+  "first-visit": { signedIn: false, games: [frontier(false), liveBlitz(false), eternum] },
+  home: { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
+  "no-realm": { signedIn: true, games: [frontier(false), liveBlitz(false), eternum] },
+  "blitz-seat": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
+  "season-over": { signedIn: true, games: [endedFrontier, liveBlitz(false), eternum] },
+  "wallet-none": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
+  "wallet-hold": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
+  "wallet-ready": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
+  "entry-choose": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
+  "entry-short": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
+  "entry-seated": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
+  "entry-cancelled": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
+  "entry-refunded": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
+  "entry-no-wallet": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
+  "reward-pending": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
+  "reward-sealed": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
+  "reward-after-season": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
+  "reward-opening": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
+  "reward-epic": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
+  "reward-lords": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
+  "reward-credit": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
+  "season-running": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
+  "season-review": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
+  "season-claim": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
+  "season-held": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
+  "season-claimed": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
+  "season-out": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
 } as const;
-
-export const LAB_WALLET = "0x04a1c0de5eed000000000000000000000000000000000000000000000009c2e";
 
 /** The payout wallet the identity service reports on each screen's session; screens without one report none. */
 export const LAB_PAYOUT_WALLETS: Partial<Record<keyof typeof LAB_SCREENS, PayoutWallet>> = {
@@ -182,19 +188,6 @@ export const LAB_PAYOUT_WALLETS: Partial<Record<keyof typeof LAB_SCREENS, Payout
   "season-out": { status: "ready", address: LAB_WALLET },
 };
 
-/**
- * The lab's ledger is the build's own, as the app reads it: until the ledger is deployed on the build's L2, the paid
- * screens show the fault a player would see.
- */
-const LAB_LEDGER = { address: L2_LEDGER ?? "0x0", chainId: L2_CHAIN.id };
-
-/** The ledger game the lab's slot fills, on a paid Blitz's screens. */
-export const LAB_SLOT_LEDGER: PaidGameLedger = {
-  ...LAB_LEDGER,
-  shard: LAB_CHAIN,
-  gameId: 7,
-};
-
 const WEI = 10n ** 18n;
 const NOT_REGISTERED = {
   registered: false,
@@ -203,6 +196,8 @@ const NOT_REGISTERED = {
   swordCredit: false,
   shieldCredit: false,
   paid: 0n,
+  refundable: false,
+  gameId: 0,
 };
 const SEATED = {
   registered: true,
@@ -211,13 +206,14 @@ const SEATED = {
   swordCredit: true,
   shieldCredit: false,
   paid: 1_000n * WEI,
+  refundable: false,
+  gameId: 0,
 };
 const ENTRY: EntryTerms = {
   prices: { seat: 500n * WEI, sword: 500n * WEI, shield: 500n * WEI },
   split: { protocolCutBps: 2000, chestLordsBps: 500 },
   cancelled: false,
-  start: NOW + 2 * 3600 + 4 * 60,
-  seats: { taken: 17, total: 24 },
+  close: NOW + 2 * 3600 + 4 * 60,
   credits: { swords: 2, shields: 0 },
   registration: NOT_REGISTERED,
   lordsToken: "0x10e5",
@@ -239,24 +235,16 @@ export const LAB_EMAIL_CODE = "111111";
 
 export type LabScreen = keyof typeof LAB_SCREENS;
 
-/** A paid game's entry as the services send it with a slot or a directory game (game-entry.ts reads it). */
-export const paidEntryPayload = (ledger: PaidGameLedger) => ({ kind: "paid" as const, ledger });
-
-/** A slot filling for 16:30, two hours away, with 17 of 24 seats taken; the player's among them when joined. */
-export const labSlots = (joined: boolean, ledger?: PaidGameLedger) => ({
+/** The slot closing at 16:30, two hours away, on the lab's shard. */
+export const labSlots = () => ({
   slots: [
     {
+      slotId: LAB_SLOT_KEY.slotId,
+      chainId: LAB_CHAIN,
       name: "blitz-1630",
-      entry: ledger ? paidEntryPayload(ledger) : { kind: "free" as const },
       closesAt: new Date((NOW + 2 * 3600 + 4 * 60) * 1000).toISOString(),
       frozenAt: null,
       closed: false,
-      registrations: Array.from({ length: 17 }, (_, position) => ({
-        realmsId: joined && position === 16 ? REALMS_ID : `0x${(100 + position).toString(16)}`,
-        account: `0x${(0xa000 + position).toString(16)}`,
-        position,
-        gameNumber: null,
-      })),
     },
   ],
 });
@@ -406,15 +394,17 @@ export const LAB_CHAT = [
   createdAt: new Date((NOW - 600 + index * 60) * 1000).toISOString(),
 }));
 
-/** The ledger the lab's finished Blitz was played on, on the reward screens. */
-export const LAB_GAME_LEDGER: PaidGameLedger = {
-  ...LAB_LEDGER,
-  shard: LAB_CHAIN,
+const RESULT = { rank: 3, chestId: 41n, mmrBefore: 1744, mmrAfter: 1780 };
+const SWORD = {
+  registered: true,
+  sword: true,
+  shield: false,
+  swordCredit: false,
+  shieldCredit: false,
+  paid: 0n,
+  refundable: false,
   gameId: 7,
 };
-
-const RESULT = { rank: 3, chestId: 41n, mmrBefore: 1744, mmrAfter: 1780 };
-const SWORD = { registered: true, sword: true, shield: false, swordCredit: false, shieldCredit: false, paid: 0n };
 const CHEST = { seasonId: 3, band: 0, requested: false, finished: false, requester: "0x0", requestBlock: 0 };
 const OPENED = { ...CHEST, requested: true, finished: true, requester: LAB_WALLET, requestBlock: 812_300 };
 const SEALED: Reward = {
@@ -451,7 +441,7 @@ export const LAB_REWARDS: Partial<Record<keyof typeof LAB_SCREENS, Reward>> = {
  * 2,933,300 and the player on the posted list.
  */
 const RUNNING: SeasonPrize = {
-  ledger: LAB_GAME_LEDGER.address,
+  ledger: "0x1ed9e7",
   seasonId: 3,
   season: {
     participants: 500,

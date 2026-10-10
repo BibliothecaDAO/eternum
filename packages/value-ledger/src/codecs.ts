@@ -5,27 +5,15 @@ import type { RpcProvider } from "starknet";
  * order; u256 is low then high, bool is 0 or 1. The one decoder of each struct, for the client and the services.
  */
 
-export interface LedgerGame {
-  seasonId: number;
-  /** False for a key the ledger has no game at: every other field is then zero. */
-  exists: boolean;
-  presetId: number;
-  start: number;
-  end: number;
-  /** The results' commitment, set once results are recorded. */
-  commitment: string;
-  registeredCount: number;
-  cancelled: boolean;
-  finalized: boolean;
-  /** The seat cap the ledger snapshotted from the preset: it registers nobody once the count reaches it. */
-  registrationLimit: number;
-}
-
 export interface Credits {
   swords: number;
   shields: number;
 }
 
+/**
+ * A wallet's registration in a slot. `refundable` once the slot's close leaves it unseated; `gameId` the game that
+ * consumed it (0 until one did); `paid` the cash it paid, 0 once refunded.
+ */
 export interface Registration {
   registered: boolean;
   sword: boolean;
@@ -33,6 +21,8 @@ export interface Registration {
   swordCredit: boolean;
   shieldCredit: boolean;
   paid: bigint;
+  refundable: boolean;
+  gameId: number;
 }
 
 /** A game's result for one wallet: rank 0 until the results are on the ledger. MMR in whole points. */
@@ -86,41 +76,46 @@ const fields = (felts: readonly string[]) => {
   };
 };
 
-/**
- * Game: season_id, exists, preset_id, start, end, pool, result_commitment, registered_count, cancelled, finalized,
- * registration_limit.
- */
-export const decodeGame = (felts: readonly string[]): LedgerGame => {
+/** Registration: registered, sword, shield, sword_credit, shield_credit, paid (2), refundable, game_id. */
+export const decodeRegistration = (felts: readonly string[]): Registration => {
+  if (felts.length !== 9) throw new Error("invalid_ledger_registration");
   const read = fields(felts);
-  const seasonId = read.number();
-  const exists = read.bool();
-  const presetId = read.number();
-  const start = read.number();
-  const end = read.number();
-  read.skip(2);
-  const commitment = read.address();
   return {
-    seasonId,
-    exists,
-    presetId,
-    start,
-    end,
-    commitment,
-    registeredCount: read.number(),
-    cancelled: read.bool(),
-    finalized: read.bool(),
-    registrationLimit: read.number(),
+    registered: read.bool(),
+    sword: read.bool(),
+    shield: read.bool(),
+    swordCredit: read.bool(),
+    shieldCredit: read.bool(),
+    paid: read.u256(),
+    refundable: read.bool(),
+    gameId: read.number(),
   };
 };
 
-/** Registration: registered, sword, shield, flags_consumed, sword_credit, shield_credit, paid, realm_id, pass_kind. */
-export const decodeRegistration = (felts: readonly string[]): Registration => {
-  const read = fields(felts);
-  const registered = read.bool();
-  const sword = read.bool();
-  const shield = read.bool();
-  read.skip(1);
-  return { registered, sword, shield, swordCredit: read.bool(), shieldCredit: read.bool(), paid: read.u256() };
+/** A registration slot on the ledger: uncapped; its pool is the money not yet allocated to a game or refunded. */
+export interface LedgerSlot {
+  seasonId: number;
+  presetId: number;
+  /** Registration closes at this Unix second, exclusive. */
+  close: number;
+  end: number;
+  pool: string;
+  registeredCount: number;
+  cancelled: boolean;
+}
+
+/** Slot: season_id, exists, preset_id, close, end, pool (2), registered_count, cancelled; one that does not exist throws. */
+export const decodeLedgerSlot = (fields: readonly string[]): LedgerSlot => {
+  if (fields.length !== 9 || !ledgerBool(fields[1]!)) throw new Error("invalid_ledger_slot");
+  return {
+    seasonId: ledgerInteger(fields[0]!),
+    presetId: ledgerInteger(fields[2]!),
+    close: ledgerInteger(fields[3]!),
+    end: ledgerInteger(fields[4]!),
+    pool: ledgerU256(fields[5]!, fields[6]!),
+    registeredCount: ledgerInteger(fields[7]!),
+    cancelled: ledgerBool(fields[8]!),
+  };
 };
 
 /** PlayerResult: rank, chest_id, mmr_before, mmr_after. */

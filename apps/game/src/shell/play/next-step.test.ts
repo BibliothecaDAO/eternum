@@ -20,13 +20,13 @@ const game = (mode: DirectoryGame["mode"], over: Partial<DirectoryGame> = {}): D
     clock: { start_settling_at: 0, start_main_at: 100, end_at: 9_000, end_grace_seconds: 0 },
     player_count: 10,
     roster_count: 0,
-    player_state: { registered: false, settled: false, roster_member: false, structures: [] },
+    player_state: { registered: false, settled: false, roster_wallet: null, structures: [] },
     ...over,
   }) as DirectoryGame;
 
 const withRealm = (base: DirectoryGame): DirectoryGame => ({
   ...base,
-  player_state: { registered: true, settled: true, roster_member: false, structures: [REALM] },
+  player_state: { registered: true, settled: true, roster_wallet: null, structures: [REALM] },
 });
 
 const blitzRow = (action: BlitzRow["action"], startsAt: number | null = null): BlitzRow => ({

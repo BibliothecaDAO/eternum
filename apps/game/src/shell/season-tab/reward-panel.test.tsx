@@ -4,13 +4,14 @@ import { createRoot } from "react-dom/client";
 import type { Call } from "starknet";
 import { afterEach, expect, it, vi } from "vitest";
 
-const signed = vi.hoisted(() => ({ calls: [] as Call[][] }));
+const signed = vi.hoisted(() => ({ calls: [] as Call[][], owners: [] as string[] }));
 vi.mock("@/ui/modules/identity/wallet-actions", () => ({
-  WalletSign: ({ calls, onLanded }: { calls: Call[]; onLanded: () => void }) => (
+  WalletSign: ({ owner, calls, onLanded }: { owner: string; calls: Call[]; onLanded: () => void }) => (
     <button
       type="button"
       onClick={() => {
         signed.calls.push(calls);
+        signed.owners.push(owner);
         onLanded();
       }}
     >
@@ -20,21 +21,18 @@ vi.mock("@/ui/modules/identity/wallet-actions", () => ({
 }));
 vi.mock("@/runtime/l2-rpc", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/runtime/l2-rpc")>()),
+  L2_LEDGER: "0x1ed9e7",
   l2Provider: () => ({ callContract: () => new Promise(() => {}) }),
 }));
 
-import type { PaidGameLedger } from "@realms-world/identity";
-import { payingWalletKey } from "../value/paying-wallet";
-import { type Reward, rewardKey } from "./reward";
+import { type EnvironmentLedger, environmentLedger } from "../value/ledger";
+import { type PlayedGameKeys, type Reward, rewardKey } from "./reward";
 import { RewardPanel } from "./reward-panel";
 
 const WEI = 10n ** 18n;
-const LEDGER: PaidGameLedger = {
-  address: "0x1ed9e7",
-  chainId: "0x534e5f4d41494e",
-  shard: "0x52",
-  gameId: 7,
-};
+// The environment's ledger over a provider that never answers: what the panel shows is seeded.
+const LEDGER = environmentLedger() as EnvironmentLedger;
+const KEYS: PlayedGameKeys = { game: { shard: "0x52", gameId: 7 }, slot: { shard: "0x52", slotId: 3 } };
 const CHEST = { seasonId: 3, band: 0, requested: false, finished: false, requester: "0x0", requestBlock: 0 };
 const OPENED = { ...CHEST, requested: true, finished: true, requester: "0x4a1", requestBlock: 812300 };
 const SEALED: Reward = {
@@ -44,23 +42,31 @@ const SEALED: Reward = {
   held: true,
   content: null,
   seasonEnd: Math.floor(Date.now() / 1000) + 86_400,
-  registration: { registered: true, sword: true, shield: false, swordCredit: false, shieldCredit: false, paid: 0n },
+  registration: {
+    registered: true,
+    sword: true,
+    shield: false,
+    swordCredit: false,
+    shieldCredit: false,
+    paid: 0n,
+    refundable: false,
+    gameId: 0,
+  },
 };
 const unmounts: (() => Promise<void>)[] = [];
 
-/** The game's registrations name 0x4a1 as the wallet that paid the player's seat, unless `payer` says otherwise. */
-const mount = async (reward: Reward, payer: string | null = "0x4a1") => {
+/** The seat's wallet the shard's roster froze for the player, 0x4a1 unless `owner` says otherwise. */
+const mount = async (reward: Reward, owner = "0x4a1") => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const client = new QueryClient({ defaultOptions: { queries: { staleTime: Infinity, retry: false } } });
-  client.setQueryData(payingWalletKey(LEDGER, "0xplayer"), payer);
-  client.setQueryData(rewardKey(LEDGER, "0x4a1"), reward);
+  client.setQueryData(rewardKey(KEYS, owner), reward);
   const container = document.createElement("div");
   document.body.append(container);
   const root = createRoot(container);
   await act(async () =>
     root.render(
       <QueryClientProvider client={client}>
-        <RewardPanel ledger={LEDGER} account="0xplayer" />
+        <RewardPanel ledger={LEDGER} keys={KEYS} owner={owner} />
       </QueryClientProvider>,
     ),
   );
@@ -79,6 +85,7 @@ const press = (container: HTMLElement, text: string) =>
 afterEach(async () => {
   for (const unmount of unmounts.splice(0)) await unmount();
   signed.calls = [];
+  signed.owners = [];
 });
 
 it("shows the sword's doubled gain and a sealed chest's band only, opened by the holder's one signature", async () => {
@@ -121,6 +128,9 @@ it("offers Open alone on a sealed chest, waits on the draw, and shows what an op
   expect(pending.textContent).toContain("Arrives with the results");
 });
 
-it("draws nothing for an account that held no seat in the game", async () => {
-  expect((await mount(SEALED, null)).textContent).toBe("");
+it("reads and opens the chest of the seat's roster wallet, whatever the payout wallet is now", async () => {
+  const panel = await mount(SEALED, "0xa11");
+  await press(panel, "Open");
+  await press(panel, "Sign");
+  expect(signed.owners).toEqual(["0xa11"]);
 });

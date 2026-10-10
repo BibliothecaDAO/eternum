@@ -13,7 +13,7 @@ vi.stubGlobal("fetch", async (input: string) => {
         url: "https://shard-a.test",
         chainId: "0xa",
         status: "active",
-        games: [{ game_id: 1, mode: "blitz", status: "Live", player_state: { roster_member: true } }],
+        games: [{ game_id: 1, mode: "blitz", status: "Live", player_state: { roster_wallet: "0x4a1" } }],
       },
     ],
   });
@@ -30,8 +30,8 @@ it("asks our directory for the signed-in player's state on every shard, and for 
   expect(realmsPlayerOf(undefined, guardian)).toBeNull();
   const signedIn = await fetchDirectories(player);
   expect(requests).toEqual([`/api/directory?player=${player}`]);
-  expect(signedIn.games.map((game) => [game.chainId, game.game_id, game.player_state?.roster_member])).toEqual([
-    ["0xa", 1, true],
+  expect(signedIn.games.map((game) => [game.chainId, game.game_id, game.player_state?.roster_wallet])).toEqual([
+    ["0xa", 1, "0x4a1"],
   ]);
 
   requests.splice(0);

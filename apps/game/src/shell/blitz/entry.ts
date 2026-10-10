@@ -1,26 +1,29 @@
 import { useQuery } from "@tanstack/react-query";
 
-import { type BlitzRow, rowEntryOf } from "../blitz-rows";
 import type { Credits, Registration } from "@realms-world/value-ledger/codecs";
-import { type EntrySplit, type LedgerPrices, registerCalls } from "../value/ledger";
-import type { PaidGameLedger } from "@realms-world/identity";
 
-import { ledgerOf } from "../value/game-entry";
+import { type BlitzRow, slotKeyOf } from "../blitz-rows";
+import {
+  type EntrySplit,
+  type EnvironmentLedger,
+  environmentLedger,
+  type LedgerPrices,
+  registerCalls,
+  type SlotKey,
+} from "../value/ledger";
 
 /*
- * A paid Blitz (design 5h): its seat, sword and shield are bought on the ledger from the payout wallet, a credit won
- * from a chest paying for a flag. The launch service names the ledger game a slot fills (game-entry.ts).
+ * A paid Blitz slot (design 5): its seat, sword and shield are bought on the environment's ledger from the payout
+ * wallet, a credit won from a chest paying for a flag. Registration is uncapped; the slot splits into games at close.
  */
 
-/** What the entry panel draws from: the game's prices and state, and the payer's credits, seat and balances. */
+/** What the entry panel draws from: the slot's prices and state, and the payer's credits, registration and LORDS. */
 export interface EntryTerms {
   prices: LedgerPrices;
   split: EntrySplit;
   cancelled: boolean;
-  /** The game's start (Unix seconds): the ledger takes no registration from then on. */
-  start: number;
-  /** Seats registered of the ledger's cap: it takes no registration once they are equal. */
-  seats: LedgerSeats;
+  /** The slot's close (Unix seconds): the ledger takes no registration from then on. */
+  close: number;
   credits: Credits;
   registration: Registration;
   /** The ledger's LORDS token, which the entry approves. */
@@ -54,90 +57,66 @@ export const entryCost = (terms: Pick<EntryTerms, "prices" | "credits">, choice:
   return { cash, swordCredit, shieldCredit };
 };
 
-type EntryState = "choose" | "short" | "seated" | "refund" | "refunded" | "closed" | "full";
+type EntryState = "choose" | "short" | "seated" | "refund" | "refunded" | "closed";
 
 /**
- * The panel's state: seated once registered; on a cancelled game, a refund until the paid LORDS and spent credits are
- * back; closed to anyone else once the game has started. Then choosing, or short of LORDS: a linked wallet pays at
- * once, the wallet sheet checking its STRK for the fee.
+ * The panel's state: seated once registered; on a cancelled slot, or a registration the slot's close left unseated
+ * (refundable), a refund until the paid LORDS and spent credits are back; closed to anyone else once the slot has
+ * closed. Then choosing, or short of LORDS: a linked wallet pays at once, the wallet sheet checking its STRK for the fee.
  */
 export const entryState = (terms: EntryTerms, choice: EntryChoice, now: number): EntryState => {
   const { registration } = terms;
-  if (registration.registered && terms.cancelled)
+  if (registration.registered && (terms.cancelled || registration.refundable))
     return registration.paid > 0n || registration.swordCredit || registration.shieldCredit ? "refund" : "refunded";
   if (registration.registered) return "seated";
-  if (now >= terms.start) return "closed";
-  if (terms.seats.taken >= terms.seats.total) return "full";
+  if (now >= terms.close) return "closed";
   if (terms.lords < entryCost(terms, choice).cash) return "short";
   return "choose";
 };
 
-/** A paid game's seats on the ledger: registered, and its cap. */
-interface LedgerSeats {
-  taken: number;
-  total: number;
-}
-
-const ledgerSeatsOf = (game: { registeredCount: number; registrationLimit: number }): LedgerSeats => ({
-  taken: game.registeredCount,
-  total: game.registrationLimit,
-});
-
 /**
- * A Blitz row's seats, taken of total: a paid slot's as the ledger counts them against its own cap (undefined until
- * it answers), any other row's as the launch service or Herald gives them. The one source for every seat count.
+ * A Blitz row's seats: a slot's registrations as the ledger counts them (uncapped, so no total; undefined until it
+ * answers), a launched game's taken of its roster as Herald gives them. The one source for every seat count.
  */
 export const useRowSeats = (row: BlitzRow | undefined): { filled?: number; total?: number } => {
-  const entry = row ? rowEntryOf(row) : null;
-  const ledger = row?.kind === "slot" && entry?.kind === "paid" ? entry.ledger : null;
-  const seats = useQuery({
-    queryKey: ledger ? ["ledger", "seats", ledger.address, ledger.shard, ledger.gameId] : ["ledger", "seats", "none"],
-    queryFn: async () => ledgerSeatsOf(await ledgerOf(ledger as PaidGameLedger).game(ledger as PaidGameLedger)),
-    enabled: ledger !== null,
+  const ledger = environmentLedger();
+  const key = row?.kind === "slot" ? slotKeyOf(row.slot) : null;
+  const registered = useQuery({
+    queryKey: key ? ["ledger", "seats", key.shard, key.slotId] : ["ledger", "seats", "none"],
+    queryFn: async () => (await (ledger as EnvironmentLedger).slot(key as SlotKey)).registeredCount,
+    enabled: ledger !== null && key !== null,
     refetchInterval: 15_000,
   }).data;
   if (!row) return {};
-  return ledger
-    ? { filled: seats?.taken, total: seats?.total }
-    : { filled: row.seats.filled ?? undefined, total: row.seats.total ?? undefined };
+  if (row.kind === "slot") return { filled: registered };
+  return { filled: row.seats.filled ?? undefined, total: row.seats.total ?? undefined };
 };
 
-/** The wallet's calls for the chosen entry: approve what it pays in LORDS, then register. */
-export const entryCalls = (ledger: PaidGameLedger, terms: EntryTerms, choice: EntryChoice) =>
-  registerCalls(ledger.address, terms.lordsToken, ledger, choice.sword, choice.shield, entryCost(terms, choice).cash);
+/** The wallet's calls for the chosen entry: approve what it pays in LORDS, then register in the slot. */
+export const entryCalls = (ledger: string, key: SlotKey, terms: EntryTerms, choice: EntryChoice) =>
+  registerCalls(ledger, terms.lordsToken, key, choice.sword, choice.shield, entryCost(terms, choice).cash);
 
-export const entryTermsKey = (ledger: PaidGameLedger, wallet: string) =>
-  ["ledger", "entry", ledger.address, ledger.shard, ledger.gameId, wallet] as const;
+export const entryTermsKey = (key: SlotKey, wallet: string) =>
+  ["ledger", "entry", key.shard, key.slotId, wallet] as const;
 
-/** The entry's terms for the payout wallet, read from the ledger and the two tokens at the latest block. */
-export const useEntryTerms = (ledger: PaidGameLedger | null, wallet: string | null) =>
+/** The entry's terms for the payout wallet, read from the environment's ledger and LORDS at the latest block. */
+export const useEntryTerms = (ledger: EnvironmentLedger, key: SlotKey, wallet: string | null) =>
   useQuery({
-    queryKey: ledger ? entryTermsKey(ledger, wallet ?? "") : (["ledger", "entry", "none"] as const),
-    queryFn: () => readEntryTerms(ledger as PaidGameLedger, wallet as string),
-    enabled: ledger !== null && wallet !== null,
+    queryKey: entryTermsKey(key, wallet ?? ""),
+    queryFn: () => readEntryTerms(ledger, key, wallet as string),
+    enabled: wallet !== null,
     refetchInterval: 15_000,
   });
 
-const readEntryTerms = async (ledger: PaidGameLedger, wallet: string): Promise<EntryTerms> => {
-  const read = ledgerOf(ledger);
-  const [game, lordsToken] = await Promise.all([read.game(ledger), read.lordsToken()]);
+const readEntryTerms = async (read: EnvironmentLedger, key: SlotKey, wallet: string): Promise<EntryTerms> => {
+  const [slot, lordsToken] = await Promise.all([read.slot(key), read.lordsToken()]);
   const [preset, credits, registration, lords] = await Promise.all([
-    read.preset(game.presetId),
+    read.preset(slot.presetId),
     read.credits(wallet),
-    read.registration(ledger, wallet),
+    read.registration(key, wallet),
     read.balanceOf(lordsToken, wallet),
   ]);
   const prices = { seat: preset.seat, sword: preset.sword, shield: preset.shield };
   const split = { protocolCutBps: preset.protocolCutBps, chestLordsBps: preset.chestLordsBps };
-  return {
-    prices,
-    split,
-    cancelled: game.cancelled,
-    start: game.start,
-    seats: ledgerSeatsOf(game),
-    credits,
-    registration,
-    lordsToken,
-    lords,
-  };
+  return { prices, split, cancelled: slot.cancelled, close: slot.close, credits, registration, lordsToken, lords };
 };

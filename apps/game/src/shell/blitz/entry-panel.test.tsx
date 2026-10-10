@@ -9,6 +9,7 @@ const signed = vi.hoisted(() => ({ calls: [] as Call[][], owners: [] as string[]
 // The ledger answers nothing here: a refetch after a send stays pending, never reaching a network.
 vi.mock("@/runtime/l2-rpc", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/runtime/l2-rpc")>()),
+  L2_LEDGER: "0x1ed9e7",
   l2Provider: () => ({ callContract: () => new Promise(() => {}) }),
 }));
 vi.mock("@/ui/modules/identity/wallet-actions", () => ({
@@ -26,26 +27,32 @@ vi.mock("@/ui/modules/identity/wallet-actions", () => ({
   ),
 }));
 
-import type { PaidGameLedger, PayoutWallet } from "@realms-world/identity";
+import type { PayoutWallet } from "@realms-world/identity";
+import { type EnvironmentLedger, environmentLedger, type SlotKey } from "../value/ledger";
 import { type EntryTerms, entryTermsKey } from "./entry";
 import { PaidEntry } from "./entry-panel";
 
 const WEI = 10n ** 18n;
-const LEDGER: PaidGameLedger = {
-  address: "0x1ed9e7",
-  chainId: "0x534e5f4d41494e",
-  shard: "0x52",
-  gameId: 7,
-};
+// The environment's ledger over a provider that never answers: what the panel shows is seeded.
+const LEDGER = environmentLedger() as EnvironmentLedger;
+const SLOT: SlotKey = { shard: "0x52", slotId: 7 };
 const WALLET: PayoutWallet = { status: "ready", address: "0x4a1" };
 const TERMS: EntryTerms = {
   prices: { seat: 500n * WEI, sword: 500n * WEI, shield: 500n * WEI },
   split: { protocolCutBps: 2000, chestLordsBps: 500 },
   cancelled: false,
-  start: Math.floor(Date.now() / 1000) + 3600,
-  seats: { taken: 17, total: 24 },
+  close: Math.floor(Date.now() / 1000) + 3600,
   credits: { swords: 2, shields: 0 },
-  registration: { registered: false, sword: false, shield: false, swordCredit: false, shieldCredit: false, paid: 0n },
+  registration: {
+    registered: false,
+    sword: false,
+    shield: false,
+    swordCredit: false,
+    shieldCredit: false,
+    paid: 0n,
+    refundable: false,
+    gameId: 0,
+  },
   lordsToken: "0x10e5",
   lords: 2_140n * WEI,
 };
@@ -55,7 +62,7 @@ const unmounts: (() => Promise<void>)[] = [];
 const mount = async (terms: EntryTerms, wallet: PayoutWallet = WALLET) => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const client = new QueryClient({ defaultOptions: { queries: { staleTime: Infinity, retry: false } } });
-  client.setQueryData(entryTermsKey(LEDGER, "0x4a1"), terms);
+  client.setQueryData(entryTermsKey(SLOT, "0x4a1"), terms);
   const container = document.createElement("div");
   document.body.append(container);
   const root = createRoot(container);
@@ -63,7 +70,7 @@ const mount = async (terms: EntryTerms, wallet: PayoutWallet = WALLET) => {
     root.render(
       <QueryClientProvider client={client}>
         <MemoryRouter>
-          <PaidEntry ledger={LEDGER} wallet={wallet} />
+          <PaidEntry ledger={LEDGER} slot={SLOT} wallet={wallet} />
         </MemoryRouter>
       </QueryClientProvider>,
     ),
@@ -122,6 +129,8 @@ it("names what is short, the seat, and the refund", async () => {
     swordCredit: true,
     shieldCredit: false,
     paid: 500n * WEI,
+    refundable: false,
+    gameId: 0,
   };
   expect((await mount({ ...TERMS, registration: seat })).textContent).toContain("Seated");
   const refund = await mount({ ...TERMS, registration: seat, cancelled: true });
@@ -131,9 +140,6 @@ it("names what is short, the seat, and the refund", async () => {
   expect(signed.calls).toEqual([[expect.objectContaining({ entrypoint: "refund", calldata: ["0x52", "7"] })]]);
 
   expect((await mount(TERMS, { status: "no_wallet" })).textContent).toContain("Entry is paid from your payout wallet");
-  expect((await mount({ ...TERMS, seats: { taken: 24, total: 24 } })).textContent).toContain(
-    "Every seat in this game is taken.",
-  );
 });
 
 it("lets a linked payout wallet pay at once: nothing waits on a link", async () => {
@@ -150,6 +156,8 @@ it("reads a slot's entry and refund with the payout wallet that pays, signed by 
     swordCredit: false,
     shieldCredit: false,
     paid: 500n * WEI,
+    refundable: false,
+    gameId: 0,
   };
   const refund = await mount({ ...TERMS, registration: seat, cancelled: true });
   await press(refund, "Take refund");

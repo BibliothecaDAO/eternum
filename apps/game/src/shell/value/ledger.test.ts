@@ -4,9 +4,9 @@ import { expect, it } from "vitest";
 import { ledgerReader, lordsOf, refundCall, registerCalls } from "./ledger";
 
 const WEI = 10n ** 18n;
-const KEY = { shard: "0x5245414c4d53", gameId: 7 };
+const KEY = { shard: "0x5245414c4d53", slotId: 7 };
 
-it("approves what the entry costs on the ledger's LORDS token, then registers with the flags as 0 or 1", () => {
+it("approves what the entry costs on the ledger's LORDS token, then registers in the slot with the flags as 0 or 1", () => {
   const big = 2n ** 130n + 5n;
   expect(registerCalls("0xledger", "0x10e5", KEY, true, false, big)).toEqual([
     { contractAddress: "0x10e5", entrypoint: "approve", calldata: ["0xledger", "5", "4"] },

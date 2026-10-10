@@ -1,8 +1,11 @@
-import type { PlaytestSlot } from "../../../../../../../apps/launch-service/src/slots";
+import type { PlaytestSlot as LaunchSlot } from "../../../../../../../apps/launch-service/src/slots";
 import type { toFactoryRunRecord } from "../../../../../../../apps/launch-service/src/model";
 import type { SeasonPhase, SeasonPhaseName } from "../../../../../../../apps/launch-service/src/calendar";
 import { fetchApi } from "@/runtime/app-api";
-export type { PlaytestSlot, SeasonPhase, SeasonPhaseName };
+export type { SeasonPhase, SeasonPhaseName };
+
+/** A Blitz slot as the launch service lists it; `chainId` names the shard its games are created on (its ledger key). */
+export type PlaytestSlot = LaunchSlot & { chainId?: string };
 type FactoryRun = ReturnType<typeof toFactoryRunRecord>;
 
 /** The launch routes are served under the app's own /api beside identity, so the session cookie reaches them. */

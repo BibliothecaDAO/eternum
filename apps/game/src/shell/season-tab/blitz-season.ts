@@ -1,46 +1,48 @@
 import { useQuery } from "@tanstack/react-query";
 
-import type { DirectoryGame } from "../herald";
-import type { BlitzSeason, PayoutCurve } from "../value/ledger";
-import type { PaidGameLedger } from "@realms-world/identity";
+import { rosterWalletOf } from "@/runtime/world/directory";
 
-import { directoryGameEntryOf, ledgerOf } from "../value/game-entry";
-import { payingWalletOf } from "../value/paying-wallet";
+import { gameSlotKeyOf } from "../blitz-rows";
+import type { DirectoryGame } from "../herald";
+import type { BlitzSeason, EnvironmentLedger, PayoutCurve, SlotKey } from "../value/ledger";
 
 /**
  * A Blitz season's prize (design 5h step 8): the pool held by GameLedger, growing as games settle; at its end the
  * relay posts the MMR top list, one hour of review follows, then each winner pulls their share. The share belongs to
- * the wallet that paid in the season's games, whatever the payout wallet is now.
+ * the seat's wallet, the one the shard's roster froze at slot close, whatever the payout wallet is now.
  */
 export interface SeasonPrize {
   ledger: string;
   seasonId: number;
   season: BlitzSeason;
   curve: PayoutCurve;
-  /** The account's wallet the share is read for: the one that paid in the game, null when it held no seat there. */
-  wallet: string | null;
+  /** The seat's wallet, which the share is read and claimed for. */
+  wallet: string;
   /** That wallet's share once the top list is posted; null before it, or for a wallet not on it. */
   share: bigint | null;
   claimed: boolean;
 }
 
-/** Where the Season tab reads its prize: the player's newest paid Blitz game, or a broken entry it will not skip. */
-type SeasonSource = { kind: "paid"; ledger: PaidGameLedger } | { kind: "broken" };
+/** Where the Season tab reads its prize: the slot of the player's newest paid game, and their seat's wallet there. */
+interface SeasonSource {
+  slot: SlotKey;
+  wallet: string;
+}
 
 /**
- * The season a player's Blitz prize is read from: the newest Blitz game in their own history that is not free. The
- * directory's upcoming games say nothing about the player, so a game created for the next season never hides this
- * one's claim. A broken entry there is refused, never skipped for an older game. Null when the player has none.
+ * The season a player's Blitz prize is read from: their own newest paid Blitz game in their history, where they held a
+ * seat. The directory's upcoming games say nothing about the player, so a game created for the next season never hides
+ * this one's claim. Null when the player has none.
  */
-export const seasonSourceOf = (history: readonly DirectoryGame[]): SeasonSource | null => {
-  const newest = history
+export const seasonSourceOf = (history: readonly DirectoryGame[]): SeasonSource | null =>
+  history
     .filter((game) => game.mode === "blitz")
     .toSorted((a, b) => b.clock.start_main_at - a.clock.start_main_at)
-    .map(directoryGameEntryOf)
-    .find((entry) => entry.kind !== "free");
-  if (!newest) return null;
-  return newest.kind === "paid" ? { kind: "paid", ledger: newest.ledger } : { kind: "broken" };
-};
+    .flatMap((game) => {
+      const slot = gameSlotKeyOf(game);
+      const wallet = rosterWalletOf(game);
+      return slot && wallet ? [{ slot, wallet }] : [];
+    })[0] ?? null;
 
 /**
  * What each paid place would take of a pool now, by the ledger's own rule: ceil(participants × paid fraction) places;
@@ -80,35 +82,27 @@ export const seasonState = (prize: SeasonPrize, now: number): SeasonState => {
   return "claim";
 };
 
-type LedgerReads = ReturnType<typeof ledgerOf>;
+export const seasonPrizeKey = (source: SeasonSource) =>
+  ["ledger", "season", source.slot.shard, source.slot.slotId, source.wallet] as const;
 
-export const seasonPrizeKey = (game: PaidGameLedger, account: string) =>
-  ["ledger", "season", game.address, game.shard, game.gameId, account] as const;
-
-/** The season prize of the player's newest paid game; nothing is read for a broken or absent source. */
-export const useSeasonPrize = (source: SeasonSource | null, account: string | null) => {
-  const game = source?.kind === "paid" ? source.ledger : null;
-  return useQuery({
-    queryKey: game && account ? seasonPrizeKey(game, account) : (["ledger", "season", "none"] as const),
-    queryFn: () => readSeasonPrize(game as PaidGameLedger, account as string),
-    enabled: game !== null && account !== null,
+/** The season prize of the player's newest paid game, on the environment's ledger; nothing is read without a source. */
+export const useSeasonPrize = (ledger: EnvironmentLedger | null, source: SeasonSource | null) =>
+  useQuery({
+    queryKey: source ? seasonPrizeKey(source) : (["ledger", "season", "none"] as const),
+    queryFn: () => readSeasonPrize(ledger as EnvironmentLedger, source as SeasonSource),
+    enabled: ledger !== null && source !== null,
     refetchInterval: 60_000,
   });
-};
 
-const readSeasonPrize = async (game: PaidGameLedger, account: string): Promise<SeasonPrize> => {
-  const read = ledgerOf(game);
-  const [{ seasonId }, wallet] = await Promise.all([read.game(game), payingWalletOf(game, account)]);
+const readSeasonPrize = async (read: EnvironmentLedger, { slot, wallet }: SeasonSource): Promise<SeasonPrize> => {
+  const { seasonId } = await read.slot(slot);
   const season = await read.season(seasonId);
-  const [curve, holding] = await Promise.all([
-    read.preset(season.presetId),
-    wallet ? holdingOf(read, seasonId, season, wallet) : { share: null, claimed: false },
-  ]);
-  return { ledger: game.address, seasonId, season, curve, wallet, ...holding };
+  const [curve, holding] = await Promise.all([read.preset(season.presetId), holdingOf(read, seasonId, season, wallet)]);
+  return { ledger: read.address, seasonId, season, curve, wallet, ...holding };
 };
 
 /** What a wallet holds in a season: its share once the list is posted, and whether it is claimed. */
-const holdingOf = async (read: LedgerReads, seasonId: number, season: BlitzSeason, wallet: string) => {
+const holdingOf = async (read: EnvironmentLedger, seasonId: number, season: BlitzSeason, wallet: string) => {
   const [claimed, share] = await Promise.all([
     read.seasonClaimed(seasonId, wallet),
     season.posted ? findShare(read, seasonId, season.winners, wallet) : Promise.resolve(null),
@@ -118,7 +112,7 @@ const holdingOf = async (read: LedgerReads, seasonId: number, season: BlitzSeaso
 
 /** The wallet's share on the posted top list, read in batches until it is found. */
 const findShare = async (
-  read: LedgerReads,
+  read: EnvironmentLedger,
   seasonId: number,
   winners: number,
   wallet: string,

@@ -1,10 +1,4 @@
-import { expect, it, vi } from "vitest";
-
-// The build's ledger (contracts/common/addresses for its L2): a paid entry is honoured only on it.
-vi.mock("@/runtime/l2-rpc", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/runtime/l2-rpc")>()),
-  L2_LEDGER: "0xa",
-}));
+import { expect, it } from "vitest";
 
 import type { DirectoryGame } from "../herald";
 import { claimSeasonCall } from "../value/ledger";
@@ -62,22 +56,26 @@ it("runs, closes, reviews, holds, then claims, waits on the fee, is claimed, or 
   expect(seasonState(prize({}, { share: null }), 250)).toBe("out");
 });
 
-const game = (id: number, start: number, entry: object = { kind: "free" }) =>
-  ({ chainId: "0x52", game_id: id, mode: "blitz", clock: { start_main_at: start }, entry }) as unknown as DirectoryGame;
-const paid = (id: number) => ({
-  kind: "paid",
-  ledger: { address: "0xa", chainId: "0x534e5f4d41494e", shard: "0x52", gameId: id },
-});
+/** A Blitz game in the player's history, filled from a slot (or none), the player on its roster with a wallet (or not). */
+const game = (id: number, start: number, slotId: number | null, wallet: string | null) =>
+  ({
+    chainId: "0x52",
+    game_id: id,
+    mode: "blitz",
+    clock: { start_main_at: start },
+    slotId,
+    player_state: { registered: true, settled: true, roster_wallet: wallet, structures: [] },
+  }) as unknown as DirectoryGame;
 
-it("takes the season from the player's own newest paid Blitz game, never from games still to come", () => {
-  expect(seasonSourceOf([game(1, 10)])).toBeNull();
-  expect(seasonSourceOf([game(1, 10, paid(1)), game(2, 20, paid(2)), game(3, 30)])).toEqual({
-    kind: "paid",
-    ledger: expect.objectContaining({ gameId: 2 }),
+it("takes the season from the player's own newest paid Blitz game, for the wallet the roster froze for their seat", () => {
+  expect(seasonSourceOf([game(1, 10, null, "0xa11")])).toBeNull();
+  expect(seasonSourceOf([game(1, 10, 1, "0xa11"), game(2, 20, 2, "0xb22"), game(3, 30, null, "0xc33")])).toEqual({
+    slot: { shard: "0x52", slotId: 2 },
+    wallet: "0xb22",
   });
-});
-
-it("refuses the season when the player's newest paid entry is broken, instead of skipping to an older one", () => {
-  vi.spyOn(console, "error").mockImplementation(() => {});
-  expect(seasonSourceOf([game(1, 10, paid(1)), game(2, 20, { kind: "paid" })])).toEqual({ kind: "broken" });
+  // A game the player held no seat in has no share of theirs.
+  expect(seasonSourceOf([game(1, 10, 1, "0xa11"), game(2, 20, 2, null)])).toEqual({
+    slot: { shard: "0x52", slotId: 1 },
+    wallet: "0xa11",
+  });
 });

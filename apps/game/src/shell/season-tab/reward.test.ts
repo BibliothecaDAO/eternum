@@ -22,7 +22,16 @@ it("waits for the results, offers a held chest, waits on the draw after the requ
     held: true,
     content: null,
     seasonEnd: 0,
-    registration: { registered: true, sword: true, shield: false, swordCredit: false, shieldCredit: false, paid: 0n },
+    registration: {
+      registered: true,
+      sword: true,
+      shield: false,
+      swordCredit: false,
+      shieldCredit: false,
+      paid: 0n,
+      refundable: false,
+      gameId: 0,
+    },
     ...overrides,
   });
   const requested = { ...chest, requested: true, requester: WALLET, requestBlock: 812300 };

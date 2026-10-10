@@ -1,13 +1,17 @@
 import type { ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
+import type { PayoutWallet } from "@realms-world/identity";
+
 import { payoutWalletOf } from "@/hooks/context/payout-wallet";
 import { useIdentitySession } from "@/hooks/context/identity-session";
 import { Button } from "@/ui/design-system/kit/button";
 import { ReasonPlate } from "@/ui/design-system/kit/reason-plate";
 import { formatClockTime } from "@/ui/design-system/kit/time";
 
-import { type BlitzRow, rowEntryOf } from "../blitz-rows";
+import type { PlaytestSlot } from "@/ui/features/factory-v2/api/factory-worker";
+
+import { type BlitzRow, slotKeyOf } from "../blitz-rows";
 import { ClockChip } from "../clock-chip";
 import { useLayout } from "../frame/layout";
 import { useRealmsPlayer } from "../herald";
@@ -23,6 +27,7 @@ import { type PlayFacts, usePlayFacts } from "../play/play-facts";
 import { LiveChip, StateChip } from "../play/state-chip";
 import { ServiceFailure } from "../service-failure";
 import { FailureLine } from "../sign-in/failure-line";
+import { environmentLedger } from "../value/ledger";
 import { BLITZ_WORDS, ENTRY_WORDS, WALLET_WORDS, WORDS } from "../words";
 import { useRowSeats } from "./entry";
 import { PaidEntry } from "./entry-panel";
@@ -86,7 +91,7 @@ const NextLobby = ({ facts }: { facts: PlayFacts }) => {
         </span>
       </Link>
       <LobbyClock row={row} step={step} now={facts.now} />
-      <SeatGrid seats={seatsOf(row, player, filled)} total={total ?? 0} preparing={false} />
+      <SeatGrid seats={seatsOf(row, player, filled)} total={total ?? filled ?? 0} preparing={false} />
       <LobbyAction row={row} step={step} desktop />
     </section>
   );
@@ -140,10 +145,9 @@ export const BlitzLobbyPage = () => {
   const { data: player } = useRealmsPlayer();
   const { session } = useIdentitySession();
   const row = facts.blitz.find((candidate) => lobbyId(candidate) === id);
-  const entry = row ? rowEntryOf(row) : null;
-  // A paid slot's seats are the ledger's count and cap, read before any early return so the hooks keep their order.
+  // A slot's seats are the ledger's registrations, read before any early return so the hooks keep their order.
   const { filled, total } = useRowSeats(row);
-  if (!row || !entry) {
+  if (!row) {
     return (
       <PageFrame back="/blitz" title={BLITZ.name} tabs={false}>
         {facts.slots.isSuccess && facts.directory.isSuccess ? <NothingHere /> : <Loading />}
@@ -154,17 +158,12 @@ export const BlitzLobbyPage = () => {
   const seats = seatsOf(row, player, filled);
   const clock = <LobbyClock row={row} step={step} now={facts.now} />;
   const desktop = layout === "desktop";
-  // A row's entry is free or paid on the ledger the services name; a paid game is never the free join.
   const wallet = session ? payoutWalletOf(session.user) : null;
   const action =
-    entry.kind === "free" ? (
+    row.kind === "game" ? (
       <LobbyAction row={row} step={step} desktop={desktop} />
-    ) : entry.kind === "broken" ? (
-      <FailureLine line={ENTRY_WORDS.unreadable} />
-    ) : wallet ? (
-      <PaidEntry ledger={entry.ledger} wallet={wallet} />
     ) : (
-      <FailureLine line={WALLET_WORDS.unavailableLine} />
+      <SlotEntry slot={row.slot} wallet={wallet} />
     );
   return (
     <PageFrame
@@ -178,7 +177,7 @@ export const BlitzLobbyPage = () => {
       {desktop ? (
         <div className="grid grid-cols-[minmax(0,1fr)_26rem] items-start gap-6">
           <section className="plate p-6">
-            <RosterGrid seats={seats} total={total ?? 0} preparing={step.kind === "preparing"} />
+            <RosterGrid seats={seats} total={total ?? seats.length} preparing={step.kind === "preparing"} />
           </section>
           <div className="flex flex-col gap-5">
             <section className="plate flex flex-col gap-4 p-5">
@@ -192,7 +191,7 @@ export const BlitzLobbyPage = () => {
       ) : (
         <div className="flex flex-col gap-4">
           {clock}
-          <SeatGrid seats={seats} total={total ?? 0} preparing={step.kind === "preparing"} />
+          <SeatGrid seats={seats} total={total ?? seats.length} preparing={step.kind === "preparing"} />
         </div>
       )}
     </PageFrame>
@@ -282,4 +281,17 @@ const LobbyAction = ({ row, step, desktop }: { row: BlitzRow; step: LobbyStep; d
       );
     }
   }
+};
+
+/**
+ * A slot's paid entry, on the environment's ledger under the slot's own key, from the payout wallet. Neither the
+ * ledger nor the key is guessed: a ledger not deployed on this environment, or a slot that does not name its shard,
+ * shows that the entry cannot be read.
+ */
+const SlotEntry = ({ slot, wallet }: { slot: PlaytestSlot; wallet: PayoutWallet | null }) => {
+  const ledger = environmentLedger();
+  const key = slotKeyOf(slot);
+  if (!ledger || !key) return <FailureLine line={ENTRY_WORDS.unreadable} />;
+  if (!wallet) return <FailureLine line={WALLET_WORDS.unavailableLine} />;
+  return <PaidEntry ledger={ledger} slot={key} wallet={wallet} />;
 };
