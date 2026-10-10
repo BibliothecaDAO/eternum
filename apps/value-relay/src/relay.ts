@@ -13,7 +13,7 @@ export const runRelay = (chainId: string, ports: RelayPorts, store: RelayStore) 
     if (head < progress.nextBlock - 1)
       return yield* haltRelay(store, `confirmed_head_regressed:${progress.page?.head ?? progress.nextBlock - 1}`);
     yield* verifyObservedHead(ports, store, progress);
-    const end = progress.page?.head ?? head;
+    const end = progress.page?.head ?? Math.min(head, progress.nextBlock + 99);
     if (progress.nextBlock <= end) {
       const observed = yield* Effect.result(
         ports.shard.eventsPage(progress.nextBlock, end, progress.page?.token ?? null),

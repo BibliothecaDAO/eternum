@@ -146,9 +146,10 @@ export class ValueRelay extends DurableObject<RelayEnv> {
         relayOperation("reset relay row", async () => {
           const progress = await this.store.progress();
           if (progress.halted !== row) throw new Error("fault_row_mismatch");
-          const start = await this.store.resetStart(row);
-          const hash = start === 0 ? null : await Effect.runPromise(this.ports.shard.blockHash(start - 1));
-          return this.store.reset(row, reason, hash);
+          return this.store.resetFromChain(row, reason, {
+            head: () => Effect.runPromise(this.ports.shard.confirmedHead()),
+            hash: (number) => Effect.runPromise(this.ports.shard.blockHash(number)),
+          });
         }),
       ),
     );

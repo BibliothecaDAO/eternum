@@ -44,6 +44,7 @@ export interface BlitzResult extends BlitzCommitment {
   rows: readonly BlitzResultRow[];
 }
 export interface ConfirmedBlock {
+  anchors?: readonly { number: number; hash: string }[];
   chainId: string;
   number: number;
   hash: string;
@@ -73,6 +74,7 @@ export type HeldObligation =
       kind: "receipt";
       reason: string;
       receipt: {
+        blockNumber?: number;
         chainId: string;
         transactionHash: string;
         keys: readonly string[];

@@ -22,7 +22,7 @@ it("persists confirmed obligations, cursor and halt across actual Worker restart
       async fetch(request) {
         const path = new URL(request.url).pathname;
         if (path === '/observe') await this.store.observe(await request.json());
-        if (path === '/reset') { const body=await request.json(); await this.store.reset(body.row,body.reason,body.hash); }
+        if (path === '/reset') { const body=await request.json(); await this.store.reset(body.row,body.reason,null); }
         if (path === '/halt') await this.store.halt('confirmed_block_changed:0');
         if (path === '/observe-chests') await this.chests.observe(await request.json());
         if (path === '/complete-chest') await this.chests.complete('7');

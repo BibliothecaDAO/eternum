@@ -201,3 +201,28 @@ it("pins one bounded Games event page without reading 2000 unrelated transaction
   expect(rpc.receipt).not.toHaveBeenCalled();
   expect(rpc.hashes).not.toHaveBeenCalled();
 });
+
+it("keeps every header in a bounded event range, including blocks with no value rows", async () => {
+  rpc.events.mockResolvedValue({ events: [] });
+  rpc.header.mockImplementation(async (number: number) => ({
+    ...header,
+    block_number: number,
+    block_hash: `0x${number + 1}`,
+    parent_hash: `0x${number}`,
+  }));
+  const page = await Effect.runPromise(fixture().ports.eventsPage(10, 14, null));
+  expect(page.anchors).toEqual([10, 11, 12, 13, 14].map((number) => ({ number, hash: `0x${number + 1}` })));
+  expect(page.withdrawals).toEqual([]);
+});
+it("refuses a mixed-fork header range before persisting any receipts", async () => {
+  rpc.events.mockResolvedValue({ events: [] });
+  rpc.header.mockImplementation(async (number: number) => ({
+    ...header,
+    block_number: number,
+    block_hash: `0x${number + 1}`,
+    parent_hash: number === 12 ? "0xff" : `0x${number}`,
+  }));
+  await expect(Effect.runPromise(fixture().ports.eventsPage(10, 14, null))).rejects.toMatchObject({
+    operation: "confirmed_block_changed:11",
+  });
+});
