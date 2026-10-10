@@ -75,6 +75,7 @@ export enum TransactionType {
   RESEARCH = "research",
   BUY_TIER = "buy_tier",
   REFILL_STAMINA = "refill_stamina",
+  WITHDRAW_LORDS = "withdraw_lords",
   EXPLORER_CREATE = "explorer_create",
   EXPLORER_ADD = "explorer_add",
   EXPLORER_DELETE = "explorer_delete",

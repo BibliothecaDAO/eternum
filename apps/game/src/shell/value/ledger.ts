@@ -11,6 +11,7 @@ import {
   decodePlayerResult,
   decodeRegistration,
   decodeSeasonWinner,
+  decodeWithdrawalPayment,
 } from "@realms-world/value-ledger/codecs";
 
 import { L2_LEDGER, l2Provider } from "@/runtime/l2-rpc";
@@ -75,6 +76,7 @@ export const lordsOf = (wei: bigint): number => Number(wei / LORDS_UNIT);
 export const lordsShortOf = (wei: bigint): number => Number((wei + LORDS_UNIT - 1n) / LORDS_UNIT);
 
 const CHEST_OPENED = hash.getSelectorFromName("ChestOpened");
+const WITHDRAWAL_PAID = hash.getSelectorFromName("WithdrawalPaid");
 
 const keyCalldata = (key: SlotKey | GameKey) => [key.shard, String("slotId" in key ? key.slotId : key.gameId)];
 const u256 = (value: bigint) => [String(value & ((1n << 128n) - 1n)), String(value >> 128n)];
@@ -187,6 +189,23 @@ export const ledgerReader = (provider: ProviderInterface, ledger: string) => {
       });
       return events[0] ? decodeChestContent(events[0].data) : null;
     },
+    /** Whether payouts are paused: the ledger then pays no withdrawal until it resumes. */
+    paused: async () => BigInt((await view("is_paused", []))[0]) !== 0n,
+    /** A Frontier withdrawal on the ledger, by its shard and claim (the withdrawal's transaction there); null until reported. */
+    payment: async (shard: string, claimId: string) =>
+      decodeWithdrawalPayment(await view("get_payment", [shard, claimId])),
+    /** The Starknet transaction that paid a claim: its WithdrawalPaid event, searched from the block the claim was made at. */
+    paymentTransaction: async (shard: string, claimId: string, fromBlock: number): Promise<string | null> => {
+      const { events } = await provider.getEvents({
+        address: ledger,
+        from_block: { block_number: fromBlock },
+        to_block: "latest",
+        keys: [[WITHDRAWAL_PAID], [num.toHex(shard)], [num.toHex(claimId)]],
+        chunk_size: 10,
+      });
+      return events[0]?.transaction_hash ?? null;
+    },
+    latestBlock: () => provider.getBlockNumber(),
     chestOwner: async (chest: string, tokenId: bigint) =>
       (await provider.callContract({ contractAddress: chest, entrypoint: "owner_of", calldata: u256(tokenId) }))[0],
   };

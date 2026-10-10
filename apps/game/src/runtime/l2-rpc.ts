@@ -9,10 +9,20 @@ import { env } from "../../env";
 /** STRK, the token every Starknet network fee is paid in, at its address on both networks. */
 const STRK = "0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d";
 
-/** Each L2 an environment can run on: its chain id, its name for players and its network fee (gas) token. */
+/** Each L2 an environment can run on: its chain id, its name for players, its fee (gas) token and its explorer. */
 const L2_CHAINS = {
-  SN_MAIN: { id: constants.StarknetChainId.SN_MAIN, label: "Starknet mainnet", gasToken: STRK },
-  SN_SEPOLIA: { id: constants.StarknetChainId.SN_SEPOLIA, label: "Starknet Sepolia", gasToken: STRK },
+  SN_MAIN: {
+    id: constants.StarknetChainId.SN_MAIN,
+    label: "Starknet mainnet",
+    gasToken: STRK,
+    explorer: "https://voyager.online",
+  },
+  SN_SEPOLIA: {
+    id: constants.StarknetChainId.SN_SEPOLIA,
+    label: "Starknet Sepolia",
+    gasToken: STRK,
+    explorer: "https://sepolia.voyager.online",
+  },
 } as const;
 
 /** The build's environment's L2 and ledger, from that environment's checked-in address book. */
@@ -26,6 +36,9 @@ export const L2_CHAIN = { name: ENVIRONMENT_L2.chain, ...L2_CHAINS[ENVIRONMENT_L
 
 /** The environment's one GameLedger, from the same address book; null until it is deployed there. */
 export const L2_LEDGER = ENVIRONMENT_L2.ledger;
+
+/** Where a player reads one of this build's L2 transactions. */
+export const l2TransactionUrl = (hash: string): string => `${L2_CHAIN.explorer}/tx/${hash}`;
 
 /** Whether a chain id, as a wallet or a payload gives it, is this build's L2. */
 export const isL2Chain = (chainId: bigint | string): boolean => BigInt(chainId) === BigInt(L2_CHAIN.id);

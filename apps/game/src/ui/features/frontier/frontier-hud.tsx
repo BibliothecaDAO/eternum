@@ -29,7 +29,10 @@ import { FrontierNav, type HudSurface, useHudSurface } from "./hud/frontier-nav"
 import { FrontierStrip } from "./hud/frontier-strip";
 import { HudBands } from "./hud/hud-bands";
 import { MenuSheet } from "./hud/menu-sheet";
-import { LordsPurse, PurseRow } from "./value/lords-purse";
+import { FrontierRealms } from "./value/frontier-realms";
+import { FrontierWithdraw } from "./value/frontier-withdraw";
+import { LordsPurse, PurseRow, RealmsChip } from "./value/lords-purse";
+import { useRealmLabor } from "./value/use-realm-labor";
 import { useRealmLords } from "./value/use-realm-lords";
 import { OfflineNotice } from "./hud/offline-notice";
 import { OrderBar } from "./hud/order-bar";
@@ -62,6 +65,7 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
   // A spectator has no realm of their own: they watch the season's leader, and the strip reads the watched realm.
   useSpectatorWatchesTheLeader();
   const [surface, setSurface] = useHudSurface();
+  const realmLabor = useRealmLabor(rules, realm);
   const desktop = useLayout() === "desktop";
   // Desktop keeps chat docked open beside the map, its Chat slot collapsing it; a phone opens it as a page.
   const [chatDocked, setChatDocked] = useState(true);
@@ -90,7 +94,14 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
               realm={realm ?? visited}
               onOpenStores={realm && !visit ? () => setSurface("production") : undefined}
             />
-            {realm && !visit && <RealmPurse realm={realm} />}
+            {realm && !visit && (
+              <RealmPurse
+                realm={realm}
+                laborWaiting={realmLabor.labor?.plan.total ?? 0}
+                onWithdraw={() => setSurface("withdraw")}
+                onRealms={() => setSurface("realms")}
+              />
+            )}
           </>
         }
         page={
@@ -135,7 +146,18 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
       >
         <FrontierSurfaces realm={realm} />
         <FrontierSelectionSheet rules={rules} realm={realm} />
-        {surface === "menu" && <HudMenu realm={realm} onOpen={setSurface} onClose={close} />}
+        {surface === "menu" && (
+          <HudMenu
+            realm={realm}
+            laborWaiting={(realmLabor.labor?.plan.total ?? 0) > 0}
+            onOpen={setSurface}
+            onClose={close}
+          />
+        )}
+        {surface === "withdraw" && realm && !visit && <FrontierWithdraw realm={realm} onClose={close} />}
+        {surface === "realms" && realm && !visit && (
+          <FrontierRealms realm={realm} labor={realmLabor} onRealm={() => setSurface("production")} onClose={close} />
+        )}
         {surface === "army" && realm && !visit && <FrontierArmy realm={realm} onClose={close} />}
         {surface === "production" && realm && <FrontierProduction rules={rules} realm={realm} onClose={close} />}
         {surface === "settings" && (
@@ -238,10 +260,13 @@ const LastHour = ({ rules, realm }: { rules: ExpeditionRules; realm: NativeRows[
 /** The Menu over the game: each row opens its way and closes the menu; Exit leaves for the app. */
 const HudMenu = ({
   realm,
+  laborWaiting,
   onOpen,
   onClose,
 }: {
   realm: NativeRows["Structure"] | null;
+  /** Whether the player's Realms have labor to give today: the Realms row wears a dot. */
+  laborWaiting: boolean;
   onOpen: (surface: HudSurface | null) => void;
   onClose: () => void;
 }) => {
@@ -254,6 +279,7 @@ const HudMenu = ({
       onToday={() => onOpen("today")}
       onProduction={realm ? () => onOpen("production") : null}
       onSeason={() => onOpen("season")}
+      realms={realm ? { waiting: laborWaiting, onOpen: () => onOpen("realms") } : undefined}
       guide={
         guide && {
           on: guide.on,
@@ -271,11 +297,22 @@ const HudMenu = ({
 };
 
 /**
- * The realm's LORDS under the strip. Withdraw and the Realms chip join it when their facts are served (the value
- * relay's claims and the held Realms); until then they live in the lab only, so nothing unwired reaches a player.
+ * Under the strip: the realm's LORDS, which open Withdraw, and beside them the Realms chip while the player's Realms
+ * have labor to give today.
  */
-const RealmPurse = ({ realm }: { realm: NativeRows["Structure"] }) => (
+const RealmPurse = ({
+  realm,
+  laborWaiting,
+  onWithdraw,
+  onRealms,
+}: {
+  realm: NativeRows["Structure"];
+  laborWaiting: number;
+  onWithdraw: () => void;
+  onRealms: () => void;
+}) => (
   <PurseRow>
-    <LordsPurse lords={useRealmLords(realm)} />
+    {laborWaiting > 0 && <RealmsChip labor={laborWaiting} onOpen={onRealms} />}
+    <LordsPurse lords={useRealmLords(realm)} onOpen={onWithdraw} />
   </PurseRow>
 );
