@@ -1,7 +1,7 @@
 import { type GameSyncModelDefinition } from "@bibliothecadao/eternum/game-sync-models";
 import { normalizeFelt, type ModelCodec, type ModelRegistry } from "../model-registry";
 import type { DecodedWorldEvent, RawWorldEvent, RpcEvent } from "../types";
-import { nativeEntityId } from "./entity-id";
+import { nativeRowKey } from "./row-key";
 import { decodeMembers } from "./serde";
 import {
   schemaIdentity,
@@ -81,7 +81,7 @@ export class NativeDecoder {
     return {
       kind: "set",
       model: definition(row.name, row.scope),
-      entityId: nativeEntityId(keys),
+      entityId: nativeRowKey(keys),
       key: decodeMembers(this.schema, row.keys, [...keys]),
       value: decodeMembers(this.schema, row.members, [...values]),
       position: { blockNumber: null, transactionHash: "0x0", transactionIndex: 0, eventIndex: 0 },
@@ -125,7 +125,7 @@ export class NativeDecoder {
       throw new Error("Native row names a foreign emitter");
     const base = {
       model: definition(model.name, model.scope),
-      entityId: nativeEntityId(frame.keys),
+      entityId: nativeRowKey(frame.keys),
       key,
       position,
     };
@@ -239,7 +239,7 @@ function decodeEvent(event: NativeRawEvent, schema: NativeSchema, layout: Native
       deletion: "event-ephemeral",
     },
     // An event is the same event wherever its transaction lands: its hash and its index in the receipt.
-    entityId: nativeEntityId([position.transactionHash, position.eventIndex]),
+    entityId: nativeRowKey([position.transactionHash, position.eventIndex]),
     position,
     key,
     value: { ...value, event_position: eventPosition(position) },

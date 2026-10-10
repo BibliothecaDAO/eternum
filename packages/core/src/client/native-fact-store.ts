@@ -447,7 +447,10 @@ function keyParts(value: unknown, type: WireType, path: string): string[] {
 }
 
 function wireId(value: string): string {
-  return `0x${integer(value, (1n << 251n) + 17n * (1n << 192n) + 1n, "entity id").toString(16)}`;
+  return value
+    .split(":")
+    .map((felt) => `0x${integer(felt, (1n << 251n) + 17n * (1n << 192n) + 1n, "row key").toString(16)}`)
+    .join(":");
 }
 
 function integer(value: unknown, limit: bigint, path: string): bigint {
