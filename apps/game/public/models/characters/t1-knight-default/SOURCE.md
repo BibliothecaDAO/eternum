@@ -82,9 +82,9 @@ vertices and weights, with the texture baked from it; roughness and metallic are
 rather than polished.
 
 The editable sources (the raw generation, the labelled and bound full-detail model, the Blender file of the sword and
-shield) and the Python tools that bind, reduce, bake and export are not in this repository. They are kept by the author;
-the process is the `eternum-tripo-asset-workflow` skill, proposed separately in #5031 with the tools. Replacing a file
-here means re-exporting all four and `runtime-fit.json` together, then updating the adapter and the hash pins from them.
+shield) and the Python tools that bind, reduce, bake and export are not in this repository. They are kept by the author.
+Replacing a file here means re-exporting all four and `runtime-fit.json` together, then updating the adapter and the
+hash pins from them.
 
 ## Known limits
 
