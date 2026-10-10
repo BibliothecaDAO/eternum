@@ -8,15 +8,11 @@ import { readRuleConstants } from "./rule-constants.mjs";
 
 const root = new URL("../", import.meta.url);
 
-test("sharing roster constants preserves the published rule values and their schema identity order", async () => {
+test("native roster constants preserve the published rule values and their schema identity order", async () => {
   const schema = JSON.parse(await readFile(new URL("schema/schema.json", root), "utf8"));
   const rules = await readRuleConstants(root);
   assert.equal(JSON.stringify(rules), JSON.stringify(schema.ruleConstants));
   const shared = await readFile(new URL("src/roster_limits.cairo", root), "utf8");
-  assert.equal(
-    await realpath(new URL("src/roster_limits.cairo", root)),
-    await realpath(new URL("../../l2/ledger/src/roster_limits.cairo", root)),
-  );
   for (const name of ["MAX_BLITZ_ROSTER_PLAYERS", "DUEL_ROSTER_PLAYERS"]) {
     const value = shared.match(new RegExp(`^pub const ${name}: u32 = ([0-9]+);$`, "m"));
     assert.ok(value, `missing shared ${name}`);
