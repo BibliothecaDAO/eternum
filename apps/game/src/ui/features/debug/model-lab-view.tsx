@@ -23,11 +23,12 @@ import {
   type ModelLabStats,
 } from "@/three/debug/model-lab/model-lab-renderer";
 import {
+  isSourceOffered,
+  MODEL_LAB_BIOMES,
   readModelLabSettings,
   writeModelLabSettings,
   type ModelLabSettings,
 } from "@/three/debug/model-lab/model-lab-settings";
-import { MODEL_LAB_BIOMES } from "@/three/debug/model-lab/model-lab-environment";
 import { useBootDocumentState } from "@/ui/modules/boot-loader";
 import "./model-lab.css";
 
@@ -122,7 +123,10 @@ export function ModelLabView() {
     const next = readModelLabSettings(writeModelLabSettings({ ...settingsRef.current, ...patch }));
     settingsRef.current = next;
     setCopied(false);
-    setParams(writeModelLabSettings(next), { replace: true });
+    // Params the lab does not own (a review flag, capture=1) stay in the address.
+    const search = new URLSearchParams(params);
+    writeModelLabSettings(next).forEach((value, key) => search.set(key, value));
+    setParams(search, { replace: true });
   };
   const share = async () => {
     try {
@@ -230,6 +234,9 @@ export function ModelLabView() {
             <option value="current">Current character runtime</option>
             <option value="default">Default game GLBs</option>
             <option value="legacy">Older alternatives</option>
+            {isSourceOffered("t1-knight-default", settings.family) && (
+              <option value="t1-knight-default">T1 Knight Default</option>
+            )}
           </select>
         </label>
         {isStudy && (
@@ -397,19 +404,27 @@ export function ModelLabView() {
         </div>
         <div className="ml-playback">
           <div className="ml-action-tabs" aria-label="Animation sequence">
-            {(["idle", "move"] as const).map((action) => (
-              <button
-                key={action}
-                aria-pressed={settings.action === action}
-                onClick={() => {
-                  change({ action });
-                  setPaused(false);
-                }}
-              >
-                {action === "idle" ? <Anchor size={13} /> : <Waves size={13} />}
-                {action === "move" ? (settings.family === "ships" ? "Sail" : "Move") : "Idle"}
-              </button>
-            ))}
+            {(settings.family === "ships" ? (["idle", "move"] as const) : (["idle", "move", "run"] as const)).map(
+              (action) => (
+                <button
+                  key={action}
+                  aria-pressed={settings.action === action}
+                  onClick={() => {
+                    change({ action });
+                    setPaused(false);
+                  }}
+                >
+                  {action === "idle" ? <Anchor size={13} /> : <Waves size={13} />}
+                  {action === "idle"
+                    ? "Idle"
+                    : action === "run"
+                      ? "Run"
+                      : settings.family === "ships"
+                        ? "Sail"
+                        : "Move"}
+                </button>
+              ),
+            )}
           </div>
           <div className="ml-transport">
             <button

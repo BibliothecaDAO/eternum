@@ -1,7 +1,8 @@
 // @vitest-environment node
 import { BiomeType } from "@bibliothecadao/types";
 import { describe, expect, it } from "vitest";
-import { createModelLabTerrainRequest, MODEL_LAB_BIOMES } from "./model-lab-environment";
+import { createModelLabTerrainRequest } from "./model-lab-environment";
+import { MODEL_LAB_BIOMES } from "./model-lab-settings";
 
 describe("model lab production biome fixtures", () => {
   it("connects ocean, beach and the selected biome without settlement disturbance", () => {

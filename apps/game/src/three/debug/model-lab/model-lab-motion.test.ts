@@ -21,4 +21,14 @@ describe("model lab review choreography", () => {
       readModelLabSettings(new URLSearchParams("family=knight&source=study&action=board&speed=NaN")),
     ).toMatchObject({ source: "current", action: "idle", speed: 1 });
   });
+  it("runs units on foot, sails ships, and offers the T1 Knight Default only under its review flag", () => {
+    expect(readModelLabSettings(new URLSearchParams("family=knight&action=run&biome=taiga"))).toMatchObject({
+      action: "run",
+      biome: "taiga",
+    });
+    expect(readModelLabSettings(new URLSearchParams("family=ships&action=run"))).toMatchObject({ action: "move" });
+    expect(readModelLabSettings(new URLSearchParams("family=knight&source=t1-knight-default"))).toMatchObject({
+      source: "current",
+    });
+  });
 });

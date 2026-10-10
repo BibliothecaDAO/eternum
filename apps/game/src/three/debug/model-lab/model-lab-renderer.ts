@@ -319,7 +319,9 @@ class ModelReviewScene implements ModelLabRenderer {
 
   private async createSlot(settings: ModelLabSettings, tier: ShipTier): Promise<Slot> {
     if (settings.family === "ships" && settings.source === "study") return this.createShipSlot(settings, tier);
-    if (settings.source === "current") return this.createCurrentSlot(settings, tier);
+    if (settings.source === "current" || settings.source === "t1-knight-default") {
+      return this.createCurrentSlot(settings, tier);
+    }
     return this.loadArchivedSlot(settings, tier);
   }
 
@@ -442,7 +444,7 @@ class ModelReviewScene implements ModelLabRenderer {
       this.input.onStats({
         progress: motion.progress,
         phase:
-          this.settings.family === "ships" ? motion.phase : this.settings.action === "move" ? "Locomotion" : "Idle",
+          this.settings.family === "ships" ? motion.phase : this.settings.action === "idle" ? "Idle" : "Locomotion",
         triangles: this.renderer.info.render.triangles,
         calls: this.renderer.info.render.drawCalls ?? this.renderer.info.render.calls,
         fps: Math.round((this.frames * 1000) / (now - this.lastStats)),
@@ -460,12 +462,13 @@ class ModelReviewScene implements ModelLabRenderer {
       const x = slot.group.position.x;
       if (this.settings.family !== "ships") {
         slot.model.rotation.y = Math.PI;
-        const z = this.settings.action === "move" ? 2 - motion.progress * 4 : 0;
+        const moving = this.settings.action !== "idle";
+        const z = moving ? 2 - motion.progress * 4 : 0;
         slot.group.position.z = z;
         slot.group.position.y = this.environment.terrain.sampleSurface(x, z).height + 0.02;
         interactions.push({
           entityId: slot.tier,
-          isMoving: this.settings.action === "move" && !this.paused,
+          isMoving: moving && !this.paused,
           mode: this.settings.family === "paladin" && slot.tier === 3 ? "airborne" : "ground",
           worldX: x,
           worldY: slot.group.position.y,
@@ -564,13 +567,19 @@ function unitConfig(settings: ModelLabSettings, tier: ShipTier) {
     humanoid: {
       tier,
       seed: 731,
-      animationMode: kind === "paladin" ? "mounted" : moving ? "walk" : "idle",
+      animationMode: kind === "paladin" ? "mounted" : resolveFootAnimationMode(settings.action),
       renderDetail: "crowd",
+      ...(settings.source === "t1-knight-default" && { appearanceId: "t1-knight-default" }),
     },
     horse: { tier, gait: moving ? "walk" : "idle", speed: moving ? 1.4 : 0 },
     dragon: { tier, locomotionMode: moving ? "flight" : "idle", speed: moving ? 3.2 : 0, renderDetail: "crowd" },
     boat: { tier, motionMode: moving ? "sail" : "idle", showWake: moving, speed: moving ? 1.6 : 0 },
   });
+}
+
+function resolveFootAnimationMode(action: ModelLabSettings["action"]): "idle" | "walk" | "run" {
+  if (action === "run") return "run";
+  return action === "move" ? "walk" : "idle";
 }
 
 function assetPath(settings: ModelLabSettings, tier: ShipTier): string {
