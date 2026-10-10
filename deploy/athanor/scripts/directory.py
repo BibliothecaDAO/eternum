@@ -13,7 +13,9 @@ def wait_for_identity(config):
     while time.monotonic() < deadline:
         try:
             with urlopen(config["public_herald_url"].rstrip("/") + "/manifest", timeout=3) as response:
-                identity = json.load(response)["shard"]
+                identity = json.load(response)
+            if not isinstance(identity, dict) or identity.get("version") != 1:
+                raise ValueError("Invalid public shard manifest")
             expected = "0x" + config["chain_id"].encode("ascii").hex()
             if int(identity["chainId"], 16) != int(expected, 16):
                 raise RuntimeError("Herald serves a different shard identity")
