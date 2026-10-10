@@ -59,19 +59,21 @@ describe("a Blitz lobby", () => {
     expect(lobbyStep(slotRow())).toEqual({ kind: "open" });
   });
 
-  it("seats a launched game from Herald's roster, each ticked once its player's realm is ready", () => {
+  it("seats a launched game from Herald's roster, each with its frozen wallet, ticked once its player's realm is ready", () => {
     const roster = [
       { account: "0xa1", wallet: "0xe1", prepared: true },
       { account: "0xb7", wallet: "0xe7", prepared: false },
     ];
     expect(seatsOf(game(roster, 2), PLAYER)).toEqual([
-      { account: "0xa1", own: false, prepared: true },
-      { account: "0xb7", own: true, prepared: false },
+      { account: "0xa1", wallet: "0xe1", own: false, prepared: true },
+      { account: "0xb7", wallet: "0xe7", own: true, prepared: false },
     ]);
   });
 
   it("leaves a launched game's taken seats unnamed and their preparation unknown when Herald serves no roster", () => {
     const seats = seatsOf(game(undefined, 3), PLAYER);
-    expect(seats).toEqual(Array.from({ length: 3 }, () => ({ account: null, own: false, prepared: undefined })));
+    expect(seats).toEqual(
+      Array.from({ length: 3 }, () => ({ account: null, wallet: null, own: false, prepared: undefined })),
+    );
   });
 });
