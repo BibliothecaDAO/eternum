@@ -17,14 +17,13 @@ the cumulative unlock. They carry no treasury cut. Only the admin unpauses; the 
 
 The immutable `claim_window_seconds` preset defaults to seven days. The shard stops new withdrawals one hour before
 `season.end + claim_window_seconds`, leaving the constant 3600-second reporting grace period. The ledger accepts a first
-report strictly before that deadline. A report reserves backing: paid plus all unpaid amounts cannot exceed the funded
-pool, including while payouts are paused. There is no administrative report correction entry.
+report strictly before that deadline. Reports move no money and have no aggregate cap or counter; payment remains
+bounded by the pool's unlocked amount. There is no administrative report correction entry.
 
 `close_frontier` runs at or after the deadline, voids every unpaid report without scanning individual claims, and
-returns `pool - paid` to the treasury. It clears both pending aggregates and emits the voided count and amount. The
-existing closed season plus payment record determines `withdrawal_voided`; the relay must recover that fact from the
-views and stop retrying voided claims. Paid retries remain harmless; unpaid payments after closure refuse. The ledger
-report cutoff and shared schedule are unchanged; the integrator applies the earlier shard cutoff.
+returns `pool - paid` to the treasury. The existing closed season plus payment record determines `withdrawal_voided`;
+the relay must recover that fact from the views and stop retrying voided claims. Paid retries remain harmless;
+unpaid payments after closure refuse.
 
 Blitz settlement takes one `protocol_cut_bps` treasury cut on the whole incoming game pot: entries, paid swords/shields
 and sponsorship. The default is 2000 bps. The remaining pot splits by `chest_lords_bps` into the season's chest reserve

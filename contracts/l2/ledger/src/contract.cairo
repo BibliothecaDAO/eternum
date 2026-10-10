@@ -37,8 +37,6 @@ pub trait IGameLedger<TState> {
     );
     fn pay(ref self: TState, shard: felt252, season_id: u32, claim_id: felt252, wallet: ContractAddress, amount: u256);
     fn report_withdrawal(ref self: TState, shard: felt252, season_id: u32, claim_id: felt252, amount: u256);
-    fn frontier_unpaid_count(self: @TState, shard: felt252, season_id: u32) -> u64;
-    fn frontier_unpaid_amount(self: @TState, shard: felt252, season_id: u32) -> u256;
     fn withdrawal_voided(self: @TState, shard: felt252, claim_id: felt252) -> bool;
     fn close_frontier(ref self: TState, shard: felt252, season_id: u32);
     fn get_frontier(self: @TState, shard: felt252, season_id: u32) -> FrontierSeason;
@@ -156,8 +154,6 @@ pub mod GameLedger {
     struct Storage {
         frontier_days: Map<(felt252, u32), FrontierSeason>,
         payments: Map<(felt252, felt252), WithdrawalPayment>,
-        frontier_unpaid: Map<(felt252, u32), u64>,
-        frontier_unpaid_backing: Map<(felt252, u32), u256>,
         treasury: ContractAddress,
         lords: ContractAddress,
         mmr_token: ContractAddress,
@@ -258,8 +254,6 @@ pub mod GameLedger {
         #[key]
         season_id: u32,
         returned: u256,
-        voided_count: u64,
-        voided_amount: u256,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -522,8 +516,6 @@ pub mod GameLedger {
             assert!(claim_id != 0 && amount > 0, "Ledger: invalid withdrawal");
             let season = self.get_frontier(shard, season_id);
             assert!(!season.closed, "Ledger: season closed");
-            let unpaid = self.frontier_unpaid_backing.entry((shard, season_id)).read();
-            assert!(amount <= season.pool - season.paid - unpaid, "Ledger: withdrawal exceeds backing");
             assert!(
                 starknet::get_block_timestamp() < self.frontier_claim_deadline(shard, season_id),
                 "Ledger: claim window ended",
@@ -532,19 +524,6 @@ pub mod GameLedger {
                 .payments
                 .entry((shard, claim_id))
                 .write(WithdrawalPayment { paid: false, season_id, wallet: 0.try_into().unwrap(), amount });
-            let pending = self.frontier_unpaid.entry((shard, season_id)).read();
-            self.frontier_unpaid.entry((shard, season_id)).write(pending + 1);
-            self.frontier_unpaid_backing.entry((shard, season_id)).write(unpaid + amount);
-        }
-
-        fn frontier_unpaid_count(self: @ContractState, shard: felt252, season_id: u32) -> u64 {
-            let _season = self.get_frontier(shard, season_id);
-            self.frontier_unpaid.entry((shard, season_id)).read()
-        }
-
-        fn frontier_unpaid_amount(self: @ContractState, shard: felt252, season_id: u32) -> u256 {
-            let _season = self.get_frontier(shard, season_id);
-            self.frontier_unpaid_backing.entry((shard, season_id)).read()
         }
 
         fn withdrawal_voided(self: @ContractState, shard: felt252, claim_id: felt252) -> bool {
@@ -577,10 +556,6 @@ pub mod GameLedger {
             season.paid += amount;
             self.frontier_days.entry((shard, season_id)).write(season);
             self.payments.entry((shard, claim_id)).write(WithdrawalPayment { paid: true, season_id, wallet, amount });
-            let pending = self.frontier_unpaid.entry((shard, season_id)).read();
-            self.frontier_unpaid.entry((shard, season_id)).write(pending - 1);
-            let unpaid = self.frontier_unpaid_backing.entry((shard, season_id)).read();
-            self.frontier_unpaid_backing.entry((shard, season_id)).write(unpaid - amount);
             self.send_lords(wallet, amount);
             self.emit(WithdrawalPaid { shard, claim_id, season_id, wallet, amount });
         }
@@ -594,15 +569,11 @@ pub mod GameLedger {
                 starknet::get_block_timestamp() >= self.frontier_claim_deadline(shard, season_id),
                 "Ledger: claim window open",
             );
-            let voided_count = self.frontier_unpaid_count(shard, season_id);
-            let voided_amount = self.frontier_unpaid_amount(shard, season_id);
-            self.frontier_unpaid.entry((shard, season_id)).write(0);
-            self.frontier_unpaid_backing.entry((shard, season_id)).write(0);
             let returned = season.pool - season.paid;
             season.closed = true;
             self.frontier_days.entry((shard, season_id)).write(season);
             self.send_lords(self.treasury.read(), returned);
-            self.emit(FrontierClosed { shard, season_id, returned, voided_count, voided_amount });
+            self.emit(FrontierClosed { shard, season_id, returned });
         }
 
         fn get_frontier(self: @ContractState, shard: felt252, season_id: u32) -> FrontierSeason {
