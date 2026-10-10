@@ -11,7 +11,7 @@ Configuration, per environment (see `wrangler.jsonc` and `.github/workflows/depl
 - `SHARD_URL` — the shard it launches on: its Herald, whose `/manifest` names the chain, node, admission endpoint and
   contracts. It is read at each launch, and a shard running a release other than the one this Worker was built with is
   refused; the ABIs are that release's committed schema.
-- `LEDGER_RPC_URL` and `LEDGER_ADDRESS` — the confirmed Starknet registration source
+- `VALUE_RELAY` — the guarded ledger reader and writer reached through the service binding
 - `DEPLOYER_ACCOUNT_ADDRESS` and the secret `DEPLOYER_PRIVATE_KEY` — the registrar writer
 - `LAUNCHER_ALLOWLIST` — comma-separated Starknet addresses; a wildcard is refused
 - the secret `OPERATOR_TOKEN` — the environment's one token for operator automation

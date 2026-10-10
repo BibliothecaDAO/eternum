@@ -1,7 +1,5 @@
-import { Effect } from "effect";
 import { expect, it, vi } from "vitest";
 import { launchPaidBlitz } from "./paid-blitz";
-import { RegistrationOpen } from "./blitz-roster";
 import type { LaunchGameSummary } from "../../../config/deployer/clean/types";
 
 const fixture = () => {
@@ -21,6 +19,7 @@ const fixture = () => {
     dryRun: false,
   };
   const shard = {
+    roster: vi.fn(async () => [] as { wallet: string; account: string }[]),
     create: vi.fn(async () => {
       order.push("create");
       return summary;
@@ -35,6 +34,7 @@ const fixture = () => {
     window: async () => ({ start: 105, end: 165 }),
   };
   const value = {
+    blitzRoster: vi.fn(async () => ({ ...frozen, secondsUntilClose: 0, end: 160 })),
     openBlitz: vi.fn(async () => {
       order.push("open");
       return {
@@ -51,9 +51,6 @@ const fixture = () => {
     blockHash: "0xabc",
     registrations: [{ wallet: "0x123", account: "0x456" }],
   };
-  let saved: typeof frozen | null = null;
-  const rosters = { read: async () => saved, save: async (_key: unknown, row: typeof frozen) => (saved = row) };
-  const source = { readClosed: vi.fn(() => Effect.succeed(frozen)) };
   const store = {
     saveEntry: vi.fn(async () => {
       order.push("terms");
@@ -61,8 +58,8 @@ const fixture = () => {
     loadGame: async () => null,
     saveGame: vi.fn(async (row: LaunchGameSummary) => row),
   };
-  const run = () => launchPaidBlitz("0x1", "paid-game", shard, value, source, rosters, store, 100);
-  return { order, shard, value, source, store, run };
+  const run = () => launchPaidBlitz("0x1", shard, value, store, 100);
+  return { order, shard, value, store, run };
 };
 it("creates an empty shard game before paid registration and installs exactly the pinned ledger pairs", async () => {
   const f = fixture();
@@ -74,7 +71,14 @@ it("creates an empty shard game before paid registration and installs exactly th
 });
 it("keeps the real game key while waiting for registration and reuses the frozen pairs after lost acknowledgments", async () => {
   const f = fixture();
-  f.source.readClosed.mockReturnValueOnce(Effect.fail(new RegistrationOpen({ secondsUntilClose: 60 })) as never);
+  f.value.blitzRoster.mockResolvedValueOnce({
+    gameId: 7,
+    blockNumber: 10,
+    blockHash: "0xabc",
+    secondsUntilClose: 60,
+    end: 160,
+    registrations: [],
+  });
   await expect(f.run()).rejects.toMatchObject({ secondsUntilClose: 60 });
   expect(f.store.saveGame).toHaveBeenCalledWith(expect.objectContaining({ gameId: 7 }));
   expect(f.shard.install).not.toHaveBeenCalled();
@@ -86,7 +90,7 @@ it("keeps the real game key while waiting for registration and reuses the frozen
   f.shard.install.mockRejectedValueOnce(new Error("lost freeze acknowledgment"));
   await expect(f.run()).rejects.toThrow("lost freeze");
   await f.run();
-  expect(f.source.readClosed).toHaveBeenCalledTimes(2);
+  expect(f.value.blitzRoster).toHaveBeenCalledTimes(3);
 });
 
 it("does not declare paid terms until the ledger opening confirms", async () => {
@@ -95,5 +99,13 @@ it("does not declare paid terms until the ledger opening confirms", async () => 
   await expect(f.run()).rejects.toThrow("ledger unavailable");
   expect(f.store.saveGame).toHaveBeenCalled();
   expect(f.store.saveEntry).not.toHaveBeenCalled();
+  expect(f.shard.install).not.toHaveBeenCalled();
+});
+it("resumes the roster stored on the shard without reading a D1 or ledger copy", async () => {
+  const f = fixture();
+  Object.assign(f.shard, { roster: async () => [{ wallet: "0x123", account: "0x456" }] });
+  f.value.blitzRoster.mockRejectedValue(new Error("ledger unavailable"));
+  await f.run();
+  expect(f.value.blitzRoster).not.toHaveBeenCalled();
   expect(f.shard.install).not.toHaveBeenCalled();
 });

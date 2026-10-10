@@ -1,3 +1,10 @@
+import {
+  rpcAt,
+  readLedgerGame,
+  readRegisteredPlayers,
+  readConfirmedLedgerHead,
+  type LedgerRosterSnapshot,
+} from "@realms-world/value-ledger";
 import { processSeasonTops } from "./season-tops";
 import { seasonLedgerReads, postSeasonTop, allocateSeason } from "./season-ledger";
 import { ledgerBatches } from "./ledger-batches";
@@ -252,6 +259,40 @@ export class ValueRelay extends DurableObject<RelayEnv> {
       ),
     );
   }
+  async blitzRoster(key: LedgerGameKey): Promise<LedgerRosterSnapshot> {
+    this.requireLaunchChain(key);
+    return Effect.runPromise(
+      onIdentityChain(
+        this.env.LEDGER_RPC_URL,
+        this.env.IDENTITY,
+        relayOperation("read closed ledger roster", async () => {
+          const provider = rpcAt(this.env.LEDGER_RPC_URL);
+          const head = await readConfirmedLedgerHead(provider);
+          const game = await readLedgerGame(provider, this.env.LEDGER_ADDRESS, key, head.number);
+          if (game.cancelled || game.finalized) throw new Error("ledger_game_not_seatable");
+          const secondsUntilClose = Math.max(0, game.start - head.time);
+          const registrations = secondsUntilClose
+            ? []
+            : await readRegisteredPlayers(
+                provider,
+                this.env.LEDGER_ADDRESS,
+                key,
+                head.number,
+                game.registeredCount,
+                game.registrationLimit,
+              );
+          return {
+            gameId: key.gameId,
+            blockNumber: head.number,
+            blockHash: head.hash,
+            secondsUntilClose,
+            end: game.end,
+            registrations,
+          };
+        }),
+      ),
+    );
+  }
   async validateBlitz(key: LedgerGameKey, window: { start: number; end: number }) {
     this.requireLaunchChain(key);
     return Effect.runPromise(
@@ -404,6 +445,9 @@ export class ValueAccountLinks extends WorkerEntrypoint<RelayEnv> {
 export class ValueLaunch extends WorkerEntrypoint<RelayEnv> {
   override fetch() {
     return new Response(null, { status: 404 });
+  }
+  blitzRoster(key: LedgerGameKey) {
+    return relayOf(this.env).blitzRoster(key);
   }
   openBlitz(key: LedgerGameKey, window: { start: number; end: number }) {
     return relayOf(this.env).openBlitz(key, window);

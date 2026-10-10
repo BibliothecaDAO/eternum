@@ -6,7 +6,6 @@ import { LaunchExecutionFailure } from "./errors";
 import type { LaunchRun, LaunchSummary } from "./model";
 import { LaunchShard } from "./shard-client";
 import { launchPaidBlitz, type BlitzValuePort } from "./paid-blitz";
-import type { BlitzRegistrationSource, D1BlitzRosterStore } from "./blitz-roster";
 import { finalizeGame } from "./results";
 
 interface LaunchTarget {
@@ -45,16 +44,11 @@ export const readLaunchShard = async (shardUrl: string) => {
 };
 export const shardChainOf = (env: LaunchEnv) => async () => (await readLaunchShard(env.SHARD_URL)).shard.chainId;
 
-export const launchExecutorLayer = (
-  target: LaunchTarget,
-  value: BlitzValuePort,
-  source: BlitzRegistrationSource,
-  rosters: D1BlitzRosterStore,
-) =>
+export const launchExecutorLayer = (target: LaunchTarget, value: BlitzValuePort) =>
   Layer.succeed(LaunchExecutor, {
     execute: (run, store) =>
       Effect.tryPromise({
-        try: () => executeRun(run, store, target, value, source, rosters),
+        try: () => executeRun(run, store, target, value),
         catch: (cause) => new LaunchExecutionFailure({ runId: run.id, cause }),
       }),
     refund: (run) =>
@@ -76,8 +70,6 @@ const executeRun = async (
   store: LaunchEntryStore,
   target: LaunchTarget,
   value: BlitzValuePort,
-  source: BlitzRegistrationSource,
-  rosters: D1BlitzRosterStore,
 ): Promise<LaunchSummary> => {
   const { shard } = await readLaunchShard(target.shardUrl);
   if (BigInt(run.chainId) !== BigInt(shard.chainId)) throw new Error("queued_launch_shard_changed");
@@ -94,9 +86,9 @@ const executeRun = async (
   if (request.environment === "madara.blitz")
     return launchPaidBlitz(
       run.chainId,
-      run.name,
       {
         create: () => native.create(request, Date.parse(run.createdAt)),
+        roster: (gameId) => native.roster(gameId),
         install: (gameId, players) => native.installRoster(gameId, players),
         seat: (gameId) => native.seat(gameId),
         window: async (gameId) => {
@@ -105,8 +97,6 @@ const executeRun = async (
         },
       },
       value,
-      source,
-      rosters,
       store,
       Date.parse(request.gameStartTime!) / 1000,
     );

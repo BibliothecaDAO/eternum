@@ -1,6 +1,5 @@
 import { Effect } from "effect";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { D1BlitzRosterStore } from "./blitz-roster";
 import { LaunchExecutor, launchExecutorLayer } from "./executor";
 import { D1LaunchStore } from "./store";
 import { createLaunchTestDatabase, TEST_CHAIN, testChain } from "./test-database";
@@ -28,6 +27,7 @@ vi.mock("./shard-client", () => ({
     create = native.create;
     installRoster = native.install;
     seat = native.seat;
+    roster = async () => [];
     game = async () => ({ start_main_at: 100n, end_at: 160n });
   },
 }));
@@ -55,36 +55,30 @@ afterEach(async () => {
   vi.unstubAllGlobals();
 });
 const target = { shardUrl: "https://shard.test", accountAddress: "0x1", privateKey: "unused-test-key" };
-it("replaces the launcher's supplied Blitz roster with the persisted ledger roster on every retry", async () => {
+it("replaces the launcher's supplied Blitz roster with the guarded ledger roster on every retry", async () => {
   const store = new D1LaunchStore(database.db, testChain());
   const run = await store.enqueue("game", {
     environment: "madara.blitz",
     gameName: "blitz-roster-test",
     rosterAccounts: ["0xbad"],
   });
-  const source = {
-    readClosed: vi.fn(() =>
-      Effect.succeed({
-        gameId: 7,
-        blockNumber: 100,
-        blockHash: "0xabc",
-        registrations: [{ wallet: "0x123", account: "0x456" }],
-      }),
-    ),
-  };
-  const layer = launchExecutorLayer(
-    target,
-    {
-      openBlitz: async (key) => ({
-        kind: "paid",
-        ledger: { address: "0x10", chainId: "0x2", shard: key.chainId, gameId: key.gameId },
-      }),
-      validateBlitz: async () => {},
-      refundBlitz: async () => null,
-    },
-    source,
-    new D1BlitzRosterStore(database.db),
-  );
+  const roster = vi.fn(async () => ({
+    gameId: 7,
+    blockNumber: 100,
+    blockHash: "0xabc",
+    secondsUntilClose: 0,
+    end: 160,
+    registrations: [{ wallet: "0x123", account: "0x456" }],
+  }));
+  const layer = launchExecutorLayer(target, {
+    blitzRoster: roster,
+    openBlitz: async (key) => ({
+      kind: "paid",
+      ledger: { address: "0x10", chainId: "0x2", shard: key.chainId, gameId: key.gameId },
+    }),
+    validateBlitz: async () => {},
+    refundBlitz: async () => null,
+  });
   const execute = () =>
     Effect.runPromise(
       Effect.gen(function* () {
@@ -96,5 +90,5 @@ it("replaces the launcher's supplied Blitz roster with the persisted ledger rost
   await execute();
   expect(run.chainId).toBe(TEST_CHAIN);
   expect(native.install).toHaveBeenCalledWith(7, [{ wallet: "0x123", account: "0x456" }]);
-  expect(source.readClosed).toHaveBeenCalledTimes(1);
+  expect(roster).toHaveBeenCalledTimes(2);
 });

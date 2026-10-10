@@ -77,3 +77,12 @@ export async function readRegisteredPlayers(
   }
   return players;
 }
+
+export interface LedgerRosterSnapshot {
+  gameId: number;
+  blockNumber: number;
+  blockHash: string;
+  secondsUntilClose: number;
+  end: number;
+  registrations: readonly { wallet: string; account: string }[];
+}

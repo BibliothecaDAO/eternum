@@ -14,8 +14,6 @@ const LaunchVars = Schema.Struct({
   LAUNCHER_ALLOWLIST: Schema.NonEmptyString,
   /** The shard launches write to: its Herald, whose /manifest names the chain, node and contracts. */
   SHARD_URL: Schema.NonEmptyString,
-  LEDGER_RPC_URL: Schema.NonEmptyString,
-  LEDGER_ADDRESS: Schema.NonEmptyString,
   DEPLOYER_ACCOUNT_ADDRESS: Schema.NonEmptyString,
   DEPLOYER_PRIVATE_KEY: Schema.NonEmptyString,
   /** The environment's one operator token, which operator automation presents as a launcher. */

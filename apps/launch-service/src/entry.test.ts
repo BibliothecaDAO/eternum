@@ -60,3 +60,10 @@ it("refuses the legacy free-registration route for a paid slot", async () => {
   await expect(slots.register("friday", [{ realmsId: "0x1", account: "0x2" }])).rejects.toThrow("ledger");
   expect((await slots.get("friday")).registrations).toEqual([]);
 });
+it("has no persistent second copy of the ledger roster after migration", async () => {
+  expect(
+    await database.db
+      .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='blitz_ledger_rosters'")
+      .first(),
+  ).toBeNull();
+});

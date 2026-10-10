@@ -1,11 +1,7 @@
 import { DurableObject } from "cloudflare:workers";
 import { Effect, Layer, Semaphore } from "effect";
-import { D1BlitzRosterStore, RosterFailure } from "./blitz-roster";
-import { ledgerBlitzRegistrations } from "./ledger-roster";
-import { decodeLaunchEnv, type LaunchEnv } from "./env";
+import { decodeLaunchEnv } from "./env";
 import { launchExecutorLayer, launchTargetOf, shardChainOf } from "./executor";
-import { LaunchShard } from "./shard-client";
-import { readLaunchShard } from "./executor";
 import { processNextLaunch } from "./process-launch";
 import { LauncherDeployment, deploymentOperation } from "./launcher-deployment";
 import type { OperatorLauncher } from "./launcher-routes";
@@ -55,36 +51,9 @@ export class Registrar extends DurableObject<Record<string, unknown>> {
       return;
     }
     const target = { ...launchTargetOf(env), ...(accountAddress ? { accountAddress } : {}) };
-    const services = Layer.mergeAll(
-      databaseLayer(store),
-      launchExecutorLayer(target, env.VALUE_RELAY, rosterSourceOf(env), new D1BlitzRosterStore(env.DB)),
-    );
+    const services = Layer.mergeAll(databaseLayer(store), launchExecutorLayer(target, env.VALUE_RELAY));
     await Effect.runPromise(processNextLaunch(Date.now()).pipe(Effect.provide(services)));
     const next = await store.nextDue();
     if (next !== null) await this.ctx.storage.setAlarm(Math.max(next, Date.now()));
   }
 }
-
-const rosterSourceOf = (env: LaunchEnv) =>
-  ledgerBlitzRegistrations({
-    rpcUrl: env.LEDGER_RPC_URL,
-    ledgerAddress: env.LEDGER_ADDRESS,
-    resolveGameKey: (chainId, gameName) =>
-      Effect.tryPromise({
-        try: async () => {
-          const { shard } = await readLaunchShard(env.SHARD_URL);
-          if (BigInt(shard.chainId) !== BigInt(chainId)) throw new Error("launch_chain_changed");
-          const native = new LaunchShard({
-            rpcUrl: shard.rpcUrl,
-            chainId,
-            gamesAddress: shard.contracts.games!,
-            accountAddress: env.DEPLOYER_ACCOUNT_ADDRESS,
-            privateKey: env.DEPLOYER_PRIVATE_KEY,
-          });
-          const gameId = await native.gameId(gameName);
-          if (!gameId) throw new Error("game_not_created");
-          return { chainId, gameId };
-        },
-        catch: () => new RosterFailure({ operation: "resolve_created_game" }),
-      }),
-  });

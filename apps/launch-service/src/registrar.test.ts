@@ -30,7 +30,6 @@ vi.mock("./executor", () => ({
   readLaunchShard: vi.fn(),
 }));
 vi.mock("./process-launch", () => ({ processNextLaunch: mock.process }));
-vi.mock("./ledger-roster", () => ({ ledgerBlitzRegistrations: () => ({}) }));
 beforeEach(() => {
   vi.clearAllMocks();
   vi.spyOn(Date, "now").mockReturnValue(1000);
