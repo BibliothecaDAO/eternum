@@ -7,7 +7,7 @@ import { type Call, hash, num, type ProviderInterface } from "starknet";
  */
 
 /** A game on the ledger: its shard's chain id and its game id there. */
-export interface GameKey {
+interface GameKey {
   shard: string;
   gameId: number;
 }
