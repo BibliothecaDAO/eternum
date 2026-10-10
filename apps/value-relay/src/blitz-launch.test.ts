@@ -1,7 +1,8 @@
+import { existsSync, readFileSync } from "node:fs";
 import { Effect } from "effect";
 import { beforeEach, expect, it, vi } from "vitest";
-import { hash } from "starknet";
-import { openSlotOnLedger, refundSlotOnLedger } from "./blitz-launch";
+import { hash, CallData } from "starknet";
+import { openSlotOnLedger, refundSlotOnLedger, markSlotRefundable } from "./blitz-launch";
 
 const rpc = vi.hoisted(() => ({
   block: vi.fn(),
@@ -60,6 +61,22 @@ it("opens the created shard key under the containing season's economic preset, t
   );
   const open = () => Effect.runPromise(openSlotOnLedger(credentials, key, { start: 100, end: 160 }));
   await open();
+  const artifact = new URL(
+    "../../../contracts/l2/ledger/target/dev/game_ledger_GameLedger.contract_class.json",
+    import.meta.url,
+  );
+  if (existsSync(artifact))
+    expect(rpc.execute.mock.calls[0]![0].calldata.map(BigInt)).toEqual(
+      new CallData(JSON.parse(readFileSync(artifact, "utf8")).abi)
+        .compile("open_slot", {
+          key: { shard: key.chainId, slot_id: key.slotId },
+          season_id: 3,
+          preset_id: 9,
+          close: 100,
+          end: 160,
+        })
+        .map(BigInt),
+    );
   await open();
   expect(rpc.execute).toHaveBeenCalledOnce();
   expect(rpc.execute).toHaveBeenCalledWith({
@@ -98,4 +115,24 @@ it("refuses slots outside a season without inventing a services settlement margi
   );
   await expect(Effect.runPromise(openSlotOnLedger(credentials, key, { start: 100, end: 300 }))).rejects.toThrow();
   expect(rpc.execute).not.toHaveBeenCalled();
+});
+
+// Compare the actual mutation adapter to the compiled contract after the landing gate.
+it.skipIf(
+  !existsSync(
+    new URL("../../../contracts/l2/ledger/target/dev/game_ledger_GameLedger.contract_class.json", import.meta.url),
+  ),
+)("encodes refunds with the compiled SlotKey and wallet array", async () => {
+  const abi = JSON.parse(
+    readFileSync(
+      new URL("../../../contracts/l2/ledger/target/dev/game_ledger_GameLedger.contract_class.json", import.meta.url),
+      "utf8",
+    ),
+  ).abi;
+  await Effect.runPromise(markSlotRefundable(credentials, key, ["0xa", "0xb"]));
+  expect(rpc.execute.mock.calls[0]![0].calldata.map(BigInt)).toEqual(
+    new CallData(abi)
+      .compile("mark_refundable", { key: { shard: key.chainId, slot_id: key.slotId }, wallets: ["0xa", "0xb"] })
+      .map(BigInt),
+  );
 });
