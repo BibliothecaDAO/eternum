@@ -89,11 +89,9 @@ export async function startStampPool(
   let nextId = 0,
     closed = false,
     initializing = true;
-  const replacements = new Set<ReturnType<typeof setTimeout>>();
   function close() {
     if (closed) return;
     closed = true;
-    for (const timer of replacements) clearTimeout(timer);
     for (const lane of lanes) {
       lane.cancelStartup();
       lane.job?.reject(refused());
@@ -112,28 +110,13 @@ export async function startStampPool(
       lane.worker.postMessage({ kind: "stamp", id: job.id, raw: job.raw }, [job.raw]);
     }
   }
-  function addLane(index: number) {
-    const worker = startLane(keyFile, identity, dispatch, () => {
-      const lane = lanes[index];
-      lane.job?.reject(refused());
-      lane.job = undefined;
-      lane.worker.terminate();
-      if (initializing || closed) return;
-      // A broken worker does not own the pool. Keep surviving lanes dispatching while it restarts.
-      const timer = setTimeout(() => {
-        replacements.delete(timer);
-        if (!closed)
-          void addLane(index)
-            .started.then(dispatch)
-            .catch(() => {});
-      }, 1000);
-      replacements.add(timer);
-      dispatch();
-    });
-    lanes[index] = worker.lane;
-    return worker;
+  function workerFailed() {
+    close();
+    // The supervisor owns recovery; a live process must never serve a dead pool.
+    if (!initializing) process.exit(1);
   }
-  const workers = Array.from({ length: count }, (_, index) => addLane(index));
+  const workers = Array.from({ length: count }, () => startLane(keyFile, identity, dispatch, workerFailed));
+  lanes.push(...workers.map((worker) => worker.lane));
   try {
     await Promise.all(workers.map((worker) => worker.started));
   } catch {
