@@ -1,3 +1,4 @@
+import { slotValueFixture, registrationIdentityFixture } from "./test-database";
 import { Effect } from "effect";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { D1CalendarStore } from "./calendar-store";
@@ -9,7 +10,6 @@ import { blitzSlotName, day, frontierSeasonEnd } from "./test-dates";
 
 let database: Awaited<ReturnType<typeof createLaunchTestDatabase>>;
 beforeEach(async () => {
-  vi.spyOn(D1LaunchStore.prototype, "entryForSlot").mockResolvedValue({ kind: "free" });
   database = await createLaunchTestDatabase();
 });
 afterEach(async () => {
@@ -19,7 +19,7 @@ afterEach(async () => {
 
 const stores = () => {
   const launches = new D1LaunchStore(database.db, testChain());
-  const slots = new D1SlotStore(database.db, launches);
+  const slots = new D1SlotStore(database.db, launches, slotValueFixture(1), registrationIdentityFixture);
   const calendar = new D1CalendarStore(database.db);
   const tick = (now: Date) => Effect.runPromise(runLaunchSchedule(launches, slots, calendar, now));
   return { launches, slots, calendar, tick };
