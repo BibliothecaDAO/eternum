@@ -5,17 +5,51 @@ import {
   decodeChest,
   decodeChestContent,
   decodeCredits,
+  decodeBlitzSeason,
   decodeGame,
+  decodeLedgerPreset,
   decodePlayerResult,
-  decodePreset,
   decodeRegistration,
-  decodeSeason,
 } from "@realms-world/value-ledger/codecs";
 
 /**
  * The client's side of GameLedger on Starknet (infra-pr/ledger-interface.txt): the reads the value screens show and
  * the calls a player's own wallet signs, decoded by the ledger's one codec module.
  */
+
+export interface LedgerPrices {
+  seat: bigint;
+  sword: bigint;
+  shield: bigint;
+}
+
+/** The preset's season payout: the share of participants paid and how each place's weight decays from the one above. */
+export interface PayoutCurve {
+  paidFractionBps: number;
+  decayBps: number;
+}
+
+/** A Blitz season on the ledger: its window, its pool, and its top list once posted. Times are Unix seconds. */
+export interface BlitzSeason {
+  participants: number;
+  winners: number;
+  posted: boolean;
+  challenged: boolean;
+  reviewUntil: number;
+  presetId: number;
+  start: number;
+  end: number;
+  pool: bigint;
+}
+
+/**
+ * Where a game's pot goes at settle: the treasury's cut first, then the chests' share of what is left to the season's
+ * chest reserve, the rest to the season pool.
+ */
+export interface EntrySplit {
+  protocolCutBps: number;
+  chestLordsBps: number;
+}
 
 /** A game on the ledger: its shard's chain id and its game id there. */
 interface GameKey {
@@ -70,6 +104,29 @@ export const refundCall = (ledger: string, key: GameKey): Call => ({
   calldata: keyCalldata(key),
 });
 
+/** A preset's entry prices, payout curve and pot split, as the entry and the season panels read them. */
+const presetTermsOf = (preset: ReturnType<typeof decodeLedgerPreset>): LedgerPrices & PayoutCurve & EntrySplit => ({
+  seat: BigInt(preset.entryFee),
+  sword: BigInt(preset.swordPrice),
+  shield: BigInt(preset.shieldPrice),
+  paidFractionBps: preset.paidFraction,
+  decayBps: preset.decay,
+  protocolCutBps: preset.protocolCut,
+  chestLordsBps: preset.chestLords,
+});
+
+const blitzSeasonOf = (season: ReturnType<typeof decodeBlitzSeason>): BlitzSeason => ({
+  participants: season.participantCount,
+  winners: season.topCount,
+  posted: season.posted,
+  challenged: season.challenged,
+  reviewUntil: season.reviewUntil,
+  presetId: season.presetId,
+  start: season.start,
+  end: season.end,
+  pool: BigInt(season.pool),
+});
+
 /**
  * The ledger's views and token balances, read at the latest block through our RPC. The LORDS token and the chest
  * collection are the ledger's own (its lords and chest_collection views), never constants of one network.
@@ -90,8 +147,8 @@ export const ledgerReader = (provider: ProviderInterface, ledger: string) => {
     chestCollection: async () => (await view("chest_collection", []))[0],
     balanceOf,
     game: async (key: GameKey) => decodeGame(await view("get_game", keyCalldata(key))),
-    preset: async (presetId: number) => decodePreset(await view("get_preset", [String(presetId)])),
-    season: async (seasonId: number) => decodeSeason(await view("get_season", [String(seasonId)])),
+    preset: async (presetId: number) => presetTermsOf(decodeLedgerPreset(await view("get_preset", [String(presetId)]))),
+    season: async (seasonId: number) => blitzSeasonOf(decodeBlitzSeason(await view("get_season", [String(seasonId)]))),
     seasonWinner: async (seasonId: number, index: number) => {
       const [wallet, low, high] = await view("get_season_winner", [String(seasonId), String(index)]);
       return { wallet, share: BigInt(low) + (BigInt(high) << 128n) };
