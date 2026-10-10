@@ -14,8 +14,9 @@ import { ServiceFailure } from "../service-failure";
 import { useNowSeconds } from "../use-now";
 import { claimSeasonCall, lordsOf } from "../value/ledger";
 import { NoStrkLine } from "../value/no-strk-line";
+import { FailureLine } from "../sign-in/failure-line";
 import { SEASON_PRIZE_WORDS } from "../words";
-import { placeShares, type SeasonPrize, seasonState, useSeasonPrize } from "./blitz-season";
+import { placeShares, type SeasonPrize, seasonSourceOf, seasonState, useSeasonPrize } from "./blitz-season";
 
 const WalletSign = lazy(() =>
   import("@/ui/modules/identity/wallet-actions").then((module) => ({ default: module.WalletSign })),
@@ -36,7 +37,9 @@ export const SeasonPrizePanel = () => {
   const history = useRecentResults(20, player);
   const wallet = session ? payoutWalletOf(session.user) : null;
   const games: DirectoryGame[] = [...(directory.data?.games ?? []), ...(history.data?.games ?? [])];
-  const prize = useSeasonPrize(games, wallet && wallet.status !== "no_wallet" ? wallet.address : null);
+  const source = seasonSourceOf(games);
+  const prize = useSeasonPrize(source, wallet && wallet.status !== "no_wallet" ? wallet.address : null);
+  if (source?.kind === "broken") return <FailureLine line={SEASON_PRIZE_WORDS.unreadable} />;
   if (prize.isError) return <ServiceFailure service="ledger" error={prize.error} retry={() => void prize.refetch()} />;
   if (!prize.data || !wallet || wallet.status === "no_wallet") return null;
   return <Prize prize={prize.data} owner={wallet.address} onClaimed={() => void prize.refetch()} />;

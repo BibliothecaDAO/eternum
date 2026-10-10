@@ -15,23 +15,25 @@ const PAID = {
 };
 
 it("reads a paid entry's ledger and a free entry, and a payload with no entry as broken, never free", () => {
-  expect(gameEntryOf({ entry: { kind: "paid", ledger: LEDGER } })).toEqual(PAID);
-  expect(gameEntryOf({ entry: { kind: "free" } })).toEqual({ kind: "free" });
+  expect(gameEntryOf({ entry: { kind: "paid", ledger: LEDGER } }, "slot-1")).toEqual(PAID);
+  expect(gameEntryOf({ entry: { kind: "free" } }, "slot-1")).toEqual({ kind: "free" });
   // The services make entry required: a payload without one is a fault.
-  expect(gameEntryOf({})).toEqual({ kind: "broken" });
+  expect(gameEntryOf({}, "slot-1")).toEqual({ kind: "broken" });
 });
 
 it("shows a paid entry without a whole ledger reference as broken, never as the free join", () => {
-  expect(gameEntryOf({ entry: { kind: "paid" } })).toEqual({ kind: "broken" });
-  expect(gameEntryOf({ entry: { kind: "paid", ledger: { ...LEDGER, feeToken: undefined } } })).toEqual({
+  expect(gameEntryOf({ entry: { kind: "paid" } }, "slot-1")).toEqual({ kind: "broken" });
+  expect(gameEntryOf({ entry: { kind: "paid", ledger: { ...LEDGER, feeToken: undefined } } }, "slot-1")).toEqual({
     kind: "broken",
   });
-  expect(gameEntryOf({ entry: { kind: "paid", ledger: { ...LEDGER, gameId: "7" } } })).toEqual({ kind: "broken" });
-  expect(gameEntryOf({ entry: { kind: "paid", ledger: { ...LEDGER, chainId: undefined } } })).toEqual({
+  expect(gameEntryOf({ entry: { kind: "paid", ledger: { ...LEDGER, gameId: "7" } } }, "slot-1")).toEqual({
     kind: "broken",
   });
-  expect(gameEntryOf({ entry: "paid" })).toEqual({ kind: "broken" });
-  expect(gameEntryOf({ entry: { kind: "sponsored" } })).toEqual({ kind: "broken" });
+  expect(gameEntryOf({ entry: { kind: "paid", ledger: { ...LEDGER, chainId: undefined } } }, "slot-1")).toEqual({
+    kind: "broken",
+  });
+  expect(gameEntryOf({ entry: "paid" }, "slot-1")).toEqual({ kind: "broken" });
+  expect(gameEntryOf({ entry: { kind: "sponsored" } }, "slot-1")).toEqual({ kind: "broken" });
 });
 
 it("refuses a directory game whose ledger key names another game", () => {
@@ -47,4 +49,18 @@ it("reads a ledger on this build's chain, and refuses, loudly, one the entry pla
   expect(() => ledgerOf({ ...onThisChain, chainId: "0x534e5f5345504f4c4941" })).toThrow(
     "Ledger 0x1ed9e7 is on chain 0x534e5f5345504f4c4941; this build reads SN_MAIN",
   );
+});
+
+it("logs why an entry is broken, once, with the slot or game it belongs to", () => {
+  const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+  gameEntryOf({ entry: { kind: "paid" } }, "blitz-1630");
+  gameEntryOf({ entry: { kind: "paid" } }, "blitz-1630");
+  expect(logged).toHaveBeenCalledOnce();
+  expect(logged).toHaveBeenCalledWith("game_entry_unreadable", { id: "blitz-1630", reason: "invalid_game_entry" });
+  directoryGameEntryOf({ chainId: "0x52", game_id: 9, entry: { kind: "paid", ledger: LEDGER } });
+  expect(logged).toHaveBeenLastCalledWith("game_entry_unreadable", {
+    id: "0x52:9",
+    reason: "ledger names game 0x52:7",
+  });
+  logged.mockRestore();
 });

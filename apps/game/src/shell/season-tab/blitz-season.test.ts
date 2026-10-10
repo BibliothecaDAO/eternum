@@ -1,4 +1,4 @@
-import { expect, it } from "vitest";
+import { expect, it, vi } from "vitest";
 
 import type { DirectoryGame } from "../herald";
 import { claimSeasonCall, decodeSeason } from "../value/ledger";
@@ -96,7 +96,7 @@ it("takes the season from the newest Blitz game that names a ledger", () => {
       game_id: id,
       mode: "blitz",
       clock: { start_main_at: start },
-      ...(ledger && { entry: { kind: "paid", ledger: { ...ledger, shard: "0x52", gameId: id } } }),
+      entry: ledger ? { kind: "paid", ledger: { ...ledger, shard: "0x52", gameId: id } } : { kind: "free" },
     }) as unknown as DirectoryGame;
   expect(seasonSourceOf([game(1, 10)])).toBeNull();
   expect(
@@ -104,6 +104,22 @@ it("takes the season from the newest Blitz game that names a ledger", () => {
       game(1, 10, { address: "0xa", chainId: "0x534e5f4d41494e", feeToken: "0xf" }),
       game(2, 20, { address: "0xb", chainId: "0x534e5f4d41494e", feeToken: "0xf" }),
       game(3, 30),
-    ])?.address,
-  ).toBe("0xb");
+    ]),
+  ).toEqual({ kind: "paid", ledger: expect.objectContaining({ address: "0xb" }) });
+});
+
+it("refuses the season when the newest Blitz game's entry is broken, instead of skipping to an older one", () => {
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  const paid = {
+    chainId: "0x52",
+    game_id: 1,
+    mode: "blitz",
+    clock: { start_main_at: 10 },
+    entry: {
+      kind: "paid",
+      ledger: { address: "0xa", chainId: "0x534e5f4d41494e", feeToken: "0xf", shard: "0x52", gameId: 1 },
+    },
+  } as unknown as DirectoryGame;
+  const broken = { chainId: "0x52", game_id: 2, mode: "blitz", clock: { start_main_at: 20 }, entry: { kind: "paid" } };
+  expect(seasonSourceOf([paid, broken as unknown as DirectoryGame])).toEqual({ kind: "broken" });
 });

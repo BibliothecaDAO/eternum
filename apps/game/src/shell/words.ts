@@ -297,6 +297,7 @@ export const REWARD_WORDS = {
 
 /** The Blitz season's prize on Season. */
 export const SEASON_PRIZE_WORDS = {
+  unreadable: "The season's prize could not be read.",
   title: "Blitz season",
   pool: "Prize pool",
   ends: (date: string) => `Ends ${date}`,

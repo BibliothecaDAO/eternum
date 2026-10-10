@@ -44,7 +44,7 @@ export const blitzRows = (
 
 /** A row's entry terms as the services declare them: a slot's own, or its directory game's; never a default. */
 export const rowEntryOf = (row: BlitzRow) =>
-  row.kind === "slot" ? gameEntryOf(row.slot) : directoryGameEntryOf(row.game);
+  row.kind === "slot" ? gameEntryOf(row.slot, row.slot.name) : directoryGameEntryOf(row.game);
 
 /** The row a card with room for one shows: the player's own game to enter, else the next slot to join. */
 export const leadBlitzRow = (rows: readonly BlitzRow[]): BlitzRow | undefined =>

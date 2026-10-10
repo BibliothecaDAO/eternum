@@ -21,14 +21,21 @@ export interface SeasonPrize {
   strk: bigint;
 }
 
-/** The season a player's Blitz games run in: the newest game the directory names a ledger for. */
-export const seasonSourceOf = (games: readonly DirectoryGame[]) => {
+/** Where the season's prize is read: the newest paid Blitz's ledger, or a broken entry the season will not skip. */
+type SeasonSource = { kind: "paid"; ledger: PaidGameLedger } | { kind: "broken" };
+
+/**
+ * The season a player's Blitz games run in: the newest game that is not free. A broken entry there is refused, never
+ * skipped for an older game's ledger. Null when every game is free.
+ */
+export const seasonSourceOf = (games: readonly DirectoryGame[]): SeasonSource | null => {
   const newest = games
     .filter((game) => game.mode === "blitz")
     .toSorted((a, b) => b.clock.start_main_at - a.clock.start_main_at)
     .map(directoryGameEntryOf)
-    .find((entry): entry is { kind: "paid"; ledger: PaidGameLedger } => entry.kind === "paid");
-  return newest?.ledger ?? null;
+    .find((entry) => entry.kind !== "free");
+  if (!newest) return null;
+  return newest.kind === "paid" ? { kind: "paid", ledger: newest.ledger } : { kind: "broken" };
 };
 
 /**
@@ -72,20 +79,18 @@ export const seasonState = (prize: SeasonPrize, now: number): SeasonState => {
 export const seasonPrizeKey = (ledger: string, seasonSource: string, wallet: string) =>
   ["ledger", "season", ledger, seasonSource, wallet] as const;
 
-export const useSeasonPrize = (games: readonly DirectoryGame[], wallet: string | null) => {
-  const source = seasonSourceOf(games);
+/** The season's prize, read from the paid source's ledger; nothing is read for a broken or absent source. */
+export const useSeasonPrize = (source: SeasonSource | null, wallet: string | null) => {
+  const ledger = source?.kind === "paid" ? source.ledger : null;
   return useQuery({
-    queryKey: seasonPrizeKey(source?.address ?? "", source ? `${source.shard}:${source.gameId}` : "", wallet ?? ""),
-    queryFn: () => readSeasonPrize(source as NonNullable<typeof source>, wallet as string),
-    enabled: source !== null && wallet !== null,
+    queryKey: seasonPrizeKey(ledger?.address ?? "", ledger ? `${ledger.shard}:${ledger.gameId}` : "", wallet ?? ""),
+    queryFn: () => readSeasonPrize(ledger as PaidGameLedger, wallet as string),
+    enabled: ledger !== null && wallet !== null,
     refetchInterval: 60_000,
   });
 };
 
-const readSeasonPrize = async (
-  source: NonNullable<ReturnType<typeof seasonSourceOf>>,
-  wallet: string,
-): Promise<SeasonPrize> => {
+const readSeasonPrize = async (source: PaidGameLedger, wallet: string): Promise<SeasonPrize> => {
   const read = ledgerOf(source);
   const { seasonId } = await read.game(source);
   const season = await read.season(seasonId);
