@@ -1,4 +1,3 @@
-import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { buildMysteryChestPreset } from "../../../../contracts/l2/ledger/scripts/chest-preset.js";
 import { nativePresetForId, nativePresetIdFor } from "../../../source/native";
 import { CallData, uint256 } from "starknet";
@@ -10,7 +9,6 @@ export interface LedgerEconomicPreset {
   day_unit_seconds: number;
   season_bags: number;
   claim_window_seconds: number;
-  registration_limit: number;
   entry_fee: ReturnType<typeof uint256.bnToUint256>;
   protocol_cut_bps: number;
   chest_lords_bps: number;
@@ -37,7 +35,6 @@ export function buildLedgerEconomicPreset(
   gameType: DeploymentGameType,
   options: {
     presetId?: number;
-    sponsored?: boolean;
     chestLordsBps?: number;
     protocolCutBps?: number;
   } = {},
@@ -46,7 +43,7 @@ export function buildLedgerEconomicPreset(
   if (native.gameType !== gameType) throw new Error("Ledger preset game type differs from shard preset");
   const balance = native.ledger;
   return {
-    entry_fee: lords(options.sponsored ? 0n : BigInt(balance.entryFee)),
+    entry_fee: lords(BigInt(balance.entryFee)),
     protocol_cut_bps: gameType === "frontier" ? 0 : (options.protocolCutBps ?? balance.protocolCutBps),
     chest_lords_bps: options.chestLordsBps ?? 500,
     paid_fraction_bps: 2_000,
@@ -65,12 +62,6 @@ export function buildLedgerEconomicPreset(
     day_unit_seconds: native.dayUnitSeconds,
     season_bags: native.seasonBags,
     claim_window_seconds: native.chests?.claimWindowSeconds ?? 0,
-    registration_limit:
-      native.entryRule === nativeRuleConstants.ENTRY_ROSTER
-        ? native.settlementMode === "Duel"
-          ? nativeRuleConstants.DUEL_ROSTER_PLAYERS
-          : nativeRuleConstants.MAX_BLITZ_ROSTER_PLAYERS
-        : 0,
   };
 }
 
