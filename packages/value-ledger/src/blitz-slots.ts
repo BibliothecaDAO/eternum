@@ -153,13 +153,15 @@ const matchesRegistration = (
   key: LedgerSlotKey,
   selector: string,
   head: number,
-) =>
+): event is EmittedEvent & { block_number: number; block_hash: string } =>
   event.keys.length === 4 &&
   event.data.length === 0 &&
+  typeof event.block_number === "number" &&
   Number.isSafeInteger(event.block_number) &&
   event.block_number >= 0 &&
   event.block_number <= head &&
-  !!event.block_hash &&
+  typeof event.block_hash === "string" &&
+  event.block_hash.length > 0 &&
   BigInt(event.from_address) === BigInt(address) &&
   BigInt(event.keys[0]!) === BigInt(selector) &&
   BigInt(event.keys[1]!) === BigInt(key.chainId) &&
