@@ -23,6 +23,7 @@ import {
   entryState,
   type EntryTerms,
   useEntryTerms,
+  useRefundsChanged,
 } from "./entry";
 import { lobbyId } from "./lobby";
 
@@ -46,6 +47,7 @@ export const PaidEntry = ({
 }) => {
   const owner = wallet.status === "no_wallet" ? null : wallet.address;
   const terms = useEntryTerms(ledger, slot, owner);
+  const refundsChanged = useRefundsChanged();
   if (owner === null) return <NoWallet />;
   if (terms.isError) return <ServiceFailure service="ledger" error={terms.error} retry={() => void terms.refetch()} />;
   return (
@@ -54,7 +56,10 @@ export const PaidEntry = ({
       slot={slot}
       terms={terms.data}
       owner={owner}
-      onSent={() => void terms.refetch()}
+      onSent={() => {
+        void terms.refetch();
+        refundsChanged();
+      }}
     />
   );
 };

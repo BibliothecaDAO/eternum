@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import type { Credits, Registration } from "@realms-world/value-ledger/codecs";
 
@@ -69,12 +69,57 @@ type EntryState = "choose" | "short" | "registered" | "seated" | "refund" | "ref
  */
 export const entryState = (terms: EntryTerms, choice: EntryChoice, now: number): EntryState => {
   const { registration } = terms;
-  if (registration.registered && (terms.cancelled || registration.refundable))
-    return registration.paid > 0n || registration.swordCredit || registration.shieldCredit ? "refund" : "refunded";
+  if (refundOwed(registration, terms.cancelled)) return "refund";
+  if (registration.registered && registration.gameId === 0 && (terms.cancelled || registration.refundable))
+    return "refunded";
   if (registration.registered) return registration.gameId === 0 ? "registered" : "seated";
   if (now >= terms.close) return "closed";
   if (terms.lords < entryCost(terms, choice).cash) return "short";
   return "choose";
+};
+
+/**
+ * Whether a registration is owed back: no game consumed it, its slot was cancelled or the close left it unseated, and
+ * it still holds the LORDS it paid or a credit it spent. The ledger's own refund rule.
+ */
+export const refundOwed = (registration: Registration, cancelled: boolean): boolean =>
+  registration.registered &&
+  registration.gameId === 0 &&
+  (cancelled || registration.refundable) &&
+  (registration.paid > 0n || registration.swordCredit || registration.shieldCredit);
+
+const REFUNDS_OWED = ["ledger", "refund-owed"] as const;
+export const refundOwedKey = (key: SlotKey, wallet: string) =>
+  [...REFUNDS_OWED, key.shard, key.slotId, wallet] as const;
+
+/**
+ * The closed slots that owe the payout wallet a refund, by name: the Blitz list keeps their rows so the refund stays
+ * in reach after the close. One registration read per closed slot the launch service lists, and the slot's own
+ * (for its cancelled flag) only where that wallet registered and was not seated.
+ */
+export const useRefundSlots = (slots: readonly PlaytestSlot[], wallet: string | null): ReadonlySet<string> => {
+  const ledger = environmentLedger();
+  const closed = ledger && wallet ? slots.filter((slot) => slot.closed) : [];
+  const owed = useQueries({
+    queries: closed.map((slot) => ({
+      queryKey: refundOwedKey(slotKeyOf(slot), wallet as string),
+      queryFn: () => readRefundOwed(ledger as EnvironmentLedger, slotKeyOf(slot), wallet as string),
+      staleTime: 60_000,
+    })),
+  });
+  return new Set(closed.filter((_, index) => owed[index]?.data === true).map((slot) => slot.name));
+};
+
+/** A refund taken, or an entry paid, changes what the list's refund rows read. */
+export const useRefundsChanged = () => {
+  const client = useQueryClient();
+  return () => void client.invalidateQueries({ queryKey: REFUNDS_OWED });
+};
+
+const readRefundOwed = async (ledger: EnvironmentLedger, key: SlotKey, wallet: string): Promise<boolean> => {
+  const registration = await ledger.registration(key, wallet);
+  if (!refundOwed(registration, true)) return false;
+  return registration.refundable || (await ledger.slot(key)).cancelled;
 };
 
 /**

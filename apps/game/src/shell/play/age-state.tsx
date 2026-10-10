@@ -10,7 +10,7 @@ import { ClockChip, clockLine } from "../clock-chip";
 import { entryHref } from "../game-links";
 import { lobbyId } from "../blitz/lobby";
 import { chooseSeason, directoryDay, seasonRealm } from "../season";
-import { BLITZ_WORDS, WORDS } from "../words";
+import { BLITZ_WORDS, ENTRY_WORDS, WORDS } from "../words";
 import type { AgeMode } from "./ages";
 import type { PlayFacts } from "./play-facts";
 import { LiveChip, StateChip } from "./state-chip";
@@ -24,6 +24,8 @@ type AgeState = { chip: ReactNode; action: AgeAction | null };
 const NOTHING: AgeState = { chip: null, action: null };
 
 const blitzAction = (row: BlitzRow): AgeAction | null => {
+  if (row.action === "refund")
+    return { word: ENTRY_WORDS.takeRefund, icon: "Sp", to: `/blitz/${lobbyId(row)}`, role: "primary" };
   if (row.kind === "slot") return { word: BLITZ_WORDS.open, icon: "Pl", to: `/blitz/${lobbyId(row)}`, role: "primary" };
   if (row.action === "enter")
     return { word: WORDS.enter, icon: "Pl", to: entryHref(row.game, "play"), role: "primary" };
@@ -38,6 +40,8 @@ const blitzState = ({ blitz, now }: PlayFacts, tile: boolean): AgeState => {
   const chip =
     lead.startsAt === null ? (
       <LiveChip />
+    ) : lead.action === "refund" ? (
+      <StateChip icon="Lk" text={ENTRY_WORDS.closed} />
     ) : lead.action === "registered" ? (
       <StateChip icon="Ok" text={formatClockTime(lead.startsAt)} />
     ) : tile ? (
