@@ -83,7 +83,7 @@ const checkConservation = (ports: MonitorPorts, store: MonitorStore) =>
     const balances = yield* ports.shard.conservation();
     const progress = yield* relayOperation("read conservation checkpoint", () => store.load());
     for (const balance of balances) {
-      const row = `conservation:${balance.gameId}:${balance.confirmedBlock}:${balance.receipts}:${balance.netIssued}`;
+      const row = `conservation:${balance.chainId ? `${balance.chainId}:` : ""}${balance.gameId}:${balance.confirmedBlock}:${balance.receipts}:${balance.netIssued}`;
       if (BigInt(balance.receipts) > BigInt(balance.netIssued) && progress.skippedConservation !== row) {
         yield* recordFault(store, { row });
         return `lords_conservation:${balance.gameId}:${balance.confirmedBlock}`;

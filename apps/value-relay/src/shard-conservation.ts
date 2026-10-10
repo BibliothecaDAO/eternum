@@ -31,7 +31,7 @@ export const shardConservationPort =
       )
         throw new Error("conservation_directory_differs");
       const head = await reader.header(directory.confirmed_block);
-      const cursor = cache ? ((await cache.get<number>("conservation:cursor")) ?? 0) : 0;
+      const cursor = cache ? ((await cache.get<number>(`conservation:cursor:${connection.chainId}`)) ?? 0) : 0;
       const balances: ConservationBalance[] = [];
       const games = new Set<number>();
       const ordered = [...directory.games].sort((a, b) => a.game_id - b.game_id);
@@ -79,7 +79,8 @@ export const shardConservationPort =
             },
           });
       }
-      if (cache) await cache.put("conservation:cursor", page.length === 25 ? page.at(-1)!.game_id : 0);
+      if (cache)
+        await cache.put(`conservation:cursor:${connection.chainId}`, page.length === 25 ? page.at(-1)!.game_id : 0);
       return balances;
     });
 

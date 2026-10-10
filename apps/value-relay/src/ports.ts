@@ -161,6 +161,7 @@ export interface MonitorPorts {
 }
 
 export interface ConservationBalance {
+  chainId?: string;
   gameId: number;
   confirmedBlock: number;
   receipts: string;

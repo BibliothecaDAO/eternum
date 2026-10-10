@@ -47,7 +47,7 @@ const storage = {
   },
 };
 const env = {
-  SHARD_URL: heraldUrl,
+  VALUE_IDENTITY: { shards: async () => [{ chainId, url: heraldUrl, status: "pending" as const }] },
   BASE_URL: "https://app.test",
   DEPLOYER_PRIVATE_KEY: "0x1",
   OPERATOR_TOKEN: "test",
@@ -60,6 +60,8 @@ beforeEach(() => {
   cache.clear();
   mock.manifest.mockResolvedValue({
     shard: {
+      url: heraldUrl,
+      status: "pending",
       chainId,
       accountClassHash: "0x2",
       guardianPublicKey: "0x9",
@@ -84,7 +86,8 @@ it("enrolls the Worker's own bot under the pinned guardian and class, and keeps 
   });
   expect(await deploy().enrol({ chainId, heraldUrl })).toEqual({ chainId, launcherAccount: own });
   expect(mock.join).toHaveBeenCalledOnce();
-  await expect(deploy().enrol({ chainId: "0x2", heraldUrl })).rejects.toThrow("launcher_target_differs");
+  mock.manifest.mockRejectedValueOnce(new Error("unlisted_shard"));
+  await expect(deploy().enrol({ chainId: "0x2", heraldUrl })).rejects.toThrow("unlisted_shard");
 });
 it("requires enrollment and launcher authority before the fixed empty-roster creation", async () => {
   const check = { chainId, heraldUrl, name: "check-worker-0123456789abcdef", presetId };

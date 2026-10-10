@@ -12,8 +12,6 @@ const LaunchVars = Schema.Struct({
   BASE_URL: Schema.NonEmptyString,
   /** Comma-separated Starknet addresses allowed to launch games; a wildcard is refused. */
   LAUNCHER_ALLOWLIST: Schema.NonEmptyString,
-  /** The shard launches write to: its Herald, whose /manifest names the chain, node and contracts. */
-  SHARD_URL: Schema.NonEmptyString,
   DEPLOYER_ACCOUNT_ADDRESS: Schema.NonEmptyString,
   DEPLOYER_PRIVATE_KEY: Schema.NonEmptyString,
   /** The environment's one operator token, which operator automation presents as a launcher. */
@@ -27,6 +25,7 @@ export interface LaunchEnv extends Omit<LaunchVars, "LAUNCHER_ALLOWLIST"> {
   DB: D1Database;
   /** The identity Worker, which owns sessions; reached by service binding only. */
   IDENTITY: Fetcher;
+  VALUE_IDENTITY: import("@realms-world/value-ledger").ShardDirectory;
   VALUE_RELAY: import("./paid-blitz").BlitzValuePort;
   /** The one registrar that executes launches, one at a time. */
   REGISTRAR: DurableObjectNamespace<import("./registrar").Registrar>;
@@ -43,6 +42,7 @@ export const decodeLaunchEnv = (raw: Record<string, unknown>): LaunchEnv => {
     launchers: launchersOf(LAUNCHER_ALLOWLIST),
     DB: raw.DB as D1Database,
     IDENTITY: raw.IDENTITY as Fetcher,
+    VALUE_IDENTITY: raw.VALUE_IDENTITY as LaunchEnv["VALUE_IDENTITY"],
     VALUE_RELAY: raw.VALUE_RELAY as LaunchEnv["VALUE_RELAY"],
     REGISTRAR: raw.REGISTRAR as LaunchEnv["REGISTRAR"],
     VERSION: raw.VERSION as WorkerVersionMetadata,

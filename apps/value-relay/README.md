@@ -1,87 +1,55 @@
 # Value relay
 
-The relay and independent payout monitor are Cloudflare Workers, with one durable relay cursor per official chain. They
-never run on a shard host. Services use Effect; contract operations sit behind typed ports in `src/ports.ts`.
+The relay and independent payout monitor run as Workers outside the shard hosts. Identity's private
+`ValueIdentity.shards()` method is the only membership source. Active and draining shards can produce payouts and labor.
+Herald's `/manifest` supplies each registered chain's current RPC and Games address. Retired rows remain available for
+readonly historical audits.
 
-The cursor stores the last confirmed block hash with durable withdrawal and result obligations in one transaction. Every
-pass rechecks that block. A changed ancestor changes this hash; a mismatched next parent or a regressed confirmed head
-also halts the relay. Pre-confirmed blocks are refused. A halted cursor requires investigation and has no automatic
-reset. Withdrawals without an eligible wallet remain pending; retries keep the withdrawal transaction hash as claim id.
-The ledger scopes that claim to the shard and enforces its unlock and pause rules.
+Each official shard has its own durable confirmed cursor. A tick reads at most 100 blocks and one Games event page, then
+journals withdrawal and result obligations with the cursor. An unfinished page retains its confirmed anchor. Changed
+hashes, parents or regressed heads halt ingestion. One environment-wide durable ledger actor serializes reports,
+payments, results, season settlement and chest finishes under the operator key. Another shard's failure does not
+suppress these jobs.
 
-The identity binding uses the `ValueIdentity` entrypoint. `payoutWallet(realmsId)` supplies the same 24-hour decision as
-the account endpoint; `linkedWallet(realmsId)` is used for the live Realms ERC721 ownership check. Labor requests use an
-internal port with a trusted account and day; no public labor route exists until the shard grant adapter and
-authenticated request mapping are ready. The shard must enforce first write per Realm/day.
+Frontier receipts are reported as debt before wallet lookup. Payments use identity's ready payout wallet at signing time
+and record that decision before broadcast. A new wallet waits 24 hours. Missing or held wallets remain queued; permanent
+refusals are recorded separately. Confirmed `withdrawal_voided` removes closed unpaid reports from retries, including
+accounts without wallets. A claim is keyed by its shard and withdrawal transaction hash.
 
-The monitor independently scans every paid claim and posted result on each pass, through paginated ports. It compares
-receipt season and amount as well as identity, and compares result commitments. A mismatch persists a stop condition
-before requesting the ledger pause, so a failed pause is retried. The pauser adapter checks the ledger's pause state
-before submitting a transaction and never unpauses it.
+`POST /api/value/labor?chainId=<official shard>` accepts only a Realm in its body. Identity supplies the signed-in
+Realms id and account. The Worker reads the UTC day from the shard and `owner_of` from identity's configured L2 chain.
+The shard owns labor eligibility and limits. No daily cap is copied into services.
 
-The published Frontier `pay`, Blitz `apply_results`, ledger event enumeration and ERC721 `owner_of` adapters are
-implemented. Result retries first check the stored game commitment; event cursors pin a confirmed L2 head. Shard
-receipts, result decoding and labor grants are pending their published schemas. Those ports fail explicitly and relay
-health remains unavailable while that value job cannot run. Shard-originated payouts and labor await those interfaces.
+The independent monitor reads confirmed ledger events through checked-through cursors, verifies receipts, recorded
+payment authority, result commitments and shard conservation, and pauses on disagreement or repeated unavailable
+verification. Later wallet changes cannot rewrite an earlier payment decision. It never uses the relay's queue as proof
+and never unpauses the ledger.
 
-Relay runtime values: `SHARD_CHAIN_ID`, `LEDGER_RPC_URL`, `LEDGER_ADDRESS`, `LEDGER_OPERATOR_ADDRESS`. Realm ownership
-is read through private identity on its configured L2 chain. `LEDGER_OPERATOR_PRIVATE_KEY` is a Worker secret for the
-Starknet operator. The shard ledger-operator adapter will use its own Worker secret when the grant interface arrives; no
-host-held signing key is reused. Monitor runtime values: `LEDGER_RPC_URL`, `LEDGER_ADDRESS`, `PAUSER_ACCOUNT_ADDRESS`;
-its separate Worker secret is `PAUSER_PRIVATE_KEY`. Do not place either credential in variables, source, logs,
-deployment artifacts or shard files.
-
-`wrangler.jsonc` describes the relay and `monitor.wrangler.jsonc` the independent monitor. No deployment is part of this
-change. The new persistence replaces an otherwise lossy block poll; no existing relay existed to remove.
-
-Blitz delivery uses the ranks-only v3 commitment and result ABI. No result row carries points or drawn contents. New
-chest requests burn the holder's token and fix its requester and block B on Starknet. The relay discovers
-ChestRequested/ChestOpened events with a confirmed block cursor and persists only unfinished requests. It calls
-open_finish from B+11 onward; the ledger alone uses block B+1 to draw, and anyone may finish. A lost acknowledgment is
-recognized by get_chest.finished. Failed finishes remain pending, and one failure does not block other requests. The
-queue and completed-block cursor commit together. Provider pagination tokens stay within a pass, so a restart replays
-the unfinished range instead of relying on a provider token's lifetime.
-
-The chest job runs even if the separate shard ingestion job is unavailable. Relay health publishes the last tick and
-both job results. The independent value monitor keeps its own chest cursor/queue and reports tokens unfinished more than
-five minutes after eligibility, using that eligibility block's timestamp and wall time. This warning does not pause
-payouts. Its existing receipt/result violations still do. The extra queue replaces repeated historical chest polling; no
-new signing key, reveal salt, expiry, retry setting or draw lives in the service.
-
-## Rogue account links
-
-A ledger link with no identity history can be created only by a rogue ledger operator key. The independent
-`AccountLinkChanged` audit pauses the ledger for that event; reconciliation does not manufacture identity history for
-it. After investigating the exact fault row, the operator clears the mapping with `set_account_link(wallet, 0)` and
-records the clear's transaction hash and reason. Clears remain legal during pause. Reset only the named rogue-link row
-through `POST /api/operator/monitor/reset`; if the manual clear is itself audited as unmatched, record its transaction
-hash and reset that exact corrective row too. These resets retain the audit trail and never unpause the ledger. The
-ledger admin unpauses only after the offending key and mapping have been corrected. No arbitrary signing endpoint is
-involved.
+The ledger runtime settings are `LEDGER_RPC_URL`, `LEDGER_ADDRESS`, `LEDGER_OPERATOR_ADDRESS` and the
+`LEDGER_OPERATOR_PRIVATE_KEY` secret. Labor uses the Worker's `SHARD_LEDGER_OPERATOR_ADDRESS` and
+`SHARD_LEDGER_OPERATOR_PRIVATE_KEY` secret. These are signing identities, not a shard membership list. The monitor has
+its own `PAUSER_ACCOUNT_ADDRESS` and `PAUSER_PRIVATE_KEY`. All ledger jobs verify the identity environment's L2 chain.
+No signing key belongs on a shard host.
 
 ## Restored shard recovery
 
-The relay keeps a hash for every confirmed block in its queued-obligation range, including empty blocks, and scans at
-most 100 blocks and one event page per tick. This replaces accepting a new parent hash on reset. An operator reset walks
-down to a stored hash that still matches the shard, verifies that anchor again, removes queued withdrawals, results and
-held rows above the fork, then replays from the next block. Without retained evidence it replays from genesis. Each
-reset records the fork, reason and already-paid claims from discarded blocks; it never unpauses the ledger. Completed
-claim metadata is immutable recovery evidence; block hashes below the queued range are pruned. The cost is one stored
-hash per retained block, one immutable completed-claim row and bounded public header reads.
+`POST /api/value/operator/reset` requires the operator bearer token and `{chainId,row,reason}`. It walks down to a
+retained hash still matching the restored chain, checks that anchor again, drops queued rows and economic caches above
+the fork, records already-paid claims from discarded blocks, and replays from fork + 1. If no anchor survives, replay
+starts at genesis. A changed anchor refuses reset. The ledger's claim identity prevents a second payment.
 
-Reset also checks discarded pending claims on the ledger, so a lost payment acknowledgment cannot hide an already-paid
-withdrawal. An unavailable ledger refuses reset and leaves the evidence queued. The reset header contains the first 100
-paid claims, their total count and the prefix for additional 100-claim audit pages; all are committed atomically. This
-replaces an unbounded single-record audit, which would prevent a large restore from being reset.
+`POST /api/operator/monitor/reset` requires `{row,reason}` and the operator token. It records the exact fault and
+advances past only that row. An availability reset retries its checkpoint. Neither reset unpauses the ledger.
 
-## Season settlement
+## Season prizes and mystery chests
 
-The relay builds the season top list from the ledger's frozen seasonal MMR, posts contiguous 32-wallet batches, then
-advances the ledger's allocation cursor in 32-position steps. The independent monitor enumerates the cohort separately,
-checks every participant and winner at a pinned confirmed head, and pauses on a mismatch or an audit that cannot finish
-before the one-hour review ends. A newer season's live token rating never replaces that frozen leaderboard.
+At season end the relay builds the top list from frozen seasonal MMR, posts 32-wallet batches and advances allocation in
+32-position steps. The monitor independently checks every participant and winner before the one-hour review ends. Event
+cursors, participant rows and a sorted index replace an unbounded population scan. The bounded settlement ABI must land
+with these services; no player challenge screen is needed.
 
-This adds the previously missing publisher and audit. Durable event cursors, participant rows and a sorted MMR index
-keep each tick to one event page per stream and at most 100 rating/winner reads. They survive interruption without an
-unbounded population scan. No additional Worker, signing role, eligibility cap, timer or player challenge screen is
-introduced. Posting/allocation use the ledger's published bounded ABI; it must be deployed with these services.
+Blitz results carry ranks only. The ledger mints tradeable rank-band chests and owns their draws. Each keeper tick reads
+one 100-event page, persists its continuation and rotates through 25 unfinished requests. It calls `open_finish` once
+the later block is readable and recognizes an already-finished retry. The monitor reports requests overdue by five
+minutes after eligibility. Pending/overdue counts describe the checked page, with `checked` identifying its size; these
+warnings do not pause payouts.

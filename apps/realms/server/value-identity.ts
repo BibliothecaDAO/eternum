@@ -1,3 +1,4 @@
+import { registeredShards } from "./directory";
 import { recordPayDecision, matchesPayDecision } from "./pay-decisions";
 import { createIdentityAuth } from "./auth";
 import { WorkerEntrypoint } from "cloudflare:workers";
@@ -12,6 +13,9 @@ import { lookupPayoutWallet, readLinkedWallet } from "./payout-wallet";
 
 /** Only a service binding exposes these reads; they have no public HTTP route. */
 export class ValueIdentity extends WorkerEntrypoint<IdentityEnv> {
+  shards() {
+    return registeredShards(this.env.DB);
+  }
   l2ChainId() {
     return encodeChainName(identityL2Configuration(this.env).chainId);
   }

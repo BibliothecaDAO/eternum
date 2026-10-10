@@ -54,7 +54,11 @@ afterEach(async () => {
   await database.close();
   vi.unstubAllGlobals();
 });
-const target = { shardUrl: "https://shard.test", accountAddress: "0x1", privateKey: "unused-test-key" };
+const target = {
+  directory: { shards: async () => [{ url: "https://shard.test", chainId: TEST_CHAIN, status: "active" as const }] },
+  accountAddress: "0x1",
+  privateKey: "unused-test-key",
+};
 it("replaces the launcher's supplied Blitz roster with the guarded ledger roster on every retry", async () => {
   const store = new D1LaunchStore(database.db, testChain());
   const run = await store.enqueue("game", {

@@ -101,11 +101,9 @@ const playerOf = (request: Request): string | null | typeof INVALID => {
 
 /** Every listed shard's games, each shard read on its own so one that fails is named and the rest still answer. */
 const listShards = async (dependencies: DirectoryDependencies, player: string | null) => {
-  const { results } = await dependencies.db
-    .prepare(
-      `SELECT "url", "chainId", "status" FROM "shards" WHERE "status" IN ('active', 'draining') ORDER BY "addedAt"`,
-    )
-    .all<ListedShard>();
+  const results = (await registeredShards(dependencies.db)).filter(
+    (row) => row.status === "active" || row.status === "draining",
+  );
   return Promise.all(
     results.map((shard) =>
       listShard(shard, () =>
@@ -375,3 +373,8 @@ export const superviseNotifiers = async (db: D1Database, notifiers: IdentityEnv[
     }),
   );
 };
+
+/** Private services read every registered lifecycle row; each write applies its active/draining rule. */
+export const registeredShards = async (db: D1Database) =>
+  (await db.prepare('SELECT url,"chainId",status FROM shards ORDER BY "addedAt", "chainId"').all<ListedShard>())
+    .results;

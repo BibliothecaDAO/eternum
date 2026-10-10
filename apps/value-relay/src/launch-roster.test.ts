@@ -23,10 +23,12 @@ const relay = () =>
       blockConcurrencyWhile: async (run: () => Promise<unknown>) => run(),
     } as unknown as DurableObjectState,
     {
-      SHARD_CHAIN_ID: "0x1",
       LEDGER_RPC_URL: "https://ledger.test",
       LEDGER_ADDRESS: "0x10",
-      IDENTITY: { l2ChainId: async () => "0x2" },
+      IDENTITY: {
+        l2ChainId: async () => "0x2",
+        shards: async () => [{ chainId: "0x1", url: "https://shard.test", status: "active" }],
+      },
     } as never,
   );
 beforeEach(() => {

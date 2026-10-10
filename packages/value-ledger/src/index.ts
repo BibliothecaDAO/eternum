@@ -94,3 +94,6 @@ export interface LedgerRosterSnapshot {
   end: number;
   registrations: readonly { wallet: string; account: string }[];
 }
+
+export { activeShards, requireActiveChain, readRegisteredShard } from "./official-shards";
+export type { ShardDirectory, RegisteredShard } from "./official-shards";

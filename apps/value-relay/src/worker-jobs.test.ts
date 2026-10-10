@@ -17,7 +17,7 @@ vi.mock("@realms-world/value-ledger", async (importOriginal) => ({
 }));
 const finish = vi.hoisted(() => vi.fn());
 vi.mock("./chests", () => ({ DurableChestStore: class {}, finishRequestedChests: finish }));
-it("runs and publishes the chest job even while shard ingestion remains unavailable", async () => {
+it("runs ledger-wide chest work independently of any configured shard", async () => {
   const data = new Map<string, unknown>();
   const ctx = {
     blockConcurrencyWhile: async (run: () => Promise<unknown>) => run(),
@@ -35,10 +35,9 @@ it("runs and publishes the chest job even while shard ingestion remains unavaila
     ctx as unknown as DurableObjectState,
     { SHARD_CHAIN_ID: "0x1", IDENTITY: { l2ChainId: async () => "0x1" } } as never,
   );
-  const observation = await relay.tick();
-  expect(observation.value.status).toBe("unavailable");
+  const observation = await relay.ledgerTick();
   expect(observation.chests).toEqual({ finished: 1, failed: 0, pending: 0 });
   expect(finish).toHaveBeenCalledOnce();
-  expect((await relay.health()).success).toBe(false);
+  expect((await relay.ledgerHealth()).success).toBe(false);
   expect(data.has("lastTick")).toBe(true);
 });

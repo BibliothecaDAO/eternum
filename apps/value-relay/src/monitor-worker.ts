@@ -1,3 +1,4 @@
+import { activeShards, readRegisteredShard, type ShardDirectory } from "@realms-world/value-ledger";
 import { processSeasonTops } from "./season-tops";
 import { seasonLedgerReads } from "./season-ledger";
 import { onIdentityChain } from "./ledger-chain";
@@ -18,11 +19,7 @@ import { runMonitor, resetMonitorRow, type MonitorProgress } from "./monitor";
 
 interface MonitorEnv {
   OPERATOR_TOKEN: string;
-  SHARD_HERALD_URL: string;
-  SHARD_RPC_URL: string;
-  SHARD_GAMES_ADDRESS: string;
-  SHARD_CHAIN_ID: string;
-  IDENTITY: {
+  IDENTITY: ShardDirectory & {
     l2ChainId(): Promise<string>;
     realmsIdForAccount(account: string): Promise<string | null>;
     matchesPayDecision(decision: import("@realms-world/identity").LedgerPayDecision): Promise<boolean>;
@@ -73,15 +70,23 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
             Result.isSuccess(seasonAudit) ? Effect.succeed(seasonAudit.success) : Effect.fail(seasonAudit.failure),
           );
           const value = yield* Effect.result(
-            runMonitor(ports, {
-              load: () => monitor.status(),
-              save: (progress) => monitor.ctx.storage.put("progress", progress),
-            }),
+            onIdentityChain(
+              monitor.env.LEDGER_RPC_URL,
+              monitor.env.IDENTITY,
+              runMonitor(ports, {
+                load: () => monitor.status(),
+                save: (progress) => monitor.ctx.storage.put("progress", progress),
+              }),
+            ),
           );
           const chests = yield* Effect.result(
-            overdueChestRequests(
-              chestLedgerReads({ rpcUrl: monitor.env.LEDGER_RPC_URL, contractAddress: monitor.env.LEDGER_ADDRESS }),
-              monitor.chests,
+            onIdentityChain(
+              monitor.env.LEDGER_RPC_URL,
+              monitor.env.IDENTITY,
+              overdueChestRequests(
+                chestLedgerReads({ rpcUrl: monitor.env.LEDGER_RPC_URL, contractAddress: monitor.env.LEDGER_ADDRESS }),
+                monitor.chests,
+              ),
             ),
           );
           const held = yield* Effect.result(
@@ -168,8 +173,12 @@ const legacyFault = async (
   const reads = ledgerMonitorReads(env.LEDGER_RPC_URL, env.LEDGER_ADDRESS);
   const page =
     stream === "paidClaims"
-      ? await Effect.runPromise(reads.paidClaims(cursor.page, cursor.fromBlock))
-      : await Effect.runPromise(reads.postedResults(cursor.page, cursor.fromBlock));
+      ? await Effect.runPromise(
+          onIdentityChain(env.LEDGER_RPC_URL, env.IDENTITY, reads.paidClaims(cursor.page, cursor.fromBlock)),
+        )
+      : await Effect.runPromise(
+          onIdentityChain(env.LEDGER_RPC_URL, env.IDENTITY, reads.postedResults(cursor.page, cursor.fromBlock)),
+        );
   const index = page.rows.findIndex((value) =>
     paid
       ? "transactionHash" in value && BigInt(value.transactionHash) === BigInt(paid[1]!)
@@ -194,29 +203,52 @@ const monitorPortsOf = (
   storage: DurableObjectStorage,
   auditSeasons: import("./ports").MonitorPorts["ledger"]["auditSeasons"],
 ) => {
-  const reader = new ShardReader({
-    rpcUrl: env.SHARD_RPC_URL,
-    gamesAddress: env.SHARD_GAMES_ADDRESS,
-    chainId: env.SHARD_CHAIN_ID,
-  });
+  const shardPorts = async (chainId: string) => {
+    const shard = await readRegisteredShard(env.IDENTITY, chainId);
+    const reader = new ShardReader({
+      rpcUrl: shard.rpcUrl,
+      gamesAddress: shard.contracts.games!,
+      chainId: shard.chainId,
+    });
+    return { reader, shard };
+  };
   return {
     identity: {
       matchesPayDecision: (decision: import("@realms-world/identity").LedgerPayDecision) =>
         relayOperation("verify signed pay decision", () => env.IDENTITY.matchesPayDecision(decision)),
     },
     shard: {
-      conservation: shardConservationPort(reader.connection, env.SHARD_HERALD_URL, fetch, storage),
-      withdrawal: shardWithdrawalPorts(
-        reader,
-        frontierReceiptBindings(
-          reader,
-          { rpcUrl: env.LEDGER_RPC_URL, address: env.LEDGER_ADDRESS },
-          env.IDENTITY,
-          env.SHARD_HERALD_URL,
-          storage,
-        ),
-      ).withdrawal,
-      result: shardResultPort(reader),
+      withdrawal: (chainId: string, hash: string) =>
+        relayOperation("audit registered shard receipt", async () => {
+          const { reader, shard } = await shardPorts(chainId);
+          return Effect.runPromise(
+            shardWithdrawalPorts(
+              reader,
+              frontierReceiptBindings(
+                reader,
+                { rpcUrl: env.LEDGER_RPC_URL, address: env.LEDGER_ADDRESS },
+                env.IDENTITY,
+                shard.url,
+                storage,
+              ),
+            ).withdrawal(chainId, hash),
+          );
+        }),
+      result: (chainId: string, gameId: number) =>
+        relayOperation("audit registered shard result", async () => {
+          const { reader } = await shardPorts(chainId);
+          return Effect.runPromise(shardResultPort(reader)(chainId, gameId));
+        }),
+      conservation: () =>
+        relayOperation("audit official shard conservation", async () => {
+          const balances = [];
+          for (const row of await activeShards(env.IDENTITY)) {
+            const { reader, shard } = await shardPorts(row.chainId);
+            const rows = await Effect.runPromise(shardConservationPort(reader.connection, shard.url, fetch, storage)());
+            balances.push(...rows.map((row) => ({ ...row, chainId: shard.chainId })));
+          }
+          return balances;
+        }),
     },
     ledger: {
       ...ledgerMonitorReads(env.LEDGER_RPC_URL, env.LEDGER_ADDRESS),

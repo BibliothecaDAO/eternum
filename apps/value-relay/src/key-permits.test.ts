@@ -12,6 +12,13 @@ vi.mock("cloudflare:workers", () => ({
 }));
 vi.mock("@realms-world/value-ledger", async (original) => ({
   ...(await original<typeof import("@realms-world/value-ledger")>()),
+  readRegisteredShard: async () => ({
+    chainId: "0x1",
+    rpcUrl: "https://proxy.test/rpc/v0_10_2",
+    contracts: { games: "0x77" },
+    url: "https://shard.test",
+    status: "active",
+  }),
   rpcAt: () => ({ getChainId: async () => "0x1" }),
 }));
 vi.mock("./game-entry", () => ({ paidGameEntry: () => Effect.succeed({ kind: "free" }) }));
@@ -36,7 +43,12 @@ it("lets the shard signer grant labor while the ledger signer awaits confirmatio
   const storage = { setAlarm: async () => {}, get: async () => undefined };
   const relay = new ValueRelay(
     { storage, blockConcurrencyWhile: async (run: () => Promise<unknown>) => run() } as unknown as DurableObjectState,
-    { SHARD_CHAIN_ID: "0x1", IDENTITY: { l2ChainId: async () => "0x1" } } as never,
+    {
+      IDENTITY: {
+        l2ChainId: async () => "0x1",
+        shards: async () => [{ chainId: "0x1", url: "https://shard.test", status: "active" }],
+      },
+    } as never,
   );
   const opening = relay.openBlitz({ chainId: "0x1", gameId: 1 }, { start: 1, end: 2 });
   await entered;

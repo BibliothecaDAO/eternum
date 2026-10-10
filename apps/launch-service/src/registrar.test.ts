@@ -40,7 +40,10 @@ beforeEach(() => {
 afterEach(() => vi.restoreAllMocks());
 const setup = () => {
   const setAlarm = vi.fn(async (_at: number) => {});
-  const registrar = new Registrar({ storage: { setAlarm } } as unknown as DurableObjectState, { DB: {} });
+  const registrar = new Registrar({ storage: { setAlarm } } as unknown as DurableObjectState, {
+    DB: {},
+    VALUE_IDENTITY: { shards: async () => [{ chainId: "0x1", url: "https://shard.test", status: "active" }] },
+  });
   return { registrar, setAlarm };
 };
 it("keeps polling an ungranted launcher beyond platform retries without consuming due runs, then resumes", async () => {

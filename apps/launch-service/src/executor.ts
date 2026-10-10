@@ -1,5 +1,5 @@
 import { Context, Effect, Layer } from "effect";
-import type { ShardManifest } from "@bibliothecadao/eternum/game-sync";
+import { activeShards, requireActiveChain, readRegisteredShard, type ShardDirectory } from "@realms-world/value-ledger";
 import type { LaunchEntryStore } from "./entry";
 import type { LaunchEnv } from "./env";
 import { LaunchExecutionFailure } from "./errors";
@@ -9,7 +9,7 @@ import { launchPaidBlitz, type BlitzValuePort } from "./paid-blitz";
 import { finalizeGame } from "./results";
 
 interface LaunchTarget {
-  shardUrl: string;
+  directory: ShardDirectory;
   accountAddress: string;
   privateKey: string;
 }
@@ -20,30 +20,22 @@ interface LaunchExecutorService {
 }
 export class LaunchExecutor extends Context.Service<LaunchExecutor, LaunchExecutorService>()("launch/LaunchExecutor") {}
 export const launchTargetOf = (env: LaunchEnv): LaunchTarget => ({
-  shardUrl: env.SHARD_URL,
+  directory: env.VALUE_IDENTITY,
   accountAddress: env.DEPLOYER_ACCOUNT_ADDRESS,
   privateKey: env.DEPLOYER_PRIVATE_KEY,
 });
 
-/** Runtime ABI is authoritative; a bundled pre-integration schema must not gate a newly built shard. */
-export const readLaunchShard = async (shardUrl: string) => {
-  const response = await fetch(new URL("/manifest", shardUrl), {
-    redirect: "manual",
-    signal: AbortSignal.timeout(5000),
-  });
-  if (!response.ok) throw new Error("launch_manifest_unavailable");
-  const manifest = (await response.json()) as ShardManifest;
-  if (
-    manifest.version !== 1 ||
-    !/^0x[0-9a-f]+$/i.test(manifest.chainId) ||
-    !/^0x[0-9a-f]+$/i.test(manifest.contracts?.games ?? "") ||
-    !/^0x[0-9a-f]+$/i.test(manifest.accountClassHash) ||
-    !/^0x[0-9a-f]+$/i.test(manifest.guardianPublicKey)
-  )
-    throw new Error("invalid_launch_manifest");
-  return { shard: { ...manifest, url: shardUrl }, world: { world: { address: manifest.contracts.games! } } };
+/** Directory membership owns selection; runtime ABI owns command encoding. */
+export const readLaunchShard = async (directory: ShardDirectory, chainId: string) => {
+  const shard = await readRegisteredShard(directory, chainId);
+  return { shard, world: { world: { address: shard.contracts.games! } } };
 };
-export const shardChainOf = (env: LaunchEnv) => async () => (await readLaunchShard(env.SHARD_URL)).shard.chainId;
+export const shardChainOf = (env: LaunchEnv, requested?: string | null) => async () => {
+  if (requested) return (await requireActiveChain(env.VALUE_IDENTITY, requested)).chainId;
+  const shards = await activeShards(env.VALUE_IDENTITY);
+  if (shards.length !== 1) throw new Error("select_official_shard_chain");
+  return shards[0]!.chainId;
+};
 
 export const launchExecutorLayer = (target: LaunchTarget, value: BlitzValuePort) =>
   Layer.succeed(LaunchExecutor, {
@@ -80,7 +72,8 @@ const executeRun = async (
   target: LaunchTarget,
   value: BlitzValuePort,
 ): Promise<LaunchSummary> => {
-  const { shard } = await readLaunchShard(target.shardUrl);
+  await requireActiveChain(target.directory, run.chainId);
+  const { shard } = await readLaunchShard(target.directory, run.chainId);
   if (BigInt(run.chainId) !== BigInt(shard.chainId)) throw new Error("queued_launch_shard_changed");
   const native = new LaunchShard({
     rpcUrl: shard.rpcUrl,

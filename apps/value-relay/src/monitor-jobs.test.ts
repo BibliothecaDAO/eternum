@@ -12,9 +12,12 @@ vi.mock("cloudflare:workers", () => ({
 }));
 vi.mock("@realms-world/value-ledger", async (original) => ({
   ...(await original<typeof import("@realms-world/value-ledger")>()),
-  rpcAt: () => {
-    throw new Error("unavailable_read");
-  },
+  rpcAt: () => ({
+    getChainId: async () => "0x1",
+    getBlock: async () => {
+      throw new Error("unavailable_read");
+    },
+  }),
 }));
 const overdue = vi.hoisted(() => vi.fn());
 vi.mock("./chests", () => ({ DurableChestStore: class {}, overdueChestRequests: overdue }));
@@ -32,7 +35,10 @@ const fixture = () => {
   };
   const monitor = new ValueMonitor(
     ctx as unknown as DurableObjectState,
-    { SHARD_CHAIN_ID: "0x1", LEDGER_RPC_URL: "https://ledger.test" } as never,
+    {
+      LEDGER_RPC_URL: "https://ledger.test",
+      IDENTITY: { l2ChainId: async () => "0x1", shards: async () => [] },
+    } as never,
   );
   return { monitor, data };
 };

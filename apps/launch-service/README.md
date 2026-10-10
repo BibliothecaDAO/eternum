@@ -8,9 +8,9 @@ signed-in Realms account with a linked wallet from the app's origin; launch muta
 
 Configuration, per environment (see `wrangler.jsonc` and `.github/workflows/deploy-workers.yml`):
 
-- `SHARD_URL` — the shard it launches on: its Herald, whose `/manifest` names the chain, node, admission endpoint and
-  contracts. It is read at each launch, and a shard running a release other than the one this Worker was built with is
-  refused; the ABIs are that release's committed schema.
+- the identity directory — the shard it launches on: its Herald, whose `/manifest` names the chain, node, admission
+  endpoint and contracts. It is read at each launch, and a shard running a release other than the one this Worker was
+  built with is refused; the ABIs are that release's committed schema.
 - `VALUE_RELAY` — the guarded ledger reader and writer reached through the service binding
 - `DEPLOYER_ACCOUNT_ADDRESS` and the secret `DEPLOYER_PRIVATE_KEY` — the registrar writer
 - `LAUNCHER_ALLOWLIST` — comma-separated Starknet addresses; a wildcard is refused
@@ -49,10 +49,10 @@ and hyperstructure settlement before recording results, which resume from the ch
 Production deploys only at the cutover, once the box's launch service has stopped: two schedulers would freeze the same
 slots.
 
-Before changing `SHARD_URL`, close registration and let all queued and running launches and result jobs finish on the
-old shard. Completed games remain in the player directory across chains. If unfinished work remains after a change, new
-launches and execution are refused, and `/api/factory/health` returns 503 with `strandedRuns` naming the affected chains
-and runs. Restore the previous `SHARD_URL` and drain that work before retrying the cutover.
+Before changing the identity directory, close registration and let all queued and running launches and result jobs
+finish on the old shard. Completed games remain in the player directory across chains. If unfinished work remains after
+a change, new launches and execution are refused, and `/api/factory/health` returns 503 with `strandedRuns` naming the
+affected chains and runs. Restore the previous the identity directory and drain that work before retrying the cutover.
 
 `/api/factory/version` names the running code and reads nothing else; `deploy-workers.yml` verifies a deploy against it.
 The deploy reports `/api/factory/health` as a separate shard-health signal that never fails the deploy.

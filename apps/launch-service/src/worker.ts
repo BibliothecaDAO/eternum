@@ -1,3 +1,4 @@
+import { activeShards } from "@realms-world/value-ledger";
 import { Effect } from "effect";
 import { realmsAccountAddress } from "@realms-world/identity/account";
 import { createLaunchApp } from "./app";
@@ -16,23 +17,26 @@ import { D1LaunchStore } from "./store";
  */
 export default {
   fetch(request: Request, rawEnv: Record<string, unknown>): Response | Promise<Response> {
-    return launchAppOf(decodeLaunchEnv(rawEnv)).fetch(request);
+    return launchAppOf(decodeLaunchEnv(rawEnv), new URL(request.url).searchParams.get("chainId")).fetch(request);
   },
   async scheduled(_controller: ScheduledController, rawEnv: Record<string, unknown>): Promise<void> {
     const env = decodeLaunchEnv(rawEnv);
-    const { launches, slots, calendar } = launchStoresOf(env);
     try {
-      await Effect.runPromise(runLaunchSchedule(launches, slots, calendar, new Date()));
+      for (const shard of await activeShards(env.VALUE_IDENTITY)) {
+        const { launches, slots, calendar } = launchStoresOf(env, shard.chainId);
+        await Effect.runPromise(runLaunchSchedule(launches, slots, calendar, new Date()));
+      }
     } finally {
-      // Wake queued work even when a schedule step or its calendar read failed.
       await registrarOf(env).armFor(Date.now());
     }
   },
 };
 
 /** The launch service's stores on one D1, keyed to the chain the shard's /manifest names. */
-const launchStoresOf = (env: LaunchEnv) => {
-  const launches = new D1LaunchStore(env.DB, shardChainOf(env));
+const launchStoresOf = (env: LaunchEnv, chainId?: string | null) => {
+  const launches = new D1LaunchStore(env.DB, shardChainOf(env, chainId), () =>
+    activeShards(env.VALUE_IDENTITY).then((rows) => rows.map((row) => row.chainId)),
+  );
   return { launches, slots: new D1SlotStore(env.DB, launches), calendar: new D1CalendarStore(env.DB) };
 };
 
@@ -40,8 +44,8 @@ const registrarOf = (env: LaunchEnv) => env.REGISTRAR.get(env.REGISTRAR.idFromNa
 
 export { Registrar } from "./registrar";
 
-const launchAppOf = (env: LaunchEnv) => {
-  const { launches, slots, calendar } = launchStoresOf(env);
+const launchAppOf = (env: LaunchEnv, chainId?: string | null) => {
+  const { launches, slots, calendar } = launchStoresOf(env, chainId);
   return createLaunchApp({
     config: {
       allowedOrigins: new Set([new URL(env.BASE_URL).origin]),
@@ -59,7 +63,7 @@ const launchAppOf = (env: LaunchEnv) => {
       check: (input) => registrarOf(env).check(input),
     },
     playerAccount: async (realmsId) => {
-      const { shard } = await readLaunchShard(env.SHARD_URL);
+      const { shard } = await readLaunchShard(env.VALUE_IDENTITY, await shardChainOf(env, chainId)());
       return realmsAccountAddress(realmsId, shard.accountClassHash, shard.guardianPublicKey);
     },
   });
