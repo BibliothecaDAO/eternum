@@ -75,7 +75,7 @@ export const actorsWhoActed = (page: HeraldStoryHistoryPage): { gameId: number; 
   const add = (gameId: number, player: unknown) => {
     if (typeof player !== "string" && typeof player !== "bigint" && typeof player !== "number") return;
     if (BigInt(player) === 0n) return;
-    const actor = canonicalFelt(player);
+    const actor = canonicalFelt(BigInt(player));
     acted.set(`${gameId}:${actor}`, { gameId, actor });
   };
   for (const { model, value } of page.items) {
