@@ -1,7 +1,7 @@
 use core::poseidon::poseidon_hash_span;
 use game_ledger::types::{
     BlitzSeason, Chest, ChestBandPreset, Credits, FrontierSeason, Game, GameKey, PlayerResult, Preset, RankedPlayer,
-    Registration, SeasonSettlement, WithdrawalPayment,
+    Registration, WithdrawalPayment,
 };
 use starknet::ContractAddress;
 
@@ -11,7 +11,6 @@ const BPS: u256 = 10_000;
 const PAYOUT_WEIGHT_SCALE: u256 = 1_000_000_000_000_000_000;
 // One minute is the relay settlement cron interval. Launch and custody share this gate.
 pub const BLITZ_SETTLEMENT_INTERVAL_SECONDS: u64 = 60;
-pub const SEASON_BATCH_SIZE: u32 = 32;
 const SEASON_REVIEW_SECONDS: u64 = 3600;
 const MMR_PRECISION: u256 = 1_000_000_000_000_000_000;
 const NO_PASS: u8 = 0;
@@ -52,11 +51,9 @@ pub trait IGameLedger<TState> {
     );
     fn open_season(ref self: TState, season_id: u32, preset_id: u32, start: u64, end: u64);
     fn get_season(self: @TState, season_id: u32) -> BlitzSeason;
-    fn post_season_top(ref self: TState, season_id: u32, start: u32, winners: Array<ContractAddress>);
-    fn allocate_season(ref self: TState, season_id: u32, start: u32) -> u32;
-    fn season_settlement(self: @TState, season_id: u32) -> SeasonSettlement;
+    fn post_season_top(ref self: TState, season_id: u32, winners: Array<ContractAddress>);
     fn challenge_season(ref self: TState, season_id: u32, omitted: ContractAddress);
-    fn claim_season(ref self: TState, season_id: u32);
+    fn claim_season(ref self: TState, season_id: u32, position: u32);
     fn correct_season_mmr(ref self: TState, season_id: u32, updates: Array<(ContractAddress, u128)>);
     fn get_season_mmr(self: @TState, season_id: u32, owner: ContractAddress) -> u128;
     fn get_season_winner(self: @TState, season_id: u32, index: u32) -> (ContractAddress, u256);
@@ -123,7 +120,7 @@ pub mod GameLedger {
     use game_ledger::mmr::MmrCalculatorImpl;
     use game_ledger::types::{
         BlitzSeason, Chest, ChestBandPreset, ChestContent, Credits, FrontierSeason, Game, GameKey, PlayerResult, Preset,
-        RankedPlayer, Registration, SeasonSettlement, WithdrawalPayment,
+        RankedPlayer, Registration, WithdrawalPayment,
     };
     use openzeppelin::access::accesscontrol::{AccessControlComponent, DEFAULT_ADMIN_ROLE};
     use openzeppelin::introspection::src5::SRC5Component;
@@ -139,7 +136,7 @@ pub mod GameLedger {
         IMMRTokenDispatcher, IMMRTokenDispatcherTrait, IPassBurnDispatcher, IPassBurnDispatcherTrait,
         IPassRestoreDispatcher, IPassRestoreDispatcherTrait, ISeasonPassMetadataDispatcher,
         ISeasonPassMetadataDispatcherTrait, MMR_PRECISION, NO_PASS, OPERATOR_ROLE, PAUSER_ROLE, PAYOUT_WEIGHT_SCALE,
-        SEASON_BATCH_SIZE, SEASON_PASS, SEASON_REVIEW_SECONDS, VILLAGE_PASS, result_commitment,
+        SEASON_PASS, SEASON_REVIEW_SECONDS, VILLAGE_PASS, result_commitment,
     };
 
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
@@ -174,8 +171,6 @@ pub mod GameLedger {
         season_mmrs: Map<(u32, ContractAddress), u128>,
         season_winners: Map<(u32, u32), ContractAddress>,
         season_allocations: Map<(u32, u32), u256>,
-        season_settlements: Map<u32, SeasonSettlement>,
-        season_positions: Map<(u32, ContractAddress), u32>,
         season_claims: Map<(u32, ContractAddress), bool>,
         chests: Map<u256, Chest>,
         chest_bands: Map<(u32, u8), ChestBandPreset>,
@@ -225,7 +220,6 @@ pub mod GameLedger {
         Refunded: Refunded,
         SeasonOpened: SeasonOpened,
         SeasonTopPosted: SeasonTopPosted,
-        SeasonTopBatchPosted: SeasonTopBatchPosted,
         SeasonChallenged: SeasonChallenged,
         SeasonPaid: SeasonPaid,
         SeasonMmrCorrected: SeasonMmrCorrected,
@@ -393,14 +387,6 @@ pub mod GameLedger {
         top_count: u32,
         review_until: u64,
         pool: u256,
-    }
-
-    #[derive(Drop, starknet::Event)]
-    struct SeasonTopBatchPosted {
-        #[key]
-        season_id: u32,
-        start: u32,
-        winners: Span<ContractAddress>,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -695,83 +681,27 @@ pub mod GameLedger {
             season
         }
 
-        fn post_season_top(ref self: ContractState, season_id: u32, start: u32, winners: Array<ContractAddress>) {
+        fn post_season_top(ref self: ContractState, season_id: u32, winners: Array<ContractAddress>) {
             self.accesscontrol.assert_only_role(OPERATOR_ROLE);
             let mut season = self.get_season(season_id);
-            let preset = self.get_preset(season.preset_id);
-            self.assert_season_top_open(season, preset);
-            assert!(!winners.is_empty() && winners.len() <= SEASON_BATCH_SIZE, "Ledger: invalid top batch size");
-            if season.challenged {
-                assert!(start == 0, "Ledger: restart challenged list");
-                season.top_count = 0;
-                season.posted = false;
-                season.challenged = false;
-                self.season_settlements.entry(season_id).write(Default::default());
-            }
-            if start < season.top_count {
-                self.assert_top_retry(season_id, season.top_count, start, winners.span());
-                return;
-            }
-            assert!(start == season.top_count, "Ledger: top batch out of order");
+            self.assert_season_top_open(season);
+            let preset = self.presets.entry(season.preset_id).read();
             self.validate_season_top(season_id, season, winners.span(), preset);
-            let mut progress = self.season_settlement(season_id);
-            if start == 0 {
-                season.pool += season.chest_reserve;
-                assert!(season.pool <= 0xffffffffffffffffffffffffffffffff, "Ledger: season pool exceeds u128");
-                season.chest_reserve = 0;
-                progress.next_weight = PAYOUT_WEIGHT_SCALE;
-            }
-            self.append_season_top(season_id, start, winners.span(), preset, ref progress);
+            season.pool += season.chest_reserve;
+            assert!(season.pool <= 0xffffffffffffffffffffffffffffffff, "Ledger: season pool exceeds u128");
+            season.chest_reserve = 0;
+            self.write_season_allocations(season_id, season, winners.span(), preset);
             season.posted = true;
-            season.top_count += winners.len();
-            // A partial proposal is challengeable, but cannot pay. Final allocation opens a full review.
+            season.challenged = false;
+            season.top_count = winners.len();
             season.review_until = starknet::get_block_timestamp() + SEASON_REVIEW_SECONDS;
-            if season.top_count == SeasonWriterImpl::winner_count(season.participant_count, preset.paid_fraction_bps) {
-                progress.next_weight = PAYOUT_WEIGHT_SCALE;
-            }
-            self.season_settlements.entry(season_id).write(progress);
             self.seasons.entry(season_id).write(season);
-            self.emit(SeasonTopBatchPosted { season_id, start, winners: winners.span() });
-        }
-
-        fn allocate_season(ref self: ContractState, season_id: u32, start: u32) -> u32 {
-            let mut season = self.get_season(season_id);
-            let preset = self.get_preset(season.preset_id);
-            assert!(season.posted && !season.challenged, "Ledger: season challenged");
-            assert!(
-                season.top_count == SeasonWriterImpl::winner_count(season.participant_count, preset.paid_fraction_bps),
-                "Ledger: incomplete top list",
-            );
-            let mut progress = self.season_settlement(season_id);
-            if start < progress.allocation_cursor {
-                return progress.allocation_cursor;
-            }
-            assert!(start == progress.allocation_cursor, "Ledger: allocation out of order");
-            if start == season.top_count {
-                return start;
-            }
-            let end = start + core::cmp::min(SEASON_BATCH_SIZE, season.top_count - start);
-            self.write_season_allocations(season_id, season, end, preset, ref progress);
-            self.season_settlements.entry(season_id).write(progress);
-            if end == season.top_count {
-                season.review_until = starknet::get_block_timestamp() + SEASON_REVIEW_SECONDS;
-                self.seasons.entry(season_id).write(season);
-                self
-                    .emit(
-                        SeasonTopPosted {
-                            season_id,
-                            top_count: season.top_count,
-                            review_until: season.review_until,
-                            pool: season.pool,
-                        },
-                    );
-            }
-            end
-        }
-
-        fn season_settlement(self: @ContractState, season_id: u32) -> SeasonSettlement {
-            let _season = self.get_season(season_id);
-            self.season_settlements.entry(season_id).read()
+            self
+                .emit(
+                    SeasonTopPosted {
+                        season_id, top_count: season.top_count, review_until: season.review_until, pool: season.pool,
+                    },
+                );
         }
 
         fn challenge_season(ref self: ContractState, season_id: u32, omitted: ContractAddress) {
@@ -796,12 +726,13 @@ pub mod GameLedger {
             self.emit(SeasonChallenged { season_id, omitted });
         }
 
-        fn claim_season(ref self: ContractState, season_id: u32) {
+        fn claim_season(ref self: ContractState, season_id: u32, position: u32) {
             self.pausable.assert_not_paused();
             let owner = starknet::get_caller_address();
             let mut season = self.get_season(season_id);
-            self.assert_season_claim_open(season_id, season);
-            let position = self.season_position(season_id, season.top_count, owner).expect('Ledger: not a winner');
+            self.assert_season_claim_open(season);
+            assert!(position < season.top_count, "Ledger: winner index out of bounds");
+            assert!(self.season_winners.entry((season_id, position)).read() == owner, "Ledger: not a winner");
             if self.season_claims.entry((season_id, owner)).read() {
                 return;
             }
@@ -819,7 +750,6 @@ pub mod GameLedger {
             let mut season = self.get_season(season_id);
             assert!(!season.settlement_started, "Ledger: season payout started");
             assert!(!updates.is_empty(), "Ledger: empty MMR correction");
-            assert!(updates.len() <= SEASON_BATCH_SIZE, "Ledger: MMR correction too large");
             let mut token_updates = array![];
             for (owner, mmr) in updates.span() {
                 self.get_season_mmr(season_id, *owner);
@@ -841,7 +771,6 @@ pub mod GameLedger {
         fn get_season_winner(self: @ContractState, season_id: u32, index: u32) -> (ContractAddress, u256) {
             let season = self.get_season(season_id);
             assert!(season.posted && index < season.top_count, "Ledger: winner index out of bounds");
-            assert!(index < self.season_settlement(season_id).allocation_cursor, "Ledger: allocations incomplete");
             (
                 self.season_winners.entry((season_id, index)).read(),
                 self.season_allocations.entry((season_id, index)).read(),
@@ -1532,19 +1461,15 @@ pub mod GameLedger {
             self.seasons.entry(season_id).write(season);
         }
 
-        fn assert_season_top_open(self: @ContractState, season: BlitzSeason, preset: Preset) {
+        fn assert_season_top_open(self: @ContractState, season: BlitzSeason) {
             let now = starknet::get_block_timestamp();
             assert!(now >= season.end, "Ledger: season has not ended");
             assert!(!season.settlement_started, "Ledger: season payout started");
-            let required = Self::winner_count(season.participant_count, preset.paid_fraction_bps);
-            assert!(
-                !season.posted || season.challenged || season.top_count < required || now < season.review_until,
-                "Ledger: top list final",
-            );
+            assert!(!season.posted || season.challenged || now < season.review_until, "Ledger: top list final");
             assert!(season.participant_count > 0, "Ledger: no season participants");
         }
 
-        fn assert_season_claim_open(self: @ContractState, season_id: u32, season: BlitzSeason) {
+        fn assert_season_claim_open(self: @ContractState, season: BlitzSeason) {
             assert!(
                 season.posted && starknet::get_block_timestamp() >= season.review_until, "Ledger: season under review",
             );
@@ -1554,62 +1479,23 @@ pub mod GameLedger {
                 season.top_count == Self::winner_count(season.participant_count, preset.paid_fraction_bps),
                 "Ledger: incomplete top list",
             );
-            assert!(
-                self.season_settlement(season_id).allocation_cursor == season.top_count,
-                "Ledger: allocations incomplete",
-            );
         }
 
         fn validate_season_top(
             self: @ContractState, season_id: u32, season: BlitzSeason, winners: Span<ContractAddress>, preset: Preset,
         ) {
             assert!(
-                season.top_count
-                    + winners.len() <= Self::winner_count(season.participant_count, preset.paid_fraction_bps),
+                winners.len() <= Self::winner_count(season.participant_count, preset.paid_fraction_bps),
                 "Ledger: too many winners",
             );
             for index in 0..winners.len() {
                 let owner = *winners.at(index);
                 let mmr = self.get_season_mmr(season_id, owner);
-                if season.top_count + index > 0 {
-                    let previous = if index > 0 {
-                        *winners.at(index - 1)
-                    } else {
-                        self.season_winners.entry((season_id, season.top_count - 1)).read()
-                    };
+                if index > 0 {
+                    let previous = *winners.at(index - 1);
                     let previous_mmr = self.get_season_mmr(season_id, previous);
                     assert!(Self::outranks(previous, previous_mmr, owner, mmr), "Ledger: unordered winners");
                 }
-            }
-        }
-
-        fn assert_top_retry(
-            self: @ContractState, season_id: u32, count: u32, start: u32, winners: Span<ContractAddress>,
-        ) {
-            assert!(start + winners.len() <= count, "Ledger: overlapping top batch");
-            for offset in 0..winners.len() {
-                assert!(
-                    self.season_winners.entry((season_id, start + offset)).read() == *winners.at(offset),
-                    "Ledger: conflicting top retry",
-                );
-            }
-        }
-
-        fn append_season_top(
-            ref self: ContractState,
-            season_id: u32,
-            start: u32,
-            winners: Span<ContractAddress>,
-            preset: Preset,
-            ref progress: SeasonSettlement,
-        ) {
-            for offset in 0..winners.len() {
-                let owner = *winners.at(offset);
-                let position = start + offset;
-                self.season_winners.entry((season_id, position)).write(owner);
-                self.season_positions.entry((season_id, owner)).write(position + 1);
-                progress.total_weight += progress.next_weight;
-                progress.next_weight = progress.next_weight * preset.decay_bps.into() / BPS;
             }
         }
 
@@ -1617,30 +1503,26 @@ pub mod GameLedger {
             ref self: ContractState,
             season_id: u32,
             season: BlitzSeason,
-            end: u32,
+            winners: Span<ContractAddress>,
             preset: Preset,
-            ref progress: SeasonSettlement,
         ) {
-            for index in progress.allocation_cursor..end {
-                let amount = if index + 1 == season.top_count {
-                    season.pool - progress.allocated
-                } else {
-                    season.pool * progress.next_weight / progress.total_weight
-                };
-                self.season_allocations.entry((season_id, index)).write(amount);
-                progress.allocated += amount;
-                progress.next_weight = progress.next_weight * preset.decay_bps.into() / BPS;
+            let allocations = self
+                .calculate_position_allocations(
+                    season.pool, season.participant_count, preset.paid_fraction_bps, preset.decay_bps,
+                );
+            for index in 0..winners.len() {
+                self.season_winners.entry((season_id, index)).write(*winners.at(index));
+                self.season_allocations.entry((season_id, index)).write(*allocations.at(index));
             }
-            progress.allocation_cursor = end;
         }
 
         fn season_position(self: @ContractState, season_id: u32, count: u32, owner: ContractAddress) -> Option<u32> {
-            let encoded = self.season_positions.entry((season_id, owner)).read();
-            if encoded != 0 && encoded <= count && self.season_winners.entry((season_id, encoded - 1)).read() == owner {
-                Option::Some(encoded - 1)
-            } else {
-                Option::None
+            for index in 0..count {
+                if self.season_winners.entry((season_id, index)).read() == owner {
+                    return Option::Some(index);
+                }
             }
+            Option::None
         }
 
         fn outranks(owner: ContractAddress, mmr: u128, other: ContractAddress, other_mmr: u128) -> bool {
@@ -1649,6 +1531,36 @@ pub mod GameLedger {
 
         fn winner_count(players: u32, fraction: u16) -> u32 {
             ((Into::<u32, u64>::into(players) * Into::<u16, u64>::into(fraction) + 9999) / 10000).try_into().unwrap()
+        }
+    }
+
+    #[generate_trait]
+    impl PayoutCalculatorImpl of PayoutCalculatorTrait {
+        fn calculate_position_allocations(
+            self: @ContractState, prize_pool: u256, player_count: u32, paid_fraction_bps: u16, decay_bps: u16,
+        ) -> Array<u256> {
+            let winner_count = SeasonWriterImpl::winner_count(player_count, paid_fraction_bps);
+            let mut weights: Array<u256> = array![];
+            let mut weight = PAYOUT_WEIGHT_SCALE;
+            let mut total_weight = 0;
+            for _ in 0..winner_count {
+                weights.append(weight);
+                total_weight += weight;
+                weight = weight * decay_bps.into() / BPS;
+            }
+
+            let mut allocations = array![];
+            let mut allocated = 0;
+            for position in 0..winner_count {
+                let amount = if position + 1 == winner_count {
+                    prize_pool - allocated
+                } else {
+                    prize_pool * *weights.at(position) / total_weight
+                };
+                allocations.append(amount);
+                allocated += amount;
+            }
+            allocations
         }
     }
 
