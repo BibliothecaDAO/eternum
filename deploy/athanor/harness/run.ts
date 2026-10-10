@@ -145,8 +145,6 @@ export function parseHarnessArgs(args: string[]): HarnessCliOptions {
 /** One harness run; `run` ends with it, so no action it sent keeps being reconciled after the process is done. */
 async function main(run: AbortSignal): Promise<void> {
   const options = parseHarnessArgs(process.argv.slice(2));
-  requiredEnvironmentValue("DEPLOYER_ACCOUNT_ADDRESS", "native harness");
-  requiredEnvironmentValue("DEPLOYER_PRIVATE_KEY", "native harness");
   process.env.HERALD_URL = options.heraldUrl;
 
   const requests = options.functional ? undefined : measureHarnessRequests(options.rpcUrl);
