@@ -43,7 +43,7 @@ const closesInside = (window: SeasonPhase, closesAt: string) => isRunning(window
 export const scheduleFrontierSeason = (store: LaunchServiceStore, season: SeasonPhase) =>
   store.schedule("game", frontierSeasonRequest(season));
 
-/** Free Blitz slots close at these UTC hours every day; registration is open from the previous close. */
+/** Blitz slots close at these UTC hours every day; registration is open from the previous close. */
 const BLITZ_SLOT_HOURS_UTC = [11, 20] as const;
 
 const HOUR_MS = 3_600_000;
@@ -51,7 +51,7 @@ const DAY_MS = 24 * HOUR_MS;
 const pad = (value: number) => String(value).padStart(2, "0");
 
 /** The next slot is the first timetable hour after `now`; its name is that instant, so every worker names the same slot. */
-export const nextBlitzSlot = (now: Date): { name: string; closesAt: string } => {
+const nextBlitzSlot = (now: Date): { name: string; closesAt: string } => {
   const midnight = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
   const closings = [0, DAY_MS].flatMap((day) => BLITZ_SLOT_HOURS_UTC.map((hour) => midnight + day + hour * HOUR_MS));
   const closesAt = new Date(closings.find((closing) => closing > now.getTime())!);
