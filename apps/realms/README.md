@@ -86,6 +86,7 @@ population. No mainnet address or population source is inferred for staging. Lab
 `ValueIdentity.realmOwnerOf` service binding; the relay's second Realms RPC is removed. Rating readers are named by the
 configured chain, so staging cannot reuse a mainnet reader cache.
 
-The deployment workflow maps the existing `CLIENT_L2_CHAIN` environment variable to `L2_CHAIN_ID` and the existing
-`CLIENT_IDENTITY_RPC_URL` secret to `IDENTITY_RPC_URL`. It checks the public contract/history settings before migrations
-or secret writes. This is repository wiring only; operators configure and deploy the environment.
+The checked-in Wrangler environment config is the only source for `L2_CHAIN_ID`. The deployment workflow does not
+override it. The existing `CLIENT_IDENTITY_RPC_URL` secret maps to `IDENTITY_RPC_URL`. It checks the public
+contract/history settings before migrations or secret writes. This is repository wiring only; operators configure and
+deploy the environment.
