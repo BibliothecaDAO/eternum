@@ -122,7 +122,10 @@ const requireHistoryAuthority = async (
   const own = realmsAccountAddress(target.realmsId, pins.accountClassHash, pins.guardianPublicKey);
   if (target.wallet && BigInt(target.wallet) !== BigInt(write.wallet)) throw new Error("link_wallet_differs");
   if (target.wallet && target.account) {
-    if (BigInt(target.account) !== BigInt(own) || BigInt(write.account) !== BigInt(own))
+    if (
+      BigInt(target.account) !== BigInt(own) ||
+      (BigInt(write.account) !== 0n && BigInt(write.account) !== BigInt(own))
+    )
       throw new Error("link_account_differs");
   } else if (BigInt(write.account) !== 0n || (!target.wallet && BigInt(write.previousAccount) !== BigInt(own)))
     throw new Error("link_clear_differs");

@@ -32,6 +32,7 @@ const set = vi.fn(
   },
 );
 const identity = {
+  target: vi.fn(async (_key: string) => target),
   dirty: vi.fn(async (): Promise<{ target: AccountLinkTarget; revision: string }[]> => []),
   complete: vi.fn(async (_account: string, _revision: string) => {}),
   targets: vi.fn(
@@ -44,6 +45,8 @@ const identity = {
   record: vi.fn(async () => {}),
 };
 const ledger = {
+  readPending: (wallet: string | null, account: string | null): Promise<{ wallet: string; account: string }> =>
+    ledger.read(wallet, account),
   paused: vi.fn(async () => false),
   read: vi.fn(async (wallet: string | null, account: string | null) => ({
     account: wallet ? (forward.get(wallet) ?? "0x0") : "0x0",
@@ -171,4 +174,22 @@ it("leaves an unconfirmed dirty row for the next tick", async () => {
   identity.targets.mockResolvedValue({ rows: [], next: null });
   await Effect.runPromise(reconcileAccountLinks({ identity, ledger }, store));
   expect(complete).not.toHaveBeenCalled();
+});
+
+it("retries an unlink through a pause without installing a new link", async () => {
+  forward.set(target.wallet!, target.account!);
+  reverse.set(target.account!, target.wallet!);
+  ledger.paused.mockResolvedValue(true);
+  const unlinked = { ...target, wallet: null };
+  expect(await Effect.runPromise(synchronizeAccountLink(unlinked, { identity, ledger }))).toBe("confirmed");
+  expect(set).toHaveBeenCalledWith(target.wallet, "0x0", expect.any(Function));
+});
+it("retracts the previous wallet during a paused replacement and keeps the install pending", async () => {
+  forward.set("0x11", target.account!);
+  reverse.set(target.account!, "0x11");
+  ledger.paused.mockResolvedValue(true);
+  Object.assign(identity, { target: async () => ({ ...target, key: "wallet:0x11", wallet: "0x11", account: null }) });
+  expect(await Effect.runPromise(synchronizeAccountLink(target, { identity, ledger }))).toBe("linking");
+  expect(forward.has("0x11")).toBe(false);
+  expect(forward.has(target.wallet!)).toBe(false);
 });

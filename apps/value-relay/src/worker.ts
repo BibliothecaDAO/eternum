@@ -238,6 +238,7 @@ export class ValueRelay extends DurableObject<RelayEnv> {
 
 const linkPortsOf = (env: RelayEnv) => ({
   identity: {
+    target: (key: string) => env.IDENTITY.accountLinkTarget(key),
     dirty: () => env.IDENTITY.dirtyAccountLinks(),
     complete: (account: string, revision: string) => env.IDENTITY.completeAccountLinkSync(account, revision),
     targets: (after: string | null) => env.IDENTITY.accountLinkTargets(after),

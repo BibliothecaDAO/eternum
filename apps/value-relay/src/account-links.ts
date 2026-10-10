@@ -3,6 +3,7 @@ import type { AccountLinkTarget, LedgerAccountLinkWrite } from "@realms-world/id
 import { RelayFailure, relayOperation } from "./ports";
 interface LinkPorts {
   identity: {
+    target(key: string): Promise<AccountLinkTarget>;
     dirty(): Promise<{ target: AccountLinkTarget; revision: string }[]>;
     complete(account: string, revision: string): Promise<void>;
     targets(after: string | null): Promise<{ rows: AccountLinkTarget[]; next: string | null }>;
@@ -10,6 +11,7 @@ interface LinkPorts {
     record(target: AccountLinkTarget, write: LedgerAccountLinkWrite): Promise<void>;
   };
   ledger: {
+    readPending(wallet: string | null, account: string | null): Promise<{ wallet: string; account: string }>;
     paused(): Promise<boolean>;
     read(wallet: string | null, account: string | null): Promise<{ wallet: string; account: string }>;
     set(
@@ -36,9 +38,23 @@ export const hasMatchingAccountLink = (target: AccountLinkTarget, actual: { wall
 export const synchronizeAccountLink = (target: AccountLinkTarget, ports: LinkPorts) =>
   relayOperation("synchronize account link", async () => {
     const desired = await ports.identity.refresh(target);
-    const actual = await ports.ledger.read(desired.wallet, desired.account);
-    if (hasMatchingAccountLink(desired, actual)) return "confirmed" as const;
-    if (await ports.ledger.paused()) return "linking" as const;
+    const actual = await ports.ledger.readPending(desired.wallet, desired.account);
+    if (hasMatchingAccountLink(desired, actual)) {
+      const confirmed = await ports.ledger.read(desired.wallet, desired.account);
+      return hasMatchingAccountLink(desired, confirmed) ? ("confirmed" as const) : ("linking" as const);
+    }
+    if (desired.wallet && (await ports.ledger.paused())) {
+      // Removing an obsolete mapping remains legal; installs wait for unpause.
+      if (BigInt(actual.account) !== 0n && !same(desired.account, actual.account)) {
+        const write = await ports.ledger.set(desired.wallet, "0x0", (write) => ports.identity.record(desired, write));
+        await ports.ledger.confirm(write.transactionHash);
+      }
+      if (BigInt(actual.wallet) !== 0n && !same(desired.wallet, actual.wallet)) {
+        const former = await ports.identity.target(`wallet:${actual.wallet}`);
+        await Effect.runPromise(synchronizeAccountLink(former, ports));
+      }
+      return "linking" as const;
+    }
     const wallet = desired.wallet ?? actual.wallet;
     const account = desired.wallet ? (desired.account ?? "0x0") : "0x0";
     const write = await ports.ledger.set(wallet, account, (write) => ports.identity.record(desired, write));

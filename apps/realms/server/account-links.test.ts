@@ -138,3 +138,10 @@ it("keeps a newer dirty revision when an older confirmed sync acknowledges", asy
   await completeAccountLinkSync(db, "0x1", "change-2");
   expect(await dirtyAccountLinks(db, pins)).toEqual([]);
 });
+
+it("authorizes retracting a stale ledger mapping for a wallet its current owner proved", async () => {
+  const target = await accountLinkTarget(db, pins, "account:0x1");
+  const clear = { wallet, account: "0x0", transactionHash: "0xfee", previousAccount: "0x999", previousWallet: "0x0" };
+  await recordLedgerLinkWrite(db, pins, target, clear);
+  expect(await matchesLedgerLinkWrite(db, pins, clear)).toBe(true);
+});
