@@ -24,7 +24,7 @@ export const runLaunchSchedule = (store: LaunchServiceStore, slots: SlotStore, c
     } else {
       yield* Effect.logError("launch_schedule_step_failed", calendarResult.failure);
     }
-    yield* runScheduleStep("freeze playtest roster", () => slots.freezeNextDue());
+    yield* runScheduleStep("freeze playtest roster", () => slots.freezeDueSlots());
   });
 
 const runScheduleStep = <A>(operation: string, task: () => Promise<A>) =>

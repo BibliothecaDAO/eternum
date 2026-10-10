@@ -109,14 +109,20 @@ export class D1SlotStore implements SlotStore {
     return this.get(name);
   }
 
-  async freezeNextDue(): Promise<void> {
+  async freezeDueSlots(): Promise<void> {
     const due = await this.db
       .prepare(
-        `SELECT name FROM playtest_slots WHERE chain_id=? AND frozen_at IS NULL AND closes_at <= ${DATABASE_NOW} ORDER BY closes_at, name LIMIT 1`,
+        `SELECT name FROM playtest_slots WHERE chain_id=? AND frozen_at IS NULL AND closes_at <= ${DATABASE_NOW} ORDER BY closes_at, name`,
       )
       .bind(await this.launches.targetChain())
-      .first<{ name: string }>();
-    if (due) await this.freeze(due.name);
+      .all<{ name: string }>();
+    for (const slot of due.results) {
+      try {
+        await this.freeze(slot.name);
+      } catch {
+        console.error("slot_close_unavailable", { name: slot.name });
+      }
+    }
   }
 }
 const toSlot = (row: SlotRow): PlaytestSlot => ({
