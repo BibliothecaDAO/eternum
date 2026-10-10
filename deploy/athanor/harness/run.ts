@@ -16,7 +16,7 @@ import { configureGameplayAccountSubmits, openShard, type Shard } from "@bibliot
 import bindings from "../../../contracts/l3/world-native/schema/bindings.json";
 import { Account, logger } from "starknet";
 import { assertChainId } from "../../../packages/chain/chain-guard.js";
-import { createHarnessAdminProvider, launchHarnessGame, prepareOpenHomes } from "./game-setup";
+import { createHarnessAdminProvider, launchHarnessGame } from "./game-setup";
 import { createHarnessAccounts, type HarnessAccount } from "./account-factory";
 import { connectActorClients, connectHarnessGameClient } from "./game-client";
 import { createHarnessGame } from "./harness-game";
@@ -487,11 +487,6 @@ async function prepareGames(
       shard,
       provider,
     );
-    if (options.gameType !== "blitz" && nativePresetForId(options.presetId).dayUnitSeconds === 0)
-      await prepareOpenHomes(
-        game.gameId,
-        group.map(({ address }) => address),
-      );
     prepared.push({
       game,
       accounts: group.map(({ account: _account, ...entry }) => ({ ...entry, gameId: game.gameId })),

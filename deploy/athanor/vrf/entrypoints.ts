@@ -3,8 +3,6 @@
 export const GAME_ENTRYPOINTS = [
   { name: "play", stamp: true },
   { name: "create_game", stamp: false },
-  { name: "freeze_blitz_roster", stamp: false },
-  { name: "prepare_homes", stamp: false },
   { name: "apply_release", stamp: false },
   { name: "register_release", stamp: false },
   { name: "register_preset", stamp: false },

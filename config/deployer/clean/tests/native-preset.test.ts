@@ -581,7 +581,7 @@ describe("fixed Regular Blitz rosters", () => {
     },
   };
   const input = {
-    gameName: "free-slot-1",
+    gameName: "slot-1",
     presetId: 2,
     startMainAt: 2000000000,
     chainTimestamp: 1999999990,
@@ -591,11 +591,10 @@ describe("fixed Regular Blitz rosters", () => {
     twoPlayerMode: false,
     useMapOverride: false,
   };
-  test("creation can precede a frozen roster and never enables a wrong mode", () => {
+  test("creation requires its frozen roster and never enables a wrong mode", () => {
     const config = configuration(2);
     const players = [{ wallet: "0xabc", account: "0xdef" }];
-    expect(buildNativeGameParams(config, input).roster).toEqual([]);
-    expect(() => buildNativeGameParams(config, input, Array(25).fill(players[0]))).toThrow("fixed roster");
+    expect(() => buildNativeGameParams(config, input)).toThrow("roster at creation");
     expect(() => buildNativeGameParams(config, { ...input, twoPlayerMode: true }, players)).toThrow(
       "Settlement layout",
     );
