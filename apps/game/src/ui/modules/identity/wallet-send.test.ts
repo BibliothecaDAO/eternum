@@ -47,12 +47,13 @@ it("holds a sent call until its receipt lands, and answers a revert with the led
   expect(signed).toHaveBeenCalledOnce();
   const reverted = {
     isReverted: () => true,
-    revert_reason: "Error in the called contract (0x1ed9e7):\nExecution failed. Failure reason: 'Ledger: roster full'.",
+    revert_reason:
+      "Error in the called contract (0x1ed9e7):\nExecution failed. Failure reason: 'Ledger: already registered'.",
   };
   await expect(sendFromWallet(account, "0x4a1", CALLS, chain(1n, Promise.resolve(reverted)), vi.fn())).resolves.toEqual(
     {
       kind: "refused",
-      reason: "Ledger: roster full",
+      reason: "Ledger: already registered",
     },
   );
 });
