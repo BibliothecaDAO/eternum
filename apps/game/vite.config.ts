@@ -17,18 +17,15 @@ import { l2EnvironmentProblem } from "./src/runtime/l2-environment";
 import { COLORS } from "./src/tokens";
 
 /**
- * The environment's one L2: its chain, named by VITE_PUBLIC_L2_CHAIN (SN_SEPOLIA for dev, SN_MAIN for production), and
- * its RPC, the team's https Alchemy endpoint for that network, never committed and never a public node. Checked once
+ * The environment's one L2 RPC: the team's https Alchemy endpoint for the network of the build's environment (Sepolia
+ * for dev, mainnet for production, from contracts/common/addresses), never committed and never a public node. Checked once
  * Vite has resolved its env, so the dev server and the build (and so the deploy, before its upload) fail at once, by
  * name; tools that only read this file for its settings (knip) are not stopped by it.
  */
 const requireL2Environment = (): PluginOption => ({
   name: "require-l2-environment",
   configResolved(config) {
-    const problem = l2EnvironmentProblem(
-      config.env.VITE_PUBLIC_L2_CHAIN?.trim(),
-      config.env.VITE_PUBLIC_IDENTITY_RPC_URL,
-    );
+    const problem = l2EnvironmentProblem(config.env.VITE_PUBLIC_ENVIRONMENT, config.env.VITE_PUBLIC_IDENTITY_RPC_URL);
     if (problem) throw new Error(problem);
   },
 });

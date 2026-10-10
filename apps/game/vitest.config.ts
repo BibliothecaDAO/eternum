@@ -12,7 +12,8 @@ export default defineConfig({
     exclude: ["**/node_modules/**", "**/dist/**", ...ASSET_CHECK_FILES],
     env: {
       VITE_PUBLIC_IDENTITY_RPC_URL: "https://identity-rpc.realms.test",
-      VITE_PUBLIC_L2_CHAIN: "SN_MAIN",
+      // Tests build as production, on mainnet.
+      VITE_PUBLIC_ENVIRONMENT: "production",
     },
     globals: true,
     environment: "jsdom",
