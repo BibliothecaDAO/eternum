@@ -156,7 +156,13 @@ export const BlitzLobbyPage = () => {
     row.kind === "game" ? (
       <LobbyAction row={row} step={step} desktop={desktop} />
     ) : (
-      <SlotEntry slot={row.slot} wallet={wallet} owed={facts.refunds.get(row.slot.name)} games={facts.games} />
+      <SlotEntry
+        key={row.slot.name}
+        slot={row.slot}
+        wallet={wallet}
+        owed={facts.refunds.get(row.slot.name)}
+        games={facts.games}
+      />
     );
   return (
     <PageFrame
@@ -325,7 +331,8 @@ const SlotEntry = ({
   owed: string | undefined;
   games: readonly DirectoryGame[];
 }) => {
-  // The wallet a refund was found for stays the entry's wallet once the refund is taken, so the panel shows it back.
+  // The wallet a refund was found for stays the entry's wallet once the refund is taken, so the panel shows it back; the
+  // lobby keys this entry by its slot, so another slot's lobby starts without it.
   const [refundWallet, setRefundWallet] = useState(owed);
   if (owed && owed !== refundWallet) setRefundWallet(owed);
   const ledger = environmentLedger();
