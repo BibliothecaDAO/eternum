@@ -1,3 +1,4 @@
+import { decodeMonitorSettings, type MonitorSettings } from "./monitor-env";
 import { checkSlotRoster, slotRosterReads } from "./roster-monitor";
 import { ledgerAddress } from "./environment";
 import { activeShards, readRegisteredShard, type ShardDirectory } from "@realms-world/value-ledger";
@@ -17,8 +18,7 @@ import { shardWithdrawalPorts } from "./shard-withdrawals";
 import { relayOperation } from "./ports";
 import { runMonitor, resetMonitorRow, type MonitorProgress } from "./monitor";
 
-interface MonitorEnv {
-  OPERATOR_TOKEN: string;
+interface MonitorEnv extends MonitorSettings {
   LAUNCH: import("@realms-world/value-ledger").LaunchCohorts;
   IDENTITY: ShardDirectory &
     import("@realms-world/value-ledger").RegistrationIdentity & {
@@ -28,10 +28,6 @@ interface MonitorEnv {
     };
   RELAY_REPORT: { held(): Promise<{ kind: string; reason: string; transactionHash: string | null }[]> };
   MONITOR: DurableObjectNamespace<ValueMonitor>;
-  LEDGER_RPC_URL: string;
-  ENVIRONMENT: import("@realms-world/chain").ValueEnvironment;
-  PAUSER_ACCOUNT_ADDRESS: string;
-  PAUSER_PRIVATE_KEY: string;
 }
 
 export class ValueMonitor extends DurableObject<MonitorEnv> {
@@ -43,7 +39,7 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
         Effect.gen(function* () {
           const seasonAudit = yield* Effect.result(
             onIdentityChain(
-              monitor.env.LEDGER_RPC_URL,
+              monitor.env.L2_RPC_URL,
               monitor.env.IDENTITY,
               relayOperation("audit season leaderboard", () =>
                 Effect.runPromise(
@@ -51,13 +47,13 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
                     "audit",
                     {
                       ...seasonLedgerReads({
-                        rpcUrl: monitor.env.LEDGER_RPC_URL,
+                        rpcUrl: monitor.env.L2_RPC_URL,
                         contractAddress: ledgerAddress(monitor.env.ENVIRONMENT),
                       }),
                       challenge: (id, omitted) =>
                         challengeSeason(
                           {
-                            rpcUrl: monitor.env.LEDGER_RPC_URL,
+                            rpcUrl: monitor.env.L2_RPC_URL,
                             contractAddress: ledgerAddress(monitor.env.ENVIRONMENT),
                             accountAddress: monitor.env.PAUSER_ACCOUNT_ADDRESS,
                             privateKey: monitor.env.PAUSER_PRIVATE_KEY,
@@ -78,7 +74,7 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
           const ports = monitorPortsOf(monitor.env, monitor.ctx.storage);
           const value = yield* Effect.result(
             onIdentityChain(
-              monitor.env.LEDGER_RPC_URL,
+              monitor.env.L2_RPC_URL,
               monitor.env.IDENTITY,
               runMonitor(ports, {
                 load: () => monitor.status(),
@@ -106,7 +102,7 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
     return Effect.runPromise(
       this.checking.withPermit(
         onIdentityChain(
-          this.env.LEDGER_RPC_URL,
+          this.env.L2_RPC_URL,
           this.env.IDENTITY,
           relayOperation("verify paid roster before results", async () => {
             if ((await this.status()).halted) throw new Error("monitor_halted");
@@ -124,7 +120,7 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
   }
   private async checkRoster(cohort: import("@realms-world/value-ledger").SlotCohort) {
     await checkSlotRoster(cohort, {
-      ...slotRosterReads(cohort, this.env.LEDGER_RPC_URL, ledgerAddress(this.env.ENVIRONMENT), this.env.IDENTITY),
+      ...slotRosterReads(cohort, this.env.L2_RPC_URL, ledgerAddress(this.env.ENVIRONMENT), this.env.IDENTITY),
       pause: async () => {
         const row = `roster:${cohort.chainId}:${cohort.slotId}`;
         await this.ctx.storage.put("progress", { ...(await this.status()), halted: row, fault: { row } });
@@ -197,14 +193,14 @@ const legacyFault = async (
     throw new Error("fault_row_unavailable");
   }
   const cursor = previous.cursors?.[stream] ?? { fromBlock: 0, page: null };
-  const reads = ledgerMonitorReads(env.LEDGER_RPC_URL, ledgerAddress(env.ENVIRONMENT));
+  const reads = ledgerMonitorReads(env.L2_RPC_URL, ledgerAddress(env.ENVIRONMENT));
   const page =
     stream === "paidClaims"
       ? await Effect.runPromise(
-          onIdentityChain(env.LEDGER_RPC_URL, env.IDENTITY, reads.paidClaims(cursor.page, cursor.fromBlock)),
+          onIdentityChain(env.L2_RPC_URL, env.IDENTITY, reads.paidClaims(cursor.page, cursor.fromBlock)),
         )
       : await Effect.runPromise(
-          onIdentityChain(env.LEDGER_RPC_URL, env.IDENTITY, reads.postedResults(cursor.page, cursor.fromBlock)),
+          onIdentityChain(env.L2_RPC_URL, env.IDENTITY, reads.postedResults(cursor.page, cursor.fromBlock)),
         );
   const index = page.rows.findIndex((value) =>
     paid
@@ -249,7 +245,7 @@ const monitorPortsOf = (env: MonitorEnv, storage: DurableObjectStorage) => {
               reader,
               frontierReceiptBindings(
                 reader,
-                () => ({ rpcUrl: env.LEDGER_RPC_URL, address: ledgerAddress(env.ENVIRONMENT) }),
+                () => ({ rpcUrl: env.L2_RPC_URL, address: ledgerAddress(env.ENVIRONMENT) }),
                 env.IDENTITY,
                 shard.url,
               ),
@@ -276,26 +272,26 @@ const monitorPortsOf = (env: MonitorEnv, storage: DurableObjectStorage) => {
       frontierPool: (chainId: string, gameId: number) =>
         relayOperation("ledger Frontier funding unavailable", () =>
           Effect.runPromise(
-            ledgerMonitorReads(env.LEDGER_RPC_URL, ledgerAddress(env.ENVIRONMENT)).frontierPool(chainId, gameId),
+            ledgerMonitorReads(env.L2_RPC_URL, ledgerAddress(env.ENVIRONMENT)).frontierPool(chainId, gameId),
           ),
         ),
       paidClaims: (cursor: string | null, fromBlock?: number) =>
         relayOperation("ledger paid claims unavailable", () =>
           Effect.runPromise(
-            ledgerMonitorReads(env.LEDGER_RPC_URL, ledgerAddress(env.ENVIRONMENT)).paidClaims(cursor, fromBlock),
+            ledgerMonitorReads(env.L2_RPC_URL, ledgerAddress(env.ENVIRONMENT)).paidClaims(cursor, fromBlock),
           ),
         ),
       postedResults: (cursor: string | null, fromBlock?: number) =>
         relayOperation("ledger results unavailable", () =>
           Effect.runPromise(
-            ledgerMonitorReads(env.LEDGER_RPC_URL, ledgerAddress(env.ENVIRONMENT)).postedResults(cursor, fromBlock),
+            ledgerMonitorReads(env.L2_RPC_URL, ledgerAddress(env.ENVIRONMENT)).postedResults(cursor, fromBlock),
           ),
         ),
       pause: () =>
         relayOperation("ledger pause unavailable", () =>
           Effect.runPromise(
             ledgerPauserAdapter({
-              rpcUrl: env.LEDGER_RPC_URL,
+              rpcUrl: env.L2_RPC_URL,
               contractAddress: ledgerAddress(env.ENVIRONMENT),
               accountAddress: env.PAUSER_ACCOUNT_ADDRESS,
               privateKey: env.PAUSER_PRIVATE_KEY,
@@ -308,7 +304,8 @@ const monitorPortsOf = (env: MonitorEnv, storage: DurableObjectStorage) => {
 
 const monitorOf = (env: MonitorEnv) => env.MONITOR.get(env.MONITOR.idFromName("monitor"));
 export default {
-  async fetch(request: Request, env: MonitorEnv): Promise<Response> {
+  async fetch(request: Request, raw: MonitorEnv): Promise<Response> {
+    const env = { ...raw, ...decodeMonitorSettings(raw) };
     if (new URL(request.url).pathname === "/api/operator/monitor/reset" && request.method === "POST") {
       if (!(await presentsOperatorToken(request, env.OPERATOR_TOKEN)))
         return Response.json({ error: "unauthorized" }, { status: 401 });
@@ -331,14 +328,16 @@ export default {
         return Response.json({ error: "fault_row_mismatch" }, { status: 409 });
       }
     }
-    if (new URL(request.url).pathname !== "/health") return new Response(null, { status: 404 });
+    if (new URL(request.url).pathname !== "/api/operator/monitor/health" || request.method !== "GET")
+      return new Response(null, { status: 404 });
     const health = await monitorOf(env).health();
     return Response.json(
       { service: "value-monitor", ...health },
       { status: health.success ? 200 : 503, headers: { "cache-control": "no-store" } },
     );
   },
-  async scheduled(_controller: ScheduledController, env: MonitorEnv): Promise<void> {
+  async scheduled(_controller: ScheduledController, raw: MonitorEnv): Promise<void> {
+    const env = { ...raw, ...decodeMonitorSettings(raw) };
     await monitorOf(env).tick();
   },
 };

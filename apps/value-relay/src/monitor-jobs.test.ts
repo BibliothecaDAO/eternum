@@ -1,5 +1,8 @@
 const address = vi.hoisted(() => vi.fn(() => "0x10"));
-vi.mock("./environment", () => ({ ledgerAddress: address }));
+vi.mock("./environment", async (original) => ({
+  ...(await original<typeof import("./environment")>()),
+  ledgerAddress: address,
+}));
 import { beforeEach, expect, it, vi } from "vitest";
 import worker, { ValueMonitor } from "./monitor-worker";
 
@@ -39,7 +42,7 @@ const fixture = () => {
   const monitor = new ValueMonitor(
     ctx as unknown as DurableObjectState,
     {
-      LEDGER_RPC_URL: "https://ledger.test",
+      L2_RPC_URL: "https://ledger.test",
       LAUNCH: { rosterCohorts: async () => [] },
       IDENTITY: { l2ChainId: async () => "0x1", shards: async () => [] },
     } as never,
@@ -90,6 +93,10 @@ it("requires an operator token and a recorded reason to clear a monitor halt wit
   };
   f.data.set("progress", progress);
   const env = {
+    ENVIRONMENT: "staging",
+    L2_RPC_URL: "https://ledger.test",
+    PAUSER_ACCOUNT_ADDRESS: "0x1",
+    PAUSER_PRIVATE_KEY: "0x2",
     OPERATOR_TOKEN: "operator-test-token",
     MONITOR: { idFromName: () => "monitor", get: () => f.monitor },
   } as never;

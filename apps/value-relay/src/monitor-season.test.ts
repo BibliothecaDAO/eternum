@@ -1,4 +1,7 @@
-vi.mock("./environment", () => ({ ledgerAddress: () => "0x10" }));
+vi.mock("./environment", async (original) => ({
+  ...(await original<typeof import("./environment")>()),
+  ledgerAddress: () => "0x10",
+}));
 import { Effect } from "effect";
 import { beforeEach, expect, it, vi } from "vitest";
 import { ValueMonitor } from "./monitor-worker";
@@ -40,7 +43,7 @@ const monitor = () => {
       },
     } as unknown as DurableObjectState,
     {
-      LEDGER_RPC_URL: "https://ledger.test",
+      L2_RPC_URL: "https://ledger.test",
       ENVIRONMENT: "staging",
       LAUNCH: { rosterCohorts: calls.cohorts },
       IDENTITY: { shards: async () => [] },
