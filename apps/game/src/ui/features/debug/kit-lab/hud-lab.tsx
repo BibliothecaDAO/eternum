@@ -53,7 +53,6 @@ import { type GuideFacts, GUIDE_STEPS } from "@/ui/features/frontier/guide/guide
 import { GuideThread } from "@/ui/features/frontier/guide/guide-thread";
 import { useRef, useState } from "react";
 import { RefillButton, RefillConfirm } from "@/ui/features/frontier/army/refill";
-import type { PotDay } from "@/ui/features/frontier/value/day-pot";
 import { LordsPurse, PurseRow, RealmsChip } from "@/ui/features/frontier/value/lords-purse";
 import { type HeldRealm, planRealmLabor } from "@/ui/features/frontier/value/realm-labor";
 import { RealmsSheet } from "@/ui/features/frontier/value/realms-sheet";
@@ -211,22 +210,6 @@ const SEVEN_REALMS: readonly HeldRealm[] = [
 type LabWithdraw = { held: number; wallet: string | null; refusal?: string; step: WithdrawStep; amount: number };
 type LabRealms = { wallet: string | null; realms: readonly HeldRealm[]; labor: number; limit: number };
 const WITHDRAW_500: LabWithdraw = { held: 1_240, wallet: WALLET_ADDRESS, step: { kind: "pick" }, amount: 500 };
-/** Days 8 to 12 of the pot: about 14,300 unlocked a day; days 10 and 11 were quiet and roll 18,600 into day 12. */
-const QUIET_THEN_BUSY: readonly PotDay[] = [
-  { day: 8, unlocked: 14_300, carried: 0, spent: 14_000, price: 32 },
-  { day: 9, unlocked: 14_300, carried: 300, spent: 14_400, price: 32 },
-  { day: 10, unlocked: 14_300, carried: 0, spent: 5_000, price: 32 },
-  { day: 11, unlocked: 14_300, carried: 9_300, spent: 5_000, price: 32 },
-  { day: 12, unlocked: 14_300, carried: 18_600, spent: 26_000, price: 50 },
-];
-const ORDINARY: readonly PotDay[] = [
-  { day: 8, unlocked: 14_300, carried: 0, spent: 14_000, price: 32 },
-  { day: 9, unlocked: 14_300, carried: 300, spent: 14_200, price: 32 },
-  { day: 10, unlocked: 14_300, carried: 400, spent: 14_500, price: 32 },
-  { day: 11, unlocked: 14_300, carried: 200, spent: 14_300, price: 32 },
-  { day: 12, unlocked: 14_300, carried: 200, spent: 10_000, price: 32 },
-];
-
 /** Day 13 at 22:30: an 8-hour day from 21:40 that ends in the night, at 05:40; tomorrow lasts 20h. */
 const NIGHT: DayClock = {
   day: 13,
@@ -787,34 +770,6 @@ const STATES = {
     armies: ARMIES,
     purse: { lords: 1_240 },
     realms: { wallet: WALLET_ADDRESS, realms: [], labor: 9_640, limit: 18_000 },
-  },
-  "chest-busy": {
-    clock: CLOCK,
-    stores: STORES,
-    armies: ARMIES,
-    purse: { lords: 1_440, gain: 200 },
-    chest: {
-      tier: 3,
-      lords: 200,
-      xp: 145,
-      troopsLost: 1_250,
-      pot: { shares: 4, days: QUIET_THEN_BUSY },
-      onClose: () => undefined,
-    },
-  },
-  "chest-ordinary": {
-    clock: CLOCK,
-    stores: STORES,
-    armies: ARMIES,
-    purse: { lords: 1_368, gain: 128 },
-    chest: {
-      tier: 3,
-      lords: 128,
-      xp: 145,
-      troopsLost: 1_250,
-      pot: { shares: 4, days: ORDINARY },
-      onClose: () => undefined,
-    },
   },
 } as const;
 

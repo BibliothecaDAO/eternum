@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-11",
+    title: "One chest price all season",
+    description:
+      "A ruin chest pays its tier's shares at one LORDS price set for the season, so the Season page's common chest reads the same every day instead of following a daily price.",
+    type: "balance",
+  },
+  {
+    date: "2026-10-11",
     title: "Factory page makes unranked games only",
     description:
       "The factory page no longer edits the season calendar or shows Blitz slots: ranked games are opened by the operator, and a game made on the page has no slot, no pot and no rating.",

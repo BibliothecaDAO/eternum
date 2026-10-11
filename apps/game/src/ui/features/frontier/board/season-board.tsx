@@ -7,8 +7,13 @@ import { getActiveGame } from "@/runtime/world";
 import { startRealmVisit } from "@/sync/active-game-client";
 import { PlayerName } from "@/ui/design-system/kit/player-name";
 import type { Tier } from "@/ui/design-system/kit/tier-chip";
-import { configManager, dayOf, type ExpeditionRules } from "@bibliothecadao/eternum";
-import { fetchHeraldLeaderboard, requireShard, safeInteger } from "@bibliothecadao/eternum/game-client";
+import { configManager } from "@bibliothecadao/eternum";
+import {
+  fetchHeraldLeaderboard,
+  type NativeRows,
+  requireShard,
+  safeInteger,
+} from "@bibliothecadao/eternum/game-client";
 import type { HeraldFrontierLeaderboardEntry } from "@bibliothecadao/eternum/game-sync";
 import { useQuery } from "@tanstack/react-query";
 import { type ReactNode, useState } from "react";
@@ -53,13 +58,13 @@ export const useSeasonRank = (): string => {
 };
 
 /**
- * Season over the board: today's common chest, the first fifty realms and the player's own, a row's detail with
+ * Season over the board: a common chest's LORDS, the first fifty realms and the player's own, a row's detail with
  * Visit. Visiting closes the page for the visited realm.
  */
-export const FrontierSeason = ({ rules, onBack }: { rules: ExpeditionRules; onBack: () => void }) => {
+export const FrontierSeason = ({ onBack }: { onBack: () => void }) => {
   const board = useSeasonBoard();
   const viewer = useViewer();
-  const chest = useCommonChest(rules);
+  const chest = useCommonChest();
   const [opened, setOpened] = useState<string | null>(null);
   const entries = board.data ?? [];
   const own = findOwnEntry(entries, viewer);
@@ -92,23 +97,24 @@ export const FrontierSeason = ({ rules, onBack }: { rules: ExpeditionRules; onBa
   );
 };
 
-/**
- * Today's common chest: the common tier's shares at the day's LORDS price, as lords_budget.cairo prices a chest. The
- * budget rolls to a new day at its first chest, so a row from an earlier day says nothing of today's price.
- */
-const useCommonChest = (rules: ExpeditionRules): { tier: Tier; lords: number } | undefined => {
+/** A common chest for the whole season; undefined until the game's chest rules are known. */
+const useCommonChest = (): { tier: Tier; lords: number } | undefined => {
   const { setup } = useGame();
   useNativeRevision(CHEST_MODELS);
-  const now = useNowSeconds();
-  const gameId = configManager.getActiveGameId();
-  const budget = setup.store.get("LordsBudget", { game_id: gameId });
-  const chestRules = setup.store.get("ChestRules", { game_id: gameId });
-  const today = dayOf(rules, now);
-  if (!budget || !chestRules || !today || Number(budget.day) !== today.index) return undefined;
-  return { tier: 1, lords: Number(BigInt(chestRules.shares.common) * budget.price) };
+  const chestRules = setup.store.get("ChestRules", { game_id: configManager.getActiveGameId() });
+  return chestRules && commonChestOf(chestRules);
 };
 
-const CHEST_MODELS = ["LordsBudget", "ChestRules"] as const;
+/**
+ * What a common chest pays: the common tier's shares at the one LORDS price a share the preset sets, as
+ * lords_budget.cairo prices a chest. The price is fixed for the season; no day changes it.
+ */
+export const commonChestOf = (chestRules: Pick<NativeRows["ChestRules"], "shares" | "price">) => ({
+  tier: 1 as const,
+  lords: Number(BigInt(chestRules.shares.common) * chestRules.price),
+});
+
+const CHEST_MODELS = ["ChestRules"] as const;
 
 /**
  * The season's first rows as SeasonRow draws them, the player's own lit in place, or pinned under them when it ranks

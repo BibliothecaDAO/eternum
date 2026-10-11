@@ -22,7 +22,7 @@ export type SeasonListRow = {
 const SKELETON_ROWS = 8;
 
 /**
- * Season (wireframe 13), a page from the Menu, so it has Back: the title with today's common chest and the player's
+ * Season (wireframe 13), a page from the Menu, so it has Back: the title with a common chest's LORDS and the player's
  * rank, then the realms by sites cleared with LORDS beside, the player's own row lit in place or pinned at the foot when
  * it ranks below the rows shown. A row opens its detail. When the season did not answer, the card says so, with Try
  * again.
@@ -39,7 +39,7 @@ export const SeasonList = ({
 }: {
   /** The player's rank; null for a player without a realm on the list, undefined while it loads. */
   rank: number | null | undefined;
-  /** Today's common chest: its tier and the LORDS it pays; absent until the day's chest price is read. */
+  /** A common chest: its tier and the LORDS it pays this season; absent until the game's chest rules are read. */
   chest?: { tier: Tier; lords: number };
   rows: readonly SeasonListRow[];
   pinned: SeasonListRow | undefined;
@@ -115,7 +115,7 @@ const BoardHead = () => (
 const rankShown = (rank: number | undefined) => (rank === undefined ? "—" : `#${rank}`);
 
 /**
- * Today's common chest (the chest, its tier, the LORDS it pays) and, after a rule, the player's rank: one chip, so the
+ * A common chest (the chest, its tier, the LORDS it pays) and, after a rule, the player's rank: one chip, so the
  * header holds Back, the title and both numbers at 360 px.
  */
 const ChestChip = ({ tier, lords, rank }: { tier: Tier; lords: number; rank: number | null | undefined }) => (
