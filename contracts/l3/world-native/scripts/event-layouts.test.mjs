@@ -45,6 +45,16 @@ test("Games exposes the published player frame, roles and frozen roster ABI", as
     abi.find(({ name }) => name === "world_native::entry::LaborRealm").members.find(({ name }) => name === "home").type,
     "core::integer::u64",
   );
+  assert.deepEqual(method("publish_frontier_pool").inputs, [
+    { name: "game_id", type: "core::integer::u32" },
+    { name: "amount", type: "core::integer::u128" },
+  ]);
+  assert.deepEqual(method("publish_frontier_pool").outputs, []);
+  assert.deepEqual(abi.find(({ name }) => name === "world_native::relics::ChestRules").members, [
+    { name: "price", type: "core::integer::u128" },
+    { name: "shares", type: "world_native::relics::ChestTiers" },
+    { name: "claim_window_seconds", type: "core::integer::u32" },
+  ]);
   assert.deepEqual(method("grant_labor").inputs, [
     { name: "realms", type: "core::array::Array::<world_native::entry::LaborRealm>" },
     { name: "day", type: "core::integer::u64" },

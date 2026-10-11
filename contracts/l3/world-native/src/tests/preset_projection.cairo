@@ -80,10 +80,9 @@ fn current_frontier_launch_readers_match_herald_projection() {
 
 #[test]
 #[feature("safe_dispatcher")]
-fn current_frontier_check_launch_has_no_payable_pool_and_matches_herald_projection() {
-    let (preset_id, definition) = current_definition("frontier-check");
+fn current_frontier_check_launch_starts_unfunded_and_matches_herald_projection() {
+    let (preset_id, _) = current_definition("frontier-check");
     assert_eq!(preset_id, 104);
-    assert_eq!(definition.economy.chests.unwrap().pool, 0);
     compare_current_launch("frontier-check");
     super::registrar::assert_zero_pool_never_funds_a_ruin_or_payout_over_a_day();
     assert_all_zero_chest_rules_refuse_registration();
@@ -99,7 +98,6 @@ fn assert_all_zero_chest_rules_refuse_registration() {
         .chests =
             Some(
                 crate::relics::ChestRules {
-                    pool: 0,
                     price: 0,
                     claim_window_seconds: 0,
                     shares: crate::relics::ChestTiers { common: 0, uncommon: 0, rare: 0, epic: 0, legendary: 0 },

@@ -1,5 +1,5 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "5250a0a27d1abc21ee5729d2c40bc7f48735877cc4d796c8985adab170e6d045";
+export const nativeFactSchemaIdentity = "9790e58a0d08a6eb767327960bc53674e0c0e249fb384c1ba3e02ccaecccc0c4";
 export const nativeRuleConstants = {
   "ATTRIBUTE_CAP": 5,
   "BATTLE_UNCOMMON_BPS": 1000,
@@ -181,8 +181,8 @@ export interface NativeRows {
   ExpeditionDiscovery: { readonly game_id: number; readonly structure_id: bigint; readonly epoch: bigint; readonly empty_reveals: number; readonly ruin_found: boolean };
   LaborRules: { readonly game_id: number; readonly amount: bigint; readonly account_daily_limit: number };
   LaborGrant: { readonly realm_id: number; readonly day: bigint; readonly game_id: number; readonly account: bigint; readonly home: bigint; readonly amount: bigint };
-  ChestRules: { readonly game_id: number; readonly pool: bigint; readonly price: bigint; readonly shares: { readonly common: number; readonly uncommon: number; readonly rare: number; readonly epic: number; readonly legendary: number }; readonly claim_window_seconds: number };
-  LordsBudget: { readonly game_id: number; readonly pool_left: bigint; readonly open: bigint; readonly day: bigint };
+  ChestRules: { readonly game_id: number; readonly price: bigint; readonly shares: { readonly common: number; readonly uncommon: number; readonly rare: number; readonly epic: number; readonly legendary: number }; readonly claim_window_seconds: number };
+  LordsBudget: { readonly game_id: number; readonly pool: bigint; readonly pool_left: bigint; readonly open: bigint; readonly day: bigint };
   SiteChest: { readonly game_id: number; readonly entity_id: bigint; readonly tier: number; readonly amount: bigint; readonly reservation_day: bigint };
   LordsWithdrawal: { readonly game_id: number; readonly claim_id: bigint; readonly account: bigint; readonly amount: bigint };
   RelicDiscovery: { readonly game_id: number; readonly last_at: bigint };
@@ -598,7 +598,6 @@ export const nativeFactModels = {
     "scope": "game",
     "fields": {
       "game_id": "u32",
-      "pool": "u128",
       "price": "u128",
       "shares": {
         "common": "u16",
@@ -617,6 +616,7 @@ export const nativeFactModels = {
     "scope": "game",
     "fields": {
       "game_id": "u32",
+      "pool": "u128",
       "pool_left": "u128",
       "open": "u128",
       "day": "u64"

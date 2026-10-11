@@ -1850,6 +1850,22 @@
       },
       {
         "type": "function",
+        "name": "publish_frontier_pool",
+        "inputs": [
+          {
+            "name": "game_id",
+            "type": "core::integer::u32"
+          },
+          {
+            "name": "amount",
+            "type": "core::integer::u128"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "external"
+      },
+      {
+        "type": "function",
         "name": "grant_labor",
         "inputs": [
           {
@@ -2911,12 +2927,6 @@
       ],
       "members": [
         {
-          "name": "pool",
-          "type": "core::integer::u128",
-          "id": "0x706f6f6c",
-          "feltLength": 1
-        },
-        {
           "name": "price",
           "type": "core::integer::u128",
           "id": "0x7072696365",
@@ -2936,7 +2946,7 @@
         }
       ],
       "keyLength": 1,
-      "valueLength": 8,
+      "valueLength": 7,
       "derivedFrom": "preset"
     },
     {
@@ -2951,6 +2961,12 @@
         }
       ],
       "members": [
+        {
+          "name": "pool",
+          "type": "core::integer::u128",
+          "id": "0x706f6f6c",
+          "feltLength": 1
+        },
         {
           "name": "pool_left",
           "type": "core::integer::u128",
@@ -2971,7 +2987,7 @@
         }
       ],
       "keyLength": 1,
-      "valueLength": 3
+      "valueLength": 4
     },
     {
       "name": "SiteChest",
@@ -10691,10 +10707,6 @@
       "name": "world_native::relics::ChestRules",
       "members": [
         {
-          "name": "pool",
-          "type": "core::integer::u128"
-        },
-        {
           "name": "price",
           "type": "core::integer::u128"
         },
@@ -10752,6 +10764,10 @@
       "type": "struct",
       "name": "world_native::relics::LordsBudget",
       "members": [
+        {
+          "name": "pool",
+          "type": "core::integer::u128"
+        },
         {
           "name": "pool_left",
           "type": "core::integer::u128"
@@ -12689,5 +12705,5 @@
       ]
     }
   },
-  "identity": "5250a0a27d1abc21ee5729d2c40bc7f48735877cc4d796c8985adab170e6d045"
+  "identity": "9790e58a0d08a6eb767327960bc53674e0c0e249fb384c1ba3e02ccaecccc0c4"
 }

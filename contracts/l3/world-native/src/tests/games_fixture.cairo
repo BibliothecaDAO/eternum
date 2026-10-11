@@ -2144,6 +2144,14 @@ pub mod GamesFixture {
                 crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: classes.placement.read() }, operator,
             )
         }
+        fn publish_frontier_pool(ref self: TContractState, game_id: u32, amount: u128) {
+            let classes = fixture_classes(game_id);
+            crate::entry::ILedgerOperatorDispatcherTrait::publish_frontier_pool(
+                crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: classes.placement.read() },
+                game_id,
+                amount,
+            )
+        }
         fn grant_labor(
             ref self: TContractState,
             realms: Array<crate::entry::LaborRealm>,

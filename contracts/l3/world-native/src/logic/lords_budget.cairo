@@ -22,10 +22,27 @@ pub fn budget(game_id: u32) -> Option<LordsBudget> {
     crate::state::read().relics.rollover_budget.read(game_id)
 }
 
+/// The ledger operator publishes confirmed custody once; zero budgets before funding are not publications.
+pub fn publish_pool(game_id: u32, amount: u128) {
+    let game = crate::logic::game::game(game_id);
+    let rules = crate::logic::game::rules(game_id);
+    assert!(
+        rules.day_unit_seconds != 0
+            && crate::logic::preset_record::for_game(game_id).rollover_chest_rules.read().is_some(),
+        "Frontier pool requires chest rules",
+    );
+    assert!(amount > 0, "empty Frontier pool");
+    assert!(budget(game_id).map(|value| value.pool).unwrap_or(0) == 0, "Frontier pool already published");
+    let timestamp = starknet::get_block_timestamp();
+    assert!(timestamp < game.end_at, "Frontier season ended");
+    let day = crate::days::day_of(game, rules.day_unit_seconds, core::cmp::max(timestamp, game.start_main_at)).index;
+    write(game_id, LordsBudget { pool: amount, pool_left: amount, open: 0, day });
+}
+
 /// Draw the candidate chest at the preset price before the site lottery.
 pub fn candidate(game_id: u32, odds: ChestTiers, seed: u256, context: ExecutionContext) -> SiteChest {
     let rules = chest_rules(game_id);
-    let today = today(game_id, rules, context);
+    let today = today(game_id, context);
     let tier = roll_tier(odds, seed);
     SiteChest {
         tier, amount: Into::<u16, u128>::into(tier_value(rules.shares, tier)) * rules.price, reservation_day: today.day,
@@ -34,10 +51,9 @@ pub fn candidate(game_id: u32, odds: ChestTiers, seed: u256, context: ExecutionC
 
 /// Reserve only LORDS already unlocked and not paid or held open.
 pub fn try_reserve(game_id: u32, chest: SiteChest, context: ExecutionContext) -> bool {
-    let rules = chest_rules(game_id);
-    let mut today = today(game_id, rules, context);
+    let mut today = today(game_id, context);
     assert!(chest.reservation_day == today.day, "chest reservation day mismatch");
-    let accepted = fits(rules, today, season_clock(context), chest.amount);
+    let accepted = fits(today, season_clock(context), chest.amount);
     if accepted {
         today.open += chest.amount;
     }
@@ -49,15 +65,14 @@ pub fn try_reserve(game_id: u32, chest: SiteChest, context: ExecutionContext) ->
 /// the pool holds.
 pub fn pay(ruin: ResourceKey, context: ExecutionContext) -> crate::resources::ResourceAmount {
     let chest = site_chest(ruin).expect('missing ruin chest');
-    let rules = chest_rules(ruin.game_id);
-    let mut today = today(ruin.game_id, rules, context);
+    let mut today = today(ruin.game_id, context);
     // Yesterday's hold was released at rollover. Clearing that site must not consume another player's hold.
     if chest.reservation_day != today.day {
         return crate::resources::ResourceAmount { resource_type: crate::resources::LORDS, amount: 0 };
     }
     assert!(chest.amount <= today.open, "ruin chest is not reserved");
     assert!(
-        issued(rules, today) + chest.amount <= unlocked(rules, season_clock(context), today.day),
+        issued(today) + chest.amount <= unlocked(today.pool, season_clock(context), today.day),
         "ruin chest exceeds the unlock",
     );
     today.pool_left -= chest.amount;
@@ -70,20 +85,19 @@ pub fn pay(ruin: ResourceKey, context: ExecutionContext) -> crate::resources::Re
 
 /// A refill returns held LORDS to the same unlocked pool; it creates no new unlock.
 pub fn return_to_pool(game_id: u32, amount: u128, context: ExecutionContext) {
-    let rules = chest_rules(game_id);
-    let mut today = today(game_id, rules, context);
-    assert!(amount <= issued(rules, today), "refill exceeds issued LORDS");
+    let mut today = today(game_id, context);
+    assert!(amount <= issued(today), "refill exceeds issued LORDS");
     today.pool_left += amount;
     write(game_id, today);
 }
 
-pub fn fits(rules: ChestRules, today: LordsBudget, clock: SeasonClock, amount: u128) -> bool {
-    amount != 0 && amount <= available(rules, today, clock)
+pub fn fits(today: LordsBudget, clock: SeasonClock, amount: u128) -> bool {
+    amount != 0 && amount <= available(today, clock)
 }
 
-pub fn available(rules: ChestRules, today: LordsBudget, clock: SeasonClock) -> u128 {
-    let unlocked = unlocked(rules, clock, today.day);
-    let committed = Into::<u128, u256>::into(issued(rules, today)) + today.open.into();
+pub fn available(today: LordsBudget, clock: SeasonClock) -> u128 {
+    let unlocked = unlocked(today.pool, clock, today.day);
+    let committed = Into::<u128, u256>::into(issued(today)) + today.open.into();
     if committed >= unlocked.into() {
         0
     } else {
@@ -91,19 +105,17 @@ pub fn available(rules: ChestRules, today: LordsBudget, clock: SeasonClock) -> u
     }
 }
 
-fn issued(rules: ChestRules, today: LordsBudget) -> u128 {
-    assert!(today.pool_left <= rules.pool, "LORDS pool exceeds its funding");
-    rules.pool - today.pool_left
+fn issued(today: LordsBudget) -> u128 {
+    assert!(today.pool_left <= today.pool, "LORDS pool exceeds its funding");
+    today.pool - today.pool_left
 }
 
 /// The current day counts as unlocked from its start; the last partial day stops exactly at the season end.
-pub fn unlocked(rules: ChestRules, clock: SeasonClock, day: u64) -> u128 {
+pub fn unlocked(pool: u128, clock: SeasonClock, day: u64) -> u128 {
     let end = core::cmp::min(budget_day(clock, day).end, clock.game.end_at);
     let duration = clock.game.end_at - clock.game.start_main_at;
     assert!(duration != 0, "empty LORDS season");
-    (Into::<u128, u256>::into(rules.pool) * (end - clock.game.start_main_at).into() / duration.into())
-        .try_into()
-        .unwrap()
+    (Into::<u128, u256>::into(pool) * (end - clock.game.start_main_at).into() / duration.into()).try_into().unwrap()
 }
 
 fn season_clock(context: ExecutionContext) -> SeasonClock {
@@ -116,7 +128,7 @@ pub fn chest_rules(game_id: u32) -> ChestRules {
 }
 
 // The first touch of a day releases expired holds; paid LORDS stay deducted.
-fn today(game_id: u32, rules: ChestRules, context: ExecutionContext) -> LordsBudget {
+fn today(game_id: u32, context: ExecutionContext) -> LordsBudget {
     let game = context.game.unbox();
     let clock = season_clock(context);
     let day = crate::days::day_of(game, clock.day_unit_seconds, context.timestamp).index;
@@ -126,7 +138,7 @@ fn today(game_id: u32, rules: ChestRules, context: ExecutionContext) -> LordsBud
         } else {
             roll(previous, day)
         },
-        None => LordsBudget { pool_left: rules.pool, open: 0, day },
+        None => LordsBudget { pool: 0, pool_left: 0, open: 0, day },
     }
 }
 

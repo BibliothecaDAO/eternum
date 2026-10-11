@@ -82,6 +82,13 @@ pub mod Games {
                 operator,
             );
         }
+        fn publish_frontier_pool(ref self: ContractState, game_id: u32, amount: u128) {
+            crate::entry::ILedgerOperatorDispatcherTrait::publish_frontier_pool(
+                crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: self.release.current_classes().placement },
+                game_id,
+                amount,
+            );
+        }
         fn grant_labor(
             ref self: ContractState, realms: Array<crate::entry::LaborRealm>, day: u64, account: ContractAddress,
         ) -> Array<crate::entry::LaborGrant> {

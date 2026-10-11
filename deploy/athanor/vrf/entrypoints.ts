@@ -9,6 +9,7 @@ export const GAME_ENTRYPOINTS = [
   { name: "set_launcher", stamp: false },
   { name: "set_ledger_operator", stamp: false },
   { name: "grant_labor", stamp: false },
+  { name: "publish_frontier_pool", stamp: false },
   { name: "register_entitlement", stamp: false },
   { name: "register_village_pass", stamp: false },
 ] as const;

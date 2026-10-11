@@ -4,6 +4,7 @@ use starknet::ContractAddress;
 pub trait ILedgerOperator<T> {
     fn ledger_operator(self: @T) -> ContractAddress;
     fn set_ledger_operator(ref self: T, operator: ContractAddress);
+    fn publish_frontier_pool(ref self: T, game_id: u32, amount: u128);
     fn grant_labor(ref self: T, realms: Array<LaborRealm>, day: u64, account: ContractAddress) -> Array<LaborGrant>;
     fn labor_grant(self: @T, realm: LaborRealm, day: u64) -> Option<LaborGrant>;
 }

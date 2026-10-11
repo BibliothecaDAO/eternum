@@ -47,6 +47,10 @@ pub mod EntryAdministration {
                 None => None,
             }
         }
+        fn publish_frontier_pool(ref self: ComponentState<TContractState>, game_id: u32, amount: u128) {
+            super::assert_ledger_operator();
+            crate::logic::lords_budget::publish_pool(game_id, amount);
+        }
         fn grant_labor(
             ref self: ComponentState<TContractState>, realms: Array<LaborRealm>, day: u64, account: ContractAddress,
         ) -> Array<LaborGrant> {

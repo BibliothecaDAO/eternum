@@ -2158,8 +2158,28 @@ fn setup_frontier_chests_with_rules(
     discovery: Option<crate::expeditions::FrontierDiscoveryRules>,
 ) -> (super::Deployment, u32, ExplorerKey) {
     let (_, frontier) = super::preset_projection::current_definition("frontier");
-    setup_frontier_chests_with_preset(discovery, frontier)
+    let result = setup_frontier_chests_with_preset(discovery, frontier);
+    let (d, game_id, _) = result;
+    publish_test_pool(d, game_id, 1000000, 350);
+    result
 }
+
+pub fn setup_unfunded_frontier_chests() -> (super::Deployment, u32, ExplorerKey) {
+    let (_, frontier) = super::preset_projection::current_definition("frontier");
+    setup_frontier_chests_with_preset(None, frontier)
+}
+
+pub fn publish_test_pool(d: super::Deployment, game_id: u32, amount: u128, timestamp: u64) {
+    super::entry::set_operator(d, super::authority());
+    start_cheat_caller_address(d.games, super::authority());
+    snforge_std::start_cheat_block_timestamp(d.games, timestamp);
+    crate::entry::ILedgerOperatorDispatcherTrait::publish_frontier_pool(
+        crate::entry::ILedgerOperatorDispatcher { contract_address: d.games }, game_id, amount,
+    );
+    snforge_std::stop_cheat_block_timestamp(d.games);
+    stop_cheat_caller_address(d.games);
+}
+
 fn setup_frontier_chests_with_preset(
     discovery: Option<crate::expeditions::FrontierDiscoveryRules>, frontier: PresetDefinition,
 ) -> (super::Deployment, u32, ExplorerKey) {
@@ -2280,8 +2300,7 @@ fn setup_frontier_chests_with_preset(
 }
 
 pub fn assert_zero_pool_never_funds_a_ruin_or_payout_over_a_day() {
-    let (_, mut frontier) = super::preset_projection::current_definition("frontier");
-    frontier.economy.chests = Some(crate::relics::ChestRules { pool: 0, ..frontier.economy.chests.unwrap() });
+    let (_, frontier) = super::preset_projection::current_definition("frontier");
     let rules = crate::expeditions::FrontierDiscoveryRules {
         stragglers_bps: 1, camp_bps: 0, rift_bps: 0, ruin_bps: 8000, shrine_bps: 0, well_bps: 0, empty_reveal_limit: 7,
     };
@@ -2297,9 +2316,8 @@ pub fn assert_zero_pool_never_funds_a_ruin_or_payout_over_a_day() {
     let lords = ResourceSlot { game_id, entity_id: army.owner, resource_type: crate::resources::LORDS };
     let before = resources.resource_balance(lords);
     let relics = IRelicsDispatcher { contract_address: d.games };
-    let chests = relics.chest_rules(game_id).unwrap();
-    assert_eq!(chests.pool, 0);
-    assert_eq!(crate::logic::lords_budget::unlocked(chests, clock, day.index), 0);
+    assert_eq!(relics.lords_budget(game_id), None);
+    assert_eq!(crate::logic::lords_budget::unlocked(0, clock, day.index), 0);
     let mut spy = snforge_std::spy_events();
     let mut time = 352_u64;
     let mut attempts = 0_u8;
@@ -2313,8 +2331,8 @@ pub fn assert_zero_pool_never_funds_a_ruin_or_payout_over_a_day() {
         assert_eq!(snforge_std::interact_with_state(d.games, || crate::map::structure_occupant(tile)), None);
         let budget = relics.lords_budget(game_id).unwrap();
         assert_eq!((budget.day, budget.pool_left, budget.open), (day.index, 0, 0));
-        assert_eq!(crate::logic::lords_budget::available(chests, budget, clock), 0);
-        assert!(!crate::logic::lords_budget::fits(chests, budget, clock, 1));
+        assert_eq!(crate::logic::lords_budget::available(budget, clock), 0);
+        assert!(!crate::logic::lords_budget::fits(budget, clock, 1));
         assert_eq!(resources.resource_balance(lords), before);
         attempts += 1;
         if time == day.end - 1 {
@@ -2411,7 +2429,7 @@ fn frontier_ruin_clear_pays_its_stored_chest_into_the_realm_and_leaves_no_chest(
     );
     assert!(captured, "chest capture failed");
     assert_eq!(resources.resource_balance(lords) - before, CHEST.amount * RESOURCE_PRECISION);
-    let pool = relics.chest_rules(game_id).unwrap().pool;
+    let pool = relics.lords_budget(game_id).unwrap().pool;
     assert_eq!(relics.lords_budget(game_id).unwrap().pool_left, pool - CHEST.amount);
     // Nothing stays on the tile: the ruin stands captured, with no chest occupancy.
     let tile = crate::geometry::tile_key(game_id, coord);
@@ -2455,7 +2473,7 @@ fn an_exhausted_budget_never_funds_a_ruin_or_payout() {
         d.games,
         || {
             let day = crate::days::day_of(context.game.unbox(), context.rules.unbox().day_unit_seconds, time).index;
-            let exhausted = crate::relics::LordsBudget { pool_left: 0, open: 0, day };
+            let exhausted = crate::relics::LordsBudget { pool: 1000000, pool_left: 0, open: 0, day };
             crate::state::write().relics.rollover_budget.write(game_id, Some(exhausted));
         },
     );
@@ -2586,10 +2604,7 @@ fn a_full_refill_costs_one_lords_a_point_returns_to_the_pool_and_is_allowed_besi
         },
     );
     let relics = IRelicsDispatcher { contract_address: d.games };
-    let pool_before = relics
-        .lords_budget(game_id)
-        .map(|budget| budget.pool_left)
-        .unwrap_or(relics.chest_rules(game_id).unwrap().pool);
+    let pool_before = relics.lords_budget(game_id).unwrap().pool_left;
     assert!(execute_in_game(d, game_id, refill, 362));
     let filled = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
     assert_eq!(Into::<u64, u128>::into(filled.troops.stamina.inline().amount), maximum);

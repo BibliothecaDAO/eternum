@@ -1,9 +1,12 @@
 use core::dict::{Felt252Dict, Felt252DictTrait};
 use snforge_std::fs::{FileTrait, read_txt};
-use starknet::storage::{StorageMapWriteAccess, StoragePointerReadAccess};
+use snforge_std::{EventSpyTrait, EventsFilterTrait};
+use starknet::storage::StorageMapWriteAccess;
+use crate::entry::{ILedgerOperatorSafeDispatcher, ILedgerOperatorSafeDispatcherTrait};
 use crate::logic::lords_budget::{SeasonClock, available, fits, roll, unlocked};
-use crate::relics::{ChestRules, LordsBudget, roll_tier, tier_value};
+use crate::relics::{ChestRules, IRelicsDispatcher, IRelicsDispatcherTrait, LordsBudget, roll_tier, tier_value};
 
+const TEST_POOL: u128 = 1000000;
 const DAY_UNIT: u32 = 14400;
 const SEASON_DAYS: u64 = 105;
 
@@ -30,58 +33,54 @@ fn clock() -> SeasonClock {
     }
 }
 
-fn empty_day(rules: ChestRules, day: u64) -> LordsBudget {
-    LordsBudget { pool_left: rules.pool, open: 0, day }
+fn empty_day(pool: u128, day: u64) -> LordsBudget {
+    LordsBudget { pool, pool_left: pool, open: 0, day }
 }
 
 #[test]
 fn current_seeded_day_is_unlocked_in_full_and_season_end_is_exact() {
-    let rules = rules();
     let clock = clock();
     let first = crate::days::day_of(clock.game, DAY_UNIT, 0);
-    assert_eq!(unlocked(rules, clock, 0), rules.pool * first.end.into() / clock.game.end_at.into());
-    assert!(unlocked(rules, clock, 0) > 0);
-    assert_eq!(unlocked(rules, clock, SEASON_DAYS - 1), rules.pool);
+    assert_eq!(unlocked(TEST_POOL, clock, 0), TEST_POOL * first.end.into() / clock.game.end_at.into());
+    assert!(unlocked(TEST_POOL, clock, 0) > 0);
+    assert_eq!(unlocked(TEST_POOL, clock, SEASON_DAYS - 1), TEST_POOL);
     let partial = SeasonClock { game: crate::game::GameRegistry { end_at: first.end - 1, ..clock.game }, ..clock };
-    assert_eq!(unlocked(rules, partial, 0), rules.pool);
+    assert_eq!(unlocked(TEST_POOL, partial, 0), TEST_POOL);
 }
 
 #[test]
 fn quiet_days_roll_their_unspent_unlock_into_the_next_days_budget() {
-    let rules = rules();
-    let first = empty_day(rules, 0);
+    let first = empty_day(TEST_POOL, 0);
     let later = roll(first, 4);
-    assert_eq!(available(rules, first, clock()), unlocked(rules, clock(), 0));
-    assert_eq!(available(rules, later, clock()), unlocked(rules, clock(), 4));
-    assert!(available(rules, later, clock()) > available(rules, first, clock()));
+    assert_eq!(available(first, clock()), unlocked(TEST_POOL, clock(), 0));
+    assert_eq!(available(later, clock()), unlocked(TEST_POOL, clock(), 4));
+    assert!(available(later, clock()) > available(first, clock()));
 }
 
 #[test]
 fn paid_and_open_chests_share_one_unlock_and_refills_restore_only_issued_value() {
-    let rules = rules();
-    let mut today = empty_day(rules, 0);
-    let unlock = unlocked(rules, clock(), 0);
+    let mut today = empty_day(TEST_POOL, 0);
+    let unlock = unlocked(TEST_POOL, clock(), 0);
     today.pool_left -= unlock - 1200;
     today.open = 300;
-    assert_eq!(available(rules, today, clock()), 900);
-    assert!(fits(rules, today, clock(), 900));
-    assert!(!fits(rules, today, clock(), 901));
+    assert_eq!(available(today, clock()), 900);
+    assert!(fits(today, clock(), 900));
+    assert!(!fits(today, clock(), 901));
     // Clearing a reservation moves open to paid, leaving the available amount unchanged.
     today.pool_left -= 300;
     today.open -= 300;
-    assert_eq!(available(rules, today, clock()), 900);
+    assert_eq!(available(today, clock()), 900);
     today.pool_left += 110;
-    assert_eq!(available(rules, today, clock()), 1010);
-    assert!(!fits(rules, today, clock(), 0));
+    assert_eq!(available(today, clock()), 1010);
+    assert!(!fits(today, clock(), 0));
 }
 
 #[test]
 fn expired_open_chests_release_their_budget_without_spending_the_pool() {
-    let rules = rules();
-    let previous = LordsBudget { open: 500, ..empty_day(rules, 0) };
+    let previous = LordsBudget { open: 500, ..empty_day(TEST_POOL, 0) };
     let next = roll(previous, 1);
-    assert_eq!((next.pool_left, next.open), (rules.pool, 0));
-    assert_eq!(available(rules, next, clock()), unlocked(rules, clock(), 1));
+    assert_eq!((next.pool_left, next.open), (TEST_POOL, 0));
+    assert_eq!(available(next, clock()), unlocked(TEST_POOL, clock(), 1));
 }
 
 #[test]
@@ -134,27 +133,26 @@ fn refused_chests_reserve_nothing_and_clearing_spends_only_the_hold() {
         d.games,
         || {
             let context = crate::commands::ExecutionContext { timestamp: 360, ..super::context(d.games, game_id) };
-            let rules = crate::logic::preset_record::for_game(game_id).rollover_chest_rules.read().unwrap();
             let day = crate::days::day_of(context.game.unbox(), context.rules.unbox().day_unit_seconds, 360).index;
             let chest = crate::relics::SiteChest { tier: 3, amount: 500, reservation_day: 0 };
             crate::state::write()
                 .relics
                 .rollover_budget
-                .write(game_id, Some(LordsBudget { pool_left: 0, ..empty_day(rules, day) }));
+                .write(game_id, Some(LordsBudget { pool_left: 0, ..empty_day(TEST_POOL, day) }));
             assert!(!crate::logic::lords_budget::try_reserve(game_id, chest, context));
             let refused = crate::logic::lords_budget::budget(game_id).unwrap();
             assert_eq!((refused.pool_left, refused.open), (0, 0));
             crate::state::write()
                 .relics
                 .rollover_budget
-                .write(game_id, Some(LordsBudget { pool_left: rules.pool, ..refused }));
+                .write(game_id, Some(LordsBudget { pool_left: TEST_POOL, ..refused }));
             assert!(crate::logic::lords_budget::try_reserve(game_id, chest, context));
             let site = crate::resources::ResourceKey { game_id, entity_id: 999 };
             crate::logic::lords_budget::store_site_chest(site, chest);
             let payout = crate::logic::lords_budget::pay(site, context);
             assert_eq!(payout.amount, 500 * crate::rules::RESOURCE_PRECISION);
             assert_eq!(crate::logic::lords_budget::budget(game_id).unwrap().open, 0);
-            assert_eq!(crate::logic::lords_budget::budget(game_id).unwrap().pool_left, rules.pool - 500);
+            assert_eq!(crate::logic::lords_budget::budget(game_id).unwrap().pool_left, TEST_POOL - 500);
         },
     );
 }
@@ -211,13 +209,14 @@ const CHUNK_DAYS: u64 = 7;
 const CHUNKS: u32 = 15;
 
 fn initial_season() -> SeasonState {
-    let rules = rules();
-    SeasonState { budget: empty_day(rules, 0), paid: 0, refused: 0 }
+    SeasonState { budget: empty_day(TEST_POOL, 0), paid: 0, refused: 0 }
 }
 
-fn assert_conservation(state: SeasonState, rules: ChestRules, clock: SeasonClock, day: u64) {
-    assert_eq!(state.paid + state.budget.pool_left, rules.pool);
-    assert!(rules.pool - state.budget.pool_left + state.budget.open <= unlocked(rules, clock, day), "unlock overshot");
+fn assert_conservation(state: SeasonState, clock: SeasonClock, day: u64) {
+    assert_eq!(state.paid + state.budget.pool_left, TEST_POOL);
+    assert!(
+        TEST_POOL - state.budget.pool_left + state.budget.open <= unlocked(TEST_POOL, clock, day), "unlock overshot",
+    );
 }
 
 // Seven-day test VMs replace one season's retained traces; state and running totals cross every boundary.
@@ -237,7 +236,7 @@ fn simulate_range(input: ChunkInput, mut state: SeasonState) -> SeasonState {
                 let tier = roll_tier(odds, 0x524f4c4c + Into::<u64, u256>::into(sample));
                 let shares: u128 = tier_value(rules.shares, tier).into();
                 let amount = shares * rules.price;
-                if !fits(rules, state.budget, clock, amount) {
+                if !fits(state.budget, clock, amount) {
                     state.refused += 1;
                     continue;
                 }
@@ -247,10 +246,10 @@ fn simulate_range(input: ChunkInput, mut state: SeasonState) -> SeasonState {
                 } else {
                     state.budget.open += amount;
                 }
-                assert_conservation(state, rules, clock, day);
+                assert_conservation(state, clock, day);
             }
         }
-        assert_conservation(state, rules, clock, day);
+        assert_conservation(state, clock, day);
     }
     state
 }
@@ -497,4 +496,105 @@ fn a_frontier_preset_requires_more_than_the_reporting_hour() {
         .chests =
             Option::Some(ChestRules { claim_window_seconds: crate::days::FRONTIER_REPORT_GRACE_SECONDS, ..chests });
     crate::presets::validate(preset);
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn publishing_a_pool_requires_the_current_operator_and_a_frontier_game() {
+    let (d, game_id, _) = super::registrar::setup_unfunded_frontier_chests();
+    let operator = ILedgerOperatorSafeDispatcher { contract_address: d.games };
+    assert!(operator.publish_frontier_pool(game_id, 700000).is_err());
+    super::entry::set_operator(d, super::authority());
+    snforge_std::start_cheat_caller_address(d.games, d.actor);
+    assert!(operator.publish_frontier_pool(game_id, 700000).is_err());
+    snforge_std::start_cheat_caller_address(d.games, super::authority());
+    assert!(operator.publish_frontier_pool(game_id, 0).is_err());
+    assert!(operator.publish_frontier_pool(9999, 700000).is_err());
+    let other = super::registrar::setup();
+    super::entry::set_operator(other, super::authority());
+    snforge_std::start_cheat_caller_address(other.games, super::authority());
+    assert!(ILedgerOperatorSafeDispatcher { contract_address: other.games }.publish_frontier_pool(1, 700000).is_err());
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn the_published_deposit_is_per_game_immutable_and_emits_the_budget_fact() {
+    let (d, game_id, _) = super::registrar::setup_unfunded_frontier_chests();
+    let relics = IRelicsDispatcher { contract_address: d.games };
+    assert_eq!(relics.lords_budget(game_id), None);
+    let mut spy = snforge_std::spy_events();
+    super::registrar::publish_test_pool(d, game_id, 700000, 0);
+    let budget = relics.lords_budget(game_id).unwrap();
+    assert_eq!((budget.pool, budget.pool_left, budget.open, budget.day), (700000, 700000, 0, 0));
+    let events = spy.get_events().emitted_by(d.games);
+    assert_eq!(events.events.len(), 1);
+    for (_, event) in events.events.span() {
+        assert_eq!(event.keys.span(), array![selector!("MapEvent"), selector!("RowSet"), 1, 'LordsBudget'].span());
+        assert_eq!(event.data.span(), array![1, game_id.into(), 4, 700000, 700000, 0, 0].span());
+    }
+    assert_eq!(relics.lords_budget(game_id + 1), None);
+    snforge_std::start_cheat_caller_address(d.games, super::authority());
+    let operator = ILedgerOperatorSafeDispatcher { contract_address: d.games };
+    assert!(operator.publish_frontier_pool(game_id, 700000).is_err());
+    assert!(operator.publish_frontier_pool(game_id, 900000).is_err());
+    // Exhaustion cannot reopen publication.
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            crate::state::write().relics.rollover_budget.write(game_id, Some(LordsBudget { pool_left: 0, ..budget }));
+        },
+    );
+    assert!(operator.publish_frontier_pool(game_id, 700000).is_err());
+    let (second, second_id, _) = super::registrar::setup_unfunded_frontier_chests();
+    super::registrar::publish_test_pool(second, second_id, 230000, 0);
+    assert_eq!(IRelicsDispatcher { contract_address: second.games }.lords_budget(second_id).unwrap().pool, 230000);
+}
+
+#[test]
+fn late_publication_replaces_a_zero_budget_and_releases_elapsed_days() {
+    let (d, game_id, _) = super::registrar::setup_unfunded_frontier_chests();
+    let initial = super::context(d.games, game_id);
+    let clock = SeasonClock { game: initial.game.unbox(), day_unit_seconds: initial.rules.unbox().day_unit_seconds };
+    let first = crate::days::day_of(clock.game, clock.day_unit_seconds, clock.game.start_main_at);
+    let second = crate::days::day_of(clock.game, clock.day_unit_seconds, first.end);
+    let timestamp = second.end;
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            let context = crate::commands::ExecutionContext { timestamp, ..initial };
+            let candidate = crate::logic::lords_budget::candidate(game_id, rules().shares, 7, context);
+            assert!(!crate::logic::lords_budget::try_reserve(game_id, candidate, context));
+            let budget = crate::logic::lords_budget::budget(game_id).unwrap();
+            assert_eq!((budget.pool, budget.pool_left, budget.open), (0, 0, 0));
+        },
+    );
+    super::registrar::publish_test_pool(d, game_id, 700000, timestamp);
+    let budget = IRelicsDispatcher { contract_address: d.games }.lords_budget(game_id).unwrap();
+    let today = crate::days::day_of(clock.game, clock.day_unit_seconds, timestamp);
+    assert_eq!(budget.day, today.index);
+    let elapsed: u128 = (today.end - clock.game.start_main_at).into();
+    let duration: u128 = (clock.game.end_at - clock.game.start_main_at).into();
+    assert_eq!(available(budget, clock), 700000 * elapsed / duration);
+    assert!(available(budget, clock) > unlocked(700000, clock, 0));
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            let context = crate::commands::ExecutionContext { timestamp, ..initial };
+            let candidate = crate::logic::lords_budget::candidate(game_id, rules().shares, 7, context);
+            assert!(crate::logic::lords_budget::try_reserve(game_id, candidate, context));
+        },
+    );
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn publication_refuses_at_the_season_end() {
+    let (d, game_id, _) = super::registrar::setup_unfunded_frontier_chests();
+    let game = super::context(d.games, game_id).game.unbox();
+    super::entry::set_operator(d, super::authority());
+    snforge_std::start_cheat_caller_address(d.games, super::authority());
+    snforge_std::start_cheat_block_timestamp(d.games, game.end_at);
+    assert!(
+        ILedgerOperatorSafeDispatcher { contract_address: d.games }.publish_frontier_pool(game_id, 700000).is_err(),
+    );
 }

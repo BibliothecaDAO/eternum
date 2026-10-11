@@ -48,6 +48,7 @@ test("only the single data-listed Games entries admit administrative invokes", (
     "set_launcher",
     "set_ledger_operator",
     "grant_labor",
+    "publish_frontier_pool",
     "register_entitlement",
     "register_village_pass",
   ]);
