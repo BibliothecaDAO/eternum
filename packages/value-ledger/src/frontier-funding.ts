@@ -11,7 +11,7 @@ export interface FrontierFundingTerms {
   claimWindow: number;
 }
 
-/** Unfunded views revert; unreadable, closed or different custody must never authorize a debit or payment. */
+/** Unfunded views revert; unreadable or different custody cannot bind a receipt. */
 export async function readFrontierFunding(
   provider: RpcProvider,
   ledgerAddress: string,
@@ -29,7 +29,6 @@ export async function readFrontierFunding(
     native.dayUnit <= 0 ||
     native.claimWindow <= 0 ||
     native.end <= native.start ||
-    season.closed ||
     season.start !== native.start ||
     season.end !== native.end ||
     BigInt(season.seed) !== BigInt(native.seed) ||
