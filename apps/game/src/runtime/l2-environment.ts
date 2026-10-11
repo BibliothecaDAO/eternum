@@ -1,4 +1,7 @@
-import { environmentL2 } from "@realms-world/chain";
+// The build config loads this module, and tools load the build config before any workspace package is built (the
+// static checks install and run without a build). So the address-book reader comes from the chain package's source,
+// which needs nothing built, never from its dist.
+import { environmentL2 } from "../../../../packages/chain/src/value-plane";
 
 import { valueEnvironmentOf } from "../shell/frame/environment";
 
