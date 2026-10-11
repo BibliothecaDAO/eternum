@@ -6,13 +6,10 @@ import type { Call } from "starknet";
 import { afterEach, expect, it, vi } from "vitest";
 
 const signed = vi.hoisted(() => ({ calls: [] as Call[][], owners: [] as string[] }));
-/** The build's L2: Sepolia on dev, where LORDS is a test token, or mainnet. */
-const build = vi.hoisted(() => ({ name: "SN_SEPOLIA" }));
 // The ledger answers nothing here: a refetch after a send stays pending, never reaching a network.
 vi.mock("@/runtime/l2-rpc", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/runtime/l2-rpc")>()),
   L2_LEDGER: "0x1ed9e7",
-  L2_CHAIN: build,
   l2Provider: () => ({ callContract: () => new Promise(() => {}) }),
 }));
 vi.mock("@/ui/modules/identity/wallet-actions", () => ({
@@ -100,7 +97,7 @@ afterEach(async () => {
   for (const unmount of unmounts.splice(0)) await unmount();
   signed.calls = [];
   signed.owners = [];
-  build.name = "SN_SEPOLIA";
+  vi.unstubAllEnvs();
 });
 
 it("pays the seat and the chosen flags from the payout wallet, a credit paying for the sword", async () => {
@@ -211,18 +208,23 @@ it("reads a slot's entry and refund with the payout wallet that pays, signed by 
   expect(signed.owners).toEqual(["0x4a1", "0xb0b"]);
 });
 
-it("mints test LORDS to the paying wallet on a Sepolia build, and offers no such thing on mainnet", async () => {
+it("mints the test token to the paying wallet in a dev build, and offers no such thing in a production build", async () => {
+  vi.stubEnv("VITE_PUBLIC_ENVIRONMENT", "staging");
   const short = await mount({ ...TERMS, lords: 320n * WEI });
   expect(short.textContent).toContain("Need 180 more LORDS");
-  await press(short, "Mint 1,000 test LORDS");
+  // The button names a test token: it never says LORDS.
+  const mint = [...short.querySelectorAll("button")].find((button) => button.textContent?.startsWith("Mint"))!;
+  expect(mint.textContent).toBe("Mint 1,000 test tokens");
+  await press(short, "Mint 1,000 test tokens");
   await press(short, "Sign");
-  // The test token's own public mint, on the token the ledger names, to the wallet that pays: 1,000 LORDS.
+  // The test token's own public mint, on the token the ledger names, to the wallet that pays: 1,000 of it.
   expect(signed.calls).toEqual([
     [{ contractAddress: "0x10e5", entrypoint: "mint", calldata: ["0x4a1", String(1_000n * WEI), "0"] }],
   ]);
   expect(signed.owners).toEqual(["0x4a1"]);
 
-  build.name = "SN_MAIN";
+  // Both environments are on Starknet mainnet: the build's environment, not its chain, decides.
+  vi.stubEnv("VITE_PUBLIC_ENVIRONMENT", "production");
   const words = (panel: HTMLElement) => [...panel.querySelectorAll("button")].map((button) => button.textContent);
   expect(words(await mount({ ...TERMS, lords: 320n * WEI })).join()).not.toContain("Mint");
   expect(words(await mount(TERMS)).join()).not.toContain("Mint");

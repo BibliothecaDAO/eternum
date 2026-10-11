@@ -246,8 +246,6 @@ export const ENTRY_WORDS = {
   total: "Total",
   payAndJoin: "Pay & join",
   needMore: (amount: string) => `Need ${amount} more LORDS`,
-  /** On a Sepolia build only: test LORDS for the wallet that pays. */
-  mintTestLords: (amount: string) => `Mint ${amount} test LORDS`,
   paidFromWallet: "Entry is paid from your payout wallet",
   registered: "Registered",
   registeredLine: "Your seat is drawn when entry closes.",
@@ -272,6 +270,12 @@ export const ENTRY_WORDS = {
   unreadable: "This game's paid entry could not be read, so it cannot be joined yet.",
   whereItGoes: "Where this entry goes: the season pool, the season's chests, the treasury",
 } as const;
+
+/**
+ * A dev build only: the test token its ledger is paid in, minted to the wallet that pays. A word of its own, outside
+ * the entry's table, so a production build drops it with the button.
+ */
+export const mintTestTokenWord = (amount: string) => `Mint ${amount} test tokens`;
 
 /** After a paid Blitz: the rating's change and the chest the result minted. */
 export const REWARD_WORDS = {

@@ -13,16 +13,15 @@ import { ServiceFailure } from "../service-failure";
 import { useNowSeconds } from "../use-now";
 import {
   type EnvironmentLedger,
-  isTestLordsBuild,
   lordsOf,
   lordsShortOf,
-  mintTestLordsCall,
+  mintTestTokenCall,
   refundCall,
   type SlotKey,
-  TEST_LORDS_MINT,
+  TEST_TOKEN_MINT,
 } from "../value/ledger";
 import { gameRowKey } from "../blitz-rows";
-import { ENTRY_WORDS, WALLET_WORDS } from "../words";
+import { ENTRY_WORDS, mintTestTokenWord, WALLET_WORDS } from "../words";
 import {
   entryCalls,
   entryCost,
@@ -185,22 +184,26 @@ const EntryPanel = ({
         ) : (
           <Button role="primary" word={ENTRY_WORDS.payAndJoin} icon="Pl" onClick={() => setSigning(true)} />
         ))}
-      {isTestLordsBuild() && !signing && <MintTestLords token={terms.lordsToken} owner={owner} onMinted={onSent} />}
+      {/* Asked of the build constant here, at this line: a production bundle holds neither the button nor its call. */}
+      {import.meta.env.VITE_PUBLIC_ENVIRONMENT !== "production" && !signing && (
+        <MintTestToken token={terms.lordsToken} owner={owner} onMinted={onSent} />
+      )}
     </Plate>
   );
 };
 
 /**
- * On a Sepolia build only: test LORDS for the wallet that pays, by the test token's own public mint, so an entry can be
- * tried on dev. One signature of its own; the wallet's balance is read again once it lands.
+ * A dev build only: its ledger is paid in a test token with no value, never LORDS, and the wallet that pays mints some
+ * to itself through that token's own public mint, so an entry can be tried. One signature of its own; the wallet's
+ * balance is read again once it lands.
  */
-const MintTestLords = ({ token, owner, onMinted }: { token: string; owner: string; onMinted: () => void }) => {
+const MintTestToken = ({ token, owner, onMinted }: { token: string; owner: string; onMinted: () => void }) => {
   const [signing, setSigning] = useState(false);
   if (!signing)
     return (
       <Button
         role="outline"
-        word={ENTRY_WORDS.mintTestLords(formatExact(lordsOf(TEST_LORDS_MINT)))}
+        word={mintTestTokenWord(formatExact(lordsOf(TEST_TOKEN_MINT)))}
         icon="Lo"
         onClick={() => setSigning(true)}
       />
@@ -209,7 +212,7 @@ const MintTestLords = ({ token, owner, onMinted }: { token: string; owner: strin
     <Suspense fallback={<Loading />}>
       <WalletSign
         owner={owner}
-        calls={[mintTestLordsCall(token, owner)]}
+        calls={[mintTestTokenCall(token, owner)]}
         onLanded={() => {
           setSigning(false);
           onMinted();

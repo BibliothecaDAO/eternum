@@ -17,8 +17,8 @@ import { l2EnvironmentProblem } from "./src/runtime/l2-environment";
 import { COLORS } from "./src/tokens";
 
 /**
- * The environment's one L2 RPC: the team's https Alchemy endpoint for the network of the build's environment (Sepolia
- * for dev, mainnet for production, from contracts/common/addresses), never committed and never a public node. Checked once
+ * The environment's one L2 RPC: the team's https Alchemy endpoint for the L2 the build's environment names in its
+ * address book (contracts/common/addresses), never committed and never a public node. Checked once
  * Vite has resolved its env, so the dev server and the build (and so the deploy, before its upload) fail at once, by
  * name; tools that only read this file for its settings (knip) are not stopped by it.
  */

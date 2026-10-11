@@ -5,13 +5,14 @@ import { environmentL2 } from "../../../../packages/chain/src/value-plane";
 
 import { valueEnvironmentOf } from "../shell/frame/environment";
 
-const NETWORKS = { SN_MAIN: "mainnet", SN_SEPOLIA: "sepolia" } as const;
+/** Alchemy's name for each L2 an address book may name. */
+const NETWORKS = { SN_MAIN: "mainnet" } as const;
 
 /**
  * Why a build's L2 RPC is refused, or null when it is sound: VITE_PUBLIC_IDENTITY_RPC_URL is the team's https Alchemy
- * endpoint for the network of the build's environment (VITE_PUBLIC_ENVIRONMENT: production on mainnet, every other
- * build on Sepolia, from contracts/common/addresses), never a public node or the other network's. The identity Worker
- * holds its RPC to the same rule.
+ * endpoint for the L2 the build's environment names in its address book (contracts/common/addresses: Starknet mainnet
+ * for dev and for production), never a public node or another network's. The identity Worker holds its RPC to the same
+ * rule.
  */
 export const l2EnvironmentProblem = (environment: string | undefined, rpcUrl: string | undefined): string | null => {
   const { chain } = environmentL2(valueEnvironmentOf(environment));
