@@ -70,13 +70,12 @@ pub fn roll_tier(odds: ChestTiers, seed: u256) -> u8 {
     4
 }
 
-// A common chest's price is capped by the preset and priced from unlocked rollover over expected rolled shares.
+// A chest pays its tier's shares at the preset's fixed whole-LORDS price.
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
 pub struct ChestRules {
     pub pool: u128,
-    pub price_ceiling: u128,
+    pub price: u128,
     pub shares: ChestTiers,
-    pub estimate_days: u16,
     pub claim_window_seconds: u32,
 }
 
@@ -88,18 +87,13 @@ pub struct SiteChest {
     pub reservation_day: u64,
 }
 
-// Open chests reserve unlocked LORDS. Rolled shares include found and refused ruins; estimate is shares per tick.
+// Open chests reserve unlocked LORDS until the day ends. Unspent funding rolls forward.
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
 pub struct LordsBudget {
     pub pool_left: u128,
     pub open: u128,
     pub day: u64,
-    pub price: u128,
-    pub estimate: u128,
-    pub rolled_shares: u128,
 }
-
-pub const LORDS_ESTIMATE_SCALE: u128 = 1000000;
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct RefillStamina {

@@ -2291,7 +2291,6 @@ pub fn assert_zero_pool_never_funds_a_ruin_or_payout_over_a_day() {
     let clock = crate::logic::lords_budget::SeasonClock {
         game: context.game.unbox(),
         day_unit_seconds: context.rules.unbox().day_unit_seconds,
-        tick: context.rules.unbox().tick_config.armies_tick_in_seconds,
     };
     let day = crate::days::day_of(clock.game, clock.day_unit_seconds, 352);
     let resources = IResourceOperationsDispatcher { contract_address: d.games };
@@ -2305,7 +2304,6 @@ pub fn assert_zero_pool_never_funds_a_ruin_or_payout_over_a_day() {
     let mut spy = snforge_std::spy_events();
     let mut time = 352_u64;
     let mut attempts = 0_u8;
-    let mut rolled_shares = 0;
     loop {
         let army = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
         let raw_root = discovery_root(
@@ -2316,16 +2314,14 @@ pub fn assert_zero_pool_never_funds_a_ruin_or_payout_over_a_day() {
         assert_eq!(snforge_std::interact_with_state(d.games, || crate::map::structure_occupant(tile)), None);
         let budget = relics.lords_budget(game_id).unwrap();
         assert_eq!((budget.day, budget.pool_left, budget.open), (day.index, 0, 0));
-        assert!(budget.price >= 1 && budget.rolled_shares > rolled_shares);
         assert_eq!(crate::logic::lords_budget::available(chests, budget, clock), 0);
         assert!(!crate::logic::lords_budget::fits(chests, budget, clock, 1));
         assert_eq!(resources.resource_balance(lords), before);
-        rolled_shares = budget.rolled_shares;
         attempts += 1;
         if time == day.end - 1 {
             break;
         }
-        time = core::cmp::min(time + clock.tick, day.end - 1);
+        time = core::cmp::min(time + context.rules.unbox().tick_config.armies_tick_in_seconds, day.end - 1);
     }
     for (_, event) in spy.get_events().emitted_by(d.games).events.span() {
         if *event.keys.at(0) == selector!("StoryEvent") {
@@ -2418,7 +2414,6 @@ fn frontier_ruin_clear_pays_its_stored_chest_into_the_realm_and_leaves_no_chest(
     assert_eq!(resources.resource_balance(lords) - before, CHEST.amount * RESOURCE_PRECISION);
     let pool = relics.chest_rules(game_id).unwrap().pool;
     assert_eq!(relics.lords_budget(game_id).unwrap().pool_left, pool - CHEST.amount);
-    assert_eq!(relics.lords_budget(game_id).unwrap().rolled_shares, 10);
     // Nothing stays on the tile: the ruin stands captured, with no chest occupancy.
     let tile = crate::geometry::tile_key(game_id, coord);
     let occupied = snforge_std::interact_with_state(d.games, || crate::logic::map::occupancy(tile).unwrap());
@@ -2447,18 +2442,12 @@ fn frontier_ruin_clear_pays_its_stored_chest_into_the_realm_and_leaves_no_chest(
     assert_eq!(payouts, 1);
 }
 
-#[test_case(name: "positive_expected_shares", 1_000_000_000_000)]
-#[test_case(name: "zero_expected_shares", 0)]
-fn an_exhausted_day_price_never_funds_a_ruin_or_payout(estimate: u128) {
+#[test]
+fn an_exhausted_budget_never_funds_a_ruin_or_payout() {
     let rules = crate::expeditions::FrontierDiscoveryRules {
         stragglers_bps: 1, camp_bps: 0, rift_bps: 0, ruin_bps: 8000, shrine_bps: 0, well_bps: 0, empty_reveal_limit: 7,
     };
     let (d, game_id, key) = setup_frontier_chests_with_rules(Some(rules));
-    let expected_price = if estimate == 0 {
-        IRelicsDispatcher { contract_address: d.games }.chest_rules(game_id).unwrap().price_ceiling
-    } else {
-        1
-    };
     let context = crate::tests::context(d.games, game_id);
     let raw_root = discovery_root(game_id, rules, 0, Some(any_chest()), crate::discovery::Discovery::Ruin(any_chest()));
     let army = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
@@ -2466,18 +2455,8 @@ fn an_exhausted_day_price_never_funds_a_ruin_or_payout(estimate: u128) {
     snforge_std::interact_with_state(
         d.games,
         || {
-            let chest_rules = crate::logic::lords_budget::chest_rules(game_id);
             let day = crate::days::day_of(context.game.unbox(), context.rules.unbox().day_unit_seconds, time).index;
-            let exhausted = crate::logic::lords_budget::open_day(
-                chest_rules,
-                crate::relics::LordsBudget { pool_left: 0, open: 0, day, price: 0, estimate, rolled_shares: 0 },
-                crate::logic::lords_budget::SeasonClock {
-                    game: context.game.unbox(),
-                    day_unit_seconds: context.rules.unbox().day_unit_seconds,
-                    tick: context.rules.unbox().tick_config.armies_tick_in_seconds,
-                },
-            );
-            assert_eq!(exhausted.price, expected_price);
+            let exhausted = crate::relics::LordsBudget { pool_left: 0, open: 0, day };
             crate::state::write().relics.rollover_budget.write(game_id, Some(exhausted));
         },
     );
@@ -2489,8 +2468,7 @@ fn an_exhausted_day_price_never_funds_a_ruin_or_payout(estimate: u128) {
     let tile = crate::geometry::tile_key(game_id, crate::geometry::neighbor(army.coord, 0));
     assert_eq!(snforge_std::interact_with_state(d.games, || crate::map::structure_occupant(tile)), None);
     let budget = IRelicsDispatcher { contract_address: d.games }.lords_budget(game_id).unwrap();
-    assert_eq!((budget.price, budget.pool_left, budget.open), (expected_price, 0, 0));
-    assert!(budget.rolled_shares > 0);
+    assert_eq!((budget.pool_left, budget.open), (0, 0));
     assert_eq!(resources.resource_balance(lords), before);
     for (_, event) in spy.get_events().emitted_by(d.games).events.span() {
         for selector in event.keys.span() {
@@ -2524,16 +2502,14 @@ fn frontier_finds_at_most_one_ruin_a_day_and_holds_its_chest_against_the_budget(
     let relics = IRelicsDispatcher { contract_address: d.games };
     let chest = relics.site_chest(ResourceKey { game_id, entity_id: ruin.entity_id }).unwrap();
     let budget = relics.lords_budget(game_id).unwrap();
-    // A quiet first day prices at the ceiling, and the chest's LORDS are held open until its clear.
-    assert_eq!(budget.price, 50);
+    // The preset fixes the price, and the chest's LORDS are held open until its clear.
+    let rules = relics.chest_rules(game_id).unwrap();
+    assert_eq!(rules.price, 50);
     assert_eq!(
         chest.amount,
-        budget.price * crate::relics::tier_value(relics.chest_rules(game_id).unwrap().shares, chest.tier).into(),
+        rules.price * crate::relics::tier_value(rules.shares, chest.tier).into(),
     );
     assert_eq!(budget.open, chest.amount);
-    assert_eq!(
-        budget.rolled_shares, crate::relics::tier_value(relics.chest_rules(game_id).unwrap().shares, chest.tier).into(),
-    );
     let counter = crate::expeditions::ExpeditionDiscoveryKey {
         game_id,
         structure_id: army.owner,
