@@ -1,8 +1,10 @@
+import { registerEnvironmentPreset } from "../registrar/register-preset";
+import { PLAYER_GAME_LEDGER_PRESET_ID } from "../../../source/common/ledger-presets";
 import { blitzRosterOf, findRegistrarGame } from "../registrar/calls";
 import { seasonSeconds } from "@bibliothecadao/eternum";
 import { frontierPreset } from "../../../source/frontier/native";
 import { nativePresets } from "../../../source/native";
-import { afterAll, describe, expect, test, mock } from "bun:test";
+import { afterAll, describe, expect, test, mock, spyOn } from "bun:test";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -54,6 +56,33 @@ function configuration(preset: number) {
 }
 
 describe("native presets", () => {
+  test("the mainnet deployment plan registers player terms with Blitz only", async () => {
+    const log = spyOn(console, "log").mockImplementation(() => {});
+    try {
+      for (const [presetId, environmentId] of [
+        [2, "madara.blitz"],
+        [3, "madara.eternum"],
+        [5, "madara.frontier"],
+      ] as const) {
+        log.mockClear();
+        await registerEnvironmentPreset({ presetId, environmentId, dryRun: true, nativeManifest: manifestPath });
+        const summary = JSON.parse(String(log.mock.calls[0]![0]));
+        const entries = summary.ledgerPresets as { presetId: number; calldata: string[] }[];
+        expect(entries.map((entry) => entry.presetId)).toEqual(
+          presetId === 2 ? [2, PLAYER_GAME_LEDGER_PRESET_ID] : [presetId],
+        );
+        if (presetId === 2)
+          expect(entries[1]!.calldata.slice(0, 3)).toEqual([
+            String(PLAYER_GAME_LEDGER_PRESET_ID),
+            String(50n * 10n ** 18n),
+            "0",
+          ]);
+      }
+    } finally {
+      log.mockRestore();
+    }
+  });
+
   test("only the Frontier deployment-check preset permits an empty LORDS pool", () => {
     const check = buildNativePreset(
       loadNativePresetConfiguration("madara.frontier", FRONTIER_SELF_CHECK_PRESET_ID),

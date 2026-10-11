@@ -5,12 +5,9 @@ name: Deploy Workers
 # from most of the workspace and the native schema, and a hand-kept list of those paths missed a schema change.
 # Production deploys only by dispatch, at the cutover. Each environment has its own D1 databases
 # and secrets. The guardian Worker is deployed by the owner alone and is not listed here. The launch Worker targets the
-# official shards in identity's directory, with
-# enrolled launcher accounts and LAUNCHER_ALLOWLIST, and signs with its
+# official shards in identity's directory, with enrolled launcher accounts, and signs with its
 # LAUNCH_DEPLOYER_PRIVATE_KEY secret. Both Workers accept the environment's one OPERATOR_TOKEN secret from operator
-# automation. Until an environment names its launch variables, its launch job deploys nothing and says which are
-# missing, so identity can reach production before the shard it needs exists. Production is dispatched with
-# --ref at the branch it releases.
+# automation. Production is dispatched with --ref at the branch it releases.
 on:
   push:
     branches: [next]
@@ -62,7 +59,6 @@ jobs:
       TARGET: ${{ inputs.environment || 'staging' }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-      LAUNCHER_ALLOWLIST: ${{ vars.LAUNCHER_ALLOWLIST }}
       RATING_HISTORY_URL: ${{ vars.RATING_HISTORY_URL }}
     steps:
       - name: Checkout
@@ -82,23 +78,6 @@ jobs:
       - name: Build workspace dependencies
         run: pnpm --filter "${{ matrix.package }}^..." run build
 
-      # The launch Worker writes to its environment's shard, which exists only once that shard is up. Without its
-      # variables the launch job touches nothing on Cloudflare and names what is missing.
-      - name: Check the launch variables
-        id: launch-vars
-        if: matrix.worker == 'apps/launch-service'
-        run: |
-          set -euo pipefail
-          missing=()
-          for name in LAUNCHER_ALLOWLIST; do
-            [ -n "${!name}" ] || missing+=("$name")
-          done
-          if [ ${#missing[@]} -gt 0 ]; then
-            echo "::notice title=Launch Worker not deployed::the $TARGET environment has no ${missing[*]}"
-            echo "The launch Worker was not deployed: the $TARGET environment has no ${missing[*]}." >> "$GITHUB_STEP_SUMMARY"
-          fi
-          echo "missing=${missing[*]}" >> "$GITHUB_OUTPUT"
-
       - name: Check identity L2 configuration
         if: matrix.worker == 'apps/realms'
         run: |
@@ -107,7 +86,7 @@ jobs:
 
       # Migrations run before the code that needs them; the database is created on its environment's first deploy.
       - name: Prepare the database
-        if: matrix.database && steps.launch-vars.outputs.missing == ''
+        if: matrix.database
         working-directory: ${{ matrix.worker }}
         run: |
           set -euo pipefail
@@ -141,7 +120,7 @@ jobs:
             pnpm exec wrangler secret bulk --env "$TARGET"
 
       - name: Set launch secrets
-        if: matrix.worker == 'apps/launch-service' && steps.launch-vars.outputs.missing == ''
+        if: matrix.worker == 'apps/launch-service'
         working-directory: ${{ matrix.worker }}
         env:
           DEPLOYER_PRIVATE_KEY: ${{ secrets.LAUNCH_DEPLOYER_PRIVATE_KEY }}
@@ -164,20 +143,18 @@ jobs:
 
       # The shard a launch writes to is the environment's decision, set beside the shard, not code.
       - name: Deploy the launch Worker at its shard
-        if: matrix.worker == 'apps/launch-service' && steps.launch-vars.outputs.missing == ''
+        if: matrix.worker == 'apps/launch-service'
         working-directory: ${{ matrix.worker }}
         env:
           WRANGLER_OUTPUT_FILE_PATH: ${{ runner.temp }}/wrangler-output.ndjson
         run: |
-          pnpm exec wrangler deploy --env "$TARGET" \
-            --var "LAUNCHER_ALLOWLIST:$LAUNCHER_ALLOWLIST"
+          pnpm exec wrangler deploy --env "$TARGET"
 
       # The deploy record names the Worker's route pattern and the version it deployed; the route must answer its
       # version path from that version, not from the one it replaced. The version path reads nothing else, so the state
       # of the shard a Worker talks to cannot fail its deploy.
       - name: Verify the deployed version answers
         id: verify
-        if: steps.launch-vars.outputs.missing == ''
         env:
           WRANGLER_OUTPUT_FILE_PATH: ${{ runner.temp }}/wrangler-output.ndjson
           VERSION_PATH: ${{ matrix.version }}

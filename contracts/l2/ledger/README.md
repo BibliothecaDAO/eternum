@@ -122,8 +122,9 @@ is not a rehearsal dependency.
 The owner-run path is `scripts/commands/deployment/sepolia.js`. It was written for this change and has not been
 executed. It refuses any provider whose chain ID is not `SN_SEPOLIA`, deploys a publicly mintable **Test LORDS** token,
 a fresh MMR contract and two fresh collectible collections, then deploys the ledger. It grants the ledger the existing
-MMR updater and collection minter roles, configures test metadata, registers separate Blitz (ID 1) and zero-cut Frontier
-(ID 2) test presets, opens a Blitz season and funds Frontier once using all six ABI arguments. The public manifest reads
+MMR updater and collection minter roles, configures test metadata, registers Blitz (ID 1), zero-cut Frontier (ID 2) and
+player-game (ID 6) test presets, opens a Blitz season and funds Frontier once using all six ABI arguments. Player seats
+cost 1 LORDS on Sepolia; preset 6 disables rating and prices both sword and shield at zero. The public manifest reads
 all eight `FrontierSeason` fields from the ledger; its derived Frontier end is independent of `SEPOLIA_SEASON_END`,
 which schedules Blitz. It writes public addresses, season data and transaction hashes to
 `contracts/l2/ledger/target/sepolia-deployment.json` and merges the deployed `ledger` into
@@ -174,3 +175,19 @@ credentials, grant the ledger `UPDATER_ROLE` on the existing MMR token, and gran
 implementation remains unchanged. The chest collection needs an authorized, storage-compatible upgrade exposing
 `mint_with_id`, plus metadata for all five new band kinds. Use the existing mainnet deployment path only after these
 gates; its constructor is `(admin, operator, treasury, lords, mmr_token, loot_chest, cosmetics)`.
+
+After mainnet ledger deployment, register the shard's Blitz preset through the existing admin preset command. It also
+registers ledger-only player preset 6 at 50 LORDS per seat, with rating off and no sword or shield price. Its dry-run
+output lists both ledger registrations. Supply `DEPLOYER_ACCOUNT_ADDRESS`, `DEPLOYER_PRIVATE_KEY`,
+`LEDGER_ADMIN_ADDRESS`, `LEDGER_ADMIN_PRIVATE_KEY`, `LEDGER_ADDRESS`, `LEDGER_RPC_URL`, `RPC_URL` and
+`NATIVE_WORLD_MANIFEST` for the approved deployment; run this only when the owner authorizes registration:
+
+```sh
+bun config/deployer/clean/registrar/register-preset.ts --preset-id 2 --environment madara.blitz --dry-run
+bun config/deployer/clean/registrar/register-preset.ts --preset-id 2 --environment madara.blitz
+```
+
+Player slots use ledger preset 6 and the existing Blitz shard preset 2. Every seat pays the preset entry, including the
+creator at open. The ledger sends the entire settled player-game pot to the treasury, with no rating, season share or
+chest; its ordinary refund paths return each unconsumed payment when enabled. Neither deployment path opens a ranked
+season for preset 6. Prices are immutable preset values; there is no deployment price override.

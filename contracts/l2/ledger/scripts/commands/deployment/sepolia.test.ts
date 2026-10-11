@@ -1,3 +1,8 @@
+import {
+  buildPlayerGameLedgerPreset,
+  buildRegisterLedgerPresetCalldata,
+} from "../../../../../../config/deployer/clean/ledger/economics";
+import { PLAYER_GAME_LEDGER_PRESET_ID } from "../../../../../../config/source/common/ledger-presets";
 import { expect, test, spyOn } from "bun:test";
 import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -34,6 +39,15 @@ test("setup and funded-pool verification use the shard game id independently of 
     cosmeticCid: "test",
   };
   const calls = buildSetupCalls(assets, settings);
+  const registrations = calls.filter((call) => call.entrypoint === "register_preset");
+  expect(registrations.map((call) => call.calldata[0])).toEqual(["1", "2", String(PLAYER_GAME_LEDGER_PRESET_ID)]);
+  const player = registrations[2]!;
+  expect(player.contractAddress).toBe(assets.ledger);
+  expect(player.calldata).toEqual(
+    buildRegisterLedgerPresetCalldata(PLAYER_GAME_LEDGER_PRESET_ID, buildPlayerGameLedgerPreset("sepolia")),
+  );
+  expect(player.calldata.slice(1, 3)).toEqual([String(10n ** 18n), "0"]);
+
   expect(calls.find((call) => call.entrypoint === "fund_frontier")?.calldata.slice(0, 2)).toEqual(["7", "42"]);
   expect(calls.find((call) => call.entrypoint === "open_season")?.calldata.slice(0, 2)).toEqual(["1", "1"]);
   const reads: unknown[] = [];
