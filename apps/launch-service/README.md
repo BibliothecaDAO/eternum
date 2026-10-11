@@ -11,11 +11,12 @@ tick lists up to five new player slots per shard, named `game-<number>`. That na
 exposes `slotId`; completed game directory rows carry that same field (null outside Blitz). The environment address book
 supplies the ledger and L2 chain. No directory row carries economic addresses or a free/paid entry payload.
 
-Blitz registration belongs to an uncapped ledger slot. At close, the relay reads confirmed registrations in pages
-of 100. Identity history resolves each payer at its registration block time. The earliest registration for each account
-gets a seat; unlinked and duplicate payers become refundable. Balanced groups retain registration order and contain at
-most 24 players. An empty slot creates no game. D1 keeps schedule and job metadata, never a roster copy. Operator
-one-offs use the same paid `/api/slots` route; the factory create-run route is removed.
+Blitz registration belongs to an uncapped ledger slot. It closes five minutes before the common game start; official
+games keep their 11:00 and 20:00 UTC starts. At close, the relay reads confirmed registrations in pages of 100. Identity
+history resolves each payer at its registration block time. The earliest registration for each account gets a seat;
+unlinked and duplicate payers become refundable. Balanced groups retain registration order and contain at most 24
+players. An empty slot creates no game. D1 keeps schedule and job metadata, never a roster copy. Operator one-offs use
+the same paid `/api/slots` route; the factory create-run route is removed.
 
 The registrar serializes its device's shard writes. Each game is created with its complete roster, then the existing
 automatic realm seating completes. A retry re-resolves the historical cohort and verifies an existing game's roster

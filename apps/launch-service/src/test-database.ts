@@ -48,7 +48,7 @@ export const slotValueFixture = (count = 0) => {
     seasonId: 1,
     presetId: 1,
     close: 100,
-    end: 160,
+    end: 460,
     pool: "0",
     registeredCount: count,
     cancelled: false,

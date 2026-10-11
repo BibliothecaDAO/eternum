@@ -1,4 +1,4 @@
-import type { RegistrationIdentity } from "@realms-world/value-ledger";
+import { BLITZ_SLOT_PREPARATION_SECONDS, type RegistrationIdentity } from "@realms-world/value-ledger";
 import { loadNativePresetConfiguration } from "../../../config/deployer/clean/registrar/native-preset";
 import { closedSlotGroups, SlotCancelled, type BlitzValuePort } from "./paid-blitz";
 import { nativePresetIdFor } from "../../../config/source/native";
@@ -53,7 +53,10 @@ export class D1SlotStore implements SlotStore {
     const duration = loadNativePresetConfiguration("madara.blitz", nativePresetIdFor("blitz")).season.durationSeconds;
     const key = { chainId: slot.chainId, slotId: slot.slotId };
     try {
-      await this.value.openSlot(key, { start: closes / 1000, end: closes / 1000 + duration });
+      await this.value.openSlot(key, {
+        start: closes / 1000,
+        end: closes / 1000 + BLITZ_SLOT_PREPARATION_SECONDS + duration,
+      });
     } catch (error) {
       // A lost receipt or unavailable read must preserve the key for recovery.
       const recorded = await this.value.slot(key).catch(() => {
@@ -130,8 +133,8 @@ export class D1SlotStore implements SlotStore {
           environment: "madara.blitz",
           version: String(nativePresetIdFor("blitz")),
           gameName: `${name}-${groupIndex + 1}`,
-          gameStartTime: slot.closesAt,
-          durationSeconds: closed!.slot.end - closed!.slot.close,
+          gameStartTime: new Date(Date.parse(slot.closesAt) + BLITZ_SLOT_PREPARATION_SECONDS * 1000).toISOString(),
+          durationSeconds: closed!.slot.end - closed!.slot.close - BLITZ_SLOT_PREPARATION_SECONDS,
           slotId: slot.slotId,
           groupIndex,
         }),

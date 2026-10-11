@@ -1,6 +1,9 @@
 import { hash, num, type RpcProvider, type EmittedEvent } from "starknet";
 import { decodeLedgerSlot, decodeRegistration, type LedgerSlot, readConfirmedLedgerHead } from "./codecs";
 
+/** Registration freezes before the common game clock starts, leaving time to create and seat every group. */
+export const BLITZ_SLOT_PREPARATION_SECONDS = 300;
+
 export interface LedgerSlotKey {
   chainId: string;
   slotId: number;

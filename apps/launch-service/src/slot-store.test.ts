@@ -231,7 +231,13 @@ it("discovers bounded paid player slots on two shards without opening them, then
     .bind(Date.now() - 1000)
     .run();
   await one.freeze("game-2147483648");
-  expect(await launches.find("game", "madara.blitz", "game-2147483648-1")).toMatchObject({ slotId: 2147483648 });
+  expect(await launches.find("game", "madara.blitz", "game-2147483648-1")).toMatchObject({
+    slotId: 2147483648,
+    request: {
+      gameStartTime: new Date(Date.parse((await one.get("game-2147483648")).closesAt) + 300000).toISOString(),
+      durationSeconds: 60,
+    },
+  });
 });
 it("discovery retries a failed ledger read without inserting an unpaid slot or skipping its number", async () => {
   const value = slotValueFixture();
@@ -251,4 +257,27 @@ it("discovery retries a failed ledger read without inserting an unpaid slot or s
     [{ chainId: TEST_CHAIN, slotId: 2147483648 }],
   ]);
   expect(await store.list()).toEqual([]);
+});
+
+it("opens custody through preparation and starts every frozen group five minutes after close", async () => {
+  const value = slotValueFixture(25);
+  const open = vi.spyOn(value, "openSlot");
+  const launches = new D1LaunchStore(database.db, testChain());
+  const store = new D1SlotStore(database.db, launches, value, registrationIdentityFixture);
+  const closesAt = soon();
+  await store.create("five-minutes", closesAt);
+  expect(open).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ start: Date.parse(closesAt) / 1000 }));
+  const closeTime = Math.floor(Date.now() / 1000) - 1;
+  await database.db
+    .prepare("UPDATE playtest_slots SET closes_at=?")
+    .bind(closeTime * 1000)
+    .run();
+  await store.freeze("five-minutes");
+  const runs = await launches.list("madara.blitz");
+  expect(runs).toHaveLength(2);
+  for (const run of runs)
+    expect(run.request).toMatchObject({
+      gameStartTime: new Date((closeTime + 300) * 1000).toISOString(),
+      durationSeconds: 60,
+    });
 });

@@ -120,7 +120,7 @@ beforeAll(async () => {
       {
         name: "directory",
         modules: true,
-        script: `import { WorkerEntrypoint } from "cloudflare:workers"; export class ValueRelay extends WorkerEntrypoint { openSlot(){} slot(){return {exists:false};} registrations(){return {slot:{exists:true,seasonId:1,presetId:1,close:100,end:160,registeredCount:1,cancelled:false},blockNumber:10,blockHash:"0xabc",secondsUntilClose:0,next:null,registrations:[{wallet:"0x1",registeredAt:90}]};} } export class ValueIdentity extends WorkerEntrypoint { accountsAtRegistration(){return ["0x101"];} shards(){return [{chainId:${JSON.stringify(SHARD_CHAIN)},url:${JSON.stringify(SHARD_URL)},status:"active"}];} } export default {fetch(){return new Response(null,{status:404});}};`,
+        script: `import { WorkerEntrypoint } from "cloudflare:workers"; export class ValueRelay extends WorkerEntrypoint { openSlot(){} slot(){return {exists:false,seasonId:0,presetId:0,close:0,end:0,pool:"0",registeredCount:0,cancelled:false};} registrations(){return {slot:{exists:true,seasonId:1,presetId:1,close:100,end:460,registeredCount:1,cancelled:false},blockNumber:10,blockHash:"0xabc",secondsUntilClose:0,next:null,registrations:[{wallet:"0x1",registeredAt:90}]};} } export class ValueIdentity extends WorkerEntrypoint { accountsAtRegistration(){return ["0x101"];} shards(){return [{chainId:${JSON.stringify(SHARD_CHAIN)},url:${JSON.stringify(SHARD_URL)},status:"active"}];} } export default {fetch(){return new Response(null,{status:404});}};`,
       },
     ],
   });

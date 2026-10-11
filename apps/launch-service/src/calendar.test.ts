@@ -56,6 +56,7 @@ test("Blitz slots are scheduled only inside the Blitz window, and none outside i
   await tick(day(9, 12));
   await tick(day(11, 12));
   expect((await slots.list()).map(({ name }) => name)).toEqual([blitzSlotName(day(9, 20))]);
+  expect((await slots.list())[0]!.closesAt).toBe(day(9, 19, 55).toISOString());
 });
 
 test("a phase moves until it starts; a started Frontier season keeps its start and its end", async () => {
