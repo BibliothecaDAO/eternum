@@ -177,6 +177,11 @@ it("authenticates the public request, rejects account/day injection and checks c
     });
   const response = await handleLaborRequest(request({ realms: [{ gameId: 7, realmId: 8, home: "9" }] }), dependencies);
   expect(response.status).toBe(200);
+  expect(await response.json()).toEqual({
+    day: 5,
+    grants: [{ realmId: "8", gameId: 7, account: "0x123", home: "9", amount: "0" }],
+    refused: [],
+  });
   expect(write).toHaveBeenCalledWith({ ...claim, day: 5 });
   expect(dependencies.authenticate).toHaveBeenCalledWith("test-cookie");
   expect(
@@ -191,16 +196,40 @@ it("authenticates the public request, rejects account/day injection and checks c
       )
     ).status,
   ).toBe(403);
+  write.mockClear();
+  const realms = [8, 10, 12].map((realmId) => ({ gameId: 7, realmId, home: "9" }));
+  ports.realms.ownerOf = (id) => Effect.succeed(id === "10" ? "0x456" : "0x999");
+  const mixed = await handleLaborRequest(request({ realms }), dependencies);
+  expect(mixed.status).toBe(200);
+  expect(await mixed.json()).toEqual({
+    day: 5,
+    grants: [{ realmId: "10", gameId: 7, account: "0x123", home: "9", amount: "0" }],
+    refused: [
+      { realmId: "8", reason: "realm_not_owned" },
+      { realmId: "12", reason: "realm_not_owned" },
+    ],
+  });
+  expect(write).toHaveBeenCalledExactlyOnceWith({
+    ...claim,
+    day: 5,
+    realms: [{ gameId: 7, realmId: "10", home: "9" }],
+  });
+  write.mockClear();
   ports.realms.ownerOf = () => Effect.succeed("0x999");
-  expect(
-    (await handleLaborRequest(request({ realms: [{ gameId: 7, realmId: 8, home: "9" }] }), dependencies)).status,
-  ).toBe(409);
-  expect(write).toHaveBeenCalledOnce();
+  const refused = await handleLaborRequest(request({ realms }), dependencies);
+  expect(refused.status).toBe(409);
+  expect(await refused.json()).toEqual({
+    day: 5,
+    error: "realm_not_owned",
+    grants: [],
+    refused: realms.map(({ realmId }) => ({ realmId: String(realmId), reason: "realm_not_owned" })),
+  });
+  expect(write).not.toHaveBeenCalled();
 });
 
 it("never reads a day or writes a grant for a signed-out caller", async () => {
   const currentDay = vi.fn(() => Effect.succeed(0));
-  const grant = vi.fn(async () => [{ gameId: 7, account: "0x123", home: "9", amount: "0" }]);
+  const grant = vi.fn(async () => ({ grants: [], refused: [] }));
   const request = new Request("https://play.test/api/value/labor", {
     method: "POST",
     headers: { origin: "https://play.test", "content-type": "application/json" },

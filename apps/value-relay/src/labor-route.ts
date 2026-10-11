@@ -1,5 +1,5 @@
 import { Effect, Data, Schema } from "effect";
-import { MAX_LABOR_REALMS, type LaborClaim, type LaborGrant, type RelayEffect } from "./ports";
+import { MAX_LABOR_REALMS, type LaborClaim, type LaborClaimResult, type RelayEffect } from "./ports";
 
 const LaborRealm = Schema.Struct({
   gameId: Schema.Int.pipe(Schema.check(Schema.isBetween({ minimum: 1, maximum: 0xffffffff }))),
@@ -18,7 +18,7 @@ interface LaborRoute {
   authenticate(cookie: string): Promise<{ realmsId: string } | null>;
   accountForRealmsId(id: string): Promise<string | null>;
   currentDay(): RelayEffect<number>;
-  grant(claim: LaborClaim): Promise<LaborGrant[]>;
+  grant(claim: LaborClaim): Promise<LaborClaimResult>;
 }
 
 export const handleLaborRequest = (request: Request, dependencies: LaborRoute): Promise<Response> =>
@@ -46,7 +46,7 @@ export const handleLaborRequest = (request: Request, dependencies: LaborRoute): 
       if (new Set(realms.map((realm) => realm.realmId)).size !== realms.length)
         return yield* Effect.fail(new LaborRequestError({ status: 400, code: "invalid_labor_request" }));
       const day = yield* dependencies.currentDay();
-      const grants = yield* Effect.tryPromise({
+      const result = yield* Effect.tryPromise({
         try: () =>
           dependencies.grant({
             chainId: dependencies.chainId,
@@ -57,7 +57,10 @@ export const handleLaborRequest = (request: Request, dependencies: LaborRoute): 
           }),
         catch: () => new LaborRequestError({ status: 409, code: "labor_grant_refused" }),
       });
-      return Response.json({ day, grants }, { headers: { "cache-control": "no-store" } });
+      return Response.json(
+        { day, ...result, ...(result.grants.length ? {} : { error: "realm_not_owned" }) },
+        { status: result.grants.length ? 200 : 409, headers: { "cache-control": "no-store" } },
+      );
     }).pipe(
       Effect.catchTag("LaborRequestError", (error) =>
         Effect.succeed(Response.json({ error: error.code }, { status: error.status })),

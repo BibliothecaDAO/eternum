@@ -93,6 +93,10 @@ export interface LaborGrant {
   home: string;
   amount: string;
 }
+export interface LaborClaimResult {
+  grants: (LaborGrant & { realmId: string })[];
+  refused: { realmId: string; reason: "realm_not_owned" }[];
+}
 export const MAX_LABOR_REALMS = 100;
 export interface LaborClaim {
   realms: readonly { gameId: number; realmId: string; home: string }[];

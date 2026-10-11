@@ -212,7 +212,10 @@ describe("confirmed value relay", () => {
     };
     await Effect.runPromise(grantDailyLabor(f.ports, claim));
     f.ports.realms.ownerOf = () => Effect.succeed("0x456");
-    await expect(Effect.runPromise(grantDailyLabor(f.ports, claim))).rejects.toThrow();
+    expect(await Effect.runPromise(grantDailyLabor(f.ports, claim))).toEqual({
+      grants: [],
+      refused: [{ realmId: "7", reason: "realm_not_owned" }],
+    });
     expect(f.ports.shard.grantLabor).toHaveBeenCalledTimes(1);
   });
   it("encodes the published payment interface with exact u256 limbs", async () => {
@@ -548,22 +551,50 @@ it("voids closed unpaid reports even when the account has no payout wallet and n
   expect(f.single.pay).not.toHaveBeenCalled();
 });
 
-it("refuses the entire labor batch when its last Realm is not owned", async () => {
+it.each(["7", "8", "9"])("grants held Realms in one call when Realm %s was sold", async (sold) => {
   const f = fixture();
-  f.ports.realms.ownerOf = (id) => Effect.succeed(id === "7" ? "0x123" : "0x456");
+  const claim = {
+    realms: ["7", "8", "9"].map((realmId) => ({ gameId: 1, realmId, home: "9" })),
+    chainId: "0x1",
+    day: 0,
+    realmsId: "0x2",
+    account: "0x3",
+  };
+  f.ports.realms.ownerOf = vi.fn((id) => Effect.succeed(id === sold ? "0x456" : "0x123"));
+  f.ports.shard.grantLabor = vi.fn((claim) =>
+    Effect.succeed(
+      claim.realms.map(() => ({
+        gameId: 1,
+        account: "0x3",
+        home: "9",
+        amount: "1000000000000",
+      })),
+    ),
+  );
+  const result = await Effect.runPromise(grantDailyLabor(f.ports, claim));
+  const held = claim.realms.filter((realm) => realm.realmId !== sold);
+  expect(result).toEqual({
+    grants: held.map(({ realmId }) => ({ realmId, gameId: 1, account: "0x3", home: "9", amount: "1000000000000" })),
+    refused: [{ realmId: sold, reason: "realm_not_owned" }],
+  });
+  expect(f.ports.realms.ownerOf).toHaveBeenCalledTimes(3);
+  expect(f.ports.shard.grantLabor).toHaveBeenCalledExactlyOnceWith({ ...claim, realms: held });
+});
+
+it("does not write or classify a Realm as sold when its ownership read fails", async () => {
+  const f = fixture();
+  const failure = new RelayFailure({ operation: "ownership_unavailable" });
+  f.ports.realms.ownerOf = (id) => (id === "7" ? Effect.succeed("0x123") : Effect.fail(failure));
   await expect(
     Effect.runPromise(
       grantDailyLabor(f.ports, {
-        realms: [
-          { gameId: 1, realmId: "7", home: "9" },
-          { gameId: 1, realmId: "8", home: "9" },
-        ],
+        realms: ["7", "8"].map((realmId) => ({ gameId: 1, realmId, home: "9" })),
         chainId: "0x1",
         day: 0,
         realmsId: "0x2",
         account: "0x3",
       }),
     ),
-  ).rejects.toMatchObject({ operation: "realm_not_owned" });
+  ).rejects.toBe(failure);
   expect(f.ports.shard.grantLabor).not.toHaveBeenCalled();
 });
