@@ -4,7 +4,7 @@ import sys
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from validation_areas import selected_areas, unowned_ci_files
+from validation_areas import AREAS, PATH_SCOPED, selected_areas, unowned_ci_files
 
 
 def areas_run_by(*files):
@@ -44,6 +44,33 @@ class CiFileOwnership(unittest.TestCase):
         ):
             with self.subTest(path=path):
                 self.assertEqual(areas_run_by(path), {"client", "herald", "services", "native", "runtime"})
+
+    def test_landing_with_no_optional_inputs_runs_only_core_areas(self):
+        for files in ([], ["README.md"], ["apps/value-relay/src/relay.ts"], ["apps/game/src/shell/blitz.ts"]):
+            with self.subTest(files=files):
+                selected = selected_areas(files, False, landing=True)
+                self.assertEqual({area for area, enabled in selected.items() if enabled}, set(AREAS) - PATH_SCOPED)
+
+    def test_landing_runs_each_optional_job_only_for_its_inputs(self):
+        for path, area in (
+            ("contracts/l2/ammv2/src/lib.cairo", "amm"),
+            ("contracts/l2/season_pass/src/lib.cairo", "season_pass"),
+            ("apps/game/src/three/terrain.ts", "terrain"),
+            ("apps/web/src/lib/rating-population.ts", "portal"),
+            ("packages/db/src/schema.ts", "portal"),
+            ("packages/identity/src/index.ts", "portal"),
+            (".github/workflows/test-portal.yml", "portal"),
+        ):
+            with self.subTest(path=path):
+                selected = selected_areas([path], False, landing=True)
+                self.assertEqual({name for name in PATH_SCOPED if selected[name]}, {area})
+
+    def test_lockfile_and_unknown_pr_base_keep_all_checks(self):
+        self.assertTrue(all(selected_areas(["pnpm-lock.yaml"], False, landing=True).values()))
+        self.assertTrue(all(selected_areas([], True).values()))
+
+    def test_portal_workflow_is_owned_independently(self):
+        self.assertEqual(areas_run_by(".github/workflows/test-portal.yml"), {"portal"})
 
     def test_a_ci_file_no_area_owns_is_named(self):
         self.assertEqual(

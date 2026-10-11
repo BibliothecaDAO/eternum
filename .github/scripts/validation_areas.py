@@ -75,6 +75,14 @@ AREAS = {
         "contracts/common/addresses/**",
         "contracts/utils/**"
     ],
+    "portal": [
+        ".github/workflows/test-portal.yml",
+        "apps/web/**",
+        "packages/db/**",
+        "packages/chain/**",
+        "packages/identity/**",
+        "contracts/common/addresses/**"
+    ],
     "native": [
         ".github/workflows/test-native.yml",
         "apps/herald/src/**",
@@ -162,10 +170,16 @@ def matches(path, patterns):
     return any(fnmatch.fnmatch(path, pattern) for pattern in patterns)
 
 
-def selected_areas(files, every_area):
-    """The areas a diff of these files runs; a landing push, or a diff with no base, runs every area."""
+# These checks run when their own inputs change; core checks run on every landing push.
+PATH_SCOPED = {"amm", "season_pass", "terrain", "portal"}
+
+
+def selected_areas(files, every_area, landing=False):
+    """Select changed inputs; landing pushes additionally require all core areas."""
     return {
-        area: every_area or any(matches(path, SHARED + patterns) for path in files) for area, patterns in AREAS.items()
+        area: (every_area or (landing and area not in PATH_SCOPED)
+               or any(matches(path, SHARED + patterns) for path in files))
+        for area, patterns in AREAS.items()
     }
 
 
