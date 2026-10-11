@@ -1,3 +1,4 @@
+import sepolia from "../../../contracts/common/addresses/sepolia.json";
 import { beforeAll, expect, it } from "vitest";
 import { buildWorkerBundle, migrationStatements, newStorage, ORIGIN, startWorker, vapidKeys } from "./workerd-harness";
 
@@ -58,7 +59,7 @@ it("reads wallet owners through the deployed Worker's SDK and serves new ledger 
       },
     });
     expect(calls.find((call) => call.method === "starknet_call")!.params).toMatchObject({
-      request: { contract_address: "0x31", calldata: ["0xa"] },
+      request: { contract_address: sepolia.mmrToken, calldata: ["0xa"] },
       block_id: { block_hash: "0xabc" },
     });
     points = 1300n;

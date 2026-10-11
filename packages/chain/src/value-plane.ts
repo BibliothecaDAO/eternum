@@ -10,6 +10,7 @@ import sepoliaAddresses from "../../../contracts/common/addresses/sepolia.json";
 export type ValuePlaneContract =
   | "ledger"
   | "vault"
+  | "realms"
   | "lords"
   | "mmrToken"
   | "seasonPass"

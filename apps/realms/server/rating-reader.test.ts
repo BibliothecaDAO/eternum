@@ -60,7 +60,6 @@ const create = () => {
     ctx as unknown as DurableObjectState,
     {
       ENVIRONMENT: "production",
-      RATING_TOKEN_ADDRESS: "0x31",
       RATING_HISTORY_URL: "https://realms.world/api/ratings/population",
       IDENTITY_RPC_URL: "https://starknet-mainnet.g.alchemy.com/v2/test",
     } as never,
@@ -104,7 +103,6 @@ it("keeps the paid-method budget across a reader restart with no cached bypass",
     await ctx.storage.put("rpc-budget", { minute: Math.floor(Date.now() / 60000), used: 10000 });
     const restarted = new RatingReader(ctx as unknown as DurableObjectState, {
       ENVIRONMENT: "production",
-      RATING_TOKEN_ADDRESS: "0x31",
       RATING_HISTORY_URL: "https://realms.world/api/ratings/population",
       IDENTITY_RPC_URL: "https://starknet-mainnet.g.alchemy.com/v2/test",
     });

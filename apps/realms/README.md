@@ -27,10 +27,10 @@ environment initialization, and a proof naming another chain is refused before s
 consumption. Deployed accounts retain contract verification; offchain verification still requires confirmed absence and
 allow-listed deployment data.
 
-`REALMS_ADDRESS`, `RATING_TOKEN_ADDRESS` and `RATING_HISTORY_URL` name this environment's collections and indexed
-population. No mainnet address or population source is inferred for staging. Labor ownership runs through the private
-`ValueIdentity.realmOwnerOf` service binding; the relay's second Realms RPC is removed. Rating readers are named by the
-configured chain, so staging cannot use the mainnet reader.
+The Realms collection and rating token come from `contracts/common/addresses/<network>.json`, selected by `ENVIRONMENT`,
+like the ledger. `RATING_HISTORY_URL` names the indexed population. No mainnet address or population source is inferred
+for staging. Labor ownership runs through the private `ValueIdentity.realmOwnerOf` service binding; the relay's second
+Realms RPC is removed. Rating readers are named by the configured chain, so staging cannot use the mainnet reader.
 
 The client and Workers share the address book through `environmentL2`. The deployment workflow does not override its
 chain or ledger. The existing `CLIENT_IDENTITY_RPC_URL` secret maps to `IDENTITY_RPC_URL`. It checks the public

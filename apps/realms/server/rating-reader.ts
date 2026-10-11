@@ -5,7 +5,7 @@ import { DurableObject } from "cloudflare:workers";
 import { RpcProvider } from "starknet";
 import { openRatingLedger, readLedgerRatings, ratingPoints } from "./rating-ledger";
 
-type Env = Pick<IdentityEnv, "ENVIRONMENT" | "IDENTITY_RPC_URL" | "RATING_TOKEN_ADDRESS" | "RATING_HISTORY_URL">;
+type Env = Pick<IdentityEnv, "ENVIRONMENT" | "IDENTITY_RPC_URL" | "RATING_HISTORY_URL">;
 const RPC_METHODS_PER_MINUTE = 10000;
 
 /** One RPC budget across callers; every read names a verified chain block and retains no rating state. */

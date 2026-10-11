@@ -1,3 +1,4 @@
+import sepolia from "../../../contracts/common/addresses/sepolia.json";
 import { afterEach, expect, it, vi } from "vitest";
 import { RpcProvider } from "starknet";
 import { identityL2Configuration, identityProvider, verifyIdentityChain, realmOwnerOf, fetchIdentityRpc } from "./l2";
@@ -7,7 +8,6 @@ import { verifyWalletOnL2 } from "./wallet-signature";
 const env = {
   ENVIRONMENT: "staging" as const,
   IDENTITY_RPC_URL: "https://starknet-sepolia.g.alchemy.com/v2/test",
-  REALMS_ADDRESS: "0x30",
 };
 afterEach(() => vi.restoreAllMocks());
 it("requires a known environment and only its HTTPS Alchemy endpoint without exposing credentials", () => {
@@ -49,7 +49,7 @@ it("reads Realm ownership on the configured chain with full u256 calldata", asyn
   const calls = vi.spyOn(RpcProvider.prototype, "callContract").mockResolvedValue(["0x123"]);
   expect(await realmOwnerOf(env, String(2n ** 128n + 4n))).toBe("0x123");
   expect(calls).toHaveBeenCalledWith(
-    { contractAddress: "0x30", entrypoint: "owner_of", calldata: ["4", "1"] },
+    { contractAddress: sepolia.realms, entrypoint: "owner_of", calldata: ["4", "1"] },
     "latest",
   );
 });
@@ -95,14 +95,12 @@ it("refuses RPC redirects using the real Worker-compatible manual mode", async (
   expect(transport).toHaveBeenCalledWith(env.IDENTITY_RPC_URL, expect.objectContaining({ redirect: "manual" }));
 });
 
-it("names missing read targets and never includes private environment values in decode failures", () => {
+it("never includes private environment values in decode failures", () => {
   const raw = {
     ...env,
-    RATING_TOKEN_ADDRESS: "0x31",
     RATING_HISTORY_URL: "https://history.test/population",
     BETTER_AUTH_SECRET: "private-marker",
   };
-  expect(() => decodeIdentityEnv({ ...raw, REALMS_ADDRESS: undefined })).toThrow("REALMS_ADDRESS");
   try {
     decodeIdentityEnv(raw);
     throw new Error("configuration was accepted");

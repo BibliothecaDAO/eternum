@@ -15,8 +15,6 @@ const IdentityVars = Schema.Struct({
   /** The RealmsAccount class every shard deploys player accounts from. */
   ACCOUNT_CLASS_HASH: Schema.NonEmptyString,
   BETTER_AUTH_SECRET: Schema.NonEmptyString,
-  REALMS_ADDRESS: Schema.NonEmptyString,
-  RATING_TOKEN_ADDRESS: Schema.NonEmptyString,
   RATING_HISTORY_URL: Schema.NonEmptyString,
   /** Only the configured chain's HTTPS Alchemy RPC is accepted. */
   IDENTITY_RPC_URL: Schema.NonEmptyString,
@@ -87,16 +85,6 @@ const decodeWithoutValues = (raw: Record<string, unknown>) => {
   }
 };
 const requireIdentityReadTargets = (raw: Record<string, unknown>) => {
-  for (const name of ["REALMS_ADDRESS", "RATING_TOKEN_ADDRESS"] as const) {
-    const value = raw[name];
-    if (
-      typeof value !== "string" ||
-      !/^0x[0-9a-fA-F]{1,64}$/.test(value) ||
-      BigInt(value) <= 0n ||
-      BigInt(value) >= (1n << 251n) - 256n
-    )
-      throw new Error(`${name} requires a nonzero contract address`);
-  }
   let url: URL;
   try {
     url = new URL(String(raw.RATING_HISTORY_URL));

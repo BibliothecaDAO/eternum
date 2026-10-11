@@ -1,3 +1,4 @@
+import sepolia from "../../../contracts/common/addresses/sepolia.json";
 import { RpcProvider } from "starknet";
 import { afterEach, beforeEach, expect, it, vi, type MockInstance } from "vitest";
 import type { IdentityAuth } from "./auth";
@@ -8,7 +9,6 @@ import { routeIdentityRequest } from "./routes";
 const query = vi.fn();
 const env = {
   ENVIRONMENT: "production",
-  RATING_TOKEN_ADDRESS: "0x31",
   RATING_HISTORY_URL: "https://realms.world/api/ratings/population",
   IDENTITY_RPC_URL: "https://starknet-mainnet.g.alchemy.com/v2/test",
   PUBLIC_RATE_LIMIT: { limit: vi.fn(async () => ({ success: true })) },
@@ -165,12 +165,11 @@ it("uses the Sepolia reader and its configured rating token instead of mainnet a
   cache = testRatingReader({
     ENVIRONMENT: "staging",
     IDENTITY_RPC_URL: "https://starknet-sepolia.g.alchemy.com/v2/test",
-    RATING_TOKEN_ADDRESS: "0x32",
   });
   const idFromName = vi.fn(() => "configured-reader");
   env.RATING_READER = { ...cache.binding, idFromName } as unknown as IdentityEnv["RATING_READER"];
   vi.mocked(RpcProvider.prototype.getChainId).mockResolvedValue("0x534e5f5345504f4c4941");
   expect((await request("players=0xa")).status).toBe(200);
   expect(idFromName).toHaveBeenCalledWith("SN_SEPOLIA");
-  expect(call).toHaveBeenCalledWith(expect.objectContaining({ contractAddress: "0x32" }), "0xabc");
+  expect(call).toHaveBeenCalledWith(expect.objectContaining({ contractAddress: sepolia.mmrToken }), "0xabc");
 });

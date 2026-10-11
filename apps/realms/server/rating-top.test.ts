@@ -13,7 +13,6 @@ let cache: ReturnType<typeof testRatingReader>;
 let population = { ...block, players: ["0xa", "0xb", "0xc", "0xd"] };
 const env = {
   ENVIRONMENT: "production",
-  RATING_TOKEN_ADDRESS: "0x31",
   RATING_HISTORY_URL: "https://realms.world/api/ratings/population",
   IDENTITY_RPC_URL: "https://starknet-mainnet.g.alchemy.com/v2/test",
   PUBLIC_RATE_LIMIT: { limit: vi.fn(async () => ({ success: true })) },

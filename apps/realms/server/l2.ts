@@ -1,5 +1,5 @@
 import type { IdentityChainId } from "@realms-world/identity";
-import { encodeChainName, environmentL2 } from "@realms-world/chain";
+import { encodeChainName, environmentL2, valuePlaneAddress } from "@realms-world/chain";
 import { RpcProvider } from "starknet";
 
 interface L2Environment {
@@ -35,14 +35,14 @@ export const verifyIdentityChain = async (provider: RpcProvider, env: L2Environm
 };
 
 /** Labor ownership uses the same chain/RPC as wallet proof and ratings; the relay has no second Realms reader. */
-export const realmOwnerOf = async (env: L2Environment & { REALMS_ADDRESS: string }, realmId: string) => {
+export const realmOwnerOf = async (env: L2Environment, realmId: string) => {
   const id = BigInt(realmId);
   if (id < 0n || id >= 2n ** 256n) throw new Error("invalid_realm_id");
   const provider = identityProvider(env);
   await verifyIdentityChain(provider, env);
   const owner = await provider.callContract(
     {
-      contractAddress: env.REALMS_ADDRESS,
+      contractAddress: valuePlaneAddress("realms", environmentL2(env.ENVIRONMENT).network),
       entrypoint: "owner_of",
       calldata: [String(id & (2n ** 128n - 1n)), String(id >> 128n)],
     },
