@@ -36,6 +36,8 @@ export interface ValueRow {
   values: string[];
   transactionHash: string;
 }
+const VALUE_MODELS = ["LordsWithdrawal", "BlitzResult"] as const;
+
 interface EventType {
   type: string;
   name: string;
@@ -76,14 +78,24 @@ export class ShardReader {
     await this.assertChain(provider);
     const first = await this.header(from);
     const block = from === to ? first : await this.header(to);
+    const prefixes = await this.prefixes(provider, to);
+    const filters = valueEventFilters(prefixes);
+    const position: { filter: number; token: string | null } = cursor ? JSON.parse(cursor) : { filter: 0, token: null };
+    if (
+      !Number.isInteger(position.filter) ||
+      !filters[position.filter] ||
+      (position.token !== null && typeof position.token !== "string")
+    )
+      throw new Error("invalid_shard_event_cursor");
     const page = await provider.getEvents({
       address: this.connection.gamesAddress,
       from_block: { block_number: from },
       to_block: { block_number: to },
       chunk_size: 100,
-      ...(cursor ? { continuation_token: cursor } : {}),
+      keys: filters[position.filter]!,
+      ...(position.token ? { continuation_token: position.token } : {}),
     });
-    if (page.events.length > 100 || (page.continuation_token && page.continuation_token === cursor))
+    if (page.events.length > 100 || (page.continuation_token && page.continuation_token === position.token))
       throw new Error("invalid_shard_event_page");
     const headers = new Map<number, ShardBlock>([
       [from, first],
@@ -96,7 +108,6 @@ export class ShardReader {
         throw new RelayFailure({ operation: `confirmed_block_changed:${number - 1}` });
       headers.set(number, header);
     }
-    const prefixes = page.events.length ? await this.prefixes(provider, to) : [];
     const rows: (ValueRow & { confirmedAt: number })[] = [];
     for (const event of page.events) {
       if (
@@ -143,7 +154,11 @@ export class ShardReader {
         .sort((a, b) => a.block_number - b.block_number)
         .map((header) => ({ number: header.block_number, hash: header.block_hash })),
       rows,
-      next: page.continuation_token || null,
+      next: page.continuation_token
+        ? JSON.stringify({ filter: position.filter, token: page.continuation_token })
+        : position.filter + 1 < filters.length
+          ? JSON.stringify({ filter: position.filter + 1, token: null })
+          : null,
     };
   }
   async receipt(
@@ -197,9 +212,7 @@ export class ShardReader {
       if (event.keys.length !== prefix.length + 2 || uint(event.keys[prefix.length]!, 8) !== 1n)
         throw new Error("invalid_rowset_header");
       const model = event.keys[prefix.length + 1]!;
-      const name = ["LordsWithdrawal", "BlitzResult", "LordsBudget", "ChestRules", "LaborGrant"].find((name) =>
-        sameFelt(model, shortString.encodeShortString(name)),
-      );
+      const name = VALUE_MODELS.find((name) => sameFelt(model, shortString.encodeShortString(name)));
       if (!name) return [];
       if (
         receipt.execution_status !== "SUCCEEDED" ||
@@ -214,6 +227,19 @@ export class ShardReader {
     return rows;
   }
 }
+
+// Equal-depth aliases share key positions; decoding still checks the exact deployed prefix.
+const valueEventFilters = (prefixes: string[][]): string[][][] => {
+  const byDepth = new Map<number, string[][]>();
+  for (const prefix of prefixes) {
+    const keys = byDepth.get(prefix.length) ?? prefix.map(() => [] as string[]);
+    prefix.forEach((key, index) => {
+      if (!keys[index]!.includes(key)) keys[index]!.push(key);
+    });
+    byDepth.set(prefix.length, keys);
+  }
+  return [...byDepth.values()].map((keys) => [...keys, ["0x1"], VALUE_MODELS.map(shortString.encodeShortString)]);
+};
 
 const rowSetPrefixes = (raw: unknown): string[][] => {
   const abi = typeof raw === "string" ? JSON.parse(raw) : raw;

@@ -47,12 +47,13 @@ it("runs ledger-wide chest work independently of any configured shard", async ()
   expect(data.has("lastTick")).toBe(true);
 });
 
-const shard = vi.hoisted(() => ({ head: vi.fn(), page: vi.fn(), grant: vi.fn() }));
+const shard = vi.hoisted(() => ({ head: vi.fn(), page: vi.fn(), header: vi.fn(), grant: vi.fn() }));
 vi.mock("./shard-rpc", async (original) => ({
   ...(await original<typeof import("./shard-rpc")>()),
   ShardReader: class {
     constructor(public connection: unknown) {}
     head = shard.head;
+    header = shard.header;
     page = shard.page;
   },
 }));
@@ -114,4 +115,37 @@ it("records unavailable ledger work while shard ingestion and owned Realm labor 
     } as never,
   );
   expect(tick).toHaveBeenCalledWith("0x1");
+});
+
+it("continues a full confirmed page through its alarm and stops when caught up", async () => {
+  const data = new Map<string, unknown>();
+  const storage = {
+    get: async (key: string) => data.get(key),
+    put: async (key: string, value: unknown) => {
+      data.set(key, value);
+    },
+    list: async () => new Map(),
+    setAlarm: vi.fn(async () => {}),
+    transaction: async (run: (tx: unknown) => Promise<unknown>): Promise<unknown> => run(storage),
+  };
+  const relay = new ValueRelay(
+    { storage } as unknown as DurableObjectState,
+    { IDENTITY: { l2ChainId: async () => "0x1" } } as never,
+  );
+  const page = {
+    block: { block_number: 0, block_hash: "0x1", status: "ACCEPTED_ON_L2" },
+    first: { parent_hash: "0x0" },
+    anchors: [{ number: 0, hash: "0x1" }],
+    rows: [],
+    next: null,
+  };
+  shard.head.mockResolvedValue(0);
+  shard.header.mockResolvedValue({ block_hash: "0x1" });
+  shard.page.mockResolvedValueOnce({ ...page, next: "cursor" }).mockResolvedValue(page);
+  expect(await relay.tick("0x1")).toMatchObject({ value: { status: "ready", more: true } });
+  expect(storage.setAlarm).toHaveBeenCalledOnce();
+  await relay.alarm();
+  expect(shard.page).toHaveBeenLastCalledWith(0, 0, "cursor");
+  expect(storage.setAlarm).toHaveBeenCalledOnce();
+  expect(data.get("progress")).toMatchObject({ nextBlock: 1 });
 });

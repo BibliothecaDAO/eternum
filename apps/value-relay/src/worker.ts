@@ -152,6 +152,8 @@ export class ValueRelay extends DurableObject<RelayEnv> {
                 : { status: "unavailable", reason: value.failure.operation },
             };
             await relay.ctx.storage.put("shardTick", observation);
+            if (Result.isSuccess(value) && value.success.status === "ready" && value.success.more)
+              await relay.ctx.storage.setAlarm(Date.now());
             return observation;
           }),
         ),
@@ -164,6 +166,9 @@ export class ValueRelay extends DurableObject<RelayEnv> {
     };
     await this.ctx.storage.put("shardTick", observation);
     return observation;
+  }
+  async alarm() {
+    await this.tick();
   }
   private async portsFor(chainId: string) {
     const bound = await this.ctx.storage.get<string>("chain");

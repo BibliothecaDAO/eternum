@@ -1,3 +1,4 @@
+import { shortString } from "starknet";
 import { ledgerCall } from "../../../packages/value-ledger/test-support/ledger-abi";
 import { gamesEventAbi as abi, withdrawalEvent } from "../../../packages/value-ledger/test-support/abi";
 import { Effect } from "effect";
@@ -172,7 +173,7 @@ it("pins one bounded Games event page without reading 2000 unrelated transaction
   rpc.hashes.mockResolvedValue({ ...header, transactions: Array(2000).fill("0xabc") });
   rpc.events.mockResolvedValue({ events: [emitted()], continuation_token: "more" });
   const page = await fixture().reader.page(10, 10, null);
-  expect(page.next).toBe("more");
+  expect(JSON.parse(page.next!)).toEqual({ filter: 0, token: "more" });
   expect(rpc.events).toHaveBeenCalledTimes(1);
   expect(rpc.receipt).not.toHaveBeenCalled();
   expect(rpc.hashes).not.toHaveBeenCalled();
@@ -201,4 +202,36 @@ it("refuses a mixed-fork header range before persisting any receipts", async () 
   await expect(Effect.runPromise(fixture().ports.eventsPage(10, 14, null))).rejects.toMatchObject({
     operation: "confirmed_block_changed:11",
   });
+});
+
+it("filters only value models and resumes every deployed RowSet depth without gameplay traffic", async () => {
+  const nested = JSON.parse(JSON.stringify(abi));
+  nested[0].variants.push({ name: "Nested", type: "fixture::Nested", kind: "nested" });
+  nested.push({
+    type: "event",
+    name: "fixture::Nested",
+    kind: "enum",
+    variants: [{ name: "RowSet", type: "fixture::RowSet", kind: "nested" }],
+  });
+  rpc.contract.mockResolvedValue({ abi: nested });
+  rpc.events
+    .mockResolvedValueOnce({ events: [emitted()], continuation_token: "more" })
+    .mockResolvedValue({ events: [] });
+  const reader = fixture().reader;
+  const first = await reader.page(10, 10, null);
+  const second = await reader.page(10, 10, first.next);
+  const third = await reader.page(10, 10, second.next);
+  expect(first.rows).toHaveLength(1);
+  expect(third.next).toBeNull();
+  expect(rpc.events).toHaveBeenCalledTimes(3);
+  const calls = rpc.events.mock.calls.map(([query]) => query);
+  expect(calls[1].continuation_token).toBe("more");
+  expect(calls[2].continuation_token).toBeUndefined();
+  for (const query of calls) {
+    expect(query.keys.slice(-2)).toEqual([
+      ["0x1"],
+      ["LordsWithdrawal", "BlitzResult"].map(shortString.encodeShortString),
+    ]);
+  }
+  expect(calls.map((query) => query.keys.length)).toEqual([3, 3, 4]);
 });

@@ -13,6 +13,7 @@ export const runRelay = (chainId: string, ports: RelayPorts, store: RelayStore) 
     if (head < (progress.page?.head ?? progress.nextBlock - 1))
       return yield* haltRelay(store, `confirmed_head_regressed:${progress.page?.head ?? progress.nextBlock - 1}`);
     yield* verifyObservedHead(ports, store, progress);
+    let more = false;
     const end = progress.page?.head ?? Math.min(head, progress.nextBlock + 99);
     if (progress.nextBlock <= end) {
       const observed = yield* Effect.result(
@@ -28,11 +29,12 @@ export const runRelay = (chainId: string, ports: RelayPorts, store: RelayStore) 
         return yield* haltRelay(store, `invalid_shard_page_range:${progress.nextBlock}`);
       yield* validateBlock(chainId, end, page, progress.lastHash, store);
       yield* relayOperation("persist confirmed obligations", () => store.observe(separateInvalidRows(chainId, page)));
+      more = !!page.next || end < head;
     }
     const payments = yield* payWithdrawals(ports, store);
     const results = yield* postResults(ports, store);
     yield* restoreResolvableReceipts(ports, store);
-    return { status: "ready" as const, deferred: [...payments, ...results] };
+    return { status: "ready" as const, more, deferred: [...payments, ...results] };
   });
 
 /** An interface/funding outage is temporary. Bot identities and invalid receipt layouts remain set aside. */
