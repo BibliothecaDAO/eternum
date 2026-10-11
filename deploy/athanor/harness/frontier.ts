@@ -1232,7 +1232,7 @@ export function summarizeFrontierDesign(evidence: FrontierEvidence) {
         value: playerDays ? (chests.length * 7) / playerDays : null,
       },
       ruinChestLords: {
-        target: "at most the day price ceiling per share",
+        target: "fixed preset price per share",
         paid: chests.reduce((sum, chest) => sum + chest.lords, 0),
         note: "Paid into the realm at each ruin's clear; withdrawal is not exercised",
       },

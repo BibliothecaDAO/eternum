@@ -105,12 +105,11 @@ export const frontierPreset: NativePreset = {
   },
   progression: { revealXp: 2, fixedXp: 200, uncommonXp: 100, rareXp: 200, epicXp: 400, legendaryXp: 800 },
   labor: { amount: 1000, accountDailyLimit: 0 },
-  // The ruin's chest: the season pool paid through a day price of at most 50 LORDS a share.
+  // The ruin's chest: the season pool pays a fixed 50 LORDS a share.
   chests: {
     pool: 1000000,
-    priceCeiling: 50,
+    price: 50,
     shares: { common: 1, uncommon: 2, rare: 4, epic: 10, legendary: 20 },
-    estimateDays: 5,
     claimWindowSeconds: 7 * 86400,
   },
   depths: [

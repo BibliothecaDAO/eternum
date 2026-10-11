@@ -295,10 +295,10 @@ function buildEconomy(
       !Number.isSafeInteger(chests.pool) ||
       chests.pool < 0 ||
       (chests.pool === 0 && presetId !== FRONTIER_SELF_CHECK_PRESET_ID) ||
-      ![chests.priceCeiling, chests.estimateDays, chests.claimWindowSeconds, ...shares].every(
+      ![chests.price, chests.claimWindowSeconds, ...shares].every(
         (value) => Number.isSafeInteger(value) && value > 0,
       ) ||
-      [chests.estimateDays, ...shares].some((value) => value > 0xffff) ||
+      shares.some((value) => value > 0xffff) ||
       chests.claimWindowSeconds > 0xffffffff ||
       shares.some((value, index) => value > (shares[index + 1] ?? value))
     )
@@ -348,9 +348,8 @@ function buildEconomy(
         ? new CairoOption(CairoOptionVariant.None)
         : new CairoOption(CairoOptionVariant.Some, {
             pool: BigInt(chests.pool),
-            price_ceiling: BigInt(chests.priceCeiling),
+            price: BigInt(chests.price),
             shares: chests.shares,
-            estimate_days: chests.estimateDays,
             claim_window_seconds: chests.claimWindowSeconds,
           }),
     trade: { max_count: config.trade.maxCount },
