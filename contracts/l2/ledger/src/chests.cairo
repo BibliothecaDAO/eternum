@@ -21,14 +21,19 @@ pub fn draw_outcome(odds: ChestOdds, block_hash: felt252, token_id: u256, season
         array!['ETERNUM_CHEST_DRAW', block_hash, token_id.low.into(), token_id.high.into(), season_id.into()].span(),
     )
         .into();
-    let mut roll: u16 = (seed % 10000).try_into().unwrap();
     let weights = outcome_weights(odds);
+    let mut total: u32 = 0;
+    for weight in weights.span() {
+        total += (*weight).into();
+    }
+    assert!(total > 0, "Ledger: empty chest draw");
+    let mut roll: u32 = (seed % total.into()).try_into().unwrap();
     for index in 0_u32..8 {
         let weight = *weights.at(index);
-        if roll < weight {
+        if roll < weight.into() {
             return index.try_into().unwrap();
         }
-        roll -= weight;
+        roll -= weight.into();
     }
     panic!("Ledger: invalid chest odds")
 }

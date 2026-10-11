@@ -98,7 +98,7 @@ pub struct ChestOdds {
 pub struct ChestBandPreset {
     pub metadata: u128,
     pub odds: ChestOdds,
-    pub lords_amount: u256,
+    pub lords_shares: u8,
 }
 
 #[derive(Copy, Default, Drop, Serde, starknet::Store)]

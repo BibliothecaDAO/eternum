@@ -905,6 +905,7 @@ pub mod GameLedger {
             );
             assert!(preset.protocol_cut_bps <= 10_000, "Ledger: invalid protocol cut");
             assert!(preset.chest_lords_bps <= 10_000, "Ledger: invalid chest share");
+            assert!(preset.protocol_cut_bps + preset.chest_lords_bps <= 10_000, "Ledger: combined shares exceed pot");
             assert!(
                 preset.paid_fraction_bps > 0 && preset.paid_fraction_bps <= 10_000, "Ledger: invalid paid fraction",
             );
@@ -1001,7 +1002,7 @@ pub mod GameLedger {
             assert!(starknet::get_block_timestamp() < season.end, "Ledger: MMR frozen");
             let treasury_cut = pool * preset.protocol_cut_bps.into() / BPS;
             let net_pool = pool - treasury_cut;
-            let chest_lords = net_pool * preset.chest_lords_bps.into() / BPS;
+            let chest_lords = pool * preset.chest_lords_bps.into() / BPS;
             season.chest_reserve += chest_lords;
             season.pool += net_pool - chest_lords;
             assert!(
@@ -1073,7 +1074,8 @@ pub mod GameLedger {
                 total += weight.into();
             }
             assert!(total == 10000, "Ledger: invalid chest odds");
-            assert!(band.odds.lords == 0 || band.lords_amount > 0, "Ledger: zero LORDS reward");
+            assert!(band.odds.lords == 0 || band.lords_shares > 0, "Ledger: zero LORDS reward");
+            assert!(band.odds.lords < 10000, "Ledger: missing chest fallback");
         }
 
         fn write_cosmetic_inventory(ref self: ContractState, preset_id: u32, rarity: u8, items: Span<u128>) {
@@ -1130,21 +1132,23 @@ pub mod GameLedger {
         ) -> ChestContent {
             let mut season = self.get_season(chest.season_id);
             let band = self.chest_bands.entry((season.preset_id, chest.band)).read();
-            let outcome = draw_outcome(band.odds, block_hash, token_id, chest.season_id);
+            let mut outcome = draw_outcome(band.odds, block_hash, token_id, chest.season_id);
+            if outcome == 5 {
+                let lords = self.get_preset(season.preset_id).entry_fee * band.lords_shares.into();
+                if lords > 0 && lords <= season.chest_reserve {
+                    season.chest_reserve -= lords;
+                    self.seasons.entry(chest.season_id).write(season);
+                    return ChestContent { kind: 3, cosmetic: 0, lords };
+                }
+                let mut fallback = band.odds;
+                fallback.lords = 0;
+                outcome = draw_outcome(fallback, block_hash, token_id, chest.season_id);
+            }
             if outcome < 5 {
                 let count = self.cosmetic_counts.entry((season.preset_id, outcome)).read();
                 let index = draw_item_index(block_hash, token_id, chest.season_id, count);
                 let cosmetic = self.cosmetic_items.entry((season.preset_id, outcome, index)).read();
                 ChestContent { kind: 0, cosmetic, lords: 0 }
-            } else if outcome == 5 {
-                let lords = if band.lords_amount < season.chest_reserve {
-                    band.lords_amount
-                } else {
-                    season.chest_reserve
-                };
-                season.chest_reserve -= lords;
-                self.seasons.entry(chest.season_id).write(season);
-                ChestContent { kind: 3, cosmetic: 0, lords }
             } else {
                 ChestContent { kind: outcome - 5, cosmetic: 0, lords: 0 }
             }
@@ -1154,9 +1158,7 @@ pub mod GameLedger {
             if content.kind == 0 {
                 ICollectibleDispatcher { contract_address: self.cosmetics.read() }.mint(wallet, content.cosmetic);
             } else if content.kind == 3 {
-                if content.lords > 0 {
-                    self.send_lords(wallet, content.lords);
-                }
+                self.send_lords(wallet, content.lords);
             } else {
                 let mut credits = self.credits.entry(wallet).read();
                 if content.kind == 1 {

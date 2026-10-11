@@ -48,7 +48,7 @@ Results contain only wallet and competition rank, sorted by rank then wallet on 
 `['ETERNUM_BLITZ_RESULT', 3, shard, game_id, count, wallet, rank, ...]`. The shard must not draw chest contents. MMR and
 chest bands share the tie-average percentile. Five bands cover 0–20%, 20–40%, 40–60%, 60–80% and 80–100%; the 100%
 endpoint stays in the fifth band. A singleton belongs to the first band. Each season uses one immutable preset,
-including its games, so a chest needs only its band and season to identify its odds and nominal LORDS amount.
+including its games, so a chest needs only its band and season to identify its odds and entry-fee shares.
 
 Chests are ordinary transferable NFTs. The holder approves the ledger, then calls `open_request(token_id)`. This burns
 the token permanently and records the requester and block B; burning removes custody and cancellation machinery. No
@@ -58,19 +58,18 @@ outcome, and delivers to the requester. A separate hash selects uniformly among 
 timestamp, finish block or Cartridge VRF enters the draw. The request never expires, and anyone can finish it later. A
 failed delivery can be attempted again, but its fixed entropy cannot change the outcome.
 
-A LORDS outcome pays `min(band.lords_amount, season.chest_reserve)`. It cannot touch Frontier, other seasons,
-unallocated slots or season-prize custody. The first valid season top-list post after season end sweeps the reserve into
-the prize pool before allocating shares. Later openings still deliver cosmetics or credits; LORDS then pays zero against
-the empty reserve. Outstanding chest requests are not a debt for their nominal amount.
+A LORDS outcome pays `band.lords_shares * preset.entry_fee` only when the season's chest reserve holds the whole amount.
+Otherwise the same draw entropy selects among the band's non-token weights, normalized without LORDS. No partial or zero
+token reward is delivered. The reserve cannot touch Frontier, other seasons, unallocated slots or season-prize custody.
+The first valid season top-list post sweeps the reserve into the prize pool; late chest openings still deliver cosmetics
+or credits.
 
-Rehearsal presets propose LORDS amounts 700 / 200 / 100 / 50 / 20 by best-to-worst band, with LORDS probabilities 10% /
-10% / 5% / 4% / 0%. For 24 untied players, the bands contain 5 / 5 / 4 / 5 / 5 players. At 500 LORDS per entry, 20%
-treasury and 5% chest share: `24*500*0.8*0.05 = 480`. Nominal expected chest rewards are
-`5*0.10*700 + 5*0.10*200 + 4*0.05*100 + 5*0.04*50 = 480`. Actual expected chest payments can be lower because of reserve
-caps, late openings, ties and other lobby sizes; every remainder joins season prizes. Paid flags increase funding
-without multiplying chests. Changing the treasury to 10% yields 540 per reference game: the owner can retune the reward
-presets, or let the extra reserve join season prizes. The full odds table and test inventory live in
-`scripts/chest-preset.js` and are registered as immutable admin presets. They are not approved production values.
+Both the treasury cut and chest share use the whole pot, including paid sword and shield flags: 10% treasury, 10% chest
+reserve, 80% prize pool. Presets whose two shares exceed 100% are refused. Chest token rewards by best-to-worst band are
+4 entries at 5%, 2 entries at 10%, 1 entry at 10%, then no tokens in the bottom two bands. Non-token odds keep their
+relative proportions. With equally populated bands, expected token rewards are 10% of an entry per player; actual
+payments depend on rank ties, lobby size and available reserve. Paid flags fund the pot without adding chests. The odds
+and cosmetic inventory are registered as immutable presets through `scripts/chest-preset.js`.
 
 The Starknet sequencer can choose/order transactions and influence the target block's contents, timestamp and hash,
 foresee the resulting outcomes, or censor requests/finishes. This is a future-block draw, not an unbiased VRF. Ordinary

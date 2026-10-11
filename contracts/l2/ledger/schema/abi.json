@@ -242,8 +242,8 @@
         "type": "game_ledger::types::ChestOdds"
       },
       {
-        "name": "lords_amount",
-        "type": "core::integer::u256"
+        "name": "lords_shares",
+        "type": "core::integer::u8"
       }
     ]
   },

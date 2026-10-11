@@ -986,12 +986,14 @@ fn odds_for(outcome: u8) -> ChestOdds {
             0
         },
         lords: if outcome == 5 {
-            10000
+            9999
         } else {
             0
         },
         sword: if outcome == 6 {
             10000
+        } else if outcome == 5 {
+            1
         } else {
             0
         },
@@ -1013,23 +1015,20 @@ fn test_bands() -> Array<ChestBandPreset> {
                         7
                     } else {
                         6
-                    }), lords_amount: 700,
+                    }), lords_shares: 0,
                 },
             );
     }
     bands
 }
 
-fn deploy_reward_fixture(outcome: u8, reserve_bps: u16, nominal_lords: u256) -> Fixture {
+fn deploy_reward_fixture(outcome: u8, reserve_bps: u16, lords_shares: u8) -> Fixture {
     let fixture = deploy_ledger();
     let mut preset = default_preset();
     preset.chest_lords_bps = reserve_bps;
     let mut bands = array![];
     for band in 0_u32..5 {
-        bands
-            .append(
-                ChestBandPreset { metadata: 0x301 + band.into(), odds: odds_for(outcome), lords_amount: nominal_lords },
-            );
+        bands.append(ChestBandPreset { metadata: 0x301 + band.into(), odds: odds_for(outcome), lords_shares });
     }
     start_cheat_caller_address(fixture.ledger_address, ADMIN());
     fixture.ledger.register_preset(PRESET_ID, preset, bands, test_items());
@@ -1038,6 +1037,85 @@ fn deploy_reward_fixture(outcome: u8, reserve_bps: u16, nominal_lords: u256) -> 
     fixture.ledger.open_slot(SLOT_KEY, 1, PRESET_ID, START, END);
     stop_cheat_caller_address(fixture.ledger_address);
     fixture
+}
+
+#[test]
+fn chest_shares_use_the_slots_entry_fee_and_never_pay_less_than_one_entry() {
+    for entry in array![100_u256, 500] {
+        for band in 0_u16..5 {
+            let fixture = deploy_ledger();
+            let mut preset = default_preset();
+            preset.entry_fee = entry;
+            preset.chest_lords_bps = 10000;
+            let shares = array![4_u8, 2, 1, 0, 0];
+            let mut bands = array![];
+            for index in 0_u32..5 {
+                bands
+                    .append(
+                        ChestBandPreset {
+                            metadata: 0x301 + index.into(),
+                            odds: odds_for(if index < 3 {
+                                5
+                            } else {
+                                6
+                            }),
+                            lords_shares: *shares.at(index),
+                        },
+                    );
+            }
+            start_cheat_caller_address(fixture.ledger_address, ADMIN());
+            fixture.ledger.register_preset(PRESET_ID, preset, bands, test_items());
+            fixture.ledger.open_season(1, PRESET_ID, START, SEASON_END);
+            start_cheat_caller_address(fixture.ledger_address, OPERATOR());
+            fixture.ledger.open_slot(SLOT_KEY, 1, PRESET_ID, START, END);
+            for index in 0_u16..5 {
+                fund_and_approve_player(@fixture, player(index), entry);
+                start_cheat_caller_address(fixture.ledger_address, player(index));
+                fixture.ledger.register(SLOT_KEY, false, false);
+            }
+            apply_results(@fixture, ranked_players(5));
+            let token_id: u256 = (band + 1).into();
+            assert!(fixture.ledger.get_chest(token_id).band == band.try_into().unwrap());
+            open_reward(@fixture, player(band), token_id);
+            let expected = entry * (*shares.at(band.into())).into();
+            assert!(fixture.lords.balance_of(player(band)) == expected);
+            assert!(expected == 0 || expected >= entry);
+            assert!(fixture.ledger.get_season(1).chest_reserve == 5 * entry - expected);
+            if band >= 3 {
+                assert!(fixture.ledger.get_credits(player(band)).swords == 1);
+            }
+        }
+    }
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn pot_shares_accept_exactly_one_hundred_percent_and_refuse_more() {
+    let fixture = deploy_ledger();
+    let safe = IGameLedgerSafeDispatcher { contract_address: fixture.ledger_address };
+    let mut preset = default_preset();
+    preset.protocol_cut_bps = 5000;
+    preset.chest_lords_bps = 5001;
+    start_cheat_caller_address(fixture.ledger_address, ADMIN());
+    assert!(safe.register_preset(2, preset, test_bands(), test_items()).is_err());
+    preset.chest_lords_bps = 5000;
+    fixture.ledger.register_preset(2, preset, test_bands(), test_items());
+    assert!(fixture.ledger.get_preset(2).chest_lords_bps == 5000);
+}
+
+#[test]
+#[should_panic(expected: "Ledger: missing chest fallback")]
+fn token_odds_must_leave_a_non_token_fallback() {
+    let fixture = deploy_ledger();
+    let mut bands = test_bands();
+    let mut band = bands.pop_front().unwrap();
+    band.odds = odds_for(5);
+    band.odds.lords = 10000;
+    band.odds.sword = 0;
+    band.lords_shares = 1;
+    bands.append(band);
+    start_cheat_caller_address(fixture.ledger_address, ADMIN());
+    fixture.ledger.register_preset(2, default_preset(), bands, test_items());
 }
 
 fn request_reward(fixture: @Fixture, wallet: ContractAddress, token_id: u256) {
@@ -1064,8 +1142,8 @@ fn open_reward(fixture: @Fixture, wallet: ContractAddress, token_id: u256) {
 }
 
 #[test]
-fn lords_draws_use_only_the_reserve_and_are_capped_without_a_second_fee() {
-    let fixture = deploy_reward_fixture(5, 2000, 700);
+fn unaffordable_lords_draws_pay_the_fallback_and_preserve_the_whole_reserve() {
+    let fixture = deploy_reward_fixture(5, 2000, 1);
     register_players(@fixture, 2);
     apply_results(@fixture, ranked_players(2));
     assert!(fixture.ledger.get_season(1).pool == 800);
@@ -1075,17 +1153,19 @@ fn lords_draws_use_only_the_reserve_and_are_capped_without_a_second_fee() {
     assert!(fixture.ledger.get_chest(1).season_id == 1);
     open_reward(@fixture, player(0), 1);
     open_reward(@fixture, player(1), 2);
-    assert!(fixture.lords.balance_of(player(0)) == 200);
+    assert!(fixture.lords.balance_of(player(0)) == 0);
+    assert!(fixture.ledger.get_credits(player(0)).swords == 1);
+    assert!(fixture.ledger.get_credits(player(1)).swords == 1);
     assert!(fixture.lords.balance_of(player(1)) == 0);
     assert!(fixture.lords.balance_of(TREASURY()) == 0);
-    assert!(fixture.ledger.get_season(1).chest_reserve == 0);
-    assert!(fixture.lords.balance_of(fixture.ledger_address) == 800);
+    assert!(fixture.ledger.get_season(1).chest_reserve == 200);
+    assert!(fixture.lords.balance_of(fixture.ledger_address) == 1000);
     assert!(fixture.ledger.get_chest(1).finished && fixture.ledger.get_chest(2).finished);
 }
 
 #[test]
 fn a_permissionless_cosmetic_finish_mints_to_the_requester() {
-    let fixture = deploy_reward_fixture(0, 0, 700);
+    let fixture = deploy_reward_fixture(0, 0, 1);
     register_players(@fixture, 1);
     apply_results(@fixture, ranked_players(1));
     request_reward(@fixture, player(0), 1);
@@ -1153,10 +1233,10 @@ fn chest_request_cannot_be_repeated() {
 }
 
 #[test]
-fn paid_flags_feed_the_chest_reserve_after_the_treasury_cut() {
+fn paid_flags_and_entries_split_the_whole_pot_ten_ten_eighty() {
     let mut preset = default_preset();
-    preset.protocol_cut_bps = 2000;
-    preset.chest_lords_bps = 2000;
+    preset.protocol_cut_bps = 1000;
+    preset.chest_lords_bps = 1000;
     let fixture = deploy_fixture(preset);
     fund_and_approve_player(@fixture, player(0), 1500);
 
@@ -1164,9 +1244,9 @@ fn paid_flags_feed_the_chest_reserve_after_the_treasury_cut() {
     fixture.ledger.register(SLOT_KEY, true, true);
 
     apply_results(@fixture, ranked_players(1));
-    assert!(fixture.lords.balance_of(TREASURY()) == 300);
-    assert!(fixture.ledger.get_season(1).chest_reserve == 240);
-    assert!(fixture.ledger.get_season(1).pool == 960);
+    assert!(fixture.lords.balance_of(TREASURY()) == 150);
+    assert!(fixture.ledger.get_season(1).chest_reserve == 150);
+    assert!(fixture.ledger.get_season(1).pool == 1200);
 }
 
 #[test]
@@ -1423,7 +1503,7 @@ fn a_game_cannot_end_at_the_instant_its_result_ratings_freeze() {
 
 #[test]
 fn frontier_season_chests_and_unfinished_game_custody_are_conserved_together() {
-    let fixture = deploy_reward_fixture(5, 2000, 200);
+    let fixture = deploy_reward_fixture(5, 2000, 1);
     fund_and_approve_player(@fixture, ADMIN(), 1000);
     start_cheat_caller_address(fixture.ledger_address, ADMIN());
     fixture.ledger.fund_frontier('shard', 1, PRESET_ID, START, END, 0x5eed, 1000);
@@ -1536,7 +1616,7 @@ fn tied_players_receive_the_same_middle_band_used_by_mmr() {
 #[test]
 fn all_eight_outcomes_use_the_immutable_band_presets() {
     for outcome in 0_u8..8 {
-        let fixture = deploy_reward_fixture(outcome, 10000, 50);
+        let fixture = deploy_reward_fixture(outcome, 10000, 1);
         register_players(@fixture, 1);
         apply_results(@fixture, ranked_players(1));
         open_reward(@fixture, player(0), 1);
@@ -1549,8 +1629,8 @@ fn all_eight_outcomes_use_the_immutable_band_presets() {
                     .at(0),
             );
         } else if outcome == 5 {
-            assert!(fixture.lords.balance_of(player(0)) == 50);
-            assert!(fixture.ledger.get_season(1).chest_reserve == 450);
+            assert!(fixture.lords.balance_of(player(0)) == 500);
+            assert!(fixture.ledger.get_season(1).chest_reserve == 0);
         } else if outcome == 6 {
             assert!(fixture.ledger.get_credits(player(0)).swords == 1);
         } else {
@@ -1561,7 +1641,7 @@ fn all_eight_outcomes_use_the_immutable_band_presets() {
 
 #[test]
 fn posting_the_first_top_list_sweeps_reserve_and_late_chests_still_finish() {
-    let fixture = deploy_reward_fixture(5, 2000, 700);
+    let fixture = deploy_reward_fixture(5, 2000, 1);
     register_players(@fixture, 2);
     apply_results(@fixture, ranked_players(2));
     request_reward(@fixture, player(0), 1);
@@ -1644,7 +1724,7 @@ fn golden_draw_uses_only_the_fixed_future_hash_and_chest_identity() {
 
 #[test]
 fn unfinished_cosmetic_requests_remain_finishable_after_season_settlement() {
-    let fixture = deploy_reward_fixture(0, 2000, 700);
+    let fixture = deploy_reward_fixture(0, 2000, 1);
     register_players(@fixture, 1);
     apply_results(@fixture, ranked_players(1));
     request_reward(@fixture, player(0), 1);
@@ -1660,7 +1740,7 @@ fn a_cosmetic_rarity_selects_from_all_its_items_using_an_independent_hash() {
     let fixture = deploy_ledger();
     let mut bands = array![];
     for band in 0_u32..5 {
-        bands.append(ChestBandPreset { metadata: 0x301 + band.into(), odds: odds_for(0), lords_amount: 700 });
+        bands.append(ChestBandPreset { metadata: 0x301 + band.into(), odds: odds_for(0), lords_shares: 0 });
     }
     let items = array![array![1, 2, 3], array![4], array![5], array![6], array![7]];
     configure_collection_metadata(fixture.cosmetics_address, array![1, 2, 3, 4, 5, 6, 7]);
