@@ -32,9 +32,8 @@ const snapshot = (poolLeft = "83", amount = "17"): ConfirmedSnapshot => ({
           value: {
             game_id: 7,
             pool: "100",
-            price_ceiling: "10",
+            price: "10",
             shares: {},
-            estimate_days: 5,
             claim_window_seconds: 604800,
           },
         },
@@ -50,9 +49,6 @@ const snapshot = (poolLeft = "83", amount = "17"): ConfirmedSnapshot => ({
             pool_left: poolLeft,
             open: "3",
             day: "1",
-            price: "1",
-            estimate: "20",
-            rolled_shares: "4",
           },
         },
       ],
@@ -104,12 +100,14 @@ it("accepts an explicitly present empty receipt model, and never defaults a miss
   ).rejects.toThrow();
 });
 it("rejects previous receipt and budget schemas, duplicate claims, wrong games and unconfirmed snapshots", async () => {
-  const malformed = [snapshot(), snapshot(), snapshot(), snapshot(), snapshot()];
+  const malformed = Array.from({ length: 7 }, () => snapshot());
   Object.assign(malformed[0]!.models[1]!.rows[0]!.value, { spent: "4" });
   Object.assign(malformed[1]!.models[2]!.rows[0]!.value, { player: "0x456" });
   malformed[2]!.models[2]!.rows.push(malformed[2]!.models[2]!.rows[0]!);
   malformed[3]!.models[2]!.rows[0]!.value.game_id = 8;
   malformed[4]!.confirmed_block = 9;
+  Object.assign(malformed[5]!.models[1]!.rows[0]!.value, { price: "1", estimate: "20", rolled_shares: "4" });
+  Object.assign(malformed[6]!.models[0]!.rows[0]!.value, { price_ceiling: "10", estimate_days: 5 });
   for (const state of malformed)
     await expect(
       Effect.runPromise(shardConservationPort(connection, "https://shard.test", network(state))()),
