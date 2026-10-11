@@ -1,4 +1,5 @@
 import {
+  BLITZ_SLOT_PREPARATION_SECONDS,
   resolveBlitzRoster,
   type LedgerSlotKey,
   type LedgerSlot,
@@ -37,6 +38,8 @@ export const closedSlotGroups = async (key: LedgerSlotKey, value: BlitzValuePort
     registrations.push(...page.registrations);
   }
   if (registrations.length !== slot.registeredCount) throw new Error("registration_history_incomplete");
+  if (slot.end - slot.close <= BLITZ_SLOT_PREPARATION_SECONDS)
+    return { groups: [], refunds: registrations.map(({ wallet }) => wallet), slot };
   const { players, refunds } = await resolveBlitzRoster(registrations, identity);
   return { groups: splitPlaytestRoster(players), refunds, slot };
 };
