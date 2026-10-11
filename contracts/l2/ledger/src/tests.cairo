@@ -1,7 +1,7 @@
 use core::num::traits::Zero;
 use game_ledger::contract::{
     IGameLedgerDispatcher, IGameLedgerDispatcherTrait, IGameLedgerSafeDispatcher, IGameLedgerSafeDispatcherTrait,
-    IMMRTokenDispatcher, IMMRTokenDispatcherTrait, result_commitment,
+    result_commitment,
 };
 use game_ledger::test_lords::{ITestLordsDispatcher, ITestLordsDispatcherTrait};
 use game_ledger::types::{ChestBandPreset, ChestOdds, GameKey, MmrParams, Preset, RankedPlayer, SlotKey};
@@ -94,7 +94,6 @@ struct Fixture {
     ledger_address: ContractAddress,
     ledger: IGameLedgerDispatcher,
     lords_address: ContractAddress,
-    mmr_address: ContractAddress,
     chest_address: ContractAddress,
     cosmetics_address: ContractAddress,
     lords: IERC20Dispatcher,
@@ -127,7 +126,6 @@ fn deploy_ledger() -> Fixture {
         ledger_address,
         ledger,
         lords_address,
-        mmr_address,
         chest_address: loot_chest,
         cosmetics_address: cosmetics,
         lords: IERC20Dispatcher { contract_address: lords_address },
@@ -1374,15 +1372,11 @@ fn monitor_pause_stops_season_payouts() {
 
 #[test]
 fn tied_mmr_uses_wallet_order_so_a_cutoff_tie_is_challengeable() {
-    let fixture = deploy_fixture(default_preset());
+    let mut preset = default_preset();
+    preset.mmr.enabled = false;
+    let fixture = deploy_fixture(preset);
     register_players(@fixture, 6);
-    apply_results(
-        @fixture,
-        array![
-            row(player(0), 1), row(player(1), 1), row(player(2), 1), row(player(3), 1), row(player(4), 1),
-            row(player(5), 1),
-        ],
-    );
+    apply_results(@fixture, ranked_players(6));
     post_top_at(@fixture, SEASON_END, array![player(1), player(2)]);
     fixture.ledger.challenge_season(1, player(0));
     assert!(fixture.ledger.get_season(1).challenged);
@@ -2185,175 +2179,6 @@ fn frontier_funding_stops_at_the_season_end() {
     assert!(fixture.ledger.frontier_unlocked('shard', 1) == 1000);
 }
 
-const PLAYER_PRESET_ID: u32 = PRESET_ID + 1;
-const FIRST_PLAYER_SLOT: u32 = 0x80000000;
-
-fn player_preset() -> Preset {
-    let mut preset = default_preset();
-    preset.entry_fee = 50;
-    preset.mmr.enabled = false;
-    preset.sword_price = 0;
-    preset.shield_price = 0;
-    preset
-}
-
-fn player_slot_fixture() -> Fixture {
-    let fixture = deploy_fixture(default_preset());
-    start_cheat_caller_address(fixture.ledger_address, ADMIN());
-    fixture.ledger.register_preset(PLAYER_PRESET_ID, player_preset(), test_bands(), test_items());
-    start_cheat_caller_address(fixture.ledger_address, player(0));
-    fixture
-}
-
-#[test]
-fn opening_player_slots_pays_each_seat_and_numbers_each_shard_independently() {
-    let fixture = player_slot_fixture();
-    fund_and_approve_player(@fixture, player(0), 150);
-    let id = fixture.ledger.open_player_slot('shard', PLAYER_PRESET_ID, START, END);
-    assert!(id == FIRST_PLAYER_SLOT);
-    let key = SlotKey { shard: 'shard', slot_id: id };
-    let slot = fixture.ledger.get_slot(key);
-    assert!(slot.exists && slot.season_id == 0 && slot.preset_id == PLAYER_PRESET_ID);
-    assert!(slot.close == START && slot.end == END && slot.pool == 50 && slot.registered_count == 1);
-    let registration = fixture.ledger.get_registration(key, player(0));
-    assert!(registration.registered && registration.paid == 50 && !registration.sword && !registration.shield);
-    let (wallet, _) = *fixture.ledger.get_registrations(key, 0, 1).at(0);
-    assert!(wallet == player(0));
-    assert!(fixture.ledger.open_player_slot('shard', PLAYER_PRESET_ID, START, END) == id + 1);
-    assert!(fixture.ledger.open_player_slot('other', PLAYER_PRESET_ID, START, END) == FIRST_PLAYER_SLOT);
-    assert!(fixture.lords.balance_of(player(0)) == 0);
-    assert!(fixture.lords.balance_of(fixture.ledger_address) == 150);
-    assert!(fixture.lords.balance_of(TREASURY()) == 0);
-}
-
-#[test]
-#[should_panic]
-fn player_cannot_open_without_paying_the_creator_seat() {
-    let fixture = player_slot_fixture();
-    fixture.ledger.open_player_slot('shard', PLAYER_PRESET_ID, START, END);
-}
-
-#[test]
-#[feature("safe_dispatcher")]
-fn player_slots_refuse_rated_free_and_invalid_windows() {
-    let fixture = player_slot_fixture();
-    start_cheat_caller_address(fixture.ledger_address, ADMIN());
-    fixture.ledger.register_preset(5, Preset { entry_fee: 0, ..player_preset() }, test_bands(), test_items());
-    start_cheat_caller_address(fixture.ledger_address, player(0));
-    let safe = IGameLedgerSafeDispatcher { contract_address: fixture.ledger_address };
-    assert!(safe.open_player_slot('shard', PRESET_ID, START, END).is_err());
-    assert!(safe.open_player_slot('shard', 5, START, END).is_err());
-    assert!(safe.open_player_slot(0, PLAYER_PRESET_ID, START, END).is_err());
-    assert!(safe.open_player_slot('shard', PLAYER_PRESET_ID, START, START).is_err());
-    start_cheat_block_timestamp(fixture.ledger_address, START);
-    assert!(safe.open_player_slot('shard', PLAYER_PRESET_ID, START, END).is_err());
-}
-
-#[test]
-#[feature("safe_dispatcher")]
-fn operator_slots_cannot_use_player_numbers_or_unrated_presets() {
-    let fixture = player_slot_fixture();
-    start_cheat_caller_address(fixture.ledger_address, OPERATOR());
-    fixture.ledger.open_slot(SlotKey { shard: 'shard', slot_id: FIRST_PLAYER_SLOT - 1 }, 1, PRESET_ID, START, END);
-    let safe = IGameLedgerSafeDispatcher { contract_address: fixture.ledger_address };
-    assert!(safe.open_slot(SlotKey { shard: 'shard', slot_id: FIRST_PLAYER_SLOT }, 1, PRESET_ID, START, END).is_err());
-    assert!(safe.open_slot(SlotKey { shard: 'shard', slot_id: 99 }, 1, PLAYER_PRESET_ID, START, END).is_err());
-}
-
-#[test]
-#[feature("safe_dispatcher")]
-fn player_slots_charge_joiners_without_swords_or_shields() {
-    let fixture = player_slot_fixture();
-    fund_and_approve_player(@fixture, player(0), 50);
-    let key = SlotKey {
-        shard: 'shard', slot_id: fixture.ledger.open_player_slot('shard', PLAYER_PRESET_ID, START, END),
-    };
-    fund_and_approve_player(@fixture, player(1), 50);
-    start_cheat_caller_address(fixture.ledger_address, player(1));
-    let safe = IGameLedgerSafeDispatcher { contract_address: fixture.ledger_address };
-    assert!(safe.register(key, true, false).is_err());
-    assert!(safe.register(key, false, true).is_err());
-    fixture.ledger.register(key, false, false);
-    assert!(fixture.ledger.get_registration(key, player(1)).paid == 50);
-    assert!(fixture.ledger.get_slot(key).pool == 100);
-    assert!(fixture.ledger.get_slot(key).registered_count == 2);
-}
-
-#[test]
-#[feature("safe_dispatcher")]
-fn player_game_pots_go_only_to_treasury_outside_any_season() {
-    let fixture = player_slot_fixture();
-    fund_and_approve_player(@fixture, player(0), 50);
-    let close = SEASON_END + 1;
-    let id = fixture.ledger.open_player_slot('shard', PLAYER_PRESET_ID, close, close + 100);
-    let key = SlotKey { shard: 'shard', slot_id: id };
-    for index in 1..3_u16 {
-        fund_and_approve_player(@fixture, player(index), 50);
-        start_cheat_caller_address(fixture.ledger_address, player(index));
-        fixture.ledger.register(key, false, false);
-    }
-    let mut before = array![];
-    fixture.ledger.get_season(1).serialize(ref before);
-    start_cheat_caller_address(fixture.ledger_address, OPERATOR());
-    start_cheat_block_timestamp(fixture.ledger_address, close);
-    fixture.ledger.apply_results(key, 7, ranked_players(2));
-    assert!(fixture.ledger.get_slot(key).pool == 50);
-    assert!(fixture.lords.balance_of(TREASURY()) == 100);
-    fixture.ledger.apply_results(key, 8, array![row(player(2), 1)]);
-    assert!(fixture.ledger.get_slot(key).pool == 0);
-    assert!(fixture.lords.balance_of(TREASURY()) == 150);
-    assert!(fixture.lords.balance_of(fixture.ledger_address) == 0);
-    assert!(fixture.ledger.get_result_commitment(GAME_KEY) == result_commitment(GAME_KEY, ranked_players(2).span()));
-    let mmr = IMMRTokenDispatcher { contract_address: fixture.mmr_address };
-    let chests = IERC721Dispatcher { contract_address: fixture.chest_address };
-    for index in 0..3_u16 {
-        let result_key = GameKey { shard: 'shard', game_id: if index == 2 {
-            8
-        } else {
-            7
-        } };
-        let result = fixture.ledger.get_player_result(result_key, player(index));
-        assert!(result.rank == if index == 1 {
-            2
-        } else {
-            1
-        });
-        assert!(result.chest_id == 0 && result.mmr_before == 0 && result.mmr_after == 0);
-        assert!(mmr.get_player_mmr(player(index)) == 1_000_000_000_000_000_000_000);
-        assert!(chests.balance_of(player(index)) == 0);
-        assert!(fixture.lords.balance_of(player(index)) == 0);
-    }
-    let mut after = array![];
-    fixture.ledger.get_season(1).serialize(ref after);
-    assert!(before == after);
-    let safe = IGameLedgerSafeDispatcher { contract_address: fixture.ledger_address };
-    assert!(safe.get_season(0).is_err());
-    assert!(safe.apply_results(key, 9, ranked_players(2)).is_err());
-}
-
-#[test]
-#[feature("safe_dispatcher")]
-fn only_operator_cancels_player_slots_and_paused_refunds_return_each_payment() {
-    let fixture = player_slot_fixture();
-    fund_and_approve_player(@fixture, player(0), 50);
-    let key = SlotKey {
-        shard: 'shard', slot_id: fixture.ledger.open_player_slot('shard', PLAYER_PRESET_ID, START, END),
-    };
-    let safe = IGameLedgerSafeDispatcher { contract_address: fixture.ledger_address };
-    assert!(safe.cancel_slot(key).is_err());
-    start_cheat_caller_address(fixture.ledger_address, OPERATOR());
-    fixture.ledger.cancel_slot(key);
-    start_cheat_caller_address(fixture.ledger_address, ADMIN());
-    fixture.ledger.pause();
-    start_cheat_caller_address(fixture.ledger_address, player(0));
-    fixture.ledger.refund(key);
-    assert!(fixture.lords.balance_of(player(0)) == 50);
-    assert!(fixture.lords.balance_of(fixture.ledger_address) == 0);
-    assert!(fixture.lords.balance_of(TREASURY()) == 0);
-    assert!(fixture.ledger.get_slot(key).pool == 0);
-    assert!(safe.refund(key).is_err());
-}
-
 #[test]
 #[feature("safe_dispatcher")]
 fn registration_pages_keep_block_times_order_and_refunded_wallets() {
@@ -2386,12 +2211,13 @@ fn registration_pages_keep_block_times_order_and_refunded_wallets() {
 }
 
 #[test]
-fn player_open_and_settlement_keep_the_registration_timestamp() {
-    let fixture = player_slot_fixture();
-    fund_and_approve_player(@fixture, player(0), 50);
+fn settlement_keeps_the_registration_timestamp() {
+    let fixture = deploy_fixture(default_preset());
+    fund_and_approve_player(@fixture, player(0), 500);
+    start_cheat_caller_address(fixture.ledger_address, player(0));
     start_cheat_block_timestamp(fixture.ledger_address, 77);
-    let id = fixture.ledger.open_player_slot('shard', PLAYER_PRESET_ID, START, END);
-    let key = SlotKey { shard: 'shard', slot_id: id };
+    let key = SLOT_KEY;
+    fixture.ledger.register(key, false, false);
     start_cheat_caller_address(fixture.ledger_address, OPERATOR());
     start_cheat_block_timestamp(fixture.ledger_address, START);
     fixture.ledger.apply_results(key, GAME_KEY.game_id, array![row(player(0), 1)]);

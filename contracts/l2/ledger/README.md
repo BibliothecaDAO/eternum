@@ -27,28 +27,21 @@ returns `pool - paid` to the treasury. The existing closed season plus payment r
 void; the relay must recover that fact from the views and stop retrying voided claims. Paid retries remain harmless;
 unpaid payments after closure refuse.
 
-Ranked Blitz settlement takes one `protocol_cut_bps` treasury cut on the whole incoming game pot: entries and paid
+Blitz settlement takes one `protocol_cut_bps` treasury cut on the whole incoming game pot: entries and paid
 swords/shields. The default is 2000 bps. The remaining pot splits by `chest_lords_bps` into the season's chest reserve
 and season prize pool. Refunds return the original payment before any settlement cut. Chest and season payouts have no
 second cut. Frontier's configuration preset keeps its cut at zero.
 
 Registration custody is keyed by `{ shard, slot_id }`. Slots have no player cap. Each wallet registers once and pays its
-entry and, in ranked slots, optional flags. The launcher resolves identity at slot close and creates groups of at most
-24 on the shard. The ledger stores only paying wallets, in registration order. The operator marks unseated wallets
-refundable; refunds return their exact payment and credits, even while paused. Cancelling or aborting a slot opens
-refunds for all remaining unconsumed entries.
-
-Any wallet may call `open_player_slot(shard, preset_id, close, end)` with a priced, unrated preset. It pays and
-registers the caller in the same transaction and returns a slot number, allocated per shard from 2³¹. Operator slots use
-lower numbers and rated presets. Player slots belong to no season and accept no swords or shields. Their results record
-ranks and the commitment, send each game's whole pot to the treasury, and change no rating, season pool, reserve or
-chest. Only the operator may open refunds; every wallet, including the creator, claims its original payment through
-`refund`.
+entry and optional flags. The launcher resolves identity at slot close and creates groups of at most 24 on the shard.
+The ledger stores only paying wallets, in registration order. The operator marks unseated wallets refundable; refunds
+return their exact payment and credits, even while paused. Cancelling or aborting a slot opens refunds for all remaining
+unconsumed entries.
 
 `apply_results(slot, game_id, ranked)` settles one actual game. Its pot includes only those players' payments, which are
 subtracted from the slot's remaining custody. Each registration records its consuming game, so another result or refund
-cannot spend it again. The result commitment remains keyed by `{ shard, game_id }`. Ranked slot opening leaves one
-settlement tick between the scheduled game end and the season cutoff.
+cannot spend it again. The result commitment remains keyed by `{ shard, game_id }`. Slot opening leaves one settlement
+tick between the scheduled game end and the season cutoff.
 
 Results contain only wallet and competition rank, sorted by rank then wallet on ties. The version-3 commitment hashes
 `['ETERNUM_BLITZ_RESULT', 3, shard, game_id, count, wallet, rank, ...]`. The shard must not draw chest contents. MMR and
